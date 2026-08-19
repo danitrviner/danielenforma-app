@@ -5,7 +5,7 @@ import { parseBaseGrams } from './exchangeHelpers';
 // quantities across every meal of the week (recipe portions × scale, plus
 // complements), grouped by ingredient name.
 //
-// Indya recipes carry a structured `ingredientsText` in grams — those aggregate
+// Recipes from the imported recetario carry a structured `ingredientsText` in grams — those aggregate
 // cleanly. Builder recipes and complements only carry exchange quantities + a
 // free-text portion label; we recover grams from the label when possible
 // (parseBaseGrams), and otherwise fall back to listing the exchange count.

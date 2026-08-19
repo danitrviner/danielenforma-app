@@ -53,7 +53,7 @@ Usar patrón `isOwner()` / `isCoach()`. Consola Firebase es la fuente de verdad.
 | `athleteNutritionConfig` | email | docId = email |
 | `mesocycles` | auto | `athleteId` = **EMAIL** |
 | `mesocycleTemplates` | auto | `ownerId` (UID coach) |
-| `recipes` | auto/UUID | `ownerId` (UID \| "indya") |
+| `recipes` | auto/UUID | `ownerId` (UID \| "recetas") |
 | `recipeFavorites` | email | docId = email |
 | `progressPhotos` | `${email}_${date}_${view}` | `athleteId` = EMAIL |
 | `bodyweightLogs` | auto | `athleteId` = EMAIL |
@@ -440,7 +440,7 @@ que un análisis automático marcó como alta prioridad, para no aplicar cambios
 - **Fase 3 (Nutrición):** "Mis Dietas" (atleta crea/guarda dietas propias, `Diet.selfManaged`, misma colección `diets`); consumo diario de intercambios persistido (`dietCompletionLogs`, doc id `${email}_${date}`) en vez de solo-sesión; botón "Cambiar comida" (recetas ±10% kcal, `src/utils/recipeMatch.ts`, reutilizado por `DietAutoGenerator.tsx`); `AthleteNutritionConfig.kcalPerStep` configurable (`src/utils/nutritionConstants.ts`, default 0.046 kcal/paso — nunca hardcodeado inline); dashboard nutricional IA coach-only (`NutritionAIDashboard.tsx` + `src/utils/nutritionAnalysis.ts`) — **motor de reglas determinístico, sin LLM/API externa** — con reporte compartible (`AthleteNutritionConfig.sharedReportSnapshot`, privado por defecto). `src/utils/exchangeHelpers.ts` (nuevo) extrae CATS/CAT_LABEL/CAT_COLOR/etc. duplicados entre `NutritionScreen.tsx`/`NutritionPlansScreen.tsx`.
 - **Fase 2 (Entrenamiento):** biblioteca de ejercicios sin nivel Principiante/Intermedio/Avanzado, con filtro "Perfil de resistencia" (`enduranceProfile`). Observaciones de ejercicio en dos niveles: descripción global (`instructions`, cualquier atleta) + observación personalizada por atleta (`ExercisePersonalNote`, colección `exerciseNotes` doc id `${exerciseId}_${email}`). Atleta deja notas por ejercicio y por entreno completo (`WorkoutLog.note`/`WorkoutEntryLog.note`, ya preparados en Fase 1); coach las ve/marca vistas en `ClientHub`. Plantillas de programa renombradas a "Plantillas de mesociclo" + 3 grupos musculares prioritarios calculados automáticamente (`src/utils/muscleGroupRanking.ts`, reutilizado por `MesocycleManager.tsx`).
 - **Fase 1 (UX y Navegación):**
-- **`RecipesScreen.tsx`:** "Cargar más recetas" fallaba en silencio cuando categoría + momento de ingesta estaban filtrados a la vez — faltaba el índice compuesto `(ownerId, categoria, intakeTypes, name)`. Añadido a `firestore.indexes.json` y desplegado. Se agregó `indyaError` + botón "Reintentar" para que futuros fallos no queden atascados sin feedback.
+- **`RecipesScreen.tsx`:** "Cargar más recetas" fallaba en silencio cuando categoría + momento de ingesta estaban filtrados a la vez — faltaba el índice compuesto `(ownerId, categoria, intakeTypes, name)`. Añadido a `firestore.indexes.json` y desplegado. Se agregó `recetasError` + botón "Reintentar" para que futuros fallos no queden atascados sin feedback.
 - **`ProgressScreen.tsx` eliminado** (duplicado muerto de `HomeScreen.tsx`, sin referencias).
 - **Navegación coach:** tab "Ajustes" eliminado; `CoachesScreen` (Entrenadores/Cuestionarios/Ficha/Biblioteca) ahora vive colapsado dentro de `ProfileScreen.tsx` → sección "Entrenadores" (solo coach). Icono "Perfil" quitado del dock móvil del coach (el avatar del header ya abre el perfil). `TrainingCoachScreen.tsx`'s tab bar (Rutinas/Ejercicios/Plantillas) pasó a scroll+snap para mobile.
 - **`ClientsScreen.tsx`:** métricas "Racha Promedio"/"Nivel Medio" removidas, reemplazadas por "Atletas próximos a finalizar su planificación" (usa `planDaysLeft` ya calculado) + tarjeta nueva "Notas Pendientes". "Revisiones Pendientes" navega directo al tab Revisiones vía `onOpenReviews`.
@@ -472,7 +472,7 @@ que un análisis automático marcó como alta prioridad, para no aplicar cambios
 
 **Entrenamiento:** biblioteca ejercicios (muscleGroup 14 claves + equipment), workouts, mesociclos (heatmap MEV/MAV/MRV, motor 48h + antagonistas), generador de rutinas, vista atleta + registro series/pesos, historial 1RM Epley, plantillas de programa E1/A1/A2.
 
-**Nutrición:** banco 311 alimentos, presupuesto intercambios, D1 (HC/PROT/GRASA), D2 (presupuesto por día semana), D3a (periodización + auto-cambio + banner), tracker atleta con LISTA/FOTOS/NÚMEROS, auto-generador dieta desde onboarding, 8.850 recetas Indya importadas.
+**Nutrición:** banco 311 alimentos, presupuesto intercambios, D1 (HC/PROT/GRASA), D2 (presupuesto por día semana), D3a (periodización + auto-cambio + banner), tracker atleta con LISTA/FOTOS/NÚMEROS, auto-generador dieta desde onboarding, 8.850 recetas importadas.
 
 **Anamnesis:** composición + Mifflin automático + comidas/tupper/cocina. Editable por atleta (Perfil → Editar ficha) y coach (ClientHub → Ficha).
 

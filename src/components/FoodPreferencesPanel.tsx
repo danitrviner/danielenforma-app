@@ -1,6 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { FOOD_GROUPS, FoodGroup } from '../data/alimentos_anamnesis';
 import { updateOnboardingFoods } from '../dbService';
+import { EmptyState } from './ui';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -12,6 +13,12 @@ interface Props {
   initialDisliked: string[];
   allergies?: string[];
   onSaved?: (liked: string[], disliked: string[]) => void;
+  /** El wizard de alta lo usa ANTES de que exista el documento de onboarding:
+   *  `updateOnboardingFoods` hace `updateDoc`, que falla sin un doc ya creado.
+   *  Con esto puesto, cada toque sincroniza al padre en vez de escribir en
+   *  Firestore, y se oculta el botón «Guardar» — el wizard guarda todo junto
+   *  al final, con su propio «Siguiente». */
+  onSaveOverride?: (liked: string[], disliked: string[]) => void;
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -22,6 +29,7 @@ export default function FoodPreferencesPanel({
   initialDisliked,
   allergies = [],
   onSaved,
+  onSaveOverride,
 }: Props) {
   const [prefs, setPrefs] = useState<Record<string, FoodPref>>(() => {
     const init: Record<string, FoodPref> = {};
@@ -53,6 +61,18 @@ export default function FoodPreferencesPanel({
     setSaved(false);
   };
 
+  // Avisa al padre DESPUÉS de que el cambio se confirme, no dentro del propio
+  // updater de `setPrefs` — llamar a un `setState` del wizard en mitad del
+  // cálculo de otro componente es justo lo que React avisa que no se debe
+  // hacer ("Cannot update a component while rendering a different component").
+  useEffect(() => {
+    if (!onSaveOverride) return;
+    const liked    = Object.entries(prefs).filter(([, v]) => v === 'favorite').map(([k]) => k);
+    const disliked = Object.entries(prefs).filter(([, v]) => v === 'dislike').map(([k]) => k);
+    onSaveOverride(liked, disliked);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prefs]);
+
   const handleSave = async () => {
     const liked    = Object.entries(prefs).filter(([, v]) => v === 'favorite').map(([k]) => k);
     const disliked = Object.entries(prefs).filter(([, v]) => v === 'dislike').map(([k]) => k);
@@ -73,38 +93,40 @@ export default function FoodPreferencesPanel({
       <div className="space-y-4">
         {/* Global counter */}
         <div className="flex items-center justify-between">
-          <div className="flex gap-3 font-mono text-xs">
+          <div className="flex gap-3 font-mono text-label">
             <span className="flex items-center gap-1 text-amber-400">
-              <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
+              <span className="material-symbols-outlined text-body-s" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
               Favoritos ({totalFav})
             </span>
             <span className="flex items-center gap-1 text-red-400">
-              <span className="material-symbols-outlined text-sm">thumb_down</span>
+              <span className="material-symbols-outlined text-body-s">thumb_down</span>
               No quiero ({totalDislike})
             </span>
           </div>
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#fbcb1a] text-black font-sans font-bold text-[10px] uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-50"
-          >
-            <span className="material-symbols-outlined text-sm">{saving ? 'progress_activity' : saved ? 'check' : 'save'}</span>
-            {saving ? 'Guardando…' : saved ? 'Guardado' : 'Guardar'}
-          </button>
+          {!onSaveOverride && (
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="flex items-center gap-2 px-3 py-2 bg-accent text-black font-sans font-bold text-caption uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50"
+            >
+              <span className="material-symbols-outlined text-body-s">{saving ? 'progress_activity' : saved ? 'check' : 'save'}</span>
+              {saving ? 'Guardando…' : saved ? 'Guardado' : 'Guardar'}
+            </button>
+          )}
         </div>
 
         {/* Allergies reminder */}
         {allergies.length > 0 && (
-          <div className="flex items-center gap-2 px-3 py-2 bg-amber-400/10 border border-amber-400/30 rounded-lg">
-            <span className="material-symbols-outlined text-sm text-amber-400">warning</span>
-            <p className="font-mono text-[10px] text-amber-300">
+          <div className="flex items-center gap-2 px-3 py-2 bg-amber-400/10 border border-amber-400/30 rounded-surface">
+            <span className="material-symbols-outlined text-body-s text-amber-400">warning</span>
+            <p className="font-mono text-caption text-amber-300">
               Alergias/intolerancias: {allergies.join(', ')} — gestionadas en la ficha.
             </p>
           </div>
         )}
 
         {/* Group tiles */}
-        <div className="grid grid-cols-3 gap-2.5">
+        <div className="grid grid-cols-3 gap-3">
           {FOOD_GROUPS.map(g => {
             const gFav     = g.foods.filter(f => prefs[f] === 'favorite').length;
             const gDislike = g.foods.filter(f => prefs[f] === 'dislike').length;
@@ -114,26 +136,26 @@ export default function FoodPreferencesPanel({
               <button
                 key={g.id}
                 onClick={() => { setActiveGroup(g); setSearch(''); }}
-                className={`flex flex-col items-center gap-2 p-3 rounded-xl border transition-all active:scale-95 ${
+                className={`flex flex-col items-center gap-2 p-3 rounded-control border transition-all active:scale-95 ${
                   hasAny
-                    ? 'bg-[#1a1c12] border-[#fbcb1a]/30 hover:border-[#fbcb1a]/60'
-                    : 'bg-[#181816] border-white/7 hover:border-[#3a3a3a]'
+                    ? 'bg-accent-bg border-accent/30 hover:border-accent/60'
+                    : 'bg-surface border-hairline hover:border-hairline'
                 }`}
               >
-                <span className={`material-symbols-outlined text-2xl ${hasAny ? 'text-[#fbcb1a]' : 'text-[#555]'}`}>
+                <span className={`material-symbols-outlined text-title-l ${hasAny ? 'text-accent' : 'text-ink-3'}`}>
                   {g.icon}
                 </span>
-                <span className="font-mono text-[9px] text-[#c6c9ab] text-center leading-tight">{g.name}</span>
+                <span className="font-sans text-caption text-ink-2 text-center leading-tight">{g.name}</span>
                 {hasAny && (
-                  <div className="flex gap-1.5">
+                  <div className="flex gap-2">
                     {gFav > 0 && (
-                      <span className="font-mono text-[8px] text-amber-400 flex items-center gap-0.5">
+                      <span className="font-mono text-caption text-amber-400 flex items-center ">
                         <span className="material-symbols-outlined" style={{ fontSize: '9px', fontVariationSettings: "'FILL' 1" }}>star</span>
                         {gFav}
                       </span>
                     )}
                     {gDislike > 0 && (
-                      <span className="font-mono text-[8px] text-red-400 flex items-center gap-0.5">
+                      <span className="font-mono text-caption text-red-400 flex items-center ">
                         <span className="material-symbols-outlined" style={{ fontSize: '9px' }}>thumb_down</span>
                         {gDislike}
                       </span>
@@ -156,54 +178,56 @@ export default function FoodPreferencesPanel({
       <div className="flex items-center gap-3">
         <button
           onClick={() => setActiveGroup(null)}
-          className="text-[#c6c9ab] hover:text-white transition-colors"
+          className="text-ink-2 hover:text-white transition-colors"
         >
-          <span className="material-symbols-outlined text-base">arrow_back</span>
+          <span className="material-symbols-outlined text-title-s">arrow_back</span>
         </button>
         <div className="flex-1">
           <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-[#fbcb1a] text-base">{activeGroup.icon}</span>
-            <h3 className="font-sans font-bold text-base text-white">{activeGroup.name}</h3>
+            <span className="material-symbols-outlined text-accent text-title-s">{activeGroup.icon}</span>
+            <h3 className="font-sans font-bold text-title-s text-white">{activeGroup.name}</h3>
           </div>
-          <div className="flex gap-3 font-mono text-[10px] mt-0.5">
+          <div className="flex gap-3 font-mono text-caption ">
             <span className="text-amber-400">⭐ {totalFav}</span>
             <span className="text-red-400">➖ {totalDislike}</span>
           </div>
         </div>
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-[#fbcb1a] text-black font-sans font-bold text-[10px] uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-50 flex-shrink-0"
-        >
-          <span className="material-symbols-outlined text-sm">{saving ? 'progress_activity' : saved ? 'check' : 'save'}</span>
-          {saving ? '…' : saved ? 'OK' : 'Guardar'}
-        </button>
+        {!onSaveOverride && (
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="flex items-center gap-2 px-3 py-2 bg-accent text-black font-sans font-bold text-caption uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50 flex-shrink-0"
+          >
+            <span className="material-symbols-outlined text-body-s">{saving ? 'progress_activity' : saved ? 'check' : 'save'}</span>
+            {saving ? '…' : saved ? 'OK' : 'Guardar'}
+          </button>
+        )}
       </div>
 
       {/* Search */}
       <div className="relative">
-        <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#c6c9ab] text-base pointer-events-none">search</span>
+        <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-ink-2 text-title-s pointer-events-none">search</span>
         <input
           type="text"
           value={search}
           onChange={e => setSearch(e.target.value)}
           placeholder="Buscar alimento…"
-          className="w-full bg-[#1c1b1b] border border-white/7 rounded-lg pl-9 pr-4 py-2 text-xs text-white placeholder-[#555] focus:outline-none focus:border-[#fbcb1a]/50 font-mono"
+          className="w-full bg-raised border border-hairline rounded-control pl-10 pr-4 py-2 text-title-s text-white placeholder-ink-3 focus:outline-none focus:border-accent/50 font-mono"
         />
         {search && (
           <button
             onClick={() => setSearch('')}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-[#555] hover:text-white"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-3 hover:text-white"
           >
-            <span className="material-symbols-outlined text-sm">close</span>
+            <span className="material-symbols-outlined text-body-s">close</span>
           </button>
         )}
       </div>
 
       {/* Food list */}
-      <div className="divide-y divide-[#1e1e1e] rounded-xl overflow-hidden border border-white/7">
+      <div className="divide-y divide-hairline rounded-surface overflow-hidden border border-hairline">
         {filteredFoods.length === 0 ? (
-          <p className="py-6 text-center font-mono text-xs text-[#555]">Sin resultados</p>
+          <EmptyState icon="search_off" title="Sin resultados" />
         ) : (
           filteredFoods.map(food => {
             const pref    = prefs[food] ?? 'neutral';
@@ -216,17 +240,17 @@ export default function FoodPreferencesPanel({
                 key={food}
                 className={`flex items-center gap-3 px-4 py-3 transition-colors ${
                   pref === 'favorite' ? 'bg-amber-400/5' :
-                  pref === 'dislike'  ? 'bg-red-500/5' : 'bg-[#181816]'
+                  pref === 'dislike'  ? 'bg-red-500/5' : 'bg-surface'
                 }`}
               >
-                <span className={`flex-1 font-mono text-xs ${
+                <span className={`flex-1 font-mono text-label ${
                   isAllergen ? 'text-amber-400 line-through' :
                   pref === 'favorite' ? 'text-white' :
-                  pref === 'dislike'  ? 'text-[#888]' : 'text-[#c6c9ab]'
+                  pref === 'dislike'  ? 'text-ink-3' : 'text-ink-2'
                 }`}>
                   {food}
                   {isAllergen && (
-                    <span className="ml-1.5 font-mono text-[9px] text-amber-400 no-underline not-italic">⚠ alergia</span>
+                    <span className="ml-2 font-mono text-caption text-amber-400 no-underline not-italic">⚠ alergia</span>
                   )}
                 </span>
 
@@ -234,26 +258,26 @@ export default function FoodPreferencesPanel({
                   <div className="flex gap-1 flex-shrink-0">
                     <button
                       onClick={() => toggle(food, 'dislike')}
-                      className={`w-11 h-11 rounded-lg flex items-center justify-center transition-all active:scale-90 ${
+                      className={`w-11 h-11 rounded-control flex items-center justify-center transition-all active:scale-90 ${
                         pref === 'dislike'
                           ? 'bg-red-500/20 border border-red-500/50 text-red-400'
-                          : 'bg-[#1c1b1b] border border-white/7 text-[#444] hover:text-red-400 hover:border-red-500/30'
+                          : 'bg-raised border border-hairline text-ink-3 hover:text-red-400 hover:border-red-500/30'
                       }`}
                       title="No me gusta"
                     >
-                      <span className="material-symbols-outlined text-sm">thumb_down</span>
+                      <span className="material-symbols-outlined text-body-s">thumb_down</span>
                     </button>
                     <button
                       onClick={() => toggle(food, 'favorite')}
-                      className={`w-11 h-11 rounded-lg flex items-center justify-center transition-all active:scale-90 ${
+                      className={`w-11 h-11 rounded-control flex items-center justify-center transition-all active:scale-90 ${
                         pref === 'favorite'
                           ? 'bg-amber-400/20 border border-amber-400/50 text-amber-400'
-                          : 'bg-[#1c1b1b] border border-white/7 text-[#444] hover:text-amber-400 hover:border-amber-400/30'
+                          : 'bg-raised border border-hairline text-ink-3 hover:text-amber-400 hover:border-amber-400/30'
                       }`}
                       title="Favorito"
                     >
                       <span
-                        className="material-symbols-outlined text-sm"
+                        className="material-symbols-outlined text-body-s"
                         style={{ fontVariationSettings: pref === 'favorite' ? "'FILL' 1" : "'FILL' 0" }}
                       >star</span>
                     </button>

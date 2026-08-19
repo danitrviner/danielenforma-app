@@ -10,6 +10,7 @@ import ErrorState from '../components/ErrorState';
 import ReunionModal from '../components/ReunionModal';
 import ResultadoGraduacionModal from '../components/ResultadoGraduacionModal';
 import type { CrmReunion } from '../types';
+import { Icon } from '../../../components/ui';
 
 const TIPO_LABEL: Record<CrmReunion['tipo'], string> = {
   optimizacion: 'Optimización',
@@ -94,17 +95,17 @@ export default function ReunionesScreen({ coachEmail }: { coachEmail: string }) 
     <div className="space-y-4">
       <header className="flex items-center justify-between gap-2">
         <div>
-          <h1 className="font-sans font-black text-xl text-[#f5f5f0]">Reuniones</h1>
-          <p className="font-mono text-[9px] uppercase tracking-widest text-[#555550]">
+          <h1 className="font-sans font-bold text-title-m text-ink">Reuniones</h1>
+          <p className="font-sans text-caption uppercase tracking-widest text-ink-3">
             Optimización, graduación y fin de programa — ordenadas por fecha
           </p>
         </div>
         <button
           type="button"
           onClick={() => setModalAbierto(true)}
-          className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#fbcb1a] text-black font-sans font-bold text-[11px] hover:bg-[#d4a800] transition-colors"
+          className="flex items-center gap-1 px-3 py-2 rounded-control bg-accent text-black font-sans font-bold text-caption hover:bg-accent-press transition-colors"
         >
-          <span className="material-symbols-outlined text-sm">add</span>
+          <Icon name="add" size="s" />
           Nueva reunión
         </button>
       </header>
@@ -112,8 +113,8 @@ export default function ReunionesScreen({ coachEmail }: { coachEmail: string }) 
       {error ? (
         <ErrorState />
       ) : cargando ? (
-        <div className="space-y-1.5">
-          {Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-14 rounded-xl bg-white/4 animate-pulse" />)}
+        <div className="space-y-2">
+          {Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-14 rounded-surface bg-white/4 animate-pulse" />)}
         </div>
       ) : eventos.length === 0 ? (
         <EmptyState
@@ -123,19 +124,19 @@ export default function ReunionesScreen({ coachEmail }: { coachEmail: string }) 
           cta={{ label: 'Nueva reunión', onClick: () => setModalAbierto(true) }}
         />
       ) : (
-        <div className="bg-[#181816]/80 backdrop-blur-sm border border-white/7 rounded-2xl divide-y divide-white/7">
+        <div className="bg-surface/80 backdrop-blur-sm border border-hairline rounded-surface divide-y divide-white/7">
           {eventos.map(ev => {
             const whatsapp = enlaceWhatsApp(telefonoPorClientId.get(ev.clientId));
             const pasada = ev.fecha < hoy;
             return (
               <div key={ev.id} className="flex items-center justify-between gap-3 p-3">
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className={`w-2 h-2 rounded-full shrink-0 ${ev.tipo === 'fin_programa' ? 'bg-[#fdba74]' : 'bg-[#fbcb1a]'}`} />
+                  <div className={`w-2 h-2 rounded-full shrink-0 ${ev.tipo === 'fin_programa' ? 'bg-warning' : 'bg-accent'}`} />
                   <div className="min-w-0">
-                    <p className="font-sans text-[11px] text-[#f5f5f0] truncate">
+                    <p className="font-sans text-caption text-ink truncate">
                       <span className="font-bold">{ev.clientNombre}</span> · {ev.etiqueta}
                     </p>
-                    <p className={`font-mono text-[9px] tabular-nums ${pasada ? 'text-[#fca5a5]' : 'text-[#555550]'}`}>
+                    <p className={`font-mono text-caption tabular-nums ${pasada ? 'text-danger' : 'text-ink-3'}`}>
                       {formatDia(ev.fecha)} · {tiempoRelativo(ev.fecha)}
                     </p>
                   </div>
@@ -145,9 +146,9 @@ export default function ReunionesScreen({ coachEmail }: { coachEmail: string }) 
                     <a
                       href={whatsapp} target="_blank" rel="noopener noreferrer"
                       aria-label="Abrir WhatsApp" title="WhatsApp"
-                      className="w-7 h-7 rounded-lg inline-flex items-center justify-center text-[#a8a89e] hover:bg-white/6 transition-colors"
+                      className="w-7 h-7 rounded-control inline-flex items-center justify-center text-ink-2 hover:bg-white/6 transition-colors"
                     >
-                      <span className="material-symbols-outlined text-base">chat</span>
+                      <Icon name="chat" size="m" />
                     </a>
                   )}
                   {ev.tipo === 'reunion' && ev.reunion && (
@@ -156,15 +157,15 @@ export default function ReunionesScreen({ coachEmail }: { coachEmail: string }) 
                         type="button"
                         onClick={() => setEditando(ev.reunion!)}
                         aria-label="Editar" title="Editar"
-                        className="w-7 h-7 rounded-lg inline-flex items-center justify-center text-[#a8a89e] hover:bg-white/6 transition-colors"
+                        className="w-7 h-7 rounded-control inline-flex items-center justify-center text-ink-2 hover:bg-white/6 transition-colors"
                       >
-                        <span className="material-symbols-outlined text-base">edit</span>
+                        <Icon name="edit" size="m" />
                       </button>
                       <button
                         type="button"
                         onClick={() => marcarRealizada(ev.reunion!)}
                         disabled={actualizar.isPending && actualizar.variables?.id === ev.reunion!.id}
-                        className="px-2 py-1 rounded-lg bg-[#fbcb1a]/15 text-[#fbcb1a] border border-[#fbcb1a]/30 font-mono text-[9px] uppercase tracking-widest hover:bg-[#fbcb1a]/25 disabled:opacity-40 transition-colors"
+                        className="px-2 py-1 rounded-control bg-accent/15 text-accent border border-accent/30 font-mono text-caption uppercase tracking-widest hover:bg-accent/25 disabled:opacity-40 transition-colors"
                       >
                         Realizada
                       </button>

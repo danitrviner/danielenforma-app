@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { CoachReport } from '../types';
 import ReportView from './ReportView';
 import { buildReportText } from '../utils/reportBuilder';
+import { Icon, Button, Input } from './ui';
 
 interface Props {
   initial: CoachReport;
@@ -36,66 +37,69 @@ export default function ReportEditor({ initial, onSaveDraft, onSend, onDelete, o
   const alreadySent = initial.status === 'sent';
 
   return (
+    /* F9 no migra este overlay, a propósito: es el único de la app con layout
+       a dos columnas (`lg:grid-cols-2` — controles a la izquierda, vista previa
+       en vivo del reporte a la derecha) y mide `max-w-4xl`. Ni con el escalón
+       `xl` que F9 añadió a la escala compartida cabe: cada columna bajaría de
+       ~430 a ~320 px, menos de lo que mide la vista previa en el móvil del
+       atleta. Decisión de Dani el 4 ago 2026: esto no es un modal más sino una
+       pantalla de trabajo que casualmente flota, y le toca a la fase de diseño
+       decidir si debe ser modal, ruta propia o panel. */
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 overflow-y-auto">
       <div className="min-h-full flex items-start justify-center sm:p-4">
-        <div className="bg-[#111110] border border-white/7 sm:rounded-2xl w-full sm:max-w-4xl shadow-2xl">
+        <div className="bg-bg border border-hairline sm:rounded-surface w-full sm:max-w-4xl shadow-e2">
           {/* Header */}
-          <div className="sticky top-0 z-10 bg-[#111110] border-b border-white/7 px-4 sm:px-6 py-4 flex items-center justify-between gap-3">
+          <div className="sticky top-0 z-10 bg-bg border-b border-hairline px-4 sm:px-6 py-4 flex items-center justify-between gap-3">
             <div>
-              <h2 className="font-sans font-black text-lg text-white uppercase tracking-tight">
+              <h2 className="font-sans font-bold text-title-m text-white uppercase tracking-tight">
                 {alreadySent ? 'Editar reporte enviado' : 'Reporte de la semana'}
               </h2>
-              <p className="font-mono text-[10px] text-[#c6c9ab] mt-0.5">
+              <p className="font-mono text-caption text-ink-2 ">
                 {draft.status === 'sent' ? 'Enviado' : 'Borrador'}
               </p>
             </div>
-            <button onClick={onClose} className="text-white bg-[#2a2a2a] hover:bg-[#3e3e3e] p-1.5 h-9 w-9 rounded-full flex items-center justify-center transition-colors flex-shrink-0">
-              <span className="material-symbols-outlined text-base">close</span>
+            <button onClick={onClose} className="text-white bg-raised hover:bg-raised p-2 h-9 w-9 rounded-full flex items-center justify-center transition-colors flex-shrink-0">
+              <Icon name="close" size="m" />
             </button>
           </div>
 
           <div className="grid lg:grid-cols-2 gap-5 p-4 sm:p-6">
             {/* ── Left: editing controls ── */}
             <div className="space-y-4">
-              <div>
-                <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-1.5">Título</label>
-                <input
-                  value={draft.title}
-                  onChange={e => setDraft(d => ({ ...d, title: e.target.value }))}
-                  className="w-full bg-[#181816] border border-white/7 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-[#fbcb1a]/50"
-                />
-              </div>
+              <Input
+                label="Título"
+                value={draft.title}
+                onChange={v => setDraft(d => ({ ...d, title: v }))}
+              />
 
               <div>
-                <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-1.5">Mensaje para el atleta</label>
+                <label className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-2">Mensaje para el atleta</label>
                 <textarea
                   value={draft.intro}
                   onChange={e => setDraft(d => ({ ...d, intro: e.target.value }))}
                   rows={4}
                   placeholder="Escribe tu valoración de la semana, contexto, próximos pasos..."
-                  className="w-full bg-[#181816] border border-white/7 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-[#fbcb1a]/50 resize-y placeholder-[#555]"
+                  className="w-full bg-surface border border-hairline rounded-control px-3 py-3 text-title-s text-white focus:outline-none focus:border-accent/50 resize-y placeholder-ink-3"
                 />
               </div>
 
-              <div className="space-y-2.5">
-                <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider">Secciones (marca qué se cuenta)</label>
+              <div className="space-y-3">
+                <label className="block font-sans text-caption text-ink-2 uppercase tracking-wider">Secciones (marca qué se cuenta)</label>
                 {draft.sections.map(s => (
-                  <div key={s.id} className="bg-[#181816] border border-white/7 rounded-xl p-3 space-y-2">
+                  <div key={s.id} className="bg-surface border border-hairline rounded-surface p-3 space-y-2">
                     <button
                       onClick={() => setSection(s.id, { included: !s.included })}
-                      className="w-full flex items-center gap-2.5 text-left"
+                      className="w-full flex items-center gap-3 text-left"
                     >
-                      <span className={`material-symbols-outlined text-lg flex-shrink-0 ${s.included ? 'text-[#fbcb1a]' : 'text-[#555]'}`} style={{ fontVariationSettings: s.included ? "'FILL' 1" : "'FILL' 0" }}>
-                        {s.included ? 'check_box' : 'check_box_outline_blank'}
-                      </span>
-                      <span className={`text-sm font-sans font-bold ${s.included ? 'text-white' : 'text-[#555]'}`}>{s.title}</span>
+                      <Icon name={s.included ? 'check_box' : 'check_box_outline_blank'} size="l" filled={s.included} className={`flex-shrink-0 ${s.included ? 'text-accent' : 'text-ink-3'}`} />
+                      <span className={`text-body-s font-sans font-bold ${s.included ? 'text-white' : 'text-ink-3'}`}>{s.title}</span>
                     </button>
                     {s.included && (
                       <input
                         value={s.coachNote ?? ''}
                         onChange={e => setSection(s.id, { coachNote: e.target.value })}
                         placeholder="Nota opcional para esta sección..."
-                        className="w-full bg-[#1e1e1b] border border-white/7 rounded-lg px-2.5 py-2 text-xs text-white focus:outline-none focus:border-[#fbcb1a]/50 placeholder-[#555]"
+                        className="w-full bg-raised border border-hairline rounded-control px-3 py-2 text-title-s text-white focus:outline-none focus:border-accent/50 placeholder-ink-3"
                       />
                     )}
                   </div>
@@ -104,44 +108,31 @@ export default function ReportEditor({ initial, onSaveDraft, onSend, onDelete, o
             </div>
 
             {/* ── Right: live preview ── */}
-            <div className="lg:border-l lg:border-white/7 lg:pl-5">
-              <p className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-3">Vista previa (lo que verá el atleta)</p>
+            <div className="lg:border-l lg:border-hairline lg:pl-5">
+              <p className="font-sans text-caption text-ink-2 uppercase tracking-wider mb-3">Vista previa (lo que verá el atleta)</p>
               <ReportView report={draft} />
             </div>
           </div>
 
           {/* Footer actions */}
-          <div className="sticky bottom-0 bg-[#111110] border-t border-white/7 px-4 sm:px-6 py-4 flex items-center gap-3 flex-wrap pb-[calc(1rem+env(safe-area-inset-bottom))]">
+          <div className="sticky bottom-0 bg-bg border-t border-hairline px-4 sm:px-6 py-4 flex items-center gap-3 flex-wrap pb-[calc(1rem+env(safe-area-inset-bottom))]">
             <button
               onClick={() => run('delete', () => onDelete(draft))}
               disabled={busy !== null}
-              className="px-3.5 py-2.5 border border-white/7 text-[#c6c9ab] hover:border-red-400/40 hover:text-red-400 font-mono text-[10px] font-bold uppercase rounded-xl transition-all disabled:opacity-40"
+              className="px-4 py-3 border border-hairline text-ink-2 hover:border-red-400/40 hover:text-red-400 font-mono text-caption font-bold uppercase rounded-control transition-all disabled:opacity-40"
             >
               {busy === 'delete' ? 'Eliminando…' : 'Eliminar'}
             </button>
             <div className="flex-1" />
-            <button
-              onClick={handleCopy}
-              className="px-4 py-2.5 bg-[#181816] border border-white/7 text-white font-sans text-xs font-bold uppercase rounded-xl hover:border-[#00eefc]/50 transition-all flex items-center gap-2"
-            >
-              <span className="material-symbols-outlined text-base">{copied ? 'check' : 'content_copy'}</span>
+            <Button variant="secondary" onClick={handleCopy} icon={copied ? 'check' : 'content_copy'}>
               {copied ? '¡Copiado!' : 'Copiar texto'}
-            </button>
-            <button
-              onClick={() => run('save', () => onSaveDraft(draft))}
-              disabled={busy !== null}
-              className="px-4 py-2.5 bg-[#181816] border border-white/7 text-white font-sans text-xs font-bold uppercase rounded-xl hover:border-[#fbcb1a]/50 transition-all disabled:opacity-40"
-            >
+            </Button>
+            <Button variant="secondary" onClick={() => run('save', () => onSaveDraft(draft))} disabled={busy !== null}>
               {busy === 'save' ? 'Guardando…' : 'Guardar borrador'}
-            </button>
-            <button
-              onClick={() => run('send', () => onSend(draft))}
-              disabled={busy !== null}
-              className="px-5 py-2.5 bg-[#fbcb1a] text-black font-sans text-xs font-bold uppercase rounded-xl hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-40 flex items-center gap-2"
-            >
-              <span className="material-symbols-outlined text-base">send</span>
+            </Button>
+            <Button onClick={() => run('send', () => onSend(draft))} disabled={busy !== null} icon="send">
               {busy === 'send' ? 'Enviando…' : alreadySent ? 'Reenviar' : 'Enviar al atleta'}
-            </button>
+            </Button>
           </div>
         </div>
       </div>

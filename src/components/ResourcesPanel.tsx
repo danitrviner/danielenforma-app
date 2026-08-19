@@ -2,7 +2,10 @@ import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Resource, ResourceKind } from '../types';
 import { getAllResources, createResource, deleteResource } from '../dbService';
-import Skeleton from './Skeleton';
+import { useToast } from '../hooks/useToast';
+import { mensajeDeErrorFirestore } from '../utils/erroresFirestore';
+import { Skeleton } from './ui';
+import { Button } from './ui';
 
 interface Props {
   coachId?: string; // required only when isCoach (used to tag newly created resources)
@@ -21,6 +24,7 @@ const resourcesQueryKey = ['resources'];
 
 export default function ResourcesPanel({ coachId, isCoach }: Props) {
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
   const { data: resources = [], isPending: loading } = useQuery({
     queryKey: resourcesQueryKey,
     queryFn: getAllResources,
@@ -43,49 +47,61 @@ export default function ResourcesPanel({ coachId, isCoach }: Props) {
       setTitle(''); setUrl(''); setKind('link'); setShowForm(false);
     } catch (err) {
       console.error(err);
+      showToast(mensajeDeErrorFirestore(err, 'crear el recurso'));
     } finally {
       setSaving(false);
     }
   };
 
+  // Optimista: la fila desaparece al instante, pero si la escritura falla de
+  // verdad (permiso denegado — ya no se lo traga en silencio, ver
+  // escriturasHonestas.test.ts) hay que deshacer el optimismo, si no la
+  // pantalla dice que se borró un recurso que en realidad sigue ahí.
   const handleDelete = async (id: string) => {
+    const previo = queryClient.getQueryData<Resource[]>(resourcesQueryKey);
     queryClient.setQueryData<Resource[]>(resourcesQueryKey, prev => prev?.filter(r => r.id !== id));
-    try { await deleteResource(id); } catch (err) { console.error(err); }
+    try {
+      await deleteResource(id);
+    } catch (err) {
+      console.error(err);
+      queryClient.setQueryData(resourcesQueryKey, previo);
+      showToast(mensajeDeErrorFirestore(err, 'eliminar el recurso'));
+    }
   };
 
   return (
-    <section className="bg-[#181816] border border-white/7 rounded-2xl p-4 sm:p-5">
-      <div className="flex items-center justify-between mb-3 pb-2 border-b border-white/7">
-        <h2 className="font-sans font-bold text-base text-white flex items-center gap-2">
-          <span className="material-symbols-outlined text-[#00eefc]">folder_open</span>
+    <section className="bg-surface border border-hairline rounded-surface p-4 sm:p-5">
+      <div className="flex items-center justify-between mb-3 pb-2 border-b border-hairline">
+        <h2 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
+          <span className="material-symbols-outlined text-data">folder_open</span>
           Recursos
         </h2>
         {isCoach && (
           <button
             onClick={() => setShowForm(v => !v)}
-            className="flex items-center gap-1 text-[10px] font-mono font-bold uppercase text-[#fbcb1a] hover:text-[#d4a800] transition-colors"
+            className="flex items-center gap-1 text-caption font-mono font-bold uppercase text-accent hover:text-accent-press transition-colors"
           >
-            <span className="material-symbols-outlined text-sm">{showForm ? 'close' : 'add'}</span>
+            <span className="material-symbols-outlined text-body-s">{showForm ? 'close' : 'add'}</span>
             {showForm ? 'Cancelar' : 'Nuevo'}
           </button>
         )}
       </div>
 
       {isCoach && showForm && (
-        <form onSubmit={handleCreate} className="bg-[#1e1e1b] border border-white/7 rounded-xl p-3 mb-3 space-y-2">
+        <form onSubmit={handleCreate} className="bg-raised border border-hairline rounded-surface p-3 mb-3 space-y-2">
           <input
             type="text"
             value={title}
             onChange={e => setTitle(e.target.value)}
             placeholder="Título del recurso"
-            className="w-full bg-[#0e0e0e] border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-[#fbcb1a]"
+            className="w-full bg-bg border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent"
             required
           />
           <div className="flex gap-2">
             <select
               value={kind}
               onChange={e => setKind(e.target.value as ResourceKind)}
-              className="bg-[#0e0e0e] border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-[#fbcb1a]"
+              className="bg-bg border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent"
             >
               {(Object.keys(KIND_LABEL) as ResourceKind[]).map(k => (
                 <option key={k} value={k}>{KIND_LABEL[k]}</option>
@@ -96,17 +112,13 @@ export default function ResourcesPanel({ coachId, isCoach }: Props) {
               value={url}
               onChange={e => setUrl(e.target.value)}
               placeholder="https://..."
-              className="flex-1 bg-[#0e0e0e] border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-[#fbcb1a]"
+              className="flex-1 bg-bg border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent"
               required
             />
           </div>
-          <button
-            type="submit"
-            disabled={saving}
-            className="w-full py-2.5 bg-[#fbcb1a] text-black font-sans font-bold text-xs uppercase rounded hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-50 shadow-sm"
-          >
+          <Button type="submit" disabled={saving} fullWidth>
             {saving ? 'Guardando...' : 'Compartir recurso'}
-          </button>
+          </Button>
         </form>
       )}
 
@@ -116,21 +128,21 @@ export default function ResourcesPanel({ coachId, isCoach }: Props) {
           <Skeleton className="h-10 w-full" />
         </div>
       ) : resources.length === 0 ? (
-        <p className="text-xs text-[#555] font-mono py-2">
+        <p className="text-label text-ink-3 font-mono py-2">
           {isCoach ? 'Todavía no compartiste ningún recurso.' : 'Tu entrenador no compartió recursos todavía.'}
         </p>
       ) : (
         <div className="space-y-2">
           {resources.map(r => (
-            <div key={r.id} className="flex items-center gap-3 bg-[#1e1e1e] border border-white/7 rounded-lg p-3">
-              <span className="material-symbols-outlined text-[#00eefc] flex-shrink-0">{KIND_ICON[r.kind]}</span>
+            <div key={r.id} className="flex items-center gap-3 bg-raised border border-hairline rounded-surface p-3">
+              <span className="material-symbols-outlined text-data flex-shrink-0">{KIND_ICON[r.kind]}</span>
               <a href={r.url} target="_blank" rel="noopener noreferrer" className="flex-1 min-w-0">
-                <p className="font-sans font-semibold text-sm text-white hover:text-[#fbcb1a] transition-colors truncate">{r.title}</p>
-                <p className="font-mono text-[10px] text-[#c6c9ab]">{KIND_LABEL[r.kind]}</p>
+                <p className="font-sans font-bold text-body-s text-white hover:text-accent transition-colors truncate">{r.title}</p>
+                <p className="font-sans text-caption text-ink-2">{KIND_LABEL[r.kind]}</p>
               </a>
               {isCoach && (
-                <button onClick={() => handleDelete(r.id)} className="text-[#c6c9ab] hover:text-red-400 transition-colors flex-shrink-0">
-                  <span className="material-symbols-outlined text-base">delete</span>
+                <button onClick={() => handleDelete(r.id)} className="text-ink-2 hover:text-red-400 transition-colors flex-shrink-0">
+                  <span className="material-symbols-outlined text-title-s">delete</span>
                 </button>
               )}
             </div>

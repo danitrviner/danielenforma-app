@@ -8,6 +8,7 @@ import { EstadoPagoPill } from './StatusPill';
 import EmptyState from './EmptyState';
 import PagoModal from './PagoModal';
 import type { CrmPago } from '../types';
+import { Icon } from '../../../components/ui';
 
 interface Props {
   pagos: CrmPago[];
@@ -93,12 +94,12 @@ export default function PagosTable({ pagos, cargando, error, mostrarCliente, coa
         const atrasado = retraso > UMBRAL_DIAS_AVISO;
         return (
           <div>
-            <span className={`tabular-nums ${atrasado ? 'text-[#fca5a5] font-bold' : ''}`}>
+            <span className={`tabular-nums ${atrasado ? 'text-danger font-bold' : ''}`}>
               {formatDia(p.estado === 'pagado' ? p.fechaCobro : p.fechaEmision)}
             </span>
             {atrasado && (
-              <p className="flex items-center gap-0.5 font-mono text-[9px] text-[#fca5a5]">
-                <span className="material-symbols-outlined text-[11px]">warning</span>
+              <p className="flex items-center font-mono text-caption text-danger">
+                <Icon name="warning" size="s" />
                 {retraso} días de retraso
               </p>
             )}
@@ -119,9 +120,9 @@ export default function PagosTable({ pagos, cargando, error, mostrarCliente, coa
               onClick={() => marcarPagado(p)}
               aria-label="Marcar como pagado"
               title="Marcar como pagado"
-              className="w-7 h-7 rounded-lg inline-flex items-center justify-center text-emerald-400 hover:bg-white/6 transition-colors"
+              className="w-7 h-7 rounded-control inline-flex items-center justify-center text-emerald-400 hover:bg-white/6 transition-colors"
             >
-              <span className="material-symbols-outlined text-base">check_circle</span>
+              <Icon name="check_circle" size="m" />
             </button>
           )}
           <button
@@ -129,9 +130,9 @@ export default function PagosTable({ pagos, cargando, error, mostrarCliente, coa
             onClick={() => setEditando(p)}
             aria-label="Editar"
             title="Editar"
-            className="w-7 h-7 rounded-lg inline-flex items-center justify-center text-[#a8a89e] hover:bg-white/6 transition-colors"
+            className="w-7 h-7 rounded-control inline-flex items-center justify-center text-ink-2 hover:bg-white/6 transition-colors"
           >
-            <span className="material-symbols-outlined text-base">edit</span>
+            <Icon name="edit" size="m" />
           </button>
           {p.estado === 'pendiente' && (
             <button
@@ -139,9 +140,9 @@ export default function PagosTable({ pagos, cargando, error, mostrarCliente, coa
               onClick={() => borrar(p)}
               aria-label="Borrar"
               title="Borrar"
-              className="w-7 h-7 rounded-lg inline-flex items-center justify-center text-[#fca5a5] hover:bg-white/6 transition-colors"
+              className="w-7 h-7 rounded-control inline-flex items-center justify-center text-danger hover:bg-white/6 transition-colors"
             >
-              <span className="material-symbols-outlined text-base">delete</span>
+              <Icon name="delete" size="m" />
             </button>
           )}
         </div>
@@ -151,7 +152,7 @@ export default function PagosTable({ pagos, cargando, error, mostrarCliente, coa
 
   return (
     <>
-      <div className="bg-[#181816]/80 backdrop-blur-sm border border-white/7 rounded-2xl overflow-hidden">
+      <div className="bg-surface/80 backdrop-blur-sm border border-hairline rounded-surface overflow-hidden">
         <DataTable
           columnas={columnas}
           filas={pagos}

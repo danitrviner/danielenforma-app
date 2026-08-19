@@ -9,6 +9,7 @@ import {
   type ResultadoParseo, type AvisoDuplicado, type FilaImportada,
 } from '../lib/importar';
 import Modal, { BotonPrimario, BotonSecundario } from './Modal';
+import { Icon } from '../../../components/ui';
 
 type Paso = 'elegir' | 'analizando' | 'previa' | 'importando' | 'hecho';
 
@@ -102,9 +103,9 @@ export default function ImportarClientes({ onCerrar }: { onCerrar: () => void })
     >
       {paso === 'elegir' && (
         <div className="space-y-3">
-          <label className="flex flex-col items-center justify-center gap-2 py-10 rounded-xl border-2 border-dashed border-white/12 hover:border-[#fbcb1a]/40 cursor-pointer transition-colors">
-            <span className="material-symbols-outlined text-2xl text-[#555550]">upload_file</span>
-            <span className="font-sans text-[11px] text-[#a8a89e]">Arrastra o elige un .xlsx o .csv</span>
+          <label className="flex flex-col items-center justify-center gap-2 py-10 rounded-control border-2 border-dashed border-strong hover:border-accent/40 cursor-pointer transition-colors">
+            <Icon name="upload_file" size="l" className="text-ink-3" />
+            <span className="font-sans text-caption text-ink-2">Arrastra o elige un .xlsx o .csv</span>
             <input
               type="file"
               accept=".xlsx,.xls,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -113,12 +114,12 @@ export default function ImportarClientes({ onCerrar }: { onCerrar: () => void })
             />
           </label>
           {errorGeneral && (
-            <p className="flex items-start gap-1.5 px-2.5 py-2 rounded-lg bg-[#fca5a5]/10 border border-[#fca5a5]/25 font-sans text-[10px] text-[#fca5a5]">
-              <span className="material-symbols-outlined text-[13px] shrink-0">error</span>
+            <p className="flex items-start gap-2 px-3 py-2 rounded-surface bg-danger/10 border border-danger/25 font-sans text-caption text-danger">
+              <Icon name="error" size="s" className="shrink-0" />
               {errorGeneral}
             </p>
           )}
-          <p className="font-mono text-[9px] text-[#555550] leading-relaxed">
+          <p className="font-sans text-caption text-ink-3 leading-relaxed">
             Columnas reconocidas: nombre (obligatoria), email, dni/nif, teléfono, dirección.
             El nombre exacto de la cabecera no importa mientras sea razonable.
           </p>
@@ -127,8 +128,8 @@ export default function ImportarClientes({ onCerrar }: { onCerrar: () => void })
 
       {paso === 'analizando' && (
         <div className="flex flex-col items-center gap-2 py-10">
-          <span className="material-symbols-outlined text-2xl text-[#fbcb1a] animate-spin">progress_activity</span>
-          <p className="font-sans text-[11px] text-[#a8a89e]">Leyendo {nombreArchivo}…</p>
+          <Icon name="progress_activity" size="l" className="text-accent animate-spin" />
+          <p className="font-sans text-caption text-ink-2">Leyendo {nombreArchivo}…</p>
         </div>
       )}
 
@@ -144,18 +145,18 @@ export default function ImportarClientes({ onCerrar }: { onCerrar: () => void })
 
       {paso === 'importando' && (
         <div className="flex flex-col items-center gap-2 py-10">
-          <span className="material-symbols-outlined text-2xl text-[#fbcb1a] animate-spin">progress_activity</span>
-          <p className="font-sans text-[11px] text-[#a8a89e]">Importando {aImportar.length} clientes…</p>
+          <Icon name="progress_activity" size="l" className="text-accent animate-spin" />
+          <p className="font-sans text-caption text-ink-2">Importando {aImportar.length} clientes…</p>
         </div>
       )}
 
       {paso === 'hecho' && (
         <div className="flex flex-col items-center gap-2 py-10 text-center">
-          <span className="material-symbols-outlined text-2xl text-[#86efac]">check_circle</span>
-          <p className="font-sans font-bold text-sm text-[#f5f5f0]">
+          <Icon name="check_circle" size="l" className="text-success" />
+          <p className="font-sans font-bold text-body-s text-ink">
             {importados} {importados === 1 ? 'cliente importado' : 'clientes importados'}
           </p>
-          <p className="font-sans text-[11px] text-[#a8a89e]">Ya aparecen en la lista de clientes.</p>
+          <p className="font-sans text-caption text-ink-2">Ya aparecen en la lista de clientes.</p>
         </div>
       )}
     </Modal>
@@ -179,21 +180,21 @@ function PrevisualizacionImportacion({ nombreArchivo, resultado, duplicados, fil
 
   return (
     <div className="space-y-3">
-      <p className="font-mono text-[9px] uppercase tracking-widest text-[#555550]">{nombreArchivo}</p>
+      <p className="font-sans text-caption uppercase tracking-widest text-ink-3">{nombreArchivo}</p>
 
       <div className="grid grid-cols-3 gap-2">
-        <Resumen icono="check_circle" color="#86efac" numero={listasParaImportar} label="listas" />
-        <Resumen icono="content_copy" color="#fdba74" numero={duplicadosPorFila.size} label="posibles duplicados" />
-        <Resumen icono="error" color="#fca5a5" numero={resultado.conError.length} label="con error" />
+        <Resumen icono="check_circle" color="var(--color-success)" numero={listasParaImportar} label="listas" />
+        <Resumen icono="content_copy" color="var(--color-warning)" numero={duplicadosPorFila.size} label="posibles duplicados" />
+        <Resumen icono="error" color="var(--color-danger)" numero={resultado.conError.length} label="con error" />
       </div>
 
       {resultado.cabecerasNoReconocidas.length > 0 && (
-        <p className="font-mono text-[9px] text-[#555550]">
+        <p className="font-mono text-caption text-ink-3">
           Columnas ignoradas (no reconocidas): {resultado.cabecerasNoReconocidas.join(', ')}
         </p>
       )}
 
-      <div className="max-h-[280px] overflow-y-auto custom-scrollbar border border-white/7 rounded-xl divide-y divide-white/4">
+      <div className="max-h-[280px] overflow-y-auto custom-scrollbar border border-hairline rounded-surface divide-y divide-white/4">
         {resultado.filas.map(fila => (
           <FilaPreview
             key={fila.fila}
@@ -210,10 +211,10 @@ function PrevisualizacionImportacion({ nombreArchivo, resultado, duplicados, fil
 
 function Resumen({ icono, color, numero, label }: { icono: string; color: string; numero: number; label: string }) {
   return (
-    <div className="flex flex-col items-center gap-1 py-2 rounded-lg bg-white/4">
-      <span className="material-symbols-outlined text-base" style={{ color }}>{icono}</span>
-      <span className="font-sans font-black text-base text-[#f5f5f0] tabular-nums">{numero}</span>
-      <span className="font-mono text-[8px] uppercase tracking-widest text-[#555550]">{label}</span>
+    <div className="flex flex-col items-center gap-1 py-2 rounded-surface bg-white/4">
+      <Icon name={icono} size="m" style={{ color }} />
+      <span className="font-sans font-bold text-title-s text-ink tabular-nums">{numero}</span>
+      <span className="font-sans text-caption uppercase tracking-widest text-ink-3">{label}</span>
     </div>
   );
 }
@@ -223,31 +224,31 @@ function FilaPreview({ fila, duplicado, excluida, onToggle }: {
 }) {
   const conError = fila.errores.length > 0;
   return (
-    <div className={`flex items-start gap-2 px-2.5 py-2 ${excluida ? 'opacity-40' : ''}`}>
+    <div className={`flex items-start gap-2 px-3 py-2 ${excluida ? 'opacity-40' : ''}`}>
       {!conError && (
         <input
           type="checkbox"
           checked={!excluida}
           onChange={onToggle}
-          className="mt-0.5 accent-[#fbcb1a]"
+          className="accent-accent"
           aria-label={`Incluir a ${fila.nombre}`}
         />
       )}
-      {conError && <span className="material-symbols-outlined text-[13px] text-[#fca5a5] mt-0.5">error</span>}
+      {conError && <Icon name="error" size="s" className="text-danger" />}
       <div className="min-w-0 flex-1">
-        <p className="font-sans text-[11px] text-[#f5f5f0] truncate">
-          {fila.nombre || <span className="text-[#555550]">(sin nombre) — fila {fila.fila}</span>}
+        <p className="font-sans text-caption text-ink truncate">
+          {fila.nombre || <span className="text-ink-3">(sin nombre) — fila {fila.fila}</span>}
         </p>
         {(fila.email || fila.dni) && (
-          <p className="font-mono text-[9px] text-[#555550] truncate">
+          <p className="font-mono text-caption text-ink-3 truncate">
             {[fila.email, fila.dni].filter(Boolean).join(' · ')}
           </p>
         )}
         {conError && (
-          <p className="font-sans text-[10px] text-[#fca5a5] mt-0.5">{fila.errores.join('. ')}</p>
+          <p className="font-sans text-caption text-danger ">{fila.errores.join('. ')}</p>
         )}
         {duplicado && (
-          <p className="font-sans text-[10px] text-[#fdba74] mt-0.5">
+          <p className="font-sans text-caption text-warning ">
             Ya existe {duplicado.clienteExistente.nombre || 'un cliente'} con el mismo {duplicado.motivo === 'dni' ? 'DNI' : 'email'}
             {excluida ? ' — excluido' : ' — se importará igualmente'}
           </p>

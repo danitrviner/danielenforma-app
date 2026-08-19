@@ -3,6 +3,22 @@ import { useQuery } from '@tanstack/react-query';
 import { UserProfile } from '../types';
 import { getProgressPhotos, getBodyweightForAthlete } from '../dbService';
 import { bodyweightForAthleteKey } from '../hooks/useAthleteWeight';
+import { Icon, ListRow } from './ui';
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Fase 3 (F3.5): "sala de espera" — re-skin sobre
+   docs/design/fase3/Login y Espera - Experiencia.dc.html panel 02. Copy
+   exacto del handoff: título "Dani está montando tu plan", cuerpo mismo
+   texto, insignia "EN REVISIÓN DESDE …" con punto que late, salida
+   secundaria a la anamnesis ("Ver mi anamnesis"). El cuadro discontinuo
+   dorado es el mismo lenguaje de vacío que Nutrición reutiliza —no un
+   patrón nuevo de esta tarjeta.
+
+   Se conserva el checklist "mientras tanto" (foto, peso, Road map): no está
+   en el panel del handoff, pero resuelve algo real que el handoff no
+   contradice —el "valle de la muerte" post-onboarding— así que se mantiene
+   junto al añadido nuevo, no en su lugar.
+   ═══════════════════════════════════════════════════════════════════════════ */
 
 // Marca de "ya visitó el Road map" — mismo patrón que enforma_tour_pending_
 // (App.tsx/AppTour.tsx): una bandera en localStorage, sin colección nueva ni
@@ -16,9 +32,20 @@ function isRoadmapVisited(email: string): boolean {
   try { return localStorage.getItem(roadmapVisitedKey(email)) === '1'; } catch { return false; }
 }
 
+/** "EN REVISIÓN DESDE HOY/AYER/N DÍAS" — sin createdAt, solo "EN REVISIÓN":
+ * el dato no está disponible en perfiles creados antes de que este campo
+ * existiera, y no se inventa una fecha. */
+function fraseDesde(createdAt: string | undefined): string {
+  if (!createdAt) return 'EN REVISIÓN';
+  const dias = Math.floor((Date.parse(new Date().toISOString().slice(0, 10)) - Date.parse(createdAt.slice(0, 10))) / 86_400_000);
+  if (dias <= 0) return 'EN REVISIÓN DESDE HOY';
+  if (dias === 1) return 'EN REVISIÓN DESDE AYER';
+  return `EN REVISIÓN DESDE HACE ${dias} DÍAS`;
+}
+
 interface Props {
   profile: UserProfile;
-  onNavigate: (tab: 'checkin' | 'roadmap') => void;
+  onNavigate: (tab: 'checkin' | 'roadmap' | 'profile') => void;
 }
 
 // El "valle de la muerte" post-onboarding: el atleta termina el wizard en su
@@ -68,47 +95,57 @@ export default function PlanInPreparationCard({ profile, onNavigate }: Props) {
   const doneCount = items.filter(i => i.done).length;
 
   return (
-    <section className="bg-[#181816] border border-[#fbcb1a]/25 rounded-3xl p-5 shadow-[0_0_40px_-8px_rgba(251,203,26,0.25)] space-y-4">
+    <section className="rounded-canvas border border-dashed border-accent/45 bg-surface p-5 space-y-4">
       <div className="flex items-start gap-3">
-        <div className="w-12 h-12 rounded-2xl bg-[#fbcb1a]/10 border border-[#fbcb1a]/30 flex items-center justify-center flex-shrink-0">
-          <span className="material-symbols-outlined text-2xl text-[#fbcb1a]" style={{ fontVariationSettings: "'FILL' 1" }}>schedule</span>
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-surface border border-accent/30 bg-accent/13">
+          <Icon name="schedule" size="l" filled className="text-accent" />
         </div>
-        <div>
-          <h2 className="font-sans font-black uppercase tracking-tight text-base text-white">Tu coach está preparando tu plan</h2>
-          <p className="text-xs text-[#c6c9ab] mt-1 leading-relaxed">
-            Está revisando tu ficha para montarte un plan a medida. Normalmente lo tienes en menos de 48h — te avisamos en cuanto esté.
+        <div className="min-w-0 flex-1 space-y-2">
+          <h2 className="font-display text-title-l font-black uppercase tracking-tight text-ink">
+            Dani está montando tu plan
+          </h2>
+          <p className="font-sans text-body-s leading-relaxed text-ink-2">
+            Revisó tu anamnesis y está construyendo tu primer bloque de fuerza y tu dieta. Te
+            avisamos en cuanto esté listo.
           </p>
+          <div className="flex flex-wrap items-center gap-3 pt-1">
+            <span className="inline-flex items-center gap-2 rounded-full border border-accent-line bg-accent/13 px-3 py-1 font-mono text-caption font-bold uppercase tracking-widest text-accent">
+              <span className="h-1.5 w-1.5 animate-pulse-dot rounded-full bg-accent" aria-hidden />
+              {fraseDesde(profile.createdAt)}
+            </span>
+            <button
+              type="button"
+              onClick={() => onNavigate('profile')}
+              className="font-sans text-body-s font-bold text-accent hover:underline"
+            >
+              Ver mi anamnesis
+            </button>
+          </div>
         </div>
       </div>
 
-      <div className="border-t border-white/7 pt-4 space-y-2">
-        <p className="font-mono text-[10px] uppercase tracking-widest text-[#c6c9ab]">
+      <div className="border-t border-hairline pt-4 space-y-2">
+        <p className="font-sans text-caption uppercase tracking-widest text-ink-2">
           Mientras tanto ({doneCount}/{items.length})
         </p>
         {items.map(item => (
-          <button
+          <ListRow
             key={item.key}
             onClick={item.onClick}
             disabled={!loaded}
-            className={`w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-all border ${
-              item.done
-                ? 'bg-emerald-500/5 border-emerald-500/20'
-                : 'bg-[#1e1e1e] border-white/7 hover:border-[#fbcb1a]/40'
-            } disabled:opacity-60`}
-          >
-            <span className={`material-symbols-outlined text-lg ${item.done ? 'text-emerald-400' : 'text-[#c6c9ab]'}`}>
-              {item.done ? 'check_circle' : item.icon}
-            </span>
-            <span className={`font-sans text-sm flex-1 ${item.done ? 'text-emerald-200 line-through decoration-emerald-500/50' : 'text-white'}`}>
-              {item.label}
-            </span>
-          </button>
+            className={`rounded-control border ${item.done ? 'bg-success/6 border-success/20' : 'bg-raised border-hairline'}`}
+            leading={
+              <Icon name={item.done ? 'check_circle' : item.icon} size="l" className={item.done ? 'text-success' : 'text-ink-2'} />
+            }
+            title={item.label}
+          />
         ))}
-        <div className="flex items-center gap-3 rounded-xl px-3 py-2.5 border border-white/7 bg-[#1e1e1e]/50 opacity-60">
-          <span className="material-symbols-outlined text-lg text-[#c6c9ab]">lock</span>
-          <span className="font-sans text-sm flex-1 text-[#c6c9ab]">Tu primer entrenamiento</span>
-          <span className="font-mono text-[9px] uppercase text-[#c6c9ab]">Esperando a tu coach</span>
-        </div>
+        <ListRow
+          className="rounded-surface border border-hairline bg-raised/50 opacity-60"
+          leading={<Icon name="lock" size="l" className="text-ink-2" />}
+          title="Tu primer entrenamiento"
+          trailing={<span className="font-sans text-caption uppercase text-ink-2">Esperando a tu coach</span>}
+        />
       </div>
     </section>
   );

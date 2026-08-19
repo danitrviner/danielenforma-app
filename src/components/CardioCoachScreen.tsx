@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { AthleteCardioProfile, CardioZones, HrTest, CardioSessionType, CardioIntervalBlock } from '../types';
+import { AthleteCardioProfile, CardioZones, HrTest, CardioSessionType, CardioIntervalBlock, CardioIntervalCloseType } from '../types';
 import {
   getAllUserProfiles, getCardioProfile, saveCardioProfile, defaultZonesFromAge,
   getAllPendingHrTests, updateHrTest, createCardioAssignment, createNotificationDeduped,
@@ -8,7 +8,9 @@ import {
 import { ZONE_ORDER, ZONE_LABEL } from '../utils/cardioZones';
 import { grantXp } from '../utils/xp';
 import { addRoadmapMilestone } from '../utils/roadmapMilestones';
-import Skeleton from './Skeleton';
+import { Skeleton } from './ui';
+import { atletasActivos } from '../utils/atletas';
+import { Icon, Button, Tabs, ListRow } from './ui';
 
 const XP_PER_APPROVED_TEST = 30;
 
@@ -28,24 +30,9 @@ export default function CardioCoachScreen({ coachEmail }: Props) {
 
   return (
     <div className="space-y-6">
-      <header className="flex flex-col gap-3 pb-4 border-b border-white/60">
-        <span className="inline-flex items-center px-2 py-0.5 rounded bg-[#201f1f] text-[10px] font-sans border border-[#fbcb1a]/30 text-[#fbcb1a] font-bold uppercase tracking-wider w-fit">
-          Consola de Entrenador
-        </span>
-        <h1 className="font-sans font-black text-3xl tracking-tight text-white uppercase">Cardio</h1>
-      </header>
+      {/* Sin cabecera propia: la pone Biblioteca (CoachLibraryScreen). */}
 
-      <div className="overflow-x-auto -mx-1 px-1 pb-0.5">
-        <div className="flex bg-[#181816] border border-white/7 p-1 rounded-lg gap-1 w-max sm:w-fit">
-          {tabs.map(t => (
-            <button key={t.id} onClick={() => setTab(t.id)}
-              className={`flex items-center justify-center gap-2 px-4 py-2.5 min-h-[44px] rounded-md font-sans text-xs font-bold tracking-wider uppercase whitespace-nowrap transition-all ${tab === t.id ? 'bg-[#fbcb1a] text-black shadow-lg shadow-[#fbcb1a]/10' : 'text-[#c6c9ab] hover:text-white'}`}>
-              <span className="material-symbols-outlined text-base">{t.icon}</span>
-              {t.label}
-            </button>
-          ))}
-        </div>
-      </div>
+      <Tabs items={tabs} value={tab} onChange={id => setTab(id as Tab)} label="Secciones de Cardio" />
 
       {tab === 'zonas' && <ZonesTab coachEmail={coachEmail} />}
       {tab === 'tests' && <PendingTestsTab coachEmail={coachEmail} />}
@@ -59,23 +46,26 @@ export default function CardioCoachScreen({ coachEmail }: Props) {
 function ZonesTab({ coachEmail }: { coachEmail: string }) {
   const { data: profiles = [], isPending } = useQuery({ queryKey: ['userProfiles'], queryFn: getAllUserProfiles });
   const [selected, setSelected] = useState<string | null>(null);
-  const athletes = profiles.filter(p => p.role === 'client');
+  const athletes = atletasActivos(profiles).filter(p => p.role === 'client');
 
-  if (isPending) return <Skeleton className="h-40 w-full rounded-2xl" />;
+  if (isPending) return <Skeleton className="h-40 w-full rounded-surface" />;
 
   if (selected) {
     return <AthleteZonesEditor athleteEmail={selected} coachEmail={coachEmail} onBack={() => setSelected(null)} />;
   }
 
   return (
-    <section className="bg-[#181816] border border-white/7 rounded-2xl p-4 sm:p-5 space-y-2">
-      <h2 className="font-sans font-bold text-base text-white mb-2">Elige un atleta</h2>
+    <section className="bg-surface border border-hairline rounded-surface p-4 sm:p-5 space-y-2">
+      <h2 className="font-sans font-bold text-title-s text-white mb-2">Elige un atleta</h2>
       {athletes.map(a => (
-        <button key={a.email} onClick={() => setSelected(a.email)} className="w-full flex items-center gap-3 bg-[#1e1e1e] border border-white/7 rounded-lg p-3 hover:border-[#fbcb1a]/40 transition-colors">
-          <img src={a.avatarUrl} alt="" className="w-7 h-7 rounded-full object-cover flex-shrink-0" />
-          <p className="flex-1 min-w-0 font-sans font-semibold text-sm text-white text-left truncate">{a.displayName}</p>
-          <span className="material-symbols-outlined text-[#c6c9ab] text-base">chevron_right</span>
-        </button>
+        <ListRow
+          key={a.email}
+          onClick={() => setSelected(a.email)}
+          className="rounded-control border bg-raised border-hairline"
+          leading={<img src={a.avatarUrl} alt="" className="w-7 h-7 rounded-full object-cover flex-shrink-0" />}
+          title={a.displayName}
+          chevron
+        />
       ))}
     </section>
   );
@@ -104,39 +94,35 @@ function AthleteZonesEditor({ athleteEmail, coachEmail, onBack }: { athleteEmail
     } finally { setSaving(false); }
   };
 
-  if (isPending) return <Skeleton className="h-40 w-full rounded-2xl" />;
+  if (isPending) return <Skeleton className="h-40 w-full rounded-surface" />;
 
   return (
-    <section className="bg-[#181816] border border-white/7 rounded-2xl p-4 sm:p-5 space-y-4">
-      <button onClick={onBack} className="flex items-center gap-1 text-xs font-mono text-[#c6c9ab] hover:text-white">
-        <span className="material-symbols-outlined text-base">arrow_back</span> Atletas
-      </button>
+    <section className="bg-surface border border-hairline rounded-surface p-4 sm:p-5 space-y-4">
+      <Button variant="ghost" size="s" onClick={onBack} icon="arrow_back">Atletas</Button>
       <div className="flex gap-2">
         <div className="flex-1">
-          <label className="text-[10px] font-mono uppercase text-[#c6c9ab]">FC reposo</label>
-          <input type="number" value={restingHR} onChange={e => setRestingHR(e.target.value)} className="w-full bg-[#0e0e0e] border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-[#fbcb1a]" />
+          <label className="text-caption font-mono uppercase text-ink-2">FC reposo</label>
+          <input type="number" value={restingHR} onChange={e => setRestingHR(e.target.value)} className="w-full bg-bg border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent" />
         </div>
         <div className="flex-1">
-          <label className="text-[10px] font-mono uppercase text-[#c6c9ab]">FCmax</label>
-          <input type="number" value={maxHR} onChange={e => setMaxHR(e.target.value)} className="w-full bg-[#0e0e0e] border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-[#fbcb1a]" />
+          <label className="text-caption font-mono uppercase text-ink-2">FCmax</label>
+          <input type="number" value={maxHR} onChange={e => setMaxHR(e.target.value)} className="w-full bg-bg border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent" />
         </div>
-        <button onClick={regenerate} className="self-end px-3 py-2 bg-white/7 text-[#c6c9ab] text-[10px] font-mono uppercase rounded hover:text-white">Recalcular</button>
+        <Button variant="secondary" size="s" onClick={regenerate} className="self-end">Recalcular</Button>
       </div>
       <div className="space-y-2">
         {ZONE_ORDER.map(z => (
           <div key={z} className="flex items-center gap-2">
-            <span className="text-xs font-mono text-[#c6c9ab] w-32 flex-shrink-0">{ZONE_LABEL[z]}</span>
+            <span className="text-label font-sans text-ink-2 w-32 flex-shrink-0">{ZONE_LABEL[z]}</span>
             <input type="number" value={active[z].min} onChange={e => setZones({ ...active, [z]: { ...active[z], min: Number(e.target.value) } })}
-              className="w-20 bg-[#0e0e0e] border border-white/7 rounded p-1.5 text-xs text-white focus:outline-none focus:border-[#fbcb1a]" />
-            <span className="text-[#555]">–</span>
+              className="w-20 bg-bg border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent" />
+            <span className="text-ink-3">–</span>
             <input type="number" value={active[z].max} onChange={e => setZones({ ...active, [z]: { ...active[z], max: Number(e.target.value) } })}
-              className="w-20 bg-[#0e0e0e] border border-white/7 rounded p-1.5 text-xs text-white focus:outline-none focus:border-[#fbcb1a]" />
+              className="w-20 bg-bg border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent" />
           </div>
         ))}
       </div>
-      <button onClick={handleSave} disabled={saving} className="w-full py-2.5 bg-[#fbcb1a] text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800] disabled:opacity-50">
-        {saving ? 'Guardando...' : 'Guardar zonas'}
-      </button>
+      <Button onClick={handleSave} disabled={saving} fullWidth>{saving ? 'Guardando...' : 'Guardar zonas'}</Button>
     </section>
   );
 }
@@ -178,30 +164,30 @@ function PendingTestsTab({ coachEmail }: { coachEmail: string }) {
     }).catch(err => console.warn('createNotificationDeduped (hrtest approved) failed:', err));
   };
 
-  if (isPending) return <Skeleton className="h-40 w-full rounded-2xl" />;
+  if (isPending) return <Skeleton className="h-40 w-full rounded-surface" />;
 
   return (
-    <section className="bg-[#181816] border border-white/7 rounded-2xl p-4 sm:p-5 space-y-2">
-      <h2 className="font-sans font-bold text-base text-white mb-2">Tests pendientes de revisión</h2>
+    <section className="bg-surface border border-hairline rounded-surface p-4 sm:p-5 space-y-2">
+      <h2 className="font-sans font-bold text-title-s text-white mb-2">Tests pendientes de revisión</h2>
       {tests.length === 0 ? (
-        <p className="text-xs text-[#555] font-mono py-2">No hay tests pendientes.</p>
+        <p className="text-label text-ink-3 font-sans py-2">No hay tests pendientes.</p>
       ) : tests.map(t => {
         const athlete = profiles.find(p => p.email === t.athleteId);
         return (
-          <div key={t.id} className="bg-[#1e1e1e] border border-white/7 rounded-lg p-3 space-y-2">
+          <div key={t.id} className="bg-raised border border-hairline rounded-surface p-3 space-y-2">
             <div className="flex items-center justify-between">
-              <p className="font-sans font-semibold text-sm text-white">{athlete?.displayName ?? t.athleteId}</p>
-              <span className="text-[10px] font-mono text-[#c6c9ab]">{t.date}</span>
+              <p className="font-sans font-bold text-body-s text-white">{athlete?.displayName ?? t.athleteId}</p>
+              <span className="text-caption font-mono text-ink-2">{t.date}</span>
             </div>
-            <p className="text-xs font-mono text-[#00eefc]">{t.type}</p>
-            <p className="text-[10px] font-mono text-[#c6c9ab]">
+            <p className="text-label font-sans text-data">{t.type}</p>
+            <p className="text-caption font-mono text-ink-2">
               {t.result.restingHR && `FC reposo: ${t.result.restingHR} `}
               {t.result.maxHR && `FCmax: ${t.result.maxHR} `}
               {t.result.lthr && `LTHR: ${t.result.lthr} `}
               {t.result.z2Ceiling && `Techo Z2: ${t.result.z2Ceiling} `}
               {t.result.decouplingPct !== undefined && `Desacople: ${t.result.decouplingPct}% `}
             </p>
-            <button onClick={() => approve(t)} className="w-full py-2 bg-[#fbcb1a] text-black font-sans font-bold text-[10px] uppercase rounded hover:bg-[#d4a800]">Aprobar y aplicar a zonas</button>
+            <Button size="s" onClick={() => approve(t)} fullWidth>Aprobar y aplicar a zonas</Button>
           </div>
         );
       })}
@@ -211,16 +197,22 @@ function PendingTestsTab({ coachEmail }: { coachEmail: string }) {
 
 // ─── PRESCRIPCIÓN ────────────────────────────────────────────────────────────
 
-const EMPTY_BLOCK = (): CardioIntervalBlock => ({ label: '', durationSec: 30, targetZone: 'z5' });
+const EMPTY_BLOCK = (): CardioIntervalBlock => ({ label: '', closeType: 'time', durationSec: 30, targetZone: 'z5' });
+
+// F9: etiquetas del selector de tipo de cierre por bloque — 'distance' queda
+// fuera, depende de GPS (F7 aparcado).
+const CLOSE_TYPE_LABEL: Record<CardioIntervalCloseType, string> = {
+  time: 'Por tiempo', zone: 'Al llegar a zona', heartRate: 'Por FC', calories: 'Por calorías', manual: 'Manual',
+};
 
 function PrescriptionTab() {
   const { data: profiles = [], isPending } = useQuery({ queryKey: ['userProfiles'], queryFn: getAllUserProfiles });
-  const athletes = profiles.filter(p => p.role === 'client');
+  const athletes = atletasActivos(profiles).filter(p => p.role === 'client');
   const [athleteEmail, setAthleteEmail] = useState('');
   const [type, setType] = useState<CardioSessionType>('zona2');
   const [durationMin, setDurationMin] = useState('45');
   const [timesPerWeek, setTimesPerWeek] = useState('3');
-  const [blocks, setBlocks] = useState<CardioIntervalBlock[]>([EMPTY_BLOCK(), { label: '', durationSec: 30, targetZone: 'z1' }]);
+  const [blocks, setBlocks] = useState<CardioIntervalBlock[]>([EMPTY_BLOCK(), { label: '', closeType: 'time', durationSec: 30, targetZone: 'z1' }]);
   const [saving, setSaving] = useState(false);
   const [savedMsg, setSavedMsg] = useState(false);
 
@@ -253,61 +245,98 @@ function PrescriptionTab() {
     setBlocks(blocks.map((b, idx) => idx === i ? { ...b, ...patch } : b));
   };
 
-  if (isPending) return <Skeleton className="h-40 w-full rounded-2xl" />;
+  if (isPending) return <Skeleton className="h-40 w-full rounded-surface" />;
 
   return (
-    <section className="bg-[#181816] border border-white/7 rounded-2xl p-4 sm:p-5 space-y-3">
-      <h2 className="font-sans font-bold text-base text-white">Prescribir cardio</h2>
+    <section className="bg-surface border border-hairline rounded-surface p-4 sm:p-5 space-y-3">
+      <h2 className="font-sans font-bold text-title-s text-white">Prescribir cardio</h2>
       <select value={athleteEmail} onChange={e => setAthleteEmail(e.target.value)}
-        className="w-full bg-[#0e0e0e] border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-[#fbcb1a]">
+        className="w-full bg-bg border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent">
         <option value="">Selecciona atleta...</option>
         {athletes.map(a => <option key={a.email} value={a.email}>{a.displayName}</option>)}
       </select>
       <div className="flex gap-2">
         <select value={type} onChange={e => setType(e.target.value as CardioSessionType)}
-          className="flex-1 bg-[#0e0e0e] border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-[#fbcb1a]">
+          className="flex-1 bg-bg border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent">
           <option value="zona2">Sesión Zona 2</option>
           <option value="libre">Libre</option>
           <option value="intervalos">Intervalos</option>
         </select>
         {type !== 'intervalos' && (
-          <input type="number" value={durationMin} onChange={e => setDurationMin(e.target.value)} placeholder="Min" className="w-20 bg-[#0e0e0e] border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-[#fbcb1a]" />
+          <input type="number" value={durationMin} onChange={e => setDurationMin(e.target.value)} placeholder="Min" className="w-20 bg-bg border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent" />
         )}
-        <input type="number" value={timesPerWeek} onChange={e => setTimesPerWeek(e.target.value)} placeholder="x/sem" className="w-20 bg-[#0e0e0e] border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-[#fbcb1a]" />
+        <input type="number" value={timesPerWeek} onChange={e => setTimesPerWeek(e.target.value)} placeholder="x/sem" className="w-20 bg-bg border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent" />
       </div>
 
       {type === 'intervalos' && (
-        <div className="space-y-2 bg-[#0e0e0e] border border-white/7 rounded-xl p-3">
-          <p className="text-[9px] font-mono uppercase text-[#c6c9ab]">Bloques (se repiten en orden, uno tras otro)</p>
+        <div className="space-y-2 bg-bg border border-hairline rounded-surface p-3">
+          <p className="text-caption font-sans uppercase text-ink-2">Bloques (se repiten en orden, uno tras otro)</p>
           {blocks.map((b, i) => (
-            <div key={i} className="flex gap-1.5 items-center">
-              <input value={b.label} onChange={e => updateBlock(i, { label: e.target.value })} placeholder={`Bloque ${i + 1}`}
-                className="flex-1 min-w-0 bg-[#181816] border border-white/7 rounded p-1.5 text-[10px] text-white focus:outline-none focus:border-[#fbcb1a]" />
-              <input type="number" min={5} value={b.durationSec} onChange={e => updateBlock(i, { durationSec: Number(e.target.value) })}
-                className="w-14 bg-[#181816] border border-white/7 rounded p-1.5 text-[10px] text-white focus:outline-none focus:border-[#fbcb1a]" />
-              <span className="text-[9px] text-[#c6c9ab] font-mono">s</span>
-              <select value={b.targetZone} onChange={e => updateBlock(i, { targetZone: e.target.value as keyof CardioZones })}
-                className="bg-[#181816] border border-white/7 rounded p-1.5 text-[10px] text-white focus:outline-none focus:border-[#fbcb1a]">
-                {ZONE_ORDER.map(z => <option key={z} value={z}>{z.toUpperCase()}</option>)}
-              </select>
-              <button onClick={() => setBlocks(blocks.filter((_, idx) => idx !== i))} className="text-[#c6c9ab] hover:text-red-400 transition-colors">
-                <span className="material-symbols-outlined text-sm">close</span>
-              </button>
+            <div key={i} className="flex flex-col gap-2 border-b border-hairline pb-2 last:border-0 last:pb-0">
+              <div className="flex gap-2 items-center">
+                <input value={b.label} onChange={e => updateBlock(i, { label: e.target.value })} placeholder={`Bloque ${i + 1}`}
+                  className="flex-1 min-w-0 bg-surface border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent" />
+                <select value={b.closeType} onChange={e => updateBlock(i, { closeType: e.target.value as CardioIntervalCloseType })}
+                  className="bg-surface border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent">
+                  {(Object.keys(CLOSE_TYPE_LABEL) as CardioIntervalCloseType[]).map(t => <option key={t} value={t}>{CLOSE_TYPE_LABEL[t]}</option>)}
+                </select>
+                <button onClick={() => setBlocks(blocks.filter((_, idx) => idx !== i))} className="text-ink-2 hover:text-red-400 transition-colors">
+                  <Icon name="close" size="s" />
+                </button>
+              </div>
+              <div className="flex gap-2 items-center pl-1">
+                {b.closeType === 'time' && (
+                  <>
+                    <input type="number" min={5} value={b.durationSec} onChange={e => updateBlock(i, { durationSec: Number(e.target.value) })}
+                      className="w-14 bg-surface border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent" />
+                    <span className="text-caption text-ink-2 font-mono">s</span>
+                    <select value={b.targetZone} onChange={e => updateBlock(i, { targetZone: e.target.value as keyof CardioZones })}
+                      className="bg-surface border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent">
+                      {ZONE_ORDER.map(z => <option key={z} value={z}>{z.toUpperCase()}</option>)}
+                    </select>
+                  </>
+                )}
+                {b.closeType === 'zone' && (
+                  <select value={b.targetZone} onChange={e => updateBlock(i, { targetZone: e.target.value as keyof CardioZones })}
+                    className="bg-surface border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent">
+                    {ZONE_ORDER.map(z => <option key={z} value={z}>Hasta {z.toUpperCase()}</option>)}
+                  </select>
+                )}
+                {b.closeType === 'heartRate' && (
+                  <>
+                    <select value={b.hrDirection ?? 'above'} onChange={e => updateBlock(i, { hrDirection: e.target.value as 'above' | 'below' })}
+                      className="bg-surface border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent">
+                      <option value="above">Sube hasta</option>
+                      <option value="below">Baja hasta</option>
+                    </select>
+                    <input type="number" min={40} value={b.hrThresholdBpm ?? 150} onChange={e => updateBlock(i, { hrThresholdBpm: Number(e.target.value) })}
+                      className="w-16 bg-surface border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent" />
+                    <span className="text-caption text-ink-2 font-mono">ppm</span>
+                  </>
+                )}
+                {b.closeType === 'calories' && (
+                  <>
+                    <input type="number" min={5} value={b.targetKcal ?? 50} onChange={e => updateBlock(i, { targetKcal: Number(e.target.value) })}
+                      className="w-16 bg-surface border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent" />
+                    <span className="text-caption text-ink-2 font-mono">kcal</span>
+                  </>
+                )}
+                {b.closeType === 'manual' && (
+                  <span className="text-caption text-ink-2 font-sans">El atleta lo marca a mano en la pantalla en vivo</span>
+                )}
+              </div>
             </div>
           ))}
-          <button onClick={() => setBlocks([...blocks, EMPTY_BLOCK()])} className="text-[10px] font-mono uppercase text-[#fbcb1a] hover:text-white transition-colors flex items-center gap-1">
-            <span className="material-symbols-outlined text-sm">add</span> Añadir bloque
-          </button>
+          <Button variant="ghost" size="s" onClick={() => setBlocks([...blocks, EMPTY_BLOCK()])} icon="add">Añadir bloque</Button>
           {validBlocks.length > 0 && (
-            <p className="text-[9px] font-mono text-[#c6c9ab]">Total: {Math.round(validBlocks.reduce((s, b) => s + b.durationSec, 0) / 60 * 10) / 10} min · {validBlocks.length} bloques</p>
+            <p className="text-caption font-mono text-ink-2">Total: {Math.round(validBlocks.reduce((s, b) => s + b.durationSec, 0) / 60 * 10) / 10} min · {validBlocks.length} bloques</p>
           )}
         </div>
       )}
 
-      <button onClick={handleCreate} disabled={saving || !athleteEmail || (type === 'intervalos' && validBlocks.length === 0)}
-        className="w-full py-2.5 bg-[#fbcb1a] text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800] disabled:opacity-50">
+      <Button onClick={handleCreate} disabled={saving || !athleteEmail || (type === 'intervalos' && validBlocks.length === 0)} fullWidth>
         {saving ? 'Guardando...' : savedMsg ? 'Prescrito ✓' : 'Prescribir'}
-      </button>
+      </Button>
     </section>
   );
 }

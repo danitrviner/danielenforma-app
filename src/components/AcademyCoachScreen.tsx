@@ -6,7 +6,9 @@ import {
   getAllLessons, createLesson, updateLesson, deleteLesson,
   getAllUserProfiles, getAllAcademyAccess, setAcademyAccess, createNotificationDeduped,
 } from '../dbService';
-import Skeleton from './Skeleton';
+import { atletasActivos } from '../utils/atletas';
+import { Skeleton } from './ui';
+import { Card, Tabs, Button } from './ui';
 
 interface Props {
   coachId: string;
@@ -38,29 +40,9 @@ export default function AcademyCoachScreen({ coachId, coachEmail }: Props) {
 
   return (
     <div className="space-y-6">
-      <header className="flex flex-col gap-3 pb-4 border-b border-white/60">
-        <span className="inline-flex items-center px-2 py-0.5 rounded bg-[#201f1f] text-[10px] font-sans border border-[#fbcb1a]/30 text-[#fbcb1a] font-bold uppercase tracking-wider w-fit">
-          Consola de Entrenador
-        </span>
-        <h1 className="font-sans font-black text-3xl tracking-tight text-white uppercase">TrainingLab</h1>
-      </header>
+      {/* Sin cabecera propia: la pone Biblioteca (CoachLibraryScreen). */}
 
-      <div className="overflow-x-auto -mx-1 px-1 pb-0.5">
-        <div className="flex bg-[#181816] border border-white/7 p-1 rounded-lg gap-1 w-max sm:w-fit">
-          {tabs.map(t => (
-            <button
-              key={t.id}
-              onClick={() => setTab(t.id)}
-              className={`flex items-center justify-center gap-2 px-4 py-2.5 min-h-[44px] rounded-md font-sans text-xs font-bold tracking-wider uppercase whitespace-nowrap transition-all ${
-                tab === t.id ? 'bg-[#fbcb1a] text-black shadow-lg shadow-[#fbcb1a]/10' : 'text-[#c6c9ab] hover:text-white'
-              }`}
-            >
-              <span className="material-symbols-outlined text-base">{t.icon}</span>
-              {t.label}
-            </button>
-          ))}
-        </div>
-      </div>
+      <Tabs items={tabs} value={tab} onChange={id => setTab(id as Tab)} label="Secciones de TrainingLab" />
 
       {tab === 'cursos' && <CoursesTab />}
       {tab === 'lecciones' && <LessonsTab />}
@@ -114,28 +96,29 @@ function CoursesTab() {
   };
 
   return (
-    <section className="bg-[#181816] border border-white/7 rounded-2xl p-4 sm:p-5 space-y-3">
-      <div className="flex items-center justify-between">
-        <h2 className="font-sans font-bold text-base text-white">Cursos</h2>
-        <button onClick={() => setShowForm(v => !v)} className="flex items-center gap-1 text-[10px] font-mono font-bold uppercase text-[#fbcb1a] hover:text-[#d4a800]">
-          <span className="material-symbols-outlined text-sm">{showForm ? 'close' : 'add'}</span>
+    <Card
+      title="Cursos"
+      action={
+        <button onClick={() => setShowForm(v => !v)} className="flex items-center gap-1 text-caption font-mono font-bold uppercase text-accent hover:text-accent-press">
+          <span className="material-symbols-outlined text-body-s">{showForm ? 'close' : 'add'}</span>
           {showForm ? 'Cancelar' : 'Nuevo curso'}
         </button>
-      </div>
+      }
+    >
 
       {showForm && (
-        <form onSubmit={handleCreate} className="bg-[#1e1e1b] border border-white/7 rounded-xl p-3 space-y-2">
+        <form onSubmit={handleCreate} className="bg-raised border border-hairline rounded-surface p-3 space-y-2">
           <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Título del curso" required
-            className="w-full bg-[#0e0e0e] border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-[#fbcb1a]" />
+            className="w-full bg-bg border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent" />
           <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="Descripción" rows={2}
-            className="w-full bg-[#0e0e0e] border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-[#fbcb1a]" />
+            className="w-full bg-bg border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent" />
           <div className="flex gap-2 flex-wrap">
             <select value={category} onChange={e => setCategory(e.target.value as AcademyCategory)}
-              className="bg-[#0e0e0e] border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-[#fbcb1a]">
+              className="bg-bg border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent">
               {CATEGORIES.map(c => <option key={c} value={c}>{CATEGORY_LABEL[c]}</option>)}
             </select>
             <select value={unlockType} onChange={e => setUnlockType(e.target.value as UnlockRule['type'])}
-              className="bg-[#0e0e0e] border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-[#fbcb1a]">
+              className="bg-bg border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent">
               <option value="immediate">Desbloqueo inmediato</option>
               <option value="daysSinceJoin">Días desde el alta</option>
               <option value="level">Nivel mínimo</option>
@@ -143,38 +126,36 @@ function CoursesTab() {
             </select>
             {unlockType !== 'immediate' && (
               <input value={unlockValue} onChange={e => setUnlockValue(e.target.value)} placeholder={unlockType === 'prerequisite' ? 'ID de curso' : 'Número'}
-                className="flex-1 min-w-[100px] bg-[#0e0e0e] border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-[#fbcb1a]" />
+                className="flex-1 min-w-[100px] bg-bg border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent" />
             )}
           </div>
-          <button type="submit" disabled={saving} className="w-full py-2.5 bg-[#fbcb1a] text-black font-sans font-bold text-xs uppercase rounded hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-50">
-            {saving ? 'Guardando...' : 'Crear curso'}
-          </button>
+          <Button type="submit" disabled={saving} fullWidth>{saving ? 'Guardando...' : 'Crear curso'}</Button>
         </form>
       )}
 
       {isPending ? (
         <div className="space-y-2"><Skeleton className="h-14 w-full" /><Skeleton className="h-14 w-full" /></div>
       ) : courses.length === 0 ? (
-        <p className="text-xs text-[#555] font-mono py-2">Todavía no hay cursos.</p>
+        <p className="text-label text-ink-3 font-sans py-2">Todavía no hay cursos.</p>
       ) : (
         <div className="space-y-2">
           {courses.map(c => (
-            <div key={c.id} className="flex items-center gap-3 bg-[#1e1e1e] border border-white/7 rounded-lg p-3">
+            <div key={c.id} className="flex items-center gap-3 bg-raised border border-hairline rounded-surface p-3">
               <div className="flex-1 min-w-0">
-                <p className="font-sans font-semibold text-sm text-white truncate">{c.title}</p>
-                <p className="text-[10px] text-[#c6c9ab] font-mono">{CATEGORY_LABEL[c.category]} · {c.lessonCount} lecciones · {UNLOCK_LABEL(c.unlockRule)}</p>
+                <p className="font-sans font-bold text-body-s text-white truncate">{c.title}</p>
+                <p className="text-caption text-ink-2 font-mono">{CATEGORY_LABEL[c.category]} · {c.lessonCount} lecciones · {UNLOCK_LABEL(c.unlockRule)}</p>
               </div>
-              <button onClick={() => togglePublished(c)} className={`text-[10px] font-mono font-bold uppercase px-2 py-1 rounded ${c.published ? 'bg-[#00eefc]/10 text-[#00eefc]' : 'bg-white/7 text-[#888]'}`}>
+              <button onClick={() => togglePublished(c)} className={`text-caption font-mono font-bold uppercase px-2 py-1 rounded-control ${c.published ? 'bg-data/10 text-data' : 'bg-white/7 text-ink-3'}`}>
                 {c.published ? 'Publicado' : 'Borrador'}
               </button>
-              <button onClick={() => handleDelete(c.id)} className="text-[#c6c9ab] hover:text-red-400 flex-shrink-0">
-                <span className="material-symbols-outlined text-base">delete</span>
+              <button onClick={() => handleDelete(c.id)} className="text-ink-2 hover:text-red-400 flex-shrink-0">
+                <span className="material-symbols-outlined text-title-s">delete</span>
               </button>
             </div>
           ))}
         </div>
       )}
-    </section>
+    </Card>
   );
 }
 
@@ -220,60 +201,59 @@ function LessonsTab() {
   };
 
   return (
-    <section className="bg-[#181816] border border-white/7 rounded-2xl p-4 sm:p-5 space-y-3">
-      <div className="flex items-center justify-between">
-        <h2 className="font-sans font-bold text-base text-white">Lecciones</h2>
-        <button onClick={() => setShowForm(v => !v)} className="flex items-center gap-1 text-[10px] font-mono font-bold uppercase text-[#fbcb1a] hover:text-[#d4a800]">
-          <span className="material-symbols-outlined text-sm">{showForm ? 'close' : 'add'}</span>
+    <Card
+      title="Lecciones"
+      action={
+        <button onClick={() => setShowForm(v => !v)} className="flex items-center gap-1 text-caption font-mono font-bold uppercase text-accent hover:text-accent-press">
+          <span className="material-symbols-outlined text-body-s">{showForm ? 'close' : 'add'}</span>
           {showForm ? 'Cancelar' : 'Nueva lección'}
         </button>
-      </div>
+      }
+    >
 
       {showForm && (
-        <form onSubmit={handleCreate} className="bg-[#1e1e1b] border border-white/7 rounded-xl p-3 space-y-2">
+        <form onSubmit={handleCreate} className="bg-raised border border-hairline rounded-surface p-3 space-y-2">
           <select value={courseId} onChange={e => setCourseId(e.target.value)} required
-            className="w-full bg-[#0e0e0e] border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-[#fbcb1a]">
+            className="w-full bg-bg border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent">
             <option value="">Selecciona curso...</option>
             {courses.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
           </select>
           <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Título de la lección" required
-            className="w-full bg-[#0e0e0e] border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-[#fbcb1a]" />
+            className="w-full bg-bg border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent" />
           <div className="flex gap-2">
             <select value={videoProvider} onChange={e => setVideoProvider(e.target.value as 'youtube' | 'vimeo')}
-              className="bg-[#0e0e0e] border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-[#fbcb1a]">
+              className="bg-bg border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent">
               <option value="youtube">YouTube</option>
               <option value="vimeo">Vimeo</option>
             </select>
             <input value={videoId} onChange={e => setVideoId(e.target.value)} placeholder="ID del vídeo" required
-              className="flex-1 bg-[#0e0e0e] border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-[#fbcb1a]" />
+              className="flex-1 bg-bg border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent" />
           </div>
-          <button type="submit" disabled={saving} className="w-full py-2.5 bg-[#fbcb1a] text-black font-sans font-bold text-xs uppercase rounded hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-50">
-            {saving ? 'Guardando...' : 'Crear lección'}
-          </button>
+          <Button type="submit" disabled={saving} fullWidth>{saving ? 'Guardando...' : 'Crear lección'}</Button>
         </form>
       )}
 
       {isPending ? (
         <div className="space-y-2"><Skeleton className="h-12 w-full" /><Skeleton className="h-12 w-full" /></div>
       ) : lessons.length === 0 ? (
-        <p className="text-xs text-[#555] font-mono py-2">Todavía no hay lecciones.</p>
+        <p className="text-label text-ink-3 font-sans py-2">Todavía no hay lecciones.</p>
       ) : (
         <div className="space-y-2">
           {lessons.map(l => (
-            <div key={l.id} className="flex items-center gap-3 bg-[#1e1e1e] border border-white/7 rounded-lg p-3">
-              <span className="material-symbols-outlined text-[#00eefc]">play_circle</span>
+            <div key={l.id} className="flex items-center gap-3 bg-raised border border-hairline rounded-surface p-3">
+              <span className="material-symbols-outlined text-data">play_circle</span>
               <div className="flex-1 min-w-0">
-                <p className="font-sans font-semibold text-sm text-white truncate">{l.title}</p>
-                <p className="text-[10px] text-[#c6c9ab] font-mono">{courses.find(c => c.id === l.courseId)?.title ?? '—'}</p>
+                <p className="font-sans font-bold text-body-s text-white truncate">{l.title}</p>
+                <p className="text-caption text-ink-2 font-sans">{courses.find(c => c.id === l.courseId)?.title ?? '—'}</p>
               </div>
-              <button onClick={() => handleDelete(l)} className="text-[#c6c9ab] hover:text-red-400 flex-shrink-0">
-                <span className="material-symbols-outlined text-base">delete</span>
+              <button onClick={() => handleDelete(l)} className="text-ink-2 hover:text-red-400 flex-shrink-0">
+                <span className="material-symbols-outlined text-title-s">delete</span>
               </button>
             </div>
           ))}
         </div>
       )}
-    </section>
+    </Card>
   );
 }
 
@@ -285,7 +265,7 @@ function AccessTab({ coachEmail }: { coachEmail: string }) {
   const { data: accessList = [], isPending: loadingAccess } = useQuery({ queryKey: ['academyAccessAll'], queryFn: getAllAcademyAccess });
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
-  const athletes = profiles.filter(p => p.role === 'client');
+  const athletes = atletasActivos(profiles).filter(p => p.role === 'client');
   const accessByEmail = new Map(accessList.map(a => [a.athleteId, a]));
 
   const toggle = async (email: string, enabled: boolean) => {
@@ -303,7 +283,8 @@ function AccessTab({ coachEmail }: { coachEmail: string }) {
   const toggleSelected = (email: string) => {
     setSelected(prev => {
       const next = new Set(prev);
-      next.has(email) ? next.delete(email) : next.add(email);
+      if (next.has(email)) next.delete(email);
+      else next.add(email);
       return next;
     });
   };
@@ -318,26 +299,25 @@ function AccessTab({ coachEmail }: { coachEmail: string }) {
   }
 
   return (
-    <section className="bg-[#181816] border border-white/7 rounded-2xl p-4 sm:p-5 space-y-3">
-      <div className="flex items-center justify-between">
-        <h2 className="font-sans font-bold text-base text-white">Acceso por atleta</h2>
-        {selected.size > 0 && (
-          <button onClick={grantSelected} className="text-[10px] font-mono font-bold uppercase text-[#fbcb1a] hover:text-[#d4a800]">
-            Conceder a {selected.size} seleccionado{selected.size === 1 ? '' : 's'}
-          </button>
-        )}
-      </div>
+    <Card
+      title="Acceso por atleta"
+      action={selected.size > 0 && (
+        <button onClick={grantSelected} className="text-caption font-sans font-bold uppercase text-accent hover:text-accent-press">
+          Conceder a {selected.size} seleccionado{selected.size === 1 ? '' : 's'}
+        </button>
+      )}
+    >
       <div className="space-y-2">
         {athletes.map(a => {
           const enabled = accessByEmail.get(a.email)?.enabled ?? false;
           return (
-            <div key={a.email} className="flex items-center gap-3 bg-[#1e1e1e] border border-white/7 rounded-lg p-3">
-              <input type="checkbox" checked={selected.has(a.email)} onChange={() => toggleSelected(a.email)} className="w-4 h-4 accent-[#fbcb1a]" />
+            <div key={a.email} className="flex items-center gap-3 bg-raised border border-hairline rounded-surface p-3">
+              <input type="checkbox" checked={selected.has(a.email)} onChange={() => toggleSelected(a.email)} className="w-4 h-4 accent-accent" />
               <img src={a.avatarUrl} alt="" className="w-7 h-7 rounded-full object-cover flex-shrink-0" />
-              <p className="flex-1 min-w-0 font-sans font-semibold text-sm text-white truncate">{a.displayName}</p>
+              <p className="flex-1 min-w-0 font-sans font-bold text-body-s text-white truncate">{a.displayName}</p>
               <button
                 onClick={() => toggle(a.email, !enabled)}
-                className={`text-[10px] font-mono font-bold uppercase px-3 py-1.5 rounded-full transition-colors ${enabled ? 'bg-[#00eefc]/10 text-[#00eefc]' : 'bg-white/7 text-[#888]'}`}
+                className={`text-caption font-mono font-bold uppercase px-3 py-2 rounded-full transition-colors ${enabled ? 'bg-data/10 text-data' : 'bg-white/7 text-ink-3'}`}
               >
                 {enabled ? 'Acceso activo' : 'Sin acceso'}
               </button>
@@ -345,6 +325,6 @@ function AccessTab({ coachEmail }: { coachEmail: string }) {
           );
         })}
       </div>
-    </section>
+    </Card>
   );
 }

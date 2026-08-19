@@ -8,6 +8,7 @@ import EmptyState from './EmptyState';
 import MetricCard from './MetricCard';
 import NuevoServicioModal from './NuevoServicioModal';
 import type { Cliente, CrmServicio } from '../types';
+import { Icon } from '../../../components/ui';
 
 export default function ServiciosTab({ cliente, coachEmail }: { cliente: Cliente; coachEmail: string }) {
   const { showToast } = useToast();
@@ -45,8 +46,8 @@ export default function ServiciosTab({ cliente, coachEmail }: { cliente: Cliente
       header: 'Servicio',
       render: s => (
         <div className="min-w-0">
-          <p className={`font-bold truncate ${s.archivado ? 'text-[#555550] line-through' : ''}`}>{s.nombre}</p>
-          {s.descripcion && <p className="font-mono text-[9px] text-[#555550] truncate">{s.descripcion}</p>}
+          <p className={`font-bold truncate ${s.archivado ? 'text-ink-3 line-through' : ''}`}>{s.nombre}</p>
+          {s.descripcion && <p className="font-sans text-caption text-ink-3 truncate">{s.descripcion}</p>}
         </div>
       ),
     },
@@ -58,7 +59,7 @@ export default function ServiciosTab({ cliente, coachEmail }: { cliente: Cliente
       render: s => (
         <div>
           <p className="font-bold">{formatEuros(s.importeCents)}</p>
-          <p className="font-mono text-[9px] text-[#555550]">{s.periodicidad}</p>
+          <p className="font-mono text-caption text-ink-3">{s.periodicidad}</p>
         </div>
       ),
     },
@@ -69,7 +70,7 @@ export default function ServiciosTab({ cliente, coachEmail }: { cliente: Cliente
       render: s => (
         <div>
           <p className="tabular-nums">{formatDia(s.fechaInicio)}{s.fechaFin ? ` → ${formatDia(s.fechaFin)}` : ''}</p>
-          <p className="font-mono text-[9px] text-[#555550]">
+          <p className="font-mono text-caption text-ink-3">
             {s.fechaFin
               ? (s.fechaFin < hoy ? 'finalizado' : `acaba ${tiempoRelativo(s.fechaFin)}`)
               : 'sin fecha de fin'}
@@ -88,11 +89,9 @@ export default function ServiciosTab({ cliente, coachEmail }: { cliente: Cliente
           onClick={() => onArchivar(s)}
           aria-label={s.archivado ? 'Recuperar servicio' : 'Archivar servicio'}
           title={s.archivado ? 'Recuperar' : 'Archivar'}
-          className="w-7 h-7 rounded-lg inline-flex items-center justify-center text-[#a8a89e] hover:bg-white/6 transition-colors"
+          className="w-7 h-7 rounded-control inline-flex items-center justify-center text-ink-2 hover:bg-white/6 transition-colors"
         >
-          <span className="material-symbols-outlined text-base">
-            {s.archivado ? 'unarchive' : 'archive'}
-          </span>
+          <Icon name={s.archivado ? 'unarchive' : 'archive'} size="m" />
         </button>
       ),
     },
@@ -107,26 +106,26 @@ export default function ServiciosTab({ cliente, coachEmail }: { cliente: Cliente
       </div>
 
       <div className="flex items-center justify-between gap-2">
-        <label className="flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-widest text-[#a8a89e] cursor-pointer">
+        <label className="flex items-center gap-2 font-mono text-caption uppercase tracking-widest text-ink-2 cursor-pointer">
           <input
             type="checkbox"
             checked={verArchivados}
             onChange={e => setVerArchivados(e.target.checked)}
-            className="accent-[#fbcb1a]"
+            className="accent-accent"
           />
           Ver archivados
         </label>
         <button
           type="button"
           onClick={() => setModalAbierto(true)}
-          className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#fbcb1a] text-black font-sans font-bold text-[11px] hover:bg-[#d4a800] transition-colors"
+          className="flex items-center gap-1 px-3 py-2 rounded-control bg-accent text-black font-sans font-bold text-caption hover:bg-accent-press transition-colors"
         >
-          <span className="material-symbols-outlined text-sm">add</span>
+          <Icon name="add" size="s" />
           Nuevo servicio
         </button>
       </div>
 
-      <div className="bg-[#181816]/80 backdrop-blur-sm border border-white/7 rounded-2xl overflow-hidden">
+      <div className="bg-surface/80 backdrop-blur-sm border border-hairline rounded-surface overflow-hidden">
         <DataTable
           columnas={columnas}
           filas={visibles}

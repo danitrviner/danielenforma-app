@@ -1,6 +1,6 @@
 import { TrainingReport } from './trainingReport';
 import {
-  BodyweightSectionData, AdherenceSectionData, NutritionSectionData, ChallengesSectionData,
+  BodyweightSectionData, AdherenceSectionData, NutritionSectionData, ChallengesSectionData, WellnessSectionData,
 } from './reportExtras';
 
 // Redactor local del mensaje del reporte: convierte los datos deterministas en
@@ -24,10 +24,11 @@ export interface NarrativeInput {
   adherence?: AdherenceSectionData | null;
   nutrition?: NutritionSectionData | null;
   challenges?: ChallengesSectionData | null;
+  wellness?: WellnessSectionData | null;
 }
 
 export function buildNarrativeIntro(input: NarrativeInput): string {
-  const { training: tr, bodyweight, adherence, nutrition, challenges } = input;
+  const { training: tr, bodyweight, adherence, nutrition, challenges, wellness } = input;
   const name = input.athleteName.trim().split(/\s+/)[0] || 'crack';
   const prs = tr.perExercise.filter(e => e.isPR);
   const delta = tr.tonnage.deltaPct;
@@ -137,6 +138,25 @@ export function buildNarrativeIntro(input: NarrativeInput): string {
       parts.push(`La dieta va al ${nutrition.avgPct}% de cumplimiento${mejora ? ', mejorando respecto al periodo anterior' : ''}. Vamos a apretar un poco ahí.`);
     } else {
       parts.push(`La parte de nutrición es donde más margen tenemos (${nutrition.avgPct}% de cumplimiento) — pequeño foco para esta semana.`);
+    }
+  }
+
+  // ── Bienestar (cuestionarios) — destaca la pregunta que más se ha movido ──
+  if (wellness && wellness.questions.length > 0) {
+    const withDelta = wellness.questions.filter(q => q.prevAvg != null && q.prevAvg !== q.avg);
+    if (withDelta.length > 0) {
+      const biggest = [...withDelta].sort((a, b) =>
+        Math.abs(b.avg - (b.prevAvg as number)) - Math.abs(a.avg - (a.prevAvg as number))
+      )[0];
+      const delta = biggest.avg - (biggest.prevAvg as number);
+      const unitTxt = biggest.unit ? ` ${biggest.unit}` : '';
+      parts.push(
+        delta > 0
+          ? `En "${biggest.questionLabel}" has subido a ${biggest.avg}${unitTxt} de media (antes ${biggest.prevAvg}${unitTxt}).`
+          : `En "${biggest.questionLabel}" has bajado a ${biggest.avg}${unitTxt} de media (antes ${biggest.prevAvg}${unitTxt}).`
+      );
+    } else if (wellness.responsesInPeriod > 0) {
+      parts.push(`Cuestionarios al día: ${wellness.responsesInPeriod} respuesta${wellness.responsesInPeriod !== 1 ? 's' : ''} registrada${wellness.responsesInPeriod !== 1 ? 's' : ''} en el periodo.`);
     }
   }
 

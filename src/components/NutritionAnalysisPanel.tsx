@@ -9,15 +9,16 @@ import { bodyweightForAthleteKey } from '../hooks/useAthleteWeight';
 import { buildNutritionReport, NutritionReport } from '../utils/nutritionAnalysis';
 import { buildMicronutrientEstimate, MicroStatus } from '../utils/micronutrients';
 import VegetableSelector from './VegetableSelector';
+import { Icon, Button } from './ui';
 
 const DEFAULT_STEP_GOAL = 8000;
 const DEFAULT_VEG_SERVINGS = 3;
 
 const STATUS_COLOR: Record<MicroStatus, string> = {
-  low:     '#f87171', // red-400
-  ok:      '#34d399', // emerald-400
-  high:    '#fbbf24', // amber-400
-  unknown: '#555',
+  low:     'var(--color-danger)', // red-400
+  ok:      'var(--color-success)', // emerald-400
+  high:    'var(--color-warning)', // amber-400
+  unknown: 'var(--color-ink-3)',
 };
 
 interface Props {
@@ -143,26 +144,26 @@ export default function NutritionAnalysisPanel({ athleteEmail, athleteName, targ
   };
 
   if (loading) {
-    return <div className="text-center py-10 font-mono text-sm text-[#c6c9ab] animate-pulse">Analizando…</div>;
+    return <div className="text-center py-10 font-mono text-body-s text-ink-2 animate-pulse">Analizando…</div>;
   }
   if (!report) {
-    return <div className="text-center py-10 font-mono text-xs text-[#c6c9ab] italic">Sin datos suficientes para {athleteName}.</div>;
+    return <div className="text-center py-10 font-sans text-label text-ink-2 italic">Sin datos suficientes para {athleteName}.</div>;
   }
 
   return (
     <div className="space-y-5">
       <div>
-        <h2 className="font-sans font-black text-xl tracking-tight text-white uppercase flex items-center gap-2">
-          <span className="material-symbols-outlined text-[#fbcb1a]" style={{ fontVariationSettings: "'FILL' 1" }}>nutrition</span>
+        <h2 className="font-sans font-bold text-title-m tracking-tight text-white uppercase flex items-center gap-2">
+          <Icon name="nutrition" size="l" filled className="text-accent" />
           Análisis nutricional
         </h2>
-        <p className="font-mono text-xs text-[#c6c9ab] mt-1">Adherencia, macros, pasos y micronutrientes estimados. Privado hasta que lo compartas.</p>
+        <p className="font-sans text-label text-ink-2 mt-1">Adherencia, macros, pasos y micronutrientes estimados. Privado hasta que lo compartas.</p>
       </div>
 
       {/* Summary */}
-      <div className="bg-[#181816] border border-white/7 rounded-2xl p-5">
-        <p className="font-mono text-[9px] text-[#c6c9ab] uppercase tracking-wider mb-2">Resumen</p>
-        <p className="text-sm text-white font-sans leading-relaxed">{report.summary}</p>
+      <div className="bg-surface border border-hairline rounded-surface p-5">
+        <p className="font-mono text-caption text-ink-2 uppercase tracking-wider mb-2">Resumen</p>
+        <p className="text-body-s text-white font-sans leading-relaxed">{report.summary}</p>
       </div>
 
       {/* Metric cards */}
@@ -178,16 +179,16 @@ export default function NutritionAnalysisPanel({ athleteEmail, athleteName, targ
 
       {/* Macro deviation */}
       {report.macroDeviation.length > 0 && (
-        <div className="bg-[#181816] border border-white/7 rounded-2xl p-5">
-          <p className="font-mono text-[9px] text-[#c6c9ab] uppercase tracking-wider mb-3">Macros del plan vs objetivo</p>
+        <div className="bg-surface border border-hairline rounded-surface p-5">
+          <p className="font-sans text-caption text-ink-2 uppercase tracking-wider mb-3">Macros del plan vs objetivo</p>
           <div className="grid grid-cols-3 gap-3">
             {report.macroDeviation.map(m => (
               <div key={m.category}>
-                <span className="block font-mono text-[9px] text-[#c6c9ab]">{m.category}</span>
-                <span className={`block font-mono text-sm font-bold ${Math.abs(m.deviationPct) > 15 ? 'text-red-400' : 'text-emerald-400'}`}>
+                <span className="block font-sans text-caption text-ink-2">{m.category}</span>
+                <span className={`block font-mono text-body-s font-bold ${Math.abs(m.deviationPct) > 15 ? 'text-red-400' : 'text-emerald-400'}`}>
                   {m.planGrams}g / {m.targetGrams}g
                 </span>
-                <span className="block font-mono text-[9px] text-[#c6c9ab]">{m.deviationPct > 0 ? '+' : ''}{m.deviationPct}%</span>
+                <span className="block font-mono text-caption text-ink-2">{m.deviationPct > 0 ? '+' : ''}{m.deviationPct}%</span>
               </div>
             ))}
           </div>
@@ -195,45 +196,45 @@ export default function NutritionAnalysisPanel({ athleteEmail, athleteName, targ
       )}
 
       {/* ── Micronutrientes (estimados) ── */}
-      <div className="bg-[#181816] border border-white/7 rounded-2xl p-5 space-y-3">
+      <div className="bg-surface border border-hairline rounded-surface p-5 space-y-3">
         <div className="flex items-center justify-between gap-3 flex-wrap">
-          <p className="font-mono text-[9px] text-[#c6c9ab] uppercase tracking-wider">Micronutrientes (estimados)</p>
+          <p className="font-mono text-caption text-ink-2 uppercase tracking-wider">Micronutrientes (estimados)</p>
           <div className="flex items-center gap-2">
-            <span className="font-mono text-[9px] text-[#c6c9ab] uppercase">Verdura/día</span>
+            <span className="font-mono text-caption text-ink-2 uppercase">Verdura/día</span>
             <div className="flex items-center gap-1">
-              <button onClick={() => setVegServings(vegServings - 1)} className="w-6 h-6 rounded-md bg-[#1e1e1b] border border-white/7 text-[#c6c9ab] hover:text-white flex items-center justify-center">−</button>
-              <span className="font-mono text-xs text-white w-5 text-center">{vegServings}</span>
-              <button onClick={() => setVegServings(vegServings + 1)} className="w-6 h-6 rounded-md bg-[#1e1e1b] border border-white/7 text-[#c6c9ab] hover:text-white flex items-center justify-center">+</button>
+              <button onClick={() => setVegServings(vegServings - 1)} className="w-6 h-6 rounded-control bg-raised border border-hairline text-ink-2 hover:text-white flex items-center justify-center">−</button>
+              <span className="font-mono text-label text-white w-5 text-center">{vegServings}</span>
+              <button onClick={() => setVegServings(vegServings + 1)} className="w-6 h-6 rounded-control bg-raised border border-hairline text-ink-2 hover:text-white flex items-center justify-center">+</button>
             </div>
           </div>
         </div>
 
-        <div className="space-y-1.5">
-          <p className="font-mono text-[9px] text-[#c6c9ab] uppercase tracking-wider">Verduras habituales del atleta</p>
+        <div className="space-y-2">
+          <p className="font-sans text-caption text-ink-2 uppercase tracking-wider">Verduras habituales del atleta</p>
           <VegetableSelector selected={vegTypes} onToggle={toggleVegType} />
         </div>
 
-        <div className="grid sm:grid-cols-2 gap-x-5 gap-y-2.5">
+        <div className="grid sm:grid-cols-2 gap-x-5 gap-y-3">
           {micros.perMicro.map(m => (
             <div key={m.key}>
               <div className="flex items-center justify-between mb-1">
-                <span className="font-mono text-[10px] text-[#c6c9ab]">
+                <span className="font-sans text-caption text-ink-2">
                   {m.label}
-                  {m.status === 'low' && <span className="ml-1.5 text-red-400">déficit</span>}
-                  {m.status === 'high' && <span className="ml-1.5 text-amber-400">{m.limit ? 'alto' : 'exceso'}</span>}
+                  {m.status === 'low' && <span className="ml-2 text-red-400">déficit</span>}
+                  {m.status === 'high' && <span className="ml-2 text-amber-400">{m.limit ? 'alto' : 'exceso'}</span>}
                 </span>
-                <span className="font-mono text-[10px] font-bold text-white">
-                  {m.intake}{m.unit} <span className="text-[#555]">· {m.rdaPct}%{m.limit ? ' ref.' : ' RDA'}</span>
+                <span className="font-mono text-caption font-bold text-white">
+                  {m.intake}{m.unit} <span className="text-ink-3">· {m.rdaPct}%{m.limit ? ' ref.' : ' RDA'}</span>
                 </span>
               </div>
-              <div className="h-1.5 rounded-full bg-[#1e1e1b] overflow-hidden">
+              <div className="h-1.5 rounded-full bg-raised overflow-hidden">
                 <div className="h-full rounded-full transition-all" style={{ width: `${Math.min(100, m.rdaPct)}%`, backgroundColor: STATUS_COLOR[m.status] }} />
               </div>
             </div>
           ))}
         </div>
 
-        <p className="font-mono text-[9px] text-[#444] leading-relaxed">
+        <p className="font-mono text-caption text-ink-3 leading-relaxed">
           {micros.note}
           {micros.unmatched.length > 0 && ` · ${micros.unmatched.length} alimento(s) sin estimación.`}
           {!activeDiet && ' · Sin dieta activa: sólo cuenta la línea base de verdura.'}
@@ -242,34 +243,30 @@ export default function NutritionAnalysisPanel({ athleteEmail, athleteName, targ
 
       {/* Flags */}
       {report.flags.length > 0 && (
-        <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-5 space-y-1.5">
-          <p className="font-mono text-[9px] text-amber-400 uppercase tracking-wider mb-1">Alertas</p>
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-surface p-5 space-y-2">
+          <p className="font-mono text-caption text-amber-400 uppercase tracking-wider mb-1">Alertas</p>
           {report.flags.map((f, i) => (
-            <p key={i} className="text-xs text-amber-200 font-sans">{f}</p>
+            <p key={i} className="text-label text-amber-200 font-sans">{f}</p>
           ))}
         </div>
       )}
 
       {/* Share */}
-      <div className="flex items-center justify-between bg-[#181816] border border-white/7 rounded-2xl p-4 gap-3 flex-wrap">
+      <div className="flex items-center justify-between bg-surface border border-hairline rounded-surface p-4 gap-3 flex-wrap">
         <div>
-          <p className="text-xs text-white font-sans font-bold">
+          <p className="text-label text-white font-sans font-bold">
             {nutritionConfig?.sharedReportSnapshot ? 'Resumen compartido con el atleta' : 'Análisis privado'}
           </p>
-          <p className="text-[10px] text-[#c6c9ab] font-mono mt-0.5">
+          <p className="text-caption text-ink-2 font-mono ">
             {nutritionConfig?.sharedReportSnapshot
               ? `Compartido el ${new Date(nutritionConfig.sharedReportSnapshot.generatedAt).toLocaleDateString('es-ES')}`
               : 'El atleta no ve este análisis hasta que lo compartas.'}
           </p>
         </div>
         {nutritionConfig?.sharedReportSnapshot ? (
-          <button onClick={handleUnshare} disabled={sharing}
-            className="px-3.5 py-2 bg-[#1c1b1b] border border-white/7 text-[#c6c9ab] font-mono text-[10px] font-bold uppercase rounded-lg hover:border-red-400/40 hover:text-red-400 transition-all disabled:opacity-50"
-          >Dejar de compartir</button>
+          <Button variant="secondary" size="s" onClick={handleUnshare} disabled={sharing}>Dejar de compartir</Button>
         ) : (
-          <button onClick={handleShare} disabled={sharing}
-            className="px-3.5 py-2 bg-[#fbcb1a] text-black font-sans text-[10px] font-bold uppercase rounded-lg hover:bg-[#d4a800] transition-all disabled:opacity-50"
-          >Compartir resumen</button>
+          <Button size="s" onClick={handleShare} disabled={sharing}>Compartir resumen</Button>
         )}
       </div>
     </div>
@@ -278,10 +275,10 @@ export default function NutritionAnalysisPanel({ athleteEmail, athleteName, targ
 
 function MetricCard({ label, value, sub }: { label: string; value: string; sub: string }) {
   return (
-    <div className="bg-[#181816] border border-white/7 rounded-2xl p-4 text-center">
-      <span className="block font-mono text-[9px] text-[#c6c9ab] uppercase tracking-wider">{label}</span>
-      <span className="block font-sans font-bold text-lg text-white mt-1">{value}</span>
-      <span className="block font-mono text-[9px] text-[#c6c9ab] mt-0.5">{sub}</span>
+    <div className="bg-surface border border-hairline rounded-surface p-4 text-center">
+      <span className="block font-sans text-caption text-ink-2 uppercase tracking-wider">{label}</span>
+      <span className="block font-sans font-bold text-title-m text-white mt-1">{value}</span>
+      <span className="block font-mono text-caption text-ink-2 ">{sub}</span>
     </div>
   );
 }

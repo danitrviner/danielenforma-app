@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef, Suspense, lazy } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import {
   UserProfile, WeightCheckIn, Workout, WorkoutAssignment, WorkoutLog,
   Exercise, Diet, AthleteDietConfig, AthleteNutritionConfig, DietMode,
@@ -9,7 +10,9 @@ import {
   OnboardingTemplateQuestion, Mesocycle, CoachReport, AiProposal, WeeklyMenu,
 } from '../types';
 import { OPEN_AI_PANEL_EVENT } from '../ai/events';
-import { computeAdherenceScore, scoreStyle } from '../utils/adherence';
+import { computeAdherenceScore, scoreStyle, SIN_DATOS_ADHERENCIA } from '../utils/adherence';
+import { atletasActivos } from '../utils/atletas';
+import { computeAverageRir } from '../utils/rirStats';
 import { calcPlanExpiry } from '../hooks/usePlanExpiry';
 import { useToast } from '../hooks/useToast';
 import { useAthleteWeight } from '../hooks/useAthleteWeight';
@@ -26,44 +29,76 @@ import {
   getOnboarding,
   getNutritionProgram, saveNutritionProgram, computeActivePhase, computePhaseStartDate, deleteNutritionProgram,
   getOnboardingTemplate, getMesocycles, getCoachReportsForAthlete, getAiProposalsForAthlete,
-  getWeeklyMenusForAthlete, getMenuCompletionLogsForAthlete,
+  getWeeklyMenusForAthlete, getMenuCompletionLogsForAthlete, getAllUserProfiles,
 } from '../dbService';
-import ClientRoadmapPanel from './ClientRoadmapPanel';
-import ClientAnalysisPanel from './ClientAnalysisPanel';
-import ClientDietsPanel from './ClientDietsPanel';
-import ClientWorkoutsPanel from './ClientWorkoutsPanel';
-import ClientReviewsPanel from './ClientReviewsPanel';
-import ClientSetupPanel from './ClientSetupPanel';
+/* 06-7. El Hub es la ruta más pesada del coach: ~1 MB, y buena parte es
+   recharts entrando por Análisis y Entrenamientos. Los paneles se importaban
+   en estático aunque el Hub solo pinta UNO cada vez —es una pantalla de
+   pestañas—, así que abrir la ficha de un cliente para mirar el setup
+   descargaba también los gráficos de correlaciones que quizá no se abren nunca.
+   En diferido, cada pestaña trae lo suyo la primera vez que se toca.
+   Reportes/Nutrición-análisis/Correlaciones se importan aquí por separado
+   (antes iban juntos dentro de ClientAnalysisPanel, retirado): abrir
+   Reportes ya no descarga también CorrelationPanel. */
+const ClientRoadmapPanel = lazy(() => import('./ClientRoadmapPanel'));
+const ClientFichaPanel = lazy(() => import('./ClientFichaPanel'));
+const ClientBodyPanel = lazy(() => import('./ClientBodyPanel'));
+const ReportsPanel = lazy(() => import('./ReportsPanel'));
+const NutritionAnalysisPanel = lazy(() => import('./NutritionAnalysisPanel'));
+const CorrelationPanel = lazy(() => import('./CorrelationPanel'));
+const ClientDietsPanel = lazy(() => import('./ClientDietsPanel'));
+const ClientWorkoutsPanel = lazy(() => import('./ClientWorkoutsPanel'));
+const ClientReviewsPanel = lazy(() => import('./ClientReviewsPanel'));
+const ClientSetupPanel = lazy(() => import('./ClientSetupPanel'));
 import PendingTray from './PendingTray';
-import ClientStatusCard from './ClientStatusCard';
+import ClientOverviewCard from './ClientOverviewCard';
+import { Badge, Tabs, Skeleton, Sheet, SearchField, ListRow, Icon } from './ui';
 
-export type HubTab = 'setup' | 'revisiones' | 'entrenamientos' | 'dietas' | 'roadmap' | 'analisis';
-export type AnalisisTab = 'correlaciones' | 'nutricion' | 'reportes';
-export const HUB_TABS: readonly HubTab[] = ['setup', 'revisiones', 'entrenamientos', 'dietas', 'roadmap', 'analisis'];
-export const ANALISIS_TABS: readonly AnalisisTab[] = ['reportes', 'nutricion', 'correlaciones'];
+export type HubTab =
+  | 'setup' | 'revisiones'
+  | 'ficha' | 'cuerpo'
+  | 'entrenamientos' | 'dietas' | 'roadmap'
+  | 'reportes' | 'analisis-nutricion' | 'correlaciones';
+export const HUB_TABS: readonly HubTab[] = [
+  'setup', 'revisiones', 'ficha', 'cuerpo',
+  'entrenamientos', 'dietas', 'roadmap',
+  'reportes', 'analisis-nutricion', 'correlaciones',
+];
 
-// Las 6 pestañas se agrupan en 3 zonas para responder a una pregunta distinta
-// cada una: qué reviso (Hoy), qué programo (Plan), cómo va (Análisis). La URL
-// sigue direccionando por HubTab — la zona es puramente de navegación/UI, así
-// que los deep links y ClientSetupPanel.onGoToTab no cambian.
-type Zone = 'hoy' | 'plan' | 'analisis';
+// Las 10 pestañas se agrupan en 4 zonas para responder a una pregunta distinta
+// cada una: qué reviso (Hoy), quién es y cómo está (Atleta), qué programo
+// (Plan), cómo va (Análisis). La URL sigue direccionando por HubTab — la zona
+// es puramente de navegación/UI, así que los deep links y
+// ClientSetupPanel.onGoToTab no cambian.
+//
+// Análisis perdió su tercer nivel: antes era zona → pestaña única "Análisis"
+// → 3 sub-pestañas (reportes/nutricion/correlaciones) con estado propio
+// (AnalisisTab). Ahora esas tres viven como pestañas de zona normales — un
+// nivel menos para llegar a Reportes, y AnalisisTab desaparece del todo.
+type Zone = 'hoy' | 'atleta' | 'plan' | 'analisis';
 const ZONE_TABS: Record<Zone, HubTab[]> = {
   hoy: ['revisiones', 'setup'],
+  atleta: ['ficha', 'cuerpo'],
   plan: ['entrenamientos', 'dietas', 'roadmap'],
-  analisis: ['analisis'],
+  analisis: ['reportes', 'analisis-nutricion', 'correlaciones'],
 };
 const ZONE_META: Record<Zone, { label: string; icon: string }> = {
   hoy: { label: 'Hoy', icon: 'today' },
+  atleta: { label: 'Atleta', icon: 'person' },
   plan: { label: 'Plan', icon: 'event_note' },
   analisis: { label: 'Análisis', icon: 'insights' },
 };
 const TAB_META: Record<HubTab, { label: string; icon: string }> = {
-  setup:          { label: 'Setup',          icon: 'checklist' },
-  revisiones:     { label: 'Revisiones',     icon: 'rate_review' },
-  entrenamientos: { label: 'Entrenamientos', icon: 'fitness_center' },
-  dietas:         { label: 'Dietas',         icon: 'nutrition' },
-  roadmap:        { label: 'Road map',       icon: 'map' },
-  analisis:       { label: 'Análisis',       icon: 'insights' },
+  setup:                { label: 'Setup',          icon: 'checklist' },
+  revisiones:           { label: 'Revisiones',     icon: 'rate_review' },
+  ficha:                { label: 'Ficha',          icon: 'badge' },
+  cuerpo:               { label: 'Cuerpo',         icon: 'monitor_weight' },
+  entrenamientos:       { label: 'Entrenamientos', icon: 'fitness_center' },
+  dietas:               { label: 'Dietas',         icon: 'nutrition' },
+  roadmap:              { label: 'Road map',       icon: 'map' },
+  reportes:             { label: 'Reportes',       icon: 'analytics' },
+  'analisis-nutricion': { label: 'Nutrición',      icon: 'restaurant' },
+  correlaciones:        { label: 'Correlaciones',  icon: 'insights' },
 };
 function zoneOf(tab: HubTab): Zone {
   return (Object.keys(ZONE_TABS) as Zone[]).find(z => ZONE_TABS[z].includes(tab)) ?? 'hoy';
@@ -81,16 +116,33 @@ interface ClientHubProps {
   // deep-linking lands on the exact same tab instead of always resetting.
   activeTab: HubTab;
   onTabChange: (tab: HubTab) => void;
-  analisisTab: AnalisisTab;
-  onAnalisisTabChange: (tab: AnalisisTab) => void;
 }
 
 export default function ClientHub({
   athlete, coachId, coachEmail, checkins, onRefreshCheckIns, onBack,
-  activeTab, onTabChange, analisisTab, onAnalisisTabChange,
+  activeTab, onTabChange,
 }: ClientHubProps) {
   const { showToast } = useToast();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
+
+  // ── Selector de atleta — saltar a otro sin volver a /clients. Comparte la
+  // clave de caché ['userProfiles'] con ClientsScreen/CommandPalette, así que
+  // normalmente ya está en caché al llegar aquí.
+  const [switcherOpen, setSwitcherOpen] = useState(false);
+  const [switcherSearch, setSwitcherSearch] = useState('');
+  const { data: allProfiles = [] } = useQuery({
+    queryKey: ['userProfiles'],
+    queryFn: getAllUserProfiles,
+    enabled: switcherOpen,
+  });
+  const switcherAthletes = useMemo(() => {
+    const q = switcherSearch.trim().toLowerCase();
+    return atletasActivos(allProfiles)
+      .filter(p => p.role === 'client' && p.email !== athlete.email)
+      .filter(p => !q || p.displayName.toLowerCase().includes(q) || p.email.toLowerCase().includes(q))
+      .sort((a, b) => a.displayName.localeCompare(b.displayName));
+  }, [allProfiles, switcherSearch, athlete.email]);
 
   // ── Onboarding ─────────────────────────────────────────────────────────────
   const onboardingKey = ['onboarding', athlete.email] as const;
@@ -233,6 +285,24 @@ export default function ClientHub({
     guardedTabChange(lastTabByZone[zone] ?? ZONE_TABS[zone][0]);
   };
 
+  // Altura real del bloque sticky de pestañas (nav de zona + sub-pestañas si
+  // la zona tiene más de una), medida y no escrita a mano: la segunda fila
+  // solo existe a veces, así que la altura cambia según la zona. Publicada
+  // como --hub-sticky-top para que paneles embebidos (p. ej. la barra de
+  // intercambios de nutrición) se peguen justo debajo sin taparla.
+  const subnavRef = useRef<HTMLDivElement>(null);
+  const [subnavHeight, setSubnavHeight] = useState(0);
+  useEffect(() => {
+    const el = subnavRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver(entries => {
+      const h = entries[0]?.contentRect.height;
+      if (h !== undefined) setSubnavHeight(h);
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [activeZone]);
+
   // ── Questionnaires ─────────────────────────────────────────────────────────
   const coachQuestionnairesKey = ['questionnairesByCoach', coachId] as const;
   const { data: coachQuestionnaires = [] } = useQuery({
@@ -295,24 +365,16 @@ export default function ClientHub({
   );
 
   const adherence = computeAdherenceScore(assignments, athleteCheckins);
-  const adh        = scoreStyle(adherence.score);
+  const adh        = adherence.hasData ? scoreStyle(adherence.score) : SIN_DATOS_ADHERENCIA;
 
-  // ── Weekly compliance ──────────────────────────────────────────────────────
-  const getWeekRange = () => {
-    const today = new Date();
-    const day = today.getDay();
-    const daysFromMonday = day === 0 ? 6 : day - 1;
-    const monday = new Date(today);
-    monday.setDate(today.getDate() - daysFromMonday);
-    const sunday = new Date(monday);
-    sunday.setDate(monday.getDate() + 6);
-    return { start: monday.toISOString().split('T')[0], end: sunday.toISOString().split('T')[0] };
-  };
-  const { start: weekStart, end: weekEnd } = getWeekRange();
-  const weekAssignments = assignments.filter(a => a.date >= weekStart && a.date <= weekEnd);
-  const weekCompleted   = weekAssignments.filter(a => a.status === 'completed').length;
-  const weekTotal       = weekAssignments.length;
-  const weekPct         = weekTotal > 0 ? Math.round((weekCompleted / weekTotal) * 100) : 0;
+  // ── Resumen del Hub (F3.13b) ──────────────────────────────────────────────
+  // RIR medio de las últimas 4 semanas (rirStats.ts) — el peso más reciente lo
+  // calcula ClientOverviewCard internamente con el mismo criterio.
+  const avgRir = computeAverageRir(athleteLogs);
+  // "Próxima revisión" del handoff = el próximo check-in que el coach aún no
+  // ha revisado (sin feedback ni aprobar) — es exactamente lo que Revisiones
+  // resuelve, así que el CTA salta directo ahí.
+  const pendingCheckins = athleteCheckins.filter(c => !c.coachFeedback && !c.approved);
 
   // ── Exercise history ───────────────────────────────────────────────────────
   const getWorkout = (id: string) => workouts.find(w => w.id === id);
@@ -379,140 +441,120 @@ export default function ClientHub({
     }
   };
 
-  const { daysLeft } = calcPlanExpiry({ planStartDate: planStart, planDurationMonths: planMonths });
+  const { daysLeft, weekNumber, totalWeeks } = calcPlanExpiry({ planStartDate: planStart, planDurationMonths: planMonths });
+  // "Semana 11 de 24" (patrón HubFit) en vez de solo días restantes — dice
+  // más al programar. El vencimiento, que sí es accionable/urgente, se queda
+  // como texto secundario junto al email en vez de desaparecer del todo.
   const planBadge = daysLeft !== null ? (
-    <span className={`text-[9px] font-sans font-bold uppercase px-2 py-0.5 rounded-lg border flex-shrink-0 ${
-      daysLeft > 30  ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20' :
-      daysLeft >= 0  ? 'bg-orange-500/10  text-orange-300  border-orange-500/20'  :
-                       'bg-red-500/10     text-red-300     border-red-500/20'
-    }`}>
-      {daysLeft >= 0 ? `Vence en ${daysLeft}d` : `Vencido hace ${-daysLeft}d`}
-    </span>
+    <Badge tone={daysLeft > 30 ? 'success' : daysLeft >= 0 ? 'warning' : 'danger'}>
+      {weekNumber !== null && totalWeeks !== null ? `Semana ${weekNumber} de ${totalWeeks}` : (daysLeft >= 0 ? `Vence en ${daysLeft}d` : `Vencido hace ${-daysLeft}d`)}
+    </Badge>
   ) : null;
+  const planExpiryCaption = daysLeft !== null
+    ? (daysLeft >= 0 ? `Vence en ${daysLeft}d` : `Vencido hace ${-daysLeft}d`)
+    : null;
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="pb-4 border-b border-white/60 space-y-3">
+      <div className="pb-4 border-b border-hairline space-y-4">
         <div className="flex items-center gap-3 flex-wrap">
           <button
             onClick={guardedBack}
-            className="p-1 px-3 bg-[#1c1b1b] hover:bg-[#2c2b2b] text-[#fbcb1a] border border-white/7 text-xs font-mono rounded flex items-center gap-1 active:scale-95 transition-all"
+            className="p-1 px-3 bg-raised hover:bg-raised text-accent border border-hairline text-label font-sans rounded-control flex items-center gap-1 active:scale-95 transition-all"
           >
-            <span className="material-symbols-outlined text-sm">arrow_back</span>
+            <span className="material-symbols-outlined text-body-s">arrow_back</span>
             Clientes
           </button>
-          <img src={athlete.avatarUrl} alt="" className="w-9 h-9 rounded-full border border-[#fbcb1a]/30 object-cover" />
+          <button
+            onClick={() => { if (confirmDiscardPlanChanges()) setSwitcherOpen(true); }}
+            title="Cambiar de atleta"
+            aria-label="Cambiar de atleta"
+            className="p-1 px-2 bg-raised hover:bg-raised text-ink-2 hover:text-accent border border-hairline rounded-control flex items-center active:scale-95 transition-all"
+          >
+            <span className="material-symbols-outlined text-body-s">swap_horiz</span>
+          </button>
+          <img src={athlete.avatarUrl} alt="" className="w-11 h-11 rounded-full border border-accent/30 object-cover" />
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="font-sans font-bold text-white text-xl leading-tight">{athlete.displayName}</h1>
+              <h1 className="font-display font-black uppercase text-ink text-title-l leading-tight tracking-tight">{athlete.displayName}</h1>
               {planBadge}
             </div>
-            <p className="font-mono text-[10px] text-[#c6c9ab]">{athlete.email}</p>
-            {/* Adherence score badge */}
-            <div className={`inline-flex items-center gap-1.5 mt-1.5 px-2 py-1 rounded-md border font-mono ${adh.bg}`}>
-              <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>monitor_heart</span>
-              <span className={`text-[9px] font-bold uppercase ${adh.text}`}>{adh.label}</span>
-              <span className={`text-sm font-black ${adh.text}`}>{adherence.score}</span>
-            </div>
+            <p className="font-mono text-caption text-ink-2">
+              {athlete.email}
+              {planExpiryCaption && <span className="text-ink-3"> · {planExpiryCaption}</span>}
+            </p>
           </div>
         </div>
-        {/* Plan duration config */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="font-mono text-[10px] text-[#c6c9ab] uppercase">Plan:</span>
-          <input
-            type="date"
-            value={planStart}
-            onChange={e => setPlanStart(e.target.value)}
-            className="bg-[#1e1e1b] border border-white/7 rounded px-2 py-2 text-xs font-mono text-white focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] min-h-[36px]"
-          />
-          <select
-            value={planMonths}
-            onChange={e => setPlanMonths(Number(e.target.value) as 3 | 6 | 12)}
-            className="bg-[#1e1e1b] border border-white/7 rounded px-2 py-2 text-xs font-mono text-white focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] min-h-[36px]"
-          >
-            <option value={3}>3 meses</option>
-            <option value={6}>6 meses</option>
-            <option value={12}>12 meses</option>
-          </select>
-          <button
-            onClick={handleSavePlan}
-            disabled={savingPlan}
-            className="px-3 py-2 min-h-[36px] bg-[#fbcb1a] text-black font-sans text-[10px] font-bold uppercase rounded hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-50"
-          >
-            {savingPlan ? '...' : 'Guardar'}
-          </button>
-        </div>
+
+        {/* Resumen: KPIs + fase/objetivo siempre visibles, últimos cambios y
+            nota del coach plegados, acceso directo al resumen IA */}
+        <ClientOverviewCard
+          athlete={athlete}
+          onboardingData={onboardingData}
+          mesocycles={mesocycles}
+          checkins={athleteCheckins}
+          coachReports={coachReports}
+          athleteLogs={athleteLogs}
+          bodyweightLogs={bodyweightLogs}
+          adherenceScore={adherence.hasData ? adherence.score : null}
+          adherenceStyle={adh}
+          averageRir={avgRir}
+          planUnpublished={assignments.length === 0}
+          pendingReviewsCount={pendingCheckins.length}
+          onGoToEntrenamientos={() => guardedTabChange('entrenamientos')}
+          onGoToRevisiones={() => guardedTabChange('revisiones')}
+        />
       </div>
 
       {/* Pendientes de hoy — lo accionable, independiente de la zona/pestaña activa */}
       <PendingTray
         athleteLogs={athleteLogs}
         getWorkout={getWorkout}
-        athleteCheckins={athleteCheckins}
         coachReports={coachReports}
         aiProposals={aiProposals}
         onGoToNotes={() => { setActiveZone('plan'); guardedTabChange('entrenamientos'); }}
-        onGoToCheckins={() => { setActiveZone('hoy'); guardedTabChange('revisiones'); }}
-        onGoToReports={() => { setActiveZone('analisis'); guardedTabChange('analisis'); onAnalisisTabChange('reportes'); }}
+        onGoToReports={() => { setActiveZone('analisis'); guardedTabChange('reportes'); }}
         onGoToAiProposals={() => window.dispatchEvent(new CustomEvent(OPEN_AI_PANEL_EVENT))}
       />
 
-      {/* Estado del cliente — fase, objetivo, últimos cambios y nota del coach */}
-      <ClientStatusCard
-        athlete={athlete}
-        onboardingData={onboardingData}
-        mesocycles={mesocycles}
-        checkins={athleteCheckins}
-        coachReports={coachReports}
-        athleteLogs={athleteLogs}
-        bodyweightLogs={bodyweightLogs}
-      />
-
-      {/* Nav de zonas (nivel 1) */}
-      <div className="sticky top-0 z-20 bg-[#141414]/95 backdrop-blur-sm space-y-1.5 pb-0.5">
-        <div className="flex bg-[#181816] border border-white/7 p-1 rounded-2xl gap-1">
-          {(Object.keys(ZONE_TABS) as Zone[]).map(zone => (
-            <button
-              key={zone}
-              onClick={() => goToZone(zone)}
-              className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 min-h-[44px] rounded-xl font-sans text-xs font-bold uppercase tracking-wide transition-all ${
-                activeZone === zone ? 'bg-[#fbcb1a] text-black' : 'text-[#c6c9ab] hover:text-white'
-              }`}
-            >
-              <span className="material-symbols-outlined text-base">{ZONE_META[zone].icon}</span>
-              {ZONE_META[zone].label}
-            </button>
-          ))}
-        </div>
+      {/* Nav de zonas (nivel 1). z-subnav, no z-sticky: los paneles que se
+          montan dentro (matriz de series, barra de intercambios…) también
+          usan sticky con z-sticky, y a igualdad de z-index gana el que va
+          después en el DOM — las pestañas quedaban tapadas por su propio
+          contenido. */}
+      <div ref={subnavRef} className="sticky top-[var(--header-h)] z-[var(--z-subnav)] bg-field/95 backdrop-blur-sm space-y-2 ">
+        <Tabs
+          items={(Object.keys(ZONE_TABS) as Zone[]).map(zone => ({ id: zone, label: ZONE_META[zone].label, icon: ZONE_META[zone].icon }))}
+          value={activeZone}
+          onChange={id => goToZone(id as Zone)}
+          label="Zonas del cliente"
+        />
 
         {/* Sub-tabs de la zona activa (solo si tiene más de una) */}
         {ZONE_TABS[activeZone].length > 1 && (
-          <div className="overflow-x-auto snap-x snap-mandatory -mx-1 px-1">
-            <div className="flex gap-1 min-w-max">
-              {ZONE_TABS[activeZone].map(tab => (
-                <button
-                  key={tab}
-                  onClick={() => guardedTabChange(tab)}
-                  className={`snap-start flex items-center gap-1.5 px-3 py-1.5 min-h-[36px] rounded-lg font-mono text-[11px] font-bold uppercase tracking-wide transition-all whitespace-nowrap border ${
-                    activeTab === tab
-                      ? 'bg-[#fbcb1a]/10 border-[#fbcb1a]/40 text-[#fbcb1a]'
-                      : 'border-transparent text-[#c6c9ab] hover:text-white'
-                  }`}
-                >
-                  <span className="material-symbols-outlined text-sm">{TAB_META[tab].icon}</span>
-                  {TAB_META[tab].label}
-                </button>
-              ))}
-            </div>
-          </div>
+          <Tabs
+            items={ZONE_TABS[activeZone].map(tab => ({ id: tab, label: TAB_META[tab].label, icon: TAB_META[tab].icon }))}
+            value={activeTab}
+            onChange={id => guardedTabChange(id as HubTab)}
+            label="Secciones de la zona"
+          />
         )}
       </div>
+
+      {/* Un solo Suspense para las diez pestañas: solo hay una montada a la
+          vez, así que diez serían diez veces el mismo hueco.
+          --hub-sticky-top: publica dónde termina el bloque sticky de arriba
+          para que paneles embebidos con su propio sticky (p. ej. la barra de
+          intercambios de nutrición) se peguen justo debajo, sin taparlo. */}
+      <div style={{ ['--hub-sticky-top' as string]: `calc(var(--header-h) + ${subnavHeight}px)` } as React.CSSProperties}>
+      <Suspense fallback={<Skeleton className="w-full h-64 rounded-surface" />}>
 
       {/* ── Tab: Setup ──────────────────────────────────────────────────────── */}
       {activeTab === 'setup' && (
         <ClientSetupPanel
+          key={athlete.email}
           athlete={athlete}
           checkins={athleteCheckins}
           onboarding={onboardingData}
@@ -526,35 +568,54 @@ export default function ClientHub({
           photos={athletePhotos}
           workoutLogs={athleteLogs}
           onGoToTab={guardedTabChange}
-          onGoToAnalisis={onAnalisisTabChange}
         />
       )}
 
       {/* ── Tab: Revisiones ────────────────────────────────────────────────── */}
       {activeTab === 'revisiones' && (
         <ClientReviewsPanel
+          key={athlete.email}
           athlete={athlete}
           coachId={coachId}
           athleteCheckins={athleteCheckins}
           onRefreshCheckIns={onRefreshCheckIns}
-          athletePhotos={athletePhotos}
-          loadingPhotos={loadingPhotos}
-          athletePhotoAssignments={athletePhotoAssignments}
-          setAthletePhotoAssignments={setAthletePhotoAssignments}
-          onboardingData={onboardingData}
-          setOnboardingData={setOnboardingData}
-          onboardingTemplate={onboardingTemplate}
-          assignments={assignments}
-          workouts={workouts}
           athleteQResponses={athleteQResponses}
           setAthleteQResponses={setAthleteQResponses}
           coachQuestionnaires={coachQuestionnaires}
           setCoachQuestionnaires={setCoachQuestionnaires}
           athleteQAssignments={athleteQAssignments}
           setAthleteQAssignments={setAthleteQAssignments}
-          weekTotal={weekTotal}
-          weekCompleted={weekCompleted}
-          weekPct={weekPct}
+        />
+      )}
+
+      {/* ── Tab: Ficha ───────────────────────────────────────────────────── */}
+      {activeTab === 'ficha' && (
+        <ClientFichaPanel
+          key={athlete.email}
+          athlete={athlete}
+          onboardingData={onboardingData}
+          setOnboardingData={setOnboardingData}
+          onboardingTemplate={onboardingTemplate}
+          planStart={planStart}
+          onPlanStartChange={setPlanStart}
+          planMonths={planMonths}
+          onPlanMonthsChange={setPlanMonths}
+          savingPlan={savingPlan}
+          onSavePlan={handleSavePlan}
+        />
+      )}
+
+      {/* ── Tab: Cuerpo ──────────────────────────────────────────────────── */}
+      {activeTab === 'cuerpo' && (
+        <ClientBodyPanel
+          key={athlete.email}
+          athlete={athlete}
+          athletePhotos={athletePhotos}
+          loadingPhotos={loadingPhotos}
+          athletePhotoAssignments={athletePhotoAssignments}
+          setAthletePhotoAssignments={setAthletePhotoAssignments}
+          athleteQResponses={athleteQResponses}
+          coachQuestionnaires={coachQuestionnaires}
         />
       )}
 
@@ -581,6 +642,7 @@ export default function ClientHub({
           athlete={athlete}
           coachId={coachId}
           onboardingData={onboardingData}
+          setOnboardingData={setOnboardingData}
           athleteDiets={athleteDiets}
           setAthleteDiets={setAthleteDiets}
           athleteDietConfig={athleteDietConfig}
@@ -601,20 +663,67 @@ export default function ClientHub({
         <ClientRoadmapPanel athleteEmail={athlete.email} />
       )}
 
-      {/* ── Tab: Análisis ─────────────────────────────────────────────────── */}
-      {activeTab === 'analisis' && (
-        <ClientAnalysisPanel
-          athlete={athlete}
+      {/* ── Tab: Reportes ────────────────────────────────────────────────── */}
+      {activeTab === 'reportes' && (
+        <ReportsPanel
+          athleteEmail={athlete.email}
+          athleteName={athlete.displayName}
           coachId={coachId}
-          athleteLogs={athleteLogs}
+          logs={athleteLogs}
           exercises={exercises}
           assignments={assignments}
           bodyweightLogs={bodyweightLogs}
-          athleteQResponses={athleteQResponses}
-          coachQuestionnaires={coachQuestionnaires}
-          analisisTab={analisisTab}
-          onAnalisisTabChange={onAnalisisTabChange}
+          targetWeight={athlete.targetWeight}
         />
+      )}
+
+      {/* ── Tab: Nutrición (análisis) ────────────────────────────────────── */}
+      {activeTab === 'analisis-nutricion' && (
+        <NutritionAnalysisPanel
+          athleteEmail={athlete.email}
+          athleteName={athlete.displayName}
+          targetWeight={athlete.targetWeight}
+        />
+      )}
+
+      {/* ── Tab: Correlaciones ───────────────────────────────────────────── */}
+      {activeTab === 'correlaciones' && (
+        <CorrelationPanel
+          athleteEmail={athlete.email}
+          logs={athleteLogs}
+          exercises={exercises}
+          responses={athleteQResponses}
+          questionnaires={coachQuestionnaires}
+          bodyweightLogs={bodyweightLogs}
+          assignments={assignments}
+        />
+      )}
+
+      </Suspense>
+      </div>
+
+      {/* Selector de atleta — la key={athlete.email} del padre (ClientsScreen)
+          ya garantiza un remonte limpio del Hub entero al navegar aquí. */}
+      {switcherOpen && (
+        <Sheet open onClose={() => setSwitcherOpen(false)} title="Cambiar de atleta" size="m">
+          <div className="space-y-3">
+            <SearchField value={switcherSearch} onChange={setSwitcherSearch} placeholder="Buscar atleta..." label="Buscar atleta" />
+            <div className="space-y-1">
+              {switcherAthletes.length === 0 ? (
+                <p className="font-sans text-body-s text-ink-2 text-center py-6">Ningún atleta coincide.</p>
+              ) : switcherAthletes.map(a => (
+                <ListRow
+                  key={a.userId}
+                  title={a.displayName}
+                  subtitle={a.email}
+                  leading={<img src={a.avatarUrl} alt="" className="w-9 h-9 rounded-full object-cover flex-shrink-0" />}
+                  trailing={<Icon name="chevron_right" size="m" className="text-ink-4" />}
+                  onClick={() => { setSwitcherOpen(false); navigate(`/clients/${encodeURIComponent(a.email)}`); }}
+                />
+              ))}
+            </div>
+          </div>
+        </Sheet>
       )}
     </div>
   );

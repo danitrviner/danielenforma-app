@@ -1,9 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { UserProfile } from '../types';
 import { getAllUserProfiles } from '../dbService';
+import { atletasActivos } from '../utils/atletas';
 import type { NavTab } from '../App';
+import { Icon, ListRow, EmptyState } from './ui';
 
 interface Props {
   onNavigateTab: (tab: NavTab) => void;
@@ -25,7 +27,7 @@ const ACTIONS: QuickAction[] = [
 // Buscador global del coach (Cmd+K / Ctrl+K): saltar directo a la ficha de
 // un atleta o a una pestaña sin pasar por Clientes → buscar → abrir. Acotado
 // a atletas + navegación — buscar ejercicios/recetas necesitaría un índice
-// de búsqueda de verdad (el banco de recetas Indya son 8.850+ documentos,
+// de búsqueda de verdad (el recetario importado son 8.850+ documentos,
 // no algo para traer entero al cliente), queda fuera de alcance por ahora.
 export default function CommandPalette({ onNavigateTab }: Props) {
   const [open, setOpen] = useState(false);
@@ -36,11 +38,12 @@ export default function CommandPalette({ onNavigateTab }: Props) {
   // Shared 'userProfiles' cache key (same as MesocycleManager) — this used to
   // be a hand-rolled module-level cache; the query cache now does the same
   // dedup app-wide, plus shares the fetch with ClientsScreen/ReviewsScreen.
-  const { data: athletes = [], isPending: loadingAthletes } = useQuery({
+  const { data: allProfiles = [], isPending: loadingAthletes } = useQuery({
     queryKey: ['userProfiles'],
     queryFn: getAllUserProfiles,
     enabled: open,
   });
+  const athletes = useMemo(() => atletasActivos(allProfiles), [allProfiles]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -81,68 +84,69 @@ export default function CommandPalette({ onNavigateTab }: Props) {
   };
 
   return (
+    /* F9 no migra este overlay, a propósito: la paleta va anclada arriba
+       (`pt-14`), que es la convención de Cmd+K, y ninguna primitiva tiene esa
+       posición — `Dialog` centra y `Sheet` sube desde abajo. Cierra con Escape
+       por su cuenta; lo que le falta es el foco atrapado y el bloqueo de
+       scroll compartido. Decisión de Dani el 4 ago 2026: queda para la fase de
+       diseño, que decidirá si la posición superior se convierte en una
+       variante de la primitiva. */
     <div
-      className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[200] flex items-start justify-center pt-24 px-4"
+      className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[200] flex items-start justify-center pt-14 px-4"
       onClick={() => setOpen(false)}
     >
       <div
-        className="bg-[#181816] border border-white/10 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden"
+        className="bg-surface border border-hairline rounded-surface w-full max-w-lg shadow-e2 overflow-hidden"
         onClick={e => e.stopPropagation()}
       >
-        <div className="flex items-center gap-2 px-4 py-3 border-b border-white/10">
-          <span className="material-symbols-outlined text-[#c6c9ab]">search</span>
+        <div className="flex items-center gap-2 px-4 py-3 border-b border-hairline">
+          <Icon name="search" size="m" className="text-ink-2" />
           <input
             ref={inputRef}
             value={query}
             onChange={e => setQuery(e.target.value)}
             placeholder="Buscar atleta o acción..."
-            className="flex-1 bg-transparent text-white text-sm focus:outline-none placeholder-[#c6c9ab]/50"
+            className="flex-1 bg-transparent text-white text-title-s focus:outline-none placeholder-ink-2/50"
           />
-          <span className="font-mono text-[9px] text-[#c6c9ab]/50 border border-white/10 rounded px-1.5 py-0.5 flex-shrink-0">ESC</span>
+          <span className="font-mono text-caption text-ink-2/50 border border-hairline rounded-control px-2 flex-shrink-0">ESC</span>
         </div>
 
         <div className="max-h-96 overflow-y-auto">
           {loadingAthletes && (
-            <p className="px-4 py-6 text-center font-mono text-xs text-[#c6c9ab] animate-pulse">Cargando atletas...</p>
+            <p className="px-4 py-6 text-center font-sans text-label text-ink-2 animate-pulse">Cargando atletas...</p>
           )}
 
           {!loadingAthletes && matchedAthletes.length > 0 && (
             <div className="py-2">
-              <p className="px-4 py-1 font-mono text-[9px] text-[#c6c9ab] uppercase tracking-wider">Atletas</p>
+              <p className="px-4 py-1 font-mono text-caption text-ink-2 uppercase tracking-wider">Atletas</p>
               {matchedAthletes.map(a => (
-                <button
+                <ListRow
                   key={a.userId}
                   onClick={() => goToAthlete(a)}
-                  className="w-full flex items-center gap-3 px-4 py-2 hover:bg-white/5 text-left transition-colors"
-                >
-                  <img src={a.avatarUrl} alt="" className="w-6 h-6 rounded-full object-cover flex-shrink-0" />
-                  <div className="min-w-0">
-                    <p className="text-sm text-white truncate">{a.displayName}</p>
-                    <p className="text-[10px] text-[#c6c9ab] truncate">{a.email}</p>
-                  </div>
-                </button>
+                  leading={<img src={a.avatarUrl} alt="" className="w-6 h-6 rounded-full object-cover flex-shrink-0" />}
+                  title={a.displayName}
+                  subtitle={a.email}
+                />
               ))}
             </div>
           )}
 
           {matchedActions.length > 0 && (
-            <div className="py-2 border-t border-white/10">
-              <p className="px-4 py-1 font-mono text-[9px] text-[#c6c9ab] uppercase tracking-wider">Acciones</p>
+            <div className="py-2 border-t border-hairline">
+              <p className="px-4 py-1 font-mono text-caption text-ink-2 uppercase tracking-wider">Acciones</p>
               {matchedActions.map(a => (
-                <button
+                <ListRow
                   key={a.id}
                   onClick={() => runAction(a.id)}
-                  className="w-full flex items-center gap-3 px-4 py-2 hover:bg-white/5 text-left transition-colors"
-                >
-                  <span className="material-symbols-outlined text-[#c6c9ab] text-base">{a.icon}</span>
-                  <span className="text-sm text-white">{a.label}</span>
-                </button>
+                  leading={<Icon name={a.icon} size="m" className="text-ink-2" />}
+                  title={a.label}
+                />
               ))}
             </div>
           )}
 
           {!loadingAthletes && matchedAthletes.length === 0 && matchedActions.length === 0 && (
-            <p className="px-4 py-6 text-center font-mono text-xs text-[#555]">Sin resultados.</p>
+            <EmptyState icon="search_off" title="Sin resultados." />
           )}
         </div>
       </div>

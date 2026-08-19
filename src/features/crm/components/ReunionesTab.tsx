@@ -5,6 +5,7 @@ import { formatDia, tiempoRelativo } from '../lib/fechas';
 import ReunionesBlock from './ReunionesBlock';
 import ReunionModal from './ReunionModal';
 import type { Cliente } from '../types';
+import { Icon } from '../../../components/ui';
 
 export default function ReunionesTab({ cliente, coachEmail }: { cliente: Cliente; coachEmail: string }) {
   const { data: reuniones = [], isPending, isError } = useReunionesDe(cliente.id);
@@ -15,11 +16,11 @@ export default function ReunionesTab({ cliente, coachEmail }: { cliente: Cliente
 
   return (
     <div className="space-y-3">
-      <div className="bg-[#181816]/80 backdrop-blur-sm border border-white/7 rounded-2xl p-4 flex items-center gap-3">
-        <span className="material-symbols-outlined text-lg text-[#fbcb1a]">flag</span>
+      <div className="bg-surface/80 backdrop-blur-sm border border-hairline rounded-surface p-4 flex items-center gap-3">
+        <Icon name="flag" size="l" className="text-accent" />
         <div>
-          <p className="font-mono text-[9px] uppercase tracking-widest text-[#a8a89e]">Fin de programa</p>
-          <p className="font-sans font-bold text-sm text-[#f5f5f0]">
+          <p className="font-mono text-caption uppercase tracking-widest text-ink-2">Fin de programa</p>
+          <p className="font-sans font-bold text-body-s text-ink">
             {finPrograma ? `${formatDia(finPrograma)} · ${tiempoRelativo(finPrograma)}` : 'Sin fecha de fin definida'}
           </p>
         </div>
@@ -29,9 +30,9 @@ export default function ReunionesTab({ cliente, coachEmail }: { cliente: Cliente
         <button
           type="button"
           onClick={() => setModalAbierto(true)}
-          className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#fbcb1a] text-black font-sans font-bold text-[11px] hover:bg-[#d4a800] transition-colors"
+          className="flex items-center gap-1 px-3 py-2 rounded-control bg-accent text-black font-sans font-bold text-caption hover:bg-accent-press transition-colors"
         >
-          <span className="material-symbols-outlined text-sm">add</span>
+          <Icon name="add" size="s" />
           Nueva reunión
         </button>
       </div>

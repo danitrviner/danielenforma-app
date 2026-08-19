@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Exercise, MuscleGroup } from '../types';
+import { Exercise, MuscleGroup, MUSCLE_ORDER, MUSCLE_LABELS } from '../types';
 import { getExercises, createExercise, updateExercise, deleteExercise, seedExercisesIfEmpty } from '../dbService';
-import Skeleton from './Skeleton';
+import { useToast } from '../hooks/useToast';
+import { mensajeDeErrorFirestore } from '../utils/erroresFirestore';
+import { Skeleton } from './ui';
+import { EmptyState, Dialog, Button, Icon, Input, Select, Sheet, Chip } from './ui';
 
 interface ExerciseLibraryScreenProps {
   coachId: string;
@@ -10,32 +13,12 @@ interface ExerciseLibraryScreenProps {
 
 type ExerciseType  = Exercise['type'];
 type EnduranceProfile = NonNullable<Exercise['enduranceProfile']>;
+type StrengthCurve = NonNullable<Exercise['strengthCurve']>;
 
 // ─── Macrocycle muscle groups (the 14 typed keys) ─────────────────────────────
 
-const MACRO_MUSCLE_GROUPS: MuscleGroup[] = [
-  'pecho', 'dorsal', 'trapecio',
-  'deltoide_ant', 'deltoide_lat', 'deltoide_post',
-  'biceps', 'triceps', 'antebrazo',
-  'cuadriceps', 'isquios', 'gluteo', 'gemelo', 'core',
-];
-
-const MACRO_MUSCLE_LABELS: Record<MuscleGroup, string> = {
-  pecho:         'Pecho',
-  dorsal:        'Dorsal',
-  trapecio:      'Trapecio',
-  deltoide_ant:  'Deltoides Ant.',
-  deltoide_lat:  'Deltoides Lat.',
-  deltoide_post: 'Deltoides Post.',
-  biceps:        'Bíceps',
-  triceps:       'Tríceps',
-  antebrazo:     'Antebrazo',
-  cuadriceps:    'Cuádriceps',
-  isquios:       'Isquiotibiales',
-  gluteo:        'Glúteo',
-  gemelo:        'Gemelo',
-  core:          'Core',
-};
+const MACRO_MUSCLE_GROUPS: MuscleGroup[] = MUSCLE_ORDER;
+const MACRO_MUSCLE_LABELS: Record<MuscleGroup, string> = MUSCLE_LABELS;
 
 const TYPES: ExerciseType[] = ['fuerza', 'cardio', 'estiramiento', 'pliometría'];
 const ENDURANCE_PROFILES: EnduranceProfile[] = ['ascendente', 'campana', 'descendente'];
@@ -53,10 +36,10 @@ const EQUIPMENT_OPTIONS = [
 type EquipmentOption = typeof EQUIPMENT_OPTIONS[number];
 
 const TYPE_STYLES: Record<ExerciseType, string> = {
-  fuerza:       'bg-[#00eefc]/10 text-[#00eefc] border border-[#00eefc]/20',
+  fuerza:       'bg-data/10 text-data border border-data/20',
   cardio:       'bg-orange-500/10 text-orange-300 border border-orange-500/20',
   estiramiento: 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20',
-  pliometría:   'bg-[#fbcb1a]/10 text-[#fbcb1a] border border-[#fbcb1a]/20',
+  pliometría:   'bg-accent/10 text-accent border border-accent/20',
 };
 
 const ENDURANCE_STYLES: Record<EnduranceProfile, string> = {
@@ -69,6 +52,20 @@ const ENDURANCE_LABELS: Record<EnduranceProfile, string> = {
   ascendente:  'Ascendente',
   campana:     'Campana',
   descendente: 'Descendente',
+};
+
+const STRENGTH_CURVES: StrengthCurve[] = ['estiramiento', 'campana', 'acortamiento'];
+
+const STRENGTH_CURVE_STYLES: Record<StrengthCurve, string> = {
+  estiramiento: 'bg-violet-500/10 text-violet-300',
+  campana:      'bg-blue-500/10 text-blue-300',
+  acortamiento: 'bg-teal-500/10 text-teal-300',
+};
+
+const STRENGTH_CURVE_LABELS: Record<StrengthCurve, string> = {
+  estiramiento: 'Estiramiento',
+  campana:      'Campana',
+  acortamiento: 'Acortamiento',
 };
 
 const EMPTY_FORM: Omit<Exercise, 'id'> = {
@@ -87,6 +84,7 @@ const exercisesQueryKey = ['exercises'] as const;
 
 export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreenProps) {
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
   const { data: exercises = [], isPending: loading } = useQuery({
     queryKey: exercisesQueryKey,
     queryFn: async () => {
@@ -95,10 +93,16 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
     },
   });
   const [search, setSearch]                     = useState('');
-  const [filterMuscleGroup, setFilterMuscleGroup] = useState<MuscleGroup | ''>('');
+  const [filterMuscleGroups, setFilterMuscleGroups] = useState<MuscleGroup[]>([]);
   const [filterType, setFilterType]             = useState('');
   const [filterEndurance, setFilterEndurance]   = useState('');
-  const [filterEquipment, setFilterEquipment]   = useState('');
+  const [filterEquipment, setFilterEquipment]   = useState<string[]>([]);
+  const [showFilterSheet, setShowFilterSheet]   = useState(false);
+  // Borrador de la hoja de filtros (panel 05 del handoff): se aplica solo al
+  // pulsar "Ver N ejercicios", no en cada toque de chip — así el atleta... (el
+  // coach, aquí) puede tantear varias combinaciones sin que la lista salte.
+  const [draftGroups, setDraftGroups]           = useState<MuscleGroup[]>([]);
+  const [draftEquipment, setDraftEquipment]     = useState<string[]>([]);
 
   const [showForm, setShowForm]                 = useState(false);
   const [editingId, setEditingId]               = useState<string | null>(null);
@@ -107,18 +111,32 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
   const [deleteConfirm, setDeleteConfirm]       = useState<string | null>(null);
   const [successMsg, setSuccessMsg]             = useState('');
 
-  const filtered = exercises.filter(ex => {
+  function matchesFilters(ex: Exercise, groups: MuscleGroup[], equipment: string[]): boolean {
     if (search && !ex.name.toLowerCase().includes(search.toLowerCase())) return false;
-    if (filterMuscleGroup && ex.muscleGroup !== filterMuscleGroup) return false;
+    if (groups.length > 0 && (!ex.muscleGroup || !groups.includes(ex.muscleGroup))) return false;
     if (filterType && ex.type !== filterType) return false;
     if (filterEndurance && ex.enduranceProfile !== filterEndurance) return false;
-    if (filterEquipment) {
+    if (equipment.length > 0) {
       const eq = ex.equipment ?? [];
       if (eq.length === 0) return false;
-      if (!eq.some(e => e.toLowerCase() === filterEquipment.toLowerCase())) return false;
+      if (!eq.some(e => equipment.includes(e))) return false;
     }
     return true;
-  });
+  }
+
+  const filtered = exercises.filter(ex => matchesFilters(ex, filterMuscleGroups, filterEquipment));
+  const draftCount = exercises.filter(ex => matchesFilters(ex, draftGroups, draftEquipment)).length;
+
+  function openFilterSheet() {
+    setDraftGroups(filterMuscleGroups);
+    setDraftEquipment(filterEquipment);
+    setShowFilterSheet(true);
+  }
+  function applyFilterSheet() {
+    setFilterMuscleGroups(draftGroups);
+    setFilterEquipment(draftEquipment);
+    setShowFilterSheet(false);
+  }
 
   const openCreate = () => {
     setEditingId(null);
@@ -135,6 +153,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
       muscleGroup:  ex.muscleGroup,
       type:         ex.type,
       enduranceProfile: ex.enduranceProfile,
+      strengthCurve: ex.strengthCurve,
       equipment:    ex.equipment ?? [],
       videoUrl:     ex.videoUrl || '',
       imageUrl:     ex.imageUrl || '',
@@ -167,6 +186,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
       setShowForm(false);
     } catch (err) {
       console.error(err);
+      showToast(mensajeDeErrorFirestore(err, editingId ? 'actualizar el ejercicio' : 'crear el ejercicio'));
     } finally {
       setIsSaving(false);
     }
@@ -180,6 +200,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
       flash('Ejercicio eliminado.');
     } catch (err) {
       console.error(err);
+      showToast(mensajeDeErrorFirestore(err, 'eliminar el ejercicio'));
     }
   };
 
@@ -195,110 +216,94 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
     return ex.muscleGroup ? MACRO_MUSCLE_LABELS[ex.muscleGroup] : ex.primaryFocus;
   }
 
-  const hasFilters = !!(filterMuscleGroup || filterType || filterEndurance || filterEquipment || search);
+  const hasFilters = filterMuscleGroups.length > 0 || !!filterType || !!filterEndurance || filterEquipment.length > 0 || !!search;
+
+  function toggleGroupChip(g: MuscleGroup) {
+    setFilterMuscleGroups(prev => prev.includes(g) ? prev.filter(x => x !== g) : [...prev, g]);
+  }
+  function toggleDraftGroup(g: MuscleGroup) {
+    setDraftGroups(prev => prev.includes(g) ? prev.filter(x => x !== g) : [...prev, g]);
+  }
+  function toggleDraftEquipment(eq: string) {
+    setDraftEquipment(prev => prev.includes(eq) ? prev.filter(x => x !== eq) : [...prev, eq]);
+  }
 
   return (
     <div className="space-y-6">
       {/* HEADER */}
-      <header className="flex flex-col md:flex-row md:items-end justify-between pb-4 border-b border-white/60 gap-4">
+      <header className="flex flex-col md:flex-row md:items-end justify-between pb-4 border-b border-hairline gap-4">
         <div>
-          <h1 className="font-sans font-black text-3xl tracking-tight text-white uppercase">Biblioteca de Ejercicios</h1>
-          <p className="text-[#c6c9ab] text-sm mt-1">
+          <h1 className="font-sans font-extrabold text-display tracking-tight text-white uppercase">Biblioteca de Ejercicios</h1>
+          <p className="text-ink-2 text-body-s mt-1">
             {exercises.length} ejercicios · {exercises.filter(e => e.isCustom).length} personalizados
             {exercises.filter(e => e.muscleGroup).length > 0 && (
-              <span className="ml-2 text-[#fbcb1a]/70">· {exercises.filter(e => e.muscleGroup).length} con grupo muscular</span>
+              <span className="ml-2 text-accent/70">· {exercises.filter(e => e.muscleGroup).length} con grupo muscular</span>
             )}
           </p>
         </div>
         <button
           onClick={openCreate}
-          className="flex items-center gap-2 h-[42px] px-5 bg-[#fbcb1a] text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all shadow-md shadow-[#fbcb1a]/10 self-start md:self-auto"
+          className="flex items-center gap-2 h-[42px] px-5 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all self-start md:self-auto"
         >
-          <span className="material-symbols-outlined text-sm">add</span>
+          <span className="material-symbols-outlined text-body-s">add</span>
           Añadir ejercicio
         </button>
       </header>
 
       {successMsg && (
-        <div className="bg-[#fbcb1a]/10 border border-[#fbcb1a]/25 text-white p-3 rounded-xl text-sm flex items-center gap-2">
-          <span className="material-symbols-outlined text-[#fbcb1a] text-base">check_circle</span>
+        <div className="bg-accent/10 border border-accent/25 text-white p-3 rounded-surface text-body-s flex items-center gap-2">
+          <span className="material-symbols-outlined text-accent text-title-s">check_circle</span>
           {successMsg}
         </div>
       )}
 
-      {/* FILTERS */}
-      <div className="flex flex-col md:flex-row gap-3">
-        {/* Search */}
-        <div className="relative flex-1 max-w-sm">
-          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#c6c9ab] text-base pointer-events-none">search</span>
+      {/* FILTERS — panel 01 del handoff: buscador 48px + botón de filtros en
+          cuadro oro 14%, chips de grupo en fila con scroll horizontal para
+          el filtro rápido. Tipo/perfil de resistencia (no están en el
+          handoff, pero ya existían) se quedan dentro de la hoja de filtros. */}
+      <div className="flex gap-2">
+        <div className="relative flex-1">
+          <Icon name="search" size="m" className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-2 pointer-events-none" />
           <input
             type="text"
             placeholder="Buscar ejercicio..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="w-full bg-[#1e1e1b] border border-white/7 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-[#c6c9ab]/50 focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] transition-all"
+            className="h-12 w-full bg-raised border border-hairline rounded-control pl-10 pr-4 text-title-s text-white placeholder-ink-2/50 focus:outline-none focus:ring-1 focus:ring-accent transition-all"
           />
         </div>
-
-        {/* Filter pills */}
-        <div className="flex gap-2 flex-wrap">
-          {/* Muscle group filter — 14 macrocycle keys */}
-          <select
-            value={filterMuscleGroup}
-            onChange={e => setFilterMuscleGroup(e.target.value as MuscleGroup | '')}
-            className="bg-[#1e1e1b] border border-white/7 rounded-xl px-3 py-2.5 text-xs font-mono text-[#c6c9ab] focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] cursor-pointer"
-          >
-            <option value="">Todos los grupos</option>
-            {MACRO_MUSCLE_GROUPS.map(g => (
-              <option key={g} value={g}>{MACRO_MUSCLE_LABELS[g]}</option>
-            ))}
-          </select>
-
-          <select
-            value={filterType}
-            onChange={e => setFilterType(e.target.value)}
-            className="bg-[#1e1e1b] border border-white/7 rounded-xl px-3 py-2.5 text-xs font-mono text-[#c6c9ab] focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] cursor-pointer"
-          >
-            <option value="">Todos los tipos</option>
-            {TYPES.map(t => <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>)}
-          </select>
-
-          <select
-            value={filterEndurance}
-            onChange={e => setFilterEndurance(e.target.value)}
-            className="bg-[#1e1e1b] border border-white/7 rounded-xl px-3 py-2.5 text-xs font-mono text-[#c6c9ab] focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] cursor-pointer"
-          >
-            <option value="">Todos los perfiles de resistencia</option>
-            {ENDURANCE_PROFILES.map(p => <option key={p} value={p}>{ENDURANCE_LABELS[p]}</option>)}
-          </select>
-
-          <select
-            value={filterEquipment}
-            onChange={e => setFilterEquipment(e.target.value)}
-            className="bg-[#1e1e1b] border border-white/7 rounded-xl px-3 py-2.5 text-xs font-mono text-[#c6c9ab] focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] cursor-pointer"
-          >
-            <option value="">Todo el material</option>
-            {EQUIPMENT_OPTIONS.map(e => (
-              <option key={e} value={e}>{e.charAt(0).toUpperCase() + e.slice(1)}</option>
-            ))}
-          </select>
-
-          {hasFilters && (
-            <button
-              onClick={() => { setFilterMuscleGroup(''); setFilterType(''); setFilterEndurance(''); setFilterEquipment(''); setSearch(''); }}
-              className="text-[#c6c9ab] hover:text-white text-xs font-mono flex items-center gap-1 px-3 py-2.5 border border-white/7 rounded-lg hover:border-[#3a3a3a] transition-all"
-            >
-              <span className="material-symbols-outlined text-sm">close</span>
-              Limpiar
-            </button>
-          )}
-        </div>
+        <button
+          onClick={openFilterSheet}
+          aria-label="Filtros"
+          className={`relative flex h-12 w-12 shrink-0 items-center justify-center rounded-control border transition-colors ${
+            filterType || filterEndurance || filterEquipment.length > 0 ? 'bg-accent/14 border-accent-line text-accent' : 'bg-raised border-hairline text-ink-2'
+          }`}
+        >
+          <Icon name="tune" size="m" />
+        </button>
       </div>
 
+      <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+        {MACRO_MUSCLE_GROUPS.map(g => (
+          <Chip key={g} selected={filterMuscleGroups.includes(g)} onClick={() => toggleGroupChip(g)} className="shrink-0">
+            {MACRO_MUSCLE_LABELS[g]}
+          </Chip>
+        ))}
+      </div>
+
+      {hasFilters && (
+        <button
+          onClick={() => { setFilterMuscleGroups([]); setFilterType(''); setFilterEndurance(''); setFilterEquipment([]); setSearch(''); }}
+          className="text-ink-2 hover:text-white text-label font-mono flex items-center gap-1"
+        >
+          <Icon name="close" size="s" />
+          Limpiar filtros
+        </button>
+      )}
+
       {!loading && (
-        <p className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-widest">
+        <p className="font-sans text-caption text-ink-2 uppercase tracking-widest">
           Mostrando {filtered.length} de {exercises.length} ejercicios
-          {filterMuscleGroup && ` · Filtrando por ${MACRO_MUSCLE_LABELS[filterMuscleGroup]}`}
         </p>
       )}
 
@@ -310,50 +315,64 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
           <Skeleton className="h-12 w-full" />
           <Skeleton className="h-12 w-full" />
         </div>
+      ) : exercises.length === 0 ? (
+        // Panel 04 del handoff: biblioteca realmente vacía (no un filtro sin
+        // resultados). En la práctica es rara — el useQuery ya llama a
+        // seedExercisesIfEmpty() al montar — pero si el coach borró los 40
+        // base a mano, esto le deja recuperarlos sin salir de la pantalla.
+        <div className="bg-surface border border-dashed border-hairline rounded-surface p-8 text-center space-y-4">
+          <p className="font-display text-title-l font-black uppercase text-ink">Biblioteca vacía</p>
+          <p className="text-body-s font-sans text-ink-2">Todavía no hay ejercicios en tu biblioteca.</p>
+          <div className="flex flex-col sm:flex-row gap-2 justify-center">
+            <Button onClick={() => seedExercisesIfEmpty().then(() => queryClient.invalidateQueries({ queryKey: exercisesQueryKey }))}>
+              Cargar los 40 base
+            </Button>
+            <Button variant="secondary" onClick={openCreate}>Crear uno desde cero</Button>
+          </div>
+        </div>
       ) : filtered.length === 0 ? (
-        <div className="bg-[#181816] border border-dashed border-white/7 rounded-2xl p-16 text-center">
-          <span className="material-symbols-outlined text-4xl text-[#fbcb1a]/40 block mb-3">fitness_center</span>
-          <p className="text-white font-bold text-sm">Sin resultados</p>
-          <p className="text-[#c6c9ab] text-xs mt-1">
-            {filterMuscleGroup
-              ? `Ningún ejercicio asignado a "${MACRO_MUSCLE_LABELS[filterMuscleGroup]}". Asigna el grupo muscular en el editor.`
-              : 'Ajusta los filtros o añade un nuevo ejercicio.'}
-          </p>
+        <div className="bg-surface border border-dashed border-hairline rounded-surface">
+          <EmptyState
+            icon="fitness_center"
+            title="Sin resultados"
+            description="Ajusta los filtros o añade un nuevo ejercicio."
+          />
         </div>
       ) : (
         <>
           {/* Desktop table */}
-          <div className="hidden md:block bg-[#181816] border border-white/7 rounded-2xl overflow-hidden shadow-md">
+          <div className="hidden md:block bg-surface border border-hairline rounded-surface overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse min-w-[760px]">
                 <thead>
-                  <tr className="bg-[#1e1e1b] border-b border-white/7">
-                    <th className="p-4 pl-6 font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider">Ejercicio</th>
-                    <th className="p-4 font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider">Grupo</th>
-                    <th className="p-4 font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider">Material</th>
-                    <th className="p-4 font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider">Tipo</th>
-                    <th className="p-4 font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider">Perfil</th>
-                    <th className="p-4 font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider">Origen</th>
-                    <th className="p-4 pr-6 font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider text-right">Acciones</th>
+                  <tr className="bg-raised border-b border-hairline">
+                    <th className="p-4 pl-6 font-mono text-caption text-ink-2 uppercase tracking-wider">Ejercicio</th>
+                    <th className="p-4 font-mono text-caption text-ink-2 uppercase tracking-wider">Grupo</th>
+                    <th className="p-4 font-mono text-caption text-ink-2 uppercase tracking-wider">Material</th>
+                    <th className="p-4 font-mono text-caption text-ink-2 uppercase tracking-wider">Tipo</th>
+                    <th className="p-4 font-mono text-caption text-ink-2 uppercase tracking-wider">Perfil (cardio)</th>
+                    <th className="p-4 font-mono text-caption text-ink-2 uppercase tracking-wider">Curva</th>
+                    <th className="p-4 font-mono text-caption text-ink-2 uppercase tracking-wider">Origen</th>
+                    <th className="p-4 pr-6 font-mono text-caption text-ink-2 uppercase tracking-wider text-right">Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filtered.map((ex, i) => (
-                    <tr key={ex.id} className={`border-b border-white/30 hover:bg-[#1e1e1e] transition-colors ${i % 2 === 0 ? '' : 'bg-[#111110]'}`}>
+                    <tr key={ex.id} className={`border-b border-hairline hover:bg-raised transition-colors ${i % 2 === 0 ? '' : 'bg-bg'}`}>
                       <td className="p-4 pl-6">
                         <div className="flex items-center gap-3">
                           {ex.imageUrl ? (
-                            <img src={ex.imageUrl} alt={ex.name} className="w-9 h-9 rounded-lg object-cover border border-white/7 flex-shrink-0" />
+                            <img src={ex.imageUrl} alt={ex.name} className="w-9 h-9 rounded-surface object-cover border border-hairline flex-shrink-0" />
                           ) : (
-                            <div className="w-9 h-9 rounded-lg bg-[#1e1e1e] border border-white/7 flex items-center justify-center flex-shrink-0">
-                              <span className="material-symbols-outlined text-base text-[#c6c9ab]">fitness_center</span>
+                            <div className="w-9 h-9 rounded-surface bg-raised border border-hairline flex items-center justify-center flex-shrink-0">
+                              <span className="material-symbols-outlined text-title-s text-ink-2">fitness_center</span>
                             </div>
                           )}
                           <div>
-                            <span className="font-sans font-bold text-sm text-white block">{ex.name}</span>
+                            <span className="font-sans font-bold text-body-s text-white block">{ex.name}</span>
                             {ex.videoUrl && (
-                              <a href={ex.videoUrl} target="_blank" rel="noopener noreferrer" className="text-[9px] font-mono text-[#00eefc]/70 hover:text-[#00eefc] flex items-center gap-0.5 transition-colors">
-                                <span className="material-symbols-outlined text-[10px]">play_circle</span>
+                              <a href={ex.videoUrl} target="_blank" rel="noopener noreferrer" className="text-caption font-sans text-data/70 hover:text-data flex items-center transition-colors">
+                                <span className="material-symbols-outlined text-caption">play_circle</span>
                                 Ver video
                               </a>
                             )}
@@ -361,41 +380,48 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                         </div>
                       </td>
                       <td className="p-4">
-                        <div className="space-y-0.5">
+                        <div className="">
                           {ex.muscleGroup ? (
-                            <span className="inline-flex items-center gap-1 font-mono text-xs text-[#fbcb1a] bg-[#fbcb1a]/8 border border-[#fbcb1a]/20 px-1.5 py-0.5 rounded">
-                              <span className="material-symbols-outlined text-[10px]">link</span>
+                            <span className="inline-flex items-center gap-1 font-mono text-label text-accent bg-accent/8 border border-accent/20 px-2 rounded-control">
+                              <span className="material-symbols-outlined text-caption">link</span>
                               {MACRO_MUSCLE_LABELS[ex.muscleGroup]}
                             </span>
                           ) : (
-                            <span className="font-mono text-xs text-[#c6c9ab]">{ex.primaryFocus}</span>
+                            <span className="font-mono text-label text-ink-2">{ex.primaryFocus}</span>
                           )}
                         </div>
                       </td>
                       <td className="p-4">
                         <div className="flex flex-wrap gap-1">
                           {(ex.equipment ?? []).length === 0 ? (
-                            <span className="font-mono text-[9px] text-[#333]">—</span>
+                            <span className="font-mono text-caption text-ink-3">—</span>
                           ) : (ex.equipment!).map(eq => (
-                            <span key={eq} className="font-mono text-[9px] bg-[#1c1b1b] border border-white/7 text-[#c6c9ab] px-1.5 py-0.5 rounded capitalize">{eq}</span>
+                            <span key={eq} className="font-mono text-caption bg-raised border border-hairline text-ink-2 px-2 rounded-control capitalize">{eq}</span>
                           ))}
                         </div>
                       </td>
                       <td className="p-4">
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold capitalize ${TYPE_STYLES[ex.type]}`}>{ex.type}</span>
+                        <span className={`px-2 rounded-control text-caption font-sans font-bold capitalize ${TYPE_STYLES[ex.type]}`}>{ex.type}</span>
                       </td>
                       <td className="p-4">
                         {ex.enduranceProfile ? (
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold ${ENDURANCE_STYLES[ex.enduranceProfile]}`}>{ENDURANCE_LABELS[ex.enduranceProfile]}</span>
+                          <span className={`px-2 rounded-control text-caption font-sans font-bold ${ENDURANCE_STYLES[ex.enduranceProfile]}`}>{ENDURANCE_LABELS[ex.enduranceProfile]}</span>
                         ) : (
-                          <span className="font-mono text-[9px] text-[#333]">—</span>
+                          <span className="font-mono text-caption text-ink-3">—</span>
+                        )}
+                      </td>
+                      <td className="p-4">
+                        {ex.strengthCurve ? (
+                          <span className={`px-2 rounded-control text-caption font-sans font-bold ${STRENGTH_CURVE_STYLES[ex.strengthCurve]}`}>{STRENGTH_CURVE_LABELS[ex.strengthCurve]}</span>
+                        ) : (
+                          <span className="font-mono text-caption text-ink-3">—</span>
                         )}
                       </td>
                       <td className="p-4">
                         {ex.isCustom ? (
-                          <span className="text-[9px] font-mono bg-violet-500/10 text-violet-300 border border-violet-500/20 px-2 py-0.5 rounded uppercase">Personalizado</span>
+                          <span className="text-caption font-mono bg-violet-500/10 text-violet-300 border border-violet-500/20 px-2 rounded-control uppercase">Personalizado</span>
                         ) : (
-                          <span className="text-[9px] font-mono text-[#c6c9ab]/60 uppercase">Sistema</span>
+                          <span className="text-caption font-mono text-ink-2/60 uppercase">Sistema</span>
                         )}
                       </td>
                       <td className="p-4 pr-6 text-right">
@@ -403,21 +429,21 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                           <div className="flex items-center gap-2 justify-end">
                             <button
                               onClick={() => openEdit(ex)}
-                              className="text-[#c6c9ab] hover:text-[#fbcb1a] p-1.5 rounded hover:bg-[#fbcb1a]/10 transition-all"
+                              className="text-ink-2 hover:text-accent p-2 rounded-control hover:bg-accent/10 transition-all"
                               title="Editar"
                             >
-                              <span className="material-symbols-outlined text-sm">edit</span>
+                              <span className="material-symbols-outlined text-body-s">edit</span>
                             </button>
                             <button
                               onClick={() => setDeleteConfirm(ex.id)}
-                              className="text-[#c6c9ab] hover:text-red-400 p-1.5 rounded hover:bg-red-500/10 transition-all"
+                              className="text-ink-2 hover:text-red-400 p-2 rounded-control hover:bg-red-500/10 transition-all"
                               title="Eliminar"
                             >
-                              <span className="material-symbols-outlined text-sm">delete</span>
+                              <span className="material-symbols-outlined text-body-s">delete</span>
                             </button>
                           </div>
                         ) : (
-                          <span className="text-[#2a2a2a] font-mono text-[10px] uppercase">—</span>
+                          <span className="text-ink-3 font-mono text-caption uppercase">—</span>
                         )}
                       </td>
                     </tr>
@@ -427,167 +453,185 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
             </div>
           </div>
 
-          {/* Mobile cards */}
-          <div className="md:hidden space-y-3">
+          {/* Mobile cards — panel 01 del handoff: fila de 64px miniatura +
+              nombre + chip de grupo (oro 13%) + chip de equipamiento (blanco
+              5%) + chevron al 30%. La marca "SIN VÍDEO" reemplaza al enlace
+              "Ver vídeo" cuando no hay uno: la ficha con reproductor propio
+              es F3.13 (lado atleta), aquí el catálogo del coach solo informa. */}
+          <div className="md:hidden space-y-2">
             {filtered.map(ex => (
-              <div key={ex.id} className="bg-[#181816] border border-white/7 rounded-2xl p-4 space-y-3">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    {ex.imageUrl ? (
-                      <img src={ex.imageUrl} alt={ex.name} className="w-10 h-10 rounded-lg object-cover border border-white/7 flex-shrink-0" />
-                    ) : (
-                      <div className="w-10 h-10 rounded-lg bg-[#1e1e1e] border border-white/7 flex items-center justify-center flex-shrink-0">
-                        <span className="material-symbols-outlined text-base text-[#c6c9ab]">fitness_center</span>
-                      </div>
-                    )}
-                    <div>
-                      <p className="font-sans font-bold text-sm text-white">{ex.name}</p>
-                      <p className="font-mono text-[10px] text-[#c6c9ab]">{muscleLabel(ex)}</p>
-                      {ex.muscleGroup && (
-                        <span className="inline-flex items-center gap-0.5 text-[9px] font-mono text-[#fbcb1a]/80">
-                          <span className="material-symbols-outlined text-[9px]">link</span>
-                          Macro
-                        </span>
-                      )}
-                    </div>
+              <div key={ex.id} className="flex items-center gap-3 bg-surface border border-hairline rounded-surface p-3">
+                <div className="relative w-16 h-16 rounded-surface bg-raised border border-hairline flex items-center justify-center flex-shrink-0 overflow-hidden">
+                  {ex.imageUrl ? (
+                    <img src={ex.imageUrl} alt={ex.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <Icon name="fitness_center" size="l" className="text-ink-2" />
+                  )}
+                  {!ex.videoUrl && (
+                    <span className="absolute bottom-0 inset-x-0 bg-black/70 text-center text-[7px] font-mono uppercase tracking-wider text-ink-2 py-1">Sin vídeo</span>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-sans font-bold text-body-s text-white truncate">{ex.name}</p>
+                  <div className="flex items-center gap-2 flex-wrap mt-1">
+                    <span className="font-mono text-caption text-accent bg-accent/13 px-2 py-1 rounded-chip">{muscleLabel(ex)}</span>
+                    {(ex.equipment ?? []).slice(0, 2).map(eq => (
+                      <span key={eq} className="font-mono text-caption text-ink-2 bg-white/5 px-2 py-1 rounded-chip capitalize">{eq}</span>
+                    ))}
                   </div>
-                  {canEdit(ex) && (
-                    <div className="flex items-center gap-1 flex-shrink-0">
-                      <button onClick={() => openEdit(ex)} className="text-[#c6c9ab] hover:text-[#fbcb1a] p-1.5 rounded transition-all">
-                        <span className="material-symbols-outlined text-sm">edit</span>
-                      </button>
-                      <button onClick={() => setDeleteConfirm(ex.id)} className="text-[#c6c9ab] hover:text-red-400 p-1.5 rounded transition-all">
-                        <span className="material-symbols-outlined text-sm">delete</span>
-                      </button>
-                    </div>
-                  )}
                 </div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold capitalize ${TYPE_STYLES[ex.type]}`}>{ex.type}</span>
-                  {ex.enduranceProfile && (
-                    <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold ${ENDURANCE_STYLES[ex.enduranceProfile]}`}>{ENDURANCE_LABELS[ex.enduranceProfile]}</span>
-                  )}
-                  {(ex.equipment ?? []).map(eq => (
-                    <span key={eq} className="font-mono text-[9px] bg-[#1c1b1b] border border-white/7 text-[#c6c9ab] px-1.5 py-0.5 rounded capitalize">{eq}</span>
-                  ))}
-                  {ex.videoUrl && (
-                    <a href={ex.videoUrl} target="_blank" rel="noopener noreferrer" className="text-[10px] font-mono text-[#00eefc]/70 flex items-center gap-0.5">
-                      <span className="material-symbols-outlined text-xs">play_circle</span>
-                      Video
-                    </a>
-                  )}
-                </div>
+                {canEdit(ex) ? (
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    <button onClick={() => openEdit(ex)} aria-label="Editar" className="text-ink-2 hover:text-accent p-2 rounded-control transition-all">
+                      <Icon name="edit" size="s" />
+                    </button>
+                    <button onClick={() => setDeleteConfirm(ex.id)} aria-label="Eliminar" className="text-ink-2 hover:text-danger p-2 rounded-control transition-all">
+                      <Icon name="delete" size="s" />
+                    </button>
+                  </div>
+                ) : (
+                  <Icon name="chevron_right" size="m" className="text-ink-2/30 flex-shrink-0" />
+                )}
               </div>
             ))}
           </div>
         </>
       )}
 
-      {/* DELETE CONFIRM MODAL */}
-      {deleteConfirm && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#1e1e1b] border border-red-500/30 rounded-2xl p-6 max-w-sm w-full space-y-4 shadow-2xl">
-            <div className="flex items-center gap-3">
-              <span className="material-symbols-outlined text-red-400 text-2xl">warning</span>
-              <h3 className="font-sans font-bold text-white text-lg">¿Eliminar ejercicio?</h3>
-            </div>
-            <p className="text-sm text-[#c6c9ab]">Esta acción no se puede deshacer. El ejercicio se eliminará de la biblioteca.</p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setDeleteConfirm(null)}
-                className="flex-1 py-2.5 border border-white/7 text-[#c6c9ab] hover:text-white font-mono text-xs uppercase rounded-lg transition-all"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={() => handleDelete(deleteConfirm)}
-                className="flex-1 py-2.5 bg-red-500/80 hover:bg-red-500 text-white font-sans font-bold text-xs uppercase rounded-lg transition-all"
-              >
-                Eliminar
-              </button>
-            </div>
+      {/* HOJA DE FILTROS — panel 05: 14 grupos + equipamiento en chips
+          multi-selección, "Limpiar" arriba, primario con el recuento. */}
+      <Sheet
+        open={showFilterSheet}
+        onClose={() => setShowFilterSheet(false)}
+        title="Filtros"
+        footer={<Button onClick={applyFilterSheet} fullWidth size="l">Ver {draftCount} ejercicios</Button>}
+      >
+        <div className="space-y-5">
+          <div className="flex items-center justify-between">
+            <p className="text-caption font-mono uppercase text-ink-2">Grupo muscular</p>
+            {(draftGroups.length > 0 || draftEquipment.length > 0) && (
+              <button onClick={() => { setDraftGroups([]); setDraftEquipment([]); }} className="text-caption font-mono uppercase text-accent">Limpiar</button>
+            )}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {MACRO_MUSCLE_GROUPS.map(g => (
+              <Chip key={g} selected={draftGroups.includes(g)} onClick={() => toggleDraftGroup(g)}>{MACRO_MUSCLE_LABELS[g]}</Chip>
+            ))}
+          </div>
+
+          <p className="text-caption font-mono uppercase text-ink-2">Equipamiento</p>
+          <div className="flex flex-wrap gap-2">
+            {EQUIPMENT_OPTIONS.map(eq => (
+              <Chip key={eq} selected={draftEquipment.includes(eq)} onClick={() => toggleDraftEquipment(eq)} className="capitalize">{eq}</Chip>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <Select
+              label="Tipo"
+              value={filterType}
+              onChange={v => setFilterType(v)}
+              placeholder="Todos"
+              options={TYPES.map(t => ({ value: t, label: t.charAt(0).toUpperCase() + t.slice(1) }))}
+            />
+            <Select
+              label="Perfil de resistencia"
+              value={filterEndurance}
+              onChange={v => setFilterEndurance(v)}
+              placeholder="Todos"
+              options={ENDURANCE_PROFILES.map(p => ({ value: p, label: ENDURANCE_LABELS[p] }))}
+            />
           </div>
         </div>
+      </Sheet>
+
+      {/* DELETE CONFIRM MODAL */}
+      {deleteConfirm && (
+        <Dialog
+          open
+          onClose={() => setDeleteConfirm(null)}
+          title="¿Eliminar ejercicio?"
+          size="s"
+          footer={(
+            <>
+              <Button variant="secondary" onClick={() => setDeleteConfirm(null)} className="flex-1">
+                Cancelar
+              </Button>
+              <Button variant="danger" onClick={() => handleDelete(deleteConfirm)} className="flex-1">
+                Eliminar
+              </Button>
+            </>
+          )}
+        >
+          <p className="text-body-s text-ink-2 flex items-start gap-3">
+            <Icon name="warning" size="l" className="text-danger shrink-0" />
+            Esta acción no se puede deshacer. El ejercicio se eliminará de la biblioteca.
+          </p>
+        </Dialog>
       )}
 
       {/* CREATE / EDIT FORM MODAL */}
       {showForm && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#1e1e1b] border border-white/7 rounded-2xl p-6 max-w-lg w-full shadow-2xl max-h-[90vh] overflow-y-auto space-y-5">
-            <div className="flex items-center justify-between">
-              <h2 className="font-sans font-black text-xl text-white uppercase tracking-tight">
-                {editingId ? 'Editar ejercicio' : 'Nuevo ejercicio'}
-              </h2>
-              <button onClick={() => setShowForm(false)} className="text-[#c6c9ab] hover:text-white p-1 rounded transition-colors">
-                <span className="material-symbols-outlined">close</span>
-              </button>
-            </div>
-
+        <Dialog
+          open
+          onClose={() => setShowForm(false)}
+          title={editingId ? 'Editar ejercicio' : 'Nuevo ejercicio'}
+          size="l"
+        >
             <form onSubmit={handleSave} className="space-y-4">
-              {/* Name */}
-              <div>
-                <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-1.5">Nombre *</label>
-                <input
-                  type="text"
-                  required
-                  value={form.name}
-                  onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                  placeholder="ej. Press inclinado con mancuernas"
-                  className="w-full bg-[#181816] border border-white/7 rounded-lg px-4 py-3 text-sm text-white placeholder-[#c6c9ab]/40 focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] transition-all"
-                />
-              </div>
+              <Input
+                label="Nombre"
+                required
+                value={form.name}
+                onChange={v => setForm(f => ({ ...f, name: v }))}
+                placeholder="ej. Press inclinado con mancuernas"
+              />
 
               {/* Grupo muscular — the 14 typed keys */}
-              <div>
-                <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-1.5">
-                  Grupo muscular
-                  <span className="ml-2 text-[#555] normal-case font-sans text-[9px]">(vincula con el plan de volumen)</span>
-                </label>
-                <select
-                  value={form.muscleGroup ?? ''}
-                  onChange={e => setForm(f => ({
-                    ...f,
-                    muscleGroup: (e.target.value as MuscleGroup) || undefined,
-                  }))}
-                  className="w-full bg-[#181816] border border-white/7 rounded-lg px-3 py-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] cursor-pointer"
-                >
-                  <option value="">— Sin asignar —</option>
-                  {MACRO_MUSCLE_GROUPS.map(g => (
-                    <option key={g} value={g}>{MACRO_MUSCLE_LABELS[g]}</option>
-                  ))}
-                </select>
-              </div>
+              <Select
+                label="Grupo muscular"
+                hint="Vincula con el plan de volumen."
+                value={form.muscleGroup ?? ''}
+                onChange={v => setForm(f => ({ ...f, muscleGroup: (v as MuscleGroup) || undefined }))}
+                placeholder="— Sin asignar —"
+                options={MACRO_MUSCLE_GROUPS.map(g => ({ value: g, label: MACRO_MUSCLE_LABELS[g] }))}
+              />
 
               {/* Type + Endurance profile — 2 cols */}
               <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-1.5">Tipo *</label>
-                  <select
-                    value={form.type}
-                    onChange={e => setForm(f => ({ ...f, type: e.target.value as ExerciseType }))}
-                    className="w-full bg-[#181816] border border-white/7 rounded-lg px-3 py-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] cursor-pointer"
-                  >
-                    {TYPES.map(t => <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-1.5">Perfil de resistencia</label>
-                  <select
-                    value={form.enduranceProfile ?? ''}
-                    onChange={e => setForm(f => ({ ...f, enduranceProfile: (e.target.value as EnduranceProfile) || undefined }))}
-                    className="w-full bg-[#181816] border border-white/7 rounded-lg px-3 py-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] cursor-pointer"
-                  >
-                    <option value="">— Sin asignar —</option>
-                    {ENDURANCE_PROFILES.map(p => <option key={p} value={p}>{ENDURANCE_LABELS[p]}</option>)}
-                  </select>
-                </div>
+                <Select
+                  label="Tipo"
+                  required
+                  value={form.type}
+                  onChange={v => setForm(f => ({ ...f, type: v as ExerciseType }))}
+                  options={TYPES.map(t => ({ value: t, label: t.charAt(0).toUpperCase() + t.slice(1) }))}
+                />
+                <Select
+                  label="Perfil de esfuerzo (cardio)"
+                  value={form.enduranceProfile ?? ''}
+                  onChange={v => setForm(f => ({ ...f, enduranceProfile: (v as EnduranceProfile) || undefined }))}
+                  placeholder="— Sin asignar —"
+                  options={ENDURANCE_PROFILES.map(p => ({ value: p, label: ENDURANCE_LABELS[p] }))}
+                />
               </div>
+
+              {/* Curva de fuerza — dónde carga más el ejercicio dentro de su
+                  rango de movimiento, no confundir con el perfil de esfuerzo
+                  de cardio de arriba (ver comentario en types.ts). */}
+              <Select
+                label="Curva de fuerza"
+                hint="Dónde está el pico de tensión: estirado, en medio, o contraído."
+                value={form.strengthCurve ?? ''}
+                onChange={v => setForm(f => ({ ...f, strengthCurve: (v as StrengthCurve) || undefined }))}
+                placeholder="— Sin asignar —"
+                options={STRENGTH_CURVES.map(c => ({ value: c, label: STRENGTH_CURVE_LABELS[c] }))}
+              />
 
               {/* Equipment multi-select */}
               <div>
-                <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-1.5">
+                <label className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-2">
                   Material necesario
-                  <span className="ml-2 text-[#555] normal-case font-sans text-[9px]">(sin tag = siempre disponible)</span>
+                  <span className="ml-2 text-ink-3 normal-case font-sans text-caption">(sin tag = siempre disponible)</span>
                 </label>
                 <div className="flex flex-wrap gap-2">
                   {EQUIPMENT_OPTIONS.map(eq => {
@@ -602,10 +646,10 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                             ? (f.equipment ?? []).filter(e => e !== eq)
                             : [...(f.equipment ?? []), eq],
                         }))}
-                        className={`px-2.5 py-1 rounded-lg font-mono text-[10px] border capitalize transition-all ${
+                        className={`px-3 py-1 rounded-control font-mono text-caption border capitalize transition-all ${
                           selected
-                            ? 'bg-[#fbcb1a]/15 border-[#fbcb1a]/40 text-[#fbcb1a] font-bold'
-                            : 'bg-[#181816] border-white/7 text-[#c6c9ab] hover:border-[#3a3a3a]'
+                            ? 'bg-accent/15 border-accent/40 text-accent font-bold'
+                            : 'bg-surface border-hairline text-ink-2 hover:border-hairline'
                         }`}
                       >
                         {selected && '✓ '}{eq}
@@ -617,70 +661,60 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
 
               {/* Image URL */}
               <div>
-                <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-1.5">URL de imagen (opcional)</label>
-                <input
+                <Input
+                  label="URL de imagen"
+                  hint="Opcional."
                   type="url"
                   value={form.imageUrl}
-                  onChange={e => setForm(f => ({ ...f, imageUrl: e.target.value }))}
+                  onChange={v => setForm(f => ({ ...f, imageUrl: v }))}
                   placeholder="https://..."
-                  className="w-full bg-[#181816] border border-white/7 rounded-lg px-4 py-3 text-sm text-white placeholder-[#c6c9ab]/40 focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] transition-all"
                 />
               </div>
 
               {/* Video URL */}
               <div>
-                <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-1.5">URL de vídeo YouTube (opcional)</label>
-                <input
+                <Input
+                  label="URL de vídeo YouTube"
+                  hint="Opcional."
                   type="url"
                   value={form.videoUrl}
-                  onChange={e => setForm(f => ({ ...f, videoUrl: e.target.value }))}
+                  onChange={v => setForm(f => ({ ...f, videoUrl: v }))}
                   placeholder="https://youtube.com/..."
-                  className="w-full bg-[#181816] border border-white/7 rounded-lg px-4 py-3 text-sm text-white placeholder-[#c6c9ab]/40 focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] transition-all"
                 />
               </div>
 
               {/* Global description — visible to any athlete */}
               <div>
-                <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-1.5">
+                <label className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-2">
                   Descripción global
-                  <span className="ml-2 text-[#555] normal-case font-sans text-[9px]">(visible para cualquier atleta)</span>
+                  <span className="ml-2 text-ink-3 normal-case font-sans text-caption">(visible para cualquier atleta)</span>
                 </label>
                 <textarea
                   value={form.instructions}
                   onChange={e => setForm(f => ({ ...f, instructions: e.target.value }))}
                   placeholder="ej. Mantén la espalda neutra durante todo el recorrido..."
                   rows={3}
-                  className="w-full bg-[#181816] border border-white/7 rounded-lg px-4 py-3 text-sm text-white placeholder-[#c6c9ab]/40 focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] transition-all resize-none"
+                  className="w-full bg-surface border border-hairline rounded-control px-4 py-3 text-title-s text-white placeholder-ink-2/40 focus:outline-none focus:ring-1 focus:ring-accent transition-all resize-none"
                 />
               </div>
 
-              {/* Actions */}
+              {/* Actions — se quedan DENTRO del <form>: sacarlas al footer de
+                  Dialog dejaría al submit fuera de su formulario. */}
               <div className="flex gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowForm(false)}
-                  className="flex-1 py-3 border border-white/7 text-[#c6c9ab] hover:text-white font-mono text-xs uppercase rounded-xl transition-all"
-                >
+                <Button type="button" variant="secondary" onClick={() => setShowForm(false)} className="flex-1">
                   Cancelar
-                </button>
-                <button
+                </Button>
+                <Button
                   type="submit"
                   disabled={isSaving || !form.name.trim()}
-                  className="flex-1 py-3 bg-[#fbcb1a] text-black font-sans font-bold text-xs uppercase rounded-xl hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-40 flex items-center justify-center gap-2"
+                  loading={isSaving}
+                  className="flex-1"
                 >
-                  {isSaving ? (
-                    <>
-                      <span className="material-symbols-outlined text-sm animate-spin">refresh</span>
-                      Guardando...
-                    </>
-                  ) : (
-                    <>{editingId ? 'Guardar cambios' : 'Crear ejercicio'}</>
-                  )}
-                </button>
+                  {isSaving ? 'Guardando...' : editingId ? 'Guardar cambios' : 'Crear ejercicio'}
+                </Button>
               </div>
             </form>
-          </div>
-        </div>
+        </Dialog>
       )}
     </div>
   );

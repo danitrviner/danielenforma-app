@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   UserProfile, Mesocycle, WorkoutLog, Exercise, OnboardingData,
   WorkoutAssignment, Workout,
 } from '../types';
-import { createWorkoutAssignment, deleteWorkoutAssignment, updateWorkoutLog } from '../dbService';
+import { createWorkoutAssignment, deleteWorkoutAssignment, updateWorkoutLog, updateUserProfile } from '../dbService';
 import { invalidateResource } from '../hooks/useResourceCache';
 import { useToast } from '../hooks/useToast';
 import MesocycleDashboard from './MesocycleDashboard';
 import LoadHistoryPanel from './LoadHistoryPanel';
 import MesocycleManager from './MesocycleManager';
+import { Badge, BadgeTone, Sheet, Button, Icon, Input, Select } from './ui';
 
 const STATUS_LABEL: Record<WorkoutAssignment['status'], string> = {
   pending:   'Pendiente',
@@ -17,11 +19,11 @@ const STATUS_LABEL: Record<WorkoutAssignment['status'], string> = {
   perdido:   'Perdido',
 };
 
-const STATUS_STYLE: Record<WorkoutAssignment['status'], string> = {
-  pending:   'bg-amber-500/10 text-amber-300 border border-amber-500/20',
-  completed: 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20',
-  skipped:   'bg-[#2a2a2a] text-[#c6c9ab] border border-[#3a3a3a]',
-  perdido:   'bg-red-500/10 text-red-300 border border-red-500/20',
+const STATUS_TONE: Record<WorkoutAssignment['status'], BadgeTone> = {
+  pending:   'warning',
+  completed: 'success',
+  skipped:   'neutral',
+  perdido:   'danger',
 };
 
 interface Props {
@@ -43,11 +45,32 @@ export default function ClientWorkoutsPanel({
   onboardingData, assignments, setAssignments, workouts, getWorkout,
 }: Props) {
   const { showToast } = useToast();
+  const queryClient = useQueryClient();
 
   const getExercise = (id: string) => exercises.find(e => e.id === id);
 
   // Lista de entrenamientos asignados plegada por defecto (puede ser muy larga)
   const [assignmentsExpanded, setAssignmentsExpanded] = useState(false);
+
+  // T7.b (18-08): antes la sala de espera se abría sola en cuanto existía
+  // UNA asignación (App.tsx, hasPlan) — Dani no controlaba el momento. Ahora
+  // hace falta este botón, y solo aparece con clientes que NUNCA han tenido
+  // un plan visible: en cuanto se pulsa, desaparece para siempre, aunque se
+  // le monten más mesociclos después.
+  const [publishing, setPublishing] = useState(false);
+  const handlePublishPlan = async () => {
+    setPublishing(true);
+    try {
+      await updateUserProfile(athlete.userId, { planPublishedAt: new Date().toISOString() });
+      queryClient.invalidateQueries({ queryKey: ['userProfiles'] });
+      showToast(`Plan publicado. ${athlete.displayName} ya puede verlo.`, 'success');
+    } catch (err) {
+      console.error('No se pudo publicar el plan:', err);
+      showToast('No se pudo publicar el plan. Inténtalo otra vez.');
+    } finally {
+      setPublishing(false);
+    }
+  };
 
   // Assign modal
   const [showAssignModal, setShowAssignModal] = useState(false);
@@ -84,30 +107,47 @@ export default function ClientWorkoutsPanel({
 
   return (
     <div className="space-y-6">
+      {assignments.length > 0 && !athlete.planPublishedAt && (
+        <div className="bg-accent/10 border border-accent/30 rounded-surface p-4 flex items-center justify-between gap-4 flex-wrap">
+          <div>
+            <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
+              <Icon name="visibility" size="m" className="text-accent" />
+              Plan montado, sin mostrar al atleta
+            </h3>
+            <p className="font-mono text-caption text-ink-3 mt-1">
+              {athlete.displayName} sigue en la sala de espera hasta que pulses este botón.
+            </p>
+          </div>
+          <Button onClick={handlePublishPlan} loading={publishing} icon="visibility" className="shrink-0">
+            Mostrar el plan al atleta
+          </Button>
+        </div>
+      )}
+
       {/* Periodización de entrenamiento — visión analítica */}
       <div>
-        <h2 className="font-sans font-black text-xl tracking-tight text-white uppercase flex items-center gap-2">
-          <span className="material-symbols-outlined text-[#fbcb1a]" style={{ fontVariationSettings: "'FILL' 1" }}>monitoring</span>
+        <h2 className="font-sans font-bold text-title-m tracking-tight text-white uppercase flex items-center gap-2">
+          <span className="material-symbols-outlined text-accent" style={{ fontVariationSettings: "'FILL' 1" }}>monitoring</span>
           Periodización de entrenamiento
         </h2>
-        <p className="font-mono text-xs text-[#c6c9ab] mt-1">Cómo va el ciclo actual antes de tocar la programación.</p>
+        <p className="font-sans text-label text-ink-2 mt-1">Cómo va el ciclo actual antes de tocar la programación.</p>
       </div>
       <MesocycleDashboard mesocycles={mesocycles} athleteEmail={athlete.email} />
       <LoadHistoryPanel logs={athleteLogs} exercises={exercises} athleteId={athlete.email} />
 
       {/* Onboarding exercise reference */}
       {onboardingData && (onboardingData.favoriteExercises.length > 0 || onboardingData.hatedExercises.length > 0 || onboardingData.equipment.length > 0) && (
-        <div className="bg-[#0e0e0e] border border-[#fbcb1a]/15 rounded-xl p-4 space-y-3">
-          <p className="font-mono text-[10px] text-[#fbcb1a] uppercase tracking-wider flex items-center gap-1.5">
-            <span className="material-symbols-outlined text-sm">person_check</span>
+        <div className="bg-bg border border-accent/15 rounded-surface p-4 space-y-3">
+          <p className="font-mono text-caption text-accent uppercase tracking-wider flex items-center gap-2">
+            <span className="material-symbols-outlined text-body-s">person_check</span>
             Preferencias de ejercicio
           </p>
           {onboardingData.favoriteExercises.length > 0 && (
             <div className="space-y-1">
-              <p className="font-mono text-[9px] text-[#c6c9ab] uppercase">Favoritos</p>
-              <div className="flex flex-wrap gap-1.5">
+              <p className="font-mono text-caption text-ink-2 uppercase">Favoritos</p>
+              <div className="flex flex-wrap gap-2">
                 {onboardingData.favoriteExercises.map(e => (
-                  <span key={e} className="bg-[#fbcb1a]/10 border border-[#fbcb1a]/25 text-[#fbcb1a] px-2.5 py-1 rounded-full text-[10px] font-mono font-bold">
+                  <span key={e} className="bg-accent/10 border border-accent/25 text-accent px-3 py-1 rounded-full text-caption font-mono font-bold">
                     {e}
                   </span>
                 ))}
@@ -116,10 +156,10 @@ export default function ClientWorkoutsPanel({
           )}
           {onboardingData.hatedExercises.length > 0 && (
             <div className="space-y-1">
-              <p className="font-mono text-[9px] text-[#c6c9ab] uppercase">Evitar</p>
-              <div className="flex flex-wrap gap-1.5">
+              <p className="font-mono text-caption text-ink-2 uppercase">Evitar</p>
+              <div className="flex flex-wrap gap-2">
                 {onboardingData.hatedExercises.map(e => (
-                  <span key={e} className="bg-red-500/10 border border-red-500/20 text-red-300 px-2.5 py-1 rounded-full text-[10px] font-mono">
+                  <span key={e} className="bg-red-500/10 border border-red-500/20 text-red-300 px-3 py-1 rounded-full text-caption font-mono">
                     {e}
                   </span>
                 ))}
@@ -128,10 +168,10 @@ export default function ClientWorkoutsPanel({
           )}
           {onboardingData.equipment.length > 0 && (
             <div className="space-y-1">
-              <p className="font-mono text-[9px] text-[#c6c9ab] uppercase">Material disponible</p>
-              <div className="flex flex-wrap gap-1.5">
+              <p className="font-mono text-caption text-ink-2 uppercase">Material disponible</p>
+              <div className="flex flex-wrap gap-2">
                 {onboardingData.equipment.map(e => (
-                  <span key={e} className="bg-[#1e1e1b] border border-white/7 text-[#c6c9ab] px-2.5 py-1 rounded-full text-[10px] font-mono">
+                  <span key={e} className="bg-raised border border-hairline text-ink-2 px-3 py-1 rounded-full text-caption font-mono">
                     {e}
                   </span>
                 ))}
@@ -139,8 +179,8 @@ export default function ClientWorkoutsPanel({
             </div>
           )}
           {onboardingData.injuries && (
-            <p className="font-mono text-[10px] text-amber-300 flex items-center gap-1">
-              <span className="material-symbols-outlined text-sm">personal_injury</span>
+            <p className="font-mono text-caption text-amber-300 flex items-center gap-1">
+              <span className="material-symbols-outlined text-body-s">personal_injury</span>
               {onboardingData.injuries}
             </p>
           )}
@@ -154,9 +194,9 @@ export default function ClientWorkoutsPanel({
           .sort((a, b) => b.date.localeCompare(a.date));
         if (logsWithNotes.length === 0) return null;
         return (
-          <div className="bg-[#181816] border border-white/7 rounded-2xl p-5 space-y-3">
-            <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
-              <span className="material-symbols-outlined text-amber-300 text-base">sticky_note_2</span>
+          <div className="bg-surface border border-hairline rounded-surface p-5 space-y-3">
+            <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
+              <span className="material-symbols-outlined text-amber-300 text-title-s">sticky_note_2</span>
               Notas del atleta
             </h3>
             {logsWithNotes.map(log => {
@@ -165,29 +205,29 @@ export default function ClientWorkoutsPanel({
               return (
                 <div
                   key={log.id}
-                  className={`border rounded-lg p-3.5 space-y-2 ${unseen ? 'bg-amber-500/5 border-amber-500/25' : 'bg-[#1e1e1e] border-white/7'}`}
+                  className={`border rounded-surface p-4 space-y-2 ${unseen ? 'bg-amber-500/5 border-amber-500/25' : 'bg-raised border-hairline'}`}
                 >
                   <div className="flex items-center justify-between">
-                    <p className="font-sans text-xs font-bold text-white">{wo?.name || 'Rutina'} · {log.date}</p>
+                    <p className="font-sans text-label font-bold text-white">{wo?.name || 'Rutina'} · {log.date}</p>
                     {unseen && (
                       <button
                         onClick={() => {
                           updateWorkoutLog(log.id, { noteCoachSeen: true }).catch(console.error);
                           setAthleteLogs(prev => prev.map(l => l.id === log.id ? { ...l, noteCoachSeen: true } : l));
                         }}
-                        className="flex-shrink-0 flex items-center gap-1 text-[9px] font-sans font-bold uppercase text-amber-300 hover:text-amber-200 transition-colors border border-amber-500/30 px-2 py-1 rounded-lg"
+                        className="flex-shrink-0 flex items-center gap-1 text-caption font-sans font-bold uppercase text-amber-300 hover:text-amber-200 transition-colors border border-amber-500/30 px-2 py-1 rounded-control"
                       >
-                        <span className="material-symbols-outlined text-xs">visibility</span>
+                        <span className="material-symbols-outlined text-label">visibility</span>
                         Marcar visto
                       </button>
                     )}
                   </div>
                   {log.note && (
-                    <p className="text-xs text-[#c6c9ab] italic">"{log.note}"</p>
+                    <p className="text-label text-ink-2 italic">"{log.note}"</p>
                   )}
                   {log.entries.filter(e => e.note).map(e => (
-                    <p key={e.exerciseId} className="text-xs text-[#c6c9ab]">
-                      <span className="font-mono text-[10px] text-[#fbcb1a]">{getExercise(e.exerciseId)?.name || e.exerciseId}:</span> "{e.note}"
+                    <p key={e.exerciseId} className="text-label text-ink-2">
+                      <span className="font-sans text-caption text-accent">{getExercise(e.exerciseId)?.name || e.exerciseId}:</span> "{e.note}"
                     </p>
                   ))}
                 </div>
@@ -199,23 +239,23 @@ export default function ClientWorkoutsPanel({
 
       {/* Workout assignments — plegado por defecto: la lista puede ser larga
           y lo habitual es venir a asignar, no a repasarla entera */}
-      <div className="bg-[#181816] border border-white/7 rounded-2xl p-5 space-y-4">
+      <div className="bg-surface border border-hairline rounded-surface p-5 space-y-4">
         <div className="flex items-center justify-between">
           <button
             onClick={() => setAssignmentsExpanded(e => !e)}
             className="flex items-center gap-2 text-left group"
           >
-            <span className="material-symbols-outlined text-[#fbcb1a] text-sm">fitness_center</span>
-            <h3 className="font-sans font-bold text-base text-white group-hover:text-[#fbcb1a] transition-colors">
+            <span className="material-symbols-outlined text-accent text-body-s">fitness_center</span>
+            <h3 className="font-sans font-bold text-title-s text-white group-hover:text-accent transition-colors">
               Entrenamientos asignados
             </h3>
             {assignments.length > 0 && (
-              <span className="font-mono text-[10px] text-[#c6c9ab] bg-white/5 border border-white/10 rounded-full px-2 py-0.5">
+              <span className="font-mono text-caption text-ink-2 bg-white/5 border border-hairline rounded-full px-2 ">
                 {assignments.length}
               </span>
             )}
             <span
-              className="material-symbols-outlined text-[#c6c9ab] text-base transition-transform"
+              className="material-symbols-outlined text-ink-2 text-title-s transition-transform"
               style={{ transform: assignmentsExpanded ? 'rotate(180deg)' : 'none' }}
             >
               expand_more
@@ -223,41 +263,39 @@ export default function ClientWorkoutsPanel({
           </button>
           <button
             onClick={() => { setAssignWorkoutId(workouts[0]?.id || ''); setAssignDate(new Date().toISOString().split('T')[0]); setShowAssignModal(true); }}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#fbcb1a]/10 border border-[#fbcb1a]/30 text-[#fbcb1a] hover:bg-[#fbcb1a]/20 font-mono text-[10px] uppercase rounded-lg transition-all"
+            className="flex items-center gap-2 px-3 py-2 bg-accent/10 border border-accent/30 text-accent hover:bg-accent/20 font-mono text-caption uppercase rounded-control transition-all"
           >
-            <span className="material-symbols-outlined text-sm">add</span>
+            <span className="material-symbols-outlined text-body-s">add</span>
             Asignar
           </button>
         </div>
         {assignments.length === 0 ? (
           <div className="py-6 text-center">
-            <span className="material-symbols-outlined text-2xl text-[#2a2a2a] block mb-2">calendar_today</span>
-            <p className="text-xs text-[#c6c9ab]">Sin entrenamientos asignados todavía.</p>
+            <span className="material-symbols-outlined text-title-l text-ink-3 block mb-2">calendar_today</span>
+            <p className="text-label text-ink-2">Sin entrenamientos asignados todavía.</p>
           </div>
         ) : !assignmentsExpanded ? null : (
           <div className="space-y-2">
             {[...assignments].sort((a, b) => a.date.localeCompare(b.date)).map(a => {
               const wo = workouts.find(w => w.id === a.workoutId);
               return (
-                <div key={a.id} className="flex items-center justify-between gap-3 p-3 bg-[#181816] border border-white/50 rounded-lg">
+                <div key={a.id} className="flex items-center justify-between gap-3 p-3 bg-surface border border-hairline rounded-surface">
                   <div className="flex items-center gap-3 min-w-0">
-                    <span className="material-symbols-outlined text-base text-[#c6c9ab] flex-shrink-0">event</span>
+                    <span className="material-symbols-outlined text-title-s text-ink-2 flex-shrink-0">event</span>
                     <div className="min-w-0">
-                      <p className="font-sans font-bold text-sm text-white truncate flex items-center gap-1.5">
-                        {wo?.name || <span className="italic text-[#c6c9ab]">Rutina eliminada</span>}
+                      <p className="font-sans font-bold text-body-s text-white truncate flex items-center gap-2">
+                        {wo?.name || <span className="italic text-ink-2">Rutina eliminada</span>}
                         {wo?.exercises.some(e => e.recordVideoSet) && (
-                          <span className="material-symbols-outlined text-[#fbcb1a] text-sm flex-shrink-0" title="Esta rutina pide grabar vídeo">videocam</span>
+                          <span className="material-symbols-outlined text-accent text-body-s flex-shrink-0" title="Esta rutina pide grabar vídeo">videocam</span>
                         )}
                       </p>
-                      <p className="font-mono text-[10px] text-[#c6c9ab]">{a.date}{wo ? ` · ${wo.exercises.length} ejercicios` : ''}</p>
+                      <p className="font-mono text-caption text-ink-2">{a.date}{wo ? ` · ${wo.exercises.length} ejercicios` : ''}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
-                    <span className={`text-[9px] font-sans font-bold uppercase px-2 py-0.5 rounded-lg ${STATUS_STYLE[a.status]}`}>
-                      {STATUS_LABEL[a.status]}
-                    </span>
-                    <button onClick={() => handleDeleteAssignment(a.id)} className="text-[#c6c9ab] hover:text-red-400 p-1 rounded transition-colors" title="Eliminar">
-                      <span className="material-symbols-outlined text-sm">delete</span>
+                    <Badge tone={STATUS_TONE[a.status]}>{STATUS_LABEL[a.status]}</Badge>
+                    <button onClick={() => handleDeleteAssignment(a.id)} className="text-ink-2 hover:text-red-400 p-1 rounded-control transition-colors" title="Eliminar">
+                      <span className="material-symbols-outlined text-body-s">delete</span>
                     </button>
                   </div>
                 </div>
@@ -276,61 +314,55 @@ export default function ClientWorkoutsPanel({
 
       {/* ── Assign modal ──────────────────────────────────────────────────── */}
       {showAssignModal && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-end sm:items-center sm:p-4">
-          <div className="bg-[#1e1e1b] border border-white/7 rounded-t-2xl sm:rounded-2xl p-6 w-full sm:max-w-md shadow-2xl space-y-5 pb-[calc(1.5rem+env(safe-area-inset-bottom))] sm:pb-6">
-            <div className="flex items-center justify-between">
-              <h2 className="font-sans font-black text-xl text-white uppercase tracking-tight">Asignar entrenamiento</h2>
-              <button onClick={() => setShowAssignModal(false)} className="text-[#c6c9ab] hover:text-white transition-colors">
-                <span className="material-symbols-outlined">close</span>
-              </button>
-            </div>
-            <p className="text-xs text-[#c6c9ab] font-mono flex items-center gap-1.5">
-              <span className="material-symbols-outlined text-sm text-[#fbcb1a]">person</span>
-              Atleta: <strong className="text-white">{athlete.displayName}</strong>
-            </p>
-            <div>
-              <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-1.5">Rutina *</label>
-              {workouts.length === 0 ? (
-                <p className="text-xs text-[#c6c9ab] font-mono italic">No hay rutinas disponibles.</p>
-              ) : (
-                <select
-                  value={assignWorkoutId}
-                  onChange={e => setAssignWorkoutId(e.target.value)}
-                  className="w-full bg-[#181816] border border-white/7 rounded-lg px-3 py-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] cursor-pointer"
-                >
-                  {workouts.map(w => (
-                    <option key={w.id} value={w.id}>{w.name} ({w.exercises.length} ej.)</option>
-                  ))}
-                </select>
-              )}
-            </div>
-            <div>
-              <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-1.5">Fecha *</label>
-              <input
-                type="date"
-                value={assignDate}
-                onChange={e => setAssignDate(e.target.value)}
-                className="w-full bg-[#181816] border border-white/7 rounded-lg px-3 py-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#fbcb1a]"
-              />
-            </div>
-            <div className="flex gap-3 pt-1">
-              <button onClick={() => setShowAssignModal(false)} className="flex-1 py-3 border border-white/7 text-[#c6c9ab] hover:text-white font-mono text-xs uppercase rounded-xl transition-all">
+        <Sheet
+          open
+          onClose={() => setShowAssignModal(false)}
+          title="Asignar entrenamiento"
+          footer={(
+            <>
+              <Button variant="secondary" onClick={() => setShowAssignModal(false)} fullWidth>
                 Cancelar
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={handleCreateAssignment}
                 disabled={isAssigning || !assignWorkoutId || !assignDate || workouts.length === 0}
-                className="flex-1 py-3 bg-[#fbcb1a] text-black font-sans font-bold text-xs uppercase rounded-xl hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-40 flex items-center justify-center gap-2"
+                loading={isAssigning}
+                icon="event_available"
+                fullWidth
               >
-                {isAssigning ? (
-                  <><span className="material-symbols-outlined text-sm animate-spin">refresh</span>Asignando...</>
-                ) : (
-                  <><span className="material-symbols-outlined text-sm">event_available</span>Confirmar</>
-                )}
-              </button>
-            </div>
+                {isAssigning ? 'Asignando...' : 'Confirmar'}
+              </Button>
+            </>
+          )}
+        >
+          <div className="space-y-5">
+            <p className="text-label text-ink-2 font-mono flex items-center gap-2">
+              <Icon name="person" size="s" className="text-accent" />
+              Atleta: <strong className="text-white">{athlete.displayName}</strong>
+            </p>
+            {workouts.length === 0 ? (
+              <div>
+                <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-2">Rutina *</label>
+                <p className="text-label text-ink-2 font-sans italic">No hay rutinas disponibles.</p>
+              </div>
+            ) : (
+              <Select
+                label="Rutina"
+                required
+                value={assignWorkoutId}
+                onChange={setAssignWorkoutId}
+                options={workouts.map(w => ({ value: w.id, label: `${w.name} (${w.exercises.length} ej.)` }))}
+              />
+            )}
+            <Input
+              label="Fecha"
+              required
+              type="date"
+              value={assignDate}
+              onChange={setAssignDate}
+            />
           </div>
-        </div>
+        </Sheet>
       )}
     </div>
   );

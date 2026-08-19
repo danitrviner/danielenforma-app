@@ -12,9 +12,10 @@ import {
 } from '../dbService';
 import { computeSetupChecklist, SetupItem, SetupPhaseId } from '../utils/clientSetup';
 import { isoWeekKey } from '../utils/challengeOptions';
-import ProgressRing from './ProgressRing';
-import Skeleton from './Skeleton';
-import { HubTab, AnalisisTab } from './ClientHub';
+import { HubTab } from './ClientHub';
+import { useToast } from '../hooks/useToast';
+import { mensajeDeErrorFirestore } from '../utils/erroresFirestore';
+import { Icon, Button, ListRow, RingSeal, Skeleton } from './ui';
 
 interface Props {
   athlete: UserProfile;
@@ -30,7 +31,6 @@ interface Props {
   photos: ProgressPhoto[];
   workoutLogs: WorkoutLog[];
   onGoToTab: (tab: HubTab) => void;
-  onGoToAnalisis: (sub: AnalisisTab) => void;
 }
 
 const STATUS_ICON: Record<SetupItem['status'], string> = {
@@ -40,10 +40,10 @@ const STATUS_ICON: Record<SetupItem['status'], string> = {
   na: 'remove',
 };
 const STATUS_COLOR: Record<SetupItem['status'], string> = {
-  done: 'text-emerald-400',
-  attention: 'text-orange-400',
-  pending: 'text-[#c6c9ab]',
-  na: 'text-[#4a4a4a]',
+  done: 'text-success',
+  attention: 'text-warning',
+  pending: 'text-ink-2',
+  na: 'text-ink-3',
 };
 
 function todayISO(): string {
@@ -53,9 +53,10 @@ function todayISO(): string {
 export default function ClientSetupPanel({
   athlete, checkins, onboarding, mesocycles, workoutAssignments, diets,
   dietConfig, nutritionConfig, qAssignments, photoAssignments, photos,
-  workoutLogs, onGoToTab, onGoToAnalisis,
+  workoutLogs, onGoToTab,
 }: Props) {
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
   const weekKey = isoWeekKey(todayISO());
   const coachClientTasksKey = ['coachClientTasks', athlete.email] as const;
 
@@ -115,12 +116,17 @@ export default function ClientSetupPanel({
 
   const goToItem = (item: SetupItem) => {
     if (!item.link) return;
-    if (item.link.analisisSub) onGoToAnalisis(item.link.analisisSub);
     onGoToTab(item.link.tab);
   };
 
+  // Optimista en las cuatro (toggleManual/handleAddExtra/toggleExtra/removeExtra):
+  // la casilla o la fila cambian al instante. Si la escritura falla de verdad
+  // (permiso denegado — ya no se lo traga en silencio, ver
+  // escriturasHonestas.test.ts) hay que deshacer el optimismo y avisar, si no
+  // la pantalla del coach dice una cosa y Firestore otra.
   const toggleManual = async (item: SetupItem) => {
     const nextDone = item.status !== 'done';
+    const previo = queryClient.getQueryData<CoachClientTask[]>(coachClientTasksKey);
     queryClient.setQueryData<CoachClientTask[]>(coachClientTasksKey, prev => {
       const list = prev ?? [];
       const existing = list.find(t => t.itemId === item.id);
@@ -132,7 +138,11 @@ export default function ClientSetupPanel({
     });
     try {
       await setSeededTaskDone(athlete.email, item.id, item.title, item.phase, nextDone);
-    } catch (err) { console.error(err); }
+    } catch (err) {
+      console.error(err);
+      queryClient.setQueryData(coachClientTasksKey, previo);
+      showToast(mensajeDeErrorFirestore(err, 'marcar la tarea'));
+    }
   };
 
   const extraTasks = manualTasks.filter(t => t.createdBy === 'coach');
@@ -151,6 +161,7 @@ export default function ClientSetupPanel({
       setShowExtraForm(false);
     } catch (err) {
       console.error(err);
+      showToast(mensajeDeErrorFirestore(err, 'añadir la tarea'));
     } finally {
       setSavingExtra(false);
     }
@@ -158,22 +169,36 @@ export default function ClientSetupPanel({
 
   const toggleExtra = async (task: CoachClientTask) => {
     const done = !task.done;
+    const previo = queryClient.getQueryData<CoachClientTask[]>(coachClientTasksKey);
     queryClient.setQueryData<CoachClientTask[]>(coachClientTasksKey, prev =>
       prev?.map(t => t.id === task.id ? { ...t, done } : t));
-    try { await updateCoachClientTask(task.id, { done, doneAt: done ? new Date().toISOString() : undefined }); } catch (err) { console.error(err); }
+    try {
+      await updateCoachClientTask(task.id, { done, doneAt: done ? new Date().toISOString() : undefined });
+    } catch (err) {
+      console.error(err);
+      queryClient.setQueryData(coachClientTasksKey, previo);
+      showToast(mensajeDeErrorFirestore(err, 'marcar la tarea'));
+    }
   };
 
   const removeExtra = async (task: CoachClientTask) => {
+    const previo = queryClient.getQueryData<CoachClientTask[]>(coachClientTasksKey);
     queryClient.setQueryData<CoachClientTask[]>(coachClientTasksKey, prev => prev?.filter(t => t.id !== task.id));
-    try { await deleteCoachClientTask(task.id); } catch (err) { console.error(err); }
+    try {
+      await deleteCoachClientTask(task.id);
+    } catch (err) {
+      console.error(err);
+      queryClient.setQueryData(coachClientTasksKey, previo);
+      showToast(mensajeDeErrorFirestore(err, 'eliminar la tarea'));
+    }
   };
 
   if (loading) {
     return (
       <div className="space-y-4">
-        <Skeleton className="h-24 w-full rounded-2xl" />
-        <Skeleton className="h-14 w-full rounded-xl" />
-        <Skeleton className="h-14 w-full rounded-xl" />
+        <Skeleton className="h-24 w-full rounded-surface" />
+        <Skeleton className="h-14 w-full rounded-surface" />
+        <Skeleton className="h-14 w-full rounded-surface" />
       </div>
     );
   }
@@ -181,25 +206,24 @@ export default function ClientSetupPanel({
   return (
     <div className="space-y-4">
       {/* Cabecera: anillo global + siguiente paso */}
-      <div className="bg-[#181816] border border-white/7 rounded-2xl p-5 flex items-center gap-5">
-        <ProgressRing pct={result.globalPct} color={result.globalPct >= 100 ? '#34d399' : '#fbcb1a'} label="Setup" />
+      <div className="bg-surface border border-hairline rounded-surface p-5 flex items-center gap-5">
+        <RingSeal percent={result.globalPct} size={104} strokeWidth={9} complete={result.globalPct >= 100} label="Progreso del setup">
+          <div className="flex flex-col items-center justify-center">
+            <span className="font-display font-black text-title-l text-ink leading-none">{result.globalPct}%</span>
+            <span className="font-mono text-caption text-ink-2 uppercase tracking-widest mt-1">Setup</span>
+          </div>
+        </RingSeal>
         <div className="flex-1 min-w-0">
           {result.nextStep ? (
             <>
-              <p className="font-mono text-[9px] text-[#c6c9ab] uppercase tracking-wide mb-1">Siguiente paso</p>
-              <p className="font-sans font-bold text-sm text-white mb-2">{result.nextStep.title}</p>
+              <p className="font-mono text-caption text-ink-2 uppercase tracking-wide mb-1">Siguiente paso</p>
+              <p className="font-sans font-bold text-body-s text-white mb-2">{result.nextStep.title}</p>
               {result.nextStep.link && (
-                <button
-                  onClick={() => goToItem(result.nextStep!)}
-                  className="flex items-center gap-1 font-mono text-[10px] text-black bg-[#fbcb1a] px-3 py-1.5 rounded-lg font-bold uppercase hover:bg-[#d4a800] transition-all"
-                >
-                  Ir ahora
-                  <span className="material-symbols-outlined text-sm">arrow_forward</span>
-                </button>
+                <Button size="s" onClick={() => goToItem(result.nextStep!)} iconTrailing="arrow_forward">Ir ahora</Button>
               )}
             </>
           ) : (
-            <p className="font-sans font-bold text-sm text-emerald-400">Todo configurado</p>
+            <p className="font-sans font-bold text-body-s text-success">Todo configurado</p>
           )}
         </div>
       </div>
@@ -208,23 +232,18 @@ export default function ClientSetupPanel({
       {result.alerts.length > 0 && (
         <div className="flex flex-col gap-2">
           {result.alerts.map(alert => (
-            <button
+            <ListRow
               key={alert.id}
               onClick={() => alert.link && onGoToTab(alert.link.tab)}
-              className={`flex items-center gap-2 text-left border rounded-xl p-3 transition-all ${
-                alert.severity === 'critical'
-                  ? 'bg-red-500/10 border-red-500/20 hover:border-red-500/40'
-                  : 'bg-orange-500/10 border-orange-500/20 hover:border-orange-500/40'
+              className={`rounded-control border ${
+                alert.severity === 'critical' ? 'bg-danger/10 border-danger/20' : 'bg-warning/10 border-warning/20'
               }`}
-            >
-              <span className={`material-symbols-outlined text-base ${alert.severity === 'critical' ? 'text-red-400' : 'text-orange-400'}`}>
-                {alert.severity === 'critical' ? 'error' : 'warning'}
-              </span>
-              <div className="flex-1 min-w-0">
-                <p className="font-sans text-xs font-bold text-white">{alert.title}</p>
-                {alert.detail && <p className="font-mono text-[10px] text-[#c6c9ab]">{alert.detail}</p>}
-              </div>
-            </button>
+              leading={
+                <Icon name={alert.severity === 'critical' ? 'error' : 'warning'} size="m" className={alert.severity === 'critical' ? 'text-danger' : 'text-warning'} />
+              }
+              title={alert.title}
+              subtitle={alert.detail}
+            />
           ))}
         </div>
       )}
@@ -234,51 +253,45 @@ export default function ClientSetupPanel({
         {result.phases.map(phase => {
           const expanded = expandedPhase === phase.id;
           return (
-            <div key={phase.id} className="bg-[#181816] border border-white/7 rounded-2xl overflow-hidden">
+            <div key={phase.id} className="bg-surface border border-hairline rounded-surface overflow-hidden">
               <button
                 onClick={() => setExpandedPhase(expanded ? null : phase.id)}
                 className="w-full flex items-center gap-3 p-4"
               >
                 <div className="flex-1 min-w-0 text-left">
-                  <div className="flex items-center gap-2">
-                    <p className="font-sans font-bold text-sm text-white">{phase.title}</p>
-                    {phase.subtitle && <span className="font-mono text-[9px] text-[#c6c9ab]">{phase.subtitle}</span>}
+                  {/* `min-w-0` + `truncate` en el título, y el subtítulo con
+                      `shrink-0`: sin esto, un título de fase largo se salía
+                      de esta columna y se metía debajo del porcentaje y la
+                      flecha de al lado — el mismo desbordamiento horizontal
+                      que ya se vio en las pestañas del CRM y en el wizard de
+                      alta, aquí con texto en vez de una fila de chips. */}
+                  <div className="flex items-center gap-2 min-w-0">
+                    <p className="min-w-0 truncate font-sans font-bold text-body-s text-white">{phase.title}</p>
+                    {phase.subtitle && <span className="shrink-0 font-sans text-caption text-ink-2">{phase.subtitle}</span>}
                   </div>
-                  <div className="w-full h-1.5 bg-[#0e0e0e] rounded-full mt-2 overflow-hidden">
+                  <div className="w-full h-1.5 bg-bg rounded-full mt-2 overflow-hidden">
                     <div
-                      className={`h-full rounded-full ${phase.donePct >= 100 ? 'bg-emerald-400' : 'bg-[#fbcb1a]'}`}
+                      className={`h-full rounded-full ${phase.donePct >= 100 ? 'bg-success' : 'bg-accent'}`}
                       style={{ width: `${phase.donePct}%` }}
                     />
                   </div>
                 </div>
-                <span className="font-mono text-xs text-[#c6c9ab] flex-shrink-0">{phase.donePct}%</span>
-                <span className="material-symbols-outlined text-[#c6c9ab] flex-shrink-0">
-                  {expanded ? 'expand_less' : 'expand_more'}
-                </span>
+                <span className="font-mono text-label text-ink-2 flex-shrink-0">{phase.donePct}%</span>
+                <Icon name={expanded ? 'expand_less' : 'expand_more'} size="l" className="text-ink-2 flex-shrink-0" />
               </button>
 
               {expanded && (
-                <div className="border-t border-white/7 divide-y divide-white/7">
+                <div className="border-t border-hairline divide-y divide-white/7">
                   {phase.items.map(item => (
-                    <button
+                    <ListRow
                       key={item.id}
                       onClick={() => item.manual ? toggleManual(item) : goToItem(item)}
                       disabled={item.status === 'na'}
-                      className={`w-full flex items-center gap-3 p-3 text-left transition-all ${
-                        item.status === 'na' ? 'opacity-40 cursor-default' : 'hover:bg-white/5'
-                      }`}
-                    >
-                      <span className={`material-symbols-outlined flex-shrink-0 text-base ${STATUS_COLOR[item.status]}`}>
-                        {STATUS_ICON[item.status]}
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <p className={`font-sans text-xs ${item.status === 'done' ? 'text-[#c6c9ab] line-through' : 'text-white'}`}>{item.title}</p>
-                        {item.detail && <p className="font-mono text-[10px] text-[#c6c9ab] mt-0.5">{item.detail}</p>}
-                      </div>
-                      {item.link && item.status !== 'na' && (
-                        <span className="material-symbols-outlined text-[#4a4a4a] text-base flex-shrink-0">chevron_right</span>
-                      )}
-                    </button>
+                      leading={<Icon name={STATUS_ICON[item.status]} size="m" className={`flex-shrink-0 ${STATUS_COLOR[item.status]}`} />}
+                      title={item.title}
+                      subtitle={item.detail}
+                      chevron={!!item.link && item.status !== 'na'}
+                    />
                   ))}
                 </div>
               )}
@@ -288,62 +301,51 @@ export default function ClientSetupPanel({
       </div>
 
       {/* Tareas extra */}
-      <div className="bg-[#181816] border border-white/7 rounded-2xl p-5">
+      <div className="bg-surface border border-hairline rounded-surface p-5">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
-            <span className="material-symbols-outlined text-[#fbcb1a] text-base">playlist_add_check</span>
+          <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
+            <Icon name="playlist_add_check" size="m" className="text-accent" />
             Tareas extra
           </h3>
-          <button
-            onClick={() => setShowExtraForm(v => !v)}
-            className="flex items-center gap-1 font-mono text-[10px] text-[#c6c9ab] hover:text-[#fbcb1a] transition-colors border border-white/7 px-2.5 py-1.5 rounded-lg"
-          >
-            <span className="material-symbols-outlined text-sm">{showExtraForm ? 'close' : 'add'}</span>
+          <Button variant="secondary" size="s" onClick={() => setShowExtraForm(v => !v)} icon={showExtraForm ? 'close' : 'add'}>
             {showExtraForm ? 'Cancelar' : 'Añadir'}
-          </button>
+          </Button>
         </div>
 
         {showExtraForm && (
-          <form onSubmit={handleAddExtra} className="bg-[#1e1e1b] border border-white/7 rounded-xl p-3 mb-3 flex gap-2">
+          <form onSubmit={handleAddExtra} className="bg-raised border border-hairline rounded-surface p-3 mb-3 flex gap-2">
             <input
               type="text"
               value={extraTitle}
               onChange={e => setExtraTitle(e.target.value)}
               placeholder="Título de la tarea"
-              className="flex-1 bg-[#0e0e0e] border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-[#fbcb1a]"
+              className="flex-1 bg-bg border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent"
               required
             />
-            <button
-              type="submit"
-              disabled={savingExtra}
-              className="px-3 py-2 bg-[#fbcb1a] text-black font-sans font-bold text-xs uppercase rounded hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-50"
-            >
-              {savingExtra ? '...' : 'Crear'}
-            </button>
+            <Button type="submit" size="s" disabled={savingExtra}>{savingExtra ? '...' : 'Crear'}</Button>
           </form>
         )}
 
         {extraTasks.length === 0 ? (
-          <p className="text-xs text-[#555] font-mono py-2">Sin tareas extra.</p>
+          <p className="text-label text-ink-3 font-sans py-2">Sin tareas extra.</p>
         ) : (
           <div className="space-y-2">
             {extraTasks.map(task => (
-              <div
+              <ListRow
                 key={task.id}
-                className={`w-full flex items-center gap-3 border rounded-lg p-3 transition-all ${
-                  task.done ? 'bg-[#161616] border-white/50 opacity-60' : 'bg-[#1e1e1e] border-white/7'
-                }`}
-              >
-                <button onClick={() => toggleExtra(task)} className="flex-shrink-0">
-                  <span className={`material-symbols-outlined ${task.done ? 'text-emerald-400' : 'text-[#c6c9ab]'}`}>
-                    {task.done ? 'check_circle' : 'radio_button_unchecked'}
-                  </span>
-                </button>
-                <p className={`flex-1 min-w-0 font-sans text-sm truncate ${task.done ? 'line-through text-[#c6c9ab]' : 'text-white'}`}>{task.title}</p>
-                <button onClick={() => removeExtra(task)} className="flex-shrink-0 text-[#4a4a4a] hover:text-red-400 transition-colors">
-                  <span className="material-symbols-outlined text-base">delete</span>
-                </button>
-              </div>
+                className={`rounded-surface border ${task.done ? 'bg-surface border-hairline opacity-60' : 'bg-raised border-hairline'}`}
+                leading={
+                  <button onClick={() => toggleExtra(task)} className="flex-shrink-0">
+                    <Icon name={task.done ? 'check_circle' : 'radio_button_unchecked'} size="l" className={task.done ? 'text-success' : 'text-ink-2'} />
+                  </button>
+                }
+                title={task.title}
+                trailing={
+                  <button onClick={() => removeExtra(task)} className="flex-shrink-0 text-ink-3 hover:text-danger transition-colors">
+                    <Icon name="delete" size="m" />
+                  </button>
+                }
+              />
             ))}
           </div>
         )}

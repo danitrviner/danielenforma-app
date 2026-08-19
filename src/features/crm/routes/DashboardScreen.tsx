@@ -3,11 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { useClientes } from '../hooks/useClientes';
 import { useReuniones } from '../hooks/useReuniones';
 import { usePagos } from '../hooks/usePagos';
-import { formatEuros, sumaCents } from '../lib/dinero';
+import { formatEuros, sumaCents, ingresosPorMes } from '../lib/dinero';
 import { formatDia, tiempoRelativo, hoyISO, aDiaISO } from '../lib/fechas';
 import MetricCard from '../components/MetricCard';
+import RecurringRevenueCard from '../components/RecurringRevenueCard';
 import EmptyState from '../components/EmptyState';
 import ErrorState from '../components/ErrorState';
+import Skeleton from '../../../components/ui/Skeleton';
 
 const MAX_FILAS = 6;
 
@@ -34,6 +36,8 @@ export default function DashboardScreen() {
     () => pagos.filter(p => p.estado === 'pendiente').sort((a, b) => a.fechaEmision.localeCompare(b.fechaEmision)).slice(0, MAX_FILAS),
     [pagos]
   );
+
+  const serieIngresos = useMemo(() => ingresosPorMes(pagos), [pagos]);
 
   const facturado = sumaCents(pagos.filter(p => p.estado === 'pagado'));
   const totalPendiente = sumaCents(pagos.filter(p => p.estado === 'pendiente'));
@@ -66,7 +70,7 @@ export default function DashboardScreen() {
   return (
     <div className="space-y-4">
       <header>
-        <h1 className="font-sans font-black text-xl text-[#f5f5f0]">Resumen</h1>
+        <h1 className="font-sans font-bold text-title-m text-ink">Resumen</h1>
       </header>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -84,7 +88,7 @@ export default function DashboardScreen() {
         <MetricCard
           icon="schedule" label="Pagos pendientes"
           value={pagosSinDato ? '—' : formatEuros(totalPendiente)}
-          accent="#fdba74"
+          accent="var(--color-warning)"
           onClick={() => navigate('/crm/pagos?estado=pendiente')}
         />
         <MetricCard
@@ -94,30 +98,36 @@ export default function DashboardScreen() {
         />
       </div>
 
+      {pagosSinDato ? (
+        <Skeleton className="h-[104px] w-full" />
+      ) : (
+        <RecurringRevenueCard serie={serieIngresos} onClick={() => navigate('/crm/pagos?estado=pagado')} />
+      )}
+
       <div className="grid grid-cols-3 gap-2">
         <MetricCard
-          icon="trending_up" label="Conversión continuidad"
+          icon="trending_up" label="Continuidad"
           value={reunionesSinDato ? '—' : conversionContinuidad !== null ? `${conversionContinuidad}%` : '—'}
           sub={conversionContinuidad === null ? 'sin graduaciones aún' : `${graduacionesConResultado.length} graduaciones`}
         />
         <MetricCard
           icon="trending_down" label="Churn"
           value={reunionesSinDato ? '—' : churn !== null ? `${churn}%` : '—'}
-          accent={churn !== null && churn > 0 ? '#fca5a5' : undefined}
+          accent={churn !== null && churn > 0 ? 'var(--color-danger)' : undefined}
           sub={churn === null ? 'sin graduaciones aún' : `${graduacionesConResultado.length} graduaciones`}
         />
         <MetricCard
           icon="person_remove" label="Bajas (30 días)"
           value={clientesSinDato ? '—' : bajasRecientes.length}
-          accent={bajasRecientes.length > 0 ? '#fca5a5' : undefined}
+          accent={bajasRecientes.length > 0 ? 'var(--color-danger)' : undefined}
           onClick={() => navigate('/crm/clientes?estado=baja')}
         />
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <section className="space-y-2">
-          <h2 className="font-mono text-[9px] uppercase tracking-widest text-[#a8a89e]">Próximas reuniones</h2>
-          <div className="bg-[#181816]/80 backdrop-blur-sm border border-white/7 rounded-2xl divide-y divide-white/7">
+          <h2 className="font-mono text-caption uppercase tracking-widest text-ink-2">Próximas reuniones</h2>
+          <div className="bg-surface/80 backdrop-blur-sm border border-hairline rounded-surface divide-y divide-white/7">
             {errorReuniones ? (
               <ErrorState />
             ) : proximasReuniones.length === 0 ? (
@@ -125,8 +135,8 @@ export default function DashboardScreen() {
             ) : (
               proximasReuniones.map(r => (
                 <div key={r.id} className="flex items-center justify-between gap-2 p-3">
-                  <p className="font-sans text-[11px] text-[#f5f5f0] truncate">{r.clientNombre}</p>
-                  <p className="font-mono text-[9px] text-[#555550] shrink-0 tabular-nums">{tiempoRelativo(r.fecha)}</p>
+                  <p className="font-sans text-caption text-ink truncate">{r.clientNombre}</p>
+                  <p className="font-mono text-caption text-ink-3 shrink-0 tabular-nums">{tiempoRelativo(r.fecha)}</p>
                 </div>
               ))
             )}
@@ -134,8 +144,8 @@ export default function DashboardScreen() {
         </section>
 
         <section className="space-y-2">
-          <h2 className="font-mono text-[9px] uppercase tracking-widest text-[#a8a89e]">Pagos pendientes</h2>
-          <div className="bg-[#181816]/80 backdrop-blur-sm border border-white/7 rounded-2xl divide-y divide-white/7">
+          <h2 className="font-mono text-caption uppercase tracking-widest text-ink-2">Pagos pendientes</h2>
+          <div className="bg-surface/80 backdrop-blur-sm border border-hairline rounded-surface divide-y divide-white/7">
             {errorPagos ? (
               <ErrorState />
             ) : pagosPendientes.length === 0 ? (
@@ -143,8 +153,8 @@ export default function DashboardScreen() {
             ) : (
               pagosPendientes.map(p => (
                 <div key={p.id} className="flex items-center justify-between gap-2 p-3">
-                  <p className="font-sans text-[11px] text-[#f5f5f0] truncate">{p.clientNombre}</p>
-                  <p className="font-mono text-[9px] text-[#fdba74] shrink-0 tabular-nums">{formatEuros(p.importeCents)}</p>
+                  <p className="font-sans text-caption text-ink truncate">{p.clientNombre}</p>
+                  <p className="font-mono text-caption text-warning shrink-0 tabular-nums">{formatEuros(p.importeCents)}</p>
                 </div>
               ))
             )}

@@ -2,13 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { UserProfile, OnboardingTemplate, OnboardingTemplateQuestion, OnboardingSection, Recipe } from '../types';
 import { getAllUsersAdmin, updateUserProfile, getOnboardingTemplate, saveOnboardingTemplate } from '../dbService';
+import { OWNER_RECETARIO } from '../db/recipes';
 import { db, doc, writeBatch } from '../firebase';
+import { roundQuarter } from '../utils/exchangeHelpers';
 import QuestionnaireManagerScreen from './QuestionnaireManagerScreen';
-import Skeleton from './Skeleton';
+import { useToast } from '../hooks/useToast';
+import { mensajeDeErrorFirestore } from '../utils/erroresFirestore';
+import { Skeleton } from './ui';
+import { Tabs } from './ui';
+import AdminMaquinasTab from '../features/gimnasio/AdminMaquinasTab';
 
 const OWNER_EMAIL = 'danitrviner@gmail.com';
 
-type SettingsTab = 'roles' | 'cuestionarios' | 'ficha' | 'biblioteca';
+type SettingsTab = 'roles' | 'cuestionarios' | 'ficha' | 'biblioteca' | 'maquinas';
 
 // ── Default template questions ────────────────────────────────────────────────
 
@@ -67,12 +73,13 @@ const TYPE_LABEL: Record<OnboardingTemplateQuestion['type'], string> = {
   numeric: 'Numérico', scale: 'Escala', choice: 'Opción', text: 'Texto libre',
 };
 
-const MINI = 'bg-[#0e0e0e] border border-white/7 rounded px-2 py-1.5 text-xs text-white font-mono focus:outline-none focus:ring-1 focus:ring-[#fbcb1a]/70 w-full';
+const MINI = 'bg-bg border border-hairline rounded-control px-2 py-2 text-label text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent/70 w-full';
 
 // ── Template editor component ─────────────────────────────────────────────────
 
 function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
   const queryKey = ['onboardingTemplate', coachEmail] as const;
   const { data: fetchedTemplate, isPending: loading } = useQuery({
     queryKey,
@@ -136,6 +143,7 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
       setDirty(false);
     } catch (err) {
       console.error(err);
+      showToast(mensajeDeErrorFirestore(err, 'guardar la ficha de iniciación'));
     } finally { setSaving(false); }
   };
 
@@ -160,18 +168,18 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <p className="font-mono text-[10px] text-[#555] uppercase tracking-widest">Plantilla de ficha de iniciación</p>
-          <p className="font-mono text-[9px] text-[#444] mt-0.5">
+          <p className="font-sans text-caption text-ink-3 uppercase tracking-widest">Plantilla de ficha de iniciación</p>
+          <p className="font-sans text-caption text-ink-3 ">
             Define las preguntas que el coach rellena para cada atleta. Los atletas no ven esto.
           </p>
         </div>
         <div className="flex gap-2">
           <button type="button" onClick={handleReset}
-            className="px-3 py-1.5 font-mono text-[10px] uppercase border border-white/7 text-[#c6c9ab] hover:text-white rounded-lg transition-all">
+            className="px-3 py-2 font-sans text-caption uppercase border border-hairline text-ink-2 hover:text-white rounded-control transition-all">
             Restaurar por defecto
           </button>
           <button type="button" onClick={handleSave} disabled={saving || !dirty}
-            className="px-3 py-1.5 font-sans text-[10px] uppercase bg-[#fbcb1a] text-black font-bold rounded-lg hover:bg-[#d4a800] disabled:opacity-50 transition-all">
+            className="px-3 py-2 font-sans text-caption uppercase bg-accent text-black font-bold rounded-control hover:bg-accent-press disabled:opacity-50 transition-all">
             {saving ? 'Guardando…' : 'Guardar plantilla'}
           </button>
         </div>
@@ -182,32 +190,32 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
         const meta = SECTION_META[section];
         const qs   = questions.filter(q => q.section === section);
         return (
-          <div key={section} className="bg-[#0e0e0e] border border-white/7 rounded-xl p-5 space-y-4">
-            <h4 className="font-mono text-xs font-bold uppercase tracking-wider text-[#fbcb1a] flex items-center gap-2">
-              <span className="material-symbols-outlined text-sm">{meta.icon}</span>
+          <div key={section} className="bg-bg border border-hairline rounded-surface p-5 space-y-4">
+            <h4 className="font-mono text-label font-bold uppercase tracking-wider text-accent flex items-center gap-2">
+              <span className="material-symbols-outlined text-body-s">{meta.icon}</span>
               {meta.label}
-              <span className="ml-auto font-mono text-[9px] text-[#555] normal-case font-normal">{qs.length} pregunta{qs.length !== 1 ? 's' : ''}</span>
+              <span className="ml-auto font-mono text-caption text-ink-3 normal-case font-normal">{qs.length} pregunta{qs.length !== 1 ? 's' : ''}</span>
             </h4>
 
             {qs.length === 0 && (
-              <p className="font-mono text-[9px] text-[#555] italic">Sin preguntas en esta sección.</p>
+              <p className="font-sans text-caption text-ink-3 italic">Sin preguntas en esta sección.</p>
             )}
 
             <div className="space-y-3">
               {qs.map(q => (
-                <div key={q.id} className={`border rounded-lg transition-all ${editingId === q.id ? 'border-[#fbcb1a]/30 bg-[#111]' : 'border-[#1e1e1e] bg-[#0a0a0a]'}`}>
+                <div key={q.id} className={`border rounded-surface transition-all ${editingId === q.id ? 'border-accent/30 bg-bg' : 'border-hairline bg-bg'}`}>
                   {editingId === q.id ? (
                     /* Inline editor */
                     <div className="p-3 space-y-2">
                       <input value={q.label} placeholder="Etiqueta de la pregunta"
                         onChange={e => updateQ(q.id, { label: e.target.value })}
                         className={MINI} />
-                      <div className="flex gap-1.5 flex-wrap">
+                      <div className="flex gap-2 flex-wrap">
                         {(['numeric', 'scale', 'text', 'choice'] as const).map(t => (
                           <button key={t} type="button"
                             onClick={() => updateQ(q.id, { type: t })}
-                            className={`px-2.5 py-1 rounded font-mono text-[9px] font-bold uppercase border transition-all ${
-                              q.type === t ? 'bg-[#fbcb1a] text-black border-transparent' : 'text-[#c6c9ab] border-white/7 hover:text-white'
+                            className={`px-3 py-1 rounded-control font-sans text-caption font-bold uppercase border transition-all ${
+                              q.type === t ? 'bg-accent text-black border-transparent' : 'text-ink-2 border-hairline hover:text-white'
                             }`}>
                             {TYPE_LABEL[t]}
                           </button>
@@ -222,21 +230,21 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
                         <div className="flex gap-2">
                           <input type="number" value={q.scaleMin ?? 1} placeholder="Min"
                             onChange={e => updateQ(q.id, { scaleMin: Number(e.target.value) })}
-                            className="w-20 bg-[#0e0e0e] border border-white/7 rounded px-2 py-1 text-xs text-white font-mono focus:outline-none" />
+                            className="w-20 bg-bg border border-hairline rounded-control px-2 py-1 text-title-s text-white font-mono focus:outline-none" />
                           <input type="number" value={q.scaleMax ?? 10} placeholder="Max"
                             onChange={e => updateQ(q.id, { scaleMax: Number(e.target.value) })}
-                            className="w-20 bg-[#0e0e0e] border border-white/7 rounded px-2 py-1 text-xs text-white font-mono focus:outline-none" />
+                            className="w-20 bg-bg border border-hairline rounded-control px-2 py-1 text-title-s text-white font-mono focus:outline-none" />
                         </div>
                       )}
                       {q.type === 'choice' && (
-                        <div className="space-y-1.5">
+                        <div className="space-y-2">
                           <div className="flex flex-wrap gap-1">
                             {(q.options ?? []).map(opt => (
-                              <span key={opt} className="flex items-center gap-1 bg-[#2a2a2a] text-white px-2 py-0.5 rounded-full text-[9px] font-mono">
+                              <span key={opt} className="flex items-center gap-1 bg-raised text-white px-2 rounded-full text-caption font-mono">
                                 {opt}
                                 <button type="button"
                                   onClick={() => updateQ(q.id, { options: (q.options ?? []).filter(o => o !== opt) })}
-                                  className="text-[#c6c9ab] hover:text-red-400">
+                                  className="text-ink-2 hover:text-red-400">
                                   <span className="material-symbols-outlined" style={{ fontSize: '9px' }}>close</span>
                                 </button>
                               </span>
@@ -254,13 +262,13 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
                             className={MINI} />
                         </div>
                       )}
-                      <div className="flex gap-1.5">
+                      <div className="flex gap-2">
                         <button type="button" onClick={() => setEditingId(null)}
-                          className="px-2.5 py-1 bg-[#fbcb1a] text-black font-sans text-[9px] font-bold uppercase rounded hover:bg-[#d4a800]">
+                          className="px-3 py-1 bg-accent text-black font-sans text-caption font-bold uppercase rounded-control hover:bg-accent-press">
                           ✓ Listo
                         </button>
                         <button type="button" onClick={() => deleteQ(q.id)}
-                          className="px-2.5 py-1 font-mono text-[10px] uppercase text-red-400 border border-red-500/30 rounded hover:bg-red-500/10">
+                          className="px-3 py-1 font-mono text-caption uppercase text-red-400 border border-red-500/30 rounded-control hover:bg-red-500/10">
                           Eliminar
                         </button>
                       </div>
@@ -268,22 +276,22 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
                   ) : (
                     /* Compact view */
                     <div className="flex items-center gap-2 px-3 py-2">
-                      <span className={`text-[9px] font-mono uppercase px-1.5 py-0.5 rounded border flex-shrink-0 ${
-                        q.type === 'numeric' ? 'text-[#ffa500] border-[#ffa500]/20 bg-[#ffa500]/5' :
-                        q.type === 'scale'   ? 'text-[#00eefc] border-[#00eefc]/20 bg-[#00eefc]/5' :
-                        q.type === 'choice'  ? 'text-[#fbcb1a] border-[#fbcb1a]/20 bg-[#fbcb1a]/5' :
-                                               'text-[#c6c9ab] border-[#3a3a3a] bg-[#1e1e1b]'
+                      <span className={`text-caption font-sans uppercase px-2 rounded-control border flex-shrink-0 ${
+                        q.type === 'numeric' ? 'text-warning border-warning/20 bg-warning/5' :
+                        q.type === 'scale'   ? 'text-data border-data/20 bg-data/5' :
+                        q.type === 'choice'  ? 'text-accent border-accent/20 bg-accent/5' :
+                                               'text-ink-2 border-hairline bg-raised'
                       }`}>{TYPE_LABEL[q.type]}</span>
-                      <span className="flex-1 text-sm text-white font-mono truncate min-w-0">
-                        {q.label || <em className="text-[#555]">sin etiqueta</em>}
+                      <span className="flex-1 text-body-s text-white font-mono truncate min-w-0">
+                        {q.label || <em className="text-ink-3">sin etiqueta</em>}
                       </span>
-                      {q.unit && <span className="text-[9px] text-[#555] font-mono flex-shrink-0">{q.unit}</span>}
+                      {q.unit && <span className="text-caption text-ink-3 font-mono flex-shrink-0">{q.unit}</span>}
                       <button type="button" onClick={() => { setEditingId(q.id); setOptionInput(''); }}
-                        className="p-1 text-[#c6c9ab] hover:text-[#00eefc] transition-colors flex-shrink-0">
+                        className="p-1 text-ink-2 hover:text-data transition-colors flex-shrink-0">
                         <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>edit</span>
                       </button>
                       <button type="button" onClick={() => deleteQ(q.id)}
-                        className="p-1 text-[#3a3a3a] hover:text-red-400 transition-colors flex-shrink-0">
+                        className="p-1 text-ink-3 hover:text-red-400 transition-colors flex-shrink-0">
                         <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>delete</span>
                       </button>
                     </div>
@@ -293,8 +301,8 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
             </div>
 
             <button type="button" onClick={() => addQ(section)}
-              className="flex items-center gap-1.5 font-mono text-[10px] uppercase text-[#c6c9ab] hover:text-[#fbcb1a] border border-dashed border-white/7 hover:border-[#fbcb1a]/30 px-3 py-2 rounded-lg w-full justify-center transition-all">
-              <span className="material-symbols-outlined text-sm">add</span>
+              className="flex items-center gap-2 font-mono text-caption uppercase text-ink-2 hover:text-accent border border-dashed border-hairline hover:border-accent/30 px-3 py-2 rounded-control w-full justify-center transition-all">
+              <span className="material-symbols-outlined text-body-s">add</span>
               Añadir pregunta
             </button>
           </div>
@@ -304,7 +312,7 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
       {dirty && (
         <div className="flex justify-end">
           <button type="button" onClick={handleSave} disabled={saving}
-            className="px-4 py-2 font-sans text-xs uppercase bg-[#fbcb1a] text-black font-bold rounded-lg hover:bg-[#d4a800] disabled:opacity-50 transition-all">
+            className="px-4 py-2 font-sans text-label uppercase bg-accent text-black font-bold rounded-control hover:bg-accent-press disabled:opacity-50 transition-all">
             {saving ? 'Guardando…' : 'Guardar plantilla'}
           </button>
         </div>
@@ -313,20 +321,20 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
   );
 }
 
-// ── Indya import panel ────────────────────────────────────────────────────────
+// ── Recetas import panel ────────────────────────────────────────────────────────
 
-interface IndyaMacros {
+interface RecetaMacros {
   carbohydrate?: { grams: number };
   protein?:      { grams: number };
   fat?:          { grams: number };
 }
-interface IndyaRawRecipe {
+interface RecetaImportada {
   id: string;
   name: string;
   image?: string;
   ingredients?: Array<{ name: string; quantity: number }>;
   steps?: Array<{ position: number; description: string }>;
-  macros?: IndyaMacros;
+  macros?: RecetaMacros;
   kcal?: number;
   weight?: number;
   cookingTime?: number;
@@ -336,16 +344,15 @@ interface IndyaRawRecipe {
   categoria?: string;
 }
 
-function roundQ(x: number): number { return Math.round(x / 0.25) * 0.25; }
 
-function mapIndyaRecipe(r: IndyaRawRecipe): Omit<Recipe, 'id'> {
+function mapRecetasRecipe(r: RecetaImportada): Omit<Recipe, 'id'> {
   const exchanges = {
-    HC:    roundQ((r.macros?.carbohydrate?.grams ?? 0) / 25),
-    PROT:  roundQ((r.macros?.protein?.grams     ?? 0) / 25),
-    GRASA: roundQ((r.macros?.fat?.grams         ?? 0) / 11),
+    HC:    roundQuarter((r.macros?.carbohydrate?.grams ?? 0) / 25),
+    PROT:  roundQuarter((r.macros?.protein?.grams     ?? 0) / 25),
+    GRASA: roundQuarter((r.macros?.fat?.grams         ?? 0) / 11),
   };
   const out: Record<string, unknown> = {
-    ownerId:     'indya',
+    ownerId:     OWNER_RECETARIO,
     name:        r.name,
     categories:  r.categoria ? [r.categoria] : [],
     ingredients: [],
@@ -370,7 +377,7 @@ function mapIndyaRecipe(r: IndyaRawRecipe): Omit<Recipe, 'id'> {
 const IMPORT_BATCH = 499;
 type ImportStatus = 'idle' | 'loading' | 'writing' | 'done' | 'error';
 
-function IndyaImportPanel() {
+function RecetasImportPanel() {
   const [status,  setStatus]  = useState<ImportStatus>('idle');
   const [done,    setDone]    = useState(0);
   const [total,   setTotal]   = useState(0);
@@ -387,7 +394,7 @@ function IndyaImportPanel() {
 
     try {
       setPhase('Leyendo índice…');
-      const idxRes = await fetch('/indya/00_indice.json');
+      const idxRes = await fetch('/recetas/00_indice.json');
       const idx = await idxRes.json();
       const files: Array<{ archivo?: string; file?: string }> = idx.archivos ?? idx.files ?? [];
 
@@ -396,10 +403,10 @@ function IndyaImportPanel() {
         const entry = files[fi];
         const fileName = entry.archivo ?? entry.file ?? String(entry);
         setPhase(`Leyendo archivo ${fi + 1} / ${files.length}: ${fileName}`);
-        const res = await fetch(`/indya/${fileName}`);
+        const res = await fetch(`/recetas/${fileName}`);
         const raw = await res.json();
-        const recs: IndyaRawRecipe[] = raw.recipes ?? raw.recetas ?? [];
-        for (const r of recs) all.push({ id: r.id, data: mapIndyaRecipe(r) });
+        const recs: RecetaImportada[] = raw.recipes ?? raw.recetas ?? [];
+        for (const r of recs) all.push({ id: r.id, data: mapRecetasRecipe(r) });
       }
 
       setTotal(all.length);
@@ -430,13 +437,13 @@ function IndyaImportPanel() {
   const pct = total > 0 ? Math.round((done / total) * 100) : 0;
 
   return (
-    <div className="bg-[#0e0e0e] border border-white/7 rounded-xl p-5 space-y-4">
+    <div className="bg-bg border border-hairline rounded-surface p-5 space-y-4">
       <div>
-        <h3 className="font-mono text-xs font-bold uppercase tracking-wider text-[#00eefc] flex items-center gap-2">
-          <span className="material-symbols-outlined text-sm">library_books</span>
-          Importar biblioteca Indya
+        <h3 className="font-mono text-label font-bold uppercase tracking-wider text-data flex items-center gap-2">
+          <span className="material-symbols-outlined text-body-s">library_books</span>
+          Importar recetario
         </h3>
-        <p className="font-mono text-[9px] text-[#555] mt-1">
+        <p className="font-mono text-caption text-ink-3 mt-1">
           8 850 recetas · idempotente · lotes de {IMPORT_BATCH} · UPSERT por UUID
         </p>
       </div>
@@ -444,25 +451,25 @@ function IndyaImportPanel() {
       {status === 'idle' && (
         <button
           onClick={startImport}
-          className="px-4 py-2 bg-[#00eefc]/10 border border-[#00eefc]/30 text-[#00eefc] hover:bg-[#00eefc]/20 font-mono text-xs uppercase tracking-wider rounded-lg transition-all flex items-center gap-2"
+          className="px-4 py-2 bg-data/10 border border-data/30 text-data hover:bg-data/20 font-sans text-label uppercase tracking-wider rounded-control transition-all flex items-center gap-2"
         >
-          <span className="material-symbols-outlined text-sm">upload</span>
+          <span className="material-symbols-outlined text-body-s">upload</span>
           Importar / Reimportar
         </button>
       )}
 
       {(status === 'loading' || status === 'writing') && (
         <div className="space-y-3">
-          <p className="font-mono text-[10px] text-[#c6c9ab] animate-pulse">{phase}</p>
+          <p className="font-mono text-caption text-ink-2 animate-pulse">{phase}</p>
           {total > 0 && (
             <>
-              <div className="w-full h-2.5 bg-[#1e1e1e] rounded-full overflow-hidden">
+              <div className="w-full h-2.5 bg-raised rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-[#00eefc] transition-all duration-300 rounded-full"
+                  className="h-full bg-data transition-all duration-300 rounded-full"
                   style={{ width: `${pct}%` }}
                 />
               </div>
-              <div className="flex justify-between font-mono text-[9px] text-[#555]">
+              <div className="flex justify-between font-mono text-caption text-ink-3">
                 <span>{done.toLocaleString('es')} / {total.toLocaleString('es')} recetas</span>
                 <span>{pct}%</span>
               </div>
@@ -473,13 +480,13 @@ function IndyaImportPanel() {
 
       {status === 'done' && (
         <div className="space-y-3">
-          <div className="flex items-center gap-2 text-[#fbcb1a] font-mono text-xs font-bold">
-            <span className="material-symbols-outlined text-base" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+          <div className="flex items-center gap-2 text-accent font-mono text-label font-bold">
+            <span className="material-symbols-outlined text-title-s" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
             {done.toLocaleString('es')} recetas importadas en {elapsed}s
           </div>
           <button
             onClick={startImport}
-            className="px-3 py-1.5 border border-white/7 text-[#c6c9ab] hover:text-white font-mono text-[10px] uppercase rounded-lg transition-all"
+            className="px-3 py-2 border border-hairline text-ink-2 hover:text-white font-sans text-caption uppercase rounded-control transition-all"
           >
             Reimportar
           </button>
@@ -488,12 +495,12 @@ function IndyaImportPanel() {
 
       {status === 'error' && (
         <div className="space-y-3">
-          <p className="font-mono text-[10px] text-red-400 bg-red-500/5 border border-red-500/20 rounded p-3 break-all">
+          <p className="font-sans text-caption text-red-400 bg-red-500/5 border border-red-500/20 rounded-control p-3 break-all">
             {error}
           </p>
           <button
             onClick={startImport}
-            className="px-3 py-1.5 border border-[#00eefc]/30 text-[#00eefc] hover:bg-[#00eefc]/10 font-mono text-[10px] uppercase rounded-lg transition-all"
+            className="px-3 py-2 border border-data/30 text-data hover:bg-data/10 font-sans text-caption uppercase rounded-control transition-all"
           >
             Reintentar
           </button>
@@ -545,22 +552,18 @@ export default function CoachesScreen({ currentUserId, currentUserEmail }: Props
   return (
     <div className="space-y-6">
       {/* Settings tabs */}
-      <div className="flex bg-[#181816] border border-white/7 p-1 rounded-lg gap-1 w-fit flex-wrap">
-        {([
+      <Tabs
+        items={[
           { id: 'roles',         label: 'Entrenadores',  icon: 'manage_accounts' },
           { id: 'cuestionarios', label: 'Cuestionarios', icon: 'quiz'            },
           { id: 'ficha',         label: 'Ficha',         icon: 'assignment'      },
           ...(isOwnerOrDev ? [{ id: 'biblioteca' as SettingsTab, label: 'Biblioteca', icon: 'library_books' }] : []),
-        ] as { id: SettingsTab; label: string; icon: string }[]).map(t => (
-          <button key={t.id} onClick={() => setSettingsTab(t.id)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-md font-mono text-xs font-bold uppercase tracking-wider transition-all ${
-              settingsTab === t.id ? 'bg-[#fbcb1a] text-black shadow-lg' : 'text-[#c6c9ab] hover:text-white'
-            }`}>
-            <span className="material-symbols-outlined text-base">{t.icon}</span>
-            {t.label}
-          </button>
-        ))}
-      </div>
+          ...(isOwnerOrDev ? [{ id: 'maquinas' as SettingsTab, label: 'Máquinas', icon: 'fitness_center' }] : []),
+        ]}
+        value={settingsTab}
+        onChange={id => setSettingsTab(id as SettingsTab)}
+        label="Ajustes"
+      />
 
       {settingsTab === 'cuestionarios' && (
         <QuestionnaireManagerScreen coachId={currentUserId} />
@@ -570,8 +573,12 @@ export default function CoachesScreen({ currentUserId, currentUserEmail }: Props
         <OnboardingTemplateEditor coachEmail={currentUserEmail} />
       )}
 
+      {settingsTab === 'maquinas' && isOwnerOrDev && (
+        <AdminMaquinasTab />
+      )}
+
       {settingsTab === 'biblioteca' && isOwnerOrDev && (
-        <IndyaImportPanel />
+        <RecetasImportPanel />
       )}
 
       {settingsTab === 'roles' && (<>
@@ -582,9 +589,9 @@ export default function CoachesScreen({ currentUserId, currentUserEmail }: Props
             <Skeleton className="h-14 w-full" />
           </div>
         ) : sortedUsers.length === 0 ? (
-          <div className="text-center py-20 border border-dashed border-white/7 rounded-2xl">
-            <span className="material-symbols-outlined text-5xl text-[#2a2a2a] block mb-3">group</span>
-            <p className="text-[#c6c9ab] text-sm">Sin usuarios registrados todavía.</p>
+          <div className="text-center py-10 border border-dashed border-hairline rounded-surface">
+            <span className="material-symbols-outlined text-display text-ink-3 block mb-3">group</span>
+            <p className="text-ink-2 text-body-s">Sin usuarios registrados todavía.</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -595,46 +602,46 @@ export default function CoachesScreen({ currentUserId, currentUserEmail }: Props
               const canToggle = !isOwner && !isSelf;
               return (
                 <div key={user.userId}
-                  className={`bg-[#181816] border rounded-2xl p-4 flex items-center gap-4 ${isOwner ? 'border-[#fbcb1a]/30' : 'border-white/7'}`}>
+                  className={`bg-surface border rounded-surface p-4 flex items-center gap-4 ${isOwner ? 'border-accent/30' : 'border-hairline'}`}>
                   <img src={user.avatarUrl} alt={user.displayName}
-                    className="w-10 h-10 rounded-full object-cover border border-white/7 flex-shrink-0" />
+                    className="w-10 h-10 rounded-full object-cover border border-hairline flex-shrink-0" />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-sans font-semibold text-white text-sm truncate">{user.displayName}</span>
-                      {isOwner && <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-[#fbcb1a]/15 text-[#fbcb1a] uppercase font-bold border border-[#fbcb1a]/25">PROPIETARIO</span>}
-                      {isSelf && !isOwner && <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-[#00eefc]/10 text-[#00eefc] uppercase border border-[#00eefc]/20">TÚ</span>}
+                      <span className="font-sans font-bold text-white text-body-s truncate">{user.displayName}</span>
+                      {isOwner && <span className="text-caption font-mono px-2 rounded-control bg-accent/15 text-accent uppercase font-bold border border-accent/25">PROPIETARIO</span>}
+                      {isSelf && !isOwner && <span className="text-caption font-mono px-2 rounded-control bg-data/10 text-data uppercase border border-data/20">TÚ</span>}
                     </div>
-                    <span className="font-mono text-xs text-[#c6c9ab] truncate block">{user.email}</span>
+                    <span className="font-mono text-label text-ink-2 truncate block">{user.email}</span>
                   </div>
                   <div className="flex items-center gap-3 flex-shrink-0">
-                    <span className={`text-[10px] font-mono px-2 py-0.5 rounded uppercase font-bold border ${
-                      isCoach ? 'bg-[#fbcb1a]/10 text-[#fbcb1a] border-[#fbcb1a]/20' : 'bg-[#2a2a2a] text-[#c6c9ab] border-[#3a3a3a]'
+                    <span className={`text-caption font-mono px-2 rounded-control uppercase font-bold border ${
+                      isCoach ? 'bg-accent/10 text-accent border-accent/20' : 'bg-raised text-ink-2 border-hairline'
                     }`}>{isCoach ? 'Coach' : 'Atleta'}</span>
                     {canToggle && (
                       <button onClick={() => handleToggleRole(user)} disabled={updating === user.userId}
-                        className={`px-3 py-1.5 rounded-lg font-mono text-xs font-bold uppercase tracking-wider transition-all active:scale-95 disabled:opacity-50 border ${
-                          isCoach ? 'border-red-500/40 text-red-400 hover:bg-red-500/10' : 'border-[#00eefc]/40 text-[#00eefc] hover:bg-[#00eefc]/10'
+                        className={`px-3 py-2 rounded-control font-sans text-label font-bold uppercase tracking-wider transition-all active:scale-95 disabled:opacity-50 border ${
+                          isCoach ? 'border-red-500/40 text-red-400 hover:bg-red-500/10' : 'border-data/40 text-data hover:bg-data/10'
                         }`}>
                         {updating === user.userId
-                          ? <span className="material-symbols-outlined text-xs animate-spin">progress_activity</span>
+                          ? <span className="material-symbols-outlined text-label animate-spin">progress_activity</span>
                           : isCoach ? 'Revocar' : 'Hacer Coach'
                         }
                       </button>
                     )}
-                    {isOwner && <span className="text-[10px] font-mono text-[#c6c9ab] italic">Permanente</span>}
+                    {isOwner && <span className="text-caption font-mono text-ink-2 italic">Permanente</span>}
                   </div>
                 </div>
               );
             })}
           </div>
         )}
-        <div className="bg-[#181816] border border-white/7 rounded-2xl p-4 space-y-1">
-          <p className="font-mono text-xs text-[#c6c9ab]">
-            <span className="text-[#fbcb1a] font-bold">Colección Firestore:</span>{' '}
+        <div className="bg-surface border border-hairline rounded-surface p-4 space-y-1">
+          <p className="font-sans text-label text-ink-2">
+            <span className="text-accent font-bold">Colección Firestore:</span>{' '}
             <code className="text-white">user_profiles</code> · Doc ID: UID de Firebase Auth · Campo:{' '}
             <code className="text-white">role: 'coach' | 'client'</code>
           </p>
-          <p className="font-mono text-xs text-[#c6c9ab]">
+          <p className="font-sans text-label text-ink-2">
             Las reglas del servidor deben impedir que un cliente se auto-asigne <code className="text-white">coach</code>{' '}
             y que nadie modifique la cuenta propietaria.
           </p>

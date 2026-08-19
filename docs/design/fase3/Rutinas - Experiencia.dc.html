@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0a0a0a;font-family:'Plus Jakarta Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#FFC72C;text-decoration:none}a:hover{color:#ffd75e}
+.nsc{overflow-y:auto;scrollbar-width:none}
+.nsc::-webkit-scrollbar{display:none}
+</style>
+</helmet>
+
+<section style="padding:44px 48px 60px;background:#0a0a0a">
+<div style="display:flex;align-items:baseline;gap:14px;margin:0 0 6px">
+<span style="font:900 34px/1 Archivo,sans-serif;letter-spacing:-.02em;color:#F5F5F4;text-transform:uppercase">Rutinas</span>
+<span style="font:500 11px/1 'IBM Plex Mono',monospace;letter-spacing:.14em;color:#FFC72C;text-transform:uppercase">Fase 3 · Pantalla pendiente</span>
+</div>
+<p style="max-width:680px;margin:0 0 34px;font:400 13.5px/1.65 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.5);text-wrap:pretty">El plan completo del atleta: la lista de días del bloque activo, el detalle de un día con sus ejercicios, y la vista de todas las semanas del mesociclo — más su ficha de reglas.</p>
+
+<div style="display:flex;flex-wrap:wrap;gap:30px;align-items:flex-start">
+
+<!-- 01 · LISTA DE DÍAS -->
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;align-items:baseline;gap:9px"><span style="font:600 10.5px/1 'IBM Plex Mono',monospace;padding:4px 7px;background:#FFC72C;color:#050505;border-radius:5px">01</span><span style="font:600 12px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.72)">Lista de días</span></div>
+<div style="width:390px;height:780px;background:#050505;border:1px solid rgba(255,255,255,.08);border-radius:34px;overflow:hidden;position:relative;box-shadow:0 30px 70px -30px rgba(0,0,0,.9)">
+  <div style="height:46px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 22px 6px;font:500 11px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.4)"><span>9:41</span><span>EN FORMA</span></div>
+  <div class="nsc" style="position:absolute;inset:46px 0 78px;padding:14px 20px 24px">
+    <div style="font:900 30px/1 Archivo,sans-serif;letter-spacing:-.02em;color:#F5F5F4;text-transform:uppercase">Mi rutina</div>
+    <div style="margin-top:9px;font:500 11.5px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.42)">BLOQUE DE FUERZA · SEMANA 2 DE 4 · 4 DÍAS</div>
+
+    <div style="margin-top:16px;display:flex;background:#0F0F0F;border-radius:13px;padding:3px;gap:2px">
+      <sc-for list="{{ weeks }}" as="w" hint-placeholder-count="4">
+        <div onClick="{{ w.set }}" style="{{ w.style }}">{{ w.label }}</div>
+      </sc-for>
+    </div>
+
+    <div style="margin-top:18px;display:flex;flex-direction:column;gap:9px">
+      <div style="padding:15px 16px;background:rgba(255,199,44,.06);border:1px solid rgba(255,199,44,.3);border-radius:18px;cursor:pointer" style-hover="border-color:rgba(255,199,44,.5)">
+        <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font:600 15px/1 'Plus Jakarta Sans',sans-serif;color:#F5F5F4">Día 1 · Empuje A</span><span style="font:500 10.5px/1 'IBM Plex Mono',monospace;color:#FFC72C">HOY</span></div>
+        <div style="margin-top:8px;font:500 11.5px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.42)">5 EJERCICIOS · 48 MIN</div>
+      </div>
+      <div style="padding:15px 16px;background:#0B0B0B;border:1px solid rgba(255,255,255,.07);border-radius:18px;display:flex;align-items:center;gap:12px;cursor:pointer" style-hover="border-color:rgba(255,255,255,.14)">
+        <div style="width:26px;height:26px;border-radius:8px;background:rgba(62,207,142,.15);display:flex;align-items:center;justify-content:center;flex:none"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3ECF8E" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></div>
+        <div style="flex:1"><div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font:600 15px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.55)">Día 2 · Tirón A</span><span style="font:500 10.5px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.3)">MAR</span></div><div style="margin-top:8px;font:500 11.5px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.35)">Hecho · 6 EJERCICIOS · 52 MIN</div></div>
+      </div>
+      <div style="padding:15px 16px;background:#0B0B0B;border:1px solid rgba(255,255,255,.07);border-radius:18px;cursor:pointer" style-hover="border-color:rgba(255,255,255,.14)">
+        <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font:600 15px/1 'Plus Jakarta Sans',sans-serif;color:#F5F5F4">Día 3 · Pierna</span><span style="font:500 10.5px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.3)">JUE</span></div>
+        <div style="margin-top:8px;font:500 11.5px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.42)">5 EJERCICIOS · 50 MIN</div>
+      </div>
+      <div style="padding:15px 16px;background:#0B0B0B;border:1px solid rgba(255,255,255,.07);border-radius:18px;cursor:pointer" style-hover="border-color:rgba(255,255,255,.14)">
+        <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font:600 15px/1 'Plus Jakarta Sans',sans-serif;color:#F5F5F4">Día 4 · Full body</span><span style="font:500 10.5px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.3)">SÁB</span></div>
+        <div style="margin-top:8px;font:500 11.5px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.42)">5 EJERCICIOS · 45 MIN</div>
+      </div>
+    </div>
+
+    <div onClick="{{ goWeeks }}" style="margin-top:18px;display:flex;align-items:center;justify-content:center;gap:8px;padding:14px;border-radius:15px;border:1px solid rgba(255,255,255,.09);cursor:pointer" style-hover="border-color:rgba(255,255,255,.2)">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(245,245,244,.55)" stroke-width="1.9" stroke-linecap="round"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M3 9h18M8 3v3M16 3v3"/></svg>
+      <span style="font:600 12.5px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.7)">Ver las 4 semanas</span>
+    </div>
+  </div>
+  <div style="position:absolute;left:0;right:0;bottom:0;height:78px;background:rgba(8,8,8,.92);backdrop-filter:blur(18px);border-top:1px solid rgba(255,255,255,.07);display:flex;align-items:flex-start;padding-top:11px">
+    <sc-for list="{{ navTabs }}" as="t" hint-placeholder-count="5">
+      <div style="{{ t.wrap }}"><div style="{{ t.iconWrap }}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="{{ t.icon }}"><path d="{{ t.d }}"/></svg></div><span style="{{ t.label }}">{{ t.name }}</span><div style="{{ t.dot }}"></div></div>
+    </sc-for>
+  </div>
+</div>
+</div>
+
+<!-- 02 · DETALLE DE DÍA -->
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;align-items:baseline;gap:9px"><span style="font:600 10.5px/1 'IBM Plex Mono',monospace;padding:4px 7px;background:#FFC72C;color:#050505;border-radius:5px">02</span><span style="font:600 12px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.72)">Detalle de día</span></div>
+<div style="width:390px;height:780px;background:#050505;border:1px solid rgba(255,255,255,.08);border-radius:34px;overflow:hidden;position:relative;box-shadow:0 30px 70px -30px rgba(0,0,0,.9)">
+  <div style="height:46px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 22px 6px;font:500 11px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.4)"><span>9:41</span><span>EN FORMA</span></div>
+  <div class="nsc" style="position:absolute;inset:46px 0 100px;padding:8px 20px 24px">
+    <div style="display:inline-flex;align-items:center;gap:7px;padding:9px 13px 9px 9px;border-radius:12px;background:#0F0F0F;border:1px solid rgba(255,255,255,.07);cursor:pointer" style-hover="border-color:rgba(255,199,44,.4)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#FFC72C" stroke-width="2.2" stroke-linecap="round"><path d="M15 6l-6 6 6 6"/></svg><span style="font:600 12.5px/1 'Plus Jakarta Sans',sans-serif;color:#FFC72C">Mi rutina</span></div>
+
+    <div style="margin-top:18px;font:900 26px/1.1 Archivo,sans-serif;color:#F5F5F4;letter-spacing:-.02em;text-transform:uppercase">Día 1 · Empuje A</div>
+    <div style="margin-top:8px;font:500 11.5px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.42)">5 EJERCICIOS · ~48 MIN</div>
+
+    <div style="margin-top:16px;padding:12px 13px;background:rgba(255,199,44,.06);border-radius:13px;font:400 12px/1.55 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.65)"><span style="color:#FFC72C;font-weight:700">D ·</span> Este bloque toca subir peso en press banca si RIR fue 3+ las dos últimas semanas.</div>
+
+    <div style="margin-top:16px;display:flex;flex-direction:column;gap:9px">
+      <sc-for list="{{ exercises }}" as="ex" hint-placeholder-count="5">
+        <div style="display:flex;gap:12px;align-items:center;padding:11px;background:#0B0B0B;border:1px solid rgba(255,255,255,.07);border-radius:17px;cursor:pointer" style-hover="border-color:rgba(255,255,255,.16)">
+          <div style="width:20px;font:600 11px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.3);text-align:center;flex:none">{{ ex.n }}</div>
+          <div style="width:60px;height:60px;border-radius:13px;background:#141414;flex:none"></div>
+          <div style="flex:1;min-width:0">
+            <div style="font:600 13.5px/1 'Plus Jakarta Sans',sans-serif;color:#F5F5F4">{{ ex.name }}</div>
+            <div style="margin-top:7px;display:flex;gap:6px;flex-wrap:wrap">
+              <span style="font:600 10px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.5);padding:5px 7px;background:rgba(255,255,255,.05);border-radius:7px">{{ ex.sets }}</span>
+              <span style="font:600 10px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.5);padding:5px 7px;background:rgba(255,255,255,.05);border-radius:7px">{{ ex.load }}</span>
+              <span style="font:600 10px/1 'IBM Plex Mono',monospace;color:#FFC72C;padding:5px 7px;background:rgba(255,199,44,.13);border-radius:7px">{{ ex.rir }}</span>
+            </div>
+          </div>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(245,245,244,.32)" stroke-width="2" stroke-linecap="round" style="flex:none"><path d="M9 6l6 6-6 6"/></svg>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+  <div style="position:absolute;left:20px;right:20px;bottom:20px"><div style="height:56px;border-radius:16px;background:#FFC72C;display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="filter:brightness(1.05)"><span style="font:700 15.5px/1 'Plus Jakarta Sans',sans-serif;color:#050505">Empezar entreno</span></div></div>
+</div>
+</div>
+
+<!-- 03 · VER SEMANAS -->
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;align-items:baseline;gap:9px"><span style="font:600 10.5px/1 'IBM Plex Mono',monospace;padding:4px 7px;background:#FFC72C;color:#050505;border-radius:5px">03</span><span style="font:600 12px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.72)">Ver semanas</span></div>
+<div style="width:390px;height:780px;background:#050505;border:1px solid rgba(255,255,255,.08);border-radius:34px;overflow:hidden;position:relative;box-shadow:0 30px 70px -30px rgba(0,0,0,.9)">
+  <div style="height:46px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 22px 6px;font:500 11px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.4)"><span>9:41</span><span>EN FORMA</span></div>
+  <div class="nsc" style="position:absolute;inset:46px 0 24px;padding:8px 20px 24px">
+    <div style="display:inline-flex;align-items:center;gap:7px;padding:9px 13px 9px 9px;border-radius:12px;background:#0F0F0F;border:1px solid rgba(255,255,255,.07);cursor:pointer"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#FFC72C" stroke-width="2.2" stroke-linecap="round"><path d="M15 6l-6 6 6 6"/></svg><span style="font:600 12.5px/1 'Plus Jakarta Sans',sans-serif;color:#FFC72C">Mi rutina</span></div>
+
+    <div style="margin-top:18px;font:900 26px/1.1 Archivo,sans-serif;color:#F5F5F4;letter-spacing:-.02em;text-transform:uppercase">Bloque de fuerza</div>
+    <div style="margin-top:8px;font:500 11.5px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.42)">4 SEMANAS · TERMINA EL 30 AGO</div>
+
+    <div style="margin-top:20px;display:flex;flex-direction:column;gap:10px">
+      <sc-for list="{{ weekRows }}" as="wk" hint-placeholder-count="4">
+        <div style="{{ wk.card }}">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <span style="{{ wk.title }}">{{ wk.label }}</span>
+            <span style="{{ wk.status }}">{{ wk.statusTxt }}</span>
+          </div>
+          <div style="display:flex;gap:7px;margin-top:12px">
+            <sc-for list="{{ wk.days }}" as="d" hint-placeholder-count="4">
+              <div style="{{ d.box }}"><span style="{{ d.txt }}">{{ d.short }}</span></div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- 04 · REGLAS -->
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;align-items:baseline;gap:9px"><span style="font:600 10.5px/1 'IBM Plex Mono',monospace;padding:4px 7px;background:#FFC72C;color:#050505;border-radius:5px">04</span><span style="font:600 12px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.72)">Reglas del módulo</span></div>
+<div style="width:390px;background:#0B0B0B;border:1px solid rgba(255,255,255,.08);border-radius:24px;padding:26px">
+  <div style="font:900 19px/1.2 Archivo,sans-serif;color:#F5F5F4;letter-spacing:-.01em;text-transform:uppercase;margin-bottom:14px">Rutinas</div>
+  <ul style="margin:0;padding:0 0 0 16px;font:400 12.5px/1.75 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.58)">
+    <li>El día de hoy siempre se distingue con oro; un día ya hecho pasa a verde y baja de contraste, nunca desaparece de la lista.</li>
+    <li>El selector de semana es un segmentado de máximo 4-6 pastillas — más de eso, usar «Ver las 4 semanas» como salida.</li>
+    <li>La ficha de día repite los chips de Componentes (series · carga · RIR); nunca inventa un tratamiento nuevo.</li>
+    <li>«Empezar entreno» es el único botón primario de la pantalla y lleva directo a la Sesión en curso.</li>
+    <li>La vista de semanas es de solo lectura: pulsar un día lleva a su detalle, no permite editar el plan (eso es del coach).</li>
+    <li>Si el bloque no tiene rutina publicada todavía, esta pantalla no se muestra — la app manda al atleta a Hoy con el aviso «Dani está montando tu plan».</li>
+  </ul>
+</div>
+</div>
+
+</div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const ICONS = [
+  { name: 'Hoy', d: 'M4 13h4l3 7 4-16 3 9h4' },
+  { name: 'Rutinas', d: 'M4 8h3v8H4zM17 8h3v8h-3zM7 12h10', active: true },
+  { name: 'Academia', d: 'M4 7l8-3 8 3-8 3zM4 7v7l8 3 8-3V7' },
+  { name: 'Nutrición', d: 'M12 4c4 0 6 3 6 7s-3 9-6 9-6-5-6-9 2-7 6-7zM12 4v16' },
+  { name: 'Perfil', d: 'M12 11a3.5 3.5 0 100-7 3.5 3.5 0 000 7zM5 20c0-3.4 3.1-5.5 7-5.5s7 2.1 7 5.5' }
+];
+
+const EXERCISES = [
+  { n: '01', name: 'Press banca inclinado', sets: '4 SERIES', load: '42,5 KG', rir: 'RIR 2' },
+  { n: '02', name: 'Press militar con mancuernas', sets: '3 SERIES', load: '18 KG', rir: 'RIR 2' },
+  { n: '03', name: 'Aperturas en polea', sets: '3 SERIES', load: '14 KG', rir: 'RIR 1' },
+  { n: '04', name: 'Fondos en paralelas', sets: '3 SERIES', load: 'PESO CORP.', rir: 'RIR 2' },
+  { n: '05', name: 'Extensión de tríceps en polea', sets: '3 SERIES', load: '25 KG', rir: 'RIR 1' }
+];
+
+const WEEKS_DATA = [
+  { label: 'Semana 1', statusTxt: 'COMPLETA', done: [true, true, true, true] },
+  { label: 'Semana 2', statusTxt: 'EN CURSO', done: [false, true, false, false], current: 0 },
+  { label: 'Semana 3', statusTxt: 'PENDIENTE', done: [false, false, false, false] },
+  { label: 'Semana 4', statusTxt: 'PENDIENTE', done: [false, false, false, false] }
+];
+
+class Component extends DCLogic {
+  state = { week: 1 };
+
+  renderVals() {
+    const navTabs = ICONS.map(t => ({
+      d: t.d,
+      name: t.name,
+      wrap: 'flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer',
+      iconWrap: 'position:relative;transform:' + (t.active ? 'translateY(-1px)' : 'none'),
+      icon: 'stroke:' + (t.active ? '#FFC72C' : 'rgba(245,245,244,.38)'),
+      label: `font:600 10px/1 'Plus Jakarta Sans',sans-serif;color:${t.active ? '#FFC72C' : 'rgba(245,245,244,.38)'}`,
+      dot: 'width:4px;height:4px;border-radius:50%;background:#FFC72C;opacity:' + (t.active ? '1' : '0')
+    }));
+
+    const weeks = [1, 2, 3, 4].map(n => {
+      const on = n === this.state.week;
+      return {
+        label: `S${n}`,
+        set: () => this.setState({ week: n }),
+        style: `flex:1;text-align:center;padding:10px 0;border-radius:10px;font:600 12px/1 'IBM Plex Mono',monospace;cursor:pointer;background:${on ? '#FFC72C' : 'transparent'};color:${on ? '#050505' : 'rgba(245,245,244,.5)'}`
+      };
+    });
+
+    const DAYS_SHORT = ['L', 'M', 'X', 'J'];
+    const weekRows = WEEKS_DATA.map(w => ({
+      label: w.label,
+      title: `font:600 15px/1 'Plus Jakarta Sans',sans-serif;color:#F5F5F4`,
+      status: `font:600 10.5px/1 'IBM Plex Mono',monospace;letter-spacing:.08em;color:${w.statusTxt === 'COMPLETA' ? '#3ECF8E' : w.statusTxt === 'EN CURSO' ? '#FFC72C' : 'rgba(245,245,244,.34)'}`,
+      statusTxt: w.statusTxt,
+      card: `background:#0B0B0B;border:1px solid ${w.statusTxt === 'EN CURSO' ? 'rgba(255,199,44,.28)' : 'rgba(255,255,255,.07)'};border-radius:18px;padding:15px 16px`,
+      days: w.done.map((d, i) => ({
+        short: DAYS_SHORT[i],
+        box: `flex:1;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:${d ? 'rgba(62,207,142,.15)' : w.current === i ? 'rgba(255,199,44,.16)' : '#141414'};border:1px solid ${w.current === i ? 'rgba(255,199,44,.5)' : 'transparent'}`,
+        txt: `font:600 11px/1 'IBM Plex Mono',monospace;color:${d ? '#3ECF8E' : w.current === i ? '#FFC72C' : 'rgba(245,245,244,.3)'}`
+      }))
+    }));
+
+    return { navTabs, weeks, exercises: EXERCISES, weekRows, goWeeks: () => {} };
+  }
+}
+</script>
+</body>
+</html>

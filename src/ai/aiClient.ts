@@ -5,15 +5,24 @@
 import { auth } from '../firebase';
 import { AiChatMessage, AiContentBlock, AiToolUseBlock } from '../types';
 import { SYSTEM_PROMPT, buildContextSuffix } from './systemPrompt';
+import { buildDoctrinaBlock } from './doctrina';
 import { TOOL_DEFINITIONS, executeTool, toolStatusLabel } from './tools';
+import { apiUrl } from '../db/apiBase';
 
-// En dev el front corre en vite (localhost:3000) sin funciones de Vercel:
-// apunta VITE_AI_PROXY_URL al proxy desplegado (https://<proyecto>.vercel.app/api/ai-chat).
-// En producción (misma origin de Vercel) basta el default relativo.
-const PROXY_URL: string = (import.meta.env.VITE_AI_PROXY_URL as string | undefined) ?? '/api/ai-chat';
+// VITE_AI_PROXY_URL sigue teniendo prioridad (dev contra un despliegue
+// concreto). Sin ella, `apiUrl` decide: ruta relativa en web, y absoluta a
+// producción en la app nativa — donde una relativa apuntaría al bundle local
+// del WebView y la llamada no saldría del móvil.
+const PROXY_URL: string =
+  (import.meta.env.VITE_AI_PROXY_URL as string | undefined)?.trim() || apiUrl('/api/ai-chat');
 
 const DEFAULT_MODEL = 'claude-sonnet-5';
 const MAX_TOOL_ROUNDS = 12;
+// api/ai-chat.ts declara maxDuration: 60 — sin un timeout de cliente por
+// encima, una función de Vercel colgada deja el chat "Pensando…" para
+// siempre, sin error ni forma de reintentar.
+const PROXY_TIMEOUT_MS = 65_000;
+const NETWORK_RETRY_DELAY_MS = 1500;
 
 export interface AgentCallbacks {
   // Se llama tras cada mensaje añadido (assistant o tool_results) — el panel lo
@@ -31,29 +40,63 @@ interface ProxyResponse {
   error?: string;
 }
 
-async function postToProxy(idToken: string, body: Record<string, unknown>): Promise<Response> {
+/** Fallo de red/timeout, distinto de una respuesta HTTP de error — el único
+ *  caso en el que tiene sentido reintentar solo. */
+class FalloDeRed extends Error {}
+
+async function postToProxy(idToken: string, body: Record<string, unknown>, round: number): Promise<Response> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), PROXY_TIMEOUT_MS);
   try {
     return await fetch(PROXY_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
       body: JSON.stringify(body),
+      signal: controller.signal,
     });
-  } catch {
-    throw new Error('No se pudo conectar con el asistente (¿proxy desplegado y VITE_AI_PROXY_URL configurada?).');
+  } catch (err) {
+    // Antes esto era un `catch {}` sin parámetro: tiraba el error original a
+    // la basura, así que era imposible distinguir CORS de un timeout, de
+    // estar sin cobertura, o de la función de Vercel cortando la conexión.
+    console.error(`[aiClient] fetch a ${PROXY_URL} falló en la ronda ${round}:`, err);
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+      throw new FalloDeRed('Sin conexión. El asistente necesita internet.');
+    }
+    if ((err as { name?: string })?.name === 'AbortError') {
+      throw new FalloDeRed(`El asistente no respondió a tiempo (ronda ${round + 1}).`);
+    }
+    throw new FalloDeRed(
+      `No se pudo conectar con el asistente (ronda ${round + 1}): ${(err as Error)?.message ?? 'error de red'}.`
+    );
+  } finally {
+    clearTimeout(timeout);
   }
 }
 
-async function callProxy(body: Record<string, unknown>): Promise<ProxyResponse['message']> {
+async function callProxy(body: Record<string, unknown>, round: number): Promise<ProxyResponse['message']> {
   const user = auth.currentUser;
   if (!user) throw new Error('Sesión caducada — vuelve a iniciar sesión.');
+
+  // Un reintento si el fallo fue de RED (no si fue un 4xx/5xx del servidor,
+  // que no se arregla repitiendo). 1,5s de espera: ni instantáneo (un hipo de
+  // wifi de medio segundo ya se ha resuelto solo) ni tan largo que el atleta
+  // crea que se ha colgado.
+  let res: Response;
+  try {
+    res = await postToProxy(await user.getIdToken(), body, round);
+  } catch (err) {
+    if (!(err instanceof FalloDeRed)) throw err;
+    console.warn(`[aiClient] reintentando ronda ${round} tras fallo de red...`);
+    await new Promise(r => setTimeout(r, NETWORK_RETRY_DELAY_MS));
+    res = await postToProxy(await user.getIdToken(), body, round);
+  }
 
   // El SDK de Firebase cachea el ID token (~1h de validez) y debería refrescarlo
   // solo, pero en pestañas de larga duración o tras suspender el portátil puede
   // quedarse enviando uno caducado. Ante un 401 del proxy, forzamos un refresco
   // real (getIdToken(true)) y reintentamos una vez antes de rendirnos.
-  let res = await postToProxy(await user.getIdToken(), body);
   if (res.status === 401) {
-    res = await postToProxy(await user.getIdToken(true), body);
+    res = await postToProxy(await user.getIdToken(true), body, round);
   }
 
   let data: ProxyResponse;
@@ -68,22 +111,82 @@ async function callProxy(body: Record<string, unknown>): Promise<ProxyResponse['
   return data.message;
 }
 
+/** Diagnóstico que Dani puede ejecutar desde el móvil (menú de ajustes del
+ *  panel del asistente) sin acceso a los logs de Vercel: un OPTIONS y un POST
+ *  mínimo a PROXY_URL, con el código HTTP y el cuerpo de error en claro. */
+export interface DiagnosticoConexion {
+  url: string;
+  optionsOk: boolean;
+  optionsError?: string;
+  postStatus?: number;
+  postBody?: string;
+  postError?: string;
+}
+
+export async function probarConexionProxy(): Promise<DiagnosticoConexion> {
+  const resultado: DiagnosticoConexion = { url: PROXY_URL, optionsOk: false };
+
+  try {
+    await fetch(PROXY_URL, { method: 'OPTIONS' });
+    resultado.optionsOk = true;
+  } catch (err) {
+    resultado.optionsError = (err as Error)?.message ?? 'error de red';
+  }
+
+  try {
+    const user = auth.currentUser;
+    const idToken = user ? await user.getIdToken() : '';
+    const res = await fetch(PROXY_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
+      body: JSON.stringify({ model: DEFAULT_MODEL, max_tokens: 1, messages: [], chatId: 'diagnostico' }),
+    });
+    resultado.postStatus = res.status;
+    resultado.postBody = (await res.text()).slice(0, 500);
+  } catch (err) {
+    resultado.postError = (err as Error)?.message ?? 'error de red';
+  }
+
+  return resultado;
+}
+
 export async function runAgentTurn(
   history: AiChatMessage[],
-  userText: string,
-  opts: { chatId: string; activeAthlete?: { email: string; name?: string }; coachInstructions?: string },
+  // `null` reanuda un turno que falló a mitad de camino: `history` YA
+  // termina en el mensaje `user` pendiente (el texto del atleta, o los
+  // tool_results de una ronda anterior — `postToProxy` solo puede fallar al
+  // principio de una ronda, con `messages` siempre en ese estado), así que
+  // no hay que volver a añadir nada. Usarlo con un texto nuevo duplicaría el
+  // turno del usuario en vez de reanudarlo.
+  userText: string | null,
+  opts: {
+    chatId: string;
+    activeAthlete?: { email: string; name?: string };
+    coachInstructions?: string;
+    doctrina?: { entrenamiento: string; nutricion: string };
+  },
   cb: AgentCallbacks = {},
 ): Promise<AiChatMessage[]> {
-  const messages: AiChatMessage[] = [
-    ...history,
-    { role: 'user', content: [{ type: 'text', text: userText }] },
-  ];
+  const messages: AiChatMessage[] = userText === null
+    ? [...history]
+    : [...history, { role: 'user', content: [{ type: 'text', text: userText }] }];
   cb.onUpdate?.(messages);
 
-  // Bloque estático cacheado + sufijo volátil (fecha, cliente activo, instrucciones
-  // fijas del coach) fuera de la caché — el prefijo debe ser byte-idéntico.
+  // Tres bloques, de más estable a más volátil — el prefijo cacheado debe ser
+  // byte-idéntico entre turnos:
+  //   1. SYSTEM_PROMPT: modelo de dominio, solo cambia con un despliegue.
+  //   2. Doctrina del coach: cambia cuando Dani edita su criterio (raro), así que
+  //      también se cachea. Va DESPUÉS del prompt para no invalidar su caché
+  //      cuando la edite.
+  //   3. Sufijo volátil (fecha, cliente activo, instrucciones fijas): fuera de caché.
+  const doctrinaBlock = opts.doctrina
+    ? buildDoctrinaBlock(opts.doctrina.entrenamiento, opts.doctrina.nutricion)
+    : '';
   const system = [
     { type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } },
+    ...(doctrinaBlock
+      ? [{ type: 'text', text: doctrinaBlock, cache_control: { type: 'ephemeral' } }]
+      : []),
     { type: 'text', text: buildContextSuffix(opts.activeAthlete, opts.coachInstructions) },
   ];
 
@@ -96,7 +199,7 @@ export async function runAgentTurn(
       tools: TOOL_DEFINITIONS,
       output_config: { effort: 'low' },
       chatId: opts.chatId,
-    });
+    }, round);
     if (!message) throw new Error('Respuesta vacía del asistente.');
 
     // Contenido del assistant VERBATIM (incluidos bloques thinking con su

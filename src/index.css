@@ -1,50 +1,541 @@
 @import "tailwindcss";
 
-@theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+/* ── Fuentes · self-host (Fase 3) ─────────────────────────────────────────────
+   Capacitor empaqueta este build para iOS/Android: un atleta en un gimnasio
+   con mala cobertura abre la app y las fuentes tienen que estar YA en el
+   bundle, no pedirse a fonts.googleapis.com en caliente. @fontsource las trae
+   como archivos estáticos (woff2 subsetéado por rango unicode), así que solo
+   se piden los pesos y subconjuntos que de verdad se usan.
 
-  /* Acento principal: volt → oro */
-  --color-accent: #fbcb1a;
-  --color-accent-dark: #d4a800;
-  --color-accent-bg: rgba(251, 203, 26, 0.10);
-  --color-accent-border: rgba(251, 203, 26, 0.30);
+   06-1 / 07-5. Material Symbols era la excepción: se pedía a
+   fonts.googleapis.com con `rel="stylesheet"`, o sea BLOQUEANDO el render.
+   572 ms medidos con banda ancha y latencia cero — el 76 % del arranque era
+   esperar a Google. Y sin cobertura no es que tardara: los iconos salían como
+   el TEXTO de su ligadura («fitness_center», «arrow_back», «close»), lo que
+   desmonta la barra inferior y todas las cabeceras.
 
-  /* Fondos (más cálidos, menos pitch black) */
-  --color-bg-base: #111110;
-  --color-bg-card: #181816;
-  --color-bg-elevated: #1e1e1b;
-  --color-bg-input: #141413;
+   Ya no. El @font-face de abajo apunta a un subconjunto commiteado con los
+   ~200 iconos que la app usa de verdad: 63 KB en vez de los ~4 MB de la fuente
+   completa, dentro del bundle y sin una sola petición a Google.
+   Se regenera con `npm run iconos:generar` al añadir un icono nuevo, y
+   `npm run iconos:comprobar` avisa si alguien usó uno que no está. */
+@import "@fontsource/archivo/700.css";
+@import "@fontsource/archivo/900.css";
+@import "@fontsource/plus-jakarta-sans/400.css";
+@import "@fontsource/plus-jakarta-sans/500.css";
+@import "@fontsource/plus-jakarta-sans/600.css";
+@import "@fontsource/plus-jakarta-sans/700.css";
+@import "@fontsource/plus-jakarta-sans/800.css";  /* font-extrabold, 23 usos existentes */
+@import "@fontsource/ibm-plex-mono/400.css";
+@import "@fontsource/ibm-plex-mono/500.css";
+@import "@fontsource/ibm-plex-mono/600.css";
 
-  /* Bordes */
-  --color-border: rgba(255, 255, 255, 0.07);
-  --color-border-strong: rgba(255, 255, 255, 0.12);
+/* `font-display: block` y no `swap`, al revés que en las fuentes de texto: en
+   una fuente de ligaduras el «texto sin fuente» no es el mismo texto con otra
+   tipografía, es la cadena «arrow_back» dentro del botón. Bloquear es lo
+   correcto aquí, y con la fuente en el bundle el bloqueo es de milisegundos.
+   Los ejes son los mismos que declaraba el <link> retirado de index.html. */
+@font-face {
+  font-family: "Material Symbols Outlined";
+  font-style: normal;
+  font-weight: 100 700;
+  font-display: block;
+  src: url("./assets/fonts/material-symbols-subset.woff2") format("woff2");
+}
 
-  /* Texto */
-  --color-text-primary: #f5f5f0;
-  --color-text-secondary: #a8a89e;
-  --color-text-muted: #555550;
+/* ═══════════════════════════════════════════════════════════════════════════
+   TOKENS DEL DESIGN SYSTEM
+   Fuente única de verdad del color en Forma. Los valores viven aquí, en CSS,
+   porque es lo único que Tailwind v4 sabe leer: no hay tailwind.config.js.
 
-  /* Estados (sin cambio) */
-  --color-success: #86efac;
-  --color-warning: #fdba74;
-  --color-danger: #fca5a5;
-  --color-cyan: #00eefc;
+   Regla dura: TypeScript elige QUÉ token, nunca QUÉ valor. Interpolar un valor
+   dentro de un className (`bg-[${x}]`) no genera CSS, no falla el build y no
+   avisa en consola — el estilo simplemente desaparece.
 
-  /* Radio consistente */
-  --radius-sm: 0.5rem;
-  --radius-md: 0.75rem;
-  --radius-lg: 1rem;
-  --radius-xl: 1.25rem;
+   Estructura, para que las fases siguientes inserten sin reescribir:
+     · Tipografía        familias (F1) · escala de tamaños (F4) · display (F3.1)
+     · Color             superficies, texto, líneas, marca, dato, estado (F1)
+     · Radios            (F3)
+     · Elevación         (F6)
+     · Motion            (F3.2)
+   `static` es obligatorio: sin él Tailwind solo emite las variables que alguna
+   clase de utilidad usa, y un `var(--color-x)` escrito en un estilo en línea o
+   en un atributo SVG se quedaría sin definir — sin error de compilación y sin
+   aviso en consola. Es la misma clase de fallo silencioso que frenó theme.ts.
+
+   ── Fase 3 (2026-08) ──────────────────────────────────────────────────────
+   Re-skin del handoff de experiencia (docs/design/fase3/). Mutación en el
+   sitio: los nombres de token no cambian, así que los 113 consumidores
+   existentes heredan la piel nueva sin tocar un componente. Donde la escala
+   del handoff es más fina que la actual (radios, superficies, texto), se
+   AÑADEN tokens nuevos en vez de forzar la escala vieja — las primitivas los
+   adoptan en F3.3.
+   ═══════════════════════════════════════════════════════════════════════════ */
+@theme static {
+  /* ── Tipografía ─────────────────────────────────────────────────────────── */
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
+  /* Solo para titulares y cifras protagonistas (--text-hero/-headline/-feature
+     de abajo, o combinada con un --text-title-* existente). Nunca en cuerpo
+     ni en UI: el handoff reserva Archivo para "lo que se lee de lejos". */
+  --font-display: "Archivo", ui-sans-serif, system-ui, sans-serif;
+
+  /* ── Escala tipográfica · 8 pasos ───────────────────────────────────────────
+     Cualquier tamaño fuera de esta tabla está prohibido. Antes convivían 16.
+
+     11 px es el suelo absoluto y solo para metadatos que no cambian una
+     decisión. 16 px es el mínimo en campos de formulario: por debajo, iOS
+     Safari hace zoom al enfocar y no revierte.
+
+     `title-m` (19) y `body` (15) NO existen en la escala de Tailwind: son la
+     razón de que estos tokens tengan que declararse en vez de reutilizar
+     text-lg o text-sm.
+
+     Deliberadamente NO se declara `--text-*--font-weight`: emitiría el peso
+     dentro de la misma regla que el tamaño y competiría con las clases
+     `font-*` existentes según el orden de la hoja, que es justo la clase de
+     conflicto silencioso que esta migración intenta eliminar. El peso se
+     controla con clases explícitas. */
+  --text-display: 32px;
+  --text-display--line-height: 1.05;
+  --text-display--letter-spacing: -0.02em;
+
+  --text-title-l: 24px;
+  --text-title-l--line-height: 1.15;
+  --text-title-l--letter-spacing: -0.02em;
+
+  --text-title-m: 19px;
+  --text-title-m--line-height: 1.25;
+  --text-title-m--letter-spacing: -0.015em;
+
+  --text-title-s: 16px;
+  --text-title-s--line-height: 1.3;
+  --text-title-s--letter-spacing: -0.01em;
+
+  --text-body: 15px;
+  --text-body--line-height: 1.55;
+
+  --text-body-s: 13px;
+  --text-body-s--line-height: 1.5;
+
+  /* `label` es el único paso cuya definición en el DS no es solo un tamaño sino
+     un estilo completo: 12 px, monoespaciada, versalitas y +0.06em de tracking.
+     Aquí se declara SOLO el tamaño. Motivo: de los 687 `text-xs` de la app,
+     604 no llevan tracking y son prosa —mensajes de error, texto corrido—, no
+     versalitas. Emitir el tracking en el token se lo aplicaría a los 604, que
+     es una decisión semántica dentro de la fase mecánica y, además, ensancha
+     unos 14 px cada línea de 20 caracteres: el riesgo de desbordamiento que el
+     plan llama «el más subestimable».
+     El tracking de las versalitas sigue donde ya estaba, en las clases
+     `tracking-*` explícitas. Qué textos son de verdad etiquetas lo decide F5. */
+  --text-label: 12px;
+  --text-label--line-height: 1.2;
+
+  --text-caption: 11px;
+  --text-caption--line-height: 1.35;
+  --text-caption--letter-spacing: 0.02em;
+
+  /* ── Escala display · 3 pasos (Fase 3) ──────────────────────────────────────
+     El handoff pide titulares y cifras protagonistas de 38 a 46 px en Archivo
+     900 — por encima de cualquier paso de la escala de arriba (tope: 32).
+     Igual que el resto del sistema, se gobiernan con pocos pasos: 46/38/26
+     cubren el rango observado (títulos de pantalla, "TE QUEDAN" de Nutrición,
+     nombre de ejercicio en Sesión, cifra "tu mejor serie"). Un titular de 24
+     no necesita paso propio: ya existe `--text-title-l`, y la familia se elige
+     aparte con `font-display` — el tamaño y la familia son variables
+     independientes en este sistema, igual que en la escala de abajo.
+     Las cifras de cardio en vivo (60-72 px) siguen siendo la excepción ya
+     documentada en DESIGN_SYSTEM_STATUS.md, no un cuarto paso de esta escala. */
+  --text-hero: 46px;
+  --text-hero--line-height: 1.05;
+  --text-hero--letter-spacing: -0.03em;
+
+  --text-headline: 38px;
+  --text-headline--line-height: 1.05;
+  --text-headline--letter-spacing: -0.025em;
+
+  --text-feature: 26px;
+  --text-feature--line-height: 1.1;
+  --text-feature--letter-spacing: -0.02em;
+
+  /* ── Escala de icono · 4 pasos ──────────────────────────────────────────────
+     Un icono NO es texto y no pertenece a la escala de arriba, aunque hasta
+     ahora se dimensionara con ella: los 590 Material Symbols de la app llevan
+     `text-body-s` o `text-title-l` porque el glifo se escala con `font-size`,
+     no porque 13 px sea su tamaño correcto. Un icono no tiene interlineado que
+     respetar ni longitud de línea que medir, y su tamaño se elige por peso
+     óptico junto al texto que acompaña.
+
+     Por eso son tokens aparte, en pasos de 4 px, y por eso los consume la
+     primitiva `ui/Icon` y nadie más. Quedan fuera del contador «escalones de
+     tamaño en uso», que mide la escala tipográfica: son otra escala.
+
+       s    16   junto a texto de 11-13 px, iconos dentro de chips y badges
+       m    20   junto a títulos de 16 px, iconos de campo y de fila de lista
+       l    24   botones de solo icono, navegación, cabeceras
+       xl   32   estados vacíos y el icono protagonista de una tarjeta       */
+  --text-icon-s:  16px;
+  --text-icon-m:  20px;
+  --text-icon-l:  24px;
+  --text-icon-xl: 32px;
+
+  /* ── Superficies · 6 (Fase 3) ───────────────────────────────────────────────
+     El handoff distingue seis niveles donde antes había cuatro: el fondo casi
+     negro (`bg`) obliga a más pasos intermedios para que una tarjeta sobre
+     otra tarjeta siga siendo legible. `field` pasa a compartir valor con
+     `surface` —el handoff no hunde los campos, los pone al mismo nivel que la
+     tarjeta que los contiene—; `inset` es el nuevo escalón hundido de verdad
+     (miniaturas, botón "menos" del stepper, fondo del toast, botón
+     deshabilitado); `track` es solo para pistas de barra de progreso y
+     segmentos pendientes. */
+  --color-bg:      #050505;
+  --color-surface: #0B0B0B;
+  --color-raised:  #0F0F0F;
+  --color-field:   #0B0B0B;
+  --color-inset:   #141414;
+  --color-track:   #1a1a1a;
+
+  /* ── Texto · 5 + inverso (Fase 3) ───────────────────────────────────────────
+     El handoff expresa el texto secundario como alfa sobre `ink`, no como un
+     gris sólido nuevo: así el texto se comporta igual sobre cualquier
+     superficie (surface/raised/inset) sin recalcular contraste por par de
+     colores. `ink-4`/`ink-5` son nuevos —etiqueta mono y pie de página—, por
+     debajo de `ink-3` no hay más pasos: seguir bajando el alfa deja de leerse. */
+  --color-ink:       #F5F5F4;
+  --color-ink-2:     rgba(245, 245, 244, 0.6);   /* apoyo, etiquetas, descripciones */
+  --color-ink-3:     rgba(245, 245, 244, 0.45);  /* placeholders, ayudas, timestamps */
+  --color-ink-4:     rgba(245, 245, 244, 0.34);  /* etiqueta mono, dato terciario    */
+  --color-ink-5:     rgba(245, 245, 244, 0.26);  /* pie de página, texto deshabilitado */
+  --color-on-accent: #050505;  /* único color admitido sobre el oro             */
+
+  /* ── Líneas · 3 ─────────────────────────────────────────────────────────────
+     Todos los bordes son de 1 px. El borde —no la sombra— define una superficie.
+     Nada de blanco por encima del 12 %: sobre #050505 es una línea blanca.
+     `accent-line` se llama así, y no `accent`, porque `--color-accent` ya es el
+     oro sólido: en Tailwind ambos generarían la misma clase `border-accent`.
+     El handoff usa oro al 45/42/40/55 % según el contexto (chip seleccionado,
+     contorno de botón secundario, selector inactivo, foco del tutorial): esos
+     matices no son tokens nuevos, son el modificador de opacidad de Tailwind
+     v4 sobre `--color-accent` (`border-accent/42`, `border-accent/55`) — el
+     mismo mecanismo que ya usan 200+ sitios con `border-white/N`. */
+  --color-hairline:    rgba(255, 255, 255, 0.07);
+  --color-strong:      rgba(255, 255, 255, 0.12);
+  --color-accent-line: rgba(255, 199, 44, 0.45);
+
+  /* ── Marca · 2 ──────────────────────────────────────────────────────────────
+     El oro significa exactamente una cosa: lo siguiente que tienes que hacer.
+     Máximo un elemento amarillo relleno por pantalla visible. */
+  --color-accent:       #FFC72C;
+  --color-accent-press: #D9A925;  /* solo pulsado y hover del primario        */
+  --color-accent-bg:    rgba(255, 199, 44, 0.14);
+
+  /* ── Dato · 1 ───────────────────────────────────────────────────────────────
+     El cian nunca es una acción. Serie principal de gráfica, métricas de cuerpo.
+     En retirada: el handoff no lo usa fuera de zonas de FC (excepción propia,
+     ver --color-chart-*); se borra cuando su contador llegue a 0 (F15). */
+  --color-data: #00eefc;
+
+  /* ── Estado · 4 ─────────────────────────────────────────────────────────────
+     Un tono por estado: texto al 100 %, fondo a un alfa bajo, borde a uno medio
+     (aplicados por opacidad en cada consumidor, no como tokens separados).
+     `success`/`danger` son los del handoff (verde/rojo de fuerza y nutrición).
+     `warning`/`info` NO están en el handoff —sus pantallas resuelven "atención"
+     y "informativo" con oro— pero 45+ sitios de análisis del coach (gráficas
+     de correlación, carga de entrenamiento, dashboards con más de dos estados)
+     los necesitan como una tercera y cuarta categoría real, no decorativa.
+     Se mantienen sin cambio de valor: no forman parte del re-skin. */
+  --color-success: #3ECF8E;  /* completado, al día, dentro de objetivo        */
+  --color-warning: #fdba74;  /* atención sin urgencia (fuera del handoff)     */
+  --color-danger:  #FF5A4E;  /* error, atrasado, acción destructiva           */
+  --color-info:    #93c5fd;  /* neutro informativo (fuera del handoff)        */
+
+  /* ── Series de gráfica · 5 ──────────────────────────────────────────────────
+     Orden de asignación fijo; la primera serie siempre es `data`. Se declaran
+     aquí para que ningún hex literal sobreviva en los paneles de gráficas.
+     Los valores siguen a `data`/`accent`/`success` para no desincronizarse del
+     token que dicen representar. Una sexta serie significa que la gráfica está
+     mal planteada. Excepción propia y ya documentada: las 5 zonas de FC de
+     Cardio/Gráficas usan sus propios colores (Z1-Z5), no esta escala. */
+  --color-chart-1: #00eefc;  /* = data    */
+  --color-chart-2: #FFC72C;  /* = accent  */
+  --color-chart-3: #a78bfa;
+  --color-chart-4: #3ECF8E;  /* = success */
+  --color-chart-5: #fdba74;  /* = warning */
+
+
+  /* ── Radios · 6 + full (Fase 3) ─────────────────────────────────────────────
+     El handoff pide más granularidad que los tres pasos originales — nueve
+     valores entre 8 y 26 px según el elemento. En vez de perseguir cada
+     número exacto (a 375 px la diferencia entre 15 y 16, o entre 18 y 20, no
+     se percibe — la propia fase F3 de la migración ya estableció ese
+     criterio), se amplía a seis pasos que absorben los valores cercanos:
+
+       chip      11   chips, casillas, pastillas mono               (nuevo)
+       control   14   cuadros de icono, miniaturas, botones de icono (10→14, absorbe 13)
+       field     16   botones y campos de entrada                    (nuevo, absorbe 15)
+       surface   20   tarjetas, filas de lista, banners              (16→20, absorbe 18)
+       canvas    24   tarjeta grande, Dialog
+       sheet     26   Sheet — bottom sheets                          (nuevo)
+       full      —    avatares, pills de estado, FAB, interruptores, anillos
+
+     Regla de anidamiento igual que antes: un hijo baja de escalón respecto a
+     su padre (nunca igual, nunca mayor). `control` y `surface` mutan de valor
+     en este commit, así que los 113 consumidores existentes de
+     `rounded-control`/`rounded-surface` heredan el radio nuevo sin tocar un
+     componente; la migración de Button/Input a `field` y de Chip a `chip`
+     ocurre en F3.3 (primitivas), no aquí. */
+  --radius-chip:    11px;
+  --radius-control: 14px;
+  --radius-field:   16px;
+  --radius-surface: 20px;
+  --radius-canvas:  24px;
+  --radius-sheet:   26px;
+
+  /* ── Elevación · 3 + ninguna ────────────────────────────────────────────────
+     Sobre un fondo casi negro la sombra apenas se percibe: la elevación se
+     comunica CAMBIANDO DE SUPERFICIE, no proyectando sombra. Por eso el nivel
+     por defecto es «ninguna» y no existe token para él — una tarjeta sin
+     sombra no lleva clase, la lleva la excepción.
+
+       e0     por defecto: tarjetas, paneles, filas, botones. El borde
+              `hairline` hace todo el trabajo. Se expresa NO poniendo sombra.
+       e1     solo lo que flota sobre contenido que se desplaza: barra de
+              navegación, barras sticky, FAB, toast, tooltip de gráfica.
+       e2     solo overlays: modal, bottom sheet, popover, menú desplegable.
+       glow   uno por pantalla como máximo, y solo señalando la acción
+              siguiente. Es información, no decoración: cuando el brillo está
+              en todas partes deja de indicar «esto es lo importante».        */
+  --shadow-e1:   0 2px 8px rgba(0, 0, 0, 0.4);
+  --shadow-e2:   0 12px 32px rgba(0, 0, 0, 0.55);
+  --shadow-glow: 0 0 24px -6px rgba(255, 199, 44, 0.35);
+
+  /* ── Motion (F3.2) ──────────────────────────────────────────────────────────
+     Un solo easing para todo el sistema — el handoff es explícito: mezclar
+     curvas es lo que hace que una app se sienta cosida a trozos. `--ease-*` sí
+     tiene namespace propio en Tailwind v4 (genera la utilidad `ease-brand`);
+     las duraciones no [`--duration-N` de Tailwind ya genera Nms sin theme, así
+     que no hay hueco para un `--duration-base` con nombre] — se declaran como
+     variables sueltas en `:root`, justo después de este bloque, y se leen con
+     la sintaxis `duration-(--duration-base)` de Tailwind v4 o directamente en
+     el `animation` shorthand de las entradas de abajo.
+
+     Regla dura repetida en el handoff: las salidas son siempre más rápidas
+     que las entradas (`exit` 140 ms es el paso más corto de la escala) y los
+     números que el usuario lee mientras cambian —cronómetros, reps— no se
+     animan nunca, entren por donde entren. */
+  --ease-brand: cubic-bezier(0.2, 0.9, 0.2, 1);
+
+  /* Animaciones de entrada/estado nombradas — Tailwind v4 las expone como
+     `animate-fade-up`, `animate-scale-y-in`, etc. Sus `@keyframes` van justo
+     debajo, dentro de este mismo `@theme`: es el patrón que usa el propio
+     Tailwind para `animate-spin`/`animate-pulse` (ver
+     node_modules/tailwindcss/theme.css) — un `@theme` puede anidar `@keyframes`
+     y así el nombre corto y su definición viven en un solo sitio. */
+  --animate-fade-up:        fade-up var(--duration-stagger-item) var(--ease-brand) both;
+  --animate-scale-y-in:     scale-y-in var(--duration-stagger-item) var(--ease-brand) both;
+  --animate-skeleton-sweep: skeleton-sweep 1.4s linear infinite;
+  --animate-pulse-dot:      pulse-dot 1.6s var(--ease-brand) infinite;
+  --animate-ghost-tap:      ghost-tap 1.1s var(--ease-brand) infinite;
+  --animate-seal-pop:       seal-pop var(--duration-stagger-item) var(--ease-brand) both;
+  --animate-sheet-in:       sheet-in var(--duration-sheet) var(--ease-brand) both;
+  --animate-toast-in:       toast-in var(--duration-slide) var(--ease-brand) both;
+
+  /* fade-up — entrada por defecto de tarjetas y filas escalonadas. */
+  @keyframes fade-up {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: none; }
+  }
+
+  /* scale-y-in — barras de sparkline creciendo desde la base (transform-origin
+     lo fija el propio componente, no el keyframe: una barra crece hacia
+     arriba, un icono con esta animación crecería desde su centro). */
+  @keyframes scale-y-in {
+    from { transform: scaleY(0); }
+    to   { transform: scaleY(1); }
+  }
+
+  /* skeleton-sweep — el barrido de luz de los esqueletos de carga. Gradiente y
+     color los pone el componente (Skeleton); esto solo mueve la posición. */
+  @keyframes skeleton-sweep {
+    from { background-position: -200% 0; }
+    to   { background-position: 200% 0; }
+  }
+
+  /* pulse-dot — el punto que late: "requiere acción" en Home Coach/CRM, "en
+     revisión" en los vacíos de Nutrición. Opacidad, no escala: un punto que
+     cambia de tamaño se lee como si fuera a desaparecer. */
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: 0.35; }
+  }
+
+  /* ghost-tap — el anillo del tutorial que respira sobre el punto que hay que
+     tocar. Escala de .72 a 1.5 y se desvanece: nunca llega a 0 de golpe. */
+  @keyframes ghost-tap {
+    0%   { transform: scale(0.72); opacity: 0.9; }
+    70%  { transform: scale(1.15); opacity: 0.35; }
+    100% { transform: scale(1.5);  opacity: 0; }
+  }
+
+  /* seal-pop — el sello de check al cerrar un anillo (día de nutrición, semana
+     de cardio, cierre del tutorial). Rebote corto, nunca oscila más de una
+     vez: es una confirmación, no una celebración ruidosa. */
+  @keyframes seal-pop {
+    0%   { transform: scale(0.62); opacity: 0; }
+    55%  { transform: scale(1.07); opacity: 1; }
+    100% { transform: scale(1);    opacity: 1; }
+  }
+
+  /* sheet-in — Sheet y la hoja de Dani del tutorial entrando desde abajo. */
+  @keyframes sheet-in {
+    from { transform: translateY(26px) scale(0.985); opacity: 0; }
+    to   { transform: none; opacity: 1; }
+  }
+
+  /* toast-in — más corto y con menos recorrido que sheet-in: un toast no
+     "sube desde el borde", solo se asienta. */
+  @keyframes toast-in {
+    from { transform: translateY(22px) scale(0.97); opacity: 0; }
+    to   { transform: none; opacity: 1; }
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   DURACIONES (F3.2)
+   Escala corta y nombrada por lo que hace, no por el número: así un
+   componente elige "esto es una salida" y no "yo diría que 140 ms". Fuera de
+   la tabla, prohibido — misma gobernanza que la escala tipográfica.
+   Se consumen con la sintaxis `duration-(--duration-x)` de Tailwind v4
+   (equivale a `duration-[var(--duration-x)]`) para transiciones normales, o
+   ya están incrustadas en los `--animate-*` de arriba para keyframes.
+   ═══════════════════════════════════════════════════════════════════════════ */
+:root {
+  --duration-exit:         140ms;  /* toda salida — siempre la más corta      */
+  --duration-state:        200ms;  /* cambio de color/estado                  */
+  --duration-base:         240ms;  /* press de botón, la mayoría de entradas  */
+  --duration-slide:        340ms;  /* lista→detalle, cambio de ejercicio      */
+  --duration-sheet:        380ms;  /* Sheet/hoja de Dani entrando             */
+  --duration-bar:          450ms;  /* ancho de barra de progreso              */
+  --duration-stagger-item: 550ms;  /* entrada de tarjeta/fila individual      */
+  --duration-ring:        1100ms;  /* anillo SVG cerrándose + sello           */
 }
 
 @layer utilities {
-  .volt-glow {
-    box-shadow: 0 0 12px 2px rgba(251, 203, 26, 0.2);
+  /* Stagger sin hook de JS: cada hijo lleva `style={{ '--i': idx }}` y esta
+     clase multiplica por 40 ms — el paso que fija el handoff entre elementos
+     de una misma lista. `--i` por defecto 0 para que un elemento suelto (sin
+     el estilo en línea) no herede un retraso de otra lista. */
+  .stagger-child {
+    animation-delay: calc(var(--i, 0) * 40ms);
   }
-  .cyan-glow {
-    box-shadow: 0 0 12px 2px rgba(0, 238, 252, 0.2);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PREFERS-REDUCED-MOTION
+   Anula duración e iteración de CUALQUIER transition/animation CSS —las
+   utilidades de Tailwind (`transition-*`, `duration-*`) y las `--animate-*`
+   de arriba por igual— sin tener que auditar cada componente uno a uno. Es
+   la anulación estándar (0.01ms, no 0ms: algunos navegadores tratan
+   duración 0 como "sin transición" y disparan el evento `transitionend` de
+   forma distinta). El motion dirigido por JavaScript (anillos con `rAF`, el
+   recorrido de scroll del tutorial, una cuenta atrás) no pasa por CSS: ese
+   usa el hook `useReducedMotion` (`ui/internal/useReducedMotion.ts`) para
+   decidir en el propio código si interpola o salta al estado final. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   GEOMETRÍA DEL MARCO
+   Alturas de la cabecera y de la barra inferior. Los propios elementos toman
+   su altura de aquí, así que la variable no puede quedarse desfasada respecto
+   a lo que se renderiza — que es justo lo que había pasado: el código asumía
+   65 px en cuatro sitios mientras la cabecera de escritorio medía 78 y la de
+   móvil 70, y por eso el contenido se metía debajo.
+
+   Todo lo que se posiciona contra el marco —barras sticky, el relleno inferior
+   de la página, el botón flotante, el toast— consume estas variables. Nunca un
+   número a mano.
+   ═══════════════════════════════════════════════════════════════════════════ */
+:root {
+  /* Safe area superior: 0 en escritorio y en un iPhone SE, ~59 px en uno con
+     isla dinámica. Se declara como token para que la cabecera, el aviso rojo y
+     el alta del atleta lean el MISMO valor — antes ninguna de las tres
+     reservaba nada y las tres se metían debajo de la barra de estado (07-1,
+     07-2, 07-3): la hora del sistema se solapaba con "EN FORMA". */
+  --safe-top: env(safe-area-inset-top, 0px);
+  /* Altura TOTAL de la cabecera, safe area incluida. El contenido interno
+     sigue midiendo 70 px porque la cabecera lleva `padding-top: var(--safe-top)`
+     y `box-sizing: border-box`. Así lo que se posiciona contra la cabecera
+     (el `main` de escritorio, las barras sticky) no necesita saber nada de
+     safe areas: le basta con --header-h, como hasta ahora. */
+  --header-h: calc(70px + var(--safe-top));
+  /* 78 px de contenido (Fase 3, F3.4: antes 59) + la safe area del iPhone,
+     que en escritorio son 20 px. */
+  --nav-h: calc(78px + max(20px, env(safe-area-inset-bottom, 20px)));
+  /* Ancho de la navegación lateral de escritorio. El propio panel y el margen
+     que le deja el contenido salían ambos de un 280 escrito a mano en dos
+     sitios: si uno cambiaba, el otro se quedaba desfasado — que es el fallo
+     que F2 corrigió con la altura de la cabecera. */
+  --sidebar-w: 280px;
+}
+
+@media (min-width: 768px) {
+  :root {
+    --header-h: calc(78px + var(--safe-top));
+    --nav-h: 0px; /* en escritorio la navegación es lateral, no inferior */
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   CAPAS
+   Los valores son EXACTAMENTE los que ya había: esto le pone nombre al orden
+   existente, no lo reordena. Así ningún elemento cambia de capa al adoptarlo.
+
+   A partir de ahora, un elemento nuevo elige una capa por su significado, no
+   mirando el número del vecino — que es como se llegó a tener once valores
+   sueltos entre z-10 y z-[200].
+   ═══════════════════════════════════════════════════════════════════════════ */
+:root {
+  --z-sticky:   10;  /* barras sticky dentro de una pantalla                  */
+  --z-subnav:   20;  /* pestañas de zona/sub-zona de la ficha de cliente.
+                         Dentro de la ficha de cliente, ningún panel sube por
+                         encima de --z-sticky: por eso este valor va antes.   */
+  --z-header:   40;  /* cabecera de la aplicación                             */
+  --z-nav:      50;  /* barra de navegación inferior                          */
+  --z-fab:      60;  /* botón flotante                                        */
+  --z-overlay:  90;  /* fondo oscurecido de un modal                          */
+  --z-modal:   100;  /* modal, bottom sheet, popover, menú                    */
+  --z-toast:   200;  /* avisos: siempre por encima de todo                    */
+}
+
+/* Los títulos reparten sus líneas en vez de dejar una palabra suelta abajo.
+   Evita el «Historial / unificado» partido en dos que señala la auditoría.
+   Se aplica a los encabezados, no a los tokens: un token es un tamaño y puede
+   usarse en algo que no sea un título. */
+h1, h2, h3, h4, h5, h6 {
+  text-wrap: balance;
+}
+
+@layer base {
+  /* iOS amplía la página al enfocar un control con fuente < 16px y no la
+     devuelve (ver index.html). Suelo de 16px en móvil para TODO control de
+     formulario, aunque el diseño le pida un tamaño de texto menor. */
+  @media (max-width: 767px) {
+    input:not([type='checkbox']):not([type='radio']),
+    select,
+    textarea {
+      font-size: max(16px, 1em);
+    }
+  }
+}
+
+@layer utilities {
   .hide-scrollbar::-webkit-scrollbar {
     display: none;
   }
@@ -52,6 +543,75 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   BASE DE LA PRIMITIVA Icon
+   La clase de Google, `.material-symbols-outlined`, trae `font-size: 24px`
+   dentro, y viene de una hoja EXTERNA que no está en ninguna capa. En la
+   cascada, una declaración sin capa gana a cualquier declaración normal que sí
+   esté en una, y todas las utilidades de Tailwind v4 viven en `@layer
+   utilities`. Resultado medido en el navegador: los 590 iconos de la app se
+   renderizan a 24 px pase lo que pase, y los `text-caption`, `text-body-s` o
+   `text-display` que llevan al lado no cambian nada. El token estaba escrito,
+   la clase se generaba, y aun así no se aplicaba: el fallo silencioso de
+   siempre, esta vez por capas y no por interpolación.
+
+   Por eso la primitiva no usa la clase de Google. Reproduce lo que necesita
+   —familia, ligaduras, caja— y deja fuera exactamente una propiedad: el
+   tamaño, que es lo que el token tiene que poder decidir.
+
+   Va sin capa a propósito: es la base sobre la que la utilidad de tamaño
+   escribe, y no debe competir con ella.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.ui-icon {
+  font-family: "Material Symbols Outlined";
+  font-weight: normal;
+  font-style: normal;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  font-feature-settings: "liga";
+  -webkit-font-feature-settings: "liga";
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   `.material-symbols-outlined` — la clase que servía Google
+
+   Al empaquetar la fuente (06-1) desaparece la hoja externa, y con ella esta
+   clase, que SIGUEN usando 281 iconos repartidos por 33 ficheros: la migración
+   a la primitiva `Icon` va pantalla a pantalla y no ha terminado. Sin esto,
+   esos 281 iconos se quedan sin familia y salen como el texto de su ligadura
+   — exactamente el fallo que este arreglo venía a cerrar.
+
+   Se replica tal cual, INCLUIDO el `font-size: 24px` y, sobre todo, SIN CAPA.
+   No es descuido: el bloque de arriba documenta que una declaración sin capa
+   gana a las utilidades de Tailwind, que viven en `@layer utilities`, y que
+   por eso hoy estos 281 iconos se pintan a 24 px pase lo que pase el
+   `text-*` que lleven al lado. Meter esta clase en una capa «arreglaría» esa
+   cascada y cambiaría de golpe el tamaño de 281 iconos por toda la app, sin
+   que nadie lo haya pedido ni mirado. Se conserva el comportamiento de hoy;
+   quien quiera el tamaño por token tiene la primitiva `Icon`.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.material-symbols-outlined {
+  font-family: "Material Symbols Outlined";
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  font-feature-settings: "liga";
+  -webkit-font-feature-settings: "liga";
+  -webkit-font-smoothing: antialiased;
 }
 
 /* Custom scrollbars */
@@ -63,11 +623,11 @@
   background: transparent;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #2a2a2a;
+  background: var(--color-track);
   border-radius: 4px;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #3e3e3e;
+  background: var(--color-strong);
 }
 
 /* Range input styling for En Forma */
@@ -81,16 +641,16 @@ input[type=range]::-webkit-slider-thumb {
   height: 20px;
   width: 20px;
   border-radius: 50%;
-  background: #fbcb1a;
+  background: var(--color-accent);
   cursor: pointer;
   margin-top: -8px;
-  box-shadow: 0 0 0 3px #141413;
+  box-shadow: 0 0 0 3px var(--color-inset);
 }
 input[type=range]::-webkit-slider-runnable-track {
   width: 100%;
   height: 4px;
   cursor: pointer;
-  background: #353534;
+  background: var(--color-track);
   border-radius: 2px;
 }
 input[type=range]:focus {

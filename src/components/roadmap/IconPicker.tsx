@@ -1,4 +1,5 @@
 import React from 'react';
+import { Icon } from '../ui';
 
 // Grid de iconos DIBUJADOS con etiqueta en español — sustituye los <select> de
 // nombres técnicos (material symbol names) que el coach no reconoce a simple
@@ -27,13 +28,13 @@ interface Props {
   accent?: string;
 }
 
-export default function IconPicker({ value, onChange, accent = '#fbcb1a' }: Props) {
+export default function IconPicker({ value, onChange, accent = 'var(--color-accent)' }: Props) {
   const options = ICON_OPTIONS.some(o => o.icon === value)
     ? ICON_OPTIONS
     : [...ICON_OPTIONS, { icon: value, label: value }];
 
   return (
-    <div className="grid grid-cols-5 sm:grid-cols-7 gap-1.5">
+    <div className="grid grid-cols-5 sm:grid-cols-7 gap-2">
       {options.map(opt => {
         const selected = opt.icon === value;
         return (
@@ -42,16 +43,14 @@ export default function IconPicker({ value, onChange, accent = '#fbcb1a' }: Prop
             type="button"
             onClick={() => onChange(opt.icon)}
             title={opt.label}
-            className="flex flex-col items-center gap-0.5 rounded-lg p-1.5 border transition-colors"
+            className="flex flex-col items-center rounded-control p-2 border transition-colors"
             style={{
               borderColor: selected ? accent : 'rgba(255,255,255,0.07)',
-              backgroundColor: selected ? `${accent}1a` : '#0e0e0e',
+              backgroundColor: selected ? `${accent}1a` : 'var(--color-bg)',
             }}
           >
-            <span className="material-symbols-outlined text-lg" style={{ color: selected ? accent : '#c6c9ab' }}>
-              {opt.icon}
-            </span>
-            <span className="font-mono text-[7px] text-[#c6c9ab] leading-none text-center">{opt.label}</span>
+            <Icon name={opt.icon} size="l" style={{ color: selected ? accent : 'var(--color-ink-2)' }} />
+            <span className="font-sans text-caption text-ink-2 leading-none text-center">{opt.label}</span>
           </button>
         );
       })}

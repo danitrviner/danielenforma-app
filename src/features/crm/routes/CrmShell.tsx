@@ -5,6 +5,7 @@ import ClienteDetail from './ClienteDetail';
 import PagosScreen from './PagosScreen';
 import ReunionesScreen from './ReunionesScreen';
 import DashboardScreen from './DashboardScreen';
+import { Icon } from '../../../components/ui';
 
 // Contenedor del módulo CRM. Monta sus propias rutas anidadas para que App.tsx
 // solo necesite una línea (`/crm/*`) y el módulo siga siendo autocontenido.
@@ -23,7 +24,7 @@ export default function CrmShell({ coachEmail }: { coachEmail: string }) {
   return (
     <div className="space-y-3">
       {SECCIONES.length > 1 && (
-        <nav className="flex items-center gap-1">
+        <nav className="flex items-center gap-1 w-max max-w-full overflow-x-auto hide-scrollbar">
           {SECCIONES.map(s => {
             // "Resumen" (path exacto '/crm') necesita coincidencia exacta —
             // si no, `startsWith('/crm')` también sería verdad en
@@ -35,13 +36,13 @@ export default function CrmShell({ coachEmail }: { coachEmail: string }) {
                 key={s.path}
                 type="button"
                 onClick={() => navigate(s.path)}
-                className={`flex items-center gap-1 px-3 py-1.5 rounded-lg font-mono text-[9px] uppercase tracking-widest transition-colors ${
+                className={`flex shrink-0 items-center gap-1 px-3 py-2 rounded-control font-mono text-caption uppercase tracking-widest transition-colors ${
                   activo
-                    ? 'bg-[#fbcb1a]/15 text-[#fbcb1a] border border-[#fbcb1a]/30'
-                    : 'bg-[#141413] text-[#a8a89e] border border-white/7 hover:border-white/12'
+                    ? 'bg-accent/15 text-accent border border-accent/30'
+                    : 'bg-field text-ink-2 border border-hairline hover:border-strong'
                 }`}
               >
-                <span className="material-symbols-outlined text-sm">{s.icon}</span>
+                <Icon name={s.icon} size="s" />
                 {s.label}
               </button>
             );
@@ -51,7 +52,7 @@ export default function CrmShell({ coachEmail }: { coachEmail: string }) {
 
       <Routes>
         <Route index element={<DashboardScreen />} />
-        <Route path="clientes" element={<ClientesList />} />
+        <Route path="clientes" element={<ClientesList coachEmail={coachEmail} />} />
         <Route path="clientes/:id" element={<ClienteDetail coachEmail={coachEmail} />} />
         <Route path="pagos" element={<PagosScreen coachEmail={coachEmail} />} />
         <Route path="reuniones" element={<ReunionesScreen coachEmail={coachEmail} />} />

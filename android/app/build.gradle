@@ -1,4 +1,20 @@
 apply plugin: 'com.android.application'
+// Sin esto los .kt del módulo (RestTimerPlugin, RestTimerService) no entran en
+// la compilación y MainActivity.java no encuentra la clase del plugin.
+apply plugin: 'org.jetbrains.kotlin.android'
+
+// Firma de subida (02-3). Las credenciales viven en android/keystore.properties,
+// que está en .gitignore y NO se commitea nunca: el fichero lo crea Dani a mano
+// siguiendo android/keystore.properties.example. Si no existe, el build de
+// release sigue funcionando pero sale SIN FIRMAR, y Play lo rechaza al subirlo;
+// por eso el `bundleRelease` avisa en voz alta más abajo en vez de fallar en
+// silencio.
+def keystorePropertiesFile = rootProject.file("keystore.properties")
+def keystoreProperties = new Properties()
+def hasKeystore = keystorePropertiesFile.exists()
+if (hasKeystore) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
 
 android {
     namespace = "com.danielenforma.app"
@@ -16,12 +32,32 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        if (hasKeystore) {
+            release {
+                storeFile rootProject.file(keystoreProperties['storeFile'])
+                storePassword keystoreProperties['storePassword']
+                keyAlias keystoreProperties['keyAlias']
+                keyPassword keystoreProperties['keyPassword']
+            }
+        }
+    }
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            if (hasKeystore) {
+                signingConfig signingConfigs.release
+            }
         }
     }
+}
+
+// Sin keystore.properties el AAB sale sin firmar y Play lo rechaza en la subida,
+// que es un viaje perdido de varios minutos. Este aviso lo dice en el momento de
+// configurar el build, no después.
+if (!hasKeystore) {
+    logger.warn("AVISO: falta android/keystore.properties — el build de release saldrá SIN FIRMAR y Google Play lo rechazará. Ver android/keystore.properties.example.")
 }
 
 repositories {

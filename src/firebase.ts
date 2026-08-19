@@ -22,23 +22,35 @@ import {
   writeBatch,
   runTransaction,
   waitForPendingWrites,
-  onSnapshot
+  onSnapshot,
+  // 03-5. Cerrar sesión tiene que poder vaciar la caché persistente: ahí viven
+  // peso, perímetros, cuestionarios, dietas y notas del coach del usuario que
+  // se va. Ver utils/cierreDeSesion.ts.
+  terminate,
+  clearIndexedDbPersistence
 } from 'firebase/firestore';
+// Un solo camino de acceso: correo y contraseña. Se han retirado
+// GoogleAuthProvider / signInWithPopup / signInWithRedirect / getRedirectResult
+// (B-3 guideline 4.8 y B-4 popup imposible en WKWebView) y el trío del enlace
+// mágico sendSignInLinkToEmail / isSignInWithEmailLink / signInWithEmailLink
+// (B-5 sin Universal Links, B-9 ajuste de consola nunca activado). Las cuentas
+// las crea el coach desde api/create-athlete.ts y el atleta elige su contraseña
+// desde el correo que manda Firebase, así que createUserWithEmailAndPassword
+// tampoco pinta nada aquí: no hay autorregistro.
 import {
   getAuth,
-  GoogleAuthProvider,
-  signInWithPopup,
-  signInWithRedirect,
-  getRedirectResult,
+  initializeAuth,
+  indexedDBLocalPersistence,
   signOut,
   onAuthStateChanged,
   signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
   sendPasswordResetEmail,
-  sendSignInLinkToEmail,
-  isSignInWithEmailLink,
-  signInWithEmailLink
+  // Reautenticación para el borrado de cuenta: una acción irreversible no puede
+  // depender solo de que el móvil esté desbloqueado.
+  EmailAuthProvider,
+  reauthenticateWithCredential
 } from 'firebase/auth';
+import { Capacitor } from '@capacitor/core';
 
 import {
   getStorage,
@@ -61,17 +73,36 @@ const FIRESTORE_DB_ID = 'ai-studio-b38fc63b-000e-4d2c-b774-20351883e870';
 // try/catch cubre el caso de HMR en dev, donde este módulo puede reevaluarse
 // dos veces para la misma app+base y `initializeFirestore` lanza si ya se
 // llamó antes — en ese caso basta con recuperar la instancia ya creada.
+// experimentalAutoDetectLongPolling: el transporte por defecto de Firestore
+// (WebChannel, streaming) es conocido por colgarse en silencio dentro de un
+// WKWebView — no lanza error, no rechaza, simplemente nunca resuelve. Esta
+// opción prueba el streaming normal y cae a long-polling solo si hace falta,
+// sin coste apreciable en la web de escritorio, donde sí funciona.
+// (Se añadió persiguiendo el «se queda cargando» del simulador. NO era la
+//  causa de aquello —lo era la persistencia de Auth, ver más abajo— pero es
+//  un endurecimiento correcto por sí mismo para el WebView, así que se queda.)
 let db;
 try {
   db = initializeFirestore(app, {
     localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
+    experimentalAutoDetectLongPolling: true,
   }, FIRESTORE_DB_ID);
 } catch {
   db = getFirestore(app, FIRESTORE_DB_ID);
 }
-const auth = getAuth(app);
+// `getAuth()` resuelve la persistencia probando localStorage primero. Dentro
+// del WKWebView de Capacitor el origen es `capacitor://localhost`, un esquema
+// propio con el almacenamiento particionado, y ahí esa resolución se queda
+// colgada: `signInWithEmailAndPassword` no resuelve NI rechaza nunca, así que
+// el botón se queda en «Entrando…» para siempre y ningún `catch` se entera.
+// En nativo hay que inicializar el auth a mano fijando IndexedDB como única
+// persistencia — es lo que documentan tanto Firebase como Capacitor para este
+// caso. En web se deja `getAuth()`, que allí funciona y respeta el
+// comportamiento multi-pestaña de siempre.
+const auth = Capacitor.isNativePlatform()
+  ? initializeAuth(app, { persistence: indexedDBLocalPersistence })
+  : getAuth(app);
 const storage = getStorage(app);
-const googleProvider = new GoogleAuthProvider();
 
 // App Check (reCAPTCHA v3): corta el uso de la API key fuera de esta app una
 // vez se active "Enforce" en la consola Firebase para Firestore/Storage. Sin
@@ -108,18 +139,12 @@ export {
   uploadBytes,
   getDownloadURL,
   deleteObject,
-  googleProvider,
-  signInWithPopup,
-  signInWithRedirect,
-  getRedirectResult,
   signOut,
   onAuthStateChanged,
   signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
   sendPasswordResetEmail,
-  sendSignInLinkToEmail,
-  isSignInWithEmailLink,
-  signInWithEmailLink,
+  EmailAuthProvider,
+  reauthenticateWithCredential,
   collection,
   doc,
   getDoc,
@@ -136,6 +161,8 @@ export {
   writeBatch,
   runTransaction,
   waitForPendingWrites,
-  onSnapshot
+  onSnapshot,
+  terminate,
+  clearIndexedDbPersistence
 };
 export default app;

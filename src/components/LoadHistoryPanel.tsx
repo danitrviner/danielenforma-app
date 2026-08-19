@@ -9,6 +9,10 @@ import { WorkoutLog, Exercise, Mesocycle } from '../types';
 import { getMesocycles } from '../dbService';
 import { epley } from '../utils/oneRepMax';
 import { addDays } from '../utils/trainingWeek';
+import {
+  Icon, EmptyState,
+  ALTURA_GRAFICA, MARGEN_GRAFICA, ANCHO_EJE_Y, REJILLA_GRAFICA, TICK_GRAFICA, EJE_GRAFICA,
+} from './ui';
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -19,10 +23,10 @@ type Metric = 'tonnage' | 'orm' | 'reps' | 'sets';
 const METRICS: Metric[] = ['tonnage', 'orm', 'reps', 'sets'];
 
 const METRIC_COLOR: Record<Metric, string> = {
-  tonnage: '#fbcb1a',
-  orm:     '#00eefc',
-  reps:    '#ff8c69',
-  sets:    '#a78bfa',
+  tonnage: 'var(--color-accent)',
+  orm:     'var(--color-data)',
+  reps:    'var(--color-warning)',
+  sets:    'var(--color-chart-3)',
 };
 
 const METRIC_LABEL: Record<Metric, string> = {
@@ -108,13 +112,13 @@ function ChartTooltip({ active, payload, activeMetrics }: any) {
   const point = payload[0]?.payload as ChartPoint | undefined;
   if (!point) return null;
   return (
-    <div className="bg-[#1c1b1b] border border-white/7 rounded-lg px-3 py-2 shadow-xl">
-      <p className="font-mono text-[10px] text-[#c6c9ab] mb-1.5">{point.label}</p>
+    <div className="bg-raised border border-hairline rounded-surface px-3 py-2 shadow-e1">
+      <p className="font-sans text-caption text-ink-2 mb-2">{point.label}</p>
       {METRICS.filter(m => (activeMetrics as Set<Metric>).has(m)).map(m => {
         const raw = m === 'tonnage' ? point.tonnage : m === 'reps' ? point.reps : m === 'sets' ? point.sets : point.orm;
         if (raw == null) return null;
         return (
-          <p key={m} className="font-mono text-xs font-bold" style={{ color: METRIC_COLOR[m] }}>
+          <p key={m} className="font-mono text-label font-bold" style={{ color: METRIC_COLOR[m] }}>
             {METRIC_LABEL[m]}: {m === 'tonnage' ? raw.toLocaleString() : raw}{METRIC_UNIT[m]}
           </p>
         );
@@ -348,45 +352,48 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
 
   if (logs.length === 0) {
     return (
-      <div className="bg-[#181816] border border-white/7 rounded-2xl p-5">
-        <h3 className="font-sans font-bold text-base text-white flex items-center gap-2 mb-4">
-          <span className="material-symbols-outlined text-[#00eefc] text-sm">monitoring</span>
+      <div className="bg-surface border border-hairline rounded-surface p-5">
+        <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2 mb-4">
+          <Icon name="monitoring" size="s" className="text-data" />
           Historial de carga
         </h3>
-        <div className="py-8 text-center border border-dashed border-white/7 rounded-xl">
-          <span className="material-symbols-outlined text-3xl text-[#2a2a2a] block mb-2">monitoring</span>
-          <p className="text-xs text-[#c6c9ab] font-mono">Sin registros de carga aún.</p>
+        <div className="border border-dashed border-hairline rounded-surface">
+          <EmptyState icon="monitoring" title="Sin registros de carga aún." />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-[#181816] border border-white/7 rounded-2xl p-5 space-y-5">
-      <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
-        <span className="material-symbols-outlined text-[#00eefc] text-sm">monitoring</span>
+    <div className="bg-surface border border-hairline rounded-surface p-5 space-y-5">
+      <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
+        <Icon name="monitoring" size="s" className="text-data" />
         Historial de carga
       </h3>
 
       {/* ── Metric toggles + overlay buttons ── */}
       <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2">
-        <div className="overflow-x-auto -mx-1 px-1">
+        {/* min-w-0 + w-full: a partir de `sm` este scroller es hijo de un flex
+            row y por defecto no puede encogerse (min-width:auto), así que
+            overflow-x-auto nunca entraba en juego y los chips desbordaban la
+            tarjeta en vez de scrollear dentro de ella. */}
+        <div className="min-w-0 w-full overflow-x-auto -mx-1 px-1">
           <div className="flex items-center gap-2 min-w-max">
             {METRICS.map(m => (
               <button
                 key={m}
                 onClick={() => toggleMetric(m)}
-                className={`px-3 min-h-[44px] rounded-full font-mono text-xs uppercase tracking-wider transition-all border ${
+                className={`px-3 min-h-[44px] rounded-full font-sans text-label uppercase tracking-wider transition-all border ${
                   activeMetrics.has(m)
                     ? 'text-black font-bold'
-                    : 'bg-transparent text-[#c6c9ab] border-white/7 hover:border-[#555]'
+                    : 'bg-transparent text-ink-2 border-hairline hover:border-hairline'
                 }`}
                 style={activeMetrics.has(m) ? { backgroundColor: METRIC_COLOR[m], borderColor: METRIC_COLOR[m] } : {}}
               >
                 {METRIC_LABEL[m]}
               </button>
             ))}
-            <div className="w-px h-4 bg-[#2a2a2a] mx-1" />
+            <div className="w-px h-4 bg-raised mx-1" />
             {(['mean', 'median'] as const).map(s => {
               const active = s === 'mean' ? showMean : showMedian;
               const toggle = s === 'mean' ? () => setShowMean(v => !v) : () => setShowMedian(v => !v);
@@ -394,8 +401,8 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
                 <button
                   key={s}
                   onClick={toggle}
-                  className={`px-2.5 min-h-[44px] rounded-full font-mono text-xs uppercase tracking-wider transition-all border ${
-                    active ? 'bg-white/10 border-white/30 text-white' : 'border-white/7 text-[#555] hover:text-[#c6c9ab]'
+                  className={`px-3 min-h-[44px] rounded-full font-mono text-label uppercase tracking-wider transition-all border ${
+                    active ? 'bg-white/10 border-hairline text-white' : 'border-hairline text-ink-3 hover:text-ink-2'
                   }`}
                 >
                   {s === 'mean' ? 'Media' : 'Mediana'}
@@ -409,13 +416,13 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
       {/* ── Exercise selector (only when 1RM metric is active) ── */}
       {ormActive && loggedExercises.length > 0 && (
         <div className="flex items-center gap-3">
-          <span className="font-mono text-[10px] uppercase tracking-wider flex-shrink-0" style={{ color: METRIC_COLOR.orm }}>
+          <span className="font-sans text-caption uppercase tracking-wider flex-shrink-0" style={{ color: METRIC_COLOR.orm }}>
             Ejercicio (1RM):
           </span>
           <select
             value={activeExId}
             onChange={e => setSelectedExId(e.target.value)}
-            className="min-w-0 flex-1 bg-[#1c1b1b] border border-white/7 text-white text-[11px] font-mono rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-[#00eefc]/50 cursor-pointer"
+            className="min-w-0 flex-1 bg-raised border border-hairline text-white text-title-s font-mono rounded-control px-3 py-2 focus:outline-none focus:border-data/50 cursor-pointer"
           >
             {loggedExercises.map(ex => (
               <option key={ex.id} value={ex.id}>{ex.name}</option>
@@ -426,19 +433,23 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
 
       {/* ── Progresión semanal/diaria (qué tramos cuentan para el cálculo) ── */}
       {ormActive && progressBuckets.length > 0 && (
-        <div className="bg-[#111] border border-white/7 rounded-xl p-4 space-y-3">
+        <div className="bg-bg border border-hairline rounded-surface p-4 space-y-3">
           <div className="flex items-center justify-between gap-2 flex-wrap">
-            <p className="font-mono text-[10px] uppercase tracking-wider" style={{ color: METRIC_COLOR.orm }}>
+            <p className="font-mono text-caption uppercase tracking-wider" style={{ color: METRIC_COLOR.orm }}>
               Progresión {granularity === 'week' ? 'semanal' : 'diaria'} (1RM)
             </p>
-            <div className="flex items-center gap-2">
-              <div className="flex bg-[#1c1b1b] border border-white/7 rounded-lg p-0.5">
+            {/* min-w-0: el <select> de abajo toma como ancho intrínseco su
+                opción más larga (texto libre del coach, "Macrociclo N · objetivo"),
+                y sin min-w-0 en toda la cadena de flex ni él ni este wrapper
+                podían encogerse — reventaban la tarjeta en vez de truncar. */}
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="flex bg-raised border border-hairline rounded-surface flex-shrink-0">
                 {(['week', 'day'] as const).map(g => (
                   <button
                     key={g}
                     onClick={() => setGranularity(g)}
-                    className={`px-2.5 py-1 rounded-md font-mono text-[10px] font-bold transition-all ${
-                      granularity === g ? 'bg-[#00eefc]/15 text-[#00eefc]' : 'text-[#555] hover:text-[#c6c9ab]'
+                    className={`px-3 py-1 rounded-control font-mono text-caption font-bold transition-all ${
+                      granularity === g ? 'bg-data/15 text-data' : 'text-ink-3 hover:text-ink-2'
                     }`}
                   >
                     {g === 'week' ? 'Semana' : 'Día'}
@@ -449,7 +460,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
                 <select
                   value={mesocycleFilter}
                   onChange={e => setMesocycleFilter(e.target.value)}
-                  className="bg-[#1c1b1b] border border-white/7 text-white text-[10px] font-mono rounded-lg px-2 py-1 focus:outline-none focus:border-[#00eefc]/50 cursor-pointer"
+                  className="min-w-0 max-w-full truncate bg-raised border border-hairline text-white text-title-s font-mono rounded-control px-2 py-1 focus:outline-none focus:border-data/50 cursor-pointer"
                 >
                   <option value="">Todo el historial</option>
                   {[...mesocycles].sort((a, b) => b.startDate.localeCompare(a.startDate)).map(m => (
@@ -461,7 +472,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
           </div>
 
           {/* Bucket checkboxes */}
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-2">
             {progressBuckets.map(b => {
               const included = !excludedBuckets.has(b.id);
               return (
@@ -469,14 +480,14 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
                   key={b.id}
                   onClick={() => toggleBucket(b.id)}
                   title={b.orm != null ? `${b.orm} kg` : b.filledOrm != null ? `${b.filledOrm} kg (estimado)` : 'Sin datos'}
-                  className={`min-w-[44px] min-h-[44px] px-2 rounded-lg font-mono text-[10px] font-bold border transition-all flex flex-col items-center justify-center gap-0.5 ${
+                  className={`min-w-[44px] min-h-[44px] px-2 rounded-control font-sans text-caption font-bold border transition-all flex flex-col items-center justify-center ${
                     included
-                      ? 'bg-[#00eefc]/10 border-[#00eefc]/40 text-[#00eefc]'
-                      : 'bg-transparent border-white/7 text-[#555] opacity-50'
+                      ? 'bg-data/10 border-data/40 text-data'
+                      : 'bg-transparent border-hairline text-ink-3 opacity-50'
                   }`}
                 >
                   <span>{b.label}</span>
-                  {b.isFilled && <span className="text-[8px] opacity-70">~</span>}
+                  {b.isFilled && <span className="text-caption opacity-70">~</span>}
                 </button>
               );
             })}
@@ -484,18 +495,18 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
 
           {/* Progression summary */}
           {progression ? (
-            <div className="flex items-center gap-2 text-xs font-mono flex-wrap">
-              <span className="text-[#c6c9ab]">{progression.first.label}: <strong className="text-white">{progression.first.filledOrm}kg</strong></span>
-              <span className="text-[#555]">→</span>
-              <span className="text-[#c6c9ab]">{progression.last.label}: <strong className="text-white">{progression.last.filledOrm}kg</strong></span>
+            <div className="flex items-center gap-2 text-label font-mono flex-wrap">
+              <span className="text-ink-2">{progression.first.label}: <strong className="text-white">{progression.first.filledOrm}kg</strong></span>
+              <span className="text-ink-3">→</span>
+              <span className="text-ink-2">{progression.last.label}: <strong className="text-white">{progression.last.filledOrm}kg</strong></span>
               <span className={`font-bold ${progression.delta >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                 ({progression.delta >= 0 ? '+' : ''}{progression.delta}kg · {progression.pct >= 0 ? '+' : ''}{progression.pct}%)
               </span>
             </div>
           ) : (
-            <p className="font-mono text-[10px] text-[#555]">Marca al menos dos {granularity === 'week' ? 'semanas' : 'días'} con datos para calcular la progresión.</p>
+            <p className="font-mono text-caption text-ink-3">Marca al menos dos {granularity === 'week' ? 'semanas' : 'días'} con datos para calcular la progresión.</p>
           )}
-          <p className="font-mono text-[9px] text-[#444]">
+          <p className="font-mono text-caption text-ink-3">
             Destilda {granularity === 'week' ? 'las semanas' : 'los días'} de adaptación que no quieres que cuenten (ej. las primeras del bloque).
             {granularity === 'week' && ' "~" = semana sin registro, estimada a partir de semanas cercanas.'}
           </p>
@@ -504,36 +515,35 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
 
       {/* ── Chart ── */}
       {activeMetrics.size === 0 ? (
-        <div className="py-6 text-center border border-dashed border-white/7 rounded-xl">
-          <p className="font-mono text-[10px] text-[#555]">Selecciona al menos una métrica.</p>
+        <div className="py-6 text-center border border-dashed border-hairline rounded-surface">
+          <p className="font-sans text-caption text-ink-3">Selecciona al menos una métrica.</p>
         </div>
       ) : (
         <div>
           {isMulti && (
-            <p className="font-mono text-[8px] text-[#555] uppercase tracking-wider mb-1 text-right">
+            <p className="font-mono text-caption text-ink-3 uppercase tracking-wider mb-1 text-right">
               % del máximo
             </p>
           )}
-          <ResponsiveContainer width="100%" height={160}>
-            <LineChart data={chartData} margin={{ top: 8, right: 8, bottom: 0, left: -28 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#1e1e1e" vertical={false} />
+          <ResponsiveContainer width="100%" height={ALTURA_GRAFICA.s}>
+            <LineChart data={chartData} margin={MARGEN_GRAFICA}>
+              <CartesianGrid {...REJILLA_GRAFICA} />
               <XAxis
                 dataKey="date"
                 tickFormatter={xTickFormatter}
                 interval={0}
-                tick={{ fill: '#c6c9ab', fontSize: 9, fontFamily: 'monospace' }}
-                axisLine={false}
-                tickLine={false}
+                tick={TICK_GRAFICA}
+                {...EJE_GRAFICA}
               />
               <YAxis
                 domain={isMulti ? [0, 100] : ['auto', 'auto']}
-                tick={{ fill: '#c6c9ab', fontSize: 9, fontFamily: 'monospace' }}
-                axisLine={false}
-                tickLine={false}
+                tick={TICK_GRAFICA}
+                {...EJE_GRAFICA}
+                width={ANCHO_EJE_Y}
               />
               <Tooltip
                 content={<ChartTooltip activeMetrics={activeMetrics} />}
-                cursor={{ stroke: '#3a3a3a', strokeWidth: 1 }}
+                cursor={{ stroke: 'var(--color-raised)', strokeWidth: 1 }}
               />
 
               {METRICS.filter(m => activeMetrics.has(m)).map(m => (
@@ -577,20 +587,20 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
       )}
 
       {/* ── Session table (desktop) / cards (mobile) ── */}
-      <div className="space-y-1.5">
-        <p className="font-mono text-[9px] text-[#c6c9ab] uppercase tracking-wider">Sesiones</p>
+      <div className="space-y-2">
+        <p className="font-mono text-caption text-ink-2 uppercase tracking-wider">Sesiones</p>
 
         {/* Mobile cards */}
         <div className="flex flex-col gap-2 sm:hidden">
           {[...sessionRows].reverse().map(row => (
-            <div key={row.date} className="bg-[#111] border border-white/50 rounded-lg px-3 py-2.5 flex items-center justify-between gap-2">
-              <span className="font-mono text-[11px] text-[#c6c9ab] flex-shrink-0">{row.label}</span>
-              <div className="flex items-center gap-3 flex-shrink-0 font-mono text-[11px]">
-                <span className="text-[#c6c9ab]"><span className="text-white font-bold">{row.sets}</span>s</span>
-                <span className="text-[#c6c9ab]"><span className="text-white">{row.reps}</span>r</span>
+            <div key={row.date} className="bg-bg border border-hairline rounded-surface px-3 py-3 flex items-center justify-between gap-2">
+              <span className="font-sans text-caption text-ink-2 flex-shrink-0">{row.label}</span>
+              <div className="flex items-center gap-3 flex-shrink-0 font-mono text-caption">
+                <span className="text-ink-2"><span className="text-white font-bold">{row.sets}</span>s</span>
+                <span className="text-ink-2"><span className="text-white">{row.reps}</span>r</span>
                 <span className="font-bold" style={{ color: METRIC_COLOR.tonnage }}>{row.tonnage.toLocaleString()}kg</span>
                 {ormActive && (
-                  <span className="font-bold" style={{ color: row.orm ? METRIC_COLOR.orm : '#555' }}>
+                  <span className="font-bold" style={{ color: row.orm ? METRIC_COLOR.orm : 'var(--color-ink-3)' }}>
                     {row.orm ? `${row.orm}kg` : '—'}
                   </span>
                 )}
@@ -600,12 +610,12 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
         </div>
 
         {/* Desktop table */}
-        <div className="hidden sm:block overflow-x-auto rounded-lg border border-white/50">
+        <div className="hidden sm:block overflow-x-auto rounded-surface border border-hairline">
           <table className="w-full text-left" style={{ minWidth: ormActive ? 460 : 360 }}>
             <thead>
-              <tr className="bg-[#111] border-b border-white/40">
+              <tr className="bg-bg border-b border-hairline">
                 {['Fecha', 'Series', 'Reps', 'Tonelaje', ...(ormActive ? ['1RM est.'] : [])].map(h => (
-                  <th key={h} className="px-3 py-2 font-mono text-[9px] text-[#c6c9ab] uppercase tracking-wider">{h}</th>
+                  <th key={h} className="px-3 py-2 font-mono text-caption text-ink-2 uppercase tracking-wider">{h}</th>
                 ))}
               </tr>
             </thead>
@@ -613,16 +623,16 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
               {[...sessionRows].reverse().map((row, i) => (
                 <tr
                   key={row.date}
-                  className={`border-b border-white/20 ${i % 2 === 0 ? 'bg-[#0f0f0f]' : 'bg-[#111]'} hover:bg-[#1e1e1b] transition-colors`}
+                  className={`border-b border-hairline ${i % 2 === 0 ? 'bg-bg' : 'bg-bg'} hover:bg-raised transition-colors`}
                 >
-                  <td className="px-3 py-2.5 font-mono text-[11px] text-[#c6c9ab]">{row.label}</td>
-                  <td className="px-3 py-2.5 font-mono text-[11px] text-white font-bold">{row.sets}</td>
-                  <td className="px-3 py-2.5 font-mono text-[11px] text-white">{row.reps}</td>
-                  <td className="px-3 py-2.5 font-mono text-[11px] font-bold" style={{ color: METRIC_COLOR.tonnage }}>
+                  <td className="px-3 py-3 font-sans text-caption text-ink-2">{row.label}</td>
+                  <td className="px-3 py-3 font-mono text-caption text-white font-bold">{row.sets}</td>
+                  <td className="px-3 py-3 font-mono text-caption text-white">{row.reps}</td>
+                  <td className="px-3 py-3 font-mono text-caption font-bold" style={{ color: METRIC_COLOR.tonnage }}>
                     {row.tonnage.toLocaleString()} kg
                   </td>
                   {ormActive && (
-                    <td className="px-3 py-2.5 font-mono text-[11px] font-bold" style={{ color: row.orm ? METRIC_COLOR.orm : '#555' }}>
+                    <td className="px-3 py-3 font-mono text-caption font-bold" style={{ color: row.orm ? METRIC_COLOR.orm : 'var(--color-ink-3)' }}>
                       {row.orm ? `${row.orm} kg` : '—'}
                     </td>
                   )}

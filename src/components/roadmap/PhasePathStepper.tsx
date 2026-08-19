@@ -1,5 +1,6 @@
 import React from 'react';
 import { PlanPhase } from '../../types';
+import { Icon } from '../ui';
 
 interface Props {
   phases: PlanPhase[];
@@ -13,8 +14,8 @@ export default function PhasePathStepper({ phases }: Props) {
   const ordered = [...phases].sort((a, b) => a.order - b.order);
 
   return (
-    <div className="rounded-3xl border border-white/7 bg-[#121212] p-5">
-      <p className="font-mono text-[9px] uppercase tracking-widest text-[#c6c9ab] mb-4">
+    <div className="rounded-canvas border border-hairline bg-bg p-5">
+      <p className="font-sans text-caption uppercase tracking-widest text-ink-2 mb-4">
         Tu camino · lo que te queda por delante
       </p>
       <div className="flex flex-col gap-3">
@@ -29,36 +30,34 @@ export default function PhasePathStepper({ phases }: Props) {
                 <div
                   className="w-9 h-9 rounded-full flex items-center justify-center border-2"
                   style={{
-                    borderColor: isFuture ? '#2a2a2a' : phase.color,
+                    borderColor: isFuture ? 'var(--color-raised)' : phase.color,
                     backgroundColor: isActive ? `${phase.color}22` : 'transparent',
-                    color: isDone ? phase.color : isActive ? phase.color : '#555',
+                    color: isDone ? phase.color : isActive ? phase.color : 'var(--color-ink-3)',
                   }}
                 >
-                  <span className="material-symbols-outlined text-base">
-                    {isDone ? 'check' : phase.icon || 'circle'}
-                  </span>
+                  <Icon name={isDone ? 'check' : phase.icon || 'circle'} size="m" />
                 </div>
                 {!isLast && (
                   <div
                     className="w-0.5 flex-1 min-h-[24px] mt-1"
-                    style={{ backgroundColor: isDone ? phase.color : '#2a2a2a' }}
+                    style={{ backgroundColor: isDone ? phase.color : 'var(--color-raised)' }}
                   />
                 )}
               </div>
               <div className={`pb-3 ${isFuture ? 'opacity-70' : ''}`}>
                 <p
-                  className="font-sans font-bold text-sm"
-                  style={{ color: isActive ? phase.color : isDone ? '#e2e2e1' : '#c6c9ab' }}
+                  className="font-sans font-bold text-body-s"
+                  style={{ color: isActive ? phase.color : isDone ? 'var(--color-ink)' : 'var(--color-ink-2)' }}
                 >
                   {phase.name}
                   {isActive && (
-                    <span className="ml-2 font-mono text-[8px] uppercase tracking-widest align-middle" style={{ color: phase.color }}>
+                    <span className="ml-2 font-mono text-caption uppercase tracking-widest align-middle" style={{ color: phase.color }}>
                       ahora
                     </span>
                   )}
                 </p>
                 {(phase.motto || phase.description) && (
-                  <p className="text-[#c6c9ab] text-xs font-mono mt-0.5 leading-relaxed">
+                  <p className="text-ink-2 text-label font-sans leading-relaxed">
                     {phase.motto || phase.description}
                   </p>
                 )}

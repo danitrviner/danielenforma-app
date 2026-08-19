@@ -1,5 +1,6 @@
 import React from 'react';
 import ErrorState from './ErrorState';
+import { useScrollEdgeMask } from '../../../components/ui/internal/useScrollEdgeMask';
 
 export interface Columna<T> {
   id: string;
@@ -41,9 +42,9 @@ export default function DataTable<T>({
 
   if (cargando) {
     return (
-      <div className="space-y-1.5 p-3">
+      <div className="space-y-2 p-3">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="h-11 rounded-lg bg-white/4 animate-pulse" />
+          <div key={i} className="h-11 rounded-surface bg-white/4 animate-pulse" />
         ))}
       </div>
     );
@@ -51,17 +52,27 @@ export default function DataTable<T>({
 
   if (filas.length === 0) return <>{vacio}</>;
 
+  return <ScrollBody columnas={columnas} filas={filas} keyOf={keyOf} onRowClick={onRowClick} />;
+}
+
+function ScrollBody<T>({ columnas, filas, keyOf, onRowClick }: Pick<Props<T>, 'columnas' | 'filas' | 'keyOf' | 'onRowClick'>) {
+  const { ref: scrollRef, maskImage } = useScrollEdgeMask<HTMLDivElement>([filas, columnas]);
+
   return (
-    <div className="overflow-x-auto custom-scrollbar">
+    <div
+      ref={scrollRef}
+      className="overflow-x-auto custom-scrollbar"
+      style={maskImage ? { maskImage, WebkitMaskImage: maskImage } : undefined}
+    >
       <table className="w-full border-collapse min-w-[640px]">
         <thead>
-          <tr className="border-b border-white/7">
+          <tr className="border-b border-hairline">
             {columnas.map(c => (
               <th
                 key={c.id}
                 scope="col"
                 style={c.width ? { width: c.width } : undefined}
-                className={`px-3 py-2 font-mono text-[9px] uppercase tracking-widest text-[#555550] font-normal ${
+                className={`px-3 py-2 font-mono text-caption uppercase tracking-widest text-ink-3 font-normal ${
                   c.align === 'right' ? 'text-right' : 'text-left'
                 }`}
               >
@@ -89,16 +100,16 @@ export default function DataTable<T>({
                       },
                     }
                   : {})}
-                className={`border-b border-white/4 ${
+                className={`border-b border-hairline ${
                   clicable
-                    ? 'cursor-pointer hover:bg-white/4 focus:bg-white/6 focus:outline-none focus:ring-1 focus:ring-inset focus:ring-[#fbcb1a]/40'
+                    ? 'cursor-pointer hover:bg-white/4 focus:bg-white/6 focus:outline-none focus:ring-1 focus:ring-inset focus:ring-accent/40'
                     : ''
                 }`}
               >
                 {columnas.map(c => (
                   <td
                     key={c.id}
-                    className={`px-3 py-2.5 font-sans text-[11px] text-[#f5f5f0] align-middle ${
+                    className={`px-3 py-3 font-sans text-caption text-ink align-middle ${
                       c.align === 'right' ? 'text-right tabular-nums' : 'text-left'
                     }`}
                   >

@@ -1,53 +1,26 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { UserProfile, Diet, DietMeal, DietItem, FoodCategory, DietMode, MealItem, Recipe, RecipeFavorites, WeekDay } from '../types';
-import { getDietsForAthlete, getAthleteDietConfig, saveAthleteDietConfig, createDiet, updateDiet, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig, getRecipes, getRecipeFavorites, getNutritionProgram, markNutritionPhaseSeen, computeActivePhase, createNotificationDeduped, getDietCompletionLog, saveDietCompletionLog, createRecipe } from '../dbService';
-import { DietNumerosView } from './DietMealsView';
-import { CATS, BUDGET_CATS, CAT_LABEL, CAT_COLOR, CAT_BG, MODE_LABEL, round2, fmtQty, itemWeightLabel, addToPlaced, recipeToDietItems, isDietPending } from '../utils/exchangeHelpers';
+import { getDietsForAthlete, getAthleteDietConfig, saveAthleteDietConfig, createDiet, updateDiet, deleteDiet, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig, saveAthleteNutritionConfig, getRecipes, getRecipeFavorites, getNutritionProgram, markNutritionPhaseSeen, computeActivePhase, createNotificationDeduped, getDietCompletionLog, saveDietCompletionLog, createRecipe } from '../dbService';
+import { CATS, BUDGET_CATS, CAT_LABEL, CAT_COLOR, CAT_BG, MODE_LABEL, ALL_DIET_MODES, round2, fmtQty, itemWeightLabel, addToPlaced, recipeToDietItems, isDietPending, computeDietPlaced } from '../utils/exchangeHelpers';
 import { findSimilarRecipes } from '../utils/recipeMatch';
-import { exchangeToKcal } from '../utils/nutritionConstants';
+import { exchangeToKcal, GRAMS_PER_EXCHANGE } from '../utils/nutritionConstants';
 import { useToast } from '../hooks/useToast';
 import Coachmark from './Coachmark';
-import Skeleton from './Skeleton';
+import { haptics } from '../services/haptics';
+import { useTourTarget } from '../features/tutorial/TourTargetContext';
+import { useTutorialEngine } from '../features/tutorial/TutorialEngine';
+import { Skeleton } from './ui';
+import { EmptyState, Sheet, Icon, Button, ProgressBar, RingSeal, Stepper, Dialog, ListRow } from './ui';
 
-const COACH_EMAIL = 'danitrviner@gmail.com';
-const makeId = () => `${Date.now()}_${Math.random().toString(36).slice(2, 5)}`;
-
-function blankDiet(athleteId: string): Diet {
-  return {
-    id: `draft_${makeId()}`,
-    athleteId,
-    name: 'Mi menú',
-    budget: { HC: 0, PROT: 0, GRASA: 0, MIX_HC: 0, MIX_GRASA: 0 },
-    meals: [{ id: makeId(), name: 'Comida 1', items: [] }],
-    selfManaged: true,
-  };
-}
-
-function dietSnapshot(dt: Pick<Diet, 'name' | 'budget' | 'meals'>): string {
-  return JSON.stringify({ name: dt.name, budget: dt.budget, meals: dt.meals });
-}
-
-// ── Weekly schedule constants ──────────────────────────────────────────────────
-
-const JS_TO_WD: Record<number, WeekDay> = { 0: 'sun', 1: 'mon', 2: 'tue', 3: 'wed', 4: 'thu', 5: 'fri', 6: 'sat' };
-const TODAY_WD: WeekDay = JS_TO_WD[new Date().getDay()];
-const TODAY_DATE: string = new Date().toISOString().split('T')[0];
-const WD_ORDER: WeekDay[] = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
-const WD_SHORT: Record<WeekDay, string> = { mon: 'L', tue: 'M', wed: 'X', thu: 'J', fri: 'V', sat: 'S', sun: 'D' };
-const WD_FULL: Record<WeekDay, string> = { mon: 'lunes', tue: 'martes', wed: 'miércoles', thu: 'jueves', fri: 'viernes', sat: 'sábado', sun: 'domingo' };
-
-// ── Helpers ────────────────────────────────────────────────────────────────────
-
-function mealLabel(name: string, n: number): string {
-  const stripped = name.replace(/^Comida\s*\d+\s*/i, '').trim();
-  return stripped || `Comida ${n}`;
-}
+import {
+  COACH_EMAIL, makeId, blankDiet, dietSnapshot,
+  TODAY_WD, TODAY_DATE, WD_ORDER, WD_SHORT, WD_FULL,
+  mealLabel, BAR_LABEL, CHIP_LABEL, ItemState,
+} from './nutrition/dietHelpers';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
-
-type ItemState = { foodLabel: string; done: boolean };
-// key = `${mealId}_${itemIdx}`
+// (ItemState viene de dietHelpers.ts — compartido con el resto de "Mi plan")
 
 interface Props {
   profile: UserProfile;
@@ -60,6 +33,13 @@ interface Props {
 export default function NutritionScreen({ profile, pendingRecipe, onConsumedPendingRecipe }: Props) {
   const { showToast } = useToast();
   const queryClient = useQueryClient();
+  const tutorial = useTutorialEngine();
+
+  // Referencias estables para el registro de objetivos del tour — una función
+  // inline nueva en cada render provoca un bucle de "Maximum update depth
+  // exceeded" (ver TourTargetContext.tsx).
+  const trackerTargetRef = useTourTarget('nutrition-tracker');
+  const firstMealRowTargetRef = useTourTarget('nutrition-first-meal-row');
 
   // ── Queries: Phase 1 (diet/config) ──────────────────────────────────────────
   const dietsKey = ['dietsForAthlete', profile.email] as const;
@@ -122,9 +102,10 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
   // read-only view, so it can't just be the query data directly) ───────────
   const [selectedDiet, setSelectedDiet] = useState<Diet | null>(null);
   const [savedDietSnapshot, setSavedDietSnapshot] = useState('');
-  const [saveChoiceOpen, setSaveChoiceOpen] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [flashMsg, setFlashMsg] = useState('');
+  // "Mis dietas" — gestión de las dietas del atleta (crear/duplicar/borrar),
+  // absorbida aquí en la fusión de Intercambios + Mis Dietas ("Mi plan").
+  const [misDietasOpen, setMisDietasOpen] = useState(false);
 
   // Per-item state (ephemeral, day-only)
   const [itemStates, setItemStates] = useState<Record<string, ItemState>>({});
@@ -136,6 +117,12 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
   const [pickerItem, setPickerItem] = useState<{ mealId: string; itemIdx: number | null; category: FoodCategory } | null>(null);
   const [pickerCategory, setPickerCategory] = useState<FoodCategory>('HC');
   const [searchTerm, setSearchTerm] = useState('');
+  // T13 (18-08): mismo tick + ×N que el selector del coach, para la rama de
+  // "añadir" (itemIdx === null) — "cambiar" sigue siendo una sustitución
+  // única que cierra al terminar, no hace falta contador ahí.
+  const [pickerAddedCounts, setPickerAddedCounts] = useState<Record<string, number>>({});
+  const [pickerRecentlyAdded, setPickerRecentlyAdded] = useState<string | null>(null);
+  const pickerRecentTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Recipe picker
   const [recipePickerMealId, setRecipePickerMealId] = useState<string | null>(null);
@@ -165,10 +152,10 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
   // Nutrition periodization
   const [phaseBanner, setPhaseBanner] = useState<string | null>(null);
 
-  function flash(msg: string) {
-    setFlashMsg(msg);
-    setTimeout(() => setFlashMsg(''), 3000);
-  }
+  // Hoja de ajuste (F3.8, panel 02) — ajustar los intercambios de una ingesta
+  // por macro, sin elegir alimentos concretos.
+  const [adjustMealId, setAdjustMealId] = useState<string | null>(null);
+  const [adjustDraft, setAdjustDraft] = useState<{ HC: number; PROT: number; GRASA: number }>({ HC: 0, PROT: 0, GRASA: 0 });
 
   // ── One-time init once Phase 1 has loaded ───────────────────────────────────
   // Applies the active nutrition-program phase (writes + notifications), then
@@ -309,6 +296,33 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     return { doneByCat, mealDoneByCat, totalItems: total, doneItems: done };
   }, [selectedDiet, itemStates]);
 
+  // Composición de cada ingesta (todos sus alimentos, estén o no marcados) —
+  // los chips del tracker ("3 HC · 2 PR · 1 GR") describen la comida, no lo
+  // que ya se ha registrado; distinto de mealDoneByCat.
+  const mealPlacedByCat = useMemo(() => {
+    const map: Record<string, Record<FoodCategory, number>> = {};
+    for (const meal of selectedDiet?.meals ?? []) {
+      const bycat: Record<FoodCategory, number> = { HC: 0, PROT: 0, GRASA: 0, MIX_HC: 0, MIX_GRASA: 0 };
+      for (const item of meal.items) addToPlaced(bycat, item.category, item.quantity);
+      map[meal.id] = bycat;
+    }
+    return map;
+  }, [selectedDiet]);
+
+  // "TE QUEDAN" del tracker — suma de las tres categorías de presupuesto,
+  // igual que el handoff (nunca desglosa MIX_HC/MIX_GRASA en la cifra grande).
+  const leftByCat = {
+    HC: (selectedDiet?.budget.HC ?? 0) - doneByCat.HC,
+    PROT: (selectedDiet?.budget.PROT ?? 0) - doneByCat.PROT,
+    GRASA: (selectedDiet?.budget.GRASA ?? 0) - doneByCat.GRASA,
+  };
+  const totalBudget = BUDGET_CATS.reduce((s, c) => s + (selectedDiet?.budget[c] ?? 0), 0);
+  const totalEaten = BUDGET_CATS.reduce((s, c) => s + doneByCat[c], 0);
+  const leftExch = round2(totalBudget - totalEaten);
+  const leftKcal = Math.round(exchangeToKcal(leftByCat)); // puede ser negativo si el día se pasa
+  const dayClosed = totalItems > 0 && doneItems === totalItems;
+  const mealsDoneCount = selectedDiet?.meals.filter(m => m.items.length > 0 && m.items.every((_, idx) => itemStates[`${m.id}_${idx}`]?.done)).length ?? 0;
+
   // Distinct coach diets scheduled across the week (the "día A/B/C" concept) that
   // still don't have enough food items placed to cover the budget the coach set.
   const pendingScheduledDiets = useMemo(() => {
@@ -394,6 +408,91 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     handleSelectDiet(blankDiet(profile.email));
   };
 
+  // ── "Mis dietas": crear/duplicar/borrar (absorbido de la antigua pestaña
+  // Mis Dietas en la fusión Intercambios + Mis Dietas → "Mi plan") ──────────
+
+  const handleStartBlankFromSheet = () => {
+    // Nombre vacío a propósito (a diferencia de handleStartBlank, que pone
+    // "Mi menú") — al crearla desde el gestor, el atleta espera ponerle
+    // nombre él mismo, como en la antigua pantalla "Nueva dieta".
+    handleSelectDiet(blankDiet(profile.email, ''), { skipDirtyCheck: true });
+    setMisDietasOpen(false);
+  };
+
+  const handleDuplicateDiet = async (dt: Diet) => {
+    try {
+      const created = await createDiet({
+        athleteId: profile.email,
+        name: `${dt.name} (copia)`,
+        budget: dt.budget,
+        meals: dt.meals.map(m => ({ ...m, id: makeId() })),
+        selfManaged: true,
+      });
+      setAllDietsList(prev => [...prev, created]);
+      handleSelectDiet(created, { skipDirtyCheck: true });
+      setMisDietasOpen(false);
+      showToast('Copia creada.', 'success');
+    } catch (err) {
+      console.error(err);
+      showToast('No se pudo duplicar la dieta.');
+    }
+  };
+
+  const [dietPendingDelete, setDietPendingDelete] = useState<Diet | null>(null);
+  const [deletingDiet, setDeletingDiet] = useState(false);
+
+  const confirmDeleteDiet = async () => {
+    const dt = dietPendingDelete;
+    if (!dt) return;
+    setDeletingDiet(true);
+    try {
+      await deleteDiet(dt.id);
+      setAllDietsList(prev => prev.filter(d => d.id !== dt.id));
+
+      // deleteDiet() no limpia las referencias a esta dieta en la config del
+      // atleta — sin esto, "activeDietIds"/"weeklySchedule" seguirían
+      // apuntando a un id que ya no existe.
+      const activeIds = dietConfigRaw?.activeDietIds ?? [];
+      const schedule: Partial<Record<WeekDay, string | null>> = { ...(dietConfigRaw?.weeklySchedule ?? {}) };
+      const hadActiveRef = activeIds.includes(dt.id);
+      let hadScheduleRef = false;
+      WD_ORDER.forEach(day => { if (schedule[day] === dt.id) { schedule[day] = null; hadScheduleRef = true; } });
+      if (hadActiveRef || hadScheduleRef) {
+        const nextConfig = {
+          ...(dietConfigRaw ?? { athleteId: profile.email }),
+          activeDietIds: activeIds.filter(id => id !== dt.id),
+          weeklySchedule: schedule,
+        };
+        await saveAthleteDietConfig(nextConfig).catch(() => {});
+        queryClient.setQueryData(athleteDietConfigKey, nextConfig);
+        setWeeklySchedule(schedule);
+      }
+
+      if (selectedDiet?.id === dt.id) {
+        const fallback = allDietsList.find(d => d.id !== dt.id) ?? null;
+        if (fallback) handleSelectDiet(fallback, { skipDirtyCheck: true });
+        else { setSelectedDiet(null); setSavedDietSnapshot(''); }
+      }
+      showToast('Dieta eliminada.', 'success');
+    } catch (err) {
+      console.error(err);
+      showToast('No se pudo eliminar la dieta.');
+    } finally {
+      setDeletingDiet(false);
+      setDietPendingDelete(null);
+    }
+  };
+
+  // Unifica el guardado del registro de "hecho" del día — antes cada sitio
+  // que lo llamaba (checkbox de un alimento, comida entera, ajuste rápido,
+  // primer guardado, cambio de comida) fallaba en silencio con
+  // `.catch(() => {})`: el atleta marcaba algo y, si no había red, nunca se
+  // enteraba de que no se había guardado nada.
+  const persistCompletion = (dietId: string, doneItemIds: string[]) => {
+    saveDietCompletionLog({ athleteId: profile.email, date: TODAY_DATE, dietId, doneItemIds })
+      .catch(() => showToast('No se pudo guardar el registro de hoy. Se reintentará al recargar.', 'error'));
+  };
+
   const handleToggleDone = (mealId: string, itemIdx: number) => {
     const key = `${mealId}_${itemIdx}`;
     setItemStates(prev => {
@@ -402,10 +501,71 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
       const next = { ...prev, [key]: { ...cur, done: !cur.done } };
       if (selectedDiet) {
         const doneItemIds = (Object.entries(next) as [string, ItemState][]).filter(([, v]) => v.done).map(([k]) => k);
-        saveDietCompletionLog({ athleteId: profile.email, date: TODAY_DATE, dietId: selectedDiet.id, doneItemIds }).catch(() => {});
+        persistCompletion(selectedDiet.id, doneItemIds);
       }
       return next;
     });
+  };
+
+  // Registrar/desregistrar una ingesta entera de un toque (handoff, panel 01):
+  // marca (o desmarca) todos sus alimentos a la vez en vez de uno a uno.
+  const handleToggleMealDone = (meal: DietMeal) => {
+    const allDone = meal.items.length > 0 && meal.items.every((_, idx) => itemStates[`${meal.id}_${idx}`]?.done);
+    const nextDone = !allDone;
+    void haptics.light();
+    if (nextDone) tutorial.markActionDone('registrar-ingesta');
+    setItemStates(prev => {
+      const next = { ...prev };
+      meal.items.forEach((_, idx) => {
+        const key = `${meal.id}_${idx}`;
+        const cur = next[key];
+        if (cur) next[key] = { ...cur, done: nextDone };
+      });
+      if (selectedDiet) {
+        const doneItemIds = (Object.entries(next) as [string, ItemState][]).filter(([, v]) => v.done).map(([k]) => k);
+        persistCompletion(selectedDiet.id, doneItemIds);
+      }
+      return next;
+    });
+    const mealName = mealLabel(meal.name, (selectedDiet?.meals.findIndex(m => m.id === meal.id) ?? -1) + 1);
+    showToast(nextDone ? `${mealName} registrada.` : `${mealName} desmarcada.`, 'success', {
+      actionLabel: 'Deshacer',
+      onAction: () => handleToggleMealDone(meal),
+    });
+  };
+
+  // Hoja de ajuste (panel 02): steppers por macro, seedeados con la
+  // composición actual de la ingesta; confirmar sustituye sus alimentos por
+  // intercambios genéricos en esas cantidades y la registra.
+  const handleOpenAdjust = (meal: DietMeal) => {
+    const bycat = mealPlacedByCat[meal.id] ?? { HC: 0, PROT: 0, GRASA: 0, MIX_HC: 0, MIX_GRASA: 0 };
+    setAdjustDraft({ HC: bycat.HC, PROT: bycat.PROT, GRASA: bycat.GRASA });
+    setAdjustMealId(meal.id);
+  };
+
+  const handleConfirmAdjust = () => {
+    if (!adjustMealId || !selectedDiet) return;
+    const mealId = adjustMealId;
+    const meal = selectedDiet.meals.find(m => m.id === mealId);
+    if (!meal) { setAdjustMealId(null); return; }
+
+    const newItems: DietItem[] = BUDGET_CATS
+      .filter(cat => adjustDraft[cat] > 0)
+      .map(cat => ({ category: cat, foodLabel: `${CAT_LABEL[cat]} (ajustado)`, quantity: adjustDraft[cat] }));
+
+    setSelectedDiet(prev => prev ? { ...prev, meals: prev.meals.map(m => m.id !== mealId ? m : { ...m, items: newItems }) } : prev);
+
+    setItemStates(prev => {
+      const next = { ...prev };
+      Object.keys(next).forEach(k => { if (k.startsWith(`${mealId}_`)) delete next[k]; });
+      newItems.forEach((item, i) => { next[`${mealId}_${i}`] = { foodLabel: item.foodLabel, done: true }; });
+      const doneItemIds = (Object.entries(next) as [string, ItemState][]).filter(([, v]) => v.done).map(([k]) => k);
+      persistCompletion(selectedDiet.id, doneItemIds);
+      return next;
+    });
+
+    void haptics.medium();
+    setAdjustMealId(null);
   };
 
   const handleOpenPicker = (mealId: string, itemIdx: number, category: FoodCategory) => {
@@ -414,10 +574,12 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     setSearchTerm('');
   };
 
-  const handleOpenAddPicker = (mealId: string) => {
-    setPickerItem({ mealId, itemIdx: null, category: 'HC' });
-    setPickerCategory('HC');
+  const handleOpenAddPicker = (mealId: string, category: FoodCategory = 'HC') => {
+    setPickerItem({ mealId, itemIdx: null, category });
+    setPickerCategory(category);
     setSearchTerm('');
+    setPickerAddedCounts({});
+    setPickerRecentlyAdded(null);
   };
 
   const handleSelectFood = (food: MealItem) => {
@@ -438,6 +600,30 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
       });
       setItemStates(prev => ({ ...prev, [`${mealId}_${newIdx}`]: { foodLabel: newItem.foodLabel, done: false } }));
       setSearchTerm('');
+      // El picker se queda abierto para encadenar varias añadidas seguidas
+      // (ver comentario arriba) — sin esto, tocar "+" no daba ninguna señal
+      // de que el toque había hecho algo.
+      void haptics.light();
+      // T13: tick + ×N en la fila, y Deshacer en el toast.
+      setPickerAddedCounts(prev => ({ ...prev, [food.id]: (prev[food.id] ?? 0) + 1 }));
+      setPickerRecentlyAdded(food.id);
+      if (pickerRecentTimer.current) clearTimeout(pickerRecentTimer.current);
+      pickerRecentTimer.current = setTimeout(() => setPickerRecentlyAdded(null), 1200);
+      showToast(`${food.label} añadido.`, 'success', {
+        actionLabel: 'Deshacer',
+        onAction: () => {
+          setSelectedDiet(prev => {
+            if (!prev) return prev;
+            return { ...prev, meals: prev.meals.map(m => m.id !== mealId ? m : { ...m, items: m.items.filter(it => it !== newItem) }) };
+          });
+          setItemStates(prev => {
+            const next = { ...prev };
+            delete next[`${mealId}_${newIdx}`];
+            return next;
+          });
+          setPickerAddedCounts(prev => ({ ...prev, [food.id]: Math.max(0, (prev[food.id] ?? 1) - 1) }));
+        },
+      });
     } else {
       // Swap an existing item in place — a single replacement, so close afterwards.
       const key = `${mealId}_${itemIdx}`;
@@ -453,6 +639,8 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
         };
       });
       setPickerItem(null);
+      void haptics.light();
+      showToast(`Cambiado por ${food.label}.`, 'success');
     }
   };
 
@@ -493,7 +681,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
         kcal: Math.round(exchangeToKcal(exchanges)),
       });
       setRecipes(prev => [...prev, saved]);
-      flash(`"${name}" guardada como receta — ya está disponible en Recetas.`);
+      showToast(`"${name}" guardada como receta — ya está disponible en Recetas.`, 'success');
       setSavingMealAsRecipeId(null);
     } finally {
       setSavingRecipe(false);
@@ -611,7 +799,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
 
     if (selectedDiet) {
       const doneItemIds = (Object.entries(nextStates) as [string, ItemState][]).filter(([, v]) => v.done).map(([k]) => k);
-      saveDietCompletionLog({ athleteId: profile.email, date: TODAY_DATE, dietId: selectedDiet.id, doneItemIds }).catch(() => {});
+      persistCompletion(selectedDiet.id, doneItemIds);
     }
 
     setSwapContext(null);
@@ -621,6 +809,24 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
 
   const renameDiet = (name: string) => {
     setSelectedDiet(prev => prev ? { ...prev, name } : prev);
+  };
+
+  // Cambio rápido de modo (Omnívoro/Vegano/Sin pesar) desde Nutrición — antes
+  // solo el coach podía habilitarlo desde la ficha del cliente. El cambio de
+  // banco de alimentos es instantáneo (activeDietMode), y si el modo no estaba
+  // habilitado se añade también a enabledModes y se persiste, para que quede
+  // disponible la próxima vez y visible como habilitado en el panel del coach.
+  const selectDietMode = (mode: DietMode) => {
+    setActiveDietMode(mode);
+    if (enabledModes.includes(mode)) return;
+    const updated = [...enabledModes, mode];
+    setEnabledModes(updated);
+    if (!nutConfig) return;
+    const next = { ...nutConfig, athleteId: profile.email, enabledModes: updated };
+    queryClient.setQueryData(['athleteNutritionConfig', profile.email], next);
+    saveAthleteNutritionConfig(next).catch(() => {
+      showToast('No se pudo guardar el modo — se activó solo para esta sesión.');
+    });
   };
 
   const updateBudgetCat = (cat: FoodCategory, value: number) => {
@@ -669,9 +875,9 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
         // so checkmarks made before the first save survive a reload.
         const doneItemIds = (Object.entries(itemStates) as [string, ItemState][]).filter(([, v]) => v.done).map(([k]) => k);
         if (doneItemIds.length > 0) {
-          saveDietCompletionLog({ athleteId: profile.email, date: TODAY_DATE, dietId: created.id, doneItemIds }).catch(() => {});
+          persistCompletion(created.id, doneItemIds);
         }
-        flash('Menú guardado en Mis Dietas.');
+        showToast('Menú guardado.', 'success');
       } catch (err) {
         console.error(err);
         showToast('No se pudo guardar el menú.');
@@ -686,7 +892,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
         await updateDiet(selectedDiet.id, { name: selectedDiet.name, budget: selectedDiet.budget, meals: selectedDiet.meals });
         setAllDietsList(prev => prev.map(d => d.id === selectedDiet.id ? selectedDiet : d));
         setSavedDietSnapshot(dietSnapshot(selectedDiet));
-        flash('Cambios guardados.');
+        showToast('Cambios guardados.', 'success');
       } catch (err) {
         console.error(err);
         showToast('No se pudieron guardar los cambios.');
@@ -695,46 +901,34 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
       }
       return;
     }
-    setSaveChoiceOpen(true);
+    // Dieta del entrenador: las reglas de Firestore prohíben que el atleta la
+    // actualice (solo puede update/delete si selfManaged=true) — antes había
+    // aquí una hoja "¿Cómo quieres guardar?" con un botón "Actualizar esta
+    // dieta" que SIEMPRE fallaba con permission-denied. En vez de ofrecer una
+    // opción que nunca funciona, se guarda como copia propia directamente
+    // (el `Banner` del header ya avisa de esto antes de que el atleta guarde).
+    await handleForkCoachDiet();
   };
 
-  const handleUpdateInPlace = async () => {
-    if (!selectedDiet) return;
-    setSaving(true);
-    try {
-      await updateDiet(selectedDiet.id, { name: selectedDiet.name, budget: selectedDiet.budget, meals: selectedDiet.meals });
-      setAllDietsList(prev => prev.map(d => d.id === selectedDiet.id ? selectedDiet : d));
-      setSavedDietSnapshot(dietSnapshot(selectedDiet));
-      flash('Dieta actualizada.');
-    } catch (err) {
-      console.error(err);
-      showToast('No se pudo actualizar la dieta.');
-    } finally {
-      setSaving(false);
-      setSaveChoiceOpen(false);
-    }
-  };
-
-  const handleSaveAsNew = async () => {
+  const handleForkCoachDiet = async () => {
     if (!selectedDiet) return;
     setSaving(true);
     try {
       const created = await createDiet({
         athleteId: profile.email,
-        name: `${selectedDiet.name} (copia)`,
+        name: `${selectedDiet.name} (mi versión)`,
         budget: selectedDiet.budget,
         meals: selectedDiet.meals.map(m => ({ ...m, id: makeId() })),
         selfManaged: true,
       });
       setAllDietsList(prev => [...prev, created]);
       handleSelectDiet(created, { skipDirtyCheck: true });
-      flash('Guardado como nueva dieta en Mis Dietas.');
+      showToast('Guardada como copia tuya — la dieta de tu coach sigue intacta.', 'success');
     } catch (err) {
       console.error(err);
-      showToast('No se pudo guardar la nueva dieta.');
+      showToast('No se pudo guardar la copia.');
     } finally {
       setSaving(false);
-      setSaveChoiceOpen(false);
     }
   };
 
@@ -748,7 +942,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     if (!meal) return;
     const newItems: DietItem[] = recipeToDietItems(recipe, enabledModes);
     if (newItems.length === 0) {
-      flash(`No se pudo añadir "${recipe.name}": no tiene datos de intercambios.`);
+      showToast(`No se pudo añadir "${recipe.name}": no tiene datos de intercambios.`, 'error');
       return;
     }
     const startIdx = meal.items.length;
@@ -759,11 +953,26 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     const newStates: Record<string, ItemState> = {};
     newItems.forEach((item, i) => { newStates[`${mealId}_${startIdx + i}`] = { foodLabel: item.foodLabel, done: false }; });
     setItemStates(prev => ({ ...prev, ...newStates }));
-    flash(`"${recipe.name}" añadida a ${mealLabel(meal.name, currentDiet.meals.indexOf(meal) + 1)}.`);
+    showToast(`"${recipe.name}" añadida a ${mealLabel(meal.name, currentDiet.meals.indexOf(meal) + 1)}.`, 'success');
   };
 
+  // 14-08 (tarea 24). React #185 «Maximum update depth exceeded» al añadir
+  // una receta a Intercambios. El guardado `!pendingRecipe` de abajo no basta
+  // por sí solo: `onConsumedPendingRecipe` limpia `pendingRecipe` en el PADRE
+  // (NutritionHubScreen), y hasta que ese cambio de prop vuelve a bajar aquí
+  // este efecto puede volver a dispararse con el MISMO objeto — por ejemplo
+  // si `loading` cambia de valor en ese hueco, que es justo el otro elemento
+  // de sus dependencias. Cada disparo repetido con la misma receta ejecuta
+  // `handleSelectDiet`/`setChooseDietForRecipe` otra vez, lo que puede volver
+  // a cambiar algo que retrigueree el efecto antes de que React llegue a
+  // pintar — el patrón clásico del error 185. Un ref que recuerda la ÚLTIMA
+  // receta ya procesada (mismo patrón que `initFor` más arriba) hace el
+  // efecto idempotente sin importar cuántas veces se dispare de más.
+  const pendingRecipeProcesadaRef = useRef<Recipe | null>(null);
   useEffect(() => {
     if (!pendingRecipe || loading) return;
+    if (pendingRecipeProcesadaRef.current === pendingRecipe) return;
+    pendingRecipeProcesadaRef.current = pendingRecipe;
     if (allDietsList.length === 0) {
       // Athlete has no diets at all yet — nothing to choose from, start a blank one
       const blank = blankDiet(profile.email);
@@ -785,7 +994,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
 
     const newItems = recipeToDietItems(recipe, enabledModes);
     if (newItems.length === 0) {
-      flash(`No se pudo añadir "${recipe.name}": no tiene datos de intercambios.`);
+      showToast(`No se pudo añadir "${recipe.name}": no tiene datos de intercambios.`, 'error');
       return;
     }
 
@@ -793,7 +1002,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
       const blank = blankDiet(profile.email);
       blank.meals[0].items = newItems;
       handleSelectDiet(blank, { skipDirtyCheck: true });
-      flash(`"${recipe.name}" añadida a un nuevo menú.`);
+      showToast(`"${recipe.name}" añadida a un nuevo menú.`, 'success');
       return;
     }
 
@@ -801,7 +1010,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
       const meal = target.meals[0];
       const updated: Diet = { ...target, meals: [{ ...meal, items: [...meal.items, ...newItems] }] };
       handleSelectDiet(updated, { skipDirtyCheck: true });
-      flash(`"${recipe.name}" añadida a ${mealLabel(meal.name, 1)}.`);
+      showToast(`"${recipe.name}" añadida a ${mealLabel(meal.name, 1)}.`, 'success');
     } else {
       handleSelectDiet(target, { skipDirtyCheck: true });
       setChooseMealForRecipe(recipe);
@@ -813,29 +1022,22 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
   return (
     <div className="w-full space-y-6">
       <div>
-        <h1 className="font-sans font-extrabold text-3xl text-white tracking-tight">Nutrición</h1>
-        <p className="text-[#c6c9ab] text-sm mt-1">Construye tu menú del día con intercambios y guárdalo en Mis Dietas.</p>
+        <h1 className="font-sans font-extrabold text-display text-white tracking-tight">Mi plan</h1>
+        <p className="text-ink-2 text-body-s mt-1">Construye tu menú del día con intercambios.</p>
       </div>
-
-      {flashMsg && (
-        <div className="flex items-center gap-2 bg-[#fbcb1a]/10 border border-[#fbcb1a]/25 text-white px-4 py-3 rounded-xl text-sm">
-          <span className="material-symbols-outlined text-[#fbcb1a] text-base">check_circle</span>
-          {flashMsg}
-        </div>
-      )}
 
       {/* Phase change banner */}
       {phaseBanner && (
-        <div className="flex items-center justify-between gap-3 bg-[#00eefc]/10 border border-[#00eefc]/30 rounded-xl px-4 py-3">
+        <div className="flex items-center justify-between gap-3 bg-data/10 border border-data/30 rounded-surface px-4 py-3">
           <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-[#00eefc] text-lg flex-shrink-0">swap_horiz</span>
-            <p className="font-sans font-bold text-[#00eefc] text-sm">{phaseBanner}</p>
+            <span className="material-symbols-outlined text-data text-title-m flex-shrink-0">swap_horiz</span>
+            <p className="font-sans font-bold text-data text-body-s">{phaseBanner}</p>
           </div>
           <button
             onClick={() => setPhaseBanner(null)}
-            className="text-[#00eefc]/60 hover:text-[#00eefc] transition-colors flex-shrink-0"
+            className="text-data/60 hover:text-data transition-colors flex-shrink-0"
           >
-            <span className="material-symbols-outlined text-base">close</span>
+            <span className="material-symbols-outlined text-title-s">close</span>
           </button>
         </div>
       )}
@@ -843,8 +1045,8 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
       {/* Pending coach diets banner — different days can carry different diets
           (día A/B/C); this flags the ones still missing food items to hit budget. */}
       {pendingScheduledDiets.length > 0 && (
-        <div className="flex items-center gap-2 bg-amber-400/10 border border-amber-400/25 text-amber-300 px-4 py-3 rounded-xl text-sm">
-          <span className="material-symbols-outlined text-amber-400 text-base flex-shrink-0">pending_actions</span>
+        <div className="flex items-center gap-2 bg-amber-400/10 border border-amber-400/25 text-amber-300 px-4 py-3 rounded-surface text-body-s">
+          <span className="material-symbols-outlined text-amber-400 text-title-s flex-shrink-0">pending_actions</span>
           <span>
             Tienes <strong>{pendingScheduledDiets.length}</strong> {pendingScheduledDiets.length === 1 ? 'dieta pendiente de generar' : 'dietas pendientes de generar'}
             {': '}
@@ -853,24 +1055,24 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
         </div>
       )}
 
-      {/* Diet mode selector */}
-      {enabledModes.length > 1 && (
-        <div className="flex gap-2 flex-wrap">
-          {enabledModes.map(mode => (
-            <button key={mode} onClick={() => setActiveDietMode(mode)}
-              className={`px-4 py-2 rounded-xl font-mono text-xs font-bold uppercase tracking-wider transition-all ${
-                activeDietMode === mode
-                  ? 'bg-[#fbcb1a] text-black shadow-md'
-                  : 'bg-[#1c1b1b] text-[#c6c9ab] border border-white/7 hover:border-[#fbcb1a]/40 hover:text-white'
-              }`}
-            >{MODE_LABEL[mode]}</button>
-          ))}
-        </div>
-      )}
+      {/* Diet mode selector — siempre visible (antes solo si el coach había
+          habilitado más de un modo) para que el atleta pueda pasar a "Sin
+          pesar" cualquier día, sin depender de que el coach lo active antes. */}
+      <div className="flex gap-2 flex-wrap">
+        {ALL_DIET_MODES.map(mode => (
+          <button key={mode} onClick={() => selectDietMode(mode)}
+            className={`px-4 py-2 rounded-control font-sans text-label font-bold uppercase tracking-wider transition-all ${
+              activeDietMode === mode
+                ? 'bg-accent text-black'
+                : 'bg-raised text-ink-2 border border-hairline hover:border-accent/40 hover:text-white'
+            }`}
+          >{MODE_LABEL[mode]}</button>
+        ))}
+      </div>
 
       {/* Week schedule navigation */}
       {!loading && WD_ORDER.some(d => typeof weeklySchedule[d] === 'string') && (
-        <div className="flex gap-1.5">
+        <div className="flex gap-2">
           {WD_ORDER.map(day => {
             const isToday = day === TODAY_WD;
             const isViewing = day === viewDay;
@@ -879,16 +1081,16 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
               <button
                 key={day}
                 onClick={() => setViewDay(day)}
-                className={`flex-1 flex flex-col items-center gap-0.5 py-2.5 rounded-xl font-mono text-[11px] font-bold uppercase tracking-wider border transition-all ${
+                className={`flex-1 flex flex-col items-center py-3 rounded-control font-mono text-caption font-bold uppercase tracking-wider border transition-all ${
                   isViewing
-                    ? 'bg-[#fbcb1a]/10 border-[#fbcb1a]/50 text-[#fbcb1a]'
+                    ? 'bg-accent/10 border-accent/50 text-accent'
                     : isToday
-                    ? 'bg-[#1c1b1b] border-[#3a3a3a] text-white'
-                    : 'bg-[#1e1e1b] border-white/7 text-[#c6c9ab] hover:border-[#3a3a3a] hover:text-white'
+                    ? 'bg-raised border-hairline text-white'
+                    : 'bg-raised border-hairline text-ink-2 hover:border-hairline hover:text-white'
                 }`}
               >
                 <span>{WD_SHORT[day]}</span>
-                <span className={`w-1 h-1 rounded-full ${isToday ? 'bg-[#fbcb1a]' : hasDiet ? 'bg-[#00eefc]/50' : 'bg-transparent'}`} />
+                <span className={`w-1 h-1 rounded-full ${isToday ? 'bg-accent' : hasDiet ? 'bg-data/50' : 'bg-transparent'}`} />
               </button>
             );
           })}
@@ -896,44 +1098,67 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
       )}
 
       {loading ? (
-        <div className="space-y-3">
-          <Skeleton className="h-8 w-1/2" />
-          <Skeleton className="h-24 w-full rounded-2xl" />
-          <Skeleton className="h-24 w-full rounded-2xl" />
+        // 05 · Carga — esqueletos con barrido 1,4 s y stagger 150 ms, nunca
+        // spinner ni cifras falsas (handoff).
+        <div className="bg-raised border border-hairline rounded-canvas p-4 space-y-5">
+          <div className="flex items-end justify-between gap-3">
+            <Skeleton className="stagger-child h-9 w-28" style={{ '--i': 0 } as React.CSSProperties} />
+            <Skeleton className="stagger-child h-5 w-16" style={{ '--i': 1 } as React.CSSProperties} />
+          </div>
+          <div className="space-y-3">
+            {[0, 1, 2].map(i => (
+              <React.Fragment key={i}><Skeleton className="stagger-child h-6 w-full" style={{ '--i': i + 2 } as React.CSSProperties} /></React.Fragment>
+            ))}
+          </div>
+          <div className="space-y-2 pt-2">
+            {[0, 1, 2].map(i => (
+              <React.Fragment key={i}><Skeleton className="stagger-child h-16 w-full" style={{ '--i': i + 5 } as React.CSSProperties} /></React.Fragment>
+            ))}
+          </div>
         </div>
       ) : allDietsList.length === 0 && !selectedDiet ? (
-        <div className="text-center py-16 border border-dashed border-white/7 rounded-2xl">
-          <span className="material-symbols-outlined text-4xl text-[#2a2a2a] block mb-3">nutrition</span>
-          <p className="text-[#c6c9ab] text-sm font-sans">Aún no tienes ningún menú.</p>
-          <p className="text-[#c6c9ab] text-xs font-mono mt-1 mb-4">Crea tu propio menú con alimentos y recetas hasta completar tus intercambios.</p>
-          <button
-            onClick={handleStartBlank}
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#fbcb1a] text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all"
-          >
-            <span className="material-symbols-outlined text-sm">add</span>
-            Crear mi primer menú
-          </button>
+        // 04 · Vacío — sin dieta publicada. Ningún vacío culpa al atleta: dice
+        // qué falta y quién lo tiene que hacer (handoff).
+        <div className="flex flex-col items-center gap-4 px-6 py-10 text-center animate-fade-up">
+          <span className="flex h-16 w-16 items-center justify-center rounded-field border border-dashed border-accent-line">
+            <Icon name="nutrition" size="xl" className="text-accent" />
+          </span>
+          <div className="flex flex-col gap-2 max-w-[320px]">
+            <p className="font-display font-black text-title-l uppercase leading-tight tracking-tight text-ink">
+              Dani está montando<br />tu dieta
+            </p>
+            <p className="font-sans text-body-s text-ink-2">
+              En cuanto tu entrenador publique tu plan de nutrición, lo verás aquí y te avisamos.
+            </p>
+          </div>
+          <span className="inline-flex items-center gap-2 rounded-field border border-accent-line bg-accent-bg px-4 py-3">
+            <span className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse-dot" />
+            <span className="font-mono text-label font-semibold tracking-[.08em] text-accent">SIN PLAN PUBLICADO TODAVÍA</span>
+          </span>
+          <Button variant="ghost" onClick={handleStartBlank} className="mt-2">
+            Empezar mi propio menú mientras tanto
+          </Button>
         </div>
       ) : viewDay !== TODAY_WD ? (() => {
         const browseDietId = weeklySchedule[viewDay] ?? null;
         const browseDiet = browseDietId ? allDietsList.find(d => d.id === browseDietId) ?? null : null;
         return (
           <div className="space-y-4">
-            <div className="bg-[#1c1b1b] rounded-xl p-4 border border-white/7">
-              <span className="block font-mono text-[9px] text-[#c6c9ab] uppercase tracking-widest font-bold mb-1">
+            <div className="bg-raised rounded-surface p-4 border border-hairline">
+              <span className="block font-mono text-caption text-ink-2 uppercase tracking-widest font-bold mb-1">
                 {WD_FULL[viewDay].charAt(0).toUpperCase() + WD_FULL[viewDay].slice(1)}
               </span>
               {browseDiet ? (
                 <>
-                  <span className="block font-sans font-bold text-lg text-white leading-tight">{browseDiet.name}</span>
+                  <span className="block font-sans font-bold text-title-m text-white leading-tight">{browseDiet.name}</span>
                   {browseDiet.coachNote && (
-                    <span className="block text-xs text-[#00eefc] italic mt-1">{browseDiet.coachNote}</span>
+                    <span className="block text-label text-data italic mt-1">{browseDiet.coachNote}</span>
                   )}
                   <div className="flex gap-2 mt-3 flex-wrap">
                     {BUDGET_CATS.map(cat => {
                       const b = browseDiet.budget[cat];
                       return b > 0 ? (
-                        <span key={cat} className={`text-[10px] font-mono font-bold px-2.5 py-1 rounded-lg border ${CAT_BG[cat]} ${CAT_COLOR[cat]}`}>
+                        <span key={cat} className={`text-caption font-mono font-bold px-3 py-1 rounded-surface border ${CAT_BG[cat]} ${CAT_COLOR[cat]}`}>
                           {cat}: {b} int.
                         </span>
                       ) : null;
@@ -941,12 +1166,12 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                   </div>
                 </>
               ) : (
-                <span className="block font-sans text-[#c6c9ab] text-sm mt-1">Día libre — sin dieta programada.</span>
+                <span className="block font-sans text-ink-2 text-body-s mt-1">Día libre — sin dieta programada.</span>
               )}
             </div>
             <button
               onClick={() => setViewDay(TODAY_WD)}
-              className="w-full py-2.5 rounded-xl border border-[#fbcb1a]/30 text-[#fbcb1a] font-mono text-xs font-bold uppercase tracking-wider hover:bg-[#fbcb1a]/10 transition-all"
+              className="w-full py-3 rounded-control border border-accent/30 text-accent font-sans text-label font-bold uppercase tracking-wider hover:bg-accent/10 transition-all"
             >
               ← Volver a hoy
             </button>
@@ -954,140 +1179,235 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
         );
       })() : (
         <>
-          {/* Diet selector — free choice among all of the athlete's diets (own + coach's) */}
-          {allDietsList.length > 0 && (
-            <div className="flex gap-2 flex-wrap items-center">
-              {allDietsList.map(dt => (
-                <button key={dt.id} onClick={() => handleSelectDiet(dt)}
-                  className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-mono text-xs font-bold uppercase tracking-wider transition-all ${
-                    selectedDiet?.id === dt.id
-                      ? 'bg-[#fbcb1a] text-black shadow-md'
-                      : 'bg-[#1c1b1b] text-[#c6c9ab] border border-white/7 hover:border-[#fbcb1a]/40 hover:text-white'
-                  }`}
-                >
-                  {!dt.selfManaged && (
-                    <span className="material-symbols-outlined" style={{ fontSize: '13px' }} title="De tu entrenador">military_tech</span>
-                  )}
-                  {dt.name}
-                </button>
-              ))}
+          {/* Selector de dieta — sustituye la fila de chips (desbordaba con
+              varias dietas). Un solo control que resume la dieta activa y
+              abre "Mis dietas" para cambiar, crear, duplicar o borrar. */}
+          {allDietsList.length > 0 && selectedDiet && (() => {
+            const isScheduledToday = weeklySchedule[TODAY_WD] === selectedDiet.id;
+            const subtitle = isScheduledToday
+              ? `Programada para hoy (${WD_FULL[TODAY_WD]}) por tu coach`
+              : !selectedDiet.selfManaged
+              ? 'De tu entrenador'
+              : 'Tuya';
+            const otherCount = allDietsList.length - 1;
+            return (
               <button
-                onClick={handleStartBlank}
-                className="flex items-center gap-1 px-3 py-2.5 rounded-xl border border-dashed border-white/7 text-[#c6c9ab] hover:border-[#fbcb1a]/40 hover:text-[#fbcb1a] font-mono text-xs font-bold uppercase tracking-wider transition-all"
+                type="button"
+                onClick={() => setMisDietasOpen(true)}
+                className="w-full flex items-center gap-3 p-3 rounded-control bg-raised border border-hairline hover:border-accent/40 transition-all text-left"
               >
-                <span className="material-symbols-outlined text-sm">add</span>
-                Nuevo
+                <span className="w-9 h-9 rounded-control bg-accent-bg flex items-center justify-center flex-shrink-0">
+                  <Icon name={selectedDiet.selfManaged ? 'bookmark' : 'military_tech'} size="s" className="text-accent" />
+                </span>
+                <span className="flex-1 min-w-0">
+                  <span className="block font-sans font-bold text-body-s text-white truncate">{selectedDiet.name}</span>
+                  <span className="block font-mono text-caption text-ink-2 truncate">{subtitle}</span>
+                </span>
+                {otherCount > 0 && (
+                  <span className="flex-shrink-0 font-mono text-caption font-bold text-ink-2 bg-bg border border-hairline rounded-full px-2 py-0.5">
+                    +{otherCount}
+                  </span>
+                )}
+                <Icon name="expand_more" size="s" className="text-ink-2 flex-shrink-0" />
               </button>
-            </div>
-          )}
+            );
+          })()}
 
           {selectedDiet && (
             <React.Fragment key={selectedDiet.id}>
-              {/* Diet header */}
-              <div className="bg-[#1c1b1b] rounded-xl p-4 border border-white/7">
-                <div className="flex items-center justify-between mb-0.5">
-                  <span className="font-mono text-[9px] text-[#c6c9ab] uppercase tracking-widest font-bold">
+              {/* ── 01 · Tracker del día (F3.8) ─────────────────────────────────── */}
+              <div ref={trackerTargetRef} className="bg-raised border border-hairline rounded-canvas p-4">
+                {/* Cabecera de la dieta — antes vivía en una tarjeta aparte junto al
+                    cupo diario fijado por el coach; ese cupo se ha quitado del todo
+                    (las barras de abajo ya muestran lo mismo) y Dani pidió juntar
+                    aquí arriba lo que queda: nombre + nota del coach. */}
+                <div className="flex items-center justify-between">
+                  <span className="font-mono text-caption text-ink-2 uppercase tracking-widest font-bold">
                     {selectedDiet.selfManaged ? 'TU MENÚ' : 'DIETA DE TU ENTRENADOR'}
                   </span>
-                  <span className="font-mono text-[9px] text-[#fbcb1a] uppercase tracking-widest font-bold">Hoy, {WD_FULL[TODAY_WD]}</span>
+                  <span className="font-mono text-caption text-accent uppercase tracking-widest font-bold">Hoy, {WD_FULL[TODAY_WD]}</span>
                 </div>
-                <input
-                  type="text"
-                  value={selectedDiet.name}
-                  onChange={e => renameDiet(e.target.value)}
-                  className="block w-full bg-transparent border-none font-sans font-bold text-lg text-white leading-tight focus:outline-none focus:ring-0 p-0"
-                />
+                <div className="flex items-center gap-2 mt-1">
+                  <input
+                    type="text"
+                    value={selectedDiet.name}
+                    onChange={e => renameDiet(e.target.value)}
+                    aria-label="Nombre de la dieta"
+                    className="min-w-0 flex-1 bg-transparent border-none font-sans font-bold text-title-m text-white leading-tight focus:outline-none focus:ring-0 p-0"
+                  />
+                  <Icon name="edit" size="s" className="text-ink-3 flex-shrink-0" />
+                </div>
                 {selectedDiet.coachNote && (
-                  <span className="block font-sans text-xs text-[#00eefc] italic mt-1">{selectedDiet.coachNote}</span>
+                  <span className="block font-sans text-label text-data italic mt-1">{selectedDiet.coachNote}</span>
                 )}
-                <span className="block font-mono text-[9px] text-[#c6c9ab] mt-1.5">
+                <span className="block font-mono text-caption text-ink-2 mt-2">
                   {selectedDiet.meals.length} comida{selectedDiet.meals.length !== 1 ? 's' : ''} · {selectedDiet.meals.reduce((s, m) => s + m.items.length, 0)} alimentos
                 </span>
+
+                <div className="border-t border-hairline mt-4 pt-4">
+                {dayClosed ? (
+                  <div className="flex flex-col items-center py-4 text-center animate-fade-up">
+                    <RingSeal percent={100} complete size={112} strokeWidth={8} label="Día cerrado en presupuesto" />
+                    <p className="font-display font-black text-title-l uppercase leading-tight tracking-tight text-ink mt-5">
+                      Día cerrado<br />en presupuesto
+                    </p>
+                    <p className="text-body-s text-ink-2 mt-2 max-w-[300px]">
+                      Registraste tus {totalItems} ingesta{totalItems !== 1 ? 's' : ''} de hoy dentro de tu presupuesto de intercambios.
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex items-end justify-between gap-3">
+                      <div>
+                        <span className="block font-mono text-caption text-ink-3 uppercase tracking-[.16em]">Te quedan</span>
+                        <div className="flex items-baseline gap-2 mt-2">
+                          <span className={`font-display font-black text-headline leading-none ${leftExch < 0 ? 'text-danger' : 'text-accent'}`}>
+                            {fmtQty(leftExch)}
+                          </span>
+                          <span className="font-sans font-semibold text-body-s text-ink-3">intercambios</span>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <span className="block font-mono text-caption text-ink-3 uppercase tracking-[.14em]">≈ kcal</span>
+                        <span className="block font-mono text-title-s text-ink-2 mt-2">
+                          {leftKcal < 0 ? '−' : '≈ '}{Math.abs(leftKcal).toLocaleString('es-ES')}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-3 mt-5">
+                      {BUDGET_CATS.map(cat => {
+                        const b = selectedDiet.budget[cat] ?? 0;
+                        const d = doneByCat[cat];
+                        const over = b > 0 && d > b;
+                        const pct = b > 0 ? (d / b) * 100 : (d > 0 ? 100 : 0);
+                        return (
+                          <div key={cat}>
+                            <div className="flex items-baseline justify-between mb-2">
+                              <span className="font-mono text-caption font-semibold text-ink-2 tracking-[.1em]">{BAR_LABEL[cat]}</span>
+                              <span className={`font-mono text-label font-bold ${over ? 'text-danger' : 'text-ink-2'}`}>
+                                {fmtQty(d)}/{fmtQty(b)}{over ? `  +${fmtQty(round2(d - b))}` : ''}
+                              </span>
+                            </div>
+                            <ProgressBar value={pct} label={`${BAR_LABEL[cat]}, ${fmtQty(d)} de ${fmtQty(b)} intercambios`} />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </>
+                )}
+
+                {selectedDiet.meals.length > 0 && (
+                  <>
+                    <div className="flex items-baseline justify-between mt-6 mb-2">
+                      <span className="font-mono text-caption text-ink-3 uppercase tracking-[.16em]">Ingestas</span>
+                      <span className="font-mono text-caption text-ink-4">{mealsDoneCount} DE {selectedDiet.meals.length}</span>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      {selectedDiet.meals.map((meal, mi) => {
+                        const mealDone = meal.items.length > 0 && meal.items.every((_, idx) => itemStates[`${meal.id}_${idx}`]?.done);
+                        const bycat = mealPlacedByCat[meal.id] ?? { HC: 0, PROT: 0, GRASA: 0, MIX_HC: 0, MIX_GRASA: 0 };
+                        return (
+                          <div
+                            key={meal.id}
+                            ref={mi === 0 ? firstMealRowTargetRef : undefined}
+                            className={`flex items-center gap-3 rounded-surface border p-3 transition-colors duration-(--duration-state) ${
+                              mealDone ? 'border-accent/20 bg-accent/6' : 'border-hairline bg-surface'
+                            }`}
+                          >
+                            <button type="button" onClick={() => handleToggleMealDone(meal)} className="flex min-w-0 flex-1 items-center gap-3 text-left">
+                              <span
+                                className={`flex h-6 w-6 flex-none items-center justify-center rounded-control border-[1.5px] transition-all duration-(--duration-state) ${
+                                  mealDone ? 'border-accent bg-accent' : 'border-strong'
+                                }`}
+                              >
+                                {mealDone && <Icon name="check" size="s" className="text-on-accent" />}
+                              </span>
+                              <span className="min-w-0 flex-1">
+                                <span className={`block truncate font-sans text-body-s font-bold transition-colors duration-(--duration-state) ${mealDone ? 'text-ink-2' : 'text-ink'}`}>
+                                  {mealLabel(meal.name, mi + 1)}
+                                </span>
+                                {(bycat.HC > 0 || bycat.PROT > 0 || bycat.GRASA > 0) && (
+                                  <span className="mt-2 flex flex-wrap gap-1">
+                                    {(['HC', 'PROT', 'GRASA'] as const).filter(c => bycat[c] > 0).map(c => (
+                                      <span
+                                        key={c}
+                                        className={`rounded-chip px-2 py-1 font-mono text-caption font-semibold ${mealDone ? 'bg-white/5 text-ink-3' : 'bg-accent-bg text-accent'}`}
+                                      >
+                                        {fmtQty(bycat[c])} {CHIP_LABEL[c]}
+                                      </span>
+                                    ))}
+                                  </span>
+                                )}
+                              </span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleOpenAdjust(meal)}
+                              title="Ajustar intercambios"
+                              aria-label={`Ajustar intercambios de ${mealLabel(meal.name, mi + 1)}`}
+                              className="-m-2 flex-none p-2 text-ink-3 transition-colors hover:text-accent"
+                            >
+                              <Icon name="tune" size="s" />
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <p className="mt-3 text-center font-mono text-caption tracking-[.08em] text-ink-4">
+                      TOCA UNA INGESTA PARA REGISTRARLA
+                    </p>
+                  </>
+                )}
+                </div>
               </div>
 
-              {/* Objetivo diario de intercambios — el atleta solo lo edita en menús propios;
-                  en dietas del entrenador el cupo es fijo, solo se rellenan alimentos. */}
-              <div className="bg-[#181816] border border-white/7 rounded-2xl p-4">
-                <p className="font-mono text-[9px] text-[#c6c9ab] uppercase tracking-wider mb-3">
-                  {selectedDiet.selfManaged ? 'Objetivo diario de intercambios' : 'Cupo diario fijado por tu entrenador'}
-                </p>
-                <div className="grid grid-cols-3 gap-3">
-                  {BUDGET_CATS.map(cat => (
-                    <div key={cat}>
-                      <label className={`block font-mono text-[9px] font-bold mb-1 ${CAT_COLOR[cat]}`}>{CAT_LABEL[cat]}</label>
-                      {selectedDiet.selfManaged ? (
+              {/* Objetivo diario de intercambios — solo existe como tarjeta aparte en
+                  menús propios (autogestionados): ahí el atleta lo edita a mano y no
+                  hay ningún otro sitio que lo muestre. En dietas del coach el cupo es
+                  fijo y ya lo cubren las barras del tracker de arriba, así que la
+                  tarjeta de "cupo diario fijado por tu entrenador" desaparece del
+                  todo — no solo se resume, se quita. */}
+              {selectedDiet.selfManaged && (
+                <div className="bg-raised rounded-surface p-4 border border-hairline">
+                  <p className="font-mono text-caption text-ink-2 uppercase tracking-wider mb-3">Objetivo diario de intercambios</p>
+                  <div className="grid grid-cols-3 gap-3">
+                    {BUDGET_CATS.map(cat => (
+                      <div key={cat}>
+                        <label className={`block font-sans text-caption font-bold mb-1 ${CAT_COLOR[cat]}`}>{CAT_LABEL[cat]}</label>
                         <input
                           type="number"
                           min={0}
                           step={0.25}
                           value={selectedDiet.budget[cat]}
                           onChange={e => updateBudgetCat(cat, parseFloat(e.target.value) || 0)}
-                          className="w-full bg-[#1e1e1b] border border-white/7 rounded-xl px-2 py-1.5 text-white text-xs focus:outline-none focus:border-[#fbcb1a]/50"
+                          className="w-full bg-surface border border-hairline rounded-control px-2 py-2 text-white text-title-s focus:outline-none focus:border-accent/50"
                         />
-                      ) : (
-                        <div className="w-full bg-[#1e1e1b]/50 border border-white/7 rounded-xl px-2 py-1.5 text-white text-xs">
-                          {fmtQty(selectedDiet.budget[cat])}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Budget dashboard */}
-              <div className="bg-[#181816] border border-white/7 rounded-2xl p-4">
-                <p className="font-mono text-[9px] text-[#c6c9ab] uppercase tracking-wider mb-3">
-                  Progreso por categoría
-                </p>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2.5">
-                  {BUDGET_CATS.map(cat => {
-                    const b = selectedDiet.budget[cat];
-                    const d = doneByCat[cat];
-                    const isOver = b > 0 && d > b;
-                    const isOk = b > 0 && round2(d) === round2(b);
-                    const pct = b > 0 ? Math.min(100, (d / b) * 100) : (d > 0 ? 100 : 0);
-                    const barColor = isOver ? 'bg-red-500' : isOk ? 'bg-green-400' : 'bg-[#fbcb1a]';
-                    return (
-                      <div key={cat}>
-                        <div className="flex items-center justify-between mb-1">
-                          <span className={`text-[9px] font-mono font-bold ${CAT_COLOR[cat]}`}>
-                            {cat.replace('_', ' ')}
-                          </span>
-                          <span className={`text-[9px] font-mono font-bold ${isOver ? 'text-red-400' : isOk ? 'text-green-400' : 'text-white'}`}>
-                            {fmtQty(d)}{b > 0 ? `/${fmtQty(b)}` : ''}{isOk ? ' ✓' : isOver ? ' !' : ''}
-                          </span>
-                        </div>
-                        <div className="h-1 w-full bg-[#1c1b1b] rounded-full overflow-hidden">
-                          <div className={`h-full rounded-full transition-all duration-300 ${barColor}`} style={{ width: `${pct}%` }} />
-                        </div>
                       </div>
-                    );
-                  })}
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
-              {/* Overall progress bar */}
-              <div className="bg-[#181816] border border-white/7 p-4 rounded-2xl">
-                <div className="flex justify-between items-end mb-2">
-                  <h2 className="font-sans font-bold text-sm text-[#e5e2e1] uppercase tracking-wide">Completados hoy</h2>
-                  <span className="font-mono text-xs text-[#fbcb1a] font-bold">{doneItems} / {totalItems}</span>
+              {/* Aviso de fork: editar una dieta del coach nunca la actualiza in
+                  situ (las reglas de Firestore lo prohíben) — al guardar se crea
+                  una copia propia. Avisar aquí, antes de que el atleta guarde,
+                  en vez de que se entere por el texto del botón. */}
+              {!selectedDiet.selfManaged && isDirty && (
+                <div className="flex items-start gap-2 bg-data/10 border border-data/25 text-data px-4 py-3 rounded-surface text-body-s">
+                  <Icon name="info" size="s" className="flex-shrink-0 mt-0.5" />
+                  <span>Esta dieta la creó tu coach. Si la editas, se guardará como copia tuya y la original no se toca.</span>
                 </div>
-                <div className="h-2 w-full bg-[#1c1b1b] rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-[#fbcb1a] rounded-full transition-all duration-500 volt-glow"
-                    style={{ width: `${totalItems > 0 ? (doneItems / totalItems) * 100 : 0}%` }}
-                  />
-                </div>
-              </div>
+              )}
 
-              {/* Resumen numérico (colocado/objetivo por comida + total del día) — siempre visible */}
-              <DietNumerosView meals={selectedDiet.meals} budget={selectedDiet.budget} />
+              {/* El desglose numérico por comida (Paco/Comida 2/Comida 3 + total del
+                  día) se ha quitado — duplicaba, con otro estilo, lo que ya muestra
+                  el tracker de arriba (panel 01) y la lista de "Ingestas". */}
 
               <Coachmark
                 id="nutrition_swap_hint"
                 email={profile.email}
                 icon="swap_horiz"
-                text="¿No te apetece algo? Toca el icono 🔁 junto a cualquier alimento para cambiarlo por un equivalente."
+                text="¿No te apetece algo? Toca Cambiar junto a cualquier alimento para sustituirlo por un equivalente."
               />
 
               <div className="space-y-4">
@@ -1095,290 +1415,451 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                   const mealDone = meal.items.length > 0 && meal.items.every((_, idx) => itemStates[`${meal.id}_${idx}`]?.done);
                   return (
                     <div key={meal.id}
-                      className={`bg-[#201f1f] rounded-xl overflow-hidden border transition-all ${mealDone ? 'border-[#fbcb1a]/40' : 'border-white/7'}`}
+                      className={`bg-raised rounded-surface overflow-hidden border transition-all ${mealDone ? 'border-accent/40' : 'border-hairline'}`}
                     >
                       {/* Meal header */}
-                      <div className="px-4 py-3 bg-[#1c1b1b]/80 flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                          <span className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${mealDone ? 'bg-[#fbcb1a] border-[#fbcb1a]' : 'border-[#3a3a3a]'}`}>
+                      <div className="px-4 py-3 bg-raised/80 flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-3 min-w-0 flex-1">
+                          <button
+                            type="button"
+                            onClick={() => handleToggleMealDone(meal)}
+                            title={mealDone ? 'Desmarcar ingesta' : 'Registrar ingesta'}
+                            aria-label={mealDone ? 'Desmarcar ingesta' : 'Registrar ingesta'}
+                            className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${mealDone ? 'bg-accent border-accent' : 'border-hairline hover:border-accent/50'}`}
+                          >
                             {mealDone && <span className="material-symbols-outlined text-black" style={{ fontSize: '13px' }}>check</span>}
-                          </span>
+                          </button>
                           <input
                             type="text"
                             value={meal.name}
                             onChange={e => renameMeal(meal.id, e.target.value)}
                             placeholder={`Comida ${mi + 1}`}
-                            className="min-w-0 flex-1 bg-transparent border-none font-sans font-bold text-white text-base focus:outline-none focus:ring-0 p-0"
+                            className="min-w-0 flex-1 bg-transparent border-none font-sans font-bold text-white text-title-s focus:outline-none focus:ring-0 p-0"
                           />
                         </div>
                         <div className="flex items-center gap-2 flex-shrink-0">
-                          <span className="font-mono text-[9px] text-[#c6c9ab] hidden sm:block">
+                          <span className="font-mono text-caption text-ink-2 hidden sm:block">
                             {meal.items.length} alimento{meal.items.length !== 1 ? 's' : ''}
                           </span>
                           {recipes.length > 0 && (
                             <button
                               onClick={() => handleOpenRecipePicker(meal.id)}
                               title="Usar receta"
-                              className="flex items-center gap-1 px-2 py-1 rounded-xl bg-[#1e1e1b] border border-white/7 hover:border-[#fbcb1a]/50 hover:text-[#fbcb1a] text-[#c6c9ab] transition-all"
+                              className="flex items-center gap-1 px-2 py-1 rounded-control bg-raised border border-hairline hover:border-accent/50 hover:text-accent text-ink-2 transition-all"
                             >
-                              <span className="material-symbols-outlined text-xs select-none">skillet</span>
-                              <span className="font-mono text-[10px] uppercase tracking-wider hidden sm:block">Receta</span>
+                              <span className="material-symbols-outlined text-label select-none">skillet</span>
+                              <span className="font-mono text-caption uppercase tracking-wider hidden sm:block">Receta</span>
                             </button>
                           )}
                           {meal.items.length > 0 && (
                             <button
                               onClick={() => openSaveMealAsRecipe(meal)}
                               title="Guardar como receta"
-                              className="flex items-center gap-1 px-2 py-1 rounded-xl bg-[#1e1e1b] border border-white/7 hover:border-[#00eefc]/50 hover:text-[#00eefc] text-[#c6c9ab] transition-all"
+                              className="flex items-center gap-1 px-2 py-1 rounded-control bg-raised border border-hairline hover:border-data/50 hover:text-data text-ink-2 transition-all"
                             >
-                              <span className="material-symbols-outlined text-xs select-none">bookmark_add</span>
-                              <span className="font-mono text-[10px] uppercase tracking-wider hidden sm:block">Guardar receta</span>
+                              <span className="material-symbols-outlined text-label select-none">bookmark_add</span>
+                              <span className="font-mono text-caption uppercase tracking-wider hidden sm:block">Guardar receta</span>
                             </button>
                           )}
                           {selectedDiet.meals.length > 1 && (
                             <button
                               onClick={() => removeMeal(meal.id)}
                               title="Quitar comida"
-                              className="text-[#c6c9ab] hover:text-red-400 transition-colors p-1"
+                              className="text-ink-2 hover:text-red-400 transition-colors p-1"
                             >
-                              <span className="material-symbols-outlined text-sm select-none">delete</span>
+                              <span className="material-symbols-outlined text-body-s select-none">delete</span>
                             </button>
                           )}
                         </div>
                       </div>
 
                       {savingMealAsRecipeId === meal.id && (
-                        <div className="px-4 py-2.5 bg-[#0e0e0e]/60 border-b border-white/60 flex items-center gap-2">
+                        <div className="px-4 py-3 bg-bg/60 border-b border-hairline flex items-center gap-2">
                           <input
                             type="text"
                             autoFocus
                             value={recipeNameDraft}
                             onChange={e => setRecipeNameDraft(e.target.value)}
                             placeholder="Nombre de la receta"
-                            className="flex-1 min-w-0 bg-[#1e1e1b] border border-white/7 rounded-lg px-2.5 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-[#00eefc]/50"
+                            className="flex-1 min-w-0 bg-raised border border-hairline rounded-control px-3 py-2 text-title-s text-white font-mono focus:outline-none focus:border-data/50"
                           />
                           <button
                             onClick={() => confirmSaveMealAsRecipe(meal)}
                             disabled={savingRecipe || !recipeNameDraft.trim()}
-                            className="px-3 py-1.5 bg-[#00eefc] text-black font-mono text-[10px] font-bold uppercase rounded-lg disabled:opacity-40 transition-all"
+                            className="px-3 py-2 bg-data text-black font-mono text-caption font-bold uppercase rounded-control disabled:opacity-40 transition-all"
                           >
                             {savingRecipe ? 'Guardando…' : 'Guardar'}
                           </button>
                           <button
                             onClick={() => setSavingMealAsRecipeId(null)}
-                            className="text-[#c6c9ab] hover:text-white p-1"
+                            className="text-ink-2 hover:text-white p-1"
                           >
-                            <span className="material-symbols-outlined text-sm">close</span>
+                            <span className="material-symbols-outlined text-body-s">close</span>
                           </button>
                         </div>
                       )}
 
-                      {/* Per-meal target + progress (only when targets are set) */}
+                      {/* Per-meal target + progress (only when targets are set) — antes
+                          salía sin rótulo, al contrario que el lado coach ("Objetivo
+                          comida"), y las barras eran hechas a mano en vez del
+                          ProgressBar compartido. */}
                       {CATS.some(c => (meal.target?.[c] ?? 0) > 0) && (() => {
                         const mDone = mealDoneByCat[meal.id] ?? {} as Record<FoodCategory, number>;
                         const targetCats = CATS.filter(c => (meal.target?.[c] ?? 0) > 0);
                         return (
-                          <div className="px-4 py-2 bg-[#0e0e0e]/60 border-b border-white/60 flex flex-wrap gap-x-3 gap-y-1.5 items-center">
-                            {targetCats.map(cat => {
-                              const tgt = meal.target![cat]!;
-                              const d = mDone[cat] ?? 0;
-                              const isOk = round2(d) >= round2(tgt);
-                              const isOver = d > tgt;
-                              return (
-                                <div key={cat} className="flex items-center gap-1">
-                                  <span className={`font-mono text-[9px] font-bold ${CAT_COLOR[cat]}`}>
-                                    {cat.replace('_', ' ')}
-                                  </span>
-                                  <span className={`font-mono text-[9px] ${isOver ? 'text-red-400' : isOk ? 'text-green-400' : 'text-[#c6c9ab]'}`}>
-                                    {fmtQty(d)}/{fmtQty(tgt)}{isOk ? ' ✓' : ''}
-                                  </span>
-                                  <div className="w-10 h-1 bg-[#1c1b1b] rounded-full overflow-hidden">
-                                    <div
-                                      className={`h-full rounded-full transition-all duration-300 ${isOver ? 'bg-red-500' : isOk ? 'bg-green-400' : 'bg-[#fbcb1a]'}`}
-                                      style={{ width: `${tgt > 0 ? Math.min(100, (d / tgt) * 100) : 0}%` }}
+                          <div className="px-4 py-2 bg-bg/60 border-b border-hairline">
+                            <p className="font-mono text-caption text-ink-3 uppercase tracking-wider mb-2">Objetivo comida</p>
+                            <div className="flex flex-wrap gap-x-3 gap-y-2 items-center">
+                              {targetCats.map(cat => {
+                                const tgt = meal.target![cat]!;
+                                const d = mDone[cat] ?? 0;
+                                const isOk = round2(d) >= round2(tgt);
+                                const isOver = d > tgt;
+                                const pct = tgt > 0 ? (d / tgt) * 100 : 0;
+                                return (
+                                  <div key={cat} className="flex items-center gap-1">
+                                    <span className={`font-mono text-caption font-bold ${CAT_COLOR[cat]}`}>
+                                      {cat.replace('_', ' ')}
+                                    </span>
+                                    <span className={`font-mono text-caption ${isOver ? 'text-red-400' : isOk ? 'text-green-400' : 'text-ink-2'}`}>
+                                      {fmtQty(d)}/{fmtQty(tgt)}{isOk ? ' ✓' : ''}
+                                    </span>
+                                    <ProgressBar
+                                      value={pct}
+                                      label={`${CAT_LABEL[cat]} de esta comida, ${fmtQty(d)} de ${fmtQty(tgt)} intercambios`}
+                                      widthClassName="w-10 flex-shrink-0"
                                     />
                                   </div>
-                                </div>
-                              );
-                            })}
+                                );
+                              })}
+                            </div>
                           </div>
                         );
                       })()}
 
                       {/* Item list */}
-                      <div className="p-3 border-t border-white/60 bg-[#111110]/40 space-y-2">
+                      <div className="p-3 border-t border-hairline bg-bg/40 space-y-2">
                         {meal.items.length === 0 ? (
-                          <div className="text-center py-4">
-                            <p className="font-mono text-[10px] text-[#c6c9ab] italic mb-2">Sin alimentos en esta comida.</p>
-                            <button
-                              onClick={() => handleOpenAddPicker(meal.id)}
-                              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#1e1e1b] border border-white/7 hover:border-[#fbcb1a]/50 hover:text-[#fbcb1a] text-[#c6c9ab] transition-all"
-                            >
-                              <span className="material-symbols-outlined text-sm select-none">add_circle</span>
-                              <span className="font-mono text-[10px] uppercase tracking-wider">Añadir alimento</span>
-                            </button>
-                          </div>
+                          <button
+                            onClick={() => handleOpenAddPicker(meal.id)}
+                            className="w-full flex items-center gap-3 p-3 rounded-surface border border-dashed border-hairline text-ink-2 hover:border-accent/50 hover:text-accent transition-colors active:scale-[0.99]"
+                          >
+                            <span className="w-8 h-8 rounded-control bg-accent-bg flex items-center justify-center flex-shrink-0">
+                              <Icon name="add" size="s" className="text-accent" />
+                            </span>
+                            <span className="font-sans text-body-s font-semibold">Añadir alimento del banco</span>
+                          </button>
                         ) : meal.items.map((item, idx) => {
                           const key = `${meal.id}_${idx}`;
                           const st = itemStates[key] ?? { foodLabel: item.foodLabel, done: false };
+                          // El botón "Cambiar" es lo único que abre el intercambiador —
+                          // antes era la fila entera con un icono decorativo sin ningún
+                          // affordance (queja real: "no da feedback ni info al tocar").
+                          const canDelete = selectedDiet.selfManaged || idx >= (origItemCounts[meal.id] ?? Infinity);
                           return (
                             <div key={key}
-                              className={`flex items-center gap-2.5 p-3 rounded-lg border transition-all ${st.done ? 'bg-[#181816] border-[#fbcb1a]/20 opacity-75' : 'bg-[#181816] border-white/7'}`}
+                              className={`flex items-center gap-3 p-3 rounded-surface border transition-colors duration-(--duration-state) ${st.done ? 'bg-surface border-accent/20 opacity-75' : 'bg-surface border-hairline'}`}
                             >
                               {/* Checkbox */}
                               <button
                                 onClick={() => handleToggleDone(meal.id, idx)}
-                                className={`w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center transition-all ${st.done ? 'bg-[#fbcb1a] text-black border-transparent' : 'border border-[#c6c9ab]/40 hover:border-[#fbcb1a]'}`}
+                                title={st.done ? 'Desmarcar' : 'Marcar'}
+                                className={`w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center transition-all active:scale-90 ${st.done ? 'bg-accent text-black border-transparent' : 'border border-ink-2/40 hover:border-accent'}`}
                               >
-                                {st.done && <span className="material-symbols-outlined text-sm font-black">check</span>}
+                                {st.done && <span className="material-symbols-outlined text-body-s font-bold">check</span>}
                               </button>
 
-                              {/* Category badge */}
-                              <span className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded border flex-shrink-0 ${CAT_BG[item.category]} ${CAT_COLOR[item.category]}`}>
-                                {item.category.replace('_', ' ')}
+                              {/* Category tag — cuadro 44px del handoff */}
+                              <span className="w-11 h-11 rounded-control bg-inset border border-hairline flex-shrink-0 flex items-center justify-center px-0.5">
+                                <span className={`font-mono font-bold text-ink-3 leading-none text-center ${item.category.startsWith('MIX_') ? 'text-[9px] tracking-tight' : 'text-caption'}`}>
+                                  {item.category.replace('_', '')}
+                                </span>
                               </span>
 
-                              {/* Food label + qty + weight */}
-                              <div className="flex-1 min-w-0">
-                                <span className={`block text-xs font-sans leading-snug ${st.done ? 'line-through text-[#c6c9ab]' : 'text-white'}`}>
-                                  {st.foodLabel}
+                              {/* Nombre + gramos en oro (los gramos SOLO viven aquí — el resto de la pantalla habla en intercambios) + equivalencia humana.
+                                  También abre el intercambiador — misma acción que "Cambiar", dos zonas táctiles para el mismo gesto. */}
+                              <button
+                                type="button"
+                                onClick={() => handleOpenPicker(meal.id, idx, item.category)}
+                                className="flex-1 min-w-0 text-left rounded-control -m-1 p-1 transition-colors hover:bg-raised/60 active:bg-raised"
+                              >
+                                <div className="flex items-baseline gap-2">
+                                  <span className={`text-body-s font-sans font-semibold leading-snug truncate ${st.done ? 'line-through text-ink-2' : 'text-ink'}`}>
+                                    {st.foodLabel}
+                                  </span>
+                                  <span className="font-mono text-body-s font-bold text-accent flex-shrink-0">
+                                    {itemWeightLabel(item.foodLabel, item.quantity)}
+                                  </span>
+                                </div>
+                                <span className="block font-sans text-caption text-ink-3 mt-1">
+                                  {fmtQty(item.quantity)} intercambio{item.quantity !== 1 ? 's' : ''} de {CAT_LABEL[item.category].toLowerCase()}
                                 </span>
-                                <span className="block font-mono text-[9px] text-[#c6c9ab] mt-0.5">
-                                  ×{fmtQty(item.quantity)} · {itemWeightLabel(item.foodLabel, item.quantity)}
-                                </span>
-                              </div>
+                              </button>
 
                               {/* Cambiar comida — only on the first item of a recipe-derived group */}
                               {item.originRecipeId && meal.items.findIndex(it => it.originRecipeId === item.originRecipeId) === idx && (
                                 <button
                                   onClick={() => handleOpenSwapPicker(meal.id, item.originRecipeId!)}
                                   title="Cambiar comida"
-                                  className="text-[#c6c9ab] hover:text-[#fbcb1a] transition-colors flex-shrink-0 p-1.5 -m-1.5"
+                                  className="text-ink-2 hover:text-accent transition-colors flex-shrink-0 p-2 -m-1.5 active:scale-90"
                                 >
-                                  <span className="material-symbols-outlined text-sm select-none">skillet</span>
+                                  <span className="material-symbols-outlined text-body-s select-none">skillet</span>
                                 </button>
                               )}
-                              {/* Swap button */}
+
+                              {/* Botón "Cambiar" real — antes era un icono decorativo sin onClick */}
                               <button
+                                type="button"
                                 onClick={() => handleOpenPicker(meal.id, idx, item.category)}
-                                title="Cambiar alimento"
-                                className="text-[#c6c9ab] hover:text-[#00eefc] transition-colors flex-shrink-0 p-1.5 -m-1.5"
+                                aria-label={`Cambiar ${st.foodLabel}`}
+                                className="flex-shrink-0 flex items-center gap-1 rounded-control border border-accent-line bg-accent-bg px-2 py-2 text-accent transition-transform duration-(--duration-state) hover:bg-accent/20 active:scale-95"
                               >
-                                <span className="material-symbols-outlined text-sm select-none">swap_horiz</span>
+                                <Icon name="swap_horiz" size="s" />
+                                <span className="hidden sm:inline font-mono text-caption uppercase tracking-wider">Cambiar</span>
                               </button>
-                              {/* Delete button — only for recipe-added items */}
-                              {idx >= (origItemCounts[meal.id] ?? Infinity) && (
+
+                              {/* Delete button — dietas propias: cualquier alimento; dietas
+                                  del coach: solo los que se añadieron aquí (no los originales) */}
+                              {canDelete && (
                                 <button
                                   onClick={() => handleRemoveItem(meal.id, idx)}
                                   title="Quitar"
-                                  className="text-[#c6c9ab] hover:text-red-400 transition-colors flex-shrink-0 p-1.5 -m-1.5"
+                                  className="text-ink-2 hover:text-red-400 transition-colors flex-shrink-0 p-2 -m-1.5 active:scale-90"
                                 >
-                                  <span className="material-symbols-outlined text-sm select-none">close</span>
+                                  <span className="material-symbols-outlined text-body-s select-none">close</span>
                                 </button>
                               )}
                             </div>
                           );
                         })}
+                        {/* Alta rápida por categoría — solo cuando la comida tiene objetivo
+                            fijado por el coach, para ir directo a lo que falta. */}
+                        {meal.items.length > 0 && CATS.some(c => (meal.target?.[c] ?? 0) > 0) && (() => {
+                          const mDone = mealDoneByCat[meal.id] ?? {} as Record<FoodCategory, number>;
+                          return (
+                            <div className="flex gap-2 flex-wrap pt-1">
+                              {BUDGET_CATS.filter(cat => (meal.target?.[cat] ?? 0) > 0).map(cat => {
+                                const missing = (meal.target![cat]! - (mDone[cat] ?? 0)) > 0;
+                                return (
+                                  <button
+                                    key={cat}
+                                    onClick={() => handleOpenAddPicker(meal.id, cat)}
+                                    className={`px-3 py-1.5 rounded-full font-mono text-caption font-bold uppercase tracking-wider border transition-all active:scale-95 ${
+                                      missing
+                                        ? 'bg-accent-bg border-accent-line text-accent hover:bg-accent/20'
+                                        : 'bg-raised border-hairline text-ink-2 hover:border-hairline'
+                                    }`}
+                                  >+ {CHIP_LABEL[cat]}</button>
+                                );
+                              })}
+                            </div>
+                          );
+                        })()}
                         {meal.items.length > 0 && (
                           <button
                             onClick={() => handleOpenAddPicker(meal.id)}
-                            className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg border border-dashed border-white/7 text-[#c6c9ab] hover:border-[#fbcb1a]/50 hover:text-[#fbcb1a] transition-all"
+                            className="w-full flex items-center gap-3 p-3 rounded-surface border border-dashed border-hairline text-ink-2 hover:border-accent/50 hover:text-accent transition-colors active:scale-[0.99]"
                           >
-                            <span className="material-symbols-outlined text-sm select-none">add_circle</span>
-                            <span className="font-mono text-[10px] uppercase tracking-wider">Añadir alimento</span>
+                            <span className="w-8 h-8 rounded-control bg-accent-bg flex items-center justify-center flex-shrink-0">
+                              <Icon name="add" size="s" className="text-accent" />
+                            </span>
+                            <span className="font-sans text-body-s font-semibold">Añadir alimento del banco</span>
                           </button>
                         )}
                       </div>
                     </div>
                   );
                 })}
+                <p className="flex items-start gap-2 bg-surface border border-hairline rounded-field px-4 py-3">
+                  <Icon name="info" size="s" className="text-accent/70 flex-shrink-0 mt-1" />
+                  <span className="font-sans text-caption text-ink-3 leading-relaxed">
+                    Cambiar un alimento no toca tu presupuesto: la app ajusta los gramos para que valga los mismos intercambios.
+                  </span>
+                </p>
                 <button
                   onClick={addMeal}
-                  className="w-full py-2.5 rounded-xl border border-dashed border-white/7 text-[#c6c9ab] font-mono text-xs font-bold uppercase tracking-wider hover:border-[#fbcb1a]/40 hover:text-[#fbcb1a] transition-all"
+                  className="w-full py-3 rounded-control border border-dashed border-hairline text-ink-2 font-sans text-label font-bold uppercase tracking-wider hover:border-accent/40 hover:text-accent transition-all"
                 >
                   + Añadir comida
                 </button>
               </div>
 
-              {/* Guardar */}
-              <div className="sticky bottom-20 md:bottom-4 flex items-center justify-between gap-3 bg-[#1c1b1b] border border-white/7 rounded-xl p-3 shadow-2xl">
-                <span className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider pl-1">
-                  {!isPersisted || isDirty ? 'Cambios sin guardar' : 'Todo guardado'}
-                </span>
-                <button
-                  onClick={handleSaveDiet}
-                  disabled={saving}
-                  className="flex items-center gap-1.5 px-4 py-2 bg-[#fbcb1a] text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-40"
-                >
-                  <span className="material-symbols-outlined text-sm">save</span>
-                  {saving ? 'Guardando...' : 'Guardar'}
-                </button>
-              </div>
+              {/* Guardar — el estado y la etiqueta del botón distinguen el caso
+                  de fork (dieta del coach, editada) del resto, para que el
+                  atleta sepa de antemano qué va a pasar al tocar "Guardar". */}
+              {(() => {
+                const willFork = !selectedDiet.selfManaged && isDirty;
+                const statusLabel = !isPersisted
+                  ? 'Menú nuevo sin guardar'
+                  : willFork
+                  ? 'Se guardará como copia tuya'
+                  : isDirty
+                  ? 'Cambios sin guardar'
+                  : 'Todo guardado';
+                return (
+                  <div className="sticky bottom-20 md:bottom-4 flex items-center justify-between gap-3 bg-raised border border-hairline rounded-surface p-3 shadow-e1">
+                    <span className="font-mono text-caption text-ink-2 uppercase tracking-wider pl-1">
+                      {statusLabel}
+                    </span>
+                    <button
+                      onClick={handleSaveDiet}
+                      disabled={saving}
+                      className="flex items-center gap-2 px-4 py-2 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40"
+                    >
+                      <span className="material-symbols-outlined text-body-s">save</span>
+                      {saving ? 'Guardando...' : willFork ? 'Guardar copia' : 'Guardar'}
+                    </button>
+                  </div>
+                );
+              })()}
             </React.Fragment>
           )}
         </>
+      )}
+
+      {/* "Mis dietas" — gestión de todas las dietas del atleta (programada
+          hoy / del coach / propias), sustituye la antigua pestaña separada. */}
+      {misDietasOpen && (() => {
+        const scheduledTodayId = weeklySchedule[TODAY_WD] ?? null;
+        const scheduledToday = allDietsList.filter(d => d.id === scheduledTodayId);
+        const fromCoach = allDietsList.filter(d => d.id !== scheduledTodayId && !d.selfManaged);
+        const own = allDietsList.filter(d => d.id !== scheduledTodayId && d.selfManaged);
+        const renderGroup = (label: string, list: Diet[]) => list.length === 0 ? null : (
+          <div className="space-y-1">
+            <p className="font-mono text-caption text-ink-2 uppercase tracking-wider px-1">{label}</p>
+            {list.map(dt => {
+              const dPlaced = computeDietPlaced(dt.meals);
+              const chips = BUDGET_CATS.filter(cat => dt.budget[cat] > 0)
+                .map(cat => `${CHIP_LABEL[cat]} ${fmtQty(dPlaced[cat])}/${fmtQty(dt.budget[cat])}`)
+                .join(' · ');
+              return (
+                <ListRow
+                  key={dt.id}
+                  title={dt.name}
+                  subtitle={chips || 'Sin alimentos todavía'}
+                  leading={
+                    <span className="w-9 h-9 rounded-control bg-raised border border-hairline flex items-center justify-center flex-shrink-0">
+                      <Icon name={dt.selfManaged ? 'bookmark' : 'military_tech'} size="s" className="text-ink-2" />
+                    </span>
+                  }
+                  trailing={
+                    <div className="flex items-center gap-1 flex-shrink-0" onClick={e => e.stopPropagation()}>
+                      <button
+                        type="button"
+                        onClick={() => handleDuplicateDiet(dt)}
+                        title="Duplicar"
+                        aria-label={`Duplicar ${dt.name}`}
+                        className="text-ink-2 hover:text-accent transition-colors p-2"
+                      >
+                        <Icon name="content_copy" size="s" />
+                      </button>
+                      {dt.selfManaged && (
+                        <button
+                          type="button"
+                          onClick={() => setDietPendingDelete(dt)}
+                          title="Eliminar"
+                          aria-label={`Eliminar ${dt.name}`}
+                          className="text-ink-2 hover:text-red-400 transition-colors p-2"
+                        >
+                          <Icon name="delete" size="s" />
+                        </button>
+                      )}
+                    </div>
+                  }
+                  onClick={() => { handleSelectDiet(dt); setMisDietasOpen(false); }}
+                />
+              );
+            })}
+          </div>
+        );
+        return (
+          <Sheet
+            open
+            onClose={() => setMisDietasOpen(false)}
+            title="Mis dietas"
+            size="l"
+            footer={<Button variant="primary" icon="add" fullWidth onClick={handleStartBlankFromSheet}>Nueva dieta</Button>}
+          >
+            <div className="space-y-4">
+              {renderGroup(`Programada hoy (${WD_FULL[TODAY_WD]})`, scheduledToday)}
+              {renderGroup('De tu entrenador', fromCoach)}
+              {renderGroup('Tuyas', own)}
+            </div>
+          </Sheet>
+        );
+      })()}
+
+      {/* Confirmar borrado de una dieta propia */}
+      {dietPendingDelete && (
+        <Dialog
+          open
+          onClose={() => setDietPendingDelete(null)}
+          title="¿Eliminar esta dieta?"
+          size="s"
+          footer={(
+            <>
+              <Button onClick={() => setDietPendingDelete(null)} variant="secondary">Cancelar</Button>
+              <Button onClick={confirmDeleteDiet} variant="danger" loading={deletingDiet}>Eliminar</Button>
+            </>
+          )}
+        >
+          <p className="text-body-s text-ink-2">
+            Se eliminará «{dietPendingDelete.name}». Si estaba programada algún día de la semana, dejará de estarlo.
+          </p>
+        </Dialog>
       )}
 
       {/* Recipe picker sheet */}
       {recipePickerMealId && (() => {
         const targetMeal = selectedDiet?.meals.find(m => m.id === recipePickerMealId);
         return (
-          <div className="fixed inset-0 bg-black/85 z-[100] flex items-end justify-center p-0 md:p-4">
-            <div className="bg-[#1c1b1b] border-t md:border border-white/7 w-full max-w-lg rounded-t-2xl md:rounded-xl max-h-[85vh] flex flex-col overflow-hidden">
-              {/* Header */}
-              <div className="p-4 border-b border-white/7 flex items-center justify-between sticky top-0 bg-[#1c1b1b] z-10">
-                <div>
-                  <h3 className="font-sans font-bold text-lg text-white flex items-center gap-2">
-                    <span className="material-symbols-outlined text-[#fbcb1a] text-base">skillet</span>
-                    Usar receta
-                  </h3>
-                  {targetMeal && (
-                    <span className="font-mono text-[10px] text-[#c6c9ab] uppercase">
-                      {mealLabel(targetMeal.name, (selectedDiet?.meals.indexOf(targetMeal) ?? 0) + 1)}
-                    </span>
-                  )}
-                </div>
-                <button
-                  onClick={() => setRecipePickerMealId(null)}
-                  className="text-white bg-[#2a2a2a] hover:bg-[#3e3e3e] p-1.5 h-8 w-8 rounded-full flex items-center justify-center transition-colors"
-                >
-                  <span className="material-symbols-outlined text-sm select-none">close</span>
-                </button>
-              </div>
+          <Sheet
+            open
+            onClose={() => setRecipePickerMealId(null)}
+            title="Usar receta"
+            toolbar={(
+              <>
+                {targetMeal && (
+                  <div className="px-4 pb-2 font-mono text-caption text-ink-2 uppercase">
+                    {mealLabel(targetMeal.name, (selectedDiet?.meals.indexOf(targetMeal) ?? 0) + 1)}
+                  </div>
+                )}
 
               {/* Search */}
-              <div className="px-4 py-2 bg-[#181816] flex items-center gap-2 border-b border-white/7">
-                <span className="material-symbols-outlined text-[#c6c9ab] text-sm select-none">search</span>
+              <div className="px-4 py-2 bg-surface flex items-center gap-2 border-b border-hairline">
+                <Icon name="search" size="s" className="text-ink-2" />
                 <input
                   type="text"
                   placeholder="Buscar receta..."
                   value={recipeSearch}
                   onChange={e => setRecipeSearch(e.target.value)}
-                  className="w-full bg-transparent border-none text-white text-xs focus:ring-0 focus:outline-none p-2 placeholder-[#c6c9ab]/45"
+                  className="w-full bg-transparent border-none text-white text-title-s focus:ring-0 focus:outline-none p-2 placeholder-ink-2/45"
                 />
               </div>
 
               {/* Category filter */}
               {availableRecipeCats.length > 0 && (
-                <div className="px-4 py-2 bg-[#181816] border-b border-white/7 flex gap-1.5 overflow-x-auto">
+                <div className="px-4 py-2 bg-surface border-b border-hairline flex gap-2 overflow-x-auto">
                   {[{ id: 'all', label: 'Todas' }, ...availableRecipeCats.map(c => ({ id: c, label: c }))].map(cat => (
                     <button
                       key={cat.id}
                       onClick={() => setRecipeCatFilter(cat.id)}
-                      className={`px-3 py-1.5 rounded-full font-mono text-[9px] font-bold uppercase tracking-wider whitespace-nowrap transition-all flex-shrink-0 ${
+                      className={`px-3 py-2 rounded-full font-sans text-caption font-bold uppercase tracking-wider whitespace-nowrap transition-all flex-shrink-0 ${
                         recipeCatFilter === cat.id
-                          ? 'bg-[#fbcb1a] text-black shadow-md'
-                          : 'bg-[#201f1f] text-[#c6c9ab] border border-transparent hover:border-white/7'
+                          ? 'bg-accent text-black'
+                          : 'bg-raised text-ink-2 border border-transparent hover:border-hairline'
                       }`}
                     >{cat.label}</button>
                   ))}
                 </div>
               )}
-
+              </>
+            )}
+          >
               {/* Recipe list */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">
+              <div className="pt-4 space-y-2">
                 {sortedPickerRecipes.length === 0 ? (
-                  <div className="text-center py-10 font-mono text-xs text-[#c6c9ab] italic">
+                  <div className="text-center py-10 font-mono text-label text-ink-2 italic">
                     {recipes.length === 0 ? 'El coach todavía no ha publicado recetas.' : 'Ninguna receta coincide.'}
                   </div>
                 ) : sortedPickerRecipes.map(recipe => {
@@ -1398,257 +1879,288 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                     <button
                       key={recipe.id}
                       onClick={() => handleApplyRecipe(recipe)}
-                      className="w-full flex items-center gap-3 p-3.5 bg-[#181816] hover:bg-[#201f1f] rounded-2xl border border-white/7 hover:border-[#fbcb1a]/40 text-left transition-all group"
+                      className="w-full flex items-center gap-3 p-4 bg-surface hover:bg-raised rounded-control border border-hairline hover:border-accent/40 text-left transition-all group"
                     >
                       {recipe.photoUrl ? (
-                        <img src={recipe.photoUrl} alt={recipe.name} className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
+                        <img src={recipe.photoUrl} alt={recipe.name} className="w-12 h-12 rounded-surface object-cover flex-shrink-0" />
                       ) : (
-                        <div className="w-12 h-12 rounded-lg bg-[#1c1b1b] border border-white/7 flex items-center justify-center flex-shrink-0">
-                          <span className="material-symbols-outlined text-[#c6c9ab] text-xl">skillet</span>
+                        <div className="w-12 h-12 rounded-surface bg-raised border border-hairline flex items-center justify-center flex-shrink-0">
+                          <span className="material-symbols-outlined text-ink-2 text-title-m">skillet</span>
                         </div>
                       )}
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5 mb-0.5">
+                        <div className="flex items-center gap-2 ">
                           {isFav && (
-                            <span className="material-symbols-outlined text-[#fbcb1a] text-xs" style={{ fontVariationSettings: "'FILL' 1", fontSize: '12px' }}>favorite</span>
+                            <span className="material-symbols-outlined text-accent text-label" style={{ fontVariationSettings: "'FILL' 1", fontSize: '12px' }}>favorite</span>
                           )}
-                          <span className="font-sans font-bold text-sm text-white group-hover:text-[#fbcb1a] transition-colors truncate">{recipe.name}</span>
+                          <span className="font-sans font-bold text-body-s text-white group-hover:text-accent transition-colors truncate">{recipe.name}</span>
                         </div>
                         {recipe.categories.length > 0 && (
                           <div className="flex flex-wrap gap-1 mb-1">
                             {recipe.categories.slice(0, 3).map(c => (
-                              <span key={c} className="px-1.5 py-0.5 rounded bg-[#2a2a2a] font-mono text-[8px] text-[#c6c9ab] uppercase">{c}</span>
+                              <span key={c} className="px-2 rounded-control bg-raised font-mono text-caption text-ink-2 uppercase">{c}</span>
                             ))}
                           </div>
                         )}
-                        <span className="font-mono text-[9px] text-[#fbcb1a]/70">{exchStr}</span>
+                        <span className="font-mono text-caption text-accent/70">{exchStr}</span>
                       </div>
-                      <span className="material-symbols-outlined text-[#c6c9ab] group-hover:text-[#fbcb1a] transition-colors select-none text-base flex-shrink-0">add_circle</span>
+                      <span className="material-symbols-outlined text-ink-2 group-hover:text-accent transition-colors select-none text-title-s flex-shrink-0">add_circle</span>
                     </button>
                   );
                 })}
               </div>
-            </div>
-          </div>
+          </Sheet>
         );
       })()}
 
       {/* Cambiar comida sheet */}
       {swapContext && (
-        <div className="fixed inset-0 bg-black/85 z-[100] flex items-end justify-center p-0 md:p-4">
-          <div className="bg-[#1c1b1b] border-t md:border border-white/7 w-full max-w-lg rounded-t-2xl md:rounded-xl max-h-[85vh] flex flex-col overflow-hidden">
-            <div className="p-4 border-b border-white/7 flex items-center justify-between sticky top-0 bg-[#1c1b1b] z-10">
-              <div>
-                <h3 className="font-sans font-bold text-lg text-white flex items-center gap-2">
-                  <span className="material-symbols-outlined text-[#fbcb1a] text-base">skillet</span>
-                  Cambiar comida
-                </h3>
-                {swapSourceRecipe && (
-                  <span className="font-mono text-[10px] text-[#c6c9ab] uppercase">
-                    Alternativas a {swapSourceRecipe.name} (±10% kcal)
-                  </span>
-                )}
-              </div>
-              <button
-                onClick={() => setSwapContext(null)}
-                className="text-white bg-[#2a2a2a] hover:bg-[#3e3e3e] p-1.5 h-8 w-8 rounded-full flex items-center justify-center transition-colors"
-              >
-                <span className="material-symbols-outlined text-sm select-none">close</span>
-              </button>
+        <Sheet
+          open
+          onClose={() => setSwapContext(null)}
+          title="Cambiar comida"
+          toolbar={swapSourceRecipe ? (
+            <div className="px-4 pb-2 font-sans text-caption text-ink-2 uppercase">
+              Alternativas a {swapSourceRecipe.name} (±10% kcal)
             </div>
-            <div className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">
+          ) : undefined}
+        >
+            <div className="pt-4 space-y-2">
               {swapCandidates.length === 0 ? (
-                <div className="text-center py-10 font-mono text-xs text-[#c6c9ab] italic">
+                <div className="text-center py-10 font-sans text-label text-ink-2 italic">
                   Sin alternativas nutricionalmente similares disponibles.
                 </div>
               ) : swapCandidates.map(recipe => (
                 <button
                   key={recipe.id}
                   onClick={() => handleApplySwap(recipe)}
-                  className="w-full flex items-center gap-3 p-3.5 bg-[#181816] hover:bg-[#201f1f] rounded-2xl border border-white/7 hover:border-[#fbcb1a]/40 text-left transition-all group"
+                  className="w-full flex items-center gap-3 p-4 bg-surface hover:bg-raised rounded-control border border-hairline hover:border-accent/40 text-left transition-all group"
                 >
                   {recipe.photoUrl ? (
-                    <img src={recipe.photoUrl} alt={recipe.name} className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
+                    <img src={recipe.photoUrl} alt={recipe.name} className="w-12 h-12 rounded-surface object-cover flex-shrink-0" />
                   ) : (
-                    <div className="w-12 h-12 rounded-lg bg-[#1c1b1b] border border-white/7 flex items-center justify-center flex-shrink-0">
-                      <span className="material-symbols-outlined text-[#c6c9ab] text-xl">skillet</span>
+                    <div className="w-12 h-12 rounded-surface bg-raised border border-hairline flex items-center justify-center flex-shrink-0">
+                      <span className="material-symbols-outlined text-ink-2 text-title-m">skillet</span>
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
-                    <span className="font-sans font-bold text-sm text-white group-hover:text-[#fbcb1a] transition-colors truncate block">{recipe.name}</span>
-                    <span className="font-mono text-[9px] text-[#fbcb1a]/70">{recipe.kcal} kcal</span>
+                    <span className="font-sans font-bold text-body-s text-white group-hover:text-accent transition-colors truncate block">{recipe.name}</span>
+                    <span className="font-mono text-caption text-accent/70">{recipe.kcal} kcal</span>
                   </div>
-                  <span className="material-symbols-outlined text-[#c6c9ab] group-hover:text-[#fbcb1a] transition-colors select-none text-base flex-shrink-0">swap_horiz</span>
+                  <span className="material-symbols-outlined text-ink-2 group-hover:text-accent transition-colors select-none text-title-s flex-shrink-0">swap_horiz</span>
                 </button>
               ))}
             </div>
-          </div>
-        </div>
+        </Sheet>
       )}
 
-      {/* Food picker sheet */}
-      {pickerItem && (
-        <div className="fixed inset-0 bg-black/85 z-[100] flex items-end justify-center p-0 md:p-4">
-          <div className="bg-[#1c1b1b] border-t md:border border-white/7 w-full max-w-lg rounded-t-2xl md:rounded-xl max-h-[85vh] flex flex-col overflow-hidden">
-            <div className="p-4 border-b border-white/7 flex items-center justify-between sticky top-0 bg-[#1c1b1b] z-10">
-              <div>
-                <h3 className="font-sans font-bold text-lg text-white">{pickerItem.itemIdx === null ? 'Añadir alimento' : 'Cambiar alimento'}</h3>
-                <span className="font-mono text-[10px] text-[#c6c9ab] uppercase">
-                  {isSearchingFoods ? `Todas las categorías · ${MODE_LABEL[activeDietMode]}` : `${CAT_LABEL[pickerCategory]} · ${MODE_LABEL[activeDietMode]}`}
-                </span>
+      {/* Food picker sheet. T13: alto="completo" — mismo motivo que el
+          selector del coach: con la barra de modos/categorías/buscador
+          encima, "auto" dejaba la lista en un tercio de pantalla. */}
+      {pickerItem && (() => {
+        const totalAdded = Object.values<number>(pickerAddedCounts).reduce((a, b) => a + b, 0);
+        return (
+        <Sheet
+          open
+          onClose={() => setPickerItem(null)}
+          title={pickerItem.itemIdx === null ? 'Añadir alimento' : 'Cambiar alimento'}
+          alto="completo"
+          footer={
+            pickerItem.itemIdx === null ? (
+              <Button onClick={() => setPickerItem(null)} fullWidth>
+                {totalAdded > 0 ? `Hecho · ${totalAdded} añadido${totalAdded === 1 ? '' : 's'}` : 'Hecho'}
+              </Button>
+            ) : undefined
+          }
+          toolbar={(
+            <>
+              <div className="px-4 pb-2 font-sans text-caption text-ink-2 uppercase">
+                {isSearchingFoods ? `Todas las categorías · ${MODE_LABEL[activeDietMode]}` : `${CAT_LABEL[pickerCategory]} · ${MODE_LABEL[activeDietMode]}`}
               </div>
-              <button onClick={() => setPickerItem(null)} className="text-white bg-[#2a2a2a] hover:bg-[#3e3e3e] p-1.5 h-8 w-8 rounded-full flex items-center justify-center transition-colors">
-                <span className="material-symbols-outlined text-sm select-none">close</span>
-              </button>
-            </div>
 
             {enabledModes.length > 1 && (
-              <div className="px-4 py-2 bg-[#111] border-b border-white/7 flex gap-2 flex-wrap">
+              <div className="px-4 py-2 bg-bg border-b border-hairline flex gap-2 flex-wrap">
                 {enabledModes.map(mode => (
                   <button key={mode} onClick={() => setActiveDietMode(mode)}
-                    className={`px-3 py-1 rounded-full font-sans text-[10px] font-bold uppercase tracking-wider transition-all ${activeDietMode === mode ? 'bg-[#fbcb1a] text-black' : 'bg-[#201f1f] text-[#c6c9ab] border border-white/7'}`}
+                    className={`px-3 py-1 rounded-full font-sans text-caption font-bold uppercase tracking-wider transition-all ${activeDietMode === mode ? 'bg-accent text-black' : 'bg-raised text-ink-2 border border-hairline'}`}
                   >{MODE_LABEL[mode]}</button>
                 ))}
               </div>
             )}
 
-            <div className={`p-3 bg-[#181816] border-b border-white/7 flex gap-1.5 flex-wrap transition-opacity ${isSearchingFoods ? 'opacity-40' : ''}`}>
+            <div className={`p-3 bg-surface border-b border-hairline flex gap-2 flex-wrap transition-opacity ${isSearchingFoods ? 'opacity-40' : ''}`}>
               {CATS.map(cat => (
                 <button key={cat} onClick={() => { setPickerCategory(cat); setSearchTerm(''); }}
-                  className={`px-3 py-1.5 rounded-full font-sans text-[10px] font-bold uppercase tracking-wider transition-all ${pickerCategory === cat && !isSearchingFoods ? 'bg-[#fbcb1a] text-black shadow-md' : 'bg-[#201f1f] text-[#c6c9ab] border border-transparent hover:border-white/7'}`}
+                  className={`px-3 py-2 rounded-full font-sans text-caption font-bold uppercase tracking-wider transition-all ${pickerCategory === cat && !isSearchingFoods ? 'bg-accent text-black' : 'bg-raised text-ink-2 border border-transparent hover:border-hairline'}`}
                 >{cat.replace('_', ' ')}</button>
               ))}
             </div>
 
-            <div className="px-4 py-2 bg-[#181816] flex items-center gap-2 border-b border-white/7">
-              <span className="material-symbols-outlined text-[#c6c9ab] text-sm select-none">search</span>
+            <div className="px-4 py-2 bg-surface flex items-center gap-2 border-b border-hairline">
+              <Icon name="search" size="s" className="text-ink-2" />
               <input type="text" placeholder="Buscar en todas las categorías..." value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
-                className="w-full bg-transparent border-none text-white text-xs focus:ring-0 focus:outline-none p-2 placeholder-[#c6c9ab]/45"
+                className="w-full bg-transparent border-none text-white text-title-s focus:ring-0 focus:outline-none p-2 placeholder-ink-2/45"
               />
             </div>
-
-            <div className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">
+            </>
+          )}
+        >
+            <div className="pt-4 space-y-2">
               {filteredFoods.length === 0 ? (
-                <div className="text-center py-10 font-mono text-xs text-[#c6c9ab] italic">Ningún alimento coincide.</div>
-              ) : filteredFoods.map(food => (
-                <button key={food.id} onClick={() => handleSelectFood(food)}
-                  className="w-full flex items-center gap-3 p-3.5 bg-[#181816] hover:bg-[#201f1f] rounded-lg border border-white/7 hover:border-[#fbcb1a]/40 text-left transition-all group"
-                >
-                  {isSearchingFoods && (
-                    <span className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded border flex-shrink-0 ${CAT_BG[food.category]} ${CAT_COLOR[food.category]}`}>
-                      {food.category.replace('_', ' ')}
-                    </span>
-                  )}
-                  <span className="flex-1 block font-sans text-xs text-white group-hover:text-[#fbcb1a] transition-colors leading-snug">{food.label}</span>
-                  <span className="material-symbols-outlined text-[#c6c9ab] group-hover:text-[#fbcb1a] transition-colors select-none text-base flex-shrink-0">add_circle</span>
-                </button>
-              ))}
+                <EmptyState
+                  icon="search_off"
+                  title={searchTerm ? `Nada para «${searchTerm}»` : 'Sin alimentos en esta categoría.'}
+                  description={searchTerm ? 'Prueba con otra palabra o cambia de categoría.' : undefined}
+                  actionLabel={searchTerm ? 'Quitar búsqueda' : undefined}
+                  onAction={searchTerm ? () => setSearchTerm('') : undefined}
+                />
+              ) : filteredFoods.map(food => {
+                const veces = pickerAddedCounts[food.id] ?? 0;
+                const reciente = pickerRecentlyAdded === food.id;
+                return (
+                  <button key={food.id} onClick={() => handleSelectFood(food)}
+                    className={`w-full flex items-center gap-3 p-4 rounded-control border text-left transition-all active:scale-[0.98] group ${
+                      reciente ? 'bg-success/10 border-success/40' : 'bg-surface hover:bg-raised border-hairline hover:border-accent/40'
+                    }`}
+                  >
+                    {isSearchingFoods && (
+                      <span className={`text-caption font-mono font-bold px-2 rounded-control border flex-shrink-0 ${CAT_BG[food.category]} ${CAT_COLOR[food.category]}`}>
+                        {food.category.replace('_', ' ')}
+                      </span>
+                    )}
+                    <span className="flex-1 block font-sans text-label text-white group-hover:text-accent transition-colors leading-snug">{food.label}</span>
+                    {reciente ? (
+                      <span className="flex items-center gap-1 flex-shrink-0 text-success">
+                        <Icon name="check_circle" size="m" />
+                        {veces > 1 && <span className="font-mono text-caption font-bold">×{veces}</span>}
+                      </span>
+                    ) : (
+                      <span className="material-symbols-outlined text-ink-2 group-hover:text-accent transition-colors select-none text-title-s flex-shrink-0">add_circle</span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
-          </div>
-        </div>
-      )}
+        </Sheet>
+        );
+      })()}
 
-      {/* Save-choice sheet — only when saving edits to a diet the coach created */}
-      {saveChoiceOpen && (
-        <div className="fixed inset-0 bg-black/85 z-[100] flex items-end justify-center p-0 md:p-4">
-          <div className="bg-[#1c1b1b] border-t md:border border-white/7 w-full max-w-md rounded-t-2xl md:rounded-xl p-5 space-y-3">
-            <h3 className="font-sans font-bold text-lg text-white">¿Cómo quieres guardar?</h3>
-            <p className="text-xs text-[#c6c9ab]">
-              Esta dieta la creó tu entrenador. Puedes actualizarla directamente o guardar tus
-              cambios como una dieta nueva tuya, sin tocar la original.
-            </p>
-            <button
-              onClick={handleUpdateInPlace}
-              disabled={saving}
-              className="w-full flex items-center gap-2 p-3.5 bg-[#181816] hover:bg-[#201f1f] rounded-xl border border-white/7 hover:border-[#fbcb1a]/40 text-left transition-all disabled:opacity-40"
-            >
-              <span className="material-symbols-outlined text-[#fbcb1a] text-base">edit</span>
-              <span className="text-sm text-white font-sans">Actualizar esta dieta</span>
-            </button>
-            <button
-              onClick={handleSaveAsNew}
-              disabled={saving}
-              className="w-full flex items-center gap-2 p-3.5 bg-[#181816] hover:bg-[#201f1f] rounded-xl border border-white/7 hover:border-[#fbcb1a]/40 text-left transition-all disabled:opacity-40"
-            >
-              <span className="material-symbols-outlined text-[#00eefc] text-base">bookmark_add</span>
-              <span className="text-sm text-white font-sans">Guardar como nueva dieta mía</span>
-            </button>
-            <button
-              onClick={() => setSaveChoiceOpen(false)}
-              className="w-full py-2 text-center font-mono text-[10px] text-[#c6c9ab] hover:text-white uppercase tracking-wider"
-            >
-              Cancelar
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Hoja de ajuste (F3.8, panel 02) — steppers por macro, píldora de encaje en vivo */}
+      {adjustMealId && selectedDiet && (() => {
+        const meal = selectedDiet.meals.find(m => m.id === adjustMealId);
+        if (!meal) return null;
+        const mi = selectedDiet.meals.indexOf(meal);
+        // Intercambios que ya cuentan otras ingestas registradas (excluye esta,
+        // que el ajuste va a sustituir por completo).
+        const otherMealsEaten = BUDGET_CATS.reduce((s, c) => s + (doneByCat[c] - (mealDoneByCat[adjustMealId]?.[c] ?? 0)), 0);
+        const draftTotal = adjustDraft.HC + adjustDraft.PROT + adjustDraft.GRASA;
+        const after = round2(totalBudget - otherMealsEaten - draftTotal);
+        const fits = after >= 0;
+        return (
+          <Sheet open onClose={() => setAdjustMealId(null)} label={`Ajustar ${mealLabel(meal.name, mi + 1)}`}>
+            <div className="pt-2">
+              <span className="inline-block px-2 py-1 rounded-control bg-accent-bg font-mono text-caption font-bold tracking-[.12em] text-accent">
+                INGESTA {mi + 1}
+              </span>
+              <h2 className="font-display font-black text-title-l uppercase leading-tight tracking-tight text-ink mt-3">
+                {mealLabel(meal.name, mi + 1)}
+              </h2>
+
+              <div className="flex flex-col gap-3 mt-5">
+                {BUDGET_CATS.map(cat => (
+                  <div key={cat} className="flex items-center justify-between gap-3 bg-field border border-hairline rounded-field px-3 py-3">
+                    <div className="flex-1">
+                      <span className="block font-mono text-caption font-semibold tracking-[.1em] text-ink-3">{BAR_LABEL[cat]}</span>
+                      <span className="block font-sans text-body-s text-ink-3 mt-2">
+                        {fmtQty(adjustDraft[cat] * GRAMS_PER_EXCHANGE[cat])} g aprox.
+                      </span>
+                    </div>
+                    <Stepper
+                      label={`Intercambios de ${BAR_LABEL[cat].toLowerCase()}`}
+                      value={adjustDraft[cat]}
+                      onChange={v => setAdjustDraft(prev => ({ ...prev, [cat]: v }))}
+                      step={0.25}
+                      min={0}
+                      max={12}
+                      dense
+                    />
+                  </div>
+                ))}
+              </div>
+
+              <div className={`flex items-center gap-2 mt-5 px-4 py-3 rounded-field border transition-colors duration-(--duration-state) ${fits ? 'bg-success/10 border-success/30 text-success' : 'bg-danger/10 border-danger/30 text-danger'}`}>
+                <span className={`h-1.5 w-1.5 rounded-full flex-none ${fits ? 'bg-success' : 'bg-danger'}`} />
+                <span className="font-mono text-label font-semibold tracking-[.04em]">
+                  {fits ? `CABE · TE QUEDARÍAN ${fmtQty(after)}` : `TE PASAS EN ${fmtQty(Math.abs(after))} INTERCAMBIOS`}
+                </span>
+              </div>
+
+              <Button variant="primary" size="l" fullWidth onClick={handleConfirmAdjust} className="mt-3">
+                Registrar ingesta
+              </Button>
+              <p className="text-center font-mono text-caption tracking-[.08em] text-ink-4 mt-4">
+                CADA TOQUE = 1 INTERCAMBIO · {Math.round(exchangeToKcal({ HC: 1, PROT: 0, GRASA: 0 }))} KCAL
+              </p>
+            </div>
+          </Sheet>
+        );
+      })()}
+
 
       {/* Choose which diet to add a recipe to (hand-off from Recetas, first step) */}
       {chooseDietForRecipe && (
-        <div className="fixed inset-0 bg-black/85 z-[100] flex items-end justify-center p-0 md:p-4">
-          <div className="bg-[#1c1b1b] border-t md:border border-white/7 w-full max-w-md rounded-t-2xl md:rounded-xl p-5 space-y-3">
-            <h3 className="font-sans font-bold text-lg text-white flex items-center gap-2">
-              <span className="material-symbols-outlined text-[#fbcb1a] text-base">skillet</span>
-              ¿A qué dieta añadir "{chooseDietForRecipe.name}"?
-            </h3>
-            <div className="space-y-2 max-h-[50vh] overflow-y-auto">
+        <Sheet
+          open
+          onClose={() => setChooseDietForRecipe(null)}
+          title={`¿A qué dieta añadir "${chooseDietForRecipe.name}"?`}
+          size="m"
+          footer={<Button variant="ghost" onClick={() => setChooseDietForRecipe(null)} fullWidth>Cancelar</Button>}
+        >
+            <div className="space-y-2 pt-2">
               {allDietsList.map(dt => (
                 <button
                   key={dt.id}
                   onClick={() => handleChooseDietForRecipe(dt)}
-                  className="w-full flex items-center justify-between p-3.5 bg-[#181816] hover:bg-[#201f1f] rounded-xl border border-white/7 hover:border-[#fbcb1a]/40 text-left transition-all"
+                  className="w-full flex items-center justify-between p-4 bg-surface hover:bg-raised rounded-control border border-hairline hover:border-accent/40 text-left transition-all"
                 >
-                  <span className="text-sm text-white font-sans truncate">{dt.name}</span>
-                  <span className="material-symbols-outlined text-[#c6c9ab] text-base flex-shrink-0">add_circle</span>
+                  <span className="text-body-s text-white font-sans truncate">{dt.name}</span>
+                  <span className="material-symbols-outlined text-ink-2 text-title-s flex-shrink-0">add_circle</span>
                 </button>
               ))}
               <button
                 onClick={() => handleChooseDietForRecipe('new')}
-                className="w-full flex items-center justify-between p-3.5 bg-[#181816] hover:bg-[#201f1f] rounded-xl border border-dashed border-[#fbcb1a]/40 hover:border-[#fbcb1a] text-left transition-all"
+                className="w-full flex items-center justify-between p-4 bg-surface hover:bg-raised rounded-control border border-dashed border-accent/40 hover:border-accent text-left transition-all"
               >
-                <span className="text-sm text-[#fbcb1a] font-sans font-bold">Nueva dieta</span>
-                <span className="material-symbols-outlined text-[#fbcb1a] text-base flex-shrink-0">add_circle</span>
+                <span className="text-body-s text-accent font-sans font-bold">Nueva dieta</span>
+                <span className="material-symbols-outlined text-accent text-title-s flex-shrink-0">add_circle</span>
               </button>
             </div>
-            <button
-              onClick={() => setChooseDietForRecipe(null)}
-              className="w-full py-2 text-center font-mono text-[10px] text-[#c6c9ab] hover:text-white uppercase tracking-wider"
-            >
-              Cancelar
-            </button>
-          </div>
-        </div>
+        </Sheet>
       )}
 
       {/* Choose which meal to add a recipe to (hand-off from Recetas, multi-meal case) */}
       {chooseMealForRecipe && selectedDiet && (
-        <div className="fixed inset-0 bg-black/85 z-[100] flex items-end justify-center p-0 md:p-4">
-          <div className="bg-[#1c1b1b] border-t md:border border-white/7 w-full max-w-md rounded-t-2xl md:rounded-xl p-5 space-y-3">
-            <h3 className="font-sans font-bold text-lg text-white flex items-center gap-2">
-              <span className="material-symbols-outlined text-[#fbcb1a] text-base">skillet</span>
-              ¿A qué comida añadir "{chooseMealForRecipe.name}"?
-            </h3>
-            <div className="space-y-2">
+        <Sheet
+          open
+          onClose={() => setChooseMealForRecipe(null)}
+          title={`¿A qué comida añadir "${chooseMealForRecipe.name}"?`}
+          size="m"
+          footer={<Button variant="ghost" onClick={() => setChooseMealForRecipe(null)} fullWidth>Cancelar</Button>}
+        >
+            <div className="space-y-2 pt-2">
               {selectedDiet.meals.map((meal, mi) => (
                 <button
                   key={meal.id}
                   onClick={() => { addRecipeToMeal(chooseMealForRecipe, meal.id, selectedDiet); setChooseMealForRecipe(null); }}
-                  className="w-full flex items-center justify-between p-3.5 bg-[#181816] hover:bg-[#201f1f] rounded-xl border border-white/7 hover:border-[#fbcb1a]/40 text-left transition-all"
+                  className="w-full flex items-center justify-between p-4 bg-surface hover:bg-raised rounded-control border border-hairline hover:border-accent/40 text-left transition-all"
                 >
-                  <span className="text-sm text-white font-sans">{mealLabel(meal.name, mi + 1)}</span>
-                  <span className="material-symbols-outlined text-[#c6c9ab] text-base">add_circle</span>
+                  <span className="text-body-s text-white font-sans">{mealLabel(meal.name, mi + 1)}</span>
+                  <span className="material-symbols-outlined text-ink-2 text-title-s">add_circle</span>
                 </button>
               ))}
             </div>
-            <button
-              onClick={() => setChooseMealForRecipe(null)}
-              className="w-full py-2 text-center font-mono text-[10px] text-[#c6c9ab] hover:text-white uppercase tracking-wider"
-            >
-              Cancelar
-            </button>
-          </div>
-        </div>
+        </Sheet>
       )}
     </div>
   );

@@ -66,7 +66,7 @@ export default function HistorialTab({ cliente }: { cliente: Cliente }) {
     return (
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="h-24 rounded-2xl bg-white/4 animate-pulse" />
+          <div key={i} className="h-24 rounded-surface bg-white/4 animate-pulse" />
         ))}
       </div>
     );
@@ -78,50 +78,50 @@ export default function HistorialTab({ cliente }: { cliente: Cliente }) {
         <MetricCard icon="layers" label="Programas" value={resumen.numProgramas} />
         <MetricCard icon="paid" label="Total pagado" value={formatEuros(resumen.totalPagado)} sub={`${resumen.pagosRealizados} pagos`} />
         <MetricCard icon="event_available" label="Reuniones" value={resumen.reunionesRealizadas} sub="realizadas" />
-        <MetricCard icon="schedule" label="Pendiente" value={formatEuros(resumen.pendienteCobro)} accent="#fdba74" />
+        <MetricCard icon="schedule" label="Pendiente" value={formatEuros(resumen.pendienteCobro)} accent="var(--color-warning)" />
       </div>
 
       <div className={`grid gap-2 ${resumen.conversionContinuidad !== null ? 'grid-cols-3' : 'grid-cols-2'}`}>
-        <div className="bg-[#181816]/80 backdrop-blur-sm border border-white/7 rounded-2xl p-3">
-          <p className="font-mono text-[9px] uppercase tracking-widest text-[#555550]">Primer programa</p>
-          <p className="font-sans font-bold text-sm text-[#f5f5f0] mt-1">
+        <div className="bg-surface/80 backdrop-blur-sm border border-hairline rounded-surface p-3">
+          <p className="font-mono text-caption uppercase tracking-widest text-ink-3">Primer programa</p>
+          <p className="font-sans font-bold text-body-s text-ink mt-1">
             {resumen.primerPrograma ? formatDia(resumen.primerPrograma) : '—'}
           </p>
         </div>
-        <div className="bg-[#181816]/80 backdrop-blur-sm border border-white/7 rounded-2xl p-3">
-          <p className="font-mono text-[9px] uppercase tracking-widest text-[#555550]">Último fin</p>
-          <p className="font-sans font-bold text-sm text-[#f5f5f0] mt-1">
+        <div className="bg-surface/80 backdrop-blur-sm border border-hairline rounded-surface p-3">
+          <p className="font-mono text-caption uppercase tracking-widest text-ink-3">Último fin</p>
+          <p className="font-sans font-bold text-body-s text-ink mt-1">
             {resumen.ultimoFin ? formatDia(resumen.ultimoFin) : '—'}
           </p>
         </div>
         {resumen.conversionContinuidad !== null && (
-          <div className="bg-[#181816]/80 backdrop-blur-sm border border-white/7 rounded-2xl p-3">
-            <p className="font-mono text-[9px] uppercase tracking-widest text-[#555550]">Conversión continuidad</p>
-            <p className="font-sans font-bold text-sm text-[#f5f5f0] mt-1">{resumen.conversionContinuidad}%</p>
+          <div className="bg-surface/80 backdrop-blur-sm border border-hairline rounded-surface p-3">
+            <p className="font-mono text-caption uppercase tracking-widest text-ink-3">Conversión continuidad</p>
+            <p className="font-sans font-bold text-body-s text-ink mt-1">{resumen.conversionContinuidad}%</p>
           </div>
         )}
       </div>
 
       <div className="space-y-2">
-        <h2 className="font-mono text-[9px] uppercase tracking-widest text-[#a8a89e]">Línea de tiempo</h2>
+        <h2 className="font-mono text-caption uppercase tracking-widest text-ink-2">Línea de tiempo</h2>
         {resumen.timeline.length === 0 ? (
           <EmptyState icon="history" titulo="Sin programas todavía" descripcion="La línea de tiempo aparecerá cuando el cliente tenga al menos un servicio." />
         ) : (
-          <div className="bg-[#181816]/80 backdrop-blur-sm border border-white/7 rounded-2xl divide-y divide-white/7">
+          <div className="bg-surface/80 backdrop-blur-sm border border-hairline rounded-surface divide-y divide-white/7">
             {resumen.timeline.map(s => {
               const enCurso = !s.fechaFin || s.fechaFin >= hoy;
               return (
                 <div key={s.id} className="flex items-center justify-between gap-2 p-3">
                   <div className="min-w-0">
-                    <p className="font-sans text-[11px] text-[#f5f5f0] truncate">{s.nombre}</p>
-                    <p className="font-mono text-[9px] text-[#555550] tabular-nums">
+                    <p className="font-sans text-caption text-ink truncate">{s.nombre}</p>
+                    <p className="font-mono text-caption text-ink-3 tabular-nums">
                       {formatDia(s.fechaInicio)}{s.fechaFin ? ` → ${formatDia(s.fechaFin)}` : ''}
                     </p>
                   </div>
-                  <span className={`shrink-0 px-2 py-0.5 rounded-full font-mono text-[9px] uppercase tracking-widest border ${
+                  <span className={`shrink-0 px-2 rounded-full font-mono text-caption uppercase tracking-widest border ${
                     enCurso
-                      ? 'bg-[#86efac]/12 text-[#86efac] border-[#86efac]/25'
-                      : 'bg-white/5 text-[#a8a89e] border-white/10'
+                      ? 'bg-success/12 text-success border-success/25'
+                      : 'bg-white/5 text-ink-2 border-hairline'
                   }`}>
                     {enCurso ? 'En curso' : 'Finalizado'}
                   </span>

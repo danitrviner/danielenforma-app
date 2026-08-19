@@ -25,8 +25,9 @@ import { buildPhaseEnergyPlans, buildWeightProjection, ProjectionResult } from '
 import { DEFAULT_KCAL_PER_STEP } from '../utils/nutritionConstants';
 import { computePhaseWeightStatus } from '../utils/planNutritionBridge';
 import { markRoadmapVisited } from './PlanInPreparationCard';
+import { Icon, PageHeader, EmptyState } from './ui';
 
-const PHASE_COLORS = ['#fbcb1a', '#00eefc', '#ff8c69', '#a78bfa'];
+const PHASE_COLORS = ['var(--color-accent)', 'var(--color-data)', 'var(--color-warning)', 'var(--color-chart-3)'];
 const DEFAULT_STEP_GOAL = 8000;
 const COACH_EMAIL = 'danitrviner@gmail.com';
 
@@ -190,14 +191,14 @@ export default function AthleteRoadmapScreen({ profile }: Props) {
     const list: Achievement[] = [];
     for (const ch of challengeHistory) {
       if (ch.status === 'conseguido' && ch.resolvedAt) {
-        list.push({ id: `ch-${ch.id}`, icon: 'emoji_events', color: '#fbcb1a', title: ch.title, date: ch.resolvedAt.split('T')[0] });
+        list.push({ id: `ch-${ch.id}`, icon: 'emoji_events', color: 'var(--color-accent)', title: ch.title, date: ch.resolvedAt.split('T')[0] });
       }
     }
     const achievedIds: Record<string, string> = roadmap?.levelLadder?.achievedLevelIds ?? {};
     const levels = (roadmap?.levelLadder ?? DEFAULT_LEVEL_LADDER).levels;
     for (const [levelId, date] of Object.entries(achievedIds)) {
       const lvl = levels.find(l => l.id === levelId);
-      if (lvl) list.push({ id: `lvl-${levelId}`, icon: 'military_tech', color: '#00eefc', title: `Nivel ${lvl.name}`, date });
+      if (lvl) list.push({ id: `lvl-${levelId}`, icon: 'military_tech', color: 'var(--color-data)', title: `Nivel ${lvl.name}`, date });
     }
     for (const phase of roadmap?.planPhases ?? []) {
       if (phase.status === 'completada' && phase.completedAt) {
@@ -206,7 +207,7 @@ export default function AthleteRoadmapScreen({ profile }: Props) {
     }
     for (const item of roadmap?.items ?? []) {
       if (item.status === 'logrado' && item.targetDate) {
-        list.push({ id: `it-${item.id}`, icon: 'star', color: '#a78bfa', title: item.title, date: item.targetDate });
+        list.push({ id: `it-${item.id}`, icon: 'star', color: 'var(--color-chart-3)', title: item.title, date: item.targetDate });
       }
     }
     return list;
@@ -214,19 +215,21 @@ export default function AthleteRoadmapScreen({ profile }: Props) {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-24">
-        <span className="material-symbols-outlined text-3xl text-[#fbcb1a] animate-spin">refresh</span>
+      <div className="flex items-center justify-center py-10">
+        <Icon name="refresh" size="xl" className="text-accent animate-spin" />
       </div>
     );
   }
 
   if (!roadmap) {
     return (
-      <div className="text-center py-24">
-        <span className="material-symbols-outlined text-5xl text-[#2a2a2a] block mb-3">map</span>
-        <p className="font-sans font-bold text-white text-sm mb-1">Road map</p>
-        <p className="text-[#c6c9ab] text-xs font-mono">No hay planificación disponible todavía.</p>
-        <p className="text-[#555] text-xs font-mono mt-1">Tu entrenador aún no ha creado tu hoja de ruta — estará disponible aquí en cuanto la configure.</p>
+      <div className="space-y-6">
+        <PageHeader title="Road map" subtitle="Tu progreso y lo que te queda por delante" />
+        <EmptyState
+          icon="map"
+          title="No hay planificación disponible todavía."
+          description="Tu entrenador aún no ha creado tu hoja de ruta — estará disponible aquí en cuanto la configure."
+        />
       </div>
     );
   }
@@ -235,10 +238,7 @@ export default function AthleteRoadmapScreen({ profile }: Props) {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="font-sans font-black text-2xl text-white uppercase tracking-tight">Road map</h1>
-        <p className="text-[#c6c9ab] text-xs font-mono mt-1">Tu progreso y lo que te queda por delante</p>
-      </div>
+      <PageHeader title="Road map" subtitle="Tu progreso y lo que te queda por delante" />
 
       {activePhase && phaseProgress && (
         <PhaseHeroCard phase={activePhase} progress={phaseProgress} weightStatus={phaseWeightStatus} />
@@ -257,7 +257,7 @@ export default function AthleteRoadmapScreen({ profile }: Props) {
       <RecentAchievements achievements={achievements} />
 
       <div>
-        <p className="font-mono text-[9px] uppercase tracking-widest text-[#c6c9ab] mb-3 px-1">Planificación completa</p>
+        <p className="font-mono text-caption uppercase tracking-widest text-ink-2 mb-3 px-1">Planificación completa</p>
         <RoadmapTimeline
           mesocycles={mesocycles}
           nutritionProgram={nutritionProgram}

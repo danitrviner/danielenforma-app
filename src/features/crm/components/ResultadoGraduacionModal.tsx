@@ -3,6 +3,7 @@ import { useToast } from '../../../hooks/useToast';
 import { useActualizarReunion } from '../hooks/useReuniones';
 import Modal, { BotonSecundario } from './Modal';
 import type { CrmReunion, ResultadoGraduacion } from '../types';
+import { Icon } from '../../../components/ui';
 
 // Se interpone SOLO al marcar una GRADUACIÓN como realizada — es la medición
 // directa de "conversión a continuidad", la palanca de negocio más grande
@@ -36,30 +37,30 @@ export default function ResultadoGraduacionModal({ reunion, onCerrar }: { reunio
       footer={<BotonSecundario onClick={onCerrar}>Cancelar</BotonSecundario>}
     >
       <div className="space-y-3">
-        <p className="font-sans text-[11px] text-[#a8a89e]">¿Qué pasó en la graduación?</p>
+        <p className="font-sans text-caption text-ink-2">¿Qué pasó en la graduación?</p>
         <div className="grid grid-cols-1 gap-2">
           <button
             type="button"
             onClick={() => elegir('continua')}
             disabled={actualizar.isPending}
-            className="flex items-center gap-2 p-3 rounded-xl bg-[#86efac]/10 border border-[#86efac]/25 hover:bg-[#86efac]/15 disabled:opacity-40 transition-colors text-left"
+            className="flex items-center gap-2 p-3 rounded-control bg-success/10 border border-success/25 hover:bg-success/15 disabled:opacity-40 transition-colors text-left"
           >
-            <span className="material-symbols-outlined text-lg text-[#86efac]">trending_up</span>
+            <Icon name="trending_up" size="l" className="text-success" />
             <div>
-              <p className="font-sans font-bold text-[12px] text-[#f5f5f0]">Sigue con nosotros</p>
-              <p className="font-mono text-[9px] text-[#555550]">Pasa a continuidad</p>
+              <p className="font-sans font-bold text-label text-ink">Sigue con nosotros</p>
+              <p className="font-mono text-caption text-ink-3">Pasa a continuidad</p>
             </div>
           </button>
           <button
             type="button"
             onClick={() => elegir('no_continua')}
             disabled={actualizar.isPending}
-            className="flex items-center gap-2 p-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/8 disabled:opacity-40 transition-colors text-left"
+            className="flex items-center gap-2 p-3 rounded-control bg-white/5 border border-hairline hover:bg-white/8 disabled:opacity-40 transition-colors text-left"
           >
-            <span className="material-symbols-outlined text-lg text-[#a8a89e]">flag</span>
+            <Icon name="flag" size="l" className="text-ink-2" />
             <div>
-              <p className="font-sans font-bold text-[12px] text-[#f5f5f0]">No continúa</p>
-              <p className="font-mono text-[9px] text-[#555550]">Termina el programa aquí</p>
+              <p className="font-sans font-bold text-label text-ink">No continúa</p>
+              <p className="font-sans text-caption text-ink-3">Termina el programa aquí</p>
             </div>
           </button>
         </div>

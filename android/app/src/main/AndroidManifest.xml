@@ -1,18 +1,27 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
     <application
-        android:allowBackup="true"
+        android:allowBackup="false"
+        android:fullBackupContent="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
+        <!-- Bloqueado a vertical (07-14/02-10, decisión de Dani §6.4, 11 ago
+             2026): sin `screenOrientation` Android permite girar libremente, y
+             a partir de 768px el layout salta a la maqueta de escritorio con
+             barra lateral de altura completa — en horizontal no cabe. Mismo
+             criterio que iOS (Info.plist). -->
         <activity
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode|navigation|density"
             android:name=".MainActivity"
             android:label="@string/title_activity_main"
             android:theme="@style/AppTheme.NoActionBarLaunch"
             android:launchMode="singleTask"
+            android:screenOrientation="portrait"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -36,6 +45,22 @@
                 android:value="Cuenta atrás de descanso durante el entrenamiento"
             />
         </service>
+
+        <!-- F5 del plan de réplica FITIV: la sesión de cardio sobrevive al
+             bolsillo — notificación persistente con FC y cronómetro.
+             `foregroundServiceType="connectedDevice"`, NO "health": el plan
+             inicial proponía "health", pero exige el permiso EN TIEMPO DE
+             EJECUCIÓN `BODY_SENSORS` (y `BODY_SENSORS_BACKGROUND` si el
+             servicio arranca con la app ya en segundo plano — justo nuestro
+             caso), y si no está concedido el sistema LANZA UNA EXCEPCIÓN al
+             crear el servicio: habría crasheado en cuanto se bloqueara la
+             pantalla. No usamos la API de sensores de Android — la FC llega
+             por BLE directo — así que pedir BODY_SENSORS solo para esto
+             habría sido desproporcionado. "connectedDevice" es el tipo que
+             de verdad cubre "hablar con un dispositivo Bluetooth conectado"
+             y solo pide BLUETOOTH_CONNECT, que la app ya solicita para la
+             banda. -->
+        <service android:name=".CardioSessionService" android:exported="false" android:foregroundServiceType="connectedDevice" />
     </application>
 
     <!-- Permissions -->
@@ -46,8 +71,29 @@
     <uses-permission android:name="android.permission.BLUETOOTH_SCAN" android:usesPermissionFlags="neverForLocation" />
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
 
+    <!-- 02-12. @capacitor-community/bluetooth-le declara ACCESS_FINE_LOCATION en
+         SU manifiesto, y el merge lo arrastraba al nuestro sin `maxSdkVersion`.
+         Efecto: Play te obliga a rellenar la declaración de permisos de
+         ubicación y a declarar recogida de ubicación en Data safety, para una
+         app que no usa la ubicación para nada. Nosotros ya escaneamos con
+         `neverForLocation`, así que en API 31+ no hace falta — pero el minSdk es
+         24, y entre 24 y 30 el sistema SÍ exigía ubicación para poder escanear
+         BLE. Por eso no se borra: `tools:node="replace"` sustituye el elemento
+         del plugin entero por el nuestro, acotado con `maxSdkVersion="30"`.
+         Borrarlo a secas dejaría la banda de pulso sin funcionar en Android
+         7-11. Verificar con:
+           ./gradlew :app:processReleaseManifest
+         y leer app/build/intermediates/merged_manifests/release/AndroidManifest.xml -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" android:maxSdkVersion="30" tools:node="replace" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" android:maxSdkVersion="30" tools:node="replace" />
+
     <!-- Notificación persistente del descanso / Android 13+ (§6.1, §14) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+
+    <!-- F5 del plan de réplica FITIV: foreground service de la sesión de
+         cardio — "connectedDevice", no "health" (ver el porqué junto al
+         <service> más arriba). -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
 </manifest>

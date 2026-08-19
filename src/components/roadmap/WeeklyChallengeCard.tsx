@@ -1,6 +1,7 @@
 import React from 'react';
 import { WeeklyChallenge } from '../../types';
 import { ChallengeProgress } from '../../utils/weeklyChallenge';
+import { Icon } from '../ui';
 
 interface Props {
   challenge: WeeklyChallenge;
@@ -26,51 +27,49 @@ function daysLeft(weekEnd: string): number {
 export default function WeeklyChallengeCard({ challenge, progress }: Props) {
   const achieved = challenge.status === 'conseguido';
   const remaining = daysLeft(challenge.weekEnd);
-  const accent = achieved ? '#8ac926' : '#fbcb1a';
+  const accent = achieved ? 'var(--color-success)' : 'var(--color-accent)';
 
   return (
     <div
-      className="rounded-3xl border p-5 flex flex-col gap-3"
-      style={{ backgroundColor: '#121212', borderColor: `${accent}33`, boxShadow: `0 0 24px ${accent}14` }}
+      className="rounded-canvas border p-5 flex flex-col gap-3"
+      style={{ backgroundColor: 'var(--color-bg)', borderColor: `${accent}33` }}
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="material-symbols-outlined text-lg" style={{ color: accent }}>
-            {achieved ? 'emoji_events' : 'flag'}
-          </span>
-          <p className="font-mono text-[9px] uppercase tracking-widest text-[#c6c9ab]">
+          <Icon name={achieved ? 'emoji_events' : 'flag'} size="l" style={{ color: accent }} />
+          <p className="font-sans text-caption uppercase tracking-widest text-ink-2">
             Reto de la semana · de tu entrenador
           </p>
         </div>
         {!achieved && (
-          <span className="font-mono text-[9px] text-[#c6c9ab]">
+          <span className="font-mono text-caption text-ink-2">
             {remaining === 0 ? 'último día' : `${remaining}d restantes`}
           </span>
         )}
       </div>
 
-      <h3 className="font-sans font-black text-lg text-white leading-tight">{challenge.title}</h3>
-      <p className="text-[#c6c9ab] text-xs font-mono leading-relaxed">{challenge.description}</p>
+      <h3 className="font-sans font-bold text-title-m text-white leading-tight">{challenge.title}</h3>
+      <p className="text-ink-2 text-label font-sans leading-relaxed">{challenge.description}</p>
 
       <div className="mt-1">
-        <div className="flex items-center justify-between mb-1.5">
-          <span className="font-mono text-[10px] text-white font-bold">
+        <div className="flex items-center justify-between mb-2">
+          <span className="font-mono text-caption text-white font-bold">
             {fmtMetric(progress.progressValue, challenge.metric.unit)}
           </span>
-          <span className="font-mono text-[10px] text-[#c6c9ab]">
+          <span className="font-mono text-caption text-ink-2">
             objetivo {fmtMetric(challenge.metric.target, challenge.metric.unit)}
           </span>
         </div>
-        <div className="h-2.5 rounded-full bg-[#1e1e1b] overflow-hidden">
+        <div className="h-2.5 rounded-full bg-raised overflow-hidden">
           <div
             className="h-full rounded-full transition-all duration-500"
-            style={{ width: `${Math.max(4, progress.pct)}%`, backgroundColor: accent, boxShadow: `0 0 8px ${accent}99` }}
+            style={{ width: `${Math.max(4, progress.pct)}%`, backgroundColor: accent }}
           />
         </div>
       </div>
 
       {achieved && (
-        <p className="text-sm font-sans font-bold" style={{ color: accent }}>
+        <p className="text-body-s font-sans font-bold" style={{ color: accent }}>
           ¡Reto conseguido! 🏆
         </p>
       )}
@@ -84,17 +83,15 @@ export default function WeeklyChallengeCard({ challenge, progress }: Props) {
 export function ChallengePendingCard() {
   return (
     <div
-      className="rounded-3xl border p-5 flex flex-col gap-2"
-      style={{ backgroundColor: '#121212', borderColor: '#fbcb1a33', boxShadow: '0 0 24px #fbcb1a14' }}
+      className="rounded-canvas border p-5 flex flex-col gap-2"
+      style={{ backgroundColor: 'var(--color-bg)', borderColor: '#FFC72C33' }}
     >
       <div className="flex items-center gap-2">
-        <span className="material-symbols-outlined text-lg animate-pulse" style={{ color: '#fbcb1a' }}>
-          hourglass_top
-        </span>
-        <p className="font-mono text-[9px] uppercase tracking-widest text-[#c6c9ab]">Reto de la semana</p>
+        <Icon name="hourglass_top" size="l" className="animate-pulse" />
+        <p className="font-sans text-caption uppercase tracking-widest text-ink-2">Reto de la semana</p>
       </div>
-      <h3 className="font-sans font-black text-lg text-white leading-tight">Tu entrenador está preparando tu reto</h3>
-      <p className="text-[#c6c9ab] text-xs font-mono leading-relaxed">
+      <h3 className="font-sans font-bold text-title-m text-white leading-tight">Tu entrenador está preparando tu reto</h3>
+      <p className="text-ink-2 text-label font-sans leading-relaxed">
         Mientras tanto: entrena, camina y registra. El reto llega en breve.
       </p>
     </div>

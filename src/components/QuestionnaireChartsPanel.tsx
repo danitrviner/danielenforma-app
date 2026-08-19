@@ -4,6 +4,11 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { Questionnaire, QuestionnaireQuestion, QuestionnaireResponse } from '../types';
+import {
+  Icon, Badge,
+  ALTURA_GRAFICA, MARGEN_GRAFICA, ANCHO_EJE_Y, REJILLA_GRAFICA, TICK_GRAFICA, EJE_GRAFICA,
+} from './ui';
+import { weekKey } from '../utils/seriesCorrelation';
 
 interface Props {
   questionnaires: Questionnaire[];
@@ -34,17 +39,10 @@ function extractSeries(questionId: string, responses: QuestionnaireResponse[]): 
   return pts.sort((a, b) => a.ts - b.ts);
 }
 
-function weekStart(dateStr: string): string {
-  const d = new Date(dateStr + 'T12:00:00');
-  const dow = d.getDay();
-  d.setDate(d.getDate() - (dow === 0 ? 6 : dow - 1));
-  return d.toISOString().slice(0, 10);
-}
-
 function toWeekly(pts: DataPoint[]): WeekPoint[] {
   const map = new Map<string, { sum: number; count: number }>();
   for (const p of pts) {
-    const ws = weekStart(p.date);
+    const ws = weekKey(p.date);
     const e = map.get(ws) ?? { sum: 0, count: 0 };
     map.set(ws, { sum: e.sum + p.value, count: e.count + 1 });
   }
@@ -70,15 +68,15 @@ function ChartTooltip({ active, payload, unit, weekly }: any) {
   const p = payload[0].payload as (DataPoint | WeekPoint);
   const count = (p as WeekPoint).count;
   return (
-    <div className="bg-[#1e1e1b] border border-white/7 rounded-xl px-3 py-2 text-xs font-mono shadow-xl">
-      <p className="text-[#c6c9ab] mb-0.5">
+    <div className="bg-raised border border-hairline rounded-surface px-3 py-2 text-label font-mono shadow-e1">
+      <p className="text-ink-2 ">
         {weekly ? `Semana del ${fmtDate(p.date)}` : fmtDate(p.date)}
       </p>
-      <p className="text-[#fbcb1a] font-bold text-sm">
+      <p className="text-accent font-bold text-body-s">
         {p.value}{unit ? ` ${unit}` : ''}
       </p>
       {weekly && count > 1 && (
-        <p className="text-[#c6c9ab] mt-0.5">Media de {count} registros</p>
+        <p className="text-ink-2 ">Media de {count} registros</p>
       )}
     </div>
   );
@@ -102,42 +100,33 @@ function QuestionChart({
   if (raw.length === 0) return null;
 
   return (
-    <div className="bg-[#181816] border border-white/7 rounded-3xl p-4 space-y-3">
+    <div className="bg-surface border border-hairline rounded-canvas p-4 space-y-3">
       <div>
-        <p className="font-sans font-semibold text-white text-sm leading-tight">{question.label}</p>
-        <div className="flex items-center gap-2 mt-0.5">
-          {question.unit && (
-            <span className="font-mono text-[9px] text-[#c6c9ab] bg-[#1e1e1b] border border-white/7 px-1.5 py-0.5 rounded">
-              {question.unit}
-            </span>
-          )}
-          <span className="font-mono text-[9px] text-[#fbcb1a] bg-[#fbcb1a]/10 border border-[#fbcb1a]/20 px-1.5 py-0.5 rounded flex items-center gap-0.5">
-            <span className="material-symbols-outlined" style={{ fontSize: '10px' }}>show_chart</span>
-            {question.type}
-          </span>
-          <span className="font-mono text-[9px] text-[#c6c9ab]">
+        <p className="font-sans font-bold text-white text-body-s leading-tight">{question.label}</p>
+        <div className="flex items-center gap-2 ">
+          {question.unit && <Badge tone="neutral">{question.unit}</Badge>}
+          <Badge tone="data" icon="show_chart">{question.type}</Badge>
+          <span className="font-mono text-caption text-ink-2">
             {weekly ? `${toWeekly(raw).length} semanas` : `${raw.length} puntos`}
           </span>
         </div>
       </div>
 
-      <ResponsiveContainer width="100%" height={180}>
-        <LineChart data={data} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" vertical={false} />
+      <ResponsiveContainer width="100%" height={ALTURA_GRAFICA.s}>
+        <LineChart data={data} margin={MARGEN_GRAFICA}>
+          <CartesianGrid {...REJILLA_GRAFICA} />
           <XAxis
             dataKey="date"
             tickFormatter={fmtDate}
-            tick={{ fill: '#c6c9ab', fontSize: 9, fontFamily: 'monospace' }}
-            axisLine={{ stroke: '#2a2a2a' }}
-            tickLine={false}
+            tick={TICK_GRAFICA}
+            {...EJE_GRAFICA}
             minTickGap={40}
           />
           <YAxis
             domain={yMin !== undefined && yMax !== undefined ? [yMin, yMax] : ['auto', 'auto']}
-            tick={{ fill: '#c6c9ab', fontSize: 9, fontFamily: 'monospace' }}
-            axisLine={false}
-            tickLine={false}
-            width={36}
+            tick={TICK_GRAFICA}
+            {...EJE_GRAFICA}
+            width={ANCHO_EJE_Y}
           />
           <Tooltip
             content={(props) => (
@@ -147,19 +136,19 @@ function QuestionChart({
           <Line
             type="monotone"
             dataKey="value"
-            stroke="#fbcb1a"
+            stroke="var(--color-accent)"
             strokeWidth={2}
-            dot={{ fill: '#fbcb1a', stroke: '#121212', strokeWidth: 2, r: 3 }}
-            activeDot={{ fill: '#fbcb1a', stroke: '#121212', strokeWidth: 2, r: 5 }}
+            dot={{ fill: 'var(--color-accent)', stroke: 'var(--color-bg)', strokeWidth: 2, r: 3 }}
+            activeDot={{ fill: 'var(--color-accent)', stroke: 'var(--color-bg)', strokeWidth: 2, r: 5 }}
           />
         </LineChart>
       </ResponsiveContainer>
 
       {/* Scale end labels */}
       {question.type === 'scale' && (question.scaleMinLabel || question.scaleMaxLabel) && (
-        <div className="flex justify-between px-9">
-          <span className="font-mono text-[9px] text-[#c6c9ab]">{yMin} – {question.scaleMinLabel}</span>
-          <span className="font-mono text-[9px] text-[#c6c9ab]">{question.scaleMaxLabel} – {yMax}</span>
+        <div className="flex justify-between px-10">
+          <span className="font-mono text-caption text-ink-2">{yMin} – {question.scaleMinLabel}</span>
+          <span className="font-mono text-caption text-ink-2">{question.scaleMaxLabel} – {yMax}</span>
         </div>
       )}
     </div>
@@ -192,19 +181,19 @@ export default function QuestionnaireChartsPanel({ questionnaires, responses }: 
     <div className="space-y-4">
       {/* Header + toggle */}
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
-          <span className="material-symbols-outlined text-[#fbcb1a] text-base">show_chart</span>
+        <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
+          <Icon name="show_chart" size="m" className="text-accent" />
           Evolución ({graphable.length} serie{graphable.length !== 1 ? 's' : ''})
         </h3>
-        <div className="flex bg-[#181816] border border-white/7 rounded-lg p-0.5 gap-0.5">
+        <div className="flex bg-surface border border-hairline rounded-surface ">
           {(['Puntos', 'Media semanal'] as const).map((label, i) => (
             <button
               key={label}
               onClick={() => setWeekly(i === 1)}
-              className={`px-3 min-h-[44px] rounded-md font-mono text-[10px] uppercase font-bold transition-all ${
+              className={`px-3 min-h-[44px] rounded-control font-sans text-caption uppercase font-bold transition-all ${
                 weekly === (i === 1)
-                  ? 'bg-[#fbcb1a] text-black shadow'
-                  : 'text-[#c6c9ab] hover:text-white'
+                  ? 'bg-accent text-black shadow'
+                  : 'text-ink-2 hover:text-white'
               }`}
             >{label}</button>
           ))}
@@ -215,7 +204,7 @@ export default function QuestionnaireChartsPanel({ questionnaires, responses }: 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {graphable.map(({ question, qTitle }) => (
           <div key={question.id}>
-            <p className="font-mono text-[9px] text-[#c6c9ab]/60 uppercase tracking-wider mb-1.5 px-1">
+            <p className="font-sans text-caption text-ink-2/60 uppercase tracking-wider mb-2 px-1">
               {qTitle}
             </p>
             <QuestionChart question={question} responses={responses} weekly={weekly} />

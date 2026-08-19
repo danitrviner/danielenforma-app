@@ -12,6 +12,14 @@
 >
 > **Estado de en-forma:** ya existe un módulo Cardio (commit `e9eb819`). Esto es análisis de
 > diferencias, no construcción desde cero.
+>
+> **Actualización 2026-08-16 — auditoría de código + re-análisis denso del vídeo + onboarding:**
+> el estado "F1-F6 y F8 completas" que este documento afirmaba **no era del todo cierto** —
+> verificado leyendo el código real, no lo que este documento decía. Ver §8bis para el detalle
+> verificado línea a línea. El vídeo de 4:38 (el mismo del 01-08, re-analizado a 1 fotograma/seg
+> en vez de 1/6) añadió el detalle exacto de color/texto/copy que faltaba (§4bis.2bis) y se
+> incorporó por primera vez el flujo de **onboarding** (cuenta + datos personales + permisos,
+> §1bis), sacado de los artículos oficiales de soporte.
 
 ---
 
@@ -30,6 +38,32 @@
 **Lectura del tamaño:** 465 MB en iOS frente a 44 MB en Android. La diferencia es la app de
 Apple Watch, sus assets y los modelos on-device. **El Apple Watch es el centro de gravedad del
 producto**, no un accesorio — dato decisivo para el §7.
+
+---
+
+## 1bis. Onboarding — el alta de un usuario nuevo
+
+> Fuente: artículos oficiales de soporte *"Guide: Install Setup / Onboarding (iOS)"* y *"Guide:
+> Getting Started with FITIV (iOS)"* (Zendesk API, texto verbatim). No estaba cubierto en el
+> análisis anterior — la grabación de pantalla empieza con la app ya configurada.
+
+Orden exacto, sin saltos:
+
+1. **Cuenta** — 3 botones: *Continuar con Apple* · *Continuar con Google* · *Continuar con email*.
+2. **Datos personales — obligatorios antes de poder usar la app**: fecha de nacimiento, altura,
+   peso, sexo. Documentado explícitamente como requisito: *"You will be given the option to set
+   your birthday, height, weight and gender when first opening the app"* — son la base de **todas**
+   las fórmulas (calorías, zonas de FC). Editable después desde Perfil → ⚙️ → Perfil.
+3. **Permiso de Apple Health** — botón "Connect Apple Health" → abre la app Salud → "ENABLE ALL".
+   Marcado como **obligatorio**: *"Apple Health permissions MUST be enabled to use the app... 
+   Disabled permissions will severely limit the app's functioning"*.
+4. **Permiso de ubicación** — para GPS/rutas.
+5. **Permiso de notificaciones** — para resúmenes semanales/mensuales.
+6. Fin → a partir de aquí ya se puede usar la app; primer Recovery/Sleep aparece al día siguiente.
+
+**Nota de diseño de FITIV, no de nosotros:** el pedido de permisos va DESPUÉS de pedir los datos
+personales, no antes — así el usuario ya ha invertido esfuerzo en rellenar el perfil cuando llegan
+los permisos (reduce el abandono en el permiso más invasivo, Salud).
 
 ---
 
@@ -272,6 +306,110 @@ debajo tres miniaturas: **Básico · Estándar · Avanzado**. Se elige viendo, n
 **Cambio de métrica en caliente:** al tocar un hueco se abre una hoja (ej. *"Centro"*) con la lista
 de métricas disponibles y ✓ en la activa: Duración · Frecuencia Cardíaca · Intensidad de FC ·
 Puntos FITIV · Distancia · Ritmo · Velocidad.
+
+### 4bis.2bis — Re-análisis 2026-08-16: detalle exacto verificado fotograma a fotograma
+
+> La grabación de 4:38 es la misma del 2026-08-01 (278s, confirmado por duración exacta). Este
+> pase fue **mucho más denso**: 278 fotogramas a 1/1 fps (antes 1/6 fps) revisados en bloques de
+> 36, más ampliación a resolución completa de cada pantalla clave. Objetivo: que la implementación
+> no vuelva a quedarse corta por falta de detalle — esta vez cada dato está anclado a un fotograma
+> concreto, no descrito de memoria.
+
+**Selector "Diseño de Métricas" — la pantalla exacta, no solo su lista de opciones:**
+Fondo negro puro, no gris. De arriba abajo: check verde ✓ arriba a la derecha (confirma el
+diseño) · título "Diseño de Métricas" centrado · **maqueta de iPhone completa** (marco gris,
+notch, barra de estado 9:41/señal/wifi/batería falsos — assets de ejemplo, no reales) con
+dentro: fila de controles (icono actividad · ⏪ ▶ ⏩ · ✕) · tarjeta "AVG PACE 4:50" · **tarjeta
+central naranja a todo el ancho** "HR" / "Zone 4" / "167" grande / — mismo patrón de fondo por
+zona que la pantalla real · tarjeta "156 AVG HR" · puntos de carrusel (3, el 2º activo) · fila de
+tabla "Lap 1 · Duration 03:45 · Avg HR 156 · Max HR 170 · Pace 4:50 · Elevation Gain 12".
+Debajo, fuera de la maqueta: título "MOSTRAR COMO" en mayúsculas gris, y **3 tarjetas con
+contorno** (la activa en verde, borde + texto + icono de teléfono verde relleno; las otras 2 en
+gris) — Básico (icono con 3 bloques rellenos) · Estándar (5 bloques, esquema 2+3) · Avanzado
+(7 bloques, esquema 3+2+2). Texto explicativo debajo: *"Elige la opción predeterminada para
+cuántas métricas prefieres durante tus entrenamientos."*
+
+**Pantalla en vivo — colores y textos exactos por zona** (fotograma con Zona 1 y con banda Z5):
+fondo Zona 1 = azul medio saturado (`#1f5fb0` aprox., no pastel); fila de 3 métricas con fondo
+azul **más oscuro y semitransparente** que el fondo general (efecto tarjeta sobre el mismo tono,
+no blanco); número central en **negro**, no blanco, sobre el azul — detalle fácil de pasar por
+alto. El bloque expandido inferior es **negro/gris oscuro**, no del color de zona — el cambio de
+color se limita estrictamente a la zona de contenido central, la barra inferior de controles
+siempre es oscura neutra.
+
+**Carrusel página 4 (gráfica con bandas), fila por fila, exacto:**
+```
+Zona 5   171 BPM · 90%   fondo rojo
+Zona 4   152 BPM · 80%   fondo naranja
+Zona 3   133 BPM · 70%   fondo amarillo/mostaza
+Zona 2   114 BPM · 60%   fondo verde
+Zona 1    95 BPM · 50%   fondo azul (con traza blanca de la sesión superpuesta)
+```
+BPM a la **izquierda**, nombre de zona **centrado**, % a la **derecha** — en cada banda, no solo
+en los extremos. 5 puntos de paginación abajo, el 5º (último) relleno = página activa.
+
+**Carrusel página 3 (tiempo por zona), exacto:** 4-5 píldoras verticales, cada una barra de
+progreso horizontal con **icono de círculo del color de zona a la izquierda dentro de la propia
+barra** (no fuera), texto "0%" o "N%" superpuesto en negro sobre la barra, y el tiempo "00:00" /
+"MM:SS" alineado a la derecha fuera de la barra. Orden de arriba abajo: Z5(rojo)·Z4(naranja)·
+Z3(amarillo)·Z2(verde) — Z1 no siempre visible, parece requerir scroll o queda fuera si la
+sesión aún no la alcanzó.
+
+**Cajón expandido (▲→▼) — confirmado con captura nítida:**
+- Fila reloj: botón pausa/play circular ámbar a la izquierda · tiempo grande + hora real centrado
+  · chevron (▲ colapsado / ▼ expandido) a la derecha.
+- 🔴 **"Desliza para guardar"** — píldora gris con círculo rojo relleno de icono ⏹ a la izquierda.
+- 🗑️ **"Deslizar para descartar"** — píldora gris con círculo gris + icono papelera rojo.
+- Fila final: 🔓 candado abierto (icono blanco, sin fondo) a la izquierda · ⚙️ engranaje (círculo
+  gris) a la derecha. Estos dos SIEMPRE visibles, cajón expandido o no.
+
+**Selector "Centro" (cambio de métrica en caliente) — confirmado con captura nítida:** hoja modal
+negra que sube desde abajo, tirador gris arriba, ✕ circular a la izquierda del título, título
+= la posición que se está editando ("Centro"), lista con separadores finos: icono + nombre +
+✓ verde en la fila activa. Orden real de la lista: Duración · Frecuencia Cardíaca · Intensidad de
+FC · Puntos FITIV · Distancia · Ritmo · Velocidad.
+
+**Sheet "Seguimiento de entrenamiento" (elegir/gestionar dispositivo antes o durante el entreno):**
+título centrado, ✕ arriba izq. Lista "Dispositivo de entrenamiento": Apple Watch (con badge
+INSTALAR si no está instalada la app del reloj) · el dispositivo BLE conectado (ej. "Google Fitbit
+Air · Conectado" + ✓) · fila "Sin dispositivo portátil — No se rastreará la frecuencia cardíaca."
+Sección "Sensores Bluetooth": "Descubrir y gestionar sensores →". Sección "Configuración":
+toggle "Sincronización de la Frecuencia Cardíaca" con subtítulo "Transmite la frecuencia cardíaca
+a Peloton, Zwift, Concept2 y otros."
+
+**Sheet de ajustes ⚙️ durante el entreno — confirmado íntegro:**
+"Dispositivo de entrenamiento" (tarjeta dispositivo conectado + toggle Sincronización FC con
+icono ℹ️ info al lado del título) → "Configuración del entrenamiento": Entrenamiento por voz
+(toggle, icono ecualizador) · Controles de entrenamiento de bloqueo automático (toggle, icono
+candado) · Fuente de música → Apple Music (chevron) · Diseño de Métricas → Avanzado (chevron,
+icono grid 2×2) · Duración de la alerta de división → 10 Segundos (chevron, icono reloj).
+
+**🎧 Mini-reproductor persistente — confirmado que existe de verdad, no solo documentado:**
+barra fija en la parte inferior, visible al navegar a Historia/Calendario/Entrenamiento mientras
+hay una sesión activa: icono del tipo de entreno + "Cinta de correr · MM:SS · --/km" a la
+izquierda, botón ⏸/▶ circular a la derecha. **Persiste durante toda la navegación fuera de la
+pantalla de entreno** — confirmado en al menos 6 pantallas distintas de la grabación (Historia,
+Calendario, Entrenamiento→búsqueda, Preparación para el Entrenamiento, Configuración). Esto es
+justo lo que el análisis de código marcó como ausente en `en-forma`.
+
+**Catálogo alfabético completo de tipos de entreno** (buscador "Todos los entrenamientos", lista
+A→Z observada letra por letra en la grabación — más completo que la estimación anterior
+"+90 tipos"): Acuática · Artes Marciales · Atletismo · Baile · Baloncesto · Balonmano · Barra ·
+Bolos · Ciclismo · Ciclismo (Interior) · Ciclismo de montaña · Ciclismo en mano · Cinta de correr
+· Correr · Criquet · Deportes · Deportes Acuáticos · Deportes de Surf · Deportes de nieve ·
+Deportes de patinaje · Deportes de remo · Deportes Ecuestres · Entrenamiento de Pasos ·
+Entrenamiento en circuito · Escalada · Escalada de Escaleras · Escaleras · Esgrima · Fútbol
+australiano · Gimnasia · Golf · HIIT · **HYROX** (con badge NUEVO, "2 Intervalos") · Kettlebell ·
+Kickboxing · Lacrosse · Larga Ruta · Levantamiento de Pesas · Natación · Navegación · Orange
+Theory · P90X · Peloton · Pesca · Pickleball · Pilates · Preparación y Recuperación · Progresión
+· **Rucking** (badge NUEVO) · Rugby · Ráquetbol · Remo · Saltar la cuerda · Senderismo ·
+**Tabata** ("16 Intervalos · 1 Rondas" ya precargado como plantilla) · Tai Chi · Tenis · Tenis de
+mesa · TRX · Waterpolo · Yoga · Zumba. Cada fila tiene 📌 (fijar a Favoritos) y ⊖ (quitar de "mis
+entrenamientos") a la derecha.
+
+**Favoritos — confirmado el límite exacto por segunda vez:** pantalla dedicada con buscador,
+texto *"Elige hasta 6 entrenamientos para fijar en la parte superior para un acceso rápido."* —
+coincide con lo ya documentado, ahora con la copy exacta.
 
 ### 4bis.3 — Detalles de UX que merece la pena robar
 
@@ -550,6 +688,48 @@ Verificado leyendo `src/components/CardioScreen.tsx`, `src/services/bleHeartRate
 | **Mini-reproductor persistente de sesión** | Medio | Medio |
 | **GPS: ruta, ritmo, splits** | Alto | Medio (solo si entrenáis fuera) |
 | **HRV matinal + readiness** | Alto | Medio |
+
+### 8bis. Onboarding — comparación real (2026-08-16)
+
+`en-forma` **ya pide** sexo, fecha de nacimiento, peso y altura al atleta en su alta —
+`src/components/AthleteOnboardingWizard.tsx` (paso 1, líneas ~194-487), con validación
+obligatoria. Esto ya replica el paso 2 del onboarding de FITIV (§1bis), y con mejor integración
+(un wizard, no una serie de prompts del sistema operativo sueltos).
+
+**Diferencia real, y es deliberada, no un bug:** el **método de FCmax y el valor de `maxHR`** los
+fija hoy **solo el coach**, desde `CardioCoachScreen.tsx` — el atleta no tiene pantalla propia
+para elegirlo. FITIV se lo pide al propio usuario. Esto es coherente con la tesis del documento
+(§10, "FITIV + supervisión"): aquí el coach calibra la zona, no el atleta a ciegas. **No se
+recomienda copiar el autoservicio de FITIV en este punto** — sería remar contra el diferencial
+del producto. Se deja anotado por si en algún momento se quiere un modo "atleta sin coach activo".
+
+### 8ter. Auditoría de código 2026-08-16 — estado real verificado por fase
+
+> Hecho leyendo el código de `en-forma` (rama `ds/f3-experiencia`) directamente, no este
+> documento. Corrige la cabecera del §9 que decía "F1–F6 y F8 construidas, verificadas y
+> desplegadas" — cierto para F1/F3/F4/F8, **falso para F2**, parcial para F5/F6.
+
+| Fase | Estado real | Detalle |
+|---|---|---|
+| F1 | ✅ Hecho | Los 4 bugs bloqueantes de más abajo ya no existen: refs de intervalo limpiadas, reloj de pared en vez de contador de ticks, desconexión de banda guarda la sesión, `sessionType` ya condiciona comportamiento. |
+| **F2** | ❌ **NO existe** | Cero código de Live Activity/foreground service para cardio. El único `LiveActivityPlugin.swift` es para el descanso de fuerza (`restTimer.ts`), sin ninguna referencia a cardio. Sigue siendo `setInterval` en el WebView — se estrangula al bloquear pantalla. **Es el hueco más grave: el caso de uso central (Z2 45min con el móvil en el bolsillo) no sobrevive.** |
+| F3 | ✅ Hecho, fiel | `src/components/cardio/LiveSession.tsx` (fondo por zona con transición), `SlideAction.tsx` (deslizadores reales), `DeviceChip.tsx` (BPM antes de empezar), alertas háptico+voz en `CardioScreen.tsx:239-247`, `HrChart.tsx` con `ReferenceArea`. |
+| F4 | ✅ Hecho | `src/utils/cardioMetrics.ts`: Keytel corregida, METs, Points (umbral 3.0), TRIMP, hrTSS, TLR (cortes 0.8/1.1/1.3/1.5), HRR, con tests. **Falta la narrativa post-entreno por IA** pese a que el documento la daba por "barata porque ya existe el asistente". |
+| F5 | 🟡 Parcial | Notas/etiquetas/filtros sí (`CardioSessionDetail.tsx`). **Faltan fotos por sesión** y el ajuste de zonas por sesión sin tocar futuras (§6). |
+| F6 | 🟡 Muy limitado | Solo 1 de los 6 tipos de intervalo (Time+zona, `CardioCoachScreen.tsx:199`), definidos por el coach no el atleta. Sin los otros 5 tipos, sin rest timers, sin carrusel de páginas, sin layouts Básico/Estándar/Avanzado — layout fijo único. |
+| F7 | ⏸ Aplazado a propósito | Consistente con lo documentado. |
+| F8 | ✅ Hecho | RR reales desde GATT 0x2A37 (`bleHeartRate.ts:41-65`), RMSSD (`cardioMetrics.ts:242-267`), `HrvTestScreen.tsx`. |
+
+**También ausentes, sin fase asignada:** auto-lock de controles durante el entreno, **mini-
+reproductor persistente** (confirmado que SÍ existe en FITIV, §4bis.2bis — hueco real a cerrar).
+
+**Prioridad para cerrar la brecha, en este orden:**
+1. **F2 real** — Live Activity/foreground service para cardio, clonando el patrón de
+   `LiveActivityPlugin.swift` + `restTimer.ts` que ya existe para fuerza.
+2. Fotos por sesión + ajuste de zonas por sesión (F5).
+3. Los 5 tipos de intervalo que faltan + rest timers (F6).
+4. Auto-lock de controles + mini-reproductor persistente.
+5. Narrativa post-entreno por IA para cardio (F4, bonus).
 
 ### 🔴 Defectos del código actual — arreglar antes de añadir nada
 

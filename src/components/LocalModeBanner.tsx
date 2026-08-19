@@ -1,20 +1,38 @@
-import React, { useEffect, useState } from 'react';
-import { isLocalBypassActive, setLocalBypassMode } from '../dbService';
+import React from 'react';
+import { setLocalBypassMode, descartarAvisoDePermisos } from '../dbService';
+import { textoDelAviso } from '../utils/avisoConexion';
+import { useAvisoConexion } from '../hooks/useAvisoConexion';
+import { Icon } from './ui';
 
-// Aviso persistente cuando dbService ha entrado en modo local (forceLocalOnly):
-// a partir de ese momento las escrituras van SOLO a localStorage y se pierden
-// al recargar. Sin este banner el fallo era invisible — el usuario seguía
-// editando creyendo que guardaba. Polling barato: el flag es un booleano de
-// módulo sin sistema de suscripción, y 3 s de latencia para un aviso es fina.
+// Aviso persistente cuando lo que el usuario guarda NO está llegando al
+// servidor: sin esto el fallo es invisible y sigue editando creyendo que guarda.
+//
+// Tres causas, tres mensajes, y la distinción no es cosmética:
+//   · permisos — la cuenta no tiene acceso. Reintentar NO va a funcionar nunca,
+//                y decirle "revisa tu conexión" manda a la persona a mirar su
+//                wifi mientras el problema está en su cuenta (P1-6). Es
+//                exactamente lo que le pasó al atleta que no podía completar el
+//                onboarding.
+//   · red      — Firestore no responde y se ha caído a modo local. Reintentar
+//                puede funcionar. Los cambios NO se están guardando.
+//   · encolado — 05-3. No hay conexión, pero Firestore SÍ tiene el dato: está
+//                en IndexedDB y subirá solo. Es un aviso, no un error, y por eso
+//                va en ámbar y no en rojo. Antes este estado no existía y el
+//                resultado era el peor de los dos mundos: sin cobertura no salía
+//                ningún aviso —el banner solo miraba `isLocalBypassActive`, que
+//                solo se enciende desde un `catch` de Firestore, y con la caché
+//                persistente sin red no hay `catch`— y a la vez el botón de
+//                guardar se quedaba girando. La persona no tenía forma de saber
+//                si su entrenamiento se había guardado o no.
+//
+// Polling barato para las dos banderas de módulo (booleanos sin suscripción,
+// 3 s de latencia para un aviso es fina); el contador de pendientes sí avisa,
+// así que va por `useSyncExternalStore` y se apaga en el mismo instante en que
+// la última escritura sincroniza.
 export default function LocalModeBanner() {
-  const [active, setActive] = useState(isLocalBypassActive());
-
-  useEffect(() => {
-    const id = setInterval(() => setActive(isLocalBypassActive()), 3000);
-    return () => clearInterval(id);
-  }, []);
-
-  if (!active) return null;
+  // La prioridad y los textos viven en utils/avisoConexion.ts, con pruebas.
+  const { aviso, pendientes, refrescar } = useAvisoConexion();
+  if (aviso === 'ok') return null;
 
   const retry = () => {
     // Vuelve a intentar Firestore: la próxima operación real confirmará si hay
@@ -23,18 +41,66 @@ export default function LocalModeBanner() {
     window.location.reload();
   };
 
+  // El aviso de permisos no tiene "Reintentar" (no serviría), así que sin esto
+  // no habría forma de quitarlo: la bandera la pone el primer permission-denied
+  // de la sesión y no se limpia sola. Descartar no arregla nada — si el fallo
+  // sigue vivo, la siguiente operación denegada lo devuelve a los 3 s.
+  const descartar = () => {
+    descartarAvisoDePermisos();
+    refrescar();
+  };
+
   return (
-    <div className="fixed top-0 left-0 right-0 z-[100] bg-red-600 text-white px-4 py-2.5 flex items-center justify-center gap-3 shadow-lg">
-      <span className="material-symbols-outlined text-base">cloud_off</span>
-      <p className="font-sans text-xs font-bold">
-        Sin conexión con el servidor — los cambios NO se están guardando.
-      </p>
-      <button
-        onClick={retry}
-        className="font-mono text-[10px] font-bold uppercase bg-white/20 hover:bg-white/30 px-2.5 py-1 rounded transition-colors"
-      >
-        Reintentar
-      </button>
+    // pt: el aviso va por encima de todo (z-100) y pegado arriba, así que sin
+    // reservar la safe area su texto quedaba debajo de la barra de estado —
+    // justo el aviso que más se tiene que leer (07-2).
+    //
+    // En el flujo, ni `fixed` ni `sticky` (14-08). Con `fixed` el aviso se
+    // salía del flujo y se comía la cabecera entera: mientras hubiera aviso
+    // —sin conexión o sin permisos— desaparecían el logo, la campana, el avatar
+    // y, en coach, el botón del asistente. Justo cuando algo va mal, la persona
+    // perdía media app, y como la bandera no se limpia sola se quedaba así toda
+    // la sesión.
+    //
+    // `sticky` tampoco vale, y se probó: la cabecera de móvil también es sticky
+    // top-0, así que los dos peleaban por el mismo sitio y ganaba el aviso por
+    // z-index — el mismo solape de antes. En el flujo normal el aviso ocupa su
+    // hueco arriba, la cabecera se coloca debajo, y al bajar el aviso se va y la
+    // cabecera se queda pegada, que es lo que se espera. El aviso se ve al abrir
+    // —cuando importa— y no secuestra la navegación el resto de la sesión.
+    <div
+      role="status"
+      aria-live="polite"
+      className={`relative z-[100] text-white px-4 py-3 pt-[calc(0.75rem+var(--safe-top))] flex items-center justify-center gap-3 shadow-e1 ${
+        // Ámbar, no rojo: un dato encolado no se ha perdido, y pintar de rojo de
+        // error algo que sí está guardado enseña a la persona a ignorar el rojo.
+        aviso === 'encolado' ? 'bg-amber-600' : 'bg-red-600'
+      }`}
+    >
+      <Icon name={aviso === 'permisos' ? 'lock' : aviso === 'encolado' ? 'cloud_sync' : 'cloud_off'} size="m" />
+      <p className="font-sans text-label font-bold">{textoDelAviso(aviso, pendientes)}</p>
+      {/* Reintentar solo tiene sentido con un fallo de red. Ante uno de permisos
+          recargar da exactamente el mismo resultado, y ofrecerlo solo consigue
+          que la persona lo pulse cinco veces antes de rendirse. Y ante uno
+          encolado no hay nada que reintentar: recargar a media sincronización es
+          justo lo que no queremos que haga. */}
+      {aviso === 'red' && (
+        <button
+          onClick={retry}
+          className="font-sans text-caption font-bold uppercase bg-white/20 hover:bg-white/30 px-3 py-1 rounded-control transition-colors"
+        >
+          Reintentar
+        </button>
+      )}
+      {aviso === 'permisos' && (
+        <button
+          onClick={descartar}
+          aria-label="Descartar el aviso"
+          className="shrink-0 rounded-control p-1 transition-colors hover:bg-white/20"
+        >
+          <Icon name="close" size="s" />
+        </button>
+      )}
     </div>
   );
 }

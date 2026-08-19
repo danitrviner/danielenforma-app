@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0a0a0a;font-family:'Plus Jakarta Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#FFC72C;text-decoration:none}a:hover{color:#ffd75e}
+@keyframes fu{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes sheetIn{from{opacity:0;transform:translateY(26px) scale(.985)}to{opacity:1;transform:none}}
+@keyframes g1{0%{transform:scale(.72);opacity:0}22%{opacity:1}55%{transform:scale(1);opacity:.95}100%{transform:scale(1.5);opacity:0}}
+@keyframes g2{0%{transform:scale(.72);opacity:0}22%{opacity:1}55%{transform:scale(1);opacity:.95}100%{transform:scale(1.5);opacity:0}}
+@keyframes spotIn{from{opacity:0;transform:scale(1.06)}to{opacity:1;transform:none}}
+@keyframes bar{from{width:0}}
+@keyframes beat{0%,100%{transform:scale(1)}50%{transform:scale(1.16)}}
+@keyframes sweep{0%{background-position:-180px 0}100%{background-position:280px 0}}
+@keyframes seal{0%{transform:scale(.62);opacity:0}60%{transform:scale(1.07);opacity:1}100%{transform:scale(1)}}
+@keyframes ringDraw{from{stroke-dashoffset:408}to{stroke-dashoffset:96}}
+.tsc{overflow-y:auto;scrollbar-width:none}
+.tsc::-webkit-scrollbar{display:none}
+</style>
+</helmet>
+
+<section style="padding:44px 48px 70px;background:#0a0a0a">
+<div style="display:flex;align-items:baseline;gap:14px;margin:0 0 6px">
+<span style="font:600 10.5px/1 'IBM Plex Mono',monospace;padding:4px 7px;background:#FFC72C;color:#050505;border-radius:5px">1a</span>
+<span style="font:900 34px/1 Archivo,sans-serif;letter-spacing:-.02em;color:#F5F5F4;text-transform:uppercase">Bienvenida guiada</span>
+<span style="font:500 11px/1 'IBM Plex Mono',monospace;letter-spacing:.14em;color:#FFC72C;text-transform:uppercase">Fase 3 · Experiencia</span>
+</div>
+<p style="max-width:700px;margin:0 0 34px;font:400 13.5px/1.65 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.5);text-wrap:pretty">Arranca cuando Dani publica el plan y el atleta sale de la pantalla de espera. Diecisiete pasos: Dani habla en primera persona, cada paso ilumina la zona real de la app con un foco recortado y un gesto fantasma, y en los dos momentos que más se preguntan —marcar una serie y registrar una ingesta— el atleta tiene que tocar de verdad para poder avanzar. La primera vez se ve entero. El marco de la izquierda es jugable.</p>
+
+<div style="display:flex;flex-wrap:wrap;gap:34px;align-items:flex-start">
+
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;align-items:baseline;gap:9px"><span style="font:600 10.5px/1 'IBM Plex Mono',monospace;padding:4px 7px;background:#FFC72C;color:#050505;border-radius:5px">01</span><span style="font:600 12px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.72)">Flujo completo · jugable</span></div>
+
+<div data-frame="tour" ref="{{ frameRef }}" style="width:390px;height:800px;background:#050505;border:1px solid rgba(255,255,255,.08);border-radius:34px;overflow:hidden;position:relative;box-shadow:0 30px 70px -30px rgba(0,0,0,.9)">
+
+  <div style="height:46px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 22px 6px;font:500 11px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.4)"><span>9:41</span><span>EN FORMA</span></div>
+
+  <div class="tsc" data-scroller="1" ref="{{ scRef }}" style="position:absolute;top:46px;left:0;right:0;bottom:0;padding-bottom:400px">
+  <!-- PANTALLA DE BIENVENIDA -->
+  <sc-if value="{{ isWelcome }}" hint-placeholder-val="{{ true }}">
+  <div style="padding:22px 26px 0;animation:fu .5s cubic-bezier(.2,.9,.2,1) both">
+    <div style="width:62px;height:62px;border-radius:21px;background:rgba(255,199,44,.14);border:1px solid rgba(255,199,44,.4);display:flex;align-items:center;justify-content:center;font:900 25px/1 Archivo,sans-serif;color:#FFC72C">D</div>
+    <div style="margin-top:18px;font:600 10px/1 'IBM Plex Mono',monospace;letter-spacing:.16em;color:#FFC72C;text-transform:uppercase">Tu plan está listo</div>
+    <div style="margin-top:12px;font:900 36px/1.02 Archivo,sans-serif;letter-spacing:-.025em;color:#F5F5F4;text-transform:uppercase">Ya lo tienes<br>todo montado</div>
+    <p style="margin:14px 0 0;font:400 14px/1.55 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.58);text-wrap:pretty">Soy Dani. Te he montado el entreno, el cardio y la dieta con lo que me contaste. Déjame enseñarte la app en dos minutos.</p>
+    <div style="margin-top:20px;display:flex;gap:8px">
+      <div style="flex:1;padding:12px 11px;background:#0B0B0B;border:1px solid rgba(255,255,255,.07);border-radius:15px"><div style="font:500 10px/1 'IBM Plex Mono',monospace;color:#FFC72C">01</div><div style="margin-top:8px;font:600 12px/1.25 'Plus Jakarta Sans',sans-serif;color:#F5F5F4">Qué hago<br>yo por ti</div></div>
+      <div style="flex:1;padding:12px 11px;background:#0B0B0B;border:1px solid rgba(255,255,255,.07);border-radius:15px"><div style="font:500 10px/1 'IBM Plex Mono',monospace;color:#FFC72C">02</div><div style="margin-top:8px;font:600 12px/1.25 'Plus Jakarta Sans',sans-serif;color:#F5F5F4">Qué haces<br>tú</div></div>
+      <div style="flex:1;padding:12px 11px;background:#0B0B0B;border:1px solid rgba(255,255,255,.07);border-radius:15px"><div style="font:500 10px/1 'IBM Plex Mono',monospace;color:#FFC72C">03</div><div style="margin-top:8px;font:600 12px/1.25 'Plus Jakarta Sans',sans-serif;color:#F5F5F4">Dónde está<br>cada cosa</div></div>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- HOY / MAPA -->
+  <sc-if value="{{ isHoy }}" hint-placeholder-val="{{ false }}">
+  <div style="padding:14px 22px 0">
+    <div style="font:600 10px/1 'IBM Plex Mono',monospace;letter-spacing:.16em;color:rgba(245,245,244,.34);text-transform:uppercase">Lunes · Semana 1</div>
+    <div style="margin-top:10px;font:900 34px/1 Archivo,sans-serif;letter-spacing:-.02em;color:#F5F5F4;text-transform:uppercase">Empuje A</div>
+    <div style="margin-top:12px;display:flex;gap:7px">
+      <span style="font:500 11px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.55);padding:7px 10px;background:rgba(255,255,255,.05);border-radius:11px">5 EJERCICIOS</span>
+      <span style="font:500 11px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.55);padding:7px 10px;background:rgba(255,255,255,.05);border-radius:11px">48 MIN</span>
+      <span style="font:500 11px/1 'IBM Plex Mono',monospace;color:#FFC72C;padding:7px 10px;background:rgba(255,199,44,.14);border-radius:11px">+ CARDIO</span>
+    </div>
+    <div style="margin-top:18px;display:flex;flex-direction:column;gap:9px">
+      <div style="display:flex;gap:12px;align-items:center;padding:12px;background:#0B0B0B;border:1px solid rgba(255,255,255,.07);border-radius:18px"><div style="width:56px;height:56px;border-radius:13px;background:#141414;flex:none"></div><div style="flex:1"><div style="font:600 14px/1 'Plus Jakarta Sans',sans-serif;color:#F5F5F4">Press banca con mancuernas</div><div style="margin-top:6px;font:500 11px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.42)">4 × 8-10 · RIR 2</div></div></div>
+      <div style="display:flex;gap:12px;align-items:center;padding:12px;background:#0B0B0B;border:1px solid rgba(255,255,255,.07);border-radius:18px"><div style="width:56px;height:56px;border-radius:13px;background:#141414;flex:none"></div><div style="flex:1"><div style="font:600 14px/1 'Plus Jakarta Sans',sans-serif;color:#F5F5F4">Press militar en máquina</div><div style="margin-top:6px;font:500 11px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.42)">3 × 10 · RIR 3</div></div></div>
+      <div style="display:flex;gap:12px;align-items:center;padding:12px;background:#0B0B0B;border:1px solid rgba(255,255,255,.07);border-radius:18px"><div style="width:56px;height:56px;border-radius:13px;background:#141414;flex:none"></div><div style="flex:1"><div style="font:600 14px/1 'Plus Jakarta Sans',sans-serif;color:#F5F5F4">Fondos en paralelas</div><div style="margin-top:6px;font:500 11px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.42)">3 × máximas · RIR 0</div></div></div>
+    </div>
+    <div data-spot="hoy-cta" style="margin-top:16px;height:56px;border-radius:16px;background:#FFC72C;display:flex;align-items:center;justify-content:center;font:700 15.5px/1 'Plus Jakarta Sans',sans-serif;color:#050505">Empezar sesión</div>
+  </div>
+  </sc-if>
+
+  <!-- REGISTRO DE SERIES -->
+  <sc-if value="{{ isSerie }}" hint-placeholder-val="{{ false }}">
+  <div style="padding:14px 22px 0">
+    <div style="display:flex;gap:5px;margin-bottom:16px">
+      <div style="flex:1;height:4px;border-radius:2px;background:rgba(255,199,44,.45)"></div>
+      <div style="flex:1;height:4px;border-radius:2px;background:#FFC72C"></div>
+      <div style="flex:1;height:4px;border-radius:2px;background:#1c1c1c"></div>
+      <div style="flex:1;height:4px;border-radius:2px;background:#1c1c1c"></div>
+      <div style="flex:1;height:4px;border-radius:2px;background:#1c1c1c"></div>
+    </div>
+    <div style="font:900 26px/1.06 Archivo,sans-serif;letter-spacing:-.02em;color:#F5F5F4;text-transform:uppercase">Press banca<br>con mancuernas</div>
+    <div style="margin-top:12px;display:flex;gap:7px">
+      <span style="font:500 11px/1 'IBM Plex Mono',monospace;color:#FFC72C;padding:7px 10px;background:rgba(255,199,44,.14);border-radius:11px">4 × 8-10</span>
+      <span style="font:500 11px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.55);padding:7px 10px;background:rgba(255,255,255,.05);border-radius:11px">RIR 2</span>
+      <span style="font:500 11px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.55);padding:7px 10px;background:rgba(255,255,255,.05);border-radius:11px">DESC 90&quot;</span>
+    </div>
+    <div data-spot="serie-tabla" style="margin-top:18px;background:#0B0B0B;border:1px solid rgba(255,255,255,.07);border-radius:18px;overflow:hidden">
+      <div style="display:flex;align-items:center;gap:10px;padding:11px 14px;font:600 10px/1 'IBM Plex Mono',monospace;letter-spacing:.14em;color:rgba(245,245,244,.34);text-transform:uppercase"><span style="width:26px">Nº</span><span style="flex:1">Reps</span><span style="flex:1">Kg</span><span style="flex:1">RIR</span><span style="width:26px"></span></div>
+      <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:rgba(255,199,44,.06);border-top:1px solid rgba(255,255,255,.05)"><span style="width:26px;font:500 12.5px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.5)">01</span><span style="flex:1;font:600 14px/1 'Plus Jakarta Sans',sans-serif;color:#F5F5F4">10</span><span style="flex:1;font:600 14px/1 'Plus Jakarta Sans',sans-serif;color:#F5F5F4">22,5</span><span style="flex:1;font:600 14px/1 'Plus Jakarta Sans',sans-serif;color:#F5F5F4">3</span><span style="width:26px;height:26px;border-radius:8px;background:#FFC72C;display:flex;align-items:center;justify-content:center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#050505" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></span></div>
+      <div data-spot="serie2" onClick="{{ marcarSerie }}" style="{{ fila2 }}"><span style="{{ fila2Num }}">02</span><span style="flex:1;font:600 14px/1 'Plus Jakarta Sans',sans-serif;color:#F5F5F4">{{ reps }}</span><span style="flex:1;font:600 14px/1 'Plus Jakarta Sans',sans-serif;color:#F5F5F4">{{ kgTxt }}</span><span style="flex:1;font:600 14px/1 'Plus Jakarta Sans',sans-serif;color:#F5F5F4">{{ rir }}</span><span style="{{ fila2Box }}"><sc-if value="{{ serieHecha }}" hint-placeholder-val="{{ false }}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#050505" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></sc-if></span></div>
+      <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-top:1px solid rgba(255,255,255,.05)"><span style="width:26px;font:500 12.5px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.5)">03</span><span style="flex:1;font:600 14px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.3)">—</span><span style="flex:1;font:600 14px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.3)">—</span><span style="flex:1;font:600 14px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.3)">—</span><span style="width:26px;height:26px;border-radius:8px;border:1.5px solid rgba(255,255,255,.14)"></span></div>
+      <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-top:1px solid rgba(255,255,255,.05)"><span style="width:26px;font:500 12.5px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.5)">04</span><span style="flex:1;font:600 14px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.3)">—</span><span style="flex:1;font:600 14px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.3)">—</span><span style="flex:1;font:600 14px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.3)">—</span><span style="width:26px;height:26px;border-radius:8px;border:1.5px solid rgba(255,255,255,.14)"></span></div>
+    </div>
+    <div data-spot="editor" style="margin-top:12px;background:#0B0B0B;border:1px solid rgba(255,255,255,.07);border-radius:18px;padding:13px 15px 15px">
+      <div style="font:600 9.5px/1 'IBM Plex Mono',monospace;letter-spacing:.14em;color:rgba(245,245,244,.34)">SERIE 02 · APUNTA LO QUE HAS HECHO</div>
+      <div style="margin-top:12px;display:flex;gap:9px">
+        <div style="flex:1"><div style="font:600 9.5px/1 'IBM Plex Mono',monospace;letter-spacing:.12em;color:rgba(245,245,244,.34);margin-bottom:7px">REPS</div><div style="display:flex;align-items:center;background:#141414;border-radius:12px;height:42px"><div onClick="{{ repsMenos }}" style="{{ stepBtn }}">−</div><div style="flex:1;text-align:center;font:600 15px/1 'Plus Jakarta Sans',sans-serif;color:#F5F5F4">{{ reps }}</div><div onClick="{{ repsMas }}" style="{{ stepBtn }}">+</div></div></div>
+        <div style="flex:1.2"><div style="font:600 9.5px/1 'IBM Plex Mono',monospace;letter-spacing:.12em;color:rgba(245,245,244,.34);margin-bottom:7px">KG</div><div style="display:flex;align-items:center;background:#141414;border:1px solid rgba(255,199,44,.35);border-radius:12px;height:42px"><div onClick="{{ kgMenos }}" style="{{ stepBtn }}">−</div><div style="flex:1;text-align:center;font:600 15px/1 'Plus Jakarta Sans',sans-serif;color:#F5F5F4">{{ kgTxt }}</div><div onClick="{{ kgMas }}" style="{{ stepBtnOro }}">+</div></div></div>
+        <div style="flex:1"><div style="font:600 9.5px/1 'IBM Plex Mono',monospace;letter-spacing:.12em;color:rgba(245,245,244,.34);margin-bottom:7px">RIR</div><div style="display:flex;align-items:center;background:#141414;border-radius:12px;height:42px"><div onClick="{{ rirMenos }}" style="{{ stepBtn }}">−</div><div style="flex:1;text-align:center;font:600 15px/1 'Plus Jakarta Sans',sans-serif;color:#F5F5F4">{{ rir }}</div><div onClick="{{ rirMas }}" style="{{ stepBtn }}">+</div></div></div>
+      </div>
+    </div>
+    <sc-if value="{{ serieHecha }}" hint-placeholder-val="{{ false }}">
+      <div style="margin-top:12px;display:flex;align-items:center;gap:10px;padding:11px 16px;background:rgba(255,199,44,.14);border:1px solid rgba(255,199,44,.4);border-radius:14px;animation:fu .34s cubic-bezier(.2,.9,.2,1) both"><span style="width:7px;height:7px;border-radius:4px;background:#FFC72C;animation:beat 1s ease-in-out infinite"></span><span style="flex:1;font:500 12.5px/1 'IBM Plex Mono',monospace;color:#FFC72C">DESCANSO 01:24</span><span style="font:600 12.5px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.55)">Saltar</span></div>
+    </sc-if>
+  </div>
+  </sc-if>
+
+  <!-- CARDIO -->
+  <sc-if value="{{ isCardio }}" hint-placeholder-val="{{ false }}">
+  <div style="padding:14px 22px 0">
+    <div style="display:flex;align-items:center;gap:8px"><span style="font:500 11px/1 'IBM Plex Mono',monospace;color:#FFC72C;padding:7px 10px;background:rgba(255,199,44,.14);border-radius:11px">LISS</span><span style="font:500 11px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.42)">2 DE 3 ESTA SEMANA</span></div>
+    <div style="margin-top:14px;font:900 30px/1.04 Archivo,sans-serif;letter-spacing:-.02em;color:#F5F5F4;text-transform:uppercase">30 min suaves<br>después de pesas</div>
+    <div data-spot="cardio-head" style="margin-top:16px;display:flex;gap:9px">
+      <div style="flex:1;padding:13px;background:#0B0B0B;border:1px solid rgba(255,255,255,.07);border-radius:15px"><div style="font:600 9.5px/1 'IBM Plex Mono',monospace;letter-spacing:.14em;color:rgba(245,245,244,.34)">DURACIÓN</div><div style="margin-top:8px;font:500 17px/1 'IBM Plex Mono',monospace;color:#F5F5F4">30&#39;</div></div>
+      <div style="flex:1;padding:13px;background:#0B0B0B;border:1px solid rgba(255,255,255,.07);border-radius:15px"><div style="font:600 9.5px/1 'IBM Plex Mono',monospace;letter-spacing:.14em;color:rgba(245,245,244,.34)">ZONA FC</div><div style="margin-top:8px;font:500 17px/1 'IBM Plex Mono',monospace;color:#F5F5F4">Z2</div></div>
+      <div style="flex:1;padding:13px;background:#0B0B0B;border:1px solid rgba(255,255,255,.07);border-radius:15px"><div style="font:600 9.5px/1 'IBM Plex Mono',monospace;letter-spacing:.14em;color:rgba(245,245,244,.34)">ESFUERZO</div><div style="margin-top:8px;font:500 17px/1 'IBM Plex Mono',monospace;color:#F5F5F4">4-5</div></div>
+    </div>
+    <div style="margin-top:12px;padding:14px 16px;background:rgba(255,199,44,.06);border:1px solid rgba(255,199,44,.2);border-radius:16px;font:400 12.5px/1.6 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.66)">«Cinta a 5,5 y hablando sin ahogarte. Si un día no te da la vida, muévelo a mañana y no pasa nada.» <span style="color:#FFC72C">— D.</span></div>
+    <div style="margin-top:14px;display:flex;gap:9px">
+      <div style="flex:1;padding:14px;background:#0B0B0B;border:1px solid rgba(255,255,255,.07);border-radius:16px"><div style="font:600 9.5px/1 'IBM Plex Mono',monospace;letter-spacing:.14em;color:rgba(245,245,244,.34)">PASOS HOY</div><div style="margin-top:9px;font:900 30px/1 Archivo,sans-serif;color:#F5F5F4">7.240</div><div style="margin-top:9px;height:6px;border-radius:4px;background:#1a1a1a;overflow:hidden"><div style="width:72%;height:100%;background:#FFC72C;animation:bar .45s cubic-bezier(.2,.9,.2,1) both"></div></div></div>
+      <div style="flex:1;padding:14px;background:#0B0B0B;border:1px solid rgba(255,255,255,.07);border-radius:16px"><div style="font:600 9.5px/1 'IBM Plex Mono',monospace;letter-spacing:.14em;color:rgba(245,245,244,.34)">MIN SEMANA</div><div style="margin-top:9px;font:900 30px/1 Archivo,sans-serif;color:#F5F5F4">60<span style="font:500 13px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.4)">/90</span></div><div style="margin-top:9px;display:flex;gap:4px;align-items:flex-end;height:18px"><div style="flex:1;height:14px;background:#FFC72C;border-radius:2px"></div><div style="flex:1;height:6px;background:#1c1c1c;border-radius:2px"></div><div style="flex:1;height:16px;background:#FFC72C;border-radius:2px"></div><div style="flex:1;height:6px;background:#1c1c1c;border-radius:2px"></div><div style="flex:1;height:6px;background:#1c1c1c;border-radius:2px"></div><div style="flex:1;height:6px;background:#1c1c1c;border-radius:2px"></div><div style="flex:1;height:6px;background:#1c1c1c;border-radius:2px"></div></div></div>
+    </div>
+    <div style="margin-top:14px;display:flex;gap:9px"><div style="flex:1;height:52px;border-radius:15px;background:#FFC72C;display:flex;align-items:center;justify-content:center;font:700 14.5px/1 'Plus Jakarta Sans',sans-serif;color:#050505">Empezar cardio</div><div style="width:130px;height:52px;border-radius:15px;border:1px solid rgba(255,199,44,.42);display:flex;align-items:center;justify-content:center;font:600 13.5px/1 'Plus Jakarta Sans',sans-serif;color:#FFC72C">Mover a mañana</div></div>
+  </div>
+  </sc-if>
+
+  <!-- RUTINAS -->
+  <sc-if value="{{ isRutinas }}" hint-placeholder-val="{{ false }}">
+  <div style="padding:14px 22px 0">
+    <div style="font:900 30px/1 Archivo,sans-serif;letter-spacing:-.02em;color:#F5F5F4;text-transform:uppercase">Mi rutina</div>
+    <div style="margin-top:9px;font:500 11.5px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.42)">BLOQUE 1 · 4 SEMANAS · 4 DÍAS</div>
+    <div style="margin-top:18px;display:flex;flex-direction:column;gap:9px">
+      <div data-spot="rutina-hoy" style="padding:15px 16px;background:rgba(255,199,44,.06);border:1px solid rgba(255,199,44,.3);border-radius:18px"><div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font:600 15px/1 'Plus Jakarta Sans',sans-serif;color:#F5F5F4">Día 1 · Empuje A</span><span style="font:500 10.5px/1 'IBM Plex Mono',monospace;color:#FFC72C">HOY</span></div><div style="margin-top:8px;font:500 11.5px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.42)">5 EJERCICIOS · 48 MIN</div></div>
+      <div style="padding:15px 16px;background:#0B0B0B;border:1px solid rgba(255,255,255,.07);border-radius:18px"><div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font:600 15px/1 'Plus Jakarta Sans',sans-serif;color:#F5F5F4">Día 2 · Tirón A</span><span style="font:500 10.5px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.3)">MIÉ</span></div><div style="margin-top:8px;font:500 11.5px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.42)">6 EJERCICIOS · 52 MIN</div></div>
+      <div style="padding:15px 16px;background:#0B0B0B;border:1px solid rgba(255,255,255,.07);border-radius:18px"><div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font:600 15px/1 'Plus Jakarta Sans',sans-serif;color:#F5F5F4">Día 3 · Pierna</span><span style="font:500 10.5px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.3)">VIE</span></div><div style="margin-top:8px;font:500 11.5px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.42)">5 EJERCICIOS · 50 MIN</div></div>
+      <div style="padding:15px 16px;background:#0B0B0B;border:1px solid rgba(255,255,255,.07);border-radius:18px"><div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font:600 15px/1 'Plus Jakarta Sans',sans-serif;color:#F5F5F4">Día 4 · Full body</span><span style="font:500 10.5px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.3)">SÁB</span></div><div style="margin-top:8px;font:500 11.5px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.42)">5 EJERCICIOS · 45 MIN</div></div>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- BIBLIOTECA -->
+  <sc-if value="{{ isBiblio }}" hint-placeholder-val="{{ false }}">
+  <div style="padding:14px 22px 0">
+    <div style="font:900 30px/1 Archivo,sans-serif;letter-spacing:-.02em;color:#F5F5F4;text-transform:uppercase">Ejercicios</div>
+    <div style="margin-top:14px;display:flex;gap:9px"><div style="flex:1;height:48px;border-radius:15px;background:#0B0B0B;border:1px solid rgba(255,255,255,.07);display:flex;align-items:center;padding:0 14px;font:400 13.5px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.34)">Buscar ejercicio</div><div style="width:48px;height:48px;border-radius:14px;background:rgba(255,199,44,.14);border:1px solid rgba(255,199,44,.4);display:flex;align-items:center;justify-content:center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFC72C" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M7 12h10M10 17h4"/></svg></div></div>
+    <div style="margin-top:12px;display:flex;gap:7px"><span style="font:500 11px/1 'IBM Plex Mono',monospace;color:#FFC72C;padding:8px 11px;background:rgba(255,199,44,.16);border:1px solid rgba(255,199,44,.45);border-radius:11px">PECHO</span><span style="font:500 11px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.5);padding:8px 11px;background:rgba(255,255,255,.05);border-radius:11px">ESPALDA</span><span style="font:500 11px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.5);padding:8px 11px;background:rgba(255,255,255,.05);border-radius:11px">PIERNA</span></div>
+    <div style="margin-top:14px;display:flex;flex-direction:column;gap:9px">
+      <div data-spot="biblio-1" style="display:flex;gap:12px;align-items:center;padding:11px;background:#0B0B0B;border:1px solid rgba(255,255,255,.07);border-radius:17px"><div style="width:60px;height:60px;border-radius:13px;background:#141414;flex:none"></div><div style="flex:1"><div style="font:600 13.5px/1 'Plus Jakarta Sans',sans-serif;color:#F5F5F4">Press banca con mancuernas</div><div style="margin-top:7px;display:flex;gap:6px"><span style="font:500 10px/1 'IBM Plex Mono',monospace;color:#FFC72C;padding:5px 7px;background:rgba(255,199,44,.13);border-radius:7px">PECHO</span><span style="font:500 10px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.45);padding:5px 7px;background:rgba(255,255,255,.05);border-radius:7px">MANCUERNAS</span></div></div></div>
+      <div style="display:flex;gap:12px;align-items:center;padding:11px;background:#0B0B0B;border:1px solid rgba(255,255,255,.07);border-radius:17px"><div style="width:60px;height:60px;border-radius:13px;background:#141414;flex:none;display:flex;align-items:flex-end;justify-content:center;padding-bottom:6px"><span style="font:500 7px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.4)">SIN VÍDEO</span></div><div style="flex:1"><div style="font:600 13.5px/1 'Plus Jakarta Sans',sans-serif;color:#F5F5F4">Aperturas en polea baja</div><div style="margin-top:7px;display:flex;gap:6px"><span style="font:500 10px/1 'IBM Plex Mono',monospace;color:#FFC72C;padding:5px 7px;background:rgba(255,199,44,.13);border-radius:7px">PECHO</span><span style="font:500 10px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.45);padding:5px 7px;background:rgba(255,255,255,.05);border-radius:7px">POLEA</span></div></div></div>
+      <div style="display:flex;gap:12px;align-items:center;padding:11px;background:#0B0B0B;border:1px solid rgba(255,255,255,.07);border-radius:17px"><div style="width:60px;height:60px;border-radius:13px;background:#141414;flex:none"></div><div style="flex:1"><div style="font:600 13.5px/1 'Plus Jakarta Sans',sans-serif;color:#F5F5F4">Fondos en paralelas</div><div style="margin-top:7px;display:flex;gap:6px"><span style="font:500 10px/1 'IBM Plex Mono',monospace;color:#FFC72C;padding:5px 7px;background:rgba(255,199,44,.13);border-radius:7px">PECHO</span><span style="font:500 10px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.45);padding:5px 7px;background:rgba(255,255,255,.05);border-radius:7px">PESO CORPORAL</span></div></div></div>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- NUTRICIÓN -->
+  <sc-if value="{{ isNutri }}" hint-placeholder-val="{{ false }}">
+  <div style="padding:14px 22px 0">
+    <div data-spot="nutri-head"><div style="display:flex;align-items:flex-end;justify-content:space-between">
+      <div><div style="font:600 10px/1 'IBM Plex Mono',monospace;letter-spacing:.16em;color:rgba(245,245,244,.34);text-transform:uppercase">Te quedan</div><div style="{{ quedanStyle }}">{{ quedan }}</div><div style="font:500 11.5px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.42);margin-top:6px">INTERCAMBIOS</div></div>
+      <div style="text-align:right;font:500 12.5px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.42)">≈ {{ kcal }} KCAL</div>
+    </div>
+    <div style="margin-top:18px;display:flex;flex-direction:column;gap:11px">
+      <div><div style="display:flex;justify-content:space-between;font:600 9.5px/1 'IBM Plex Mono',monospace;letter-spacing:.14em;color:rgba(245,245,244,.38);margin-bottom:6px"><span>HIDRATOS</span><span>{{ hcTxt }}</span></div><div style="height:6px;border-radius:4px;background:#1a1a1a;overflow:hidden"><div style="{{ hcBar }}"></div></div></div>
+      <div><div style="display:flex;justify-content:space-between;font:600 9.5px/1 'IBM Plex Mono',monospace;letter-spacing:.14em;color:rgba(245,245,244,.38);margin-bottom:6px"><span>PROTEÍNA</span><span>{{ prTxt }}</span></div><div style="height:6px;border-radius:4px;background:#1a1a1a;overflow:hidden"><div style="{{ prBar }}"></div></div></div>
+      <div><div style="display:flex;justify-content:space-between;font:600 9.5px/1 'IBM Plex Mono',monospace;letter-spacing:.14em;color:rgba(245,245,244,.38);margin-bottom:6px"><span>GRASA</span><span>{{ grTxt }}</span></div><div style="height:6px;border-radius:4px;background:#1a1a1a;overflow:hidden"><div style="{{ grBar }}"></div></div></div>
+    </div>
+    </div>
+    <div style="margin-top:20px;background:#0B0B0B;border:1px solid rgba(255,255,255,.07);border-radius:18px;overflow:hidden">
+      <div style="display:flex;align-items:center;gap:12px;padding:14px 15px;background:rgba(255,199,44,.055)"><div style="width:26px;height:26px;border-radius:8px;background:#FFC72C;display:flex;align-items:center;justify-content:center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#050505" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></div><div style="flex:1"><div style="font:600 14px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.5)">Desayuno</div><div style="margin-top:6px;font:500 10.5px/1 'IBM Plex Mono',monospace;color:#FFC72C">3 HC · 2 PR · 1 GR</div></div></div>
+      <div data-spot="ingesta-row" onClick="{{ registrarIngesta }}" style="{{ ingestaRow }}"><div style="{{ ingestaBox }}"><sc-if value="{{ ingestaHecha }}" hint-placeholder-val="{{ false }}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#050505" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></sc-if></div><div style="flex:1"><div style="{{ ingestaTitle }}">Media mañana</div><div style="{{ ingestaChips }}">2 HC · 1 PR</div></div></div>
+      <div style="display:flex;align-items:center;gap:12px;padding:14px 15px;border-top:1px solid rgba(255,255,255,.05)"><div style="width:26px;height:26px;border-radius:8px;border:1.5px solid rgba(255,255,255,.14)"></div><div style="flex:1"><div style="font:600 14px/1 'Plus Jakarta Sans',sans-serif;color:#F5F5F4">Comida</div><div style="margin-top:6px;font:500 10.5px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.42)">4 HC · 3 PR · 2 GR</div></div></div>
+      <div style="display:flex;align-items:center;gap:12px;padding:14px 15px;border-top:1px solid rgba(255,255,255,.05)"><div style="width:26px;height:26px;border-radius:8px;border:1.5px solid rgba(255,255,255,.14)"></div><div style="flex:1"><div style="font:600 14px/1 'Plus Jakarta Sans',sans-serif;color:#F5F5F4">Merienda</div><div style="margin-top:6px;font:500 10.5px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.42)">2 HC · 1 PR</div></div></div>
+      <div style="display:flex;align-items:center;gap:12px;padding:14px 15px;border-top:1px solid rgba(255,255,255,.05)"><div style="width:26px;height:26px;border-radius:8px;border:1.5px solid rgba(255,255,255,.14)"></div><div style="flex:1"><div style="font:600 14px/1 'Plus Jakarta Sans',sans-serif;color:#F5F5F4">Cena</div><div style="margin-top:6px;font:500 10.5px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.42)">3 HC · 3 PR · 1 GR</div></div></div>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- DETALLE DE INGESTA -->
+  <sc-if value="{{ isIngesta }}" hint-placeholder-val="{{ false }}">
+  <div style="padding:14px 22px 0">
+    <div style="font:600 10px/1 'IBM Plex Mono',monospace;letter-spacing:.16em;color:rgba(245,245,244,.34);text-transform:uppercase">Ingesta · 14:00</div>
+    <div style="margin-top:10px;font:900 30px/1 Archivo,sans-serif;letter-spacing:-.02em;color:#F5F5F4;text-transform:uppercase">Comida</div>
+    <div style="margin-top:11px;display:flex;gap:7px"><span style="font:500 11px/1 'IBM Plex Mono',monospace;color:#FFC72C;padding:7px 10px;background:rgba(255,199,44,.14);border-radius:11px">4 HC · 3 PR · 2 GR</span><span style="font:500 11px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.5);padding:7px 10px;background:rgba(255,255,255,.05);border-radius:11px">≈ 620 KCAL</span></div>
+    <div style="margin-top:16px;display:flex;flex-direction:column;gap:9px">
+      <div data-spot="alim-1" style="display:flex;gap:12px;align-items:center;padding:13px;background:#0B0B0B;border:1px solid rgba(255,255,255,.07);border-radius:17px"><div style="width:44px;height:44px;border-radius:12px;background:rgba(255,199,44,.12);display:flex;align-items:center;justify-content:center;font:600 9px/1 'IBM Plex Mono',monospace;color:#FFC72C;flex:none">PROT</div><div style="flex:1"><div style="font:600 13.5px/1 'Plus Jakarta Sans',sans-serif;color:#F5F5F4">Pollo <span style="font:500 13px/1 'IBM Plex Mono',monospace;color:#FFC72C">150 g</span></div><div style="margin-top:6px;font:400 11.5px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.42)">3 intercambios de proteína · 1 pechuga</div></div><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="rgba(255,199,44,.65)" stroke-width="2" stroke-linecap="round"><path d="M7 8h11l-3-3M17 16H6l3 3"/></svg></div>
+      <div style="display:flex;gap:12px;align-items:center;padding:13px;background:#0B0B0B;border:1px solid rgba(255,255,255,.07);border-radius:17px"><div style="width:44px;height:44px;border-radius:12px;background:rgba(255,199,44,.12);display:flex;align-items:center;justify-content:center;font:600 9px/1 'IBM Plex Mono',monospace;color:#FFC72C;flex:none">HC</div><div style="flex:1"><div style="font:600 13.5px/1 'Plus Jakarta Sans',sans-serif;color:#F5F5F4">Arroz <span style="font:500 13px/1 'IBM Plex Mono',monospace;color:#FFC72C">80 g</span></div><div style="margin-top:6px;font:400 11.5px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.42)">4 intercambios de hidratos · 1 taza</div></div><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="rgba(255,199,44,.65)" stroke-width="2" stroke-linecap="round"><path d="M7 8h11l-3-3M17 16H6l3 3"/></svg></div>
+      <div style="display:flex;gap:12px;align-items:center;padding:13px;background:#0B0B0B;border:1px solid rgba(255,255,255,.07);border-radius:17px"><div style="width:44px;height:44px;border-radius:12px;background:rgba(255,199,44,.12);display:flex;align-items:center;justify-content:center;font:600 9px/1 'IBM Plex Mono',monospace;color:#FFC72C;flex:none">GRASA</div><div style="flex:1"><div style="font:600 13.5px/1 'Plus Jakarta Sans',sans-serif;color:#F5F5F4">Aceite de oliva <span style="font:500 13px/1 'IBM Plex Mono',monospace;color:#FFC72C">20 g</span></div><div style="margin-top:6px;font:400 11.5px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.42)">2 intercambios de grasa · 2 cucharadas</div></div><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="rgba(255,199,44,.65)" stroke-width="2" stroke-linecap="round"><path d="M7 8h11l-3-3M17 16H6l3 3"/></svg></div>
+      <div style="display:flex;gap:12px;align-items:center;padding:13px;border:1px dashed rgba(255,199,44,.35);border-radius:17px"><div style="width:44px;height:44px;border-radius:12px;background:rgba(255,199,44,.14);display:flex;align-items:center;justify-content:center;flex:none"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFC72C" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></div><div style="font:600 13.5px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.7)">Añadir alimento del banco</div></div>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- RECETAS -->
+  <sc-if value="{{ isRecetas }}" hint-placeholder-val="{{ false }}">
+  <div style="padding:14px 22px 0">
+    <div style="font:900 30px/1 Archivo,sans-serif;letter-spacing:-.02em;color:#F5F5F4;text-transform:uppercase">Recetas</div>
+    <div style="margin-top:13px;height:48px;border-radius:15px;background:#0B0B0B;border:1px solid rgba(255,255,255,.07);display:flex;align-items:center;padding:0 14px;font:400 13.5px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.34)">Buscar entre 8.850 recetas</div>
+    <div style="margin-top:11px;display:flex;gap:7px"><span data-spot="recetas-chip" style="font:500 11px/1 'IBM Plex Mono',monospace;color:#FFC72C;padding:8px 11px;background:rgba(255,199,44,.16);border:1px solid rgba(255,199,44,.45);border-radius:11px">CABE EN MI PRESUPUESTO</span><span style="font:500 11px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.5);padding:8px 11px;background:rgba(255,255,255,.05);border-radius:11px">RÁPIDAS</span></div>
+    <div style="margin-top:14px;display:flex;flex-direction:column;gap:11px">
+      <div style="background:#0B0B0B;border:1px solid rgba(255,255,255,.07);border-radius:19px;overflow:hidden"><div style="height:96px;background:#141414"></div><div style="padding:13px 15px"><div style="font:600 14.5px/1 'Plus Jakarta Sans',sans-serif;color:#F5F5F4">Salteado de pollo y arroz</div><div style="margin-top:9px;display:flex;justify-content:space-between;align-items:center"><span style="font:500 11px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.42)">4 HC · 3 PR · 2 GR · ≈ 610 KCAL</span><span style="font:500 10px/1 'IBM Plex Mono',monospace;color:#3ECF8E;padding:5px 8px;background:rgba(62,207,142,.14);border-radius:8px">CABE</span></div></div></div>
+      <div style="background:#0B0B0B;border:1px solid rgba(255,255,255,.07);border-radius:19px;overflow:hidden"><div style="height:96px;background:#141414"></div><div style="padding:13px 15px"><div style="font:600 14.5px/1 'Plus Jakarta Sans',sans-serif;color:#F5F5F4">Tortilla de patata ligera</div><div style="margin-top:9px;display:flex;justify-content:space-between;align-items:center"><span style="font:500 11px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.42)">3 HC · 3 PR · 2 GR · ≈ 540 KCAL</span><span style="font:500 10px/1 'IBM Plex Mono',monospace;color:#3ECF8E;padding:5px 8px;background:rgba(62,207,142,.14);border-radius:8px">CABE</span></div></div></div>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- ACADEMIA -->
+  <sc-if value="{{ isAcademia }}" hint-placeholder-val="{{ false }}">
+  <div style="padding:14px 22px 0">
+    <div style="font:900 30px/1 Archivo,sans-serif;letter-spacing:-.02em;color:#F5F5F4;text-transform:uppercase">Academia</div>
+    <div style="margin-top:13px;display:flex;justify-content:space-between;font:500 11px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.42)"><span>PROGRESO DEL CURSO</span><span style="color:#FFC72C">18%</span></div>
+    <div style="margin-top:8px;height:6px;border-radius:4px;background:#1a1a1a;overflow:hidden"><div style="width:18%;height:100%;background:#FFC72C;animation:bar .5s cubic-bezier(.2,.9,.2,1) both"></div></div>
+    <div data-spot="academia-1" style="margin-top:18px;background:#0F0F0F;border:1px solid rgba(255,255,255,.07);border-radius:19px;padding:15px">
+      <div style="display:flex;align-items:center;gap:12px"><div style="width:34px;height:34px;border-radius:11px;background:#FFC72C;display:flex;align-items:center;justify-content:center;font:600 12px/1 'IBM Plex Mono',monospace;color:#050505">01</div><div style="flex:1;font:600 14.5px/1 'Plus Jakarta Sans',sans-serif;color:#F5F5F4">Empieza por aquí</div><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(245,245,244,.4)" stroke-width="2" stroke-linecap="round" style="transform:rotate(180deg)"><path d="M6 15l6-6 6 6"/></svg></div>
+      <div style="margin-top:13px;display:flex;flex-direction:column;gap:11px">
+        <div style="display:flex;align-items:center;gap:11px"><span style="width:8px;height:8px;border-radius:5px;background:#FFC72C"></span><span style="flex:1;font:500 13px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.5)">Cómo leer tu rutina</span><span style="font:500 10.5px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.3)">4:10</span></div>
+        <div style="display:flex;align-items:center;gap:11px"><span style="width:8px;height:8px;border-radius:5px;border:1.5px solid #FFC72C"></span><span style="flex:1;font:600 13px/1 'Plus Jakarta Sans',sans-serif;color:#F5F5F4">Qué es el RIR y cómo contarlo</span><span style="font:500 10.5px/1 'IBM Plex Mono',monospace;color:#FFC72C">6:32</span></div>
+        <div style="display:flex;align-items:center;gap:11px"><span style="width:8px;height:8px;border-radius:5px;border:1.5px solid rgba(245,245,244,.25)"></span><span style="flex:1;font:500 13px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.7)">Intercambios sin volverte loco</span><span style="font:500 10.5px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.3)">8:05</span></div>
+      </div>
+    </div>
+    <div style="margin-top:11px;padding:15px;background:#0B0B0B;border:1px solid rgba(255,255,255,.07);border-radius:19px;display:flex;align-items:center;gap:12px"><div style="width:34px;height:34px;border-radius:11px;background:rgba(255,199,44,.13);display:flex;align-items:center;justify-content:center;font:600 12px/1 'IBM Plex Mono',monospace;color:#FFC72C">02</div><div style="flex:1;font:600 14.5px/1 'Plus Jakarta Sans',sans-serif;color:#F5F5F4">Técnica de los básicos</div></div>
+    <div style="margin-top:11px;padding:15px;background:#0B0B0B;border:1px solid rgba(255,255,255,.07);border-radius:19px;display:flex;align-items:center;gap:12px"><div style="width:34px;height:34px;border-radius:11px;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;font:600 12px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.4)">03</div><div style="flex:1;font:600 14.5px/1 'Plus Jakarta Sans',sans-serif;color:#F5F5F4">Comer fuera de casa</div></div>
+  </div>
+  </sc-if>
+
+  <!-- PERFIL / FOTOS -->
+  <sc-if value="{{ isPerfil }}" hint-placeholder-val="{{ false }}">
+  <div style="padding:14px 22px 0">
+    <div style="font:900 30px/1 Archivo,sans-serif;letter-spacing:-.02em;color:#F5F5F4;text-transform:uppercase">Mi progreso</div>
+    <div style="margin-top:14px;display:flex;gap:9px">
+      <div style="flex:1;padding:14px;background:#0B0B0B;border:1px solid rgba(255,255,255,.07);border-radius:16px"><div style="font:600 9.5px/1 'IBM Plex Mono',monospace;letter-spacing:.14em;color:rgba(245,245,244,.34)">PESO</div><div style="margin-top:9px;font:900 26px/1 Archivo,sans-serif;color:#F5F5F4">78,4</div></div>
+      <div style="flex:1;padding:14px;background:#0B0B0B;border:1px solid rgba(255,255,255,.07);border-radius:16px"><div style="font:600 9.5px/1 'IBM Plex Mono',monospace;letter-spacing:.14em;color:rgba(245,245,244,.34)">ADHERENCIA</div><div style="margin-top:9px;font:900 26px/1 Archivo,sans-serif;color:#F5F5F4">—</div></div>
+      <div style="flex:1;padding:14px;background:#0B0B0B;border:1px solid rgba(255,255,255,.07);border-radius:16px"><div style="font:600 9.5px/1 'IBM Plex Mono',monospace;letter-spacing:.14em;color:rgba(245,245,244,.34)">SESIONES</div><div style="margin-top:9px;font:900 26px/1 Archivo,sans-serif;color:#F5F5F4">0</div></div>
+    </div>
+    <div style="margin-top:16px;font:600 10px/1 'IBM Plex Mono',monospace;letter-spacing:.16em;color:rgba(245,245,244,.34);text-transform:uppercase">Fotos de progreso</div>
+    <div data-spot="fotos" style="margin-top:11px;display:flex;gap:9px">
+      <div style="flex:1;height:150px;border:1px dashed rgba(255,199,44,.35);border-radius:17px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px"><div style="width:38px;height:38px;border-radius:12px;background:rgba(255,199,44,.14);display:flex;align-items:center;justify-content:center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFC72C" stroke-width="2" stroke-linecap="round"><path d="M4 8h4l2-2h4l2 2h4v11H4z"/><circle cx="12" cy="13" r="3.2"/></svg></div><span style="font:500 11px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.45)">FRONTAL</span></div>
+      <div style="flex:1;height:150px;border:1px dashed rgba(255,255,255,.12);border-radius:17px;display:flex;align-items:center;justify-content:center;font:500 11px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.3)">LATERAL</div>
+      <div style="flex:1;height:150px;border:1px dashed rgba(255,255,255,.12);border-radius:17px;display:flex;align-items:center;justify-content:center;font:500 11px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.3)">ESPALDA</div>
+    </div>
+    <div style="margin-top:12px;padding:14px 16px;background:rgba(255,199,44,.06);border:1px solid rgba(255,199,44,.2);border-radius:16px;font:400 12.5px/1.6 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.66)">Las fotos las veo solo yo y sirven para ajustarte la dieta. Si hoy no te apetece, lo dejamos para el domingo.</div>
+  </div>
+  </sc-if>
+
+  <!-- CHAT -->
+  <sc-if value="{{ isChat }}" hint-placeholder-val="{{ false }}">
+  <div style="padding:14px 22px 0">
+    <div data-spot="chat-head" style="display:flex;align-items:center;gap:12px"><div style="width:42px;height:42px;border-radius:14px;background:rgba(255,199,44,.14);border:1px solid rgba(255,199,44,.4);display:flex;align-items:center;justify-content:center;font:900 17px/1 Archivo,sans-serif;color:#FFC72C">D</div><div><div style="font:600 15px/1 'Plus Jakarta Sans',sans-serif;color:#F5F5F4">Dani</div><div style="margin-top:6px;font:500 10.5px/1 'IBM Plex Mono',monospace;color:#3ECF8E">RESPONDE EN MENOS DE 24 H</div></div></div>
+    <div style="margin-top:20px;display:flex;flex-direction:column;gap:11px">
+      <div style="max-width:80%;padding:13px 15px;background:rgba(255,199,44,.07);border:1px solid rgba(255,199,44,.22);border-radius:17px 17px 17px 5px;font:400 13.5px/1.55 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.82)">Ya tienes el plan dentro. Cualquier duda de técnica, mándame un vídeo por aquí y te lo corrijo.</div>
+      <div style="max-width:80%;align-self:flex-end;padding:13px 15px;background:#141414;border-radius:17px 17px 5px 17px;font:400 13.5px/1.55 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.82)">Perfecto, mañana te mando el press banca</div>
+    </div>
+    <div style="margin-top:18px;display:flex;gap:9px;align-items:center"><div style="flex:1;height:48px;border-radius:15px;background:#0B0B0B;border:1px solid rgba(255,255,255,.07);display:flex;align-items:center;padding:0 14px;font:400 13.5px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.3)">Escríbeme</div><div style="width:48px;height:48px;border-radius:14px;background:rgba(255,199,44,.14);border:1px solid rgba(255,199,44,.4);display:flex;align-items:center;justify-content:center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFC72C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div></div>
+  </div>
+  </sc-if>
+
+  <!-- WIDGETS -->
+  <sc-if value="{{ isWidgets }}" hint-placeholder-val="{{ false }}">
+  <div style="padding:6px 22px 0">
+    <div style="display:flex;justify-content:center;margin-bottom:18px"><div data-spot="isla" style="display:flex;align-items:center;gap:10px;padding:9px 15px;background:#000;border:1px solid rgba(255,255,255,.1);border-radius:20px"><span style="width:8px;height:8px;border-radius:5px;background:#FFC72C;animation:beat 1s ease-in-out infinite"></span><span style="font:600 12px/1 'Plus Jakarta Sans',sans-serif;color:#F5F5F4">Comida en 20 min</span><span style="font:500 11px/1 'IBM Plex Mono',monospace;color:#FFC72C">4 HC · 3 PR</span></div></div>
+    <div style="text-align:center;font:900 54px/1 Archivo,sans-serif;color:#F5F5F4;letter-spacing:-.02em">9:41</div>
+    <div style="text-align:center;margin-top:6px;font:500 12px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.4)">LUNES 12 DE ENERO</div>
+    <div style="margin-top:22px;padding:16px;background:rgba(20,20,20,.85);border:1px solid rgba(255,255,255,.08);border-radius:20px"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font:600 9.5px/1 'IBM Plex Mono',monospace;letter-spacing:.14em;color:rgba(245,245,244,.34)">CARDIO EN CURSO</span><span style="font:500 10px/1 'IBM Plex Mono',monospace;color:#3ECF8E;padding:5px 8px;background:rgba(62,207,142,.14);border-radius:8px">EN ZONA</span></div><div style="margin-top:12px;display:flex;align-items:flex-end;gap:16px"><span style="font:900 44px/1 Archivo,sans-serif;color:#F5F5F4">18:24</span><span style="font:500 16px/1 'IBM Plex Mono',monospace;color:#FFC72C;padding-bottom:5px">138 ppm</span></div></div>
+    <div style="margin-top:11px;display:flex;gap:11px">
+      <div style="flex:1;padding:15px;background:rgba(20,20,20,.85);border:1px solid rgba(255,255,255,.08);border-radius:20px"><div style="font:600 9.5px/1 'IBM Plex Mono',monospace;letter-spacing:.14em;color:rgba(245,245,244,.34)">PASOS</div><div style="margin-top:10px;font:900 26px/1 Archivo,sans-serif;color:#F5F5F4">7.240</div></div>
+      <div style="flex:1;padding:15px;background:rgba(20,20,20,.85);border:1px solid rgba(255,255,255,.08);border-radius:20px"><div style="font:600 9.5px/1 'IBM Plex Mono',monospace;letter-spacing:.14em;color:rgba(245,245,244,.34)">TE QUEDAN</div><div style="margin-top:10px;font:900 26px/1 Archivo,sans-serif;color:#FFC72C">9</div></div>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- CIERRE -->
+  <sc-if value="{{ isFinal }}" hint-placeholder-val="{{ false }}">
+  <div style="padding:44px 26px 0;text-align:center">
+    <div style="display:flex;justify-content:center;position:relative">
+      <svg width="150" height="150" viewBox="0 0 150 150"><circle cx="75" cy="75" r="65" fill="none" stroke="#1a1a1a" stroke-width="8"/><circle cx="75" cy="75" r="65" fill="none" stroke="#FFC72C" stroke-width="8" stroke-linecap="round" stroke-dasharray="408" stroke-dashoffset="96" transform="rotate(-90 75 75)" style="animation:ringDraw 1.1s cubic-bezier(.2,.9,.2,1) both"/></svg>
+      <div style="position:absolute;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center"><div style="width:56px;height:56px;border-radius:20px;background:#FFC72C;display:flex;align-items:center;justify-content:center;animation:seal .5s cubic-bezier(.2,.9,.2,1) .55s both"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#050505" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></div></div>
+    </div>
+    <div style="margin-top:22px;font:900 32px/1.04 Archivo,sans-serif;letter-spacing:-.02em;color:#F5F5F4;text-transform:uppercase">Ya sabes<br>cómo va esto</div>
+    <p style="margin:14px 0 0;font:400 13.5px/1.62 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.55)">Empieza por el entreno de hoy. Lo demás se aprende sobre la marcha.</p>
+    <div style="margin-top:24px;text-align:left;display:flex;flex-direction:column;gap:9px">
+      <div style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:#0B0B0B;border:1px solid rgba(255,255,255,.07);border-radius:16px"><span style="width:22px;height:22px;border-radius:7px;border:1.5px solid rgba(255,199,44,.5)"></span><span style="font:600 13.5px/1 'Plus Jakarta Sans',sans-serif;color:#F5F5F4">Haz tu primera sesión</span></div>
+      <div style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:#0B0B0B;border:1px solid rgba(255,255,255,.07);border-radius:16px"><span style="width:22px;height:22px;border-radius:7px;border:1.5px solid rgba(255,199,44,.5)"></span><span style="font:600 13.5px/1 'Plus Jakarta Sans',sans-serif;color:#F5F5F4">Registra las 5 ingestas de hoy</span></div>
+      <div style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:#0B0B0B;border:1px solid rgba(255,255,255,.07);border-radius:16px"><span style="width:22px;height:22px;border-radius:7px;border:1.5px solid rgba(255,199,44,.5)"></span><span style="font:600 13.5px/1 'Plus Jakarta Sans',sans-serif;color:#F5F5F4">Mira la lección del RIR</span></div>
+    </div>
+    <div style="margin-top:20px;font:400 11.5px/1.6 'IBM Plex Mono',monospace;color:rgba(245,245,244,.34)">Puedes repetir este tour cuando quieras<br>en Perfil › Ayuda</div>
+  </div>
+  </sc-if>
+
+  </div>
+
+  <!-- BARRA INFERIOR -->
+  <div data-spot="nav" style="{{ navStyle }}">
+    <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="5">
+      <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="{{ t.icon }}"><path d="{{ t.d }}"/></svg>
+        <span style="{{ t.label }}">{{ t.name }}</span>
+        <div style="{{ t.dot }}"></div>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="{{ bannerStyle }}">{{ pantallaNombre }}</div>
+
+  <!-- FOCO RECORTADO -->
+  <div style="{{ spotStyle }}"></div>
+
+  <!-- GESTO FANTASMA -->
+  <div style="{{ ghostStyle }}"><div style="{{ ghostRing }}"></div><div style="width:20px;height:20px;border-radius:12px;background:rgba(255,199,44,.85);position:absolute;top:14px;left:14px"></div></div>
+
+  <!-- HOJA DE DANI -->
+  <div data-sheet="1" ref="{{ sheetRef }}" style="{{ sheetStyle }}">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+      <div style="width:34px;height:34px;border-radius:11px;background:rgba(255,199,44,.14);border:1px solid rgba(255,199,44,.4);display:flex;align-items:center;justify-content:center;font:900 14px/1 Archivo,sans-serif;color:#FFC72C;flex:none">D</div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:7px">
+        <span style="font:600 10px/1 'IBM Plex Mono',monospace;letter-spacing:.14em;color:rgba(245,245,244,.34);text-transform:uppercase">{{ chip }}</span>
+        <div style="height:3px;border-radius:2px;background:#1a1a1a;overflow:hidden"><div style="{{ progressStyle }}"></div></div>
+      </div>
+      <span style="font:500 10.5px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.34);flex:none">{{ counter }}</span>
+    </div>
+    <div style="{{ titleStyle }}">{{ titulo }}</div>
+    <p style="{{ bodyStyle }}">{{ cuerpo }}</p>
+    <div style="display:flex;gap:10px;align-items:center;margin-top:16px">
+      <div onClick="{{ prev }}" style="{{ prevStyle }}"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="rgba(245,245,244,.6)" stroke-width="2" stroke-linecap="round"><path d="M15 6l-6 6 6 6"/></svg></div>
+      <div onClick="{{ next }}" style="{{ ctaStyle }}">{{ ctaLabel }}</div>
+    </div>
+    <div onClick="{{ skip }}" style="{{ skipStyle }}">{{ skipLabel }}</div>
+  </div>
+
+</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:10px;width:640px">
+<div style="display:flex;align-items:baseline;gap:9px"><span style="font:600 10.5px/1 'IBM Plex Mono',monospace;padding:4px 7px;background:#FFC72C;color:#050505;border-radius:5px">02</span><span style="font:600 12px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.72)">Los 17 pasos · qué enseña y cómo se anima</span></div>
+<div style="display:flex;flex-direction:column;gap:9px">
+<sc-for list="{{ desglose }}" as="d" hint-placeholder-count="17">
+  <div onClick="{{ d.go }}" style="{{ d.card }}" style-hover="border-color:rgba(255,199,44,.35)">
+    <div style="display:flex;align-items:baseline;gap:11px"><span style="{{ d.num }}">{{ d.n }}</span><span style="font:600 14.5px/1 'Plus Jakarta Sans',sans-serif;color:#F5F5F4">{{ d.t }}</span><span style="{{ d.tagStyle }}">{{ d.tag }}</span></div>
+    <div style="margin-top:9px;font:400 12.5px/1.6 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.5);text-wrap:pretty">{{ d.q }}</div>
+    <div style="margin-top:8px;font:400 11.5px/1.55 'IBM Plex Mono',monospace;color:rgba(245,245,244,.32)">{{ d.a }}</div>
+  </div>
+</sc-for>
+</div>
+
+<div style="margin-top:14px;padding:18px 20px;background:#0B0B0B;border:1px solid rgba(255,255,255,.07);border-radius:20px">
+  <div style="font:600 10px/1 'IBM Plex Mono',monospace;letter-spacing:.16em;color:#FFC72C;text-transform:uppercase">Reglas del tour</div>
+  <div style="margin-top:13px;display:flex;flex-direction:column;gap:9px;font:400 12.5px/1.6 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.55)">
+    <div>Cuando todavía no hay datos del atleta (adherencia, historial, fotos) la pantalla enseña un ejemplo marcado como <span style="font:500 11.5px/1 'IBM Plex Mono',monospace;color:#FFC72C">EJEMPLO</span>. Ese aviso desaparece con el primer dato real y no vuelve nunca.</div>
+    <div>Al llegar a una sección nueva el atleta ve <strong style="color:rgba(245,245,244,.8);font-weight:600">la pantalla entera</strong> primero: cartel con el nombre, recorrido de arriba abajo y solo después entra el foco. Nunca se hace zoom sobre algo sin haber enseñado dónde está.</div>
+    <div>Los pasos que piden algo al atleta (fotos de progreso, permisos, widgets) siempre llevan «Ahora no» y no bloquean el avance.</div>
+    <div>Dos pasos exigen tocar de verdad —marcar una serie y registrar una ingesta— porque son las dos preguntas que más se repiten. El primario está deshabilitado hasta que lo hace.</div>
+    <div>Foco recortado: <span style="font:500 11.5px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.4)">box-shadow 0 0 0 9999px rgba(0,0,0,.62)</span> + borde oro al 55%, entrada 320 ms. El gesto fantasma late cada 1,1 s sobre el objetivo.</div>
+    <div>La primera vez el tour va entero: no hay «saltar». Solo los pasos que piden algo llevan «Ahora no». Al terminar, Dani deja el checklist de tres primeros pasos en Hoy y el tour queda en Perfil › Ayuda.</div>
+  </div>
+</div>
+</div>
+
+</div>
+</section>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1120,&quot;height&quot;:980}}">
+const EASE = 'cubic-bezier(.2,.9,.2,1)';
+
+const STEPS = [
+  {scr:'welcome', chip:'Bienvenida', tab:0, t:'Dos minutos y lo tienes', c:'No hace falta que te lo sepas todo hoy. Te enseño lo que hay, lo que hago yo y lo que tienes que hacer tú. Esta primera vez lo vemos entero; luego lo tienes en tu perfil por si quieres repasarlo.', cta:'Enséñame la app', q:'Quién habla y qué va a pasar. Sale justo al cerrar la pantalla de espera, con el plan ya publicado.', a:'Entrada de la pantalla en 500 ms + hoja de Dani desde abajo 380 ms.'},
+  {scr:'hoy', chip:'El mapa', tab:0, target:'nav', r:0, sheetTop:true, t:'Cinco pestañas, ni una más', c:'Abajo tienes todo: Hoy es tu día, Rutinas tu plan completo, Academia los vídeos donde te explico las cosas, Nutrición tu comida y Perfil tus datos. Si te pierdes, vuelve siempre a Hoy.', cta:'Sigue', tag:'NAVEGACIÓN', q:'La barra inferior entera, iluminada. Las cinco pestañas se nombran una a una.', a:'Foco sobre la barra; iconos entran escalonados 45 ms; el punto oro escala de .2 a 1.'},
+  {scr:'hoy', chip:'Hoy', tab:0, target:'hoy-cta', ghost:'center', r:20, t:'Aquí te dejo tu entreno', c:'Cada día abres la app y ya tienes lo que toca: los ejercicios, las series y el tiempo aproximado. No tienes que elegir nada. Toca Empezar sesión y vamos.', cta:'Sigue', tag:'ENTRENO', q:'La pantalla de inicio con el entreno del día, el tiempo estimado y el aviso de que hay cardio después.', a:'Foco sobre la cabecera + gesto fantasma sobre el primario oro.'},
+  {scr:'serie', chip:'Registro', tab:0, target:'serie2', ghost:'right', r:14, action:'serie', t:'Esto sí lo tienes que hacer tú', c:'Al terminar cada serie, tócala. Se guarda lo que has levantado y arranca solo el descanso. Yo veo tus números y con ellos te subo la carga. Pruébalo: marca la serie 02.', cta:'Toca la serie 02', ctaDone:'Perfecto, sigue', tag:'HAZLO TÚ', q:'El corazón de la app. Marcar serie, ver el descanso arrancar y entender que sin registro no hay ajuste.', a:'El atleta tiene que tocar. Fila a oro 6% en 240 ms, pastilla de descanso entra 340 ms con punto que late.'},
+  {scr:'serie', chip:'Registro', tab:0, target:'editor', ghost:'right', r:22, t:'Corrige lo que has hecho', c:'Los números vienen puestos con lo del último día. Si has hecho otra cosa, cámbialos aquí mismo con los botones. El RIR son las repeticiones que te has dejado sin hacer: RIR 2 es que podías haber hecho dos más.', cta:'Sigue', tag:'ENTRENO', q:'Los tres campos son editables: el atleta corrige reps, kilos y RIR con los steppers antes de dar la serie por buena.', a:'Foco sobre el editor de la serie activa; gesto fantasma sobre el + de los kilos, que funcionan de verdad.'},
+  {scr:'cardio', chip:'Cardio', tab:1, target:'cardio-head', r:19, t:'El cardio va después de las pesas', c:'Nunca antes. Te pido minutos a la semana, no todos los días, así que si hoy no puedes lo mueves a mañana y no pasa nada. Lo que cuenta es cerrar la semana.', cta:'Sigue', tag:'CARDIO', q:'Jerarquía (fuerza primero), objetivo semanal y el permiso explícito de mover la sesión.', a:'Foco sobre la prescripción; las microbarras de la semana entran con scaleY 550 ms.'},
+  {scr:'rutinas', chip:'Rutinas', tab:1, target:'rutina-hoy', r:22, t:'Tu plan completo, por si quieres verlo', c:'En Rutinas está el bloque entero: los días, los ejercicios y las semanas que dura. Sirve para mirar hacia delante, pero para entrenar te basta con Hoy.', cta:'Sigue', tag:'RUTINAS', q:'Diferencia entre Hoy (lo que toca) y Rutinas (el plan completo).', a:'Foco sobre el día de hoy; el resto de días al 60%.'},
+  {scr:'biblio', chip:'Ejercicios', tab:1, target:'biblio-1', ghost:'left', r:21, t:'Si no sabes cómo se hace, míralo', c:'Toca cualquier ejercicio y tienes mi vídeo, a velocidad normal o a cámara lenta, y mis notas. Algunos todavía no tienen vídeo: pídemelo por el chat y lo grabo.', cta:'Sigue', tag:'BIBLIOTECA', q:'Dónde ver la técnica y qué pasa con los ejercicios sin vídeo.', a:'Foco sobre la fila; gesto fantasma sobre la miniatura, que arranca el bucle.'},
+  {scr:'nutri', chip:'Nutrición', tab:3, target:'nutri-head', r:18, t:'Olvídate de contar calorías', c:'Trabajamos con intercambios. Arriba ves los que te quedan hoy y las tres barras te dicen de qué. No busques números exactos: si la barra no se pasa, vas bien.', cta:'Sigue', tag:'NUTRICIÓN', q:'La unidad del sistema. Por qué intercambios y no kcal exactas.', a:'Foco sobre el contador; las tres barras interpolan su ancho en 420 ms.'},
+  {scr:'nutri', chip:'Nutrición', tab:3, target:'ingesta-row', ghost:'left', r:14, action:'ingesta', t:'Comes, tocas y listo', c:'Cinco ingestas al día. Cuando te comas una, tócala: se marca, los intercambios bajan solos y yo veo cómo llevas la semana. Registra la de media mañana para verlo.', cta:'Toca Media mañana', ctaDone:'Eso es, sigue', tag:'HAZLO TÚ', q:'El gesto principal de Nutrición. Registro con un toque y feedback inmediato en el contador.', a:'El atleta tiene que tocar. Fila a oro 5,5% en 240 ms y las barras se mueven después, no a la vez.'},
+  {scr:'ingesta', chip:'Nutrición', tab:3, target:'alim-1', ghost:'right', r:21, t:'Cambia el alimento, no la dieta', c:'Dentro de cada ingesta tienes los alimentos con sus gramos. ¿No te gusta el pollo? Toca la fila y cámbialo: los gramos se recalculan solos para que valga lo mismo. No tienes que montar nada.', cta:'Sigue', tag:'NUTRICIÓN', q:'Cómo se intercambia un alimento sin romper el plan. Resuelve la duda más repetida.', a:'Foco sobre la fila; el icono de intercambio gira 180° al tocar y los gramos cuentan hasta el nuevo valor.'},
+  {scr:'recetas', chip:'Nutrición', tab:3, target:'recetas-chip', r:15, t:'8.850 recetas que sí te caben', c:'Si no sabes qué cocinar, filtra por «cabe en mi presupuesto» y solo te salen las que encajan con lo que te queda. Ajustas las raciones y se recalcula todo.', cta:'Sigue', tag:'RECETAS', q:'Recetas filtradas por lo que le queda al atleta ese día, no un buscador genérico.', a:'Foco sobre el chip de presupuesto, seleccionado por defecto; las tarjetas entran escalonadas 40 ms.'},
+  {scr:'academia', chip:'Academia', tab:2, target:'academia-1', r:23, t:'Aquí te lo explico todo', c:'Vídeos cortos con lo que necesitas saber: cómo leer la rutina, qué es el RIR, cómo comer fuera de casa. Empieza por el módulo 01 y ve a tu ritmo.', cta:'Sigue', tag:'ACADEMIA', q:'Dónde está la formación y por dónde empezar. Se marca el módulo 01 como punto de partida.', a:'Foco sobre el acordeón abierto; las lecciones entran escalonadas 40 ms y la barra de curso crece 450 ms.'},
+  {scr:'chat', chip:'Contacto', tab:4, target:'chat-head', r:18, t:'Me tienes aquí dentro', c:'Cualquier duda me escribes por aquí y te contesto en menos de 24 h. Si quieres que te mire la técnica, grábate y me mandas el vídeo: te lo corrijo con notas.', cta:'Sigue', tag:'CHAT', q:'Cómo contactar con Dani y qué se puede pedir (correcciones de técnica por vídeo). Fija la expectativa de respuesta.', a:'Foco sobre la cabecera del chat; las burbujas entran escalonadas 45 ms.'},
+  {scr:'perfil', chip:'Perfil', tab:4, target:'fotos', ghost:'left', r:21, t:'Una foto el domingo y ya está', c:'Peso y fotos son lo que uso para ajustarte la dieta. Las veo solo yo. Si quieres hacer la primera ahora, adelante; si no, te lo recuerdo el domingo.', cta:'Hacer la primera foto', skip:'Ahora no, sigue', tag:'SALTABLE', q:'Único paso que recoge un dato. Se puede saltar sin coste y se reintenta el domingo.', a:'Foco sobre los tres huecos de foto; el frontal en discontinuo oro, los otros en gris.'},
+  {scr:'widgets', chip:'Fuera de la app', tab:4, target:'isla', ghost:'center', r:24, t:'Te aviso sin que abras nada', c:'Media hora antes de cada comida te aparece arriba lo que te queda, y en la pantalla bloqueada tienes los pasos y el cardio. Activa los avisos y no se te olvida ninguna ingesta.', cta:'Activar avisos', skip:'Ahora no, sigue', tag:'SALTABLE', q:'Isla dinámica y widgets. Se pide el permiso de notificaciones en contexto, no al abrir la app.', a:'Foco sobre la isla dinámica; el punto oro late a 1 s.'},
+  {scr:'final', chip:'Listo', tab:0, t:'Ya sabes cómo va esto', c:'Te dejo tres cosas para hoy. Cuando termines la sesión lo veo al momento y te escribo si hay que cambiar algo.', cta:'Ir a mi entreno de hoy', tag:'CIERRE', q:'Cierre con checklist de tres primeros pasos y salida directa al entreno.', a:'Anillo que se cierra en 1,1 s + sello con scale .62→1.07→1 a los 550 ms. Haptic success.'}
+];
+
+const TABS = [
+  {name:'Hoy', d:'M4 11l8-6 8 6v8a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z'},
+  {name:'Rutinas', d:'M4 9v6M8 7v10M16 7v10M20 9v6M8 12h8'},
+  {name:'Academia', d:'M3 8l9-4 9 4-9 4zM7 11v5c0 1 2.2 2.4 5 2.4S17 17 17 16v-5'},
+  {name:'Nutrición', d:'M7 3v8a2.5 2.5 0 0 0 5 0V3M9.5 11v10M17 3c-1.6 1.4-2 3.4-2 5.5s.6 3 2 3.5v9'},
+  {name:'Perfil', d:'M12 11a3.6 3.6 0 1 0 0-7.2A3.6 3.6 0 0 0 12 11zM4.5 20.5c.6-3.9 3.7-6 7.5-6s6.9 2.1 7.5 6'}
+];
+
+const PANTALLAS = {hoy:'Hoy', serie:'Sesión en curso', cardio:'Cardio', rutinas:'Rutinas', biblio:'Ejercicios', nutri:'Nutrición', ingesta:'Ingesta', recetas:'Recetas', academia:'Academia', chat:'Chat con Dani', perfil:'Perfil', widgets:'Fuera de la app'};
+
+class Component extends DCLogic {
+  state = {i:0, serieHecha:false, ingestaHecha:false, rect:null, fase:'foco', reps:10, kg:22.5, rir:2};
+
+  _els(){
+    if(!this.frame || !this.frame.isConnected) this.frame = document.querySelector('[data-frame="tour"]');
+    if(this.frame){
+      this.sc = this.frame.querySelector('[data-scroller]');
+      this.sheet = this.frame.querySelector('[data-sheet]');
+    }
+    return this.frame;
+  }
+
+  componentDidMount(){
+    this._t1 = setTimeout(() => this._sync(), 60);
+    this._onR = () => this._sync();
+    window.addEventListener('resize', this._onR);
+  }
+  componentWillUnmount(){ clearTimeout(this._t1); clearTimeout(this._t2); clearTimeout(this._t3); window.removeEventListener('resize', this._onR); }
+  _agenda(){
+    const st = this.state;
+    if(this._i !== st.i){
+      this._i = st.i; this._f = st.fase;
+      setTimeout(() => { if(this.state.fase === 'vista') this._recorrer(); else this._sync(); }, 0);
+      return;
+    }
+    if(this._f !== st.fase){
+      this._f = st.fase;
+      if(st.fase === 'foco') setTimeout(() => this._sync(), 0);
+      return;
+    }
+    if(this._sh !== st.serieHecha || this._ih !== st.ingestaHecha){
+      this._sh = st.serieHecha; this._ih = st.ingestaHecha;
+      setTimeout(() => this._sync(), 0);
+    }
+  }
+
+  _recorrer(){
+    this._els();
+    const sc = this.sc;
+    if(!sc){ this.setState({fase:'foco'}); return; }
+    sc.scrollTop = 0;
+    this._t2 = setTimeout(() => {
+      const max = Math.max(0, sc.scrollHeight - sc.clientHeight - 400);
+      if(max > 20) sc.scrollTo({top: max, behavior: 'smooth'});
+    }, 450);
+    this._t3 = setTimeout(() => this.setState({fase: 'foco'}), 1800);
+  }
+
+  _sync(){
+    const f = this._els(), sc = this.sc, s = STEPS[this.state.i];
+    if(!f) return;
+    if(!s.target || this.state.fase === 'vista'){ if(this.state.rect) this.setState({rect:null}); return; }
+    const el = f.querySelector('[data-spot="' + s.target + '"]');
+    if(!el) return;
+    if(sc && !s.sheetTop){
+      const sheetH = this.sheet ? this.sheet.offsetHeight : 320;
+      const banda = 800 - 46 - sheetH;
+      let want = el.offsetTop + el.offsetHeight / 2 - banda / 2;
+      want = Math.max(0, Math.min(sc.scrollHeight - sc.clientHeight, want));
+      if(Math.abs(sc.scrollTop - want) > 2) sc.scrollTop = want;
+    } else if(sc && sc.scrollTop !== 0){ sc.scrollTop = 0; }
+    requestAnimationFrame(() => {
+      if(!this.frame || !el.isConnected) return;
+      const fr = this.frame.getBoundingClientRect(), r = el.getBoundingClientRect();
+      const k = (this.frame.offsetWidth ? fr.width / this.frame.offsetWidth : 1) || 1;
+      const rect = {
+        t: (r.top - fr.top) / k - 6,
+        l: (r.left - fr.left) / k - 6,
+        w: r.width / k + 12,
+        h: r.height / k + 12
+      };
+      const c = this.state.rect;
+      if(!c || Math.abs(c.t - rect.t) > 1 || Math.abs(c.l - rect.l) > 1 || Math.abs(c.w - rect.w) > 1 || Math.abs(c.h - rect.h) > 1) this.setState({rect});
+    });
+  }
+
+  go(n){
+    const max = STEPS.length - 1;
+    const i = Math.max(0, Math.min(max, n));
+    if(i === this.state.i) return;
+    clearTimeout(this._t2); clearTimeout(this._t3);
+    const nueva = STEPS[i].scr !== STEPS[this.state.i].scr && !!STEPS[i].target;
+    this.setState({i, rect: null, fase: nueva ? 'vista' : 'foco'});
+  }
+
+  renderVals(){
+    this._agenda();
+    const {i, serieHecha, ingestaHecha} = this.state;
+    const s = STEPS[i];
+    const scr = s.scr;
+    const bloqueado = (s.action === 'serie' && !serieHecha) || (s.action === 'ingesta' && !ingestaHecha);
+    const hechoAqui = (s.action === 'serie' && serieHecha) || (s.action === 'ingesta' && ingestaHecha);
+
+    const sheetTop = !!s.sheetTop;
+    const sheetPos = sheetTop ? 'top:56px' : 'bottom:0';
+    const radius = sheetTop ? '26px' : '26px 26px 34px 34px';
+
+    const spot = this.state.rect;
+    const rad = s.r != null ? s.r : 16;
+    const anim = i % 2 ? 'g1' : 'g2';
+    let gx = 0, gy = 0;
+    if(spot && s.ghost){
+      gy = spot.t + spot.h / 2;
+      gx = s.ghost === 'right' ? spot.l + spot.w - 27 : s.ghost === 'left' ? spot.l + 40 : spot.l + spot.w / 2;
+    }
+
+    const desglose = STEPS.map((x, n) => ({
+      n: String(n + 1).padStart(2, '0'),
+      t: x.t,
+      q: x.q,
+      a: x.a,
+      tag: x.tag || 'INICIO',
+      go: () => this.go(n),
+      card: 'padding:16px 18px;background:' + (n === i ? '#0F0F0F' : '#0B0B0B') + ';border:1px solid ' + (n === i ? 'rgba(255,199,44,.45)' : 'rgba(255,255,255,.07)') + ';border-radius:19px;cursor:pointer;transition:border-color .2s ' + EASE,
+      num: 'font:500 11.5px/1 "IBM Plex Mono",monospace;color:' + (n === i ? '#FFC72C' : 'rgba(245,245,244,.34)'),
+      tagStyle: 'margin-left:auto;font:600 9.5px/1 "IBM Plex Mono",monospace;letter-spacing:.12em;padding:5px 8px;border-radius:7px;' + (x.tag === 'HAZLO TÚ' ? 'color:#050505;background:#FFC72C' : x.tag === 'SALTABLE' ? 'color:#FFC72C;background:rgba(255,199,44,.14)' : 'color:rgba(245,245,244,.4);background:rgba(255,255,255,.05)')
+    }));
+
+    const quedan = ingestaHecha ? 9 : 12;
+
+    return {
+      isWelcome: scr === 'welcome', isHoy: scr === 'hoy', isSerie: scr === 'serie', isCardio: scr === 'cardio',
+      isRutinas: scr === 'rutinas', isBiblio: scr === 'biblio', isNutri: scr === 'nutri', isIngesta: scr === 'ingesta',
+      isRecetas: scr === 'recetas', isAcademia: scr === 'academia', isPerfil: scr === 'perfil', isChat: scr === 'chat',
+      isWidgets: scr === 'widgets', isFinal: scr === 'final',
+
+      pantallaNombre: PANTALLAS[scr] || '',
+      bannerStyle: (this.state.fase === 'vista' && PANTALLAS[scr])
+        ? 'position:absolute;top:60px;left:50%;transform:translateX(-50%);z-index:8;padding:10px 18px;background:rgba(8,8,8,.92);border:1px solid rgba(255,199,44,.45);border-radius:14px;font:600 11px/1 "IBM Plex Mono",monospace;letter-spacing:.16em;color:#FFC72C;text-transform:uppercase;animation:fu .34s ' + EASE + ' both'
+        : 'display:none',
+
+      reps: this.state.reps,
+      rir: this.state.rir,
+      kgTxt: String(this.state.kg).replace('.', ','),
+      stepBtn: 'width:38px;height:42px;display:flex;align-items:center;justify-content:center;font:500 19px/1 "Plus Jakarta Sans",sans-serif;color:rgba(245,245,244,.55);cursor:pointer',
+      stepBtnOro: 'width:38px;height:42px;display:flex;align-items:center;justify-content:center;font:500 19px/1 "Plus Jakarta Sans",sans-serif;color:#FFC72C;cursor:pointer',
+      repsMas: () => this.setState({reps: Math.min(30, this.state.reps + 1)}),
+      repsMenos: () => this.setState({reps: Math.max(1, this.state.reps - 1)}),
+      kgMas: () => this.setState({kg: Math.round((this.state.kg + 2.5) * 10) / 10}),
+      kgMenos: () => this.setState({kg: Math.max(0, Math.round((this.state.kg - 2.5) * 10) / 10)}),
+      rirMas: () => this.setState({rir: Math.min(5, this.state.rir + 1)}),
+      rirMenos: () => this.setState({rir: Math.max(0, this.state.rir - 1)}),
+
+      chip: s.chip,
+      counter: String(i + 1).padStart(2, '0') + ' / ' + String(STEPS.length).padStart(2, '0'),
+      titulo: s.t,
+      cuerpo: s.c,
+      ctaLabel: hechoAqui ? s.ctaDone : s.cta,
+      skipLabel: s.skip || '',
+      desglose,
+
+      progressStyle: 'height:100%;background:#FFC72C;border-radius:2px;width:' + Math.round((i + 1) / STEPS.length * 100) + '%;transition:width .45s ' + EASE,
+      titleStyle: 'font:900 24px/1.1 Archivo,sans-serif;letter-spacing:-.02em;color:#F5F5F4;text-transform:uppercase',
+      bodyStyle: 'margin:11px 0 0;font:400 13.5px/1.6 "Plus Jakarta Sans",sans-serif;color:rgba(245,245,244,.6);text-wrap:pretty',
+      sheetStyle: 'position:absolute;left:0;right:0;' + sheetPos + ';z-index:6;padding:18px 22px ' + (sheetTop ? '20px' : '26px') + ';background:#0F0F0F;border:1px solid rgba(255,255,255,.08);border-radius:' + radius + ';box-shadow:0 -20px 60px -20px rgba(0,0,0,.9);animation:sheetIn .38s ' + EASE + ' both',
+
+      prev: () => this.go(i - 1),
+      next: () => { if (!bloqueado) this.go(i + 1); },
+      skip: () => { if(s.skip) this.go(i + 1); },
+      prevStyle: 'width:52px;height:56px;border-radius:16px;background:#141414;display:' + (i === 0 ? 'none' : 'flex') + ';align-items:center;justify-content:center;cursor:pointer;flex:none',
+      ctaStyle: 'flex:1;height:56px;border-radius:16px;display:flex;align-items:center;justify-content:center;font:700 15.5px/1 "Plus Jakarta Sans",sans-serif;cursor:' + (bloqueado ? 'default' : 'pointer') + ';transition:background .22s ' + EASE + ',color .22s ' + EASE + ';' + (bloqueado ? 'background:#141414;color:rgba(245,245,244,.26)' : 'background:#FFC72C;color:#050505'),
+      skipStyle: 'margin-top:12px;text-align:center;font:600 12.5px/1 "Plus Jakarta Sans",sans-serif;color:rgba(245,245,244,.34);cursor:pointer;display:' + (s.skip ? 'block' : 'none'),
+
+      frameRef: (el) => { this.frame = el; },
+      scRef: (el) => { this.sc = el; },
+      sheetRef: (el) => { this.sheet = el; },
+
+      spotStyle: spot
+        ? 'position:absolute;z-index:5;pointer-events:none;top:' + spot.t + 'px;left:' + spot.l + 'px;width:' + spot.w + 'px;height:' + spot.h + 'px;border-radius:' + rad + 'px;border:1.5px solid rgba(255,199,44,.55);box-shadow:0 0 0 9999px rgba(0,0,0,.62);transition:all .3s ' + EASE + ';animation:spotIn .32s ' + EASE + ' both'
+        : 'display:none',
+
+      ghostStyle: (spot && s.ghost)
+        ? 'position:absolute;z-index:7;pointer-events:none;width:48px;height:48px;left:' + (gx - 24) + 'px;top:' + (gy - 24) + 'px'
+        : 'display:none',
+      ghostRing: 'position:absolute;inset:0;border-radius:26px;border:2px solid rgba(255,199,44,.9);animation:' + anim + ' 1.1s ' + EASE + ' infinite',
+
+      navStyle: 'position:absolute;left:0;right:0;bottom:0;height:78px;background:rgba(8,8,8,.92);backdrop-filter:blur(18px);border-top:1px solid rgba(255,255,255,.07);display:' + (scr === 'welcome' || scr === 'final' || scr === 'widgets' ? 'none' : 'flex') + ';align-items:flex-start;padding-top:11px;z-index:2',
+      tabs: TABS.map((t, n) => ({
+        name: t.name, d: t.d,
+        icon: 'stroke:' + (n === s.tab ? '#FFC72C' : 'rgba(245,245,244,.38)') + ';transform:translateY(' + (n === s.tab ? '-1px' : '0') + ');transition:all .22s ' + EASE,
+        label: 'font:600 10px/1 "Plus Jakarta Sans",sans-serif;color:' + (n === s.tab ? '#FFC72C' : 'rgba(245,245,244,.38)'),
+        dot: 'width:4px;height:4px;border-radius:3px;background:#FFC72C;transform:scale(' + (n === s.tab ? 1 : 0.2) + ');opacity:' + (n === s.tab ? 1 : 0) + ';transition:all .22s ' + EASE
+      })),
+
+      serieHecha,
+      marcarSerie: () => this.setState({serieHecha: !serieHecha}),
+      fila2: 'display:flex;align-items:center;gap:10px;padding:12px 14px;border-top:1px solid rgba(255,255,255,.05);cursor:pointer;transition:background .24s ' + EASE + ';background:' + (serieHecha ? 'rgba(255,199,44,.06)' : 'transparent'),
+      fila2Num: 'width:26px;font:500 12.5px/1 "IBM Plex Mono",monospace;color:' + (serieHecha ? 'rgba(245,245,244,.5)' : '#FFC72C'),
+      fila2Box: 'width:26px;height:26px;border-radius:8px;display:flex;align-items:center;justify-content:center;transition:all .24s ' + EASE + ';' + (serieHecha ? 'background:#FFC72C;border:1.5px solid #FFC72C' : 'border:1.5px solid rgba(255,199,44,.55)'),
+
+      ingestaHecha,
+      registrarIngesta: () => this.setState({ingestaHecha: !ingestaHecha}),
+      quedan,
+      quedanStyle: 'font:900 54px/1 Archivo,sans-serif;letter-spacing:-.03em;color:#FFC72C;margin-top:8px',
+      kcal: ingestaHecha ? '1.420' : '1.980',
+      hcTxt: ingestaHecha ? '5 / 12' : '3 / 12',
+      prTxt: ingestaHecha ? '3 / 9' : '2 / 9',
+      grTxt: ingestaHecha ? '1 / 4' : '1 / 4',
+      hcBar: 'height:100%;border-radius:4px;background:#FFC72C;width:' + (ingestaHecha ? 42 : 25) + '%;transition:width .42s ' + EASE,
+      prBar: 'height:100%;border-radius:4px;background:#FFC72C;width:' + (ingestaHecha ? 33 : 22) + '%;transition:width .42s ' + EASE + ' .08s',
+      grBar: 'height:100%;border-radius:4px;background:#FFC72C;width:25%;transition:width .42s ' + EASE,
+      ingestaRow: 'display:flex;align-items:center;gap:12px;padding:14px 15px;border-top:1px solid rgba(255,255,255,.05);cursor:pointer;transition:background .24s ' + EASE + ';background:' + (ingestaHecha ? 'rgba(255,199,44,.055)' : 'transparent'),
+      ingestaBox: 'width:26px;height:26px;border-radius:8px;flex:none;display:flex;align-items:center;justify-content:center;transition:all .24s ' + EASE + ';' + (ingestaHecha ? 'background:#FFC72C;border:1.5px solid #FFC72C' : 'border:1.5px solid rgba(255,199,44,.55)'),
+      ingestaTitle: 'font:600 14px/1 "Plus Jakarta Sans",sans-serif;transition:color .24s ' + EASE + ';color:' + (ingestaHecha ? 'rgba(245,245,244,.5)' : '#F5F5F4'),
+      ingestaChips: 'margin-top:6px;font:500 10.5px/1 "IBM Plex Mono",monospace;color:' + (ingestaHecha ? '#FFC72C' : 'rgba(245,245,244,.42)')
+    };
+  }
+}
+
+</script>
+</body>
+</html>

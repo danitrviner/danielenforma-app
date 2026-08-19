@@ -6,8 +6,11 @@ import {
   OnboardingSection, OnboardingTemplateQuestion,
 } from '../types';
 import { saveOnboarding, updateOnboarding } from '../dbService';
-import { ACTIVITY_FACTORS, GOAL_ADJUSTMENTS, calcAge, mifflinBMR } from '../utils/energyCalc';
+import { ACTIVITY_FACTORS, calcAge, computeAuto } from '../utils/energyCalc';
+import type { AutoCalc } from '../utils/energyCalc';
 import { DISH_TYPES } from '../utils/dishTypes';
+import { roundQuarter } from '../utils/exchangeHelpers';
+import { Icon, Button } from './ui';
 
 // ── Section metadata ──────────────────────────────────────────────────────────
 
@@ -56,10 +59,8 @@ const INTAKE_ICONS: Record<number, string> = {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function roundQ(x: number): number { return Math.round(x / 0.25) * 0.25; }
-
 function fmtExch(x: number): string {
-  const r = roundQ(x);
+  const r = roundQuarter(x);
   return r % 1 === 0 ? r.toFixed(0) : r.toFixed(2);
 }
 
@@ -67,32 +68,6 @@ function macroGrams(cal: number, pct: number, factor: 4 | 9) {
   return Math.round((cal * pct) / 100 / factor);
 }
 
-interface AutoCalc {
-  bmr: number; tdee: number; kcal: number;
-  protG: number; grasaG: number; hcG: number;
-  protPct: number; grasaPct: number; hcPct: number;
-}
-
-function computeAuto(
-  sex: 'male' | 'female', birthDate: string,
-  w: number, h: number, level: ActivityLevel, goal: GoalBody,
-): AutoCalc {
-  const age    = calcAge(birthDate);
-  const bmr    = mifflinBMR(sex, w, h, age);
-  const tdee   = Math.round(bmr * ACTIVITY_FACTORS[level]);
-  const kcal   = Math.round(tdee * GOAL_ADJUSTMENTS[goal]);
-  const protG  = Math.round(2 * w);
-  const pKcal  = protG * 4;
-  const gKcal  = Math.round(kcal * 0.25);
-  const grasaG = Math.round(gKcal / 9);
-  const hcKcal = Math.max(0, kcal - pKcal - gKcal);
-  const hcG    = Math.round(hcKcal / 4);
-  const tot    = pKcal + gKcal + hcKcal;
-  const protPct  = Math.round((pKcal / tot) * 100);
-  const grasaPct = Math.round((gKcal / tot) * 100);
-  const hcPct    = 100 - protPct - grasaPct;
-  return { bmr, tdee, kcal, protG, grasaG, hcG, protPct, grasaPct, hcPct };
-}
 
 // ── Form state ────────────────────────────────────────────────────────────────
 
@@ -329,15 +304,15 @@ function PillSelect<T extends string>({
   onChange: (v: T) => void;
 }) {
   return (
-    <div className="space-y-1.5">
-      <p className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wide">{label}</p>
+    <div className="space-y-2">
+      <p className="font-sans text-caption text-ink-2 uppercase tracking-wide">{label}</p>
       <div className="flex flex-wrap gap-2">
         {options.map(o => (
           <button key={o.value} type="button" onClick={() => onChange(o.value)}
-            className={`px-3 py-1.5 rounded-lg font-mono text-xs font-bold border transition-all ${
+            className={`px-3 py-2 rounded-control font-sans text-label font-bold border transition-all ${
               value === o.value
-                ? 'bg-[#fbcb1a] text-black border-transparent'
-                : 'bg-transparent text-[#c6c9ab] border-white/7 hover:text-white hover:border-[#3a3a3a]'
+                ? 'bg-accent text-black border-transparent'
+                : 'bg-transparent text-ink-2 border-hairline hover:text-white hover:border-hairline'
             }`}>
             {o.label}
           </button>
@@ -349,15 +324,15 @@ function PillSelect<T extends string>({
 
 function YesNo({ label, value, onChange }: { label: string; value: boolean; onChange: (v: boolean) => void }) {
   return (
-    <div className="space-y-1.5">
-      <p className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wide">{label}</p>
+    <div className="space-y-2">
+      <p className="font-sans text-caption text-ink-2 uppercase tracking-wide">{label}</p>
       <div className="flex gap-2">
         {([{ v: true, l: 'Sí' }, { v: false, l: 'No' }]).map(o => (
           <button key={String(o.v)} type="button" onClick={() => onChange(o.v)}
-            className={`flex-1 py-2 rounded-lg font-mono text-xs font-bold border transition-all ${
+            className={`flex-1 py-2 rounded-control font-mono text-label font-bold border transition-all ${
               value === o.v
-                ? 'bg-[#fbcb1a] text-black border-transparent'
-                : 'bg-transparent text-[#c6c9ab] border-white/7 hover:text-white hover:border-[#3a3a3a]'
+                ? 'bg-accent text-black border-transparent'
+                : 'bg-transparent text-ink-2 border-hairline hover:text-white hover:border-hairline'
             }`}>
             {o.l}
           </button>
@@ -375,15 +350,15 @@ function CheckboxGroup({
   const toggle = (opt: string) =>
     onChange(values.includes(opt) ? values.filter(v => v !== opt) : [...values, opt]);
   return (
-    <div className="space-y-1.5">
-      <p className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wide">{label}</p>
+    <div className="space-y-2">
+      <p className="font-sans text-caption text-ink-2 uppercase tracking-wide">{label}</p>
       <div className="flex flex-wrap gap-2">
         {options.map(opt => (
           <button key={opt} type="button" onClick={() => toggle(opt)}
-            className={`px-3 py-1.5 rounded-lg font-mono text-xs font-bold border transition-all ${
+            className={`px-3 py-2 rounded-control font-mono text-label font-bold border transition-all ${
               values.includes(opt)
-                ? 'bg-[#fbcb1a] text-black border-transparent'
-                : 'bg-transparent text-[#c6c9ab] border-white/7 hover:text-white hover:border-[#3a3a3a]'
+                ? 'bg-accent text-black border-transparent'
+                : 'bg-transparent text-ink-2 border-hairline hover:text-white hover:border-hairline'
             }`}>
             {opt}
           </button>
@@ -399,11 +374,11 @@ function TextField({
   label: string; value: string; onChange: (v: string) => void; placeholder?: string;
 }) {
   return (
-    <div className="space-y-1.5">
-      <p className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wide">{label}</p>
+    <div className="space-y-2">
+      <p className="font-sans text-caption text-ink-2 uppercase tracking-wide">{label}</p>
       <input type="text" value={value} onChange={e => onChange(e.target.value)}
         placeholder={placeholder}
-        className="bg-[#0e0e0e] border border-white/7 rounded-lg px-3 py-2 text-sm text-white font-mono focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] w-full placeholder:text-[#444]" />
+        className="bg-bg border border-hairline rounded-control px-3 py-2 text-title-s text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent w-full placeholder:text-ink-3" />
     </div>
   );
 }
@@ -414,13 +389,13 @@ function NumberField({
   label: string; value: number | ''; onChange: (v: number | '') => void; unit?: string; min?: number; max?: number;
 }) {
   return (
-    <div className="space-y-1.5">
-      <p className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wide">{label}</p>
-      <div className="flex items-center gap-2">
+    <div className="space-y-2 min-w-0">
+      <p className="font-sans text-caption text-ink-2 uppercase tracking-wide truncate">{label}</p>
+      <div className="flex items-center gap-2 min-w-0">
         <input type="number" min={min} max={max} value={value}
           onChange={e => onChange(e.target.value === '' ? '' : Number(e.target.value))}
-          className="flex-1 bg-[#0e0e0e] border border-white/7 rounded-lg px-3 py-2 text-sm text-white font-mono focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] text-center" />
-        {unit && <span className="font-mono text-[10px] text-[#555] flex-shrink-0">{unit}</span>}
+          className="w-full min-w-0 bg-bg border border-hairline rounded-control px-3 py-2 text-title-s text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent text-center" />
+        {unit && <span className="font-mono text-caption text-ink-3 flex-shrink-0">{unit}</span>}
       </div>
     </div>
   );
@@ -439,14 +414,14 @@ function TagInput({
     setInput('');
   };
   return (
-    <div className="space-y-1.5">
-      <p className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wide">{label}</p>
-      {helpText && <p className="font-mono text-[9px] text-[#555]">{helpText}</p>}
-      <div className="flex flex-wrap gap-1.5 p-2.5 bg-[#0e0e0e] border border-white/7 rounded-lg min-h-[44px] focus-within:ring-1 focus-within:ring-[#fbcb1a]/50 transition-all">
+    <div className="space-y-2">
+      <p className="font-sans text-caption text-ink-2 uppercase tracking-wide">{label}</p>
+      {helpText && <p className="font-sans text-caption text-ink-3">{helpText}</p>}
+      <div className="flex flex-wrap gap-2 p-3 bg-bg border border-hairline rounded-surface min-h-[44px] focus-within:ring-1 focus-within:ring-accent/50 transition-all">
         {tags.map(t => (
-          <span key={t} className="flex items-center gap-1 bg-[#2a2a2a] border border-[#3a3a3a] text-white px-2 py-0.5 rounded-full text-xs font-mono">
+          <span key={t} className="flex items-center gap-1 bg-raised border border-hairline text-white px-2 rounded-full text-label font-mono">
             {t}
-            <button type="button" onClick={() => onChange(tags.filter(x => x !== t))} className="text-[#c6c9ab] hover:text-red-400 transition-colors">
+            <button type="button" onClick={() => onChange(tags.filter(x => x !== t))} className="text-ink-2 hover:text-red-400 transition-colors">
               <span className="material-symbols-outlined" style={{ fontSize: '10px' }}>close</span>
             </button>
           </span>
@@ -458,7 +433,7 @@ function TagInput({
           }}
           onBlur={() => { if (input.trim()) add(); }}
           placeholder={tags.length === 0 ? placeholder : '+ añadir'}
-          className="bg-transparent text-sm text-white outline-none flex-1 min-w-[100px] placeholder:text-[#444]" />
+          className="bg-transparent text-title-s text-white outline-none flex-1 min-w-[100px] placeholder:text-ink-3" />
       </div>
     </div>
   );
@@ -475,28 +450,28 @@ function SupplementsTable({
   const add = () => onChange([...rows, { name: '', dose: '', frequency: '' }]);
 
   return (
-    <div className="space-y-1.5">
-      <p className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wide">Suplementación</p>
+    <div className="space-y-2">
+      <p className="font-mono text-caption text-ink-2 uppercase tracking-wide">Suplementación</p>
       {rows.length > 0 && (
         <div className="space-y-2">
           {rows.map((r, i) => (
             <div key={i} className="flex items-center gap-2">
               <input type="text" value={r.name} onChange={e => update(i, { name: e.target.value })}
-                placeholder="Suplemento" className="flex-1 min-w-0 bg-[#0e0e0e] border border-white/7 rounded px-2 py-1.5 text-xs text-white font-mono focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] placeholder:text-[#444]" />
+                placeholder="Suplemento" className="flex-1 min-w-0 bg-bg border border-hairline rounded-control px-2 py-2 text-title-s text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent placeholder:text-ink-3" />
               <input type="text" value={r.dose} onChange={e => update(i, { dose: e.target.value })}
-                placeholder="Dosis" className="w-20 flex-shrink-0 bg-[#0e0e0e] border border-white/7 rounded px-2 py-1.5 text-xs text-white font-mono focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] placeholder:text-[#444]" />
+                placeholder="Dosis" className="w-20 flex-shrink-0 bg-bg border border-hairline rounded-control px-2 py-2 text-title-s text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent placeholder:text-ink-3" />
               <input type="text" value={r.frequency} onChange={e => update(i, { frequency: e.target.value })}
-                placeholder="Frecuencia" className="w-24 flex-shrink-0 bg-[#0e0e0e] border border-white/7 rounded px-2 py-1.5 text-xs text-white font-mono focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] placeholder:text-[#444]" />
-              <button type="button" onClick={() => remove(i)} className="text-[#c6c9ab] hover:text-red-400 transition-colors flex-shrink-0">
-                <span className="material-symbols-outlined text-sm">close</span>
+                placeholder="Frecuencia" className="w-24 flex-shrink-0 bg-bg border border-hairline rounded-control px-2 py-2 text-title-s text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent placeholder:text-ink-3" />
+              <button type="button" onClick={() => remove(i)} className="text-ink-2 hover:text-red-400 transition-colors flex-shrink-0">
+                <Icon name="close" size="s" />
               </button>
             </div>
           ))}
         </div>
       )}
       <button type="button" onClick={add}
-        className="flex items-center gap-1 font-mono text-[10px] text-[#c6c9ab] hover:text-[#fbcb1a] transition-colors border border-dashed border-white/7 hover:border-[#fbcb1a]/40 px-2.5 py-1.5 rounded-lg">
-        <span className="material-symbols-outlined text-sm">add</span>
+        className="flex items-center gap-1 font-sans text-caption text-ink-2 hover:text-accent transition-colors border border-dashed border-hairline hover:border-accent/40 px-3 py-2 rounded-control">
+        <Icon name="add" size="s" />
         Añadir suplemento
       </button>
     </div>
@@ -505,12 +480,12 @@ function SupplementsTable({
 
 function Section({ icon, title, children, complete }: { icon: string; title: string; children: React.ReactNode; complete?: boolean }) {
   return (
-    <div className={`space-y-4 bg-[#0e0e0e] border rounded-xl p-5 transition-colors ${complete ? 'border-[#fbcb1a]/25' : 'border-white/7'}`}>
-      <h4 className="font-mono text-xs font-bold uppercase tracking-wider text-[#fbcb1a] flex items-center gap-2">
-        <span className="material-symbols-outlined text-sm">{icon}</span>
+    <div className={`space-y-4 bg-bg border rounded-surface p-5 transition-colors ${complete ? 'border-accent/25' : 'border-hairline'}`}>
+      <h4 className="font-mono text-label font-bold uppercase tracking-wider text-accent flex items-center gap-2">
+        <Icon name={icon} size="s" />
         {title}
         {complete && (
-          <span className="material-symbols-outlined text-emerald-400 text-sm ml-auto" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+          <Icon name="check_circle" size="s" filled className="text-emerald-400 ml-auto" />
         )}
       </h4>
       {children}
@@ -526,16 +501,16 @@ function SliderField({
   minLabel?: string; maxLabel?: string;
 }) {
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-2">
       <div className="flex justify-between items-baseline">
-        <p className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wide">{label}</p>
-        <span className="font-mono text-sm font-bold text-white">{value}{unit}</span>
+        <p className="font-sans text-caption text-ink-2 uppercase tracking-wide">{label}</p>
+        <span className="font-mono text-body-s font-bold text-white">{value}{unit}</span>
       </div>
       <input type="range" min={min} max={max} step={step} value={value}
         onChange={e => onChange(Number(e.target.value))}
-        className="w-full accent-[#fbcb1a] cursor-pointer" />
+        className="w-full accent-accent cursor-pointer" />
       {(minLabel || maxLabel) && (
-        <div className="flex justify-between font-mono text-[8px] text-[#555]">
+        <div className="flex justify-between font-mono text-caption text-ink-3">
           <span>{minLabel}</span>
           <span>{maxLabel}</span>
         </div>
@@ -555,7 +530,7 @@ interface Props {
   onCancel?:    () => void;
 }
 
-const FIELD = 'bg-[#0e0e0e] border border-white/7 rounded-lg px-3 py-2 text-sm text-white font-mono focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] w-full';
+const FIELD = 'bg-bg border border-hairline rounded-surface px-3 py-2 text-body-s text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent w-full';
 
 export default function OnboardingForm({
   athleteEmail, initialData, isCoach = false, template = [], onSaved, onCancel,
@@ -730,8 +705,8 @@ export default function OnboardingForm({
         <div className="flex items-center gap-2">
           <input type="number" value={val ?? ''}
             onChange={e => setAnswer(q.id, e.target.value === '' ? '' : Number(e.target.value))}
-            className="w-24 bg-[#0e0e0e] border border-white/7 rounded px-2 py-1.5 text-sm text-white font-mono focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] text-center" />
-          {q.unit && <span className="text-[10px] text-[#c6c9ab] font-mono">{q.unit}</span>}
+            className="w-24 bg-bg border border-hairline rounded-control px-2 py-2 text-title-s text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent text-center" />
+          {q.unit && <span className="text-caption text-ink-2 font-mono">{q.unit}</span>}
         </div>
       );
     }
@@ -741,19 +716,19 @@ export default function OnboardingForm({
       const num = Number(val) || 0;
       return (
         <div className="flex items-center gap-2">
-          <span className="font-mono text-[9px] text-[#555] w-3">{min}</span>
+          <span className="font-mono text-caption text-ink-3 w-3">{min}</span>
           <input type="range" min={min} max={max} value={num || min}
             onChange={e => setAnswer(q.id, Number(e.target.value))}
-            className="flex-1 accent-[#fbcb1a]" />
-          <span className="font-mono text-[9px] text-[#555] w-3">{max}</span>
-          <span className="font-mono text-sm font-bold text-white w-6 text-right">{num || '—'}</span>
+            className="flex-1 accent-accent" />
+          <span className="font-mono text-caption text-ink-3 w-3">{max}</span>
+          <span className="font-mono text-body-s font-bold text-white w-6 text-right">{num || '—'}</span>
         </div>
       );
     }
     if (q.type === 'choice') {
       return (
         <select value={String(val ?? '')} onChange={e => setAnswer(q.id, e.target.value)}
-          className="bg-[#0e0e0e] border border-white/7 rounded-lg px-2 py-1.5 text-sm text-white font-mono focus:outline-none focus:ring-1 focus:ring-[#fbcb1a]">
+          className="bg-bg border border-hairline rounded-control px-2 py-2 text-title-s text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent">
           <option value="">— elegir —</option>
           {(q.options ?? []).map(o => <option key={o} value={o}>{o}</option>)}
         </select>
@@ -762,7 +737,7 @@ export default function OnboardingForm({
     return (
       <textarea value={String(val ?? '')} rows={2}
         onChange={e => setAnswer(q.id, e.target.value)}
-        className="w-full bg-[#0e0e0e] border border-white/7 rounded-lg px-2 py-1.5 text-sm text-white font-mono focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] resize-none" />
+        className="w-full bg-bg border border-hairline rounded-control px-2 py-2 text-title-s text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent resize-none" />
     );
   };
 
@@ -772,22 +747,22 @@ export default function OnboardingForm({
       <div className={isFirstTime ? 'text-center space-y-2 py-4' : 'space-y-1'}>
         {isFirstTime ? (
           <>
-            <span className="material-symbols-outlined text-5xl text-[#fbcb1a]">waving_hand</span>
-            <h2 className="font-sans font-extrabold text-2xl text-white">¡Bienvenido/a!</h2>
-            <p className="text-[#c6c9ab] text-sm font-sans max-w-md mx-auto">
+            <Icon name="waving_hand" size="xl" className="text-accent" />
+            <h2 className="font-sans font-bold text-title-l text-white">¡Bienvenido/a!</h2>
+            <p className="text-ink-2 text-body-s font-sans max-w-md mx-auto">
               Rellena los datos básicos. Tu entrenador usará esta información para personalizar tu plan.
             </p>
           </>
         ) : (
-          <h3 className="font-sans font-bold text-white text-base flex items-center gap-2">
-            <span className="material-symbols-outlined text-[#fbcb1a]">edit_note</span>
+          <h3 className="font-sans font-bold text-white text-title-s flex items-center gap-2">
+            <Icon name="edit_note" size="m" className="text-accent" />
             Editar ficha de iniciación
           </h3>
         )}
       </div>
 
       {error && (
-        <p className="bg-red-500/10 border border-red-500/30 text-red-200 px-4 py-3 rounded-xl text-xs font-mono">
+        <p className="bg-red-500/10 border border-red-500/30 text-red-200 px-4 py-3 rounded-surface text-label font-sans">
           {error}
         </p>
       )}
@@ -795,14 +770,14 @@ export default function OnboardingForm({
       {/* Progreso de la ficha — motiva sin bloquear: el resto de la app ya
           trata este formulario como algo que se revisa/edita puntualmente,
           no como un wizard de un solo paso, así que no fuerza secuencia. */}
-      <div className="space-y-1.5">
-        <div className="flex items-center justify-between font-mono text-[9px] text-[#c6c9ab] uppercase tracking-wide">
+      <div className="space-y-2">
+        <div className="flex items-center justify-between font-sans text-caption text-ink-2 uppercase tracking-wide">
           <span>Progreso de la ficha</span>
           <span>{coreFieldsFilled}/{coreFieldsTotal}</span>
         </div>
         <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
           <div
-            className="h-full bg-[#fbcb1a] rounded-full transition-all duration-500"
+            className="h-full bg-accent rounded-full transition-all duration-500"
             style={{ width: `${(coreFieldsFilled / coreFieldsTotal) * 100}%` }}
           />
         </div>
@@ -817,60 +792,60 @@ export default function OnboardingForm({
             { value: 'female', label: 'Mujer'  },
           ]}
         />
-        <div className="space-y-1.5">
-          <p className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wide">Fecha de nacimiento</p>
+        <div className="space-y-2">
+          <p className="font-mono text-caption text-ink-2 uppercase tracking-wide">Fecha de nacimiento</p>
           <input type="date" value={form.birthDate}
             onChange={e => set('birthDate', e.target.value)}
             className={FIELD}
             max={new Date().toISOString().split('T')[0]}
           />
           {form.birthDate && (
-            <p className="font-mono text-[9px] text-[#555]">
+            <p className="font-mono text-caption text-ink-3">
               {calcAge(form.birthDate)} años
             </p>
           )}
         </div>
         <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1.5">
-            <p className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wide">Peso</p>
+          <div className="space-y-2">
+            <p className="font-mono text-caption text-ink-2 uppercase tracking-wide">Peso</p>
             <div className="flex items-center gap-2">
               <input type="number" min={30} max={250} step={0.1} value={form.weightKg}
                 onChange={e => set('weightKg', e.target.value === '' ? '' : Number(e.target.value))}
                 placeholder="70"
-                className="flex-1 bg-[#0e0e0e] border border-white/7 rounded-lg px-3 py-2 text-sm text-white font-mono focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] text-center" />
-              <span className="font-mono text-[10px] text-[#555] flex-shrink-0">kg</span>
+                className="flex-1 bg-bg border border-hairline rounded-control px-3 py-2 text-title-s text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent text-center" />
+              <span className="font-mono text-caption text-ink-3 flex-shrink-0">kg</span>
             </div>
           </div>
-          <div className="space-y-1.5">
-            <p className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wide">Altura</p>
+          <div className="space-y-2">
+            <p className="font-mono text-caption text-ink-2 uppercase tracking-wide">Altura</p>
             <div className="flex items-center gap-2">
               <input type="number" min={100} max={250} step={1} value={form.heightCm}
                 onChange={e => set('heightCm', e.target.value === '' ? '' : Number(e.target.value))}
                 placeholder="170"
-                className="flex-1 bg-[#0e0e0e] border border-white/7 rounded-lg px-3 py-2 text-sm text-white font-mono focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] text-center" />
-              <span className="font-mono text-[10px] text-[#555] flex-shrink-0">cm</span>
+                className="flex-1 bg-bg border border-hairline rounded-control px-3 py-2 text-title-s text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent text-center" />
+              <span className="font-mono text-caption text-ink-3 flex-shrink-0">cm</span>
             </div>
           </div>
         </div>
         <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1.5">
-            <p className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wide">% Grasa <span className="text-[#555] normal-case">(opc)</span></p>
+          <div className="space-y-2">
+            <p className="font-mono text-caption text-ink-2 uppercase tracking-wide">% Grasa <span className="text-ink-3 normal-case">(opc)</span></p>
             <div className="flex items-center gap-2">
               <input type="number" min={3} max={60} step={0.1} value={form.bodyFatPct}
                 onChange={e => set('bodyFatPct', e.target.value === '' ? '' : Number(e.target.value))}
                 placeholder="—"
-                className="flex-1 bg-[#0e0e0e] border border-white/7 rounded-lg px-3 py-2 text-sm text-white font-mono focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] text-center" />
-              <span className="font-mono text-[10px] text-[#555] flex-shrink-0">%</span>
+                className="flex-1 bg-bg border border-hairline rounded-control px-3 py-2 text-title-s text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent text-center" />
+              <span className="font-mono text-caption text-ink-3 flex-shrink-0">%</span>
             </div>
           </div>
-          <div className="space-y-1.5">
-            <p className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wide">% Músculo <span className="text-[#555] normal-case">(opc)</span></p>
+          <div className="space-y-2">
+            <p className="font-mono text-caption text-ink-2 uppercase tracking-wide">% Músculo <span className="text-ink-3 normal-case">(opc)</span></p>
             <div className="flex items-center gap-2">
               <input type="number" min={10} max={70} step={0.1} value={form.musclePct}
                 onChange={e => set('musclePct', e.target.value === '' ? '' : Number(e.target.value))}
                 placeholder="—"
-                className="flex-1 bg-[#0e0e0e] border border-white/7 rounded-lg px-3 py-2 text-sm text-white font-mono focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] text-center" />
-              <span className="font-mono text-[10px] text-[#555] flex-shrink-0">%</span>
+                className="flex-1 bg-bg border border-hairline rounded-control px-3 py-2 text-title-s text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent text-center" />
+              <span className="font-mono text-caption text-ink-3 flex-shrink-0">%</span>
             </div>
           </div>
         </div>
@@ -886,16 +861,16 @@ export default function OnboardingForm({
             { value: 'muy_activo'  as ActivityLevel, label: 'Muy activo',  desc: 'Ejercicio intenso 6–7 días/semana',             factor: '×1.725' },
           ]).map(o => (
             <button key={o.value} type="button" onClick={() => set('activityLevel', o.value)}
-              className={`w-full flex items-center gap-3 p-3 rounded-xl border text-left transition-all ${
+              className={`w-full flex items-center gap-3 p-3 rounded-control border text-left transition-all ${
                 form.activityLevel === o.value
-                  ? 'bg-[#1a1c12] border-[#fbcb1a]/40'
-                  : 'bg-[#0a0a0a] border-white/7 hover:border-[#3a3a3a]'
+                  ? 'bg-accent-bg border-accent/40'
+                  : 'bg-bg border-hairline hover:border-hairline'
               }`}>
               <div className="flex-1 min-w-0">
-                <p className={`font-mono text-xs font-bold ${form.activityLevel === o.value ? 'text-[#fbcb1a]' : 'text-white'}`}>{o.label}</p>
-                <p className="font-mono text-[9px] text-[#555] mt-0.5">{o.desc}</p>
+                <p className={`font-sans text-label font-bold ${form.activityLevel === o.value ? 'text-accent' : 'text-white'}`}>{o.label}</p>
+                <p className="font-mono text-caption text-ink-3 ">{o.desc}</p>
               </div>
-              <span className={`font-mono text-[10px] font-bold flex-shrink-0 ${form.activityLevel === o.value ? 'text-[#fbcb1a]' : 'text-[#3a3a3a]'}`}>{o.factor}</span>
+              <span className={`font-mono text-caption font-bold flex-shrink-0 ${form.activityLevel === o.value ? 'text-accent' : 'text-ink-3'}`}>{o.factor}</span>
             </button>
           ))}
         </div>
@@ -919,11 +894,11 @@ export default function OnboardingForm({
             { value: 'salud',               label: 'Salud'              },
           ]}
         />
-        <div className="space-y-1.5">
-          <p className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wide">Objetivo, en tus palabras <span className="text-[#555] normal-case">(opc)</span></p>
+        <div className="space-y-2">
+          <p className="font-sans text-caption text-ink-2 uppercase tracking-wide">Objetivo, en tus palabras <span className="text-ink-3 normal-case">(opc)</span></p>
           <textarea rows={2} value={form.goalFreeText} onChange={e => set('goalFreeText', e.target.value)}
             placeholder="Describe con tus palabras qué quieres conseguir…"
-            className={`${FIELD} resize-none placeholder:text-[#444]`} />
+            className={`${FIELD} resize-none placeholder:text-ink-3`} />
         </div>
       </Section>
 
@@ -937,31 +912,31 @@ export default function OnboardingForm({
       <Section icon="health_and_safety" title="Salud">
         <YesNo label="¿Tienes alguna lesión o molestia actual?" value={form.hasCurrentInjury} onChange={v => set('hasCurrentInjury', v)} />
         {form.hasCurrentInjury && (
-          <div className="space-y-3 pl-3 border-l-2 border-white/7">
+          <div className="space-y-3 pl-3 border-l-2 border-hairline">
             <TextField label="¿Dónde?" value={form.currentInjuryLocation} onChange={v => set('currentInjuryLocation', v)} />
             <SliderField label="Intensidad" min={1} max={10} value={form.currentInjuryIntensity} onChange={v => set('currentInjuryIntensity', v)} />
-            <div className="space-y-1.5">
-              <p className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wide">¿En qué gestos/movimientos/ejercicios sientes dolor?</p>
+            <div className="space-y-2">
+              <p className="font-sans text-caption text-ink-2 uppercase tracking-wide">¿En qué gestos/movimientos/ejercicios sientes dolor?</p>
               <textarea rows={2} value={form.currentInjuryMovements} onChange={e => set('currentInjuryMovements', e.target.value)}
-                className={`${FIELD} resize-none placeholder:text-[#444]`} />
+                className={`${FIELD} resize-none placeholder:text-ink-3`} />
             </div>
           </div>
         )}
         <YesNo label="¿Lesiones anteriores?" value={form.hadPastInjuries} onChange={v => set('hadPastInjuries', v)} />
         {form.hadPastInjuries && (
-          <div className="pl-3 border-l-2 border-white/7">
+          <div className="pl-3 border-l-2 border-hairline">
             <TextField label="¿Cuál?" value={form.pastInjuriesDetail} onChange={v => set('pastInjuriesDetail', v)} />
           </div>
         )}
         <YesNo label="¿Consumes algún medicamento o fármaco?" value={form.takesMedication} onChange={v => set('takesMedication', v)} />
         {form.takesMedication && (
-          <div className="pl-3 border-l-2 border-white/7">
+          <div className="pl-3 border-l-2 border-hairline">
             <TextField label="¿Cuál?" value={form.medicationDetail} onChange={v => set('medicationDetail', v)} />
           </div>
         )}
         <YesNo label="¿Intervención quirúrgica reciente?" value={form.recentSurgery} onChange={v => set('recentSurgery', v)} />
         {form.recentSurgery && (
-          <div className="pl-3 border-l-2 border-white/7">
+          <div className="pl-3 border-l-2 border-hairline">
             <TextField label="¿Cuál?" value={form.recentSurgeryDetail} onChange={v => set('recentSurgeryDetail', v)} />
           </div>
         )}
@@ -983,12 +958,12 @@ export default function OnboardingForm({
 
         {/* Auto-calc panel */}
         {autoCalc && (
-          <div className="bg-[#00eefc]/5 border border-[#00eefc]/20 rounded-xl p-4 space-y-3">
+          <div className="bg-data/5 border border-data/20 rounded-surface p-4 space-y-3">
             <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-[#00eefc] text-base">calculate</span>
-              <p className="font-mono text-[10px] text-[#00eefc] uppercase font-bold tracking-wide">Cálculo automático (Mifflin-St Jeor)</p>
+              <Icon name="calculate" size="m" className="text-data" />
+              <p className="font-sans text-caption text-data uppercase font-bold tracking-wide">Cálculo automático (Mifflin-St Jeor)</p>
             </div>
-            <div className="space-y-0.5 font-mono text-xs text-[#888]">
+            <div className="font-mono text-label text-ink-3">
               <p>BMR: <span className="text-white font-bold">{autoCalc.bmr.toLocaleString()} kcal</span></p>
               <p>
                 TDEE ({form.activityLevel && (
@@ -998,73 +973,73 @@ export default function OnboardingForm({
               </p>
               <p>
                 Objetivo ({form.goalBody ? GOAL_ADJ_LABEL[form.goalBody] : ''}):
-                {' '}<span className="text-[#fbcb1a] font-bold">{autoCalc.kcal.toLocaleString()} kcal</span>
+                {' '}<span className="text-accent font-bold">{autoCalc.kcal.toLocaleString()} kcal</span>
               </p>
             </div>
-            <div className="grid grid-cols-3 gap-2 pt-2 border-t border-[#00eefc]/10">
+            <div className="grid grid-cols-3 gap-2 pt-2 border-t border-data/10">
               {[
-                { label: 'HC',    g: autoCalc.hcG,    pct: autoCalc.hcPct,    ef: 25, color: '#ffa500' },
-                { label: 'PROT',  g: autoCalc.protG,  pct: autoCalc.protPct,  ef: 25, color: '#00eefc' },
-                { label: 'GRASA', g: autoCalc.grasaG, pct: autoCalc.grasaPct, ef: 11, color: '#ff6b6b' },
+                { label: 'HC',    g: autoCalc.hcG,    pct: autoCalc.hcPct,    ef: 25, color: 'var(--color-warning)' },
+                { label: 'PROT',  g: autoCalc.protG,  pct: autoCalc.protPct,  ef: 25, color: 'var(--color-data)' },
+                { label: 'GRASA', g: autoCalc.grasaG, pct: autoCalc.grasaPct, ef: 11, color: 'var(--color-danger)' },
               ].map(m => (
                 <div key={m.label} className="text-center">
-                  <p className="font-mono text-[9px] font-bold uppercase" style={{ color: m.color }}>{m.label}</p>
-                  <p className="font-mono text-base font-bold text-white">{m.g}g</p>
-                  <p className="font-mono text-[9px] text-[#555]">{m.pct}% · {fmtExch(m.g / m.ef)} int</p>
+                  <p className="font-sans text-caption font-bold uppercase" style={{ color: m.color }}>{m.label}</p>
+                  <p className="font-mono text-title-s font-bold text-white">{m.g}g</p>
+                  <p className="font-mono text-caption text-ink-3">{m.pct}% · {fmtExch(m.g / m.ef)} int</p>
                 </div>
               ))}
             </div>
             <button type="button" onClick={applyAuto}
-              className="w-full py-2 bg-[#00eefc]/10 hover:bg-[#00eefc]/15 border border-[#00eefc]/30 text-[#00eefc] font-mono font-bold text-[10px] uppercase rounded-lg tracking-wide active:scale-95 transition-all">
+              className="w-full py-2 bg-data/10 hover:bg-data/15 border border-data/30 text-data font-sans font-bold text-caption uppercase rounded-control tracking-wide active:scale-95 transition-all">
               Aplicar este cálculo
             </button>
           </div>
         )}
         {!autoCalc && (
-          <p className="font-mono text-[9px] text-[#555] flex items-center gap-1.5">
-            <span className="material-symbols-outlined text-xs">info</span>
+          <p className="font-mono text-caption text-ink-3 flex items-center gap-2">
+            <Icon name="info" size="s" />
             Completa composición + actividad + objetivo para ver el cálculo automático de kcal y macros.
           </p>
         )}
 
         {/* Manual calorie input */}
-        <div className="space-y-1.5">
-          <p className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wide">Objetivo calórico diario</p>
+        <div className="space-y-2">
+          <p className="font-mono text-caption text-ink-2 uppercase tracking-wide">Objetivo calórico diario</p>
           <div className="flex items-center gap-2">
             <input type="number" min={800} max={8000} step={50} value={form.targetCalories}
               onChange={e => set('targetCalories', e.target.value === '' ? '' : Number(e.target.value))}
-              className="w-28 bg-[#0e0e0e] border border-white/7 rounded-lg px-3 py-2 text-sm text-white font-mono focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] text-center" />
-            <span className="font-mono text-xs text-[#c6c9ab]">kcal/día</span>
+              className="w-28 bg-bg border border-hairline rounded-control px-3 py-2 text-title-s text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent text-center" />
+            <span className="font-mono text-label text-ink-2">kcal/día</span>
           </div>
         </div>
 
         {/* Macro split */}
         <div className="space-y-2">
-          <p className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wide">Distribución de macros</p>
+          <p className="font-mono text-caption text-ink-2 uppercase tracking-wide">Distribución de macros</p>
           <div className="space-y-2">
             {([
-              { key: 'hcPct'    as const, label: 'HC',    factor: 4 as const, ef: 25, color: '#ffa500', grams: hcG    },
-              { key: 'protPct'  as const, label: 'PROT',  factor: 4 as const, ef: 25, color: '#00eefc', grams: protG  },
-              { key: 'grasaPct' as const, label: 'GRASA', factor: 9 as const, ef: 11, color: '#ff6b6b', grams: grasaG },
+              { key: 'hcPct'    as const, label: 'HC',    factor: 4 as const, ef: 25, color: 'var(--color-warning)', grams: hcG    },
+              { key: 'protPct'  as const, label: 'PROT',  factor: 4 as const, ef: 25, color: 'var(--color-data)', grams: protG  },
+              { key: 'grasaPct' as const, label: 'GRASA', factor: 9 as const, ef: 11, color: 'var(--color-danger)', grams: grasaG },
             ]).map(m => (
               <div key={m.key} className="flex items-center gap-3">
-                <span className="font-mono text-xs font-bold w-10 text-right shrink-0" style={{ color: m.color }}>{m.label}</span>
+                <span className="font-sans text-label font-bold w-10 text-right shrink-0" style={{ color: m.color }}>{m.label}</span>
                 <input type="number" min={0} max={100} value={form[m.key]}
                   onChange={e => set(m.key, e.target.value === '' ? '' : Number(e.target.value))}
-                  className="w-14 bg-[#0e0e0e] border border-white/7 rounded px-2 py-1 text-sm text-white font-mono focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] text-center shrink-0" />
-                <span className="font-mono text-[10px] text-[#555] shrink-0">%</span>
+                  className="w-14 bg-bg border border-hairline rounded-control px-2 py-1 text-title-s text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent text-center shrink-0" />
+                <span className="font-mono text-caption text-ink-3 shrink-0">%</span>
                 {cal > 0 ? (
                   <>
-                    <span className="font-mono text-sm font-bold text-white w-14 shrink-0">{m.grams}g</span>
-                    <span className="font-mono text-[9px] text-[#555]">{fmtExch(m.grams / m.ef)} int</span>
+                    <span className="font-mono text-body-s font-bold text-white w-14 shrink-0">{m.grams}g</span>
+                    <span className="font-mono text-caption text-ink-3">{fmtExch(m.grams / m.ef)} int</span>
                   </>
                 ) : (
-                  <span className="font-mono text-sm text-[#444] w-14 shrink-0">—</span>
+                  <span className="font-mono text-body-s text-ink-3 w-14 shrink-0">—</span>
                 )}
               </div>
             ))}
           </div>
-          <div className={`flex items-center gap-1.5 font-mono text-[10px] ${totalPct === 100 ? 'text-[#06d6a0]' : 'text-amber-400'}`}>
+          <div className={`flex items-center gap-2 font-mono text-caption ${totalPct === 100 ? 'text-success' : 'text-amber-400'}`}>
             <span className="material-symbols-outlined" style={{ fontSize: '12px' }}>{totalPct === 100 ? 'check_circle' : 'warning'}</span>
             Total: {totalPct}% {totalPct === 100 ? '✓' : `— debe sumar 100%`}
           </div>
@@ -1082,7 +1057,7 @@ export default function OnboardingForm({
         <YesNo label="¿Has tenido sobrepeso u obesidad anteriormente?" value={form.hadOverweightHistory} onChange={v => set('hadOverweightHistory', v)} />
         <YesNo label="¿Tu relación con la comida es buena?" value={form.foodRelationshipGood} onChange={v => set('foodRelationshipGood', v)} />
         {!form.foodRelationshipGood && (
-          <div className="pl-3 border-l-2 border-white/7">
+          <div className="pl-3 border-l-2 border-hairline">
             <TextField label="¿Por qué?" value={form.foodRelationshipReason} onChange={v => set('foodRelationshipReason', v)} />
           </div>
         )}
@@ -1098,15 +1073,15 @@ export default function OnboardingForm({
 
       {/* ── COMIDAS ──────────────────────────────────────────────────── */}
       <Section icon="schedule" title="Comidas">
-        <div className="space-y-1.5">
-          <p className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wide">Número de ingestas</p>
+        <div className="space-y-2">
+          <p className="font-mono text-caption text-ink-2 uppercase tracking-wide">Número de ingestas</p>
           <div className="flex gap-2">
             {([3, 4, 5] as const).map(n => (
               <button key={n} type="button" onClick={() => changeMealCount(n)}
-                className={`flex-1 py-2 rounded-lg font-mono text-sm font-bold border transition-all ${
+                className={`flex-1 py-2 rounded-control font-mono text-body-s font-bold border transition-all ${
                   form.mealCount === n
-                    ? 'bg-[#fbcb1a] text-black border-transparent'
-                    : 'bg-transparent text-[#c6c9ab] border-white/7 hover:text-white hover:border-[#3a3a3a]'
+                    ? 'bg-accent text-black border-transparent'
+                    : 'bg-transparent text-ink-2 border-hairline hover:text-white hover:border-hairline'
                 }`}>
                 {n}
               </button>
@@ -1115,17 +1090,17 @@ export default function OnboardingForm({
         </div>
 
         <div className="space-y-2">
-          <p className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wide">Ingestas y tupper</p>
-          <div className="divide-y divide-[#1e1e1e] rounded-xl overflow-hidden border border-white/7">
+          <p className="font-mono text-caption text-ink-2 uppercase tracking-wide">Ingestas y tupper</p>
+          <div className="divide-y divide-hairline rounded-surface overflow-hidden border border-hairline">
             {form.meals.map((meal, i) => (
-              <div key={meal.intakeType} className="flex items-center gap-3 px-4 py-3 bg-[#0a0a0a]">
-                <span className="material-symbols-outlined text-[#555] text-base">{INTAKE_ICONS[meal.intakeType]}</span>
-                <span className="flex-1 font-mono text-xs text-white">{meal.name}</span>
+              <div key={meal.intakeType} className="flex items-center gap-3 px-4 py-3 bg-bg">
+                <Icon name={INTAKE_ICONS[meal.intakeType]} size="m" className="text-ink-3" />
+                <span className="flex-1 font-sans text-label text-white">{meal.name}</span>
                 <button type="button" onClick={() => toggleTupper(i)}
-                  className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg font-mono text-[9px] font-bold border transition-all ${
+                  className={`flex items-center gap-2 px-3 py-2 rounded-control font-mono text-caption font-bold border transition-all ${
                     meal.needsTupper
-                      ? 'bg-[#00eefc]/15 border-[#00eefc]/40 text-[#00eefc]'
-                      : 'bg-[#1e1e1b] border-white/7 text-[#555] hover:text-[#c6c9ab] hover:border-[#3a3a3a]'
+                      ? 'bg-data/15 border-data/40 text-data'
+                      : 'bg-raised border-hairline text-ink-3 hover:text-ink-2 hover:border-hairline'
                   }`}>
                   <span className="material-symbols-outlined" style={{ fontSize: '12px' }}>lunch_dining</span>
                   Tupper
@@ -1177,19 +1152,19 @@ export default function OnboardingForm({
         <YesNo label="¿Prefieres cocinar todo de una vez para la semana (batch cooking)?" value={form.batchCookingPreferred} onChange={v => set('batchCookingPreferred', v)} />
 
         <div>
-          <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-1.5">Tipos de comida que prefieres</label>
-          <p className="font-mono text-[9px] text-[#7d7f68] mb-2">
-            Toca: neutral → <span className="text-[#fbcb1a]">priorizar</span> → <span className="text-red-400">evitar</span>. Guía las recetas del menú generado.
+          <label className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-2">Tipos de comida que prefieres</label>
+          <p className="font-sans text-caption text-ink-3 mb-2">
+            Toca: neutral → <span className="text-accent">priorizar</span> → <span className="text-red-400">evitar</span>. Guía las recetas del menú generado.
           </p>
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-2">
             {DISH_TYPES.filter(dt => dt.id !== 'otro').map(dt => {
               const pref = form.preferredDishTypes.includes(dt.id);
               const excl = form.excludedDishTypes.includes(dt.id);
               const cls = pref
-                ? 'bg-[#fbcb1a] border-[#fbcb1a] text-black'
+                ? 'bg-accent border-accent text-black'
                 : excl
                   ? 'bg-red-500/15 border-red-500/40 text-red-300 line-through'
-                  : 'bg-[#181818] border-white/10 text-[#c6c9ab] hover:text-white';
+                  : 'bg-surface border-hairline text-ink-2 hover:text-white';
               const cycle = () => {
                 if (pref) { set('preferredDishTypes', form.preferredDishTypes.filter(x => x !== dt.id)); set('excludedDishTypes', [...form.excludedDishTypes, dt.id]); }
                 else if (excl) { set('excludedDishTypes', form.excludedDishTypes.filter(x => x !== dt.id)); }
@@ -1197,7 +1172,7 @@ export default function OnboardingForm({
               };
               return (
                 <button type="button" key={dt.id} onClick={cycle}
-                  className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg border font-mono text-[10px] font-bold transition-all ${cls}`}>
+                  className={`flex items-center gap-1 px-3 py-2 rounded-control border font-mono text-caption font-bold transition-all ${cls}`}>
                   <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>{dt.icon}</span>
                   {dt.label}
                 </button>
@@ -1217,20 +1192,16 @@ export default function OnboardingForm({
             { value: 'avanzado',     label: 'Avanzado'     },
           ]}
         />
-        <TagInput label="Material disponible" placeholder="p.ej. mancuernas, barra…"
-          helpText="Equipamiento al que tienes acceso"
-          tags={form.equipment} onChange={v => set('equipment', v)} />
         <TagInput label="Ejercicios favoritos" placeholder="p.ej. sentadilla, press banca…"
           tags={form.favoriteExercises} onChange={v => set('favoriteExercises', v)} />
         <TagInput label="Ejercicios que prefieres evitar" placeholder="p.ej. remo con barra…"
           tags={form.hatedExercises} onChange={v => set('hatedExercises', v)} />
-        <div className="space-y-1.5">
-          <p className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wide">Lesiones / limitaciones</p>
+        <div className="space-y-2">
+          <p className="font-mono text-caption text-ink-2 uppercase tracking-wide">Lesiones / limitaciones</p>
           <textarea rows={3} value={form.injuries} onChange={e => set('injuries', e.target.value)}
             placeholder="p.ej. rodilla derecha operada (menisco)…"
-            className={`${FIELD} resize-none placeholder:text-[#444]`} />
+            className={`${FIELD} resize-none placeholder:text-ink-3`} />
         </div>
-        <NumberField label="Múltiplo de levantamiento total (press banca + sentadilla + peso muerto)" value={form.oneRepMaxTotal} onChange={v => set('oneRepMaxTotal', v)} unit="kg" min={0} />
         <PillSelect<ProgressFrequency>
           label="¿Cada cuánto progresas?" value={form.progressFrequency} onChange={v => set('progressFrequency', v)}
           options={[
@@ -1249,14 +1220,14 @@ export default function OnboardingForm({
           ]}
         />
         <SliderField label="Motivación actual" min={1} max={10} value={form.currentMotivation} onChange={v => set('currentMotivation', v)} />
-        <div className="space-y-1.5">
-          <p className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wide">Grupos musculares o ejercicios a mejorar</p>
+        <div className="space-y-2">
+          <p className="font-sans text-caption text-ink-2 uppercase tracking-wide">Grupos musculares o ejercicios a mejorar</p>
           <textarea rows={2} value={form.muscleGroupsToImprove} onChange={e => set('muscleGroupsToImprove', e.target.value)}
-            className={`${FIELD} resize-none placeholder:text-[#444]`} />
+            className={`${FIELD} resize-none placeholder:text-ink-3`} />
         </div>
         <YesNo label="¿Te mantienes activo en tus días de descanso?" value={form.restDayActive} onChange={v => set('restDayActive', v)} />
         {form.restDayActive && (
-          <div className="pl-3 border-l-2 border-white/7">
+          <div className="pl-3 border-l-2 border-hairline">
             <TextField label="¿Cómo?" value={form.restDayActiveDetail} onChange={v => set('restDayActiveDetail', v)} />
           </div>
         )}
@@ -1281,7 +1252,7 @@ export default function OnboardingForm({
         />
         <YesNo label="¿Medicación para conciliar el sueño?" value={form.sleepMedication} onChange={v => set('sleepMedication', v)} />
         {form.sleepMedication && (
-          <div className="pl-3 border-l-2 border-white/7">
+          <div className="pl-3 border-l-2 border-hairline">
             <TextField label="¿Cuál?" value={form.sleepMedicationDetail} onChange={v => set('sleepMedicationDetail', v)} />
           </div>
         )}
@@ -1290,8 +1261,8 @@ export default function OnboardingForm({
       {/* ── VALORACIÓN DETALLADA (template questions) ────────────────── */}
       {template.length > 0 && (
         <div className="space-y-4">
-          <p className="font-mono text-[9px] text-[#555] uppercase tracking-widest flex items-center gap-1.5">
-            <span className="material-symbols-outlined text-sm text-[#555]">tune</span>
+          <p className="font-mono text-caption text-ink-3 uppercase tracking-widest flex items-center gap-2">
+            <Icon name="tune" size="s" className="text-ink-3" />
             Valoración detallada
           </p>
           {(['entrenamiento', 'nutricion', 'descanso'] as OnboardingSection[]).map(section => {
@@ -1303,8 +1274,8 @@ export default function OnboardingForm({
                 <Section icon={meta.icon} title={meta.label}>
                   <div className="space-y-4">
                     {questions.map(q => (
-                      <div key={q.id} className="space-y-1.5 border-b border-white/40 pb-3 last:border-0 last:pb-0">
-                        <p className="font-mono text-[10px] text-[#c6c9ab] uppercase">{q.label}</p>
+                      <div key={q.id} className="space-y-2 border-b border-hairline pb-3 last:border-0 last:pb-0">
+                        <p className="font-sans text-caption text-ink-2 uppercase">{q.label}</p>
                         {renderAnswer(q)}
                       </div>
                     ))}
@@ -1318,15 +1289,13 @@ export default function OnboardingForm({
 
       {/* ── Actions ──────────────────────────────────────────────────── */}
       <div className="flex gap-3">
-        <button type="button" onClick={handleSave} disabled={saving}
-          className="flex-1 py-3 bg-[#fbcb1a] text-black font-sans font-bold text-sm uppercase rounded-xl hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-50">
-          {saving ? 'Guardando…' : isFirstTime ? 'Guardar y empezar' : 'Guardar cambios'}
-        </button>
+        <Button onClick={handleSave} loading={saving} variant="primary" fullWidth>
+          {isFirstTime ? 'Guardar y empezar' : 'Guardar cambios'}
+        </Button>
         {onCancel && (
-          <button type="button" onClick={onCancel}
-            className="px-5 py-3 border border-white/7 text-[#c6c9ab] font-mono text-sm rounded-xl hover:text-white hover:border-[#3a3a3a] transition-all">
+          <Button onClick={onCancel} variant="secondary">
             Cancelar
-          </button>
+          </Button>
         )}
       </div>
     </div>

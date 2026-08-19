@@ -103,6 +103,29 @@ export interface UserProfile {
   telefono?: { prefijo: string; numero: string }; // prefijo con '+' («+34»)
   estadoCrm?: EstadoCrm;                          // ausente ⇒ se trata como 'activo'
 
+  // ── Bienvenida guiada / tutorial (F3.12, Fase 3) ──────────────────────────
+  // Dato del propio atleta (su progreso viendo el tour), no una decisión
+  // comercial del coach — por eso NO está en la lista bloqueada del `allow
+  // update` de arriba: el atleta puede escribirlo sin pasar por el coach.
+  tutorial?: {
+    completado: boolean;
+    pasoAlcanzado: number;    // índice del último paso visto, para reanudar si se cierra la app
+    ejemplosVistos: string[]; // ids de paso cuyo aviso "EJEMPLO" ya no debe repetirse
+    completadoEn?: string;    // ISO
+  };
+  checklistInicial?: {
+    primeraSesion: boolean;
+    cincoIngestas: boolean;
+    leccionRir: boolean;
+  };
+
+  // ── Preferencias de notificaciones (F3.13e) ────────────────────────────────
+  // Silencia un tipo en la campanita (NotificationBell) — NO evita que se
+  // escriba en Firestore (createNotificationDeduped no lee esto: hacerlo
+  // añadiría una lectura extra en cada notificación de la app entera, atleta
+  // incluido). Ausente o `true` ⇒ activada; solo `false` la silencia.
+  notificationPrefs?: Partial<Record<NotificationType, boolean>>;
+
   // ── Churn + atribución (2026-08-02) ────────────────────────────────────────
   // Sin fechaBaja/motivoBaja, marcar a alguien de baja pierde para siempre
   // CUÁNDO y POR QUÉ — y el churn (KPI real del negocio, objetivo <10%) queda
@@ -117,6 +140,29 @@ export interface UserProfile {
   // importados — sin esto, el CAC por canal es incalculable para cualquiera
   // que ya tenga cuenta en la app.
   origen?: string;                  // 'instagram' | 'referido' | 'ads' | ... (mismo campo libre que CrmContacto.origen)
+
+  // ── Borrado de cuenta (2026-07-23) ─────────────────────────────────────────
+  // api/delete-account.ts ANONIMIZA en vez de borrar (a propósito: el cuadro de
+  // mandos sigue contando altas/bajas sobre estos documentos), y ya escribe
+  // estos dos campos en Firestore — pero el tipo no los tenía, así que nadie en
+  // src/ los leía y el perfil `borrado_…@anonimo.local` seguía apareciendo en
+  // todas las listas de atletas. Ver src/utils/atletas.ts.
+  anonimizado?: boolean;
+  anonimizadoEn?: string; // ISO
+
+  // ── Publicación del plan (T7.b, 2026-08-18) ────────────────────────────────
+  // Antes la puerta de la sala de espera era `hasPlan` (asignaciones > 0), una
+  // deducción: en cuanto el coach asignaba un mesociclo, el atleta veía su
+  // plan sin que Dani hubiera decidido el momento. `hasPlan` sigue existiendo
+  // como señal separada — es lo que decide si el botón "Mostrar el plan al
+  // atleta" puede pulsarse, y lo que arranca el tour — pero lo que abre la
+  // sala de espera ahora es esto, una decisión explícita del coach.
+  planPublishedAt?: string; // ISO, el día en que el coach le mostró su primer plan
+
+  // ISO timestamp de la última vez que el atleta abrió la app (escrito por su
+  // propio cliente en cada arranque de sesión, ver App.tsx loadUserSession).
+  // Solo para mostrarlo en la tarjeta del coach — no gatea nada.
+  lastLoginAt?: string;
 }
 
 // Estado comercial del cliente. Deliberadamente separado de `role`, que es un
@@ -176,7 +222,16 @@ export interface AthleteNutritionConfig {
   batchCookingPreferred?: boolean; // athlete prefers cooking the whole week at once; pre-fills the coach's batch toggle
   preferredDishTypes?: string[]; // DishType ids the athlete wants to see more of (see utils/dishTypes)
   excludedDishTypes?: string[];  // DishType ids the athlete never wants in the menu
+  /** Cuándo el atleta tiene más hambre — alimenta el reparto automático de
+   *  intercambios por comida (utils/mealDistribution.ts). Sin valor = reparto
+   *  uniforme (comportamiento histórico). */
+  hungerProfile?: HungerProfile;
+  /** Franja (escala 1-5, ver DietMeal.slot) de la ingesta pegada al entreno,
+   *  para cuando ninguna comida de la dieta trae `aroundTraining` explícito. */
+  trainingSlot?: number;
 }
+
+export type HungerProfile = 'manana' | 'equilibrado' | 'noche';
 
 export interface Exercise {
   id: string;
@@ -185,7 +240,16 @@ export interface Exercise {
   primaryFocus: string;      // legacy free-form label
   muscleGroup?: MuscleGroup; // typed macrocycle key (optional; old docs lack it)
   type: 'fuerza' | 'cardio' | 'estiramiento' | 'pliometría';
-  enduranceProfile?: 'ascendente' | 'campana' | 'descendente'; // curva de esfuerzo a lo largo de la serie
+  enduranceProfile?: 'ascendente' | 'campana' | 'descendente'; // curva de esfuerzo a lo largo de la serie (cardio)
+  // Dónde carga más el ejercicio de fuerza dentro de su rango de movimiento —
+  // no es lo mismo que enduranceProfile (esa es la curva de esfuerzo dentro
+  // de UNA serie de cardio; esta es dónde está el pico de tensión mecánica en
+  // el recorrido, un concepto de hipertrofia). 'estiramiento' = carga máxima
+  // en posición alargada (ej. curl femoral, aperturas), 'acortamiento' =
+  // carga máxima en contracción máxima (ej. gemelo en máquina, curl en
+  // polea baja), 'campana' = carga máxima a mitad de recorrido (la mayoría
+  // de ejercicios con peso libre — sentadilla, press banca).
+  strengthCurve?: 'estiramiento' | 'acortamiento' | 'campana';
   equipment?: string[];      // material necesario; undefined/empty = siempre disponible
   videoUrl?: string;
   imageUrl?: string;
@@ -204,9 +268,93 @@ export interface ExercisePersonalNote {
   updatedAt: string; // ISO timestamp
 }
 
+// ─── CATÁLOGO DE MÁQUINAS DE GIMNASIO ─────────────────────────────────────────
+// Eje SEPARADO de `Exercise.equipment[]` (texto libre, taxonomía divergente): esto
+// describe máquinas concretas de marca concreta que existen físicamente en el
+// gimnasio del atleta. La relación máquina→ejercicio NO está implementada; ver
+// docs/catalogo-maquinas.md para el diseño de la colección puente futura.
+//
+// El catálogo publicado vive como JSON en src/data/maquinas/<marca>.json (entra en
+// el bundle, cero lecturas de Firestore); la colección `maquinas` guarda SOLO los
+// cambios del admin sobre esa semilla y las máquinas creadas a mano. El catálogo
+// efectivo es el merge de ambos — ver src/db/machines.ts.
+
+// Abierto a propósito: añadir Panatta/Matrix/Prime es un importador nuevo, no un
+// cambio de tipo. Los literales están para autocompletado de lo ya importado.
+export type MarcaMaquina = 'hammerStrength' | 'technogym' | (string & {});
+
+export const MARCA_LABELS: Record<string, string> = {
+  hammerStrength: 'Hammer Strength',
+  technogym: 'Technogym',
+};
+
+export interface Maquina {
+  // Slug determinista `${marca}-${familia}-${nombreOriginal}` calculado en el
+  // importador y congelado en el JSON. A diferencia de los IDs de `Exercise`
+  // (autogenerados por addDoc, irreproducibles entre entornos), reimportar no
+  // duplica ni renumera. Es la garantía de las migraciones y de la futura
+  // relación con ejercicios.
+  id: string;
+  nombreOriginal: string;   // 'Iso-Lateral Incline Press' — nunca se le muestra al atleta
+  nombreMostrado: string;   // 'Press inclinado' — lo único que ve el atleta
+  marca: MarcaMaquina;
+  familia: string;          // 'Plate Loaded' | 'Pure Strength'
+  categoria: MuscleGroup;   // agrupa el swipe; reutiliza el enum ya tipado
+  fotoUrl: string;          // ruta relativa a public/ para el catálogo, URL de Storage para las manuales
+  fuente: 'scraping' | 'manual';
+  visible: boolean;
+  publicadoEn: string | null; // null = importada pero sin revisar; el scraping nunca publica directo
+  creadoPor: 'admin' | 'sistema';
+}
+
+// Lo que el admin cambia sobre una máquina de la semilla. Es lo único que se
+// guarda en Firestore para las máquinas importadas — un doc por máquina tocada,
+// no uno por máquina del catálogo.
+export interface MaquinaOverride extends Partial<Omit<Maquina, 'id'>> {
+  id: string;
+  actualizadoEn: string;
+}
+
+export interface DecisionMaquina {
+  maquinaId: string;
+  tengo: boolean;
+  decididoEn: string; // ISO
+}
+
+// Máquina que el atleta añade con foto propia. Vive SOLO en su gimnasio; nunca
+// entra al catálogo global hasta que un admin la promueve.
+export interface MaquinaPropia {
+  id: string;
+  nombre: string;
+  fotoUrl: string;
+  creadaEn: string;
+  candidataAPublica: boolean;
+}
+
+export interface ProgresoCatalogo {
+  revisadas: number;
+  total: number;
+  categoriaActual: MuscleGroup | null;
+  completado: boolean;
+  // true si el atleta cerró el onboarding sin completar el catálogo. Lo leen
+  // PendingTasksPanel (tarjeta en Hoy) y el badge de la pestaña.
+  pendienteRecordatorio: boolean;
+  // Versión del catálogo con la que se completó. Sin esto, al importar una marca
+  // nueva el atleta que ya terminó queda `completado: true` para siempre y nunca
+  // ve las máquinas añadidas.
+  versionCatalogo: string;
+}
+
+export interface Gimnasio {
+  atletaId: string; // email — misma convención que onboarding/, tasks, progressPhotos
+  maquinas: DecisionMaquina[];
+  progresoCatalogo: ProgresoCatalogo;
+  maquinasPropias: MaquinaPropia[];
+}
+
 // High-intensity techniques a coach can flag on an exercise so the athlete sees a
 // distinct badge + explanation of what to actually do. See utils/workoutTechniques.ts.
-export type WorkoutTechnique = 'amrap' | 'dropset' | 'myoreps' | 'restpause';
+export type WorkoutTechnique = 'amrap' | 'dropset' | 'myoreps' | 'restpause' | 'fallo';
 
 // One warm-up approximation set — display-only, never logged, never counts toward
 // volume/records/progression. See src/utils/warmup/.
@@ -281,7 +429,12 @@ export interface Workout {
 export interface WorkoutSetLog {
   weight: number;   // kg lifted
   repsDone: number; // actual reps completed
-  rir: number;      // perceived reps in reserve
+  rir: number;      // perceived reps in reserve — se ignora si alFallo es true
+  // Fase 3 (decisión de Dani, 2026-08-07): FALLO no es RIR 0. Son dos cosas
+  // distintas ("no podía hacer ni una más pero paré ahí" vs "seguí hasta que
+  // la forma se rompió") y el contrato de datos original lo mezclaba. Cuando
+  // es true, `rir` no se lee — se conserva por compatibilidad con logs viejos.
+  alFallo?: boolean;
 }
 
 export interface WorkoutEntryLog {
@@ -315,16 +468,26 @@ export interface WorkoutAssignment {
 
 // ─── QUESTIONNAIRES ───────────────────────────────────────────────────────────
 
-export type QuestionType = 'numeric' | 'scale' | 'choice' | 'text' | 'boolean';
+export type QuestionType = 'numeric' | 'scale' | 'choice' | 'text' | 'boolean' | 'metric' | 'media';
 
-export type QScheduleType = 'once' | 'weekdays' | 'interval' | 'monthly';
+export type QScheduleType = 'once' | 'weekdays' | 'interval' | 'monthly' | 'plan_week' | 'mesocycle_end';
 
 export interface QSchedule {
   type: QScheduleType;
   weekdays?: number[];    // 0=Sun..6=Sat  (for 'weekdays')
   intervalDays?: number;  // (for 'interval')
   dayOfMonth?: number;    // (for 'monthly')
+  planWeek?: number;          // (for 'plan_week') 1-indexed week since assignment.startDate
+  planWeekday?: number;       // (for 'plan_week') 0=Sun..6=Sat, default = startDate's weekday
+  mesocycleOffsetDays?: number; // (for 'mesocycle_end') days before/after the mesocycle's last day, default 0
 }
+
+// Perímetros y peso corporal recogidos vía preguntas tipo 'metric'. El peso
+// (`bodyweight`) no genera un BodyMeasurement — reutiliza bodyweightLogs para
+// no partir en dos la serie que ya alimenta perfil/reportes/periodización.
+export type BodyMetricKey =
+  | 'bodyweight' | 'altura' | 'pecho' | 'cintura' | 'abdomen' | 'cadera'
+  | 'biceps_izq' | 'biceps_der' | 'muslo_izq' | 'muslo_der' | 'gemelo' | 'cuello';
 
 export interface QuestionnaireQuestion {
   id: string;
@@ -351,6 +514,11 @@ export interface QuestionnaireQuestion {
   // boolean
   labelTrue?: string;        // default 'Sí'
   labelFalse?: string;       // default 'No'
+  // metric
+  metricKey?: BodyMetricKey;
+  // media
+  mediaKind?: 'video' | 'image';
+  maxSizeMb?: number;        // default 50
 }
 
 export interface Questionnaire {
@@ -361,6 +529,18 @@ export interface Questionnaire {
   questions: QuestionnaireQuestion[];
 }
 
+// Personalización por cliente sobre la plantilla maestra: el questionId se
+// conserva siempre, así que gráficas/correlaciones/reportes pueden seguir
+// comparando la misma pregunta entre atletas y en el tiempo aunque cada uno
+// tenga su propia versión (ocultada, reformulada o con preguntas extra).
+export interface QuestionnaireOverrides {
+  hidden?: string[];                       // questionIds ocultos para este atleta
+  relabeled?: Record<string, string>;      // questionId -> enunciado propio
+  required?: Record<string, boolean>;      // questionId -> forzar/quitar obligatoriedad
+  extra?: QuestionnaireQuestion[];         // preguntas exclusivas de este atleta (id con prefijo 'x_')
+  order?: string[];                        // orden personalizado de questionIds (plantilla + extra)
+}
+
 export interface QuestionnaireAssignment {
   id: string;
   questionnaireId: string;
@@ -369,6 +549,7 @@ export interface QuestionnaireAssignment {
   startDate: string;           // YYYY-MM-DD
   active: boolean;
   createdAt: string;
+  overrides?: QuestionnaireOverrides;
 }
 
 export interface QuestionnaireResponse {
@@ -379,6 +560,44 @@ export interface QuestionnaireResponse {
   submittedAt: string;
   answers: { questionId: string; value: string | number | boolean }[];
 }
+
+// ─── BODY MEASUREMENTS ─────────────────────────────────────────────────────────
+// Serie propia de perímetros corporales. Se escribe desde una respuesta de
+// cuestionario (pregunta tipo 'metric') o manualmente. docId determinista
+// `${athleteId}_${date}_${metricKey}` (mismo patrón que progressPhotos) para
+// que responder dos veces el mismo día sobrescriba en vez de duplicar.
+
+export interface BodyMeasurement {
+  id: string;
+  athleteId: string;  // email
+  date: string;       // YYYY-MM-DD
+  metricKey: BodyMetricKey;
+  value: number;
+  unit: 'cm' | 'kg';
+  source: 'questionnaire' | 'manual';
+  responseId?: string;
+  createdAt: string;  // ISO timestamp
+}
+
+export const BODY_METRIC_LABELS: Record<BodyMetricKey, string> = {
+  bodyweight: 'Peso corporal',
+  altura:     'Altura',
+  pecho:      'Contorno de pecho',
+  cintura:    'Perímetro de cintura',
+  abdomen:    'Perímetro de abdomen',
+  cadera:     'Perímetro de cadera',
+  biceps_izq: 'Bíceps izquierdo',
+  biceps_der: 'Bíceps derecho',
+  muslo_izq:  'Muslo izquierdo',
+  muslo_der:  'Muslo derecho',
+  gemelo:     'Gemelo',
+  cuello:     'Cuello',
+};
+
+export const BODY_METRIC_UNITS: Record<BodyMetricKey, 'cm' | 'kg'> = {
+  bodyweight: 'kg', altura: 'cm', pecho: 'cm', cintura: 'cm', abdomen: 'cm', cadera: 'cm',
+  biceps_izq: 'cm', biceps_der: 'cm', muslo_izq: 'cm', muslo_der: 'cm', gemelo: 'cm', cuello: 'cm',
+};
 
 // ─── BODYWEIGHT ───────────────────────────────────────────────────────────────
 
@@ -428,6 +647,11 @@ export type SleepRoutineOrScreen = 'rutina' | 'pantalla';
 
 export interface OnboardingData {
   athleteId:          string;         // email
+  /** A-2. Consentimiento explícito para que sus datos se analicen con IA
+   *  (Anthropic). Ausente = no ha contestado, y sin respuesta NO se envía nada:
+   *  son datos de salud, art. 9 del RGPD. La lógica y el porqué, en
+   *  `src/ai/consentimientoIA.ts`. */
+  consentimientoIA?:  { aceptado: boolean; fecha: string; version: number };
   // ── Composición corporal ──────────────────────────────────────────────────
   sex?:               'male' | 'female';
   birthDate?:         string;         // YYYY-MM-DD
@@ -547,6 +771,13 @@ export interface DietMeal {
   name: string;
   items: DietItem[];
   target?: Record<FoodCategory, number>; // per-meal exchange targets (optional, set by coach)
+  /** Franja horaria: 1=Desayuno 2=Media mañana 3=Comida 4=Merienda 5=Cena.
+   *  Misma escala que OnboardingMeal.intakeType y MenuMeal.slot (utils/menuEngine.ts).
+   *  Ausente en dietas antiguas — se resuelve con utils/mealDistribution.ts:resolveSlots(). */
+  slot?: number;
+  /** Ingesta pegada al entreno (pre/post) — como mucho una por dieta. El
+   *  reparto automático (utils/mealDistribution.ts) sesga hidratos hacia ella. */
+  aroundTraining?: boolean;
 }
 
 export interface Diet {
@@ -784,19 +1015,19 @@ export interface RecipeIngredient {
   quantity: number; // multiples of 0.25
 }
 
-export interface IndyaIngredient {
+export interface RecetaIngrediente {
   name: string;
   quantity: number; // grams or units
 }
 
-export interface IndyaStep {
+export interface RecetaPaso {
   position: number;
   description: string;
 }
 
 export interface Recipe {
   id: string;
-  ownerId: string;    // Firebase UID | 'indya'
+  ownerId: string;    // UID de Firebase, o el centinela del recetario importado (OWNER_RECETARIO en db/recipes)
   name: string;
   photoUrl?: string;
   // ── Coach / athlete builder ───────────────────────────────────────────────
@@ -804,10 +1035,10 @@ export interface Recipe {
   ingredients: RecipeIngredient[];
   extras: string[];
   steps: string[];
-  // ── Indya-only fields (all optional) ────────────────────────────────────
+  // ── imported only fields (all optional) ────────────────────────────────────
   image?: string;
-  ingredientsText?: IndyaIngredient[];
-  stepsText?: IndyaStep[];
+  ingredientsText?: RecetaIngrediente[];
+  stepsText?: RecetaPaso[];
   macros?: { carb: number; prot: number; fat: number };
   kcal?: number;
   weight?: number;
@@ -906,7 +1137,7 @@ export type MuscleGroup =
   | 'pecho' | 'dorsal' | 'trapecio'
   | 'deltoide_ant' | 'deltoide_lat' | 'deltoide_post'
   | 'biceps' | 'triceps' | 'antebrazo'
-  | 'cuadriceps' | 'isquios' | 'gluteo' | 'gemelo' | 'core';
+  | 'cuadriceps' | 'isquios' | 'gluteo' | 'aductores' | 'gemelo' | 'core';
 
 export const MUSCLE_LABELS: Record<MuscleGroup, string> = {
   pecho:         'Pecho',
@@ -921,8 +1152,32 @@ export const MUSCLE_LABELS: Record<MuscleGroup, string> = {
   cuadriceps:    'Cuádriceps',
   isquios:       'Isquiotibiales',
   gluteo:        'Glúteo',
+  aductores:     'Aductores',
   gemelo:        'Gemelo',
   core:          'Core',
+};
+
+// T10 (18-08). Antes había cuatro copias de este mismo orden repartidas por
+// MesocycleDashboard, MesocycleManager, MesocycleTemplateLibrary y
+// ExerciseLibraryScreen (esta última como MACRO_MUSCLE_GROUPS) — exactamente
+// por eso añadir un grupo nuevo era caro: había que tocar el mismo enum en
+// cinco sitios. Un único origen de verdad.
+export const MUSCLE_ORDER: MuscleGroup[] = [
+  'pecho', 'dorsal', 'trapecio',
+  'deltoide_ant', 'deltoide_lat', 'deltoide_post',
+  'biceps', 'triceps', 'antebrazo',
+  'cuadriceps', 'isquios', 'gluteo', 'aductores', 'gemelo', 'core',
+];
+
+// Etiquetas cortas para tablas y gráficas estrechas (MesocycleDashboard). No
+// son solo MUSCLE_LABELS truncado: "Delt.Ant" no es "Deltoides ant." cortado,
+// es la abreviatura que ya se usaba.
+export const MUSCLE_LABELS_SHORT: Record<MuscleGroup, string> = {
+  pecho: 'Pecho', dorsal: 'Dorsal', trapecio: 'Trapecio',
+  deltoide_ant: 'Delt.Ant', deltoide_lat: 'Delt.Lat', deltoide_post: 'Delt.Post',
+  biceps: 'Bíceps', triceps: 'Tríceps', antebrazo: 'Antebrazo',
+  cuadriceps: 'Cuáds', isquios: 'Isquios', gluteo: 'Glúteo',
+  aductores: 'Aduct.', gemelo: 'Gemelo', core: 'Core',
 };
 
 export interface MuscleGroupConfig {
@@ -1114,7 +1369,20 @@ export interface AthleteCardioProfile {
 
 export type CardioSessionType = 'libre' | 'zona2' | 'intervalos';
 
-export interface CardioIntervalBlock { label: string; durationSec: number; targetZone: keyof CardioZones }
+// F9 del plan de réplica FITIV (docs/FITIV-analisis-y-plan.md §4.3): un
+// bloque cierra por uno de estos criterios en vez de solo por tiempo.
+// 'distance' se queda fuera — depende de GPS, aparcado en F7.
+export type CardioIntervalCloseType = 'time' | 'zone' | 'heartRate' | 'calories' | 'manual';
+
+export interface CardioIntervalBlock {
+  label: string;
+  closeType: CardioIntervalCloseType;
+  durationSec: number; // estimación mostrada en el resumen aunque el cierre real sea por otro criterio
+  targetZone?: keyof CardioZones; // color/anuncio del bloque en todos los tipos; criterio de cierre solo si closeType === 'zone'
+  hrThresholdBpm?: number; // closeType === 'heartRate'
+  hrDirection?: 'above' | 'below'; // closeType === 'heartRate'
+  targetKcal?: number; // closeType === 'calories', acumulado dentro del bloque
+}
 
 export interface CardioAssignment {
   id: string;
@@ -1162,6 +1430,22 @@ export interface CardioSession {
   notes?: string;
   tags?: string[];
   manual?: boolean;       // añadida a mano, sin banda real — no otorga XP ni Puntos (regla de FITIV, §6)
+}
+
+// Objetivo semanal de cardio (F3.9, `objetivosCardio` del contrato). Doc ID
+// determinista `${athleteId}_${isoWeek}`, mismo patrón que WeeklyChallenge.
+// `minutesGoal`/`sessionsGoal` son lo único que persiste: los minutos hechos
+// siempre se derivan de `cardioSessions` (ver weeklyCardioMinutesDone) para
+// que el contador nunca pueda divergir de las sesiones reales. `closed`
+// existe solo para no repetir el haptic de éxito una vez la semana ya cerró.
+export interface CardioWeeklyGoal {
+  id: string;          // `${athleteId}_${isoWeek}`
+  athleteId: string;
+  isoWeek: string;      // '2026-W28'
+  minutesGoal: number;
+  sessionsGoal?: number;
+  closed: boolean;
+  closedAt?: string;    // ISO
 }
 
 export type HrTestType = 'resting' | 'talktest' | 'tt30' | 'maxramp' | 'decoupling';

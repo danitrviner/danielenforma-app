@@ -1,6 +1,6 @@
 import { db, collection, doc, setDoc, getDocs, updateDoc, query, where } from '../firebase';
 import { AppNotification } from '../types';
-import { forceLocalOnly, setLocalBypassMode, stripUndefined } from './core';
+import { forceLocalOnly, setLocalBypassMode, stripUndefined, esFalloDePermisos } from './core';
 
 // ── Notifications ─────────────────────────────────────────────────────────────
 
@@ -70,7 +70,8 @@ export async function markNotificationRead(id: string, recipientEmail: string): 
     await updateDoc(doc(db, 'notifications', id), { read: true });
   } catch (err) {
     console.warn('markNotificationRead Firestore failed:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
   }
 }
 
@@ -87,7 +88,8 @@ export async function markAllNotificationsRead(recipientEmail: string): Promise<
     await Promise.all(snap.docs.map(d => updateDoc(d.ref, { read: true })));
   } catch (err) {
     console.warn('markAllNotificationsRead Firestore failed:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
   }
 }
 

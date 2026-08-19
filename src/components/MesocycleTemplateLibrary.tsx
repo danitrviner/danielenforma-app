@@ -1,12 +1,13 @@
 import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { MuscleGroup, MuscleGroupConfig, MesocycleTemplate, TemplateStage, TemplateDay, WorkoutExercise, Exercise } from '../types';
+import { MuscleGroup, MuscleGroupConfig, MesocycleTemplate, TemplateStage, TemplateDay, WorkoutExercise, Exercise, MUSCLE_ORDER, MUSCLE_LABELS } from '../types';
 import { getTopMuscleGroups } from '../utils/muscleGroupRanking';
 import {
   getMesocycleTemplates, createMesocycleTemplate,
   updateMesocycleTemplate, deleteMesocycleTemplate, getExercises,
 } from '../dbService';
-import Skeleton from './Skeleton';
+import { Skeleton } from './ui';
+import { Icon, Button, EmptyState, Dialog, Input } from './ui';
 
 function mesocycleTemplatesKey(coachId: string) {
   return ['mesocycleTemplates', coachId] as const;
@@ -14,29 +15,7 @@ function mesocycleTemplatesKey(coachId: string) {
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
-const MUSCLE_GROUPS: MuscleGroup[] = [
-  'pecho', 'dorsal', 'trapecio',
-  'deltoide_ant', 'deltoide_lat', 'deltoide_post',
-  'biceps', 'triceps', 'antebrazo',
-  'cuadriceps', 'isquios', 'gluteo', 'gemelo', 'core',
-];
-
-const MUSCLE_LABELS: Record<MuscleGroup, string> = {
-  pecho:         'Pecho',
-  dorsal:        'Dorsal',
-  trapecio:      'Trapecio',
-  deltoide_ant:  'Deltoides Ant.',
-  deltoide_lat:  'Deltoides Lat.',
-  deltoide_post: 'Deltoides Post.',
-  biceps:        'Bíceps',
-  triceps:       'Tríceps',
-  antebrazo:     'Antebrazo',
-  cuadriceps:    'Cuádriceps',
-  isquios:       'Isquiotibiales',
-  gluteo:        'Glúteo',
-  gemelo:        'Gemelo',
-  core:          'Core',
-};
+const MUSCLE_GROUPS: MuscleGroup[] = MUSCLE_ORDER;
 
 const DEFAULT_GROUPS = (): Record<MuscleGroup, MuscleGroupConfig> =>
   Object.fromEntries(
@@ -46,7 +25,7 @@ const DEFAULT_GROUPS = (): Record<MuscleGroup, MuscleGroupConfig> =>
 // ── Heatmap helpers ────────────────────────────────────────────────────────────
 
 function heatmapBg(series: number): string {
-  if (series === 0) return '#1a1a1a';
+  if (series === 0) return 'var(--color-surface)';
   if (series <= 4)  return `rgb(59 130 246 / ${Math.round(18 + ((series - 1) / 3) * 32)}%)`;
   if (series <= 9)  return `rgb(34 197 94 / ${Math.round(20 + ((series - 5) / 4) * 40)}%)`;
   if (series <= 14) return `rgb(249 115 22 / ${Math.round(28 + ((series - 10) / 4) * 42)}%)`;
@@ -54,11 +33,11 @@ function heatmapBg(series: number): string {
 }
 
 function heatmapText(series: number): string {
-  if (series === 0) return '#555';
-  if (series <= 4)  return '#93c5fd';
-  if (series <= 9)  return '#86efac';
-  if (series <= 14) return '#fdba74';
-  return '#fca5a5';
+  if (series === 0) return 'var(--color-ink-3)';
+  if (series <= 4)  return 'var(--color-info)';
+  if (series <= 9)  return 'var(--color-success)';
+  if (series <= 14) return 'var(--color-warning)';
+  return 'var(--color-danger)';
 }
 
 // ── Sub-components ─────────────────────────────────────────────────────────────
@@ -71,15 +50,15 @@ function Stepper({ value, min = 0, max = 25, onChange }: {
       <button
         onClick={() => onChange(Math.max(min, value - 1))}
         disabled={value <= min}
-        className="w-6 h-6 rounded bg-[#2a2a2a] text-[#c6c9ab] hover:bg-[#3a3a3a] disabled:opacity-30 text-xs font-bold flex items-center justify-center"
+        className="w-6 h-6 rounded-control bg-raised text-ink-2 hover:bg-raised disabled:opacity-30 text-label font-bold flex items-center justify-center"
       >−</button>
-      <span className="w-8 text-center font-mono text-sm font-bold" style={{ color: heatmapText(value) }}>
+      <span className="w-8 text-center font-mono text-body-s font-bold" style={{ color: heatmapText(value) }}>
         {value}
       </span>
       <button
         onClick={() => onChange(Math.min(max, value + 1))}
         disabled={value >= max}
-        className="w-6 h-6 rounded bg-[#2a2a2a] text-[#c6c9ab] hover:bg-[#3a3a3a] disabled:opacity-30 text-xs font-bold flex items-center justify-center"
+        className="w-6 h-6 rounded-control bg-raised text-ink-2 hover:bg-raised disabled:opacity-30 text-label font-bold flex items-center justify-center"
       >+</button>
     </div>
   );
@@ -99,8 +78,8 @@ function PrioritySelector({ value, onChange }: {
       {opts.map(o => (
         <button
           key={o.v} onClick={() => onChange(o.v)} title={o.label}
-          className={`px-2 py-0.5 rounded text-xs font-mono transition-all ${
-            value === o.v ? 'bg-[#fbcb1a] text-black font-bold' : 'bg-[#2a2a2a] text-[#c6c9ab] hover:bg-[#3a3a3a]'
+          className={`px-2 rounded-control text-label font-mono transition-all ${
+            value === o.v ? 'bg-accent text-black font-bold' : 'bg-raised text-ink-2 hover:bg-raised'
           }`}
         >{o.icon}</button>
       ))}
@@ -124,59 +103,59 @@ const ExerciseRow: React.FC<{
   onChange, onDelete, onMoveUp, onMoveDown,
 }) => {
   return (
-    <div className="flex items-center gap-2 py-1.5 border-b border-white/40 last:border-0 group">
+    <div className="flex items-center gap-2 py-2 border-b border-hairline last:border-0 group">
       {/* Name */}
-      <span className="font-mono text-[10px] text-[#c6c9ab] flex-1 min-w-0 truncate" title={exName}>{exName}</span>
+      <span className="font-sans text-caption text-ink-2 flex-1 min-w-0 truncate" title={exName}>{exName}</span>
       {/* Sets */}
-      <div className="flex items-center gap-0.5">
-        <span className="font-mono text-[9px] text-[#555]">sets</span>
+      <div className="flex items-center ">
+        <span className="font-mono text-caption text-ink-3">sets</span>
         <input
           type="number" min={1} max={20} value={ex.sets}
           onChange={e => onChange({ ...ex, sets: Math.max(1, Number(e.target.value)) })}
-          className="w-10 bg-[#0e0e0e] border border-white/7 rounded px-1 py-0.5 text-center font-mono text-xs text-white focus:outline-none focus:border-[#fbcb1a]/50"
+          className="w-10 bg-bg border border-hairline rounded-control px-1 text-center font-mono text-title-s text-white focus:outline-none focus:border-accent/50"
         />
       </div>
       {/* Reps */}
-      <div className="flex items-center gap-0.5">
-        <span className="font-mono text-[9px] text-[#555]">reps</span>
+      <div className="flex items-center ">
+        <span className="font-mono text-caption text-ink-3">reps</span>
         <input
           type="text" value={ex.reps}
           onChange={e => onChange({ ...ex, reps: e.target.value })}
-          className="w-14 bg-[#0e0e0e] border border-white/7 rounded px-1 py-0.5 text-center font-mono text-xs text-white focus:outline-none focus:border-[#fbcb1a]/50"
+          className="w-14 bg-bg border border-hairline rounded-control px-1 text-center font-mono text-title-s text-white focus:outline-none focus:border-accent/50"
           placeholder="8-12"
         />
       </div>
       {/* RIR */}
-      <div className="flex items-center gap-0.5">
-        <span className="font-mono text-[9px] text-[#555]">rir</span>
+      <div className="flex items-center ">
+        <span className="font-mono text-caption text-ink-3">rir</span>
         <input
           type="number" min={0} max={5} value={ex.rir}
           onChange={e => onChange({ ...ex, rir: Math.min(5, Math.max(0, Number(e.target.value))) })}
-          className="w-10 bg-[#0e0e0e] border border-white/7 rounded px-1 py-0.5 text-center font-mono text-xs text-white focus:outline-none focus:border-[#fbcb1a]/50"
+          className="w-10 bg-bg border border-hairline rounded-control px-1 text-center font-mono text-title-s text-white focus:outline-none focus:border-accent/50"
         />
       </div>
       {/* Rest */}
-      <div className="flex items-center gap-0.5">
-        <span className="font-mono text-[9px] text-[#555]">rest</span>
+      <div className="flex items-center ">
+        <span className="font-mono text-caption text-ink-3">rest</span>
         <input
           type="number" min={0} max={600} step={15} value={ex.restSeconds}
           onChange={e => onChange({ ...ex, restSeconds: Math.max(0, Number(e.target.value)) })}
-          className="w-14 bg-[#0e0e0e] border border-white/7 rounded px-1 py-0.5 text-center font-mono text-xs text-white focus:outline-none focus:border-[#fbcb1a]/50"
+          className="w-14 bg-bg border border-hairline rounded-control px-1 text-center font-mono text-title-s text-white focus:outline-none focus:border-accent/50"
         />
       </div>
       {/* Reorder + delete */}
-      <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+      <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
         <button onClick={onMoveUp} disabled={isFirst} title="Subir"
-          className="w-5 h-5 flex items-center justify-center rounded text-[#c6c9ab] hover:text-white disabled:opacity-20">
-          <span className="material-symbols-outlined text-sm">arrow_upward</span>
+          className="w-5 h-5 flex items-center justify-center rounded-control text-ink-2 hover:text-white disabled:opacity-20">
+          <Icon name="arrow_upward" size="s" />
         </button>
         <button onClick={onMoveDown} disabled={isLast} title="Bajar"
-          className="w-5 h-5 flex items-center justify-center rounded text-[#c6c9ab] hover:text-white disabled:opacity-20">
-          <span className="material-symbols-outlined text-sm">arrow_downward</span>
+          className="w-5 h-5 flex items-center justify-center rounded-control text-ink-2 hover:text-white disabled:opacity-20">
+          <Icon name="arrow_downward" size="s" />
         </button>
         <button onClick={onDelete} title="Eliminar ejercicio"
-          className="w-5 h-5 flex items-center justify-center rounded text-[#c6c9ab] hover:text-red-400">
-          <span className="material-symbols-outlined text-sm">close</span>
+          className="w-5 h-5 flex items-center justify-center rounded-control text-ink-2 hover:text-red-400">
+          <Icon name="close" size="s" />
         </button>
       </div>
     </div>
@@ -234,36 +213,34 @@ const DayBlock: React.FC<{
   const sortedExs = [...day.exercises].sort((a, b) => a.order - b.order);
 
   return (
-    <div className="border border-white/7 rounded-xl overflow-hidden">
+    <div className="border border-hairline rounded-surface overflow-hidden">
       {/* Header */}
-      <div className="flex items-center gap-2 px-3 py-2 bg-[#181816] cursor-pointer group" onClick={() => setOpen(o => !o)}>
-        <span className={`material-symbols-outlined text-sm text-[#c6c9ab] transition-transform ${open ? 'rotate-90' : ''}`}>
-          chevron_right
-        </span>
+      <div className="flex items-center gap-2 px-3 py-2 bg-surface cursor-pointer group" onClick={() => setOpen(o => !o)}>
+        <Icon name="chevron_right" size="s" className={`text-ink-2 transition-transform ${open ? 'rotate-90' : ''}`} />
         <input
           type="text"
           value={day.name}
           onClick={e => e.stopPropagation()}
           onChange={e => onChange({ ...day, name: e.target.value })}
-          className="flex-1 bg-transparent font-mono text-xs text-white focus:outline-none"
+          className="flex-1 bg-transparent font-mono text-title-s text-white focus:outline-none"
           placeholder="Nombre del día"
         />
-        <span className="font-mono text-[9px] text-[#555]">{day.exercises.length} ejerc.</span>
+        <span className="font-mono text-caption text-ink-3">{day.exercises.length} ejerc.</span>
         <button
           onClick={e => { e.stopPropagation(); onDelete(); }}
-          className="opacity-0 group-hover:opacity-100 w-5 h-5 flex items-center justify-center rounded text-[#c6c9ab] hover:text-red-400 transition-all"
+          className="opacity-0 group-hover:opacity-100 w-5 h-5 flex items-center justify-center rounded-control text-ink-2 hover:text-red-400 transition-all"
           title="Eliminar día"
         >
-          <span className="material-symbols-outlined text-sm">delete</span>
+          <Icon name="delete" size="s" />
         </button>
       </div>
 
       {/* Body */}
       {open && (
-        <div className="px-3 py-2 bg-[#111] space-y-1">
+        <div className="px-3 py-2 bg-bg space-y-1">
           {/* Exercise list */}
           {sortedExs.length === 0 ? (
-            <p className="font-mono text-[9px] text-[#555] italic py-1">Sin ejercicios.</p>
+            <p className="font-sans text-caption text-ink-3 italic py-1">Sin ejercicios.</p>
           ) : (
             sortedExs.map((ex, idx) => {
               const exObj = exercises.find(e => e.id === ex.exerciseId);
@@ -288,7 +265,7 @@ const DayBlock: React.FC<{
             <select
               value={selectedExId}
               onChange={e => setSelectedExId(e.target.value)}
-              className="flex-1 bg-[#0e0e0e] border border-white/7 rounded-lg px-2 py-1.5 text-white font-mono text-xs focus:outline-none focus:border-[#fbcb1a]/50"
+              className="flex-1 bg-bg border border-hairline rounded-control px-2 py-2 text-white font-sans text-title-s focus:outline-none focus:border-accent/50"
             >
               <option value="">— Elegir ejercicio —</option>
               {exercises.map(ex => (
@@ -298,7 +275,7 @@ const DayBlock: React.FC<{
             <button
               onClick={addExercise}
               disabled={!selectedExId}
-              className="px-3 py-1.5 bg-[#1c1b1b] border border-white/7 text-[#c6c9ab] font-mono text-xs rounded-lg hover:border-[#fbcb1a]/40 hover:text-[#fbcb1a] disabled:opacity-30 transition-all"
+              className="px-3 py-2 bg-raised border border-hairline text-ink-2 font-sans text-label rounded-control hover:border-accent/40 hover:text-accent disabled:opacity-30 transition-all"
             >
               Añadir
             </button>
@@ -372,37 +349,35 @@ const StageAccordion: React.FC<StageFormProps> = ({
   };
 
   return (
-    <div className="border border-white/7 rounded-xl overflow-hidden">
+    <div className="border border-hairline rounded-surface overflow-hidden">
       {/* Stage header */}
-      <div className="flex items-center gap-2 px-4 py-3 bg-[#181816] cursor-pointer" onClick={() => setOpen(o => !o)}>
-        <span className={`material-symbols-outlined text-sm text-[#c6c9ab] transition-transform ${open ? 'rotate-90' : ''}`}>
-          chevron_right
-        </span>
-        <span className="font-mono text-[9px] text-[#555] flex-shrink-0">#{stageIdx + 1}</span>
+      <div className="flex items-center gap-2 px-4 py-3 bg-surface cursor-pointer" onClick={() => setOpen(o => !o)}>
+        <Icon name="chevron_right" size="s" className={`text-ink-2 transition-transform ${open ? 'rotate-90' : ''}`} />
+        <span className="font-mono text-caption text-ink-3 flex-shrink-0">#{stageIdx + 1}</span>
         <input
           type="text"
           value={stage.name}
           onClick={e => e.stopPropagation()}
           onChange={e => onChange({ ...stage, name: e.target.value })}
-          className="flex-1 bg-transparent font-sans font-bold text-sm text-white focus:outline-none"
+          className="flex-1 bg-transparent font-sans font-bold text-title-s text-white focus:outline-none"
           placeholder="Nombre del mesociclo"
         />
         <div className="flex items-center gap-3 flex-shrink-0" onClick={e => e.stopPropagation()}>
           <div className="flex items-center gap-1">
-            <span className="font-mono text-[9px] text-[#555]">sem</span>
+            <span className="font-mono text-caption text-ink-3">sem</span>
             <Stepper value={stage.weeks} min={1} max={20} onChange={v => onChange({ ...stage, weeks: v })} />
           </div>
           <div className="flex items-center gap-1">
-            <span className="font-mono text-[9px] text-[#555]">días/sem</span>
+            <span className="font-mono text-caption text-ink-3">días/sem</span>
             <Stepper value={stage.daysPerWeek} min={1} max={7} onChange={v => onChange({ ...stage, daysPerWeek: v })} />
           </div>
           {!isOnly && (
             <button
               onClick={onDelete}
-              className="w-6 h-6 flex items-center justify-center rounded text-[#c6c9ab] hover:text-red-400 transition-colors"
+              className="w-6 h-6 flex items-center justify-center rounded-control text-ink-2 hover:text-red-400 transition-colors"
               title="Eliminar mesociclo"
             >
-              <span className="material-symbols-outlined text-sm">delete</span>
+              <Icon name="delete" size="s" />
             </button>
           )}
         </div>
@@ -410,15 +385,15 @@ const StageAccordion: React.FC<StageFormProps> = ({
 
       {/* Stage body */}
       {open && (
-        <div className="bg-[#111]">
+        <div className="bg-bg">
           {/* Tabs */}
-          <div className="flex border-b border-white/7">
+          <div className="flex border-b border-hairline">
             {(['volume', 'training'] as const).map(t => (
               <button
                 key={t}
                 onClick={() => setTab(t)}
-                className={`px-4 py-2 font-mono text-xs uppercase tracking-wider transition-colors ${
-                  tab === t ? 'text-[#fbcb1a] border-b-2 border-[#fbcb1a]' : 'text-[#555] hover:text-[#c6c9ab]'
+                className={`px-4 py-2 font-mono text-label uppercase tracking-wider transition-colors ${
+                  tab === t ? 'text-accent border-b-2 border-accent' : 'text-ink-3 hover:text-ink-2'
                 }`}
               >
                 {t === 'volume' ? 'Volumen' : 'Entrenamiento'}
@@ -430,16 +405,16 @@ const StageAccordion: React.FC<StageFormProps> = ({
           {tab === 'volume' && (
             <div className="p-4">
               <div className="flex items-center justify-between mb-2">
-                <span className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider">Volumen y prioridad por grupo</span>
-                <span className="font-mono text-[10px] text-[#fbcb1a] font-bold">{totalSeries} series/sem</span>
+                <span className="font-sans text-caption text-ink-2 uppercase tracking-wider">Volumen y prioridad por grupo</span>
+                <span className="font-mono text-caption text-accent font-bold">{totalSeries} series/sem</span>
               </div>
-              <div className="border border-white/7 rounded-xl overflow-hidden">
+              <div className="border border-hairline rounded-surface overflow-hidden">
                 <table className="w-full">
                   <thead>
-                    <tr className="bg-[#111] border-b border-white/7">
-                      <th className="px-3 py-2 text-left font-mono text-[9px] text-[#c6c9ab] uppercase tracking-wider">Grupo</th>
-                      <th className="px-3 py-2 text-center font-mono text-[9px] text-[#c6c9ab] uppercase tracking-wider">Series</th>
-                      <th className="px-3 py-2 text-right font-mono text-[9px] text-[#c6c9ab] uppercase tracking-wider">Prioridad</th>
+                    <tr className="bg-bg border-b border-hairline">
+                      <th className="px-3 py-2 text-left font-mono text-caption text-ink-2 uppercase tracking-wider">Grupo</th>
+                      <th className="px-3 py-2 text-center font-mono text-caption text-ink-2 uppercase tracking-wider">Series</th>
+                      <th className="px-3 py-2 text-right font-mono text-caption text-ink-2 uppercase tracking-wider">Prioridad</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -448,20 +423,20 @@ const StageAccordion: React.FC<StageFormProps> = ({
                       return (
                         <tr
                           key={g}
-                          className="border-b border-white/30 last:border-0 transition-colors"
+                          className="border-b border-hairline last:border-0 transition-colors"
                           style={{ backgroundColor: heatmapBg(cfg.series) }}
                         >
-                          <td className="px-3 py-2.5">
-                            <span className="font-sans text-xs font-medium" style={{ color: cfg.series > 0 ? heatmapText(cfg.series) : '#c6c9ab' }}>
+                          <td className="px-3 py-3">
+                            <span className="font-sans text-label font-medium" style={{ color: cfg.series > 0 ? heatmapText(cfg.series) : 'var(--color-ink-2)' }}>
                               {MUSCLE_LABELS[g]}
                             </span>
                           </td>
-                          <td className="px-3 py-2.5">
+                          <td className="px-3 py-3">
                             <div className="flex justify-center">
                               <Stepper value={cfg.series} onChange={v => updateGroup(g, 'series', v)} />
                             </div>
                           </td>
-                          <td className="px-3 py-2.5">
+                          <td className="px-3 py-3">
                             <div className="flex justify-end">
                               <PrioritySelector
                                 value={cfg.priority}
@@ -482,21 +457,21 @@ const StageAccordion: React.FC<StageFormProps> = ({
           {tab === 'training' && (
             <div className="p-4 space-y-2">
               <div className="flex items-center justify-between mb-2">
-                <span className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider">
+                <span className="font-sans text-caption text-ink-2 uppercase tracking-wider">
                   Días de entrenamiento ({stage.days.length}/{stage.daysPerWeek})
                 </span>
                 <button
                   onClick={addDay}
                   disabled={stage.days.length >= stage.daysPerWeek}
-                  className="flex items-center gap-1 px-2 py-1 bg-[#1c1b1b] border border-white/7 text-[#c6c9ab] font-mono text-[10px] rounded-lg hover:border-[#fbcb1a]/40 hover:text-[#fbcb1a] disabled:opacity-30 transition-all"
+                  className="flex items-center gap-1 px-2 py-1 bg-raised border border-hairline text-ink-2 font-mono text-caption rounded-control hover:border-accent/40 hover:text-accent disabled:opacity-30 transition-all"
                 >
-                  <span className="material-symbols-outlined text-sm">add</span>
+                  <Icon name="add" size="s" />
                   Añadir día
                 </button>
               </div>
               {stage.days.length === 0 ? (
-                <div className="text-center py-6 border border-dashed border-white/7 rounded-xl">
-                  <p className="font-mono text-[10px] text-[#555]">Sin días predefinidos. El generador usará distribución automática.</p>
+                <div className="text-center py-6 border border-dashed border-hairline rounded-surface">
+                  <p className="font-sans text-caption text-ink-3">Sin días predefinidos. El generador usará distribución automática.</p>
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -605,58 +580,51 @@ function TemplateEditor({
   const totalWeeks = form.stages.reduce((s, st) => s + st.weeks, 0);
 
   return (
-    <div className="bg-[#181816] border border-white/7 rounded-2xl overflow-hidden">
+    <div className="bg-surface border border-hairline rounded-surface overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-5 py-4 border-b border-white/7">
-        <h3 className="font-sans font-bold text-white text-base flex items-center gap-2">
-          <span className="material-symbols-outlined text-[#fbcb1a] text-base">edit_note</span>
+      <div className="flex items-center justify-between px-5 py-4 border-b border-hairline">
+        <h3 className="font-sans font-bold text-white text-title-s flex items-center gap-2">
+          <Icon name="edit_note" size="m" className="text-accent" />
           {initial.name ? `Editar "${initial.name}"` : 'Nueva plantilla de mesociclo'}
         </h3>
-        <button onClick={onCancel} className="text-[#c6c9ab] hover:text-white transition-colors">
-          <span className="material-symbols-outlined text-base">close</span>
+        <button onClick={onCancel} className="text-ink-2 hover:text-white transition-colors">
+          <Icon name="close" size="m" />
         </button>
       </div>
 
       <div className="p-5 space-y-5">
         {/* Name + description */}
         <div className="grid grid-cols-1 gap-3">
-          <div>
-            <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-1.5">Nombre de la plantilla</label>
-            <input
-              type="text"
-              value={form.name}
-              onChange={e => { setForm(f => ({ ...f, name: e.target.value })); setNameError(''); }}
-              placeholder="Ej: Powerbuilding 12 semanas"
-              className="w-full bg-[#0e0e0e] border border-white/7 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-[#fbcb1a]/50 placeholder-[#555]"
-            />
-            {nameError && <p className="text-red-400 font-mono text-[10px] mt-1">{nameError}</p>}
-          </div>
-          <div>
-            <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-1.5">Descripción (opcional)</label>
-            <input
-              type="text"
-              value={form.description}
-              onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-              placeholder="Breve descripción de la plantilla"
-              className="w-full bg-[#0e0e0e] border border-white/7 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-[#fbcb1a]/50 placeholder-[#555]"
-            />
-          </div>
+          <Input
+            label="Nombre de la plantilla"
+            value={form.name}
+            onChange={v => { setForm(f => ({ ...f, name: v })); setNameError(''); }}
+            placeholder="Ej: Powerbuilding 12 semanas"
+            error={nameError || undefined}
+          />
+          <Input
+            label="Descripción"
+            hint="Opcional."
+            value={form.description}
+            onChange={v => setForm(f => ({ ...f, description: v }))}
+            placeholder="Breve descripción de la plantilla"
+          />
         </div>
 
         {/* Stages */}
         <div>
           <div className="flex items-center justify-between mb-3">
             <div>
-              <span className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider">
+              <span className="font-mono text-caption text-ink-2 uppercase tracking-wider">
                 Mesociclos ({form.stages.length})
               </span>
-              <span className="font-mono text-[10px] text-[#555] ml-3">{totalWeeks} semanas en total</span>
+              <span className="font-mono text-caption text-ink-3 ml-3">{totalWeeks} semanas en total</span>
             </div>
             <button
               onClick={addStage}
-              className="flex items-center gap-1 px-2.5 py-1.5 bg-[#1c1b1b] border border-white/7 text-[#c6c9ab] font-mono text-[10px] rounded-xl hover:border-[#fbcb1a]/40 hover:text-[#fbcb1a] transition-all"
+              className="flex items-center gap-1 px-3 py-2 bg-raised border border-hairline text-ink-2 font-sans text-caption rounded-control hover:border-accent/40 hover:text-accent transition-all"
             >
-              <span className="material-symbols-outlined text-sm">add</span>
+              <Icon name="add" size="s" />
               Añadir mesociclo
             </button>
           </div>
@@ -677,19 +645,12 @@ function TemplateEditor({
 
         {/* Actions */}
         <div className="flex gap-3">
-          <button
-            onClick={handleSubmit}
-            disabled={saving}
-            className="flex-1 py-2.5 bg-[#fbcb1a] text-black font-sans text-xs font-bold uppercase tracking-wider rounded-xl hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-50"
-          >
-            {saving ? 'Guardando…' : 'Guardar plantilla'}
-          </button>
-          <button
-            onClick={onCancel}
-            className="px-4 py-2.5 bg-[#1c1b1b] border border-white/7 text-[#c6c9ab] font-mono text-xs font-bold uppercase tracking-wider rounded-xl hover:text-white transition-all"
-          >
+          <Button onClick={handleSubmit} loading={saving} variant="primary" fullWidth>
+            Guardar plantilla
+          </Button>
+          <Button onClick={onCancel} variant="secondary">
             Cancelar
-          </button>
+          </Button>
         </div>
       </div>
     </div>
@@ -733,35 +694,35 @@ function TemplateCard({
   const topGroups = getTopMuscleGroups(mergeStageGroups(tpl.stages), 3);
 
   return (
-    <div className="bg-[#181816] border border-white/7 rounded-3xl p-4 hover:border-[#fbcb1a]/30 hover:shadow-[0_0_30px_-12px_rgba(251,203,26,0.3)] transition-all">
+    <div className="bg-surface border border-hairline rounded-canvas p-4 hover:border-accent/30 transition-all">
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="min-w-0">
-          <p className="font-sans font-bold text-white text-sm truncate">{tpl.name}</p>
+          <p className="font-sans font-bold text-white text-body-s truncate">{tpl.name}</p>
           {tpl.description && (
-            <p className="font-mono text-[9px] text-[#c6c9ab] mt-0.5 truncate">{tpl.description}</p>
+            <p className="font-sans text-caption text-ink-2 truncate">{tpl.description}</p>
           )}
           <div className="flex gap-3 mt-1 flex-wrap">
-            <span className="font-mono text-[10px] text-[#c6c9ab]">{tpl.stages.length} meso{tpl.stages.length !== 1 ? 's' : ''}</span>
-            <span className="font-mono text-[10px] text-[#fbcb1a] font-bold">{totalWeeks} semanas</span>
+            <span className="font-mono text-caption text-ink-2">{tpl.stages.length} meso{tpl.stages.length !== 1 ? 's' : ''}</span>
+            <span className="font-mono text-caption text-accent font-bold">{totalWeeks} semanas</span>
             {totalExercises > 0 && (
-              <span className="font-mono text-[10px] text-[#00eefc]">{totalExercises} ejercicios</span>
+              <span className="font-mono text-caption text-data">{totalExercises} ejercicios</span>
             )}
           </div>
         </div>
-        <div className="flex gap-1.5 flex-shrink-0">
+        <div className="flex gap-2 flex-shrink-0">
           <button
             onClick={onEdit}
-            className="p-1.5 rounded-lg bg-[#1c1b1b] border border-white/7 text-[#00eefc] hover:border-[#00eefc]/40 transition-all"
+            className="p-2 rounded-control bg-raised border border-hairline text-data hover:border-data/40 transition-all"
             title="Editar plantilla"
           >
-            <span className="material-symbols-outlined text-sm">edit</span>
+            <Icon name="edit" size="s" />
           </button>
           <button
             onClick={onDelete}
-            className="p-1.5 rounded-lg bg-[#1c1b1b] border border-white/7 text-[#c6c9ab] hover:text-red-400 hover:border-red-500/30 transition-all"
+            className="p-2 rounded-control bg-raised border border-hairline text-ink-2 hover:text-red-400 hover:border-red-500/30 transition-all"
             title="Eliminar plantilla"
           >
-            <span className="material-symbols-outlined text-sm">delete</span>
+            <Icon name="delete" size="s" />
           </button>
         </div>
       </div>
@@ -772,7 +733,7 @@ function TemplateCard({
           {topGroups.map(g => (
             <span
               key={g}
-              className="font-mono text-[8px] px-1.5 py-0.5 rounded bg-[#fbcb1a]/10 border border-[#fbcb1a]/25 text-[#fbcb1a] uppercase font-bold"
+              className="font-sans text-caption px-2 rounded-control bg-accent/10 border border-accent/25 text-accent uppercase font-bold"
             >
               {MUSCLE_LABELS[g]}
             </span>
@@ -785,7 +746,7 @@ function TemplateCard({
         {tpl.stages.map(st => (
           <span
             key={st.id}
-            className="font-mono text-[9px] px-2 py-0.5 rounded-full bg-[#1e1e1b] border border-white/7 text-[#c6c9ab]"
+            className="font-mono text-caption px-2 rounded-full bg-raised border border-hairline text-ink-2"
           >
             {st.name} · {st.weeks}sem
           </span>
@@ -886,38 +847,32 @@ export default function MesocycleTemplateLibrary({ coachId }: Props) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="font-sans font-bold text-lg text-white">Plantillas de mesociclo</h2>
-          <p className="font-mono text-[10px] text-[#c6c9ab] mt-0.5">
+          <h2 className="font-sans font-bold text-title-m text-white">Plantillas de mesociclo</h2>
+          <p className="font-sans text-caption text-ink-2 ">
             Mesociclos periodizados de múltiples etapas — aplícalos a cualquier cliente.
           </p>
         </div>
-        <button
-          onClick={openCreate}
-          className="flex items-center gap-1.5 px-3 py-2 bg-[#fbcb1a] text-black font-sans text-[10px] font-bold uppercase rounded-xl hover:bg-[#d4a800] active:scale-95 transition-all"
-        >
-          <span className="material-symbols-outlined text-sm">add</span>
+        <Button onClick={openCreate} variant="primary" size="s" icon="add">
           Nueva
-        </button>
+        </Button>
       </div>
 
       {/* Content */}
       {loading ? (
         <div className="space-y-3">
-          <Skeleton className="h-20 w-full rounded-2xl" />
-          <Skeleton className="h-20 w-full rounded-2xl" />
-          <Skeleton className="h-20 w-full rounded-2xl" />
+          <Skeleton className="h-20 w-full rounded-surface" />
+          <Skeleton className="h-20 w-full rounded-surface" />
+          <Skeleton className="h-20 w-full rounded-surface" />
         </div>
       ) : templates.length === 0 ? (
-        <div className="py-16 text-center border border-dashed border-white/7 rounded-2xl">
-          <span className="material-symbols-outlined text-4xl text-[#2a2a2a] block mb-3">library_books</span>
-          <p className="font-sans font-bold text-white text-sm mb-1">Sin plantillas todavía</p>
-          <p className="text-[#c6c9ab] text-xs font-mono">Crea tu primera plantilla de mesociclo reutilizable.</p>
-          <button
-            onClick={openCreate}
-            className="mt-4 px-4 py-2 bg-[#fbcb1a] text-black font-sans text-[10px] font-bold uppercase rounded-xl hover:bg-[#d4a800] transition-all"
-          >
-            Crear plantilla
-          </button>
+        <div className="border border-dashed border-hairline rounded-surface">
+          <EmptyState
+            icon="library_books"
+            title="Sin plantillas todavía"
+            description="Crea tu primera plantilla de mesociclo reutilizable."
+            actionLabel="Crear plantilla"
+            onAction={openCreate}
+          />
         </div>
       ) : (
         <div className="space-y-3">
@@ -937,28 +892,26 @@ export default function MesocycleTemplateLibrary({ coachId }: Props) {
       {confirmDeleteId && (() => {
         const tpl = templates.find(t => t.id === confirmDeleteId);
         return (
-          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-[#1c1b1b] border border-white/7 rounded-2xl p-6 max-w-sm w-full space-y-4">
-              <p className="font-sans font-bold text-white text-sm">¿Eliminar plantilla?</p>
-              <p className="font-mono text-[11px] text-[#c6c9ab]">
-                Se eliminará «{tpl?.name}» permanentemente. Los mesociclos ya creados a partir de ella no se verán afectados.
-              </p>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => handleDelete(confirmDeleteId)}
-                  className="flex-1 py-2 bg-red-500 text-white font-mono text-xs font-bold uppercase rounded-xl hover:bg-red-600 transition-all"
-                >
-                  Eliminar
-                </button>
-                <button
-                  onClick={() => setConfirmDeleteId(null)}
-                  className="flex-1 py-2 bg-[#2a2a2a] text-[#c6c9ab] font-mono text-xs font-bold uppercase rounded-xl hover:text-white transition-all"
-                >
+          <Dialog
+            open
+            onClose={() => setConfirmDeleteId(null)}
+            title="¿Eliminar plantilla?"
+            size="s"
+            footer={(
+              <>
+                <Button onClick={() => setConfirmDeleteId(null)} variant="secondary">
                   Cancelar
-                </button>
-              </div>
-            </div>
-          </div>
+                </Button>
+                <Button onClick={() => handleDelete(confirmDeleteId)} variant="danger">
+                  Eliminar
+                </Button>
+              </>
+            )}
+          >
+            <p className="font-sans text-caption text-ink-2">
+              Se eliminará «{tpl?.name}» permanentemente. Los mesociclos ya creados a partir de ella no se verán afectados.
+            </p>
+          </Dialog>
         );
       })()}
     </div>

@@ -48,3 +48,35 @@ export function estimateMaintenanceKcal(onboarding: MaintenanceInput, weightKg: 
   const bmr = mifflinBMR(onboarding.sex, weightKg, onboarding.heightCm, age);
   return Math.round(bmr * ACTIVITY_FACTORS[onboarding.activityLevel]);
 }
+
+export interface AutoCalc {
+  bmr: number; tdee: number; kcal: number;
+  protG: number; grasaG: number; hcG: number;
+  protPct: number; grasaPct: number; hcPct: number;
+}
+
+// Vivía dentro de OnboardingForm.tsx (el alta que rellena el coach). Sube aquí
+// porque el asistente de alta del ATLETA tiene que producir exactamente el mismo
+// número: antes escribía 2000 kcal fijas para todo el mundo (05-8), y ese número
+// es el que ve el atleta en Nutrición, el que ve el coach en el hub y el que
+// consume el asistente de IA. Una sola definición, dos llamantes.
+export function computeAuto(
+  sex: 'male' | 'female', birthDate: string,
+  w: number, h: number, level: ActivityLevel, goal: GoalBody,
+): AutoCalc {
+  const age    = calcAge(birthDate);
+  const bmr    = mifflinBMR(sex, w, h, age);
+  const tdee   = Math.round(bmr * ACTIVITY_FACTORS[level]);
+  const kcal   = Math.round(tdee * GOAL_ADJUSTMENTS[goal]);
+  const protG  = Math.round(2 * w);
+  const pKcal  = protG * 4;
+  const gKcal  = Math.round(kcal * 0.25);
+  const grasaG = Math.round(gKcal / 9);
+  const hcKcal = Math.max(0, kcal - pKcal - gKcal);
+  const hcG    = Math.round(hcKcal / 4);
+  const tot    = pKcal + gKcal + hcKcal;
+  const protPct  = Math.round((pKcal / tot) * 100);
+  const grasaPct = Math.round((gKcal / tot) * 100);
+  const hcPct    = 100 - protPct - grasaPct;
+  return { bmr, tdee, kcal, protG, grasaG, hcG, protPct, grasaPct, hcPct };
+}

@@ -2,7 +2,6 @@ import {
   db,
   auth,
   onAuthStateChanged,
-  sendSignInLinkToEmail,
   collection,
   doc,
   getDoc,
@@ -29,13 +28,17 @@ import { SYSTEM_EXERCISES } from './data';
 import { SYSTEM_FOODS } from './nutricion_seed_en_forma';
 import { compressImage } from './utils/compressImage';
 import { markInviteJoined } from './db/invites';
-import { forceLocalOnly, stripUndefined, authReady, withAuthRetry, setLocalBypassMode, isLocalBypassActive } from './db/core';
+import { forceLocalOnly, stripUndefined, authReady, withAuthRetry, setLocalBypassMode, isLocalBypassActive, hayFalloDePermisos, descartarAvisoDePermisos, escriturasPendientes, suscribirEscriturasPendientes } from './db/core';
 
 // stripUndefined/authReady/withAuthRetry/forceLocalOnly/setLocalBypassMode/
 // isLocalBypassActive movidos a src/db/core.ts (2026-07-18) — es la ÚNICA
 // fuente de esa bandera ahora (import de arriba); reexportados aquí para
 // que ningún import existente (`from '../dbService'`) tenga que cambiar.
-export { setLocalBypassMode, isLocalBypassActive };
+export { setLocalBypassMode, isLocalBypassActive, hayFalloDePermisos, descartarAvisoDePermisos };
+// 05-3. El contador real de escrituras que vencieron el plazo y siguen sin
+// confirmar. Lo lee LocalModeBanner para poder decir «pendiente de enviar» sin
+// inventarse el número.
+export { escriturasPendientes, suscribirEscriturasPendientes };
 
 // ─── USER PROFILES + CHECKINS ─────────────────────────────────────────────────
 // Movido a src/db/profiles.ts (2026-07-18) — reexportado aquí para que ningún
@@ -64,6 +67,18 @@ export {
   getMesocycleTemplates, createMesocycleTemplate, updateMesocycleTemplate, deleteMesocycleTemplate,
 } from './db/training';
 
+// ─── CATÁLOGO DE MÁQUINAS + GIMNASIO DEL ATLETA ───────────────────────────────
+// Catálogo publicado = JSON del bundle (src/data/maquinas) + overrides del admin
+// en Firestore. El gimnasio del atleta (docId = email) guarda sus decisiones.
+export {
+  getCatalogoMaquinas, getCatalogoMaquinasAdmin, getCatalogoVersion,
+  upsertOverrideMaquina, publicarMaquina, ocultarMaquina, crearMaquinaAdmin,
+  promoverMaquinaPropia, subirImagenMaquina,
+  getGimnasio, guardarGimnasio, guardarGimnasioLocal, guardarDecisiones, gimnasioVacio,
+  subirFotoGimnasio, addMaquinaPropia, deleteMaquinaPropia,
+  getMaquinasDisponibles, getEstadoCatalogo,
+} from './db/machines';
+
 // ─── NUTRICIÓN (alimentos, dietas, menús, configs, programas) ────────────────
 // Movido a src/db/nutrition.ts (2026-07-18) — reexportado aquí para que ningún
 // import existente (`from '../dbService'`) tenga que cambiar.
@@ -91,12 +106,12 @@ export {
 // ─── CLIENT INVITES (coach-only, doc id = email) ──────────────────────────────
 // Movido a src/db/invites.ts (2026-07-18) — reexportado aquí para que ningún
 // import existente (`from '../dbService'`) tenga que cambiar.
-export { inviteClient, getPendingInvites, markInviteJoined } from './db/invites';
+export { inviteClient, getPendingInvites, markInviteJoined, cancelInvite } from './db/invites';
 // ─── RECIPES ─────────────────────────────────────────────────────────────────
 // Movido a src/db/recipes.ts (2026-07-18) — reexportado aquí para que ningún
 // import existente (`from '../dbService'`) tenga que cambiar.
-export { getRecipes, getRecipeById, queryIndyaRecipes, createRecipe, updateRecipe, deleteRecipe, getRecipeFavorites, saveRecipeFavorites, queryIndyaForGenerator } from './db/recipes';
-export type { IndyaRecipeCursor, IndyaRecipeFilters } from './db/recipes';
+export { getRecipes, getRecipeById, queryRecetas, createRecipe, updateRecipe, deleteRecipe, getRecipeFavorites, saveRecipeFavorites, queryRecetasForGenerator, OWNER_RECETARIO_TODOS } from './db/recipes';
+export type { RecetasCursor, RecetasFilters } from './db/recipes';
 
 // ─── PROGRESS PHOTOS + ASIGNACIONES DE FOTO ───────────────────────────────────
 // Movido a src/db/media.ts (2026-07-18) — reexportado aquí para que ningún
@@ -104,6 +119,7 @@ export type { IndyaRecipeCursor, IndyaRecipeFilters } from './db/recipes';
 export {
   getProgressPhotos, uploadProgressPhoto, deleteProgressPhoto,
   assignPhotoCheckIn, getPhotoAssignmentsForAthlete, deactivatePhotoAssignment,
+  uploadQuestionnaireMedia,
 } from './db/media';
 
 // ─── QUESTIONNAIRES + ASIGNACIONES + RESPUESTAS ───────────────────────────────
@@ -123,6 +139,11 @@ export {
   getBodyweightForAthlete, addBodyweight, updateBodyweight, deleteBodyweight,
   getStepsForAthlete, addSteps, updateSteps,
 } from './db/athleteMetrics';
+
+// ─── MEDIDAS CORPORALES (perímetros) ──────────────────────────────────────────
+export {
+  getBodyMeasurementsForAthlete, saveBodyMeasurement, deleteBodyMeasurement,
+} from './db/bodyMeasurements';
 
 // ─── ONBOARDING ───────────────────────────────────────────────────────────────
 // Movido a src/db/onboarding.ts (2026-07-18) — reexportado aquí para que ningún
@@ -175,6 +196,7 @@ export {
 // ningún import existente (`from '../dbService'`) tenga que cambiar.
 export {
   getCoachInstructions, saveCoachInstructions,
+  getDoctrina, getDoctrinaParaEditar, saveDoctrina, resetDoctrina,
   getAthleteStatusNote, saveAthleteStatusNote,
   getQuickReplies, saveQuickReplies,
 } from './db/coachSettings';
@@ -207,6 +229,7 @@ export {
   getCardioProfile, saveCardioProfile, defaultZonesFromAge,
   getCardioAssignmentsForAthlete, createCardioAssignment, updateCardioAssignment, deleteCardioAssignment,
   getCardioSessionsForAthlete, createCardioSession, updateCardioSession,
+  getCardioWeeklyGoal, saveCardioWeeklyGoal,
   getHrTestsForAthlete, getAllPendingHrTests, createHrTest, updateHrTest,
   getHrvReadingsForAthlete, createHrvReading,
 } from './db/cardio';

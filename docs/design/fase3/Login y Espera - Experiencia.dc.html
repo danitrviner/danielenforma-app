@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0a0a0a;font-family:'Plus Jakarta Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#FFC72C;text-decoration:none}a:hover{color:#ffd75e}
+@keyframes ping{0%{box-shadow:0 0 0 0 rgba(255,199,44,.3)}100%{box-shadow:0 0 0 9px rgba(255,199,44,0)}}
+@keyframes atlasBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+</style>
+</helmet>
+
+<section style="padding:44px 48px 60px;background:#0a0a0a">
+<div style="display:flex;align-items:baseline;gap:14px;margin:0 0 6px">
+<span style="font:900 34px/1 Archivo,sans-serif;letter-spacing:-.02em;color:#F5F5F4;text-transform:uppercase">Login y espera</span>
+<span style="font:500 11px/1 'IBM Plex Mono',monospace;letter-spacing:.14em;color:#FFC72C;text-transform:uppercase">Fase 3 · Pantalla pendiente</span>
+</div>
+<p style="max-width:680px;margin:0 0 34px;font:400 13.5px/1.65 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.5);text-wrap:pretty">Entrada por invitación de Dani (sin autorregistro) y la pantalla de espera mientras monta el plan del atleta — el único momento antes de que arranque el tutorial. Más su ficha de reglas.</p>
+
+<div style="display:flex;flex-wrap:wrap;gap:30px;align-items:flex-start">
+
+<!-- 01 · LOGIN -->
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;align-items:baseline;gap:9px"><span style="font:600 10.5px/1 'IBM Plex Mono',monospace;padding:4px 7px;background:#FFC72C;color:#050505;border-radius:5px">01</span><span style="font:600 12px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.72)">Login</span></div>
+<div style="width:390px;height:780px;background:#050505;border:1px solid rgba(255,255,255,.08);border-radius:34px;overflow:hidden;position:relative;box-shadow:0 30px 70px -30px rgba(0,0,0,.9)">
+  <div style="height:46px;box-sizing:border-box;display:flex;align-items:flex-end;justify-content:flex-end;padding:0 22px 6px;font:500 11px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.4)"><span>9:41</span></div>
+  <div style="padding:24px 26px 0;box-sizing:border-box;display:flex;flex-direction:column;height:calc(100% - 46px)">
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center">
+      <div style="width:74px;height:65px;margin-bottom:8px;animation:atlasBob 2.4s cubic-bezier(.2,.9,.2,1) infinite"><img src="atlas-icon-gold.png" style="width:100%;height:100%;object-fit:contain" alt="Atlas sosteniendo un disco"></div>
+      <div style="font:900 32px/1 Archivo,sans-serif;letter-spacing:-.02em;color:#F5F5F4;text-transform:uppercase">En forma</div>
+      <div style="margin-top:8px;font:500 11px/1 'IBM Plex Mono',monospace;letter-spacing:.1em;color:rgba(245,245,244,.4);text-transform:uppercase">De invisible a imparable</div>
+
+      <div style="margin-top:18px;display:flex;flex-direction:column;gap:8px">
+        <div>
+          <div style="font:600 10px/1 'IBM Plex Mono',monospace;letter-spacing:.16em;color:rgba(245,245,244,.32);text-transform:uppercase;margin-bottom:8px">Correo</div>
+          <div style="height:54px;border-radius:15px;background:#0B0B0B;border:1px solid rgba(255,255,255,.08);display:flex;align-items:center;padding:0 16px;font:400 14.5px/1 'Plus Jakarta Sans',sans-serif;color:#F5F5F4">maria@ejemplo.com</div>
+        </div>
+        <div>
+          <div style="font:600 10px/1 'IBM Plex Mono',monospace;letter-spacing:.16em;color:rgba(245,245,244,.32);text-transform:uppercase;margin-bottom:8px">Contraseña</div>
+          <div style="height:54px;border-radius:15px;background:#0B0B0B;border:1px solid rgba(255,255,255,.08);display:flex;align-items:center;padding:0 16px;font:400 14.5px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.4)">••••••••</div>
+        </div>
+      </div>
+
+      <div style="text-align:right;margin-top:8px"><span style="font:600 12px/1 'Plus Jakarta Sans',sans-serif;color:#FFC72C;cursor:pointer">¿Olvidaste tu contraseña?</span></div>
+
+      <div style="margin-top:16px;height:56px;border-radius:16px;background:#FFC72C;display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="filter:brightness(1.05)"><span style="font:700 15.5px/1 'Plus Jakarta Sans',sans-serif;color:#050505">Entrar</span></div>
+    </div>
+
+    <div style="padding-bottom:14px;text-align:center;font:400 12px/1.6 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.4)">¿Aún no tienes acceso?<br><span style="color:#FFC72C;font-weight:600;cursor:pointer">Escribe a Dani para empezar</span></div>
+  </div>
+</div>
+</div>
+
+<!-- 02 · ESPERA -->
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;align-items:baseline;gap:9px"><span style="font:600 10.5px/1 'IBM Plex Mono',monospace;padding:4px 7px;background:#FFC72C;color:#050505;border-radius:5px">02</span><span style="font:600 12px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.72)">Pantalla de espera</span></div>
+<div style="width:390px;height:780px;background:#050505;border:1px solid rgba(255,255,255,.08);border-radius:34px;overflow:hidden;position:relative;box-shadow:0 30px 70px -30px rgba(0,0,0,.9)">
+  <div style="height:46px;box-sizing:border-box;display:flex;align-items:flex-end;justify-content:flex-end;padding:0 22px 6px;font:500 11px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.4)"><span>9:41</span></div>
+  <div style="padding:0 30px 28px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;height:calc(100% - 46px);text-align:center">
+    <div style="width:76px;height:76px;border-radius:24px;border:1px dashed rgba(255,199,44,.4);display:flex;align-items:center;justify-content:center"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#FFC72C" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6v6l4 2"/><circle cx="12" cy="12" r="9"/></svg></div>
+    <div style="font:900 24px/1.25 Archivo,sans-serif;color:#F5F5F4;letter-spacing:-.01em;text-transform:uppercase;margin-top:22px">Dani está<br>montando tu plan</div>
+    <p style="margin:14px 0 0;max-width:280px;font:400 13px/1.6 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.5)">Revisó tu anamnesis y está construyendo tu primer bloque de fuerza y tu dieta. Te avisamos en cuanto esté listo.</p>
+
+    <div style="display:inline-flex;align-items:center;gap:9px;margin-top:22px;padding:11px 15px;border-radius:13px;background:rgba(255,199,44,.07);border:1px solid rgba(255,199,44,.22)">
+      <span style="width:7px;height:7px;border-radius:4px;background:#FFC72C;animation:ping 1.6s cubic-bezier(.2,.9,.2,1) infinite"></span>
+      <span style="font:600 11px/1 'IBM Plex Mono',monospace;letter-spacing:.08em;color:#FFC72C">EN REVISIÓN DESDE AYER</span>
+    </div>
+
+    <div style="margin-top:30px;height:52px;padding:0 22px;border-radius:16px;background:#0F0F0F;border:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="border-color:rgba(255,255,255,.16)"><span style="font:600 14px/1 'Plus Jakarta Sans',sans-serif;color:#F5F5F4">Ver mi anamnesis</span></div>
+  </div>
+</div>
+</div>
+
+<!-- 03 · REGLAS -->
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;align-items:baseline;gap:9px"><span style="font:600 10.5px/1 'IBM Plex Mono',monospace;padding:4px 7px;background:#FFC72C;color:#050505;border-radius:5px">03</span><span style="font:600 12px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.72)">Reglas del módulo</span></div>
+<div style="width:390px;background:#0B0B0B;border:1px solid rgba(255,255,255,.08);border-radius:24px;padding:26px">
+  <div style="font:900 19px/1.2 Archivo,sans-serif;color:#F5F5F4;letter-spacing:-.01em;text-transform:uppercase;margin-bottom:14px">Login y espera</div>
+  <ul style="margin:0;padding:0 0 0 16px;font:400 12.5px/1.75 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.58)">
+    <li>No hay autorregistro: el acceso lo crea Dani al aceptar un atleta nuevo. La pantalla nunca ofrece «crear cuenta».</li>
+    <li>Un solo botón primario, oro pleno, igual que en el resto de la app — nada de un login con más de una acción destacada.</li>
+    <li>La espera reutiliza el mismo lenguaje de vacío que Nutrición: cuadro discontinuo oro, insignia con punto que late, salida secundaria a la anamnesis.</li>
+    <li>El tutorial de bienvenida solo arranca cuando el plan ya está publicado — mientras tanto, el atleta se queda en esta pantalla.</li>
+    <li>Ningún vacío culpa al atleta: dice qué falta (el plan) y quién lo tiene que hacer (Dani).</li>
+  </ul>
+</div>
+</div>
+
+</div>
+</section>
+</x-dc>
+</body>
+</html>

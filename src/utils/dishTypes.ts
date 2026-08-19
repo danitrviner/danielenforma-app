@@ -3,7 +3,7 @@ import { normalizeStr } from './foodPrefs';
 
 // Heuristic "dish type" classification so the menu can offer variety filters
 // (batidos, tostadas, arroces, pastas…) and stop serving the same kind of meal
-// every day. Indya recipes only carry a coarse `categoria`, so the real signal
+// every day. Recipes from the imported recetario only carry a coarse `categoria`, so the real signal
 // is the recipe name; we fall back to categoria when the name is inconclusive.
 
 export type DishType =

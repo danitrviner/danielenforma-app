@@ -1,42 +1,46 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useQueries, useQuery } from '@tanstack/react-query';
 import { useParams, useNavigate } from 'react-router-dom';
 import { UserProfile, WeightCheckIn, WorkoutAssignment, WorkoutLog } from '../types';
-import { getAllUserProfiles, createNotificationDeduped, getWorkoutAssignments, getWorkoutLogs, inviteClient, getPendingInvites } from '../dbService';
-import ClientHub, { HubTab, AnalisisTab, HUB_TABS, ANALISIS_TABS } from './ClientHub';
-import ResourcesPanel from './ResourcesPanel';
+import { getAllUserProfiles, createNotificationDeduped, getWorkoutAssignments, getWorkoutLogs } from '../dbService';
+import ClientHub, { HubTab, HUB_TABS } from './ClientHub';
+import HomeCoachScreen from './HomeCoachScreen';
+import AthletesBar from './AthletesBar';
 import CoachNotesPanel from './CoachNotesPanel';
 import WeeklyAnalysisButton from './WeeklyAnalysisButton';
-import { computeAdherenceScore, scoreStyle } from '../utils/adherence';
 import { calcPlanExpiry } from '../hooks/usePlanExpiry';
 import { getPendingReviews } from '../hooks/usePendingReviews';
 import { estimateSetupPct } from '../utils/clientSetup';
-import ProgressRing from './ProgressRing';
-import { useToast } from '../hooks/useToast';
-import Skeleton from './Skeleton';
+import { atletasActivos, esBaja, esAnonimizado } from '../utils/atletas';
+import { Skeleton } from './ui';
+import { EmptyState, Badge } from './ui';
 
 const DEFAULT_HUB_TAB: HubTab = 'revisiones';
-const DEFAULT_ANALISIS_TAB: AnalisisTab = 'reportes';
 
 interface ClientsScreenProps {
   checkins: WeightCheckIn[];
   onRefreshCheckIns: () => void;
   coachId: string;
   coachEmail: string;
-  onOpenReviews?: () => void;
 }
 
-export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, coachEmail, onOpenReviews }: ClientsScreenProps) {
+export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, coachEmail }: ClientsScreenProps) {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const { showToast } = useToast();
-  const { athleteId, hubTab, subTab } = useParams<{ athleteId?: string; hubTab?: string; subTab?: string }>();
-  const inviteInputRef = useRef<HTMLInputElement>(null);
+  const { athleteId, hubTab } = useParams<{ athleteId?: string; hubTab?: string }>();
   // Shared 'userProfiles' cache key (same as CommandPalette/ReviewsScreen/MesocycleManager).
-  const { data: athletes = [], isPending: loadingAthletes } = useQuery({
+  // Sin filtrar: el CRM y la sección "Archivados" de abajo necesitan también
+  // las bajas y los anonimizados. `athletes` (abajo) es la vista filtrada
+  // que usa el resto de esta pantalla — el coach entrena hoy a esos, no a
+  // los de baja ni a los perfiles borrados (ver src/utils/atletas.ts).
+  const { data: allProfiles = [], isPending: loadingAthletes } = useQuery({
     queryKey: ['userProfiles'],
     queryFn: getAllUserProfiles,
   });
+  const athletes: UserProfile[] = useMemo(() => atletasActivos(allProfiles), [allProfiles]);
+  const archivedAthletes = useMemo(
+    () => allProfiles.filter(p => esBaja(p) && !esAnonimizado(p)),
+    [allProfiles]
+  );
 
   // Per-athlete assignments/logs — same N-parallel-queries pattern as
   // PendingTasksPanel's per-questionnaire lookups, sharing cache keys with
@@ -47,85 +51,84 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
   // which never matched, so every athlete's adherence score silently ignored
   // their training data. allAssignments below is still keyed by .email for
   // lookup convenience against the athlete list.
+  // 06-2. `enabled: !athleteId` — con la ficha de un cliente abierta, esta
+  // pantalla no se ve: la ocupa ClientHub. Sin esto, abrir un cliente seguía
+  // manteniendo vivas y refrescándose las N consultas de la lista entera.
   const assignmentsQueries = useQueries({
     queries: athletes.map(a => ({
       queryKey: ['workoutAssignments', a.userId],
       queryFn: () => getWorkoutAssignments(a.userId),
+      enabled: !athleteId,
     })),
   });
   const allAssignments = new Map<string, WorkoutAssignment[]>();
   athletes.forEach((a, i) => allAssignments.set(a.email, assignmentsQueries[i]?.data ?? []));
+  const loadingAssignments = assignmentsQueries.some(q => q.isPending);
+
+  /* 06-2. Esta pantalla leía TODOS los entrenamientos de TODOS los atletas —un
+     `where athleteId ==` sin `limit`, historial completo— y lo único que hacía
+     con ellos era contar notas sin leer para el badge de la tarjeta. Con 30
+     atletas eran ~5.700 documentos por montaje, y con el `refetchOnWindowFocus`
+     de antes, otra vez en cada vuelta al primer plano.
+
+     Ahora pide solo la ventana que necesita, y bajo una CLAVE DE CACHÉ PROPIA
+     (`recientes`): compartir la clave con ClientHub —que sí necesita el
+     historial entero para récords y reportes— le habría servido una lista
+     recortada desde la caché, y los récords del atleta habrían salido mal sin
+     que nada diera error.
+
+     Lo que se pierde: una nota sin leer de hace más de 120 días deja de contar
+     en el badge. Si una nota lleva cuatro meses sin abrirse, el badge no es el
+     problema. */
+  // Se calcula una vez por montaje, no por render: forma parte de la clave de
+  // caché, y una clave que cambia en cada render vuelve a leer en cada render.
+  const desdeVentana = useMemo(() => {
+    const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+    return new Date(hoy.getTime() - 120 * 86_400_000).toISOString().slice(0, 10);
+  }, []);
 
   const workoutLogsQueries = useQueries({
     queries: athletes.map(a => ({
-      queryKey: ['workoutLogs', a.email],
-      queryFn: () => getWorkoutLogs(a.email),
+      queryKey: ['workoutLogs', a.email, 'recientes', desdeVentana],
+      queryFn: () => getWorkoutLogs(a.email, { desde: desdeVentana, limite: 200 }),
+      enabled: !athleteId,
     })),
   });
   const allWorkoutLogs = new Map<string, WorkoutLog[]>();
   athletes.forEach((a, i) => allWorkoutLogs.set(a.email, workoutLogsQueries[i]?.data ?? []));
 
-  // Search + grid density for the athlete list
+  // Search + grid density for the athlete list. Tarjetas más compactas y más
+  // opciones de columnas (hasta 6): antes el máximo eran 4 columnas con
+  // tarjetas grandes, y con más de un puñado de atletas la lista se hacía
+  // larguísima de bajar.
   const [search, setSearch] = useState('');
-  const [gridCols, setGridCols] = useState<2 | 3 | 4>(() => {
+  const [gridCols, setGridCols] = useState<2 | 3 | 4 | 5 | 6>(() => {
     const v = Number(localStorage.getItem('enforma_clients_grid_cols'));
-    return v === 2 || v === 3 || v === 4 ? v : 3;
+    return v === 2 || v === 3 || v === 4 || v === 5 || v === 6 ? v : 4;
   });
-  const changeGridCols = (n: 2 | 3 | 4) => {
+  const changeGridCols = (n: 2 | 3 | 4 | 5 | 6) => {
     localStorage.setItem('enforma_clients_grid_cols', String(n));
     setGridCols(n);
   };
-  const GRID_COLS_CLASS: Record<2 | 3 | 4, string> = {
+  const GRID_COLS_CLASS: Record<2 | 3 | 4 | 5 | 6, string> = {
     2: 'md:grid-cols-2',
     3: 'md:grid-cols-2 lg:grid-cols-3',
     4: 'md:grid-cols-2 lg:grid-cols-4',
+    5: 'md:grid-cols-3 lg:grid-cols-5',
+    6: 'md:grid-cols-3 lg:grid-cols-6',
   };
 
-  // Invite a new client by email
-  const pendingInvitesKey = ['pendingInvites'] as const;
-  const { data: pendingInvites = [] } = useQuery({
-    queryKey: pendingInvitesKey,
-    queryFn: getPendingInvites,
+  // Modo de vista: tarjetas (diseño 1a) o fila compacta (diseño 1b, ~80px por
+  // atleta) — para coaches con muchos atletas que prefieren hacer scroll
+  // rápido antes de entrar al detalle de uno. El selector de columnas solo
+  // tiene sentido en modo tarjetas.
+  const [viewMode, setViewMode] = useState<'cards' | 'compact'>(() => {
+    const v = localStorage.getItem('enforma_clients_view_mode');
+    return v === 'compact' ? 'compact' : 'cards';
   });
-  const [inviteEmail, setInviteEmail] = useState('');
-  const [inviting, setInviting] = useState(false);
-  const [inviteError, setInviteError] = useState('');
-  const [inviteSuccess, setInviteSuccess] = useState('');
-
-  const loadInvites = () => queryClient.invalidateQueries({ queryKey: pendingInvitesKey });
-
-  const handleInvite = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setInviteError('');
-    setInviteSuccess('');
-    if (!inviteEmail.trim()) return;
-    setInviting(true);
-    try {
-      await inviteClient(inviteEmail.trim());
-      setInviteSuccess(`Invitación enviada a ${inviteEmail.trim()}.`);
-      setInviteEmail('');
-      loadInvites();
-    } catch (err: any) {
-      console.error('inviteClient error:', err);
-      if (err.code === 'auth/operation-not-allowed') {
-        setInviteError('El acceso por enlace no está activado en Firebase (Authentication → Sign-in method → Email link).');
-      } else {
-        setInviteError(err.message || 'No se pudo enviar la invitación.');
-      }
-    } finally {
-      setInviting(false);
-    }
-  };
-
-  const handleResendInvite = async (email: string) => {
-    try {
-      await inviteClient(email);
-      loadInvites();
-      showToast(`Invitación reenviada a ${email}.`, 'success');
-    } catch (err) {
-      console.error('resend invite error:', err);
-      showToast(`No se pudo reenviar la invitación a ${email}.`);
-    }
+  const changeViewMode = (m: 'cards' | 'compact') => {
+    localStorage.setItem('enforma_clients_view_mode', m);
+    setViewMode(m);
   };
 
   const openAthleteHub = (athlete: UserProfile & { setupPct?: number }, tab?: HubTab) => {
@@ -133,11 +136,13 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
     navigate(`/clients/${encodeURIComponent(athlete.email)}${landingTab ? `/${landingTab}` : ''}`);
   };
 
+  // Busca en allProfiles, no en athletes: un enlace desde "Archivados" apunta
+  // a una baja, que atletasActivos() ya no incluye.
   const selectedAthlete = useMemo(() => {
     if (!athleteId) return null;
     const decoded = decodeURIComponent(athleteId).toLowerCase();
-    return athletes.find(a => a.email.toLowerCase() === decoded) ?? null;
-  }, [athletes, athleteId]);
+    return allProfiles.find(a => a.email.toLowerCase() === decoded) ?? null;
+  }, [allProfiles, athleteId]);
 
   // Deep-linked to an athlete that doesn't exist (typo, deleted account, stale
   // link) — once the athlete list has actually loaded, bounce back to the grid
@@ -148,24 +153,19 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
     }
   }, [athleteId, loadingAthletes, selectedAthlete, navigate]);
 
-  // The "/clients/:athleteId/analisis/:subTab" route (needed for the extra sub-tab
-  // segment) doesn't capture a `hubTab` param at all, so `subTab` being present is
-  // what actually means "we're on the Análisis tab" — falling back to `hubTab` alone
-  // would default to DEFAULT_HUB_TAB and silently bounce back to Revisiones.
-  const activeHubTab: HubTab = subTab
-    ? 'analisis'
-    : hubTab === 'periodizacion'
-      // Pestaña retirada: la periodización vive ahora dentro de Entrenamientos.
-      // Los enlaces/bookmarks antiguos aterrizan ahí en vez de en Revisiones.
-      ? 'entrenamientos'
+  // Alias de pestañas retiradas: los enlaces/bookmarks antiguos siguen vivos,
+  // solo redirigen. "periodizacion" vive ahora dentro de Entrenamientos.
+  // "analisis" (la pestaña única de antes, sin sub-pestaña en la URL) aterriza
+  // en Reportes, la primera de las tres pestañas en que se dividió — el caso
+  // CON sub-pestaña (/clients/:id/analisis/:subTab) lo resuelve un redirect
+  // propio en App.tsx antes de llegar aquí (ver AnalisisSubTabRedirect).
+  const activeHubTab: HubTab = hubTab === 'periodizacion'
+    ? 'entrenamientos'
+    : hubTab === 'analisis'
+      ? 'reportes'
       : (hubTab && (HUB_TABS as readonly string[]).includes(hubTab))
         ? (hubTab as HubTab)
         : DEFAULT_HUB_TAB;
-  const activeAnalisisTab: AnalisisTab = (subTab && (ANALISIS_TABS as readonly string[]).includes(subTab))
-    ? (subTab as AnalisisTab)
-    : DEFAULT_ANALISIS_TAB;
-
-  const pendingCheckins = getPendingReviews(checkins);
 
   const todayMs = useMemo(() => {
     const d = new Date(); d.setHours(0, 0, 0, 0); return d.getTime();
@@ -186,6 +186,10 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
         : Math.floor((todayMs - lastCheckinMs) / 86_400_000);
       const checkinLate = daysSince === null || daysSince > 7;
 
+      const daysSinceLogin = athlete.lastLoginAt
+        ? Math.floor((todayMs - new Date(athlete.lastLoginAt).getTime()) / 86_400_000)
+        : null;
+
       const { daysLeft: planDaysLeft, expired: planExpired, expiringSoon: planSoon } = calcPlanExpiry(athlete);
 
       const athleteAssignments = allAssignments.get(athlete.email) ?? [];
@@ -198,8 +202,6 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
       if (checkinLate)    sortScore = Math.min(sortScore, 2);
       if (setupPct < 100) sortScore = Math.min(sortScore, 3);
 
-      const adherence = computeAdherenceScore(athleteAssignments, athleteCheckins);
-
       const athleteLogs = allWorkoutLogs.get(athlete.email) ?? [];
       const pendingNotesCount = athleteLogs.reduce((n, log) => {
         let count = n;
@@ -211,13 +213,12 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
       return {
         ...athlete,
         planDaysLeft, planExpired, planSoon,
-        daysSince, checkinLate,
+        daysSince, checkinLate, daysSinceLogin,
         totalCheckCount: athleteCheckins.length,
         pendingCount: getPendingReviews(athleteCheckins).length,
         pendingNotesCount,
         sortScore,
         setupPct,
-        adherenceScore: adherence.score,
       };
     }).sort((a, b) => a.sortScore - b.sortScore);
   }, [athletes, checkins, todayMs, allAssignments, allWorkoutLogs]);
@@ -232,11 +233,6 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
 
   const athletesFinishingSoon = useMemo(
     () => enrichedAthletes.filter(a => a.planSoon).sort((a, b) => (a.planDaysLeft ?? 0) - (b.planDaysLeft ?? 0)),
-    [enrichedAthletes]
-  );
-
-  const totalPendingNotes = useMemo(
-    () => enrichedAthletes.reduce((n, a) => n + a.pendingNotesCount, 0),
     [enrichedAthletes]
   );
 
@@ -293,9 +289,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
         onRefreshCheckIns={onRefreshCheckIns}
         onBack={() => navigate('/clients')}
         activeTab={activeHubTab}
-        onTabChange={tab => navigate(`/clients/${athleteId}${tab === 'analisis' ? `/analisis/${DEFAULT_ANALISIS_TAB}` : `/${tab}`}`)}
-        analisisTab={activeAnalisisTab}
-        onAnalisisTabChange={sub => navigate(`/clients/${athleteId}/analisis/${sub}`)}
+        onTabChange={tab => navigate(`/clients/${athleteId}/${tab}`)}
       />
     );
   }
@@ -303,288 +297,272 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
   return (
     <div className="space-y-6">
       {/* Header */}
-      <header className="pb-4 border-b border-white/60">
+      <header className="pb-4 border-b border-hairline">
         <div className="flex items-center gap-3 mb-2">
-          <span className="inline-flex items-center px-2 py-0.5 rounded bg-[#201f1f] text-[10px] font-sans border border-[#fbcb1a]/30 text-[#fbcb1a] font-bold uppercase tracking-wider">
+          <span className="inline-flex items-center px-2 rounded-control bg-raised text-caption font-sans border border-accent/30 text-accent font-bold uppercase tracking-wider">
             Consola de Entrenador
           </span>
-          <span className="inline-flex items-center gap-1.5 text-xs font-mono text-[#00eefc]">
-            <span className="w-2 h-2 rounded-full bg-[#00eefc] animate-pulse"></span>
+          <span className="inline-flex items-center gap-2 text-label font-mono text-data">
+            <span className="w-2 h-2 rounded-full bg-data animate-pulse"></span>
             Sincronizado
           </span>
         </div>
         <div className="flex items-center justify-between gap-3 flex-wrap">
-          <h1 className="font-sans font-black text-3xl tracking-tight text-white uppercase">Clientes</h1>
+          <h1 className="font-sans font-extrabold text-display tracking-tight text-white uppercase">Clientes</h1>
           <WeeklyAnalysisButton />
         </div>
       </header>
 
-      {/* Summary cards */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 pb-2">
-        {/* Athletes count + finishing soon */}
-        <div className="lg:col-span-5 bg-gradient-to-br from-[#121414] to-[#121212] border border-white/7 p-5 rounded-2xl relative overflow-hidden flex flex-col justify-between shadow-lg">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-[#fbcb1a]/5 rounded-bl-full pointer-events-none" />
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-[#fbcb1a] text-xl">group</span>
-                <h2 className="font-sans font-extrabold text-[#c6c9ab] text-xs uppercase tracking-wider">Atletas del Entrenador</h2>
-              </div>
-              <span className="text-[10px] bg-teal-500/15 text-[#00eefc] px-2 py-0.5 border border-teal-500/20 rounded font-sans font-bold uppercase">Activos</span>
-            </div>
-            <div className="flex items-baseline gap-2 mt-2">
-              <span className="font-sans font-black text-5xl text-white tracking-tight">{athletes.length}</span>
-              <span className="text-xs text-[#c6c9ab] font-sans pb-1">deportistas registrados</span>
-            </div>
-          </div>
-          <div className="mt-6 pt-4 border-t border-white/60">
-            <span className="block text-[8px] text-[#c6c9ab] uppercase font-mono mb-2">Próximos a finalizar planificación</span>
-            {athletesFinishingSoon.length === 0 ? (
-              <p className="text-xs text-[#555] font-mono">Ninguno por ahora.</p>
-            ) : (
-              <div className="space-y-1.5">
-                {athletesFinishingSoon.slice(0, 3).map(a => (
-                  <button
-                    key={a.userId}
-                    onClick={() => openAthleteHub(a)}
-                    className="w-full flex items-center justify-between bg-[#1b1c1c]/50 hover:bg-[#1b1c1c] px-2.5 py-1.5 rounded-lg border border-white/40 text-left transition-colors"
-                  >
-                    <span className="text-xs text-white font-sans truncate">{a.displayName}</span>
-                    <span className="text-[10px] font-mono font-bold text-orange-300 flex-shrink-0 ml-2">{a.planDaysLeft}d</span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
+      {/* Contador + próximos a finalizar + buscador + invitar/invitaciones
+          pendientes, unificados y arriba del todo (antes: contador y
+          buscador en dos tarjetas separadas más abajo, e invitar solo
+          alcanzable desde CRM > Clientes). */}
+      <AthletesBar
+        count={athletes.length}
+        finishingSoon={athletesFinishingSoon}
+        onOpenAthlete={userId => {
+          const athlete = enrichedAthletes.find(a => a.userId === userId);
+          if (athlete) openAthleteHub(athlete);
+        }}
+        search={search}
+        onSearchChange={setSearch}
+      />
 
-        {/* Pending reviews + notes */}
-        <div className="lg:col-span-7 flex flex-col gap-4">
-          <button
-            onClick={onOpenReviews}
-            disabled={!onOpenReviews}
-            className="bg-[#181816] border border-white/7 p-5 rounded-2xl flex flex-col justify-between shadow-lg text-left hover:border-[#00eefc]/40 transition-colors disabled:cursor-default disabled:hover:border-white/7"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-[#00eefc] text-xl">pending_actions</span>
-                <h2 className="font-sans font-extrabold text-[#c6c9ab] text-xs uppercase tracking-wider">Revisiones Pendientes</h2>
-              </div>
-              {pendingCheckins.length > 0 ? (
-                <span className="text-[10px] bg-red-500/10 text-rose-400 px-2.5 py-0.5 border border-red-500/25 rounded font-sans uppercase font-black animate-pulse">
-                  {pendingCheckins.length} por evaluar
-                </span>
-              ) : (
-                <span className="text-[10px] bg-[#fbcb1a]/10 text-[#fbcb1a] px-2.5 py-0.5 border border-[#fbcb1a]/20 rounded font-sans uppercase font-bold">Al día</span>
-              )}
-            </div>
-            {pendingCheckins.length === 0 ? (
-              <p className="text-xs font-bold text-white">¡Sin revisiones pendientes!</p>
-            ) : (
-              <p className="text-sm text-[#c6c9ab] font-mono">
-                Ve a <strong className="text-[#fbcb1a]">Revisiones</strong> para evaluar los {pendingCheckins.length} check-ins pendientes.
-              </p>
-            )}
-          </button>
-
-          {/* Pending notes */}
-          <div className="bg-[#181816] border border-white/7 p-5 rounded-2xl shadow-lg">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-amber-300 text-xl">sticky_note_2</span>
-                <h2 className="font-sans font-extrabold text-[#c6c9ab] text-xs uppercase tracking-wider">Notas Pendientes</h2>
-              </div>
-              {totalPendingNotes > 0 ? (
-                <span className="text-[10px] bg-amber-500/10 text-amber-300 px-2.5 py-0.5 border border-amber-500/25 rounded font-sans uppercase font-black">
-                  {totalPendingNotes} por leer
-                </span>
-              ) : (
-                <span className="text-[10px] bg-[#fbcb1a]/10 text-[#fbcb1a] px-2.5 py-0.5 border border-[#fbcb1a]/20 rounded font-sans uppercase font-bold">Al día</span>
-              )}
-            </div>
-            {totalPendingNotes === 0 ? (
-              <p className="text-xs text-[#555] font-mono">Sin notas nuevas de ejercicios o entrenamientos.</p>
-            ) : (
-              <div className="space-y-1.5">
-                {enrichedAthletes.filter(a => a.pendingNotesCount > 0).slice(0, 3).map(a => (
-                  <button
-                    key={a.userId}
-                    onClick={() => openAthleteHub(a, 'entrenamientos')}
-                    className="w-full flex items-center justify-between bg-[#1b1c1c]/50 hover:bg-[#1b1c1c] px-2.5 py-1.5 rounded-lg border border-white/40 text-left transition-colors"
-                  >
-                    <span className="text-xs text-white font-sans truncate">{a.displayName}</span>
-                    <span className="text-[10px] font-mono font-bold text-amber-300 flex-shrink-0 ml-2">{a.pendingNotesCount}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Coach's own private to-do list — separate from Revisiones Pendientes */}
-      <CoachNotesPanel athletes={athletes} />
-
-      <ResourcesPanel isCoach coachId={coachId} />
-
-      {/* Athlete list */}
+      {/* Athlete list — junto a "Atletas del Entrenador", no al final de la
+          pantalla: es lo primero que el coach quiere ver al entrar. */}
       <div className="space-y-4">
-        <div className="bg-[#181816] border border-white/7 p-4 rounded-2xl flex flex-col md:flex-row md:items-center gap-3">
-          <div className="relative flex-1">
-            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#c6c9ab] text-base pointer-events-none">search</span>
-            <input
-              type="text"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              placeholder="Buscar atleta por nombre o email..."
-              className="w-full bg-[#111110] border border-white/7 rounded-lg pl-9 pr-3 py-2.5 text-sm text-white font-sans focus:outline-none focus:border-[#fbcb1a] transition-colors"
-            />
+        <div className="flex items-center justify-end gap-3">
+          {/* Tarjetas vs. fila compacta (diseño 1b) */}
+          <div className="flex bg-bg border border-hairline p-1 rounded-surface gap-1">
+            <button
+              onClick={() => changeViewMode('cards')}
+              title="Tarjetas"
+              className={`w-7 h-7 rounded-control flex items-center justify-center transition-all ${
+                viewMode === 'cards' ? 'bg-accent text-black' : 'text-ink-2 hover:text-white'
+              }`}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>grid_view</span>
+            </button>
+            <button
+              onClick={() => changeViewMode('compact')}
+              title="Fila compacta"
+              className={`w-7 h-7 rounded-control flex items-center justify-center transition-all ${
+                viewMode === 'compact' ? 'bg-accent text-black' : 'text-ink-2 hover:text-white'
+              }`}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>table_rows</span>
+            </button>
           </div>
-          <div className="flex items-center gap-3 flex-shrink-0">
-            <div className="flex bg-[#111110] border border-white/7 p-1 rounded-lg gap-1">
-              {([2, 3, 4] as const).map(n => (
+          {viewMode === 'cards' && (
+            <div className="flex bg-bg border border-hairline p-1 rounded-surface gap-1">
+              {([2, 3, 4, 5, 6] as const).map(n => (
                 <button
                   key={n}
                   onClick={() => changeGridCols(n)}
                   title={`${n} columnas`}
-                  className={`w-7 h-7 rounded-md font-sans text-xs font-bold transition-all ${
-                    gridCols === n ? 'bg-[#fbcb1a] text-black' : 'text-[#c6c9ab] hover:text-white'
+                  className={`w-7 h-7 rounded-control font-sans text-label font-bold transition-all ${
+                    gridCols === n ? 'bg-accent text-black' : 'text-ink-2 hover:text-white'
                   }`}
                 >
                   {n}
                 </button>
               ))}
             </div>
-            <span className="text-[10px] bg-teal-500/10 text-teal-300 px-3 py-1.5 border border-teal-500/20 rounded font-sans uppercase whitespace-nowrap">
-              {filteredAthletes.length} ATLETAS
-            </span>
-          </div>
+          )}
+          <span className="text-caption bg-teal-500/10 text-teal-300 px-3 py-2 border border-teal-500/20 rounded-control font-sans uppercase whitespace-nowrap">
+            {filteredAthletes.length} ATLETAS
+          </span>
         </div>
 
         {loadingAthletes ? (
-          <div className={`grid grid-cols-1 ${GRID_COLS_CLASS[gridCols]} gap-4`}>
-            <Skeleton className="h-40 w-full rounded-2xl" />
-            <Skeleton className="h-40 w-full rounded-2xl" />
-            <Skeleton className="h-40 w-full rounded-2xl" />
+          <div className={viewMode === 'cards' ? `grid grid-cols-1 ${GRID_COLS_CLASS[gridCols]} gap-4` : 'space-y-px'}>
+            <Skeleton className="h-40 w-full rounded-surface" />
+            <Skeleton className="h-40 w-full rounded-surface" />
+            <Skeleton className="h-40 w-full rounded-surface" />
           </div>
         ) : athletes.length === 0 ? (
-          <div className="text-center py-12 flex flex-col items-center gap-3">
-            <p className="text-[#c6c9ab] font-mono text-xs">No hay atletas registrados todavía.</p>
-            <button
-              onClick={() => inviteInputRef.current?.focus()}
-              className="flex items-center gap-1.5 px-3.5 py-2 bg-[#fbcb1a] text-black font-sans font-bold text-[10px] uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all"
-            >
-              <span className="material-symbols-outlined text-sm">person_add</span>
-              Invitar a tu primer atleta
-            </button>
-          </div>
+          <EmptyState
+            icon="group"
+            title="No hay atletas registrados todavía."
+            actionLabel="Invitar a tu primer atleta"
+            onAction={() => navigate('/crm/clientes')}
+          />
         ) : filteredAthletes.length === 0 ? (
-          <div className="text-center py-12 text-[#c6c9ab] font-mono text-xs">Ningún atleta coincide con "{search}".</div>
+          <EmptyState icon="search_off" title={`Ningún atleta coincide con "${search}".`} />
+        ) : viewMode === 'compact' ? (
+          /* Fila compacta (diseño 1b) — avatar, nombre, un dato clave y el
+             anillo de setup, ~80px por atleta. Pensada para escanear rápido
+             una lista larga antes de entrar al detalle de uno. */
+          <div className="flex flex-col gap-px bg-hairline rounded-surface overflow-hidden border border-hairline">
+            {filteredAthletes.map(athlete => {
+              const { setupPct, totalCheckCount, checkinLate, planExpired, daysSince } = athlete;
+              const isAlert = planExpired || (checkinLate && daysSince !== null && daysSince > 7);
+              const ringR = 13.5, ringCx = 16, ringSize = 32;
+              const ringCirc = 2 * Math.PI * ringR;
+              const ringOffset = ringCirc * (1 - Math.max(0, Math.min(100, setupPct)) / 100);
+              const subtitle = totalCheckCount === 0
+                ? `Sin registros · racha ${athlete.currentStreak || 0} sem`
+                : `${athlete.actualWeight || athlete.initialWeight} kg · racha ${athlete.currentStreak || 0} sem`;
+
+              return (
+                <button
+                  key={athlete.userId}
+                  onClick={() => openAthleteHub(athlete)}
+                  className={`bg-bg flex items-center gap-3 px-4 py-3 text-left hover:bg-raised/50 transition-colors ${
+                    isAlert ? 'shadow-[inset_3px_0_0_var(--color-danger)]' : ''
+                  }`}
+                >
+                  <div className="w-9.5 h-9.5 rounded-full overflow-hidden border border-hairline flex-shrink-0" style={{ width: 38, height: 38 }}>
+                    <img src={athlete.avatarUrl} alt={athlete.displayName} className="w-full h-full object-cover" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-sans font-bold text-white text-label truncate">{athlete.displayName}</p>
+                    <p className="font-mono text-caption text-ink-2 truncate">{subtitle}</p>
+                  </div>
+                  <div className="relative flex-none" style={{ width: ringSize, height: ringSize }}>
+                    <svg width={ringSize} height={ringSize} viewBox={`0 0 ${ringSize} ${ringSize}`} className="-rotate-90">
+                      <circle cx={ringCx} cy={ringCx} r={ringR} fill="none" stroke="rgba(255,255,255,.08)" strokeWidth="2.5" />
+                      <circle
+                        cx={ringCx} cy={ringCx} r={ringR} fill="none" stroke={setupPct >= 100 ? 'var(--color-success)' : 'var(--color-accent)'} strokeWidth="2.5"
+                        strokeLinecap="round" strokeDasharray={ringCirc} strokeDashoffset={ringOffset}
+                      />
+                    </svg>
+                    <span className="absolute inset-0 flex items-center justify-center font-mono text-[8.5px] font-semibold text-white/80">{setupPct}%</span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
         ) : (
           <div className={`grid grid-cols-1 ${GRID_COLS_CLASS[gridCols]} gap-4`}>
             {filteredAthletes.map(athlete => {
               const { planDaysLeft, planExpired, planSoon, daysSince, checkinLate,
-                      totalCheckCount, pendingCount, adherenceScore, setupPct } = athlete;
-              const adh = scoreStyle(adherenceScore);
-              const needsAttention = planExpired || planSoon || checkinLate;
+                      daysSinceLogin, pendingCount, setupPct, totalCheckCount } = athlete;
+              // Alerta real (diseño 1c) — plan vencido o 7+ días sin actividad,
+              // no "casi vence" ni cualquier otro matiz: eso ya lo dicen los
+              // badges. El borde rojo se reserva a lo urgente de verdad.
+              const isAlert = planExpired || (checkinLate && daysSince !== null && daysSince > 7);
+              const setupRing = setupPct >= 100 ? 'var(--color-success)' : 'var(--color-accent)';
+
+              // Anillo de progreso del setup — trazo fino (3px), % centrado.
+              // No se reutiliza <ProgressRing/> aquí: esa tiene un trazo fijo de
+              // 9px pensado para el tamaño grande del dashboard del atleta.
+              const ringR = 18, ringCx = 21, ringSize = 42;
+              const ringCirc = 2 * Math.PI * ringR;
+              const ringOffset = ringCirc * (1 - Math.max(0, Math.min(100, setupPct)) / 100);
 
               return (
                 <div
                   key={athlete.userId}
                   onClick={() => openAthleteHub(athlete)}
-                  className={`bg-[#111110] border rounded-2xl p-5 hover:border-[#fbcb1a]/50 hover:shadow-[0_4px_20px_rgba(251,203,26,0.05)] cursor-pointer transition-all flex flex-col justify-between group relative overflow-hidden ${
-                    needsAttention ? 'border-orange-500/30' : 'border-white/7'
+                  className={`bg-bg border rounded-surface p-4 hover:border-accent/50 cursor-pointer transition-all flex flex-col gap-3 group relative overflow-hidden ${
+                    isAlert ? 'border-danger/30 shadow-[inset_3px_0_0_var(--color-danger)]' : 'border-hairline'
                   }`}
                 >
-                  <div className="absolute right-0 top-0 w-16 h-16 bg-gradient-to-tr from-transparent to-[#fbcb1a]/5 rounded-bl-full pointer-events-none" />
-                  <button
-                    onClick={e => { e.stopPropagation(); openAthleteHub(athlete, 'setup'); }}
-                    title={`Setup ${setupPct}%`}
-                    className="absolute right-3 top-3 z-10"
-                  >
-                    <ProgressRing pct={setupPct} size={32} color={setupPct >= 100 ? '#34d399' : '#fbcb1a'} />
-                  </button>
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white/7 group-hover:border-[#fbcb1a]/60 transition-all flex-shrink-0">
+                  {/* Header: avatar, nombre, email, badge de plan + anillo de setup */}
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-start gap-3 min-w-0">
+                      <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-hairline group-hover:border-accent/60 transition-all flex-shrink-0">
                         <img src={athlete.avatarUrl} alt={athlete.displayName} className="w-full h-full object-cover" />
                       </div>
-                      <div className="min-w-0 flex-1">
-                        <h3 className="font-sans font-bold text-white text-base leading-snug group-hover:text-[#fbcb1a] transition-colors">{athlete.displayName}</h3>
-                        <p className="font-mono text-[10px] text-[#c6c9ab] truncate">{athlete.email}</p>
-                        {/* Plan badge */}
-                        <div className="flex flex-wrap gap-1 mt-0.5">
+                      <div className="min-w-0">
+                        <h3 className="font-sans font-bold text-white text-label leading-snug group-hover:text-accent transition-colors truncate">{athlete.displayName}</h3>
+                        <p className="font-mono text-caption text-ink-2 truncate">{athlete.email}</p>
+                        <div className="flex flex-wrap gap-1 mt-1">
                           {planDaysLeft !== null ? (
-                            <span className={`text-[9px] font-sans font-bold uppercase px-1.5 py-0.5 rounded border ${
-                              planDaysLeft > 30  ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20' :
-                              planDaysLeft >= 0  ? 'bg-orange-500/10  text-orange-300  border-orange-500/20'  :
-                                                   'bg-red-500/10     text-red-400     border-red-500/20'
-                            }`}>
+                            <Badge tone={planDaysLeft > 30 ? 'success' : planDaysLeft >= 0 ? 'warning' : 'danger'}>
                               {planDaysLeft >= 0 ? `Vence en ${planDaysLeft}d` : `Vencido hace ${-planDaysLeft}d`}
-                            </span>
+                            </Badge>
                           ) : (
-                            <span className="text-[9px] font-sans font-bold uppercase px-1.5 py-0.5 rounded border bg-[#1c1b1b] text-[#4a4a4a] border-white/7">
-                              Sin plan
-                            </span>
+                            <Badge tone="neutral">Sin plan</Badge>
                           )}
-                          {/* Check-in atrasado badge */}
                           {checkinLate && (
-                            <span className="text-[9px] font-sans font-bold uppercase px-1.5 py-0.5 rounded border bg-orange-500/10 text-orange-300 border-orange-500/20">
+                            <Badge tone="warning">
                               {daysSince === null ? 'Sin check-in' : `Check-in · ${daysSince}d`}
-                            </span>
+                            </Badge>
                           )}
                         </div>
                       </div>
                     </div>
-                    <div className="grid grid-cols-3 gap-2 bg-[#1b1c1c]/50 p-2.5 rounded-lg border border-white/40 text-center font-mono">
+                    <button
+                      onClick={e => { e.stopPropagation(); openAthleteHub(athlete, 'setup'); }}
+                      title={`Setup ${setupPct}%`}
+                      className="relative flex-none z-10"
+                      style={{ width: ringSize, height: ringSize }}
+                    >
+                      <svg width={ringSize} height={ringSize} viewBox={`0 0 ${ringSize} ${ringSize}`} className="-rotate-90">
+                        <circle cx={ringCx} cy={ringCx} r={ringR} fill="none" stroke="rgba(255,255,255,.08)" strokeWidth="3" />
+                        <circle
+                          cx={ringCx} cy={ringCx} r={ringR} fill="none" stroke={setupRing} strokeWidth="3"
+                          strokeLinecap="round" strokeDasharray={ringCirc} strokeDashoffset={ringOffset}
+                          className="transition-all duration-500"
+                        />
+                      </svg>
+                      <span className="absolute inset-0 flex items-center justify-center font-mono text-[10.5px] font-semibold text-white/85">{setupPct}%</span>
+                    </button>
+                  </div>
+
+                  <div className="h-px bg-hairline" />
+
+                  {/* Pesos, o el estado real de un atleta sin registros todavía */}
+                  {totalCheckCount === 0 ? (
+                    <div className="flex items-center gap-2 py-0.5">
+                      <span className="material-symbols-outlined text-label text-ink-3">info</span>
+                      <span className="font-mono text-caption text-ink-3">Sin registros de peso todavía</span>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-3 text-center font-mono">
                       <div>
-                        <span className="block text-[8px] text-[#c6c9ab] uppercase">INICIAL</span>
-                        <span className="block text-xs font-bold text-white">{athlete.initialWeight} kg</span>
+                        <span className="block text-caption text-ink-2 uppercase">Inicial</span>
+                        <span className="block text-title-s font-bold text-white/85">{athlete.initialWeight}</span>
                       </div>
-                      <div>
-                        <span className="block text-[8px] text-[#fbcb1a] uppercase font-bold">ACTUAL</span>
-                        <span className="block text-xs font-bold text-[#fbcb1a]">{athlete.actualWeight || athlete.initialWeight} kg</span>
+                      <div className="border-l border-hairline">
+                        <span className="block text-caption text-accent uppercase font-bold">Actual</span>
+                        <span className="block text-title-s font-bold text-accent">{athlete.actualWeight || athlete.initialWeight}</span>
                       </div>
-                      <div>
-                        <span className="block text-[8px] text-[#00eefc] uppercase">META</span>
-                        <span className="block text-xs font-bold text-[#00eefc]">{athlete.targetWeight} kg</span>
+                      <div className="border-l border-hairline">
+                        <span className="block text-caption text-data uppercase">Meta</span>
+                        <span className="block text-title-s font-bold text-data">{athlete.targetWeight}</span>
                       </div>
                     </div>
-                    <div className="space-y-1.5">
-                      <div className="flex justify-between font-mono text-[10px]">
-                        <span className="text-[#c6c9ab] uppercase flex items-center gap-1">
-                          <span className="material-symbols-outlined text-[12px] text-orange-400">local_fire_department</span> Racha
-                        </span>
-                        <strong className="text-white">{athlete.currentStreak || 0} sem</strong>
-                      </div>
-                      <div className="flex justify-between font-mono text-[10px]">
-                        <span className="text-[#c6c9ab] uppercase flex items-center gap-1">
-                          <span className="material-symbols-outlined text-[12px] text-teal-400">military_tech</span> Nivel
-                        </span>
-                        <strong className="text-[#00eefc]">Lvl {athlete.level || 1}</strong>
-                      </div>
-                      {/* Adherence score */}
-                      <div className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg border font-mono ${adh.bg}`}>
-                        <span className={`text-[10px] uppercase font-bold flex items-center gap-1 ${adh.text}`}>
-                          <span className="material-symbols-outlined" style={{ fontSize: '11px' }}>monitor_heart</span>
-                          {adh.label}
-                        </span>
-                        <span className={`text-sm font-black ${adh.text}`}>{adherenceScore}</span>
-                      </div>
+                  )}
+
+                  <div className="h-px bg-hairline" />
+
+                  {/* Racha + último login, dos columnas separadas por un divisor —
+                      antes iba Nivel aquí, pero el coach ya no lo quiere ver. */}
+                  <div className="flex items-center">
+                    <div className="flex items-center gap-1.5 flex-1 font-mono text-caption">
+                      <span className="material-symbols-outlined text-label text-orange-400">local_fire_department</span>
+                      <span className="text-ink-2 uppercase">Racha</span>
+                      <strong className="ml-auto text-white/85">{athlete.currentStreak || 0} sem</strong>
+                    </div>
+                    <div className="w-px h-[18px] bg-hairline mx-3.5" />
+                    <div className="flex items-center gap-1.5 flex-1 font-mono text-caption">
+                      <span className="material-symbols-outlined text-label text-ink-3">history</span>
+                      <span className="text-ink-2 uppercase">Login</span>
+                      <strong className="ml-auto text-white/85">{daysSinceLogin === null ? '—' : daysSinceLogin <= 0 ? 'Hoy' : `${daysSinceLogin}d`}</strong>
                     </div>
                   </div>
-                  <div className="mt-5 pt-3.5 border-t border-white/60 flex items-center justify-between text-xs font-mono">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[#c6c9ab]">{totalCheckCount} Reportes</span>
+
+                  <div className="h-px bg-hairline" />
+
+                  <div className="flex items-center justify-between text-label font-mono">
+                    <div className="flex items-center gap-2 font-mono text-caption text-ink-2">
+                      {isAlert ? (
+                        <span>Última actividad {daysSince === null ? 'desconocida' : `hace ${daysSince}d`}</span>
+                      ) : (
+                        <span>Último reporte · {daysSince === null ? '—' : daysSince <= 0 ? 'hoy' : `hace ${daysSince}d`}</span>
+                      )}
                       {pendingCount > 0 && (
-                        <span className="text-[9px] bg-red-500/15 text-rose-400 border border-red-500/25 px-1.5 py-0.5 rounded font-sans uppercase">
+                        <span className="text-caption bg-red-500/15 text-rose-400 border border-red-500/25 px-2 rounded-control font-sans uppercase">
                           {pendingCount} pend.
                         </span>
                       )}
                     </div>
-                    <span className="text-[#fbcb1a] flex items-center gap-1 group-hover:translate-x-1 transition-transform">
-                      <span>Abrir Hub</span>
-                      <span className="material-symbols-outlined text-[10px]">arrow_forward</span>
+                    <span className={`flex items-center gap-1 group-hover:translate-x-1 transition-transform ${isAlert ? 'text-danger' : 'text-accent'}`}>
+                      <span>{isAlert ? 'Contactar' : 'Abrir Hub'}</span>
+                      <span className="material-symbols-outlined text-caption">arrow_forward</span>
                     </span>
                   </div>
                 </div>
@@ -595,60 +573,53 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
         )}
       </div>
 
-      {/* Invite a new client by email */}
-      <div className="bg-[#181816] border border-white/7 p-5 rounded-2xl">
-        <div className="flex items-center gap-2 mb-3">
-          <span className="material-symbols-outlined text-[#fbcb1a] text-xl">person_add</span>
-          <h2 className="font-sans font-extrabold text-[#c6c9ab] text-xs uppercase tracking-wider">Invitar nuevo atleta</h2>
-        </div>
-        <form onSubmit={handleInvite} className="flex flex-col sm:flex-row gap-2 sm:max-w-md">
-          <input
-            ref={inviteInputRef}
-            type="email"
-            value={inviteEmail}
-            onChange={e => setInviteEmail(e.target.value)}
-            placeholder="correo del nuevo cliente"
-            className="flex-1 bg-[#111110] border border-white/7 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-[#fbcb1a] transition-colors"
-          />
-          <button
-            type="submit"
-            disabled={inviting || !inviteEmail.trim()}
-            className="flex-shrink-0 flex items-center justify-center gap-1.5 px-3.5 py-2.5 bg-[#fbcb1a] text-black font-sans font-bold text-[10px] uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-40"
-          >
-            <span className="material-symbols-outlined text-sm">mail</span>
-            {inviting ? 'Enviando...' : 'Invitar'}
-          </button>
-        </form>
-        {inviteError && <p className="font-mono text-[10px] text-red-400 mt-1.5">{inviteError}</p>}
-        {inviteSuccess && <p className="font-mono text-[10px] text-[#fbcb1a] mt-1.5">{inviteSuccess}</p>}
+      {!loadingAthletes && (
+        <HomeCoachScreen
+          athletes={athletes}
+          checkins={checkins}
+          assignmentsByEmail={allAssignments}
+          loadingAssignments={loadingAssignments}
+        />
+      )}
 
-        {pendingInvites.length > 0 && (
-          <div className="mt-4 pt-4 border-t border-white/60">
-            <p className="font-mono text-[9px] text-[#c6c9ab] uppercase tracking-wider mb-2.5">
-              Invitaciones pendientes ({pendingInvites.length})
-            </p>
-            <div className="space-y-1.5">
-              {pendingInvites.map(inv => (
-                <div key={inv.id} className="flex items-center gap-3 bg-[#1e1e1b] border border-white/7 rounded-xl px-3 py-2">
-                  <span className="material-symbols-outlined text-[#c6c9ab] text-sm">mail</span>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-sans text-xs text-white truncate">{inv.email}</p>
-                    <p className="font-mono text-[9px] text-[#555]">
-                      Invitado el {new Date(inv.invitedAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => handleResendInvite(inv.email)}
-                    className="font-mono text-[9px] text-[#00eefc] hover:underline uppercase tracking-wide flex-shrink-0"
-                  >
-                    Reenviar
-                  </button>
+      {/* Pendientes: notas del atleta sin leer + to-do privado del coach, en una sola tarjeta */}
+      <CoachNotesPanel
+        athletes={athletes}
+        athletesWithPendingNotes={enrichedAthletes}
+        onOpenAthleteNotes={userId => {
+          const athlete = enrichedAthletes.find(a => a.userId === userId);
+          if (athlete) openAthleteHub(athlete, 'entrenamientos');
+        }}
+      />
+
+      {/* Bajas no anonimizadas: fuera de la lista principal (no molestan en
+          HOME COACH ni en el contador), pero no desaparecidas — el coach
+          puede volver a abrir su ficha. Los anonimizados no se listan aquí
+          ni en ningún sitio: ya no tienen nombre ni datos, solo cuentan para
+          el churn del CRM. */}
+      {archivedAthletes.length > 0 && (
+        <details className="group">
+          <summary className="cursor-pointer font-mono text-caption text-ink-3 uppercase tracking-wider py-2 select-none">
+            Archivados ({archivedAthletes.length})
+          </summary>
+          <div className="mt-2 space-y-1">
+            {archivedAthletes.map(a => (
+              <button
+                key={a.userId}
+                onClick={() => openAthleteHub(a)}
+                className="w-full flex items-center gap-3 bg-bg border border-hairline rounded-surface px-4 py-3 text-left hover:border-accent/40 transition-colors"
+              >
+                <img src={a.avatarUrl} alt="" className="w-8 h-8 rounded-full object-cover border border-hairline shrink-0" />
+                <div className="min-w-0 flex-1">
+                  <p className="font-sans text-label text-ink-2 truncate">{a.displayName}</p>
+                  <p className="font-mono text-caption text-ink-4 truncate">{a.email}</p>
                 </div>
-              ))}
-            </div>
+                {a.fechaBaja && <Badge tone="neutral">Baja: {a.fechaBaja}</Badge>}
+              </button>
+            ))}
           </div>
-        )}
-      </div>
+        </details>
+      )}
     </div>
   );
 }

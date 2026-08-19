@@ -1,203 +1,18 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useQuery, useQueries, useQueryClient } from '@tanstack/react-query';
-import { UserProfile, WeightCheckIn, QuestionnaireAssignment, QuestionnaireResponse, Questionnaire, QuestionnaireQuestion, BodyweightLog, PhotoAssignment, ProgressPhoto, PhotoView } from '../types';
-import { createNotificationDeduped, getAssignmentsForAthlete, getResponsesForAthlete, getQuestionnaireById, submitResponse, addBodyweight, getBodyweightForAthlete, updateBodyweight, getPhotoAssignmentsForAthlete, getProgressPhotos } from '../dbService';
-import { todayStr, isDueToday, hasAnsweredThisOccurrence, isUpcoming } from '../utils/questionnaireSchedule';
+import { UserProfile, WeightCheckIn, QuestionnaireAssignment, QuestionnaireResponse, Questionnaire, BodyweightLog, PhotoAssignment, ProgressPhoto, PhotoView } from '../types';
+import { createNotificationDeduped, getAssignmentsForAthlete, getResponsesForAthlete, getQuestionnaireById, addBodyweight, getBodyweightForAthlete, updateBodyweight, getPhotoAssignmentsForAthlete, getProgressPhotos, getMesocycles } from '../dbService';
+import { todayStr, isDueToday, hasAnsweredThisOccurrence, isUpcoming, isOverdue, ScheduleContext } from '../utils/questionnaireSchedule';
 import { hasUploadedThisOccurrence } from '../utils/photoSchedule';
+import { scheduleLabel } from '../utils/scheduleEngine';
 import { bodyweightForAthleteKey } from '../hooks/useAthleteWeight';
 import PhotosScreen from './PhotosScreen';
+import QuestionnaireWizard from './QuestionnaireWizard';
+import { EmptyState, WeightWheelPicker } from './ui';
 
 const PHOTO_VIEW_LABELS: Record<PhotoView, string> = { front: 'Frente', side: 'Lateral', back: 'Espalda' };
 
 const COACH_EMAIL = 'danitrviner@gmail.com';
-
-// ── Inline questionnaire form ─────────────────────────────────────────────────
-
-function QuestionnaireForm({
-  questionnaire,
-  assignment,
-  athleteEmail,
-  onSubmitted,
-  onCancel,
-}: {
-  questionnaire: Questionnaire;
-  assignment: QuestionnaireAssignment;
-  athleteEmail: string;
-  onSubmitted: (r: QuestionnaireResponse) => void;
-  onCancel: () => void;
-}) {
-  const [answers, setAnswers] = useState<Record<string, string | number | boolean>>({});
-  const [saving, setSaving] = useState(false);
-  const [err, setErr] = useState('');
-
-  const setAnswer = (qId: string, value: string | number | boolean) =>
-    setAnswers(prev => ({ ...prev, [qId]: value }));
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const missing = questionnaire.questions.filter(q => q.required && answers[q.id] === undefined);
-    if (missing.length > 0) {
-      setErr(`Por favor responde: ${missing.map(q => q.label).join(', ')}`);
-      return;
-    }
-    setErr('');
-    setSaving(true);
-    try {
-      const payload = questionnaire.questions
-        .filter(q => answers[q.id] !== undefined)
-        .map(q => ({ questionId: q.id, value: answers[q.id] }));
-      const response = await submitResponse({
-        questionnaireId: questionnaire.id,
-        assignmentId: assignment.id,
-        athleteId: athleteEmail,
-        submittedAt: new Date().toISOString(),
-        answers: payload,
-      });
-      onSubmitted(response);
-    } catch (e) {
-      console.error(e);
-      setErr('Error al enviar. Inténtalo de nuevo.');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <div className="bg-[#181816] border border-white/7 rounded-2xl p-4 sm:p-6">
-      <div className="flex items-center justify-between mb-5 pb-2 border-b border-white/7">
-        <h2 className="font-sans font-bold text-lg text-white flex items-center gap-2">
-          <span className="material-symbols-outlined text-[#00eefc]">assignment</span>
-          {questionnaire.title}
-        </h2>
-        <button onClick={onCancel} className="text-[#c6c9ab] hover:text-white transition-colors p-1">
-          <span className="material-symbols-outlined text-base">close</span>
-        </button>
-      </div>
-
-      {questionnaire.description && (
-        <p className="text-xs text-[#c6c9ab] mb-4 font-sans">{questionnaire.description}</p>
-      )}
-
-      {err && (
-        <div className="bg-red-500/10 border border-red-500/30 text-red-200 p-3 rounded-lg text-xs mb-4">{err}</div>
-      )}
-
-      <form onSubmit={handleSubmit} className="space-y-5">
-        {questionnaire.questions.map((q: QuestionnaireQuestion) => (
-          <div key={q.id}>
-            <label className="block font-mono text-[11px] text-[#c6c9ab] uppercase tracking-wider mb-2">
-              {q.label}{q.required && ' *'}{q.unit && ` (${q.unit})`}
-            </label>
-            {q.helpText && <p className="text-[11px] text-[#c6c9ab]/70 mb-2">{q.helpText}</p>}
-
-            {q.type === 'text' && (
-              <textarea
-                value={(answers[q.id] as string) ?? ''}
-                onChange={e => setAnswer(q.id, e.target.value)}
-                maxLength={q.maxChars}
-                placeholder="Escribe aquí..."
-                className="w-full bg-[#1e1e1e] border-0 border-b border-white/7 text-[#e5e2e1] text-xs p-2.5 focus:ring-0 focus:border-[#fbcb1a] transition-colors min-h-[60px]"
-              />
-            )}
-
-            {q.type === 'numeric' && (
-              <input
-                type="number"
-                step={q.decimals ? Math.pow(10, -q.decimals) : 1}
-                min={q.min}
-                max={q.max}
-                value={(answers[q.id] as string) ?? ''}
-                onChange={e => setAnswer(q.id, parseFloat(e.target.value))}
-                className="w-full bg-[#1e1e1e] border-0 border-b border-white/7 text-white font-mono p-2.5 focus:ring-0 focus:border-[#fbcb1a] transition-colors"
-              />
-            )}
-
-            {q.type === 'scale' && (
-              <div className="space-y-2">
-                <div className="flex gap-1.5 flex-wrap">
-                  {Array.from({ length: (q.scaleMax ?? 10) - (q.scaleMin ?? 1) + 1 }, (_, i) => (q.scaleMin ?? 1) + i).map(v => (
-                    <button
-                      key={v}
-                      type="button"
-                      onClick={() => setAnswer(q.id, v)}
-                      className={`w-9 h-9 rounded-lg font-mono text-xs font-bold transition-all ${
-                        answers[q.id] === v
-                          ? 'bg-[#fbcb1a] text-black'
-                          : 'bg-[#1e1e1e] text-[#c6c9ab] border border-white/7 hover:border-[#fbcb1a]/50'
-                      }`}
-                    >{v}</button>
-                  ))}
-                </div>
-                {(q.scaleMinLabel || q.scaleMaxLabel) && (
-                  <div className="flex justify-between text-[10px] font-mono text-[#c6c9ab]">
-                    <span>{q.scaleMin ?? 1} – {q.scaleMinLabel}</span>
-                    <span>{q.scaleMaxLabel} – {q.scaleMax ?? 10}</span>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {q.type === 'boolean' && (
-              <div className="flex gap-2">
-                {([true, false] as const).map(v => (
-                  <button
-                    key={String(v)}
-                    type="button"
-                    onClick={() => setAnswer(q.id, v)}
-                    className={`flex-1 py-3 font-mono text-xs rounded-lg border transition-all min-h-[44px] ${
-                      answers[q.id] === v
-                        ? 'bg-[#fbcb1a] text-black font-bold border-transparent'
-                        : 'bg-[#1e1e1e] text-[#e5e2e1] border-white/7'
-                    }`}
-                  >{v ? (q.labelTrue ?? 'Sí') : (q.labelFalse ?? 'No')}</button>
-                ))}
-              </div>
-            )}
-
-            {q.type === 'choice' && q.options && (
-              <div className="flex flex-col gap-1.5">
-                {q.options.map(opt => {
-                  const curSelected: string[] = q.multiSelect
-                    ? ((answers[q.id] as string | undefined) ?? '').split(',').filter(Boolean)
-                    : [];
-                  const isSelected = q.multiSelect ? curSelected.includes(opt) : answers[q.id] === opt;
-                  return (
-                  <button
-                    key={opt}
-                    type="button"
-                    onClick={() => {
-                      if (q.multiSelect) {
-                        const next = isSelected ? curSelected.filter(o => o !== opt) : [...curSelected, opt];
-                        setAnswer(q.id, next.join(','));
-                      } else {
-                        setAnswer(q.id, opt);
-                      }
-                    }}
-                    className={`w-full py-2.5 px-3 text-xs font-mono rounded-lg border text-left transition-all min-h-[44px] ${
-                      isSelected
-                        ? 'bg-[#fbcb1a] text-black border-transparent font-bold'
-                        : 'bg-[#1e1e1e] text-[#e5e2e1] border-white/7'
-                    }`}
-                  >{opt}</button>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        ))}
-
-        <button
-          type="submit"
-          disabled={saving}
-          className="w-full h-[44px] bg-[#fbcb1a] text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-opacity-95 active:scale-95 transition-all flex items-center justify-center gap-2"
-        >
-          {saving ? 'Enviando...' : 'Enviar Respuesta'}
-          <span className="material-symbols-outlined text-sm">send</span>
-        </button>
-      </form>
-    </div>
-  );
-}
 
 // ── Main screen ───────────────────────────────────────────────────────────────
 
@@ -224,6 +39,9 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
     queryFn: () => getBodyweightForAthlete(profile.email),
   });
   const bwToday = useMemo(() => bwLogs.find(l => l.date === todayStr()) ?? null, [bwLogs]);
+  // bwLogs viene ascendente por fecha (getBodyweightForAthlete) — el último es
+  // el peso más reciente, usado para prefill de la pregunta 'metric' bodyweight.
+  const latestWeight = bwLogs.length > 0 ? bwLogs[bwLogs.length - 1].weight : undefined;
   const [bwInput, setBwInput]   = useState('');
   const [bwEditing, setBwEditing] = useState(false);
   const [bwSaving, setBwSaving] = useState(false);
@@ -231,7 +49,6 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
   const [bwMode, setBwMode] = useState<BwMode>(
     () => (localStorage.getItem(bwModeKey(profile.email)) as BwMode | null) ?? 'daily'
   );
-  const bwInputRef = useRef<HTMLInputElement>(null);
 
   // Igual que el .then() original: abre el editor / adopta el kind de hoy una
   // sola vez por atleta cuando el registro de peso ya cargó, no en cada
@@ -243,10 +60,6 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
     if (!bwToday) setBwEditing(true); // start in input mode if nothing logged yet
     else if (bwToday.kind) setBwMode(bwToday.kind); // refleja cómo se registró hoy
   }, [loadingBw, profile.email, bwToday]);
-
-  useEffect(() => {
-    if (bwEditing) bwInputRef.current?.focus();
-  }, [bwEditing]);
 
   const changeBwMode = (mode: BwMode) => {
     setBwMode(mode);
@@ -319,15 +132,27 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
     }
     return tMap;
   }, [questionnaireQueries]);
+  // Mesociclos del atleta — contexto para los disparadores 'plan_week' y
+  // 'mesocycle_end' (scheduleEngine no conoce el plan de entreno por sí solo).
+  const { data: mesocycles = [] } = useQuery({
+    queryKey: ['mesocyclesForAthlete', profile.email],
+    queryFn: () => getMesocycles(profile.email),
+  });
+  const scheduleCtx: ScheduleContext = useMemo(() => ({ mesocycles }), [mesocycles]);
+
   const loadingQ = loadingAssignments || loadingResponses
     || (activeQuestionnaireIds.length > 0 && questionnaireQueries.some(q => q.isPending));
 
   const [activeAssignment, setActiveAssignment] = useState<QuestionnaireAssignment | null>(null);
 
+  // "Vencido y sin responder" (isOverdue) en vez de isDueToday: para
+  // interval/plan_week/mesocycle_end, isOverdue se queda true desde la fecha
+  // objetivo hasta que se responde, no solo el día exacto — así un
+  // cuestionario sin responder no desaparece de "pendientes" al día siguiente.
   const pendingAssignments = assignments.filter(
-    a => isDueToday(a) && !hasAnsweredThisOccurrence(a, responses)
+    a => isOverdue(a, scheduleCtx) && !hasAnsweredThisOccurrence(a, responses, scheduleCtx)
   );
-  const upcomingAssignments = assignments.filter(a => isUpcoming(a));
+  const upcomingAssignments = assignments.filter(a => !isOverdue(a, scheduleCtx) && isUpcoming(a, scheduleCtx));
 
   // Photo check-in state
   const { data: rawPhotoAssignments = [], isPending: loadingPhotoAssignmentsQ } = useQuery({
@@ -342,10 +167,26 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
   const photoAssignments = useMemo(() => rawPhotoAssignments.filter(a => a.active), [rawPhotoAssignments]);
   const loadingPhotoAssignments = loadingPhotoAssignmentsQ || loadingProgressPhotos;
 
-  const pendingPhotoAssignments = photoAssignments.filter(
+  // Sin asignación explícita del coach (ya no es configurable desde su UI):
+  // por defecto se piden las 3 vistas cada semana, para que el flujo de fotos
+  // de check-in nunca dependa de que alguien lo active a mano.
+  const effectivePhotoAssignments = useMemo<PhotoAssignment[]>(() => {
+    if (photoAssignments.length > 0) return photoAssignments;
+    return [{
+      id: 'implicit-default',
+      athleteId: profile.email,
+      schedule: { type: 'interval', intervalDays: 7 },
+      startDate: todayStr(),
+      views: ['front', 'side', 'back'],
+      active: true,
+      createdAt: new Date().toISOString(),
+    }];
+  }, [photoAssignments, profile.email]);
+
+  const pendingPhotoAssignments = effectivePhotoAssignments.filter(
     a => isDueToday(a) && !hasUploadedThisOccurrence(a, progressPhotos)
   );
-  const upcomingPhotoAssignments = photoAssignments.filter(a => isUpcoming(a));
+  const upcomingPhotoAssignments = effectivePhotoAssignments.filter(a => isUpcoming(a));
 
   const handleQuestionnaireSubmitted = (r: QuestionnaireResponse) => {
     queryClient.setQueryData<QuestionnaireResponse[]>(responsesKey, prev => [...(prev ?? []), r]);
@@ -364,19 +205,19 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-sans font-extrabold text-3xl tracking-tight text-white">Check-in Semanal</h1>
-        <p className="text-[#c6c9ab] text-sm mt-1">Registra tu peso y responde los cuestionarios del entrenador.</p>
+        <h1 className="font-sans font-extrabold text-display tracking-tight text-white">Check-in Semanal</h1>
+        <p className="text-ink-2 text-body-s mt-1">Registra tu peso y responde los cuestionarios del entrenador.</p>
       </div>
 
       {/* ── Quick bodyweight widget ─────────────────────────────────────────── */}
-      <div className="bg-[#181816] border border-white/7 rounded-2xl px-4 py-3 space-y-3">
+      <div className="bg-surface border border-hairline rounded-surface px-4 py-3 space-y-3">
         {/* Modo: día a día vs. media semanal ya calculada por el atleta */}
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={() => changeBwMode('daily')}
-            className={`px-2.5 py-1 rounded-lg font-mono text-[10px] uppercase tracking-wide border transition-all ${
-              bwMode === 'daily' ? 'bg-[#00eefc]/15 border-[#00eefc]/40 text-[#00eefc]' : 'border-white/7 text-[#c6c9ab]'
+            className={`px-3 py-1 rounded-control font-sans text-caption uppercase tracking-wide border transition-all ${
+              bwMode === 'daily' ? 'bg-data/15 border-data/40 text-data' : 'border-hairline text-ink-2'
             }`}
           >
             Me peso cada día
@@ -384,8 +225,8 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
           <button
             type="button"
             onClick={() => changeBwMode('weekly_avg')}
-            className={`px-2.5 py-1 rounded-lg font-mono text-[10px] uppercase tracking-wide border transition-all ${
-              bwMode === 'weekly_avg' ? 'bg-[#00eefc]/15 border-[#00eefc]/40 text-[#00eefc]' : 'border-white/7 text-[#c6c9ab]'
+            className={`px-3 py-1 rounded-control font-sans text-caption uppercase tracking-wide border transition-all ${
+              bwMode === 'weekly_avg' ? 'bg-data/15 border-data/40 text-data' : 'border-hairline text-ink-2'
             }`}
           >
             Llevo yo la media semanal
@@ -393,63 +234,54 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
         </div>
 
         <div className="flex items-center gap-3">
-        <div className="w-9 h-9 rounded-lg bg-[#00eefc]/10 flex items-center justify-center flex-shrink-0">
-          <span className="material-symbols-outlined text-[#00eefc] text-base" style={{ fontVariationSettings: "'FILL' 1" }}>scale</span>
+        <div className="w-9 h-9 rounded-surface bg-data/10 flex items-center justify-center flex-shrink-0">
+          <span className="material-symbols-outlined text-data text-title-s" style={{ fontVariationSettings: "'FILL' 1" }}>scale</span>
         </div>
 
         <div className="flex-1 min-w-0">
-          <p className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider">
+          <p className="font-mono text-caption text-ink-2 uppercase tracking-wider">
             {bwMode === 'weekly_avg' ? 'Media semanal' : 'Peso de hoy'}
           </p>
           {!bwEditing && bwToday ? (
-            <p className="font-mono text-lg font-bold text-white leading-tight">
-              {bwToday.weight} <span className="text-xs text-[#c6c9ab] font-normal">kg</span>
+            <p className="font-mono text-title-m font-bold text-white leading-tight">
+              {bwToday.weight} <span className="text-label text-ink-2 font-normal">kg</span>
             </p>
           ) : (
-            <div className="flex items-center gap-2 mt-1">
-              <input
-                ref={bwInputRef}
-                type="number"
-                step="0.1"
-                min="20"
-                max="300"
-                value={bwInput}
-                onChange={e => { setBwInput(e.target.value); setBwError(''); }}
-                onKeyDown={e => { if (e.key === 'Enter') handleSaveBw(); }}
-                placeholder={bwToday ? String(bwToday.weight) : '0.0'}
-                className="w-24 bg-[#1e1e1b] border border-white/7 rounded-xl px-2.5 py-1.5 text-white font-mono text-sm focus:outline-none focus:ring-1 focus:ring-[#00eefc] placeholder-[#444]"
+            <div className="mt-1">
+              <WeightWheelPicker
+                value={bwInput && !isNaN(parseFloat(bwInput)) ? parseFloat(bwInput) : (bwToday?.weight ?? latestWeight ?? 70)}
+                onChange={v => { setBwInput(String(v)); setBwError(''); }}
               />
-              <span className="font-mono text-xs text-[#555]">kg</span>
             </div>
           )}
-          {bwError && <p className="font-mono text-[10px] text-red-400 mt-1">{bwError}</p>}
+          {bwError && <p className="font-sans text-caption text-red-400 mt-1">{bwError}</p>}
         </div>
 
         {!bwEditing && bwToday ? (
           <button
             onClick={() => { setBwInput(String(bwToday.weight)); setBwEditing(true); }}
-            className="flex-shrink-0 w-9 h-9 rounded-lg border border-white/7 flex items-center justify-center text-[#c6c9ab] hover:text-white hover:border-[#3a3a3a] transition-all"
+            className="flex-shrink-0 w-9 h-9 rounded-control border border-hairline flex items-center justify-center text-ink-2 hover:text-white hover:border-hairline transition-all"
             title="Editar"
           >
-            <span className="material-symbols-outlined text-sm">edit</span>
+            <span className="material-symbols-outlined text-body-s">edit</span>
           </button>
         ) : (
           <button
             onClick={handleSaveBw}
             disabled={bwSaving}
-            className="flex-shrink-0 w-9 h-9 rounded-lg bg-[#00eefc] flex items-center justify-center text-black transition-all hover:bg-[#00d4e0] active:scale-95 disabled:opacity-50"
+            className="flex-shrink-0 w-9 h-9 rounded-control bg-data flex items-center justify-center text-black transition-all hover:bg-data active:scale-95 disabled:opacity-50"
             title="Guardar peso"
           >
             {bwSaving
-              ? <span className="material-symbols-outlined text-sm animate-spin">refresh</span>
-              : <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>check</span>
+              ? <span className="material-symbols-outlined text-body-s animate-spin">refresh</span>
+              : <span className="material-symbols-outlined text-body-s" style={{ fontVariationSettings: "'FILL' 1" }}>check</span>
             }
           </button>
         )}
         </div>
 
         {bwMode === 'weekly_avg' && (
-          <p className="font-mono text-[10px] text-[#c6c9ab]/70 -mt-1">
+          <p className="font-sans text-caption text-ink-2/70 -mt-1">
             Pon un único valor con la media que ya llevas calculada de la semana — no hace falta que te peses aquí a diario.
           </p>
         )}
@@ -457,10 +289,11 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
 
       {/* Questionnaire active form */}
       {activeAssignment && templates.get(activeAssignment.questionnaireId) && (
-        <QuestionnaireForm
+        <QuestionnaireWizard
           questionnaire={templates.get(activeAssignment.questionnaireId)!}
           assignment={activeAssignment}
           athleteEmail={profile.email}
+          currentWeight={latestWeight}
           onSubmitted={handleQuestionnaireSubmitted}
           onCancel={() => setActiveAssignment(null)}
         />
@@ -468,11 +301,11 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
 
       {/* Pending questionnaires list */}
       {!activeAssignment && !loadingQ && pendingAssignments.length > 0 && (
-        <section className="bg-[#181816] border border-[#fbcb1a]/20 rounded-2xl p-4 sm:p-6">
-          <h2 className="font-sans font-bold text-base text-white mb-3 pb-2 border-b border-white/7 flex items-center gap-2">
-            <span className="material-symbols-outlined text-[#fbcb1a]">assignment_late</span>
+        <section className="bg-surface border border-accent/20 rounded-surface p-4 sm:p-6">
+          <h2 className="font-sans font-bold text-title-s text-white mb-3 pb-2 border-b border-hairline flex items-center gap-2">
+            <span className="material-symbols-outlined text-accent">assignment_late</span>
             Cuestionarios pendientes
-            <span className="ml-auto bg-[#fbcb1a] text-black text-[10px] font-bold px-2 py-0.5 rounded-full">{pendingAssignments.length}</span>
+            <span className="ml-auto bg-accent text-black text-caption font-bold px-2 rounded-full">{pendingAssignments.length}</span>
           </h2>
           <div className="space-y-2">
             {pendingAssignments.map(a => {
@@ -482,14 +315,17 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
                 <button
                   key={a.id}
                   onClick={() => setActiveAssignment(a)}
-                  className="w-full flex items-center justify-between bg-[#1e1e1e] border border-white/7 hover:border-[#fbcb1a]/40 rounded-lg p-3.5 text-left transition-all group"
+                  className="w-full flex items-center justify-between bg-raised border border-hairline hover:border-accent/40 rounded-control p-4 text-left transition-all group"
                 >
                   <div>
-                    <p className="font-sans font-semibold text-sm text-white group-hover:text-[#fbcb1a] transition-colors">{q.title}</p>
-                    {q.description && <p className="text-[11px] text-[#c6c9ab] mt-0.5 font-sans">{q.description}</p>}
-                    <p className="font-mono text-[10px] text-[#c6c9ab] mt-1">{q.questions.length} pregunta{q.questions.length !== 1 ? 's' : ''}</p>
+                    <p className="font-sans font-bold text-body-s text-white group-hover:text-accent transition-colors">{q.title}</p>
+                    {q.description && <p className="text-caption text-ink-2 font-sans">{q.description}</p>}
+                    <p className="font-mono text-caption text-ink-2 mt-1">
+                      {q.questions.length} pregunta{q.questions.length !== 1 ? 's' : ''}
+                      {(a.schedule.type === 'plan_week' || a.schedule.type === 'mesocycle_end') && ` · ${scheduleLabel(a.schedule)}`}
+                    </p>
                   </div>
-                  <span className="material-symbols-outlined text-[#c6c9ab] group-hover:text-[#fbcb1a] transition-colors flex-shrink-0 ml-3">chevron_right</span>
+                  <span className="material-symbols-outlined text-ink-2 group-hover:text-accent transition-colors flex-shrink-0 ml-3">chevron_right</span>
                 </button>
               );
             })}
@@ -499,24 +335,24 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
 
       {/* Upcoming (not-yet-due) recurring questionnaires */}
       {!activeAssignment && !loadingQ && upcomingAssignments.length > 0 && (
-        <details className="group bg-[#181816] border border-white/7 rounded-2xl">
+        <details className="group bg-surface border border-hairline rounded-surface">
           <summary className="cursor-pointer list-none flex items-center justify-between p-4 sm:px-6">
-            <h2 className="font-sans font-bold text-sm text-white flex items-center gap-2">
-              <span className="material-symbols-outlined text-[#c6c9ab] text-base">event_upcoming</span>
+            <h2 className="font-sans font-bold text-body-s text-white flex items-center gap-2">
+              <span className="material-symbols-outlined text-ink-2 text-title-s">event_upcoming</span>
               Cuestionarios futuros
-              <span className="font-mono text-[10px] text-[#c6c9ab]">({upcomingAssignments.length})</span>
+              <span className="font-mono text-caption text-ink-2">({upcomingAssignments.length})</span>
             </h2>
-            <span className="material-symbols-outlined text-[#c6c9ab] text-sm group-open:rotate-180 transition-transform">expand_more</span>
+            <span className="material-symbols-outlined text-ink-2 text-body-s group-open:rotate-180 transition-transform">expand_more</span>
           </summary>
           <div className="px-4 sm:px-6 pb-4 space-y-2">
             {upcomingAssignments.map(a => {
               const q = templates.get(a.questionnaireId);
               if (!q) return null;
               return (
-                <div key={a.id} className="flex items-center justify-between bg-[#1e1e1e] border border-white/60 rounded-lg p-3">
-                  <p className="font-sans text-xs text-[#c6c9ab]">{q.title}</p>
-                  <span className="font-mono text-[9px] text-[#555] uppercase">
-                    {a.schedule.type === 'weekdays' ? 'Semanal' : a.schedule.type === 'interval' ? `Cada ${a.schedule.intervalDays ?? 7}d` : a.schedule.type === 'monthly' ? 'Mensual' : ''}
+                <div key={a.id} className="flex items-center justify-between bg-raised border border-hairline rounded-surface p-3">
+                  <p className="font-sans text-label text-ink-2">{q.title}</p>
+                  <span className="font-sans text-caption text-ink-3 uppercase">
+                    {scheduleLabel(a.schedule)}
                   </span>
                 </div>
               );
@@ -527,19 +363,19 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
 
       {/* Pending photo check-ins */}
       {!loadingPhotoAssignments && pendingPhotoAssignments.length > 0 && (
-        <section className="bg-[#181816] border border-[#fbcb1a]/20 rounded-2xl p-4 sm:p-6">
-          <h2 className="font-sans font-bold text-base text-white mb-3 pb-2 border-b border-white/7 flex items-center gap-2">
-            <span className="material-symbols-outlined text-[#fbcb1a]">photo_camera</span>
+        <section className="bg-surface border border-accent/20 rounded-surface p-4 sm:p-6">
+          <h2 className="font-sans font-bold text-title-s text-white mb-3 pb-2 border-b border-hairline flex items-center gap-2">
+            <span className="material-symbols-outlined text-accent">photo_camera</span>
             Fotos pendientes
-            <span className="ml-auto bg-[#fbcb1a] text-black text-[10px] font-bold px-2 py-0.5 rounded-full">{pendingPhotoAssignments.length}</span>
+            <span className="ml-auto bg-accent text-black text-caption font-bold px-2 rounded-full">{pendingPhotoAssignments.length}</span>
           </h2>
           <div className="space-y-2">
             {pendingPhotoAssignments.map(a => (
-              <div key={a.id} className="flex items-center justify-between bg-[#1e1e1e] border border-white/7 rounded-lg p-3.5">
-                <p className="font-sans font-semibold text-sm text-white">
+              <div key={a.id} className="flex items-center justify-between bg-raised border border-hairline rounded-surface p-4">
+                <p className="font-sans font-bold text-body-s text-white">
                   {a.views.map(v => PHOTO_VIEW_LABELS[v]).join(', ')}
                 </p>
-                <p className="font-mono text-[10px] text-[#c6c9ab]">Sube las fotos abajo</p>
+                <p className="font-sans text-caption text-ink-2">Sube las fotos abajo</p>
               </div>
             ))}
           </div>
@@ -548,20 +384,20 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
 
       {/* Upcoming (not-yet-due) recurring photo check-ins */}
       {!loadingPhotoAssignments && upcomingPhotoAssignments.length > 0 && (
-        <details className="group bg-[#181816] border border-white/7 rounded-2xl">
+        <details className="group bg-surface border border-hairline rounded-surface">
           <summary className="cursor-pointer list-none flex items-center justify-between p-4 sm:px-6">
-            <h2 className="font-sans font-bold text-sm text-white flex items-center gap-2">
-              <span className="material-symbols-outlined text-[#c6c9ab] text-base">event_upcoming</span>
+            <h2 className="font-sans font-bold text-body-s text-white flex items-center gap-2">
+              <span className="material-symbols-outlined text-ink-2 text-title-s">event_upcoming</span>
               Fotos futuras
-              <span className="font-mono text-[10px] text-[#c6c9ab]">({upcomingPhotoAssignments.length})</span>
+              <span className="font-mono text-caption text-ink-2">({upcomingPhotoAssignments.length})</span>
             </h2>
-            <span className="material-symbols-outlined text-[#c6c9ab] text-sm group-open:rotate-180 transition-transform">expand_more</span>
+            <span className="material-symbols-outlined text-ink-2 text-body-s group-open:rotate-180 transition-transform">expand_more</span>
           </summary>
           <div className="px-4 sm:px-6 pb-4 space-y-2">
             {upcomingPhotoAssignments.map(a => (
-              <div key={a.id} className="flex items-center justify-between bg-[#1e1e1e] border border-white/60 rounded-lg p-3">
-                <p className="font-sans text-xs text-[#c6c9ab]">{a.views.map(v => PHOTO_VIEW_LABELS[v]).join(', ')}</p>
-                <span className="font-mono text-[9px] text-[#555] uppercase">
+              <div key={a.id} className="flex items-center justify-between bg-raised border border-hairline rounded-surface p-3">
+                <p className="font-sans text-label text-ink-2">{a.views.map(v => PHOTO_VIEW_LABELS[v]).join(', ')}</p>
+                <span className="font-sans text-caption text-ink-3 uppercase">
                   {a.schedule.type === 'weekdays' ? 'Semanal' : a.schedule.type === 'interval' ? `Cada ${a.schedule.intervalDays ?? 7}d` : a.schedule.type === 'monthly' ? 'Mensual' : ''}
                 </span>
               </div>
@@ -571,60 +407,84 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
       )}
 
       {/* ── Fotografías de progreso (centralizado aquí) ──────────────────────── */}
-      <section className="bg-[#181816] border border-white/7 rounded-2xl p-4 sm:p-6">
-        <h2 className="font-sans font-bold text-lg text-white mb-4 pb-2 border-b border-white/7 flex items-center gap-2">
-          <span className="material-symbols-outlined text-[#fbcb1a]">photo_camera</span>
+      <section className="bg-surface border border-hairline rounded-surface p-4 sm:p-6">
+        <h2 className="font-sans font-bold text-title-m text-white mb-4 pb-2 border-b border-hairline flex items-center gap-2">
+          <span className="material-symbols-outlined text-accent">photo_camera</span>
           Fotografías de Progreso
         </h2>
         <PhotosScreen profile={profile} />
       </section>
 
-      {/* ── Historial de Revisiones ──────────────────────────────────────────── */}
-      <section className="bg-[#181816] border border-white/7 rounded-2xl p-5">
-        <h2 className="font-sans font-bold text-lg text-white mb-4 pb-2 border-b border-white/7 flex items-center gap-2">
-          <span className="material-symbols-outlined text-[#00eefc]">history</span>
-          Historial de Revisiones
-        </h2>
-        <div className="flex flex-col gap-3 max-h-[400px] overflow-y-auto custom-scrollbar pr-1">
-          {checkins.map((item) => (
-            <div
-              key={item.id}
-              className={`bg-[#1e1e1e] border rounded-lg p-4 transition-all hover:bg-[#201f1f] ${item.approved ? 'border-[#00eefc]/30' : 'border-white/7'}`}
-            >
-              <div className="flex justify-between items-center mb-2">
-                <div className="flex items-center gap-3">
-                  <span className="font-mono text-xs text-[#c6c9ab]">{item.dateStr}</span>
-                  <span className="font-mono font-bold text-white text-sm">{item.weight} kg</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-base">{item.mood}</span>
-                  <span className={`text-[10px] px-2 py-0.5 rounded uppercase font-mono ${item.adherence === 'Sí' ? 'bg-[#fbcb1a]/10 text-[#fbcb1a]' : item.adherence === 'Parcial' ? 'bg-[#00eefc]/10 text-[#00eefc]' : 'bg-red-400/10 text-red-300'}`}>
-                    {item.adherence}
-                  </span>
-                </div>
-              </div>
-              {item.notes && (
-                <p className="text-xs text-[#c6c9ab] font-sans leading-relaxed mb-3 italic">"{item.notes}"</p>
-              )}
-              {item.coachFeedback ? (
-                <div className="text-xs border-l-2 border-[#fbcb1a] pl-3 py-1 ml-1 bg-black/20 rounded-r p-2">
-                  <span className="font-mono font-semibold text-[#fbcb1a] block mb-1">Nota del Entrenador:</span>
-                  <p className="text-white leading-relaxed">{item.coachFeedback}</p>
-                </div>
-              ) : (
-                <div className="text-[11px] text-[#c6c9ab]/60 font-mono italic pl-1 flex items-center gap-1">
-                  <span className="material-symbols-outlined text-xs animate-spin text-[#fbcb1a]">sync</span>
-                  Pendiente de revisión del Entrenador
-                </div>
-              )}
-            </div>
-          ))}
-          {checkins.length === 0 && (
-            <div className="text-[#c6c9ab] text-center italic py-12 text-sm">
-              Aún no tienes registros de peso. Envía tu primer check-in.
-            </div>
+      {/* ── El hilo de revisiones (F3.13c) ───────────────────────────────────── */}
+      <section className="bg-surface border border-hairline rounded-surface p-5">
+        <div className="flex items-center justify-between mb-4 pb-2 border-b border-hairline">
+          <h2 className="font-sans font-bold text-title-m text-ink flex items-center gap-2">
+            <span className="material-symbols-outlined text-accent">history</span>
+            Revisiones
+          </h2>
+          {checkins.length > 0 && (
+            <span className="font-mono text-caption text-ink-3 uppercase tracking-wider">
+              {checkins.length} enviada{checkins.length === 1 ? '' : 's'}
+            </span>
           )}
         </div>
+
+        {checkins.length === 0 ? (
+          <EmptyState
+            icon="history_edu"
+            title="Cada domingo, dos minutos"
+            description="Tú cuentas cómo ha ido la semana y tu coach ajusta el plan con eso. Aquí quedará todo el hilo, revisión a revisión."
+          />
+        ) : (() => {
+          const ordenado = [...checkins].sort((a, b) => {
+            const ta = a.timestamp instanceof Date ? a.timestamp.getTime() : new Date(a.timestamp as unknown as string).getTime();
+            const tb = b.timestamp instanceof Date ? b.timestamp.getTime() : new Date(b.timestamp as unknown as string).getTime();
+            return (isNaN(tb) ? 0 : tb) - (isNaN(ta) ? 0 : ta);
+          });
+          return (
+            <div className="relative max-h-[420px] overflow-y-auto custom-scrollbar pr-1">
+              <div className="absolute left-[9px] top-2 bottom-2 w-px bg-gradient-to-b from-accent-line to-transparent" aria-hidden />
+              {ordenado.map((item, idx) => {
+                const esUltima = idx === 0;
+                const tieneRespuesta = !!item.coachFeedback;
+                return (
+                  <div key={item.id} className="relative flex gap-4 pb-4 last:pb-0">
+                    <span
+                      className={`relative z-10 mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${esUltima ? 'bg-accent animate-pulse-dot' : 'bg-ink-4'}`}
+                      aria-hidden
+                    />
+                    <div
+                      className={`min-w-0 flex-1 space-y-2 rounded-field border p-4 ${
+                        esUltima && tieneRespuesta ? 'border-accent-line bg-raised' : 'border-hairline bg-field'
+                      }`}
+                    >
+                      {esUltima && tieneRespuesta && (
+                        <span className="inline-block rounded-chip bg-accent px-2 py-1 font-mono text-caption font-bold uppercase tracking-wide text-on-accent">
+                          Respuesta nueva
+                        </span>
+                      )}
+                      <div className="flex items-baseline justify-between gap-2">
+                        <span className="font-sans text-body-s text-ink">{item.dateStr}</span>
+                        <span className="font-mono text-caption text-ink-2">{item.weight} kg · {item.adherence}</span>
+                      </div>
+                      {item.notes && (
+                        <p className="font-sans text-body-s text-ink-2 italic leading-relaxed">"{item.notes}"</p>
+                      )}
+                      {tieneRespuesta ? (
+                        <p className="font-sans text-body-s text-ink leading-relaxed">{item.coachFeedback}</p>
+                      ) : (
+                        <p className="flex items-center gap-1 font-mono text-caption italic text-ink-3">
+                          <span className="material-symbols-outlined animate-spin text-accent text-label">sync</span>
+                          Pendiente de revisión
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })()}
       </section>
     </div>
   );

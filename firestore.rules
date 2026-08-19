@@ -24,6 +24,56 @@ service cloud.firestore {
       return request.auth != null && request.auth.uid == uid;
     }
 
+    /* ── 04-10 · Usuario DE LA APP, no cualquier UID autenticado ──────────────
+       Doce colecciones se leían con `request.auth != null` y nada más:
+       exercises, maquinas, workouts, foodItems, mesocycleTemplates, recipes,
+       questionnaires, challengeTemplates, resources, onboardingTemplates,
+       academyCourses y academyLessons.
+
+       El problema es que crear un UID es gratis y no lo controla nadie: con
+       `createUserWithEmailAndPassword` cualquiera del mundo obtiene un token
+       válido, y con él un bucle sobre `recipes` son millones de lecturas
+       FACTURABLES en una hora. No es una fuga de datos personales —ahí no hay
+       datos de nadie— es la factura.
+
+       Tener documento en `user_profiles` sí es una señal de ser usuario real:
+       lo crea `getOrCreateUserProfile` en el arranque de sesión, con el UID
+       como id del documento, y un atacante que solo registra una cuenta por
+       REST no pasa por ahí.
+
+       CUIDADO AL TOCAR ESTO: cada `exists()` es una lectura facturable más por
+       consulta. Se usa solo en las colecciones de catálogo, que es donde está
+       el riesgo de bucle, y NO en las rutas por documento del atleta, que ya
+       están acotadas por email o por UID.
+       ────────────────────────────────────────────────────────────────────── */
+    // Se acepta el perfil bajo el UID actual O la invitación del coach (14-08).
+    //
+    // Exigir solo `user_profiles/{uid}` dejaba fuera a clientes legítimos, y de
+    // una forma que no se veía venir: `getOrCreateUserProfile`
+    // (src/db/profiles.ts:141-149), cuando encuentra un perfil con ese email
+    // bajo OTRO docId —un UID de un registro anterior de la misma persona—, lo
+    // devuelve tal cual y NUNCA crea el documento bajo el UID nuevo. A partir de
+    // ahí, para las reglas esa persona «no existe»: se le deniegan de golpe las
+    // 13 colecciones compartidas (recetas, ejercicios, alimentos, máquinas…),
+    // mientras sus datos propios —que filtran por email— siguen funcionando. En
+    // pantalla eso era «no se pudieron cargar las recetas» con el aviso rojo de
+    // permisos encima, y un «Reintentar» que no podía arreglar nada.
+    //
+    // La alternativa era migrar el perfil al UID nuevo, pero eso son datos de
+    // producción: el atleta no puede borrar el documento viejo (el delete es
+    // solo del coach), así que la migración deja DOS perfiles con el mismo
+    // email y el coach se encuentra el cliente duplicado en su lista.
+    //
+    // `invites/{email}` da la misma garantía sin tocar un solo dato: el
+    // documento lo crea el coach al invitar y `markInviteJoined` lo marca como
+    // usado en vez de borrarlo, así que sigue ahí. Esto NO abre las bibliotecas
+    // a cualquiera con una cuenta: hay que estar invitado por el coach.
+    function esUsuarioDeLaApp() {
+      return request.auth != null
+          && (exists(/databases/$(database)/documents/user_profiles/$(request.auth.uid))
+              || exists(/databases/$(database)/documents/invites/$(request.auth.token.email.lower())));
+    }
+
     // ── user_profiles (docId = UID) ──────────────────────────────────────────
     // El atleta gestiona su propio perfil, pero los campos que definen su plan
     // de pago (planStartDate/planDurationMonths), su rol, el resumen de setup
@@ -54,21 +104,63 @@ service cloud.firestore {
       // fechaBaja/motivoBaja/motivoBajaDetalle/origen se añaden 2026-08-02 con
       // el mismo razonamiento: son hechos de negocio (por qué se fue, por qué
       // canal llegó) que el atleta no debe poder reescribir.
+      // 16-08: bug de dos capas, las dos con la misma forma — un campo que
+      // `getOrCreateUserProfile` (src/db/profiles.ts) manda SIEMPRE en el
+      // primer documento de cualquier atleta, bloqueado en la lista de
+      // `allow create`. `xp`/`level` ya se sabían (comentario de abajo, "SALEN
+      // de la lista bloqueada") pero el arreglo solo tocó `allow update`, no
+      // este `create`; y `currentStreak`/`maxStreak` tenían el MISMO problema
+      // sin que nadie lo hubiera notado — el propio comentario de la regla de
+      // `update` decía "el cliente no los escribe en ningún sitio, solo se
+      // inicializan al crear el perfil", que es exactamente la operación que
+      // esta lista bloqueaba. Resultado: la creación del perfil de CUALQUIER
+      // atleta nuevo denegaba permiso desde el primer momento, sin excepción.
+      // El error se tragaba en silencio (el único `catch` de todo `src/db`
+      // que no relanza, para no dejar a nadie fuera de la app) y la sesión
+      // seguía en modo local — funcionando para esa persona, invisible para
+      // el coach, porque el documento real nunca llegaba a Firestore.
+      // Encontrado al investigar por qué danielbriz8@gmail.com no aparecía en
+      // «Atletas del Entrenador» pese a haber iniciado sesión días antes: en
+      // TODA la producción solo había 2 documentos en user_profiles.
       allow create: if isCoach()
                     || (isOwnerUid(userId)
                         && request.resource.data.role == 'client'
                         && request.auth.token.email_verified == true
                         && !request.resource.data.keys()
                             .hasAny(['planStartDate', 'planDurationMonths', 'setupSummary',
-                                     'xp', 'level', 'currentStreak', 'maxStreak', 'estadoCrm',
-                                     'fechaBaja', 'motivoBaja', 'motivoBajaDetalle', 'origen'])
+                                     'estadoCrm', 'fechaBaja', 'motivoBaja',
+                                     'motivoBajaDetalle', 'origen', 'planPublishedAt'])
                         && exists(/databases/$(database)/documents/invites/$(request.auth.token.email.lower())));
+      // `xp` y `level` SALEN de la lista bloqueada (14-08). Estaban aquí como
+      // antitrampas, pero quien los escribe es el propio atleta desde su móvil:
+      // `grantXp` (src/utils/xp.ts) hace `updateUserProfile(uid, { xp, level })`
+      // al terminar una lección de Academia o una sesión de cardio. O sea que la
+      // regla prohibía justo lo que el código hacía: cada vez que el atleta
+      // ganaba XP le saltaba un `permission-denied`, y con él el aviso rojo de
+      // «tu cuenta no tiene permiso para guardar — los cambios NO se están
+      // guardando». Nunca se llegó a guardar un solo punto: los perfiles se
+      // quedaban en 0 XP y nivel 1 para siempre.
+      //
+      // El riesgo de dejarlos pasar es que alguien se infle el XP desde la
+      // consola. No abre ninguna puerta: XP y nivel son gamificación y no tocan
+      // plan, cobros ni estado comercial. Todo eso —planStartDate,
+      // planDurationMonths, role, setupSummary, estadoCrm, fechaBaja,
+      // motivoBaja, motivoBajaDetalle, origen— sigue bloqueado, que es donde
+      // hacer trampas sí tendría consecuencias.
+      //
+      // `currentStreak`/`maxStreak` se quedan bloqueados: el cliente no los
+      // escribe en ningún sitio, solo se inicializan al crear el perfil.
+      // `planPublishedAt` se añade (T7.b, 18-08): es el momento en que el
+      // COACH decide mostrarle el plan al atleta — si el atleta pudiera
+      // escribirlo, se abriría su propio plan desde la consola del navegador
+      // sin que el coach hubiera pulsado "Mostrar el plan al atleta".
       allow update: if isCoach()
                     || (isOwnerUid(userId)
                         && !request.resource.data.diff(resource.data).affectedKeys()
                             .hasAny(['planStartDate', 'planDurationMonths', 'role', 'setupSummary',
-                                     'xp', 'level', 'currentStreak', 'maxStreak', 'estadoCrm',
-                                     'fechaBaja', 'motivoBaja', 'motivoBajaDetalle', 'origen']));
+                                     'currentStreak', 'maxStreak', 'estadoCrm',
+                                     'fechaBaja', 'motivoBaja', 'motivoBajaDetalle', 'origen',
+                                     'planPublishedAt']));
       allow delete: if isCoach();
     }
 
@@ -95,8 +187,27 @@ service cloud.firestore {
 
     // ── exercises (ownerId = UID del coach) ──────────────────────────────────
     match /exercises/{docId} {
-      allow read: if request.auth != null;
+      allow read: if esUsuarioDeLaApp();  // 04-10
       allow write: if isCoach();
+    }
+
+    // ── maquinas (docId = slug estable de la máquina) ────────────────────────
+    // Overrides del admin sobre el catálogo semilla del bundle, más las máquinas
+    // creadas a mano. Cualquier atleta autenticado necesita leerlas para que su
+    // catálogo refleje lo que el admin ha ocultado o renombrado; escribir solo el
+    // admin. Una máquina propia de un atleta NUNCA llega aquí por sí sola: la
+    // copia el admin al promoverla (ver docs/catalogo-maquinas.md).
+    match /maquinas/{docId} {
+      allow read: if esUsuarioDeLaApp();  // 04-10
+      allow write: if isCoach();
+    }
+
+    // ── gimnasios (docId = email del atleta) ─────────────────────────────────
+    // Qué máquinas tiene disponibles en su gimnasio. Mismo criterio que
+    // onboarding/: su dueño y el coach, nadie más — el coach lo necesita para el
+    // panel de equipamiento del Hub del atleta.
+    match /gimnasios/{email} {
+      allow read, write: if isCoach() || isOwnerEmail(email);
     }
 
     // ── exerciseNotes (docId = `${exerciseId}_${athleteId}`; athleteId = EMAIL) ─
@@ -108,7 +219,7 @@ service cloud.firestore {
 
     // ── workouts (ownerId = UID del coach) ───────────────────────────────────
     match /workouts/{docId} {
-      allow read: if request.auth != null;
+      allow read: if esUsuarioDeLaApp();  // 04-10
       allow write: if isCoach();
     }
 
@@ -116,7 +227,17 @@ service cloud.firestore {
     match /workoutAssignments/{docId} {
       allow read: if isCoach()
                   || (request.auth != null && request.auth.uid == resource.data.athleteId);
-      allow write: if isCoach();
+      allow create, delete: if isCoach();
+      // El atleta solo puede marcar el estado de su propia asignación al
+      // terminar/saltar una sesión (o que el cliente la marque "perdido" tras
+      // 7 días) — nunca tocar otro campo. Ver docs del bug: el cliente hacía
+      // esta escritura sin permiso y el "Terminar sesión" fallaba aunque el
+      // entrenamiento ya estuviera guardado en workoutLogs.
+      allow update: if isCoach()
+                    || (request.auth != null
+                        && request.auth.uid == resource.data.athleteId
+                        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
+                        && request.resource.data.status in ['completed', 'skipped', 'perdido']);
     }
 
     // ── workoutLogs (athleteId = EMAIL) ──────────────────────────────────────
@@ -133,7 +254,7 @@ service cloud.firestore {
 
     // ── foodItems (sin propietario, compartidos) ─────────────────────────────
     match /foodItems/{docId} {
-      allow read: if request.auth != null;
+      allow read: if esUsuarioDeLaApp();  // 04-10
       allow write: if isCoach();
     }
 
@@ -195,16 +316,18 @@ service cloud.firestore {
 
     // ── mesocycleTemplates (ownerId = UID del coach) ─────────────────────────
     match /mesocycleTemplates/{docId} {
-      allow read: if request.auth != null;
+      allow read: if esUsuarioDeLaApp();  // 04-10
       allow write: if isCoach();
     }
 
-    // ── recipes (ownerId = UID | 'indya') ────────────────────────────────────
+    // ── recipes (ownerId = UID del autor, o el centinela del recetario) ──────
     // Athletes may create their own (e.g. "guardar como receta" from Intercambios,
-    // or as a weekly-menu swap candidate); Indya bulk-import stays coach-only in
-    // practice since 'indya' isn't a real auth uid.
+    // or as a weekly-menu swap candidate); el recetario importado en bloque queda
+    // coach-only en la práctica, porque su centinela no es un uid de auth real.
+    // Ese centinela tiene dos valores por historia; ver OWNER_RECETARIO en
+    // src/db/recipes.ts, que explica por qué y advierte de no quitar el heredado.
     match /recipes/{docId} {
-      allow read: if request.auth != null;
+      allow read: if esUsuarioDeLaApp();  // 04-10
       allow create: if isCoach()
                     || (request.auth != null && request.resource.data.ownerId == request.auth.uid);
       allow update, delete: if isCoach() || isOwnerUid(resource.data.ownerId);
@@ -281,7 +404,7 @@ service cloud.firestore {
 
     // ── questionnaires (ownerId = UID del coach) ─────────────────────────────
     match /questionnaires/{docId} {
-      allow read: if request.auth != null;
+      allow read: if esUsuarioDeLaApp();  // 04-10
       allow write: if isCoach();
     }
 
@@ -309,6 +432,24 @@ service cloud.firestore {
                         && request.auth.token.email_verified == true);
       allow update, delete: if isCoach()
                             || (request.auth != null && request.auth.token.email == resource.data.athleteId && request.auth.token.email_verified == true);
+    }
+
+    // ── bodyMeasurements (docId = `${athleteId}_${date}_${metricKey}`; athleteId = EMAIL) ─
+    // Perímetros corporales, escritos desde una respuesta de cuestionario
+    // (pregunta tipo 'metric') o manualmente.
+    //
+    // Usa `isOwnerEmail`, igual que el resto del fichero, y NO la comparación de
+    // email a pelo con la que llegó del merge: esa se dejaba fuera
+    // `email_verified == true`. La auditoría de seguridad del 2026-07-23 añadió
+    // esa condición en todas partes justo por esto — una cuenta de
+    // email/contraseña la puede crear cualquiera con
+    // createUserWithEmailAndPassword y sin verificar el correo, así que sin el
+    // flag bastaba con registrarse poniendo el email de otra persona para leer y
+    // escribir sus mediciones.
+    match /bodyMeasurements/{docId} {
+      allow read: if isCoach() || isOwnerEmail(resource.data.athleteId);
+      allow create: if isCoach() || isOwnerEmail(request.resource.data.athleteId);
+      allow update, delete: if isCoach() || isOwnerEmail(resource.data.athleteId);
     }
 
     // ── onboarding (docId = email) ───────────────────────────────────────────
@@ -347,7 +488,7 @@ service cloud.firestore {
 
     // ── challengeTemplates (biblioteca de retos; ownerId = UID del coach) ────
     match /challengeTemplates/{docId} {
-      allow read: if request.auth != null;
+      allow read: if esUsuarioDeLaApp();  // 04-10
       allow write: if isCoach();
     }
 
@@ -356,7 +497,14 @@ service cloud.firestore {
     // runs under the newly-created client's own auth session right after they
     // sign in via the invite link, not the coach's.
     match /invites/{email} {
-      allow read: if isCoach();
+      // isOwnerEmail(email) también en el read: markInviteJoined (src/db/invites.ts)
+      // empieza con un getDoc para comprobar el estado antes de escribir, y sin
+      // esto el atleta podía escribir su invitación pero no leerla —
+      // permission-denied silencioso y la invitación se quedaba "pending" para
+      // siempre aunque el alta hubiera terminado bien. Un atleta leyendo SU
+      // PROPIO documento de invitación no abre nada: la regla ya restringe por
+      // email exacto.
+      allow read: if isCoach() || isOwnerEmail(email);
       allow create: if isCoach();
       allow update: if isCoach() || isOwnerEmail(email);
       allow delete: if isCoach();
@@ -392,7 +540,7 @@ service cloud.firestore {
 
     // ── resources (coachId = UID del coach; lectura para cualquier atleta autenticado) ──
     match /resources/{docId} {
-      allow read: if request.auth != null;
+      allow read: if esUsuarioDeLaApp();  // 04-10
       allow write: if isCoach();
     }
 
@@ -402,7 +550,7 @@ service cloud.firestore {
     // Lectura para cualquier autenticado (la plantilla no contiene datos
     // personales); escritura solo coach.
     match /onboardingTemplates/{coachEmail} {
-      allow read: if request.auth != null;
+      allow read: if esUsuarioDeLaApp();  // 04-10
       allow write: if isCoach();
     }
 
@@ -470,11 +618,11 @@ service cloud.firestore {
     // nunca llegaba a sincronizar con Firestore y vivía solo en localStorage
     // (auditoría 2026-07-23). Puramente aditivo — antes 100% denegado.
     match /academyCourses/{docId} {
-      allow read: if request.auth != null;
+      allow read: if esUsuarioDeLaApp();  // 04-10
       allow write: if isCoach();
     }
     match /academyLessons/{docId} {
-      allow read: if request.auth != null;
+      allow read: if esUsuarioDeLaApp();  // 04-10
       allow write: if isCoach();
     }
 
@@ -489,10 +637,11 @@ service cloud.firestore {
       allow read, write: if isCoach() || isOwnerEmail(email);
     }
 
-    // ── athleteCardioProfile (docId = email; zonas fijadas por el coach) ─────
+    // ── athleteCardioProfile (docId = email; zonas fijadas por el coach o,
+    // ahora, editables a mano por el propio atleta — modelo FITIV: FCmax
+    // editable en vez de exigir un test) ─────────────────────────────────────
     match /athleteCardioProfile/{email} {
-      allow read: if isCoach() || isOwnerEmail(email);
-      allow write: if isCoach();
+      allow read, write: if isCoach() || isOwnerEmail(email);
     }
 
     // ── cardioAssignments (athleteId = EMAIL; prescripción del coach) ────────
@@ -514,6 +663,17 @@ service cloud.firestore {
       allow update, delete: if isCoach()
                             || (request.auth != null && request.auth.token.email == resource.data.athleteId
                                 && request.auth.token.email_verified == true);
+    }
+
+    // ── cardioWeeklyGoals (F3.9; doc id `${athleteId}_${isoWeek}`, athleteId = EMAIL) ──
+    match /cardioWeeklyGoals/{docId} {
+      allow read: if isCoach()
+                  || (request.auth != null && request.auth.token.email == resource.data.athleteId
+                      && request.auth.token.email_verified == true);
+      allow create, update: if isCoach()
+                            || (request.auth != null && request.auth.token.email == request.resource.data.athleteId
+                                && request.auth.token.email_verified == true);
+      allow delete: if isCoach();
     }
 
     // ── hrTests (athleteId = EMAIL; el atleta hace el test, el coach aprueba) ─

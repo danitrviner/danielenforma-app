@@ -1,9 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   UserProfile, OnboardingData, GoalBody, GoalCapacity, ExperienceLevel,
-  ActivityLevel, DietType,
+  ActivityLevel, DietType, OnboardingMeal,
 } from '../types';
-import { saveOnboarding } from '../dbService';
+import { computeAuto } from '../utils/energyCalc';
+import { mensajeDeErrorFirestore } from '../utils/erroresFirestore';
+import { saveOnboarding, getAthleteNutritionConfig, saveAthleteNutritionConfig } from '../dbService';
+import { guardarBorradorAlta, cargarBorradorAlta, borrarBorradorAlta } from '../utils/borradorAlta';
+import { Icon, Button, Input, Sheet } from './ui';
+import { registrarConsentimiento } from '../ai/consentimientoIA';
+import FoodPreferencesPanel from './FoodPreferencesPanel';
+import VegetableSelector from './VegetableSelector';
 
 // Primera experiencia del atleta: wizard a pantalla completa, paso a paso, que
 // bloquea la app hasta completarse (gating en App.tsx). Recoge lo esencial del
@@ -51,6 +58,34 @@ const ACTIVITY: { id: ActivityLevel; label: string; desc: string }[] = [
   { id: 'muy_activo', label: 'Muy activo', desc: 'Trabajo físico o mucho deporte' },
 ];
 
+// Mismos presets que el cuestionario largo del coach (OnboardingForm), pero
+// duplicados a propósito: el wizard es un subconjunto deliberadamente aparte,
+// no comparte estado con el formulario del coach.
+const MEAL_PRESETS: Record<3 | 4 | 5, OnboardingMeal[]> = {
+  3: [
+    { intakeType: 1, name: 'Desayuno', needsTupper: false },
+    { intakeType: 3, name: 'Comida', needsTupper: false },
+    { intakeType: 5, name: 'Cena', needsTupper: false },
+  ],
+  4: [
+    { intakeType: 1, name: 'Desayuno', needsTupper: false },
+    { intakeType: 2, name: 'Media mañana', needsTupper: false },
+    { intakeType: 3, name: 'Comida', needsTupper: false },
+    { intakeType: 5, name: 'Cena', needsTupper: false },
+  ],
+  5: [
+    { intakeType: 1, name: 'Desayuno', needsTupper: false },
+    { intakeType: 2, name: 'Media mañana', needsTupper: false },
+    { intakeType: 3, name: 'Comida', needsTupper: false },
+    { intakeType: 4, name: 'Merienda', needsTupper: false },
+    { intakeType: 5, name: 'Cena', needsTupper: false },
+  ],
+};
+
+const INTAKE_ICONS: Record<number, string> = {
+  1: 'free_breakfast', 2: 'coffee', 3: 'restaurant', 4: 'bakery_dining', 5: 'dinner_dining',
+};
+
 // Chip seleccionable reutilizado en todos los pasos.
 interface ChipProps {
   selected: boolean;
@@ -65,13 +100,31 @@ function Chip({ selected, onClick, children, big = false }: ChipProps) {
     <button
       type="button"
       onClick={onClick}
-      className={`${big ? 'p-4 rounded-2xl text-left w-full' : 'px-4 py-2.5 rounded-xl'} border font-sans text-sm transition-all active:scale-95 ${
+      className={`${big ? 'p-4 rounded-control text-left w-full' : 'px-4 py-3 rounded-control'} border font-sans text-body-s transition-all active:scale-95 ${
         selected
-          ? 'bg-[#fbcb1a]/15 border-[#fbcb1a] text-white shadow-lg shadow-[#fbcb1a]/10'
-          : 'bg-[#181816] border-white/10 text-[#c6c9ab] hover:border-white/30'
+          ? 'bg-accent/15 border-accent text-white'
+          : 'bg-surface border-hairline text-ink-2 hover:border-strong'
       }`}
     >
       {children}
+    </button>
+  );
+}
+
+// Mismo patrón que el Switch local de ProfileScreen (Ajustes → Análisis con
+// IA) — no vale la pena subirlo al DS por un solo control repetido dos veces.
+function ConsentSwitch({ on, onToggle }: { on: boolean; onToggle: () => void }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={on}
+      aria-label="Revisión con apoyo de IA"
+      onClick={onToggle}
+      style={{ padding: '2px' }}
+      className={`w-11 h-6 rounded-full shrink-0 transition-colors ${on ? 'bg-accent' : 'bg-white/12'}`}
+    >
+      <span className={`block w-5 h-5 rounded-full bg-bg transition-transform ${on ? 'translate-x-5' : 'translate-x-0'}`} />
     </button>
   );
 }
@@ -80,86 +133,246 @@ function StepShell({ title, subtitle, children }: { title: string; subtitle?: st
   return (
     <div className="space-y-6 animate-[fadeSlideIn_.35s_ease]">
       <div>
-        <h2 className="font-sans font-black text-2xl text-white tracking-tight">{title}</h2>
-        {subtitle && <p className="text-sm text-[#c6c9ab] mt-1">{subtitle}</p>}
+        <h2 className="font-sans font-bold text-title-l text-white tracking-tight">{title}</h2>
+        {subtitle && <p className="text-body-s text-ink-2 mt-1">{subtitle}</p>}
       </div>
       {children}
     </div>
   );
 }
 
-const inputCls = 'w-full bg-[#181818] border border-white/10 focus:border-[#fbcb1a]/60 rounded-xl px-4 py-3 text-sm text-white placeholder-[#c6c9ab]/40 outline-none transition-colors';
+// text-title-s (16px), no text-body-s (13px): por debajo de 16px WKWebView
+// amplía la página sola al enfocar el campo y no la devuelve al desenfocar
+// (ver index.html y el suelo de 16px en src/index.css).
+const inputCls = 'w-full bg-surface border border-hairline focus:border-accent/60 rounded-surface px-4 py-3 text-title-s text-white placeholder-ink-2/40 outline-none transition-colors';
+
+/** 05-4. Lo que se guarda entre sesión y sesión. Es exactamente el estado del
+ *  wizard: si mañana se añade un paso, el campo nuevo entra aquí y en el efecto
+ *  de autoguardado, y nada más. */
+interface BorradorCampos {
+  step: number;
+  sex: 'male' | 'female' | '';
+  birthDate: string;
+  weightKg: string;
+  heightCm: string;
+  occupation: string;
+  referralSource: string;
+  goalBody: GoalBody | '';
+  goalCapacity: GoalCapacity | '';
+  goalFreeText: string;
+  experienceLevel: ExperienceLevel | '';
+  equipment: string[];
+  injuries: string;
+  noInjuries: boolean;
+  hadPastInjuries: boolean;
+  pastInjuriesDetail: string;
+  takesMedication: boolean;
+  medicationDetail: string;
+  recentSurgery: boolean;
+  recentSurgeryDetail: string;
+  dietType: DietType | '';
+  mealCount: number | null;
+  menuVariety: number;
+  batchCookingPreferred: boolean;
+  allergies: string;
+  dislikedFoods: string;
+  meals: OnboardingMeal[];
+  cookingLevel: number;
+  cookingMaxTime: number;
+  prefLiked: string[];
+  prefDisliked: string[];
+  vegTypes: string[];
+  activityLevel: ActivityLevel | '';
+}
 
 export default function AthleteOnboardingWizard({ profile, onComplete }: Props) {
-  const [step, setStep] = useState(0);
+  // 05-4. El alta ya no empieza en blanco si quedó a medias. Se lee UNA vez, en
+  // el inicializador perezoso de un `useState`, y no en un efecto: leerlo
+  // después obligaría a pisar 18 campos en un segundo render, con el riesgo de
+  // borrar lo que el atleta hubiera empezado a escribir mientras tanto.
+  const [borrador] = useState(() => cargarBorradorAlta<BorradorCampos>(profile.email));
+
+  const [step, setStep] = useState(borrador?.step ?? 0);
+  /** 14-08. El único contenedor con scroll de verdad (ver el `overflow-y-auto`
+   *  de abajo). Sin resetearlo al cambiar de paso, si el atleta bajaba en un
+   *  paso largo (p. ej. Alimentación) y pulsaba «Siguiente», aterrizaba a
+   *  media altura del paso nuevo — el título y la barra de progreso quedaban
+   *  fuera de vista y la pantalla parecía clavada/rota. */
+  const contentRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    contentRef.current?.scrollTo(0, 0);
+  }, [step]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  /** Puerta de un solo sentido: una vez la ficha está en Firestore, este
+   *  componente no vuelve a escribir borrador nunca. Hace falta porque el
+   *  `finally` de `finish` devuelve `saving` a false DESPUÉS de `onComplete()`,
+   *  y si el wizard sigue montado un instante más, el efecto de autoguardado
+   *  volvería a crear el borrador que se acaba de borrar. */
+  const [enviado, setEnviado] = useState(false);
 
   // ── Respuestas ──────────────────────────────────────────────────────────────
-  const [sex, setSex] = useState<'male' | 'female' | ''>('');
-  const [birthDate, setBirthDate] = useState('');
-  const [weightKg, setWeightKg] = useState('');
-  const [heightCm, setHeightCm] = useState('');
-  const [goalBody, setGoalBody] = useState<GoalBody | ''>('');
-  const [goalCapacity, setGoalCapacity] = useState<GoalCapacity | ''>('');
-  const [goalFreeText, setGoalFreeText] = useState('');
-  const [experienceLevel, setExperienceLevel] = useState<ExperienceLevel | ''>('');
-  const [equipment, setEquipment] = useState<string[]>([]);
-  const [injuries, setInjuries] = useState('');
-  const [noInjuries, setNoInjuries] = useState(false);
-  const [dietType, setDietType] = useState<DietType | ''>('');
-  const [mealCount, setMealCount] = useState<number | null>(null);
-  const [menuVariety, setMenuVariety] = useState<number>(3);
-  const [batchCookingPreferred, setBatchCookingPreferred] = useState(false);
-  const [allergies, setAllergies] = useState('');
-  const [dislikedFoods, setDislikedFoods] = useState('');
-  const [activityLevel, setActivityLevel] = useState<ActivityLevel | ''>('');
+  const [sex, setSex] = useState<'male' | 'female' | ''>(borrador?.sex ?? '');
+  const [birthDate, setBirthDate] = useState(borrador?.birthDate ?? '');
+  const [weightKg, setWeightKg] = useState(borrador?.weightKg ?? '');
+  const [heightCm, setHeightCm] = useState(borrador?.heightCm ?? '');
+  const [occupation, setOccupation] = useState(borrador?.occupation ?? '');
+  const [referralSource, setReferralSource] = useState(borrador?.referralSource ?? '');
+  const [goalBody, setGoalBody] = useState<GoalBody | ''>(borrador?.goalBody ?? '');
+  const [goalCapacity, setGoalCapacity] = useState<GoalCapacity | ''>(borrador?.goalCapacity ?? '');
+  const [goalFreeText, setGoalFreeText] = useState(borrador?.goalFreeText ?? '');
+  const [experienceLevel, setExperienceLevel] = useState<ExperienceLevel | ''>(borrador?.experienceLevel ?? '');
+  const [equipment, setEquipment] = useState<string[]>(borrador?.equipment ?? []);
+  const [injuries, setInjuries] = useState(borrador?.injuries ?? '');
+  const [noInjuries, setNoInjuries] = useState(borrador?.noInjuries ?? false);
+  const [hadPastInjuries, setHadPastInjuries] = useState(borrador?.hadPastInjuries ?? false);
+  const [pastInjuriesDetail, setPastInjuriesDetail] = useState(borrador?.pastInjuriesDetail ?? '');
+  const [takesMedication, setTakesMedication] = useState(borrador?.takesMedication ?? false);
+  const [medicationDetail, setMedicationDetail] = useState(borrador?.medicationDetail ?? '');
+  const [recentSurgery, setRecentSurgery] = useState(borrador?.recentSurgery ?? false);
+  const [recentSurgeryDetail, setRecentSurgeryDetail] = useState(borrador?.recentSurgeryDetail ?? '');
+  const [dietType, setDietType] = useState<DietType | ''>(borrador?.dietType ?? '');
+  const [mealCount, setMealCount] = useState<number | null>(borrador?.mealCount ?? null);
+  const [menuVariety, setMenuVariety] = useState<number>(borrador?.menuVariety ?? 3);
+  const [batchCookingPreferred, setBatchCookingPreferred] = useState(borrador?.batchCookingPreferred ?? false);
+  const [allergies, setAllergies] = useState(borrador?.allergies ?? '');
+  const [dislikedFoods, setDislikedFoods] = useState(borrador?.dislikedFoods ?? '');
+  const [meals, setMeals] = useState<OnboardingMeal[]>(borrador?.meals ?? []);
+  const [cookingLevel, setCookingLevel] = useState(borrador?.cookingLevel ?? 3);
+  const [cookingMaxTime, setCookingMaxTime] = useState(borrador?.cookingMaxTime ?? 45);
+  const [prefLiked, setPrefLiked] = useState<string[]>(borrador?.prefLiked ?? []);
+  const [prefDisliked, setPrefDisliked] = useState<string[]>(borrador?.prefDisliked ?? []);
+  const [vegTypes, setVegTypes] = useState<string[]>(borrador?.vegTypes ?? []);
+  const [activityLevel, setActivityLevel] = useState<ActivityLevel | ''>(borrador?.activityLevel ?? '');
+
+  // Las ingestas dependen de cuántas se hayan elegido en el paso de
+  // Alimentación: si `mealCount` cambia, se regenera el preset (Desayuno,
+  // Comida, Cena…), conservando los tupper ya marcados cuando el número de
+  // ingestas no cambia realmente (p.ej. al volver «Atrás» y «Siguiente»).
+  useEffect(() => {
+    if (mealCount !== 3 && mealCount !== 4 && mealCount !== 5) return;
+    setMeals(prev => {
+      const preset = MEAL_PRESETS[mealCount];
+      const yaCoincide = prev.length === preset.length && prev.every((m, i) => m.intakeType === preset[i].intakeType);
+      return yaCoincide ? prev : preset.map(m => ({ ...m }));
+    });
+  }, [mealCount]);
+
+  // 05-4. Autoguardado: cada respuesta y cada cambio de paso persisten al
+  // instante. No se guarda mientras se está enviando, para que un `finish` en
+  // vuelo no reescriba el borrador que está a punto de borrarse.
+  useEffect(() => {
+    if (saving || enviado) return;
+    guardarBorradorAlta<BorradorCampos>(profile.email, {
+      step, sex, birthDate, weightKg, heightCm, occupation, referralSource,
+      goalBody, goalCapacity, goalFreeText,
+      experienceLevel, equipment, injuries, noInjuries,
+      hadPastInjuries, pastInjuriesDetail, takesMedication, medicationDetail,
+      recentSurgery, recentSurgeryDetail,
+      dietType, mealCount, menuVariety, batchCookingPreferred, allergies, dislikedFoods,
+      meals, cookingLevel, cookingMaxTime, prefLiked, prefDisliked, vegTypes,
+      activityLevel,
+    });
+  }, [saving, enviado, profile.email, step, sex, birthDate, weightKg, heightCm, occupation, referralSource,
+      goalBody, goalCapacity, goalFreeText, experienceLevel, equipment, injuries, noInjuries,
+      hadPastInjuries, pastInjuriesDetail, takesMedication, medicationDetail, recentSurgery, recentSurgeryDetail,
+      dietType, mealCount, menuVariety, batchCookingPreferred, allergies, dislikedFoods,
+      meals, cookingLevel, cookingMaxTime, prefLiked, prefDisliked, vegTypes, activityLevel]);
 
   const firstName = (profile.displayName || 'atleta').split(' ')[0];
 
-  // Validación por paso: el atleta no avanza sin responder lo obligatorio.
+  // Validación por paso: el atleta no avanza sin responder lo obligatorio. Los
+  // pasos nuevos (14-08: datos personales, salud, comidas, cocina,
+  // preferencias, verduras) son todos opcionales a propósito — nada de eso
+  // bloquea el alta, el coach lo completa si falta.
   const stepValid = (): boolean => {
     switch (step) {
-      case 0: return true;
       case 1: return !!sex && !!birthDate && Number(weightKg) >= 30 && Number(heightCm) >= 100;
-      case 2: return !!goalBody && !!goalCapacity;
-      case 3: return !!experienceLevel && equipment.length > 0 && (noInjuries || injuries.trim().length > 0);
-      case 4: return !!dietType && mealCount != null;
-      case 5: return !!activityLevel;
+      case 3: return !!goalBody && !!goalCapacity;
+      case 4: return !!experienceLevel && equipment.length > 0 && (noInjuries || injuries.trim().length > 0);
+      case 6: return !!dietType && mealCount != null;
+      case 11: return !!activityLevel;
       default: return true;
     }
   };
 
-  const TOTAL_STEPS = 7; // 0 bienvenida … 6 final
+  // 0 bienvenida, 1 sobre ti, 2 datos personales, 3 objetivo, 4 entrenamiento,
+  // 5 salud, 6 alimentación, 7 comidas, 8 cocina, 9 preferencias alimentarias,
+  // 10 verduras habituales, 11 día a día, 12 final.
+  const TOTAL_STEPS = 13;
+
+  /* A-2. Ni premarcada ni obligatoria. Si el atleta no toca el interruptor,
+     se queda `null` y HomeScreen se lo preguntará una vez más (T6): mejor eso
+     que meter una decisión sobre datos de salud en el último paso de un alta
+     que la persona quiere terminar cuanto antes, donde cualquiera pulsa lo
+     que sea por salir. Volver a apagarlo tras encenderlo también vuelve a
+     `null`, no a `false` — un interruptor no puede registrar un "no"
+     explícito y distinguirlo de "no lo he tocado", así que no lo intenta: el
+     "no" de verdad se da desde Ajustes o en la pregunta de Hoy. */
+  const [consienteIA, setConsienteIA] = useState<boolean | null>(null);
+  const [mostrarDetalleIA, setMostrarDetalleIA] = useState(false);
 
   const finish = async () => {
     setSaving(true);
     setError('');
     try {
-      const targetCalories = 2000;
-      const split = { hc: 40, prot: 30, grasa: 30 };
+      // 05-8. Aquí había `targetCalories = 2000` fijo y un reparto 40/30/30
+      // inventado, iguales para todo el mundo: unas 700 kcal por encima del
+      // mantenimiento de una mujer de 55 kg, 52 años y sedentaria. Y ese número
+      // no se queda quieto — es el que ella ve en Nutrición, el que aparece en
+      // el hub del coach y el que lee el asistente de IA.
+      //
+      // Ahora se calcula con la misma función que usa el formulario del coach
+      // (computeAuto: Mifflin-St Jeor × factor de actividad × ajuste de meta).
+      // La validación del paso 1 y del paso 5 ya garantiza sexo, fecha de
+      // nacimiento, peso, altura y nivel de actividad, así que en la práctica
+      // siempre hay datos; si alguno faltara, se deja `targetCalories`
+      // SIN ESCRIBIR en vez de inventar una cifra, y las pantallas muestran que
+      // está pendiente del coach.
+      const auto = sex && birthDate && activityLevel && goalBody
+        && Number(weightKg) > 0 && Number(heightCm) > 0
+        ? computeAuto(sex, birthDate, Number(weightKg), Number(heightCm), activityLevel, goalBody)
+        : null;
+      // 14-08. `dislikedFoods` mezcla dos fuentes: el texto libre del paso de
+      // Alimentación (rápido de escribir, no exige elegir de un catálogo) y
+      // las categorías concretas marcadas en Preferencias alimentarias
+      // (FoodPreferencesPanel, catálogo de FOOD_GROUPS). Son complementarias,
+      // no duplicadas — se juntan sin perder ninguna.
+      const dislikedFoodsTexto = dislikedFoods.split(',').map(s => s.trim()).filter(Boolean);
+      const dislikedFoodsFinal = [...new Set([...dislikedFoodsTexto, ...prefDisliked])];
       const data: OnboardingData = {
         athleteId: profile.email,
         sex: sex || undefined,
         birthDate: birthDate || undefined,
         weightKg: Number(weightKg) || undefined,
         heightCm: Number(heightCm) || undefined,
+        occupation: occupation.trim() || undefined,
+        referralSource: referralSource.trim() || undefined,
         activityLevel: activityLevel || undefined,
         goalBody: goalBody || undefined,
         goalCapacity: goalCapacity || undefined,
         goalFreeText: goalFreeText.trim() || undefined,
+        hadPastInjuries,
+        pastInjuriesDetail: hadPastInjuries ? (pastInjuriesDetail.trim() || undefined) : undefined,
+        takesMedication,
+        medicationDetail: takesMedication ? (medicationDetail.trim() || undefined) : undefined,
+        recentSurgery,
+        recentSurgeryDetail: recentSurgery ? (recentSurgeryDetail.trim() || undefined) : undefined,
         dietType: (dietType || 'omnivoro') as DietType,
-        targetCalories,
-        macroSplit: split,
-        macroGrams: {
-          hc: Math.round(targetCalories * split.hc / 100 / 4),
-          prot: Math.round(targetCalories * split.prot / 100 / 4),
-          grasa: Math.round(targetCalories * split.grasa / 100 / 9),
-        },
-        likedFoods: [],
-        dislikedFoods: dislikedFoods.split(',').map(s => s.trim()).filter(Boolean),
+        targetCalories: auto ? auto.kcal : undefined,
+        macroSplit: auto
+          ? { hc: auto.hcPct, prot: auto.protPct, grasa: auto.grasaPct }
+          : undefined,
+        macroGrams: auto
+          ? { hc: auto.hcG, prot: auto.protG, grasa: auto.grasaG }
+          : undefined,
+        likedFoods: prefLiked,
+        dislikedFoods: dislikedFoodsFinal,
         allergies: allergies.split(',').map(s => s.trim()).filter(Boolean),
         mealCount: mealCount ?? undefined,
+        meals: meals.length > 0 ? meals : undefined,
+        cookingLevel,
+        cookingMaxTime,
         menuVariety,
         batchCookingPreferred,
         equipment,
@@ -170,12 +383,35 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
         hasCurrentInjury: !noInjuries && injuries.trim().length > 0,
         currentInjuryLocation: noInjuries ? undefined : (injuries.trim() || undefined),
         completedAt: new Date().toISOString(),
+        consentimientoIA: consienteIA === null
+          ? undefined
+          : registrarConsentimiento(consienteIA, new Date().toISOString()),
       };
       await saveOnboarding(data);
+      // Las verduras habituales viven aparte, en AthleteNutritionConfig (las
+      // comparte con NutritionHubScreen y el panel de análisis del coach), no
+      // en el documento de onboarding. Best-effort: si falla, el atleta puede
+      // marcarlas después desde Nutrición — no es motivo para bloquear el alta.
+      if (vegTypes.length > 0) {
+        try {
+          const config = await getAthleteNutritionConfig(profile.email);
+          await saveAthleteNutritionConfig({ ...config, vegTypes });
+        } catch (err) {
+          console.warn('No se pudieron guardar las verduras habituales:', err);
+        }
+      }
+      // 05-4. La ficha ya está guardada: el borrador sobra. Va después del
+      // await, para que un fallo al guardar no se lleve por delante los pasos
+      // que el atleta acaba de rellenar.
+      borrarBorradorAlta(profile.email);
+      setEnviado(true);
       onComplete();
     } catch (err) {
       console.error('saveOnboarding failed:', err);
-      setError('No se pudo guardar. Revisa tu conexión e inténtalo de nuevo.');
+      // P1-6: el mensaje sale del error real. Antes era siempre "revisa tu
+      // conexión", que en el caso más frecuente —permisos denegados— mandaba al
+      // atleta a mirar su wifi mientras el problema estaba en su cuenta.
+      setError(mensajeDeErrorFirestore(err, 'guardar tu ficha'));
     } finally {
       setSaving(false);
     }
@@ -184,37 +420,71 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
   const pct = Math.round((step / (TOTAL_STEPS - 1)) * 100);
 
   return (
-    <div className="min-h-screen bg-[#0e0e0e] flex flex-col relative overflow-hidden">
+    // 14-08. `h-[100dvh]`, no `min-h-screen`: con min-height el div podía
+    // crecer más alto que la pantalla y el documento entero se desplazaba
+    // (lateral incluido, porque un hijo `flex` de sobra —p. ej. una fila de
+    // chips sin `min-w-0`— ya no quedaba contenido por ningún `overflow-hidden`
+    // de altura fija). Fijar la altura al viewport y mover el scroll a un único
+    // contenedor interno (ver más abajo) dejan la cabecera y los botones
+    // siempre en su sitio, y el `overflow-hidden` de aquí sí llega a recortar
+    // cualquier desbordamiento en vez de solo maquillarlo.
+    <div className="h-[100dvh] bg-bg flex flex-col relative overflow-hidden">
       <style>{`@keyframes fadeSlideIn { from { opacity: 0; transform: translateX(24px); } to { opacity: 1; transform: none; } }`}</style>
-      <div className="absolute top-[-10%] right-[-10%] w-96 h-96 bg-[#fbcb1a]/5 blur-[120px] rounded-full pointer-events-none"></div>
-      <div className="absolute bottom-[-10%] left-[-10%] w-96 h-96 bg-[#00eefc]/5 blur-[120px] rounded-full pointer-events-none"></div>
+      {/* Corrige P0-1 de la auditoría visual (docs/auditoria-visual/hallazgos.md):
+          los brillos con offset negativo (-10%) inflaban el scrollWidth del
+          ancestro a 413 px en un viewport de 375 — `overflow-hidden` en el
+          contenedor flex de arriba no bastaba. Un wrapper propio, absoluto y
+          recortado a los cuatro bordes, los aísla del cálculo de layout del
+          resto de la pantalla. */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden>
+        <div className="absolute top-[-10%] right-[-10%] w-96 h-96 bg-accent/6 blur-[120px] rounded-full"></div>
+      </div>
 
-      {/* Progreso */}
-      <div className="w-full max-w-lg mx-auto px-6 pt-8">
+      {/* Progreso — corrige P2-1: pista más visible (track, no white/5) y
+          "Paso N de M" explícito en vez de solo la fracción junto al logo. */}
+      {/* pt: es la PRIMERA pantalla que ve un atleta nuevo, y sin reservar la
+          safe area el "Paso N de 6" y el logo se metían bajo la isla dinámica
+          (07-3). El calc mantiene los 2rem de aire original por debajo. */}
+      <div className="flex-none w-full max-w-lg mx-auto px-6 pt-[calc(2rem+var(--safe-top))]">
         <div className="flex items-center gap-2 mb-2">
-          <img src="/atlas-logo.png" alt="En Forma" className="w-7 h-7 rounded-md" />
-          <span className="font-sans font-black text-lg tracking-tighter uppercase text-[#fbcb1a]">EN FORMA</span>
-          <span className="ml-auto font-mono text-[10px] text-[#c6c9ab]">{step > 0 ? `${step} / ${TOTAL_STEPS - 1}` : ''}</span>
+          <img src="/atlas-logo.png" alt="En Forma" className="w-7 h-7 object-contain" />
+          <span className="font-sans font-bold text-title-m tracking-tighter uppercase text-accent">EN FORMA</span>
+          {step > 0 && (
+            <span className="ml-auto font-mono text-caption uppercase tracking-widest text-ink-2">
+              Paso {step} de {TOTAL_STEPS - 1}
+            </span>
+          )}
         </div>
-        <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
-          <div className="h-full bg-[#fbcb1a] rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
+        <div className="h-1.5 bg-track rounded-full overflow-hidden">
+          <div className="h-full bg-accent rounded-full transition-[width] duration-(--duration-bar) ease-brand" style={{ width: `${pct}%` }} />
         </div>
       </div>
 
-      {/* Contenido del paso */}
-      <div className="flex-1 w-full max-w-lg mx-auto px-6 py-8" key={step}>
+      {/* Contenido del paso — corrige P1-1: sin `justify-center` el contenido se
+          quedaba pegado arriba y dejaba ~600 px muertos hasta los botones en
+          los pasos cortos (bienvenida, "Tu día a día"). En los pasos largos
+          (Alimentación) no cambia nada: no hay hueco que centrar, así que el
+          contenido sigue empezando arriba y hace scroll dentro de este
+          contenedor.
+          `min-h-0` es obligatorio en un hijo `flex-1` para que su propio
+          `overflow-y-auto` funcione: sin él, un hijo flex nunca se encoge por
+          debajo de la altura de su contenido (mínimo automático), así que
+          jamás llegaba a desbordar y el scroll se lo comía el documento
+          entero — el mismo bug que ya se vio en el CRM, aquí en vertical. */}
+      <div ref={contentRef} className="flex-1 min-h-0 overflow-y-auto w-full max-w-lg mx-auto px-6 py-8 flex flex-col justify-center" key={step}>
         {step === 0 && (
-          <StepShell title={`¡Hola, ${firstName}! 👋`} subtitle="Bienvenido a tu nuevo entrenamiento. Antes de empezar, necesitamos conocerte: son 2 minutos y tu coach lo usará para montar tu plan a medida.">
+          <StepShell title={`¡Hola, ${firstName}! 👋`} subtitle="Bienvenido a tu nuevo entrenamiento. Antes de empezar, necesitamos conocerte bien: tómate tu tiempo, tu coach usará todo esto para montar tu plan a medida.">
             {/* VIDEO_SLOT: aquí irá el vídeo corto de bienvenida de Dani.
-                <video src="..." controls poster="..." className="rounded-2xl w-full" /> */}
-            <div className="bg-[#181816] border border-white/10 rounded-2xl p-5 space-y-3">
+                <video src="..." controls poster="..." className="rounded-surface w-full" /> */}
+            <div className="bg-surface border border-hairline rounded-surface p-5 space-y-3">
               {[
                 { icon: 'person', text: 'Cuéntanos sobre ti y tu objetivo' },
                 { icon: 'fitness_center', text: 'Tu experiencia y tu material' },
-                { icon: 'restaurant', text: 'Cómo comes y qué evitas' },
+                { icon: 'health_and_safety', text: 'Tu salud, para entrenarte seguro' },
+                { icon: 'restaurant', text: 'Cómo comes, cocinas y qué evitas' },
               ].map(i => (
-                <p key={i.icon} className="flex items-center gap-3 text-sm text-[#e5e2e1]">
-                  <span className="material-symbols-outlined text-[#fbcb1a]">{i.icon}</span>
+                <p key={i.icon} className="flex items-center gap-3 text-body-s text-ink">
+                  <Icon name={i.icon} size="m" className="text-accent" />
                   {i.text}
                 </p>
               ))}
@@ -230,16 +500,16 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
                 <Chip selected={sex === 'female'} onClick={() => setSex('female')}>Mujer</Chip>
               </div>
               <div>
-                <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-1.5">Fecha de nacimiento</label>
+                <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-2">Fecha de nacimiento</label>
                 <input type="date" value={birthDate} onChange={e => setBirthDate(e.target.value)} className={inputCls} />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-1.5">Peso (kg)</label>
+                  <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-2">Peso (kg)</label>
                   <input type="number" min={30} max={250} step={0.1} value={weightKg} onChange={e => setWeightKg(e.target.value)} placeholder="75" className={inputCls} />
                 </div>
                 <div>
-                  <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-1.5">Altura (cm)</label>
+                  <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-2">Altura (cm)</label>
                   <input type="number" min={100} max={250} value={heightCm} onChange={e => setHeightCm(e.target.value)} placeholder="175" className={inputCls} />
                 </div>
               </div>
@@ -248,22 +518,41 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
         )}
 
         {step === 2 && (
+          <StepShell title="Sobre ti (II)" subtitle="Un par de cosas más para conocerte.">
+            <Input
+              label="¿A qué te dedicas?"
+              hint="Opcional."
+              value={occupation}
+              onChange={setOccupation}
+              placeholder="Ej: profesor, comercial…"
+            />
+            <Input
+              label="¿Cómo nos has conocido?"
+              hint="Opcional."
+              value={referralSource}
+              onChange={setReferralSource}
+              placeholder="Ej: Instagram, recomendación…"
+            />
+          </StepShell>
+        )}
+
+        {step === 3 && (
           <StepShell title="Tu objetivo" subtitle="¿Qué quieres conseguir? Esto marca todo el plan.">
-            <div className="space-y-2.5">
+            <div className="space-y-3">
               {GOALS.map(g => (
                 <Chip key={g.id} big selected={goalBody === g.id} onClick={() => setGoalBody(g.id)}>
                   <span className="flex items-center gap-3">
-                    <span className={`material-symbols-outlined text-2xl ${goalBody === g.id ? 'text-[#fbcb1a]' : 'text-[#c6c9ab]'}`}>{g.icon}</span>
+                    <Icon name={g.icon} size="l" className={goalBody === g.id ? 'text-accent' : 'text-ink-2'} />
                     <span>
                       <span className="block font-bold text-white">{g.label}</span>
-                      <span className="block text-xs text-[#c6c9ab]">{g.desc}</span>
+                      <span className="block text-label text-ink-2">{g.desc}</span>
                     </span>
                   </span>
                 </Chip>
               ))}
             </div>
             <div>
-              <p className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-2">¿Y a nivel de rendimiento?</p>
+              <p className="font-sans text-caption text-ink-2 uppercase tracking-wider mb-2">¿Y a nivel de rendimiento?</p>
               <div className="flex flex-wrap gap-2">
                 {CAPACITIES.map(c => (
                   <Chip key={c.id} selected={goalCapacity === c.id} onClick={() => setGoalCapacity(c.id)}>{c.label}</Chip>
@@ -271,25 +560,25 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
               </div>
             </div>
             <div>
-              <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-1.5">Cuéntalo con tus palabras (opcional)</label>
+              <label className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-2">Cuéntalo con tus palabras (opcional)</label>
               <textarea value={goalFreeText} onChange={e => setGoalFreeText(e.target.value)} rows={2}
                 placeholder="Ej: quiero verme bien en verano y sentirme con energía" className={`${inputCls} resize-none`} />
             </div>
           </StepShell>
         )}
 
-        {step === 3 && (
+        {step === 4 && (
           <StepShell title="Tu entrenamiento" subtitle="Para ajustar el plan a tu nivel y tu material.">
-            <div className="space-y-2.5">
+            <div className="space-y-3">
               {EXPERIENCE.map(x => (
                 <Chip key={x.id} big selected={experienceLevel === x.id} onClick={() => setExperienceLevel(x.id)}>
                   <span className="block font-bold text-white">{x.label}</span>
-                  <span className="block text-xs text-[#c6c9ab]">{x.desc}</span>
+                  <span className="block text-label text-ink-2">{x.desc}</span>
                 </Chip>
               ))}
             </div>
             <div>
-              <p className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-2">¿Con qué material cuentas? (elige todo lo que tengas)</p>
+              <p className="font-sans text-caption text-ink-2 uppercase tracking-wider mb-2">¿Con qué material cuentas? (elige todo lo que tengas)</p>
               <div className="flex flex-wrap gap-2">
                 {EQUIPMENT_OPTIONS.map(eq => (
                   <Chip key={eq} selected={equipment.includes(eq)}
@@ -300,7 +589,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
               </div>
             </div>
             <div>
-              <p className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-2">¿Lesiones o molestias actuales?</p>
+              <p className="font-sans text-caption text-ink-2 uppercase tracking-wider mb-2">¿Lesiones o molestias actuales?</p>
               <div className="space-y-2">
                 <Chip selected={noInjuries} onClick={() => { setNoInjuries(v => !v); if (!noInjuries) setInjuries(''); }}>
                   No tengo lesiones
@@ -314,20 +603,64 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
           </StepShell>
         )}
 
-        {step === 4 && (
+        {step === 5 && (
+          <StepShell title="Salud" subtitle="Para que tu coach entrene y programe tu dieta con seguridad.">
+            <div>
+              <p className="font-sans text-caption text-ink-2 uppercase tracking-wider mb-2">¿Lesiones anteriores? (ya curadas)</p>
+              <div className="space-y-2">
+                <div className="grid grid-cols-2 gap-2">
+                  <Chip selected={hadPastInjuries} onClick={() => setHadPastInjuries(true)}>Sí</Chip>
+                  <Chip selected={!hadPastInjuries} onClick={() => { setHadPastInjuries(false); setPastInjuriesDetail(''); }}>No</Chip>
+                </div>
+                {hadPastInjuries && (
+                  <input value={pastInjuriesDetail} onChange={e => setPastInjuriesDetail(e.target.value)}
+                    placeholder="¿Cuál?" className={inputCls} />
+                )}
+              </div>
+            </div>
+            <div>
+              <p className="font-sans text-caption text-ink-2 uppercase tracking-wider mb-2">¿Tomas algún medicamento o fármaco?</p>
+              <div className="space-y-2">
+                <div className="grid grid-cols-2 gap-2">
+                  <Chip selected={takesMedication} onClick={() => setTakesMedication(true)}>Sí</Chip>
+                  <Chip selected={!takesMedication} onClick={() => { setTakesMedication(false); setMedicationDetail(''); }}>No</Chip>
+                </div>
+                {takesMedication && (
+                  <input value={medicationDetail} onChange={e => setMedicationDetail(e.target.value)}
+                    placeholder="¿Cuál?" className={inputCls} />
+                )}
+              </div>
+            </div>
+            <div>
+              <p className="font-sans text-caption text-ink-2 uppercase tracking-wider mb-2">¿Cirugía reciente?</p>
+              <div className="space-y-2">
+                <div className="grid grid-cols-2 gap-2">
+                  <Chip selected={recentSurgery} onClick={() => setRecentSurgery(true)}>Sí</Chip>
+                  <Chip selected={!recentSurgery} onClick={() => { setRecentSurgery(false); setRecentSurgeryDetail(''); }}>No</Chip>
+                </div>
+                {recentSurgery && (
+                  <input value={recentSurgeryDetail} onChange={e => setRecentSurgeryDetail(e.target.value)}
+                    placeholder="¿Cuál?" className={inputCls} />
+                )}
+              </div>
+            </div>
+          </StepShell>
+        )}
+
+        {step === 6 && (
           <StepShell title="Tu alimentación" subtitle="Tu coach montará la dieta respetando esto.">
             <div className="grid grid-cols-2 gap-2">
               {DIET_TYPES.map(d => (
                 <Chip key={d.id} selected={dietType === d.id} onClick={() => setDietType(d.id)}>
                   <span className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-base">{d.icon}</span>
+                    <Icon name={d.icon} size="m" />
                     {d.label}
                   </span>
                 </Chip>
               ))}
             </div>
             <div>
-              <p className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-2">¿Cuántas comidas al día prefieres?</p>
+              <p className="font-sans text-caption text-ink-2 uppercase tracking-wider mb-2">¿Cuántas comidas al día prefieres?</p>
               <div className="flex gap-2">
                 {[3, 4, 5].map(n => (
                   <Chip key={n} selected={mealCount === n} onClick={() => setMealCount(n)}>{n} comidas</Chip>
@@ -335,51 +668,126 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
               </div>
             </div>
             <div>
-              <p className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-2">Cuando tu coach te prepare un menú, ¿lo prefieres variado o más sencillo de repetir?</p>
+              <p className="font-sans text-caption text-ink-2 uppercase tracking-wider mb-2">Cuando tu coach te prepare un menú, ¿lo prefieres variado o más sencillo de repetir?</p>
               <div className="flex gap-2">
                 {[1, 2, 3, 4, 5].map(n => (
                   <Chip key={n} selected={menuVariety === n} onClick={() => setMenuVariety(n)}>{n}</Chip>
                 ))}
               </div>
               <div className="flex justify-between mt-1">
-                <span className="font-mono text-[9px] text-[#666]">Repetitivo, sencillo</span>
-                <span className="font-mono text-[9px] text-[#666]">Muy variado</span>
+                <span className="font-sans text-caption text-ink-3">Repetitivo, sencillo</span>
+                <span className="font-mono text-caption text-ink-3">Muy variado</span>
               </div>
             </div>
             <div>
-              <p className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-2">¿Prefieres cocinar todo de una vez para la semana (batch cooking)?</p>
+              <p className="font-sans text-caption text-ink-2 uppercase tracking-wider mb-2">¿Prefieres cocinar todo de una vez para la semana (batch cooking)?</p>
               <div className="flex gap-2">
                 <Chip selected={batchCookingPreferred} onClick={() => setBatchCookingPreferred(true)}>Sí, cocino de golpe</Chip>
                 <Chip selected={!batchCookingPreferred} onClick={() => setBatchCookingPreferred(false)}>No, cocino cada día</Chip>
               </div>
             </div>
-            <div>
-              <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-1.5">Alergias o intolerancias (separa por comas, o deja vacío)</label>
-              <input value={allergies} onChange={e => setAllergies(e.target.value)} placeholder="Ej: lactosa, frutos secos" className={inputCls} />
-            </div>
-            <div>
-              <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-1.5">Alimentos que NO quieres ver en tu dieta</label>
-              <input value={dislikedFoods} onChange={e => setDislikedFoods(e.target.value)} placeholder="Ej: pescado azul, coliflor" className={inputCls} />
+            <Input
+              label="Alergias o intolerancias"
+              hint="Separa por comas, o déjalo vacío."
+              value={allergies}
+              onChange={setAllergies}
+              placeholder="Ej: lactosa, frutos secos"
+            />
+            <Input
+              label="Alimentos que NO quieres ver en tu dieta"
+              value={dislikedFoods}
+              onChange={setDislikedFoods}
+              placeholder="Ej: pescado azul, coliflor"
+            />
+          </StepShell>
+        )}
+
+        {step === 7 && (
+          <StepShell title="Tus comidas" subtitle="¿Cuáles necesitas llevar preparadas, en tupper?">
+            <div className="divide-y divide-hairline rounded-surface overflow-hidden border border-hairline">
+              {meals.map((meal, i) => (
+                <div key={meal.intakeType} className="flex items-center gap-3 px-4 py-3 bg-surface">
+                  <Icon name={INTAKE_ICONS[meal.intakeType]} size="m" className="text-ink-2" />
+                  <span className="flex-1 font-sans text-body-s text-white">{meal.name}</span>
+                  <button type="button"
+                    onClick={() => setMeals(prev => prev.map((m, idx) => idx === i ? { ...m, needsTupper: !m.needsTupper } : m))}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-control font-mono text-caption font-bold border transition-all active:scale-95 ${
+                      meal.needsTupper
+                        ? 'bg-accent/15 border-accent/40 text-accent'
+                        : 'bg-raised border-hairline text-ink-3 hover:text-ink-2'
+                    }`}
+                  >
+                    <Icon name="lunch_dining" size="s" />
+                    Tupper
+                  </button>
+                </div>
+              ))}
             </div>
           </StepShell>
         )}
 
-        {step === 5 && (
+        {step === 8 && (
+          <StepShell title="Cómo cocinas" subtitle="Para que las recetas de tu menú se ajusten a tu maña y tu tiempo.">
+            <div>
+              <p className="font-sans text-caption text-ink-2 uppercase tracking-wider mb-2">Nivel de cocina</p>
+              <div className="flex gap-2">
+                {[1, 2, 3, 4, 5].map(n => (
+                  <Chip key={n} selected={cookingLevel === n} onClick={() => setCookingLevel(n)}>{n}</Chip>
+                ))}
+              </div>
+              <div className="flex justify-between mt-1">
+                <span className="font-sans text-caption text-ink-3">Básico (hervir agua)</span>
+                <span className="font-mono text-caption text-ink-3">Chef avanzado</span>
+              </div>
+            </div>
+            <div>
+              <p className="font-sans text-caption text-ink-2 uppercase tracking-wider mb-2">Tiempo máximo por receta</p>
+              <div className="flex flex-wrap gap-2">
+                {[15, 30, 45, 60, 90].map(n => (
+                  <Chip key={n} selected={cookingMaxTime === n} onClick={() => setCookingMaxTime(n)}>{n} min</Chip>
+                ))}
+              </div>
+            </div>
+          </StepShell>
+        )}
+
+        {step === 9 && (
+          <StepShell title="Preferencias alimentarias" subtitle="Marca lo que te encanta y lo que no quieres ver en tu menú.">
+            <FoodPreferencesPanel
+              athleteEmail={profile.email}
+              initialLiked={prefLiked}
+              initialDisliked={prefDisliked}
+              allergies={allergies.split(',').map(s => s.trim()).filter(Boolean)}
+              onSaveOverride={(liked, disliked) => { setPrefLiked(liked); setPrefDisliked(disliked); }}
+            />
+          </StepShell>
+        )}
+
+        {step === 10 && (
+          <StepShell title="Tus verduras habituales" subtitle="Así tu coach afina la estimación de vitaminas y minerales.">
+            <VegetableSelector
+              selected={vegTypes}
+              onToggle={id => setVegTypes(prev => prev.includes(id) ? prev.filter(v => v !== id) : [...prev, id])}
+            />
+          </StepShell>
+        )}
+
+        {step === 11 && (
           <StepShell title="Tu día a día" subtitle="Fuera del entrenamiento, ¿cómo te mueves?">
-            <div className="space-y-2.5">
+            <div className="space-y-3">
               {ACTIVITY.map(a => (
                 <Chip key={a.id} big selected={activityLevel === a.id} onClick={() => setActivityLevel(a.id)}>
                   <span className="block font-bold text-white">{a.label}</span>
-                  <span className="block text-xs text-[#c6c9ab]">{a.desc}</span>
+                  <span className="block text-label text-ink-2">{a.desc}</span>
                 </Chip>
               ))}
             </div>
           </StepShell>
         )}
 
-        {step === 6 && (
+        {step === 12 && (
           <StepShell title="¡Todo listo! 💪" subtitle="Tu coach ya tiene lo que necesita para montar tu plan. Ahora te enseñamos la app en 1 minuto.">
-            <div className="bg-[#181816] border border-[#fbcb1a]/25 rounded-2xl p-5 space-y-2.5">
+            <div className="bg-surface border border-accent/25 rounded-surface p-5 space-y-3">
               {[
                 goalBody && { icon: 'target', text: GOALS.find(g => g.id === goalBody)?.label },
                 experienceLevel && { icon: 'fitness_center', text: EXPERIENCE.find(x => x.id === experienceLevel)?.label },
@@ -388,46 +796,88 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
               ].filter(Boolean).map((i, idx) => {
                 const item = i as { icon: string; text: string };
                 return (
-                  <p key={idx} className="flex items-center gap-3 text-sm text-[#e5e2e1]">
-                    <span className="material-symbols-outlined text-[#fbcb1a] text-base">{item.icon}</span>
+                  <p key={idx} className="flex items-center gap-3 text-body-s text-ink">
+                    <Icon name={item.icon} size="m" className="text-accent" />
                     {item.text}
                   </p>
                 );
               })}
             </div>
+            {/* T6 (18-08). Antes: bloque destacado con el mismo borde que la
+                tarjeta de arriba, y el texto prometía algo que la app no hace
+                («prepara tus planes más rápido» — la política de privacidad
+                ya decía lo correcto: revisar la evolución, no programar).
+                Son datos de salud (art. 9 RGPD): el consentimiento tiene que
+                ser específico y separado de "acepto los términos", así que
+                esto no se puede esconder dentro del alta — pero sí bajar de
+                rango: una fila discreta, interruptor apagado por defecto
+                (nada premarcado — dejarlo así no es un "no", es "todavía no
+                lo sé": HomeScreen lo pregunta una vez más y luego solo queda
+                el interruptor de Perfil → Ajustes) y el detalle completo
+                detrás de "¿Qué es esto?", no delante. */}
+            <div className="bg-surface border border-hairline rounded-surface p-4 flex items-center justify-between gap-3 text-left">
+              <div className="min-w-0">
+                <p className="font-sans text-label font-bold text-white">Revisión con apoyo de IA</p>
+                <button
+                  type="button"
+                  onClick={() => setMostrarDetalleIA(true)}
+                  className="font-mono text-caption text-accent underline underline-offset-2"
+                >
+                  ¿Qué es esto?
+                </button>
+              </div>
+              <ConsentSwitch
+                on={consienteIA === true}
+                onToggle={() => setConsienteIA(prev => prev === true ? null : true)}
+              />
+            </div>
+            {mostrarDetalleIA && (
+              <Sheet open onClose={() => setMostrarDetalleIA(false)} title="Revisión con apoyo de IA">
+                <div className="space-y-4 text-body-s font-sans text-ink-2">
+                  <p>
+                    Tu entrenador puede usar un asistente de IA para <strong className="text-ink">revisar tu
+                    evolución</strong> (entrenos, dieta y revisiones) cuando prepara tus ajustes. Los planes
+                    los decide y los firma él.
+                  </p>
+                  <p>
+                    Para eso se enviarían esos datos —incluidos lesiones y alergias— a
+                    <strong className="text-ink"> Anthropic PBC</strong>, sin tu nombre completo y sin
+                    usarse para entrenar sus modelos.
+                  </p>
+                  <p className="text-caption text-ink-3">
+                    Puedes cambiarlo cuando quieras en Perfil → Ajustes. Si lo dejas apagado, la app
+                    funciona exactamente igual.
+                  </p>
+                </div>
+              </Sheet>
+            )}
+
             {error && (
-              <div className="bg-red-500/10 border border-red-500/35 text-red-200 p-3 rounded-xl text-sm text-center">{error}</div>
+              <div className="bg-danger/7 border border-danger/24 text-danger p-3 rounded-surface text-body-s text-center">{error}</div>
             )}
           </StepShell>
         )}
       </div>
 
-      {/* Navegación */}
-      <div className="w-full max-w-lg mx-auto px-6 pb-10 flex gap-3">
+      {/* Navegación — corrige P1-2: la jerarquía estaba invertida porque
+          "Siguiente" no llevaba variant="primary" (el default de Button es
+          "secondary", igual que "Atrás" — ambos pesaban lo mismo).
+          `flex-none`: con la altura ahora fija al viewport, sin esto el
+          `flex-1` del contenido de arriba se comería el hueco de estos
+          botones en vez de dejárselo. `pb` reserva la safe area de abajo,
+          igual que el resto de paneles fijos de la app. */}
+      <div className="flex-none w-full max-w-lg mx-auto px-6 pt-3 pb-[calc(2.5rem+env(safe-area-inset-bottom,0px))] flex gap-3">
         {step > 0 && step < TOTAL_STEPS - 1 && (
-          <button
-            onClick={() => setStep(s => s - 1)}
-            className="px-5 py-3.5 rounded-xl bg-white/5 border border-white/10 text-[#c6c9ab] font-sans text-sm font-bold uppercase tracking-wide"
-          >
-            Atrás
-          </button>
+          <Button variant="ghost" size="l" onClick={() => setStep(s => s - 1)}>Atrás</Button>
         )}
         {step < TOTAL_STEPS - 1 ? (
-          <button
-            onClick={() => setStep(s => s + 1)}
-            disabled={!stepValid()}
-            className="flex-1 py-3.5 rounded-xl bg-[#fbcb1a] text-black font-sans text-sm font-black uppercase tracking-widest disabled:opacity-30 transition-all active:scale-[.98]"
-          >
+          <Button variant="primary" size="l" onClick={() => setStep(s => s + 1)} disabled={!stepValid()} className="flex-1">
             {step === 0 ? 'Empezar' : 'Siguiente'}
-          </button>
+          </Button>
         ) : (
-          <button
-            onClick={finish}
-            disabled={saving}
-            className="flex-1 py-3.5 rounded-xl bg-[#fbcb1a] text-black font-sans text-sm font-black uppercase tracking-widest disabled:opacity-50 transition-all active:scale-[.98]"
-          >
-            {saving ? 'Guardando…' : 'Entrar en EN FORMA'}
-          </button>
+          <Button variant="primary" size="l" loading={saving} loadingLabel="Guardando" onClick={finish} className="flex-1">
+            Entrar en EN FORMA
+          </Button>
         )}
       </div>
     </div>
