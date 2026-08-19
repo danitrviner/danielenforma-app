@@ -80,6 +80,29 @@ export function exerciseBestProgress(logs: WorkoutLog[], exerciseId: string): Ex
   };
 }
 
+export interface ExerciseSessionEntry {
+  date: string;
+  sets: { weight: number; reps: number }[];
+}
+
+// Lista sesión a sesión (más reciente primero) de lo que el atleta levantó en
+// un ejercicio — a diferencia de exerciseBestProgress (solo el mejor set de
+// siempre), esto es lo que pide "revisar los pesos usados": cada sesión con
+// sus series reales, para que el atleta compare sin tener que hacer memoria.
+export function exerciseSessionHistory(
+  logs: WorkoutLog[],
+  exerciseId: string,
+  limit = 10,
+): ExerciseSessionEntry[] {
+  const bySession: ExerciseSessionEntry[] = [];
+  for (const log of logs) {
+    const entry = log.entries.find(e => e.exerciseId === exerciseId);
+    if (!entry || entry.sets.length === 0) continue;
+    bySession.push({ date: log.date, sets: entry.sets.map(s => ({ weight: s.weight, reps: s.repsDone })) });
+  }
+  return bySession.sort((a, b) => b.date.localeCompare(a.date)).slice(0, limit);
+}
+
 // Peso máximo levantado por sesión en un ejercicio, últimas `sessionsBack`
 // sesiones que lo incluyeron, más antigua primero — para el `Sparkline` de
 // la ficha de ejercicio (construido en F3.3 ya pensando en este uso).

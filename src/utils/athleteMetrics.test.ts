@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { WorkoutLog } from '../types';
-import { exerciseBestProgress, exerciseWeightTrend } from './athleteMetrics';
+import { exerciseBestProgress, exerciseWeightTrend, exerciseSessionHistory } from './athleteMetrics';
 
 function log(date: string, exerciseId: string, sets: { weight: number; repsDone: number }[]): WorkoutLog {
   return {
@@ -54,5 +54,36 @@ describe('exerciseWeightTrend', () => {
     const logs = Array.from({ length: 10 }, (_, i) =>
       log(`2026-08-${String(i + 1).padStart(2, '0')}`, 'ex1', [{ weight: 50 + i, repsDone: 8 }]));
     expect(exerciseWeightTrend(logs, 'ex1', 8)).toEqual([52, 53, 54, 55, 56, 57, 58, 59]);
+  });
+});
+
+describe('exerciseSessionHistory', () => {
+  it('sin logs del ejercicio: array vacío', () => {
+    expect(exerciseSessionHistory([], 'ex1')).toEqual([]);
+  });
+
+  it('una entrada por sesión con sus series reales, más reciente primero', () => {
+    const logs = [
+      log('2026-08-01', 'ex1', [{ weight: 50, repsDone: 10 }, { weight: 55, repsDone: 6 }]),
+      log('2026-08-03', 'ex1', [{ weight: 60, repsDone: 8 }]),
+    ];
+    expect(exerciseSessionHistory(logs, 'ex1')).toEqual([
+      { date: '2026-08-03', sets: [{ weight: 60, reps: 8 }] },
+      { date: '2026-08-01', sets: [{ weight: 50, reps: 10 }, { weight: 55, reps: 6 }] },
+    ]);
+  });
+
+  it('ignora ejercicios distintos y sesiones sin series de ese ejercicio', () => {
+    const logs = [log('2026-08-01', 'ex2', [{ weight: 100, repsDone: 5 }])];
+    expect(exerciseSessionHistory(logs, 'ex1')).toEqual([]);
+  });
+
+  it('recorta al límite pedido (10 por defecto)', () => {
+    const logs = Array.from({ length: 15 }, (_, i) =>
+      log(`2026-08-${String(i + 1).padStart(2, '0')}`, 'ex1', [{ weight: 50 + i, repsDone: 8 }]));
+    const history = exerciseSessionHistory(logs, 'ex1');
+    expect(history).toHaveLength(10);
+    expect(history[0].date).toBe('2026-08-15');
+    expect(history[9].date).toBe('2026-08-06');
   });
 });

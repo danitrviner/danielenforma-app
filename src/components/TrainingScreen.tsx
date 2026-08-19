@@ -19,7 +19,7 @@ import { useTutorialEngine } from '../features/tutorial/TutorialEngine';
 import Coachmark from './Coachmark';
 import ExerciseVideoPlayer from './ExerciseVideoPlayer';
 import ExerciseBestSetCard from './ExerciseBestSetCard';
-import { exerciseBestProgress, exerciseWeightTrend, ExerciseBestProgress } from '../utils/athleteMetrics';
+import { exerciseBestProgress, exerciseWeightTrend, exerciseSessionHistory, ExerciseBestProgress } from '../utils/athleteMetrics';
 import { epley } from '../utils/oneRepMax';
 import { allTimeBestBefore } from '../utils/trainingReport';
 import { Skeleton } from './ui';
@@ -701,16 +701,18 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                         Vídeo
                       </button>
                     )}
-                    {exerciseProgressById.has(we.exerciseId) && (
-                      <button
-                        type="button"
-                        onClick={() => setHistoryExId(we.exerciseId)}
-                        className="inline-flex items-center gap-1 text-caption font-sans font-bold uppercase px-2 rounded-control border text-accent border-accent/30 hover:bg-accent/10 transition-colors"
-                      >
-                        <Icon name="trending_up" size="s" />
-                        Historial
-                      </button>
-                    )}
+                    {/* Siempre visible, aunque no haya datos aún — antes se ocultaba
+                        del todo si exerciseProgressById no tenía entrada para este
+                        ejercicio, y un atleta que lo hacía por primera vez no veía
+                        ningún botón. El Dialog decide qué enseñar si está vacío. */}
+                    <button
+                      type="button"
+                      onClick={() => setHistoryExId(we.exerciseId)}
+                      className="inline-flex items-center gap-1 text-caption font-sans font-bold uppercase px-2 rounded-control border text-accent border-accent/30 hover:bg-accent/10 transition-colors"
+                    >
+                      <Icon name="trending_up" size="s" />
+                      Historial
+                    </button>
                     {warmup.readiness && (
                       <span
                         title={warmup.readiness.message}
@@ -1043,18 +1045,49 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
 
         {/* Historial de peso — pantalla propia, ya no escondida detrás del
             botón de vídeo (que además la ocultaba del todo si el ejercicio
-            tenía vídeo). Reutiliza ExerciseBestSetCard, la misma pieza que ya
-            existía para esto en la ficha de ejercicio de Biblioteca. */}
-        {historyExId && exerciseProgressById.get(historyExId) && (
-          <Dialog
-            open
-            onClose={() => setHistoryExId(null)}
-            size="s"
-            title={`Historial — ${getExercise(historyExId)?.name ?? 'Ejercicio'}`}
-          >
-            <ExerciseBestSetCard {...exerciseProgressById.get(historyExId)!} />
-          </Dialog>
-        )}
+            tenía vídeo). "Tu mejor serie" (ExerciseBestSetCard) es un
+            resumen; debajo va la lista sesión a sesión con los pesos reales
+            usados, que es lo que el atleta necesita para no tener que hacer
+            memoria de la última vez. Se abre siempre, aunque no haya datos:
+            un atleta haciendo el ejercicio por primera vez tiene que poder
+            comprobarlo y ver que, en efecto, no hay nada todavía. */}
+        {historyExId && (() => {
+          const progress = exerciseProgressById.get(historyExId);
+          const sessions = exerciseSessionHistory(logs, historyExId);
+          return (
+            <Dialog
+              open
+              onClose={() => setHistoryExId(null)}
+              size="s"
+              title={`Historial — ${getExercise(historyExId)?.name ?? 'Ejercicio'}`}
+            >
+              <div className="space-y-4">
+                {progress ? (
+                  <ExerciseBestSetCard {...progress} />
+                ) : (
+                  <p className="font-sans text-label text-ink-2">
+                    Todavía no hay series registradas de este ejercicio — esta será tu primera vez.
+                  </p>
+                )}
+                {sessions.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="font-sans text-caption text-ink-2 uppercase tracking-widest">Sesiones anteriores</p>
+                    <div className="space-y-1.5">
+                      {sessions.map(s => (
+                        <div key={s.date} className="flex items-center justify-between gap-3 py-1.5 border-b border-hairline last:border-b-0">
+                          <span className="font-mono text-caption text-ink-3">{s.date}</span>
+                          <span className="font-mono text-label text-ink text-right">
+                            {s.sets.map(set => `${set.weight}×${set.reps}`).join(' · ')}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </Dialog>
+          );
+        })()}
       </div>
     );
   }
