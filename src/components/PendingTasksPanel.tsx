@@ -1,10 +1,11 @@
 import React, { useMemo } from 'react';
 import { useQueries, useQuery } from '@tanstack/react-query';
-import { UserProfile, WeightCheckIn, TaskType, Questionnaire } from '../types';
-import { getTasksForAthlete, getAssignmentsForAthlete, getResponsesForAthlete, getQuestionnaireById, getPhotoAssignmentsForAthlete, getProgressPhotos } from '../dbService';
-import { isDueToday, hasAnsweredThisOccurrence, todayStr } from '../utils/questionnaireSchedule';
+import { UserProfile, WeightCheckIn, TaskType, Questionnaire, PhotoAssignment } from '../types';
+import { getTasksForAthlete, getAssignmentsForAthlete, getResponsesForAthlete, getQuestionnaireById, getPhotoAssignmentsForAthlete, getProgressPhotos, getMesocycles } from '../dbService';
+import { isDueToday, isOverdue, hasAnsweredThisOccurrence, todayStr, ScheduleContext } from '../utils/questionnaireSchedule';
 import { hasUploadedThisOccurrence } from '../utils/photoSchedule';
-import Skeleton from './Skeleton';
+import { Skeleton } from './ui';
+import { ListRow } from './ui';
 
 type NavTarget = 'checkin' | 'training' | 'nutrition' | 'roadmap';
 
@@ -23,11 +24,11 @@ const TYPE_ICON: Record<TaskType, string> = {
 };
 
 const TYPE_COLOR: Record<TaskType, string> = {
-  revision: 'text-[#00eefc]',
-  cuestionario: 'text-[#fbcb1a]',
+  revision: 'text-data',
+  cuestionario: 'text-accent',
   foto: 'text-violet-300',
   manual: 'text-amber-300',
-  otro: 'text-[#c6c9ab]',
+  otro: 'text-ink-2',
 };
 
 export default function PendingTasksPanel({ profile, checkins, onNavigate }: Props) {
@@ -51,12 +52,18 @@ export default function PendingTasksPanel({ profile, checkins, onNavigate }: Pro
     queryKey: ['progressPhotos', profile.email],
     queryFn: () => getProgressPhotos(profile.email),
   });
+  // Contexto para los disparadores 'plan_week'/'mesocycle_end' (ver CheckInScreen).
+  const { data: mesocycles = [] } = useQuery({
+    queryKey: ['mesocyclesForAthlete', profile.email],
+    queryFn: () => getMesocycles(profile.email),
+  });
+  const scheduleCtx: ScheduleContext = useMemo(() => ({ mesocycles }), [mesocycles]);
 
   const manualTasks = tasks.filter(t => t.status === 'pending');
 
   const due = useMemo(
-    () => assignments.filter(a => a.active && isDueToday(a) && !hasAnsweredThisOccurrence(a, responses)),
-    [assignments, responses]
+    () => assignments.filter(a => a.active && isOverdue(a, scheduleCtx) && !hasAnsweredThisOccurrence(a, responses, scheduleCtx)),
+    [assignments, responses, scheduleCtx]
   );
 
   // One cache entry per questionnaire id (['questionnaireById', id]) so this
@@ -73,7 +80,23 @@ export default function PendingTasksPanel({ profile, checkins, onNavigate }: Pro
     title: (questionnaireQueries[i]?.data as Questionnaire | null | undefined)?.title ?? 'Cuestionario',
   }));
 
-  const duePhotos = photoAssignments.filter(a => a.active && isDueToday(a) && !hasUploadedThisOccurrence(a, photos));
+  // Sin asignación explícita del coach: por defecto se piden las 3 vistas
+  // cada semana (mismo criterio que CheckInScreen).
+  const effectivePhotoAssignments: PhotoAssignment[] = useMemo(() => {
+    const active = photoAssignments.filter(a => a.active);
+    if (active.length > 0) return active;
+    return [{
+      id: 'implicit-default',
+      athleteId: profile.email,
+      schedule: { type: 'interval', intervalDays: 7 },
+      startDate: todayStr(),
+      views: ['front', 'side', 'back'],
+      active: true,
+      createdAt: new Date().toISOString(),
+    }];
+  }, [photoAssignments, profile.email]);
+
+  const duePhotos = effectivePhotoAssignments.filter(a => isDueToday(a) && !hasUploadedThisOccurrence(a, photos));
   const pendingPhotos = duePhotos.map(a => ({
     id: a.id,
     viewsLabel: a.views.map(v => v === 'front' ? 'Frente' : v === 'side' ? 'Lateral' : 'Espalda').join(', '),
@@ -125,7 +148,7 @@ export default function PendingTasksPanel({ profile, checkins, onNavigate }: Pro
 
   if (loading) {
     return (
-      <div className="bg-[#181816] border border-white/7 rounded-2xl p-5 space-y-2">
+      <div className="bg-surface border border-hairline rounded-surface p-5 space-y-2">
         <Skeleton className="h-10 w-full" />
         <Skeleton className="h-10 w-full" />
       </div>
@@ -133,34 +156,29 @@ export default function PendingTasksPanel({ profile, checkins, onNavigate }: Pro
   }
 
   return (
-    <section className="bg-[#181816] border border-white/7 rounded-2xl p-4 sm:p-5">
-      <h2 className="font-sans font-bold text-base text-white mb-3 pb-2 border-b border-white/7 flex items-center gap-2">
-        <span className="material-symbols-outlined text-[#fbcb1a]">checklist</span>
+    <section className="bg-surface border border-hairline rounded-surface p-4 sm:p-5">
+      <h2 className="font-sans font-bold text-title-s text-white mb-3 pb-2 border-b border-hairline flex items-center gap-2">
+        <span className="material-symbols-outlined text-accent">checklist</span>
         Tareas pendientes
         {rows.length > 0 && (
-          <span className="ml-auto bg-[#fbcb1a] text-black text-[10px] font-bold px-2 py-0.5 rounded-full">{rows.length}</span>
+          <span className="ml-auto bg-accent text-black text-caption font-bold px-2 rounded-full">{rows.length}</span>
         )}
       </h2>
 
       {rows.length === 0 ? (
-        <p className="text-xs text-[#555] font-mono py-2">Todo al día — sin tareas pendientes.</p>
+        <p className="text-label text-ink-3 font-sans py-2">Todo al día — sin tareas pendientes.</p>
       ) : (
         <div className="space-y-2">
           {rows.map(row => (
-            <button
+            <ListRow
               key={row.key}
               onClick={row.onOpen}
-              className="w-full flex items-center gap-3 bg-[#1e1e1e] border border-white/7 hover:border-[#fbcb1a]/40 rounded-lg p-3 text-left transition-all group"
-            >
-              <span className={`material-symbols-outlined flex-shrink-0 ${TYPE_COLOR[row.type]}`}>{TYPE_ICON[row.type]}</span>
-              <div className="flex-1 min-w-0">
-                <p className="font-sans font-semibold text-sm text-white group-hover:text-[#fbcb1a] transition-colors truncate">{row.title}</p>
-                {row.dueDate && (
-                  <p className="font-mono text-[10px] text-[#c6c9ab] mt-0.5">Vence: {row.dueDate}</p>
-                )}
-              </div>
-              <span className="material-symbols-outlined text-[#c6c9ab] group-hover:text-[#fbcb1a] transition-colors flex-shrink-0">chevron_right</span>
-            </button>
+              className="bg-raised border border-hairline rounded-control"
+              leading={<span className={`material-symbols-outlined flex-shrink-0 ${TYPE_COLOR[row.type]}`}>{TYPE_ICON[row.type]}</span>}
+              title={row.title}
+              subtitle={row.dueDate ? `Vence: ${row.dueDate}` : undefined}
+              chevron
+            />
           ))}
         </div>
       )}

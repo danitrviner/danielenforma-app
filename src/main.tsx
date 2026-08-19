@@ -11,10 +11,25 @@ import './index.css';
 // this data (assignments, diets, onboarding...) doesn't change from another
 // tab while the coach/athlete is looking at it. Screens that need fresher
 // data set their own staleTime/refetchOnMount per query.
+//
+// 06-2 / 06-20. Los 60 s de antes eran demasiado poco, y `refetchOnWindowFocus`
+// se quedó en su valor por defecto (`true`) sin sobrescribirse en ningún sitio:
+// CADA vuelta de la app al primer plano pasado un minuto repetía entero el
+// abanico de lecturas de la pantalla. En el móvil de un coach —que sale y entra
+// de la app decenas de veces al día— eso multiplicaba por sí solo la factura de
+// Firestore, y sin aportar nada: los datos de esta app los cambia una persona
+// desde otra pantalla cada muchos minutos, no cada segundo.
+//
+// Nada de esto retrasa lo que hace el propio usuario: cada mutación actualiza
+// la caché con `setQueryData` en el momento, así que lo que tú tocas se ve al
+// instante. Lo que se retrasa es enterarse de lo que cambió OTRO dispositivo,
+// y ahí diez minutos es de sobra.
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 60_000,
+      staleTime: 10 * 60_000,
+      gcTime: 30 * 60_000,
+      refetchOnWindowFocus: false,
       retry: 1,
     },
   },

@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { AiChatMessage } from '../types';
 import { runAgentTurn, messageText } from '../ai/aiClient';
-import { createCoachNote, getCoachInstructions } from '../dbService';
+import { createCoachNote, getCoachInstructions, getDoctrina } from '../dbService';
+import { Icon, Button, Dialog } from './ui';
 
 // Fase 5 — Análisis semanal proactivo. Un botón que lanza al mismo agente IA con
 // un prompt enlatado: revisa toda la cartera, señala quién necesita atención y
@@ -24,8 +25,15 @@ export default function WeeklyAnalysisButton() {
     setOpen(true); setBusy(true); setResult(null); setError(null); setStatus(null);
     const chatId = `weekly_${Date.now()}`;
     try {
-      const coachInstructions = await getCoachInstructions().catch(() => '');
-      const msgs = await runAgentTurn([] as AiChatMessage[], PROMPT, { chatId, coachInstructions }, {
+      // Mismo contexto que el chat del panel: sin la doctrina, el análisis
+      // semanal razonaría con criterio genérico y contradiría al asistente.
+      const [coachInstructions, entrenamiento, nutricion] = await Promise.all([
+        getCoachInstructions().catch(() => ''),
+        getDoctrina('entrenamiento').catch(() => ''),
+        getDoctrina('nutricion').catch(() => ''),
+      ]);
+      const doctrina = { entrenamiento, nutricion };
+      const msgs = await runAgentTurn([] as AiChatMessage[], PROMPT, { chatId, coachInstructions, doctrina }, {
         onToolStatus: setStatus,
       });
       const last = [...msgs].reverse().find(m => m.role === 'assistant' && messageText(m));
@@ -50,44 +58,37 @@ export default function WeeklyAnalysisButton() {
       <button
         onClick={run}
         disabled={busy}
-        className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-[#fbcb1a]/10 border border-[#fbcb1a]/30 hover:border-[#fbcb1a]/60 text-[#fbcb1a] font-sans text-xs font-bold uppercase tracking-wider transition-all disabled:opacity-40"
+        className="inline-flex items-center gap-2 px-3 py-2 rounded-control bg-accent/10 border border-accent/30 hover:border-accent/60 text-accent font-sans text-label font-bold uppercase tracking-wider transition-all disabled:opacity-40"
       >
-        <span className="material-symbols-outlined text-base" style={{ fontVariationSettings: "'FILL' 1" }}>smart_toy</span>
+        <Icon name="smart_toy" size="m" filled />
         Análisis semanal IA
       </button>
 
       {open && (
-        <div className="fixed inset-0 z-[80] bg-black/70 flex items-center justify-center p-4" onClick={() => !busy && setOpen(false)}>
-          <div className="bg-[#111110] border border-white/10 rounded-2xl w-full max-w-2xl max-h-[80vh] flex flex-col shadow-2xl" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center gap-2 px-4 py-3 border-b border-white/7">
-              <span className="material-symbols-outlined text-[#fbcb1a]" style={{ fontVariationSettings: "'FILL' 1" }}>smart_toy</span>
-              <span className="font-sans font-black text-sm uppercase tracking-wider text-[#fbcb1a] flex-1">Análisis semanal</span>
-              <button onClick={() => !busy && setOpen(false)} disabled={busy}
-                className="p-1.5 rounded-lg text-[#c6c9ab] hover:text-white hover:bg-white/5 disabled:opacity-40">
-                <span className="material-symbols-outlined text-[20px]">close</span>
-              </button>
+        <Dialog
+          open
+          onClose={() => { if (!busy) setOpen(false); }}
+          title="Análisis semanal"
+          size="xl"
+          footer={result ? (
+            <span className="mr-auto text-caption font-sans text-ink-2">
+              Guardado en tus notas de coach.
+            </span>
+          ) : undefined}
+        >
+          {busy && (
+            <div className="flex items-center gap-2 text-label font-mono text-ink-2 animate-pulse">
+              <Icon name="progress_activity" size="m" className="animate-spin" />
+              {status ?? 'Analizando tu cartera…'}
             </div>
-            <div className="flex-1 overflow-y-auto p-4">
-              {busy && (
-                <div className="flex items-center gap-2 text-xs font-mono text-[#c6c9ab] animate-pulse">
-                  <span className="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
-                  {status ?? 'Analizando tu cartera…'}
-                </div>
-              )}
-              {error && (
-                <div className="bg-[#ff6b6b]/10 border border-[#ff6b6b]/30 text-[#ff9b9b] rounded-xl px-3.5 py-2.5 text-xs">{error}</div>
-              )}
-              {result && (
-                <div className="text-sm text-[#e5e2e1] whitespace-pre-wrap leading-relaxed">{result}</div>
-              )}
-            </div>
-            {result && (
-              <div className="px-4 py-2.5 border-t border-white/7 text-[11px] font-mono text-[#c6c9ab]">
-                Guardado en tus notas de coach.
-              </div>
-            )}
-          </div>
-        </div>
+          )}
+          {error && (
+            <div className="bg-danger/10 border border-danger/30 text-danger rounded-surface px-4 py-3 text-label">{error}</div>
+          )}
+          {result && (
+            <div className="text-body-s text-ink whitespace-pre-wrap leading-relaxed">{result}</div>
+          )}
+        </Dialog>
       )}
     </>
   );

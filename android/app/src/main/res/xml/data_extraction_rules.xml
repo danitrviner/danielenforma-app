@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  01-8 / 02-13. `allowBackup="true"` subía a Google Drive el almacenamiento del
+  WebView: el token de sesión de Firebase y todo lo que la app cachea en local,
+  que incluye datos de salud del atleta. En Android 12+ `allowBackup="false"`
+  por sí solo apaga la copia en la nube pero NO la transferencia directa entre
+  dispositivos; hace falta este fichero para cerrar también esa vía.
+
+  Ninguna de las dos secciones tiene <include>, así que no se copia nada. Es
+  intencionado: la app no guarda nada en local que no se pueda recuperar
+  volviendo a iniciar sesión, y lo que sí guarda son datos de salud.
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="root" />
+        <exclude domain="database" />
+        <exclude domain="sharedpref" />
+        <exclude domain="external" />
+        <exclude domain="file" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="root" />
+        <exclude domain="database" />
+        <exclude domain="sharedpref" />
+        <exclude domain="external" />
+        <exclude domain="file" />
+    </device-transfer>
+</data-extraction-rules>

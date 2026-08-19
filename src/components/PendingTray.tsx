@@ -1,14 +1,13 @@
 import React from 'react';
-import { WorkoutLog, Workout, WeightCheckIn, CoachReport, AiProposal } from '../types';
+import { WorkoutLog, Workout, CoachReport, AiProposal } from '../types';
+import { Icon } from './ui';
 
 interface Props {
   athleteLogs: WorkoutLog[];
   getWorkout: (id: string) => Workout | undefined;
-  athleteCheckins: WeightCheckIn[];
   coachReports: CoachReport[];
   aiProposals?: AiProposal[];
   onGoToNotes: () => void;
-  onGoToCheckins: () => void;
   onGoToReports: () => void;
   onGoToAiProposals?: () => void;
 }
@@ -17,16 +16,17 @@ const REPORT_REMINDER_DAYS = 7;
 const MS_PER_DAY = 86400000;
 
 // Franja de "qué hay que mirar hoy" para este atleta, independiente de en qué
-// zona/pestaña estés — agrega señales que ya vive dispersas por el Hub
-// (notas de entreno sin ver en Entrenamientos, check-ins sin feedback en
-// Revisiones) en un solo sitio con acceso directo. Se oculta si no hay nada
-// pendiente: el objetivo es reducir ruido, no añadir un banner permanente.
+// zona/pestaña estés — agrega señales que ya vive dispersas por el Hub (notas
+// de entreno sin ver en Entrenamientos, reportes atrasados) en un solo sitio
+// con acceso directo. Se oculta si no hay nada pendiente: el objetivo es
+// reducir ruido, no añadir un banner permanente. Los check-ins sin revisar
+// (la "próxima revisión" del handoff Fase 3) ya no viven aquí — ClientHub los
+// destaca en su propia tarjeta de cabecera, ver F3.13b.
 export default function PendingTray({
-  athleteLogs, getWorkout, athleteCheckins, coachReports, aiProposals = [],
-  onGoToNotes, onGoToCheckins, onGoToReports, onGoToAiProposals,
+  athleteLogs, getWorkout, coachReports, aiProposals = [],
+  onGoToNotes, onGoToReports, onGoToAiProposals,
 }: Props) {
   const unseenNotes = athleteLogs.filter(l => (l.note || l.entries.some(e => e.note)) && !l.noteCoachSeen);
-  const pendingCheckins = athleteCheckins.filter(c => !c.coachFeedback && !c.approved);
   const pendingProposals = aiProposals.filter(p => p.status === 'proposed');
 
   // Días desde el último reporte ENVIADO (drafts no cuentan — el atleta no los ve).
@@ -51,15 +51,6 @@ export default function PendingTray({
         ? `1 nota sin ver${wo ? ` (${wo.name})` : ''}`
         : `${unseenNotes.length} notas de entreno sin ver`,
       onClick: onGoToNotes,
-    });
-  }
-
-  if (pendingCheckins.length > 0) {
-    items.push({
-      key: 'checkins',
-      icon: 'monitor_weight',
-      text: pendingCheckins.length === 1 ? '1 check-in por revisar' : `${pendingCheckins.length} check-ins por revisar`,
-      onClick: onGoToCheckins,
     });
   }
 
@@ -89,9 +80,9 @@ export default function PendingTray({
         <button
           key={item.key}
           onClick={item.onClick}
-          className="flex items-center gap-2 bg-amber-500/10 border border-amber-500/25 hover:border-amber-500/50 text-amber-200 px-3 py-2 rounded-xl font-mono text-[11px] font-bold transition-all"
+          className="flex items-center gap-2 bg-warning/10 border border-warning/25 hover:border-warning/50 text-warning px-3 py-2 rounded-control font-mono text-caption font-bold transition-all"
         >
-          <span className="material-symbols-outlined text-base">{item.icon}</span>
+          <Icon name={item.icon} size="m" />
           {item.text}
         </button>
       ))}

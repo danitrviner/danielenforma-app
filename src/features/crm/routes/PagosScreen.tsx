@@ -9,6 +9,7 @@ import PagosTable from '../components/PagosTable';
 import SuscripcionModal from '../components/SuscripcionModal';
 import PagoModal from '../components/PagoModal';
 import type { EstadoPago } from '../types';
+import { Icon } from '../../../components/ui';
 
 // Pantalla global /crm/pagos: vista de negocio a través de TODOS los clientes,
 // a diferencia de PagosTab/RenovacionesTab que están scopeados a uno. El
@@ -47,24 +48,24 @@ export default function PagosScreen({ coachEmail }: { coachEmail: string }) {
   return (
     <div className="space-y-4">
       <header>
-        <h1 className="font-sans font-black text-xl text-[#f5f5f0]">Pagos</h1>
+        <h1 className="font-sans font-bold text-title-m text-ink">Pagos</h1>
       </header>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
         <MetricCard icon="paid" label="Facturado" value={formatEuros(facturado)} sub="pagos cobrados" />
-        <MetricCard icon="schedule" label="Pendiente de cobro" value={formatEuros(pendienteDeCobro)} sub="pagos pendientes" accent="#fdba74" />
+        <MetricCard icon="schedule" label="Pendiente de cobro" value={formatEuros(pendienteDeCobro)} sub="pagos pendientes" accent="var(--color-warning)" />
         <MetricCard icon="autorenew" label="Suscripciones activas" value={suscripcionesActivas} sub={`${suscripciones.length} en total`} />
       </div>
 
       <section className="space-y-2">
         <div className="flex items-center justify-between gap-2">
-          <h2 className="font-mono text-[9px] uppercase tracking-widest text-[#a8a89e]">Suscripciones</h2>
+          <h2 className="font-mono text-caption uppercase tracking-widest text-ink-2">Suscripciones</h2>
           <button
             type="button"
             onClick={() => setModalSuscripcion(true)}
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white/6 text-[#f5f5f0] font-sans font-bold text-[11px] hover:bg-white/10 transition-colors"
+            className="flex items-center gap-1 px-3 py-2 rounded-control bg-white/6 text-ink font-sans font-bold text-caption hover:bg-white/10 transition-colors"
           >
-            <span className="material-symbols-outlined text-sm">add</span>
+            <Icon name="add" size="s" />
             Nueva suscripción
           </button>
         </div>
@@ -80,42 +81,40 @@ export default function PagosScreen({ coachEmail }: { coachEmail: string }) {
 
       <section className="space-y-2">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="font-mono text-[9px] uppercase tracking-widest text-[#a8a89e]">Pagos</h2>
+          <h2 className="font-mono text-caption uppercase tracking-widest text-ink-2">Pagos</h2>
           <button
             type="button"
             onClick={() => setModalPago(true)}
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#fbcb1a] text-black font-sans font-bold text-[11px] hover:bg-[#d4a800] transition-colors"
+            className="flex items-center gap-1 px-3 py-2 rounded-control bg-accent text-black font-sans font-bold text-caption hover:bg-accent-press transition-colors"
           >
-            <span className="material-symbols-outlined text-sm">add</span>
+            <Icon name="add" size="s" />
             Registrar pago
           </button>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative flex-1 min-w-[180px]">
-            <span className="material-symbols-outlined absolute left-2 top-1/2 -translate-y-1/2 text-sm text-[#555550] pointer-events-none">
-              search
-            </span>
+            <Icon name="search" size="s" className="absolute left-2 top-1/2 -translate-y-1/2 text-ink-3 pointer-events-none" />
             <input
               type="search"
               value={busqueda}
               onChange={e => setParam('q', e.target.value)}
               placeholder="Buscar por cliente o concepto"
               aria-label="Buscar pagos"
-              className="w-full pl-7 pr-2 py-1.5 rounded-lg bg-[#141413] border border-white/7 text-[11px] text-[#f5f5f0] placeholder:text-[#555550] focus:outline-none focus:border-[#fbcb1a]/40"
+              className="w-full pl-8 pr-2 py-2 rounded-control bg-field border border-hairline text-title-s text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent/40"
             />
           </div>
-          <div className="flex items-center gap-1" role="group" aria-label="Filtrar por estado">
+          <div className="flex items-center gap-1 min-w-0 overflow-x-auto hide-scrollbar" role="group" aria-label="Filtrar por estado">
             {(['todos', 'pendiente', 'pagado'] as const).map(f => (
               <button
                 key={f}
                 type="button"
                 onClick={() => setParam('estado', f === 'todos' ? '' : f)}
                 aria-pressed={filtro === f}
-                className={`px-2.5 py-1.5 rounded-lg font-mono text-[9px] uppercase tracking-widest transition-colors ${
+                className={`shrink-0 px-3 py-2 rounded-control font-mono text-caption uppercase tracking-widest transition-colors ${
                   filtro === f
-                    ? 'bg-[#fbcb1a]/15 text-[#fbcb1a] border border-[#fbcb1a]/30'
-                    : 'bg-[#141413] text-[#a8a89e] border border-white/7 hover:border-white/12'
+                    ? 'bg-accent/15 text-accent border border-accent/30'
+                    : 'bg-field text-ink-2 border border-hairline hover:border-strong'
                 }`}
               >
                 {f === 'todos' ? 'Todos' : f === 'pendiente' ? 'Pendientes' : 'Pagados'}

@@ -14,6 +14,7 @@ import LevelLadderEditor from './roadmap/LevelLadderEditor';
 import { PhaseData } from '../utils/planPhase';
 import { LadderData } from '../utils/levelLadder';
 import { ChallengeData } from '../utils/weeklyChallenge';
+import { Icon, Tabs } from './ui';
 
 interface Props {
   athleteEmail: string;
@@ -90,8 +91,8 @@ export default function CoachRoadmapView({ athleteEmail }: Props) {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-24">
-        <span className="material-symbols-outlined text-3xl text-[#fbcb1a] animate-spin">refresh</span>
+      <div className="flex items-center justify-center py-10">
+        <Icon name="refresh" size="xl" className="text-accent animate-spin" />
       </div>
     );
   }
@@ -113,24 +114,11 @@ export default function CoachRoadmapView({ athleteEmail }: Props) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="font-sans font-black text-xl text-white uppercase tracking-tight">Road map del atleta</h2>
-        <p className="text-[#c6c9ab] text-xs font-mono mt-1">Fases, retos semanales y niveles — editable por el coach</p>
+        <h2 className="font-sans font-bold text-title-m text-white uppercase tracking-tight">Road map del atleta</h2>
+        <p className="text-ink-2 text-label font-sans mt-1">Fases, retos semanales y niveles — editable por el coach</p>
       </div>
 
-      <div className="flex bg-[#181816] border border-white/7 p-1 rounded-lg gap-1 w-fit flex-wrap">
-        {SUB_TABS.map(t => (
-          <button
-            key={t.id}
-            onClick={() => setSubTab(t.id)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-md font-sans text-xs font-bold tracking-wider uppercase transition-all ${
-              subTab === t.id ? 'bg-[#fbcb1a] text-black shadow-lg shadow-[#fbcb1a]/10' : 'text-[#c6c9ab] hover:text-white'
-            }`}
-          >
-            <span className="material-symbols-outlined text-base">{t.icon}</span>
-            {t.label}
-          </button>
-        ))}
-      </div>
+      <Tabs items={SUB_TABS} value={subTab} onChange={id => setSubTab(id as SubTab)} label="Secciones del Road map" />
 
       {subTab === 'fases' && (
         <PlanPhaseEditor
@@ -144,7 +132,7 @@ export default function CoachRoadmapView({ athleteEmail }: Props) {
       )}
       {subTab === 'retos' && (uid
         ? <ChallengeManager athleteEmail={athleteEmail} challengeData={challengeData} roadmap={rm} onSaveRoadmap={handleSave} />
-        : <p className="text-xs text-[#555] font-mono py-4">No se ha podido cargar el perfil del atleta.</p>
+        : <p className="text-label text-ink-3 font-sans py-4">No se ha podido cargar el perfil del atleta.</p>
       )}
       {subTab === 'niveles' && <LevelLadderEditor roadmap={rm} onSave={handleSave} ladderData={ladderData} />}
       {subTab === 'timeline' && (

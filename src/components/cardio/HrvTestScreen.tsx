@@ -3,6 +3,7 @@ import { UserProfile, HrvReading } from '../../types';
 import { HeartRateMonitor, isBleAvailable } from '../../services/bleHeartRate';
 import { createHrvReading } from '../../dbService';
 import { rmssd, hrvBaseline, readinessScoreFromHrv } from '../../utils/cardioMetrics';
+import { Icon } from '../ui';
 
 // HRV matinal (F8, §7/§8 del análisis): 3 min tumbado con la banda puesta,
 // quieto. Es una lectura puntual e independiente del entreno — su propia
@@ -110,43 +111,49 @@ export default function HrvTestScreen({ profile, pastReadings, onClose, onSaved 
   };
 
   return (
-    <div className="fixed inset-0 z-[90] flex flex-col items-center justify-center bg-[#0e0e0e] px-6">
+    /* No es un modal: es una vista a pantalla completa. Fondo opaco, sin telón
+       y sin caja — ocupa la ventana entera durante la sesión. F9 lo clasificó y
+       lo dejó fuera a propósito: convertirlo en `Dialog` sería un rediseño, no
+       una migración. Cuenta en la métrica `Overlays artesanales` del inventario
+       porque esa métrica mide la utilidad de posición, que aquí no significa
+       overlay sino pantalla. */
+    <div className="fixed inset-0 z-[90] flex flex-col items-center justify-center bg-bg px-6">
       <div className="w-full max-w-sm space-y-6 text-center">
         {phase === 'intro' && (
           <>
             <div>
-              <p className="text-[10px] font-mono uppercase text-[#c6c9ab] tracking-wider">HRV matinal</p>
-              <span className="material-symbols-outlined text-[#00eefc] text-5xl mt-3 block">bedtime</span>
-              <p className="text-sm text-white mt-3">Túmbate con la banda puesta y quédate quieto 3 minutos. Mejor nada más despertar, antes de levantarte.</p>
+              <p className="text-caption font-mono uppercase text-ink-2 tracking-wider">HRV matinal</p>
+              <Icon name="bedtime" size="xl" className="text-data mt-3 block" />
+              <p className="text-body-s text-white mt-3">Túmbate con la banda puesta y quédate quieto 3 minutos. Mejor nada más despertar, antes de levantarte.</p>
             </div>
-            {error && <p className="text-xs text-red-400 font-mono">{error}</p>}
-            <button onClick={start} className="w-full py-3 bg-[#fbcb1a] text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all">
+            {error && <p className="text-label text-red-400 font-sans">{error}</p>}
+            <button onClick={start} className="w-full py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all">
               Empezar
             </button>
-            <button onClick={onClose} className="w-full py-2 text-[10px] font-mono uppercase text-[#c6c9ab] hover:text-white transition-colors">
+            <button onClick={onClose} className="w-full py-2 text-caption font-sans uppercase text-ink-2 hover:text-white transition-colors">
               Cancelar
             </button>
           </>
         )}
 
-        {phase === 'connecting' && <p className="text-xs text-[#c6c9ab] font-mono">Conectando con la banda...</p>}
+        {phase === 'connecting' && <p className="text-label text-ink-2 font-sans">Conectando con la banda...</p>}
 
         {phase === 'measuring' && (
           <>
-            <p className="text-[10px] font-mono uppercase text-[#c6c9ab] tracking-wider">Quédate quieto</p>
-            <p className="font-sans font-black text-6xl text-white tabular-nums mt-2">{Math.floor(remaining / 60)}:{String(remaining % 60).padStart(2, '0')}</p>
+            <p className="text-caption font-mono uppercase text-ink-2 tracking-wider">Quédate quieto</p>
+            <p className="font-sans font-bold text-6xl text-white tabular-nums mt-2">{Math.floor(remaining / 60)}:{String(remaining % 60).padStart(2, '0')}</p>
             <div className="flex items-center justify-center gap-2">
-              <span className="material-symbols-outlined text-[#ff4d4d] text-lg">favorite</span>
-              <p className="font-sans font-bold text-2xl text-white tabular-nums">{bpm ?? '--'}</p>
+              <Icon name="favorite" size="l" className="text-danger" />
+              <p className="font-sans font-bold text-title-l text-white tabular-nums">{bpm ?? '--'}</p>
             </div>
-            {error && <p className="text-xs text-red-400 font-mono">{error}</p>}
-            <button onClick={cancel} className="w-full py-2 text-[10px] font-mono uppercase text-[#c6c9ab] hover:text-white transition-colors">
+            {error && <p className="text-label text-red-400 font-sans">{error}</p>}
+            <button onClick={cancel} className="w-full py-2 text-caption font-sans uppercase text-ink-2 hover:text-white transition-colors">
               Cancelar
             </button>
           </>
         )}
 
-        {phase === 'saving' && <p className="text-xs text-[#c6c9ab] font-mono">Guardando...</p>}
+        {phase === 'saving' && <p className="text-label text-ink-2 font-mono">Guardando...</p>}
       </div>
     </div>
   );

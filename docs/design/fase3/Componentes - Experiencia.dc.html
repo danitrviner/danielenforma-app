@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0a0a0a;font-family:'Plus Jakarta Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#FFC72C;text-decoration:none}a:hover{color:#ffd75e}
+@keyframes fu{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes fi{from{opacity:0}to{opacity:1}}
+@keyframes grow{from{transform:scaleY(.08)}to{transform:scaleY(1)}}
+@keyframes shim{0%{background-position:-260px 0}100%{background-position:260px 0}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes glow{0%,100%{box-shadow:0 0 0 0 rgba(255,199,44,.28)}50%{box-shadow:0 0 0 10px rgba(255,199,44,0)}}
+@keyframes bar{from{width:0}}
+@keyframes dash{from{stroke-dashoffset:264}}
+@keyframes slidein{from{opacity:0;transform:translateY(22px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes caret{0%,49%{opacity:1}50%,100%{opacity:0}}
+</style>
+</helmet>
+
+<section style="padding:44px 48px 60px;background:#0a0a0a">
+<div style="display:flex;align-items:baseline;gap:14px;margin:0 0 6px">
+<span style="font:900 34px/1 Archivo,sans-serif;letter-spacing:-.02em;color:#F5F5F4;text-transform:uppercase">Componentes</span>
+<span style="font:500 11px/1 'IBM Plex Mono',monospace;letter-spacing:.14em;color:#FFC72C;text-transform:uppercase">Fase 3 · Experiencia</span>
+</div>
+<p style="max-width:660px;margin:0 0 34px;font:400 13.5px/1.65 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.5);text-wrap:pretty">Seis marcos de 390×780 con el inventario vivo de componentes: acciones, tarjetas, entrada de datos, filtros, feedback y listas. Todo interactivo — pulsa botones, marca series, mueve el stepper, lanza el toast.</p>
+
+<div style="display:flex;flex-wrap:wrap;gap:30px;align-items:flex-start">
+
+<!-- ============ 1 · ACCIONES ============ -->
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;align-items:baseline;gap:9px"><span style="font:600 10.5px/1 'IBM Plex Mono',monospace;padding:4px 7px;background:#FFC72C;color:#050505;border-radius:5px">01</span><span style="font:600 12px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.72)">Acciones</span></div>
+<div style="width:390px;height:780px;background:#050505;border:1px solid rgba(255,255,255,.08);border-radius:34px;overflow:hidden;position:relative;box-shadow:0 30px 70px -30px rgba(0,0,0,.9)">
+  <div style="height:46px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 22px 6px;font:500 11px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.4)"><span>9:41</span><span>EN FORMA</span></div>
+  <div style="padding:16px 22px 0;display:flex;flex-direction:column;gap:20px">
+    <div style="animation:fu .5s cubic-bezier(.2,.9,.2,1) both">
+      <div style="font:600 10px/1 'IBM Plex Mono',monospace;letter-spacing:.16em;color:rgba(245,245,244,.32);text-transform:uppercase;margin-bottom:12px">Primaria</div>
+      <div onClick="{{ fireBtn }}" style="height:56px;border-radius:16px;background:#FFC72C;display:flex;align-items:center;justify-content:center;gap:10px;cursor:pointer;transition:transform .22s cubic-bezier(.2,.9,.2,1),filter .22s;animation:glow 2.6s ease-in-out infinite" style-active="transform:scale(.97)" style-hover="filter:brightness(1.06)">
+        <sc-if value="{{ btnLoading }}" hint-placeholder-val="{{ false }}"><span style="width:17px;height:17px;border:2.5px solid rgba(5,5,5,.28);border-top-color:#050505;border-radius:50%;animation:spin .7s linear infinite"></span></sc-if>
+        <span style="font:700 15.5px/1 'Plus Jakarta Sans',sans-serif;color:#050505;letter-spacing:-.01em">{{ btnLabel }}</span>
+      </div>
+      <div style="margin-top:8px;font:400 11px/1.5 'IBM Plex Mono',monospace;color:rgba(245,245,244,.3)">56px · press scale .97 · haptic medium</div>
+    </div>
+
+    <div style="animation:fu .5s cubic-bezier(.2,.9,.2,1) .05s both">
+      <div style="font:600 10px/1 'IBM Plex Mono',monospace;letter-spacing:.16em;color:rgba(245,245,244,.32);text-transform:uppercase;margin-bottom:12px">Secundaria · fantasma</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="height:52px;border-radius:15px;border:1px solid rgba(255,199,44,.42);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .22s cubic-bezier(.2,.9,.2,1)" style-hover="background:rgba(255,199,44,.09)"><span style="font:600 15px/1 'Plus Jakarta Sans',sans-serif;color:#FFC72C">Ver rutina completa</span></div>
+        <div style="height:52px;border-radius:15px;background:#0F0F0F;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .22s" style-hover="background:#161616"><span style="font:600 15px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.82)">Saltar por hoy</span></div>
+        <div style="height:52px;border-radius:15px;display:flex;align-items:center;justify-content:center;cursor:pointer"><span style="font:600 15px/1 'Plus Jakarta Sans',sans-serif;color:#FF5A4E">Abandonar sesión</span></div>
+      </div>
+    </div>
+
+    <div style="animation:fu .5s cubic-bezier(.2,.9,.2,1) .1s both">
+      <div style="font:600 10px/1 'IBM Plex Mono',monospace;letter-spacing:.16em;color:rgba(245,245,244,.32);text-transform:uppercase;margin-bottom:12px">Icono · 48px</div>
+      <div style="display:flex;gap:12px">
+        <div style="width:48px;height:48px;border-radius:14px;background:#0F0F0F;border:1px solid rgba(255,255,255,.07);display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="border-color:rgba(255,199,44,.4)"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#F5F5F4" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M12 5v14"/></svg></div>
+        <div style="width:48px;height:48px;border-radius:14px;background:#0F0F0F;border:1px solid rgba(255,255,255,.07);display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="border-color:rgba(255,199,44,.4)"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#F5F5F4" stroke-width="2" stroke-linecap="round"><path d="M12 20V8M6 14l6-6 6 6"/></svg></div>
+        <div style="width:48px;height:48px;border-radius:14px;background:rgba(255,199,44,.14);border:1px solid rgba(255,199,44,.4);display:flex;align-items:center;justify-content:center;cursor:pointer"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#FFC72C" stroke-width="2" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg></div>
+        <div style="width:48px;height:48px;border-radius:14px;background:#0F0F0F;border:1px solid rgba(255,255,255,.07);display:flex;align-items:center;justify-content:center;opacity:.35"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#F5F5F4" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></div>
+      </div>
+    </div>
+
+    <div style="animation:fu .5s cubic-bezier(.2,.9,.2,1) .15s both;padding:16px;background:#0B0B0B;border:1px solid rgba(255,255,255,.06);border-radius:16px">
+      <div style="font:600 10px/1 'IBM Plex Mono',monospace;letter-spacing:.16em;color:rgba(245,245,244,.32);text-transform:uppercase;margin-bottom:12px">Deshabilitada · carga</div>
+      <div style="display:flex;gap:10px">
+        <div style="flex:1;height:44px;border-radius:13px;background:#141414;display:flex;align-items:center;justify-content:center"><span style="font:600 13.5px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.26)">Guardar</span></div>
+        <div style="flex:1;height:44px;border-radius:13px;background:rgba(255,199,44,.22);display:flex;align-items:center;justify-content:center;gap:8px"><span style="width:14px;height:14px;border:2px solid rgba(255,199,44,.3);border-top-color:#FFC72C;border-radius:50%;animation:spin .7s linear infinite"></span><span style="font:600 13.5px/1 'Plus Jakarta Sans',sans-serif;color:#FFC72C">Guardando</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ============ 2 · TARJETAS ============ -->
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;align-items:baseline;gap:9px"><span style="font:600 10.5px/1 'IBM Plex Mono',monospace;padding:4px 7px;background:#FFC72C;color:#050505;border-radius:5px">02</span><span style="font:600 12px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.72)">Tarjetas</span></div>
+<div style="width:390px;height:780px;background:#050505;border:1px solid rgba(255,255,255,.08);border-radius:34px;overflow:hidden;position:relative;box-shadow:0 30px 70px -30px rgba(0,0,0,.9)">
+  <div style="height:46px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 22px 6px;font:500 11px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.4)"><span>9:41</span><span>EN FORMA</span></div>
+  <div style="padding:14px 22px 0;display:flex;flex-direction:column;gap:14px">
+
+    <div style="animation:fu .5s cubic-bezier(.2,.9,.2,1) both;background:#0B0B0B;border:1px solid rgba(255,255,255,.07);border-radius:20px;padding:18px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div><div style="font:600 10px/1 'IBM Plex Mono',monospace;letter-spacing:.16em;color:rgba(245,245,244,.34);text-transform:uppercase">Peso corporal</div>
+        <div style="display:flex;align-items:baseline;gap:7px;margin-top:9px"><span style="font:900 38px/1 Archivo,sans-serif;color:#F5F5F4;letter-spacing:-.03em">78,4</span><span style="font:500 13px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.4)">kg</span></div></div>
+        <div style="padding:5px 9px;border-radius:8px;background:rgba(62,207,142,.14);font:600 11.5px/1 'IBM Plex Mono',monospace;color:#3ECF8E">−1,2</div>
+      </div>
+      <div style="display:flex;align-items:flex-end;gap:5px;height:52px;margin-top:16px">
+        <div style="flex:1;height:38%;background:#1a1a1a;border-radius:3px;transform-origin:bottom;animation:grow .55s cubic-bezier(.2,.9,.2,1) .1s both"></div>
+        <div style="flex:1;height:52%;background:#1a1a1a;border-radius:3px;transform-origin:bottom;animation:grow .55s cubic-bezier(.2,.9,.2,1) .14s both"></div>
+        <div style="flex:1;height:44%;background:#1a1a1a;border-radius:3px;transform-origin:bottom;animation:grow .55s cubic-bezier(.2,.9,.2,1) .18s both"></div>
+        <div style="flex:1;height:66%;background:#1a1a1a;border-radius:3px;transform-origin:bottom;animation:grow .55s cubic-bezier(.2,.9,.2,1) .22s both"></div>
+        <div style="flex:1;height:58%;background:#242424;border-radius:3px;transform-origin:bottom;animation:grow .55s cubic-bezier(.2,.9,.2,1) .26s both"></div>
+        <div style="flex:1;height:78%;background:#242424;border-radius:3px;transform-origin:bottom;animation:grow .55s cubic-bezier(.2,.9,.2,1) .3s both"></div>
+        <div style="flex:1;height:70%;background:#2e2e2e;border-radius:3px;transform-origin:bottom;animation:grow .55s cubic-bezier(.2,.9,.2,1) .34s both"></div>
+        <div style="flex:1;height:100%;background:#FFC72C;border-radius:3px;transform-origin:bottom;animation:grow .55s cubic-bezier(.2,.9,.2,1) .38s both"></div>
+      </div>
+    </div>
+
+    <div style="animation:fu .5s cubic-bezier(.2,.9,.2,1) .06s both;background:#0B0B0B;border:1px solid rgba(255,255,255,.07);border-radius:20px;padding:14px;display:flex;gap:14px;align-items:center">
+      <div style="width:74px;height:74px;border-radius:15px;background:#141414;border:1px dashed rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;flex:none"><span style="font:500 9px/1.3 'IBM Plex Mono',monospace;color:rgba(245,245,244,.3);text-align:center">VÍDEO<br>4:3</span></div>
+      <div style="flex:1;min-width:0">
+        <div style="font:700 16px/1.25 'Plus Jakarta Sans',sans-serif;color:#F5F5F4;letter-spacing:-.01em">Press banca inclinado</div>
+        <div style="font:400 12.5px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.45);margin-top:5px">Pectoral · mancuernas</div>
+        <div style="display:flex;gap:6px;margin-top:10px">
+          <span style="padding:4px 8px;border-radius:7px;background:#161616;font:500 11px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.7)">4×8</span>
+          <span style="padding:4px 8px;border-radius:7px;background:#161616;font:500 11px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.7)">60 kg</span>
+          <span style="padding:4px 8px;border-radius:7px;background:#161616;font:500 11px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.7)">RPE 8</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="animation:fu .5s cubic-bezier(.2,.9,.2,1) .12s both;background:#0F0F0F;border:1px solid rgba(255,255,255,.07);border-radius:20px;padding:16px">
+      <div style="display:flex;gap:12px;align-items:center">
+        <div style="width:44px;height:44px;border-radius:50%;background:rgba(255,199,44,.16);display:flex;align-items:center;justify-content:center;flex:none"><span style="font:700 14px/1 'Plus Jakarta Sans',sans-serif;color:#FFC72C">MR</span></div>
+        <div style="flex:1"><div style="font:700 15px/1.2 'Plus Jakarta Sans',sans-serif;color:#F5F5F4">María Ruiz</div><div style="font:400 12px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.42);margin-top:4px">Semana 6 · Fuerza</div></div>
+        <span style="padding:4px 9px;border-radius:7px;background:rgba(62,207,142,.14);font:600 10.5px/1 'IBM Plex Mono',monospace;color:#3ECF8E">ACTIVA</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:16px;font:500 11px/1 'IBM Plex Mono',monospace"><span style="color:rgba(245,245,244,.4)">ADHERENCIA</span><span style="color:#F5F5F4">86%</span></div>
+      <div style="height:5px;border-radius:3px;background:#1a1a1a;margin-top:8px;overflow:hidden"><div style="width:86%;height:100%;background:#FFC72C;border-radius:3px;animation:bar .8s cubic-bezier(.2,.9,.2,1) .2s both"></div></div>
+    </div>
+
+    <div style="animation:fu .5s cubic-bezier(.2,.9,.2,1) .18s both;background:#0B0B0B;border:1px solid rgba(255,255,255,.07);border-radius:20px;padding:16px;display:flex;align-items:center;gap:14px">
+      <svg width="52" height="52" viewBox="0 0 52 52" style="flex:none"><circle cx="26" cy="26" r="21" fill="none" stroke="#1a1a1a" stroke-width="5"/><circle cx="26" cy="26" r="21" fill="none" stroke="#FFC72C" stroke-width="5" stroke-linecap="round" stroke-dasharray="132 264" transform="rotate(-90 26 26)" style="animation:dash 1s cubic-bezier(.2,.9,.2,1) .25s both"/></svg>
+      <div style="flex:1"><div style="font:600 10px/1 'IBM Plex Mono',monospace;letter-spacing:.16em;color:rgba(245,245,244,.34);text-transform:uppercase">Academia</div><div style="font:700 15px/1.3 'Plus Jakarta Sans',sans-serif;color:#F5F5F4;margin-top:6px">Bases de la hipertrofia</div><div style="font:400 12px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.42);margin-top:5px">4 / 8 lecciones</div></div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ============ 3 · ENTRADA DE DATOS ============ -->
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;align-items:baseline;gap:9px"><span style="font:600 10.5px/1 'IBM Plex Mono',monospace;padding:4px 7px;background:#FFC72C;color:#050505;border-radius:5px">03</span><span style="font:600 12px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.72)">Entrada de datos</span></div>
+<div style="width:390px;height:780px;background:#050505;border:1px solid rgba(255,255,255,.08);border-radius:34px;overflow:hidden;position:relative;box-shadow:0 30px 70px -30px rgba(0,0,0,.9)">
+  <div style="height:46px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 22px 6px;font:500 11px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.4)"><span>9:41</span><span>EN FORMA</span></div>
+  <div style="padding:16px 22px 0;display:flex;flex-direction:column;gap:22px">
+
+    <div style="animation:fu .5s cubic-bezier(.2,.9,.2,1) both">
+      <div style="font:600 10px/1 'IBM Plex Mono',monospace;letter-spacing:.16em;color:#FFC72C;text-transform:uppercase;margin-bottom:8px">Nombre del cliente</div>
+      <div style="height:54px;border-radius:15px;background:#0B0B0B;border:1.5px solid #FFC72C;display:flex;align-items:center;padding:0 16px;gap:2px"><span style="font:500 15px/1 'Plus Jakarta Sans',sans-serif;color:#F5F5F4">María Ruiz</span><span style="width:1.5px;height:19px;background:#FFC72C;animation:caret 1.1s steps(1) infinite"></span></div>
+      <div style="margin-top:7px;font:400 11px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.3)">Foco: borde oro + label oro · 180 ms</div>
+    </div>
+
+    <div style="animation:fu .5s cubic-bezier(.2,.9,.2,1) .05s both">
+      <div style="font:600 10px/1 'IBM Plex Mono',monospace;letter-spacing:.16em;color:#FF5A4E;text-transform:uppercase;margin-bottom:8px">Email</div>
+      <div style="height:54px;border-radius:15px;background:#0B0B0B;border:1.5px solid rgba(255,90,78,.55);display:flex;align-items:center;padding:0 16px"><span style="font:500 15px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.6)">maria@</span></div>
+      <div style="margin-top:7px;display:flex;gap:6px;align-items:center"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#FF5A4E" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg><span style="font:500 11.5px/1 'Plus Jakarta Sans',sans-serif;color:#FF5A4E">Falta el dominio del email</span></div>
+    </div>
+
+    <div style="animation:fu .5s cubic-bezier(.2,.9,.2,1) .1s both;background:#0B0B0B;border:1px solid rgba(255,255,255,.07);border-radius:20px;padding:18px">
+      <div style="font:600 10px/1 'IBM Plex Mono',monospace;letter-spacing:.16em;color:rgba(245,245,244,.34);text-transform:uppercase">Carga · serie 3</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:14px">
+        <div onClick="{{ dec }}" style="width:52px;height:52px;border-radius:15px;background:#161616;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:transform .18s cubic-bezier(.2,.9,.2,1)" style-active="transform:scale(.92)"><svg width="20" height="20" viewBox="0 0 24 24" stroke="#F5F5F4" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14"/></svg></div>
+        <div style="text-align:center"><div style="font:600 34px/1 'IBM Plex Mono',monospace;color:#F5F5F4;letter-spacing:-.02em">{{ peso }}</div><div style="font:500 10px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.36);margin-top:6px;letter-spacing:.1em">KG</div></div>
+        <div onClick="{{ inc }}" style="width:52px;height:52px;border-radius:15px;background:rgba(255,199,44,.16);border:1px solid rgba(255,199,44,.35);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:transform .18s cubic-bezier(.2,.9,.2,1)" style-active="transform:scale(.92)"><svg width="20" height="20" viewBox="0 0 24 24" stroke="#FFC72C" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14M12 5v14"/></svg></div>
+      </div>
+      <div style="margin-top:14px;font:400 11px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.3);text-align:center">Paso 2,5 kg · haptic light por toque</div>
+    </div>
+
+    <div style="animation:fu .5s cubic-bezier(.2,.9,.2,1) .15s both">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px"><span style="font:600 10px/1 'IBM Plex Mono',monospace;letter-spacing:.16em;color:rgba(245,245,244,.34);text-transform:uppercase">Esfuerzo percibido</span><span style="font:600 14px/1 'IBM Plex Mono',monospace;color:#FFC72C">RPE {{ rpe }}</span></div>
+      <div style="display:flex;gap:5px">
+        <sc-for list="{{ rpeScale }}" as="p" hint-placeholder-count="10">
+          <div onClick="{{ p.set }}" style="{{ p.style }}"></div>
+        </sc-for>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:8px;font:400 10px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.28)"><span>1 fácil</span><span>10 fallo</span></div>
+    </div>
+
+    <div style="animation:fu .5s cubic-bezier(.2,.9,.2,1) .2s both">
+      <div style="font:600 10px/1 'IBM Plex Mono',monospace;letter-spacing:.16em;color:rgba(245,245,244,.34);text-transform:uppercase;margin-bottom:10px">Selector</div>
+      <div style="height:54px;border-radius:15px;background:#0B0B0B;border:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:space-between;padding:0 16px;cursor:pointer" style-hover="border-color:rgba(255,199,44,.4)"><span style="font:500 15px/1 'Plus Jakarta Sans',sans-serif;color:#F5F5F4">Bloque de fuerza</span><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="rgba(245,245,244,.45)" stroke-width="2" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg></div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ============ 4 · FILTROS Y ESTADO ============ -->
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;align-items:baseline;gap:9px"><span style="font:600 10.5px/1 'IBM Plex Mono',monospace;padding:4px 7px;background:#FFC72C;color:#050505;border-radius:5px">04</span><span style="font:600 12px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.72)">Filtros y estado</span></div>
+<div style="width:390px;height:780px;background:#050505;border:1px solid rgba(255,255,255,.08);border-radius:34px;overflow:hidden;position:relative;box-shadow:0 30px 70px -30px rgba(0,0,0,.9)">
+  <div style="height:46px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 22px 6px;font:500 11px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.4)"><span>9:41</span><span>EN FORMA</span></div>
+  <div style="padding:16px 22px 0;display:flex;flex-direction:column;gap:24px">
+
+    <div style="animation:fu .5s cubic-bezier(.2,.9,.2,1) both">
+      <div style="font:600 10px/1 'IBM Plex Mono',monospace;letter-spacing:.16em;color:rgba(245,245,244,.34);text-transform:uppercase;margin-bottom:11px">Segmentado</div>
+      <div style="position:relative;height:46px;background:#0F0F0F;border-radius:14px;padding:4px;display:flex">
+        <div style="{{ segStyle }}"></div>
+        <sc-for list="{{ segs }}" as="s" hint-placeholder-count="3">
+          <div onClick="{{ s.set }}" style="flex:1;display:flex;align-items:center;justify-content:center;position:relative;z-index:1;cursor:pointer"><span style="{{ s.style }}">{{ s.label }}</span></div>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="animation:fu .5s cubic-bezier(.2,.9,.2,1) .05s both">
+      <div style="font:600 10px/1 'IBM Plex Mono',monospace;letter-spacing:.16em;color:rgba(245,245,244,.34);text-transform:uppercase;margin-bottom:11px">Chips · multi</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px">
+        <sc-for list="{{ chips }}" as="c" hint-placeholder-count="6">
+          <div onClick="{{ c.set }}" style="{{ c.style }}"><span style="font:600 12.5px/1 'Plus Jakarta Sans',sans-serif">{{ c.label }}</span></div>
+        </sc-for>
+      </div>
+      <div style="margin-top:10px;font:400 11px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.3)">{{ chipCount }} activos · oro solo en selección</div>
+    </div>
+
+    <div style="animation:fu .5s cubic-bezier(.2,.9,.2,1) .1s both">
+      <div style="font:600 10px/1 'IBM Plex Mono',monospace;letter-spacing:.16em;color:rgba(245,245,244,.34);text-transform:uppercase;margin-bottom:11px">Insignias de estado</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px">
+        <span style="padding:6px 10px;border-radius:8px;background:rgba(62,207,142,.14);font:600 11px/1 'IBM Plex Mono',monospace;color:#3ECF8E">ACTIVO</span>
+        <span style="padding:6px 10px;border-radius:8px;background:rgba(255,199,44,.14);font:600 11px/1 'IBM Plex Mono',monospace;color:#FFC72C">EN PAUSA</span>
+        <span style="padding:6px 10px;border-radius:8px;background:rgba(255,90,78,.14);font:600 11px/1 'IBM Plex Mono',monospace;color:#FF5A4E">IMPAGO</span>
+        <span style="padding:6px 10px;border-radius:8px;background:#161616;font:600 11px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.5)">ARCHIVADO</span>
+      </div>
+    </div>
+
+    <div style="animation:fu .5s cubic-bezier(.2,.9,.2,1) .15s both">
+      <div style="font:600 10px/1 'IBM Plex Mono',monospace;letter-spacing:.16em;color:rgba(245,245,244,.34);text-transform:uppercase;margin-bottom:11px">Pestañas</div>
+      <div style="display:flex;gap:24px;border-bottom:1px solid rgba(255,255,255,.07)">
+        <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="3">
+          <div onClick="{{ t.set }}" style="padding-bottom:12px;cursor:pointer;position:relative"><span style="{{ t.style }}">{{ t.label }}</span><div style="{{ t.bar }}"></div></div>
+        </sc-for>
+      </div>
+      <div style="padding-top:16px;font:400 13px/1.6 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.45)">{{ tabBody }}</div>
+    </div>
+
+    <div style="animation:fu .5s cubic-bezier(.2,.9,.2,1) .2s both;background:#0B0B0B;border:1px solid rgba(255,255,255,.07);border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:16px">
+      <sc-for list="{{ switches }}" as="w" hint-placeholder-count="2">
+        <div onClick="{{ w.set }}" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer">
+          <span style="font:500 14px/1 'Plus Jakarta Sans',sans-serif;color:#F5F5F4">{{ w.label }}</span>
+          <div style="{{ w.track }}"><div style="{{ w.knob }}"></div></div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ============ 5 · FEEDBACK ============ -->
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;align-items:baseline;gap:9px"><span style="font:600 10.5px/1 'IBM Plex Mono',monospace;padding:4px 7px;background:#FFC72C;color:#050505;border-radius:5px">05</span><span style="font:600 12px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.72)">Feedback</span></div>
+<div style="width:390px;height:780px;background:#050505;border:1px solid rgba(255,255,255,.08);border-radius:34px;overflow:hidden;position:relative;box-shadow:0 30px 70px -30px rgba(0,0,0,.9)">
+  <div style="height:46px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 22px 6px;font:500 11px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.4)"><span>9:41</span><span>EN FORMA</span></div>
+  <div style="padding:16px 22px 0;display:flex;flex-direction:column;gap:20px">
+
+    <div style="animation:fu .5s cubic-bezier(.2,.9,.2,1) both;background:#0B0B0B;border:1px solid rgba(255,255,255,.07);border-radius:20px;padding:18px">
+      <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font:600 10px/1 'IBM Plex Mono',monospace;letter-spacing:.16em;color:rgba(245,245,244,.34);text-transform:uppercase">Sesión de hoy</span><span style="font:600 12px/1 'IBM Plex Mono',monospace;color:#FFC72C">{{ doneCount }}/5</span></div>
+      <div style="height:6px;border-radius:4px;background:#1a1a1a;margin-top:12px;overflow:hidden"><div style="{{ progStyle }}"></div></div>
+      <div style="margin-top:10px;font:400 11.5px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.4)">Marca series en el marco 06 para verla avanzar</div>
+    </div>
+
+    <div style="animation:fu .5s cubic-bezier(.2,.9,.2,1) .05s both;display:flex;gap:14px;padding:16px;background:rgba(255,199,44,.07);border:1px solid rgba(255,199,44,.22);border-radius:18px">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#FFC72C" stroke-width="2" stroke-linecap="round" style="flex:none;margin-top:1px"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg>
+      <div><div style="font:700 13.5px/1.3 'Plus Jakarta Sans',sans-serif;color:#F5F5F4">Sin conexión</div><div style="font:400 12.5px/1.55 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.5);margin-top:4px">Seguimos guardando en el móvil. Se sincroniza al volver la red.</div></div>
+    </div>
+
+    <div style="animation:fu .5s cubic-bezier(.2,.9,.2,1) .1s both;display:flex;gap:14px;padding:16px;background:rgba(255,90,78,.07);border:1px solid rgba(255,90,78,.24);border-radius:18px">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#FF5A4E" stroke-width="2" stroke-linecap="round" style="flex:none;margin-top:1px"><path d="M12 3l9 16H3z"/><path d="M12 9v4M12 16h.01"/></svg>
+      <div style="flex:1"><div style="font:700 13.5px/1.3 'Plus Jakarta Sans',sans-serif;color:#F5F5F4">No se pudo enviar la rutina</div><div style="font:400 12.5px/1.55 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.5);margin-top:4px">Revisa el plan de María antes de reenviar.</div><div style="margin-top:11px;display:inline-flex;padding:8px 13px;border-radius:10px;border:1px solid rgba(255,90,78,.4);cursor:pointer"><span style="font:600 12.5px/1 'Plus Jakarta Sans',sans-serif;color:#FF5A4E">Reintentar</span></div></div>
+    </div>
+
+    <div style="animation:fu .5s cubic-bezier(.2,.9,.2,1) .15s both">
+      <div style="font:600 10px/1 'IBM Plex Mono',monospace;letter-spacing:.16em;color:rgba(245,245,244,.34);text-transform:uppercase;margin-bottom:11px">Esqueleto de carga</div>
+      <div style="background:#0B0B0B;border:1px solid rgba(255,255,255,.06);border-radius:18px;padding:16px;display:flex;gap:13px;align-items:center">
+        <div style="width:44px;height:44px;border-radius:50%;flex:none;background:linear-gradient(90deg,#111 0%,#1c1c1c 40%,#111 80%);background-size:260px 100%;animation:shim 1.4s linear infinite"></div>
+        <div style="flex:1;display:flex;flex-direction:column;gap:9px">
+          <div style="height:11px;width:62%;border-radius:6px;background:linear-gradient(90deg,#111 0%,#1c1c1c 40%,#111 80%);background-size:260px 100%;animation:shim 1.4s linear infinite"></div>
+          <div style="height:11px;width:38%;border-radius:6px;background:linear-gradient(90deg,#111 0%,#1c1c1c 40%,#111 80%);background-size:260px 100%;animation:shim 1.4s linear .15s infinite"></div>
+        </div>
+      </div>
+    </div>
+
+    <div onClick="{{ fireToast }}" style="animation:fu .5s cubic-bezier(.2,.9,.2,1) .2s both;height:50px;border-radius:15px;border:1px dashed rgba(255,199,44,.4);display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="background:rgba(255,199,44,.07)"><span style="font:600 13.5px/1 'Plus Jakarta Sans',sans-serif;color:#FFC72C">Lanzar toast</span></div>
+  </div>
+
+  <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;left:18px;right:18px;bottom:24px;padding:15px 17px;background:#141414;border:1px solid rgba(255,255,255,.1);border-radius:16px;display:flex;align-items:center;gap:12px;box-shadow:0 20px 40px -14px rgba(0,0,0,.85);animation:slidein .34s cubic-bezier(.2,.9,.2,1) both">
+      <div style="width:26px;height:26px;border-radius:50%;background:rgba(62,207,142,.16);display:flex;align-items:center;justify-content:center;flex:none"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3ECF8E" stroke-width="3" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg></div>
+      <span style="flex:1;font:600 13.5px/1.35 'Plus Jakarta Sans',sans-serif;color:#F5F5F4">Rutina enviada a María</span>
+      <span style="font:600 12.5px/1 'Plus Jakarta Sans',sans-serif;color:#FFC72C;cursor:pointer">Ver</span>
+    </div>
+  </sc-if>
+</div>
+</div>
+
+<!-- ============ 6 · LISTAS ============ -->
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;align-items:baseline;gap:9px"><span style="font:600 10.5px/1 'IBM Plex Mono',monospace;padding:4px 7px;background:#FFC72C;color:#050505;border-radius:5px">06</span><span style="font:600 12px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.72)">Listas y filas</span></div>
+<div style="width:390px;height:780px;background:#050505;border:1px solid rgba(255,255,255,.08);border-radius:34px;overflow:hidden;position:relative;box-shadow:0 30px 70px -30px rgba(0,0,0,.9)">
+  <div style="height:46px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 22px 6px;font:500 11px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.4)"><span>9:41</span><span>EN FORMA</span></div>
+  <div style="padding:16px 22px 0;display:flex;flex-direction:column;gap:22px">
+
+    <div style="animation:fu .5s cubic-bezier(.2,.9,.2,1) both">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px"><span style="font:600 10px/1 'IBM Plex Mono',monospace;letter-spacing:.16em;color:rgba(245,245,244,.34);text-transform:uppercase">Series · press banca</span><span style="font:600 11px/1 'IBM Plex Mono',monospace;color:#FFC72C">{{ doneCount }}/5</span></div>
+      <div style="background:#0B0B0B;border:1px solid rgba(255,255,255,.07);border-radius:18px;overflow:hidden">
+        <sc-for list="{{ sets }}" as="r" hint-placeholder-count="5">
+          <div onClick="{{ r.set }}" style="{{ r.row }}" style-hover="background:#101010">
+            <div style="{{ r.box }}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#050505" stroke-width="3.2" stroke-linecap="round" style="{{ r.tick }}"><path d="M20 6L9 17l-5-5"/></svg></div>
+            <span style="width:22px;font:600 13px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.34)">{{ r.n }}</span>
+            <span style="{{ r.txt }}">{{ r.label }}</span>
+            <span style="font:500 12.5px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.4)">{{ r.rpe }}</span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="animation:fu .5s cubic-bezier(.2,.9,.2,1) .07s both">
+      <div style="font:600 10px/1 'IBM Plex Mono',monospace;letter-spacing:.16em;color:rgba(245,245,244,.34);text-transform:uppercase;margin-bottom:12px">Fila navegable</div>
+      <div style="background:#0B0B0B;border:1px solid rgba(255,255,255,.07);border-radius:18px;overflow:hidden">
+        <div style="display:flex;align-items:center;gap:13px;padding:14px 16px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,.05)" style-hover="background:#101010"><div style="width:38px;height:38px;border-radius:50%;background:rgba(255,199,44,.14);display:flex;align-items:center;justify-content:center;flex:none"><span style="font:700 12px/1 'Plus Jakarta Sans',sans-serif;color:#FFC72C">MR</span></div><div style="flex:1"><div style="font:600 14.5px/1 'Plus Jakarta Sans',sans-serif;color:#F5F5F4">María Ruiz</div><div style="font:400 11.5px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.4);margin-top:5px">Entrenó hace 2 h</div></div><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(245,245,244,.35)" stroke-width="2" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg></div>
+        <div style="display:flex;align-items:center;gap:13px;padding:14px 16px;cursor:pointer" style-hover="background:#101010"><div style="width:38px;height:38px;border-radius:50%;background:#161616;display:flex;align-items:center;justify-content:center;flex:none"><span style="font:700 12px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.6)">JL</span></div><div style="flex:1"><div style="font:600 14.5px/1 'Plus Jakarta Sans',sans-serif;color:#F5F5F4">Javier León</div><div style="font:400 11.5px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.4);margin-top:5px">Sin registrar 6 días</div></div><span style="padding:4px 8px;border-radius:7px;background:rgba(255,90,78,.14);font:600 10px/1 'IBM Plex Mono',monospace;color:#FF5A4E">RIESGO</span></div>
+      </div>
+    </div>
+
+    <div style="animation:fu .5s cubic-bezier(.2,.9,.2,1) .14s both">
+      <div style="font:600 10px/1 'IBM Plex Mono',monospace;letter-spacing:.16em;color:rgba(245,245,244,.34);text-transform:uppercase;margin-bottom:12px">Deslizar para acciones</div>
+      <div style="position:relative;border-radius:18px;overflow:hidden;background:#FF5A4E">
+        <div style="position:absolute;right:0;top:0;bottom:0;width:96px;display:flex;align-items:center;justify-content:center;gap:7px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#050505" stroke-width="2.2" stroke-linecap="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg><span style="font:700 12.5px/1 'Plus Jakarta Sans',sans-serif;color:#050505">Borrar</span></div>
+        <div onClick="{{ toggleSwipe }}" style="{{ swipeStyle }}"><div style="width:38px;height:38px;border-radius:11px;background:#161616;flex:none"></div><div style="flex:1"><div style="font:600 14.5px/1 'Plus Jakarta Sans',sans-serif;color:#F5F5F4">Sentadilla búlgara</div><div style="font:400 11.5px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.4);margin-top:5px">3×10 · 24 kg</div></div></div>
+      </div>
+      <div style="margin-top:9px;font:400 11px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.3)">Toca la fila para simular el deslizamiento</div>
+    </div>
+
+    <div style="animation:fu .5s cubic-bezier(.2,.9,.2,1) .2s both;display:flex;align-items:center;gap:12px;padding:15px 16px;border:1px dashed rgba(255,255,255,.12);border-radius:18px;cursor:pointer" style-hover="border-color:rgba(255,199,44,.4)"><div style="width:30px;height:30px;border-radius:10px;background:rgba(255,199,44,.14);display:flex;align-items:center;justify-content:center"><svg width="15" height="15" viewBox="0 0 24 24" stroke="#FFC72C" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14M12 5v14"/></svg></div><span style="font:600 14px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.7)">Añadir ejercicio</span></div>
+  </div>
+</div>
+</div>
+
+</div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:2640,&quot;height&quot;:980}}">
+class Component extends DCLogic {
+  state = {
+    btn: 'idle', peso: '62,5', pesoN: 62.5, rpe: 8, seg: 0, tab: 0,
+    chips: [false, true, false, false, true, false],
+    sw: [true, false],
+    sets: [true, true, false, false, false],
+    toast: false, swiped: false
+  };
+  componentWillUnmount() { clearTimeout(this.t1); clearTimeout(this.t2); clearTimeout(this.t3); }
+  fmt(n) { return n.toFixed(1).replace('.', ','); }
+  renderVals() {
+    const G = '#FFC72C', W = '#F5F5F4';
+    const segLabels = ['Clientes', 'Rutinas', 'Métricas'];
+    const chipLabels = ['Fuerza', 'Hipertrofia', 'Movilidad', 'Core', 'Cardio', 'Rehab'];
+    const tabLabels = ['Hoy', 'Historial', 'Notas'];
+    const tabBodies = [
+      'Cuatro ejercicios pendientes. Empieza por el press banca mientras estés fresca.',
+      'Doce sesiones registradas este bloque. La media de RPE bajó de 8,4 a 7,9.',
+      'Molestia leve en hombro derecho el martes. Reducir rango en aperturas.'
+    ];
+    const done = this.state.sets.filter(Boolean).length;
+    return {
+      btnLoading: this.state.btn === 'loading',
+      btnLabel: this.state.btn === 'loading' ? 'Enviando' : this.state.btn === 'done' ? '¡Listo!' : 'Empezar sesión',
+      fireBtn: () => {
+        if (this.state.btn !== 'idle') return;
+        this.setState({ btn: 'loading' });
+        this.t1 = setTimeout(() => this.setState({ btn: 'done' }), 1100);
+        this.t2 = setTimeout(() => this.setState({ btn: 'idle' }), 2500);
+      },
+      peso: this.state.peso,
+      inc: () => this.setState(s => ({ pesoN: s.pesoN + 2.5, peso: this.fmt(s.pesoN + 2.5) })),
+      dec: () => this.setState(s => ({ pesoN: Math.max(0, s.pesoN - 2.5), peso: this.fmt(Math.max(0, s.pesoN - 2.5)) })),
+      rpe: this.state.rpe,
+      rpeScale: Array.from({ length: 10 }, (_, i) => ({
+        set: () => this.setState({ rpe: i + 1 }),
+        style: { flex: 1, height: 34, borderRadius: 9, cursor: 'pointer', transition: 'background .2s cubic-bezier(.2,.9,.2,1)', background: i < this.state.rpe ? (i >= 7 ? G : 'rgba(255,199,44,.45)') : '#161616' }
+      })),
+      segs: segLabels.map((label, i) => ({
+        label, set: () => this.setState({ seg: i }),
+        style: { font: "600 13.5px/1 'Plus Jakarta Sans',sans-serif", transition: 'color .28s', color: this.state.seg === i ? '#050505' : 'rgba(245,245,244,.5)' }
+      })),
+      segStyle: { position: 'absolute', top: 4, left: 4, bottom: 4, width: '33.3%', borderRadius: 11, background: G, transition: 'transform .32s cubic-bezier(.2,.9,.2,1)', transform: 'translateX(' + this.state.seg * 100 + '%)' },
+      chips: chipLabels.map((label, i) => ({
+        label, set: () => this.setState(s => { const c = s.chips.slice(); c[i] = !c[i]; return { chips: c }; }),
+        style: Object.assign(
+          { padding: '9px 14px', borderRadius: 11, cursor: 'pointer', transition: 'all .24s cubic-bezier(.2,.9,.2,1)' },
+          this.state.chips[i]
+            ? { background: 'rgba(255,199,44,.16)', border: '1px solid rgba(255,199,44,.45)', color: G }
+            : { background: '#0F0F0F', border: '1px solid rgba(255,255,255,.07)', color: 'rgba(245,245,244,.6)' })
+      })),
+      chipCount: this.state.chips.filter(Boolean).length,
+      tabs: tabLabels.map((label, i) => ({
+        label, set: () => this.setState({ tab: i }),
+        style: { font: "600 14px/1 'Plus Jakarta Sans',sans-serif", transition: 'color .24s', color: this.state.tab === i ? W : 'rgba(245,245,244,.4)' },
+        bar: { position: 'absolute', left: 0, right: 0, bottom: -1, height: 2, borderRadius: 2, transition: 'opacity .24s', background: G, opacity: this.state.tab === i ? 1 : 0 }
+      })),
+      tabBody: tabBodies[this.state.tab],
+      switches: ['Recordatorio de entreno', 'Resumen semanal por email'].map((label, i) => ({
+        label, set: () => this.setState(s => { const w = s.sw.slice(); w[i] = !w[i]; return { sw: w }; }),
+        track: { width: 48, height: 29, borderRadius: 15, padding: 3, display: 'flex', transition: 'background .26s cubic-bezier(.2,.9,.2,1)', background: this.state.sw[i] ? G : '#242424' },
+        knob: { width: 23, height: 23, borderRadius: '50%', background: '#fff', transition: 'transform .26s cubic-bezier(.2,.9,.2,1)', transform: this.state.sw[i] ? 'translateX(19px)' : 'none' }
+      })),
+      sets: this.state.sets.map((on, i) => ({
+        n: String(i + 1).padStart(2, '0'),
+        label: [8, 8, 7, 6, 6][i] + ' reps · ' + [60, 60, 62.5, 62.5, 65][i] + ' kg',
+        rpe: on ? 'RPE ' + [7, 8, 8, 9, 9][i] : '—',
+        set: () => this.setState(s => { const x = s.sets.slice(); x[i] = !x[i]; return { sets: x }; }),
+        row: { display: 'flex', alignItems: 'center', gap: 13, padding: '14px 16px', cursor: 'pointer', transition: 'background .2s', background: on ? 'rgba(255,199,44,.05)' : 'transparent', borderBottom: i < 4 ? '1px solid rgba(255,255,255,.05)' : 'none' },
+        box: Object.assign(
+          { width: 24, height: 24, borderRadius: 8, flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all .24s cubic-bezier(.2,.9,.2,1)' },
+          on ? { background: G, border: '1px solid ' + G } : { background: 'transparent', border: '1.5px solid rgba(255,255,255,.16)' }),
+        tick: { opacity: on ? 1 : 0, transition: 'opacity .2s' },
+        txt: { flex: 1, font: "500 14.5px/1 'Plus Jakarta Sans',sans-serif", transition: 'color .24s', color: on ? 'rgba(245,245,244,.45)' : W, textDecoration: on ? 'line-through' : 'none' }
+      })),
+      doneCount: done,
+      progStyle: { height: '100%', background: G, borderRadius: 4, transition: 'width .45s cubic-bezier(.2,.9,.2,1)', width: (done / 5 * 100) + '%' },
+      toast: this.state.toast,
+      fireToast: () => {
+        this.setState({ toast: true });
+        clearTimeout(this.t3);
+        this.t3 = setTimeout(() => this.setState({ toast: false }), 3200);
+      },
+      swipeStyle: { background: '#0B0B0B', border: '1px solid rgba(255,255,255,.07)', borderRadius: 18, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 13, cursor: 'pointer', transition: 'transform .34s cubic-bezier(.2,.9,.2,1)', transform: this.state.swiped ? 'translateX(-96px)' : 'none' },
+      toggleSwipe: () => this.setState(s => ({ swiped: !s.swiped }))
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -7,6 +7,7 @@ import { esDniValido, normalizarDni, PREFIJOS_FRECUENTES } from '../lib/identida
 import { EscrituraEncolada } from '../../../db/crm';
 import Modal, { Campo, inputClass, BotonPrimario, BotonSecundario } from './Modal';
 import type { EstadoCrm } from '../types';
+import { Icon } from '../../../components/ui';
 
 // Alta manual. Crea un `crmContacto` — una persona sin cuenta en la app. Los
 // clientes que YA usan En Forma no se crean aquí: llegan por invitación desde
@@ -122,14 +123,14 @@ export default function NuevoClienteModal({ onCerrar }: { onCerrar: () => void }
         </Campo>
 
         {duplicado && (
-          <p className="flex items-start gap-1.5 px-2.5 py-2 rounded-lg bg-[#fdba74]/10 border border-[#fdba74]/25 font-sans text-[10px] text-[#fdba74]">
-            <span className="material-symbols-outlined text-[13px] shrink-0">warning</span>
+          <p className="flex items-start gap-2 px-3 py-2 rounded-surface bg-warning/10 border border-warning/25 font-sans text-caption text-warning">
+            <Icon name="warning" size="s" className="shrink-0" />
             Ya existe un cliente con este DNI: <strong>{duplicado.nombre}</strong>. Puedes crearlo igualmente, pero probablemente sea un duplicado.
           </p>
         )}
 
         <Campo label="Teléfono">
-          <div className="flex gap-1.5">
+          <div className="flex gap-2">
             <select
               className={`${inputClass} w-[104px] shrink-0`}
               value={prefijo}
@@ -141,7 +142,7 @@ export default function NuevoClienteModal({ onCerrar }: { onCerrar: () => void }
               ))}
             </select>
             <input
-              className={inputClass}
+              className={`${inputClass} min-w-0 flex-1`}
               value={numero}
               onChange={e => setNumero(e.target.value)}
               placeholder="600 000 000"

@@ -4,6 +4,10 @@ import { useNavigate } from 'react-router-dom';
 import { WeightCheckIn, QuestionnaireResponse, Questionnaire } from '../types';
 import { getAllUserProfiles, submitCoachFeedback, getQuestionnairesByCoach, getResponsesByQuestionnaireIds, getQuickReplies, saveQuickReplies } from '../dbService';
 import { usePendingReviews } from '../hooks/usePendingReviews';
+import { useToast } from '../hooks/useToast';
+import { mensajeDeErrorFirestore } from '../utils/erroresFirestore';
+import { atletasActivos } from '../utils/atletas';
+import { Badge, PageHeader, Button, Dialog, Icon } from './ui';
 
 interface ReviewsScreenProps {
   checkins: WeightCheckIn[];
@@ -19,12 +23,14 @@ type UnifiedItem =
 export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, coachEmail }: ReviewsScreenProps) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
 
   // Shared 'userProfiles' cache key (same as CommandPalette/MesocycleManager).
-  const { data: athletes = [] } = useQuery({
+  const { data: allProfiles = [] } = useQuery({
     queryKey: ['userProfiles'],
     queryFn: getAllUserProfiles,
   });
+  const athletes = useMemo(() => atletasActivos(allProfiles), [allProfiles]);
 
   const quickRepliesKey = ['quickReplies'] as const;
   const { data: quickReplies = [] } = useQuery({
@@ -77,6 +83,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
       setShowQuickReplyManager(false);
     } catch (err) {
       console.error(err);
+      showToast(mensajeDeErrorFirestore(err, 'guardar las respuestas rápidas'));
     } finally {
       setSavingQuickReplies(false);
     }
@@ -186,59 +193,50 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
 
   return (
     <div className="space-y-6">
-      <header className="flex flex-col md:flex-row md:items-end justify-between pb-4 border-b border-white/60 gap-4">
-        <div>
-          <h1 className="font-sans font-black text-3xl tracking-tight text-white uppercase">Revisiones</h1>
-          <p className="text-[#c6c9ab] text-sm mt-1">
-            Historial cronológico de check-ins y respuestas de cuestionarios.
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          {pendingCount > 0 && (
-            <>
-              <span className="flex items-center gap-1.5 text-[10px] bg-orange-500/10 text-orange-300 border border-orange-500/20 px-3 py-1.5 rounded-lg font-sans font-bold uppercase">
-                <span className="material-symbols-outlined text-sm">pending_actions</span>
-                {pendingCount} pendiente{pendingCount !== 1 ? 's' : ''}
-              </span>
-              <button
-                onClick={startReviewing}
-                className="flex items-center gap-1.5 text-xs bg-[#fbcb1a] text-black px-3.5 py-2 rounded-lg font-sans font-bold uppercase tracking-wide hover:bg-[#d4a800] active:scale-95 transition-all"
-              >
-                <span className="material-symbols-outlined text-base">rate_review</span>
-                Empezar a revisar
-              </button>
-            </>
-          )}
-          {loadingResponses && (
-            <span className="font-mono text-[10px] text-[#c6c9ab] animate-pulse">Cargando respuestas...</span>
-          )}
-        </div>
-      </header>
+      <PageHeader
+        title="Revisiones"
+        subtitle="Historial cronológico de check-ins y respuestas de cuestionarios."
+        action={
+          <div className="flex items-center gap-3">
+            {pendingCount > 0 && (
+              <>
+                <Badge tone="warning" icon="pending_actions">
+                  {pendingCount} pendiente{pendingCount !== 1 ? 's' : ''}
+                </Badge>
+                <Button onClick={startReviewing} icon="rate_review">Empezar a revisar</Button>
+              </>
+            )}
+            {loadingResponses && (
+              <span className="font-sans text-caption text-ink-2 animate-pulse">Cargando respuestas...</span>
+            )}
+          </div>
+        }
+      />
 
       {successMsg && (
-        <div className="bg-[#fbcb1a]/15 border border-[#fbcb1a]/30 text-white p-4 rounded-xl text-sm flex items-center gap-2">
-          <span className="material-symbols-outlined text-[#fbcb1a]">check_circle</span>
+        <div className="bg-accent/15 border border-accent/30 text-white p-4 rounded-surface text-body-s flex items-center gap-2">
+          <span className="material-symbols-outlined text-accent">check_circle</span>
           <p>{successMsg}</p>
         </div>
       )}
       {errorMsg && (
-        <div className="bg-red-500/10 border border-red-500/30 text-red-200 p-4 rounded-xl text-xs font-mono">{errorMsg}</div>
+        <div className="bg-red-500/10 border border-red-500/30 text-red-200 p-4 rounded-surface text-label font-sans">{errorMsg}</div>
       )}
 
       {unifiedItems.length === 0 && !loadingResponses ? (
-        <div className="bg-[#111110] border border-dashed border-white/7 rounded-xl p-16 text-center text-[#c6c9ab]">
-          <span className="material-symbols-outlined text-4xl text-[#fbcb1a] mb-2 block">verified_user</span>
-          <p className="text-sm font-bold text-white">¡Sin revisiones todavía!</p>
-          <p className="text-xs mt-1">Los check-ins y respuestas de tus atletas aparecerán aquí en cuanto los envíen desde su app.</p>
+        <div className="bg-bg border border-dashed border-hairline rounded-surface p-10 text-center text-ink-2">
+          <span className="material-symbols-outlined text-display text-accent mb-2 block">verified_user</span>
+          <p className="text-body-s font-bold text-white">¡Sin revisiones todavía!</p>
+          <p className="text-label mt-1">Los check-ins y respuestas de tus atletas aparecerán aquí en cuanto los envíen desde su app.</p>
         </div>
       ) : (
-        <div className="bg-[#181816] border border-white/7 rounded-2xl overflow-hidden">
-          <div className="p-4 border-b border-white/7 bg-[#1c1b1b] flex items-center gap-2">
-            <span className="material-symbols-outlined text-[#fbcb1a] text-sm">history_edu</span>
-            <h3 className="font-sans font-bold text-base text-white uppercase tracking-wide">Historial unificado</h3>
-            <span className="font-mono text-[9px] text-[#c6c9ab] ml-1">({unifiedItems.length} entradas, más antiguo primero)</span>
+        <div className="bg-surface border border-hairline rounded-surface overflow-hidden">
+          <div className="p-4 border-b border-hairline bg-raised flex items-center gap-2">
+            <span className="material-symbols-outlined text-accent text-body-s">history_edu</span>
+            <h3 className="font-sans font-bold text-title-s text-white uppercase tracking-wide">Historial unificado</h3>
+            <span className="font-mono text-caption text-ink-2 ml-1">({unifiedItems.length} entradas, más antiguo primero)</span>
           </div>
-          <div className="divide-y divide-[#2a2a2a]/40">
+          <div className="divide-y divide-hairline/40">
             {unifiedItems.map(item => {
               const key = item.kind === 'checkin' ? `c_${item.data.id}` : `r_${item.data.id}`;
               const isExpanded = expandedId === key;
@@ -272,9 +270,9 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                   <div key={key} ref={isExpanded ? expandedRowRef : undefined}>
                     <div
                       onClick={toggle}
-                      className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-all hover:bg-[#1e1e1b] ${isExpanded ? 'bg-[#1e1e1b]' : ''}`}
+                      className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-all hover:bg-raised ${isExpanded ? 'bg-raised' : ''}`}
                     >
-                      <div className="w-7 h-7 rounded-full overflow-hidden border border-white/7 flex-shrink-0">
+                      <div className="w-7 h-7 rounded-full overflow-hidden border border-hairline flex-shrink-0">
                         <img
                           src={athleteProfile?.avatarUrl || 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&q=80&w=200'}
                           alt=""
@@ -282,20 +280,18 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                         />
                       </div>
                       <span
-                        className="material-symbols-outlined flex-shrink-0 text-lg"
-                        style={{ color: c.approved ? '#fbcb1a' : '#fb923c', fontVariationSettings: "'FILL' 1" }}
+                        className="material-symbols-outlined flex-shrink-0 text-title-m"
+                        style={{ color: c.approved ? 'var(--color-accent)' : 'var(--color-warning)', fontVariationSettings: "'FILL' 1" }}
                       >rate_review</span>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-sans font-bold text-white text-xs">{athleteName}</span>
-                          <span className="font-mono text-[9px] text-[#c6c9ab]">Check-in · {c.dateStr}</span>
-                          <span className={`text-[9px] font-mono font-bold uppercase px-1.5 py-0.5 rounded flex-shrink-0 ${
-                            c.approved ? 'bg-emerald-500/10 text-emerald-300' : 'bg-orange-500/10 text-orange-300'
-                          }`}>
+                          <span className="font-sans font-bold text-white text-label">{athleteName}</span>
+                          <span className="font-mono text-caption text-ink-2">Check-in · {c.dateStr}</span>
+                          <Badge tone={c.approved ? 'success' : 'warning'}>
                             {c.approved ? 'Revisado' : 'Pendiente'}
-                          </span>
+                          </Badge>
                         </div>
-                        <p className="font-mono text-[10px] text-[#c6c9ab] mt-0.5">
+                        <p className="font-mono text-caption text-ink-2 ">
                           {c.weight} kg · {c.adherence} · {c.mood}
                         </p>
                       </div>
@@ -303,58 +299,58 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                         <button
                           onClick={(e) => { e.stopPropagation(); goToAthleteProfile(athleteProfile.email); }}
                           title="Ver perfil completo"
-                          className="flex-shrink-0 p-1.5 rounded-lg text-[#c6c9ab] hover:text-[#fbcb1a] hover:bg-[#1c1b1b] transition-colors"
+                          className="flex-shrink-0 p-2 rounded-control text-ink-2 hover:text-accent hover:bg-raised transition-colors"
                         >
-                          <span className="material-symbols-outlined text-base">account_circle</span>
+                          <span className="material-symbols-outlined text-title-s">account_circle</span>
                         </button>
                       )}
                       <span
-                        className="material-symbols-outlined text-[#c6c9ab] text-sm transition-transform flex-shrink-0"
+                        className="material-symbols-outlined text-ink-2 text-body-s transition-transform flex-shrink-0"
                         style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}
                       >expand_more</span>
                     </div>
                     {isExpanded && (
-                      <div className="px-4 pb-4 pt-2 bg-[#111111] border-t border-white/40 space-y-3">
-                        <div className="grid grid-cols-3 gap-2 font-mono text-xs">
+                      <div className="px-4 pb-4 pt-2 bg-bg border-t border-hairline space-y-3">
+                        <div className="grid grid-cols-3 gap-2 font-mono text-label">
                           {[
                             { label: 'Peso', value: `${c.weight} kg`, color: 'text-white' },
-                            { label: 'Adherencia', value: c.adherence, color: 'text-[#fbcb1a]' },
+                            { label: 'Adherencia', value: c.adherence, color: 'text-accent' },
                             { label: 'Humor', value: c.mood || '😊', color: 'text-white' },
                           ].map(cell => (
-                            <div key={cell.label} className="bg-[#1e1e1b] p-2.5 rounded-xl border border-white/40">
-                              <span className="block text-[#c6c9ab] text-[10px] uppercase">{cell.label}</span>
+                            <div key={cell.label} className="bg-raised p-3 rounded-surface border border-hairline">
+                              <span className="block text-ink-2 text-caption uppercase">{cell.label}</span>
                               <strong className={cell.color}>{cell.value}</strong>
                             </div>
                           ))}
                         </div>
                         {c.notes && (
-                          <div className="bg-[#181818] p-3 rounded-lg border border-white/30">
-                            <span className="block font-mono text-[9px] text-[#c6c9ab] uppercase mb-1">Notas del atleta</span>
-                            <p className="text-xs text-slate-300 font-sans italic">"{c.notes}"</p>
+                          <div className="bg-surface p-3 rounded-surface border border-hairline">
+                            <span className="block font-mono text-caption text-ink-2 uppercase mb-1">Notas del atleta</span>
+                            <p className="text-label text-slate-300 font-sans italic">"{c.notes}"</p>
                           </div>
                         )}
                         {successMsg && expandedId === key && (
-                          <div className="bg-[#fbcb1a]/15 border border-[#fbcb1a]/30 text-white p-3 rounded-lg text-xs flex items-center gap-2">
-                            <span className="material-symbols-outlined text-[#fbcb1a] text-sm">check_circle</span>
+                          <div className="bg-accent/15 border border-accent/30 text-white p-3 rounded-surface text-label flex items-center gap-2">
+                            <span className="material-symbols-outlined text-accent text-body-s">check_circle</span>
                             {successMsg}
                           </div>
                         )}
                         {errorMsg && expandedId === key && (
-                          <div className="bg-red-500/10 border border-red-500/30 text-red-200 p-3 rounded-lg text-xs font-mono">{errorMsg}</div>
+                          <div className="bg-red-500/10 border border-red-500/30 text-red-200 p-3 rounded-surface text-label font-sans">{errorMsg}</div>
                         )}
                         {pendingIdx >= 0 && pendingCheckinItems.length > 1 && (
-                          <p className="font-mono text-[9px] text-[#c6c9ab] uppercase tracking-wider">
+                          <p className="font-mono text-caption text-ink-2 uppercase tracking-wider">
                             Revisando {pendingIdx + 1} de {pendingCheckinItems.length} pendientes
                           </p>
                         )}
-                        <div className="flex items-center gap-1.5 flex-wrap">
+                        <div className="flex items-center gap-2 flex-wrap">
                           {quickReplies.map((r, i) => (
                             <button
                               key={i}
                               type="button"
                               onClick={() => insertQuickReply(r)}
                               title={r}
-                              className="max-w-[180px] truncate text-[10px] font-mono text-[#c6c9ab] hover:text-[#fbcb1a] hover:border-[#fbcb1a]/40 border border-white/10 px-2 py-1 rounded-lg transition-all"
+                              className="max-w-[180px] truncate text-caption font-mono text-ink-2 hover:text-accent hover:border-accent/40 border border-hairline px-2 py-1 rounded-control transition-all"
                             >
                               {r}
                             </button>
@@ -363,9 +359,9 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                             type="button"
                             onClick={openQuickReplyManager}
                             title="Gestionar plantillas de feedback"
-                            className="text-[#c6c9ab]/60 hover:text-white p-1"
+                            className="text-ink-2/60 hover:text-white p-1"
                           >
-                            <span className="material-symbols-outlined text-sm">tune</span>
+                            <span className="material-symbols-outlined text-body-s">tune</span>
                           </button>
                         </div>
                         <form onSubmit={(e) => handleSendFeedback(c.id, e)} className="space-y-2">
@@ -373,15 +369,15 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                             value={expandedId === key ? feedbackText : (c.coachFeedback || '')}
                             onChange={e => setFeedbackText(e.target.value)}
                             placeholder="Escribe tu feedback para el atleta..."
-                            className="w-full bg-[#1c1b1b] border border-white/60 rounded p-3 text-sm text-white focus:ring-1 focus:ring-[#fbcb1a] focus:outline-none min-h-[80px] resize-none font-sans"
+                            className="w-full bg-raised border border-hairline rounded-control p-3 text-title-s text-white focus:ring-1 focus:ring-accent focus:outline-none min-h-[80px] resize-none font-sans"
                           />
                           <button
                             type="submit"
                             disabled={isSubmitting}
-                            className="h-[36px] px-5 bg-[#fbcb1a] text-black font-sans font-bold text-xs uppercase rounded flex items-center gap-1.5 hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-50"
+                            className="h-[36px] px-5 bg-accent text-black font-sans font-bold text-label uppercase rounded-control flex items-center gap-2 hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50"
                           >
                             {isSubmitting ? 'Guardando...' : hasNextPending ? 'Enviar y siguiente' : 'Enviar y Aprobar'}
-                            <span className="material-symbols-outlined text-sm">{hasNextPending ? 'skip_next' : 'send'}</span>
+                            <span className="material-symbols-outlined text-body-s">{hasNextPending ? 'skip_next' : 'send'}</span>
                           </button>
                         </form>
                       </div>
@@ -407,9 +403,9 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                 <div key={key}>
                   <div
                     onClick={toggle}
-                    className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-all hover:bg-[#1e1e1b] ${isExpanded ? 'bg-[#1e1e1b]' : ''}`}
+                    className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-all hover:bg-raised ${isExpanded ? 'bg-raised' : ''}`}
                   >
-                    <div className="w-7 h-7 rounded-full overflow-hidden border border-white/7 flex-shrink-0">
+                    <div className="w-7 h-7 rounded-full overflow-hidden border border-hairline flex-shrink-0">
                       <img
                         src={athleteProfile?.avatarUrl || 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&q=80&w=200'}
                         alt=""
@@ -417,42 +413,42 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                       />
                     </div>
                     <span
-                      className="material-symbols-outlined flex-shrink-0 text-lg"
-                      style={{ color: '#00eefc', fontVariationSettings: "'FILL' 1" }}
+                      className="material-symbols-outlined flex-shrink-0 text-title-m"
+                      style={{ color: 'var(--color-data)', fontVariationSettings: "'FILL' 1" }}
                     >quiz</span>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-sans font-bold text-white text-xs">{athleteName}</span>
-                        <span className="font-mono text-[9px] text-[#c6c9ab]">{q?.title ?? 'Cuestionario'} · {submittedDate}</span>
+                        <span className="font-sans font-bold text-white text-label">{athleteName}</span>
+                        <span className="font-mono text-caption text-ink-2">{q?.title ?? 'Cuestionario'} · {submittedDate}</span>
                       </div>
                       {previewAnswers && (
-                        <p className="font-mono text-[10px] text-[#c6c9ab] mt-0.5 truncate">{previewAnswers}</p>
+                        <p className="font-mono text-caption text-ink-2 truncate">{previewAnswers}</p>
                       )}
                     </div>
                     {athleteProfile && (
                       <button
                         onClick={(e) => { e.stopPropagation(); goToAthleteProfile(athleteProfile.email); }}
                         title="Ver perfil completo"
-                        className="flex-shrink-0 p-1.5 rounded-lg text-[#c6c9ab] hover:text-[#fbcb1a] hover:bg-[#1c1b1b] transition-colors"
+                        className="flex-shrink-0 p-2 rounded-control text-ink-2 hover:text-accent hover:bg-raised transition-colors"
                       >
-                        <span className="material-symbols-outlined text-base">account_circle</span>
+                        <span className="material-symbols-outlined text-title-s">account_circle</span>
                       </button>
                     )}
                     <span
-                      className="material-symbols-outlined text-[#c6c9ab] text-sm transition-transform flex-shrink-0"
+                      className="material-symbols-outlined text-ink-2 text-body-s transition-transform flex-shrink-0"
                       style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}
                     >expand_more</span>
                   </div>
                   {isExpanded && (
-                    <div className="px-4 pb-4 pt-2 bg-[#111111] border-t border-white/40 space-y-2">
+                    <div className="px-4 pb-4 pt-2 bg-bg border-t border-hairline space-y-2">
                       {r.answers.map(ans => {
                         const question = q?.questions.find(qq => qq.id === ans.questionId);
                         return (
                           <div key={ans.questionId} className="flex items-start gap-3">
-                            <span className="font-mono text-[9px] text-[#c6c9ab] flex-1 pt-0.5">
+                            <span className="font-sans text-caption text-ink-2 flex-1 ">
                               {question?.label ?? ans.questionId}
                             </span>
-                            <span className="font-mono text-xs text-white font-bold text-right">
+                            <span className="font-mono text-label text-white font-bold text-right">
                               {String(ans.value)}{question?.unit ? ` ${question.unit}` : ''}
                             </span>
                           </div>
@@ -468,48 +464,43 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
       )}
 
       {showQuickReplyManager && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-          <div className="bg-[#181816] border border-white/10 rounded-2xl w-full max-w-md p-5 space-y-4 max-h-[80vh] flex flex-col">
-            <div className="flex items-center justify-between">
-              <h3 className="font-sans font-bold text-white text-sm">Plantillas de feedback</h3>
-              <button onClick={() => setShowQuickReplyManager(false)} className="text-[#c6c9ab] hover:text-white">
-                <span className="material-symbols-outlined text-base">close</span>
-              </button>
-            </div>
-            <div className="space-y-2 overflow-y-auto flex-1">
-              {quickReplyDraft.map((r, i) => (
-                <div key={i} className="flex items-center gap-2">
-                  <input
-                    value={r}
-                    onChange={e => setQuickReplyDraft(prev => prev.map((x, xi) => xi === i ? e.target.value : x))}
-                    placeholder="ej. Buen trabajo esta semana, sigue así."
-                    className="flex-1 bg-[#1c1b1b] border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-[#fbcb1a]"
-                  />
-                  <button
-                    onClick={() => setQuickReplyDraft(prev => prev.filter((_, xi) => xi !== i))}
-                    className="text-[#c6c9ab] hover:text-red-300 p-1 flex-shrink-0"
-                  >
-                    <span className="material-symbols-outlined text-base">delete</span>
-                  </button>
-                </div>
-              ))}
-              <button
-                onClick={() => setQuickReplyDraft(prev => [...prev, ''])}
-                className="flex items-center gap-1.5 text-xs font-mono text-[#fbcb1a] hover:text-white"
-              >
-                <span className="material-symbols-outlined text-sm">add</span>
-                Añadir plantilla
-              </button>
-            </div>
-            <button
-              onClick={saveQuickReplyManager}
-              disabled={savingQuickReplies}
-              className="w-full py-2.5 bg-[#fbcb1a] text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-50"
-            >
+        <Dialog
+          open
+          onClose={() => setShowQuickReplyManager(false)}
+          title="Plantillas de feedback"
+          footer={(
+            <Button onClick={saveQuickReplyManager} disabled={savingQuickReplies} fullWidth>
               {savingQuickReplies ? 'Guardando...' : 'Guardar'}
+            </Button>
+          )}
+        >
+          <div className="space-y-2">
+            {quickReplyDraft.map((r, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <input
+                  value={r}
+                  onChange={e => setQuickReplyDraft(prev => prev.map((x, xi) => xi === i ? e.target.value : x))}
+                  placeholder="ej. Buen trabajo esta semana, sigue así."
+                  className="flex-1 bg-raised border border-hairline rounded-control px-3 py-2 text-title-s text-white focus:outline-none focus:ring-1 focus:ring-accent"
+                />
+                <Button
+                  variant="ghost"
+                  size="s"
+                  icon="delete"
+                  label="Quitar plantilla"
+                  onClick={() => setQuickReplyDraft(prev => prev.filter((_, xi) => xi !== i))}
+                />
+              </div>
+            ))}
+            <button
+              onClick={() => setQuickReplyDraft(prev => [...prev, ''])}
+              className="flex items-center gap-2 text-label font-mono text-accent hover:text-white"
+            >
+              <Icon name="add" size="s" />
+              Añadir plantilla
             </button>
           </div>
-        </div>
+        </Dialog>
       )}
     </div>
   );

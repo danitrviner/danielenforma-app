@@ -1,14 +1,17 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { Capacitor } from '@capacitor/core';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { AiChat, AiChatMessage, AiProposal, Diet, Mesocycle, MuscleGroup, MUSCLE_LABELS, KnowledgeNote } from '../types';
 import {
   getAiChats, saveAiChat, deleteAiChat, getAiProposalsForAthlete, updateAiProposal,
   submitCoachFeedback, createDiet, updateDiet, createMesocycle, bulkUpsertKnowledgeNotes,
   getCoachInstructions, saveCoachInstructions,
+  getDoctrina, getDoctrinaParaEditar, saveDoctrina, resetDoctrina,
 } from '../dbService';
-import { runAgentTurn, messageText } from '../ai/aiClient';
-import { OPEN_AI_PANEL_EVENT } from '../ai/events';
+import { runAgentTurn, messageText, probarConexionProxy } from '../ai/aiClient';
+import { OPEN_AI_PANEL_EVENT, OpenAiPanelDetail } from '../ai/events';
 import { exchangeToKcal } from '../utils/nutritionConstants';
+import { Icon, Button, ListRow, Badge, Dialog } from './ui';
 
 interface Props {
   activeAthleteEmail?: string;
@@ -31,6 +34,21 @@ interface SpeechRecognitionLike {
 }
 type SpeechRecognitionCtor = new () => SpeechRecognitionLike;
 function getSpeechRecognitionCtor(): SpeechRecognitionCtor | null {
+  // En la app nativa el botón no se ofrece, aunque el objeto exista.
+  //
+  // El WKWebView de iOS SÍ expone `webkitSpeechRecognition`, así que la
+  // comprobación de abajo daba `true` y el micrófono aparecía en el móvil —
+  // y no dictaba nada. iOS pide DOS permisos para el dictado,
+  // `NSMicrophoneUsageDescription` y `NSSpeechRecognitionUsageDescription`, y
+  // el Info.plist solo declara el primero: la API existe, se deja llamar y
+  // muere sin decir nada. Detectarlo por capacidades es justo lo que no
+  // funciona aquí, porque la capacidad está y lo que falta es el permiso.
+  //
+  // Se ofrece solo en web, que es donde el dictado funciona de verdad. Si
+  // algún día se quiere en el móvil, no basta con volver a enseñar el botón:
+  // hay que añadir esa clave al Info.plist y comprobarlo en un iPhone real.
+  if (Capacitor.isNativePlatform()) return null;
+
   const w = window as unknown as { SpeechRecognition?: SpeechRecognitionCtor; webkitSpeechRecognition?: SpeechRecognitionCtor };
   return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
 }
@@ -52,6 +70,52 @@ function newChat(athleteId?: string): AiChat {
 // del chat en la colección aiChats.
 const aiChatsKey = ['aiChats'] as const;
 const coachInstructionsKey = ['coachInstructions'] as const;
+const doctrinaKey = ['coachDoctrina'] as const;
+
+type PromptTab = 'instrucciones' | 'entrenamiento' | 'nutricion';
+
+const PROMPT_TABS: { id: PromptTab; label: string }[] = [
+  { id: 'instrucciones', label: 'Reglas fijas' },
+  { id: 'entrenamiento', label: 'Entrenamiento' },
+  { id: 'nutricion',     label: 'Nutrición' },
+];
+
+// Editor de una doctrina. Aparte del textarea, su trabajo real es dejar claro
+// si lo que se está leyendo es el criterio de Dani o el de fábrica: sin ese
+// aviso, editar el default y guardarlo parece lo mismo que no tocar nada.
+function DoctrinaEditor({ descripcion, valor, onChange, esDefault, onRestaurar, disabled }: {
+  descripcion: string;
+  valor: string;
+  onChange: (v: string) => void;
+  esDefault: boolean;
+  onRestaurar: () => void;
+  disabled: boolean;
+}) {
+  return (
+    <>
+      <p className="text-label text-ink-2">{descripcion}</p>
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-caption font-mono text-ink-2">
+          {esDefault ? 'Criterio por defecto (sin editar)' : 'Tu criterio'}
+        </span>
+        {!esDefault && (
+          <Button variant="ghost" size="s" onClick={onRestaurar} disabled={disabled}>
+            Restaurar el de por defecto
+          </Button>
+        )}
+      </div>
+      <textarea
+        value={valor}
+        onChange={e => onChange(e.target.value)}
+        rows={16}
+        className="w-full resize-none bg-surface border border-hairline focus:border-accent/50 rounded-control px-4 py-3 text-body-s font-mono text-ink outline-none"
+      />
+      <p className="text-caption text-ink-2">
+        Se manda entero en cada conversación. Escribe reglas concretas y accionables — cuanto más vago, menos cambia lo que hace la IA.
+      </p>
+    </>
+  );
+}
 
 export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: Props) {
   const queryClient = useQueryClient();
@@ -75,15 +139,39 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
   });
   const [reviewingId, setReviewingId] = useState<string | null>(null);
   const [syncMsg, setSyncMsg] = useState<string | null>(null);
+  const [diagMsg, setDiagMsg] = useState<string | null>(null);
+  const [diagnosticando, setDiagnosticando] = useState(false);
   const [listening, setListening] = useState(false);
   const { data: coachInstructions = '' } = useQuery({
     queryKey: coachInstructionsKey,
     queryFn: getCoachInstructions,
     enabled: open,
   });
+  // El criterio de Dani viaja en el system prompt de cada turno. Si la lectura
+  // falla se manda el default en vez de nada: operar sin doctrina es peor que
+  // operar con la de fábrica.
+  const { data: doctrina } = useQuery({
+    queryKey: doctrinaKey,
+    queryFn: async () => ({
+      entrenamiento: await getDoctrina('entrenamiento'),
+      nutricion: await getDoctrina('nutricion'),
+    }),
+    enabled: open,
+  });
   const [editingInstructions, setEditingInstructions] = useState(false);
   const [instructionsDraft, setInstructionsDraft] = useState('');
   const [savingInstructions, setSavingInstructions] = useState(false);
+  // Pestaña abierta dentro del editor. Las tres cosas se editan igual (texto
+  // libre que acaba en el system prompt), así que comparten diálogo en vez de
+  // abrir tres modales distintos desde tres botones distintos en la cabecera.
+  const [promptTab, setPromptTab] = useState<PromptTab>('instrucciones');
+  const [entrenoDraft, setEntrenoDraft] = useState('');
+  const [nutricionDraft, setNutricionDraft] = useState('');
+  // true = todavía es el criterio por defecto (Dani no lo ha tocado). Se usa
+  // para avisarlo en el editor y para no ofrecer "restaurar" cuando no hay nada
+  // que restaurar.
+  const [entrenoEsDefault, setEntrenoEsDefault] = useState(true);
+  const [nutricionEsDefault, setNutricionEsDefault] = useState(true);
   const liveMessages = useRef<AiChatMessage[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const vaultInputRef = useRef<HTMLInputElement>(null);
@@ -126,13 +214,71 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
     }
   };
 
-  const openInstructionsEditor = () => { setInstructionsDraft(coachInstructions); setEditingInstructions(true); };
+  // T9. El único diagnóstico posible sin acceso a los logs de Vercel: un
+  // OPTIONS y un POST mínimo a PROXY_URL, con URL, código HTTP y cuerpo de
+  // error EN CLARO. No cierra la duda con un "parece que ya va" — enseña el
+  // resultado real, sea cual sea.
+  const probarConexion = async () => {
+    setDiagnosticando(true);
+    setDiagMsg(null);
+    try {
+      const d = await probarConexionProxy();
+      const lineas = [
+        `URL: ${d.url}`,
+        `OPTIONS: ${d.optionsOk ? 'OK' : `falló — ${d.optionsError}`}`,
+        d.postStatus !== undefined
+          ? `POST: HTTP ${d.postStatus} — ${d.postBody}`
+          : `POST: falló — ${d.postError}`,
+      ];
+      setDiagMsg(lineas.join('\n'));
+    } finally {
+      setDiagnosticando(false);
+    }
+  };
+
+  const openInstructionsEditor = async () => {
+    setInstructionsDraft(coachInstructions);
+    setPromptTab('instrucciones');
+    setEditingInstructions(true);
+    // Se cargan al abrir, no con el panel: son textos largos que solo hacen
+    // falta cuando Dani entra a editarlos.
+    const [ent, nut] = await Promise.all([
+      getDoctrinaParaEditar('entrenamiento').catch(() => null),
+      getDoctrinaParaEditar('nutricion').catch(() => null),
+    ]);
+    if (ent) { setEntrenoDraft(ent.text); setEntrenoEsDefault(ent.esDefault); }
+    if (nut) { setNutricionDraft(nut.text); setNutricionEsDefault(nut.esDefault); }
+  };
+
   const saveInstructions = async () => {
     setSavingInstructions(true);
     try {
-      await saveCoachInstructions(instructionsDraft.trim());
-      queryClient.setQueryData(coachInstructionsKey, instructionsDraft.trim());
+      if (promptTab === 'instrucciones') {
+        await saveCoachInstructions(instructionsDraft.trim());
+        queryClient.setQueryData(coachInstructionsKey, instructionsDraft.trim());
+      } else if (promptTab === 'entrenamiento') {
+        await saveDoctrina('entrenamiento', entrenoDraft.trim());
+        setEntrenoEsDefault(false);
+        queryClient.invalidateQueries({ queryKey: doctrinaKey });
+      } else {
+        await saveDoctrina('nutricion', nutricionDraft.trim());
+        setNutricionEsDefault(false);
+        queryClient.invalidateQueries({ queryKey: doctrinaKey });
+      }
       setEditingInstructions(false);
+    } finally {
+      setSavingInstructions(false);
+    }
+  };
+
+  const restaurarDoctrina = async (kind: 'entrenamiento' | 'nutricion') => {
+    setSavingInstructions(true);
+    try {
+      await resetDoctrina(kind);
+      const fresh = await getDoctrinaParaEditar(kind);
+      if (kind === 'entrenamiento') { setEntrenoDraft(fresh.text); setEntrenoEsDefault(true); }
+      else { setNutricionDraft(fresh.text); setNutricionEsDefault(true); }
+      queryClient.invalidateQueries({ queryKey: doctrinaKey });
     } finally {
       setSavingInstructions(false);
     }
@@ -147,7 +293,11 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
   };
 
   useEffect(() => {
-    const onOpen = () => setOpen(true);
+    const onOpen = (e: Event) => {
+      setOpen(true);
+      const prompt = (e as CustomEvent<OpenAiPanelDetail>).detail?.prompt;
+      if (prompt) setInput(prompt);
+    };
     window.addEventListener(OPEN_AI_PANEL_EVENT, onOpen);
     return () => window.removeEventListener(OPEN_AI_PANEL_EVENT, onOpen);
   }, []);
@@ -202,11 +352,11 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
     await saveAiChat(updated);
   };
 
-  const send = async () => {
-    const text = input.trim();
-    if (!text || busy) return;
-    if (listening) recognitionRef.current?.stop();
-    setInput('');
+  // `userText`: el texto nuevo del atleta en un envío normal, o `null` para
+  // reanudar un turno que falló a mitad de camino (T9) — `chat.messages` ya
+  // tiene el mensaje pendiente (ver el comentario de `runAgentTurn`), así que
+  // pasar texto de nuevo aquí duplicaría el turno en vez de reanudarlo.
+  const runTurn = async (userText: string | null) => {
     setError(null);
     setBusy(true);
     liveMessages.current = chat.messages;
@@ -216,7 +366,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
       : undefined;
 
     try {
-      await runAgentTurn(chat.messages, text, { chatId: chat.id, activeAthlete, coachInstructions }, {
+      await runAgentTurn(chat.messages, userText, { chatId: chat.id, activeAthlete, coachInstructions, doctrina }, {
         onUpdate: msgs => {
           liveMessages.current = msgs;
           setChat(c => ({ ...c, messages: msgs }));
@@ -237,6 +387,19 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
     }
   };
 
+  const send = async () => {
+    const text = input.trim();
+    if (!text || busy) return;
+    if (listening) recognitionRef.current?.stop();
+    setInput('');
+    await runTurn(text);
+  };
+
+  const retry = async () => {
+    if (busy) return;
+    await runTurn(null);
+  };
+
   const openChat = (c: AiChat) => { setChat(c); setShowList(false); setError(null); };
   const startNew = () => { setChat(newChat(activeAthleteEmail)); setShowList(false); setError(null); };
   const removeChat = async (id: string) => {
@@ -252,46 +415,53 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
       <button
         onClick={() => setOpen(true)}
         title="Asistente IA"
-        className="fixed bottom-28 right-4 md:bottom-8 md:right-8 z-[60] w-13 h-13 p-3.5 rounded-full bg-[#fbcb1a] text-black shadow-lg shadow-black/40 hover:scale-105 transition-transform"
+        // Solo en escritorio. En móvil el disparador vive en la cabecera,
+        // junto al avatar (App.tsx): ahí no tapa contenido, no compite con la
+        // barra inferior y no hay que reservarle hueco al final de cada
+        // pantalla. Abre por `OPEN_AI_PANEL_EVENT`, el mismo evento que ya
+        // usaba ClientHub.
+        className="hidden md:block fixed md:bottom-8 md:right-8 z-[60] w-13 h-13 p-4 rounded-full bg-accent text-black shadow-e1 hover:scale-105 transition-transform"
       >
-        <span className="material-symbols-outlined block" style={{ fontVariationSettings: "'FILL' 1" }}>smart_toy</span>
+        <Icon name="smart_toy" size="l" filled className="block" />
       </button>
     );
   }
 
   return (
-    <div className="fixed inset-y-0 right-0 z-[70] w-full sm:w-[440px] bg-[#111110] border-l border-white/10 flex flex-col shadow-2xl">
-      {/* Header */}
-      <div className="flex items-center gap-2 px-4 py-3 border-b border-white/7">
-        <span className="material-symbols-outlined text-[#fbcb1a]" style={{ fontVariationSettings: "'FILL' 1" }}>smart_toy</span>
-        <span className="font-sans font-black text-sm uppercase tracking-wider text-[#fbcb1a] flex-1">Asistente IA</span>
-        <button onClick={openInstructionsEditor} title="Instrucciones fijas para la IA"
-          className="p-1.5 rounded-lg text-[#c6c9ab] hover:text-white hover:bg-white/5">
-          <span className="material-symbols-outlined text-[20px]">tune</span>
-        </button>
-        <button onClick={() => vaultInputRef.current?.click()} title="Sincronizar bóveda de conocimiento"
-          className="p-1.5 rounded-lg text-[#c6c9ab] hover:text-white hover:bg-white/5">
-          <span className="material-symbols-outlined text-[20px]">menu_book</span>
-        </button>
+    <div className="fixed inset-y-0 right-0 z-[70] w-full sm:w-[440px] bg-bg border-l border-hairline flex flex-col shadow-e2">
+      {/* Header
+          El `pt-` no es cosmético: es por lo que no se podía cerrar el panel en
+          el móvil. El contenedor va `fixed inset-y-0`, o sea que empieza en el
+          borde FÍSICO de la pantalla, y en un iPhone con Dynamic Island toda
+          esta fila —incluido el botón de cerrar— quedaba tapada por la barra de
+          estado. No había forma de salir del asistente salvo matando la app.
+          El resto de cabeceras de la app ya reservan `--safe-top`; esta se
+          quedó fuera por ser un panel flotante y no una cabecera de pantalla. */}
+      <div className="flex items-center gap-2 px-4 py-3 pt-[calc(0.75rem+var(--safe-top))] border-b border-hairline">
+        <Icon name="smart_toy" size="m" filled className="text-accent" />
+        <span className="font-sans font-bold text-body-s uppercase tracking-wider text-accent flex-1">Asistente IA</span>
+        <Button variant="ghost" size="s" onClick={openInstructionsEditor} icon="tune" label="Instrucciones fijas para la IA" />
+        <Button variant="ghost" size="s" onClick={probarConexion} loading={diagnosticando} icon="network_check" label="Probar conexión con el asistente" />
+        <Button variant="ghost" size="s" onClick={() => vaultInputRef.current?.click()} icon="menu_book" label="Sincronizar bóveda de conocimiento" />
         <input ref={vaultInputRef} type="file" accept="application/json,.json" className="hidden"
           onChange={e => { const f = e.target.files?.[0]; if (f) importVault(f); e.target.value = ''; }} />
-        <button onClick={() => setShowList(s => !s)} title="Historial de chats"
-          className="p-1.5 rounded-lg text-[#c6c9ab] hover:text-white hover:bg-white/5">
-          <span className="material-symbols-outlined text-[20px]">history</span>
-        </button>
-        <button onClick={startNew} title="Chat nuevo"
-          className="p-1.5 rounded-lg text-[#c6c9ab] hover:text-white hover:bg-white/5">
-          <span className="material-symbols-outlined text-[20px]">add_comment</span>
-        </button>
-        <button onClick={() => setOpen(false)} title="Cerrar"
-          className="p-1.5 rounded-lg text-[#c6c9ab] hover:text-white hover:bg-white/5">
-          <span className="material-symbols-outlined text-[20px]">close</span>
-        </button>
+        <Button variant="ghost" size="s" onClick={() => setShowList(s => !s)} icon="history" label="Historial de chats" />
+        <Button variant="ghost" size="s" onClick={startNew} icon="add_comment" label="Chat nuevo" />
+        <Button variant="ghost" size="s" onClick={() => setOpen(false)} icon="close" label="Cerrar" />
       </div>
 
       {syncMsg && (
-        <div className="px-4 py-2 text-[11px] font-mono text-[#00eefc] border-b border-white/7 bg-[#00eefc]/5">
+        <div className="px-4 py-2 text-caption font-mono text-data border-b border-hairline bg-data/5">
           {syncMsg}
+        </div>
+      )}
+
+      {diagMsg && (
+        <div className="px-4 py-2 text-caption font-mono text-ink-2 border-b border-hairline bg-surface whitespace-pre-wrap flex items-start justify-between gap-3">
+          <span>{diagMsg}</span>
+          <button onClick={() => setDiagMsg(null)} className="text-ink-3 hover:text-white shrink-0">
+            <Icon name="close" size="s" />
+          </button>
         </div>
       )}
 
@@ -299,24 +469,21 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
       {showList ? (
         <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-2">
           {chats.length === 0 && (
-            <p className="text-[#c6c9ab] font-mono text-xs text-center py-8">Sin chats guardados todavía.</p>
+            <p className="text-ink-2 font-sans text-label text-center py-8">Sin chats guardados todavía.</p>
           )}
           {chats.map(c => (
-            <div key={c.id}
-              className={`flex items-center gap-2 p-3 rounded-xl border cursor-pointer transition-colors ${c.id === chat.id ? 'border-[#fbcb1a]/40 bg-[#fbcb1a]/5' : 'border-white/7 bg-[#161616] hover:border-white/20'}`}
+            <ListRow
+              key={c.id}
               onClick={() => openChat(c)}
-            >
-              <div className="flex-1 min-w-0">
-                <p className="text-xs text-white truncate">{c.title || 'Chat sin título'}</p>
-                <p className="text-[10px] font-mono text-[#c6c9ab]">
-                  {c.updatedAt.slice(0, 10)}{c.athleteId ? ` · ${c.athleteId}` : ''}
-                </p>
-              </div>
-              <button onClick={e => { e.stopPropagation(); removeChat(c.id); }} title="Borrar chat"
-                className="p-1 text-[#c6c9ab] hover:text-[#ff6b6b]">
-                <span className="material-symbols-outlined text-[18px]">delete</span>
-              </button>
-            </div>
+              className={`rounded-surface border ${c.id === chat.id ? 'border-accent/40 bg-accent/5' : 'border-hairline bg-surface'}`}
+              title={c.title || 'Chat sin título'}
+              subtitle={`${c.updatedAt.slice(0, 10)}${c.athleteId ? ` · ${c.athleteId}` : ''}`}
+              trailing={
+                <button onClick={e => { e.stopPropagation(); removeChat(c.id); }} title="Borrar chat" className="p-1 text-ink-2 hover:text-danger">
+                  <Icon name="delete" size="m" />
+                </button>
+              }
+            />
           ))}
         </div>
       ) : (
@@ -325,14 +492,14 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
           <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
             {chat.messages.length === 0 && (
               <div className="text-center py-10 px-4">
-                <p className="text-[#c6c9ab] text-sm mb-3">Pregúntame por tus clientes:</p>
+                <p className="text-ink-2 text-body-s mb-3">Pregúntame por tus clientes:</p>
                 <div className="flex flex-col gap-2 text-left">
                   {['¿Qué clientes necesitan atención?',
                     activeAthleteEmail ? 'Resume la situación de este cliente' : 'Resume la situación de un cliente',
                     activeAthleteEmail ? '¿Cómo van los entrenamientos de este cliente este mes?' : '¿Quién lleva más días sin check-in?',
                   ].map(s => (
                     <button key={s} onClick={() => setInput(s)}
-                      className="text-left text-xs text-[#c6c9ab] hover:text-white bg-[#161616] border border-white/7 hover:border-[#fbcb1a]/40 rounded-xl px-3 py-2 transition-colors">
+                      className="text-left text-label text-ink-2 hover:text-white bg-surface border border-hairline hover:border-accent/40 rounded-control px-3 py-2 transition-colors">
                       {s}
                     </button>
                   ))}
@@ -345,25 +512,25 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                 const text = messageText(msg);
                 if (!text) return null; // mensajes de tool_results — no se pintan
                 return (
-                  <div key={i} className="self-end max-w-[85%] bg-[#fbcb1a]/12 border border-[#fbcb1a]/25 text-[#e5e2e1] rounded-2xl rounded-br-sm px-3.5 py-2.5 text-sm whitespace-pre-wrap">
+                  <div key={i} className="self-end max-w-[85%] bg-accent/12 border border-accent/25 text-ink rounded-surface rounded-br-control px-4 py-3 text-body-s whitespace-pre-wrap">
                     {text}
                   </div>
                 );
               }
               return (
-                <div key={i} className="self-start max-w-[92%] flex flex-col gap-1.5">
+                <div key={i} className="self-start max-w-[92%] flex flex-col gap-2">
                   {msg.content.map((block, j) => {
                     if (block.type === 'text' && block.text.trim()) {
                       return (
-                        <div key={j} className="bg-[#161616] border border-white/7 text-[#e5e2e1] rounded-2xl rounded-bl-sm px-3.5 py-2.5 text-sm whitespace-pre-wrap">
+                        <div key={j} className="bg-surface border border-hairline text-ink rounded-surface rounded-bl-control px-4 py-3 text-body-s whitespace-pre-wrap">
                           {block.text}
                         </div>
                       );
                     }
                     if (block.type === 'tool_use') {
                       return (
-                        <div key={j} className="flex items-center gap-1.5 text-[10px] font-mono text-[#00eefc]/80 px-1">
-                          <span className="material-symbols-outlined text-[14px]">manufacturing</span>
+                        <div key={j} className="flex items-center gap-2 text-caption font-mono text-data/80 px-1">
+                          <Icon name="manufacturing" size="s" />
                           {block.name}
                         </div>
                       );
@@ -375,14 +542,21 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
             })}
 
             {busy && (
-              <div className="self-start flex items-center gap-2 text-xs font-mono text-[#c6c9ab] animate-pulse px-1">
-                <span className="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
+              <div className="self-start flex items-center gap-2 text-label font-mono text-ink-2 animate-pulse px-1">
+                <Icon name="progress_activity" size="m" className="animate-spin" />
                 {toolStatus ?? 'Pensando…'}
               </div>
             )}
             {error && (
-              <div className="self-start max-w-[92%] bg-[#ff6b6b]/10 border border-[#ff6b6b]/30 text-[#ff9b9b] rounded-2xl px-3.5 py-2.5 text-xs">
-                {error}
+              <div className="self-start max-w-[92%] bg-danger/10 border border-danger/30 text-danger rounded-surface px-4 py-3 text-label space-y-2">
+                <p>{error}</p>
+                <button
+                  type="button"
+                  onClick={retry}
+                  className="font-mono text-caption uppercase tracking-wide underline underline-offset-2"
+                >
+                  Vuelve a intentarlo
+                </button>
               </div>
             )}
           </div>
@@ -390,7 +564,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
           {/* Propuestas pendientes del cliente activo — la IA propone, Dani aprueba */}
           {proposals.length > 0 && (
             <div className="border-t border-amber-500/20 bg-amber-500/5 p-3 flex flex-col gap-2 max-h-[40%] overflow-y-auto">
-              <p className="text-[10px] font-mono font-bold uppercase tracking-wider text-amber-300/80">
+              <p className="text-caption font-sans font-bold uppercase tracking-wider text-amber-300/80">
                 {proposals.length === 1 ? '1 propuesta por revisar' : `${proposals.length} propuestas por revisar`}
               </p>
               {proposals.map(p => {
@@ -400,39 +574,37 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                   ? (Object.keys(MUSCLE_LABELS) as MuscleGroup[]).filter(g => meso.groups[g]?.series > 0)
                   : [];
                 return (
-                <div key={p.id} className="bg-[#161616] border border-amber-500/25 rounded-xl p-3 flex flex-col gap-2">
-                  <p className="text-xs text-white whitespace-pre-wrap">{p.summary}</p>
-                  {p.rationale && <p className="text-[11px] text-[#c6c9ab] italic">{p.rationale}</p>}
+                <div key={p.id} className="bg-surface border border-amber-500/25 rounded-surface p-3 flex flex-col gap-2">
+                  <p className="text-label text-white whitespace-pre-wrap">{p.summary}</p>
+                  {p.rationale && <p className="text-caption text-ink-2 italic">{p.rationale}</p>}
                   {meso && (
-                    <div className="flex flex-col gap-1.5 bg-[#111110] border border-white/7 rounded-lg p-2.5">
-                      <div className="flex gap-2 flex-wrap text-[10px] font-mono text-[#c6c9ab]">
+                    <div className="flex flex-col gap-2 bg-bg border border-hairline rounded-surface p-3">
+                      <div className="flex gap-2 flex-wrap text-caption font-mono text-ink-2">
                         <span>{meso.weeks} sem</span>
                         <span>·</span>
                         <span>{meso.daysPerWeek} días/sem</span>
                         <span>·</span>
                         <span>{mesoTrained.reduce((s, g) => s + meso.groups[g].series, 0)} series/sem</span>
                       </div>
-                      <div className="grid grid-cols-2 gap-x-3 gap-y-0.5">
+                      <div className="grid grid-cols-2 gap-x-3 ">
                         {mesoTrained.map(g => (
-                          <div key={g} className="flex justify-between text-[11px]">
-                            <span className="text-[#c6c9ab]">{MUSCLE_LABELS[g]}</span>
-                            <span className="text-[#e5e2e1] font-mono">{meso.groups[g].series}</span>
+                          <div key={g} className="flex justify-between text-caption">
+                            <span className="text-ink-2">{MUSCLE_LABELS[g]}</span>
+                            <span className="text-ink font-mono">{meso.groups[g].series}</span>
                           </div>
                         ))}
                       </div>
                     </div>
                   )}
                   {diet && (
-                    <div className="flex flex-col gap-1.5 bg-[#111110] border border-white/7 rounded-lg p-2.5">
-                      <div className="flex gap-1.5 flex-wrap">
+                    <div className="flex flex-col gap-2 bg-bg border border-hairline rounded-surface p-3">
+                      <div className="flex gap-2 flex-wrap">
                         {(['HC', 'PROT', 'GRASA'] as const).map(cat => (
-                          <span key={cat} className="text-[10px] font-mono font-bold bg-white/5 border border-white/10 rounded px-1.5 py-0.5 text-[#e5e2e1]">
-                            {cat} {diet.budget[cat]}
-                          </span>
+                          <Badge key={cat} tone="neutral">{cat} {diet.budget[cat]}</Badge>
                         ))}
-                        <span className="text-[10px] font-mono text-[#c6c9ab]">≈ {exchangeToKcal(diet.budget)} kcal</span>
+                        <span className="text-caption font-mono text-ink-2">≈ {exchangeToKcal(diet.budget)} kcal</span>
                       </div>
-                      <ul className="text-[11px] text-[#c6c9ab] flex flex-col gap-0.5">
+                      <ul className="text-caption text-ink-2 flex flex-col ">
                         {diet.meals.map(m => (
                           <li key={m.id}>{m.name}: {m.items.length} {m.items.length === 1 ? 'item' : 'items'}</li>
                         ))}
@@ -443,14 +615,14 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                     <button
                       onClick={() => approveProposal(p)}
                       disabled={reviewingId === p.id}
-                      className="flex-1 py-1.5 rounded-lg bg-[#86efac]/15 border border-[#86efac]/40 text-[#86efac] text-[11px] font-bold uppercase tracking-wide disabled:opacity-40"
+                      className="flex-1 py-2 rounded-control bg-success/15 border border-success/40 text-success text-caption font-bold uppercase tracking-wide disabled:opacity-40"
                     >
                       Aprobar
                     </button>
                     <button
                       onClick={() => rejectProposal(p)}
                       disabled={reviewingId === p.id}
-                      className="flex-1 py-1.5 rounded-lg bg-[#ff6b6b]/10 border border-[#ff6b6b]/30 text-[#ff9b9b] text-[11px] font-bold uppercase tracking-wide disabled:opacity-40"
+                      className="flex-1 py-2 rounded-control bg-danger/10 border border-danger/30 text-danger text-caption font-bold uppercase tracking-wide disabled:opacity-40"
                     >
                       Rechazar
                     </button>
@@ -461,11 +633,13 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
             </div>
           )}
 
-          {/* Input */}
-          <div className="p-3 border-t border-white/7">
+          {/* Input — mismo motivo que la cabecera, por el otro extremo: el panel
+              llega al borde inferior físico y la barra de gestos del iPhone se
+              comía parte del campo y del botón de enviar. */}
+          <div className="p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] border-t border-hairline">
             {chatFull ? (
               <button onClick={startNew}
-                className="w-full py-2.5 rounded-xl bg-[#fbcb1a]/10 border border-[#fbcb1a]/30 text-[#fbcb1a] text-xs font-bold uppercase tracking-wider">
+                className="w-full py-3 rounded-control bg-accent/10 border border-accent/30 text-accent text-label font-bold uppercase tracking-wider">
                 Chat largo — empezar chat nuevo
               </button>
             ) : (
@@ -479,18 +653,19 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                   rows={Math.min(4, Math.max(1, input.split('\n').length))}
                   placeholder={busy ? 'Trabajando…' : listening ? 'Escuchando…' : 'Escribe al asistente…'}
                   disabled={busy}
-                  className="flex-1 resize-none bg-[#181818] border border-white/10 focus:border-[#fbcb1a]/50 rounded-xl px-3.5 py-2.5 text-sm text-[#e5e2e1] placeholder-[#c6c9ab]/50 outline-none disabled:opacity-50"
+                  className="flex-1 resize-none bg-surface border border-hairline focus:border-accent/50 rounded-control px-4 py-3 text-title-s text-ink placeholder-ink-2/50 outline-none disabled:opacity-50"
                 />
                 {speechSupported && (
-                  <button onClick={toggleDictation} disabled={busy} title={listening ? 'Detener dictado' : 'Dictar por voz'}
-                    className={`p-2.5 rounded-xl border transition-colors disabled:opacity-30 ${listening ? 'bg-[#ff6b6b]/15 border-[#ff6b6b]/40 text-[#ff6b6b] animate-pulse' : 'bg-white/5 border-white/10 text-[#c6c9ab] hover:text-white'}`}>
-                    <span className="material-symbols-outlined block text-[20px]">{listening ? 'stop_circle' : 'mic'}</span>
-                  </button>
+                  <Button
+                    variant={listening ? 'danger' : 'ghost'}
+                    onClick={toggleDictation}
+                    disabled={busy}
+                    icon={listening ? 'stop_circle' : 'mic'}
+                    label={listening ? 'Detener dictado' : 'Dictar por voz'}
+                    className={listening ? 'animate-pulse' : ''}
+                  />
                 )}
-                <button onClick={send} disabled={busy || !input.trim()} title="Enviar"
-                  className="p-2.5 rounded-xl bg-[#fbcb1a] text-black disabled:opacity-30 transition-opacity">
-                  <span className="material-symbols-outlined block text-[20px]">send</span>
-                </button>
+                <Button onClick={send} disabled={busy || !input.trim()} icon="send" label="Enviar" />
               </div>
             )}
           </div>
@@ -498,36 +673,77 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
       )}
 
       {editingInstructions && (
-        <div className="fixed inset-0 z-[90] bg-black/70 flex items-center justify-center p-4" onClick={() => !savingInstructions && setEditingInstructions(false)}>
-          <div className="bg-[#111110] border border-white/10 rounded-2xl w-full max-w-md flex flex-col shadow-2xl" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center gap-2 px-4 py-3 border-b border-white/7">
-              <span className="material-symbols-outlined text-[#fbcb1a]">tune</span>
-              <span className="font-sans font-black text-sm uppercase tracking-wider text-[#fbcb1a] flex-1">Instrucciones fijas</span>
-            </div>
-            <div className="p-4 flex flex-col gap-2">
-              <p className="text-xs text-[#c6c9ab]">
-                Reglas tuyas que el asistente sigue SIEMPRE, en cualquier chat, con prioridad sobre todo lo demás. Ej: "empieza los mesociclos con una semana de descarga", "nunca superes 20 series/semana en pierna en principiantes".
-              </p>
-              <textarea
-                value={instructionsDraft}
-                onChange={e => setInstructionsDraft(e.target.value)}
-                rows={8}
-                placeholder="Escribe tus reglas, una por línea…"
-                className="w-full resize-none bg-[#181818] border border-white/10 focus:border-[#fbcb1a]/50 rounded-xl px-3.5 py-2.5 text-sm text-[#e5e2e1] placeholder-[#c6c9ab]/50 outline-none"
-              />
-            </div>
-            <div className="flex gap-2 p-4 pt-0">
-              <button onClick={() => setEditingInstructions(false)} disabled={savingInstructions}
-                className="flex-1 py-2.5 rounded-xl bg-white/5 border border-white/10 text-[#c6c9ab] text-xs font-bold uppercase tracking-wide disabled:opacity-40">
+        <Dialog
+          open
+          onClose={() => { if (!savingInstructions) setEditingInstructions(false); }}
+          title="Lo que sigue la IA"
+          footer={(
+            <>
+              <Button variant="secondary" onClick={() => setEditingInstructions(false)} disabled={savingInstructions} className="flex-1">
                 Cancelar
-              </button>
-              <button onClick={saveInstructions} disabled={savingInstructions}
-                className="flex-1 py-2.5 rounded-xl bg-[#fbcb1a] text-black text-xs font-bold uppercase tracking-wide disabled:opacity-40">
+              </Button>
+              <Button onClick={saveInstructions} disabled={savingInstructions} loading={savingInstructions} className="flex-1">
                 {savingInstructions ? 'Guardando…' : 'Guardar'}
-              </button>
+              </Button>
+            </>
+          )}
+        >
+            <div className="flex flex-col gap-3">
+              <div className="flex gap-1 border-b border-hairline">
+                {PROMPT_TABS.map(t => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => setPromptTab(t.id)}
+                    className={`px-3 py-2 text-label font-sans uppercase tracking-wider border-b-2 -mb-px transition-colors ${
+                      promptTab === t.id
+                        ? 'border-accent text-accent'
+                        : 'border-transparent text-ink-2 hover:text-ink'
+                    }`}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+
+              {promptTab === 'instrucciones' && (
+                <>
+                  <p className="text-label text-ink-2">
+                    Reglas puntuales que el asistente sigue SIEMPRE, por encima de todo lo demás — incluido tu criterio de las otras dos pestañas. Ej: "empieza los mesociclos con una semana de descarga".
+                  </p>
+                  <textarea
+                    value={instructionsDraft}
+                    onChange={e => setInstructionsDraft(e.target.value)}
+                    rows={8}
+                    placeholder="Escribe tus reglas, una por línea…"
+                    className="w-full resize-none bg-surface border border-hairline focus:border-accent/50 rounded-control px-4 py-3 text-title-s text-ink placeholder-ink-2/50 outline-none"
+                  />
+                </>
+              )}
+
+              {promptTab === 'entrenamiento' && (
+                <DoctrinaEditor
+                  descripcion="Tu criterio para programar: volumen por grupo, RIR, frecuencia, rangos de reps, orden de la sesión, descansos y progresión. La IA lo aplica al proponer mesociclos y al analizar entrenamientos."
+                  valor={entrenoDraft}
+                  onChange={setEntrenoDraft}
+                  esDefault={entrenoEsDefault}
+                  onRestaurar={() => restaurarDoctrina('entrenamiento')}
+                  disabled={savingInstructions}
+                />
+              )}
+
+              {promptTab === 'nutricion' && (
+                <DoctrinaEditor
+                  descripcion="Tu criterio nutricional: prioridades, cálculo de calorías, superávit/déficit, proteína y distribución. La IA lo aplica al proponer o ajustar dietas."
+                  valor={nutricionDraft}
+                  onChange={setNutricionDraft}
+                  esDefault={nutricionEsDefault}
+                  onRestaurar={() => restaurarDoctrina('nutricion')}
+                  disabled={savingInstructions}
+                />
+              )}
             </div>
-          </div>
-        </div>
+        </Dialog>
       )}
     </div>
   );

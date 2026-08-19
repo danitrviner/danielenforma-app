@@ -1,4 +1,6 @@
-import { CardioAssignment, CardioZones } from '../types';
+import { CardioAssignment, CardioSession, CardioZones } from '../types';
+import { isoWeekKey, isoWeekBounds } from './challengeOptions';
+import { addDays } from './trainingWeek';
 
 // Lógica pura de acumulación de una sesión de cardio en vivo — extraída de
 // CardioScreen.tsx para poder testearla sin React (§F1 del plan de réplica
@@ -99,3 +101,45 @@ export function pickActiveIntervalAssignment(assignments: CardioAssignment[]): C
     .filter(a => a.active && a.type === 'intervalos' && (a.intervals?.length ?? 0) > 0)
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
 }
+
+// ─── Objetivo semanal de cardio (F3.9, `objetivosCardio` del contrato) ─────
+//
+// El contrato pide minutosObjetivo/minutosHechos por semana ISO. minutosHechos
+// nunca se guarda: siempre se deriva de `cardioSessions` (evita que el
+// contador y las sesiones reales diverjan). Lo único que persiste en
+// Firestore es el objetivo y si esa semana ya cerró — para no repetir el
+// haptic de éxito en cada render/sesión de la misma semana ya completa.
+
+const DEFAULT_WEEKLY_MINUTES = 90; // 3 sesiones de 30 min si el coach no ha prescrito nada
+
+/** Minutos de cardio ya hechos en la semana ISO de `todayIso`, a partir de las sesiones reales. */
+export function weeklyCardioMinutesDone(sessions: Pick<CardioSession, 'date' | 'durationSec'>[], todayIso: string): number {
+  const { weekStart, weekEnd } = isoWeekBounds(todayIso);
+  const secs = sessions
+    .filter(s => s.date >= weekStart && s.date <= weekEnd)
+    .reduce((sum, s) => sum + s.durationSec, 0);
+  return Math.round(secs / 60);
+}
+
+/** Minutos hechos por día de la semana ISO actual (lunes→domingo), para las 7 microbarras. */
+export function dailyCardioMinutesForWeek(sessions: Pick<CardioSession, 'date' | 'durationSec'>[], todayIso: string): number[] {
+  const { weekStart } = isoWeekBounds(todayIso);
+  const days: number[] = [];
+  for (let i = 0; i < 7; i++) {
+    const dateStr = addDays(weekStart, i);
+    const secs = sessions.filter(s => s.date === dateStr).reduce((sum, s) => sum + s.durationSec, 0);
+    days.push(Math.round(secs / 60));
+  }
+  return days;
+}
+
+/** Objetivo semanal por defecto cuando no hay uno guardado — derivado de la prescripción activa, si la hay. */
+export function defaultWeeklyCardioGoal(assignments: CardioAssignment[]): { minutesGoal: number; sessionsGoal?: number } {
+  const active = assignments.filter(a => a.active && (a.type === 'zona2' || a.type === 'intervalos') && a.timesPerWeek);
+  const best = active.sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
+  if (!best?.timesPerWeek) return { minutesGoal: DEFAULT_WEEKLY_MINUTES };
+  const perSessionMin = best.targetDurationSec ? best.targetDurationSec / 60 : 30;
+  return { minutesGoal: Math.round(best.timesPerWeek * perSessionMin), sessionsGoal: best.timesPerWeek };
+}
+
+export { isoWeekKey };

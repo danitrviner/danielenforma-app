@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0a0a0a;font-family:'Plus Jakarta Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#FFC72C;text-decoration:none}a:hover{color:#ffd75e}
+@keyframes ping{0%{box-shadow:0 0 0 0 rgba(255,199,44,.3)}100%{box-shadow:0 0 0 9px rgba(255,199,44,0)}}
+.nsc{overflow-y:auto;scrollbar-width:none}
+.nsc::-webkit-scrollbar{display:none}
+</style>
+</helmet>
+
+<section style="padding:44px 48px 60px;background:#0a0a0a">
+<div style="display:flex;align-items:baseline;gap:14px;margin:0 0 6px">
+<span style="font:900 34px/1 Archivo,sans-serif;letter-spacing:-.02em;color:#F5F5F4;text-transform:uppercase">Home Coach</span>
+<span style="font:500 11px/1 'IBM Plex Mono',monospace;letter-spacing:.14em;color:#FFC72C;text-transform:uppercase">Fase 3 · Pantalla pendiente</span>
+</div>
+<p style="max-width:680px;margin:0 0 34px;font:400 13.5px/1.65 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.5);text-wrap:pretty">La pantalla de inicio de Dani: qué atletas requieren acción hoy (revisiones, pagos, planes por publicar) y quién está al día. Más su ficha de reglas.</p>
+
+<div style="display:flex;flex-wrap:wrap;gap:30px;align-items:flex-start">
+
+<!-- 01 · REQUIERE ACCIÓN -->
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;align-items:baseline;gap:9px"><span style="font:600 10.5px/1 'IBM Plex Mono',monospace;padding:4px 7px;background:#FFC72C;color:#050505;border-radius:5px">01</span><span style="font:600 12px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.72)">Requiere acción</span></div>
+<div style="width:390px;height:780px;background:#050505;border:1px solid rgba(255,255,255,.08);border-radius:34px;overflow:hidden;position:relative;box-shadow:0 30px 70px -30px rgba(0,0,0,.9)">
+  <div style="height:46px;box-sizing:border-box;display:flex;align-items:flex-end;justify-content:space-between;padding:0 22px 6px;font:500 11px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.4)"><span>9:41</span><span>EN FORMA · COACH</span></div>
+  <div class="nsc" style="position:absolute;inset:46px 0 78px;box-sizing:border-box;padding:14px 20px 24px">
+    <div style="font:900 28px/1 Archivo,sans-serif;color:#F5F5F4;letter-spacing:-.02em;text-transform:uppercase">Hoy</div>
+    <div style="margin-top:8px;font:500 11.5px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.42)">JUEVES · 14 ATLETAS ACTIVOS</div>
+
+    <div style="margin-top:16px;display:flex;gap:7px;overflow-x:auto">
+      <span style="flex:none;font:600 11px/1 'IBM Plex Mono',monospace;color:#050505;padding:8px 12px;background:#FFC72C;border-radius:10px">TODAS · 7</span>
+      <span style="flex:none;font:600 11px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.55);padding:8px 12px;background:rgba(255,255,255,.05);border-radius:10px">REVISIONES · 4</span>
+      <span style="flex:none;font:600 11px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.55);padding:8px 12px;background:rgba(255,255,255,.05);border-radius:10px">PAGOS · 3</span>
+    </div>
+
+    <div style="margin-top:20px;display:flex;align-items:center;gap:9px">
+      <span style="width:7px;height:7px;border-radius:4px;background:#FFC72C;animation:ping 1.6s cubic-bezier(.2,.9,.2,1) infinite"></span>
+      <span style="font:600 10px/1 'IBM Plex Mono',monospace;letter-spacing:.14em;color:rgba(245,245,244,.34)">REQUIERE ACCIÓN</span>
+    </div>
+    <div style="margin-top:11px;background:#0B0B0B;border:1px solid rgba(255,255,255,.07);border-radius:16px;overflow:hidden">
+      <sc-for list="{{ actionRows }}" as="r" hint-placeholder-count="5">
+        <div style="{{ r.row }}" style-hover="background:#101010">
+          <div style="{{ r.av }}"><span style="{{ r.avTxt }}">{{ r.ini }}</span></div>
+          <div style="flex:1;min-width:0"><div style="font:600 14px/1 'Plus Jakarta Sans',sans-serif;color:#F5F5F4">{{ r.name }}</div><div style="{{ r.metaStyle }}">{{ r.meta }}</div></div>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(245,245,244,.32)" stroke-width="2" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="margin-top:20px;display:flex;align-items:center;gap:9px">
+      <span style="width:7px;height:7px;border-radius:4px;background:rgba(245,245,244,.2)"></span>
+      <span style="font:600 10px/1 'IBM Plex Mono',monospace;letter-spacing:.14em;color:rgba(245,245,244,.34)">AL DÍA · 7</span>
+    </div>
+    <div style="margin-top:11px;background:#0B0B0B;border:1px solid rgba(255,255,255,.07);border-radius:16px;overflow:hidden;opacity:.55">
+      <sc-for list="{{ okRows }}" as="r" hint-placeholder-count="3">
+        <div style="{{ r.row }}">
+          <div style="{{ r.av }}"><span style="{{ r.avTxt }}">{{ r.ini }}</span></div>
+          <div style="flex:1;min-width:0"><div style="font:600 14px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.7)">{{ r.name }}</div><div style="{{ r.metaStyle }}">{{ r.meta }}</div></div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+  <div style="position:absolute;left:0;right:0;bottom:0;height:78px;box-sizing:border-box;background:rgba(8,8,8,.92);backdrop-filter:blur(18px);border-top:1px solid rgba(255,255,255,.07);display:flex;align-items:flex-start;padding-top:11px">
+    <sc-for list="{{ navTabs }}" as="t" hint-placeholder-count="5">
+      <div style="{{ t.wrap }}"><div style="{{ t.iconWrap }}"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="{{ t.icon }}"><path d="{{ t.d }}"/></svg></div><span style="{{ t.label }}">{{ t.name }}</span><div style="{{ t.dot }}"></div></div>
+    </sc-for>
+  </div>
+</div>
+</div>
+
+<!-- 02 · TODO AL DÍA -->
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;align-items:baseline;gap:9px"><span style="font:600 10.5px/1 'IBM Plex Mono',monospace;padding:4px 7px;background:#FFC72C;color:#050505;border-radius:5px">02</span><span style="font:600 12px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.72)">Todo al día</span></div>
+<div style="width:390px;height:780px;background:#050505;border:1px solid rgba(255,255,255,.08);border-radius:34px;overflow:hidden;position:relative;box-shadow:0 30px 70px -30px rgba(0,0,0,.9)">
+  <div style="height:46px;box-sizing:border-box;display:flex;align-items:flex-end;justify-content:space-between;padding:0 22px 6px;font:500 11px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.4)"><span>9:41</span><span>EN FORMA · COACH</span></div>
+  <div style="padding:14px 20px 0;box-sizing:border-box">
+    <div style="font:900 28px/1 Archivo,sans-serif;color:#F5F5F4;letter-spacing:-.02em;text-transform:uppercase">Hoy</div>
+    <div style="margin-top:8px;font:500 11.5px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.42)">VIERNES · 14 ATLETAS ACTIVOS</div>
+  </div>
+  <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 40px">
+    <div style="width:52px;height:52px;border-radius:16px;background:rgba(255,199,44,.14);display:flex;align-items:center;justify-content:center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FFC72C" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></div>
+    <div style="font:600 15px/1 'Plus Jakarta Sans',sans-serif;color:#F5F5F4;margin-top:16px">Todo al día</div>
+    <div style="font:400 12.5px/1.6 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.45);margin-top:6px">Ningún atleta necesita algo tuyo ahora mismo.</div>
+  </div>
+</div>
+</div>
+
+<!-- 03 · REGLAS -->
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;align-items:baseline;gap:9px"><span style="font:600 10.5px/1 'IBM Plex Mono',monospace;padding:4px 7px;background:#FFC72C;color:#050505;border-radius:5px">03</span><span style="font:600 12px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.72)">Reglas del módulo</span></div>
+<div style="width:390px;background:#0B0B0B;border:1px solid rgba(255,255,255,.08);border-radius:24px;padding:26px">
+  <div style="font:900 19px/1.2 Archivo,sans-serif;color:#F5F5F4;letter-spacing:-.01em;text-transform:uppercase;margin-bottom:14px">Home Coach</div>
+  <ul style="margin:0;padding:0 0 0 16px;font:400 12.5px/1.75 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.58)">
+    <li>«Requiere acción» siempre arriba y separada de «Al día» — nunca una sola lista mezclada.</li>
+    <li>Cada fila abre directamente la ficha del atleta en el punto exacto que requiere acción (la revisión, el pago), nunca la ficha genérica.</li>
+    <li>El punto oro que late solo aparece si hay pendientes; en cero, la sección se apaga a gris sin desaparecer.</li>
+    <li>Tocar una fila la resuelve visualmente al momento (fondo se asienta, pasa a Al día); la siguiente pendiente queda destacada.</li>
+    <li>Sin ilustración en el vacío: un check en cuadro oro y una frase, nada más.</li>
+    <li>Reutiliza la fila de `ActionRow` y el punto pulsante ya definidos en CRM — no inventa un tratamiento nuevo.</li>
+  </ul>
+</div>
+</div>
+
+</div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const ICONS = [
+  { name: 'Hoy', d: 'M4 13h4l3 7 4-16 3 9h4', active: true },
+  { name: 'Clientes', d: 'M9 12a3.6 3.6 0 100-7.2A3.6 3.6 0 009 12zM2.5 20c.6-3.4 3.2-5.3 6.5-5.3s5.9 1.9 6.5 5.3M16 8.5c1.8.3 3.2 1.7 3.6 3.5M18 20c-.2-1.7-.9-3-2-4' },
+  { name: 'CRM', d: 'M4 19V9l8-5 8 5v10M4 19h16M9 19v-6h6v6' },
+  { name: 'Academia', d: 'M4 7l8-3 8 3-8 3zM4 7v7l8 3 8-3V7' },
+  { name: 'Ajustes', d: 'M12 15a3 3 0 100-6 3 3 0 000 6z M19.4 13.5c.05-.5.05-1 0-1.5l1.5-1.2-1.5-2.6-1.8.5a5.6 5.6 0 00-1.3-.75l-.3-1.9h-3l-.3 1.9c-.47.18-.9.43-1.3.75l-1.8-.5-1.5 2.6L9 12c-.05.5-.05 1 0 1.5l-1.5 1.2 1.5 2.6 1.8-.5c.4.32.83.57 1.3.75l.3 1.9h3l.3-1.9c.47-.18.9-.43 1.3-.75l1.8.5 1.5-2.6z' }
+];
+
+const ACTION_ROWS = [
+  { ini: 'MR', name: 'María Ruiz', meta: 'Check-in · vence hoy' },
+  { ini: 'CD', name: 'Carlos Díaz', meta: 'Check-in · vence hoy' },
+  { ini: 'AT', name: 'Ana Torres', meta: '12 días de retraso en el pago' },
+  { ini: 'JV', name: 'Jorge Vega', meta: 'Plan sin publicar · espera 26 h' },
+  { ini: 'LP', name: 'Laura Paz', meta: '5 días de retraso en el pago' }
+];
+
+const OK_ROWS = [
+  { ini: 'SL', name: 'Sofía López', meta: 'Al día' },
+  { ini: 'IM', name: 'Iker Mora', meta: 'Al día' },
+  { ini: 'PD', name: 'Pablo Duro', meta: 'Al día' }
+];
+
+class Component extends DCLogic {
+  renderVals() {
+    const navTabs = ICONS.map(t => ({
+      d: t.d,
+      name: t.name,
+      wrap: 'flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer',
+      iconWrap: 'position:relative;transform:' + (t.active ? 'translateY(-1px)' : 'none'),
+      icon: 'stroke:' + (t.active ? '#FFC72C' : 'rgba(245,245,244,.38)'),
+      label: `font:600 10px/1 'Plus Jakarta Sans',sans-serif;color:${t.active ? '#FFC72C' : 'rgba(245,245,244,.38)'}`,
+      dot: 'width:4px;height:4px;border-radius:50%;background:#FFC72C;opacity:' + (t.active ? '1' : '0')
+    }));
+
+    const mkRow = (r, i, n, dim) => ({
+      ini: r.ini, name: r.name, meta: r.meta,
+      row: `display:flex;align-items:center;gap:12px;padding:13px 15px;cursor:pointer${i < n - 1 ? ';border-bottom:1px solid rgba(255,255,255,.05)' : ''}`,
+      av: `width:36px;height:36px;border-radius:50%;background:${dim ? 'rgba(255,255,255,.06)' : 'rgba(255,199,44,.16)'};display:flex;align-items:center;justify-content:center;flex:none`,
+      avTxt: `font:700 12px/1 'Plus Jakarta Sans',sans-serif;color:${dim ? 'rgba(245,245,244,.4)' : '#FFC72C'}`,
+      metaStyle: `font:500 11px/1 'IBM Plex Mono',monospace;color:${dim ? 'rgba(245,245,244,.32)' : 'rgba(245,245,244,.42)'};margin-top:5px`
+    });
+
+    return {
+      navTabs,
+      actionRows: ACTION_ROWS.map((r, i) => mkRow(r, i, ACTION_ROWS.length, false)),
+      okRows: OK_ROWS.map((r, i) => mkRow(r, i, OK_ROWS.length, true))
+    };
+  }
+}
+</script>
+</body>
+</html>

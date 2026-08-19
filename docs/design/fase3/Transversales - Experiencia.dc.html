@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@900&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<meta name="design_doc_mode" content="canvas">
+<style>
+body{margin:0;background:#070707;font-family:'Plus Jakarta Sans',sans-serif;color:rgba(255,255,255,.92);-webkit-font-smoothing:antialiased}
+a{color:#FFC72C}a:hover{color:#ffd966}
+@keyframes fadeUp{0%{opacity:0;transform:translateY(10px)}100%{opacity:1;transform:translateY(0)}}
+@keyframes breathe{0%,100%{opacity:.35}50%{opacity:1}}
+@keyframes shim{0%{background-position:-280px 0}100%{background-position:360px 0}}
+@keyframes growX{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes holdFill{0%{width:0}100%{width:100%}}
+@keyframes sheetIn{0%{transform:translateY(30px);opacity:.4}70%{transform:translateY(-4px)}100%{transform:translateY(0);opacity:1}}
+@keyframes bandDown{0%{transform:translateY(-100%)}100%{transform:translateY(0)}}
+@keyframes pullArc{0%{stroke-dashoffset:76}100%{stroke-dashoffset:12}}
+@keyframes tabDot{0%{opacity:0;transform:scale(.4)}100%{opacity:1;transform:scale(1)}}
+@keyframes swipeHint{0%,10%{transform:translateX(0);opacity:.2}45%{opacity:1}70%,100%{transform:translateX(26px);opacity:0}}
+@keyframes toastBar{0%{width:100%}100%{width:0}}
+</style>
+</helmet>
+
+<div style="padding:56px 48px 96px;box-sizing:border-box;min-width:100%">
+
+<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:44px">
+<span style="font:900 34px 'Archivo',sans-serif;text-transform:uppercase;letter-spacing:-.02em">Transversales · Experiencia</span>
+<span style="font:12px 'IBM Plex Mono',monospace;color:rgba(255,255,255,.4);letter-spacing:.06em">MÓDULO 15 — NAVEGACIÓN, CAPAS, BOTTOM SHEETS, ACCIÓN IRREVERSIBLE, ERRORES, CARGA, DESHACER, SPEC DE MOTION</span>
+</div>
+
+<div style="display:flex;flex-wrap:wrap;gap:52px;align-items:flex-start">
+
+<!-- 01 NAVEGACIÓN -->
+<div style="display:flex;flex-direction:column;gap:14px;width:390px">
+<div style="display:flex;flex-direction:column;gap:4px">
+<span style="font:600 11px 'IBM Plex Mono',monospace;color:#FFC72C;letter-spacing:.1em">01 · BARRA INFERIOR</span>
+<span style="font-size:13px;color:rgba(255,255,255,.5);line-height:1.5">Cuatro destinos como máximo. La pestaña activa se marca con el icono lleno y el texto en blanco, nunca con fondo ni píldora.</span>
+</div>
+<div style="width:390px;height:780px;border-radius:42px;border:1px solid rgba(255,255,255,.09);background:#050505;overflow:hidden;position:relative;box-sizing:border-box">
+<div style="padding:52px 20px 0;display:flex;flex-direction:column;gap:6px">
+<span style="font:900 22px 'Archivo',sans-serif;text-transform:uppercase;letter-spacing:-.02em">Navegación</span>
+<span style="font:10px 'IBM Plex Mono',monospace;color:rgba(255,255,255,.35);letter-spacing:.08em">ATLETA · 4 DESTINOS · COACH · 4 DESTINOS</span>
+</div>
+
+<div style="margin:24px 20px 0;display:flex;flex-direction:column;gap:10px">
+<span style="font:600 10px 'IBM Plex Mono',monospace;color:rgba(255,255,255,.35);letter-spacing:.1em">ESTADOS DE UNA PESTAÑA</span>
+<div style="border-radius:16px;background:#0B0B0B;overflow:hidden">
+<div style="padding:14px 16px;display:flex;align-items:center;gap:14px;border-bottom:1px solid rgba(255,255,255,.06)">
+<span style="width:26px;height:26px;border-radius:7px;background:rgba(255,255,255,.9);flex:none"></span>
+<span style="flex:1;font-size:13px;color:rgba(255,255,255,.9)">Activa</span>
+<span style="font:10px 'IBM Plex Mono',monospace;color:rgba(255,255,255,.35)">ICONO LLENO · 100%</span>
+</div>
+<div style="padding:14px 16px;display:flex;align-items:center;gap:14px;border-bottom:1px solid rgba(255,255,255,.06)">
+<span style="width:26px;height:26px;border-radius:7px;border:1.5px solid rgba(255,255,255,.3);box-sizing:border-box;flex:none"></span>
+<span style="flex:1;font-size:13px;color:rgba(255,255,255,.6)">En reposo</span>
+<span style="font:10px 'IBM Plex Mono',monospace;color:rgba(255,255,255,.35)">TRAZO · 45%</span>
+</div>
+<div style="padding:14px 16px;display:flex;align-items:center;gap:14px">
+<span style="position:relative;width:26px;height:26px;flex:none">
+<span style="position:absolute;inset:0;border-radius:7px;border:1.5px solid rgba(255,255,255,.3);box-sizing:border-box"></span>
+<span style="position:absolute;right:-3px;top:-3px;width:8px;height:8px;border-radius:50%;background:#FFC72C;border:2px solid #0B0B0B;animation:tabDot .3s cubic-bezier(.2,.9,.2,1) both"></span>
+</span>
+<span style="flex:1;font-size:13px;color:rgba(255,255,255,.6)">Con novedad</span>
+<span style="font:10px 'IBM Plex Mono',monospace;color:#FFC72C">PUNTO ORO · SIN Nº</span>
+</div>
+</div>
+</div>
+
+<div style="margin:22px 20px 0;display:flex;flex-direction:column;gap:10px">
+<span style="font:600 10px 'IBM Plex Mono',monospace;color:rgba(255,255,255,.35);letter-spacing:.1em">REGLAS</span>
+<div style="display:flex;flex-direction:column;gap:9px">
+<div style="display:flex;gap:12px;align-items:flex-start"><span style="width:5px;height:5px;border-radius:50%;background:#FFC72C;flex:none;margin-top:7px"></span><span style="font-size:12.5px;line-height:1.55;color:rgba(255,255,255,.65)">Toque en la pestaña activa: sube al principio con scroll animado 320 ms.</span></div>
+<div style="display:flex;gap:12px;align-items:flex-start"><span style="width:5px;height:5px;border-radius:50%;background:#FFC72C;flex:none;margin-top:7px"></span><span style="font-size:12.5px;line-height:1.55;color:rgba(255,255,255,.65)">Cada pestaña recuerda su posición y su sub-pantalla al volver.</span></div>
+<div style="display:flex;gap:12px;align-items:flex-start"><span style="width:5px;height:5px;border-radius:50%;background:#FFC72C;flex:none;margin-top:7px"></span><span style="font-size:12.5px;line-height:1.55;color:rgba(255,255,255,.65)">La barra se oculta en entreno, lector y cámara. En nada más.</span></div>
+<div style="display:flex;gap:12px;align-items:flex-start"><span style="width:5px;height:5px;border-radius:50%;background:#FFC72C;flex:none;margin-top:7px"></span><span style="font-size:12.5px;line-height:1.55;color:rgba(255,255,255,.65)">Cambio de pestaña: fade cruzado 180 ms, sin desplazamiento lateral.</span></div>
+</div>
+</div>
+
+<div style="margin:22px 20px 0;padding:14px 16px;border-radius:14px;background:#0B0B0B;display:flex;align-items:center;gap:12px">
+<div style="position:relative;width:34px;height:16px;flex:none">
+<span style="position:absolute;left:0;top:5px;width:20px;height:6px;border-radius:4px;background:rgba(255,255,255,.25);animation:swipeHint 2.6s ease-out infinite"></span>
+</div>
+<span style="font-size:12.5px;line-height:1.5;color:rgba(255,255,255,.6);flex:1">Volver siempre por gesto desde el borde, 1:1 con el dedo.</span>
+</div>
+
+<div style="position:absolute;left:0;right:0;bottom:0;height:84px;background:rgba(8,8,8,.92);border-top:1px solid rgba(255,255,255,.07);backdrop-filter:blur(18px);display:flex;align-items:flex-start;padding:14px 10px 0">
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:7px">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="rgba(255,255,255,.95)"><path d="M4 11l8-7 8 7v8a2 2 0 01-2 2h-4v-6h-4v6H6a2 2 0 01-2-2z"></path></svg>
+<span style="font:600 10px 'IBM Plex Mono',monospace;color:rgba(255,255,255,.95);letter-spacing:.04em">HOY</span>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:7px">
+<span style="position:relative;display:flex">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.42)" stroke-width="2"><path d="M4 18l5-6 4 3 6-8"></path></svg>
+<span style="position:absolute;right:-4px;top:-2px;width:7px;height:7px;border-radius:50%;background:#FFC72C;animation:breathe 2.4s ease-in-out infinite"></span>
+</span>
+<span style="font:600 10px 'IBM Plex Mono',monospace;color:rgba(255,255,255,.42);letter-spacing:.04em">PROGRESO</span>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:7px">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.42)" stroke-width="2"><path d="M6 3v8a3 3 0 006 0V3M9 14v7M17 3c-1.5 3-1.5 6 0 8v10"></path></svg>
+<span style="font:600 10px 'IBM Plex Mono',monospace;color:rgba(255,255,255,.42);letter-spacing:.04em">COMIDA</span>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:7px">
+<span style="width:22px;height:22px;border-radius:50%;background:rgba(255,199,44,.14);color:#FFC72C;font:700 8.5px 'IBM Plex Mono',monospace;display:flex;align-items:center;justify-content:center">JL</span>
+<span style="font:600 10px 'IBM Plex Mono',monospace;color:rgba(255,255,255,.42);letter-spacing:.04em">PERFIL</span>
+</div>
+</div>
+</div>
+</div>
+
+<!-- 02 CAPAS -->
+<div style="display:flex;flex-direction:column;gap:14px;width:390px">
+<div style="display:flex;flex-direction:column;gap:4px">
+<span style="font:600 11px 'IBM Plex Mono',monospace;color:#FFC72C;letter-spacing:.1em">02 · JERARQUÍA DE CAPAS</span>
+<span style="font-size:13px;color:rgba(255,255,255,.5);line-height:1.5">Cuándo empuja, cuándo sube desde abajo y cuándo interrumpe. Nunca dos capas del mismo tipo apiladas.</span>
+</div>
+<div style="width:390px;height:780px;border-radius:42px;border:1px solid rgba(255,255,255,.09);background:#050505;overflow:hidden;position:relative;box-sizing:border-box">
+<div style="padding:52px 20px 0;display:flex;flex-direction:column;gap:6px">
+<span style="font:900 22px 'Archivo',sans-serif;text-transform:uppercase;letter-spacing:-.02em">Tres capas</span>
+<span style="font:10px 'IBM Plex Mono',monospace;color:rgba(255,255,255,.35);letter-spacing:.08em">PUSH · SHEET · INTERRUPCIÓN</span>
+</div>
+
+<div style="margin:22px 20px 0;display:flex;flex-direction:column;gap:12px">
+<div style="padding:15px 16px;border-radius:16px;background:#0B0B0B;display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;align-items:baseline;gap:10px">
+<span style="font:600 11px 'IBM Plex Mono',monospace;color:#FFC72C">PUSH</span>
+<span style="font-size:12.5px;color:rgba(255,255,255,.55)">Un nivel más de detalle</span>
+<span style="font:10px 'IBM Plex Mono',monospace;color:rgba(255,255,255,.3);margin-left:auto">300 MS</span>
+</div>
+<div style="height:58px;border-radius:12px;background:#050505;position:relative;overflow:hidden">
+<div style="position:absolute;left:-14%;top:0;bottom:0;width:60%;background:rgba(255,255,255,.05);border-radius:10px"></div>
+<div style="position:absolute;left:36%;top:0;bottom:0;right:0;background:#141414;border-left:1px solid rgba(255,255,255,.1);border-radius:10px 0 0 10px;display:flex;align-items:center;padding-left:14px">
+<span style="font:10px 'IBM Plex Mono',monospace;color:rgba(255,255,255,.5)">NUEVA PANTALLA</span>
+</div>
+</div>
+<span style="font-size:12px;line-height:1.55;color:rgba(255,255,255,.45)">La anterior retrocede un 18% y se oscurece. Vuelve con gesto de borde.</span>
+</div>
+
+<div style="padding:15px 16px;border-radius:16px;background:#0B0B0B;display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;align-items:baseline;gap:10px">
+<span style="font:600 11px 'IBM Plex Mono',monospace;color:#FFC72C">SHEET</span>
+<span style="font-size:12.5px;color:rgba(255,255,255,.55)">Elegir o editar sin perder el sitio</span>
+<span style="font:10px 'IBM Plex Mono',monospace;color:rgba(255,255,255,.3);margin-left:auto">380 MS</span>
+</div>
+<div style="height:58px;border-radius:12px;background:#050505;position:relative;overflow:hidden">
+<div style="position:absolute;inset:0;background:rgba(255,255,255,.04)"></div>
+<div style="position:absolute;left:0;right:0;bottom:0;height:52%;background:#141414;border-radius:12px 12px 0 0;border-top:1px solid rgba(255,255,255,.1);display:flex;flex-direction:column;align-items:center;padding-top:7px;animation:sheetIn .38s cubic-bezier(.2,.9,.2,1) both">
+<span style="width:34px;height:4px;border-radius:3px;background:rgba(255,255,255,.2)"></span>
+</div>
+</div>
+<span style="font-size:12px;line-height:1.55;color:rgba(255,255,255,.45)">Scrim al 55%, tirador visible, se cierra arrastrando. El fondo sigue vivo.</span>
+</div>
+
+<div style="padding:15px 16px;border-radius:16px;background:#0B0B0B;display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;align-items:baseline;gap:10px">
+<span style="font:600 11px 'IBM Plex Mono',monospace;color:#FFC72C">INTERRUPCIÓN</span>
+<span style="font-size:12.5px;color:rgba(255,255,255,.55)">Solo si es irreversible</span>
+<span style="font:10px 'IBM Plex Mono',monospace;color:rgba(255,255,255,.3);margin-left:auto">220 MS</span>
+</div>
+<div style="height:58px;border-radius:12px;background:#050505;position:relative;overflow:hidden">
+<div style="position:absolute;inset:0;background:rgba(0,0,0,.55)"></div>
+<div style="position:absolute;left:18%;right:18%;top:18%;bottom:18%;background:#141414;border-radius:10px;border:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center">
+<span style="font:10px 'IBM Plex Mono',monospace;color:rgba(255,255,255,.5)">CONFIRMAR</span>
+</div>
+</div>
+<span style="font-size:12px;line-height:1.55;color:rgba(255,255,255,.45)">Centrado, scrim al 72%, sin cierre por toque fuera. Es la excepción.</span>
+</div>
+</div>
+
+<div style="position:absolute;left:20px;right:20px;bottom:26px;padding:14px 16px;border-radius:14px;background:#0F0F0F;border:1px dashed rgba(255,255,255,.12)">
+<span style="font-size:12.5px;line-height:1.55;color:rgba(255,255,255,.6)">Nunca un sheet sobre otro sheet: el segundo nivel sustituye el contenido del primero con fade 200 ms y el tirador se queda.</span>
+</div>
+</div>
+</div>
+
+<!-- 03 BOTTOM SHEET -->
+<div style="display:flex;flex-direction:column;gap:14px;width:390px">
+<div style="display:flex;flex-direction:column;gap:4px">
+<span style="font:600 11px 'IBM Plex Mono',monospace;color:#FFC72C;letter-spacing:.1em">03 · BOTTOM SHEET</span>
+<span style="font-size:13px;color:rgba(255,255,255,.5);line-height:1.5">El patrón por defecto para elegir. Título, opciones de 54 px, la elegida en oro y check dibujado.</span>
+</div>
+<div style="width:390px;height:780px;border-radius:42px;border:1px solid rgba(255,255,255,.09);background:#050505;overflow:hidden;position:relative;box-sizing:border-box">
+<div style="padding:52px 20px 0;opacity:.35;filter:blur(.4px)">
+<span style="font:900 22px 'Archivo',sans-serif;text-transform:uppercase;letter-spacing:-.02em">Fuerza inferior</span>
+<div style="margin-top:18px;display:flex;flex-direction:column;gap:10px">
+<div style="height:58px;border-radius:14px;background:#0B0B0B"></div>
+<div style="height:58px;border-radius:14px;background:#0B0B0B"></div>
+<div style="height:58px;border-radius:14px;background:#0B0B0B"></div>
+</div>
+</div>
+<div style="position:absolute;inset:0;background:rgba(0,0,0,.55)"></div>
+
+<div style="position:absolute;left:0;right:0;bottom:0;background:#141414;border-radius:24px 24px 0 0;border-top:1px solid rgba(255,255,255,.1);padding:10px 0 26px;animation:sheetIn .38s cubic-bezier(.2,.9,.2,1) both">
+<div style="display:flex;justify-content:center;padding-bottom:14px"><span style="width:38px;height:4px;border-radius:3px;background:rgba(255,255,255,.22)"></span></div>
+<div style="padding:0 20px 14px;display:flex;flex-direction:column;gap:4px">
+<span style="font:700 17px 'Plus Jakarta Sans',sans-serif;letter-spacing:-.01em">Cambiar ejercicio</span>
+<span style="font-size:12.5px;color:rgba(255,255,255,.45);line-height:1.5">Alternativas que trabajan lo mismo. Marcos lo verá en tu revisión.</span>
+</div>
+<div style="padding:0 10px">
+<div style="padding:15px 12px;border-radius:12px;background:rgba(255,199,44,.1);display:flex;align-items:center;gap:12px">
+<div style="flex:1;display:flex;flex-direction:column;gap:3px">
+<span style="font-size:13.5px;color:#FFC72C;font-weight:600">Prensa de piernas</span>
+<span style="font:10.5px 'IBM Plex Mono',monospace;color:rgba(255,199,44,.6)">MISMO PATRÓN · MÁQUINA</span>
+</div>
+<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#FFC72C" stroke-width="2.4" stroke-linecap="round"><path d="M4 12.5l5.5 5.5L20 6.5"></path></svg>
+</div>
+<div style="padding:15px 12px;display:flex;align-items:center;gap:12px">
+<div style="flex:1;display:flex;flex-direction:column;gap:3px">
+<span style="font-size:13.5px;color:rgba(255,255,255,.88)">Hack squat</span>
+<span style="font:10.5px 'IBM Plex Mono',monospace;color:rgba(255,255,255,.35)">MISMO PATRÓN · MÁQUINA</span>
+</div>
+</div>
+<div style="padding:15px 12px;display:flex;align-items:center;gap:12px">
+<div style="flex:1;display:flex;flex-direction:column;gap:3px">
+<span style="font-size:13.5px;color:rgba(255,255,255,.88)">Sentadilla búlgara</span>
+<span style="font:10.5px 'IBM Plex Mono',monospace;color:rgba(255,255,255,.35)">UNILATERAL · MANCUERNAS</span>
+</div>
+</div>
+<div style="padding:15px 12px;display:flex;align-items:center;gap:12px;opacity:.45">
+<div style="flex:1;display:flex;flex-direction:column;gap:3px">
+<span style="font-size:13.5px;color:rgba(255,255,255,.88)">Sentadilla frontal</span>
+<span style="font:10.5px 'IBM Plex Mono',monospace;color:rgba(255,255,255,.35)">NO DISPONIBLE EN TU GIMNASIO</span>
+</div>
+</div>
+</div>
+<div style="padding:14px 20px 0;display:flex;gap:10px">
+<span style="flex:1;height:50px;border-radius:14px;background:rgba(255,255,255,.07);display:flex;align-items:center;justify-content:center;font:600 13.5px 'Plus Jakarta Sans',sans-serif;color:rgba(255,255,255,.8)">Cancelar</span>
+<span style="flex:1.4;height:50px;border-radius:14px;background:#FFC72C;display:flex;align-items:center;justify-content:center;font:700 13.5px 'Plus Jakarta Sans',sans-serif;color:#0B0B0B">Cambiar</span>
+</div>
+</div>
+</div>
+</div>
+
+<!-- 04 IRREVERSIBLE -->
+<div style="display:flex;flex-direction:column;gap:14px;width:390px">
+<div style="display:flex;flex-direction:column;gap:4px">
+<span style="font:600 11px 'IBM Plex Mono',monospace;color:#FFC72C;letter-spacing:.1em">04 · ACCIÓN IRREVERSIBLE</span>
+<span style="font-size:13px;color:rgba(255,255,255,.5);line-height:1.5">Inventario exacto de lo que se pierde y mantener pulsado 1,5 s. El botón oro es el de volver.</span>
+</div>
+<div style="width:390px;height:780px;border-radius:42px;border:1px solid rgba(255,255,255,.09);background:#050505;overflow:hidden;position:relative;box-sizing:border-box">
+<div style="padding:52px 20px 0;opacity:.22">
+<span style="font:900 22px 'Archivo',sans-serif;text-transform:uppercase;letter-spacing:-.02em">Ajustes</span>
+<div style="margin-top:18px;display:flex;flex-direction:column;gap:1px">
+<div style="height:54px;background:#0B0B0B"></div>
+<div style="height:54px;background:#0B0B0B"></div>
+</div>
+</div>
+<div style="position:absolute;inset:0;background:rgba(0,0,0,.72)"></div>
+
+<div style="position:absolute;left:0;right:0;bottom:0;background:#141414;border-radius:24px 24px 0 0;border-top:1px solid rgba(255,255,255,.1);padding:10px 0 26px;animation:sheetIn .38s cubic-bezier(.2,.9,.2,1) both">
+<div style="display:flex;justify-content:center;padding-bottom:16px"><span style="width:38px;height:4px;border-radius:3px;background:rgba(255,255,255,.22)"></span></div>
+<div style="padding:0 22px;display:flex;flex-direction:column;gap:8px">
+<span style="font:700 20px 'Plus Jakarta Sans',sans-serif;letter-spacing:-.015em">Eliminar tu cuenta</span>
+<span style="font-size:13px;line-height:1.6;color:rgba(255,255,255,.5)">Esto no se puede deshacer. Perderías, exactamente:</span>
+</div>
+<div style="margin:16px 22px 0;border-radius:14px;background:#0B0B0B;overflow:hidden">
+<div style="padding:13px 15px;display:flex;align-items:baseline;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,.06)"><span style="font-size:12.5px;color:rgba(255,255,255,.75)">Entrenos registrados</span><span style="font:600 12px 'IBM Plex Mono',monospace;color:rgba(255,255,255,.85)">184</span></div>
+<div style="padding:13px 15px;display:flex;align-items:baseline;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,.06)"><span style="font-size:12.5px;color:rgba(255,255,255,.75)">Revisiones y respuestas</span><span style="font:600 12px 'IBM Plex Mono',monospace;color:rgba(255,255,255,.85)">21</span></div>
+<div style="padding:13px 15px;display:flex;align-items:baseline;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,.06)"><span style="font-size:12.5px;color:rgba(255,255,255,.75)">Fotos de progreso</span><span style="font:600 12px 'IBM Plex Mono',monospace;color:rgba(255,255,255,.85)">37</span></div>
+<div style="padding:13px 15px;display:flex;align-items:baseline;justify-content:space-between"><span style="font-size:12.5px;color:rgba(255,255,255,.75)">Historial de peso</span><span style="font:600 12px 'IBM Plex Mono',monospace;color:rgba(255,255,255,.85)">14 MESES</span></div>
+</div>
+<div style="margin:14px 22px 0;padding:13px 15px;border-radius:12px;background:rgba(255,255,255,.04);display:flex;align-items:center;gap:12px">
+<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#FFC72C" stroke-width="2" style="flex:none"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 19h16"></path></svg>
+<span style="font-size:12.5px;line-height:1.5;color:rgba(255,255,255,.65);flex:1">Descargar todos mis datos antes</span>
+<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.3)" stroke-width="2"><path d="M9 6l6 6-6 6"></path></svg>
+</div>
+
+<div style="margin:20px 22px 0;display:flex;flex-direction:column;gap:12px">
+<div style="position:relative;height:52px;border-radius:14px;border:1px solid rgba(229,72,77,.45);overflow:hidden;display:flex;align-items:center;justify-content:center">
+<div style="position:absolute;left:0;top:0;bottom:0;background:rgba(229,72,77,.28);animation:holdFill 1.5s linear infinite"></div>
+<span style="position:relative;font:600 13.5px 'Plus Jakarta Sans',sans-serif;color:#E5484D">Mantén pulsado para eliminar</span>
+</div>
+<span style="height:50px;border-radius:14px;background:#FFC72C;display:flex;align-items:center;justify-content:center;font:700 14px 'Plus Jakarta Sans',sans-serif;color:#0B0B0B">Mejor no, volver</span>
+<span style="font:10px 'IBM Plex Mono',monospace;color:rgba(255,255,255,.28);text-align:center;letter-spacing:.06em">HAPTIC CRECIENTE CADA 500 MS · SUELTAS Y VUELVE A CERO EN 200 MS</span>
+</div>
+</div>
+</div>
+</div>
+
+<!-- 05 ERRORES -->
+<div style="display:flex;flex-direction:column;gap:14px;width:390px">
+<div style="display:flex;flex-direction:column;gap:4px">
+<span style="font:600 11px 'IBM Plex Mono',monospace;color:#FFC72C;letter-spacing:.1em">05 · SIN CONEXIÓN Y ERRORES</span>
+<span style="font-size:13px;color:rgba(255,255,255,.5);line-height:1.5">Nunca una pantalla completa de error. El fallo se cuenta donde ocurre y con dos salidas.</span>
+</div>
+<div style="width:390px;height:780px;border-radius:42px;border:1px solid rgba(255,255,255,.09);background:#050505;overflow:hidden;position:relative;box-sizing:border-box">
+<div style="position:absolute;left:0;right:0;top:0;padding:46px 18px 12px;background:#161616;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:11px;animation:bandDown .26s cubic-bezier(.2,.9,.2,1) both">
+<span style="width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.55);flex:none;animation:breathe 2s ease-in-out infinite"></span>
+<span style="font-size:12.5px;color:rgba(255,255,255,.75);flex:1">Sin conexión · se guardará al volver</span>
+<span style="font:600 10.5px 'IBM Plex Mono',monospace;color:#FFC72C;letter-spacing:.06em">REINTENTAR</span>
+</div>
+
+<div style="padding:110px 20px 0;display:flex;flex-direction:column;gap:6px">
+<span style="font:900 22px 'Archivo',sans-serif;text-transform:uppercase;letter-spacing:-.02em">Hoy</span>
+<span style="font:10px 'IBM Plex Mono',monospace;color:rgba(255,255,255,.35);letter-spacing:.08em">3 CAMBIOS PENDIENTES DE SINCRONIZAR</span>
+</div>
+
+<div style="margin:22px 20px 0;display:flex;flex-direction:column;gap:12px">
+<div style="padding:16px;border-radius:16px;background:#0B0B0B;display:flex;align-items:center;gap:14px">
+<div style="flex:1;display:flex;flex-direction:column;gap:4px">
+<span style="font-size:13.5px;color:rgba(255,255,255,.9)">Fuerza superior · completado</span>
+<span style="font:10.5px 'IBM Plex Mono',monospace;color:rgba(255,255,255,.4)">PENDIENTE DE SINCRONIZAR</span>
+</div>
+<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.35)" stroke-width="2" style="flex:none"><circle cx="12" cy="12" r="9" stroke-dasharray="4 4"></circle></svg>
+</div>
+
+<div style="padding:16px;border-radius:16px;background:#0B0B0B;display:flex;flex-direction:column;gap:12px">
+<span style="font-size:13.5px;color:rgba(255,255,255,.9)">Foto de progreso</span>
+<div style="display:flex;align-items:center;gap:12px">
+<span style="width:34px;height:44px;border-radius:6px;background:repeating-linear-gradient(45deg,rgba(255,255,255,.07) 0 5px,rgba(255,255,255,.02) 5px 10px);flex:none"></span>
+<span style="font-size:12.5px;line-height:1.5;color:rgba(255,255,255,.55);flex:1">No se ha podido subir. Se reintenta sola al recuperar red.</span>
+</div>
+<div style="display:flex;gap:10px">
+<span style="flex:1;height:40px;border-radius:11px;background:rgba(255,255,255,.07);display:flex;align-items:center;justify-content:center;font:600 12.5px 'Plus Jakarta Sans',sans-serif;color:rgba(255,255,255,.8)">Subir ahora</span>
+<span style="flex:1;height:40px;border-radius:11px;background:transparent;border:1px solid rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;font:600 12.5px 'Plus Jakarta Sans',sans-serif;color:rgba(255,255,255,.55)">Descartar</span>
+</div>
+</div>
+
+<div style="padding:16px;border-radius:16px;background:#0B0B0B;display:flex;flex-direction:column;gap:10px">
+<span style="font:600 10px 'IBM Plex Mono',monospace;color:rgba(255,255,255,.35);letter-spacing:.1em">ERROR EN LÍNEA · EN SU SITIO</span>
+<div style="display:flex;flex-direction:column;gap:7px">
+<span style="font:10.5px 'IBM Plex Mono',monospace;color:#E5484D;letter-spacing:.06em">PESO</span>
+<div style="height:44px;border-radius:11px;background:#050505;border:1px solid rgba(229,72,77,.5);display:flex;align-items:center;padding:0 14px"><span style="font:700 15px 'IBM Plex Mono',monospace;color:rgba(255,255,255,.85)">182,4</span></div>
+<span style="font-size:12px;line-height:1.5;color:rgba(229,72,77,.9)">182,4 kg no encaja con tus 82 kg de la semana pasada. ¿Querías 82,4?</span>
+</div>
+<div style="display:flex;gap:10px">
+<span style="height:36px;padding:0 14px;border-radius:10px;background:#FFC72C;display:flex;align-items:center;font:700 12px 'Plus Jakarta Sans',sans-serif;color:#0B0B0B">Usar 82,4</span>
+<span style="height:36px;padding:0 14px;border-radius:10px;border:1px solid rgba(255,255,255,.12);display:flex;align-items:center;font:600 12px 'Plus Jakarta Sans',sans-serif;color:rgba(255,255,255,.6)">Es correcto</span>
+</div>
+</div>
+</div>
+
+<div style="position:absolute;left:20px;right:20px;bottom:26px;padding:14px 16px;border-radius:14px;background:rgba(255,199,44,.1);border:1px solid rgba(255,199,44,.22);display:flex;align-items:center;gap:12px">
+<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#FFC72C" stroke-width="2.3" stroke-linecap="round" style="flex:none"><path d="M4 12.5l5.5 5.5L20 6.5"></path></svg>
+<span style="font-size:12.5px;color:#FFC72C;flex:1">3 cambios sincronizados</span>
+<span style="font:10px 'IBM Plex Mono',monospace;color:rgba(255,199,44,.55)">AL VOLVER LA RED</span>
+</div>
+</div>
+</div>
+
+<!-- 06 CARGA -->
+<div style="display:flex;flex-direction:column;gap:14px;width:390px">
+<div style="display:flex;flex-direction:column;gap:4px">
+<span style="font:600 11px 'IBM Plex Mono',monospace;color:#FFC72C;letter-spacing:.1em">06 · CARGA</span>
+<span style="font-size:13px;color:rgba(255,255,255,.5);line-height:1.5">Nunca un spinner. Esqueletos con la forma real del contenido y relevo por fade de 200 ms.</span>
+</div>
+<div style="width:390px;height:780px;border-radius:42px;border:1px solid rgba(255,255,255,.09);background:#050505;overflow:hidden;position:relative;box-sizing:border-box">
+<div style="padding:34px 0 0;display:flex;justify-content:center">
+<svg width="30" height="30" viewBox="0 0 30 30" style="transform:rotate(-90deg)"><circle cx="15" cy="15" r="12" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="2"></circle><circle cx="15" cy="15" r="12" fill="none" stroke="#FFC72C" stroke-width="2" stroke-linecap="round" stroke-dasharray="76" style="animation:pullArc 1.1s ease-out infinite alternate"></circle></svg>
+</div>
+
+<div style="padding:22px 20px 0;display:flex;flex-direction:column;gap:10px">
+<div style="width:150px;height:22px;border-radius:7px;background:linear-gradient(90deg,rgba(255,255,255,.1) 0 30%,rgba(255,255,255,.045) 42%,rgba(255,255,255,.1) 60%);background-size:360px 100%;animation:shim 1.9s linear infinite"></div>
+<div style="width:200px;height:11px;border-radius:6px;background:rgba(255,255,255,.06)"></div>
+</div>
+
+<div style="margin:26px 20px 0;padding:18px;border-radius:18px;background:#0B0B0B;display:flex;flex-direction:column;gap:16px">
+<div style="width:110px;height:12px;border-radius:6px;background:linear-gradient(90deg,rgba(255,255,255,.09) 0 30%,rgba(255,255,255,.04) 42%,rgba(255,255,255,.09) 60%);background-size:360px 100%;animation:shim 1.9s linear .1s infinite"></div>
+<div style="width:60%;height:38px;border-radius:9px;background:linear-gradient(90deg,rgba(255,255,255,.1) 0 30%,rgba(255,255,255,.045) 42%,rgba(255,255,255,.1) 60%);background-size:360px 100%;animation:shim 1.9s linear .2s infinite"></div>
+<div style="display:flex;align-items:flex-end;gap:7px;height:64px">
+<span style="flex:1;height:38%;border-radius:4px;background:rgba(255,255,255,.06)"></span>
+<span style="flex:1;height:58%;border-radius:4px;background:rgba(255,255,255,.06)"></span>
+<span style="flex:1;height:46%;border-radius:4px;background:rgba(255,255,255,.06)"></span>
+<span style="flex:1;height:72%;border-radius:4px;background:rgba(255,255,255,.06)"></span>
+<span style="flex:1;height:60%;border-radius:4px;background:rgba(255,255,255,.06)"></span>
+<span style="flex:1;height:88%;border-radius:4px;background:rgba(255,255,255,.06)"></span>
+<span style="flex:1;height:100%;border-radius:4px;background:linear-gradient(90deg,rgba(255,255,255,.1) 0 30%,rgba(255,255,255,.045) 42%,rgba(255,255,255,.1) 60%);background-size:360px 100%;animation:shim 1.9s linear .3s infinite"></span>
+</div>
+</div>
+
+<div style="margin:20px 20px 0;display:flex;flex-direction:column;gap:1px;border-radius:16px;overflow:hidden">
+<div style="padding:16px;background:#0B0B0B;display:flex;align-items:center;gap:14px">
+<span style="width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.06);flex:none"></span>
+<div style="flex:1;display:flex;flex-direction:column;gap:7px">
+<span style="width:62%;height:11px;border-radius:6px;background:linear-gradient(90deg,rgba(255,255,255,.09) 0 30%,rgba(255,255,255,.04) 42%,rgba(255,255,255,.09) 60%);background-size:360px 100%;animation:shim 1.9s linear infinite"></span>
+<span style="width:38%;height:9px;border-radius:5px;background:rgba(255,255,255,.05)"></span>
+</div>
+</div>
+<div style="padding:16px;background:#0B0B0B;display:flex;align-items:center;gap:14px;opacity:.75">
+<span style="width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.06);flex:none"></span>
+<div style="flex:1;display:flex;flex-direction:column;gap:7px">
+<span style="width:52%;height:11px;border-radius:6px;background:linear-gradient(90deg,rgba(255,255,255,.09) 0 30%,rgba(255,255,255,.04) 42%,rgba(255,255,255,.09) 60%);background-size:360px 100%;animation:shim 1.9s linear .15s infinite"></span>
+<span style="width:30%;height:9px;border-radius:5px;background:rgba(255,255,255,.05)"></span>
+</div>
+</div>
+<div style="padding:16px;background:#0B0B0B;display:flex;align-items:center;gap:14px;opacity:.5">
+<span style="width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.06);flex:none"></span>
+<div style="flex:1;display:flex;flex-direction:column;gap:7px">
+<span style="width:44%;height:11px;border-radius:6px;background:rgba(255,255,255,.06)"></span>
+<span style="width:26%;height:9px;border-radius:5px;background:rgba(255,255,255,.05)"></span>
+</div>
+</div>
+</div>
+
+<div style="position:absolute;left:20px;right:20px;bottom:26px;display:flex;flex-direction:column;gap:9px">
+<div style="display:flex;gap:12px;align-items:flex-start"><span style="width:5px;height:5px;border-radius:50%;background:#FFC72C;flex:none;margin-top:7px"></span><span style="font-size:12.5px;line-height:1.55;color:rgba(255,255,255,.6)">Brillo lento de 1,9 s, nunca pulso rápido.</span></div>
+<div style="display:flex;gap:12px;align-items:flex-start"><span style="width:5px;height:5px;border-radius:50%;background:#FFC72C;flex:none;margin-top:7px"></span><span style="font-size:12.5px;line-height:1.55;color:rgba(255,255,255,.6)">Si tarda menos de 240 ms no se muestra esqueleto.</span></div>
+<div style="display:flex;gap:12px;align-items:flex-start"><span style="width:5px;height:5px;border-radius:50%;background:#FFC72C;flex:none;margin-top:7px"></span><span style="font-size:12.5px;line-height:1.55;color:rgba(255,255,255,.6)">Si pasa de 6 s, una línea explica qué se está trayendo.</span></div>
+</div>
+</div>
+</div>
+
+<!-- 07 DESHACER + SPEC -->
+<div style="display:flex;flex-direction:column;gap:14px;width:390px">
+<div style="display:flex;flex-direction:column;gap:4px">
+<span style="font:600 11px 'IBM Plex Mono',monospace;color:#FFC72C;letter-spacing:.1em">07 · DESHACER Y SPEC DE MOTION</span>
+<span style="font-size:13px;color:rgba(255,255,255,.5);line-height:1.5">Deshacer real de 4 s en vez de "¿estás seguro?". Y las cifras que gobiernan toda la app.</span>
+</div>
+<div style="width:390px;height:780px;border-radius:42px;border:1px solid rgba(255,255,255,.09);background:#050505;overflow:hidden;position:relative;box-sizing:border-box">
+<div style="padding:52px 20px 0;display:flex;flex-direction:column;gap:6px">
+<span style="font:900 22px 'Archivo',sans-serif;text-transform:uppercase;letter-spacing:-.02em">Motion</span>
+<span style="font:10px 'IBM Plex Mono',monospace;color:rgba(255,255,255,.35);letter-spacing:.08em">EASING ÚNICO · CUBIC-BEZIER(.2,.9,.2,1)</span>
+</div>
+
+<div style="margin:22px 20px 0;padding:16px;border-radius:16px;background:#141414;border:1px solid rgba(255,199,44,.2);display:flex;flex-direction:column;gap:12px">
+<div style="display:flex;align-items:center;gap:12px">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFC72C" stroke-width="2" style="flex:none"><path d="M4 10h10a4 4 0 110 8H9M4 10l4-4M4 10l4 4"></path></svg>
+<span style="font-size:13px;color:rgba(255,255,255,.85);flex:1">Comida eliminada</span>
+<span style="font:700 11.5px 'IBM Plex Mono',monospace;color:#FFC72C;letter-spacing:.06em">DESHACER</span>
+</div>
+<div style="height:2px;border-radius:2px;background:rgba(255,255,255,.1);overflow:hidden">
+<div style="height:100%;background:#FFC72C;animation:toastBar 4s linear infinite"></div>
+</div>
+</div>
+
+<div style="margin:18px 20px 0;display:flex;flex-direction:column;gap:9px">
+<span style="font:600 10px 'IBM Plex Mono',monospace;color:rgba(255,255,255,.35);letter-spacing:.1em">DURACIONES</span>
+<div style="border-radius:16px;background:#0B0B0B;overflow:hidden">
+<div style="padding:10px 15px;display:flex;align-items:baseline;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,.06)"><span style="font-size:12.5px;color:rgba(255,255,255,.7)">Entrada de contenido · fadeUp</span><span style="font:600 11.5px 'IBM Plex Mono',monospace;color:rgba(255,255,255,.85)">340 MS</span></div>
+<div style="padding:10px 15px;display:flex;align-items:baseline;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,.06)"><span style="font-size:12.5px;color:rgba(255,255,255,.7)">Stagger de lista</span><span style="font:600 11.5px 'IBM Plex Mono',monospace;color:rgba(255,255,255,.85)">40-50 MS</span></div>
+<div style="padding:10px 15px;display:flex;align-items:baseline;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,.06)"><span style="font-size:12.5px;color:rgba(255,255,255,.7)">Push a sub-pantalla</span><span style="font:600 11.5px 'IBM Plex Mono',monospace;color:rgba(255,255,255,.85)">300 MS</span></div>
+<div style="padding:10px 15px;display:flex;align-items:baseline;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,.06)"><span style="font-size:12.5px;color:rgba(255,255,255,.7)">Sheet entra / sale</span><span style="font:600 11.5px 'IBM Plex Mono',monospace;color:rgba(255,255,255,.85)">380 / 280 MS</span></div>
+<div style="padding:10px 15px;display:flex;align-items:baseline;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,.06)"><span style="font-size:12.5px;color:rgba(255,255,255,.7)">Cambio de pestaña</span><span style="font:600 11.5px 'IBM Plex Mono',monospace;color:rgba(255,255,255,.85)">180 MS</span></div>
+<div style="padding:10px 15px;display:flex;align-items:baseline;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,.06)"><span style="font-size:12.5px;color:rgba(255,255,255,.7)">Estado de un control</span><span style="font:600 11.5px 'IBM Plex Mono',monospace;color:rgba(255,255,255,.85)">200 MS</span></div>
+<div style="padding:10px 15px;display:flex;align-items:baseline;justify-content:space-between"><span style="font-size:12.5px;color:rgba(255,255,255,.7)">Deshacer en pantalla</span><span style="font:600 11.5px 'IBM Plex Mono',monospace;color:rgba(255,255,255,.85)">4 S</span></div>
+</div>
+</div>
+
+<div style="margin:14px 20px 0;display:flex;flex-direction:column;gap:9px">
+<span style="font:600 10px 'IBM Plex Mono',monospace;color:rgba(255,255,255,.35);letter-spacing:.1em">HAPTICS</span>
+<div style="display:flex;flex-direction:column;gap:6px">
+<div style="display:flex;align-items:baseline;gap:12px"><span style="font:600 10px 'IBM Plex Mono',monospace;color:#FFC72C;width:62px;flex:none">LIGERO</span><span style="font-size:12.5px;line-height:1.5;color:rgba(255,255,255,.6);flex:1">selección, toggle, snap de gráfica</span></div>
+<div style="display:flex;align-items:baseline;gap:12px"><span style="font:600 10px 'IBM Plex Mono',monospace;color:#FFC72C;width:62px;flex:none">MEDIO</span><span style="font-size:12.5px;line-height:1.5;color:rgba(255,255,255,.6);flex:1">umbral de swipe, serie completada, envío</span></div>
+<div style="display:flex;align-items:baseline;gap:12px"><span style="font:600 10px 'IBM Plex Mono',monospace;color:#FFC72C;width:62px;flex:none">ÉXITO</span><span style="font-size:12.5px;line-height:1.5;color:rgba(255,255,255,.6);flex:1">entreno cerrado, revisión enviada, sincronizado</span></div>
+<div style="display:flex;align-items:baseline;gap:12px"><span style="font:600 10px 'IBM Plex Mono',monospace;color:rgba(255,255,255,.4);width:62px;flex:none">NUNCA</span><span style="font-size:12.5px;line-height:1.5;color:rgba(255,255,255,.45);flex:1">scroll, aparición de esqueletos, errores de red</span></div>
+</div>
+</div>
+
+<div style="position:absolute;left:20px;right:20px;bottom:26px;padding:14px 16px;border-radius:14px;background:#0B0B0B">
+<span style="font-size:12.5px;line-height:1.55;color:rgba(255,255,255,.6)">Con "reducir movimiento" activo: todo pasa a fade de 160 ms, se mantienen los haptics y desaparecen halos, chispas y count-up.</span>
+</div>
+</div>
+</div>
+
+</div>
+</div>
+
+</x-dc>
+</body>
+</html>

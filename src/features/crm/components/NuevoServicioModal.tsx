@@ -136,7 +136,7 @@ export default function NuevoServicioModal({ cliente, coachEmail, onCerrar }: {
           <button
             type="button"
             onClick={sugerirFin}
-            className="font-mono text-[9px] uppercase tracking-widest text-[#fbcb1a] hover:underline"
+            className="font-sans text-caption uppercase tracking-widest text-accent hover:underline"
           >
             Calcular fin desde la periodicidad
           </button>
@@ -146,16 +146,16 @@ export default function NuevoServicioModal({ cliente, coachEmail, onCerrar }: {
           <input className={inputClass} value={descripcion} onChange={e => setDescripcion(e.target.value)} placeholder="Opcional" />
         </Campo>
 
-        <label className="flex items-start gap-2 px-2.5 py-2 rounded-lg bg-[#fbcb1a]/8 border border-[#fbcb1a]/20 cursor-pointer">
+        <label className="flex items-start gap-2 px-3 py-2 rounded-control bg-accent/8 border border-accent/20 cursor-pointer">
           <input
             type="checkbox"
             checked={generarPago}
             onChange={e => setGenerarPago(e.target.checked)}
-            className="mt-0.5 accent-[#fbcb1a]"
+            className="accent-accent"
           />
-          <span className="font-sans text-[10px] text-[#f5f5f0] leading-relaxed">
+          <span className="font-sans text-caption text-ink leading-relaxed">
             Generar el cobro pendiente al crear el servicio
-            <span className="block text-[#a8a89e]">
+            <span className="block text-ink-2">
               Se escriben todos los documentos en la misma transacción: o entran todos, o ninguno.
               {(importeCents ?? 0) <= 0 && ' Con importe 0 no se genera nada.'}
             </span>
@@ -180,7 +180,7 @@ export default function NuevoServicioModal({ cliente, coachEmail, onCerrar }: {
                 value={cuotas}
                 onChange={e => setCuotas(Math.min(12, Math.max(1, Number(e.target.value) || 1)))}
               />
-              <span className="font-sans text-[10px] text-[#a8a89e]">
+              <span className="font-sans text-caption text-ink-2">
                 {cuotas === 1 ? 'cuota' : 'cuotas mensuales'}
               </span>
             </div>

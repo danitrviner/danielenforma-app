@@ -10,13 +10,17 @@ import {
   computePhaseStartDate,
 } from '../dbService';
 import { estimateMaintenanceKcal } from '../utils/energyCalc';
+import { roundQuarter } from '../utils/exchangeHelpers';
 import {
   resolvePhaseTargetKcal,
   suggestPhaseTargetKcal,
   computePhaseEnergyBalance,
 } from '../utils/nutritionPeriodization';
 import NutritionPerformanceDashboard from './NutritionPerformanceDashboard';
-import Skeleton from './Skeleton';
+import { useToast } from '../hooks/useToast';
+import { mensajeDeErrorFirestore } from '../utils/erroresFirestore';
+import { Skeleton } from './ui';
+import { Icon, Button, EmptyState, Input } from './ui';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -41,12 +45,12 @@ interface FormState {
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
-const PHASE_COLORS = ['#fbcb1a', '#00eefc', '#ff8c69', '#a78bfa'];
+const PHASE_COLORS = ['var(--color-accent)', 'var(--color-data)', 'var(--color-warning)', 'var(--color-chart-3)'];
 
 function phaseTextColor(bgColor: string): string {
-  // #fbcb1a and #00eefc are light, others are darker
-  if (bgColor === '#fbcb1a') return '#000';
-  if (bgColor === '#00eefc') return '#000';
+  // accent y data son claros, el resto son oscuros
+  if (bgColor === 'var(--color-accent)') return '#000';
+  if (bgColor === 'var(--color-data)') return '#000';
   return '#fff';
 }
 
@@ -61,7 +65,6 @@ function addWeeks(isoDate: string, weeks: number): string {
   return d.toISOString().split('T')[0];
 }
 
-function roundQuarter(x: number): number { return Math.round(x / 0.25) * 0.25; }
 
 function fmtKcal(n: number | null): string {
   return n == null ? '—' : `${Math.round(n).toLocaleString('es-ES')} kcal`;
@@ -71,15 +74,15 @@ function fmtKcal(n: number | null): string {
 
 function Stepper({ value, min, max, onChange }: { value: number; min: number; max: number; onChange: (v: number) => void }) {
   return (
-    <div className="flex items-center gap-1.5">
+    <div className="flex items-center gap-2">
       <button
         onClick={() => onChange(Math.max(min, value - 1))}
-        className="w-6 h-6 flex items-center justify-center rounded-lg bg-[#2a2a2a] text-white hover:bg-[#3a3a3a] transition-colors font-bold text-sm"
+        className="w-6 h-6 flex items-center justify-center rounded-control bg-raised text-white hover:bg-raised transition-colors font-bold text-body-s"
       >−</button>
-      <span className="w-7 text-center font-mono text-sm text-white">{value}</span>
+      <span className="w-7 text-center font-mono text-body-s text-white">{value}</span>
       <button
         onClick={() => onChange(Math.min(max, value + 1))}
-        className="w-6 h-6 flex items-center justify-center rounded-lg bg-[#2a2a2a] text-white hover:bg-[#3a3a3a] transition-colors font-bold text-sm"
+        className="w-6 h-6 flex items-center justify-center rounded-control bg-raised text-white hover:bg-raised transition-colors font-bold text-body-s"
       >+</button>
     </div>
   );
@@ -100,7 +103,7 @@ function ProgramTimeline({ program, diets, today }: TimelineProps) {
   return (
     <div className="space-y-2">
       {/* Mobile: vertical stack */}
-      <div className="flex flex-col gap-1.5 sm:hidden">
+      <div className="flex flex-col gap-2 sm:hidden">
         {[...program.phases].sort((a, b) => {
           if (activePhase?.id === a.id) return -1;
           if (activePhase?.id === b.id) return 1;
@@ -117,17 +120,17 @@ function ProgramTimeline({ program, diets, today }: TimelineProps) {
             <div
               key={phase.id}
               style={{ backgroundColor: bg, color: fg, outline: isActive ? '2px solid white' : 'none', outlineOffset: '-2px' }}
-              className="flex items-center justify-between px-3 py-2.5 rounded-lg relative"
+              className="flex items-center justify-between px-3 py-3 rounded-surface relative"
             >
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-bold font-sans truncate">{phase.name}</p>
-                {diet && <p className="text-[9px] font-mono opacity-75 truncate">{diet.name}</p>}
+                <p className="text-label font-bold font-sans truncate">{phase.name}</p>
+                {diet && <p className="text-caption font-sans opacity-75 truncate">{diet.name}</p>}
               </div>
               <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-                <span className="text-[9px] font-mono opacity-75">{fmtDate(startDate)}–{fmtDate(endDate)}</span>
-                <span className="text-[9px] font-mono font-bold">{phase.weeks}s</span>
+                <span className="text-caption font-mono opacity-75">{fmtDate(startDate)}–{fmtDate(endDate)}</span>
+                <span className="text-caption font-mono font-bold">{phase.weeks}s</span>
                 {isActive && (
-                  <span className="text-[8px] font-mono font-bold px-1.5 py-0.5 rounded" style={{ backgroundColor: 'rgba(0,0,0,0.25)' }}>HOY</span>
+                  <span className="text-caption font-mono font-bold px-2 rounded-control" style={{ backgroundColor: 'rgba(0,0,0,0.25)' }}>HOY</span>
                 )}
               </div>
             </div>
@@ -137,7 +140,7 @@ function ProgramTimeline({ program, diets, today }: TimelineProps) {
 
       {/* Desktop: horizontal proportional blocks */}
       <div className="hidden sm:block space-y-2">
-        <div className="flex rounded-lg overflow-hidden" style={{ minHeight: '48px' }}>
+        <div className="flex rounded-surface overflow-hidden" style={{ minHeight: '48px' }}>
           {program.phases.map((phase, idx) => {
             const widthPct = (phase.weeks / totalWeeks) * 100;
             const bg = PHASE_COLORS[idx % PHASE_COLORS.length];
@@ -155,18 +158,18 @@ function ProgramTimeline({ program, diets, today }: TimelineProps) {
                   outline: isActive ? `2px solid white` : 'none',
                   outlineOffset: '-2px',
                 }}
-                className="flex flex-col items-center justify-center px-1 py-1.5 transition-all relative"
+                className="flex flex-col items-center justify-center px-1 py-2 transition-all relative"
               >
                 {isActive && (
                   <span
-                    className="absolute top-0.5 right-0.5 text-[8px] font-mono font-bold px-1 rounded"
+                    className="absolute top-0.5 right-0.5 text-caption font-mono font-bold px-1 rounded-control"
                     style={{ backgroundColor: 'rgba(0,0,0,0.25)', color: fg }}
                   >HOY</span>
                 )}
-                <span className="text-[10px] font-bold font-sans truncate w-full text-center leading-tight">
+                <span className="text-caption font-bold font-sans truncate w-full text-center leading-tight">
                   {phase.name}
                 </span>
-                <span className="text-[9px] font-mono opacity-75 truncate w-full text-center">
+                <span className="text-caption font-mono opacity-75 truncate w-full text-center">
                   {phase.weeks}s
                 </span>
               </div>
@@ -180,7 +183,7 @@ function ProgramTimeline({ program, diets, today }: TimelineProps) {
             const endDate = addWeeks(startDate, phase.weeks);
             return (
               <div key={phase.id} style={{ width: `${widthPct}%` }} className="flex flex-col items-center">
-                <span className="text-[8px] font-mono text-[#c6c9ab] truncate">
+                <span className="text-caption font-mono text-ink-2 truncate">
                   {fmtDate(startDate)}–{fmtDate(endDate)}
                 </span>
               </div>
@@ -198,6 +201,7 @@ export default function NutritionPeriodizationPanel({
   athleteEmail, athleteName, targetWeightKg, diets, onboarding, currentWeightKg, stepGoal, kcalPerStep, onDietsChanged,
 }: Props) {
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
   const programQueryKey = ['nutritionProgram', athleteEmail] as const;
   const { data: program = null, isPending: loading } = useQuery({
     queryKey: programQueryKey,
@@ -236,6 +240,7 @@ export default function NutritionPeriodizationPanel({
       setRefreshKey(k => k + 1);
     } catch (err) {
       console.error('deleteNutritionProgram failed:', err);
+      showToast(mensajeDeErrorFirestore(err, 'eliminar la periodización'));
     } finally {
       setSaving(false);
     }
@@ -261,6 +266,7 @@ export default function NutritionPeriodizationPanel({
       setRefreshKey(k => k + 1);
     } catch (err) {
       console.error('saveNutritionProgram failed:', err);
+      showToast(mensajeDeErrorFirestore(err, 'guardar la periodización'));
     } finally {
       setSaving(false);
     }
@@ -341,6 +347,7 @@ export default function NutritionPeriodizationPanel({
       setRefreshKey(k => k + 1);
     } catch (err) {
       console.error('handleAdjustDietToPhase failed:', err);
+      showToast(mensajeDeErrorFirestore(err, 'ajustar la dieta a la fase'));
     } finally {
       setAdjustingDietFor(null);
     }
@@ -348,7 +355,7 @@ export default function NutritionPeriodizationPanel({
 
   if (loading) {
     return (
-      <div className="bg-[#181816] border border-white/7 rounded-2xl p-5">
+      <div className="bg-surface border border-hairline rounded-surface p-5">
         <Skeleton className="h-32 w-full" />
       </div>
     );
@@ -364,23 +371,15 @@ export default function NutritionPeriodizationPanel({
   if (form === null) {
     if (program === null) {
       return (
-        <div className="bg-[#181816] border border-white/7 rounded-2xl p-5 space-y-4">
+        <div className="bg-surface border border-hairline rounded-surface p-5 space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
-              <span className="material-symbols-outlined text-[#a78bfa] text-sm">timeline</span>
+            <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
+              <Icon name="timeline" size="s" className="text-chart-3" />
               Periodización nutricional
             </h3>
           </div>
-          <div className="border border-dashed border-white/7 rounded-xl py-8 flex flex-col items-center gap-3">
-            <span className="material-symbols-outlined text-3xl text-[#2a2a2a]">timeline</span>
-            <p className="text-[#c6c9ab] text-xs font-mono text-center">Sin periodización nutricional.</p>
-            <button
-              onClick={handleCreate}
-              className="flex items-center gap-1.5 px-4 py-2 bg-[#1c1b1b] border border-[#3a3a3a] hover:border-[#fbcb1a]/40 text-white text-xs font-mono font-bold rounded-xl transition-all"
-            >
-              <span className="material-symbols-outlined text-sm text-[#fbcb1a]">add</span>
-              Crear periodización
-            </button>
+          <div className="border border-dashed border-hairline rounded-surface">
+            <EmptyState icon="timeline" title="Sin periodización nutricional." actionLabel="Crear periodización" onAction={handleCreate} />
           </div>
         </div>
       );
@@ -406,53 +405,67 @@ export default function NutritionPeriodizationPanel({
   };
 
   return (
-    <div className="bg-[#181816] border border-white/7 rounded-2xl p-5 space-y-5">
+    <div className="bg-surface border border-hairline rounded-surface p-5 space-y-5">
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
-          <span className="material-symbols-outlined text-[#a78bfa] text-sm">timeline</span>
+        <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
+          <Icon name="timeline" size="s" className="text-chart-3" />
           Periodización nutricional
         </h3>
         <div className="flex items-center gap-2">
           {program !== null && (
-            <button
-              onClick={handleDelete}
-              disabled={saving}
-              className="text-[10px] font-mono font-bold text-red-400 hover:text-red-300 transition-colors uppercase tracking-wider disabled:opacity-50"
-            >Eliminar</button>
+            <Button variant="ghost" size="s" onClick={handleDelete} disabled={saving} className="text-red-400 hover:text-red-300">Eliminar</Button>
           )}
-          <button
-            onClick={handleCancel}
-            disabled={saving}
-            className="text-[10px] font-mono font-bold text-[#c6c9ab] hover:text-white transition-colors uppercase tracking-wider disabled:opacity-50"
-          >Cancelar</button>
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="flex items-center gap-1 px-3 py-1.5 bg-[#fbcb1a] text-black text-[10px] font-sans font-bold rounded-lg hover:bg-[#cde600] transition-colors disabled:opacity-50 uppercase tracking-wider"
-          >
-            {saving ? 'Guardando...' : 'Guardar'}
-          </button>
+          <Button variant="ghost" size="s" onClick={handleCancel} disabled={saving}>Cancelar</Button>
+          <Button size="s" onClick={handleSave} disabled={saving}>{saving ? 'Guardando...' : 'Guardar'}</Button>
         </div>
       </div>
 
       {/* Start date */}
-      <div className="space-y-1.5">
-        <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider">
-          Fecha de inicio
-        </label>
-        <input
+      <div className="space-y-2">
+        <Input
+          label="Fecha de inicio"
           type="date"
           value={form.startDate}
-          onChange={e => setForm(prev => prev ? { ...prev, startDate: e.target.value } : prev)}
-          className="bg-[#1c1b1b] border border-white/7 text-white text-sm font-mono rounded-lg px-3 py-2 focus:outline-none focus:border-[#a78bfa]/50 hover:border-[#3a3a3a] transition-colors"
+          onChange={v => setForm(prev => prev ? { ...prev, startDate: v } : prev)}
         />
       </div>
+
+      {/* T12 (18-08). Movido aquí desde "Referencia del atleta" en el editor
+          de dietas — es donde se planifica, así que es donde hace falta
+          verlo al fijar el objetivo kcal de cada fase. Solo referencia: no
+          se edita aquí, se edita en Perfil › Onboarding. */}
+      {onboarding && (
+        <div className="bg-bg border border-hairline rounded-surface p-3 space-y-2">
+          <p className="font-mono text-caption text-ink-2 uppercase tracking-wider">
+            Referencia del onboarding
+          </p>
+          <div className="flex flex-wrap gap-3 text-label font-mono">
+            <span className="text-ink-2">
+              {onboarding.dietType === 'omnivoro' ? 'Omnívoro' : onboarding.dietType === 'vegano' ? 'Vegano' : onboarding.dietType === 'vegetariano' ? 'Vegetariano' : 'Otro'}
+              {' · '}<span className="text-white font-bold">{onboarding.targetCalories} kcal</span>
+            </span>
+          </div>
+          <div className="flex gap-2 flex-wrap">
+            {([
+              { label: 'HC',    g: onboarding.macroGrams.hc,    pct: onboarding.macroSplit.hc,    color: 'text-amber-300',  bg: 'bg-amber-500/10 border-amber-500/20' },
+              { label: 'PROT',  g: onboarding.macroGrams.prot,  pct: onboarding.macroSplit.prot,  color: 'text-blue-300',   bg: 'bg-blue-500/10 border-blue-500/20' },
+              { label: 'GRASA', g: onboarding.macroGrams.grasa, pct: onboarding.macroSplit.grasa, color: 'text-orange-300', bg: 'bg-orange-500/10 border-orange-500/20' },
+            ]).map(m => (
+              <div key={m.label} className={`border rounded-surface px-3 py-2 text-center ${m.bg}`}>
+                <p className={`font-sans text-caption uppercase font-bold ${m.color}`}>{m.label}</p>
+                <p className="font-mono font-bold text-white text-body-s">{m.g}g</p>
+                <p className="font-mono text-caption text-ink-3">{m.pct}%</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Phases list */}
       <div className="space-y-3">
         {form.phases.length === 0 && (
-          <p className="text-[#c6c9ab] text-xs font-mono text-center py-4 border border-dashed border-white/7 rounded-xl">
+          <p className="text-ink-2 text-label font-sans text-center py-4 border border-dashed border-hairline rounded-surface">
             Sin fases. Añade una para comenzar.
           </p>
         )}
@@ -468,25 +481,25 @@ export default function NutritionPeriodizationPanel({
           return (
             <div
               key={phase.id}
-              className="bg-[#1c1b1b] border border-white/7 rounded-xl p-4 space-y-3"
+              className="bg-raised border border-hairline rounded-surface p-4 space-y-3"
               style={{ borderLeftColor: phaseColor, borderLeftWidth: '3px' }}
             >
               {/* Phase header */}
               <div className="flex items-center gap-2">
-                <div className="flex flex-col gap-0.5">
+                <div className="flex flex-col ">
                   <button
                     onClick={() => movePhase(idx, -1)}
                     disabled={idx === 0}
-                    className="w-5 h-5 flex items-center justify-center text-[#c6c9ab] hover:text-white disabled:opacity-30 transition-colors"
+                    className="w-5 h-5 flex items-center justify-center text-ink-2 hover:text-white disabled:opacity-30 transition-colors"
                   >
-                    <span className="material-symbols-outlined text-sm">arrow_upward</span>
+                    <Icon name="arrow_upward" size="s" />
                   </button>
                   <button
                     onClick={() => movePhase(idx, 1)}
                     disabled={idx === form.phases.length - 1}
-                    className="w-5 h-5 flex items-center justify-center text-[#c6c9ab] hover:text-white disabled:opacity-30 transition-colors"
+                    className="w-5 h-5 flex items-center justify-center text-ink-2 hover:text-white disabled:opacity-30 transition-colors"
                   >
-                    <span className="material-symbols-outlined text-sm">arrow_downward</span>
+                    <Icon name="arrow_downward" size="s" />
                   </button>
                 </div>
                 <input
@@ -494,28 +507,28 @@ export default function NutritionPeriodizationPanel({
                   value={phase.name}
                   onChange={e => updatePhase(idx, { name: e.target.value })}
                   placeholder="Nombre de la fase"
-                  className="flex-1 bg-[#252525] border border-[#3a3a3a] text-white text-sm font-sans rounded-lg px-3 py-1.5 focus:outline-none focus:border-[#a78bfa]/50 transition-colors"
+                  className="flex-1 bg-raised border border-hairline text-white text-title-s font-sans rounded-control px-3 py-2 focus:outline-none focus:border-chart-3/50 transition-colors"
                 />
                 <button
                   onClick={() => removePhase(idx)}
-                  className="text-[#c6c9ab] hover:text-red-400 transition-colors flex-shrink-0"
+                  className="text-ink-2 hover:text-red-400 transition-colors flex-shrink-0"
                 >
-                  <span className="material-symbols-outlined text-sm">delete</span>
+                  <Icon name="delete" size="s" />
                 </button>
               </div>
 
               {/* Phase details */}
               <div className="flex flex-wrap items-center gap-4">
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-mono text-[#c6c9ab] uppercase tracking-wider">Semanas:</span>
+                  <span className="text-caption font-mono text-ink-2 uppercase tracking-wider">Semanas:</span>
                   <Stepper value={phase.weeks} min={1} max={24} onChange={v => updatePhase(idx, { weeks: v })} />
                 </div>
                 <div className="flex items-center gap-2 flex-1 min-w-0">
-                  <span className="text-[10px] font-mono text-[#c6c9ab] uppercase tracking-wider flex-shrink-0">Dieta:</span>
+                  <span className="text-caption font-mono text-ink-2 uppercase tracking-wider flex-shrink-0">Dieta:</span>
                   <select
                     value={phase.dietId}
                     onChange={e => updatePhase(idx, { dietId: e.target.value })}
-                    className="flex-1 min-w-0 bg-[#252525] border border-[#3a3a3a] text-white text-xs font-mono rounded-lg px-2 py-1.5 focus:outline-none focus:border-[#a78bfa]/50 transition-colors"
+                    className="flex-1 min-w-0 bg-raised border border-hairline text-white text-title-s font-mono rounded-control px-2 py-2 focus:outline-none focus:border-chart-3/50 transition-colors"
                   >
                     <option value="">Sin dieta</option>
                     {diets.map(d => (
@@ -525,7 +538,7 @@ export default function NutritionPeriodizationPanel({
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-mono text-[#c6c9ab] uppercase tracking-wider flex-shrink-0">Peso objetivo:</span>
+                <span className="text-caption font-sans text-ink-2 uppercase tracking-wider flex-shrink-0">Peso objetivo:</span>
                 <input
                   type="number"
                   step="0.1"
@@ -534,14 +547,14 @@ export default function NutritionPeriodizationPanel({
                   value={phase.targetWeight ?? ''}
                   onChange={e => updatePhase(idx, { targetWeight: e.target.value ? Number(e.target.value) : undefined })}
                   placeholder="—"
-                  className="w-20 bg-[#252525] border border-[#3a3a3a] text-white text-xs font-mono rounded-lg px-2 py-1.5 focus:outline-none focus:border-[#a78bfa]/50 transition-colors"
+                  className="w-20 bg-raised border border-hairline text-white text-title-s font-mono rounded-control px-2 py-2 focus:outline-none focus:border-chart-3/50 transition-colors"
                 />
-                <span className="text-[10px] font-mono text-[#c6c9ab]">kg</span>
+                <span className="text-caption font-mono text-ink-2">kg</span>
               </div>
 
               {/* Energy objective */}
               <div className="flex flex-wrap items-center gap-2">
-                <span className="text-[10px] font-mono text-[#c6c9ab] uppercase tracking-wider flex-shrink-0">Objetivo energético:</span>
+                <span className="text-caption font-sans text-ink-2 uppercase tracking-wider flex-shrink-0">Objetivo energético:</span>
                 <input
                   type="number"
                   step="25"
@@ -549,9 +562,9 @@ export default function NutritionPeriodizationPanel({
                   value={phase.targetKcal ?? ''}
                   onChange={e => updatePhase(idx, { targetKcal: e.target.value ? Number(e.target.value) : undefined })}
                   placeholder={resolved.source === 'diet' && resolved.kcal != null ? String(resolved.kcal) : '—'}
-                  className="w-24 bg-[#252525] border border-[#3a3a3a] text-white text-xs font-mono rounded-lg px-2 py-1.5 focus:outline-none focus:border-[#a78bfa]/50 transition-colors"
+                  className="w-24 bg-raised border border-hairline text-white text-title-s font-mono rounded-control px-2 py-2 focus:outline-none focus:border-chart-3/50 transition-colors"
                 />
-                <span className="text-[10px] font-mono text-[#c6c9ab]">
+                <span className="text-caption font-mono text-ink-2">
                   kcal {resolved.kcal != null && `(≈ ${Math.round(resolved.kcal / 100)} int.)`}
                   {phase.targetKcal == null && resolved.source === 'diet' && ' · desde la dieta'}
                 </span>
@@ -559,7 +572,7 @@ export default function NutritionPeriodizationPanel({
                   <button
                     onClick={() => handleSuggestKcal(idx)}
                     title="Calcula el objetivo a partir del peso deseado"
-                    className="text-[9px] font-mono font-bold text-[#a78bfa] hover:text-white transition-colors uppercase tracking-wider px-2 py-1 rounded-lg border border-[#a78bfa]/30 hover:border-[#a78bfa]/60"
+                    className="text-caption font-mono font-bold text-chart-3 hover:text-white transition-colors uppercase tracking-wider px-2 py-1 rounded-control border border-chart-3/30 hover:border-chart-3/60"
                   >Sugerir</button>
                 )}
                 {canAdjustDiet && (
@@ -567,20 +580,20 @@ export default function NutritionPeriodizationPanel({
                     onClick={() => handleAdjustDietToPhase(idx)}
                     disabled={adjustingDietFor === phase.id}
                     title="Escala los intercambios de la dieta vinculada a este objetivo"
-                    className="text-[9px] font-mono font-bold text-[#fbcb1a] hover:text-white transition-colors uppercase tracking-wider px-2 py-1 rounded-lg border border-[#fbcb1a]/30 hover:border-[#fbcb1a]/60 disabled:opacity-40"
+                    className="text-caption font-mono font-bold text-accent hover:text-white transition-colors uppercase tracking-wider px-2 py-1 rounded-control border border-accent/30 hover:border-accent/60 disabled:opacity-40"
                   >{adjustingDietFor === phase.id ? 'Ajustando…' : 'Ajustar dieta al tramo'}</button>
                 )}
               </div>
 
               {/* Resolved energy balance */}
               {resolved.kcal != null && maintenanceKcal != null && (
-                <div className="flex flex-wrap gap-x-4 gap-y-1 text-[10px] font-mono text-[#c6c9ab] bg-[#181816] rounded-lg px-3 py-2">
+                <div className="flex flex-wrap gap-x-4 gap-y-1 text-caption font-mono text-ink-2 bg-surface rounded-surface px-3 py-2">
                   <span>Mantenimiento: <b className="text-white">{fmtKcal(maintenanceKcal)}</b></span>
                   <span>+ Pasos: <b className="text-white">{fmtKcal(stepsKcal)}</b></span>
                   <span>Gasto total: <b className="text-white">{fmtKcal(balance.totalExpenditure)}</b></span>
                   {balance.dailyDeficit != null && (
                     <span>
-                      {balance.dailyDeficit >= 0 ? 'Déficit' : 'Superávit'}: <b className={balance.dailyDeficit >= 0 ? 'text-[#fdba74]' : 'text-[#00eefc]'}>{fmtKcal(Math.abs(balance.dailyDeficit))}/día</b>
+                      {balance.dailyDeficit >= 0 ? 'Déficit' : 'Superávit'}: <b className={balance.dailyDeficit >= 0 ? 'text-warning' : 'text-data'}>{fmtKcal(Math.abs(balance.dailyDeficit))}/día</b>
                     </span>
                   )}
                   {balance.weeklyDeltaKg != null && (
@@ -594,9 +607,9 @@ export default function NutritionPeriodizationPanel({
 
         <button
           onClick={addPhase}
-          className="w-full flex items-center justify-center gap-1.5 py-2.5 border border-dashed border-[#3a3a3a] hover:border-[#a78bfa]/40 text-[#c6c9ab] hover:text-white text-xs font-mono rounded-xl transition-all"
+          className="w-full flex items-center justify-center gap-2 py-3 border border-dashed border-hairline hover:border-chart-3/40 text-ink-2 hover:text-white text-label font-sans rounded-control transition-all"
         >
-          <span className="material-symbols-outlined text-sm">add</span>
+          <Icon name="add" size="s" />
           Añadir fase
         </button>
       </div>
@@ -604,7 +617,7 @@ export default function NutritionPeriodizationPanel({
       {/* Timeline preview */}
       {form.phases.length > 0 && (
         <div className="space-y-2">
-          <span className="block text-[10px] font-mono text-[#c6c9ab] uppercase tracking-wider">Vista previa</span>
+          <span className="block text-caption font-mono text-ink-2 uppercase tracking-wider">Vista previa</span>
           <ProgramTimeline program={previewProgram} diets={diets} today={today} />
         </div>
       )}

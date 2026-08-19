@@ -1,6 +1,6 @@
 import { db, collection, doc, getDocs, addDoc, updateDoc, query, where } from '../firebase';
 import { TaskItem } from '../types';
-import { forceLocalOnly, setLocalBypassMode, stripUndefined } from './core';
+import { forceLocalOnly, setLocalBypassMode, stripUndefined, esFalloDePermisos } from './core';
 
 // ─── TASKS (dashboard "Tareas pendientes") ─────────────────────────────────────
 
@@ -28,7 +28,7 @@ export async function getTasksForAthlete(athleteId: string): Promise<TaskItem[]>
     return tasks;
   } catch (err) {
     console.warn('getTasksForAthlete Firestore failed, using local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     return getLocalTasks().filter(t => t.athleteId === athleteId);
   }
 }
@@ -46,7 +46,8 @@ export async function createTask(data: Omit<TaskItem, 'id'>): Promise<TaskItem> 
     return task;
   } catch (err) {
     console.warn('createTask Firestore failed, saving local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
     const task: TaskItem = { ...data, id: `local_task_${Date.now()}` };
     saveLocalTasks([...getLocalTasks(), task]);
     return task;
@@ -61,7 +62,8 @@ export async function updateTask(id: string, updates: Partial<TaskItem>): Promis
     saveLocalTasks(updated);
   } catch (err) {
     console.warn('updateTask Firestore failed, saving local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
     saveLocalTasks(updated);
   }
 }

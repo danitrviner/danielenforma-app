@@ -1,6 +1,6 @@
 import { db, collection, doc, setDoc, getDocs, deleteDoc, query, where, orderBy } from '../firebase';
 import { CoachReport } from '../types';
-import { forceLocalOnly, setLocalBypassMode, stripUndefined } from './core';
+import { forceLocalOnly, setLocalBypassMode, stripUndefined, esFalloDePermisos } from './core';
 
 // ─── COACH REPORTS (persistent coach→athlete performance/nutrition reports) ─────
 
@@ -27,7 +27,7 @@ export async function getCoachReportsForAthlete(athleteId: string): Promise<Coac
     return snap.docs.map(d => ({ id: d.id, ...d.data() } as CoachReport));
   } catch (err) {
     console.warn('getCoachReportsForAthlete Firestore failed, using local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     return local.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   }
 }
@@ -48,7 +48,7 @@ export async function getSentReportsForAthlete(athleteId: string): Promise<Coach
     return snap.docs.map(d => ({ id: d.id, ...d.data() } as CoachReport));
   } catch (err) {
     console.warn('getSentReportsForAthlete Firestore failed, using local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     return local.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   }
 }
@@ -64,7 +64,8 @@ export async function saveCoachReport(report: CoachReport): Promise<void> {
     await setDoc(doc(db, 'coachReports', report.id), stripUndefined(report));
   } catch (err) {
     console.warn('saveCoachReport Firestore failed, saving local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
   }
 }
 
@@ -76,7 +77,8 @@ export async function deleteCoachReport(id: string): Promise<void> {
     saveLocalCoachReports(filtered);
   } catch (err) {
     console.warn('deleteCoachReport Firestore failed, deleting local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
     saveLocalCoachReports(filtered);
   }
 }

@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { TaskItem, TaskType } from '../types';
 import { getTasksForAthlete, createTask, updateTask } from '../dbService';
-import Skeleton from './Skeleton';
+import { Skeleton } from './ui';
+import { ListRow, Button } from './ui';
 
 interface Props {
   athleteEmail: string;
@@ -69,36 +70,32 @@ export default function TaskManagerPanel({ athleteEmail }: Props) {
   const done = tasks.filter(t => t.status === 'done');
 
   return (
-    <div className="bg-[#181816] border border-white/7 rounded-2xl p-5">
+    <div className="bg-surface border border-hairline rounded-surface p-5">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
-          <span className="material-symbols-outlined text-[#fbcb1a] text-base">checklist</span>
+        <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
+          <span className="material-symbols-outlined text-accent text-title-s">checklist</span>
           Tareas del atleta
         </h3>
-        <button
-          onClick={() => setShowForm(v => !v)}
-          className="flex items-center gap-1 font-mono text-[10px] text-[#c6c9ab] hover:text-[#fbcb1a] transition-colors border border-white/7 px-2.5 py-1.5 rounded-lg"
-        >
-          <span className="material-symbols-outlined text-sm">{showForm ? 'close' : 'add'}</span>
+        <Button variant="secondary" size="s" onClick={() => setShowForm(v => !v)} icon={showForm ? 'close' : 'add'}>
           {showForm ? 'Cancelar' : 'Nueva tarea'}
-        </button>
+        </Button>
       </div>
 
       {showForm && (
-        <form onSubmit={handleCreate} className="bg-[#1e1e1b] border border-white/7 rounded-xl p-3 mb-3 space-y-2">
+        <form onSubmit={handleCreate} className="bg-raised border border-hairline rounded-surface p-3 mb-3 space-y-2">
           <input
             type="text"
             value={title}
             onChange={e => setTitle(e.target.value)}
             placeholder="Título de la tarea"
-            className="w-full bg-[#0e0e0e] border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-[#fbcb1a]"
+            className="w-full bg-bg border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent"
             required
           />
           <div className="flex gap-2">
             <select
               value={type}
               onChange={e => setType(e.target.value as TaskType)}
-              className="bg-[#0e0e0e] border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-[#fbcb1a]"
+              className="bg-bg border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent"
             >
               {(Object.keys(TYPE_LABEL) as (keyof typeof TYPE_LABEL)[]).map(k => (
                 <option key={k} value={k}>{TYPE_LABEL[k]}</option>
@@ -108,16 +105,12 @@ export default function TaskManagerPanel({ athleteEmail }: Props) {
               type="date"
               value={dueDate}
               onChange={e => setDueDate(e.target.value)}
-              className="flex-1 bg-[#0e0e0e] border border-white/7 rounded p-2 text-xs text-white focus:outline-none focus:border-[#fbcb1a]"
+              className="flex-1 bg-bg border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent"
             />
           </div>
-          <button
-            type="submit"
-            disabled={createMutation.isPending}
-            className="w-full py-2.5 bg-[#fbcb1a] text-black font-sans font-bold text-xs uppercase rounded hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-50 shadow-sm"
-          >
+          <Button type="submit" disabled={createMutation.isPending} fullWidth>
             {createMutation.isPending ? 'Guardando...' : 'Crear tarea'}
-          </button>
+          </Button>
         </form>
       )}
 
@@ -127,25 +120,24 @@ export default function TaskManagerPanel({ athleteEmail }: Props) {
           <Skeleton className="h-10 w-full" />
         </div>
       ) : tasks.length === 0 ? (
-        <p className="text-xs text-[#555] font-mono py-2">Sin tareas asignadas.</p>
+        <p className="text-label text-ink-3 font-sans py-2">Sin tareas asignadas.</p>
       ) : (
         <div className="space-y-2">
           {[...pending, ...done].map(t => (
-            <button
+            <ListRow
               key={t.id}
               onClick={() => handleToggle(t)}
-              className={`w-full flex items-center gap-3 border rounded-lg p-3 text-left transition-all ${
-                t.status === 'done' ? 'bg-[#161616] border-white/50 opacity-60' : 'bg-[#1e1e1e] border-white/7 hover:border-[#fbcb1a]/40'
+              className={`border rounded-control ${
+                t.status === 'done' ? 'bg-surface border-hairline opacity-60' : 'bg-raised border-hairline'
               }`}
-            >
-              <span className={`material-symbols-outlined flex-shrink-0 ${t.status === 'done' ? 'text-emerald-400' : 'text-[#c6c9ab]'}`}>
-                {t.status === 'done' ? 'check_circle' : 'radio_button_unchecked'}
-              </span>
-              <div className="flex-1 min-w-0">
-                <p className={`font-sans text-sm truncate ${t.status === 'done' ? 'line-through text-[#c6c9ab]' : 'text-white'}`}>{t.title}</p>
-                {t.dueDate && <p className="font-mono text-[10px] text-[#c6c9ab] mt-0.5">Vence: {t.dueDate}</p>}
-              </div>
-            </button>
+              leading={
+                <span className={`material-symbols-outlined flex-shrink-0 ${t.status === 'done' ? 'text-emerald-400' : 'text-ink-2'}`}>
+                  {t.status === 'done' ? 'check_circle' : 'radio_button_unchecked'}
+                </span>
+              }
+              title={t.title}
+              subtitle={t.dueDate ? `Vence: ${t.dueDate}` : undefined}
+            />
           ))}
         </div>
       )}

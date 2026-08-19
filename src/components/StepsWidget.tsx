@@ -4,7 +4,8 @@ import { StepLog } from '../types';
 import { getAthleteNutritionConfig, getStepsForAthlete, addSteps, updateSteps } from '../dbService';
 import { todayStr } from '../utils/questionnaireSchedule';
 import { DEFAULT_KCAL_PER_STEP } from '../utils/nutritionConstants';
-import Skeleton from './Skeleton';
+import { Skeleton } from './ui';
+import { Icon, Button } from './ui';
 
 interface Props {
   athleteEmail: string;
@@ -93,27 +94,21 @@ export default function StepsWidget({ athleteEmail }: Props) {
 
   if (loading) {
     return (
-      <div className="bg-[#181816] border border-white/7 rounded-2xl p-4">
+      <div className="bg-surface border border-hairline rounded-surface p-4">
         <Skeleton className="h-16 w-full" />
       </div>
     );
   }
 
   return (
-    <div className="bg-[#181816] border border-white/7 rounded-2xl p-4 sm:p-5">
+    <div className="bg-surface border border-hairline rounded-surface p-4 sm:p-5">
       <div className="flex items-center justify-between mb-3">
-        <h2 className="font-sans font-bold text-sm text-white flex items-center gap-2">
-          <span className="material-symbols-outlined text-[#fbcb1a] text-base">directions_walk</span>
+        <h2 className="font-sans font-bold text-body-s text-white flex items-center gap-2">
+          <Icon name="directions_walk" size="m" className="text-accent" />
           Pasos de hoy
         </h2>
         {!editing && (
-          <button
-            onClick={() => { setInput(String(steps)); setEditing(true); }}
-            className="text-[#c6c9ab] hover:text-white transition-colors"
-            title="Editar"
-          >
-            <span className="material-symbols-outlined text-base">edit</span>
-          </button>
+          <Button variant="ghost" size="s" onClick={() => { setInput(String(steps)); setEditing(true); }} icon="edit" label="Editar" />
         )}
       </div>
 
@@ -128,41 +123,32 @@ export default function StepsWidget({ athleteEmail }: Props) {
             onKeyDown={e => { if (e.key === 'Enter') handleSave(); }}
             placeholder="0"
             autoFocus
-            className="flex-1 bg-[#1e1e1b] border border-white/7 rounded-xl px-2.5 py-1.5 text-white font-mono text-sm focus:outline-none focus:ring-1 focus:ring-[#fbcb1a]"
+            className="flex-1 bg-raised border border-hairline rounded-control px-3 py-2 text-white font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-accent"
           />
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="flex-shrink-0 w-9 h-9 rounded-lg bg-[#fbcb1a] flex items-center justify-center text-black transition-all hover:bg-[#d4a800] active:scale-95 disabled:opacity-50"
-          >
-            {saving
-              ? <span className="material-symbols-outlined text-sm animate-spin">refresh</span>
-              : <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>check</span>
-            }
-          </button>
+          <Button size="s" onClick={handleSave} loading={saving} icon="check" label="Guardar" />
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-3 gap-2 mb-2 font-mono text-center">
-            <div>
-              <span className="block text-[9px] text-[#c6c9ab] uppercase">Realizados</span>
-              <span className="block text-sm font-bold text-white">{steps.toLocaleString('es-ES')}</span>
-            </div>
-            <div>
-              <span className="block text-[9px] text-[#c6c9ab] uppercase">Objetivo</span>
-              <span className="block text-sm font-bold text-[#00eefc]">{goal.toLocaleString('es-ES')}</span>
-            </div>
-            <div>
-              <span className="block text-[9px] text-[#c6c9ab] uppercase">Restantes</span>
-              <span className="block text-sm font-bold text-[#fbcb1a]">{remaining.toLocaleString('es-ES')}</span>
-            </div>
+          {/* Una línea y la barra, en vez de tres columnas rotuladas + barra +
+              pie de kcal (petición de Dani, 14-08: «dejarlo un poco más bajo»).
+              No se pierde ni un dato: realizados y objetivo van en la cifra
+              partida, lo que falta y las kcal a la derecha. Cuatro alturas de
+              texto pasan a una. */}
+          <div className="mb-2 flex items-baseline justify-between gap-3 font-mono">
+            <p className="whitespace-nowrap">
+              <span className="text-title-s font-bold text-white">{steps.toLocaleString('es-ES')}</span>
+              <span className="text-caption text-ink-2"> / {goal.toLocaleString('es-ES')}</span>
+            </p>
+            <p className="truncate text-caption text-ink-2">
+              {remaining > 0
+                ? <>Faltan <span className="font-bold text-accent">{remaining.toLocaleString('es-ES')}</span></>
+                : <span className="font-bold text-success">Objetivo cumplido</span>}
+              <span className="text-ink-3"> · +{kcalEarned.toLocaleString('es-ES')} kcal</span>
+            </p>
           </div>
-          <div className="h-1.5 bg-[#1c1b1b] rounded-full overflow-hidden">
-            <div className="h-full bg-[#fbcb1a] rounded-full transition-all duration-300" style={{ width: `${pct}%` }} />
+          <div className="h-1.5 bg-raised rounded-full overflow-hidden">
+            <div className="h-full bg-accent rounded-full transition-all duration-300" style={{ width: `${pct}%` }} />
           </div>
-          <p className="font-mono text-[9px] text-[#c6c9ab] uppercase tracking-widest mt-2 text-center">
-            +{kcalEarned.toLocaleString('es-ES')} kcal por actividad
-          </p>
         </>
       )}
     </div>

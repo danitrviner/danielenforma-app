@@ -1,6 +1,9 @@
 import { db, doc, getDoc, setDoc, updateDoc } from '../firebase';
 import { OnboardingData, OnboardingTemplate } from '../types';
-import { forceLocalOnly, setLocalBypassMode, stripUndefined } from './core';
+import {
+  forceLocalOnly, setLocalBypassMode, stripUndefined, esFalloDePermisos,
+  conTimeout, EscrituraEncolada,
+} from './core';
 
 // ─── ONBOARDING ───────────────────────────────────────────────────────────────
 
@@ -47,7 +50,8 @@ export async function updateOnboardingFoods(
     await updateDoc(doc(db, 'onboarding', email), { likedFoods, dislikedFoods });
   } catch (err) {
     console.warn('updateOnboardingFoods Firestore failed:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
   }
 }
 
@@ -57,7 +61,23 @@ export async function saveOnboarding(data: OnboardingData): Promise<void> {
   if (forceLocalOnly) {
     throw new Error('Sin conexión con Firestore. Recarga la página e inténtalo de nuevo.');
   }
-  await setDoc(doc(db, 'onboarding', data.athleteId), stripUndefined(data));
+  // El error de Firestore sube tal cual, con su `code`: es lo que permite a la
+  // pantalla decir la verdad (permisos, sesión caducada, red) en vez del
+  // «revisa tu conexión» genérico de antes. Ver utils/erroresFirestore.
+  try {
+    await conTimeout('Guardar tu ficha', setDoc(doc(db, 'onboarding', data.athleteId), stripUndefined(data)));
+  } catch (err) {
+    // 05-2. Sin red esto no resolvía nunca y el alta se quedaba en «Guardando»
+    // para siempre, en el último paso de los seis. La copia local ya está
+    // escrita arriba y la mutación está encolada en IndexedDB con la misma
+    // clave (el email), así que el alta está completa a todos los efectos:
+    // se deja pasar en vez de mandar al atleta a repetirla.
+    if (err instanceof EscrituraEncolada) {
+      console.info('saveOnboarding encolada, sube al recuperar conexión:', data.athleteId);
+      return;
+    }
+    throw err;
+  }
 }
 
 export async function updateOnboarding(data: OnboardingData): Promise<void> {
@@ -114,7 +134,8 @@ export async function saveOnboardingTemplate(coachEmail: string, tpl: Onboarding
     await setDoc(doc(db, 'onboardingTemplates', coachEmail), stripUndefined(tpl));
   } catch (err) {
     console.warn('saveOnboardingTemplate Firestore failed, saving local:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
   }
 }
 

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Icon } from './ui';
 
 // Reemplaza el carrusel genérico de AppTour: en vez de un tutorial de 6
 // pantallas que el atleta ve antes de tocar nada y olvida al cerrarlo, esto
@@ -26,15 +27,15 @@ export default function Coachmark({ id, email, icon, text }: Props) {
   if (dismissed) return null;
 
   return (
-    <div className="flex items-start gap-2.5 bg-[#fbcb1a]/8 border border-[#fbcb1a]/25 rounded-xl px-3.5 py-3">
-      <span className="material-symbols-outlined text-[#fbcb1a] text-lg flex-shrink-0">{icon}</span>
-      <p className="flex-1 text-xs text-[#fbcb1a] leading-relaxed">{text}</p>
+    <div className="flex items-start gap-3 bg-accent/8 border border-accent/25 rounded-surface px-4 py-3">
+      <Icon name={icon} size="l" className="text-accent flex-shrink-0" />
+      <p className="flex-1 text-label text-accent leading-relaxed">{text}</p>
       <button
         onClick={() => { markSeen(id, email); setDismissed(true); }}
         aria-label="Cerrar aviso"
-        className="text-[#fbcb1a]/60 hover:text-[#fbcb1a] flex-shrink-0 -m-1 p-1"
+        className="text-accent/60 hover:text-accent flex-shrink-0 -m-1 p-1"
       >
-        <span className="material-symbols-outlined text-base">close</span>
+        <Icon name="close" size="m" />
       </button>
     </div>
   );

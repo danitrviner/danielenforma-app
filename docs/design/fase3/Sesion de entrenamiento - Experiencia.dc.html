@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0a0a0a;font-family:'Plus Jakarta Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#FFC72C;text-decoration:none}a:hover{color:#ffd75e}
+@keyframes fu{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes tc1{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:none}}
+@keyframes tc2{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:none}}
+@keyframes drop1{from{opacity:0;transform:translateY(-10px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes drop2{from{opacity:0;transform:translateY(-10px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes line1{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+@keyframes myo1{from{opacity:0;transform:scale(.6)}60%{transform:scale(1.08)}to{opacity:1;transform:scale(1)}}
+@keyframes myo2{from{opacity:0;transform:scale(.6)}60%{transform:scale(1.08)}to{opacity:1;transform:scale(1)}}
+@keyframes fail{0%,100%{box-shadow:0 0 0 0 rgba(255,90,78,0);border-color:rgba(255,90,78,.35)}50%{box-shadow:0 0 0 6px rgba(255,90,78,.07);border-color:rgba(255,90,78,.75)}}
+@keyframes rec{0%,100%{opacity:1}50%{opacity:.25}}
+@keyframes ping{0%{box-shadow:0 0 0 0 rgba(255,199,44,.3)}100%{box-shadow:0 0 0 9px rgba(255,199,44,0)}}
+@keyframes ampulse{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
+.nsc{overflow-y:auto;scrollbar-width:none}.nsc::-webkit-scrollbar{display:none}
+</style>
+</helmet>
+
+<section style="padding:44px 48px 60px;background:#0a0a0a">
+<div style="display:flex;align-items:baseline;gap:14px;margin:0 0 6px">
+<span style="font:900 34px/1 Archivo,sans-serif;letter-spacing:-.02em;color:#F5F5F4;text-transform:uppercase">Sesión</span>
+<span style="font:500 11px/1 'IBM Plex Mono',monospace;letter-spacing:.14em;color:#FFC72C;text-transform:uppercase">Fase 3 · la pantalla del entreno</span>
+</div>
+<p style="max-width:700px;margin:0 0 34px;font:400 13.5px/1.65 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.5);text-wrap:pretty">La pantalla que se mira una hora seguida. Registro con el valor de la última vez en gris, parámetros que impone el coach destacados, vídeo que se despliega solo si hace falta, cambio de ejercicio arrastrando, y una animación propia por tipo de serie: dropset, myoreps, AMRAP y fallo.</p>
+
+<div style="display:flex;flex-wrap:wrap;gap:30px;align-items:flex-start">
+
+<!-- 1 · REGISTRO -->
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;align-items:baseline;gap:9px"><span style="font:600 10.5px/1 'IBM Plex Mono',monospace;padding:4px 7px;background:#FFC72C;color:#050505;border-radius:5px">01</span><span style="font:600 12px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.72)">Registro · serie normal</span></div>
+<div style="width:390px;height:780px;background:#050505;border:1px solid rgba(255,255,255,.08);border-radius:34px;overflow:hidden;position:relative;box-shadow:0 30px 70px -30px rgba(0,0,0,.9)">
+  <div style="height:46px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 20px 6px;font:500 11px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.4)"><span>9:41</span><span>EN FORMA</span></div>
+  <div style="display:flex;align-items:center;gap:12px;padding:6px 20px 0">
+    <div style="width:34px;height:34px;border-radius:11px;background:#0F0F0F;border:1px solid rgba(255,255,255,.07);display:flex;align-items:center;justify-content:center;flex:none;cursor:pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(245,245,244,.6)" stroke-width="2.2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></div>
+    <div style="flex:1"><div style="font:600 13px/1 'Plus Jakarta Sans',sans-serif;color:#F5F5F4">Fuerza · tren superior</div><div style="font:500 10.5px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.36);margin-top:5px">EJERCICIO {{ exNum }}/5</div></div>
+    <div style="display:flex;align-items:center;gap:7px;padding:8px 11px;border-radius:11px;background:#0F0F0F"><span style="width:6px;height:6px;border-radius:3px;background:#3ECF8E;flex:none"></span><span style="font:600 12px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.7)">42:18</span></div>
+  </div>
+  <div style="display:flex;gap:4px;padding:14px 20px 0">
+    <sc-for list="{{ steps }}" as="s" hint-placeholder-count="5"><div style="{{ s.style }}"></div></sc-for>
+  </div>
+
+  <div onPointerDown="{{ down }}" onPointerMove="{{ move }}" onPointerUp="{{ up }}" onPointerCancel="{{ up }}" style="{{ cardStyle }}">
+    <div onClick="{{ toggleVid }}" style="{{ vidStrip }}">
+      <div style="width:30px;height:30px;border-radius:10px;background:rgba(255,199,44,.14);display:flex;align-items:center;justify-content:center;flex:none"><svg width="13" height="13" viewBox="0 0 24 24" fill="#FFC72C"><path d="M8 5l11 7-11 7z"/></svg></div>
+      <span style="flex:1;font:600 12.5px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.75)">{{ vidLabel }}</span>
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(245,245,244,.45)" stroke-width="2" stroke-linecap="round" style="{{ vidChev }}"><path d="M6 9l6 6 6-6"/></svg>
+    </div>
+    <div style="{{ vidBody }}">
+      <div style="width:100%;height:170px;border-radius:14px;background:#141414;border:1px dashed rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center"><span style="font:500 10px/1.4 'IBM Plex Mono',monospace;color:rgba(245,245,244,.3);text-align:center">VÍDEO DEMO<br>16:9</span></div>
+    </div>
+
+    <div style="font:900 25px/1.06 Archivo,sans-serif;color:#F5F5F4;letter-spacing:-.025em;margin-top:14px;text-transform:uppercase">{{ exName }}</div>
+    <div style="display:flex;gap:7px;margin-top:12px;flex-wrap:wrap">
+      <span style="{{ chipSets }}">{{ exSets }}</span>
+      <span style="{{ chipLoad }}"><sc-if value="{{ locked }}" hint-placeholder-val="{{ true }}"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#FFC72C" stroke-width="2.4" stroke-linecap="round" style="margin-right:5px"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg></sc-if>{{ exLoad }}</span>
+      <span style="{{ chipTempo }}">{{ exTempo }}</span>
+    </div>
+    <div style="{{ coachNote }}">
+      <div style="width:22px;height:22px;border-radius:50%;background:rgba(255,199,44,.16);display:flex;align-items:center;justify-content:center;flex:none"><span style="font:700 9px/1 'Plus Jakarta Sans',sans-serif;color:#FFC72C">D</span></div>
+      <span style="flex:1;font:500 12px/1.45 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.62)">{{ coachTxt }}</span>
+    </div>
+
+    <div style="margin-top:14px;background:#0B0B0B;border:1px solid rgba(255,255,255,.07);border-radius:16px;overflow:hidden">
+      <div style="display:flex;align-items:center;padding:9px 13px;background:#0D0D0D">
+        <span style="width:24px;font:600 9px/1 'IBM Plex Mono',monospace;letter-spacing:.12em;color:rgba(245,245,244,.3)">Nº</span>
+        <span style="flex:1;font:600 9px/1 'IBM Plex Mono',monospace;letter-spacing:.12em;color:rgba(245,245,244,.3)">REPS</span>
+        <span style="{{ kgHead }}">KG</span>
+        <span style="width:40px;font:600 9px/1 'IBM Plex Mono',monospace;letter-spacing:.12em;color:rgba(245,245,244,.3)">RPE</span>
+        <span style="width:26px"></span>
+      </div>
+      <sc-for list="{{ logRows }}" as="s" hint-placeholder-count="4">
+        <div style="{{ s.row }}">
+          <span style="{{ s.num }}">{{ s.n }}</span>
+          <div style="flex:1"><div style="{{ s.repsV }}">{{ s.reps }}</div><div style="{{ s.ghost }}">{{ s.repsGhost }}</div></div>
+          <div style="{{ s.kgCell }}"><div style="{{ s.kgV }}">{{ s.kg }}</div><div style="{{ s.ghost }}">{{ s.kgGhost }}</div></div>
+          <div style="width:40px"><div style="{{ s.rpeV }}">{{ s.rpe }}</div></div>
+          <div onClick="{{ s.set }}" style="{{ s.box }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#050505" stroke-width="3.4" stroke-linecap="round" style="{{ s.tick }}"><path d="M20 6L9 17l-5-5"/></svg></div>
+        </div>
+      </sc-for>
+    </div>
+    <div style="{{ restStyle }}">
+      <span style="width:7px;height:7px;border-radius:4px;background:#FFC72C;flex:none;animation:ping 1.4s cubic-bezier(.2,.9,.2,1) infinite"></span>
+      <span style="font:600 12.5px/1 'IBM Plex Mono',monospace;color:#FFC72C;letter-spacing:.05em">DESCANSO {{ restTxt }}</span>
+      <div style="flex:1"></div>
+      <span onClick="{{ skipRest }}" style="font:600 11.5px/1 'Plus Jakarta Sans',sans-serif;color:rgba(255,199,44,.75);cursor:pointer">Saltar</span>
+    </div>
+    <div style="{{ hintStyle }}">‹ arrastra para cambiar de ejercicio ›</div>
+  </div>
+</div>
+</div>
+
+<!-- 2 · DROPSET -->
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;align-items:baseline;gap:9px"><span style="font:600 10.5px/1 'IBM Plex Mono',monospace;padding:4px 7px;background:#FFC72C;color:#050505;border-radius:5px">02</span><span style="font:600 12px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.72)">Dropset</span></div>
+<div style="width:390px;height:780px;background:#050505;border:1px solid rgba(255,255,255,.08);border-radius:34px;overflow:hidden;position:relative;box-shadow:0 30px 70px -30px rgba(0,0,0,.9)">
+  <div style="height:46px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 20px 6px;font:500 11px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.4)"><span>9:41</span><span>EN FORMA</span></div>
+  <div style="padding:14px 20px 0">
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="padding:6px 10px;border-radius:8px;background:rgba(255,199,44,.14);font:700 10px/1 'IBM Plex Mono',monospace;letter-spacing:.12em;color:#FFC72C">DROPSET</span>
+      <span style="font:500 11px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.36)">SERIE 3 DE 3</span>
+    </div>
+    <div style="font:900 25px/1.06 Archivo,sans-serif;color:#F5F5F4;letter-spacing:-.025em;margin-top:14px;text-transform:uppercase">Elevaciones laterales</div>
+    <div style="font:400 12.5px/1.5 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.45);margin-top:9px">Sin descanso entre bajadas. Cambia el peso y sigue hasta que no puedas mantener la técnica.</div>
+
+    <div style="margin-top:20px;position:relative">
+      <sc-for list="{{ drops }}" as="d" hint-placeholder-count="3">
+        <div style="{{ d.wrap }}">
+          <div style="{{ d.line }}"></div>
+          <div style="{{ d.card }}">
+            <div style="{{ d.badge }}"><span style="{{ d.badgeTxt }}">{{ d.tag }}</span></div>
+            <div style="flex:1">
+              <div style="display:flex;align-items:baseline;gap:8px"><span style="{{ d.kg }}">{{ d.kgTxt }}</span><span style="font:500 11.5px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.35)">kg</span><span style="{{ d.arrow }}">{{ d.delta }}</span></div>
+              <div style="{{ d.ghost }}">{{ d.ghostTxt }}</div>
+            </div>
+            <div style="text-align:right;margin-right:12px"><div style="{{ d.reps }}">{{ d.repsTxt }}</div><div style="font:500 9px/1 'IBM Plex Mono',monospace;letter-spacing:.1em;color:rgba(245,245,244,.3);margin-top:5px">REPS</div></div>
+            <div onClick="{{ d.set }}" style="{{ d.box }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#050505" stroke-width="3.4" stroke-linecap="round" style="{{ d.tick }}"><path d="M20 6L9 17l-5-5"/></svg></div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+    <div onClick="{{ addDrop }}" style="{{ addDropStyle }}"><svg width="14" height="14" viewBox="0 0 24 24" stroke="#FFC72C" stroke-width="2.4" stroke-linecap="round" fill="none"><path d="M5 12h14M12 5v14"/></svg><span style="font:600 12.5px/1 'Plus Jakarta Sans',sans-serif;color:#FFC72C">Añadir bajada</span></div>
+
+    <div style="{{ dropTotal }}">
+      <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font:600 9.5px/1 'IBM Plex Mono',monospace;letter-spacing:.14em;color:rgba(245,245,244,.34)">TOTAL DEL DROPSET</span><span style="font:600 11px/1 'IBM Plex Mono',monospace;color:#3ECF8E">{{ dropDone }}</span></div>
+      <div style="display:flex;align-items:baseline;gap:8px;margin-top:10px"><span style="font:900 30px/1 Archivo,sans-serif;color:#F5F5F4;letter-spacing:-.03em">{{ dropReps }}</span><span style="font:500 12px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.42)">reps · {{ dropVol }} kg de volumen</span></div>
+    </div>
+    <div style="margin-top:20px;font:400 10.5px/1.65 'IBM Plex Mono',monospace;color:rgba(245,245,244,.3)">Cada bajada entra cayendo 10 px con la línea que la conecta<br>dibujándose de arriba abajo (300 ms, 60 ms de retardo)</div>
+  </div>
+</div>
+</div>
+
+<!-- 3 · MYOREPS -->
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;align-items:baseline;gap:9px"><span style="font:600 10.5px/1 'IBM Plex Mono',monospace;padding:4px 7px;background:#FFC72C;color:#050505;border-radius:5px">03</span><span style="font:600 12px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.72)">Myoreps</span></div>
+<div style="width:390px;height:780px;background:#050505;border:1px solid rgba(255,255,255,.08);border-radius:34px;overflow:hidden;position:relative;box-shadow:0 30px 70px -30px rgba(0,0,0,.9)">
+  <div style="height:46px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 20px 6px;font:500 11px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.4)"><span>9:41</span><span>EN FORMA</span></div>
+  <div style="padding:14px 20px 0">
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="padding:6px 10px;border-radius:8px;background:rgba(255,199,44,.14);font:700 10px/1 'IBM Plex Mono',monospace;letter-spacing:.12em;color:#FFC72C">MYOREPS</span>
+      <span style="font:500 11px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.36)">ACTIVACIÓN + MINISERIES</span>
+    </div>
+    <div style="font:900 25px/1.06 Archivo,sans-serif;color:#F5F5F4;letter-spacing:-.025em;margin-top:14px;text-transform:uppercase">Curl en polea</div>
+
+    <div style="{{ actCard }}">
+      <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font:600 9.5px/1 'IBM Plex Mono',monospace;letter-spacing:.14em;color:rgba(245,245,244,.34)">SERIE DE ACTIVACIÓN</span><span style="font:500 10px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.28)">RPE 9 · deja 1 en recámara</span></div>
+      <div style="display:flex;align-items:flex-end;gap:14px;margin-top:12px">
+        <div><div style="font:900 34px/1 Archivo,sans-serif;color:#F5F5F4;letter-spacing:-.03em">15</div><div style="font:500 9px/1 'IBM Plex Mono',monospace;letter-spacing:.1em;color:rgba(245,245,244,.3);margin-top:6px">REPS</div></div>
+        <div><div style="font:600 22px/1 'IBM Plex Mono',monospace;color:#F5F5F4">22</div><div style="font:500 9px/1 'IBM Plex Mono',monospace;letter-spacing:.1em;color:rgba(245,245,244,.3);margin-top:6px">KG</div></div>
+        <div style="flex:1"></div>
+        <div onClick="{{ setAct }}" style="{{ actBox }}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#050505" stroke-width="3.4" stroke-linecap="round" style="{{ actTick }}"><path d="M20 6L9 17l-5-5"/></svg></div>
+      </div>
+      <div style="font:400 10.5px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.28);margin-top:12px">Última vez: 14 reps · 22 kg</div>
+    </div>
+
+    <div style="{{ myoZone }}">
+      <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font:600 9.5px/1 'IBM Plex Mono',monospace;letter-spacing:.14em;color:rgba(245,245,244,.34)">MINISERIES · 15 s DE PAUSA</span><span style="{{ myoPauseTxt }}">{{ myoPause }}</span></div>
+      <div style="display:flex;flex-wrap:wrap;gap:9px;margin-top:14px;align-items:center">
+        <sc-for list="{{ myo }}" as="m" hint-placeholder-count="3">
+          <div style="{{ m.pill }}"><span style="{{ m.n }}">{{ m.reps }}</span><span style="font:500 9px/1 'IBM Plex Mono',monospace;color:rgba(5,5,5,.55)">reps</span></div>
+        </sc-for>
+        <div onClick="{{ addMyo }}" style="{{ addMyoStyle }}"><svg width="15" height="15" viewBox="0 0 24 24" stroke="#FFC72C" stroke-width="2.4" stroke-linecap="round" fill="none"><path d="M5 12h14M12 5v14"/></svg></div>
+      </div>
+      <div style="font:400 11px/1.55 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.42);margin-top:14px">{{ myoAdvice }}</div>
+    </div>
+
+    <div style="{{ myoTotal }}">
+      <span style="font:600 9.5px/1 'IBM Plex Mono',monospace;letter-spacing:.14em;color:rgba(245,245,244,.34)">TOTAL EFECTIVO</span>
+      <div style="display:flex;align-items:baseline;gap:8px;margin-top:9px"><span style="font:900 28px/1 Archivo,sans-serif;color:#FFC72C;letter-spacing:-.03em">{{ myoSum }}</span><span style="font:500 12px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.42)">reps cerca del fallo</span></div>
+    </div>
+    <div style="margin-top:18px;font:400 10.5px/1.65 'IBM Plex Mono',monospace;color:rgba(245,245,244,.3)">Cada miniserie aparece con un rebote (escala .6 → 1,08 → 1)<br>Si bajas de 5 reps, la app corta la serie sola</div>
+  </div>
+</div>
+</div>
+
+<!-- 4 · AMRAP Y FALLO -->
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;align-items:baseline;gap:9px"><span style="font:600 10.5px/1 'IBM Plex Mono',monospace;padding:4px 7px;background:#FFC72C;color:#050505;border-radius:5px">04</span><span style="font:600 12px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.72)">AMRAP y serie al fallo</span></div>
+<div style="width:390px;height:780px;background:#050505;border:1px solid rgba(255,255,255,.08);border-radius:34px;overflow:hidden;position:relative;box-shadow:0 30px 70px -30px rgba(0,0,0,.9)">
+  <div style="height:46px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 20px 6px;font:500 11px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.4)"><span>9:41</span><span>EN FORMA</span></div>
+  <div style="padding:14px 20px 0">
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="padding:6px 10px;border-radius:8px;background:rgba(255,199,44,.14);font:700 10px/1 'IBM Plex Mono',monospace;letter-spacing:.12em;color:#FFC72C">DESCANSO</span>
+      <span style="font:500 11px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.36)">SERIE 3 DE 4 · PRESS BANCA</span>
+    </div>
+
+    <div style="margin-top:16px;padding:18px 17px;background:#0B0B0B;border:1px solid rgba(255,255,255,.07);border-radius:20px">
+      <div style="position:relative;width:164px;height:164px;margin:0 auto">
+        <svg width="164" height="164" viewBox="0 0 164 164"><circle cx="82" cy="82" r="72" fill="none" stroke="#161616" stroke-width="9"/><circle cx="82" cy="82" r="72" fill="none" stroke="#FFC72C" stroke-width="9" stroke-linecap="round" transform="rotate(-90 82 82)" style="{{ tRing }}"/></svg>
+        <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">
+          <span style="{{ tBig }}">{{ tTxt }}</span>
+          <span style="{{ tStateStyle }}">{{ tState }}</span>
+        </div>
+      </div>
+      <div style="display:flex;gap:9px;margin-top:16px">
+        <div onClick="{{ tPlus }}" style="width:62px;height:52px;border-radius:15px;background:#161616;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none"><span style="font:600 12.5px/1 'IBM Plex Mono',monospace;color:#F5F5F4">+15s</span></div>
+        <div onClick="{{ tToggle }}" style="{{ tBtn }}"><span style="font:700 14.5px/1 'Plus Jakarta Sans',sans-serif;color:#050505">{{ tBtnTxt }}</span></div>
+        <div onClick="{{ tSkip }}" style="width:62px;height:52px;border-radius:15px;background:#161616;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#F5F5F4" stroke-width="2.2" stroke-linecap="round"><path d="M6 5l8 7-8 7M17 5v14"/></svg></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:14px;margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,.06)">
+        <div style="flex:1"><div style="font:600 12.5px/1.3 'Plus Jakarta Sans',sans-serif;color:#F5F5F4">Mostrar en pantalla de bloqueo</div><div style="font:400 10px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.3);margin-top:6px">VIBRA AL TERMINAR</div></div>
+        <div onClick="{{ lockToggle }}" style="{{ lockTrack }}"><div style="{{ lockKnob }}"></div></div>
+      </div>
+    </div>
+    <div style="{{ lockCardStyle }}">
+      <div style="font:500 9px/1 'IBM Plex Mono',monospace;letter-spacing:.14em;color:rgba(245,245,244,.28);text-align:center">PANTALLA DE BLOQUEO</div>
+      <div style="margin-top:11px;padding:13px;border-radius:18px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);display:flex;align-items:center;gap:12px">
+        <div style="width:36px;height:36px;border-radius:11px;background:#FFC72C;display:flex;align-items:center;justify-content:center;flex:none"><span style="font:900 13px/1 Archivo,sans-serif;color:#050505">EF</span></div>
+        <div style="flex:1;min-width:0"><div style="font:700 12px/1 'Plus Jakarta Sans',sans-serif;color:#F5F5F4">Descanso · serie 3 de 4</div><div style="font:400 10px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.48);margin-top:5px">Press banca · 8 reps a 60 kg</div></div>
+        <span style="{{ lockTime }}">{{ tTxt }}</span>
+      </div>
+    </div>
+
+    <div style="{{ failCard }}">
+      <div style="display:flex;align-items:center;gap:9px">
+        <span style="padding:5px 9px;border-radius:7px;background:rgba(255,90,78,.14);font:700 9.5px/1 'IBM Plex Mono',monospace;letter-spacing:.12em;color:#FF5A4E">AL FALLO</span>
+        <span style="font:500 10.5px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.34)">SIN REPS OBJETIVO</span>
+      </div>
+      <div style="display:flex;align-items:flex-end;gap:16px;margin-top:14px">
+        <div><div style="{{ failN }}">{{ failReps }}</div><div style="font:500 9px/1 'IBM Plex Mono',monospace;letter-spacing:.1em;color:rgba(245,245,244,.3);margin-top:6px">REPS HECHAS</div></div>
+        <div style="flex:1"></div>
+        <div onClick="{{ failMinus }}" style="width:44px;height:44px;border-radius:13px;background:#161616;display:flex;align-items:center;justify-content:center;cursor:pointer"><svg width="16" height="16" viewBox="0 0 24 24" stroke="#F5F5F4" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14"/></svg></div>
+        <div onClick="{{ failPlus }}" style="width:44px;height:44px;border-radius:13px;background:rgba(255,90,78,.16);border:1px solid rgba(255,90,78,.4);display:flex;align-items:center;justify-content:center;cursor:pointer"><svg width="16" height="16" viewBox="0 0 24 24" stroke="#FF5A4E" stroke-width="2.4" stroke-linecap="round" fill="none"><path d="M5 12h14M12 5v14"/></svg></div>
+      </div>
+      <div style="{{ failMsg }}">{{ failTxt }}</div>
+    </div>
+    <div style="margin-top:16px;font:400 10.5px/1.65 'IBM Plex Mono',monospace;color:rgba(245,245,244,.3)">AMRAP: el anillo se vacía en 60 s y el contador late al sumar<br>Al fallo: el borde rojo respira mientras la serie está abierta</div>
+  </div>
+</div>
+</div>
+
+<!-- 5 · GRABACIÓN PEDIDA -->
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;align-items:baseline;gap:9px"><span style="font:600 10.5px/1 'IBM Plex Mono',monospace;padding:4px 7px;background:#FFC72C;color:#050505;border-radius:5px">05</span><span style="font:600 12px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.72)">Grabación pedida por el coach</span></div>
+<div style="width:390px;height:780px;background:#050505;border:1px solid rgba(255,255,255,.08);border-radius:34px;overflow:hidden;position:relative;box-shadow:0 30px 70px -30px rgba(0,0,0,.9)">
+  <div style="height:46px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 20px 6px;font:500 11px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.4)"><span>9:41</span><span>EN FORMA</span></div>
+  <div style="padding:14px 20px 0">
+    <div style="{{ recBanner }}">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="width:26px;height:26px;border-radius:50%;background:rgba(255,199,44,.16);display:flex;align-items:center;justify-content:center;flex:none"><span style="font:700 10px/1 'Plus Jakarta Sans',sans-serif;color:#FFC72C">D</span></div>
+        <span style="flex:1;font:700 12.5px/1.3 'Plus Jakarta Sans',sans-serif;color:#F5F5F4">Dani te pide vídeo de la serie 3</span>
+        <span style="{{ recDot }}"></span>
+      </div>
+      <div style="font:400 12px/1.5 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.55);margin-top:9px">«Grábame el press de lado para ver si el codo se abre en la bajada.»</div>
+    </div>
+
+    <div style="font:900 25px/1.06 Archivo,sans-serif;color:#F5F5F4;letter-spacing:-.025em;margin-top:18px;text-transform:uppercase">Press banca inclinado</div>
+    <div style="display:flex;gap:7px;margin-top:12px">
+      <span style="padding:6px 10px;border-radius:9px;background:#161616;font:500 11.5px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.72)">4×8</span>
+      <span style="padding:6px 10px;border-radius:9px;background:rgba(255,199,44,.14);border:1px solid rgba(255,199,44,.35);display:flex;align-items:center;font:500 11.5px/1 'IBM Plex Mono',monospace;color:#FFC72C"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#FFC72C" stroke-width="2.4" stroke-linecap="round" style="margin-right:5px"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg>60 kg fijos</span>
+      <span style="padding:6px 10px;border-radius:9px;background:#161616;font:500 11.5px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.72)">3-0-1</span>
+    </div>
+
+    <div style="margin-top:16px;background:#0B0B0B;border:1px solid rgba(255,255,255,.07);border-radius:16px;overflow:hidden">
+      <sc-for list="{{ recRows }}" as="r" hint-placeholder-count="4">
+        <div style="{{ r.row }}">
+          <span style="{{ r.num }}">{{ r.n }}</span>
+          <span style="{{ r.txt }}">{{ r.label }}</span>
+          <div style="flex:1"></div>
+          <sc-if value="{{ r.needsVid }}" hint-placeholder-val="{{ false }}"><div onClick="{{ recAction }}" style="{{ r.camBtn }}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" style="{{ r.camIcon }}"><path d="M4 8h9v8H4zM13 11l5-3v8l-5-3"/></svg><span style="{{ r.camTxt }}">{{ recBtnLabel }}</span></div></sc-if>
+          <div style="{{ r.box }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#050505" stroke-width="3.4" stroke-linecap="round" style="{{ r.tick }}"><path d="M20 6L9 17l-5-5"/></svg></div>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="{{ recFileStyle }}">
+      <div style="width:52px;height:40px;border-radius:9px;background:#141414;border:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;flex:none"><svg width="15" height="15" viewBox="0 0 24 24" fill="#FFC72C"><path d="M8 5l11 7-11 7z"/></svg></div>
+      <div style="flex:1"><div style="font:600 12.5px/1 'Plus Jakarta Sans',sans-serif;color:#F5F5F4">serie-3.mp4 · 12 s</div><div style="font:400 10.5px/1 'IBM Plex Mono',monospace;color:rgba(62,207,142,.85);margin-top:6px">ENVIADO A DANI</div></div>
+      <span onClick="{{ recRedo }}" style="font:600 11.5px/1 'Plus Jakarta Sans',sans-serif;color:rgba(255,199,44,.8);cursor:pointer">Rehacer</span>
+    </div>
+    <div style="margin-top:18px;font:400 10.5px/1.65 'IBM Plex Mono',monospace;color:rgba(245,245,244,.3)">La serie con vídeo pedido no se puede cerrar sin grabar:<br>el punto rojo late hasta que el archivo se sube</div>
+  </div>
+</div>
+</div>
+
+<!-- 6 · CIERRE DE EJERCICIO -->
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;align-items:baseline;gap:9px"><span style="font:600 10.5px/1 'IBM Plex Mono',monospace;padding:4px 7px;background:#FFC72C;color:#050505;border-radius:5px">06</span><span style="font:600 12px/1 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.72)">Cierre de ejercicio</span></div>
+<div style="width:390px;height:780px;background:#050505;border:1px solid rgba(255,255,255,.08);border-radius:34px;overflow:hidden;position:relative;box-shadow:0 30px 70px -30px rgba(0,0,0,.9)">
+  <div style="height:46px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 20px 6px;font:500 11px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.4)"><span>9:41</span><span>EN FORMA</span></div>
+  <div style="padding:16px 20px 0">
+    <div style="animation:fu .5s cubic-bezier(.2,.9,.2,1) both;display:flex;align-items:center;gap:11px">
+      <div style="width:34px;height:34px;border-radius:50%;background:rgba(62,207,142,.16);display:flex;align-items:center;justify-content:center;flex:none"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#3ECF8E" stroke-width="3" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg></div>
+      <div><div style="font:700 15px/1 'Plus Jakarta Sans',sans-serif;color:#F5F5F4">Press banca cerrado</div><div style="font:500 10.5px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.38);margin-top:6px">4 SERIES · 11:42</div></div>
+    </div>
+
+    <div style="animation:fu .5s cubic-bezier(.2,.9,.2,1) .06s both;margin-top:20px;background:#0B0B0B;border:1px solid rgba(255,199,44,.28);border-radius:20px;padding:18px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div><div style="font:600 9.5px/1 'IBM Plex Mono',monospace;letter-spacing:.14em;color:#FFC72C">RÉCORD PERSONAL</div><div style="display:flex;align-items:baseline;gap:7px;margin-top:11px"><span style="font:900 34px/1 Archivo,sans-serif;color:#F5F5F4;letter-spacing:-.03em">62,5</span><span style="font:500 12px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.42)">kg × 6</span></div></div>
+        <div style="padding:5px 9px;border-radius:8px;background:rgba(255,199,44,.16);font:700 10px/1 'IBM Plex Mono',monospace;color:#FFC72C">NUEVO</div>
+      </div>
+      <div style="font:400 11.5px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.35);margin-top:12px">Anterior: 60 kg × 6 · hace 12 días</div>
+    </div>
+
+    <div style="animation:fu .5s cubic-bezier(.2,.9,.2,1) .12s both;margin-top:12px;display:flex;gap:10px">
+      <div style="flex:1;background:#0B0B0B;border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:14px"><div style="font:600 9px/1 'IBM Plex Mono',monospace;letter-spacing:.13em;color:rgba(245,245,244,.34)">VOLUMEN</div><div style="font:600 20px/1 'IBM Plex Mono',monospace;color:#F5F5F4;margin-top:9px">1.860</div><div style="font:400 9.5px/1 'IBM Plex Mono',monospace;color:rgba(62,207,142,.8);margin-top:6px">+7% VS ÚLTIMA</div></div>
+      <div style="flex:1;background:#0B0B0B;border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:14px"><div style="font:600 9px/1 'IBM Plex Mono',monospace;letter-spacing:.13em;color:rgba(245,245,244,.34)">RPE MEDIO</div><div style="font:600 20px/1 'IBM Plex Mono',monospace;color:#F5F5F4;margin-top:9px">8,3</div><div style="font:400 9.5px/1 'IBM Plex Mono',monospace;color:rgba(245,245,244,.3);margin-top:6px">OBJETIVO 8</div></div>
+    </div>
+
+    <div style="animation:fu .5s cubic-bezier(.2,.9,.2,1) .18s both;margin-top:18px">
+      <div style="font:600 9.5px/1 'IBM Plex Mono',monospace;letter-spacing:.14em;color:rgba(245,245,244,.34);text-transform:uppercase">Nota para Dani</div>
+      <div style="margin-top:11px;min-height:74px;border-radius:16px;background:#0B0B0B;border:1px solid rgba(255,255,255,.08);padding:14px;font:400 13px/1.55 'Plus Jakarta Sans',sans-serif;color:rgba(245,245,244,.45)">Escribe cómo te has sentido…</div>
+      <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+        <sc-for list="{{ notes }}" as="n" hint-placeholder-count="4"><div onClick="{{ n.set }}" style="{{ n.style }}"><span style="font:600 12px/1 'Plus Jakarta Sans',sans-serif">{{ n.label }}</span></div></sc-for>
+      </div>
+    </div>
+  </div>
+  <div style="position:absolute;left:0;right:0;bottom:0;padding:16px 20px 26px;background:linear-gradient(to top,#050505 55%,rgba(5,5,5,0));display:flex;gap:11px">
+    <div style="width:56px;height:56px;border-radius:16px;background:#0F0F0F;border:1px solid rgba(255,255,255,.07);display:flex;align-items:center;justify-content:center;flex:none;cursor:pointer"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F5F5F4" stroke-width="2.2" stroke-linecap="round"><path d="M15 6l-6 6 6 6"/></svg></div>
+    <div style="flex:1;height:56px;border-radius:16px;background:#FFC72C;display:flex;align-items:center;justify-content:center;gap:9px;cursor:pointer" style-active="transform:scale(.98)"><span style="font:700 15px/1 'Plus Jakarta Sans',sans-serif;color:#050505">Siguiente: remo con barra</span></div>
+  </div>
+</div>
+</div>
+
+</div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:2640,&quot;height&quot;:980}}">
+class Component extends DCLogic {
+  state = {
+    ex: 0, dir: 1, anim: 0, vid: false, dragX: 0, dragging: false,
+    log: { '0-0': 1, '0-1': 1 }, rest: 0,
+    drops: { 0: 1 }, dropN: 3,
+    act: false, myo: [5, 4], t: 72, tTotal: 90, tRun: true, lock: true, fail: 9, note: -1,
+    rec: 'idle'
+  };
+  componentWillUnmount() { clearInterval(this.iv); clearInterval(this.am); clearTimeout(this.rt); }
+  startRest() {
+    clearInterval(this.iv); this.setState({ rest: 90 });
+    this.iv = setInterval(() => {
+      if (this.state.rest <= 1) { clearInterval(this.iv); this.setState({ rest: 0 }); }
+      else this.setState({ rest: this.state.rest - 1 });
+    }, 1000);
+  }
+  startAm() {
+    if (this.state.amRun) return;
+    this.setState({ amRun: true });
+    clearInterval(this.am);
+    this.am = setInterval(() => {
+      if (this.state.amT <= 1) { clearInterval(this.am); this.setState({ amT: 0, amRun: false }); }
+      else this.setState({ amT: this.state.amT - 1 });
+    }, 1000);
+  }
+  renderVals() {
+    const G = '#FFC72C', W = '#F5F5F4', R = '#FF5A4E', GR = '#3ECF8E';
+    const par = this.state.anim % 2 === 0;
+    const enter = (b) => b + (par ? '1' : '2');
+    const mono = (s, c) => ({ font: "500 " + s + "px/1 'IBM Plex Mono',monospace", color: c });
+
+    const EX = [
+      { name: 'Press banca inclinado', sets: '4×8', load: '60 kg', tempo: '3-0-1', locked: true, n: 4, reps: [8, 8, 8, 8], kg: ['60', '60', '60', '60'], r: [7, 8, 8, 9], last: [[8, '57,5'], [8, '57,5'], [7, '57,5'], [6, '55']], coach: 'Carga fija esta semana: quiero ver las 8 limpias antes de subir.' },
+      { name: 'Remo con barra', sets: '4×10', load: '55 kg', tempo: '2-1-1', locked: false, n: 4, reps: [10, 10, 10, 10], kg: ['55', '55', '55', '57,5'], r: [7, 7, 8, 8], last: [[10, '52,5'], [10, '52,5'], [9, '55'], [9, '55']], coach: 'Sube el peso si las dos primeras salen a RPE 7.' },
+      { name: 'Elevaciones laterales', sets: '3×12', load: '10 kg', tempo: 'Fluido', locked: false, n: 3, reps: [12, 12, 12], kg: ['10', '10', '10'], r: [8, 8, 9], last: [[12, '10'], [11, '10'], [10, '10']], coach: 'La tercera serie es dropset. No descanses entre bajadas.' },
+      { name: 'Fondos en paralelas', sets: 'AMRAP 60 s', load: 'Peso libre', tempo: 'Control', locked: false, n: 3, reps: ['—', '—', '—'], kg: ['—', '—', '—'], r: [8, 9, 9], last: [[14, '—'], [12, '—'], [10, '—']], coach: 'Cuenta solo las reps con pecho a la altura de las manos.' },
+      { name: 'Face pull', sets: '3×15', load: '22 kg', tempo: '2-1-2', locked: true, n: 3, reps: [15, 15, 15], kg: ['22', '22', '22'], r: [7, 7, 8], last: [[15, '20'], [15, '20'], [14, '22']], coach: 'Peso fijo: prioriza abrir al final del recorrido.' }
+    ];
+    const ex = EX[this.state.ex];
+
+    const DROPS = [{ kg: '10', reps: 12, delta: null, ghost: '12 reps la última vez' }, { kg: '7,5', reps: 9, delta: '−25%', ghost: '8 reps la última vez' }, { kg: '5', reps: 8, delta: '−33%', ghost: '6 reps la última vez' }, { kg: '4', reps: 6, delta: '−20%', ghost: 'nueva bajada' }];
+    const dn = this.state.dropN;
+    const dDone = Object.keys(this.state.drops).length;
+
+    return {
+      /* 01 */
+      exNum: String(this.state.ex + 1).padStart(2, '0'),
+      exName: ex.name, exSets: ex.sets, exLoad: ex.load, exTempo: ex.tempo, locked: ex.locked, coachTxt: ex.coach,
+      steps: EX.map((_, i) => ({ style: { flex: 1, height: 4, borderRadius: 2, background: i < this.state.ex ? 'rgba(255,199,44,.45)' : i === this.state.ex ? G : '#1c1c1c', transition: 'background .28s cubic-bezier(.2,.9,.2,1)' } })),
+      chipSets: { padding: '6px 10px', borderRadius: 9, background: '#161616', font: "500 11.5px/1 'IBM Plex Mono',monospace", color: 'rgba(245,245,244,.72)' },
+      chipLoad: ex.locked
+        ? { padding: '6px 10px', borderRadius: 9, background: 'rgba(255,199,44,.14)', border: '1px solid rgba(255,199,44,.35)', display: 'flex', alignItems: 'center', font: "500 11.5px/1 'IBM Plex Mono',monospace", color: G }
+        : { padding: '6px 10px', borderRadius: 9, background: '#161616', display: 'flex', alignItems: 'center', font: "500 11.5px/1 'IBM Plex Mono',monospace", color: 'rgba(245,245,244,.72)' },
+      chipTempo: { padding: '6px 10px', borderRadius: 9, background: '#161616', font: "500 11.5px/1 'IBM Plex Mono',monospace", color: 'rgba(245,245,244,.72)' },
+      coachNote: { display: 'flex', gap: 10, alignItems: 'flex-start', marginTop: 13, padding: '12px 13px', background: 'rgba(255,199,44,.05)', border: '1px solid rgba(255,199,44,.18)', borderRadius: 14, animation: enter('tc') + ' .3s cubic-bezier(.2,.9,.2,1) both' },
+      toggleVid: () => this.setState({ vid: !this.state.vid }),
+      vidLabel: this.state.vid ? 'Ocultar técnica' : 'Ver técnica · 24 s',
+      vidChev: { transition: 'transform .3s cubic-bezier(.2,.9,.2,1)', transform: this.state.vid ? 'rotate(180deg)' : 'none', flex: 'none' },
+      vidStrip: { display: 'flex', alignItems: 'center', gap: 11, padding: '10px 13px', background: '#0B0B0B', border: '1px solid rgba(255,255,255,.07)', borderRadius: 14, cursor: 'pointer' },
+      vidBody: { maxHeight: this.state.vid ? 186 : 0, opacity: this.state.vid ? 1 : 0, overflow: 'hidden', transition: 'max-height .34s cubic-bezier(.2,.9,.2,1),opacity .28s,margin-top .34s', marginTop: this.state.vid ? 10 : 0 },
+      cardStyle: { padding: '16px 20px 0', touchAction: 'pan-y', cursor: this.state.dragging ? 'grabbing' : 'grab', transform: 'translateX(' + this.state.dragX + 'px)', opacity: 1 - Math.min(Math.abs(this.state.dragX) / 320, 0.45), transition: this.state.dragging ? 'none' : 'transform .34s cubic-bezier(.2,.9,.2,1),opacity .34s', animation: this.state.dragging ? 'none' : enter(this.state.dir > 0 ? 'tc' : 'tc') + ' .3s cubic-bezier(.2,.9,.2,1) both' },
+      down: (e) => { this.x0 = e.clientX; this.setState({ dragging: true }); },
+      move: (e) => { if (this.state.dragging) this.setState({ dragX: e.clientX - this.x0 }); },
+      up: () => {
+        const d = this.state.dragX;
+        let ni = this.state.ex;
+        if (d < -60 && this.state.ex < 4) ni = this.state.ex + 1;
+        if (d > 60 && this.state.ex > 0) ni = this.state.ex - 1;
+        this.setState({ dragging: false, dragX: 0, ex: ni, dir: ni >= this.state.ex ? 1 : -1, anim: this.state.anim + 1, vid: false });
+      },
+      hintStyle: { marginTop: 14, textAlign: 'center', font: "500 10px/1 'IBM Plex Mono',monospace", letterSpacing: '.1em', color: 'rgba(245,245,244,.22)' },
+      kgHead: Object.assign({ flex: 1, font: "600 9px/1 'IBM Plex Mono',monospace", letterSpacing: '.12em' }, { color: ex.locked ? 'rgba(255,199,44,.75)' : 'rgba(245,245,244,.3)' }),
+      logRows: Array.from({ length: ex.n }, (_, i) => {
+        const k = this.state.ex + '-' + i;
+        const on = !!this.state.log[k];
+        const isNext = !on && (i === 0 || !!this.state.log[this.state.ex + '-' + (i - 1)]);
+        return {
+          n: String(i + 1).padStart(2, '0'), reps: ex.reps[i], kg: ex.kg[i], rpe: on ? ex.r[i] : '—',
+          repsGhost: ex.last[i][0] + ' reps', kgGhost: ex.last[i][1] + ' kg',
+          row: { display: 'flex', alignItems: 'center', padding: '11px 13px', borderTop: '1px solid rgba(255,255,255,.05)', transition: 'background .24s cubic-bezier(.2,.9,.2,1)', background: on ? 'rgba(255,199,44,.06)' : isNext ? 'rgba(255,255,255,.022)' : 'transparent' },
+          num: { width: 24, font: "600 11.5px/1 'IBM Plex Mono',monospace", color: isNext ? G : 'rgba(245,245,244,.32)', transition: 'color .24s' },
+          repsV: Object.assign(mono(14, on ? W : 'rgba(245,245,244,.6)'), { transition: 'color .24s' }),
+          kgCell: { flex: 1 },
+          kgV: Object.assign(mono(14, ex.locked ? G : on ? W : 'rgba(245,245,244,.6)'), { transition: 'color .24s' }),
+          rpeV: mono(13, on ? W : 'rgba(245,245,244,.3)'),
+          ghost: { font: "400 9.5px/1 'IBM Plex Mono',monospace", color: 'rgba(245,245,244,.22)', marginTop: 5 },
+          set: () => {
+            const l = Object.assign({}, this.state.log);
+            if (l[k]) { delete l[k]; this.setState({ log: l }); }
+            else { l[k] = 1; this.setState({ log: l }); this.startRest(); }
+          },
+          box: Object.assign({ width: 26, height: 26, borderRadius: 8, flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all .24s cubic-bezier(.2,.9,.2,1)' },
+            on ? { background: G, border: '1px solid ' + G } : { background: 'transparent', border: isNext ? '1.5px solid rgba(255,199,44,.55)' : '1.5px solid rgba(255,255,255,.14)' }),
+          tick: { opacity: on ? 1 : 0, transition: 'opacity .2s' }
+        };
+      }),
+      restTxt: Math.floor(this.state.rest / 60) + ':' + String(this.state.rest % 60).padStart(2, '0'),
+      restStyle: { display: this.state.rest > 0 ? 'flex' : 'none', alignItems: 'center', gap: 9, marginTop: 11, padding: '11px 13px', background: 'rgba(255,199,44,.07)', border: '1px solid rgba(255,199,44,.24)', borderRadius: 13 },
+      skipRest: () => { clearInterval(this.iv); this.setState({ rest: 0 }); },
+
+      /* 02 dropset */
+      drops: DROPS.slice(0, dn).map((d, i) => {
+        const on = !!this.state.drops[i];
+        return {
+          tag: i === 0 ? 'BASE' : 'D' + i, kgTxt: d.kg, repsTxt: d.reps, delta: d.delta || '', ghostTxt: d.ghost,
+          wrap: { position: 'relative', paddingLeft: 0, animation: enter('drop') + ' .32s cubic-bezier(.2,.9,.2,1) ' + (i * 0.06) + 's both' },
+          line: { position: 'absolute', left: 22, top: -12, width: 2, height: 14, background: 'rgba(255,199,44,.35)', transformOrigin: 'top', display: i === 0 ? 'none' : 'block', animation: 'line1 .3s cubic-bezier(.2,.9,.2,1) ' + (i * 0.06 + 0.1) + 's both' },
+          card: { display: 'flex', alignItems: 'center', gap: 12, padding: '13px 13px', marginTop: i === 0 ? 0 : 12, background: on ? 'rgba(255,199,44,.06)' : '#0B0B0B', border: '1px solid ' + (on ? 'rgba(255,199,44,.3)' : 'rgba(255,255,255,.07)'), borderRadius: 16, transition: 'all .26s cubic-bezier(.2,.9,.2,1)' },
+          badge: { width: 32, height: 32, borderRadius: 10, flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', background: i === 0 ? 'rgba(255,199,44,.16)' : 'rgba(255,199,44,.08)' },
+          badgeTxt: { font: "700 9.5px/1 'IBM Plex Mono',monospace", color: i === 0 ? G : 'rgba(255,199,44,.7)' },
+          kg: { font: "600 20px/1 'IBM Plex Mono',monospace", color: on ? W : 'rgba(245,245,244,.75)' },
+          arrow: { font: "600 10.5px/1 'IBM Plex Mono',monospace", color: R, opacity: d.delta ? 1 : 0 },
+          ghost: { font: "400 9.5px/1 'IBM Plex Mono',monospace", color: 'rgba(245,245,244,.22)', marginTop: 6 },
+          reps: { font: "600 18px/1 'IBM Plex Mono',monospace", color: on ? G : 'rgba(245,245,244,.6)' },
+          set: () => { const d2 = Object.assign({}, this.state.drops); if (d2[i]) delete d2[i]; else d2[i] = 1; this.setState({ drops: d2 }); },
+          box: Object.assign({ width: 26, height: 26, borderRadius: 8, flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all .24s cubic-bezier(.2,.9,.2,1)' },
+            on ? { background: G, border: '1px solid ' + G } : { background: 'transparent', border: '1.5px solid rgba(255,199,44,.45)' }),
+          tick: { opacity: on ? 1 : 0, transition: 'opacity .2s' }
+        };
+      }),
+      addDrop: () => { if (dn < 4) this.setState({ dropN: dn + 1 }); },
+      addDropStyle: { display: dn < 4 ? 'flex' : 'none', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 12, height: 46, borderRadius: 14, border: '1px dashed rgba(255,199,44,.35)', cursor: 'pointer' },
+      dropDone: dDone + ' de ' + dn + ' hechas',
+      dropReps: DROPS.slice(0, dn).reduce((a, d, i) => a + (this.state.drops[i] ? d.reps : 0), 0),
+      dropVol: DROPS.slice(0, dn).reduce((a, d, i) => a + (this.state.drops[i] ? d.reps * parseFloat(String(d.kg).replace(',', '.')) : 0), 0).toFixed(0),
+      dropTotal: { marginTop: 16, padding: '16px 17px', background: '#0F0F0F', border: '1px solid rgba(255,255,255,.07)', borderRadius: 18 },
+
+      /* 03 myoreps */
+      actCard: { marginTop: 18, padding: '16px 17px', background: this.state.act ? 'rgba(255,199,44,.06)' : '#0B0B0B', border: '1px solid ' + (this.state.act ? 'rgba(255,199,44,.3)' : 'rgba(255,255,255,.07)'), borderRadius: 18, transition: 'all .26s cubic-bezier(.2,.9,.2,1)' },
+      setAct: () => this.setState({ act: !this.state.act }),
+      actBox: Object.assign({ width: 34, height: 34, borderRadius: 11, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all .24s cubic-bezier(.2,.9,.2,1)' }, this.state.act ? { background: G, border: '1px solid ' + G } : { background: 'transparent', border: '1.5px solid rgba(255,199,44,.5)' }),
+      actTick: { opacity: this.state.act ? 1 : 0, transition: 'opacity .2s' },
+      myoZone: { marginTop: 12, padding: '16px 17px', background: '#0B0B0B', border: '1px solid rgba(255,255,255,.07)', borderRadius: 18, opacity: this.state.act ? 1 : 0.4, pointerEvents: this.state.act ? 'auto' : 'none', transition: 'opacity .3s cubic-bezier(.2,.9,.2,1)' },
+      myoPause: this.state.act ? 'EN CURSO' : 'BLOQUEADO',
+      myoPauseTxt: { font: "600 9.5px/1 'IBM Plex Mono',monospace", letterSpacing: '.1em', color: this.state.act ? G : 'rgba(245,245,244,.28)' },
+      myo: this.state.myo.map((reps, i) => ({
+        reps,
+        pill: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, width: 52, padding: '11px 0', borderRadius: 14, background: G, animation: enter('myo') + ' .36s cubic-bezier(.2,.9,.2,1) ' + (i * 0.05) + 's both' },
+        n: { font: "700 17px/1 'IBM Plex Mono',monospace", color: '#050505' }
+      })),
+      addMyo: () => {
+        const last = this.state.myo[this.state.myo.length - 1] || 5;
+        this.setState({ myo: this.state.myo.concat([Math.max(2, last - 1)]) });
+      },
+      addMyoStyle: { width: 52, height: 52, borderRadius: 14, border: '1px dashed rgba(255,199,44,.4)', display: this.state.myo.length < 6 ? 'flex' : 'none', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' },
+      myoAdvice: (this.state.myo[this.state.myo.length - 1] || 5) < 4 ? 'Última miniserie por debajo de 4 reps: la app cierra la serie aquí.' : 'Sigue sumando miniseries mientras aguantes 4 reps o más.',
+      myoSum: this.state.myo.reduce((a, b) => a + b, 15),
+      myoTotal: { marginTop: 12, padding: '15px 17px', background: '#0F0F0F', border: '1px solid rgba(255,255,255,.07)', borderRadius: 18 },
+
+      /* 04 amrap + fallo */
+      amCard: { marginTop: 18, padding: '18px 17px', background: '#0B0B0B', border: '1px solid rgba(255,255,255,.07)', borderRadius: 20 },
+      amrap: this.state.amrap,
+      amCount: { font: "900 46px/1 Archivo,sans-serif", color: W, letterSpacing: '-.04em', animation: this.state.amRun ? 'ampulse .5s cubic-bezier(.2,.9,.2,1)' : 'none' },
+      amRing: { strokeDasharray: 415, strokeDashoffset: 415 - (this.state.amT / 60) * 415, transition: 'stroke-dashoffset 1s linear' },
+      amTime: '0:' + String(this.state.amT).padStart(2, '0') + (this.state.amRun ? '' : this.state.amT === 0 ? ' · fin' : ' · en pausa'),
+      amTimeStyle: { textAlign: 'center', marginTop: 10, font: "600 13px/1 'IBM Plex Mono',monospace", color: this.state.amT <= 10 ? R : 'rgba(245,245,244,.55)', transition: 'color .3s' },
+      amPlus: () => { this.startAm(); this.setState({ amrap: this.state.amrap + 1, anim: this.state.anim + 1 }); },
+      amMinus: () => this.setState({ amrap: Math.max(0, this.state.amrap - 1) }),
+      amPlusStyle: { flex: 1, height: 52, borderRadius: 15, background: G, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'transform .2s cubic-bezier(.2,.9,.2,1)' },
+      amBtn: this.state.amRun ? '+1 repetición' : this.state.amT === 0 ? 'Serie cerrada' : 'Empezar y contar',
+      failCard: { marginTop: 14, padding: '16px 17px', background: '#0B0B0B', border: '1px solid rgba(255,90,78,.35)', borderRadius: 20, animation: 'fail 2.2s cubic-bezier(.2,.9,.2,1) infinite' },
+      failReps: this.state.fail,
+      failN: { font: "900 34px/1 Archivo,sans-serif", color: W, letterSpacing: '-.03em' },
+      failPlus: () => this.setState({ fail: this.state.fail + 1 }),
+      failMinus: () => this.setState({ fail: Math.max(0, this.state.fail - 1) }),
+      failTxt: this.state.fail > 10 ? 'Por encima del rango: Dani subirá la carga la próxima sesión.' : 'Última vez llegó a 10. Para cuando la técnica se rompa, no antes.',
+      failMsg: { font: "400 11.5px/1.5 'Plus Jakarta Sans',sans-serif", color: this.state.fail > 10 ? 'rgba(255,199,44,.8)' : 'rgba(245,245,244,.42)', marginTop: 13, transition: 'color .26s' },
+
+      /* 05 grabación */
+      recBanner: { padding: '15px 16px', background: this.state.rec === 'done' ? 'rgba(62,207,142,.06)' : 'rgba(255,199,44,.06)', border: '1px solid ' + (this.state.rec === 'done' ? 'rgba(62,207,142,.28)' : 'rgba(255,199,44,.26)'), borderRadius: 18, transition: 'all .3s cubic-bezier(.2,.9,.2,1)' },
+      recDot: { width: 9, height: 9, borderRadius: 5, flex: 'none', background: this.state.rec === 'done' ? GR : R, animation: this.state.rec === 'done' ? 'none' : 'rec 1.1s ease-in-out infinite' },
+      recBtnLabel: this.state.rec === 'rec' ? 'Grabando' : this.state.rec === 'done' ? 'Vídeo listo' : 'Grabar',
+      recAction: () => {
+        if (this.state.rec === 'idle') {
+          this.setState({ rec: 'rec' });
+          this.rt = setTimeout(() => this.setState({ rec: 'done' }), 1800);
+        }
+      },
+      recRedo: () => this.setState({ rec: 'idle' }),
+      recRows: [0, 1, 2, 3].map(i => {
+        const done = i < 2 || (i === 2 && this.state.rec === 'done');
+        const needs = i === 2;
+        return {
+          n: String(i + 1).padStart(2, '0'),
+          label: ['8 reps · 60 kg', '8 reps · 60 kg', '8 reps · 60 kg · vídeo', '8 reps · 60 kg'][i],
+          needsVid: needs && this.state.rec !== 'done',
+          row: { display: 'flex', alignItems: 'center', gap: 11, padding: '12px 13px', borderTop: i ? '1px solid rgba(255,255,255,.05)' : 'none', background: needs && this.state.rec !== 'done' ? 'rgba(255,90,78,.05)' : done ? 'rgba(255,199,44,.05)' : 'transparent', transition: 'background .26s' },
+          num: { width: 24, font: "600 11.5px/1 'IBM Plex Mono',monospace", color: needs ? R : 'rgba(245,245,244,.32)' },
+          txt: { font: "500 13px/1 'Plus Jakarta Sans',sans-serif", color: done ? 'rgba(245,245,244,.55)' : W },
+          camBtn: { display: 'flex', alignItems: 'center', gap: 6, padding: '7px 10px', borderRadius: 10, background: this.state.rec === 'rec' ? 'rgba(255,90,78,.2)' : 'rgba(255,90,78,.12)', border: '1px solid rgba(255,90,78,.4)', cursor: 'pointer', transition: 'all .24s' },
+          camIcon: { stroke: R, fill: 'none' },
+          camTxt: { font: "600 11px/1 'Plus Jakarta Sans',sans-serif", color: R },
+          box: Object.assign({ width: 26, height: 26, borderRadius: 8, flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all .24s cubic-bezier(.2,.9,.2,1)' },
+            done ? { background: G, border: '1px solid ' + G } : { background: 'transparent', border: '1.5px solid rgba(255,255,255,.14)', opacity: needs ? 0.4 : 1 }),
+          tick: { opacity: done ? 1 : 0, transition: 'opacity .2s' }
+        };
+      }),
+      recFileStyle: { display: this.state.rec === 'done' ? 'flex' : 'none', alignItems: 'center', gap: 12, marginTop: 14, padding: '12px 13px', background: '#0B0B0B', border: '1px solid rgba(62,207,142,.24)', borderRadius: 16, animation: 'fu .34s cubic-bezier(.2,.9,.2,1) both' },
+
+      /* 06 */
+      notes: ['Me sobró una rep', 'Hombro tirando', 'Buena técnica', 'Mucho peso'].map((label, i) => ({
+        label, set: () => this.setState({ note: this.state.note === i ? -1 : i }),
+        style: this.state.note === i
+          ? { padding: '9px 13px', borderRadius: 11, cursor: 'pointer', background: 'rgba(255,199,44,.16)', border: '1px solid rgba(255,199,44,.45)', color: G, transition: 'all .22s cubic-bezier(.2,.9,.2,1)' }
+          : { padding: '9px 13px', borderRadius: 11, cursor: 'pointer', background: '#0F0F0F', border: '1px solid rgba(255,255,255,.07)', color: 'rgba(245,245,244,.6)', transition: 'all .22s cubic-bezier(.2,.9,.2,1)' }
+      }))
+    };
+  }
+}
+</script>
+</body>
+</html>

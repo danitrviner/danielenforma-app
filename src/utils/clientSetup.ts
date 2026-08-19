@@ -8,7 +8,7 @@ import type {
   PhotoAssignment, ProgressPhoto, WorkoutLog, Roadmap, NutritionProgram,
   WeeklyChallenge, CoachClientTask,
 } from '../types';
-import type { HubTab, AnalisisTab } from '../components/ClientHub';
+import type { HubTab } from '../components/ClientHub';
 import { getWeekStart, addDays } from './trainingWeek';
 import { isCoachGraceDay } from './challengeOptions';
 
@@ -17,7 +17,6 @@ export type SetupStatus = 'done' | 'pending' | 'attention' | 'na';
 
 export interface SetupItemLink {
   tab: HubTab;
-  analisisSub?: AnalisisTab;
 }
 
 export interface SetupItemDef {
@@ -79,6 +78,8 @@ export interface SetupInputs {
 }
 
 const REVISIONES: SetupItemLink = { tab: 'revisiones' };
+const FICHA: SetupItemLink = { tab: 'ficha' };
+const CUERPO: SetupItemLink = { tab: 'cuerpo' };
 const ENTRENAMIENTOS: SetupItemLink = { tab: 'entrenamientos' };
 const DIETAS: SetupItemLink = { tab: 'dietas' };
 const ROADMAP: SetupItemLink = { tab: 'roadmap' };
@@ -86,13 +87,12 @@ const ROADMAP: SetupItemLink = { tab: 'roadmap' };
 export const SEEDED_ITEMS: SetupItemDef[] = [
   // ── Alta (semana 0) ──
   { id: 'alta_perfil', phase: 'alta', title: 'Perfil del cliente creado' },
-  { id: 'alta_plan_fechado', phase: 'alta', title: 'Plan con fecha de inicio y duración', link: REVISIONES },
-  { id: 'alta_onboarding', phase: 'alta', title: 'Cuestionario de onboarding completado', link: REVISIONES },
-  { id: 'alta_peso_inicial', phase: 'alta', title: 'Peso inicial registrado', link: REVISIONES },
-  { id: 'alta_peso_meta', phase: 'alta', title: 'Peso objetivo definido', link: REVISIONES },
-  { id: 'alta_foto_inicial', phase: 'alta', title: 'Foto inicial subida', link: REVISIONES },
+  { id: 'alta_plan_fechado', phase: 'alta', title: 'Plan con fecha de inicio y duración', link: FICHA },
+  { id: 'alta_onboarding', phase: 'alta', title: 'Cuestionario de onboarding completado', link: FICHA },
+  { id: 'alta_peso_inicial', phase: 'alta', title: 'Peso inicial registrado', link: CUERPO },
+  { id: 'alta_peso_meta', phase: 'alta', title: 'Peso objetivo definido', link: FICHA },
+  { id: 'alta_foto_inicial', phase: 'alta', title: 'Foto inicial subida', link: CUERPO },
   { id: 'alta_cuestionario', phase: 'alta', title: 'Cuestionario periódico asignado', link: REVISIONES },
-  { id: 'alta_fotos_periodicas', phase: 'alta', title: 'Fotos periódicas asignadas', link: REVISIONES },
 
   // ── Programación ──
   { id: 'prog_mesociclo', phase: 'programacion', title: 'Mesociclo creado', link: ENTRENAMIENTOS },
@@ -165,7 +165,6 @@ export function computeSetupChecklist(inputs: SetupInputs): SetupResult {
   set('alta_peso_meta', profile.targetWeight > 0 ? 'done' : 'pending');
   set('alta_foto_inicial', photos.length > 0 ? 'done' : 'pending');
   set('alta_cuestionario', qAssignments.some(a => a.active) ? 'done' : 'pending');
-  set('alta_fotos_periodicas', photoAssignments.some(a => a.active) ? 'done' : 'pending');
 
   // ── Programación ──
   set('prog_mesociclo', mesocycles.length > 0 ? 'done' : 'pending');
@@ -291,9 +290,9 @@ export function computeSetupChecklist(inputs: SetupInputs): SetupResult {
   {
     const expiry = calcPlanExpirySimple(profile, today);
     if (expiry.expired) {
-      alerts.push({ id: 'rec_plan_vencer', title: 'Plan vencido', detail: expiry.daysLeft !== null ? `Vencido hace ${-expiry.daysLeft}d` : undefined, severity: 'critical', link: REVISIONES });
+      alerts.push({ id: 'rec_plan_vencer', title: 'Plan vencido', detail: expiry.daysLeft !== null ? `Vencido hace ${-expiry.daysLeft}d` : undefined, severity: 'critical', link: FICHA });
     } else if (expiry.expiringSoon) {
-      alerts.push({ id: 'rec_plan_vencer', title: 'Plan a punto de vencer', detail: expiry.daysLeft !== null ? `Vence en ${expiry.daysLeft}d` : undefined, severity: 'warn', link: REVISIONES });
+      alerts.push({ id: 'rec_plan_vencer', title: 'Plan a punto de vencer', detail: expiry.daysLeft !== null ? `Vence en ${expiry.daysLeft}d` : undefined, severity: 'warn', link: FICHA });
     }
   }
 

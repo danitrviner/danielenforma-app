@@ -5,67 +5,21 @@
 //   2. aplica whitelist de modelos + clamp de max_tokens (guardarraíl de coste)
 //   3. reenvía la petición a Anthropic y devuelve el mensaje completo
 //   4. escribe una fila de auditoría en aiAuditLog (admin SDK, el cliente no puede)
+//
+// La verificación de identidad, la lista blanca de CORS y los clientes admin
+// viven en ./_lib/auth para que no haya dos definiciones de «quién es el coach».
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import Anthropic from '@anthropic-ai/sdk';
-import { createRemoteJWKSet, jwtVerify } from 'jose';
+import { esCoach, getAdminDb, setCors, tokenDeLaCabecera, verifyFirebaseIdToken } from './_lib/auth.js';
 
 export const config = { maxDuration: 60 };
 
-const COACH_EMAIL = 'danitrviner@gmail.com';
-const PROJECT_ID = 'fleet-operator-z5xj8';
 const ALLOWED_MODELS = new Set(['claude-sonnet-5', 'claude-haiku-4-5']);
 const MAX_TOKENS_CAP = 8192;
 const DAILY_CALL_LIMIT = 400;
 
-// Verificación manual del ID token de Firebase con `jose` en vez de
-// firebase-admin/auth: esa vía depende de jwks-rsa, que intenta un require()
-// CJS de `jose` (ESM-only) y revienta con ERR_REQUIRE_ESM en el runtime de
-// Vercel. La verificación manual sigue el esquema documentado por Firebase
-// (JWKS público de Google + comprobación de iss/aud/exp) sin esa dependencia rota.
-const FIREBASE_JWKS = createRemoteJWKSet(
-  new URL('https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.google.com')
-);
-
-async function verifyFirebaseIdToken(idToken: string): Promise<{ email: string } | null> {
-  try {
-    const { payload } = await jwtVerify(idToken, FIREBASE_JWKS, {
-      issuer: `https://securetoken.google.com/${PROJECT_ID}`,
-      audience: PROJECT_ID,
-    });
-    if (typeof payload.sub !== 'string' || !payload.sub) return null;
-    if (typeof payload.auth_time === 'number' && payload.auth_time * 1000 > Date.now()) return null;
-    const email = typeof payload.email === 'string' ? payload.email : '';
-    return { email };
-  } catch {
-    return null;
-  }
-}
-
-// Firestore admin (auditoría + contador diario) es opcional: sin
-// FIREBASE_SERVICE_ACCOUNT configurada en Vercel se omite sin romper el resto.
-// Se importa de forma perezosa (import() dinámico) para no arrastrar
-// firebase-admin/app en el bundle cuando no hace falta.
-async function getDb() {
-  const raw = process.env.FIREBASE_SERVICE_ACCOUNT;
-  if (!raw) return null;
-  const { initializeApp, getApps, cert } = await import('firebase-admin/app');
-  const { getFirestore } = await import('firebase-admin/firestore');
-  const app = getApps()[0] ?? initializeApp({ credential: cert(JSON.parse(raw)), projectId: PROJECT_ID });
-  return getFirestore(app, 'ai-studio-b38fc63b-000e-4d2c-b774-20351883e870');
-}
-
-function setCors(req: VercelRequest, res: VercelResponse) {
-  const origin = req.headers.origin;
-  if (origin) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-    res.setHeader('Vary', 'Origin');
-  }
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
-}
-
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  setCors(req, res);
+  setCors(req.headers.origin, (k, v) => res.setHeader(k, v));
   if (req.method === 'OPTIONS') { res.status(204).end(); return; }
   if (req.method !== 'POST') { res.status(405).json({ error: 'Método no permitido' }); return; }
 
@@ -75,12 +29,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   // ── Autenticación: solo el coach ──────────────────────────────────────────
-  const authHeader = req.headers.authorization || '';
-  const idToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+  const idToken = tokenDeLaCabecera(req.headers.authorization);
   if (!idToken) { res.status(401).json({ error: 'Falta el token de autenticación' }); return; }
   const decoded = await verifyFirebaseIdToken(idToken);
   if (!decoded) { res.status(401).json({ error: 'Token inválido o caducado' }); return; }
-  if (decoded.email.toLowerCase() !== COACH_EMAIL) {
+  if (!esCoach(decoded)) {
     res.status(403).json({ error: 'Solo el coach puede usar el asistente' });
     return;
   }
@@ -106,21 +59,33 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     : 'low';
 
   // ── Guardarraíl de coste: contador diario ─────────────────────────────────
-  const db = await getDb();
+  // 04-13. El contador tenía dos problemas. Uno: leer y luego escribir sin
+  // transacción deja una ventana en la que N peticiones simultáneas leen el
+  // mismo valor y todas pasan, así que el tope no era un tope. Dos: cualquier
+  // fallo de Firestore caía en el catch y la petición seguía adelante
+  // (fail-open), o sea que tumbar el contador levantaba el límite de gasto.
+  // Ahora la comprobación y el incremento van en una transacción, y un fallo
+  // corta la petición (fail-closed) en vez de abrir la barra libre.
+  const db = await getAdminDb();
   const today = new Date().toISOString().slice(0, 10);
   if (db) {
     try {
-      const { FieldValue } = await import('firebase-admin/firestore');
       const counterRef = db.collection('aiUsage').doc(`daily_${today}`);
-      const snap = await counterRef.get();
-      const count = (snap.exists ? (snap.data()?.count as number) : 0) || 0;
-      if (count >= DAILY_CALL_LIMIT) {
+      const withinLimit = await db.runTransaction(async tx => {
+        const snap = await tx.get(counterRef);
+        const count = (snap.exists ? (snap.data()?.count as number) : 0) || 0;
+        if (count >= DAILY_CALL_LIMIT) return false;
+        tx.set(counterRef, { count: count + 1, date: today }, { merge: true });
+        return true;
+      });
+      if (!withinLimit) {
         res.status(429).json({ error: `Límite diario de ${DAILY_CALL_LIMIT} llamadas alcanzado` });
         return;
       }
-      await counterRef.set({ count: FieldValue.increment(1), date: today }, { merge: true });
     } catch (err) {
-      console.warn('Contador diario no disponible:', err);
+      console.error('Contador diario no disponible, se rechaza la llamada:', err);
+      res.status(503).json({ error: 'El control de gasto no está disponible. Inténtalo en un minuto.' });
+      return;
     }
   }
 

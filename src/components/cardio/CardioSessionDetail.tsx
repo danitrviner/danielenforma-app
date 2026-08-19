@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { CardioSession, CardioZones } from '../../types';
 import { updateCardioSession } from '../../dbService';
+import { mensajeDeErrorFirestore } from '../../utils/erroresFirestore';
 import { compare30DayAverage } from '../../utils/cardioHistory';
 import ZoneBars from './ZoneBars';
 import HrChart from './HrChart';
+import { Icon } from '../ui';
 
 // Detalle y edición post-entreno (§6 del análisis): título/notas/etiquetas
 // editables, el `type` no. Comparativa vs los últimos 30 días como en el
@@ -36,6 +38,7 @@ export default function CardioSessionDetail({ session, allSessions, zones, onClo
   const [tags, setTags] = useState<string[]>(session.tags ?? []);
   const [tagInput, setTagInput] = useState('');
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
 
   const comparison = compare30DayAverage(session, allSessions);
   const chartData = session.samples.map((v, i) => ({ t: i * session.sampleIntervalSec, bpm: v }));
@@ -46,34 +49,50 @@ export default function CardioSessionDetail({ session, allSessions, zones, onClo
     setTagInput('');
   };
 
+  // Mismo caso que ManualSessionModal: `updateCardioSession` relanza si
+  // Firestore deniega la escritura, y sin el try/finally el botón se quedaba en
+  // "Guardando..." para siempre, sin decir por qué y sin poder reintentar.
   const handleSave = async () => {
     setSaving(true);
+    setError('');
     const updates = { title: title || undefined, notes: notes || undefined, tags: tags.length ? tags : undefined };
-    await updateCardioSession(session.id, updates);
-    onSaved({ ...session, ...updates });
-    setSaving(false);
+    try {
+      await updateCardioSession(session.id, updates);
+      onSaved({ ...session, ...updates });
+    } catch (err) {
+      console.error('updateCardioSession failed:', err);
+      setError(mensajeDeErrorFirestore(err, 'guardar los cambios'));
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
-    <div className="fixed inset-0 z-[90] bg-[#0e0e0e] overflow-y-auto">
+    /* No es un modal: es una vista a pantalla completa. Fondo opaco, sin telón
+       y sin caja — ocupa la ventana entera durante la sesión. F9 lo clasificó y
+       lo dejó fuera a propósito: convertirlo en `Dialog` sería un rediseño, no
+       una migración. Cuenta en la métrica `Overlays artesanales` del inventario
+       porque esa métrica mide la utilidad de posición, que aquí no significa
+       overlay sino pantalla. */
+    <div className="fixed inset-0 z-[90] bg-bg overflow-y-auto">
       <div className="max-w-lg mx-auto p-4 sm:p-6 space-y-5">
         <div className="flex items-center justify-between">
-          <button onClick={onClose} className="text-[#c6c9ab] hover:text-white transition-colors">
-            <span className="material-symbols-outlined">close</span>
+          <button onClick={onClose} className="text-ink-2 hover:text-white transition-colors">
+            <Icon name="close" />
           </button>
-          <p className="text-[10px] font-mono uppercase text-[#c6c9ab]">{session.date} · {SESSION_TYPE_LABEL[session.type] ?? session.type}</p>
+          <p className="text-caption font-mono uppercase text-ink-2">{session.date} · {SESSION_TYPE_LABEL[session.type] ?? session.type}</p>
           <div className="w-6" />
         </div>
 
         <input
           value={title} onChange={e => setTitle(e.target.value)} placeholder={SESSION_TYPE_LABEL[session.type] ?? 'Título'}
-          className="w-full bg-transparent font-sans font-black text-2xl text-white placeholder:text-white/30 focus:outline-none border-b border-white/10 pb-2"
+          className="w-full bg-transparent font-sans font-bold text-title-l text-white placeholder:text-white/30 focus:outline-none border-b border-hairline pb-2"
         />
 
         {comparison.count > 0 && (
-          <div className="bg-[#181816] border border-white/7 rounded-xl p-3">
-            <p className="text-[9px] font-mono uppercase text-[#c6c9ab] mb-2">VS. promedio de los últimos 30 días ({comparison.count} entrenos)</p>
-            <div className="flex gap-4 text-xs font-mono">
+          <div className="bg-surface border border-hairline rounded-surface p-3">
+            <p className="text-caption font-sans uppercase text-ink-2 mb-2">VS. promedio de los últimos 30 días ({comparison.count} entrenos)</p>
+            <div className="flex gap-4 text-label font-mono">
               {pctDelta(session.durationSec, comparison.durationSec) && (
                 <span className="text-white">Duración {pctDelta(session.durationSec, comparison.durationSec)}</span>
               )}
@@ -102,45 +121,47 @@ export default function CardioSessionDetail({ session, allSessions, zones, onClo
         </div>
 
         {chartData.length > 1 && zones && (
-          <div className="bg-[#181816] border border-white/7 rounded-2xl p-3">
+          <div className="bg-surface border border-hairline rounded-surface p-3">
             <HrChart data={chartData} zones={zones} />
           </div>
         )}
 
         {zones && (
-          <div className="bg-[#181816] border border-white/7 rounded-2xl p-3">
+          <div className="bg-surface border border-hairline rounded-surface p-3">
             <ZoneBars timeInZone={session.timeInZoneSec} belowZoneSec={0} elapsedSec={session.durationSec} />
           </div>
         )}
 
         <div className="space-y-2">
-          <p className="text-[10px] font-mono uppercase text-[#c6c9ab]">Etiquetas</p>
-          <div className="flex flex-wrap gap-1.5">
+          <p className="text-caption font-mono uppercase text-ink-2">Etiquetas</p>
+          <div className="flex flex-wrap gap-2">
             {tags.map(t => (
-              <span key={t} className="flex items-center gap-1 bg-[#181816] border border-white/10 rounded-full px-2.5 py-1 text-[10px] font-mono text-white">
+              <span key={t} className="flex items-center gap-1 bg-surface border border-hairline rounded-full px-3 py-1 text-caption font-mono text-white">
                 {t}
-                <button onClick={() => setTags(tags.filter(x => x !== t))} className="text-[#c6c9ab] hover:text-white">×</button>
+                <button onClick={() => setTags(tags.filter(x => x !== t))} className="text-ink-2 hover:text-white">×</button>
               </span>
             ))}
             <input
               value={tagInput} onChange={e => setTagInput(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); addTag(); } }}
-              placeholder="+ etiqueta" className="bg-transparent text-[10px] font-mono text-white placeholder:text-[#c6c9ab] focus:outline-none w-20"
+              placeholder="+ etiqueta" className="bg-transparent text-title-s font-mono text-white placeholder:text-ink-2 focus:outline-none w-20"
             />
           </div>
         </div>
 
         <div className="space-y-2">
-          <p className="text-[10px] font-mono uppercase text-[#c6c9ab]">Notas</p>
+          <p className="text-caption font-mono uppercase text-ink-2">Notas</p>
           <textarea
             value={notes} onChange={e => setNotes(e.target.value)} rows={3}
-            className="w-full bg-[#181816] border border-white/7 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-[#fbcb1a] resize-none"
+            className="w-full bg-surface border border-hairline rounded-control p-3 text-title-s text-white focus:outline-none focus:border-accent resize-none"
             placeholder="¿Cómo te sentiste?"
           />
         </div>
 
+        {error && <p className="font-sans text-caption text-danger">{error}</p>}
+
         <button onClick={handleSave} disabled={saving}
-          className="w-full py-3 bg-[#fbcb1a] text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-50">
+          className="w-full py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50">
           {saving ? 'Guardando...' : 'Guardar'}
         </button>
       </div>
@@ -150,9 +171,9 @@ export default function CardioSessionDetail({ session, allSessions, zones, onClo
 
 function Metric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="bg-[#181816] border border-white/7 rounded-xl p-2.5 text-center">
-      <p className="text-[8px] font-mono uppercase text-[#c6c9ab]">{label}</p>
-      <p className="text-sm font-sans font-bold text-white mt-0.5">{value}</p>
+    <div className="bg-surface border border-hairline rounded-surface p-3 text-center">
+      <p className="text-caption font-sans uppercase text-ink-2">{label}</p>
+      <p className="text-body-s font-sans font-bold text-white ">{value}</p>
     </div>
   );
 }

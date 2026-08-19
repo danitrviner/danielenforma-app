@@ -5,7 +5,7 @@
     <key>CAPACITOR_DEBUG</key>
 	<string>$(CAPACITOR_DEBUG)</string>
 	<key>CFBundleDevelopmentRegion</key>
-	<string>en</string>
+	<string>es</string>
 	<key>CFBundleDisplayName</key>
         <string>En Forma</string>
 	<key>CFBundleExecutable</key>
@@ -28,36 +28,86 @@
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
 	<string>Main</string>
-	<key>UIRequiredDeviceCapabilities</key>
-	<array>
-		<string>armv7</string>
-	</array>
+	<!-- 07-14/02-10, decisión de Dani (§6.4, 11 ago 2026): bloquear a vertical.
+	     A partir de 768px el layout salta a la maqueta de escritorio con barra
+	     lateral de altura completa, y un iPhone en horizontal mide ~430pt de
+	     alto — no hay sitio. Confirmado con capturas reales del panel de coach a
+	     932×430 (se rompe) frente a los tamaños de iPad (aguantan, ver informe).
+	     Declarar landscape sin soportarlo de verdad era además riesgo de
+	     rechazo por la guideline 2.1. -->
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 	<key>UISupportedInterfaceOrientations~ipad</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationPortraitUpsideDown</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
-	<key>UIViewControllerBasedStatusBarAppearance</key>
+	<!-- Apple exige esta clave cuando TARGETED_DEVICE_FAMILY incluye iPad (hoy
+	     "1,2", §6.4 sigue sin decidir) y no se soportan todas las orientaciones:
+	     sin ella Xcode avisa "All interface orientations must be supported
+	     unless the app requires full screen" y el envío puede rechazarse. Solo
+	     quita Slide Over/Split View en iPad — no decide si se distribuye a
+	     iPad, eso sigue abierto. -->
+	<key>UIRequiresFullScreen</key>
 	<true/>
+	<!-- 07-6. Sin estas tres claves, `CAPBridgeViewController` se quedaba con
+	     el estilo `.default`, que SIGUE AL SISTEMA: con el iPhone en modo claro,
+	     el reloj, la batería y la cobertura se pintaban en negro sobre el
+	     #050505 de la app, o sea invisibles. La app es oscura siempre y no tiene
+	     modo claro, así que la interfaz se fija en oscuro (`UIUserInterfaceStyle`)
+	     y el estilo de la barra se declara a nivel de app en vez de dejarlo en
+	     manos de cada view controller. -->
+	<key>UIUserInterfaceStyle</key>
+	<string>Dark</string>
+	<key>UIStatusBarStyle</key>
+	<string>UIStatusBarStyleLightContent</string>
+	<key>UIViewControllerBasedStatusBarAppearance</key>
+	<false/>
+	<!-- Purpose strings de cámara, fototeca y micrófono. Sin ellas iOS mata el
+	     proceso en seco (no lanza excepción: termina la app) la primera vez que
+	     el atleta toca "Hacer foto". Las cuatro pantallas que lo disparan son
+	     PhotosScreen (foto de progreso), AddOwnMachineSheet (máquina que falta),
+	     AdminMaquinasTab (catálogo) y QuestionnaireWizard (respuesta en vídeo).
+	     Apple rechaza los textos genéricos: cada uno dice qué se abre, cuándo y
+	     para qué se usa lo que se captura. -->
+	<key>NSCameraUsageDescription</key>
+	<string>En Forma abre la cámara solo cuando pulsas «Hacer foto», para que puedas enviar a tu entrenador tu foto de progreso, la foto de una máquina de tu gimnasio o el vídeo de un ejercicio que te haya pedido.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>En Forma accede a tus fotos solo cuando eliges una de la galería, para enviar a tu entrenador tu foto de progreso, una máquina de tu gimnasio o la respuesta a un cuestionario.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>En Forma usa el micrófono únicamente mientras grabas un vídeo de un ejercicio para responder a un cuestionario de tu entrenador, para que el vídeo lleve sonido.</string>
+	<!-- Declaración de cifrado (EAR, Category 5 Part 2, nota 4): la app solo usa
+	     HTTPS/TLS del sistema y no implementa criptografía propia, así que entra
+	     en la exención. Sin esta clave cada build queda en "Missing Compliance" y
+	     no se puede enviar a revisión ni repartir por TestFlight. Si algún día se
+	     añade cifrado propio en reposo, este valor deja de ser correcto. -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>NSBluetoothAlwaysUsageDescription</key>
 	<string>En Forma usa Bluetooth para conectar con tu banda de pulso y mostrar tu frecuencia cardíaca en directo.</string>
 	<key>NSBluetoothPeripheralUsageDescription</key>
 	<string>En Forma usa Bluetooth para conectar con tu banda de pulso y mostrar tu frecuencia cardíaca en directo.</string>
-	<!-- Live Activity del temporizador de descanso (pantalla de bloqueo) — la
-	     extensión ActivityKit (widget extension target) aún no existe en este
-	     proyecto; hay que añadirla desde Xcode (File > New > Target > Widget
-	     Extension, activando "Include Live Activity"). Esta clave por sí sola
-	     no basta, pero es el prerrequisito de Info.plist para que el sistema
-	     permita presentar Live Activities de esta app. -->
+	<!-- Live Activity del temporizador de descanso (pantalla de bloqueo). El
+	     target de Widget Extension "RestTimerWidget" ya existe en el proyecto
+	     (creado en Xcode con "Include Live Activity" — ver el .pbxproj), así
+	     que esta clave ya no es un prerrequisito pendiente sino la que de
+	     verdad habilita presentar Live Activities de esta app. -->
 	<key>NSSupportsLiveActivities</key>
 	<true/>
+	<!-- F5 del plan de réplica FITIV — la pieza real que faltaba para que una
+	     sesión de cardio sobreviva al bolsillo. Sin `bluetooth-central` aquí,
+	     iOS suspende el WebView entero al bloquear la pantalla: la banda deja
+	     de entregar notificaciones GATT y ni la Live Activity ni el
+	     cronómetro reciben datos frescos, tengan Live Activity o no. Con este
+	     modo declarado, cada notificación de la característica 0x2A37 (FC)
+	     despierta la app lo justo para procesar la muestra — es el mecanismo
+	     real, no la Live Activity, el que mantiene viva la sesión.
+	     Justificación para App Review: registro continuo de frecuencia
+	     cardíaca durante el ejercicio, con banda BLE de pecho/brazo. -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>bluetooth-central</string>
+	</array>
 </dict>
 </plist>

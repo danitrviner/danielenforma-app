@@ -1,11 +1,20 @@
+import { useState } from 'react';
 import { WorkoutExercise, WorkoutTechnique, WarmupMode, WarmupSet, WorkoutSetGroup } from '../types';
 import { TECHNIQUES, TECHNIQUE_EMOJI, TECHNIQUE_LABEL, TECHNIQUE_COLOR, TECHNIQUE_DESCRIPTION } from '../utils/workoutTechniques';
 import { syncAggregateFromGroups, newSetGroup } from '../utils/setGroups';
+import { Icon } from './ui';
 
 interface Props {
   we: WorkoutExercise;
   onChange: (patch: Partial<WorkoutExercise>) => void;
 }
+
+// T11.b (18-08). "Top set / back-off" no es un concepto del modelo de datos
+// —WorkoutSetGroup ya hacía exactamente lo que Dani pedía: rangos de reps
+// distintos dentro de un mismo ejercicio— era jerga metida en la interfaz que
+// obligaba a etiquetar algo que no hacía falta etiquetar. Estas cuatro son
+// sugerencias, no la lista cerrada: "Escribir..." abre un campo libre.
+const ETIQUETAS_SUGERIDAS = ['Pesado', 'Ligero', 'Al fallo'];
 
 // Full execution-config editor for one exercise inside a routine — series/reps/rir
 // (uniform or split into top-set/back-off-set blocks), rest, high-intensity technique,
@@ -14,14 +23,21 @@ interface Props {
 // so a coach configures an exercise the same way no matter which screen they're on.
 export default function ExerciseConfigEditor({ we, onChange }: Props) {
   const hasGroups = (we.setGroups?.length ?? 0) > 0;
+  // Qué bloques muestran el campo de texto libre en vez del Select de
+  // sugerencias — estado de interfaz, no del ejercicio: una etiqueta
+  // personalizada sigue siendo solo texto en WorkoutSetGroup.label.
+  const [etiquetaLibre, setEtiquetaLibre] = useState<Set<number>>(new Set());
 
   const enableGroups = () => {
-    const seed: WorkoutSetGroup = { label: 'Top set', sets: we.sets, reps: we.reps, rir: we.rir };
+    // Label vacío al crear el primer bloque — antes se rellenaba con "Top
+    // set" sin que nadie lo hubiera pedido; ahora es opcional de verdad.
+    const seed: WorkoutSetGroup = { label: '', sets: we.sets, reps: we.reps, rir: we.rir };
     onChange(syncAggregateFromGroups({ ...we, setGroups: [seed] }));
   };
 
   const disableGroups = () => {
     onChange({ setGroups: undefined });
+    setEtiquetaLibre(new Set());
   };
 
   const updateGroup = (gIdx: number, field: keyof WorkoutSetGroup, value: string | number) => {
@@ -75,125 +91,155 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
       {/* Series / Reps / Descanso / RIR — uniforme o por bloques */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <label className="block font-mono text-[9px] text-[#c6c9ab] uppercase">Series</label>
+          <label className="block font-mono text-caption text-ink-2 uppercase">Series</label>
           <button
             type="button"
             onClick={hasGroups ? disableGroups : enableGroups}
-            className="font-mono text-[9px] text-[#fbcb1a] hover:text-white transition-colors"
+            className="flex items-center gap-1 px-2 py-1 rounded-control font-sans text-caption font-bold text-accent hover:text-white hover:bg-accent/10 transition-colors"
           >
-            {hasGroups ? '← Volver a series uniformes' : 'Dividir en bloques (top set / back-off)'}
+            <Icon name={hasGroups ? 'undo' : 'add'} size="s" />
+            {hasGroups ? 'Volver a un solo rango' : 'Añadir otro rango de reps'}
           </button>
         </div>
 
         {!hasGroups ? (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <div>
-              <label className="block font-mono text-[9px] text-[#c6c9ab] uppercase mb-1">Series</label>
+              <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Series</label>
               <input
                 type="number" min={1} max={20}
                 value={we.sets}
                 onChange={e => onChange({ sets: parseInt(e.target.value) || 1 })}
-                className="w-full bg-[#0e0e0e] border border-white/7 rounded-md px-2 py-1.5 text-center text-white font-mono text-sm focus:outline-none focus:ring-1 focus:ring-[#fbcb1a]"
+                className="w-full bg-bg border border-hairline rounded-control px-2 py-2 text-center text-white font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-accent"
               />
             </div>
             <div>
-              <label className="block font-mono text-[9px] text-[#c6c9ab] uppercase mb-1">Reps</label>
+              <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Reps</label>
               <input
                 type="text"
                 value={we.reps}
                 onChange={e => onChange({ reps: e.target.value })}
                 placeholder="8-10"
-                className="w-full bg-[#0e0e0e] border border-white/7 rounded-md px-2 py-1.5 text-center text-white font-mono text-sm focus:outline-none focus:ring-1 focus:ring-[#fbcb1a]"
+                className="w-full bg-bg border border-hairline rounded-control px-2 py-2 text-center text-white font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-accent"
               />
             </div>
             <div>
-              <label className="block font-mono text-[9px] text-[#c6c9ab] uppercase mb-1">Descanso (s)</label>
+              <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Descanso (s)</label>
               <input
                 type="number" min={0}
                 value={we.restSeconds}
                 onChange={e => onChange({ restSeconds: parseInt(e.target.value) || 0 })}
-                className="w-full bg-[#0e0e0e] border border-white/7 rounded-md px-2 py-1.5 text-center text-white font-mono text-sm focus:outline-none focus:ring-1 focus:ring-[#fbcb1a]"
+                className="w-full bg-bg border border-hairline rounded-control px-2 py-2 text-center text-white font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-accent"
               />
             </div>
             <div>
-              <label className="block font-mono text-[9px] text-[#c6c9ab] uppercase mb-1">RIR</label>
+              <label className="block font-mono text-caption text-ink-2 uppercase mb-1">RIR</label>
               <input
                 type="number" min={0} max={5}
                 value={we.rir}
                 onChange={e => onChange({ rir: parseInt(e.target.value) || 0 })}
-                className="w-full bg-[#0e0e0e] border border-white/7 rounded-md px-2 py-1.5 text-center text-white font-mono text-sm focus:outline-none focus:ring-1 focus:ring-[#fbcb1a]"
+                className="w-full bg-bg border border-hairline rounded-control px-2 py-2 text-center text-white font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-accent"
               />
             </div>
           </div>
         ) : (
           <div className="space-y-2">
-            {(we.setGroups || []).map((g, gIdx) => (
-              <div key={gIdx} className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-2 items-end bg-[#0e0e0e] border border-white/7 rounded-lg p-2">
+            {/* Resumen en vivo — calculado de los bloques, no de we.sets: si
+                alguna vez se desincronizan (datos antiguos, un cambio desde
+                fuera de este editor), esto enseña el número REAL en vez de
+                dejar dos verdades a la vez. */}
+            <p className="font-mono text-caption text-white bg-bg border border-hairline rounded-control px-3 py-2">
+              {(we.setGroups || []).reduce((s, g) => s + Math.max(1, g.sets || 1), 0)} series ·{' '}
+              {(we.setGroups || [])
+                .map(g => `${Math.max(1, g.sets || 1)}×${g.reps}${g.rir !== undefined && g.rir !== null ? ` (RIR ${g.rir})` : ''}`)
+                .join(' + ')}
+            </p>
+
+            {(we.setGroups || []).map((g, gIdx) => {
+              const esSugerida = !g.label || ETIQUETAS_SUGERIDAS.includes(g.label);
+              const mostrarLibre = etiquetaLibre.has(gIdx) || !esSugerida;
+              return (
+              <div key={gIdx} className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-2 items-end bg-bg border border-hairline rounded-surface p-2">
                 <div>
-                  <label className="block font-mono text-[9px] text-[#c6c9ab] uppercase mb-1">Etiqueta</label>
-                  <input
-                    type="text"
-                    value={g.label || ''}
-                    onChange={e => updateGroup(gIdx, 'label', e.target.value)}
-                    placeholder="Top set, Back-off..."
-                    className="w-full bg-[#181816] border border-white/7 rounded-md px-2 py-1.5 text-white font-mono text-xs focus:outline-none focus:ring-1 focus:ring-[#fbcb1a]"
-                  />
+                  <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Etiqueta (opcional)</label>
+                  {mostrarLibre ? (
+                    <input
+                      type="text"
+                      autoFocus={etiquetaLibre.has(gIdx)}
+                      value={g.label || ''}
+                      onChange={e => updateGroup(gIdx, 'label', e.target.value)}
+                      placeholder="Escribe una etiqueta"
+                      className="w-full bg-surface border border-hairline rounded-control px-2 py-2 text-white font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-accent"
+                    />
+                  ) : (
+                    <select
+                      value={g.label || ''}
+                      onChange={e => {
+                        if (e.target.value === '__libre__') {
+                          setEtiquetaLibre(prev => new Set(prev).add(gIdx));
+                          return;
+                        }
+                        updateGroup(gIdx, 'label', e.target.value);
+                      }}
+                      className="w-full bg-surface border border-hairline rounded-control px-2 py-2 text-white font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-accent appearance-none"
+                    >
+                      <option value="">—</option>
+                      {ETIQUETAS_SUGERIDAS.map(l => <option key={l} value={l}>{l}</option>)}
+                      <option value="__libre__">Escribir...</option>
+                    </select>
+                  )}
                 </div>
                 <div>
-                  <label className="block font-mono text-[9px] text-[#c6c9ab] uppercase mb-1">Series</label>
+                  <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Series</label>
                   <input
                     type="number" min={1} max={20}
                     value={g.sets}
                     onChange={e => updateGroup(gIdx, 'sets', parseInt(e.target.value) || 1)}
-                    className="w-16 bg-[#181816] border border-white/7 rounded-md px-2 py-1.5 text-center text-white font-mono text-xs focus:outline-none focus:ring-1 focus:ring-[#fbcb1a]"
+                    className="w-16 bg-surface border border-hairline rounded-control px-2 py-2 text-center text-white font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-accent"
                   />
                 </div>
                 <div>
-                  <label className="block font-mono text-[9px] text-[#c6c9ab] uppercase mb-1">Reps</label>
+                  <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Reps</label>
                   <input
                     type="text"
                     value={g.reps}
                     onChange={e => updateGroup(gIdx, 'reps', e.target.value)}
-                    className="w-20 bg-[#181816] border border-white/7 rounded-md px-2 py-1.5 text-center text-white font-mono text-xs focus:outline-none focus:ring-1 focus:ring-[#fbcb1a]"
+                    className="w-20 bg-surface border border-hairline rounded-control px-2 py-2 text-center text-white font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-accent"
                   />
                 </div>
                 <div>
-                  <label className="block font-mono text-[9px] text-[#c6c9ab] uppercase mb-1">RIR</label>
+                  <label className="block font-mono text-caption text-ink-2 uppercase mb-1">RIR</label>
                   <input
                     type="number" min={0} max={5}
                     value={g.rir}
                     onChange={e => updateGroup(gIdx, 'rir', parseInt(e.target.value) || 0)}
-                    className="w-14 bg-[#181816] border border-white/7 rounded-md px-2 py-1.5 text-center text-white font-mono text-xs focus:outline-none focus:ring-1 focus:ring-[#fbcb1a]"
+                    className="w-14 bg-surface border border-hairline rounded-control px-2 py-2 text-center text-white font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-accent"
                   />
                 </div>
                 <button
                   onClick={() => removeGroup(gIdx)}
-                  className="p-1.5 text-[#c6c9ab] hover:text-red-400 transition-colors"
-                  title="Eliminar bloque"
+                  className="p-2 text-ink-2 hover:text-red-400 transition-colors"
+                  title="Eliminar rango"
                 >
-                  <span className="material-symbols-outlined text-sm">delete</span>
+                  <Icon name="delete" size="s" />
                 </button>
               </div>
-            ))}
-            <div className="flex items-center justify-between">
-              <button
-                onClick={addGroup}
-                className="flex items-center gap-1 text-[10px] font-mono text-[#fbcb1a] hover:text-white transition-colors"
-              >
-                <span className="material-symbols-outlined text-sm">add</span>
-                Añadir bloque
-              </button>
-              <span className="font-mono text-[9px] text-[#555]">
-                Total: {we.sets} series · {we.reps}
-              </span>
-            </div>
+              );
+            })}
+            <button
+              onClick={addGroup}
+              className="flex items-center gap-1 text-caption font-sans text-accent hover:text-white transition-colors"
+            >
+              <Icon name="add" size="s" />
+              Añadir otro rango de reps
+            </button>
             <div>
-              <label className="block font-mono text-[9px] text-[#c6c9ab] uppercase mb-1">Descanso entre series (s)</label>
+              <label className="block font-sans text-caption text-ink-2 uppercase mb-1">Descanso entre series (s)</label>
               <input
                 type="number" min={0}
                 value={we.restSeconds}
                 onChange={e => onChange({ restSeconds: parseInt(e.target.value) || 0 })}
-                className="w-24 bg-[#0e0e0e] border border-white/7 rounded-md px-2 py-1.5 text-center text-white font-mono text-sm focus:outline-none focus:ring-1 focus:ring-[#fbcb1a]"
+                className="w-24 bg-bg border border-hairline rounded-control px-2 py-2 text-center text-white font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-accent"
               />
             </div>
           </div>
@@ -206,7 +252,7 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
         value={we.notes || ''}
         onChange={e => onChange({ notes: e.target.value })}
         placeholder="Notas opcionales (técnica, variante, carga...)"
-        className="w-full bg-[#0e0e0e] border border-white/7 rounded-md px-3 py-1.5 text-xs text-[#c6c9ab] placeholder-[#c6c9ab]/30 font-sans focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] transition-all"
+        className="w-full bg-bg border border-hairline rounded-control px-3 py-2 text-title-s text-ink-2 placeholder-ink-2/30 font-sans focus:outline-none focus:ring-1 focus:ring-accent transition-all"
       />
 
       {/* Grabar con el móvil */}
@@ -214,20 +260,20 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
         <button
           type="button"
           onClick={toggleRecordVideo}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-sans text-[10px] font-bold uppercase tracking-wider border transition-all ${
+          className={`flex items-center gap-2 px-3 py-2 rounded-control font-sans text-caption font-bold uppercase tracking-wider border transition-all ${
             we.recordVideoSet
-              ? 'bg-[#fbcb1a]/10 border-[#fbcb1a]/40 text-[#fbcb1a]'
-              : 'border-white/7 text-[#c6c9ab] hover:text-white hover:border-white/20'
+              ? 'bg-accent/10 border-accent/40 text-accent'
+              : 'border-hairline text-ink-2 hover:text-white hover:border-strong'
           }`}
         >
-          <span className="material-symbols-outlined text-sm">videocam</span>
+          <Icon name="videocam" size="s" />
           Grabar con el móvil
         </button>
         {we.recordVideoSet && (
           <select
             value={we.recordVideoSet}
             onChange={e => onChange({ recordVideoSet: e.target.value === 'all' ? 'all' : parseInt(e.target.value) })}
-            className="bg-[#0e0e0e] border border-white/7 rounded-md px-2 py-1.5 text-xs font-mono text-white focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] cursor-pointer"
+            className="bg-bg border border-hairline rounded-control px-2 py-2 text-title-s font-mono text-white focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
           >
             <option value="all">Todas las series</option>
             {Array.from({ length: we.sets }, (_, i) => i + 1).map(n => (
@@ -238,16 +284,16 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
       </div>
 
       {/* Técnica de alta intensidad */}
-      <div className="space-y-1.5">
-        <label className="block font-mono text-[9px] text-[#c6c9ab] uppercase">Técnica de alta intensidad (opcional)</label>
-        <div className="flex items-center gap-1.5 flex-wrap">
+      <div className="space-y-2">
+        <label className="block font-sans text-caption text-ink-2 uppercase">Técnica de alta intensidad (opcional)</label>
+        <div className="flex items-center gap-2 flex-wrap">
           <button
             type="button"
             onClick={() => setTechnique(undefined)}
-            className={`px-2.5 py-1 rounded-lg font-mono text-[10px] font-bold uppercase tracking-wider border transition-all ${
+            className={`px-3 py-1 rounded-control font-mono text-caption font-bold uppercase tracking-wider border transition-all ${
               !we.technique
-                ? 'bg-white/10 border-white/20 text-white'
-                : 'border-white/7 text-[#c6c9ab] hover:text-white hover:border-white/20'
+                ? 'bg-white/10 border-hairline text-white'
+                : 'border-hairline text-ink-2 hover:text-white hover:border-strong'
             }`}
           >Normal</button>
           {TECHNIQUES.map(t => (
@@ -256,75 +302,75 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
               type="button"
               onClick={() => setTechnique(we.technique === t ? undefined : t)}
               title={TECHNIQUE_DESCRIPTION[t]}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-lg font-mono text-[10px] font-bold uppercase tracking-wider border transition-all ${
+              className={`flex items-center gap-1 px-3 py-1 rounded-control font-mono text-caption font-bold uppercase tracking-wider border transition-all ${
                 we.technique === t
                   ? TECHNIQUE_COLOR[t]
-                  : 'border-white/7 text-[#c6c9ab] hover:text-white hover:border-white/20'
+                  : 'border-hairline text-ink-2 hover:text-white hover:border-strong'
               }`}
             >{TECHNIQUE_EMOJI[t]} {TECHNIQUE_LABEL[t]}</button>
           ))}
         </div>
         {we.technique && (
-          <p className="font-sans text-[10px] text-[#c6c9ab] leading-relaxed pt-0.5">{TECHNIQUE_DESCRIPTION[we.technique]}</p>
+          <p className="font-sans text-caption text-ink-2 leading-relaxed ">{TECHNIQUE_DESCRIPTION[we.technique]}</p>
         )}
       </div>
 
       {/* Warm-up (series de aproximación) */}
-      <div className="space-y-2 border-t border-white/50 pt-3">
-        <label className="block font-mono text-[9px] text-[#c6c9ab] uppercase">Series de aproximación (warm-up)</label>
-        <div className="flex items-center gap-1.5 flex-wrap">
+      <div className="space-y-2 border-t border-hairline pt-3">
+        <label className="block font-sans text-caption text-ink-2 uppercase">Series de aproximación (warm-up)</label>
+        <div className="flex items-center gap-2 flex-wrap">
           {([['none', 'Ninguna'], ['auto', 'Automático'], ['manual', 'Manual']] as [WarmupMode, string][]).map(([mode, label]) => (
             <button
               key={mode}
               type="button"
               onClick={() => setWarmupMode(mode)}
-              className={`px-2.5 py-1 rounded-lg font-mono text-[10px] font-bold uppercase tracking-wider border transition-all ${
+              className={`px-3 py-1 rounded-control font-sans text-caption font-bold uppercase tracking-wider border transition-all ${
                 (we.warmupMode || 'none') === mode
                   ? 'bg-orange-500/15 border-orange-500/40 text-orange-300'
-                  : 'border-white/7 text-[#c6c9ab] hover:text-white hover:border-white/20'
+                  : 'border-hairline text-ink-2 hover:text-white hover:border-strong'
               }`}
             >{label}</button>
           ))}
         </div>
         {we.warmupMode === 'auto' && (
-          <p className="font-sans text-[10px] text-[#c6c9ab] leading-relaxed pt-0.5">
+          <p className="font-sans text-caption text-ink-2 leading-relaxed ">
             🔥 El atleta verá series de aproximación calculadas automáticamente a partir del peso que escriba en la primera serie efectiva y su historial en este ejercicio.
           </p>
         )}
         {we.warmupMode === 'manual' && (
-          <div className="space-y-1.5 pt-1">
+          <div className="space-y-2 pt-1">
             {(we.manualWarmupSets || []).map((s, wIdx) => (
               <div key={wIdx} className="flex items-center gap-2">
-                <span className="font-mono text-[10px] text-orange-300 w-8">W{wIdx + 1}</span>
+                <span className="font-mono text-caption text-orange-300 w-8">W{wIdx + 1}</span>
                 <input
                   type="number" min={0} step={0.5}
                   value={s.weight}
                   onChange={e => updateManualWarmupSet(wIdx, 'weight', parseFloat(e.target.value) || 0)}
                   placeholder="kg"
-                  className="w-20 bg-[#0e0e0e] border border-white/7 rounded-md px-2 py-1 text-center text-white font-mono text-xs focus:outline-none focus:ring-1 focus:ring-[#fbcb1a]"
+                  className="w-20 bg-bg border border-hairline rounded-control px-2 py-1 text-center text-white font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-accent"
                 />
-                <span className="text-[#c6c9ab] text-xs">×</span>
+                <span className="text-ink-2 text-label">×</span>
                 <input
                   type="number" min={1}
                   value={s.reps}
                   onChange={e => updateManualWarmupSet(wIdx, 'reps', parseInt(e.target.value) || 1)}
                   placeholder="reps"
-                  className="w-16 bg-[#0e0e0e] border border-white/7 rounded-md px-2 py-1 text-center text-white font-mono text-xs focus:outline-none focus:ring-1 focus:ring-[#fbcb1a]"
+                  className="w-16 bg-bg border border-hairline rounded-control px-2 py-1 text-center text-white font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-accent"
                 />
                 <button
                   onClick={() => removeManualWarmupSet(wIdx)}
-                  className="p-1 text-[#c6c9ab] hover:text-red-400 transition-colors"
+                  className="p-1 text-ink-2 hover:text-red-400 transition-colors"
                   title="Eliminar"
                 >
-                  <span className="material-symbols-outlined text-sm">delete</span>
+                  <Icon name="delete" size="s" />
                 </button>
               </div>
             ))}
             <button
               onClick={addManualWarmupSet}
-              className="flex items-center gap-1 text-[10px] font-mono text-orange-300 hover:text-orange-200 transition-colors pt-0.5"
+              className="flex items-center gap-1 text-caption font-sans text-orange-300 hover:text-orange-200 transition-colors "
             >
-              <span className="material-symbols-outlined text-sm">add</span>
+              <span className="material-symbols-outlined text-body-s">add</span>
               Añadir serie de aproximación
             </button>
           </div>

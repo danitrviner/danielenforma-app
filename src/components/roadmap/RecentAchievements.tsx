@@ -1,4 +1,5 @@
 import React from 'react';
+import { Icon } from '../ui';
 
 export interface Achievement {
   id: string;
@@ -26,22 +27,22 @@ export default function RecentAchievements({ achievements }: Props) {
 
   return (
     <div className="flex flex-col gap-2">
-      <p className="font-mono text-[9px] uppercase tracking-widest text-[#c6c9ab] px-1">Logros recientes</p>
-      <div className="flex gap-2.5 overflow-x-auto pb-1 -mx-1 px-1">
+      <p className="font-mono text-caption uppercase tracking-widest text-ink-2 px-1">Logros recientes</p>
+      <div className="flex gap-3 overflow-x-auto pb-1 -mx-1 px-1">
         {sorted.map(a => (
           <div
             key={a.id}
-            className="flex-shrink-0 flex flex-col items-center gap-1.5 w-[84px] rounded-2xl border p-3 text-center"
-            style={{ backgroundColor: '#121212', borderColor: `${a.color}33` }}
+            className="flex-shrink-0 flex flex-col items-center gap-2 w-[84px] rounded-surface border p-3 text-center"
+            style={{ backgroundColor: 'var(--color-bg)', borderColor: `${a.color}33` }}
           >
-            <span
-              className="material-symbols-outlined text-xl w-9 h-9 rounded-full flex items-center justify-center"
+            <Icon
+              name={a.icon}
+              size="l"
+              className="w-9 h-9 rounded-full flex items-center justify-center"
               style={{ color: a.color, backgroundColor: `${a.color}1a` }}
-            >
-              {a.icon}
-            </span>
-            <p className="text-white text-[10px] font-sans font-bold leading-tight line-clamp-2">{a.title}</p>
-            <p className="text-[#c6c9ab] text-[8px] font-mono">{fmtDate(a.date)}</p>
+            />
+            <p className="text-white text-caption font-sans font-bold leading-tight line-clamp-2">{a.title}</p>
+            <p className="text-ink-2 text-caption font-mono">{fmtDate(a.date)}</p>
           </div>
         ))}
       </div>

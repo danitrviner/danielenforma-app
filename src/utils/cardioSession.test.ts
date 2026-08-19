@@ -1,10 +1,14 @@
 import { describe, it, expect } from 'vitest';
-import { CardioAssignment } from '../types';
+import { CardioAssignment, CardioSession } from '../types';
 import {
   createZoneAccumulator, flushZoneTime, setActiveZone, roundTimeInZone,
   elapsedSecFromWallClock, shouldDiscardSession, summarizeSamples, pickActiveZona2Assignment,
-  pickActiveIntervalAssignment,
+  pickActiveIntervalAssignment, weeklyCardioMinutesDone, dailyCardioMinutesForWeek, defaultWeeklyCardioGoal,
 } from './cardioSession';
+
+function session(date: string, durationSec: number): Pick<CardioSession, 'date' | 'durationSec'> {
+  return { date, durationSec };
+}
 
 describe('cardioSession — acumulación de tiempo por zona', () => {
   it('imputa el tramo transcurrido a la zona que estaba activa, no a la nueva', () => {
@@ -117,7 +121,7 @@ describe('pickActiveZona2Assignment — prescripción del coach para la sesión 
 
 describe('pickActiveIntervalAssignment — prescripción de intervalos del coach (§F6)', () => {
   const base: Omit<CardioAssignment, 'id' | 'type' | 'active' | 'createdAt'> = { athleteId: 'a@x.com' };
-  const someBlocks = [{ label: 'Sprint', durationSec: 30, targetZone: 'z5' as const }];
+  const someBlocks = [{ label: 'Sprint', closeType: 'time' as const, durationSec: 30, targetZone: 'z5' as const }];
 
   it('exige al menos un bloque definido', () => {
     const noBlocks: CardioAssignment = { ...base, id: '1', type: 'intervalos', active: true, createdAt: '2026-01-01', intervals: [] };
@@ -127,5 +131,46 @@ describe('pickActiveIntervalAssignment — prescripción de intervalos del coach
   it('coge la de intervalos activa con bloques', () => {
     const target: CardioAssignment = { ...base, id: '2', type: 'intervalos', active: true, createdAt: '2026-01-01', intervals: someBlocks };
     expect(pickActiveIntervalAssignment([target])).toEqual(target);
+  });
+});
+
+describe('objetivo semanal de cardio (F3.9)', () => {
+  const TODAY = '2026-07-08'; // miércoles, semana ISO 2026-W28: lunes 2026-07-06 → domingo 2026-07-12
+
+  it('suma minutos solo de sesiones dentro de la semana ISO actual', () => {
+    const sessions = [
+      session('2026-07-05', 30 * 60), // domingo anterior: fuera
+      session('2026-07-06', 20 * 60), // lunes: dentro
+      session('2026-07-08', 25 * 60), // hoy: dentro
+      session('2026-07-13', 40 * 60), // lunes siguiente: fuera
+    ];
+    expect(weeklyCardioMinutesDone(sessions, TODAY)).toBe(45);
+  });
+
+  it('sin sesiones esta semana, son 0 minutos', () => {
+    expect(weeklyCardioMinutesDone([session('2026-06-01', 30 * 60)], TODAY)).toBe(0);
+  });
+
+  it('reparte los minutos por día de la semana, lunes primero', () => {
+    const sessions = [session('2026-07-06', 20 * 60), session('2026-07-08', 25 * 60)];
+    expect(dailyCardioMinutesForWeek(sessions, TODAY)).toEqual([20, 0, 25, 0, 0, 0, 0]);
+  });
+
+  it('sin prescripción activa, cae al objetivo genérico de 90 min/semana', () => {
+    expect(defaultWeeklyCardioGoal([])).toEqual({ minutesGoal: 90 });
+  });
+
+  it('deriva el objetivo de la prescripción activa más reciente (timesPerWeek × duración)', () => {
+    const assignments: CardioAssignment[] = [
+      { athleteId: 'a@x.com', id: '1', type: 'zona2', active: true, createdAt: '2026-01-01', timesPerWeek: 3, targetDurationSec: 40 * 60 },
+    ];
+    expect(defaultWeeklyCardioGoal(assignments)).toEqual({ minutesGoal: 120, sessionsGoal: 3 });
+  });
+
+  it('sin targetDurationSec, asume 30 min por sesión', () => {
+    const assignments: CardioAssignment[] = [
+      { athleteId: 'a@x.com', id: '1', type: 'intervalos', active: true, createdAt: '2026-01-01', timesPerWeek: 2, intervals: [] },
+    ];
+    expect(defaultWeeklyCardioGoal(assignments)).toEqual({ minutesGoal: 60, sessionsGoal: 2 });
   });
 });

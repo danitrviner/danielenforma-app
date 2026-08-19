@@ -1,19 +1,22 @@
 import React, { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  UserProfile, WeeklyMenu, AthleteNutritionConfig, RecipeFavorites, MenuCompletionLog,
+  UserProfile, WeeklyMenu, RecipeFavorites, MenuCompletionLog,
   WeekDay, MenuDay, MenuMeal, Recipe, FoodCategory,
 } from '../types';
 import {
-  getPublishedMenu, getOnboarding, getAthleteNutritionConfig, saveAthleteNutritionConfig,
+  getPublishedMenu, getOnboarding, getAthleteNutritionConfig,
   updateWeeklyMenu, getMenuCompletionLog, saveMenuCompletionLog,
-  queryIndyaForGenerator, getRecipes, getRecipeById,
+  queryRecetasForGenerator, getRecipes, getRecipeById,
   getRecipeFavorites, saveRecipeFavorites,
 } from '../dbService';
 import { findSwapAlternatives, recipeMatchesSlot, buildBatchPlan, GeneratorPrefs, MenuCandidate } from '../utils/menuEngine';
+import { exchangeToKcal } from '../utils/nutritionConstants';
 import { buildShoppingList, ShoppingListItem } from '../utils/menuShoppingList';
-import { DISH_TYPES, DishType } from '../utils/dishTypes';
+import { DishType } from '../utils/dishTypes';
 import { substitutesFor } from '../utils/ingredientSubstitutions';
+import { Icon, EmptyState, ListRow, Badge, Sheet, Dialog } from './ui';
 
 const WEEK_DAYS: WeekDay[] = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 const WEEK_DAY_SHORT: Record<WeekDay, string> = { mon: 'L', tue: 'M', wed: 'X', thu: 'J', fri: 'V', sat: 'S', sun: 'D' };
@@ -44,6 +47,7 @@ interface Props {
 
 export default function MyMenuScreen({ profile }: Props) {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const menuKey = ['publishedMenu', profile.email] as const;
   const { data: menu = null, isPending: loadingMenu } = useQuery({
     queryKey: menuKey,
@@ -88,10 +92,6 @@ export default function MyMenuScreen({ profile }: Props) {
   const [swapFor, setSwapFor] = useState<{ mealId: string; slot: number } | null>(null);
   const [swapLoading, setSwapLoading] = useState(false);
   const [swapCandidates, setSwapCandidates] = useState<MenuCandidate[]>([]);
-  const [savingVariety, setSavingVariety] = useState(false);
-  const [savingBatchPref, setSavingBatchPref] = useState(false);
-  const [dishPrefsOpen, setDishPrefsOpen] = useState(false);
-
   const [shoppingOpen, setShoppingOpen] = useState(false);
   const [shoppingLoading, setShoppingLoading] = useState(false);
   const [shoppingItems, setShoppingItems] = useState<ShoppingListItem[] | null>(null);
@@ -126,13 +126,6 @@ export default function MyMenuScreen({ profile }: Props) {
     fetched.forEach((r, i) => { if (r) map.set(ids[i], r); });
     setShoppingItems(buildShoppingList(menu.days, map));
     setShoppingLoading(false);
-  }
-
-  async function handleBatchPrefChange(value: boolean) {
-    setSavingBatchPref(true);
-    const next: AthleteNutritionConfig = { ...(nutritionConfig ?? { athleteId: profile.email, enabledModes: [] }), batchCookingPreferred: value };
-    queryClient.setQueryData(nutritionConfigKey, next);
-    try { await saveAthleteNutritionConfig(next); } finally { setSavingBatchPref(false); }
   }
 
   // Menu tick-offs live in their own collection (keys = `${day}_${mealId}`), so
@@ -204,28 +197,6 @@ export default function MyMenuScreen({ profile }: Props) {
     if (!disliked && meal) openSwap(meal);
   }
 
-  // Athlete's preferred / excluded dish types (tri-state cycle: neutral → más → evitar).
-  async function cycleDishType(id: DishType) {
-    const pref = new Set((nutritionConfig?.preferredDishTypes ?? onboarding?.preferredDishTypes ?? []) as string[]);
-    const excl = new Set((nutritionConfig?.excludedDishTypes ?? onboarding?.excludedDishTypes ?? []) as string[]);
-    if (pref.has(id)) { pref.delete(id); excl.add(id); }
-    else if (excl.has(id)) { excl.delete(id); }
-    else { pref.add(id); }
-    const next: AthleteNutritionConfig = {
-      ...(nutritionConfig ?? { athleteId: profile.email, enabledModes: [] }),
-      preferredDishTypes: Array.from(pref), excludedDishTypes: Array.from(excl),
-    };
-    queryClient.setQueryData(nutritionConfigKey, next);
-    await saveAthleteNutritionConfig(next).catch(() => {});
-  }
-  function dishState(id: string): 'pref' | 'excl' | 'neutral' {
-    const pref = (nutritionConfig?.preferredDishTypes ?? onboarding?.preferredDishTypes ?? []) as string[];
-    const excl = (nutritionConfig?.excludedDishTypes ?? onboarding?.excludedDishTypes ?? []) as string[];
-    if (pref.includes(id)) return 'pref';
-    if (excl.includes(id)) return 'excl';
-    return 'neutral';
-  }
-
   // Swap one ingredient of the current meal for a same-group equivalent (approximate
   // equivalence, so exchanges/kcal stay the same). Persisted on the meal via `days`.
   async function applySubstitution(from: string, to: string) {
@@ -249,8 +220,8 @@ export default function MyMenuScreen({ profile }: Props) {
     setSwapLoading(true);
     setSwapCandidates([]);
     if (day) {
-      const [indya, builder] = await Promise.all([queryIndyaForGenerator(meal.slot, 300), getRecipes()]);
-      const pool = [...indya, ...builder.filter(r => recipeMatchesSlot(r, meal.slot))];
+      const [recetas, builder] = await Promise.all([queryRecetasForGenerator(meal.slot, 300), getRecipes({ ownerId: profile.userId })]);
+      const pool = [...recetas, ...builder.filter(r => recipeMatchesSlot(r, meal.slot))];
       const alts = findSwapAlternatives(day, meal.id, pool, prefs, 5);
       setSwapCandidates(alts);
     }
@@ -263,7 +234,7 @@ export default function MyMenuScreen({ profile }: Props) {
     if (!meal) return;
 
     const nextMeals = day.meals.map(m => m.id === meal.id
-      ? { ...m, recipeId: candidate.recipe.id, recipeName: candidate.recipe.name, recipeImage: candidate.recipe.image ?? candidate.recipe.photoUrl, scale: candidate.scale, exch: candidate.exch, complements: [] }
+      ? { ...m, recipeId: candidate.recipe.id, recipeName: candidate.recipe.name, recipeImage: candidate.recipe.image ?? candidate.recipe.photoUrl, scale: candidate.scale, exch: candidate.exch, kcal: Math.round(exchangeToKcal(candidate.exch)), complements: [] }
       : m);
     const nextDay: MenuDay = { ...day, meals: nextMeals };
     const nextDays = menu.days.map(d => d.day === selectedDay ? nextDay : d);
@@ -279,35 +250,30 @@ export default function MyMenuScreen({ profile }: Props) {
     await updateWeeklyMenu(menu.id, { days: nextDays, swapHistory: nextMenu.swapHistory }).catch(() => {});
   }
 
-  async function handleVarietyChange(v: number) {
-    setSavingVariety(true);
-    const next: AthleteNutritionConfig = { ...(nutritionConfig ?? { athleteId: profile.email, enabledModes: [] }), menuVariety: v };
-    queryClient.setQueryData(nutritionConfigKey, next);
-    try { await saveAthleteNutritionConfig(next); } finally { setSavingVariety(false); }
-  }
-
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-16">
-        <span className="material-symbols-outlined text-3xl text-[#fbcb1a] animate-spin">progress_activity</span>
+      <div className="flex items-center justify-center py-10">
+        <Icon name="progress_activity" size="xl" className="text-accent animate-spin" />
       </div>
     );
   }
 
   if (!menu) {
     return (
-      <div className="bg-[#181816] border border-white/7 rounded-2xl p-8 text-center space-y-2">
-        <span className="material-symbols-outlined text-3xl text-[#2a2a2a] block">restaurant_menu</span>
-        <p className="font-sans font-bold text-sm text-white">Todavía no tienes un menú semanal</p>
-        <p className="font-mono text-xs text-[#c6c9ab]">Tu entrenador aún no ha publicado un menú basado en recetas. Mientras tanto, sigue usando Intercambios.</p>
+      <div className="bg-surface border border-hairline rounded-surface">
+        <EmptyState
+          icon="restaurant_menu"
+          title="Todavía no tienes un menú semanal"
+          description="Tu entrenador aún no ha publicado un menú basado en recetas. Mientras tanto, sigue usando Intercambios."
+        />
       </div>
     );
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       {/* Week strip */}
-      <div className="grid grid-cols-7 gap-1.5">
+      <div className="grid grid-cols-7 gap-2">
         {WEEK_DAYS.map(d => {
           const active = d === selectedDay;
           const isToday = d === todayWeekDay();
@@ -317,10 +283,10 @@ export default function MyMenuScreen({ profile }: Props) {
             <button
               key={d}
               onClick={() => setSelectedDay(d)}
-              className={`flex flex-col items-center gap-0.5 py-2 rounded-xl border transition-all ${active ? 'bg-[#fbcb1a] border-[#fbcb1a] text-black' : 'bg-[#181816] border-white/7 text-[#c6c9ab] hover:border-white/20'}`}
+              className={`flex flex-col items-center py-2 rounded-control border transition-all ${active ? 'bg-accent border-accent text-black' : 'bg-surface border-hairline text-ink-2 hover:border-strong'}`}
             >
-              <span className="font-mono text-[10px] font-bold uppercase">{WEEK_DAY_SHORT[d]}</span>
-              {isToday && <span className={`w-1 h-1 rounded-full ${active ? 'bg-black' : 'bg-[#fbcb1a]'}`} />}
+              <span className="font-mono text-caption font-bold uppercase">{WEEK_DAY_SHORT[d]}</span>
+              {isToday && <span className={`w-1 h-1 rounded-full ${active ? 'bg-black' : 'bg-accent'}`} />}
               {!hasMeals && <span className="material-symbols-outlined" style={{ fontSize: '10px' }}>remove</span>}
             </button>
           );
@@ -329,49 +295,53 @@ export default function MyMenuScreen({ profile }: Props) {
 
       {/* Batch cooking — cook-once plan for the whole week */}
       {menu.batchCooking && batchPlan.length > 0 && (
-        <div className="bg-[#fbcb1a]/5 border border-[#fbcb1a]/25 rounded-2xl p-4 space-y-3">
+        <div className="bg-accent/5 border border-accent/25 rounded-surface p-4 space-y-3">
           <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-[#fbcb1a] text-base">inventory_2</span>
+            <Icon name="inventory_2" size="m" className="text-accent" />
             <div>
-              <p className="font-sans font-bold text-sm text-white">Cocina de la semana</p>
-              <p className="font-mono text-[10px] text-[#c6c9ab]">Prepáralo todo de una vez y repártelo por días.</p>
+              <p className="font-sans font-bold text-body-s text-white">Cocina de la semana</p>
+              <p className="font-sans text-caption text-ink-2">Prepáralo todo de una vez y repártelo por días.</p>
             </div>
           </div>
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             {batchPlan.map(e => (
-              <div key={e.recipeId} className="flex items-center gap-3 bg-[#0e0e0e] border border-white/7 rounded-lg px-3 py-2">
-                <div className="w-9 h-9 rounded-lg overflow-hidden flex-shrink-0 bg-[#1c1b1b]">
-                  {e.recipeImage ? <img src={e.recipeImage} alt="" className="w-full h-full object-cover" /> : null}
-                </div>
-                <span className="flex-1 font-sans text-xs text-white truncate">{e.recipeName}</span>
-                <span className="font-mono text-[10px] text-[#fbcb1a] flex-shrink-0">≈{e.servings} {e.servings === 1 ? 'ración' : 'raciones'}</span>
-              </div>
+              <ListRow
+                key={e.recipeId}
+                className="rounded-surface border bg-bg border-hairline"
+                leading={
+                  <div className="w-9 h-9 rounded-surface overflow-hidden flex-shrink-0 bg-raised">
+                    {e.recipeImage ? <img src={e.recipeImage} alt="" className="w-full h-full object-cover" /> : null}
+                  </div>
+                }
+                title={e.recipeName}
+                trailing={<span className="font-mono text-caption text-accent flex-shrink-0">≈{e.servings} {e.servings === 1 ? 'ración' : 'raciones'}</span>}
+              />
             ))}
           </div>
         </div>
       )}
 
       {/* Shopping list — available for any menu */}
-      <div className="bg-[#181816] border border-white/7 rounded-2xl overflow-hidden">
-        <button onClick={openShoppingList} className="w-full flex items-center justify-between px-4 py-3 hover:bg-[#141414] transition-colors">
-          <span className="flex items-center gap-2 font-sans font-bold text-sm text-white">
-            <span className="material-symbols-outlined text-[#00eefc] text-base">shopping_cart</span>
+      <div className="bg-surface border border-hairline rounded-surface overflow-hidden">
+        <button onClick={openShoppingList} className="w-full flex items-center justify-between px-4 py-3 hover:bg-field transition-colors">
+          <span className="flex items-center gap-2 font-sans font-bold text-body-s text-white">
+            <Icon name="shopping_cart" size="m" className="text-data" />
             Lista de la compra de la semana
           </span>
-          <span className="material-symbols-outlined text-[#c6c9ab] text-base">{shoppingOpen ? 'expand_less' : 'expand_more'}</span>
+          <Icon name={shoppingOpen ? 'expand_less' : 'expand_more'} size="m" className="text-ink-2" />
         </button>
         {shoppingOpen && (
           <div className="px-4 pb-4">
             {shoppingLoading ? (
-              <div className="flex justify-center py-4"><span className="material-symbols-outlined text-xl text-[#fbcb1a] animate-spin">progress_activity</span></div>
+              <div className="flex justify-center py-4"><Icon name="progress_activity" size="l" className="text-accent animate-spin" /></div>
             ) : !shoppingItems || shoppingItems.length === 0 ? (
-              <p className="font-mono text-[10px] text-[#555] py-2">No hay ingredientes que listar en este menú.</p>
+              <p className="font-sans text-caption text-ink-3 py-2">No hay ingredientes que listar en este menú.</p>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
                 {shoppingItems.map((item, i) => (
-                  <div key={i} className="flex items-center justify-between gap-2 border-b border-white/5 py-1">
-                    <span className="font-sans text-[11px] text-[#c6c9ab] truncate">{item.name}</span>
-                    <span className="font-mono text-[10px] text-white flex-shrink-0">{item.display}</span>
+                  <div key={i} className="flex items-center justify-between gap-2 border-b border-hairline py-1">
+                    <span className="font-sans text-caption text-ink-2 truncate">{item.name}</span>
+                    <span className="font-mono text-caption text-white flex-shrink-0">{item.display}</span>
                   </div>
                 ))}
               </div>
@@ -381,82 +351,96 @@ export default function MyMenuScreen({ profile }: Props) {
       </div>
 
       <div>
-        <h2 className="font-sans font-extrabold text-xl text-white">{WEEK_DAY_FULL[selectedDay]}</h2>
-        <p className="font-mono text-xs text-[#c6c9ab]">{day?.dietName ?? 'Día libre'}</p>
+        <h2 className="font-sans font-bold text-title-m text-white">{WEEK_DAY_FULL[selectedDay]}</h2>
+        <p className="font-mono text-label text-ink-2">{day?.dietName ?? 'Día libre'}</p>
       </div>
 
       {/* Meals */}
       {!day || day.meals.length === 0 ? (
-        <div className="bg-[#181816] border border-white/7 rounded-2xl p-6 text-center">
-          <p className="font-mono text-xs text-[#c6c9ab]">Sin menú para este día — usa Intercambios si quieres montarte algo igualmente.</p>
+        <div className="bg-surface border border-hairline rounded-surface">
+          <EmptyState icon="event_busy" title="Sin menú para este día" description="Usa Intercambios si quieres montarte algo igualmente." />
         </div>
       ) : (
         <div className="space-y-3">
           {day.meals.map(meal => {
             const done = doneKeys.has(`${selectedDay}_${meal.id}`);
             return (
-              <div key={meal.id} className={`bg-[#181816] border rounded-2xl p-3 flex gap-3 transition-all ${done ? 'border-emerald-400/30' : 'border-white/7'}`}>
-                <button
-                  onClick={() => toggleDone(meal.id)}
-                  className={`flex-shrink-0 w-8 h-8 rounded-full border-2 flex items-center justify-center transition-colors self-start mt-1 ${done ? 'bg-emerald-400 border-emerald-400' : 'border-[#3a3a3a] hover:border-[#c6c9ab]'}`}
-                  title={done ? 'Marcar como no hecha' : 'Marcar como hecha'}
-                >
-                  {done && <span className="material-symbols-outlined text-black text-base">check</span>}
-                </button>
-
+              <div key={meal.id} className={`bg-surface border rounded-surface overflow-hidden transition-all ${done ? 'border-emerald-400/30' : 'border-hairline'}`}>
+                {/* Foto a sangre, mismo patrón que RecetaCard en la Biblioteca de
+                    recetas — antes era una miniatura de 64px, demasiado pequeña
+                    para verse bien (queja real de Dani). */}
                 <button
                   onClick={() => openDetail(meal)}
-                  className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 bg-[#1c1b1b] border border-white/7"
+                  className="relative block w-full aspect-[21/9] bg-raised"
                 >
-                  {meal.recipeImage
-                    ? <img src={meal.recipeImage} alt={meal.recipeName} className="w-full h-full object-cover" />
-                    : <div className="w-full h-full flex items-center justify-center"><span className="material-symbols-outlined text-xl text-[#2a2a2a]">skillet</span></div>}
+                  {meal.recipeImage ? (
+                    <img src={meal.recipeImage} alt={meal.recipeName} className="absolute inset-0 w-full h-full object-cover" />
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center"><Icon name="skillet" size="xl" className="text-ink-3" /></div>
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/15 to-transparent" />
+                  <div className="absolute bottom-0 left-0 right-0 p-3 text-left">
+                    <span className="font-sans text-caption text-white/70 uppercase tracking-wider">
+                      {meal.name}{meal.scale !== 1 ? ` · ×${meal.scale}` : ''}
+                    </span>
+                    <p className={`font-sans font-bold text-title-s leading-tight ${done ? 'text-white/60 line-through' : 'text-white'}`}>
+                      {meal.recipeName}
+                    </p>
+                  </div>
+                  {done && (
+                    <span className="absolute top-2 right-2 w-8 h-8 rounded-full bg-emerald-400 flex items-center justify-center">
+                      <Icon name="check" size="m" className="text-black" />
+                    </span>
+                  )}
                 </button>
 
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-[9px] text-[#555] uppercase">{meal.name}</span>
-                    {meal.scale !== 1 && <span className="font-mono text-[9px] text-[#fbcb1a]">×{meal.scale}</span>}
-                  </div>
-                  <p className={`font-sans font-bold text-sm leading-tight ${done ? 'text-[#c6c9ab] line-through' : 'text-white'}`}>{meal.recipeName}</p>
-                  <p className="font-mono text-[9px] text-[#c6c9ab] mt-0.5">{fmtExch(meal.exch)} · {meal.kcal} kcal</p>
-                  {meal.complements.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-1.5">
-                      {meal.complements.map((c, ci) => (
-                        <span key={ci} className="text-[9px] font-mono text-[#c6c9ab] bg-[#1c1b1b] border border-white/7 px-1.5 py-0.5 rounded">
-                          +{c.quantity} {CAT_LABEL[c.category]} · {c.foodLabel}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                  <div className="flex items-center gap-3 mt-1.5">
-                    <button
-                      onClick={() => openSwap(meal)}
-                      className="flex items-center gap-1 text-[10px] font-mono text-[#00eefc] hover:text-white transition-colors"
-                    >
-                      <span className="material-symbols-outlined text-sm">swap_horiz</span>
-                      Intercambiar
-                    </button>
-                    {meal.recipeId && (
-                      <>
-                        <button
-                          onClick={() => toggleFavorite(meal.recipeId)}
-                          title={isFav(meal.recipeId) ? 'Quitar de favoritas' : 'Me encanta — quiero que salga más'}
-                          className="flex items-center transition-colors"
-                          style={{ color: isFav(meal.recipeId) ? '#fbcb1a' : '#6b6f52' }}
-                        >
-                          <span className="material-symbols-outlined text-base" style={{ fontVariationSettings: isFav(meal.recipeId) ? "'FILL' 1" : "'FILL' 0" }}>favorite</span>
-                        </button>
-                        <button
-                          onClick={() => toggleDislike(meal.recipeId, meal)}
-                          title={isDisliked(meal.recipeId) ? 'Quitar el "no me gusta"' : 'No me gusta — que no vuelva a salir'}
-                          className="flex items-center transition-colors"
-                          style={{ color: isDisliked(meal.recipeId) ? '#f87171' : '#6b6f52' }}
-                        >
-                          <span className="material-symbols-outlined text-base" style={{ fontVariationSettings: isDisliked(meal.recipeId) ? "'FILL' 1" : "'FILL' 0" }}>thumb_down</span>
-                        </button>
-                      </>
+                <div className="p-3 flex gap-3">
+                  <button
+                    onClick={() => toggleDone(meal.id)}
+                    className={`flex-shrink-0 w-8 h-8 rounded-full border-2 flex items-center justify-center transition-colors self-start ${done ? 'bg-emerald-400 border-emerald-400' : 'border-hairline hover:border-ink-2'}`}
+                    title={done ? 'Marcar como no hecha' : 'Marcar como hecha'}
+                  >
+                    {done && <Icon name="check" size="m" className="text-black" />}
+                  </button>
+
+                  <div className="flex-1 min-w-0">
+                    <p className="font-mono text-caption text-ink-2">{fmtExch(meal.exch)} · {meal.kcal} kcal</p>
+                    {meal.complements.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {meal.complements.map((c, ci) => (
+                          <Badge key={ci} tone="neutral">+{c.quantity} {CAT_LABEL[c.category]} · {c.foodLabel}</Badge>
+                        ))}
+                      </div>
                     )}
+                    <div className="flex items-center gap-3 mt-2">
+                      <button
+                        onClick={() => openSwap(meal)}
+                        className="flex items-center gap-1 text-caption font-mono text-data hover:text-white transition-colors"
+                      >
+                        <Icon name="swap_horiz" size="s" />
+                        Intercambiar
+                      </button>
+                      {meal.recipeId && (
+                        <>
+                          <button
+                            onClick={() => toggleFavorite(meal.recipeId)}
+                            title={isFav(meal.recipeId) ? 'Quitar de favoritas' : 'Me encanta — quiero que salga más'}
+                            className="flex items-center transition-colors"
+                            style={{ color: isFav(meal.recipeId) ? 'var(--color-accent)' : 'var(--color-ink-3)' }}
+                          >
+                            <Icon name="favorite" size="m" filled={isFav(meal.recipeId)} />
+                          </button>
+                          <button
+                            onClick={() => toggleDislike(meal.recipeId, meal)}
+                            title={isDisliked(meal.recipeId) ? 'Quitar el "no me gusta"' : 'No me gusta — que no vuelva a salir'}
+                            className="flex items-center transition-colors"
+                            style={{ color: isDisliked(meal.recipeId) ? 'var(--color-danger)' : 'var(--color-ink-3)' }}
+                          >
+                            <Icon name="thumb_down" size="m" filled={isDisliked(meal.recipeId)} />
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -465,148 +449,85 @@ export default function MyMenuScreen({ profile }: Props) {
         </div>
       )}
 
-      {/* Dish-type preferences (tri-state) */}
-      <div className="bg-[#181816] border border-white/7 rounded-2xl overflow-hidden">
-        <button onClick={() => setDishPrefsOpen(o => !o)} className="w-full flex items-center justify-between px-4 py-3 hover:bg-[#141414] transition-colors">
-          <span className="flex items-center gap-2 font-sans font-bold text-sm text-white">
-            <span className="material-symbols-outlined text-[#fbcb1a] text-base">tune</span>
-            Tipos de comida que prefieres
-          </span>
-          <span className="material-symbols-outlined text-[#c6c9ab] text-base">{dishPrefsOpen ? 'expand_less' : 'expand_more'}</span>
-        </button>
-        {dishPrefsOpen && (
-          <div className="px-4 pb-4 space-y-3">
-            <p className="font-mono text-[9px] text-[#555]">
-              Toca una vez para que salga <span className="text-[#fbcb1a]">más</span>, otra vez para <span className="text-red-400">evitarla</span>, otra para dejarla neutral.
-            </p>
-            <div className="flex flex-wrap gap-1.5">
-              {DISH_TYPES.filter(dt => dt.id !== 'otro').map(dt => {
-                const st = dishState(dt.id);
-                const cls = st === 'pref'
-                  ? 'bg-[#fbcb1a] border-[#fbcb1a] text-black'
-                  : st === 'excl'
-                    ? 'bg-red-500/15 border-red-500/40 text-red-300 line-through'
-                    : 'bg-[#1c1b1b] border-white/7 text-[#c6c9ab] hover:text-white';
-                return (
-                  <button
-                    key={dt.id}
-                    onClick={() => cycleDishType(dt.id)}
-                    className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg border font-mono text-[10px] font-bold transition-all ${cls}`}
-                  >
-                    <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>{dt.icon}</span>
-                    {dt.label}
-                  </button>
-                );
-              })}
-            </div>
-            <p className="font-mono text-[9px] text-[#555]">Se aplica a tus intercambios de recetas y a la próxima generación del coach.</p>
-          </div>
-        )}
-      </div>
-
-      {/* Variety preference */}
-      <div className="bg-[#181816] border border-white/7 rounded-2xl p-4 space-y-2">
-        <p className="font-mono text-[10px] text-[#c6c9ab] uppercase">¿Cómo prefieres tu menú?</p>
-        <div className="flex gap-2">
-          {[1, 2, 3, 4, 5].map(v => (
-            <button
-              key={v}
-              disabled={savingVariety}
-              onClick={() => handleVarietyChange(v)}
-              className={`flex-1 py-2 rounded-lg font-mono font-bold text-xs transition-all disabled:opacity-50 ${prefs.variety === v ? 'bg-[#fbcb1a] text-black' : 'bg-[#1c1b1b] border border-white/7 text-[#c6c9ab] hover:text-white'}`}
-            >
-              {v}
-            </button>
-          ))}
-        </div>
-        <div className="flex justify-between">
-          <span className="font-mono text-[9px] text-[#555]">Repetitivo, más sencillo</span>
-          <span className="font-mono text-[9px] text-[#555]">Muy variado</span>
-        </div>
-
+      {/* Tipos de comida que prefieres / variedad / batch cooking / verduras se
+          movieron a Perfil > Preferencias — no tenía sentido tenerlos aquí,
+          en la pantalla de "ya está hecho", cuando no cambian el menú
+          publicado hasta la próxima generación del coach. */}
+      <div className="bg-surface border border-hairline rounded-surface p-4 flex items-center justify-between gap-3">
+        <p className="font-sans text-caption text-ink-2">
+          Tipos de comida, variedad y batch cooking se editan ahora en tu perfil.
+        </p>
         <button
-          onClick={() => handleBatchPrefChange(!(nutritionConfig?.batchCookingPreferred ?? onboarding?.batchCookingPreferred ?? false))}
-          disabled={savingBatchPref}
-          className="w-full flex items-center gap-3 pt-3 mt-1 border-t border-white/7 text-left disabled:opacity-50"
+          type="button"
+          onClick={() => navigate('/profile?tab=preferencias')}
+          className="flex-shrink-0 flex items-center gap-1 text-caption font-mono text-accent hover:text-white transition-colors"
         >
-          <span className={`w-5 h-5 rounded flex-shrink-0 border-2 flex items-center justify-center transition-colors ${(nutritionConfig?.batchCookingPreferred ?? onboarding?.batchCookingPreferred) ? 'bg-[#fbcb1a] border-[#fbcb1a]' : 'border-[#3a3a3a]'}`}>
-            {(nutritionConfig?.batchCookingPreferred ?? onboarding?.batchCookingPreferred) && <span className="material-symbols-outlined text-black" style={{ fontSize: '13px' }}>check</span>}
-          </span>
-          <span className="flex-1">
-            <span className="flex items-center gap-1.5 font-sans font-bold text-xs text-white">
-              <span className="material-symbols-outlined text-sm text-[#fbcb1a]">inventory_2</span>
-              Prefiero batch cooking
-            </span>
-            <span className="block font-mono text-[9px] text-[#c6c9ab] mt-0.5">Cocinar todo de una vez y repartirlo por días.</span>
-          </span>
+          <Icon name="tune" size="s" />
+          Ajustar mis preferencias
         </button>
-
-        <p className="font-mono text-[9px] text-[#555]">Se aplicará la próxima vez que tu entrenador genere el menú.</p>
       </div>
 
       {/* Swap sheet */}
       {swapFor && (
-        <div className="fixed inset-0 z-50 bg-black/70 flex items-end sm:items-center justify-center p-4" onClick={() => setSwapFor(null)}>
-          <div onClick={e => e.stopPropagation()} className="bg-[#181816] border border-white/7 rounded-2xl w-full max-w-md max-h-[70vh] overflow-y-auto p-4 space-y-2">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="font-sans font-bold text-sm text-white">Elige una alternativa</h3>
-              <button onClick={() => setSwapFor(null)} className="text-[#c6c9ab] hover:text-white">
-                <span className="material-symbols-outlined text-base">close</span>
-              </button>
-            </div>
+        <Sheet
+          open
+          onClose={() => setSwapFor(null)}
+          title="Elige una alternativa"
+          size="m"
+        >
+          <div className="space-y-2 pt-2">
             {swapLoading ? (
-              <p className="font-mono text-xs text-[#555] text-center py-6">Buscando alternativas que mantengan tus puntos…</p>
+              <p className="font-sans text-label text-ink-3 text-center py-6">Buscando alternativas que mantengan tus puntos…</p>
             ) : swapCandidates.length === 0 ? (
-              <p className="font-mono text-xs text-[#555] text-center py-6">No hay alternativas disponibles ahora mismo para este hueco.</p>
+              <p className="font-sans text-label text-ink-3 text-center py-6">No hay alternativas disponibles ahora mismo para este hueco.</p>
             ) : (
               swapCandidates.map((c, ci) => (
                 <button
                   key={ci}
                   onClick={() => confirmSwap(c)}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 text-left bg-[#0e0e0e] border border-white/7 hover:border-[#fbcb1a]/40 rounded-xl transition-all"
+                  className="w-full flex items-center gap-3 px-3 py-3 text-left bg-bg border border-hairline hover:border-accent/40 rounded-control transition-all"
                 >
-                  <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 bg-[#1c1b1b]">
+                  <div className="w-10 h-10 rounded-surface overflow-hidden flex-shrink-0 bg-raised">
                     {c.recipe.image ? <img src={c.recipe.image} alt="" className="w-full h-full object-cover" /> : null}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-sans text-sm text-white truncate">{c.recipe.name}</p>
-                    <p className="font-mono text-[9px] text-[#c6c9ab]">{fmtExch(c.exch)} · mantiene tus puntos del día</p>
+                    <p className="font-sans text-body-s text-white truncate">{c.recipe.name}</p>
+                    <p className="font-mono text-caption text-ink-2">{fmtExch(c.exch)} · mantiene tus puntos del día</p>
                   </div>
                 </button>
               ))
             )}
           </div>
-        </div>
+        </Sheet>
       )}
 
       {/* Recipe detail */}
       {detailOpen && (
-        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={closeDetail}>
-          <div onClick={e => e.stopPropagation()} className="bg-[#181816] border border-white/7 rounded-2xl w-full max-w-lg max-h-[80vh] overflow-y-auto p-5 space-y-3">
+        <Dialog
+          open
+          onClose={closeDetail}
+          size="l"
+          title={detailRecipe?.name ?? 'Receta'}
+        >
+          <div className="space-y-3">
             {detailLoading ? (
               <div className="flex items-center justify-center py-10">
-                <span className="material-symbols-outlined text-2xl text-[#fbcb1a] animate-spin">progress_activity</span>
+                <Icon name="progress_activity" size="l" className="text-accent animate-spin" />
               </div>
             ) : detailRecipe ? (
               <>
-                <div className="flex items-center justify-between">
-                  <h3 className="font-sans font-bold text-base text-white">{detailRecipe.name}</h3>
-                  <button onClick={closeDetail} className="text-[#c6c9ab] hover:text-white">
-                    <span className="material-symbols-outlined text-base">close</span>
-                  </button>
-                </div>
                 {(detailRecipe.image ?? detailRecipe.photoUrl) && (
-                  <div className="w-full aspect-[16/9] rounded-xl overflow-hidden bg-[#1c1b1b]">
+                  <div className="w-full aspect-[16/9] rounded-surface overflow-hidden bg-raised">
                     <img src={detailRecipe.image ?? detailRecipe.photoUrl} alt={detailRecipe.name} className="w-full h-full object-cover" />
                   </div>
                 )}
                 {detailRecipe.kcal != null && (
-                  <p className="font-mono text-[10px] text-[#c6c9ab]">{detailRecipe.kcal} kcal{detailRecipe.cookingTime != null ? ` · ${detailRecipe.cookingTime} min` : ''}</p>
+                  <p className="font-mono text-caption text-ink-2">{detailRecipe.kcal} kcal{detailRecipe.cookingTime != null ? ` · ${detailRecipe.cookingTime} min` : ''}</p>
                 )}
                 {(detailRecipe.ingredientsText?.length || detailRecipe.ingredients?.length) ? (
                   <div>
-                    <p className="font-mono text-[9px] text-[#555] uppercase mb-1.5">Ingredientes</p>
-                    <ul className="space-y-0.5">
+                    <p className="font-mono text-caption text-ink-3 uppercase mb-2">Ingredientes</p>
+                    <ul className="">
                       {(detailRecipe.ingredientsText?.length
                         ? detailRecipe.ingredientsText.map(i => ({ label: i.name, qty: `${i.quantity}g` }))
                         : (detailRecipe.ingredients ?? []).map(i => ({ label: i.foodLabel, qty: `×${i.quantity}` }))
@@ -615,42 +536,42 @@ export default function MyMenuScreen({ profile }: Props) {
                         const subs = detailMealId ? substitutesFor(ing.label) : [];
                         const open = subForIngredient === ing.label;
                         return (
-                          <li key={idx} className="py-1 border-b border-white/7 last:border-0">
+                          <li key={idx} className="py-1 border-b border-hairline last:border-0">
                             <div className="flex items-center justify-between gap-2">
-                              <span className="text-xs font-sans flex-1 pr-2">
+                              <span className="text-label font-sans flex-1 pr-2">
                                 {swappedTo ? (
                                   <>
-                                    <span className="text-[#c6c9ab] line-through">{ing.label}</span>{' '}
-                                    <span className="text-[#fbcb1a]">→ {swappedTo}</span>
+                                    <span className="text-ink-2 line-through">{ing.label}</span>{' '}
+                                    <span className="text-accent">→ {swappedTo}</span>
                                   </>
                                 ) : (
                                   <span className="text-white">{ing.label}</span>
                                 )}
                               </span>
-                              <span className="font-mono text-[10px] text-[#c6c9ab] shrink-0">{ing.qty}</span>
+                              <span className="font-mono text-caption text-ink-2 shrink-0">{ing.qty}</span>
                               {subs.length > 0 && (
                                 <button
                                   onClick={() => setSubForIngredient(open ? null : ing.label)}
                                   title="Cambiar por un alimento parecido"
-                                  className="text-[#00eefc] hover:text-white shrink-0"
+                                  className="text-data hover:text-white shrink-0"
                                 >
                                   <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>swap_horiz</span>
                                 </button>
                               )}
                             </div>
                             {open && subs.length > 0 && (
-                              <div className="flex flex-wrap gap-1 mt-1.5 pb-1">
+                              <div className="flex flex-wrap gap-1 mt-2 pb-1">
                                 {swappedTo && (
                                   <button
                                     onClick={() => applySubstitution(ing.label, ing.label)}
-                                    className="px-2 py-0.5 rounded-md bg-[#1c1b1b] border border-white/7 text-[#c6c9ab] font-mono text-[10px] hover:text-white"
+                                    className="px-2 rounded-control bg-raised border border-hairline text-ink-2 font-mono text-caption hover:text-white"
                                   >↩ original</button>
                                 )}
                                 {subs.map(s => (
                                   <button
                                     key={s}
                                     onClick={() => applySubstitution(ing.label, s)}
-                                    className="px-2 py-0.5 rounded-md bg-[#1c1b1b] border border-white/7 text-white font-mono text-[10px] hover:border-[#fbcb1a]/50 hover:text-[#fbcb1a]"
+                                    className="px-2 rounded-control bg-raised border border-hairline text-white font-mono text-caption hover:border-accent/50 hover:text-accent"
                                   >{s}</button>
                                 ))}
                               </div>
@@ -660,36 +581,29 @@ export default function MyMenuScreen({ profile }: Props) {
                       })}
                     </ul>
                     {detailMealId && (
-                      <p className="font-mono text-[9px] text-[#555] mt-1.5">Cambia un ingrediente por otro parecido si no lo tienes o no te gusta.</p>
+                      <p className="font-sans text-caption text-ink-3 mt-2">Cambia un ingrediente por otro parecido si no lo tienes o no te gusta.</p>
                     )}
                   </div>
                 ) : null}
                 {(detailRecipe.stepsText?.length || detailRecipe.steps?.length) ? (
                   <div>
-                    <p className="font-mono text-[9px] text-[#555] uppercase mb-1.5">Preparación</p>
-                    <ol className="space-y-1.5 list-decimal list-inside">
+                    <p className="font-mono text-caption text-ink-3 uppercase mb-2">Preparación</p>
+                    <ol className="space-y-2 list-decimal list-inside">
                       {(detailRecipe.stepsText?.length
                         ? detailRecipe.stepsText.map(s => s.description)
                         : detailRecipe.steps ?? []
                       ).map((text, idx) => (
-                        <li key={idx} className="text-xs text-[#c6c9ab] font-sans leading-relaxed">{text}</li>
+                        <li key={idx} className="text-label text-ink-2 font-sans leading-relaxed">{text}</li>
                       ))}
                     </ol>
                   </div>
                 ) : null}
               </>
             ) : (
-              <>
-                <div className="flex justify-end">
-                  <button onClick={closeDetail} className="text-[#c6c9ab] hover:text-white">
-                    <span className="material-symbols-outlined text-base">close</span>
-                  </button>
-                </div>
-                <p className="font-mono text-xs text-[#555] text-center py-6">No se pudo cargar la receta.</p>
-              </>
+              <p className="font-sans text-label text-ink-3 text-center py-6">No se pudo cargar la receta.</p>
             )}
           </div>
-        </div>
+        </Dialog>
       )}
     </div>
   );

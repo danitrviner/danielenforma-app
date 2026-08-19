@@ -1,31 +1,55 @@
 import React from 'react';
+import { EmptyState as EmptyStateDS } from '../../../components/ui';
 
 interface Props {
   icon: string;
   titulo: string;
   descripcion?: string;
   cta?: { label: string; onClick: () => void };
+  /**
+   * Segunda acción, más discreta que `cta` (enlace de texto, no botón) — para
+   * el caso con dos caminos reales distintos (p.ej. "Invitar atleta" primario
+   * vs. "o crea un contacto sin cuenta" secundario en `ClientesList`). No se
+   * tocó la primitiva del DS (`ui/EmptyState`, que solo admite un CTA) porque
+   * es de un solo botón en el resto de sus usos — esto se pinta debajo, aparte.
+   */
+  ctaSecundario?: { label: string; onClick: () => void };
 }
 
-// Estado vacío real: el CRM arranca sin un solo dato de ejemplo, así que esto
-// es lo primero que se ve en cada tabla. Lleva su CTA para que la pantalla
-// vacía sea accionable y no un callejón sin salida.
-export default function EmptyState({ icon, titulo, descripcion, cta }: Props) {
+/**
+ * Estado vacío del CRM — hoy una envoltura fina sobre la primitiva del DS.
+ *
+ * El CRM arranca sin un solo dato de ejemplo, así que esto es lo primero que se
+ * ve en cada tabla; lleva su CTA para que la pantalla vacía sea accionable y no
+ * un callejón sin salida. Eso no cambia: la primitiva tiene el mismo hueco de
+ * acción (`actionLabel` / `onAction`).
+ *
+ * Lo que aporta delegar: el CTA deja de ser un `<button>` a mano —sin
+ * `focus-visible` y sin altura mínima táctil— y pasa a `Button`.
+ *
+ * La API en español (`titulo` / `descripcion` / `cta`) no cambia: las pantallas
+ * del CRM que lo usan no se tocan.
+ */
+export default function EmptyState({ icon, titulo, descripcion, cta, ctaSecundario }: Props) {
   return (
-    <div className="flex flex-col items-center justify-center text-center gap-2 py-12 px-6">
-      <span className="material-symbols-outlined text-3xl text-[#555550]">{icon}</span>
-      <p className="font-sans font-bold text-sm text-[#f5f5f0]">{titulo}</p>
-      {descripcion && (
-        <p className="font-sans text-[11px] text-[#a8a89e] max-w-[320px] leading-relaxed">{descripcion}</p>
-      )}
-      {cta && (
-        <button
-          type="button"
-          onClick={cta.onClick}
-          className="mt-2 px-3 py-1.5 rounded-lg bg-[#fbcb1a] text-black font-sans font-bold text-[11px] hover:bg-[#d4a800] transition-colors"
-        >
-          {cta.label}
-        </button>
+    <div className="space-y-3">
+      <EmptyStateDS
+        icon={icon}
+        title={titulo}
+        description={descripcion}
+        actionLabel={cta?.label}
+        onAction={cta?.onClick}
+      />
+      {ctaSecundario && (
+        <p className="text-center">
+          <button
+            type="button"
+            onClick={ctaSecundario.onClick}
+            className="font-sans text-caption uppercase tracking-widest text-accent hover:underline"
+          >
+            {ctaSecundario.label}
+          </button>
+        </p>
       )}
     </div>
   );

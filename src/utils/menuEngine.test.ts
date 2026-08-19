@@ -10,7 +10,7 @@ import { computeMenuAdherenceRate } from './nutritionAnalysis';
 
 function recipe(overrides: Partial<Recipe>): Recipe {
   return {
-    id: 'r1', ownerId: 'indya', name: 'Receta', categories: [], ingredients: [], extras: [], steps: [],
+    id: 'r1', ownerId: 'recetas', name: 'Receta', categories: [], ingredients: [], extras: [], steps: [],
     ...overrides,
   };
 }
@@ -200,7 +200,7 @@ describe('isMenuStale', () => {
 });
 
 describe('buildShoppingList', () => {
-  it('sums Indya gram ingredients across the week scaled per meal', () => {
+  it('sums Recetas gram ingredients across the week scaled per meal', () => {
     const pollo = recipe({ id: 'r1', name: 'Pollo con arroz', ingredientsText: [{ name: 'Pollo', quantity: 100 }, { name: 'Arroz', quantity: 50 }] });
     const meal = (scale: number) => ({ id: 'm', slot: 3, name: 'Comida', recipeId: 'r1', recipeName: 'Pollo con arroz', scale, exch: { HC: 1, PROT: 1, GRASA: 0 }, kcal: 100, complements: [] });
     const days: MenuDay[] = [

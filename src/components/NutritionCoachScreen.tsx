@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import FoodLibraryScreen from './FoodLibraryScreen';
 import NutritionPlansScreen from './NutritionPlansScreen';
 import RecipeBuilderScreen from './RecipeBuilderScreen';
+import { Tabs } from './ui';
 
 type Tab = 'tipos' | 'alimentos' | 'recetas';
 
@@ -20,35 +21,8 @@ export default function NutritionCoachScreen({ coachId }: Props) {
 
   return (
     <div className="space-y-6">
-      <header className="flex flex-col gap-3 pb-4 border-b border-white/60">
-        <div className="flex items-center gap-3">
-          <span className="inline-flex items-center px-2 py-0.5 rounded bg-[#201f1f] text-[10px] font-sans border border-[#fbcb1a]/30 text-[#fbcb1a] font-bold uppercase tracking-wider">
-            Consola de Entrenador
-          </span>
-          <span className="inline-flex items-center gap-1.5 text-xs font-mono text-[#00eefc]">
-            <span className="w-2 h-2 rounded-full bg-[#00eefc] animate-pulse"></span>
-            Sincronizado
-          </span>
-        </div>
-        <h1 className="font-sans font-black text-3xl tracking-tight text-white uppercase">Nutrición</h1>
-      </header>
-
-      <div className="flex bg-[#181816] border border-white/7 p-1 rounded-lg gap-1 w-fit flex-wrap">
-        {tabs.map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-md font-sans text-xs font-bold tracking-wider uppercase transition-all ${
-              activeTab === tab.id
-                ? 'bg-[#fbcb1a] text-black shadow-lg shadow-[#fbcb1a]/10'
-                : 'text-[#c6c9ab] hover:text-white'
-            }`}
-          >
-            <span className="material-symbols-outlined text-base">{tab.icon}</span>
-            {tab.label}
-          </button>
-        ))}
-      </div>
+      {/* Sin cabecera propia: la pone Biblioteca (CoachLibraryScreen). */}
+      <Tabs items={tabs} value={activeTab} onChange={id => setActiveTab(id as Tab)} label="Secciones de Nutrición" />
 
       {activeTab === 'tipos'     && <NutritionPlansScreen coachId={coachId} />}
       {activeTab === 'alimentos' && <FoodLibraryScreen coachId={coachId} />}

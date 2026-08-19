@@ -1,0 +1,1275 @@
+{
+  "generado": "2026-08-08T17:12:04.409Z",
+  "commit": "15c873b",
+  "totales": {
+    "archivosTsx": 184,
+    "lineasTsx": 45617
+  },
+  "metricas": {
+    "hexLiterales": 73,
+    "clasesTokenEnUso": 5134,
+    "importsThemeTs": 0,
+    "bordesBlancosFuertes": 2,
+    "textoBajo11px": 12,
+    "camposBajo16px": 0,
+    "fontMono": 1028,
+    "fontSans": 973,
+    "pesosProhibidos": 56,
+    "espaciadoFueraEscala": 16,
+    "sombrasFueraEscala": 3,
+    "glowAcento": 0,
+    "modalesArtesanales": 10,
+    "transitionAll": 228,
+    "animatePulse": 27,
+    "ariaLabel": 61,
+    "htmlFor": 1,
+    "focusVisible": 53,
+    "reducedMotion": 3,
+    "roundedSm": 0,
+    "roundedMd": 0,
+    "roundedLg": 2,
+    "roundedXl": 1,
+    "rounded2xl": 6,
+    "rounded3xl": 2,
+    "roundedFull": 173,
+    "hexDistintos": 25,
+    "tamanosTextoDistintos": 19,
+    "archivosMas600Lineas": 21,
+    "hexEnTokensCss": 14
+  },
+  "listas": {
+    "hexDistintos": [
+      "#000",
+      "#00eefc",
+      "#0e0e0e",
+      "#121212",
+      "#141413",
+      "#181816",
+      "#1c1b1b",
+      "#1e1e1b",
+      "#1e1e1e",
+      "#212120",
+      "#2a2a2a",
+      "#3a3a3a",
+      "#4a90d9",
+      "#6b7280",
+      "#86efac",
+      "#a78bfa",
+      "#c6c9ab",
+      "#fb923c",
+      "#fbcb1a",
+      "#ff4d4d",
+      "#ff8c42",
+      "#ff8c69",
+      "#ffc72c33",
+      "#ffc72c55",
+      "#fff"
+    ],
+    "hexEnTokensCss": [
+      "#00eefc",
+      "#050505",
+      "#0b0b0b",
+      "#0f0f0f",
+      "#141414",
+      "#1a1a1a",
+      "#3ecf8e",
+      "#93c5fd",
+      "#a78bfa",
+      "#d9a925",
+      "#f5f5f4",
+      "#fdba74",
+      "#ff5a4e",
+      "#ffc72c"
+    ],
+    "tamanosTexto": [
+      "10px",
+      "11px",
+      "4xl",
+      "6xl",
+      "7px",
+      "7xl",
+      "9px",
+      "base",
+      "body",
+      "body-s",
+      "caption",
+      "display",
+      "label",
+      "lg",
+      "sm",
+      "title-l",
+      "title-m",
+      "title-s",
+      "xs"
+    ],
+    "archivosGrandes": [
+      {
+        "archivo": "src/components/NutritionScreen.tsx",
+        "lineas": 1897
+      },
+      {
+        "archivo": "src/components/MesocycleManager.tsx",
+        "lineas": 1695
+      },
+      {
+        "archivo": "src/components/ClientReviewsPanel.tsx",
+        "lineas": 1600
+      },
+      {
+        "archivo": "src/components/OnboardingForm.tsx",
+        "lineas": 1332
+      },
+      {
+        "archivo": "src/components/TrainingScreen.tsx",
+        "lineas": 1069
+      },
+      {
+        "archivo": "src/components/RecipesScreen.tsx",
+        "lineas": 965
+      },
+      {
+        "archivo": "src/components/MesocycleTemplateLibrary.tsx",
+        "lineas": 941
+      },
+      {
+        "archivo": "src/components/NutritionPlansScreen.tsx",
+        "lineas": 915
+      },
+      {
+        "archivo": "src/components/ui/Showcase.tsx",
+        "lineas": 819
+      },
+      {
+        "archivo": "src/App.tsx",
+        "lineas": 767
+      },
+      {
+        "archivo": "src/components/RoadmapTimeline.tsx",
+        "lineas": 747
+      },
+      {
+        "archivo": "src/components/CardioScreen.tsx",
+        "lineas": 722
+      },
+      {
+        "archivo": "src/components/ExerciseLibraryScreen.tsx",
+        "lineas": 706
+      },
+      {
+        "archivo": "src/components/MyMenuScreen.tsx",
+        "lineas": 692
+      },
+      {
+        "archivo": "src/components/WorkoutsScreen.tsx",
+        "lineas": 681
+      },
+      {
+        "archivo": "src/components/RecipeBuilderScreen.tsx",
+        "lineas": 657
+      },
+      {
+        "archivo": "src/components/CoachesScreen.tsx",
+        "lineas": 652
+      },
+      {
+        "archivo": "src/components/WeeklyMenuEditor.tsx",
+        "lineas": 644
+      },
+      {
+        "archivo": "src/components/LoadHistoryPanel.tsx",
+        "lineas": 639
+      },
+      {
+        "archivo": "src/components/ClientsScreen.tsx",
+        "lineas": 629
+      },
+      {
+        "archivo": "src/components/ClientHub.tsx",
+        "lineas": 624
+      }
+    ]
+  },
+  "porArchivo": {
+    "src/App.tsx": {
+      "clasesTokenEnUso": 50,
+      "fontMono": 2,
+      "fontSans": 11,
+      "pesosProhibidos": 2,
+      "transitionAll": 1,
+      "animatePulse": 5,
+      "ariaLabel": 3,
+      "focusVisible": 3,
+      "roundedFull": 8
+    },
+    "src/components/AcademyCoachScreen.tsx": {
+      "clasesTokenEnUso": 57,
+      "fontMono": 5,
+      "fontSans": 7,
+      "roundedFull": 2
+    },
+    "src/components/AcademyScreen.tsx": {
+      "clasesTokenEnUso": 14,
+      "fontMono": 1,
+      "fontSans": 7,
+      "transitionAll": 1
+    },
+    "src/components/AiChatPanel.tsx": {
+      "clasesTokenEnUso": 64,
+      "fontMono": 6,
+      "fontSans": 3,
+      "animatePulse": 2,
+      "roundedFull": 1
+    },
+    "src/components/AthleteOnboardingWizard.tsx": {
+      "clasesTokenEnUso": 44,
+      "fontMono": 5,
+      "fontSans": 11,
+      "transitionAll": 1,
+      "roundedFull": 3
+    },
+    "src/components/AthleteReportsPanel.tsx": {
+      "clasesTokenEnUso": 9,
+      "fontSans": 1
+    },
+    "src/components/AthleteRoadmapScreen.tsx": {
+      "clasesTokenEnUso": 2,
+      "fontMono": 1
+    },
+    "src/components/BodyMeasurementsPanel.tsx": {
+      "hexLiterales": 20,
+      "bordesBlancosFuertes": 1,
+      "textoBajo11px": 2,
+      "fontMono": 3,
+      "fontSans": 3,
+      "pesosProhibidos": 1,
+      "transitionAll": 1,
+      "rounded2xl": 5,
+      "rounded3xl": 1
+    },
+    "src/components/BodyweightPanel.tsx": {
+      "clasesTokenEnUso": 32,
+      "fontMono": 10,
+      "fontSans": 5,
+      "transitionAll": 2
+    },
+    "src/components/CardioCoachScreen.tsx": {
+      "clasesTokenEnUso": 59,
+      "fontMono": 6,
+      "fontSans": 8,
+      "roundedFull": 1
+    },
+    "src/components/CardioScreen.tsx": {
+      "clasesTokenEnUso": 23,
+      "fontMono": 8,
+      "fontSans": 4,
+      "roundedFull": 2
+    },
+    "src/components/CheckInScreen.tsx": {
+      "clasesTokenEnUso": 91,
+      "fontMono": 11,
+      "fontSans": 22,
+      "pesosProhibidos": 1,
+      "transitionAll": 5,
+      "roundedFull": 3
+    },
+    "src/components/ClientDietsPanel.tsx": {
+      "clasesTokenEnUso": 86,
+      "fontMono": 21,
+      "fontSans": 13,
+      "transitionAll": 6
+    },
+    "src/components/ClientHub.tsx": {
+      "clasesTokenEnUso": 18,
+      "fontMono": 4,
+      "fontSans": 2,
+      "pesosProhibidos": 1,
+      "transitionAll": 2,
+      "roundedFull": 1
+    },
+    "src/components/ClientHubSummary.tsx": {
+      "clasesTokenEnUso": 12,
+      "fontMono": 5,
+      "fontSans": 1,
+      "pesosProhibidos": 3
+    },
+    "src/components/ClientReviewsPanel.tsx": {
+      "hexLiterales": 22,
+      "clasesTokenEnUso": 286,
+      "bordesBlancosFuertes": 1,
+      "textoBajo11px": 5,
+      "fontMono": 74,
+      "fontSans": 55,
+      "espaciadoFueraEscala": 12,
+      "transitionAll": 18,
+      "roundedLg": 2,
+      "roundedXl": 1,
+      "rounded2xl": 1,
+      "roundedFull": 2
+    },
+    "src/components/ClientSetupPanel.tsx": {
+      "clasesTokenEnUso": 42,
+      "fontMono": 3,
+      "fontSans": 6,
+      "pesosProhibidos": 1,
+      "roundedFull": 2
+    },
+    "src/components/ClientStatusCard.tsx": {
+      "clasesTokenEnUso": 34,
+      "fontMono": 8
+    },
+    "src/components/ClientWorkoutsPanel.tsx": {
+      "clasesTokenEnUso": 45,
+      "fontMono": 13,
+      "fontSans": 9,
+      "transitionAll": 1,
+      "roundedFull": 4
+    },
+    "src/components/ClientsScreen.tsx": {
+      "clasesTokenEnUso": 78,
+      "fontMono": 11,
+      "fontSans": 25,
+      "pesosProhibidos": 2,
+      "transitionAll": 4,
+      "animatePulse": 1,
+      "roundedFull": 2
+    },
+    "src/components/CoachNotesPanel.tsx": {
+      "clasesTokenEnUso": 25,
+      "fontMono": 1,
+      "fontSans": 3,
+      "roundedFull": 1
+    },
+    "src/components/CoachRoadmapView.tsx": {
+      "clasesTokenEnUso": 3,
+      "fontSans": 3
+    },
+    "src/components/CoachesScreen.tsx": {
+      "clasesTokenEnUso": 99,
+      "fontMono": 20,
+      "fontSans": 17,
+      "transitionAll": 11,
+      "animatePulse": 1,
+      "roundedFull": 4
+    },
+    "src/components/Coachmark.tsx": {
+      "clasesTokenEnUso": 6,
+      "ariaLabel": 1
+    },
+    "src/components/CommandPalette.tsx": {
+      "clasesTokenEnUso": 12,
+      "fontMono": 3,
+      "fontSans": 1,
+      "modalesArtesanales": 1,
+      "animatePulse": 1,
+      "roundedFull": 1
+    },
+    "src/components/CorrelationPanel.tsx": {
+      "clasesTokenEnUso": 25,
+      "fontMono": 3,
+      "fontSans": 8,
+      "pesosProhibidos": 1,
+      "transitionAll": 1,
+      "roundedFull": 2
+    },
+    "src/components/DietMealsView.tsx": {
+      "clasesTokenEnUso": 14,
+      "fontMono": 10,
+      "fontSans": 1
+    },
+    "src/components/ErrorBoundary.tsx": {
+      "clasesTokenEnUso": 3,
+      "fontSans": 2
+    },
+    "src/components/ExerciseBestSetCard.tsx": {
+      "clasesTokenEnUso": 10,
+      "fontSans": 4
+    },
+    "src/components/ExerciseConfigEditor.tsx": {
+      "clasesTokenEnUso": 80,
+      "fontMono": 26,
+      "fontSans": 10,
+      "transitionAll": 5
+    },
+    "src/components/ExerciseLibraryScreen.tsx": {
+      "clasesTokenEnUso": 102,
+      "textoBajo11px": 1,
+      "fontMono": 23,
+      "fontSans": 13,
+      "pesosProhibidos": 2,
+      "transitionAll": 8,
+      "ariaLabel": 3
+    },
+    "src/components/ExercisePersonalNotesPanel.tsx": {
+      "clasesTokenEnUso": 11,
+      "fontSans": 4
+    },
+    "src/components/ExerciseVideoPlayer.tsx": {
+      "clasesTokenEnUso": 2
+    },
+    "src/components/FoodLibraryScreen.tsx": {
+      "clasesTokenEnUso": 33,
+      "fontMono": 5,
+      "fontSans": 4,
+      "transitionAll": 4,
+      "roundedFull": 2
+    },
+    "src/components/FoodPreferencesPanel.tsx": {
+      "clasesTokenEnUso": 32,
+      "fontMono": 8,
+      "fontSans": 4,
+      "transitionAll": 5
+    },
+    "src/components/HomeCoachScreen.tsx": {
+      "clasesTokenEnUso": 22,
+      "fontMono": 4,
+      "fontSans": 2,
+      "pesosProhibidos": 1,
+      "animatePulse": 3,
+      "roundedFull": 2
+    },
+    "src/components/HomeScreen.tsx": {
+      "clasesTokenEnUso": 37,
+      "fontMono": 9,
+      "fontSans": 4,
+      "pesosProhibidos": 2
+    },
+    "src/components/HrTestsPanel.tsx": {
+      "clasesTokenEnUso": 17,
+      "fontMono": 7,
+      "fontSans": 8,
+      "pesosProhibidos": 1
+    },
+    "src/components/LoadHistoryPanel.tsx": {
+      "clasesTokenEnUso": 60,
+      "fontMono": 17,
+      "fontSans": 9,
+      "transitionAll": 4,
+      "roundedFull": 2
+    },
+    "src/components/LocalModeBanner.tsx": {
+      "fontSans": 2,
+      "ariaLabel": 1
+    },
+    "src/components/MesocycleDashboard.tsx": {
+      "clasesTokenEnUso": 12,
+      "fontMono": 1,
+      "fontSans": 5,
+      "transitionAll": 1,
+      "animatePulse": 1
+    },
+    "src/components/MesocycleManager.tsx": {
+      "clasesTokenEnUso": 216,
+      "fontMono": 66,
+      "fontSans": 37,
+      "pesosProhibidos": 1,
+      "transitionAll": 15,
+      "animatePulse": 1,
+      "roundedFull": 3
+    },
+    "src/components/MesocycleTemplateLibrary.tsx": {
+      "clasesTokenEnUso": 111,
+      "fontMono": 27,
+      "fontSans": 17,
+      "transitionAll": 8,
+      "roundedFull": 1
+    },
+    "src/components/MyDietsScreen.tsx": {
+      "clasesTokenEnUso": 87,
+      "fontMono": 10,
+      "fontSans": 17,
+      "transitionAll": 8,
+      "roundedFull": 2
+    },
+    "src/components/MyMenuScreen.tsx": {
+      "clasesTokenEnUso": 98,
+      "fontMono": 17,
+      "fontSans": 23,
+      "transitionAll": 5,
+      "roundedFull": 2
+    },
+    "src/components/NotificationBell.tsx": {
+      "clasesTokenEnUso": 19,
+      "fontMono": 5,
+      "fontSans": 3,
+      "animatePulse": 1,
+      "roundedFull": 2
+    },
+    "src/components/NutritionAnalysisPanel.tsx": {
+      "clasesTokenEnUso": 34,
+      "fontMono": 12,
+      "fontSans": 12,
+      "transitionAll": 1,
+      "animatePulse": 1,
+      "roundedFull": 2
+    },
+    "src/components/NutritionHubScreen.tsx": {
+      "clasesTokenEnUso": 8,
+      "fontMono": 1,
+      "fontSans": 4
+    },
+    "src/components/NutritionPerformanceDashboard.tsx": {
+      "hexLiterales": 1,
+      "clasesTokenEnUso": 59,
+      "fontMono": 6,
+      "fontSans": 12,
+      "roundedFull": 2
+    },
+    "src/components/NutritionPeriodizationPanel.tsx": {
+      "hexLiterales": 3,
+      "clasesTokenEnUso": 53,
+      "fontMono": 18,
+      "fontSans": 10,
+      "transitionAll": 2
+    },
+    "src/components/NutritionPlansScreen.tsx": {
+      "clasesTokenEnUso": 120,
+      "fontMono": 31,
+      "fontSans": 17,
+      "transitionAll": 7,
+      "roundedFull": 3
+    },
+    "src/components/NutritionScreen.tsx": {
+      "clasesTokenEnUso": 278,
+      "fontMono": 37,
+      "fontSans": 37,
+      "pesosProhibidos": 5,
+      "transitionAll": 26,
+      "ariaLabel": 2,
+      "roundedFull": 10
+    },
+    "src/components/OnboardingForm.tsx": {
+      "clasesTokenEnUso": 185,
+      "fontMono": 58,
+      "fontSans": 27,
+      "transitionAll": 10,
+      "roundedFull": 3
+    },
+    "src/components/PendingTasksPanel.tsx": {
+      "clasesTokenEnUso": 13,
+      "fontSans": 2,
+      "roundedFull": 1
+    },
+    "src/components/PendingTray.tsx": {
+      "clasesTokenEnUso": 4,
+      "fontMono": 1,
+      "transitionAll": 1
+    },
+    "src/components/PhotosScreen.tsx": {
+      "clasesTokenEnUso": 10,
+      "fontMono": 3,
+      "fontSans": 2,
+      "transitionAll": 1,
+      "roundedFull": 1
+    },
+    "src/components/PlanInPreparationCard.tsx": {
+      "clasesTokenEnUso": 24,
+      "fontMono": 1,
+      "fontSans": 4,
+      "pesosProhibidos": 1,
+      "roundedFull": 2
+    },
+    "src/components/ProfileScreen.tsx": {
+      "hexLiterales": 2,
+      "clasesTokenEnUso": 65,
+      "fontMono": 4,
+      "fontSans": 14,
+      "transitionAll": 1,
+      "rounded3xl": 1,
+      "roundedFull": 7
+    },
+    "src/components/ProgressRing.tsx": {
+      "clasesTokenEnUso": 1,
+      "fontSans": 2,
+      "transitionAll": 1
+    },
+    "src/components/QuestionnaireChartsPanel.tsx": {
+      "clasesTokenEnUso": 16,
+      "fontMono": 4,
+      "fontSans": 4,
+      "transitionAll": 1
+    },
+    "src/components/QuestionnaireEditor.tsx": {
+      "hexLiterales": 3,
+      "clasesTokenEnUso": 42,
+      "textoBajo11px": 3,
+      "fontMono": 20,
+      "fontSans": 4,
+      "transitionAll": 1
+    },
+    "src/components/QuestionnaireManagerScreen.tsx": {
+      "clasesTokenEnUso": 12,
+      "fontSans": 1,
+      "transitionAll": 2
+    },
+    "src/components/QuestionnaireWizard.tsx": {
+      "clasesTokenEnUso": 38,
+      "fontMono": 7,
+      "fontSans": 9,
+      "transitionAll": 3,
+      "ariaLabel": 2
+    },
+    "src/components/RecipeBuilderScreen.tsx": {
+      "clasesTokenEnUso": 82,
+      "fontMono": 20,
+      "fontSans": 14,
+      "transitionAll": 8,
+      "roundedFull": 4
+    },
+    "src/components/RecipesScreen.tsx": {
+      "clasesTokenEnUso": 90,
+      "fontMono": 25,
+      "fontSans": 21,
+      "pesosProhibidos": 1,
+      "transitionAll": 7,
+      "ariaLabel": 1,
+      "roundedFull": 8
+    },
+    "src/components/ReportEditor.tsx": {
+      "clasesTokenEnUso": 28,
+      "fontMono": 2,
+      "fontSans": 5,
+      "modalesArtesanales": 1,
+      "transitionAll": 1,
+      "roundedFull": 1
+    },
+    "src/components/ReportView.tsx": {
+      "hexLiterales": 2,
+      "clasesTokenEnUso": 37,
+      "textoBajo11px": 1,
+      "fontMono": 24,
+      "fontSans": 8,
+      "pesosProhibidos": 4,
+      "espaciadoFueraEscala": 2,
+      "roundedFull": 4
+    },
+    "src/components/ReportsPanel.tsx": {
+      "clasesTokenEnUso": 16,
+      "fontMono": 4,
+      "fontSans": 3,
+      "transitionAll": 1
+    },
+    "src/components/ResourcesPanel.tsx": {
+      "clasesTokenEnUso": 24,
+      "fontMono": 2,
+      "fontSans": 3
+    },
+    "src/components/ReviewsScreen.tsx": {
+      "clasesTokenEnUso": 63,
+      "fontMono": 11,
+      "fontSans": 10,
+      "transitionAll": 4,
+      "animatePulse": 1,
+      "roundedFull": 2
+    },
+    "src/components/RoadmapTimeline.tsx": {
+      "clasesTokenEnUso": 48,
+      "fontMono": 16,
+      "fontSans": 8,
+      "transitionAll": 3,
+      "animatePulse": 1,
+      "roundedFull": 2
+    },
+    "src/components/ScheduleFields.tsx": {
+      "hexLiterales": 4,
+      "clasesTokenEnUso": 30,
+      "fontMono": 16,
+      "fontSans": 1,
+      "transitionAll": 1
+    },
+    "src/components/StatTile.tsx": {
+      "clasesTokenEnUso": 3,
+      "fontSans": 2,
+      "roundedFull": 1
+    },
+    "src/components/StepsWidget.tsx": {
+      "clasesTokenEnUso": 16,
+      "fontMono": 2,
+      "fontSans": 2,
+      "transitionAll": 1,
+      "roundedFull": 2
+    },
+    "src/components/TaskManagerPanel.tsx": {
+      "clasesTokenEnUso": 20,
+      "fontSans": 2
+    },
+    "src/components/TrainingScreen.tsx": {
+      "clasesTokenEnUso": 180,
+      "fontMono": 43,
+      "fontSans": 13,
+      "pesosProhibidos": 3,
+      "transitionAll": 1,
+      "roundedFull": 6
+    },
+    "src/components/WeeklyAnalysisButton.tsx": {
+      "clasesTokenEnUso": 10,
+      "fontMono": 1,
+      "fontSans": 2,
+      "transitionAll": 1,
+      "animatePulse": 1
+    },
+    "src/components/WeeklyMenuEditor.tsx": {
+      "clasesTokenEnUso": 92,
+      "fontMono": 23,
+      "fontSans": 27,
+      "transitionAll": 4,
+      "roundedFull": 2
+    },
+    "src/components/WelcomeScreen.tsx": {
+      "clasesTokenEnUso": 34,
+      "fontMono": 5,
+      "fontSans": 2,
+      "pesosProhibidos": 2,
+      "roundedFull": 2
+    },
+    "src/components/WorkoutsScreen.tsx": {
+      "clasesTokenEnUso": 123,
+      "fontMono": 18,
+      "fontSans": 13,
+      "pesosProhibidos": 1,
+      "transitionAll": 9
+    },
+    "src/components/academy/LessonPlayer.tsx": {
+      "clasesTokenEnUso": 11,
+      "fontMono": 2,
+      "fontSans": 3
+    },
+    "src/components/cardio/CardioSessionDetail.tsx": {
+      "clasesTokenEnUso": 26,
+      "fontMono": 6,
+      "fontSans": 6,
+      "modalesArtesanales": 1,
+      "transitionAll": 1,
+      "roundedFull": 1
+    },
+    "src/components/cardio/CardioSessionSummary.tsx": {
+      "clasesTokenEnUso": 15,
+      "fontMono": 5,
+      "fontSans": 5,
+      "pesosProhibidos": 2,
+      "modalesArtesanales": 1
+    },
+    "src/components/cardio/CardioToday.tsx": {
+      "clasesTokenEnUso": 38,
+      "fontMono": 4,
+      "fontSans": 5,
+      "pesosProhibidos": 4
+    },
+    "src/components/cardio/CooldownPrompt.tsx": {
+      "clasesTokenEnUso": 7,
+      "fontSans": 5,
+      "modalesArtesanales": 1,
+      "transitionAll": 1
+    },
+    "src/components/cardio/DeviceChip.tsx": {
+      "clasesTokenEnUso": 4,
+      "fontSans": 2,
+      "roundedFull": 1
+    },
+    "src/components/cardio/EffortPrompt.tsx": {
+      "clasesTokenEnUso": 3,
+      "fontMono": 1,
+      "pesosProhibidos": 1,
+      "modalesArtesanales": 1
+    },
+    "src/components/cardio/HrvReadinessCard.tsx": {
+      "clasesTokenEnUso": 10,
+      "fontMono": 4,
+      "fontSans": 4,
+      "pesosProhibidos": 1,
+      "transitionAll": 1
+    },
+    "src/components/cardio/HrvTestScreen.tsx": {
+      "clasesTokenEnUso": 11,
+      "fontMono": 3,
+      "fontSans": 8,
+      "modalesArtesanales": 1,
+      "transitionAll": 1
+    },
+    "src/components/cardio/LiveSession.tsx": {
+      "fontMono": 2,
+      "fontSans": 10,
+      "pesosProhibidos": 1,
+      "modalesArtesanales": 1,
+      "transitionAll": 1,
+      "roundedFull": 2
+    },
+    "src/components/cardio/ManualSessionModal.tsx": {
+      "clasesTokenEnUso": 17,
+      "fontSans": 2
+    },
+    "src/components/cardio/SlideAction.tsx": {
+      "fontSans": 1,
+      "roundedFull": 2
+    },
+    "src/components/cardio/TrainingLoadPanel.tsx": {
+      "clasesTokenEnUso": 13,
+      "fontMono": 3,
+      "fontSans": 2,
+      "transitionAll": 1,
+      "roundedFull": 3
+    },
+    "src/components/cardio/ZoneBars.tsx": {
+      "fontMono": 2,
+      "fontSans": 1,
+      "roundedFull": 1
+    },
+    "src/components/progress/PhotoCompareCurtain.tsx": {
+      "clasesTokenEnUso": 10,
+      "fontMono": 3,
+      "ariaLabel": 1,
+      "roundedFull": 4
+    },
+    "src/components/roadmap/ChallengeManager.tsx": {
+      "clasesTokenEnUso": 72,
+      "fontMono": 8,
+      "fontSans": 13,
+      "transitionAll": 2,
+      "animatePulse": 1,
+      "roundedFull": 4
+    },
+    "src/components/roadmap/ChallengeOptionsPanel.tsx": {
+      "hexLiterales": 1,
+      "clasesTokenEnUso": 21,
+      "fontMono": 7,
+      "fontSans": 7,
+      "transitionAll": 1,
+      "roundedFull": 1
+    },
+    "src/components/roadmap/IconPicker.tsx": {
+      "clasesTokenEnUso": 1,
+      "fontSans": 1
+    },
+    "src/components/roadmap/LevelLadderCard.tsx": {
+      "clasesTokenEnUso": 13,
+      "fontMono": 2,
+      "fontSans": 4,
+      "transitionAll": 1,
+      "roundedFull": 2
+    },
+    "src/components/roadmap/LevelLadderEditor.tsx": {
+      "clasesTokenEnUso": 32,
+      "fontMono": 4,
+      "fontSans": 4,
+      "transitionAll": 1,
+      "roundedFull": 1
+    },
+    "src/components/roadmap/PhaseHeroCard.tsx": {
+      "clasesTokenEnUso": 11,
+      "fontMono": 4,
+      "fontSans": 3,
+      "transitionAll": 1,
+      "roundedFull": 2
+    },
+    "src/components/roadmap/PhasePathStepper.tsx": {
+      "clasesTokenEnUso": 4,
+      "fontMono": 1,
+      "fontSans": 3,
+      "roundedFull": 1
+    },
+    "src/components/roadmap/PlanPhaseEditor.tsx": {
+      "hexLiterales": 1,
+      "clasesTokenEnUso": 54,
+      "fontMono": 7,
+      "fontSans": 8,
+      "roundedFull": 3
+    },
+    "src/components/roadmap/RecentAchievements.tsx": {
+      "clasesTokenEnUso": 2,
+      "fontMono": 2,
+      "fontSans": 1,
+      "roundedFull": 1
+    },
+    "src/components/roadmap/WeeklyChallengeCard.tsx": {
+      "hexLiterales": 1,
+      "clasesTokenEnUso": 7,
+      "fontMono": 3,
+      "fontSans": 7,
+      "transitionAll": 1,
+      "animatePulse": 1,
+      "roundedFull": 2
+    },
+    "src/components/ui/Badge.tsx": {
+      "clasesTokenEnUso": 21,
+      "fontMono": 1,
+      "fontSans": 1,
+      "roundedFull": 2
+    },
+    "src/components/ui/Banner.tsx": {
+      "clasesTokenEnUso": 9,
+      "fontSans": 1
+    },
+    "src/components/ui/Button.tsx": {
+      "clasesTokenEnUso": 14,
+      "fontSans": 1,
+      "ariaLabel": 1,
+      "focusVisible": 5
+    },
+    "src/components/ui/Card.tsx": {
+      "clasesTokenEnUso": 8,
+      "fontSans": 2,
+      "ariaLabel": 1,
+      "focusVisible": 5
+    },
+    "src/components/ui/Chip.tsx": {
+      "clasesTokenEnUso": 8,
+      "fontSans": 2,
+      "ariaLabel": 1,
+      "focusVisible": 7,
+      "roundedFull": 2
+    },
+    "src/components/ui/CollapsingHeader.tsx": {
+      "clasesTokenEnUso": 4,
+      "fontSans": 1,
+      "pesosProhibidos": 1
+    },
+    "src/components/ui/Dialog.tsx": {
+      "clasesTokenEnUso": 8,
+      "fontSans": 1,
+      "ariaLabel": 2,
+      "focusVisible": 3
+    },
+    "src/components/ui/EffortScale.tsx": {
+      "clasesTokenEnUso": 11,
+      "fontMono": 1,
+      "fontSans": 1,
+      "ariaLabel": 1,
+      "focusVisible": 3
+    },
+    "src/components/ui/EmptyState.tsx": {
+      "clasesTokenEnUso": 3,
+      "fontSans": 2
+    },
+    "src/components/ui/Icon.tsx": {
+      "ariaLabel": 1
+    },
+    "src/components/ui/Input.tsx": {
+      "clasesTokenEnUso": 15,
+      "fontMono": 1,
+      "fontSans": 2,
+      "htmlFor": 1
+    },
+    "src/components/ui/ListRow.tsx": {
+      "clasesTokenEnUso": 4,
+      "fontSans": 2,
+      "ariaLabel": 1,
+      "focusVisible": 3
+    },
+    "src/components/ui/PageHeader.tsx": {
+      "clasesTokenEnUso": 8,
+      "fontSans": 2,
+      "pesosProhibidos": 1
+    },
+    "src/components/ui/ProgressBar.tsx": {
+      "clasesTokenEnUso": 2,
+      "ariaLabel": 1
+    },
+    "src/components/ui/RingSeal.tsx": {
+      "clasesTokenEnUso": 3,
+      "ariaLabel": 1,
+      "roundedFull": 1
+    },
+    "src/components/ui/RirScale.tsx": {
+      "clasesTokenEnUso": 16,
+      "fontMono": 1,
+      "ariaLabel": 1,
+      "focusVisible": 3
+    },
+    "src/components/ui/SearchField.tsx": {
+      "clasesTokenEnUso": 8,
+      "fontSans": 2,
+      "ariaLabel": 1
+    },
+    "src/components/ui/SegmentedControl.tsx": {
+      "clasesTokenEnUso": 6,
+      "fontSans": 1,
+      "ariaLabel": 1,
+      "focusVisible": 3
+    },
+    "src/components/ui/Select.tsx": {
+      "clasesTokenEnUso": 9,
+      "fontSans": 1
+    },
+    "src/components/ui/Sheet.tsx": {
+      "clasesTokenEnUso": 7,
+      "fontSans": 1,
+      "ariaLabel": 2,
+      "focusVisible": 3,
+      "roundedFull": 1
+    },
+    "src/components/ui/Showcase.tsx": {
+      "clasesTokenEnUso": 55,
+      "fontMono": 1,
+      "fontSans": 38,
+      "focusVisible": 1,
+      "roundedFull": 1
+    },
+    "src/components/ui/Skeleton.tsx": {
+      "animatePulse": 1
+    },
+    "src/components/ui/Sparkline.tsx": {
+      "clasesTokenEnUso": 1,
+      "ariaLabel": 1
+    },
+    "src/components/ui/Stepper.tsx": {
+      "clasesTokenEnUso": 8,
+      "fontMono": 2,
+      "ariaLabel": 3,
+      "focusVisible": 8
+    },
+    "src/components/ui/SwipeRow.tsx": {
+      "clasesTokenEnUso": 3,
+      "fontSans": 1,
+      "ariaLabel": 1
+    },
+    "src/components/ui/Tabs.tsx": {
+      "clasesTokenEnUso": 7,
+      "fontSans": 2,
+      "ariaLabel": 1,
+      "focusVisible": 4,
+      "roundedFull": 2
+    },
+    "src/components/ui/internal/useReducedMotion.ts": {
+      "reducedMotion": 2
+    },
+    "src/data/phasePresets.ts": {
+      "hexLiterales": 6
+    },
+    "src/features/crm/components/ClienteSelector.tsx": {
+      "clasesTokenEnUso": 10,
+      "fontMono": 2,
+      "fontSans": 3,
+      "ariaLabel": 1
+    },
+    "src/features/crm/components/ClienteSwipeRow.tsx": {
+      "clasesTokenEnUso": 3,
+      "fontSans": 2,
+      "ariaLabel": 2
+    },
+    "src/features/crm/components/ClientesActionList.tsx": {
+      "clasesTokenEnUso": 17,
+      "fontSans": 8,
+      "roundedFull": 2
+    },
+    "src/features/crm/components/DataTable.tsx": {
+      "clasesTokenEnUso": 5,
+      "fontMono": 1,
+      "fontSans": 1,
+      "animatePulse": 1
+    },
+    "src/features/crm/components/DatosPersonalesTab.tsx": {
+      "clasesTokenEnUso": 8,
+      "fontMono": 2,
+      "fontSans": 1,
+      "ariaLabel": 1
+    },
+    "src/features/crm/components/EmptyState.tsx": {
+      "clasesTokenEnUso": 1,
+      "fontSans": 1,
+      "focusVisible": 1
+    },
+    "src/features/crm/components/ErrorState.tsx": {
+      "clasesTokenEnUso": 3,
+      "fontSans": 2
+    },
+    "src/features/crm/components/HistorialTab.tsx": {
+      "clasesTokenEnUso": 22,
+      "fontMono": 6,
+      "fontSans": 4,
+      "animatePulse": 1,
+      "roundedFull": 1
+    },
+    "src/features/crm/components/ImportarClientes.tsx": {
+      "clasesTokenEnUso": 27,
+      "fontMono": 2,
+      "fontSans": 13,
+      "ariaLabel": 1
+    },
+    "src/features/crm/components/InvitarAtletaModal.tsx": {
+      "clasesTokenEnUso": 1,
+      "fontSans": 1
+    },
+    "src/features/crm/components/MetricCard.tsx": {
+      "clasesTokenEnUso": 6,
+      "fontMono": 1,
+      "fontSans": 2,
+      "roundedFull": 1
+    },
+    "src/features/crm/components/Modal.tsx": {
+      "clasesTokenEnUso": 8,
+      "fontSans": 3,
+      "focusVisible": 1
+    },
+    "src/features/crm/components/NuevoClienteModal.tsx": {
+      "clasesTokenEnUso": 3,
+      "fontSans": 1,
+      "ariaLabel": 1
+    },
+    "src/features/crm/components/NuevoServicioModal.tsx": {
+      "clasesTokenEnUso": 7,
+      "fontSans": 3
+    },
+    "src/features/crm/components/PagoModal.tsx": {
+      "clasesTokenEnUso": 7,
+      "fontMono": 1
+    },
+    "src/features/crm/components/PagosTab.tsx": {
+      "clasesTokenEnUso": 2,
+      "fontSans": 1
+    },
+    "src/features/crm/components/PagosTable.tsx": {
+      "clasesTokenEnUso": 6,
+      "fontMono": 1,
+      "ariaLabel": 3
+    },
+    "src/features/crm/components/RecurringRevenueCard.tsx": {
+      "clasesTokenEnUso": 9,
+      "fontSans": 3,
+      "roundedFull": 1
+    },
+    "src/features/crm/components/RenovacionesTab.tsx": {
+      "clasesTokenEnUso": 2,
+      "fontSans": 1
+    },
+    "src/features/crm/components/ResultadoGraduacionModal.tsx": {
+      "clasesTokenEnUso": 11,
+      "fontMono": 1,
+      "fontSans": 4
+    },
+    "src/features/crm/components/ReunionModal.tsx": {
+      "clasesTokenEnUso": 7,
+      "fontSans": 1
+    },
+    "src/features/crm/components/ReunionesBlock.tsx": {
+      "clasesTokenEnUso": 10,
+      "fontMono": 2,
+      "ariaLabel": 2
+    },
+    "src/features/crm/components/ReunionesTab.tsx": {
+      "clasesTokenEnUso": 7,
+      "fontMono": 1,
+      "fontSans": 2
+    },
+    "src/features/crm/components/ServiciosTab.tsx": {
+      "clasesTokenEnUso": 11,
+      "fontMono": 3,
+      "fontSans": 2,
+      "ariaLabel": 1
+    },
+    "src/features/crm/components/SuscripcionesBlock.tsx": {
+      "clasesTokenEnUso": 10,
+      "fontMono": 3,
+      "ariaLabel": 2
+    },
+    "src/features/crm/routes/ClienteDetail.tsx": {
+      "clasesTokenEnUso": 17,
+      "fontMono": 3,
+      "fontSans": 4,
+      "animatePulse": 1
+    },
+    "src/features/crm/routes/ClientesList.tsx": {
+      "clasesTokenEnUso": 25,
+      "fontMono": 2,
+      "fontSans": 5,
+      "ariaLabel": 2
+    },
+    "src/features/crm/routes/CrmShell.tsx": {
+      "clasesTokenEnUso": 7,
+      "fontMono": 1
+    },
+    "src/features/crm/routes/DashboardScreen.tsx": {
+      "clasesTokenEnUso": 11,
+      "fontMono": 4,
+      "fontSans": 3
+    },
+    "src/features/crm/routes/PagosScreen.tsx": {
+      "clasesTokenEnUso": 19,
+      "fontMono": 3,
+      "fontSans": 3,
+      "ariaLabel": 2
+    },
+    "src/features/crm/routes/ReunionesScreen.tsx": {
+      "clasesTokenEnUso": 17,
+      "fontMono": 2,
+      "fontSans": 4,
+      "animatePulse": 1,
+      "ariaLabel": 2,
+      "roundedFull": 1
+    },
+    "src/features/gimnasio/AddOwnMachineSheet.tsx": {
+      "clasesTokenEnUso": 3,
+      "fontSans": 3
+    },
+    "src/features/gimnasio/AdminMaquinasTab.tsx": {
+      "clasesTokenEnUso": 18,
+      "fontMono": 6,
+      "fontSans": 3,
+      "ariaLabel": 1
+    },
+    "src/features/gimnasio/CatalogoSwipe.tsx": {
+      "clasesTokenEnUso": 38,
+      "fontMono": 9,
+      "fontSans": 5,
+      "pesosProhibidos": 5,
+      "ariaLabel": 3,
+      "roundedFull": 3
+    },
+    "src/features/gimnasio/DevHarness.tsx": {
+      "clasesTokenEnUso": 17,
+      "fontMono": 1,
+      "fontSans": 7,
+      "pesosProhibidos": 1
+    },
+    "src/features/gimnasio/EquipoClienteCard.tsx": {
+      "clasesTokenEnUso": 16,
+      "fontMono": 5,
+      "fontSans": 5
+    },
+    "src/features/gimnasio/MachineCard.tsx": {
+      "clasesTokenEnUso": 11,
+      "fontMono": 4,
+      "pesosProhibidos": 1,
+      "reducedMotion": 1
+    },
+    "src/features/gimnasio/MiGimnasioPanel.tsx": {
+      "clasesTokenEnUso": 14,
+      "fontMono": 3,
+      "fontSans": 6,
+      "ariaLabel": 1
+    },
+    "src/features/gimnasio/RecordatorioGimnasioCard.tsx": {
+      "clasesTokenEnUso": 8,
+      "fontMono": 1,
+      "fontSans": 2
+    },
+    "src/features/tutorial/TourOverlay.tsx": {
+      "clasesTokenEnUso": 15,
+      "fontMono": 4,
+      "fontSans": 2,
+      "pesosProhibidos": 2,
+      "espaciadoFueraEscala": 2,
+      "sombrasFueraEscala": 3,
+      "modalesArtesanales": 2,
+      "ariaLabel": 1,
+      "roundedFull": 4
+    },
+    "src/hooks/useToast.tsx": {
+      "clasesTokenEnUso": 5,
+      "fontSans": 2
+    },
+    "src/utils/adherence.ts": {
+      "clasesTokenEnUso": 11
+    },
+    "src/utils/cardioZones.ts": {
+      "hexLiterales": 6
+    },
+    "src/utils/planNutritionBridge.test.ts": {
+      "hexLiterales": 1
+    },
+    "src/utils/workoutTechniques.ts": {
+      "clasesTokenEnUso": 15
+    },
+    "index.html": {
+      "clasesTokenEnUso": 4
+    }
+  }
+}

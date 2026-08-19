@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Mesocycle, NutritionProgram, Roadmap, RoadmapItem, BodyweightLog } from '../types';
+import { Icon, Button, EmptyState, Sheet, Input, Select } from './ui';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -34,14 +35,14 @@ function fmtMonth(d: Date): string {
 
 // ─── Block color palettes ─────────────────────────────────────────────────────
 
-const MESO_COLORS = ['#fbcb1a', '#d4a800', '#f7ff80'];
-const NUTRI_COLORS = ['#00eefc', '#0cbcce', '#b3f6ff'];
+const MESO_COLORS = ['var(--color-accent)', 'var(--color-accent-press)', 'var(--color-accent)'];
+const NUTRI_COLORS = ['var(--color-data)', 'var(--color-data)', 'var(--color-data)'];
 
 function statusColor(status?: RoadmapItem['status']): string {
-  if (status === 'logrado') return '#86efac';
-  if (status === 'en_progreso') return '#fbcb1a';
-  if (status === 'pendiente') return '#ff8c69';
-  return '#c6c9ab';
+  if (status === 'logrado') return 'var(--color-success)';
+  if (status === 'en_progreso') return 'var(--color-accent)';
+  if (status === 'pendiente') return 'var(--color-warning)';
+  return 'var(--color-ink-2)';
 }
 
 function typeIcon(type: RoadmapItem['type']): string {
@@ -99,136 +100,99 @@ interface EditorProps {
 
 function ItemEditor({ item, onChange, onConfirm, onDelete, onCancel, saving, isNew }: EditorProps) {
   return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center sm:p-4">
-      <div className="bg-[#1e1e1b] border border-white/7 rounded-t-2xl sm:rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto pb-[calc(1.5rem+env(safe-area-inset-bottom))] sm:pb-6">
-        <div className="flex items-center justify-between">
-          <h2 className="font-sans font-black text-lg text-white uppercase tracking-tight">
-            {isNew ? 'Nuevo item' : 'Editar item'}
-          </h2>
-          <button onClick={onCancel} className="text-[#c6c9ab] hover:text-white transition-colors">
-            <span className="material-symbols-outlined">close</span>
-          </button>
-        </div>
-
+    <Sheet
+      open
+      onClose={onCancel}
+      title={isNew ? 'Nuevo item' : 'Editar item'}
+      footer={(
+        <>
+          {!isNew && onDelete && (
+            <Button variant="danger" onClick={onDelete}>Eliminar</Button>
+          )}
+          <Button variant="secondary" onClick={onCancel} className="flex-1">Cancelar</Button>
+          <Button onClick={onConfirm} disabled={saving || !item.title.trim()} loading={saving} className="flex-1">
+            {saving ? 'Guardando...' : isNew ? 'Añadir' : 'Guardar'}
+          </Button>
+        </>
+      )}
+    >
+      <div className="space-y-4">
         {/* Title */}
-        <div>
-          <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-1">Título *</label>
-          <input
-            type="text"
-            value={item.title}
-            onChange={e => onChange({ ...item, title: e.target.value })}
-            placeholder="Nombre del objetivo / hito..."
-            className="w-full bg-[#181816] border border-white/7 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#fbcb1a]"
-          />
-        </div>
+        <Input
+          label="Título"
+          required
+          value={item.title}
+          onChange={v => onChange({ ...item, title: v })}
+          placeholder="Nombre del objetivo / hito..."
+        />
 
-        {/* Description */}
+        {/* Description — sigue a mano: `Input` no tiene variante de textarea y
+            crear una sería ampliar el alcance de F11. */}
         <div>
-          <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-1">Descripción</label>
+          <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-1">Descripción</label>
           <textarea
             value={item.description ?? ''}
             onChange={e => onChange({ ...item, description: e.target.value || undefined })}
             rows={2}
             placeholder="Detalle opcional..."
-            className="w-full bg-[#181816] border border-white/7 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] resize-none"
+            className="w-full bg-surface border border-hairline rounded-control px-3 py-3 text-title-s text-white focus:outline-none focus:ring-1 focus:ring-accent resize-none"
           />
         </div>
 
         {/* Type + Lane */}
         <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-1">Tipo</label>
-            <select
-              value={item.type}
-              onChange={e => onChange({ ...item, type: e.target.value as RoadmapItem['type'] })}
-              className="w-full bg-[#181816] border border-white/7 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] cursor-pointer"
-            >
-              <option value="objetivo">Objetivo</option>
-              <option value="hito">Hito</option>
-              <option value="nota">Nota</option>
-            </select>
-          </div>
-          <div>
-            <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-1">Lane</label>
-            <select
-              value={item.lane}
-              onChange={e => onChange({ ...item, lane: e.target.value as RoadmapItem['lane'] })}
-              className="w-full bg-[#181816] border border-white/7 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] cursor-pointer"
-            >
-              <option value="entreno">Entreno</option>
-              <option value="nutricion">Nutrición</option>
-              <option value="movilidad">Movilidad</option>
-              <option value="general">General</option>
-            </select>
-          </div>
+          <Select
+            label="Tipo"
+            value={item.type}
+            onChange={v => onChange({ ...item, type: v as RoadmapItem['type'] })}
+            options={[
+              { value: 'objetivo', label: 'Objetivo' },
+              { value: 'hito', label: 'Hito' },
+              { value: 'nota', label: 'Nota' },
+            ]}
+          />
+          <Select
+            label="Lane"
+            value={item.lane}
+            onChange={v => onChange({ ...item, lane: v as RoadmapItem['lane'] })}
+            options={[
+              { value: 'entreno', label: 'Entreno' },
+              { value: 'nutricion', label: 'Nutrición' },
+              { value: 'movilidad', label: 'Movilidad' },
+              { value: 'general', label: 'General' },
+            ]}
+          />
         </div>
 
         {/* Start / Target dates */}
         <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-1">Inicio</label>
-            <input
-              type="date"
-              value={item.startDate ?? ''}
-              onChange={e => onChange({ ...item, startDate: e.target.value || undefined })}
-              className="w-full bg-[#181816] border border-white/7 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#fbcb1a]"
-            />
-          </div>
-          <div>
-            <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-1">Objetivo</label>
-            <input
-              type="date"
-              value={item.targetDate ?? ''}
-              onChange={e => onChange({ ...item, targetDate: e.target.value || undefined })}
-              className="w-full bg-[#181816] border border-white/7 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#fbcb1a]"
-            />
-          </div>
+          <Input
+            label="Inicio"
+            type="date"
+            value={item.startDate ?? ''}
+            onChange={v => onChange({ ...item, startDate: v || undefined })}
+          />
+          <Input
+            label="Objetivo"
+            type="date"
+            value={item.targetDate ?? ''}
+            onChange={v => onChange({ ...item, targetDate: v || undefined })}
+          />
         </div>
 
         {/* Status */}
-        <div>
-          <label className="block font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wider mb-1">Estado</label>
-          <select
-            value={item.status ?? 'pendiente'}
-            onChange={e => onChange({ ...item, status: e.target.value as RoadmapItem['status'] })}
-            className="w-full bg-[#181816] border border-white/7 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] cursor-pointer"
-          >
-            <option value="pendiente">Pendiente</option>
-            <option value="en_progreso">En progreso</option>
-            <option value="logrado">Logrado</option>
-          </select>
-        </div>
-
-        {/* Buttons */}
-        <div className="flex gap-3 pt-1">
-          {!isNew && onDelete && (
-            <button
-              onClick={onDelete}
-              className="px-4 py-2.5 border border-red-800/40 text-red-400 hover:text-red-300 font-mono text-xs uppercase rounded-xl transition-all"
-            >
-              Eliminar
-            </button>
-          )}
-          <button
-            onClick={onCancel}
-            className="flex-1 py-2.5 border border-white/7 text-[#c6c9ab] hover:text-white font-mono text-xs uppercase rounded-xl transition-all"
-          >
-            Cancelar
-          </button>
-          <button
-            onClick={onConfirm}
-            disabled={saving || !item.title.trim()}
-            className="flex-1 py-2.5 bg-[#fbcb1a] text-black font-sans font-bold text-xs uppercase rounded-xl hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-40 flex items-center justify-center gap-1"
-          >
-            {saving ? (
-              <><span className="material-symbols-outlined text-sm animate-spin">refresh</span>Guardando...</>
-            ) : (
-              isNew ? 'Añadir' : 'Guardar'
-            )}
-          </button>
-        </div>
+        <Select
+          label="Estado"
+          value={item.status ?? 'pendiente'}
+          onChange={v => onChange({ ...item, status: v as RoadmapItem['status'] })}
+          options={[
+            { value: 'pendiente', label: 'Pendiente' },
+            { value: 'en_progreso', label: 'En progreso' },
+            { value: 'logrado', label: 'Logrado' },
+          ]}
+        />
       </div>
-    </div>
+    </Sheet>
   );
 }
 
@@ -405,15 +369,15 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
   // atleta (readonly): refuerza visualmente "dónde estás y qué te queda".
   // El coach ve siempre opacidad plena (son fases que puede seguir editando).
   function goldTimingClasses(timing: BlockTiming): string {
-    if (!readonly) return 'hover:shadow-[0_0_15px_rgba(251,203,26,0.2)]';
+    if (!readonly) return '';
     if (timing === 'past') return 'opacity-40 grayscale-[0.3]';
-    if (timing === 'current') return 'shadow-[0_0_24px_rgba(251,203,26,0.4)]';
+    if (timing === 'current') return '';
     return 'opacity-70';
   }
   function cyanTimingClasses(timing: BlockTiming): string {
-    if (!readonly) return 'hover:shadow-[0_0_15px_rgba(0,238,252,0.2)]';
+    if (!readonly) return '';
     if (timing === 'past') return 'opacity-40 grayscale-[0.3]';
-    if (timing === 'current') return 'shadow-[0_0_24px_rgba(0,238,252,0.35)]';
+    if (timing === 'current') return '';
     return 'opacity-70';
   }
 
@@ -429,14 +393,14 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
       <div
         key={m.id}
         style={{ position: 'absolute', left: x, top: topBase + ITEM_Y, width: w, height: ITEM_H, zIndex: 5 }}
-        className={`rounded-xl overflow-hidden cursor-default transition-all ${goldTimingClasses(timing)}`}
+        className={`rounded-surface overflow-hidden cursor-default transition-all ${goldTimingClasses(timing)}`}
         title={`${m.objective || `Mes. ${m.number}`} · ${m.weeks} semanas · ${fmtDate(m.startDate)} – ${fmtDate(mEnd)}`}
       >
         <div style={{ background: color }} className="h-full px-3 flex flex-col justify-center">
-          <p className="font-sans font-bold text-black text-[10px] uppercase truncate leading-tight">
+          <p className="font-sans font-bold text-black text-caption uppercase truncate leading-tight">
             {m.objective || `Mes. ${m.number}`}
           </p>
-          <p className="font-mono text-[8px] text-black/60 leading-tight">{m.weeks} sem · {fmtDate(m.startDate)}</p>
+          <p className="font-mono text-caption text-black/60 leading-tight">{m.weeks} sem · {fmtDate(m.startDate)}</p>
         </div>
       </div>
     );
@@ -450,12 +414,12 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
       <div
         key={b.key}
         style={{ position: 'absolute', left: x, top: topBase + ITEM_Y, width: w, height: ITEM_H, zIndex: 5 }}
-        className={`rounded-xl overflow-hidden cursor-default transition-all ${cyanTimingClasses(timing)}`}
+        className={`rounded-surface overflow-hidden cursor-default transition-all ${cyanTimingClasses(timing)}`}
         title={`${b.label} · ${fmtDate(b.start)} – ${fmtDate(b.end)}`}
       >
         <div style={{ background: b.color }} className="h-full px-3 flex flex-col justify-center">
-          <p className="font-sans font-bold text-black text-[10px] uppercase truncate leading-tight">{b.label}</p>
-          <p className="font-mono text-[8px] text-black/60 leading-tight">
+          <p className="font-sans font-bold text-black text-caption uppercase truncate leading-tight">{b.label}</p>
+          <p className="font-mono text-caption text-black/60 leading-tight">
             {fmtDate(b.start)} – {fmtDate(b.end)}
           </p>
         </div>
@@ -474,18 +438,18 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
       <div
         key={item.id}
         style={{ position: 'absolute', left: x, top: topBase + ITEM_Y, width: w, height: ITEM_H, zIndex: 5 }}
-        className={`rounded-xl overflow-hidden border border-white/10 transition-transform ${readonly ? 'cursor-default' : 'cursor-pointer hover:scale-[1.02]'}`}
+        className={`rounded-surface overflow-hidden border border-hairline transition-transform ${readonly ? 'cursor-default' : 'cursor-pointer hover:scale-[1.02]'}`}
         title={`${item.title}${item.description ? ' — ' + item.description : ''}${item.targetDate ? ' · ' + fmtDate(item.targetDate) : ''}`}
         onClick={() => !readonly && openEdit(item)}
       >
-        <div style={{ background: color }} className="h-full px-3 flex items-center gap-1.5">
+        <div style={{ background: color }} className="h-full px-3 flex items-center gap-2">
           <span
             className="material-symbols-outlined text-black/70 shrink-0"
             style={{ fontSize: 12, fontVariationSettings: "'FILL' 1" }}
           >
             {typeIcon(item.type)}
           </span>
-          <p className="font-sans font-bold text-black text-[10px] uppercase truncate leading-tight">{item.title}</p>
+          <p className="font-sans font-bold text-black text-caption uppercase truncate leading-tight">{item.title}</p>
         </div>
       </div>
     );
@@ -495,17 +459,17 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
     <>
       <div
         style={{ position: 'absolute', left: 0, top: topBase, width: containerWidth, height: WEIGHT_LANE_H }}
-        className="bg-[#0c0c0c] border-b border-[#1e1e1e]"
+        className="bg-bg border-b border-hairline"
       />
       <svg style={{ position: 'absolute', left: 0, top: topBase, width: containerWidth, height: WEIGHT_LANE_H }}>
         {[wDomainMin, (wDomainMin + wDomainMax) / 2, wDomainMax].map(w => (
-          <line key={w} x1={0} y1={weightToLocalY(w)} x2={containerWidth} y2={weightToLocalY(w)} stroke="#222" strokeWidth={1} />
+          <line key={w} x1={0} y1={weightToLocalY(w)} x2={containerWidth} y2={weightToLocalY(w)} stroke="var(--color-raised)" strokeWidth={1} />
         ))}
         {projectedWaypoints.length >= 2 && (
           <polyline
             points={projectedWaypoints.map(p => `${xOf(p.date)},${weightToLocalY(p.weight)}`).join(' ')}
             fill="none"
-            stroke="#a78bfa"
+            stroke="var(--color-chart-3)"
             strokeWidth={2}
             strokeDasharray="6 3"
           />
@@ -515,10 +479,10 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
           const cy = weightToLocalY(p.weight);
           return (
             <g key={i}>
-              <polygon points={`${cx},${cy - 5} ${cx + 5},${cy} ${cx},${cy + 5} ${cx - 5},${cy}`} fill="#a78bfa">
+              <polygon points={`${cx},${cy - 5} ${cx + 5},${cy} ${cx},${cy + 5} ${cx - 5},${cy}`} fill="var(--color-chart-3)">
                 <title>Meta: {p.weight} kg · {fmtDate(p.date)}</title>
               </polygon>
-              <text x={cx + 8} y={cy + 3} fill="#a78bfa" style={{ fontSize: 8, fontFamily: 'monospace' }}>
+              <text x={cx + 8} y={cy + 3} fill="var(--color-chart-3)" style={{ fontSize: 8, fontFamily: 'monospace' }}>
                 {p.weight.toFixed(1)}
               </text>
             </g>
@@ -528,7 +492,7 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
           const cx = xOf(log.date);
           const cy = weightToLocalY(log.weight);
           return (
-            <circle key={i} cx={cx} cy={cy} r={3.5} fill="#fbcb1a" opacity={0.85}>
+            <circle key={i} cx={cx} cy={cy} r={3.5} fill="var(--color-accent)" opacity={0.85}>
               <title>{log.date}: {log.weight} kg</title>
             </circle>
           );
@@ -541,10 +505,10 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
 
   function MiniLane({ icon, label, height, children }: { icon: string; label: string; height: number; children: React.ReactNode }) {
     return (
-      <div className="rounded-2xl border border-white/5 bg-[#141414] overflow-hidden shadow-xl">
-        <div className="px-3 py-2 border-b border-[#1e1e1e] flex items-center gap-1.5">
-          <span className="material-symbols-outlined text-[#c6c9ab]" style={{ fontSize: 13 }}>{icon}</span>
-          <span className="font-mono text-[10px] uppercase text-[#c6c9ab] tracking-widest">{label}</span>
+      <div className="rounded-surface border border-hairline bg-field overflow-hidden">
+        <div className="px-3 py-2 border-b border-hairline flex items-center gap-2">
+          <span className="material-symbols-outlined text-ink-2" style={{ fontSize: 13 }}>{icon}</span>
+          <span className="font-sans text-caption uppercase text-ink-2 tracking-widest">{label}</span>
         </div>
         <div className="overflow-x-auto">
           <div style={{ position: 'relative', width: containerWidth, height }}>
@@ -554,12 +518,12 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
                 style={{ position: 'absolute', left: m.x, top: 0, height: MOBILE_HEADER_H }}
                 className="flex items-end pb-1 pl-1"
               >
-                <span className="font-mono text-[8px] uppercase text-[#c6c9ab] tracking-widest whitespace-nowrap">{m.label}</span>
+                <span className="font-sans text-caption uppercase text-ink-2 tracking-widest whitespace-nowrap">{m.label}</span>
               </div>
             ))}
             <div
               style={{ position: 'absolute', left: todayX, top: 0, width: 2, height, zIndex: 10 }}
-              className={readonly ? 'bg-[#fbcb1a] shadow-[0_0_10px_#fbcb1a]' : 'bg-[#fbcb1a]/40'}
+              className={readonly ? 'bg-accent' : 'bg-accent/40'}
             />
             {children}
           </div>
@@ -573,16 +537,10 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
       {/* Toolbar */}
       {!readonly && (
         <div className="flex items-center justify-between">
-          <p className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-widest">
+          <p className="font-mono text-caption text-ink-2 uppercase tracking-widest">
             Timeline de planificación
           </p>
-          <button
-            onClick={openNew}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#fbcb1a] text-black font-sans font-bold text-[10px] uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all shadow-[0_0_20px_rgba(251,203,26,0.15)]"
-          >
-            <span className="material-symbols-outlined text-sm">add</span>
-            Añadir objetivo
-          </button>
+          <Button size="s" onClick={openNew} icon="add">Añadir objetivo</Button>
         </div>
       )}
 
@@ -605,31 +563,31 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
       </div>
 
       {/* Desktop: sticky sidebar + one combined horizontally scrollable canvas */}
-      <div className="hidden sm:flex border border-white/5 rounded-2xl bg-[#141414] overflow-hidden shadow-2xl">
+      <div className="hidden sm:flex border border-hairline rounded-surface bg-field overflow-hidden">
 
         {/* Sidebar — never scrolls */}
         <div
           style={{ width: LANE_HEADER_W, flexShrink: 0, height: totalHeight }}
-          className="bg-[#141414] border-r border-white/10 relative z-10"
+          className="bg-field border-r border-hairline relative z-10"
         >
           <div style={{ height: HEADER_H }} />
           {(['Entrenamiento', 'Nutrición', 'Objetivos'] as const).map((label, i) => (
             <div
               key={label}
               style={{ height: LANE_H }}
-              className="flex items-center justify-end pr-3 border-b border-[#1e1e1e]"
+              className="flex items-center justify-end pr-3 border-b border-hairline"
             >
-              <span className="font-mono text-[10px] uppercase text-[#c6c9ab] tracking-widest">{label}</span>
+              <span className="font-sans text-caption uppercase text-ink-2 tracking-widest">{label}</span>
             </div>
           ))}
           {showWeightChart && (
             <div
               style={{ height: WEIGHT_LANE_H }}
-              className="flex flex-col justify-between pr-2 py-1.5 border-b border-[#1e1e1e]"
+              className="flex flex-col justify-between pr-2 py-2 border-b border-hairline"
             >
-              <span className="font-mono text-[7px] text-[#c6c9ab] text-right block">{wDomainMax.toFixed(1)}</span>
-              <span className="font-mono text-[10px] uppercase text-[#c6c9ab] tracking-widest text-right block">Peso</span>
-              <span className="font-mono text-[7px] text-[#c6c9ab] text-right block">{wDomainMin.toFixed(1)}</span>
+              <span className="font-mono text-caption text-ink-2 text-right block">{wDomainMax.toFixed(1)}</span>
+              <span className="font-mono text-caption uppercase text-ink-2 tracking-widest text-right block">Peso</span>
+              <span className="font-mono text-caption text-ink-2 text-right block">{wDomainMin.toFixed(1)}</span>
             </div>
           )}
         </div>
@@ -643,9 +601,9 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
               <div
                 key={i}
                 style={{ position: 'absolute', left: m.x, top: 0, height: HEADER_H }}
-                className="flex items-end pb-1.5 pl-1.5"
+                className="flex items-end pb-2 pl-2"
               >
-                <span className="font-mono text-[10px] uppercase text-[#c6c9ab] tracking-widest whitespace-nowrap">{m.label}</span>
+                <span className="font-sans text-caption uppercase text-ink-2 tracking-widest whitespace-nowrap">{m.label}</span>
               </div>
             ))}
 
@@ -654,7 +612,7 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
               <div
                 key={`tick-${i}`}
                 style={{ position: 'absolute', left: m.x, top: HEADER_H, width: 1, height: 3 * LANE_H + (showWeightChart ? WEIGHT_LANE_H : 0) }}
-                className="bg-[#1e1e1e]"
+                className="bg-raised"
               />
             ))}
 
@@ -663,26 +621,26 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
               <div
                 key={i}
                 style={{ position: 'absolute', left: 0, top: HEADER_H + i * LANE_H, width: containerWidth, height: LANE_H }}
-                className={`border-b border-[#1e1e1e] ${i % 2 === 0 ? 'bg-[#111111]' : 'bg-[#0e0e0e]'}`}
+                className={`border-b border-hairline ${i % 2 === 0 ? 'bg-bg' : 'bg-bg'}`}
               />
             ))}
 
             {/* HOY vertical line — para el atleta, badge celebratorio "estás aquí" */}
             <div
               style={{ position: 'absolute', left: todayX, top: 0, width: 2, height: totalHeight, zIndex: 30 }}
-              className={readonly ? 'bg-[#fbcb1a] shadow-[0_0_10px_#fbcb1a]' : 'bg-[#fbcb1a]/40'}
+              className={readonly ? 'bg-accent' : 'bg-accent/40'}
             >
               {readonly ? (
                 <span
                   style={{ position: 'absolute', top: -8, left: '50%', transform: 'translateX(-50%)' }}
-                  className="bg-[#fbcb1a] text-black text-[9px] font-black px-2 py-1 rounded-full tracking-tighter shadow-[0_0_15px_rgba(251,203,26,0.6)] border-2 border-[#141414] whitespace-nowrap uppercase animate-pulse"
+                  className="bg-accent text-black text-caption font-bold px-2 py-1 rounded-full tracking-tighter border-2 border-hairline whitespace-nowrap uppercase animate-pulse"
                 >
                   Estás aquí
                 </span>
               ) : (
                 <span
                   style={{ position: 'absolute', top: 2, left: 4 }}
-                  className="font-mono text-[8px] text-[#fbcb1a] uppercase whitespace-nowrap"
+                  className="font-mono text-caption text-accent uppercase whitespace-nowrap"
                 >
                   Hoy
                 </span>
@@ -707,15 +665,15 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
 
       {/* Floating items (no dates) */}
       {floatingItems.length > 0 && (
-        <div className="border border-white/7 rounded-xl p-4 space-y-2">
-          <p className="font-mono text-[10px] uppercase text-[#c6c9ab] tracking-widest mb-2">Sin fecha asignada</p>
+        <div className="border border-hairline rounded-surface p-4 space-y-2">
+          <p className="font-mono text-caption uppercase text-ink-2 tracking-widest mb-2">Sin fecha asignada</p>
           <div className="flex flex-wrap gap-2">
             {floatingItems.map(item => (
               <button
                 key={item.id}
                 onClick={() => !readonly && openEdit(item)}
                 disabled={readonly}
-                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-white/7 text-xs font-mono ${readonly ? 'cursor-default' : 'hover:border-[#fbcb1a]/40 cursor-pointer'} transition-all`}
+                className={`flex items-center gap-2 px-3 py-2 rounded-control border border-hairline text-label font-sans ${readonly ? 'cursor-default' : 'hover:border-accent/40 cursor-pointer'} transition-all`}
                 style={{ color: statusColor(item.status) }}
                 title={item.description}
               >
@@ -731,45 +689,42 @@ export default function RoadmapTimeline({ mesocycles, nutritionProgram, roadmap,
 
       {/* Empty state */}
       {roadmap.items.length === 0 && mesocycles.length === 0 && !nutritionProgram && (
-        <div className="text-center py-12">
-          <span className="material-symbols-outlined text-4xl text-[#2a2a2a] block mb-2">map</span>
-          <p className="text-[#c6c9ab] text-xs font-mono">No hay datos de planificación todavía.</p>
-        </div>
+        <EmptyState icon="map" title="No hay datos de planificación todavía." />
       )}
 
       {/* Legend */}
-      <div className="flex flex-wrap gap-4 px-1 pt-3 border-t border-white/5">
-        <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded-sm" style={{ background: MESO_COLORS[0] }} />
-          <span className="font-mono text-[9px] text-[#c6c9ab] uppercase">Mesociclo</span>
+      <div className="flex flex-wrap gap-4 px-1 pt-3 border-t border-hairline">
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 rounded-control" style={{ background: MESO_COLORS[0] }} />
+          <span className="font-mono text-caption text-ink-2 uppercase">Mesociclo</span>
         </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded-sm" style={{ background: NUTRI_COLORS[0] }} />
-          <span className="font-mono text-[9px] text-[#c6c9ab] uppercase">Nutrición</span>
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 rounded-control" style={{ background: NUTRI_COLORS[0] }} />
+          <span className="font-mono text-caption text-ink-2 uppercase">Nutrición</span>
         </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded-sm" style={{ background: '#ff8c69' }} />
-          <span className="font-mono text-[9px] text-[#c6c9ab] uppercase">Pendiente</span>
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 rounded-control" style={{ background: 'var(--color-warning)' }} />
+          <span className="font-mono text-caption text-ink-2 uppercase">Pendiente</span>
         </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded-sm" style={{ background: '#fbcb1a' }} />
-          <span className="font-mono text-[9px] text-[#c6c9ab] uppercase">En progreso</span>
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 rounded-control" style={{ background: 'var(--color-accent)' }} />
+          <span className="font-mono text-caption text-ink-2 uppercase">En progreso</span>
         </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded-sm" style={{ background: '#86efac' }} />
-          <span className="font-mono text-[9px] text-[#c6c9ab] uppercase">Logrado</span>
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 rounded-control" style={{ background: 'var(--color-success)' }} />
+          <span className="font-mono text-caption text-ink-2 uppercase">Logrado</span>
         </div>
         {showWeightChart && (
           <>
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-2">
               <svg width="20" height="10">
-                <line x1="0" y1="5" x2="20" y2="5" stroke="#a78bfa" strokeWidth="2" strokeDasharray="5 2" />
+                <line x1="0" y1="5" x2="20" y2="5" stroke="var(--color-chart-3)" strokeWidth="2" strokeDasharray="5 2" />
               </svg>
-              <span className="font-mono text-[9px] text-[#c6c9ab] uppercase">Plan peso</span>
+              <span className="font-mono text-caption text-ink-2 uppercase">Plan peso</span>
             </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-3 h-3 rounded-full" style={{ background: '#fbcb1a' }} />
-              <span className="font-mono text-[9px] text-[#c6c9ab] uppercase">Peso real</span>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full" style={{ background: 'var(--color-accent)' }} />
+              <span className="font-mono text-caption text-ink-2 uppercase">Peso real</span>
             </div>
           </>
         )}

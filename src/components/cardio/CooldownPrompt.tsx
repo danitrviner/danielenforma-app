@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Icon } from '../ui';
 
 // Vuelta a la calma de 2 min tras terminar el entreno (§5.6 del análisis) —
 // con banda BLE no hay otra forma de medir el Heart Rate Recovery, porque la
@@ -22,21 +23,27 @@ export default function CooldownPrompt({ bpm, onDone }: Props) {
   }, [remaining, onDone]);
 
   return (
-    <div className="fixed inset-0 z-[90] flex flex-col items-center justify-center bg-[#0e0e0e] px-6">
+    /* No es un modal: es una vista a pantalla completa. Fondo opaco, sin telón
+       y sin caja — ocupa la ventana entera durante la sesión. F9 lo clasificó y
+       lo dejó fuera a propósito: convertirlo en `Dialog` sería un rediseño, no
+       una migración. Cuenta en la métrica `Overlays artesanales` del inventario
+       porque esa métrica mide la utilidad de posición, que aquí no significa
+       overlay sino pantalla. */
+    <div className="fixed inset-0 z-[90] flex flex-col items-center justify-center bg-bg px-6">
       <div className="w-full max-w-sm space-y-6 text-center">
         <div>
-          <p className="text-[10px] font-mono uppercase text-[#c6c9ab] tracking-wider">Vuelta a la calma</p>
-          <p className="font-sans font-black text-6xl text-white tabular-nums mt-2">{Math.floor(remaining / 60)}:{String(remaining % 60).padStart(2, '0')}</p>
-          <p className="text-xs font-mono text-[#c6c9ab] mt-2">Deja la banda puesta para medir tu recuperación cardíaca</p>
+          <p className="text-caption font-sans uppercase text-ink-2 tracking-wider">Vuelta a la calma</p>
+          <p className="font-sans font-bold text-6xl text-white tabular-nums mt-2">{Math.floor(remaining / 60)}:{String(remaining % 60).padStart(2, '0')}</p>
+          <p className="text-label font-sans text-ink-2 mt-2">Deja la banda puesta para medir tu recuperación cardíaca</p>
         </div>
 
         <div className="flex items-center justify-center gap-2">
-          <span className="material-symbols-outlined text-[#ff4d4d] text-lg">favorite</span>
-          <p className="font-sans font-bold text-2xl text-white tabular-nums">{bpm ?? '--'}</p>
+          <Icon name="favorite" size="l" className="text-danger" />
+          <p className="font-sans font-bold text-title-l text-white tabular-nums">{bpm ?? '--'}</p>
         </div>
 
         <button onClick={onDone}
-          className="w-full py-3 border border-white/15 text-[#c6c9ab] font-sans font-bold text-xs uppercase rounded-lg hover:text-white hover:border-white/30 transition-all">
+          className="w-full py-3 border border-hairline text-ink-2 font-sans font-bold text-label uppercase rounded-control hover:text-white hover:border-strong transition-all">
           Saltar y guardar ya
         </button>
       </div>

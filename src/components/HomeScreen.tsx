@@ -1,18 +1,23 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { UserProfile, WeightCheckIn } from '../types';
-import { getWorkoutAssignmentsForAthlete, getWorkouts } from '../dbService';
+import { UserProfile, WeightCheckIn, WeekDay } from '../types';
+import { getWorkoutAssignmentsForAthlete, getWorkouts, getCardioAssignmentsForAthlete, getDietsForAthlete, getAthleteDietConfig, getDietCompletionLog, getOnboarding } from '../dbService';
 import { getWeekRange, getWeekStart, formatDate } from '../utils/trainingWeek';
+import { pickActiveZona2Assignment, pickActiveIntervalAssignment } from '../utils/cardioSession';
+import { pickTodaysDiet, countMealsDone } from '../utils/nutritionSummary';
 import PendingTasksPanel from './PendingTasksPanel';
+import SolicitudConsentimientoIA from './SolicitudConsentimientoIA';
+import { debePedirseConsentimiento, haSidoAplazado, marcarAplazado } from '../ai/consentimientoIA';
 import StepsWidget from './StepsWidget';
 import ResourcesPanel from './ResourcesPanel';
 import AthleteReportsPanel from './AthleteReportsPanel';
-import ProgressRing from './ProgressRing';
-import StatTile from './StatTile';
 import PlanInPreparationCard from './PlanInPreparationCard';
-import Skeleton from './Skeleton';
+import RecordatorioGimnasioCard from '../features/gimnasio/RecordatorioGimnasioCard';
+import { useTourTarget } from '../features/tutorial/TourTargetContext';
+import { Skeleton } from './ui';
+import { Icon, Button, PageHeader, ListRow, ProgressBar } from './ui';
 
-type NavTarget = 'checkin' | 'training' | 'nutrition' | 'roadmap' | 'academy' | 'cardio';
+type NavTarget = 'checkin' | 'training' | 'nutrition' | 'roadmap' | 'academy' | 'cardio' | 'profile';
 
 interface HomeScreenProps {
   profile: UserProfile;
@@ -20,12 +25,28 @@ interface HomeScreenProps {
   onNavigate: (tab: NavTarget) => void;
 }
 
+const JS_TO_WD: Record<number, WeekDay> = { 0: 'sun', 1: 'mon', 2: 'tue', 3: 'wed', 4: 'thu', 5: 'fri', 6: 'sat' };
+const TODAY_DATE = new Date().toISOString().split('T')[0];
+const TODAY_WD: WeekDay = JS_TO_WD[new Date().getDay()];
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   HomeScreen — "Hoy" (F3.11, módulo 8 del handoff)
+
+   Una tarea manda: el entreno del día es siempre la primera tarjeta con el
+   único botón primario. El cardio nunca aparece por encima del entreno de
+   fuerza — solo sube a tarjeta principal en día de descanso (sin nada de
+   fuerza programado hoy). La nutrición se resume en una fila de progreso,
+   nunca repite el detalle de NutritionScreen. Entreno hecho se confirma en
+   verde, no en oro. Sin datos todavía, la tarjeta se omite.
+
+   Fuera de alcance a propósito: el checklist de los "tres primeros pasos"
+   (primera sesión, cinco ingestas, lección del RIR) necesita el campo
+   `checklistInicial` que el motor de tutorial de F3.12 todavía no ha creado
+   — se añade en esa fase, no aquí, para no inventar un modelo de datos que
+   F3.12 podría necesitar dar forma distinta.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
 export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreenProps) {
-  // Pilot migration to TanStack Query (replaces the old useEffect+useState
-  // fetch): 'workouts' is shared/reusable across screens under one cache key,
-  // so TrainingScreen switching tabs won't re-fetch it if this query already
-  // populated the cache (and vice versa) — the win useResourceCache was going
-  // for, but app-wide instead of one-off per hook.
   const { data: assignments = [], isPending: loadingAssignments } = useQuery({
     queryKey: ['workoutAssignments', profile.userId],
     queryFn: () => getWorkoutAssignmentsForAthlete(profile.userId),
@@ -36,52 +57,145 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
   });
   const loadingTraining = loadingAssignments || loadingWorkouts;
 
+  const { data: cardioAssignments = [] } = useQuery({
+    queryKey: ['cardioAssignments', profile.email],
+    queryFn: () => getCardioAssignmentsForAthlete(profile.email),
+  });
+  const { data: diets = [] } = useQuery({
+    queryKey: ['dietsForAthlete', profile.email],
+    queryFn: () => getDietsForAthlete(profile.email),
+  });
+  const { data: dietConfig = null } = useQuery({
+    queryKey: ['athleteDietConfig', profile.email],
+    queryFn: () => getAthleteDietConfig(profile.email).catch(() => null),
+  });
+  const { data: completionLog } = useQuery({
+    queryKey: ['dietCompletionLog', profile.email, TODAY_DATE],
+    queryFn: () => getDietCompletionLog(profile.email, TODAY_DATE),
+  });
+
   const curWeekStart = getWeekRange().start;
   const sorted = [...assignments].sort((a, b) => a.date.localeCompare(b.date));
   const thisWeekPending = sorted.filter(a => getWeekStart(a.date) === curWeekStart && a.status === 'pending');
   const overdue = sorted.filter(a => a.status === 'pending' && getWeekStart(a.date) < curWeekStart);
   const getWorkout = (id: string) => workouts.find(w => w.id === id);
 
-  const weekAssignments = sorted.filter(a => getWeekStart(a.date) === curWeekStart);
-  const weekCompleted = weekAssignments.filter(a => a.status === 'completed').length;
-  const weekPct = weekAssignments.length > 0 ? (weekCompleted / weekAssignments.length) * 100 : 0;
+  const todayAssignment = assignments.find(a => a.date === TODAY_DATE);
+  const todayWorkout = todayAssignment ? getWorkout(todayAssignment.workoutId) : undefined;
+  const isRestDay = !todayAssignment;
+
+  const zona2Assignment = pickActiveZona2Assignment(cardioAssignments);
+  const intervalAssignment = pickActiveIntervalAssignment(cardioAssignments);
+  const cardioRx = zona2Assignment ?? intervalAssignment;
+
+  const todaysDiet = pickTodaysDiet(diets, dietConfig, TODAY_WD);
+  const mealsDone = todaysDiet ? countMealsDone(todaysDiet, completionLog?.doneItemIds ?? []) : null;
+
+  /* A-2. Se le pregunta aquí, en la primera pantalla que abre, porque los
+     atletas que ya están dentro terminaron su alta hace meses y no van a volver
+     a verla. Sin esto el consentimiento solo llegaría a los clientes nuevos.
+
+     T6 (18-08): `aplazado` vivía en el estado del componente, así que "Ahora
+     no" solo valía para esa sesión — cada vez que se reabría la app volvía a
+     interrumpir a pantalla completa. Ahora se guarda en localStorage: se
+     pregunta una vez a pantalla completa, y a partir de ahí la única puerta
+     es el interruptor discreto de Perfil → Ajustes → Análisis con IA (que ya
+     existe). No es un rechazo —`debePedirseConsentimiento` sigue devolviendo
+     `true` sobre el dato real y Ajustes lo sigue enseñando— es solo dejar de
+     interrumpir. */
+  const { data: onboarding = null } = useQuery({
+    queryKey: ['onboarding', profile.email],
+    queryFn: () => getOnboarding(profile.email),
+  });
+  const [aplazado, setAplazado] = useState(() => haSidoAplazado(profile.email));
+  const aplazar = () => {
+    marcarAplazado(profile.email);
+    setAplazado(true);
+  };
+  const pedirConsentimiento = !aplazado && !!onboarding && debePedirseConsentimiento(onboarding);
+
+  const cardioIsPrimary = isRestDay && !!cardioRx;
+  const primaryCardRef = useTourTarget('home-primary-card');
+  const cardioRowRef = useTourTarget('home-cardio-row');
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="font-sans font-extrabold text-3xl tracking-tight text-white">Inicio</h1>
-        <p className="text-[#c6c9ab] text-sm mt-1">Tus tareas, entrenamientos pendientes y recursos.</p>
-      </div>
+      {pedirConsentimiento && onboarding && (
+        <SolicitudConsentimientoIA onboarding={onboarding} onAhoraNo={aplazar} />
+      )}
 
-      {/* ── Sin ningún entrenamiento asignado todavía: recién llegado, el coach
-          aún no le ha montado el plan. Antes esto caía directo en "sin
-          entrenamientos pendientes" — la app se sentía vacía justo en el
-          momento de mayor motivación del atleta nuevo. ──────────────────── */}
+      <PageHeader title="Hoy" subtitle="Tu tarea del día." />
+
       {!loadingTraining && assignments.length === 0 && (
         <PlanInPreparationCard profile={profile} onNavigate={onNavigate} />
       )}
 
-      {/* ── Resumen de hoy: anillo de progreso semanal ──────────────────────── */}
-      {!loadingTraining && weekAssignments.length > 0 && (
-        <section className="bg-[#181816] border border-white/7 rounded-3xl p-5 shadow-[0_0_40px_-8px_rgba(251,203,26,0.35)]">
-          <h2 className="font-sans font-black uppercase tracking-tight text-lg text-white mb-4">Resumen de hoy</h2>
-          <div className="flex items-center gap-5">
-            <ProgressRing pct={weekPct} />
-            <div className="flex-1 flex flex-col gap-3">
-              <StatTile
-                icon="fitness_center"
-                label="Entrenamientos"
-                value={`${weekCompleted}/${weekAssignments.length}`}
-              />
-              <p className="text-[10px] text-[#c6c9ab] font-mono leading-relaxed">
-                {weekCompleted === weekAssignments.length
-                  ? '¡Semana completada! 💪'
-                  : `Te ${weekAssignments.length - weekCompleted === 1 ? 'queda' : 'quedan'} ${weekAssignments.length - weekCompleted} entrenamiento${weekAssignments.length - weekCompleted === 1 ? '' : 's'} esta semana.`}
+      {!loadingTraining && assignments.length > 0 && (
+        <>
+          {/* ── Tarjeta primaria: entreno de fuerza, salvo día de descanso con cardio prescrito ── */}
+          {!cardioIsPrimary && todayAssignment && (
+            <section ref={primaryCardRef} className={`rounded-canvas p-5 border ${todayAssignment.status === 'completed' ? 'bg-success/8 border-success/25' : 'bg-surface border-hairline'}`}>
+              <p className="text-caption font-mono uppercase tracking-wider text-ink-2">Entreno de hoy</p>
+              <p className="font-display text-feature font-black uppercase text-ink mt-1">{todayWorkout?.name ?? 'Rutina'}</p>
+              {todayAssignment.status === 'completed' ? (
+                <p className="flex items-center gap-2 text-body-s font-sans font-bold text-success mt-3">
+                  <Icon name="check_circle" size="m" />
+                  Hecho
+                </p>
+              ) : (
+                <Button onClick={() => onNavigate('training')} fullWidth size="l" className="mt-4">Empezar entreno</Button>
+              )}
+            </section>
+          )}
+
+          {cardioIsPrimary && cardioRx && (
+            <section ref={primaryCardRef} className="rounded-canvas p-5 border bg-surface border-hairline">
+              <p className="text-caption font-mono uppercase tracking-wider text-ink-2">Día de descanso · Cardio</p>
+              <p className="font-display text-feature font-black uppercase text-ink mt-1">
+                {cardioRx.type === 'zona2' ? 'Zona 2' : 'Intervalos'}
               </p>
+              <Button onClick={() => onNavigate('cardio')} fullWidth size="l" className="mt-4">Empezar cardio</Button>
+            </section>
+          )}
+
+          {isRestDay && !cardioRx && (
+            <section className="rounded-canvas p-5 border bg-surface border-hairline text-center">
+              <p className="font-sans text-body-s text-ink-2">Hoy es día de descanso.</p>
+            </section>
+          )}
+
+          {/* ── Cardio como fila secundaria cuando hoy toca fuerza ── */}
+          {!cardioIsPrimary && cardioRx && (
+            <div ref={cardioRowRef}>
+            <ListRow
+              onClick={() => onNavigate('cardio')}
+              className="rounded-control border bg-surface border-hairline"
+              leading={<Icon name="favorite" size="m" className="text-accent" />}
+              title="Cardio"
+              subtitle={cardioRx.type === 'zona2' ? 'Zona 2' : 'Intervalos'}
+              chevron
+            />
             </div>
-          </div>
-        </section>
+          )}
+
+          {/* ── Nutrición: fila de progreso, nunca el detalle ── */}
+          {todaysDiet && mealsDone && (
+            <button onClick={() => onNavigate('nutrition')} className="w-full text-left bg-surface border border-hairline rounded-control p-4 space-y-2 hover:border-strong transition-colors">
+              <div className="flex items-center justify-between">
+                <p className="text-caption font-mono uppercase text-ink-2">Nutrición</p>
+                <p className="text-caption font-mono text-ink-2 tabular-nums">{mealsDone.done}/{mealsDone.total} ingestas</p>
+              </div>
+              <ProgressBar value={mealsDone.total > 0 ? (mealsDone.done / mealsDone.total) * 100 : 0} label={`Ingestas de hoy, ${mealsDone.done} de ${mealsDone.total}`} />
+            </button>
+          )}
+        </>
       )}
+
+      {/* Va ANTES de las tareas: si el atleta omitió el catálogo, es lo único
+          de esta pantalla que le pide terminar algo que él mismo dejó a medias.
+          No entra en PendingTasksPanel porque ahí todas las filas tienen la
+          misma forma y esta lleva barra de progreso y recuento propios. */}
+      <RecordatorioGimnasioCard email={profile.email} />
 
       <PendingTasksPanel profile={profile} checkins={checkins} onNavigate={onNavigate} />
 
@@ -89,60 +203,54 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
 
       <StepsWidget athleteEmail={profile.email} />
 
-      {/* ── Entrenamientos pendientes de esta semana + atrasados ─────────────── */}
-      {/* Oculta del todo para el atleta sin ningún entrenamiento asignado
-          nunca (PlanInPreparationCard ya cubre ese mensaje arriba) — mostrar
-          "sin entrenamientos pendientes" justo debajo sería contradecir el
-          tono de "tu coach lo está preparando". */}
+      {/* ── Semana: pendientes + atrasados ─────────────────────────────────── */}
       {(loadingTraining || assignments.length > 0) && (
-      <section className="bg-[#181816] border border-white/7 rounded-2xl p-4 sm:p-5">
-        <h2 className="font-sans font-black uppercase tracking-tight text-base text-white mb-3 pb-2 border-b border-white/7 flex items-center gap-2">
-          <span className="material-symbols-outlined text-[#00eefc]">fitness_center</span>
-          Entrenamiento
+      <section className="bg-surface border border-hairline rounded-surface p-4 sm:p-5">
+        <h2 className="font-sans font-bold uppercase tracking-tight text-title-s text-white mb-3 pb-2 border-b border-hairline flex items-center gap-2">
+          <Icon name="fitness_center" size="l" className="text-accent" />
+          Esta semana
           <button
             onClick={() => onNavigate('training')}
-            className="ml-auto text-[10px] font-mono font-bold uppercase text-[#c6c9ab] hover:text-[#fbcb1a] transition-colors"
+            className="ml-auto text-caption font-mono font-bold uppercase text-ink-2 hover:text-accent transition-colors"
           >
             Ver todo
           </button>
         </h2>
 
         {loadingTraining ? (
-          <div className="space-y-1.5">
-            <Skeleton className="h-11 w-full rounded-lg" />
-            <Skeleton className="h-11 w-full rounded-lg" />
+          <div className="space-y-2">
+            <Skeleton className="h-11 w-full rounded-surface" />
+            <Skeleton className="h-11 w-full rounded-surface" />
           </div>
         ) : thisWeekPending.length === 0 && overdue.length === 0 ? (
-          <p className="text-xs text-[#555] font-mono py-2">Sin entrenamientos pendientes esta semana.</p>
+          <p className="text-label text-ink-3 font-sans py-2">Sin entrenamientos pendientes esta semana.</p>
         ) : (
           <div className="space-y-3">
             {thisWeekPending.length > 0 && (
-              <div className="space-y-1.5">
-                <span className="font-mono text-[10px] uppercase font-bold tracking-widest text-[#fbcb1a]">Esta semana</span>
+              <div className="space-y-2">
+                <span className="font-mono text-caption uppercase font-bold tracking-widest text-accent">Esta semana</span>
                 {thisWeekPending.map(a => (
-                  <button
+                  <ListRow
                     key={a.id}
                     onClick={() => onNavigate('training')}
-                    className="w-full flex items-center justify-between bg-[#1e1e1e] border border-white/7 hover:border-[#fbcb1a]/40 rounded-lg p-3 text-left transition-all"
-                  >
-                    <span className="font-sans text-sm text-white truncate">{getWorkout(a.workoutId)?.name || 'Rutina'}</span>
-                    <span className="font-mono text-[10px] text-[#c6c9ab] flex-shrink-0 ml-2">{formatDate(a.date)}</span>
-                  </button>
+                    className="rounded-control border bg-raised border-hairline"
+                    title={getWorkout(a.workoutId)?.name || 'Rutina'}
+                    trailing={<span className="font-mono text-caption text-ink-2 flex-shrink-0">{formatDate(a.date)}</span>}
+                  />
                 ))}
               </div>
             )}
             {overdue.length > 0 && (
-              <div className="space-y-1.5">
-                <span className="font-mono text-[10px] uppercase font-bold tracking-widest text-red-300">Atrasados</span>
+              <div className="space-y-2">
+                <span className="font-mono text-caption uppercase font-bold tracking-widest text-danger">Atrasados</span>
                 {overdue.map(a => (
-                  <button
+                  <ListRow
                     key={a.id}
                     onClick={() => onNavigate('training')}
-                    className="w-full flex items-center justify-between bg-[#1e1e1e] border border-red-500/20 hover:border-red-500/40 rounded-lg p-3 text-left transition-all"
-                  >
-                    <span className="font-sans text-sm text-white truncate">{getWorkout(a.workoutId)?.name || 'Rutina'}</span>
-                    <span className="font-mono text-[10px] text-red-300 flex-shrink-0 ml-2">{formatDate(a.date)}</span>
-                  </button>
+                    className="rounded-control border bg-raised border-danger/20"
+                    title={getWorkout(a.workoutId)?.name || 'Rutina'}
+                    trailing={<span className="font-mono text-caption text-danger flex-shrink-0">{formatDate(a.date)}</span>}
+                  />
                 ))}
               </div>
             )}
@@ -150,27 +258,6 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
         )}
       </section>
       )}
-
-      {/* ── Accesos a Academia y Cardio: viven aquí en vez de en la barra de
-          navegación para no saturarla con más pestañas. ────────────────── */}
-      <div className="grid grid-cols-2 gap-3">
-        <button
-          onClick={() => onNavigate('academy')}
-          className="bg-[#181816] border border-white/7 hover:border-[#fbcb1a]/40 rounded-2xl p-4 flex flex-col items-start gap-2 text-left transition-all"
-        >
-          <span className="material-symbols-outlined text-[#fbcb1a] text-2xl">school</span>
-          <span className="font-sans font-black text-sm text-white uppercase tracking-tight">Academia</span>
-          <span className="text-[10px] text-[#c6c9ab] font-mono">Cursos y formación</span>
-        </button>
-        <button
-          onClick={() => onNavigate('cardio')}
-          className="bg-[#181816] border border-white/7 hover:border-[#fbcb1a]/40 rounded-2xl p-4 flex flex-col items-start gap-2 text-left transition-all"
-        >
-          <span className="material-symbols-outlined text-[#fbcb1a] text-2xl">favorite</span>
-          <span className="font-sans font-black text-sm text-white uppercase tracking-tight">Cardio</span>
-          <span className="text-[10px] text-[#c6c9ab] font-mono">Zonas y FC en directo</span>
-        </button>
-      </div>
 
       <ResourcesPanel isCoach={false} />
     </div>

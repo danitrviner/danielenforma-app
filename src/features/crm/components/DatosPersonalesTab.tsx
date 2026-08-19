@@ -6,6 +6,7 @@ import { hoyISO } from '../lib/fechas';
 import { EscrituraEncolada } from '../../../db/crm';
 import { Campo, inputClass, BotonPrimario } from './Modal';
 import type { Cliente, EstadoCrm, MotivoBaja } from '../types';
+import { Icon } from '../../../components/ui';
 
 // Estados de preventa ('lead', 'llamada_agendada') solo tienen sentido para
 // contactos sin cuenta — un `fuente === 'perfil'` ya se registró en la app,
@@ -120,7 +121,7 @@ export default function DatosPersonalesTab({ cliente }: { cliente: Cliente }) {
   const estados = cliente.fuente === 'perfil' ? ESTADOS_PERFIL : ESTADOS_CONTACTO;
 
   return (
-    <div className="bg-[#181816]/80 backdrop-blur-sm border border-white/7 rounded-2xl p-4 space-y-3">
+    <div className="bg-surface/80 backdrop-blur-sm border border-hairline rounded-surface p-4 space-y-3">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <Campo label="Nombre">
           <input className={inputClass} value={nombre} onChange={e => setNombre(e.target.value)} />
@@ -144,7 +145,7 @@ export default function DatosPersonalesTab({ cliente }: { cliente: Cliente }) {
         </Campo>
 
         <Campo label="Teléfono">
-          <div className="flex gap-1.5">
+          <div className="flex gap-2">
             <select
               className={`${inputClass} w-[104px] shrink-0`}
               value={prefijo}
@@ -153,7 +154,7 @@ export default function DatosPersonalesTab({ cliente }: { cliente: Cliente }) {
             >
               {PREFIJOS_FRECUENTES.map(p => <option key={p.code} value={p.code}>{p.label}</option>)}
             </select>
-            <input className={inputClass} value={numero} onChange={e => setNumero(e.target.value)} inputMode="tel" />
+            <input className={`${inputClass} min-w-0 flex-1`} value={numero} onChange={e => setNumero(e.target.value)} inputMode="tel" />
           </div>
         </Campo>
 
@@ -180,10 +181,10 @@ export default function DatosPersonalesTab({ cliente }: { cliente: Cliente }) {
       </div>
 
       {mostrarCamposBaja && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 rounded-xl bg-[#fca5a5]/8 border border-[#fca5a5]/20">
-          <div className="sm:col-span-2 flex items-start gap-1.5">
-            <span className="material-symbols-outlined text-[13px] text-[#fca5a5] shrink-0 mt-0.5">warning</span>
-            <p className="font-sans text-[10px] text-[#fca5a5] leading-relaxed">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 rounded-surface bg-danger/8 border border-danger/20">
+          <div className="sm:col-span-2 flex items-start gap-2">
+            <Icon name="warning" size="s" className="text-danger shrink-0" />
+            <p className="font-sans text-caption text-danger leading-relaxed">
               Fecha y motivo de baja son obligatorios — sin ellos, el churn de este cliente
               queda incalculable para siempre.
             </p>
@@ -211,7 +212,7 @@ export default function DatosPersonalesTab({ cliente }: { cliente: Cliente }) {
       )}
 
       {cliente.email && (
-        <p className="font-mono text-[9px] text-[#555550]">
+        <p className="font-mono text-caption text-ink-3">
           Email: {cliente.email}
           {cliente.fuente === 'perfil' && ' · lo gestiona el propio cliente desde su cuenta'}
         </p>
@@ -219,7 +220,7 @@ export default function DatosPersonalesTab({ cliente }: { cliente: Cliente }) {
 
       <div className="flex items-center justify-end gap-2 pt-1">
         {sucio && !bajaIncompleta && (
-          <span className="font-mono text-[9px] uppercase tracking-widest text-[#fdba74]">Sin guardar</span>
+          <span className="font-mono text-caption uppercase tracking-widest text-warning">Sin guardar</span>
         )}
         <BotonPrimario onClick={onGuardar} disabled={!sucio || bajaIncompleta || guardar.isPending}>
           {guardar.isPending ? 'Guardando…' : 'Guardar cambios'}

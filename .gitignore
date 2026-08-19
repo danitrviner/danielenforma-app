@@ -5,19 +5,26 @@ coverage/
 .DS_Store
 *.log
 
+# Salida de los scripts de diagnóstico (scripts/diagnostico*.mjs) — datos
+# generados en la máquina de quien lo corre, nunca hace falta versionarlos.
+scripts/out/
+
 # Env files — only the example template is committed
 .env
 .env.*
 !.env.example
 
-# Firebase CLI cache and deploy artefacts
+# Firebase CLI cache y artefactos de deploy (los *-debug.log ya los cubre *.log)
 .firebase/
-firebase-debug.log
-firestore-debug.log
-ui-debug.log
 
 # Vercel CLI project link (project/org ids, local-only)
 .vercel
+
+# Firma de Android — contraseñas del keystore de subida. Solo se commitea el
+# ejemplo (android/keystore.properties.example).
+android/keystore.properties
+*.jks
+*.keystore
 
 # Service account / admin credentials — NEVER commit these
 serviceAccount.json
@@ -26,7 +33,5 @@ service-account*.json
 *-adminsdk-*.json
 
 # OS / editor
-.DS_Store
 Thumbs.db
 .vscode/settings.json
-.env*

@@ -9,6 +9,16 @@ buildscript {
     dependencies {
         classpath 'com.android.tools.build:gradle:8.13.0'
         classpath 'com.google.gms:google-services:4.4.4'
+        // RestTimerPlugin y RestTimerService están escritos en Kotlin, pero el
+        // proyecto no tenía el plugin de Kotlin por ninguna parte: los .kt no se
+        // compilaban, así que MainActivity.java no encontraba
+        // `RestTimerPlugin` y la compilación de Android fallaba entera. No se
+        // había detectado porque en esta máquina nunca hubo JDK y Android no se
+        // había compilado NI UNA VEZ (§3.1 del checklist).
+        // La versión NO es libre: @capacitor-community/bluetooth-le arrastra
+        // kotlin-stdlib 2.2.20, y compilar con un plugin más antiguo aborta con
+        // "Module was compiled with an incompatible version of Kotlin".
+        classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:2.2.20'
 
         // NOTE: Do not place your application dependencies here; they belong
         // in the individual module build.gradle files

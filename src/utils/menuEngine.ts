@@ -3,6 +3,7 @@ import {
   BudgetVec, MenuDay, MenuMeal, MenuComplement,
 } from '../types';
 import { addToPlaced, round2 } from './exchangeHelpers';
+import { quotaSplit } from './quotaSplit';
 import { ingredientMatch, normalizeStr } from './foodPrefs';
 import { fitScore } from './recipeMatch';
 import { exchangeToKcal } from './nutritionConstants';
@@ -16,8 +17,6 @@ import { dishType, DishType } from './dishTypes';
 
 export const MENU_SCALES = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2] as const;
 const WEEK_DAYS: WeekDay[] = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
-
-const rQ = (x: number) => Math.round(x / 0.25) * 0.25;
 
 export interface MealSlotSpec {
   slot: number;   // intakeType 1-5
@@ -54,7 +53,7 @@ const PRESET_PCTS: Record<3 | 4 | 5, number[]> = {
   5: [20, 10, 35, 10, 25],
 };
 
-const FALLBACK_SLOTS: Record<3 | 4 | 5, MealSlotSpec[]> = {
+export const FALLBACK_SLOTS: Record<3 | 4 | 5, MealSlotSpec[]> = {
   3: [
     { slot: 1, name: 'Desayuno', pct: 25 },
     { slot: 3, name: 'Comida', pct: 45 },
@@ -90,7 +89,7 @@ export function slotsFromOnboarding(
   return FALLBACK_SLOTS[count];
 }
 
-// Indya recipes carry a reliable intakeTypes tag; builder recipes (coach/athlete)
+// Recipes from the imported recetario carry a reliable intakeTypes tag; builder recipes (coach/athlete)
 // don't — RecipeBuilderScreen only offers free-form category tags. So a builder
 // recipe is eligible for any slot unless explicitly tagged "Desayuno"/"Cena".
 // Shared by the coach's generator/editor and the athlete's swap picker so both
@@ -102,17 +101,21 @@ export function recipeMatchesSlot(recipe: Recipe, slot: number): boolean {
   return true;
 }
 
+// Antes redondeaba cada franja a 0,25 de forma independiente (roundQuarter),
+// lo que podía desviar la suma de las franjas hasta n·0,125 respecto al
+// presupuesto real del día. quotaSplit reparte por peso (aquí, sl.pct) con
+// suma EXACTA — misma regla que usa el reparto de "Mi plan"/coach.
 export function slotTargets(dayBudget: BudgetVec, slots: MealSlotSpec[]): BudgetVec[] {
-  return slots.map(sl => ({
-    HC: rQ(dayBudget.HC * sl.pct / 100),
-    PROT: rQ(dayBudget.PROT * sl.pct / 100),
-    GRASA: rQ(dayBudget.GRASA * sl.pct / 100),
-  }));
+  const weights = slots.map(sl => sl.pct);
+  const hc = quotaSplit(dayBudget.HC, weights);
+  const prot = quotaSplit(dayBudget.PROT, weights);
+  const grasa = quotaSplit(dayBudget.GRASA, weights);
+  return slots.map((_, i) => ({ HC: hc[i], PROT: prot[i], GRASA: grasa[i] }));
 }
 
 // ─── Recipe → exchanges ──────────────────────────────────────────────────────
 
-// Indya recipes carry a precomputed aggregate; coach/athlete builder recipes
+// Recipes from the imported recetario carry a precomputed aggregate; coach/athlete builder recipes
 // carry structured, per-mode ingredients instead (see exchangeHelpers.ts).
 export function recipeExchanges(recipe: Recipe, mode: DietMode = 'OMNIVORO'): BudgetVec | null {
   if (recipe.exchanges) {
@@ -174,7 +177,7 @@ const MEAT_FISH_KEYWORDS = [
 ];
 const ANIMAL_KEYWORDS = [...MEAT_FISH_KEYWORDS, 'huevo', 'leche', 'queso', 'yogur', 'mantequilla', 'nata', 'miel'];
 
-// Heuristic only — Indya recipes have no explicit vegan/vegetarian flag, so
+// Heuristic only — Recipes from the imported recetario have no explicit vegan/vegetarian flag, so
 // this checks the free-text ingredient list. Recipes without ingredientsText
 // (most builder recipes) can't be verified this way and are let through
 // unfiltered; the coach reviews the draft before publishing regardless.

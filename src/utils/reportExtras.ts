@@ -1,4 +1,8 @@
-import { BodyweightLog, WorkoutAssignment, DietCompletionLog, Diet, WeeklyChallenge } from '../types';
+import {
+  BodyweightLog, WorkoutAssignment, DietCompletionLog, Diet, WeeklyChallenge,
+  QuestionnaireResponse, QuestionnaireAssignment, Questionnaire,
+} from '../types';
+import { resolveQuestions } from './questionnaireResolve';
 
 // Extra report sections beyond pure training performance (peso corporal,
 // adherencia a sesiones, nutrición y retos). Same deterministic philosophy as
@@ -124,6 +128,93 @@ export interface ChallengeItem {
 }
 
 export interface ChallengesSectionData { items: ChallengeItem[]; }
+
+// ── Bienestar (cuestionarios) ─────────────────────────────────────────────────
+// Media de cada pregunta numérica/escala/medida respondida en el periodo,
+// comparada con la ventana anterior — mismo patrón que el resto de secciones.
+// Resuelve overrides por asignación (resolveQuestions) para que la etiqueta
+// mostrada sea la que el atleta realmente vio, no la de la plantilla maestra.
+
+export interface WellnessQuestionSummary {
+  questionId: string;
+  questionLabel: string;
+  questionnaireTitle: string;
+  avg: number;
+  prevAvg: number | null;
+  unit?: string;
+  responsesCount: number;
+}
+
+export interface WellnessSectionData {
+  questions: WellnessQuestionSummary[];
+  responsesInPeriod: number;
+}
+
+interface WellnessAcc { sum: number; count: number; label: string; qTitle: string; unit?: string }
+
+function wellnessAverages(
+  responses: QuestionnaireResponse[],
+  qById: Map<string, Questionnaire>,
+  aById: Map<string, QuestionnaireAssignment>,
+  start: string,
+  end: string,
+): Map<string, WellnessAcc> {
+  const acc = new Map<string, WellnessAcc>();
+  for (const r of responses) {
+    const date = r.submittedAt.slice(0, 10);
+    if (!inRange(date, start, end)) continue;
+    const q = qById.get(r.questionnaireId);
+    if (!q) continue;
+    const assignment = aById.get(r.assignmentId);
+    const resolved = assignment ? resolveQuestions(q, assignment) : q.questions;
+    for (const ans of r.answers) {
+      const question = resolved.find(rq => rq.id === ans.questionId);
+      if (!question) continue;
+      const graphable = question.graphable || question.type === 'numeric' || question.type === 'scale' || question.type === 'metric';
+      if (!graphable) continue;
+      const val = Number(ans.value);
+      if (isNaN(val)) continue;
+      const e = acc.get(question.id) ?? { sum: 0, count: 0, label: question.label, qTitle: q.title, unit: question.unit };
+      e.sum += val;
+      e.count += 1;
+      acc.set(question.id, e);
+    }
+  }
+  return acc;
+}
+
+export function computeWellnessSection(
+  responses: QuestionnaireResponse[],
+  questionnaires: Questionnaire[],
+  qAssignments: QuestionnaireAssignment[],
+  periodStart: string,
+  periodEnd: string,
+  prevStart: string | null,
+  prevEnd: string | null,
+): WellnessSectionData {
+  const qById = new Map(questionnaires.map(q => [q.id, q]));
+  const aById = new Map(qAssignments.map(a => [a.id, a]));
+
+  const cur = wellnessAverages(responses, qById, aById, periodStart, periodEnd);
+  const prev = prevStart && prevEnd ? wellnessAverages(responses, qById, aById, prevStart, prevEnd) : new Map<string, WellnessAcc>();
+
+  const questions: WellnessQuestionSummary[] = [...cur.entries()].map(([id, e]) => {
+    const p = prev.get(id);
+    return {
+      questionId: id,
+      questionLabel: e.label,
+      questionnaireTitle: e.qTitle,
+      avg: round1(e.sum / e.count),
+      prevAvg: p ? round1(p.sum / p.count) : null,
+      unit: e.unit,
+      responsesCount: e.count,
+    };
+  });
+
+  const responsesInPeriod = responses.filter(r => inRange(r.submittedAt.slice(0, 10), periodStart, periodEnd)).length;
+
+  return { questions, responsesInPeriod };
+}
 
 export function computeChallengesSection(
   challenges: WeeklyChallenge[],

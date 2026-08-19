@@ -4,7 +4,9 @@ import { UserProfile, ProgressPhoto, PhotoView } from '../types';
 import { getProgressPhotos, uploadProgressPhoto, deleteProgressPhoto } from '../dbService';
 import { useToast } from '../hooks/useToast';
 import Coachmark from './Coachmark';
-import Skeleton from './Skeleton';
+import PhotoCompareCurtain from './progress/PhotoCompareCurtain';
+import { Skeleton } from './ui';
+import { Icon, Button, PageHeader, Tabs, SegmentedControl, EmptyState } from './ui';
 
 const VIEW_LABELS: Record<PhotoView, string> = {
   front: 'Frente',
@@ -30,11 +32,16 @@ export default function PhotosScreen({ profile }: Props) {
   const { showToast } = useToast();
   const queryClient = useQueryClient();
   const photosKey = ['progressPhotos', profile.email] as const;
-  const { data: photos = [], isPending: loading } = useQuery({
+  // 05-11. `isError` importa tanto como `data`: la lectura solo falla cuando no
+  // hay ni respuesta del servidor ni copia local en este dispositivo, y en ese
+  // caso la pantalla NO puede decir «no tienes fotos» — es justo la frase que
+  // hacía creer a un atleta que se habían borrado seis meses de fotos suyas.
+  const { data: photos = [], isPending: loading, isError, refetch } = useQuery({
     queryKey: photosKey,
     queryFn: () => getProgressPhotos(profile.email),
   });
   const [selectedView, setSelectedView] = useState<PhotoView>('front');
+  const [mode, setMode] = useState<'galeria' | 'comparar'>('galeria');
   const [uploadDate, setUploadDate]   = useState(todayStr());
   const [uploading, setUploading]     = useState(false);
   const [deleting, setDeleting]       = useState<string | null>(null);
@@ -94,10 +101,7 @@ export default function PhotosScreen({ profile }: Props) {
 
   return (
     <div className="space-y-6 max-w-2xl mx-auto">
-      <div>
-        <h1 className="font-sans font-extrabold text-3xl tracking-tight text-white">Fotos de Progreso</h1>
-        <p className="text-[#c6c9ab] text-sm mt-1">Sube fotos por fecha para registrar tu evolución física.</p>
-      </div>
+      <PageHeader title="Fotos de Progreso" subtitle="Sube fotos por fecha para registrar tu evolución física." />
 
       <Coachmark
         id="photos_upload_hint"
@@ -107,44 +111,36 @@ export default function PhotosScreen({ profile }: Props) {
       />
 
       {/* View selector */}
-      <div className="flex bg-[#181816] border border-white/7 p-1 rounded-2xl gap-1 w-fit">
-        {(['front', 'side', 'back'] as PhotoView[]).map(v => (
-          <button
-            key={v}
-            onClick={() => setSelectedView(v)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-mono text-xs font-bold uppercase tracking-wider transition-all ${
-              selectedView === v
-                ? 'bg-[#fbcb1a] text-black shadow-md'
-                : 'text-[#c6c9ab] hover:text-white'
-            }`}
-          >
-            <span className="material-symbols-outlined text-sm">{VIEW_ICONS[v]}</span>
-            {VIEW_LABELS[v]}
-          </button>
-        ))}
-      </div>
+      <Tabs
+        items={(['front', 'side', 'back'] as PhotoView[]).map(v => ({ id: v, label: VIEW_LABELS[v], icon: VIEW_ICONS[v] }))}
+        value={selectedView}
+        onChange={id => setSelectedView(id as PhotoView)}
+        label="Ángulo de la foto"
+      />
+
+      {visiblePhotos.length >= 2 && (
+        <SegmentedControl
+          options={[{ value: 'galeria', label: 'Galería' }, { value: 'comparar', label: 'Comparar' }]}
+          value={mode}
+          onChange={v => setMode(v as 'galeria' | 'comparar')}
+          label="Vista de fotos"
+        />
+      )}
 
       {/* Upload bar */}
-      <div className="bg-[#1c1b1b] border border-white/7 rounded-xl p-4 flex flex-wrap items-center gap-3">
-        <div className="flex items-center gap-2 flex-1 min-w-0">
-          <span className="material-symbols-outlined text-[#c6c9ab] text-sm">calendar_today</span>
+      <div className="bg-raised border border-hairline rounded-surface p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+        <div className="flex items-center gap-2 min-w-0">
+          <Icon name="calendar_today" size="s" className="text-ink-2 flex-shrink-0" />
           <input
             type="date"
             value={uploadDate}
             onChange={e => setUploadDate(e.target.value)}
-            className="bg-transparent border-none text-white font-mono text-sm focus:outline-none focus:ring-0 min-w-0"
+            className="bg-transparent border-none text-white font-mono text-title-s focus:outline-none focus:ring-0 min-w-0 max-w-full"
           />
         </div>
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          disabled={uploading}
-          className="flex items-center gap-2 px-4 py-2 bg-[#fbcb1a] text-black font-sans text-xs font-bold uppercase tracking-wider rounded-lg hover:bg-[#d4a800] disabled:opacity-50 active:scale-95 transition-all"
-        >
-          {uploading
-            ? <><span className="material-symbols-outlined text-sm animate-spin">progress_activity</span> Subiendo…</>
-            : <><span className="material-symbols-outlined text-sm">upload</span> Subir foto ({VIEW_LABELS[selectedView]})</>
-          }
-        </button>
+        <Button onClick={() => fileInputRef.current?.click()} disabled={uploading} loading={uploading} icon="upload" className="sm:ml-auto">
+          {uploading ? 'Subiendo…' : `Subir foto (${VIEW_LABELS[selectedView]})`}
+        </Button>
         <input
           ref={fileInputRef}
           type="file"
@@ -153,41 +149,71 @@ export default function PhotosScreen({ profile }: Props) {
           onChange={handleFileChange}
         />
         {uploadError && (
-          <p className="w-full font-mono text-xs text-red-400">{uploadError}</p>
+          <p className="w-full font-sans text-label text-red-400">{uploadError}</p>
         )}
       </div>
 
       {/* Gallery */}
-      {visiblePhotos.length === 0 ? (
-        <div className="text-center py-20 border border-dashed border-white/7 rounded-2xl">
-          <span className="material-symbols-outlined text-5xl text-[#2a2a2a] block mb-3">photo_camera</span>
-          <p className="text-[#c6c9ab] text-sm font-sans">Sin fotos de {VIEW_LABELS[selectedView].toLowerCase()} todavía.</p>
-          <p className="text-[#c6c9ab] text-xs font-mono mt-1 mb-4">Sube tu primera foto para empezar a registrar tu evolución.</p>
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            disabled={uploading}
-            className="flex items-center gap-2 mx-auto px-4 py-2 bg-[#fbcb1a] text-black font-sans text-xs font-bold uppercase tracking-wider rounded-lg hover:bg-[#d4a800] disabled:opacity-50 active:scale-95 transition-all"
-          >
-            <span className="material-symbols-outlined text-sm">upload</span>
-            Subir foto
-          </button>
+      {isError ? (
+        // 05-11. Un fallo de lectura NO es una galería vacía. Se dice lo que ha
+        // pasado, se deja claro que las fotos siguen ahí, y se ofrece reintentar
+        // — que aquí sí sirve, a diferencia del aviso de permisos.
+        <div className="border border-dashed border-hairline rounded-surface">
+          <EmptyState
+            icon="cloud_off"
+            title="No hemos podido cargar tus fotos."
+            description="Es un problema de conexión, no de tus fotos: siguen guardadas. Inténtalo otra vez en un momento."
+            actionLabel="Reintentar"
+            onAction={() => { void refetch(); }}
+          />
+        </div>
+      ) : visiblePhotos.length === 0 ? (
+        <div className="border border-dashed border-hairline rounded-surface">
+          <EmptyState
+            icon="photo_camera"
+            title={`Sin fotos de ${VIEW_LABELS[selectedView].toLowerCase()} todavía.`}
+            description="Sube tu primera foto para empezar a registrar tu evolución."
+            actionLabel="Subir foto"
+            onAction={() => fileInputRef.current?.click()}
+          />
+        </div>
+      ) : mode === 'comparar' && visiblePhotos.length >= 2 ? (
+        <div className="space-y-3">
+          <PhotoCompareCurtain
+            antes={visiblePhotos[visiblePhotos.length - 1]}
+            ahora={visiblePhotos[0]}
+            badge={`${Math.max(1, Math.round((new Date(visiblePhotos[0].date).getTime() - new Date(visiblePhotos[visiblePhotos.length - 1].date).getTime()) / (7 * 86_400_000)))} SEMANAS`}
+          />
+          <p className="font-sans text-caption text-ink-2/70 text-center">
+            Misma luz, misma hora, misma distancia: así se nota mejor el cambio.
+          </p>
+          <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-1">
+            {visiblePhotos.map(photo => (
+              <img
+                key={photo.id}
+                src={photo.url}
+                alt={`${VIEW_LABELS[photo.view]} ${photo.date}`}
+                className="h-16 w-12 shrink-0 rounded-control border border-hairline object-cover object-top"
+              />
+            ))}
+          </div>
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {visiblePhotos.map((photo, idx) => (
-            <div key={photo.id} className="relative group rounded-xl overflow-hidden border border-white/7 bg-[#1c1b1b] aspect-[3/4]">
+            <div key={photo.id} className="relative group rounded-surface overflow-hidden border border-hairline bg-raised aspect-[3/4]">
               <img
                 src={photo.url}
                 alt={`${VIEW_LABELS[photo.view]} ${photo.date}`}
                 className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500"
               />
               {/* Date badge */}
-              <div className="absolute top-2 left-2 bg-black/70 backdrop-blur-sm px-2 py-0.5 rounded text-white font-mono text-[9px]">
+              <div className="absolute top-2 left-2 bg-black/70 backdrop-blur-sm px-2 rounded-control text-white font-mono text-caption">
                 {formatDate(photo.date)}
               </div>
               {/* Latest badge */}
               {idx === 0 && (
-                <div className="absolute top-2 right-2 bg-[#fbcb1a] px-2 py-0.5 rounded font-mono text-[9px] font-black text-black">
+                <div className="absolute top-2 right-2 bg-accent px-2 rounded-control font-mono text-caption font-bold text-black">
                   ACTUAL
                 </div>
               )}
@@ -195,12 +221,9 @@ export default function PhotosScreen({ profile }: Props) {
               <button
                 onClick={() => handleDelete(photo)}
                 disabled={deleting === photo.id}
-                className="absolute bottom-2 right-2 w-7 h-7 rounded-full bg-black/70 backdrop-blur-sm flex items-center justify-center text-[#c6c9ab] hover:text-red-400 hover:bg-black/90 transition-all opacity-0 group-hover:opacity-100 disabled:opacity-50"
+                className="absolute bottom-2 right-2 w-7 h-7 rounded-full bg-black/70 backdrop-blur-sm flex items-center justify-center text-ink-2 hover:text-red-400 hover:bg-black/90 transition-all opacity-0 group-hover:opacity-100 disabled:opacity-50"
               >
-                {deleting === photo.id
-                  ? <span className="material-symbols-outlined text-xs animate-spin">progress_activity</span>
-                  : <span className="material-symbols-outlined text-sm">delete</span>
-                }
+                <Icon name={deleting === photo.id ? 'progress_activity' : 'delete'} size="s" className={deleting === photo.id ? 'animate-spin' : ''} />
               </button>
             </div>
           ))}

@@ -9,6 +9,7 @@ import EmptyState from './EmptyState';
 import ReunionModal from './ReunionModal';
 import ResultadoGraduacionModal from './ResultadoGraduacionModal';
 import type { CrmReunion } from '../types';
+import { Icon } from '../../../components/ui';
 
 interface Props {
   reuniones: CrmReunion[];
@@ -77,7 +78,7 @@ export default function ReunionesBlock({ reuniones, cargando, error, mostrarClie
       render: r => (
         <div>
           <p className="tabular-nums">{formatDia(r.fecha)}</p>
-          <p className="font-mono text-[9px] text-[#555550]">{tiempoRelativo(r.fecha)}</p>
+          <p className="font-mono text-caption text-ink-3">{tiempoRelativo(r.fecha)}</p>
         </div>
       ),
     },
@@ -97,10 +98,10 @@ export default function ReunionesBlock({ reuniones, cargando, error, mostrarClie
                 rel="noopener noreferrer"
                 aria-label="Abrir WhatsApp"
                 title="WhatsApp"
-                className="w-7 h-7 rounded-lg inline-flex items-center justify-center text-[#a8a89e] hover:bg-white/6 transition-colors"
+                className="w-7 h-7 rounded-control inline-flex items-center justify-center text-ink-2 hover:bg-white/6 transition-colors"
                 onClick={e => e.stopPropagation()}
               >
-                <span className="material-symbols-outlined text-base">chat</span>
+                <Icon name="chat" size="m" />
               </a>
             )}
             <button
@@ -108,18 +109,18 @@ export default function ReunionesBlock({ reuniones, cargando, error, mostrarClie
               onClick={() => setEditando(r)}
               aria-label="Editar"
               title="Editar"
-              className="w-7 h-7 rounded-lg inline-flex items-center justify-center text-[#a8a89e] hover:bg-white/6 transition-colors"
+              className="w-7 h-7 rounded-control inline-flex items-center justify-center text-ink-2 hover:bg-white/6 transition-colors"
             >
-              <span className="material-symbols-outlined text-base">edit</span>
+              <Icon name="edit" size="m" />
             </button>
             <button
               type="button"
               onClick={() => marcarRealizada(r)}
               disabled={actualizar.isPending && actualizar.variables?.id === r.id}
-              className={`px-2 py-1 rounded-lg font-mono text-[9px] uppercase tracking-widest transition-colors disabled:opacity-40 ${
+              className={`px-2 py-1 rounded-control font-mono text-caption uppercase tracking-widest transition-colors disabled:opacity-40 ${
                 r.realizada
-                  ? 'bg-white/6 text-[#a8a89e] hover:bg-white/10'
-                  : 'bg-[#fbcb1a]/15 text-[#fbcb1a] border border-[#fbcb1a]/30 hover:bg-[#fbcb1a]/25'
+                  ? 'bg-white/6 text-ink-2 hover:bg-white/10'
+                  : 'bg-accent/15 text-accent border border-accent/30 hover:bg-accent/25'
               }`}
             >
               {r.realizada ? 'Realizada' : 'Marcar realizada'}
@@ -132,7 +133,7 @@ export default function ReunionesBlock({ reuniones, cargando, error, mostrarClie
 
   return (
     <>
-      <div className="bg-[#181816]/80 backdrop-blur-sm border border-white/7 rounded-2xl overflow-hidden">
+      <div className="bg-surface/80 backdrop-blur-sm border border-hairline rounded-surface overflow-hidden">
         <DataTable
           columnas={columnas}
           filas={reuniones}

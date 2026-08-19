@@ -1,6 +1,6 @@
 import { db, auth, collection, doc, getDoc, setDoc, getDocs, addDoc, updateDoc, deleteDoc, query, where, orderBy, limit } from '../firebase';
 import { UserProfile, WeightCheckIn } from '../types';
-import { forceLocalOnly, setLocalBypassMode, stripUndefined, authReady } from './core';
+import { forceLocalOnly, setLocalBypassMode, stripUndefined, authReady, esFalloDePermisos } from './core';
 import { markInviteJoined } from './invites';
 
 // ── Profile de-duplication helpers ────────────────────────────────────────────
@@ -181,8 +181,14 @@ export async function getOrCreateUserProfile(userId: string, email: string, disp
       await new Promise(r => setTimeout(r, 400));
       return getOrCreateUserProfile(userId, email, displayName, true);
     }
+    // Excepción deliberada: esta es la ÚNICA escritura que no relanza ante un
+    // fallo de permisos. Es la ruta de arranque de la sesión — si lanza, nadie
+    // entra en la app, ni siquiera para ver el aviso que le explicaría por qué.
+    // El perfil local es lo que mantiene la sesión en pie el tiempo suficiente
+    // para que `LocalModeBanner` diga «tu cuenta no tiene permiso». No lo
+    // "arregles" por consistencia con el resto de src/db.
     console.warn('Firestore user_profiles read failed. Switching to local fallback:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     return getLocalUserProfile(userId, email, displayName, isDanitrviner);
   }
 }
@@ -325,7 +331,8 @@ export async function updateUserProfile(userId: string, updates: Partial<UserPro
     updateLocalUserProfile(userId, updates);
   } catch (err) {
     console.warn('Firestore user_profiles write failed, using local storage:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
     updateLocalUserProfile(userId, updates);
   }
 }
@@ -379,7 +386,7 @@ export async function getCheckIns(userId?: string): Promise<WeightCheckIn[]> {
     return entries;
   } catch (err) {
     console.warn('Firestore checkins read failed, using local storage:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
     const all = getLocalCheckIns();
     return userId ? all.filter(c => c.userId === userId) : all;
   }
@@ -462,7 +469,8 @@ export async function addWeightCheckIn(
     return fullResult;
   } catch (err) {
     console.warn('Firestore add checkin failed, using local fallback:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
     return addLocalWeightCheckIn(userId, email, newEntry);
   }
 }
@@ -517,7 +525,8 @@ export async function submitCoachFeedback(checkInId: string, feedback: string): 
     submitLocalCoachFeedback(checkInId, feedback);
   } catch (err) {
     console.warn('Firestore checkins update feedback failed:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
     submitLocalCoachFeedback(checkInId, feedback);
   }
 }
@@ -607,7 +616,8 @@ export async function updateCheckIn(
     saveLocalCheckIns(patch(getLocalCheckIns()));
   } catch (err) {
     console.warn('updateCheckIn failed:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
     saveLocalCheckIns(patch(getLocalCheckIns()));
   }
 }
@@ -620,7 +630,8 @@ export async function deleteCheckIn(id: string): Promise<void> {
     saveLocalCheckIns(remove(getLocalCheckIns()));
   } catch (err) {
     console.warn('deleteCheckIn failed:', err);
-    setLocalBypassMode(true);
+    setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
     saveLocalCheckIns(remove(getLocalCheckIns()));
   }
 }

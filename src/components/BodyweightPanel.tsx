@@ -7,7 +7,11 @@ import {
 import { BodyweightLog } from '../types';
 import { getBodyweightForAthlete, addBodyweight, updateBodyweight, deleteBodyweight } from '../dbService';
 import { bodyweightForAthleteKey } from '../hooks/useAthleteWeight';
-import Skeleton from './Skeleton';
+import { Skeleton } from './ui';
+import {
+  Icon, Button, EmptyState,
+  ALTURA_GRAFICA, MARGEN_GRAFICA, ANCHO_EJE_Y, REJILLA_GRAFICA, TICK_GRAFICA, EJE_GRAFICA,
+} from './ui';
 
 interface Props {
   athleteEmail: string;
@@ -47,13 +51,13 @@ function BwTooltip({ active, payload }: any) {
   const rawEntry = payload.find((p: any) => p.dataKey === 'value');
   const avgEntry = payload.find((p: any) => p.dataKey === 'avg');
   return (
-    <div className="bg-[#1e1e1b] border border-white/7 rounded-xl px-3 py-2 text-xs font-mono shadow-xl">
-      <p className="text-[#c6c9ab] mb-1">{fmtDate(date)}</p>
+    <div className="bg-raised border border-hairline rounded-surface px-3 py-2 text-label font-mono shadow-e1">
+      <p className="text-ink-2 mb-1">{fmtDate(date)}</p>
       {rawEntry?.value != null && (
-        <p className="text-[#fbcb1a] font-bold text-sm">{rawEntry.value} kg</p>
+        <p className="text-accent font-bold text-body-s">{rawEntry.value} kg</p>
       )}
       {avgEntry?.value != null && rawEntry?.value !== avgEntry?.value && (
-        <p className="text-[#00eefc] text-[10px] mt-0.5">Media 7d: {avgEntry.value} kg</p>
+        <p className="text-data text-caption ">Media 7d: {avgEntry.value} kg</p>
       )}
     </div>
   );
@@ -166,29 +170,29 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
 
   // ── Render ──────────────────────────────────────────────────────────────────
 
-  const INPUT_CLS = 'bg-[#0e0e0e] border border-white/7 rounded px-2 py-2 text-sm text-white font-mono focus:outline-none focus:ring-1 focus:ring-[#fbcb1a] min-h-[44px]';
+  const INPUT_CLS = 'bg-bg border border-hairline rounded-control px-2 py-2 text-body-s text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent min-h-[44px]';
 
   return (
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
-          <span className="material-symbols-outlined text-[#fbcb1a] text-base">monitor_weight</span>
+        <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
+          <Icon name="monitor_weight" size="m" className="text-accent" />
           Peso corporal
           {logs.length > 0 && (
-            <span className="font-mono text-[10px] text-[#c6c9ab] font-normal">
+            <span className="font-mono text-caption text-ink-2 font-normal">
               {asc.at(-1)?.weight} kg · {fmtDate(asc.at(-1)!.date)}
             </span>
           )}
         </h3>
         {logs.length >= 2 && (
           <div className="flex items-center gap-3">
-            <span className="flex items-center gap-1.5 font-mono text-[9px] text-[#c6c9ab]">
-              <span className="inline-block w-4 h-px bg-[#fbcb1a]" />
+            <span className="flex items-center gap-2 font-mono text-caption text-ink-2">
+              <span className="inline-block w-4 h-px bg-accent" />
               Diario
             </span>
-            <span className="flex items-center gap-1.5 font-mono text-[9px] text-[#c6c9ab]">
-              <span className="inline-block w-4 border-t border-dashed border-[#00eefc]" />
+            <span className="flex items-center gap-2 font-mono text-caption text-ink-2">
+              <span className="inline-block w-4 border-t border-dashed border-data" />
               Media 7d
             </span>
           </div>
@@ -199,25 +203,33 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
         <Skeleton className="h-[180px] w-full" />
       ) : (
         <>
+          {/* Con 1 solo registro, un LineChart dibuja un punto suelto sin línea
+              — no es falso, pero tampoco dice nada útil (F3.13f, "nunca una
+              gráfica que finja saber una tendencia que no tiene"). Se pide
+              explícitamente el segundo dato en vez de fingir el gráfico. */}
+          {logs.length === 1 && (
+            <div className="flex items-center gap-3 bg-raised border border-hairline rounded-surface px-4 py-3">
+              <Icon name="show_chart" size="m" className="text-accent shrink-0" />
+              <p className="font-sans text-caption text-ink-2">Con un registro más dibujamos tu tendencia.</p>
+            </div>
+          )}
           {/* Chart */}
-          {logs.length > 0 && (
-            <ResponsiveContainer width="100%" height={180}>
-              <LineChart data={chartData} margin={{ top: 4, right: 16, bottom: 0, left: 4 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" vertical={false} />
+          {logs.length > 1 && (
+            <ResponsiveContainer width="100%" height={ALTURA_GRAFICA.s}>
+              <LineChart data={chartData} margin={MARGEN_GRAFICA}>
+                <CartesianGrid {...REJILLA_GRAFICA} />
                 <XAxis
                   dataKey="date"
                   tickFormatter={fmtDate}
-                  tick={{ fill: '#c6c9ab', fontSize: 9, fontFamily: 'monospace' }}
-                  axisLine={{ stroke: '#2a2a2a' }}
-                  tickLine={false}
+                  tick={TICK_GRAFICA}
+                  {...EJE_GRAFICA}
                   minTickGap={56}
                 />
                 <YAxis
                   domain={yDomain}
-                  tick={{ fill: '#c6c9ab', fontSize: 9, fontFamily: 'monospace' }}
-                  axisLine={false}
-                  tickLine={false}
-                  width={40}
+                  tick={TICK_GRAFICA}
+                  {...EJE_GRAFICA}
+                  width={ANCHO_EJE_Y}
                   tickFormatter={v => `${v}`}
                 />
                 <Tooltip content={(props) => <BwTooltip {...props} />} />
@@ -225,7 +237,7 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
                 <Line
                   type="monotone"
                   dataKey="avg"
-                  stroke="#00eefc"
+                  stroke="var(--color-data)"
                   strokeWidth={1.5}
                   strokeDasharray="5 3"
                   dot={false}
@@ -235,10 +247,10 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
                 <Line
                   type="monotone"
                   dataKey="value"
-                  stroke="#fbcb1a"
+                  stroke="var(--color-accent)"
                   strokeWidth={2}
-                  dot={{ fill: '#fbcb1a', stroke: '#121212', strokeWidth: 2, r: 3 }}
-                  activeDot={{ fill: '#fbcb1a', stroke: '#121212', strokeWidth: 2, r: 5 }}
+                  dot={{ fill: 'var(--color-accent)', stroke: 'var(--color-bg)', strokeWidth: 2, r: 3 }}
+                  activeDot={{ fill: 'var(--color-accent)', stroke: 'var(--color-bg)', strokeWidth: 2, r: 5 }}
                 />
               </LineChart>
             </ResponsiveContainer>
@@ -266,39 +278,32 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
                   max="300"
                   className={`flex-1 sm:w-24 sm:flex-none ${INPUT_CLS}`}
                 />
-                <span className="font-mono text-[10px] text-[#c6c9ab]">kg</span>
+                <span className="font-mono text-caption text-ink-2">kg</span>
               </div>
-              <button
-                onClick={handleAdd}
-                disabled={adding || !newWeight || !newDate}
-                className="w-full sm:w-auto px-4 py-2.5 min-h-[44px] bg-[#fbcb1a] text-black font-sans font-bold text-xs uppercase rounded-lg hover:bg-[#d4a800] active:scale-95 transition-all disabled:opacity-40"
-              >
+              <Button onClick={handleAdd} disabled={adding || !newWeight || !newDate} className="w-full sm:w-auto">
                 {adding ? '…' : 'Añadir'}
-              </button>
+              </Button>
             </div>
           )}
 
           {/* Empty state */}
           {logs.length === 0 && (
-            <div className="text-center py-8 border border-dashed border-white/7 rounded-xl">
-              <span className="material-symbols-outlined text-3xl text-[#2a2a2a] block mb-2">monitor_weight</span>
-              <p className="font-mono text-xs text-[#c6c9ab]">
-                {readOnly ? 'Sin registros todavía.' : 'Añade tu primer registro de peso.'}
-              </p>
+            <div className="border border-dashed border-hairline rounded-surface">
+              <EmptyState icon="monitor_weight" title={readOnly ? 'Sin registros todavía.' : 'Añade tu primer registro de peso.'} />
             </div>
           )}
 
           {/* List */}
           {logs.length > 0 && (
             <div className="space-y-1">
-              <p className="font-mono text-[9px] text-[#c6c9ab] uppercase tracking-wider">
+              <p className="font-sans text-caption text-ink-2 uppercase tracking-wider">
                 Historial{logs.length > 20 && !showAll ? ` · mostrando 20 de ${logs.length}` : ` · ${logs.length} registros`}
               </p>
               <div className="space-y-1 max-h-64 overflow-y-auto pr-1">
                 {listEntries.map(b => (
                   <div
                     key={b.id}
-                    className="flex items-center gap-2 bg-[#1e1e1b] border border-white/7 rounded-xl px-3 py-2"
+                    className="flex items-center gap-2 bg-raised border border-hairline rounded-surface px-3 py-2"
                   >
                     {editId === b.id ? (
                       // ── Inline edit ──────────────────────────────────────
@@ -308,27 +313,27 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
                           value={editDate}
                           onChange={e => setEditDate(e.target.value)}
                           max={todayStr()}
-                          className={`${INPUT_CLS} text-xs py-1`}
+                          className={`${INPUT_CLS} text-label py-1`}
                         />
                         <input
                           type="number"
                           value={editWeight}
                           onChange={e => setEditWeight(e.target.value)}
                           step="0.1"
-                          className={`w-20 ${INPUT_CLS} text-xs py-1`}
+                          className={`w-20 ${INPUT_CLS} text-label py-1`}
                         />
-                        <span className="font-mono text-[10px] text-[#c6c9ab]">kg</span>
+                        <span className="font-mono text-caption text-ink-2">kg</span>
                         <div className="flex gap-1 ml-auto">
                           <button
                             onClick={handleSaveEdit}
                             disabled={saving}
-                            className="px-2 py-1 bg-[#fbcb1a] text-black font-sans text-[9px] font-bold uppercase rounded transition-all disabled:opacity-50"
+                            className="px-2 py-1 bg-accent text-black font-sans text-caption font-bold uppercase rounded-control transition-all disabled:opacity-50"
                           >
                             {saving ? '…' : 'OK'}
                           </button>
                           <button
                             onClick={cancelEdit}
-                            className="px-2 py-1 border border-white/7 text-[#c6c9ab] font-mono text-[10px] uppercase rounded transition-all hover:text-white"
+                            className="px-2 py-1 border border-hairline text-ink-2 font-sans text-caption uppercase rounded-control transition-all hover:text-white"
                           >
                             ✕
                           </button>
@@ -337,26 +342,24 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
                     ) : (
                       // ── Read row ─────────────────────────────────────────
                       <>
-                        <span className="font-mono text-[10px] text-[#c6c9ab] w-20 flex-shrink-0">{fmtDate(b.date)}</span>
-                        <span className="font-mono font-bold text-white text-sm flex-1">{b.weight} kg</span>
+                        <span className="font-mono text-caption text-ink-2 w-20 flex-shrink-0">{fmtDate(b.date)}</span>
+                        <span className="font-mono font-bold text-white text-body-s flex-1">{b.weight} kg</span>
                         {!readOnly && (
                           <div className="flex gap-1 flex-shrink-0">
                             <button
                               onClick={() => startEdit(b)}
-                              className="p-1 text-[#c6c9ab] hover:text-[#00eefc] transition-colors"
+                              className="p-1 text-ink-2 hover:text-data transition-colors"
                               title="Editar"
                             >
-                              <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>edit</span>
+                              <Icon name="edit" size="s" />
                             </button>
                             <button
                               onClick={() => handleDelete(b.id)}
                               disabled={deletingId === b.id}
-                              className="p-1 text-[#c6c9ab] hover:text-red-400 transition-colors disabled:opacity-40"
+                              className="p-1 text-ink-2 hover:text-red-400 transition-colors disabled:opacity-40"
                               title="Eliminar"
                             >
-                              <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>
-                                {deletingId === b.id ? 'progress_activity' : 'delete'}
-                              </span>
+                              <Icon name={deletingId === b.id ? 'progress_activity' : 'delete'} size="s" className={deletingId === b.id ? 'animate-spin' : ''} />
                             </button>
                           </div>
                         )}
@@ -368,7 +371,7 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
               {logs.length > 20 && !showAll && (
                 <button
                   onClick={() => setShowAll(true)}
-                  className="text-[10px] font-mono text-[#c6c9ab] hover:text-white underline transition-colors"
+                  className="text-caption font-mono text-ink-2 hover:text-white underline transition-colors"
                 >
                   Ver todos ({logs.length})
                 </button>
