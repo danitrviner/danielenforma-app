@@ -9,16 +9,16 @@ import { bodyweightForAthleteKey } from '../hooks/useAthleteWeight';
 import { buildNutritionReport, NutritionReport } from '../utils/nutritionAnalysis';
 import { buildMicronutrientEstimate, MicroStatus } from '../utils/micronutrients';
 import VegetableSelector from './VegetableSelector';
-import { Icon, Button } from './ui';
+import { Icon, Button, Skeleton, EmptyState } from './ui';
 
 const DEFAULT_STEP_GOAL = 8000;
 const DEFAULT_VEG_SERVINGS = 3;
 
-const STATUS_COLOR: Record<MicroStatus, string> = {
-  low:     'var(--color-danger)', // red-400
-  ok:      'var(--color-success)', // emerald-400
-  high:    'var(--color-warning)', // amber-400
-  unknown: 'var(--color-ink-3)',
+const STATUS_BAR_COLOR: Record<MicroStatus, string> = {
+  low:     'bg-danger',
+  ok:      'bg-success',
+  high:    'bg-warning',
+  unknown: 'bg-ink-3',
 };
 
 interface Props {
@@ -144,10 +144,27 @@ export default function NutritionAnalysisPanel({ athleteEmail, athleteName, targ
   };
 
   if (loading) {
-    return <div className="text-center py-10 font-mono text-body-s text-ink-2 animate-pulse">Analizando…</div>;
+    return (
+      <div className="space-y-5">
+        <Skeleton className="h-7 w-64" />
+        <Skeleton className="h-24 w-full" />
+        <div className="grid grid-cols-3 gap-3">
+          <Skeleton className="h-20 w-full" />
+          <Skeleton className="h-20 w-full" />
+          <Skeleton className="h-20 w-full" />
+        </div>
+        <Skeleton className="h-40 w-full" />
+      </div>
+    );
   }
   if (!report) {
-    return <div className="text-center py-10 font-sans text-label text-ink-2 italic">Sin datos suficientes para {athleteName}.</div>;
+    return (
+      <EmptyState
+        icon="nutrition"
+        title="Sin datos suficientes"
+        description={`Todavía no hay datos de dieta, pasos o peso para ${athleteName}.`}
+      />
+    );
   }
 
   return (
@@ -185,7 +202,7 @@ export default function NutritionAnalysisPanel({ athleteEmail, athleteName, targ
             {report.macroDeviation.map(m => (
               <div key={m.category}>
                 <span className="block font-sans text-caption text-ink-2">{m.category}</span>
-                <span className={`block font-mono text-body-s font-bold ${Math.abs(m.deviationPct) > 15 ? 'text-red-400' : 'text-emerald-400'}`}>
+                <span className={`block font-mono text-body-s font-bold ${Math.abs(m.deviationPct) > 15 ? 'text-danger' : 'text-success'}`}>
                   {m.planGrams}g / {m.targetGrams}g
                 </span>
                 <span className="block font-mono text-caption text-ink-2">{m.deviationPct > 0 ? '+' : ''}{m.deviationPct}%</span>
@@ -220,15 +237,15 @@ export default function NutritionAnalysisPanel({ athleteEmail, athleteName, targ
               <div className="flex items-center justify-between mb-1">
                 <span className="font-sans text-caption text-ink-2">
                   {m.label}
-                  {m.status === 'low' && <span className="ml-2 text-red-400">déficit</span>}
-                  {m.status === 'high' && <span className="ml-2 text-amber-400">{m.limit ? 'alto' : 'exceso'}</span>}
+                  {m.status === 'low' && <span className="ml-2 text-danger">déficit</span>}
+                  {m.status === 'high' && <span className="ml-2 text-warning">{m.limit ? 'alto' : 'exceso'}</span>}
                 </span>
                 <span className="font-mono text-caption font-bold text-white">
                   {m.intake}{m.unit} <span className="text-ink-3">· {m.rdaPct}%{m.limit ? ' ref.' : ' RDA'}</span>
                 </span>
               </div>
               <div className="h-1.5 rounded-full bg-raised overflow-hidden">
-                <div className="h-full rounded-full transition-all" style={{ width: `${Math.min(100, m.rdaPct)}%`, backgroundColor: STATUS_COLOR[m.status] }} />
+                <div className={`h-full rounded-full transition-all ${STATUS_BAR_COLOR[m.status]}`} style={{ width: `${Math.min(100, m.rdaPct)}%` }} />
               </div>
             </div>
           ))}

@@ -4,7 +4,7 @@ import { Recipe, RecipeIngredient, MealItem, FoodCategory } from '../types';
 import { getRecipes, createRecipe, updateRecipe, deleteRecipe, getFoodItems, queryRecetas } from '../dbService';
 import type { RecetasCursor } from '../dbService';
 import { roundQuarter } from '../utils/exchangeHelpers';
-import { Skeleton } from './ui';
+import { Skeleton, Icon } from './ui';
 import { EmptyState, Badge, Chip, Dialog, Button, Input } from './ui';
 
 const RECIPE_CATEGORIES = ['Alta proteína', 'Rápida', 'Pre-entreno', 'Recuperación', 'Desayuno', 'Cena'];
@@ -30,7 +30,7 @@ function RecetaCard({ recipe }: { recipe: Recipe; key?: React.Key }) {
       {photo
         ? <img src={photo} alt={recipe.name} className="absolute inset-0 w-full h-full object-cover opacity-70" />
         : <div className="absolute inset-0 bg-gradient-to-br from-raised to-bg flex items-center justify-center">
-            <span className="material-symbols-outlined text-display text-ink-3">skillet</span>
+            <Icon name="skillet" size="xl" className="text-ink-3" />
           </div>
       }
       <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/50 to-transparent" />
@@ -49,11 +49,11 @@ const CAT_LABELS: Record<FoodCategory, string> = {
 };
 
 const CAT_COLORS: Record<FoodCategory, string> = {
-  HC:        'text-amber-400 border-amber-400/30 bg-amber-400/10',
-  PROT:      'text-blue-400 border-blue-400/30 bg-blue-400/10',
-  GRASA:     'text-orange-400 border-orange-400/30 bg-orange-400/10',
-  MIX_HC:    'text-violet-400 border-violet-400/30 bg-violet-400/10',
-  MIX_GRASA: 'text-pink-400 border-pink-400/30 bg-pink-400/10',
+  HC:        'text-warning border-warning/30 bg-warning/10',
+  PROT:      'text-info border-info/30 bg-info/10',
+  GRASA:     'text-success border-success/30 bg-success/10',
+  MIX_HC:    'text-data border-data/30 bg-data/10',
+  MIX_GRASA: 'text-danger border-danger/30 bg-danger/10',
 };
 
 function calcExchanges(ingredients: RecipeIngredient[]): Partial<Record<FoodCategory, number>> {
@@ -284,13 +284,9 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
         <p className="font-mono text-label text-ink-2 uppercase tracking-wider">
           {recipes.length} receta{recipes.length !== 1 ? 's' : ''} propia{recipes.length !== 1 ? 's' : ''}
         </p>
-        <button
-          onClick={openCreate}
-          className="flex items-center gap-2 px-4 py-2 bg-accent text-black font-sans text-label font-bold uppercase tracking-wider rounded-control hover:bg-accent-press active:scale-95 transition-all"
-        >
-          <span className="material-symbols-outlined text-body-s">add</span>
+        <Button variant="primary" size="s" icon="add" onClick={openCreate}>
           Nueva receta
-        </button>
+        </Button>
       </div>
 
       {recipes.length === 0 ? (
@@ -322,41 +318,13 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
                     {recipe.ingredients.length} ingredientes · {recipe.steps.length} pasos
                   </p>
                 </div>
-                <div className="flex gap-2 px-4 pb-4">
-                  {confirmDelete === recipe.id ? (
-                    <>
-                      <button
-                        onClick={() => setConfirmDelete(null)}
-                        className="flex-1 py-2 rounded-control bg-raised text-ink-2 font-mono text-label uppercase tracking-wider hover:text-white transition-all"
-                      >
-                        Cancelar
-                      </button>
-                      <button
-                        onClick={() => handleDelete(recipe.id)}
-                        disabled={deleting === recipe.id}
-                        className="flex-1 py-2 rounded-control bg-red-600 text-white font-mono text-label uppercase tracking-wider font-bold hover:bg-red-700 transition-all disabled:opacity-40"
-                      >
-                        {deleting === recipe.id ? '...' : '¿Eliminar?'}
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <button
-                        onClick={() => openEdit(recipe)}
-                        className="flex-1 py-2 rounded-control bg-raised text-ink-2 font-mono text-label uppercase tracking-wider hover:text-white hover:bg-raised transition-all flex items-center justify-center gap-1"
-                      >
-                        <span className="material-symbols-outlined text-label">edit</span>
-                        Editar
-                      </button>
-                      <button
-                        onClick={() => setConfirmDelete(recipe.id)}
-                        className="flex-1 py-2 rounded-control bg-red-900/20 text-red-400 font-mono text-label uppercase tracking-wider hover:bg-red-900/40 transition-all flex items-center justify-center gap-1"
-                      >
-                        <span className="material-symbols-outlined text-label">delete</span>
-                        Eliminar
-                      </button>
-                    </>
-                  )}
+                <div className="flex items-center justify-end gap-1 px-4 pb-4">
+                  <button onClick={() => openEdit(recipe)} aria-label="Editar" className="text-ink-2 hover:text-accent p-2 rounded-control transition-all">
+                    <Icon name="edit" size="s" />
+                  </button>
+                  <button onClick={() => setConfirmDelete(recipe.id)} aria-label="Eliminar" className="text-ink-2 hover:text-danger p-2 rounded-control transition-all">
+                    <Icon name="delete" size="s" />
+                  </button>
                 </div>
               </div>
             );
@@ -367,7 +335,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
       {/* ── Recetario importado (solo lectura) ────────────────────────────── */}
       <section className="space-y-4 pt-4 border-t border-hairline">
         <h2 className="font-sans font-bold text-body-s text-white uppercase tracking-wider flex items-center gap-2">
-          <span className="material-symbols-outlined text-data text-title-s">library_books</span>
+          <Icon name="library_books" size="m" className="text-data" />
           Recetario
           <span className="font-sans text-caption text-ink-2 normal-case font-normal">8.850 recetas · solo lectura</span>
         </h2>
@@ -395,16 +363,12 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
           ))}
         </div>
 
-        <div className="relative">
-          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-ink-2 text-title-s">search</span>
-          <input
-            type="text"
-            value={recetasSearch}
-            onChange={e => setRecetasSearch(e.target.value)}
-            placeholder="Buscar en esta página…"
-            className="w-full bg-raised border border-hairline rounded-control pl-10 pr-4 py-3 text-title-s text-white placeholder-ink-2/50 focus:outline-none focus:border-data/50 font-mono"
-          />
-        </div>
+        <Input
+          icon="search"
+          value={recetasSearch}
+          onChange={setRecetasSearch}
+          placeholder="Buscar en esta página…"
+        />
 
         {recetasLoading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -427,16 +391,15 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
             </div>
             {recetasHasMore && !recetasSearch && (
               <div className="flex justify-center pt-2">
-                <button
+                <Button
+                  variant="secondary"
+                  icon="expand_more"
                   onClick={handleRecetasLoadMore}
-                  disabled={recetasLoadingMore}
-                  className="px-6 py-3 bg-raised border border-hairline hover:border-data/50 text-ink-2 hover:text-white font-sans text-label uppercase tracking-wider rounded-control transition-all disabled:opacity-50 flex items-center gap-2"
+                  loading={recetasLoadingMore}
+                  loadingLabel="Cargando…"
                 >
-                  {recetasLoadingMore
-                    ? <><span className="material-symbols-outlined text-body-s animate-spin">progress_activity</span>Cargando…</>
-                    : <><span className="material-symbols-outlined text-body-s">expand_more</span>Cargar más recetas</>
-                  }
-                </button>
+                  Cargar más recetas
+                </Button>
               </div>
             )}
           </div>
@@ -502,18 +465,9 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
               <label className="font-mono text-caption text-ink-2 uppercase tracking-wider">Categorías</label>
               <div className="flex flex-wrap gap-2">
                 {RECIPE_CATEGORIES.map(cat => (
-                  <button
-                    key={cat}
-                    type="button"
-                    onClick={() => toggleCategory(cat)}
-                    className={`px-3 py-1 rounded-full font-mono text-label uppercase tracking-wider font-bold transition-all ${
-                      form.categories.includes(cat)
-                        ? 'bg-accent text-black'
-                        : 'bg-raised text-ink-2 hover:text-white'
-                    }`}
-                  >
+                  <Chip key={cat} selected={form.categories.includes(cat)} onClick={() => toggleCategory(cat)}>
                     {cat}
-                  </button>
+                  </Chip>
                 ))}
               </div>
             </div>
@@ -584,8 +538,8 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
                         <span className="w-8 text-center font-mono text-label text-white select-none">{ing.quantity}</span>
                         <button type="button" onClick={() => adjustIngQty(idx, 0.25)} className="w-6 h-6 bg-raised rounded-control text-white text-label hover:bg-raised transition-colors">+</button>
                       </div>
-                      <button type="button" onClick={() => removeIngredient(idx)} className="text-ink-2 hover:text-red-400 transition-colors">
-                        <span className="material-symbols-outlined text-body-s">close</span>
+                      <button type="button" onClick={() => removeIngredient(idx)} className="text-ink-2 hover:text-danger transition-colors">
+                        <Icon name="close" size="s" />
                       </button>
                     </li>
                   ))}
@@ -612,8 +566,8 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
                   {form.extras.map((ex, idx) => (
                     <span key={idx} className="flex items-center gap-1 px-3 py-1 bg-raised rounded-full">
                       <span className="font-mono text-caption text-ink-2">{ex}</span>
-                      <button type="button" onClick={() => setForm(f => ({ ...f, extras: f.extras.filter((_, i) => i !== idx) }))} className="text-ink-2 hover:text-red-400 transition-colors">
-                        <span className="material-symbols-outlined text-label leading-none" style={{ fontSize: '14px' }}>close</span>
+                      <button type="button" onClick={() => setForm(f => ({ ...f, extras: f.extras.filter((_, i) => i !== idx) }))} className="text-ink-2 hover:text-danger transition-colors">
+                        <Icon name="close" size="s" />
                       </button>
                     </span>
                   ))}
@@ -640,8 +594,8 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
                     <li key={idx} className="flex items-start gap-3 px-3 py-3 bg-raised rounded-surface border border-hairline">
                       <span className="w-5 h-5 rounded-full bg-raised text-ink-2 font-mono text-caption font-bold flex items-center justify-center shrink-0 ">{idx + 1}</span>
                       <p className="text-label text-ink-2 flex-1 leading-relaxed">{step}</p>
-                      <button type="button" onClick={() => setForm(f => ({ ...f, steps: f.steps.filter((_, i) => i !== idx) }))} className="text-ink-2 hover:text-red-400 transition-colors shrink-0">
-                        <span className="material-symbols-outlined text-body-s">close</span>
+                      <button type="button" onClick={() => setForm(f => ({ ...f, steps: f.steps.filter((_, i) => i !== idx) }))} className="text-ink-2 hover:text-danger transition-colors shrink-0">
+                        <Icon name="close" size="s" />
                       </button>
                     </li>
                   ))}
@@ -650,6 +604,34 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
             </div>
 
           </div>
+        </Dialog>
+      )}
+
+      {/* ── DELETE CONFIRM ──────────────────────────────────────────────── */}
+      {confirmDelete && (
+        <Dialog
+          open
+          onClose={() => setConfirmDelete(null)}
+          title="¿Eliminar receta?"
+          size="s"
+          footer={(
+            <>
+              <Button variant="secondary" onClick={() => setConfirmDelete(null)} className="flex-1">Cancelar</Button>
+              <Button
+                variant="danger"
+                onClick={() => handleDelete(confirmDelete)}
+                disabled={deleting === confirmDelete}
+                loading={deleting === confirmDelete}
+                className="flex-1"
+              >
+                Eliminar
+              </Button>
+            </>
+          )}
+        >
+          <p className="font-sans text-caption text-ink-2">
+            «{recipes.find(r => r.id === confirmDelete)?.name}»
+          </p>
         </Dialog>
       )}
     </div>

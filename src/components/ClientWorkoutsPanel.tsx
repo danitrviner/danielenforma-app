@@ -187,52 +187,99 @@ export default function ClientWorkoutsPanel({
         </div>
       )}
 
-      {/* Notas del atleta (por ejercicio + entreno completo) */}
+      {/* Notas del atleta — agrupadas por sesión (mockup Fase 3, pantalla 06):
+          cada log de entreno es una sesión, y dentro de ella la nota del
+          entreno completo y las notas por ejercicio son "notas" individuales,
+          cada una con su propio punto de no-leído en vez de un único
+          "Marcar visto" por sesión. */}
       {(() => {
         const logsWithNotes = athleteLogs
           .filter(l => l.note || l.entries.some(e => e.note))
           .sort((a, b) => b.date.localeCompare(a.date));
         if (logsWithNotes.length === 0) return null;
+
+        const totalUnread = logsWithNotes.reduce((s, l) => {
+          let n = 0;
+          if (l.note && !l.noteCoachSeen) n++;
+          n += l.entries.filter(e => e.note && !e.noteCoachSeen).length;
+          return s + n;
+        }, 0);
+
+        const markLogSeen = (logId: string) => {
+          updateWorkoutLog(logId, { noteCoachSeen: true }).catch(console.error);
+          setAthleteLogs(prev => prev.map(l => l.id === logId ? { ...l, noteCoachSeen: true } : l));
+        };
+        const markEntrySeen = (logId: string, exerciseId: string) => {
+          setAthleteLogs(prev => prev.map(l => {
+            if (l.id !== logId) return l;
+            const entries = l.entries.map(e => e.exerciseId === exerciseId ? { ...e, noteCoachSeen: true } : e);
+            updateWorkoutLog(logId, { entries }).catch(console.error);
+            return { ...l, entries };
+          }));
+        };
+
         return (
-          <div className="bg-surface border border-hairline rounded-surface p-5 space-y-3">
-            <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
-              <span className="material-symbols-outlined text-amber-300 text-title-s">sticky_note_2</span>
-              Notas del atleta
-            </h3>
-            {logsWithNotes.map(log => {
-              const wo = getWorkout(log.workoutId);
-              const unseen = !log.noteCoachSeen;
-              return (
-                <div
-                  key={log.id}
-                  className={`border rounded-surface p-4 space-y-2 ${unseen ? 'bg-amber-500/5 border-amber-500/25' : 'bg-raised border-hairline'}`}
-                >
-                  <div className="flex items-center justify-between">
-                    <p className="font-sans text-label font-bold text-white">{wo?.name || 'Rutina'} · {log.date}</p>
-                    {unseen && (
-                      <button
-                        onClick={() => {
-                          updateWorkoutLog(log.id, { noteCoachSeen: true }).catch(console.error);
-                          setAthleteLogs(prev => prev.map(l => l.id === log.id ? { ...l, noteCoachSeen: true } : l));
-                        }}
-                        className="flex-shrink-0 flex items-center gap-1 text-caption font-sans font-bold uppercase text-amber-300 hover:text-amber-200 transition-colors border border-amber-500/30 px-2 py-1 rounded-control"
-                      >
-                        <span className="material-symbols-outlined text-label">visibility</span>
-                        Marcar visto
-                      </button>
-                    )}
+          <div className="bg-surface border border-hairline rounded-surface p-5 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
+                <span className="material-symbols-outlined text-amber-300 text-title-s">sticky_note_2</span>
+                Notas del atleta
+              </h3>
+              {totalUnread > 0 && (
+                <Badge tone="accent">{totalUnread} sin leer</Badge>
+              )}
+            </div>
+
+            <div className="space-y-5">
+              {logsWithNotes.map(log => {
+                const wo = getWorkout(log.workoutId);
+                const notes: { key: string; ctx: string; unread: boolean; text: string; onSeen: () => void }[] = [];
+                if (log.note) {
+                  notes.push({
+                    key: `${log.id}-w`, ctx: 'ENTRENO COMPLETO',
+                    unread: !log.noteCoachSeen, text: log.note,
+                    onSeen: () => markLogSeen(log.id),
+                  });
+                }
+                log.entries.filter(e => e.note).forEach(e => {
+                  notes.push({
+                    key: `${log.id}-${e.exerciseId}`,
+                    ctx: getExercise(e.exerciseId)?.name || e.exerciseId,
+                    unread: !e.noteCoachSeen, text: e.note!,
+                    onSeen: () => markEntrySeen(log.id, e.exerciseId),
+                  });
+                });
+                return (
+                  <div key={log.id} className="space-y-2">
+                    <div className="flex items-center gap-3">
+                      <span className="font-mono text-caption text-ink-2 uppercase tracking-[.09em]">
+                        {wo?.name || 'Rutina'} · {log.date}
+                      </span>
+                      <div className="flex-1 h-px bg-hairline" />
+                    </div>
+                    <div className="space-y-2">
+                      {notes.map(n => (
+                        <div
+                          key={n.key}
+                          onClick={n.unread ? n.onSeen : undefined}
+                          className={`rounded-surface border p-3.5 transition-colors ${
+                            n.unread ? 'bg-accent-bg border-accent-line cursor-pointer' : 'bg-raised border-hairline'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            {n.unread && <span className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse-dot flex-shrink-0" />}
+                            <span className={`font-mono text-caption uppercase tracking-[.07em] flex-1 truncate ${n.unread ? 'text-accent' : 'text-ink-3'}`}>
+                              {n.ctx}
+                            </span>
+                          </div>
+                          <p className="mt-2 text-body-s text-ink leading-relaxed">{n.text}</p>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                  {log.note && (
-                    <p className="text-label text-ink-2 italic">"{log.note}"</p>
-                  )}
-                  {log.entries.filter(e => e.note).map(e => (
-                    <p key={e.exerciseId} className="text-label text-ink-2">
-                      <span className="font-sans text-caption text-accent">{getExercise(e.exerciseId)?.name || e.exerciseId}:</span> "{e.note}"
-                    </p>
-                  ))}
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
         );
       })()}
@@ -269,6 +316,54 @@ export default function ClientWorkoutsPanel({
             Asignar
           </button>
         </div>
+
+        {/* Adherencia del mesociclo activo (mockup Fase 3, pantalla 05) — se deriva
+            de las asignaciones del mesociclo en curso (fecha de hoy dentro de su
+            rango de semanas, o el último por número si ninguno está en curso).
+            No existía como % en esta pantalla: MesocycleDashboard ya calculaba la
+            misma cuenta completed/total por mesociclo, para su gráfica de barras —
+            aquí se reutiliza el mismo criterio (completed/total), sin duplicar una
+            fórmula nueva, solo resumida en un único número para el meso vigente. */}
+        {(() => {
+          if (mesocycles.length === 0 || assignments.length === 0) return null;
+          const today = new Date().toISOString().split('T')[0];
+          const sorted = [...mesocycles].sort((a, b) => a.number - b.number);
+          const current = sorted.find(m => {
+            const end = new Date(m.startDate + 'T00:00:00');
+            end.setDate(end.getDate() + m.weeks * 7);
+            return today >= m.startDate && today < end.toISOString().split('T')[0];
+          }) ?? sorted[sorted.length - 1];
+          const mesoAssignments = assignments.filter(a => a.mesocycleId === current.id);
+          if (mesoAssignments.length === 0) return null;
+          const completed = mesoAssignments.filter(a => a.status === 'completed').length;
+          const adherence = Math.round((completed / mesoAssignments.length) * 100);
+          const cells = [...mesoAssignments].sort((a, b) => a.date.localeCompare(b.date));
+          return (
+            <div className="bg-bg border border-hairline rounded-surface px-4 py-3 space-y-2">
+              <div className="flex items-baseline gap-2">
+                <span className="font-mono font-semibold text-title-l text-ink tabular-nums">{adherence}%</span>
+                <span className="font-sans text-caption text-ink-2">
+                  adherencia · meso #{current.number} · {completed}/{mesoAssignments.length}
+                </span>
+              </div>
+              <div className="flex gap-0.5 h-1">
+                {cells.map(a => (
+                  <div
+                    key={a.id}
+                    className="flex-1 rounded-full"
+                    style={{
+                      backgroundColor:
+                        a.status === 'completed' ? 'var(--color-success)' :
+                        a.status === 'skipped' || a.status === 'perdido' ? 'var(--color-danger)' :
+                        'var(--color-track)',
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
+          );
+        })()}
+
         {assignments.length === 0 ? (
           <div className="py-6 text-center">
             <span className="material-symbols-outlined text-title-l text-ink-3 block mb-2">calendar_today</span>

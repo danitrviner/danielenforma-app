@@ -20,7 +20,7 @@ export default function StatTile({ icon, label, value, accent = 'var(--color-acc
         style={{ color: accent, backgroundColor: `${accent}1a` }}
       />
       <span className="font-sans text-caption uppercase tracking-widest text-ink-2">{label}</span>
-      <span className="font-sans font-bold text-title-m text-white leading-none">{value}</span>
+      <span className="font-sans font-bold text-title-m text-ink leading-none">{value}</span>
     </div>
   );
 }

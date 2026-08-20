@@ -236,11 +236,11 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
                   <div className="absolute -bottom-1 -right-1 bg-accent text-black text-caption font-bold px-2 rounded-full leading-tight whitespace-nowrap shadow">Lv {profile.level}</div>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-sans font-bold text-title-m text-white">{profile.displayName}</h3>
+                  <h3 className="font-sans font-bold text-title-m text-ink">{profile.displayName}</h3>
                   <p className="font-mono text-caption text-ink-2 truncate">{profile.email}</p>
                   <div className="flex items-center gap-2 mt-2">
                     <div className="flex-1 h-2 bg-raised rounded-full overflow-hidden">
-                      <div className="h-full bg-data" style={{ width: `${Math.min(100, (profile.xp / 400) * 100)}%` }}></div>
+                      <div className="h-full bg-accent" style={{ width: `${Math.min(100, (profile.xp / 400) * 100)}%` }}></div>
                     </div>
                     <span className="font-mono text-caption text-ink-2 flex-shrink-0">{profile.xp}/400 XP</span>
                   </div>
@@ -252,7 +252,7 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
                 <StatTile icon="local_fire_department" label="Racha actual" value={`${streakDays}d`} />
                 <StatTile icon="military_tech" label="Racha máxima" value={`${maxStreakDays}d`} />
                 <StatTile icon="workspace_premium" label="Nivel" value={profile.level} />
-                <StatTile icon="flag" label="Meta" value={`${profile.targetWeight}kg`} accent="var(--color-data)" />
+                <StatTile icon="flag" label="Meta" value={`${profile.targetWeight}kg`} />
               </div>
             </div>
 
@@ -270,9 +270,9 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
               <Suspense fallback={<PanelCargando />}><BodyweightPanel athleteEmail={profile.email} /></Suspense>
             </div>
             {bodyMeasurements.some(m => m.metricKey !== 'bodyweight') && (
-              <div className="bg-[#181816] border border-white/7 p-4 sm:p-6 rounded-3xl space-y-3">
-                <h3 className="font-sans font-bold text-base text-white flex items-center gap-2">
-                  <span className="material-symbols-outlined text-[#fbcb1a] text-base">straighten</span>
+              <div className="bg-surface border border-hairline p-4 sm:p-6 rounded-canvas space-y-3">
+                <h3 className="font-sans font-bold text-title-s text-ink flex items-center gap-2">
+                  <Icon name="straighten" size="m" className="text-accent" />
                   Mediciones
                 </h3>
                 <Suspense fallback={<PanelCargando />}><BodyMeasurementsPanel athleteEmail={profile.email} /></Suspense>

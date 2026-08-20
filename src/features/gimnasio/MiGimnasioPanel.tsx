@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Button, Icon, SearchField, Skeleton } from '../../components/ui';
+import { Button, Card, EmptyState, Icon, ListRow, SearchField, Skeleton } from '../../components/ui';
 import { MARCA_LABELS, MUSCLE_LABELS } from '../../types';
 import type { Maquina, MaquinaPropia } from '../../types';
 import { getEstadoCatalogo, guardarGimnasio, deleteMaquinaPropia } from '../../dbService';
@@ -83,7 +83,7 @@ export default function MiGimnasioPanel({ email }: Props) {
 
   if (isLoading) {
     return (
-      <div className="bg-surface border border-hairline rounded-canvas p-5">
+      <div className="bg-surface border border-hairline rounded-surface p-5">
         <div className="space-y-2" aria-label="Cargando tu gimnasio">
           <Skeleton className="h-6 w-40" />
           <Skeleton className="h-12 w-full" />
@@ -95,15 +95,10 @@ export default function MiGimnasioPanel({ email }: Props) {
   const total = catalogoVisible.length + propiasVisibles.length;
 
   return (
-    <div className="bg-surface border border-hairline rounded-canvas p-5 flex flex-col gap-4">
-      <div>
-        <h3 className="font-sans font-bold text-title-m text-ink">Mi gimnasio</h3>
-        <p className="font-mono text-caption text-ink-4 uppercase tracking-widest mt-1">
-          {misMaquinas.length + propias.length} máquinas
-          {pendientes > 0 && ` · ${pendientes} sin revisar`}
-        </p>
-      </div>
-
+    <Card
+      title="Mi gimnasio"
+      subtitle={`${misMaquinas.length + propias.length} máquinas${pendientes > 0 ? ` · ${pendientes} sin revisar` : ''}`}
+    >
       {/* Un catálogo a medias o una marca nueva importada dejan máquinas sin
           decidir. Se ofrece retomar aquí, que es donde el atleta va a buscarlo. */}
       {pendientes > 0 && (
@@ -121,55 +116,52 @@ export default function MiGimnasioPanel({ email }: Props) {
 
       <ul className="flex flex-col divide-y divide-hairline">
         {catalogoVisible.map(m => (
-          <li key={m.id} className="flex items-center gap-3 py-3">
-            <img
-              src={m.fotoUrl}
-              alt=""
-              className="w-12 h-12 rounded-control object-contain bg-white flex-shrink-0"
-              loading="lazy"
-            />
-            <div className="flex-1 min-w-0">
-              <p className="font-sans text-body-s text-ink truncate">{m.nombreMostrado}</p>
-              <p className="font-mono text-caption text-ink-4 uppercase tracking-wider truncate">
-                {MARCA_LABELS[m.marca] ?? m.marca} · {MUSCLE_LABELS[m.categoria]}
-              </p>
-            </div>
-            <Button
-              variant="ghost"
-              size="s"
-              icon="delete"
-              label={`Quitar ${m.nombreMostrado} de mi gimnasio`}
-              onClick={() => quitarDelCatalogo(m)}
-              className="text-danger flex-shrink-0"
-            />
-          </li>
+          <ListRow
+            key={m.id}
+            as="li"
+            leading={<img src={m.fotoUrl} alt="" className="w-12 h-12 rounded-control object-contain bg-white flex-shrink-0" loading="lazy" />}
+            title={m.nombreMostrado}
+            subtitle={`${MARCA_LABELS[m.marca] ?? m.marca} · ${MUSCLE_LABELS[m.categoria]}`}
+            trailing={
+              <Button
+                variant="ghost"
+                size="s"
+                icon="delete"
+                label={`Quitar ${m.nombreMostrado} de mi gimnasio`}
+                onClick={() => quitarDelCatalogo(m)}
+                className="text-danger flex-shrink-0"
+              />
+            }
+          />
         ))}
 
         {propiasVisibles.map(p => (
-          <li key={p.id} className="flex items-center gap-3 py-3">
-            <img src={p.fotoUrl} alt="" className="w-12 h-12 rounded-control object-cover flex-shrink-0" loading="lazy" />
-            <div className="flex-1 min-w-0">
-              <p className="font-sans text-body-s text-ink truncate">{p.nombre}</p>
-              <p className="font-mono text-caption text-ink-4 uppercase tracking-wider">Añadida por ti</p>
-            </div>
-            <Button
-              variant="ghost"
-              size="s"
-              icon="delete"
-              label={`Eliminar ${p.nombre}`}
-              onClick={() => quitarPropia(p)}
-              className="text-danger flex-shrink-0"
-            />
-          </li>
+          <ListRow
+            key={p.id}
+            as="li"
+            leading={<img src={p.fotoUrl} alt="" className="w-12 h-12 rounded-control object-cover flex-shrink-0" loading="lazy" />}
+            title={p.nombre}
+            subtitle="Añadida por ti"
+            trailing={
+              <Button
+                variant="ghost"
+                size="s"
+                icon="delete"
+                label={`Eliminar ${p.nombre}`}
+                onClick={() => quitarPropia(p)}
+                className="text-danger flex-shrink-0"
+              />
+            }
+          />
         ))}
       </ul>
 
       {total === 0 && (
-        <p className="font-sans text-body-s text-ink-3 py-2">
-          {filtro
-            ? 'Ninguna máquina coincide con esa búsqueda.'
-            : 'Todavía no has marcado ninguna máquina como disponible.'}
-        </p>
+        <EmptyState
+          icon={filtro ? 'search_off' : 'fitness_center'}
+          title={filtro ? 'Sin resultados' : 'Todavía no hay máquinas'}
+          description={filtro ? 'Ninguna máquina coincide con esa búsqueda.' : 'Todavía no has marcado ninguna máquina como disponible.'}
+        />
       )}
 
       <Button variant="secondary" size="m" icon="add" fullWidth onClick={() => setAnadiendo(true)}>
@@ -187,6 +179,6 @@ export default function MiGimnasioPanel({ email }: Props) {
         <Icon name="info" size="s" className="mt-1" />
         Dani usa esto para montarte el plan con lo que de verdad tienes a mano.
       </p>
-    </div>
+    </Card>
   );
 }

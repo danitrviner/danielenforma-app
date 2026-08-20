@@ -23,16 +23,19 @@ export const TECHNIQUE_LABEL: Record<WorkoutTechnique, string> = {
  * Fase 3: tokens del DS en vez de los colores de Tailwind sueltos (red-400,
  * orange-400, violet-400, blue-400) que llevaba antes — la escala de estado
  * del sistema no tiene un tono por técnica, así que se reparten los cuatro
- * disponibles + `data` (en retirada, pero es exactamente el caso "distinto y
- * no es una acción" que todavía lo justifica). AMRAP y FALLO comparten
- * `danger`: son la misma familia de intensidad ("hasta que no puedas más"),
- * el emoji y la etiqueta ya los distinguen.
+ * disponibles. AMRAP y FALLO comparten `danger`: son la misma familia de
+ * intensidad ("hasta que no puedas más"), el emoji y la etiqueta ya los
+ * distinguen. `restpause` usaba `data` (cian) como quinto tono de necesidad
+ * — el handoff de Fase 3 lo reserva a zonas de frecuencia cardíaca y no
+ * fuera de ahí (`src/index.css`), así que pasa a `neutral`: encaja incluso
+ * mejor con lo que es la técnica (pausas cortas controladas, no un extremo
+ * de intensidad como las otras cuatro).
  */
 export const TECHNIQUE_COLOR: Record<WorkoutTechnique, string> = {
   amrap:     'text-danger border-danger/30 bg-danger/10',
   dropset:   'text-warning border-warning/30 bg-warning/10',
   myoreps:   'text-info border-info/30 bg-info/10',
-  restpause: 'text-data border-data/30 bg-data/10',
+  restpause: 'text-ink-2 border-hairline bg-raised',
   fallo:     'text-danger border-danger/30 bg-danger/10',
 };
 

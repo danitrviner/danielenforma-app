@@ -255,6 +255,35 @@ export interface Exercise {
   imageUrl?: string;
   instructions?: string;     // descripción global — visible para cualquier atleta
   isCustom: boolean;
+
+  // ─── Curaduría del coach ────────────────────────────────────────────────
+  // El catálogo son 1.721 ejercicios: 40 escritos a mano y 1.681 importados de
+  // un banco de vídeos y traducidos con un diccionario palabra por palabra, así
+  // que muchos tienen el nombre mal o describen algo que el vídeo no hace. Estos
+  // campos son el resultado de que el coach los revise uno a uno en
+  // ExerciseTriageScreen. Todos opcionales: un ejercicio sin revisar es el
+  // estado normal de partida, no un error.
+
+  // Dónde aparece en los buscadores del coach. 'alta' = los que prescribe a
+  // diario y quiere ver primero; 'baja' = los relega al final sin ocultarlos.
+  prioridad?: 'alta' | 'normal' | 'baja';
+
+  // El coach ha validado nombre, grupo muscular y curva mirando el vídeo. Es
+  // lo que da el progreso de la revisión y lo que permite reanudarla.
+  revisado?: boolean;
+  revisadoAt?: string;       // ISO
+
+  // Marcado como "esto sobra" durante la revisión. NO borra nada: la decisión
+  // de eliminar ejercicios y sus vídeos es aparte y del coach.
+  descartado?: boolean;
+
+  // Nota libre del coach durante la revisión (dudas, "falta grabar de otro
+  // ángulo", "confirmar con fisio"...). Solo la ve el coach, nunca el atleta.
+  notasRevision?: string;
+
+  // Se puede hacer en casa sin ir al gimnasio (peso corporal, banda, mancuernas
+  // ligeras...). Curación manual del coach, no se infiere de `equipment`.
+  casa?: boolean;
 }
 
 // Observación personalizada de un ejercicio, visible únicamente para un atleta concreto
@@ -1193,6 +1222,7 @@ export interface DayAssignment {
 export interface DayPlan {
   assignments: DayAssignment[];
   totalSeries: number;
+  dayType?: string; // etiqueta del reparto elegido (p.ej. "Torso", "Push") — solo visual
 }
 
 export interface WeekDistribution {
@@ -1218,6 +1248,7 @@ export interface Mesocycle {
   days?: TemplateDay[];
   programId?: string;      // links mesocycles created from the same template
   programOrder?: number;   // position in the sequence (0-based)
+  splitId?: string;        // id del reparto de días elegido (ver utils/trainingSplits.ts)
 }
 
 export interface MesocycleTemplate {

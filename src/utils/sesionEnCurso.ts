@@ -46,6 +46,15 @@ export interface SesionEnCurso {
   workoutNoteInput: string;
   /** ISO. Sirve para caducar el borrador, no para mostrarlo. */
   guardadoEn: string;
+  /** La forma PRESCRITA (series por ejercicio según la rutina, sin las
+   *  bajadas/miniseries que el atleta añada a mano) en el momento de guardar.
+   *  Se compara por separado de `playerSets.length` porque, desde que existen
+   *  dropset/myoreps con filas añadidas en caliente, `playerSets` puede tener
+   *  MÁS filas que la prescripción sin que eso signifique que el coach cambió
+   *  la rutina — y menos filas si el coach sí la cambió, que es justo lo que
+   *  este campo tiene que seguir detectando. Opcional por compatibilidad con
+   *  borradores guardados antes de que existiera este campo. */
+  formaPrescrita?: number[];
 }
 
 const PREFIJO = 'enforma_sesion_en_curso_v1';
@@ -80,8 +89,12 @@ export function guardarSesion(athleteEmail: string, sesion: SesionEnCurso): void
 
 /**
  * Devuelve el borrador solo si se puede aplicar con seguridad a la rutina que
- * se está abriendo ahora mismo. `formaActual` es la forma de la tabla recién
- * prerrellenada; si no coincide, el borrador se borra y se devuelve `null`.
+ * se está abriendo ahora mismo. `formaActual` es la forma PRESCRITA de la
+ * tabla recién prerrellenada (sin filas añadidas a mano); si no coincide con
+ * la `formaPrescrita` que se guardó con el borrador, se borra y se devuelve
+ * `null`. Un borrador sin `formaPrescrita` (guardado antes de que existiera
+ * el campo) se compara contra `playerSets.length` como hacía siempre —
+ * conservador, pero nunca menos seguro que antes.
  */
 export function cargarSesion(
   athleteEmail: string,
@@ -97,8 +110,8 @@ export function cargarSesion(
 
     const caducado = !sesion.guardadoEn || Date.now() - Date.parse(sesion.guardadoEn) > CADUCIDAD_MS;
     const otraRutina = sesion.workoutId !== workoutId;
-    const cambióLaForma = !Array.isArray(sesion.playerSets)
-      || !mismaForma(formaDeSesion(sesion.playerSets), formaActual);
+    const formaGuardada = Array.isArray(sesion.formaPrescrita) ? sesion.formaPrescrita : formaDeSesion(sesion.playerSets);
+    const cambióLaForma = !Array.isArray(sesion.playerSets) || !mismaForma(formaGuardada, formaActual);
 
     if (caducado || otraRutina || cambióLaForma) {
       borrarSesion(athleteEmail, assignmentId);

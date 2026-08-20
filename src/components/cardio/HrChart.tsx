@@ -1,7 +1,7 @@
 import React from 'react';
-import { LineChart, Line, XAxis, YAxis, Tooltip, ReferenceArea, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, Tooltip, ReferenceArea, ReferenceDot, ResponsiveContainer } from 'recharts';
 import { CardioZones } from '../../types';
-import { ZONE_ORDER, ZONE_LABEL, ZONE_COLOR, pctOfMaxHR } from '../../utils/cardioZones';
+import { ZONE_ORDER, ZONE_LABEL, ZONE_COLOR, BELOW_ZONE_COLOR, getZoneForBpm, pctOfMaxHR } from '../../utils/cardioZones';
 import { MARGEN_GRAFICA, ANCHO_EJE_Y, TICK_GRAFICA, EJE_GRAFICA, TOOLTIP_GRAFICA } from '../ui';
 
 // Gráfica de FC con bandas de zona de fondo + BPM a la izquierda y % de
@@ -11,6 +11,23 @@ import { MARGEN_GRAFICA, ANCHO_EJE_Y, TICK_GRAFICA, EJE_GRAFICA, TOOLTIP_GRAFICA
 // recharts' ReferenceArea prop types don't declare `key`, even though React
 // needs it for the list below (mismo patrón que NutritionPerformanceDashboard.tsx).
 const ReferenceAreaAny = ReferenceArea as unknown as React.FC<Record<string, unknown>>;
+
+/**
+ * Punto "en directo" del último dato — panel 05 (Zonas de Frecuencia) de
+ * Graficas - Experiencia.dc.html: un halo que respira alrededor del punto
+ * actual, no solo la línea llegando hasta el borde. `cx`/`cy` los calcula
+ * Recharts a partir de `x`/`y` en coordenadas de dato; sin ellos (primer
+ * render, antes de que el eje tenga escala) no se dibuja nada.
+ */
+function LiveDot({ cx, cy, fill }: { cx?: number; cy?: number; fill: string }) {
+  if (cx == null || cy == null) return null;
+  return (
+    <g>
+      <circle cx={cx} cy={cy} r={7} fill="none" stroke={fill} strokeWidth={2} className="animate-ghost-tap" style={{ transformOrigin: `${cx}px ${cy}px` }} />
+      <circle cx={cx} cy={cy} r={4.5} fill={fill} stroke="var(--color-bg)" strokeWidth={2} />
+    </g>
+  );
+}
 
 interface Props {
   data: { t: number; bpm: number }[];
@@ -23,6 +40,9 @@ export default function HrChart({ data, zones, maxHR, height = 140 }: Props) {
   if (data.length < 2) return null;
 
   const boundaryTicks = [zones.z2.min, zones.z3.min, zones.z4.min, zones.z5.min];
+  const last = data[data.length - 1];
+  const liveZone = getZoneForBpm(last.bpm, zones);
+  const liveColor = liveZone ? ZONE_COLOR[liveZone] : BELOW_ZONE_COLOR;
 
   return (
     <div className="w-full" style={{ height }}>
@@ -57,6 +77,15 @@ export default function HrChart({ data, zones, maxHR, height = 140 }: Props) {
           )}
           <Tooltip {...TOOLTIP_GRAFICA} />
           <Line yAxisId="bpm" type="monotone" dataKey="bpm" stroke="var(--color-ink)" dot={false} strokeWidth={2} />
+          <ReferenceDot
+            yAxisId="bpm"
+            x={last.t}
+            y={last.bpm}
+            r={4.5}
+            shape={p => <LiveDot cx={p.cx} cy={p.cy} fill={liveColor} />}
+            label={{ value: `${last.bpm}`, position: 'top', fill: 'var(--color-ink)', fontSize: 13, fontFamily: 'monospace', fontWeight: 700 }}
+            isFront
+          />
         </LineChart>
       </ResponsiveContainer>
     </div>

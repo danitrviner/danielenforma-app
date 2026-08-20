@@ -7,6 +7,7 @@ import { formatDia, hoyISO } from '../lib/fechas';
 import MetricCard from './MetricCard';
 import EmptyState from './EmptyState';
 import ErrorState from './ErrorState';
+import { Skeleton } from '../../../components/ui';
 import type { Cliente } from '../types';
 
 // Todo lo de esta pestaña es DERIVADO — nunca se almacena en Firestore. Un solo
@@ -66,7 +67,7 @@ export default function HistorialTab({ cliente }: { cliente: Cliente }) {
     return (
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="h-24 rounded-surface bg-white/4 animate-pulse" />
+          <React.Fragment key={i}><Skeleton className="h-24 w-full" /></React.Fragment>
         ))}
       </div>
     );

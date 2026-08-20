@@ -150,6 +150,13 @@ export default function MesocycleDashboard({ mesocycles, athleteEmail }: Props) 
     );
   }
 
+  // KPI hero — la cifra grande de la pantalla 01 del mockup de Fase 3: el
+  // último mesociclo y su delta frente al anterior, coherente con lo que ya
+  // pinta el gráfico "Series" debajo (misma fuente de datos, sin recalcular).
+  const lastPoint = totalSeriesData[totalSeriesData.length - 1];
+  const prevPoint  = totalSeriesData[totalSeriesData.length - 2];
+  const kpiDelta = prevPoint ? lastPoint.series - prevPoint.series : null;
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -161,6 +168,26 @@ export default function MesocycleDashboard({ mesocycles, athleteEmail }: Props) 
           <span className="font-sans text-caption text-ink-2 animate-pulse">Cargando datos…</span>
         )}
       </div>
+
+      {lastPoint && (
+        <div className="flex flex-col gap-1">
+          <span className="font-mono text-caption text-ink-2 uppercase tracking-[.1em]">
+            Series semanales · meso {lastPoint.label}
+          </span>
+          <div className="flex items-baseline gap-2">
+            <span className="font-mono font-semibold text-hero text-ink tabular-nums">{lastPoint.series}</span>
+            {kpiDelta !== null && (
+              <span className={`font-mono text-label font-bold rounded-full px-2 py-0.5 border ${
+                kpiDelta > 0 ? 'text-accent bg-accent/12 border-accent-line' :
+                kpiDelta < 0 ? 'text-danger bg-danger/12 border-danger/25' :
+                'text-ink-3 bg-transparent border-hairline'
+              }`}>
+                {kpiDelta > 0 ? `▲+${kpiDelta}` : kpiDelta < 0 ? `▼${kpiDelta}` : '='}
+              </span>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Las 3 gráficas comparten una tarjeta con un selector en vez de ir
           apiladas por separado — se ve una a la vez, la que interese. */}

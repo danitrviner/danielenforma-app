@@ -167,12 +167,13 @@ export default function CatalogoSwipe({ email, onCompletado, onOmitir }: Props) 
             <div className="font-mono text-caption text-ink-4 uppercase tracking-widest">Progreso por categoría</div>
             {porCategoria.map(c => {
               const completa = c.decididas === c.total;
+              const enCurso = !completa && c.decididas > 0;
               return (
                 <div key={c.categoria} className="flex items-center gap-3">
-                  <span className={`w-1.5 h-1.5 rounded-full ${completa ? 'bg-success' : 'bg-ink-5'}`} />
+                  <span className={`w-1.5 h-1.5 rounded-full ${completa ? 'bg-success' : enCurso ? 'bg-warning' : 'bg-ink-5'}`} />
                   <span className="flex-1 font-sans text-body-s text-ink-2">{MUSCLE_LABELS[c.categoria]}</span>
-                  <span className={`font-mono text-caption ${completa ? 'text-success' : 'text-ink-4'}`}>
-                    {c.decididas}/{c.total}
+                  <span className={`font-mono text-caption ${completa ? 'text-success' : enCurso ? 'text-warning' : 'text-ink-4'}`}>
+                    {completa ? `${c.decididas}/${c.total}` : enCurso ? 'En curso' : 'Pendiente'}
                   </span>
                 </div>
               );

@@ -39,6 +39,8 @@ export { default as Chip } from './Chip';
 
 export { default as ListRow } from './ListRow';
 
+export { default as ActionRow } from './ActionRow';
+
 export { default as PageHeader } from './PageHeader';
 
 export { default as Sheet } from './Sheet';

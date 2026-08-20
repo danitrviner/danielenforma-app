@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Exercise, MuscleGroup, MUSCLE_ORDER, MUSCLE_LABELS } from '../types';
-import { Sheet, Icon, EmptyState } from './ui';
+import { Sheet, Icon, EmptyState, Chip } from './ui';
 
 /* T11.a (18-08). Antes solo se podía "cambiar" un ejercicio desde la vista
    previa del generador (un <select> con la biblioteca entera, sin filtro).
@@ -57,26 +57,13 @@ export default function ExercisePickerSheet({
       toolbar={(
         <>
           <div className={`px-3 py-2 bg-surface border-b border-hairline flex gap-2 flex-wrap transition-opacity ${term ? 'opacity-40' : ''}`}>
-            <button
-              type="button"
-              onClick={() => setGroup('all')}
-              className={`px-3 py-1 rounded-full font-mono text-caption font-bold uppercase tracking-wider transition-all ${
-                group === 'all' && !term ? 'bg-accent text-black' : 'bg-raised text-ink-2 border border-hairline'
-              }`}
-            >
+            <Chip selected={group === 'all' && !term} onClick={() => setGroup('all')}>
               Todos
-            </button>
+            </Chip>
             {MUSCLE_ORDER.map(g => (
-              <button
-                key={g}
-                type="button"
-                onClick={() => setGroup(g)}
-                className={`px-3 py-1 rounded-full font-mono text-caption font-bold uppercase tracking-wider transition-all ${
-                  group === g && !term ? 'bg-accent text-black' : 'bg-raised text-ink-2 border border-hairline'
-                }`}
-              >
+              <Chip key={g} selected={group === g && !term} onClick={() => setGroup(g)}>
                 {MUSCLE_LABELS[g]}
-              </button>
+              </Chip>
             ))}
           </div>
           <div className="px-4 py-2 bg-surface flex items-center gap-2 border-b border-hairline">

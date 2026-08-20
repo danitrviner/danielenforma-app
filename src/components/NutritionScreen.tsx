@@ -323,6 +323,14 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
   const dayClosed = totalItems > 0 && doneItems === totalItems;
   const mealsDoneCount = selectedDiet?.meals.filter(m => m.items.length > 0 && m.items.every((_, idx) => itemStates[`${m.id}_${idx}`]?.done)).length ?? 0;
 
+  // Haptic success solo en la TRANSICIÓN a día cerrado (handoff, panel 06) —
+  // no en cada render mientras ya está cerrado, ni al reabrirlo desmarcando algo.
+  const dayClosedRef = useRef(false);
+  useEffect(() => {
+    if (dayClosed && !dayClosedRef.current) void haptics.success();
+    dayClosedRef.current = dayClosed;
+  }, [dayClosed]);
+
   // Distinct coach diets scheduled across the week (the "día A/B/C" concept) that
   // still don't have enough food items placed to cover the budget the coach set.
   const pendingScheduledDiets = useMemo(() => {
@@ -1022,22 +1030,22 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
   return (
     <div className="w-full space-y-6">
       <div>
-        <h1 className="font-sans font-extrabold text-display text-white tracking-tight">Mi plan</h1>
+        <h1 className="font-sans font-extrabold text-display text-ink tracking-tight">Mi plan</h1>
         <p className="text-ink-2 text-body-s mt-1">Construye tu menú del día con intercambios.</p>
       </div>
 
       {/* Phase change banner */}
       {phaseBanner && (
-        <div className="flex items-center justify-between gap-3 bg-data/10 border border-data/30 rounded-surface px-4 py-3">
+        <div className="flex items-center justify-between gap-3 bg-accent/10 border border-accent/30 rounded-surface px-4 py-3">
           <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-data text-title-m flex-shrink-0">swap_horiz</span>
-            <p className="font-sans font-bold text-data text-body-s">{phaseBanner}</p>
+            <Icon name="swap_horiz" size="m" className="text-accent flex-shrink-0" />
+            <p className="font-sans font-bold text-accent text-body-s">{phaseBanner}</p>
           </div>
           <button
             onClick={() => setPhaseBanner(null)}
-            className="text-data/60 hover:text-data transition-colors flex-shrink-0"
+            className="text-accent/60 hover:text-accent transition-colors flex-shrink-0"
           >
-            <span className="material-symbols-outlined text-title-s">close</span>
+            <Icon name="close" size="s" />
           </button>
         </div>
       )}
@@ -1045,8 +1053,8 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
       {/* Pending coach diets banner — different days can carry different diets
           (día A/B/C); this flags the ones still missing food items to hit budget. */}
       {pendingScheduledDiets.length > 0 && (
-        <div className="flex items-center gap-2 bg-amber-400/10 border border-amber-400/25 text-amber-300 px-4 py-3 rounded-surface text-body-s">
-          <span className="material-symbols-outlined text-amber-400 text-title-s flex-shrink-0">pending_actions</span>
+        <div className="flex items-center gap-2 bg-warning/10 border border-warning/25 text-warning px-4 py-3 rounded-surface text-body-s">
+          <Icon name="pending_actions" size="s" className="text-warning flex-shrink-0" />
           <span>
             Tienes <strong>{pendingScheduledDiets.length}</strong> {pendingScheduledDiets.length === 1 ? 'dieta pendiente de generar' : 'dietas pendientes de generar'}
             {': '}
@@ -1064,7 +1072,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
             className={`px-4 py-2 rounded-control font-sans text-label font-bold uppercase tracking-wider transition-all ${
               activeDietMode === mode
                 ? 'bg-accent text-black'
-                : 'bg-raised text-ink-2 border border-hairline hover:border-accent/40 hover:text-white'
+                : 'bg-raised text-ink-2 border border-hairline hover:border-accent/40 hover:text-ink'
             }`}
           >{MODE_LABEL[mode]}</button>
         ))}
@@ -1085,12 +1093,12 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                   isViewing
                     ? 'bg-accent/10 border-accent/50 text-accent'
                     : isToday
-                    ? 'bg-raised border-hairline text-white'
-                    : 'bg-raised border-hairline text-ink-2 hover:border-hairline hover:text-white'
+                    ? 'bg-raised border-hairline text-ink'
+                    : 'bg-raised border-hairline text-ink-2 hover:border-hairline hover:text-ink'
                 }`}
               >
                 <span>{WD_SHORT[day]}</span>
-                <span className={`w-1 h-1 rounded-full ${isToday ? 'bg-accent' : hasDiet ? 'bg-data/50' : 'bg-transparent'}`} />
+                <span className={`w-1 h-1 rounded-full ${isToday ? 'bg-accent' : hasDiet ? 'bg-info/50' : 'bg-transparent'}`} />
               </button>
             );
           })}
@@ -1150,9 +1158,9 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
               </span>
               {browseDiet ? (
                 <>
-                  <span className="block font-sans font-bold text-title-m text-white leading-tight">{browseDiet.name}</span>
+                  <span className="block font-sans font-bold text-title-m text-ink leading-tight">{browseDiet.name}</span>
                   {browseDiet.coachNote && (
-                    <span className="block text-label text-data italic mt-1">{browseDiet.coachNote}</span>
+                    <span className="block text-label text-accent italic mt-1">{browseDiet.coachNote}</span>
                   )}
                   <div className="flex gap-2 mt-3 flex-wrap">
                     {BUDGET_CATS.map(cat => {
@@ -1200,7 +1208,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                   <Icon name={selectedDiet.selfManaged ? 'bookmark' : 'military_tech'} size="s" className="text-accent" />
                 </span>
                 <span className="flex-1 min-w-0">
-                  <span className="block font-sans font-bold text-body-s text-white truncate">{selectedDiet.name}</span>
+                  <span className="block font-sans font-bold text-body-s text-ink truncate">{selectedDiet.name}</span>
                   <span className="block font-mono text-caption text-ink-2 truncate">{subtitle}</span>
                 </span>
                 {otherCount > 0 && (
@@ -1233,12 +1241,12 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                     value={selectedDiet.name}
                     onChange={e => renameDiet(e.target.value)}
                     aria-label="Nombre de la dieta"
-                    className="min-w-0 flex-1 bg-transparent border-none font-sans font-bold text-title-m text-white leading-tight focus:outline-none focus:ring-0 p-0"
+                    className="min-w-0 flex-1 bg-transparent border-none font-sans font-bold text-title-m text-ink leading-tight focus:outline-none focus:ring-0 p-0"
                   />
                   <Icon name="edit" size="s" className="text-ink-3 flex-shrink-0" />
                 </div>
                 {selectedDiet.coachNote && (
-                  <span className="block font-sans text-label text-data italic mt-1">{selectedDiet.coachNote}</span>
+                  <span className="block font-sans text-label text-accent italic mt-1">{selectedDiet.coachNote}</span>
                 )}
                 <span className="block font-mono text-caption text-ink-2 mt-2">
                   {selectedDiet.meals.length} comida{selectedDiet.meals.length !== 1 ? 's' : ''} · {selectedDiet.meals.reduce((s, m) => s + m.items.length, 0)} alimentos
@@ -1380,7 +1388,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                           step={0.25}
                           value={selectedDiet.budget[cat]}
                           onChange={e => updateBudgetCat(cat, parseFloat(e.target.value) || 0)}
-                          className="w-full bg-surface border border-hairline rounded-control px-2 py-2 text-white text-title-s focus:outline-none focus:border-accent/50"
+                          className="w-full bg-surface border border-hairline rounded-control px-2 py-2 text-ink text-title-s focus:outline-none focus:border-accent/50"
                         />
                       </div>
                     ))}
@@ -1393,7 +1401,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                   una copia propia. Avisar aquí, antes de que el atleta guarde,
                   en vez de que se entere por el texto del botón. */}
               {!selectedDiet.selfManaged && isDirty && (
-                <div className="flex items-start gap-2 bg-data/10 border border-data/25 text-data px-4 py-3 rounded-surface text-body-s">
+                <div className="flex items-start gap-2 bg-info/10 border border-info/25 text-info px-4 py-3 rounded-surface text-body-s">
                   <Icon name="info" size="s" className="flex-shrink-0 mt-0.5" />
                   <span>Esta dieta la creó tu coach. Si la editas, se guardará como copia tuya y la original no se toca.</span>
                 </div>
@@ -1434,7 +1442,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                             value={meal.name}
                             onChange={e => renameMeal(meal.id, e.target.value)}
                             placeholder={`Comida ${mi + 1}`}
-                            className="min-w-0 flex-1 bg-transparent border-none font-sans font-bold text-white text-title-s focus:outline-none focus:ring-0 p-0"
+                            className="min-w-0 flex-1 bg-transparent border-none font-sans font-bold text-ink text-title-s focus:outline-none focus:ring-0 p-0"
                           />
                         </div>
                         <div className="flex items-center gap-2 flex-shrink-0">
@@ -1455,7 +1463,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                             <button
                               onClick={() => openSaveMealAsRecipe(meal)}
                               title="Guardar como receta"
-                              className="flex items-center gap-1 px-2 py-1 rounded-control bg-raised border border-hairline hover:border-data/50 hover:text-data text-ink-2 transition-all"
+                              className="flex items-center gap-1 px-2 py-1 rounded-control bg-raised border border-hairline hover:border-info/50 hover:text-info text-ink-2 transition-all"
                             >
                               <span className="material-symbols-outlined text-label select-none">bookmark_add</span>
                               <span className="font-mono text-caption uppercase tracking-wider hidden sm:block">Guardar receta</span>
@@ -1481,18 +1489,18 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                             value={recipeNameDraft}
                             onChange={e => setRecipeNameDraft(e.target.value)}
                             placeholder="Nombre de la receta"
-                            className="flex-1 min-w-0 bg-raised border border-hairline rounded-control px-3 py-2 text-title-s text-white font-mono focus:outline-none focus:border-data/50"
+                            className="flex-1 min-w-0 bg-raised border border-hairline rounded-control px-3 py-2 text-title-s text-ink font-mono focus:outline-none focus:border-info/50"
                           />
                           <button
                             onClick={() => confirmSaveMealAsRecipe(meal)}
                             disabled={savingRecipe || !recipeNameDraft.trim()}
-                            className="px-3 py-2 bg-data text-black font-mono text-caption font-bold uppercase rounded-control disabled:opacity-40 transition-all"
+                            className="px-3 py-2 bg-info text-black font-mono text-caption font-bold uppercase rounded-control disabled:opacity-40 transition-all"
                           >
                             {savingRecipe ? 'Guardando…' : 'Guardar'}
                           </button>
                           <button
                             onClick={() => setSavingMealAsRecipeId(null)}
-                            className="text-ink-2 hover:text-white p-1"
+                            className="text-ink-2 hover:text-ink p-1"
                           >
                             <span className="material-symbols-outlined text-body-s">close</span>
                           </button>
@@ -1833,7 +1841,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                   placeholder="Buscar receta..."
                   value={recipeSearch}
                   onChange={e => setRecipeSearch(e.target.value)}
-                  className="w-full bg-transparent border-none text-white text-title-s focus:ring-0 focus:outline-none p-2 placeholder-ink-2/45"
+                  className="w-full bg-transparent border-none text-ink text-title-s focus:ring-0 focus:outline-none p-2 placeholder-ink-2/45"
                 />
               </div>
 
@@ -1893,7 +1901,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                           {isFav && (
                             <span className="material-symbols-outlined text-accent text-label" style={{ fontVariationSettings: "'FILL' 1", fontSize: '12px' }}>favorite</span>
                           )}
-                          <span className="font-sans font-bold text-body-s text-white group-hover:text-accent transition-colors truncate">{recipe.name}</span>
+                          <span className="font-sans font-bold text-body-s text-ink group-hover:text-accent transition-colors truncate">{recipe.name}</span>
                         </div>
                         {recipe.categories.length > 0 && (
                           <div className="flex flex-wrap gap-1 mb-1">
@@ -1944,7 +1952,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
-                    <span className="font-sans font-bold text-body-s text-white group-hover:text-accent transition-colors truncate block">{recipe.name}</span>
+                    <span className="font-sans font-bold text-body-s text-ink group-hover:text-accent transition-colors truncate block">{recipe.name}</span>
                     <span className="font-mono text-caption text-accent/70">{recipe.kcal} kcal</span>
                   </div>
                   <span className="material-symbols-outlined text-ink-2 group-hover:text-accent transition-colors select-none text-title-s flex-shrink-0">swap_horiz</span>
@@ -2000,7 +2008,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
               <Icon name="search" size="s" className="text-ink-2" />
               <input type="text" placeholder="Buscar en todas las categorías..." value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
-                className="w-full bg-transparent border-none text-white text-title-s focus:ring-0 focus:outline-none p-2 placeholder-ink-2/45"
+                className="w-full bg-transparent border-none text-ink text-title-s focus:ring-0 focus:outline-none p-2 placeholder-ink-2/45"
               />
             </div>
             </>
@@ -2029,7 +2037,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                         {food.category.replace('_', ' ')}
                       </span>
                     )}
-                    <span className="flex-1 block font-sans text-label text-white group-hover:text-accent transition-colors leading-snug">{food.label}</span>
+                    <span className="flex-1 block font-sans text-label text-ink group-hover:text-accent transition-colors leading-snug">{food.label}</span>
                     {reciente ? (
                       <span className="flex items-center gap-1 flex-shrink-0 text-success">
                         <Icon name="check_circle" size="m" />
@@ -2124,7 +2132,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                   onClick={() => handleChooseDietForRecipe(dt)}
                   className="w-full flex items-center justify-between p-4 bg-surface hover:bg-raised rounded-control border border-hairline hover:border-accent/40 text-left transition-all"
                 >
-                  <span className="text-body-s text-white font-sans truncate">{dt.name}</span>
+                  <span className="text-body-s text-ink font-sans truncate">{dt.name}</span>
                   <span className="material-symbols-outlined text-ink-2 text-title-s flex-shrink-0">add_circle</span>
                 </button>
               ))}
@@ -2155,7 +2163,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                   onClick={() => { addRecipeToMeal(chooseMealForRecipe, meal.id, selectedDiet); setChooseMealForRecipe(null); }}
                   className="w-full flex items-center justify-between p-4 bg-surface hover:bg-raised rounded-control border border-hairline hover:border-accent/40 text-left transition-all"
                 >
-                  <span className="text-body-s text-white font-sans">{mealLabel(meal.name, mi + 1)}</span>
+                  <span className="text-body-s text-ink font-sans">{mealLabel(meal.name, mi + 1)}</span>
                   <span className="material-symbols-outlined text-ink-2 text-title-s">add_circle</span>
                 </button>
               ))}

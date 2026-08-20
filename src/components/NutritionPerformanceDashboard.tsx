@@ -17,7 +17,7 @@ import {
   buildPhaseEnergyPlans, buildWeightProjection, computePeriodizationPerformance,
   computePhaseEnergyBalance, resolvePhaseTargetKcal, PhaseEnergyPlan,
 } from '../utils/nutritionPeriodization';
-import { Skeleton } from './ui';
+import { Skeleton, SegmentedControl } from './ui';
 import {
   Icon, EmptyState,
   ALTURA_GRAFICA, MARGEN_GRAFICA, ANCHO_EJE_Y, REJILLA_GRAFICA, TICK_GRAFICA, EJE_GRAFICA,
@@ -332,22 +332,16 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
       <div className="bg-surface border border-hairline rounded-surface p-5 space-y-3">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <p className="font-sans text-caption text-ink-2 uppercase tracking-wider">Peso: proyección vs. real</p>
-          <div className="inline-flex bg-field border border-hairline rounded-surface ">
-            {([
-              { id: 'both', label: 'Ambas' },
-              { id: 'exp', label: 'Esperado 100%' },
-              { id: 'adh', label: 'Según adherencia' },
-            ] as { id: CurveMode; label: string }[]).map(opt => (
-              <button
-                key={opt.id}
-                onClick={() => setCurveMode(opt.id)}
-                aria-pressed={curveMode === opt.id}
-                className={`font-sans text-caption px-3 py-2 rounded-control transition-colors ${
-                  curveMode === opt.id ? 'bg-raised text-white' : 'text-ink-2 hover:text-white'
-                }`}
-              >{opt.label}</button>
-            ))}
-          </div>
+          <SegmentedControl
+            label="Curvas mostradas"
+            value={curveMode}
+            onChange={id => setCurveMode(id as CurveMode)}
+            options={[
+              { value: 'both', label: 'Ambas' },
+              { value: 'exp', label: 'Esperado 100%' },
+              { value: 'adh', label: 'Según adherencia' },
+            ]}
+          />
         </div>
 
         {chartRows.length > 0 && projection && (
@@ -477,7 +471,7 @@ function StatCard({
   return (
     <div className="bg-surface border border-hairline rounded-surface p-4 flex flex-col gap-2">
       <span className="font-sans text-caption text-ink-2 uppercase tracking-wider">{label}</span>
-      <span className="font-mono font-bold text-title-m" style={{ color: valueColor ?? '#fff' }}>
+      <span className={`font-mono font-bold text-title-m ${valueColor ? '' : 'text-white'}`} style={valueColor ? { color: valueColor } : undefined}>
         {value}{unit && <span className="text-label text-ink-2 font-medium ml-1">{unit}</span>}
       </span>
       {progressPct != null && (

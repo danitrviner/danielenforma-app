@@ -13,7 +13,7 @@ import ReunionesTab from '../components/ReunionesTab';
 import HistorialTab from '../components/HistorialTab';
 import InvitarAtletaModal from '../components/InvitarAtletaModal';
 import { enlaceWhatsApp, formatTelefono } from '../lib/identidad';
-import { Icon } from '../../../components/ui';
+import { Button, Icon, Skeleton } from '../../../components/ui';
 
 // La pestaña activa va en `?tab=`, como pediste — no en useState. Refrescar o
 // volver atrás recupera la pestaña exacta.
@@ -53,7 +53,7 @@ export default function ClienteDetail({ coachEmail }: { coachEmail: string }) {
   };
 
   if (isPending) {
-    return <div className="h-40 rounded-surface bg-white/4 animate-pulse" />;
+    return <Skeleton className="h-40 w-full" />;
   }
 
   if (!cliente) {
@@ -101,15 +101,15 @@ export default function ClienteDetail({ coachEmail }: { coachEmail: string }) {
 
         <div className="flex items-center gap-2">
           {estadoSuscripcion.tipo === 'vence_pronto' && (
-            <button
-              type="button"
-              onClick={() => registrar.mutate({ suscripcion: estadoSuscripcion.suscripcion, coachEmail })}
+            <Button
+              variant="primary"
+              size="s"
+              icon="autorenew"
               disabled={registrar.isPending}
-              className="flex items-center gap-1 px-3 py-2 rounded-control bg-accent text-black font-sans font-bold text-caption hover:bg-accent-press disabled:opacity-40 transition-colors"
+              onClick={() => registrar.mutate({ suscripcion: estadoSuscripcion.suscripcion, coachEmail })}
             >
-              <Icon name="autorenew" size="s" />
               {registrar.isPending ? 'Renovando…' : 'Renovar plan'}
-            </button>
+            </Button>
           )}
           {whatsapp && (
             <a

@@ -98,6 +98,7 @@ export default function AcademyScreen({ profile }: Props) {
         course={openCourse}
         courseLessons={courseLessons}
         done={done}
+        completedLessonIds={new Set(Object.keys(progressSafe.completed))}
         nextLesson={nextLesson}
         onBack={() => setOpenLessonId(null)}
         onComplete={() => handleCompleteLesson(openLesson)}
@@ -112,8 +113,8 @@ export default function AcademyScreen({ profile }: Props) {
       <div className="space-y-6">
         <Button variant="ghost" size="s" onClick={() => setOpenCourseId(null)} icon="arrow_back">Academia</Button>
         <div>
-          <span className="text-caption font-sans uppercase text-data">{CATEGORY_LABEL[openCourse.category]}</span>
-          <h2 className="font-sans font-bold text-title-l text-white">{openCourse.title}</h2>
+          <span className="text-caption font-sans uppercase text-accent">{CATEGORY_LABEL[openCourse.category]}</span>
+          <h2 className="font-sans font-bold text-title-l text-ink">{openCourse.title}</h2>
           <p className="text-label text-ink-2 font-sans mt-1">{openCourse.description}</p>
         </div>
         <div className="space-y-2">
@@ -154,7 +155,7 @@ export default function AcademyScreen({ profile }: Props) {
 
       {(Object.keys(byCategory) as AcademyCategory[]).map(cat => (
         <div key={cat} className="space-y-2">
-          <h3 className="text-caption font-sans uppercase text-data tracking-wider">{CATEGORY_LABEL[cat]}</h3>
+          <h3 className="text-caption font-sans uppercase text-accent tracking-wider">{CATEGORY_LABEL[cat]}</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {byCategory[cat].map(c => {
               const { unlocked, reason } = evaluateUnlockRule(c.unlockRule, { profile, progress: progressSafe }, courseTitleById);
@@ -167,7 +168,7 @@ export default function AcademyScreen({ profile }: Props) {
                   className={`text-left bg-surface border border-hairline rounded-control p-4 transition-all ${unlocked ? 'hover:border-accent/40' : 'opacity-50'}`}
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <p className="font-sans font-bold text-body-s text-white">{c.title}</p>
+                    <p className="font-sans font-bold text-body-s text-ink">{c.title}</p>
                     {!unlocked && <Icon name="lock" size="m" className="text-ink-3 flex-shrink-0" />}
                   </div>
                   <p className="text-label text-ink-2 font-sans mt-1 line-clamp-2">{c.description}</p>

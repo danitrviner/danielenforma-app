@@ -1,5 +1,6 @@
 import React from 'react';
 import ErrorState from './ErrorState';
+import { Skeleton } from '../../../components/ui';
 import { useScrollEdgeMask } from '../../../components/ui/internal/useScrollEdgeMask';
 
 export interface Columna<T> {
@@ -44,7 +45,7 @@ export default function DataTable<T>({
     return (
       <div className="space-y-2 p-3">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="h-11 rounded-surface bg-white/4 animate-pulse" />
+          <React.Fragment key={i}><Skeleton className="h-11 w-full" /></React.Fragment>
         ))}
       </div>
     );

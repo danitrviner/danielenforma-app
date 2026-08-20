@@ -10,7 +10,7 @@ import {
 } from '../dbService';
 import type { RecetasCursor } from '../dbService';
 import { classifyRecipe } from '../utils/foodPrefs';
-import { BUDGET_CATS, roundQuarter } from '../utils/exchangeHelpers';
+import { BUDGET_CATS, roundQuarter, CAT_COLOR, CAT_BG } from '../utils/exchangeHelpers';
 import { exchangeToKcal } from '../utils/nutritionConstants';
 import { Skeleton } from './ui';
 import { EmptyState, Badge, Chip, SearchField, Button, Select } from './ui';
@@ -21,12 +21,16 @@ const CAT_LABELS: Record<FoodCategory, string> = {
   HC: 'HC', PROT: 'PROT', GRASA: 'GRASA', MIX_HC: 'MIX·HC', MIX_GRASA: 'MIX·GRASA',
 };
 
+// Antes tenía su propio mapa de color (-400 en todo) distinto del que ya
+// usaba NutritionScreen.tsx (-300 texto / -500 fondo) para las mismas 5
+// categorías — la misma categoría se veía de un tono distinto según la
+// pantalla. Se reutiliza el mapa compartido en vez de mantener un segundo.
 const CAT_COLORS: Record<FoodCategory, string> = {
-  HC:        'text-amber-400 border-amber-400/30 bg-amber-400/10',
-  PROT:      'text-blue-400 border-blue-400/30 bg-blue-400/10',
-  GRASA:     'text-orange-400 border-orange-400/30 bg-orange-400/10',
-  MIX_HC:    'text-violet-400 border-violet-400/30 bg-violet-400/10',
-  MIX_GRASA: 'text-pink-400 border-pink-400/30 bg-pink-400/10',
+  HC:        `${CAT_COLOR.HC} ${CAT_BG.HC}`,
+  PROT:      `${CAT_COLOR.PROT} ${CAT_BG.PROT}`,
+  GRASA:     `${CAT_COLOR.GRASA} ${CAT_BG.GRASA}`,
+  MIX_HC:    `${CAT_COLOR.MIX_HC} ${CAT_BG.MIX_HC}`,
+  MIX_GRASA: `${CAT_COLOR.MIX_GRASA} ${CAT_BG.MIX_GRASA}`,
 };
 
 function calcExchanges(recipe: Recipe): Partial<Record<FoodCategory, number>> {
@@ -128,7 +132,7 @@ function RecipeCard({ recipe, isFav, large = false, onOpen, onToggleFav }: CardP
             ))}
           </div>
         )}
-        <h3 className={`font-sans font-bold text-white group-hover:text-accent transition-colors leading-tight ${large ? 'text-title-l' : 'text-title-s'}`}>
+        <h3 className={`font-sans font-bold text-ink group-hover:text-accent transition-colors leading-tight ${large ? 'text-title-l' : 'text-title-s'}`}>
           {recipe.name}
         </h3>
         {exchStr !== '—' && (
@@ -149,7 +153,7 @@ function RecetaCard({ recipe, isFav, isFeatured, onOpen, onToggleFav }: Omit<Car
       onClick={() => onOpen(recipe)}
       className={`group relative rounded-surface overflow-hidden bg-raised border aspect-[4/5] flex flex-col justify-end cursor-pointer transition-all ${
         isFeatured
-          ? 'border-amber-400/40 hover:border-amber-400/70'
+          ? 'border-accent/40 hover:border-accent/70'
           : 'border-hairline hover:border-accent/40'
       }`}
     >
@@ -183,7 +187,7 @@ function RecetaCard({ recipe, isFav, isFeatured, onOpen, onToggleFav }: Omit<Car
       ) : null}
 
       <div className="relative z-10 p-3 space-y-1">
-        <p className="font-sans font-bold text-white text-label leading-tight line-clamp-2">{recipe.name}</p>
+        <p className="font-sans font-bold text-ink text-label leading-tight line-clamp-2">{recipe.name}</p>
         {exch && (exch.HC > 0 || exch.PROT > 0 || exch.GRASA > 0) && (
           <p className="font-mono text-caption text-accent/75">
             {[exch.HC > 0 && `${exch.HC}HC`, exch.PROT > 0 && `${exch.PROT}P`, exch.GRASA > 0 && `${exch.GRASA}G`]
@@ -320,7 +324,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, isOwn, enabledModes, savingFa
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setConfirmingDelete(false)}
-                className="text-label font-mono uppercase tracking-wider text-ink-2 hover:text-white transition-colors"
+                className="text-label font-mono uppercase tracking-wider text-ink-2 hover:text-ink transition-colors"
               >
                 Cancelar
               </button>
@@ -346,7 +350,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, isOwn, enabledModes, savingFa
 
       {/* Title + metadata */}
       <div className="space-y-3">
-        <h1 className="font-sans font-bold text-title-l text-white tracking-tight">{recipe.name}</h1>
+        <h1 className="font-sans font-bold text-title-l text-ink tracking-tight">{recipe.name}</h1>
 
         {/* Recetas metadata row */}
         {isRecetas && (
@@ -478,7 +482,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, isOwn, enabledModes, savingFa
             ].map(({ label, val }) => (
               <div key={label} className="text-center">
                 <span className="block font-sans text-caption text-ink-2 uppercase">{label}</span>
-                <span className="block font-bold text-white text-body-s font-mono">{val}g</span>
+                <span className="block font-bold text-ink text-body-s font-mono">{val}g</span>
               </div>
             ))}
           </div>
@@ -488,7 +492,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, isOwn, enabledModes, savingFa
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         {/* Ingredients */}
         <section className="bg-raised border border-hairline rounded-surface p-5 space-y-3">
-          <h2 className="font-sans font-bold text-body-s text-white uppercase tracking-wider flex items-center gap-2">
+          <h2 className="font-sans font-bold text-body-s text-ink uppercase tracking-wider flex items-center gap-2">
             <span className="material-symbols-outlined text-accent text-title-s">grocery</span>
             Ingredientes
           </h2>
@@ -497,7 +501,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, isOwn, enabledModes, savingFa
             <ul className="space-y-2">
               {recipe.ingredientsText.map((ing, idx) => (
                 <li key={idx} className="flex items-center justify-between py-2 border-b border-hairline last:border-0">
-                  <span className="text-label text-white font-sans flex-1 pr-2 leading-relaxed">{ing.name}</span>
+                  <span className="text-label text-ink font-sans flex-1 pr-2 leading-relaxed">{ing.name}</span>
                   <span className="font-mono text-caption text-ink-2 shrink-0">{ing.quantity}g</span>
                 </li>
               ))}
@@ -506,7 +510,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, isOwn, enabledModes, savingFa
             <ul className="space-y-2">
               {visibleIngredients.map((ing, idx) => (
                 <li key={idx} className="flex items-center justify-between py-2 border-b border-hairline last:border-0">
-                  <span className="text-label text-white font-sans flex-1 pr-2 leading-relaxed">{ing.foodLabel}</span>
+                  <span className="text-label text-ink font-sans flex-1 pr-2 leading-relaxed">{ing.foodLabel}</span>
                   <span className={`font-mono text-caption font-bold shrink-0 ${CAT_COLORS[ing.category].split(' ')[0]}`}>
                     ×{ing.quantity}
                   </span>
@@ -533,7 +537,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, isOwn, enabledModes, savingFa
         {((isRecetas && recipe.stepsText && recipe.stepsText.length > 0) ||
           (!isRecetas && recipe.steps.length > 0)) && (
           <section className="bg-raised border border-hairline rounded-surface p-5 space-y-4">
-            <h2 className="font-sans font-bold text-body-s text-white uppercase tracking-wider flex items-center gap-2">
+            <h2 className="font-sans font-bold text-body-s text-ink uppercase tracking-wider flex items-center gap-2">
               <span className="material-symbols-outlined text-accent text-title-s">format_list_numbered</span>
               Preparación
             </h2>
@@ -809,7 +813,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-sans font-extrabold text-display tracking-tight text-white">Recetas</h1>
+        <h1 className="font-sans font-extrabold text-display tracking-tight text-ink">Recetas</h1>
         <p className="text-ink-2 text-body-s mt-1">Tus recetas y la biblioteca completa de recetas.</p>
       </div>
 
@@ -823,7 +827,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
       {/* ── Coach / athlete recipes ─────────────────────────────────────────── */}
       {!loading && recipes.length > 0 && (
         <section className="space-y-4">
-          <h2 className="font-sans font-bold text-body-s text-white uppercase tracking-wider flex items-center gap-2">
+          <h2 className="font-sans font-bold text-body-s text-ink uppercase tracking-wider flex items-center gap-2">
             <span className="material-symbols-outlined text-accent text-title-s">restaurant_menu</span>
             Recetas del programa
           </h2>
@@ -869,7 +873,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
 
       {/* ── Biblioteca de recetas (paginated, backed by the Recetas dataset — never shown to the user) ──── */}
       <section className="space-y-4">
-        <h2 className="font-sans font-bold text-body-s text-white uppercase tracking-wider flex items-center gap-2">
+        <h2 className="font-sans font-bold text-body-s text-ink uppercase tracking-wider flex items-center gap-2">
           <span className="material-symbols-outlined text-data text-title-s">library_books</span>
           Biblioteca de recetas
           <span className="font-mono text-caption text-ink-2 normal-case font-normal">8 850 recetas</span>
@@ -923,7 +927,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
             <button
               onClick={handleLoadMore}
               disabled={recetasLoadingMore}
-              className="px-6 py-3 bg-raised border border-hairline hover:border-data/50 text-ink-2 hover:text-white font-sans text-label uppercase tracking-wider rounded-control transition-all disabled:opacity-50 flex items-center gap-2"
+              className="px-6 py-3 bg-raised border border-hairline hover:border-accent/50 text-ink-2 hover:text-ink font-sans text-label uppercase tracking-wider rounded-control transition-all disabled:opacity-50 flex items-center gap-2"
             >
               {recetasLoadingMore
                 ? <><span className="material-symbols-outlined text-body-s animate-spin">progress_activity</span>Cargando…</>
@@ -932,7 +936,13 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
             </button>
           </div>
         ) : recetasTotalVisible === 0 ? (
-          <EmptyState icon="search_off" title={recetasSearch ? 'Sin resultados en esta página.' : 'Sin recetas para estos filtros.'} />
+          <EmptyState
+            icon="search_off"
+            title={recetasSearch ? `Nada para «${recetasSearch}»` : 'Sin recetas para estos filtros.'}
+            description={onlyFitsBudget ? 'Prueba con otro término, o quita el filtro de presupuesto.' : undefined}
+            actionLabel={onlyFitsBudget ? 'Quitar presupuesto' : undefined}
+            onAction={onlyFitsBudget ? () => setOnlyFitsBudget(false) : undefined}
+          />
         ) : (
           <div className="space-y-6">
             <p className="font-sans text-caption text-ink-2 uppercase">
@@ -1022,7 +1032,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
                 <button
                   onClick={handleLoadMore}
                   disabled={recetasLoadingMore}
-                  className="px-6 py-3 bg-raised border border-hairline hover:border-data/50 text-ink-2 hover:text-white font-sans text-label uppercase tracking-wider rounded-control transition-all disabled:opacity-50 flex items-center gap-2"
+                  className="px-6 py-3 bg-raised border border-hairline hover:border-accent/50 text-ink-2 hover:text-ink font-sans text-label uppercase tracking-wider rounded-control transition-all disabled:opacity-50 flex items-center gap-2"
                 >
                   {recetasLoadingMore
                     ? <><span className="material-symbols-outlined text-body-s animate-spin">progress_activity</span>Cargando…</>

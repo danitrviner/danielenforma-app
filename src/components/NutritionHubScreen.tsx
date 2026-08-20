@@ -6,7 +6,7 @@ import NutritionScreen from './NutritionScreen';
 import MyMenuScreen from './MyMenuScreen';
 import RecipesScreen from './RecipesScreen';
 import NutritionPerformanceDashboard from './NutritionPerformanceDashboard';
-import { Tabs } from './ui';
+import { Icon, Tabs } from './ui';
 
 interface NutritionHubScreenProps {
   profile: UserProfile;
@@ -45,8 +45,8 @@ export default function NutritionHubScreen({ profile }: NutritionHubScreenProps)
       {nutritionConfig?.sharedReportSnapshot && (
         <div className="bg-surface border border-hairline rounded-surface p-4">
           <div className="flex items-center gap-2 mb-2">
-            <span className="material-symbols-outlined text-accent text-title-s">insights</span>
-            <p className="font-sans font-bold text-body-s text-white">Análisis de tu entrenador</p>
+            <Icon name="insights" size="s" className="text-accent" />
+            <p className="font-sans font-bold text-body-s text-ink">Análisis de tu entrenador</p>
           </div>
           <p className="text-label text-ink-2 font-sans leading-relaxed">{nutritionConfig.sharedReportSnapshot.summary}</p>
           {nutritionConfig.sharedReportSnapshot.flags.length > 0 && (

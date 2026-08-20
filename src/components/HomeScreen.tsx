@@ -15,7 +15,7 @@ import PlanInPreparationCard from './PlanInPreparationCard';
 import RecordatorioGimnasioCard from '../features/gimnasio/RecordatorioGimnasioCard';
 import { useTourTarget } from '../features/tutorial/TourTargetContext';
 import { Skeleton } from './ui';
-import { Icon, Button, PageHeader, ListRow, ProgressBar } from './ui';
+import { Icon, Button, PageHeader, ListRow } from './ui';
 
 type NavTarget = 'checkin' | 'training' | 'nutrition' | 'roadmap' | 'academy' | 'cardio' | 'profile';
 
@@ -28,6 +28,7 @@ interface HomeScreenProps {
 const JS_TO_WD: Record<number, WeekDay> = { 0: 'sun', 1: 'mon', 2: 'tue', 3: 'wed', 4: 'thu', 5: 'fri', 6: 'sat' };
 const TODAY_DATE = new Date().toISOString().split('T')[0];
 const TODAY_WD: WeekDay = JS_TO_WD[new Date().getDay()];
+const DIA_SEMANA = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 
 /* ═══════════════════════════════════════════════════════════════════════════
    HomeScreen — "Hoy" (F3.11, módulo 8 del handoff)
@@ -44,6 +45,16 @@ const TODAY_WD: WeekDay = JS_TO_WD[new Date().getDay()];
    `checklistInicial` que el motor de tutorial de F3.12 todavía no ha creado
    — se añade en esa fase, no aquí, para no inventar un modelo de datos que
    F3.12 podría necesitar dar forma distinta.
+
+   Auditoría visual vs. `Hoy - Experiencia.dc.html` (docs/design/fase3):
+   cabecera pasa a saludo personalizado + día + racha (dato real,
+   `profile.currentStreak`, ya usado en Perfil/Clientes). Se queda FUERA a
+   propósito, por no tener dato real que no sea inventado: el pill "DÍA N ·
+   SPLIT" y "~N MIN" (no hay campo de duración estimada ni de nombre de
+   split en `Workout`), y el aviso del coach ("D · Sube el peso...", no hay
+   campo de nota por asignación). "Semana N de M" tampoco se añade — exigiría
+   resolver el mesociclo activo y no hay ese cálculo ya hecho en ningún sitio
+   reutilizable. Todo esto queda anotado para Dani en vez de inventado.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreenProps) {
@@ -124,7 +135,16 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
         <SolicitudConsentimientoIA onboarding={onboarding} onAhoraNo={aplazar} />
       )}
 
-      <PageHeader title="Hoy" subtitle="Tu tarea del día." />
+      <PageHeader
+        title={`Hola, ${profile.displayName?.split(' ')[0] || 'de nuevo'}`}
+        subtitle={DIA_SEMANA[new Date().getDay()]}
+        actionInline
+        action={profile.currentStreak > 0 ? (
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-control border border-accent-line bg-accent/13">
+            <span className="font-mono text-body-s font-bold text-accent">{profile.currentStreak}</span>
+          </span>
+        ) : undefined}
+      />
 
       {!loadingTraining && assignments.length === 0 && (
         <PlanInPreparationCard profile={profile} onNavigate={onNavigate} />
@@ -135,7 +155,9 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
           {/* ── Tarjeta primaria: entreno de fuerza, salvo día de descanso con cardio prescrito ── */}
           {!cardioIsPrimary && todayAssignment && (
             <section ref={primaryCardRef} className={`rounded-canvas p-5 border ${todayAssignment.status === 'completed' ? 'bg-success/8 border-success/25' : 'bg-surface border-hairline'}`}>
-              <p className="text-caption font-mono uppercase tracking-wider text-ink-2">Entreno de hoy</p>
+              <p className="text-caption font-mono uppercase tracking-wider text-ink-2">
+                Entreno de hoy{todayWorkout && ` · ${todayWorkout.exercises.length} ejercicio${todayWorkout.exercises.length === 1 ? '' : 's'}`}
+              </p>
               <p className="font-display text-feature font-black uppercase text-ink mt-1">{todayWorkout?.name ?? 'Rutina'}</p>
               {todayAssignment.status === 'completed' ? (
                 <p className="flex items-center gap-2 text-body-s font-sans font-bold text-success mt-3">
@@ -158,11 +180,23 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
             </section>
           )}
 
-          {isRestDay && !cardioRx && (
-            <section className="rounded-canvas p-5 border bg-surface border-hairline text-center">
-              <p className="font-sans text-body-s text-ink-2">Hoy es día de descanso.</p>
-            </section>
-          )}
+          {isRestDay && !cardioRx && (() => {
+            const proxima = sorted.find(a => a.date > TODAY_DATE && a.status === 'pending');
+            const proximoWorkout = proxima ? getWorkout(proxima.workoutId) : undefined;
+            return (
+              <section className="rounded-canvas border border-dashed border-strong p-6 text-center">
+                <span className="mx-auto flex h-11 w-11 items-center justify-center rounded-field bg-white/5">
+                  <Icon name="bedtime" size="m" className="text-ink-3" />
+                </span>
+                <p className="font-sans text-body-s font-bold text-ink mt-3.5">Hoy toca descanso</p>
+                {proximoWorkout && (
+                  <p className="font-sans text-body-s text-ink-2 mt-1.5">
+                    Próxima sesión: {proximoWorkout.name} · {formatDate(proxima!.date)}
+                  </p>
+                )}
+              </section>
+            );
+          })()}
 
           {/* ── Cardio como fila secundaria cuando hoy toca fuerza ── */}
           {!cardioIsPrimary && cardioRx && (
@@ -178,14 +212,21 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
             </div>
           )}
 
-          {/* ── Nutrición: fila de progreso, nunca el detalle ── */}
+          {/* ── Nutrición: fila de progreso, nunca el detalle ──
+              Un segmento por ingesta (no una barra única interpolada): son
+              datos discretos —cada ingesta está completa o no— y así se ve
+              en la maqueta. */}
           {todaysDiet && mealsDone && (
-            <button onClick={() => onNavigate('nutrition')} className="w-full text-left bg-surface border border-hairline rounded-control p-4 space-y-2 hover:border-strong transition-colors">
+            <button onClick={() => onNavigate('nutrition')} className="w-full text-left bg-surface border border-hairline rounded-control p-4 space-y-3 hover:border-strong transition-colors">
               <div className="flex items-center justify-between">
-                <p className="text-caption font-mono uppercase text-ink-2">Nutrición</p>
-                <p className="text-caption font-mono text-ink-2 tabular-nums">{mealsDone.done}/{mealsDone.total} ingestas</p>
+                <p className="text-caption font-mono uppercase text-ink-2">Nutrición de hoy</p>
+                <p className="text-caption font-mono text-ink-2 tabular-nums">{mealsDone.done}/{mealsDone.total} registradas</p>
               </div>
-              <ProgressBar value={mealsDone.total > 0 ? (mealsDone.done / mealsDone.total) * 100 : 0} label={`Ingestas de hoy, ${mealsDone.done} de ${mealsDone.total}`} />
+              <div className="flex gap-1" role="img" aria-label={`Ingestas de hoy, ${mealsDone.done} de ${mealsDone.total}`}>
+                {Array.from({ length: mealsDone.total }, (_, i) => (
+                  <span key={i} className={`h-1.5 flex-1 rounded-full ${i < mealsDone.done ? 'bg-accent' : 'bg-track'}`} />
+                ))}
+              </div>
             </button>
           )}
         </>

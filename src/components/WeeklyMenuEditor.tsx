@@ -12,7 +12,7 @@ import {
 } from '../utils/menuEngine';
 import { buildShoppingList } from '../utils/menuShoppingList';
 import { DISH_TYPES, DishType } from '../utils/dishTypes';
-import { Icon, Button, Input } from './ui';
+import { Icon, Button, Input, ProgressBar } from './ui';
 
 const WEEK_DAYS: WeekDay[] = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 const WEEK_DAY_FULL: Record<WeekDay, string> = {
@@ -330,9 +330,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
             {slots.map((sl, i) => (
               <div key={i} className="flex items-center gap-3 bg-surface border border-hairline rounded-surface px-4 py-3">
                 <span className="font-sans text-label text-white w-32 flex-shrink-0 truncate">{sl.name}</span>
-                <div className="flex-1 h-1.5 bg-raised rounded-full overflow-hidden">
-                  <div className="h-full bg-accent/50 rounded-full transition-all" style={{ width: `${Math.min(sl.pct, 100)}%` }} />
-                </div>
+                <ProgressBar value={sl.pct} label={`${sl.name}, ${sl.pct}%`} className="flex-1" />
                 <input
                   type="number" min={0} max={100} value={sl.pct}
                   onChange={e => setSlots(prev => prev.map((s, idx) => idx === i ? { ...s, pct: Number(e.target.value) } : s))}
@@ -350,7 +348,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
           className={`w-full flex items-center gap-3 p-4 rounded-control border text-left transition-all ${batch ? 'bg-accent/10 border-accent/40' : 'bg-surface border-hairline hover:border-strong'}`}
         >
           <span className={`w-5 h-5 rounded-control flex-shrink-0 border-2 flex items-center justify-center transition-colors ${batch ? 'bg-accent border-accent' : 'border-hairline'}`}>
-            {batch && <span className="material-symbols-outlined text-black" style={{ fontSize: '13px' }}>check</span>}
+            {batch && <Icon name="check" size="s" className="text-black" />}
           </span>
           <span className="flex-1">
             <span className="flex items-center gap-2 font-sans font-bold text-body-s text-white">
@@ -404,7 +402,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
                   onClick={() => cycleDishType(dt.id)}
                   className={`flex items-center gap-1 px-3 py-2 rounded-control border font-mono text-caption font-bold transition-all ${cls}`}
                 >
-                  <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>{dt.icon}</span>
+                  <Icon name={dt.icon} size="s" />
                   {dt.label}
                 </button>
               );
@@ -460,7 +458,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
             {menu.name}
             {menu.batchCooking && (
               <span className="flex-shrink-0 flex items-center gap-1 text-caption font-mono font-bold uppercase text-accent bg-accent/10 border border-accent/25 px-2 rounded-control">
-                <span className="material-symbols-outlined" style={{ fontSize: '11px' }}>inventory_2</span>batch
+                <Icon name="inventory_2" size="s" />batch
               </span>
             )}
           </h2>

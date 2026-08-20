@@ -15,12 +15,14 @@ import {
 } from '../dbService';
 import ExerciseConfigEditor from './ExerciseConfigEditor';
 import ExercisePickerSheet from './ExercisePickerSheet';
+import ExerciseVideoPlayer from './ExerciseVideoPlayer';
 import { MesocycleTemplate } from '../types';
 import { rankMuscleGroups } from '../utils/muscleGroupRanking';
 import { atletasActivos } from '../utils/atletas';
+import { TRAINING_SPLITS, DAY_TYPE_MUSCLES, getSplitsForDays } from '../utils/trainingSplits';
 import { useToast } from '../hooks/useToast';
 import { Skeleton } from './ui';
-import { EmptyState, Dialog, Input, Icon } from './ui';
+import { EmptyState, Dialog, Input, Icon, Tabs, TabItem } from './ui';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -48,6 +50,14 @@ function heatmapText(series: number): string {
   if (series <= 9)  return 'var(--color-success)';
   if (series <= 14) return 'var(--color-warning)';
   return 'var(--color-danger)';
+}
+
+function zoneLabel(series: number): string {
+  if (series === 0) return 'Sin volumen';
+  if (series <= 4)  return 'MEV';
+  if (series <= 9)  return 'Productivo';
+  if (series <= 14) return 'MAV';
+  return 'MRV';
 }
 
 const LEGEND = [
@@ -91,9 +101,10 @@ function sessionCount(series: number, maxDays: number): number {
 function runDistribution(
   groups: Record<MuscleGroup, MuscleGroupConfig>,
   daysPerWeek: number,
+  dayTypes?: string[], // reparto elegido (Torso/Pierna/Push/...) — si viene, restringe qué días acepta cada grupo muscular
 ): { days: DayPlan[]; overloadAlert: boolean } {
-  const days: DayPlan[] = Array.from({ length: daysPerWeek }, () => ({
-    assignments: [], totalSeries: 0,
+  const days: DayPlan[] = Array.from({ length: daysPerWeek }, (_, i) => ({
+    assignments: [], totalSeries: 0, dayType: dayTypes?.[i],
   }));
 
   const totalAll = MUSCLE_GROUPS.reduce((s, g) => s + groups[g].series, 0);
@@ -102,6 +113,16 @@ function runDistribution(
   const active = rankMuscleGroups(groups);
 
   const placedOn: Partial<Record<MuscleGroup, number[]>> = {};
+
+  // Días permitidos para un grupo dado el reparto elegido; sin reparto, todos valen.
+  const allowedDays = (group: MuscleGroup): number[] => {
+    if (!dayTypes) return Array.from({ length: daysPerWeek }, (_, i) => i);
+    const allowed = Array.from({ length: daysPerWeek }, (_, i) => i)
+      .filter(i => (DAY_TYPE_MUSCLES[dayTypes[i]] ?? []).includes(group));
+    // si el reparto no cubre este grupo en ningún día, no lo bloqueamos —
+    // mejor colocarlo en algún día que perder el volumen configurado
+    return allowed.length > 0 ? allowed : Array.from({ length: daysPerWeek }, (_, i) => i);
+  };
 
   for (const group of active) {
     const total    = groups[group].series;
@@ -112,11 +133,12 @@ function runDistribution(
 
     const antag     = getAntagonist(group);
     const antagDays = (antag && placedOn[antag]) ? placedOn[antag]! : [];
+    const candidates = allowedDays(group);
 
     for (const chunk of chunks) {
       let bestDay = -1, bestScore = Infinity;
 
-      for (let d = 0; d < daysPerWeek; d++) {
+      for (const d of candidates) {
         if (myDays.some(pd => Math.abs(d - pd) < 2)) continue;
         let score = days[d].totalSeries;
         if (groups[group].priority === 'alta') score += d * 0.3;
@@ -125,14 +147,14 @@ function runDistribution(
       }
 
       if (bestDay === -1) {
-        for (let d = 0; d < daysPerWeek; d++) {
+        for (const d of candidates) {
           let score = days[d].totalSeries;
           if (antagDays.includes(d)) score += 50;
           if (score < bestScore) { bestScore = score; bestDay = d; }
         }
       }
 
-      if (bestDay === -1) bestDay = 0;
+      if (bestDay === -1) bestDay = candidates[0] ?? 0;
       days[bestDay].assignments.push({ group, series: chunk });
       days[bestDay].totalSeries += chunk;
       myDays.push(bestDay);
@@ -235,6 +257,11 @@ function PrioritySelector({ value, onChange }: {
 // Editable — the auto-generated distribution is a starting point, not a final answer;
 // the coach can nudge series, remove a group, move one to another day, or add a group
 // that the algorithm didn't place, all without recalculating from scratch.
+//
+// Cada asignación es una "fila-chip": nombre + series editables, con un botón de mover
+// que despliega los días destino inline (en vez del <select> nativo de antes) y uno de
+// quitar. El total del día se lee grande y en mono, coloreado por zona — igual criterio
+// que el heatmap de la tabla de volumen — y un aviso ámbar aparece cuando se pasa de 12.
 const DayCard: React.FC<{
   day: DayPlan;
   dayNumber: number;
@@ -245,67 +272,92 @@ const DayCard: React.FC<{
   onMove: (aIdx: number, targetDayIdx: number) => void;
   onAddGroup: (group: MuscleGroup) => void;
 }> = ({ day, dayNumber, dayIdx, daysPerWeek, onSeriesChange, onRemove, onMove, onAddGroup }) => {
+  const [moveOpenIdx, setMoveOpenIdx] = useState<number | null>(null);
   const total   = day.totalSeries;
   const optimal = total >= 9 && total <= 12;
   const over    = total > 12;
   const totalColor = optimal ? 'var(--color-success)' : over ? 'var(--color-warning)' : 'var(--color-ink-2)';
-  const totalBg    = optimal ? 'rgba(34,197,94,.12)' : over ? 'rgba(249,115,22,.12)' : 'transparent';
   const placedGroups = new Set(day.assignments.map(a => a.group));
   const otherDays = Array.from({ length: daysPerWeek }, (_, i) => i).filter(i => i !== dayIdx);
+  const availableGroups = MUSCLE_GROUPS.filter(g => !placedGroups.has(g));
 
   return (
-    <div className="bg-surface border border-hairline rounded-surface p-4 flex-1 min-w-[200px] max-w-[260px]">
-      <div className="flex items-center justify-between mb-3 pb-2 border-b border-hairline">
-        <span className="font-mono text-caption text-ink-2 uppercase tracking-wider">Día {dayNumber}</span>
-        {over && <span className="material-symbols-outlined text-body-s text-orange-400" title=">12 series">warning</span>}
+    <div className="bg-surface border border-hairline rounded-surface p-4 flex-1 min-w-[220px] max-w-[300px] flex flex-col gap-3">
+      <div className="flex items-center gap-2">
+        <span className="font-mono text-caption text-ink-2 uppercase tracking-wider flex-1 min-w-0 truncate">
+          Día {dayNumber}{day.dayType ? ` · ${day.dayType}` : ''}
+        </span>
+        <span className="font-mono text-title-m font-bold tabular-nums" style={{ color: totalColor }}>{total}</span>
+        <span className="font-mono text-caption text-ink-3">series</span>
       </div>
-      <div className="space-y-2 min-h-[60px]">
+
+      <div className="space-y-1.5 min-h-[44px]">
         {day.assignments.length === 0 ? (
-          <p className="text-caption text-ink-3 font-mono italic">Descanso</p>
+          <p className="text-caption text-ink-3 font-mono italic py-2">Descanso</p>
         ) : (
           day.assignments.map((a, i) => (
-            <div key={i} className="flex items-center gap-2">
-              <span className="text-label text-white truncate flex-1 min-w-0">{MUSCLE_LABELS[a.group]}</span>
-              <input
-                type="number" min={0} max={25}
-                value={a.series}
-                onChange={e => onSeriesChange(i, parseInt(e.target.value) || 0)}
-                className="w-11 bg-bg border border-hairline rounded-control px-1 text-center text-white font-mono text-title-s focus:outline-none focus:border-accent"
-              />
-              {otherDays.length > 0 && (
-                <select
-                  value=""
-                  onChange={e => { if (e.target.value) onMove(i, parseInt(e.target.value)); }}
-                  title="Mover a otro día"
-                  className="bg-bg border border-hairline rounded-control text-title-s font-mono text-ink-2 focus:outline-none focus:border-accent cursor-pointer"
-                >
-                  <option value="">→</option>
-                  {otherDays.map(d => <option key={d} value={d}>Día {d + 1}</option>)}
-                </select>
+            <div key={i}>
+              <div className="flex items-center gap-1.5 bg-inset border border-hairline rounded-control px-2 py-1.5">
+                <span className="text-label text-white font-sans font-semibold truncate flex-1 min-w-0">{MUSCLE_LABELS[a.group]}</span>
+                <input
+                  type="number" min={0} max={25}
+                  value={a.series}
+                  onChange={e => onSeriesChange(i, parseInt(e.target.value) || 0)}
+                  className="w-9 bg-transparent border-none p-0 text-center text-white font-mono text-title-s font-bold focus:outline-none focus:ring-0"
+                />
+                {otherDays.length > 0 && (
+                  <button
+                    onClick={() => setMoveOpenIdx(moveOpenIdx === i ? null : i)}
+                    title="Mover a otro día"
+                    className={`flex-shrink-0 transition-colors ${moveOpenIdx === i ? 'text-accent' : 'text-ink-3 hover:text-accent'}`}
+                  >
+                    <Icon name="swap_horiz" size="s" />
+                  </button>
+                )}
+                <button onClick={() => onRemove(i)} className="text-ink-3 hover:text-red-400 transition-colors flex-shrink-0">
+                  <Icon name="close" size="s" />
+                </button>
+              </div>
+              {moveOpenIdx === i && (
+                <div className="flex flex-wrap gap-1.5 mt-1.5 pl-1 animate-fade-up">
+                  {otherDays.map(d => (
+                    <button
+                      key={d}
+                      onClick={() => { onMove(i, d); setMoveOpenIdx(null); }}
+                      className="px-2.5 py-1 rounded-full font-mono text-caption font-bold text-accent bg-accent/12 border border-accent-line hover:bg-accent/20 transition-colors"
+                    >
+                      Día {d + 1}
+                    </button>
+                  ))}
+                </div>
               )}
-              <button onClick={() => onRemove(i)} className="text-ink-3 hover:text-red-400 transition-colors flex-shrink-0">
-                <span className="material-symbols-outlined text-body-s">close</span>
-              </button>
             </div>
           ))
         )}
       </div>
-      <div className="mt-3 pt-2 border-t border-hairline flex items-center justify-between rounded-control"
-        style={{ backgroundColor: totalBg }}
-      >
-        <span className="font-mono text-caption text-ink-2 uppercase">Total</span>
-        <span className="font-mono text-body-s font-bold" style={{ color: totalColor }}>{total}</span>
-      </div>
-      <select
-        value=""
-        onChange={e => { if (e.target.value) onAddGroup(e.target.value as MuscleGroup); }}
-        className="mt-2 w-full bg-bg border border-dashed border-hairline rounded-control px-2 py-1 text-title-s font-sans text-ink-2 focus:outline-none focus:border-accent cursor-pointer"
-      >
-        <option value="">+ Añadir grupo…</option>
-        {MUSCLE_GROUPS.filter(g => !placedGroups.has(g)).map(g => (
-          <option key={g} value={g}>{MUSCLE_LABELS[g]}</option>
-        ))}
-      </select>
+
+      {over && (
+        <div className="flex items-start gap-2 bg-orange-500/10 border border-orange-500/30 rounded-control px-2.5 py-2">
+          <span className="font-mono text-caption font-bold text-orange-400 mt-px">!</span>
+          <span className="text-caption font-sans text-orange-300 leading-relaxed">Este día supera las 12 series recomendadas.</span>
+        </div>
+      )}
+
+      {availableGroups.length > 0 && (
+        <div className="relative flex items-center">
+          <select
+            value=""
+            onChange={e => { if (e.target.value) onAddGroup(e.target.value as MuscleGroup); }}
+            className="appearance-none w-full bg-bg border border-dashed border-hairline rounded-control pl-2 pr-8 py-2 text-title-s font-sans text-ink-2 focus:outline-none focus:border-accent cursor-pointer"
+          >
+            <option value="">+ Añadir grupo…</option>
+            {availableGroups.map(g => (
+              <option key={g} value={g}>{MUSCLE_LABELS[g]}</option>
+            ))}
+          </select>
+          <span className="ui-icon pointer-events-none absolute right-2 text-ink-3" style={{ fontSize: '16px' }} aria-hidden>expand_more</span>
+        </div>
+      )}
     </div>
   );
 };
@@ -362,34 +414,87 @@ function MesoExercisesView({
     );
   }
 
+  return <MesoExercisesTabs {...{ groups, weeks, allExercises, onUpdateExercise, onReplaceExercise, onAddExercise, onRemoveExercise }} />;
+}
+
+// Un día por pestaña en vez de todos los días apilados en la misma pantalla —
+// con 5-6 días el grid antiguo obligaba a hacer scroll constante para comparar
+// ejercicios de días distintos. Aquí solo se ve un día a la vez, con su vídeo.
+function MesoExercisesTabs({
+  groups, weeks, allExercises, onUpdateExercise, onReplaceExercise, onAddExercise, onRemoveExercise,
+}: {
+  groups: MesoWorkoutGroup[];
+  weeks: number;
+  allExercises: Exercise[];
+  onUpdateExercise: (group: MesoWorkoutGroup, exIdx: number, patch: Partial<WorkoutExercise>) => void;
+  onReplaceExercise: (group: MesoWorkoutGroup, exIdx: number) => void;
+  onAddExercise: (group: MesoWorkoutGroup) => void;
+  onRemoveExercise: (group: MesoWorkoutGroup, exIdx: number) => void;
+}) {
+  const [activeIdx, setActiveIdx] = useState(0);
+  const [openVideoKey, setOpenVideoKey] = useState<string | null>(null);
+  const group = groups[Math.min(activeIdx, groups.length - 1)];
+
   return (
     <div className="space-y-4">
       <p className="font-mono text-caption text-ink-2">
         Cada día se repite igual en las {weeks} semanas del mesociclo — edita aquí y se aplica a todas las semanas a la vez.
       </p>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {groups.map(group => (
-          <div key={group.name} className="bg-surface border border-hairline rounded-surface overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-3 bg-bg border-b border-hairline">
-              <p className="font-sans font-bold text-body-s text-white">{group.name}</p>
-              <span className="font-mono text-caption text-ink-2">
-                {group.exercises.reduce((s, e) => s + e.sets, 0)} series · {group.exercises.length} ejercicios
-              </span>
-            </div>
-            <div className="p-3 space-y-2">
-              {group.exercises.length === 0 ? (
-                <p className="text-label text-ink-3 font-sans px-1 py-2">Sin ejercicios en este día.</p>
-              ) : (
-                group.exercises.map((we, exIdx) => {
-                  const ex = allExercises.find(e => e.id === we.exerciseId);
-                  return (
-                    <div key={`${we.exerciseId}-${exIdx}`} className="bg-raised rounded-surface p-3 space-y-2">
+
+      {/* Day tabs */}
+      <div className="overflow-x-auto -mx-1 px-1">
+        <div className="flex bg-surface border border-hairline p-1 rounded-surface gap-1 min-w-max">
+          {groups.map((g, i) => (
+            <button
+              key={g.name}
+              onClick={() => { setActiveIdx(i); setOpenVideoKey(null); }}
+              className={`px-3 py-2 rounded-control font-mono text-label font-bold uppercase tracking-wide transition-all whitespace-nowrap ${
+                i === activeIdx ? 'bg-accent text-black' : 'text-ink-2 hover:text-white'
+              }`}
+            >
+              {g.name}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {group && (
+        <div className="bg-surface border border-hairline rounded-surface overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-3 bg-bg border-b border-hairline">
+            <p className="font-sans font-bold text-body-s text-white">{group.name}</p>
+            <span className="font-mono text-caption text-ink-2">
+              {group.exercises.reduce((s, e) => s + e.sets, 0)} series · {group.exercises.length} ejercicios
+            </span>
+          </div>
+          <div className="p-3 space-y-2">
+            {group.exercises.length === 0 ? (
+              <p className="text-label text-ink-3 font-sans px-1 py-2">Sin ejercicios en este día.</p>
+            ) : (
+              group.exercises.map((we, exIdx) => {
+                const ex = allExercises.find(e => e.id === we.exerciseId);
+                const videoKey = `${group.name}-${exIdx}`;
+                const isVideoOpen = openVideoKey === videoKey;
+                return (
+                  <div key={`${we.exerciseId}-${exIdx}`} className="bg-raised rounded-surface overflow-hidden">
+                    <div className="p-3 space-y-2">
                       <div className="flex items-start justify-between gap-2">
                         <p className="text-label font-sans font-bold text-white truncate">
                           {ex?.name || we.exerciseId}
                           {we.muscleGroup && <span className="text-caption font-sans text-ink-2 ml-2">{MUSCLE_LABELS[we.muscleGroup]}</span>}
                         </p>
                         <div className="flex items-center gap-1 flex-shrink-0">
+                          {ex?.videoUrl && (
+                            <button
+                              onClick={() => setOpenVideoKey(isVideoOpen ? null : videoKey)}
+                              title="Ver vídeo"
+                              className={`flex items-center gap-1 px-2 py-1 rounded-control transition-colors ${
+                                isVideoOpen ? 'text-accent' : 'text-ink-3 hover:text-accent'
+                              }`}
+                            >
+                              <Icon name="videocam" size="s" />
+                              <span className="font-mono text-caption">Vídeo</span>
+                            </button>
+                          )}
                           <button
                             onClick={() => onReplaceExercise(group, exIdx)}
                             title="Cambiar ejercicio"
@@ -408,23 +513,24 @@ function MesoExercisesView({
                       </div>
                       <ExerciseConfigEditor we={we} onChange={patch => onUpdateExercise(group, exIdx, patch)} />
                     </div>
-                  );
-                })
-              )}
-              <button
-                onClick={() => onAddExercise(group)}
-                className="w-full flex items-center justify-center gap-2 bg-bg border border-dashed border-hairline rounded-control px-3 py-2 text-title-s font-sans text-ink-2 hover:text-accent hover:border-accent/40 transition-all"
-              >
-                <Icon name="add" size="s" />
-                Añadir ejercicio
-              </button>
-              <p className="font-mono text-caption text-ink-3">
-                Se aplica a todas las semanas de este mesociclo — las sesiones ya completadas no se tocan.
-              </p>
-            </div>
+                    {isVideoOpen && ex?.videoUrl && <ExerciseVideoPlayer videoUrl={ex.videoUrl} />}
+                  </div>
+                );
+              })
+            )}
+            <button
+              onClick={() => onAddExercise(group)}
+              className="w-full flex items-center justify-center gap-2 bg-bg border border-dashed border-hairline rounded-control px-3 py-2 text-title-s font-sans text-ink-2 hover:text-accent hover:border-accent/40 transition-all"
+            >
+              <Icon name="add" size="s" />
+              Añadir ejercicio
+            </button>
+            <p className="font-mono text-caption text-ink-3">
+              Se aplica a todas las semanas de este mesociclo — las sesiones ya completadas no se tocan.
+            </p>
           </div>
-        ))}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -471,17 +577,36 @@ function ProgressionView({ editing, mesocycles, onUpdateGroup }: {
             .join(' · ');
           const lastHistorical = history.length > 0 ? history[history.length - 1].groups[group] : null;
           const delta = lastHistorical !== null ? cfg.series - lastHistorical.series : null;
+          // Barra de zona MEV/Productivo/MAV/MRV — mismos umbrales que heatmapBg/LEGEND
+          // (1/5/10/15 series), pintada como marcas de referencia sobre el rango 0-20 en
+          // vez de solo un color de fondo: así la zona se lee de un vistazo, como en el
+          // mockup de Fase 3 (r.mavMark / r.mrvMark).
+          const ZONE_MAX = 20;
+          const fillPct = Math.min(100, (cfg.series / ZONE_MAX) * 100);
+          const mavPct  = (10 / ZONE_MAX) * 100;
+          const mrvPct  = (15 / ZONE_MAX) * 100;
           return (
-            <div key={group} className="bg-bg border border-hairline rounded-surface p-3 space-y-2"
-              style={{ backgroundColor: cfg.series > 0 ? heatmapBg(cfg.series) : undefined }}
-            >
+            <div key={group} className="bg-surface border border-hairline rounded-surface p-3 space-y-3">
               <div className="flex items-center justify-between">
                 <span className="font-sans text-label text-white font-bold">{MUSCLE_LABELS[group]}</span>
-                {delta !== null && <Delta delta={delta} showEqual />}
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-caption uppercase tracking-wider" style={{ color: heatmapText(cfg.series) }}>
+                    {zoneLabel(cfg.series)}
+                  </span>
+                  {delta !== null && <Delta delta={delta} showEqual />}
+                </div>
               </div>
               <div className="flex items-center justify-between gap-3">
                 <Stepper value={cfg.series} onChange={v => onUpdateGroup(group, 'series', v)} />
                 <PrioritySelector value={cfg.priority} onChange={v => onUpdateGroup(group, 'priority', v)} />
+              </div>
+              <div className="relative h-1 rounded-full bg-track">
+                <div
+                  className="absolute inset-y-0 left-0 rounded-full transition-[width] duration-(--duration-bar)"
+                  style={{ width: `${fillPct}%`, backgroundColor: heatmapText(cfg.series) }}
+                />
+                <div className="absolute -top-0.5 -bottom-0.5 w-px bg-white/28" style={{ left: `${mavPct}%` }} title="MAV" />
+                <div className="absolute -top-0.5 -bottom-0.5 w-px bg-danger/70" style={{ left: `${mrvPct}%` }} title="MRV" />
               </div>
               {histText && (
                 <p className="font-mono text-caption text-ink-3">{histText}</p>
@@ -531,6 +656,8 @@ function ProgressionView({ editing, mesocycles, onUpdateGroup }: {
                   const zeroToZero = prev !== null && prev.series === 0 && cfg.series === 0;
 
                   if (isCurrent) {
+                    const ZONE_MAX = 20;
+                    const fillPct = Math.min(100, (cfg.series / ZONE_MAX) * 100);
                     return (
                       <td key={m.id} className="px-3 py-2 border-r border-hairline last:border-r-0 bg-accent/5"
                         style={{ backgroundColor: cfg.series > 0 ? heatmapBg(cfg.series) : undefined }}
@@ -539,6 +666,14 @@ function ProgressionView({ editing, mesocycles, onUpdateGroup }: {
                           <Stepper value={cfg.series} onChange={v => onUpdateGroup(group, 'series', v)} />
                           <PrioritySelector value={cfg.priority} onChange={v => onUpdateGroup(group, 'priority', v)} />
                           {!zeroToZero && <Delta delta={delta} showEqual />}
+                          <div className="relative h-1 w-full rounded-full bg-track">
+                            <div
+                              className="absolute inset-y-0 left-0 rounded-full transition-[width] duration-(--duration-bar)"
+                              style={{ width: `${fillPct}%`, backgroundColor: heatmapText(cfg.series) }}
+                            />
+                            <div className="absolute -top-0.5 -bottom-0.5 w-px bg-white/28" style={{ left: `${(10 / ZONE_MAX) * 100}%` }} title="MAV" />
+                            <div className="absolute -top-0.5 -bottom-0.5 w-px bg-danger/70" style={{ left: `${(15 / ZONE_MAX) * 100}%` }} title="MRV" />
+                          </div>
                         </div>
                       </td>
                     );
@@ -615,9 +750,16 @@ function ProgressionView({ editing, mesocycles, onUpdateGroup }: {
         </table>
       </div>
 
-      <div className="bg-surface border border-hairline rounded-surface px-4 py-3 flex items-center justify-between">
-        <span className="font-sans text-label text-ink-2 uppercase tracking-wider">Total series semanales (meso actual)</span>
-        <span className="font-mono font-bold text-title-m text-white">{currentTotal}</span>
+      <div className="bg-surface border border-hairline rounded-surface px-5 py-4 flex items-end justify-between gap-4 flex-wrap">
+        <div className="flex flex-col gap-1">
+          <span className="font-mono text-caption text-ink-2 uppercase tracking-[.1em]">Series semanales totales</span>
+          <div className="flex items-baseline gap-2">
+            <span className="font-mono font-semibold text-hero text-ink tabular-nums">{currentTotal}</span>
+            {history.length > 0 && (
+              <Delta delta={currentTotal - totals[totals.length - 2]} showEqual />
+            )}
+          </div>
+        </div>
       </div>
 
       <p className="font-mono text-caption text-ink-3">
@@ -788,7 +930,8 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
 
   const handleGenerateDistribution = () => {
     if (!editing) return;
-    const result = runDistribution(editing.groups, editing.daysPerWeek);
+    const split = editing.splitId ? TRAINING_SPLITS.find(s => s.id === editing.splitId) : undefined;
+    const result = runDistribution(editing.groups, editing.daysPerWeek, split?.dayTypes);
     const distribution: WeekDistribution = {
       ...result,
       snapshot: buildSnapshot(editing),
@@ -1205,7 +1348,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
 
       queryClient.setQueryData<Mesocycle[]>(mesocyclesQueryKey, prev => [...(prev ?? []), ...created]);
       setEditing(created[0]);
-      setEditorTab('volume');
+      setEditorTab('progression');
       setConfirmDelete(false);
       setGenPhase('idle');
       setShowTemplatePicker(false);
@@ -1234,7 +1377,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
       });
       queryClient.setQueryData<Mesocycle[]>(mesocyclesQueryKey, prev => [...(prev ?? []), created]);
       setEditing(created);
-      setEditorTab('volume');
+      setEditorTab('progression');
       setConfirmDelete(false);
       setGenPhase('idle');
     } finally {
@@ -1330,7 +1473,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
             {mesocycles.map(m => (
               <button
                 key={m.id}
-                onClick={() => { setEditing(m); setEditorTab('volume'); setConfirmDelete(false); setGenPhase('idle'); }}
+                onClick={() => { setEditing(m); setEditorTab('progression'); setConfirmDelete(false); setGenPhase('idle'); }}
                 className={`w-full text-left p-3 rounded-control border transition-all ${
                   editing?.id === m.id
                     ? 'border-accent/60 bg-accent/5'
@@ -1396,7 +1539,14 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                     <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Días/semana</label>
                     <div className="flex gap-1 flex-wrap">
                       {[2,3,4,5,6].map(d => (
-                        <button key={d} onClick={() => updateField('daysPerWeek', d)}
+                        <button key={d} onClick={() => {
+                            if (!editing) return;
+                            const split = editing.splitId ? TRAINING_SPLITS.find(s => s.id === editing.splitId) : undefined;
+                            const clearsSplit = split && split.dayTypes.length !== d;
+                            const updated = { ...editing, daysPerWeek: d, ...(clearsSplit ? { splitId: undefined } : {}) };
+                            setEditing(updated);
+                            scheduleAutoSave(updated);
+                          }}
                           className={`w-11 h-11 rounded-control font-mono text-label font-bold transition-all ${
                             editing.daysPerWeek === d ? 'bg-accent text-black' : 'bg-raised text-ink-2 hover:bg-raised'
                           }`}
@@ -1414,27 +1564,20 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                 />
               </div>
 
-              {/* Tab bar */}
-              <div className="overflow-x-auto -mx-1 px-1 ">
-                <div className="flex bg-surface border border-hairline p-1 rounded-surface gap-1 min-w-max">
-                  {([
-                    { id: 'progression',  label: 'Progresión y volumen', icon: 'trending_up' },
-                    { id: 'distribution', label: 'Distribución',        icon: 'grid_view'   },
-                    { id: 'exercises',    label: 'Ejercicios programados', icon: 'fitness_center' },
-                  ] as { id: EditorTab; label: string; icon: string }[]).map(tab => (
-                    <button
-                      key={tab.id}
-                      onClick={() => { setEditorTab(tab.id); if (tab.id !== 'distribution') setGenPhase('idle'); }}
-                      className={`flex items-center gap-2 px-3 py-3 rounded-control font-mono text-label font-bold uppercase tracking-wide transition-all whitespace-nowrap ${
-                        editorTab === tab.id ? 'bg-accent text-black' : 'text-ink-2 hover:text-white'
-                      }`}
-                    >
-                      <span className="material-symbols-outlined text-body-s">{tab.icon}</span>
-                      {tab.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
+              {/* Tab bar — subrayado oro (ui/Tabs), igual que el resto de la app.
+                  Antes era una píldora rellena local, la única pantalla que no
+                  usaba la primitiva compartida; el mockup de Fase 3 confirma el
+                  subrayado como fuente de verdad para esta zona también. */}
+              <Tabs
+                label="Pestañas del editor de mesociclo"
+                value={editorTab}
+                onChange={id => { setEditorTab(id as EditorTab); if (id !== 'distribution') setGenPhase('idle'); }}
+                items={[
+                  { id: 'progression',  label: 'Volumen',      icon: 'trending_up' },
+                  { id: 'distribution', label: 'Distribución', icon: 'grid_view' },
+                  { id: 'exercises',    label: 'Ejercicios',   icon: 'fitness_center' },
+                ] as TabItem[]}
+              />
 
               {/* ── Progresión y volumen ── */}
               {editorTab === 'progression' && (
@@ -1457,6 +1600,32 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                           </p>
                         </div>
                       )}
+
+                      {/* Reparto de días — plantillas Torso/Pierna/Push/Pull filtradas por daysPerWeek */}
+                      <div className="space-y-2">
+                        <span className="font-mono text-caption text-ink-2 uppercase tracking-wider">
+                          Reparto ({editing.daysPerWeek} días/sem)
+                        </span>
+                        {getSplitsForDays(editing.daysPerWeek).length === 0 ? (
+                          <p className="font-sans text-caption text-ink-3">Sin plantillas de reparto para {editing.daysPerWeek} días/semana.</p>
+                        ) : (
+                          <div className="flex flex-wrap gap-2">
+                            {getSplitsForDays(editing.daysPerWeek).map(split => (
+                              <button
+                                key={split.id}
+                                onClick={() => updateField('splitId', editing.splitId === split.id ? undefined : split.id)}
+                                className={`px-3 py-2 rounded-control border font-sans text-label text-left transition-all ${
+                                  editing.splitId === split.id
+                                    ? 'bg-accent/10 border-accent text-accent'
+                                    : 'bg-raised border-hairline text-ink-2 hover:border-accent/40 hover:text-white'
+                                }`}
+                              >
+                                {split.label}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
 
                       {/* Distribution controls */}
                       <div className="flex flex-wrap items-center gap-3">
@@ -1602,7 +1771,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
 
                       <div className="flex flex-wrap gap-3">
                         {previewDays.map((pd, dayIdx) => (
-                          <div key={dayIdx} className="bg-surface border border-hairline rounded-surface p-4 flex-1 min-w-[260px]">
+                          <div key={dayIdx} className="bg-surface border border-hairline rounded-surface p-4 flex-1 min-w-[300px]">
                             {/* Day header */}
                             <div className="flex items-center justify-between mb-3 pb-2 border-b border-hairline">
                               <span className="font-mono text-label font-bold text-accent uppercase">Día {dayIdx + 1}</span>

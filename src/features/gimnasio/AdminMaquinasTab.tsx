@@ -1,6 +1,6 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Button, Icon, Input, SearchField, Select, Sheet, Skeleton } from '../../components/ui';
+import { Badge, Button, Chip, EmptyState, Icon, Input, ListRow, SearchField, Select, Sheet, Skeleton } from '../../components/ui';
 import { MARCA_LABELS, MUSCLE_LABELS } from '../../types';
 import type { Maquina, MuscleGroup } from '../../types';
 import {
@@ -98,28 +98,10 @@ export default function AdminMaquinasTab() {
 
       <div className="flex flex-wrap gap-2">
         {([['pendientes', `Por revisar (${pendientes.length})`], ['todas', `Todas (${catalogo.length})`]] as const).map(([id, etiqueta]) => (
-          <button
-            key={id}
-            type="button"
-            onClick={() => setFiltro(id)}
-            className={`px-3 py-2 rounded-chip font-mono text-caption uppercase tracking-wider transition-colors ${
-              filtro === id ? 'bg-accent text-on-accent' : 'bg-raised text-ink-3'
-            }`}
-          >
-            {etiqueta}
-          </button>
+          <Chip key={id} selected={filtro === id} onClick={() => setFiltro(id)}>{etiqueta}</Chip>
         ))}
         {marcas.map(marca => (
-          <button
-            key={marca}
-            type="button"
-            onClick={() => setFiltro(marca)}
-            className={`px-3 py-2 rounded-chip font-mono text-caption uppercase tracking-wider transition-colors ${
-              filtro === marca ? 'bg-accent text-on-accent' : 'bg-raised text-ink-3'
-            }`}
-          >
-            {MARCA_LABELS[marca] ?? marca}
-          </button>
+          <Chip key={marca} selected={filtro === marca} onClick={() => setFiltro(marca)}>{MARCA_LABELS[marca] ?? marca}</Chip>
         ))}
       </div>
 
@@ -134,35 +116,28 @@ export default function AdminMaquinasTab() {
       ) : (
         <ul className="divide-y divide-hairline">
           {visibles.map(m => (
-            <li key={m.id}>
-              <button
-                type="button"
-                onClick={() => setEditando(m)}
-                className="w-full flex items-center gap-3 py-3 text-left transition-colors hover:bg-raised/60"
-              >
-                <img src={m.fotoUrl} alt="" className="w-12 h-12 rounded-control object-contain bg-white flex-shrink-0" loading="lazy" />
-                <span className="flex-1 min-w-0">
-                  <span className="block font-sans text-body-s text-ink truncate">{m.nombreMostrado}</span>
-                  <span className="block font-mono text-caption text-ink-4 uppercase tracking-wider truncate">
-                    {MARCA_LABELS[m.marca] ?? m.marca} · {m.nombreOriginal}
-                  </span>
+            <ListRow
+              key={m.id}
+              as="li"
+              onClick={() => setEditando(m)}
+              leading={<img src={m.fotoUrl} alt="" className="w-12 h-12 rounded-control object-contain bg-white flex-shrink-0" loading="lazy" />}
+              title={m.nombreMostrado}
+              subtitle={`${MARCA_LABELS[m.marca] ?? m.marca} · ${m.nombreOriginal}`}
+              trailing={
+                <span className="flex items-center gap-2">
+                  <Badge tone={!m.publicadoEn ? 'accent' : m.visible ? 'success' : 'danger'}>
+                    {!m.publicadoEn ? 'Sin revisar' : m.visible ? 'Publicada' : 'Oculta'}
+                  </Badge>
+                  <Icon name="chevron_right" size="s" className="text-ink-4 shrink-0" />
                 </span>
-                <span
-                  className={`font-mono text-caption uppercase tracking-wider flex-shrink-0 ${
-                    !m.publicadoEn ? 'text-accent' : m.visible ? 'text-success' : 'text-ink-5'
-                  }`}
-                >
-                  {!m.publicadoEn ? 'Sin revisar' : m.visible ? 'Publicada' : 'Oculta'}
-                </span>
-                <Icon name="chevron_right" size="s" className="text-ink-4 flex-shrink-0" />
-              </button>
-            </li>
+              }
+            />
           ))}
         </ul>
       )}
 
       {!isLoading && visibles.length === 0 && (
-        <p className="font-sans text-body-s text-ink-3 py-2">Ninguna máquina coincide con este filtro.</p>
+        <EmptyState icon="search_off" title="Sin resultados" description="Ninguna máquina coincide con este filtro." />
       )}
 
       <Button variant="secondary" size="m" icon="add" fullWidth onClick={() => setCreando(true)}>

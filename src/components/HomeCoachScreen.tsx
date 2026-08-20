@@ -1,31 +1,51 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { UserProfile, WeightCheckIn, WorkoutAssignment } from '../types';
 import { getCrmSuscripciones } from '../dbService';
-import { Icon } from './ui';
+import { ActionRow as ActionRowPrimitive, EmptyState } from './ui';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    HomeCoachScreen (F3.13a, "Home Coach" del handoff transversal)
 
    La entrada del coach: "Requiere acción" (revisiones, pagos, planes sin
-   publicar) separada de "Al día", reutilizando el punto pulsante ya
-   establecido en la cabecera de ClientsScreen (`animate-pulse` + bg-data,
-   ahora también en oro para lo urgente). No sustituye a la parrilla de
-   atletas ni al alta de nuevo cliente que ya vivían en ClientsScreen — esos
-   siguen debajo, sin tocar: CRM→Clientes es un directorio de facturación
-   (con contactos que ni siquiera tienen cuenta en la app, ver `Cliente.
-   fuente`), no el lanzador del Hub de coaching por atleta. La tarjeta
-   "Revisiones Pendientes" que vivía arriba de la parrilla SÍ se retira de
-   ClientsScreen: esta pantalla la sustituye 1:1.
+   publicar) separada de "Al día". Restilizada sobre `Home Coach -
+   Experiencia.dc.html` (docs/design/fase3): filtro por chips, fila con
+   avatar de iniciales (`ui/ActionRow`, nueva — el propio handoff pide
+   reutilizarla en vez de inventar un tratamiento por pantalla), "Al día"
+   siempre visible y atenuada en vez de un `<details>` colapsado, y estado
+   vacío a pantalla completa cuando no hay nada pendiente.
+
+   La maqueta dibuja esto como una pantalla propia titulada "Hoy" — aquí
+   vive insertada bajo la cabecera "Clientes" de `ClientsScreen`, así que no
+   repetimos el título grande (quedaría duplicado con el de arriba); ver la
+   nota en CLAUDE.md/el informe de rediseño sobre si esto debería separarse
+   en su propia pestaña ahora que CRM ya tiene la suya.
+
+   No sustituye a la parrilla de atletas ni al alta de nuevo cliente que ya
+   vivían en ClientsScreen — esos siguen debajo, sin tocar: CRM→Clientes es
+   un directorio de facturación (con contactos que ni siquiera tienen cuenta
+   en la app, ver `Cliente.fuente`), no el lanzador del Hub de coaching por
+   atleta. La tarjeta "Revisiones Pendientes" que vivía arriba de la
+   parrilla SÍ se retira de ClientsScreen: esta pantalla la sustituye 1:1.
    ═══════════════════════════════════════════════════════════════════════════ */
+
+type Categoria = 'revision' | 'pago' | 'plan';
 
 interface ActionRow {
   key: string;
+  categoria: Categoria;
   label: string;
   detail: string;
   onClick: () => void;
 }
+
+function iniciales(nombre: string): string {
+  const partes = nombre.trim().split(/\s+/);
+  return ((partes[0]?.[0] ?? '') + (partes[1]?.[0] ?? '')).toUpperCase() || '·';
+}
+
+const DIA_SEMANA = ['DOMINGO', 'LUNES', 'MARTES', 'MIÉRCOLES', 'JUEVES', 'VIERNES', 'SÁBADO'];
 
 interface Props {
   athletes: UserProfile[];
@@ -40,6 +60,7 @@ function todayIso(): string {
 
 export default function HomeCoachScreen({ athletes, checkins, assignmentsByEmail, loadingAssignments }: Props) {
   const navigate = useNavigate();
+  const [filtro, setFiltro] = useState<'todas' | Categoria>('todas');
   const { data: suscripciones = [] } = useQuery({
     queryKey: ['crmSuscripciones'],
     queryFn: getCrmSuscripciones,
@@ -56,6 +77,7 @@ export default function HomeCoachScreen({ athletes, checkins, assignmentsByEmail
     const pendingForAthlete = checkins.filter(x => x.email === c.email && (!x.approved || !x.coachFeedback)).length;
     revisionRows.push({
       key: `revision-${c.email}`,
+      categoria: 'revision',
       label: nameByEmail.get(c.email) ?? c.email,
       detail: `${pendingForAthlete} revisión${pendingForAthlete === 1 ? '' : 'es'} pendiente${pendingForAthlete === 1 ? '' : 's'}`,
       onClick: () => navigate(`/clients/${encodeURIComponent(c.email)}/revisiones`),
@@ -67,6 +89,7 @@ export default function HomeCoachScreen({ athletes, checkins, assignmentsByEmail
   const pagoClientIds = new Set(overdueSubs.map(s => s.clientId));
   const pagoRows: ActionRow[] = overdueSubs.map(s => ({
     key: `pago-${s.id}`,
+    categoria: 'pago',
     label: s.clientNombre,
     detail: `Pago vencido · ${s.concepto}`,
     onClick: () => navigate(`/crm/clientes/${s.clientId}`),
@@ -76,6 +99,7 @@ export default function HomeCoachScreen({ athletes, checkins, assignmentsByEmail
     .filter(a => (assignmentsByEmail.get(a.email) ?? []).length === 0)
     .map(a => ({
       key: `plan-${a.email}`,
+      categoria: 'plan',
       label: a.displayName,
       detail: 'Plan sin publicar',
       onClick: () => navigate(`/clients/${encodeURIComponent(a.email)}/entrenamientos`),
@@ -83,61 +107,95 @@ export default function HomeCoachScreen({ athletes, checkins, assignmentsByEmail
   const planPendingEmails = new Set(planRows.map(r => r.key.slice('plan-'.length)));
 
   const requiereAccion = [...revisionRows, ...pagoRows, ...planRows];
+  const visibles = filtro === 'todas' ? requiereAccion : requiereAccion.filter(r => r.categoria === filtro);
   const alDia = athletes.filter(a =>
     !seenReviewEmail.has(a.email)
     && !(a.userId && pagoClientIds.has(a.userId))
     && !planPendingEmails.has(a.email)
   );
 
+  const chips = useMemo(() => ([
+    { id: 'todas' as const, label: 'Todas', count: requiereAccion.length },
+    { id: 'revision' as const, label: 'Revisiones', count: revisionRows.length },
+    { id: 'pago' as const, label: 'Pagos', count: pagoRows.length },
+    { id: 'plan' as const, label: 'Planes', count: planRows.length },
+  ].filter(c => c.id === 'todas' || c.count > 0)), [requiereAccion.length, revisionRows.length, pagoRows.length, planRows.length]);
+
+  const hoy = new Date();
+
+  if (requiereAccion.length === 0) {
+    return (
+      <section>
+        <EmptyState
+          icon="check"
+          iconTone="accent"
+          title="Todo al día"
+          description="Ningún atleta necesita algo tuyo ahora mismo."
+        />
+      </section>
+    );
+  }
+
   return (
     <section className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="font-display text-title-l font-black uppercase text-ink">Home Coach</h2>
-        {requiereAccion.length > 0 ? (
-          <span className="inline-flex items-center gap-2 rounded-control border border-accent-line bg-accent/10 px-3 py-1 font-mono text-caption font-bold uppercase text-accent">
-            <span className="h-2 w-2 rounded-full bg-accent animate-pulse" />
-            {requiereAccion.length} requiere{requiereAccion.length === 1 ? '' : 'n'} acción
-          </span>
-        ) : (
-          <span className="rounded-control border border-hairline bg-surface px-3 py-1 font-mono text-caption font-bold uppercase text-ink-2">Al día</span>
-        )}
-      </div>
+      <p className="font-mono text-label uppercase tracking-wider text-ink-3">
+        {DIA_SEMANA[hoy.getDay()]} · {athletes.length} atleta{athletes.length === 1 ? '' : 's'} activo{athletes.length === 1 ? '' : 's'}
+      </p>
 
-      {requiereAccion.length > 0 && (
-        <div className="space-y-2">
-          {requiereAccion.map(row => (
+      {chips.length > 1 && (
+        <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+          {chips.map(c => (
             <button
-              key={row.key}
-              onClick={row.onClick}
-              className="w-full flex items-center gap-3 rounded-control border border-hairline bg-surface p-4 text-left hover:border-accent-line transition-colors"
+              key={c.id}
+              type="button"
+              onClick={() => setFiltro(c.id)}
+              className={
+                'flex-none rounded-chip px-3 py-2 font-mono text-caption font-bold uppercase transition-colors duration-(--duration-state) '
+                + (filtro === c.id ? 'bg-accent text-on-accent' : 'bg-white/5 text-ink-2 hover:bg-white/8')
+              }
             >
-              <span className="h-2 w-2 shrink-0 rounded-full bg-accent animate-pulse" />
-              <span className="min-w-0 flex-1">
-                <span className="block truncate font-sans text-body-s font-bold text-ink">{row.label}</span>
-                <span className="block font-mono text-caption text-ink-2">{row.detail}</span>
-              </span>
-              <Icon name="chevron_right" size="m" className="text-ink-2 shrink-0" />
+              {c.label} · {c.count}
             </button>
           ))}
         </div>
       )}
 
+      <div className="flex items-center gap-2">
+        <span className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse" />
+        <span className="font-mono text-caption uppercase tracking-widest text-ink-3">Requiere acción</span>
+      </div>
+      <div className="divide-y divide-hairline overflow-hidden rounded-field border border-hairline bg-surface">
+        {visibles.map(row => (
+          <ActionRowPrimitive
+            key={row.key}
+            initials={iniciales(row.label)}
+            title={row.label}
+            meta={row.detail}
+            urgent
+            onClick={row.onClick}
+          />
+        ))}
+      </div>
+
       {alDia.length > 0 && (
-        <details className="rounded-control border border-hairline bg-surface p-3">
-          <summary className="cursor-pointer select-none font-mono text-caption uppercase text-ink-2">Al día ({alDia.length})</summary>
-          <div className="mt-3 space-y-1">
+        <>
+          <div className="flex items-center gap-2">
+            <span className="h-1.5 w-1.5 rounded-full bg-white/20" />
+            <span className="font-mono text-caption uppercase tracking-widest text-ink-3">Al día · {alDia.length}</span>
+          </div>
+          <div className="divide-y divide-hairline overflow-hidden rounded-field border border-hairline bg-surface opacity-55">
             {alDia.map(a => (
-              <button
+              <ActionRowPrimitive
                 key={a.email}
+                initials={iniciales(a.displayName)}
+                title={a.displayName}
+                meta="Al día"
+                urgent={false}
                 onClick={() => navigate(`/clients/${encodeURIComponent(a.email)}`)}
-                className="w-full flex items-center justify-between rounded-control px-3 py-2 text-left hover:bg-raised transition-colors"
-              >
-                <span className="font-sans text-body-s text-ink-2">{a.displayName}</span>
-                <Icon name="check_circle" size="s" className="text-success" />
-              </button>
+              />
             ))}
           </div>
-        </details>
+        </>
       )}
     </section>
   );

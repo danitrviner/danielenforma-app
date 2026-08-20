@@ -670,7 +670,7 @@ export default function NutritionPlansScreen({
                     </button>
                     <button
                       onClick={() => setDeleteId(dt.id)}
-                      className="flex items-center gap-2 px-3 py-2 bg-raised border border-hairline text-ink-2 hover:text-red-400 hover:border-red-500/30 font-mono text-caption uppercase rounded-control transition-all"
+                      className="flex items-center gap-2 px-3 py-2 bg-raised border border-hairline text-ink-2 hover:text-danger hover:border-danger/30 font-mono text-caption uppercase rounded-control transition-all"
                     >
                       <Icon name="delete" size="s" />Eliminar
                     </button>
@@ -737,14 +737,14 @@ export default function NutritionPlansScreen({
             const isOver = b > 0 && p > b;
             const isOk = b > 0 && round2(p) === round2(b);
             const pct = b > 0 ? Math.min(100, (p / b) * 100) : (p > 0 ? 100 : 0);
-            const barColor = isOver ? 'bg-red-500' : isOk ? 'bg-green-400' : 'bg-accent';
+            const barColor = isOver ? 'bg-danger' : isOk ? 'bg-success' : 'bg-accent';
             return (
               <div key={cat}>
                 <div className="flex items-center justify-between mb-1">
                   <span className={`text-caption font-mono font-bold ${CAT_COLOR[cat]}`}>
                     {cat.replace('_', ' ')}
                   </span>
-                  <span className={`text-caption font-mono font-bold ${isOver ? 'text-red-400' : isOk ? 'text-green-400' : 'text-white'}`}>
+                  <span className={`text-caption font-mono font-bold ${isOver ? 'text-danger' : isOk ? 'text-success' : 'text-white'}`}>
                     {fmtQty(p)}{b > 0 ? `/${fmtQty(b)}` : ''}{isOk ? ' ✓' : isOver ? ' !' : ''}
                   </span>
                 </div>
@@ -757,12 +757,12 @@ export default function NutritionPlansScreen({
         </div>
 
         {targetMismatches.length > 0 && (
-          <div className="mt-3 bg-amber-500/10 border border-amber-500/30 rounded-surface px-3 py-2 flex flex-wrap gap-x-3 gap-y-1">
-            <span className="font-sans text-caption text-amber-400 uppercase tracking-wider w-full ">
+          <div className="mt-3 bg-warning/10 border border-warning/30 rounded-surface px-3 py-2 flex flex-wrap gap-x-3 gap-y-1">
+            <span className="font-sans text-caption text-warning uppercase tracking-wider w-full ">
               ⚠ Objetivos por comida no cuadran con el presupuesto
             </span>
             {targetMismatches.map(({ cat, sum, budget: b }) => (
-              <span key={cat} className="font-mono text-caption text-amber-300">
+              <span key={cat} className="font-mono text-caption text-warning">
                 {cat.replace('_', ' ')}: suma {fmtQty(sum)} ≠ {fmtQty(b)}
               </span>
             ))}
@@ -859,15 +859,15 @@ export default function NutritionPlansScreen({
         {/* T12: la dieta no cuadra con lo que pide la fase — se avisa, no se
             sobreescribe solo: es Dani quien decide. */}
         {phaseKcalMismatch && (
-          <div className="bg-amber-500/10 border border-amber-500/30 rounded-surface px-3 py-2 flex items-center justify-between gap-3 flex-wrap">
-            <span className="font-mono text-caption text-amber-300">
+          <div className="bg-warning/10 border border-warning/30 rounded-surface px-3 py-2 flex items-center justify-between gap-3 flex-wrap">
+            <span className="font-mono text-caption text-warning">
               Esta dieta suma {Math.round(currentBudgetKcal)} kcal y la fase pide {Math.round(phaseTargetKcal!)}
               {' '}({currentBudgetKcal > phaseTargetKcal! ? '+' : ''}{Math.round(currentBudgetKcal - phaseTargetKcal!)})
             </span>
             {onboardingData && (
               <button
                 onClick={ajustarAlObjetivoDeLaFase}
-                className="font-mono text-caption text-amber-300 underline underline-offset-2 hover:text-amber-200 transition-colors"
+                className="font-mono text-caption text-warning underline underline-offset-2 hover:text-warning/80 transition-colors"
               >
                 Cuadrar
               </button>
@@ -903,7 +903,7 @@ export default function NutritionPlansScreen({
       {onboardingData && (onboardingData.allergies.length > 0 || onboardingData.dislikedFoods.length > 0) && (
         <div className="flex flex-wrap gap-2">
           {onboardingData.allergies.length > 0 && (
-            <span className="inline-flex items-center gap-1 font-mono text-caption text-amber-400 bg-amber-500/10 border border-amber-500/25 px-2 py-1 rounded-control">
+            <span className="inline-flex items-center gap-1 font-mono text-caption text-warning bg-warning/10 border border-warning/25 px-2 py-1 rounded-control">
               <Icon name="warning" size="s" />
               Alergias: <span className="font-bold">{onboardingData.allergies.join(', ')}</span>
             </span>
@@ -995,7 +995,7 @@ export default function NutritionPlansScreen({
                 {SLOT_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
               </select>
               {form.meals.length > 1 && (
-                <button onClick={() => removeMeal(meal.id)} className="text-ink-2 hover:text-red-400 transition-colors">
+                <button onClick={() => removeMeal(meal.id)} className="text-ink-2 hover:text-danger transition-colors">
                   <Icon name="remove_circle" size="s" />
                 </button>
               )}
@@ -1031,7 +1031,7 @@ export default function NutritionPlansScreen({
                             >+</button>
                           </div>
                           {tgt > 0 && (
-                            <span className={`font-mono text-caption ml-1 ${isOver ? 'text-red-400' : isOk ? 'text-green-400' : 'text-ink-2'}`}>
+                            <span className={`font-mono text-caption ml-1 ${isOver ? 'text-danger' : isOk ? 'text-success' : 'text-ink-2'}`}>
                               {fmtQty(p)}{isOk ? ' ✓' : isOver ? ' !' : ''}
                             </span>
                           )}
@@ -1072,7 +1072,7 @@ export default function NutritionPlansScreen({
                     {itemWeightLabel(item.foodLabel, item.quantity)}
                   </span>
                   {/* Remove */}
-                  <button onClick={() => removeItem(meal.id, idx)} className="text-ink-2 hover:text-red-400 transition-colors flex-shrink-0">
+                  <button onClick={() => removeItem(meal.id, idx)} className="text-ink-2 hover:text-danger transition-colors flex-shrink-0">
                     <Icon name="close" size="s" />
                   </button>
                 </div>

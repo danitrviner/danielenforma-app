@@ -172,7 +172,7 @@ export default function ClientDietsPanel({
                     <div className="flex items-center gap-2 min-w-0">
                       <p className={`font-sans font-bold text-body-s truncate ${active ? 'text-white' : 'text-ink-2'}`}>{dt.name}</p>
                       {dt.isDraft === true && (
-                        <span className="flex-shrink-0 text-caption font-mono font-bold uppercase text-amber-400 bg-amber-400/10 px-2 rounded-control border border-amber-400/20">
+                        <span className="flex-shrink-0 text-caption font-mono font-bold uppercase text-warning bg-warning/10 px-2 rounded-control border border-warning/20">
                           BORRADOR
                         </span>
                       )}
@@ -231,7 +231,7 @@ export default function ClientDietsPanel({
             Programación semanal
           </h3>
           {pendingScheduledDiets.length > 0 && (
-            <span className="flex items-center gap-1 text-caption font-mono font-bold uppercase text-amber-400 bg-amber-400/10 px-2 py-1 rounded-surface border border-amber-400/20">
+            <span className="flex items-center gap-1 text-caption font-mono font-bold uppercase text-warning bg-warning/10 px-2 py-1 rounded-surface border border-warning/20">
               <span className="material-symbols-outlined" style={{ fontSize: '12px' }}>pending_actions</span>
               {pendingScheduledDiets.length} {pendingScheduledDiets.length === 1 ? 'pendiente de generar' : 'pendientes de generar'}
             </span>
@@ -314,7 +314,7 @@ export default function ClientDietsPanel({
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 min-w-0 flex-wrap">
                     <p className="font-sans font-bold text-body-s text-white truncate">{m.name}</p>
-                    <span className={`flex-shrink-0 text-caption font-mono font-bold uppercase px-2 rounded-control border ${m.status === 'published' ? 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20' : 'text-amber-400 bg-amber-400/10 border-amber-400/20'}`}>
+                    <span className={`flex-shrink-0 text-caption font-mono font-bold uppercase px-2 rounded-control border ${m.status === 'published' ? 'text-success bg-success/10 border-success/20' : 'text-warning bg-warning/10 border-warning/20'}`}>
                       {m.status === 'published' ? 'PUBLICADO' : 'BORRADOR'}
                     </span>
                     {m.batchCooking && (
@@ -323,7 +323,7 @@ export default function ClientDietsPanel({
                       </span>
                     )}
                     {isMenuStale(m, athleteDietConfig?.weeklySchedule ?? {}, athleteDiets) && (
-                      <span className="flex-shrink-0 flex items-center text-caption font-mono font-bold uppercase text-orange-400 bg-orange-400/10 border border-orange-400/25 px-2 rounded-control" title="Las dietas o el calendario han cambiado desde que se generó — regenera para actualizar los puntos.">
+                      <span className="flex-shrink-0 flex items-center text-caption font-mono font-bold uppercase text-warning bg-warning/10 border border-warning/25 px-2 rounded-control" title="Las dietas o el calendario han cambiado desde que se generó — regenera para actualizar los puntos.">
                         <span className="material-symbols-outlined" style={{ fontSize: '10px' }}>sync_problem</span>desactualizado
                       </span>
                     )}

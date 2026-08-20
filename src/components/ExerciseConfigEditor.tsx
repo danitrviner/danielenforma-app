@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { WorkoutExercise, WorkoutTechnique, WarmupMode, WarmupSet, WorkoutSetGroup } from '../types';
 import { TECHNIQUES, TECHNIQUE_EMOJI, TECHNIQUE_LABEL, TECHNIQUE_COLOR, TECHNIQUE_DESCRIPTION } from '../utils/workoutTechniques';
 import { syncAggregateFromGroups, newSetGroup } from '../utils/setGroups';
-import { Icon } from './ui';
+import { Icon, SegmentedControl } from './ui';
 
 interface Props {
   we: WorkoutExercise;
@@ -16,6 +16,103 @@ interface Props {
 // sugerencias, no la lista cerrada: "Escribir..." abre un campo libre.
 const ETIQUETAS_SUGERIDAS = ['Pesado', 'Ligero', 'Al fallo'];
 
+function formatRest(seconds: number): string {
+  if (seconds < 60) return `${seconds}s`;
+  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
+}
+
+// Stepper compacto para las celdas de SERIES/DESCANSO de cada bloque — el
+// `Stepper` compartido de `ui/` está pensado para contextos con sitio de
+// sobra (botones de 44-52 px); aquí conviven tres celdas una junto a otra
+// dentro de una tarjeta de ejercicio que a su vez vive dentro de una columna
+// de día de ~260-300 px, así que necesita el mismo patrón "grande en móvil,
+// compacto en escritorio" que ya usa el stepper de reparto de series en
+// `MesocycleManager` (ProgressionView), pero con los tokens de color del DS
+// en vez de los del heatmap de volumen.
+function BlockStepper({ value, min = 0, max = 99, step = 1, format, onChange }: {
+  value: number; min?: number; max?: number; step?: number; format?: (v: number) => string; onChange: (v: number) => void;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-1">
+      <button
+        type="button"
+        onClick={() => onChange(Math.max(min, value - step))}
+        disabled={value <= min}
+        className="w-9 h-9 sm:w-6 sm:h-6 rounded-control bg-inset text-ink-2 hover:bg-white/5 disabled:opacity-30 font-mono text-body-s sm:text-label font-bold flex items-center justify-center flex-shrink-0 transition-colors"
+      >−</button>
+      <span className="flex-1 text-center font-mono text-title-s font-bold text-ink tabular-nums">
+        {format ? format(value) : value}
+      </span>
+      <button
+        type="button"
+        onClick={() => onChange(Math.min(max, value + step))}
+        disabled={value >= max}
+        className="w-9 h-9 sm:w-6 sm:h-6 rounded-control bg-accent/14 text-accent hover:bg-accent/22 disabled:opacity-30 font-mono text-body-s sm:text-label font-bold flex items-center justify-center flex-shrink-0 transition-colors"
+      >+</button>
+    </div>
+  );
+}
+
+// Fila compacta de RIR — misma fórmula de color que `ui/RirScale` (oro pleno
+// en 0-1, al 45% en 2-3, al 25% en 4-5) pero sin el segmento FALLO: el RIR
+// objetivo de una prescripción es siempre un número (`WorkoutExercise.rir`/
+// `WorkoutSetGroup.rir: number`), no la unión con 'fallo' que sí existe en
+// el LOG real de una serie (`WorkoutSetLog`). No es el mismo dato, así que
+// no reutiliza el componente compartido.
+function RirRow({ value, onChange }: { value: number; onChange: (v: number) => void }) {
+  const tono = (v: number) => v <= 1 ? 'bg-accent border-accent text-on-accent'
+    : v <= 3 ? 'bg-accent/45 border-accent text-on-accent'
+    : 'bg-accent/25 border-accent-line text-accent';
+  return (
+    <div className="flex gap-1" role="radiogroup" aria-label="RIR">
+      {[0, 1, 2, 3, 4, 5].map(v => {
+        const activo = value === v;
+        return (
+          <button
+            key={v} type="button" role="radio" aria-checked={activo}
+            onClick={() => onChange(v)}
+            className={`flex-1 h-8 rounded-control border font-mono text-label font-bold transition-colors ${
+              activo ? tono(v) : 'border-hairline bg-inset text-ink-3 hover:border-strong'
+            }`}
+          >{v}</button>
+        );
+      })}
+    </div>
+  );
+}
+
+// Las tres celdas compartidas por el bloque uniforme y cada bloque de
+// `setGroups` — series (stepper), reps (texto libre: "8-10", "AMRAP", "12"…
+// no es un número, no puede ser un stepper) y descanso (stepper en pasos de
+// 15 s, formateado mm:ss a partir de 60 s).
+function ConfigCells({ sets, reps, rest, onSets, onReps, onRest }: {
+  sets: number; reps: string; rest: number;
+  onSets: (v: number) => void; onReps: (v: string) => void; onRest: (v: number) => void;
+}) {
+  return (
+    <div className="flex gap-2">
+      <div className="flex-1 min-w-[72px] bg-inset rounded-control p-2 flex flex-col gap-1.5">
+        <span className="font-mono text-caption text-ink-2 uppercase tracking-wider">Series</span>
+        <BlockStepper value={sets} min={1} max={20} onChange={onSets} />
+      </div>
+      <div className="flex-1 min-w-[72px] bg-inset rounded-control p-2 flex flex-col gap-1.5">
+        <span className="font-mono text-caption text-ink-2 uppercase tracking-wider">Reps</span>
+        <input
+          type="text"
+          value={reps}
+          onChange={e => onReps(e.target.value)}
+          placeholder="8-10"
+          className="w-full bg-transparent border-none p-0 text-center text-white font-mono text-title-s font-bold focus:outline-none focus:ring-0"
+        />
+      </div>
+      <div className="flex-1 min-w-[72px] bg-inset rounded-control p-2 flex flex-col gap-1.5">
+        <span className="font-mono text-caption text-ink-2 uppercase tracking-wider">Descanso</span>
+        <BlockStepper value={rest} min={0} max={600} step={15} format={formatRest} onChange={onRest} />
+      </div>
+    </div>
+  );
+}
+
 // Full execution-config editor for one exercise inside a routine — series/reps/rir
 // (uniform or split into top-set/back-off-set blocks), rest, high-intensity technique,
 // video reminder and warm-up mode. Used identically from WorkoutsScreen (shared routine
@@ -23,7 +120,7 @@ const ETIQUETAS_SUGERIDAS = ['Pesado', 'Ligero', 'Al fallo'];
 // so a coach configures an exercise the same way no matter which screen they're on.
 export default function ExerciseConfigEditor({ we, onChange }: Props) {
   const hasGroups = (we.setGroups?.length ?? 0) > 0;
-  // Qué bloques muestran el campo de texto libre en vez del Select de
+  // Qué bloques muestran el campo de texto libre en vez del selector de
   // sugerencias — estado de interfaz, no del ejercicio: una etiqueta
   // personalizada sigue siendo solo texto en WorkoutSetGroup.label.
   const [etiquetaLibre, setEtiquetaLibre] = useState<Set<number>>(new Set());
@@ -86,211 +183,129 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
     onChange({ recordVideoSet: we.recordVideoSet ? undefined : 'all' });
   };
 
+  const totalSets = hasGroups ? (we.setGroups || []).reduce((s, g) => s + Math.max(1, g.sets || 1), 0) : we.sets;
+
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       {/* Series / Reps / Descanso / RIR — uniforme o por bloques */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <label className="block font-mono text-caption text-ink-2 uppercase">Series</label>
-          <button
-            type="button"
-            onClick={hasGroups ? disableGroups : enableGroups}
-            className="flex items-center gap-1 px-2 py-1 rounded-control font-sans text-caption font-bold text-accent hover:text-white hover:bg-accent/10 transition-colors"
-          >
-            <Icon name={hasGroups ? 'undo' : 'add'} size="s" />
-            {hasGroups ? 'Volver a un solo rango' : 'Añadir otro rango de reps'}
-          </button>
+          <span className="font-mono text-caption text-ink-2 uppercase tracking-wider">
+            {totalSets} series{hasGroups ? ` · ${(we.setGroups || []).length} bloques` : ''}
+          </span>
+          {hasGroups && (
+            <button
+              type="button"
+              onClick={disableGroups}
+              className="flex items-center gap-1 font-sans text-caption font-bold text-accent hover:text-white transition-colors"
+            >
+              <Icon name="undo" size="s" />
+              Volver a un solo rango
+            </button>
+          )}
         </div>
 
         {!hasGroups ? (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <div>
-              <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Series</label>
-              <input
-                type="number" min={1} max={20}
-                value={we.sets}
-                onChange={e => onChange({ sets: parseInt(e.target.value) || 1 })}
-                className="w-full bg-bg border border-hairline rounded-control px-2 py-2 text-center text-white font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-accent"
-              />
-            </div>
-            <div>
-              <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Reps</label>
-              <input
-                type="text"
-                value={we.reps}
-                onChange={e => onChange({ reps: e.target.value })}
-                placeholder="8-10"
-                className="w-full bg-bg border border-hairline rounded-control px-2 py-2 text-center text-white font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-accent"
-              />
-            </div>
-            <div>
-              <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Descanso (s)</label>
-              <input
-                type="number" min={0}
-                value={we.restSeconds}
-                onChange={e => onChange({ restSeconds: parseInt(e.target.value) || 0 })}
-                className="w-full bg-bg border border-hairline rounded-control px-2 py-2 text-center text-white font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-accent"
-              />
-            </div>
-            <div>
-              <label className="block font-mono text-caption text-ink-2 uppercase mb-1">RIR</label>
-              <input
-                type="number" min={0} max={5}
-                value={we.rir}
-                onChange={e => onChange({ rir: parseInt(e.target.value) || 0 })}
-                className="w-full bg-bg border border-hairline rounded-control px-2 py-2 text-center text-white font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-accent"
-              />
-            </div>
+          <div className="space-y-2">
+            <ConfigCells
+              sets={we.sets}
+              reps={we.reps}
+              rest={we.restSeconds}
+              onSets={v => onChange({ sets: v })}
+              onReps={v => onChange({ reps: v })}
+              onRest={v => onChange({ restSeconds: v })}
+            />
+            <RirRow value={we.rir} onChange={v => onChange({ rir: v })} />
           </div>
         ) : (
           <div className="space-y-2">
-            {/* Resumen en vivo — calculado de los bloques, no de we.sets: si
-                alguna vez se desincronizan (datos antiguos, un cambio desde
-                fuera de este editor), esto enseña el número REAL en vez de
-                dejar dos verdades a la vez. */}
-            <p className="font-mono text-caption text-white bg-bg border border-hairline rounded-control px-3 py-2">
-              {(we.setGroups || []).reduce((s, g) => s + Math.max(1, g.sets || 1), 0)} series ·{' '}
-              {(we.setGroups || [])
-                .map(g => `${Math.max(1, g.sets || 1)}×${g.reps}${g.rir !== undefined && g.rir !== null ? ` (RIR ${g.rir})` : ''}`)
-                .join(' + ')}
-            </p>
-
             {(we.setGroups || []).map((g, gIdx) => {
               const esSugerida = !g.label || ETIQUETAS_SUGERIDAS.includes(g.label);
               const mostrarLibre = etiquetaLibre.has(gIdx) || !esSugerida;
               return (
-              <div key={gIdx} className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-2 items-end bg-bg border border-hairline rounded-surface p-2">
-                <div>
-                  <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Etiqueta (opcional)</label>
-                  {mostrarLibre ? (
-                    <input
-                      type="text"
-                      autoFocus={etiquetaLibre.has(gIdx)}
-                      value={g.label || ''}
-                      onChange={e => updateGroup(gIdx, 'label', e.target.value)}
-                      placeholder="Escribe una etiqueta"
-                      className="w-full bg-surface border border-hairline rounded-control px-2 py-2 text-white font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-accent"
-                    />
-                  ) : (
-                    <select
-                      value={g.label || ''}
-                      onChange={e => {
-                        if (e.target.value === '__libre__') {
-                          setEtiquetaLibre(prev => new Set(prev).add(gIdx));
-                          return;
-                        }
-                        updateGroup(gIdx, 'label', e.target.value);
-                      }}
-                      className="w-full bg-surface border border-hairline rounded-control px-2 py-2 text-white font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-accent appearance-none"
+                <div key={gIdx} className="bg-raised border border-hairline rounded-surface p-3 space-y-3">
+                  <div className="flex items-center gap-2">
+                    {mostrarLibre ? (
+                      <input
+                        type="text"
+                        autoFocus={etiquetaLibre.has(gIdx)}
+                        value={g.label || ''}
+                        onChange={e => updateGroup(gIdx, 'label', e.target.value)}
+                        placeholder="Etiqueta del bloque"
+                        className="min-w-0 flex-1 bg-accent/12 border border-accent-line rounded-control px-2 py-1 text-accent font-mono text-caption font-bold uppercase tracking-wider focus:outline-none focus:ring-1 focus:ring-accent"
+                      />
+                    ) : (
+                      <div className="relative flex-1 min-w-0">
+                        <select
+                          value={g.label || ''}
+                          onChange={e => {
+                            if (e.target.value === '__libre__') {
+                              setEtiquetaLibre(prev => new Set(prev).add(gIdx));
+                              return;
+                            }
+                            updateGroup(gIdx, 'label', e.target.value);
+                          }}
+                          className="w-full appearance-none bg-accent/12 border border-accent-line rounded-control pl-2 pr-6 py-1 text-accent font-mono text-caption font-bold uppercase tracking-wider focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
+                        >
+                          <option value="">Sin etiqueta</option>
+                          {ETIQUETAS_SUGERIDAS.map(l => <option key={l} value={l}>{l}</option>)}
+                          <option value="__libre__">Escribir...</option>
+                        </select>
+                        <span className="ui-icon pointer-events-none absolute right-1 top-1/2 -translate-y-1/2 text-accent" style={{ fontSize: '14px' }} aria-hidden>expand_more</span>
+                      </div>
+                    )}
+                    <button
+                      onClick={() => removeGroup(gIdx)}
+                      className="font-mono text-caption font-bold text-ink-3 hover:text-red-400 uppercase tracking-wider transition-colors flex-shrink-0"
                     >
-                      <option value="">—</option>
-                      {ETIQUETAS_SUGERIDAS.map(l => <option key={l} value={l}>{l}</option>)}
-                      <option value="__libre__">Escribir...</option>
-                    </select>
-                  )}
-                </div>
-                <div>
-                  <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Series</label>
-                  <input
-                    type="number" min={1} max={20}
-                    value={g.sets}
-                    onChange={e => updateGroup(gIdx, 'sets', parseInt(e.target.value) || 1)}
-                    className="w-16 bg-surface border border-hairline rounded-control px-2 py-2 text-center text-white font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-accent"
+                      Quitar
+                    </button>
+                  </div>
+
+                  <ConfigCells
+                    sets={g.sets}
+                    reps={g.reps}
+                    rest={we.restSeconds}
+                    onSets={v => updateGroup(gIdx, 'sets', v)}
+                    onReps={v => updateGroup(gIdx, 'reps', v)}
+                    onRest={v => onChange({ restSeconds: v })}
                   />
+                  <RirRow value={g.rir} onChange={v => updateGroup(gIdx, 'rir', v)} />
                 </div>
-                <div>
-                  <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Reps</label>
-                  <input
-                    type="text"
-                    value={g.reps}
-                    onChange={e => updateGroup(gIdx, 'reps', e.target.value)}
-                    className="w-20 bg-surface border border-hairline rounded-control px-2 py-2 text-center text-white font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-accent"
-                  />
-                </div>
-                <div>
-                  <label className="block font-mono text-caption text-ink-2 uppercase mb-1">RIR</label>
-                  <input
-                    type="number" min={0} max={5}
-                    value={g.rir}
-                    onChange={e => updateGroup(gIdx, 'rir', parseInt(e.target.value) || 0)}
-                    className="w-14 bg-surface border border-hairline rounded-control px-2 py-2 text-center text-white font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-accent"
-                  />
-                </div>
-                <button
-                  onClick={() => removeGroup(gIdx)}
-                  className="p-2 text-ink-2 hover:text-red-400 transition-colors"
-                  title="Eliminar rango"
-                >
-                  <Icon name="delete" size="s" />
-                </button>
-              </div>
               );
             })}
-            <button
-              onClick={addGroup}
-              className="flex items-center gap-1 text-caption font-sans text-accent hover:text-white transition-colors"
-            >
-              <Icon name="add" size="s" />
-              Añadir otro rango de reps
-            </button>
-            <div>
-              <label className="block font-sans text-caption text-ink-2 uppercase mb-1">Descanso entre series (s)</label>
-              <input
-                type="number" min={0}
-                value={we.restSeconds}
-                onChange={e => onChange({ restSeconds: parseInt(e.target.value) || 0 })}
-                className="w-24 bg-bg border border-hairline rounded-control px-2 py-2 text-center text-white font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-accent"
-              />
-            </div>
           </div>
         )}
+
+        <button
+          onClick={hasGroups ? addGroup : enableGroups}
+          className="w-full flex items-center justify-center gap-2 bg-bg border border-dashed border-hairline rounded-control px-3 py-2.5 text-title-s font-sans text-ink-2 hover:text-accent hover:border-accent/40 transition-all"
+        >
+          <Icon name="add" size="s" />
+          Añadir bloque con otra configuración
+        </button>
       </div>
 
       {/* Notas */}
-      <input
-        type="text"
-        value={we.notes || ''}
-        onChange={e => onChange({ notes: e.target.value })}
-        placeholder="Notas opcionales (técnica, variante, carga...)"
-        className="w-full bg-bg border border-hairline rounded-control px-3 py-2 text-title-s text-ink-2 placeholder-ink-2/30 font-sans focus:outline-none focus:ring-1 focus:ring-accent transition-all"
-      />
-
-      {/* Grabar con el móvil */}
-      <div className="flex items-center gap-2 flex-wrap">
-        <button
-          type="button"
-          onClick={toggleRecordVideo}
-          className={`flex items-center gap-2 px-3 py-2 rounded-control font-sans text-caption font-bold uppercase tracking-wider border transition-all ${
-            we.recordVideoSet
-              ? 'bg-accent/10 border-accent/40 text-accent'
-              : 'border-hairline text-ink-2 hover:text-white hover:border-strong'
-          }`}
-        >
-          <Icon name="videocam" size="s" />
-          Grabar con el móvil
-        </button>
-        {we.recordVideoSet && (
-          <select
-            value={we.recordVideoSet}
-            onChange={e => onChange({ recordVideoSet: e.target.value === 'all' ? 'all' : parseInt(e.target.value) })}
-            className="bg-bg border border-hairline rounded-control px-2 py-2 text-title-s font-mono text-white focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
-          >
-            <option value="all">Todas las series</option>
-            {Array.from({ length: we.sets }, (_, i) => i + 1).map(n => (
-              <option key={n} value={n}>Solo serie {n}</option>
-            ))}
-          </select>
-        )}
+      <div className="bg-bg border border-hairline border-l-2 border-l-accent rounded-surface px-3 py-2.5">
+        <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-1">Nota para el atleta</label>
+        <textarea
+          value={we.notes || ''}
+          onChange={e => onChange({ notes: e.target.value })}
+          placeholder="Técnica, variante, carga, progresión…"
+          rows={2}
+          className="w-full bg-transparent border-none p-0 text-title-s text-white placeholder-ink-2/30 font-sans focus:outline-none focus:ring-0 resize-none"
+        />
       </div>
 
       {/* Técnica de alta intensidad */}
       <div className="space-y-2">
-        <label className="block font-sans text-caption text-ink-2 uppercase">Técnica de alta intensidad (opcional)</label>
+        <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider">Técnica de intensidad</label>
         <div className="flex items-center gap-2 flex-wrap">
           <button
             type="button"
             onClick={() => setTechnique(undefined)}
-            className={`px-3 py-1 rounded-control font-mono text-caption font-bold uppercase tracking-wider border transition-all ${
+            className={`px-3 py-1.5 rounded-chip font-mono text-caption font-bold uppercase tracking-wider border transition-all ${
               !we.technique
                 ? 'bg-white/10 border-hairline text-white'
                 : 'border-hairline text-ink-2 hover:text-white hover:border-strong'
@@ -302,7 +317,7 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
               type="button"
               onClick={() => setTechnique(we.technique === t ? undefined : t)}
               title={TECHNIQUE_DESCRIPTION[t]}
-              className={`flex items-center gap-1 px-3 py-1 rounded-control font-mono text-caption font-bold uppercase tracking-wider border transition-all ${
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-chip font-mono text-caption font-bold uppercase tracking-wider border transition-all ${
                 we.technique === t
                   ? TECHNIQUE_COLOR[t]
                   : 'border-hairline text-ink-2 hover:text-white hover:border-strong'
@@ -311,43 +326,41 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
           ))}
         </div>
         {we.technique && (
-          <p className="font-sans text-caption text-ink-2 leading-relaxed ">{TECHNIQUE_DESCRIPTION[we.technique]}</p>
+          <p className="font-sans text-caption text-ink-2 leading-relaxed">{TECHNIQUE_DESCRIPTION[we.technique]}</p>
         )}
       </div>
 
       {/* Warm-up (series de aproximación) */}
       <div className="space-y-2 border-t border-hairline pt-3">
-        <label className="block font-sans text-caption text-ink-2 uppercase">Series de aproximación (warm-up)</label>
-        <div className="flex items-center gap-2 flex-wrap">
-          {([['none', 'Ninguna'], ['auto', 'Automático'], ['manual', 'Manual']] as [WarmupMode, string][]).map(([mode, label]) => (
-            <button
-              key={mode}
-              type="button"
-              onClick={() => setWarmupMode(mode)}
-              className={`px-3 py-1 rounded-control font-sans text-caption font-bold uppercase tracking-wider border transition-all ${
-                (we.warmupMode || 'none') === mode
-                  ? 'bg-orange-500/15 border-orange-500/40 text-orange-300'
-                  : 'border-hairline text-ink-2 hover:text-white hover:border-strong'
-              }`}
-            >{label}</button>
-          ))}
-        </div>
+        <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider">Calentamiento</label>
+        <SegmentedControl
+          label="Calentamiento"
+          value={we.warmupMode || 'none'}
+          onChange={v => setWarmupMode(v as WarmupMode)}
+          options={[
+            { value: 'none', label: 'Ninguna' },
+            { value: 'auto', label: 'Automático' },
+            { value: 'manual', label: 'Manual' },
+          ]}
+        />
         {we.warmupMode === 'auto' && (
-          <p className="font-sans text-caption text-ink-2 leading-relaxed ">
-            🔥 El atleta verá series de aproximación calculadas automáticamente a partir del peso que escriba en la primera serie efectiva y su historial en este ejercicio.
-          </p>
+          <div className="bg-bg border border-hairline rounded-surface px-3 py-2.5">
+            <p className="font-sans text-caption text-ink-2 leading-relaxed">
+              🔥 El atleta verá series de aproximación calculadas automáticamente a partir del peso que escriba en la primera serie efectiva y su historial en este ejercicio.
+            </p>
+          </div>
         )}
         {we.warmupMode === 'manual' && (
-          <div className="space-y-2 pt-1">
+          <div className="bg-bg border border-hairline rounded-surface px-3 py-2.5 space-y-2">
             {(we.manualWarmupSets || []).map((s, wIdx) => (
               <div key={wIdx} className="flex items-center gap-2">
-                <span className="font-mono text-caption text-orange-300 w-8">W{wIdx + 1}</span>
+                <span className="font-mono text-caption text-accent w-8">W{wIdx + 1}</span>
                 <input
                   type="number" min={0} step={0.5}
                   value={s.weight}
                   onChange={e => updateManualWarmupSet(wIdx, 'weight', parseFloat(e.target.value) || 0)}
                   placeholder="kg"
-                  className="w-20 bg-bg border border-hairline rounded-control px-2 py-1 text-center text-white font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-accent"
+                  className="w-20 bg-inset border border-hairline rounded-control px-2 py-1 text-center text-white font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-accent"
                 />
                 <span className="text-ink-2 text-label">×</span>
                 <input
@@ -355,7 +368,7 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
                   value={s.reps}
                   onChange={e => updateManualWarmupSet(wIdx, 'reps', parseInt(e.target.value) || 1)}
                   placeholder="reps"
-                  className="w-16 bg-bg border border-hairline rounded-control px-2 py-1 text-center text-white font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-accent"
+                  className="w-16 bg-inset border border-hairline rounded-control px-2 py-1 text-center text-white font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-accent"
                 />
                 <button
                   onClick={() => removeManualWarmupSet(wIdx)}
@@ -368,14 +381,50 @@ export default function ExerciseConfigEditor({ we, onChange }: Props) {
             ))}
             <button
               onClick={addManualWarmupSet}
-              className="flex items-center gap-1 text-caption font-sans text-orange-300 hover:text-orange-200 transition-colors "
+              className="flex items-center gap-1 text-caption font-sans text-accent hover:text-white transition-colors"
             >
-              <span className="material-symbols-outlined text-body-s">add</span>
+              <Icon name="add" size="s" />
               Añadir serie de aproximación
             </button>
           </div>
         )}
       </div>
+
+      {/* Grabar con el móvil */}
+      <button
+        type="button"
+        onClick={toggleRecordVideo}
+        className="w-full flex items-center gap-3 bg-surface border border-hairline rounded-surface px-3 py-3 text-left transition-colors hover:border-strong"
+      >
+        <div className="flex-1 min-w-0">
+          <p className="font-sans text-title-s font-bold text-white">Pedir vídeo de esta serie</p>
+          <p className="font-mono text-caption text-ink-2 mt-0.5">
+            {we.recordVideoSet ? 'El atleta verá el aviso de grabar' : 'Desactivado'}
+          </p>
+        </div>
+        <span
+          className={`relative w-11 h-6 rounded-full flex-shrink-0 transition-colors ${we.recordVideoSet ? 'bg-accent' : 'bg-inset'}`}
+          style={{ padding: 4 }}
+          aria-hidden
+        >
+          <span
+            className="block w-4 h-4 rounded-full bg-white transition-transform duration-200"
+            style={{ transform: we.recordVideoSet ? 'translateX(20px)' : 'translateX(0)' }}
+          />
+        </span>
+      </button>
+      {we.recordVideoSet && (
+        <select
+          value={we.recordVideoSet}
+          onChange={e => onChange({ recordVideoSet: e.target.value === 'all' ? 'all' : parseInt(e.target.value) })}
+          className="bg-bg border border-hairline rounded-control px-2 py-2 text-title-s font-mono text-white focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
+        >
+          <option value="all">Todas las series</option>
+          {Array.from({ length: we.sets }, (_, i) => i + 1).map(n => (
+            <option key={n} value={n}>Solo serie {n}</option>
+          ))}
+        </select>
+      )}
     </div>
   );
 }

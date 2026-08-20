@@ -69,6 +69,35 @@ describe('sesionEnCurso — lo que NO debe restaurar', () => {
     expect(datos.size).toBe(0);
   });
 
+  it('conserva una bajada/miniserie que el atleta añadió a mano, aunque tenga más filas que la prescripción', () => {
+    // El atleta añadió una bajada de dropset: 3 filas en vez de las 2 prescritas.
+    guardarSesion(ATLETA, sesion({
+      playerSets: [[serie(true), serie(true), serie()], [serie()]],
+      formaPrescrita: [2, 1],
+    }));
+    const borrador = cargarSesion(ATLETA, 'a1', 'w1', [2, 1]);
+    expect(borrador).not.toBeNull();
+    expect(borrador!.playerSets[0]).toHaveLength(3);
+  });
+
+  it('descarta el borrador si el coach reduce el nº de series, aunque el atleta hubiera añadido una fila de más', () => {
+    // formaPrescrita sigue siendo [2, 1] (lo que había cuando se guardó), pero
+    // la rutina de hoy trae 1 sola serie en el primer ejercicio: el coach la
+    // cambió de verdad, y eso debe ganarle a las filas añadidas por el atleta.
+    guardarSesion(ATLETA, sesion({
+      playerSets: [[serie(true), serie(true), serie()], [serie()]],
+      formaPrescrita: [2, 1],
+    }));
+    expect(cargarSesion(ATLETA, 'a1', 'w1', [1, 1])).toBeNull();
+  });
+
+  it('sin formaPrescrita (borrador de antes de dropset/myoreps), compara por playerSets.length como siempre', () => {
+    const { formaPrescrita: _sinUsar, ...sinCampo } = sesion();
+    guardarSesion(ATLETA, sinCampo as SesionEnCurso);
+    expect(cargarSesion(ATLETA, 'a1', 'w1', [2, 1])).not.toBeNull();
+    expect(cargarSesion(ATLETA, 'a1', 'w1', [3, 1])).toBeNull();
+  });
+
   it('descarta el borrador si cambió el nº de ejercicios', () => {
     guardarSesion(ATLETA, sesion());
     expect(cargarSesion(ATLETA, 'a1', 'w1', [2, 1, 4])).toBeNull();

@@ -10,7 +10,7 @@ import ErrorState from '../components/ErrorState';
 import ReunionModal from '../components/ReunionModal';
 import ResultadoGraduacionModal from '../components/ResultadoGraduacionModal';
 import type { CrmReunion } from '../types';
-import { Icon } from '../../../components/ui';
+import { Button, Icon, Skeleton } from '../../../components/ui';
 
 const TIPO_LABEL: Record<CrmReunion['tipo'], string> = {
   optimizacion: 'Optimización',
@@ -100,21 +100,16 @@ export default function ReunionesScreen({ coachEmail }: { coachEmail: string }) 
             Optimización, graduación y fin de programa — ordenadas por fecha
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => setModalAbierto(true)}
-          className="flex items-center gap-1 px-3 py-2 rounded-control bg-accent text-black font-sans font-bold text-caption hover:bg-accent-press transition-colors"
-        >
-          <Icon name="add" size="s" />
+        <Button variant="primary" size="s" icon="add" onClick={() => setModalAbierto(true)}>
           Nueva reunión
-        </button>
+        </Button>
       </header>
 
       {error ? (
         <ErrorState />
       ) : cargando ? (
         <div className="space-y-2">
-          {Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-14 rounded-surface bg-white/4 animate-pulse" />)}
+          {Array.from({ length: 4 }).map((_, i) => <React.Fragment key={i}><Skeleton className="h-14 w-full" /></React.Fragment>)}
         </div>
       ) : eventos.length === 0 ? (
         <EmptyState

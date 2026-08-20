@@ -51,7 +51,7 @@ const ClientWorkoutsPanel = lazy(() => import('./ClientWorkoutsPanel'));
 const ClientReviewsPanel = lazy(() => import('./ClientReviewsPanel'));
 const ClientSetupPanel = lazy(() => import('./ClientSetupPanel'));
 import PendingTray from './PendingTray';
-import ClientOverviewCard from './ClientOverviewCard';
+import ClientAlertsBar from './ClientAlertsBar';
 import { Badge, Tabs, Skeleton, Sheet, SearchField, ListRow, Icon } from './ui';
 
 export type HubTab =
@@ -488,19 +488,10 @@ export default function ClientHub({
           </div>
         </div>
 
-        {/* Resumen: KPIs + fase/objetivo siempre visibles, últimos cambios y
-            nota del coach plegados, acceso directo al resumen IA */}
-        <ClientOverviewCard
-          athlete={athlete}
-          onboardingData={onboardingData}
-          mesocycles={mesocycles}
-          checkins={athleteCheckins}
-          coachReports={coachReports}
-          athleteLogs={athleteLogs}
-          bodyweightLogs={bodyweightLogs}
-          adherenceScore={adherence.hasData ? adherence.score : null}
-          adherenceStyle={adh}
-          averageRir={avgRir}
+        {/* Lo urgente, siempre visible sea cual sea la pestaña. Lo
+            descriptivo (KPIs, fase, objetivo, nota, últimos cambios) vive
+            ahora en la pestaña Ficha — ver ClientFichaPanel. */}
+        <ClientAlertsBar
           planUnpublished={assignments.length === 0}
           pendingReviewsCount={pendingCheckins.length}
           onGoToEntrenamientos={() => guardedTabChange('entrenamientos')}
@@ -602,6 +593,14 @@ export default function ClientHub({
           onPlanMonthsChange={setPlanMonths}
           savingPlan={savingPlan}
           onSavePlan={handleSavePlan}
+          mesocycles={mesocycles}
+          checkins={athleteCheckins}
+          coachReports={coachReports}
+          athleteLogs={athleteLogs}
+          bodyweightLogs={bodyweightLogs}
+          adherenceScore={adherence.hasData ? adherence.score : null}
+          adherenceStyle={adh}
+          averageRir={avgRir}
         />
       )}
 

@@ -151,7 +151,10 @@ export default function LiveSession({
             />
             <PageCalorias caloriesKcal={liveCaloriesKcal} caloriesActiveKcal={liveCaloriesActiveKcal} points={livePoints} />
             <PageZonas timeInZone={timeInZone} belowZoneSec={belowZoneSec} elapsedSec={elapsedSec} currentZone={currentZone} />
-            <PageGrafica chartData={chartData} zones={zones} maxHR={maxHR} />
+            <PageGrafica
+              chartData={chartData} zones={zones} maxHR={maxHR}
+              timeInZone={timeInZone} belowZoneSec={belowZoneSec} elapsedSec={elapsedSec} currentZone={currentZone}
+            />
             <PageAvanzado
               ctx={{
                 bpm, avgHR, maxHRSoFar, maxHR, currentZone, elapsedSec,

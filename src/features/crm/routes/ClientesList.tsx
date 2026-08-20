@@ -16,7 +16,7 @@ import NuevoClienteModal from '../components/NuevoClienteModal';
 import InvitarAtletaModal from '../components/InvitarAtletaModal';
 import InvitacionesPendientesPanel from '../components/InvitacionesPendientesPanel';
 import type { Cliente, EstadoCrm, CrmServicio } from '../types';
-import { Icon } from '../../../components/ui';
+import { Button, Icon } from '../../../components/ui';
 
 // Lazy: read-excel-file + papaparse (las dependencias de este modal) pesan más
 // que el resto de la pantalla junta, y la mayoría de visitas a /crm/clientes
@@ -178,14 +178,9 @@ export default function ClientesList({ coachEmail }: { coachEmail: string }) {
             <Icon name="person_add" size="s" />
             Invitar atleta
           </button>
-          <button
-            type="button"
-            onClick={() => setModalAbierto(true)}
-            className="flex items-center gap-1 px-3 py-2 rounded-control bg-accent text-black font-sans font-bold text-caption hover:bg-accent-press transition-colors"
-          >
-            <Icon name="add" size="s" />
+          <Button variant="primary" size="s" icon="add" onClick={() => setModalAbierto(true)}>
             Nuevo cliente
-          </button>
+          </Button>
         </div>
       </header>
 

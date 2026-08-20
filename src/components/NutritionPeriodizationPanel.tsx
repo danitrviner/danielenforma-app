@@ -49,9 +49,9 @@ const PHASE_COLORS = ['var(--color-accent)', 'var(--color-data)', 'var(--color-w
 
 function phaseTextColor(bgColor: string): string {
   // accent y data son claros, el resto son oscuros
-  if (bgColor === 'var(--color-accent)') return '#000';
-  if (bgColor === 'var(--color-data)') return '#000';
-  return '#fff';
+  if (bgColor === 'var(--color-accent)') return 'black';
+  if (bgColor === 'var(--color-data)') return 'black';
+  return 'white';
 }
 
 function fmtDate(isoDate: string): string {
@@ -130,7 +130,7 @@ function ProgramTimeline({ program, diets, today }: TimelineProps) {
                 <span className="text-caption font-mono opacity-75">{fmtDate(startDate)}–{fmtDate(endDate)}</span>
                 <span className="text-caption font-mono font-bold">{phase.weeks}s</span>
                 {isActive && (
-                  <span className="text-caption font-mono font-bold px-2 rounded-control" style={{ backgroundColor: 'rgba(0,0,0,0.25)' }}>HOY</span>
+                  <span className="text-caption font-mono font-bold px-2 rounded-control bg-black/25">HOY</span>
                 )}
               </div>
             </div>
@@ -162,8 +162,8 @@ function ProgramTimeline({ program, diets, today }: TimelineProps) {
               >
                 {isActive && (
                   <span
-                    className="absolute top-0.5 right-0.5 text-caption font-mono font-bold px-1 rounded-control"
-                    style={{ backgroundColor: 'rgba(0,0,0,0.25)', color: fg }}
+                    className="absolute top-0.5 right-0.5 text-caption font-mono font-bold px-1 rounded-control bg-black/25"
+                    style={{ color: fg }}
                   >HOY</span>
                 )}
                 <span className="text-caption font-bold font-sans truncate w-full text-center leading-tight">

@@ -124,7 +124,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
   // tiene sentido en modo tarjetas.
   const [viewMode, setViewMode] = useState<'cards' | 'compact'>(() => {
     const v = localStorage.getItem('enforma_clients_view_mode');
-    return v === 'compact' ? 'compact' : 'cards';
+    return v === 'cards' ? 'cards' : 'compact';
   });
   const changeViewMode = (m: 'cards' | 'compact') => {
     localStorage.setItem('enforma_clients_view_mode', m);
@@ -395,14 +395,16 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
              una lista larga antes de entrar al detalle de uno. */
           <div className="flex flex-col gap-px bg-hairline rounded-surface overflow-hidden border border-hairline">
             {filteredAthletes.map(athlete => {
-              const { setupPct, totalCheckCount, checkinLate, planExpired, daysSince } = athlete;
+              const { setupPct, totalCheckCount, checkinLate, planExpired, daysSince, daysSinceLogin } = athlete;
               const isAlert = planExpired || (checkinLate && daysSince !== null && daysSince > 7);
               const ringR = 13.5, ringCx = 16, ringSize = 32;
               const ringCirc = 2 * Math.PI * ringR;
               const ringOffset = ringCirc * (1 - Math.max(0, Math.min(100, setupPct)) / 100);
               const subtitle = totalCheckCount === 0
-                ? `Sin registros · racha ${athlete.currentStreak || 0} sem`
-                : `${athlete.actualWeight || athlete.initialWeight} kg · racha ${athlete.currentStreak || 0} sem`;
+                ? 'Sin registros de peso'
+                : `${athlete.actualWeight || athlete.initialWeight} kg`;
+              const revisionLabel = daysSince === null ? '—' : daysSince <= 0 ? 'hoy' : `${daysSince}d`;
+              const loginLabel = daysSinceLogin === null ? '—' : daysSinceLogin <= 0 ? 'hoy' : `${daysSinceLogin}d`;
 
               return (
                 <button
@@ -418,6 +420,13 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
                   <div className="min-w-0 flex-1">
                     <p className="font-sans font-bold text-white text-label truncate">{athlete.displayName}</p>
                     <p className="font-mono text-caption text-ink-2 truncate">{subtitle}</p>
+                  </div>
+                  {/* Última revisión + último login — antes solo estaban en modo
+                      tarjetas; el coach quiere verlos también en compacto, que
+                      es justo el modo pensado para escanear la lista rápido. */}
+                  <div className="flex flex-col items-end gap-0.5 font-mono text-[10px] uppercase text-ink-3 flex-none">
+                    <span>Rev · <strong className="text-ink-2">{revisionLabel}</strong></span>
+                    <span>Login · <strong className="text-ink-2">{loginLabel}</strong></span>
                   </div>
                   <div className="relative flex-none" style={{ width: ringSize, height: ringSize }}>
                     <svg width={ringSize} height={ringSize} viewBox={`0 0 ${ringSize} ${ringSize}`} className="-rotate-90">

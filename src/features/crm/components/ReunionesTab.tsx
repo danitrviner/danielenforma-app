@@ -5,7 +5,7 @@ import { formatDia, tiempoRelativo } from '../lib/fechas';
 import ReunionesBlock from './ReunionesBlock';
 import ReunionModal from './ReunionModal';
 import type { Cliente } from '../types';
-import { Icon } from '../../../components/ui';
+import { Button, Icon } from '../../../components/ui';
 
 export default function ReunionesTab({ cliente, coachEmail }: { cliente: Cliente; coachEmail: string }) {
   const { data: reuniones = [], isPending, isError } = useReunionesDe(cliente.id);
@@ -27,14 +27,9 @@ export default function ReunionesTab({ cliente, coachEmail }: { cliente: Cliente
       </div>
 
       <div className="flex items-center justify-end">
-        <button
-          type="button"
-          onClick={() => setModalAbierto(true)}
-          className="flex items-center gap-1 px-3 py-2 rounded-control bg-accent text-black font-sans font-bold text-caption hover:bg-accent-press transition-colors"
-        >
-          <Icon name="add" size="s" />
+        <Button variant="primary" size="s" icon="add" onClick={() => setModalAbierto(true)}>
           Nueva reunión
-        </button>
+        </Button>
       </div>
 
       <ReunionesBlock

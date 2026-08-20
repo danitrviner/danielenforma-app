@@ -268,6 +268,7 @@ upload_file
 verified_user
 video_library
 videocam
+videocam_off
 view_timeline
 visibility
 visibility_off

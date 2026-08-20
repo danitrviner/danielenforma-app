@@ -9,7 +9,7 @@ import PagosTable from '../components/PagosTable';
 import SuscripcionModal from '../components/SuscripcionModal';
 import PagoModal from '../components/PagoModal';
 import type { EstadoPago } from '../types';
-import { Icon } from '../../../components/ui';
+import { Button, Icon } from '../../../components/ui';
 
 // Pantalla global /crm/pagos: vista de negocio a través de TODOS los clientes,
 // a diferencia de PagosTab/RenovacionesTab que están scopeados a uno. El
@@ -82,14 +82,9 @@ export default function PagosScreen({ coachEmail }: { coachEmail: string }) {
       <section className="space-y-2">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="font-mono text-caption uppercase tracking-widest text-ink-2">Pagos</h2>
-          <button
-            type="button"
-            onClick={() => setModalPago(true)}
-            className="flex items-center gap-1 px-3 py-2 rounded-control bg-accent text-black font-sans font-bold text-caption hover:bg-accent-press transition-colors"
-          >
-            <Icon name="add" size="s" />
+          <Button variant="primary" size="s" icon="add" onClick={() => setModalPago(true)}>
             Registrar pago
-          </button>
+          </Button>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">

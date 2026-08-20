@@ -2,35 +2,29 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { UserProfile, Workout, WorkoutAssignment, Exercise, WorkoutLog, WorkoutEntryLog, ExercisePersonalNote } from '../types';
 import LoadHistoryPanel from './LoadHistoryPanel';
-import StatTile from './StatTile';
 import {
   getWorkoutAssignmentsForAthlete, getWorkouts, getExercises,
   createWorkoutLog, updateWorkoutAssignment, getWorkoutLogs, getExerciseNotesForAthlete,
+  getCardioAssignmentsForAthlete,
 } from '../dbService';
 import { getWeekRange, getWeekStart, MONTHS_ES, formatDate } from '../utils/trainingWeek';
-import { TECHNIQUE_EMOJI, TECHNIQUE_LABEL, TECHNIQUE_COLOR, TECHNIQUE_DESCRIPTION } from '../utils/workoutTechniques';
-import { generateWarmup } from '../utils/warmup/WarmupGenerator';
-import { parseTargetReps } from '../utils/warmup/WarmupEngine';
-import { expandSetGroups } from '../utils/setGroups';
 import { prefillWorkoutSets } from '../utils/setPrefill';
 import { useToast } from '../hooks/useToast';
 import { useTourTarget } from '../features/tutorial/TourTargetContext';
 import { useTutorialEngine } from '../features/tutorial/TutorialEngine';
-import Coachmark from './Coachmark';
-import ExerciseVideoPlayer from './ExerciseVideoPlayer';
-import ExerciseBestSetCard from './ExerciseBestSetCard';
-import { exerciseBestProgress, exerciseWeightTrend, exerciseSessionHistory, ExerciseBestProgress } from '../utils/athleteMetrics';
+import { exerciseBestProgress, exerciseWeightTrend, ExerciseBestProgress } from '../utils/athleteMetrics';
 import { epley } from '../utils/oneRepMax';
 import { allTimeBestBefore } from '../utils/trainingReport';
 import { Skeleton } from './ui';
-import { startRestTimer, stopRestTimer } from '../services/restTimer';
 import { useBotonAtras } from '../services/botonAtras';
 import {
   guardarSesion, cargarSesion, borrarSesion, formaDeSesion, tieneSeriesHechas,
   limpiarSesionesCaducadas,
 } from '../utils/sesionEnCurso';
 import { haptics } from '../services/haptics';
-import { Badge, BadgeTone, Dialog, Button, Icon, ProgressBar, SegmentedControl, Chip, EmptyState } from './ui';
+import { Badge, BadgeTone, Button, Icon, SegmentedControl, Chip, EmptyState } from './ui';
+import WorkoutSessionPlayer, { SessionCelebration } from './training/WorkoutSessionPlayer';
+import { SetInput, nuevaSerieVacia } from './training/setInput';
 
 interface TrainingScreenProps {
   profile: UserProfile;
@@ -39,44 +33,6 @@ interface TrainingScreenProps {
 // ── Types ────────────────────────────────────────────────────────────────────
 
 type MainTab = 'programa' | 'progresion';
-
-/** `rir` guarda '0'-'5' o el literal 'fallo' — Fase 3: FALLO no es RIR 0
- * (decisión de Dani, 2026-08-07), así que necesita su propio valor, no un
- * número reservado. */
-interface SetInput {
-  weight: string;
-  repsDone: string;
-  rir: string;
-  done: boolean;
-}
-
-/** Orden de ciclo del selector compacto de la tabla: el valor más bajo (serie
- * más dura) primero, con FALLO como un séptimo escalón aparte, no dentro del
- * 0-5. */
-const RIR_OPCIONES = ['fallo', '0', '1', '2', '3', '4', '5'] as const;
-
-function rirTexto(valor: string): string {
-  return valor === 'fallo' ? 'FALLO' : valor;
-}
-
-/** Mismo criterio de color que la primitiva RirScale (ui/RirScale.tsx),
- * aplicado aquí a un `<select>` nativo en vez de a los 7 botones de la
- * primitiva: la tabla no tiene sitio para el selector completo por fila, así
- * que el toque abre la rueda nativa y esto solo pinta el valor ya elegido. */
-function rirClaseColor(valor: string): string {
-  if (valor === 'fallo') return 'text-danger';
-  const n = Number(valor);
-  if (n <= 1) return 'text-accent';
-  if (n <= 3) return 'text-accent/70';
-  return 'text-ink-2';
-}
-
-interface SessionCelebration {
-  isFirstEver: boolean;
-  totalSets: number;
-  tonnage: number;
-  prs: { exerciseId: string; name: string; newBest: number }[];
-}
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -150,6 +106,14 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
     queryKey: ['exerciseNotesForAthlete', profile.email],
     queryFn: () => getExerciseNotesForAthlete(profile.email),
   });
+  // Solo para el aviso informativo de cierre de ejercicio ("hoy toca cardio
+  // después") — no dispara ninguna navegación, así que basta con la misma
+  // query que ya usan HomeScreen/CardioScreen, sin nada nuevo del lado del
+  // backend.
+  const { data: cardioAssignments = [] } = useQuery({
+    queryKey: ['cardioAssignmentsForAthlete', profile.email],
+    queryFn: () => getCardioAssignmentsForAthlete(profile.email),
+  });
   const loading = loadingAssignments || loadingWorkouts || loadingExercises || loadingLogs || loadingNotes;
 
   // Pending assignments more than a week past their date are lost — the athlete missed
@@ -186,21 +150,13 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
   const [celebration, setCelebration] = useState<SessionCelebration | null>(null);
   const [exerciseNoteInputs, setExerciseNoteInputs] = useState<string[]>([]);
   const [workoutNoteInput, setWorkoutNoteInput] = useState('');
+  // No necesita re-render propio: solo lo lee el autoguardado, y cambia junto
+  // con activeWorkout (mismo ciclo de vida que el resto del estado del player).
+  const formaPrescritaRef = useRef<number[]>([]);
 
   // 05-5. Barrido de borradores de sesión caducados: una sesión que se abre y
   // nunca se termina deja su clave, y sin esto se acumularían una por semana.
   useEffect(() => { limpiarSesionesCaducadas(profile.email); }, [profile.email]);
-  // Vídeo demo abierto (F3.13, "ficha de ejercicio" — el tutorial ya promete
-  // "aquí tienes el vídeo a 0,5× o velocidad normal" señalando esta tarjeta,
-  // pero hasta ahora solo había una miniatura estática sin reproducir nada).
-  // Uno solo a la vez: N iframes de YouTube cargados a la vez en una sesión
-  // con varios ejercicios sería peso muerto en cada carga de pantalla.
-  const [openVideoIdx, setOpenVideoIdx] = useState<number | null>(null);
-
-  // Historial de peso — antes vivía escondido detrás del mismo botón que el
-  // vídeo (y con un vídeo presente, ni siquiera se podía abrir): ahora es su
-  // propia pantalla, con botón propio, independiente de si hay vídeo o no.
-  const [historyExId, setHistoryExId] = useState<string | null>(null);
 
   // "Tu mejor serie" de la ficha de ejercicio (F3.13, Biblioteca panel 02) —
   // useMemo a nivel de componente, no dentro del .map() de tarjetas de
@@ -216,30 +172,12 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
     return map;
   }, [logs, activeWorkout]);
 
-  // Cronómetro de descanso: se arranca solo al marcar una serie como hecha,
-  // con el restSeconds prescrito del ejercicio — antes el atleta tenía que
-  // llevar la cuenta él mismo en el momento de mayor intensidad de la sesión.
-  const [restTimer, setRestTimer] = useState<{ totalSeconds: number; secondsLeft: number } | null>(null);
-
-  // Cuenta atrás del descanso: se reprograma sola cada segundo vía el propio
-  // cambio de estado; se detiene al llegar a 0 (el efecto de abajo la cierra).
-  useEffect(() => {
-    if (!restTimer || restTimer.secondsLeft <= 0) return;
-    const id = setTimeout(() => {
-      setRestTimer(prev => (prev ? { ...prev, secondsLeft: prev.secondsLeft - 1 } : null));
-    }, 1000);
-    return () => clearTimeout(id);
-  }, [restTimer]);
-
-  // Al llegar a 0: una vibración corta (no pide permiso, no-op si el
-  // navegador no la soporta) y se cierra sola a los pocos segundos.
-  useEffect(() => {
-    if (restTimer?.secondsLeft !== 0) return;
-    navigator.vibrate?.([150, 80, 150]);
-    stopRestTimer().catch(() => {}); // ya lo vimos en primer plano, evita el duplicado/la notificación colgada en background
-    const id = setTimeout(() => setRestTimer(null), 3000);
-    return () => clearTimeout(id);
-  }, [restTimer?.secondsLeft]);
+  // Solo la CardioAssignment PUNTUAL (con `date`) del mismo día del entreno —
+  // las recurrentes por `timesPerWeek` no se pueden atribuir a un día exacto
+  // sin más lógica, así que se dejan fuera a propósito (ver el plan).
+  const sameDayCardio = activeAssignment
+    ? cardioAssignments.find(c => c.active && c.date === activeAssignment.date) ?? null
+    : null;
 
   // ── Derived ────────────────────────────────────────────────────────────────
   const getWorkout = (id: string) => workouts.find(w => w.id === id);
@@ -296,6 +234,10 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
     }
 
     const prerrellenadas = prefillWorkoutSets(wo, entries);
+    // La forma PRESCRITA (sin las filas de dropset/myoreps que el atleta
+    // pueda añadir después) — se guarda con cada autoguardado para poder
+    // distinguir "el coach cambió la rutina" de "yo añadí una bajada".
+    formaPrescritaRef.current = formaDeSesion(prerrellenadas);
 
     // 05-5. Si esta misma sesión quedó a medias —la app murió en segundo plano,
     // o el atleta salió a la lista entre series— se recupera lo que ya había
@@ -331,13 +273,25 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
     setPrevEntries([]);
     setExerciseNoteInputs([]);
     setWorkoutNoteInput('');
-    setRestTimer(null);
   };
 
   const updateSet = (exIdx: number, sIdx: number, field: keyof SetInput, value: string | boolean) => {
     setPlayerSets(prev => {
       const next = prev.map(ex => [...ex]);
       next[exIdx][sIdx] = { ...next[exIdx][sIdx], [field]: value };
+      return next;
+    });
+  };
+
+  /** Añade una bajada (dropset) o miniserie (myoreps) suelta durante la
+   * sesión — mismo `SetInput` que cualquier otra fila, sin campo nuevo en el
+   * modelo de datos (decisión del plan: "Dropset/myoreps: solo visual, dato
+   * simple"). `sesionEnCurso.ts` ya sabe tolerar que el borrador tenga más
+   * series por ejercicio que el prerelleno recién calculado. */
+  const addSetRow = (exIdx: number) => {
+    setPlayerSets(prev => {
+      const next = prev.map(ex => [...ex]);
+      next[exIdx] = [...(next[exIdx] || []), nuevaSerieVacia()];
       return next;
     });
   };
@@ -385,6 +339,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
       exerciseNoteInputs,
       workoutNoteInput,
       guardadoEn:        new Date().toISOString(),
+      formaPrescrita:    formaPrescritaRef.current,
     });
   }, [activeAssignment, activeWorkout, playerSets, exerciseNoteInputs, workoutNoteInput,
       celebration, canFinish, profile.email]);
@@ -455,7 +410,6 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
       }
 
       queryClient.setQueryData<WorkoutLog[]>(logsKey, prev => [...(prev ?? []), newLog]);
-      setRestTimer(null);
       // 05-5. El entrenamiento ya está en Firestore: el borrador local sobra.
       // Va después de las escrituras y no antes, para que un fallo al
       // guardar deje el trabajo del atleta donde estaba.
@@ -557,538 +511,41 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
 
   // ── Render: PLAYER ─────────────────────────────────────────────────────────
   if (activeAssignment && activeWorkout) {
-    const orderedExercises = activeWorkout.exercises.slice().sort((a, b) => a.order - b.order);
-    const doneSetsTotal = playerSets.flat().filter(s => s.done).length;
-    const totalSets = playerSets.flat().length;
-
     return (
-      // pb reservado para la action bar fija de más abajo (nota + botones):
-      // bug real — pb-14 (56px) se quedaba corto frente a los ~184px que ocupa
-      // la barra (bottom-nav + pt-8 + botón size="l"), así que la nota del
-      // entrenamiento quedaba tapada por "Saltar sesión"/"Terminar sesión".
-      <div className="space-y-6 pb-[calc(var(--nav-h)+7rem)]">
-        {/* Player header */}
-        <header className="pb-4 border-b border-hairline sticky top-[var(--header-h)] bg-bg/92 backdrop-blur-md z-[var(--z-sticky)] pt-2">
-          <div className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="s"
-              icon="arrow_back"
-              label="Volver"
-              onClick={cerrarPlayer}
-              className="shrink-0"
-            />
-            <div className="flex-1 min-w-0">
-              <h1 className="font-display text-title-l font-black uppercase tracking-tight text-ink truncate">{activeWorkout.name}</h1>
-              <p className="font-mono text-caption text-ink-2">{formatDate(activeAssignment.date)} · EJERCICIO {orderedExercises.length}</p>
-            </div>
-            <div className="flex-shrink-0 text-right">
-              <span className="font-mono text-label text-accent font-bold">{doneSetsTotal}/{totalSets}</span>
-              <span className="block font-mono text-caption text-ink-2 uppercase">series hechas</span>
-            </div>
-          </div>
-
-          {/* Cronómetro de descanso — dentro de la cabecera sticky, no flotando
-              encima del contenido: antes era un pill `fixed` con un `top`
-              adivinado a ojo que según la pantalla tapaba las stat tiles o el
-              propio título. Pastilla oro con punto que late mientras cuenta
-              (handoff, Sesión módulo 3): al llegar a 0 el icono deja de latir
-              y el texto pasa a "¡Listo!" un instante antes de cerrarse sola. */}
-          {restTimer && (
-            <div className="mt-3 flex items-center gap-3 rounded-full border border-accent-line bg-surface py-2 pl-4 pr-2 shadow-e1 w-fit">
-            <span className="relative flex h-2 w-2" aria-hidden>
-              {restTimer.secondsLeft > 0 && (
-                <span className="absolute inline-flex h-full w-full animate-pulse-dot rounded-full bg-accent" />
-              )}
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-accent" />
-            </span>
-            <div className="leading-none">
-              <p className="font-mono text-title-m font-bold tabular-nums text-ink">
-                {Math.floor(restTimer.secondsLeft / 60)}:{String(restTimer.secondsLeft % 60).padStart(2, '0')}
-              </p>
-              <p className="font-mono text-caption uppercase tracking-wide text-ink-2">
-                {restTimer.secondsLeft > 0 ? 'Descanso' : '¡Listo!'}
-              </p>
-            </div>
-            <Button variant="ghost" size="s" icon="close" label="Saltar descanso" onClick={() => setRestTimer(null)} />
-            </div>
-          )}
-        </header>
-
-        {/* Progress bar */}
-        <ProgressBar value={totalSets > 0 ? (doneSetsTotal / totalSets) * 100 : 0} label={`${doneSetsTotal} de ${totalSets} series hechas`} />
-
-        {/* Stat tiles: real progress metrics */}
-        <div className="grid grid-cols-2 gap-3">
-          <StatTile icon="check_circle" label="Series hechas" value={`${doneSetsTotal}/${totalSets}`} />
-          <StatTile icon="format_list_numbered" label="Ejercicios" value={orderedExercises.length} />
-        </div>
-
-        <Coachmark
-          id="training_player_mark_set"
-          email={profile.email}
-          icon="touch_app"
-          text="Marca el círculo al terminar cada serie — es lo que usa tu coach para progresarte."
-        />
-
-        {/* Exercise cards */}
-        {orderedExercises.map((we, exIdx) => {
-          const ex = getExercise(we.exerciseId);
-          const exSets = playerSets[exIdx] || [];
-          const prevEntry = prevEntries.find(e => e.exerciseId === we.exerciseId);
-          const expanded = expandSetGroups(we);
-          const totalSets = expanded.length;
-          const doneSets = exSets.filter(s => s.done).length;
-          // Warm-up reacts live to whatever the athlete is currently typing for the first
-          // effective set (first row of the first block, top set included) — there's no
-          // separate "prescribed weight" field, it's only known once the athlete types it.
-          const set1Weight = parseFloat(exSets[0]?.weight || '') || 0;
-          const warmup = generateWarmup({
-            mode: we.warmupMode,
-            manualSets: we.manualWarmupSets,
-            targetWeight: set1Weight,
-            targetReps: parseTargetReps(expanded[0]?.reps ?? we.reps),
-            previousSets: prevEntry?.sets,
-          });
-          return (
-            <div
-              key={`${we.exerciseId}-${exIdx}`}
-              className={`bg-surface border rounded-surface overflow-hidden ${
-                we.recordVideoSet ? 'border-accent/50' : 'border-hairline'
-              }`}
-            >
-              {/* Exercise header — nombre en Archivo 900 (handoff, Sesión): es
-                  el único titular de la tarjeta, todo lo demás es dato o chip. */}
-              <div
-                ref={exIdx === 0 ? videoTargetRef : undefined}
-                className="flex items-center gap-3 p-4 bg-surface border-b border-hairline"
-              >
-                <span className="font-mono text-caption text-ink-3 w-5 text-center font-bold flex-shrink-0">{exIdx + 1}</span>
-                {/* Icono fijo de mancuerna — antes mostraba la foto del ejercicio si
-                    había una, ahora siempre la mancuerna para dejar la fila más
-                    compacta y consistente (hueco que hacía falta para el nuevo
-                    botón de historial). */}
-                <div className="w-11 h-11 rounded-full bg-raised border border-hairline flex items-center justify-center flex-shrink-0">
-                  <Icon name="fitness_center" size="m" className="text-ink-2" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-display text-title-m font-black uppercase tracking-tight text-ink truncate flex items-center gap-2">
-                    {ex?.name || we.exerciseId}
-                    {we.technique && (
-                      <span className={`inline-flex items-center gap-1 text-caption font-mono font-bold uppercase px-2 rounded-control border flex-shrink-0 ${TECHNIQUE_COLOR[we.technique]}`}>
-                        {TECHNIQUE_EMOJI[we.technique]} {TECHNIQUE_LABEL[we.technique]}
-                      </span>
-                    )}
-                  </p>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-mono text-caption text-ink-2">
-                      {we.setGroups && we.setGroups.length > 0
-                        ? we.setGroups.map((g, i) => `${g.label || `Bloque ${i + 1}`} ${g.sets}×${g.reps} (RIR ${g.rir})`).join(' · ')
-                        : `${we.sets}×${we.reps} · RIR ${we.rir}`} · {we.restSeconds}s
-                    </span>
-                    {ex?.equipment?.map(eq => (
-                      <span key={eq} className="text-caption font-sans px-2 rounded-control bg-white/5 text-ink-3">{eq}</span>
-                    ))}
-                    {ex?.videoUrl && (
-                      <button
-                        type="button"
-                        onClick={() => setOpenVideoIdx(v => v === exIdx ? null : exIdx)}
-                        className={`inline-flex items-center gap-1 text-caption font-sans font-bold uppercase px-2 rounded-control border transition-colors ${
-                          openVideoIdx === exIdx ? 'bg-accent text-on-accent border-accent' : 'text-accent border-accent/30 hover:bg-accent/10'
-                        }`}
-                      >
-                        <Icon name="play_circle" size="s" filled={openVideoIdx === exIdx} />
-                        Vídeo
-                      </button>
-                    )}
-                    {/* Siempre visible, aunque no haya datos aún — antes se ocultaba
-                        del todo si exerciseProgressById no tenía entrada para este
-                        ejercicio, y un atleta que lo hacía por primera vez no veía
-                        ningún botón. El Dialog decide qué enseñar si está vacío. */}
-                    <button
-                      type="button"
-                      onClick={() => setHistoryExId(we.exerciseId)}
-                      className="inline-flex items-center gap-1 text-caption font-sans font-bold uppercase px-2 rounded-control border text-accent border-accent/30 hover:bg-accent/10 transition-colors"
-                    >
-                      <Icon name="trending_up" size="s" />
-                      Historial
-                    </button>
-                    {warmup.readiness && (
-                      <span
-                        title={warmup.readiness.message}
-                        className={`text-caption font-mono px-2 rounded-control border ${
-                          warmup.readiness.score >= 75 ? 'text-success border-success/30 bg-success/10'
-                          : warmup.readiness.score >= 45 ? 'text-warning border-warning/30 bg-warning/10'
-                          : 'text-danger border-danger/30 bg-danger/10'
-                        }`}
-                      >
-                        🔥 Readiness {warmup.readiness.score}
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <div className="flex-shrink-0">
-                  {doneSets === totalSets ? (
-                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-accent text-on-accent">
-                      <Icon name="check" size="s" filled />
-                    </span>
-                  ) : (
-                    <span className="font-mono text-caption font-bold px-2 py-1 rounded-control bg-inset text-ink-2">
-                      {doneSets}/{totalSets}
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {openVideoIdx === exIdx && ex?.videoUrl && <ExerciseVideoPlayer videoUrl={ex.videoUrl} />}
-
-              {we.recordVideoSet && (
-                <div className="flex items-center gap-2 px-4 py-2 bg-accent/6 border-b border-accent-line">
-                  <Icon name="videocam" size="s" className="text-accent" />
-                  <p className="font-sans text-label font-bold text-accent">
-                    {we.recordVideoSet === 'all'
-                      ? 'Tu entrenador quiere que grabes todas las series con el móvil'
-                      : `Tu entrenador quiere que grabes la serie ${we.recordVideoSet} con el móvil`}
-                  </p>
-                </div>
-              )}
-
-              {we.technique && (
-                <div className={`flex items-start gap-2 px-4 py-3 border-b ${TECHNIQUE_COLOR[we.technique]}`}>
-                  <span className="text-title-s flex-shrink-0 leading-none">{TECHNIQUE_EMOJI[we.technique]}</span>
-                  <p className="font-sans text-label leading-relaxed">
-                    <span className="font-bold uppercase tracking-wide">{TECHNIQUE_LABEL[we.technique]}. </span>
-                    {TECHNIQUE_DESCRIPTION[we.technique]}
-                  </p>
-                </div>
-              )}
-
-              {/* Set table
-                  07-4. Era `min-w-[480px]` dentro de un ancho útil de 343-361 px,
-                  así que en CUALQUIER iPhone la última columna quedaba fuera de
-                  pantalla — y la última columna es «Hecha», la casilla que el
-                  atleta pulsa una vez por serie, de pie, con las manos ocupadas y
-                  el pulso a 150. Había que arrastrar la tabla en horizontal cada
-                  vez, dentro de una página que ya scrollea en vertical.
-
-                  Ahora en móvil la tabla CABE, en vez de caber a medias: se
-                  esconde la columna «Anterior» y se aprietan paddings y campos.
-                  Esconder «Anterior» no pierde el dato: la tabla llega
-                  prerrellenada con lo del último día (utils/setPrefill.ts) y ese
-                  mismo valor está de placeholder en cada campo, así que la
-                  columna era la tercera vez que se decía lo mismo. En pantallas
-                  anchas no cambia nada. */}
-              <div className="overflow-x-auto">
-                <table className="w-full text-left sm:min-w-[480px]">
-                  <thead>
-                    <tr className="bg-bg border-b border-hairline">
-                      <th className="px-2 sm:px-4 py-2 font-mono text-caption text-ink-2 uppercase w-12">Serie</th>
-                      <th className="px-2 sm:px-3 py-2 font-mono text-caption text-ink-2 uppercase">Peso</th>
-                      <th className="px-2 sm:px-3 py-2 font-mono text-caption text-ink-2 uppercase">Reps</th>
-                      <th className="px-2 sm:px-3 py-2 font-mono text-caption text-ink-2 uppercase">RIR</th>
-                      <th className="hidden sm:table-cell px-3 py-2 font-mono text-caption text-ink-3 uppercase">Anterior</th>
-                      <th className="px-2 sm:px-4 py-2 font-mono text-caption text-ink-2 uppercase text-center">Hecha</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {warmup.sets.map((w, wIdx) => (
-                      <tr key={`warmup-${wIdx}`} className="border-b border-hairline bg-warning/6">
-                        <td className="px-2 sm:px-4 py-3">
-                          <span className="font-mono text-label font-bold text-warning flex items-center gap-1">
-                            🔥 W{wIdx + 1}
-                          </span>
-                        </td>
-                        <td className="px-2 sm:px-3 py-2">
-                          <span className="w-16 sm:w-20 inline-block text-center text-warning font-mono text-body-s">{w.weight}</span>
-                        </td>
-                        <td className="px-2 sm:px-3 py-2">
-                          <span className="w-14 sm:w-16 inline-block text-center text-warning font-mono text-body-s">{w.reps}</span>
-                        </td>
-                        <td className="px-2 sm:px-3 py-2 text-center text-warning/50 font-mono text-body-s">—</td>
-                        <td className="hidden sm:table-cell px-3 py-2 text-center text-warning/50 font-mono text-caption">Warm-up</td>
-                        <td className="px-2 sm:px-4 py-2 text-center text-warning/40 font-mono text-body-s">—</td>
-                      </tr>
-                    ))}
-                    {exSets.map((setInput, sIdx) => {
-                      const prev = prevEntry?.sets[sIdx];
-                      const shouldRecord = we.recordVideoSet === 'all' || we.recordVideoSet === sIdx + 1;
-                      // Serie siguiente anticipada (handoff): la primera sin
-                      // marcar, en orden — número y casilla en oro para que el
-                      // atleta sepa dónde está sin tener que contar filas.
-                      const esSiguiente = !setInput.done && exSets.slice(0, sIdx).every(s => s.done);
-                      return (
-                        <tr
-                          key={sIdx}
-                          className={`border-b border-hairline transition-colors duration-(--duration-state) ${
-                            setInput.done ? 'bg-accent/6' : shouldRecord ? 'bg-accent/5' : esSiguiente ? 'bg-accent/[.03]' : 'hover:bg-raised'
-                          }`}
-                        >
-                          <td className="px-2 sm:px-4 py-3">
-                            <span className={`font-mono text-label font-bold flex items-center gap-1 ${setInput.done || esSiguiente ? 'text-accent' : 'text-ink-2'}`}>
-                              {String(sIdx + 1).padStart(2, '0')}
-                              {shouldRecord && <Icon name="videocam" size="s" className="text-accent" label="Grabar con el móvil" />}
-                            </span>
-                            {(we.setGroups?.length ?? 0) > 1 && expanded[sIdx]?.label && (
-                              <span className="block font-sans text-caption text-accent/70 uppercase ">{expanded[sIdx].label}</span>
-                            )}
-                          </td>
-                          <td className="px-2 sm:px-3 py-2" ref={exIdx === 0 && sIdx === 0 ? setEditorTargetRef : undefined}>
-                            <input
-                              type="number"
-                              min={0}
-                              step={0.5}
-                              value={setInput.weight}
-                              onChange={e => updateSet(exIdx, sIdx, 'weight', e.target.value)}
-                              placeholder={prev && prev.weight > 0 ? String(prev.weight) : '—'}
-                              disabled={setInput.done}
-                              className={`w-16 sm:w-20 rounded-control border bg-field px-1 sm:px-2 py-2 text-center font-mono text-title-s text-ink focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50 disabled:cursor-not-allowed ${esSiguiente ? 'border-accent/55' : 'border-hairline'}`}
-                            />
-                          </td>
-                          <td className="px-2 sm:px-3 py-2">
-                            <input
-                              type="number"
-                              min={0}
-                              value={setInput.repsDone}
-                              onChange={e => updateSet(exIdx, sIdx, 'repsDone', e.target.value)}
-                              placeholder={prev && prev.repsDone > 0 ? String(prev.repsDone) : (expanded[sIdx]?.reps || '—')}
-                              disabled={setInput.done}
-                              className={`w-14 sm:w-16 rounded-control border bg-field px-1 sm:px-2 py-2 text-center font-mono text-title-s text-ink focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50 disabled:cursor-not-allowed ${esSiguiente ? 'border-accent/55' : 'border-hairline'}`}
-                            />
-                          </td>
-                          <td className="px-2 sm:px-3 py-2">
-                            {/* FALLO no es RIR 0: es un séptimo valor, no un número
-                                reservado — de ahí el <select> en vez de un <input
-                                type="number"> con min/max 0-5. La rueda nativa es
-                                el mismo criterio que ya usa `Select` (ui/Select.tsx):
-                                en móvil gana a cualquier lista propia. */}
-                            <select
-                              value={setInput.rir}
-                              onChange={e => updateSet(exIdx, sIdx, 'rir', e.target.value)}
-                              disabled={setInput.done}
-                              className={`w-14 sm:w-16 appearance-none bg-field border border-hairline rounded-control px-1 sm:px-2 py-2 text-center font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50 disabled:cursor-not-allowed ${rirClaseColor(setInput.rir)}`}
-                            >
-                              {RIR_OPCIONES.map(v => (
-                                <option key={v} value={v}>{rirTexto(v)}</option>
-                              ))}
-                            </select>
-                          </td>
-                          <td className="hidden sm:table-cell px-3 py-2">
-                            {prev ? (
-                              <span className="font-mono text-caption text-ink-3 whitespace-nowrap">
-                                {prev.weight > 0 ? `${prev.weight}kg` : '—'} × {prev.repsDone > 0 ? `${prev.repsDone}r` : '—'}
-                              </span>
-                            ) : (
-                              <span className="font-mono text-caption text-ink-3">—</span>
-                            )}
-                          </td>
-                          <td className="px-2 sm:px-4 py-2 text-center">
-                            {/* Casilla oro con check en on-accent al completar (handoff,
-                                Componentes 06) — desmarcar es tocar otra vez, sin confirmar. */}
-                            <button
-                              ref={exIdx === 0 && sIdx === 0 ? firstSetRowTargetRef : undefined}
-                              onClick={() => {
-                                const markingDone = !setInput.done;
-                                void haptics.light();
-                                updateSet(exIdx, sIdx, 'done', markingDone);
-                                if (markingDone) tutorial.markActionDone('marcar-serie');
-                                if (markingDone && we.restSeconds) {
-                                  setRestTimer({ totalSeconds: we.restSeconds, secondsLeft: we.restSeconds });
-                                  startRestTimer(ex?.name || 'tu ejercicio', we.restSeconds).catch(() => {});
-                                } else if (!markingDone) {
-                                  stopRestTimer().catch(() => {});
-                                }
-                              }}
-                              className={`mx-auto flex h-11 w-11 items-center justify-center rounded-control border transition-colors duration-(--duration-state) ${
-                                setInput.done
-                                  ? 'bg-accent border-accent text-on-accent'
-                                  : 'border-hairline text-ink-3 hover:border-accent-line hover:text-accent'
-                              }`}
-                            >
-                              <Icon name={setInput.done ? 'check_circle' : 'radio_button_unchecked'} size="m" filled={setInput.done} />
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Athlete's note for this exercise */}
-              <div className="px-4 py-3 bg-bg border-t border-hairline">
-                <label className="font-mono text-caption text-ink-2 uppercase tracking-wider block mb-2">Tu nota (opcional)</label>
-                <textarea
-                  value={exerciseNoteInputs[exIdx] || ''}
-                  onChange={e => updateExerciseNote(exIdx, e.target.value)}
-                  placeholder="ej. Molestia leve en el hombro derecho..."
-                  rows={2}
-                  className="w-full bg-bg border border-hairline rounded-control p-3 text-title-s text-white placeholder-ink-2/40 focus:outline-none focus:ring-1 focus:ring-accent resize-none"
-                />
-              </div>
-
-              {we.notes && (
-                <div className="px-4 py-2 bg-bg border-t border-hairline">
-                  <p className="font-sans text-caption text-ink-2 italic">📌 {we.notes}</p>
-                </div>
-              )}
-
-              {ex?.instructions && (
-                <div className="px-4 py-2 bg-bg border-t border-hairline">
-                  <p className="font-mono text-caption text-ink-3 uppercase ">Descripción</p>
-                  <p className="text-label text-ink-2">{ex.instructions}</p>
-                </div>
-              )}
-
-              {getPersonalNote(we.exerciseId) && (
-                <div className="px-4 py-2 bg-accent-bg border-t border-accent/15">
-                  <p className="font-sans text-caption text-accent/70 uppercase ">Nota de tu entrenador para ti</p>
-                  <p className="text-label text-accent">{getPersonalNote(we.exerciseId)}</p>
-                </div>
-              )}
-            </div>
-          );
-        })}
-
-        {/* Nota del entrenamiento completo */}
-        <div className="bg-surface border border-hairline rounded-surface p-4 space-y-2">
-          <label className="font-sans text-caption text-ink-2 uppercase tracking-wider">Nota del entrenamiento (opcional)</label>
-          <textarea
-            value={workoutNoteInput}
-            onChange={e => setWorkoutNoteInput(e.target.value)}
-            placeholder="¿Cómo te sentiste hoy? Cualquier comentario general para tu entrenador..."
-            rows={2}
-            className="w-full bg-bg border border-hairline rounded-control p-3 text-title-s text-white placeholder-ink-2/40 focus:outline-none focus:ring-1 focus:ring-accent resize-none"
-          />
-        </div>
-
-        {/* Player action bar — pie fijo con degradado al fondo (handoff): el
-            retroceso es un botón cuadrado y el primario es quien lleva la
-            acción de verdad. bottom usa --nav-h (bug real: bottom-24 = 96px
-            era siempre menor que la bottom-nav, ~98-112px con safe-area, así
-            que la barra quedaba pisada por/pisando la nav). */}
-        <div className="fixed bottom-[calc(var(--nav-h)+0.5rem)] md:bottom-6 left-0 right-0 z-[var(--z-fab)] px-4 pt-8 bg-gradient-to-t from-bg via-bg/90 to-transparent">
-          <div className="flex justify-center gap-3">
-            <Button
-              variant="secondary"
-              size="l"
-              icon="skip_next"
-              label="Saltar sesión"
-              onClick={async () => {
-                await handleSkip(activeAssignment);
-                // Saltar la sesión sí es abandonarla: aquí el borrador se va.
-                borrarSesion(profile.email, activeAssignment.id);
-                cerrarPlayer();
-              }}
-            />
-            <Button
-              variant="primary"
-              size="l"
-              icon="flag"
-              loading={isFinishing}
-              loadingLabel="Guardando"
-              disabled={!canFinish || !!celebration}
-              onClick={handleFinish}
-              className="flex-1 max-w-xs"
-            >
-              Terminar sesión
-            </Button>
-          </div>
-        </div>
-
-        {/* Celebración al terminar — se muestra antes de volver a la lista;
-            el atleta la despide él mismo (dismissCelebration cierra ambas cosas). */}
-        {celebration && (
-          <Dialog
-            open
-            onClose={dismissCelebration}
-            size="s"
-            label={celebration.isFirstEver ? 'Primera sesión registrada' : 'Entreno completado'}
-            footer={(
-              <Button onClick={dismissCelebration} fullWidth>Genial</Button>
-            )}
-          >
-            <div className="space-y-5 text-center">
-              <div className="w-16 h-16 mx-auto rounded-surface bg-accent/10 border border-accent/30 flex items-center justify-center">
-                <Icon name={celebration.isFirstEver ? 'celebration' : 'bolt'} size="xl" filled className="text-accent" />
-              </div>
-              <div>
-                <h2 className="font-sans font-bold text-title-m text-white">
-                  {celebration.isFirstEver ? '¡Primera sesión registrada! 💪' : '¡Entreno completado! 💪'}
-                </h2>
-                <p className="text-body-s text-ink-2 mt-1">
-                  {celebration.isFirstEver ? 'Así se empieza — a partir de aquí, todo suma.' : 'Buen trabajo. Sigue así.'}
-                </p>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-raised rounded-surface p-3">
-                  <p className="font-mono text-title-l font-bold text-white tabular-nums">{celebration.totalSets}</p>
-                  <p className="font-mono text-caption text-ink-2 uppercase tracking-wide">Series</p>
-                </div>
-                <div className="bg-raised rounded-surface p-3">
-                  <p className="font-mono text-title-l font-bold text-white tabular-nums">{Math.round(celebration.tonnage).toLocaleString('es-ES')}</p>
-                  <p className="font-mono text-caption text-ink-2 uppercase tracking-wide">kg movidos</p>
-                </div>
-              </div>
-              {celebration.prs.length > 0 && (
-                <div className="bg-accent/10 border border-accent/30 rounded-surface p-3 space-y-2 text-left">
-                  {celebration.prs.map(pr => (
-                    <p key={pr.exerciseId} className="text-label text-accent flex items-center gap-2">
-                      <Icon name="military_tech" size="s" />
-                      Récord en {pr.name} — {pr.newBest} kg est.
-                    </p>
-                  ))}
-                </div>
-              )}
-            </div>
-          </Dialog>
-        )}
-
-        {/* Historial de peso — pantalla propia, ya no escondida detrás del
-            botón de vídeo (que además la ocultaba del todo si el ejercicio
-            tenía vídeo). "Tu mejor serie" (ExerciseBestSetCard) es un
-            resumen; debajo va la lista sesión a sesión con los pesos reales
-            usados, que es lo que el atleta necesita para no tener que hacer
-            memoria de la última vez. Se abre siempre, aunque no haya datos:
-            un atleta haciendo el ejercicio por primera vez tiene que poder
-            comprobarlo y ver que, en efecto, no hay nada todavía. */}
-        {historyExId && (() => {
-          const progress = exerciseProgressById.get(historyExId);
-          const sessions = exerciseSessionHistory(logs, historyExId);
-          return (
-            <Dialog
-              open
-              onClose={() => setHistoryExId(null)}
-              size="s"
-              title={`Historial — ${getExercise(historyExId)?.name ?? 'Ejercicio'}`}
-            >
-              <div className="space-y-4">
-                {progress ? (
-                  <ExerciseBestSetCard {...progress} />
-                ) : (
-                  <p className="font-sans text-label text-ink-2">
-                    Todavía no hay series registradas de este ejercicio — esta será tu primera vez.
-                  </p>
-                )}
-                {sessions.length > 0 && (
-                  <div className="space-y-2">
-                    <p className="font-sans text-caption text-ink-2 uppercase tracking-widest">Sesiones anteriores</p>
-                    <div className="space-y-1.5">
-                      {sessions.map(s => (
-                        <div key={s.date} className="flex items-center justify-between gap-3 py-1.5 border-b border-hairline last:border-b-0">
-                          <span className="font-mono text-caption text-ink-3">{s.date}</span>
-                          <span className="font-mono text-label text-ink text-right">
-                            {s.sets.map(set => `${set.weight}×${set.reps}`).join(' · ')}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </Dialog>
-          );
-        })()}
-      </div>
+      <WorkoutSessionPlayer
+        profile={profile}
+        activeAssignment={activeAssignment}
+        activeWorkout={activeWorkout}
+        playerSets={playerSets}
+        updateSet={updateSet}
+        addSetRow={addSetRow}
+        prevEntries={prevEntries}
+        exerciseNoteInputs={exerciseNoteInputs}
+        updateExerciseNote={updateExerciseNote}
+        workoutNoteInput={workoutNoteInput}
+        setWorkoutNoteInput={setWorkoutNoteInput}
+        getExercise={getExercise}
+        getPersonalNote={getPersonalNote}
+        logs={logs}
+        exerciseProgressById={exerciseProgressById}
+        handleFinish={handleFinish}
+        isFinishing={isFinishing}
+        canFinish={canFinish}
+        celebration={celebration}
+        dismissCelebration={dismissCelebration}
+        cerrarPlayer={cerrarPlayer}
+        onSkipSession={async () => {
+          await handleSkip(activeAssignment);
+          // Saltar la sesión sí es abandonarla: aquí el borrador se va.
+          borrarSesion(profile.email, activeAssignment.id);
+          cerrarPlayer();
+        }}
+        sameDayCardio={sameDayCardio}
+        videoTargetRef={videoTargetRef}
+        setEditorTargetRef={setEditorTargetRef}
+        firstSetRowTargetRef={firstSetRowTargetRef}
+        onMarkActionDone={() => tutorial.markActionDone('marcar-serie')}
+      />
     );
   }
 

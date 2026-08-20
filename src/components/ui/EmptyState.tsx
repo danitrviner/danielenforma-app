@@ -15,9 +15,14 @@ import Icon from './Icon';
    px—. Esta primitiva no inventa el valor, aplica la decisión que ya estaba
    tomada.
 
-   El icono usa `text-icon-xl` (32 px) en `ink-3`, nunca `accent`: un estado
-   vacío no es una llamada a la acción dorada por sí solo — si tiene acción, es
-   el botón quien la lleva, no el icono decorativo de arriba.
+   El icono usa `text-icon-xl` (32 px) en `ink-3` por defecto, nunca `accent`:
+   un estado vacío no es una llamada a la acción dorada por sí solo — si tiene
+   acción, es el botón quien la lleva, no el icono decorativo de arriba.
+
+   `iconTone="accent"` es la única excepción, y a propósito estrecha: un
+   "todo al día" (Home Coach, Home Atleta) es un estado positivo de cero
+   pendientes, no una lista vacía — el handoff de Fase 3 lo trata como el
+   único acento de esa pantalla, no como decoración de un hueco sin datos.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 type Props = {
@@ -28,6 +33,15 @@ type Props = {
   /** Texto del botón. Sin esto no hay acción — un estado vacío no la necesita siempre. */
   actionLabel?: string;
   onAction?: () => void;
+  /**
+   * Segunda acción, en `secondary` mientras la primera pasa a `primary` —
+   * "biblioteca vacía" (Ejercicios) necesita "Cargar los base" y "Crear uno
+   * desde cero" a la vez; sin esto, esos sitios no podían usar la primitiva.
+   */
+  secondaryActionLabel?: string;
+  onSecondaryAction?: () => void;
+  /** 'accent' solo para un cero-pendientes positivo — ver nota arriba. */
+  iconTone?: 'neutral' | 'accent';
   className?: string;
 };
 
@@ -37,19 +51,35 @@ export default function EmptyState({
   description,
   actionLabel,
   onAction,
+  secondaryActionLabel,
+  onSecondaryAction,
+  iconTone = 'neutral',
   className = '',
 }: Props) {
   return (
     <div className={`flex flex-col items-center gap-3 px-6 py-10 text-center ${className}`}>
-      <Icon name={icon} size="xl" className="text-ink-3" />
+      {iconTone === 'accent' ? (
+        <span className="flex h-[52px] w-[52px] items-center justify-center rounded-field bg-accent/14">
+          <Icon name={icon} size="l" className="text-accent" />
+        </span>
+      ) : (
+        <Icon name={icon} size="xl" className="text-ink-3" />
+      )}
       <div className="flex flex-col gap-1">
         <p className="font-sans text-title-s font-bold text-ink">{title}</p>
         {description && <p className="font-sans text-body-s text-ink-2">{description}</p>}
       </div>
       {actionLabel && onAction && (
-        <Button variant="secondary" onClick={onAction} className="mt-1">
-          {actionLabel}
-        </Button>
+        <div className="mt-1 flex flex-col gap-2 sm:flex-row">
+          <Button variant={secondaryActionLabel ? 'primary' : 'secondary'} onClick={onAction}>
+            {actionLabel}
+          </Button>
+          {secondaryActionLabel && onSecondaryAction && (
+            <Button variant="secondary" onClick={onSecondaryAction}>
+              {secondaryActionLabel}
+            </Button>
+          )}
+        </div>
       )}
     </div>
   );
