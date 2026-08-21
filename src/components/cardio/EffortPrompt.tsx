@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Button, EffortScale } from '../ui';
+import { useScrollLock } from '../ui/internal/overlayHooks';
 
 // Paso previo a guardar: Esfuerzo Percibido 1–10 (§5.4 del análisis, "04 ·
 // registro en dos toques" del handoff de Fase 3) — la única carga de
@@ -17,14 +19,19 @@ interface Props {
 
 export default function EffortPrompt({ suggested, onConfirm, saving }: Props) {
   const [pe, setPe] = useState(suggested);
+  useScrollLock(true);
 
-  return (
+  return createPortal(
     /* No es un modal: es una vista a pantalla completa. Fondo opaco, sin telón
        y sin caja — ocupa la ventana entera durante la sesión. F9 lo clasificó y
        lo dejó fuera a propósito: convertirlo en `Dialog` sería un rediseño, no
        una migración. Cuenta en la métrica `Overlays artesanales` del inventario
        porque esa métrica mide la utilidad de posición, que aquí no significa
-       overlay sino pantalla. */
+       overlay sino pantalla.
+       Portal a document.body (22-08): venía montada en su sitio normal dentro
+       de `<main>`, como LiveSession antes de su fix del 17-08 — mismo fallo,
+       aparecía cortada/desplazada hacia arriba justo después de deslizar para
+       guardar. Mismo remedio: portal + useScrollLock. */
     <div className="fixed inset-0 z-[90] flex flex-col items-center justify-center bg-bg px-6">
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center">
@@ -38,6 +45,7 @@ export default function EffortPrompt({ suggested, onConfirm, saving }: Props) {
           Guardar sesión
         </Button>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

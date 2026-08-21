@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Icon } from '../ui';
+import { useScrollLock } from '../ui/internal/overlayHooks';
 
 // Vuelta a la calma de 2 min tras terminar el entreno (§5.6 del análisis) —
 // con banda BLE no hay otra forma de medir el Heart Rate Recovery, porque la
@@ -15,6 +17,7 @@ interface Props {
 
 export default function CooldownPrompt({ bpm, onDone }: Props) {
   const [remaining, setRemaining] = useState(COOLDOWN_SEC);
+  useScrollLock(true);
 
   useEffect(() => {
     if (remaining <= 0) { onDone(); return; }
@@ -22,13 +25,15 @@ export default function CooldownPrompt({ bpm, onDone }: Props) {
     return () => window.clearTimeout(t);
   }, [remaining, onDone]);
 
-  return (
+  return createPortal(
     /* No es un modal: es una vista a pantalla completa. Fondo opaco, sin telón
        y sin caja — ocupa la ventana entera durante la sesión. F9 lo clasificó y
        lo dejó fuera a propósito: convertirlo en `Dialog` sería un rediseño, no
        una migración. Cuenta en la métrica `Overlays artesanales` del inventario
        porque esa métrica mide la utilidad de posición, que aquí no significa
-       overlay sino pantalla. */
+       overlay sino pantalla.
+       Portal a document.body (22-08): mismo fix que EffortPrompt/LiveSession —
+       ver el docstring de LiveSession.tsx para el porqué. */
     <div className="fixed inset-0 z-[90] flex flex-col items-center justify-center bg-bg px-6">
       <div className="w-full max-w-sm space-y-6 text-center">
         <div>
@@ -47,6 +52,7 @@ export default function CooldownPrompt({ bpm, onDone }: Props) {
           Saltar y guardar ya
         </button>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

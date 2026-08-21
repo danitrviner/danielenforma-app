@@ -1,7 +1,9 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { CardioSession, CardioZones } from '../../types';
 import ZoneBars from './ZoneBars';
 import { Button, RingSeal } from '../ui';
+import { useScrollLock } from '../ui/internal/overlayHooks';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    CardioSessionSummary (F3.9, "05 · Resumen y semana cerrada" del handoff)
@@ -12,6 +14,11 @@ import { Button, RingSeal } from '../ui';
    titular de cierre — el haptic success ya se disparó en CardioScreen al
    guardar, no aquí, para que sea un evento único y no dependa de que esta
    pantalla llegue a montarse.
+
+   Portal a document.body (22-08): mismo fix que EffortPrompt/LiveSession —
+   ver el docstring de LiveSession.tsx para el porqué (montada en su sitio
+   normal dentro de `<main>`, salía cortada/desplazada hacia arriba justo
+   después de deslizar para guardar).
    ═══════════════════════════════════════════════════════════════════════════ */
 
 interface Props {
@@ -32,8 +39,9 @@ export default function CardioSessionSummary({ session, weeklyMinutesGoal, weekl
   const pct = weeklyMinutesGoal > 0 ? Math.min(100, Math.round((weeklyMinutesDone / weeklyMinutesGoal) * 100)) : 0;
   const zoneSec = session.timeInZoneSec;
   const inZoneSec = (zoneSec.z2 ?? 0) + (zoneSec.z3 ?? 0) + (zoneSec.z4 ?? 0);
+  useScrollLock(true);
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-[90] flex flex-col items-center justify-center bg-bg px-6 py-8 overflow-y-auto">
       <div className="w-full max-w-sm space-y-6 text-center">
         <RingSeal
@@ -68,6 +76,7 @@ export default function CardioSessionSummary({ session, weeklyMinutesGoal, weekl
 
         <Button onClick={onClose} fullWidth size="l">Continuar</Button>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
