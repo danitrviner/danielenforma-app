@@ -102,9 +102,15 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
   };
 
   // Build unified chronological list (oldest first)
+  //
+  // Los check-ins ya revisados (approved) NO entran aquí — Dani los quiere
+  // fuera de esta lista en cuanto están resueltos, esta pantalla es la
+  // bandeja de trabajo, no un archivo histórico. Las respuestas de
+  // cuestionario no tienen ese mismo concepto de "revisado" (no hay campo
+  // approved en QuestionnaireResponse), así que esas se siguen mostrando.
   const unifiedItems = useMemo<UnifiedItem[]>(() => {
     const items: UnifiedItem[] = [
-      ...checkins.map(c => ({
+      ...checkins.filter(c => !c.approved).map(c => ({
         kind: 'checkin' as const,
         sortKey: c.timestamp instanceof Date
           ? c.timestamp.getTime()
@@ -195,7 +201,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
     <div className="space-y-6">
       <PageHeader
         title="Revisiones"
-        subtitle="Historial cronológico de check-ins y respuestas de cuestionarios."
+        subtitle="Check-ins pendientes de revisar y respuestas de cuestionarios, más antiguo primero."
         action={
           <div className="flex items-center gap-3">
             {pendingCount > 0 && (
@@ -233,7 +239,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
         <div className="bg-surface border border-hairline rounded-surface overflow-hidden">
           <div className="p-4 border-b border-hairline bg-raised flex items-center gap-2">
             <span className="material-symbols-outlined text-accent text-body-s">history_edu</span>
-            <h3 className="font-sans font-bold text-title-s text-white uppercase tracking-wide">Historial unificado</h3>
+            <h3 className="font-sans font-bold text-title-s text-white uppercase tracking-wide">Bandeja unificada</h3>
             <span className="font-mono text-caption text-ink-2 ml-1">({unifiedItems.length} entradas, más antiguo primero)</span>
           </div>
           <div className="divide-y divide-hairline/40">

@@ -290,7 +290,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
         </button>
       </div>
 
-      <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+      <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-1 -mx-1 px-1">
         {MACRO_MUSCLE_GROUPS.map(g => (
           <Chip key={g} selected={filterMuscleGroups.includes(g)} onClick={() => toggleGroupChip(g)} className="shrink-0">
             {MACRO_MUSCLE_LABELS[g]}

@@ -2088,7 +2088,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
               {/* Category filter */}
               {recipeSource === 'mias' ? (
                 availableRecipeCats.length > 0 && (
-                  <div className="px-4 py-2 bg-surface border-b border-hairline flex gap-2 overflow-x-auto">
+                  <div className="px-4 py-2 bg-surface border-b border-hairline flex gap-2 overflow-x-auto hide-scrollbar">
                     {[{ id: 'all', label: 'Todas' }, ...availableRecipeCats.map(c => ({ id: c, label: c }))].map(cat => (
                       <button
                         key={cat.id}
@@ -2103,7 +2103,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                   </div>
                 )
               ) : (
-                <div className="px-4 py-2 bg-surface border-b border-hairline flex gap-2 overflow-x-auto">
+                <div className="px-4 py-2 bg-surface border-b border-hairline flex gap-2 overflow-x-auto hide-scrollbar">
                   {RECETAS_CATS.map(cat => (
                     <button
                       key={cat}
@@ -2182,7 +2182,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
               {/* Familias de plato disponibles. Es la respuesta directa a "no me
                   apetece otro batido": un toque y la lista cambia de familia. */}
               {swapDishTypes.length > 1 && (
-                <div className="flex gap-2 overflow-x-auto -mx-1 px-1 pb-1">
+                <div className="flex gap-2 overflow-x-auto hide-scrollbar -mx-1 px-1 pb-1">
                   <button
                     onClick={() => setSwapDishFilter(null)}
                     className={`flex-shrink-0 px-3 py-1.5 rounded-full font-sans text-caption font-bold border transition-colors ${

@@ -340,7 +340,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
           <span className="font-sans text-caption text-ink-2 normal-case font-normal">8.850 recetas · solo lectura</span>
         </h2>
 
-        <div className="w-full overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
+        <div className="w-full overflow-x-auto hide-scrollbar -mx-4 px-4 md:mx-0 md:px-0">
           <div className="flex gap-2 w-max">
             {RECETAS_CATS.map(cat => (
               <button

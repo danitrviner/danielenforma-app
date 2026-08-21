@@ -442,7 +442,7 @@ function MesoExercisesTabs({
       </p>
 
       {/* Day tabs */}
-      <div className="overflow-x-auto -mx-1 px-1">
+      <div className="overflow-x-auto hide-scrollbar -mx-1 px-1">
         <div className="flex bg-surface border border-hairline p-1 rounded-surface gap-1 min-w-max">
           {groups.map((g, i) => (
             <button

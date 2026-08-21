@@ -137,7 +137,7 @@ export default function HomeCoachScreen({ athletes, checkins, assignmentsByEmail
       </p>
 
       {chips.length > 1 && (
-        <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+        <div className="-mx-1 flex gap-2 overflow-x-auto hide-scrollbar px-1 pb-1">
           {chips.map(c => (
             <button
               key={c.id}

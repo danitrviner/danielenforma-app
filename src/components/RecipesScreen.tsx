@@ -843,7 +843,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
             Recetas del programa
           </h2>
 
-          <div className="w-full overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
+          <div className="w-full overflow-x-auto hide-scrollbar -mx-4 px-4 md:mx-0 md:px-0">
             <div className="flex gap-2 w-max">
               {[
                 { id: 'all',       name: 'Todas' },

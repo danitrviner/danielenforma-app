@@ -28,7 +28,7 @@ export default function RecentAchievements({ achievements }: Props) {
   return (
     <div className="flex flex-col gap-2">
       <p className="font-mono text-caption uppercase tracking-widest text-ink-2 px-1">Logros recientes</p>
-      <div className="flex gap-3 overflow-x-auto pb-1 -mx-1 px-1">
+      <div className="flex gap-3 overflow-x-auto hide-scrollbar pb-1 -mx-1 px-1">
         {sorted.map(a => (
           <div
             key={a.id}

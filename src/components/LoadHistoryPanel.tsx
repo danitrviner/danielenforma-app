@@ -377,7 +377,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
             row y por defecto no puede encogerse (min-width:auto), así que
             overflow-x-auto nunca entraba en juego y los chips desbordaban la
             tarjeta en vez de scrollear dentro de ella. */}
-        <div className="min-w-0 w-full overflow-x-auto -mx-1 px-1">
+        <div className="min-w-0 w-full overflow-x-auto hide-scrollbar -mx-1 px-1">
           <div className="flex items-center gap-2 min-w-max">
             {METRICS.map(m => (
               <button
