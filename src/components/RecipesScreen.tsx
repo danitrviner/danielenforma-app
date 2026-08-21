@@ -9,7 +9,7 @@ import {
   getDietsForAthlete, getAthleteDietConfig, OWNER_RECETARIO_TODOS,
 } from '../dbService';
 import type { RecetasCursor } from '../dbService';
-import { classifyRecipe } from '../utils/foodPrefs';
+import { classifyRecipe, violatesDietType } from '../utils/foodPrefs';
 import { BUDGET_CATS, roundQuarter, CAT_COLOR, CAT_BG } from '../utils/exchangeHelpers';
 import { exchangeToKcal } from '../utils/nutritionConstants';
 import { Skeleton } from './ui';
@@ -635,6 +635,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
     liked:     onboardingData?.likedFoods     ?? [],
     disliked:  onboardingData?.dislikedFoods  ?? [],
     allergies: onboardingData?.allergies      ?? [],
+    dietType:  onboardingData?.dietType,
   }), [onboardingData]);
   const [selectedCat, setSelectedCat]   = useState<string>('all');
 
@@ -709,8 +710,16 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
       : selectedCat === 'MisRecetas' ? recipes.filter(r => r.ownerId === profile.userId)
       : selectedCat === 'all' ? recipes
       : recipes.filter(r => r.categories.includes(selectedCat));
-    return onlyFitsBudget ? base.filter(fitsBudget) : base;
-  }, [recipes, favorites, selectedCat, profile.userId, onlyFitsBudget, fitsBudget]);
+    // Filtro duro: esta lista (recetas del coach/atleta) no miraba alergias ni
+    // tipo de dieta en absoluto — el propio autor de la receta puede verla
+    // siempre en "Mis recetas", pero no se le ofrece como opción a comer si
+    // contiene un alérgeno o rompe su régimen.
+    const safe = base.filter(r =>
+      selectedCat === 'MisRecetas' ||
+      (classifyRecipe(r, [], [], prefs.allergies) !== 'allergy' && !violatesDietType(r, prefs.dietType))
+    );
+    return onlyFitsBudget ? safe.filter(fitsBudget) : safe;
+  }, [recipes, favorites, selectedCat, profile.userId, onlyFitsBudget, fitsBudget, prefs]);
 
   const { recetasFeatured, recetasNormal, recetasDisliked, recetasTotalVisible } = useMemo(() => {
     const bySearch = recetasSearch.trim()
@@ -718,13 +727,15 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
       : recetasRecipes;
     const searched = onlyFitsBudget ? bySearch.filter(fitsBudget) : bySearch;
 
-    const hasPrefs = prefs.liked.length > 0 || prefs.disliked.length > 0 || prefs.allergies.length > 0;
+    const hasPrefs = prefs.liked.length > 0 || prefs.disliked.length > 0 || prefs.allergies.length > 0 ||
+      (!!prefs.dietType && prefs.dietType !== 'omnivoro' && prefs.dietType !== 'otro');
     if (!hasPrefs) {
       return { recetasFeatured: [], recetasNormal: searched, recetasDisliked: [], recetasTotalVisible: searched.length };
     }
 
     const featured: Recipe[] = [], normal: Recipe[] = [], disliked: Recipe[] = [];
     for (const r of searched) {
+      if (violatesDietType(r, prefs.dietType)) continue;
       const cls = classifyRecipe(r, prefs.liked, prefs.disliked, prefs.allergies);
       if (cls === 'allergy')   continue;
       if (cls === 'featured')  featured.push(r);

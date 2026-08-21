@@ -4,7 +4,7 @@ import {
 } from '../types';
 import { addToPlaced, round2 } from './exchangeHelpers';
 import { quotaSplit } from './quotaSplit';
-import { ingredientMatch, normalizeStr } from './foodPrefs';
+import { ingredientMatch, normalizeStr, violatesDietType } from './foodPrefs';
 import { fitScore } from './recipeMatch';
 import { exchangeToKcal } from './nutritionConstants';
 import { simpleComplementsFor } from './menuComplements';
@@ -171,23 +171,6 @@ export function bestScaleFit(
   return best;
 }
 
-const MEAT_FISH_KEYWORDS = [
-  'pollo', 'ternera', 'cerdo', 'pavo', 'cordero', 'pescado', 'atun', 'salmon',
-  'merluza', 'gamba', 'marisco', 'jamon', 'bacon', 'panceta', 'chorizo', 'conejo', 'pato',
-];
-const ANIMAL_KEYWORDS = [...MEAT_FISH_KEYWORDS, 'huevo', 'leche', 'queso', 'yogur', 'mantequilla', 'nata', 'miel'];
-
-// Heuristic only — Recipes from the imported recetario have no explicit vegan/vegetarian flag, so
-// this checks the free-text ingredient list. Recipes without ingredientsText
-// (most builder recipes) can't be verified this way and are let through
-// unfiltered; the coach reviews the draft before publishing regardless.
-function violatesDietType(recipe: Recipe, dietType?: DietType): boolean {
-  if (!dietType || dietType === 'omnivoro' || dietType === 'otro') return false;
-  const text = (recipe.ingredientsText ?? []).map(i => normalizeStr(i.name)).join(' ');
-  if (!text) return false;
-  const keywords = dietType === 'vegano' ? ANIMAL_KEYWORDS : MEAT_FISH_KEYWORDS;
-  return keywords.some(k => text.includes(normalizeStr(k)));
-}
 
 export interface RankOptions {
   needsTupper?: boolean;
@@ -526,18 +509,30 @@ export function findSwapAlternatives(
 
   // Diversify the shortlist by dish type so the athlete sees genuinely different
   // options (a batido, a tostada, a tortilla…) rather than five variations of the
-  // same thing. Take the best of each new dish type first, then fill up to `count`.
-  const picked: MenuCandidate[] = [];
-  const seenTypes = new Set<DishType>();
+  // same thing.
+  //
+  // Reparto en RONDA, no "el mejor de cada tipo y luego relleno por puntuación":
+  // ese relleno volvía a ser monotemático en cuanto se agotaban los tipos nuevos,
+  // justo en la parte de la lista donde mira quien no quiere nada de lo primero.
+  // Misma regla que el "Cambiar comida" de Mi plan (utils/recipeMatch.ts).
+  const groups = new Map<DishType, MenuCandidate[]>();
   for (const c of withinTolerance) {
     const dt = dishType(c.recipe);
-    if (!seenTypes.has(dt)) { picked.push(c); seenTypes.add(dt); }
-    if (picked.length >= count) return picked;
+    const g = groups.get(dt);
+    if (g) g.push(c); else groups.set(dt, [c]);
   }
-  for (const c of withinTolerance) {
-    if (picked.includes(c)) continue;
-    picked.push(c);
-    if (picked.length >= count) break;
+  const queues = [...groups.values()].sort((a, b) => a[0].score - b[0].score);
+
+  const picked: MenuCandidate[] = [];
+  let anyLeft = true;
+  for (let round = 0; anyLeft && picked.length < count; round++) {
+    anyLeft = false;
+    for (const q of queues) {
+      if (round >= q.length) continue;
+      anyLeft = true;
+      picked.push(q[round]);
+      if (picked.length >= count) break;
+    }
   }
   return picked;
 }

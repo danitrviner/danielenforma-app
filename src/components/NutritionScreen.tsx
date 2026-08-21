@@ -1,10 +1,13 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { UserProfile, Diet, DietMeal, DietItem, FoodCategory, DietMode, MealItem, Recipe, RecipeFavorites, WeekDay } from '../types';
-import { getDietsForAthlete, getAthleteDietConfig, saveAthleteDietConfig, createDiet, updateDiet, deleteDiet, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig, saveAthleteNutritionConfig, getRecipes, getRecipeFavorites, getNutritionProgram, markNutritionPhaseSeen, computeActivePhase, createNotificationDeduped, getDietCompletionLog, saveDietCompletionLog, createRecipe } from '../dbService';
+import { getDietsForAthlete, getAthleteDietConfig, saveAthleteDietConfig, createDiet, updateDiet, deleteDiet, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig, saveAthleteNutritionConfig, getRecipes, getRecipeFavorites, getNutritionProgram, markNutritionPhaseSeen, computeActivePhase, createNotificationDeduped, getDietCompletionLog, saveDietCompletionLog, createRecipe, queryRecetas, queryRecetasForGenerator, getOnboarding, getRecipeById } from '../dbService';
+import type { RecetasCursor } from '../dbService';
 import { CATS, BUDGET_CATS, CAT_LABEL, CAT_COLOR, CAT_BG, MODE_LABEL, ALL_DIET_MODES, round2, fmtQty, itemWeightLabel, addToPlaced, recipeToDietItems, isDietPending, computeDietPlaced } from '../utils/exchangeHelpers';
-import { findSimilarRecipes } from '../utils/recipeMatch';
-import { exchangeToKcal, GRAMS_PER_EXCHANGE } from '../utils/nutritionConstants';
+import { findRecipeAlternatives, recipeExchanges, groupByDishType, type RecipeAlternative, type AlternativePrefs } from '../utils/recipeMatch';
+import { ingredientMatch, violatesDietType } from '../utils/foodPrefs';
+import { dishTypeLabel, type DishType } from '../utils/dishTypes';
+import { exchangeToKcal } from '../utils/nutritionConstants';
 import { useToast } from '../hooks/useToast';
 import Coachmark from './Coachmark';
 import { haptics } from '../services/haptics';
@@ -22,10 +25,119 @@ import {
 // ── Types ──────────────────────────────────────────────────────────────────────
 // (ItemState viene de dietHelpers.ts — compartido con el resto de "Mi plan")
 
+// Mismas categorías fijas que RecipesScreen.tsx/RecipeBuilderScreen.tsx — el
+// catálogo `queryRecetas` filtra por `categoria`, no hay forma de listarlas
+// dinámicamente sin traerse la colección entera, así que cada sitio que
+// navega el recetario mantiene su propia copia de esta lista corta.
+const RECETAS_CATS = [
+  'Todas',
+  'Platos salados / principales',
+  'Desayuno y dulces',
+  'Bebidas',
+  'Suplementos deportivos',
+];
+
 interface Props {
   profile: UserProfile;
   pendingRecipe?: Recipe | null;
   onConsumedPendingRecipe?: () => void;
+}
+
+// Fila del picker de recetas — compartida entre "Mis recetas" (propias/coach)
+// y "Recetario" (catálogo), antes duplicada entera en el JSX de cada una.
+// Fila de una alternativa en "Cambiar comida". A diferencia de RecipePickerRow,
+// esta muestra los INTERCAMBIOS —que es lo que tiene que cuadrar— y avisa cuando
+// el total no es idéntico, en vez de enseñar solo las kcal sin contexto.
+function SwapCandidateRow({ alt, isFav, onSelect }: {
+  alt: RecipeAlternative; isFav: boolean; onSelect: (r: Recipe) => void;
+  key?: React.Key;
+}) {
+  const { recipe, exchanges, totalDrift } = alt;
+  const total = exchanges.HC + exchanges.PROT + exchanges.GRASA;
+  const photo = recipe.photoUrl ?? recipe.image;
+  return (
+    <button
+      onClick={() => onSelect(recipe)}
+      className="w-full flex items-center gap-3 p-4 bg-surface hover:bg-raised rounded-control border border-hairline hover:border-accent/40 text-left transition-all group"
+    >
+      {photo ? (
+        <img src={photo} alt="" className="w-12 h-12 rounded-surface object-cover flex-shrink-0" />
+      ) : (
+        <div className="w-12 h-12 rounded-surface bg-raised border border-hairline flex items-center justify-center flex-shrink-0">
+          <Icon name="skillet" size="m" className="text-ink-2" />
+        </div>
+      )}
+      <div className="flex-1 min-w-0">
+        <span className="font-sans font-bold text-body-s text-ink group-hover:text-accent transition-colors truncate block">
+          {isFav && <Icon name="favorite" size="s" className="text-accent mr-1 align-middle" />}
+          {recipe.name}
+        </span>
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="font-mono text-caption text-accent/70">{fmtQty(total)} int.</span>
+          <span className="font-mono text-caption text-ink-2">
+            {fmtQty(exchanges.HC)} HC · {fmtQty(exchanges.PROT)} P · {fmtQty(exchanges.GRASA)} G
+          </span>
+          {/* Honestidad: si el total no es exacto se dice, no se esconde. */}
+          {totalDrift > 0.001 && (
+            <span className="font-mono text-caption text-ink-2 italic">
+              ({totalDrift > 0 ? '±' : ''}{fmtQty(totalDrift)})
+            </span>
+          )}
+          <span className="font-sans text-caption text-ink-2">· {dishTypeLabel(alt.dishType)}</span>
+        </div>
+      </div>
+      <Icon name="swap_horiz" size="s" className="text-ink-2 group-hover:text-accent transition-colors flex-shrink-0" />
+    </button>
+  );
+}
+
+function RecipePickerRow({ recipe, isFav, enabledModes, onSelect }: {
+  recipe: Recipe; isFav: boolean; enabledModes: DietMode[]; onSelect: (r: Recipe) => void;
+  // El repo no tiene `@types/react`, así que TS no excluye `key` de las props
+  // por su cuenta — mismo workaround que `Badge.tsx`.
+  key?: React.Key;
+}) {
+  const exchParts: string[] = [];
+  const totals: Partial<Record<FoodCategory, number>> = {};
+  recipe.ingredients
+    .filter(ing => enabledModes.includes(ing.mode))
+    .forEach(ing => { totals[ing.category] = (totals[ing.category] ?? 0) + ing.quantity; });
+  (['HC', 'PROT', 'GRASA', 'MIX_HC', 'MIX_GRASA'] as FoodCategory[])
+    .filter(c => (totals[c] ?? 0) > 0)
+    .forEach(c => exchParts.push(`${totals[c]} ${c.replace('_', ' ')}`));
+  const exchStr = exchParts.join(' · ') || '—';
+
+  return (
+    <button
+      onClick={() => onSelect(recipe)}
+      className="w-full flex items-center gap-3 p-4 bg-surface hover:bg-raised rounded-control border border-hairline hover:border-accent/40 text-left transition-all group"
+    >
+      {recipe.photoUrl ? (
+        <img src={recipe.photoUrl} alt={recipe.name} className="w-12 h-12 rounded-surface object-cover flex-shrink-0" />
+      ) : (
+        <div className="w-12 h-12 rounded-surface bg-raised border border-hairline flex items-center justify-center flex-shrink-0">
+          <span className="material-symbols-outlined text-ink-2 text-title-m">skillet</span>
+        </div>
+      )}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 ">
+          {isFav && (
+            <span className="material-symbols-outlined text-accent text-label" style={{ fontVariationSettings: "'FILL' 1", fontSize: '12px' }}>favorite</span>
+          )}
+          <span className="font-sans font-bold text-body-s text-ink group-hover:text-accent transition-colors truncate">{recipe.name}</span>
+        </div>
+        {recipe.categories.length > 0 && (
+          <div className="flex flex-wrap gap-1 mb-1">
+            {recipe.categories.slice(0, 3).map(c => (
+              <span key={c} className="px-2 rounded-control bg-raised font-mono text-caption text-ink-2 uppercase">{c}</span>
+            ))}
+          </div>
+        )}
+        <span className="font-mono text-caption text-accent/70">{exchStr}</span>
+      </div>
+      <span className="material-symbols-outlined text-ink-2 group-hover:text-accent transition-colors select-none text-title-s flex-shrink-0">add_circle</span>
+    </button>
+  );
 }
 
 // ── Component ──────────────────────────────────────────────────────────────────
@@ -95,6 +207,15 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     enabled: !loadingPhase1,
   });
 
+  // Anamnesis del atleta: alergias, intolerancias, tipo de dieta y comidas que
+  // no le gustan. "Cambiar comida" no leía NADA de esto y podía ofrecer una
+  // receta con un alérgeno; ahora filtra igual que el generador de menús.
+  const { data: onboarding = null } = useQuery({
+    queryKey: ['onboarding', profile.email],
+    queryFn: () => getOnboarding(profile.email).catch(() => null),
+    enabled: !loadingPhase1,
+  });
+
   const loading = loadingPhase1 || loadingFoodItems || loadingRecipesQ || loadingFavs;
 
   // ── Local editor/draft state — seeded once from the queries above, then
@@ -128,11 +249,29 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
   const [recipePickerMealId, setRecipePickerMealId] = useState<string | null>(null);
   const [recipeSearch, setRecipeSearch]             = useState('');
   const [recipeCatFilter, setRecipeCatFilter]       = useState<string>('all');
+  // Dos fuentes en el mismo picker (a petición de Dani): "Mis recetas" (propias
+  // + del coach, via getRecipes — lo que ya había) y "Recetario" (el catálogo
+  // de ~8.850, paginado con queryRecetas — antes solo estaba en la pestaña
+  // Recetas, no accesible desde aquí al elegir qué comer en una comida).
+  const [recipeSource, setRecipeSource]             = useState<'mias' | 'recetario'>('mias');
+  const [recetarioCat, setRecetarioCat]             = useState<string>('Todas');
+  const [recetarioResults, setRecetarioResults]     = useState<Recipe[]>([]);
+  const [recetarioCursor, setRecetarioCursor]       = useState<RecetasCursor | null>(null);
+  const [recetarioHasMore, setRecetarioHasMore]     = useState(false);
+  const [recetarioLoading, setRecetarioLoading]     = useState(false);
+  const [recetarioLoadingMore, setRecetarioLoadingMore] = useState(false);
   // Tracks how many items each meal had originally (before any recipe was applied)
   const [origItemCounts, setOrigItemCounts]         = useState<Record<string, number>>({});
 
   // Recipe swap ("Cambiar comida")
-  const [swapContext, setSwapContext] = useState<{ mealId: string; recipeId: string } | null>(null);
+  const [swapContext, setSwapContext] = useState<{ mealId: string; recipeId: string; slot?: number } | null>(null);
+  const [swapSourceRecipe, setSwapSourceRecipe] = useState<Recipe | null>(null);
+  // El pool se carga al abrir la hoja, no de antemano: son hasta 300 recetas del
+  // recetario y no tiene sentido bajarlas mientras el atleta solo mira su plan.
+  const [swapPool, setSwapPool] = useState<Recipe[]>([]);
+  const [swapLoading, setSwapLoading] = useState(false);
+  const [swapDishFilter, setSwapDishFilter] = useState<DishType | null>(null);
+  const [swapSearch, setSwapSearch] = useState('');
 
   // "Guardar como receta" — turns a meal built here into a reusable Recipe,
   // which then feeds both the manual recipe picker and the weekly-menu generator.
@@ -152,10 +291,11 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
   // Nutrition periodization
   const [phaseBanner, setPhaseBanner] = useState<string | null>(null);
 
-  // Hoja de ajuste (F3.8, panel 02) — ajustar los intercambios de una ingesta
-  // por macro, sin elegir alimentos concretos.
-  const [adjustMealId, setAdjustMealId] = useState<string | null>(null);
-  const [adjustDraft, setAdjustDraft] = useState<{ HC: number; PROT: number; GRASA: number }>({ HC: 0, PROT: 0, GRASA: 0 });
+  // Pantalla de reparto (a petición de Dani) — un único botón "Editar reparto
+  // por comida" abre esta pantalla con el reparto de TODAS las comidas a la
+  // vez, en vez de steppers sueltos en cada tarjeta. Sustituye a la antigua
+  // "hoja de ajuste" (registro rápido por macros), que se ha quitado.
+  const [repartoSheetOpen, setRepartoSheetOpen] = useState(false);
 
   // ── One-time init once Phase 1 has loaded ───────────────────────────────────
   // Applies the active nutrition-program phase (writes + notifications), then
@@ -296,17 +436,16 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     return { doneByCat, mealDoneByCat, totalItems: total, doneItems: done };
   }, [selectedDiet, itemStates]);
 
-  // Composición de cada ingesta (todos sus alimentos, estén o no marcados) —
-  // los chips del tracker ("3 HC · 2 PR · 1 GR") describen la comida, no lo
-  // que ya se ha registrado; distinto de mealDoneByCat.
-  const mealPlacedByCat = useMemo(() => {
-    const map: Record<string, Record<FoodCategory, number>> = {};
+  // Suma del reparto por comida (`meal.target`) frente al cupo diario total
+  // (`selectedDiet.budget`) — mismo cálculo que `targetMismatches` del lado
+  // coach (NutritionPlansScreen.tsx), portado aquí para avisar al atleta si
+  // lo que ha repartido entre comidas no cuadra con el total del día.
+  const mealTargetSumByCat = useMemo(() => {
+    const sum: Record<FoodCategory, number> = { HC: 0, PROT: 0, GRASA: 0, MIX_HC: 0, MIX_GRASA: 0 };
     for (const meal of selectedDiet?.meals ?? []) {
-      const bycat: Record<FoodCategory, number> = { HC: 0, PROT: 0, GRASA: 0, MIX_HC: 0, MIX_GRASA: 0 };
-      for (const item of meal.items) addToPlaced(bycat, item.category, item.quantity);
-      map[meal.id] = bycat;
+      for (const cat of BUDGET_CATS) sum[cat] = round2(sum[cat] + (meal.target?.[cat] ?? 0));
     }
-    return map;
+    return sum;
   }, [selectedDiet]);
 
   // "TE QUEDAN" del tracker — suma de las tres categorías de presupuesto,
@@ -321,7 +460,6 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
   const leftExch = round2(totalBudget - totalEaten);
   const leftKcal = Math.round(exchangeToKcal(leftByCat)); // puede ser negativo si el día se pasa
   const dayClosed = totalItems > 0 && doneItems === totalItems;
-  const mealsDoneCount = selectedDiet?.meals.filter(m => m.items.length > 0 && m.items.every((_, idx) => itemStates[`${m.id}_${idx}`]?.done)).length ?? 0;
 
   // Haptic success solo en la TRANSICIÓN a día cerrado (handoff, panel 06) —
   // no en cada render mientras ya está cerrado, ni al reabrirlo desmarcando algo.
@@ -358,6 +496,27 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     return Array.from(s).sort();
   }, [recipes]);
 
+  // Restricciones del atleta que CUALQUIER lista de recetas mostrada aquí debe
+  // respetar. Las alergias y el tipo de dieta son filtros DUROS — antes solo
+  // los aplicaba "Cambiar comida"; el resto de listas (este picker, el
+  // recetario) no miraban nada de esto.
+  const swapPrefs: AlternativePrefs = useMemo(() => ({
+    allergies:         onboarding?.allergies ?? [],
+    dislikedFoods:     onboarding?.dislikedFoods ?? [],
+    likedFoods:        onboarding?.likedFoods ?? [],
+    dietType:          onboarding?.dietType,
+    cookingMaxTime:    onboarding?.cookingMaxTime,
+    favoriteRecipeIds: recipeFavorites.recipeIds,
+    dislikedRecipeIds: recipeFavorites.dislikedIds ?? [],
+    preferredDishTypes: (nutConfig?.preferredDishTypes ?? onboarding?.preferredDishTypes ?? []) as DishType[],
+    excludedDishTypes:  (nutConfig?.excludedDishTypes  ?? onboarding?.excludedDishTypes  ?? []) as DishType[],
+  }), [onboarding, nutConfig, recipeFavorites]);
+
+  const isSafeForAthlete = (r: Recipe) =>
+    !swapPrefs.allergies!.some(f => ingredientMatch(r, f)) &&
+    !swapPrefs.dislikedRecipeIds!.includes(r.id) &&
+    !violatesDietType(r, swapPrefs.dietType);
+
   const sortedPickerRecipes = useMemo(() => {
     const withIngredients = recipes.filter(r =>
       r.ingredients.some(ing => enabledModes.includes(ing.mode))
@@ -365,7 +524,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     const filtered = withIngredients.filter(r => {
       const matchCat = recipeCatFilter === 'all' || r.categories.includes(recipeCatFilter);
       const matchSearch = !recipeSearch || r.name.toLowerCase().includes(recipeSearch.toLowerCase());
-      return matchCat && matchSearch;
+      return matchCat && matchSearch && isSafeForAthlete(r);
     });
     return filtered.sort((a, b) => {
       const aFav = recipeFavorites.recipeIds.includes(a.id);
@@ -373,17 +532,41 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
       if (aFav !== bFav) return aFav ? -1 : 1;
       return a.name.localeCompare(b.name);
     });
-  }, [recipes, enabledModes, recipeCatFilter, recipeSearch, recipeFavorites]);
+  }, [recipes, enabledModes, recipeCatFilter, recipeSearch, recipeFavorites, swapPrefs]);
 
-  const swapSourceRecipe = useMemo(() =>
-    swapContext ? recipes.find(r => r.id === swapContext.recipeId) ?? null : null,
-    [swapContext, recipes]
-  );
+  // Recetario (catálogo ~8.850) — queryRecetas solo filtra por categoría en el
+  // servidor (no hay búsqueda de texto ahí), así que el término de búsqueda se
+  // aplica en cliente sobre lo ya cargado, igual que hace RecipeBuilderScreen.
+  //
+  // ANTES filtraba por `r.ingredients.some(...)`, pero el recetario importado
+  // SIEMPRE tiene `ingredients: []` (el importador lo deja vacío a propósito,
+  // ver mapRecipe en importRecetas.mjs) — así que ese `.some()` era siempre
+  // `false` y esta pestaña no mostraba NUNCA ninguna receta del catálogo, para
+  // nadie. Bug de disponibilidad puro, no de preferencias, pero apareció al
+  // auditar esta pantalla para que respete alergias en todos los apartados.
+  const sortedRecetarioResults = useMemo(() => {
+    const safe = recetarioResults.filter(isSafeForAthlete);
+    if (!recipeSearch) return safe;
+    return safe.filter(r => r.name.toLowerCase().includes(recipeSearch.toLowerCase()));
+  }, [recetarioResults, recipeSearch, swapPrefs]);
 
   const swapCandidates = useMemo(() => {
-    if (!swapSourceRecipe) return [];
-    return findSimilarRecipes(swapSourceRecipe, recipes.filter(r => r.id !== swapSourceRecipe.id));
-  }, [swapSourceRecipe, recipes]);
+    if (!swapSourceRecipe || swapPool.length === 0) return [];
+    return findRecipeAlternatives(swapSourceRecipe, swapPool, {
+      prefs: swapPrefs,
+      intakeType: swapContext?.slot,
+      search: swapSearch.trim() || undefined,
+      limit: 40,
+    });
+  }, [swapSourceRecipe, swapPool, swapPrefs, swapContext?.slot, swapSearch]);
+
+  // Pestañas de tipo de plato: el atleta que no quiere otro batido necesita ver
+  // de un vistazo qué otras familias hay disponibles, no rebuscar en la lista.
+  const swapDishTypes = useMemo(() => groupByDishType(swapCandidates), [swapCandidates]);
+  const visibleSwapCandidates = useMemo(
+    () => swapDishFilter ? swapCandidates.filter(c => c.dishType === swapDishFilter) : swapCandidates,
+    [swapCandidates, swapDishFilter],
+  );
 
   // ── Handlers ─────────────────────────────────────────────────────────────────
 
@@ -443,6 +626,33 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     } catch (err) {
       console.error(err);
       showToast('No se pudo duplicar la dieta.');
+    }
+  };
+
+  // "Guardar como menú" — plantilla de un día completo para repetir más
+  // adelante. A diferencia de handleDuplicateDiet, NO cambia la dieta activa
+  // (el atleta se queda donde estaba); solo deja una copia marcada
+  // `menuTemplate` disponible en "Mis dietas" → "Tus menús guardados".
+  const [savingMenu, setSavingMenu] = useState(false);
+  const handleSaveAsMenu = async () => {
+    if (!selectedDiet) return;
+    setSavingMenu(true);
+    try {
+      const created = await createDiet({
+        athleteId: profile.email,
+        name: `${selectedDiet.name || 'Mi menú'} (menú guardado)`,
+        budget: selectedDiet.budget,
+        meals: selectedDiet.meals.map(m => ({ ...m, id: makeId() })),
+        selfManaged: true,
+        menuTemplate: true,
+      });
+      setAllDietsList(prev => [...prev, created]);
+      showToast('Menú guardado — podrás repetirlo desde «Mis dietas».', 'success');
+    } catch (err) {
+      console.error(err);
+      showToast('No se pudo guardar el menú.');
+    } finally {
+      setSavingMenu(false);
     }
   };
 
@@ -542,40 +752,6 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     });
   };
 
-  // Hoja de ajuste (panel 02): steppers por macro, seedeados con la
-  // composición actual de la ingesta; confirmar sustituye sus alimentos por
-  // intercambios genéricos en esas cantidades y la registra.
-  const handleOpenAdjust = (meal: DietMeal) => {
-    const bycat = mealPlacedByCat[meal.id] ?? { HC: 0, PROT: 0, GRASA: 0, MIX_HC: 0, MIX_GRASA: 0 };
-    setAdjustDraft({ HC: bycat.HC, PROT: bycat.PROT, GRASA: bycat.GRASA });
-    setAdjustMealId(meal.id);
-  };
-
-  const handleConfirmAdjust = () => {
-    if (!adjustMealId || !selectedDiet) return;
-    const mealId = adjustMealId;
-    const meal = selectedDiet.meals.find(m => m.id === mealId);
-    if (!meal) { setAdjustMealId(null); return; }
-
-    const newItems: DietItem[] = BUDGET_CATS
-      .filter(cat => adjustDraft[cat] > 0)
-      .map(cat => ({ category: cat, foodLabel: `${CAT_LABEL[cat]} (ajustado)`, quantity: adjustDraft[cat] }));
-
-    setSelectedDiet(prev => prev ? { ...prev, meals: prev.meals.map(m => m.id !== mealId ? m : { ...m, items: newItems }) } : prev);
-
-    setItemStates(prev => {
-      const next = { ...prev };
-      Object.keys(next).forEach(k => { if (k.startsWith(`${mealId}_`)) delete next[k]; });
-      newItems.forEach((item, i) => { next[`${mealId}_${i}`] = { foodLabel: item.foodLabel, done: true }; });
-      const doneItemIds = (Object.entries(next) as [string, ItemState][]).filter(([, v]) => v.done).map(([k]) => k);
-      persistCompletion(selectedDiet.id, doneItemIds);
-      return next;
-    });
-
-    void haptics.medium();
-    setAdjustMealId(null);
-  };
-
   const handleOpenPicker = (mealId: string, itemIdx: number, category: FoodCategory) => {
     setPickerItem({ mealId, itemIdx, category });
     setPickerCategory(category);
@@ -658,6 +834,41 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     setRecipePickerMealId(mealId);
     setRecipeSearch('');
     setRecipeCatFilter('all');
+    setRecipeSource('mias');
+    setRecetarioCat('Todas');
+    setRecetarioResults([]);
+    setRecetarioCursor(null);
+    setRecetarioHasMore(false);
+  };
+
+  const loadRecetario = async (cat: string, cursor: RecetasCursor | null, append: boolean) => {
+    const result = await queryRecetas({ categoria: cat === 'Todas' ? undefined : cat }, cursor);
+    setRecetarioResults(prev => append ? [...prev, ...result.recipes] : result.recipes);
+    setRecetarioCursor(result.cursor);
+    setRecetarioHasMore(result.hasMore);
+  };
+
+  // Carga (o recarga al cambiar de categoría) en cuanto se entra en la
+  // pestaña "Recetario" del picker — no antes, para no pedir nada si el
+  // atleta se queda en "Mis recetas".
+  useEffect(() => {
+    if (!recipePickerMealId || recipeSource !== 'recetario') return;
+    setRecetarioLoading(true);
+    loadRecetario(recetarioCat, null, false)
+      .catch(() => showToast('No se pudo cargar el recetario.'))
+      .finally(() => setRecetarioLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [recipePickerMealId, recipeSource, recetarioCat]);
+
+  const handleRecetarioLoadMore = async () => {
+    setRecetarioLoadingMore(true);
+    try {
+      await loadRecetario(recetarioCat, recetarioCursor, true);
+    } catch {
+      showToast('No se pudo cargar más recetas.');
+    } finally {
+      setRecetarioLoadingMore(false);
+    }
   };
 
   // ── "Guardar como receta" ────────────────────────────────────────────────
@@ -760,8 +971,37 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
 
   // ── Recipe swap ("Cambiar comida") ──────────────────────────────────────────
 
-  const handleOpenSwapPicker = (mealId: string, recipeId: string) => {
-    setSwapContext({ mealId, recipeId });
+  const handleOpenSwapPicker = async (mealId: string, recipeId: string) => {
+    const slot = selectedDiet?.meals.find(m => m.id === mealId)?.slot;
+    setSwapContext({ mealId, recipeId, slot });
+    setSwapDishFilter(null);
+    setSwapSearch('');
+    setSwapLoading(true);
+    setSwapPool([]);
+
+    // La receta origen puede venir del recetario importado, que getRecipes()
+    // excluye a propósito para no bajarse 8.850 documentos. Antes se buscaba
+    // solo en `recipes` y en ese caso salía null → "sin alternativas".
+    const source = recipes.find(r => r.id === recipeId) ?? await getRecipeById(recipeId).catch(() => null);
+    setSwapSourceRecipe(source);
+    if (!source) { setSwapLoading(false); return; }
+
+    // El pool ANTES era solo `recipes` (las recetas del coach y del atleta, un
+    // puñado): el recetario entero quedaba fuera del "Cambiar comida". Ahora se
+    // trae el bloque del recetario correspondiente al momento del día.
+    const recetario = slot != null
+      ? await queryRecetasForGenerator(slot, 300).catch(() => [] as Recipe[])
+      : [];
+    setSwapPool([...recetario, ...recipes]);
+    setSwapLoading(false);
+  };
+
+  const handleCloseSwap = () => {
+    setSwapContext(null);
+    setSwapSourceRecipe(null);
+    setSwapPool([]);
+    setSwapDishFilter(null);
+    setSwapSearch('');
   };
 
   const handleApplySwap = (newRecipe: Recipe) => {
@@ -770,9 +1010,11 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     const meal = selectedDiet.meals.find(m => m.id === mealId);
     if (!meal) { setSwapContext(null); return; }
 
-    const newIngredientItems: DietItem[] = newRecipe.ingredients
-      .filter(ing => enabledModes.includes(ing.mode))
-      .map(ing => ({ category: ing.category, foodLabel: ing.foodLabel, quantity: ing.quantity, originRecipeId: newRecipe.id }));
+    // recipeToDietItems, no `newRecipe.ingredients` a pelo: las 8.850 recetas del
+    // recetario importado NO traen `ingredients` (el importador lo deja vacío),
+    // así que sustituir por una de ellas metía cero alimentos en la comida y
+    // vaciaba el hueco. El helper cae a los intercambios agregados en ese caso.
+    const newIngredientItems: DietItem[] = recipeToDietItems(newRecipe, enabledModes);
 
     const oldItems = meal.items;
     const keptIndices: number[] = [];
@@ -837,8 +1079,24 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     });
   };
 
-  const updateBudgetCat = (cat: FoodCategory, value: number) => {
-    setSelectedDiet(prev => prev ? { ...prev, budget: { ...prev.budget, [cat]: value } } : prev);
+  // Reparto del cupo diario por comida (handoff — a petición de Dani): el
+  // total diario lo fija el coach y es fijo (`selectedDiet.budget`), pero el
+  // atleta puede mover cuánto de ese total asigna a cada comida. Mismo patrón
+  // que `setMealTarget` del lado coach (NutritionPlansScreen.tsx), adaptado a
+  // `setSelectedDiet` — esto ya dispara `isDirty`/autoguardado solo, porque
+  // `dietSnapshot` serializa `meals` completo.
+  const updateMealTargetCat = (mealId: string, cat: FoodCategory, delta: number) => {
+    setSelectedDiet(prev => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        meals: prev.meals.map(m => {
+          if (m.id !== mealId) return m;
+          const cur = m.target ?? { HC: 0, PROT: 0, GRASA: 0, MIX_HC: 0, MIX_GRASA: 0 };
+          return { ...m, target: { ...cur, [cat]: Math.max(0, round2(cur[cat] + delta)) } };
+        }),
+      };
+    });
   };
 
   const addMeal = () => {
@@ -922,14 +1180,37 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     if (!selectedDiet) return;
     setSaving(true);
     try {
+      // Un id nuevo por comida, pero recordando cuál viene de cuál — el
+      // registro de "hecho" de hoy está indexado por `${mealId}_${idx}` y sin
+      // este mapa el fork lo deja huérfano bajo un mealId que ya no existe
+      // (la barra "Objetivo comida" vuelve a 0% y el registro no sobrevive a
+      // un recargo, aunque el atleta acabe de marcarlo).
+      const idMap = new Map(selectedDiet.meals.map(m => [m.id, makeId()]));
       const created = await createDiet({
         athleteId: profile.email,
         name: `${selectedDiet.name} (mi versión)`,
         budget: selectedDiet.budget,
-        meals: selectedDiet.meals.map(m => ({ ...m, id: makeId() })),
+        meals: selectedDiet.meals.map(m => ({ ...m, id: idMap.get(m.id)! })),
         selfManaged: true,
       });
       setAllDietsList(prev => [...prev, created]);
+
+      const doneItemIds = (Object.entries(itemStates) as [string, ItemState][])
+        .filter(([, v]) => v.done)
+        .map(([key]) => {
+          const sep = key.lastIndexOf('_');
+          const newMealId = idMap.get(key.slice(0, sep));
+          return newMealId ? `${newMealId}${key.slice(sep)}` : key;
+        });
+      // Se espera esta escritura ANTES de seleccionar la dieta forkeada: el
+      // efecto que reconstruye `itemStates` al cambiar de dieta lee este
+      // mismo log (`getDietCompletionLog`) — si `handleSelectDiet` fuera
+      // primero, esa lectura podría llegar antes que esta escritura y
+      // encontrar el registro vacío.
+      if (doneItemIds.length > 0) {
+        await saveDietCompletionLog({ athleteId: profile.email, date: TODAY_DATE, dietId: created.id, doneItemIds });
+      }
+
       handleSelectDiet(created, { skipDirtyCheck: true });
       showToast('Guardada como copia tuya — la dieta de tu coach sigue intacta.', 'success');
     } catch (err) {
@@ -939,6 +1220,17 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
       setSaving(false);
     }
   };
+
+  // Autoguardado — sustituye al botón "Guardar" manual: en cuanto hay cambios
+  // sin guardar, se guardan solos tras una pausa corta de inactividad (evita
+  // disparar una escritura por cada tecla/tap). `saving` en las dependencias
+  // relanza el temporizador cuando el guardado en curso termina, por si el
+  // atleta siguió editando mientras tanto.
+  useEffect(() => {
+    if (!isDirty || saving) return;
+    const t = setTimeout(() => { handleSaveDiet(); }, 1200);
+    return () => clearTimeout(t);
+  }, [isDirty, saving, selectedDiet]);
 
   // ── Recipe hand-off from Recetas (favoritos → "Añadir a Intercambios") ──────
 
@@ -1304,97 +1596,8 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                   </>
                 )}
 
-                {selectedDiet.meals.length > 0 && (
-                  <>
-                    <div className="flex items-baseline justify-between mt-6 mb-2">
-                      <span className="font-mono text-caption text-ink-3 uppercase tracking-[.16em]">Ingestas</span>
-                      <span className="font-mono text-caption text-ink-4">{mealsDoneCount} DE {selectedDiet.meals.length}</span>
-                    </div>
-                    <div className="flex flex-col gap-2">
-                      {selectedDiet.meals.map((meal, mi) => {
-                        const mealDone = meal.items.length > 0 && meal.items.every((_, idx) => itemStates[`${meal.id}_${idx}`]?.done);
-                        const bycat = mealPlacedByCat[meal.id] ?? { HC: 0, PROT: 0, GRASA: 0, MIX_HC: 0, MIX_GRASA: 0 };
-                        return (
-                          <div
-                            key={meal.id}
-                            ref={mi === 0 ? firstMealRowTargetRef : undefined}
-                            className={`flex items-center gap-3 rounded-surface border p-3 transition-colors duration-(--duration-state) ${
-                              mealDone ? 'border-accent/20 bg-accent/6' : 'border-hairline bg-surface'
-                            }`}
-                          >
-                            <button type="button" onClick={() => handleToggleMealDone(meal)} className="flex min-w-0 flex-1 items-center gap-3 text-left">
-                              <span
-                                className={`flex h-6 w-6 flex-none items-center justify-center rounded-control border-[1.5px] transition-all duration-(--duration-state) ${
-                                  mealDone ? 'border-accent bg-accent' : 'border-strong'
-                                }`}
-                              >
-                                {mealDone && <Icon name="check" size="s" className="text-on-accent" />}
-                              </span>
-                              <span className="min-w-0 flex-1">
-                                <span className={`block truncate font-sans text-body-s font-bold transition-colors duration-(--duration-state) ${mealDone ? 'text-ink-2' : 'text-ink'}`}>
-                                  {mealLabel(meal.name, mi + 1)}
-                                </span>
-                                {(bycat.HC > 0 || bycat.PROT > 0 || bycat.GRASA > 0) && (
-                                  <span className="mt-2 flex flex-wrap gap-1">
-                                    {(['HC', 'PROT', 'GRASA'] as const).filter(c => bycat[c] > 0).map(c => (
-                                      <span
-                                        key={c}
-                                        className={`rounded-chip px-2 py-1 font-mono text-caption font-semibold ${mealDone ? 'bg-white/5 text-ink-3' : 'bg-accent-bg text-accent'}`}
-                                      >
-                                        {fmtQty(bycat[c])} {CHIP_LABEL[c]}
-                                      </span>
-                                    ))}
-                                  </span>
-                                )}
-                              </span>
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleOpenAdjust(meal)}
-                              title="Ajustar intercambios"
-                              aria-label={`Ajustar intercambios de ${mealLabel(meal.name, mi + 1)}`}
-                              className="-m-2 flex-none p-2 text-ink-3 transition-colors hover:text-accent"
-                            >
-                              <Icon name="tune" size="s" />
-                            </button>
-                          </div>
-                        );
-                      })}
-                    </div>
-                    <p className="mt-3 text-center font-mono text-caption tracking-[.08em] text-ink-4">
-                      TOCA UNA INGESTA PARA REGISTRARLA
-                    </p>
-                  </>
-                )}
                 </div>
               </div>
-
-              {/* Objetivo diario de intercambios — solo existe como tarjeta aparte en
-                  menús propios (autogestionados): ahí el atleta lo edita a mano y no
-                  hay ningún otro sitio que lo muestre. En dietas del coach el cupo es
-                  fijo y ya lo cubren las barras del tracker de arriba, así que la
-                  tarjeta de "cupo diario fijado por tu entrenador" desaparece del
-                  todo — no solo se resume, se quita. */}
-              {selectedDiet.selfManaged && (
-                <div className="bg-raised rounded-surface p-4 border border-hairline">
-                  <p className="font-mono text-caption text-ink-2 uppercase tracking-wider mb-3">Objetivo diario de intercambios</p>
-                  <div className="grid grid-cols-3 gap-3">
-                    {BUDGET_CATS.map(cat => (
-                      <div key={cat}>
-                        <label className={`block font-sans text-caption font-bold mb-1 ${CAT_COLOR[cat]}`}>{CAT_LABEL[cat]}</label>
-                        <input
-                          type="number"
-                          min={0}
-                          step={0.25}
-                          value={selectedDiet.budget[cat]}
-                          onChange={e => updateBudgetCat(cat, parseFloat(e.target.value) || 0)}
-                          className="w-full bg-surface border border-hairline rounded-control px-2 py-2 text-ink text-title-s focus:outline-none focus:border-accent/50"
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
 
               {/* Aviso de fork: editar una dieta del coach nunca la actualiza in
                   situ (las reglas de Firestore lo prohíben) — al guardar se crea
@@ -1418,11 +1621,23 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                 text="¿No te apetece algo? Toca Cambiar junto a cualquier alimento para sustituirlo por un equivalente."
               />
 
+              {/* Abre la pantalla dedicada de reparto (todas las comidas a la
+                  vez), en vez de steppers sueltos en cada tarjeta. */}
+              <button
+                type="button"
+                onClick={() => setRepartoSheetOpen(true)}
+                className="self-start flex items-center gap-2 px-3 py-2 rounded-control border bg-raised border-hairline text-ink-2 font-sans text-label font-bold hover:text-accent hover:border-accent/50 transition-colors"
+              >
+                <Icon name="tune" size="s" />
+                Editar reparto por comida
+              </button>
+
               <div className="space-y-4">
                 {selectedDiet.meals.map((meal, mi) => {
                   const mealDone = meal.items.length > 0 && meal.items.every((_, idx) => itemStates[`${meal.id}_${idx}`]?.done);
                   return (
                     <div key={meal.id}
+                      ref={mi === 0 ? firstMealRowTargetRef : undefined}
                       className={`bg-raised rounded-surface overflow-hidden border transition-all ${mealDone ? 'border-accent/40' : 'border-hairline'}`}
                     >
                       {/* Meal header */}
@@ -1449,16 +1664,21 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                           <span className="font-mono text-caption text-ink-2 hidden sm:block">
                             {meal.items.length} alimento{meal.items.length !== 1 ? 's' : ''}
                           </span>
-                          {recipes.length > 0 && (
-                            <button
-                              onClick={() => handleOpenRecipePicker(meal.id)}
-                              title="Usar receta"
-                              className="flex items-center gap-1 px-2 py-1 rounded-control bg-raised border border-hairline hover:border-accent/50 hover:text-accent text-ink-2 transition-all"
-                            >
-                              <span className="material-symbols-outlined text-label select-none">skillet</span>
-                              <span className="font-mono text-caption uppercase tracking-wider hidden sm:block">Receta</span>
-                            </button>
-                          )}
+                          {/* Antes solo aparecía si ya había ≥1 receta guardada —
+                              el botón desaparecía del todo y parecía que faltaba.
+                              Siempre visible; la hoja que abre ya tiene su propio
+                              estado vacío ("el coach todavía no ha publicado
+                              recetas"). Cubre tanto recetas del coach como
+                              comidas de intercambios que el propio atleta guardó
+                              con "Guardar receta" — son la misma lista. */}
+                          <button
+                            onClick={() => handleOpenRecipePicker(meal.id)}
+                            title="Usar receta o comida guardada"
+                            className="flex items-center gap-1 px-2 py-1 rounded-control bg-raised border border-hairline hover:border-accent/50 hover:text-accent text-ink-2 transition-all"
+                          >
+                            <span className="material-symbols-outlined text-label select-none">skillet</span>
+                            <span className="font-mono text-caption uppercase tracking-wider hidden sm:block">Receta</span>
+                          </button>
                           {meal.items.length > 0 && (
                             <button
                               onClick={() => openSaveMealAsRecipe(meal)}
@@ -1507,10 +1727,8 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                         </div>
                       )}
 
-                      {/* Per-meal target + progress (only when targets are set) — antes
-                          salía sin rótulo, al contrario que el lado coach ("Objetivo
-                          comida"), y las barras eran hechas a mano en vez del
-                          ProgressBar compartido. */}
+                      {/* Objetivo por comida — solo lectura aquí; se edita en la
+                          pantalla dedicada ("Editar reparto por comida" arriba). */}
                       {CATS.some(c => (meal.target?.[c] ?? 0) > 0) && (() => {
                         const mDone = mealDoneByCat[meal.id] ?? {} as Record<FoodCategory, number>;
                         const targetCats = CATS.filter(c => (meal.target?.[c] ?? 0) > 0);
@@ -1692,17 +1910,18 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                 </button>
               </div>
 
-              {/* Guardar — el estado y la etiqueta del botón distinguen el caso
-                  de fork (dieta del coach, editada) del resto, para que el
-                  atleta sepa de antemano qué va a pasar al tocar "Guardar". */}
+              {/* Autoguardado — sin botón "Guardar": el estado refleja lo que
+                  el autoguardado (más arriba) ya está haciendo solo. La
+                  etiqueta avisa de antemano si lo que se está a punto de
+                  guardar es un fork (dieta del coach, editada). */}
               {(() => {
                 const willFork = !selectedDiet.selfManaged && isDirty;
-                const statusLabel = !isPersisted
-                  ? 'Menú nuevo sin guardar'
+                const statusLabel = saving
+                  ? 'Guardando...'
                   : willFork
                   ? 'Se guardará como copia tuya'
                   : isDirty
-                  ? 'Cambios sin guardar'
+                  ? 'Cambios pendientes de autoguardar'
                   : 'Todo guardado';
                 return (
                   <div className="sticky bottom-20 md:bottom-4 flex items-center justify-between gap-3 bg-raised border border-hairline rounded-surface p-3 shadow-e1">
@@ -1710,12 +1929,12 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                       {statusLabel}
                     </span>
                     <button
-                      onClick={handleSaveDiet}
-                      disabled={saving}
-                      className="flex items-center gap-2 px-4 py-2 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40"
+                      onClick={handleSaveAsMenu}
+                      disabled={savingMenu}
+                      title="Guardar el día entero para repetirlo más adelante"
+                      className="flex-none px-3 py-2 bg-white/8 text-ink font-sans font-bold text-label uppercase rounded-control hover:bg-white/12 active:scale-95 transition-all disabled:opacity-40 whitespace-nowrap"
                     >
-                      <span className="material-symbols-outlined text-body-s">save</span>
-                      {saving ? 'Guardando...' : willFork ? 'Guardar copia' : 'Guardar'}
+                      {savingMenu ? 'Guardando...' : 'Guardar como menú'}
                     </button>
                   </div>
                 );
@@ -1731,7 +1950,8 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
         const scheduledTodayId = weeklySchedule[TODAY_WD] ?? null;
         const scheduledToday = allDietsList.filter(d => d.id === scheduledTodayId);
         const fromCoach = allDietsList.filter(d => d.id !== scheduledTodayId && !d.selfManaged);
-        const own = allDietsList.filter(d => d.id !== scheduledTodayId && d.selfManaged);
+        const own = allDietsList.filter(d => d.id !== scheduledTodayId && d.selfManaged && !d.menuTemplate);
+        const savedMenus = allDietsList.filter(d => d.id !== scheduledTodayId && d.menuTemplate);
         const renderGroup = (label: string, list: Diet[]) => list.length === 0 ? null : (
           <div className="space-y-1">
             <p className="font-mono text-caption text-ink-2 uppercase tracking-wider px-1">{label}</p>
@@ -1747,7 +1967,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                   subtitle={chips || 'Sin alimentos todavía'}
                   leading={
                     <span className="w-9 h-9 rounded-control bg-raised border border-hairline flex items-center justify-center flex-shrink-0">
-                      <Icon name={dt.selfManaged ? 'bookmark' : 'military_tech'} size="s" className="text-ink-2" />
+                      <Icon name={dt.menuTemplate ? 'restaurant_menu' : dt.selfManaged ? 'bookmark' : 'military_tech'} size="s" className="text-ink-2" />
                     </span>
                   }
                   trailing={
@@ -1792,6 +2012,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
               {renderGroup(`Programada hoy (${WD_FULL[TODAY_WD]})`, scheduledToday)}
               {renderGroup('De tu entrenador', fromCoach)}
               {renderGroup('Tuyas', own)}
+              {renderGroup('Tus menús guardados', savedMenus)}
             </div>
           </Sheet>
         );
@@ -1825,6 +2046,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
             open
             onClose={() => setRecipePickerMealId(null)}
             title="Usar receta"
+            alto="completo"
             toolbar={(
               <>
                 {targetMeal && (
@@ -1832,6 +2054,24 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                     {mealLabel(targetMeal.name, (selectedDiet?.meals.indexOf(targetMeal) ?? 0) + 1)}
                   </div>
                 )}
+
+              {/* Fuente: recetas propias/del coach vs. el recetario del catálogo */}
+              <div className="px-4 pb-2 flex gap-2">
+                {([
+                  { id: 'mias' as const, label: 'Mis recetas' },
+                  { id: 'recetario' as const, label: 'Recetario' },
+                ]).map(src => (
+                  <button
+                    key={src.id}
+                    onClick={() => setRecipeSource(src.id)}
+                    className={`px-3 py-2 rounded-control font-sans text-caption font-bold uppercase tracking-wider transition-all ${
+                      recipeSource === src.id
+                        ? 'bg-accent text-on-accent'
+                        : 'bg-raised text-ink-2 border border-hairline hover:border-accent/50'
+                    }`}
+                  >{src.label}</button>
+                ))}
+              </div>
 
               {/* Search */}
               <div className="px-4 py-2 bg-surface flex items-center gap-2 border-b border-hairline">
@@ -1846,18 +2086,34 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
               </div>
 
               {/* Category filter */}
-              {availableRecipeCats.length > 0 && (
+              {recipeSource === 'mias' ? (
+                availableRecipeCats.length > 0 && (
+                  <div className="px-4 py-2 bg-surface border-b border-hairline flex gap-2 overflow-x-auto">
+                    {[{ id: 'all', label: 'Todas' }, ...availableRecipeCats.map(c => ({ id: c, label: c }))].map(cat => (
+                      <button
+                        key={cat.id}
+                        onClick={() => setRecipeCatFilter(cat.id)}
+                        className={`px-3 py-2 rounded-full font-sans text-caption font-bold uppercase tracking-wider whitespace-nowrap transition-all flex-shrink-0 ${
+                          recipeCatFilter === cat.id
+                            ? 'bg-accent text-black'
+                            : 'bg-raised text-ink-2 border border-transparent hover:border-hairline'
+                        }`}
+                      >{cat.label}</button>
+                    ))}
+                  </div>
+                )
+              ) : (
                 <div className="px-4 py-2 bg-surface border-b border-hairline flex gap-2 overflow-x-auto">
-                  {[{ id: 'all', label: 'Todas' }, ...availableRecipeCats.map(c => ({ id: c, label: c }))].map(cat => (
+                  {RECETAS_CATS.map(cat => (
                     <button
-                      key={cat.id}
-                      onClick={() => setRecipeCatFilter(cat.id)}
+                      key={cat}
+                      onClick={() => setRecetarioCat(cat)}
                       className={`px-3 py-2 rounded-full font-sans text-caption font-bold uppercase tracking-wider whitespace-nowrap transition-all flex-shrink-0 ${
-                        recipeCatFilter === cat.id
+                        recetarioCat === cat
                           ? 'bg-accent text-black'
                           : 'bg-raised text-ink-2 border border-transparent hover:border-hairline'
                       }`}
-                    >{cat.label}</button>
+                    >{cat}</button>
                   ))}
                 </div>
               )}
@@ -1866,56 +2122,34 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
           >
               {/* Recipe list */}
               <div className="pt-4 space-y-2">
-                {sortedPickerRecipes.length === 0 ? (
-                  <div className="text-center py-10 font-mono text-label text-ink-2 italic">
-                    {recipes.length === 0 ? 'El coach todavía no ha publicado recetas.' : 'Ninguna receta coincide.'}
-                  </div>
-                ) : sortedPickerRecipes.map(recipe => {
-                  const isFav = recipeFavorites.recipeIds.includes(recipe.id);
-                  // Exchange summary for this athlete's mode
-                  const exchParts: string[] = [];
-                  const totals: Partial<Record<FoodCategory, number>> = {};
-                  recipe.ingredients
-                    .filter(ing => enabledModes.includes(ing.mode))
-                    .forEach(ing => { totals[ing.category] = (totals[ing.category] ?? 0) + ing.quantity; });
-                  (['HC', 'PROT', 'GRASA', 'MIX_HC', 'MIX_GRASA'] as FoodCategory[])
-                    .filter(c => (totals[c] ?? 0) > 0)
-                    .forEach(c => exchParts.push(`${totals[c]} ${c.replace('_', ' ')}`));
-                  const exchStr = exchParts.join(' · ') || '—';
-
-                  return (
-                    <button
-                      key={recipe.id}
-                      onClick={() => handleApplyRecipe(recipe)}
-                      className="w-full flex items-center gap-3 p-4 bg-surface hover:bg-raised rounded-control border border-hairline hover:border-accent/40 text-left transition-all group"
-                    >
-                      {recipe.photoUrl ? (
-                        <img src={recipe.photoUrl} alt={recipe.name} className="w-12 h-12 rounded-surface object-cover flex-shrink-0" />
-                      ) : (
-                        <div className="w-12 h-12 rounded-surface bg-raised border border-hairline flex items-center justify-center flex-shrink-0">
-                          <span className="material-symbols-outlined text-ink-2 text-title-m">skillet</span>
-                        </div>
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 ">
-                          {isFav && (
-                            <span className="material-symbols-outlined text-accent text-label" style={{ fontVariationSettings: "'FILL' 1", fontSize: '12px' }}>favorite</span>
-                          )}
-                          <span className="font-sans font-bold text-body-s text-ink group-hover:text-accent transition-colors truncate">{recipe.name}</span>
-                        </div>
-                        {recipe.categories.length > 0 && (
-                          <div className="flex flex-wrap gap-1 mb-1">
-                            {recipe.categories.slice(0, 3).map(c => (
-                              <span key={c} className="px-2 rounded-control bg-raised font-mono text-caption text-ink-2 uppercase">{c}</span>
-                            ))}
-                          </div>
-                        )}
-                        <span className="font-mono text-caption text-accent/70">{exchStr}</span>
-                      </div>
-                      <span className="material-symbols-outlined text-ink-2 group-hover:text-accent transition-colors select-none text-title-s flex-shrink-0">add_circle</span>
-                    </button>
-                  );
-                })}
+                {recipeSource === 'mias' ? (
+                  sortedPickerRecipes.length === 0 ? (
+                    <div className="text-center py-10 font-mono text-label text-ink-2 italic">
+                      {recipes.length === 0 ? 'El coach todavía no ha publicado recetas.' : 'Ninguna receta coincide.'}
+                    </div>
+                  ) : sortedPickerRecipes.map(recipe => (
+                    <RecipePickerRow key={recipe.id} recipe={recipe} isFav={recipeFavorites.recipeIds.includes(recipe.id)} enabledModes={enabledModes} onSelect={handleApplyRecipe} />
+                  ))
+                ) : recetarioLoading ? (
+                  <div className="text-center py-10 font-mono text-label text-ink-2 italic">Cargando recetario…</div>
+                ) : sortedRecetarioResults.length === 0 ? (
+                  <div className="text-center py-10 font-mono text-label text-ink-2 italic">Ninguna receta coincide.</div>
+                ) : (
+                  <>
+                    {sortedRecetarioResults.map(recipe => (
+                      <RecipePickerRow key={recipe.id} recipe={recipe} isFav={recipeFavorites.recipeIds.includes(recipe.id)} enabledModes={enabledModes} onSelect={handleApplyRecipe} />
+                    ))}
+                    {recetarioHasMore && (
+                      <button
+                        onClick={handleRecetarioLoadMore}
+                        disabled={recetarioLoadingMore}
+                        className="w-full text-center py-3 font-sans text-label font-bold text-accent disabled:opacity-50"
+                      >
+                        {recetarioLoadingMore ? 'Cargando…' : 'Cargar más'}
+                      </button>
+                    )}
+                  </>
+                )}
               </div>
           </Sheet>
         );
@@ -1925,38 +2159,78 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
       {swapContext && (
         <Sheet
           open
-          onClose={() => setSwapContext(null)}
+          onClose={handleCloseSwap}
+          alto="completo"
           title="Cambiar comida"
-          toolbar={swapSourceRecipe ? (
-            <div className="px-4 pb-2 font-sans text-caption text-ink-2 uppercase">
-              Alternativas a {swapSourceRecipe.name} (±10% kcal)
-            </div>
-          ) : undefined}
-        >
-            <div className="pt-4 space-y-2">
-              {swapCandidates.length === 0 ? (
-                <div className="text-center py-10 font-sans text-label text-ink-2 italic">
-                  Sin alternativas nutricionalmente similares disponibles.
+          toolbar={
+            <div className="px-4 pb-3 space-y-3">
+              {swapSourceRecipe && (
+                <div className="font-sans text-caption text-ink-2">
+                  Mismos intercambios que <span className="text-ink font-bold">{swapSourceRecipe.name}</span>
+                  {' · '}
+                  <span className="font-mono text-accent">
+                    {fmtQty(recipeExchanges(swapSourceRecipe).HC + recipeExchanges(swapSourceRecipe).PROT + recipeExchanges(swapSourceRecipe).GRASA)} int.
+                  </span>
                 </div>
-              ) : swapCandidates.map(recipe => (
-                <button
-                  key={recipe.id}
-                  onClick={() => handleApplySwap(recipe)}
-                  className="w-full flex items-center gap-3 p-4 bg-surface hover:bg-raised rounded-control border border-hairline hover:border-accent/40 text-left transition-all group"
-                >
-                  {recipe.photoUrl ? (
-                    <img src={recipe.photoUrl} alt={recipe.name} className="w-12 h-12 rounded-surface object-cover flex-shrink-0" />
-                  ) : (
-                    <div className="w-12 h-12 rounded-surface bg-raised border border-hairline flex items-center justify-center flex-shrink-0">
-                      <span className="material-symbols-outlined text-ink-2 text-title-m">skillet</span>
-                    </div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <span className="font-sans font-bold text-body-s text-ink group-hover:text-accent transition-colors truncate block">{recipe.name}</span>
-                    <span className="font-mono text-caption text-accent/70">{recipe.kcal} kcal</span>
-                  </div>
-                  <span className="material-symbols-outlined text-ink-2 group-hover:text-accent transition-colors select-none text-title-s flex-shrink-0">swap_horiz</span>
-                </button>
+              )}
+              <input
+                value={swapSearch}
+                onChange={e => setSwapSearch(e.target.value)}
+                placeholder="Buscar entre las alternativas…"
+                className="w-full px-3 py-2 bg-raised border border-hairline rounded-control font-sans text-label text-ink placeholder:text-ink-2 focus:border-accent/40 outline-none"
+              />
+              {/* Familias de plato disponibles. Es la respuesta directa a "no me
+                  apetece otro batido": un toque y la lista cambia de familia. */}
+              {swapDishTypes.length > 1 && (
+                <div className="flex gap-2 overflow-x-auto -mx-1 px-1 pb-1">
+                  <button
+                    onClick={() => setSwapDishFilter(null)}
+                    className={`flex-shrink-0 px-3 py-1.5 rounded-full font-sans text-caption font-bold border transition-colors ${
+                      swapDishFilter === null
+                        ? 'bg-accent/15 border-accent/40 text-accent'
+                        : 'bg-surface border-hairline text-ink-2 hover:text-ink'}`}
+                  >
+                    Todo ({swapCandidates.length})
+                  </button>
+                  {swapDishTypes.map(({ type, count }) => (
+                    <button
+                      key={type}
+                      onClick={() => setSwapDishFilter(t => t === type ? null : type)}
+                      className={`flex-shrink-0 px-3 py-1.5 rounded-full font-sans text-caption font-bold border transition-colors ${
+                        swapDishFilter === type
+                          ? 'bg-accent/15 border-accent/40 text-accent'
+                          : 'bg-surface border-hairline text-ink-2 hover:text-ink'}`}
+                    >
+                      {dishTypeLabel(type)} ({count})
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          }
+        >
+            <div className="pt-2 space-y-2">
+              {swapLoading ? (
+                <div className="space-y-2 pt-2">
+                  {[0, 1, 2, 3].map(i => <div key={i}><Skeleton className="h-20 w-full rounded-control" /></div>)}
+                </div>
+              ) : !swapSourceRecipe ? (
+                <div className="text-center py-10 font-sans text-label text-ink-2 italic">
+                  No se ha podido cargar la receta original.
+                </div>
+              ) : visibleSwapCandidates.length === 0 ? (
+                <div className="text-center py-10 font-sans text-label text-ink-2 italic">
+                  {swapSearch || swapDishFilter
+                    ? 'Ninguna alternativa coincide con este filtro.'
+                    : 'Sin alternativas con los mismos intercambios que respeten tus alergias y preferencias.'}
+                </div>
+              ) : visibleSwapCandidates.map(alt => (
+                <SwapCandidateRow
+                  key={alt.recipe.id}
+                  alt={alt}
+                  isFav={recipeFavorites.recipeIds.includes(alt.recipe.id)}
+                  onSelect={handleApplySwap}
+                />
               ))}
             </div>
         </Sheet>
@@ -2055,65 +2329,63 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
       })()}
 
       {/* Hoja de ajuste (F3.8, panel 02) — steppers por macro, píldora de encaje en vivo */}
-      {adjustMealId && selectedDiet && (() => {
-        const meal = selectedDiet.meals.find(m => m.id === adjustMealId);
-        if (!meal) return null;
-        const mi = selectedDiet.meals.indexOf(meal);
-        // Intercambios que ya cuentan otras ingestas registradas (excluye esta,
-        // que el ajuste va a sustituir por completo).
-        const otherMealsEaten = BUDGET_CATS.reduce((s, c) => s + (doneByCat[c] - (mealDoneByCat[adjustMealId]?.[c] ?? 0)), 0);
-        const draftTotal = adjustDraft.HC + adjustDraft.PROT + adjustDraft.GRASA;
-        const after = round2(totalBudget - otherMealsEaten - draftTotal);
-        const fits = after >= 0;
-        return (
-          <Sheet open onClose={() => setAdjustMealId(null)} label={`Ajustar ${mealLabel(meal.name, mi + 1)}`}>
-            <div className="pt-2">
-              <span className="inline-block px-2 py-1 rounded-control bg-accent-bg font-mono text-caption font-bold tracking-[.12em] text-accent">
-                INGESTA {mi + 1}
-              </span>
-              <h2 className="font-display font-black text-title-l uppercase leading-tight tracking-tight text-ink mt-3">
-                {mealLabel(meal.name, mi + 1)}
-              </h2>
+      {/* Pantalla de reparto — cuánto del cupo diario fijo (`selectedDiet.budget`,
+          lo fija el coach) asigna el atleta a cada comida. Un solo botón la abre
+          para TODAS las comidas a la vez, tamaño mediano (no pantalla completa). */}
+      {repartoSheetOpen && selectedDiet && (
+        <Sheet
+          open
+          onClose={() => setRepartoSheetOpen(false)}
+          title="Editar distribución de intercambios"
+          size="m"
+          footer={<Button variant="primary" size="l" fullWidth onClick={() => setRepartoSheetOpen(false)}>Guardar</Button>}
+        >
+          <div className="pt-2 space-y-3">
+            <p className="font-sans text-body-s text-ink-2">
+              El total del día lo fija tu coach. Reparte cuánto de ese cupo va a cada comida.
+            </p>
 
-              <div className="flex flex-col gap-3 mt-5">
-                {BUDGET_CATS.map(cat => (
-                  <div key={cat} className="flex items-center justify-between gap-3 bg-field border border-hairline rounded-field px-3 py-3">
-                    <div className="flex-1">
-                      <span className="block font-mono text-caption font-semibold tracking-[.1em] text-ink-3">{BAR_LABEL[cat]}</span>
-                      <span className="block font-sans text-body-s text-ink-3 mt-2">
-                        {fmtQty(adjustDraft[cat] * GRAMS_PER_EXCHANGE[cat])} g aprox.
-                      </span>
-                    </div>
-                    <Stepper
-                      label={`Intercambios de ${BAR_LABEL[cat].toLowerCase()}`}
-                      value={adjustDraft[cat]}
-                      onChange={v => setAdjustDraft(prev => ({ ...prev, [cat]: v }))}
-                      step={0.25}
-                      min={0}
-                      max={12}
-                      dense
-                    />
+            {/* Restantes por repartir — siempre visible, no solo cuando no
+                cuadra, para que se vea en vivo mientras se mueven los
+                steppers de abajo. */}
+            <div className="bg-raised border border-hairline rounded-field p-3 flex flex-wrap gap-x-4 gap-y-1">
+              {BUDGET_CATS.map(cat => {
+                const left = round2((selectedDiet.budget[cat] ?? 0) - mealTargetSumByCat[cat]);
+                return (
+                  <div key={cat} className="flex items-center gap-1.5">
+                    <span className={`font-mono text-caption font-bold ${CAT_COLOR[cat]}`}>{cat}</span>
+                    <span className={`font-mono text-caption ${left < 0 ? 'text-red-400' : left === 0 ? 'text-green-400' : 'text-ink-2'}`}>
+                      {left === 0 ? 'repartido' : left > 0 ? `quedan ${fmtQty(left)}` : `te pasas ${fmtQty(-left)}`}
+                    </span>
                   </div>
-                ))}
-              </div>
-
-              <div className={`flex items-center gap-2 mt-5 px-4 py-3 rounded-field border transition-colors duration-(--duration-state) ${fits ? 'bg-success/10 border-success/30 text-success' : 'bg-danger/10 border-danger/30 text-danger'}`}>
-                <span className={`h-1.5 w-1.5 rounded-full flex-none ${fits ? 'bg-success' : 'bg-danger'}`} />
-                <span className="font-mono text-label font-semibold tracking-[.04em]">
-                  {fits ? `CABE · TE QUEDARÍAN ${fmtQty(after)}` : `TE PASAS EN ${fmtQty(Math.abs(after))} INTERCAMBIOS`}
-                </span>
-              </div>
-
-              <Button variant="primary" size="l" fullWidth onClick={handleConfirmAdjust} className="mt-3">
-                Registrar ingesta
-              </Button>
-              <p className="text-center font-mono text-caption tracking-[.08em] text-ink-4 mt-4">
-                CADA TOQUE = 1 INTERCAMBIO · {Math.round(exchangeToKcal({ HC: 1, PROT: 0, GRASA: 0 }))} KCAL
-              </p>
+                );
+              })}
             </div>
-          </Sheet>
-        );
-      })()}
+
+            {selectedDiet.meals.map((meal, mi) => (
+              <div key={meal.id} className="bg-field border border-hairline rounded-field p-3">
+                <p className="font-sans font-bold text-body-s text-ink mb-3">{mealLabel(meal.name, mi + 1)}</p>
+                <div className="flex flex-col gap-2">
+                  {BUDGET_CATS.map(cat => (
+                    <div key={cat} className="flex items-center justify-between gap-3">
+                      <span className={`font-mono text-caption font-bold tracking-[.08em] ${CAT_COLOR[cat]}`}>{BAR_LABEL[cat]}</span>
+                      <Stepper
+                        label={`${BAR_LABEL[cat]} de ${mealLabel(meal.name, mi + 1)}`}
+                        value={meal.target?.[cat] ?? 0}
+                        onChange={v => updateMealTargetCat(meal.id, cat, round2(v - (meal.target?.[cat] ?? 0)))}
+                        step={0.25}
+                        min={0}
+                        max={12}
+                        dense
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </Sheet>
+      )}
 
 
       {/* Choose which diet to add a recipe to (hand-off from Recetas, first step) */}

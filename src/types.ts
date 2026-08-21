@@ -818,6 +818,11 @@ export interface Diet {
   coachNote?: string;
   isDraft?: boolean;
   selfManaged?: boolean; // true = created by the athlete in "Mis Dietas", private to them
+  /** true = guardada desde "Guardar como menú" (una plantilla de un día
+   *  completo para repetir más adelante), no una dieta que el atleta esté
+   *  usando activamente. Vive como un Diet más (mismo CRUD, misma sheet
+   *  "Mis dietas") pero en su propio grupo "Tus menús guardados". */
+  menuTemplate?: boolean;
 }
 
 export type WeekDay = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun';
@@ -1077,6 +1082,13 @@ export interface Recipe {
   intakeTypes?: number[];
   categoria?: string;
   exchanges?: { HC: number; PROT: number; GRASA: number };
+  /** Intercambios antes del redondeo a enteros, para auditar o revertir.
+   *  Lo escribe scripts/redondearIntercambiosRecetas.mjs; no lo lee la app. */
+  exchangesRaw?: { HC: number; PROT: number; GRASA: number };
+  /** Códigos de régimen/patología para los que esta receta NO es apta —
+   *  `forbiddenFor` del recetario original. Ver utils/dietaryRestrictions.ts.
+   *  Ausente en las recetas importadas antes de que se recuperara este campo. */
+  restrictions?: number[];
 }
 
 export interface RecipeFavorites {
