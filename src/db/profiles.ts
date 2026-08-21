@@ -532,6 +532,15 @@ export async function submitCoachFeedback(checkInId: string, feedback: string): 
 }
 
 // Seed Initial Checkins if collection is empty
+//
+// `id` es la clave de escritura en Firestore (ver setDoc más abajo), no solo una
+// etiqueta local — por eso es estable (userId, sin Date.now()) y no cambia entre
+// llamadas. Antes llevaba Date.now() y se escribía con addDoc (id aleatorio de
+// Firestore), así que dos llamadas casi simultáneas a esta función — dos
+// pestañas abriendo sesión a la vez, o el efecto de App.tsx disparándose dos
+// veces— pasaban ambas el `snap.empty` (ninguna había escrito todavía) y
+// creaban 6 check-ins en vez de 3. Con id estable + setDoc, la segunda llamada
+// sobreescribe los mismos 3 documentos en vez de duplicarlos.
 export async function seedInitialCheckinsIfEmpty(userId: string, email: string): Promise<void> {
   const currentLocal = getLocalCheckIns();
   if (currentLocal.length > 0) {
@@ -540,7 +549,7 @@ export async function seedInitialCheckinsIfEmpty(userId: string, email: string):
 
   const seedData = [
     {
-      id: `seed_checkin_1_${Date.now()}`,
+      id: `seed_checkin_1_${userId}`,
       userId,
       email,
       timestamp: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000), // 14 days ago
@@ -553,7 +562,7 @@ export async function seedInitialCheckinsIfEmpty(userId: string, email: string):
       coachFeedback: 'Buen inicio. El peso bajará cuando el déficit de agua se normalice.'
     },
     {
-      id: `seed_checkin_2_${Date.now()}`,
+      id: `seed_checkin_2_${userId}`,
       userId,
       email,
       timestamp: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 7 days ago
@@ -566,7 +575,7 @@ export async function seedInitialCheckinsIfEmpty(userId: string, email: string):
       coachFeedback: 'Excelente progreso, mantente constante.'
     },
     {
-      id: `seed_checkin_3_${Date.now()}`,
+      id: `seed_checkin_3_${userId}`,
       userId,
       email,
       timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000), // 1 day ago
@@ -592,7 +601,9 @@ export async function seedInitialCheckinsIfEmpty(userId: string, email: string):
     if (snap.empty) {
       for (const item of seedData) {
         const { id, ...firebaseItem } = item;
-        await addDoc(colRef, firebaseItem);
+        // setDoc con id estable, no addDoc: una segunda siembra concurrente
+        // sobreescribe estos mismos 3 documentos en vez de crear otros 3.
+        await setDoc(doc(colRef, id), firebaseItem);
       }
     }
     saveLocalCheckIns(seedData);

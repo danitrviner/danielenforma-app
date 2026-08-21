@@ -206,6 +206,155 @@ const FINAL_MESOCICLO: QuestionnairePresetDef = {
   ],
 };
 
+// ── 8. Check Mes 5 (semestral) ────────────────────────────────────────────────
+// El bloque compartido de 4 preguntas (sensaciones entreno/motivación/días
+// disponibles/mejora del coach) que reaparece en varias plantillas de Dani —
+// aquí en su versión mínima, sin la intro ni el cierre motivacional de la
+// Semana 10.
+
+const CHECK_MES_5: QuestionnairePresetDef = {
+  title: 'Check Mes 5 (semestral)',
+  description: 'Pulso corto de mitad de programa semestral.',
+  suggestedSchedule: { type: 'once' },
+  questions: [
+    scale('En cuánto al entrenamiento... ¿Has tenido buenas sensaciones? (del 1 al 10)'),
+    scale('¿Qué puntuación le darías a la motivación actual? (del 1 al 10)'),
+    numeric('¿Cuántos días te gustaría y podrías entrenar durante la próxima fase de la rutina de entrenamiento?', { unit: 'días' }),
+    text('¿En qué aspectos crees que YO podría mejorar para darte aún mejores resultados?'),
+    text('SUGERENCIAS aquí:'),
+  ],
+};
+
+// ── 9. Revisión Semana 10 (mitad de fase) ─────────────────────────────────────
+// Nombre exacto de la plantilla original no visible en la captura (se abrió
+// directamente sobre las preguntas) — título puesto por el contenido del
+// cierre ("la semana 12 de 24... llevamos 10 semanas"). Revisar el nombre.
+
+const REVISION_SEMANA_10: QuestionnairePresetDef = {
+  title: 'Revisión Semana 10 (mitad de fase)',
+  description: 'Check de mitad de la primera fase (semana 10 de 24) antes de preparar el siguiente bloque.',
+  suggestedSchedule: { type: 'plan_week', planWeek: 10 },
+  questions: [
+    text('Este FORMULARIO es IMPORTANTE porque me servirá muchísimo para poder ir preparándote el NUEVO PLAN de ENTRENAMIENTO que está por caer... Ahora llevamos muchas semanas adaptándonos y mejorando semana tras semana con el mismo patrón de movimiento, es hora de ir al siguiente nivel para seguir avanzando.'),
+    text('¿Crees que has entrenado lo suficientemente fuerte y constante durante estas primeras semanas de tu plan de entrenamiento?'),
+    text('¿Qué puntuación le darías a los resultados obtenidos durante esta primera fase del programa?'),
+    scale('En cuánto al entrenamiento... ¿Has tenido buenas sensaciones? (del 1 al 10)'),
+    scale('¿Qué puntuación le darías a la motivación actual? (del 1 al 10)'),
+    numeric('¿Cuántos días te gustaría y podrías entrenar durante la próxima fase de la rutina de entrenamiento?', { unit: 'días' }),
+    text('¿En qué aspectos crees que YO podría mejorar para darte aún mejores resultados?'),
+    text('¿Algo que quieras añadir o sugerencia de cara a ir preparando la nueva planificación de la siguiente fase del programa?'),
+    text('🚀Pronto empezamos la mitad de la 1a parte del programa, es decir, la semana 12 de 24... Ahora llevamos 10 semanas, así que a por ello tío, esto solo acaba de empezar y no te imaginas cómo estaremos en 3, 6 y 12 meses vista!'),
+  ],
+};
+
+// ── 10. Primera Semana ────────────────────────────────────────────────────────
+// Nombre exacto no visible en la captura — puesto por contenido ("llevas tu
+// primera semana en el programa"). Revisar el nombre.
+
+const PRIMERA_SEMANA: QuestionnairePresetDef = {
+  title: 'Primera Semana',
+  description: 'Primer contacto tras 7 días de plan — entendimiento del programa y primeras sensaciones.',
+  suggestedSchedule: { type: 'plan_week', planWeek: 1 },
+  questions: [
+    text('Ahora que llevas tu primera semana en el programa... ¿Cómo lo estás llevando a nivel general?'),
+    text('Lo más importante antes de hacerte más preguntas... ¿Has entendido e interiorizado todos los conceptos del programa (funcionamiento, soporte, dieta, entrenamiento, normas a cumplir, metodología, etc.)?'),
+    text('⚠️Llevas 7 días ENTRENANDO y probando la nueva rutina que te he preparado... ¿Te está gustando para mantenértelo o quieres introducir algún cambio antes de dejarla tal cuál está y empezar a progresar y ver ese cambio físico que estamos buscando?'),
+    text('⚠️Llevas 7 días SIGUIENDO EL PLAN NUTRICIONAL... ¿Te está gustando para mantenértelo o quieres introducir algún cambio antes de dejarla tal cuál está hasta que yo decida que sea oportuno cambiar las cantidades, macronutrientes y/o la metodología de la dieta?'),
+    text('¿Del 1 al 10 cómo están siendo tus sensaciones en cuánto al ENTRENAMIENTO se refiere? ¿Algo que quieras comentar?'),
+    text('¿Del 1 al 10 cómo están siendo tus sensaciones en cuánto a la NUTRICIÓN se refiere? ¿Algo que quieras comentar?'),
+    text('¿Del 1 al 10 cómo están siendo tus sensaciones en cuánto al SOPORTE se refiere? ¿Algo que quieras comentar? Ten en cuenta que todavía no hemos pasado ninguna revisión, eso es lo mejor del seguimiento que aún está por llegar'),
+    text('¿Algo que quieras comentar? ;)'),
+  ],
+};
+
+// ── 11. Revisión Mes 1 (4 semanas) ────────────────────────────────────────────
+// Nombre exacto no visible en la captura — puesto por contenido ("estas 4
+// semanas"). Revisar el nombre.
+
+const REVISION_MES_1: QuestionnairePresetDef = {
+  title: 'Revisión Mes 1 (4 semanas)',
+  description: 'Primer mes cerrado — adherencia, obstáculos y si mantener o variar la rutina.',
+  suggestedSchedule: { type: 'plan_week', planWeek: 4 },
+  questions: [
+    text('¿Qué tal llevas estas 4 semanas?'),
+    text('⚠️Te cuento en cuánto al ENTRENAMIENTO: Lo más óptimo para seguir progresando es seguir con la misma rutina de entrenamiento un par de semanas más porque así consigues sacarle el jugo a los patrones de movimiento que has interiorizado estas 4 semanas... SIN EMBARGO... Somos conscientes de que a veces os puede resultar aburrido o monótono hacer siempre lo mismo, o incluso a veces nos comentáis que preferís tener un cambio ya que estáis pagando dinero (cosa que no tiene sentido)... ENTONCES MI PREGUNTA ES (respóndeme con sinceridad que tenemos confianza)... ¿Quieres seguir con la misma rutina para maximizar los resultados o prefieres cambiar de rutina para tener más variedad y diversión sacrificando un pequeño % de resultados a medio / largo plazo?'),
+    text('¿Principales obstáculos encontrados a lo largo de estas 4 semanas trabajando juntos?'),
+    text('¿Qué es lo que más te está costando del proceso?'),
+    text('¿Qué aspectos te gustaría incluir al servicio para que sea aún mejor?'),
+    scale('¿Del 1 al 10 cuánto has cumplido con el plan?'),
+    scale('¿Del 1 al 10 cómo de motivado estás?'),
+    text('Ahora que ya llevas 4 semanas progresando y trabajando juntos y conocemos tus objetivos a corto plazo... ¿Qué objetivos tendrías a medio (6 meses) y largo plazo (12 meses)? Para tenerlo en cuenta a la hora de cambiarte la dieta y el entreno cuándo sea necesario ;)'),
+    text('Comenta lo que quieras:'),
+  ],
+};
+
+// ── 12. Revisión Mes 2 (8 semanas) ────────────────────────────────────────────
+// Nombre exacto no visible en la captura — puesto por contenido ("estas 8
+// semanas"). Revisar el nombre.
+
+const REVISION_MES_2: QuestionnairePresetDef = {
+  title: 'Revisión Mes 2 (8 semanas)',
+  description: 'Segundo mes cerrado — comparación con el punto de partida y objetivos a medio/largo plazo.',
+  suggestedSchedule: { type: 'plan_week', planWeek: 8 },
+  questions: [
+    text('¿Qué tal estás llevando estas 8 semanas?'),
+    text('¿Cómo estabas antes de empezar a trabajar conmigo y cómo estás ahora (a nivel mental y físico)?'),
+    text('¿Cuáles son tus objetivos a corto medio y largo plazo?'),
+    text('¿Cuál ha sido tu mayor victoria y porqué?'),
+    text('¿Qué cosa te ha fallado y cómo crees que podríamos solucionarlo?'),
+    text('¿En qué sientes que podría echarte un cable extra?'),
+    text('Hace 1 mes te pregunté por tus objetivos a corto (3 meses), medio (6 meses) y largo plazo (12 meses)... ¿Quieres añadir algo más a esos objetivos o los mantenemos igual de momento?'),
+  ],
+};
+
+// ── 13. Revisión express (semanal) ────────────────────────────────────────────
+// La última pregunta se cortaba en el borde de la captura — completar el
+// texto con el original antes de asignarla a clientes.
+
+const REVISION_EXPRESS: QuestionnairePresetDef = {
+  title: '📝Revisión express (semanal)',
+  description: 'Check semanal rápido de adherencia — versión corta de la Revisión Semanal.',
+  suggestedSchedule: { type: 'interval', intervalDays: 7 },
+  questions: [
+    numeric('¿Cuántos pasos de media has realizado esta semana?', { unit: 'pasos' }),
+    scale('¿Del 1 al 5 cuánto has cumplido con los entrenos?', { min: 1, max: 5 }),
+    scale('¿Del 1 al 5 cuánto has cumplido con la nutrición?', { min: 1, max: 5 }),
+    text('¿En qué crees que has podido fallar desde la última revisión?'),
+    text('¿De qué estás contento de haber logrado?'),
+    text('¿De qué estás frustrado de no haber logrado?'),
+    text('Inserta cualquier tipo de comentario libre que te gustaría que tenga en cuenta a la hora de pasar tu revisión (rellenar con un "." si no tienes nada que añadir)... [TEXTO CORTADO EN LA CAPTURA — completar: seguía "Por cierto aprovecho para recordarte que me envíes vídeos..."]'),
+  ],
+};
+
+// ── 14. Revisión Quincenal Completa ───────────────────────────────────────────
+// Nombre exacto no visible en la captura — puesto por contenido ("últimas 2
+// semanas"). La lista seguía más allá de la pregunta 11 sin verse en la
+// captura — revisar si faltan preguntas al final.
+//
+// La primera pregunta pide la DIFERENCIA de peso frente a hace 30 días, no el
+// peso absoluto — por eso es `numeric` y no `metric('bodyweight')`: ese tipo
+// alimenta el histórico real de peso corporal (bodyweightLogs) y un valor
+// delta ahí lo corrompería.
+
+const REVISION_QUINCENAL: QuestionnairePresetDef = {
+  title: 'Revisión Quincenal Completa',
+  description: 'Revisión a fondo cada 2 semanas — peso, sensaciones, fatiga/descanso, PRs y sobrecarga progresiva.',
+  suggestedSchedule: { type: 'interval', intervalDays: 14 },
+  questions: [
+    numeric('Diferencia de peso corporal en la báscula respecto a hace 30 días:', { unit: 'kg' }),
+    text('Sensaciones y feedback DIETA: (ejemplo aleatorio: Me cuesta comer tanto, todo fenomenal, etc.)'),
+    text('Sensaciones y feedback ENTRENO:'),
+    scale('Sensaciones y niveles actuales de FATIGA siendo un 1 poco fatigado y un 10 muy fatigado:', { minLabel: 'Poco fatigado', maxLabel: 'Muy fatigado' }),
+    scale('Sensaciones y niveles actuales de DESCANSO siendo un 1 poco descansado y un 10 muy descansado:', { minLabel: 'Poco descansado', maxLabel: 'Muy descansado' }),
+    numeric('¿Cuántos PASOS de MEDIA has realizado en estas últimas 2 semanas?', { unit: 'pasos' }),
+    text('LESIONES/MOLESTIAS:'),
+    text('RÉCORDS de series de LEVANTAMIENTOS (ejemplo: 90kg banca a 6 repeticiones y 120kg sentadilla a 4 repeticiones)'),
+    text('¿Has conseguido realizar la sobrecarga progresiva en los básicos? ¿Y en los accesorios?'),
+    text('¿Qué crees que te ha estado fallando desde la última revisión para que no hayas logrado todas las expectativas que tenías pensado realizar?'),
+    text('¿En qué aspecto crees que YO podría mejorar desde la última revisión que hemos tenido para que tú sigas consiguiendo tus objetivos?'),
+  ],
+};
+
 export const QUESTIONNAIRE_PRESETS: QuestionnairePresetDef[] = [
   ENTRENAMIENTO,
   EVALUACION_DOLOR,
@@ -214,6 +363,13 @@ export const QUESTIONNAIRE_PRESETS: QuestionnairePresetDef[] = [
   REVISION_SEMANA_3,
   REVISION_SEMANAL,
   FINAL_MESOCICLO,
+  CHECK_MES_5,
+  REVISION_SEMANA_10,
+  PRIMERA_SEMANA,
+  REVISION_MES_1,
+  REVISION_MES_2,
+  REVISION_EXPRESS,
+  REVISION_QUINCENAL,
 ];
 
 export function suggestedScheduleForTitle(title: string): QSchedule | undefined {
