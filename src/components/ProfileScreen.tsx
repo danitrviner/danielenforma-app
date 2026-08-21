@@ -2,16 +2,14 @@ import React, { useState, useMemo, Suspense, lazy } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery, useQueries, useQueryClient } from '@tanstack/react-query';
 import { UserProfile, Questionnaire, OnboardingData, WeightCheckIn, NotificationType } from '../types';
-import { updateUserProfile, getAssignmentsForAthlete, getResponsesForAthlete, getQuestionnaireById, getOnboarding, updateOnboarding } from '../dbService';
+import { updateUserProfile, getAssignmentsForAthlete, getResponsesForAthlete, getQuestionnaireById, getOnboarding } from '../dbService';
 import { signOut, auth } from '../firebase';
 import { useToast } from '../hooks/useToast';
-import { estadoConsentimiento, registrarConsentimiento } from '../ai/consentimientoIA';
 /* 06-6. Estos tres paneles arrastran recharts —344 KB— y se importaban en
    estático, así que el atleta los descargaba y evaluaba aunque entrase a
    Perfil solo a cambiarse el avatar. Van en diferido: además de los bloques,
    Perfil es una pantalla con orden configurable donde varios de ellos ni
    siquiera se renderizan si el atleta los tiene ocultos. */
-const BodyweightPanel = lazy(() => import('./BodyweightPanel'));
 const BodyMeasurementsPanel = lazy(() => import('./BodyMeasurementsPanel'));
 const QuestionnaireChartsPanel = lazy(() => import('./QuestionnaireChartsPanel'));
 import FoodPreferencesPanel from './FoodPreferencesPanel';
@@ -156,28 +154,6 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
     queryKey: onboardingKey,
     queryFn: () => getOnboarding(profile.email),
   });
-  // A-2. Retirar el consentimiento tiene que ser tan fácil como darlo.
-  const consentimientoIA = estadoConsentimiento(onboarding);
-  const cambiarConsentimientoIA = async (aceptado: boolean) => {
-    if (!onboarding) return;
-    const anterior = onboarding.consentimientoIA;
-    const consentimiento = registrarConsentimiento(aceptado, new Date().toISOString());
-    queryClient.setQueryData<OnboardingData | null>(onboardingKey, prev =>
-      prev ? { ...prev, consentimientoIA: consentimiento } : prev);
-    try {
-      await updateOnboarding({ ...onboarding, consentimientoIA: consentimiento });
-      showToast(aceptado ? 'Guardado. Tu entrenador ya puede usar el asistente.' : 'Guardado. Tus datos dejan de enviarse.');
-    } catch (err) {
-      console.error('No se pudo guardar el consentimiento de IA:', err);
-      queryClient.setQueryData<OnboardingData | null>(onboardingKey, prev =>
-        prev ? { ...prev, consentimientoIA: anterior } : prev);
-      showToast('No se pudo guardar. Inténtalo otra vez.');
-    }
-  };
-
-
-  const streakDays = profile.currentStreak;
-  const maxStreakDays = profile.maxStreak;
 
   const handleSignOut = async () => {
     // 03-5. `onLogOut` estaba DENTRO del try, así que un `signOut` que lanzara
@@ -224,38 +200,6 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
       case 'resumen':
         return (
           <div className="space-y-4">
-            <div className="bg-surface border border-hairline rounded-canvas p-5 relative overflow-hidden flex flex-col gap-5">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-accent/5 blur-3xl rounded-full pointer-events-none"></div>
-
-              {/* Avatar + XP */}
-              <div className="flex items-center gap-4">
-                <div className="relative inline-block flex-shrink-0">
-                  <div className="w-16 h-16 rounded-full border-2 border-accent overflow-hidden">
-                    <img src={profile.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
-                  </div>
-                  <div className="absolute -bottom-1 -right-1 bg-accent text-black text-caption font-bold px-2 rounded-full leading-tight whitespace-nowrap shadow">Lv {profile.level}</div>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-sans font-bold text-title-m text-ink">{profile.displayName}</h3>
-                  <p className="font-mono text-caption text-ink-2 truncate">{profile.email}</p>
-                  <div className="flex items-center gap-2 mt-2">
-                    <div className="flex-1 h-2 bg-raised rounded-full overflow-hidden">
-                      <div className="h-full bg-accent" style={{ width: `${Math.min(100, (profile.xp / 400) * 100)}%` }}></div>
-                    </div>
-                    <span className="font-mono text-caption text-ink-2 flex-shrink-0">{profile.xp}/400 XP</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Streak + level stats */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <StatTile icon="local_fire_department" label="Racha actual" value={`${streakDays}d`} />
-                <StatTile icon="military_tech" label="Racha máxima" value={`${maxStreakDays}d`} />
-                <StatTile icon="workspace_premium" label="Nivel" value={profile.level} />
-                <StatTile icon="flag" label="Meta" value={`${profile.targetWeight}kg`} />
-              </div>
-            </div>
-
             <MiFichaCard profile={profile} />
           </div>
         );
@@ -263,11 +207,13 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
       case 'progreso':
         return (
           <div className="space-y-4">
+            {/* Peso corporal vive DENTRO de CheckInScreen (primera sección,
+                antes de cuestionarios/fotos/revisiones) — así la misma
+                pantalla sirve tanto aquí como en la ruta /checkin a la que
+                saltan las tareas pendientes de Home, y hay un único sitio
+                para pesarse en los dos puntos de entrada. */}
             <div className="bg-surface border border-hairline rounded-surface p-4 sm:p-5">
               <CheckInScreen profile={profile} checkins={checkins} />
-            </div>
-            <div className="bg-surface border border-hairline p-4 sm:p-6 rounded-canvas">
-              <Suspense fallback={<PanelCargando />}><BodyweightPanel athleteEmail={profile.email} /></Suspense>
             </div>
             {bodyMeasurements.some(m => m.metricKey !== 'bodyweight') && (
               <div className="bg-surface border border-hairline p-4 sm:p-6 rounded-canvas space-y-3">
@@ -348,6 +294,42 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
         </div>
       )}
 
+      {/* Identidad + XP + racha/nivel — persistente encima de las pestañas
+          (1:1 con `OFICIAL - Perfil (atleta).dc.html`): antes vivía SOLO
+          dentro de la pestaña "Resumen" y desaparecía al cambiar a
+          Progreso/Road map/Preferencias/Mi gimnasio. */}
+      {!isCoach && (
+        <div className="bg-surface border border-hairline rounded-canvas p-5 relative overflow-hidden flex flex-col gap-5">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-accent/5 blur-3xl rounded-full pointer-events-none"></div>
+
+          <div className="flex items-center gap-4">
+            <div className="relative inline-block flex-shrink-0">
+              <div className="w-16 h-16 rounded-full border-2 border-accent overflow-hidden">
+                <img src={profile.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+              </div>
+              <div className="absolute -bottom-1 -right-1 bg-accent text-black text-caption font-bold px-2 rounded-full leading-tight whitespace-nowrap shadow">Lv {profile.level}</div>
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="font-sans font-bold text-title-m text-ink">{profile.displayName}</h3>
+              <p className="font-mono text-caption text-ink-2 truncate">{profile.email}</p>
+              <div className="flex items-center gap-2 mt-2">
+                <div className="flex-1 h-2 bg-raised rounded-full overflow-hidden">
+                  <div className="h-full bg-accent" style={{ width: `${Math.min(100, (profile.xp / 400) * 100)}%` }}></div>
+                </div>
+                <span className="font-mono text-caption text-ink-2 flex-shrink-0">{profile.xp}/400 XP</span>
+              </div>
+            </div>
+          </div>
+
+          <div className={`grid gap-3 ${profile.targetWeight > 0 ? 'grid-cols-2' : 'grid-cols-1'}`}>
+            <StatTile icon="workspace_premium" label="Nivel" value={profile.level} />
+            {profile.targetWeight > 0 && (
+              <StatTile icon="flag" label="Meta" value={`${profile.targetWeight}kg`} />
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Submenú de pestañas (antes: "Progreso" y "Road map" eran desplegables
           y el resto un scroll único apilado — Dani pidió que fueran
           seleccionables). Cada pestaña embebe pantallas existentes tal cual,
@@ -366,6 +348,7 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
           rojo sobre fondo neutro, no un botón relleno. */}
       <Sheet open={showSettings} onClose={() => setShowSettings(false)} title="Ajustes">
         <div className="space-y-6">
+          <p className="font-mono text-caption text-ink-3 uppercase tracking-widest">Cuenta</p>
           <form onSubmit={handleUpdate} className="space-y-4">
             <Input label={isCoach ? 'Nombre' : 'Nombre deportivo'} required value={displayName} onChange={setDisplayName} />
             {!isCoach && (
@@ -385,36 +368,9 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
             {success && <p className="text-label font-sans font-bold text-accent text-center">{success}</p>}
           </form>
 
-          {/* A-2. El aviso de consentimiento promete «puedes cambiarlo en
-              Perfil → Ajustes», así que tiene que estar aquí de verdad. Un
-              consentimiento que no se puede retirar con la misma facilidad con
-              la que se dio no es un consentimiento válido (art. 7.3 RGPD). */}
-          {!isCoach && onboarding && (
-            <div className="space-y-2">
-              <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
-                <Icon name="smart_toy" size="m" className="text-accent" />
-                Análisis con IA
-              </h3>
-              <div className="bg-surface border border-hairline rounded-surface p-3 flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="font-sans text-caption font-bold text-white">
-                    {consentimientoIA === 'aceptado' ? 'Permitido' : 'No permitido'}
-                  </p>
-                  <p className="font-sans text-caption text-ink-3">
-                    {consentimientoIA === 'aceptado'
-                      ? 'Tu entrenador puede analizar tus datos con el asistente de IA.'
-                      : 'Tus datos no se envían al asistente de IA. La app funciona igual.'}
-                  </p>
-                </div>
-                <Switch
-                  on={consentimientoIA === 'aceptado'}
-                  onToggle={() => cambiarConsentimientoIA(consentimientoIA !== 'aceptado')}
-                />
-              </div>
-            </div>
-          )}
-
           {isCoach && (
+            <>
+            <p className="font-mono text-caption text-ink-3 uppercase tracking-widest">Preferencias</p>
             <div className="space-y-2">
               <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
                 <Icon name="notifications" size="m" className="text-accent" />
@@ -432,7 +388,10 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
                 ))}
               </div>
             </div>
+            </>
           )}
+
+          <p className="font-mono text-caption text-ink-3 uppercase tracking-widest">Soporte</p>
 
           {isCoach && (
             showCoaches ? (

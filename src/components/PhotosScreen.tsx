@@ -1,12 +1,13 @@
-import React, { useState, useRef } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { UserProfile, ProgressPhoto, PhotoView } from '../types';
 import { getProgressPhotos, uploadProgressPhoto, deleteProgressPhoto } from '../dbService';
 import { useToast } from '../hooks/useToast';
 import Coachmark from './Coachmark';
-import PhotoCompareCurtain from './progress/PhotoCompareCurtain';
 import { Skeleton } from './ui';
-import { Icon, Button, PageHeader, Tabs, SegmentedControl, EmptyState } from './ui';
+import { Icon, Badge, EmptyState } from './ui';
+
+const VIEWS: PhotoView[] = ['front', 'side', 'back'];
 
 const VIEW_LABELS: Record<PhotoView, string> = {
   front: 'Frente',
@@ -14,14 +15,23 @@ const VIEW_LABELS: Record<PhotoView, string> = {
   back: 'Espalda',
 };
 
+// Iconos de silueta por ángulo (handoff §7). "accessibility" a secas no es un
+// nombre real de Material Symbols —Google lo descarta al generar el
+// subconjunto (`npm run iconos:generar`) y el navegador cae al texto de la
+// ligadura sin avisar— así que "Espalda" usa `directions_run`, ya en el
+// subconjunto, en vez de repetir ese fallo.
 const VIEW_ICONS: Record<PhotoView, string> = {
-  front: 'person',
-  side: 'accessibility_new',
-  back: 'directions_walk',
+  front: 'accessibility_new',
+  side: 'directions_walk',
+  back: 'directions_run',
 };
 
 function todayStr(): string {
   return new Date().toISOString().split('T')[0];
+}
+
+function fmtDate(d: string): string {
+  return new Date(d + 'T12:00:00').toLocaleDateString('es-ES', { day: '2-digit', month: 'short' });
 }
 
 interface Props {
@@ -40,41 +50,49 @@ export default function PhotosScreen({ profile }: Props) {
     queryKey: photosKey,
     queryFn: () => getProgressPhotos(profile.email),
   });
-  const [selectedView, setSelectedView] = useState<PhotoView>('front');
-  const [mode, setMode] = useState<'galeria' | 'comparar'>('galeria');
-  const [uploadDate, setUploadDate]   = useState(todayStr());
-  const [uploading, setUploading]     = useState(false);
-  const [deleting, setDeleting]       = useState<string | null>(null);
+  const [uploadingView, setUploadingView] = useState<PhotoView | null>(null);
+  const [deletingView, setDeletingView] = useState<PhotoView | null>(null);
   const [uploadError, setUploadError] = useState('');
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  // Una URL de Storage que falla al cargar (permisos, red) no debe dejar el
+  // alt-text roto ocupando la fila — se cae al icono placeholder igual que si
+  // no hubiera foto.
+  const [brokenPhotoIds, setBrokenPhotoIds] = useState<Set<string>>(new Set());
+  const fileInputRefs = useRef<Partial<Record<PhotoView, HTMLInputElement | null>>>({});
 
-  const visiblePhotos = photos
-    .filter(p => p.view === selectedView)
-    .sort((a, b) => b.date.localeCompare(a.date)); // newest first
+  // Última foto por ángulo — es lo único que muestra la fila (handoff §7:
+  // estado actual por ángulo, no el histórico completo).
+  const latestByView = useMemo(() => {
+    const map: Partial<Record<PhotoView, ProgressPhoto>> = {};
+    for (const p of photos) {
+      const cur = map[p.view];
+      if (!cur || p.date > cur.date) map[p.view] = p;
+    }
+    return map;
+  }, [photos]);
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (view: PhotoView, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setUploading(true);
+    setUploadingView(view);
     setUploadError('');
     try {
-      const photo = await uploadProgressPhoto(profile.email, uploadDate, selectedView, file);
+      const photo = await uploadProgressPhoto(profile.email, todayStr(), view, file);
       queryClient.setQueryData<ProgressPhoto[]>(photosKey, prev => {
-        // Replace existing photo for same date+view, or prepend
         const withoutOld = (prev ?? []).filter(p => !(p.date === photo.date && p.view === photo.view));
-        return [...withoutOld, photo].sort((a, b) => a.date.localeCompare(b.date));
+        return [...withoutOld, photo];
       });
     } catch (err) {
       console.error('Upload failed:', err);
       setUploadError('No se pudo subir la foto. Verifica tu conexión.');
     } finally {
-      setUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
+      setUploadingView(null);
+      const input = fileInputRefs.current[view];
+      if (input) input.value = '';
     }
   };
 
   const handleDelete = async (photo: ProgressPhoto) => {
-    setDeleting(photo.id);
+    setDeletingView(photo.view);
     try {
       await deleteProgressPhoto(photo);
       queryClient.setQueryData<ProgressPhoto[]>(photosKey, prev => prev?.filter(p => p.id !== photo.id));
@@ -82,27 +100,39 @@ export default function PhotosScreen({ profile }: Props) {
       console.error('Delete failed:', err);
       showToast('No se pudo eliminar la foto.');
     } finally {
-      setDeleting(null);
+      setDeletingView(null);
     }
   };
 
-  const formatDate = (d: string) =>
-    new Date(d + 'T12:00:00').toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
-
   if (loading) {
     return (
-      <div className="grid grid-cols-3 gap-2">
-        <Skeleton className="aspect-square w-full" />
-        <Skeleton className="aspect-square w-full" />
-        <Skeleton className="aspect-square w-full" />
+      <div className="flex flex-col gap-2.5">
+        <Skeleton className="h-[90px] w-full rounded-field" />
+        <Skeleton className="h-[90px] w-full rounded-field" />
+        <Skeleton className="h-[90px] w-full rounded-field" />
+      </div>
+    );
+  }
+
+  if (isError) {
+    // 05-11. Un fallo de lectura NO es una galería vacía. Se dice lo que ha
+    // pasado, se deja claro que las fotos siguen ahí, y se ofrece reintentar
+    // — que aquí sí sirve, a diferencia del aviso de permisos.
+    return (
+      <div className="border border-dashed border-hairline rounded-field">
+        <EmptyState
+          icon="cloud_off"
+          title="No hemos podido cargar tus fotos."
+          description="Es un problema de conexión, no de tus fotos: siguen guardadas. Inténtalo otra vez en un momento."
+          actionLabel="Reintentar"
+          onAction={() => { void refetch(); }}
+        />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 max-w-2xl mx-auto">
-      <PageHeader title="Fotos de Progreso" subtitle="Sube fotos por fecha para registrar tu evolución física." />
-
+    <div className="space-y-3">
       <Coachmark
         id="photos_upload_hint"
         email={profile.email}
@@ -110,124 +140,74 @@ export default function PhotosScreen({ profile }: Props) {
         text="Sube una foto por cada ángulo — es la forma más clara de ver tu progreso real, más allá del peso."
       />
 
-      {/* View selector */}
-      <Tabs
-        items={(['front', 'side', 'back'] as PhotoView[]).map(v => ({ id: v, label: VIEW_LABELS[v], icon: VIEW_ICONS[v] }))}
-        value={selectedView}
-        onChange={id => setSelectedView(id as PhotoView)}
-        label="Ángulo de la foto"
-      />
+      {/* Una fila por ángulo (handoff §7) — icono placeholder, badge ACTUAL,
+          fecha de la última actualización, subir/borrar. */}
+      <div className="flex flex-col gap-2.5">
+        {VIEWS.map(view => {
+          const photo = latestByView[view];
+          const isUploading = uploadingView === view;
+          const isDeleting = deletingView === view;
+          return (
+            <div key={view} className="bg-surface border border-hairline rounded-field p-3 flex items-center gap-3">
+              <div
+                className="w-[50px] h-[66px] rounded-control shrink-0 flex items-center justify-center overflow-hidden"
+                style={{ backgroundImage: 'repeating-linear-gradient(45deg, rgba(255,255,255,.05) 0 6px, rgba(255,255,255,.015) 6px 12px)' }}
+              >
+                {photo && !brokenPhotoIds.has(photo.id) ? (
+                  <img
+                    src={photo.url}
+                    alt={VIEW_LABELS[view]}
+                    className="w-full h-full object-cover object-top"
+                    onError={() => setBrokenPhotoIds(prev => new Set(prev).add(photo.id))}
+                  />
+                ) : (
+                  <Icon name={VIEW_ICONS[view]} size="m" className="text-ink-4" />
+                )}
+              </div>
 
-      {visiblePhotos.length >= 2 && (
-        <SegmentedControl
-          options={[{ value: 'galeria', label: 'Galería' }, { value: 'comparar', label: 'Comparar' }]}
-          value={mode}
-          onChange={v => setMode(v as 'galeria' | 'comparar')}
-          label="Vista de fotos"
-        />
-      )}
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1.5">
+                  <span className="font-sans font-bold text-body-s text-white">{VIEW_LABELS[view]}</span>
+                  {photo && <Badge tone="success">ACTUAL</Badge>}
+                </div>
+                <p className="font-mono text-caption text-ink-2 mt-1">
+                  {photo ? `Actualizada ${fmtDate(photo.date)}` : 'Sin foto todavía'}
+                </p>
+              </div>
 
-      {/* Upload bar */}
-      <div className="bg-raised border border-hairline rounded-surface p-4 flex flex-col sm:flex-row sm:items-center gap-3">
-        <div className="flex items-center gap-2 min-w-0">
-          <Icon name="calendar_today" size="s" className="text-ink-2 flex-shrink-0" />
-          <input
-            type="date"
-            value={uploadDate}
-            onChange={e => setUploadDate(e.target.value)}
-            className="bg-transparent border-none text-white font-mono text-title-s focus:outline-none focus:ring-0 min-w-0 max-w-full"
-          />
-        </div>
-        <Button onClick={() => fileInputRef.current?.click()} disabled={uploading} loading={uploading} icon="upload" className="sm:ml-auto">
-          {uploading ? 'Subiendo…' : `Subir foto (${VIEW_LABELS[selectedView]})`}
-        </Button>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={handleFileChange}
-        />
-        {uploadError && (
-          <p className="w-full font-sans text-label text-red-400">{uploadError}</p>
-        )}
+              <button
+                onClick={() => fileInputRefs.current[view]?.click()}
+                disabled={isUploading}
+                className="w-[34px] h-[34px] rounded-control bg-inset border border-hairline flex items-center justify-center text-accent shrink-0 disabled:opacity-50"
+                title="Subir foto"
+              >
+                <Icon name={isUploading ? 'progress_activity' : 'upload'} size="s" className={isUploading ? 'animate-spin' : ''} />
+              </button>
+              <input
+                ref={el => { fileInputRefs.current[view] = el; }}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={e => handleFileChange(view, e)}
+              />
+
+              {photo && (
+                <button
+                  onClick={() => handleDelete(photo)}
+                  disabled={isDeleting}
+                  className="text-ink-3 hover:text-danger transition-colors shrink-0 disabled:opacity-40"
+                  title="Eliminar"
+                >
+                  <Icon name={isDeleting ? 'progress_activity' : 'delete'} size="m" className={isDeleting ? 'animate-spin' : ''} />
+                </button>
+              )}
+            </div>
+          );
+        })}
       </div>
 
-      {/* Gallery */}
-      {isError ? (
-        // 05-11. Un fallo de lectura NO es una galería vacía. Se dice lo que ha
-        // pasado, se deja claro que las fotos siguen ahí, y se ofrece reintentar
-        // — que aquí sí sirve, a diferencia del aviso de permisos.
-        <div className="border border-dashed border-hairline rounded-surface">
-          <EmptyState
-            icon="cloud_off"
-            title="No hemos podido cargar tus fotos."
-            description="Es un problema de conexión, no de tus fotos: siguen guardadas. Inténtalo otra vez en un momento."
-            actionLabel="Reintentar"
-            onAction={() => { void refetch(); }}
-          />
-        </div>
-      ) : visiblePhotos.length === 0 ? (
-        <div className="border border-dashed border-hairline rounded-surface">
-          <EmptyState
-            icon="photo_camera"
-            title={`Sin fotos de ${VIEW_LABELS[selectedView].toLowerCase()} todavía.`}
-            description="Sube tu primera foto para empezar a registrar tu evolución."
-            actionLabel="Subir foto"
-            onAction={() => fileInputRef.current?.click()}
-          />
-        </div>
-      ) : mode === 'comparar' && visiblePhotos.length >= 2 ? (
-        <div className="space-y-3">
-          <PhotoCompareCurtain
-            antes={visiblePhotos[visiblePhotos.length - 1]}
-            ahora={visiblePhotos[0]}
-            badge={`${Math.max(1, Math.round((new Date(visiblePhotos[0].date).getTime() - new Date(visiblePhotos[visiblePhotos.length - 1].date).getTime()) / (7 * 86_400_000)))} SEMANAS`}
-          />
-          <p className="font-sans text-caption text-ink-2/70 text-center">
-            Misma luz, misma hora, misma distancia: así se nota mejor el cambio.
-          </p>
-          <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-1">
-            {visiblePhotos.map(photo => (
-              <img
-                key={photo.id}
-                src={photo.url}
-                alt={`${VIEW_LABELS[photo.view]} ${photo.date}`}
-                className="h-16 w-12 shrink-0 rounded-control border border-hairline object-cover object-top"
-              />
-            ))}
-          </div>
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          {visiblePhotos.map((photo, idx) => (
-            <div key={photo.id} className="relative group rounded-surface overflow-hidden border border-hairline bg-raised aspect-[3/4]">
-              <img
-                src={photo.url}
-                alt={`${VIEW_LABELS[photo.view]} ${photo.date}`}
-                className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500"
-              />
-              {/* Date badge */}
-              <div className="absolute top-2 left-2 bg-black/70 backdrop-blur-sm px-2 rounded-control text-white font-mono text-caption">
-                {formatDate(photo.date)}
-              </div>
-              {/* Latest badge */}
-              {idx === 0 && (
-                <div className="absolute top-2 right-2 bg-accent px-2 rounded-control font-mono text-caption font-bold text-black">
-                  ACTUAL
-                </div>
-              )}
-              {/* Delete button */}
-              <button
-                onClick={() => handleDelete(photo)}
-                disabled={deleting === photo.id}
-                className="absolute bottom-2 right-2 w-7 h-7 rounded-full bg-black/70 backdrop-blur-sm flex items-center justify-center text-ink-2 hover:text-red-400 hover:bg-black/90 transition-all opacity-0 group-hover:opacity-100 disabled:opacity-50"
-              >
-                <Icon name={deleting === photo.id ? 'progress_activity' : 'delete'} size="s" className={deleting === photo.id ? 'animate-spin' : ''} />
-              </button>
-            </div>
-          ))}
-        </div>
+      {uploadError && (
+        <p className="font-sans text-label text-danger">{uploadError}</p>
       )}
     </div>
   );

@@ -281,7 +281,7 @@ export default function CardioScreen({ profile }: Props) {
         return (
           <section className="space-y-2">
             <div className="flex items-center justify-between">
-              <h3 className="text-caption font-mono uppercase text-data tracking-wider">Historial</h3>
+              <h3 className="text-caption font-mono uppercase text-ink-2 tracking-wider">Historial</h3>
               <Button variant="ghost" size="s" onClick={() => setShowManualAdd(true)} icon="add">Añadir a mano</Button>
             </div>
 
@@ -312,7 +312,7 @@ export default function CardioScreen({ profile }: Props) {
             {[...filtered].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 20).map(s => (
               <button key={s.id} onClick={() => setSelectedSessionId(s.id)}
                 className="w-full flex items-center gap-3 bg-surface border border-hairline rounded-control p-3 text-left hover:border-strong transition-colors">
-                <Icon name="favorite" size="l" className="text-data" />
+                <Icon name="favorite" size="l" className="text-ink-3" />
                 <div className="flex-1 min-w-0">
                   <p className="font-sans font-bold text-body-s text-white">
                     {s.title || `${s.date} · ${Math.round(s.durationSec / 60)} min`}

@@ -723,27 +723,27 @@ export default function ClientReviewsPanel({
                   const changeCount = assignHidden.size + Object.keys(assignRelabeled).length
                     + Object.keys(assignRequiredOverride).length + assignExtra.length;
                   return (
-                    <div className="border border-white/7 rounded-xl overflow-hidden">
+                    <div className="border border-hairline rounded-field overflow-hidden">
                       <button
                         type="button"
                         onClick={() => setAssignOverridesOpen(o => !o)}
-                        className="w-full flex items-center justify-between px-3 py-2.5 bg-[#1c1b1b] hover:bg-[#212120] transition-colors"
+                        className="w-full flex items-center justify-between px-3 py-2.5 bg-raised hover:bg-raised/70 transition-colors"
                       >
-                        <span className="font-mono text-[10px] text-[#c6c9ab] uppercase tracking-wide flex items-center gap-1.5">
+                        <span className="font-mono text-caption text-ink-2 uppercase tracking-wide flex items-center gap-1.5">
                           <span className="material-symbols-outlined text-sm">tune</span>
                           Personalizar para este cliente
                           {changeCount > 0 && (
-                            <span className="bg-[#fbcb1a] text-black text-[9px] font-bold px-1.5 py-0.5 rounded-full">{changeCount}</span>
+                            <span className="bg-accent text-on-accent text-[9px] font-bold px-1.5 py-0.5 rounded-full">{changeCount}</span>
                           )}
                         </span>
-                        <span className={`material-symbols-outlined text-[#c6c9ab] text-sm transition-transform ${assignOverridesOpen ? 'rotate-180' : ''}`}>expand_more</span>
+                        <span className={`material-symbols-outlined text-ink-2 text-sm transition-transform ${assignOverridesOpen ? 'rotate-180' : ''}`}>expand_more</span>
                       </button>
                       {assignOverridesOpen && (
-                        <div className="p-3 space-y-2 bg-[#141413]">
+                        <div className="p-3 space-y-2 bg-bg">
                           {tmpl.questions.map(q => {
                             const hidden = assignHidden.has(q.id);
                             return (
-                              <div key={q.id} className={`flex items-start gap-2 p-2 rounded-lg border ${hidden ? 'border-white/60 opacity-50' : 'border-white/7'}`}>
+                              <div key={q.id} className={`flex items-start gap-2 p-2 rounded-control border ${hidden ? 'border-ink-3 opacity-50' : 'border-hairline'}`}>
                                 <button
                                   type="button"
                                   onClick={() => setAssignHidden(prev => {
@@ -753,7 +753,7 @@ export default function ClientReviewsPanel({
                                     return next;
                                   })}
                                   title={hidden ? 'Mostrar de nuevo' : 'Ocultar para este cliente'}
-                                  className="flex-shrink-0 mt-1 text-[#c6c9ab] hover:text-white transition-colors"
+                                  className="flex-shrink-0 mt-1 text-ink-2 hover:text-white transition-colors"
                                 >
                                   <span className="material-symbols-outlined text-base">{hidden ? 'visibility_off' : 'visibility'}</span>
                                 </button>
@@ -771,12 +771,12 @@ export default function ClientReviewsPanel({
                                   />
                                   <label className="flex items-center gap-1.5 cursor-pointer w-fit">
                                     <span
-                                      className={`w-3.5 h-3.5 rounded border flex items-center justify-center transition-colors ${(assignRequiredOverride[q.id] ?? q.required) ? 'bg-[#fbcb1a] border-[#fbcb1a]' : 'border-[#3a3a3a]'}`}
+                                      className={`w-3.5 h-3.5 rounded border flex items-center justify-center transition-colors ${(assignRequiredOverride[q.id] ?? q.required) ? 'bg-accent border-accent' : 'border-hairline'}`}
                                       onClick={() => !hidden && setAssignRequiredOverride(prev => ({ ...prev, [q.id]: !(prev[q.id] ?? q.required) }))}
                                     >
-                                      {(assignRequiredOverride[q.id] ?? q.required) && <span className="material-symbols-outlined text-black" style={{ fontSize: '9px' }}>check</span>}
+                                      {(assignRequiredOverride[q.id] ?? q.required) && <span className="material-symbols-outlined text-on-accent" style={{ fontSize: '9px' }}>check</span>}
                                     </span>
-                                    <span className="font-mono text-[9px] text-[#c6c9ab]">Obligatoria</span>
+                                    <span className="font-mono text-[9px] text-ink-2">Obligatoria</span>
                                   </label>
                                 </div>
                               </div>
@@ -784,18 +784,18 @@ export default function ClientReviewsPanel({
                           })}
 
                           {assignExtra.map((q, idx) => (
-                            <div key={q.id} className="p-2 rounded-lg border border-[#00eefc]/30 bg-[#00eefc]/5 space-y-1.5">
+                            <div key={q.id} className="p-2 rounded-control border border-data/30 bg-data/5 space-y-1.5">
                               <div className="flex items-center gap-2">
                                 <input
                                   value={q.label}
                                   onChange={e => setAssignExtra(prev => prev.map((qq, i) => i === idx ? { ...qq, label: e.target.value } : qq))}
                                   placeholder="Pregunta exclusiva de este cliente"
-                                  className="flex-1 min-w-0 bg-bg border border-hairline rounded-control px-2 py-2 text-title-s text-white font-sans focus:outline-none focus:ring-1 focus:ring-[#00eefc]"
+                                  className="flex-1 min-w-0 bg-bg border border-hairline rounded-control px-2 py-2 text-title-s text-white font-sans focus:outline-none focus:ring-1 focus:ring-data"
                                 />
                                 <select
                                   value={q.type}
                                   onChange={e => setAssignExtra(prev => prev.map((qq, i) => i === idx ? { ...qq, ...applyTypeChange({ type: e.target.value as QuestionnaireQuestion['type'] }) } : qq))}
-                                  className="bg-[#1e1e1b] border border-white/7 rounded px-1.5 py-1.5 text-[10px] font-mono text-white focus:outline-none focus:ring-1 focus:ring-[#00eefc] flex-shrink-0"
+                                  className="bg-raised border border-hairline rounded px-1.5 py-1.5 text-[10px] font-mono text-white focus:outline-none focus:ring-1 focus:ring-data flex-shrink-0"
                                 >
                                   <option value="text">Texto</option>
                                   <option value="numeric">Número</option>
@@ -806,7 +806,7 @@ export default function ClientReviewsPanel({
                                 <button
                                   type="button"
                                   onClick={() => setAssignExtra(prev => prev.filter((_, i) => i !== idx))}
-                                  className="flex-shrink-0 text-[#c6c9ab] hover:text-red-400 transition-colors"
+                                  className="flex-shrink-0 text-ink-2 hover:text-red-400 transition-colors"
                                 >
                                   <span className="material-symbols-outlined text-base">close</span>
                                 </button>
@@ -817,7 +817,7 @@ export default function ClientReviewsPanel({
                                   onChange={e => setAssignExtra(prev => prev.map((qq, i) => i === idx ? { ...qq, options: e.target.value.split('\n').map(s => s.trim()).filter(Boolean) } : qq))}
                                   placeholder={'Opción A\nOpción B'}
                                   rows={2}
-                                  className="w-full bg-[#0e0e0e] border border-white/7 rounded px-2 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:ring-1 focus:ring-[#00eefc] resize-none"
+                                  className="w-full bg-bg border border-hairline rounded px-2 py-1.5 text-[11px] text-white font-mono focus:outline-none focus:ring-1 focus:ring-data resize-none"
                                 />
                               )}
                             </div>
@@ -826,7 +826,7 @@ export default function ClientReviewsPanel({
                           <button
                             type="button"
                             onClick={() => setAssignExtra(prev => [...prev, { ...newQuestion(), id: `x_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`, required: false }])}
-                            className="flex items-center gap-1.5 px-2.5 py-1.5 text-[#00eefc] font-mono text-[10px] uppercase hover:text-white transition-colors"
+                            className="flex items-center gap-1.5 px-2.5 py-1.5 text-data font-mono text-[10px] uppercase hover:text-white transition-colors"
                           >
                             <span className="material-symbols-outlined text-sm">add</span>Añadir pregunta solo para él/ella
                           </button>

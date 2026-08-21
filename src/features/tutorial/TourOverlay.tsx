@@ -27,7 +27,6 @@ interface Props {
   state: TourState;
   getRect: (id: string) => DOMRect | null;
   targetVersion: number;
-  isFirstPass: boolean; // primera vez (no repetible) — sin "Saltar el tour"
   onNext: () => void;
   onBack: () => void;
   onSkipStep: () => void;
@@ -42,7 +41,7 @@ const SCREEN_BANNER_MS = 1800;
 const ANTIBLOQUEO_MS = 2500;
 
 export default function TourOverlay({
-  step, stepIndex, totalSteps, state, getRect, targetVersion, isFirstPass,
+  step, stepIndex, totalSteps, state, getRect, targetVersion,
   onNext, onBack, onSkipStep, onClose, onForceUnblock,
 }: Props) {
   useScrollLock(true);
@@ -179,9 +178,7 @@ export default function TourOverlay({
           {step.skippable && (
             <button onClick={onSkipStep} className="w-full text-center text-label font-sans text-ink-3">Ahora no</button>
           )}
-          {!isFirstPass && (
-            <button onClick={onClose} className="w-full text-center text-caption font-mono uppercase text-ink-3">Saltar el tour</button>
-          )}
+          <button onClick={onClose} className="w-full text-center text-caption font-mono uppercase text-ink-3">Saltar el tour</button>
         </div>
       </div>
     </div>,

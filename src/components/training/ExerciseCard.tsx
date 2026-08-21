@@ -62,29 +62,29 @@ export default function ExerciseCard({
   const esDropset = we.technique === 'dropset';
   const esMyoreps = we.technique === 'myoreps';
 
+  // Tamaño adaptativo del nombre — un nombre largo ("Elevación de rodilla
+  // alterno inclinado, de espalda") ocupaba media tarjeta a text-feature
+  // (26px); se reduce por escalones según longitud en vez de dejarlo fijo.
+  const nombreEjercicio = ex?.name || we.exerciseId;
+  const nombreSizeClass = nombreEjercicio.length > 40 ? 'text-title-m'
+    : nombreEjercicio.length > 24 ? 'text-title-l'
+    : 'text-feature';
+
   return (
     <div className={`bg-surface border rounded-surface overflow-hidden ${we.recordVideoSet ? 'border-accent/50' : 'border-hairline'}`}>
       {/* Cabecera */}
       <div ref={exIdx === 0 ? videoTargetRef : undefined} className="flex items-center gap-3 p-4 bg-surface border-b border-hairline">
         <span className="font-mono text-caption text-ink-3 w-5 text-center font-bold flex-shrink-0">{exIdx + 1}</span>
-        <div className="w-11 h-11 rounded-full bg-raised border border-hairline flex items-center justify-center flex-shrink-0">
-          <Icon name="fitness_center" size="m" className="text-ink-2" />
-        </div>
         <div className="flex-1 min-w-0">
-          <p className="font-display text-title-m font-black uppercase tracking-tight text-ink truncate flex items-center gap-2">
-            {ex?.name || we.exerciseId}
+          <p className={`font-display ${nombreSizeClass} font-black uppercase tracking-tight text-ink flex items-center gap-2 flex-wrap`}>
+            {nombreEjercicio}
             {we.technique && (
               <span className={`inline-flex items-center gap-1 text-caption font-mono font-bold uppercase px-2 rounded-control border flex-shrink-0 ${TECHNIQUE_COLOR[we.technique]}`}>
                 {TECHNIQUE_EMOJI[we.technique]} {TECHNIQUE_LABEL[we.technique]}
               </span>
             )}
           </p>
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-mono text-caption text-ink-2">
-              {we.setGroups && we.setGroups.length > 0
-                ? we.setGroups.map((g, i) => `${g.label || `Bloque ${i + 1}`} ${g.sets}×${g.reps} (RIR ${g.rir})`).join(' · ')
-                : `${we.sets}×${we.reps} · RIR ${we.rir}`} · {we.restSeconds}s
-            </span>
+          <div className="flex items-center gap-2 flex-wrap mt-1">
             {ex?.equipment?.map(eq => (
               <span key={eq} className="text-caption font-sans px-2 rounded-control bg-white/5 text-ink-3">{eq}</span>
             ))}
@@ -296,6 +296,9 @@ function NormalTable({
                     disabled={setInput.done}
                     className={`w-16 sm:w-20 rounded-control border bg-field px-1 sm:px-2 py-2 text-center font-mono text-title-s text-ink focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50 disabled:cursor-not-allowed ${esSiguiente ? 'border-accent/55' : 'border-hairline'}`}
                   />
+                  {prev && prev.weight > 0 && (
+                    <span className="block text-center font-mono text-caption text-ink-3 mt-1">{prev.weight} kg</span>
+                  )}
                 </td>
                 <td className="px-2 sm:px-3 py-2">
                   <input
@@ -306,6 +309,9 @@ function NormalTable({
                     disabled={setInput.done}
                     className={`w-14 sm:w-16 rounded-control border bg-field px-1 sm:px-2 py-2 text-center font-mono text-title-s text-ink focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50 disabled:cursor-not-allowed ${esSiguiente ? 'border-accent/55' : 'border-hairline'}`}
                   />
+                  {prev && prev.repsDone > 0 && (
+                    <span className="block text-center font-mono text-caption text-ink-3 mt-1">{prev.repsDone} reps</span>
+                  )}
                 </td>
                 <td className="px-2 sm:px-3 py-2">
                   <select

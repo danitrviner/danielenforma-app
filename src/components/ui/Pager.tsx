@@ -41,12 +41,35 @@ interface PagerProps {
   /** 'inside' los superpone al contenido (pantallas oscuras a pantalla completa); 'outside' los deja en su propia fila; 'none' los oculta (por ejemplo si ya hay otro indicador). */
   dots?: 'inside' | 'outside' | 'none';
   className?: string;
+  /** Color del punto activo (p.ej. el color de zona en Cardio en vivo).
+   *  Sin especificar, usa el neutro `bg-ink` de siempre. */
+  activeDotColor?: string;
 }
 
-export default function Pager({ children, value, onChange, label, dots = 'outside', className = '' }: PagerProps) {
+export default function Pager({ children, value, onChange, label, dots = 'outside', className = '', activeDotColor }: PagerProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const pageCount = React.Children.count(children);
   const reducedMotion = useReducedMotion();
+
+  // Alto de la página activa, no el de la más alta de todas — `flex` mide su
+  // propio alto por el hijo más grande aunque el resto no se estiren
+  // (`items-start` de más abajo solo evita que SE ESTIREN, no reduce el alto
+  // del contenedor). Sin esto, una página corta (p.ej. el último ejercicio de
+  // la sesión) deja un hueco vacío del tamaño de la página más alta antes de
+  // lo que venga después en el flujo normal.
+  const pageRefs = useRef<Array<HTMLDivElement | null>>([]);
+  const [activeHeight, setActiveHeight] = useState<number | undefined>(undefined);
+  useLayoutEffect(() => {
+    const el = pageRefs.current[value];
+    if (el) setActiveHeight(el.offsetHeight);
+  }, [value, pageCount]);
+  useEffect(() => {
+    const el = pageRefs.current[value];
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(() => setActiveHeight(el.offsetHeight));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [value]);
 
   // Evita que el propio `onScroll` reinterprete como "el usuario deslizó" el
   // scroll que acabamos de disparar nosotros mismos con `scrollTo`.
@@ -132,8 +155,9 @@ export default function Pager({ children, value, onChange, label, dots = 'outsid
           aria-current={i === value}
           className={
             'h-1.5 rounded-full transition-[width,opacity] duration-(--duration-state) pointer-events-auto '
-            + (i === value ? 'w-4 bg-ink opacity-90' : 'w-1.5 bg-ink opacity-30 hover:opacity-50')
+            + (i === value ? `w-4 opacity-90 ${activeDotColor ? '' : 'bg-ink'}` : 'w-1.5 bg-ink opacity-30 hover:opacity-50')
           }
+          style={i === value && activeDotColor ? { background: activeDotColor } : undefined}
         />
       ))}
     </div>
@@ -149,10 +173,16 @@ export default function Pager({ children, value, onChange, label, dots = 'outsid
         tabIndex={0}
         onScroll={handleScroll}
         onKeyDown={onKeyDown}
-        className="flex overflow-x-auto snap-x snap-mandatory overscroll-x-contain hide-scrollbar focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-line"
+        className="flex items-start overflow-x-auto snap-x snap-mandatory overscroll-x-contain hide-scrollbar focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-line"
+        style={activeHeight != null ? { height: activeHeight, transition: reducedMotion ? undefined : 'height 200ms ease' } : undefined}
       >
         {React.Children.map(children, (child, i) => (
-          <div key={i} className="w-full shrink-0 snap-center" aria-hidden={i !== value}>
+          <div
+            key={i}
+            ref={el => { pageRefs.current[i] = el; }}
+            className="w-full shrink-0 snap-center"
+            aria-hidden={i !== value}
+          >
             {child}
           </div>
         ))}

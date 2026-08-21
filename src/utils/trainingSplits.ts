@@ -1,4 +1,4 @@
-import { MuscleGroup } from '../types';
+import { MuscleGroup, MuscleGroupConfig } from '../types';
 
 // Catálogo de repartos de entrenamiento estándar (torso/pierna, push/pull,
 // full body...) — Dani los definió como la forma "correcta" de repartir los
@@ -37,6 +37,45 @@ export const TRAINING_SPLITS: TrainingSplit[] = [
 
 export function getSplitsForDays(daysPerWeek: number): TrainingSplit[] {
   return TRAINING_SPLITS.filter(s => s.dayTypes.length === daysPerWeek);
+}
+
+// Sesiones/semana "ideales" para un grupo según su volumen — mismo criterio
+// que sessionCount() en MesocycleManager, sin el tope de no-consecutivos
+// (aquí solo sirve para puntuar repartos, no para colocar series).
+function idealSessions(series: number): number {
+  if (series <= 5)  return 1;
+  if (series <= 14) return 2;
+  return 3;
+}
+
+const PRIORITY_WEIGHT: Record<MuscleGroupConfig['priority'], number> = { alta: 3, media: 2, baja: 1 };
+
+// De entre los repartos que encajan con daysPerWeek, cuál cubre mejor la
+// frecuencia que pide el volumen ya configurado (más series/prioridad alta
+// en un grupo → más días de ese tipo debería tener el reparto). Es una
+// sugerencia, no una imposición — el coach elige libremente cualquiera de
+// los que se listan.
+export function recommendSplit(
+  groups: Record<MuscleGroup, MuscleGroupConfig>,
+  daysPerWeek: number,
+): TrainingSplit | null {
+  const candidates = getSplitsForDays(daysPerWeek);
+  if (candidates.length === 0) return null;
+
+  let best: TrainingSplit | null = null;
+  let bestPenalty = Infinity;
+
+  for (const split of candidates) {
+    let penalty = 0;
+    for (const [group, cfg] of Object.entries(groups) as [MuscleGroup, MuscleGroupConfig][]) {
+      if (cfg.series <= 0) continue;
+      const daysCovering = split.dayTypes.filter(dt => (DAY_TYPE_MUSCLES[dt] ?? []).includes(group)).length;
+      penalty += PRIORITY_WEIGHT[cfg.priority] * Math.abs(daysCovering - idealSessions(cfg.series));
+    }
+    if (penalty < bestPenalty) { bestPenalty = penalty; best = split; }
+  }
+
+  return best;
 }
 
 // Qué grupos musculares entran en cada tipo de día. 'core' se puede colocar

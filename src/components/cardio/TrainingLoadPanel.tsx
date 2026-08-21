@@ -39,7 +39,7 @@ export default function TrainingLoadPanel({ sessions }: Props) {
 
   return (
     <section className="bg-surface border border-hairline rounded-surface p-4 sm:p-5 space-y-4">
-      <h3 className="text-caption font-mono uppercase text-data tracking-wider">Carga de entrenamiento</h3>
+      <h3 className="text-caption font-mono uppercase text-ink-2 tracking-wider">Carga de entrenamiento</h3>
 
       <div>
         <div className="flex items-center justify-between mb-2">

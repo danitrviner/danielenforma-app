@@ -19,7 +19,7 @@ import ExerciseVideoPlayer from './ExerciseVideoPlayer';
 import { MesocycleTemplate } from '../types';
 import { rankMuscleGroups } from '../utils/muscleGroupRanking';
 import { atletasActivos } from '../utils/atletas';
-import { TRAINING_SPLITS, DAY_TYPE_MUSCLES, getSplitsForDays } from '../utils/trainingSplits';
+import { TRAINING_SPLITS, DAY_TYPE_MUSCLES, getSplitsForDays, recommendSplit } from '../utils/trainingSplits';
 import { useToast } from '../hooks/useToast';
 import { Skeleton } from './ui';
 import { EmptyState, Dialog, Input, Icon, Tabs, TabItem } from './ui';
@@ -1608,23 +1608,41 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                         </span>
                         {getSplitsForDays(editing.daysPerWeek).length === 0 ? (
                           <p className="font-sans text-caption text-ink-3">Sin plantillas de reparto para {editing.daysPerWeek} días/semana.</p>
-                        ) : (
-                          <div className="flex flex-wrap gap-2">
-                            {getSplitsForDays(editing.daysPerWeek).map(split => (
-                              <button
-                                key={split.id}
-                                onClick={() => updateField('splitId', editing.splitId === split.id ? undefined : split.id)}
-                                className={`px-3 py-2 rounded-control border font-sans text-label text-left transition-all ${
-                                  editing.splitId === split.id
-                                    ? 'bg-accent/10 border-accent text-accent'
-                                    : 'bg-raised border-hairline text-ink-2 hover:border-accent/40 hover:text-white'
-                                }`}
-                              >
-                                {split.label}
-                              </button>
-                            ))}
-                          </div>
-                        )}
+                        ) : (() => {
+                          const recommended = recommendSplit(editing.groups, editing.daysPerWeek);
+                          return (
+                            <div className="flex flex-wrap gap-2">
+                              {getSplitsForDays(editing.daysPerWeek).map(split => {
+                                const isRecommended = recommended?.id === split.id;
+                                return (
+                                  <button
+                                    key={split.id}
+                                    onClick={() => updateField('splitId', editing.splitId === split.id ? undefined : split.id)}
+                                    className={`px-3 py-2 rounded-control border font-sans text-label text-left transition-all flex items-center gap-2 ${
+                                      editing.splitId === split.id
+                                        ? 'bg-accent/10 border-accent text-accent'
+                                        : 'bg-raised border-hairline text-ink-2 hover:border-accent/40 hover:text-white'
+                                    }`}
+                                  >
+                                    {split.label}
+                                    {isRecommended && (
+                                      <span
+                                        title="Recomendado según tu volumen/prioridad configurados"
+                                        className={`font-mono text-caption px-1.5 py-0.5 rounded-full border ${
+                                          editing.splitId === split.id
+                                            ? 'border-accent text-accent'
+                                            : 'border-data/40 text-data'
+                                        }`}
+                                      >
+                                        ★ Recomendado
+                                      </span>
+                                    )}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          );
+                        })()}
                       </div>
 
                       {/* Distribution controls */}

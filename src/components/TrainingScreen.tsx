@@ -522,8 +522,6 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
         prevEntries={prevEntries}
         exerciseNoteInputs={exerciseNoteInputs}
         updateExerciseNote={updateExerciseNote}
-        workoutNoteInput={workoutNoteInput}
-        setWorkoutNoteInput={setWorkoutNoteInput}
         getExercise={getExercise}
         getPersonalNote={getPersonalNote}
         logs={logs}

@@ -9,12 +9,13 @@ import { ActionRow as ActionRowPrimitive, EmptyState } from './ui';
    HomeCoachScreen (F3.13a, "Home Coach" del handoff transversal)
 
    La entrada del coach: "Requiere acción" (revisiones, pagos, planes sin
-   publicar) separada de "Al día". Restilizada sobre `Home Coach -
-   Experiencia.dc.html` (docs/design/fase3): filtro por chips, fila con
-   avatar de iniciales (`ui/ActionRow`, nueva — el propio handoff pide
-   reutilizarla en vez de inventar un tratamiento por pantalla), "Al día"
-   siempre visible y atenuada en vez de un `<details>` colapsado, y estado
-   vacío a pantalla completa cuando no hay nada pendiente.
+   publicar). Restilizada sobre `Home Coach - Experiencia.dc.html`
+   (docs/design/fase3): filtro por chips, fila con avatar de iniciales
+   (`ui/ActionRow`, nueva — el propio handoff pide reutilizarla en vez de
+   inventar un tratamiento por pantalla), y estado vacío a pantalla completa
+   cuando no hay nada pendiente. La sección "Al día" que vivía aquí se quitó
+   en el rediseño (handoff Fase 3.2, "Home Coach"): esos atletas siguen
+   accesibles desde la parrilla completa de `ClientsScreen`.
 
    La maqueta dibuja esto como una pantalla propia titulada "Hoy" — aquí
    vive insertada bajo la cabecera "Clientes" de `ClientsScreen`, así que no
@@ -86,7 +87,6 @@ export default function HomeCoachScreen({ athletes, checkins, assignmentsByEmail
 
   const today = todayIso();
   const overdueSubs = suscripciones.filter(s => s.estado === 'activa' && s.proximoCobro <= today);
-  const pagoClientIds = new Set(overdueSubs.map(s => s.clientId));
   const pagoRows: ActionRow[] = overdueSubs.map(s => ({
     key: `pago-${s.id}`,
     categoria: 'pago',
@@ -104,15 +104,9 @@ export default function HomeCoachScreen({ athletes, checkins, assignmentsByEmail
       detail: 'Plan sin publicar',
       onClick: () => navigate(`/clients/${encodeURIComponent(a.email)}/entrenamientos`),
     }));
-  const planPendingEmails = new Set(planRows.map(r => r.key.slice('plan-'.length)));
 
   const requiereAccion = [...revisionRows, ...pagoRows, ...planRows];
   const visibles = filtro === 'todas' ? requiereAccion : requiereAccion.filter(r => r.categoria === filtro);
-  const alDia = athletes.filter(a =>
-    !seenReviewEmail.has(a.email)
-    && !(a.userId && pagoClientIds.has(a.userId))
-    && !planPendingEmails.has(a.email)
-  );
 
   const chips = useMemo(() => ([
     { id: 'todas' as const, label: 'Todas', count: requiereAccion.length },
@@ -176,27 +170,6 @@ export default function HomeCoachScreen({ athletes, checkins, assignmentsByEmail
           />
         ))}
       </div>
-
-      {alDia.length > 0 && (
-        <>
-          <div className="flex items-center gap-2">
-            <span className="h-1.5 w-1.5 rounded-full bg-white/20" />
-            <span className="font-mono text-caption uppercase tracking-widest text-ink-3">Al día · {alDia.length}</span>
-          </div>
-          <div className="divide-y divide-hairline overflow-hidden rounded-field border border-hairline bg-surface opacity-55">
-            {alDia.map(a => (
-              <ActionRowPrimitive
-                key={a.email}
-                initials={iniciales(a.displayName)}
-                title={a.displayName}
-                meta="Al día"
-                urgent={false}
-                onClick={() => navigate(`/clients/${encodeURIComponent(a.email)}`)}
-              />
-            ))}
-          </div>
-        </>
-      )}
     </section>
   );
 }

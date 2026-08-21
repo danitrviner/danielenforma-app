@@ -24,7 +24,7 @@ export default function HrvReadinessCard({ readings, onMeasure }: Props) {
 
   return (
     <section className="bg-surface border border-hairline rounded-surface p-4 sm:p-5 space-y-3">
-      <h3 className="text-caption font-mono uppercase text-data tracking-wider">HRV matinal</h3>
+      <h3 className="text-caption font-mono uppercase text-ink-2 tracking-wider">HRV matinal</h3>
 
       {latest ? (
         <div className="flex items-center justify-between">

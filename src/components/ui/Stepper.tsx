@@ -73,8 +73,8 @@ export default function Stepper({
         <Icon name="remove" size="m" />
       </button>
 
-      <div className="flex min-w-[64px] flex-col items-center">
-        <span className="font-mono text-feature font-semibold tabular-nums text-ink">{format(value)}</span>
+      <div className={`flex ${dense ? 'min-w-[48px]' : 'min-w-[64px]'} flex-col items-center`}>
+        <span className={`font-mono font-semibold tabular-nums text-ink ${dense ? 'text-title-m' : 'text-feature'}`}>{format(value)}</span>
         {unit && <span className="font-mono text-caption uppercase tracking-[.1em] text-ink-3">{unit}</span>}
       </div>
 

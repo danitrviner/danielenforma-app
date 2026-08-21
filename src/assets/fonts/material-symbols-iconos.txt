@@ -1,3 +1,4 @@
+accessibility
 accessibility_new
 account_circle
 add
@@ -42,7 +43,6 @@ calendar_month
 calendar_today
 calendar_view_month
 capture
-cards
 category
 celebration
 chat
@@ -73,6 +73,7 @@ directions_run
 directions_walk
 distance
 done
+download
 draft
 eco
 edit
@@ -87,7 +88,6 @@ event
 event_available
 event_busy
 event_note
-event_upcoming
 expand_less
 expand_more
 fact_check
@@ -243,7 +243,6 @@ switch
 sync
 sync_problem
 tab
-table_rows
 takeout_dining
 target
 task_alt

@@ -24,9 +24,11 @@ import PageAvanzado from './pages/PageAvanzado';
 
    Diferencias deliberadas con la implementación anterior (un solo fichero,
    columna scrollable):
-   - El color de zona se acota al bloque de contenido central. La barra
-     inferior y el cajón son SIEMPRE `--color-surface`/`--color-raised`
-     neutros — antes el color de zona bañaba también los controles.
+   - El color de zona es un ACENTO puntual (franja de 3px arriba + corazón),
+     no un baño de color de toda la pantalla — decisión de estilo explícita
+     del rediseño (handoff Fase 3.2, "Cardio"), distinta del gradiente de
+     fondo que teñía todo el bloque de contenido antes. La barra inferior y
+     el cajón siguen SIEMPRE `--color-surface`/`--color-raised` neutros.
    - Carrusel de 5 páginas con puntos (`Pager`, F3) en vez de todo apilado en
      una columna con scroll.
    - Fila de 3 métricas (antes 2: faltaba METs).
@@ -108,14 +110,18 @@ export default function LiveSession({
 
   return createPortal(
     <div className="fixed inset-0 z-[90] flex flex-col bg-bg" onPointerDown={onRegisterActivity}>
-      <div
-        className="flex flex-1 min-h-0 flex-col transition-colors duration-700"
-        style={{ background: `linear-gradient(180deg, ${zoneColor}f2, ${zoneColor}cc)` }}
-      >
+      <div className="flex flex-1 min-h-0 flex-col bg-bg">
+        {/* El color de zona es un acento puntual (franja superior, texto,
+            borde) — no un baño de color de toda la pantalla. Antes el
+            gradiente de fondo teñía TODO este bloque (BPM, métricas, las 5
+            páginas del carrusel); decisión de estilo explícita: solo esta
+            franja de 3px y el corazón llevan el color de zona. */}
+        <div className="h-[3px] flex-shrink-0 transition-colors duration-700" style={{ background: zoneColor }} />
+
         <TopBar deviceStatus={deviceStatus} onHide={onHide} />
 
         <div className="flex items-center justify-center gap-2 pt-3">
-          <p className="font-sans font-bold text-7xl text-bg tabular-nums leading-none">{bpm ?? '--'}</p>
+          <p className="font-sans font-bold text-7xl text-ink tabular-nums leading-none">{bpm ?? '--'}</p>
           {/* "El corazón late a la frecuencia real medida, no a un ritmo
               fijo" — regla de motion del prototipo de Fase 3 (panel
               "Zonas de Frecuencia" de Graficas - Experiencia.dc.html), que
@@ -127,8 +133,8 @@ export default function LiveSession({
               name="favorite"
               size="l"
               filled
-              className="text-bg animate-pulse-dot"
-              style={{ animationDuration: `${60000 / bpm}ms` }}
+              className="animate-pulse-dot"
+              style={{ animationDuration: `${60000 / bpm}ms`, color: zoneColor }}
             />
           )}
         </div>
@@ -136,7 +142,7 @@ export default function LiveSession({
         <MetricRow bpm={bpm} mets={liveMets} maxHR={maxHRSoFar} />
 
         <div className="flex-1 min-h-0 mt-3">
-          <Pager value={pagina} onChange={setPagina} label="Métricas de la sesión" dots="inside" className="h-full">
+          <Pager value={pagina} onChange={setPagina} label="Métricas de la sesión" dots="inside" activeDotColor={zoneColor} className="h-full">
             <PageObjetivo
               intervalBlocks={intervalBlocks}
               currentBlockIndex={currentBlockIndex}

@@ -5,7 +5,6 @@ import {
 import { Button, Icon, Dialog } from '../ui';
 import Pager from '../ui/Pager';
 import Coachmark from '../Coachmark';
-import StatTile from '../StatTile';
 import ExerciseBestSetCard from '../ExerciseBestSetCard';
 import { exerciseSessionHistory, ExerciseBestProgress } from '../../utils/athleteMetrics';
 import { allTimeBestBefore } from '../../utils/trainingReport';
@@ -33,8 +32,6 @@ interface Props {
   prevEntries: WorkoutEntryLog[];
   exerciseNoteInputs: string[];
   updateExerciseNote: (exIdx: number, value: string) => void;
-  workoutNoteInput: string;
-  setWorkoutNoteInput: (value: string) => void;
   getExercise: (id: string) => Exercise | undefined;
   getPersonalNote: (exerciseId: string) => string | undefined;
   logs: WorkoutLog[];
@@ -62,7 +59,7 @@ interface Props {
  */
 export default function WorkoutSessionPlayer({
   profile, activeAssignment, activeWorkout, playerSets, updateSet, addSetRow, prevEntries,
-  exerciseNoteInputs, updateExerciseNote, workoutNoteInput, setWorkoutNoteInput,
+  exerciseNoteInputs, updateExerciseNote,
   getExercise, getPersonalNote, logs, exerciseProgressById, handleFinish, isFinishing, canFinish,
   celebration, dismissCelebration, cerrarPlayer, onSkipSession, sameDayCardio,
   videoTargetRef, setEditorTargetRef, firstSetRowTargetRef, onMarkActionDone,
@@ -170,7 +167,7 @@ export default function WorkoutSessionPlayer({
   });
 
   return (
-    <div className="space-y-6 pb-[calc(var(--nav-h)+7rem)]">
+    <div className="space-y-6">
       <header className="pb-4 border-b border-hairline sticky top-[var(--header-h)] bg-bg/92 backdrop-blur-md z-[var(--z-sticky)] pt-2 space-y-3">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="s" icon="arrow_back" label="Volver" onClick={cerrarPlayer} className="shrink-0" />
@@ -204,11 +201,6 @@ export default function WorkoutSessionPlayer({
         </div>
       </header>
 
-      <div className="grid grid-cols-2 gap-3">
-        <StatTile icon="check_circle" label="Series hechas" value={`${doneSetsTotal}/${totalSetsAll}`} />
-        <StatTile icon="format_list_numbered" label="Ejercicios" value={orderedExercises.length} />
-      </div>
-
       <Coachmark
         id="training_player_mark_set"
         email={profile.email}
@@ -220,30 +212,22 @@ export default function WorkoutSessionPlayer({
         {pages}
       </Pager>
 
-      {/* Nota del entrenamiento completo */}
-      <div className="bg-surface border border-hairline rounded-surface p-4 space-y-2">
-        <label className="font-sans text-caption text-ink-2 uppercase tracking-wider">Nota del entrenamiento (opcional)</label>
-        <textarea
-          value={workoutNoteInput}
-          onChange={e => setWorkoutNoteInput(e.target.value)}
-          placeholder="¿Cómo te sentiste hoy? Cualquier comentario general para tu entrenador..."
-          rows={2}
-          className="w-full bg-bg border border-hairline rounded-control p-3 text-title-s text-ink placeholder-ink-2/40 focus:outline-none focus:ring-1 focus:ring-accent resize-none"
-        />
-      </div>
-
-      {/* Player action bar — pie fijo, igual que antes */}
-      <div className="fixed bottom-[calc(var(--nav-h)+0.5rem)] md:bottom-6 left-0 right-0 z-[var(--z-fab)] px-4 pt-8 bg-gradient-to-t from-bg via-bg/90 to-transparent">
-        <div className="flex justify-center gap-3">
-          <Button variant="secondary" size="l" icon="skip_next" label="Saltar sesión" onClick={onSkipSession} />
-          <Button
-            variant="primary" size="l" icon="flag" loading={isFinishing} loadingLabel="Guardando"
-            disabled={!canFinish || !!celebration} onClick={handleFinish} className="flex-1 max-w-xs"
-          >
-            Terminar sesión
-          </Button>
+      {/* Player action bar — ya no fija ni pegajosa: en el flujo normal, solo
+          en la página del último ejercicio programado. En el resto de
+          páginas no hay forma de terminar/saltar la sesión desde aquí. */}
+      {pageIdx === orderedExercises.length - 1 && (
+        <div className="px-4 pt-4">
+          <div className="flex justify-center gap-3">
+            <Button variant="secondary" size="l" icon="skip_next" label="Saltar sesión" onClick={onSkipSession} />
+            <Button
+              variant="primary" size="l" icon="flag" loading={isFinishing} loadingLabel="Guardando"
+              disabled={!canFinish || !!celebration} onClick={handleFinish} className="flex-1 max-w-xs"
+            >
+              Terminar sesión
+            </Button>
+          </div>
         </div>
-      </div>
+      )}
 
       {celebration && (
         <Dialog

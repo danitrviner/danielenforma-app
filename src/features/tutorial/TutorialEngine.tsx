@@ -36,9 +36,11 @@ import type { NavTab } from '../../App';
 
    No arranca solo una vez completado: una vez `tutorial.completado` es
    true, la única puerta de entrada es "Repetir el tour" desde
-   Perfil›Ajustes (`TutorialEngineApi.restart()`), que sí puede saltar
-   cualquier paso con "Saltar el tour" — la primera pasada no puede
-   saltarse entera, solo paso a paso o con "Ahora no" en los saltables.
+   Perfil›Ajustes (`TutorialEngineApi.restart()`).
+
+   "Saltar el tour" (rediseño Fase 3.2) está disponible en cualquier paso,
+   primera pasada incluida — decisión explícita de Dani, revierte la regla
+   anterior que solo dejaba saltar el tour entero al repetirlo.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 interface TutorialEngineApi {
@@ -68,8 +70,6 @@ export default function TutorialEngine({ profile, planVisible, currentTab, onNav
     tourReducer,
     initialTourState(profile.tutorial?.pasoAlcanzado ?? 0, profile.tutorial?.ejemplosVistos ?? [])
   );
-  const isFirstPass = !profile.tutorial?.completado;
-
   // Arranque/reanudación automática: plan visible + tutorial no completado
   // (reanuda en pasoAlcanzado, no solo arranca de cero — ver comentario de
   // cabecera).
@@ -126,7 +126,6 @@ export default function TutorialEngine({ profile, planVisible, currentTab, onNav
           state={state}
           getRect={getTourTargetRect}
           targetVersion={targetVersion}
-          isFirstPass={isFirstPass}
           onNext={() => dispatch({ type: 'NEXT' })}
           onBack={() => dispatch({ type: 'BACK' })}
           onSkipStep={() => dispatch({ type: 'SKIP' })}
