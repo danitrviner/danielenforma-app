@@ -54,7 +54,7 @@ export default function CardioMiniPlayerDemo() {
     weekJustClosed: false,
     intervalBlocksRef: { current: null },
     sessionTargetZoneRef: { current: 'z2' },
-    livePrefs: { voiceEnabled: true, autoLockEnabled: false, autoLockDelaySec: 20, advancedLayout: DEFAULT_ADVANCED_LAYOUT },
+    livePrefs: { voiceEnabled: true, advancedLayout: DEFAULT_ADVANCED_LAYOUT },
     setLivePrefs: () => {},
     locked: false,
     registerActivity: () => {},

@@ -2,14 +2,36 @@ import React from 'react';
 import { CardioZones } from '../../../../types';
 import { ZONE_ORDER, ZONE_LABEL, ZONE_COLOR, BELOW_ZONE_LABEL, BELOW_ZONE_COLOR, getZoneForBpm } from '../../../../utils/cardioZones';
 
-/* Página 4 del carrusel — calco 1:1 del panel 05 "Zonas de Frecuencia" de
+/* Página del carrusel — calco 1:1 del panel 05 "Zonas de Frecuencia" de
    Graficas - Experiencia.dc.html (a petición de Dani, 2026-08-20): bandas de
    zona macizas con la línea en vivo dibujada DENTRO de ellas (ya no aparte,
    como con HrChart/Recharts), lista de zonas en orden ascendente Z1→Z5 con
    la fila actual resaltada, y el reparto de la sesión como barra segmentada
    al final — las cuatro piezas que trae ese panel. Encargo acotado a esta
    página: los colores de zona siguen siendo los del Design System (Z2 cian,
-   no verde) y la cabecera con el ppm grande vive fuera, en LiveSession. */
+   no verde) y la cabecera con el ppm grande vive fuera, en LiveSession.
+
+   Absorbe también lo que antes era la página aparte de zonas/umbrales
+   (`PageZonas`, quitada 21-08 a petición de Dani por redundante con la
+   lista de abajo): esta es ahora la única página con la gráfica Y los
+   umbrales, uno debajo del otro, deslizable verticalmente dentro de la
+   propia página (el carrusel de `Pager` en modo `fill` da a cada página
+   el alto fijo del hueco entre la fila de métricas y la barra inferior;
+   como el contenido de esta página no cabe siempre entero ahí, la página
+   scrollea POR DENTRO en vertical — el deslizamiento horizontal del
+   carrusel para cambiar de página sigue intacto, son ejes distintos).
+
+   El ancho de la gráfica es RESPONSIVE (`width="100%"` en el `<svg>`, viewBox
+   fijo con `preserveAspectRatio="none"`) — antes tenía un ancho en píxeles
+   fijo (350) igual que el `viewBox`, así que en cualquier pantalla más
+   estrecha que 350px de contenido el `overflow-hidden` del contenedor
+   recortaba la mitad derecha de la línea y de las etiquetas de zona, y en
+   una más ancha sobraba un margen muerto sin dibujar — el aspecto de
+   "gráfica pequeña y cortada" que Dani señaló (21-08). El alto, en cambio,
+   sigue siendo un valor FIJO (`CHART_H`, ver más abajo) a propósito: solo se
+   subió el número (180→220) para que se vea más grande, sin dejarlo crecer
+   dinámicamente — con `preserveAspectRatio="none"` un alto variable
+   deformaría el trazo y la etiqueta de ppm en vertical. */
 
 interface Props {
   chartData: { t: number; bpm: number }[];
@@ -23,7 +45,13 @@ interface Props {
 
 const ZONE_RANK: Record<keyof CardioZones, number> = { z1: 0, z2: 1, z3: 2, z4: 3, z5: 4 };
 const WINDOW_SEC = 90; // "ÚLTIMOS 90 S" del mockup
-const CHART_H = 180;
+// 220 (antes 180): más grande a petición de Dani (21-08). Se mantiene FIJO
+// (no crece con flex) a propósito — el `<svg>` de abajo solo estira el
+// ANCHO con `preserveAspectRatio="none"` (necesario porque el ancho real
+// varía de pantalla a pantalla); si el alto también se estirase de forma no
+// uniforme, el trazo y el número de ppm se deformarían verticalmente cada
+// vez que el alto real no coincidiera con este valor.
+const CHART_H = 220;
 const CHART_W = 350;
 
 function fmt(sec: number): string {
@@ -67,28 +95,50 @@ export default function PageGrafica({ chartData, zones, timeInZone, belowZoneSec
   const total = Math.max(elapsedSec, 1);
 
   return (
-    <div className="flex h-full flex-col gap-4 justify-center px-3 overflow-y-auto hide-scrollbar">
+    <div className="flex h-full flex-col gap-4 px-3 pb-3 overflow-y-auto hide-scrollbar">
       {/* Bandas de zona + línea en vivo */}
-      <div className="relative rounded-2xl overflow-hidden" style={{ height: CHART_H, background: 'rgba(0,0,0,.35)' }}>
+      <div className="relative rounded-2xl overflow-hidden shrink-0" style={{ height: CHART_H, background: 'rgba(0,0,0,.35)' }}>
         <div className="absolute inset-0 flex flex-col">
-          {[...ZONE_ORDER].reverse().map(z => (
-            <div
-              key={z}
-              className="flex-1 flex items-center justify-end pr-2.5 border-b border-white/5 last:border-b-0"
-              style={{ background: `${ZONE_COLOR[z]}22` }}
-            >
-              <span className="font-mono text-[9.5px]" style={{ color: `${ZONE_COLOR[z]}c0` }}>{z.toUpperCase()}</span>
-            </div>
-          ))}
+          {[...ZONE_ORDER].reverse().map(z => {
+            const isNow = z === currentZone;
+            return (
+              <div
+                key={z}
+                className="flex-1 flex items-center justify-end pr-2.5 border-b border-white/5 last:border-b-0 transition-colors duration-700"
+                // La banda de la zona actual se ilumina un poco (petición de
+                // Dani, 21-08) — mismo truco de opacidad-en-hex que ya usa
+                // el resto del panel, solo con un dígito más alto (`44`
+                // frente al `22` de las demás) para que se note sin llegar
+                // a teñir toda la fila como hace el acento de arriba.
+                style={{ background: `${ZONE_COLOR[z]}${isNow ? '44' : '22'}` }}
+              >
+                <span
+                  className="font-mono text-[9.5px] transition-colors duration-700"
+                  style={{ color: isNow ? ZONE_COLOR[z] : `${ZONE_COLOR[z]}c0` }}
+                >
+                  {z.toUpperCase()}
+                </span>
+              </div>
+            );
+          })}
         </div>
-        <svg width={CHART_W} height={CHART_H} viewBox={`0 0 ${CHART_W} ${CHART_H}`} className="absolute left-0 top-0" preserveAspectRatio="none">
-          <path d={pathD} fill="none" stroke="rgba(255,255,255,.9)" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" />
-          <circle cx={last.x} cy={last.y} r={7} fill="none" stroke={lastColor} strokeWidth={2} className="animate-ghost-tap" style={{ transformOrigin: `${last.x}px ${last.y}px` }} />
-          <circle cx={last.x} cy={last.y} r={4.5} fill={lastColor} stroke="rgba(0,0,0,.35)" strokeWidth={2} />
+        {/* preserveAspectRatio="none" solo estira el ANCHO (el contenedor
+            mide CHART_H de alto exacto, así que el eje Y nunca se
+            deforma) — `vectorEffect="non-scaling-stroke"` evita que ese
+            estiramiento horizontal adelgace o engorde el trazo. La
+            etiqueta de ppm sigue siendo HTML, no SVG: como el alto es
+            siempre exacto, su `top` en píxeles crudos es válido tal cual;
+            solo el `left` va en PORCENTAJE del ancho (no en píxeles del
+            viewBox), que es la única coordenada que de verdad cambia de
+            escala según el ancho real de la pantalla. */}
+        <svg width="100%" height="100%" viewBox={`0 0 ${CHART_W} ${CHART_H}`} className="absolute left-0 top-0" preserveAspectRatio="none">
+          <path d={pathD} fill="none" stroke="rgba(255,255,255,.9)" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+          <circle cx={last.x} cy={last.y} r={7} fill="none" stroke={lastColor} strokeWidth={2} vectorEffect="non-scaling-stroke" className="animate-ghost-tap" style={{ transformOrigin: `${last.x}px ${last.y}px` }} />
+          <circle cx={last.x} cy={last.y} r={4.5} fill={lastColor} stroke="rgba(0,0,0,.35)" strokeWidth={2} vectorEffect="non-scaling-stroke" />
         </svg>
         <span
           className="absolute font-mono font-bold text-[15px]"
-          style={{ color: lastColor, left: Math.min(last.x, CHART_W - 34), top: Math.max(last.y - 26, 4) }}
+          style={{ color: lastColor, left: `min(${(last.x / CHART_W) * 100}%, calc(100% - 34px))`, top: Math.max(last.y - 26, 4) }}
         >
           {lastBpm}
         </span>

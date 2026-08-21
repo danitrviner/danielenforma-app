@@ -8,10 +8,6 @@ const KEY = 'enforma.cardio.livePrefs.v1';
 export interface CardioLivePrefs {
   /** Avisos por voz al cambiar de bloque o salir de zona. FITIV lo trae ON por defecto. */
   voiceEnabled: boolean;
-  /** Bloquea los controles tras un rato sin tocar la pantalla — FITIV lo trae OFF por defecto (§4bis.2 del análisis). */
-  autoLockEnabled: boolean;
-  /** Segundos de inactividad antes de bloquear, si autoLockEnabled. */
-  autoLockDelaySec: number;
   /** Claves del catálogo (`cardioLiveMetrics.ts`) para las 7 posiciones fijas del layout Avanzado (F9). */
   advancedLayout: string[];
 }
@@ -20,8 +16,6 @@ export const DEFAULT_ADVANCED_LAYOUT = ['duration', 'bpm', 'avgHR', 'zone', 'int
 
 export const DEFAULT_LIVE_PREFS: CardioLivePrefs = {
   voiceEnabled: true,
-  autoLockEnabled: false,
-  autoLockDelaySec: 20,
   advancedLayout: DEFAULT_ADVANCED_LAYOUT,
 };
 

@@ -44,12 +44,23 @@ interface PagerProps {
   /** Color del punto activo (p.ej. el color de zona en Cardio en vivo).
    *  Sin especificar, usa el neutro `bg-ink` de siempre. */
   activeDotColor?: string;
+  /** 'content' (por defecto) da al carrusel el alto de la página activa —
+   *  lo correcto cuando vive en el flujo normal y debajo viene más contenido.
+   *  'fill' le hace ocupar TODO el alto que le dé su contenedor (requiere que
+   *  el `className` ya sea `h-full` o similar) y hace scrollear en vertical
+   *  cada página por dentro. Sin esto, un Pager dentro de un `flex-1` a
+   *  pantalla completa se encoge al alto de su página más corta y deja una
+   *  franja de pocos píxeles como única zona deslizable: el resto del hueco
+   *  negro no pertenece al carrusel y el gesto no llega — el fallo que Dani
+   *  vio en la sesión de cardio en vivo (21-08). */
+  height?: 'content' | 'fill';
 }
 
-export default function Pager({ children, value, onChange, label, dots = 'outside', className = '', activeDotColor }: PagerProps) {
+export default function Pager({ children, value, onChange, label, dots = 'outside', className = '', activeDotColor, height = 'content' }: PagerProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const pageCount = React.Children.count(children);
   const reducedMotion = useReducedMotion();
+  const fill = height === 'fill';
 
   // Alto de la página activa, no el de la más alta de todas — `flex` mide su
   // propio alto por el hijo más grande aunque el resto no se estiren
@@ -60,16 +71,18 @@ export default function Pager({ children, value, onChange, label, dots = 'outsid
   const pageRefs = useRef<Array<HTMLDivElement | null>>([]);
   const [activeHeight, setActiveHeight] = useState<number | undefined>(undefined);
   useLayoutEffect(() => {
+    if (fill) return;
     const el = pageRefs.current[value];
     if (el) setActiveHeight(el.offsetHeight);
-  }, [value, pageCount]);
+  }, [value, pageCount, fill]);
   useEffect(() => {
+    if (fill) return;
     const el = pageRefs.current[value];
     if (!el || typeof ResizeObserver === 'undefined') return;
     const ro = new ResizeObserver(() => setActiveHeight(el.offsetHeight));
     ro.observe(el);
     return () => ro.disconnect();
-  }, [value]);
+  }, [value, fill]);
 
   // Evita que el propio `onScroll` reinterprete como "el usuario deslizó" el
   // scroll que acabamos de disparar nosotros mismos con `scrollTo`.
@@ -173,14 +186,23 @@ export default function Pager({ children, value, onChange, label, dots = 'outsid
         tabIndex={0}
         onScroll={handleScroll}
         onKeyDown={onKeyDown}
-        className="flex items-start overflow-x-auto snap-x snap-mandatory overscroll-x-contain hide-scrollbar focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-line"
-        style={activeHeight != null ? { height: activeHeight, transition: reducedMotion ? undefined : 'height 200ms ease' } : undefined}
+        className={
+          'flex overflow-x-auto snap-x snap-mandatory overscroll-x-contain hide-scrollbar focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-line '
+          + (fill ? 'h-full items-stretch' : 'items-start')
+        }
+        style={!fill && activeHeight != null ? { height: activeHeight, transition: reducedMotion ? undefined : 'height 200ms ease' } : undefined}
       >
         {React.Children.map(children, (child, i) => (
           <div
             key={i}
             ref={el => { pageRefs.current[i] = el; }}
-            className="w-full shrink-0 snap-center"
+            className={
+              'w-full shrink-0 snap-center'
+              + (fill ? ' h-full overflow-y-auto overscroll-y-contain' : '')
+              // Los puntos 'inside' flotan sobre el contenido: en modo 'fill'
+              // una página que scrollea por dentro se les metería debajo.
+              + (fill && dots === 'inside' ? ' pb-7' : '')
+            }
             aria-hidden={i !== value}
           >
             {child}

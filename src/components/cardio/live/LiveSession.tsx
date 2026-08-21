@@ -13,8 +13,6 @@ import ActionDrawer from './ActionDrawer';
 import LockOverlay from './LockOverlay';
 import LiveSettingsSheet from './LiveSettingsSheet';
 import PageObjetivo from './pages/PageObjetivo';
-import PageCalorias from './pages/PageCalorias';
-import PageZonas from './pages/PageZonas';
 import PageGrafica from './pages/PageGrafica';
 import PageAvanzado from './pages/PageAvanzado';
 
@@ -29,7 +27,7 @@ import PageAvanzado from './pages/PageAvanzado';
      del rediseño (handoff Fase 3.2, "Cardio"), distinta del gradiente de
      fondo que teñía todo el bloque de contenido antes. La barra inferior y
      el cajón siguen SIEMPRE `--color-surface`/`--color-raised` neutros.
-   - Carrusel de 5 páginas con puntos (`Pager`, F3) en vez de todo apilado en
+   - Carrusel de páginas con puntos (`Pager`, F3) en vez de todo apilado en
      una columna con scroll.
    - Fila de 3 métricas (antes 2: faltaba METs).
    - Pausa real (F4 del motor, `useCardioSession.tsx`) con el único elemento
@@ -142,7 +140,7 @@ export default function LiveSession({
         <MetricRow bpm={bpm} mets={liveMets} maxHR={maxHRSoFar} />
 
         <div className="flex-1 min-h-0 mt-3">
-          <Pager value={pagina} onChange={setPagina} label="Métricas de la sesión" dots="inside" activeDotColor={zoneColor} className="h-full">
+          <Pager value={pagina} onChange={setPagina} label="Métricas de la sesión" dots="inside" activeDotColor={zoneColor} className="h-full" height="fill">
             <PageObjetivo
               intervalBlocks={intervalBlocks}
               currentBlockIndex={currentBlockIndex}
@@ -154,9 +152,10 @@ export default function LiveSession({
               targetDurationSec={targetDurationSec}
               targetProgressSec={targetProgressSec}
               onAdvanceBlock={onAdvanceBlock}
+              caloriesKcal={liveCaloriesKcal}
+              caloriesActiveKcal={liveCaloriesActiveKcal}
+              points={livePoints}
             />
-            <PageCalorias caloriesKcal={liveCaloriesKcal} caloriesActiveKcal={liveCaloriesActiveKcal} points={livePoints} />
-            <PageZonas timeInZone={timeInZone} belowZoneSec={belowZoneSec} elapsedSec={elapsedSec} currentZone={currentZone} />
             <PageGrafica
               chartData={chartData} zones={zones} maxHR={maxHR}
               timeInZone={timeInZone} belowZoneSec={belowZoneSec} elapsedSec={elapsedSec} currentZone={currentZone}

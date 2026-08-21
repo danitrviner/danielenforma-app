@@ -24,6 +24,31 @@ interface Props {
   targetDurationSec?: number;
   targetProgressSec: number;
   onAdvanceBlock?: () => void;
+  /** Antes página 2 aparte (`PageCalorias`) — fusionada aquí a petición de
+   *  Dani (21-08): el objetivo y las calorías comparten página, una debajo
+   *  de la otra, en vez de un deslizamiento más para llegar a las calorías. */
+  caloriesKcal?: number;
+  caloriesActiveKcal?: number;
+  points?: number;
+}
+
+function CaloriesRow({ caloriesKcal, caloriesActiveKcal, points }: { caloriesKcal?: number; caloriesActiveKcal?: number; points?: number }) {
+  return (
+    <div className="flex items-center justify-center gap-4 px-6 pb-4">
+      <CalorieStat label="Cal. activa" value={caloriesActiveKcal !== undefined ? String(Math.round(caloriesActiveKcal)) : '--'} />
+      <CalorieStat label="Cal. total" value={caloriesKcal !== undefined ? String(Math.round(caloriesKcal)) : '--'} />
+      <CalorieStat label="Puntos" value={points !== undefined ? String(points) : '--'} />
+    </div>
+  );
+}
+
+function CalorieStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex-1 text-center">
+      <p className="font-mono text-title font-bold text-white tabular-nums">{value}</p>
+      <p className="text-caption font-sans uppercase text-white/70 mt-1">{label}</p>
+    </div>
+  );
 }
 
 function BlockObjective({ block, bpm, currentZone, blockProgressKcal, blockRemainingSec, onAdvanceBlock }: {
@@ -83,24 +108,28 @@ function BlockObjective({ block, bpm, currentZone, blockProgressKcal, blockRemai
 export default function PageObjetivo({
   intervalBlocks, currentBlockIndex, blockRemainingSec, blockProgressKcal, bpm, currentZone,
   targetZone, targetDurationSec, targetProgressSec, onAdvanceBlock,
+  caloriesKcal, caloriesActiveKcal, points,
 }: Props) {
   if (intervalBlocks && currentBlockIndex !== undefined) {
     const block = intervalBlocks[currentBlockIndex];
     const next = intervalBlocks[currentBlockIndex + 1];
     return (
-      <div className="flex h-full flex-col items-center justify-center gap-2 px-8 text-center">
-        <p className="text-caption font-mono uppercase text-white/80">
-          Bloque {currentBlockIndex + 1}/{intervalBlocks.length} · {block.label}
-        </p>
-        <BlockObjective
-          block={block}
-          bpm={bpm}
-          currentZone={currentZone}
-          blockProgressKcal={blockProgressKcal}
-          blockRemainingSec={blockRemainingSec}
-          onAdvanceBlock={onAdvanceBlock}
-        />
-        {next && <p className="text-caption font-sans text-white/60">Siguiente: {next.label}</p>}
+      <div className="flex h-full flex-col">
+        <div className="flex flex-1 flex-col items-center justify-center gap-2 px-8 text-center">
+          <p className="text-caption font-mono uppercase text-white/80">
+            Bloque {currentBlockIndex + 1}/{intervalBlocks.length} · {block.label}
+          </p>
+          <BlockObjective
+            block={block}
+            bpm={bpm}
+            currentZone={currentZone}
+            blockProgressKcal={blockProgressKcal}
+            blockRemainingSec={blockRemainingSec}
+            onAdvanceBlock={onAdvanceBlock}
+          />
+          {next && <p className="text-caption font-sans text-white/60">Siguiente: {next.label}</p>}
+        </div>
+        <CaloriesRow caloriesKcal={caloriesKcal} caloriesActiveKcal={caloriesActiveKcal} points={points} />
       </div>
     );
   }
@@ -108,24 +137,30 @@ export default function PageObjetivo({
   if (targetZone) {
     const fraction = targetDurationSec ? Math.min(targetProgressSec / targetDurationSec, 1) : null;
     return (
-      <div className="flex h-full flex-col items-center justify-center gap-3 px-8">
-        <p className="text-caption font-sans uppercase text-white/80 text-center">
-          Objetivo: {ZONE_LABEL[targetZone]}
-          {targetDurationSec ? ` · ${fmtClock(targetProgressSec)} / ${fmtClock(targetDurationSec)}` : ` · ${fmtClock(targetProgressSec)}`}
-        </p>
-        {fraction !== null && (
-          <div className="h-2 w-full rounded-full bg-black/30 overflow-hidden">
-            <div className="h-full rounded-full bg-white transition-[width] duration-1000" style={{ width: `${fraction * 100}%` }} />
-          </div>
-        )}
+      <div className="flex h-full flex-col">
+        <div className="flex flex-1 flex-col items-center justify-center gap-3 px-8">
+          <p className="text-caption font-sans uppercase text-white/80 text-center">
+            Objetivo: {ZONE_LABEL[targetZone]}
+            {targetDurationSec ? ` · ${fmtClock(targetProgressSec)} / ${fmtClock(targetDurationSec)}` : ` · ${fmtClock(targetProgressSec)}`}
+          </p>
+          {fraction !== null && (
+            <div className="h-2 w-full rounded-full bg-black/30 overflow-hidden">
+              <div className="h-full rounded-full bg-white transition-[width] duration-1000" style={{ width: `${fraction * 100}%` }} />
+            </div>
+          )}
+        </div>
+        <CaloriesRow caloriesKcal={caloriesKcal} caloriesActiveKcal={caloriesActiveKcal} points={points} />
       </div>
     );
   }
 
   return (
-    <div className="flex h-full flex-col items-center justify-center gap-1 px-8 text-center">
-      <p className="font-mono text-display text-white/50">--:--</p>
-      <p className="text-caption font-sans uppercase text-white/50">Sesión libre, sin objetivo</p>
+    <div className="flex h-full flex-col">
+      <div className="flex flex-1 flex-col items-center justify-center gap-1 px-8 text-center">
+        <p className="font-mono text-display text-white/50">--:--</p>
+        <p className="text-caption font-sans uppercase text-white/50">Sesión libre, sin objetivo</p>
+      </div>
+      <CaloriesRow caloriesKcal={caloriesKcal} caloriesActiveKcal={caloriesActiveKcal} points={points} />
     </div>
   );
 }

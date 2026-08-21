@@ -96,10 +96,13 @@ interface CardioSessionContextValue {
   livePrefs: CardioLivePrefs;
   setLivePrefs: (patch: Partial<CardioLivePrefs>) => void;
   locked: boolean;
-  /** Reinicia el temporizador de auto-lock — la UI la llama en cualquier toque de la pantalla en vivo. */
+  /** No-op deliberado (ver `useCardioSession.tsx`) — se mantiene en la
+   *  interfaz porque la UI de la pantalla en vivo la llama en cada toque,
+   *  pero ya no arma ningún temporizador: el auto-lock por inactividad se
+   *  quitó del todo (21-08). */
   registerActivity: () => void;
   unlock: () => void;
-  /** Candado manual del cajón: bloquear ya, sin esperar al temporizador. */
+  /** Candado manual del cajón — único camino que queda para bloquear. */
   lock: () => void;
 
   connect: () => Promise<void>;
@@ -218,32 +221,29 @@ function CardioSessionProviderInner({ profile, children }: { profile: UserProfil
     });
   }
 
-  // Auto-lock (F8, §4bis.2 del análisis: "Auto Lock Workout Controls",
-  // apagado por defecto en FITIV). `lockTimerRef` se reinicia con cada toque
-  // en la pantalla en vivo (`registerActivity`, que llama la propia UI) —
-  // sin actividad durante `autoLockDelaySec`, se bloquea.
+  // Bloqueo SOLO manual (candado del cajón) — el auto-lock por inactividad
+  // que traía F8 (§4bis.2 del análisis: "Auto Lock Workout Controls") se
+  // quitó del todo a petición de Dani (21-08): la pantalla de cardio en
+  // vivo no se tiene que bloquear nunca sola, pase el tiempo que pase sin
+  // tocarla. Antes ya venía OFF por defecto (así lo trae FITIV también),
+  // pero "por defecto" no basta — el interruptor de "Bloqueo automático" en
+  // los ajustes de la sesión permitía encenderlo, y de ahí viene el bloqueo
+  // que Dani vio. Se elimina el temporizador entero, no solo su valor por
+  // defecto, para que no haya ningún camino (ajuste tocado sin querer,
+  // preferencia vieja en `localStorage`…) que lo reactive.
   const [locked, setLocked] = useState(false);
-  const lockTimerRef = useRef<number | null>(null);
 
-  function armLockTimer() {
-    if (lockTimerRef.current !== null) window.clearTimeout(lockTimerRef.current);
-    if (!livePrefs.autoLockEnabled) return;
-    lockTimerRef.current = window.setTimeout(() => setLocked(true), livePrefs.autoLockDelaySec * 1000);
-  }
-
-  function registerActivity() {
-    if (locked) return; // desbloquear es un gesto aparte (el SlideAction), no un toque cualquiera
-    armLockTimer();
-  }
+  /** Ya no arma ningún temporizador — se deja como no-op porque la UI llama
+   *  a esto en cada toque de la pantalla en vivo; quitar la llamada de la
+   *  propia UI habría sido un cambio más grande sin ganar nada. */
+  function registerActivity() {}
 
   function unlock() {
     setLocked(false);
-    armLockTimer();
   }
 
-  /** Candado manual del cajón — bloquear ya, sin esperar al temporizador de inactividad. */
+  /** Candado manual del cajón — el único camino que queda para bloquear. */
   function lock() {
-    if (lockTimerRef.current !== null) window.clearTimeout(lockTimerRef.current);
     setLocked(true);
   }
 
@@ -336,7 +336,6 @@ function CardioSessionProviderInner({ profile, children }: { profile: UserProfil
     stopTicking();
     cancelSpeech();
     monitorRef.current?.disconnect();
-    if (lockTimerRef.current !== null) window.clearTimeout(lockTimerRef.current);
   }, []);
 
   function stopTicking() {
@@ -346,7 +345,6 @@ function CardioSessionProviderInner({ profile, children }: { profile: UserProfil
 
   async function teardownMonitor() {
     stopTicking();
-    if (lockTimerRef.current !== null) { window.clearTimeout(lockTimerRef.current); lockTimerRef.current = null; }
     setLocked(false);
     if (activityStartedRef.current) {
       activityStartedRef.current = false;
@@ -507,7 +505,6 @@ function CardioSessionProviderInner({ profile, children }: { profile: UserProfil
     setDisplayBelowZoneSec(0);
     setDisplayLive({});
     setLocked(false);
-    armLockTimer();
 
     if (sessionType === 'intervalos' && intervalAssignment?.intervals?.length) {
       intervalBlocksRef.current = intervalAssignment.intervals;

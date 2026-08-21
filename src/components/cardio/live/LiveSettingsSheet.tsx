@@ -59,9 +59,10 @@ export default function LiveSettingsSheet({ open, onClose, deviceStatus, prefs, 
         <Row icon="mic" title="Entrenamiento por voz" subtitle="Avisos al cambiar de bloque o salir de zona">
           <Switch on={prefs.voiceEnabled} onToggle={() => onChangePrefs({ voiceEnabled: !prefs.voiceEnabled })} />
         </Row>
-        <Row icon="lock" title="Bloqueo automático" subtitle={`Bloquea los controles tras ${prefs.autoLockDelaySec} s sin tocar`}>
-          <Switch on={prefs.autoLockEnabled} onToggle={() => onChangePrefs({ autoLockEnabled: !prefs.autoLockEnabled })} />
-        </Row>
+        {/* El interruptor de "Bloqueo automático" (F8, auto-lock por
+            inactividad) se quitó de aquí a petición de Dani (21-08): la
+            pantalla en vivo no se debe bloquear nunca sola. El candado
+            manual del cajón inferior sigue disponible. */}
       </div>
     </Sheet>
   );
