@@ -3,10 +3,9 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { MealItem, FoodCategory, DietMode } from '../types';
 import { getFoodItems, createFoodItem, updateFoodItem, deleteFoodItem, seedFoodItemsIfEmpty } from '../dbService';
 import { SYSTEM_FOODS } from '../nutricion_seed_en_forma';
-import { encontrarDuplicados, GrupoDuplicado } from '../utils/dedupeFoodItems';
 import { useToast } from '../hooks/useToast';
 import { Skeleton } from './ui';
-import { EmptyState, Dialog, Button, Select, Icon } from './ui';
+import { EmptyState, Dialog, Button, Select } from './ui';
 
 const SYSTEM_LABELS = new Set(SYSTEM_FOODS.map(f => f.label));
 
@@ -62,33 +61,6 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
   const [form, setForm] = useState<Omit<MealItem, 'id'>>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-
-  // T14 (18-08). No se borra solo al abrir la pantalla: es un borrado en
-  // producción y lo tiene que confirmar el coach, viendo antes cuánto se
-  // borraría y cuál de cada grupo se conserva.
-  const [showMantenimiento, setShowMantenimiento] = useState(false);
-  const [limpiando, setLimpiando] = useState(false);
-  const duplicados = useMemo(() => encontrarDuplicados(items), [items]);
-  const totalABorrar = duplicados.reduce((n, g) => n + g.eliminar.length, 0);
-
-  const limpiarDuplicados = async (grupos: GrupoDuplicado[]) => {
-    setLimpiando(true);
-    try {
-      const idsABorrar = grupos.flatMap(g => g.eliminar.map(e => e.id));
-      for (const id of idsABorrar) {
-        await deleteFoodItem(id);
-      }
-      queryClient.setQueryData<MealItem[]>(foodItemsQueryKey, prev =>
-        prev?.filter(f => !idsABorrar.includes(f.id)));
-      showToast(`${idsABorrar.length} alimento${idsABorrar.length === 1 ? '' : 's'} duplicado${idsABorrar.length === 1 ? '' : 's'} eliminado${idsABorrar.length === 1 ? '' : 's'}.`, 'success');
-      setShowMantenimiento(false);
-    } catch (err) {
-      console.error('No se pudieron limpiar los duplicados:', err);
-      showToast('No se pudieron eliminar los duplicados. Inténtalo otra vez.');
-    } finally {
-      setLimpiando(false);
-    }
-  };
 
   const isSystem = (item: MealItem) => SYSTEM_LABELS.has(item.label);
 
@@ -198,18 +170,6 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
             />
           </div>
           <button
-            onClick={() => setShowMantenimiento(true)}
-            className="relative flex items-center gap-2 px-3 py-3 bg-raised border border-hairline text-ink-2 hover:text-white hover:border-accent/40 font-sans font-bold text-label uppercase rounded-control active:scale-95 transition-all whitespace-nowrap"
-            title="Mantenimiento — duplicados"
-          >
-            <span className="material-symbols-outlined text-body-s">content_copy</span>
-            {totalABorrar > 0 && (
-              <span className="absolute -top-1.5 -right-1.5 bg-danger text-white text-caption font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                {totalABorrar}
-              </span>
-            )}
-          </button>
-          <button
             onClick={openCreate}
             className="flex items-center gap-2 px-4 py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all whitespace-nowrap"
           >
@@ -313,61 +273,6 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
                 />
               </div>
             </div>
-        </Dialog>
-      )}
-
-      {/* Mantenimiento — duplicados */}
-      {showMantenimiento && (
-        <Dialog
-          open
-          onClose={() => setShowMantenimiento(false)}
-          title="Mantenimiento — alimentos duplicados"
-          footer={
-            duplicados.length > 0 ? (
-              <>
-                <Button variant="secondary" onClick={() => setShowMantenimiento(false)} className="flex-1">Cancelar</Button>
-                <Button
-                  variant="danger"
-                  onClick={() => limpiarDuplicados(duplicados)}
-                  disabled={limpiando}
-                  loading={limpiando}
-                  className="flex-1"
-                >
-                  Eliminar {totalABorrar} duplicado{totalABorrar === 1 ? '' : 's'}
-                </Button>
-              </>
-            ) : (
-              <Button variant="secondary" onClick={() => setShowMantenimiento(false)} className="flex-1">Cerrar</Button>
-            )
-          }
-        >
-          {duplicados.length === 0 ? (
-            <p className="font-sans text-body-s text-ink-2 text-center py-4">
-              No hay ningún alimento duplicado ahora mismo.
-            </p>
-          ) : (
-            <div className="space-y-3 max-h-[50vh] overflow-y-auto">
-              <p className="font-sans text-caption text-ink-2">
-                Se agrupan por modo + categoría + etiqueta (sin espacios ni acentos). Se conserva uno
-                de cada grupo — el de siembra del sistema si existe, si no el más antiguo — y se
-                borran los demás.
-              </p>
-              {duplicados.map(g => (
-                <div key={g.clave} className="bg-surface border border-hairline rounded-surface p-3 space-y-1">
-                  <p className="font-sans text-label text-white">{g.conservar.label}</p>
-                  <p className="font-mono text-caption text-ink-3">
-                    {g.conservar.mode} · {g.conservar.category}
-                  </p>
-                  <div className="flex items-center gap-2 text-caption font-mono">
-                    <Icon name="check_circle" size="s" className="text-success" />
-                    <span className="text-success">Se conserva 1</span>
-                    <Icon name="delete" size="s" className="text-danger ml-2" />
-                    <span className="text-danger">Se borra{g.eliminar.length === 1 ? '' : 'n'} {g.eliminar.length}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
         </Dialog>
       )}
 
