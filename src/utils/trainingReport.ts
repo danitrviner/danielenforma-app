@@ -32,6 +32,8 @@ export interface MuscleGroupPerf {
   label: string;
   tonnage: number;
   tonnageDeltaPct: number | null;
+  sets: number;                  // series efectivas — ver weightedGroupsOf() más abajo
+  setsDeltaPct: number | null;
   meanOrm: number | null;        // mean of per-exercise bestOrm within the group
   ormDeltaPct: number | null;
 }
@@ -110,9 +112,20 @@ export function allTimeBestBefore(logs: WorkoutLog[], beforeDate: string): Map<s
   return best;
 }
 
-function groupOf(exerciseId: string, exercises: Exercise[]): GroupKey {
+// Series efectivas ponderadas ("fractional sets", Pelland et al. 2026, Sports
+// Med): el grupo principal cuenta 1.0, cada grupo secundario cuenta 0.5 fijo
+// — no se normaliza para sumar 1.0 por ejercicio, es la evidencia con más
+// respaldo frente a contar el secundario como set completo o no contarlo.
+const SECONDARY_WEIGHT = 0.5;
+
+function weightedGroupsOf(exerciseId: string, exercises: Exercise[]): { group: GroupKey; weight: number }[] {
   const ex = exercises.find(e => e.id === exerciseId);
-  return ex?.muscleGroup ?? NONE_GROUP;
+  if (!ex?.muscleGroup) return [{ group: NONE_GROUP, weight: 1 }];
+  const groups = [{ group: ex.muscleGroup as GroupKey, weight: 1 }];
+  for (const g of ex.secondaryMuscleGroups ?? []) {
+    groups.push({ group: g as GroupKey, weight: SECONDARY_WEIGHT });
+  }
+  return groups;
 }
 
 // ── Window resolution ─────────────────────────────────────────────────────────
@@ -197,13 +210,17 @@ export function buildTrainingReport(params: {
 
   // Muscle groups — tonnage sum + mean best-orm per exercise, both windows
   const groupAgg = (agg: Agg) => {
-    const byGroup = new Map<GroupKey, { tonnage: number; orms: number[] }>();
+    const byGroup = new Map<GroupKey, { tonnage: number; sets: number; orms: number[] }>();
     for (const [exerciseId, row] of agg.perExercise) {
-      const g = groupOf(exerciseId, exercises);
-      let bucket = byGroup.get(g);
-      if (!bucket) { bucket = { tonnage: 0, orms: [] }; byGroup.set(g, bucket); }
-      bucket.tonnage = round1(bucket.tonnage + row.tonnage);
-      if (row.bestOrm > 0) bucket.orms.push(row.bestOrm);
+      for (const { group: g, weight } of weightedGroupsOf(exerciseId, exercises)) {
+        let bucket = byGroup.get(g);
+        if (!bucket) { bucket = { tonnage: 0, sets: 0, orms: [] }; byGroup.set(g, bucket); }
+        bucket.tonnage = round1(bucket.tonnage + row.tonnage * weight);
+        bucket.sets = round1(bucket.sets + row.sets * weight);
+        // El 1RM estimado es una cualidad de fuerza del ejercicio, no se
+        // reparte — solo cuenta para el grupo principal (weight === 1).
+        if (weight === 1 && row.bestOrm > 0) bucket.orms.push(row.bestOrm);
+      }
     }
     return byGroup;
   };
@@ -228,6 +245,8 @@ export function buildTrainingReport(params: {
       label: group === NONE_GROUP ? 'Sin grupo' : MUSCLE_LABELS[group],
       tonnage: c.tonnage,
       tonnageDeltaPct: p ? deltaPct(c.tonnage, p.tonnage) : null,
+      sets: c.sets,
+      setsDeltaPct: p ? deltaPct(c.sets, p.sets) : null,
       meanOrm,
       ormDeltaPct: meanOrm != null && prevMeanOrm != null ? deltaPct(meanOrm, prevMeanOrm) : null,
     };

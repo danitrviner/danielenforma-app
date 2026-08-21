@@ -238,7 +238,16 @@ export interface Exercise {
   ownerId: string;
   name: string;
   primaryFocus: string;      // legacy free-form label
-  muscleGroup?: MuscleGroup; // typed macrocycle key (optional; old docs lack it)
+  muscleGroup?: MuscleGroup; // typed macrocycle key (optional; old docs lack it) — grupo PRINCIPAL, peso 1.0
+  // Grupos que el ejercicio trabaja además del principal (p.ej. isquios en un
+  // "buenos días" cuyo principal es lumbares). Cada uno cuenta 0.5 fijo en el
+  // cálculo de series efectivas de trainingReport.ts — método "fractional sets"
+  // (Pelland et al. 2026, Sports Med): es el reparto con más evidencia frente a
+  // contarlo como set completo o no contarlo, y no se normaliza para sumar 1.0
+  // por ejercicio (un ejercicio de 3 grupos reparte 1.0 + 0.5 + 0.5).
+  // Solo afecta al informe; el resto de la app (MesocycleManager, el picker,
+  // el filtro de la IA) sigue usando únicamente `muscleGroup`.
+  secondaryMuscleGroups?: MuscleGroup[];
   type: 'fuerza' | 'cardio' | 'estiramiento' | 'pliometría';
   enduranceProfile?: 'ascendente' | 'campana' | 'descendente'; // curva de esfuerzo a lo largo de la serie (cardio)
   // Dónde carga más el ejercicio de fuerza dentro de su rango de movimiento —
@@ -429,6 +438,20 @@ export interface WorkoutExercise {
   // first group's RIR) purely so summary views that just print "3×8-10" keep working
   // without knowing about groups. See src/utils/setGroups.ts.
   setGroups?: WorkoutSetGroup[];
+  // Progresión automática por semana del mesociclo (periodización) — cada regla es un
+  // escalón que entra en `atWeek` y se mantiene hasta que una regla posterior lo
+  // sustituye (acumulativo, no un delta de una sola semana). Se aplica en el momento de
+  // LEER la sesión de una semana concreta (ver src/utils/progression.ts), nunca se
+  // "explota" en documentos por semana — el `Workout` sigue siendo uno solo por
+  // día-tipo, reutilizado en todas las semanas del mesociclo.
+  weeklyProgression?: WeeklyProgressionRule[];
+}
+
+export interface WeeklyProgressionRule {
+  atWeek: number;       // semana del mesociclo (1-indexada) en la que entra este escalón
+  addSets?: number;     // series añadidas sobre la base, acumulado desde la regla anterior
+  addReps?: string;     // sustituye el rango de reps a partir de esta semana (si se indica)
+  setRir?: number;      // sustituye el RIR a partir de esta semana (si se indica)
 }
 
 export interface TemplateDay {
@@ -1178,7 +1201,8 @@ export type MuscleGroup =
   | 'pecho' | 'dorsal' | 'trapecio'
   | 'deltoide_ant' | 'deltoide_lat' | 'deltoide_post'
   | 'biceps' | 'triceps' | 'antebrazo'
-  | 'cuadriceps' | 'isquios' | 'gluteo' | 'aductores' | 'gemelo' | 'core';
+  | 'cuadriceps' | 'isquios' | 'gluteo' | 'aductores' | 'gemelo' | 'core'
+  | 'lumbares' | 'rotadores';
 
 export const MUSCLE_LABELS: Record<MuscleGroup, string> = {
   pecho:         'Pecho',
@@ -1196,6 +1220,8 @@ export const MUSCLE_LABELS: Record<MuscleGroup, string> = {
   aductores:     'Aductores',
   gemelo:        'Gemelo',
   core:          'Core',
+  lumbares:      'Lumbares',
+  rotadores:     'Rotadores (manguito)',
 };
 
 // T10 (18-08). Antes había cuatro copias de este mismo orden repartidas por
@@ -1208,6 +1234,7 @@ export const MUSCLE_ORDER: MuscleGroup[] = [
   'deltoide_ant', 'deltoide_lat', 'deltoide_post',
   'biceps', 'triceps', 'antebrazo',
   'cuadriceps', 'isquios', 'gluteo', 'aductores', 'gemelo', 'core',
+  'lumbares', 'rotadores',
 ];
 
 // Etiquetas cortas para tablas y gráficas estrechas (MesocycleDashboard). No
@@ -1219,6 +1246,7 @@ export const MUSCLE_LABELS_SHORT: Record<MuscleGroup, string> = {
   biceps: 'Bíceps', triceps: 'Tríceps', antebrazo: 'Antebrazo',
   cuadriceps: 'Cuáds', isquios: 'Isquios', gluteo: 'Glúteo',
   aductores: 'Aduct.', gemelo: 'Gemelo', core: 'Core',
+  lumbares: 'Lumbares', rotadores: 'Rotad.',
 };
 
 export interface MuscleGroupConfig {
