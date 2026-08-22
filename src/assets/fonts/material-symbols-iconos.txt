@@ -42,6 +42,7 @@ calculate
 calendar_month
 calendar_today
 calendar_view_month
+calendar_view_week
 capture
 category
 celebration
@@ -150,7 +151,6 @@ menu_book
 message
 mic
 military_tech
-mode
 monitor_heart
 monitor_weight
 monitoring
@@ -180,7 +180,6 @@ play_arrow
 play_circle
 play_lesson
 playlist_add_check
-pool
 preview
 priority
 priority_high

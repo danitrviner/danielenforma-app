@@ -40,7 +40,7 @@ import { weekKey } from '../utils/seriesCorrelation';
 import { resolveQuestions } from '../utils/questionnaireResolve';
 import { SYSTEM_FOODS } from '../nutricion_seed_en_forma';
 import { validateDietPayload, DietUpdatePayload, validateMesocyclePayload, MesocycleProposalPayload } from './validators';
-import { UserProfile, WeightCheckIn, Diet, FoodCategory, Mesocycle, MuscleGroup, MuscleGroupConfig, MUSCLE_LABELS } from '../types';
+import { UserProfile, WeightCheckIn, Diet, FoodCategory, Mesocycle, MuscleGroup, MuscleGroupConfig, MUSCLE_LABELS, PeriodizationBlockPayload } from '../types';
 
 // Definiciones que se envían a la API en cada petición. Mantener el orden y el
 // contenido estables: forman parte del prefijo cacheado del prompt.
@@ -241,6 +241,38 @@ export const TOOL_DEFINITIONS = [
     },
   },
   {
+    name: 'propose_periodization_block',
+    description:
+      'Crea una PROPUESTA de bloque completo periodizado (Bloque H2.1): el mesociclo (igual que propose_mesocycle, incluyendo semana de descarga si aplica) MÁS la cadencia de revisiones (check-ins) que se programarán automáticamente durante el bloque. Al aprobar, Dani obtiene de golpe el mesociclo y todas sus revisiones ya en el calendario — nada se aplica sin su aprobación. NO incluye las reglas de progresión por ejercicio ni cambios de dieta: esos se configuran después, cuando el mesociclo ya tiene entrenamientos generados. Usa get_training_history y get_questionnaire_trends antes de proponer, para que la cadencia de revisiones y la semana de descarga respondan a cómo le ha ido al atleta, no a un patrón genérico.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        athlete_email: { type: 'string' },
+        weeks: { type: 'number', description: 'Duración en semanas (1–12)' },
+        days_per_week: { type: 'number', description: 'Días de entrenamiento por semana (1–7)' },
+        objective: { type: 'string', description: 'Objetivo del bloque, ej. "Hipertrofia — énfasis espalda"' },
+        start_date: { type: 'string', description: 'Fecha de inicio YYYY-MM-DD (opcional; por defecto hoy)' },
+        deload_week: { type: 'number', description: 'Semana (1-indexada) de descarga dentro del bloque, si el bloque debe incluir una. Omitir si no aplica.' },
+        review_cadence_weeks: { type: 'number', description: 'Cada cuántas semanas se programa una revisión durante el bloque (ej. 2 = una cada 2 semanas). La primera cae en esa misma semana, la última no más tarde que el fin del bloque.' },
+        review_type: { type: 'string', enum: ['revision', 'cuestionario', 'foto'], description: 'Tipo de revisión a programar en la cadencia.' },
+        groups: {
+          type: 'object',
+          description: 'Series semanales objetivo por grupo muscular. Solo incluye los grupos que se entrenan. Grupos válidos: pecho, dorsal, trapecio, deltoide_ant, deltoide_lat, deltoide_post, biceps, triceps, antebrazo, cuadriceps, isquios, gluteo, aductores, gemelo, core.',
+          additionalProperties: {
+            type: 'object',
+            properties: {
+              series: { type: 'number' },
+              priority: { type: 'string', enum: ['alta', 'media', 'baja'] },
+            },
+            required: ['series'],
+          },
+        },
+        rationale: { type: 'string', description: 'Justificación breve para Dani, incluyendo cómo debería progresar el volumen semana a semana (Dani lo configurará por ejercicio después) — no la ve el atleta.' },
+      },
+      required: ['athlete_email', 'weeks', 'days_per_week', 'objective', 'groups', 'review_cadence_weeks', 'review_type'],
+    },
+  },
+  {
     name: 'draft_checkin_feedback',
     description:
       'Crea una PROPUESTA de feedback para un check-in concreto. NO se envía al atleta directamente: queda pendiente de aprobación de Dani en el panel del asistente. Usa get_checkins primero para obtener el check_in_id exacto.',
@@ -274,6 +306,7 @@ export function toolStatusLabel(name: string, input: Record<string, unknown>): s
     case 'search_knowledge': return `Consultando la bóveda${typeof input.query === 'string' ? `: "${input.query}"` : ''}…`;
     case 'get_exercise_library': return 'Consultando la librería de ejercicios…';
     case 'propose_mesocycle': return `Preparando propuesta de mesociclo${who}…`;
+    case 'propose_periodization_block': return `Preparando propuesta de bloque completo${who}…`;
     default: return `Ejecutando ${name}…`;
   }
 }
@@ -856,6 +889,88 @@ async function proposeMesocycle(
   });
 }
 
+// Bloque H2.1 — mismo mesociclo que proposeMesocycle (misma validación, mismo
+// relleno de grupos) más la cadencia de revisiones. Al aprobar (AiChatPanel),
+// se crea el mesociclo Y las tareas de revisión de una vez — el calendario
+// (Bloque H) las pinta solas en cuanto existen, sin nada más que hacer.
+async function proposePeriodizationBlock(
+  athleteEmail: string,
+  weeks: number,
+  daysPerWeek: number,
+  objective: string,
+  groupsInput: MesocycleProposalPayload['groups'],
+  startDate: string | undefined,
+  deloadWeek: number | undefined,
+  reviewCadenceWeeks: number,
+  reviewType: 'revision' | 'cuestionario' | 'foto',
+  rationale: string,
+  chatId: string,
+): Promise<string> {
+  const issues = validateMesocyclePayload({ weeks, daysPerWeek, objective, groups: groupsInput });
+  if (deloadWeek !== undefined && (deloadWeek < 1 || deloadWeek > weeks)) {
+    issues.push({ field: 'deload_week', message: `deload_week debe estar entre 1 y ${weeks}` });
+  }
+  if (!Number.isFinite(reviewCadenceWeeks) || reviewCadenceWeeks < 1) {
+    issues.push({ field: 'review_cadence_weeks', message: 'review_cadence_weeks debe ser un número >= 1' });
+  }
+  if (issues.length > 0) {
+    return toResult({ valid: false, issues, note: 'Corrige estos problemas y vuelve a llamar a propose_periodization_block.' });
+  }
+
+  const profile = await findProfile(athleteEmail);
+  if (!profile) return toResult({ valid: false, issues: [{ field: 'athlete_email', message: `No existe ningún cliente con email ${athleteEmail}` }] });
+
+  const existing = await getMesocycles(athleteEmail);
+  const number = existing.length + 1;
+  const groups = Object.fromEntries(
+    (Object.keys(MUSCLE_LABELS) as MuscleGroup[]).map(g => {
+      const cfg = groupsInput[g];
+      return [g, { series: cfg?.series ?? 0, priority: cfg?.priority ?? 'media' }];
+    })
+  ) as Record<MuscleGroup, MuscleGroupConfig>;
+
+  const mesocycle: Omit<Mesocycle, 'id'> = {
+    athleteId: athleteEmail,
+    number,
+    weeks,
+    startDate: startDate?.trim() || new Date().toISOString().slice(0, 10),
+    objective,
+    daysPerWeek,
+    groups,
+    ...(deloadWeek !== undefined ? { deloadWeek } : {}),
+  };
+
+  const reviewCount = Math.max(1, Math.floor(weeks / reviewCadenceWeeks));
+  const trained = (Object.keys(MUSCLE_LABELS) as MuscleGroup[])
+    .filter(g => groups[g].series > 0)
+    .map(g => `${MUSCLE_LABELS[g]} ${groups[g].series}`);
+  const totalSeries = (Object.keys(MUSCLE_LABELS) as MuscleGroup[]).reduce((s, g) => s + groups[g].series, 0);
+  const summary = `Bloque #${number} · ${objective} · ${weeks} sem × ${daysPerWeek} días · ${totalSeries} series/sem`
+    + (deloadWeek ? ` · descarga en sem. ${deloadWeek}` : '')
+    + ` · revisión cada ${reviewCadenceWeeks} sem (${reviewCount})`;
+
+  const payload: PeriodizationBlockPayload = { mesocycle, reviewCadenceWeeks, reviewType };
+
+  const proposal = await createAiProposal({
+    athleteId: athleteEmail,
+    kind: 'periodizationBlock',
+    status: 'proposed',
+    chatId,
+    summary,
+    rationale: rationale || '',
+    payload,
+    createdAt: new Date().toISOString(),
+  });
+  return toResult({
+    proposalCreated: true,
+    proposalId: proposal.id,
+    number,
+    trainedGroups: trained,
+    reviewCount,
+    note: 'Propuesta de bloque completo creada. Dani la revisa y aprueba desde el panel — al aprobar se crean el mesociclo y todas las revisiones de golpe; los entrenamientos por día y la progresión por ejercicio los configura después en la app.',
+  });
+}
+
 // ── Dispatcher ────────────────────────────────────────────────────────────────
 
 /* A-2. Toda tool que lea datos de UN atleta concreto pasa por aquí. Se pone la
@@ -870,7 +985,7 @@ async function proposeMesocycle(
 const TOOLS_CON_DATOS_DE_ATLETA = new Set([
   'get_client_overview', 'get_training_history', 'get_diet', 'get_checkins',
   'get_questionnaire_trends', 'generate_report_draft', 'draft_checkin_feedback',
-  'propose_diet_update', 'propose_mesocycle',
+  'propose_diet_update', 'propose_mesocycle', 'propose_periodization_block',
 ]);
 
 async function comprobarConsentimiento(email: string): Promise<string | null> {
@@ -966,6 +1081,26 @@ export async function executeTool(
           input.objective,
           input.groups as MesocycleProposalPayload['groups'],
           typeof input.start_date === 'string' ? input.start_date : undefined,
+          typeof input.rationale === 'string' ? input.rationale : '',
+          chatId,
+        );
+        const parsed = JSON.parse(content) as { valid?: boolean };
+        return { content, isError: parsed.valid === false };
+      }
+      case 'propose_periodization_block': {
+        if (!email || typeof input.objective !== 'string' || !input.groups || typeof input.review_cadence_weeks !== 'number' || typeof input.review_type !== 'string') {
+          return { content: 'Faltan athlete_email, objective, groups, review_cadence_weeks o review_type', isError: true };
+        }
+        const content = await proposePeriodizationBlock(
+          email,
+          Number(input.weeks),
+          Number(input.days_per_week),
+          input.objective,
+          input.groups as MesocycleProposalPayload['groups'],
+          typeof input.start_date === 'string' ? input.start_date : undefined,
+          typeof input.deload_week === 'number' ? input.deload_week : undefined,
+          input.review_cadence_weeks,
+          input.review_type as 'revision' | 'cuestionario' | 'foto',
           typeof input.rationale === 'string' ? input.rationale : '',
           chatId,
         );

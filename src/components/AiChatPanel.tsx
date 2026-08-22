@@ -1,12 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { AiChat, AiChatMessage, AiProposal, Diet, Mesocycle, MuscleGroup, MUSCLE_LABELS, KnowledgeNote } from '../types';
+import { AiChat, AiChatMessage, AiProposal, Diet, Mesocycle, MuscleGroup, MUSCLE_LABELS, KnowledgeNote, PeriodizationBlockPayload } from '../types';
 import {
   getAiChats, saveAiChat, deleteAiChat, getAiProposalsForAthlete, updateAiProposal,
   submitCoachFeedback, createDiet, updateDiet, createMesocycle, bulkUpsertKnowledgeNotes,
   getCoachInstructions, saveCoachInstructions,
-  getDoctrina, getDoctrinaParaEditar, saveDoctrina, resetDoctrina,
+  getDoctrina, getDoctrinaParaEditar, saveDoctrina, resetDoctrina, createTask,
 } from '../dbService';
 import { runAgentTurn, messageText, probarConexionProxy } from '../ai/aiClient';
 import { OPEN_AI_PANEL_EVENT, OpenAiPanelDetail } from '../ai/events';
@@ -325,6 +325,26 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
       } else if (p.kind === 'mesocycle') {
         const created = await createMesocycle(p.payload as Omit<Mesocycle, 'id'>);
         await updateAiProposal(p.id, { status: 'approved', reviewedAt: new Date().toISOString(), resultEntityId: created.id });
+      } else if (p.kind === 'periodizationBlock') {
+        // Bloque H2.1 — al aprobar se crea el mesociclo Y toda la cadencia de
+        // revisiones de golpe; el carril "Revisiones" del cuadro de mando las
+        // pinta solas en cuanto existen como TaskItem, no hace falta nada más.
+        const { mesocycle, reviewCadenceWeeks, reviewType } = p.payload as PeriodizationBlockPayload;
+        const created = await createMesocycle(mesocycle);
+        const reviewCount = Math.max(1, Math.floor(mesocycle.weeks / reviewCadenceWeeks));
+        const reviewTitle = reviewType === 'revision' ? 'Revisión' : reviewType === 'cuestionario' ? 'Cuestionario' : 'Fotos de check-in';
+        await Promise.all(Array.from({ length: reviewCount }, (_, i) => {
+          const weekOffset = (i + 1) * reviewCadenceWeeks;
+          const date = new Date(mesocycle.startDate + 'T00:00:00');
+          date.setDate(date.getDate() + weekOffset * 7);
+          return createTask({
+            athleteId: p.athleteId, type: reviewType,
+            title: `${reviewTitle} — bloque #${mesocycle.number}`,
+            dueDate: date.toISOString().split('T')[0],
+            status: 'pending', createdBy: 'coach', createdAt: new Date().toISOString(),
+          });
+        }));
+        await updateAiProposal(p.id, { status: 'approved', reviewedAt: new Date().toISOString(), resultEntityId: created.id });
       }
       queryClient.setQueryData<AiProposal[]>(proposalsKey, prev => prev?.filter(x => x.id !== p.id));
     } catch {
@@ -569,7 +589,9 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
               </p>
               {proposals.map(p => {
                 const diet = p.kind === 'diet' ? (p.payload as Omit<Diet, 'id'>) : null;
-                const meso = p.kind === 'mesocycle' ? (p.payload as Omit<Mesocycle, 'id'>) : null;
+                const meso = p.kind === 'mesocycle' ? (p.payload as Omit<Mesocycle, 'id'>)
+                  : p.kind === 'periodizationBlock' ? (p.payload as PeriodizationBlockPayload).mesocycle
+                  : null;
                 const mesoTrained = meso
                   ? (Object.keys(MUSCLE_LABELS) as MuscleGroup[]).filter(g => meso.groups[g]?.series > 0)
                   : [];

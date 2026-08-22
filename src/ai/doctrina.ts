@@ -41,7 +41,12 @@ deltoide_post 8-15 · biceps 8-14 · triceps 8-14 (ambos, descontando tirones y
 press) · antebrazo 0-6 · cuadriceps 10-15 · isquios 8-12 (tolera menos) ·
 gluteo 10-16 · aductores 6-12 (referencia inicial, pendiente de ajustar con
 la respuesta real del atleta — ya reciben trabajo indirecto de sentadilla,
-zancada y hip thrust) · gemelo 8-15 · core 4-10.
+zancada y hip thrust) · gemelo 8-15 · core 4-10 · lumbares 4-8 (referencia
+inicial, pendiente de ajustar — ya reciben carga indirecta de sentadilla,
+peso muerto e hip thrust, la literatura no publica landmarks específicos) ·
+rotadores 4-9 (referencia inicial, pendiente de ajustar — se tratan más como
+salud/prevención del hombro que como hipertrofia; sin landmarks específicos
+publicados).
 Rendimientos decrecientes claros a partir de ~15 series/semana/músculo: no subas
 "porque sí", solo si recupera bien y progresa. Progresa de MEV hacia MRV, no
 arranques en el techo. Los grupos prioritarios van a la parte alta del rango y

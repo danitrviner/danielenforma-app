@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { MuscleGroup, MuscleGroupConfig, MesocycleTemplate, TemplateStage, TemplateDay, WorkoutExercise, Exercise, MUSCLE_ORDER, MUSCLE_LABELS } from '../types';
+import { MuscleGroup, MuscleGroupConfig, MesocycleTemplate, TemplateStage, TemplateDay, WorkoutExercise, Exercise, MUSCLE_ORDER, MUSCLE_LABELS, TaskType } from '../types';
 import { getTopMuscleGroups } from '../utils/muscleGroupRanking';
 import {
   getMesocycleTemplates, createMesocycleTemplate,
@@ -289,26 +289,27 @@ const DayBlock: React.FC<{
 // ── Stage accordion ────────────────────────────────────────────────────────────
 
 // StageForm is declared below but TypeScript resolves interfaces globally in a file
+interface StageFormShape {
+  id: string;
+  name: string;
+  weeks: number;
+  daysPerWeek: number;
+  groups: Record<MuscleGroup, MuscleGroupConfig>;
+  days: TemplateDay[];
+  // Bloque H — periodización completa de la etapa (Pantalla 4): descarga y
+  // cadencia de revisiones, se materializan al aplicar la plantilla igual
+  // que en propose_periodization_block (Bloque H2.1).
+  deloadWeek?: number;
+  reviewCadenceWeeks?: number;
+  reviewType?: TaskType;
+}
+
 interface StageFormProps {
-  stage: {
-    id: string;
-    name: string;
-    weeks: number;
-    daysPerWeek: number;
-    groups: Record<MuscleGroup, MuscleGroupConfig>;
-    days: TemplateDay[];
-  };
+  stage: StageFormShape;
   stageIdx: number;
   exercises: Exercise[];
   isOnly: boolean;
-  onChange: (updated: {
-    id: string;
-    name: string;
-    weeks: number;
-    daysPerWeek: number;
-    groups: Record<MuscleGroup, MuscleGroupConfig>;
-    days: TemplateDay[];
-  }) => void;
+  onChange: (updated: StageFormShape) => void;
   onDelete: () => void;
 }
 
@@ -450,6 +451,70 @@ const StageAccordion: React.FC<StageFormProps> = ({
                   </tbody>
                 </table>
               </div>
+
+              {/* Descarga y cadencia de revisiones (Bloque H) — se materializan
+                  al aplicar la plantilla: el mesociclo se crea con esta semana de
+                  descarga marcada, y las revisiones aparecen solas en el
+                  calendario del atleta (deriveDeloadEvents / deriveReviewEvents). */}
+              <div className="mt-4 pt-4 border-t border-hairline space-y-3">
+                <div className="flex items-center gap-3 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={() => onChange({ ...stage, deloadWeek: stage.deloadWeek !== undefined ? undefined : stage.weeks })}
+                    className={`relative w-10 h-5.5 rounded-full flex-shrink-0 transition-colors ${stage.deloadWeek !== undefined ? 'bg-accent' : 'bg-inset'}`}
+                    style={{ padding: 3 }}
+                    aria-pressed={stage.deloadWeek !== undefined}
+                  >
+                    <span className="block w-4 h-4 rounded-full bg-white transition-transform duration-200" style={{ transform: stage.deloadWeek !== undefined ? 'translateX(18px)' : 'translateX(0)' }} />
+                  </button>
+                  <span className="font-mono text-caption text-ink-2 uppercase tracking-wider">Incluye semana de descarga</span>
+                  {stage.deloadWeek !== undefined && (
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-sans text-caption text-ink-3">en la semana</span>
+                      <input
+                        type="number" min={1} max={stage.weeks}
+                        value={stage.deloadWeek}
+                        onChange={e => onChange({ ...stage, deloadWeek: Math.min(stage.weeks, Math.max(1, parseInt(e.target.value) || 1)) })}
+                        className="w-14 bg-raised border border-hairline rounded-control px-2 py-1 text-center text-caption text-white font-mono focus:outline-none focus:border-accent"
+                      />
+                    </div>
+                  )}
+                </div>
+                <div className="flex items-center gap-3 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={() => onChange(stage.reviewCadenceWeeks !== undefined
+                      ? { ...stage, reviewCadenceWeeks: undefined, reviewType: undefined }
+                      : { ...stage, reviewCadenceWeeks: 2, reviewType: 'revision' })}
+                    className={`relative w-10 h-5.5 rounded-full flex-shrink-0 transition-colors ${stage.reviewCadenceWeeks !== undefined ? 'bg-accent' : 'bg-inset'}`}
+                    style={{ padding: 3 }}
+                    aria-pressed={stage.reviewCadenceWeeks !== undefined}
+                  >
+                    <span className="block w-4 h-4 rounded-full bg-white transition-transform duration-200" style={{ transform: stage.reviewCadenceWeeks !== undefined ? 'translateX(18px)' : 'translateX(0)' }} />
+                  </button>
+                  <span className="font-mono text-caption text-ink-2 uppercase tracking-wider">Programar revisiones cada</span>
+                  {stage.reviewCadenceWeeks !== undefined && (
+                    <>
+                      <input
+                        type="number" min={1} max={stage.weeks}
+                        value={stage.reviewCadenceWeeks}
+                        onChange={e => onChange({ ...stage, reviewCadenceWeeks: Math.max(1, parseInt(e.target.value) || 1) })}
+                        className="w-14 bg-raised border border-hairline rounded-control px-2 py-1 text-center text-caption text-white font-mono focus:outline-none focus:border-accent"
+                      />
+                      <span className="font-sans text-caption text-ink-3">semanas ·</span>
+                      <select
+                        value={stage.reviewType ?? 'revision'}
+                        onChange={e => onChange({ ...stage, reviewType: e.target.value as TaskType })}
+                        className="bg-raised border border-hairline rounded-control px-2 py-1 text-caption text-white font-sans focus:outline-none focus:border-accent cursor-pointer"
+                      >
+                        <option value="revision">Check-in</option>
+                        <option value="cuestionario">Cuestionario</option>
+                        <option value="foto">Fotos</option>
+                      </select>
+                    </>
+                  )}
+                </div>
+              </div>
             </div>
           )}
 
@@ -504,6 +569,9 @@ interface StageForm {
   daysPerWeek: number;
   groups: Record<MuscleGroup, MuscleGroupConfig>;
   days: TemplateDay[];
+  deloadWeek?: number;
+  reviewCadenceWeeks?: number;
+  reviewType?: TaskType;
 }
 
 interface FormState {
@@ -788,6 +856,9 @@ export default function MesocycleTemplateLibrary({ coachId }: Props) {
           daysPerWeek: s.daysPerWeek,
           groups: s.groups,
           days: s.days.length > 0 ? s.days : undefined,
+          deloadWeek: s.deloadWeek,
+          reviewCadenceWeeks: s.reviewCadenceWeeks,
+          reviewType: s.reviewType,
         })),
       };
 

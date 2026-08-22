@@ -42,6 +42,7 @@ const AthleteRoadmapScreen = lazy(() => import('./components/AthleteRoadmapScree
 
 // Coach screens
 const ClientsScreen        = lazy(() => import('./components/ClientsScreen'));
+const CoachWeekScreen      = lazy(() => import('./components/CoachWeekScreen'));
 const AiChatPanel          = lazy(() => import('./components/AiChatPanel'));
 const CommandPalette       = lazy(() => import('./components/CommandPalette'));
 const AthleteOnboardingWizard = lazy(() => import('./components/AthleteOnboardingWizard'));
@@ -109,7 +110,7 @@ function AnalisisSubTabRedirect() {
 
 const OWNER_EMAIL = 'danitrviner@gmail.com';
 
-export type NavTab = 'home' | 'training' | 'nutrition' | 'checkin' | 'roadmap' | 'academy' | 'cardio' | 'clients' | 'reviews' | 'crm' | 'library' | 'profile';
+export type NavTab = 'home' | 'training' | 'nutrition' | 'checkin' | 'roadmap' | 'academy' | 'cardio' | 'clients' | 'reviews' | 'crm' | 'library' | 'profile' | 'week';
 
 type NavItem = { id: NavTab; label: string; shortLabel?: string; icon: string };
 type NavGroup = { title?: string; items: NavItem[] };
@@ -126,7 +127,7 @@ type NavGroup = { title?: string; items: NavItem[] };
 const ATHLETE_TABS: NavItem[] = [
   { id: 'home',      label: 'Hoy',      shortLabel: 'Hoy',      icon: 'bolt' },
   { id: 'training',  label: 'Rutinas',  shortLabel: 'Rutinas',  icon: 'fitness_center' },
-  { id: 'academy',   label: 'Academia', shortLabel: 'Academia', icon: 'school' },
+  { id: 'academy',   label: 'Training Lab', shortLabel: 'TrainingLab', icon: 'school' },
   { id: 'nutrition', label: 'Nutrición', shortLabel: 'Nutri.',  icon: 'restaurant' },
   { id: 'profile',   label: 'Perfil',   shortLabel: 'Perfil',   icon: 'person' },
 ];
@@ -151,13 +152,23 @@ const COACH_BIBLIOTECA: NavItem[] = [
   // Solo salen en la barra lateral de PC, que usa `label`: sin `shortLabel`.
   { id: 'training',  label: 'Ejercicios', icon: 'fitness_center'  },
   { id: 'nutrition', label: 'Nutrición',  icon: 'restaurant'      },
-  { id: 'academy',   label: 'Academia',   icon: 'school'          },
+  { id: 'academy',   label: 'Training Lab', icon: 'school'        },
   { id: 'cardio',    label: 'Cardio',     icon: 'favorite'        },
+];
+
+// Solo en la barra lateral de PC (Bloque H, Pantalla 5) — la vista de lunes
+// por la mañana, fuera del perfil de un cliente. No entra en
+// `COACH_DIA_A_DIA` a propósito: ese array también alimenta
+// `COACH_TABS_MOBILE` vía spread, y los cuatro destinos de móvil ya están al
+// límite de ancho (ver el comentario de `COACH_TABS_MOBILE`) — añadir aquí
+// habría vuelto a romperlo.
+const COACH_ESTA_SEMANA: NavItem[] = [
+  { id: 'week', label: 'Esta semana', icon: 'calendar_view_week' },
 ];
 
 // Barra lateral de PC: agrupada con encabezados, nadie pierde un destino.
 const COACH_NAV_GROUPS: NavGroup[] = [
-  { title: 'Día a día',  items: COACH_DIA_A_DIA  },
+  { title: 'Día a día',  items: [...COACH_DIA_A_DIA, ...COACH_ESTA_SEMANA] },
   { title: 'Biblioteca', items: COACH_BIBLIOTECA },
 ];
 // Barra inferior de móvil: cuatro destinos para el coach. Con los siete de
@@ -192,7 +203,7 @@ const ATHLETE_PATH_SEGMENTS = ['home', 'training', 'nutrition', 'checkin', 'road
 // 'training' | 'nutrition' | 'academy' | 'cardio' siguen aquí aunque ya no
 // sean destinos propios del coach: sus rutas viven (redirigen a /library/…)
 // para no romper enlaces antiguos ni las notificaciones que navegan ahí.
-const COACH_PATH_SEGMENTS = ['clients', 'crm', 'reviews', 'library', 'training', 'nutrition', 'academy', 'cardio', 'profile'];
+const COACH_PATH_SEGMENTS = ['clients', 'crm', 'reviews', 'library', 'week', 'training', 'nutrition', 'academy', 'cardio', 'profile'];
 
 // Techo para cualquier carga de sesión (login manual o restauración al
 // abrir la app): sin él, un hipo de red deja el logo pulsando para siempre.
@@ -713,7 +724,7 @@ function AppContent() {
           <img src="/atlas-logo.png" alt="En Forma" className="w-6 h-6 object-contain" />
           <span className="font-sans font-bold text-title-m tracking-tighter uppercase select-none">EN FORMA</span>
           <span className="text-caption bg-surface border border-hairline text-ink-2 px-2 rounded-control font-mono uppercase ml-2 select-none">
-            {profile.role === 'coach' ? 'Modo entrenador' : 'Modo atleta'}
+            {isCoach ? 'Modo entrenador' : 'Modo atleta'}
           </span>
         </div>
         <div className="flex items-center gap-6">
@@ -874,6 +885,7 @@ function AppContent() {
                 {/* El CRM monta sus propias rutas anidadas (ver CrmShell) */}
                 <Route path="/crm/*" element={<CrmShell coachEmail={profile.email} />} />
                 <Route path="/reviews" element={<ReviewsScreen checkins={checkins} onRefreshCheckIns={handleRefreshData} coachId={profile.userId} coachEmail={profile.email} />} />
+                <Route path="/week" element={<CoachWeekScreen coachId={profile.userId} />} />
 
                 {/* Biblioteca: los cuatro catálogos como rutas hijas, con la
                     sección en la URL para que un refresco la recupere. */}

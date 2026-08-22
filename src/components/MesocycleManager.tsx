@@ -11,7 +11,7 @@ import {
   createWorkoutStrict, createWorkoutAssignmentStrict,
   deleteWorkoutsByMesocycleIdStrict, deleteWorkoutAssignmentsByMesocycleIdStrict,
   getUserProfileByEmail, migratePrimaryFocusToMuscleGroup,
-  getMesocycleTemplates,
+  getMesocycleTemplates, createTask,
 } from '../dbService';
 import ExerciseConfigEditor from './ExerciseConfigEditor';
 import ExercisePickerSheet from './ExercisePickerSheet';
@@ -22,7 +22,7 @@ import { atletasActivos } from '../utils/atletas';
 import { TRAINING_SPLITS, DAY_TYPE_MUSCLES, getSplitsForDays, recommendSplit } from '../utils/trainingSplits';
 import { useToast } from '../hooks/useToast';
 import { Skeleton } from './ui';
-import { EmptyState, Dialog, Input, Icon, Tabs, TabItem } from './ui';
+import { EmptyState, Dialog, Input, Icon, Tabs, TabItem, Sheet, Pager } from './ui';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -432,8 +432,34 @@ function MesoExercisesTabs({
   onRemoveExercise: (group: MesoWorkoutGroup, exIdx: number) => void;
 }) {
   const [activeIdx, setActiveIdx] = useState(0);
-  const [openVideoKey, setOpenVideoKey] = useState<string | null>(null);
+  const [videoModal, setVideoModal] = useState<{ key: string; url: string; name: string } | null>(null);
+  const longPressTimer = useRef<number | null>(null);
   const group = groups[Math.min(activeIdx, groups.length - 1)];
+
+  // Un exerciseId repetido en más de un día puede ser intencional (p. ej. un
+  // básico que se entrena dos veces por semana), pero el coach quiere verlo
+  // de un vistazo en vez de descubrirlo semanas después revisando día a día.
+  const duplicateExerciseIds = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const g of groups) {
+      for (const we of g.exercises) {
+        counts.set(we.exerciseId, (counts.get(we.exerciseId) ?? 0) + 1);
+      }
+    }
+    return new Set([...counts.entries()].filter(([, n]) => n > 1).map(([id]) => id));
+  }, [groups]);
+
+  const clearLongPress = () => {
+    if (longPressTimer.current !== null) {
+      window.clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  };
+
+  const openVideoModal = (videoKey: string, ex: Exercise | undefined) => {
+    if (!ex?.videoUrl) return;
+    setVideoModal({ key: videoKey, url: ex.videoUrl, name: ex.name });
+  };
 
   return (
     <div className="space-y-4">
@@ -441,96 +467,125 @@ function MesoExercisesTabs({
         Cada día se repite igual en las {weeks} semanas del mesociclo — edita aquí y se aplica a todas las semanas a la vez.
       </p>
 
-      {/* Day tabs */}
-      <div className="overflow-x-auto hide-scrollbar -mx-1 px-1">
-        <div className="flex bg-surface border border-hairline p-1 rounded-surface gap-1 min-w-max">
-          {groups.map((g, i) => (
-            <button
-              key={g.name}
-              onClick={() => { setActiveIdx(i); setOpenVideoKey(null); }}
-              className={`px-3 py-2 rounded-control font-mono text-label font-bold uppercase tracking-wide transition-all whitespace-nowrap ${
-                i === activeIdx ? 'bg-accent text-black' : 'text-ink-2 hover:text-white'
-              }`}
-            >
-              {g.name}
-            </button>
-          ))}
-        </div>
-      </div>
+      {/* Carrusel de días — solo el día activo muestra su contenido debajo */}
+      <Tabs
+        label="Días del mesociclo"
+        value={group?.name ?? ''}
+        onChange={id => {
+          const i = groups.findIndex(g => g.name === id);
+          if (i >= 0) setActiveIdx(i);
+        }}
+        items={groups.map(g => ({ id: g.name, label: g.name } as TabItem))}
+      />
 
-      {group && (
-        <div className="bg-surface border border-hairline rounded-surface overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-3 bg-bg border-b border-hairline">
-            <p className="font-sans font-bold text-body-s text-white">{group.name}</p>
-            <span className="font-mono text-caption text-ink-2">
-              {group.exercises.reduce((s, e) => s + e.sets, 0)} series · {group.exercises.length} ejercicios
-            </span>
-          </div>
-          <div className="p-3 space-y-2">
-            {group.exercises.length === 0 ? (
-              <p className="text-label text-ink-3 font-sans px-1 py-2">Sin ejercicios en este día.</p>
-            ) : (
-              group.exercises.map((we, exIdx) => {
-                const ex = allExercises.find(e => e.id === we.exerciseId);
-                const videoKey = `${group.name}-${exIdx}`;
-                const isVideoOpen = openVideoKey === videoKey;
-                return (
-                  <div key={`${we.exerciseId}-${exIdx}`} className="bg-raised rounded-surface overflow-hidden">
-                    <div className="p-3 space-y-2">
-                      <div className="flex items-start justify-between gap-2">
-                        <p className="text-label font-sans font-bold text-white truncate">
-                          {ex?.name || we.exerciseId}
-                          {we.muscleGroup && <span className="text-caption font-sans text-ink-2 ml-2">{MUSCLE_LABELS[we.muscleGroup]}</span>}
-                        </p>
-                        <div className="flex items-center gap-1 flex-shrink-0">
-                          {ex?.videoUrl && (
-                            <button
-                              onClick={() => setOpenVideoKey(isVideoOpen ? null : videoKey)}
-                              title="Ver vídeo"
-                              className={`flex items-center gap-1 px-2 py-1 rounded-control transition-colors ${
-                                isVideoOpen ? 'text-accent' : 'text-ink-3 hover:text-accent'
-                              }`}
-                            >
-                              <Icon name="videocam" size="s" />
-                              <span className="font-mono text-caption">Vídeo</span>
-                            </button>
-                          )}
-                          <button
-                            onClick={() => onReplaceExercise(group, exIdx)}
-                            title="Cambiar ejercicio"
-                            className="text-ink-3 hover:text-accent transition-colors"
-                          >
-                            <Icon name="swap_horiz" size="s" />
-                          </button>
-                          <button
-                            onClick={() => onRemoveExercise(group, exIdx)}
-                            title="Quitar ejercicio"
-                            className="text-ink-3 hover:text-red-400 transition-colors"
-                          >
-                            <Icon name="close" size="s" />
-                          </button>
+      {/* Swipe entre días (Bloque C1) — misma `activeIdx` que los Tabs de
+          arriba, así que saltar directo y deslizar con el dedo nunca se
+          desincronizan: los dos mueven el mismo estado. */}
+      {groups.length > 0 && (
+        <Pager label="Días del mesociclo" value={activeIdx} onChange={setActiveIdx}>
+          {groups.map(g => (
+            <div key={g.name} className="bg-surface border border-hairline rounded-surface overflow-hidden">
+              <div className="flex items-center justify-between px-4 py-3 bg-bg border-b border-hairline">
+                <p className="font-sans font-bold text-body-s text-white">{g.name}</p>
+                <span className="font-mono text-caption text-ink-2">
+                  {g.exercises.reduce((s, e) => s + e.sets, 0)} series · {g.exercises.length} ejercicios
+                </span>
+              </div>
+              <div className="p-3 space-y-2">
+                {g.exercises.length === 0 ? (
+                  <p className="text-label text-ink-3 font-sans px-1 py-2">Sin ejercicios en este día.</p>
+                ) : (
+                  g.exercises.map((we, exIdx) => {
+                    const ex = allExercises.find(e => e.id === we.exerciseId);
+                    const videoKey = `${g.name}-${exIdx}`;
+                    const isDuplicate = duplicateExerciseIds.has(we.exerciseId);
+                    return (
+                      <div
+                        key={`${we.exerciseId}-${exIdx}`}
+                        className={`bg-raised rounded-surface overflow-hidden ${isDuplicate ? 'border border-red-500/50' : ''}`}
+                      >
+                        <div className="p-3 space-y-2">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <p
+                                className={`text-label font-sans font-bold truncate ${isDuplicate ? 'text-red-400' : 'text-white'} ${ex?.videoUrl ? 'cursor-pointer select-none' : ''}`}
+                                title={ex?.videoUrl ? 'Mantén pulsado o clic derecho para ver el vídeo' : undefined}
+                                onContextMenu={e => { if (ex?.videoUrl) { e.preventDefault(); openVideoModal(videoKey, ex); } }}
+                                onPointerDown={() => {
+                                  if (!ex?.videoUrl) return;
+                                  clearLongPress();
+                                  longPressTimer.current = window.setTimeout(() => openVideoModal(videoKey, ex), 500);
+                                }}
+                                onPointerUp={clearLongPress}
+                                onPointerLeave={clearLongPress}
+                                onPointerCancel={clearLongPress}
+                              >
+                                {ex?.name || we.exerciseId}
+                                {we.muscleGroup && <span className="text-caption font-sans text-ink-2 ml-2">{MUSCLE_LABELS[we.muscleGroup]}</span>}
+                              </p>
+                              {isDuplicate && (
+                                <span className="inline-flex items-center gap-1 mt-1 font-mono text-caption font-bold text-red-400">
+                                  <Icon name="warning" size="s" />
+                                  También programado otro día
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-1 flex-shrink-0">
+                              {ex?.videoUrl && (
+                                <button
+                                  onClick={() => openVideoModal(videoKey, ex)}
+                                  title="Ver vídeo"
+                                  className="flex items-center gap-1 px-2 py-1 rounded-control text-ink-3 hover:text-accent transition-colors"
+                                >
+                                  <Icon name="videocam" size="s" />
+                                  <span className="font-mono text-caption">Vídeo</span>
+                                </button>
+                              )}
+                              <button
+                                onClick={() => onReplaceExercise(g, exIdx)}
+                                title="Cambiar ejercicio"
+                                className="text-ink-3 hover:text-accent transition-colors"
+                              >
+                                <Icon name="swap_horiz" size="s" />
+                              </button>
+                              <button
+                                onClick={() => onRemoveExercise(g, exIdx)}
+                                title="Quitar ejercicio"
+                                className="text-ink-3 hover:text-red-400 transition-colors"
+                              >
+                                <Icon name="close" size="s" />
+                              </button>
+                            </div>
+                          </div>
+                          <ExerciseConfigEditor we={we} onChange={patch => onUpdateExercise(g, exIdx, patch)} mesoWeeks={weeks} />
                         </div>
                       </div>
-                      <ExerciseConfigEditor we={we} onChange={patch => onUpdateExercise(group, exIdx, patch)} />
-                    </div>
-                    {isVideoOpen && ex?.videoUrl && <ExerciseVideoPlayer videoUrl={ex.videoUrl} />}
-                  </div>
-                );
-              })
-            )}
-            <button
-              onClick={() => onAddExercise(group)}
-              className="w-full flex items-center justify-center gap-2 bg-bg border border-dashed border-hairline rounded-control px-3 py-2 text-title-s font-sans text-ink-2 hover:text-accent hover:border-accent/40 transition-all"
-            >
-              <Icon name="add" size="s" />
-              Añadir ejercicio
-            </button>
-            <p className="font-mono text-caption text-ink-3">
-              Se aplica a todas las semanas de este mesociclo — las sesiones ya completadas no se tocan.
-            </p>
-          </div>
-        </div>
+                    );
+                  })
+                )}
+                <button
+                  onClick={() => onAddExercise(g)}
+                  className="w-full flex items-center justify-center gap-2 bg-bg border border-dashed border-hairline rounded-control px-3 py-2 text-title-s font-sans text-ink-2 hover:text-accent hover:border-accent/40 transition-all"
+                >
+                  <Icon name="add" size="s" />
+                  Añadir ejercicio
+                </button>
+                <p className="font-mono text-caption text-ink-3">
+                  Se aplica a todas las semanas de este mesociclo — las sesiones ya completadas no se tocan.
+                </p>
+              </div>
+            </div>
+          ))}
+        </Pager>
       )}
+
+      <Sheet
+        open={videoModal !== null}
+        onClose={() => setVideoModal(null)}
+        title={videoModal?.name ?? 'Vídeo del ejercicio'}
+      >
+        {videoModal && <ExerciseVideoPlayer videoUrl={videoModal.url} />}
+      </Sheet>
     </div>
   );
 }
@@ -1323,13 +1378,15 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
       const created: Mesocycle[] = [];
       let startDate = new Date().toISOString().split('T')[0];
 
+      const reviewTasks: Promise<unknown>[] = [];
       for (let i = 0; i < tpl.stages.length; i++) {
         const stage = tpl.stages[i];
+        const stageStartDate = startDate;
         const meso = await createMesocycle({
           athleteId:    selectedEmail,
           number:       startNumber + i,
           weeks:        stage.weeks,
-          startDate,
+          startDate:    stageStartDate,
           objective:    stage.name,
           daysPerWeek:  stage.daysPerWeek,
           groups:       { ...stage.groups },
@@ -1338,13 +1395,35 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                           : undefined,
           programId,
           programOrder: i,
+          ...(stage.deloadWeek !== undefined ? { deloadWeek: stage.deloadWeek } : {}),
         });
         created.push(meso);
+
+        // Cadencia de revisiones de la etapa (Bloque H, Pantalla 4) — se crean
+        // ya con la plantilla aplicada, el carril "Revisiones" del calendario
+        // las pinta solas en cuanto existen como TaskItem.
+        if (stage.reviewCadenceWeeks && stage.reviewCadenceWeeks > 0) {
+          const reviewCount = Math.max(1, Math.floor(stage.weeks / stage.reviewCadenceWeeks));
+          const reviewType = stage.reviewType ?? 'revision';
+          const reviewTitle = reviewType === 'revision' ? 'Revisión' : reviewType === 'cuestionario' ? 'Cuestionario' : 'Fotos de check-in';
+          for (let r = 1; r <= reviewCount; r++) {
+            const d = new Date(stageStartDate + 'T00:00:00');
+            d.setDate(d.getDate() + r * stage.reviewCadenceWeeks * 7);
+            reviewTasks.push(createTask({
+              athleteId: selectedEmail, type: reviewType,
+              title: `${reviewTitle} — ${stage.name}`,
+              dueDate: d.toISOString().split('T')[0],
+              status: 'pending', createdBy: 'coach', createdAt: new Date().toISOString(),
+            }));
+          }
+        }
+
         // Advance start date
         const d = new Date(startDate + 'T00:00:00');
         d.setDate(d.getDate() + stage.weeks * 7);
         startDate = d.toISOString().split('T')[0];
       }
+      await Promise.all(reviewTasks);
 
       queryClient.setQueryData<Mesocycle[]>(mesocyclesQueryKey, prev => [...(prev ?? []), ...created]);
       setEditing(created[0]);
@@ -1562,6 +1641,34 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                   onChange={v => updateField('objective', v)}
                   placeholder="Ej. Hipertrofia tren superior, puesta en forma general…"
                 />
+
+                {/* Semana de descarga (Bloque H) — marca qué semana del meso es de
+                    descarga, dato que hoy no existe en ningún sitio de la app.
+                    Se usa para el marcador ▼ del carril Entrenamiento y para el
+                    aviso de conflicto "revisión en semana de descarga". */}
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => updateField('deloadWeek', editing.deloadWeek !== undefined ? undefined : editing.weeks)}
+                    className={`relative w-10 h-5.5 rounded-full flex-shrink-0 transition-colors ${editing.deloadWeek !== undefined ? 'bg-accent' : 'bg-inset'}`}
+                    style={{ padding: 3 }}
+                    aria-pressed={editing.deloadWeek !== undefined}
+                  >
+                    <span className="block w-4 h-4 rounded-full bg-white transition-transform duration-200" style={{ transform: editing.deloadWeek !== undefined ? 'translateX(18px)' : 'translateX(0)' }} />
+                  </button>
+                  <span className="font-mono text-caption text-ink-2 uppercase tracking-wider">Incluye semana de descarga</span>
+                  {editing.deloadWeek !== undefined && (
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-sans text-caption text-ink-3">en la semana</span>
+                      <input
+                        type="number" min={1} max={editing.weeks}
+                        value={editing.deloadWeek}
+                        onChange={e => updateField('deloadWeek', Math.min(editing.weeks, Math.max(1, parseInt(e.target.value) || 1)))}
+                        className="w-14 bg-raised border border-hairline rounded-control px-2 py-1 text-center text-caption text-white font-mono focus:outline-none focus:border-accent"
+                      />
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Tab bar — subrayado oro (ui/Tabs), igual que el resto de la app.
@@ -1844,7 +1951,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                                       </button>
                                     </div>
                                   </div>
-                                  <ExerciseConfigEditor we={pe} onChange={patch => updatePExPatch(dayIdx, peIdx, patch)} />
+                                  <ExerciseConfigEditor we={pe} onChange={patch => updatePExPatch(dayIdx, peIdx, patch)} mesoWeeks={editing.weeks} />
                                 </div>
                               ))}
                             </div>

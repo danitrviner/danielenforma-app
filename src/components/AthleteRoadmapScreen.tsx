@@ -8,8 +8,10 @@ import {
   getStepsForAthlete, getWorkoutLogs, getExercises, getDietCompletionLogsForAthlete,
   getDietsForAthlete, getOnboarding, getAthleteNutritionConfig, getWorkoutAssignmentsForAthlete,
   getWeeklyChallengesForAthlete, saveRoadmapLevelProgress, createNotificationDeduped,
+  getTasksForAthlete, getWorkouts,
 } from '../dbService';
 import { bodyweightForAthleteKey } from '../hooks/useAthleteWeight';
+import { deriveReviewEvents, deriveVolumeIncreaseEvents, deriveKcalChangeEvents, deriveDeloadEvents } from '../utils/planEvents';
 import RoadmapTimeline from './RoadmapTimeline';
 import PhaseHeroCard from './roadmap/PhaseHeroCard';
 import WeeklyChallengeCard, { ChallengePendingCard } from './roadmap/WeeklyChallengeCard';
@@ -95,10 +97,22 @@ export default function AthleteRoadmapScreen({ profile }: Props) {
     queryKey: ['weeklyChallengesForAthlete', profile.email],
     queryFn: () => getWeeklyChallengesForAthlete(profile.email),
   });
+  // Pantalla 6 (Bloque H) — el atleta ve su propio cuadro de mando, en modo
+  // solo lectura: mismos derivadores que el coach, sin ningún handler de
+  // edición (RoadmapTimeline los oculta solo cuando faltan los `on*`).
+  const { data: tasks = [], isPending: loadingTasks } = useQuery({
+    queryKey: ['tasksForAthlete', profile.email],
+    queryFn: () => getTasksForAthlete(profile.email),
+  });
+  const { data: workouts = [], isPending: loadingWorkouts } = useQuery({
+    queryKey: ['workouts'],
+    queryFn: getWorkouts,
+  });
 
   const loading = loadingMesocycles || loadingNutritionProgram || loadingRoadmap || loadingBodyweight
     || loadingSteps || loadingWorkoutLogs || loadingExercises || loadingDietCompletionLogs
-    || loadingDiets || loadingOnboarding || loadingNutConfig || loadingAssignments || loadingChallengeHistory;
+    || loadingDiets || loadingOnboarding || loadingNutConfig || loadingAssignments || loadingChallengeHistory
+    || loadingTasks || loadingWorkouts;
 
   const stepGoal = nutConfig?.stepGoal ?? DEFAULT_STEP_GOAL;
   const kcalPerStep = nutConfig?.kcalPerStep ?? DEFAULT_KCAL_PER_STEP;
@@ -235,6 +249,7 @@ export default function AthleteRoadmapScreen({ profile }: Props) {
   }
 
   const phases = roadmap.planPhases ?? [];
+  const today = new Date().toISOString().split('T')[0];
 
   return (
     <div className="space-y-6">
@@ -265,6 +280,11 @@ export default function AthleteRoadmapScreen({ profile }: Props) {
           readonly={true}
           bodyweightLogs={bodyweightLogs}
           initialWeight={profile.actualWeight ?? profile.initialWeight}
+          reviewEvents={deriveReviewEvents(tasks, today)}
+          workoutAssignments={assignments}
+          volumeEvents={mesocycles.flatMap(m => deriveVolumeIncreaseEvents(workouts, exercises, m, today))}
+          nutritionEvents={deriveKcalChangeEvents(nutritionProgram, today)}
+          deloadEvents={deriveDeloadEvents(mesocycles, today)}
         />
       </div>
     </div>

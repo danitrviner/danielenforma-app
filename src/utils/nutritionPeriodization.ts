@@ -148,6 +148,29 @@ export function weeklyDietAdherencePct(
   return bucketAverage(entries, programStart, weekCount);
 }
 
+// Adherencia de dieta de los últimos `windowDays` días hasta `today` — a
+// diferencia de `weeklyDietAdherencePct` (alineada a la semana del programa
+// de nutrición, para el histórico), esta es para condiciones que se evalúan
+// "ahora mismo" (Bloque H2.2), sin depender de en qué semana del programa
+// caiga hoy. `undefined` si no hay ningún registro en la ventana.
+export function recentDietAdherencePct(
+  logs: DietCompletionLog[], diets: Diet[], today: string, windowDays = 14,
+): number | undefined {
+  const dietsById = new Map(diets.map(d => [d.id, d]));
+  const windowStart = addDays(today, -windowDays);
+  const values = logs
+    .filter(l => l.date >= windowStart && l.date <= today)
+    .map(l => {
+      const diet = dietsById.get(l.dietId);
+      const totalItems = diet ? diet.meals.reduce((s, m) => s + m.items.length, 0) : 0;
+      if (totalItems === 0) return null;
+      return Math.min(100, (l.doneItemIds.length / totalItems) * 100);
+    })
+    .filter((v): v is number => v != null);
+  if (values.length === 0) return undefined;
+  return values.reduce((s, v) => s + v, 0) / values.length;
+}
+
 export function weeklyStepAdherencePct(
   logs: StepLog[], stepGoal: number, programStart: string, weekCount: number,
 ): (number | null)[] {

@@ -5,10 +5,11 @@ import LoadHistoryPanel from './LoadHistoryPanel';
 import {
   getWorkoutAssignmentsForAthlete, getWorkouts, getExercises,
   createWorkoutLog, updateWorkoutAssignment, getWorkoutLogs, getExerciseNotesForAthlete,
-  getCardioAssignmentsForAthlete,
+  getCardioAssignmentsForAthlete, getMesocycles,
 } from '../dbService';
 import { getWeekRange, getWeekStart, MONTHS_ES, formatDate } from '../utils/trainingWeek';
 import { prefillWorkoutSets } from '../utils/setPrefill';
+import { mesocycleWeekNumber, resolveExerciseForWeek } from '../utils/progression';
 import { useToast } from '../hooks/useToast';
 import { useTourTarget } from '../features/tutorial/TourTargetContext';
 import { useTutorialEngine } from '../features/tutorial/TutorialEngine';
@@ -114,6 +115,13 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
     queryKey: ['cardioAssignmentsForAthlete', profile.email],
     queryFn: () => getCardioAssignmentsForAthlete(profile.email),
   });
+  // Solo para resolver la progresión por semanas (Bloque F) al abrir una sesión — saber
+  // en qué semana del mesociclo cae `activeAssignment.date` requiere el `startDate` del
+  // Mesocycle, que hasta ahora esta pantalla no necesitaba cargar.
+  const { data: mesocycles = [] } = useQuery({
+    queryKey: ['mesocycles', profile.userId],
+    queryFn: () => getMesocycles(profile.userId),
+  });
   const loading = loadingAssignments || loadingWorkouts || loadingExercises || loadingLogs || loadingNotes;
 
   // Pending assignments more than a week past their date are lost — the athlete missed
@@ -214,8 +222,28 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
   // lógica vive en utils/setPrefill.ts (testeada ahí) para no depender de
   // montar todo el player en el test.
   const openPlayer = (assignment: WorkoutAssignment) => {
-    const wo = getWorkout(assignment.workoutId);
-    if (!wo) return;
+    const baseWorkout = getWorkout(assignment.workoutId);
+    if (!baseWorkout) return;
+
+    // Progresión por semanas (Bloque F): la rutina base es una sola plantilla
+    // reutilizada en todas las semanas del mesociclo — aquí se resuelve cuál es la
+    // prescripción EFECTIVA para la semana en la que cae esta fecha, sin tocar la
+    // plantilla guardada.
+    const meso = assignment.mesocycleId ? mesocycles.find(m => m.id === assignment.mesocycleId) : undefined;
+    // Bloque H2.2 — con qué datos evalúan sus condiciones las reglas
+    // condicionales ("+1 serie solo si..."). Solo adherencia de entrenamiento
+    // y RIR medio son evaluables aquí (esta pantalla no carga dieta ni peso);
+    // una condición que dependa de esas dos métricas simplemente no se aplica
+    // desde la sesión del atleta — mismo comportamiento seguro que sin datos.
+    const conditionCtx = { today: new Date().toISOString().split('T')[0], workoutAssignments: assignments, workoutLogs: logs, bodyweightLogs: [] };
+    const wo: Workout = meso
+      ? {
+          ...baseWorkout,
+          exercises: baseWorkout.exercises.map(we =>
+            resolveExerciseForWeek(we, mesocycleWeekNumber(meso.startDate, assignment.date), conditionCtx)
+          ),
+        }
+      : baseWorkout;
 
     // Para cada ejercicio de la rutina, la sesión registrada más reciente
     // entre TODAS las sesiones anteriores — es lo que rellena la tabla.

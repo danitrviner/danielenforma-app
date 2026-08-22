@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useQueries, useQuery } from '@tanstack/react-query';
+import { useQueries, useQuery, useIsFetching, useIsMutating } from '@tanstack/react-query';
 import { useParams, useNavigate } from 'react-router-dom';
 import { UserProfile, WeightCheckIn, WorkoutAssignment, WorkoutLog } from '../types';
 import { getAllUserProfiles, createNotificationDeduped, getWorkoutAssignments, getWorkoutLogs } from '../dbService';
@@ -7,7 +7,6 @@ import ClientHub, { HubTab, HUB_TABS } from './ClientHub';
 import HomeCoachScreen from './HomeCoachScreen';
 import AthletesBar from './AthletesBar';
 import CoachNotesPanel from './CoachNotesPanel';
-import WeeklyAnalysisButton from './WeeklyAnalysisButton';
 import InvitarAtletaModal from '../features/crm/components/InvitarAtletaModal';
 import { calcPlanExpiry } from '../hooks/usePlanExpiry';
 import { getPendingReviews } from '../hooks/usePendingReviews';
@@ -28,6 +27,14 @@ interface ClientsScreenProps {
 export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, coachEmail }: ClientsScreenProps) {
   const navigate = useNavigate();
   const { athleteId, hubTab } = useParams<{ athleteId?: string; hubTab?: string }>();
+  // "Sincronizado" solo mientras hay algo de verdad en vuelo — antes era texto
+  // fijo, sin relación con si había o no una petición en curso.
+  // Ambos hooks se llaman siempre, nunca dentro de un `||` — cortocircuitar
+  // haría que `useIsMutating` se saltara algunos renders y no otros, cambiando
+  // el nº de hooks entre renders (React lo detecta y rompe el componente).
+  const fetchingCount = useIsFetching();
+  const mutatingCount = useIsMutating();
+  const isSyncing = fetchingCount > 0 || mutatingCount > 0;
   // Shared 'userProfiles' cache key (same as CommandPalette/ReviewsScreen/MesocycleManager).
   // Sin filtrar: el CRM y la sección "Archivados" de abajo necesitan también
   // las bajas y los anonimizados. `athletes` (abajo) es la vista filtrada
@@ -268,18 +275,16 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
     <div className="space-y-6">
       {/* Header */}
       <header className="pb-4 border-b border-hairline">
-        <div className="flex items-center gap-3 mb-2">
-          <span className="inline-flex items-center px-2 rounded-control bg-raised text-caption font-sans border border-accent/30 text-accent font-bold uppercase tracking-wider">
-            Consola de Entrenador
-          </span>
-          <span className="inline-flex items-center gap-2 text-label font-mono text-data">
-            <span className="w-2 h-2 rounded-full bg-data animate-pulse"></span>
-            Sincronizado
-          </span>
-        </div>
+        {isSyncing && (
+          <div className="flex items-center gap-3 mb-2">
+            <span className="inline-flex items-center gap-2 text-label font-mono text-data">
+              <span className="w-2 h-2 rounded-full bg-data animate-pulse"></span>
+              Sincronizando…
+            </span>
+          </div>
+        )}
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <h1 className="font-sans font-extrabold text-display tracking-tight text-white uppercase">Clientes</h1>
-          <WeeklyAnalysisButton />
         </div>
       </header>
 

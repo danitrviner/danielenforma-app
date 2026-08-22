@@ -72,7 +72,7 @@ export default function CardioMiniPlayer({ currentPath, onOpen }: Props) {
       </div>
       <button
         type="button"
-        onClick={(e) => { e.stopPropagation(); cardio.paused ? cardio.resume() : cardio.pause(); }}
+        onClick={(e) => { e.stopPropagation(); if (cardio.paused) cardio.resume(); else cardio.pause(); }}
         aria-label={cardio.paused ? 'Reanudar' : 'Pausar'}
         className="flex h-10 w-10 items-center justify-center rounded-full bg-raised text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-line"
       >

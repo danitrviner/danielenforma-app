@@ -452,6 +452,25 @@ export interface WeeklyProgressionRule {
   addSets?: number;     // series añadidas sobre la base, acumulado desde la regla anterior
   addReps?: string;     // sustituye el rango de reps a partir de esta semana (si se indica)
   setRir?: number;      // sustituye el RIR a partir de esta semana (si se indica)
+  // Periodización auto-regulada (Bloque H2.2) — la regla solo se aplica si se
+  // cumple. Aditivo y opcional: sin esto, la regla se comporta exactamente
+  // igual que antes (siempre activa desde `atWeek`). Ver `src/utils/conditions.ts`.
+  condition?: RuleCondition;
+}
+
+export type ConditionMetric = 'adherenciaEntreno' | 'adherenciaDieta' | 'rirMedio' | 'peso';
+export type ConditionOperator = '>=' | '<=' | '=';
+export type ConditionFallback = 'mantener' | 'mitad' | 'posponer' | 'avisar';
+
+export interface ConditionRow {
+  metric: ConditionMetric;
+  operator: ConditionOperator;
+  value: number;
+}
+
+export interface RuleCondition {
+  rows: ConditionRow[]; // encadenadas con Y (AND) — el constructor de EventPlannerSheet no ofrece O
+  fallback: ConditionFallback;
 }
 
 export interface TemplateDay {
@@ -467,6 +486,9 @@ export interface TemplateStage {
   daysPerWeek: number;
   groups: Record<MuscleGroup, MuscleGroupConfig>;
   days?: TemplateDay[];
+  deloadWeek?: number;          // semana (1-indexada) de descarga dentro de esta etapa
+  reviewCadenceWeeks?: number;  // cada cuántas semanas se programa una revisión durante esta etapa
+  reviewType?: TaskType;
 }
 
 export interface Workout {
@@ -1289,6 +1311,7 @@ export interface Mesocycle {
   programId?: string;      // links mesocycles created from the same template
   programOrder?: number;   // position in the sequence (0-based)
   splitId?: string;        // id del reparto de días elegido (ver utils/trainingSplits.ts)
+  deloadWeek?: number;     // semana (1-indexada) de descarga dentro del meso; undefined = sin descarga marcada
 }
 
 export interface MesocycleTemplate {
@@ -1586,13 +1609,29 @@ export interface AiChat {
   messages: AiChatMessage[];
 }
 
-export type AiProposalKind = 'diet' | 'mesocycle' | 'checkinFeedback';
+export type AiProposalKind = 'diet' | 'mesocycle' | 'checkinFeedback' | 'periodizationBlock';
 export type AiProposalStatus = 'proposed' | 'approved' | 'rejected';
+
+// Bloque H2.1 — "la IA propone el bloque entero periodizado". Alcance real:
+// el mesociclo con su semana de descarga (si aplica) más la cadencia de
+// revisiones, ambos materializables de golpe al aprobar. Las reglas de
+// `weeklyProgression` por ejercicio y las fases de nutrición NO entran aquí
+// — dependen de datos que no existen todavía en el momento de la propuesta
+// (los `Workout` del mesociclo, que Dani genera después con "Distribución";
+// la dieta enlazada de cada fase). La justificación de la IA sobre cómo
+// progresar sí viaja en `rationale`, como guía para cuando Dani configure la
+// progresión por ejercicio.
+export interface PeriodizationBlockPayload {
+  mesocycle: Omit<Mesocycle, 'id'>;
+  reviewCadenceWeeks: number; // cada cuántas semanas se programa una revisión
+  reviewType: 'revision' | 'cuestionario' | 'foto';
+}
 
 export type AiProposalPayload =
   | Omit<Diet, 'id'>
   | Omit<Mesocycle, 'id'>
-  | { checkInId: string; feedback: string };
+  | { checkInId: string; feedback: string }
+  | PeriodizationBlockPayload;
 
 export interface AiProposal {
   id: string;
