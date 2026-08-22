@@ -1,5 +1,9 @@
 ext {
-    minSdkVersion = 24
+    // Subido de 24 a 26 (22-08): Health Connect (capacitor-health, pasos
+    // vinculados a Salud/Health Connect) exige minSdk 26 — Android 8.0+ ya
+    // cubre la inmensa mayoría del parque activo, así que el coste de
+    // compatibilidad es mínimo frente a lo que gana el atleta.
+    minSdkVersion = 26
     compileSdkVersion = 36
     targetSdkVersion = 36
     androidxActivityVersion = '1.11.0'

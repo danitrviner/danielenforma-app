@@ -55,7 +55,7 @@ export default function AcademyScreen({ profile }: Props) {
   }
 
   if (!access?.enabled) {
-    return <EmptyState icon="lock" title="Academia aún no disponible" description="Tu entrenador todavía no te ha dado acceso a TrainingLab." />;
+    return <EmptyState icon="lock" title="Training Lab aún no disponible" description="Tu entrenador todavía no te ha dado acceso a Training Lab." />;
   }
 
   const visibleCourses = access.grantedCourses?.length
@@ -111,7 +111,7 @@ export default function AcademyScreen({ profile }: Props) {
   if (openCourse) {
     return (
       <div className="space-y-6">
-        <Button variant="ghost" size="s" onClick={() => setOpenCourseId(null)} icon="arrow_back">Academia</Button>
+        <Button variant="ghost" size="s" onClick={() => setOpenCourseId(null)} icon="arrow_back">Training Lab</Button>
         <div>
           <span className="text-caption font-sans uppercase text-accent">{CATEGORY_LABEL[openCourse.category]}</span>
           <h2 className="font-sans font-bold text-title-l text-ink">{openCourse.title}</h2>
@@ -147,7 +147,7 @@ export default function AcademyScreen({ profile }: Props) {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="TrainingLab" subtitle="Academia de formación — entrenamiento, nutrición y más" />
+      <PageHeader title="Training Lab" subtitle="Formación — entrenamiento, nutrición y más" />
 
       {publishedCourses.length === 0 && (
         <p className="text-label text-ink-3 font-sans py-6 text-center">Todavía no hay cursos publicados.</p>

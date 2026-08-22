@@ -15,6 +15,7 @@ const QuestionnaireChartsPanel = lazy(() => import('./QuestionnaireChartsPanel')
 import FoodPreferencesPanel from './FoodPreferencesPanel';
 import MenuPreferencesPanel from './MenuPreferencesPanel';
 import MiFichaCard from './MiFichaCard';
+import AthleteHighlightsPanel from './AthleteHighlightsPanel';
 import CoachesScreen from './CoachesScreen';
 import EliminarCuentaDialog from './EliminarCuentaDialog';
 import CheckInScreen from './CheckInScreen';
@@ -200,6 +201,7 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
       case 'resumen':
         return (
           <div className="space-y-4">
+            <AthleteHighlightsPanel athleteEmail={profile.email} />
             <MiFichaCard profile={profile} />
           </div>
         );

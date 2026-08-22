@@ -19,8 +19,8 @@ interface NutritionHubScreenProps {
 type NutritionTab = 'mi-plan' | 'mi-menu' | 'recetas' | 'periodizacion';
 
 const TABS: { id: NutritionTab; label: string; icon: string }[] = [
-  { id: 'mi-plan',       label: 'Mi Plan',        icon: 'restaurant' },
   { id: 'mi-menu',       label: 'Mi Menú',        icon: 'menu_book' },
+  { id: 'mi-plan',       label: 'Mi Plan',        icon: 'restaurant' },
   { id: 'recetas',       label: 'Recetas',        icon: 'skillet' },
   { id: 'periodizacion', label: 'Periodización',  icon: 'monitoring' },
 ];

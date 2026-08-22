@@ -22,8 +22,25 @@ export interface HeartRateSample {
   at: number;
 }
 
+const SIMULATE_STORAGE_KEY = 'enforma:simulateBle';
+
+// Solo para probar en el navegador el flujo completo de una sesión de
+// cardio (zonas, resumen final...) sin banda real ni build nativo. Se activa
+// visitando la app con ?simulateBle=1 (se recuerda en localStorage) y solo
+// funciona en dev — nunca en producción, aunque alguien adivine el parámetro.
+export function isBleSimulated(): boolean {
+  if (!import.meta.env.DEV) return false;
+  return localStorage.getItem(SIMULATE_STORAGE_KEY) === '1';
+}
+
+if (import.meta.env.DEV && typeof window !== 'undefined') {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('simulateBle') === '1') localStorage.setItem(SIMULATE_STORAGE_KEY, '1');
+  else if (params.get('simulateBle') === '0') localStorage.removeItem(SIMULATE_STORAGE_KEY);
+}
+
 export function isBleAvailable(): boolean {
-  return Capacitor.isNativePlatform();
+  return Capacitor.isNativePlatform() || isBleSimulated();
 }
 
 /**
@@ -74,6 +91,8 @@ export class HeartRateMonitor {
   private reconnectTimer: number | null = null;
   private onSample: ((sample: HeartRateSample) => void) | null = null;
   private onStatus: ((status: HeartRateStatus) => void) | null = null;
+  private simulateTimer: number | null = null;
+  private simulatedBpm = 0;
 
   /** True en cuanto llega un paquete con intervalos RR (→ HRV posible). */
   supportsRR = false;
@@ -82,6 +101,13 @@ export class HeartRateMonitor {
     if (!isBleAvailable()) throw new Error('BLE solo disponible en la app nativa (iOS/Android)');
     this.onStatus = onStatus ?? null;
     this.stopped = false;
+
+    if (isBleSimulated() && !Capacitor.isNativePlatform()) {
+      this.deviceId = 'simulated-band';
+      this.reconnectAttempt = 0;
+      this.onStatus?.('connected');
+      return { deviceId: this.deviceId, name: 'Banda simulada (dev)' };
+    }
 
     if (!this.initialized) {
       await BleClient.initialize();
@@ -99,7 +125,28 @@ export class HeartRateMonitor {
   async startListening(onSample: (sample: HeartRateSample) => void): Promise<void> {
     if (!this.deviceId) throw new Error('No hay banda conectada');
     this.onSample = onSample;
+    if (this.deviceId === 'simulated-band') {
+      this.startSimulating();
+      return;
+    }
     await this.subscribe();
+  }
+
+  /** Genera BPM realista en zona 2 con paseo aleatorio, un pulso por segundo. */
+  private startSimulating(): void {
+    this.simulatedBpm = 118 + Math.round(Math.random() * 8);
+    this.listening = true;
+    this.simulateTimer = window.setInterval(() => {
+      const drift = Math.round((Math.random() - 0.5) * 6);
+      this.simulatedBpm = Math.min(150, Math.max(95, this.simulatedBpm + drift));
+      const rrBase = Math.round(60000 / this.simulatedBpm);
+      this.supportsRR = true;
+      this.onSample?.({
+        bpm: this.simulatedBpm,
+        rrIntervals: [rrBase + Math.round((Math.random() - 0.5) * 40)],
+        at: Date.now(),
+      });
+    }, 1000);
   }
 
   private async subscribe(): Promise<void> {
@@ -158,6 +205,12 @@ export class HeartRateMonitor {
 
   async stopListening(): Promise<void> {
     if (!this.deviceId || !this.listening) return;
+    if (this.simulateTimer !== null) {
+      window.clearInterval(this.simulateTimer);
+      this.simulateTimer = null;
+      this.listening = false;
+      return;
+    }
     try {
       await BleClient.stopNotifications(this.deviceId, HEART_RATE_SERVICE, HEART_RATE_MEASUREMENT);
     } catch {
@@ -174,6 +227,11 @@ export class HeartRateMonitor {
     }
     if (!this.deviceId) return;
     await this.stopListening();
+    if (this.deviceId === 'simulated-band') {
+      this.deviceId = null;
+      this.onSample = null;
+      return;
+    }
     try {
       await BleClient.disconnect(this.deviceId);
     } catch {

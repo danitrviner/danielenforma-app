@@ -273,8 +273,8 @@ function AccessTab({ coachEmail }: { coachEmail: string }) {
     queryClient.setQueryData<AcademyAccess[]>(['academyAccessAll'], prev => [...(prev ?? []).filter(a => a.athleteId !== email), updated]);
     if (enabled) {
       createNotificationDeduped(`notif_academy_access_${email}_${updated.grantedAt}`, {
-        recipientEmail: email, type: 'academy_access_granted', title: 'Academia desbloqueada 🎓',
-        body: 'Tu entrenador te ha dado acceso a TrainingLab.',
+        recipientEmail: email, type: 'academy_access_granted', title: 'Training Lab desbloqueado 🎓',
+        body: 'Tu entrenador te ha dado acceso a Training Lab.',
         link: 'academy', createdAt: new Date().toISOString(), read: false,
       }).catch(err => console.warn('createNotificationDeduped (academy access) failed:', err));
     }

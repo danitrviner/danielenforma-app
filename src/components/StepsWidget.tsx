@@ -1,9 +1,11 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { Capacitor } from '@capacitor/core';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { StepLog } from '../types';
 import { getAthleteNutritionConfig, getStepsForAthlete, addSteps, updateSteps } from '../dbService';
 import { todayStr } from '../utils/questionnaireSchedule';
 import { DEFAULT_KCAL_PER_STEP } from '../utils/nutritionConstants';
+import { isHealthStepsSupported, isHealthStepsLinked, linkHealthSteps, getTodaySteps } from '../services/healthSteps';
 import { Skeleton } from './ui';
 import { Icon, Button } from './ui';
 
@@ -38,29 +40,27 @@ export default function StepsWidget({ athleteEmail }: Props) {
 
   const [input, setInput] = useState('');
   const [editing, setEditing] = useState(false);
+  const [linked, setLinked] = useState(isHealthStepsLinked());
+  const [linking, setLinking] = useState(false);
+  const healthSupported = isHealthStepsSupported();
+  const healthSource = Capacitor.getPlatform() === 'ios' ? 'apple_health' : 'google_health_connect';
 
-  // Same intent as the old "no entry for today yet" branch of the initial
-  // Promise.all().then() — open the editor by default the first time we
-  // learn there's no log for today, but only once per athlete (not on every
-  // background refetch).
-  const editingInitFor = useRef<string | null>(null);
-  useEffect(() => {
-    if (!loadingSteps && editingInitFor.current !== athleteEmail) {
-      editingInitFor.current = athleteEmail;
-      if (!todayLog) setEditing(true);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loadingSteps, athleteEmail]);
+  const { data: healthSteps } = useQuery({
+    queryKey: ['healthSteps', athleteEmail],
+    queryFn: getTodaySteps,
+    enabled: linked,
+    refetchInterval: 60_000,
+  });
 
   const saveMutation = useMutation({
-    mutationFn: async (val: number) => {
+    mutationFn: async ({ val, source = 'manual' }: { val: number; source?: StepLog['source'] }) => {
       if (todayId) {
         await updateSteps(todayId, { steps: val });
         return { id: todayId, steps: val };
       }
       const entry = await addSteps({
         athleteId: athleteEmail, date: todayStr(), steps: val,
-        source: 'manual', createdAt: new Date().toISOString(),
+        source, createdAt: new Date().toISOString(),
       });
       return entry;
     },
@@ -85,8 +85,27 @@ export default function StepsWidget({ athleteEmail }: Props) {
   const handleSave = () => {
     const val = parseInt(input, 10);
     if (!input || isNaN(val) || val < 0 || val > 100000) return;
-    saveMutation.mutate(val);
+    saveMutation.mutate({ val });
   };
+
+  const handleLink = async () => {
+    setLinking(true);
+    try {
+      const ok = await linkHealthSteps();
+      if (ok) { setLinked(true); setEditing(false); }
+    } finally {
+      setLinking(false);
+    }
+  };
+
+  // Vinculado: cada lectura fresca de Salud/Health Connect sustituye el
+  // registro de hoy — deja de pedirse a mano (petición de Dani, 22-08).
+  useEffect(() => {
+    if (linked && healthSteps !== undefined && healthSteps !== null && healthSteps !== steps) {
+      saveMutation.mutate({ val: healthSteps, source: healthSource });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [linked, healthSteps]);
 
   const remaining = Math.max(0, goal - steps);
   const pct = Math.min(100, (steps / goal) * 100);
@@ -107,12 +126,19 @@ export default function StepsWidget({ athleteEmail }: Props) {
           <Icon name="directions_walk" size="m" className="text-accent" />
           Pasos de hoy
         </h2>
-        {!editing && (
+        {linked ? (
+          <span className="flex items-center gap-1 text-caption font-sans text-success">
+            <Icon name="check_circle" size="s" />
+            Vinculado
+          </span>
+        ) : healthSupported ? (
+          <Button variant="ghost" size="s" onClick={handleLink} loading={linking} icon="favorite" label="Vincular con Salud" />
+        ) : !editing && (
           <Button variant="ghost" size="s" onClick={() => { setInput(String(steps)); setEditing(true); }} icon="edit" label="Editar" />
         )}
       </div>
 
-      {editing ? (
+      {editing && !linked ? (
         <div className="flex items-center gap-2">
           <input
             type="number"

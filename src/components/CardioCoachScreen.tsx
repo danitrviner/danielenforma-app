@@ -205,6 +205,90 @@ const CLOSE_TYPE_LABEL: Record<CardioIntervalCloseType, string> = {
   time: 'Por tiempo', zone: 'Al llegar a zona', heartRate: 'Por FC', calories: 'Por calorías', manual: 'Manual',
 };
 
+// Modo series: en vez de montar bloque a bloque, se elige un protocolo
+// (trabajo/descanso × repeticiones) y se genera la lista de bloques sola.
+// Los valores son los protocolos estándar de HIIT/VO2máx — Dani pidió algo
+// pensado para trabajar Z5/VO2máx sin tener que construir cada bloque a mano.
+interface SeriesPreset {
+  label: string;
+  workSec: number;
+  restSec: number;
+  reps: number;
+  workZone: keyof CardioZones;
+  restZone: keyof CardioZones;
+  hint: string;
+}
+
+const SERIES_PRESETS: SeriesPreset[] = [
+  { label: 'Tabata', workSec: 20, restSec: 10, reps: 8, workZone: 'z5', restZone: 'z1', hint: '20s/10s × 8 — VO2máx, muy corto e intenso' },
+  { label: 'Series Z5 clásicas', workSec: 30, restSec: 90, reps: 8, workZone: 'z5', restZone: 'z1', hint: '30s/90s × 8 — el estándar para Z5' },
+  { label: 'HIIT 40/20', workSec: 40, restSec: 20, reps: 10, workZone: 'z4', restZone: 'z1', hint: '40s/20s × 10 — umbral-Z5, más volumen' },
+  { label: 'Noruego 4×4', workSec: 240, restSec: 180, reps: 4, workZone: 'z4', restZone: 'z1', hint: '4min/3min × 4 — VO2máx clásico de resistencia' },
+];
+
+function generateSeriesBlocks(preset: Pick<SeriesPreset, 'workSec' | 'restSec' | 'reps' | 'workZone' | 'restZone'>): CardioIntervalBlock[] {
+  const blocks: CardioIntervalBlock[] = [];
+  for (let i = 1; i <= preset.reps; i++) {
+    blocks.push({ label: `Serie ${i}`, closeType: 'time', durationSec: preset.workSec, targetZone: preset.workZone });
+    if (i < preset.reps) {
+      blocks.push({ label: `Recuperación ${i}`, closeType: 'time', durationSec: preset.restSec, targetZone: preset.restZone });
+    }
+  }
+  return blocks;
+}
+
+function SeriesModePicker({ onGenerate }: { onGenerate: (blocks: CardioIntervalBlock[]) => void }) {
+  const [workSec, setWorkSec] = useState('30');
+  const [restSec, setRestSec] = useState('90');
+  const [reps, setReps] = useState('8');
+  const [workZone, setWorkZone] = useState<keyof CardioZones>('z5');
+  const [restZone, setRestZone] = useState<keyof CardioZones>('z1');
+
+  const applyPreset = (p: SeriesPreset) => {
+    setWorkSec(String(p.workSec)); setRestSec(String(p.restSec)); setReps(String(p.reps));
+    setWorkZone(p.workZone); setRestZone(p.restZone);
+    onGenerate(generateSeriesBlocks(p));
+  };
+
+  const applyCustom = () => {
+    onGenerate(generateSeriesBlocks({
+      workSec: Number(workSec) || 30, restSec: Number(restSec) || 90, reps: Number(reps) || 1, workZone, restZone,
+    }));
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-wrap gap-2">
+        {SERIES_PRESETS.map(p => (
+          <button key={p.label} type="button" onClick={() => applyPreset(p)} title={p.hint}
+            className="px-3 py-2 bg-surface border border-hairline rounded-control text-caption font-sans text-white hover:border-accent transition-colors">
+            {p.label}
+          </button>
+        ))}
+      </div>
+      <div className="flex flex-wrap gap-2 items-center">
+        <input type="number" min={5} value={workSec} onChange={e => setWorkSec(e.target.value)} placeholder="Trabajo (s)"
+          className="w-24 bg-surface border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent" />
+        <select value={workZone} onChange={e => setWorkZone(e.target.value as keyof CardioZones)}
+          className="bg-surface border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent">
+          {ZONE_ORDER.map(z => <option key={z} value={z}>{z.toUpperCase()}</option>)}
+        </select>
+        <span className="text-caption text-ink-2 font-mono">/</span>
+        <input type="number" min={5} value={restSec} onChange={e => setRestSec(e.target.value)} placeholder="Descanso (s)"
+          className="w-24 bg-surface border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent" />
+        <select value={restZone} onChange={e => setRestZone(e.target.value as keyof CardioZones)}
+          className="bg-surface border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent">
+          {ZONE_ORDER.map(z => <option key={z} value={z}>{z.toUpperCase()}</option>)}
+        </select>
+        <span className="text-caption text-ink-2 font-mono">×</span>
+        <input type="number" min={1} value={reps} onChange={e => setReps(e.target.value)} placeholder="Reps"
+          className="w-16 bg-surface border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent" />
+        <Button variant="ghost" size="s" onClick={applyCustom} icon="bolt">Generar</Button>
+      </div>
+    </div>
+  );
+}
+
 function PrescriptionTab() {
   const { data: profiles = [], isPending } = useQuery({ queryKey: ['userProfiles'], queryFn: getAllUserProfiles });
   const athletes = atletasActivos(profiles).filter(p => p.role === 'client');
@@ -212,7 +296,8 @@ function PrescriptionTab() {
   const [type, setType] = useState<CardioSessionType>('zona2');
   const [durationMin, setDurationMin] = useState('45');
   const [timesPerWeek, setTimesPerWeek] = useState('3');
-  const [blocks, setBlocks] = useState<CardioIntervalBlock[]>([EMPTY_BLOCK(), { label: '', closeType: 'time', durationSec: 30, targetZone: 'z1' }]);
+  const [blocks, setBlocks] = useState<CardioIntervalBlock[]>(() => generateSeriesBlocks(SERIES_PRESETS[1]));
+  const [blockMode, setBlockMode] = useState<'series' | 'manual'>('series');
   const [saving, setSaving] = useState(false);
   const [savedMsg, setSavedMsg] = useState(false);
 
@@ -269,7 +354,20 @@ function PrescriptionTab() {
       </div>
 
       {type === 'intervalos' && (
-        <div className="space-y-2 bg-bg border border-hairline rounded-surface p-3">
+        <div className="space-y-3 bg-bg border border-hairline rounded-surface p-3">
+          <div className="flex gap-2">
+            <button type="button" onClick={() => setBlockMode('series')}
+              className={`px-3 py-1.5 rounded-control text-caption font-sans font-bold transition-colors ${blockMode === 'series' ? 'bg-accent text-black' : 'bg-surface text-ink-2 border border-hairline'}`}>
+              Series automáticas
+            </button>
+            <button type="button" onClick={() => setBlockMode('manual')}
+              className={`px-3 py-1.5 rounded-control text-caption font-sans font-bold transition-colors ${blockMode === 'manual' ? 'bg-accent text-black' : 'bg-surface text-ink-2 border border-hairline'}`}>
+              Manual
+            </button>
+          </div>
+
+          {blockMode === 'series' && <SeriesModePicker onGenerate={setBlocks} />}
+
           <p className="text-caption font-sans uppercase text-ink-2">Bloques (se repiten en orden, uno tras otro)</p>
           {blocks.map((b, i) => (
             <div key={i} className="flex flex-col gap-2 border-b border-hairline pb-2 last:border-0 last:pb-0">

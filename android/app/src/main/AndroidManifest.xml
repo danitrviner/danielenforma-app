@@ -61,7 +61,36 @@
              y solo pide BLUETOOTH_CONNECT, que la app ya solicita para la
              banda. -->
         <service android:name=".CardioSessionService" android:exported="false" android:foregroundServiceType="connectedDevice" />
+
+        <!-- Pasos vía Health Connect (capacitor-health): solo lectura de
+             READ_STEPS, para dejar de pedirle al atleta que los escriba a
+             mano cada día. Actividades exigidas por Health Connect para
+             mostrar la razón del permiso — sin ellas la solicitud falla en
+             Android 13 y 14+. -->
+        <activity
+            android:name="com.fit_up.health.capacitor.PermissionsRationaleActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
+            </intent-filter>
+        </activity>
+        <activity-alias
+            android:name="ViewPermissionUsageActivity"
+            android:exported="true"
+            android:targetActivity="com.fit_up.health.capacitor.PermissionsRationaleActivity"
+            android:permission="android.permission.START_VIEW_PERMISSION_USAGE">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW_PERMISSION_USAGE" />
+                <category android:name="android.intent.category.HEALTH_PERMISSIONS" />
+            </intent-filter>
+        </activity-alias>
     </application>
+
+    <queries>
+        <package android:name="com.google.android.apps.healthdata" />
+    </queries>
+
+    <uses-permission android:name="android.permission.health.READ_STEPS" />
 
     <!-- Permissions -->
 

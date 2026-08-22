@@ -31,7 +31,7 @@ import { PageHeader, Tabs } from './ui';
 export const LIBRARY_SECTIONS = [
   { id: 'ejercicios', label: 'Ejercicios', icon: 'fitness_center' },
   { id: 'nutricion',  label: 'Nutrición',  icon: 'restaurant'     },
-  { id: 'academia',   label: 'Academia',   icon: 'school'         },
+  { id: 'academia',   label: 'Training Lab', icon: 'school'       },
   { id: 'cardio',     label: 'Cardio',     icon: 'favorite'       },
   // 14-08 (tarea 13). Vivía en el Inicio del coach (ClientsScreen), mezclado
   // con las tarjetas de seguimiento de atletas. Es justo el mismo tipo de

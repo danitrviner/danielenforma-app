@@ -14,7 +14,20 @@ import NutritionPeriodizationPanel from './NutritionPeriodizationPanel';
 import NutritionPlansScreen from './NutritionPlansScreen';
 import WeeklyMenuEditor from './WeeklyMenuEditor';
 import FoodPreferencesPanel from './FoodPreferencesPanel';
-import { EmptyState } from './ui';
+import { EmptyState, SegmentedControl } from './ui';
+
+const GOAL_BODY_LABELS: Record<string, string> = {
+  aumentar_musculo: 'Aumentar músculo',
+  reducir_grasa:    'Reducir grasa',
+  mantener:         'Mantener',
+};
+
+type SubView = 'programacion' | 'info';
+const SUBVIEW_KEY = 'enforma_coach_diets_subview';
+const readSubView = (): SubView => {
+  try { return localStorage.getItem(SUBVIEW_KEY) === 'info' ? 'info' : 'programacion'; }
+  catch { return 'programacion'; }
+};
 
 const DIET_MODE_LABELS: Record<DietMode, string> = {
   OMNIVORO:  'Omnívoro',
@@ -55,6 +68,12 @@ export default function ClientDietsPanel({
 }: Props) {
   // Diet editor state: undefined = closed, null = create new, Diet = edit existing
   const [dietEditorDiet, setDietEditorDiet] = useState<Diet | null | undefined>(undefined);
+
+  const [subView, setSubView] = useState<SubView>(readSubView);
+  const changeSubView = (v: string) => {
+    setSubView(v as SubView);
+    try { localStorage.setItem(SUBVIEW_KEY, v); } catch { /* noop */ }
+  };
 
   // T12 (18-08). Misma clave de caché que NutritionPeriodizationPanel
   // (['nutritionProgram', email]) — montado justo debajo, ver más abajo —
@@ -124,7 +143,22 @@ export default function ClientDietsPanel({
   ) : (
     /* ── Diet list + config ── */
     <div className="space-y-6">
-      {/* Diets */}
+      <SegmentedControl
+        label="Vista de dietas"
+        options={[{ value: 'programacion', label: 'Programación' }, { value: 'info', label: 'Información' }]}
+        value={subView}
+        onChange={changeSubView}
+      />
+
+      {(activePhase || onboardingData?.goalBody) && (
+        <p className="font-mono text-caption text-ink-2">
+          {activePhase && <>Fase actual: <span className="text-white font-bold">{activePhase.name}</span></>}
+          {activePhase && onboardingData?.goalBody && ' · '}
+          {onboardingData?.goalBody && <>Objetivo: <span className="text-accent font-bold">{GOAL_BODY_LABELS[onboardingData.goalBody] ?? onboardingData.goalBody}</span></>}
+        </p>
+      )}
+
+      {subView === 'programacion' && (
       <div className="bg-surface border border-hairline rounded-surface p-5 space-y-4">
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
@@ -178,7 +212,7 @@ export default function ClientDietsPanel({
                       )}
                     </div>
                     <p className="font-mono text-caption text-ink-2">
-                      {dt.meals.length} comida{dt.meals.length !== 1 ? 's' : ''} · {dt.meals.reduce((s, m) => s + m.items.length, 0)} alimentos
+                      {dt.meals.length} comida{dt.meals.length !== 1 ? 's' : ''} · {dt.meals.reduce((s, m) => s + m.items.reduce((si, it) => si + it.quantity, 0), 0)} intercambios
                     </p>
                   </div>
 
@@ -203,9 +237,10 @@ export default function ClientDietsPanel({
           </div>
         )}
       </div>
+      )}
 
       {/* Preferencias alimentarias */}
-      {onboardingData && (
+      {subView === 'info' && onboardingData && (
         <div className="bg-surface border border-hairline rounded-surface p-5">
           <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2 mb-4">
             <span className="material-symbols-outlined text-accent text-title-s">restaurant</span>
@@ -224,6 +259,7 @@ export default function ClientDietsPanel({
       )}
 
       {/* Weekly schedule grid */}
+      {subView === 'programacion' && (
       <div className="bg-surface border border-hairline rounded-surface p-5 space-y-4">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
@@ -275,9 +311,11 @@ export default function ClientDietsPanel({
         </div>{/* end grid cols-7 */}
         </div>{/* end overflow-x-auto */}
       </div>
+      )}
 
       {/* Menú semanal — generador automático basado en recetas. Lee sus
           puntos de las dietas de tipo de día programadas arriba. */}
+      {subView === 'programacion' && (
       <div className="bg-surface border border-hairline rounded-surface p-5 space-y-4">
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
@@ -373,10 +411,12 @@ export default function ClientDietsPanel({
           </div>
         )}
       </div>
+      )}
 
       {/* Periodización nutricional — el panel es dueño del estado de
           edición y renderiza el dashboard de rendimiento (gráfico +
           stats) como su propia vista de lectura; son una sola sección. */}
+      {subView === 'info' && (
       <NutritionPeriodizationPanel
         athleteEmail={athlete.email}
         athleteName={athlete.displayName}
@@ -392,11 +432,12 @@ export default function ClientDietsPanel({
             .catch(console.error);
         }}
       />
+      )}
 
       {/* Referencia rápida para "Repartir objetivos" en Mi plan / Dietas —
           para que el coach vea de un vistazo si ya tiene sentido pulsar el
           botón o si primero hay que pedirle esto al atleta. */}
-      {nutritionConfig?.hungerProfile && (
+      {subView === 'info' && nutritionConfig?.hungerProfile && (
         <div className="flex items-center gap-2 bg-data/10 border border-data/25 text-data px-4 py-3 rounded-surface text-caption font-mono">
           <span className="material-symbols-outlined text-body-s flex-shrink-0">restaurant</span>
           <span>
@@ -407,7 +448,7 @@ export default function ClientDietsPanel({
       )}
 
       {/* Nutrition mode config */}
-      {nutritionConfig && (
+      {subView === 'info' && nutritionConfig && (
         <div className="bg-surface border border-hairline rounded-surface p-5 space-y-4">
           <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
             <span className="material-symbols-outlined text-data text-body-s">tune</span>
@@ -437,7 +478,7 @@ export default function ClientDietsPanel({
       )}
 
       {/* Step goal config */}
-      {nutritionConfig && (
+      {subView === 'info' && nutritionConfig && (
         <div className="bg-surface border border-hairline rounded-surface p-5 space-y-4">
           <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
             <span className="material-symbols-outlined text-data text-body-s">directions_walk</span>

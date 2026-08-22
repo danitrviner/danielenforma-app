@@ -88,6 +88,12 @@
 	<string>En Forma usa Bluetooth para conectar con tu banda de pulso y mostrar tu frecuencia cardíaca en directo.</string>
 	<key>NSBluetoothPeripheralUsageDescription</key>
 	<string>En Forma usa Bluetooth para conectar con tu banda de pulso y mostrar tu frecuencia cardíaca en directo.</string>
+	<!-- Vincular pasos con Apple Health (capacitor-health): el atleta ya no
+	     tiene que escribir sus pasos a mano cada día, se leen de la app Salud. -->
+	<key>NSHealthShareUsageDescription</key>
+	<string>En Forma lee tus pasos de la app Salud para mostrar tu progreso diario sin que tengas que escribirlo a mano.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>En Forma no escribe datos en la app Salud, esta autorización la exige iOS aunque solo leamos tus pasos.</string>
 	<!-- Live Activity del temporizador de descanso (pantalla de bloqueo). El
 	     target de Widget Extension "RestTimerWidget" ya existe en el proyecto
 	     (creado en Xcode con "Include Live Activity" — ver el .pbxproj), así

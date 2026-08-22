@@ -12,6 +12,11 @@ export interface TrainingSplit {
 }
 
 export const TRAINING_SPLITS: TrainingSplit[] = [
+  // 2 días — full body es el estándar para principiantes/poco tiempo (ACSM);
+  // torso-pierna como alternativa si prefiere no repetir el mismo día dos veces.
+  { id: '2-full',                label: 'Full body',                  dayTypes: ['Full body', 'Full body'] },
+  { id: '2-torso-pierna',        label: 'Torso - Pierna',             dayTypes: ['Torso', 'Pierna'] },
+
   // 3 días
   { id: '3-torso-pierna-full',   label: 'Torso - Pierna - Full body', dayTypes: ['Torso', 'Pierna', 'Full body'] },
   { id: '3-full',                label: 'Full body',                  dayTypes: ['Full body', 'Full body', 'Full body'] },
@@ -23,6 +28,7 @@ export const TRAINING_SPLITS: TrainingSplit[] = [
   { id: '4-push-pull-x2',        label: 'Push - Pull - Push - Pull',                 dayTypes: ['Push', 'Pull', 'Push', 'Pull'] },
   { id: '4-push-pull-legs-torso',label: 'Push - Pull - Legs - Torso',                dayTypes: ['Push', 'Pull', 'Legs', 'Torso'] },
   { id: '4-torso-pierna-brazo-full', label: 'Torso - Pierna - Brazo/Hombro - Full body', dayTypes: ['Torso', 'Pierna', 'Brazo/Hombro', 'Full body'] },
+  { id: '4-push-pull-legs-full', label: 'Push - Pull - Legs - Full body', dayTypes: ['Push', 'Pull', 'Legs', 'Full body'] },
 
   // 5 días
   { id: '5-torso-pierna-x2-brazo', label: 'Torso - Pierna - Torso - Pierna - Brazo/Hombro', dayTypes: ['Torso', 'Pierna', 'Torso', 'Pierna', 'Brazo/Hombro'] },
@@ -33,6 +39,9 @@ export const TRAINING_SPLITS: TrainingSplit[] = [
   // 6 días
   { id: '6-torso-pierna-brazo-x2', label: 'Torso - Pierna - Brazo/Hombro x2', dayTypes: ['Torso', 'Pierna', 'Brazo/Hombro', 'Torso', 'Pierna', 'Brazo/Hombro'] },
   { id: '6-empujes-tiron-pierna-hombro-x2', label: 'Empujes torso - Tirón torso - Pierna/Hombro x2', dayTypes: ['Empujes torso', 'Tirón torso', 'Pierna/Hombro', 'Empujes torso', 'Tirón torso', 'Pierna/Hombro'] },
+  // PPL x2 — el reparto de 6 días más usado en programación de hipertrofia
+  // (Push/Pull/Legs repetido), 2x/semana por grupo con recuperación entre medias.
+  { id: '6-ppl-x2', label: 'Push - Pull - Legs x2', dayTypes: ['Push', 'Pull', 'Legs', 'Push', 'Pull', 'Legs'] },
 ];
 
 export function getSplitsForDays(daysPerWeek: number): TrainingSplit[] {

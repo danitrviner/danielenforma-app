@@ -24,6 +24,18 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev"],
       "autoPort": true
+    },
+    {
+      "name": "en-forma-ejercicios-qa",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "autoPort": true
+    },
+    {
+      "name": "en-forma-cambios-plan",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "autoPort": true
     }
   ]
 }
