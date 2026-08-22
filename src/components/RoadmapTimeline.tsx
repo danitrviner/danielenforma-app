@@ -4,6 +4,7 @@ import { PlanEvent, WeekAdherence, weekAdherence, detectConflicts, PlanConflict 
 import { mesocycleWeekNumber } from '../utils/progression';
 import { Icon, Button, EmptyState, Sheet, Input, Select, Badge, BadgeTone } from './ui';
 import EventPlannerSheet from './roadmap/EventPlannerSheet';
+import ProposePlanSheet from './roadmap/ProposePlanSheet';
 
 type PlannerLane = 'entrenamiento' | 'nutricion' | 'revisiones' | 'objetivos';
 
@@ -287,6 +288,7 @@ export default function RoadmapTimeline({ mesocycles: mesocyclesProp, nutritionP
   const [quickCreateSaving, setQuickCreateSaving] = useState(false);
   const [viewingConflict, setViewingConflict] = useState<PlanConflict | null>(null);
   const [plannerOpen, setPlannerOpen] = useState(false);
+  const [proposePlanOpen, setProposePlanOpen] = useState(false);
   // Con qué fecha/carril se abre el panel "Programar evento" — clicar una
   // celda vacía de Entrenamiento o Nutrición lo abre ya centrado en esa semana
   // y ese carril, en vez de siempre "Entrenamiento hoy" (Bloque H, Pantalla 1).
@@ -990,12 +992,19 @@ export default function RoadmapTimeline({ mesocycles: mesocyclesProp, nutritionP
             Timeline de planificación
           </p>
           <div className="flex items-center gap-2">
+            {onAddVolumeRule && (
+              <Button size="s" onClick={() => setProposePlanOpen(true)} icon="auto_awesome">Proponer plan con IA</Button>
+            )}
             {onCreateReview && onAddVolumeRule && (
               <Button size="s" variant="secondary" onClick={() => { setPlannerDate(today); setPlannerLane('entrenamiento'); setPlannerOpen(true); }} icon="add">Evento</Button>
             )}
-            <Button size="s" onClick={openNew} icon="add">Añadir objetivo</Button>
+            <Button size="s" variant="secondary" onClick={openNew} icon="add">Añadir objetivo</Button>
           </div>
         </div>
+      )}
+
+      {onAddVolumeRule && (
+        <ProposePlanSheet open={proposePlanOpen} onClose={() => setProposePlanOpen(false)} />
       )}
 
       {onCreateReview && onAddVolumeRule && (

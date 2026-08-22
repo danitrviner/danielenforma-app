@@ -380,6 +380,7 @@ function Delta({ delta, showEqual = false }: { delta: number | null; showEqual?:
 // end to end, not two disconnected screens the coach has to reconcile by hand.
 function MesoExercisesView({
   groups, loading, weeks, allExercises, onUpdateExercise, onReplaceExercise, onAddExercise, onRemoveExercise, onGoToDistribution,
+  libraryWorkouts, onUseLibraryWorkout,
 }: {
   groups: MesoWorkoutGroup[];
   loading: boolean;
@@ -390,6 +391,8 @@ function MesoExercisesView({
   onAddExercise: (group: MesoWorkoutGroup) => void;
   onRemoveExercise: (group: MesoWorkoutGroup, exIdx: number) => void;
   onGoToDistribution: () => void;
+  libraryWorkouts: Workout[];
+  onUseLibraryWorkout: (group: MesoWorkoutGroup, workout: Workout) => void;
 }) {
   if (loading) {
     return (
@@ -414,7 +417,7 @@ function MesoExercisesView({
     );
   }
 
-  return <MesoExercisesTabs {...{ groups, weeks, allExercises, onUpdateExercise, onReplaceExercise, onAddExercise, onRemoveExercise }} />;
+  return <MesoExercisesTabs {...{ groups, weeks, allExercises, onUpdateExercise, onReplaceExercise, onAddExercise, onRemoveExercise, libraryWorkouts, onUseLibraryWorkout }} />;
 }
 
 // Un día por pestaña en vez de todos los días apilados en la misma pantalla —
@@ -422,6 +425,7 @@ function MesoExercisesView({
 // ejercicios de días distintos. Aquí solo se ve un día a la vez, con su vídeo.
 function MesoExercisesTabs({
   groups, weeks, allExercises, onUpdateExercise, onReplaceExercise, onAddExercise, onRemoveExercise,
+  libraryWorkouts, onUseLibraryWorkout,
 }: {
   groups: MesoWorkoutGroup[];
   weeks: number;
@@ -430,9 +434,12 @@ function MesoExercisesTabs({
   onReplaceExercise: (group: MesoWorkoutGroup, exIdx: number) => void;
   onAddExercise: (group: MesoWorkoutGroup) => void;
   onRemoveExercise: (group: MesoWorkoutGroup, exIdx: number) => void;
+  libraryWorkouts: Workout[];
+  onUseLibraryWorkout: (group: MesoWorkoutGroup, workout: Workout) => void;
 }) {
   const [activeIdx, setActiveIdx] = useState(0);
   const [videoModal, setVideoModal] = useState<{ key: string; url: string; name: string } | null>(null);
+  const [libraryPickerFor, setLibraryPickerFor] = useState<MesoWorkoutGroup | null>(null);
   const longPressTimer = useRef<number | null>(null);
   const group = groups[Math.min(activeIdx, groups.length - 1)];
 
@@ -563,13 +570,25 @@ function MesoExercisesTabs({
                     );
                   })
                 )}
-                <button
-                  onClick={() => onAddExercise(g)}
-                  className="w-full flex items-center justify-center gap-2 bg-bg border border-dashed border-hairline rounded-control px-3 py-2 text-title-s font-sans text-ink-2 hover:text-accent hover:border-accent/40 transition-all"
-                >
-                  <Icon name="add" size="s" />
-                  Añadir ejercicio
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => onAddExercise(g)}
+                    className="flex-1 flex items-center justify-center gap-2 bg-bg border border-dashed border-hairline rounded-control px-3 py-2 text-title-s font-sans text-ink-2 hover:text-accent hover:border-accent/40 transition-all"
+                  >
+                    <Icon name="add" size="s" />
+                    Añadir ejercicio
+                  </button>
+                  {libraryWorkouts.length > 0 && (
+                    <button
+                      onClick={() => setLibraryPickerFor(g)}
+                      title="Copiar los ejercicios de una rutina de la biblioteca a este día"
+                      className="flex items-center justify-center gap-2 bg-bg border border-dashed border-hairline rounded-control px-3 py-2 text-title-s font-sans text-ink-2 hover:text-accent hover:border-accent/40 transition-all"
+                    >
+                      <Icon name="library_books" size="s" />
+                      Usar de biblioteca
+                    </button>
+                  )}
+                </div>
                 <p className="font-mono text-caption text-ink-3">
                   Se aplica a todas las semanas de este mesociclo — las sesiones ya completadas no se tocan.
                 </p>
@@ -585,6 +604,31 @@ function MesoExercisesTabs({
         title={videoModal?.name ?? 'Vídeo del ejercicio'}
       >
         {videoModal && <ExerciseVideoPlayer videoUrl={videoModal.url} />}
+      </Sheet>
+
+      {/* Bloque G — elegir una rutina de la biblioteca (WorkoutsScreen) para
+          copiar sus ejercicios al día activo. Se copian, no se referencian. */}
+      <Sheet
+        open={libraryPickerFor !== null}
+        onClose={() => setLibraryPickerFor(null)}
+        title="Usar rutina de la biblioteca"
+      >
+        <div className="space-y-2">
+          {libraryWorkouts.length === 0 ? (
+            <p className="font-sans text-caption text-ink-3">Sin rutinas en la biblioteca todavía — créalas en Biblioteca → Ejercicios → Rutinas.</p>
+          ) : (
+            libraryWorkouts.map(w => (
+              <button
+                key={w.id}
+                onClick={() => { if (libraryPickerFor) { onUseLibraryWorkout(libraryPickerFor, w); setLibraryPickerFor(null); } }}
+                className="w-full flex items-center justify-between gap-3 p-3 bg-raised border border-hairline rounded-surface hover:border-accent/40 transition-all text-left"
+              >
+                <span className="font-sans font-bold text-body-s text-white">{w.name}</span>
+                <span className="font-mono text-caption text-ink-2">{w.exercises.length} ejerc.</span>
+              </button>
+            ))
+          )}
+        </div>
       </Sheet>
     </div>
   );
@@ -1317,6 +1361,18 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
     setExercisePicker({ context: 'programado', group, exIdx: null });
   }
 
+  // Bloque G — librería de workouts reutilizables (WorkoutsScreen, pestaña
+  // "Rutinas" de Ejercicios): un Workout sin `mesocycleId` es de biblioteca,
+  // no de un atleta concreto. "Usar" copia sus ejercicios al día — no los
+  // referencia — para no acoplar el día del atleta a que alguien no edite la
+  // plantilla de biblioteca por error; mismo criterio que aplicar una
+  // plantilla de mesociclo (handleApplyTemplate) o un ejercicio nuevo.
+  function handleUseLibraryWorkout(group: MesoWorkoutGroup, libraryWorkout: Workout) {
+    if (!window.confirm(`¿Copiar los ${libraryWorkout.exercises.length} ejercicios de "${libraryWorkout.name}" a este día? Se añaden a los que ya tenga.`)) return;
+    const copied = libraryWorkout.exercises.map((e, i) => ({ ...e, order: group.exercises.length + i }));
+    void writeMesoWorkoutExercises(group, [...group.exercises, ...copied]);
+  }
+
   function handleRemoveMesoExercise(group: MesoWorkoutGroup, exIdx: number) {
     if (!window.confirm('¿Quitar este ejercicio? Se aplica a todas las semanas de este mesociclo — las sesiones ya completadas no se tocan.')) return;
     void writeMesoWorkoutExercises(group, group.exercises.filter((_, i) => i !== exIdx));
@@ -2044,6 +2100,8 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                   onAddExercise={handleAddMesoExercise}
                   onRemoveExercise={handleRemoveMesoExercise}
                   onGoToDistribution={() => setEditorTab('distribution')}
+                  libraryWorkouts={allWorkouts.filter(w => !w.mesocycleId)}
+                  onUseLibraryWorkout={handleUseLibraryWorkout}
                 />
               )}
 
