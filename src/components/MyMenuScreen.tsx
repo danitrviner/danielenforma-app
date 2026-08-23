@@ -100,8 +100,11 @@ export default function MyMenuScreen({ profile }: Props) {
     allergies: onboarding?.allergies ?? [],
     disliked: onboarding?.dislikedFoods ?? [],
     liked: onboarding?.likedFoods ?? [],
-    dietType: onboarding?.dietType,
-    cookingMaxTime: onboarding?.cookingMaxTime,
+    // Manda lo que el atleta haya corregido en Perfil > Preferencias; la ficha
+    // de iniciación es solo el valor de partida (igual que `variety` y los
+    // tipos de plato, justo debajo).
+    dietType: nutritionConfig?.dietType ?? onboarding?.dietType,
+    cookingMaxTime: nutritionConfig?.cookingMaxTime ?? onboarding?.cookingMaxTime,
     variety: nutritionConfig?.menuVariety ?? onboarding?.menuVariety ?? 3,
     favoriteRecipeIds: favorites.recipeIds,
     dislikedRecipeIds: favorites.dislikedIds ?? [],

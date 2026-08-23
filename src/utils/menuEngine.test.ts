@@ -166,6 +166,46 @@ describe('generateWeek batch cooking', () => {
   });
 });
 
+describe('batch cooking y tupper', () => {
+  const slots = [{ slot: 1, name: 'Comida', pct: 100 }];
+  const d = diet({ id: 'd1', budget: { HC: 4, PROT: 4, GRASA: 2, MIX_HC: 0, MIX_GRASA: 0 } });
+  const schedule = { mon: 'd1', tue: 'd1' } as const;
+  const exchanges = { HC: 4, PROT: 4, GRASA: 2 };
+
+  /* Cocinar el domingo para toda la semana y que te toque una receta que solo
+     está buena recién hecha es el fallo que hace que el atleta abandone el
+     menú. `needsTupper` no cubría esto: solo dice que ESA comida se la lleva
+     de casa, y en batch se cocina todo por adelantado igualmente. */
+  it('prefiere platos que aguantan en tupper cuando se cocina para toda la semana', () => {
+    const pools = {
+      1: [
+        recipe({ id: 'fresca', name: 'Ensalada templada', exchanges }),
+        recipe({ id: 'tupper', name: 'Lentejas', exchanges, tupper: true }),
+      ],
+    };
+    const days = generateWeek({ schedule, diets: [d], slots, pools, foods: [], prefs: basePrefs, batch: true });
+    expect(days.find(x => x.day === 'mon')!.meals[0].recipeId).toBe('tupper');
+  });
+
+  it('sin platos de tupper sigue proponiendo comida en vez de dejar el día vacío', () => {
+    const pools = { 1: [recipe({ id: 'fresca', name: 'Ensalada templada', exchanges })] };
+    const days = generateWeek({ schedule, diets: [d], slots, pools, foods: [], prefs: basePrefs, batch: true });
+    expect(days.find(x => x.day === 'mon')!.meals[0].recipeId).toBe('fresca');
+  });
+
+  it('fuera de batch, un plato no apto para tupper compite de igual a igual', () => {
+    const pools = {
+      1: [
+        recipe({ id: 'fresca', name: 'Ensalada templada', exchanges }),
+        recipe({ id: 'tupper', name: 'Lentejas', exchanges, tupper: true }),
+      ],
+    };
+    const days = generateWeek({ schedule, diets: [d], slots, pools, foods: [], prefs: basePrefs });
+    const elegidas = new Set(days.filter(x => x.meals.length).map(x => x.meals[0].recipeId));
+    expect(elegidas.has('fresca')).toBe(true);
+  });
+});
+
 describe('buildBatchPlan', () => {
   it('aggregates repeated recipes across the week into servings to cook', () => {
     const meal = (id: string, recipeId: string, name: string, scale: number) =>
@@ -176,7 +216,9 @@ describe('buildBatchPlan', () => {
       { day: 'wed', dietId: 'd', target: { HC: 1, PROT: 1, GRASA: 1 }, meals: [meal('wed_m1', 'r2', 'Merluza', 1)] },
     ];
     const plan = buildBatchPlan(days);
-    expect(plan[0]).toMatchObject({ recipeId: 'r1', totalScale: 2.25, servings: 2, });
+    // 3 raciones, no 2: se redondea hacia arriba porque es lo que hay que
+    // cocinar. Con 2 raciones para 2,25 de plan, el último día no come.
+    expect(plan[0]).toMatchObject({ recipeId: 'r1', totalScale: 2.25, servings: 3, });
     expect(plan[0].occurrences).toHaveLength(2);
     expect(plan.map(p => p.recipeId)).toEqual(['r1', 'r2']); // sorted by total volume desc
   });

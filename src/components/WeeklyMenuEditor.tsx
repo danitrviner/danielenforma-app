@@ -99,14 +99,16 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
     allergies: onboarding?.allergies ?? [],
     disliked: onboarding?.dislikedFoods ?? [],
     liked: onboarding?.likedFoods ?? [],
-    dietType: onboarding?.dietType,
-    cookingMaxTime: onboarding?.cookingMaxTime,
+    // Manda lo corregido por el atleta en su perfil, igual que `variety` y
+    // `batch` arriba; la ficha de iniciación es el valor de partida.
+    dietType: nutritionConfig?.dietType ?? onboarding?.dietType,
+    cookingMaxTime: nutritionConfig?.cookingMaxTime ?? onboarding?.cookingMaxTime,
     variety,
     favoriteRecipeIds: favorites.recipeIds,
     dislikedRecipeIds: favorites.dislikedIds ?? [],
     preferredDishTypes: preferredDish as DishType[],
     excludedDishTypes: excludedDish as DishType[],
-  }), [onboarding, variety, favorites, preferredDish, excludedDish]);
+  }), [onboarding, nutritionConfig, variety, favorites, preferredDish, excludedDish]);
 
   function cycleDishType(id: string) {
     if (preferredDish.includes(id)) { setPreferredDish(p => p.filter(x => x !== id)); setExcludedDish(e => [...e, id]); }

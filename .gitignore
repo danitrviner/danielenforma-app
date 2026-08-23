@@ -35,3 +35,8 @@ service-account*.json
 # OS / editor
 Thumbs.db
 .vscode/settings.json
+
+# Índice del recetario: se genera en cada build desde public/recetas/
+# (scripts/generarIndiceRecetas.mjs). Son 4,7 MB derivados de datos que ya
+# están versionados aquí — guardarlo solo serviría para que se desincronizara.
+public/recetas-indice.json
