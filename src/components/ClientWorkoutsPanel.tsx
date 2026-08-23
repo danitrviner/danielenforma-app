@@ -159,58 +159,6 @@ export default function ClientWorkoutsPanel({
         </>
       ) : (
       <>
-      {/* Onboarding exercise reference */}
-      {onboardingData && (onboardingData.favoriteExercises.length > 0 || onboardingData.hatedExercises.length > 0 || onboardingData.equipment.length > 0) && (
-        <div className="bg-bg border border-accent/15 rounded-surface p-4 space-y-3">
-          <p className="font-mono text-caption text-accent uppercase tracking-wider flex items-center gap-2">
-            <span className="material-symbols-outlined text-body-s">person_check</span>
-            Preferencias de ejercicio
-          </p>
-          {onboardingData.favoriteExercises.length > 0 && (
-            <div className="space-y-1">
-              <p className="font-mono text-caption text-ink-2 uppercase">Favoritos</p>
-              <div className="flex flex-wrap gap-2">
-                {onboardingData.favoriteExercises.map(e => (
-                  <span key={e} className="bg-accent/10 border border-accent/25 text-accent px-3 py-1 rounded-full text-caption font-mono font-bold">
-                    {e}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-          {onboardingData.hatedExercises.length > 0 && (
-            <div className="space-y-1">
-              <p className="font-mono text-caption text-ink-2 uppercase">Evitar</p>
-              <div className="flex flex-wrap gap-2">
-                {onboardingData.hatedExercises.map(e => (
-                  <span key={e} className="bg-red-500/10 border border-red-500/20 text-red-300 px-3 py-1 rounded-full text-caption font-mono">
-                    {e}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-          {onboardingData.equipment.length > 0 && (
-            <div className="space-y-1">
-              <p className="font-mono text-caption text-ink-2 uppercase">Material disponible</p>
-              <div className="flex flex-wrap gap-2">
-                {onboardingData.equipment.map(e => (
-                  <span key={e} className="bg-raised border border-hairline text-ink-2 px-3 py-1 rounded-full text-caption font-mono">
-                    {e}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-          {onboardingData.injuries && (
-            <p className="font-mono text-caption text-amber-300 flex items-center gap-1">
-              <span className="material-symbols-outlined text-body-s">personal_injury</span>
-              {onboardingData.injuries}
-            </p>
-          )}
-        </div>
-      )}
-
       {/* Notas del atleta — agrupadas por sesión (mockup Fase 3, pantalla 06):
           cada log de entreno es una sesión, y dentro de ella la nota del
           entreno completo y las notas por ejercicio son "notas" individuales,
