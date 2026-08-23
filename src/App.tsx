@@ -449,6 +449,20 @@ function AppContent() {
   // directo a /training rebotaría a Hoy durante ese primer instante.
   const bloquearSinPlan = !cargandoPlanGate && !planVisible;
 
+  /* El tour necesita DOS señales, no una.
+     `planVisible` dice que el coach pulsó «Mostrar el plan al atleta»; eso es
+     lo que decide cuándo se abre la app, y así se queda. Pero como marca del
+     perfil que es, se queda puesta para siempre: si luego no queda ningún
+     entrenamiento asignado —se reasignó el mesociclo, se borró, o se publicó
+     antes de terminar de montarlo— el tour arrancaba igual y paseaba al atleta
+     por pantallas vacías. Los pasos que piden tocar una serie o una comida no
+     tenían nada que tocar, así que no se podían completar y el tour se quedaba
+     encallado.
+     Se exige además que exista algo asignado de verdad. Si aún no lo hay, el
+     tour espera: `hasPlan` ya se refresca solo al volver a primer plano (ver el
+     listener de abajo), así que arrancará en cuanto llegue el plan real. */
+  const tourConContenido = planVisible && hasPlan;
+
   /* 14-08 (tarea 9), ampliado en T7.b (18-08). El tour automático
      (TutorialEngine) arranca solo en cuanto `hasPlan` pasa a `true` — la
      lógica en sí ya estaba bien. El bug real está aquí: esta consulta
@@ -709,7 +723,7 @@ function AppContent() {
     <CardioSessionProvider profile={profile} enabled={!isCoach}>
     <TutorialEngine
       profile={profile}
-      planVisible={planVisible}
+      planVisible={tourConContenido}
       currentTab={pathTab}
       onNavigate={goToTab}
       onProfileChanged={updates => setProfile(p => p ? { ...p, ...updates } as UserProfile : p)}

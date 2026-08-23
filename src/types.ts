@@ -229,6 +229,18 @@ export interface AthleteNutritionConfig {
   /** Franja (escala 1-5, ver DietMeal.slot) de la ingesta pegada al entreno,
    *  para cuando ninguna comida de la dieta trae `aroundTraining` explícito. */
   trainingSlot?: number;
+  /* ── Respuestas de la ficha de iniciación que el atleta puede corregir ──────
+     Se preguntan una vez al darse de alta y luego quedaban congeladas para
+     siempre: quien decía cocinar 15 minutos porque estaba de mudanza se
+     quedaba con menús de 15 minutos un año después. Todas siguen el mismo
+     patrón que `menuVariety`: aquí vive lo que el atleta cambie, y
+     `OnboardingData` es el valor de partida cuando esto no tiene nada. */
+  dietType?: DietType;
+  cookingLevel?: number;      // 1–5
+  cookingMaxTime?: number;    // minutos
+  mealCount?: number;         // 3 | 4 | 5
+  breakfastVariety?: number;  // 1–5
+  lunchVariety?: number;      // 1–5
 }
 
 export type HungerProfile = 'manana' | 'equilibrado' | 'noche';

@@ -119,8 +119,8 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
   // en qué semana del mesociclo cae `activeAssignment.date` requiere el `startDate` del
   // Mesocycle, que hasta ahora esta pantalla no necesitaba cargar.
   const { data: mesocycles = [] } = useQuery({
-    queryKey: ['mesocycles', profile.userId],
-    queryFn: () => getMesocycles(profile.userId),
+    queryKey: ['mesocycles', profile.email],
+    queryFn: () => getMesocycles(profile.email),
   });
   const loading = loadingAssignments || loadingWorkouts || loadingExercises || loadingLogs || loadingNotes;
 

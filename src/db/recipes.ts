@@ -1,5 +1,4 @@
-import { db, collection, doc, getDoc, setDoc, getDocs, addDoc, updateDoc, deleteDoc, query, where, orderBy, limit, startAfter } from '../firebase';
-import { QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
+import { db, collection, doc, getDoc, setDoc, getDocs, addDoc, updateDoc, deleteDoc, query, where } from '../firebase';
 import { Recipe, RecipeFavorites } from '../types';
 import { forceLocalOnly, setLocalBypassMode, stripUndefined, esFalloDePermisos } from './core';
 
@@ -95,42 +94,98 @@ export async function getRecipeById(id: string): Promise<Recipe | null> {
   }
 }
 
-export type RecetasCursor = QueryDocumentSnapshot<DocumentData>;
+/**
+ * Posición dentro del índice empaquetado. Es opaco para quien lo usa: se
+ * recibe de `queryRecetas` y se le devuelve tal cual para pedir la página
+ * siguiente. Antes era un `QueryDocumentSnapshot` de Firestore (lo consumía
+ * `startAfter`); al listar en local ya no hay snapshot que guardar.
+ */
+export type RecetasCursor = { offset: number };
 
 export interface RecetasFilters {
   categoria?: string;
   intakeType?: number;
 }
 
-const recetasPageCache = new Map<string, { recipes: Recipe[]; cursor: RecetasCursor | null; hasMore: boolean }>();
+/**
+ * El índice del recetario viaja dentro de la app (`public/recetas-indice.json`,
+ * lo genera `scripts/generarIndiceRecetas.mjs`). Listar y filtrar recetas no
+ * toca Firestore: son 8.850 documentos que no cambian casi nunca y que se
+ * releían enteros en cada sesión de cada atleta, agotando la cuota diaria de
+ * lecturas de la base de datos —y tirando la app a modo local cuando pasaba—
+ * además de pagar un viaje a us-west1 por página.
+ *
+ * Lo que el índice NO trae son los pasos y las cantidades: eso llega con
+ * `getRecipeById` al abrir una receta concreta, que es una lectura y solo
+ * cuando de verdad se necesita.
+ *
+ * En la app nativa el fichero es local, así que esto no es una descarga.
+ */
+/**
+ * Repone los campos que el documento de Firestore sí tiene pero que no vale la
+ * pena guardar 8.850 veces en el fichero: o son constantes, o se derivan de otro
+ * campo. Guardarlos costaría cientos de KB en cada instalación para no decir
+ * nada nuevo.
+ */
+function hidratarEntradaIndice(r: Recipe): Recipe {
+  return {
+    ...r,
+    ownerId: OWNER_RECETARIO,
+    // `categoria` es el campo real; `categories` es el array heredado con el que
+    // filtran las pantallas antiguas y el motor de menús.
+    categories: r.categoria ? [r.categoria] : [],
+    // Vacíos en el documento real: una receta del recetario trae `ingredientsText`
+    // y `stepsText`, no la estructura de ingredientes del constructor.
+    ingredients: [],
+    extras: [],
+    steps: [],
+  } as Recipe;
+}
+
+let indicePromesa: Promise<Recipe[]> | null = null;
+
+export function cargarIndiceRecetas(): Promise<Recipe[]> {
+  // Se memoiza la promesa, no el resultado: si la lista y el generador de menús
+  // lo piden a la vez durante el arranque, comparten la misma carga en lugar de
+  // parsear 4,5 MB dos veces.
+  indicePromesa ??= fetch('/recetas-indice.json')
+    .then(res => {
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res.json();
+    })
+    .then((data: { recetas: Recipe[] }) => (data.recetas ?? []).map(hidratarEntradaIndice))
+    .catch(err => {
+      console.warn('No se pudo cargar el índice del recetario:', err);
+      indicePromesa = null;   // que el siguiente intento vuelva a probar
+      return [];
+    });
+  return indicePromesa;
+}
 
 export async function queryRecetas(
   filters: RecetasFilters,
   cursor: RecetasCursor | null,
-  pageSize = 24,
+  pageSize = 48,
 ): Promise<{ recipes: Recipe[]; cursor: RecetasCursor | null; hasMore: boolean }> {
-  const cacheKey = `${filters.categoria ?? ''}|${filters.intakeType ?? ''}|${cursor?.id ?? ''}|${pageSize}`;
-  const cached = recetasPageCache.get(cacheKey);
-  if (cached) return cached;
+  const indice = await cargarIndiceRecetas();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const constraints: any[] = [where('ownerId', 'in', OWNER_RECETARIO_TODOS)];
-  if (filters.categoria) constraints.push(where('categoria', '==', filters.categoria));
-  if (filters.intakeType != null) constraints.push(where('intakeTypes', 'array-contains', filters.intakeType));
-  constraints.push(orderBy('name'));
-  if (cursor) constraints.push(startAfter(cursor));
-  constraints.push(limit(pageSize + 1));
+  // El índice ya viene ordenado por nombre desde el generador —el mismo orden
+  // que daba `orderBy('name')`—, así que filtrar conserva el orden y no hay que
+  // reordenar 8.850 entradas en el móvil.
+  const coincidencias = indice.filter(r =>
+    (!filters.categoria || r.categoria === filters.categoria) &&
+    (filters.intakeType == null || (r.intakeTypes ?? []).includes(filters.intakeType)),
+  );
 
-  const snap = await getDocs(query(collection(db, 'recipes'), ...constraints));
-  const hasMore = snap.docs.length > pageSize;
-  const docs = hasMore ? snap.docs.slice(0, pageSize) : snap.docs;
-  const result = {
-    recipes: docs.map(d => ({ id: d.id, ...d.data() } as Recipe)),
-    cursor: docs[docs.length - 1] ?? null,
-    hasMore,
+  const desde = cursor?.offset ?? 0;
+  const recipes = coincidencias.slice(desde, desde + pageSize);
+  const siguiente = desde + recipes.length;
+
+  return {
+    recipes,
+    cursor: { offset: siguiente },
+    hasMore: siguiente < coincidencias.length,
   };
-  recetasPageCache.set(cacheKey, result);
-  return result;
 }
 
 export async function createRecipe(data: Omit<Recipe, 'id'>): Promise<Recipe> {
@@ -247,23 +302,15 @@ function shuffle<T>(arr: T[]): T[] {
 export async function queryRecetasForGenerator(intakeType: number, maxResults = 300): Promise<Recipe[]> {
   const cached = recetasGeneratorCache.get(intakeType);
   if (cached) return cached;
-  try {
-    const q = query(
-      collection(db, 'recipes'),
-      where('ownerId', 'in', OWNER_RECETARIO_TODOS),
-      where('intakeTypes', 'array-contains', intakeType),
-      orderBy('name'),
-      limit(maxResults),
-    );
-    const snap = await getDocs(q);
-    // orderBy('name') biases toward the start of the alphabet; shuffle client-side
-    // so the generator/swap picker don't always surface the same few recipes.
-    const recipes = shuffle(snap.docs.map(d => ({ id: d.id, ...d.data() } as Recipe)));
-    recetasGeneratorCache.set(intakeType, recipes);
-    return recipes;
-  } catch (err) {
-    console.warn(`queryRecetasForGenerator(intakeType=${intakeType}) failed:`, err);
-    return [];
-  }
+
+  const indice = await cargarIndiceRecetas();
+  const candidatas = indice.filter(r => (r.intakeTypes ?? []).includes(intakeType));
+
+  // Se baraja ANTES de recortar: el índice está ordenado por nombre, así que
+  // quedarse con las primeras `maxResults` dejaría al generador proponiendo
+  // siempre las mismas recetas del principio del alfabeto.
+  const recipes = shuffle(candidatas).slice(0, maxResults);
+  recetasGeneratorCache.set(intakeType, recipes);
+  return recipes;
 }
 

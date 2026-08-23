@@ -6,10 +6,11 @@ import {
 import {
   getRecipes, getRecipeFavorites, saveRecipeFavorites, deleteRecipe,
   getAthleteNutritionConfig, queryRecetas, getOnboarding,
-  getDietsForAthlete, getAthleteDietConfig, OWNER_RECETARIO_TODOS,
+  getDietsForAthlete, getAthleteDietConfig, OWNER_RECETARIO_TODOS, getRecipeById,
 } from '../dbService';
 import type { RecetasCursor } from '../dbService';
 import { classifyRecipe, violatesDietType } from '../utils/foodPrefs';
+import { dishType } from '../utils/dishTypes';
 import { BUDGET_CATS, roundQuarter, CAT_COLOR, CAT_BG } from '../utils/exchangeHelpers';
 import { exchangeToKcal } from '../utils/nutritionConstants';
 import { Skeleton } from './ui';
@@ -74,7 +75,10 @@ const INTAKE_LABELS: Record<number, string> = {
   5: 'Cena',
 };
 
-const PAGE_SIZE = 24;
+// Cuántas recetas visibles intenta juntar cada clic de «Cargar más recetas», y
+// cuántas lecturas como mucho se encadenan para lograrlo.
+const RECETAS_VISIBLES_POR_CLIC = 12;
+const MAX_PAGINAS_POR_CLIC = 3;
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
@@ -91,6 +95,9 @@ interface CardProps {
   isFav: boolean;
   large?: boolean;
   isFeatured?: boolean;
+  /** Tarda más de lo que el atleta dijo poder cocinar. No se le oculta —puede
+   *  tener un día libre— pero se marca para que lo vea antes de meterse. */
+  excedeTiempo?: boolean;
   onOpen: (r: Recipe) => void;
   onToggleFav: (id: string) => Promise<void> | void;
   key?: React.Key;
@@ -144,7 +151,7 @@ function RecipeCard({ recipe, isFav, large = false, onOpen, onToggleFav }: CardP
 }
 
 // Compact card used in the Recetas paginated grid (image-forward, tighter)
-function RecetaCard({ recipe, isFav, isFeatured, onOpen, onToggleFav }: Omit<CardProps, 'large'>) {
+function RecetaCard({ recipe, isFav, isFeatured, excedeTiempo, onOpen, onToggleFav }: Omit<CardProps, 'large'>) {
   const photo = recipe.image ?? recipe.photoUrl;
   const exch = recipe.exchanges;
 
@@ -196,7 +203,10 @@ function RecetaCard({ recipe, isFav, isFeatured, onOpen, onToggleFav }: Omit<Car
         )}
         <div className="flex flex-wrap gap-1 ">
           {recipe.cookingTime && (
-            <span className="flex items-center font-mono text-caption text-ink-2">
+            <span
+              className={`flex items-center font-mono text-caption ${excedeTiempo ? 'text-amber-400' : 'text-ink-2'}`}
+              title={excedeTiempo ? 'Tarda más de lo que sueles tener para cocinar' : undefined}
+            >
               <span className="material-symbols-outlined" style={{ fontSize: '10px' }}>schedule</span>
               {recipe.cookingTime}min
             </span>
@@ -631,12 +641,31 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
     const total = BUDGET_CATS.reduce((s, c) => s + (exch[c] ?? 0), 0);
     return total <= dailyBudgetTotal;
   }, [dailyBudgetTotal]);
+  // Los tipos de plato (arroces, ensaladas, tortillas…) se preguntan en la ficha
+  // de iniciación y el motor de menús ya los respetaba, pero el recetario que
+  // navega el atleta los ignoraba: le seguía ofreciendo justo lo que había
+  // marcado como excluido y no le adelantaba lo que había pedido tener más.
   const prefs = useMemo(() => ({
     liked:     onboardingData?.likedFoods     ?? [],
     disliked:  onboardingData?.dislikedFoods  ?? [],
     allergies: onboardingData?.allergies      ?? [],
     dietType:  onboardingData?.dietType,
-  }), [onboardingData]);
+    // Misma precedencia que MenuPreferencesPanel: manda lo que el atleta haya
+    // editado luego en su perfil, y la ficha de iniciación es el valor de
+    // partida. Leer solo el onboarding dejaría el recetario obedeciendo a
+    // respuestas que el atleta ya cambió.
+    tiposPreferidos: new Set(nutritionConfig?.preferredDishTypes ?? onboardingData?.preferredDishTypes ?? []),
+    tiposExcluidos:  new Set(nutritionConfig?.excludedDishTypes  ?? onboardingData?.excludedDishTypes  ?? []),
+    tiempoMaxCocina: nutritionConfig?.cookingMaxTime ?? onboardingData?.cookingMaxTime,
+  }), [onboardingData, nutritionConfig]);
+
+  // El generador de menús descarta lo que no cabe en el tiempo de cocina del
+  // atleta; aquí no se descarta —navegando puede querer algo para un domingo—
+  // pero sí se avisa, para que no abra una receta de hora y media creyendo que
+  // le encaja entre semana.
+  const excedeTiempoDeCocina = useCallback((r: Recipe) => (
+    prefs.tiempoMaxCocina != null && r.cookingTime != null && r.cookingTime > prefs.tiempoMaxCocina
+  ), [prefs.tiempoMaxCocina]);
   const [selectedCat, setSelectedCat]   = useState<string>('all');
 
   const [showDislikedSection, setShowDislikedSection] = useState(false);
@@ -675,12 +704,17 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
       setRecetasCursor(result.cursor);
       setRecetasHasMore(result.hasMore);
       setRecetasError(null);
+      // Se devuelve además de guardarse en estado: `handleLoadMore` encadena
+      // páginas dentro de un mismo clic y no puede esperar al re-render para
+      // saber con qué cursor sigue ni cuántas recetas le han valido.
+      return result;
     } catch (err) {
       console.warn('queryRecetas failed:', err);
       setRecetasError('No se pudieron cargar las recetas. Reintenta.');
       // Keep hasMore true so the retry button stays visible; cursor is left
       // untouched so retrying repeats the same (failed) page.
       setRecetasHasMore(true);
+      return null;
     }
   }, []);
 
@@ -691,11 +725,35 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
     loadRecetas(recetasCat, recetasIntake, null, false).finally(() => setRecetasLoading(false));
   }, [recetasCat, recetasIntake, loadRecetas]);
 
+  // Lo que de verdad acaba en pantalla. El filtrado por alergias, tipo de dieta
+  // y presupuesto ocurre DESPUÉS de paginar, así que sin esto una página entera
+  // podía quedarse en dos tarjetas: se pedían 24 recetas y las preferencias del
+  // atleta descartaban 22 en silencio.
+  const esVisible = useCallback((r: Recipe) => {
+    if (onlyFitsBudget && !fitsBudget(r)) return false;
+    if (violatesDietType(r, prefs.dietType)) return false;
+    // Un tipo de plato excluido es una decisión explícita del atleta, igual de
+    // firme que una alergia a efectos de no enseñárselo.
+    if (prefs.tiposExcluidos.size > 0 && prefs.tiposExcluidos.has(dishType(r))) return false;
+    return classifyRecipe(r, prefs.liked, prefs.disliked, prefs.allergies) !== 'allergy';
+  }, [onlyFitsBudget, fitsBudget, prefs]);
+
   const handleLoadMore = useCallback(async () => {
     setRecetasLoadingMore(true);
-    await loadRecetas(recetasCat, recetasIntake, recetasCursor, true);
+    // Se encadenan páginas hasta juntar recetas visibles de verdad, no hasta
+    // completar una lectura. El tope evita quemar lecturas en cadena cuando el
+    // recetario se acaba o las preferencias descartan casi todo.
+    let cursor = recetasCursor;
+    let visibles = 0;
+    for (let intento = 0; intento < MAX_PAGINAS_POR_CLIC && visibles < RECETAS_VISIBLES_POR_CLIC; intento++) {
+      const result = await loadRecetas(recetasCat, recetasIntake, cursor, true);
+      if (!result) break;                       // error: el aviso ya está puesto
+      visibles += result.recipes.filter(esVisible).length;
+      cursor = result.cursor;
+      if (!result.hasMore) break;
+    }
     setRecetasLoadingMore(false);
-  }, [loadRecetas, recetasCat, recetasIntake, recetasCursor]);
+  }, [loadRecetas, recetasCat, recetasIntake, recetasCursor, esVisible]);
 
   // ── Derived data ────────────────────────────────────────────────────────────
 
@@ -728,27 +786,35 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
     const searched = onlyFitsBudget ? bySearch.filter(fitsBudget) : bySearch;
 
     const hasPrefs = prefs.liked.length > 0 || prefs.disliked.length > 0 || prefs.allergies.length > 0 ||
+      prefs.tiposPreferidos.size > 0 || prefs.tiposExcluidos.size > 0 || favorites.recipeIds.length > 0 ||
       (!!prefs.dietType && prefs.dietType !== 'omnivoro' && prefs.dietType !== 'otro');
     if (!hasPrefs) {
       return { recetasFeatured: [], recetasNormal: searched, recetasDisliked: [], recetasTotalVisible: searched.length };
     }
 
-    const featured: Recipe[] = [], normal: Recipe[] = [], disliked: Recipe[] = [];
+    // «Destacadas» reúne, por este orden, lo que el atleta ha dicho que quiere:
+    // primero sus favoritas —es la señal más explícita que existe, la marcó
+    // receta a receta—, después los tipos de plato que pidió tener más y los
+    // ingredientes que le gustan. Antes esta sección solo miraba ingredientes,
+    // así que una receta marcada como favorita podía aparecer enterrada entre
+    // cientos.
+    const favoritas: Recipe[] = [], featured: Recipe[] = [], normal: Recipe[] = [], disliked: Recipe[] = [];
     for (const r of searched) {
-      if (violatesDietType(r, prefs.dietType)) continue;
+      if (!esVisible(r)) continue;
+      if (favorites.recipeIds.includes(r.id)) { favoritas.push(r); continue; }
       const cls = classifyRecipe(r, prefs.liked, prefs.disliked, prefs.allergies);
-      if (cls === 'allergy')   continue;
-      if (cls === 'featured')  featured.push(r);
-      else if (cls === 'disliked') disliked.push(r);
+      if (cls === 'disliked') { disliked.push(r); continue; }
+      if (cls === 'featured' || prefs.tiposPreferidos.has(dishType(r))) featured.push(r);
       else normal.push(r);
     }
+    featured.unshift(...favoritas);
     return {
       recetasFeatured: featured,
       recetasNormal:   normal,
       recetasDisliked: disliked,
       recetasTotalVisible: featured.length + normal.length + disliked.length,
     };
-  }, [recetasRecipes, recetasSearch, prefs, onlyFitsBudget, fitsBudget]);
+  }, [recetasRecipes, recetasSearch, prefs, onlyFitsBudget, fitsBudget, esVisible, favorites.recipeIds]);
 
   // ── Favorites ───────────────────────────────────────────────────────────────
 
@@ -778,9 +844,21 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
     try { await saveRecipeFavorites(nextFavs); } finally { setSavingFav(false); }
   };
 
-  const openRecipe = (recipe: Recipe) => {
+  // Las recetas del recetario llegan del índice que viaja con la app, y ese
+  // índice trae lo justo para la lista: no lleva pasos, cantidades ni macros.
+  // Se piden al abrir la receta —una sola lectura, y solo de la que de verdad
+  // se va a leer— en vez de traerlas para las 8.850 por si acaso.
+  //
+  // Se pinta primero lo que ya se tiene (nombre, foto, intercambios) y el resto
+  // entra cuando llega: así abrir una receta es inmediato. Si la lectura falla,
+  // se queda la versión del índice en lugar de una pantalla de error.
+  const openRecipe = async (recipe: Recipe) => {
     setActiveRecipe(recipe);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (!OWNER_RECETARIO_TODOS.includes(recipe.ownerId) || recipe.stepsText) return;
+    const completa = await getRecipeById(recipe.id);
+    // Puede haber cambiado de receta —o cerrado el detalle— mientras se leía.
+    if (completa) setActiveRecipe(prev => (prev?.id === recipe.id ? completa : prev));
   };
 
   // Las comidas ya guardadas que usan esta receta quedan tal cual (los datos
@@ -963,7 +1041,8 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
               }
             </p>
 
-            {/* ── Destacadas (liked ingredients) ── */}
+            {/* ── Destacadas: favoritas primero, luego tipos de plato pedidos e
+                   ingredientes que le gustan ── */}
             {recetasFeatured.length > 0 && (
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
@@ -980,6 +1059,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
                       isFav={favorites.recipeIds.includes(r.id)}
                       isFeatured
                       onOpen={openRecipe}
+                      excedeTiempo={excedeTiempoDeCocina(r)}
                       onToggleFav={toggleFavorite}
                     />
                   ))}
@@ -996,6 +1076,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
                     recipe={r}
                     isFav={favorites.recipeIds.includes(r.id)}
                     onOpen={openRecipe}
+                    excedeTiempo={excedeTiempoDeCocina(r)}
                     onToggleFav={toggleFavorite}
                   />
                 ))}
@@ -1024,6 +1105,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
                         recipe={r}
                         isFav={favorites.recipeIds.includes(r.id)}
                         onOpen={openRecipe}
+                        excedeTiempo={excedeTiempoDeCocina(r)}
                         onToggleFav={toggleFavorite}
                       />
                     ))}

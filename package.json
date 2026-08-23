@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
-    "build": "vite build",
+    "build": "node scripts/generarIndiceRecetas.mjs && vite build",
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit && npm run iconos:comprobar",
@@ -13,7 +13,8 @@
     "ds:inventario": "node scripts/ds-inventario.mjs",
     "export:vault": "tsx scripts/export-vault.ts",
     "test": "vitest run",
-    "sync:native": "npm run build && npx cap sync ios && npx cap sync android",
+    "recetas:indice": "node scripts/generarIndiceRecetas.mjs",
+    "sync:native": "npm run build && node scripts/prepararBundleNativo.mjs && npx cap sync ios && npx cap sync android",
     "prerelease": "npm run lint && npm run test && npm run sync:native",
     "iconos:generar": "node scripts/generar-fuente-iconos.mjs",
     "iconos:comprobar": "node scripts/comprobar-iconos.mjs",

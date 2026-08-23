@@ -174,6 +174,11 @@ export function bestScaleFit(
 
 export interface RankOptions {
   needsTupper?: boolean;
+  /** Se está eligiendo para cocinar una vez y comer durante la semana. Distinto
+   *  de `needsTupper`, que solo dice que ESA comida se la lleva de casa: aquí
+   *  TODO se cocina por adelantado, así que un plato que solo esté bueno recién
+   *  hecho es mala elección aunque encaje de intercambios. */
+  batch?: boolean;
   mode?: DietMode;
   // Dish types already placed (per day and/or week) with how many times — used to
   // penalize serving the same *kind* of meal repeatedly (the "always a batido" fix).
@@ -217,6 +222,11 @@ export function rankCandidates(
     if (prefs.disliked.some(f => ingredientMatch(recipe, f))) score += 2;
     if (prefs.liked.some(f => ingredientMatch(recipe, f))) score -= 0.5;
     if (opts.needsTupper && recipe.tupper) score -= 0.5;
+    // Penalización fuerte, no exclusión: si el recetario disponible para esa
+    // franja tuviera pocos platos de tupper, excluirlos dejaría la comida vacía,
+    // que es peor que proponer algo que aguanta regular. Con +4 solo sale un no-
+    // tupper cuando de verdad no hay alternativa razonable.
+    if (opts.batch && !recipe.tupper) score += 4;
     if (usedIds.has(recipe.id)) score += 5;              // strong nudge away, not a hard block
     const dishReuse = opts.usedDishTypes?.get(dt) ?? 0;
     if (dishReuse > 0) score += 2 * dishReuse;           // spread dish types across the day/week
@@ -380,7 +390,7 @@ function generateWeekBatch(args: GenerateWeekArgs): MenuDay[] {
   const slotRecipe: (Recipe | null)[] = slots.map((slot, i) => {
     const slotTargetsAcrossDays = scheduledDiets.map(d => slotTargets(dietBudgetVec(d), slots)[i]);
     const repTarget = avgVec(slotTargetsAcrossDays);
-    const ranked = rankCandidates(pools[slot.slot] ?? [], repTarget, prefs, usedAcrossSlots, { needsTupper: slot.needsTupper, mode });
+    const ranked = rankCandidates(pools[slot.slot] ?? [], repTarget, prefs, usedAcrossSlots, { needsTupper: slot.needsTupper, batch: true, mode });
     const pick = ranked[0]?.recipe ?? null;
     if (pick) usedAcrossSlots.add(pick.id);
     return pick;
@@ -401,7 +411,7 @@ function generateWeekBatch(args: GenerateWeekArgs): MenuDay[] {
         if (fit) return buildMeal(id, slot, fixed, fit.scale, fit.exch);
       }
       // Fixed recipe can't scale to this day's target — pick a one-off for this day.
-      const ranked = rankCandidates(pools[slot.slot] ?? [], targets[i], prefs, new Set(), { needsTupper: slot.needsTupper, mode });
+      const ranked = rankCandidates(pools[slot.slot] ?? [], targets[i], prefs, new Set(), { needsTupper: slot.needsTupper, batch: true, mode });
       const pick = ranked[0];
       return pick ? buildMeal(id, slot, pick.recipe, pick.scale, pick.exch) : emptyMeal(id, slot);
     });
@@ -566,7 +576,11 @@ export function buildBatchPlan(days: MenuDay[]): BatchRecipeEntry[] {
     }
   }
   const list = Array.from(byRecipe.values());
-  for (const e of list) e.servings = Math.max(1, Math.round(e.totalScale));
+  // Hacia arriba, no al más cercano: esto es cuánto hay que COCINAR el domingo.
+  // Redondeando a la baja, una semana que suma 2,25 raciones decía «cocina 2» y
+  // el atleta se quedaba sin comida el último día — que es justo el día en que
+  // se abandona el menú. Pasarse sobran las sobras; quedarse corto rompe el plan.
+  for (const e of list) e.servings = Math.max(1, Math.ceil(e.totalScale));
   return list.sort((a, b) => b.totalScale - a.totalScale);
 }
 

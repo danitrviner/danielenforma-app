@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { UserProfile, Diet, DietMeal, DietItem, FoodCategory, DietMode, MealItem, Recipe, RecipeFavorites, WeekDay } from '../types';
 import { getDietsForAthlete, getAthleteDietConfig, saveAthleteDietConfig, createDiet, updateDiet, deleteDiet, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig, saveAthleteNutritionConfig, getRecipes, getRecipeFavorites, getNutritionProgram, markNutritionPhaseSeen, computeActivePhase, createNotificationDeduped, getDietCompletionLog, saveDietCompletionLog, createRecipe, queryRecetas, queryRecetasForGenerator, getOnboarding, getRecipeById } from '../dbService';
@@ -6,7 +6,7 @@ import type { RecetasCursor } from '../dbService';
 import { CATS, BUDGET_CATS, CAT_LABEL, CAT_COLOR, CAT_BG, MODE_LABEL, ALL_DIET_MODES, round2, fmtQty, itemWeightLabel, addToPlaced, recipeToDietItems, isDietPending, computeDietPlaced } from '../utils/exchangeHelpers';
 import { findRecipeAlternatives, recipeExchanges, groupByDishType, type RecipeAlternative, type AlternativePrefs } from '../utils/recipeMatch';
 import { ingredientMatch, violatesDietType } from '../utils/foodPrefs';
-import { dishTypeLabel, type DishType } from '../utils/dishTypes';
+import { dishType, dishTypeLabel, type DishType } from '../utils/dishTypes';
 import { exchangeToKcal } from '../utils/nutritionConstants';
 import { useToast } from '../hooks/useToast';
 import Coachmark from './Coachmark';
@@ -263,6 +263,16 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
   // Tracks how many items each meal had originally (before any recipe was applied)
   const [origItemCounts, setOrigItemCounts]         = useState<Record<string, number>>({});
 
+  /* Ver la receta que hay dentro de una comida del plan.
+     Cambiarla ya se podía —y cambiar alimentos sueltos también—, pero la única
+     puerta era un icono de sartén sin texto, con la explicación en un `title`
+     que en un móvil no se ve nunca: en la práctica nadie llegaba. Ahora la
+     receta se abre como en Mi menú (foto, ingredientes, pasos) y desde dentro
+     se cambia, que es donde uno la busca después de leerla. */
+  const [recetaAbierta, setRecetaAbierta] = useState<{ mealId: string; recipeId: string } | null>(null);
+  const [recetaDetalle, setRecetaDetalle] = useState<Recipe | null>(null);
+  const [cargandoReceta, setCargandoReceta] = useState(false);
+
   // Recipe swap ("Cambiar comida")
   const [swapContext, setSwapContext] = useState<{ mealId: string; recipeId: string; slot?: number } | null>(null);
   const [swapSourceRecipe, setSwapSourceRecipe] = useState<Recipe | null>(null);
@@ -504,18 +514,33 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     allergies:         onboarding?.allergies ?? [],
     dislikedFoods:     onboarding?.dislikedFoods ?? [],
     likedFoods:        onboarding?.likedFoods ?? [],
-    dietType:          onboarding?.dietType,
-    cookingMaxTime:    onboarding?.cookingMaxTime,
+    // Igual que los tipos de plato de abajo: manda lo corregido en el perfil.
+    dietType:          nutConfig?.dietType ?? onboarding?.dietType,
+    cookingMaxTime:    nutConfig?.cookingMaxTime ?? onboarding?.cookingMaxTime,
     favoriteRecipeIds: recipeFavorites.recipeIds,
     dislikedRecipeIds: recipeFavorites.dislikedIds ?? [],
     preferredDishTypes: (nutConfig?.preferredDishTypes ?? onboarding?.preferredDishTypes ?? []) as DishType[],
     excludedDishTypes:  (nutConfig?.excludedDishTypes  ?? onboarding?.excludedDishTypes  ?? []) as DishType[],
   }), [onboarding, nutConfig, recipeFavorites]);
 
-  const isSafeForAthlete = (r: Recipe) =>
+  // Un tipo de plato excluido es una decisión explícita del atleta en sus
+  // preferencias, igual de firme que una alergia: faltaba aquí, así que los
+  // buscadores de esta pantalla seguían ofreciéndole justo lo que había
+  // marcado que no quería ver.
+  const isSafeForAthlete = useCallback((r: Recipe) =>
     !swapPrefs.allergies!.some(f => ingredientMatch(r, f)) &&
     !swapPrefs.dislikedRecipeIds!.includes(r.id) &&
-    !violatesDietType(r, swapPrefs.dietType);
+    !(swapPrefs.excludedDishTypes ?? []).includes(dishType(r)) &&
+    !violatesDietType(r, swapPrefs.dietType), [swapPrefs]);
+
+  /** Lo que el atleta ha pedido, primero: sus favoritas y después los tipos de
+   *  plato que marcó querer más. Dentro de cada grupo, por nombre. */
+  const ordenarPorPreferencia = useCallback((lista: Recipe[]) => {
+    const preferidos = new Set(swapPrefs.preferredDishTypes ?? []);
+    const rango = (r: Recipe) =>
+      recipeFavorites.recipeIds.includes(r.id) ? 0 : preferidos.has(dishType(r)) ? 1 : 2;
+    return [...lista].sort((a, b) => rango(a) - rango(b) || a.name.localeCompare(b.name));
+  }, [swapPrefs, recipeFavorites]);
 
   const sortedPickerRecipes = useMemo(() => {
     const withIngredients = recipes.filter(r =>
@@ -526,13 +551,8 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
       const matchSearch = !recipeSearch || r.name.toLowerCase().includes(recipeSearch.toLowerCase());
       return matchCat && matchSearch && isSafeForAthlete(r);
     });
-    return filtered.sort((a, b) => {
-      const aFav = recipeFavorites.recipeIds.includes(a.id);
-      const bFav = recipeFavorites.recipeIds.includes(b.id);
-      if (aFav !== bFav) return aFav ? -1 : 1;
-      return a.name.localeCompare(b.name);
-    });
-  }, [recipes, enabledModes, recipeCatFilter, recipeSearch, recipeFavorites, swapPrefs]);
+    return ordenarPorPreferencia(filtered);
+  }, [recipes, enabledModes, recipeCatFilter, recipeSearch, isSafeForAthlete, ordenarPorPreferencia]);
 
   // Recetario (catálogo ~8.850) — queryRecetas solo filtra por categoría en el
   // servidor (no hay búsqueda de texto ahí), así que el término de búsqueda se
@@ -546,9 +566,14 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
   // auditar esta pantalla para que respete alergias en todos los apartados.
   const sortedRecetarioResults = useMemo(() => {
     const safe = recetarioResults.filter(isSafeForAthlete);
-    if (!recipeSearch) return safe;
-    return safe.filter(r => r.name.toLowerCase().includes(recipeSearch.toLowerCase()));
-  }, [recetarioResults, recipeSearch, swapPrefs]);
+    const buscadas = recipeSearch
+      ? safe.filter(r => r.name.toLowerCase().includes(recipeSearch.toLowerCase()))
+      : safe;
+    // Antes salía en el orden del catálogo (alfabético): las favoritas del
+    // atleta quedaban donde cayeran, y los tipos de plato que había pedido
+    // tener más no se adelantaban.
+    return ordenarPorPreferencia(buscadas);
+  }, [recetarioResults, recipeSearch, isSafeForAthlete, ordenarPorPreferencia]);
 
   const swapCandidates = useMemo(() => {
     if (!swapSourceRecipe || swapPool.length === 0) return [];
@@ -970,6 +995,23 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
   };
 
   // ── Recipe swap ("Cambiar comida") ──────────────────────────────────────────
+
+  const abrirReceta = async (mealId: string, recipeId: string) => {
+    setRecetaAbierta({ mealId, recipeId });
+    setRecetaDetalle(null);
+    setCargandoReceta(true);
+    // Puede estar ya entre las recetas cargadas (las del coach y las propias);
+    // si no, es una del recetario y se pide la completa, con pasos y cantidades.
+    const yaCargada = recipes.find(r => r.id === recipeId);
+    const completa = yaCargada ?? await getRecipeById(recipeId).catch(() => null);
+    setRecetaDetalle(completa);
+    setCargandoReceta(false);
+  };
+
+  const cerrarReceta = () => {
+    setRecetaAbierta(null);
+    setRecetaDetalle(null);
+  };
 
   const handleOpenSwapPicker = async (mealId: string, recipeId: string) => {
     const slot = selectedDiet?.meals.find(m => m.id === mealId)?.slot;
@@ -1822,14 +1864,18 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                                 </span>
                               </button>
 
-                              {/* Cambiar comida — only on the first item of a recipe-derived group */}
+                              {/* Abrir la receta — solo en el primer alimento del grupo que
+                                  vino de ella. Con texto y no solo icono: en móvil no hay
+                                  hover, así que un `title` no lo lee nadie. */}
                               {item.originRecipeId && meal.items.findIndex(it => it.originRecipeId === item.originRecipeId) === idx && (
                                 <button
-                                  onClick={() => handleOpenSwapPicker(meal.id, item.originRecipeId!)}
-                                  title="Cambiar comida"
-                                  className="text-ink-2 hover:text-accent transition-colors flex-shrink-0 p-2 -m-1.5 active:scale-90"
+                                  type="button"
+                                  onClick={() => abrirReceta(meal.id, item.originRecipeId!)}
+                                  aria-label="Ver la receta de esta comida"
+                                  className="flex-shrink-0 flex items-center gap-1 rounded-control border border-hairline bg-raised px-2 py-2 text-ink-2 transition-transform duration-(--duration-state) hover:text-accent hover:border-accent/40 active:scale-95"
                                 >
                                   <span className="material-symbols-outlined text-body-s select-none">skillet</span>
+                                  <span className="hidden sm:inline font-mono text-caption uppercase tracking-wider">Receta</span>
                                 </button>
                               )}
 
@@ -2154,6 +2200,80 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
           </Sheet>
         );
       })()}
+
+      {/* Ver la receta de una comida del plan, y cambiarla desde dentro */}
+      {recetaAbierta && (
+        <Dialog open onClose={cerrarReceta} size="l" title={recetaDetalle?.name ?? 'Receta'}>
+          <div className="space-y-3">
+            {cargandoReceta ? (
+              <div className="flex items-center justify-center py-10">
+                <Icon name="progress_activity" size="l" className="text-accent animate-spin" />
+              </div>
+            ) : recetaDetalle ? (
+              <>
+                {(recetaDetalle.image ?? recetaDetalle.photoUrl) && (
+                  <div className="w-full aspect-[16/9] rounded-surface overflow-hidden bg-raised">
+                    <img src={recetaDetalle.image ?? recetaDetalle.photoUrl} alt={recetaDetalle.name} className="w-full h-full object-cover" />
+                  </div>
+                )}
+                {(recetaDetalle.kcal != null || recetaDetalle.cookingTime != null) && (
+                  <p className="font-mono text-caption text-ink-2">
+                    {[recetaDetalle.kcal != null && `${recetaDetalle.kcal} kcal`,
+                      recetaDetalle.cookingTime != null && `${recetaDetalle.cookingTime} min`]
+                      .filter(Boolean).join(' · ')}
+                  </p>
+                )}
+                {(recetaDetalle.ingredientsText?.length || recetaDetalle.ingredients?.length) ? (
+                  <div>
+                    <p className="font-mono text-caption text-ink-3 uppercase mb-2">Ingredientes</p>
+                    <ul>
+                      {(recetaDetalle.ingredientsText?.length
+                        ? recetaDetalle.ingredientsText.map(i => ({ label: i.name, qty: `${i.quantity}g` }))
+                        : (recetaDetalle.ingredients ?? []).map(i => ({ label: i.foodLabel, qty: `×${i.quantity}` }))
+                      ).map((ing, i) => (
+                        <li key={i} className="flex items-center justify-between gap-2 py-1 border-b border-hairline last:border-0">
+                          <span className="text-label font-sans flex-1 pr-2">{ing.label}</span>
+                          <span className="font-mono text-caption text-ink-2 flex-shrink-0">{ing.qty}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
+                {recetaDetalle.stepsText?.length ? (
+                  <div>
+                    <p className="font-mono text-caption text-ink-3 uppercase mb-2">Preparación</p>
+                    <ol className="space-y-2">
+                      {recetaDetalle.stepsText.map((s, i) => (
+                        <li key={i} className="flex gap-2">
+                          <span className="font-mono text-caption text-accent flex-shrink-0">{s.position ?? i + 1}</span>
+                          <span className="text-label font-sans text-ink-2">{s.description}</span>
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
+                ) : null}
+              </>
+            ) : (
+              // Sin conexión o receta borrada: se dice, y el cambio se deja
+              // disponible igual — no poder leerla no impide querer otra.
+              <p className="font-sans text-label text-ink-2 py-6 text-center">
+                No se pudo cargar la receta. Puedes cambiarla de todas formas.
+              </p>
+            )}
+            <Button
+              variant="secondary"
+              className="w-full"
+              onClick={() => {
+                const { mealId, recipeId } = recetaAbierta;
+                cerrarReceta();
+                handleOpenSwapPicker(mealId, recipeId);
+              }}
+            >
+              Cambiar por otra receta
+            </Button>
+          </div>
+        </Dialog>
+      )}
 
       {/* Cambiar comida sheet */}
       {swapContext && (
