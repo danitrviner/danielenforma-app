@@ -1,4 +1,5 @@
 import { db, auth, onAuthStateChanged } from '../firebase';
+import { reportarError } from '../monitorizacion';
 
 // Recursively remove keys whose value is undefined before sending to Firestore.
 // Firestore rejects documents containing undefined values.
@@ -194,7 +195,23 @@ export function setLocalBypassMode(enabled: boolean, err?: unknown) {
     return;
   }
   ultimoErrorFirestore = err ?? ultimoErrorFirestore;
-  if (err !== undefined && esFalloDePermisos(err)) return;
+
+  // Este es el único sitio por el que pasa TODO fallo de Firestore de la app,
+  // así que es el sitio donde engancharlo a la monitorización. Se distinguen
+  // los dos casos porque exigen reacciones distintas: un `permission-denied`
+  // suele ser una regla mal escrita —un fallo nuestro, urgente— mientras que
+  // una caída al modo local suele ser la red del usuario, que ni es culpa
+  // nuestra ni tiene arreglo por nuestra parte. Marcarlos igual haría que los
+  // segundos, que son muchos más, escondieran a los primeros.
+  const fallo = esFalloDePermisos(err);
+  reportarError(err ?? new Error('Firestore inaccesible'), 'firestore', {
+    tipo: fallo ? 'permisos' : 'sin-conexion',
+    // Un permission-denied con sesión abierta es una regla que no cuadra; sin
+    // sesión abierta es casi siempre una lectura lanzada antes de tiempo.
+    conSesion: Boolean(auth.currentUser),
+  });
+
+  if (err !== undefined && fallo) return;
   forceLocalOnly = true;
 }
 

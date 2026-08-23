@@ -3,6 +3,7 @@ import { Routes, Route, Navigate, useNavigate, useLocation, useParams } from 're
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { App as CapacitorApp } from '@capacitor/app';
 import { onAuthStateChanged, auth } from './firebase';
+import { identificarUsuario } from './monitorizacion';
 import { UserProfile, WeightCheckIn, NotificationType } from './types';
 import { getOrCreateUserProfile, getCheckIns, seedInitialCheckinsIfEmpty, getOnboarding, getWorkoutAssignmentsForAthlete, getGimnasio, updateUserProfile } from './dbService';
 import { useGimnasioPendiente } from './features/gimnasio/RecordatorioGimnasioCard';
@@ -362,11 +363,17 @@ function AppContent() {
       try {
         if (user) {
           setCurrentUser(user);
+          // Sin rol todavía (el perfil aún no ha cargado): se afina más abajo,
+          // en el efecto que sigue a `profile`. Aquí importa sobre todo que
+          // desde este instante cualquier error que reporte Sentry venga
+          // atado a alguien, no a "anónimo".
+          identificarUsuario(user.email);
           await loadUserSession(user);
         } else {
           setCurrentUser(null);
           setProfile(null);
           setCheckins([]);
+          identificarUsuario(null);
         }
       } catch (err) {
         console.error('Error restoring session:', err);
@@ -401,6 +408,15 @@ function AppContent() {
 
   // Null-safe a propósito: se evalúa antes de la puerta de sesión.
   const isCoach = !!profile && (profile.role === 'coach' || profile.email.toLowerCase() === OWNER_EMAIL);
+
+  // El login ya etiquetó al usuario (arriba, en onAuthStateChanged); esto solo
+  // añade el rol en cuanto el perfil termina de cargar, para poder filtrar en
+  // Sentry "solo fallos de atletas" o "solo del coach" sin tener que abrir cada
+  // error uno a uno.
+  useEffect(() => {
+    if (currentUser?.email) identificarUsuario(currentUser.email, isCoach ? 'coach' : 'atleta');
+  }, [currentUser?.email, isCoach]);
+
   // 14-08 (tarea 23). Necesario aquí, no solo en LocalModeBanner: con aviso
   // visible, la cabecera de móvil ya no es lo primero pegado al borde físico
   // (el aviso se cuela delante en el flujo, ver LocalModeBanner) y no debe

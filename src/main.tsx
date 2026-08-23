@@ -4,7 +4,13 @@ import {BrowserRouter} from 'react-router-dom';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import App from './App.tsx';
 import ErrorBoundary from './components/ErrorBoundary.tsx';
+import {iniciarMonitorizacion} from './monitorizacion.ts';
 import './index.css';
+
+// Lo primero de todo, antes de montar React: un fallo durante el arranque —el
+// peor de los fallos, porque deja al usuario sin app— tiene que llegar igual.
+// Sin `VITE_SENTRY_DSN` esto no hace nada (ver src/monitorizacion.ts).
+iniciarMonitorizacion();
 
 // Firestore reads are the app's real cost/latency driver, so default to a
 // stale time instead of react-query's refetch-on-mount-by-default — most of

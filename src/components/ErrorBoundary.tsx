@@ -1,5 +1,6 @@
 import React from 'react';
 import { Icon, Button } from './ui';
+import { reportarError } from '../monitorizacion';
 
 interface State {
   error: Error | null;
@@ -23,7 +24,11 @@ export default class ErrorBoundary extends React.Component<{ children: React.Rea
   }
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
-    console.error('Uncaught render error:', error, info.componentStack);
+    // Este es el fallo que más importa reportar: ha tumbado la pantalla entera
+    // y la persona está viendo el cartel rojo ahora mismo. El `componentStack`
+    // dice qué componente lo provocó, que es justo lo que la pila de JavaScript
+    // sola no cuenta.
+    reportarError(error, 'ErrorBoundary', { componentStack: info.componentStack });
   }
 
   render() {

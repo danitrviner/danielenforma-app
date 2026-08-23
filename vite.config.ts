@@ -1,11 +1,36 @@
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
+import {execSync} from 'child_process';
 import path from 'path';
 import {defineConfig} from 'vite';
+
+/**
+ * Identificador del despliegue, para que cada error que llega a Sentry diga en
+ * qué versión exacta apareció (ver `src/monitorizacion.ts`).
+ *
+ * En Vercel viene dado en el entorno; en un build local se saca de git. Si no
+ * hay ninguna de las dos —un tarball sin `.git`, por ejemplo— se degrada a
+ * 'desconocida' en vez de romper el build: saber la versión es útil, pero no
+ * tanto como poder compilar.
+ */
+function release(): string {
+  const deVercel = process.env.VERCEL_GIT_COMMIT_SHA;
+  if (deVercel) return deVercel.slice(0, 7);
+  try {
+    return execSync('git rev-parse --short HEAD', {stdio: ['ignore', 'pipe', 'ignore']})
+      .toString()
+      .trim();
+  } catch {
+    return 'desconocida';
+  }
+}
 
 export default defineConfig(() => {
   return {
     plugins: [react(), tailwindcss()],
+    define: {
+      __APP_RELEASE__: JSON.stringify(release()),
+    },
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),
