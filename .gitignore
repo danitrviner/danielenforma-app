@@ -40,3 +40,6 @@ Thumbs.db
 # (scripts/generarIndiceRecetas.mjs). Son 4,7 MB derivados de datos que ya
 # están versionados aquí — guardarlo solo serviría para que se desincronizara.
 public/recetas-indice.json
+
+# Sesiones locales de Superdesign — no es código de la app
+.superdesign/
