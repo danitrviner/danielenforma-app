@@ -13,6 +13,26 @@ export interface AdherenceResult {
   hasData: boolean;
 }
 
+/**
+ * Adherencia de UN mesociclo: sesiones completadas ÷ asignadas.
+ *
+ * Distinta de `computeAdherenceScore`, que mide una ventana de 28 días
+ * mezclando entrenos y check-ins. Esta responde a "¿hizo el bloque que le
+ * puse?" y vivía copiada en tres sitios (el cuadro de mando de periodización,
+ * el panel de entrenamientos y el lector de historial del sugeridor de
+ * volumen), que es como dos pantallas acaban enseñando cifras distintas del
+ * mismo cliente.
+ *
+ * `null` cuando no hay asignaciones de ese mesociclo: sin plan asignado no hay
+ * un 0%, hay un "no se sabe".
+ */
+export function adherenciaDeMesociclo(assignments: WorkoutAssignment[], mesocycleId: string): number | null {
+  const propias = assignments.filter(a => a.mesocycleId === mesocycleId);
+  if (propias.length === 0) return null;
+  const completadas = propias.filter(a => a.status === 'completed').length;
+  return Math.round((completadas / propias.length) * 100);
+}
+
 export function computeAdherenceScore(
   assignments: WorkoutAssignment[],
   checkins: WeightCheckIn[],

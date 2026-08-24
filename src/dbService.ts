@@ -197,6 +197,7 @@ export {
 export {
   getCoachInstructions, saveCoachInstructions,
   getDoctrina, getDoctrinaParaEditar, saveDoctrina, resetDoctrina,
+  getVolumeLandmarks, getVolumeLandmarksParaEditar, saveVolumeLandmarks, resetVolumeLandmarks,
   getAthleteStatusNote, saveAthleteStatusNote,
   getQuickReplies, saveQuickReplies,
 } from './db/coachSettings';

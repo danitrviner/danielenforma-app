@@ -582,6 +582,13 @@ export interface QuestionnaireQuestion {
   required: boolean;
   helpText?: string;
   graphable?: boolean;       // auto-true for numeric/scale; used in R2 charts
+  // Clave semántica ESTABLE de la respuesta, para que un motor pueda leerla.
+  // `id` se genera aleatorio al instanciar una plantilla (`q-{ts}-{i}-{rnd}`),
+  // así que no sirve para preguntar "¿dónde está la respuesta de qué grupo
+  // priorizar?". Opcional y aditiva: una pregunta sin `signalKey` es lo normal
+  // — solo la llevan las pocas que alimentan un cálculo. Ver
+  // src/data/questionnaireSignals.ts.
+  signalKey?: string;
   // numeric
   unit?: string;
   min?: number;
@@ -1304,6 +1311,13 @@ export interface WeekDistribution {
   overloadAlert: boolean;
   snapshot: {
     daysPerWeek: number;
+    // Cambiar la duración del ciclo, el reparto elegido o el calendario a mano
+    // cambia el reparto entero (el volumen del ciclo, la frecuencia por grupo,
+    // qué día es de qué tipo), así que los tres entran en la foto que decide
+    // si la distribución se ha quedado vieja.
+    cycleDays?: number;
+    splitId?: string;
+    customOffsets?: string; // Mesocycle.customOffsets, serializado con .join(',')
     groupSeries: Partial<Record<MuscleGroup, number>>;
   };
   generatedAt: string;
@@ -1316,7 +1330,34 @@ export interface Mesocycle {
   weeks: number;
   startDate: string;
   objective: string;
+  // Nº de SESIONES de entrenamiento que tiene un microciclo. Se llama así por
+  // historia: nació cuando un microciclo era siempre una semana. Con
+  // `cycleDays` puesto deja de ser "por semana" y pasa a ser "por ciclo".
   daysPerWeek: number;
+  /**
+   * Duración del microciclo en DÍAS, descansos incluidos. `undefined` = 7 (el
+   * ciclo semanal de siempre, y el comportamiento de todos los mesociclos ya
+   * creados).
+   *
+   * Existe porque hay frecuencias que no caben en una semana: entrenar un
+   * grupo tres veces cada dos semanas —1,5 veces por semana— exige un ciclo de
+   * 14 días, y entrenarlo cada 5 días exige uno de 5. Ver `diasDeCiclo` en
+   * utils/progression.ts y los repartos rotativos de utils/trainingSplits.ts.
+   */
+  cycleDays?: number;
+  /**
+   * Días del ciclo (0-based) elegidos A MANO como sesión, en vez de dejar que
+   * `offsetsDeSesiones` los calcule solo. Longitud = `daysPerWeek`; si no
+   * cuadra, se ignora y se cae al cálculo automático — nunca deja el
+   * mesociclo en un estado sin calendario válido.
+   *
+   * Existe porque el cálculo automático asume patrones razonables (reparte
+   * uniforme, ancla a la semana...), y hay coaches que quieren el descanso
+   * exactamente donde ellos digan — un fin de semana libre fijo, un día
+   * concreto reservado para otra actividad — sin que eso encaje en ningún
+   * reparto de la lista.
+   */
+  customOffsets?: number[];
   groups: Record<MuscleGroup, MuscleGroupConfig>;
   distribution?: WeekDistribution;
   days?: TemplateDay[];

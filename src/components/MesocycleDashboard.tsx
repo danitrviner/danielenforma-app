@@ -7,6 +7,7 @@ import {
 } from 'recharts';
 import { Mesocycle, MuscleGroup, MUSCLE_ORDER, MUSCLE_LABELS_SHORT } from '../types';
 import { getWorkoutAssignmentsByMesocycleIds } from '../dbService';
+import { adherenciaDeMesociclo } from '../utils/adherence';
 import {
   Icon, EmptyState, SegmentedControl,
   ALTURA_GRAFICA, MARGEN_GRAFICA, ANCHO_EJE_Y, REJILLA_GRAFICA, TICK_GRAFICA, EJE_GRAFICA,
@@ -129,7 +130,10 @@ export default function MesocycleDashboard({ mesocycles, athleteEmail }: Props) 
       const { total, completed } = byMeso[m.id] ?? { total: 0, completed: 0 };
       return {
         label: `#${m.number}`,
-        adherencia: total > 0 ? Math.round((completed / total) * 100) : null,
+        // El % sale de la función compartida (utils/adherence), no de una
+        // división repetida aquí: es la misma cifra que enseñan el panel de
+        // entrenamientos, el cierre de mesociclo y el sugeridor de volumen.
+        adherencia: adherenciaDeMesociclo(assignments, m.id),
         total,
         completed,
       };

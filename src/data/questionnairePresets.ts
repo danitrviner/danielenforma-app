@@ -12,7 +12,8 @@
 // original — como texto libre no se pueden graficar ni correlacionar, que es
 // justo el objetivo de este proyecto.
 
-import { QuestionnaireQuestion, QSchedule, BodyMetricKey, Questionnaire } from '../types';
+import { QuestionnaireQuestion, QSchedule, BodyMetricKey, Questionnaire, MuscleGroup } from '../types';
+import { OPCIONES_GRUPOS, VolumeSignalKey } from './questionnaireSignals';
 
 export interface QuestionnairePresetDef {
   title: string;
@@ -41,6 +42,17 @@ function scale(label: string, opts: { required?: boolean; min?: number; max?: nu
 }
 function boolQ(label: string, required = false): Omit<QuestionnaireQuestion, 'id'> {
   return { label, type: 'boolean', required };
+}
+// Pregunta de "elige grupos musculares" — las 17 opciones se generan desde
+// MUSCLE_ORDER/MUSCLE_LABELS (ver questionnaireSignals) para que no puedan
+// desincronizarse del enum si algún día se añade un grupo.
+function choiceGroups(label: string, signalKey: VolumeSignalKey, helpText?: string): Omit<QuestionnaireQuestion, 'id'> {
+  return { label, type: 'choice', required: false, options: OPCIONES_GRUPOS, multiSelect: true, signalKey, helpText };
+}
+// Igual que `scale`, pero etiquetando la respuesta con una señal legible por
+// un motor (hoy, el sugeridor de volumen).
+function scaleSignal(label: string, signalKey: VolumeSignalKey, opts: Parameters<typeof scale>[1] = {}): Omit<QuestionnaireQuestion, 'id'> {
+  return { ...scale(label, opts), signalKey };
 }
 function metric(label: string, metricKey: BodyMetricKey, required = true): Omit<QuestionnaireQuestion, 'id'> {
   return { label, type: 'metric', required, metricKey };
@@ -115,16 +127,35 @@ const EVALUACION_DOLOR: QuestionnairePresetDef = {
 // cual las definió Dani, sin mapear a los MuscleGroup de la app — decisión
 // explícita, no se toca el heatmap MEV/MAV/MRV ni la biblioteca de ejercicios.
 
-const DOMS_ZONES = [
-  'CUÁDRICEPS', 'ISQUIOTIBIALES', 'GLÚTEOS', 'ADUCTORES', 'LUMBARES', 'GEMELOS',
-  'OBLICUOS', 'ABDOMEN', 'PECTORAL', 'TRAPECIO', 'DORSAL', 'TRÍCEPS', 'BÍCEPS', 'HOMBRO',
+// Las 14 zonas SIGUEN SIENDO las de Dani; lo único que se añade es la señal
+// que las hace legibles para un motor. No es un mapeo perfecto ni pretende
+// serlo: OBLICUOS y ABDOMEN caen los dos en `core` (quien lee se queda con el
+// valor más alto de los dos) y HOMBRO se apunta al deltoide lateral, que es lo
+// que se entiende por "hombro" al hablar de agujetas. Antebrazo, rotadores y
+// los deltoides anterior/posterior no tienen zona propia: simplemente se
+// quedan sin esa señal, no se inventa una.
+const DOMS_ZONES: { zona: string; group: MuscleGroup }[] = [
+  { zona: 'CUÁDRICEPS',     group: 'cuadriceps' },
+  { zona: 'ISQUIOTIBIALES', group: 'isquios' },
+  { zona: 'GLÚTEOS',        group: 'gluteo' },
+  { zona: 'ADUCTORES',      group: 'aductores' },
+  { zona: 'LUMBARES',       group: 'lumbares' },
+  { zona: 'GEMELOS',        group: 'gemelo' },
+  { zona: 'OBLICUOS',       group: 'core' },
+  { zona: 'ABDOMEN',        group: 'core' },
+  { zona: 'PECTORAL',       group: 'pecho' },
+  { zona: 'TRAPECIO',       group: 'trapecio' },
+  { zona: 'DORSAL',         group: 'dorsal' },
+  { zona: 'TRÍCEPS',        group: 'triceps' },
+  { zona: 'BÍCEPS',         group: 'biceps' },
+  { zona: 'HOMBRO',         group: 'deltoide_lat' },
 ];
 
 const DOMS: QuestionnairePresetDef = {
   title: "DOM's o \"agujetas\"",
   description: 'Escala de 0 (nada) a 10 (muchísimo) por grupo muscular.',
   suggestedSchedule: { type: 'interval', intervalDays: 14 },
-  questions: DOMS_ZONES.map(zone => scale(zone, { required: true, min: 0, max: 10, minLabel: 'Nada', maxLabel: 'Muchísimo' })),
+  questions: DOMS_ZONES.map(({ zona, group }) => scaleSignal(zona, `doms.${group}` as VolumeSignalKey, { required: true, min: 0, max: 10, minLabel: 'Nada', maxLabel: 'Muchísimo' })),
 };
 
 // ── 4. Mediciones ──────────────────────────────────────────────────────────────
@@ -187,7 +218,19 @@ const FINAL_MESOCICLO: QuestionnairePresetDef = {
   description: 'Cierre de bloque: qué mantener, qué cambiar y objetivos del siguiente.',
   suggestedSchedule: { type: 'mesocycle_end' },
   questions: [
-    scale('¿Cómo valorarías en general este bloque de entrenamiento del 1 al 10?'),
+    scaleSignal('¿Cómo valorarías en general este bloque de entrenamiento del 1 al 10?', 'meso_end.rating'),
+    // Las cuatro preguntas medibles del cierre. No sustituyen a ninguna de las
+    // de texto libre de Dani —esas siguen abajo, íntegras— sino que ponen en
+    // números lo que él ya preguntaba en prosa, para que el sugeridor de
+    // volumen del bloque siguiente pueda leerlo.
+    scaleSignal('¿Cómo de bien te has recuperado entre sesiones?', 'meso_end.recovery',
+      { minLabel: 'Fatal', maxLabel: 'Perfecto' }),
+    scaleSignal('¿Cómo de exigentes te han parecido las series?', 'meso_end.effort',
+      { minLabel: 'Me sobraba', maxLabel: 'Al límite' }),
+    choiceGroups('¿Qué grupos quieres priorizar en el siguiente bloque?', 'meso_end.priority_groups',
+      'Puedes marcar varios.'),
+    choiceGroups('¿En qué grupos sentiste que el volumen fue demasiado?', 'meso_end.overload_groups',
+      'Puedes marcar varios, o ninguno.'),
     text('¿Hubo alguna semana en la que notaste que la recuperación no era suficiente?'),
     text('¿Qué ejercicios te han generado mejores sensaciones musculares?'),
     text('¿Hay algún ejercicio que no hayas terminado de sentir bien o que te haya generado molestias?'),

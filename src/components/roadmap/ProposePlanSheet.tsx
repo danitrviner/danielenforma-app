@@ -76,7 +76,7 @@ export default function ProposePlanSheet({ open, onClose }: Props) {
           </div>
           <div>
             <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-1">Días/semana</label>
-            <Stepper label="Días por semana" dense value={daysPerWeek} min={1} max={7} onChange={setDaysPerWeek} />
+            <Stepper label="Días por ciclo" dense value={daysPerWeek} min={1} max={10} onChange={setDaysPerWeek} />
           </div>
         </div>
         <div>

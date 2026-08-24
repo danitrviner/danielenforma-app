@@ -220,12 +220,12 @@ export const TOOL_DEFINITIONS = [
       properties: {
         athlete_email: { type: 'string' },
         weeks: { type: 'number', description: 'Duración en semanas (1–12)' },
-        days_per_week: { type: 'number', description: 'Días de entrenamiento por semana (1–7)' },
+        days_per_week: { type: 'number', description: 'Días de entrenamiento por ciclo (1–10). Hasta 7 es una semana normal; de 8 a 10 el ciclo se repite cada N días en vez de cada semana.' },
         objective: { type: 'string', description: 'Objetivo del bloque, ej. "Hipertrofia — énfasis espalda"' },
         start_date: { type: 'string', description: 'Fecha de inicio YYYY-MM-DD (opcional; por defecto hoy)' },
         groups: {
           type: 'object',
-          description: 'Series semanales objetivo por grupo muscular. Solo incluye los grupos que se entrenan. Ej: {"pecho":{"series":12,"priority":"alta"},"dorsal":{"series":16,"priority":"alta"}}. Grupos válidos: pecho, dorsal, trapecio, deltoide_ant, deltoide_lat, deltoide_post, biceps, triceps, antebrazo, cuadriceps, isquios, gluteo, aductores, gemelo, core.',
+          description: 'Series semanales objetivo por grupo muscular. Solo incluye los grupos que se entrenan. Ej: {"pecho":{"series":12,"priority":"alta"},"dorsal":{"series":16,"priority":"alta"}}. Grupos válidos: pecho, dorsal, trapecio, deltoide_ant, deltoide_lat, deltoide_post, biceps, triceps, antebrazo, cuadriceps, isquios, gluteo, aductores, gemelo, core, lumbares, rotadores.',
           additionalProperties: {
             type: 'object',
             properties: {
@@ -249,7 +249,7 @@ export const TOOL_DEFINITIONS = [
       properties: {
         athlete_email: { type: 'string' },
         weeks: { type: 'number', description: 'Duración en semanas (1–12)' },
-        days_per_week: { type: 'number', description: 'Días de entrenamiento por semana (1–7)' },
+        days_per_week: { type: 'number', description: 'Días de entrenamiento por ciclo (1–10). Hasta 7 es una semana normal; de 8 a 10 el ciclo se repite cada N días en vez de cada semana.' },
         objective: { type: 'string', description: 'Objetivo del bloque, ej. "Hipertrofia — énfasis espalda"' },
         start_date: { type: 'string', description: 'Fecha de inicio YYYY-MM-DD (opcional; por defecto hoy)' },
         deload_week: { type: 'number', description: 'Semana (1-indexada) de descarga dentro del bloque, si el bloque debe incluir una. Omitir si no aplica.' },
@@ -257,7 +257,7 @@ export const TOOL_DEFINITIONS = [
         review_type: { type: 'string', enum: ['revision', 'cuestionario', 'foto'], description: 'Tipo de revisión a programar en la cadencia.' },
         groups: {
           type: 'object',
-          description: 'Series semanales objetivo por grupo muscular. Solo incluye los grupos que se entrenan. Grupos válidos: pecho, dorsal, trapecio, deltoide_ant, deltoide_lat, deltoide_post, biceps, triceps, antebrazo, cuadriceps, isquios, gluteo, aductores, gemelo, core.',
+          description: 'Series semanales objetivo por grupo muscular. Solo incluye los grupos que se entrenan. Grupos válidos: pecho, dorsal, trapecio, deltoide_ant, deltoide_lat, deltoide_post, biceps, triceps, antebrazo, cuadriceps, isquios, gluteo, aductores, gemelo, core, lumbares, rotadores.',
           additionalProperties: {
             type: 'object',
             properties: {
@@ -431,6 +431,11 @@ async function getClientOverview(email: string): Promise<string> {
       goalBody: onboarding.goalBody ?? null,
       goalCapacity: onboarding.goalCapacity ?? null,
       experienceLevel: onboarding.experienceLevel,
+      // El SYSTEM_PROMPT le dice al modelo que aquí están las preferencias de
+      // entrenamiento del atleta, pero estos dos campos no se proyectaban.
+      equipment: onboarding.equipment ?? null,
+      techniqueLevel: onboarding.techniqueLevel ?? null,
+      muscleGroupsToImprove: onboarding.muscleGroupsToImprove ?? null,
       dietType: onboarding.dietType,
       targetCalories: onboarding.targetCalories,
       injuries: markAthleteText(onboarding.injuries || onboarding.currentInjuryLocation),
@@ -484,8 +489,12 @@ async function getTrainingHistory(email: string, weeks: number): Promise<string>
     window: { periodStart, periodEnd: today, comparison: report.comparisonLabel },
     sessions: report.sessions,
     tonnage: report.tonnage,
+    // `sets`/`setsDeltaPct` se calculaban y se tiraban aquí: sin ellos el
+    // modelo proponía volumen por grupo sin poder ver cuántas series se
+    // hicieron de verdad, que es el dato que decide si se sube o se sostiene.
     muscleGroups: report.muscleGroups.map(g => ({
       group: g.label, tonnage: g.tonnage, tonnageDeltaPct: g.tonnageDeltaPct, ormDeltaPct: g.ormDeltaPct,
+      sets: g.sets, setsDeltaPct: g.setsDeltaPct,
     })),
     topExercises: report.perExercise
       .sort((a, b) => b.tonnage - a.tonnage)

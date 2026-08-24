@@ -3,7 +3,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   MuscleGroup, MuscleGroupConfig, Mesocycle, UserProfile, Workout,
   DayPlan, DayAssignment, WeekDistribution, Exercise, WorkoutExercise, TemplateDay,
-  MUSCLE_LABELS, MUSCLE_ORDER,
+  WorkoutLog, WorkoutAssignment,
+  MUSCLE_LABELS, MUSCLE_LABELS_SHORT, MUSCLE_ORDER,
 } from '../types';
 import {
   getMesocycles, createMesocycle, updateMesocycle, deleteMesocycle,
@@ -11,15 +12,30 @@ import {
   createWorkoutStrict, createWorkoutAssignmentStrict,
   deleteWorkoutsByMesocycleIdStrict, deleteWorkoutAssignmentsByMesocycleIdStrict,
   getUserProfileByEmail, migratePrimaryFocusToMuscleGroup,
-  getMesocycleTemplates, createTask,
+  getMesocycleTemplates, createTask, getWorkoutLogs, getWorkoutAssignmentsByMesocycleIds,
 } from '../dbService';
 import ExerciseConfigEditor from './ExerciseConfigEditor';
+import RoutinePreview, { PreviewDay, PreviewExercise } from './training/RoutinePreview';
+import SeriesBalance from './training/SeriesBalance';
+import MesocycleReviewPanel from './MesocycleReviewPanel';
+import {
+  balanceDeSeries, seriesPorGrupo, seriesPlanificadasDelDia, seriesPlanificadasDelMeso, duracionEstimadaMin,
+  frecuenciaSemanal, gruposEnDiasSeguidos, repartoDeSeries, runDistribution,
+} from '../utils/programacion';
 import ExercisePickerSheet from './ExercisePickerSheet';
 import ExerciseVideoPlayer from './ExerciseVideoPlayer';
 import { MesocycleTemplate } from '../types';
-import { rankMuscleGroups } from '../utils/muscleGroupRanking';
+import { diasDeCiclo, offsetsDeSesiones, formateaFrecuencia, vueltasDelCiclo } from '../utils/progression';
 import { atletasActivos } from '../utils/atletas';
-import { TRAINING_SPLITS, DAY_TYPE_MUSCLES, getSplitsForDays, recommendSplit } from '../utils/trainingSplits';
+import {
+  TRAINING_SPLITS, DAY_TYPE_MUSCLES, getSplitsForDays, recommendSplit,
+  cicloDeSplit, sesionesDeSplit, tiposDeEntrenamiento, offsetsDeSplit, frecuenciaSemanalDeSplit,
+  type TrainingSplit,
+} from '../utils/trainingSplits';
+import { zoneLabel, heatmapBg, heatmapText, VOLUME_ZONE_LEGEND, GENERIC_LANDMARK } from '../utils/volumeZones';
+import { VOLUME_LANDMARKS_DEFAULT, type VolumeLandmark } from '../data/volumeLandmarks';
+import { getVolumeLandmarks } from '../dbService';
+import VolumeSuggestionSheet from './VolumeSuggestionSheet';
 import { useToast } from '../hooks/useToast';
 import { Skeleton } from './ui';
 import { EmptyState, Dialog, Input, Icon, Tabs, TabItem, Sheet, Pager } from './ui';
@@ -34,146 +50,33 @@ const DEFAULT_GROUPS = (): Record<MuscleGroup, MuscleGroupConfig> =>
     MUSCLE_GROUPS.map(g => [g, { series: 0, priority: 'media' as const }])
   ) as Record<MuscleGroup, MuscleGroupConfig>;
 
-// ─── Heatmap helpers ──────────────────────────────────────────────────────────
-
-function heatmapBg(series: number): string {
-  if (series === 0) return 'var(--color-surface)';
-  if (series <= 4)  return `rgb(59 130 246 / ${Math.round(18 + ((series - 1) / 3) * 32)}%)`;
-  if (series <= 9)  return `rgb(34 197 94 / ${Math.round(20 + ((series - 5) / 4) * 40)}%)`;
-  if (series <= 14) return `rgb(249 115 22 / ${Math.round(28 + ((series - 10) / 4) * 42)}%)`;
-  return `rgb(239 68 68 / ${Math.round(48 + Math.min((series - 15) / 5, 1) * 42)}%)`;
-}
-
-function heatmapText(series: number): string {
-  if (series === 0) return 'var(--color-ink-3)';
-  if (series <= 4)  return 'var(--color-info)';
-  if (series <= 9)  return 'var(--color-success)';
-  if (series <= 14) return 'var(--color-warning)';
-  return 'var(--color-danger)';
-}
-
-function zoneLabel(series: number): string {
-  if (series === 0) return 'Sin volumen';
-  if (series <= 4)  return 'MEV';
-  if (series <= 9)  return 'Productivo';
-  if (series <= 14) return 'MAV';
-  return 'MRV';
-}
-
-const LEGEND = [
-  { label: 'Sin volumen', range: '0',          bg: 'var(--color-surface)',               text: 'var(--color-ink-3)'     },
-  { label: 'MEV',         range: '1–4 series', bg: 'rgb(59 130 246 / 35%)', text: 'var(--color-info)'  },
-  { label: 'Productivo',  range: '5–9 series', bg: 'rgb(34 197 94 / 45%)',  text: 'var(--color-success)'  },
-  { label: 'MAV',         range: '10–14',      bg: 'rgb(249 115 22 / 55%)', text: 'var(--color-warning)'  },
-  { label: 'MRV',         range: '15+',        bg: 'rgb(239 68 68 / 65%)',  text: 'var(--color-danger)'  },
-];
+// Heatmap/zoneLabel/LEGEND ahora viven en utils/volumeZones.ts, leyendo la
+// tabla de landmarks por grupo en vez de umbrales fijos iguales para los 17
+// grupos musculares (antes duplicados aquí y en MesocycleTemplateLibrary.tsx).
 
 // ─── Distribution engine ──────────────────────────────────────────────────────
-
-const ANTAGONIST_PAIRS: [MuscleGroup, MuscleGroup][] = [
-  ['pecho',      'dorsal'],
-  ['biceps',     'triceps'],
-  ['cuadriceps', 'isquios'],
-];
-
-function getAntagonist(g: MuscleGroup): MuscleGroup | null {
-  for (const [a, b] of ANTAGONIST_PAIRS) {
-    if (g === a) return b;
-    if (g === b) return a;
-  }
-  return null;
-}
-
-function splitEvenly(total: number, n: number): number[] {
-  if (n <= 0) return [total];
-  const base = Math.floor(total / n);
-  const rem  = total % n;
-  return Array.from({ length: n }, (_, i) => base + (i < rem ? 1 : 0));
-}
-
-function sessionCount(series: number, maxDays: number): number {
-  const maxNonConsec = Math.ceil(maxDays / 2);
-  if (series <= 5)  return 1;
-  if (series <= 14) return Math.min(2, maxNonConsec);
-  return Math.min(3, maxNonConsec, maxDays);
-}
-
-function runDistribution(
-  groups: Record<MuscleGroup, MuscleGroupConfig>,
-  daysPerWeek: number,
-  dayTypes?: string[], // reparto elegido (Torso/Pierna/Push/...) — si viene, restringe qué días acepta cada grupo muscular
-): { days: DayPlan[]; overloadAlert: boolean } {
-  const days: DayPlan[] = Array.from({ length: daysPerWeek }, (_, i) => ({
-    assignments: [], totalSeries: 0, dayType: dayTypes?.[i],
-  }));
-
-  const totalAll = MUSCLE_GROUPS.reduce((s, g) => s + groups[g].series, 0);
-  const overloadAlert = totalAll > daysPerWeek * 12;
-
-  const active = rankMuscleGroups(groups);
-
-  const placedOn: Partial<Record<MuscleGroup, number[]>> = {};
-
-  // Días permitidos para un grupo dado el reparto elegido; sin reparto, todos valen.
-  const allowedDays = (group: MuscleGroup): number[] => {
-    if (!dayTypes) return Array.from({ length: daysPerWeek }, (_, i) => i);
-    const allowed = Array.from({ length: daysPerWeek }, (_, i) => i)
-      .filter(i => (DAY_TYPE_MUSCLES[dayTypes[i]] ?? []).includes(group));
-    // si el reparto no cubre este grupo en ningún día, no lo bloqueamos —
-    // mejor colocarlo en algún día que perder el volumen configurado
-    return allowed.length > 0 ? allowed : Array.from({ length: daysPerWeek }, (_, i) => i);
-  };
-
-  for (const group of active) {
-    const total    = groups[group].series;
-    const sessions = sessionCount(total, daysPerWeek);
-    const chunks   = splitEvenly(total, sessions);
-    const myDays: number[] = [];
-    placedOn[group] = myDays;
-
-    const antag     = getAntagonist(group);
-    const antagDays = (antag && placedOn[antag]) ? placedOn[antag]! : [];
-    const candidates = allowedDays(group);
-
-    for (const chunk of chunks) {
-      let bestDay = -1, bestScore = Infinity;
-
-      for (const d of candidates) {
-        if (myDays.some(pd => Math.abs(d - pd) < 2)) continue;
-        let score = days[d].totalSeries;
-        if (groups[group].priority === 'alta') score += d * 0.3;
-        if (antagDays.includes(d)) score += 50;
-        if (score < bestScore) { bestScore = score; bestDay = d; }
-      }
-
-      if (bestDay === -1) {
-        for (const d of candidates) {
-          let score = days[d].totalSeries;
-          if (antagDays.includes(d)) score += 50;
-          if (score < bestScore) { bestScore = score; bestDay = d; }
-        }
-      }
-
-      if (bestDay === -1) bestDay = candidates[0] ?? 0;
-      days[bestDay].assignments.push({ group, series: chunk });
-      days[bestDay].totalSeries += chunk;
-      myDays.push(bestDay);
-    }
-  }
-
-  return { days, overloadAlert };
-}
 
 function buildSnapshot(m: Mesocycle) {
   const groupSeries: Partial<Record<MuscleGroup, number>> = {};
   MUSCLE_GROUPS.forEach(g => { if (m.groups[g].series > 0) groupSeries[g] = m.groups[g].series; });
-  return { daysPerWeek: m.daysPerWeek, groupSeries };
+  return {
+    daysPerWeek: m.daysPerWeek,
+    cycleDays: m.cycleDays,
+    splitId: m.splitId,
+    // Serializado a texto: es el único campo del snapshot que es un array, y
+    // la comparación de abajo es toda por igualdad simple.
+    customOffsets: m.customOffsets ? m.customOffsets.join(',') : undefined,
+    groupSeries,
+  };
 }
 
 function isStale(m: Mesocycle, dist: WeekDistribution): boolean {
   const cur  = buildSnapshot(m);
   const snap = dist.snapshot;
   if (cur.daysPerWeek !== snap.daysPerWeek) return true;
+  if (cur.cycleDays !== snap.cycleDays) return true;
+  if (cur.splitId !== snap.splitId) return true;
+  if (cur.customOffsets !== snap.customOffsets) return true;
   const keys = new Set([...Object.keys(cur.groupSeries), ...Object.keys(snap.groupSeries)]) as Set<MuscleGroup>;
   for (const k of keys) {
     if (cur.groupSeries[k] !== snap.groupSeries[k]) return true;
@@ -182,22 +85,6 @@ function isStale(m: Mesocycle, dist: WeekDistribution): boolean {
 }
 
 // ─── Generator types & helpers ────────────────────────────────────────────────
-
-// Extends WorkoutExercise (not a parallel shape) so the generator preview can carry —
-// and let the coach configure — the exact same fields as the routine editor: technique,
-// warm-up, recordVideoSet, setGroups. `name`/`muscleGroup`/`equipmentMismatch` are
-// preview-only display extras, stripped back out to a plain WorkoutExercise on assign.
-interface PreviewExercise extends WorkoutExercise {
-  name: string;
-  muscleGroup: MuscleGroup;
-  equipmentMismatch?: boolean; // exercise needs equipment athlete doesn't have
-}
-
-interface PreviewDay {
-  dayIndex: number;
-  exercises: PreviewExercise[];
-  warnings: string[];
-}
 
 type GeneratorPhase = 'idle' | 'loading' | 'preview' | 'assigning' | 'done' | 'error';
 
@@ -209,8 +96,8 @@ function addDays(dateStr: string, days: number): string {
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
-function Stepper({ value, min = 0, max = 25, onChange }: {
-  value: number; min?: number; max?: number; onChange: (v: number) => void;
+function Stepper({ value, min = 0, max = 25, onChange, landmark }: {
+  value: number; min?: number; max?: number; onChange: (v: number) => void; landmark?: VolumeLandmark;
 }) {
   return (
     <div className="flex items-center gap-1">
@@ -219,7 +106,7 @@ function Stepper({ value, min = 0, max = 25, onChange }: {
         disabled={value <= min}
         className="w-11 h-11 sm:w-6 sm:h-6 rounded-control bg-raised text-ink-2 hover:bg-raised disabled:opacity-30 text-body-s sm:text-label font-bold flex items-center justify-center flex-shrink-0"
       >−</button>
-      <span className="w-8 text-center font-mono text-body-s font-bold" style={{ color: heatmapText(value) }}>
+      <span className="w-8 text-center font-mono text-body-s font-bold" style={{ color: heatmapText(value, landmark) }}>
         {value}
       </span>
       <button
@@ -264,14 +151,21 @@ function PrioritySelector({ value, onChange }: {
 // que el heatmap de la tabla de volumen — y un aviso ámbar aparece cuando se pasa de 12.
 const DayCard: React.FC<{
   day: DayPlan;
-  dayNumber: number;
   dayIdx: number;
   daysPerWeek: number;
+  /**
+   * En qué día del ciclo (0-based) cae cada sesión. Sin esto, una tarjeta se
+   * numeraría por su posición en la lista de SESIONES ("Día 3" = la 3ª sesión
+   * que existe) en vez de por el día real del calendario — y si el 3 se marcó
+   * como descanso, la 3ª sesión cae en realidad el día 4, así que llamarla
+   * "Día 3" haría parecer que el descanso no se respetó.
+   */
+  offsets: number[];
   onSeriesChange: (aIdx: number, series: number) => void;
   onRemove: (aIdx: number) => void;
   onMove: (aIdx: number, targetDayIdx: number) => void;
   onAddGroup: (group: MuscleGroup) => void;
-}> = ({ day, dayNumber, dayIdx, daysPerWeek, onSeriesChange, onRemove, onMove, onAddGroup }) => {
+}> = ({ day, dayIdx, daysPerWeek, offsets, onSeriesChange, onRemove, onMove, onAddGroup }) => {
   const [moveOpenIdx, setMoveOpenIdx] = useState<number | null>(null);
   const total   = day.totalSeries;
   const optimal = total >= 9 && total <= 12;
@@ -280,12 +174,13 @@ const DayCard: React.FC<{
   const placedGroups = new Set(day.assignments.map(a => a.group));
   const otherDays = Array.from({ length: daysPerWeek }, (_, i) => i).filter(i => i !== dayIdx);
   const availableGroups = MUSCLE_GROUPS.filter(g => !placedGroups.has(g));
+  const diaCalendario = (sesion: number) => (offsets[sesion] ?? sesion) + 1;
 
   return (
     <div className="bg-surface border border-hairline rounded-surface p-4 flex-1 min-w-[220px] max-w-[300px] flex flex-col gap-3">
       <div className="flex items-center gap-2">
         <span className="font-mono text-caption text-ink-2 uppercase tracking-wider flex-1 min-w-0 truncate">
-          Día {dayNumber}{day.dayType ? ` · ${day.dayType}` : ''}
+Día {diaCalendario(dayIdx)}{day.dayType ? ` · ${day.dayType}` : ''}
         </span>
         <span className="font-mono text-title-m font-bold tabular-nums" style={{ color: totalColor }}>{total}</span>
         <span className="font-mono text-caption text-ink-3">series</span>
@@ -326,7 +221,7 @@ const DayCard: React.FC<{
                       onClick={() => { onMove(i, d); setMoveOpenIdx(null); }}
                       className="px-2.5 py-1 rounded-full font-mono text-caption font-bold text-accent bg-accent/12 border border-accent-line hover:bg-accent/20 transition-colors"
                     >
-                      Día {d + 1}
+                      Día {diaCalendario(d)}
                     </button>
                   ))}
                 </div>
@@ -362,6 +257,90 @@ const DayCard: React.FC<{
   );
 };
 
+// La frecuencia más alta que da un reparto a algún grupo. Es el número con el
+// que un entrenador elige entre plantillas: «esta me deja el pecho a 1,5».
+//
+// Deja fuera los grupos que caben en TODOS los días del reparto (core, lumbares
+// y rotadores están en cada tipo de día a propósito, para poder colocarlos donde
+// haga falta). Contarlos haría que cualquier plantilla dijera "hasta 3×/sem",
+// que es la frecuencia del core, no la del reparto.
+function frecuenciaMaximaDeSplit(split: TrainingSplit): number {
+  const tipos = tiposDeEntrenamiento(split);
+  const especificos = MUSCLE_GROUPS.filter(g =>
+    !tipos.every(t => (DAY_TYPE_MUSCLES[t] ?? []).includes(g)));
+  return Math.max(0, ...especificos.map(g => frecuenciaSemanalDeSplit(split, g)));
+}
+
+// Calendario de una vuelta del microciclo: qué días se entrena y cuáles son de
+// descanso. Sin esto la duración del ciclo es un número abstracto — y es
+// justo lo que decide la frecuencia real de cada grupo.
+//
+// Con `onToggleDay` se vuelve editable: pulsar un día lo cambia de sesión a
+// descanso o al revés. `personalizado` distingue el estado (naranja) de un
+// calendario tocado a mano del automático (oro) — para que se note que ya no
+// es lo que el ciclo/reparto elegido calcularía solo.
+const CalendarioCiclo: React.FC<{
+  cicloDias: number;
+  offsets: number[];
+  tipos: string[];
+  sesiones: number;
+  onToggleDay?: (dia: number) => void;
+  personalizado?: boolean;
+  onRestablecer?: () => void;
+}> = ({ cicloDias, offsets, tipos, sesiones, onToggleDay, personalizado = false, onRestablecer }) => {
+  const porDia = new Map(offsets.map((off, i) => [off, tipos[i] ?? `Sesión ${i + 1}`]));
+  const tono = personalizado ? 'text-orange-400' : 'text-accent';
+  const tonoFondo = personalizado ? 'border-orange-500/40 bg-orange-500/10' : 'border-accent-line bg-accent/10';
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <span className="font-mono text-caption text-ink-2 uppercase tracking-wider">
+          Calendario del ciclo ({cicloDias} días · {offsets.length}/{sesiones} sesiones{personalizado ? ' · a mano' : ''})
+        </span>
+        {personalizado && onRestablecer && (
+          <button
+            type="button"
+            onClick={onRestablecer}
+            className="font-mono text-caption font-bold text-accent hover:text-white transition-colors flex items-center gap-1"
+          >
+            <Icon name="undo" size="s" />
+            Volver al automático
+          </button>
+        )}
+      </div>
+      {onToggleDay && (
+        <p className="font-sans text-caption text-ink-3 leading-relaxed">
+          Pulsa un día para cambiarlo entre sesión y descanso. {offsets.length < sesiones
+            ? `Faltan ${sesiones - offsets.length} por colocar.`
+            : offsets.length > sesiones ? `Sobran ${offsets.length - sesiones} — quita alguna.` : ''}
+        </p>
+      )}
+      <div className="flex flex-wrap gap-1">
+        {Array.from({ length: cicloDias }, (_, d) => {
+          const tipo = porDia.get(d);
+          const Elemento: React.ElementType = onToggleDay ? 'button' : 'div';
+          return (
+            <Elemento
+              key={d}
+              type={onToggleDay ? 'button' : undefined}
+              onClick={onToggleDay ? () => onToggleDay(d) : undefined}
+              title={tipo ? `Día ${d + 1}: ${tipo}${onToggleDay ? ' — pulsa para poner descanso' : ''}` : `Día ${d + 1}: descanso${onToggleDay ? ' — pulsa para poner sesión' : ''}`}
+              className={`min-w-[52px] flex-1 max-w-[92px] rounded-control border px-1.5 py-1 text-center transition-colors ${
+                tipo ? tonoFondo : 'border-hairline bg-inset'
+              } ${onToggleDay ? 'cursor-pointer hover:border-strong' : ''}`}
+            >
+              <span className={`block font-mono text-caption ${tipo ? tono : 'text-ink-3'}`}>D{d + 1}</span>
+              <span className={`block font-sans text-caption truncate ${tipo ? 'text-white' : 'text-ink-3'}`}>
+                {tipo ?? '—'}
+              </span>
+            </Elemento>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
 // ─── Progression view ─────────────────────────────────────────────────────────
 
 const PRIORITY_ICON: Record<'alta' | 'media' | 'baja', string> = {
@@ -379,8 +358,8 @@ function Delta({ delta, showEqual = false }: { delta: number | null; showEqual?:
 // the meso's volume/priority config and the exercises it generates are the same thing
 // end to end, not two disconnected screens the coach has to reconcile by hand.
 function MesoExercisesView({
-  groups, loading, weeks, allExercises, onUpdateExercise, onReplaceExercise, onAddExercise, onRemoveExercise, onGoToDistribution,
-  libraryWorkouts, onUseLibraryWorkout,
+  groups, loading, weeks, allExercises, onUpdateExercise, onReplaceExercise, onAddExercise, onRemoveExercise,
+  onMoveExercise, onGoToDistribution, libraryWorkouts, onUseLibraryWorkout, distribution, mesoGroups, semanasDelCiclo,
 }: {
   groups: MesoWorkoutGroup[];
   loading: boolean;
@@ -390,9 +369,13 @@ function MesoExercisesView({
   onReplaceExercise: (group: MesoWorkoutGroup, exIdx: number) => void;
   onAddExercise: (group: MesoWorkoutGroup) => void;
   onRemoveExercise: (group: MesoWorkoutGroup, exIdx: number) => void;
+  onMoveExercise: (group: MesoWorkoutGroup, exIdx: number, delta: -1 | 1) => void;
   onGoToDistribution: () => void;
   libraryWorkouts: Workout[];
   onUseLibraryWorkout: (group: MesoWorkoutGroup, workout: Workout) => void;
+  distribution?: WeekDistribution;
+  mesoGroups: Record<MuscleGroup, MuscleGroupConfig>;
+  semanasDelCiclo: number;
 }) {
   if (loading) {
     return (
@@ -417,7 +400,7 @@ function MesoExercisesView({
     );
   }
 
-  return <MesoExercisesTabs {...{ groups, weeks, allExercises, onUpdateExercise, onReplaceExercise, onAddExercise, onRemoveExercise, libraryWorkouts, onUseLibraryWorkout }} />;
+  return <MesoExercisesTabs {...{ groups, weeks, allExercises, onUpdateExercise, onReplaceExercise, onAddExercise, onRemoveExercise, onMoveExercise, libraryWorkouts, onUseLibraryWorkout, distribution, mesoGroups, semanasDelCiclo }} />;
 }
 
 // Un día por pestaña en vez de todos los días apilados en la misma pantalla —
@@ -425,7 +408,7 @@ function MesoExercisesView({
 // ejercicios de días distintos. Aquí solo se ve un día a la vez, con su vídeo.
 function MesoExercisesTabs({
   groups, weeks, allExercises, onUpdateExercise, onReplaceExercise, onAddExercise, onRemoveExercise,
-  libraryWorkouts, onUseLibraryWorkout,
+  onMoveExercise, libraryWorkouts, onUseLibraryWorkout, distribution, mesoGroups, semanasDelCiclo,
 }: {
   groups: MesoWorkoutGroup[];
   weeks: number;
@@ -434,8 +417,12 @@ function MesoExercisesTabs({
   onReplaceExercise: (group: MesoWorkoutGroup, exIdx: number) => void;
   onAddExercise: (group: MesoWorkoutGroup) => void;
   onRemoveExercise: (group: MesoWorkoutGroup, exIdx: number) => void;
+  onMoveExercise: (group: MesoWorkoutGroup, exIdx: number, delta: -1 | 1) => void;
   libraryWorkouts: Workout[];
   onUseLibraryWorkout: (group: MesoWorkoutGroup, workout: Workout) => void;
+  distribution?: WeekDistribution;
+  mesoGroups: Record<MuscleGroup, MuscleGroupConfig>;
+  semanasDelCiclo: number;
 }) {
   const [activeIdx, setActiveIdx] = useState(0);
   const [videoModal, setVideoModal] = useState<{ key: string; url: string; name: string } | null>(null);
@@ -456,6 +443,27 @@ function MesoExercisesTabs({
     return new Set([...counts.entries()].filter(([, n]) => n > 1).map(([id]) => id));
   }, [groups]);
 
+  // Balance de la SEMANA: lo pautado en los días contra el volumen del
+  // mesociclo. Es la cuenta que se descuadra sin avisar cuando se cambia un
+  // ejercicio, se copia una rutina de biblioteca o se toca el volumen después
+  // de haber generado — hasta ahora había que sumarlo a mano día por día.
+  const balanceSemana = useMemo(() => balanceDeSeries(
+    seriesPorGrupo(groups.flatMap(g => g.exercises), allExercises),
+    seriesPlanificadasDelMeso(mesoGroups, semanasDelCiclo),
+  ), [groups, allExercises, mesoGroups, semanasDelCiclo]);
+
+  const referenciaCiclo = semanasDelCiclo === 1
+    ? 'el volumen del mesociclo'
+    : `el volumen del ciclo (${semanasDelCiclo.toLocaleString('es-ES')} semanas)`;
+
+  // A qué día de la distribución corresponde cada tarjeta. El nombre que crea
+  // el generador es «Día N – Meso #X»; si viene de una plantilla puede ser
+  // cualquier cosa, y entonces vale la posición en la lista.
+  const dayIndexOf = (name: string, idx: number): number => {
+    const m = /d[ií]a\s*(\d+)/i.exec(name);
+    return m ? parseInt(m[1], 10) - 1 : idx;
+  };
+
   const clearLongPress = () => {
     if (longPressTimer.current !== null) {
       window.clearTimeout(longPressTimer.current);
@@ -471,8 +479,12 @@ function MesoExercisesTabs({
   return (
     <div className="space-y-4">
       <p className="font-mono text-caption text-ink-2">
-        Cada día se repite igual en las {weeks} semanas del mesociclo — edita aquí y se aplica a todas las semanas a la vez.
+        Cada sesión se repite igual en todas las vueltas del mesociclo — edita aquí y se aplica a todas a la vez.
       </p>
+
+      <div className="bg-surface border border-hairline rounded-surface px-4 py-3">
+        <SeriesBalance balance={balanceSemana} referencia={referenciaCiclo} ocultarSiVacio={false} />
+      </div>
 
       {/* Carrusel de días — solo el día activo muestra su contenido debajo */}
       <Tabs
@@ -490,13 +502,27 @@ function MesoExercisesTabs({
           desincronizan: los dos mueven el mismo estado. */}
       {groups.length > 0 && (
         <Pager label="Días del mesociclo" value={activeIdx} onChange={setActiveIdx}>
-          {groups.map(g => (
+          {groups.map((g, gIdx) => (
             <div key={g.name} className="bg-surface border border-hairline rounded-surface overflow-hidden">
-              <div className="flex items-center justify-between px-4 py-3 bg-bg border-b border-hairline">
-                <p className="font-sans font-bold text-body-s text-white">{g.name}</p>
-                <span className="font-mono text-caption text-ink-2">
-                  {g.exercises.reduce((s, e) => s + e.sets, 0)} series · {g.exercises.length} ejercicios
-                </span>
+              <div className="px-4 py-3 bg-bg border-b border-hairline space-y-2">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <p className="font-sans font-bold text-body-s text-white">{g.name}</p>
+                  <span className="font-mono text-caption text-ink-2 tabular-nums">
+                    {g.exercises.reduce((s, e) => s + e.sets, 0)} series · {g.exercises.length} ejercicios
+                    {duracionEstimadaMin(g.exercises) > 0 && (
+                      <span title="Series × (45 s de trabajo + descanso). Sin contar el calentamiento.">
+                        {' · ~'}{duracionEstimadaMin(g.exercises)} min
+                      </span>
+                    )}
+                  </span>
+                </div>
+                <SeriesBalance
+                  balance={balanceDeSeries(
+                    seriesPorGrupo(g.exercises, allExercises),
+                    seriesPlanificadasDelDia(distribution?.days[dayIndexOf(g.name, gIdx)]),
+                  )}
+                  referencia="la distribución del día"
+                />
               </div>
               <div className="p-3 space-y-2">
                 {g.exercises.length === 0 ? (
@@ -512,8 +538,29 @@ function MesoExercisesTabs({
                         className={`bg-raised rounded-surface overflow-hidden ${isDuplicate ? 'border border-red-500/50' : ''}`}
                       >
                         <div className="p-3 space-y-2">
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="min-w-0">
+                          <div className="flex items-start gap-2">
+                            {/* Reordenar — el orden en que se hacen los ejercicios
+                                es una decisión de programación (básicos primero,
+                                aislamiento después), y hasta ahora la única forma
+                                de cambiarlo era borrar y volver a añadir. */}
+                            <div className="flex flex-col flex-shrink-0">
+                              <button
+                                type="button"
+                                onClick={() => onMoveExercise(g, exIdx, -1)}
+                                disabled={exIdx === 0}
+                                aria-label="Subir ejercicio"
+                                className="text-ink-3 hover:text-accent disabled:opacity-20 disabled:hover:text-ink-3 transition-colors"
+                              ><Icon name="keyboard_arrow_up" size="s" /></button>
+                              <button
+                                type="button"
+                                onClick={() => onMoveExercise(g, exIdx, 1)}
+                                disabled={exIdx === g.exercises.length - 1}
+                                aria-label="Bajar ejercicio"
+                                className="text-ink-3 hover:text-accent disabled:opacity-20 disabled:hover:text-ink-3 transition-colors"
+                              ><Icon name="keyboard_arrow_down" size="s" /></button>
+                            </div>
+                            <span className="font-mono text-caption text-ink-3 tabular-nums w-4 flex-shrink-0 pt-1">{exIdx + 1}</span>
+                            <div className="min-w-0 flex-1">
                               <p
                                 className={`text-label font-sans font-bold truncate ${isDuplicate ? 'text-red-400' : 'text-white'} ${ex?.videoUrl ? 'cursor-pointer select-none' : ''}`}
                                 title={ex?.videoUrl ? 'Mantén pulsado o clic derecho para ver el vídeo' : undefined}
@@ -637,26 +684,41 @@ function MesoExercisesTabs({
 // Volume/priority config and cross-mesocycle progression used to be two separate tabs —
 // merged here so setting this mesocycle's series/priority per group happens with last
 // mesocycle's numbers right there for reference, instead of tabbing back and forth.
-function ProgressionView({ editing, mesocycles, onUpdateGroup }: {
+function ProgressionView({ editing, mesocycles, onUpdateGroup, onApplySuggestion, landmarks, athleteLevel, athleteEmail, coachId }: {
   editing: Mesocycle;
   mesocycles: Mesocycle[];
   onUpdateGroup: (group: MuscleGroup, field: keyof MuscleGroupConfig, value: number | string) => void;
+  onApplySuggestion: (groups: Record<MuscleGroup, MuscleGroupConfig>, mode: 'replace' | 'fillZeros') => void;
+  landmarks: Record<MuscleGroup, VolumeLandmark>;
+  athleteLevel?: 'principiante' | 'intermedio' | 'avanzado';
+  athleteEmail: string;
+  coachId: string;
 }) {
   const history = [...mesocycles].filter(m => m.id !== editing.id).sort((a, b) => a.number - b.number);
   const columns = [...history, editing]; // current mesocycle always last, editable
   const totals = columns.map(m => MUSCLE_GROUPS.reduce((s, g) => s + m.groups[g].series, 0));
   const currentTotal = MUSCLE_GROUPS.reduce((acc, g) => acc + editing.groups[g].series, 0);
+  const [showSuggest, setShowSuggest] = useState(false);
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap gap-2">
-        {LEGEND.map(l => (
-          <div key={l.label} className="flex items-center gap-2 px-3 py-1 rounded-surface border border-hairline" style={{ backgroundColor: l.bg }}>
-            <span className="font-sans text-caption font-bold" style={{ color: l.text }}>{l.label}</span>
-            <span className="font-mono text-caption opacity-70" style={{ color: l.text }}>{l.range}</span>
-          </div>
-        ))}
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex flex-wrap gap-2">
+          {VOLUME_ZONE_LEGEND.map(l => (
+            <div key={l.label} className="flex items-center gap-2 px-3 py-1 rounded-surface border border-hairline" style={{ backgroundColor: l.bg }}>
+              <span className="font-sans text-caption font-bold" style={{ color: l.text }}>{l.label}</span>
+            </div>
+          ))}
+        </div>
+        <button
+          onClick={() => setShowSuggest(true)}
+          className="flex items-center gap-2 px-3 py-2 bg-accent/10 border border-accent/40 text-accent font-sans text-label font-bold uppercase tracking-wider rounded-control hover:bg-accent/20 active:scale-95 transition-all"
+        >
+          <Icon name="auto_awesome" size="s" />
+          Sugerir volumen
+        </button>
       </div>
+      <p className="font-mono text-caption text-ink-3 -mt-2">Cada barra usa el rango de su propio grupo — pecho y antebrazo no se miden igual.</p>
 
       <div className="flex flex-wrap gap-3 text-caption font-mono">
         <span className="text-success">▲ Sube</span>
@@ -665,44 +727,57 @@ function ProgressionView({ editing, mesocycles, onUpdateGroup }: {
         <span className="text-ink-2 ml-2">⭐ Alta · ◑ Media · ⚪ Baja prioridad</span>
       </div>
 
+      {showSuggest && (
+        <VolumeSuggestionSheet
+          editing={editing}
+          mesocycles={mesocycles}
+          landmarks={landmarks}
+          athleteLevel={athleteLevel}
+          athleteEmail={athleteEmail}
+          coachId={coachId}
+          onClose={() => setShowSuggest(false)}
+          onApply={(groups, mode) => { onApplySuggestion(groups, mode); setShowSuggest(false); }}
+        />
+      )}
+
       {/* Por debajo de sm la tabla es legítimamente ancha pero inusable: una
           tarjeta por grupo muscular en su lugar, con el meso actual editable
           y el historial como texto compacto. Mismos datos, otra presentación. */}
       <div className="sm:hidden space-y-2">
         {MUSCLE_GROUPS.map(group => {
           const cfg = editing.groups[group];
+          const landmark = landmarks[group];
           const histText = history
             .map(m => `Meso #${m.number}: ${m.groups[group].series}`)
             .join(' · ');
           const lastHistorical = history.length > 0 ? history[history.length - 1].groups[group] : null;
           const delta = lastHistorical !== null ? cfg.series - lastHistorical.series : null;
-          // Barra de zona MEV/Productivo/MAV/MRV — mismos umbrales que heatmapBg/LEGEND
-          // (1/5/10/15 series), pintada como marcas de referencia sobre el rango 0-20 en
-          // vez de solo un color de fondo: así la zona se lee de un vistazo, como en el
-          // mockup de Fase 3 (r.mavMark / r.mrvMark).
-          const ZONE_MAX = 20;
+          // Barra de zona MEV/Productivo/MAV/MRV — el rango 0-ZONE_MAX y las
+          // marcas MAV/MRV son los de la tabla de landmarks DE ESTE GRUPO, no
+          // un umbral fijo igual para los 17 (ver utils/volumeZones.ts).
+          const ZONE_MAX = Math.max(1, landmark.mrv);
           const fillPct = Math.min(100, (cfg.series / ZONE_MAX) * 100);
-          const mavPct  = (10 / ZONE_MAX) * 100;
-          const mrvPct  = (15 / ZONE_MAX) * 100;
+          const mavPct  = (landmark.mavMin / ZONE_MAX) * 100;
+          const mrvPct  = (landmark.mavMax / ZONE_MAX) * 100;
           return (
             <div key={group} className="bg-surface border border-hairline rounded-surface p-3 space-y-3">
               <div className="flex items-center justify-between">
                 <span className="font-sans text-label text-white font-bold">{MUSCLE_LABELS[group]}</span>
                 <div className="flex items-center gap-2">
-                  <span className="font-mono text-caption uppercase tracking-wider" style={{ color: heatmapText(cfg.series) }}>
-                    {zoneLabel(cfg.series)}
+                  <span className="font-mono text-caption uppercase tracking-wider" style={{ color: heatmapText(cfg.series, landmark) }}>
+                    {zoneLabel(cfg.series, landmark)}
                   </span>
                   {delta !== null && <Delta delta={delta} showEqual />}
                 </div>
               </div>
               <div className="flex items-center justify-between gap-3">
-                <Stepper value={cfg.series} onChange={v => onUpdateGroup(group, 'series', v)} />
+                <Stepper value={cfg.series} onChange={v => onUpdateGroup(group, 'series', v)} landmark={landmark} />
                 <PrioritySelector value={cfg.priority} onChange={v => onUpdateGroup(group, 'priority', v)} />
               </div>
               <div className="relative h-1 rounded-full bg-track">
                 <div
                   className="absolute inset-y-0 left-0 rounded-full transition-[width] duration-(--duration-bar)"
-                  style={{ width: `${fillPct}%`, backgroundColor: heatmapText(cfg.series) }}
+                  style={{ width: `${fillPct}%`, backgroundColor: heatmapText(cfg.series, landmark) }}
                 />
                 <div className="absolute -top-0.5 -bottom-0.5 w-px bg-white/28" style={{ left: `${mavPct}%` }} title="MAV" />
                 <div className="absolute -top-0.5 -bottom-0.5 w-px bg-danger/70" style={{ left: `${mrvPct}%` }} title="MRV" />
@@ -730,7 +805,7 @@ function ProgressionView({ editing, mesocycles, onUpdateGroup }: {
                       {isCurrent ? `Meso #${m.number} (actual)` : `Meso #${m.number}`}
                     </span>
                     <span className="font-mono text-caption text-ink-2 block ">{m.startDate}</span>
-                    <span className="font-mono text-caption text-ink-3 block">{m.daysPerWeek}d · {m.weeks} sem</span>
+                    <span className="font-mono text-caption text-ink-3 block">{m.daysPerWeek} ses. · {m.weeks} sem</span>
                     {m.objective && (
                       <span className="block mt-1 text-caption text-ink-2 font-sans font-medium max-w-[120px] mx-auto leading-tight"
                         style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
@@ -742,7 +817,9 @@ function ProgressionView({ editing, mesocycles, onUpdateGroup }: {
             </tr>
           </thead>
           <tbody>
-            {MUSCLE_GROUPS.map((group, rowIdx) => (
+            {MUSCLE_GROUPS.map((group, rowIdx) => {
+              const landmark = landmarks[group];
+              return (
               <tr key={group} className={rowIdx % 2 === 0 ? 'bg-bg' : 'bg-bg'}>
                 <td className={`sticky left-0 z-[var(--z-sticky)] px-4 py-3 border-r border-hairline font-sans text-label text-ink-2 whitespace-nowrap ${rowIdx % 2 === 0 ? 'bg-bg' : 'bg-bg'}`}>
                   {MUSCLE_LABELS[group]}
@@ -755,23 +832,23 @@ function ProgressionView({ editing, mesocycles, onUpdateGroup }: {
                   const zeroToZero = prev !== null && prev.series === 0 && cfg.series === 0;
 
                   if (isCurrent) {
-                    const ZONE_MAX = 20;
+                    const ZONE_MAX = Math.max(1, landmark.mrv);
                     const fillPct = Math.min(100, (cfg.series / ZONE_MAX) * 100);
                     return (
                       <td key={m.id} className="px-3 py-2 border-r border-hairline last:border-r-0 bg-accent/5"
-                        style={{ backgroundColor: cfg.series > 0 ? heatmapBg(cfg.series) : undefined }}
+                        style={{ backgroundColor: cfg.series > 0 ? heatmapBg(cfg.series, landmark) : undefined }}
                       >
                         <div className="flex flex-col items-center gap-2">
-                          <Stepper value={cfg.series} onChange={v => onUpdateGroup(group, 'series', v)} />
+                          <Stepper value={cfg.series} onChange={v => onUpdateGroup(group, 'series', v)} landmark={landmark} />
                           <PrioritySelector value={cfg.priority} onChange={v => onUpdateGroup(group, 'priority', v)} />
                           {!zeroToZero && <Delta delta={delta} showEqual />}
                           <div className="relative h-1 w-full rounded-full bg-track">
                             <div
                               className="absolute inset-y-0 left-0 rounded-full transition-[width] duration-(--duration-bar)"
-                              style={{ width: `${fillPct}%`, backgroundColor: heatmapText(cfg.series) }}
+                              style={{ width: `${fillPct}%`, backgroundColor: heatmapText(cfg.series, landmark) }}
                             />
-                            <div className="absolute -top-0.5 -bottom-0.5 w-px bg-white/28" style={{ left: `${(10 / ZONE_MAX) * 100}%` }} title="MAV" />
-                            <div className="absolute -top-0.5 -bottom-0.5 w-px bg-danger/70" style={{ left: `${(15 / ZONE_MAX) * 100}%` }} title="MRV" />
+                            <div className="absolute -top-0.5 -bottom-0.5 w-px bg-white/28" style={{ left: `${(landmark.mavMin / ZONE_MAX) * 100}%` }} title="MAV" />
+                            <div className="absolute -top-0.5 -bottom-0.5 w-px bg-danger/70" style={{ left: `${(landmark.mavMax / ZONE_MAX) * 100}%` }} title="MRV" />
                           </div>
                         </div>
                       </td>
@@ -780,13 +857,13 @@ function ProgressionView({ editing, mesocycles, onUpdateGroup }: {
 
                   return (
                     <td key={m.id} className="px-3 py-3 border-r border-hairline last:border-r-0 text-center"
-                      style={{ backgroundColor: cfg.series > 0 ? heatmapBg(cfg.series) : undefined }}
+                      style={{ backgroundColor: cfg.series > 0 ? heatmapBg(cfg.series, landmark) : undefined }}
                     >
                       {cfg.series === 0 ? (
                         <span className="font-mono text-caption text-ink-3">—</span>
                       ) : (
                         <div className="flex items-center justify-center gap-1 flex-wrap">
-                          <span className="font-mono text-label font-bold tabular-nums" style={{ color: heatmapText(cfg.series) }}>
+                          <span className="font-mono text-label font-bold tabular-nums" style={{ color: heatmapText(cfg.series, landmark) }}>
                             {cfg.series}
                           </span>
                           <span className="text-caption">{PRIORITY_ICON[cfg.priority]}</span>
@@ -797,7 +874,8 @@ function ProgressionView({ editing, mesocycles, onUpdateGroup }: {
                   );
                 })}
               </tr>
-            ))}
+              );
+            })}
           </tbody>
           <tfoot>
             <tr><td colSpan={columns.length + 1} className="h-px bg-raised p-0" /></tr>
@@ -818,13 +896,13 @@ function ProgressionView({ editing, mesocycles, onUpdateGroup }: {
               })}
             </tr>
             <tr className="bg-bg">
-              <td className="sticky left-0 z-[var(--z-sticky)] bg-bg px-4 py-3 border-r border-t border-hairline font-mono text-caption text-ink-2 uppercase tracking-wider whitespace-nowrap">Días / semana</td>
+              <td className="sticky left-0 z-[var(--z-sticky)] bg-bg px-4 py-3 border-r border-t border-hairline font-mono text-caption text-ink-2 uppercase tracking-wider whitespace-nowrap">Sesiones / ciclo</td>
               {columns.map((m, mIdx) => {
                 const delta = mIdx > 0 ? m.daysPerWeek - columns[mIdx - 1].daysPerWeek : null;
                 return (
                   <td key={m.id} className="px-3 py-3 border-r border-t border-hairline last:border-r-0 text-center">
                     <div className="flex items-center justify-center">
-                      <span className="font-mono text-label font-bold text-ink-2">{m.daysPerWeek}d</span>
+                      <span className="font-mono text-label font-bold text-ink-2">{m.daysPerWeek} ses.</span>
                       <Delta delta={delta} />
                     </div>
                   </td>
@@ -871,7 +949,7 @@ function ProgressionView({ editing, mesocycles, onUpdateGroup }: {
 // ─── Main component ───────────────────────────────────────────────────────────
 
 type SaveState  = 'idle' | 'pending' | 'saving' | 'saved' | 'error';
-type EditorTab  = 'distribution' | 'exercises' | 'progression';
+type EditorTab  = 'distribution' | 'exercises' | 'progression' | 'cierre';
 
 // One row per distinct day pattern (name) generated for this mesocycle — every week
 // repeats the same exercises per day (see handleAssign), so grouping by name collapses
@@ -900,9 +978,20 @@ interface MesocycleManagerProps {
   coachId: string;
   athleteEmail?: string;      // when set: skip the athlete selector
   athleteEquipment?: string[]; // from onboarding; used to rank exercises in generator
+  athleteLevel?: 'principiante' | 'intermedio' | 'avanzado'; // from onboarding; punto de partida del sugeridor de volumen
+  athleteName?: string;       // solo para el borrador de texto del cierre de mesociclo
+  // Logs y asignaciones del atleta, si quien monta esta pantalla YA los tiene
+  // cargados (ClientHub los pasa por props a todo el panel). Se aceptan para no
+  // repetir dos lecturas de Firestore que ya están en memoria; si no vienen, la
+  // pestaña «Cierre» las pide por su cuenta al abrirse, nunca antes.
+  athleteLogs?: WorkoutLog[];
+  athleteAssignments?: WorkoutAssignment[];
 }
 
-export default function MesocycleManager({ coachId, athleteEmail, athleteEquipment = [] }: MesocycleManagerProps) {
+export default function MesocycleManager({
+  coachId, athleteEmail, athleteEquipment = [], athleteLevel, athleteName,
+  athleteLogs, athleteAssignments,
+}: MesocycleManagerProps) {
   const { showToast } = useToast();
   const queryClient = useQueryClient();
   const [selectedEmail, setSelectedEmail] = useState(athleteEmail ?? '');
@@ -956,6 +1045,14 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
   );
   const loadingMeso = !!selectedEmail && mesoQueryPending;
 
+  // Tabla de landmarks de volumen (MV/MEV/MAV/MRV por grupo) — misma queryKey
+  // que en AiChatPanel.tsx para compartir caché: si Dani la edita en el panel
+  // del asistente, esta vista se entera sin recargar.
+  const { data: volumeLandmarks = VOLUME_LANDMARKS_DEFAULT } = useQuery({
+    queryKey: ['coachVolumeLandmarks'],
+    queryFn: getVolumeLandmarks,
+  });
+
   // Exercise names for "Ejercicios programados" are needed as soon as that tab is opened,
   // independent of the generator flow (which only loads them once it actually runs).
   const { data: allExercises = [] } = useQuery({
@@ -975,6 +1072,28 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
     () => editing?.id ? allWorkouts.filter(w => w.mesocycleId === editing.id) : [],
     [allWorkouts, editing?.id]
   );
+
+  // Datos del CIERRE. Solo se piden si esta pantalla no los recibió por props y
+  // el coach abre la pestaña — el cierre es lo último que se mira de un bloque,
+  // no hay motivo para pagar dos queries cada vez que se entra a programar.
+  // Mismas queryKeys que ClientHub/MesocycleDashboard: si ya están en caché,
+  // esto no lee nada de Firestore.
+  const necesitaLogs = editorTab === 'cierre' && !athleteLogs && !!selectedEmail;
+  const { data: logsQuery = [], isPending: logsPending } = useQuery({
+    queryKey: ['workoutLogs', selectedEmail],
+    queryFn: () => getWorkoutLogs(selectedEmail),
+    enabled: necesitaLogs,
+  });
+  const mesoIds = useMemo(() => mesocycles.map(m => m.id), [mesocycles]);
+  const necesitaAsignaciones = editorTab === 'cierre' && !athleteAssignments && mesoIds.length > 0;
+  const { data: asignacionesQuery = [], isPending: asignacionesPending } = useQuery({
+    queryKey: ['workoutAssignmentsByMesocycleIds', mesoIds],
+    queryFn: () => getWorkoutAssignmentsByMesocycleIds(mesoIds),
+    enabled: necesitaAsignaciones,
+  });
+  const cierreLogs = athleteLogs ?? logsQuery;
+  const cierreAsignaciones = athleteAssignments ?? asignacionesQuery;
+  const cierreCargando = (necesitaLogs && logsPending) || (necesitaAsignaciones && asignacionesPending);
 
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -1027,10 +1146,31 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
     scheduleAutoSave(updated);
   };
 
+  // Aplica de golpe el resultado de "Sugerir volumen" (VolumeSuggestionSheet).
+  // 'replace' pisa los 17 grupos; 'fillZeros' respeta lo que Dani ya hubiera
+  // tocado a mano y solo rellena los que siguen a 0 — dos intenciones
+  // distintas, no una casualidad de implementación.
+  const applyVolumeSuggestion = (suggested: Record<MuscleGroup, MuscleGroupConfig>, mode: 'replace' | 'fillZeros') => {
+    if (!editing) return;
+    const nextGroups = mode === 'replace'
+      ? suggested
+      : Object.fromEntries(MUSCLE_GROUPS.map(g =>
+          [g, editing.groups[g].series === 0 ? suggested[g] : editing.groups[g]]
+        )) as Record<MuscleGroup, MuscleGroupConfig>;
+    const updated: Mesocycle = { ...editing, groups: nextGroups };
+    setEditing(updated);
+    scheduleAutoSave(updated);
+  };
+
   const handleGenerateDistribution = () => {
     if (!editing) return;
     const split = editing.splitId ? TRAINING_SPLITS.find(s => s.id === editing.splitId) : undefined;
-    const result = runDistribution(editing.groups, editing.daysPerWeek, split?.dayTypes);
+    const result = runDistribution(
+      editing.groups,
+      editing.daysPerWeek,
+      split ? tiposDeEntrenamiento(split) : undefined,
+      { cicloDias, offsets: offsetsCiclo },
+    );
     const distribution: WeekDistribution = {
       ...result,
       snapshot: buildSnapshot(editing),
@@ -1116,8 +1256,11 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
 
       // 2. Load exercises + run migration
       await migratePrimaryFocusToMuscleGroup();
-      const exercises = await getExercises();
-      queryClient.setQueryData(['exercises'], exercises);
+      // `ensureQueryData` en vez de `getExercises()` a pelo: el catálogo son
+      // ~1.700 documentos y esta pantalla YA lo tiene cargado en la caché de
+      // react-query (misma queryKey). Releerlo en cada "Generar rutinas" era
+      // una lectura completa de la colección por cada pulsación.
+      const exercises = await queryClient.ensureQueryData({ queryKey: ['exercises'], queryFn: getExercises });
 
       // If mesocycle has predefined days from template, use them as base
       if (hasDays) {
@@ -1175,8 +1318,9 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
             continue;
           }
           const compatibleCount = available.filter(e => exIsCompatible(e)).length;
-          const numEx   = Math.max(1, Math.round(series / 4));
-          const chunks  = splitEvenly(series, Math.min(numEx, available.length * 2));
+          // Tope de series por ejercicio (ver utils/programacion): 9 series de
+          // pecho salen como 3+3+3, no como un único ejercicio de 9 ni como 5+4.
+          const chunks  = repartoDeSeries(series, available.length);
           for (let i = 0; i < chunks.length; i++) {
             const ex = available[i % available.length];
             const mismatch = !exIsCompatible(ex);
@@ -1211,7 +1355,10 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
 
   const handleAssign = async () => {
     if (!editing || !athleteUid) return;
-    const total = editing.weeks * editing.daysPerWeek;
+    // Las semanas del mesociclo son semanas de calendario; lo que se repite es
+    // el MICROCICLO. Con uno de 14 días, 8 semanas son 4 vueltas, no 8.
+    const vueltas = vueltasDelCiclo(editing.weeks, diasDeCiclo(editing.daysPerWeek, editing.cycleDays));
+    const total = vueltas * editing.daysPerWeek;
     setGenPhase('assigning');
     setAssignProgress({ done: 0, total });
     setGenError('');
@@ -1242,10 +1389,29 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
         dayWorkoutIds.push(workout.id);
       }
 
+      // Calendario del microciclo: cuánto dura la vuelta y en qué día de la
+      // vuelta cae cada sesión. Con un reparto rotativo los descansos van DENTRO
+      // del ciclo (Push, Pull, Descanso, Legs, Descanso), así que las sesiones
+      // no son los primeros N días — y si se siguiera sumando de 7 en 7, la
+      // segunda vuelta de un ciclo de 9 pisaría las fechas de la primera.
+      const splitAsignado = editing.splitId ? TRAINING_SPLITS.find(sp => sp.id === editing.splitId) : undefined;
+      const cicloDias = diasDeCiclo(editing.daysPerWeek, editing.cycleDays);
+      // Un patrón tocado a mano en el calendario manda sobre el cálculo
+      // automático — mismo criterio que `offsetsCiclo` más abajo en el
+      // componente, para que lo que se ve en el calendario sea exactamente lo
+      // que se asigna al atleta.
+      const offsets = editing.customOffsets && editing.customOffsets.length === editing.daysPerWeek
+        ? [...editing.customOffsets].sort((a, b) => a - b)
+        : offsetsDeSesiones({
+            sesiones: editing.daysPerWeek,
+            cicloDias,
+            offsetsDelSplit: splitAsignado ? offsetsDeSplit(splitAsignado) : undefined,
+            repartirEnElCiclo: editing.cycleDays !== undefined,
+          });
       let done = 0;
-      for (let week = 1; week <= editing.weeks; week++) {
+      for (let week = 1; week <= vueltas; week++) {
         for (let dayIdx = 0; dayIdx < editing.daysPerWeek; dayIdx++) {
-          const date = addDays(editing.startDate, (week - 1) * 7 + dayIdx);
+          const date = addDays(editing.startDate, (week - 1) * cicloDias + (offsets[dayIdx] ?? dayIdx));
 
           // athleteId is the resolved UID (not email) so athlete security rules match
           await createWorkoutAssignmentStrict({
@@ -1290,6 +1456,19 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
           .map((e, i) => ({ ...e, order: i })),
       }
     ));
+  }
+
+  // Reordenar dentro del día — el `order` se reescribe a partir de la posición
+  // real en el array, que es lo que después se guarda en el Workout.
+  function movePEx(dayIdx: number, exIdx: number, delta: -1 | 1) {
+    setPreviewDays(prev => prev.map((d, di) => {
+      if (di !== dayIdx) return d;
+      const destino = exIdx + delta;
+      if (destino < 0 || destino >= d.exercises.length) return d;
+      const exercises = [...d.exercises];
+      [exercises[exIdx], exercises[destino]] = [exercises[destino], exercises[exIdx]];
+      return { ...d, exercises: exercises.map((e, i) => ({ ...e, order: i })) };
+    }));
   }
 
   function addPEx(dayIdx: number, exerciseId: string) {
@@ -1371,6 +1550,16 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
     if (!window.confirm(`¿Copiar los ${libraryWorkout.exercises.length} ejercicios de "${libraryWorkout.name}" a este día? Se añaden a los que ya tenga.`)) return;
     const copied = libraryWorkout.exercises.map((e, i) => ({ ...e, order: group.exercises.length + i }));
     void writeMesoWorkoutExercises(group, [...group.exercises, ...copied]);
+  }
+
+  // Reordenar dentro del día ya asignado. Reescribe `order` a partir de la
+  // posición real: es el campo por el que se ordena la sesión del atleta.
+  function handleMoveMesoExercise(group: MesoWorkoutGroup, exIdx: number, delta: -1 | 1) {
+    const destino = exIdx + delta;
+    if (destino < 0 || destino >= group.exercises.length) return;
+    const exercises = [...group.exercises];
+    [exercises[exIdx], exercises[destino]] = [exercises[destino], exercises[exIdx]];
+    void writeMesoWorkoutExercises(group, exercises.map((e, i) => ({ ...e, order: i })));
   }
 
   function handleRemoveMesoExercise(group: MesoWorkoutGroup, exIdx: number) {
@@ -1537,6 +1726,69 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
     idle: '', pending: '…', saving: 'Guardando…', saved: '✓ Guardado', error: '⚠ Error',
   }[saveState];
 
+  // Calendario del microciclo del mesociclo que se está editando: cuánto dura
+  // la vuelta, en qué día cae cada sesión y de qué tipo es cada una.
+  //
+  // `customOffsets` (elegido a mano por el coach en el calendario) manda sobre
+  // cualquier otro cálculo cuando su longitud cuadra con las sesiones — es la
+  // única condición: si el coach cambia el nº de sesiones o la duración del
+  // ciclo después de haber tocado el calendario, el patrón a mano deja de
+  // encajar y se cae al automático en vez de dejar el mesociclo sin calendario.
+  const splitActual = editing?.splitId ? TRAINING_SPLITS.find(sp => sp.id === editing.splitId) : undefined;
+  const cicloDias = editing ? diasDeCiclo(editing.daysPerWeek, editing.cycleDays) : 7;
+
+  // Dos versiones del patrón a mano, y no es redundante:
+  //  - `customCrudo` es lo que hay tecleado AHORA MISMO, tenga o no el número
+  //    correcto de días — es lo que el calendario tiene que enseñar mientras
+  //    el coach todavía está quitando y poniendo días, o el toggle parecería
+  //    no hacer nada (volvería al automático en cada clic intermedio).
+  //  - `customValido` es ese mismo patrón, pero solo cuando su longitud ya
+  //    cuadra con las sesiones configuradas — el único que es seguro usar
+  //    para generar rutinas, calcular frecuencias o guardar fechas reales.
+  const customCrudo = editing?.customOffsets ? [...editing.customOffsets].sort((a, b) => a - b) : null;
+  const customValido = customCrudo && customCrudo.length === editing?.daysPerWeek ? customCrudo : null;
+
+  const offsetsAutomaticos = editing
+    ? offsetsDeSesiones({
+        sesiones: editing.daysPerWeek,
+        cicloDias,
+        offsetsDelSplit: splitActual ? offsetsDeSplit(splitActual) : undefined,
+        repartirEnElCiclo: editing.cycleDays !== undefined,
+      })
+    : [];
+  // Para generar/calcular: el patrón a mano solo cuenta si ya está completo.
+  const offsetsCiclo = customValido ?? offsetsAutomaticos;
+  // Para el calendario que se ve y se toca: el patrón a mano tal cual esté,
+  // completo o no.
+  const offsetsCalendario = customCrudo ?? offsetsAutomaticos;
+  const tiposCiclo = customCrudo
+    ? Array.from({ length: editing?.daysPerWeek ?? 0 }, (_, i) => `Sesión ${i + 1}`)
+    : splitActual
+      ? tiposDeEntrenamiento(splitActual)
+      : Array.from({ length: editing?.daysPerWeek ?? 0 }, (_, i) => `Día ${i + 1}`);
+
+  // Toca un día del calendario: lo añade o lo quita del patrón a mano. Elegir
+  // un descanso o una sesión concretos es, a propósito, independiente de todo
+  // lo demás (reparto, prioridad...) — solo dice CUÁNDO cae cada sesión, no
+  // qué grupos entrena. Tocar el calendario deja de usar el reparto elegido
+  // (splitId), porque un patrón elegido a mano ya no es ninguno de la lista.
+  const toggleDiaCiclo = (dia: number) => {
+    if (!editing) return;
+    const actual = editing.customOffsets ?? offsetsAutomaticos;
+    const yaEsta = actual.includes(dia);
+    const siguiente = yaEsta ? actual.filter(d => d !== dia) : [...actual, dia].sort((a, b) => a - b);
+    const updated: Mesocycle = { ...editing, customOffsets: siguiente, splitId: undefined };
+    setEditing(updated);
+    scheduleAutoSave(updated);
+  };
+
+  const restablecerCalendario = () => {
+    if (!editing) return;
+    const { customOffsets: _fuera, ...resto } = editing;
+    setEditing(resto as Mesocycle);
+    scheduleAutoSave(resto as Mesocycle);
+  };
+
   const selectedAthlete = athletes.find(a => a.email === selectedEmail);
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -1617,7 +1869,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
               >
                 <div className="flex items-center justify-between mb-1">
                   <span className="font-mono text-caption text-ink-2 uppercase tracking-wider">Meso #{m.number}</span>
-                  <span className="font-mono text-caption text-ink-2">{m.weeks}sem · {m.daysPerWeek}d/sem</span>
+                  <span className="font-mono text-caption text-ink-2">{m.weeks} sem · {m.daysPerWeek} ses.</span>
                 </div>
                 <p className="text-white text-label font-sans font-bold truncate">{m.objective || '(sin objetivo)'}</p>
                 <p className="text-ink-2 text-caption font-mono ">{m.startDate}</p>
@@ -1625,6 +1877,14 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                   {m.distribution && (
                     <span className="inline-flex items-center text-caption font-mono text-success">
                       <span className="material-symbols-outlined text-caption">grid_view</span>Distribución
+                    </span>
+                  )}
+                  {/* Qué bloques están cerrados y cuál está en marcha. Se
+                      deduce de las fechas, sin leer nada, y es lo que le dice
+                      al coach que la pestaña «Cierre» ya tiene algo que contar. */}
+                  {addDays(m.startDate, m.weeks * 7 - 1) < new Date().toISOString().split('T')[0] && (
+                    <span className="inline-flex items-center gap-0.5 text-caption font-mono text-ink-3">
+                      <span className="material-symbols-outlined text-caption">check_circle</span>Terminado
                     </span>
                   )}
                 </div>
@@ -1670,25 +1930,86 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                     value={editing.startDate}
                     onChange={v => updateField('startDate', v)}
                   />
-                  <div>
-                    <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Días/semana</label>
-                    <div className="flex gap-1 flex-wrap">
-                      {[2,3,4,5,6].map(d => (
+                  <div className="col-span-2 md:col-span-4">
+                    <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Sesiones por ciclo</label>
+                    <div className="flex gap-1 overflow-x-auto hide-scrollbar pb-1">
+                      {[2,3,4,5,6,7,8,9,10].map(d => (
                         <button key={d} onClick={() => {
                             if (!editing) return;
                             const split = editing.splitId ? TRAINING_SPLITS.find(s => s.id === editing.splitId) : undefined;
-                            const clearsSplit = split && split.dayTypes.length !== d;
-                            const updated = { ...editing, daysPerWeek: d, ...(clearsSplit ? { splitId: undefined } : {}) };
+                            const clearsSplit = split && sesionesDeSplit(split) !== d;
+                            const updated = {
+                              ...editing,
+                              daysPerWeek: d,
+                              ...(clearsSplit ? { splitId: undefined, cycleDays: undefined } : {}),
+                              // Un ciclo no puede tener menos días que sesiones.
+                              ...(editing.cycleDays !== undefined && editing.cycleDays < d ? { cycleDays: d } : {}),
+                            };
                             setEditing(updated);
                             scheduleAutoSave(updated);
                           }}
-                          className={`w-11 h-11 rounded-control font-mono text-label font-bold transition-all ${
+                          className={`w-11 h-11 flex-shrink-0 rounded-control font-mono text-label font-bold transition-all ${
                             editing.daysPerWeek === d ? 'bg-accent text-black' : 'bg-raised text-ink-2 hover:bg-raised'
                           }`}
                         >{d}</button>
                       ))}
                     </div>
                   </div>
+                </div>
+
+                {/* Duración del microciclo. Es lo que permite frecuencias que no
+                    caben en una semana: entrenar un grupo cada 5 días son 1,4
+                    veces por semana, y la frecuencia de 1,5 son tres sesiones
+                    cada 14 días. Sin tocarlo, el ciclo es la semana de siempre
+                    y nada cambia respecto a los mesociclos ya creados. */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <span className="font-mono text-caption text-ink-2 uppercase tracking-wider">Duración del split</span>
+                    <span className="font-mono text-caption text-ink-3">
+                      {editing.cycleDays === undefined
+                        ? 'Semanal (7 días)'
+                        : cicloDias % 7 === 0
+                          ? `${cicloDias} días · ${cicloDias / 7} semanas alternas`
+                          : `${cicloDias} días · rotativo`}
+                    </span>
+                  </div>
+                  <div className="flex gap-1 items-center overflow-x-auto hide-scrollbar pb-1">
+                    <button
+                      onClick={() => updateField('cycleDays', undefined)}
+                      className={`px-3 h-11 flex-shrink-0 rounded-control font-mono text-label font-bold transition-all ${
+                        editing.cycleDays === undefined ? 'bg-accent text-black' : 'bg-raised text-ink-2 hover:text-white'
+                      }`}
+                    >Semanal</button>
+                    {[3, 4, 5, 6, 8, 9, 10, 12, 14].filter(d => d >= editing.daysPerWeek).map(d => (
+                      <button
+                        key={d}
+                        onClick={() => updateField('cycleDays', d)}
+                        className={`w-11 h-11 flex-shrink-0 rounded-control font-mono text-label font-bold transition-all ${
+                          editing.cycleDays === d ? 'bg-accent text-black' : 'bg-raised text-ink-2 hover:text-white'
+                        }`}
+                      >{d}</button>
+                    ))}
+                  </div>
+                  {/* La duda razonable: arriba se pide «Semanas» y aquí «cada
+                      cuánto se repite el patrón». No son lo mismo — las semanas
+                      son cuánto dura el bloque, esto es cada cuánto vuelve a
+                      empezar el patrón dentro de él. Se dice con los números
+                      puestos para que no haya que deducirlo. */}
+                  {editing.cycleDays !== undefined && (
+                    <p className="font-mono text-caption text-accent">
+                      {editing.weeks} semanas de bloque ÷ ciclo de {cicloDias} días ={' '}
+                      {vueltasDelCiclo(editing.weeks, cicloDias)} vueltas ·{' '}
+                      {vueltasDelCiclo(editing.weeks, cicloDias) * editing.daysPerWeek} sesiones en total
+                    </p>
+                  )}
+                  {editing.cycleDays !== undefined && (
+                    <p className="font-sans text-caption text-ink-3 leading-relaxed">
+                      {cicloDias % 7 === 0
+                        ? `Ciclo de ${cicloDias / 7} semanas: los días de entrenamiento siguen siendo los mismos de cada semana, lo que cambia es qué toca cada día. Es lo que permite entrenar un grupo 2 veces una semana y 3 la siguiente — frecuencia 2,5.`
+                        : `Ciclo rotativo de ${cicloDias} días: los días de entrenamiento se mueven por el calendario (no se entrena «los lunes», se entrena «el día 1 del ciclo»). Da frecuencias como 1,4 o 1,75 por grupo.`}
+                      {' '}El volumen sigue configurándose por SEMANA; la vuelta entera moverá {cicloDias / 7 === 1 ? 'ese mismo' : `${(cicloDias / 7).toLocaleString('es-ES')}×`} volumen.
+                    </p>
+                  )}
                 </div>
 
                 <Input
@@ -1739,12 +2060,22 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                   { id: 'progression',  label: 'Volumen',      icon: 'trending_up' },
                   { id: 'distribution', label: 'Distribución', icon: 'grid_view' },
                   { id: 'exercises',    label: 'Ejercicios',   icon: 'fitness_center' },
+                  { id: 'cierre',       label: 'Cierre',       icon: 'monitoring' },
                 ] as TabItem[]}
               />
 
               {/* ── Progresión y volumen ── */}
               {editorTab === 'progression' && (
-                <ProgressionView editing={editing} mesocycles={mesocycles} onUpdateGroup={updateGroup} />
+                <ProgressionView
+                  editing={editing}
+                  mesocycles={mesocycles}
+                  onUpdateGroup={updateGroup}
+                  onApplySuggestion={applyVolumeSuggestion}
+                  landmarks={volumeLandmarks}
+                  athleteLevel={athleteLevel}
+                  athleteEmail={selectedEmail}
+                  coachId={coachId}
+                />
               )}
 
               {/* ── Distribución ── */}
@@ -1767,10 +2098,10 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                       {/* Reparto de días — plantillas Torso/Pierna/Push/Pull filtradas por daysPerWeek */}
                       <div className="space-y-2">
                         <span className="font-mono text-caption text-ink-2 uppercase tracking-wider">
-                          Reparto ({editing.daysPerWeek} días/sem)
+                          Reparto ({editing.daysPerWeek} sesiones por ciclo)
                         </span>
                         {getSplitsForDays(editing.daysPerWeek).length === 0 ? (
-                          <p className="font-sans text-caption text-ink-3">Sin plantillas de reparto para {editing.daysPerWeek} días/semana.</p>
+                          <p className="font-sans text-caption text-ink-3">Sin plantillas de reparto para {editing.daysPerWeek} sesiones — la distribución repartirá los grupos libremente.</p>
                         ) : (() => {
                           const recommended = recommendSplit(editing.groups, editing.daysPerWeek);
                           return (
@@ -1780,14 +2111,34 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                                 return (
                                   <button
                                     key={split.id}
-                                    onClick={() => updateField('splitId', editing.splitId === split.id ? undefined : split.id)}
+                                    onClick={() => {
+                                      // Elegir un reparto fija su calendario: un
+                                      // rotativo de 5 días trae su ciclo puesto,
+                                      // uno semanal vuelve a los 7 de siempre.
+                                      const quitando = editing.splitId === split.id;
+                                      const updated: Mesocycle = {
+                                        ...editing,
+                                        splitId: quitando ? undefined : split.id,
+                                        cycleDays: quitando ? undefined : cicloDeSplit(split),
+                                        // Un reparto de la lista trae su propio calendario —
+                                        // pisa cualquier patrón que el coach hubiera tocado a mano.
+                                        customOffsets: undefined,
+                                      };
+                                      setEditing(updated);
+                                      scheduleAutoSave(updated);
+                                    }}
                                     className={`px-3 py-2 rounded-control border font-sans text-label text-left transition-all flex items-center gap-2 ${
                                       editing.splitId === split.id
                                         ? 'bg-accent/10 border-accent text-accent'
                                         : 'bg-raised border-hairline text-ink-2 hover:border-accent/40 hover:text-white'
                                     }`}
                                   >
-                                    {split.label}
+                                    <span className="flex flex-col items-start gap-0.5">
+                                      <span>{split.label}</span>
+                                      <span className="font-mono text-caption opacity-70">
+                                        {cicloDeSplit(split)} d · hasta {formateaFrecuencia(frecuenciaMaximaDeSplit(split))}×/sem por grupo
+                                      </span>
+                                    </span>
                                     {isRecommended && (
                                       <span
                                         title="Recomendado según tu volumen/prioridad configurados"
@@ -1808,15 +2159,34 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                         })()}
                       </div>
 
+                      {/* El calendario hace concreto el número de «duración del
+                          ciclo»: sin verlo, «14 días» no dice si se entrena de
+                          lunes a viernes las dos semanas o diez días seguidos. */}
+                      <CalendarioCiclo
+                        cicloDias={cicloDias}
+                        offsets={offsetsCalendario}
+                        tipos={tiposCiclo}
+                        sesiones={editing.daysPerWeek}
+                        personalizado={!!customCrudo}
+                        onToggleDay={toggleDiaCiclo}
+                        onRestablecer={customCrudo ? restablecerCalendario : undefined}
+                      />
+
                       {/* Distribution controls */}
                       <div className="flex flex-wrap items-center gap-3">
                         <button
                           onClick={handleGenerateDistribution}
-                          className="flex items-center gap-2 px-4 py-3 bg-accent text-black font-sans text-label font-bold uppercase tracking-wider rounded-control hover:bg-accent-press active:scale-95 transition-all"
+                          disabled={!!customCrudo && !customValido}
+                          className="flex items-center gap-2 px-4 py-3 bg-accent text-black font-sans text-label font-bold uppercase tracking-wider rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-40 disabled:pointer-events-none"
                         >
                           <span className="material-symbols-outlined text-body-s">shuffle</span>
                           Distribución Automática
                         </button>
+                        {customCrudo && !customValido && (
+                          <span className="font-sans text-label text-orange-300">
+                            Termina el calendario a mano ({customCrudo.length}/{editing.daysPerWeek}) antes de repartir.
+                          </span>
+                        )}
                         {editing.distribution && isStale(editing, editing.distribution) && (
                           <div className="flex items-center gap-2 px-3 py-2 bg-orange-500/10 border border-orange-500/30 rounded-surface">
                             <span className="material-symbols-outlined text-body-s text-orange-400">warning</span>
@@ -1834,7 +2204,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                           <div>
                             <p className="font-mono text-label font-bold text-orange-300 uppercase ">Sobrevolumen</p>
                             <p className="font-mono text-label text-orange-300/80">
-                              El volumen total supera el límite de {editing.daysPerWeek} días × 12 series.
+                              El volumen del ciclo supera el límite de {editing.daysPerWeek} sesiones × 12 series.
                             </p>
                           </div>
                         </div>
@@ -1854,9 +2224,9 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                               <DayCard
                                 key={i}
                                 day={day}
-                                dayNumber={i + 1}
                                 dayIdx={i}
                                 daysPerWeek={editing.daysPerWeek}
+                                offsets={offsetsCiclo}
                                 onSeriesChange={(aIdx, series) => updateAssignmentSeries(i, aIdx, series)}
                                 onRemove={aIdx => removeAssignment(i, aIdx)}
                                 onMove={(aIdx, targetDayIdx) => moveAssignment(i, aIdx, targetDayIdx)}
@@ -1864,6 +2234,46 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                               />
                             ))}
                           </div>
+
+                          {/* Frecuencia semanal — la otra variable del reparto, junto
+                              al volumen: cuántas veces por semana se toca cada grupo.
+                              El repartidor ya la decide por dentro (sessionCount) pero
+                              no la decía en ninguna parte. */}
+                          {(() => {
+                            const frecuencia = frecuenciaSemanal(editing.distribution!.days, cicloDias);
+                            const choques = gruposEnDiasSeguidos(editing.distribution!.days, { offsets: offsetsCiclo, cicloDias });
+                            if (frecuencia.length === 0) return null;
+                            return (
+                              <div className="bg-surface border border-hairline rounded-surface px-4 py-3 space-y-2">
+                                <div className="flex items-baseline justify-between gap-2 flex-wrap">
+                                  <span className="font-mono text-caption text-ink-2 uppercase tracking-wider">Frecuencia por grupo</span>
+                                  <span className="font-mono text-caption text-ink-3">veces por semana, contando el ciclo entero</span>
+                                </div>
+                                <div className="flex flex-wrap gap-1.5">
+                                  {frecuencia.map(f => (
+                                    <span
+                                      key={f.group}
+                                      title={`${f.veces} ${f.veces === 1 ? 'sesión' : 'sesiones'} por ciclo (día${f.dias.length > 1 ? 's' : ''} ${f.dias.map(d => (offsetsCiclo[d] ?? d) + 1).join(', ')}) · ${formateaFrecuencia(f.porSemana)} por semana`}
+                                      className="inline-flex items-center gap-1 rounded-chip border border-hairline bg-raised px-2 py-0.5 font-mono text-caption text-ink-2"
+                                    >
+                                      {MUSCLE_LABELS_SHORT[f.group]}
+                                      <strong className="text-ink tabular-nums">{formateaFrecuencia(f.porSemana)}</strong>
+                                      <span className="text-ink-3">/sem</span>
+                                    </span>
+                                  ))}
+                                </div>
+                                {choques.length > 0 && (
+                                  <div className="flex items-start gap-2">
+                                    <Icon name="warning" size="s" className="text-orange-400 flex-shrink-0 mt-px" />
+                                    <p className="font-sans text-caption text-orange-300 leading-relaxed">
+                                      En días seguidos: {choques.map(c => `${MUSCLE_LABELS[c.group]} (día ${c.dias[0] + 1} y día ${c.dias[1] + 1}${c.entreVueltas ? ', entre vuelta y vuelta' : ''})`).join(', ')}.
+                                      Son fechas consecutivas para el atleta — revisa si le da tiempo a recuperar.
+                                    </p>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })()}
 
                           <div className="bg-surface border border-hairline rounded-surface px-4 py-3 flex flex-wrap gap-4 items-center justify-between">
                             <div className="flex items-center gap-4">
@@ -1909,7 +2319,8 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                               )}
                             </button>
                             <span className="font-mono text-caption text-ink-3">
-                              Creará {editing.weeks} × {editing.daysPerWeek} = {editing.weeks * editing.daysPerWeek} sesiones
+                              Creará {vueltasDelCiclo(editing.weeks, cicloDias)} vueltas × {editing.daysPerWeek} sesiones ={' '}
+                              {vueltasDelCiclo(editing.weeks, cicloDias) * editing.daysPerWeek} sesiones
                             </span>
                           </div>
                         </div>
@@ -1923,115 +2334,28 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
 
                   {/* === Preview (editable) === */}
                   {genPhase === 'preview' && (
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between flex-wrap gap-3">
-                        <div>
-                          <p className="font-sans font-bold text-white text-body-s">Vista previa de rutinas</p>
-                          <p className="font-mono text-caption text-ink-2 ">
-                            Meso #{editing.number} · {editing.weeks} semanas × {editing.daysPerWeek} días =&nbsp;
-                            <span className="text-accent">{editing.weeks * editing.daysPerWeek} sesiones</span>
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => { setGenPhase('idle'); setPreviewDays([]); }}
-                            className="px-3 py-2 font-mono text-label text-ink-2 hover:text-white border border-hairline rounded-control transition-all flex items-center gap-1"
-                          >
-                            <span className="material-symbols-outlined text-body-s">arrow_back</span>
-                            Volver
-                          </button>
-                          <button
-                            onClick={handleAssign}
-                            className="px-4 py-2 bg-accent text-black font-sans text-label font-bold uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all flex items-center gap-2"
-                          >
-                            <span className="material-symbols-outlined text-body-s">assignment_turned_in</span>
-                            Asignar al atleta
-                          </button>
-                        </div>
-                      </div>
-
-                      <div className="flex flex-wrap gap-3">
-                        {previewDays.map((pd, dayIdx) => (
-                          <div key={dayIdx} className="bg-surface border border-hairline rounded-surface p-4 flex-1 min-w-[300px]">
-                            {/* Day header */}
-                            <div className="flex items-center justify-between mb-3 pb-2 border-b border-hairline">
-                              <span className="font-mono text-label font-bold text-accent uppercase">Día {dayIdx + 1}</span>
-                              <span className="font-mono text-caption text-ink-2">
-                                {pd.exercises.reduce((s, e) => s + e.sets, 0)} series
-                              </span>
-                            </div>
-
-                            {/* Warnings */}
-                            {pd.warnings.length > 0 && (
-                              <div className="mb-2 ">
-                                {pd.warnings.map((w, wi) => (
-                                  <p key={wi} className="text-caption font-mono text-orange-400 flex items-center gap-1">
-                                    <span className="material-symbols-outlined text-caption">warning</span>
-                                    Sin ejercicios para {w}
-                                  </p>
-                                ))}
-                              </div>
-                            )}
-
-                            {/* Exercise rows */}
-                            <div className="space-y-2">
-                              {pd.exercises.map((pe, peIdx) => (
-                                <div key={peIdx} className="bg-raised rounded-surface p-3 space-y-2">
-                                  <div className="flex items-start justify-between gap-2">
-                                    <div className="min-w-0">
-                                      <p className="text-label font-sans font-bold text-white truncate">{pe.name}</p>
-                                      <div className="flex items-center gap-2 flex-wrap">
-                                        <p className="text-caption font-sans text-ink-2">{MUSCLE_LABELS[pe.muscleGroup]}</p>
-                                        {pe.equipmentMismatch && (
-                                          <span className="inline-flex items-center text-caption font-mono text-amber-400 bg-amber-500/10 border border-amber-500/20 px-1 rounded-control" title="Material no disponible según onboarding">
-                                            <span className="material-symbols-outlined" style={{ fontSize: '9px' }}>warning</span>
-                                            sin material
-                                          </span>
-                                        )}
-                                      </div>
-                                    </div>
-                                    <div className="flex items-center gap-1 flex-shrink-0">
-                                      <button
-                                        onClick={() => setExercisePicker({ context: 'preview', dayIdx, exIdx: peIdx, group: pe.muscleGroup })}
-                                        title="Cambiar ejercicio"
-                                        className="text-ink-3 hover:text-accent transition-colors"
-                                      >
-                                        <span className="material-symbols-outlined text-body-s">swap_horiz</span>
-                                      </button>
-                                      <button
-                                        onClick={() => removePEx(dayIdx, peIdx)}
-                                        title="Quitar ejercicio"
-                                        className="text-ink-3 hover:text-red-400 transition-colors"
-                                      >
-                                        <span className="material-symbols-outlined text-body-s">close</span>
-                                      </button>
-                                    </div>
-                                  </div>
-                                  <ExerciseConfigEditor we={pe} onChange={patch => updatePExPatch(dayIdx, peIdx, patch)} mesoWeeks={editing.weeks} />
-                                </div>
-                              ))}
-                            </div>
-
-                            {/* Add exercise */}
-                            <div className="mt-2">
-                              <button
-                                type="button"
-                                onClick={() => setExercisePicker({ context: 'preview', dayIdx, exIdx: null })}
-                                className="w-full flex items-center justify-center gap-2 bg-raised border border-dashed border-hairline rounded-control px-3 py-2 text-title-s font-sans text-ink-2 hover:text-accent hover:border-accent/40 transition-all"
-                              >
-                                <span className="material-symbols-outlined text-body-s">add</span>
-                                Añadir ejercicio
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-
-                      <p className="font-sans text-caption text-ink-3">
-                        Los cambios en sets/reps/RIR se aplican igual en todas las semanas.
-                        Después de asignar, edita semanas concretas en la vista de entrenamientos del atleta.
-                      </p>
-                    </div>
+                    <RoutinePreview
+                      days={previewDays}
+                      distribution={editing.distribution}
+                      mesoGroups={editing.groups}
+                      mesoNumber={editing.number}
+                      weeks={editing.weeks}
+                      daysPerWeek={editing.daysPerWeek}
+                      semanasDelCiclo={cicloDias / 7}
+                      vueltas={vueltasDelCiclo(editing.weeks, cicloDias)}
+                      offsets={offsetsCiclo}
+                      catalogo={allExercises}
+                      onSets={(dayIdx, exIdx, sets) => updatePExPatch(dayIdx, exIdx, { sets })}
+                      onMove={movePEx}
+                      onRemove={removePEx}
+                      onReplace={(dayIdx, exIdx) => setExercisePicker({
+                        context: 'preview', dayIdx, exIdx,
+                        group: previewDays[dayIdx]?.exercises[exIdx]?.muscleGroup,
+                      })}
+                      onAdd={dayIdx => setExercisePicker({ context: 'preview', dayIdx, exIdx: null })}
+                      onBack={() => { setGenPhase('idle'); setPreviewDays([]); }}
+                      onAssign={handleAssign}
+                    />
                   )}
 
                   {/* === Assigning progress === */}
@@ -2060,7 +2384,7 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                       <div>
                         <p className="font-sans font-bold text-white text-body-s">¡Rutinas asignadas!</p>
                         <p className="font-mono text-caption text-ink-2 mt-1">
-                          {editing.weeks * editing.daysPerWeek} sesiones creadas a partir del {editing.startDate}
+                          {vueltasDelCiclo(editing.weeks, cicloDias) * editing.daysPerWeek} sesiones creadas a partir del {editing.startDate}
                         </p>
                       </div>
                       <button
@@ -2099,9 +2423,26 @@ export default function MesocycleManager({ coachId, athleteEmail, athleteEquipme
                   onReplaceExercise={handleReplaceMesoExercise}
                   onAddExercise={handleAddMesoExercise}
                   onRemoveExercise={handleRemoveMesoExercise}
+                  onMoveExercise={handleMoveMesoExercise}
+                  distribution={editing.distribution}
+                  mesoGroups={editing.groups}
+                  semanasDelCiclo={cicloDias / 7}
                   onGoToDistribution={() => setEditorTab('distribution')}
                   libraryWorkouts={allWorkouts.filter(w => !w.mesocycleId)}
                   onUseLibraryWorkout={handleUseLibraryWorkout}
+                />
+              )}
+
+              {/* ── Cierre del mesociclo (solo coach) ── */}
+              {editorTab === 'cierre' && (
+                <MesocycleReviewPanel
+                  meso={editing}
+                  mesocycles={mesocycles}
+                  logs={cierreLogs}
+                  assignments={cierreAsignaciones}
+                  exercises={allExercises}
+                  athleteName={athleteName ?? selectedAthlete?.displayName}
+                  cargando={cierreCargando}
                 />
               )}
 

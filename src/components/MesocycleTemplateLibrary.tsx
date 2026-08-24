@@ -370,7 +370,7 @@ const StageAccordion: React.FC<StageFormProps> = ({
           </div>
           <div className="flex items-center gap-1">
             <span className="font-mono text-caption text-ink-3">días/sem</span>
-            <Stepper value={stage.daysPerWeek} min={1} max={7} onChange={v => onChange({ ...stage, daysPerWeek: v })} />
+            <Stepper value={stage.daysPerWeek} min={1} max={10} onChange={v => onChange({ ...stage, daysPerWeek: v })} />
           </div>
           {!isOnly && (
             <button

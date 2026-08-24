@@ -1,6 +1,7 @@
 import { db, doc, getDoc, setDoc, deleteDoc } from '../firebase';
-import { CoachInstructions, CoachQuickReplies } from '../types';
+import { CoachInstructions, CoachQuickReplies, MuscleGroup } from '../types';
 import { DOCTRINA_DEFAULTS, type DoctrinaKind } from '../ai/doctrina';
+import { VOLUME_LANDMARKS_DEFAULT, isValidLandmarksTable, type VolumeLandmark } from '../data/volumeLandmarks';
 import { forceLocalOnly, setLocalBypassMode, esFalloDePermisos } from './core';
 
 // ─── INSTRUCCIONES FIJAS DEL COACH (para el asistente IA) ───────────────────────
@@ -96,6 +97,77 @@ export async function resetDoctrina(kind: DoctrinaKind): Promise<void> {
     await deleteDoc(doc(db, 'coachSettings', DOCTRINA_DOC_IDS[kind]));
   } catch (err) {
     console.warn(`resetDoctrina(${kind}) Firestore failed:`, err);
+    setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
+  }
+}
+
+// ─── TABLA DE VOLUMEN (MV/MEV/MAV/MRV por grupo muscular) ──────────────────────
+// Mismo patrón exacto que la doctrina de arriba: un doc en coachSettings con
+// distinción null (nunca tocado → usar VOLUME_LANDMARKS_DEFAULT) vs guardado.
+// Editable desde la pestaña "Volumen" del panel del asistente; el sugeridor de
+// volumen (utils/volumeSuggestion.ts) y buildDoctrinaBlock() leen de aquí para
+// que el botón y lo que ve la IA nunca se desincronicen.
+
+const VOLUME_LANDMARKS_DOC_ID = 'volumeLandmarks';
+const VOLUME_LANDMARKS_LOCAL_KEY = 'enforma_volume_landmarks_v1';
+
+type LandmarksTable = Record<MuscleGroup, VolumeLandmark>;
+
+async function getVolumeLandmarksRaw(): Promise<LandmarksTable | null> {
+  const localRaw = localStorage.getItem(VOLUME_LANDMARKS_LOCAL_KEY);
+  const local = localRaw ? (JSON.parse(localRaw) as LandmarksTable) : null;
+  if (forceLocalOnly) return local;
+  try {
+    const snap = await getDoc(doc(db, 'coachSettings', VOLUME_LANDMARKS_DOC_ID));
+    if (!snap.exists()) return null;
+    const table = (snap.data().table as LandmarksTable) ?? null;
+    if (table) localStorage.setItem(VOLUME_LANDMARKS_LOCAL_KEY, JSON.stringify(table));
+    return table;
+  } catch (err) {
+    console.warn('getVolumeLandmarks Firestore failed, using local:', err);
+    setLocalBypassMode(true, err);
+    return local;
+  }
+}
+
+/** Lo que de verdad se usa: lo de Dani si lo ha tocado, el default si no. */
+export async function getVolumeLandmarks(): Promise<LandmarksTable> {
+  const raw = await getVolumeLandmarksRaw();
+  return raw === null ? VOLUME_LANDMARKS_DEFAULT : raw;
+}
+
+/** Para el editor: además de la tabla activa, si viene del default o no. */
+export async function getVolumeLandmarksParaEditar(): Promise<{ table: LandmarksTable; esDefault: boolean }> {
+  const raw = await getVolumeLandmarksRaw();
+  return raw === null
+    ? { table: VOLUME_LANDMARKS_DEFAULT, esDefault: true }
+    : { table: raw, esDefault: false };
+}
+
+export async function saveVolumeLandmarks(table: LandmarksTable): Promise<void> {
+  if (!isValidLandmarksTable(table)) {
+    throw new Error('Tabla de volumen inválida: revisa que mv ≤ mev ≤ mavMin ≤ mavMax ≤ mrv ≤ 25 en los 17 grupos.');
+  }
+  localStorage.setItem(VOLUME_LANDMARKS_LOCAL_KEY, JSON.stringify(table));
+  if (forceLocalOnly) return;
+  try {
+    await setDoc(doc(db, 'coachSettings', VOLUME_LANDMARKS_DOC_ID), { table, updatedAt: new Date().toISOString() });
+  } catch (err) {
+    console.warn('saveVolumeLandmarks Firestore failed, kept local:', err);
+    setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
+  }
+}
+
+/** Vuelve al criterio por defecto: borra la copia de Dani (mismo motivo que resetDoctrina). */
+export async function resetVolumeLandmarks(): Promise<void> {
+  localStorage.removeItem(VOLUME_LANDMARKS_LOCAL_KEY);
+  if (forceLocalOnly) return;
+  try {
+    await deleteDoc(doc(db, 'coachSettings', VOLUME_LANDMARKS_DOC_ID));
+  } catch (err) {
+    console.warn('resetVolumeLandmarks Firestore failed:', err);
     setLocalBypassMode(true, err);
     if (esFalloDePermisos(err)) throw err;
   }

@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { WorkoutExercise, WorkoutTechnique, WarmupMode, WarmupSet, WorkoutSetGroup, WeeklyProgressionRule } from '../types';
 import { TECHNIQUES, TECHNIQUE_EMOJI, TECHNIQUE_LABEL, TECHNIQUE_COLOR, TECHNIQUE_DESCRIPTION } from '../utils/workoutTechniques';
 import { syncAggregateFromGroups, newSetGroup } from '../utils/setGroups';
-import { Icon, SegmentedControl, Collapsible } from './ui';
+import { Icon, SegmentedControl } from './ui';
 
 interface Props {
   we: WorkoutExercise;
@@ -117,6 +117,47 @@ function ConfigCells({ sets, reps, rest, onSets, onReps, onRest }: {
   );
 }
 
+// ── Ajustes finos plegados en chips ──────────────────────────────────────────
+// Las cinco cosas que se configuran DESPUÉS de decidir series/reps/RIR. Cada
+// una es un chip; como mucho una está abierta. El orden es el de uso real: la
+// nota al atleta es lo que más se escribe, el vídeo lo que menos.
+type Seccion = 'nota' | 'tecnica' | 'calentamiento' | 'progresion' | 'video';
+
+const SECCIONES: Seccion[] = ['nota', 'tecnica', 'calentamiento', 'progresion', 'video'];
+
+const ETIQUETA_SECCION: Record<Seccion, string> = {
+  nota:          'Nota',
+  tecnica:       'Técnica',
+  calentamiento: 'Calentam.',
+  progresion:    'Progresión',
+  video:         'Vídeo',
+};
+
+function ChipSeccion({ etiqueta, valor, activa, abierta, onClick }: {
+  etiqueta: string; valor?: string; activa: boolean; abierta: boolean; onClick: () => void;
+  /** Sin `@types/react` en el repo, TS no excluye `key` por su cuenta (ver ui/Chip). */
+  key?: React.Key;
+}) {
+  const tono = abierta
+    ? 'bg-accent/16 border-accent text-accent'
+    : activa
+      ? 'bg-transparent border-accent-line text-accent'
+      : 'bg-transparent border-hairline text-ink-2 hover:text-white hover:border-strong';
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-expanded={abierta}
+      className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-chip border font-mono text-caption font-bold uppercase tracking-wider transition-all ${tono}`}
+    >
+      {activa && !abierta && <span className="w-1.5 h-1.5 rounded-full bg-accent flex-shrink-0" />}
+      {etiqueta}
+      {valor && <span className="normal-case font-normal opacity-80">· {valor}</span>}
+      <Icon name="expand_more" size="s" className={`transition-transform duration-(--duration-base) ${abierta ? 'rotate-180' : ''}`} />
+    </button>
+  );
+}
+
 // Full execution-config editor for one exercise inside a routine — series/reps/rir
 // (uniform or split into top-set/back-off-set blocks), rest, high-intensity technique,
 // video reminder and warm-up mode. Used identically from WorkoutsScreen (shared routine
@@ -207,6 +248,25 @@ export default function ExerciseConfigEditor({ we, onChange, mesoWeeks }: Props)
 
   const toggleRecordVideo = () => {
     onChange({ recordVideoSet: we.recordVideoSet ? undefined : 'all' });
+  };
+
+  // Qué chip está desplegado. Arranca SIEMPRE cerrado, tenga contenido o no:
+  // que la nota o la técnica ya estén puestas se ve en el propio chip (punto
+  // dorado + valor), no hace falta abrir el panel para enterarse.
+  const [abierta, setAbierta] = useState<Seccion | null>(null);
+
+  const resumen: Record<Seccion, { activa: boolean; valor?: string }> = {
+    nota:          { activa: !!we.notes?.trim() },
+    tecnica:       { activa: !!we.technique, valor: we.technique ? TECHNIQUE_LABEL[we.technique] : undefined },
+    calentamiento: {
+      activa: !!we.warmupMode && we.warmupMode !== 'none',
+      valor: we.warmupMode === 'auto' ? 'auto' : we.warmupMode === 'manual' ? `${we.manualWarmupSets?.length ?? 0} series` : undefined,
+    },
+    progresion:    { activa: progresion.length > 0, valor: progresion.length > 0 ? `${progresion.length}` : undefined },
+    video:         {
+      activa: !!we.recordVideoSet,
+      valor: we.recordVideoSet === 'all' ? 'todas' : we.recordVideoSet ? `serie ${we.recordVideoSet}` : undefined,
+    },
   };
 
   const totalSets = hasGroups ? (we.setGroups || []).reduce((s, g) => s + Math.max(1, g.sets || 1), 0) : we.sets;
@@ -312,149 +372,134 @@ export default function ExerciseConfigEditor({ we, onChange, mesoWeeks }: Props)
         </button>
       </div>
 
-      {/* Notas — abierto por defecto si ya tiene contenido, para no esconder
-          algo que el coach ya configuró (Bloque A1). */}
-      <Collapsible
-        defaultOpen={!!we.notes}
-        className="bg-bg border border-hairline border-l-2 border-l-accent rounded-surface px-3 py-2.5"
-        trigger={<span className="font-mono text-caption text-ink-2 uppercase tracking-wider">Nota para el atleta</span>}
-      >
-        <textarea
-          value={we.notes || ''}
-          onChange={e => onChange({ notes: e.target.value })}
-          placeholder="Técnica, variante, carga, progresión…"
-          rows={2}
-          className="w-full bg-transparent border-none p-0 text-title-s text-white placeholder-ink-2/30 font-sans focus:outline-none focus:ring-0 resize-none"
-        />
-      </Collapsible>
+      {/* ── Ajustes finos: chips que se despliegan ──────────────────────────
+          Antes eran cuatro desplegables apilados (nota, técnica, calentamiento,
+          progresión) más una fila para el vídeo, y se abrían solos si tenían
+          contenido: cinco bloques a ancho completo por ejercicio, y un día de
+          seis ejercicios era una pared de controles. Ahora es una sola fila de
+          chips, SIEMPRE recogida, con uno abierto como mucho. Lo configurado no
+          queda escondido: el chip se pinta en oro y lleva el valor al lado. */}
+      <div className="space-y-2 border-t border-hairline pt-3">
+        <div className="flex flex-wrap gap-1.5">
+          {SECCIONES.filter(sec => sec !== 'progresion' || mesoWeeks !== undefined).map(sec => (
+            <ChipSeccion
+              key={sec}
+              etiqueta={ETIQUETA_SECCION[sec]}
+              valor={resumen[sec].valor}
+              activa={resumen[sec].activa}
+              abierta={abierta === sec}
+              onClick={() => setAbierta(a => a === sec ? null : sec)}
+            />
+          ))}
+        </div>
 
-      {/* Técnica de alta intensidad */}
-      <Collapsible
-        defaultOpen={!!we.technique}
-        trigger={
-          <span className="font-mono text-caption text-ink-2 uppercase tracking-wider">
-            Técnica de intensidad{we.technique && <span className="text-accent"> · {TECHNIQUE_LABEL[we.technique]}</span>}
-          </span>
-        }
-      >
-        <div className="space-y-2">
-          <div className="flex items-center gap-2 flex-wrap">
-            <button
-              type="button"
-              onClick={() => setTechnique(undefined)}
-              className={`px-3 py-1.5 rounded-chip font-mono text-caption font-bold uppercase tracking-wider border transition-all ${
-                !we.technique
-                  ? 'bg-white/10 border-hairline text-white'
-                  : 'border-hairline text-ink-2 hover:text-white hover:border-strong'
-              }`}
-            >Normal</button>
-            {TECHNIQUES.map(t => (
+        {abierta === 'nota' && (
+          <div className="bg-bg border border-hairline border-l-2 border-l-accent rounded-surface px-3 py-2.5 animate-fade-up">
+            <textarea
+              autoFocus
+              value={we.notes || ''}
+              onChange={e => onChange({ notes: e.target.value })}
+              placeholder="Técnica, variante, carga, progresión…"
+              rows={2}
+              className="w-full bg-transparent border-none p-0 text-title-s text-white placeholder-ink-2/30 font-sans focus:outline-none focus:ring-0 resize-none"
+            />
+          </div>
+        )}
+
+        {abierta === 'tecnica' && (
+          <div className="space-y-2 animate-fade-up">
+            <div className="flex items-center gap-2 flex-wrap">
               <button
-                key={t}
                 type="button"
-                onClick={() => setTechnique(we.technique === t ? undefined : t)}
-                title={TECHNIQUE_DESCRIPTION[t]}
-                className={`flex items-center gap-1 px-3 py-1.5 rounded-chip font-mono text-caption font-bold uppercase tracking-wider border transition-all ${
-                  we.technique === t
-                    ? TECHNIQUE_COLOR[t]
+                onClick={() => setTechnique(undefined)}
+                className={`px-3 py-1.5 rounded-chip font-mono text-caption font-bold uppercase tracking-wider border transition-all ${
+                  !we.technique
+                    ? 'bg-white/10 border-hairline text-white'
                     : 'border-hairline text-ink-2 hover:text-white hover:border-strong'
                 }`}
-              >{TECHNIQUE_EMOJI[t]} {TECHNIQUE_LABEL[t]}</button>
-            ))}
-          </div>
-          {we.technique && (
-            <p className="font-sans text-caption text-ink-2 leading-relaxed">{TECHNIQUE_DESCRIPTION[we.technique]}</p>
-          )}
-        </div>
-      </Collapsible>
-
-      {/* Warm-up (series de aproximación) */}
-      <Collapsible
-        defaultOpen={!!we.warmupMode && we.warmupMode !== 'none'}
-        className="border-t border-hairline pt-3"
-        trigger={
-          <span className="font-mono text-caption text-ink-2 uppercase tracking-wider">
-            Calentamiento{we.warmupMode && we.warmupMode !== 'none' && (
-              <span className="text-accent"> · {we.warmupMode === 'auto' ? 'Automático' : 'Manual'}</span>
-            )}
-          </span>
-        }
-      >
-        <div className="space-y-2">
-          <SegmentedControl
-            label="Calentamiento"
-            value={we.warmupMode || 'none'}
-            onChange={v => setWarmupMode(v as WarmupMode)}
-            options={[
-              { value: 'none', label: 'Ninguna' },
-              { value: 'auto', label: 'Automático' },
-              { value: 'manual', label: 'Manual' },
-            ]}
-          />
-          {we.warmupMode === 'auto' && (
-            <div className="bg-bg border border-hairline rounded-surface px-3 py-2.5">
-              <p className="font-sans text-caption text-ink-2 leading-relaxed">
-                🔥 El atleta verá series de aproximación calculadas automáticamente a partir del peso que escriba en la primera serie efectiva y su historial en este ejercicio.
-              </p>
-            </div>
-          )}
-          {we.warmupMode === 'manual' && (
-            <div className="bg-bg border border-hairline rounded-surface px-3 py-2.5 space-y-2">
-              {(we.manualWarmupSets || []).map((s, wIdx) => (
-                <div key={wIdx} className="flex items-center gap-2">
-                  <span className="font-mono text-caption text-accent w-8">W{wIdx + 1}</span>
-                  <input
-                    type="number" min={0} step={0.5}
-                    value={s.weight}
-                    onChange={e => updateManualWarmupSet(wIdx, 'weight', parseFloat(e.target.value) || 0)}
-                    placeholder="kg"
-                    className="w-20 bg-inset border border-hairline rounded-control px-2 py-1 text-center text-white font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-accent"
-                  />
-                  <span className="text-ink-2 text-label">×</span>
-                  <input
-                    type="number" min={1}
-                    value={s.reps}
-                    onChange={e => updateManualWarmupSet(wIdx, 'reps', parseInt(e.target.value) || 1)}
-                    placeholder="reps"
-                    className="w-16 bg-inset border border-hairline rounded-control px-2 py-1 text-center text-white font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-accent"
-                  />
-                  <button
-                    onClick={() => removeManualWarmupSet(wIdx)}
-                    className="p-1 text-ink-2 hover:text-red-400 transition-colors"
-                    title="Eliminar"
-                  >
-                    <Icon name="delete" size="s" />
-                  </button>
-                </div>
+              >Normal</button>
+              {TECHNIQUES.map(t => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => setTechnique(we.technique === t ? undefined : t)}
+                  title={TECHNIQUE_DESCRIPTION[t]}
+                  className={`flex items-center gap-1 px-3 py-1.5 rounded-chip font-mono text-caption font-bold uppercase tracking-wider border transition-all ${
+                    we.technique === t
+                      ? TECHNIQUE_COLOR[t]
+                      : 'border-hairline text-ink-2 hover:text-white hover:border-strong'
+                  }`}
+                >{TECHNIQUE_EMOJI[t]} {TECHNIQUE_LABEL[t]}</button>
               ))}
-              <button
-                onClick={addManualWarmupSet}
-                className="flex items-center gap-1 text-caption font-sans text-accent hover:text-white transition-colors"
-              >
-                <Icon name="add" size="s" />
-                Añadir serie de aproximación
-              </button>
             </div>
-          )}
-        </div>
-      </Collapsible>
+            {we.technique && (
+              <p className="font-sans text-caption text-ink-2 leading-relaxed">{TECHNIQUE_DESCRIPTION[we.technique]}</p>
+            )}
+          </div>
+        )}
 
-      {/* Progresión por semanas (periodización) — solo con mesociclo conocido */}
-      {mesoWeeks !== undefined && (
-        <Collapsible
-          defaultOpen={progresion.length > 0}
-          className="border-t border-hairline pt-3"
-          trigger={
-            <span className="flex items-center gap-1.5 font-mono text-caption text-ink-2 uppercase tracking-wider">
-              <Icon name="trending_up" size="s" />
-              Progresión por semanas
-              {progresion.length > 0 && (
-                <span className="text-accent">· {progresion.length}</span>
-              )}
-            </span>
-          }
-        >
-          <div className="mt-2 space-y-2">
+        {abierta === 'calentamiento' && (
+          <div className="space-y-2 animate-fade-up">
+            <SegmentedControl
+              label="Calentamiento"
+              value={we.warmupMode || 'none'}
+              onChange={v => setWarmupMode(v as WarmupMode)}
+              options={[
+                { value: 'none', label: 'Ninguna' },
+                { value: 'auto', label: 'Automático' },
+                { value: 'manual', label: 'Manual' },
+              ]}
+            />
+            {we.warmupMode === 'auto' && (
+              <div className="bg-bg border border-hairline rounded-surface px-3 py-2.5">
+                <p className="font-sans text-caption text-ink-2 leading-relaxed">
+                  🔥 El atleta verá series de aproximación calculadas automáticamente a partir del peso que escriba en la primera serie efectiva y su historial en este ejercicio.
+                </p>
+              </div>
+            )}
+            {we.warmupMode === 'manual' && (
+              <div className="bg-bg border border-hairline rounded-surface px-3 py-2.5 space-y-2">
+                {(we.manualWarmupSets || []).map((s, wIdx) => (
+                  <div key={wIdx} className="flex items-center gap-2">
+                    <span className="font-mono text-caption text-accent w-8">W{wIdx + 1}</span>
+                    <input
+                      type="number" min={0} step={0.5}
+                      value={s.weight}
+                      onChange={e => updateManualWarmupSet(wIdx, 'weight', parseFloat(e.target.value) || 0)}
+                      placeholder="kg"
+                      className="w-20 bg-inset border border-hairline rounded-control px-2 py-1 text-center text-white font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-accent"
+                    />
+                    <span className="text-ink-2 text-label">×</span>
+                    <input
+                      type="number" min={1}
+                      value={s.reps}
+                      onChange={e => updateManualWarmupSet(wIdx, 'reps', parseInt(e.target.value) || 1)}
+                      placeholder="reps"
+                      className="w-16 bg-inset border border-hairline rounded-control px-2 py-1 text-center text-white font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-accent"
+                    />
+                    <button
+                      onClick={() => removeManualWarmupSet(wIdx)}
+                      className="p-1 text-ink-2 hover:text-red-400 transition-colors"
+                      title="Eliminar"
+                    >
+                      <Icon name="delete" size="s" />
+                    </button>
+                  </div>
+                ))}
+                <button
+                  onClick={addManualWarmupSet}
+                  className="flex items-center gap-1 text-caption font-sans text-accent hover:text-white transition-colors"
+                >
+                  <Icon name="add" size="s" />
+                  Añadir serie de aproximación
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {abierta === 'progresion' && mesoWeeks !== undefined && (
+          <div className="space-y-2 animate-fade-up">
             {progresion.length === 0 && (
               <p className="font-sans text-caption text-ink-3 leading-relaxed">
                 Añade series automáticamente en semanas concretas del mesociclo — por ejemplo, +1 serie en la semana 4 y otra en la 6.
@@ -502,36 +547,36 @@ export default function ExerciseConfigEditor({ we, onChange, mesoWeeks }: Props)
               Añadir escalón de progresión
             </button>
           </div>
-        </Collapsible>
-      )}
+        )}
 
-      {/* Grabar con el móvil — icono pequeño en vez de bloque grande (Bloque
-          A2): es un flag que se toca a menudo, no necesita todo el ancho. */}
-      <div className="flex items-center gap-2">
-        <button
-          type="button"
-          onClick={toggleRecordVideo}
-          title={we.recordVideoSet ? 'Pedir vídeo activado' : 'Pedir vídeo de esta serie'}
-          className={`w-9 h-9 rounded-control flex items-center justify-center flex-shrink-0 transition-colors border ${
-            we.recordVideoSet ? 'bg-accent/14 border-accent text-accent' : 'bg-surface border-hairline text-ink-2 hover:text-white hover:border-strong'
-          }`}
-        >
-          <Icon name="videocam" size="s" />
-        </button>
-        <span className="font-mono text-caption text-ink-2 uppercase tracking-wider">
-          {we.recordVideoSet ? 'Pide vídeo al atleta' : 'Vídeo desactivado'}
-        </span>
-        {we.recordVideoSet && (
-          <select
-            value={we.recordVideoSet}
-            onChange={e => onChange({ recordVideoSet: e.target.value === 'all' ? 'all' : parseInt(e.target.value) })}
-            className="ml-auto bg-bg border border-hairline rounded-control px-2 py-1.5 text-caption font-mono text-white focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
-          >
-            <option value="all">Todas las series</option>
-            {Array.from({ length: we.sets }, (_, i) => i + 1).map(n => (
-              <option key={n} value={n}>Solo serie {n}</option>
-            ))}
-          </select>
+        {abierta === 'video' && (
+          <div className="bg-bg border border-hairline rounded-surface px-3 py-2.5 flex items-center gap-2 flex-wrap animate-fade-up">
+            <button
+              type="button"
+              onClick={toggleRecordVideo}
+              aria-pressed={!!we.recordVideoSet}
+              className={`w-9 h-9 rounded-control flex items-center justify-center flex-shrink-0 transition-colors border ${
+                we.recordVideoSet ? 'bg-accent/14 border-accent text-accent' : 'bg-surface border-hairline text-ink-2 hover:text-white hover:border-strong'
+              }`}
+            >
+              <Icon name="videocam" size="s" />
+            </button>
+            <span className="font-mono text-caption text-ink-2 uppercase tracking-wider">
+              {we.recordVideoSet ? 'Pide vídeo al atleta' : 'Vídeo desactivado'}
+            </span>
+            {we.recordVideoSet && (
+              <select
+                value={we.recordVideoSet}
+                onChange={e => onChange({ recordVideoSet: e.target.value === 'all' ? 'all' : parseInt(e.target.value) })}
+                className="ml-auto bg-surface border border-hairline rounded-control px-2 py-1.5 text-caption font-mono text-white focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
+              >
+                <option value="all">Todas las series</option>
+                {Array.from({ length: we.sets }, (_, i) => i + 1).map(n => (
+                  <option key={n} value={n}>Solo serie {n}</option>
+                ))}
+              </select>
+            )}
+          </div>
         )}
       </div>
     </div>

@@ -164,6 +164,7 @@ export async function runAgentTurn(
     activeAthlete?: { email: string; name?: string };
     coachInstructions?: string;
     doctrina?: { entrenamiento: string; nutricion: string };
+    volumeLandmarks?: Record<string, { mv: number; mev: number; mavMin: number; mavMax: number; mrv: number }>;
   },
   cb: AgentCallbacks = {},
 ): Promise<AiChatMessage[]> {
@@ -180,7 +181,7 @@ export async function runAgentTurn(
   //      cuando la edite.
   //   3. Sufijo volátil (fecha, cliente activo, instrucciones fijas): fuera de caché.
   const doctrinaBlock = opts.doctrina
-    ? buildDoctrinaBlock(opts.doctrina.entrenamiento, opts.doctrina.nutricion)
+    ? buildDoctrinaBlock(opts.doctrina.entrenamiento, opts.doctrina.nutricion, opts.volumeLandmarks)
     : '';
   const system = [
     { type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } },

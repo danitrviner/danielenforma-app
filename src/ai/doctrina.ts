@@ -222,10 +222,33 @@ export const DOCTRINA_DEFAULTS: Record<DoctrinaKind, string> = {
   nutricion: DOCTRINA_NUTRICION_DEFAULT,
 };
 
+// El texto de DOCTRINA_ENTRENAMIENTO_DEFAULT de arriba describe los rangos de
+// volumen en prosa; VOLUME_LANDMARKS_DEFAULT (src/data/volumeLandmarks.ts) es
+// la versión tipada de esos mismos números, editable desde la pestaña
+// "Volumen" del panel. Si Dani edita el TEXTO de la doctrina, ese texto queda
+// congelado tal cual lo escribió — así que la tabla se manda SIEMPRE como un
+// bloque aparte, generado en el momento, para que el modelo nunca vea números
+// de volumen desactualizados aunque la prosa ya no los mencione.
+function renderVolumeLandmarksBlock(table: Record<string, { mv: number; mev: number; mavMin: number; mavMax: number; mrv: number }>): string {
+  const filas = Object.entries(table)
+    .map(([grupo, l]) => `${grupo}: MV ${l.mv} · MEV ${l.mev} · MAV ${l.mavMin}-${l.mavMax} · MRV ${l.mrv}`)
+    .join('\n');
+  return `### TABLA DE VOLUMEN VIGENTE (series efectivas/semana, editada por Dani)\nEstos son los números que rigen AHORA MISMO, por encima de cualquier cifra que aparezca en el texto de arriba si difieren:\n${filas}`;
+}
+
 /** Bloque que se manda al modelo. Va en su propio bloque de system cacheado:
- *  cambia cuando Dani edita su criterio (raro), no en cada turno como la fecha. */
-export function buildDoctrinaBlock(entrenamiento: string, nutricion: string): string {
-  const partes = [entrenamiento.trim(), nutricion.trim()].filter(Boolean);
+ *  cambia cuando Dani edita su criterio (raro), no en cada turno como la fecha.
+ *  `volumeLandmarks` es opcional para no romper doctrina.test.ts ni llamadas
+ *  antiguas; en producción aiClient.ts siempre la pasa. */
+export function buildDoctrinaBlock(
+  entrenamiento: string,
+  nutricion: string,
+  volumeLandmarks?: Record<string, { mv: number; mev: number; mavMin: number; mavMax: number; mrv: number }>,
+): string {
+  const entrenamientoConTabla = volumeLandmarks
+    ? [entrenamiento.trim(), renderVolumeLandmarksBlock(volumeLandmarks)].filter(Boolean).join('\n\n')
+    : entrenamiento.trim();
+  const partes = [entrenamientoConTabla, nutricion.trim()].filter(Boolean);
   if (partes.length === 0) return '';
   return `# CRITERIO DEL COACH\n\nLo siguiente es el criterio propio de Dani. Tiene prioridad sobre cualquier convención genérica de entrenamiento o nutrición que conozcas. Si algo que vas a proponer lo contradice, no lo propongas: dilo y explica por qué crees que este caso es una excepción.\n\n${partes.join('\n\n')}`;
 }

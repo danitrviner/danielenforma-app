@@ -1,13 +1,15 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { AiChat, AiChatMessage, AiProposal, Diet, Mesocycle, MuscleGroup, MUSCLE_LABELS, KnowledgeNote, PeriodizationBlockPayload } from '../types';
+import { AiChat, AiChatMessage, AiProposal, Diet, Mesocycle, MuscleGroup, MUSCLE_LABELS, MUSCLE_ORDER, KnowledgeNote, PeriodizationBlockPayload } from '../types';
 import {
   getAiChats, saveAiChat, deleteAiChat, getAiProposalsForAthlete, updateAiProposal,
   submitCoachFeedback, createDiet, updateDiet, createMesocycle, bulkUpsertKnowledgeNotes,
   getCoachInstructions, saveCoachInstructions,
   getDoctrina, getDoctrinaParaEditar, saveDoctrina, resetDoctrina, createTask,
+  getVolumeLandmarks, getVolumeLandmarksParaEditar, saveVolumeLandmarks, resetVolumeLandmarks,
 } from '../dbService';
+import { VOLUME_LANDMARKS_DEFAULT, type VolumeLandmark } from '../data/volumeLandmarks';
 import { runAgentTurn, messageText, probarConexionProxy } from '../ai/aiClient';
 import { OPEN_AI_PANEL_EVENT, OpenAiPanelDetail } from '../ai/events';
 import { exchangeToKcal } from '../utils/nutritionConstants';
@@ -71,13 +73,15 @@ function newChat(athleteId?: string): AiChat {
 const aiChatsKey = ['aiChats'] as const;
 const coachInstructionsKey = ['coachInstructions'] as const;
 const doctrinaKey = ['coachDoctrina'] as const;
+const volumeLandmarksKey = ['coachVolumeLandmarks'] as const;
 
-type PromptTab = 'instrucciones' | 'entrenamiento' | 'nutricion';
+type PromptTab = 'instrucciones' | 'entrenamiento' | 'nutricion' | 'volumen';
 
 const PROMPT_TABS: { id: PromptTab; label: string }[] = [
   { id: 'instrucciones', label: 'Reglas fijas' },
   { id: 'entrenamiento', label: 'Entrenamiento' },
   { id: 'nutricion',     label: 'Nutrición' },
+  { id: 'volumen',       label: 'Volumen' },
 ];
 
 // Editor de una doctrina. Aparte del textarea, su trabajo real es dejar claro
@@ -113,6 +117,83 @@ function DoctrinaEditor({ descripcion, valor, onChange, esDefault, onRestaurar, 
       <p className="text-caption text-ink-2">
         Se manda entero en cada conversación. Escribe reglas concretas y accionables — cuanto más vago, menos cambia lo que hace la IA.
       </p>
+    </>
+  );
+}
+
+const LANDMARK_COLS: { key: keyof VolumeLandmark; label: string }[] = [
+  { key: 'mv',     label: 'MV' },
+  { key: 'mev',    label: 'MEV' },
+  { key: 'mavMin', label: 'MAV min' },
+  { key: 'mavMax', label: 'MAV max' },
+  { key: 'mrv',    label: 'MRV' },
+];
+
+// Tabla de 17 filas (un grupo muscular por fila) x 5 columnas (MV/MEV/MAV min-
+// max/MRV), en series efectivas por semana. Alimenta tanto al botón "Sugerir
+// volumen" del mesociclo (utils/volumeSuggestion.ts) como al bloque de
+// doctrina que ve la IA (ai/doctrina.ts) — un único sitio para no desincronizar
+// lo que hace el botón de lo que sabe el asistente.
+function VolumeLandmarksEditor({ valor, onChange, esDefault, onRestaurar, disabled }: {
+  valor: Record<MuscleGroup, VolumeLandmark>;
+  onChange: (v: Record<MuscleGroup, VolumeLandmark>) => void;
+  esDefault: boolean;
+  onRestaurar: () => void;
+  disabled: boolean;
+}) {
+  const setCell = (group: MuscleGroup, key: keyof VolumeLandmark, raw: string) => {
+    const n = Math.max(0, Math.min(25, Math.round(Number(raw) || 0)));
+    onChange({ ...valor, [group]: { ...valor[group], [key]: n } });
+  };
+  return (
+    <>
+      <p className="text-label text-ink-2">
+        Series efectivas por semana, por grupo muscular. MAV min-max son los rangos que ya usas al programar; MV, MEV y MRV acotan por debajo y por arriba. El sugeridor de volumen del mesociclo y la IA parten de estos números.
+      </p>
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-caption font-mono text-ink-2">
+          {esDefault ? 'Tabla por defecto (sin editar)' : 'Tu tabla'}
+        </span>
+        {!esDefault && (
+          <Button variant="ghost" size="s" onClick={onRestaurar} disabled={disabled}>
+            Restaurar la de por defecto
+          </Button>
+        )}
+      </div>
+      <div className="overflow-x-auto rounded-surface border border-hairline">
+        <table className="w-full border-collapse text-body-s">
+          <thead>
+            <tr className="bg-bg">
+              <th className="sticky left-0 bg-bg text-left px-3 py-2 font-mono text-caption text-ink-2 uppercase tracking-wider border-b border-r border-hairline">Grupo</th>
+              {LANDMARK_COLS.map(c => (
+                <th key={c.key} className="px-2 py-2 font-mono text-caption text-ink-2 uppercase tracking-wider border-b border-hairline text-center">{c.label}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {MUSCLE_ORDER.map(group => (
+              <tr key={group}>
+                <td className="sticky left-0 bg-surface px-3 py-1.5 border-r border-hairline font-sans text-label text-ink-2 whitespace-nowrap">
+                  {MUSCLE_LABELS[group]}
+                </td>
+                {LANDMARK_COLS.map(c => (
+                  <td key={c.key} className="px-1 py-1 text-center">
+                    <input
+                      type="number"
+                      min={0}
+                      max={25}
+                      value={valor[group][c.key]}
+                      onChange={e => setCell(group, c.key, e.target.value)}
+                      disabled={disabled}
+                      className="w-14 bg-transparent text-center text-body-s text-ink outline-none border border-transparent focus:border-accent/50 rounded-control py-1"
+                    />
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </>
   );
 }
@@ -158,6 +239,13 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
     }),
     enabled: open,
   });
+  // La tabla de volumen viaja aparte de la doctrina de texto — ver el
+  // comentario de buildDoctrinaBlock en ai/doctrina.ts sobre por qué.
+  const { data: volumeLandmarks } = useQuery({
+    queryKey: volumeLandmarksKey,
+    queryFn: getVolumeLandmarks,
+    enabled: open,
+  });
   const [editingInstructions, setEditingInstructions] = useState(false);
   const [instructionsDraft, setInstructionsDraft] = useState('');
   const [savingInstructions, setSavingInstructions] = useState(false);
@@ -172,6 +260,9 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
   // que restaurar.
   const [entrenoEsDefault, setEntrenoEsDefault] = useState(true);
   const [nutricionEsDefault, setNutricionEsDefault] = useState(true);
+  const [landmarksDraft, setLandmarksDraft] = useState<Record<MuscleGroup, VolumeLandmark>>(VOLUME_LANDMARKS_DEFAULT);
+  const [landmarksEsDefault, setLandmarksEsDefault] = useState(true);
+  const [landmarksError, setLandmarksError] = useState<string | null>(null);
   const liveMessages = useRef<AiChatMessage[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const vaultInputRef = useRef<HTMLInputElement>(null);
@@ -239,15 +330,18 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
   const openInstructionsEditor = async () => {
     setInstructionsDraft(coachInstructions);
     setPromptTab('instrucciones');
+    setLandmarksError(null);
     setEditingInstructions(true);
     // Se cargan al abrir, no con el panel: son textos largos que solo hacen
     // falta cuando Dani entra a editarlos.
-    const [ent, nut] = await Promise.all([
+    const [ent, nut, vol] = await Promise.all([
       getDoctrinaParaEditar('entrenamiento').catch(() => null),
       getDoctrinaParaEditar('nutricion').catch(() => null),
+      getVolumeLandmarksParaEditar().catch(() => null),
     ]);
     if (ent) { setEntrenoDraft(ent.text); setEntrenoEsDefault(ent.esDefault); }
     if (nut) { setNutricionDraft(nut.text); setNutricionEsDefault(nut.esDefault); }
+    if (vol) { setLandmarksDraft(vol.table); setLandmarksEsDefault(vol.esDefault); }
   };
 
   const saveInstructions = async () => {
@@ -260,10 +354,23 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
         await saveDoctrina('entrenamiento', entrenoDraft.trim());
         setEntrenoEsDefault(false);
         queryClient.invalidateQueries({ queryKey: doctrinaKey });
-      } else {
+      } else if (promptTab === 'nutricion') {
         await saveDoctrina('nutricion', nutricionDraft.trim());
         setNutricionEsDefault(false);
         queryClient.invalidateQueries({ queryKey: doctrinaKey });
+      } else {
+        setLandmarksError(null);
+        try {
+          await saveVolumeLandmarks(landmarksDraft);
+        } catch (err) {
+          // Error de validación (orden mv≤mev≤mavMin≤mavMax≤mrv) — se muestra
+          // inline y NO se cierra el diálogo, a diferencia de un fallo de red
+          // (que sí guarda en local y cierra, igual que la doctrina).
+          setLandmarksError(err instanceof Error ? err.message : 'No se pudo guardar la tabla.');
+          return;
+        }
+        setLandmarksEsDefault(false);
+        queryClient.invalidateQueries({ queryKey: volumeLandmarksKey });
       }
       setEditingInstructions(false);
     } finally {
@@ -279,6 +386,19 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
       if (kind === 'entrenamiento') { setEntrenoDraft(fresh.text); setEntrenoEsDefault(true); }
       else { setNutricionDraft(fresh.text); setNutricionEsDefault(true); }
       queryClient.invalidateQueries({ queryKey: doctrinaKey });
+    } finally {
+      setSavingInstructions(false);
+    }
+  };
+
+  const restaurarLandmarks = async () => {
+    setSavingInstructions(true);
+    try {
+      await resetVolumeLandmarks();
+      const fresh = await getVolumeLandmarksParaEditar();
+      setLandmarksDraft(fresh.table);
+      setLandmarksEsDefault(true);
+      queryClient.invalidateQueries({ queryKey: volumeLandmarksKey });
     } finally {
       setSavingInstructions(false);
     }
@@ -386,7 +506,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
       : undefined;
 
     try {
-      await runAgentTurn(chat.messages, userText, { chatId: chat.id, activeAthlete, coachInstructions, doctrina }, {
+      await runAgentTurn(chat.messages, userText, { chatId: chat.id, activeAthlete, coachInstructions, doctrina, volumeLandmarks }, {
         onUpdate: msgs => {
           liveMessages.current = msgs;
           setChat(c => ({ ...c, messages: msgs }));
@@ -763,6 +883,21 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                   onRestaurar={() => restaurarDoctrina('nutricion')}
                   disabled={savingInstructions}
                 />
+              )}
+
+              {promptTab === 'volumen' && (
+                <>
+                  <VolumeLandmarksEditor
+                    valor={landmarksDraft}
+                    onChange={setLandmarksDraft}
+                    esDefault={landmarksEsDefault}
+                    onRestaurar={restaurarLandmarks}
+                    disabled={savingInstructions}
+                  />
+                  {landmarksError && (
+                    <p className="text-caption text-danger">{landmarksError}</p>
+                  )}
+                </>
               )}
             </div>
         </Dialog>

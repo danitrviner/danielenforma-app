@@ -1,6 +1,7 @@
 import React from 'react';
 import { QuestionnaireQuestion, QuestionType, BodyMetricKey, BODY_METRIC_LABELS } from '../types';
 import { Icon, Button, Input } from './ui';
+import { SEÑALES_DISPONIBLES } from '../data/questionnaireSignals';
 
 // ── Shared types & helpers (consumed by QuestionnaireManagerScreen + ClientHub) ─
 
@@ -34,6 +35,9 @@ export function applyTypeChange(patch: { type: QuestionType }): Partial<Question
     unit: undefined, min: undefined, max: undefined, decimals: undefined,
     scaleMin: undefined, scaleMax: undefined, scaleMinLabel: undefined, scaleMaxLabel: undefined,
     options: undefined, multiSelect: undefined,
+    // La señal describe QUÉ significa la respuesta, y eso depende del tipo:
+    // 'grupos a priorizar' solo existe sobre una pregunta de opción múltiple.
+    signalKey: undefined,
     maxChars: undefined,
     labelTrue: undefined, labelFalse: undefined,
     metricKey: undefined,
@@ -197,6 +201,33 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
                 className={`w-full ${MINI_INPUT_CLS} text-caption`}
               />
             </div>
+
+            {/* Señal — qué significa esta respuesta para los motores de la app.
+                Hace falta poder ponerla a mano porque los cuestionarios que ya
+                están asignados en Firestore se crearon sin ella: sin esto habría
+                que recrearlos desde cero para que el sugeridor de volumen
+                pudiera leer el cierre de mesociclo. */}
+            {(q.type === 'scale' || q.type === 'numeric' || q.type === 'choice') && (
+              <div className="pl-10 flex items-center gap-2 flex-wrap">
+                <span className="font-mono text-caption text-ink-3 uppercase tracking-wider">Señal</span>
+                <select
+                  value={q.signalKey ?? ''}
+                  onChange={e => setQ(idx, { signalKey: e.target.value || undefined })}
+                  className="bg-raised border border-hairline rounded-control px-2 py-1 text-caption font-mono text-ink-2 focus:outline-none focus:ring-1 focus:ring-accent max-w-full"
+                >
+                  <option value="">Ninguna (respuesta normal)</option>
+                  {SEÑALES_DISPONIBLES
+                    .filter(sig => sig.tipos.includes(q.type))
+                    .map(sig => <option key={sig.key} value={sig.key}>{sig.label}</option>)}
+                </select>
+                {q.signalKey && (
+                  <span className="inline-flex items-center gap-1 font-mono text-caption text-accent">
+                    <Icon name="bolt" size="s" />
+                    la lee el sugeridor de volumen
+                  </span>
+                )}
+              </div>
+            )}
 
             {/* Type-specific config */}
             <div className="pl-10 space-y-2">

@@ -6,6 +6,7 @@ import {
 } from '../types';
 import { createWorkoutAssignment, deleteWorkoutAssignment, updateWorkoutLog, updateUserProfile } from '../dbService';
 import { invalidateResource } from '../hooks/useResourceCache';
+import { adherenciaDeMesociclo } from '../utils/adherence';
 import { useToast } from '../hooks/useToast';
 import MesocycleDashboard from './MesocycleDashboard';
 import LoadHistoryPanel from './LoadHistoryPanel';
@@ -308,7 +309,7 @@ export default function ClientWorkoutsPanel({
           const mesoAssignments = assignments.filter(a => a.mesocycleId === current.id);
           if (mesoAssignments.length === 0) return null;
           const completed = mesoAssignments.filter(a => a.status === 'completed').length;
-          const adherence = Math.round((completed / mesoAssignments.length) * 100);
+          const adherence = adherenciaDeMesociclo(assignments, current.id) ?? 0;
           const cells = [...mesoAssignments].sort((a, b) => a.date.localeCompare(b.date));
           return (
             <div className="bg-bg border border-hairline rounded-surface px-4 py-3 space-y-2">
@@ -377,6 +378,10 @@ export default function ClientWorkoutsPanel({
         coachId={coachId}
         athleteEmail={athlete.email}
         athleteEquipment={onboardingData?.equipment ?? []}
+        athleteLevel={onboardingData?.experienceLevel}
+        athleteName={athlete.displayName}
+        athleteLogs={athleteLogs}
+        athleteAssignments={assignments}
       />
       </>
       )}

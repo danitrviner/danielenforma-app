@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Mesocycle, NutritionProgram, Roadmap, RoadmapItem, BodyweightLog, WorkoutAssignment, Workout, Exercise, WeeklyProgressionRule } from '../types';
 import { PlanEvent, WeekAdherence, weekAdherence, detectConflicts, PlanConflict } from '../utils/planEvents';
-import { mesocycleWeekNumber } from '../utils/progression';
+import { mesocycleWeekNumber, diasDeCiclo } from '../utils/progression';
 import { Icon, Button, EmptyState, Sheet, Input, Select, Badge, BadgeTone } from './ui';
 import EventPlannerSheet from './roadmap/EventPlannerSheet';
 import ProposePlanSheet from './roadmap/ProposePlanSheet';
@@ -392,7 +392,7 @@ export default function RoadmapTimeline({ mesocycles: mesocyclesProp, nutritionP
             const newDate = isoDate(addDays(parseDate(prev.date), dayDelta));
             const meso = mesocyclesProp.find(m => m.id === prev.moveRef.mesocycleId);
             if (meso) {
-              const newAtWeek = mesocycleWeekNumber(meso.startDate, newDate);
+              const newAtWeek = mesocycleWeekNumber(meso.startDate, newDate, diasDeCiclo(meso.daysPerWeek));
               if (newAtWeek !== prev.moveRef.atWeek) {
                 onMoveVolumeEvent?.(prev.moveRef.workoutId, prev.moveRef.exerciseId, prev.moveRef.atWeek, newAtWeek);
               }
