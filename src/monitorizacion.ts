@@ -29,9 +29,22 @@
    cliente concreto cuando haga falta atenderle.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-import * as Sentry from '@sentry/react';
+// Import diferido a propósito: `@sentry/react` iba en estático y viajaba en
+// el chunk de entrada de TODOS los usuarios aunque la mayoría de builds no
+// tengan VITE_SENTRY_DSN definida (dev, tests, y cualquier despliegue sin la
+// variable). Las funciones de aquí abajo siguen siendo síncronas de cara a
+// quien las llama — el import() solo se dispara la primera vez que de verdad
+// hace falta, y en dev/test (sin DSN) no se dispara nunca.
+type SentryModule = typeof import('@sentry/react');
 
 const DSN = import.meta.env.VITE_SENTRY_DSN as string | undefined;
+
+let sentryPromise: Promise<SentryModule> | null = null;
+function cargarSentry(): Promise<SentryModule> | null {
+  if (!DSN) return null;
+  sentryPromise ??= import('@sentry/react');
+  return sentryPromise;
+}
 
 /** Nombre del entorno tal y como aparecerá en Sentry. */
 function entorno(): string {
@@ -85,6 +98,7 @@ export function iniciarMonitorizacion(): void {
   if (iniciado || !DSN) return;
   iniciado = true;
 
+  cargarSentry()?.then(Sentry => {
   Sentry.init({
     dsn: DSN,
     environment: entorno(),
@@ -129,6 +143,7 @@ export function iniciarMonitorizacion(): void {
       return evento;
     },
   });
+  });
 }
 
 /**
@@ -142,12 +157,14 @@ export function iniciarMonitorizacion(): void {
  */
 export function identificarUsuario(email: string | null, rol?: 'coach' | 'atleta'): void {
   if (!DSN) return;
-  if (!email) {
-    Sentry.setUser(null);
-    return;
-  }
-  Sentry.setUser({ id: codigoDeUsuario(email) });
-  if (rol) Sentry.setTag('rol', rol);
+  cargarSentry()?.then(Sentry => {
+    if (!email) {
+      Sentry.setUser(null);
+      return;
+    }
+    Sentry.setUser({ id: codigoDeUsuario(email) });
+    if (rol) Sentry.setTag('rol', rol);
+  });
 }
 
 /**
@@ -160,15 +177,19 @@ export function identificarUsuario(email: string | null, rol?: 'coach' | 'atleta
 export function reportarError(error: unknown, donde: string, extra?: Record<string, unknown>): void {
   console.error(`[${donde}]`, error, extra ?? '');
   if (!DSN) return;
-  Sentry.withScope(scope => {
-    scope.setTag('donde', donde);
-    if (extra) scope.setContext('detalle', extra);
-    Sentry.captureException(error instanceof Error ? error : new Error(String(error)));
+  cargarSentry()?.then(Sentry => {
+    Sentry.withScope(scope => {
+      scope.setTag('donde', donde);
+      if (extra) scope.setContext('detalle', extra);
+      Sentry.captureException(error instanceof Error ? error : new Error(String(error)));
+    });
   });
 }
 
 /** Deja constancia de algo que ayuda a entender el error que venga después. */
 export function migaDePan(mensaje: string, datos?: Record<string, unknown>): void {
   if (!DSN) return;
-  Sentry.addBreadcrumb({ message: mensaje, level: 'info', data: datos });
+  cargarSentry()?.then(Sentry => {
+    Sentry.addBreadcrumb({ message: mensaje, level: 'info', data: datos });
+  });
 }
