@@ -35,10 +35,12 @@ vi.mock('../firebase', () => ({
   }),
   getDocs: async (_ref: unknown) => ({
     docs: estado.docsCompletos.map(d => ({ id: d.id, data: () => d.data })),
+    size: estado.docsCompletos.length,
   }),
   getDocsFromCache: async (_ref: unknown) => {
     if (estado.cacheFalla) throw new Error('sin caché local todavía');
-    return { docs: (estado.docsCache ?? []).map(d => ({ id: d.id, data: () => d.data })), empty: (estado.docsCache ?? []).length === 0 };
+    const docs = (estado.docsCache ?? []).map(d => ({ id: d.id, data: () => d.data }));
+    return { docs, empty: docs.length === 0, size: docs.length };
   },
   setDoc: vi.fn(async () => {}),
 }));
@@ -47,6 +49,9 @@ const { leerCatalogo, marcarCatalogoCambiado } = await import('./catalogoVersion
 const firebaseMock = await import('../firebase');
 
 const CLAVE_LOCAL = 'enforma_catalogo_version_ejercicios';
+/** Escribe el sello tal y como lo guarda `leerCatalogo`: versión + recuento. */
+const sellar = (version: string, n: number) =>
+  localStorage.setItem(CLAVE_LOCAL, JSON.stringify({ version, n }));
 const mapear = (d: { id: string; data: () => Record<string, unknown> }) => ({ id: d.id, ...d.data() });
 
 beforeEach(() => {
@@ -71,7 +76,7 @@ describe('leerCatalogo — sin documento de versión', () => {
 describe('leerCatalogo — versión coincide', () => {
   it('sirve la copia local sin tocar getDocs cuando la versión coincide', async () => {
     estado.versionDoc = { version: '2026-08-26T10:00:00.000Z' };
-    localStorage.setItem(CLAVE_LOCAL, '2026-08-26T10:00:00.000Z');
+    sellar('2026-08-26T10:00:00.000Z', 1);
     estado.docsCache = [{ id: 'a', data: { name: 'De la caché local' } }];
     // Si esto se usara, el resultado sería distinto — así se distingue cuál sirvió.
     estado.docsCompletos = [{ id: 'b', data: { name: 'NO debería verse' } }];
@@ -82,7 +87,7 @@ describe('leerCatalogo — versión coincide', () => {
 
   it('si la caché local viene vacía (dispositivo nuevo), cae al getDocs completo', async () => {
     estado.versionDoc = { version: 'v1' };
-    localStorage.setItem(CLAVE_LOCAL, 'v1');
+    sellar('v1', 1);
     estado.docsCache = []; // getDocsFromCache no lanza, pero no trae nada
     estado.docsCompletos = [{ id: 'a', data: { name: 'Del servidor' } }];
 
@@ -92,7 +97,7 @@ describe('leerCatalogo — versión coincide', () => {
 
   it('si getDocsFromCache falla (IndexedDB no disponible), cae al getDocs completo', async () => {
     estado.versionDoc = { version: 'v1' };
-    localStorage.setItem(CLAVE_LOCAL, 'v1');
+    sellar('v1', 1);
     estado.cacheFalla = true;
     estado.docsCompletos = [{ id: 'a', data: { name: 'Del servidor' } }];
 
@@ -101,15 +106,66 @@ describe('leerCatalogo — versión coincide', () => {
   });
 });
 
+describe('leerCatalogo — caché local incompleta', () => {
+  /* El fallo que protegen estas dos: la copia local de Firestore se llena
+     documento a documento, y varias consultas parciales escriben en ella sin
+     traer el catálogo entero (`getWorkoutsByIds`, los `where('mesocycleId')`,
+     el `limit(1)` que comprueba si hay que sembrar). Si el navegador purga
+     IndexedDB pero deja el localStorage —Safari lo hace—, el sello sigue
+     diciendo «al día» con cuatro documentos sueltos en la caché. Comprobar
+     solo que no esté vacía daba esa lista corta por buena: el atleta veía tres
+     rutinas en vez de todas, sin un error por ningún sitio. */
+
+  it('NO sirve una caché con menos documentos de los que tenía el catálogo', async () => {
+    estado.versionDoc = { version: 'v1' };
+    sellar('v1', 40);                         // el catálogo entero son 40
+    estado.docsCache = [                      // pero en la caché solo quedan 2
+      { id: 'a', data: { name: 'suelto 1' } },
+      { id: 'b', data: { name: 'suelto 2' } },
+    ];
+    estado.docsCompletos = Array.from({ length: 40 }, (_, i) => ({ id: `w${i}`, data: { name: `Rutina ${i}` } }));
+
+    const resultado = await leerCatalogo('ejercicios', 'exercises', mapear);
+    expect(resultado).toHaveLength(40);
+    expect(resultado[0]).toEqual({ id: 'w0', name: 'Rutina 0' });
+  });
+
+  it('sirve la caché cuando tiene al menos los documentos esperados', async () => {
+    estado.versionDoc = { version: 'v1' };
+    sellar('v1', 2);
+    estado.docsCache = [
+      { id: 'a', data: { name: 'de la caché' } },
+      { id: 'b', data: { name: 'de la caché' } },
+    ];
+    estado.docsCompletos = [{ id: 'z', data: { name: 'NO debería verse' } }];
+
+    const resultado = await leerCatalogo('ejercicios', 'exercises', mapear);
+    expect(resultado).toHaveLength(2);
+    expect(resultado[0]).toEqual({ id: 'a', name: 'de la caché' });
+  });
+
+  it('un sello en el formato antiguo (versión suelta, sin recuento) fuerza relectura', async () => {
+    estado.versionDoc = { version: 'v1' };
+    localStorage.setItem(CLAVE_LOCAL, 'v1');   // como lo guardaba la versión anterior
+    estado.docsCache = [{ id: 'a', data: { name: 'de la caché' } }];
+    estado.docsCompletos = [{ id: 'z', data: { name: 'Del servidor' } }];
+
+    const resultado = await leerCatalogo('ejercicios', 'exercises', mapear);
+    expect(resultado).toEqual([{ id: 'z', name: 'Del servidor' }]);
+    // Y al releer deja el sello ya en el formato nuevo.
+    expect(JSON.parse(localStorage.getItem(CLAVE_LOCAL)!)).toEqual({ version: 'v1', n: 1 });
+  });
+});
+
 describe('leerCatalogo — versión distinta o desconocida', () => {
   it('hace getDocs completo y guarda la versión nueva cuando no coincide', async () => {
     estado.versionDoc = { version: 'v2' };
-    localStorage.setItem(CLAVE_LOCAL, 'v1'); // versión vieja en este dispositivo
+    sellar('v1', 1); // versión vieja en este dispositivo
     estado.docsCompletos = [{ id: 'a', data: { name: 'Versión nueva' } }];
 
     const resultado = await leerCatalogo('ejercicios', 'exercises', mapear);
     expect(resultado).toEqual([{ id: 'a', name: 'Versión nueva' }]);
-    expect(localStorage.getItem(CLAVE_LOCAL)).toBe('v2');
+    expect(JSON.parse(localStorage.getItem(CLAVE_LOCAL)!)).toEqual({ version: 'v2', n: 1 });
   });
 
   it('la primera vez en un dispositivo (sin versión local guardada) hace getDocs completo', async () => {
@@ -119,7 +175,7 @@ describe('leerCatalogo — versión distinta o desconocida', () => {
 
     const resultado = await leerCatalogo('ejercicios', 'exercises', mapear);
     expect(resultado).toEqual([{ id: 'a', name: 'Primera vez' }]);
-    expect(localStorage.getItem(CLAVE_LOCAL)).toBe('v1');
+    expect(JSON.parse(localStorage.getItem(CLAVE_LOCAL)!)).toEqual({ version: 'v1', n: 1 });
   });
 });
 

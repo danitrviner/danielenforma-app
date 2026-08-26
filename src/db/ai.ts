@@ -1,6 +1,7 @@
 import { db, collection, doc, getDocs, setDoc, addDoc, updateDoc, deleteDoc, query, where, writeBatch } from '../firebase';
 import { AiChat, AiProposal, KnowledgeNote } from '../types';
 import { forceLocalOnly, setLocalBypassMode, stripUndefined, esFalloDePermisos } from './core';
+import { leerCatalogo, marcarCatalogoCambiado } from './catalogoVersionado';
 
 // ─── AI ASSISTANT (chats + propuestas, solo coach) ──────────────────────────────
 
@@ -143,8 +144,12 @@ function saveLocalKnowledge(notes: KnowledgeNote[]): void {
 export async function getKnowledgeNotes(): Promise<KnowledgeNote[]> {
   if (forceLocalOnly) return getLocalKnowledge();
   try {
-    const snap = await getDocs(collection(db, 'knowledgeBase'));
-    const notes = snap.docs.map(d => ({ id: d.id, ...d.data() } as KnowledgeNote));
+    // Mismo tratamiento versionado que los demás catálogos. Aquí importa
+    // porque la bóveda se relee entera en cada arranque del panel de la IA y
+    // crece con cada nota que Dani sincroniza, sin techo — y su contenido
+    // cambia solo cuando él la resincroniza a propósito, que es justo el caso
+    // que el sello de versión resuelve mejor.
+    const notes = await leerCatalogo('knowledgeBase', 'knowledgeBase', d => ({ id: d.id, ...d.data() } as KnowledgeNote));
     saveLocalKnowledge(notes);
     return notes;
   } catch (err) {
@@ -169,6 +174,7 @@ export async function bulkUpsertKnowledgeNotes(notes: KnowledgeNote[]): Promise<
       }
       await batch.commit();
     }
+    void marcarCatalogoCambiado('knowledgeBase');
     return notes.length;
   } catch (err) {
     console.warn('bulkUpsertKnowledgeNotes Firestore failed, kept local:', err);

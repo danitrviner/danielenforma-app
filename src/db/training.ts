@@ -240,8 +240,14 @@ export async function getWorkouts(): Promise<Workout[]> {
   if (forceLocalOnly) return getLocalWorkouts();
   if (workoutsCache) return workoutsCache;
   try {
-    const snap = await getDocs(collection(db, 'workouts'));
-    const workouts = snap.docs.map(d => ({ id: d.id, ...d.data() } as Workout));
+    // Mismo tratamiento que `exercises`/`foodItems`, y por el mismo motivo: esto
+    // era un `getDocs` de la colección entera en CADA sesión de CADA persona.
+    // Y aquí pesa más que en un catálogo de solo-coach — `getWorkouts()` lo
+    // llaman diez pantallas, tres de ellas del atleta (Hoy, Rutinas y Road
+    // map), así que la colección se bajaba entera también en el móvil de cada
+    // cliente. Es además la que más crece con el uso: una rutina nueva por
+    // cada mesociclo de cada atleta, sin techo.
+    const workouts = await leerCatalogo('workouts', 'workouts', d => ({ id: d.id, ...d.data() } as Workout));
     saveLocalWorkouts(workouts);
     workoutsCache = workouts;
     return workouts;
@@ -298,6 +304,7 @@ export async function createWorkout(data: Omit<Workout, 'id'>): Promise<Workout>
   }
   try {
     const ref = await addDoc(collection(db, 'workouts'), stripUndefined(data));
+    void marcarCatalogoCambiado('workouts');
     const newW: Workout = { ...data, id: ref.id };
     const list = getLocalWorkouts();
     list.push(newW);
@@ -323,6 +330,7 @@ export async function updateWorkout(id: string, updates: Partial<Workout>): Prom
   }
   try {
     await updateDoc(doc(db, 'workouts', id), stripUndefined(updates) as Record<string, unknown>);
+    void marcarCatalogoCambiado('workouts');
     saveLocalWorkouts(getLocalWorkouts().map(w => (w.id === id ? { ...w, ...updates } : w)));
   } catch (err) {
     console.warn('updateWorkout Firestore failed, updating local:', err);
@@ -341,6 +349,7 @@ export async function deleteWorkout(id: string): Promise<void> {
   if (forceLocalOnly) { dropLocal(); return; }
   try {
     await deleteDoc(doc(db, 'workouts', id));
+    void marcarCatalogoCambiado('workouts');
     // Cascade: remove assignments that reference this workout
     const aSnap = await getDocs(query(collection(db, 'workoutAssignments'), where('workoutId', '==', id)));
     await Promise.all(aSnap.docs.map(d => deleteDoc(d.ref).catch(() => {})));
@@ -883,6 +892,7 @@ export async function deleteWorkoutAssignmentsByMesocycleIdStrict(mesocycleId: s
 export async function createWorkoutStrict(data: Omit<Workout, 'id'>): Promise<Workout> {
   workoutsCache = null;
   const ref = await addDoc(collection(db, 'workouts'), stripUndefined(data));
+  void marcarCatalogoCambiado('workouts');
   const workout: Workout = { ...data, id: ref.id };
   const list = getLocalWorkouts();
   list.push(workout);

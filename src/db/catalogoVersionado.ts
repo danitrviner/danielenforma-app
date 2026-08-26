@@ -33,6 +33,27 @@ import { db, collection, doc, getDoc, getDocs, getDocsFromCache, setDoc } from '
 
 const CLAVE_VERSION_LOCAL = (nombre: string) => `enforma_catalogo_version_${nombre}`;
 
+/** Sello guardado en este dispositivo: qué versión se leyó y cuántos documentos traía. */
+interface SelloLocal { version: string; n: number; }
+
+/**
+ * Lee el sello del dispositivo. Devuelve null si no hay, si está corrupto o si
+ * viene en el formato antiguo (la versión a pelo, sin el recuento): en ese caso
+ * conviene releer una vez para saber cuántos documentos hay, en lugar de dar
+ * por buena una caché cuyo tamaño esperado no se conoce.
+ */
+function leerSelloLocal(clave: string): SelloLocal | null {
+  try {
+    const raw = localStorage.getItem(clave);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (typeof parsed?.version === 'string' && typeof parsed?.n === 'number') return parsed;
+  } catch {
+    /* formato antiguo (string suelto) o JSON inválido */
+  }
+  return null;
+}
+
 /**
  * Lee una colección-catálogo aprovechando la copia local cuando su versión no
  * ha cambiado. Degrada con seguridad ante cualquier fallo: si el documento de
@@ -57,11 +78,24 @@ export async function leerCatalogo<T>(
   }
 
   if (versionRemota != null) {
-    const versionLocal = localStorage.getItem(claveLocal);
-    if (versionRemota === versionLocal) {
+    const guardado = leerSelloLocal(claveLocal);
+    if (guardado && versionRemota === guardado.version) {
       try {
         const cacheSnap = await getDocsFromCache(colRef);
-        if (!cacheSnap.empty) return cacheSnap.docs.map(mapear);
+        // No basta con que la caché NO esté vacía: tiene que estar COMPLETA.
+        //
+        // La copia local de Firestore se llena documento a documento, y varias
+        // consultas parciales escriben en ella sin traerla entera — `getWorkouts`
+        // convive con `getWorkoutsByIds` y con los `where('mesocycleId', ...)`,
+        // y `getExercises` con el `limit(1)` que comprueba si hay que sembrar.
+        // Si el navegador purga IndexedDB pero deja el localStorage —Safari lo
+        // hace— el sello seguiría diciendo «al día» con solo un puñado de
+        // documentos en la caché, y `!empty` daría esa lista corta por buena:
+        // el atleta vería tres rutinas en vez de todas, sin un solo error por
+        // ningún sitio. Por eso se guarda también cuántos documentos tenía el
+        // catálogo la última vez que se leyó entero, y una caché con menos se
+        // trata como incompleta.
+        if (cacheSnap.size >= guardado.n) return cacheSnap.docs.map(mapear);
       } catch {
         // Sin caché local todavía en este dispositivo — cae al fetch normal.
       }
@@ -70,7 +104,9 @@ export async function leerCatalogo<T>(
 
   const snap = await getDocs(colRef);
   if (versionRemota != null) {
-    try { localStorage.setItem(claveLocal, versionRemota); } catch {}
+    try {
+      localStorage.setItem(claveLocal, JSON.stringify({ version: versionRemota, n: snap.size }));
+    } catch {}
   }
   return snap.docs.map(mapear);
 }
