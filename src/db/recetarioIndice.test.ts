@@ -29,10 +29,14 @@ const INDICE = [
   receta('e', 'Ensalada César',    { categoria: 'Platos salados' }),
 ];
 
+// `.text()`, no `.json()`: cargarIndiceRecetas ya no parsea en el hilo
+// principal directamente — pide el texto y lo parsea ahí mismo (sin Worker,
+// que no existe en Node/Vitest) o se lo manda a un Worker si lo hay. El mock
+// solo necesita imitar la parte que SÍ toca el hilo principal: el fetch.
 beforeAll(() => {
   vi.stubGlobal('fetch', vi.fn(async () => ({
     ok: true,
-    json: async () => ({ total: INDICE.length, recetas: INDICE }),
+    text: async () => JSON.stringify({ total: INDICE.length, recetas: INDICE }),
   })));
 });
 
