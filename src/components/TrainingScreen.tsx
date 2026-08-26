@@ -121,7 +121,11 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
   // query que ya usan HomeScreen/CardioScreen, sin nada nuevo del lado del
   // backend.
   const { data: cardioAssignments = [] } = useQuery({
-    queryKey: ['cardioAssignmentsForAthlete', profile.email],
+    // Misma clave que HomeScreen/CardioScreen/useCardioSession — antes llevaba
+    // el sufijo "ForAthlete" y react-query la trataba como una consulta
+    // aparte, así que esta pantalla pagaba su propia lectura en vez de
+    // compartir la de las demás.
+    queryKey: ['cardioAssignments', profile.email],
     queryFn: () => getCardioAssignmentsForAthlete(profile.email),
   });
   // Solo para resolver la progresión por semanas (Bloque F) al abrir una sesión — saber

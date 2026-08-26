@@ -74,7 +74,10 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
   // Mesociclos del atleta — contexto para los disparadores 'plan_week' y
   // 'mesocycle_end' (scheduleEngine no conoce el plan de entreno por sí solo).
   const { data: mesocycles = [] } = useQuery({
-    queryKey: ['mesocyclesForAthlete', profile.email],
+    // Misma clave que TrainingScreen/HomeScreen/ClientHub — antes llevaba el
+    // sufijo "ForAthlete" y pagaba su propia lectura en vez de compartir la
+    // de las demás pantallas.
+    queryKey: ['mesocycles', profile.email],
     queryFn: () => getMesocycles(profile.email),
   });
   const scheduleCtx: ScheduleContext = useMemo(() => ({ mesocycles }), [mesocycles]);

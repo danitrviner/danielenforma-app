@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { UserProfile, CardioZones, CardioSessionType, CardioIntervalBlock, CardioSession, CardioWeeklyGoal } from '../types';
 import { getCardioProfile, getCardioSessionsForAthlete, getCardioAssignmentsForAthlete, createCardioSession, getOnboarding, getCardioWeeklyGoal, saveCardioWeeklyGoal } from '../dbService';
@@ -141,17 +142,31 @@ export function CardioSessionProvider({ profile, enabled, children }: ProviderPr
 
 function CardioSessionProviderInner({ profile, children }: { profile: UserProfile; children: React.ReactNode }) {
   const queryClient = useQueryClient();
+  const [state, setState] = useState<CardioSessionState>('idle');
+  // Este proveedor envuelve TODA la app del atleta (App.tsx) para que una
+  // sesión en vivo sobreviva a navegar fuera de /cardio (ver cabecera del
+  // fichero) — pero eso hacía que sus 5 consultas se dispararan en la raíz de
+  // CADA sesión de CADA atleta, tocara o no cardio. Se acotan a cuando de
+  // verdad hacen falta: dentro de /cardio, o con una sesión ya en marcha
+  // (para que sobreviva si el atleta navega a otra pestaña con el mini-player
+  // puesto). `location` antes que las queries porque `enabled` las necesita.
+  const location = useLocation();
+  const cardioEnUso = location.pathname.startsWith('/cardio') || state !== 'idle';
+
   const { data: cardioProfile } = useQuery({
     queryKey: ['cardioProfile', profile.email],
     queryFn: () => getCardioProfile(profile.email),
+    enabled: cardioEnUso,
   });
   const { data: sessions = [] } = useQuery({
     queryKey: ['cardioSessions', profile.email],
     queryFn: () => getCardioSessionsForAthlete(profile.email),
+    enabled: cardioEnUso,
   });
   const { data: assignments = [] } = useQuery({
     queryKey: ['cardioAssignments', profile.email],
     queryFn: () => getCardioAssignmentsForAthlete(profile.email),
+    enabled: cardioEnUso,
   });
   // Peso/edad/sexo/altura de la anamnesis — entrada del motor de cálculo
   // (Keytel, TRIMP, METs, §5 del análisis). Ninguno es obligatorio: sin
@@ -159,6 +174,7 @@ function CardioSessionProviderInner({ profile, children }: { profile: UserProfil
   const { data: onboarding } = useQuery({
     queryKey: ['onboarding', profile.email],
     queryFn: () => getOnboarding(profile.email),
+    enabled: cardioEnUso,
   });
   const onboardingRef = useRef(onboarding);
   onboardingRef.current = onboarding;
@@ -168,9 +184,9 @@ function CardioSessionProviderInner({ profile, children }: { profile: UserProfil
   const { data: weeklyGoal } = useQuery({
     queryKey: ['cardioWeeklyGoal', profile.email, currentIsoWeek],
     queryFn: () => getCardioWeeklyGoal(profile.email, currentIsoWeek),
+    enabled: cardioEnUso,
   });
 
-  const [state, setState] = useState<CardioSessionState>('idle');
   const [justSavedSession, setJustSavedSession] = useState<CardioSession | null>(null);
   const [weekJustClosed, setWeekJustClosed] = useState(false);
   const [sessionType, setSessionType] = useState<CardioSessionType>('libre');

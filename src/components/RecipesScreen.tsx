@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   UserProfile, Recipe, RecipeFavorites, FoodCategory, DietMode,
@@ -696,18 +696,28 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
 
   // ── Recetas paginated load ────────────────────────────────────────────────────
 
+  // Cada carga que NO es "cargar más" (append=false) es una selección de
+  // filtro nueva. Sin esto, dos toques rápidos en distintas categorías podían
+  // acabar con la respuesta de la PRIMERA pisando a la segunda si llegaba más
+  // tarde — no hay AbortController real aquí (queryRecetas filtra en memoria
+  // sobre el índice ya cargado, no hay petición de red que cancelar), pero el
+  // resultado tardío se puede simplemente descartar en vez de aplicarse.
+  const recetasGenRef = useRef(0);
+
   const loadRecetas = useCallback(async (
     cat: string,
     intake: number | null,
     cursor: RecetasCursor | null,
     append: boolean,
   ) => {
+    const generacion = append ? recetasGenRef.current : ++recetasGenRef.current;
     const filters = {
       categoria: cat === 'Todas' ? undefined : cat,
       intakeType: intake ?? undefined,
     };
     try {
       const result = await queryRecetas(filters, cursor);
+      if (generacion !== recetasGenRef.current) return null; // el filtro cambió mientras cargaba
       setRecetasRecipes(prev => append ? [...prev, ...result.recipes] : result.recipes);
       setRecetasCursor(result.cursor);
       setRecetasHasMore(result.hasMore);
@@ -717,6 +727,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
       // saber con qué cursor sigue ni cuántas recetas le han valido.
       return result;
     } catch (err) {
+      if (generacion !== recetasGenRef.current) return null;
       console.warn('queryRecetas failed:', err);
       setRecetasError('No se pudieron cargar las recetas. Reintenta.');
       // Keep hasMore true so the retry button stays visible; cursor is left

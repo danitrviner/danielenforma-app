@@ -54,7 +54,8 @@ export default function PendingTasksPanel({ profile, checkins, onNavigate }: Pro
   });
   // Contexto para los disparadores 'plan_week'/'mesocycle_end' (ver CheckInScreen).
   const { data: mesocycles = [] } = useQuery({
-    queryKey: ['mesocyclesForAthlete', profile.email],
+    // Misma clave que TrainingScreen/HomeScreen/ClientHub — ver CheckInScreen.
+    queryKey: ['mesocycles', profile.email],
     queryFn: () => getMesocycles(profile.email),
   });
   const scheduleCtx: ScheduleContext = useMemo(() => ({ mesocycles }), [mesocycles]);
