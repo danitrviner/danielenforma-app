@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { UserProfile, CardioZones, CardioSessionType, CardioIntervalBlock, CardioSession, CardioWeeklyGoal } from '../types';
@@ -49,6 +49,26 @@ import { loadLivePrefs, saveLivePrefs, CardioLivePrefs } from '../utils/cardioLi
    donde estaban — React Query comparte caché por queryKey, así que no hay
    coste de red por duplicarlas aquí y allí.
    ═══════════════════════════════════════════════════════════════════════════ */
+
+/**
+ * Envuelve `fn` en una función de identidad ESTABLE (la misma referencia en
+ * todos los renders) que siempre llama a la versión más reciente — para que
+ * `value` (más abajo) se pueda memoizar sin dejar de acceder a los refs y
+ * al estado del render en curso. Ninguna de las funciones del motor de
+ * cardio (`connect`, `start`, `pause`…) usa `useCallback`: se recrean en
+ * cada render, así que meterlas tal cual en el array de dependencias de un
+ * `useMemo` invalidaría la memoización en cada render y meterlas SIN estar
+ * en las dependencias dejaría closures viejas colgando de `value` (llamar a
+ * un `start()` de un render anterior con un `sessionType` ya desactualizado,
+ * por ejemplo). Con este envoltorio la identidad no cambia nunca, así que
+ * puede vivir en `value` sin invalidar nada, y por dentro siempre ejecuta la
+ * versión de ESTE render.
+ */
+function useEstable<T extends (...args: any[]) => any>(fn: T): T {
+  const fnRef = useRef(fn);
+  fnRef.current = fn;
+  return useRef(((...args: Parameters<T>) => fnRef.current(...args)) as T).current;
+}
 
 const XP_PER_SESSION = 15;
 export const SAMPLE_INTERVAL_SEC = 4; // submuestreo — nunca FC cruda por segundo (§7.4)
@@ -850,16 +870,47 @@ function CardioSessionProviderInner({ profile, children }: { profile: UserProfil
     setState('idle');
   };
 
-  const value: CardioSessionContextValue = {
+  // Identidades estables (ver `useEstable` arriba) — así `value` se puede
+  // memoizar de verdad: sin esto, un objeto nuevo con funciones nuevas en
+  // cada render tira cualquier useMemo/React.memo de quien consuma el
+  // contexto, tick de 1 s incluido aunque ni siquiera haya sesión en curso.
+  const connectEstable = useEstable(connect);
+  const cancelReadyEstable = useEstable(cancelReady);
+  const startEstable = useEstable(start);
+  const pauseEstable = useEstable(pause);
+  const resumeEstable = useEstable(resume);
+  const advanceBlockManuallyEstable = useEstable(advanceBlockManually);
+  const saveEstable = useEstable(() => finishSession('save'));
+  const discardEstable = useEstable(() => finishSession('discard'));
+  const finishCooldownEstable = useEstable(finishCooldown);
+  const confirmEffortEstable = useEstable(confirmEffort);
+  const closeSummaryEstable = useEstable(closeSummary);
+  const setLivePrefsEstable = useEstable(setLivePrefs);
+  const registerActivityEstable = useEstable(registerActivity);
+  const unlockEstable = useEstable(unlock);
+  const lockEstable = useEstable(lock);
+
+  const value: CardioSessionContextValue = useMemo(() => ({
     state, sessionType, setSessionType, bpm, deviceStatus, error, paused,
     displayElapsedSec, displaySamples, displayTimeInZone, displayBelowZoneSec,
     displayBlockIndex, displayBlockRemainingSec, displayBlockProgressKcal, displayLive, justSavedSession, weekJustClosed,
-    intervalBlocksRef, sessionTargetZoneRef, livePrefs, setLivePrefs, locked, registerActivity, unlock, lock,
-    connect, cancelReady, start, pause, resume, advanceBlockManually,
-    save: () => finishSession('save'),
-    discard: () => finishSession('discard'),
-    finishCooldown, confirmEffort, closeSummary,
-  };
+    intervalBlocksRef, sessionTargetZoneRef, livePrefs, setLivePrefs: setLivePrefsEstable,
+    locked, registerActivity: registerActivityEstable, unlock: unlockEstable, lock: lockEstable,
+    connect: connectEstable, cancelReady: cancelReadyEstable, start: startEstable, pause: pauseEstable,
+    resume: resumeEstable, advanceBlockManually: advanceBlockManuallyEstable,
+    save: saveEstable, discard: discardEstable,
+    finishCooldown: finishCooldownEstable, confirmEffort: confirmEffortEstable, closeSummary: closeSummaryEstable,
+    // Las *Estable no entran aquí: por diseño nunca cambian de referencia, así
+    // que listarlas no puede invalidar nunca la memoización — solo añadiría
+    // ruido. `intervalBlocksRef`/`sessionTargetZoneRef` tampoco: `useRef`
+    // devuelve siempre el mismo objeto.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [
+    state, sessionType, bpm, deviceStatus, error, paused,
+    displayElapsedSec, displaySamples, displayTimeInZone, displayBelowZoneSec,
+    displayBlockIndex, displayBlockRemainingSec, displayBlockProgressKcal, displayLive, justSavedSession, weekJustClosed,
+    livePrefs, locked,
+  ]);
 
   return <CardioSessionContext.Provider value={value}>{children}</CardioSessionContext.Provider>;
 }
