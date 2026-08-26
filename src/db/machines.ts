@@ -1,7 +1,8 @@
 import {
-  db, storage, storageRef, uploadBytes, getDownloadURL, deleteObject,
+  db,
   collection, doc, getDoc, getDocs, setDoc,
 } from '../firebase';
+import { subirArchivo, borrarArchivo } from '../almacenamiento';
 import { Maquina, MaquinaOverride, MaquinaPropia, Gimnasio, DecisionMaquina, ProgresoCatalogo } from '../types';
 import { forceLocalOnly, setLocalBypassMode, stripUndefined, esFalloDePermisos } from './core';
 import { compressImage } from '../utils/compressImage';
@@ -181,9 +182,7 @@ export async function promoverMaquinaPropia(
 
 /** Sube la imagen de una máquina del catálogo desde el admin. */
 export async function subirImagenMaquina(id: string, file: File): Promise<string> {
-  const sRef = storageRef(storage, `maquinas/${id}`);
-  await uploadBytes(sRef, await compressImage(file));
-  return getDownloadURL(sRef);
+  return subirArchivo(`maquinas/${id}`, await compressImage(file));
 }
 
 // ─── GIMNASIO DEL ATLETA (docId = email) ──────────────────────────────────────
@@ -295,9 +294,7 @@ export async function guardarDecisiones(
 
 export async function subirFotoGimnasio(email: string, file: File): Promise<string> {
   const nombre = `${Date.now()}`;
-  const sRef = storageRef(storage, `gymPhotos/${email}/${nombre}`);
-  await uploadBytes(sRef, await compressImage(file));
-  return getDownloadURL(sRef);
+  return subirArchivo(`gymPhotos/${email}/${nombre}`, await compressImage(file));
 }
 
 export async function addMaquinaPropia(
@@ -324,7 +321,7 @@ export async function deleteMaquinaPropia(email: string, id: string): Promise<vo
   if (propia && !forceLocalOnly) {
     // La foto vive en gymPhotos/{email}/{nombre}; el nombre es la cola de la URL.
     const nombre = decodeURIComponent(propia.fotoUrl.split('/o/')[1]?.split('?')[0] ?? '').split('/').pop();
-    if (nombre) await deleteObject(storageRef(storage, `gymPhotos/${email}/${nombre}`)).catch(() => {});
+    if (nombre) await borrarArchivo(`gymPhotos/${email}/${nombre}`);
   }
 }
 

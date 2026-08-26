@@ -15,11 +15,6 @@ import {
   orderBy,
   limit,
   startAfter,
-  storage,
-  storageRef,
-  uploadBytes,
-  getDownloadURL,
-  deleteObject,
   writeBatch,
 } from './firebase';
 import { QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';

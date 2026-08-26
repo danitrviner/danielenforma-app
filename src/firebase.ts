@@ -1,6 +1,4 @@
 import { initializeApp } from 'firebase/app';
-import { initializeAppCheck, ReCaptchaV3Provider } from 'firebase/app-check';
-import { getAnalytics, isSupported as isAnalyticsSupported } from 'firebase/analytics';
 import {
   getFirestore,
   initializeFirestore,
@@ -52,14 +50,6 @@ import {
 } from 'firebase/auth';
 import { Capacitor } from '@capacitor/core';
 
-import {
-  getStorage,
-  ref as storageRef,
-  uploadBytes,
-  getDownloadURL,
-  deleteObject,
-} from 'firebase/storage';
-
 import firebaseConfig from '../firebase-applet-config.json';
 
 // Initialize Firebase
@@ -102,7 +92,9 @@ try {
 const auth = Capacitor.isNativePlatform()
   ? initializeAuth(app, { persistence: indexedDBLocalPersistence })
   : getAuth(app);
-const storage = getStorage(app);
+// Storage NO se inicializa aquí a propósito: su SDK se carga bajo demanda
+// desde src/almacenamiento.ts, que es el único sitio de la app que lo toca.
+// Ver el comentario de cabecera de ese fichero.
 
 // App Check (reCAPTCHA v3): corta el uso de la API key fuera de esta app una
 // vez se active "Enforce" en la consola Firebase para Firestore/Storage. Sin
@@ -112,13 +104,33 @@ const storage = getStorage(app);
 // site key reCAPTCHA v3 para este dominio en App Check, añadir
 // VITE_RECAPTCHA_SITE_KEY a .env.local y a las env vars de Vercel, y solo
 // entonces activar "Enforce" para Firestore y Storage.
-const RECAPTCHA_SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY as string | undefined;
-if (RECAPTCHA_SITE_KEY) {
-  initializeAppCheck(app, {
-    provider: new ReCaptchaV3Provider(RECAPTCHA_SITE_KEY),
-    isTokenAutoRefreshEnabled: true,
-  });
-}
+// El SDK de App Check se carga con `import()` en vez de estáticamente: son
+// ~20 KB que hoy viajan en el arranque de TODOS (coach y atleta) para no
+// ejecutarse nunca, porque sin site key este bloque no entra.
+//
+// Cargarlo tarde tiene un peligro que no se ve hasta que se activa: App Check
+// tiene que estar inicializado ANTES de la primera lectura de Firestore, o esa
+// lectura sale sin token y, con "Enforce" activado, la rechaza el servidor. Por
+// eso no basta con lanzarlo y olvidarse — se exporta esta promesa y `authReady`
+// (src/db/core.ts) la espera antes de dejar pasar nada a Firestore.
+//
+// Sin site key resuelve al instante y no cuesta nada. Es el caso de hoy.
+export const appCheckListo: Promise<void> = (async () => {
+  const siteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY as string | undefined;
+  if (!siteKey) return;
+  try {
+    const { initializeAppCheck, ReCaptchaV3Provider } = await import('firebase/app-check');
+    initializeAppCheck(app, {
+      provider: new ReCaptchaV3Provider(siteKey),
+      isTokenAutoRefreshEnabled: true,
+    });
+  } catch (err) {
+    // Que no se pueda cargar App Check no debe dejar la app sin arrancar: sin
+    // "Enforce" todo sigue funcionando, y con "Enforce" el error real lo dará
+    // la primera lectura, que es donde se entiende.
+    console.warn('App Check no se pudo inicializar:', err);
+  }
+})();
 
 // Analytics: hoy no está activado (measurementId vacío en
 // firebase-applet-config.json, Analytics nunca se habilitó para este
@@ -126,19 +138,26 @@ if (RECAPTCHA_SITE_KEY) {
 // measurementId, esto empieza a mandar eventos solo; hasta entonces no hace
 // nada. `isSupported()` evita el intento en entornos sin IndexedDB/cookies
 // (por ejemplo, algunos navegadores en modo incógnito).
+// Igual que App Check: el SDK se carga solo si de verdad se va a usar. Hoy
+// `measurementId` está vacío, así que estos ~23 KB salían en cada arranque
+// para nada. Analytics no es crítico para nada del funcionamiento, así que
+// aquí sí basta con lanzarlo y olvidarse.
+//
+// OJO si algún día se rellena `measurementId`: Analytics escribe
+// identificadores en el dispositivo y esta app tiene usuarios en España, así
+// que activarlo sin pedir consentimiento antes es un problema de RGPD. Existe
+// ya un patrón de consentimiento en la app para la IA
+// (SolicitudConsentimientoIA.tsx) que se puede reutilizar.
 if (firebaseConfig.measurementId) {
-  isAnalyticsSupported().then(supported => { if (supported) getAnalytics(app); }).catch(() => {});
+  import('firebase/analytics')
+    .then(async ({ getAnalytics, isSupported }) => { if (await isSupported()) getAnalytics(app); })
+    .catch(() => {});
 }
 
 export {
   app,
   db,
   auth,
-  storage,
-  storageRef,
-  uploadBytes,
-  getDownloadURL,
-  deleteObject,
   signOut,
   onAuthStateChanged,
   signInWithEmailAndPassword,

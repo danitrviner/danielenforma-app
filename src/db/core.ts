@@ -1,4 +1,4 @@
-import { db, auth, onAuthStateChanged } from '../firebase';
+import { db, auth, onAuthStateChanged, appCheckListo } from '../firebase';
 import { reportarError } from '../monitorizacion';
 
 // Recursively remove keys whose value is undefined before sending to Firestore.
@@ -17,11 +17,20 @@ export function stripUndefined<T>(obj: T): T {
 
 // Resolves once Firebase confirms a signed-in user (skips the null firing).
 // Awaiting this before Firestore calls ensures the auth token has been accepted.
-export const authReady: Promise<void> = new Promise(resolve => {
+//
+// Además espera a `appCheckListo`: el SDK de App Check se carga con `import()`
+// para no pesar en el arranque (ver src/firebase.ts), y si algún día se activa
+// "Enforce" en la consola, una lectura lanzada antes de que ese módulo termine
+// de cargar saldría sin token y la rechazaría el servidor. Hoy esa promesa
+// resuelve al instante porque no hay site key configurada, así que esto no
+// retrasa nada — está aquí para que activar App Check no rompa el arranque.
+const sesionIniciada: Promise<void> = new Promise(resolve => {
   const unsub = onAuthStateChanged(auth, user => {
     if (user) { unsub(); resolve(); }
   });
 });
+
+export const authReady: Promise<void> = Promise.all([sesionIniciada, appCheckListo]).then(() => {});
 
 // Retries fn once with a 400 ms delay when Firestore returns permission-denied
 // while auth.currentUser is already set — handles the lag between onAuthStateChanged

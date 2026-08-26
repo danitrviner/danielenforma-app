@@ -7,6 +7,10 @@ vi.mock('../firebase', () => ({
   db: {},
   auth: { currentUser: null },
   onAuthStateChanged: () => () => {},
+  // App Check se carga con `import()` en la app real y `authReady` espera a
+  // esta promesa (ver core.ts). Aquí resuelve sin más: el test no prueba nada
+  // de App Check, solo necesita que el módulo se pueda importar.
+  appCheckListo: Promise.resolve(),
 }));
 
 const { conTimeout, EscrituraEncolada, escriturasPendientes, suscribirEscriturasPendientes } =

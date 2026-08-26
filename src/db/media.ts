@@ -1,4 +1,5 @@
-import { db, storage, storageRef, uploadBytes, getDownloadURL, deleteObject, collection, doc, setDoc, getDocs, addDoc, updateDoc, deleteDoc, query, where } from '../firebase';
+import { db, collection, doc, setDoc, getDocs, addDoc, updateDoc, deleteDoc, query, where } from '../firebase';
+import { subirArchivo, borrarArchivo } from '../almacenamiento';
 import { ProgressPhoto, PhotoView, PhotoAssignment } from '../types';
 import { forceLocalOnly, setLocalBypassMode, stripUndefined, esFalloDePermisos } from './core';
 import { compressImage } from '../utils/compressImage';
@@ -70,10 +71,7 @@ export async function uploadProgressPhoto(
   file: File
 ): Promise<ProgressPhoto> {
   const path = `progressPhotos/${athleteEmail}/${date}_${view}`;
-  const sRef = storageRef(storage, path);
-  const uploadData = await compressImage(file);
-  await uploadBytes(sRef, uploadData);
-  const url = await getDownloadURL(sRef);
+  const url = await subirArchivo(path, await compressImage(file));
   const photo: ProgressPhoto = {
     id: `${athleteEmail}_${date}_${view}`,
     athleteId: athleteEmail,
@@ -98,7 +96,7 @@ export async function uploadProgressPhoto(
 
 export async function deleteProgressPhoto(photo: ProgressPhoto): Promise<void> {
   const path = `progressPhotos/${photo.athleteId}/${photo.date}_${photo.view}`;
-  await deleteObject(storageRef(storage, path)).catch(() => {});
+  await borrarArchivo(path);
   await deleteDoc(doc(db, 'progressPhotos', photo.id));
   const local = getLocalProgressPhotos(photo.athleteId);
   if (local) saveLocalProgressPhotos(photo.athleteId, local.filter(p => p.id !== photo.id));
@@ -116,9 +114,7 @@ export async function uploadQuestionnaireMedia(
 ): Promise<string> {
   const uploadData = file.type.startsWith('image/') ? await compressImage(file) : file;
   const path = `questionnaireMedia/${athleteEmail}/${Date.now()}_${questionId}`;
-  const sRef = storageRef(storage, path);
-  await uploadBytes(sRef, uploadData);
-  return getDownloadURL(sRef);
+  return subirArchivo(path, uploadData);
 }
 
 // ─── PHOTO CHECK-IN ASSIGNMENTS ───────────────────────────────────────────────

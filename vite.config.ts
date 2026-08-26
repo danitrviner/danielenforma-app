@@ -57,7 +57,7 @@ export default defineConfig(() => {
           // así que el navegador los cachea una vez en vez de re-descargarlos
           // dentro del chunk index en cada deploy.
           manualChunks: {
-            firebase: ['firebase/app', 'firebase/auth', 'firebase/firestore', 'firebase/storage'],
+            firebase: ['firebase/app', 'firebase/auth', 'firebase/firestore'],
             'react-vendor': ['react', 'react-dom', 'react-router-dom'],
           },
         },
