@@ -8,7 +8,7 @@ import {
   doc,
   getDoc,
   setDoc,
-  getDocs,
+  getDocs as _getDocs,
   getDocsFromCache,
   addDoc,
   updateDoc,
@@ -29,6 +29,7 @@ import {
   terminate,
   clearIndexedDbPersistence
 } from 'firebase/firestore';
+import type { Query, QuerySnapshot, DocumentData } from 'firebase/firestore';
 // Un solo camino de acceso: correo y contraseña. Se han retirado
 // GoogleAuthProvider / signInWithPopup / signInWithRedirect / getRedirectResult
 // (B-3 guideline 4.8 y B-4 popup imposible en WKWebView) y el trío del enlace
@@ -154,6 +155,47 @@ if (firebaseConfig.measurementId) {
   import('firebase/analytics')
     .then(async ({ getAnalytics, isSupported }) => { if (await isSupported()) getAnalytics(app); })
     .catch(() => {});
+}
+
+// ── Contador de lecturas (Fase 8, plan de optimización) ────────────────────
+// Sin esto, una regresión de cuota como la del 22-08 (ver
+// db/catalogoVersionado.ts) se descubre otra vez cuando la app ya se ha
+// caído a modo local. App.tsx vuelca `resumenLecturas()` a consola (dev) o
+// como miga de pan de Sentry (prod) en cada cambio de pantalla, y llama a
+// `reiniciarContadorLecturas()` — así el resumen es "lo que ha costado ESTA
+// pantalla", no un total acumulado desde el arranque.
+//
+// Solo cuenta `getDocs` (consulta de colección): es la que paga por
+// documento y la que causó el incidente. `getDoc` (1 documento) y
+// `getDocsFromCache` (0 lecturas) no aportan nada a la alarma de cuota.
+interface ContadorColeccion { coleccion: string; documentos: number; llamadas: number }
+const contadoresLectura = new Map<string, ContadorColeccion>();
+
+function registrarLectura(coleccion: string, documentos: number): void {
+  const actual = contadoresLectura.get(coleccion) ?? { coleccion, documentos: 0, llamadas: 0 };
+  actual.documentos += documentos;
+  actual.llamadas += 1;
+  contadoresLectura.set(coleccion, actual);
+}
+
+export function resumenLecturas(): ContadorColeccion[] {
+  return Array.from(contadoresLectura.values()).sort((a, b) => b.documentos - a.documentos);
+}
+
+export function reiniciarContadorLecturas(): void {
+  contadoresLectura.clear();
+}
+
+// Envuelve `getDocs` para contar sin tocar ninguno de los puntos de llamada
+// de `db/*.ts` — todos lo importan de aquí, no directo de 'firebase/firestore'.
+// El nombre de la colección sale de `snap.docs[0]` (API pública y estable,
+// `DocumentReference.parent.path`); con 0 resultados no hay de dónde sacarlo,
+// así que se cuenta como 'desconocida' — el propio 0 ya dice que esa consulta
+// no ha costado nada de verdad.
+async function getDocs<T = DocumentData>(q: Query<T>): Promise<QuerySnapshot<T>> {
+  const snap = await _getDocs(q);
+  registrarLectura(snap.docs[0]?.ref.parent.path ?? 'desconocida', snap.size);
+  return snap;
 }
 
 export {

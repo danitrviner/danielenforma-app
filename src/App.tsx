@@ -2,8 +2,8 @@ import React, { useState, useEffect, useMemo, Suspense, lazy } from 'react';
 import { Routes, Route, Navigate, useNavigate, useLocation, useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { App as CapacitorApp } from '@capacitor/app';
-import { onAuthStateChanged, auth } from './firebase';
-import { identificarUsuario } from './monitorizacion';
+import { onAuthStateChanged, auth, resumenLecturas, reiniciarContadorLecturas } from './firebase';
+import { identificarUsuario, migaDePan } from './monitorizacion';
 import { UserProfile, WeightCheckIn, NotificationType } from './types';
 import { getOrCreateUserProfile, getCheckIns, getOnboarding, getWorkoutAssignmentsForAthlete, getGimnasio, updateUserProfile } from './dbService';
 import { useGimnasioPendiente } from './features/gimnasio/RecordatorioGimnasioCard';
@@ -248,6 +248,25 @@ function AppContent() {
   const salidaArmada = React.useRef(false);
 
   useEffect(() => { iniciarBotonAtras(); }, []);
+
+  // Contador de lecturas (Fase 8): al ENTRAR a una pantalla se vuelca lo que
+  // costó la anterior y se reinicia — así el resumen es "esto ha costado esta
+  // pantalla", no un total acumulado desde el arranque. Se salta el primer
+  // montaje (nada que reportar todavía).
+  const primeraPantalla = React.useRef(true);
+  useEffect(() => {
+    if (primeraPantalla.current) { primeraPantalla.current = false; return; }
+    const resumen = resumenLecturas();
+    if (resumen.length > 0) {
+      if (import.meta.env.DEV) {
+        console.table(resumen);
+      } else {
+        const total = resumen.reduce((sum, r) => sum + r.documentos, 0);
+        migaDePan('lecturas de Firestore', { total, porColeccion: resumen });
+      }
+    }
+    reiniciarContadorLecturas();
+  }, [location.pathname]);
 
   useEffect(() => {
     fijarManejadorDeRuta(() => {
