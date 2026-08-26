@@ -12,13 +12,11 @@
  *   GOOGLE_APPLICATION_CREDENTIALS=./serviceAccount.json node scripts/limpiarCheckinsDuplicados.mjs
  */
 import { readFileSync } from 'fs';
-import { initializeApp, cert } from 'firebase-admin/app';
-import { getFirestore } from 'firebase-admin/firestore';
+import { abrirDb } from './_lib/firestoreDb.mjs';
 
 const cfg = JSON.parse(readFileSync('./firebase-applet-config.json', 'utf8'));
 const sa = JSON.parse(readFileSync(process.env.GOOGLE_APPLICATION_CREDENTIALS, 'utf8'));
-initializeApp({ credential: cert(sa) });
-const db = getFirestore(cfg.firestoreDatabaseId);
+const db = abrirDb(sa);
 
 async function main() {
   const snap = await db.collection('checkins')

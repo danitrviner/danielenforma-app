@@ -8,6 +8,7 @@ import {
   summarizeSamples, pickActiveZona2Assignment, pickActiveIntervalAssignment,
   weeklyCardioMinutesDone, dailyCardioMinutesForWeek, defaultWeeklyCardioGoal, isoWeekKey,
 } from '../utils/cardioSession';
+import { resolverAsignacionCardio } from '../utils/cardioProgression';
 import { suggestedPerceivedEffort } from '../utils/cardioMetrics';
 import { DateRangeFilter, filterSessions, allTags } from '../utils/cardioHistory';
 import { isCardioSkippedToday, skipCardioToday } from '../utils/cardioSkipToday';
@@ -91,8 +92,14 @@ export default function CardioScreen({ profile }: Props) {
   // tarjeta de hoy sin pisar la elección manual del atleta. Se recalcula
   // aquí porque es puramente de render (props de CardioToday); el motor
   // tiene su propia copia para decidir qué arranca al pulsar Empezar.
-  const zona2Assignment = pickActiveZona2Assignment(assignments);
-  const intervalAssignment = pickActiveIntervalAssignment(assignments);
+  // Programa progresivo (26-08): si la prescripción es un programa, lo que
+  // toca esta semana no está guardado en la asignación — se deriva aquí de las
+  // sesiones ya hechas, igual que la rutina de la semana se deriva del
+  // mesociclo. Se resuelve en el mismo punto en el que se elige el cardio
+  // activo para que la tarjeta de hoy, el reproductor en vivo y el panel del
+  // coach vean exactamente la misma sesión.
+  const zona2Assignment = resolverAsignacionCardio(pickActiveZona2Assignment(assignments, todayIso), sessions, todayIso);
+  const intervalAssignment = resolverAsignacionCardio(pickActiveIntervalAssignment(assignments, todayIso), sessions, todayIso);
 
   const { state, sessionType, setSessionType, bpm, deviceStatus, error, paused,
     displayElapsedSec, displaySamples, displayTimeInZone, displayBelowZoneSec,

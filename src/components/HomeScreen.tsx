@@ -95,8 +95,8 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
   const todayWorkout = todayAssignment ? getWorkout(todayAssignment.workoutId) : undefined;
   const isRestDay = !todayAssignment;
 
-  const zona2Assignment = pickActiveZona2Assignment(cardioAssignments);
-  const intervalAssignment = pickActiveIntervalAssignment(cardioAssignments);
+  const zona2Assignment = pickActiveZona2Assignment(cardioAssignments, TODAY_DATE);
+  const intervalAssignment = pickActiveIntervalAssignment(cardioAssignments, TODAY_DATE);
   const cardioRx = zona2Assignment ?? intervalAssignment;
 
   const todaysDiet = pickTodaysDiet(diets, dietConfig, TODAY_WD);

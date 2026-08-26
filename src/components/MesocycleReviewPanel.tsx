@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Exercise, Mesocycle, WorkoutAssignment, WorkoutLog } from '../types';
 import { buildCierreMesociclo, FilaVolumenGrupo } from '../utils/cierreMesociclo';
-import { ExercisePerf, MuscleGroupPerf } from '../utils/trainingReport';
+import { ExercisePerf } from '../utils/trainingReport';
 import { useToast } from '../hooks/useToast';
 import { Icon, EmptyState, Badge, SegmentedControl } from './ui';
 
@@ -62,7 +62,7 @@ function BarraCumplimiento({ pct }: { pct: number | null }) {
   );
 }
 
-type Vista = 'volumen' | 'fuerza' | 'grupos';
+type Vista = 'volumen' | 'fuerza' | 'grupos' | 'patrones';
 
 export default function MesocycleReviewPanel({
   meso, mesocycles, logs, assignments, exercises, athleteName, cargando = false,
@@ -196,15 +196,17 @@ export default function MesocycleReviewPanel({
             value={vista}
             onChange={v => setVista(v as Vista)}
             options={[
-              { value: 'volumen', label: 'Volumen' },
-              { value: 'fuerza',  label: 'Fuerza' },
-              { value: 'grupos',  label: 'Por grupo' },
+              { value: 'volumen',  label: 'Volumen' },
+              { value: 'fuerza',   label: 'Fuerza' },
+              { value: 'grupos',   label: 'Por grupo' },
+              { value: 'patrones', label: 'Rendimiento' },
             ]}
           />
 
-          {vista === 'volumen' && <TablaVolumen filas={cierre.volumen.filas} comparacion={cierre.comparacion} />}
-          {vista === 'fuerza'  && <TablaFuerza ejercicios={cierre.informe.perExercise} comparacion={cierre.comparacion} />}
-          {vista === 'grupos'  && <TablaGrupos grupos={cierre.informe.muscleGroups} comparacion={cierre.comparacion} />}
+          {vista === 'volumen'  && <TablaVolumen filas={cierre.volumen.filas} comparacion={cierre.comparacion} />}
+          {vista === 'fuerza'   && <TablaFuerza ejercicios={cierre.informe.perExercise} comparacion={cierre.comparacion} />}
+          {vista === 'grupos'   && <TablaGrupos grupos={cierre.informe.muscleGroups} comparacion={cierre.comparacion} />}
+          {vista === 'patrones' && <TablaGrupos grupos={cierre.patrones} comparacion={cierre.comparacion} />}
 
           {/* Borrador para el cliente */}
           <div className="bg-surface border border-hairline rounded-surface p-4 space-y-2">
@@ -315,7 +317,19 @@ function TablaFuerza({ ejercicios, comparacion }: { ejercicios: ExercisePerf[]; 
   );
 }
 
-function TablaGrupos({ grupos, comparacion }: { grupos: MuscleGroupPerf[]; comparacion: string }) {
+// Forma común a MuscleGroupPerf y PatternPerf (movementPatterns.ts) — la tabla
+// no necesita saber si `group` es un grupo muscular o un patrón de movimiento.
+interface GroupPerfLike {
+  group: string;
+  label: string;
+  tonnage: number;
+  tonnageDeltaPct: number | null;
+  sets: number;
+  meanOrm: number | null;
+  ormDeltaPct: number | null;
+}
+
+function TablaGrupos({ grupos, comparacion }: { grupos: GroupPerfLike[]; comparacion: string }) {
   if (grupos.length === 0) {
     return <p className="font-sans text-caption text-ink-3">Sin series registradas por grupo muscular.</p>;
   }

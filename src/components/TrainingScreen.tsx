@@ -20,7 +20,7 @@ import { Skeleton } from './ui';
 import { useBotonAtras } from '../services/botonAtras';
 import {
   guardarSesion, cargarSesion, borrarSesion, formaDeSesion, tieneSeriesHechas,
-  limpiarSesionesCaducadas,
+  limpiarSesionesCaducadas, seriesHechasEnBorrador,
 } from '../utils/sesionEnCurso';
 import { haptics } from '../services/haptics';
 import { Badge, BadgeTone, Button, Icon, SegmentedControl, Chip, EmptyState } from './ui';
@@ -165,6 +165,23 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
   // 05-5. Barrido de borradores de sesión caducados: una sesión que se abre y
   // nunca se termina deja su clave, y sin esto se acumularían una por semana.
   useEffect(() => { limpiarSesionesCaducadas(profile.email); }, [profile.email]);
+
+  // Sesiones a medias, por assignmentId → nº de series ya marcadas (Dani,
+  // 26-08). El borrador se guardaba desde 05-5 y se restauraba al reabrir la
+  // sesión, pero era invisible desde fuera: la tarjeta seguía diciendo
+  // «Empezar», así que nada te contaba que tenías medio entreno guardado
+  // esperando. Se recalcula también al cerrar el player (`activeAssignment`
+  // en las dependencias) para que al volver a la lista el contador esté al
+  // día sin recargar la pantalla.
+  const [borradores, setBorradores] = useState<Record<string, number>>({});
+  useEffect(() => {
+    const mapa: Record<string, number> = {};
+    for (const a of assignments) {
+      const hechas = seriesHechasEnBorrador(profile.email, a.id);
+      if (hechas > 0) mapa[a.id] = hechas;
+    }
+    setBorradores(mapa);
+  }, [assignments, profile.email, activeAssignment]);
 
   // "Tu mejor serie" de la ficha de ejercicio (F3.13, Biblioteca panel 02) —
   // useMemo a nivel de componente, no dentro del .map() de tarjetas de
@@ -482,6 +499,10 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
     const isPast = a.date < today;
     const isNext = opts?.isNext ?? false;
     const canAct = a.status === 'pending' || a.status === 'perdido';
+    // Series ya marcadas en el borrador local de esta sesión (0 = no hay nada
+    // a medias). Solo se muestra en las sesiones que todavía se pueden hacer:
+    // en una completada el dato ya está en Firestore y el borrador sobra.
+    const seriesAMedias = canAct ? (borradores[a.id] ?? 0) : 0;
     return (
       <div
         key={a.id}
@@ -513,6 +534,11 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
               <p className="font-sans font-bold text-ink text-title-s">{wo?.name || 'Rutina'}</p>
               {isNext && a.status === 'pending' && <Badge tone="accent">Siguiente</Badge>}
               {!isNext && isPast && a.status === 'pending' && <Badge tone="danger">Atrasado</Badge>}
+              {seriesAMedias > 0 && (
+                <Badge tone="warning" icon="pause_circle">
+                  Sin terminar · {seriesAMedias} serie{seriesAMedias !== 1 ? 's' : ''}
+                </Badge>
+              )}
             </div>
             <p className="font-mono text-label text-ink-2 ">
               {formatDate(a.date)} · {wo ? `${wo.exercises.length} ejercicio${wo.exercises.length !== 1 ? 's' : ''}` : '—'}
@@ -525,8 +551,12 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
             <>
               <Button variant="secondary" size="s" icon="skip_next" onClick={() => handleSkip(a)}>Saltar</Button>
               {wo && (
-                <Button variant="primary" size="s" icon="play_circle" onClick={() => openPlayer(a)}>
-                  {a.status === 'perdido' ? 'Recuperar' : 'Empezar'}
+                <Button
+                  variant="primary" size="s"
+                  icon={seriesAMedias > 0 ? 'play_arrow' : 'play_circle'}
+                  onClick={() => openPlayer(a)}
+                >
+                  {seriesAMedias > 0 ? 'Continuar' : a.status === 'perdido' ? 'Recuperar' : 'Empezar'}
                 </Button>
               )}
             </>

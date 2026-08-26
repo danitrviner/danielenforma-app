@@ -37,6 +37,7 @@ import { VOLUME_LANDMARKS_DEFAULT, type VolumeLandmark } from '../data/volumeLan
 import { getVolumeLandmarks } from '../dbService';
 import VolumeSuggestionSheet from './VolumeSuggestionSheet';
 import { useToast } from '../hooks/useToast';
+import { useConfirm } from '../hooks/useConfirm';
 import { Skeleton } from './ui';
 import { EmptyState, Dialog, Input, Icon, Tabs, TabItem, Sheet, Pager } from './ui';
 
@@ -360,6 +361,7 @@ function Delta({ delta, showEqual = false }: { delta: number | null; showEqual?:
 function MesoExercisesView({
   groups, loading, weeks, allExercises, onUpdateExercise, onReplaceExercise, onAddExercise, onRemoveExercise,
   onMoveExercise, onGoToDistribution, libraryWorkouts, onUseLibraryWorkout, distribution, mesoGroups, semanasDelCiclo,
+  onRenameDay,
 }: {
   groups: MesoWorkoutGroup[];
   loading: boolean;
@@ -376,6 +378,7 @@ function MesoExercisesView({
   distribution?: WeekDistribution;
   mesoGroups: Record<MuscleGroup, MuscleGroupConfig>;
   semanasDelCiclo: number;
+  onRenameDay: (group: MesoWorkoutGroup, nuevoNombre: string) => void;
 }) {
   if (loading) {
     return (
@@ -400,7 +403,59 @@ function MesoExercisesView({
     );
   }
 
-  return <MesoExercisesTabs {...{ groups, weeks, allExercises, onUpdateExercise, onReplaceExercise, onAddExercise, onRemoveExercise, onMoveExercise, libraryWorkouts, onUseLibraryWorkout, distribution, mesoGroups, semanasDelCiclo }} />;
+  return <MesoExercisesTabs {...{ groups, weeks, allExercises, onUpdateExercise, onReplaceExercise, onAddExercise, onRemoveExercise, onMoveExercise, libraryWorkouts, onUseLibraryWorkout, distribution, mesoGroups, semanasDelCiclo, onRenameDay }} />;
+}
+
+const PREFIJO_DIA = /^(Día\s*\d+\s*–\s*)(.*)$/i;
+
+// Título del día, editable. Solo se toca lo que va después de «Día N – »
+// (ver comentario junto a `handleRenameDay`): ese prefijo es lo que mantiene
+// el orden de los días y la comparación contra la distribución semanal.
+function DayTitle({ name, editing, value, onStartEdit, onChangeValue, onCommit, onCancel }: {
+  name: string;
+  editing: boolean;
+  value: string;
+  onStartEdit: (prefijo: string, sufijoActual: string) => void;
+  onChangeValue: (v: string) => void;
+  onCommit: (prefijo: string) => void;
+  onCancel: () => void;
+}) {
+  const m = PREFIJO_DIA.exec(name);
+  const prefijo = m ? m[1] : '';
+  const sufijo = m ? m[2] : name;
+
+  if (editing) {
+    return (
+      <div className="flex items-center gap-1 flex-1 min-w-0">
+        {prefijo && <span className="font-sans text-body-s text-ink-3 flex-shrink-0">{prefijo}</span>}
+        <input
+          autoFocus
+          type="text"
+          value={value}
+          onChange={e => onChangeValue(e.target.value)}
+          onFocus={e => e.target.select()}
+          onKeyDown={e => {
+            if (e.key === 'Enter') onCommit(prefijo);
+            if (e.key === 'Escape') onCancel();
+          }}
+          onBlur={() => onCommit(prefijo)}
+          className="min-w-0 flex-1 bg-inset border border-accent/40 rounded-control px-2 py-1 font-sans font-bold text-body-s text-white focus:outline-none"
+        />
+      </div>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={() => onStartEdit(prefijo, sufijo)}
+      title="Renombrar día"
+      className="flex items-center gap-1.5 min-w-0 group text-left"
+    >
+      <p className="font-sans font-bold text-body-s text-white truncate">{name}</p>
+      <Icon name="edit" size="s" className="text-ink-3 opacity-0 group-hover:opacity-100 flex-shrink-0 transition-opacity" />
+    </button>
+  );
 }
 
 // Un día por pestaña en vez de todos los días apilados en la misma pantalla —
@@ -409,6 +464,7 @@ function MesoExercisesView({
 function MesoExercisesTabs({
   groups, weeks, allExercises, onUpdateExercise, onReplaceExercise, onAddExercise, onRemoveExercise,
   onMoveExercise, libraryWorkouts, onUseLibraryWorkout, distribution, mesoGroups, semanasDelCiclo,
+  onRenameDay,
 }: {
   groups: MesoWorkoutGroup[];
   weeks: number;
@@ -420,6 +476,7 @@ function MesoExercisesTabs({
   onMoveExercise: (group: MesoWorkoutGroup, exIdx: number, delta: -1 | 1) => void;
   libraryWorkouts: Workout[];
   onUseLibraryWorkout: (group: MesoWorkoutGroup, workout: Workout) => void;
+  onRenameDay: (group: MesoWorkoutGroup, nuevoNombre: string) => void;
   distribution?: WeekDistribution;
   mesoGroups: Record<MuscleGroup, MuscleGroupConfig>;
   semanasDelCiclo: number;
@@ -429,6 +486,58 @@ function MesoExercisesTabs({
   const [libraryPickerFor, setLibraryPickerFor] = useState<MesoWorkoutGroup | null>(null);
   const longPressTimer = useRef<number | null>(null);
   const group = groups[Math.min(activeIdx, groups.length - 1)];
+
+  // Saltar al ejercicio que está descuadrando un grupo muscular — click en un
+  // chip de `SeriesBalance`. Si el grupo aparece en varios días, empieza a
+  // buscar por `preferredDayIdx` (el día que ya se está viendo) y si no está
+  // ahí, coge el primer día donde aparezca.
+  const exerciseRefs = useRef(new Map<string, HTMLDivElement>());
+  const [highlightedKey, setHighlightedKey] = useState<string | null>(null);
+  const jumpToGroup = useCallback((targetGroup: MuscleGroup, preferredDayIdx?: number) => {
+    const orden = preferredDayIdx !== undefined
+      ? [preferredDayIdx, ...groups.map((_, i) => i).filter(i => i !== preferredDayIdx)]
+      : groups.map((_, i) => i);
+    for (const dayIdx of orden) {
+      const exIdx = groups[dayIdx].exercises.findIndex(we =>
+        (we.muscleGroup ?? allExercises.find(e => e.id === we.exerciseId)?.muscleGroup) === targetGroup);
+      if (exIdx === -1) continue;
+      const key = `${groups[dayIdx].name}-${exIdx}`;
+      const irYResaltar = () => {
+        exerciseRefs.current.get(key)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setHighlightedKey(key);
+        window.setTimeout(() => setHighlightedKey(k => k === key ? null : k), 1600);
+      };
+      if (dayIdx !== activeIdx) {
+        setActiveIdx(dayIdx);
+        window.setTimeout(irYResaltar, 420); // espera al scroll horizontal del Pager entre días
+      } else {
+        irYResaltar();
+      }
+      return;
+    }
+  }, [groups, allExercises, activeIdx]);
+
+  // Renombrar un día. El generador nombra cada tarjeta «Día N – Meso #X»
+  // (línea ~1420) y `groupMesoWorkouts` ordena los días por ese nombre
+  // (numeric-aware) — tocar el «Día N –» rompería el orden Y el `dayIndexOf`
+  // de más abajo, que lo vuelve a parsear para saber contra qué día de la
+  // distribución comparar el balance. Por eso solo se edita lo que va
+  // después: el coach puede poner «Empuje», «Pierna dominante rodilla»… sin
+  // arriesgarse a desordenar el mesociclo sin querer.
+  const [renamingDay, setRenamingDay] = useState<{ name: string; value: string } | null>(null);
+  const { showToast: showRenameToast } = useToast();
+
+  function handleRenameDay(group: MesoWorkoutGroup, prefijo: string, sufijoNuevo: string) {
+    const sufijo = sufijoNuevo.trim();
+    if (!sufijo) return;
+    const nuevoNombre = `${prefijo}${sufijo}`;
+    if (nuevoNombre === group.name) return;
+    if (groups.some(g => g !== group && g.name === nuevoNombre)) {
+      showRenameToast('Ya hay un día con ese nombre', 'error');
+      return;
+    }
+    onRenameDay(group, nuevoNombre);
+  }
 
   // Un exerciseId repetido en más de un día puede ser intencional (p. ej. un
   // básico que se entrena dos veces por semana), pero el coach quiere verlo
@@ -483,7 +592,7 @@ function MesoExercisesTabs({
       </p>
 
       <div className="bg-surface border border-hairline rounded-surface px-4 py-3">
-        <SeriesBalance balance={balanceSemana} referencia={referenciaCiclo} ocultarSiVacio={false} />
+        <SeriesBalance balance={balanceSemana} referencia={referenciaCiclo} ocultarSiVacio={false} onGroupClick={jumpToGroup} />
       </div>
 
       {/* Carrusel de días — solo el día activo muestra su contenido debajo */}
@@ -506,7 +615,15 @@ function MesoExercisesTabs({
             <div key={g.name} className="bg-surface border border-hairline rounded-surface overflow-hidden">
               <div className="px-4 py-3 bg-bg border-b border-hairline space-y-2">
                 <div className="flex items-center justify-between gap-2 flex-wrap">
-                  <p className="font-sans font-bold text-body-s text-white">{g.name}</p>
+                  <DayTitle
+                    name={g.name}
+                    editing={renamingDay?.name === g.name}
+                    value={renamingDay?.name === g.name ? renamingDay.value : ''}
+                    onStartEdit={(_, sufijoActual) => setRenamingDay({ name: g.name, value: sufijoActual })}
+                    onChangeValue={v => setRenamingDay({ name: g.name, value: v })}
+                    onCommit={prefijo => { void handleRenameDay(g, prefijo, renamingDay?.value ?? ''); setRenamingDay(null); }}
+                    onCancel={() => setRenamingDay(null)}
+                  />
                   <span className="font-mono text-caption text-ink-2 tabular-nums">
                     {g.exercises.reduce((s, e) => s + e.sets, 0)} series · {g.exercises.length} ejercicios
                     {duracionEstimadaMin(g.exercises) > 0 && (
@@ -522,6 +639,7 @@ function MesoExercisesTabs({
                     seriesPlanificadasDelDia(distribution?.days[dayIndexOf(g.name, gIdx)]),
                   )}
                   referencia="la distribución del día"
+                  onGroupClick={g => jumpToGroup(g, gIdx)}
                 />
               </div>
               <div className="p-3 space-y-2">
@@ -532,10 +650,12 @@ function MesoExercisesTabs({
                     const ex = allExercises.find(e => e.id === we.exerciseId);
                     const videoKey = `${g.name}-${exIdx}`;
                     const isDuplicate = duplicateExerciseIds.has(we.exerciseId);
+                    const jumpKey = `${g.name}-${exIdx}`;
                     return (
                       <div
                         key={`${we.exerciseId}-${exIdx}`}
-                        className={`bg-raised rounded-surface overflow-hidden ${isDuplicate ? 'border border-red-500/50' : ''}`}
+                        ref={el => { if (el) exerciseRefs.current.set(jumpKey, el); else exerciseRefs.current.delete(jumpKey); }}
+                        className={`bg-raised rounded-surface overflow-hidden transition-shadow ${isDuplicate ? 'border border-red-500/50' : ''} ${highlightedKey === jumpKey ? 'ring-2 ring-accent' : ''}`}
                       >
                         <div className="p-3 space-y-2">
                           <div className="flex items-start gap-2">
@@ -993,6 +1113,7 @@ export default function MesocycleManager({
   athleteLogs, athleteAssignments,
 }: MesocycleManagerProps) {
   const { showToast } = useToast();
+  const { confirm, ConfirmDialog } = useConfirm();
   const queryClient = useQueryClient();
   const [selectedEmail, setSelectedEmail] = useState(athleteEmail ?? '');
   const [creating, setCreating]           = useState(false);
@@ -1532,6 +1653,16 @@ export default function MesocycleManager({
     await Promise.all(group.workoutIds.map(id => updateWorkout(id, { exercises: updatedExercises })));
   }
 
+  // La validación (nombre vacío, duplicado con otro día) vive en `MesoExercisesTabs`
+  // —es la única que tiene la lista de `groups` hermanos a mano—; aquí solo se
+  // escribe, igual que `writeMesoWorkoutExercises`.
+  async function handleRenameDay(group: MesoWorkoutGroup, nuevoNombre: string) {
+    queryClient.setQueryData<Workout[]>(['workouts'], prev => prev?.map(w =>
+      group.workoutIds.includes(w.id) ? { ...w, name: nuevoNombre } : w
+    ));
+    await Promise.all(group.workoutIds.map(id => updateWorkout(id, { name: nuevoNombre })));
+  }
+
   function handleReplaceMesoExercise(group: MesoWorkoutGroup, exIdx: number) {
     setExercisePicker({ context: 'programado', group, exIdx, muscleGroup: group.exercises[exIdx]?.muscleGroup });
   }
@@ -1546,8 +1677,8 @@ export default function MesocycleManager({
   // referencia — para no acoplar el día del atleta a que alguien no edite la
   // plantilla de biblioteca por error; mismo criterio que aplicar una
   // plantilla de mesociclo (handleApplyTemplate) o un ejercicio nuevo.
-  function handleUseLibraryWorkout(group: MesoWorkoutGroup, libraryWorkout: Workout) {
-    if (!window.confirm(`¿Copiar los ${libraryWorkout.exercises.length} ejercicios de "${libraryWorkout.name}" a este día? Se añaden a los que ya tenga.`)) return;
+  async function handleUseLibraryWorkout(group: MesoWorkoutGroup, libraryWorkout: Workout) {
+    if (!await confirm(`¿Copiar los ${libraryWorkout.exercises.length} ejercicios de "${libraryWorkout.name}" a este día? Se añaden a los que ya tenga.`)) return;
     const copied = libraryWorkout.exercises.map((e, i) => ({ ...e, order: group.exercises.length + i }));
     void writeMesoWorkoutExercises(group, [...group.exercises, ...copied]);
   }
@@ -1562,14 +1693,14 @@ export default function MesocycleManager({
     void writeMesoWorkoutExercises(group, exercises.map((e, i) => ({ ...e, order: i })));
   }
 
-  function handleRemoveMesoExercise(group: MesoWorkoutGroup, exIdx: number) {
-    if (!window.confirm('¿Quitar este ejercicio? Se aplica a todas las semanas de este mesociclo — las sesiones ya completadas no se tocan.')) return;
+  async function handleRemoveMesoExercise(group: MesoWorkoutGroup, exIdx: number) {
+    if (!await confirm('¿Quitar este ejercicio? Se aplica a todas las semanas de este mesociclo — las sesiones ya completadas no se tocan.')) return;
     void writeMesoWorkoutExercises(group, group.exercises.filter((_, i) => i !== exIdx));
   }
 
   // Selección final del picker, compartida por los dos contextos (vista
   // previa del generador y "Ejercicios programados").
-  function handlePickExercise(ex: Exercise) {
+  async function handlePickExercise(ex: Exercise) {
     if (!exercisePicker) return;
     if (exercisePicker.context === 'preview') {
       const { dayIdx, exIdx } = exercisePicker;
@@ -1591,7 +1722,7 @@ export default function MesocycleManager({
       // con el ejercicio anterior necesitaría leer WorkoutLog, que esta
       // pantalla no carga hoy; mejor decir la verdad general que inventar
       // una cifra.
-      if (!window.confirm('Este cambio se aplica a TODAS las semanas de este mesociclo. Las sesiones ya completadas no se tocan (guardan su propia copia). ¿Continuar?')) {
+      if (!await confirm('Este cambio se aplica a TODAS las semanas de este mesociclo. Las sesiones ya completadas no se tocan (guardan su propia copia). ¿Continuar?')) {
         setExercisePicker(null);
         return;
       }
@@ -1794,6 +1925,7 @@ export default function MesocycleManager({
   // ─────────────────────────────────────────────────────────────────────────────
   return (
     <div className="space-y-6">
+      <ConfirmDialog />
       {/* Title + selector only in standalone mode */}
       {!athleteEmail && (
         <>
@@ -2430,6 +2562,7 @@ export default function MesocycleManager({
                   onGoToDistribution={() => setEditorTab('distribution')}
                   libraryWorkouts={allWorkouts.filter(w => !w.mesocycleId)}
                   onUseLibraryWorkout={handleUseLibraryWorkout}
+                  onRenameDay={handleRenameDay}
                 />
               )}
 

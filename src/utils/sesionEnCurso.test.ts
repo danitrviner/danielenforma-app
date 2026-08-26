@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
   guardarSesion, cargarSesion, borrarSesion, formaDeSesion, tieneSeriesHechas,
-  limpiarSesionesCaducadas, SerieBorrador, SesionEnCurso,
+  limpiarSesionesCaducadas, seriesHechasEnBorrador, SerieBorrador, SesionEnCurso,
 } from './sesionEnCurso';
 
 /* Las pruebas corren en Node, sin DOM, así que localStorage no existe: se
@@ -109,9 +109,15 @@ describe('sesionEnCurso — lo que NO debe restaurar', () => {
   });
 
   it('descarta el borrador de anteayer', () => {
+    const hace40h = new Date(Date.now() - 40 * 60 * 60 * 1000).toISOString();
+    guardarSesion(ATLETA, sesion({ guardadoEn: hace40h }));
+    expect(cargarSesion(ATLETA, 'a1', 'w1', [2, 1])).toBeNull();
+  });
+
+  it('conserva el borrador de ayer por la tarde (se termina de apuntar hoy)', () => {
     const hace30h = new Date(Date.now() - 30 * 60 * 60 * 1000).toISOString();
     guardarSesion(ATLETA, sesion({ guardadoEn: hace30h }));
-    expect(cargarSesion(ATLETA, 'a1', 'w1', [2, 1])).toBeNull();
+    expect(cargarSesion(ATLETA, 'a1', 'w1', [2, 1])).not.toBeNull();
   });
 
   it('conserva el borrador de hace 6 horas (sesión de noche terminada por la mañana)', () => {
@@ -153,5 +159,37 @@ describe('sesionEnCurso — utilidades', () => {
     expect(cargarSesion(ATLETA, 'hoy', 'w1', [2, 1])).not.toBeNull();
     // El barrido es por atleta: no toca lo de nadie más, ni siquiera caducado.
     expect(datos.has(`enforma_sesion_en_curso_v1_luis@ejemplo.com_vieja-de-luis`)).toBe(true);
+  });
+});
+
+describe('seriesHechasEnBorrador — el aviso «Sin terminar» de la lista', () => {
+  beforeEach(() => { datos = montarLocalStorage(); });
+  afterEach(() => { vi.unstubAllGlobals(); });
+
+  it('cuenta solo las series marcadas', () => {
+    guardarSesion(ATLETA, sesion());
+    expect(seriesHechasEnBorrador(ATLETA, 'a1')).toBe(1);
+  });
+
+  it('devuelve 0 sin borrador, con borrador caducado o con nada hecho', () => {
+    expect(seriesHechasEnBorrador(ATLETA, 'a1')).toBe(0);
+
+    const hace40h = new Date(Date.now() - 40 * 60 * 60 * 1000).toISOString();
+    guardarSesion(ATLETA, sesion({ assignmentId: 'vieja', guardadoEn: hace40h }));
+    expect(seriesHechasEnBorrador(ATLETA, 'vieja')).toBe(0);
+
+    guardarSesion(ATLETA, sesion({ assignmentId: 'vacia', playerSets: [[serie(), serie()]] }));
+    expect(seriesHechasEnBorrador(ATLETA, 'vacia')).toBe(0);
+  });
+
+  it('mirar la lista NO borra el borrador aunque la rutina haya cambiado de forma', () => {
+    guardarSesion(ATLETA, sesion());
+    seriesHechasEnBorrador(ATLETA, 'a1');
+    expect(datos.has(`enforma_sesion_en_curso_v1_${ATLETA}_a1`)).toBe(true);
+  });
+
+  it('no mezcla atletas en un móvil compartido', () => {
+    guardarSesion(ATLETA, sesion());
+    expect(seriesHechasEnBorrador('luis@ejemplo.com', 'a1')).toBe(0);
   });
 });

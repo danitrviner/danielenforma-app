@@ -3,7 +3,7 @@ import { Recipe, Diet, MenuDay, BudgetVec, WeeklyMenu } from '../types';
 import {
   bestScaleFit, rankCandidates, generateDay, generateWeek,
   isDayWithinTolerance, findSwapAlternatives, GeneratorPrefs,
-  buildBatchPlan, isMenuStale,
+  buildBatchPlan, isMenuStale, fillComplements,
 } from './menuEngine';
 import { buildShoppingList } from './menuShoppingList';
 import { computeMenuAdherenceRate } from './nutritionAnalysis';
@@ -317,6 +317,93 @@ describe('recipe favorites / dislikes / dish-type prefs', () => {
     const usedDishTypes = new Map([['batido' as const, 1]]);
     const ranked = rankCandidates([batido, tostada], target, basePrefs, new Set(), { usedDishTypes });
     expect(ranked[0].recipe.id).toBe('tostada'); // batido penalized for repetition
+  });
+
+  // 24-08. Un alimento marcado "no me gusta" en Preferencias alimentarias
+  // llegaba igualmente a la dieta: era solo +2 al score, la misma escala que la
+  // distancia en intercambios, así que ganaba en cuanto encajase algo mejor.
+  it('excluye una receta con un alimento marcado «no me gusta»', () => {
+    const conEspinacas = recipe({
+      id: 'espinacas', name: 'Salteado de espinacas', exchanges: { HC: 2, PROT: 2, GRASA: 1 },
+      ingredientsText: [{ name: 'Espinaca', quantity: 100 }, { name: 'Aceite de oliva', quantity: 10 }],
+    });
+    const otras = [
+      ...Array.from({ length: 5 }, (_, i) => recipe({
+        id: `ok${i}`, name: `Plato ${i}`, exchanges: { HC: 2, PROT: 2, GRASA: 1 },
+        ingredientsText: [{ name: 'Arroz', quantity: 80 }],
+      })),
+    ];
+    const ranked = rankCandidates([conEspinacas, ...otras], target, { ...basePrefs, disliked: ['Espinaca'] }, new Set());
+    expect(ranked.map(c => c.recipe.id)).not.toContain('espinacas');
+  });
+
+  it('vuelve a admitir lo no deseado si excluirlo dejaría la franja sin recetas', () => {
+    const conEspinacas = recipe({
+      id: 'espinacas', name: 'Salteado de espinacas', exchanges: { HC: 2, PROT: 2, GRASA: 1 },
+      ingredientsText: [{ name: 'Espinaca', quantity: 100 }],
+    });
+    const ranked = rankCandidates([conEspinacas], target, { ...basePrefs, disliked: ['Espinaca'] }, new Set());
+    expect(ranked.map(c => c.recipe.id)).toEqual(['espinacas']);
+  });
+
+  // 24-08. Las señales blandas se sumaban al `fitScore` sin techo, así que un
+  // favorito que se pasaba 3 intercambios (−3) empataba con uno que clavaba.
+  it('un favorito NO adelanta a una receta que encaja mucho mejor', () => {
+    const clava = recipe({ id: 'clava', name: 'Encaja', exchanges: { HC: 2, PROT: 2, GRASA: 1 } });
+    const favoritoMalo = recipe({ id: 'malo', name: 'Favorito grande', exchanges: { HC: 5, PROT: 4, GRASA: 3 } });
+    const ranked = rankCandidates([favoritoMalo, clava], target, { ...basePrefs, favoriteRecipeIds: ['malo'] }, new Set());
+    expect(ranked[0].recipe.id).toBe('clava');
+  });
+});
+
+// 24-08. El día llegaba a Dani con −3 / −4 intercambios acumulados. Tres causas,
+// una prueba cada una.
+describe('precisión del día generado', () => {
+  const slots = [
+    { slot: 1, name: 'Desayuno', pct: 20 },
+    { slot: 2, name: 'Media mañana', pct: 10 },
+    { slot: 3, name: 'Comida', pct: 40 },
+    { slot: 5, name: 'Cena', pct: 30 },
+  ];
+
+  function poolDe(n: number, exch: BudgetVec): Recipe[] {
+    return Array.from({ length: n }, (_, i) => recipe({
+      id: `p${i}`, name: `Plato ${i}`, exchanges: { ...exch }, ingredientsText: [{ name: 'Arroz', quantity: 80 }],
+    }));
+  }
+
+  it('no deja una comida vacía cuando ninguna receta llega al objetivo de la franja', () => {
+    // Comida = 40 % de 58 int ≈ 23; el recetario solo tiene platos de 5.
+    const pequenas = poolDe(20, { HC: 2, PROT: 2, GRASA: 1 });
+    const pools = { 1: pequenas, 2: pequenas, 3: pequenas, 5: pequenas };
+    const day = generateDay({
+      day: 'mon',
+      diet: diet({ budget: { HC: 28, PROT: 18, GRASA: 12, MIX_HC: 0, MIX_GRASA: 0 } }),
+      slots, pools, foods: [], prefs: basePrefs, usedIds: new Set(),
+    });
+    expect(day.meals.every(m => m.recipeId !== '')).toBe(true);
+  });
+
+  it('cuida la categoría con menos presupuesto en vez de tratar los tres macros igual', () => {
+    // Dieta de definición: la grasa es el presupuesto pequeño. Entre un plato que
+    // clava HC/PROT pasándose de grasa y otro algo peor en HC pero correcto de
+    // grasa, tiene que ganar el segundo.
+    const target: BudgetVec = { HC: 8, PROT: 5, GRASA: 2 };
+    const grasiento = recipe({ id: 'grasiento', exchanges: { HC: 8, PROT: 5, GRASA: 5 } });
+    const ajustado  = recipe({ id: 'ajustado',  exchanges: { HC: 7, PROT: 5, GRASA: 2 } });
+    const ranked = rankCandidates([grasiento, ajustado], target, basePrefs, new Set());
+    expect(ranked[0].recipe.id).toBe('ajustado');
+  });
+
+  it('los complementos encadenan hasta cerrar un hueco mayor de 2 intercambios', () => {
+    const gap: BudgetVec = { HC: 5, PROT: 0, GRASA: 0 };
+    const frutas = [
+      { id: 'f1', mode: 'OMNIVORO' as const, category: 'HC' as const, label: '1 intercambio = 1 manzana' },
+      { id: 'f2', mode: 'OMNIVORO' as const, category: 'HC' as const, label: '1 intercambio = 1 plátano' },
+    ];
+    const comps = fillComplements(gap, frutas, 'OMNIVORO');
+    const total = comps.reduce((s, c) => s + c.quantity, 0);
+    expect(total).toBeGreaterThanOrEqual(4.5); // antes se quedaba en 2
   });
 });
 

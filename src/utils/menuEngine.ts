@@ -18,6 +18,21 @@ import { dishType, DishType } from './dishTypes';
 export const MENU_SCALES = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2] as const;
 const WEEK_DAYS: WeekDay[] = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 
+// Cuánto peor que el mejor encaje puede ser una receta y seguir compitiendo por
+// preferencias (favoritos, variedad, tipo de plato). Ver `rankCandidates`.
+const BANDA_MINIMA = 0.5;   // intercambios
+const BANDA_PCT    = 0.15;  // …o el 15 % del objetivo de la franja, lo que sea mayor
+const FUERA_DE_BANDA = 100; // constante para que lo que no encaja quede siempre al final
+/** Tope de complementos encadenados por categoría (ver `fillComplements`). */
+const MAX_COMPLEMENTOS_POR_CATEGORIA = 3;
+/** Tope de raciones de UN mismo complemento — más que esto deja de ser realista. */
+const MAX_RACIONES_POR_COMPLEMENTO = 4;
+/** Suelo y techo del peso por macro (ver `pesosPorCategoria`). */
+const PRESUPUESTO_MINIMO = 0.5;
+const PESO_MAXIMO = 4;
+/** Por debajo de esto, excluir los "no me gusta" dejaría la franja sin recetas. */
+const MIN_RECETAS_PARA_EXCLUIR = 5;
+
 export interface MealSlotSpec {
   slot: number;   // intakeType 1-5
   name: string;
@@ -152,6 +167,7 @@ function mealTotalExch(meal: MenuMeal): BudgetVec {
 // discarded from candidacy entirely rather than served as a bad match.
 export function bestScaleFit(
   recipe: Recipe, target: BudgetVec, mode: DietMode = 'OMNIVORO',
+  opts: { permitirFueraDeRango?: boolean } = {},
 ): { scale: number; exch: BudgetVec; score: number } | null {
   const base = recipeExchanges(recipe, mode);
   if (!base) return null;
@@ -160,15 +176,49 @@ export function bestScaleFit(
   if (baseTotal <= 0 || targetTotal <= 0) return null;
 
   const idealScale = targetTotal / baseTotal;
-  if (idealScale < MENU_SCALES[0] || idealScale > MENU_SCALES[MENU_SCALES.length - 1]) return null;
+  // `permitirFueraDeRango` es el último recurso de `rankCandidates`: cuando
+  // NINGUNA receta de la franja llega al objetivo (una comida de 20
+  // intercambios y un recetario de platos de 5), rechazarlas todas dejaba la
+  // comida literalmente vacía y el día entero descuadrado en silencio. Servir
+  // el plato a su escala máxima y cerrar el resto con complementos es lo que
+  // haría el coach a mano.
+  if (!opts.permitirFueraDeRango
+    && (idealScale < MENU_SCALES[0] || idealScale > MENU_SCALES[MENU_SCALES.length - 1])) return null;
+  // Un plato que ya es demasiado grande a media ración no se puede recortar más:
+  // ese sí se descarta siempre, aunque no haya alternativa.
+  if (idealScale < MENU_SCALES[0]) return null;
 
+  // Distancia L1 PONDERADA por categoría. `fitScore` mide en intercambios
+  // absolutos y trata igual los tres macros; con una dieta de definición
+  // (20 HC / 14 PROT / 9 GRASA) eso significa que pasarse 4 de grasa —casi la
+  // mitad del presupuesto del día— puntúa igual que pasarse 4 de HC, que es un
+  // 20 %. El resultado era días que clavaban HC y proteína y se iban a 13/9 de
+  // grasa (Dani, 24-08). El peso sube en la categoría con menos presupuesto,
+  // que es justo la que hay que cuidar.
+  const pesos = pesosPorCategoria(target);
   let best: { scale: number; exch: BudgetVec; score: number } | null = null;
   for (const scale of MENU_SCALES) {
     const exch: BudgetVec = { HC: round2(base.HC * scale), PROT: round2(base.PROT * scale), GRASA: round2(base.GRASA * scale) };
-    const score = fitScore(target, exch);
+    const score = round2(
+      pesos.HC * Math.abs(target.HC - exch.HC)
+      + pesos.PROT * Math.abs(target.PROT - exch.PROT)
+      + pesos.GRASA * Math.abs(target.GRASA - exch.GRASA),
+    );
     if (!best || score < best.score) best = { scale, exch, score };
   }
   return best;
+}
+
+// Peso de cada macro en la distancia: la media del objetivo dividida entre lo
+// que pide esa categoría. Con los tres macros iguales da 1 y se comporta como
+// la L1 de siempre; cuanto más pequeño es el presupuesto de una categoría, más
+// caro sale desviarse en ella. El suelo evita dividir por ~0 en una categoría
+// que la dieta no usa.
+function pesosPorCategoria(target: BudgetVec): BudgetVec {
+  const media = (target.HC + target.PROT + target.GRASA) / 3;
+  if (media <= 0) return { HC: 1, PROT: 1, GRASA: 1 };
+  const peso = (v: number) => Math.min(PESO_MAXIMO, media / Math.max(v, PRESUPUESTO_MINIMO));
+  return { HC: peso(target.HC), PROT: peso(target.PROT), GRASA: peso(target.GRASA) };
 }
 
 
@@ -185,11 +235,14 @@ export interface RankOptions {
   usedDishTypes?: ReadonlyMap<DishType, number>;
 }
 
-// Hard filters (never appear in output): allergies, dietType violations,
-// cooking time over the athlete's max, recipes the athlete marked "no me gusta",
-// and dish types they chose to exclude. Soft signals (nudge the ranking):
-// favorite recipes and preferred dish types (strong bonus), liked/disliked
-// ingredients, tupper fit, recipe repetition (`usedIds`) and dish-type repetition.
+// Filtros duros (nunca salen): alergias, incompatibilidad con el tipo de dieta,
+// tiempo de cocina por encima del máximo, recetas marcadas "no me gusta", tipos
+// de plato excluidos y —desde 24-08— los ALIMENTOS marcados "no me gusta" en
+// Preferencias alimentarias, con reserva si dejaran la franja sin recetas.
+// Señales blandas (solo ordenan): favoritos y tipos de plato preferidos, alimentos
+// que le gustan, tupper, repetición de receta (`usedIds`) y de tipo de plato.
+// Las señales blandas NUNCA adelantan a una receta que encaja mejor: solo
+// ordenan dentro de la banda de tolerancia (ver `BANDA_MINIMA`/`BANDA_PCT`).
 export function rankCandidates(
   pool: Recipe[],
   target: BudgetVec,
@@ -203,7 +256,7 @@ export function rankCandidates(
   const excludedDish = new Set(prefs.excludedDishTypes ?? []);
   const preferredDish = new Set(prefs.preferredDishTypes ?? []);
 
-  const safe = pool.filter(r =>
+  const permitidas = pool.filter(r =>
     !disliked.has(r.id) &&
     !excludedDish.has(dishType(r)) &&
     !prefs.allergies.some(f => ingredientMatch(r, f)) &&
@@ -211,14 +264,55 @@ export function rankCandidates(
     !(prefs.cookingMaxTime != null && r.cookingTime != null && r.cookingTime > prefs.cookingMaxTime),
   );
 
+  // Los alimentos marcados "no me gusta" en Preferencias alimentarias se
+  // EXCLUYEN, no se penalizan. Antes sumaban +2 al `fitScore` —la misma escala
+  // que la distancia en intercambios— así que un plato con espinacas seguía
+  // saliendo si encajaba 2 puntos mejor que el resto: al atleta le llegaba en
+  // la dieta justo lo que había dicho que no quería. Con 8.850 recetas casi
+  // siempre hay alternativa; si un atleta descarta tanto que la franja se
+  // quedaría sin nada, se vuelven a admitir (una comida con algo que no le
+  // encanta es mejor que una comida vacía) y el coach lo ve en el borrador.
+  const sinNoDeseados = permitidas.filter(r => !prefs.disliked.some(f => ingredientMatch(r, f)));
+  const safe = sinNoDeseados.length >= MIN_RECETAS_PARA_EXCLUIR ? sinNoDeseados : permitidas;
+
+  // Se calcula PRIMERO el encaje puro de cada receta, sin preferencias. Antes
+  // las preferencias se sumaban directamente al `fitScore`, que es distancia L1
+  // en intercambios: un favorito (−3) que se pasaba 3 intercambios empataba con
+  // uno que cuadraba clavado, y una receta ya usada (+5) perdía contra
+  // cualquier cosa. Eso es lo que descuadraba los días enteros (Dani, 24-08):
+  // las señales blandas competían de tú a tú con la precisión nutricional.
+  type ConEncaje = { recipe: Recipe; fit: NonNullable<ReturnType<typeof bestScaleFit>> };
+  const encajesDe = (permitirFueraDeRango: boolean): ConEncaje[] => safe
+    .map(recipe => ({ recipe, fit: bestScaleFit(recipe, target, mode, { permitirFueraDeRango }) }))
+    .filter((c): c is ConEncaje => c.fit != null);
+
+  // Si ninguna receta llega al objetivo de la franja se reintenta sin el tope de
+  // escala: mejor el plato más grande disponible + complementos que una comida
+  // vacía (ver `bestScaleFit`).
+  const conEncaje = ((): ConEncaje[] => {
+    const estricto = encajesDe(false);
+    return estricto.length > 0 ? estricto : encajesDe(true);
+  })();
+  if (conEncaje.length === 0) return [];
+
+  // Banda de tolerancia: las preferencias solo ordenan DENTRO de las recetas
+  // que ya encajan bien. Se mide en intercambios y crece con el tamaño de la
+  // franja (un desayuno de 3 int. no admite el mismo error absoluto que una
+  // comida de 10), con un suelo para que en franjas pequeñas siga habiendo
+  // variedad donde elegir.
+  const objetivoTotal = target.HC + target.PROT + target.GRASA;
+  const mejorEncaje = Math.min(...conEncaje.map(c => c.fit.score));
+  const banda = Math.max(BANDA_MINIMA, objetivoTotal * BANDA_PCT);
+  const limite = mejorEncaje + banda;
+
   const scored: MenuCandidate[] = [];
-  for (const recipe of safe) {
-    const fit = bestScaleFit(recipe, target, mode);
-    if (!fit) continue;
+  for (const { recipe, fit } of conEncaje) {
     let score = fit.score;
     const dt = dishType(recipe);
     if (favorites.has(recipe.id)) score -= 3;            // favorites: appear much more
     if (preferredDish.has(dt)) score -= 1.5;             // preferred dish types: prioritized
+    // Sigue penalizando por si la franja cayó en la reserva de arriba (recetario
+    // demasiado restringido): dentro de lo que hay, lo no deseado va al final.
     if (prefs.disliked.some(f => ingredientMatch(recipe, f))) score += 2;
     if (prefs.liked.some(f => ingredientMatch(recipe, f))) score -= 0.5;
     if (opts.needsTupper && recipe.tupper) score -= 0.5;
@@ -230,6 +324,10 @@ export function rankCandidates(
     if (usedIds.has(recipe.id)) score += 5;              // strong nudge away, not a hard block
     const dishReuse = opts.usedDishTypes?.get(dt) ?? 0;
     if (dishReuse > 0) score += 2 * dishReuse;           // spread dish types across the day/week
+    // Fuera de banda no se descarta —el buscador de alternativas y las franjas
+    // con recetario pobre necesitan la lista larga— pero nunca puede adelantar
+    // a algo que sí encaja, por muy favorito que sea.
+    if (fit.score > limite) score += FUERA_DE_BANDA;
     scored.push({ recipe, scale: fit.scale, exch: fit.exch, score });
   }
   return scored.sort((a, b) => a.score - b.score);
@@ -245,13 +343,32 @@ export function fillComplements(gap: BudgetVec, foods: MealItem[], mode: DietMod
   const cats: (keyof BudgetVec)[] = ['HC', 'PROT', 'GRASA'];
   const result: MenuComplement[] = [];
   for (const cat of cats) {
-    const need = gap[cat];
+    let need = gap[cat];
     if (need < 0.5) continue;
     const candidates = simple.filter(f => f.category === cat || (cat === 'PROT' && f.category === 'MIX_HC'));
     if (candidates.length === 0) continue;
-    const food = candidates[Math.floor(Math.random() * candidates.length)];
-    const qty = Math.min(2, Math.floor(need * 2) / 2);
-    if (qty >= 0.5) result.push({ foodLabel: food.label, category: food.category, quantity: qty });
+    // Antes se ponía UN solo complemento tapado a 2 intercambios: un hueco de 4
+    // se quedaba a medias y el día seguía descuadrado sin decirlo. Ahora se
+    // encadenan hasta cerrar el hueco, con alimentos distintos mientras los
+    // haya (3 raciones de pan es peor consejo que pan + fruta + arroz) y un
+    // tope de seguridad para no escribir una lista absurda si el hueco es
+    // enorme por un fallo de configuración de la dieta.
+    const usados = new Set<string>();
+    for (let n = 0; n < MAX_COMPLEMENTOS_POR_CATEGORIA && need >= 0.5; n++) {
+      const frescos = candidates.filter(f => !usados.has(f.label));
+      const pool = frescos.length > 0 ? frescos : candidates;
+      const food = pool[Math.floor(Math.random() * pool.length)];
+      // Se reparte el hueco entre los complementos que quedan por poner, en vez
+      // de vaciar 2 en el primero: 3+3 raciones repartidas es un consejo más
+      // realista que 2+2+2 arbitrario, y evita quedarse corto en huecos grandes.
+      const restantes = MAX_COMPLEMENTOS_POR_CATEGORIA - n;
+      const objetivo = Math.max(0.5, need / restantes);
+      const qty = Math.min(MAX_RACIONES_POR_COMPLEMENTO, Math.floor(objetivo * 2) / 2, Math.floor(need * 2) / 2);
+      if (qty < 0.5) break;
+      usados.add(food.label);
+      result.push({ foodLabel: food.label, category: food.category, quantity: qty });
+      need = round2(need - qty);
+    }
   }
   return result;
 }
@@ -336,14 +453,34 @@ export function generateDay(args: GenerateDayArgs): MenuDay {
   const target = dietBudgetVec(diet);
   const targets = slotTargets(target, slots);
 
+  // Se elige franja a franja recalculando lo que QUEDA del día, en vez de
+  // resolver las cuatro contra su cuota fija. Las recetas vienen en
+  // intercambios discretos y la escala solo va de 0,5 a 2 en pasos de 0,25, así
+  // que cada comida deja un pico suelto; con cuotas fijas esos picos se SUMAN
+  // (era lo que dejaba días a −3 o −4 intercambios). Arrastrando el resto, la
+  // comida siguiente lo absorbe y el error se cancela en vez de acumularse.
+  let restante: BudgetVec = { ...target };
   const meals: MenuMeal[] = slots.map((slot, i) => {
+    // Nunca por debajo de cero: si una comida se pasó, la siguiente pide lo
+    // mínimo, no un objetivo negativo — con un objetivo negativo `bestScaleFit`
+    // descarta TODAS las recetas y la comida saldría vacía, que es mucho peor
+    // que servir algo pequeño.
+    const disponible: BudgetVec = {
+      HC: Math.max(0, restante.HC), PROT: Math.max(0, restante.PROT), GRASA: Math.max(0, restante.GRASA),
+    };
+    const objetivoFranja = slotTargets(disponible, slots.slice(i))[0] ?? targets[i];
     const pool = pools[slot.slot] ?? [];
-    const ranked = rankCandidates(pool, targets[i], prefs, usedIds, { needsTupper: slot.needsTupper, mode, usedDishTypes: dishTypes });
+    const ranked = rankCandidates(pool, objetivoFranja, prefs, usedIds, { needsTupper: slot.needsTupper, mode, usedDishTypes: dishTypes });
     const pick = ranked[0];
     const id = `${day}_m${i + 1}`;
     if (!pick) return emptyMeal(id, slot);
     usedIds.add(pick.recipe.id);
     bumpDishType(dishTypes, dishType(pick.recipe));
+    restante = {
+      HC: round2(restante.HC - pick.exch.HC),
+      PROT: round2(restante.PROT - pick.exch.PROT),
+      GRASA: round2(restante.GRASA - pick.exch.GRASA),
+    };
     return buildMeal(id, slot, pick.recipe, pick.scale, pick.exch);
   });
 

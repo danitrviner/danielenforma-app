@@ -89,17 +89,31 @@ export function summarizeSamples(samples: number[]): { avgHR?: number; maxHR?: n
  * guiar la sesión con zona y duración objetivo (§F3 del plan). Si hay varias
  * activas a la vez (no debería, pero por si acaso) se usa la más reciente.
  */
-export function pickActiveZona2Assignment(assignments: CardioAssignment[]): CardioAssignment | undefined {
-  return assignments
-    .filter(a => a.active && a.type === 'zona2')
-    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
+/**
+ * De entre las activas de un tipo, cuál es "la de hoy". Una asignación con
+ * `date` es PUNTUAL — programada para un día concreto (26-08, Dani: "poder
+ * configurar y programar sesiones de cardio específicas") — y solo cuenta si
+ * `date === todayIso`; fuera de su día no se ve por ningún lado, ni antes ni
+ * después, así que un cardio puesto para el jueves no se le adelanta al
+ * atleta el martes ni le persigue la semana siguiente. Sin coincidencia
+ * puntual, se cae a la más reciente SIN fecha (la prescripción recurrente de
+ * siempre) — una puntual de otro día nunca sirve de recurrente de repuesto.
+ * Si hay más de una puntual para hoy, gana la más reciente, igual que con las
+ * recurrentes.
+ */
+function pickActiveAssignment(activos: CardioAssignment[], todayIso: string): CardioAssignment | undefined {
+  const porFecha = (xs: CardioAssignment[]) => xs.sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
+  const puntualDeHoy = porFecha(activos.filter(a => a.date === todayIso));
+  return puntualDeHoy ?? porFecha(activos.filter(a => !a.date));
+}
+
+export function pickActiveZona2Assignment(assignments: CardioAssignment[], todayIso: string): CardioAssignment | undefined {
+  return pickActiveAssignment(assignments.filter(a => a.active && a.type === 'zona2'), todayIso);
 }
 
 /** Igual que `pickActiveZona2Assignment` pero para intervalos (§F6) — exige que el coach haya definido al menos un bloque. */
-export function pickActiveIntervalAssignment(assignments: CardioAssignment[]): CardioAssignment | undefined {
-  return assignments
-    .filter(a => a.active && a.type === 'intervalos' && (a.intervals?.length ?? 0) > 0)
-    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
+export function pickActiveIntervalAssignment(assignments: CardioAssignment[], todayIso: string): CardioAssignment | undefined {
+  return pickActiveAssignment(assignments.filter(a => a.active && a.type === 'intervalos' && (a.intervals?.length ?? 0) > 0), todayIso);
 }
 
 // ─── Objetivo semanal de cardio (F3.9, `objetivosCardio` del contrato) ─────

@@ -48,6 +48,7 @@ const NutritionAnalysisPanel = lazy(() => import('./NutritionAnalysisPanel'));
 const CorrelationPanel = lazy(() => import('./CorrelationPanel'));
 const ClientDietsPanel = lazy(() => import('./ClientDietsPanel'));
 const ClientWorkoutsPanel = lazy(() => import('./ClientWorkoutsPanel'));
+const ClientCardioPanel = lazy(() => import('./ClientCardioPanel'));
 const ClientReviewsPanel = lazy(() => import('./ClientReviewsPanel'));
 const ClientSetupPanel = lazy(() => import('./ClientSetupPanel'));
 import PendingTray from './PendingTray';
@@ -57,11 +58,11 @@ import { Badge, Tabs, Skeleton, Sheet, SearchField, ListRow, Icon } from './ui';
 export type HubTab =
   | 'setup' | 'revisiones'
   | 'ficha' | 'cuerpo'
-  | 'entrenamientos' | 'dietas' | 'roadmap'
+  | 'entrenamientos' | 'cardio' | 'dietas' | 'roadmap'
   | 'reportes' | 'analisis-nutricion' | 'correlaciones';
 export const HUB_TABS: readonly HubTab[] = [
   'setup', 'revisiones', 'ficha', 'cuerpo',
-  'entrenamientos', 'dietas', 'roadmap',
+  'entrenamientos', 'cardio', 'dietas', 'roadmap',
   'reportes', 'analisis-nutricion', 'correlaciones',
 ];
 
@@ -79,7 +80,7 @@ type Zone = 'hoy' | 'atleta' | 'plan' | 'analisis';
 const ZONE_TABS: Record<Zone, HubTab[]> = {
   hoy: ['revisiones', 'setup'],
   atleta: ['ficha', 'cuerpo'],
-  plan: ['entrenamientos', 'dietas', 'roadmap'],
+  plan: ['entrenamientos', 'cardio', 'dietas', 'roadmap'],
   analisis: ['reportes', 'analisis-nutricion', 'correlaciones'],
 };
 const ZONE_META: Record<Zone, { label: string; icon: string }> = {
@@ -94,6 +95,7 @@ const TAB_META: Record<HubTab, { label: string; icon: string }> = {
   ficha:                { label: 'Ficha',          icon: 'badge' },
   cuerpo:               { label: 'Cuerpo',         icon: 'monitor_weight' },
   entrenamientos:       { label: 'Entrenamientos', icon: 'fitness_center' },
+  cardio:               { label: 'Cardio',         icon: 'monitor_heart' },
   dietas:               { label: 'Dietas',         icon: 'nutrition' },
   roadmap:              { label: 'Road map',       icon: 'map' },
   reportes:             { label: 'Reportes',       icon: 'analytics' },
@@ -634,6 +636,9 @@ export default function ClientHub({
           getWorkout={getWorkout}
         />
       )}
+
+      {/* ── Tab: Cardio ───────────────────────────────────────────────────── */}
+      {activeTab === 'cardio' && <ClientCardioPanel athlete={athlete} />}
 
       {/* ── Tab: Dietas ───────────────────────────────────────────────────── */}
       {activeTab === 'dietas' && (

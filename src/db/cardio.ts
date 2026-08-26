@@ -13,13 +13,24 @@ function saveLocalProfileMap(map: Record<string, AthleteCardioProfile>): void {
   localStorage.setItem(PROFILE_LOCAL_KEY, JSON.stringify(map));
 }
 
-// Karvonen (%HRR) con Tanaka como FCmax de partida hasta que haya test real.
+// Karvonen (%FC de reserva) con Tanaka como FCmax de partida hasta que haya
+// test real — ver `maxHREstimada` en utils/cardioZones.ts.
+//
+// Las bandas eran contiguas (z1.max = z2.min = 60% HRR), así que un pulso que
+// caía justo en la frontera pertenecía a DOS zonas y `getZoneForBpm` lo
+// resolvía por el orden del bucle: siempre la zona baja. Con el tiempo por
+// zona eso son segundos mal imputados en cada cruce, que en una sesión de
+// intervalos son muchos. Ahora el techo de cada zona es el suelo de la
+// siguiente menos 1 ppm: las cinco bandas son disjuntas y cubren todo el
+// rango sin huecos.
 export function defaultZonesFromAge(restingHR: number, maxHR: number): CardioZones {
-  const band = (loPct: number, hiPct: number) => ({
-    min: Math.round(restingHR + loPct * (maxHR - restingHR)),
-    max: Math.round(restingHR + hiPct * (maxHR - restingHR)),
+  const bpm = (pct: number) => Math.round(restingHR + pct * (maxHR - restingHR));
+  const cortes = [0.5, 0.6, 0.7, 0.8, 0.9].map(bpm);
+  const banda = (i: number) => ({
+    min: cortes[i],
+    max: i < 4 ? cortes[i + 1] - 1 : bpm(1.0),
   });
-  return { z1: band(0.5, 0.6), z2: band(0.6, 0.7), z3: band(0.7, 0.8), z4: band(0.8, 0.9), z5: band(0.9, 1.0) };
+  return { z1: banda(0), z2: banda(1), z3: banda(2), z4: banda(3), z5: banda(4) };
 }
 
 export async function getCardioProfile(athleteId: string): Promise<AthleteCardioProfile | null> {

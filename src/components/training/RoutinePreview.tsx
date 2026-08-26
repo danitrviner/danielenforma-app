@@ -196,7 +196,7 @@ export default function RoutinePreview({
                     <span className="font-mono text-caption text-ink-3 tabular-nums w-4 flex-shrink-0">{exIdx + 1}</span>
 
                     <div className="min-w-0 flex-1">
-                      <p className="text-label font-sans font-bold text-white truncate">{pe.name}</p>
+                      <p className="text-label font-sans font-bold text-white">{pe.name}</p>
                       <div className="flex items-center gap-1.5 flex-wrap">
                         <span className="font-mono text-caption text-ink-2">{MUSCLE_LABELS_SHORT[pe.muscleGroup]}</span>
                         {pe.equipmentMismatch && (

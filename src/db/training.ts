@@ -8,6 +8,7 @@ import { SYSTEM_EXERCISES } from '../data';
 import { combinarLogs } from './combinarLogs';
 import { normalizeMuscleGroups } from '../utils/normalizeMuscleGroups';
 import { slugify } from '../utils/maquinaId';
+import { exigeUid, exigeEmail } from './clavesDeAtleta';
 
 // T14 (18-08): mismo patrón que idDeFoodItem — un ID determinista hace que
 // sembrar dos veces sobreescriba en vez de duplicar.
@@ -323,7 +324,13 @@ function saveLocalAssignments(assignments: WorkoutAssignment[]) {
   } catch (e) {}
 }
 
+/**
+ * OJO: `athleteId` aquí es el **UID**, no el email — `workoutAssignments` es la
+ * única colección así (ver `clavesDeAtleta.ts`). Con un email la consulta
+ * devolvería 0 asignaciones sin error, así que se comprueba antes.
+ */
 export async function getWorkoutAssignments(athleteId?: string): Promise<WorkoutAssignment[]> {
+  if (athleteId) exigeUid(athleteId, 'getWorkoutAssignments');
   if (forceLocalOnly) {
     const all = getLocalAssignments();
     return athleteId ? all.filter(a => a.athleteId === athleteId) : all;
@@ -348,6 +355,7 @@ export async function getWorkoutAssignments(athleteId?: string): Promise<Workout
 // Strict athlete query by UID — throws on Firestore failure (no local fallback).
 // Firestore rule requires athleteId == request.auth.uid, so the where clause is mandatory.
 export async function getWorkoutAssignmentsForAthlete(uid: string): Promise<WorkoutAssignment[]> {
+  exigeUid(uid, 'getWorkoutAssignmentsForAthlete');
   const q = query(collection(db, 'workoutAssignments'), where('athleteId', '==', uid));
   const snap = await getDocs(q);
   const assignments = snap.docs.map(d => ({ id: d.id, ...d.data() } as WorkoutAssignment));
@@ -382,6 +390,10 @@ export async function getWorkoutAssignmentsByMesocycleIds(mesocycleIds: string[]
 }
 
 export async function createWorkoutAssignment(data: Omit<WorkoutAssignment, 'id'>): Promise<WorkoutAssignment> {
+  // Escribir con email deja la asignación huérfana PARA SIEMPRE: la regla exige
+  // `athleteId == request.auth.uid`, así que el atleta nunca la verá ni podrá
+  // marcarla, y nada lo avisa. Peor que un error de lectura.
+  exigeUid(data.athleteId, 'createWorkoutAssignment');
   if (forceLocalOnly) {
     const newA: WorkoutAssignment = { ...data, id: `local_a_${Date.now()}` };
     const list = getLocalAssignments();
@@ -492,6 +504,10 @@ export async function getWorkoutLogs(
   athleteId?: string,
   ventana?: VentanaDeLogs,
 ): Promise<WorkoutLog[]> {
+  // `workoutLogs` va por EMAIL, al revés que `workoutAssignments` (que va por
+  // UID) — las dos se usan juntas en las mismas pantallas y confundirlas
+  // devuelve una lista vacía sin dar error. Ver `clavesDeAtleta.ts`.
+  if (athleteId) exigeEmail(athleteId, 'getWorkoutLogs');
   if (forceLocalOnly) {
     const all = getLocalWorkoutLogs();
     const propios = athleteId ? all.filter(l => l.athleteId === athleteId) : all;
@@ -823,6 +839,7 @@ export async function createWorkoutStrict(data: Omit<Workout, 'id'>): Promise<Wo
 }
 
 export async function createWorkoutAssignmentStrict(data: Omit<WorkoutAssignment, 'id'>): Promise<WorkoutAssignment> {
+  exigeUid(data.athleteId, 'createWorkoutAssignmentStrict');
   const ref = await addDoc(collection(db, 'workoutAssignments'), stripUndefined(data));
   const assignment: WorkoutAssignment = { ...data, id: ref.id };
   const list = getLocalAssignments();

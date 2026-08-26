@@ -1,16 +1,17 @@
 import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { AthleteCardioProfile, CardioZones, HrTest, CardioSessionType, CardioIntervalBlock, CardioIntervalCloseType } from '../types';
+import { AthleteCardioProfile, CardioZones, HrTest } from '../types';
 import {
   getAllUserProfiles, getCardioProfile, saveCardioProfile, defaultZonesFromAge,
-  getAllPendingHrTests, updateHrTest, createCardioAssignment, createNotificationDeduped,
+  getAllPendingHrTests, updateHrTest, createNotificationDeduped,
 } from '../dbService';
 import { ZONE_ORDER, ZONE_LABEL } from '../utils/cardioZones';
 import { grantXp } from '../utils/xp';
 import { addRoadmapMilestone } from '../utils/roadmapMilestones';
 import { Skeleton } from './ui';
 import { atletasActivos } from '../utils/atletas';
-import { Icon, Button, Tabs, ListRow } from './ui';
+import { Button, Tabs, ListRow } from './ui';
+import CardioPrescriptionForm from './cardio/CardioPrescriptionForm';
 
 const XP_PER_APPROVED_TEST = 30;
 
@@ -196,139 +197,15 @@ function PendingTestsTab({ coachEmail }: { coachEmail: string }) {
 }
 
 // ─── PRESCRIPCIÓN ────────────────────────────────────────────────────────────
-
-const EMPTY_BLOCK = (): CardioIntervalBlock => ({ label: '', closeType: 'time', durationSec: 30, targetZone: 'z5' });
-
-// F9: etiquetas del selector de tipo de cierre por bloque — 'distance' queda
-// fuera, depende de GPS (F7 aparcado).
-const CLOSE_TYPE_LABEL: Record<CardioIntervalCloseType, string> = {
-  time: 'Por tiempo', zone: 'Al llegar a zona', heartRate: 'Por FC', calories: 'Por calorías', manual: 'Manual',
-};
-
-// Modo series: en vez de montar bloque a bloque, se elige un protocolo
-// (trabajo/descanso × repeticiones) y se genera la lista de bloques sola.
-// Los valores son los protocolos estándar de HIIT/VO2máx — Dani pidió algo
-// pensado para trabajar Z5/VO2máx sin tener que construir cada bloque a mano.
-interface SeriesPreset {
-  label: string;
-  workSec: number;
-  restSec: number;
-  reps: number;
-  workZone: keyof CardioZones;
-  restZone: keyof CardioZones;
-  hint: string;
-}
-
-const SERIES_PRESETS: SeriesPreset[] = [
-  { label: 'Tabata', workSec: 20, restSec: 10, reps: 8, workZone: 'z5', restZone: 'z1', hint: '20s/10s × 8 — VO2máx, muy corto e intenso' },
-  { label: 'Series Z5 clásicas', workSec: 30, restSec: 90, reps: 8, workZone: 'z5', restZone: 'z1', hint: '30s/90s × 8 — el estándar para Z5' },
-  { label: 'HIIT 40/20', workSec: 40, restSec: 20, reps: 10, workZone: 'z4', restZone: 'z1', hint: '40s/20s × 10 — umbral-Z5, más volumen' },
-  { label: 'Noruego 4×4', workSec: 240, restSec: 180, reps: 4, workZone: 'z4', restZone: 'z1', hint: '4min/3min × 4 — VO2máx clásico de resistencia' },
-];
-
-function generateSeriesBlocks(preset: Pick<SeriesPreset, 'workSec' | 'restSec' | 'reps' | 'workZone' | 'restZone'>): CardioIntervalBlock[] {
-  const blocks: CardioIntervalBlock[] = [];
-  for (let i = 1; i <= preset.reps; i++) {
-    blocks.push({ label: `Serie ${i}`, closeType: 'time', durationSec: preset.workSec, targetZone: preset.workZone });
-    if (i < preset.reps) {
-      blocks.push({ label: `Recuperación ${i}`, closeType: 'time', durationSec: preset.restSec, targetZone: preset.restZone });
-    }
-  }
-  return blocks;
-}
-
-function SeriesModePicker({ onGenerate }: { onGenerate: (blocks: CardioIntervalBlock[]) => void }) {
-  const [workSec, setWorkSec] = useState('30');
-  const [restSec, setRestSec] = useState('90');
-  const [reps, setReps] = useState('8');
-  const [workZone, setWorkZone] = useState<keyof CardioZones>('z5');
-  const [restZone, setRestZone] = useState<keyof CardioZones>('z1');
-
-  const applyPreset = (p: SeriesPreset) => {
-    setWorkSec(String(p.workSec)); setRestSec(String(p.restSec)); setReps(String(p.reps));
-    setWorkZone(p.workZone); setRestZone(p.restZone);
-    onGenerate(generateSeriesBlocks(p));
-  };
-
-  const applyCustom = () => {
-    onGenerate(generateSeriesBlocks({
-      workSec: Number(workSec) || 30, restSec: Number(restSec) || 90, reps: Number(reps) || 1, workZone, restZone,
-    }));
-  };
-
-  return (
-    <div className="space-y-3">
-      <div className="flex flex-wrap gap-2">
-        {SERIES_PRESETS.map(p => (
-          <button key={p.label} type="button" onClick={() => applyPreset(p)} title={p.hint}
-            className="px-3 py-2 bg-surface border border-hairline rounded-control text-caption font-sans text-white hover:border-accent transition-colors">
-            {p.label}
-          </button>
-        ))}
-      </div>
-      <div className="flex flex-wrap gap-2 items-center">
-        <input type="number" min={5} value={workSec} onChange={e => setWorkSec(e.target.value)} placeholder="Trabajo (s)"
-          className="w-24 bg-surface border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent" />
-        <select value={workZone} onChange={e => setWorkZone(e.target.value as keyof CardioZones)}
-          className="bg-surface border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent">
-          {ZONE_ORDER.map(z => <option key={z} value={z}>{z.toUpperCase()}</option>)}
-        </select>
-        <span className="text-caption text-ink-2 font-mono">/</span>
-        <input type="number" min={5} value={restSec} onChange={e => setRestSec(e.target.value)} placeholder="Descanso (s)"
-          className="w-24 bg-surface border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent" />
-        <select value={restZone} onChange={e => setRestZone(e.target.value as keyof CardioZones)}
-          className="bg-surface border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent">
-          {ZONE_ORDER.map(z => <option key={z} value={z}>{z.toUpperCase()}</option>)}
-        </select>
-        <span className="text-caption text-ink-2 font-mono">×</span>
-        <input type="number" min={1} value={reps} onChange={e => setReps(e.target.value)} placeholder="Reps"
-          className="w-16 bg-surface border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent" />
-        <Button variant="ghost" size="s" onClick={applyCustom} icon="bolt">Generar</Button>
-      </div>
-    </div>
-  );
-}
+// El formulario en sí vive en cardio/CardioPrescriptionForm.tsx — se comparte
+// con la ficha del atleta (ClientCardioPanel, Plan › Cardio). Aquí solo queda
+// el desplegable de qué atleta, que es lo único que sobra cuando ya se está
+// dentro de su ficha.
 
 function PrescriptionTab() {
   const { data: profiles = [], isPending } = useQuery({ queryKey: ['userProfiles'], queryFn: getAllUserProfiles });
   const athletes = atletasActivos(profiles).filter(p => p.role === 'client');
   const [athleteEmail, setAthleteEmail] = useState('');
-  const [type, setType] = useState<CardioSessionType>('zona2');
-  const [durationMin, setDurationMin] = useState('45');
-  const [timesPerWeek, setTimesPerWeek] = useState('3');
-  const [blocks, setBlocks] = useState<CardioIntervalBlock[]>(() => generateSeriesBlocks(SERIES_PRESETS[1]));
-  const [blockMode, setBlockMode] = useState<'series' | 'manual'>('series');
-  const [saving, setSaving] = useState(false);
-  const [savedMsg, setSavedMsg] = useState(false);
-
-  const validBlocks = blocks.filter(b => b.label.trim() && b.durationSec > 0);
-
-  const handleCreate = async () => {
-    if (!athleteEmail) return;
-    if (type === 'intervalos' && validBlocks.length === 0) return;
-    setSaving(true);
-    try {
-      await createCardioAssignmentSafe();
-      setSavedMsg(true);
-      setTimeout(() => setSavedMsg(false), 2000);
-    } finally { setSaving(false); }
-  };
-
-  const createCardioAssignmentSafe = async () => {
-    const intervalsDurationSec = validBlocks.reduce((sum, b) => sum + b.durationSec, 0);
-    await createCardioAssignment({
-      athleteId: athleteEmail, type,
-      targetDurationSec: type === 'intervalos' ? intervalsDurationSec : Number(durationMin) * 60,
-      targetZone: type === 'zona2' ? 'z2' : undefined,
-      intervals: type === 'intervalos' ? validBlocks : undefined,
-      timesPerWeek: Number(timesPerWeek),
-      active: true, createdAt: new Date().toISOString(),
-    });
-  };
-
-  const updateBlock = (i: number, patch: Partial<CardioIntervalBlock>) => {
-    setBlocks(blocks.map((b, idx) => idx === i ? { ...b, ...patch } : b));
-  };
 
   if (isPending) return <Skeleton className="h-40 w-full rounded-surface" />;
 
@@ -340,101 +217,7 @@ function PrescriptionTab() {
         <option value="">Selecciona atleta...</option>
         {athletes.map(a => <option key={a.email} value={a.email}>{a.displayName}</option>)}
       </select>
-      <div className="flex gap-2">
-        <select value={type} onChange={e => setType(e.target.value as CardioSessionType)}
-          className="flex-1 bg-bg border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent">
-          <option value="zona2">Sesión Zona 2</option>
-          <option value="libre">Libre</option>
-          <option value="intervalos">Intervalos</option>
-        </select>
-        {type !== 'intervalos' && (
-          <input type="number" value={durationMin} onChange={e => setDurationMin(e.target.value)} placeholder="Min" className="w-20 bg-bg border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent" />
-        )}
-        <input type="number" value={timesPerWeek} onChange={e => setTimesPerWeek(e.target.value)} placeholder="x/sem" className="w-20 bg-bg border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent" />
-      </div>
-
-      {type === 'intervalos' && (
-        <div className="space-y-3 bg-bg border border-hairline rounded-surface p-3">
-          <div className="flex gap-2">
-            <button type="button" onClick={() => setBlockMode('series')}
-              className={`px-3 py-1.5 rounded-control text-caption font-sans font-bold transition-colors ${blockMode === 'series' ? 'bg-accent text-black' : 'bg-surface text-ink-2 border border-hairline'}`}>
-              Series automáticas
-            </button>
-            <button type="button" onClick={() => setBlockMode('manual')}
-              className={`px-3 py-1.5 rounded-control text-caption font-sans font-bold transition-colors ${blockMode === 'manual' ? 'bg-accent text-black' : 'bg-surface text-ink-2 border border-hairline'}`}>
-              Manual
-            </button>
-          </div>
-
-          {blockMode === 'series' && <SeriesModePicker onGenerate={setBlocks} />}
-
-          <p className="text-caption font-sans uppercase text-ink-2">Bloques (se repiten en orden, uno tras otro)</p>
-          {blocks.map((b, i) => (
-            <div key={i} className="flex flex-col gap-2 border-b border-hairline pb-2 last:border-0 last:pb-0">
-              <div className="flex gap-2 items-center">
-                <input value={b.label} onChange={e => updateBlock(i, { label: e.target.value })} placeholder={`Bloque ${i + 1}`}
-                  className="flex-1 min-w-0 bg-surface border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent" />
-                <select value={b.closeType} onChange={e => updateBlock(i, { closeType: e.target.value as CardioIntervalCloseType })}
-                  className="bg-surface border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent">
-                  {(Object.keys(CLOSE_TYPE_LABEL) as CardioIntervalCloseType[]).map(t => <option key={t} value={t}>{CLOSE_TYPE_LABEL[t]}</option>)}
-                </select>
-                <button onClick={() => setBlocks(blocks.filter((_, idx) => idx !== i))} className="text-ink-2 hover:text-red-400 transition-colors">
-                  <Icon name="close" size="s" />
-                </button>
-              </div>
-              <div className="flex gap-2 items-center pl-1">
-                {b.closeType === 'time' && (
-                  <>
-                    <input type="number" min={5} value={b.durationSec} onChange={e => updateBlock(i, { durationSec: Number(e.target.value) })}
-                      className="w-14 bg-surface border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent" />
-                    <span className="text-caption text-ink-2 font-mono">s</span>
-                    <select value={b.targetZone} onChange={e => updateBlock(i, { targetZone: e.target.value as keyof CardioZones })}
-                      className="bg-surface border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent">
-                      {ZONE_ORDER.map(z => <option key={z} value={z}>{z.toUpperCase()}</option>)}
-                    </select>
-                  </>
-                )}
-                {b.closeType === 'zone' && (
-                  <select value={b.targetZone} onChange={e => updateBlock(i, { targetZone: e.target.value as keyof CardioZones })}
-                    className="bg-surface border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent">
-                    {ZONE_ORDER.map(z => <option key={z} value={z}>Hasta {z.toUpperCase()}</option>)}
-                  </select>
-                )}
-                {b.closeType === 'heartRate' && (
-                  <>
-                    <select value={b.hrDirection ?? 'above'} onChange={e => updateBlock(i, { hrDirection: e.target.value as 'above' | 'below' })}
-                      className="bg-surface border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent">
-                      <option value="above">Sube hasta</option>
-                      <option value="below">Baja hasta</option>
-                    </select>
-                    <input type="number" min={40} value={b.hrThresholdBpm ?? 150} onChange={e => updateBlock(i, { hrThresholdBpm: Number(e.target.value) })}
-                      className="w-16 bg-surface border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent" />
-                    <span className="text-caption text-ink-2 font-mono">ppm</span>
-                  </>
-                )}
-                {b.closeType === 'calories' && (
-                  <>
-                    <input type="number" min={5} value={b.targetKcal ?? 50} onChange={e => updateBlock(i, { targetKcal: Number(e.target.value) })}
-                      className="w-16 bg-surface border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent" />
-                    <span className="text-caption text-ink-2 font-mono">kcal</span>
-                  </>
-                )}
-                {b.closeType === 'manual' && (
-                  <span className="text-caption text-ink-2 font-sans">El atleta lo marca a mano en la pantalla en vivo</span>
-                )}
-              </div>
-            </div>
-          ))}
-          <Button variant="ghost" size="s" onClick={() => setBlocks([...blocks, EMPTY_BLOCK()])} icon="add">Añadir bloque</Button>
-          {validBlocks.length > 0 && (
-            <p className="text-caption font-mono text-ink-2">Total: {Math.round(validBlocks.reduce((s, b) => s + b.durationSec, 0) / 60 * 10) / 10} min · {validBlocks.length} bloques</p>
-          )}
-        </div>
-      )}
-
-      <Button onClick={handleCreate} disabled={saving || !athleteEmail || (type === 'intervalos' && validBlocks.length === 0)} fullWidth>
-        {saving ? 'Guardando...' : savedMsg ? 'Prescrito ✓' : 'Prescribir'}
-      </Button>
+      {athleteEmail && <CardioPrescriptionForm athleteEmail={athleteEmail} />}
     </section>
   );
 }

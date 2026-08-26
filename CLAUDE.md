@@ -21,6 +21,10 @@ databaseId: ai-studio-b38fc63b-000e-4d2c-b774-20351883e870
 ```
 `firebase.ts` inicializa con `getFirestore(app, 'ai-studio-b38fc63b-000e-4d2c-b774-20351883e870')`. Cualquier script también.
 
+**Por qué duele:** `getFirestore()` sin el id NO falla — usa `(default)`, que existe y está vacía. El script dice «0 documentos» o «importado correctamente» habiendo tocado la base equivocada.
+
+**Cómo está protegido (24-08):** los scripts abren la base con `scripts/_lib/firestoreDb.mjs` (`abrirDb(serviceAccount)`), que lanza si falta el id en vez de caer a `(default)`. Un test (`src/db/clavesDeAtleta.test.ts`) falla si algún script vuelve a llamar a `getFirestore()` sin argumentos.
+
 ### 2 — Owner permanente
 `danitrviner@gmail.com` es coach blindado. Google OAuth para el coach, `atleta@enforma.com` (email/pwd) para sandbox atleta.
 
@@ -31,6 +35,13 @@ Usar `stripUndefined(obj)` (helper recursivo en `dbService.ts`) en **todas** las
 Las reglas de Firestore deniegan queries de colección completa. Siempre incluir `where('athleteId','==', email)` o equivalente.
 
 ### 5 — Taxonomía email vs UID mixta (ver tabla colecciones)
+`workoutAssignments` es la **única** colección con `athleteId` = UID. Las otras ~30 usan el email.
+
+**Por qué duele:** la regla exige `athleteId == request.auth.uid`, así que consultar con email **no da error de permisos** — devuelve 0 documentos. Al coach le aparece «este atleta no tiene entrenamientos asignados», indistinguible de la verdad. Y escribir con email deja la asignación huérfana para siempre: el atleta nunca la ve ni puede marcarla.
+
+**Cómo está protegido (24-08):** `src/db/clavesDeAtleta.ts` expone `exigeUid()` / `exigeEmail()`, ya aplicados en `getWorkoutAssignments`, `getWorkoutAssignmentsForAthlete`, `createWorkoutAssignment`, `createWorkoutAssignmentStrict` y `getWorkoutLogs`. Pasar la clave equivocada ahora lanza con el nombre de la función y qué campo usar (`userProfile.userId` vs `userProfile.email`), en vez de devolver una lista vacía.
+
+**Lo que NO se ha hecho:** migrar `workoutAssignments` a email. Reescribiría documentos de clientes reales y las reglas; es una decisión aparte y no se ha tocado.
 
 ### 6 — Reglas Firestore sugeridas por IA casi siempre MAL
 Usar patrón `isOwner()` / `isCoach()`. Consola Firebase es la fuente de verdad.

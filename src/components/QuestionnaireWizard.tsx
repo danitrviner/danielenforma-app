@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   Questionnaire, QuestionnaireAssignment, QuestionnaireResponse, QuestionnaireQuestion,
-  BodyweightLog, BodyMeasurement,
+  BodyweightLog, BodyMeasurement, BODY_METRIC_UNITS,
 } from '../types';
 import { submitResponse, addBodyweight, saveBodyMeasurement, uploadQuestionnaireMedia } from '../dbService';
 import { resolveQuestions } from '../utils/questionnaireResolve';
@@ -172,7 +172,8 @@ export default function QuestionnaireWizard({ questionnaire, assignment, athlete
         queryClient.setQueryData<BodyweightLog[]>(bodyweightForAthleteKey(athleteEmail), prev => [...(prev ?? []), entry]);
       } else {
         const entry = await saveBodyMeasurement({
-          athleteId: athleteEmail, date: hoy, metricKey: q.metricKey, value: valor, unit: 'cm',
+          athleteId: athleteEmail, date: hoy, metricKey: q.metricKey, value: valor,
+          unit: BODY_METRIC_UNITS[q.metricKey],
           source: 'questionnaire', responseId: response.id, createdAt: new Date().toISOString(),
         });
         queryClient.setQueryData<BodyMeasurement[]>(bodyMeasurementsForAthleteKey(athleteEmail), prev =>

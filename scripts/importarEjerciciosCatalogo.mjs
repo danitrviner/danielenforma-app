@@ -23,8 +23,7 @@
 import { readFileSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { initializeApp, cert } from 'firebase-admin/app';
-import { getFirestore } from 'firebase-admin/firestore';
+import { abrirDb } from './_lib/firestoreDb.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -51,8 +50,7 @@ if (!SA_PATH) {
 }
 const serviceAccount = JSON.parse(readFileSync(resolve(SA_PATH), 'utf8'));
 
-initializeApp({ credential: cert(serviceAccount) });
-const db = getFirestore(firebaseConfig.firestoreDatabaseId);
+const db = abrirDb(serviceAccount);
 
 async function contarColeccion(nombre) {
   const snap = await db.collection(nombre).count().get();

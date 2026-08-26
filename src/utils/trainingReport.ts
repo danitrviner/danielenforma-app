@@ -63,13 +63,16 @@ function deltaPct(cur: number, prev: number | null): number | null {
 
 function round1(n: number): number { return Math.round(n * 10) / 10; }
 
-interface Agg {
+export interface Agg {
   tonnage: number;
   perExercise: Map<string, { sets: number; reps: number; tonnage: number; bestOrm: number }>;
   dates: Set<string>;
 }
 
-function aggregate(logs: WorkoutLog[]): Agg {
+// Exportada además del uso interno: movementPatterns.ts la reutiliza para
+// construir el bloque "Rendimiento" (por patrón de movimiento en vez de por
+// grupo muscular) sin duplicar la lógica de tonelaje/1RM por sesión.
+export function aggregate(logs: WorkoutLog[]): Agg {
   const perExercise = new Map<string, { sets: number; reps: number; tonnage: number; bestOrm: number }>();
   const dates = new Set<string>();
   let tonnage = 0;
@@ -118,14 +121,24 @@ export function allTimeBestBefore(logs: WorkoutLog[], beforeDate: string): Map<s
 // respaldo frente a contar el secundario como set completo o no contarlo.
 const SECONDARY_WEIGHT = 0.5;
 
-function weightedGroupsOf(exerciseId: string, exercises: Exercise[]): { group: GroupKey; weight: number }[] {
+// `mapKey` traduce cada MuscleGroup del ejercicio a 0-N claves de agrupación
+// propias del caso de uso (por defecto, identidad — un grupo muscular es su
+// propia clave). movementPatterns.ts la reutiliza con un mapKey que reparte
+// un mismo grupo muscular en varios patrones de movimiento (p.ej. tríceps
+// cuenta para "empuje torso" Y para "brazo"), sin duplicar el resto de la
+// lógica de agregación por ejercicio/serie.
+export function weightedGroupsOf<K extends string = MuscleGroup>(
+  exerciseId: string,
+  exercises: Exercise[],
+  mapKey: (g: MuscleGroup) => K[] = (g) => [g as unknown as K],
+): { group: K | typeof NONE_GROUP; weight: number }[] {
   const ex = exercises.find(e => e.id === exerciseId);
   if (!ex?.muscleGroup) return [{ group: NONE_GROUP, weight: 1 }];
-  const groups = [{ group: ex.muscleGroup as GroupKey, weight: 1 }];
+  const out: { group: K | typeof NONE_GROUP; weight: number }[] = mapKey(ex.muscleGroup).map(k => ({ group: k, weight: 1 }));
   for (const g of ex.secondaryMuscleGroups ?? []) {
-    groups.push({ group: g as GroupKey, weight: SECONDARY_WEIGHT });
+    for (const k of mapKey(g)) out.push({ group: k, weight: SECONDARY_WEIGHT });
   }
-  return groups;
+  return out;
 }
 
 // ── Window resolution ─────────────────────────────────────────────────────────

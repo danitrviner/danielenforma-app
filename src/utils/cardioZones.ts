@@ -49,12 +49,37 @@ export function getZoneAlertDirection(bpm: number, targetBand: { min: number; ma
   return 'in';
 }
 
+/**
+ * FCmax estimada por edad — Tanaka, Monahan & Seals (2001): 208 − 0,7 × edad.
+ *
+ * Antes la app usaba `220 − edad` (Haskell & Fox) en la tarjeta de ajustes del
+ * atleta, aunque el comentario de `db/cardio.ts` ya decía «Tanaka»: dos sitios,
+ * dos fórmulas. Se unifica en Tanaka porque es la revisión que corrigió el
+ * problema conocido de 220−edad: sobreestima la FCmax de los jóvenes e
+ * infraestima la de los mayores (a los 50 son 185 contra 173: 12 ppm de
+ * diferencia, que desplazan TODAS las zonas). Su error típico también es
+ * menor (~7 ppm frente a ~10-12).
+ *
+ * Sigue siendo una estimación de población: por eso la app deja editarla a
+ * mano y ofrece calibrar con un test real, que es lo único exacto.
+ */
+export function maxHREstimada(edadAnios: number): number {
+  return Math.round(208 - 0.7 * edadAnios);
+}
+
 // Friel por LTHR (referencia running, §5.6 del plan) — usado cuando el
 // atleta ya tiene LTHR de un test de umbral (Test 2), más preciso que Karvonen.
+//
+// El suelo de Z1 no era 0 por convicción, sino por omisión: Friel no define
+// límite inferior. Pero dejarlo en 0 hacía que con este método NUNCA existiera
+// el estado «Fuera de zona», mientras que con Karvonen (suelo en el 50% de la
+// FC de reserva) sí — el mismo paseo se contaba como Z1 o como fuera de zona
+// según qué método tuviera el atleta. Se le pone un suelo práctico del 70% del
+// LTHR: por debajo de eso no es entrenamiento aeróbico, es reposo o paseo.
 export function zonesFromLthr(lthr: number): CardioZones {
   const pct = (p: number) => Math.round(lthr * p);
   return {
-    z1: { min: 0, max: pct(0.85) - 1 },
+    z1: { min: pct(0.70), max: pct(0.85) - 1 },
     z2: { min: pct(0.85), max: pct(0.89) },
     z3: { min: pct(0.90), max: pct(0.94) },
     z4: { min: pct(0.95), max: pct(0.99) },

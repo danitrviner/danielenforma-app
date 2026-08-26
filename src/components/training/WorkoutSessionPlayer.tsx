@@ -75,23 +75,48 @@ export default function WorkoutSessionPlayer({
   // Cronómetro de descanso — vive aquí (antes en TrainingScreen) porque solo
   // el player lo usa; se arranca al marcar una serie como hecha con el
   // `restSeconds` prescrito del ejercicio.
-  const [restTimer, setRestTimer] = useState<{ totalSeconds: number; secondsLeft: number } | null>(null);
+  //
+  // Reloj de pared, no cuenta de ticks (Dani, 26-08: «bloqueas el móvil y el
+  // temporizador se queda pillado»). El descuento anterior era un
+  // `setTimeout` encadenado de 1 s: con la pantalla bloqueada o la app en
+  // segundo plano, iOS y Android estrangulan o congelan los temporizadores de
+  // JS, así que al volver el descanso seguía marcando los segundos que
+  // faltaban cuando se apagó la pantalla. Aquí se guarda el INSTANTE de fin
+  // (`endsAtMs`) y lo que falta se calcula contra `Date.now()`: se congele lo
+  // que se congele, al volver el número es el correcto. Es el mismo criterio
+  // que ya usaba la sesión de cardio (utils/cardioSession.ts).
+  const [restTimer, setRestTimer] = useState<{ totalSeconds: number; endsAtMs: number; exerciseName: string } | null>(null);
+  const [nowMs, setNowMs] = useState(() => Date.now());
 
   useEffect(() => {
-    if (!restTimer || restTimer.secondsLeft <= 0) return;
-    const id = setTimeout(() => {
-      setRestTimer(prev => (prev ? { ...prev, secondsLeft: prev.secondsLeft - 1 } : null));
-    }, 1000);
-    return () => clearTimeout(id);
+    if (!restTimer) return;
+    const marcarAhora = () => setNowMs(Date.now());
+    marcarAhora();
+    // 500 ms para que el segundo cambie a tiempo sin depender de que el tick
+    // caiga justo en el borde; el coste es el mismo re-render que ya había.
+    const id = window.setInterval(marcarAhora, 500);
+    // Al volver de segundo plano el intervalo puede tardar en retomarse: se
+    // recalcula en cuanto la pantalla vuelve a estar visible o la ventana
+    // recupera el foco, sin esperar al siguiente tick.
+    const alVolver = () => { if (document.visibilityState === 'visible') marcarAhora(); };
+    document.addEventListener('visibilitychange', alVolver);
+    window.addEventListener('focus', marcarAhora);
+    return () => {
+      window.clearInterval(id);
+      document.removeEventListener('visibilitychange', alVolver);
+      window.removeEventListener('focus', marcarAhora);
+    };
   }, [restTimer]);
 
+  const restSecondsLeft = restTimer ? Math.max(0, Math.ceil((restTimer.endsAtMs - nowMs) / 1000)) : null;
+
   useEffect(() => {
-    if (restTimer?.secondsLeft !== 0) return;
+    if (restSecondsLeft !== 0) return;
     navigator.vibrate?.([150, 80, 150]);
     stopRestTimer().catch(() => {});
     const id = setTimeout(() => setRestTimer(null), 3000);
     return () => clearTimeout(id);
-  }, [restTimer?.secondsLeft]);
+  }, [restSecondsLeft]);
 
   // Igual que antes: se calcula una sola vez para toda la sesión, no dentro
   // del .map() de tarjetas (Rules of Hooks / coste).
@@ -107,11 +132,24 @@ export default function WorkoutSessionPlayer({
     updateSet(exIdx, sIdx, 'done', markingDone);
     if (markingDone) onMarkActionDone();
     if (markingDone && we.restSeconds) {
-      setRestTimer({ totalSeconds: we.restSeconds, secondsLeft: we.restSeconds });
-      startRestTimer(ex?.name || 'tu ejercicio', we.restSeconds).catch(() => {});
+      const nombre = ex?.name || 'tu ejercicio';
+      setRestTimer({ totalSeconds: we.restSeconds, endsAtMs: Date.now() + we.restSeconds * 1000, exerciseName: nombre });
+      startRestTimer(nombre, we.restSeconds).catch(() => {});
     } else if (!markingDone) {
       stopRestTimer().catch(() => {});
     }
+  };
+
+  const addRestSeconds = (s: number) => {
+    if (!restTimer) return;
+    // Si el descanso ya había llegado a 0, los segundos se suman desde AHORA,
+    // no desde un fin que ya quedó atrás.
+    const endsAtMs = Math.max(Date.now(), restTimer.endsAtMs) + s * 1000;
+    setRestTimer({ ...restTimer, totalSeconds: restTimer.totalSeconds + s, endsAtMs });
+    // Y se reprograma el aviso nativo: si no, la notificación seguiría sonando
+    // a la hora vieja, que es justo cuando el móvil está bloqueado y el atleta
+    // depende de ella.
+    startRestTimer(restTimer.exerciseName, Math.round((endsAtMs - Date.now()) / 1000)).catch(() => {});
   };
 
   const pages = orderedExercises.map((we, exIdx) => {
@@ -156,9 +194,11 @@ export default function WorkoutSessionPlayer({
         onAddRow={() => addSetRow(exIdx)}
         noteValue={exerciseNoteInputs[exIdx] || ''}
         onNoteChange={v => updateExerciseNote(exIdx, v)}
-        restTimer={pageIdx === exIdx ? restTimer : null}
-        onSkipRest={() => setRestTimer(null)}
-        onAddRestSeconds={s => setRestTimer(prev => (prev ? { totalSeconds: prev.totalSeconds + s, secondsLeft: prev.secondsLeft + s } : prev))}
+        restTimer={pageIdx === exIdx && restTimer && restSecondsLeft !== null
+          ? { totalSeconds: restTimer.totalSeconds, secondsLeft: restSecondsLeft }
+          : null}
+        onSkipRest={() => { setRestTimer(null); stopRestTimer().catch(() => {}); }}
+        onAddRestSeconds={s => addRestSeconds(s)}
         videoTargetRef={exIdx === 0 ? videoTargetRef : undefined}
         setEditorTargetRef={exIdx === 0 ? setEditorTargetRef : undefined}
         firstSetRowTargetRef={exIdx === 0 ? firstSetRowTargetRef : undefined}

@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { UserProfile, AthleteCardioProfile } from '../../types';
 import { getOnboarding, getCardioProfile, saveCardioProfile } from '../../dbService';
 import { defaultZonesFromAge } from '../../db/cardio';
+import { maxHREstimada } from '../../utils/cardioZones';
 import { useToast } from '../../hooks/useToast';
 import HrTestsPanel from '../HrTestsPanel';
 import { Icon, Button, Collapsible } from '../ui';
@@ -11,8 +12,9 @@ interface Props {
   profile: UserProfile;
 }
 
-// FCmax por edad — Haskell & Fox (220 − edad), la misma referencia que usa
-// FITIV para sus zonas (docs/FITIV-analisis-y-plan.md §5.2).
+// FCmax por edad — Tanaka (208 − 0,7 × edad), en `utils/cardioZones.ts`. Antes
+// aquí se calculaba a mano con 220 − edad; ver el porqué del cambio en el
+// comentario de `maxHREstimada`.
 function edadDesde(birthDate?: string): number | null {
   if (!birthDate) return null;
   const nacimiento = new Date(birthDate);
@@ -46,7 +48,7 @@ export default function CardioZonesSettingsCard({ profile }: Props) {
   const [saving, setSaving] = useState(false);
 
   const edad = edadDesde(onboarding?.birthDate);
-  const estimado = edad != null ? 220 - edad : null;
+  const estimado = edad != null ? maxHREstimada(edad) : null;
   const maxHRActual = cardioProfile?.maxHR ?? estimado ?? undefined;
   const [draft, setDraft] = useState<string>('');
   const mostrando = draft !== '' ? draft : (maxHRActual != null ? String(maxHRActual) : '');
@@ -109,7 +111,7 @@ export default function CardioZonesSettingsCard({ profile }: Props) {
         </div>
         <p className="font-sans text-caption text-ink-3 mt-2">
           {esEstimado
-            ? `Estimada por tu edad (${edad} años) — corrígela si la conoces con más precisión.`
+            ? `Estimada por tu edad (${edad} años, fórmula de Tanaka) — corrígela si la conoces con más precisión.`
             : 'Puesta a mano. Tus zonas se recalculan a partir de este valor.'}
         </p>
       </div>

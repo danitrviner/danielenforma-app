@@ -1,5 +1,5 @@
 import React from 'react';
-import { MUSCLE_LABELS_SHORT } from '../../types';
+import { MUSCLE_LABELS_SHORT, MuscleGroup } from '../../types';
 import { BalanceDeSeries } from '../../utils/programacion';
 import { Icon } from '../ui';
 
@@ -19,9 +19,12 @@ interface Props {
   referencia: string;
   /** Sin plan con el que comparar no hay balance que enseñar. */
   ocultarSiVacio?: boolean;
+  /** Si se pasa, cada chip descuadrado se puede clicar para saltar al primer
+   *  ejercicio de ese grupo — si no, los chips son solo lectura. */
+  onGroupClick?: (group: MuscleGroup) => void;
 }
 
-export default function SeriesBalance({ balance, referencia, ocultarSiVacio = true }: Props) {
+export default function SeriesBalance({ balance, referencia, ocultarSiVacio = true, onGroupClick }: Props) {
   const { filas, pendientes, sobrantes, cuadra, totalPautadas, totalPlanificadas } = balance;
   if (ocultarSiVacio && totalPlanificadas === 0 && totalPautadas === 0) return null;
 
@@ -69,16 +72,30 @@ export default function SeriesBalance({ balance, referencia, ocultarSiVacio = tr
           {descuadradas.map(f => {
             const falta = f.diff < 0;
             const color = falta ? 'var(--color-warning)' : 'var(--color-info)';
-            return (
-              <span
-                key={f.group}
-                title={`${MUSCLE_LABELS_SHORT[f.group]}: ${f.pautadas} pautadas de ${f.planificadas} planificadas`}
-                className="inline-flex items-center gap-1 rounded-chip border px-2 py-0.5 font-mono text-caption tabular-nums"
-                style={{ borderColor: color, color, backgroundColor: 'color-mix(in srgb, currentColor 10%, transparent)' }}
-              >
+            const contenido = (
+              <>
                 {MUSCLE_LABELS_SHORT[f.group]}
                 <span className="text-ink-2">{f.pautadas}/{f.planificadas}</span>
                 <strong>{falta ? f.diff : `+${f.diff}`}</strong>
+              </>
+            );
+            const claseComun = 'inline-flex items-center gap-1 rounded-chip border px-2 py-0.5 font-mono text-caption tabular-nums';
+            const estiloComun = { borderColor: color, color, backgroundColor: 'color-mix(in srgb, currentColor 10%, transparent)' };
+            const titulo = `${MUSCLE_LABELS_SHORT[f.group]}: ${f.pautadas} pautadas de ${f.planificadas} planificadas`;
+            return onGroupClick ? (
+              <button
+                key={f.group}
+                type="button"
+                title={`${titulo} — ir al ejercicio`}
+                onClick={() => onGroupClick(f.group)}
+                className={`${claseComun} hover:brightness-125 active:scale-95 transition-transform`}
+                style={estiloComun}
+              >
+                {contenido}
+              </button>
+            ) : (
+              <span key={f.group} title={titulo} className={claseComun} style={estiloComun}>
+                {contenido}
               </span>
             );
           })}

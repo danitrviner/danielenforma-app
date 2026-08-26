@@ -59,10 +59,14 @@ export interface SesionEnCurso {
 
 const PREFIJO = 'enforma_sesion_en_curso_v1';
 
-/** 20 h: cubre de sobra cualquier sesión real (incluida la que se empieza de
- *  noche y se termina a la mañana siguiente) sin llegar a resucitar la de ayer
- *  a la misma hora. */
-const CADUCIDAD_MS = 20 * 60 * 60 * 1000;
+/** 36 h (antes 20 h). Dani, 26-08: «si dejo el entreno a medias, que se quede
+ *  guardado para poder terminarlo cuando sea» — el caso real es entrenar por
+ *  la tarde, olvidarse de apuntar la última serie y acordarse al día
+ *  siguiente. Con 20 h ese borrador ya no existía. Se puede alargar sin
+ *  riesgo desde que la lista de rutinas marca el borrador de forma explícita
+ *  («Sin terminar · N series» + botón «Continuar»): ya no es una restauración
+ *  silenciosa que pueda confundirse con la sesión de hoy. */
+const CADUCIDAD_MS = 36 * 60 * 60 * 1000;
 
 function clave(athleteEmail: string, assignmentId: string): string {
   return `${PREFIJO}_${athleteEmail}_${assignmentId}`;
@@ -137,6 +141,29 @@ export function borrarSesion(athleteEmail: string, assignmentId: string): void {
  *  merece ni restaurarse ni avisar de nada. */
 export function tieneSeriesHechas(sesion: SesionEnCurso): boolean {
   return sesion.playerSets.some(ex => ex.some(s => s.done));
+}
+
+/**
+ * Series marcadas en el borrador de esta sesión, para que la LISTA de rutinas
+ * pueda decir «Sin terminar · 8 series» sin abrir el player. Devuelve 0 si no
+ * hay borrador, si caducó o si no hay ninguna serie hecha.
+ *
+ * A diferencia de `cargarSesion`, aquí NO se valida la forma de la rutina ni
+ * se borra nada: esto es solo un vistazo para pintar la lista, y una lectura
+ * de lista jamás debe tener el efecto de tirar el borrador del atleta. Si la
+ * rutina cambió de forma, `cargarSesion` ya lo descartará al abrir.
+ */
+export function seriesHechasEnBorrador(athleteEmail: string, assignmentId: string): number {
+  try {
+    const raw = localStorage.getItem(clave(athleteEmail, assignmentId));
+    if (!raw) return 0;
+    const sesion = JSON.parse(raw) as SesionEnCurso;
+    if (!sesion.guardadoEn || Date.now() - Date.parse(sesion.guardadoEn) > CADUCIDAD_MS) return 0;
+    if (!Array.isArray(sesion.playerSets)) return 0;
+    return sesion.playerSets.reduce((n, ex) => n + ex.filter(s => s.done).length, 0);
+  } catch {
+    return 0;
+  }
 }
 
 /**

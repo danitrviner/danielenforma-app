@@ -512,7 +512,15 @@ function RecipeDetail({ recipe, isFav, isDisliked, isOwn, enabledModes, savingFa
               {recipe.ingredientsText.map((ing, idx) => (
                 <li key={idx} className="flex items-center justify-between py-2 border-b border-hairline last:border-0">
                   <span className="text-label text-ink font-sans flex-1 pr-2 leading-relaxed">{ing.name}</span>
-                  <span className="font-mono text-caption text-ink-2 shrink-0">{ing.quantity}g</span>
+                  {/* El índice del recetario NO trae cantidades (pesa la mitad
+                      del campo y solo hacen falta con la receta abierta): las
+                      repone `getRecipeById` en `openRecipe`. Mientras esa
+                      lectura viaja —y para siempre si falla, por ejemplo sin
+                      conexión— aquí solo hay nombre, y pintar `{ing.quantity}g`
+                      a secas ponía un «undefinedg» junto a cada ingrediente. */}
+                  {ing.quantity != null && (
+                    <span className="font-mono text-caption text-ink-2 shrink-0">{ing.quantity}g</span>
+                  )}
                 </li>
               ))}
             </ul>

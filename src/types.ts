@@ -571,9 +571,22 @@ export interface QSchedule {
 // Perímetros y peso corporal recogidos vía preguntas tipo 'metric'. El peso
 // (`bodyweight`) no genera un BodyMeasurement — reutiliza bodyweightLogs para
 // no partir en dos la serie que ya alimenta perfil/reportes/periodización.
+//
+// biceps_izq/biceps_der/muslo_izq/muslo_der/gemelo son claves LEGACY (protocolo
+// simplificado, un solo valor por perímetro): se conservan para no romper el
+// histórico de clientes que ya midieron con ellas, pero el preset "Mediciones"
+// (questionnairePresets.ts) ya no las usa — pide el protocolo completo de
+// relajado/contraído por lado + pliegue subglúteo, que es lo que necesitan los
+// índices antropométricos (ver utils/anthropometricIndices.ts).
 export type BodyMetricKey =
-  | 'bodyweight' | 'altura' | 'pecho' | 'cintura' | 'abdomen' | 'cadera'
-  | 'biceps_izq' | 'biceps_der' | 'muslo_izq' | 'muslo_der' | 'gemelo' | 'cuello';
+  | 'bodyweight' | 'altura' | 'pecho' | 'cintura' | 'abdomen' | 'cadera' | 'cuello'
+  | 'biceps_izq' | 'biceps_der' | 'muslo_izq' | 'muslo_der' | 'gemelo' // legacy
+  | 'biceps_izq_relajado' | 'biceps_izq_contraido'
+  | 'biceps_der_relajado' | 'biceps_der_contraido'
+  | 'muslo_izq_relajado' | 'muslo_izq_contraido'
+  | 'muslo_der_relajado' | 'muslo_der_contraido'
+  | 'gemelo_izq' | 'gemelo_der'
+  | 'pliegue_subgluteo_der';
 
 export interface QuestionnaireQuestion {
   id: string;
@@ -666,7 +679,7 @@ export interface BodyMeasurement {
   date: string;       // YYYY-MM-DD
   metricKey: BodyMetricKey;
   value: number;
-  unit: 'cm' | 'kg';
+  unit: 'cm' | 'kg' | 'mm';
   source: 'questionnaire' | 'manual';
   responseId?: string;
   createdAt: string;  // ISO timestamp
@@ -679,17 +692,36 @@ export const BODY_METRIC_LABELS: Record<BodyMetricKey, string> = {
   cintura:    'Perímetro de cintura',
   abdomen:    'Perímetro de abdomen',
   cadera:     'Perímetro de cadera',
-  biceps_izq: 'Bíceps izquierdo',
-  biceps_der: 'Bíceps derecho',
-  muslo_izq:  'Muslo izquierdo',
-  muslo_der:  'Muslo derecho',
-  gemelo:     'Gemelo',
   cuello:     'Cuello',
+  // legacy
+  biceps_izq: 'Bíceps izquierdo (legacy)',
+  biceps_der: 'Bíceps derecho (legacy)',
+  muslo_izq:  'Muslo izquierdo (legacy)',
+  muslo_der:  'Muslo derecho (legacy)',
+  gemelo:     'Gemelo (legacy)',
+  // protocolo completo
+  biceps_izq_relajado:   'Bíceps izquierdo relajado',
+  biceps_izq_contraido:  'Bíceps izquierdo contraído',
+  biceps_der_relajado:   'Bíceps derecho relajado',
+  biceps_der_contraido:  'Bíceps derecho contraído',
+  muslo_izq_relajado:    'Muslo izquierdo relajado',
+  muslo_izq_contraido:   'Muslo izquierdo contraído',
+  muslo_der_relajado:    'Muslo derecho relajado',
+  muslo_der_contraido:   'Muslo derecho contraído',
+  gemelo_izq:             'Gemelo izquierdo',
+  gemelo_der:             'Gemelo derecho',
+  pliegue_subgluteo_der:  'Pliegue subglúteo derecho',
 };
 
-export const BODY_METRIC_UNITS: Record<BodyMetricKey, 'cm' | 'kg'> = {
-  bodyweight: 'kg', altura: 'cm', pecho: 'cm', cintura: 'cm', abdomen: 'cm', cadera: 'cm',
-  biceps_izq: 'cm', biceps_der: 'cm', muslo_izq: 'cm', muslo_der: 'cm', gemelo: 'cm', cuello: 'cm',
+export const BODY_METRIC_UNITS: Record<BodyMetricKey, 'cm' | 'kg' | 'mm'> = {
+  bodyweight: 'kg', altura: 'cm', pecho: 'cm', cintura: 'cm', abdomen: 'cm', cadera: 'cm', cuello: 'cm',
+  biceps_izq: 'cm', biceps_der: 'cm', muslo_izq: 'cm', muslo_der: 'cm', gemelo: 'cm',
+  biceps_izq_relajado: 'cm', biceps_izq_contraido: 'cm',
+  biceps_der_relajado: 'cm', biceps_der_contraido: 'cm',
+  muslo_izq_relajado: 'cm', muslo_izq_contraido: 'cm',
+  muslo_der_relajado: 'cm', muslo_der_contraido: 'cm',
+  gemelo_izq: 'cm', gemelo_der: 'cm',
+  pliegue_subgluteo_der: 'mm',
 };
 
 // ─── BODYWEIGHT ───────────────────────────────────────────────────────────────
@@ -1531,6 +1563,21 @@ export interface CardioIntervalBlock {
   targetKcal?: number; // closeType === 'calories', acumulado dentro del bloque
 }
 
+/**
+ * Programa progresivo de cardio (Dani, 26-08). Guarda la INTENCIÓN, no la
+ * prescripción: los minutos de Zona 2 o las series de VO₂máx de esta semana se
+ * derivan de aquí en `utils/cardioProgression.ts`, igual que la rutina de la
+ * semana se deriva del mesociclo en vez de duplicarse semana a semana.
+ */
+export interface CardioProgram {
+  kind: 'zona2' | 'vo2max';
+  /** Solo 'vo2max': id de PROTOCOLOS_VO2MAX ('noruego4x4' | 'billat30_30' | 'sprints30_90'). */
+  protocolId: string;
+  startDate: string;   // YYYY-MM-DD
+  baseMinutes?: number;          // 'zona2': minutos de la semana 1
+  targetZone?: keyof CardioZones; // 'zona2': normalmente z2
+}
+
 export interface CardioAssignment {
   id: string;
   athleteId: string;
@@ -1542,6 +1589,9 @@ export interface CardioAssignment {
   date?: string; // YYYY-MM-DD si es puntual; si no, recurrente por timesPerWeek
   active: boolean;
   createdAt: string; // ISO
+  /** Si viene, la duración/los bloques de arriba son los de la semana en curso
+   *  y los recalcula `resolverAsignacionCardio` — no se editan a mano. */
+  program?: CardioProgram;
 }
 
 export interface CardioSession {

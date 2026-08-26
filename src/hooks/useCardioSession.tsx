@@ -10,6 +10,7 @@ import {
   roundTimeInZone, elapsedSecFromWallClock, shouldDiscardSession, summarizeSamples, pickActiveZona2Assignment,
   pickActiveIntervalAssignment, weeklyCardioMinutesDone, defaultWeeklyCardioGoal, isoWeekKey,
 } from '../utils/cardioSession';
+import { resolverAsignacionCardio } from '../utils/cardioProgression';
 import {
   caloriesKeytel, caloriesActive, metsFromCalories, fitivPoints, trimpBanister, hrTss,
   effortMinutes, hrrEligibility, heartRateRecovery, sampleNearElapsed,
@@ -255,8 +256,14 @@ function CardioSessionProviderInner({ profile, children }: { profile: UserProfil
   // el tipo de sesión una sola vez, sin pisar si el atleta ya ha elegido a
   // mano. 'intervalos' solo es seleccionable si el coach definió bloques
   // (§F6) — no hay editor de bloques propio del atleta, es cosa del coach.
-  const zona2Assignment = pickActiveZona2Assignment(assignments);
-  const intervalAssignment = pickActiveIntervalAssignment(assignments);
+  // Programa progresivo (26-08): si la prescripción es un programa, lo que
+  // toca esta semana no está guardado en la asignación — se deriva aquí de las
+  // sesiones ya hechas, igual que la rutina de la semana se deriva del
+  // mesociclo. Se resuelve en el mismo punto en el que se elige el cardio
+  // activo para que la tarjeta de hoy, el reproductor en vivo y el panel del
+  // coach vean exactamente la misma sesión.
+  const zona2Assignment = resolverAsignacionCardio(pickActiveZona2Assignment(assignments, todayIso), sessions, todayIso);
+  const intervalAssignment = resolverAsignacionCardio(pickActiveIntervalAssignment(assignments, todayIso), sessions, todayIso);
   const autoSelectedRef = useRef(false);
   useEffect(() => {
     if (autoSelectedRef.current || state !== 'idle') return;

@@ -9,13 +9,11 @@
  *   GOOGLE_APPLICATION_CREDENTIALS=./serviceAccount.json node scripts/limpiarPaco.mjs
  */
 import { readFileSync } from 'fs';
-import { initializeApp, cert } from 'firebase-admin/app';
-import { getFirestore } from 'firebase-admin/firestore';
+import { abrirDb } from './_lib/firestoreDb.mjs';
 
 const cfg = JSON.parse(readFileSync('./firebase-applet-config.json', 'utf8'));
 const sa = JSON.parse(readFileSync(process.env.GOOGLE_APPLICATION_CREDENTIALS, 'utf8'));
-initializeApp({ credential: cert(sa) });
-const db = getFirestore(cfg.firestoreDatabaseId);
+const db = abrirDb(sa);
 
 const DIET_IDS = [
   'lerBhuq6w9iIYqeFA2cs', '6qjb6vt0kzqj75zuVp2O', 'cSUyJjXaMkoMllrjuNDP', 'oFb9mcNZ041AsTrGtMSS',

@@ -3,6 +3,7 @@ import {
   MUSCLE_LABELS, MUSCLE_ORDER,
 } from '../types';
 import { buildTrainingReport, TrainingReport } from './trainingReport';
+import { buildMovementPatternReport, PatternPerf } from './movementPatterns';
 import { addDays } from './trainingWeek';
 import { adherenciaDeMesociclo } from './adherence';
 
@@ -61,6 +62,8 @@ export interface CierreMesociclo {
   };
   /** Tonelaje, 1RM estimado, récords y progresión por grupo (trainingReport). */
   informe: TrainingReport;
+  /** Variación de 1RM/tonelaje por patrón de movimiento — bloque "Rendimiento" del protocolo de mediciones. */
+  patrones: PatternPerf[];
   /** Frases para el coach, ya masticadas. */
   titulares: string[];
   /** Borrador copiable para mandarle al cliente. El coach lo edita antes. */
@@ -124,11 +127,17 @@ export function buildCierreMesociclo(params: {
     .filter(m => m.id !== meso.id && m.number < meso.number)
     .sort((a, b) => b.number - a.number)[0] ?? null;
 
+  const comparison = { mode: 'mesocycle' as const, currentId: meso.id, previousId: anterior?.id ?? null };
   const informe = buildTrainingReport({
     logs, exercises, mesocycles,
     periodStart: inicio, periodEnd: fin,
-    comparison: { mode: 'mesocycle', currentId: meso.id, previousId: anterior?.id ?? null },
+    comparison,
   });
+  const patrones = buildMovementPatternReport({
+    logs, exercises, mesocycles,
+    periodStart: inicio, periodEnd: fin,
+    comparison,
+  }).patterns;
 
   // ── Adherencia ──────────────────────────────────────────────────────────
   const asigMeso = assignments.filter(a => a.mesocycleId === meso.id);
@@ -245,6 +254,7 @@ export function buildCierreMesociclo(params: {
     sesiones: { registradas, programadas: asigMeso.length, completadas, adherenciaPct },
     volumen: { filas, totalProgramadas, totalRealizadas, pct: pctVolumen },
     informe,
+    patrones,
     titulares,
     resumenParaCliente: frases.join(' '),
   };

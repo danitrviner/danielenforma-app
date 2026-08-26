@@ -129,9 +129,45 @@ export default function Pager({ children, value, onChange, label, dots = 'outsid
     }
   }, [value, scrollToIndex]);
 
+  // Trampa 3 (Dani, 26-08): con un gesto FUERTE el carrusel se quedaba a
+  // medio camino entre dos ejercicios. `snap-mandatory` promete anclar, pero
+  // el WKWebView de iOS abandona el anclado si el contenido del carrusel se
+  // re-maqueta mientras aún hay inercia — y aquí se re-maqueta siempre: cada
+  // `onChange` re-renderiza el player entero (barra de progreso, temporizador
+  // que salta de tarjeta, alto de la página activa). No se puede evitar el
+  // re-render, así que se corrige el destino: cuando el scroll se queda
+  // quieto, si no estamos clavados en un múltiplo del ancho, se ancla a mano.
+  // Se comprueba SIEMPRE al asentarse, no solo cuando cambia el índice: el
+  // caso roto es justo el de quedarse descuadrado dentro de la misma página.
+  const settleRef = useRef<number | null>(null);
+  const [dragging, setDragging] = useState(false);
+
+  const anclarAlAsentarse = useCallback(() => {
+    if (settleRef.current !== null) window.clearTimeout(settleRef.current);
+    settleRef.current = window.setTimeout(() => {
+      settleRef.current = null;
+      setDragging(false);
+      const el = scrollRef.current;
+      if (!el || el.clientWidth === 0) return;
+      const index = Math.max(0, Math.min(Math.round(el.scrollLeft / el.clientWidth), pageCount - 1));
+      const target = index * el.clientWidth;
+      // 1px de tolerancia: en pantallas con escala fraccionaria el propio
+      // anclado nativo deja décimas de píxel, y corregir eso sería un bucle.
+      if (Math.abs(el.scrollLeft - target) <= 1) return;
+      programmaticRef.current = true;
+      el.scrollTo({ left: target, behavior: reducedMotion ? 'auto' : 'smooth' });
+      window.setTimeout(() => {
+        programmaticRef.current = false;
+        if (Math.abs(el.scrollLeft - target) > 2) el.scrollTo({ left: target, behavior: 'auto' });
+      }, reducedMotion ? 50 : 400);
+    }, 160);
+  }, [pageCount, reducedMotion]);
+
   const rafRef = useRef<number | null>(null);
   const handleScroll = useCallback(() => {
     if (programmaticRef.current) return;
+    setDragging(true);
+    anclarAlAsentarse();
     if (rafRef.current !== null) return;
     rafRef.current = requestAnimationFrame(() => {
       rafRef.current = null;
@@ -144,9 +180,12 @@ export default function Pager({ children, value, onChange, label, dots = 'outsid
         onChange(clamped);
       }
     });
-  }, [pageCount, onChange]);
+  }, [pageCount, onChange, anclarAlAsentarse]);
 
-  useEffect(() => () => { if (rafRef.current !== null) cancelAnimationFrame(rafRef.current); }, []);
+  useEffect(() => () => {
+    if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+    if (settleRef.current !== null) window.clearTimeout(settleRef.current);
+  }, []);
 
   const goTo = (index: number) => onChange(Math.max(0, Math.min(index, pageCount - 1)));
 
@@ -190,7 +229,11 @@ export default function Pager({ children, value, onChange, label, dots = 'outsid
           'flex overflow-x-auto snap-x snap-mandatory overscroll-x-contain hide-scrollbar focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-line '
           + (fill ? 'h-full items-stretch' : 'items-start')
         }
-        style={!fill && activeHeight != null ? { height: activeHeight, transition: reducedMotion ? undefined : 'height 200ms ease' } : undefined}
+        /* Mientras el dedo (o la inercia) manda, el alto cambia de golpe y sin
+           animar: una transición de alto en marcha es re-maquetación continua
+           dentro del contenedor que está scrolleando, justo lo que hace que
+           iOS suelte el anclado (trampa 3). */
+        style={!fill && activeHeight != null ? { height: activeHeight, transition: reducedMotion || dragging ? undefined : 'height 200ms ease' } : undefined}
       >
         {React.Children.map(children, (child, i) => (
           <div

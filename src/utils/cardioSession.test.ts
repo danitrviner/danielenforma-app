@@ -92,6 +92,8 @@ describe('cardioSession — resumen de muestras', () => {
   });
 });
 
+const HOY = '2026-08-27';
+
 describe('pickActiveZona2Assignment — prescripción del coach para la sesión guiada', () => {
   const base: Omit<CardioAssignment, 'id' | 'type' | 'active' | 'createdAt'> = { athleteId: 'a@x.com' };
 
@@ -100,7 +102,7 @@ describe('pickActiveZona2Assignment — prescripción del coach para la sesión 
       { ...base, id: '1', type: 'libre', active: true, createdAt: '2026-01-01' },
       { ...base, id: '2', type: 'zona2', active: false, createdAt: '2026-01-02' },
     ];
-    expect(pickActiveZona2Assignment(assignments)).toBeUndefined();
+    expect(pickActiveZona2Assignment(assignments, HOY)).toBeUndefined();
   });
 
   it('coge la Zona 2 activa', () => {
@@ -109,13 +111,35 @@ describe('pickActiveZona2Assignment — prescripción del coach para la sesión 
       { ...base, id: '1', type: 'libre', active: true, createdAt: '2026-01-01' },
       target,
     ];
-    expect(pickActiveZona2Assignment(assignments)).toEqual(target);
+    expect(pickActiveZona2Assignment(assignments, HOY)).toEqual(target);
   });
 
   it('con varias activas, se queda con la más reciente', () => {
     const older: CardioAssignment = { ...base, id: '1', type: 'zona2', active: true, createdAt: '2026-01-01' };
     const newer: CardioAssignment = { ...base, id: '2', type: 'zona2', active: true, createdAt: '2026-02-01' };
-    expect(pickActiveZona2Assignment([older, newer])).toEqual(newer);
+    expect(pickActiveZona2Assignment([older, newer], HOY)).toEqual(newer);
+  });
+
+  it('una sesión puntual para HOY gana a la recurrente', () => {
+    const recurrente: CardioAssignment = { ...base, id: '1', type: 'zona2', active: true, createdAt: '2026-01-01' };
+    const puntual: CardioAssignment = { ...base, id: '2', type: 'zona2', active: true, createdAt: '2026-08-20', date: HOY };
+    expect(pickActiveZona2Assignment([recurrente, puntual], HOY)).toEqual(puntual);
+  });
+
+  it('una sesión puntual para OTRO día no se ve ni antes ni después de su fecha', () => {
+    const puntualDeMañana: CardioAssignment = { ...base, id: '1', type: 'zona2', active: true, createdAt: '2026-08-20', date: '2026-08-28' };
+    const recurrente: CardioAssignment = { ...base, id: '2', type: 'zona2', active: true, createdAt: '2026-01-01' };
+    // Hoy: se ve la recurrente, no la puntual de mañana.
+    expect(pickActiveZona2Assignment([puntualDeMañana, recurrente], HOY)).toEqual(recurrente);
+    // Al día siguiente: ahora sí toca la puntual.
+    expect(pickActiveZona2Assignment([puntualDeMañana, recurrente], '2026-08-28')).toEqual(puntualDeMañana);
+    // Pasado el día: vuelve a no verse, cae otra vez a la recurrente.
+    expect(pickActiveZona2Assignment([puntualDeMañana, recurrente], '2026-08-29')).toEqual(recurrente);
+  });
+
+  it('sin recurrente de respaldo, un día sin sesión puntual no coge una puntual de otro día', () => {
+    const puntualDeOtroDia: CardioAssignment = { ...base, id: '1', type: 'zona2', active: true, createdAt: '2026-08-20', date: '2026-08-28' };
+    expect(pickActiveZona2Assignment([puntualDeOtroDia], HOY)).toBeUndefined();
   });
 });
 
@@ -125,12 +149,12 @@ describe('pickActiveIntervalAssignment — prescripción de intervalos del coach
 
   it('exige al menos un bloque definido', () => {
     const noBlocks: CardioAssignment = { ...base, id: '1', type: 'intervalos', active: true, createdAt: '2026-01-01', intervals: [] };
-    expect(pickActiveIntervalAssignment([noBlocks])).toBeUndefined();
+    expect(pickActiveIntervalAssignment([noBlocks], HOY)).toBeUndefined();
   });
 
   it('coge la de intervalos activa con bloques', () => {
     const target: CardioAssignment = { ...base, id: '2', type: 'intervalos', active: true, createdAt: '2026-01-01', intervals: someBlocks };
-    expect(pickActiveIntervalAssignment([target])).toEqual(target);
+    expect(pickActiveIntervalAssignment([target], HOY)).toEqual(target);
   });
 });
 

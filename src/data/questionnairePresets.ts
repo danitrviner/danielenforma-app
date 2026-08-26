@@ -162,16 +162,27 @@ const DOMS: QuestionnairePresetDef = {
 
 const MEDICIONES: QuestionnairePresetDef = {
   title: 'Mediciones',
-  description: 'Perímetros corporales — alimentan la ficha de mediciones y las correlaciones.',
+  description: 'Perímetros corporales mensuales — alimentan la ficha de mediciones y los índices '
+    + 'antropométricos (Pecho/Cintura, Bíceps/Cintura, Cadera/Cintura, Muslo/Cintura). Sigue el orden del '
+    + 'protocolo en vídeo: https://www.youtube.com/watch?v=cCQ8SPp9jdc',
   suggestedSchedule: { type: 'monthly', dayOfMonth: 26 },
   questions: [
+    metric('Cuello (cm)', 'cuello'),
     metric('Contorno de pecho (cm)', 'pecho'),
-    metric('Bíceps izquierdo contraído (cm)', 'biceps_izq'),
-    metric('Muslo izquierdo contraido (cm)', 'muslo_izq'),
-    metric('Bíceps derecho contraído (cm)', 'biceps_der'),
-    metric('Muslo derecho contraído (cm)', 'muslo_der'),
+    metric('Bíceps derecho relajado (cm)', 'biceps_der_relajado'),
+    metric('Bíceps derecho contraído (cm)', 'biceps_der_contraido'),
+    metric('Bíceps izquierdo relajado (cm)', 'biceps_izq_relajado'),
+    metric('Bíceps izquierdo contraído (cm)', 'biceps_izq_contraido'),
+    metric('Perímetro de cintura (cm)', 'cintura'),
     metric('Perímetro de abdomen (cm)', 'abdomen'),
-    metric('Perimetro de cintura (cm)', 'cintura'),
+    metric('Perímetro de cadera (cm)', 'cadera'),
+    metric('Pliegue subglúteo derecho (mm)', 'pliegue_subgluteo_der'),
+    metric('Muslo derecho relajado (cm)', 'muslo_der_relajado'),
+    metric('Muslo derecho contraído (cm)', 'muslo_der_contraido'),
+    metric('Muslo izquierdo relajado (cm)', 'muslo_izq_relajado'),
+    metric('Muslo izquierdo contraído (cm)', 'muslo_izq_contraido'),
+    metric('Gemelo derecho (cm)', 'gemelo_der'),
+    metric('Gemelo izquierdo (cm)', 'gemelo_izq'),
   ],
 };
 
