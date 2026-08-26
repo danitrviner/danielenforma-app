@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Exercise, MuscleGroup, MUSCLE_ORDER, MUSCLE_LABELS } from '../types';
 import { getExercises, createExercise, updateExercise, deleteExercise, seedExercisesIfEmpty } from '../dbService';
 import { useToast } from '../hooks/useToast';
+import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { mensajeDeErrorFirestore } from '../utils/erroresFirestore';
 import { Skeleton } from './ui';
 import { Badge, EmptyState, Dialog, Button, Icon, Input, PageHeader, Select, Sheet, Chip, SearchField, ListRow } from './ui';
@@ -99,6 +100,10 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
     },
   });
   const [search, setSearch]                     = useState('');
+  // El campo se actualiza al instante (se ve lo que se teclea); lo que se
+  // debouncea es el término que de verdad dispara el filtro+orden sobre los
+  // ~1.681 ejercicios — sin esto, cada tecla repetía un sort() completo.
+  const searchDebounced = useDebouncedValue(search, 200);
   const [filterMuscleGroups, setFilterMuscleGroups] = useState<MuscleGroup[]>([]);
   const [filterType, setFilterType]             = useState('');
   const [filterEndurance, setFilterEndurance]   = useState('');
@@ -121,7 +126,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
   const sinRevisar = exercises.filter(e => !e.revisado).length;
 
   function matchesFilters(ex: Exercise, groups: MuscleGroup[], equipment: string[]): boolean {
-    if (search && !ex.name.toLowerCase().includes(search.toLowerCase())) return false;
+    if (searchDebounced && !ex.name.toLowerCase().includes(searchDebounced.toLowerCase())) return false;
     if (groups.length > 0 && (!ex.muscleGroup || !groups.includes(ex.muscleGroup))) return false;
     if (filterType && ex.type !== filterType) return false;
     if (filterEndurance && ex.enduranceProfile !== filterEndurance) return false;

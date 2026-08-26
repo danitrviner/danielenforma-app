@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { MealItem, FoodCategory, DietMode } from '../types';
 import { getFoodItems, createFoodItem, updateFoodItem, deleteFoodItem, seedFoodItemsIfEmpty } from '../dbService';
@@ -56,6 +57,7 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
   const [filterMode, setFilterMode] = useState<DietMode>('OMNIVORO');
   const [filterCat, setFilterCat] = useState<FoodCategory | 'all'>('all');
   const [search, setSearch] = useState('');
+  const searchDebounced = useDebouncedValue(search, 200);
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<Omit<MealItem, 'id'>>(EMPTY_FORM);
@@ -67,7 +69,7 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
   const filtered = items.filter(f => {
     if (f.mode !== filterMode) return false;
     if (filterCat !== 'all' && f.category !== filterCat) return false;
-    if (search && !f.label.toLowerCase().includes(search.toLowerCase())) return false;
+    if (searchDebounced && !f.label.toLowerCase().includes(searchDebounced.toLowerCase())) return false;
     return true;
   });
 

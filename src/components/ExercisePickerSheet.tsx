@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Exercise, MuscleGroup, MUSCLE_ORDER, MUSCLE_LABELS } from '../types';
 import { Sheet, Icon, EmptyState, Chip } from './ui';
+import { useDebouncedValue } from '../hooks/useDebouncedValue';
 
 /* T11.a (18-08). Antes solo se podía "cambiar" un ejercicio desde la vista
    previa del generador (un <select> con la biblioteca entera, sin filtro).
@@ -38,13 +39,18 @@ export default function ExercisePickerSheet({
 }: Props) {
   const [group, setGroup] = useState<MuscleGroup | 'all'>(initialGroup ?? 'all');
   const [search, setSearch] = useState('');
+  // Debounced solo para el filtro: el campo y los chips (opacity-40 abajo)
+  // siguen el tecleo al instante, lo que se retrasa es el filter() sobre la
+  // biblioteca entera de ejercicios.
+  const searchDebounced = useDebouncedValue(search, 200);
 
   if (!open) return null;
 
   const term = search.trim().toLowerCase();
+  const termDebounced = searchDebounced.trim().toLowerCase();
   const filtered = exercises.filter(ex => {
-    if (!term && group !== 'all' && ex.muscleGroup !== group) return false;
-    if (term && !ex.name.toLowerCase().includes(term)) return false;
+    if (!termDebounced && group !== 'all' && ex.muscleGroup !== group) return false;
+    if (termDebounced && !ex.name.toLowerCase().includes(termDebounced)) return false;
     return true;
   });
 
