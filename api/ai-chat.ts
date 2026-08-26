@@ -89,10 +89,53 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
   }
 
-  // ── Llamada a Anthropic ───────────────────────────────────────────────────
+  // ── Coste en USD, para que el coach vea lo que cuesta cada petición ───────
+  // Precios oficiales por millón de tokens (ver la whitelist ALLOWED_MODELS,
+  // arriba) — si Anthropic cambia precios, esto es lo único que hay que tocar.
+  // Multiplicadores de caché fijos según la documentación de Anthropic: 1,25×
+  // el precio de entrada al ESCRIBIR en caché (TTL de 5 min, el que usa
+  // aiClient.ts con `cache_control: {type: 'ephemeral'}`), 0,1× al LEER.
+  const PRECIOS_POR_MTOK: Record<string, { input: number; output: number }> = {
+    'claude-sonnet-5': { input: 2, output: 10 },
+    'claude-haiku-4-5': { input: 1, output: 5 },
+  };
+  function calcularCosteUsd(modelo: string, usage: {
+    input_tokens: number; output_tokens: number;
+    cache_creation_input_tokens?: number | null; cache_read_input_tokens?: number | null;
+  }): number {
+    const precio = PRECIOS_POR_MTOK[modelo];
+    if (!precio) return 0;
+    const MTOK = 1_000_000;
+    return (
+      (usage.input_tokens * precio.input) / MTOK +
+      (usage.output_tokens * precio.output) / MTOK +
+      ((usage.cache_creation_input_tokens ?? 0) * precio.input * 1.25) / MTOK +
+      ((usage.cache_read_input_tokens ?? 0) * precio.input * 0.1) / MTOK
+    );
+  }
+
+  // ── Llamada a Anthropic, en streaming ─────────────────────────────────────
+  // A partir de aquí cualquier fallo SOLO puede comunicarse dentro del propio
+  // stream (evento `error`), nunca con un res.status().json() — las cabeceras
+  // de la respuesta ya se han enviado, así que el código HTTP ya es 200 y no
+  // se puede cambiar. El cliente (aiClient.ts) sabe leer un evento `error`
+  // dentro de un 200 como el fallo que es.
   const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache, no-transform',
+    Connection: 'keep-alive',
+    // Sin esto, un proxy delante de la función (o la propia plataforma)
+    // puede bufferizar la respuesta y el cliente no ve nada hasta el final —
+    // exactamente lo que el streaming se supone que evita.
+    'X-Accel-Buffering': 'no',
+  });
+  const enviarEvento = (tipo: string, datos: unknown) => {
+    res.write(`event: ${tipo}\ndata: ${JSON.stringify(datos)}\n\n`);
+  };
+
   try {
-    const message = await anthropic.messages.create({
+    const stream = anthropic.messages.stream({
       model,
       max_tokens: maxTokens,
       system: body.system as never,
@@ -100,6 +143,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       tools: (body.tools ?? undefined) as never,
       output_config: { effort },
     } as never);
+
+    for await (const event of stream) {
+      enviarEvento(event.type, event);
+    }
+
+    const message = await stream.finalMessage();
+    const costoUsd = calcularCosteUsd(model, message.usage);
 
     // ── Auditoría server-side (el cliente no puede escribirla ni saltársela) ─
     if (db) {
@@ -110,17 +160,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         outputTokens: message.usage.output_tokens,
         cacheReadInputTokens: message.usage.cache_read_input_tokens ?? 0,
         cacheCreationInputTokens: message.usage.cache_creation_input_tokens ?? 0,
+        costoUsd,
         stopReason: message.stop_reason ?? null,
         toolNames: message.content.filter(b => b.type === 'tool_use').map(b => b.name),
         chatId: body.chatId ?? null,
       }).catch(err => console.warn('aiAuditLog write failed:', err));
     }
 
-    res.status(200).json({ message });
+    // Último evento: el coste de ESTA llamada, para que el panel lo enseñe
+    // sin tener que recalcular precios en el navegador.
+    enviarEvento('costo', { usd: costoUsd, usage: message.usage });
   } catch (err) {
     const e = err as { status?: number; message?: string };
-    console.error('Anthropic API error:', e);
-    res.status(e.status && e.status >= 400 && e.status < 600 ? e.status : 502)
-      .json({ error: e.message || 'Error llamando a la API de Anthropic' });
+    console.error('Anthropic stream error:', e);
+    enviarEvento('error', { error: e.message || 'Error llamando a la API de Anthropic' });
+  } finally {
+    res.end();
   }
 }

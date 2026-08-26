@@ -2,8 +2,13 @@
 // al proxy de Vercel (que guarda la API key y verifica que somos el coach),
 // ejecuta localmente las tools que pida el modelo (src/ai/tools.ts) y reenvía
 // los resultados hasta que el modelo responde sin más tool calls.
+//
+// api/ai-chat.ts responde en streaming (Server-Sent Events): el texto llega
+// token a token en vez de esperar la respuesta completa, y el turno se puede
+// cancelar a mitad de camino con el `signal` que pasa AiChatPanel (botón
+// «Detener»).
 import { auth } from '../firebase';
-import { AiChatMessage, AiContentBlock, AiToolUseBlock } from '../types';
+import { AiChatMessage, AiContentBlock, AiTextBlock, AiThinkingBlock, AiToolUseBlock } from '../types';
 import { SYSTEM_PROMPT, buildContextSuffix } from './systemPrompt';
 import { buildDoctrinaBlock } from './doctrina';
 import { TOOL_DEFINITIONS, executeTool, toolStatusLabel } from './tools';
@@ -18,35 +23,48 @@ const PROXY_URL: string =
 
 const DEFAULT_MODEL = 'claude-sonnet-5';
 const MAX_TOOL_ROUNDS = 12;
-// api/ai-chat.ts declara maxDuration: 60 — sin un timeout de cliente por
-// encima, una función de Vercel colgada deja el chat "Pensando…" para
-// siempre, sin error ni forma de reintentar.
-const PROXY_TIMEOUT_MS = 65_000;
+// Antes esto era un plazo único de 65s para la respuesta ENTERA — con
+// streaming eso penalizaría sin motivo una respuesta larga que va llegando
+// con normalidad. Ahora es un plazo de SILENCIO: se reinicia con cada trozo
+// que llega de verdad, y solo salta si el servidor deja de mandar nada en
+// absoluto (función de Vercel colgada, conexión cortada a medias...).
+const SILENCIO_MAX_MS = 30_000;
 const NETWORK_RETRY_DELAY_MS = 1500;
 
 export interface AgentCallbacks {
-  // Se llama tras cada mensaje añadido (assistant o tool_results) — el panel lo
-  // usa como fuente de verdad para que un error a mitad de turno no pierda nada.
+  // Se llama tras cada mensaje añadido o actualizado (assistant en curso,
+  // assistant final, o tool_results) — el panel lo usa como fuente de verdad
+  // para pintar el texto según va llegando, y para que un error a mitad de
+  // turno no deje nada a medias (ver el try/catch dentro de runAgentTurn).
   onUpdate?: (messages: AiChatMessage[]) => void;
   // Etiqueta de la tool en curso, o null cuando termina.
   onToolStatus?: (label: string | null) => void;
+  // Coste en USD de CADA llamada al proxy (una por ronda), y el acumulado del
+  // turno hasta ese momento — para que el panel enseñe lo que cuesta cada
+  // petición sin recalcular precios en el navegador.
+  onCost?: (rondaUsd: number, acumuladoUsd: number) => void;
 }
 
-interface ProxyResponse {
-  message?: {
-    content: AiContentBlock[];
-    stop_reason: string;
-  };
-  error?: string;
+interface MensajeStreameado {
+  content: AiContentBlock[];
+  stop_reason: string;
 }
 
-/** Fallo de red/timeout, distinto de una respuesta HTTP de error — el único
- *  caso en el que tiene sentido reintentar solo. */
+/** Fallo de red al ABRIR la conexión, distinto de un corte a mitad de
+ *  streaming — es el único caso en el que tiene sentido reintentar solo,
+ *  porque todavía no se ha mostrado nada al atleta. */
 class FalloDeRed extends Error {}
 
-async function postToProxy(idToken: string, body: Record<string, unknown>, round: number): Promise<Response> {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), PROXY_TIMEOUT_MS);
+/** El propio atleta/coach ha pulsado «Detener» — no es un fallo. */
+export class TurnoCancelado extends Error {
+  constructor(cause?: unknown) { super('Cancelado.', cause ? { cause } : undefined); this.name = 'TurnoCancelado'; }
+}
+
+async function abrirConexion(
+  idToken: string, body: Record<string, unknown>, round: number,
+  controller: AbortController, reiniciarSilencio: () => void, señalExterna?: AbortSignal,
+): Promise<Response> {
+  reiniciarSilencio();
   try {
     return await fetch(PROXY_URL, {
       method: 'POST',
@@ -55,60 +73,221 @@ async function postToProxy(idToken: string, body: Record<string, unknown>, round
       signal: controller.signal,
     });
   } catch (err) {
+    if (señalExterna?.aborted) throw new TurnoCancelado(err);
     // Antes esto era un `catch {}` sin parámetro: tiraba el error original a
     // la basura, así que era imposible distinguir CORS de un timeout, de
     // estar sin cobertura, o de la función de Vercel cortando la conexión.
     console.error(`[aiClient] fetch a ${PROXY_URL} falló en la ronda ${round}:`, err);
     if (typeof navigator !== 'undefined' && navigator.onLine === false) {
-      throw new FalloDeRed('Sin conexión. El asistente necesita internet.');
+      throw new FalloDeRed('Sin conexión. El asistente necesita internet.', { cause: err });
     }
     if ((err as { name?: string })?.name === 'AbortError') {
-      throw new FalloDeRed(`El asistente no respondió a tiempo (ronda ${round + 1}).`);
+      throw new FalloDeRed(`El asistente no respondió a tiempo (ronda ${round + 1}).`, { cause: err });
     }
     throw new FalloDeRed(
-      `No se pudo conectar con el asistente (ronda ${round + 1}): ${(err as Error)?.message ?? 'error de red'}.`
+      `No se pudo conectar con el asistente (ronda ${round + 1}): ${(err as Error)?.message ?? 'error de red'}.`,
+      { cause: err }
     );
-  } finally {
-    clearTimeout(timeout);
   }
 }
 
-async function callProxy(body: Record<string, unknown>, round: number): Promise<ProxyResponse['message']> {
+/** Trocea el cuerpo de la respuesta en eventos `event: X\ndata: Y\n\n` — el
+ *  mismo formato SSE que usa la propia API de Anthropic (ver api/ai-chat.ts,
+ *  que reenvía sus eventos tal cual bajo ese formato). Reinicia el plazo de
+ *  silencio con cada trozo que llega de verdad, no con cada evento parseado —
+ *  un solo trozo de red puede traer varios eventos SSE juntos. */
+async function* leerEventosSSE(
+  response: Response, reiniciarSilencio: () => void,
+): AsyncGenerator<{ tipo: string; datos: any }> {
+  if (!response.body) throw new Error('El servidor no devolvió un cuerpo de respuesta.');
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      reiniciarSilencio();
+      buffer += decoder.decode(value, { stream: true });
+
+      let corte: number;
+      while ((corte = buffer.indexOf('\n\n')) !== -1) {
+        const bloque = buffer.slice(0, corte);
+        buffer = buffer.slice(corte + 2);
+        let tipo = '';
+        let datosCrudos = '';
+        for (const linea of bloque.split('\n')) {
+          if (linea.startsWith('event:')) tipo = linea.slice(6).trim();
+          else if (linea.startsWith('data:')) datosCrudos += linea.slice(5).trim();
+        }
+        if (!tipo || !datosCrudos) continue;
+        try {
+          yield { tipo, datos: JSON.parse(datosCrudos) };
+        } catch (err) {
+          console.warn('[aiClient] evento SSE con JSON inválido, se descarta:', err);
+        }
+      }
+    }
+  } finally {
+    reader.releaseLock();
+  }
+}
+
+/** Consume el stream de UNA llamada al proxy, reconstruyendo el mensaje del
+ *  assistant bloque a bloque y avisando a `cb.onUpdate` con cada trozo de
+ *  texto que llega — así el panel enseña el texto según se genera en vez de
+ *  esperar a que termine el turno entero. */
+async function leerRespuestaEnStreaming(
+  response: Response,
+  mensajesPrevios: AiChatMessage[],
+  reiniciarSilencio: () => void,
+  cb: AgentCallbacks,
+): Promise<{ message: MensajeStreameado; costoUsd: number }> {
+  const contenido: AiContentBlock[] = [];
+  const jsonParcialPorIndice: Record<number, string> = {};
+  let stopReason = 'end_turn';
+  let costoUsd = 0;
+  const mensajeEnCurso = (): AiChatMessage => ({ role: 'assistant', content: contenido });
+
+  for await (const { tipo, datos } of leerEventosSSE(response, reiniciarSilencio)) {
+    switch (tipo) {
+      case 'error':
+        throw new Error(datos?.error || 'El asistente falló a mitad de la respuesta.');
+
+      case 'costo':
+        costoUsd = typeof datos?.usd === 'number' ? datos.usd : 0;
+        break;
+
+      case 'content_block_start': {
+        const bloque = datos.content_block;
+        const nuevo: AiContentBlock | null =
+          bloque?.type === 'text' ? { type: 'text', text: '' } :
+          bloque?.type === 'thinking' ? { type: 'thinking', thinking: '' } :
+          bloque?.type === 'tool_use' ? { type: 'tool_use', id: bloque.id, name: bloque.name, input: {} } :
+          null;
+        if (nuevo) {
+          contenido[datos.index] = nuevo;
+          if (nuevo.type === 'tool_use') jsonParcialPorIndice[datos.index] = '';
+        }
+        break;
+      }
+
+      case 'content_block_delta': {
+        const bloque = contenido[datos.index];
+        if (!bloque) break;
+        const delta = datos.delta;
+        if (delta?.type === 'text_delta' && bloque.type === 'text') {
+          (bloque as AiTextBlock).text += delta.text ?? '';
+          cb.onUpdate?.([...mensajesPrevios, mensajeEnCurso()]);
+        } else if (delta?.type === 'thinking_delta' && bloque.type === 'thinking') {
+          (bloque as AiThinkingBlock).thinking += delta.thinking ?? '';
+        } else if (delta?.type === 'signature_delta' && bloque.type === 'thinking') {
+          (bloque as AiThinkingBlock).signature = ((bloque as AiThinkingBlock).signature ?? '') + (delta.signature ?? '');
+        } else if (delta?.type === 'input_json_delta' && bloque.type === 'tool_use') {
+          jsonParcialPorIndice[datos.index] = (jsonParcialPorIndice[datos.index] ?? '') + (delta.partial_json ?? '');
+        }
+        break;
+      }
+
+      case 'content_block_stop': {
+        const bloque = contenido[datos.index];
+        if (bloque?.type === 'tool_use') {
+          try {
+            (bloque as AiToolUseBlock).input = JSON.parse(jsonParcialPorIndice[datos.index] || '{}');
+          } catch (err) {
+            console.warn('[aiClient] input de tool_use con JSON inválido:', err);
+            (bloque as AiToolUseBlock).input = {};
+          }
+        }
+        break;
+      }
+
+      case 'message_delta':
+        if (datos.delta?.stop_reason) stopReason = datos.delta.stop_reason;
+        break;
+
+      default:
+        break; // message_start / message_stop / eventos futuros: nada que reconstruir aquí.
+    }
+  }
+
+  return { message: { content: contenido, stop_reason: stopReason }, costoUsd };
+}
+
+async function callProxy(
+  body: Record<string, unknown>, round: number, mensajesPrevios: AiChatMessage[],
+  señalExterna: AbortSignal | undefined, cb: AgentCallbacks,
+): Promise<{ message: MensajeStreameado; costoUsd: number }> {
   const user = auth.currentUser;
   if (!user) throw new Error('Sesión caducada — vuelve a iniciar sesión.');
+  if (señalExterna?.aborted) throw new TurnoCancelado();
 
-  // Un reintento si el fallo fue de RED (no si fue un 4xx/5xx del servidor,
-  // que no se arregla repitiendo). 1,5s de espera: ni instantáneo (un hipo de
-  // wifi de medio segundo ya se ha resuelto solo) ni tan largo que el atleta
-  // crea que se ha colgado.
-  let res: Response;
+  // UN controller para TODA la ronda (conexión + lectura del stream): abortar
+  // aquí es lo único que de verdad corta un `fetch` con el cuerpo a medio
+  // leer. Se combina con `señalExterna` reenviando su cancelación aquí, y con
+  // un plazo de silencio que `reiniciarSilencio` va posponiendo mientras
+  // lleguen trozos de verdad.
+  const controller = new AbortController();
+  const reenviarCancelacion = () => controller.abort();
+  señalExterna?.addEventListener('abort', reenviarCancelacion, { once: true });
+  let temporizadorSilencio: ReturnType<typeof setTimeout> | undefined;
+  const reiniciarSilencio = () => {
+    clearTimeout(temporizadorSilencio);
+    temporizadorSilencio = setTimeout(() => controller.abort(), SILENCIO_MAX_MS);
+  };
+
   try {
-    res = await postToProxy(await user.getIdToken(), body, round);
+    // Un reintento si el fallo fue de RED al ABRIR la conexión (no si fue un
+    // 4xx/5xx del servidor, que no se arregla repitiendo). 1,5s de espera: ni
+    // instantáneo (un hipo de wifi de medio segundo ya se ha resuelto solo)
+    // ni tan largo que el atleta crea que se ha colgado.
+    let res: Response;
+    try {
+      res = await abrirConexion(await user.getIdToken(), body, round, controller, reiniciarSilencio, señalExterna);
+    } catch (err) {
+      if (err instanceof TurnoCancelado) throw err;
+      if (!(err instanceof FalloDeRed)) throw err;
+      console.warn(`[aiClient] reintentando ronda ${round} tras fallo de red...`);
+      await new Promise(r => setTimeout(r, NETWORK_RETRY_DELAY_MS));
+      res = await abrirConexion(await user.getIdToken(), body, round, controller, reiniciarSilencio, señalExterna);
+    }
+
+    // El SDK de Firebase cachea el ID token (~1h de validez) y debería
+    // refrescarlo solo, pero en pestañas de larga duración o tras suspender
+    // el portátil puede quedarse enviando uno caducado. Ante un 401 del
+    // proxy, forzamos un refresco real (getIdToken(true)) y reintentamos una
+    // vez antes de rendirnos.
+    if (res.status === 401) {
+      res = await abrirConexion(await user.getIdToken(true), body, round, controller, reiniciarSilencio, señalExterna);
+    }
+
+    if (!res.ok) {
+      // Un error de ANTES de abrir el stream (auth, payload, límite diario)
+      // sigue llegando como JSON — api/ai-chat.ts solo cambia a eventos SSE
+      // una vez decide que sí va a llamar a Anthropic.
+      let mensaje = `Error del asistente (HTTP ${res.status}).`;
+      try {
+        const data = await res.json();
+        if (data?.error) mensaje = data.error;
+      } catch { /* cuerpo no-JSON: se queda el mensaje genérico */ }
+      throw new Error(mensaje);
+    }
+
+    return await leerRespuestaEnStreaming(res, mensajesPrevios, reiniciarSilencio, cb);
   } catch (err) {
-    if (!(err instanceof FalloDeRed)) throw err;
-    console.warn(`[aiClient] reintentando ronda ${round} tras fallo de red...`);
-    await new Promise(r => setTimeout(r, NETWORK_RETRY_DELAY_MS));
-    res = await postToProxy(await user.getIdToken(), body, round);
+    if (err instanceof TurnoCancelado || err instanceof FalloDeRed) throw err;
+    if (señalExterna?.aborted) throw new TurnoCancelado(err);
+    if ((err as { name?: string })?.name === 'AbortError') {
+      throw new Error(
+        `El asistente dejó de responder a mitad de la ronda ${round + 1} (demasiado silencio). Puedes reintentar.`,
+        { cause: err }
+      );
+    }
+    throw err;
+  } finally {
+    clearTimeout(temporizadorSilencio);
+    señalExterna?.removeEventListener('abort', reenviarCancelacion);
   }
-
-  // El SDK de Firebase cachea el ID token (~1h de validez) y debería refrescarlo
-  // solo, pero en pestañas de larga duración o tras suspender el portátil puede
-  // quedarse enviando uno caducado. Ante un 401 del proxy, forzamos un refresco
-  // real (getIdToken(true)) y reintentamos una vez antes de rendirnos.
-  if (res.status === 401) {
-    res = await postToProxy(await user.getIdToken(true), body, round);
-  }
-
-  let data: ProxyResponse;
-  try {
-    data = await res.json();
-  } catch {
-    throw new Error(`El asistente devolvió una respuesta inválida (HTTP ${res.status}).`);
-  }
-  if (!res.ok || !data.message) {
-    throw new Error(data.error || `Error del asistente (HTTP ${res.status}).`);
-  }
-  return data.message;
 }
 
 /** Diagnóstico que Dani puede ejecutar desde el móvil (menú de ajustes del
@@ -154,10 +333,10 @@ export async function runAgentTurn(
   history: AiChatMessage[],
   // `null` reanuda un turno que falló a mitad de camino: `history` YA
   // termina en el mensaje `user` pendiente (el texto del atleta, o los
-  // tool_results de una ronda anterior — `postToProxy` solo puede fallar al
-  // principio de una ronda, con `messages` siempre en ese estado), así que
-  // no hay que volver a añadir nada. Usarlo con un texto nuevo duplicaría el
-  // turno del usuario en vez de reanudarlo.
+  // tool_results de una ronda anterior — un fallo o cancelación solo puede
+  // pasar con `messages` en ese estado, ver el try/catch de más abajo), así
+  // que no hay que volver a añadir nada. Usarlo con un texto nuevo
+  // duplicaría el turno del usuario en vez de reanudarlo.
   userText: string | null,
   opts: {
     chatId: string;
@@ -165,6 +344,8 @@ export async function runAgentTurn(
     coachInstructions?: string;
     doctrina?: { entrenamiento: string; nutricion: string };
     volumeLandmarks?: Record<string, { mv: number; mev: number; mavMin: number; mavMax: number; mrv: number }>;
+    // Botón «Detener» del panel — cancela la ronda en curso.
+    signal?: AbortSignal;
   },
   cb: AgentCallbacks = {},
 ): Promise<AiChatMessage[]> {
@@ -191,17 +372,33 @@ export async function runAgentTurn(
     { type: 'text', text: buildContextSuffix(opts.activeAthlete, opts.coachInstructions) },
   ];
 
+  let costoAcumuladoUsd = 0;
+
   for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
-    const message = await callProxy({
-      model: DEFAULT_MODEL,
-      max_tokens: 4096,
-      system,
-      messages,
-      tools: TOOL_DEFINITIONS,
-      output_config: { effort: 'low' },
-      chatId: opts.chatId,
-    }, round);
+    let message: MensajeStreameado;
+    let costoUsd: number;
+    try {
+      ({ message, costoUsd } = await callProxy({
+        model: DEFAULT_MODEL,
+        max_tokens: 4096,
+        system,
+        messages,
+        tools: TOOL_DEFINITIONS,
+        output_config: { effort: 'low' },
+        chatId: opts.chatId,
+      }, round, messages, opts.signal, cb));
+    } catch (err) {
+      // Lo que se haya enseñado en vivo durante esta ronda (texto a medias,
+      // un tool_use sin terminar) no es un estado válido para reanudar ni
+      // para reenviar a la API — se revierte la vista al último punto bueno
+      // conocido (justo antes de esta ronda) para que un reintento
+      // posterior (o simplemente escribir un mensaje nuevo) parta de ahí.
+      cb.onUpdate?.(messages);
+      throw err;
+    }
     if (!message) throw new Error('Respuesta vacía del asistente.');
+    costoAcumuladoUsd += costoUsd;
+    cb.onCost?.(costoUsd, costoAcumuladoUsd);
 
     // Contenido del assistant VERBATIM (incluidos bloques thinking con su
     // signature) — la API rechaza bloques modificados al reenviar el historial.

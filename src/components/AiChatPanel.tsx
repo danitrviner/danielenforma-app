@@ -10,7 +10,7 @@ import {
   getVolumeLandmarks, getVolumeLandmarksParaEditar, saveVolumeLandmarks, resetVolumeLandmarks,
 } from '../dbService';
 import { VOLUME_LANDMARKS_DEFAULT, type VolumeLandmark } from '../data/volumeLandmarks';
-import { runAgentTurn, messageText, probarConexionProxy } from '../ai/aiClient';
+import { runAgentTurn, messageText, probarConexionProxy, TurnoCancelado } from '../ai/aiClient';
 import { OPEN_AI_PANEL_EVENT, OpenAiPanelDetail } from '../ai/events';
 import { exchangeToKcal } from '../utils/nutritionConstants';
 import { Icon, Button, ListRow, Badge, Dialog } from './ui';
@@ -212,6 +212,10 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
   const [busy, setBusy] = useState(false);
   const [toolStatus, setToolStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Coste del turno en curso (o del último terminado) — se resetea al
+  // empezar cada `runTurn`, se acumula ronda a ronda vía onCost.
+  const [costoTurnoUsd, setCostoTurnoUsd] = useState<number | null>(null);
+  const cancelarTurnoRef = useRef<AbortController | null>(null);
   const proposalsKey = ['aiProposalsForAthlete', activeAthleteEmail ?? ''] as const;
   const { data: proposals = [] } = useQuery({
     queryKey: proposalsKey,
@@ -499,23 +503,32 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
   const runTurn = async (userText: string | null) => {
     setError(null);
     setBusy(true);
+    setCostoTurnoUsd(0);
     liveMessages.current = chat.messages;
+    const controller = new AbortController();
+    cancelarTurnoRef.current = controller;
 
     const activeAthlete = activeAthleteEmail
       ? { email: activeAthleteEmail, name: activeAthleteName }
       : undefined;
 
     try {
-      await runAgentTurn(chat.messages, userText, { chatId: chat.id, activeAthlete, coachInstructions, doctrina, volumeLandmarks }, {
+      await runAgentTurn(chat.messages, userText, { chatId: chat.id, activeAthlete, coachInstructions, doctrina, volumeLandmarks, signal: controller.signal }, {
         onUpdate: msgs => {
           liveMessages.current = msgs;
           setChat(c => ({ ...c, messages: msgs }));
         },
         onToolStatus: setToolStatus,
+        onCost: (_rondaUsd, acumuladoUsd) => setCostoTurnoUsd(acumuladoUsd),
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error inesperado del asistente.');
+      // Cancelado por el propio coach (botón «Detener») — no es un error que
+      // avisar, ya tuvo el feedback inmediato del botón.
+      if (!(err instanceof TurnoCancelado)) {
+        setError(err instanceof Error ? err.message : 'Error inesperado del asistente.');
+      }
     } finally {
+      cancelarTurnoRef.current = null;
       setBusy(false);
       setToolStatus(null);
       const msgs = liveMessages.current;
@@ -540,8 +553,10 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
     await runTurn(null);
   };
 
-  const openChat = (c: AiChat) => { setChat(c); setShowList(false); setError(null); };
-  const startNew = () => { setChat(newChat(activeAthleteEmail)); setShowList(false); setError(null); };
+  const detenerTurno = () => cancelarTurnoRef.current?.abort();
+
+  const openChat = (c: AiChat) => { setChat(c); setShowList(false); setError(null); setCostoTurnoUsd(null); };
+  const startNew = () => { setChat(newChat(activeAthleteEmail)); setShowList(false); setError(null); setCostoTurnoUsd(null); };
   const removeChat = async (id: string) => {
     queryClient.setQueryData<AiChat[]>(aiChatsKey, prev => prev?.filter(c => c.id !== id));
     if (chat.id === id) startNew();
@@ -682,10 +697,25 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
             })}
 
             {busy && (
-              <div className="self-start flex items-center gap-2 text-label font-mono text-ink-2 animate-pulse px-1">
-                <Icon name="progress_activity" size="m" className="animate-spin" />
-                {toolStatus ?? 'Pensando…'}
+              <div className="self-start flex items-center gap-2 text-label font-mono text-ink-2 px-1">
+                <span className="flex items-center gap-2 animate-pulse">
+                  <Icon name="progress_activity" size="m" className="animate-spin" />
+                  {toolStatus ?? 'Pensando…'}
+                </span>
+                <button
+                  type="button"
+                  onClick={detenerTurno}
+                  className="flex items-center gap-1 text-caption uppercase tracking-wide text-ink-3 hover:text-danger border border-hairline hover:border-danger/40 rounded-control px-2 py-0.5 transition-colors"
+                >
+                  <Icon name="stop_circle" size="s" />
+                  Detener
+                </button>
               </div>
+            )}
+            {!busy && costoTurnoUsd !== null && costoTurnoUsd > 0 && (
+              <p className="self-start text-caption font-mono text-ink-4 px-1">
+                Esta respuesta: ${costoTurnoUsd < 0.01 ? costoTurnoUsd.toFixed(4) : costoTurnoUsd.toFixed(3)}
+              </p>
             )}
             {error && (
               <div className="self-start max-w-[92%] bg-danger/10 border border-danger/30 text-danger rounded-surface px-4 py-3 text-label space-y-2">
