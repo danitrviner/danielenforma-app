@@ -39,3 +39,25 @@ export function abrirDb(serviceAccount) {
   if (getApps().length === 0) initializeApp({ credential: cert(serviceAccount) });
   return getFirestore(DATABASE_ID);
 }
+
+/**
+ * Invalida la copia local de un catálogo en TODOS los dispositivos.
+ *
+ * La app sirve `exercises`, `foodItems`, `workouts` y compañía desde la caché
+ * del dispositivo mientras el documento `catalogos/{nombre}` siga diciendo la
+ * misma versión (src/db/catalogoVersionado.ts). Un script que escriba con el
+ * Admin SDK no pasa por ahí, así que si no marca el sello su cambio es
+ * INVISIBLE: `importarEjerciciosCatalogo.mjs --aplicar` borra y reemplaza el
+ * catálogo entero, y sin esta llamada cada móvil seguiría enseñando los
+ * ejercicios viejos —desde su caché, sin un solo error— hasta que el sello
+ * cambiara por otra vía.
+ *
+ * Llamar SIEMPRE después de que la escritura haya terminado.
+ */
+export async function marcarCatalogoCambiado(db, nombre) {
+  await db.collection('catalogos').doc(nombre).set(
+    { version: new Date().toISOString() },
+    { merge: true },
+  );
+  console.log(`Sello de versión de '${nombre}' actualizado (las apps releerán el catálogo).`);
+}

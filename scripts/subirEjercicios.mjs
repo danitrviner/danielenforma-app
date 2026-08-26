@@ -129,6 +129,15 @@ async function main() {
 
   guardarProgreso(progreso);
 
+  // Los ejercicios recién creados no aparecerían en ninguna app: `exercises` se
+  // sirve desde la caché del dispositivo mientras el sello no cambie. El import
+  // va aquí y no arriba para no romper la comprobación de credenciales del
+  // principio, que es la que da el mensaje útil cuando faltan.
+  if (hechos > 0) {
+    const { marcarCatalogoCambiado } = await import('./_lib/firestoreDb.mjs');
+    await marcarCatalogoCambiado(db, 'exercises');
+  }
+
   console.log(`\nHecho. Creados/actualizados: ${Object.values(progreso).filter(p => p.done).length}`);
   if (errores.length > 0) {
     console.log(`Errores (${errores.length}), quedan pendientes para el próximo run:`);

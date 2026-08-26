@@ -23,7 +23,7 @@
 import { readFileSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { abrirDb } from './_lib/firestoreDb.mjs';
+import { abrirDb, marcarCatalogoCambiado } from './_lib/firestoreDb.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -123,6 +123,11 @@ async function main() {
 
   console.log('\nEscribiendo catálogo nuevo…');
   const escritos = await escribirEjercicios(ejercicios);
+
+  // Imprescindible: la app sirve `exercises` desde la caché del dispositivo
+  // mientras el sello no cambie. Sin esto, acabamos de reemplazar el catálogo
+  // entero en Firestore y ningún móvil se enteraría.
+  await marcarCatalogoCambiado(db, 'exercises');
 
   console.log(`\nHecho. ${escritos} ejercicios escritos en 'exercises'.`);
 }

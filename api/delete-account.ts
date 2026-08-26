@@ -32,6 +32,7 @@ import {
   tokenDeLaCabecera,
   verifyFirebaseIdToken,
 } from './_lib/auth.js';
+import { marcarCatalogosCambiados } from './_lib/catalogos.js';
 
 export const config = { maxDuration: 60 };
 
@@ -248,6 +249,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     await writer.close();
     if (fallidos.length) {
       console.error('delete-account: documentos que no se pudieron borrar:', fallidos);
+    }
+
+    // Las cinco colecciones del CRM se sirven desde la copia local del
+    // dispositivo mientras su sello no cambie (src/db/catalogoVersionado.ts).
+    // Esta anonimización la ha hecho el Admin SDK, que no pasa por ahí: sin
+    // marcar el sello, el navegador del coach seguiría enseñando el nombre, el
+    // DNI y el teléfono de quien acaba de pedir que lo borren. No es un ahorro
+    // de lecturas lo que está en juego aquí, es que el borrado se vea.
+    if (resumen.crmAnonimizados > 0) {
+      await marcarCatalogosCambiados(adminDb, [
+        ...CRM_A_ANONIMIZAR.map(c => c.coleccion),
+        'crmContactos',
+      ]);
     }
 
     // ── 5. Storage ──────────────────────────────────────────────────────────

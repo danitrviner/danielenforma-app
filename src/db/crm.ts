@@ -19,14 +19,15 @@
 // No es pérdida de dato: la mutación está en IndexedDB y llegará.
 
 import {
-  db, collection, doc, getDocs, addDoc, updateDoc, deleteDoc,
-  query, where, runTransaction, writeBatch,
+  db, collection, doc, addDoc, updateDoc, deleteDoc,
+  runTransaction, writeBatch,
 } from '../firebase';
 import type {
   CrmContacto, CrmServicio, CrmPago, CrmSuscripcion, CrmReunion,
 } from '../features/crm/types';
 import type { UserProfile } from '../types';
 import { stripUndefined, authReady, conTimeout } from './core';
+import { leerCatalogo, marcarCatalogoCambiado } from './catalogoVersionado';
 import { avanzarPeriodo, sumarMeses } from '../features/crm/lib/fechas';
 import { repartirEnCuotas } from '../features/crm/lib/dinero';
 
@@ -35,6 +36,33 @@ const COL_SERVICIOS = 'crmServicios';
 const COL_PAGOS = 'crmPagos';
 const COL_SUSCRIPCIONES = 'crmSuscripciones';
 const COL_REUNIONES = 'crmReuniones';
+
+// ── Sello de versión ─────────────────────────────────────────────────────────
+//
+// Las cinco colecciones se leían ENTERAS cada vez que se abría el CRM. Son
+// solo-coach, así que no multiplican por número de atletas como `exercises` o
+// `workouts` — pero crecen monótonamente con el negocio y no se borra nada
+// nunca (un pago cobrado no se puede borrar ni por reglas), así que el coste
+// por sesión sube para siempre: cada mes de facturación son más pagos que
+// releer. Con el sello son 1 lectura por catálogo mientras nadie escriba.
+//
+// Aquí hay dos cosas que NO pasan en los otros catálogos y que obligan a
+// hilar más fino:
+//
+//   · Se escriben también desde el servidor. `api/delete-account.ts` anonimiza
+//     las cinco al borrarse una cuenta y `api/create-athlete.ts` enlaza el
+//     contacto — con el Admin SDK, que no pasa por este fichero. Si esas
+//     escrituras no tocaran el sello, el navegador del coach seguiría sirviendo
+//     de su caché los datos personales de alguien que pidió que lo borraran.
+//     Por eso ambos endpoints marcan el sello (api/_lib/catalogos.ts).
+//
+//   · `getCrmXByCliente` ya no consulta a Firestore. Filtra sobre el catálogo
+//     completo, que a estas alturas está en la caché local a coste cero; ir al
+//     servidor a por el subconjunto de un cliente costaría lecturas cada vez
+//     que se abre una ficha, teniendo la respuesta ya al lado.
+//
+// El nombre del sello coincide con el de la colección, así que las constantes
+// `COL_*` de arriba sirven para los dos argumentos de `leerCatalogo`.
 
 // ── Escrituras con timeout ───────────────────────────────────────────────────
 //
@@ -53,8 +81,7 @@ function ahora(): string {
 
 export async function getCrmContactos(): Promise<CrmContacto[]> {
   await authReady;
-  const snap = await getDocs(collection(db, COL_CONTACTOS));
-  return snap.docs.map(d => ({ id: d.id, ...d.data() } as CrmContacto));
+  return leerCatalogo(COL_CONTACTOS, COL_CONTACTOS, d => ({ id: d.id, ...d.data() } as CrmContacto));
 }
 
 export async function createCrmContacto(
@@ -63,6 +90,7 @@ export async function createCrmContacto(
   await authReady;
   const payload = { ...data, createdAt: ahora(), updatedAt: ahora() };
   const ref = await conTimeout('Crear contacto', addDoc(collection(db, COL_CONTACTOS), stripUndefined(payload)));
+  void marcarCatalogoCambiado(COL_CONTACTOS);
   return { ...payload, id: ref.id };
 }
 
@@ -70,11 +98,13 @@ export async function updateCrmContacto(id: string, updates: Partial<CrmContacto
   await authReady;
   const payload = stripUndefined({ ...updates, updatedAt: ahora() }) as Record<string, unknown>;
   await conTimeout('Guardar contacto', updateDoc(doc(db, COL_CONTACTOS, id), payload));
+  void marcarCatalogoCambiado(COL_CONTACTOS);
 }
 
 export async function deleteCrmContacto(id: string): Promise<void> {
   await authReady;
   await conTimeout('Borrar contacto', deleteDoc(doc(db, COL_CONTACTOS, id)));
+  void marcarCatalogoCambiado(COL_CONTACTOS);
 }
 
 // Límite duro de Firestore: un writeBatch no admite más de 500 operaciones.
@@ -115,6 +145,7 @@ export async function importarCrmContactosBatch(
     }
     try {
       await conTimeout(`Importar clientes (${escritos + 1}–${escritos + lote.length})`, batch.commit());
+      void marcarCatalogoCambiado(COL_CONTACTOS);
     } catch (err) {
       throw new Error(
         `Se importaron ${escritos} de ${contactos.length} clientes antes de fallar. ` +
@@ -157,14 +188,11 @@ export async function updateClienteCrmFields(
 
 export async function getCrmServicios(): Promise<CrmServicio[]> {
   await authReady;
-  const snap = await getDocs(collection(db, COL_SERVICIOS));
-  return snap.docs.map(d => ({ id: d.id, ...d.data() } as CrmServicio));
+  return leerCatalogo(COL_SERVICIOS, COL_SERVICIOS, d => ({ id: d.id, ...d.data() } as CrmServicio));
 }
 
 export async function getCrmServiciosByCliente(clientId: string): Promise<CrmServicio[]> {
-  await authReady;
-  const snap = await getDocs(query(collection(db, COL_SERVICIOS), where('clientId', '==', clientId)));
-  return snap.docs.map(d => ({ id: d.id, ...d.data() } as CrmServicio));
+  return (await getCrmServicios()).filter(s => s.clientId === clientId);
 }
 
 /**
@@ -222,6 +250,9 @@ export async function createCrmServicioConPago(
     }
   }));
 
+  void marcarCatalogoCambiado(COL_SERVICIOS);
+  if (pagos.length > 0) void marcarCatalogoCambiado(COL_PAGOS);
+
   return { servicio, pagos };
 }
 
@@ -229,6 +260,7 @@ export async function updateCrmServicio(id: string, updates: Partial<CrmServicio
   await authReady;
   const payload = stripUndefined({ ...updates, updatedAt: ahora() }) as Record<string, unknown>;
   await conTimeout('Guardar servicio', updateDoc(doc(db, COL_SERVICIOS, id), payload));
+  void marcarCatalogoCambiado(COL_SERVICIOS);
 }
 
 /**
@@ -248,14 +280,11 @@ export async function desarchivarCrmServicio(id: string): Promise<void> {
 
 export async function getCrmPagos(): Promise<CrmPago[]> {
   await authReady;
-  const snap = await getDocs(collection(db, COL_PAGOS));
-  return snap.docs.map(d => ({ id: d.id, ...d.data() } as CrmPago));
+  return leerCatalogo(COL_PAGOS, COL_PAGOS, d => ({ id: d.id, ...d.data() } as CrmPago));
 }
 
 export async function getCrmPagosByCliente(clientId: string): Promise<CrmPago[]> {
-  await authReady;
-  const snap = await getDocs(query(collection(db, COL_PAGOS), where('clientId', '==', clientId)));
-  return snap.docs.map(d => ({ id: d.id, ...d.data() } as CrmPago));
+  return (await getCrmPagos()).filter(p => p.clientId === clientId);
 }
 
 export async function createCrmPago(
@@ -264,6 +293,7 @@ export async function createCrmPago(
   await authReady;
   const payload = { ...data, createdAt: ahora(), updatedAt: ahora() };
   const ref = await conTimeout('Registrar pago', addDoc(collection(db, COL_PAGOS), stripUndefined(payload)));
+  void marcarCatalogoCambiado(COL_PAGOS);
   return { ...payload, id: ref.id };
 }
 
@@ -271,6 +301,7 @@ export async function updateCrmPago(id: string, updates: Partial<CrmPago>): Prom
   await authReady;
   const payload = stripUndefined({ ...updates, updatedAt: ahora() }) as Record<string, unknown>;
   await conTimeout('Guardar pago', updateDoc(doc(db, COL_PAGOS, id), payload));
+  void marcarCatalogoCambiado(COL_PAGOS);
 }
 
 /**
@@ -284,20 +315,18 @@ export async function updateCrmPago(id: string, updates: Partial<CrmPago>): Prom
 export async function deleteCrmPago(id: string): Promise<void> {
   await authReady;
   await conTimeout('Borrar pago', deleteDoc(doc(db, COL_PAGOS, id)));
+  void marcarCatalogoCambiado(COL_PAGOS);
 }
 
 // ── Suscripciones ────────────────────────────────────────────────────────────
 
 export async function getCrmSuscripciones(): Promise<CrmSuscripcion[]> {
   await authReady;
-  const snap = await getDocs(collection(db, COL_SUSCRIPCIONES));
-  return snap.docs.map(d => ({ id: d.id, ...d.data() } as CrmSuscripcion));
+  return leerCatalogo(COL_SUSCRIPCIONES, COL_SUSCRIPCIONES, d => ({ id: d.id, ...d.data() } as CrmSuscripcion));
 }
 
 export async function getCrmSuscripcionesByCliente(clientId: string): Promise<CrmSuscripcion[]> {
-  await authReady;
-  const snap = await getDocs(query(collection(db, COL_SUSCRIPCIONES), where('clientId', '==', clientId)));
-  return snap.docs.map(d => ({ id: d.id, ...d.data() } as CrmSuscripcion));
+  return (await getCrmSuscripciones()).filter(s => s.clientId === clientId);
 }
 
 export async function createCrmSuscripcion(
@@ -306,6 +335,7 @@ export async function createCrmSuscripcion(
   await authReady;
   const payload = { ...data, createdAt: ahora(), updatedAt: ahora() };
   const ref = await conTimeout('Crear suscripción', addDoc(collection(db, COL_SUSCRIPCIONES), stripUndefined(payload)));
+  void marcarCatalogoCambiado(COL_SUSCRIPCIONES);
   return { ...payload, id: ref.id };
 }
 
@@ -313,6 +343,7 @@ export async function updateCrmSuscripcion(id: string, updates: Partial<CrmSuscr
   await authReady;
   const payload = stripUndefined({ ...updates, updatedAt: ahora() }) as Record<string, unknown>;
   await conTimeout('Guardar suscripción', updateDoc(doc(db, COL_SUSCRIPCIONES, id), payload));
+  void marcarCatalogoCambiado(COL_SUSCRIPCIONES);
 }
 
 /**
@@ -354,7 +385,7 @@ export async function registrarCobroSuscripcion(
   const pagoRef = doc(collection(db, COL_PAGOS));
   const ts = ahora();
 
-  return conTimeout('Registrar cobro', runTransaction(db, async tx => {
+  const pago = await conTimeout('Registrar cobro', runTransaction(db, async tx => {
     const snap = await tx.get(subRef);
     if (!snap.exists()) throw new Error('La suscripción ya no existe.');
     const sub = snap.data() as CrmSuscripcion;
@@ -380,20 +411,24 @@ export async function registrarCobroSuscripcion(
     }));
     return { ...pagoDoc, id: pagoRef.id };
   }));
+
+  // Solo si la transacción confirmó: cuando pierde la carrera lanza
+  // `CobroYaRegistrado` desde dentro y no se llega aquí — que es lo correcto,
+  // porque en ese caso quien ganó ya marcó los dos sellos.
+  void marcarCatalogoCambiado(COL_PAGOS);
+  void marcarCatalogoCambiado(COL_SUSCRIPCIONES);
+  return pago;
 }
 
 // ── Reuniones ────────────────────────────────────────────────────────────────
 
 export async function getCrmReuniones(): Promise<CrmReunion[]> {
   await authReady;
-  const snap = await getDocs(collection(db, COL_REUNIONES));
-  return snap.docs.map(d => ({ id: d.id, ...d.data() } as CrmReunion));
+  return leerCatalogo(COL_REUNIONES, COL_REUNIONES, d => ({ id: d.id, ...d.data() } as CrmReunion));
 }
 
 export async function getCrmReunionesByCliente(clientId: string): Promise<CrmReunion[]> {
-  await authReady;
-  const snap = await getDocs(query(collection(db, COL_REUNIONES), where('clientId', '==', clientId)));
-  return snap.docs.map(d => ({ id: d.id, ...d.data() } as CrmReunion));
+  return (await getCrmReuniones()).filter(r => r.clientId === clientId);
 }
 
 export async function createCrmReunion(
@@ -402,6 +437,7 @@ export async function createCrmReunion(
   await authReady;
   const payload = { ...data, createdAt: ahora(), updatedAt: ahora() };
   const ref = await conTimeout('Crear reunión', addDoc(collection(db, COL_REUNIONES), stripUndefined(payload)));
+  void marcarCatalogoCambiado(COL_REUNIONES);
   return { ...payload, id: ref.id };
 }
 
@@ -409,4 +445,5 @@ export async function updateCrmReunion(id: string, updates: Partial<CrmReunion>)
   await authReady;
   const payload = stripUndefined({ ...updates, updatedAt: ahora() }) as Record<string, unknown>;
   await conTimeout('Guardar reunión', updateDoc(doc(db, COL_REUNIONES, id), payload));
+  void marcarCatalogoCambiado(COL_REUNIONES);
 }

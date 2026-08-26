@@ -26,6 +26,7 @@ import {
   tokenDeLaCabecera,
   verifyFirebaseIdToken,
 } from './_lib/auth.js';
+import { marcarCatalogosCambiados } from './_lib/catalogos.js';
 
 export const config = { maxDuration: 30 };
 
@@ -154,7 +155,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           coincidencias++;
         }
       }
-      if (coincidencias > 0) await batch.commit();
+      if (coincidencias > 0) {
+        await batch.commit();
+        // El CRM sirve `crmContactos` desde la copia local del dispositivo
+        // mientras el sello no cambie, y esta escritura es del Admin SDK. Sin
+        // marcarlo, el contacto seguiría saliendo como «sin cuenta» en el CRM
+        // del coach —sin «Ficha de entreno»— aunque el alta ya esté hecha.
+        await marcarCatalogosCambiados(adminDb, ['crmContactos']);
+      }
     } catch (err) {
       // Best-effort: el alta ya está hecha y es lo que de verdad no puede
       // fallar. Un contacto sin enlazar se corrige reinvitando desde el CRM.
