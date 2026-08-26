@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   UserProfile, ProgressPhoto, PhotoView, PhotoAssignment,
   Questionnaire, QuestionnaireResponse,
 } from '../types';
 import { deactivatePhotoAssignment } from '../dbService';
 import { scheduleLabel } from '../utils/scheduleEngine';
+import { leerSexo } from '../utils/athleteProfileSignals';
+import { computeIRP } from '../utils/readinessIndex';
 import { useToast } from '../hooks/useToast';
 import { Skeleton } from './ui';
 import BodyweightPanel from './BodyweightPanel';
@@ -38,6 +40,10 @@ export default function ClientBodyPanel({
   const { showToast } = useToast();
 
   const [selectedView, setSelectedView] = useState<PhotoView>('front');
+  const irp = useMemo(
+    () => computeIRP({ responses: athleteQResponses, questionnaires: coachQuestionnaires }),
+    [athleteQResponses, coachQuestionnaires],
+  );
 
   const handleDeactivatePhoto = async (id: string) => {
     await deactivatePhotoAssignment(id).catch(err => { console.error(err); showToast('No se pudo desactivar el check-in de fotos.'); });
@@ -162,8 +168,32 @@ export default function ClientBodyPanel({
           <span className="material-symbols-outlined text-accent text-body-s">straighten</span>
           Mediciones
         </h3>
-        <BodyMeasurementsPanel athleteEmail={athlete.email} />
+        <BodyMeasurementsPanel
+          athleteEmail={athlete.email}
+          sexo={leerSexo(athleteQResponses, coachQuestionnaires)}
+          pesoKg={athlete.actualWeight || null}
+        />
       </div>
+
+      {/* ── Readiness (IRP) ──────────────────────────────────────────── */}
+      {irp.valor != null && (
+        <div className="bg-surface border border-hairline rounded-surface p-5 space-y-2">
+          <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
+            <span className="material-symbols-outlined text-accent text-body-s">battery_charging_full</span>
+            Readiness (IRP)
+          </h3>
+          <p className={`font-mono font-black text-3xl leading-none ${irp.valor < 0 ? 'text-red-400' : irp.valor < 3 ? 'text-orange-400' : 'text-white'}`}>
+            {irp.valor}
+          </p>
+          <p className="font-mono text-caption text-ink-2">
+            Sueño {irp.horasSueño}h · Estrés {irp.estres}/10 · DOMS crónico {irp.domsCronico}/10 (tendencia suavizada)
+          </p>
+          <p className="font-mono text-caption text-ink-3">
+            IRP = Sueño × (10 − Estrés − DOMS crónico) / 10. Bajo o negativo indica poca capacidad de recuperación
+            esta semana — no es diagnóstico, es una señal para revisar volumen/intensidad con el cliente.
+          </p>
+        </div>
+      )}
 
       {/* ── Gráficas de evolución ────────────────────────────────────── */}
       {athleteQResponses.length > 0 && coachQuestionnaires.length > 0 && (

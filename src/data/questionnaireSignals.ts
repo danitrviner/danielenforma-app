@@ -20,6 +20,15 @@ export type VolumeSignalKey =
   | 'meso_end.overload_groups'
   | `doms.${MuscleGroup}`;
 
+// Señales de perfil del atleta (anamnesis, se responden una vez) y de
+// bienestar semanal (Revisión Semanal) — motor de analítica, ver
+// src/utils/athleteProfileSignals.ts, src/utils/wellnessTrend.ts.
+export type PerfilSignalKey = 'perfil.sexo_biologico' | 'perfil.antiguedad_entrenamiento_anios';
+export type WellnessSignalKey = 'wellness.sleep_hours_weekly' | 'wellness.stress_weekly';
+
+/** Unión de TODAS las señales que puede llevar una pregunta, para tipar los helpers de preset. */
+export type SignalKey = VolumeSignalKey | PerfilSignalKey | WellnessSignalKey;
+
 /** Señales sueltas (no las 17 de DOM's) que el selector del editor ofrece. */
 export const SEÑALES_FIN_MESOCICLO: { key: VolumeSignalKey; label: string; tipos: string[] }[] = [
   { key: 'meso_end.rating',          label: 'Valoración del bloque (1-10)',        tipos: ['scale', 'numeric'] },
@@ -32,8 +41,18 @@ export const SEÑALES_FIN_MESOCICLO: { key: VolumeSignalKey; label: string; tipo
 export const SEÑALES_DOMS: { key: VolumeSignalKey; label: string; tipos: string[] }[] =
   MUSCLE_ORDER.map(g => ({ key: `doms.${g}` as VolumeSignalKey, label: `Agujetas · ${MUSCLE_LABELS[g]}`, tipos: ['scale', 'numeric'] }));
 
+export const SEÑALES_PERFIL: { key: PerfilSignalKey; label: string; tipos: string[] }[] = [
+  { key: 'perfil.sexo_biologico',                 label: 'Sexo biológico',                     tipos: ['choice'] },
+  { key: 'perfil.antiguedad_entrenamiento_anios',  label: 'Antigüedad de entrenamiento (años)', tipos: ['numeric'] },
+];
+
+export const SEÑALES_WELLNESS: { key: WellnessSignalKey; label: string; tipos: string[] }[] = [
+  { key: 'wellness.sleep_hours_weekly', label: 'Horas de sueño (semanal)', tipos: ['numeric'] },
+  { key: 'wellness.stress_weekly',      label: 'Estrés de la semana (1-10)', tipos: ['scale', 'numeric'] },
+];
+
 /** Todas las señales que el editor puede asignar a una pregunta. */
-export const SEÑALES_DISPONIBLES = [...SEÑALES_FIN_MESOCICLO, ...SEÑALES_DOMS];
+export const SEÑALES_DISPONIBLES = [...SEÑALES_FIN_MESOCICLO, ...SEÑALES_DOMS, ...SEÑALES_PERFIL, ...SEÑALES_WELLNESS];
 
 export function esSeñalDoms(key: string): MuscleGroup | null {
   if (!key.startsWith('doms.')) return null;

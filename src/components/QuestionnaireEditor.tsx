@@ -223,7 +223,7 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
                 {q.signalKey && (
                   <span className="inline-flex items-center gap-1 font-mono text-caption text-accent">
                     <Icon name="bolt" size="s" />
-                    la lee el sugeridor de volumen
+                    la lee un motor de la app
                   </span>
                 )}
               </div>

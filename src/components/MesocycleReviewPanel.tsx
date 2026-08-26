@@ -1,7 +1,10 @@
 import React, { useMemo, useState } from 'react';
-import { Exercise, Mesocycle, WorkoutAssignment, WorkoutLog } from '../types';
+import { Exercise, Mesocycle, WorkoutAssignment, WorkoutLog, BodyweightLog } from '../types';
 import { buildCierreMesociclo, FilaVolumenGrupo } from '../utils/cierreMesociclo';
 import { ExercisePerf } from '../utils/trainingReport';
+import { IEARow } from '../utils/accumulatedStimulusIndex';
+import { Sexo } from '../utils/athleteProfileSignals';
+import { e1rmAlometrico, pesoCorporalEn } from '../utils/allometricScore';
 import { useToast } from '../hooks/useToast';
 import { Icon, EmptyState, Badge, SegmentedControl } from './ui';
 
@@ -25,6 +28,10 @@ interface Props {
   exercises: Exercise[];
   athleteName?: string;
   cargando?: boolean;
+  // Para el 1RM alométrico de la tabla «Fuerza» — null-tolerante: sin sexo o
+  // sin peso registrado en el bloque, la columna simplemente no aparece.
+  sexo?: Sexo | null;
+  pesoLogs?: BodyweightLog[];
 }
 
 function Delta({ pct, invertido = false }: { pct: number | null; invertido?: boolean }) {
@@ -62,10 +69,11 @@ function BarraCumplimiento({ pct }: { pct: number | null }) {
   );
 }
 
-type Vista = 'volumen' | 'fuerza' | 'grupos' | 'patrones';
+type Vista = 'volumen' | 'fuerza' | 'grupos' | 'patrones' | 'estimulo';
 
 export default function MesocycleReviewPanel({
   meso, mesocycles, logs, assignments, exercises, athleteName, cargando = false,
+  sexo = null, pesoLogs = [],
 }: Props) {
   const { showToast } = useToast();
   const [vista, setVista] = useState<Vista>('volumen');
@@ -74,6 +82,11 @@ export default function MesocycleReviewPanel({
     () => buildCierreMesociclo({ meso, mesocycles, logs, assignments, exercises, athleteName }),
     [meso, mesocycles, logs, assignments, exercises, athleteName],
   );
+
+  // Peso corporal al final del bloque (aproximación documentada: si el
+  // atleta no se pesó ese día, es la última medida conocida hasta esa fecha)
+  // — para el 1RM alométrico, que corrige el sesgo del peso corporal.
+  const pesoEnCierre = useMemo(() => pesoCorporalEn(cierre.fin, pesoLogs), [cierre.fin, pesoLogs]);
 
   const copiar = async (texto: string, queEs: string) => {
     try {
@@ -200,13 +213,15 @@ export default function MesocycleReviewPanel({
               { value: 'fuerza',   label: 'Fuerza' },
               { value: 'grupos',   label: 'Por grupo' },
               { value: 'patrones', label: 'Rendimiento' },
+              { value: 'estimulo', label: 'Estímulo (IEA)' },
             ]}
           />
 
           {vista === 'volumen'  && <TablaVolumen filas={cierre.volumen.filas} comparacion={cierre.comparacion} />}
-          {vista === 'fuerza'   && <TablaFuerza ejercicios={cierre.informe.perExercise} comparacion={cierre.comparacion} />}
+          {vista === 'fuerza'   && <TablaFuerza ejercicios={cierre.informe.perExercise} comparacion={cierre.comparacion} sexo={sexo} pesoKg={pesoEnCierre} />}
           {vista === 'grupos'   && <TablaGrupos grupos={cierre.informe.muscleGroups} comparacion={cierre.comparacion} />}
           {vista === 'patrones' && <TablaGrupos grupos={cierre.patrones} comparacion={cierre.comparacion} />}
+          {vista === 'estimulo' && <TablaEstimulo filas={cierre.estimuloAcumulado} />}
 
           {/* Borrador para el cliente */}
           <div className="bg-surface border border-hairline rounded-surface p-4 space-y-2">
@@ -276,43 +291,66 @@ function TablaVolumen({ filas, comparacion }: { filas: FilaVolumenGrupo[]; compa
   );
 }
 
-function TablaFuerza({ ejercicios, comparacion }: { ejercicios: ExercisePerf[]; comparacion: string }) {
+function TablaFuerza({ ejercicios, comparacion, sexo, pesoKg }: {
+  ejercicios: ExercisePerf[]; comparacion: string; sexo: Sexo | null; pesoKg: number | null;
+}) {
   if (ejercicios.length === 0) {
     return <p className="font-sans text-caption text-ink-3">Sin ejercicios registrados en la ventana del mesociclo.</p>;
   }
   // Por 1RM estimado descendente: la pregunta de esta tabla es la fuerza, no el volumen.
   const orden = [...ejercicios].sort((a, b) => b.bestOrm - a.bestOrm);
+  const alometricoDisponible = sexo != null && pesoKg != null;
   return (
-    <div className="overflow-x-auto rounded-surface border border-hairline">
-      <table className="w-full border-collapse" style={{ minWidth: '520px' }}>
-        <thead>
-          <tr className="bg-bg">
-            <th className="text-left px-3 py-2.5 font-mono text-caption text-ink-2 uppercase tracking-wider border-b border-hairline">Ejercicio</th>
-            <th className="text-right px-3 py-2.5 font-mono text-caption text-ink-2 uppercase tracking-wider border-b border-hairline">Series</th>
-            <th className="text-right px-3 py-2.5 font-mono text-caption text-ink-2 uppercase tracking-wider border-b border-hairline">Tonelaje</th>
-            <th className="text-right px-3 py-2.5 font-mono text-caption text-ink-2 uppercase tracking-wider border-b border-hairline">1RM est.</th>
-            <th className="text-right px-3 py-2.5 font-mono text-caption text-ink-2 uppercase tracking-wider border-b border-hairline">vs {comparacion}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {orden.map(e => (
-            <tr key={e.exerciseId} className="border-b border-hairline last:border-b-0">
-              <td className="px-3 py-2.5 font-sans text-label text-ink">
-                <span className="flex items-center gap-2">
-                  <span className="truncate">{e.name}</span>
-                  {e.isPR && <Badge tone="accent">PR</Badge>}
-                </span>
-              </td>
-              <td className="px-3 py-2.5 text-right font-mono text-label text-ink-2 tabular-nums">{e.sets}</td>
-              <td className="px-3 py-2.5 text-right font-mono text-label text-ink-2 tabular-nums">
-                {e.tonnage.toLocaleString('es-ES', { maximumFractionDigits: 0 })} kg
-              </td>
-              <td className="px-3 py-2.5 text-right font-mono text-label font-bold text-ink tabular-nums">{e.bestOrm} kg</td>
-              <td className="px-3 py-2.5 text-right"><Delta pct={e.deltaOrmPct} /></td>
+    <div className="space-y-2">
+      <div className="overflow-x-auto rounded-surface border border-hairline">
+        <table className="w-full border-collapse" style={{ minWidth: alometricoDisponible ? '620px' : '520px' }}>
+          <thead>
+            <tr className="bg-bg">
+              <th className="text-left px-3 py-2.5 font-mono text-caption text-ink-2 uppercase tracking-wider border-b border-hairline">Ejercicio</th>
+              <th className="text-right px-3 py-2.5 font-mono text-caption text-ink-2 uppercase tracking-wider border-b border-hairline">Series</th>
+              <th className="text-right px-3 py-2.5 font-mono text-caption text-ink-2 uppercase tracking-wider border-b border-hairline">Tonelaje</th>
+              <th className="text-right px-3 py-2.5 font-mono text-caption text-ink-2 uppercase tracking-wider border-b border-hairline">1RM est.</th>
+              {alometricoDisponible && (
+                <th className="text-right px-3 py-2.5 font-mono text-caption text-ink-2 uppercase tracking-wider border-b border-hairline">1RM alom.</th>
+              )}
+              <th className="text-right px-3 py-2.5 font-mono text-caption text-ink-2 uppercase tracking-wider border-b border-hairline">vs {comparacion}</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {orden.map(e => (
+              <tr key={e.exerciseId} className="border-b border-hairline last:border-b-0">
+                <td className="px-3 py-2.5 font-sans text-label text-ink">
+                  <span className="flex items-center gap-2">
+                    <span className="truncate">{e.name}</span>
+                    {e.isPR && <Badge tone="accent">PR</Badge>}
+                  </span>
+                </td>
+                <td className="px-3 py-2.5 text-right font-mono text-label text-ink-2 tabular-nums">{e.sets}</td>
+                <td className="px-3 py-2.5 text-right font-mono text-label text-ink-2 tabular-nums">
+                  {e.tonnage.toLocaleString('es-ES', { maximumFractionDigits: 0 })} kg
+                </td>
+                <td className="px-3 py-2.5 text-right font-mono text-label font-bold text-ink tabular-nums">{e.bestOrm} kg</td>
+                {alometricoDisponible && (
+                  <td className="px-3 py-2.5 text-right font-mono text-label text-ink-2 tabular-nums">
+                    {e1rmAlometrico(e.bestOrm, pesoKg!, sexo!) ?? '—'}
+                  </td>
+                )}
+                <td className="px-3 py-2.5 text-right"><Delta pct={e.deltaOrmPct} /></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {alometricoDisponible ? (
+        <p className="font-mono text-caption text-ink-3">
+          1RM alométrico = 1RM est. / Peso^{sexo === 'hombre' ? '0.55' : '0.50'} — corrige el sesgo de comparar fuerza
+          entre pesos corporales distintos. Calculado con el peso del {pesoKg}kg registrado hacia el {comparacion === 'sin mesociclo previo' ? 'final del bloque' : 'cierre'}.
+        </p>
+      ) : (
+        <p className="font-mono text-caption text-ink-3">
+          Falta {sexo == null ? 'el sexo biológico (anamnesis)' : 'un peso corporal registrado'} para mostrar el 1RM alométrico.
+        </p>
+      )}
     </div>
   );
 }
@@ -366,6 +404,42 @@ function TablaGrupos({ grupos, comparacion }: { grupos: GroupPerfLike[]; compara
       <p className="font-mono text-caption text-ink-3">
         Las series de esta tabla son efectivas ponderadas: el grupo principal del ejercicio cuenta 1 y cada
         secundario 0,5. La tabla de «Volumen» cuenta solo el principal, que es la unidad con la que se programó.
+      </p>
+    </div>
+  );
+}
+
+function TablaEstimulo({ filas }: { filas: IEARow[] }) {
+  if (filas.length === 0) {
+    return <p className="font-sans text-caption text-ink-3">Sin series registradas por grupo muscular.</p>;
+  }
+  return (
+    <div className="space-y-2">
+      <div className="overflow-x-auto rounded-surface border border-hairline">
+        <table className="w-full border-collapse" style={{ minWidth: '480px' }}>
+          <thead>
+            <tr className="bg-bg">
+              <th className="text-left px-3 py-2.5 font-mono text-caption text-ink-2 uppercase tracking-wider border-b border-hairline">Grupo</th>
+              <th className="text-right px-3 py-2.5 font-mono text-caption text-ink-2 uppercase tracking-wider border-b border-hairline">Series efect.</th>
+              <th className="text-right px-3 py-2.5 font-mono text-caption text-ink-2 uppercase tracking-wider border-b border-hairline">RIR medio</th>
+              <th className="text-right px-3 py-2.5 font-mono text-caption text-ink-2 uppercase tracking-wider border-b border-hairline">IEA</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filas.map(f => (
+              <tr key={f.group} className="border-b border-hairline last:border-b-0">
+                <td className="px-3 py-2.5 font-sans text-label text-ink whitespace-nowrap">{f.label}</td>
+                <td className="px-3 py-2.5 text-right font-mono text-label text-ink-2 tabular-nums">{f.fractionalSets}</td>
+                <td className="px-3 py-2.5 text-right font-mono text-label text-ink-2 tabular-nums">{f.meanRir != null ? f.meanRir : '—'}</td>
+                <td className="px-3 py-2.5 text-right font-mono text-label font-bold text-ink tabular-nums">{f.iea != null ? f.iea : '—'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="font-mono text-caption text-ink-3">
+        IEA = series efectivas × (RIR medio real / 10) — sustituye al tonelaje bruto, que se dispara solo por cambiar el
+        rango de repeticiones aunque el estímulo real no haya subido. Sin RIR registrado en el bloque, sale «—».
       </p>
     </div>
   );

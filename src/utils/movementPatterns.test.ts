@@ -41,8 +41,9 @@ describe('buildMovementPatternReport', () => {
     });
     const torso = r.patterns.find(p => p.group === 'empuje_torso')!;
     const pierna = r.patterns.find(p => p.group === 'empuje_pierna')!;
-    expect(torso.tonnage).toBe(640); // 80kg x 8 reps
-    expect(pierna.tonnage).toBe(500); // 100kg x 5 reps
+    // Press banca: pecho (principal, ->torso) 640 + tríceps (secundario 0.5, ->torso también) 320
+    expect(torso.tonnage).toBe(960);
+    expect(pierna.tonnage).toBe(500); // 100kg x 5 reps, sentadilla sin secundarios
   });
 
   it('reparte un mismo grupo muscular en varios patrones sin dividir el peso (tríceps: torso Y brazo)', () => {
@@ -54,8 +55,8 @@ describe('buildMovementPatternReport', () => {
     });
     const torso = r.patterns.find(p => p.group === 'empuje_torso')!;
     const brazo = r.patterns.find(p => p.group === 'brazo')!;
-    // Principal (pecho->torso) pesa 1, secundario (tríceps->torso+brazo) pesa 0.5 en cada uno.
-    expect(torso.tonnage).toBe(640);
+    // Principal (pecho->torso) pesa 1 (640), secundario (tríceps->torso+brazo) pesa 0.5 en cada uno (320).
+    expect(torso.tonnage).toBe(960);
     expect(brazo.tonnage).toBe(320);
   });
 

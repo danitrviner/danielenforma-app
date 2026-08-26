@@ -9,6 +9,7 @@ import { WorkoutLog, Exercise, Mesocycle } from '../types';
 import { getMesocycles } from '../dbService';
 import { epley } from '../utils/oneRepMax';
 import { addDays } from '../utils/trainingWeek';
+import { ewmaDeSeriePorSesion } from '../utils/loadTrend';
 import {
   Icon, EmptyState,
   ALTURA_GRAFICA, MARGEN_GRAFICA, ANCHO_EJE_Y, REJILLA_GRAFICA, TICK_GRAFICA, EJE_GRAFICA,
@@ -83,6 +84,7 @@ interface ChartPoint extends SessionRow {
   repsPct: number;
   setsPct: number;
   ormPct: number | null;
+  ormEwma: number | null;
 }
 
 type Granularity = 'week' | 'day';
@@ -285,6 +287,13 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
     return { first, last, delta, pct };
   }, [progressBuckets, excludedBuckets]);
 
+  // EWMA del e1RM del ejercicio activo, por fecha — suaviza un mal día
+  // aislado (durmió mal, estresado) sin el retraso de una media móvil.
+  const ormEwmaByDate = useMemo(() => {
+    if (!activeExId) return new Map<string, number>();
+    return new Map(ewmaDeSeriePorSesion(logs, activeExId).map(p => [p.date, p.value]));
+  }, [logs, activeExId]);
+
   // Normalised chart points (0-100 per metric)
   const chartData = useMemo<ChartPoint[]>(() => {
     const maxT    = Math.max(...sessionRows.map(r => r.tonnage), 1);
@@ -298,8 +307,9 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
       repsPct:    pct(r.reps, maxR),
       setsPct:    pct(r.sets, maxS),
       ormPct:     r.orm != null && r.orm > 0 ? pct(r.orm, maxO) : null,
+      ormEwma:    ormEwmaByDate.get(r.date) ?? null,
     }));
-  }, [sessionRows]);
+  }, [sessionRows, ormEwmaByDate]);
 
   // Stats for reference lines — raw (single-metric) and pct (multi-metric)
   const stats = useMemo(() => {
@@ -559,6 +569,23 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
                   isAnimationActive={false}
                 />
               ))}
+
+              {/* EWMA del 1RM — solo en vista de una métrica, la normalización a % del
+                  modo multi-métrica no tiene un análogo sensato para una serie suavizada. */}
+              {ormActive && !isMulti && (
+                <Line
+                  type="monotone"
+                  dataKey="ormEwma"
+                  stroke={METRIC_COLOR.orm}
+                  strokeOpacity={0.5}
+                  strokeDasharray="5 3"
+                  strokeWidth={2}
+                  dot={false}
+                  connectNulls={false}
+                  isAnimationActive={false}
+                  name="1RM (tendencia EWMA)"
+                />
+              )}
 
               {showMean && METRICS.filter(m => activeMetrics.has(m)).map(m => (
                 <ReferenceLine

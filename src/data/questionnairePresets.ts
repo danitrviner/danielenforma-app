@@ -13,7 +13,7 @@
 // justo el objetivo de este proyecto.
 
 import { QuestionnaireQuestion, QSchedule, BodyMetricKey, Questionnaire, MuscleGroup } from '../types';
-import { OPCIONES_GRUPOS, VolumeSignalKey } from './questionnaireSignals';
+import { OPCIONES_GRUPOS, VolumeSignalKey, SignalKey } from './questionnaireSignals';
 
 export interface QuestionnairePresetDef {
   title: string;
@@ -33,6 +33,17 @@ function text(label: string, required = false, helpText?: string): Omit<Question
 function numeric(label: string, opts: { unit?: string; required?: boolean } = {}): Omit<QuestionnaireQuestion, 'id'> {
   return { label, type: 'numeric', required: opts.required ?? false, unit: opts.unit };
 }
+// Igual que `numeric`, pero etiquetando la respuesta con una señal legible por un motor.
+function numericSignal(label: string, signalKey: SignalKey, opts: Parameters<typeof numeric>[1] = {}): Omit<QuestionnaireQuestion, 'id'> {
+  return { ...numeric(label, opts), signalKey };
+}
+// Pregunta de opción única/múltiple genérica (no atada a grupos musculares como choiceGroups).
+function choice(label: string, options: string[], opts: { signalKey?: SignalKey; required?: boolean; multiSelect?: boolean; helpText?: string } = {}): Omit<QuestionnaireQuestion, 'id'> {
+  return {
+    label, type: 'choice', required: opts.required ?? false, options,
+    multiSelect: opts.multiSelect ?? false, signalKey: opts.signalKey, helpText: opts.helpText,
+  };
+}
 function scale(label: string, opts: { required?: boolean; min?: number; max?: number; minLabel?: string; maxLabel?: string } = {}): Omit<QuestionnaireQuestion, 'id'> {
   return {
     label, type: 'scale', required: opts.required ?? false,
@@ -51,7 +62,7 @@ function choiceGroups(label: string, signalKey: VolumeSignalKey, helpText?: stri
 }
 // Igual que `scale`, pero etiquetando la respuesta con una señal legible por
 // un motor (hoy, el sugeridor de volumen).
-function scaleSignal(label: string, signalKey: VolumeSignalKey, opts: Parameters<typeof scale>[1] = {}): Omit<QuestionnaireQuestion, 'id'> {
+function scaleSignal(label: string, signalKey: SignalKey, opts: Parameters<typeof scale>[1] = {}): Omit<QuestionnaireQuestion, 'id'> {
   return { ...scale(label, opts), signalKey };
 }
 function metric(label: string, metricKey: BodyMetricKey, required = true): Omit<QuestionnaireQuestion, 'id'> {
@@ -72,7 +83,9 @@ const ENTRENAMIENTO: QuestionnairePresetDef = {
     text('Ocupación'),
     numeric('Edad'),
     metric('Peso corporal (kg)', 'bodyweight'),
-    numeric('Altura en CM'),
+    metric('Altura (cm)', 'altura'),
+    choice('Sexo biológico', ['Hombre', 'Mujer'], { signalKey: 'perfil.sexo_biologico', required: true }),
+    numericSignal('¿Cuántos años llevas entrenando con regularidad?', 'perfil.antiguedad_entrenamiento_anios', { unit: 'años' }),
     text('Objetivo'),
     text('¿Actualmente tienes alguna lesión o molestia?'),
     text('En caso afirmativo, ¿dónde y qué intensidad del 1-10 le asocias?'),
@@ -216,6 +229,8 @@ const REVISION_SEMANAL: QuestionnairePresetDef = {
     numeric('Anota pasos diarios de media (si no tienes dispositivo conectado)', { unit: 'pasos' }),
     boolQ('¿Has seguido más del 80% del plan nutricional en la semana?', true),
     scale('Puntúa tu sueño esta semana', { required: true }),
+    numericSignal('¿Cuántas horas dormiste de media esta semana?', 'wellness.sleep_hours_weekly', { unit: 'h', required: true }),
+    scaleSignal('¿Qué nivel de estrés has tenido esta semana? Valóralo del 1-10', 'wellness.stress_weekly', { required: true }),
     media('Corrección de ejercicios en video (Grábate que no te lo tenga que pedir)', false, 'video'),
     scale('¿Cuánto crees que estás progresando?'),
     scale('¿Cómo de cansado te sientes?'),

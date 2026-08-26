@@ -4,6 +4,7 @@ import { useQuery, useQueries, useQueryClient } from '@tanstack/react-query';
 import { UserProfile, Questionnaire, OnboardingData, WeightCheckIn, NotificationType } from '../types';
 import { updateUserProfile, getAssignmentsForAthlete, getResponsesForAthlete, getQuestionnaireById, getOnboarding } from '../dbService';
 import { signOut, auth } from '../firebase';
+import { leerSexo } from '../utils/athleteProfileSignals';
 import { useToast } from '../hooks/useToast';
 /* 06-6. Estos tres paneles arrastran recharts —344 KB— y se importaban en
    estático, así que el atleta los descargaba y evaluaba aunque entrase a
@@ -223,7 +224,13 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
                   <Icon name="straighten" size="m" className="text-accent" />
                   Mediciones
                 </h3>
-                <Suspense fallback={<PanelCargando />}><BodyMeasurementsPanel athleteEmail={profile.email} /></Suspense>
+                <Suspense fallback={<PanelCargando />}>
+                  <BodyMeasurementsPanel
+                    athleteEmail={profile.email}
+                    sexo={leerSexo(responses, questionnaires)}
+                    pesoKg={profile.actualWeight || null}
+                  />
+                </Suspense>
               </div>
             )}
             {questionnaires.length > 0 && responses.length > 0 && (

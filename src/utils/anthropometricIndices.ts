@@ -5,13 +5,14 @@ import { BodyMeasurement, BodyMetricKey } from '../types';
 // perímetro implicado. Si falta cualquiera de los dos, el índice es null (no
 // se rellena con datos legacy de otro protocolo).
 
-export type AnthropometricIndexKey = 'ipc' | 'ibc' | 'icac' | 'imc_muslo';
+export type AnthropometricIndexKey = 'ipc' | 'ibc' | 'icac' | 'imc_muslo' | 'whtr';
 
 export const ANTHROPOMETRIC_INDEX_LABELS: Record<AnthropometricIndexKey, string> = {
   ipc:       'Pecho / Cintura',
   ibc:       'Bíceps der. contraído / Cintura',
   icac:      'Cadera / Cintura',
   imc_muslo: 'Muslo der. relajado / Cintura',
+  whtr:      'Cintura / Altura (WHtR)',
 };
 
 const INDEX_PAIRS: Record<AnthropometricIndexKey, [BodyMetricKey, BodyMetricKey]> = {
@@ -19,6 +20,10 @@ const INDEX_PAIRS: Record<AnthropometricIndexKey, [BodyMetricKey, BodyMetricKey]
   ibc:       ['biceps_der_contraido', 'cintura'],
   icac:      ['cadera', 'cintura'],
   imc_muslo: ['muslo_der_relajado', 'cintura'],
+  // WHtR se define convencionalmente cintura/altura (no al revés) — a diferencia
+  // de los otros 4 índices, la altura es prácticamente invariable en adultos,
+  // por eso es el ratio con más respaldo en salud cardiometabólica.
+  whtr:      ['cintura', 'altura'],
 };
 
 /** Última medida de cada perímetro, por clave — pásale `latest` de useBodyMeasurements. */

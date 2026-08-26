@@ -4,6 +4,10 @@ import {
 } from 'recharts';
 import { BodyMetricKey, BODY_METRIC_LABELS, BODY_METRIC_UNITS } from '../types';
 import { useBodyMeasurements } from '../hooks/useBodyMeasurements';
+import { computeAnthropometricIndices, ANTHROPOMETRIC_INDEX_LABELS } from '../utils/anthropometricIndices';
+import { pctGrasaUSNavy, masaMagraEstimadaKg, computeIRC } from '../utils/bodyFatUSNavy';
+import { estadoMDC } from '../utils/mdc';
+import { Sexo } from '../utils/athleteProfileSignals';
 import { Skeleton } from './ui';
 
 // Ficha de mediciones: última medida de cada perímetro + delta desde el
@@ -14,6 +18,8 @@ import { Skeleton } from './ui';
 
 interface Props {
   athleteEmail: string;
+  sexo: Sexo | null;    // de la anamnesis (perfil.sexo_biologico) — para %grasa US Navy
+  pesoKg: number | null; // último peso conocido del atleta — idem
 }
 
 function fmtDate(dateStr: string): string {
@@ -21,9 +27,28 @@ function fmtDate(dateStr: string): string {
   return d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
 }
 
-export default function BodyMeasurementsPanel({ athleteEmail }: Props) {
-  const { all, loading } = useBodyMeasurements(athleteEmail);
+export default function BodyMeasurementsPanel({ athleteEmail, sexo, pesoKg }: Props) {
+  const { all, latest, loading } = useBodyMeasurements(athleteEmail);
   const [expanded, setExpanded] = useState<BodyMetricKey | null>(null);
+
+  const indices = useMemo(() => computeAnthropometricIndices(latest), [latest]);
+  const hayIndices = Object.values(indices).some(v => v != null);
+
+  const composicion = useMemo(() => {
+    if (!sexo || pesoKg == null) return null;
+    const cuelloCm = latest.cuello?.value;
+    const cinturaCm = latest.cintura?.value;
+    const alturaCm = latest.altura?.value;
+    const caderaCm = latest.cadera?.value;
+    if (cuelloCm == null || cinturaCm == null || alturaCm == null) return null;
+    if (sexo === 'mujer' && caderaCm == null) return null;
+    const pctGrasa = pctGrasaUSNavy({ sexo, cuelloCm, cinturaCm, caderaCm, alturaCm });
+    if (pctGrasa == null) return null;
+    const masaMagraKg = masaMagraEstimadaKg(pesoKg, pctGrasa);
+    const whtr = indices.whtr;
+    const irc = masaMagraKg != null && whtr != null ? computeIRC(masaMagraKg, whtr) : null;
+    return { pctGrasa, masaMagraKg, irc };
+  }, [sexo, pesoKg, latest, indices.whtr]);
 
   const byMetric = useMemo(() => {
     const map = new Map<BodyMetricKey, { date: string; value: number }[]>();
@@ -80,15 +105,71 @@ export default function BodyMeasurementsPanel({ athleteEmail }: Props) {
               <p className="font-sans font-black text-lg text-white leading-none">
                 {last.value} <span className="text-xs font-normal text-[#c6c9ab]">{unit}</span>
               </p>
-              {pts.length > 1 && delta !== 0 && (
-                <p className={`font-mono text-[10px] ${delta > 0 ? 'text-[#fb923c]' : 'text-[#86efac]'}`}>
-                  {delta > 0 ? '+' : ''}{delta} {unit} desde {fmtDate(first.date)}
-                </p>
-              )}
+              {pts.length > 1 && (() => {
+                const estado = estadoMDC(delta, key);
+                if (estado === 'estable') {
+                  return <p className="font-mono text-[10px] text-[#c6c9ab]">Estable desde {fmtDate(first.date)}</p>;
+                }
+                return (
+                  <p className={`font-mono text-[10px] ${estado === 'sube' ? 'text-[#fb923c]' : 'text-[#86efac]'}`}>
+                    {delta > 0 ? '+' : ''}{delta} {unit} desde {fmtDate(first.date)}
+                  </p>
+                );
+              })()}
             </button>
           );
         })}
       </div>
+
+      {hayIndices && (
+        <div className="bg-[#181816] border border-white/7 rounded-3xl p-4 space-y-2">
+          <p className="font-sans font-semibold text-white text-sm">Índices antropométricos</p>
+          <div className="grid grid-cols-2 gap-2">
+            {(Object.entries(indices) as [keyof typeof indices, number | null][])
+              .filter(([, v]) => v != null)
+              .map(([key, v]) => (
+                <div key={key} className="bg-[#1e1e1e] border border-white/7 rounded-2xl p-3">
+                  <p className="font-mono text-[9px] uppercase tracking-widest text-[#c6c9ab] truncate">
+                    {ANTHROPOMETRIC_INDEX_LABELS[key]}
+                  </p>
+                  <p className="font-sans font-black text-lg text-white leading-none">{v}</p>
+                </div>
+              ))}
+          </div>
+          <p className="font-mono text-[10px] text-[#c6c9ab]">
+            Calculados con la última medida de cada perímetro. Requieren el protocolo completo
+            (relajado/contraído por lado) — las medidas antiguas de un solo valor no los alimentan.
+          </p>
+        </div>
+      )}
+
+      {composicion && (
+        <div className="bg-[#181816] border border-white/7 rounded-3xl p-4 space-y-2">
+          <p className="font-sans font-semibold text-white text-sm">Composición corporal (US Navy)</p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            <div className="bg-[#1e1e1e] border border-white/7 rounded-2xl p-3">
+              <p className="font-mono text-[9px] uppercase tracking-widest text-[#c6c9ab] truncate">% Grasa estimado</p>
+              <p className="font-sans font-black text-lg text-white leading-none">{composicion.pctGrasa}%</p>
+            </div>
+            {composicion.masaMagraKg != null && (
+              <div className="bg-[#1e1e1e] border border-white/7 rounded-2xl p-3">
+                <p className="font-mono text-[9px] uppercase tracking-widest text-[#c6c9ab] truncate">Masa magra est.</p>
+                <p className="font-sans font-black text-lg text-white leading-none">{composicion.masaMagraKg} kg</p>
+              </div>
+            )}
+            {composicion.irc != null && (
+              <div className="bg-[#1e1e1e] border border-white/7 rounded-2xl p-3">
+                <p className="font-mono text-[9px] uppercase tracking-widest text-[#c6c9ab] truncate">IRC</p>
+                <p className="font-sans font-black text-lg text-white leading-none">{composicion.irc}</p>
+              </div>
+            )}
+          </div>
+          <p className="font-mono text-[10px] text-[#c6c9ab]">
+            Estimado solo con cinta métrica (cuello, cintura{sexo === 'mujer' ? ', cadera' : ''}, altura) — sin calibre.
+            IRC = Masa magra estimada / WHtR, índice propio para ver la recomposición, no una referencia clínica.
+          </p>
+        </div>
+      )}
 
       {expanded && byMetric.get(expanded)!.length > 1 && (
         <div className="bg-[#181816] border border-white/7 rounded-3xl p-4">

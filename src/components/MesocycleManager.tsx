@@ -37,6 +37,8 @@ import { VOLUME_LANDMARKS_DEFAULT, type VolumeLandmark } from '../data/volumeLan
 import { getVolumeLandmarks } from '../dbService';
 import VolumeSuggestionSheet from './VolumeSuggestionSheet';
 import { useToast } from '../hooks/useToast';
+import { useAthleteProfileSignals } from '../hooks/useAthleteProfileSignals';
+import { useAthleteWeight } from '../hooks/useAthleteWeight';
 import { useConfirm } from '../hooks/useConfirm';
 import { Skeleton } from './ui';
 import { EmptyState, Dialog, Input, Icon, Tabs, TabItem, Sheet, Pager } from './ui';
@@ -1922,6 +1924,11 @@ export default function MesocycleManager({
 
   const selectedAthlete = athletes.find(a => a.email === selectedEmail);
 
+  // Solo para el e1RM alométrico de la pestaña «Cierre» — sexo (anamnesis) y
+  // peso corporal, que esta pantalla no tenía en scope hasta ahora.
+  const { sexo: sexoAtleta } = useAthleteProfileSignals(selectedEmail || undefined, coachId);
+  const { logs: pesoLogsAtleta } = useAthleteWeight(selectedEmail || undefined);
+
   // ─────────────────────────────────────────────────────────────────────────────
   return (
     <div className="space-y-6">
@@ -2576,6 +2583,8 @@ export default function MesocycleManager({
                   exercises={allExercises}
                   athleteName={athleteName ?? selectedAthlete?.displayName}
                   cargando={cierreCargando}
+                  sexo={sexoAtleta}
+                  pesoLogs={pesoLogsAtleta}
                 />
               )}
 
