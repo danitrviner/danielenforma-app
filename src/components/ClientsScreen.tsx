@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useQueries, useQuery, useIsFetching, useIsMutating } from '@tanstack/react-query';
 import { useParams, useNavigate } from 'react-router-dom';
 import { UserProfile, WeightCheckIn, WorkoutAssignment, WorkoutLog } from '../types';
@@ -16,6 +16,57 @@ import { Skeleton } from './ui';
 import { EmptyState, Badge } from './ui';
 
 const DEFAULT_HUB_TAB: HubTab = 'revisiones';
+
+// Forma de cada elemento de `enrichedAthletes` (más abajo) — hecha a mano
+// porque ese array sale de un useMemo sin tipo propio y AthleteRow necesita
+// un tipo con nombre para vivir fuera del componente (ver comentario junto a
+// AthleteRow). Si el useMemo deja de calcular alguno de estos campos, tsc lo
+// marca aquí como incompatibilidad de tipos.
+type EnrichedAthlete = UserProfile & {
+  planDaysLeft: number | null;
+  planExpired: boolean;
+  planSoon: boolean;
+  daysSince: number | null;
+  checkinLate: boolean;
+  daysSinceLogin: number | null;
+  totalCheckCount: number;
+  pendingCount: number;
+  pendingNotesCount: number;
+  sortScore: number;
+  setupPct: number;
+};
+
+// Envuelta en React.memo y hecha componente aparte (antes iba inline dentro
+// del .map()) — la lista de atletas puede ser larga y antes cualquier estado
+// de ClientsScreen (búsqueda, sincronización...) repintaba cada fila igual.
+// Depende de que `onOpen` tenga identidad estable (useCallback más abajo) y
+// de que `athlete` no se reconstruya en cada render (ya sale de un useMemo).
+const AthleteRow = React.memo(function AthleteRow({ athlete, onOpen }: {
+  athlete: EnrichedAthlete;
+  onOpen: (athlete: EnrichedAthlete) => void;
+}) {
+  const { pendingCount, daysSince, daysSinceLogin } = athlete;
+  const revisionLabel = daysSince === null ? '—' : daysSince <= 0 ? 'hoy' : `hace ${daysSince}d`;
+  const loginLabel = daysSinceLogin === null ? '—' : daysSinceLogin <= 0 ? 'hoy' : `hace ${daysSinceLogin}d`;
+  const metaLine = pendingCount > 0
+    ? `${pendingCount} revisión${pendingCount === 1 ? '' : 'es'} pendiente${pendingCount === 1 ? '' : 's'}`
+    : `Último acceso: ${loginLabel} · Última revisión: ${revisionLabel}`;
+
+  return (
+    <button
+      onClick={() => onOpen(athlete)}
+      className="flex items-center gap-3 bg-raised border border-hairline rounded-control px-3 py-2.5 text-left hover:border-accent/40 transition-colors"
+    >
+      <div className="w-8 h-8 rounded-full overflow-hidden border border-hairline flex-shrink-0">
+        <img src={athlete.avatarUrl} alt={athlete.displayName} loading="lazy" decoding="async" className="w-full h-full object-cover" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="font-sans font-bold text-white text-label truncate">{athlete.displayName}</p>
+        <p className="font-mono text-caption text-ink-3 truncate mt-0.5">{metaLine}</p>
+      </div>
+    </button>
+  );
+});
 
 interface ClientsScreenProps {
   checkins: WeightCheckIn[];
@@ -69,8 +120,16 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
       enabled: !athleteId,
     })),
   });
-  const allAssignments = new Map<string, WorkoutAssignment[]>();
-  athletes.forEach((a, i) => allAssignments.set(a.email, assignmentsQueries[i]?.data ?? []));
+  // Memoizado: sin esto, un Map nuevo en cada render invalidaba también el
+  // useMemo de `enrichedAthletes` (lo tiene como dependencia) en cada render
+  // — lo que a su vez habría dejado sin efecto el React.memo de AthleteRow,
+  // porque cada `athlete` habría sido un objeto distinto cada vez aunque
+  // nada suyo hubiera cambiado de verdad.
+  const allAssignments = useMemo(() => {
+    const map = new Map<string, WorkoutAssignment[]>();
+    athletes.forEach((a, i) => map.set(a.email, assignmentsQueries[i]?.data ?? []));
+    return map;
+  }, [athletes, assignmentsQueries]);
   const loadingAssignments = assignmentsQueries.some(q => q.isPending);
 
   /* 06-2. Esta pantalla leía TODOS los entrenamientos de TODOS los atletas —un
@@ -102,8 +161,11 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
       enabled: !athleteId,
     })),
   });
-  const allWorkoutLogs = new Map<string, WorkoutLog[]>();
-  athletes.forEach((a, i) => allWorkoutLogs.set(a.email, workoutLogsQueries[i]?.data ?? []));
+  const allWorkoutLogs = useMemo(() => {
+    const map = new Map<string, WorkoutLog[]>();
+    athletes.forEach((a, i) => map.set(a.email, workoutLogsQueries[i]?.data ?? []));
+    return map;
+  }, [athletes, workoutLogsQueries]);
 
   // Buscador de la lista de atletas.
   const [search, setSearch] = useState('');
@@ -113,10 +175,10 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
   const [allAthletesOpen, setAllAthletesOpen] = useState(true);
   const [inviteOpen, setInviteOpen] = useState(false);
 
-  const openAthleteHub = (athlete: UserProfile & { setupPct?: number }, tab?: HubTab) => {
+  const openAthleteHub = useCallback((athlete: UserProfile & { setupPct?: number }, tab?: HubTab) => {
     const landingTab = tab ?? ((athlete.setupPct ?? 100) < 100 ? 'setup' : undefined);
     navigate(`/clients/${encodeURIComponent(athlete.email)}${landingTab ? `/${landingTab}` : ''}`);
-  };
+  }, [navigate]);
 
   // Busca en allProfiles, no en athletes: un enlace desde "Archivados" apunta
   // a una baja, que atletasActivos() ya no incluye.
@@ -364,30 +426,9 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
             <EmptyState icon="search_off" title={`Ningún atleta coincide con "${search}".`} />
           ) : (
             <div className="flex flex-col gap-1.5">
-              {filteredAthletes.map(athlete => {
-                const { pendingCount, daysSince, daysSinceLogin } = athlete;
-                const revisionLabel = daysSince === null ? '—' : daysSince <= 0 ? 'hoy' : `hace ${daysSince}d`;
-                const loginLabel = daysSinceLogin === null ? '—' : daysSinceLogin <= 0 ? 'hoy' : `hace ${daysSinceLogin}d`;
-                const metaLine = pendingCount > 0
-                  ? `${pendingCount} revisión${pendingCount === 1 ? '' : 'es'} pendiente${pendingCount === 1 ? '' : 's'}`
-                  : `Último acceso: ${loginLabel} · Última revisión: ${revisionLabel}`;
-
-                return (
-                  <button
-                    key={athlete.userId}
-                    onClick={() => openAthleteHub(athlete)}
-                    className="flex items-center gap-3 bg-raised border border-hairline rounded-control px-3 py-2.5 text-left hover:border-accent/40 transition-colors"
-                  >
-                    <div className="w-8 h-8 rounded-full overflow-hidden border border-hairline flex-shrink-0">
-                      <img src={athlete.avatarUrl} alt={athlete.displayName} loading="lazy" decoding="async" className="w-full h-full object-cover" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="font-sans font-bold text-white text-label truncate">{athlete.displayName}</p>
-                      <p className="font-mono text-caption text-ink-3 truncate mt-0.5">{metaLine}</p>
-                    </div>
-                  </button>
-                );
-              })}
+              {filteredAthletes.map(athlete => (
+                <AthleteRow key={athlete.userId} athlete={athlete} onOpen={openAthleteHub} />
+              ))}
             </div>
           )
         )}
