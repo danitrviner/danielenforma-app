@@ -603,7 +603,7 @@ export default function CoachesScreen({ currentUserId, currentUserEmail }: Props
               return (
                 <div key={user.userId}
                   className={`bg-surface border rounded-surface p-4 flex items-center gap-4 ${isOwner ? 'border-accent/30' : 'border-hairline'}`}>
-                  <img src={user.avatarUrl} alt={user.displayName}
+                  <img src={user.avatarUrl} alt={user.displayName} loading="lazy" decoding="async"
                     className="w-10 h-10 rounded-full object-cover border border-hairline flex-shrink-0" />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">

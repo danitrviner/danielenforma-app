@@ -123,7 +123,7 @@ export default function CommandPalette({ onNavigateTab }: Props) {
                 <ListRow
                   key={a.userId}
                   onClick={() => goToAthlete(a)}
-                  leading={<img src={a.avatarUrl} alt="" className="w-6 h-6 rounded-full object-cover flex-shrink-0" />}
+                  leading={<img src={a.avatarUrl} alt="" loading="lazy" decoding="async" className="w-6 h-6 rounded-full object-cover flex-shrink-0" />}
                   title={a.displayName}
                   subtitle={a.email}
                 />

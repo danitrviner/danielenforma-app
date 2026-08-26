@@ -309,7 +309,7 @@ export default function MyMenuScreen({ profile }: Props) {
                 className="rounded-surface border bg-bg border-hairline"
                 leading={
                   <div className="w-9 h-9 rounded-surface overflow-hidden flex-shrink-0 bg-raised">
-                    {e.recipeImage ? <img src={e.recipeImage} alt="" className="w-full h-full object-cover" /> : null}
+                    {e.recipeImage ? <img src={e.recipeImage} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" /> : null}
                   </div>
                 }
                 title={e.recipeName}
@@ -373,7 +373,7 @@ export default function MyMenuScreen({ profile }: Props) {
                   className="relative block w-full aspect-[21/9] bg-raised"
                 >
                   {meal.recipeImage ? (
-                    <img src={meal.recipeImage} alt={meal.recipeName} className="absolute inset-0 w-full h-full object-cover" />
+                    <img src={meal.recipeImage} alt={meal.recipeName} loading="lazy" decoding="async" className="absolute inset-0 w-full h-full object-cover" />
                   ) : (
                     <div className="absolute inset-0 flex items-center justify-center"><Icon name="skillet" size="xl" className="text-ink-3" /></div>
                   )}
@@ -487,7 +487,7 @@ export default function MyMenuScreen({ profile }: Props) {
                   className="w-full flex items-center gap-3 px-3 py-3 text-left bg-bg border border-hairline hover:border-accent/40 rounded-control transition-all"
                 >
                   <div className="w-10 h-10 rounded-surface overflow-hidden flex-shrink-0 bg-raised">
-                    {c.recipe.image ? <img src={c.recipe.image} alt="" className="w-full h-full object-cover" /> : null}
+                    {c.recipe.image ? <img src={c.recipe.image} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" /> : null}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-sans text-body-s text-ink truncate">{c.recipe.name}</p>

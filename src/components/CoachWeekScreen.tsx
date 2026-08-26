@@ -170,7 +170,7 @@ export default function CoachWeekScreen({ coachId: _coachId }: Props) {
               onClick={() => navigate(`/clients/${encodeURIComponent(athlete.email)}/roadmap`)}
               className="w-full flex items-center gap-3 bg-surface border border-hairline rounded-surface p-4 text-left hover:border-accent/30 transition-all"
             >
-              <img src={athlete.avatarUrl} alt={athlete.displayName} className="w-10 h-10 rounded-full object-cover border border-hairline flex-shrink-0" />
+              <img src={athlete.avatarUrl} alt={athlete.displayName} loading="lazy" decoding="async" className="w-10 h-10 rounded-full object-cover border border-hairline flex-shrink-0" />
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 flex-wrap">
                   <p className="font-sans font-bold text-body-s text-white truncate">{athlete.displayName}</p>

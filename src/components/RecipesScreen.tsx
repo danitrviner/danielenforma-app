@@ -117,7 +117,7 @@ function RecipeCard({ recipe, isFav, large = false, onOpen, onToggleFav }: CardP
       className={`${colSpan} group relative rounded-surface overflow-hidden bg-raised border border-hairline ${minH} flex flex-col justify-end cursor-pointer hover:border-accent/40 transition-all`}
     >
       {photo
-        ? <img src={photo} alt={recipe.name} className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-500" />
+        ? <img src={photo} alt={recipe.name} loading="lazy" decoding="async" className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-500" />
         : <div className="absolute inset-0"><RecipePlaceholder /></div>
       }
       <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
@@ -166,7 +166,7 @@ function RecetaCard({ recipe, isFav, isFeatured, excedeTiempo, onOpen, onToggleF
       }`}
     >
       {photo
-        ? <img src={photo} alt={recipe.name} className="absolute inset-0 w-full h-full object-cover opacity-70 group-hover:scale-105 transition-transform duration-500" />
+        ? <img src={photo} alt={recipe.name} loading="lazy" decoding="async" className="absolute inset-0 w-full h-full object-cover opacity-70 group-hover:scale-105 transition-transform duration-500" />
         : <div className="absolute inset-0 bg-gradient-to-br from-raised to-bg flex items-center justify-center">
             <span className="material-symbols-outlined text-display text-ink-3">skillet</span>
           </div>
@@ -354,7 +354,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, isOwn, enabledModes, savingFa
       {/* Photo */}
       <div className="w-full aspect-[16/7] rounded-surface overflow-hidden bg-raised border border-hairline">
         {photo
-          ? <img src={photo} alt={recipe.name} className="w-full h-full object-cover" />
+          ? <img src={photo} alt={recipe.name} loading="lazy" decoding="async" className="w-full h-full object-cover" />
           : <RecipePlaceholder />
         }
       </div>

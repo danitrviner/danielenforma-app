@@ -157,6 +157,8 @@ export default function PhotosScreen({ profile }: Props) {
                   <img
                     src={photo.url}
                     alt={VIEW_LABELS[view]}
+                    loading="lazy"
+                    decoding="async"
                     className="w-full h-full object-cover object-top"
                     onError={() => setBrokenPhotoIds(prev => new Set(prev).add(photo.id))}
                   />

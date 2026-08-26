@@ -313,7 +313,7 @@ function AccessTab({ coachEmail }: { coachEmail: string }) {
           return (
             <div key={a.email} className="flex items-center gap-3 bg-raised border border-hairline rounded-surface p-3">
               <input type="checkbox" checked={selected.has(a.email)} onChange={() => toggleSelected(a.email)} className="w-4 h-4 accent-accent" />
-              <img src={a.avatarUrl} alt="" className="w-7 h-7 rounded-full object-cover flex-shrink-0" />
+              <img src={a.avatarUrl} alt="" loading="lazy" decoding="async" className="w-7 h-7 rounded-full object-cover flex-shrink-0" />
               <p className="flex-1 min-w-0 font-sans font-bold text-body-s text-white truncate">{a.displayName}</p>
               <button
                 onClick={() => toggle(a.email, !enabled)}

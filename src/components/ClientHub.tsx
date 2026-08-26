@@ -743,7 +743,7 @@ export default function ClientHub({
                   key={a.userId}
                   title={a.displayName}
                   subtitle={a.email}
-                  leading={<img src={a.avatarUrl} alt="" className="w-9 h-9 rounded-full object-cover flex-shrink-0" />}
+                  leading={<img src={a.avatarUrl} alt="" loading="lazy" decoding="async" className="w-9 h-9 rounded-full object-cover flex-shrink-0" />}
                   trailing={<Icon name="chevron_right" size="m" className="text-ink-4" />}
                   onClick={() => { setSwitcherOpen(false); navigate(`/clients/${encodeURIComponent(a.email)}`); }}
                 />

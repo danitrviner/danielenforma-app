@@ -63,7 +63,7 @@ function ZonesTab({ coachEmail }: { coachEmail: string }) {
           key={a.email}
           onClick={() => setSelected(a.email)}
           className="rounded-control border bg-raised border-hairline"
-          leading={<img src={a.avatarUrl} alt="" className="w-7 h-7 rounded-full object-cover flex-shrink-0" />}
+          leading={<img src={a.avatarUrl} alt="" loading="lazy" decoding="async" className="w-7 h-7 rounded-full object-cover flex-shrink-0" />}
           title={a.displayName}
           chevron
         />
