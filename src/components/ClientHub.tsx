@@ -146,11 +146,20 @@ export default function ClientHub({
       .sort((a, b) => a.displayName.localeCompare(b.displayName));
   }, [allProfiles, switcherSearch, athlete.email]);
 
+  // Consultas que solo alimentan UNA o unas pocas pestañas se activan solo
+  // cuando esa pestaña está abierta — antes las ~19 consultas del Hub
+  // disparaban todas de golpe al abrir la ficha, aunque la pestaña por
+  // defecto sea "revisiones" (ClientsScreen.DEFAULT_HUB_TAB) y no necesite ni
+  // la mitad. Lo que alimenta cabecera/PendingTray (siempre visibles) se
+  // queda eager: assignments, athleteLogs, coachReports, aiProposals.
+  const tabIn = (...tabs: HubTab[]): boolean => (tabs as HubTab[]).includes(activeTab);
+
   // ── Onboarding ─────────────────────────────────────────────────────────────
   const onboardingKey = ['onboarding', athlete.email] as const;
   const { data: onboardingData = null } = useQuery({
     queryKey: onboardingKey,
     queryFn: () => getOnboarding(athlete.email),
+    enabled: tabIn('setup', 'ficha', 'dietas'),
   });
   // ClientReviewsPanel writes through this (OnboardingForm / FoodPreferencesPanel
   // saves) without needing to know about react-query — same Dispatch-shaped API
@@ -162,6 +171,7 @@ export default function ClientHub({
   const { data: onboardingTemplateDoc } = useQuery({
     queryKey: ['onboardingTemplate', coachEmail],
     queryFn: () => getOnboardingTemplate(coachEmail),
+    enabled: tabIn('ficha'),
   });
   const onboardingTemplate: OnboardingTemplateQuestion[] = onboardingTemplateDoc?.questions ?? [];
 
@@ -195,6 +205,7 @@ export default function ClientHub({
   const { data: mesocycles = [] } = useQuery({
     queryKey: ['mesocycles', athlete.email],
     queryFn: () => getMesocycles(athlete.email),
+    enabled: tabIn('setup', 'ficha', 'entrenamientos'),
   });
 
   // Shared ['exercises'] cache key with MesocycleManager/CoachRoadmapView —
@@ -218,6 +229,7 @@ export default function ClientHub({
   const { data: athleteDiets = [] } = useQuery({
     queryKey: athleteDietsKey,
     queryFn: () => getDietsForAthlete(athlete.email).then(list => list.filter(d => !d.selfManaged)),
+    enabled: tabIn('setup', 'dietas'),
   });
   const setAthleteDiets = (updater: React.SetStateAction<Diet[]>) =>
     queryClient.setQueryData<Diet[]>(athleteDietsKey, prev =>
@@ -227,19 +239,24 @@ export default function ClientHub({
   const { data: athleteDietConfig = null } = useQuery({
     queryKey: athleteDietConfigKey,
     queryFn: () => getAthleteDietConfig(athlete.email),
+    enabled: tabIn('setup', 'dietas'),
   });
 
   const nutritionConfigKey = ['athleteNutritionConfig', athlete.email] as const;
   const { data: nutritionConfig = null } = useQuery({
     queryKey: nutritionConfigKey,
     queryFn: () => getAthleteNutritionConfig(athlete.email),
+    enabled: tabIn('setup', 'dietas'),
   });
 
   // ── Photos ─────────────────────────────────────────────────────────────────
-  const { data: athletePhotos = [], isPending: loadingPhotos } = useQuery({
+  const fotosActivas = tabIn('setup', 'cuerpo');
+  const { data: athletePhotos = [], isPending: loadingPhotosQuery } = useQuery({
     queryKey: ['progressPhotos', athlete.email],
     queryFn: () => getProgressPhotos(athlete.email),
+    enabled: fotosActivas,
   });
+  const loadingPhotos = fotosActivas && loadingPhotosQuery;
 
   // Weekly menu (recipe-first): list of drafts/published/archived — feeds both
   // the Dietas tab (editor state is local to ClientDietsPanel) and the menu
@@ -248,6 +265,7 @@ export default function ClientHub({
   const { data: weeklyMenus = [] } = useQuery({
     queryKey: weeklyMenusKey,
     queryFn: () => getWeeklyMenusForAthlete(athlete.email),
+    enabled: tabIn('dietas'),
   });
   const setWeeklyMenus = (updater: React.SetStateAction<WeeklyMenu[]>) =>
     queryClient.setQueryData<WeeklyMenu[]>(weeklyMenusKey, prev =>
@@ -256,6 +274,7 @@ export default function ClientHub({
   const { data: menuCompletionLogs = [] } = useQuery({
     queryKey: ['menuCompletionLogsForAthlete', athlete.email],
     queryFn: () => getMenuCompletionLogsForAthlete(athlete.email),
+    enabled: tabIn('dietas'),
   });
 
   // Plan duration — snapshot-diff dirty check, same pattern as NutritionScreen's
@@ -310,6 +329,7 @@ export default function ClientHub({
   const { data: coachQuestionnaires = [] } = useQuery({
     queryKey: coachQuestionnairesKey,
     queryFn: () => getQuestionnairesByCoach(coachId),
+    enabled: tabIn('revisiones', 'cuerpo', 'correlaciones'),
   });
   const setCoachQuestionnaires = (updater: React.SetStateAction<Questionnaire[]>) =>
     queryClient.setQueryData<Questionnaire[]>(coachQuestionnairesKey, prev =>
@@ -319,6 +339,7 @@ export default function ClientHub({
   const { data: athleteQAssignments = [] } = useQuery({
     queryKey: athleteQAssignmentsKey,
     queryFn: () => getAssignmentsForAthlete(athlete.email),
+    enabled: tabIn('setup', 'revisiones'),
   });
   const setAthleteQAssignments = (updater: React.SetStateAction<QuestionnaireAssignment[]>) =>
     queryClient.setQueryData<QuestionnaireAssignment[]>(athleteQAssignmentsKey, prev =>
@@ -328,6 +349,7 @@ export default function ClientHub({
   const { data: athleteQResponses = [] } = useQuery({
     queryKey: athleteQResponsesKey,
     queryFn: () => getResponsesForAthlete(athlete.email),
+    enabled: tabIn('revisiones', 'cuerpo', 'correlaciones'),
   });
   const setAthleteQResponses = (updater: React.SetStateAction<QuestionnaireResponse[]>) =>
     queryClient.setQueryData<QuestionnaireResponse[]>(athleteQResponsesKey, prev =>
@@ -338,6 +360,7 @@ export default function ClientHub({
   const { data: athletePhotoAssignments = [] } = useQuery({
     queryKey: athletePhotoAssignmentsKey,
     queryFn: () => getPhotoAssignmentsForAthlete(athlete.email),
+    enabled: tabIn('setup', 'cuerpo'),
   });
   const setAthletePhotoAssignments = (updater: React.SetStateAction<PhotoAssignment[]>) =>
     queryClient.setQueryData<PhotoAssignment[]>(athletePhotoAssignmentsKey, prev =>
