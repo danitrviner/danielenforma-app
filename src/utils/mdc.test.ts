@@ -2,10 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { estadoMDC, mdcDeMetrica } from './mdc';
 
 describe('mdcDeMetrica', () => {
-  it('clasifica tronco, extremidad y pliegue con sus umbrales', () => {
+  it('clasifica tronco y extremidad con sus umbrales', () => {
     expect(mdcDeMetrica('cintura')).toBe(1.5);
     expect(mdcDeMetrica('biceps_der_relajado')).toBe(1.0);
-    expect(mdcDeMetrica('pliegue_subgluteo_der')).toBe(0.2);
   });
 
   it('bodyweight/altura no tienen MDC (fuera del protocolo de perímetros)', () => {

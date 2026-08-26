@@ -6,8 +6,10 @@ import { BodyMetricKey } from '../types';
 // "Estable" en vez de una flecha de progreso/regresión cuando el cambio no
 // supera el umbral. bodyweight/altura quedan fuera — no son parte del
 // protocolo de perímetros (el peso tiene su propio seguimiento en
-// BodyweightPanel, la altura no cambia en adultos).
-export type MDCCategoria = 'extremidad' | 'tronco' | 'pliegue';
+// BodyweightPanel, la altura no cambia en adultos). Todo se mide con cinta
+// métrica — sin calibre/plicómetro (decisión explícita de Dani), así que
+// solo hay dos categorías.
+export type MDCCategoria = 'extremidad' | 'tronco';
 
 const CATEGORIA_POR_METRICA: Record<Exclude<BodyMetricKey, 'bodyweight' | 'altura'>, MDCCategoria> = {
   pecho: 'tronco', cintura: 'tronco', abdomen: 'tronco', cadera: 'tronco', cuello: 'tronco',
@@ -19,13 +21,11 @@ const CATEGORIA_POR_METRICA: Record<Exclude<BodyMetricKey, 'bodyweight' | 'altur
   muslo_izq_relajado: 'extremidad', muslo_izq_contraido: 'extremidad',
   muslo_der_relajado: 'extremidad', muslo_der_contraido: 'extremidad',
   gemelo_izq: 'extremidad', gemelo_der: 'extremidad',
-  pliegue_subgluteo_der: 'pliegue',
 };
 
 const UMBRAL_POR_CATEGORIA: Record<MDCCategoria, number> = {
   extremidad: 1.0, // cm
   tronco: 1.5,     // cm
-  pliegue: 0.2,    // cm (2.0mm)
 };
 
 export function mdcDeMetrica(metricKey: BodyMetricKey): number | null {

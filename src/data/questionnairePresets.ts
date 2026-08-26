@@ -189,7 +189,6 @@ const MEDICIONES: QuestionnairePresetDef = {
     metric('Perímetro de cintura (cm)', 'cintura'),
     metric('Perímetro de abdomen (cm)', 'abdomen'),
     metric('Perímetro de cadera (cm)', 'cadera'),
-    metric('Pliegue subglúteo derecho (mm)', 'pliegue_subgluteo_der'),
     metric('Muslo derecho relajado (cm)', 'muslo_der_relajado'),
     metric('Muslo derecho contraído (cm)', 'muslo_der_contraido'),
     metric('Muslo izquierdo relajado (cm)', 'muslo_izq_relajado'),

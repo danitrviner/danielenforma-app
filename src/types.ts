@@ -576,8 +576,10 @@ export interface QSchedule {
 // simplificado, un solo valor por perímetro): se conservan para no romper el
 // histórico de clientes que ya midieron con ellas, pero el preset "Mediciones"
 // (questionnairePresets.ts) ya no las usa — pide el protocolo completo de
-// relajado/contraído por lado + pliegue subglúteo, que es lo que necesitan los
-// índices antropométricos (ver utils/anthropometricIndices.ts).
+// relajado/contraído por lado, que es lo que necesitan los índices
+// antropométricos (ver utils/anthropometricIndices.ts). Sin pliegues/calibre:
+// decisión explícita de Dani, ni el subglúteo del Excel original ni el
+// tricipital de CAMA — solo cinta métrica.
 export type BodyMetricKey =
   | 'bodyweight' | 'altura' | 'pecho' | 'cintura' | 'abdomen' | 'cadera' | 'cuello'
   | 'biceps_izq' | 'biceps_der' | 'muslo_izq' | 'muslo_der' | 'gemelo' // legacy
@@ -585,8 +587,7 @@ export type BodyMetricKey =
   | 'biceps_der_relajado' | 'biceps_der_contraido'
   | 'muslo_izq_relajado' | 'muslo_izq_contraido'
   | 'muslo_der_relajado' | 'muslo_der_contraido'
-  | 'gemelo_izq' | 'gemelo_der'
-  | 'pliegue_subgluteo_der';
+  | 'gemelo_izq' | 'gemelo_der';
 
 export interface QuestionnaireQuestion {
   id: string;
@@ -679,7 +680,7 @@ export interface BodyMeasurement {
   date: string;       // YYYY-MM-DD
   metricKey: BodyMetricKey;
   value: number;
-  unit: 'cm' | 'kg' | 'mm';
+  unit: 'cm' | 'kg';
   source: 'questionnaire' | 'manual';
   responseId?: string;
   createdAt: string;  // ISO timestamp
@@ -710,10 +711,9 @@ export const BODY_METRIC_LABELS: Record<BodyMetricKey, string> = {
   muslo_der_contraido:   'Muslo derecho contraído',
   gemelo_izq:             'Gemelo izquierdo',
   gemelo_der:             'Gemelo derecho',
-  pliegue_subgluteo_der:  'Pliegue subglúteo derecho',
 };
 
-export const BODY_METRIC_UNITS: Record<BodyMetricKey, 'cm' | 'kg' | 'mm'> = {
+export const BODY_METRIC_UNITS: Record<BodyMetricKey, 'cm' | 'kg'> = {
   bodyweight: 'kg', altura: 'cm', pecho: 'cm', cintura: 'cm', abdomen: 'cm', cadera: 'cm', cuello: 'cm',
   biceps_izq: 'cm', biceps_der: 'cm', muslo_izq: 'cm', muslo_der: 'cm', gemelo: 'cm',
   biceps_izq_relajado: 'cm', biceps_izq_contraido: 'cm',
@@ -721,7 +721,6 @@ export const BODY_METRIC_UNITS: Record<BodyMetricKey, 'cm' | 'kg' | 'mm'> = {
   muslo_izq_relajado: 'cm', muslo_izq_contraido: 'cm',
   muslo_der_relajado: 'cm', muslo_der_contraido: 'cm',
   gemelo_izq: 'cm', gemelo_der: 'cm',
-  pliegue_subgluteo_der: 'mm',
 };
 
 // ─── BODYWEIGHT ───────────────────────────────────────────────────────────────
