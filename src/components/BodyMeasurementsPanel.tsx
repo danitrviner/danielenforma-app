@@ -54,6 +54,12 @@ export default function BodyMeasurementsPanel({ athleteEmail, sexo, pesoKg }: Pr
     const map = new Map<BodyMetricKey, { date: string; value: number }[]>();
     for (const m of all) {
       if (m.metricKey === 'bodyweight') continue; // vive en BodyweightPanel
+      // Altura no es un perímetro que se siga en el tiempo (no cambia en
+      // adultos, mdc.ts la excluye del umbral de cambio a propósito) — es un
+      // dato único de la anamnesis que solo alimenta %grasa US Navy y WHtR
+      // más abajo. Mostrarla aquí sería una tarjeta más diciendo "Estable"
+      // para siempre, sin aportar nada al coach.
+      if (m.metricKey === 'altura') continue;
       if (!map.has(m.metricKey)) map.set(m.metricKey, []);
       map.get(m.metricKey)!.push({ date: m.date, value: m.value });
     }
