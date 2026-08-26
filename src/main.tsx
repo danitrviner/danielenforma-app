@@ -1,7 +1,9 @@
 import {StrictMode} from 'react';
 import {createRoot} from 'react-dom/client';
 import {BrowserRouter} from 'react-router-dom';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import {QueryClient} from '@tanstack/react-query';
+import {PersistQueryClientProvider} from '@tanstack/react-query-persist-client';
+import {createSyncStoragePersister} from '@tanstack/query-sync-storage-persister';
 import App from './App.tsx';
 import ErrorBoundary from './components/ErrorBoundary.tsx';
 import {iniciarMonitorizacion} from './monitorizacion.ts';
@@ -30,25 +32,61 @@ iniciarMonitorizacion();
 // la caché con `setQueryData` en el momento, así que lo que tú tocas se ve al
 // instante. Lo que se retrasa es enterarse de lo que cambió OTRO dispositivo,
 // y ahí diez minutos es de sobra.
+// `gcTime` sube de los 30 min de antes a 24 h: con la persistencia de abajo,
+// `gcTime` ya no es solo "cuánto vive en memoria" — es lo que decide cuánto
+// dura en el localStorage guardado entre recargas. Con 30 min, cualquier dato
+// que llevara más de media hora sin pedirse se borraba del caché ANTES de que
+// hubiera ocasión de persistirlo, y la persistencia de abajo no habría servido
+// para nada.
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 10 * 60_000,
-      gcTime: 30 * 60_000,
+      gcTime: 24 * 60 * 60_000,
       refetchOnWindowFocus: false,
       retry: 1,
     },
   },
 });
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   Caché entre recargas
+
+   Hasta ahora el `staleTime` de 10 min de arriba solo amortiguaba lecturas
+   DENTRO de una sesión: 13 pantallas de coach comparten la consulta
+   `userProfiles`, así que abrir cinco de ellas seguidas costaba una sola
+   lectura de Firestore, no cinco. Pero cada vez que el coach cerraba y volvía
+   a abrir la app —o recargaba— ese caché desaparecía entero y las mismas
+   colecciones (perfiles de todos los clientes, catálogo de ejercicios,
+   dietas del CRM...) se volvían a leer de cero. Eso, no las pantallas en sí,
+   es lo que agotó la cuota diaria el 22 de agosto con apenas nadie usando
+   la app todavía.
+   Esto guarda el caché en `localStorage` al salir y lo recupera al entrar, así
+   que una recarga reutiliza lo que ya se había leído en las últimas 24 h en
+   vez de camino a Firestore otra vez. No es información nueva expuesta: cada
+   dominio de `src/db/` ya guarda su propia copia en localStorage como reserva
+   sin conexión (`enforma_exercises`, `enforma_food_items_v2`...) — esto solo
+   hace lo mismo con la capa de React Query.
+   `buster: __APP_RELEASE__` invalida el caché guardado en cada despliegue: si
+   la forma de un dato cambia entre versiones, no hay riesgo de arrancar con
+   una versión vieja del JSON pegada en el localStorage de alguien.
+   ═══════════════════════════════════════════════════════════════════════════ */
+const persister = createSyncStoragePersister({
+  storage: window.localStorage,
+  key: 'enforma_query_cache_v1',
+});
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ErrorBoundary>
-      <QueryClientProvider client={queryClient}>
+      <PersistQueryClientProvider
+        client={queryClient}
+        persistOptions={{ persister, maxAge: 24 * 60 * 60_000, buster: __APP_RELEASE__ }}
+      >
         <BrowserRouter>
           <App />
         </BrowserRouter>
-      </QueryClientProvider>
+      </PersistQueryClientProvider>
     </ErrorBoundary>
   </StrictMode>,
 );
