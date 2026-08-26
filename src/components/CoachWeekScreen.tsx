@@ -1,10 +1,10 @@
 import React from 'react';
-import { useQueries, useQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { UserProfile, Mesocycle, TaskItem, WorkoutAssignment, NutritionProgram } from '../types';
+import { Mesocycle, WorkoutAssignment, NutritionProgram } from '../types';
 import {
-  getAllUserProfiles, getMesocycles, getTasksForAthlete, getWorkoutAssignments,
-  getNutritionProgram, getWorkouts, getExercises,
+  getAllUserProfiles, getMesocyclesForAthletes, getTasksForAthletes, getWorkoutAssignmentsForAthletes,
+  getNutritionProgramsForAthletes, getWorkoutsByIds, getExercises,
 } from '../dbService';
 import { atletasActivos } from '../utils/atletas';
 import { getWeekRange, getWeekStart } from '../utils/trainingWeek';
@@ -40,26 +40,70 @@ export default function CoachWeekScreen({ coachId: _coachId }: Props) {
     queryFn: getAllUserProfiles,
   });
   const athletes = React.useMemo(() => atletasActivos(allProfiles).filter(p => p.role !== 'coach'), [allProfiles]);
+  const athleteEmails = React.useMemo(() => athletes.map(a => a.email), [athletes]);
+  const athleteUids = React.useMemo(() => athletes.map(a => a.userId), [athletes]);
+  const hayAtletas = athletes.length > 0;
 
-  const { data: workouts = [], isPending: loadingWorkouts } = useQuery({ queryKey: ['workouts'], queryFn: getWorkouts });
   const { data: exercises = [], isPending: loadingExercises } = useQuery({ queryKey: ['exercises'], queryFn: getExercises });
 
-  const mesoQueries = useQueries({
-    queries: athletes.map(a => ({ queryKey: ['mesocycles', a.email], queryFn: () => getMesocycles(a.email) })),
+  // Cuatro consultas de lote (30 ids por `in`) en vez de 4×N — con 30 clientes,
+  // esto pasa de 120 idas y vueltas a 4. Ver Fase 3 del plan de optimización.
+  const { data: mesocyclesFlat = [], isPending: loadingMeso } = useQuery({
+    queryKey: ['mesocyclesForAthletes', athleteEmails],
+    queryFn: () => getMesocyclesForAthletes(athleteEmails),
+    enabled: hayAtletas,
   });
-  const taskQueries = useQueries({
-    queries: athletes.map(a => ({ queryKey: ['tasksForAthlete', a.email], queryFn: () => getTasksForAthlete(a.email) })),
+  const { data: tasksFlat = [], isPending: loadingTasks } = useQuery({
+    queryKey: ['tasksForAthletes', athleteEmails],
+    queryFn: () => getTasksForAthletes(athleteEmails),
+    enabled: hayAtletas,
   });
-  const assignmentQueries = useQueries({
-    queries: athletes.map(a => ({ queryKey: ['workoutAssignments', a.userId], queryFn: () => getWorkoutAssignments(a.userId) })),
+  const { data: assignmentsFlat = [], isPending: loadingAssignmentsQuery } = useQuery({
+    queryKey: ['workoutAssignmentsForAthletes', athleteUids],
+    queryFn: () => getWorkoutAssignmentsForAthletes(athleteUids),
+    enabled: hayAtletas,
   });
-  const nutritionQueries = useQueries({
-    queries: athletes.map(a => ({ queryKey: ['nutritionProgram', a.email], queryFn: () => getNutritionProgram(a.email) })),
+  const { data: nutritionProgramsFlat = [], isPending: loadingNutrition } = useQuery({
+    queryKey: ['nutritionProgramsForAthletes', athleteEmails],
+    queryFn: () => getNutritionProgramsForAthletes(athleteEmails),
+    enabled: hayAtletas,
   });
+  const loadingAssignments = hayAtletas && loadingAssignmentsQuery;
+
+  // Las rutinas dependen de qué workoutId aparece en las asignaciones ya
+  // cargadas — sustituye a getWorkouts() (colección entera de TODOS los
+  // atletas) por solo las que de verdad se usan esta semana.
+  const workoutIds = React.useMemo(() => Array.from(new Set(assignmentsFlat.map(a => a.workoutId))), [assignmentsFlat]);
+  const { data: workouts = [], isPending: loadingWorkoutsQuery } = useQuery({
+    queryKey: ['workoutsByIds', workoutIds],
+    queryFn: () => getWorkoutsByIds(workoutIds),
+    enabled: workoutIds.length > 0,
+  });
+  const loadingWorkouts = workoutIds.length > 0 && loadingWorkoutsQuery;
+
+  const mesoByAthlete = React.useMemo(() => {
+    const map = new Map<string, Mesocycle[]>();
+    for (const m of mesocyclesFlat) map.set(m.athleteId, [...(map.get(m.athleteId) ?? []), m]);
+    return map;
+  }, [mesocyclesFlat]);
+  const tasksByAthlete = React.useMemo(() => {
+    const map = new Map<string, typeof tasksFlat>();
+    for (const t of tasksFlat) map.set(t.athleteId, [...(map.get(t.athleteId) ?? []), t]);
+    return map;
+  }, [tasksFlat]);
+  const assignmentsByAthlete = React.useMemo(() => {
+    const map = new Map<string, WorkoutAssignment[]>();
+    for (const a of assignmentsFlat) map.set(a.athleteId, [...(map.get(a.athleteId) ?? []), a]);
+    return map;
+  }, [assignmentsFlat]);
+  const nutritionByAthlete = React.useMemo(() => {
+    const map = new Map<string, NutritionProgram>();
+    for (const p of nutritionProgramsFlat) map.set(p.athleteId, p);
+    return map;
+  }, [nutritionProgramsFlat]);
 
   const loading = loadingProfiles || loadingWorkouts || loadingExercises
-    || mesoQueries.some(q => q.isPending) || taskQueries.some(q => q.isPending)
-    || assignmentQueries.some(q => q.isPending) || nutritionQueries.some(q => q.isPending);
+    || loadingMeso || loadingTasks || loadingAssignments || loadingNutrition;
 
   if (loading) {
     return (
@@ -72,11 +116,11 @@ export default function CoachWeekScreen({ coachId: _coachId }: Props) {
     );
   }
 
-  const rows = athletes.map((a, i) => {
-    const mesocycles = (mesoQueries[i]?.data as Mesocycle[] | undefined) ?? [];
-    const tasks = (taskQueries[i]?.data as TaskItem[] | undefined) ?? [];
-    const assignments = (assignmentQueries[i]?.data as WorkoutAssignment[] | undefined) ?? [];
-    const nutritionProgram = (nutritionQueries[i]?.data as NutritionProgram | null | undefined) ?? null;
+  const rows = athletes.map((a) => {
+    const mesocycles = mesoByAthlete.get(a.email) ?? [];
+    const tasks = tasksByAthlete.get(a.email) ?? [];
+    const assignments = assignmentsByAthlete.get(a.userId) ?? [];
+    const nutritionProgram = nutritionByAthlete.get(a.email) ?? null;
 
     const sorted = [...mesocycles].sort((a2, b2) => a2.number - b2.number);
     const currentMeso = sorted.find(m => {

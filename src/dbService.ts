@@ -51,14 +51,14 @@ export {
   getExercises, createExercise, updateExercise, deleteExercise,
   getExerciseNotesForAthlete, saveExerciseNote, seedExercisesIfEmpty,
   getWorkouts, getWorkoutsByIds, createWorkout, updateWorkout, deleteWorkout,
-  getWorkoutAssignments, getWorkoutAssignmentsForAthlete, getWorkoutAssignmentsByMesocycleIds,
+  getWorkoutAssignments, getWorkoutAssignmentsForAthlete, getWorkoutAssignmentsByMesocycleIds, getWorkoutAssignmentsForAthletes,
   createWorkoutAssignment, updateWorkoutAssignment, deleteWorkoutAssignment,
   getWorkoutLogs, createWorkoutLog, deleteWorkoutLog, updateWorkoutLog,
   migratePrimaryFocusToMuscleGroup,
   deleteWorkoutsByMesocycleId, deleteWorkoutAssignmentsByMesocycleId,
   deleteWorkoutsByMesocycleIdStrict, deleteWorkoutAssignmentsByMesocycleIdStrict,
   createWorkoutStrict, createWorkoutAssignmentStrict,
-  getMesocycles, createMesocycle, updateMesocycle, deleteMesocycle,
+  getMesocycles, getMesocyclesForAthletes, createMesocycle, updateMesocycle, deleteMesocycle,
   getMesocycleTemplates, createMesocycleTemplate, updateMesocycleTemplate, deleteMesocycleTemplate,
 } from './db/training';
 
@@ -85,7 +85,7 @@ export {
   getDietCompletionLog, getDietCompletionLogsForAthlete, saveDietCompletionLog,
   getMenuCompletionLog, getMenuCompletionLogsForAthlete, saveMenuCompletionLog,
   getAthleteDietConfig, saveAthleteDietConfig,
-  getNutritionProgram, saveNutritionProgram, markNutritionPhaseSeen, deleteNutritionProgram,
+  getNutritionProgram, getNutritionProgramsForAthletes, saveNutritionProgram, markNutritionPhaseSeen, deleteNutritionProgram,
   computeActivePhase, computePhaseStartDate,
 } from './db/nutrition';
 
@@ -158,7 +158,7 @@ export {
 // ─── TASKS (dashboard "Tareas pendientes") ─────────────────────────────────────
 // Movido a src/db/tasks.ts (2026-07-18) — reexportado aquí para que ningún
 // import existente (`from '../dbService'`) tenga que cambiar.
-export { getTasksForAthlete, createTask, updateTask } from './db/tasks';
+export { getTasksForAthlete, getTasksForAthletes, createTask, updateTask } from './db/tasks';
 
 // ─── COACH NOTES + COACH CLIENT TASKS + RESOURCES ─────────────────────────────
 // Movido a src/db/coachTools.ts (2026-07-18) — reexportado aquí para que

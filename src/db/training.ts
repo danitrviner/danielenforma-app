@@ -446,6 +446,33 @@ export async function getWorkoutAssignmentsByMesocycleIds(mesocycleIds: string[]
   }
 }
 
+// Asignaciones de un lote de atletas por UID — para CoachWeekScreen (antes,
+// una consulta por atleta con getWorkoutAssignments). Mismo troceo de 30 que
+// el resto de consultas 'in'.
+export async function getWorkoutAssignmentsForAthletes(athleteUids: string[]): Promise<WorkoutAssignment[]> {
+  const unicos = Array.from(new Set(athleteUids));
+  if (unicos.length === 0) return [];
+  if (forceLocalOnly) {
+    return getLocalAssignments().filter(a => unicos.includes(a.athleteId));
+  }
+  try {
+    const results: WorkoutAssignment[] = [];
+    const CHUNK = 30;
+    for (let i = 0; i < unicos.length; i += CHUNK) {
+      const chunk = unicos.slice(i, i + CHUNK);
+      const snap = await getDocs(query(collection(db, 'workoutAssignments'), where('athleteId', 'in', chunk)));
+      snap.docs.forEach(d => results.push({ id: d.id, ...d.data() } as WorkoutAssignment));
+    }
+    const local = getLocalAssignments().filter(a => !unicos.includes(a.athleteId));
+    saveLocalAssignments([...local, ...results]);
+    return results;
+  } catch (err) {
+    console.warn('getWorkoutAssignmentsForAthletes Firestore failed, using local:', err);
+    setLocalBypassMode(true, err);
+    return getLocalAssignments().filter(a => unicos.includes(a.athleteId));
+  }
+}
+
 export async function createWorkoutAssignment(data: Omit<WorkoutAssignment, 'id'>): Promise<WorkoutAssignment> {
   // Escribir con email deja la asignación huérfana PARA SIEMPRE: la regla exige
   // `athleteId == request.auth.uid`, así que el atleta nunca la verá ni podrá
@@ -948,6 +975,33 @@ export async function getMesocycles(athleteId: string): Promise<Mesocycle[]> {
     console.warn('getMesocycles Firestore failed, using local:', err);
     setLocalBypassMode(true, err);
     return getLocalMesocycles().filter(m => m.athleteId === athleteId).map(withNormalizedGroups);
+  }
+}
+
+// Mesociclos de un lote de atletas — para CoachWeekScreen (antes, una consulta
+// por atleta). Firestore no admite `where('athleteId', 'in', chunk)` con más
+// de 30 valores, de ahí el troceo.
+export async function getMesocyclesForAthletes(athleteIds: string[]): Promise<Mesocycle[]> {
+  const unicos = Array.from(new Set(athleteIds));
+  if (unicos.length === 0) return [];
+  if (forceLocalOnly) {
+    return getLocalMesocycles().filter(m => unicos.includes(m.athleteId)).map(withNormalizedGroups);
+  }
+  try {
+    const results: Mesocycle[] = [];
+    const CHUNK = 30;
+    for (let i = 0; i < unicos.length; i += CHUNK) {
+      const chunk = unicos.slice(i, i + CHUNK);
+      const snap = await getDocs(query(collection(db, 'mesocycles'), where('athleteId', 'in', chunk)));
+      snap.docs.forEach(d => results.push(withNormalizedGroups({ id: d.id, ...d.data() } as Mesocycle)));
+    }
+    const local = getLocalMesocycles().filter(m => !unicos.includes(m.athleteId));
+    setLocalMesocycles([...local, ...results]);
+    return results;
+  } catch (err) {
+    console.warn('getMesocyclesForAthletes Firestore failed, using local:', err);
+    setLocalBypassMode(true, err);
+    return getLocalMesocycles().filter(m => unicos.includes(m.athleteId)).map(withNormalizedGroups);
   }
 }
 

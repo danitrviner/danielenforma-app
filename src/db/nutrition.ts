@@ -1,4 +1,4 @@
-import { db, collection, doc, getDoc, setDoc, getDocs, addDoc, updateDoc, deleteDoc, query, where, limit } from '../firebase';
+import { db, collection, doc, getDoc, setDoc, getDocs, addDoc, updateDoc, deleteDoc, query, where, limit, documentId } from '../firebase';
 import { MealItem, AthleteNutritionConfig, Diet, AthleteDietConfig, DietCompletionLog, WeeklyMenu, MenuCompletionLog, NutritionProgram, NutritionPhase } from '../types';
 import { forceLocalOnly, setLocalBypassMode, stripUndefined, authReady, withAuthRetry, esFalloDePermisos } from './core';
 import { SYSTEM_FOODS } from '../nutricion_seed_en_forma';
@@ -622,6 +622,33 @@ export async function getNutritionProgram(athleteEmail: string): Promise<Nutriti
     console.warn('getNutritionProgram Firestore failed:', err);
     setLocalBypassMode(true, err);
     return getLocalNutProgs().find(p => p.athleteId === athleteEmail) ?? null;
+  }
+}
+
+// Programas de un lote de atletas — pensada para CoachWeekScreen, que antes
+// lanzaba una consulta por atleta (N idas y vueltas). El id de documento de
+// `nutritionPrograms` es el email, así que se trocea por `documentId()`.
+export async function getNutritionProgramsForAthletes(emails: string[]): Promise<NutritionProgram[]> {
+  const unicos = Array.from(new Set(emails));
+  if (unicos.length === 0) return [];
+  if (forceLocalOnly) {
+    return getLocalNutProgs().filter(p => unicos.includes(p.athleteId));
+  }
+  try {
+    const results: NutritionProgram[] = [];
+    const CHUNK = 30;
+    for (let i = 0; i < unicos.length; i += CHUNK) {
+      const chunk = unicos.slice(i, i + CHUNK);
+      const snap = await getDocs(query(collection(db, 'nutritionPrograms'), where(documentId(), 'in', chunk)));
+      snap.docs.forEach(d => results.push({ athleteId: d.id, ...d.data() } as NutritionProgram));
+    }
+    const local = getLocalNutProgs().filter(p => !results.find(r => r.athleteId === p.athleteId));
+    saveLocalNutProgs([...local, ...results]);
+    return results;
+  } catch (err) {
+    console.warn('getNutritionProgramsForAthletes Firestore failed, using local:', err);
+    setLocalBypassMode(true, err);
+    return getLocalNutProgs().filter(p => unicos.includes(p.athleteId));
   }
 }
 

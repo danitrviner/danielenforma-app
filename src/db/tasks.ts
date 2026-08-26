@@ -33,6 +33,32 @@ export async function getTasksForAthlete(athleteId: string): Promise<TaskItem[]>
   }
 }
 
+// Tareas de un lote de atletas — para CoachWeekScreen (antes, una consulta
+// por atleta con getTasksForAthlete).
+export async function getTasksForAthletes(athleteIds: string[]): Promise<TaskItem[]> {
+  const unicos = Array.from(new Set(athleteIds));
+  if (unicos.length === 0) return [];
+  if (forceLocalOnly) {
+    return getLocalTasks().filter(t => unicos.includes(t.athleteId));
+  }
+  try {
+    const results: TaskItem[] = [];
+    const CHUNK = 30;
+    for (let i = 0; i < unicos.length; i += CHUNK) {
+      const chunk = unicos.slice(i, i + CHUNK);
+      const snap = await getDocs(query(collection(db, 'tasks'), where('athleteId', 'in', chunk)));
+      snap.docs.forEach(d => results.push({ id: d.id, ...d.data() } as TaskItem));
+    }
+    const local = getLocalTasks().filter(t => !unicos.includes(t.athleteId));
+    saveLocalTasks([...local, ...results]);
+    return results;
+  } catch (err) {
+    console.warn('getTasksForAthletes Firestore failed, using local:', err);
+    setLocalBypassMode(true, err);
+    return getLocalTasks().filter(t => unicos.includes(t.athleteId));
+  }
+}
+
 export async function createTask(data: Omit<TaskItem, 'id'>): Promise<TaskItem> {
   if (forceLocalOnly) {
     const task: TaskItem = { ...data, id: `local_task_${Date.now()}` };
