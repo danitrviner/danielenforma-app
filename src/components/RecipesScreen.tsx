@@ -104,7 +104,13 @@ interface CardProps {
   key?: React.Key;
 }
 
-function RecipeCard({ recipe, isFav, large = false, onOpen, onToggleFav }: CardProps) {
+// Envuelta en React.memo: la rejilla pinta 48+ tarjetas a la vez y solo la
+// que de verdad cambió (se marcó/desmarcó favorita, o cambió de posición)
+// tiene que volver a renderizar — sin esto, cualquier estado de RecipesScreen
+// (el propio buscador, activeRecipe...) repintaba las 48 igual. Depende de
+// que `onOpen`/`onToggleFav` tengan identidad estable (useCallback más abajo)
+// y de que `recipe` no se reconstruya en cada render (ya sale de un useMemo).
+const RecipeCard = React.memo(function RecipeCard({ recipe, isFav, large = false, onOpen, onToggleFav }: CardProps) {
   const exchStr = formatExchanges(calcExchanges(recipe));
   const photo = recipe.image ?? recipe.photoUrl;
   const colSpan = large ? 'col-span-1 md:col-span-8' : 'col-span-1 md:col-span-4';
@@ -149,10 +155,10 @@ function RecipeCard({ recipe, isFav, large = false, onOpen, onToggleFav }: CardP
       </div>
     </article>
   );
-}
+});
 
 // Compact card used in the Recetas paginated grid (image-forward, tighter)
-function RecetaCard({ recipe, isFav, isFeatured, excedeTiempo, onOpen, onToggleFav }: Omit<CardProps, 'large'>) {
+const RecetaCard = React.memo(function RecetaCard({ recipe, isFav, isFeatured, excedeTiempo, onOpen, onToggleFav }: Omit<CardProps, 'large'>) {
   const photo = recipe.image ?? recipe.photoUrl;
   const exch = recipe.exchanges;
 
@@ -219,7 +225,7 @@ function RecetaCard({ recipe, isFav, isFeatured, excedeTiempo, onOpen, onToggleF
       </div>
     </article>
   );
-}
+});
 
 // ── Detail view ───────────────────────────────────────────────────────────────
 
@@ -858,19 +864,26 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
 
   // ── Favorites ───────────────────────────────────────────────────────────────
 
-  const toggleFavorite = async (recipeId: string) => {
+  // `useCallback` aquí no es cosmético: RecipeCard/RecetaCard van envueltas
+  // en React.memo más abajo, y sin una identidad estable en `onToggleFav`
+  // cada tecla en el buscador (o cualquier otro estado de esta pantalla)
+  // habría invalidado el memo de las 48+ tarjetas visibles igual que si no
+  // estuviera. `favoritesKey` no entra en las dependencias — es un array
+  // literal nuevo cada render, así que se reconstruye igual dentro del
+  // cuerpo con `profile.email` (que sí es estable).
+  const toggleFavorite = useCallback(async (recipeId: string) => {
     const isFav = favoritosSet.has(recipeId);
     const nextFavs: RecipeFavorites = {
       athleteId: profile.email,
       recipeIds: isFav ? favorites.recipeIds.filter(id => id !== recipeId) : [...favorites.recipeIds, recipeId],
       dislikedIds: (favorites.dislikedIds ?? []).filter(id => id !== recipeId), // favorite & dislike are mutually exclusive
     };
-    queryClient.setQueryData(favoritesKey, nextFavs);
+    queryClient.setQueryData(['recipeFavorites', profile.email], nextFavs);
     setSavingFav(true);
     try { await saveRecipeFavorites(nextFavs); } finally { setSavingFav(false); }
-  };
+  }, [favoritosSet, favorites.recipeIds, favorites.dislikedIds, profile.email, queryClient]);
 
-  const toggleDislike = async (recipeId: string) => {
+  const toggleDislike = useCallback(async (recipeId: string) => {
     const wasDisliked = (favorites.dislikedIds ?? []).includes(recipeId);
     const nextFavs: RecipeFavorites = {
       athleteId: profile.email,
@@ -879,10 +892,10 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
         ? (favorites.dislikedIds ?? []).filter(id => id !== recipeId)
         : [...(favorites.dislikedIds ?? []), recipeId],
     };
-    queryClient.setQueryData(favoritesKey, nextFavs);
+    queryClient.setQueryData(['recipeFavorites', profile.email], nextFavs);
     setSavingFav(true);
     try { await saveRecipeFavorites(nextFavs); } finally { setSavingFav(false); }
-  };
+  }, [favorites.recipeIds, favorites.dislikedIds, profile.email, queryClient]);
 
   // Las recetas del recetario llegan del índice que viaja con la app, y ese
   // índice trae lo justo para la lista: no lleva pasos, cantidades ni macros.
@@ -892,14 +905,14 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
   // Se pinta primero lo que ya se tiene (nombre, foto, intercambios) y el resto
   // entra cuando llega: así abrir una receta es inmediato. Si la lectura falla,
   // se queda la versión del índice en lugar de una pantalla de error.
-  const openRecipe = async (recipe: Recipe) => {
+  const openRecipe = useCallback(async (recipe: Recipe) => {
     setActiveRecipe(recipe);
     window.scrollTo({ top: 0, behavior: 'smooth' });
     if (!OWNER_RECETARIO_TODOS.includes(recipe.ownerId) || recipe.stepsText) return;
     const completa = await getRecipeById(recipe.id);
     // Puede haber cambiado de receta —o cerrado el detalle— mientras se leía.
     if (completa) setActiveRecipe(prev => (prev?.id === recipe.id ? completa : prev));
-  };
+  }, []);
 
   // Las comidas ya guardadas que usan esta receta quedan tal cual (los datos
   // se copiaron al añadirla, no referencian la receta en vivo) — solo deja de
