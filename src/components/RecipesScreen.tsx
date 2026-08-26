@@ -5,10 +5,11 @@ import {
 } from '../types';
 import {
   getRecipes, getRecipeFavorites, saveRecipeFavorites, deleteRecipe,
-  getAthleteNutritionConfig, queryRecetas, getOnboarding,
+  getAthleteNutritionConfig, queryRecetas, cargarIndiceRecetas, getOnboarding,
   getDietsForAthlete, getAthleteDietConfig, OWNER_RECETARIO_TODOS, getRecipeById,
 } from '../dbService';
 import type { RecetasCursor } from '../dbService';
+import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { classifyRecipe, violatesDietType } from '../utils/foodPrefs';
 import { dishType } from '../utils/dishTypes';
 import { BUDGET_CATS, roundQuarter, CAT_COLOR, CAT_BG } from '../utils/exchangeHelpers';
@@ -613,6 +614,9 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
     queryFn: () => getRecipeFavorites(profile.email),
   });
   const favorites = favoritesData ?? { athleteId: profile.email, recipeIds: [] };
+  // `.has()` en vez de `.includes()` dentro de bucles sobre miles de recetas
+  // (el índice completo, en la búsqueda por nombre) — O(1) en vez de O(n).
+  const favoritosSet = useMemo(() => new Set(favorites.recipeIds), [favorites.recipeIds]);
   const { data: nutritionConfig, isPending: loadingNutConfig } = useQuery({
     queryKey: ['athleteNutritionConfig', profile.email],
     queryFn: () => getAthleteNutritionConfig(profile.email),
@@ -682,7 +686,16 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
   const [recetasCat, setRecetasCat]         = useState<string>('Todas');
   const [recetasIntake, setRecetasIntake]   = useState<number | null>(null);
   const [recetasSearch, setRecetasSearch]   = useState('');
+  const recetasSearchDebounced = useDebouncedValue(recetasSearch, 200);
   const [recetasRecipes, setRecetasRecipes] = useState<Recipe[]>([]);
+  // Índice completo (8.850 recetas) para que buscar por nombre no se quede
+  // mirando solo la página ya paginada (`recetasRecipes`, 48 a la vez) — sin
+  // esto, una receta que encaja pero no cayó en las primeras páginas cargadas
+  // era invisible para el buscador aunque el índice entero ya estuviera en
+  // memoria. `cargarIndiceRecetas` memoiza la promesa: `queryRecetas` (arriba)
+  // pide el mismo índice, así que esto no duplica la descarga.
+  const [indiceRecetas, setIndiceRecetas] = useState<Recipe[]>([]);
+  useEffect(() => { cargarIndiceRecetas().then(setIndiceRecetas); }, []);
   const [recetasCursor, setRecetasCursor]   = useState<RecetasCursor | null>(null);
   const [recetasHasMore, setRecetasHasMore] = useState(false);
   const [recetasLoading, setRecetasLoading] = useState(true);
@@ -783,7 +796,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
   }, [recipes]);
 
   const filteredRecipes = useMemo(() => {
-    const base = selectedCat === 'Favoritas' ? recipes.filter(r => favorites.recipeIds.includes(r.id))
+    const base = selectedCat === 'Favoritas' ? recipes.filter(r => favoritosSet.has(r.id))
       : selectedCat === 'MisRecetas' ? recipes.filter(r => r.ownerId === profile.userId)
       : selectedCat === 'all' ? recipes
       : recipes.filter(r => r.categories.includes(selectedCat));
@@ -796,16 +809,24 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
       (classifyRecipe(r, [], [], prefs.allergies) !== 'allergy' && !violatesDietType(r, prefs.dietType))
     );
     return onlyFitsBudget ? safe.filter(fitsBudget) : safe;
-  }, [recipes, favorites, selectedCat, profile.userId, onlyFitsBudget, fitsBudget, prefs]);
+  }, [recipes, favoritosSet, selectedCat, profile.userId, onlyFitsBudget, fitsBudget, prefs]);
 
   const { recetasFeatured, recetasNormal, recetasDisliked, recetasTotalVisible } = useMemo(() => {
-    const bySearch = recetasSearch.trim()
-      ? recetasRecipes.filter(r => r.name.toLowerCase().includes(recetasSearch.toLowerCase()))
+    const termino = recetasSearchDebounced.trim().toLowerCase();
+    // Con término de búsqueda se filtra el ÍNDICE COMPLETO (mismos filtros de
+    // categoría/momento que ya aplica queryRecetas para paginar), no solo lo
+    // ya paginado — de lo contrario solo aparecían coincidencias que hubieran
+    // caído en alguna de las páginas ya cargadas.
+    const bySearch = termino
+      ? indiceRecetas.filter(r =>
+          (recetasCat === 'Todas' || r.categoria === recetasCat) &&
+          (recetasIntake == null || (r.intakeTypes ?? []).includes(recetasIntake)) &&
+          r.name.toLowerCase().includes(termino))
       : recetasRecipes;
     const searched = onlyFitsBudget ? bySearch.filter(fitsBudget) : bySearch;
 
     const hasPrefs = prefs.liked.length > 0 || prefs.disliked.length > 0 || prefs.allergies.length > 0 ||
-      prefs.tiposPreferidos.size > 0 || prefs.tiposExcluidos.size > 0 || favorites.recipeIds.length > 0 ||
+      prefs.tiposPreferidos.size > 0 || prefs.tiposExcluidos.size > 0 || favoritosSet.size > 0 ||
       (!!prefs.dietType && prefs.dietType !== 'omnivoro' && prefs.dietType !== 'otro');
     if (!hasPrefs) {
       return { recetasFeatured: [], recetasNormal: searched, recetasDisliked: [], recetasTotalVisible: searched.length };
@@ -820,7 +841,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
     const favoritas: Recipe[] = [], featured: Recipe[] = [], normal: Recipe[] = [], disliked: Recipe[] = [];
     for (const r of searched) {
       if (!esVisible(r)) continue;
-      if (favorites.recipeIds.includes(r.id)) { favoritas.push(r); continue; }
+      if (favoritosSet.has(r.id)) { favoritas.push(r); continue; }
       const cls = classifyRecipe(r, prefs.liked, prefs.disliked, prefs.allergies);
       if (cls === 'disliked') { disliked.push(r); continue; }
       if (cls === 'featured' || prefs.tiposPreferidos.has(dishType(r))) featured.push(r);
@@ -833,12 +854,12 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
       recetasDisliked: disliked,
       recetasTotalVisible: featured.length + normal.length + disliked.length,
     };
-  }, [recetasRecipes, recetasSearch, prefs, onlyFitsBudget, fitsBudget, esVisible, favorites.recipeIds]);
+  }, [recetasRecipes, indiceRecetas, recetasSearchDebounced, recetasCat, recetasIntake, prefs, onlyFitsBudget, fitsBudget, esVisible, favoritosSet]);
 
   // ── Favorites ───────────────────────────────────────────────────────────────
 
   const toggleFavorite = async (recipeId: string) => {
-    const isFav = favorites.recipeIds.includes(recipeId);
+    const isFav = favoritosSet.has(recipeId);
     const nextFavs: RecipeFavorites = {
       athleteId: profile.email,
       recipeIds: isFav ? favorites.recipeIds.filter(id => id !== recipeId) : [...favorites.recipeIds, recipeId],
@@ -900,7 +921,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
     return (
       <RecipeDetail
         recipe={activeRecipe}
-        isFav={favorites.recipeIds.includes(activeRecipe.id)}
+        isFav={favoritosSet.has(activeRecipe.id)}
         isDisliked={(favorites.dislikedIds ?? []).includes(activeRecipe.id)}
         isOwn={activeRecipe.ownerId === profile.userId}
         enabledModes={enabledModes}
@@ -964,9 +985,9 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
             />
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
-              <RecipeCard recipe={filteredRecipes[0]} isFav={favorites.recipeIds.includes(filteredRecipes[0].id)} large onOpen={openRecipe} onToggleFav={toggleFavorite} />
+              <RecipeCard recipe={filteredRecipes[0]} isFav={favoritosSet.has(filteredRecipes[0].id)} large onOpen={openRecipe} onToggleFav={toggleFavorite} />
               {filteredRecipes.slice(1).map(r => (
-                <RecipeCard key={r.id} recipe={r} isFav={favorites.recipeIds.includes(r.id)} onOpen={openRecipe} onToggleFav={toggleFavorite} />
+                <RecipeCard key={r.id} recipe={r} isFav={favoritosSet.has(r.id)} onOpen={openRecipe} onToggleFav={toggleFavorite} />
               ))}
             </div>
           )}
@@ -1075,7 +1096,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
                     <RecetaCard
                       key={r.id}
                       recipe={r}
-                      isFav={favorites.recipeIds.includes(r.id)}
+                      isFav={favoritosSet.has(r.id)}
                       isFeatured
                       onOpen={openRecipe}
                       excedeTiempo={excedeTiempoDeCocina(r)}
@@ -1093,7 +1114,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
                   <RecetaCard
                     key={r.id}
                     recipe={r}
-                    isFav={favorites.recipeIds.includes(r.id)}
+                    isFav={favoritosSet.has(r.id)}
                     onOpen={openRecipe}
                     excedeTiempo={excedeTiempoDeCocina(r)}
                     onToggleFav={toggleFavorite}
@@ -1122,7 +1143,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
                       <RecetaCard
                         key={r.id}
                         recipe={r}
-                        isFav={favorites.recipeIds.includes(r.id)}
+                        isFav={favoritosSet.has(r.id)}
                         onOpen={openRecipe}
                         excedeTiempo={excedeTiempoDeCocina(r)}
                         onToggleFav={toggleFavorite}
