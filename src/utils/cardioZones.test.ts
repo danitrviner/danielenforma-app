@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { CardioZones } from '../types';
-import { getZoneForBpm, pctOfMaxHR, getZoneAlertDirection, maxHREstimada, zonesFromLthr } from './cardioZones';
+import { getZoneForBpm, pctOfMaxHR, getZoneAlertDirection, maxHREstimada, zonesFromLthr, ZONE_ORDER } from './cardioZones';
 import { defaultZonesFromAge } from '../db/cardio';
 
 // Zonas reales de la sesión de Dani analizada en docs/FITIV-analisis-y-plan.md
@@ -96,5 +96,17 @@ describe('defaultZonesFromAge — Karvonen', () => {
   it('el borde exacto entre zonas cae en la zona alta, no en la baja', () => {
     expect(getZoneForBpm(z.z2.min, z)).toBe('z2');
     expect(getZoneForBpm(z.z2.max, z)).toBe('z2');
+  });
+
+  it('con FC de reposo y FCmax muy cerca, ninguna banda se invierte (min <= max)', () => {
+    // 70/75: los cortes en pct 0.5-0.9 redondean casi todos al mismo ppm.
+    const cercano = defaultZonesFromAge(70, 75);
+    for (const zona of ZONE_ORDER) {
+      expect(cercano[zona].min).toBeLessThanOrEqual(cercano[zona].max);
+    }
+    // Y las cinco siguen sin solaparse ni dejar huecos.
+    for (const [bajo, alto] of [[cercano.z1, cercano.z2], [cercano.z2, cercano.z3], [cercano.z3, cercano.z4], [cercano.z4, cercano.z5]]) {
+      expect(bajo.max).toBe(alto.min - 1);
+    }
   });
 });

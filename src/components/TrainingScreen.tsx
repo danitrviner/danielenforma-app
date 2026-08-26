@@ -186,15 +186,26 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
   // esperando. Se recalcula también al cerrar el player (`activeAssignment`
   // en las dependencias) para que al volver a la lista el contador esté al
   // día sin recargar la pantalla.
-  const [borradores, setBorradores] = useState<Record<string, number>>({});
+  // Un borrador caduca a las 36h (sesionEnCurso.ts) sin que cambie nada de lo
+  // anterior — si la lista se queda abierta en primer plano más tiempo que
+  // eso, el badge se quedaría clavado diciendo "Continuar" sobre un borrador
+  // que `cargarSesion` ya descartaría en silencio al pulsarlo. Un tick cada
+  // 10 min basta para que el badge se autocorrija sin depender de que el
+  // atleta navegue a otro sitio y vuelva.
+  const [tick, setTick] = useState(0);
   useEffect(() => {
+    const id = window.setInterval(() => setTick(t => t + 1), 10 * 60 * 1000);
+    return () => window.clearInterval(id);
+  }, []);
+  const borradores = useMemo(() => {
     const mapa: Record<string, number> = {};
     for (const a of assignments) {
       const hechas = seriesHechasEnBorrador(profile.email, a.id);
       if (hechas > 0) mapa[a.id] = hechas;
     }
-    setBorradores(mapa);
-  }, [assignments, profile.email, activeAssignment]);
+    return mapa;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [assignments, profile.email, activeAssignment, tick]);
 
   // "Tu mejor serie" de la ficha de ejercicio (F3.13, Biblioteca panel 02) —
   // useMemo a nivel de componente, no dentro del .map() de tarjetas de

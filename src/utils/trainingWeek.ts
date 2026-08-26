@@ -4,6 +4,20 @@
 
 function padDate(n: number): string { return String(n).padStart(2, '0'); }
 
+/**
+ * "Hoy" en YYYY-MM-DD, en la hora LOCAL del dispositivo — no `toISOString()`,
+ * que da la fecha en UTC. Para España (UTC+1/+2) eso desplaza la fecha en la
+ * ventana de 1-2h tras la medianoche local: una sesión de cardio puntual
+ * programada para "hoy" podía no coincidir, o coincidir un día antes/después
+ * de lo previsto, justo cuando `pickActiveZona2Assignment`/
+ * `pickActiveIntervalAssignment` (utils/cardioSession.ts) empezaron a
+ * comparar la fecha exacta de la asignación contra "hoy" (26-08).
+ */
+export function hoyIsoLocal(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${padDate(d.getMonth() + 1)}-${padDate(d.getDate())}`;
+}
+
 export function addDays(dateStr: string, days: number): string {
   const [y, m, d] = dateStr.split('-').map(Number);
   const date = new Date(y, m - 1, d);

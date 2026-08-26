@@ -217,7 +217,12 @@ function PrescriptionTab() {
         <option value="">Selecciona atleta...</option>
         {athletes.map(a => <option key={a.email} value={a.email}>{a.displayName}</option>)}
       </select>
-      {athleteEmail && <CardioPrescriptionForm athleteEmail={athleteEmail} />}
+      {/* `key` fuerza a React a remontar el formulario al cambiar de atleta
+          en el desplegable — sin esto, el coach podía dejar 6 bloques de
+          intervalos montados para un atleta, cambiar el desplegable a otro
+          sin guardar, y los mismos bloques seguían ahí listos para
+          prescribirse al atleta equivocado. */}
+      {athleteEmail && <CardioPrescriptionForm key={athleteEmail} athleteEmail={athleteEmail} />}
     </section>
   );
 }

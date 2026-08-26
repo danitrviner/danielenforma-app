@@ -26,6 +26,7 @@ badge
 bakery_dining
 balance
 bar_chart
+battery_charging_full
 bedtime
 blender
 block
@@ -148,7 +149,6 @@ manage_accounts
 manufacturing
 map
 menu_book
-message
 mic
 military_tech
 monitor_heart
@@ -164,6 +164,7 @@ nutrition
 paid
 password
 pause
+pause_circle
 pending
 pending_actions
 person

@@ -101,7 +101,13 @@ export function summarizeSamples(samples: number[]): { avgHR?: number; maxHR?: n
  * Si hay más de una puntual para hoy, gana la más reciente, igual que con las
  * recurrentes.
  */
-function pickActiveAssignment(activos: CardioAssignment[], todayIso: string): CardioAssignment | undefined {
+function pickActiveAssignment(candidatos: CardioAssignment[], todayIso: string): CardioAssignment | undefined {
+  // Un programa progresivo con "Empieza el" en el futuro no cuenta como
+  // activo todavía — sin este filtro, `semanaDelPrograma` no tiene sesiones
+  // previas que contar y siempre devuelve semana 1, así que el atleta veía y
+  // podía empezar la Semana 1 el mismo día que el coach lo creaba, días antes
+  // de la fecha que había elegido a propósito.
+  const activos = candidatos.filter(a => !a.program || a.program.startDate <= todayIso);
   const porFecha = (xs: CardioAssignment[]) => xs.sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
   const puntualDeHoy = porFecha(activos.filter(a => a.date === todayIso));
   return puntualDeHoy ?? porFecha(activos.filter(a => !a.date));

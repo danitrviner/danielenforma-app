@@ -9,6 +9,7 @@ import {
   weeklyCardioMinutesDone, dailyCardioMinutesForWeek, defaultWeeklyCardioGoal, isoWeekKey,
 } from '../utils/cardioSession';
 import { resolverAsignacionCardio } from '../utils/cardioProgression';
+import { hoyIsoLocal } from '../utils/trainingWeek';
 import { suggestedPerceivedEffort } from '../utils/cardioMetrics';
 import { DateRangeFilter, filterSessions, allTags } from '../utils/cardioHistory';
 import { isCardioSkippedToday, skipCardioToday } from '../utils/cardioSkipToday';
@@ -65,7 +66,7 @@ export default function CardioScreen({ profile }: Props) {
     queryFn: () => getHrvReadingsForAthlete(profile.email),
   });
 
-  const todayIso = new Date().toISOString().slice(0, 10);
+  const todayIso = hoyIsoLocal();
   const currentIsoWeek = isoWeekKey(todayIso);
   const { data: weeklyGoal } = useQuery({
     queryKey: ['cardioWeeklyGoal', profile.email, currentIsoWeek],

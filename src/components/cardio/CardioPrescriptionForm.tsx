@@ -3,6 +3,7 @@ import { CardioSessionType, CardioIntervalBlock, CardioIntervalCloseType, Cardio
 import { createCardioAssignment } from '../../dbService';
 import { ZONE_ORDER } from '../../utils/cardioZones';
 import { PROTOCOLOS_VO2MAX, ZONA2_BASE_MIN_DEFECTO, prescripcionDeSemana, previaDelPrograma } from '../../utils/cardioProgression';
+import { hoyIsoLocal } from '../../utils/trainingWeek';
 import { Button, Icon } from '../ui';
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -142,6 +143,23 @@ const MODO_LABEL: Record<ModoPrescripcion, string> = {
 const MODOS_PUNTUAL: ModoPrescripcion[] = ['zona2', 'libre', 'intervalos'];
 
 /**
+ * Construye el `CardioProgram` a partir de lo elegido en el formulario — un
+ * único sitio, usado tanto por la previa (`ProgramaProgresivoEditor`) como
+ * por el guardado real (`createCardioAssignmentSafe`). Antes era el mismo
+ * literal copiado en los dos sitios: cambiar un campo en uno y olvidarlo en
+ * el otro habría dejado la previa del coach sin coincidir con lo que se
+ * guarda de verdad.
+ */
+function buildProgram(
+  modo: 'prog_zona2' | 'prog_vo2max',
+  { protocolId, startDate, baseMin }: { protocolId: string; startDate: string; baseMin: string },
+): CardioProgram {
+  return modo === 'prog_vo2max'
+    ? { kind: 'vo2max', protocolId, startDate }
+    : { kind: 'zona2', protocolId: 'zona2', startDate, baseMinutes: Number(baseMin) || ZONA2_BASE_MIN_DEFECTO, targetZone: 'z2' };
+}
+
+/**
  * Editor de un programa progresivo. Lo importante aquí es la PREVIA: el coach
  * no está eligiendo la sesión de esta semana, está eligiendo a dónde lleva el
  * atleta en dos meses, y eso no se puede aprobar a ciegas.
@@ -154,9 +172,7 @@ function ProgramaProgresivoEditor({
   startDate: string; onStartDate: (v: string) => void;
   baseMin: string; onBaseMin: (v: string) => void;
 }) {
-  const program: CardioProgram = modo === 'prog_vo2max'
-    ? { kind: 'vo2max', protocolId, startDate }
-    : { kind: 'zona2', protocolId: 'zona2', startDate, baseMinutes: Number(baseMin) || ZONA2_BASE_MIN_DEFECTO, targetZone: 'z2' };
+  const program = buildProgram(modo, { protocolId, startDate, baseMin });
   const previa = previaDelPrograma(program, 1, 8);
 
   return (
@@ -215,6 +231,9 @@ interface Props {
   athleteEmail: string;
   /** Tras crear la asignación con éxito — el llamador refresca su lista. */
   onCreated?: () => void;
+  /** El repo no tiene `@types/react` instalado, así que TypeScript no excluye
+   *  `key` de las props por su cuenta — mismo workaround que `BadgeProps`. */
+  key?: React.Key;
 }
 
 export default function CardioPrescriptionForm({ athleteEmail, onCreated }: Props) {
@@ -223,8 +242,11 @@ export default function CardioPrescriptionForm({ athleteEmail, onCreated }: Prop
   const esPrograma = cuando === 'recurrente' && (modo === 'prog_zona2' || modo === 'prog_vo2max');
   const type: CardioSessionType = modo === 'prog_vo2max' ? 'intervalos' : modo === 'prog_zona2' ? 'zona2' : modo;
   const [protocolId, setProtocolId] = useState(PROTOCOLOS_VO2MAX[1].id);
-  const [startDate, setStartDate] = useState(() => new Date().toISOString().slice(0, 10));
-  const [fechaPuntual, setFechaPuntual] = useState(() => new Date().toISOString().slice(0, 10));
+  // Fecha LOCAL, no UTC (`hoyIsoLocal`, no `toISOString()`): esto alimenta el
+  // `<input type="date">`, que ya trabaja en fecha local del navegador — y es
+  // justo lo que se compara contra `todayIso` al elegir el cardio de hoy.
+  const [startDate, setStartDate] = useState(() => hoyIsoLocal());
+  const [fechaPuntual, setFechaPuntual] = useState(() => hoyIsoLocal());
   const [baseMin, setBaseMin] = useState(String(ZONA2_BASE_MIN_DEFECTO));
   const [durationMin, setDurationMin] = useState('45');
   const [timesPerWeek, setTimesPerWeek] = useState('3');
@@ -256,10 +278,8 @@ export default function CardioPrescriptionForm({ athleteEmail, onCreated }: Prop
   };
 
   const createCardioAssignmentSafe = async () => {
-    if (esPrograma) {
-      const program: CardioProgram = modo === 'prog_vo2max'
-        ? { kind: 'vo2max', protocolId, startDate }
-        : { kind: 'zona2', protocolId: 'zona2', startDate, baseMinutes: Number(baseMin) || ZONA2_BASE_MIN_DEFECTO, targetZone: 'z2' };
+    if (esPrograma && (modo === 'prog_zona2' || modo === 'prog_vo2max')) {
+      const program = buildProgram(modo, { protocolId, startDate, baseMin });
       // Se guarda además la sesión de la SEMANA 1 en los campos de siempre:
       // así una asignación con programa sigue siendo legible por cualquier
       // parte de la app que no sepa nada de programas, y lo que ve el atleta

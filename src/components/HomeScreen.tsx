@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { UserProfile, WeightCheckIn, WeekDay } from '../types';
 import { getWorkoutAssignmentsForAthlete, getWorkoutsByIds, getCardioAssignmentsForAthlete, getDietsForAthlete, getAthleteDietConfig, getDietCompletionLog, getOnboarding } from '../dbService';
-import { getWeekRange, getWeekStart, formatDate } from '../utils/trainingWeek';
+import { getWeekRange, getWeekStart, formatDate, hoyIsoLocal } from '../utils/trainingWeek';
 import { pickActiveZona2Assignment, pickActiveIntervalAssignment } from '../utils/cardioSession';
 import { pickTodaysDiet, countMealsDone } from '../utils/nutritionSummary';
 import PendingTasksPanel from './PendingTasksPanel';
@@ -26,8 +26,6 @@ interface HomeScreenProps {
 }
 
 const JS_TO_WD: Record<number, WeekDay> = { 0: 'sun', 1: 'mon', 2: 'tue', 3: 'wed', 4: 'thu', 5: 'fri', 6: 'sat' };
-const TODAY_DATE = new Date().toISOString().split('T')[0];
-const TODAY_WD: WeekDay = JS_TO_WD[new Date().getDay()];
 const DIA_SEMANA = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -58,6 +56,13 @@ const DIA_SEMANA = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viern
    ═══════════════════════════════════════════════════════════════════════════ */
 
 export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreenProps) {
+  // Dentro del componente, no a nivel de módulo: una constante de módulo se
+  // calcula una sola vez y se queda anclada al día en que se cargó la app —
+  // en una sesión de Capacitor que sigue viva en segundo plano toda la noche,
+  // "hoy" se quedaba en ayer y esta pantalla podía desacordar con las que sí
+  // recalculaban la fecha en cada render (p. ej. CardioScreen).
+  const TODAY_DATE = hoyIsoLocal();
+  const TODAY_WD: WeekDay = JS_TO_WD[new Date().getDay()];
   const { data: assignments = [], isPending: loadingAssignments } = useQuery({
     queryKey: ['workoutAssignments', profile.userId],
     queryFn: () => getWorkoutAssignmentsForAthlete(profile.userId),

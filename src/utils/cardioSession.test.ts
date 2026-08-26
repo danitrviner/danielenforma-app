@@ -141,6 +141,32 @@ describe('pickActiveZona2Assignment — prescripción del coach para la sesión 
     const puntualDeOtroDia: CardioAssignment = { ...base, id: '1', type: 'zona2', active: true, createdAt: '2026-08-20', date: '2026-08-28' };
     expect(pickActiveZona2Assignment([puntualDeOtroDia], HOY)).toBeUndefined();
   });
+
+  it('un programa progresivo con "Empieza el" en el futuro no cuenta como activo todavía', () => {
+    const futuro: CardioAssignment = {
+      ...base, id: '1', type: 'zona2', active: true, createdAt: '2026-08-20',
+      program: { kind: 'zona2', protocolId: 'zona2', startDate: '2026-09-01' },
+    };
+    // Hoy (26-08) es antes del 01-09: el programa no ha empezado, no debe verse.
+    expect(pickActiveZona2Assignment([futuro], HOY)).toBeUndefined();
+  });
+
+  it('un programa progresivo cuenta como activo desde su fecha de inicio, inclusive', () => {
+    const programa: CardioAssignment = {
+      ...base, id: '1', type: 'zona2', active: true, createdAt: '2026-08-20',
+      program: { kind: 'zona2', protocolId: 'zona2', startDate: HOY },
+    };
+    expect(pickActiveZona2Assignment([programa], HOY)).toEqual(programa);
+  });
+
+  it('un programa futuro no tapa una prescripción recurrente sin fecha ya activa', () => {
+    const futuro: CardioAssignment = {
+      ...base, id: '1', type: 'zona2', active: true, createdAt: '2026-08-25',
+      program: { kind: 'zona2', protocolId: 'zona2', startDate: '2026-09-01' },
+    };
+    const recurrente: CardioAssignment = { ...base, id: '2', type: 'zona2', active: true, createdAt: '2026-01-01' };
+    expect(pickActiveZona2Assignment([futuro, recurrente], HOY)).toEqual(recurrente);
+  });
 });
 
 describe('pickActiveIntervalAssignment — prescripción de intervalos del coach (§F6)', () => {

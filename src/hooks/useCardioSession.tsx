@@ -12,6 +12,7 @@ import {
   pickActiveIntervalAssignment, weeklyCardioMinutesDone, defaultWeeklyCardioGoal, isoWeekKey,
 } from '../utils/cardioSession';
 import { resolverAsignacionCardio } from '../utils/cardioProgression';
+import { hoyIsoLocal } from '../utils/trainingWeek';
 import {
   caloriesKeytel, caloriesActive, metsFromCalories, fitivPoints, trimpBanister, hrTss,
   effortMinutes, hrrEligibility, heartRateRecovery, sampleNearElapsed,
@@ -199,7 +200,7 @@ function CardioSessionProviderInner({ profile, children }: { profile: UserProfil
   const onboardingRef = useRef(onboarding);
   onboardingRef.current = onboarding;
 
-  const todayIso = new Date().toISOString().slice(0, 10);
+  const todayIso = hoyIsoLocal();
   const currentIsoWeek = isoWeekKey(todayIso);
   const { data: weeklyGoal } = useQuery({
     queryKey: ['cardioWeeklyGoal', profile.email, currentIsoWeek],

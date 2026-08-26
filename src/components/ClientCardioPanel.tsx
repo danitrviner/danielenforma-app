@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { UserProfile } from '../types';
 import { getCardioAssignmentsForAthlete, getCardioSessionsForAthlete, getCardioProfile, updateCardioAssignment, deleteCardioAssignment } from '../dbService';
@@ -7,6 +7,7 @@ import {
   resolverAsignacionCardio, semanaDelPrograma, prescripcionDeSemana, previaDelPrograma, protocoloVo2max,
 } from '../utils/cardioProgression';
 import { isoWeekKey } from '../utils/challengeOptions';
+import { hoyIsoLocal } from '../utils/trainingWeek';
 import { useConfirm } from '../hooks/useConfirm';
 import { Badge, Button, Card, EmptyState, Icon, Sheet, Skeleton } from './ui';
 import CardioPrescriptionForm from './cardio/CardioPrescriptionForm';
@@ -54,7 +55,7 @@ function fechaCorta(iso: string): string {
 }
 
 export default function ClientCardioPanel({ athlete }: Props) {
-  const hoyIso = new Date().toISOString().slice(0, 10);
+  const hoyIso = hoyIsoLocal();
   const queryClient = useQueryClient();
   const { confirm, ConfirmDialog } = useConfirm();
   const [mostrandoFormulario, setMostrandoFormulario] = useState(false);
@@ -98,6 +99,22 @@ export default function ClientCardioPanel({ athlete }: Props) {
   // ya la ignoran fuera de su día.
   const puntualesProximas = activas.filter(a => a.date && a.date >= hoyIso).sort((a, b) => a.date!.localeCompare(b.date!));
   const sesionesRecientes = [...sessions].sort((a, b) => b.date.localeCompare(a.date));
+
+  // Por cada recurrente hay que recorrer TODO el historial de sesiones
+  // (resolverAsignacionCardio → semanaDelPrograma). Sin memoizar, esto se
+  // repetía en cada render del panel — incluido abrir/cerrar el Sheet de
+  // "Programar cardio", que no cambia nada de esto — y para un atleta con
+  // meses de cardio son cientos de sesiones recorridas varias veces por nada.
+  // Deps sobre `assignments`/`sessions` (las referencias estables de
+  // react-query), no sobre `recurrentes`: al ser un `.filter()` nuevo en cada
+  // render, usarlo como dep habría invalidado el memo igual de siempre.
+  const filasRecurrentes = useMemo(() => assignments.filter(a => a.active && !a.date).map(a => {
+    const resuelta = resolverAsignacionCardio(a, sessions, hoyIso);
+    const semana = a.program ? semanaDelPrograma(a.program, a.id, sessions, hoyIso) : null;
+    const prescripcion = a.program && semana ? prescripcionDeSemana(a.program, semana) : null;
+    const hechasEstaSemana = sessions.filter(s => s.assignmentId === a.id && isoWeekKey(s.date) === isoWeekKey(hoyIso)).length;
+    return { a, resuelta, semana, prescripcion, hechasEstaSemana, objetivo: resuelta?.timesPerWeek ?? 0 };
+  }), [assignments, sessions, hoyIso]);
 
   // Últimas 6 semanas ISO: minutos y número de sesiones. Es la respuesta a "¿lo
   // está haciendo?", que es lo primero que mira un coach antes de tocar nada.
@@ -171,13 +188,7 @@ export default function ClientCardioPanel({ athlete }: Props) {
             />
           </Card>
         ) : (
-          recurrentes.map(a => {
-            const resuelta = resolverAsignacionCardio(a, sessions, hoyIso);
-            const semana = a.program ? semanaDelPrograma(a.program, a.id, sessions, hoyIso) : null;
-            const prescripcion = a.program && semana ? prescripcionDeSemana(a.program, semana) : null;
-            const hechasEstaSemana = sessions.filter(s => s.assignmentId === a.id && isoWeekKey(s.date) === isoWeekKey(hoyIso)).length;
-            const objetivo = resuelta?.timesPerWeek ?? 0;
-
+          filasRecurrentes.map(({ a, resuelta, semana, prescripcion, hechasEstaSemana, objetivo }) => {
             return (
               <Card key={a.id} className="space-y-3">
                 <div className="flex items-start justify-between gap-3 flex-wrap">

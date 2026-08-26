@@ -25,11 +25,18 @@ function saveLocalProfileMap(map: Record<string, AthleteCardioProfile>): void {
 // rango sin huecos.
 export function defaultZonesFromAge(restingHR: number, maxHR: number): CardioZones {
   const bpm = (pct: number) => Math.round(restingHR + pct * (maxHR - restingHR));
-  const cortes = [0.5, 0.6, 0.7, 0.8, 0.9].map(bpm);
-  const banda = (i: number) => ({
-    min: cortes[i],
-    max: i < 4 ? cortes[i + 1] - 1 : bpm(1.0),
-  });
+  const cortesBrutos = [0.5, 0.6, 0.7, 0.8, 0.9].map(bpm);
+  // Con FC de reposo y FCmax muy cerca (un dato mal introducido, pero nada lo
+  // impedía) dos cortes contiguos podían redondear al mismo ppm, dejando una
+  // banda invertida (`min > max`) que `getZoneForBpm` nunca podía satisfacer:
+  // esa zona desaparecía en silencio de toda sesión de esa persona. Se fuerza
+  // cada corte a ser al menos 1 ppm mayor que el anterior — la única forma de
+  // garantizar cinco bandas no vacías sin inventar una FC de reposo/máxima
+  // distinta a la que se introdujo.
+  const cortes: number[] = [];
+  for (const c of cortesBrutos) cortes.push(cortes.length === 0 ? c : Math.max(c, cortes[cortes.length - 1] + 1));
+  const techo = Math.max(bpm(1.0), cortes[4] + 1);
+  const banda = (i: number) => ({ min: cortes[i], max: i < 4 ? cortes[i + 1] - 1 : techo });
   return { z1: banda(0), z2: banda(1), z3: banda(2), z4: banda(3), z5: banda(4) };
 }
 
