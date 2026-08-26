@@ -1,6 +1,7 @@
 import { db, collection, doc, getDoc, setDoc, getDocs, deleteDoc, query, where } from '../firebase';
 import { Roadmap, LevelLadder, WeeklyChallenge, ChallengeTemplate } from '../types';
 import { forceLocalOnly, setLocalBypassMode, stripUndefined, esFalloDePermisos } from './core';
+import { leerCatalogo, marcarCatalogoCambiado } from './catalogoVersionado';
 
 // ─── ROADMAPS ─────────────────────────────────────────────────────────────────
 
@@ -161,8 +162,7 @@ function saveLocalChallengeTemplates(list: ChallengeTemplate[]): void {
 export async function getChallengeTemplates(): Promise<ChallengeTemplate[]> {
   if (forceLocalOnly) return getLocalChallengeTemplates();
   try {
-    const snap = await getDocs(collection(db, 'challengeTemplates'));
-    const list = snap.docs.map(d => ({ ...d.data(), id: d.id } as ChallengeTemplate));
+    const list = await leerCatalogo('challengeTemplates', 'challengeTemplates', d => ({ ...d.data(), id: d.id } as ChallengeTemplate));
     list.sort((a, b) => a.title.localeCompare(b.title));
     saveLocalChallengeTemplates(list);
     return list;
@@ -184,6 +184,7 @@ export async function saveChallengeTemplate(template: ChallengeTemplate): Promis
   try {
     await setDoc(doc(db, 'challengeTemplates', template.id), data);
     upsertLocal();
+    void marcarCatalogoCambiado('challengeTemplates');
   } catch (err) {
     console.warn('saveChallengeTemplate Firestore failed:', err);
     setLocalBypassMode(true, err);
@@ -202,6 +203,7 @@ export async function deleteChallengeTemplate(templateId: string): Promise<void>
   try {
     await deleteDoc(doc(db, 'challengeTemplates', templateId));
     removeLocal();
+    void marcarCatalogoCambiado('challengeTemplates');
   } catch (err) {
     console.warn('deleteChallengeTemplate Firestore failed:', err);
     setLocalBypassMode(true, err);

@@ -5,7 +5,7 @@ import { App as CapacitorApp } from '@capacitor/app';
 import { onAuthStateChanged, auth } from './firebase';
 import { identificarUsuario } from './monitorizacion';
 import { UserProfile, WeightCheckIn, NotificationType } from './types';
-import { getOrCreateUserProfile, getCheckIns, seedInitialCheckinsIfEmpty, getOnboarding, getWorkoutAssignmentsForAthlete, getGimnasio, updateUserProfile } from './dbService';
+import { getOrCreateUserProfile, getCheckIns, getOnboarding, getWorkoutAssignmentsForAthlete, getGimnasio, updateUserProfile } from './dbService';
 import { useGimnasioPendiente } from './features/gimnasio/RecordatorioGimnasioCard';
 import { getPendingReviews } from './hooks/usePendingReviews';
 import NotificationBell from './components/NotificationBell';
@@ -325,8 +325,15 @@ function AppContent() {
     // la descarga completa del historial (sin límite) antes de ver ninguna
     // pantalla. `checkins` arranca en [] y toda la UI que depende de él ya
     // tolera la lista vacía, así que puede llegar en segundo plano.
-    seedInitialCheckinsIfEmpty(user.uid, user.email || 'atleta@enforma.com')
-      .then(() => getCheckIns(coachRole ? undefined : user.uid)) // coach: sin filtro; atleta: solo el suyo
+    //
+    // Antes esto pasaba primero por `seedInitialCheckinsIfEmpty`, que escribía
+    // TRES check-ins inventados (peso, ánimo y feedback del coach de mentira)
+    // en la cuenta de cada atleta nuevo — datos de ejemplo colándose como
+    // reales en producción, además de una lectura y hasta tres escrituras de
+    // más en cada primer arranque. La pantalla ya tolera perfectamente un
+    // historial vacío (ver el comentario de arriba), así que se quita: quien
+    // quiera ver el aspecto de la pantalla con datos puede usar el modo local.
+    getCheckIns(coachRole ? undefined : user.uid) // coach: sin filtro; atleta: solo el suyo
       .then(setCheckins)
       .catch(err => console.error('Error cargando check-ins:', err));
     // Última vez que el atleta abrió la app — solo lectura para el coach (tarjetas

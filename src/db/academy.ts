@@ -1,6 +1,7 @@
 import { db, collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc, query, where } from '../firebase';
 import { AcademyCourse, AcademyLesson, AcademyProgress, AcademyAccess } from '../types';
 import { forceLocalOnly, setLocalBypassMode, stripUndefined, esFalloDePermisos } from './core';
+import { leerCatalogo, marcarCatalogoCambiado } from './catalogoVersionado';
 
 // ─── COURSES ────────────────────────────────────────────────────────────────
 
@@ -16,8 +17,7 @@ function saveLocalCourses(list: AcademyCourse[]): void {
 export async function getAllCourses(): Promise<AcademyCourse[]> {
   if (forceLocalOnly) return getLocalCourses();
   try {
-    const snap = await getDocs(collection(db, 'academyCourses'));
-    const courses = snap.docs.map(d => ({ id: d.id, ...d.data() } as AcademyCourse));
+    const courses = await leerCatalogo('academyCourses', 'academyCourses', d => ({ id: d.id, ...d.data() } as AcademyCourse));
     saveLocalCourses(courses);
     return courses;
   } catch (err) {
@@ -37,6 +37,7 @@ export async function createCourse(data: Omit<AcademyCourse, 'id'>): Promise<Aca
     const ref = await addDoc(collection(db, 'academyCourses'), stripUndefined(data));
     const course: AcademyCourse = { ...data, id: ref.id };
     saveLocalCourses([...getLocalCourses(), course]);
+    void marcarCatalogoCambiado('academyCourses');
     return course;
   } catch (err) {
     console.warn('createCourse Firestore failed, saving local:', err);
@@ -54,6 +55,7 @@ export async function updateCourse(id: string, updates: Partial<AcademyCourse>):
   try {
     await updateDoc(doc(db, 'academyCourses', id), stripUndefined(updates) as Record<string, unknown>);
     saveLocalCourses(updated);
+    void marcarCatalogoCambiado('academyCourses');
   } catch (err) {
     console.warn('updateCourse Firestore failed, saving local:', err);
     setLocalBypassMode(true, err);
@@ -68,6 +70,7 @@ export async function deleteCourse(id: string): Promise<void> {
   try {
     await deleteDoc(doc(db, 'academyCourses', id));
     saveLocalCourses(filtered);
+    void marcarCatalogoCambiado('academyCourses');
   } catch (err) {
     console.warn('deleteCourse Firestore failed, deleting local:', err);
     setLocalBypassMode(true, err);
@@ -90,8 +93,7 @@ function saveLocalLessons(list: AcademyLesson[]): void {
 export async function getAllLessons(): Promise<AcademyLesson[]> {
   if (forceLocalOnly) return getLocalLessons();
   try {
-    const snap = await getDocs(collection(db, 'academyLessons'));
-    const lessons = snap.docs.map(d => ({ id: d.id, ...d.data() } as AcademyLesson));
+    const lessons = await leerCatalogo('academyLessons', 'academyLessons', d => ({ id: d.id, ...d.data() } as AcademyLesson));
     saveLocalLessons(lessons);
     return lessons;
   } catch (err) {
@@ -111,6 +113,7 @@ export async function createLesson(data: Omit<AcademyLesson, 'id'>): Promise<Aca
     const ref = await addDoc(collection(db, 'academyLessons'), stripUndefined(data));
     const lesson: AcademyLesson = { ...data, id: ref.id };
     saveLocalLessons([...getLocalLessons(), lesson]);
+    void marcarCatalogoCambiado('academyLessons');
     return lesson;
   } catch (err) {
     console.warn('createLesson Firestore failed, saving local:', err);
@@ -128,6 +131,7 @@ export async function updateLesson(id: string, updates: Partial<AcademyLesson>):
   try {
     await updateDoc(doc(db, 'academyLessons', id), stripUndefined(updates) as Record<string, unknown>);
     saveLocalLessons(updated);
+    void marcarCatalogoCambiado('academyLessons');
   } catch (err) {
     console.warn('updateLesson Firestore failed, saving local:', err);
     setLocalBypassMode(true, err);
@@ -142,6 +146,7 @@ export async function deleteLesson(id: string): Promise<void> {
   try {
     await deleteDoc(doc(db, 'academyLessons', id));
     saveLocalLessons(filtered);
+    void marcarCatalogoCambiado('academyLessons');
   } catch (err) {
     console.warn('deleteLesson Firestore failed, deleting local:', err);
     setLocalBypassMode(true, err);

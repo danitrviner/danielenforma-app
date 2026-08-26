@@ -40,7 +40,7 @@ export { escriturasPendientes, suscribirEscriturasPendientes };
 // import existente (`from '../dbService'`) tenga que cambiar.
 export {
   getOrCreateUserProfile, getAllUserProfiles, getAllUsersAdmin, updateUserProfile,
-  getCheckIns, addWeightCheckIn, submitCoachFeedback, seedInitialCheckinsIfEmpty,
+  getCheckIns, addWeightCheckIn, submitCoachFeedback,
   updateCheckIn, deleteCheckIn, getUserProfileByEmail,
 } from './db/profiles';
 
@@ -50,7 +50,7 @@ export {
 export {
   getExercises, createExercise, updateExercise, deleteExercise,
   getExerciseNotesForAthlete, saveExerciseNote, seedExercisesIfEmpty,
-  getWorkouts, createWorkout, updateWorkout, deleteWorkout,
+  getWorkouts, getWorkoutsByIds, createWorkout, updateWorkout, deleteWorkout,
   getWorkoutAssignments, getWorkoutAssignmentsForAthlete, getWorkoutAssignmentsByMesocycleIds,
   createWorkoutAssignment, updateWorkoutAssignment, deleteWorkoutAssignment,
   getWorkoutLogs, createWorkoutLog, deleteWorkoutLog, updateWorkoutLog,

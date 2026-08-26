@@ -41,6 +41,10 @@ const SIN_DATOS_DEL_ATLETA: Record<string, string> = {
   academyLessons: 'contenido formativo, igual para todos',
   resources: 'material descargable del coach',
   knowledgeBase: 'base de conocimiento del asistente de IA',
+  // Sello de versión de cada catálogo versionado (src/db/catalogoVersionado.ts):
+  // un documento por catálogo con un único campo `version`, sin ningún dato de
+  // ninguna persona — ni siquiera de quién lo cambió.
+  catalogos: 'solo un sello de versión por catálogo, sin datos de nadie',
   // Cosas del coach, no del atleta.
   coachSettings: 'ajustes del propio coach',
   aiAuditLog: 'auditoría de uso de la API, sin datos del atleta y con retención propia',

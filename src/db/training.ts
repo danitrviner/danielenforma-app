@@ -1,4 +1,4 @@
-import { db, collection, doc, getDocs, setDoc, addDoc, updateDoc, deleteDoc, query, where, orderBy, limit } from '../firebase';
+import { db, collection, doc, getDocs, setDoc, addDoc, updateDoc, deleteDoc, query, where, orderBy, limit, documentId } from '../firebase';
 import { Exercise, ExercisePersonalNote, Workout, WorkoutAssignment, WorkoutLog, MuscleGroup, Mesocycle, MesocycleTemplate, MuscleGroupConfig, TemplateDay } from '../types';
 import {
   forceLocalOnly, setLocalBypassMode, stripUndefined, esFalloDePermisos,
@@ -9,6 +9,7 @@ import { combinarLogs } from './combinarLogs';
 import { normalizeMuscleGroups } from '../utils/normalizeMuscleGroups';
 import { slugify } from '../utils/maquinaId';
 import { exigeUid, exigeEmail } from './clavesDeAtleta';
+import { leerCatalogo, marcarCatalogoCambiado } from './catalogoVersionado';
 
 // T14 (18-08): mismo patrón que idDeFoodItem — un ID determinista hace que
 // sembrar dos veces sobreescriba en vez de duplicar.
@@ -40,8 +41,10 @@ export async function getExercises(): Promise<Exercise[]> {
   if (forceLocalOnly) return getLocalExercises();
   if (exercisesCache) return exercisesCache;
   try {
-    const snap = await getDocs(collection(db, 'exercises'));
-    const exercises = snap.docs.map(d => ({ id: d.id, ...d.data() } as Exercise));
+    // `leerCatalogo` sirve la copia local del dispositivo (0 lecturas) cuando
+    // su versión coincide con `catalogos/exercises` — antes esto era un
+    // `getDocs` completo (1.681 documentos) en CADA sesión de CADA persona.
+    const exercises = await leerCatalogo('exercises', 'exercises', d => ({ id: d.id, ...d.data() } as Exercise));
     saveLocalExercises(exercises);
     exercisesCache = exercises;
     return exercises;
@@ -67,6 +70,7 @@ export async function createExercise(data: Omit<Exercise, 'id'>): Promise<Exerci
     const list = getLocalExercises();
     list.push(newEx);
     saveLocalExercises(list);
+    void marcarCatalogoCambiado('exercises');
     return newEx;
   } catch (err) {
     console.warn('createExercise Firestore failed, saving local:', err);
@@ -91,6 +95,7 @@ export async function updateExercise(id: string, updates: Partial<Exercise>): Pr
     await updateDoc(doc(db, 'exercises', id), stripUndefined(updates) as Record<string, unknown>);
     const list = getLocalExercises().map(ex => (ex.id === id ? { ...ex, ...updates } : ex));
     saveLocalExercises(list);
+    void marcarCatalogoCambiado('exercises');
   } catch (err) {
     console.warn('updateExercise Firestore failed, updating local:', err);
     setLocalBypassMode(true, err);
@@ -109,6 +114,7 @@ export async function deleteExercise(id: string): Promise<void> {
   try {
     await deleteDoc(doc(db, 'exercises', id));
     saveLocalExercises(getLocalExercises().filter(ex => ex.id !== id));
+    void marcarCatalogoCambiado('exercises');
   } catch (err) {
     console.warn('deleteExercise Firestore failed, deleting local:', err);
     setLocalBypassMode(true, err);
@@ -166,7 +172,6 @@ export async function saveExerciseNote(data: Omit<ExercisePersonalNote, 'id'>): 
 }
 
 export async function seedExercisesIfEmpty(): Promise<void> {
-  exercisesCache = null;
   if (forceLocalOnly) {
     if (getLocalExercises().length === 0) {
       const seeded = SYSTEM_EXERCISES.map(ex => ({ ...ex, id: idDeSystemExercise(ex) }));
@@ -175,8 +180,13 @@ export async function seedExercisesIfEmpty(): Promise<void> {
     return;
   }
   try {
-    const snap = await getDocs(collection(db, 'exercises'));
-    if (snap.empty) {
+    // `limit(1)`: solo hace falta saber si la colección está vacía, no
+    // descargarla entera para comprobarlo. Esta era la lectura más cara de
+    // toda la app — 1.681 documentos, en CADA montaje de ClientHub,
+    // ExerciseLibraryScreen, WorkoutsScreen y ExerciseTriageScreen, dos veces
+    // (aquí y en el re-lectura que había al final).
+    const probe = await getDocs(query(collection(db, 'exercises'), limit(1)));
+    if (probe.empty) {
       // setDoc con ID determinista, no addDoc: mismo motivo que foodItems —
       // dos cargas concurrentes viendo la colección vacía escriben los
       // MISMOS documentos en vez de duplicarlos. seedExercisesIfEmpty se
@@ -184,10 +194,13 @@ export async function seedExercisesIfEmpty(): Promise<void> {
       for (const ex of SYSTEM_EXERCISES) {
         await setDoc(doc(db, 'exercises', idDeSystemExercise(ex)), stripUndefined(ex));
       }
+      exercisesCache = null;
+      void marcarCatalogoCambiado('exercises');
     }
-    const after = await getDocs(collection(db, 'exercises'));
-    const seeded = after.docs.map(d => ({ id: d.id, ...d.data() } as Exercise));
-    saveLocalExercises(seeded);
+    // Ya NO se vuelve a leer la colección entera aquí: si acaba de sembrarse
+    // (o ya tenía algo), el `getExercises()` que casi siempre sigue a esta
+    // llamada hace su propia lectura, y esa sí pasa por `leerCatalogo` — que
+    // la sirve desde la copia local en cuanto la versión coincide.
   } catch (err) {
     // No relanza ante permisos, a diferencia del resto de escrituras de este
     // fichero: lo que se siembra es el catálogo de ejercicios del sistema, no
@@ -236,6 +249,41 @@ export async function getWorkouts(): Promise<Workout[]> {
     console.warn('getWorkouts Firestore failed, using local:', err);
     setLocalBypassMode(true, err);
     return getLocalWorkouts();
+  }
+}
+
+// Rutinas de un conjunto de ids concreto — pensada para pantallas de UN
+// atleta (Hoy, Entrenamiento, la ficha del coach) que ya tienen las
+// asignaciones cargadas y solo necesitan las rutinas que esas asignaciones
+// referencian, no la colección entera de TODOS los atletas. `getWorkouts()`
+// se queda para donde el coach de verdad necesita el listado global
+// (WorkoutsScreen, ExerciseTriageScreen).
+export async function getWorkoutsByIds(ids: string[]): Promise<Workout[]> {
+  const unicos = Array.from(new Set(ids));
+  if (unicos.length === 0) return [];
+  if (forceLocalOnly) {
+    const local = getLocalWorkouts();
+    return unicos.map(id => local.find(w => w.id === id)).filter((w): w is Workout => !!w);
+  }
+  try {
+    const results: Workout[] = [];
+    const CHUNK = 30; // límite de Firestore para `in`
+    for (let i = 0; i < unicos.length; i += CHUNK) {
+      const chunk = unicos.slice(i, i + CHUNK);
+      const snap = await getDocs(query(collection(db, 'workouts'), where(documentId(), 'in', chunk)));
+      snap.docs.forEach(d => results.push({ id: d.id, ...d.data() } as Workout));
+    }
+    // Fusiona con la copia local sin pisarla entera — a diferencia de
+    // getWorkouts(), esto es un subconjunto y no debe sobrescribir el espejo
+    // completo del dispositivo.
+    const local = getLocalWorkouts().filter(w => !results.find(r => r.id === w.id));
+    saveLocalWorkouts([...local, ...results]);
+    return results;
+  } catch (err) {
+    console.warn('getWorkoutsByIds Firestore failed, using local:', err);
+    setLocalBypassMode(true, err);
+    const local = getLocalWorkouts();
+    return unicos.map(id => local.find(w => w.id === id)).filter((w): w is Workout => !!w);
   }
 }
 
@@ -775,6 +823,10 @@ export async function migratePrimaryFocusToMuscleGroup(): Promise<{ updated: num
     );
     saveLocalExercises(localList);
     localStorage.setItem(FLAG, 'true');
+    if (updated > 0) {
+      exercisesCache = null;
+      void marcarCatalogoCambiado('exercises');
+    }
     console.log(`[migration muscleGroup] updated=${updated} skipped=${skipped}`);
   } catch (err) {
     console.warn('[migration muscleGroup] failed, will retry:', err);

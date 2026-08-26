@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { UserProfile, WeightCheckIn, WeekDay } from '../types';
-import { getWorkoutAssignmentsForAthlete, getWorkouts, getCardioAssignmentsForAthlete, getDietsForAthlete, getAthleteDietConfig, getDietCompletionLog, getOnboarding } from '../dbService';
+import { getWorkoutAssignmentsForAthlete, getWorkoutsByIds, getCardioAssignmentsForAthlete, getDietsForAthlete, getAthleteDietConfig, getDietCompletionLog, getOnboarding } from '../dbService';
 import { getWeekRange, getWeekStart, formatDate } from '../utils/trainingWeek';
 import { pickActiveZona2Assignment, pickActiveIntervalAssignment } from '../utils/cardioSession';
 import { pickTodaysDiet, countMealsDone } from '../utils/nutritionSummary';
@@ -62,10 +62,20 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
     queryKey: ['workoutAssignments', profile.userId],
     queryFn: () => getWorkoutAssignmentsForAthlete(profile.userId),
   });
-  const { data: workouts = [], isPending: loadingWorkouts } = useQuery({
-    queryKey: ['workouts'],
-    queryFn: getWorkouts,
+  // Solo las rutinas que las asignaciones de ESTE atleta referencian, no la
+  // colección entera de todos los atletas — antes `getWorkouts()` se bajaba
+  // las rutinas de todos los clientes al móvil de cada atleta.
+  const workoutIds = React.useMemo(() => Array.from(new Set(assignments.map(a => a.workoutId))), [assignments]);
+  const { data: workouts = [], isPending: loadingWorkoutsQuery } = useQuery({
+    queryKey: ['workoutsByIds', workoutIds],
+    queryFn: () => getWorkoutsByIds(workoutIds),
+    enabled: workoutIds.length > 0,
   });
+  // Con `enabled: false` (sin ids que pedir) la consulta se queda en
+  // `isPending` para siempre porque nunca llega a ejecutarse — sin este `&&`,
+  // un atleta sin asignaciones vería el esqueleto de carga sin fin en vez del
+  // estado vacío.
+  const loadingWorkouts = workoutIds.length > 0 && loadingWorkoutsQuery;
   const loadingTraining = loadingAssignments || loadingWorkouts;
 
   const { data: cardioAssignments = [] } = useQuery({

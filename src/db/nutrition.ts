@@ -1,8 +1,9 @@
-import { db, collection, doc, getDoc, setDoc, getDocs, addDoc, updateDoc, deleteDoc, query, where } from '../firebase';
+import { db, collection, doc, getDoc, setDoc, getDocs, addDoc, updateDoc, deleteDoc, query, where, limit } from '../firebase';
 import { MealItem, AthleteNutritionConfig, Diet, AthleteDietConfig, DietCompletionLog, WeeklyMenu, MenuCompletionLog, NutritionProgram, NutritionPhase } from '../types';
 import { forceLocalOnly, setLocalBypassMode, stripUndefined, authReady, withAuthRetry, esFalloDePermisos } from './core';
 import { SYSTEM_FOODS } from '../nutricion_seed_en_forma';
 import { idDeFoodItem } from '../utils/foodItemId';
+import { leerCatalogo, marcarCatalogoCambiado } from './catalogoVersionado';
 
 // ─── FOOD ITEMS ───────────────────────────────────────────────────────────────
 
@@ -29,8 +30,10 @@ export async function getFoodItems(): Promise<MealItem[]> {
   if (forceLocalOnly) return getLocalFoodItems();
   if (foodItemsCache) return foodItemsCache;
   try {
-    const snap = await getDocs(collection(db, 'foodItems'));
-    const items = snap.docs.map(d => ({ id: d.id, ...d.data() } as MealItem));
+    // `leerCatalogo` sirve la copia local del dispositivo (0 lecturas) cuando
+    // su versión coincide con `catalogos/foodItems` — antes esto era un
+    // `getDocs` completo (310 documentos) en CADA sesión de CADA atleta.
+    const items = await leerCatalogo('foodItems', 'foodItems', d => ({ id: d.id, ...d.data() } as MealItem));
     saveLocalFoodItems(items);
     foodItemsCache = items;
     return items;
@@ -52,6 +55,7 @@ export async function createFoodItem(data: Omit<MealItem, 'id'>): Promise<MealIt
     const ref = await addDoc(collection(db, 'foodItems'), stripUndefined(data));
     const newItem: MealItem = { ...data, id: ref.id };
     saveLocalFoodItems([...getLocalFoodItems(), newItem]);
+    void marcarCatalogoCambiado('foodItems');
     return newItem;
   } catch (err) {
     console.warn('createFoodItem Firestore failed, saving local:', err);
@@ -72,6 +76,7 @@ export async function updateFoodItem(id: string, updates: Partial<MealItem>): Pr
   try {
     await updateDoc(doc(db, 'foodItems', id), stripUndefined(updates) as Record<string, unknown>);
     saveLocalFoodItems(getLocalFoodItems().map(f => (f.id === id ? { ...f, ...updates } : f)));
+    void marcarCatalogoCambiado('foodItems');
   } catch (err) {
     console.warn('updateFoodItem Firestore failed, updating local:', err);
     setLocalBypassMode(true, err);
@@ -89,6 +94,7 @@ export async function deleteFoodItem(id: string): Promise<void> {
   try {
     await deleteDoc(doc(db, 'foodItems', id));
     saveLocalFoodItems(getLocalFoodItems().filter(f => f.id !== id));
+    void marcarCatalogoCambiado('foodItems');
   } catch (err) {
     console.warn('deleteFoodItem Firestore failed, deleting local:', err);
     setLocalBypassMode(true, err);
@@ -98,7 +104,6 @@ export async function deleteFoodItem(id: string): Promise<void> {
 }
 
 export async function seedFoodItemsIfEmpty(): Promise<void> {
-  foodItemsCache = null;
   const seeded: MealItem[] = SYSTEM_FOODS.map(f => ({
     id: idDeFoodItem(f),
     mode: f.mode,
@@ -113,8 +118,12 @@ export async function seedFoodItemsIfEmpty(): Promise<void> {
     return;
   }
   try {
-    const snap = await getDocs(collection(db, 'foodItems'));
-    if (snap.empty) {
+    // `limit(1)`: solo hace falta saber si la colección está vacía, no
+    // descargarla entera para comprobarlo (antes eran 310 documentos, dos
+    // veces, en cada montaje de FoodLibraryScreen/NutritionPlansScreen/
+    // NutritionScreen).
+    const probe = await getDocs(query(collection(db, 'foodItems'), limit(1)));
+    if (probe.empty) {
       // setDoc con ID determinista, no addDoc: si dos cargas concurrentes
       // ven ambas la colección vacía, las dos escriben los MISMOS 310
       // documentos en vez de 620 duplicados — sembrar es idempotente.
@@ -122,9 +131,12 @@ export async function seedFoodItemsIfEmpty(): Promise<void> {
         const { id, ...data } = item;
         await setDoc(doc(db, 'foodItems', id), stripUndefined(data));
       }
+      foodItemsCache = null;
+      void marcarCatalogoCambiado('foodItems');
     }
-    const after = await getDocs(collection(db, 'foodItems'));
-    saveLocalFoodItems(after.docs.map(d => ({ id: d.id, ...d.data() } as MealItem)));
+    // Ya NO se vuelve a leer la colección entera aquí: el `getFoodItems()`
+    // que casi siempre sigue a esta llamada hace su propia lectura, y esa sí
+    // pasa por `leerCatalogo`.
   } catch (err) {
     // Mismo criterio que `seedExercisesIfEmpty`: catálogo del sistema, no dato
     // del usuario. No relanza.

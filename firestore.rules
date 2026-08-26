@@ -191,6 +191,17 @@ service cloud.firestore {
       allow write: if isCoach();
     }
 
+    // ── catalogos (docId = nombre del catálogo: "exercises", "foodItems"...) ──
+    // Sello de versión de cada catálogo versionado (src/db/catalogoVersionado.ts):
+    // un solo campo `version` que le dice al dispositivo si su copia local de
+    // la colección sigue siendo válida. Mismo criterio de lectura/escritura que
+    // el resto de catálogos del sistema (exercises, maquinas): cualquier
+    // usuario autenticado lee, solo el coach escribe.
+    match /catalogos/{docId} {
+      allow read: if esUsuarioDeLaApp();
+      allow write: if isCoach();
+    }
+
     // ── maquinas (docId = slug estable de la máquina) ────────────────────────
     // Overrides del admin sobre el catálogo semilla del bundle, más las máquinas
     // creadas a mano. Cualquier atleta autenticado necesita leerlas para que su

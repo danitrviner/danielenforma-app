@@ -1,6 +1,7 @@
 import { db, collection, doc, getDocs, setDoc, addDoc, updateDoc, deleteDoc, query, where } from '../firebase';
 import { CoachNote, CoachClientTask, Resource } from '../types';
 import { forceLocalOnly, setLocalBypassMode, stripUndefined, esFalloDePermisos } from './core';
+import { leerCatalogo, marcarCatalogoCambiado } from './catalogoVersionado';
 
 // ─── COACH NOTES (private to-do list, never visible to athletes) ──────────────
 
@@ -194,8 +195,7 @@ function saveLocalResources(resources: Resource[]): void {
 export async function getAllResources(): Promise<Resource[]> {
   if (forceLocalOnly) return getLocalResources();
   try {
-    const snap = await getDocs(collection(db, 'resources'));
-    const resources = snap.docs.map(d => ({ id: d.id, ...d.data() } as Resource));
+    const resources = await leerCatalogo('resources', 'resources', d => ({ id: d.id, ...d.data() } as Resource));
     saveLocalResources(resources);
     return resources;
   } catch (err) {
@@ -215,6 +215,7 @@ export async function createResource(data: Omit<Resource, 'id'>): Promise<Resour
     const ref = await addDoc(collection(db, 'resources'), stripUndefined(data));
     const resource: Resource = { ...data, id: ref.id };
     saveLocalResources([...getLocalResources(), resource]);
+    void marcarCatalogoCambiado('resources');
     return resource;
   } catch (err) {
     console.warn('createResource Firestore failed, saving local:', err);
@@ -232,6 +233,7 @@ export async function deleteResource(id: string): Promise<void> {
   try {
     await deleteDoc(doc(db, 'resources', id));
     saveLocalResources(filtered);
+    void marcarCatalogoCambiado('resources');
   } catch (err) {
     console.warn('deleteResource Firestore failed, deleting local:', err);
     setLocalBypassMode(true, err);

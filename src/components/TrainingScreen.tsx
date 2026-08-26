@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { UserProfile, Workout, WorkoutAssignment, Exercise, WorkoutLog, WorkoutEntryLog, ExercisePersonalNote } from '../types';
 import LoadHistoryPanel from './LoadHistoryPanel';
 import {
-  getWorkoutAssignmentsForAthlete, getWorkouts, getExercises,
+  getWorkoutAssignmentsForAthlete, getWorkoutsByIds, getExercises,
   createWorkoutLog, updateWorkoutAssignment, getWorkoutLogs, getExerciseNotesForAthlete,
   getCardioAssignmentsForAthlete, getMesocycles,
 } from '../dbService';
@@ -85,10 +85,19 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
     queryKey: assignmentsKey,
     queryFn: () => getWorkoutAssignmentsForAthlete(profile.userId),
   });
-  const { data: workouts = [], isPending: loadingWorkouts } = useQuery({
-    queryKey: ['workouts'],
-    queryFn: getWorkouts,
+  // Solo las rutinas que las asignaciones de ESTE atleta referencian, no la
+  // colección entera de todos los atletas — antes `getWorkouts()` se bajaba
+  // las rutinas de todos los clientes al móvil de cada atleta.
+  const workoutIds = useMemo(() => Array.from(new Set(assignments.map(a => a.workoutId))), [assignments]);
+  const { data: workouts = [], isPending: loadingWorkoutsQuery } = useQuery({
+    queryKey: ['workoutsByIds', workoutIds],
+    queryFn: () => getWorkoutsByIds(workoutIds),
+    enabled: workoutIds.length > 0,
   });
+  // Con `enabled: false` la consulta se queda en `isPending` para siempre —
+  // sin este `&&`, un atleta sin asignaciones vería el esqueleto de carga sin
+  // fin en vez del estado vacío.
+  const loadingWorkouts = workoutIds.length > 0 && loadingWorkoutsQuery;
   // Sembrar el catálogo de ejercicios es mantenimiento del coach (escribe en
   // `exercises`, colección de solo-coach) — ya se hace desde ExerciseLibraryScreen,
   // WorkoutsScreen y ClientHub. Aquí, en la pantalla del atleta, solo se lee:
