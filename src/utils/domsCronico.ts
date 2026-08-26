@@ -15,19 +15,46 @@ function round1(n: number): number { return Math.round(n * 10) / 10; }
  * menos datos: etiquetar "crónico" a un atleta nuevo con una sola lectura
  * alta sería un falso positivo).
  */
-export function domsCronicoDeGrupo(
+// Sin límite superior de fecha — usado por domsCronicoDeGrupo para reusar la
+// variante "En" sin duplicar la lógica de la media de las últimas N lecturas.
+const SIN_LIMITE_FECHA = '9999-12-31';
+
+/** Como domsCronicoDeGrupo pero solo con lecturas hasta `fecha` (inclusive) — para construir una serie histórica sin mirar al futuro. */
+export function domsCronicoDeGrupoEn(
+  fecha: string,
   group: MuscleGroup,
   responses: QuestionnaireResponse[],
   questionnaires: Questionnaire[],
 ): number | null {
-  const serie = historialDeSeñal(`doms.${group}`, responses, questionnaires);
+  const serie = historialDeSeñal(`doms.${group}`, responses, questionnaires).filter(p => p.date <= fecha);
   if (serie.length < DOMS_CRONICO_N_LECTURAS) return null;
   const ultimas = serie.slice(-DOMS_CRONICO_N_LECTURAS);
   return round1(ultimas.reduce((s, p) => s + p.value, 0) / ultimas.length);
 }
 
+export function domsCronicoDeGrupo(
+  group: MuscleGroup,
+  responses: QuestionnaireResponse[],
+  questionnaires: Questionnaire[],
+): number | null {
+  return domsCronicoDeGrupoEn(SIN_LIMITE_FECHA, group, responses, questionnaires);
+}
+
 export function esDomsCronico(mediaCronica: number | null): boolean {
   return mediaCronica != null && mediaCronica >= DOMS_CRONICO_UMBRAL;
+}
+
+/** Como domsCronicoGlobal pero solo con lecturas hasta `fecha` (inclusive) — para construir una serie histórica de IRP sin mirar al futuro. */
+export function domsCronicoGlobalEn(
+  fecha: string,
+  responses: QuestionnaireResponse[],
+  questionnaires: Questionnaire[],
+): number | null {
+  const medias = MUSCLE_ORDER
+    .map(g => domsCronicoDeGrupoEn(fecha, g, responses, questionnaires))
+    .filter((v): v is number => v != null);
+  if (medias.length === 0) return null;
+  return round1(medias.reduce((s, v) => s + v, 0) / medias.length);
 }
 
 /** Escalar único (media sobre los grupos con datos suficientes) para alimentar IRP — null si ningún grupo tiene aún N lecturas. */
@@ -35,9 +62,5 @@ export function domsCronicoGlobal(
   responses: QuestionnaireResponse[],
   questionnaires: Questionnaire[],
 ): number | null {
-  const medias = MUSCLE_ORDER
-    .map(g => domsCronicoDeGrupo(g, responses, questionnaires))
-    .filter((v): v is number => v != null);
-  if (medias.length === 0) return null;
-  return round1(medias.reduce((s, v) => s + v, 0) / medias.length);
+  return domsCronicoGlobalEn(SIN_LIMITE_FECHA, responses, questionnaires);
 }

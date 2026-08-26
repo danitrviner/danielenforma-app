@@ -3,11 +3,17 @@ import { useQuery } from '@tanstack/react-query';
 import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend,
 } from 'recharts';
-import { WorkoutLog, Exercise, QuestionnaireResponse, Questionnaire, BodyweightLog, WorkoutAssignment, BODY_METRIC_LABELS } from '../types';
+import { WorkoutLog, Exercise, QuestionnaireResponse, Questionnaire, BodyweightLog, WorkoutAssignment, BodyMetricKey, BODY_METRIC_LABELS } from '../types';
 import { epley } from '../utils/oneRepMax';
 import { getStepsForAthlete } from '../dbService';
 import { useBodyMeasurements } from '../hooks/useBodyMeasurements';
 import { DataPoint, Aggregation, Granularity, weekKey, toWeeklyBuckets, pearsonAligned } from '../utils/seriesCorrelation';
+import { computeAnthropometricIndices, ANTHROPOMETRIC_INDEX_LABELS } from '../utils/anthropometricIndices';
+import { pctGrasaUSNavy, masaMagraEstimadaKg, computeIRC } from '../utils/bodyFatUSNavy';
+import { e1rmAlometrico, pesoCorporalEn } from '../utils/allometricScore';
+import { ewmaDeSeñal } from '../utils/wellnessTrend';
+import { historialIRP } from '../utils/readinessIndex';
+import { Sexo } from '../utils/athleteProfileSignals';
 import {
   EmptyState, Icon,
   ALTURA_GRAFICA, MARGEN_GRAFICA, REJILLA_GRAFICA, TICK_GRAFICA, EJE_GRAFICA,
@@ -22,6 +28,7 @@ interface Props {
   questionnaires: Questionnaire[];
   bodyweightLogs: BodyweightLog[];
   assignments: WorkoutAssignment[];
+  sexo: Sexo | null; // de la anamnesis — alimenta %grasa US Navy y el e1RM alométrico
 }
 
 type Series = { id: string; label: string; points: DataPoint[]; unit?: string; agg: Aggregation };
@@ -40,7 +47,7 @@ function fmtDate(dateStr: string): string {
 }
 
 export default function CorrelationPanel({
-  athleteEmail, logs, exercises, responses, questionnaires, bodyweightLogs, assignments,
+  athleteEmail, logs, exercises, responses, questionnaires, bodyweightLogs, assignments, sexo,
 }: Props) {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [selectorOpen, setSelectorOpen] = useState(false);
@@ -52,7 +59,7 @@ export default function CorrelationPanel({
     queryKey: ['stepsForAthlete', athleteEmail],
     queryFn: () => getStepsForAthlete(athleteEmail),
   });
-  const { all: bodyMeasurements } = useBodyMeasurements(athleteEmail);
+  const { all: bodyMeasurements, latest: latestBodyMeasurements } = useBodyMeasurements(athleteEmail);
 
   const allSeries = useMemo<Series[]>(() => {
     const result: Series[] = [];
@@ -117,6 +124,21 @@ export default function CorrelationPanel({
         .map(([date, value]) => ({ date, value: Math.round(value * 10) / 10 }));
       if (points.length > 0) {
         result.push({ id: `orm_${eid}`, label: `1RM: ${ex?.name ?? eid}`, points, unit: 'kg', agg: 'avg' });
+
+        // 1RM alométrico (/Peso^b) — corrige el sesgo cuadrado-cubo del 1RM
+        // crudo frente al peso corporal. Solo si se conoce el sexo (anamnesis).
+        if (sexo) {
+          const alomPoints: DataPoint[] = [];
+          for (const p of points) {
+            const pesoEnFecha = pesoCorporalEn(p.date, bodyweightLogs);
+            if (pesoEnFecha == null) continue;
+            const alom = e1rmAlometrico(p.value, pesoEnFecha, sexo);
+            if (alom != null) alomPoints.push({ date: p.date, value: alom });
+          }
+          if (alomPoints.length > 0) {
+            result.push({ id: `orm_alom_${eid}`, label: `1RM alom.: ${ex?.name ?? eid}`, points: alomPoints, agg: 'avg' });
+          }
+        }
       }
     }
 
@@ -185,8 +207,86 @@ export default function CorrelationPanel({
       }
     }
 
+    // 8. Índices antropométricos + composición corporal (US Navy) por fecha —
+    // agrupando bodyMeasurements por fecha de envío (el cuestionario
+    // "Mediciones" pide todo el protocolo de una vez, así que un mismo día
+    // trae cuello/cintura/cadera/etc. juntos). La altura no se repite (se
+    // pregunta una vez en la anamnesis), así que se superpone como valor fijo.
+    {
+      const alturaCm = latestBodyMeasurements.altura?.value;
+      const porFecha = new Map<string, Partial<Record<BodyMetricKey, number>>>();
+      for (const m of bodyMeasurements) {
+        if (m.metricKey === 'bodyweight' || m.metricKey === 'altura') continue;
+        if (!porFecha.has(m.date)) porFecha.set(m.date, {});
+        porFecha.get(m.date)![m.metricKey] = m.value;
+      }
+      const indexSeries: Record<string, DataPoint[]> = {};
+      const composicionSeries: Record<'pctGrasa' | 'masaMagra' | 'irc', DataPoint[]> = { pctGrasa: [], masaMagra: [], irc: [] };
+      for (const [date, vals] of [...porFecha.entries()].sort(([a], [b]) => a.localeCompare(b))) {
+        const latestSnapshot: Partial<Record<BodyMetricKey, { value: number }>> = {};
+        for (const [k, v] of Object.entries(vals)) latestSnapshot[k as BodyMetricKey] = { value: v! };
+        if (alturaCm != null) latestSnapshot.altura = { value: alturaCm };
+        const indices = computeAnthropometricIndices(latestSnapshot as Parameters<typeof computeAnthropometricIndices>[0]);
+        for (const [key, v] of Object.entries(indices)) {
+          if (v == null) continue;
+          if (!indexSeries[key]) indexSeries[key] = [];
+          indexSeries[key].push({ date, value: v });
+        }
+
+        if (sexo && alturaCm != null && vals.cuello != null && vals.cintura != null) {
+          const pesoEnFecha = pesoCorporalEn(date, bodyweightLogs);
+          const pctGrasa = pctGrasaUSNavy({ sexo, cuelloCm: vals.cuello, cinturaCm: vals.cintura, caderaCm: vals.cadera, alturaCm });
+          if (pctGrasa != null) {
+            composicionSeries.pctGrasa.push({ date, value: pctGrasa });
+            if (pesoEnFecha != null) {
+              const masaMagraKg = masaMagraEstimadaKg(pesoEnFecha, pctGrasa);
+              if (masaMagraKg != null) {
+                composicionSeries.masaMagra.push({ date, value: masaMagraKg });
+                const whtr = indices.whtr;
+                if (whtr != null) {
+                  const irc = computeIRC(masaMagraKg, whtr);
+                  if (irc != null) composicionSeries.irc.push({ date, value: irc });
+                }
+              }
+            }
+          }
+        }
+      }
+      for (const [key, points] of Object.entries(indexSeries)) {
+        if (points.length > 0) {
+          result.push({ id: `idx_${key}`, label: ANTHROPOMETRIC_INDEX_LABELS[key as keyof typeof ANTHROPOMETRIC_INDEX_LABELS], points, agg: 'avg' });
+        }
+      }
+      if (composicionSeries.pctGrasa.length > 0) {
+        result.push({ id: 'us_navy_pct_grasa', label: '% Grasa estimado (US Navy)', points: composicionSeries.pctGrasa, unit: '%', agg: 'avg' });
+      }
+      if (composicionSeries.masaMagra.length > 0) {
+        result.push({ id: 'us_navy_masa_magra', label: 'Masa magra estimada', points: composicionSeries.masaMagra, unit: 'kg', agg: 'avg' });
+      }
+      if (composicionSeries.irc.length > 0) {
+        result.push({ id: 'irc', label: 'IRC (recomposición)', points: composicionSeries.irc, agg: 'avg' });
+      }
+    }
+
+    // 9. Sueño / estrés suavizados (EWMA) — alternativa a la respuesta cruda
+    // de la sección 4, amortigua una mala semana suelta.
+    const sueñoEwma = ewmaDeSeñal('wellness.sleep_hours_weekly', responses, questionnaires);
+    if (sueñoEwma.length > 0) {
+      result.push({ id: 'sueño_ewma', label: 'Horas de sueño (EWMA)', points: sueñoEwma, unit: 'h', agg: 'avg' });
+    }
+    const estresEwma = ewmaDeSeñal('wellness.stress_weekly', responses, questionnaires);
+    if (estresEwma.length > 0) {
+      result.push({ id: 'estres_ewma', label: 'Estrés semanal (EWMA)', points: estresEwma, agg: 'avg' });
+    }
+
+    // 10. IRP (Índice de Readiness) — sueño × (10 − estrés − DOMS crónico) / 10.
+    const irpPoints = historialIRP({ responses, questionnaires });
+    if (irpPoints.length > 0) {
+      result.push({ id: 'irp', label: 'IRP (readiness)', points: irpPoints, agg: 'avg' });
+    }
+
     return result;
-  }, [logs, exercises, responses, questionnaires, bodyweightLogs, bodyMeasurements, stepLogs, assignments]);
+  }, [logs, exercises, responses, questionnaires, bodyweightLogs, bodyMeasurements, latestBodyMeasurements, stepLogs, assignments, sexo]);
 
   const toggleSeries = (id: string) => {
     setSelectedIds(prev => {

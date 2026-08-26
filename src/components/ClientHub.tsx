@@ -13,6 +13,7 @@ import { OPEN_AI_PANEL_EVENT } from '../ai/events';
 import { computeAdherenceScore, scoreStyle, SIN_DATOS_ADHERENCIA } from '../utils/adherence';
 import { atletasActivos } from '../utils/atletas';
 import { computeAverageRir } from '../utils/rirStats';
+import { leerSexo } from '../utils/athleteProfileSignals';
 import { calcPlanExpiry } from '../hooks/usePlanExpiry';
 import { useToast } from '../hooks/useToast';
 import { useAthleteWeight } from '../hooks/useAthleteWeight';
@@ -723,6 +724,7 @@ export default function ClientHub({
           questionnaires={coachQuestionnaires}
           bodyweightLogs={bodyweightLogs}
           assignments={assignments}
+          sexo={leerSexo(athleteQResponses, coachQuestionnaires)}
         />
       )}
 

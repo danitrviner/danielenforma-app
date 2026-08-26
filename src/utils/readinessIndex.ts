@@ -1,6 +1,7 @@
 import { Questionnaire, QuestionnaireResponse } from '../types';
+import { DataPoint } from './seriesCorrelation';
 import { ewmaDeSeñal } from './wellnessTrend';
-import { domsCronicoGlobal } from './domsCronico';
+import { domsCronicoGlobal, domsCronicoGlobalEn } from './domsCronico';
 
 // IRP — Índice de Readiness Psicofisiológico. Sueño × (10 − estrés −
 // DOMS_crónico) / 10. Usa el valor EWMA más reciente de sueño/estrés (no el
@@ -34,4 +35,27 @@ export function computeIRP(params: {
   }
   const valor = Math.round(horasSueño * ((10 - estres - domsCronico) / 10) * 10) / 10;
   return { valor, horasSueño, estres, domsCronico };
+}
+
+/**
+ * Serie histórica de IRP, para correlacionarlo con otras variables — un
+ * punto por cada fecha donde coinciden sueño y estrés EWMA, usando solo DOMS
+ * crónico calculado hasta esa fecha (nunca con lecturas posteriores).
+ */
+export function historialIRP(params: {
+  responses: QuestionnaireResponse[];
+  questionnaires: Questionnaire[];
+}): DataPoint[] {
+  const { responses, questionnaires } = params;
+  const sueñoEwma = ewmaDeSeñal('wellness.sleep_hours_weekly', responses, questionnaires);
+  const estresEwma = ewmaDeSeñal('wellness.stress_weekly', responses, questionnaires);
+  const puntos: DataPoint[] = [];
+  for (const s of sueñoEwma) {
+    const e = estresEwma.find(p => p.date === s.date);
+    if (e === undefined) continue;
+    const doms = domsCronicoGlobalEn(s.date, responses, questionnaires);
+    if (doms == null) continue;
+    puntos.push({ date: s.date, value: Math.round(s.value * ((10 - e.value - doms) / 10) * 10) / 10 });
+  }
+  return puntos;
 }
