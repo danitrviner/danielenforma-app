@@ -114,9 +114,21 @@ export default function PendingTasksPanel({ profile, checkins, onNavigate }: Pro
   const daysSinceCheckin = lastCheckinMs === null ? null : Math.floor((Date.now() - lastCheckinMs) / 86_400_000);
   const needsCheckin = daysSinceCheckin === null || daysSinceCheckin >= 7;
 
-  type Row = { key: string; type: TaskType; title: string; dueDate?: string; onOpen: () => void };
+  type Row = { key: string; type: TaskType; title: string; dueDate?: string; onOpen: () => void; urgent?: boolean };
 
+  // Los cuestionarios pendientes (Mediciones, Revisión Semanal, DOM's...)
+  // alimentan directamente las métricas del coach — sin respuesta, esas
+  // gráficas se quedan sin datos. Se destacan más que una tarea manual
+  // cualquiera, aunque sin bloquear el resto de la app.
   const rows: Row[] = [
+    ...pendingQuestionnaires.map(q => ({
+      key: `q_${q.id}`,
+      type: 'cuestionario' as TaskType,
+      title: q.title,
+      dueDate: todayStr(),
+      onOpen: () => onNavigate('checkin'),
+      urgent: true,
+    })),
     ...(needsCheckin ? [{
       key: 'checkin-due',
       type: 'revision' as TaskType,
@@ -124,13 +136,6 @@ export default function PendingTasksPanel({ profile, checkins, onNavigate }: Pro
       dueDate: todayStr(),
       onOpen: () => onNavigate('checkin'),
     }] : []),
-    ...pendingQuestionnaires.map(q => ({
-      key: `q_${q.id}`,
-      type: 'cuestionario' as TaskType,
-      title: q.title,
-      dueDate: todayStr(),
-      onOpen: () => onNavigate('checkin'),
-    })),
     ...pendingPhotos.map(p => ({
       key: `foto_${p.id}`,
       type: 'foto' as TaskType,
@@ -170,12 +175,19 @@ export default function PendingTasksPanel({ profile, checkins, onNavigate }: Pro
         <p className="text-label text-ink-3 font-sans py-2">Todo al día — sin tareas pendientes.</p>
       ) : (
         <div className="space-y-2">
+          {rows.some(r => r.urgent) && (
+            <p className="font-sans text-caption text-warning uppercase tracking-wider px-1">
+              Sin responder — tu coach no ve datos actualizados hasta que lo hagas
+            </p>
+          )}
           {rows.map(row => (
             <ListRow
               key={row.key}
               onClick={row.onOpen}
-              className="bg-raised border border-hairline rounded-control"
-              leading={<span className={`material-symbols-outlined flex-shrink-0 ${TYPE_COLOR[row.type]}`}>{TYPE_ICON[row.type]}</span>}
+              className={row.urgent
+                ? 'bg-warning/10 border border-warning/40 rounded-control'
+                : 'bg-raised border border-hairline rounded-control'}
+              leading={<span className={`material-symbols-outlined flex-shrink-0 ${row.urgent ? 'text-warning' : TYPE_COLOR[row.type]}`}>{row.urgent ? 'warning' : TYPE_ICON[row.type]}</span>}
               title={row.title}
               subtitle={row.dueDate ? `Vence: ${row.dueDate}` : undefined}
               chevron

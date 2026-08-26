@@ -29,7 +29,23 @@ export function hasAnsweredThisOccurrence(
   const today = todayStr();
 
   if (type === 'weekdays') {
-    return mine.some(r => r.submittedAt.slice(0, 10) === today);
+    // Ventana de la ocurrencia actual: desde el último día programado de la
+    // semana (no forzosamente hoy) hasta hoy inclusive. Antes se comparaba
+    // solo contra "hoy exacto", así que responder un día tarde (p.ej. sábado
+    // a una revisión de viernes) no cerraba la ocurrencia.
+    const weekdays = a.schedule.weekdays ?? [];
+    if (weekdays.length === 0) return false;
+    const now = startOfDay(today);
+    let daysBack = 0;
+    while (daysBack < 7 && !weekdays.includes((now.getDay() - daysBack + 7) % 7)) daysBack++;
+    if (daysBack >= 7) return false; // no debería pasar con weekdays no vacío
+    const pulse = new Date(now);
+    pulse.setDate(pulse.getDate() - daysBack);
+    const pulseStr = pulse.toISOString().slice(0, 10);
+    return mine.some(r => {
+      const d = r.submittedAt.slice(0, 10);
+      return d >= pulseStr && d <= today;
+    });
   }
 
   if (type === 'interval') {
@@ -77,22 +93,28 @@ export function hasAnsweredThisOccurrence(
   return false;
 }
 
-// "Vencido y sin responder": para 'interval', 'plan_week' y 'mesocycle_end' se
-// queda vencido desde su fecha objetivo hasta que se responde (no solo el día
-// exacto), igual que hasAnsweredThisOccurrence considera la ventana completa —
-// de lo contrario un cuestionario sin responder desaparecería de "pendientes"
-// en cuanto pasara el día exacto, sin que el atleta pudiera responderlo tarde.
-// Para el resto de tipos ('once'/'weekdays'/'monthly') equivale a isDueToday.
+// "Vencido y sin responder": para todos los tipos recurrentes se queda
+// vencido desde su fecha/ventana objetivo hasta que se responde (no solo el
+// día exacto), igual que hasAnsweredThisOccurrence considera la ventana
+// completa — de lo contrario un cuestionario sin responder desaparecería de
+// "pendientes" en cuanto pasara el día exacto, sin que el atleta pudiera
+// responderlo tarde ni el coach lo viera como pendiente. Solo 'once' equivale
+// a isDueToday — una ocurrencia única sin fecha límite recurrente.
 export function isOverdue(a: QuestionnaireAssignment, ctx?: ScheduleContext): boolean {
   if (!a.schedule) return false;
   const { type } = a.schedule;
-  if (type !== 'interval' && type !== 'plan_week' && type !== 'mesocycle_end') {
-    return isDueToday(a, ctx);
-  }
+  if (type === 'once') return isDueToday(a, ctx);
   const today = startOfDay(todayStr());
   const start = startOfDay(a.startDate);
-  if (type === 'interval') return today.getTime() >= start.getTime();
+  if (today.getTime() < start.getTime()) return false;
+  if (type === 'interval') return true;
   if (type === 'plan_week') return planWeekDueDate(a.schedule, start).getTime() <= today.getTime();
+  if (type === 'monthly') return today.getDate() >= (a.schedule.dayOfMonth ?? 1);
+  // weekdays: dentro de cualquier semana siempre hay un día programado en los
+  // últimos 7 días (la misma ventana que usa hasAnsweredThisOccurrence más
+  // arriba), así que se queda vencido de forma continua hasta que responda —
+  // igual que 'interval'.
+  if (type === 'weekdays') return (a.schedule.weekdays ?? []).length > 0;
   // mesocycle_end
   const offset = a.schedule.mesocycleOffsetDays ?? 0;
   return (ctx?.mesocycles ?? []).some(m => mesocycleEndDate(m, offset).getTime() <= today.getTime());
