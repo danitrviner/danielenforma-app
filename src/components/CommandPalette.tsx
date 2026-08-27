@@ -5,7 +5,7 @@ import { UserProfile } from '../types';
 import { getAllUserProfiles } from '../dbService';
 import { atletasActivos } from '../utils/atletas';
 import type { NavTab } from '../App';
-import { Icon, ListRow, EmptyState } from './ui';
+import { Avatar, Icon, ListRow, EmptyState } from './ui';
 
 interface Props {
   onNavigateTab: (tab: NavTab) => void;
@@ -123,7 +123,7 @@ export default function CommandPalette({ onNavigateTab }: Props) {
                 <ListRow
                   key={a.userId}
                   onClick={() => goToAthlete(a)}
-                  leading={<img src={a.avatarUrl} alt="" loading="lazy" decoding="async" className="w-6 h-6 rounded-full object-cover flex-shrink-0" />}
+                  leading={<Avatar src={a.avatarUrl} name={a.displayName} className="w-6 h-6 rounded-full object-cover flex-shrink-0" />}
                   title={a.displayName}
                   subtitle={a.email}
                 />

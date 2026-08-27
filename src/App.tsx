@@ -25,6 +25,7 @@ import { Icon } from './components/ui';
 import { OPEN_AI_PANEL_EVENT } from './ai/events';
 import { limpiarDatosDeSesion } from './utils/cierreDeSesion';
 import { iniciarBotonAtras, fijarManejadorDeRuta, salirDeLaApp } from './services/botonAtras';
+import { Avatar } from './components/ui';
 
 // Cada pantalla de abajo solo se monta tras elegir un tab, y ningún atleta
 // necesita el código de las pantallas de coach (ni viceversa) — son ~8800 y
@@ -845,7 +846,7 @@ function AppContent() {
             <NotificationBell recipientEmail={profile.email} onNavigate={goToTab} mutedTypes={mutedNotifTypes} />
             <span className="w-px h-6 bg-white/7"></span>
             <div className="flex items-center gap-2 cursor-pointer" onClick={() => goToTab('profile')}>
-              <img src={profile.avatarUrl} alt="Avatar" className="w-7 h-7 rounded-full object-cover border border-accent/40" />
+              <Avatar src={profile.avatarUrl} name={profile.displayName} alt="Avatar" className="w-7 h-7 rounded-full object-cover border border-accent/40" />
               <span className="text-label font-sans font-medium text-white">{profile.displayName}</span>
             </div>
           </div>
@@ -896,7 +897,7 @@ function AppContent() {
           )}
           <NotificationBell recipientEmail={profile.email} onNavigate={goToTab} mutedTypes={mutedNotifTypes} />
           <div className="w-6 h-6 rounded-full overflow-hidden border border-accent/40" onClick={() => goToTab('profile')}>
-            <img src={profile.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+            <Avatar src={profile.avatarUrl} name={profile.displayName} alt="Avatar" className="w-full h-full object-cover" />
           </div>
         </div>
       </header>

@@ -8,7 +8,7 @@ import {
 import { ZONE_ORDER, ZONE_LABEL } from '../utils/cardioZones';
 import { grantXp } from '../utils/xp';
 import { addRoadmapMilestone } from '../utils/roadmapMilestones';
-import { Skeleton } from './ui';
+import { Avatar, Skeleton } from './ui';
 import { atletasActivos } from '../utils/atletas';
 import { Button, Tabs, ListRow } from './ui';
 import CardioPrescriptionForm from './cardio/CardioPrescriptionForm';
@@ -63,7 +63,7 @@ function ZonesTab({ coachEmail }: { coachEmail: string }) {
           key={a.email}
           onClick={() => setSelected(a.email)}
           className="rounded-control border bg-raised border-hairline"
-          leading={<img src={a.avatarUrl} alt="" loading="lazy" decoding="async" className="w-7 h-7 rounded-full object-cover flex-shrink-0" />}
+          leading={<Avatar src={a.avatarUrl} name={a.displayName} className="w-7 h-7 rounded-full object-cover flex-shrink-0" />}
           title={a.displayName}
           chevron
         />

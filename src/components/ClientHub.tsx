@@ -54,7 +54,7 @@ const ClientReviewsPanel = lazy(() => import('./ClientReviewsPanel'));
 const ClientSetupPanel = lazy(() => import('./ClientSetupPanel'));
 import PendingTray from './PendingTray';
 import ClientAlertsBar from './ClientAlertsBar';
-import { Badge, Tabs, Skeleton, Sheet, SearchField, ListRow, Icon } from './ui';
+import { Avatar, Badge, Tabs, Skeleton, Sheet, SearchField, ListRow, Icon } from './ui';
 
 export type HubTab =
   | 'setup' | 'revisiones'
@@ -501,7 +501,7 @@ export default function ClientHub({
           >
             <span className="material-symbols-outlined text-body-s">swap_horiz</span>
           </button>
-          <img src={athlete.avatarUrl} alt="" className="w-11 h-11 rounded-full border border-accent/30 object-cover" />
+          <Avatar src={athlete.avatarUrl} name={athlete.displayName} className="w-11 h-11 rounded-full border border-accent/30 object-cover" />
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <h1 className="font-display font-black uppercase text-ink text-title-l leading-tight tracking-tight">{athlete.displayName}</h1>
@@ -745,7 +745,7 @@ export default function ClientHub({
                   key={a.userId}
                   title={a.displayName}
                   subtitle={a.email}
-                  leading={<img src={a.avatarUrl} alt="" loading="lazy" decoding="async" className="w-9 h-9 rounded-full object-cover flex-shrink-0" />}
+                  leading={<Avatar src={a.avatarUrl} name={a.displayName} className="w-9 h-9 rounded-full object-cover flex-shrink-0" />}
                   trailing={<Icon name="chevron_right" size="m" className="text-ink-4" />}
                   onClick={() => { setSwitcherOpen(false); navigate(`/clients/${encodeURIComponent(a.email)}`); }}
                 />

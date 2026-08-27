@@ -12,6 +12,8 @@
 
 export { default as Skeleton, ScreenSkeleton } from './Skeleton';
 
+export { default as Avatar } from './Avatar';
+
 export { default as Icon } from './Icon';
 export type { IconSize } from './Icon';
 

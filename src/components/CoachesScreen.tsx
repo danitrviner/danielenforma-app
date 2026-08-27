@@ -8,7 +8,7 @@ import { roundQuarter } from '../utils/exchangeHelpers';
 import QuestionnaireManagerScreen from './QuestionnaireManagerScreen';
 import { useToast } from '../hooks/useToast';
 import { mensajeDeErrorFirestore } from '../utils/erroresFirestore';
-import { Skeleton } from './ui';
+import { Avatar, Skeleton } from './ui';
 import { Tabs } from './ui';
 import AdminMaquinasTab from '../features/gimnasio/AdminMaquinasTab';
 
@@ -603,7 +603,7 @@ export default function CoachesScreen({ currentUserId, currentUserEmail }: Props
               return (
                 <div key={user.userId}
                   className={`bg-surface border rounded-surface p-4 flex items-center gap-4 ${isOwner ? 'border-accent/30' : 'border-hairline'}`}>
-                  <img src={user.avatarUrl} alt={user.displayName} loading="lazy" decoding="async"
+                  <Avatar src={user.avatarUrl} name={user.displayName}
                     className="w-10 h-10 rounded-full object-cover border border-hairline flex-shrink-0" />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">

@@ -1,5 +1,6 @@
 import React from 'react';
 import {
+  Avatar,
   Badge, Banner, Button, Card, Chip, CollapsingHeader, Dialog, EffortScale, EmptyState, Icon, Input,
   ListRow, PageHeader, Pager, ProgressBar, RingSeal, RirScale, SearchField, SegmentedControl, Select, Sheet,
   Skeleton, Sparkline, Stepper, SwipeRow, Tabs,
@@ -750,6 +751,35 @@ export default function Showcase() {
           {vecesCrearRutina > 0
             ? `Botón de acción pulsado ${vecesCrearRutina} ${vecesCrearRutina === 1 ? 'vez' : 'veces'}.`
             : 'El icono va en ink-3, nunca en accent: un estado vacío no es una llamada a la acción dorada por sí solo — si tiene acción, la lleva el botón, no el icono.'}
+        </p>
+      </Seccion>
+
+      <Seccion
+        titulo="Avatar"
+        resumen="Foto de perfil con iniciales de reserva. Los perfiles nacen con avatarUrl vacío, y un <img src=&quot;&quot;> pinta el icono de imagen rota: aquí sale la inicial."
+      >
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <Muestra pie="Con foto">
+            <Avatar src="/atlas-logo.png" name="Dani Briz" className="h-10 w-10 rounded-full object-cover border border-hairline" />
+          </Muestra>
+          <Muestra pie="Sin foto">
+            <Avatar name="Marcos García" className="h-10 w-10 rounded-full" />
+          </Muestra>
+          <Muestra pie="URL rota">
+            <Avatar src="https://s3.eu-west-3.amazonaws.com/storage.get.com/no.jpg" name="Ana López" className="h-10 w-10 rounded-full" />
+          </Muestra>
+          <Muestra pie="Sin nombre">
+            <Avatar className="h-10 w-10 rounded-full" />
+          </Muestra>
+        </div>
+        <div className="flex items-end gap-3">
+          <Avatar name="Dani Briz" className="h-6 w-6 rounded-full" />
+          <Avatar name="Dani Briz" className="h-9 w-9 rounded-full" />
+          <Avatar name="Dani Briz" className="h-14 w-14 rounded-full" />
+        </div>
+        <p className="font-sans text-body-s text-ink-3">
+          Las iniciales van en SVG con viewBox, así que escalan solas con el tamaño que traiga
+          className — de 24 a 56 px sin tocar la tipografía.
         </p>
       </Seccion>
 

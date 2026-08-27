@@ -9,7 +9,7 @@ import {
 import { atletasActivos } from '../utils/atletas';
 import { getWeekRange, getWeekStart } from '../utils/trainingWeek';
 import { deriveReviewEvents, deriveVolumeIncreaseEvents, deriveKcalChangeEvents, deriveDeloadEvents, weekAdherence } from '../utils/planEvents';
-import { PageHeader, EmptyState, Skeleton, Icon, Badge, BadgeTone } from './ui';
+import { Avatar, PageHeader, EmptyState, Skeleton, Icon, Badge, BadgeTone } from './ui';
 
 // Pantalla 5 (Bloque H) — "Esta semana", fuera del perfil de un cliente: una
 // fila por atleta con qué le toca en los próximos 7 días. Es la vista de
@@ -178,7 +178,7 @@ export default function CoachWeekScreen({ coachId: _coachId }: Props) {
               onClick={() => navigate(`/clients/${encodeURIComponent(athlete.email)}/roadmap`)}
               className="w-full flex items-center gap-3 bg-surface border border-hairline rounded-surface p-4 text-left hover:border-accent/30 transition-all"
             >
-              <img src={athlete.avatarUrl} alt={athlete.displayName} loading="lazy" decoding="async" className="w-10 h-10 rounded-full object-cover border border-hairline flex-shrink-0" />
+              <Avatar src={athlete.avatarUrl} name={athlete.displayName} className="w-10 h-10 rounded-full object-cover border border-hairline flex-shrink-0" />
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 flex-wrap">
                   <p className="font-sans font-bold text-body-s text-white truncate">{athlete.displayName}</p>

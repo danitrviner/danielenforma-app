@@ -40,7 +40,7 @@ import { useToast } from '../hooks/useToast';
 import { useAthleteProfileSignals } from '../hooks/useAthleteProfileSignals';
 import { useAthleteWeight } from '../hooks/useAthleteWeight';
 import { useConfirm } from '../hooks/useConfirm';
-import { Skeleton } from './ui';
+import { Avatar, Skeleton } from './ui';
 import { EmptyState, Dialog, Input, Icon, Tabs, TabItem, Sheet, Pager } from './ui';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -1965,7 +1965,7 @@ export default function MesocycleManager({
               ))}
             </select>
             {selectedAthlete && (
-              <img src={selectedAthlete.avatarUrl} alt="" className="w-8 h-8 rounded-full border border-hairline object-cover" />
+              <Avatar src={selectedAthlete.avatarUrl} name={selectedAthlete.displayName} className="w-8 h-8 rounded-full border border-hairline object-cover" />
             )}
           </div>
           {!selectedEmail && (
