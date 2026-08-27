@@ -122,6 +122,15 @@ const auth = Capacitor.isNativePlatform()
 // eso no basta con lanzarlo y olvidarse — se exporta esta promesa y `authReady`
 // (src/db/core.ts) la espera antes de dejar pasar nada a Firestore.
 //
+// ESTADO 27-08-2026: la variable NO está puesta en producción, a propósito.
+// App Check solo protege cuando se activa "Enforce", y eso no se puede hacer
+// hasta que la app nativa tenga sus propios proveedores (App Attest / Play
+// Integrity): reCAPTCHA no funciona dentro del WebView de Capacitor, así que
+// aplicarlo hoy dejaría sin datos a la app instalada. Mientras tanto cargar
+// reCAPTCHA costaba 330 KB por visita a cambio de cero protección. El registro
+// en la consola de Firebase (Enterprise) sigue hecho: para volver a activarlo
+// basta con devolver VITE_RECAPTCHA_SITE_KEY a las variables de Vercel.
+//
 // Sin site key resuelve al instante y no cuesta nada. Es el caso de hoy.
 export const appCheckListo: Promise<void> = (async () => {
   const siteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY as string | undefined;
