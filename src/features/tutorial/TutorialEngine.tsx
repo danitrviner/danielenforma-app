@@ -43,6 +43,11 @@ import type { NavTab } from '../../App';
    anterior que solo dejaba saltar el tour entero al repetirlo.
    ═══════════════════════════════════════════════════════════════════════════ */
 
+/* 27-08: tour desactivado por decisión de Dani ("no sale bien, que no salte
+   nunca"). Se deja todo el motor montado pero sin puerta de entrada: ni
+   arranque automático ni "Repetir el tour". Poner a false para reactivarlo. */
+const TOUR_DISABLED = true;
+
 interface TutorialEngineApi {
   markActionDone: (stepId: string) => void;
   restart: () => void;
@@ -74,6 +79,7 @@ export default function TutorialEngine({ profile, planVisible, currentTab, onNav
   // (reanuda en pasoAlcanzado, no solo arranca de cero — ver comentario de
   // cabecera).
   useEffect(() => {
+    if (TOUR_DISABLED) return;
     if (startedAutomatically.current) return;
     if (!planVisible || profile.tutorial?.completado) return;
     startedAutomatically.current = true;
@@ -112,7 +118,7 @@ export default function TutorialEngine({ profile, planVisible, currentTab, onNav
     markActionDone: (stepId: string) => {
       if (state.active && step.id === stepId) dispatch({ type: 'MARK_ACTION_DONE' });
     },
-    restart: () => dispatch({ type: 'RESTART' }),
+    restart: () => { if (!TOUR_DISABLED) dispatch({ type: 'RESTART' }); },
   };
 
   return (
