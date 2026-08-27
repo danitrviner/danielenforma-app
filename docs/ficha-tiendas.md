@@ -20,6 +20,12 @@ te expone a la directriz 2.1 en cuanto el revisor no encuentre por dónde regist
 | Descripción corta (Play) | 80 | `El plan que tu entrenador diseña para ti: entrenos, dieta y progreso real.` | 74 |
 | Palabras clave (App Store) | 100 | `entrenador,personal,fuerza,gimnasio,rutina,dieta,macros,progreso,pesas,coach,fitness` | 84 |
 
+**«En Forma» a secas está cogido** en la App Store (comprobado el 27-08: Apple lo rechaza al
+crear la app). Los nombres tienen que ser únicos en toda la tienda, pero la unicidad es sobre
+la cadena exacta, así que `En Forma · Entrenamiento` sí entra. No afecta al nombre bajo el
+icono del móvil, que sigue siendo **En Forma** (`CFBundleDisplayName` en el Info.plist) y no
+tiene que coincidir con el de la ficha.
+
 Sobre las palabras clave: sin espacios después de las comas (Apple los cuenta), sin repetir
 palabras que ya están en el nombre o el subtítulo (Apple ya indexa esas) y sin marcas ajenas,
 que es motivo de rechazo.
