@@ -4,100 +4,232 @@
       "collectionGroup": "recipes",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "ownerId", "order": "ASCENDING" },
-        { "fieldPath": "name",    "order": "ASCENDING" }
+        {
+          "fieldPath": "ownerId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "name",
+          "order": "ASCENDING"
+        }
       ]
     },
     {
       "collectionGroup": "recipes",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "ownerId",   "order": "ASCENDING" },
-        { "fieldPath": "categoria", "order": "ASCENDING" },
-        { "fieldPath": "name",      "order": "ASCENDING" }
+        {
+          "fieldPath": "ownerId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "categoria",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "name",
+          "order": "ASCENDING"
+        }
       ]
     },
     {
       "collectionGroup": "recipes",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "ownerId",     "order": "ASCENDING" },
-        { "fieldPath": "intakeTypes", "arrayConfig": "CONTAINS" },
-        { "fieldPath": "name",        "order": "ASCENDING" }
+        {
+          "fieldPath": "ownerId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "intakeTypes",
+          "arrayConfig": "CONTAINS"
+        },
+        {
+          "fieldPath": "name",
+          "order": "ASCENDING"
+        }
       ]
     },
     {
       "collectionGroup": "recipes",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "ownerId",     "order": "ASCENDING" },
-        { "fieldPath": "categoria",   "order": "ASCENDING" },
-        { "fieldPath": "intakeTypes", "arrayConfig": "CONTAINS" },
-        { "fieldPath": "name",        "order": "ASCENDING" }
+        {
+          "fieldPath": "ownerId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "categoria",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "intakeTypes",
+          "arrayConfig": "CONTAINS"
+        },
+        {
+          "fieldPath": "name",
+          "order": "ASCENDING"
+        }
       ]
     },
     {
       "collectionGroup": "coachReports",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "athleteId", "order": "ASCENDING" },
-        { "fieldPath": "createdAt", "order": "DESCENDING" }
+        {
+          "fieldPath": "athleteId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
       ]
     },
     {
       "collectionGroup": "coachReports",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "athleteId", "order": "ASCENDING" },
-        { "fieldPath": "status",    "order": "ASCENDING" },
-        { "fieldPath": "createdAt", "order": "DESCENDING" }
+        {
+          "fieldPath": "athleteId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
       ]
     },
-
-    { "collectionGroup": "crmServicios", "queryScope": "COLLECTION",
+    {
+      "collectionGroup": "crmServicios",
+      "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "clientId",    "order": "ASCENDING" },
-        { "fieldPath": "fechaInicio", "order": "DESCENDING" }
-      ] },
-
-    { "collectionGroup": "crmPagos", "queryScope": "COLLECTION",
+        {
+          "fieldPath": "clientId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "fechaInicio",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "crmPagos",
+      "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "clientId",     "order": "ASCENDING" },
-        { "fieldPath": "fechaEmision", "order": "DESCENDING" }
-      ] },
-    { "collectionGroup": "crmPagos", "queryScope": "COLLECTION",
+        {
+          "fieldPath": "clientId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "fechaEmision",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "crmPagos",
+      "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "estado",       "order": "ASCENDING" },
-        { "fieldPath": "fechaEmision", "order": "DESCENDING" }
-      ] },
-
-    { "collectionGroup": "crmSuscripciones", "queryScope": "COLLECTION",
+        {
+          "fieldPath": "estado",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "fechaEmision",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "crmSuscripciones",
+      "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "estado",       "order": "ASCENDING" },
-        { "fieldPath": "proximoCobro", "order": "ASCENDING" }
-      ] },
-    { "collectionGroup": "crmSuscripciones", "queryScope": "COLLECTION",
+        {
+          "fieldPath": "estado",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "proximoCobro",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "crmSuscripciones",
+      "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "clientId",     "order": "ASCENDING" },
-        { "fieldPath": "proximoCobro", "order": "ASCENDING" }
-      ] },
-
-    { "collectionGroup": "crmReuniones", "queryScope": "COLLECTION",
+        {
+          "fieldPath": "clientId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "proximoCobro",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "crmReuniones",
+      "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "realizada", "order": "ASCENDING" },
-        { "fieldPath": "fecha",     "order": "ASCENDING" }
-      ] },
-    { "collectionGroup": "crmReuniones", "queryScope": "COLLECTION",
+        {
+          "fieldPath": "realizada",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "fecha",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "crmReuniones",
+      "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "clientId", "order": "ASCENDING" },
-        { "fieldPath": "fecha",    "order": "ASCENDING" }
-      ] },
-
-    { "collectionGroup": "workoutLogs", "queryScope": "COLLECTION",
+        {
+          "fieldPath": "clientId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "fecha",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "workoutLogs",
+      "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "athleteId", "order": "ASCENDING" },
-        { "fieldPath": "date",      "order": "DESCENDING" }
-      ] }
+        {
+          "fieldPath": "athleteId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "date",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "workoutAssignments",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "athleteId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "date",
+          "order": "ASCENDING"
+        }
+      ]
+    }
   ],
   "fieldOverrides": []
 }

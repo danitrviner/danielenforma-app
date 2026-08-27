@@ -4,6 +4,7 @@ import {BrowserRouter} from 'react-router-dom';
 import {QueryClient} from '@tanstack/react-query';
 import {PersistQueryClientProvider} from '@tanstack/react-query-persist-client';
 import {createSyncStoragePersister} from '@tanstack/query-sync-storage-persister';
+import {CLAVE_CACHE_CONSULTAS, registrarClienteDeConsultas} from './cacheDeConsultas.ts';
 import App from './App.tsx';
 import ErrorBoundary from './components/ErrorBoundary.tsx';
 import {iniciarMonitorizacion} from './monitorizacion.ts';
@@ -73,8 +74,10 @@ const queryClient = new QueryClient({
    ═══════════════════════════════════════════════════════════════════════════ */
 const persister = createSyncStoragePersister({
   storage: window.localStorage,
-  key: 'enforma_query_cache_v1',
+  key: CLAVE_CACHE_CONSULTAS,
 });
+
+registrarClienteDeConsultas(queryClient);
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

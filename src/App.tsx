@@ -3,6 +3,7 @@ import { Routes, Route, Navigate, useNavigate, useLocation, useParams } from 're
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { App as CapacitorApp } from '@capacitor/app';
 import { onAuthStateChanged, signOut, auth, resumenLecturas, reiniciarContadorLecturas } from './firebase';
+import { asegurarCacheDeEstaCuenta } from './cacheDeConsultas';
 import { identificarUsuario, migaDePan } from './monitorizacion';
 import { UserProfile, WeightCheckIn, NotificationType } from './types';
 import { getOrCreateUserProfile, getCheckIns, getOnboarding, getWorkoutAssignmentsForAthlete, getGimnasio, updateUserProfile } from './dbService';
@@ -408,6 +409,9 @@ function AppContent() {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       try {
         if (user) {
+          // Antes de tocar nada: si la caché persistida es de otra cuenta, se
+          // tira. Va lo primero para que no llegue a pintarse un dato ajeno.
+          asegurarCacheDeEstaCuenta(user.uid);
           setCurrentUser(user);
           // Sin rol todavía (el perfil aún no ha cargado): se afina más abajo,
           // en el efecto que sigue a `profile`. Aquí importa sobre todo que
@@ -416,6 +420,7 @@ function AppContent() {
           identificarUsuario(user.email);
           await loadUserSession(user);
         } else {
+          asegurarCacheDeEstaCuenta(null);
           setCurrentUser(null);
           setProfile(null);
           setCheckins([]);
@@ -485,10 +490,13 @@ function AppContent() {
   // petición extra. Solo hace falta saber si hay ALGO asignado (el tutorial,
   // F3.12, arranca cuando el coach publica el plan), no la lista en sí.
   const athleteUserId = profile?.userId;
+  // Migración 24-08: `workoutAssignments` pasa de UID a email y durante el
+  // paso hacen falta las dos claves (ver db/clavesDeAtleta.ts).
+  const clavesAtleta = profile ? { uid: profile.userId, email: profile.email } : null;
   const { data: tutorialGateAssignments = [], isPending: cargandoPlanGate } = useQuery({
     queryKey: ['workoutAssignments', athleteUserId],
-    queryFn: () => getWorkoutAssignmentsForAthlete(athleteUserId!),
-    enabled: !!athleteUserId && !isCoach,
+    queryFn: () => getWorkoutAssignmentsForAthlete(clavesAtleta!),
+    enabled: !!clavesAtleta && !isCoach,
   });
   // 14-08 (tarea 8). El atleta terminaba el wizard y caía en una app vacía:
   // Rutinas, Academia y Nutrición sin nada que enseñar hasta que el coach

@@ -8,7 +8,7 @@ import { SYSTEM_EXERCISES } from '../data';
 import { combinarLogs } from './combinarLogs';
 import { normalizeMuscleGroups } from '../utils/normalizeMuscleGroups';
 import { slugify } from '../utils/maquinaId';
-import { exigeUid, exigeEmail } from './clavesDeAtleta';
+import { exigeEmail, clavesDelAtleta, type ClavesDeAtleta } from './clavesDeAtleta';
 import { leerCatalogo, marcarCatalogoCambiado } from './catalogoVersionado';
 
 // T14 (18-08): mismo patrón que idDeFoodItem — un ID determinista hace que
@@ -386,15 +386,20 @@ function saveLocalAssignments(assignments: WorkoutAssignment[]) {
  * única colección así (ver `clavesDeAtleta.ts`). Con un email la consulta
  * devolvería 0 asignaciones sin error, así que se comprueba antes.
  */
-export async function getWorkoutAssignments(athleteId?: string): Promise<WorkoutAssignment[]> {
-  if (athleteId) exigeUid(athleteId, 'getWorkoutAssignments');
-  if (forceLocalOnly) {
-    const all = getLocalAssignments();
-    return athleteId ? all.filter(a => a.athleteId === athleteId) : all;
-  }
+/**
+ * MIGRACIÓN UID→EMAIL (24-08). Pide las DOS claves del atleta y filtra con un
+ * `in` de dos valores, así que devuelve lo mismo tanto si el documento ya se
+ * migró (email) como si no (uid). Es lo que permite desplegar el código y
+ * correr la migración en cualquier orden, sin una ventana en la que el atleta
+ * no vea sus sesiones. Al terminar: dejar solo `claves.email`.
+ */
+export async function getWorkoutAssignments(claves?: ClavesDeAtleta): Promise<WorkoutAssignment[]> {
+  const suyas = (a: WorkoutAssignment) =>
+    !claves || a.athleteId === claves.email || a.athleteId === claves.uid;
+  if (forceLocalOnly) return getLocalAssignments().filter(suyas);
   try {
     const colRef = collection(db, 'workoutAssignments');
-    const q = athleteId ? query(colRef, where('athleteId', '==', athleteId)) : colRef;
+    const q = claves ? query(colRef, where('athleteId', 'in', clavesDelAtleta(claves))) : colRef;
     const snap = await getDocs(q);
     const assignments = snap.docs.map(d => ({ id: d.id, ...d.data() } as WorkoutAssignment));
     // Merge into local cache
@@ -404,16 +409,15 @@ export async function getWorkoutAssignments(athleteId?: string): Promise<Workout
   } catch (err) {
     console.warn('getWorkoutAssignments Firestore failed, using local:', err);
     setLocalBypassMode(true, err);
-    const all = getLocalAssignments();
-    return athleteId ? all.filter(a => a.athleteId === athleteId) : all;
+    return getLocalAssignments().filter(suyas);
   }
 }
 
-// Strict athlete query by UID — throws on Firestore failure (no local fallback).
-// Firestore rule requires athleteId == request.auth.uid, so the where clause is mandatory.
-export async function getWorkoutAssignmentsForAthlete(uid: string): Promise<WorkoutAssignment[]> {
-  exigeUid(uid, 'getWorkoutAssignmentsForAthlete');
-  const q = query(collection(db, 'workoutAssignments'), where('athleteId', '==', uid));
+// Strict athlete query — throws on Firestore failure (no local fallback).
+// La regla exige que athleteId sea el email (o el uid, mientras dure la
+// migración), así que el where es obligatorio: sin él la query se deniega entera.
+export async function getWorkoutAssignmentsForAthlete(claves: ClavesDeAtleta): Promise<WorkoutAssignment[]> {
+  const q = query(collection(db, 'workoutAssignments'), where('athleteId', 'in', clavesDelAtleta(claves)));
   const snap = await getDocs(q);
   const assignments = snap.docs.map(d => ({ id: d.id, ...d.data() } as WorkoutAssignment));
   return assignments.sort((a, b) => a.date.localeCompare(b.date));
@@ -449,35 +453,56 @@ export async function getWorkoutAssignmentsByMesocycleIds(mesocycleIds: string[]
 // Asignaciones de un lote de atletas por UID — para CoachWeekScreen (antes,
 // una consulta por atleta con getWorkoutAssignments). Mismo troceo de 30 que
 // el resto de consultas 'in'.
-export async function getWorkoutAssignmentsForAthletes(athleteUids: string[]): Promise<WorkoutAssignment[]> {
-  const unicos = Array.from(new Set(athleteUids));
+export async function getWorkoutAssignmentsForAthletes(
+  atletas: ClavesDeAtleta[],
+  /** Solo asignaciones con `date >= desde` (YYYY-MM-DD). Sin esto se trae el
+   *  historial ENTERO de cada atleta, que crece sin techo: medido en el
+   *  emulador con 20 atletas, 1.365 documentos a los seis meses y 5.460 a los
+   *  dos años para pintar una semana, que son 60. Necesita el índice compuesto
+   *  workoutAssignments (athleteId ASC, date ASC) de firestore.indexes.json. */
+  desde?: string,
+): Promise<WorkoutAssignment[]> {
+  // Migración 24-08: se piden las dos claves de cada atleta (email nuevo, uid
+  // antiguo) porque durante el paso conviven documentos con una y con otra.
+  // El `in` de Firestore admite 30 valores, así que son 15 atletas por tanda.
+  const unicos = Array.from(new Set(atletas.flatMap(clavesDelAtleta)));
   if (unicos.length === 0) return [];
   if (forceLocalOnly) {
-    return getLocalAssignments().filter(a => unicos.includes(a.athleteId));
+    const propias = getLocalAssignments().filter(a => unicos.includes(a.athleteId));
+    return desde ? propias.filter(a => a.date >= desde) : propias;
   }
   try {
     const results: WorkoutAssignment[] = [];
     const CHUNK = 30;
     for (let i = 0; i < unicos.length; i += CHUNK) {
       const chunk = unicos.slice(i, i + CHUNK);
-      const snap = await getDocs(query(collection(db, 'workoutAssignments'), where('athleteId', 'in', chunk)));
+      let q = query(collection(db, 'workoutAssignments'), where('athleteId', 'in', chunk));
+      if (desde) q = query(q, where('date', '>=', desde));
+      const snap = await getDocs(q);
       snap.docs.forEach(d => results.push({ id: d.id, ...d.data() } as WorkoutAssignment));
     }
-    const local = getLocalAssignments().filter(a => !unicos.includes(a.athleteId));
-    saveLocalAssignments([...local, ...results]);
+    // Una lectura con ventana NO puede tocar la copia local: sobrescribiría el
+    // espejo completo del dispositivo con un trozo, y todo lo que quedara fuera
+    // de la ventana desaparecería de la vista sin conexión. Mismo motivo, y
+    // mismo cuidado, que en `getWorkoutLogs`.
+    if (!desde) {
+      const local = getLocalAssignments().filter(a => !unicos.includes(a.athleteId));
+      saveLocalAssignments([...local, ...results]);
+    }
     return results;
   } catch (err) {
     console.warn('getWorkoutAssignmentsForAthletes Firestore failed, using local:', err);
     setLocalBypassMode(true, err);
-    return getLocalAssignments().filter(a => unicos.includes(a.athleteId));
+    const propias = getLocalAssignments().filter(a => unicos.includes(a.athleteId));
+    return desde ? propias.filter(a => a.date >= desde) : propias;
   }
 }
 
 export async function createWorkoutAssignment(data: Omit<WorkoutAssignment, 'id'>): Promise<WorkoutAssignment> {
-  // Escribir con email deja la asignación huérfana PARA SIEMPRE: la regla exige
-  // `athleteId == request.auth.uid`, así que el atleta nunca la verá ni podrá
-  // marcarla, y nada lo avisa. Peor que un error de lectura.
-  exigeUid(data.athleteId, 'createWorkoutAssignment');
+  // Desde la migración 24-08 se escribe SIEMPRE el email: es la clave a la que
+  // va toda la colección y la que usan las otras ~30. Escribir la equivocada
+  // deja la asignación huérfana para siempre (el atleta no la ve ni la marca).
+  exigeEmail(data.athleteId, 'createWorkoutAssignment');
   if (forceLocalOnly) {
     const newA: WorkoutAssignment = { ...data, id: `local_a_${Date.now()}` };
     const list = getLocalAssignments();
@@ -928,7 +953,7 @@ export async function createWorkoutStrict(data: Omit<Workout, 'id'>): Promise<Wo
 }
 
 export async function createWorkoutAssignmentStrict(data: Omit<WorkoutAssignment, 'id'>): Promise<WorkoutAssignment> {
-  exigeUid(data.athleteId, 'createWorkoutAssignmentStrict');
+  exigeEmail(data.athleteId, 'createWorkoutAssignmentStrict');
   const ref = await addDoc(collection(db, 'workoutAssignments'), stripUndefined(data));
   const assignment: WorkoutAssignment = { ...data, id: ref.id };
   const list = getLocalAssignments();

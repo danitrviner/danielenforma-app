@@ -41,7 +41,11 @@ export default function CoachWeekScreen({ coachId: _coachId }: Props) {
   });
   const athletes = React.useMemo(() => atletasActivos(allProfiles).filter(p => p.role !== 'coach'), [allProfiles]);
   const athleteEmails = React.useMemo(() => athletes.map(a => a.email), [athletes]);
+  // Migración 24-08: las asignaciones necesitan las DOS claves del atleta
+  // mientras la colección pasa de UID a email (db/clavesDeAtleta.ts).
   const athleteUids = React.useMemo(() => athletes.map(a => a.userId), [athletes]);
+  const clavesAtletas = React.useMemo(
+    () => athletes.map(a => ({ uid: a.userId, email: a.email })), [athletes]);
   const hayAtletas = athletes.length > 0;
 
   const { data: exercises = [], isPending: loadingExercises } = useQuery({ queryKey: ['exercises'], queryFn: getExercises });
@@ -59,8 +63,12 @@ export default function CoachWeekScreen({ coachId: _coachId }: Props) {
     enabled: hayAtletas,
   });
   const { data: assignmentsFlat = [], isPending: loadingAssignmentsQuery } = useQuery({
-    queryKey: ['workoutAssignmentsForAthletes', athleteUids],
-    queryFn: () => getWorkoutAssignmentsForAthletes(athleteUids),
+    // Solo la semana que se pinta. Lo único que se hace con estas asignaciones
+    // es `weekAdherence`, que ya filtra a [weekStart, weekEnd) — pedirlas
+    // acotadas es equivalente, y evita traerse el historial entero de cada
+    // atleta: 1.365 documentos a los seis meses para mostrar 60, y subiendo.
+    queryKey: ['workoutAssignmentsForAthletes', athleteUids, weekStart],
+    queryFn: () => getWorkoutAssignmentsForAthletes(clavesAtletas, weekStart),
     enabled: hayAtletas,
   });
   const { data: nutritionProgramsFlat = [], isPending: loadingNutrition } = useQuery({
