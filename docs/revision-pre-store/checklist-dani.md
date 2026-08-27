@@ -1,5 +1,12 @@
 # Lo que solo puede hacer Dani para publicar en las tiendas
 
+> **⚠️ Este documento está superado (27-08-2026).**
+> Lo que queda de verdad está en [PENDIENTE.md](PENDIENTE.md), repasado contra el estado
+> real: Firebase por API, Vercel, el repo y un build de Android que ahora sí compila. Aquí
+> se conserva el detalle y el porqué de cada punto, pero da por pendientes cosas ya hechas
+> y dice al menos una que hoy es falsa (§2.2, «NO marcar HealthKit»: la app sí lo usa).
+
+
 Estado a **13 ago 2026 (tarde)**, rama `ds/f3-experiencia`. Todo lo de abajo está fuera del alcance de
 Claude: o exige una sesión iniciada en una consola, o es una contraseña, o es un dispositivo
 físico, o es una decisión tuya. El detalle técnico de cada punto está en
