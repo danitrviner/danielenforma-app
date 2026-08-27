@@ -4,6 +4,7 @@ import { UserProfile, ProgressPhoto, PhotoView } from '../types';
 import { getProgressPhotos, uploadProgressPhoto, deleteProgressPhoto } from '../dbService';
 import { useToast } from '../hooks/useToast';
 import Coachmark from './Coachmark';
+import PhotoCompareCurtain from './progress/PhotoCompareCurtain';
 import { Skeleton } from './ui';
 import { Icon, Badge, EmptyState } from './ui';
 
@@ -34,6 +35,10 @@ function fmtDate(d: string): string {
   return new Date(d + 'T12:00:00').toLocaleDateString('es-ES', { day: '2-digit', month: 'short' });
 }
 
+function fmtDateLong(d: string): string {
+  return new Date(d + 'T12:00:00').toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' });
+}
+
 interface Props {
   profile: UserProfile;
 }
@@ -51,22 +56,24 @@ export default function PhotosScreen({ profile }: Props) {
     queryFn: () => getProgressPhotos(profile.email),
   });
   const [uploadingView, setUploadingView] = useState<PhotoView | null>(null);
-  const [deletingView, setDeletingView] = useState<PhotoView | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState('');
+  // Ángulo cuyo histórico está abierto en el panel — null = panel cerrado.
+  const [historyView, setHistoryView] = useState<PhotoView | null>(null);
+  // Ids seleccionados para comparar dentro del histórico (máx. 2).
+  const [compareIds, setCompareIds] = useState<string[]>([]);
   // Una URL de Storage que falla al cargar (permisos, red) no debe dejar el
   // alt-text roto ocupando la fila — se cae al icono placeholder igual que si
   // no hubiera foto.
   const [brokenPhotoIds, setBrokenPhotoIds] = useState<Set<string>>(new Set());
   const fileInputRefs = useRef<Partial<Record<PhotoView, HTMLInputElement | null>>>({});
 
-  // Última foto por ángulo — es lo único que muestra la fila (handoff §7:
-  // estado actual por ángulo, no el histórico completo).
-  const latestByView = useMemo(() => {
-    const map: Partial<Record<PhotoView, ProgressPhoto>> = {};
-    for (const p of photos) {
-      const cur = map[p.view];
-      if (!cur || p.date > cur.date) map[p.view] = p;
-    }
+  // Todas las fotos por ángulo, de la más reciente a la más antigua. El
+  // histórico completo vive aquí; la fila solo enseña `[0]` (estado actual).
+  const photosByView = useMemo(() => {
+    const map: Record<PhotoView, ProgressPhoto[]> = { front: [], side: [], back: [] };
+    for (const p of photos) map[p.view].push(p);
+    for (const v of VIEWS) map[v].sort((a, b) => b.date.localeCompare(a.date));
     return map;
   }, [photos]);
 
@@ -92,16 +99,30 @@ export default function PhotosScreen({ profile }: Props) {
   };
 
   const handleDelete = async (photo: ProgressPhoto) => {
-    setDeletingView(photo.view);
+    setDeletingId(photo.id);
     try {
       await deleteProgressPhoto(photo);
       queryClient.setQueryData<ProgressPhoto[]>(photosKey, prev => prev?.filter(p => p.id !== photo.id));
+      setCompareIds(prev => prev.filter(id => id !== photo.id));
     } catch (err) {
       console.error('Delete failed:', err);
       showToast('No se pudo eliminar la foto.');
     } finally {
-      setDeletingView(null);
+      setDeletingId(null);
     }
+  };
+
+  const openHistory = (view: PhotoView) => {
+    setCompareIds([]);
+    setHistoryView(view);
+  };
+
+  const toggleCompare = (id: string) => {
+    setCompareIds(prev => {
+      if (prev.includes(id)) return prev.filter(x => x !== id);
+      if (prev.length >= 2) return [prev[1], id];
+      return [...prev, id];
+    });
   };
 
   if (loading) {
@@ -131,6 +152,12 @@ export default function PhotosScreen({ profile }: Props) {
     );
   }
 
+  const historyPhotos = historyView ? photosByView[historyView] : [];
+  const comparePair = compareIds
+    .map(id => historyPhotos.find(p => p.id === id))
+    .filter((p): p is ProgressPhoto => !!p)
+    .sort((a, b) => a.date.localeCompare(b.date));
+
   return (
     <div className="space-y-3">
       <Coachmark
@@ -140,18 +167,23 @@ export default function PhotosScreen({ profile }: Props) {
         text="Sube una foto por cada ángulo — es la forma más clara de ver tu progreso real, más allá del peso."
       />
 
-      {/* Una fila por ángulo (handoff §7) — icono placeholder, badge ACTUAL,
-          fecha de la última actualización, subir/borrar. */}
+      {/* Una fila por ángulo (handoff §7) — miniatura de la última, badge ACTUAL,
+          fecha, y acceso al histórico completo. Nada se sobrescribe: cada fecha
+          es una foto nueva que se guarda aparte. */}
       <div className="flex flex-col gap-2.5">
         {VIEWS.map(view => {
-          const photo = latestByView[view];
+          const all = photosByView[view];
+          const photo = all[0];
           const isUploading = uploadingView === view;
-          const isDeleting = deletingView === view;
           return (
             <div key={view} className="bg-surface border border-hairline rounded-field p-3 flex items-center gap-3">
-              <div
-                className="w-[50px] h-[66px] rounded-control shrink-0 flex items-center justify-center overflow-hidden"
+              <button
+                type="button"
+                onClick={() => photo && openHistory(view)}
+                disabled={!photo}
+                className="w-[50px] h-[66px] rounded-control shrink-0 flex items-center justify-center overflow-hidden disabled:cursor-default"
                 style={{ backgroundImage: 'repeating-linear-gradient(45deg, rgba(255,255,255,.05) 0 6px, rgba(255,255,255,.015) 6px 12px)' }}
+                aria-label={photo ? `Ver histórico de ${VIEW_LABELS[view]}` : undefined}
               >
                 {photo && !brokenPhotoIds.has(photo.id) ? (
                   <img
@@ -165,7 +197,7 @@ export default function PhotosScreen({ profile }: Props) {
                 ) : (
                   <Icon name={VIEW_ICONS[view]} size="m" className="text-ink-4" />
                 )}
-              </div>
+              </button>
 
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1.5">
@@ -175,6 +207,16 @@ export default function PhotosScreen({ profile }: Props) {
                 <p className="font-mono text-caption text-ink-2 mt-1">
                   {photo ? `Actualizada ${fmtDate(photo.date)}` : 'Sin foto todavía'}
                 </p>
+                {all.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => openHistory(view)}
+                    className="mt-1 inline-flex items-center gap-1 font-sans text-caption text-accent"
+                  >
+                    <Icon name="history" size="s" />
+                    Ver {all.length} fotos
+                  </button>
+                )}
               </div>
 
               <button
@@ -192,17 +234,6 @@ export default function PhotosScreen({ profile }: Props) {
                 className="hidden"
                 onChange={e => handleFileChange(view, e)}
               />
-
-              {photo && (
-                <button
-                  onClick={() => handleDelete(photo)}
-                  disabled={isDeleting}
-                  className="text-ink-3 hover:text-danger transition-colors shrink-0 disabled:opacity-40"
-                  title="Eliminar"
-                >
-                  <Icon name={isDeleting ? 'progress_activity' : 'delete'} size="m" className={isDeleting ? 'animate-spin' : ''} />
-                </button>
-              )}
             </div>
           );
         })}
@@ -210,6 +241,102 @@ export default function PhotosScreen({ profile }: Props) {
 
       {uploadError && (
         <p className="font-sans text-label text-danger">{uploadError}</p>
+      )}
+
+      {historyView && (
+        <div
+          className="fixed inset-0 z-50 bg-bg/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4"
+          onClick={() => setHistoryView(null)}
+        >
+          <div
+            className="bg-surface border border-hairline rounded-t-surface sm:rounded-surface w-full sm:max-w-md max-h-[85vh] flex flex-col"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-4 py-3 border-b border-hairline">
+              <div>
+                <p className="font-sans font-bold text-body-s text-white">{VIEW_LABELS[historyView]}</p>
+                <p className="font-mono text-caption text-ink-2 mt-0.5">
+                  {historyPhotos.length} {historyPhotos.length === 1 ? 'foto guardada' : 'fotos guardadas'}
+                </p>
+              </div>
+              <button
+                onClick={() => setHistoryView(null)}
+                aria-label="Cerrar"
+                className="text-ink-3 hover:text-white -m-1 p-1"
+              >
+                <Icon name="close" size="m" />
+              </button>
+            </div>
+
+            {comparePair.length === 2 && (
+              <div className="p-4 border-b border-hairline">
+                <PhotoCompareCurtain
+                  antes={{ url: comparePair[0].url, date: comparePair[0].date }}
+                  ahora={{ url: comparePair[1].url, date: comparePair[1].date }}
+                  height={320}
+                />
+                <p className="font-sans text-caption text-ink-2 mt-2 text-center">
+                  Arrastra para comparar · toca una foto para cambiar la selección
+                </p>
+              </div>
+            )}
+
+            <div className="overflow-y-auto p-4 space-y-2">
+              {historyPhotos.length >= 2 && comparePair.length < 2 && (
+                <p className="font-sans text-caption text-ink-2">
+                  Toca dos fotos para compararlas lado a lado.
+                </p>
+              )}
+              {historyPhotos.map(p => {
+                const selected = compareIds.includes(p.id);
+                const isDeleting = deletingId === p.id;
+                return (
+                  <div
+                    key={p.id}
+                    className={`flex items-center gap-3 rounded-field border p-2 transition-colors ${selected ? 'border-accent bg-accent/8' : 'border-hairline'}`}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => toggleCompare(p.id)}
+                      className="w-[46px] h-[60px] rounded-control shrink-0 overflow-hidden bg-inset"
+                    >
+                      {brokenPhotoIds.has(p.id) ? (
+                        <Icon name={VIEW_ICONS[historyView]} size="m" className="text-ink-4" />
+                      ) : (
+                        <img
+                          src={p.url}
+                          alt={fmtDate(p.date)}
+                          loading="lazy"
+                          className="w-full h-full object-cover object-top"
+                          onError={() => setBrokenPhotoIds(prev => new Set(prev).add(p.id))}
+                        />
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => toggleCompare(p.id)}
+                      className="min-w-0 flex-1 text-left"
+                    >
+                      <p className="font-sans text-body-s text-white capitalize">{fmtDateLong(p.date)}</p>
+                      <p className="font-mono text-caption text-ink-2 mt-0.5">
+                        {selected ? 'Seleccionada para comparar' : 'Toca para comparar'}
+                      </p>
+                    </button>
+                    <button
+                      onClick={() => handleDelete(p)}
+                      disabled={isDeleting}
+                      className="text-ink-3 hover:text-danger transition-colors shrink-0 disabled:opacity-40 -m-1 p-1"
+                      title="Eliminar esta foto"
+                      aria-label={`Eliminar foto del ${fmtDate(p.date)}`}
+                    >
+                      <Icon name={isDeleting ? 'progress_activity' : 'delete'} size="m" className={isDeleting ? 'animate-spin' : ''} />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
