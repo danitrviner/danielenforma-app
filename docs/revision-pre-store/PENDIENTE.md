@@ -30,10 +30,8 @@ arrastra cuatro capas de «Actualización N» y da por pendiente cosas ya hechas
 
 - [ ] **Notas del revisor y credenciales**: texto listo para pegar en
       [notas-para-revision.md](../notas-para-revision.md).
-- [ ] **Capturas.** iPhone 6,9" (1320×2868), 5 imágenes. Y **de iPad 13" también**, porque el
-      proyecto declara `TARGETED_DEVICE_FAMILY = "1,2"`. Si no quieres el trabajo de iPad en la
-      v1, ponerlo a `"1"` son cinco minutos y te ahorras capturas y QA de tablet — dilo y lo
-      cambio.
+- [ ] **Capturas.** iPhone 6,9" (1320×2868), 5 imágenes. **Solo iPhone**: la v1 ya no se
+      distribuye a iPad (decidido el 27-08), así que no hacen falta las de 13".
 - [ ] **App Privacy (Apple) y Data safety (Play)**: datos de salud, cifrado en tránsito,
       borrado de cuenta a petición, y que los datos de salud **se comparten con un tercero**
       (Anthropic) cuando el entrenador usa el análisis con IA.
@@ -79,7 +77,6 @@ arrastra cuatro capas de «Actualización N» y da por pendiente cosas ya hechas
 
 ## 5 · Decisiones que siguen abiertas (ninguna bloquea)
 
-- **iPad sí o no** en la v1 (ver capturas, arriba).
 - **Dominio público definitivo.** Hoy todo apunta a `en-forma-ivory.vercel.app`, incluidas las
   páginas legales. Cambiarlo después obliga a tocar las dos fichas de tienda.
 - **DPA de Anthropic** aceptado en la consola de tu cuenta de API, para que lo que dice la
