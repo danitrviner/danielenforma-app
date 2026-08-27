@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import ExerciseVideoPlayer from './ExerciseVideoPlayer';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Exercise, MuscleGroup, MUSCLE_ORDER, MUSCLE_LABELS } from '../types';
 import { getExercises, createExercise, updateExercise, deleteExercise, seedExercisesIfEmpty } from '../dbService';
@@ -120,6 +121,10 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
   const [form, setForm]                         = useState<Omit<Exercise, 'id'>>(EMPTY_FORM);
   const [isSaving, setIsSaving]                 = useState(false);
   const [deleteConfirm, setDeleteConfirm]       = useState<string | null>(null);
+  // Vídeo desplegado dentro de la tabla. Antes «Ver video» era un enlace a
+  // YouTube que sacaba al coach fuera de la app; ahora se ve aquí, con el
+  // mismo reproductor y control de velocidad que usa el atleta.
+  const [videoAbierto, setVideoAbierto]         = useState<string | null>(null);
   const [successMsg, setSuccessMsg]             = useState('');
   const [showTriage, setShowTriage]             = useState(false);
 
@@ -376,7 +381,8 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                 </thead>
                 <tbody>
                   {filtered.map((ex, i) => (
-                    <tr key={ex.id} className={`border-b border-hairline hover:bg-raised transition-colors ${i % 2 === 0 ? '' : 'bg-bg'}`}>
+                    <React.Fragment key={ex.id}>
+                    <tr className={`border-b border-hairline hover:bg-raised transition-colors ${i % 2 === 0 ? '' : 'bg-bg'}`}>
                       <td className="p-4 pl-6">
                         <div className="flex items-center gap-3">
                           {ex.imageUrl ? (
@@ -389,10 +395,15 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                           <div>
                             <span className="font-sans font-bold text-body-s text-ink block">{ex.name}</span>
                             {ex.videoUrl && (
-                              <a href={ex.videoUrl} target="_blank" rel="noopener noreferrer" className="text-caption font-sans text-ink-3 hover:text-accent flex items-center gap-1 transition-colors">
-                                <Icon name="play_circle" size="s" />
-                                Ver video
-                              </a>
+                              <button
+                                type="button"
+                                onClick={() => setVideoAbierto(prev => (prev === ex.id ? null : ex.id))}
+                                aria-expanded={videoAbierto === ex.id}
+                                className="text-caption font-sans text-ink-3 hover:text-accent flex items-center gap-1 transition-colors"
+                              >
+                                <Icon name={videoAbierto === ex.id ? 'expand_less' : 'play_circle'} size="s" />
+                                {videoAbierto === ex.id ? 'Ocultar vídeo' : 'Ver vídeo'}
+                              </button>
                             )}
                           </div>
                         </div>
@@ -460,6 +471,16 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                         )}
                       </td>
                     </tr>
+                    {videoAbierto === ex.id && ex.videoUrl && (
+                      <tr className="border-b border-hairline">
+                        <td colSpan={7} className="p-0">
+                          <div className="max-w-2xl">
+                            <ExerciseVideoPlayer videoUrl={ex.videoUrl} />
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                    </React.Fragment>
                   ))}
                 </tbody>
               </table>
