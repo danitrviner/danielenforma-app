@@ -994,6 +994,28 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     });
   };
 
+  // Ajusta la cantidad de un alimento en pasos de 0.25 intercambios; los
+  // gramos se recalculan proporcionalmente vía itemWeightLabel/parseBaseGrams.
+  const handleUpdateQuantity = (mealId: string, itemIdx: number, delta: number) => {
+    setSelectedDiet(prev => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        meals: prev.meals.map(m => {
+          if (m.id !== mealId) return m;
+          return {
+            ...m,
+            items: m.items.map((item, i) => {
+              if (i !== itemIdx) return item;
+              const newQty = round2(Math.max(0.25, item.quantity + delta));
+              return { ...item, quantity: newQty };
+            }),
+          };
+        }),
+      };
+    });
+  };
+
   // ── Recipe swap ("Cambiar comida") ──────────────────────────────────────────
 
   const abrirReceta = async (mealId: string, recipeId: string) => {
@@ -1860,9 +1882,31 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                                   </span>
                                 </div>
                                 <span className="block font-sans text-caption text-ink-3 mt-1">
-                                  {fmtQty(item.quantity)} intercambio{item.quantity !== 1 ? 's' : ''} de {CAT_LABEL[item.category].toLowerCase()}
+                                  intercambio{item.quantity !== 1 ? 's' : ''} de {CAT_LABEL[item.category].toLowerCase()}
                                 </span>
                               </button>
+
+                              {/* Stepper de cantidad — pasos de 0.25 intercambio; los gramos
+                                  se recalculan solos vía itemWeightLabel (proporcional a la
+                                  equivalencia del alimento). */}
+                              <div
+                                className="flex items-center gap-1 bg-inset rounded-control border border-hairline flex-shrink-0"
+                                onClick={e => e.stopPropagation()}
+                              >
+                                <button
+                                  type="button"
+                                  onClick={() => handleUpdateQuantity(meal.id, idx, -0.25)}
+                                  aria-label="Restar 0.25 intercambios"
+                                  className="w-7 h-7 flex items-center justify-center text-ink-2 hover:text-white font-bold text-body-s active:scale-90"
+                                >−</button>
+                                <span className="w-9 text-center font-mono text-caption text-white">{fmtQty(item.quantity)}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleUpdateQuantity(meal.id, idx, 0.25)}
+                                  aria-label="Sumar 0.25 intercambios"
+                                  className="w-7 h-7 flex items-center justify-center text-ink-2 hover:text-white font-bold text-body-s active:scale-90"
+                                >+</button>
+                              </div>
 
                               {/* Abrir la receta — solo en el primer alimento del grupo que
                                   vino de ella. Con texto y no solo icono: en móvil no hay
