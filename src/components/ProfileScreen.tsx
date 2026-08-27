@@ -27,8 +27,7 @@ import StatTile from './StatTile';
 import MiGimnasioPanel from '../features/gimnasio/MiGimnasioPanel';
 import { useBodyMeasurements } from '../hooks/useBodyMeasurements';
 import { useTourTarget } from '../features/tutorial/TourTargetContext';
-import { useTutorialEngine } from '../features/tutorial/TutorialEngine';
-import { Icon, Button, PageHeader, ListRow, Input, Sheet, Skeleton, Tabs } from './ui';
+import { Avatar, Icon, Button, PageHeader, ListRow, Input, Sheet, Skeleton, Tabs } from './ui';
 
 interface ProfileScreenProps {
   profile: UserProfile;
@@ -92,7 +91,6 @@ function Switch({ on, onToggle }: { on: boolean; onToggle: () => void }) {
 export default function ProfileScreen({ profile, isCoach, checkins, onRefreshProfile, onLogOut }: ProfileScreenProps) {
   const { showToast } = useToast();
   const queryClient = useQueryClient();
-  const tutorial = useTutorialEngine();
   const progressRowRef = useTourTarget('profile-progress-row');
   const settingsActionRef = useTourTarget('profile-settings-action');
   const [showCoaches, setShowCoaches] = useState(false);
@@ -304,7 +302,7 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
           progreso, es quién eres. */}
       {isCoach && (
         <div className="bg-surface border border-hairline rounded-canvas p-5 flex items-center gap-4">
-          <img src={profile.avatarUrl} alt="Avatar" className="w-14 h-14 rounded-full object-cover border border-accent/40 shrink-0" />
+          <Avatar src={profile.avatarUrl} name={profile.displayName} alt="Avatar" className="w-14 h-14 rounded-full object-cover border border-accent/40 shrink-0" />
           <div className="min-w-0">
             <h3 className="font-sans font-bold text-title-m text-white truncate">{profile.displayName}</h3>
             <p className="font-sans text-caption text-ink-2 truncate">{profile.email}</p>
@@ -324,7 +322,7 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
           <div className="flex items-center gap-4">
             <div className="relative inline-block flex-shrink-0">
               <div className="w-16 h-16 rounded-full border-2 border-accent overflow-hidden">
-                <img src={profile.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                <Avatar src={profile.avatarUrl} name={profile.displayName} alt="Avatar" className="w-full h-full object-cover" />
               </div>
               <div className="absolute -bottom-1 -right-1 bg-accent text-black text-caption font-bold px-2 rounded-full leading-tight whitespace-nowrap shadow">Lv {profile.level}</div>
             </div>
@@ -433,19 +431,6 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
                 chevron
               />
             )
-          )}
-
-          {/* 27-08: "Repetir el tour" oculto — el tour está desactivado
-              (TutorialEngine, TOUR_DISABLED). */}
-          {false && !isCoach && (
-            <ListRow
-              onClick={() => { setShowSettings(false); tutorial.restart(); }}
-              className="rounded-control border bg-surface border-hairline"
-              leading={<Icon name="school" size="m" className="text-accent" />}
-              title="Repetir el tour"
-              subtitle="Vuelve a empezar desde el paso 01"
-              chevron
-            />
           )}
 
           {/* Legales. Apple (5.1.1.i) y Google exigen el enlace a la política de

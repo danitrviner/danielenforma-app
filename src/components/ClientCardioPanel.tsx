@@ -74,10 +74,6 @@ export default function ClientCardioPanel({ athlete }: Props) {
     queryFn: () => getCardioProfile(athlete.email),
   });
 
-  if (cargandoAsignaciones || cargandoSesiones) {
-    return <div className="space-y-3"><Skeleton className="h-32 w-full rounded-surface" /><Skeleton className="h-64 w-full rounded-surface" /></div>;
-  }
-
   const refrescarAsignaciones = () => queryClient.invalidateQueries({ queryKey: assignmentsKey });
 
   const desactivar = async (id: string) => {
@@ -115,6 +111,13 @@ export default function ClientCardioPanel({ athlete }: Props) {
     const hechasEstaSemana = sessions.filter(s => s.assignmentId === a.id && isoWeekKey(s.date) === isoWeekKey(hoyIso)).length;
     return { a, resuelta, semana, prescripcion, hechasEstaSemana, objetivo: resuelta?.timesPerWeek ?? 0 };
   }), [assignments, sessions, hoyIso]);
+
+  // El aviso de carga va DESPUÉS de todos los hooks: si sale antes, el primer
+  // render (cargando) ejecuta menos hooks que el segundo y React revienta con
+  // «Rendered more hooks than during the previous render».
+  if (cargandoAsignaciones || cargandoSesiones) {
+    return <div className="space-y-3"><Skeleton className="h-32 w-full rounded-surface" /><Skeleton className="h-64 w-full rounded-surface" /></div>;
+  }
 
   // Últimas 6 semanas ISO: minutos y número de sesiones. Es la respuesta a "¿lo
   // está haciendo?", que es lo primero que mira un coach antes de tocar nada.
