@@ -344,9 +344,17 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
     setWorkoutNoteInput('');
   };
 
+  // Solo se copia el array del ejercicio TOCADO, no los de todos — antes
+  // `prev.map(ex => [...ex])` clonaba las N filas de series en cada tecla,
+  // así que `exSets` cambiaba de referencia para TODOS los ejercicios de la
+  // sesión aunque solo uno tuviera un cambio real. Con ExerciseCard en
+  // React.memo (ver WorkoutSessionPlayer.tsx) eso habría invalidado el memo
+  // de cada tarjeta cada vez que se marcaba una sola serie — el caso más
+  // frecuente de toda la pantalla.
   const updateSet = (exIdx: number, sIdx: number, field: keyof SetInput, value: string | boolean) => {
     setPlayerSets(prev => {
-      const next = prev.map(ex => [...ex]);
+      const next = [...prev];
+      next[exIdx] = [...next[exIdx]];
       next[exIdx][sIdx] = { ...next[exIdx][sIdx], [field]: value };
       return next;
     });
@@ -359,7 +367,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
    * series por ejercicio que el prerelleno recién calculado. */
   const addSetRow = (exIdx: number) => {
     setPlayerSets(prev => {
-      const next = prev.map(ex => [...ex]);
+      const next = [...prev];
       next[exIdx] = [...(next[exIdx] || []), nuevaSerieVacia()];
       return next;
     });

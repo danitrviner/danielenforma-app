@@ -11,6 +11,7 @@ import { allTimeBestBefore } from '../../utils/trainingReport';
 import { startRestTimer, stopRestTimer } from '../../services/restTimer';
 import { haptics } from '../../services/haptics';
 import { formatDate } from '../../utils/trainingWeek';
+import { useEstable } from '../../hooks/useEstable';
 import { SetInput } from './setInput';
 import ExerciseCard from './ExerciseCard';
 import ExerciseCloseCard from './ExerciseCloseCard';
@@ -152,12 +153,50 @@ export default function WorkoutSessionPlayer({
     startRestTimer(restTimer.exerciseName, Math.round((endsAtMs - Date.now()) / 1000)).catch(() => {});
   };
 
+  // ExerciseCard va en React.memo (ver ExerciseCard.tsx): antes cada página
+  // pasaba callbacks nuevos en cada render («() => updateSet(exIdx, ...)»),
+  // así que el memo no servía de nada — marcar UNA serie repintaba las
+  // tarjetas de TODOS los ejercicios de la sesión, no solo la que cambió.
+  //
+  // `useEstable` (misma idea que en useCardioSession.tsx) da identidad
+  // estable a las funciones que SÍ cambian en cada render (props, y
+  // `handleMarkDone`/`addRestSeconds`, definidas aquí sin useCallback) sin
+  // arriesgar una closure vieja: por dentro siempre llaman a la versión de
+  // ESTE render. `updateSet`/`addSetRow` en TrainingScreen.tsx también se
+  // tocaron para copiar solo el ejercicio tocado, no los N — si no, esto no
+  // habría servido de nada: `exSets` habría seguido siendo un array nuevo
+  // para cada ejercicio en cada tecla.
+  const updateSetStable = useEstable(updateSet);
+  const addSetRowStable = useEstable(addSetRow);
+  const updateExerciseNoteStable = useEstable(updateExerciseNote);
+  const handleMarkDoneStable = useEstable(handleMarkDone);
+  const onSkipRestStable = useEstable(() => { setRestTimer(null); stopRestTimer().catch(() => {}); });
+  const addRestSecondsStable = useEstable(addRestSeconds);
+
+  // Tabla de callbacks por índice — identidad estable por ejercicio. Depende
+  // de `activeWorkout.exercises` (la fuente, estable mientras no cambie el
+  // entreno), no de `orderedExercises` (un array nuevo cada render por el
+  // `.slice().sort()` de arriba) ni de nada que cambie con cada serie
+  // marcada — si no, se recalcularía en cada tecla igual que sin memoizar.
+  const exerciseCallbacksByIdx = useMemo(() => (
+    orderedExercises.map((we, exIdx) => ({
+      onToggleVideo: () => setOpenVideoIdx(v => (v === exIdx ? null : exIdx)),
+      onOpenHistory: () => setHistoryExId(we.exerciseId),
+      onUpdateSet: (sIdx: number, field: keyof SetInput, value: string | boolean) => updateSetStable(exIdx, sIdx, field, value),
+      onMarkDone: (sIdx: number, markingDone: boolean) => handleMarkDoneStable(exIdx, sIdx, markingDone),
+      onAddRow: () => addSetRowStable(exIdx),
+      onNoteChange: (v: string) => updateExerciseNoteStable(exIdx, v),
+    }))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  ), [activeWorkout.exercises]);
+
   const pages = orderedExercises.map((we, exIdx) => {
     const ex = getExercise(we.exerciseId);
     const exSets = playerSets[exIdx] || [];
     const prevEntry = prevEntries.find(e => e.exerciseId === we.exerciseId);
     const cerrado = exSets.length > 0 && exSets.every(s => s.done);
     const isLast = exIdx === orderedExercises.length - 1;
+    const cb = exerciseCallbacksByIdx[exIdx];
 
     if (cerrado) {
       return (
@@ -168,7 +207,7 @@ export default function WorkoutSessionPlayer({
           exSets={exSets}
           priorBestOrm={priorBestByExercise.get(we.exerciseId)}
           noteValue={exerciseNoteInputs[exIdx] || ''}
-          onNoteChange={v => updateExerciseNote(exIdx, v)}
+          onNoteChange={cb.onNoteChange}
           isLast={isLast}
           nextExerciseName={!isLast ? (getExercise(orderedExercises[exIdx + 1]?.exerciseId)?.name) : undefined}
           onNext={() => setPageIdx(i => Math.min(i + 1, orderedExercises.length - 1))}
@@ -187,18 +226,18 @@ export default function WorkoutSessionPlayer({
         prevEntry={prevEntry}
         personalNote={getPersonalNote(we.exerciseId)}
         isVideoOpen={openVideoIdx === exIdx}
-        onToggleVideo={() => setOpenVideoIdx(v => (v === exIdx ? null : exIdx))}
-        onOpenHistory={() => setHistoryExId(we.exerciseId)}
-        onUpdateSet={(sIdx, field, value) => updateSet(exIdx, sIdx, field, value)}
-        onMarkDone={(sIdx, markingDone) => handleMarkDone(exIdx, sIdx, markingDone)}
-        onAddRow={() => addSetRow(exIdx)}
+        onToggleVideo={cb.onToggleVideo}
+        onOpenHistory={cb.onOpenHistory}
+        onUpdateSet={cb.onUpdateSet}
+        onMarkDone={cb.onMarkDone}
+        onAddRow={cb.onAddRow}
         noteValue={exerciseNoteInputs[exIdx] || ''}
-        onNoteChange={v => updateExerciseNote(exIdx, v)}
+        onNoteChange={cb.onNoteChange}
         restTimer={pageIdx === exIdx && restTimer && restSecondsLeft !== null
           ? { totalSeconds: restTimer.totalSeconds, secondsLeft: restSecondsLeft }
           : null}
-        onSkipRest={() => { setRestTimer(null); stopRestTimer().catch(() => {}); }}
-        onAddRestSeconds={s => addRestSeconds(s)}
+        onSkipRest={onSkipRestStable}
+        onAddRestSeconds={addRestSecondsStable}
         videoTargetRef={exIdx === 0 ? videoTargetRef : undefined}
         setEditorTargetRef={exIdx === 0 ? setEditorTargetRef : undefined}
         firstSetRowTargetRef={exIdx === 0 ? firstSetRowTargetRef : undefined}

@@ -41,7 +41,13 @@ interface Props {
  * myoreps solo cambian cómo se PINTAN esas mismas filas, no el dato que
  * guardan — cada bajada/miniserie sigue siendo un `SetInput` normal.
  */
-export default function ExerciseCard({
+// React.memo: es la página del carrusel que más cambia por render (cada
+// serie marcada, cada tecla del peso/reps) — sin esto, WorkoutSessionPlayer
+// repintaría también las tarjetas de los DEMÁS ejercicios de la sesión en
+// cada una de esas teclas. Depende de que sus props sigan siendo estables
+// (ver los `useEstable`/useMemo de WorkoutSessionPlayer.tsx y el
+// updateSet/addSetRow corregidos en TrainingScreen.tsx).
+export default React.memo(function ExerciseCard({
   we, exIdx, ex, exSets, prevEntry, personalNote, isVideoOpen, onToggleVideo, onOpenHistory,
   onUpdateSet, onMarkDone, onAddRow, noteValue, onNoteChange,
   restTimer, onSkipRest, onAddRestSeconds,
@@ -215,7 +221,7 @@ export default function ExerciseCard({
       )}
     </div>
   );
-}
+});
 
 // ── Tabla normal (idéntica a la de antes, solo reubicada) ──────────────────
 
