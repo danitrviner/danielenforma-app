@@ -192,4 +192,38 @@ describe('marcarCatalogoCambiado', () => {
     vi.mocked(firebaseMock.setDoc).mockRejectedValueOnce(new Error('sin permisos'));
     await expect(marcarCatalogoCambiado('ejercicios')).resolves.toBeUndefined();
   });
+
+  /* El dispositivo que escribe no debe invalidarse a sí mismo. Cuando no se
+     refrescaba su sello local, cada edición de un ejercicio le costaba el
+     catálogo entero (1.681 lecturas) en la relectura inmediata; ~29 ediciones
+     seguidas agotaron la cuota diaria del proyecto el 22-08-2026. */
+  it('deja el sello local al día para que el que escribe no se re-descargue el catálogo', async () => {
+    sellar('v1', 3);
+    await marcarCatalogoCambiado('ejercicios');
+
+    const sello = JSON.parse(localStorage.getItem(CLAVE_LOCAL)!);
+    const [, datos] = vi.mocked(firebaseMock.setDoc).mock.calls[0] as unknown as [unknown, { version: string }, unknown];
+    expect(sello.version).toBe(datos.version);
+    expect(sello.n).toBe(3);
+  });
+
+  it('tras marcar el cambio, una relectura se sirve de la caché sin tocar getDocs', async () => {
+    sellar('v1', 2);
+    await marcarCatalogoCambiado('ejercicios');
+    const nueva = (vi.mocked(firebaseMock.setDoc).mock.calls[0] as unknown as [unknown, { version: string }, unknown])[1].version;
+
+    // El servidor ya devuelve la versión nueva (el setDoc fue bien).
+    estado.versionDoc = { version: nueva };
+    estado.docsCache = [{ id: 'a', data: {} }, { id: 'b', data: {} }];
+    estado.docsCompletos = [{ id: 'NO_DEBERIA_LEERSE', data: {} }];
+
+    const r = await leerCatalogo('ejercicios', 'exercises', mapear);
+    expect(r.map(x => x.id)).toEqual(['a', 'b']);
+  });
+
+  it('no inventa un sello si este dispositivo nunca leyó el catálogo', async () => {
+    localStorage.removeItem(CLAVE_LOCAL);
+    await marcarCatalogoCambiado('ejercicios');
+    expect(localStorage.getItem(CLAVE_LOCAL)).toBeNull();
+  });
 });

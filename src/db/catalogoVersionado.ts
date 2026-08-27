@@ -112,10 +112,47 @@ export async function leerCatalogo<T>(
 }
 
 /** Llamar tras crear/editar/borrar un documento de un catálogo versionado —
- *  invalida la copia local de TODOS los dispositivos en su siguiente lectura. */
+ *  invalida la copia local de los DEMÁS dispositivos en su siguiente lectura.
+ *
+ *  Ojo con el «los demás»: el dispositivo que hace el cambio NO debe
+ *  invalidarse a sí mismo. Ya tiene el dato bueno —el llamante acaba de
+ *  guardarlo en su copia local y Firestore lo aplica al instante en su caché
+ *  persistente—, así que re-descargar el catálogo entero por su propia
+ *  escritura es puro desperdicio.
+ *
+ *  Medido en producción el 27-08 y no es poca cosa: cada edición de un
+ *  ejercicio en la pantalla de revisión costaba **1.681 lecturas** (el
+ *  catálogo completo). Los picos de lecturas de agosto son múltiplos casi
+ *  exactos de esa cifra —17.025 ≈ 10 ediciones, 8.521 ≈ 5— y las ~29
+ *  ediciones del 22-08 agotaron la cuota diaria del proyecto (49.553 de
+ *  50.000 unidades) y tiraron la base para todo el mundo.
+ *
+ *  El sello local se escribe ANTES del `setDoc`, y a propósito: los llamantes
+ *  hacen `void marcarCatalogoCambiado(...)` y refrescan acto seguido, así que
+ *  si esperásemos a la confirmación del servidor la relectura llegaría antes
+ *  y volveríamos a pagar el catálogo entero.
+ *
+ *  Solo se refresca un sello que YA existía: si este dispositivo nunca leyó el
+ *  catálogo no puede afirmar que su caché esté al día. Y si el `setDoc` falla,
+ *  el sello local queda por delante del remoto — que es seguro: no coinciden,
+ *  así que la siguiente lectura baja todo, se gasta una lectura de más y nunca
+ *  se sirve un dato viejo. */
 export async function marcarCatalogoCambiado(nombre: string): Promise<void> {
+  const version = new Date().toISOString();
+
+  const anterior = leerSelloLocal(CLAVE_VERSION_LOCAL(nombre));
+  if (anterior) {
+    try {
+      // Se conserva `n` tal cual. En un alta la caché tendrá un documento de
+      // más (`size >= n` sigue cumpliéndose) y en una baja tendrá uno menos,
+      // que falla la comprobación y provoca una relectura: una lectura de más
+      // en la operación menos frecuente, y el sello se recompone solo.
+      localStorage.setItem(CLAVE_VERSION_LOCAL(nombre), JSON.stringify({ version, n: anterior.n }));
+    } catch {}
+  }
+
   try {
-    await setDoc(doc(db, 'catalogos', nombre), { version: new Date().toISOString() }, { merge: true });
+    await setDoc(doc(db, 'catalogos', nombre), { version }, { merge: true });
   } catch (err) {
     // No relanza: que falle el sello de versión no debe impedir que la
     // escritura real (el ejercicio/alimento que se acaba de guardar) se dé
