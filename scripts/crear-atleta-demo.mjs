@@ -34,7 +34,11 @@ async function main() {
 
   const ahora = new Date().toISOString();
 
-  await db.collection('user_profiles').doc(EMAIL).set({
+  // El id del documento es el UID, como en el resto de perfiles. Con el email
+  // por id (así nació este perfil, corregido el 27-08) cualquier
+  // `updateUserProfile(uid)` fallaba con not-found: la ficha del cliente en la
+  // consola del entrenador desconectaba la sesión de Firestore.
+  await db.collection('user_profiles').doc(user.uid).set({
     userId: user.uid,
     email: EMAIL,
     displayName: NOMBRE,

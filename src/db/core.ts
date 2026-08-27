@@ -186,6 +186,23 @@ export function esFalloDePermisos(err: unknown): boolean {
 }
 
 /**
+ * Errores que hablan del dato o de la petición, no de la conexión: un documento
+ * que no existe, un campo inválido, un índice que falta.
+ *
+ * Caer al modo local por uno de estos hace más daño que el fallo original. Pasó
+ * de verdad (27-08): el perfil del cliente de revisión de la App Store se había
+ * guardado con el email por id en vez del uid, así que abrir su ficha lanzaba un
+ * `updateDoc` a un documento inexistente y la sesión entera del entrenador se
+ * desconectaba de Firestore sin decir nada.
+ */
+export function esFalloDeDatos(err: unknown): boolean {
+  const code = (err as { code?: string } | null)?.code;
+  return code === 'not-found' || code === 'invalid-argument'
+    || code === 'failed-precondition' || code === 'already-exists'
+    || code === 'out-of-range';
+}
+
+/**
  * Activa el modo local. `err` es el error que lo provocó — pásalo siempre que
  * lo tengas.
  *
@@ -213,14 +230,15 @@ export function setLocalBypassMode(enabled: boolean, err?: unknown) {
   // nuestra ni tiene arreglo por nuestra parte. Marcarlos igual haría que los
   // segundos, que son muchos más, escondieran a los primeros.
   const fallo = esFalloDePermisos(err);
+  const dato = esFalloDeDatos(err);
   reportarError(err ?? new Error('Firestore inaccesible'), 'firestore', {
-    tipo: fallo ? 'permisos' : 'sin-conexion',
+    tipo: fallo ? 'permisos' : dato ? 'datos' : 'sin-conexion',
     // Un permission-denied con sesión abierta es una regla que no cuadra; sin
     // sesión abierta es casi siempre una lectura lanzada antes de tiempo.
     conSesion: Boolean(auth.currentUser),
   });
 
-  if (err !== undefined && fallo) return;
+  if (err !== undefined && (fallo || dato)) return;
   forceLocalOnly = true;
 }
 

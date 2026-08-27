@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { setLocalBypassMode, isLocalBypassActive, esFalloDePermisos, hayFalloDePermisos, descartarAvisoDePermisos } from './core';
+import { setLocalBypassMode, isLocalBypassActive, esFalloDePermisos, esFalloDeDatos, hayFalloDePermisos, descartarAvisoDePermisos } from './core';
 import { mensajeDeErrorFirestore, reintentarNoSirve } from '../utils/erroresFirestore';
 
 /* Cubre P0-2 y P1-6 de docs/auditoria-visual/hallazgos.md.
@@ -35,6 +35,22 @@ describe('setLocalBypassMode', () => {
     expect(isLocalBypassActive()).toBe(false);              // saveOnboarding puede intentarlo
   });
 
+  it('NO lo activa ante un documento que no existe — 27-08', () => {
+    // Un `updateDoc` contra un id equivocado no dice nada de la conexión. El
+    // perfil del cliente de revisión de la App Store estaba guardado con el
+    // email por id: abrir su ficha desconectaba de Firestore la sesión entera
+    // del entrenador.
+    setLocalBypassMode(true, errorDe('not-found', 'No document to update'));
+    expect(isLocalBypassActive()).toBe(false);
+  });
+
+  it('NO lo activa ante un índice que falta ni ante un campo inválido', () => {
+    setLocalBypassMode(true, errorDe('failed-precondition'));
+    expect(isLocalBypassActive()).toBe(false);
+    setLocalBypassMode(true, errorDe('invalid-argument'));
+    expect(isLocalBypassActive()).toBe(false);
+  });
+
   it('sigue activándose cuando no se pasa el error, por compatibilidad', () => {
     setLocalBypassMode(true);
     expect(isLocalBypassActive()).toBe(true);
@@ -44,6 +60,18 @@ describe('setLocalBypassMode', () => {
     setLocalBypassMode(true, errorDe('unavailable'));
     setLocalBypassMode(false);
     expect(isLocalBypassActive()).toBe(false);
+  });
+});
+
+describe('esFalloDeDatos', () => {
+  it('distingue el fallo del dato del fallo de red', () => {
+    expect(esFalloDeDatos(errorDe('not-found'))).toBe(true);
+    expect(esFalloDeDatos(errorDe('already-exists'))).toBe(true);
+    expect(esFalloDeDatos(errorDe('out-of-range'))).toBe(true);
+    expect(esFalloDeDatos(errorDe('unavailable'))).toBe(false);
+    expect(esFalloDeDatos(errorDe('permission-denied'))).toBe(false);
+    expect(esFalloDeDatos(null)).toBe(false);
+    expect(esFalloDeDatos(new Error('sin code'))).toBe(false);
   });
 });
 
