@@ -1195,6 +1195,17 @@ export default function MesocycleManager({
     () => editing?.id ? allWorkouts.filter(w => w.mesocycleId === editing.id) : [],
     [allWorkouts, editing?.id]
   );
+  // Antes se llamaba en línea dentro del JSX («groups={groupMesoWorkouts(...)}»,
+  // más abajo) — un array de objetos NUEVOS en cada render de esta pantalla,
+  // aunque nada de `mesoWorkouts` hubiera cambiado. `MesoExercisesTabs` tiene
+  // varios useMemo que dependen de `groups`; sin esto, todos ellos (y
+  // cualquier React.memo de las tarjetas que dependa de esta lista) se
+  // recalculaban en cada tecla de CUALQUIER campo de la pantalla, no solo los
+  // que tocan ejercicios.
+  const mesoGroupsForTabs = useMemo(
+    () => groupMesoWorkouts(mesoWorkouts, editing?.id ?? ''),
+    [mesoWorkouts, editing?.id]
+  );
 
   // Datos del CIERRE. Solo se piden si esta pantalla no los recibió por props y
   // el coach abre la pestaña — el cierre es lo último que se mira de un bloque,
@@ -2554,7 +2565,7 @@ export default function MesocycleManager({
               {/* ── Ejercicios programados ── */}
               {editorTab === 'exercises' && (
                 <MesoExercisesView
-                  groups={groupMesoWorkouts(mesoWorkouts, editing.id)}
+                  groups={mesoGroupsForTabs}
                   loading={loadingMesoWorkouts}
                   weeks={editing.weeks}
                   allExercises={allExercises}
