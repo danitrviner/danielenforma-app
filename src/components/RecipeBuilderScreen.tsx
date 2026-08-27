@@ -6,6 +6,8 @@ import type { RecetasCursor } from '../dbService';
 import { roundQuarter } from '../utils/exchangeHelpers';
 import { Skeleton, Icon } from './ui';
 import { EmptyState, Badge, Chip, Dialog, Button, Input } from './ui';
+import { fotoDeReceta } from '../utils/fotoDeReceta';
+import FotoDeReceta from './FotoDeReceta';
 
 const RECIPE_CATEGORIES = ['Alta proteína', 'Rápida', 'Pre-entreno', 'Recuperación', 'Desayuno', 'Cena'];
 
@@ -24,11 +26,11 @@ const INTAKE_LABELS: Record<number, string> = {
 };
 
 function RecetaCard({ recipe }: { recipe: Recipe; key?: React.Key }) {
-  const photo = recipe.image ?? recipe.photoUrl;
+  const photo = fotoDeReceta(recipe);
   return (
     <article className="relative rounded-surface overflow-hidden bg-raised border border-hairline aspect-[4/5] flex flex-col justify-end">
       {photo
-        ? <img src={photo} alt={recipe.name} className="absolute inset-0 w-full h-full object-cover opacity-70" />
+        ? <FotoDeReceta src={photo} alt={recipe.name} className="absolute inset-0 w-full h-full object-cover opacity-70" fallback={null} />
         : <div className="absolute inset-0 bg-gradient-to-br from-raised to-bg flex items-center justify-center">
             <Icon name="skillet" size="xl" className="text-ink-3" />
           </div>
@@ -297,9 +299,9 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
             const exchStr = formatExchanges(calcExchanges(recipe.ingredients));
             return (
               <div key={recipe.id} className="bg-raised border border-hairline rounded-surface overflow-hidden flex flex-col">
-                {recipe.photoUrl && (
+                {fotoDeReceta(recipe) && (
                   <div className="w-full h-36 overflow-hidden shrink-0">
-                    <img src={recipe.photoUrl} alt={recipe.name} className="w-full h-full object-cover" />
+                    <FotoDeReceta src={fotoDeReceta(recipe)} alt={recipe.name} className="w-full h-full object-cover" fallback={null} />
                   </div>
                 )}
                 <div className="p-4 flex-1 space-y-2">

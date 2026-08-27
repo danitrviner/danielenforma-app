@@ -13,6 +13,8 @@ import {
 import { buildShoppingList } from '../utils/menuShoppingList';
 import { DISH_TYPES, DishType } from '../utils/dishTypes';
 import { Icon, Button, Input, ProgressBar } from './ui';
+import { fotoDeReceta } from '../utils/fotoDeReceta';
+import FotoDeReceta from './FotoDeReceta';
 
 const WEEK_DAYS: WeekDay[] = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 const WEEK_DAY_FULL: Record<WeekDay, string> = {
@@ -217,7 +219,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
     nextMeals[mealIdx] = {
       ...nextMeals[mealIdx],
       recipeId: pick.recipe.id, recipeName: pick.recipe.name,
-      recipeImage: pick.recipe.image ?? pick.recipe.photoUrl,
+      recipeImage: fotoDeReceta(pick.recipe),
       scale: pick.scale, exch: pick.exch, complements: [],
     };
     updateDay(day, { ...menuDay, meals: nextMeals });
@@ -245,7 +247,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
     nextMeals[mealIdx] = {
       ...nextMeals[mealIdx],
       recipeId: c.recipe.id, recipeName: c.recipe.name,
-      recipeImage: c.recipe.image ?? c.recipe.photoUrl,
+      recipeImage: fotoDeReceta(c.recipe),
       scale: c.scale, exch: c.exch, complements: [],
     };
     updateDay(day, { ...menuDay, meals: nextMeals });
@@ -553,9 +555,12 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
                         <div key={meal.id} className="bg-bg border border-hairline rounded-surface p-3">
                           <div className="flex items-start gap-3">
                             <div className="w-12 h-12 rounded-surface overflow-hidden flex-shrink-0 bg-raised border border-hairline">
-                              {meal.recipeImage
-                                ? <img src={meal.recipeImage} alt={meal.recipeName} className="w-full h-full object-cover" />
-                                : <div className="w-full h-full flex items-center justify-center"><Icon name="skillet" size="l" className="text-ink-3" /></div>}
+                              <FotoDeReceta
+                                src={meal.recipeImage}
+                                alt={meal.recipeName}
+                                className="w-full h-full object-cover"
+                                fallback={<div className="w-full h-full flex items-center justify-center"><Icon name="skillet" size="l" className="text-ink-3" /></div>}
+                              />
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2">
@@ -606,7 +611,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
                                     className="w-full flex items-center gap-3 px-2 py-2 text-left hover:bg-raised rounded-control transition-colors"
                                   >
                                     <div className="w-7 h-7 rounded-control overflow-hidden flex-shrink-0 bg-raised">
-                                      {c.recipe.image ? <img src={c.recipe.image} alt="" className="w-full h-full object-cover" /> : null}
+                                      <FotoDeReceta src={fotoDeReceta(c.recipe)} alt="" className="w-full h-full object-cover" fallback={null} />
                                     </div>
                                     <div className="flex-1 min-w-0">
                                       <p className="font-sans text-label text-white truncate">{c.recipe.name}</p>

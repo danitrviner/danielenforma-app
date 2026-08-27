@@ -17,6 +17,8 @@ import { buildShoppingList, ShoppingListItem } from '../utils/menuShoppingList';
 import { DishType } from '../utils/dishTypes';
 import { substitutesFor } from '../utils/ingredientSubstitutions';
 import { Icon, EmptyState, ListRow, Badge, Sheet, Dialog, ScreenSkeleton } from './ui';
+import { fotoDeReceta } from '../utils/fotoDeReceta';
+import FotoDeReceta from './FotoDeReceta';
 
 const WEEK_DAYS: WeekDay[] = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 const WEEK_DAY_SHORT: Record<WeekDay, string> = { mon: 'L', tue: 'M', wed: 'X', thu: 'J', fri: 'V', sat: 'S', sun: 'D' };
@@ -237,7 +239,7 @@ export default function MyMenuScreen({ profile }: Props) {
     if (!meal) return;
 
     const nextMeals = day.meals.map(m => m.id === meal.id
-      ? { ...m, recipeId: candidate.recipe.id, recipeName: candidate.recipe.name, recipeImage: candidate.recipe.image ?? candidate.recipe.photoUrl, scale: candidate.scale, exch: candidate.exch, kcal: Math.round(exchangeToKcal(candidate.exch)), complements: [] }
+      ? { ...m, recipeId: candidate.recipe.id, recipeName: candidate.recipe.name, recipeImage: fotoDeReceta(candidate.recipe), scale: candidate.scale, exch: candidate.exch, kcal: Math.round(exchangeToKcal(candidate.exch)), complements: [] }
       : m);
     const nextDay: MenuDay = { ...day, meals: nextMeals };
     const nextDays = menu.days.map(d => d.day === selectedDay ? nextDay : d);
@@ -309,7 +311,7 @@ export default function MyMenuScreen({ profile }: Props) {
                 className="rounded-surface border bg-bg border-hairline"
                 leading={
                   <div className="w-9 h-9 rounded-surface overflow-hidden flex-shrink-0 bg-raised">
-                    {e.recipeImage ? <img src={e.recipeImage} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" /> : null}
+                    <FotoDeReceta src={e.recipeImage} alt="" className="w-full h-full object-cover" fallback={null} />
                   </div>
                 }
                 title={e.recipeName}
@@ -372,11 +374,12 @@ export default function MyMenuScreen({ profile }: Props) {
                   onClick={() => openDetail(meal)}
                   className="relative block w-full aspect-[21/9] bg-raised"
                 >
-                  {meal.recipeImage ? (
-                    <img src={meal.recipeImage} alt={meal.recipeName} loading="lazy" decoding="async" className="absolute inset-0 w-full h-full object-cover" />
-                  ) : (
-                    <div className="absolute inset-0 flex items-center justify-center"><Icon name="skillet" size="xl" className="text-ink-3" /></div>
-                  )}
+                  <FotoDeReceta
+                    src={meal.recipeImage}
+                    alt={meal.recipeName}
+                    className="absolute inset-0 w-full h-full object-cover"
+                    fallback={<div className="absolute inset-0 flex items-center justify-center"><Icon name="skillet" size="xl" className="text-ink-3" /></div>}
+                  />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/15 to-transparent" />
                   <div className="absolute bottom-0 left-0 right-0 p-3 text-left">
                     <span className="font-sans text-caption text-ink-2 uppercase tracking-wider">
@@ -487,7 +490,7 @@ export default function MyMenuScreen({ profile }: Props) {
                   className="w-full flex items-center gap-3 px-3 py-3 text-left bg-bg border border-hairline hover:border-accent/40 rounded-control transition-all"
                 >
                   <div className="w-10 h-10 rounded-surface overflow-hidden flex-shrink-0 bg-raised">
-                    {c.recipe.image ? <img src={c.recipe.image} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" /> : null}
+                    <FotoDeReceta src={fotoDeReceta(c.recipe)} alt="" className="w-full h-full object-cover" fallback={null} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-sans text-body-s text-ink truncate">{c.recipe.name}</p>
@@ -515,9 +518,9 @@ export default function MyMenuScreen({ profile }: Props) {
               </div>
             ) : detailRecipe ? (
               <>
-                {(detailRecipe.image ?? detailRecipe.photoUrl) && (
+                {fotoDeReceta(detailRecipe) && (
                   <div className="w-full aspect-[16/9] rounded-surface overflow-hidden bg-raised">
-                    <img src={detailRecipe.image ?? detailRecipe.photoUrl} alt={detailRecipe.name} className="w-full h-full object-cover" />
+                    <FotoDeReceta src={fotoDeReceta(detailRecipe)} alt={detailRecipe.name} className="w-full h-full object-cover" fallback={null} />
                   </div>
                 )}
                 {detailRecipe.kcal != null && (

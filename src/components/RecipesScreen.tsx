@@ -14,6 +14,8 @@ import { classifyRecipe, violatesDietType } from '../utils/foodPrefs';
 import { dishType } from '../utils/dishTypes';
 import { BUDGET_CATS, roundQuarter, CAT_COLOR, CAT_BG } from '../utils/exchangeHelpers';
 import { exchangeToKcal } from '../utils/nutritionConstants';
+import { fotoDeReceta } from '../utils/fotoDeReceta';
+import FotoDeReceta from './FotoDeReceta';
 import { Skeleton } from './ui';
 import { EmptyState, Badge, Chip, SearchField, Button, Select } from './ui';
 
@@ -112,7 +114,7 @@ interface CardProps {
 // y de que `recipe` no se reconstruya en cada render (ya sale de un useMemo).
 const RecipeCard = React.memo(function RecipeCard({ recipe, isFav, large = false, onOpen, onToggleFav }: CardProps) {
   const exchStr = formatExchanges(calcExchanges(recipe));
-  const photo = recipe.image ?? recipe.photoUrl;
+  const photo = fotoDeReceta(recipe);
   const colSpan = large ? 'col-span-1 md:col-span-8' : 'col-span-1 md:col-span-4';
   const minH    = large ? 'min-h-[300px] md:min-h-[360px]' : 'min-h-[220px] md:min-h-[280px]';
   const tags = recipe.categoria ? [recipe.categoria] : recipe.categories.slice(0, 2);
@@ -122,10 +124,12 @@ const RecipeCard = React.memo(function RecipeCard({ recipe, isFav, large = false
       onClick={() => onOpen(recipe)}
       className={`${colSpan} group relative rounded-surface overflow-hidden bg-raised border border-hairline ${minH} flex flex-col justify-end cursor-pointer hover:border-accent/40 transition-all`}
     >
-      {photo
-        ? <img src={photo} alt={recipe.name} loading="lazy" decoding="async" className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-500" />
-        : <div className="absolute inset-0"><RecipePlaceholder /></div>
-      }
+      <FotoDeReceta
+        src={photo}
+        alt={recipe.name}
+        className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-500"
+        fallback={<div className="absolute inset-0"><RecipePlaceholder /></div>}
+      />
       <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
 
       <button
@@ -159,7 +163,7 @@ const RecipeCard = React.memo(function RecipeCard({ recipe, isFav, large = false
 
 // Compact card used in the Recetas paginated grid (image-forward, tighter)
 const RecetaCard = React.memo(function RecetaCard({ recipe, isFav, isFeatured, excedeTiempo, onOpen, onToggleFav }: Omit<CardProps, 'large'>) {
-  const photo = recipe.image ?? recipe.photoUrl;
+  const photo = fotoDeReceta(recipe);
   const exch = recipe.exchanges;
 
   return (
@@ -171,12 +175,16 @@ const RecetaCard = React.memo(function RecetaCard({ recipe, isFav, isFeatured, e
           : 'border-hairline hover:border-accent/40'
       }`}
     >
-      {photo
-        ? <img src={photo} alt={recipe.name} loading="lazy" decoding="async" className="absolute inset-0 w-full h-full object-cover opacity-70 group-hover:scale-105 transition-transform duration-500" />
-        : <div className="absolute inset-0 bg-gradient-to-br from-raised to-bg flex items-center justify-center">
+      <FotoDeReceta
+        src={photo}
+        alt={recipe.name}
+        className="absolute inset-0 w-full h-full object-cover opacity-70 group-hover:scale-105 transition-transform duration-500"
+        fallback={
+          <div className="absolute inset-0 bg-gradient-to-br from-raised to-bg flex items-center justify-center">
             <span className="material-symbols-outlined text-display text-ink-3">skillet</span>
           </div>
-      }
+        }
+      />
       <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/50 to-transparent" />
 
       <button
@@ -277,7 +285,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, isOwn, enabledModes, savingFa
   const exch = calcExchanges(scaledRecipe);
   const scaledTotal = BUDGET_CATS.reduce((s, c) => s + (exch[c] ?? 0), 0);
   const fitsBudget = dailyBudgetTotal == null || scaledTotal <= dailyBudgetTotal;
-  const photo = recipe.image ?? recipe.photoUrl;
+  const photo = fotoDeReceta(recipe);
 
   const visibleIngredients = isRecetas
     ? []
@@ -359,10 +367,12 @@ function RecipeDetail({ recipe, isFav, isDisliked, isOwn, enabledModes, savingFa
 
       {/* Photo */}
       <div className="w-full aspect-[16/7] rounded-surface overflow-hidden bg-raised border border-hairline">
-        {photo
-          ? <img src={photo} alt={recipe.name} loading="lazy" decoding="async" className="w-full h-full object-cover" />
-          : <RecipePlaceholder />
-        }
+        <FotoDeReceta
+          src={photo}
+          alt={recipe.name}
+          className="w-full h-full object-cover"
+          fallback={<RecipePlaceholder />}
+        />
       </div>
 
       {/* Title + metadata */}

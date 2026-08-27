@@ -13,6 +13,8 @@ import Coachmark from './Coachmark';
 import { haptics } from '../services/haptics';
 import { useTourTarget } from '../features/tutorial/TourTargetContext';
 import { useTutorialEngine } from '../features/tutorial/TutorialEngine';
+import { fotoDeReceta } from '../utils/fotoDeReceta';
+import FotoDeReceta from './FotoDeReceta';
 import { Skeleton } from './ui';
 import { EmptyState, Sheet, Icon, Button, ProgressBar, RingSeal, Stepper, Dialog, ListRow } from './ui';
 
@@ -54,19 +56,22 @@ function SwapCandidateRow({ alt, isFav, onSelect }: {
 }) {
   const { recipe, exchanges, totalDrift } = alt;
   const total = exchanges.HC + exchanges.PROT + exchanges.GRASA;
-  const photo = recipe.photoUrl ?? recipe.image;
+  const photo = fotoDeReceta(recipe);
   return (
     <button
       onClick={() => onSelect(recipe)}
       className="w-full flex items-center gap-3 p-4 bg-surface hover:bg-raised rounded-control border border-hairline hover:border-accent/40 text-left transition-all group"
     >
-      {photo ? (
-        <img src={photo} alt="" className="w-12 h-12 rounded-surface object-cover flex-shrink-0" />
-      ) : (
-        <div className="w-12 h-12 rounded-surface bg-raised border border-hairline flex items-center justify-center flex-shrink-0">
-          <Icon name="skillet" size="m" className="text-ink-2" />
-        </div>
-      )}
+      <FotoDeReceta
+        src={photo}
+        alt=""
+        className="w-12 h-12 rounded-surface object-cover flex-shrink-0"
+        fallback={(
+          <div className="w-12 h-12 rounded-surface bg-raised border border-hairline flex items-center justify-center flex-shrink-0">
+            <Icon name="skillet" size="m" className="text-ink-2" />
+          </div>
+        )}
+      />
       <div className="flex-1 min-w-0">
         <span className="font-sans font-bold text-body-s text-ink group-hover:text-accent transition-colors truncate block">
           {isFav && <Icon name="favorite" size="s" className="text-accent mr-1 align-middle" />}
@@ -112,13 +117,16 @@ function RecipePickerRow({ recipe, isFav, enabledModes, onSelect }: {
       onClick={() => onSelect(recipe)}
       className="w-full flex items-center gap-3 p-4 bg-surface hover:bg-raised rounded-control border border-hairline hover:border-accent/40 text-left transition-all group"
     >
-      {recipe.photoUrl ? (
-        <img src={recipe.photoUrl} alt={recipe.name} className="w-12 h-12 rounded-surface object-cover flex-shrink-0" />
-      ) : (
-        <div className="w-12 h-12 rounded-surface bg-raised border border-hairline flex items-center justify-center flex-shrink-0">
-          <span className="material-symbols-outlined text-ink-2 text-title-m">skillet</span>
-        </div>
-      )}
+      <FotoDeReceta
+        src={fotoDeReceta(recipe)}
+        alt={recipe.name}
+        className="w-12 h-12 rounded-surface object-cover flex-shrink-0"
+        fallback={(
+          <div className="w-12 h-12 rounded-surface bg-raised border border-hairline flex items-center justify-center flex-shrink-0">
+            <span className="material-symbols-outlined text-ink-2 text-title-m">skillet</span>
+          </div>
+        )}
+      />
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 ">
           {isFav && (
@@ -2255,9 +2263,14 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
               </div>
             ) : recetaDetalle ? (
               <>
-                {(recetaDetalle.image ?? recetaDetalle.photoUrl) && (
+                {fotoDeReceta(recetaDetalle) && (
                   <div className="w-full aspect-[16/9] rounded-surface overflow-hidden bg-raised">
-                    <img src={recetaDetalle.image ?? recetaDetalle.photoUrl} alt={recetaDetalle.name} className="w-full h-full object-cover" />
+                    <FotoDeReceta
+                      src={fotoDeReceta(recetaDetalle)}
+                      alt={recetaDetalle.name}
+                      className="w-full h-full object-cover"
+                      fallback={null}
+                    />
                   </div>
                 )}
                 {(recetaDetalle.kcal != null || recetaDetalle.cookingTime != null) && (

@@ -9,6 +9,7 @@ import { fitScore } from './recipeMatch';
 import { exchangeToKcal } from './nutritionConstants';
 import { simpleComplementsFor } from './menuComplements';
 import { dishType, DishType } from './dishTypes';
+import { fotoDeReceta } from './fotoDeReceta';
 
 // Pure, framework-free generator for recipe-first weekly menus. Reads its
 // daily point budget from the client's already-configured exchange-type diets
@@ -401,7 +402,7 @@ function buildMeal(id: string, slot: MealSlotSpec, recipe: Recipe, scale: number
   const meal: MenuMeal = {
     id, slot: slot.slot, name: slot.name,
     recipeId: recipe.id, recipeName: recipe.name,
-    recipeImage: recipe.image ?? recipe.photoUrl,
+    recipeImage: fotoDeReceta(recipe),
     scale, exch, kcal: 0, complements: [],
   };
   meal.kcal = mealKcal(meal);
