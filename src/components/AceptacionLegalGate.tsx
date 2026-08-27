@@ -52,25 +52,39 @@ interface Props {
   documentos?: MetaDocumentoLegal[];
   /** Solo cuando no queda nada obligatorio (revisión desde Perfil). */
   onCerrar?: () => void;
+  /** Revisión desde Perfil: el documento ya está aceptado en esta versión y
+   *  solo se vuelve a abrir para cambiar la casilla opcional. Las obligatorias
+   *  aparecen ya marcadas —no se le hace re-aceptar lo aceptado— y no hay que
+   *  volver a bajar el texto. */
+  revision?: boolean;
   /** Costura para el banco de pruebas de `/dev/legal`, que no tiene sesión y
    *  por tanto no puede escribir en Firestore. En la app siempre es el guardado
    *  de verdad. */
   guardar?: (nuevas: AceptacionesLegales) => Promise<AceptacionesLegales>;
 }
 
-function marcasIniciales(casillas: CasillaLegal[], previas: Record<string, boolean> | undefined) {
+function marcasIniciales(
+  casillas: CasillaLegal[],
+  previas: Record<string, boolean> | undefined,
+  revision: boolean,
+) {
   const estado: Record<string, boolean> = {};
-  // Las obligatorias SIEMPRE arrancan en falso, aunque haya un registro previo:
-  // si se está volviendo a preguntar es porque el texto cambió, y una marca
-  // heredada de la versión anterior no consiente el texto nuevo. Las
-  // opcionales sí conservan lo que la persona eligió: reabrir sus ajustes y
-  // encontrárselos en blanco parecería que se han perdido.
-  for (const c of casillas) estado[c.id] = c.obligatoria ? false : (previas?.[c.id] ?? false);
+  // Las obligatorias arrancan en falso, aunque haya un registro previo: si se
+  // está preguntando es porque el texto cambió, y una marca heredada de la
+  // versión anterior no consiente el texto nuevo. La excepción es la revisión
+  // desde Perfil, donde el documento ya está aceptado EN ESTA versión y volver
+  // a exigir las dos marcas sería pedirle que reacepte lo que ya aceptó solo
+  // por venir a cambiar una casilla opcional.
+  // Las opcionales siempre conservan lo que la persona eligió: encontrárselas
+  // en blanco parecería que se han perdido.
+  for (const c of casillas) {
+    estado[c.id] = c.obligatoria ? revision : (previas?.[c.id] ?? false);
+  }
   return estado;
 }
 
 export default function AceptacionLegalGate({
-  profile, onCompletado, onSalir, documentos, onCerrar, guardar,
+  profile, onCompletado, onSalir, documentos, onCerrar, guardar, revision,
 }: Props) {
   const pasos = useMemo(
     () => documentos ?? documentosPendientes(profile.legal),
@@ -104,14 +118,26 @@ export default function AceptacionLegalGate({
   // el texto cabe entero (en cuyo caso ya está "leído" y no hay nada que bajar).
   useEffect(() => {
     if (!doc) return;
-    setMarcas(marcasIniciales(doc.casillas, opcionesPrevias));
+    setMarcas(marcasIniciales(doc.casillas, opcionesPrevias, !!revision));
     setError(null);
     const el = cuerpoRef.current;
     if (el) {
       el.scrollTop = 0;
-      setAlFinal(el.scrollHeight - el.clientHeight <= 8);
+      setAlFinal(!!revision || el.scrollHeight - el.clientHeight <= 8);
     }
-  }, [doc, opcionesPrevias]);
+  }, [doc, opcionesPrevias, revision]);
+
+  /* Red de seguridad. Si no queda ningún paso que enseñar, este componente
+     antes devolvía `null` — y como quien lo monta lo hace dentro de un
+     contenedor a pantalla completa, el resultado era una PANTALLA NEGRA sin
+     nada, indistinguible de la app colgada y sin forma de salir. Ahora se
+     avisa a quien lo montó para que deje de renderizarlo. No debería ocurrir
+     nunca; precisamente por eso conviene que, si ocurre, no se coma la app. */
+  useEffect(() => {
+    if (meta && doc) return;
+    console.warn('Muro legal sin pasos que enseñar: se cierra solo.');
+    (onCerrar ?? (() => onCompletado(guardado)))();
+  }, [meta, doc, onCerrar, onCompletado, guardado]);
 
   if (!meta || !doc) return null;
 
@@ -172,7 +198,7 @@ export default function AceptacionLegalGate({
         <div className="shrink-0 border-b border-hairline px-4 py-3">
           <div className="flex items-center justify-between gap-3">
             <p className="text-caption font-mono uppercase tracking-wider text-ink-3">
-              {pasos.length > 1 ? `${indice + 1} de ${pasos.length}` : 'Tus permisos'}
+              {revision ? 'Tus permisos' : `${indice + 1} de ${pasos.length}`}
             </p>
             {onCerrar && !quedaObligatorio && (
               <button
@@ -252,7 +278,7 @@ export default function AceptacionLegalGate({
             disabled={!puedeContinuar}
             onClick={continuar}
           >
-            {doc.accion}
+            {revision ? 'Guardar' : doc.accion}
           </Button>
 
           {/* La otra salida. En tono apagado, pero a la vista: un muro sin
@@ -273,5 +299,6 @@ export default function AceptacionLegalGate({
   );
 }
 
-/** Atajo para Perfil → Ajustes: reabre solo el paso de los permisos opcionales. */
-export const SOLO_AJUSTES = DOCUMENTOS_LEGALES.filter(d => !d.obligatorio);
+/** Atajo para Perfil → Ajustes: reabre el documento donde vive la casilla
+ *  opcional del análisis asistido, en modo revisión. */
+export const DOC_CON_OPCIONALES = DOCUMENTOS_LEGALES.filter(d => d.id === 'terminos');

@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import {
   documentosPendientes, debeAceptarLegal, faltaAlgoObligatorio, registrarAceptacion,
-  decisionIA, consentimientoIADesdeLegal, permiteUsoDeImagenes,
-  DOCUMENTOS_LEGALES, OPCION_IA, OPCION_IMAGENES,
+  decisionIA, consentimientoIADesdeLegal,
+  DOCUMENTOS_LEGALES, OPCION_IA,
   type AceptacionesLegales,
 } from './aceptacion';
 import { VERSION_CONSENTIMIENTO_IA } from '../ai/consentimientoIA';
@@ -15,14 +15,13 @@ const perfil = (legal?: AceptacionesLegales, role: 'client' | 'coach' = 'client'
   ({ role, legal } as Pick<UserProfile, 'role' | 'legal'>);
 
 const todoAceptado = (): AceptacionesLegales => ({
-  terminos:   registrarAceptacion(meta('terminos'), AHORA),
+  terminos:   registrarAceptacion(meta('terminos'), AHORA, { [OPCION_IA]: false }),
   privacidad: registrarAceptacion(meta('privacidad'), AHORA),
-  ajustes:    registrarAceptacion(meta('ajustes'), AHORA, { [OPCION_IA]: false, [OPCION_IMAGENES]: false }),
 });
 
 describe('documentos pendientes', () => {
   it('sin nada aceptado, los pide todos y en orden', () => {
-    expect(documentosPendientes(undefined).map(d => d.id)).toEqual(['terminos', 'privacidad', 'ajustes']);
+    expect(documentosPendientes(undefined).map(d => d.id)).toEqual(['terminos', 'privacidad']);
   });
 
   it('con todo aceptado en versión actual, no pide nada', () => {
@@ -37,7 +36,7 @@ describe('documentos pendientes', () => {
 
   it('a medias, solo pide lo que falta', () => {
     const legal: AceptacionesLegales = { terminos: registrarAceptacion(meta('terminos'), AHORA) };
-    expect(documentosPendientes(legal).map(d => d.id)).toEqual(['privacidad', 'ajustes']);
+    expect(documentosPendientes(legal).map(d => d.id)).toEqual(['privacidad']);
   });
 });
 
@@ -60,12 +59,10 @@ describe('a quién se le enseña el muro', () => {
 });
 
 describe('obligatorio vs opcional', () => {
-  it('faltando solo el paso opcional, no queda nada obligatorio', () => {
-    const legal = todoAceptado();
-    delete legal.ajustes;
-    expect(faltaAlgoObligatorio(legal)).toBe(false);
-    // …pero sigue siendo un paso pendiente: se pregunta una vez.
-    expect(documentosPendientes(legal).map(d => d.id)).toEqual(['ajustes']);
+  it('los dos documentos del muro son obligatorios', () => {
+    expect(DOCUMENTOS_LEGALES.every(d => d.obligatorio)).toBe(true);
+    expect(faltaAlgoObligatorio(undefined)).toBe(true);
+    expect(faltaAlgoObligatorio(todoAceptado())).toBe(false);
   });
 
   it('faltando privacidad, sí', () => {
@@ -91,30 +88,16 @@ describe('decisión sobre el análisis con IA', () => {
 
   it('un «sí» viaja al onboarding con la versión del consentimiento', () => {
     const legal = todoAceptado();
-    legal.ajustes = registrarAceptacion(meta('ajustes'), AHORA, { [OPCION_IA]: true });
+    legal.terminos = registrarAceptacion(meta('terminos'), AHORA, { [OPCION_IA]: true });
     expect(consentimientoIADesdeLegal(legal)).toEqual({
       aceptado: true, fecha: AHORA, version: VERSION_CONSENTIMIENTO_IA,
     });
   });
 
-  it('aceptar el documento sin tocar las casillas NO consiente nada', () => {
-    const legal: AceptacionesLegales = { ajustes: registrarAceptacion(meta('ajustes'), AHORA) };
+  it('aceptar los términos sin tocar la casilla opcional NO consiente el análisis', () => {
+    const legal: AceptacionesLegales = { terminos: registrarAceptacion(meta('terminos'), AHORA) };
     expect(decisionIA(legal)).toBeUndefined();
-    expect(permiteUsoDeImagenes(legal)).toBe(false);
-  });
-});
-
-describe('uso promocional de imágenes', () => {
-  it('por defecto, no', () => {
-    expect(permiteUsoDeImagenes(undefined)).toBe(false);
-    expect(permiteUsoDeImagenes(todoAceptado())).toBe(false);
-  });
-
-  it('solo si se marcó', () => {
-    const legal: AceptacionesLegales = {
-      ajustes: registrarAceptacion(meta('ajustes'), AHORA, { [OPCION_IMAGENES]: true }),
-    };
-    expect(permiteUsoDeImagenes(legal)).toBe(true);
+    expect(consentimientoIADesdeLegal(legal)).toBeUndefined();
   });
 });
 

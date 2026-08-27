@@ -19,7 +19,7 @@ import MiFichaCard from './MiFichaCard';
 import AthleteHighlightsPanel from './AthleteHighlightsPanel';
 import CoachesScreen from './CoachesScreen';
 import EliminarCuentaDialog from './EliminarCuentaDialog';
-import AceptacionLegalGate, { SOLO_AJUSTES } from './AceptacionLegalGate';
+import AceptacionLegalGate, { DOC_CON_OPCIONALES } from './AceptacionLegalGate';
 import type { AceptacionesLegales } from '../legal/aceptacion';
 import CheckInScreen from './CheckInScreen';
 import AthleteRoadmapScreen from './AthleteRoadmapScreen';
@@ -462,7 +462,7 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
                 className="flex items-center gap-2 py-2 text-body-s font-sans text-ink-3 hover:text-ink-2"
               >
                 <Icon name="tune" size="s" />
-                Permisos opcionales
+                Análisis automático
               </button>
             )}
             <a
@@ -510,7 +510,8 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
       {showPermisos && (
         <AceptacionLegalGate
           profile={{ ...profile, legal: legalLocal }}
-          documentos={SOLO_AJUSTES}
+          documentos={DOC_CON_OPCIONALES}
+          revision
           onCerrar={() => setShowPermisos(false)}
           onCompletado={legal => { setLegalLocal(legal); setShowPermisos(false); }}
         />

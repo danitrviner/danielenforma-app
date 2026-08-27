@@ -21,10 +21,9 @@
    que se consintió, no para lo que venga después.
 
    **Se falla cerrado, pero solo en lo obligatorio.** Sin registro de los dos
-   documentos obligatorios no se entra a la app. Los ajustes opcionales
-   (el análisis asistido, el uso promocional de imágenes) no bloquean nada:
-   se preguntan una vez, se guarda la respuesta —sea cual sea— y no se
-   vuelve a insistir.
+   documentos no se entra a la app. La única casilla opcional —el análisis
+   asistido— no bloquea nada: se pregunta una vez, se guarda la respuesta
+   —sea cual sea— y no se vuelve a insistir.
 
    **Un "no" se guarda.** Igual que en `ai/consentimientoIA.ts`: sin guardar
    el "no" no hay forma de distinguir «dijo que no» de «aún no se lo hemos
@@ -36,11 +35,15 @@ import { VERSION_CONSENTIMIENTO_IA, type ConsentimientoIA } from '../ai/consenti
 
 /** Id de cada documento del muro. Es la clave con la que se guarda: no se
  *  renombra nunca sin migrar los registros ya escritos. */
-export type IdDocumentoLegal = 'terminos' | 'privacidad' | 'ajustes';
+export type IdDocumentoLegal = 'terminos' | 'privacidad';
 
-/** Ids de las casillas opcionales del documento `ajustes`. */
+/** Id de la única casilla opcional, que viaja dentro del documento `terminos`.
+ *  Decisión de Dani (27-08): no quería una pantalla dedicada al asunto. Que
+ *  comparta paso con los términos NO significa que se acepte con ellos: es una
+ *  casilla suelta, desmarcada, que no bloquea el botón. Meterla DENTRO de la
+ *  aceptación de los términos invalidaría el consentimiento (art. 7.2 y 7.4:
+ *  tiene que ser separable, y decir que no no puede costar el servicio). */
 export const OPCION_IA = 'analisisIA';
-export const OPCION_IMAGENES = 'usoImagenes';
 
 export interface MetaDocumentoLegal {
   id: IdDocumentoLegal;
@@ -49,13 +52,13 @@ export interface MetaDocumentoLegal {
   obligatorio: boolean;
 }
 
-/* La versión de `ajustes` va atada a la del consentimiento de IA: es la
-   casilla que de verdad tiene consecuencias legales dentro de ese paso, y así
-   subir una obliga a volver a preguntar la otra. */
+/* Los dos son obligatorios. La casilla opcional del análisis asistido vive
+   dentro de `terminos`, así que si cambia lo que se le cuenta sobre ese
+   tratamiento hay que subir la versión de `terminos`: arrastra a volver a
+   enseñar el documento entero, que es el precio de no tener paso propio. */
 export const DOCUMENTOS_LEGALES: readonly MetaDocumentoLegal[] = [
-  { id: 'terminos',   version: 1,                          obligatorio: true },
-  { id: 'privacidad', version: 1,                          obligatorio: true },
-  { id: 'ajustes',    version: VERSION_CONSENTIMIENTO_IA,  obligatorio: false },
+  { id: 'terminos',   version: 1, obligatorio: true },
+  { id: 'privacidad', version: 1, obligatorio: true },
 ];
 
 export interface RegistroAceptacion {
@@ -103,7 +106,7 @@ export function registrarAceptacion(
 /** Lectura de la casilla del análisis asistido. Sin registro devuelve
  *  `undefined` —«no ha contestado»—, que NO es lo mismo que `false`. */
 export function decisionIA(legal: AceptacionesLegales | undefined): boolean | undefined {
-  const opciones = legal?.ajustes?.opciones;
+  const opciones = legal?.terminos?.opciones;
   if (!opciones || typeof opciones[OPCION_IA] !== 'boolean') return undefined;
   return opciones[OPCION_IA];
 }
@@ -113,14 +116,8 @@ export function decisionIA(legal: AceptacionesLegales | undefined): boolean | un
 export function consentimientoIADesdeLegal(
   legal: AceptacionesLegales | undefined,
 ): ConsentimientoIA | undefined {
-  const registro = legal?.ajustes;
+  const registro = legal?.terminos;
   const aceptado = decisionIA(legal);
   if (!registro || aceptado === undefined) return undefined;
   return { aceptado, fecha: registro.fecha, version: VERSION_CONSENTIMIENTO_IA };
-}
-
-/** ¿Autorizó usar sus fotos y resultados para promoción? Por defecto NO: es
- *  una finalidad distinta del servicio y se pide aparte (art. 7.2 RGPD). */
-export function permiteUsoDeImagenes(legal: AceptacionesLegales | undefined): boolean {
-  return legal?.ajustes?.opciones?.[OPCION_IMAGENES] === true;
 }

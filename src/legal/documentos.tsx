@@ -1,5 +1,5 @@
 import React from 'react';
-import { OPCION_IA, OPCION_IMAGENES, type IdDocumentoLegal } from './aceptacion';
+import { OPCION_IA, type IdDocumentoLegal } from './aceptacion';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    El texto del muro legal
@@ -98,6 +98,25 @@ export const CONTENIDO_LEGAL: Record<IdDocumentoLegal, ContenidoLegal> = {
         obligatoria: true,
         etiqueta: <>Entiendo que esto no es asesoramiento médico y que entreno bajo mi responsabilidad.</>,
       },
+      /* Opcional, y separada de las dos de arriba por una línea. Comparte paso
+         con los términos —decisión de Dani: no quería una pantalla dedicada—
+         pero NO se acepta con ellos: no bloquea el botón y arranca desmarcada.
+         Si bloqueara, dejaría de ser consentimiento (art. 7.4 RGPD). */
+      {
+        id: OPCION_IA,
+        obligatoria: false,
+        etiqueta: <>Permitir que mi entrenador use herramientas de análisis automático al revisar mi evolución. <span className="text-ink-3">(opcional)</span></>,
+        detalle: (
+          <>
+            Cuando las usa, se envían tu ficha, tus entrenos, tu dieta y tus revisiones —incluidas
+            lesiones, alergias y medicación— a Anthropic PBC (EE. UU., con cláusulas contractuales
+            tipo), que las trata como encargado y no las emplea para entrenar sus modelos. No viaja
+            tu nombre completo: solo tu nombre de pila y la inicial del apellido. Los planes los
+            decide y los firma tu entrenador. Si lo dejas sin marcar, los prepara a mano, no se
+            envía nada y la app funciona igual. Puedes cambiarlo cuando quieras en Perfil → Ajustes.
+          </>
+        ),
+      },
     ],
   },
 
@@ -111,7 +130,7 @@ export const CONTENIDO_LEGAL: Record<IdDocumentoLegal, ContenidoLegal> = {
       <>
         <p className={P}>
           Responsable del tratamiento: tu entrenador, Daniel Briz Morales, NIF 73004250L,
-          Calle Viena 1, 50003 Zaragoza.
+          Zaragoza (España).
           Contacto: <span className="text-ink">danitrviner@gmail.com</span>. La app{' '}
           <strong className="text-ink">no recoge nada por su cuenta</strong>: no hay analítica, ni
           publicidad, ni seguimiento entre aplicaciones, ni acceso a tu ubicación, tu agenda o tus
@@ -167,48 +186,5 @@ export const CONTENIDO_LEGAL: Record<IdDocumentoLegal, ContenidoLegal> = {
         detalle: <>Peso, medidas, lesiones, alergias y medicación. Sin esto no se puede preparar un plan seguro. Revocable en cualquier momento.</>,
       },
     ],
-  },
-
-  /* ── 3. Opcionales ──────────────────────────────────────────────────────────
-     Sin titular. Son dos finalidades distintas del servicio contratado, así que
-     van aparte y desmarcadas (art. 7.2 y considerando 32 del RGPD: nada
-     premarcado, y decir que no no puede costar nada). Que el paso sea discreto
-     no autoriza a ser ambiguo: se dice el tercero con su nombre, el país y qué
-     sale de aquí. */
-  ajustes: {
-    id: 'ajustes',
-    titulo: 'Un par de permisos opcionales',
-    accion: 'Guardar y empezar',
-    cuerpo: (
-      <>
-        <p className={P}>
-          Ninguno de los dos hace falta para usar la app. Si los dejas sin marcar, todo funciona
-          exactamente igual. Puedes cambiarlos cuando quieras en Perfil → Ajustes.
-        </p>
-      </>
-    ),
-    casillas: [
-      {
-        id: OPCION_IA,
-        obligatoria: false,
-        etiqueta: <>Permitir que mi entrenador use herramientas de análisis automático al revisar mi evolución.</>,
-        detalle: (
-          <>
-            Cuando las usa, se envían tu ficha, tus entrenos, tu dieta y tus revisiones —incluidas
-            lesiones, alergias y medicación— a Anthropic PBC (EE. UU., con cláusulas contractuales
-            tipo), que las trata como encargado y no las emplea para entrenar sus modelos. No viaja
-            tu nombre completo: solo tu nombre de pila y la inicial del apellido. Los planes los
-            decide y los firma tu entrenador. Si lo dejas sin marcar, los prepara a mano y no se
-            envía nada.
-          </>
-        ),
-      },
-      {
-        id: OPCION_IMAGENES,
-        obligatoria: false,
-        etiqueta: <>Permitir el uso de mis fotos y resultados con fines promocionales.</>,
-        detalle: <>Antes y después, testimonios o publicaciones en redes. Sin esto, tus fotos solo las ve tu entrenador.</>,
-      },
-    ],
-  },
+  }
 };
