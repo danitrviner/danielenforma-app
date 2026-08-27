@@ -1,6 +1,6 @@
 import {
   db,
-  collection, doc, getDoc, getDocs, setDoc,
+  doc, getDoc, setDoc,
 } from '../firebase';
 import { subirArchivo, borrarArchivo } from '../almacenamiento';
 import { Maquina, MaquinaOverride, MaquinaPropia, Gimnasio, DecisionMaquina, ProgresoCatalogo } from '../types';
@@ -8,6 +8,7 @@ import { forceLocalOnly, setLocalBypassMode, stripUndefined, esFalloDePermisos }
 import { compressImage } from '../utils/compressImage';
 import { maquinaId } from '../utils/maquinaId';
 import { CATALOGO_VERSION } from '../data/maquinas/version';
+import { leerCatalogo, marcarCatalogoCambiado } from './catalogoVersionado';
 
 // La semilla se carga con import() diferido, no estático: son 28 KB de JSON que
 // solo hacen falta cuando alguien abre el catálogo, y un import normal los
@@ -48,8 +49,15 @@ async function fetchOverrides(): Promise<MaquinaOverride[]> {
   if (forceLocalOnly) return getLocalOverrides();
   if (overridesCache) return overridesCache;
   try {
-    const snap = await getDocs(collection(db, MAQUINAS_COL));
-    const list = snap.docs.map(d => ({ ...(d.data() as MaquinaOverride), id: d.id }));
+    // Versionado como el resto de catálogos: 1 lectura para comprobar el sello
+    // y, si no ha cambiado, la copia local del dispositivo a coste cero. Antes
+    // era un `getDocs` completo en cada sesión de cada persona — hoy son 63
+    // overrides y con un solo usuario da igual, pero con 100 atletas abriendo
+    // la app dos veces al día son ~12.600 lecturas diarias por nada.
+    const list = await leerCatalogo(
+      'maquinas', MAQUINAS_COL,
+      d => ({ ...(d.data() as MaquinaOverride), id: d.id }),
+    );
     saveLocalOverrides(list);
     overridesCache = list;
     return list;
@@ -119,6 +127,9 @@ export async function upsertOverrideMaquina(id: string, cambios: Partial<Maquina
   if (forceLocalOnly) return;
   try {
     await setDoc(doc(db, MAQUINAS_COL, id), stripUndefined(payload), { merge: true });
+    // Sin esto los demás dispositivos seguirían sirviendo su copia vieja del
+    // catálogo: el cambio del admin sería invisible y sin dar ningún error.
+    void marcarCatalogoCambiado('maquinas');
   } catch (err) {
     console.warn('upsertOverrideMaquina Firestore failed, saved local:', err);
     setLocalBypassMode(true, err);

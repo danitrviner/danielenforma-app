@@ -158,7 +158,8 @@ export default function ExerciseTriageScreen({ onClose }: ExerciseTriageScreenPr
       }
       setOrdenados(prev => (prev ? prev.filter(e => !idsBorrados.has(e.id)) : prev));
       setIndice(i => Math.max(0, Math.min(i, lista.length - idsBorrados.size - 1)));
-      queryClient.invalidateQueries({ queryKey: exercisesQueryKey });
+      queryClient.setQueryData<Exercise[]>(exercisesQueryKey, prev =>
+        prev?.filter(ex => !idsBorrados.has(ex.id)));
       setConfirmandoBorrado(false);
       if (fallos > 0) {
         showToast(`Borrados ${idsBorrados.size}, ${fallos} fallaron — reintenta con esos.`, 'error');
@@ -175,7 +176,11 @@ export default function ExerciseTriageScreen({ onClose }: ExerciseTriageScreenPr
     setCambios(c => ({ ...c, [id]: { ...c[id], ...updates } }));
     try {
       await updateExercise(id, updates);
-      queryClient.invalidateQueries({ queryKey: exercisesQueryKey });
+      // `setQueryData` y NO `invalidateQueries`: el dato nuevo ya está aquí,
+      // así que volver a pedir la lista no aporta nada y cuesta una relectura
+      // del catálogo por cada edición. Mismo patrón que ExerciseLibraryScreen.
+      queryClient.setQueryData<Exercise[]>(exercisesQueryKey, prev =>
+        prev?.map(ex => (ex.id === id ? { ...ex, ...updates } : ex)));
     } catch (err) {
       setCambios(c => {
         const copia = { ...c };
