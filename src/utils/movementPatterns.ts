@@ -42,8 +42,13 @@ const MUSCLE_TO_PATTERNS: Partial<Record<MuscleGroup, MovementPattern[]>> = {
   aductores:     ['empuje_cadera'],
 };
 
-function mapToPatterns(g: MuscleGroup): MovementPattern[] {
+/** Patrones en los que cae un grupo muscular — lista vacía si el grupo no entra en ninguno (core, gemelo, lumbares, rotadores). */
+export function patronesDeGrupo(g: MuscleGroup): MovementPattern[] {
   return MUSCLE_TO_PATTERNS[g] ?? [];
+}
+
+function mapToPatterns(g: MuscleGroup): MovementPattern[] {
+  return patronesDeGrupo(g);
 }
 
 function round1(n: number): number { return Math.round(n * 10) / 10; }
