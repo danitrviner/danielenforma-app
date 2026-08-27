@@ -32,6 +32,13 @@ type Props = {
   /** Muestra la flecha de "entrar" a la derecha. Se ignora si hay `trailing`. */
   chevron?: boolean;
   onClick?: () => void;
+  /** Convierte la fila en un enlace de verdad (`<a>`). Excluyente con `onClick`.
+   *  Existe para los enlaces a páginas fuera de la SPA —las legales— donde
+   *  `window.open()` no vale: los navegadores bloquean la ventana abierta por
+   *  código y el usuario se queda sin ver nada, mientras que un `<a
+   *  target="_blank">` pulsado a mano siempre se abre. */
+  href?: string;
+  target?: string;
   disabled?: boolean;
   /** Nombre accesible cuando el título no basta por sí solo. */
   label?: string;
@@ -48,6 +55,8 @@ export default function ListRow({
   trailing,
   chevron = false,
   onClick,
+  href,
+  target,
   disabled = false,
   label,
   as = 'div',
@@ -65,6 +74,27 @@ export default function ListRow({
     </>
   );
 
+  const claseInteractiva =
+    'flex w-full min-h-[52px] items-center gap-3 rounded-control px-3 py-3 text-left transition-colors duration-(--duration-state) '
+    + 'hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-line '
+    + 'disabled:opacity-40 disabled:pointer-events-none';
+
+  if (href) {
+    return (
+      <Envoltorio className={className}>
+        <a
+          href={href}
+          target={target}
+          rel={target === '_blank' ? 'noopener noreferrer' : undefined}
+          aria-label={label}
+          className={claseInteractiva}
+        >
+          {cuerpo}
+        </a>
+      </Envoltorio>
+    );
+  }
+
   if (onClick) {
     return (
       <Envoltorio className={className}>
@@ -73,11 +103,7 @@ export default function ListRow({
           onClick={onClick}
           disabled={disabled}
           aria-label={label}
-          className={
-            'flex w-full min-h-[52px] items-center gap-3 rounded-control px-3 py-3 text-left transition-colors duration-(--duration-state) '
-            + 'hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-line '
-            + 'disabled:opacity-40 disabled:pointer-events-none'
-          }
+          className={claseInteractiva}
         >
           {cuerpo}
         </button>

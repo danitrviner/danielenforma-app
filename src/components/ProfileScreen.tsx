@@ -438,36 +438,38 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
               Google exige además que el camino de borrado sea accesible desde
               aquí. Son páginas estáticas fuera de la SPA, así que se abren en el
               navegador del sistema: `target="_blank"` con `rel="noopener"` para
-              no dejarles acceso a `window.opener`. */}
-          <div className="pt-2 mt-2 border-t border-hairline flex flex-col">
+              no dejarles acceso a `window.opener`.
+
+              Con el mismo peso visual que el resto de ajustes (ListRow), no como
+              dos líneas de texto tenue al fondo del panel: Dani no las encontró
+              probando la cuenta del revisor, y lo que no encuentra quien hizo la
+              app tampoco lo encuentra quien la revisa. «Encontrable» es el
+              requisito literal de las dos tiendas. */}
+          <p className="font-mono text-caption text-ink-3 uppercase tracking-widest pt-2">Legal</p>
+
+          <div className="bg-surface border border-hairline rounded-surface divide-y divide-hairline">
             {!isCoach && (
-              <button
-                type="button"
+              <ListRow
                 onClick={() => { setShowSettings(false); setShowPermisos(true); }}
-                className="flex items-center gap-2 py-2 text-body-s font-sans text-ink-3 hover:text-ink-2"
-              >
-                <Icon name="tune" size="s" />
-                Análisis automático
-              </button>
+                leading={<Icon name="tune" size="m" className="text-accent" />}
+                title="Análisis automático"
+                chevron
+              />
             )}
-            <a
+            <ListRow
               href="/privacidad"
               target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 py-2 text-body-s font-sans text-ink-3 hover:text-ink-2"
-            >
-              <Icon name="shield" size="s" />
-              Política de privacidad
-            </a>
-            <a
+              leading={<Icon name="shield" size="m" className="text-accent" />}
+              title="Política de privacidad"
+              chevron
+            />
+            <ListRow
               href="/terminos"
               target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 py-2 text-body-s font-sans text-ink-3 hover:text-ink-2"
-            >
-              <Icon name="gavel" size="s" />
-              Términos de uso
-            </a>
+              leading={<Icon name="gavel" size="m" className="text-accent" />}
+              title="Términos de uso"
+              chevron
+            />
           </div>
 
           <button onClick={handleSignOut} className="w-full flex items-center justify-center gap-2 py-3 text-label font-sans font-bold text-danger">
