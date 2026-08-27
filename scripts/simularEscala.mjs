@@ -64,12 +64,47 @@ for (let a = 0; a < ATLETAS; a++) {
 await cerrar();
 console.log(`Sembrados ${escritos} documentos.\n`);
 
+// ── ANTES vs DESPUÉS ────────────────────────────────────────────────────────
+// Compara lo que costaba cada pantalla con lo que cuesta tras los cambios,
+// contra los mismos dos años de datos.
+const C = (c) => db.collection(c);
+const e0 = emails[0];
+const hoy = dia(0);
+
+const casos = [
+  ['Widget de pasos (el registro de hoy)',
+   () => C('stepLogs').where('athleteId','==',e0),
+   () => C('stepLogs').where('athleteId','==',e0).where('date','==',hoy).limit(1)],
+  ['Check-in (el peso más reciente)',
+   () => C('bodyweightLogs').where('athleteId','==',e0),
+   () => C('bodyweightLogs').where('athleteId','==',e0).orderBy('date','desc').limit(1)],
+  ['Destacados (variación de punta a punta)',
+   () => C('bodyweightLogs').where('athleteId','==',e0),
+   () => C('bodyweightLogs').where('athleteId','==',e0).orderBy('date','desc').limit(1)],
+  ['Semana del coach (15 atletas)',
+   () => C('workoutAssignments').where('athleteId','in',emails.slice(0,15)),
+   () => C('workoutAssignments').where('athleteId','in',emails.slice(0,15)).where('date','>=',dia(7))],
+];
+
+console.log('LECTURAS POR PANTALLA · 20 atletas con 2 años de historial\n');
+console.log('  ' + 'pantalla'.padEnd(42) + 'antes'.padStart(8) + 'después'.padStart(10));
+console.log('  ' + '-'.repeat(60));
+let antesTotal = 0, despuesTotal = 0;
+for (const [etiqueta, antesQ, despuesQ] of casos) {
+  const antes = (await antesQ().get()).size;
+  const despues = (await despuesQ().get()).size;
+  antesTotal += antes; despuesTotal += despues;
+  console.log('  ' + etiqueta.padEnd(42) + String(antes).padStart(8) + String(despues).padStart(10));
+}
+console.log('  ' + '-'.repeat(60));
+console.log('  ' + 'TOTAL'.padEnd(42) + String(antesTotal).padStart(8) + String(despuesTotal).padStart(10));
+console.log(`\n  Reducción: ${(100 - despuesTotal/antesTotal*100).toFixed(1)}%`);
+console.log('  Y lo importante: las de "después" NO crecen con el tiempo.\n');
+
 // ── Medición por horizonte ─────────────────────────────────────────────────
 // Una consulta SIN ventana devuelve todo el historial. Para saber qué
 // devolvería con una cuenta de X meses, se cuenta lo que hay desde ese corte:
 // es exactamente lo que la consulta traería si la cuenta tuviera esa edad.
-const C = (c) => db.collection(c);
-const e0 = emails[0];
 const HORIZONTES = [[6,180],[12,365],[24,730]];
 
 const SIN_VENTANA = [
