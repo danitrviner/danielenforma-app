@@ -43,12 +43,13 @@
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
 	</array>
-	<!-- Apple exige esta clave cuando TARGETED_DEVICE_FAMILY incluye iPad (hoy
-	     "1,2", §6.4 sigue sin decidir) y no se soportan todas las orientaciones:
-	     sin ella Xcode avisa "All interface orientations must be supported
-	     unless the app requires full screen" y el envío puede rechazarse. Solo
-	     quita Slide Over/Split View en iPad — no decide si se distribuye a
-	     iPad, eso sigue abierto. -->
+	<!-- La v1 se distribuye SOLO a iPhone (TARGETED_DEVICE_FAMILY = "1",
+	     decidido el 27-08-2026): así no hay que diseñar, probar ni fotografiar
+	     una pantalla de tablet para salir. Estas dos claves se quedan puestas
+	     aunque hoy no se lean: son las que Apple exige en cuanto se vuelva a
+	     incluir iPad y no se soporten todas las orientaciones — sin ellas Xcode
+	     avisa "All interface orientations must be supported unless the app
+	     requires full screen" y el envío puede rechazarse. -->
 	<key>UIRequiresFullScreen</key>
 	<true/>
 	<!-- 07-6. Sin estas tres claves, `CAPBridgeViewController` se quedaba con
