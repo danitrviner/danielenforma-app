@@ -234,10 +234,25 @@ service cloud.firestore {
       allow write: if isCoach();
     }
 
-    // ── workoutAssignments (athleteId = UID) ─────────────────────────────────
+    // ── workoutAssignments (athleteId = EMAIL desde 24-08; antes UID) ────────
+    // MIGRACIÓN EN CURSO. Esta colección era la ÚNICA del proyecto con
+    // athleteId = UID, contra las ~30 que usan email; ver `clavesDeAtleta.ts`.
+    // Durante el paso se aceptan LAS DOS claves para que no haya ventana en la
+    // que el atleta se quede sin ver sus sesiones: los documentos ya migrados
+    // llevan email y los que aún no, UID. Cuando `migrarAsignacionesAEmail.mjs`
+    // haya terminado en producción, quitar la rama del uid (y este comentario).
+    function esSuAsignacion() {
+      return request.auth != null
+             && (
+               // Clave nueva: email verificado.
+               (request.auth.token.email == resource.data.athleteId
+                && request.auth.token.email_verified == true)
+               // Clave antigua: UID. Se quita al acabar la migración.
+               || request.auth.uid == resource.data.athleteId
+             );
+    }
     match /workoutAssignments/{docId} {
-      allow read: if isCoach()
-                  || (request.auth != null && request.auth.uid == resource.data.athleteId);
+      allow read: if isCoach() || esSuAsignacion();
       allow create, delete: if isCoach();
       // El atleta solo puede marcar el estado de su propia asignación al
       // terminar/saltar una sesión (o que el cliente la marque "perdido" tras
@@ -245,8 +260,7 @@ service cloud.firestore {
       // esta escritura sin permiso y el "Terminar sesión" fallaba aunque el
       // entrenamiento ya estuviera guardado en workoutLogs.
       allow update: if isCoach()
-                    || (request.auth != null
-                        && request.auth.uid == resource.data.athleteId
+                    || (esSuAsignacion()
                         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
                         && request.resource.data.status in ['completed', 'skipped', 'perdido']);
     }

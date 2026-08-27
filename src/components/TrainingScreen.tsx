@@ -83,7 +83,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
   const assignmentsKey = ['workoutAssignmentsForAthlete', profile.userId] as const;
   const { data: assignments = [], isPending: loadingAssignments } = useQuery({
     queryKey: assignmentsKey,
-    queryFn: () => getWorkoutAssignmentsForAthlete(profile.userId),
+    queryFn: () => getWorkoutAssignmentsForAthlete({ uid: profile.userId, email: profile.email }),
   });
   // Solo las rutinas que las asignaciones de ESTE atleta referencian, no la
   // colección entera de todos los atletas — antes `getWorkouts()` se bajaba

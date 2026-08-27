@@ -91,7 +91,7 @@ export default function CoachRoadmapView({ athleteEmail }: Props) {
   const uid = profile?.userId;
   const { data: assignments = [], isPending: loadingAssignments } = useQuery({
     queryKey: ['workoutAssignments', uid],
-    queryFn: () => getWorkoutAssignments(uid!),
+    queryFn: () => getWorkoutAssignments({ uid: uid!, email: athleteEmail }),
     enabled: !!uid,
   });
 

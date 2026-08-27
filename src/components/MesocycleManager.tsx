@@ -1547,10 +1547,11 @@ export default function MesocycleManager({
         for (let dayIdx = 0; dayIdx < editing.daysPerWeek; dayIdx++) {
           const date = addDays(editing.startDate, (week - 1) * cicloDias + (offsets[dayIdx] ?? dayIdx));
 
-          // athleteId is the resolved UID (not email) so athlete security rules match
+          // Migración 24-08: se escribe el EMAIL. Antes era el UID — esta era
+          // la única colección del proyecto con esa clave.
           await createWorkoutAssignmentStrict({
             workoutId:   dayWorkoutIds[dayIdx],
-            athleteId:   athleteUid,
+            athleteId:   selectedEmail,
             mesocycleId: editing.id,
             date,
             status:      'pending',

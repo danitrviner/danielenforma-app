@@ -34,14 +34,16 @@ Usar `stripUndefined(obj)` (helper recursivo en `dbService.ts`) en **todas** las
 ### 4 — Queries deben filtrar por dueño
 Las reglas de Firestore deniegan queries de colección completa. Siempre incluir `where('athleteId','==', email)` o equivalente.
 
-### 5 — Taxonomía email vs UID mixta (ver tabla colecciones)
-`workoutAssignments` es la **única** colección con `athleteId` = UID. Las otras ~30 usan el email.
+### 5 — Taxonomía email vs UID — MIGRADA a email (24-08)
+`workoutAssignments` **era** la única colección con `athleteId` = UID; el 24-08 se migraron sus 136 documentos a email. Ahora TODAS las colecciones usan el email.
 
-**Por qué duele:** la regla exige `athleteId == request.auth.uid`, así que consultar con email **no da error de permisos** — devuelve 0 documentos. Al coach le aparece «este atleta no tiene entrenamientos asignados», indistinguible de la verdad. Y escribir con email deja la asignación huérfana para siempre: el atleta nunca la ve ni puede marcarla.
+**Por qué dolía:** la regla exigía `athleteId == request.auth.uid`, así que consultar con email **no da error de permisos** — devuelve 0 documentos. Al coach le aparece «este atleta no tiene entrenamientos asignados», indistinguible de la verdad. Y escribir con email deja la asignación huérfana para siempre: el atleta nunca la ve ni puede marcarla.
 
-**Cómo está protegido (24-08):** `src/db/clavesDeAtleta.ts` expone `exigeUid()` / `exigeEmail()`, ya aplicados en `getWorkoutAssignments`, `getWorkoutAssignmentsForAthlete`, `createWorkoutAssignment`, `createWorkoutAssignmentStrict` y `getWorkoutLogs`. Pasar la clave equivocada ahora lanza con el nombre de la función y qué campo usar (`userProfile.userId` vs `userProfile.email`), en vez de devolver una lista vacía.
+**Cómo está protegido:** `src/db/clavesDeAtleta.ts` expone `exigeUid()` / `exigeEmail()` / `clavesDelAtleta()`, aplicados en los accesores de asignaciones y en `getWorkoutLogs`. Pasar la clave equivocada lanza con el nombre de la función y qué campo usar (`userProfile.userId` vs `userProfile.email`), en vez de devolver una lista vacía.
 
-**Lo que NO se ha hecho:** migrar `workoutAssignments` a email. Reescribiría documentos de clientes reales y las reglas; es una decisión aparte y no se ha tocado.
+**Estado de la migración (24-08):** reglas y código desplegados, y 136/136 documentos migrados y verificados. Cada uno conserva el UID en `athleteIdAnterior` por si hubiera que volver atrás.
+
+**PASO PENDIENTE:** las reglas y las consultas aceptan TODAVÍA las dos claves (`in [email, uid]`) a propósito. El bundle nativo va empotrado (`webDir: 'dist'`), así que una app instalada con un bundle anterior a la migración consultaría por UID y vería **0 entrenamientos**. Antes de quitar la rama del uid de `firestore.rules` y simplificar `clavesDeAtleta.ts`, confirmar que no queda ninguna instalación nativa con bundle viejo.
 
 ### 6 — Reglas Firestore sugeridas por IA casi siempre MAL
 Usar patrón `isOwner()` / `isCoach()`. Consola Firebase es la fuente de verdad.
@@ -56,7 +58,7 @@ Usar patrón `isOwner()` / `isCoach()`. Consola Firebase es la fuente de verdad.
 | `checkins` | auto | `userId` (UID) + `email` |
 | `exercises` | auto | `ownerId` (UID) |
 | `workouts` | auto | `ownerId` (UID coach) |
-| `workoutAssignments` | auto | `athleteId` = **UID** |
+| `workoutAssignments` | auto | `athleteId` = **EMAIL** (migrado 24-08; era UID, conserva `athleteIdAnterior`) |
 | `workoutLogs` | auto | `athleteId` = **EMAIL** |
 | `foodItems` | auto | — |
 | `diets` | auto | `athleteId` = **EMAIL** (`selfManaged: true` = creada por el atleta en "Mis Dietas", el coach no la ve/edita) |

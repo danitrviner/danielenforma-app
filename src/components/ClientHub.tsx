@@ -180,7 +180,7 @@ export default function ClientHub({
   const assignmentsKey = ['workoutAssignments', athlete.userId] as const;
   const { data: assignments = [] } = useQuery({
     queryKey: assignmentsKey,
-    queryFn: () => getWorkoutAssignments(athlete.userId),
+    queryFn: () => getWorkoutAssignments({ uid: athlete.userId, email: athlete.email }),
   });
   const setAssignments = (updater: React.SetStateAction<WorkoutAssignment[]>) =>
     queryClient.setQueryData<WorkoutAssignment[]>(assignmentsKey, prev =>

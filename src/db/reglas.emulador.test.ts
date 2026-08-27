@@ -194,6 +194,43 @@ describe('workoutAssignments · el atleta puede cerrar/saltar su propia sesión'
       athleteId: uidAtleta, workoutId: 'w1', date: '2026-08-18', status: 'pending',
     }));
   });
+
+  // ── Migración UID→EMAIL (24-08) ────────────────────────────────────────────
+  // Durante el paso conviven documentos con las dos claves. Las reglas tienen
+  // que dejar al atleta cerrar su sesión en AMBOS casos, o se queda sin poder
+  // marcar entrenamientos justo mientras corre la migración.
+
+  it('migrado a email: el atleta puede cerrar su sesión con athleteId = email', async () => {
+    await sembrar(async db => {
+      await setDoc(doc(db, 'workoutAssignments', 'a6'), {
+        athleteId: ATLETA, workoutId: 'w1', date: '2026-08-18', status: 'pending',
+      });
+    });
+    const atleta = env.authenticatedContext(uidAtleta, { email: ATLETA, email_verified: true }).firestore();
+    await assertSucceeds(updateDoc(doc(atleta, 'workoutAssignments', 'a6'), { status: 'completed' }));
+  });
+
+  it('migrado a email: sigue sin poder tocar la de otro atleta', async () => {
+    await sembrar(async db => {
+      await setDoc(doc(db, 'workoutAssignments', 'a7'), {
+        athleteId: 'otro@enforma.com', workoutId: 'w1', date: '2026-08-18', status: 'pending',
+      });
+    });
+    const atleta = env.authenticatedContext(uidAtleta, { email: ATLETA, email_verified: true }).firestore();
+    await assertFails(updateDoc(doc(atleta, 'workoutAssignments', 'a7'), { status: 'completed' }));
+  });
+
+  // Sin email verificado la rama nueva no aplica. Se usa un uid distinto del
+  // suyo para que la rama antigua tampoco lo salve por accidente.
+  it('migrado a email: sin email verificado NO puede', async () => {
+    await sembrar(async db => {
+      await setDoc(doc(db, 'workoutAssignments', 'a8'), {
+        athleteId: ATLETA, workoutId: 'w1', date: '2026-08-18', status: 'pending',
+      });
+    });
+    const sinVerificar = env.authenticatedContext('uid-sin-verificar', { email: ATLETA, email_verified: false }).firestore();
+    await assertFails(updateDoc(doc(sinVerificar, 'workoutAssignments', 'a8'), { status: 'completed' }));
+  });
 });
 
 describe('athleteCardioProfile · el atleta puede fijar su FCmax a mano', () => {

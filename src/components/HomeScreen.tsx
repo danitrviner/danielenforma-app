@@ -65,7 +65,7 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
   const TODAY_WD: WeekDay = JS_TO_WD[new Date().getDay()];
   const { data: assignments = [], isPending: loadingAssignments } = useQuery({
     queryKey: ['workoutAssignments', profile.userId],
-    queryFn: () => getWorkoutAssignmentsForAthlete(profile.userId),
+    queryFn: () => getWorkoutAssignmentsForAthlete({ uid: profile.userId, email: profile.email }),
   });
   // Solo las rutinas que las asignaciones de ESTE atleta referencian, no la
   // colección entera de todos los atletas — antes `getWorkouts()` se bajaba

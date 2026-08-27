@@ -98,7 +98,8 @@ export default function ClientWorkoutsPanel({
     try {
       const newA = await createWorkoutAssignment({
         workoutId: assignWorkoutId,
-        athleteId: athlete.userId,
+        // Migración 24-08: la colección pasa a EMAIL, como las otras ~30.
+        athleteId: athlete.email,
         date:      assignDate,
         status:    'pending',
       });

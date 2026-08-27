@@ -116,7 +116,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
   const assignmentsQueries = useQueries({
     queries: athletes.map(a => ({
       queryKey: ['workoutAssignments', a.userId],
-      queryFn: () => getWorkoutAssignments(a.userId),
+      queryFn: () => getWorkoutAssignments({ uid: a.userId, email: a.email }),
       enabled: !athleteId,
     })),
   });

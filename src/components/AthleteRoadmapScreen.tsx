@@ -91,7 +91,7 @@ export default function AthleteRoadmapScreen({ profile }: Props) {
   });
   const { data: assignments = [], isPending: loadingAssignments } = useQuery({
     queryKey: ['workoutAssignmentsForAthlete', profile.userId],
-    queryFn: () => getWorkoutAssignmentsForAthlete(profile.userId),
+    queryFn: () => getWorkoutAssignmentsForAthlete({ uid: profile.userId, email: profile.email }),
   });
   const { data: challengeHistory = [], isPending: loadingChallengeHistory } = useQuery({
     queryKey: ['weeklyChallengesForAthlete', profile.email],
