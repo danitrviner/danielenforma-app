@@ -145,7 +145,7 @@ export {
 // import existente (`from '../dbService'`) tenga que cambiar.
 export {
   getOnboarding, updateOnboardingFoods, saveOnboarding, updateOnboarding,
-  getOnboardingTemplate, saveOnboardingTemplate,
+  getOnboardingTemplate, saveOnboardingTemplate, fusionarConsentimientoIA,
 } from './db/onboarding';
 
 // ─── NOTIFICATIONS ─────────────────────────────────────────────────────────────

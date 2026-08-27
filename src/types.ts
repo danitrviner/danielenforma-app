@@ -1,3 +1,5 @@
+import type { AceptacionesLegales } from './legal/aceptacion';
+
 // ─── NOTIFICATIONS ────────────────────────────────────────────────────────────
 
 export type NotificationType =
@@ -87,6 +89,12 @@ export interface UserProfile {
   // this field existed — treat as undefined (no daysSinceJoin drip gating) rather
   // than backfilling, since the real join date is unrecoverable for those.
   createdAt?: string;
+
+  /** Prueba del consentimiento: qué documentos legales aceptó, en qué versión y
+   *  cuándo (art. 7.1 RGPD — hay que poder demostrarlo). Vive aquí y no en el
+   *  onboarding porque el muro se enseña ANTES del alta. La lógica y el porqué,
+   *  en `src/legal/aceptacion.ts`. */
+  legal?: AceptacionesLegales;
 
   // ── Campos CRM (2026-08-01) ───────────────────────────────────────────────
   // Todos opcionales: un perfil sin ellos es exactamente lo que era antes, y
@@ -786,7 +794,9 @@ export interface OnboardingData {
   // ── Datos personales adicionales ───────────────────────────────────────────
   occupation?:        string;
   referralSource?:    string;         // ¿cómo nos conociste?
-  goalFreeText?:      string;         // objetivo en texto libre (además de goalBody/goalCapacity)
+  goalFreeText?:      string;         // cómo se ve/siente el atleta cuando consiga su objetivo
+  goalTimelineMotivation?: string;    // para cuándo lo quiere y qué hay detrás (fecha, evento, motivo)
+  coachExpectations?: string;         // qué espera de su entrenador — última pregunta del alta
   // ── Actividad ─────────────────────────────────────────────────────────────
   activityLevel?:     ActivityLevel;
   // ── Objetivo ──────────────────────────────────────────────────────────────

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, Suspense, lazy } from 'react';
 import { Routes, Route, Navigate, useNavigate, useLocation, useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { App as CapacitorApp } from '@capacitor/app';
-import { onAuthStateChanged, auth, resumenLecturas, reiniciarContadorLecturas } from './firebase';
+import { onAuthStateChanged, signOut, auth, resumenLecturas, reiniciarContadorLecturas } from './firebase';
 import { identificarUsuario, migaDePan } from './monitorizacion';
 import { UserProfile, WeightCheckIn, NotificationType } from './types';
 import { getOrCreateUserProfile, getCheckIns, getOnboarding, getWorkoutAssignmentsForAthlete, getGimnasio, updateUserProfile } from './dbService';
@@ -13,6 +13,7 @@ import TutorialEngine from './features/tutorial/TutorialEngine';
 import { useTourTarget } from './features/tutorial/TourTargetContext';
 
 import WelcomeScreen from './components/WelcomeScreen';
+import { debeAceptarLegal } from './legal/aceptacion';
 import LocalModeBanner from './components/LocalModeBanner';
 import { useAvisoConexion } from './hooks/useAvisoConexion';
 import { ToastProvider, useToast } from './hooks/useToast';
@@ -47,6 +48,7 @@ const CoachWeekScreen      = lazy(() => import('./components/CoachWeekScreen'));
 const AiChatPanel          = lazy(() => import('./components/AiChatPanel'));
 const CommandPalette       = lazy(() => import('./components/CommandPalette'));
 const AthleteOnboardingWizard = lazy(() => import('./components/AthleteOnboardingWizard'));
+const AceptacionLegalGate = lazy(() => import('./components/AceptacionLegalGate'));
 const PlanEnEsperaScreen     = lazy(() => import('./components/PlanEnEsperaScreen'));
 const ReviewsScreen        = lazy(() => import('./components/ReviewsScreen'));
 const TrainingCoachScreen  = lazy(() => import('./components/TrainingCoachScreen'));
@@ -650,6 +652,27 @@ function AppContent() {
     );
   }
 
+  // Banco de pruebas del muro legal, misma poda que el del wizard de alta: sin
+  // esto hay que crear una cuenta nueva de verdad para ver los tres pasos.
+  if (import.meta.env.DEV && location.pathname === '/dev/legal') {
+    return (
+      <div className="min-h-screen bg-bg">
+        <Suspense fallback={null}>
+          <AceptacionLegalGate
+            profile={{
+              userId: 'dev', email: 'dev@example.com', displayName: 'Dev Atleta',
+              role: 'client', avatarUrl: '', level: 1, xp: 0, currentStreak: 0, maxStreak: 0,
+              initialWeight: 0, targetWeight: 0, actualWeight: 0,
+            } as UserProfile}
+            guardar={async nuevas => { console.log('guardaría', nuevas); return nuevas; }}
+            onCompletado={legal => console.log('onCompletado', legal)}
+            onSalir={() => console.log('onSalir')}
+          />
+        </Suspense>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-bg flex items-center justify-center flex-col gap-4">
@@ -664,6 +687,30 @@ function AppContent() {
 
   if (!currentUser || !profile) {
     return <WelcomeScreen onLoginSuccess={handleLoginSuccess} />;
+  }
+
+  /* Muro legal. Va ANTES del alta a propósito: el primer dato que el atleta
+     escribe en la app es su fecha de nacimiento y su peso —dato de salud, art.
+     9 del RGPD— y para entonces el consentimiento ya tiene que estar dado.
+     También lo ven los atletas antiguos, que nunca aceptaron nada porque hasta
+     ahora no había nada que aceptar; y lo vuelven a ver si un documento sube de
+     versión. El coach no: es el responsable del tratamiento, no el interesado. */
+  if (debeAceptarLegal(profile)) {
+    return (
+      <div className="min-h-screen bg-bg">
+        <Suspense fallback={null}>
+          <AceptacionLegalGate
+            profile={profile}
+            onCompletado={legal => setProfile(p => (p ? { ...p, legal } : p))}
+            onSalir={async () => {
+              try { await signOut(auth); } catch (err) { console.error('signOut falló:', err); }
+              setCurrentUser(null);
+              void limpiarDatosDeSesion(queryClient);
+            }}
+          />
+        </Suspense>
+      </div>
+    );
   }
 
   // Primer login del atleta: onboarding guiado obligatorio antes de ver la app.

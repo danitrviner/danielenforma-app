@@ -19,6 +19,8 @@ import MiFichaCard from './MiFichaCard';
 import AthleteHighlightsPanel from './AthleteHighlightsPanel';
 import CoachesScreen from './CoachesScreen';
 import EliminarCuentaDialog from './EliminarCuentaDialog';
+import AceptacionLegalGate, { SOLO_AJUSTES } from './AceptacionLegalGate';
+import type { AceptacionesLegales } from '../legal/aceptacion';
 import CheckInScreen from './CheckInScreen';
 import AthleteRoadmapScreen from './AthleteRoadmapScreen';
 import StatTile from './StatTile';
@@ -96,6 +98,14 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
   const [showCoaches, setShowCoaches] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showEliminarCuenta, setShowEliminarCuenta] = useState(false);
+  /* Revocar es tan fácil como conceder (art. 7.3 RGPD, y la guía 5.1.1 de Apple
+     pide "una forma accesible y comprensible de retirar el consentimiento").
+     Se reabre el MISMO paso del muro, con el mismo texto y las casillas como
+     las dejó: un interruptor suelto en Ajustes diría "IA: sí/no" sin volver a
+     explicar qué se envía ni a quién. `legalLocal` existe porque `profile` lo
+     posee App.tsx y no se refresca solo al guardar desde aquí. */
+  const [showPermisos, setShowPermisos] = useState(false);
+  const [legalLocal, setLegalLocal] = useState<AceptacionesLegales | undefined>(profile.legal);
   const [searchParams] = useSearchParams();
   const requestedTab = searchParams.get('tab');
   const initialTab: ProfileTab = PROFILE_TABS.some(t => t.id === requestedTab) ? (requestedTab as ProfileTab) : 'resumen';
@@ -425,7 +435,9 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
             )
           )}
 
-          {!isCoach && (
+          {/* 27-08: "Repetir el tour" oculto — el tour está desactivado
+              (TutorialEngine, TOUR_DISABLED). */}
+          {false && !isCoach && (
             <ListRow
               onClick={() => { setShowSettings(false); tutorial.restart(); }}
               className="rounded-control border bg-surface border-hairline"
@@ -443,6 +455,16 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
               navegador del sistema: `target="_blank"` con `rel="noopener"` para
               no dejarles acceso a `window.opener`. */}
           <div className="pt-2 mt-2 border-t border-hairline flex flex-col">
+            {!isCoach && (
+              <button
+                type="button"
+                onClick={() => { setShowSettings(false); setShowPermisos(true); }}
+                className="flex items-center gap-2 py-2 text-body-s font-sans text-ink-3 hover:text-ink-2"
+              >
+                <Icon name="tune" size="s" />
+                Permisos opcionales
+              </button>
+            )}
             <a
               href="/privacidad"
               target="_blank"
@@ -484,6 +506,15 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
           )}
         </div>
       </Sheet>
+
+      {showPermisos && (
+        <AceptacionLegalGate
+          profile={{ ...profile, legal: legalLocal }}
+          documentos={SOLO_AJUSTES}
+          onCerrar={() => setShowPermisos(false)}
+          onCompletado={legal => { setLegalLocal(legal); setShowPermisos(false); }}
+        />
+      )}
 
       <EliminarCuentaDialog
         open={showEliminarCuenta}

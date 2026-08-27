@@ -139,3 +139,32 @@ export async function saveOnboardingTemplate(coachEmail: string, tpl: Onboarding
   }
 }
 
+
+/* ── Consentimiento de IA sobre un alta que YA existe ────────────────────────
+   El muro legal (`legal/AceptacionLegalGate`) se enseña antes del alta, así que
+   para un atleta nuevo el documento de onboarding todavía no existe: su
+   consentimiento se lo lleva el propio wizard, que lo escribe junto al resto de
+   la ficha (`AthleteOnboardingWizard`, campo `consentimientoIA`).
+
+   Esta función es para el otro caso: el atleta que ya está dentro, con su alta
+   hecha hace meses, que acaba de contestar en el muro o de tocar el interruptor
+   de Perfil → Ajustes. Se mira antes si el documento existe a propósito: crear
+   uno a medias aquí lo dejaría sin `completedAt` y sin `dietType`, y el gate de
+   App.tsx lo leería como «alta a medio hacer». */
+export async function fusionarConsentimientoIA(
+  email: string,
+  consentimiento: { aceptado: boolean; fecha: string; version: number },
+): Promise<void> {
+  const all = getLocalOnboardingAll();
+  const existingLocal = all.find(o => o.athleteId === email);
+  if (existingLocal) {
+    setLocalOnboardingAll([
+      ...all.filter(o => o.athleteId !== email),
+      { ...existingLocal, consentimientoIA: consentimiento },
+    ]);
+  }
+  if (forceLocalOnly) return;
+  const snap = await getDoc(doc(db, 'onboarding', email));
+  if (!snap.exists()) return;
+  await updateDoc(doc(db, 'onboarding', email), { consentimientoIA: consentimiento });
+}

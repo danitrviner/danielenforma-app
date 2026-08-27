@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  UserProfile, OnboardingData, GoalBody, GoalCapacity, ExperienceLevel,
+  UserProfile, OnboardingData, ExperienceLevel,
   ActivityLevel, DietType, OnboardingMeal,
 } from '../types';
 import { computeAuto } from '../utils/energyCalc';
 import { mensajeDeErrorFirestore } from '../utils/erroresFirestore';
 import { saveOnboarding, getAthleteNutritionConfig, saveAthleteNutritionConfig } from '../dbService';
+import { consentimientoIADesdeLegal } from '../legal/aceptacion';
 import { guardarBorradorAlta, cargarBorradorAlta, borrarBorradorAlta } from '../utils/borradorAlta';
-import { Icon, Button, Input, Sheet } from './ui';
-import { registrarConsentimiento } from '../ai/consentimientoIA';
+import { Icon, Button, Input } from './ui';
 import FoodPreferencesPanel from './FoodPreferencesPanel';
 import VegetableSelector from './VegetableSelector';
 
@@ -22,26 +22,10 @@ interface Props {
   onComplete: () => void;
 }
 
-const GOALS: { id: GoalBody; icon: string; label: string; desc: string }[] = [
-  { id: 'reducir_grasa', icon: 'local_fire_department', label: 'Reducir grasa', desc: 'Perder grasa manteniendo músculo' },
-  { id: 'aumentar_musculo', icon: 'fitness_center', label: 'Ganar músculo', desc: 'Construir masa muscular' },
-  { id: 'mantener', icon: 'balance', label: 'Mantener', desc: 'Recomposición y hábitos' },
-];
-
-const CAPACITIES: { id: GoalCapacity; label: string }[] = [
-  { id: 'fuerza', label: 'Fuerza' },
-  { id: 'fuerza_resistencia', label: 'Fuerza + resistencia' },
-  { id: 'salud', label: 'Salud general' },
-];
-
 const EXPERIENCE: { id: ExperienceLevel; label: string; desc: string }[] = [
   { id: 'principiante', label: 'Principiante', desc: 'Menos de 1 año entrenando' },
   { id: 'intermedio', label: 'Intermedio', desc: '1–3 años con constancia' },
   { id: 'avanzado', label: 'Avanzado', desc: 'Más de 3 años en serio' },
-];
-
-const EQUIPMENT_OPTIONS = [
-  'Gimnasio completo', 'Mancuernas', 'Barra y discos', 'Bandas elásticas', 'Máquinas', 'Solo peso corporal',
 ];
 
 const DIET_TYPES: { id: DietType; icon: string; label: string }[] = [
@@ -111,24 +95,6 @@ function Chip({ selected, onClick, children, big = false }: ChipProps) {
   );
 }
 
-// Mismo patrón que el Switch local de ProfileScreen (Ajustes → Análisis con
-// IA) — no vale la pena subirlo al DS por un solo control repetido dos veces.
-function ConsentSwitch({ on, onToggle }: { on: boolean; onToggle: () => void }) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={on}
-      aria-label="Revisión con apoyo de IA"
-      onClick={onToggle}
-      style={{ padding: '2px' }}
-      className={`w-11 h-6 rounded-full shrink-0 transition-colors ${on ? 'bg-accent' : 'bg-white/12'}`}
-    >
-      <span className={`block w-5 h-5 rounded-full bg-bg transition-transform ${on ? 'translate-x-5' : 'translate-x-0'}`} />
-    </button>
-  );
-}
-
 function StepShell({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
   return (
     <div className="space-y-6 animate-[fadeSlideIn_.35s_ease]">
@@ -157,9 +123,9 @@ interface BorradorCampos {
   heightCm: string;
   occupation: string;
   referralSource: string;
-  goalBody: GoalBody | '';
-  goalCapacity: GoalCapacity | '';
   goalFreeText: string;
+  goalTimelineMotivation: string;
+  coachExpectations: string;
   experienceLevel: ExperienceLevel | '';
   equipment: string[];
   injuries: string;
@@ -218,9 +184,9 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
   const [heightCm, setHeightCm] = useState(borrador?.heightCm ?? '');
   const [occupation, setOccupation] = useState(borrador?.occupation ?? '');
   const [referralSource, setReferralSource] = useState(borrador?.referralSource ?? '');
-  const [goalBody, setGoalBody] = useState<GoalBody | ''>(borrador?.goalBody ?? '');
-  const [goalCapacity, setGoalCapacity] = useState<GoalCapacity | ''>(borrador?.goalCapacity ?? '');
   const [goalFreeText, setGoalFreeText] = useState(borrador?.goalFreeText ?? '');
+  const [goalTimelineMotivation, setGoalTimelineMotivation] = useState(borrador?.goalTimelineMotivation ?? '');
+  const [coachExpectations, setCoachExpectations] = useState(borrador?.coachExpectations ?? '');
   const [experienceLevel, setExperienceLevel] = useState<ExperienceLevel | ''>(borrador?.experienceLevel ?? '');
   const [equipment, setEquipment] = useState<string[]>(borrador?.equipment ?? []);
   const [injuries, setInjuries] = useState(borrador?.injuries ?? '');
@@ -265,7 +231,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
     if (saving || enviado) return;
     guardarBorradorAlta<BorradorCampos>(profile.email, {
       step, sex, birthDate, weightKg, heightCm, occupation, referralSource,
-      goalBody, goalCapacity, goalFreeText,
+      goalFreeText, goalTimelineMotivation, coachExpectations,
       experienceLevel, equipment, injuries, noInjuries,
       hadPastInjuries, pastInjuriesDetail, takesMedication, medicationDetail,
       recentSurgery, recentSurgeryDetail,
@@ -274,7 +240,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
       activityLevel,
     });
   }, [saving, enviado, profile.email, step, sex, birthDate, weightKg, heightCm, occupation, referralSource,
-      goalBody, goalCapacity, goalFreeText, experienceLevel, equipment, injuries, noInjuries,
+      goalFreeText, goalTimelineMotivation, coachExpectations, experienceLevel, equipment, injuries, noInjuries,
       hadPastInjuries, pastInjuriesDetail, takesMedication, medicationDetail, recentSurgery, recentSurgeryDetail,
       dietType, mealCount, menuVariety, batchCookingPreferred, allergies, dislikedFoods,
       meals, cookingLevel, cookingMaxTime, prefLiked, prefDisliked, vegTypes, activityLevel]);
@@ -288,8 +254,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
   const stepValid = (): boolean => {
     switch (step) {
       case 1: return !!sex && !!birthDate && Number(weightKg) >= 30 && Number(heightCm) >= 100;
-      case 3: return !!goalBody && !!goalCapacity;
-      case 4: return !!experienceLevel && equipment.length > 0 && (noInjuries || injuries.trim().length > 0);
+      case 4: return !!experienceLevel && (noInjuries || injuries.trim().length > 0);
       case 6: return !!dietType && mealCount != null;
       case 11: return !!activityLevel;
       default: return true;
@@ -298,19 +263,8 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
 
   // 0 bienvenida, 1 sobre ti, 2 datos personales, 3 objetivo, 4 entrenamiento,
   // 5 salud, 6 alimentación, 7 comidas, 8 cocina, 9 preferencias alimentarias,
-  // 10 verduras habituales, 11 día a día, 12 final.
-  const TOTAL_STEPS = 13;
-
-  /* A-2. Ni premarcada ni obligatoria. Si el atleta no toca el interruptor,
-     se queda `null` y HomeScreen se lo preguntará una vez más (T6): mejor eso
-     que meter una decisión sobre datos de salud en el último paso de un alta
-     que la persona quiere terminar cuanto antes, donde cualquiera pulsa lo
-     que sea por salir. Volver a apagarlo tras encenderlo también vuelve a
-     `null`, no a `false` — un interruptor no puede registrar un "no"
-     explícito y distinguirlo de "no lo he tocado", así que no lo intenta: el
-     "no" de verdad se da desde Ajustes o en la pregunta de Hoy. */
-  const [consienteIA, setConsienteIA] = useState<boolean | null>(null);
-  const [mostrarDetalleIA, setMostrarDetalleIA] = useState(false);
+  // 10 verduras habituales, 11 día a día, 12 resumen, 13 qué esperas de tu coach.
+  const TOTAL_STEPS = 14;
 
   const finish = async () => {
     setSaving(true);
@@ -329,9 +283,15 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
       // siempre hay datos; si alguno faltara, se deja `targetCalories`
       // SIN ESCRIBIR en vez de inventar una cifra, y las pantallas muestran que
       // está pendiente del coach.
-      const auto = sex && birthDate && activityLevel && goalBody
+      //
+      // 26-08: el alta ya no pregunta el objetivo (reducir grasa/ganar
+      // músculo/mantener) — esa decisión la toma el coach con el atleta
+      // delante, no un desplegable en un formulario de dos minutos. El
+      // cálculo automático usa siempre 'mantener' (normocalórica) como punto
+      // de partida; las kcal finales las ajusta el coach en la ficha.
+      const auto = sex && birthDate && activityLevel
         && Number(weightKg) > 0 && Number(heightCm) > 0
-        ? computeAuto(sex, birthDate, Number(weightKg), Number(heightCm), activityLevel, goalBody)
+        ? computeAuto(sex, birthDate, Number(weightKg), Number(heightCm), activityLevel, 'mantener')
         : null;
       // 14-08. `dislikedFoods` mezcla dos fuentes: el texto libre del paso de
       // Alimentación (rápido de escribir, no exige elegir de un catálogo) y
@@ -342,6 +302,13 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
       const dislikedFoodsFinal = [...new Set([...dislikedFoodsTexto, ...prefDisliked])];
       const data: OnboardingData = {
         athleteId: profile.email,
+        // La decisión sobre el análisis asistido se tomó en el muro legal, antes
+        // de llegar aquí, y su prueba vive en `user_profiles.legal`. Se copia al
+        // alta porque es el documento que leen las herramientas del asistente
+        // (`ai/tools.ts` → `estadoConsentimiento`). Sin esta línea, `saveOnboarding`
+        // —que es un `setDoc` sin merge— borraría lo que el muro acabara de
+        // escribir, y el atleta que dijo que sí aparecería como «sin responder».
+        consentimientoIA: consentimientoIADesdeLegal(profile.legal),
         sex: sex || undefined,
         birthDate: birthDate || undefined,
         weightKg: Number(weightKg) || undefined,
@@ -349,9 +316,9 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
         occupation: occupation.trim() || undefined,
         referralSource: referralSource.trim() || undefined,
         activityLevel: activityLevel || undefined,
-        goalBody: goalBody || undefined,
-        goalCapacity: goalCapacity || undefined,
         goalFreeText: goalFreeText.trim() || undefined,
+        goalTimelineMotivation: goalTimelineMotivation.trim() || undefined,
+        coachExpectations: coachExpectations.trim() || undefined,
         hadPastInjuries,
         pastInjuriesDetail: hadPastInjuries ? (pastInjuriesDetail.trim() || undefined) : undefined,
         takesMedication,
@@ -383,9 +350,6 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
         hasCurrentInjury: !noInjuries && injuries.trim().length > 0,
         currentInjuryLocation: noInjuries ? undefined : (injuries.trim() || undefined),
         completedAt: new Date().toISOString(),
-        consentimientoIA: consienteIA === null
-          ? undefined
-          : registrarConsentimiento(consienteIA, new Date().toISOString()),
       };
       await saveOnboarding(data);
       // Las verduras habituales viven aparte, en AthleteNutritionConfig (las
@@ -537,38 +501,28 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
         )}
 
         {step === 3 && (
-          <StepShell title="Tu objetivo" subtitle="¿Qué quieres conseguir? Esto marca todo el plan.">
-            <div className="space-y-3">
-              {GOALS.map(g => (
-                <Chip key={g.id} big selected={goalBody === g.id} onClick={() => setGoalBody(g.id)}>
-                  <span className="flex items-center gap-3">
-                    <Icon name={g.icon} size="l" className={goalBody === g.id ? 'text-accent' : 'text-ink-2'} />
-                    <span>
-                      <span className="block font-bold text-white">{g.label}</span>
-                      <span className="block text-label text-ink-2">{g.desc}</span>
-                    </span>
-                  </span>
-                </Chip>
-              ))}
+          <StepShell title="Tu objetivo" subtitle="Esto es lo que más ayuda a tu coach a montarte el plan — tómate un momento.">
+            <div>
+              <label className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-2">
+                ¿Para cuándo lo quieres? ¿Hay algo detrás — una fecha, un evento, un motivo?
+              </label>
+              <textarea value={goalTimelineMotivation} onChange={e => setGoalTimelineMotivation(e.target.value)} rows={3}
+                placeholder="Ej: en 4 meses tengo una boda; o simplemente estoy cansado de sentirme así"
+                className={`${inputCls} resize-none`} />
             </div>
             <div>
-              <p className="font-sans text-caption text-ink-2 uppercase tracking-wider mb-2">¿Y a nivel de rendimiento?</p>
-              <div className="flex flex-wrap gap-2">
-                {CAPACITIES.map(c => (
-                  <Chip key={c.id} selected={goalCapacity === c.id} onClick={() => setGoalCapacity(c.id)}>{c.label}</Chip>
-                ))}
-              </div>
-            </div>
-            <div>
-              <label className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-2">Cuéntalo con tus palabras (opcional)</label>
-              <textarea value={goalFreeText} onChange={e => setGoalFreeText(e.target.value)} rows={2}
-                placeholder="Ej: quiero verme bien en verano y sentirme con energía" className={`${inputCls} resize-none`} />
+              <label className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-2">
+                Descríbelo con tus palabras: ¿cómo te ves o te sientes cuando lo consigas?
+              </label>
+              <textarea value={goalFreeText} onChange={e => setGoalFreeText(e.target.value)} rows={3}
+                placeholder="Ej: me veo con más energía, con la ropa que quiero ponerme, sin agobiarme al subir escaleras"
+                className={`${inputCls} resize-none`} />
             </div>
           </StepShell>
         )}
 
         {step === 4 && (
-          <StepShell title="Tu entrenamiento" subtitle="Para ajustar el plan a tu nivel y tu material.">
+          <StepShell title="Tu entrenamiento" subtitle="Para ajustar el plan a tu nivel.">
             <div className="space-y-3">
               {EXPERIENCE.map(x => (
                 <Chip key={x.id} big selected={experienceLevel === x.id} onClick={() => setExperienceLevel(x.id)}>
@@ -576,17 +530,6 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
                   <span className="block text-label text-ink-2">{x.desc}</span>
                 </Chip>
               ))}
-            </div>
-            <div>
-              <p className="font-sans text-caption text-ink-2 uppercase tracking-wider mb-2">¿Con qué material cuentas? (elige todo lo que tengas)</p>
-              <div className="flex flex-wrap gap-2">
-                {EQUIPMENT_OPTIONS.map(eq => (
-                  <Chip key={eq} selected={equipment.includes(eq)}
-                    onClick={() => setEquipment(prev => prev.includes(eq) ? prev.filter(e => e !== eq) : [...prev, eq])}>
-                    {eq}
-                  </Chip>
-                ))}
-              </div>
             </div>
             <div>
               <p className="font-sans text-caption text-ink-2 uppercase tracking-wider mb-2">¿Lesiones o molestias actuales?</p>
@@ -789,7 +732,6 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
           <StepShell title="¡Todo listo! 💪" subtitle="Tu coach ya tiene lo que necesita para montar tu plan. Ahora te enseñamos la app en 1 minuto.">
             <div className="bg-surface border border-accent/25 rounded-surface p-5 space-y-3">
               {[
-                goalBody && { icon: 'target', text: GOALS.find(g => g.id === goalBody)?.label },
                 experienceLevel && { icon: 'fitness_center', text: EXPERIENCE.find(x => x.id === experienceLevel)?.label },
                 dietType && { icon: 'restaurant', text: `${DIET_TYPES.find(d => d.id === dietType)?.label} · ${mealCount} comidas` },
                 weightKg && { icon: 'monitor_weight', text: `${weightKg} kg · ${heightCm} cm` },
@@ -803,54 +745,23 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
                 );
               })}
             </div>
-            {/* T6 (18-08). Antes: bloque destacado con el mismo borde que la
-                tarjeta de arriba, y el texto prometía algo que la app no hace
-                («prepara tus planes más rápido» — la política de privacidad
-                ya decía lo correcto: revisar la evolución, no programar).
-                Son datos de salud (art. 9 RGPD): el consentimiento tiene que
-                ser específico y separado de "acepto los términos", así que
-                esto no se puede esconder dentro del alta — pero sí bajar de
-                rango: una fila discreta, interruptor apagado por defecto
-                (nada premarcado — dejarlo así no es un "no", es "todavía no
-                lo sé": HomeScreen lo pregunta una vez más y luego solo queda
-                el interruptor de Perfil → Ajustes) y el detalle completo
-                detrás de "¿Qué es esto?", no delante. */}
-            <div className="bg-surface border border-hairline rounded-surface p-4 flex items-center justify-between gap-3 text-left">
-              <div className="min-w-0">
-                <p className="font-sans text-label font-bold text-white">Revisión con apoyo de IA</p>
-                <button
-                  type="button"
-                  onClick={() => setMostrarDetalleIA(true)}
-                  className="font-mono text-caption text-accent underline underline-offset-2"
-                >
-                  ¿Qué es esto?
-                </button>
-              </div>
-              <ConsentSwitch
-                on={consienteIA === true}
-                onToggle={() => setConsienteIA(prev => prev === true ? null : true)}
-              />
+          </StepShell>
+        )}
+
+        {step === 13 && (
+          <StepShell title="Una última cosa" subtitle="Tómate tu tiempo con esta — es la que más le importa a tu coach.">
+            <div>
+              <label className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-2">
+                ¿Qué esperas de tu entrenador?
+              </label>
+              <p className="text-body-s text-ink-2 mb-3">
+                No hay respuesta corta que valga aquí. Piensa en cómo te gusta que te hablen cuando fallas,
+                cuánto acompañamiento necesitas, qué te ha faltado en intentos anteriores — lo que sea que
+                marque la diferencia entre un plan que sigues y uno que abandonas.
+              </p>
+              <textarea value={coachExpectations} onChange={e => setCoachExpectations(e.target.value)} rows={5}
+                placeholder="Tómate el tiempo que necesites..." className={`${inputCls} resize-none`} />
             </div>
-            {mostrarDetalleIA && (
-              <Sheet open onClose={() => setMostrarDetalleIA(false)} title="Revisión con apoyo de IA">
-                <div className="space-y-4 text-body-s font-sans text-ink-2">
-                  <p>
-                    Tu entrenador puede usar un asistente de IA para <strong className="text-ink">revisar tu
-                    evolución</strong> (entrenos, dieta y revisiones) cuando prepara tus ajustes. Los planes
-                    los decide y los firma él.
-                  </p>
-                  <p>
-                    Para eso se enviarían esos datos —incluidos lesiones y alergias— a
-                    <strong className="text-ink"> Anthropic PBC</strong>, sin tu nombre completo y sin
-                    usarse para entrenar sus modelos.
-                  </p>
-                  <p className="text-caption text-ink-3">
-                    Puedes cambiarlo cuando quieras en Perfil → Ajustes. Si lo dejas apagado, la app
-                    funciona exactamente igual.
-                  </p>
-                </div>
-              </Sheet>
-            )}
 
             {error && (
               <div className="bg-danger/7 border border-danger/24 text-danger p-3 rounded-surface text-body-s text-center">{error}</div>
