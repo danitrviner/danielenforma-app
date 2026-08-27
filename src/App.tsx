@@ -90,6 +90,24 @@ const GimnasioHarness = import.meta.env.DEV
   ? lazy(() => import('./features/gimnasio/DevHarness'))
   : null;
 
+/* La pantalla de espera de la app, con marca. Existe como componente y no como
+   un `<div className="min-h-screen bg-bg" />` suelto por un motivo concreto:
+   ese div es NEGRO Y VACÍO, exactamente igual que una app colgada. Cuando un
+   chunk diferido tarda —o no llega— la persona no ve "cargando", ve una
+   pantalla muerta, y no hay forma de distinguir las dos cosas ni de contarlo
+   por teléfono. Con el logo y una línea de texto, un fallo se puede describir. */
+function Splash({ texto = 'Cargando...' }: { texto?: string }) {
+  return (
+    <div className="min-h-screen bg-bg flex items-center justify-center flex-col gap-4">
+      <div className="flex items-center gap-2 text-accent animate-pulse">
+        <img src="/atlas-logo.png" alt="En Forma" className="w-9 h-9 object-contain" />
+        <span className="font-sans font-extrabold text-display tracking-tighter uppercase text-accent">EN FORMA</span>
+      </div>
+      <p className="font-sans text-label text-ink-2 uppercase tracking-widest animate-pulse">{texto}</p>
+    </div>
+  );
+}
+
 function ScreenFallback() {
   return <ScreenSkeleton />;
 }
@@ -657,7 +675,7 @@ function AppContent() {
   if (import.meta.env.DEV && location.pathname === '/dev/legal') {
     return (
       <div className="min-h-screen bg-bg">
-        <Suspense fallback={null}>
+        <Suspense fallback={<Splash texto="Un momento..." />}>
           <AceptacionLegalGate
             profile={{
               userId: 'dev', email: 'dev@example.com', displayName: 'Dev Atleta',
@@ -674,15 +692,7 @@ function AppContent() {
   }
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-bg flex items-center justify-center flex-col gap-4">
-        <div className="flex items-center gap-2 text-accent animate-pulse">
-          <img src="/atlas-logo.png" alt="En Forma" className="w-9 h-9 object-contain" />
-          <span className="font-sans font-extrabold text-display tracking-tighter uppercase text-accent">EN FORMA</span>
-        </div>
-        <p className="font-sans text-label text-ink-2 uppercase tracking-widest animate-pulse">Cargando tu sesión...</p>
-      </div>
-    );
+    return <Splash texto="Cargando tu sesión..." />;
   }
 
   if (!currentUser || !profile) {
@@ -717,7 +727,7 @@ function AppContent() {
   if (!isCoach && onboardingGate !== 'done') {
     if (onboardingGate === 'missing') {
       return (
-        <Suspense fallback={<div className="min-h-screen bg-bg" />}>
+        <Suspense fallback={<Splash texto="Preparando tu alta..." />}>
           <AthleteOnboardingWizard
             profile={profile}
             onComplete={() => setOnboardingGate('done')}
@@ -726,22 +736,14 @@ function AppContent() {
       );
     }
     // 'checking' — misma splash que la carga de sesión
-    return (
-      <div className="min-h-screen bg-bg flex items-center justify-center flex-col gap-4">
-        <div className="flex items-center gap-2 text-accent animate-pulse">
-          <img src="/atlas-logo.png" alt="En Forma" className="w-9 h-9 object-contain" />
-          <span className="font-sans font-extrabold text-display tracking-tighter uppercase text-accent">EN FORMA</span>
-        </div>
-        <p className="font-sans text-label text-ink-2 uppercase tracking-widest animate-pulse">Preparando tu experiencia...</p>
-      </div>
-    );
+    return <Splash texto="Preparando tu experiencia..." />;
   }
 
   // Segundo gate: el catálogo de máquinas, justo después de la anamnesis.
   // "Omitir" no bloquea — marca el recordatorio y deja pasar (lo recoge Hoy).
   if (!isCoach && gimnasioGate === 'missing') {
     return (
-      <Suspense fallback={<div className="min-h-screen bg-bg" />}>
+      <Suspense fallback={<Splash texto="Cargando tu gimnasio..." />}>
         <CatalogoSwipe
           email={profile.email}
           onCompletado={() => setGimnasioGate('done')}
@@ -757,7 +759,7 @@ function AppContent() {
   // navegación, una única pantalla de espera hasta que haya plan).
   if (!isCoach && bloquearSinPlan) {
     return (
-      <Suspense fallback={<div className="min-h-screen bg-bg" />}>
+      <Suspense fallback={<Splash texto="Cargando..." />}>
         <PlanEnEsperaScreen
           profile={profile}
           checkins={checkins}
