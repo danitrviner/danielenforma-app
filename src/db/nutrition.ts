@@ -450,19 +450,24 @@ export async function getDietCompletionLog(athleteId: string, date: string): Pro
 }
 
 // Bulk range read for the AI nutrition dashboard's adherence computation.
-export async function getDietCompletionLogsForAthlete(athleteId: string): Promise<DietCompletionLog[]> {
+export async function getDietCompletionLogsForAthlete(athleteId: string, desde?: string): Promise<DietCompletionLog[]> {
   if (forceLocalOnly) {
-    return getLocalDietCompletionLogs().filter(l => l.athleteId === athleteId).sort((a, b) => a.date.localeCompare(b.date));
+    const propios = getLocalDietCompletionLogs().filter(l => l.athleteId === athleteId);
+    return (desde ? propios.filter(l => l.date >= desde) : propios).sort((a, b) => a.date.localeCompare(b.date));
   }
   try {
-    const snap = await getDocs(query(collection(db, 'dietCompletionLogs'), where('athleteId', '==', athleteId)));
+    let q = query(collection(db, 'dietCompletionLogs'), where('athleteId', '==', athleteId));
+    if (desde) q = query(q, where('date', '>=', desde));
+    const snap = await getDocs(q);
     const list = snap.docs.map(d => ({ id: d.id, ...d.data() } as DietCompletionLog)).sort((a, b) => a.date.localeCompare(b.date));
-    saveLocalDietCompletionLogs([...getLocalDietCompletionLogs().filter(l => l.athleteId !== athleteId), ...list]);
+    // Con ventana NO se toca el espejo local (ver getBodyweightForAthlete).
+    if (!desde) saveLocalDietCompletionLogs([...getLocalDietCompletionLogs().filter(l => l.athleteId !== athleteId), ...list]);
     return list;
   } catch (err) {
     console.warn('getDietCompletionLogsForAthlete Firestore failed, using local:', err);
     setLocalBypassMode(true, err);
-    return getLocalDietCompletionLogs().filter(l => l.athleteId === athleteId).sort((a, b) => a.date.localeCompare(b.date));
+    const propios = getLocalDietCompletionLogs().filter(l => l.athleteId === athleteId);
+    return (desde ? propios.filter(l => l.date >= desde) : propios).sort((a, b) => a.date.localeCompare(b.date));
   }
 }
 

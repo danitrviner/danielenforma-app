@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { StepLog } from '../types';
-import { getAthleteNutritionConfig, getStepsForAthlete, addSteps, updateSteps } from '../dbService';
+import { getAthleteNutritionConfig, getStepsForDate, addSteps, updateSteps } from '../dbService';
 import { todayStr } from '../utils/questionnaireSchedule';
 import { DEFAULT_KCAL_PER_STEP } from '../utils/nutritionConstants';
 import { isHealthStepsSupported, isHealthStepsLinked, linkHealthSteps, getTodaySteps } from '../services/healthSteps';
@@ -26,15 +26,23 @@ export default function StepsWidget({ athleteEmail }: Props) {
     queryKey: ['athleteNutritionConfig', athleteEmail],
     queryFn: () => getAthleteNutritionConfig(athleteEmail),
   });
-  const { data: logs = [], isPending: loadingSteps } = useQuery({
-    queryKey: stepsKey,
-    queryFn: () => getStepsForAthlete(athleteEmail),
+  // Este widget solo necesita el registro de HOY, así que lo pide y ya. Antes
+  // leía el historial completo (`getStepsForAthlete`) para hacer un `.find()`
+  // por fecha: 728 documentos a los dos años para quedarse con uno.
+  //
+  // Y con CLAVE PROPIA, no la de la lista completa: `['stepsForAthlete', email]`
+  // la comparten siete pantallas —Correlaciones, Análisis nutricional, los dos
+  // road maps, Cardio— y varias necesitan la serie entera. Escribir un único
+  // día bajo esa clave les dejaría un historial de un elemento sin ningún error
+  // que lo delatara.
+  const { data: todayLog = null, isPending: loadingSteps } = useQuery({
+    queryKey: ['stepsForDate', athleteEmail, todayStr()],
+    queryFn: () => getStepsForDate(athleteEmail, todayStr()),
   });
   const loading = loadingConfig || loadingSteps;
 
   const goal = config?.stepGoal || DEFAULT_STEP_GOAL;
   const kcalPerStep = config?.kcalPerStep || DEFAULT_KCAL_PER_STEP;
-  const todayLog = logs.find(l => l.date === todayStr());
   const todayId = todayLog?.id ?? null;
   const steps = todayLog?.steps ?? 0;
 
@@ -65,15 +73,20 @@ export default function StepsWidget({ athleteEmail }: Props) {
       return entry;
     },
     onSuccess: result => {
+      queryClient.setQueryData<StepLog | null>(['stepsForDate', athleteEmail, todayStr()],
+        prev => (prev ? { ...prev, steps: result.steps } : (result as StepLog)));
+      // La lista completa la comparten otras pantallas. Si ya está en caché se
+      // parchea para que no enseñen un dato viejo; si no lo está, no se crea
+      // —inventar una lista de un elemento sería peor que no tener ninguna—.
       queryClient.setQueryData<StepLog[]>(stepsKey, prev => {
-        const list = prev ?? [];
-        const idx = list.findIndex(l => l.id === result.id);
+        if (!prev) return prev;
+        const idx = prev.findIndex(l => l.id === result.id);
         if (idx >= 0) {
-          const copy = [...list];
+          const copy = [...prev];
           copy[idx] = { ...copy[idx], steps: result.steps };
           return copy;
         }
-        return [...list, result as StepLog];
+        return [...prev, result as StepLog];
       });
       setInput('');
       setEditing(false);
