@@ -95,15 +95,23 @@ export default function HomeCoachScreen({ athletes, checkins, assignmentsByEmail
     onClick: () => navigate(`/crm/clientes/${s.clientId}`),
   }));
 
+  // Dos estados distintos, no uno. Antes esto solo miraba si había
+  // asignaciones, así que un atleta con el plan montado pero SIN publicar
+  // desaparecía de «Requiere acción» — y mientras el panel decía «todo al día»
+  // él seguía atascado en la pantalla de espera, que es bloqueo total. Justo el
+  // caso que más se escapa: el trabajo está hecho y solo falta pulsar el botón.
   const planRows: ActionRow[] = loadingAssignments ? [] : athletes
-    .filter(a => (assignmentsByEmail.get(a.email) ?? []).length === 0)
-    .map(a => ({
-      key: `plan-${a.email}`,
-      categoria: 'plan',
-      label: a.displayName,
-      detail: 'Plan sin publicar',
-      onClick: () => navigate(`/clients/${encodeURIComponent(a.email)}/entrenamientos`),
-    }));
+    .flatMap(a => {
+      const sinEntrenos = (assignmentsByEmail.get(a.email) ?? []).length === 0;
+      if (!sinEntrenos && a.planPublishedAt) return [];
+      return [{
+        key: `plan-${a.email}`,
+        categoria: 'plan' as const,
+        label: a.displayName,
+        detail: sinEntrenos ? 'Sin entrenamientos asignados' : 'Plan sin publicar · el atleta no lo ve',
+        onClick: () => navigate(`/clients/${encodeURIComponent(a.email)}/entrenamientos`),
+      }];
+    });
 
   const requiereAccion = [...revisionRows, ...pagoRows, ...planRows];
   const visibles = filtro === 'todas' ? requiereAccion : requiereAccion.filter(r => r.categoria === filtro);
