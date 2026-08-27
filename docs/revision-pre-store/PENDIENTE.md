@@ -9,12 +9,6 @@ arrastra cuatro capas de «Actualización N» y da por pendiente cosas ya hechas
 
 ## 1 · Bloqueantes: sin esto no se publica
 
-- [ ] **Keystore de subida de Android.** `android/keystore.properties` no existe, así que el
-      AAB sale **sin firmar** y Play lo rechaza. Ver `android/keystore.properties.example`.
-      Guarda el `.jks` y las contraseñas en el gestor: si se pierden y no has activado Play
-      App Signing, no puedes volver a actualizar la app nunca.
-- [ ] **Cuenta de Apple Developer: persona física u organización.** Si eliges organización,
-      el D-U-N-S tarda semanas — decidirlo hoy o publicar como persona física.
 - [ ] **App ID en el portal de Apple**, certificado de distribución y perfil de App Store.
 - [ ] **HealthKit marcado en el App ID.** El proyecto tiene la capacidad activada
       (`ios/App/App/App.entitlements`) y el widget de pasos lee de Salud. *(El checklist viejo
@@ -67,7 +61,10 @@ arrastra cuatro capas de «Actualización N» y da por pendiente cosas ya hechas
 | §1.3 Base `(default)` fantasma | No existe. Solo hay una base |
 | §1.5 App Check | Registrado como reCAPTCHA **Enterprise**, y **apagado a propósito** hasta que el nativo pueda aplicarlo — ver [estado](../../src/firebase.ts) |
 | §3.1 JDK | OpenJDK 21 instalado |
-| §3.3 Build de Android | **`bundleRelease` compila**: `app-release.aab`, 14 MB (sin firmar, falta el keystore) |
+| §3.3 Build de Android | **AAB firmado y verificado** (27-08): 14 MB, certificado `CN=Daniel Briz Morales` válido hasta 2054, `jarsigner` da «jar verified» |
+| §2.1 Tipo de cuenta de Apple | **Persona física** (decidido el 27-08). La política de privacidad ya le identifica como responsable, con NIF |
+| §5.1 Keystore de subida | Creado en `~/Keys/en-forma-upload.jks`, con `android/keystore.properties` fuera del repo |
+| Enlace legal dentro de la app | Sección **LEGAL** propia en Perfil → Ajustes, con enlaces reales (`<a target="_blank">`) |
 | §4.5 Declaración de cifrado | `ITSAppUsesNonExemptEncryption` ya está en el `Info.plist` |
 | §5.6 `ACCESS_FINE_LOCATION` del plugin BLE | Acotado con `maxSdkVersion=30` y `tools:node="replace"` |
 | §6.2 Google Sign-In en iOS | Retirado: el acceso es solo email y contraseña |
