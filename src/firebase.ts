@@ -99,14 +99,19 @@ const auth = Capacitor.isNativePlatform()
 // desde src/almacenamiento.ts, que es el único sitio de la app que lo toca.
 // Ver el comentario de cabecera de ese fichero.
 
-// App Check (reCAPTCHA v3): corta el uso de la API key fuera de esta app una
-// vez se active "Enforce" en la consola Firebase para Firestore/Storage. Sin
-// VITE_RECAPTCHA_SITE_KEY configurada (dev local, o antes de crear el site
-// key en la consola) simplemente no se inicializa — no rompe nada mientras
-// tanto. Pasos manuales pendientes en la consola de Firebase: registrar un
-// site key reCAPTCHA v3 para este dominio en App Check, añadir
-// VITE_RECAPTCHA_SITE_KEY a .env.local y a las env vars de Vercel, y solo
-// entonces activar "Enforce" para Firestore y Storage.
+// App Check (reCAPTCHA ENTERPRISE): corta el uso de la API key fuera de esta
+// app una vez se active "Enforce" en la consola Firebase para
+// Firestore/Storage. Sin VITE_RECAPTCHA_SITE_KEY configurada (dev local)
+// simplemente no se inicializa — no rompe nada mientras tanto.
+//
+// Enterprise, no v3, y la diferencia no se ve en la clave: las dos empiezan
+// por 6L y son indistinguibles a ojo. La app registrada en App Check
+// (27-08-2026) es Enterprise, así que el proveedor tiene que ser
+// ReCaptchaEnterpriseProvider. Con el de v3 el navegador conseguía el token de
+// reCAPTCHA sin problema y era Firebase quien lo rechazaba al canjearlo, con
+// un 400 "App not registered" que parecía un fallo de registro y no de
+// proveedor. Si algún día se cambia la clave, hay que mirar en qué apartado de
+// App Check está registrada antes de tocar esto.
 // El SDK de App Check se carga con `import()` en vez de estáticamente: son
 // ~20 KB que hoy viajan en el arranque de TODOS (coach y atleta) para no
 // ejecutarse nunca, porque sin site key este bloque no entra.
@@ -122,9 +127,9 @@ export const appCheckListo: Promise<void> = (async () => {
   const siteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY as string | undefined;
   if (!siteKey) return;
   try {
-    const { initializeAppCheck, ReCaptchaV3Provider } = await import('firebase/app-check');
+    const { initializeAppCheck, ReCaptchaEnterpriseProvider } = await import('firebase/app-check');
     initializeAppCheck(app, {
-      provider: new ReCaptchaV3Provider(siteKey),
+      provider: new ReCaptchaEnterpriseProvider(siteKey),
       isTokenAutoRefreshEnabled: true,
     });
   } catch (err) {
