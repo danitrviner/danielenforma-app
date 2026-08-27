@@ -7,7 +7,7 @@ import {
 import { submitResponse, addBodyweight, saveBodyMeasurement, uploadQuestionnaireMedia } from '../dbService';
 import { resolveQuestions } from '../utils/questionnaireResolve';
 import { todayStr } from '../utils/questionnaireSchedule';
-import { bodyweightForAthleteKey } from '../hooks/useAthleteWeight';
+import { bodyweightForAthleteKey, invalidarExtremosDePeso } from '../hooks/useAthleteWeight';
 import { useBodyMeasurements, bodyMeasurementsForAthleteKey } from '../hooks/useBodyMeasurements';
 import { mensajeDeErrorFirestore } from '../utils/erroresFirestore';
 import { Icon, Button, ProgressBar } from './ui';
@@ -170,6 +170,9 @@ export default function QuestionnaireWizard({ questionnaire, assignment, athlete
           kind: 'daily', createdAt: new Date().toISOString(),
         });
         queryClient.setQueryData<BodyweightLog[]>(bodyweightForAthleteKey(athleteEmail), prev => [...(prev ?? []), entry]);
+        // El peso que se registra desde el cuestionario cuenta igual que el
+        // del panel: los extremos pueden haber cambiado.
+        invalidarExtremosDePeso(queryClient, athleteEmail);
       } else {
         const entry = await saveBodyMeasurement({
           athleteId: athleteEmail, date: hoy, metricKey: q.metricKey, value: valor,

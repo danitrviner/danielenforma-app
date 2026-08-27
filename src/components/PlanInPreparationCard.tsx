@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { UserProfile } from '../types';
-import { getProgressPhotos, getBodyweightForAthlete } from '../dbService';
-import { bodyweightForAthleteKey } from '../hooks/useAthleteWeight';
+import { getProgressPhotos, getPesoExtremo } from '../dbService';
+import { pesoUltimoKey } from '../hooks/useAthleteWeight';
 import { Icon, ListRow } from './ui';
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -61,12 +61,15 @@ export default function PlanInPreparationCard({ profile, onNavigate }: Props) {
     queryKey: ['progressPhotos', profile.email],
     queryFn: () => getProgressPhotos(profile.email),
   });
-  const { data: weights = [], isPending: loadingWeights } = useQuery({
-    queryKey: bodyweightForAthleteKey(profile.email),
-    queryFn: () => getBodyweightForAthlete(profile.email),
+  // Esta tarjeta solo pregunta «¿se ha pesado alguna vez?». Leer el historial
+  // entero para mirar `.length > 0` costaba cientos de documentos; basta con
+  // pedir uno. Comparte clave con Check-in, así que entre las dos es 1 lectura.
+  const { data: algunPeso = null, isPending: loadingWeights } = useQuery({
+    queryKey: pesoUltimoKey(profile.email),
+    queryFn: () => getPesoExtremo(profile.email, 'ultimo'),
   });
   const hasPhoto = photos.length > 0;
-  const hasWeight = weights.length > 0;
+  const hasWeight = algunPeso !== null;
   const loaded = !loadingPhotos && !loadingWeights;
 
   const items = [

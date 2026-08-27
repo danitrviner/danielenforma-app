@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useMemo, Suspense, lazy } from 'react';
 import { useQuery, useQueries, useQueryClient } from '@tanstack/react-query';
 import { UserProfile, WeightCheckIn, QuestionnaireAssignment, QuestionnaireResponse, Questionnaire, PhotoAssignment, ProgressPhoto, PhotoView } from '../types';
-import { createNotificationDeduped, getAssignmentsForAthlete, getResponsesForAthlete, getQuestionnaireById, getBodyweightForAthlete, getPhotoAssignmentsForAthlete, getProgressPhotos, getMesocycles } from '../dbService';
+import { createNotificationDeduped, getAssignmentsForAthlete, getResponsesForAthlete, getQuestionnaireById, getPesoExtremo, getPhotoAssignmentsForAthlete, getProgressPhotos, getMesocycles } from '../dbService';
 import { todayStr, hasAnsweredThisOccurrence, isUpcoming, isOverdue, ScheduleContext } from '../utils/questionnaireSchedule';
 import { scheduleLabel } from '../utils/scheduleEngine';
-import { bodyweightForAthleteKey } from '../hooks/useAthleteWeight';
+import { pesoUltimoKey } from '../hooks/useAthleteWeight';
 import PhotosScreen from './PhotosScreen';
 import QuestionnaireWizard from './QuestionnaireWizard';
 import { EmptyState, Skeleton } from './ui';
@@ -29,16 +29,15 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
 
   // Solo para prefill de la pregunta 'metric' bodyweight de los cuestionarios
   // — el registro/edición de peso en sí vive en BodyweightPanel (rediseño
-  // Fase 3.2, "Perfil"): un único sitio para pesarse, no dos widgets
-  // distintos escribiendo en el mismo `bwKey`.
-  const bwKey = bodyweightForAthleteKey(profile.email);
-  const { data: bwLogs = [] } = useQuery({
-    queryKey: bwKey,
-    queryFn: () => getBodyweightForAthlete(profile.email),
+  // Fase 3.2, "Perfil"): un único sitio para pesarse, no dos widgets distintos.
+  //
+  // Y solo hace falta el peso más reciente, no el historial: antes se leían
+  // todos los registros del atleta para quedarse con el último de la lista.
+  const { data: ultimoPeso = null } = useQuery({
+    queryKey: pesoUltimoKey(profile.email),
+    queryFn: () => getPesoExtremo(profile.email, 'ultimo'),
   });
-  // bwLogs viene ascendente por fecha (getBodyweightForAthlete) — el último es
-  // el peso más reciente.
-  const latestWeight = bwLogs.length > 0 ? bwLogs[bwLogs.length - 1].weight : undefined;
+  const latestWeight = ultimoPeso?.weight;
 
   // Questionnaire state
   const responsesKey = ['responsesForAthlete', profile.email] as const;

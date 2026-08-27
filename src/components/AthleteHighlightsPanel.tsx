@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { getBodyweightForAthlete, getWorkoutLogs, getRoadmap, getExercises } from '../dbService';
+import { getPesoExtremo, getWorkoutLogs, getRoadmap, getExercises } from '../dbService';
+import { pesoPrimeroKey, pesoUltimoKey } from '../hooks/useAthleteWeight';
 import { Icon, Skeleton } from './ui';
 import StatTile from './StatTile';
 
@@ -50,10 +51,18 @@ function computeStreak(dates: string[]): number {
 }
 
 export default function AthleteHighlightsPanel({ athleteEmail }: Props) {
-  const { data: bodyweightLogs = [], isPending: loadingWeight } = useQuery({
-    queryKey: ['bodyweightForAthlete', athleteEmail],
-    queryFn: () => getBodyweightForAthlete(athleteEmail),
+  // Este panel solo enseña cuánto ha variado el peso de punta a punta, así que
+  // pide los dos extremos y no el historial: dos lecturas en vez de una por
+  // cada día que el atleta lleve registrando.
+  const { data: primerPeso = null, isPending: loadingPrimero } = useQuery({
+    queryKey: pesoPrimeroKey(athleteEmail),
+    queryFn: () => getPesoExtremo(athleteEmail, 'primero'),
   });
+  const { data: ultimoPeso = null, isPending: loadingUltimo } = useQuery({
+    queryKey: pesoUltimoKey(athleteEmail),
+    queryFn: () => getPesoExtremo(athleteEmail, 'ultimo'),
+  });
+  const loadingWeight = loadingPrimero || loadingUltimo;
   const { data: workoutLogs = [], isPending: loadingLogs } = useQuery({
     queryKey: ['workoutLogs', athleteEmail],
     queryFn: () => getWorkoutLogs(athleteEmail),
@@ -76,12 +85,12 @@ export default function AthleteHighlightsPanel({ athleteEmail }: Props) {
   }, [exercises]);
 
   const weightChange = useMemo(() => {
-    if (bodyweightLogs.length < 2) return null;
-    const sorted = [...bodyweightLogs].sort((a, b) => a.date.localeCompare(b.date));
-    const first = sorted[0];
-    const last = sorted[sorted.length - 1];
-    return { delta: last.weight - first.weight, first, last };
-  }, [bodyweightLogs]);
+    // `id` distinto = hay al menos dos registros. Con uno solo, primero y
+    // último son el mismo documento y no hay variación que enseñar — es lo
+    // mismo que comprobaba el `length < 2` de antes.
+    if (!primerPeso || !ultimoPeso || primerPeso.id === ultimoPeso.id) return null;
+    return { delta: ultimoPeso.weight - primerPeso.weight, first: primerPeso, last: ultimoPeso };
+  }, [primerPeso, ultimoPeso]);
 
   const personalRecords = useMemo<PersonalRecord[]>(() => {
     const best = new Map<string, PersonalRecord>();

@@ -18,6 +18,36 @@ export function bodyweightForAthleteKey(athleteEmail: string) {
   return ['bodyweightForAthlete', athleteEmail] as const;
 }
 
+/* Claves de las consultas de FRONTERA (primer y último peso).
+ *
+ * Van aparte de `bodyweightForAthleteKey` a propósito: esa devuelve la lista
+ * completa y la comparten las pantallas del coach para pintar gráficas. Guardar
+ * un único registro bajo esa clave les dejaría un historial de un elemento sin
+ * ningún error que lo delatara — el mismo accidente que se evitó en el widget
+ * de pasos.
+ *
+ * `pesoUltimoKey` la comparten Check-in (que enseña el último peso) y la tarjeta
+ * de plan en preparación (que solo mira si existe alguno): una lectura sirve a
+ * las dos. */
+export function pesoPrimeroKey(athleteEmail: string) {
+  return ['pesoExtremo', athleteEmail, 'primero'] as const;
+}
+export function pesoUltimoKey(athleteEmail: string) {
+  return ['pesoExtremo', athleteEmail, 'ultimo'] as const;
+}
+
+/** Tras escribir un peso, los extremos pueden haber cambiado. Los escritores
+ *  llaman a esto para que Check-in y Destacados no se queden con el valor
+ *  viejo. Se invalidan (no se parchean) porque un borrado puede dejar como
+ *  extremo a un registro que no estaba en memoria. */
+export function invalidarExtremosDePeso(
+  queryClient: { invalidateQueries: (o: { queryKey: readonly unknown[] }) => unknown },
+  athleteEmail: string,
+): void {
+  queryClient.invalidateQueries({ queryKey: pesoPrimeroKey(athleteEmail) });
+  queryClient.invalidateQueries({ queryKey: pesoUltimoKey(athleteEmail) });
+}
+
 // Single source of truth for "what does this athlete weigh" — replaces the
 // independent getBodyweightForAthlete() calls in CoachRoadmapView and
 // NutritionPerformanceDashboard (read-only consumers), which could each show a

@@ -1,4 +1,4 @@
-import { db, collection, doc, getDocs, addDoc, updateDoc, deleteDoc, query, where, limit } from '../firebase';
+import { db, collection, doc, getDocs, addDoc, updateDoc, deleteDoc, query, where, limit, orderBy } from '../firebase';
 import { BodyweightLog, StepLog } from '../types';
 import { forceLocalOnly, setLocalBypassMode, stripUndefined, esFalloDePermisos } from './core';
 
@@ -33,6 +33,46 @@ export async function getBodyweightForAthlete(email: string, desde?: string): Pr
     setLocalBypassMode(true, err);
     const propios = getLocalBw().filter(b => b.athleteId === email);
     return (desde ? propios.filter(b => b.date >= desde) : propios).sort((a, b) => a.date.localeCompare(b.date));
+  }
+}
+
+/**
+ * El peso más antiguo o el más reciente del atleta, en UNA lectura.
+ *
+ * Varias pantallas necesitaban exactamente un valor de frontera —el último peso
+ * en Check-in, el primero y el último en Destacados, «¿ha pesado alguna vez?» en
+ * la tarjeta de plan— y lo sacaban leyendo el historial entero y mirando el
+ * extremo: 728 documentos a los dos años para quedarse con uno. La respuesta es
+ * la misma; lo que cambia es lo que cuesta.
+ *
+ * Necesita el índice compuesto bodyweightLogs (athleteId, date).
+ */
+export async function getPesoExtremo(
+  email: string,
+  extremo: 'primero' | 'ultimo',
+): Promise<BodyweightLog | null> {
+  const deLocal = () => {
+    const propios = getLocalBw().filter(b => b.athleteId === email)
+      .sort((a, b) => a.date.localeCompare(b.date));
+    if (propios.length === 0) return null;
+    return extremo === 'primero' ? propios[0] : propios[propios.length - 1];
+  };
+  if (forceLocalOnly) return deLocal();
+  try {
+    const snap = await getDocs(query(
+      collection(db, 'bodyweightLogs'),
+      where('athleteId', '==', email),
+      orderBy('date', extremo === 'primero' ? 'asc' : 'desc'),
+      limit(1),
+    ));
+    const d = snap.docs[0];
+    return d ? ({ id: d.id, ...d.data() } as BodyweightLog) : null;
+    // No se toca el espejo local: un extremo no es el historial, y escribirlo
+    // como si lo fuera dejaría al atleta con un único peso sin conexión.
+  } catch (err) {
+    console.warn('getPesoExtremo Firestore failed, using local:', err);
+    setLocalBypassMode(true, err);
+    return deLocal();
   }
 }
 

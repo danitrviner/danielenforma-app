@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { LineChart, Line, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { BodyweightLog } from '../types';
 import { getBodyweightForAthlete, addBodyweight, updateBodyweight, deleteBodyweight } from '../dbService';
-import { bodyweightForAthleteKey } from '../hooks/useAthleteWeight';
+import { bodyweightForAthleteKey, invalidarExtremosDePeso } from '../hooks/useAthleteWeight';
 import { Skeleton } from './ui';
 import { Icon, EmptyState } from './ui';
 
@@ -126,6 +126,10 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
         createdAt: new Date().toISOString(),
       });
       queryClient.setQueryData<BodyweightLog[]>(queryKey, prev => [...(prev ?? []), entry]);
+      // Un peso nuevo puede ser el más reciente —o el primero, si es el
+      // estreno—, así que los extremos que leen Check-in y Destacados dejan de
+      // ser válidos.
+      invalidarExtremosDePeso(queryClient, athleteEmail);
       setNewWeight('');
       setNewDate(todayStr());
       setAddOpen(false);
@@ -150,6 +154,9 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
       await updateBodyweight(editId, { date: editDate, weight: w });
       queryClient.setQueryData<BodyweightLog[]>(queryKey, prev =>
         prev?.map(b => b.id === editId ? { ...b, date: editDate, weight: w } : b));
+      // Editar puede cambiar la FECHA, así que el registro puede entrar o salir
+      // de los extremos.
+      invalidarExtremosDePeso(queryClient, athleteEmail);
       setEditId(null);
     } catch (err) { console.error(err); }
     finally { setSaving(false); }
@@ -160,6 +167,9 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
     try {
       await deleteBodyweight(id);
       queryClient.setQueryData<BodyweightLog[]>(queryKey, prev => prev?.filter(b => b.id !== id));
+      // Al borrar un extremo, el nuevo puede ser un registro que no está en
+      // memoria — por eso se invalida y se vuelve a pedir, no se recalcula.
+      invalidarExtremosDePeso(queryClient, athleteEmail);
     } catch (err) { console.error(err); }
     finally { setDeletingId(null); }
   };

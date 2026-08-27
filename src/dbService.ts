@@ -132,7 +132,7 @@ export {
 // ningún import existente (`from '../dbService'`) tenga que cambiar.
 export {
   getBodyweightForAthlete, addBodyweight, updateBodyweight, deleteBodyweight,
-  getStepsForAthlete, getStepsForDate, addSteps, updateSteps,
+  getStepsForAthlete, getStepsForDate, getPesoExtremo, addSteps, updateSteps,
 } from './db/athleteMetrics';
 
 // ─── MEDIDAS CORPORALES (perímetros) ──────────────────────────────────────────
