@@ -98,6 +98,11 @@ export {
   getChallengeTemplates, saveChallengeTemplate, deleteChallengeTemplate,
 } from './db/roadmap';
 
+// ─── NOTAS DEL COACH POR DÍA (Roadmap → Calendario) ───────────────────────────
+export {
+  getCoachDayNote, getCoachDayNotesForAthlete, saveCoachDayNote, deleteCoachDayNote,
+} from './db/coachDayNotes';
+
 // ─── CLIENT INVITES (coach-only, doc id = email) ──────────────────────────────
 // Movido a src/db/invites.ts (2026-07-18) — reexportado aquí para que ningún
 // import existente (`from '../dbService'`) tenga que cambiar.
@@ -224,7 +229,7 @@ export {
 export {
   getCardioProfile, saveCardioProfile, defaultZonesFromAge,
   getCardioAssignmentsForAthlete, createCardioAssignment, updateCardioAssignment, deleteCardioAssignment,
-  getCardioSessionsForAthlete, createCardioSession, updateCardioSession,
+  getCardioSessionsForAthlete, getCardioSessionsSince, createCardioSession, updateCardioSession,
   getCardioWeeklyGoal, saveCardioWeeklyGoal,
   getHrTestsForAthlete, getAllPendingHrTests, createHrTest, updateHrTest,
   getHrvReadingsForAthlete, createHrvReading,

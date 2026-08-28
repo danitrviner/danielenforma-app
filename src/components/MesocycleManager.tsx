@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   MuscleGroup, MuscleGroupConfig, Mesocycle, UserProfile, Workout,
   DayPlan, DayAssignment, WeekDistribution, Exercise, WorkoutExercise, TemplateDay,
-  WorkoutLog, WorkoutAssignment,
+  WorkoutLog, WorkoutAssignment, PhaseType,
   MUSCLE_LABELS, MUSCLE_LABELS_SHORT, MUSCLE_ORDER,
 } from '../types';
 import {
@@ -41,9 +41,21 @@ import { useAthleteProfileSignals } from '../hooks/useAthleteProfileSignals';
 import { useAthleteWeight } from '../hooks/useAthleteWeight';
 import { useConfirm } from '../hooks/useConfirm';
 import { Avatar, Skeleton } from './ui';
-import { EmptyState, Dialog, Input, Icon, Tabs, TabItem, Sheet, Pager } from './ui';
+import { EmptyState, Dialog, Input, Icon, Tabs, TabItem, Sheet, Pager, Select } from './ui';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
+
+// Tipo de fase (Roadmap → Calendario, coach) — decide el color/icono del
+// bloque en los 3 niveles del calendario. Opcional a propósito: sin marcar,
+// `clasificarFaseEntreno` (utils/roadmapCalendar.ts) lo deduce del objetivo.
+const PHASE_TYPE_OPTIONS: { value: '' | PhaseType; label: string }[] = [
+  { value: '', label: 'Auto (según objetivo)' },
+  { value: 'fuerza', label: 'Fuerza' },
+  { value: 'hipertrofia', label: 'Hipertrofia' },
+  { value: 'definicion', label: 'Definición' },
+  { value: 'mantenimiento', label: 'Mantenimiento' },
+  { value: 'descarga', label: 'Descarga' },
+];
 
 const MUSCLE_GROUPS: MuscleGroup[] = MUSCLE_ORDER;
 
@@ -2168,6 +2180,16 @@ export default function MesocycleManager({
                   value={editing.objective}
                   onChange={v => updateField('objective', v)}
                   placeholder="Ej. Hipertrofia tren superior, puesta en forma general…"
+                />
+
+                {/* Tipo de fase (Roadmap → Calendario) — color/icono del bloque en
+                    los 3 niveles del calendario del coach. Opcional: sin marcar se
+                    deduce del objetivo de arriba (ver PHASE_TYPE_OPTIONS). */}
+                <Select
+                  label="Tipo (calendario)"
+                  value={editing.phaseType ?? ''}
+                  onChange={v => updateField('phaseType', v === '' ? undefined : v as PhaseType)}
+                  options={PHASE_TYPE_OPTIONS}
                 />
 
                 {/* Semana de descarga (Bloque H) — marca qué semana del meso es de

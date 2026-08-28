@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { UserProfile, Diet, DietMeal, DietItem, FoodCategory, DietMode, MealItem, Recipe, RecipeFavorites, WeekDay } from '../types';
+import { UserProfile, Diet, DietMeal, DietItem, FoodCategory, DietMode, MealItem, Recipe, RecipeFavorites, WeekDay, RefeedDay } from '../types';
 import { getDietsForAthlete, getAthleteDietConfig, saveAthleteDietConfig, createDiet, updateDiet, deleteDiet, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig, saveAthleteNutritionConfig, getRecipes, getRecipeFavorites, getNutritionProgram, markNutritionPhaseSeen, computeActivePhase, createNotificationDeduped, getDietCompletionLog, saveDietCompletionLog, createRecipe, queryRecetas, queryRecetasForGenerator, getOnboarding, getRecipeById } from '../dbService';
 import type { RecetasCursor } from '../dbService';
-import { CATS, BUDGET_CATS, CAT_LABEL, CAT_COLOR, CAT_BG, MODE_LABEL, ALL_DIET_MODES, round2, fmtQty, itemWeightLabel, addToPlaced, recipeToDietItems, isDietPending, computeDietPlaced } from '../utils/exchangeHelpers';
+import { CATS, BUDGET_CATS, CAT_LABEL, CAT_COLOR, CAT_BG, MODE_LABEL, ALL_DIET_MODES, round2, fmtQty, itemWeightLabel, foodNameWithoutGrams, addToPlaced, recipeToDietItems, isDietPending, computeDietPlaced } from '../utils/exchangeHelpers';
 import { findRecipeAlternatives, recipeExchanges, groupByDishType, type RecipeAlternative, type AlternativePrefs } from '../utils/recipeMatch';
 import { ingredientMatch, violatesDietType } from '../utils/foodPrefs';
 import { dishType, dishTypeLabel, type DishType } from '../utils/dishTypes';
@@ -17,6 +17,7 @@ import { fotoDeReceta } from '../utils/fotoDeReceta';
 import FotoDeReceta from './FotoDeReceta';
 import { Skeleton } from './ui';
 import { EmptyState, Sheet, Icon, Button, ProgressBar, RingSeal, Stepper, Dialog, ListRow } from './ui';
+import MealItemSwipeRow from './nutrition/MealItemSwipeRow';
 
 import {
   COACH_EMAIL, makeId, blankDiet, dietSnapshot,
@@ -308,6 +309,8 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
 
   // Nutrition periodization
   const [phaseBanner, setPhaseBanner] = useState<string | null>(null);
+  /** Recarga que el coach ha marcado para HOY (NutritionProgram.refeedDays). */
+  const [refeedHoy, setRefeedHoy] = useState<RefeedDay | null>(null);
 
   // Pantalla de reparto (a petición de Dani) — un único botón "Editar reparto
   // por comida" abre esta pantalla con el reparto de TODAS las comidas a la
@@ -381,8 +384,14 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
       const schedule = dietConfig?.weeklySchedule ?? {};
       setWeeklySchedule(schedule);
 
+      // Día de recarga: si el coach marcó hoy como refeed y le puso dieta, esa
+      // manda por encima del calendario semanal — es justo lo que significa
+      // una recarga. Sin dieta, es solo el aviso.
+      const recargaDeHoy = (program?.refeedDays ?? []).find(r => r.date === TODAY_DATE) ?? null;
+      setRefeedHoy(recargaDeHoy);
+
       const rememberedId = localStorage.getItem(`enforma_intercambios_diet_${profile.email}`);
-      const todayId = schedule[TODAY_WD] ?? null;
+      const todayId = recargaDeHoy?.dietId ?? schedule[TODAY_WD] ?? null;
       const initDiet: Diet | null =
         (todayId && allDietsList.find(d => d.id === todayId)) ||
         (rememberedId && allDietsList.find(d => d.id === rememberedId)) ||
@@ -466,18 +475,36 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     return sum;
   }, [selectedDiet]);
 
+  // Presupuesto efectivo del tracker. Una dieta del coach trae su cupo en
+  // `budget`; un menú propio en construcción no tiene cupo (todo a 0), así que
+  // el baseline de las barras y del "te quedan" es lo que el propio menú suma
+  // —no cero—. Sin esto, marcar el único alimento de un menú a medio montar
+  // llenaba las barras al 100 % y cerraba el día "en presupuesto".
+  const plannedByCat = useMemo(() => computeDietPlaced(selectedDiet?.meals), [selectedDiet]);
+  const effBudget: Record<'HC' | 'PROT' | 'GRASA', number> = {
+    HC: (selectedDiet?.budget.HC ?? 0) || plannedByCat.HC,
+    PROT: (selectedDiet?.budget.PROT ?? 0) || plannedByCat.PROT,
+    GRASA: (selectedDiet?.budget.GRASA ?? 0) || plannedByCat.GRASA,
+  };
+
   // "TE QUEDAN" del tracker — suma de las tres categorías de presupuesto,
   // igual que el handoff (nunca desglosa MIX_HC/MIX_GRASA en la cifra grande).
   const leftByCat = {
-    HC: (selectedDiet?.budget.HC ?? 0) - doneByCat.HC,
-    PROT: (selectedDiet?.budget.PROT ?? 0) - doneByCat.PROT,
-    GRASA: (selectedDiet?.budget.GRASA ?? 0) - doneByCat.GRASA,
+    HC: effBudget.HC - doneByCat.HC,
+    PROT: effBudget.PROT - doneByCat.PROT,
+    GRASA: effBudget.GRASA - doneByCat.GRASA,
   };
-  const totalBudget = BUDGET_CATS.reduce((s, c) => s + (selectedDiet?.budget[c] ?? 0), 0);
+  const totalBudget = effBudget.HC + effBudget.PROT + effBudget.GRASA;
   const totalEaten = BUDGET_CATS.reduce((s, c) => s + doneByCat[c], 0);
   const leftExch = round2(totalBudget - totalEaten);
   const leftKcal = Math.round(exchangeToKcal(leftByCat)); // puede ser negativo si el día se pasa
-  const dayClosed = totalItems > 0 && doneItems === totalItems;
+  // El sello "Día cerrado en presupuesto" solo sale cuando de verdad has
+  // consumido tu cupo en las tres categorías —no por marcar "todos los
+  // alimentos que llevas añadidos", que en un menú a medio montar era 1 y
+  // cerraba el día con el presupuesto casi intacto.
+  const dayClosed = totalBudget > 0
+    && doneItems > 0
+    && BUDGET_CATS.every(c => round2(doneByCat[c]) + 0.05 >= round2(effBudget[c]));
 
   // Haptic success solo en la TRANSICIÓN a día cerrado (handoff, panel 06) —
   // no en cada render mientras ya está cerrado, ni al reabrirlo desmarcando algo.
@@ -1398,6 +1425,21 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
         <p className="text-ink-2 text-body-s mt-1">Construye tu menú del día con intercambios.</p>
       </div>
 
+      {/* Día de recarga marcado por el coach — va antes que el cambio de fase
+          porque es lo que cambia lo que come HOY. */}
+      {refeedHoy && (
+        <div
+          className="flex items-start gap-2.5 rounded-surface px-4 py-3"
+          style={{ background: 'color-mix(in srgb, var(--color-refeed) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--color-refeed) 30%, transparent)' }}
+        >
+          <Icon name="local_fire_department" size="m" style={{ color: 'var(--color-refeed)', flexShrink: 0 }} />
+          <div className="min-w-0">
+            <p className="font-sans font-bold text-body-s" style={{ color: 'var(--color-refeed)' }}>Hoy toca recarga</p>
+            {refeedHoy.note && <p className="font-sans text-label text-ink-2 mt-0.5">{refeedHoy.note}</p>}
+          </div>
+        </div>
+      )}
+
       {/* Phase change banner */}
       {phaseBanner && (
         <div className="flex items-center justify-between gap-3 bg-accent/10 border border-accent/30 rounded-surface px-4 py-3">
@@ -1648,10 +1690,10 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                     </div>
                     <div className="flex flex-col gap-3 mt-5">
                       {BUDGET_CATS.map(cat => {
-                        const b = selectedDiet.budget[cat] ?? 0;
+                        const b = effBudget[cat] ?? 0;
                         const d = doneByCat[cat];
                         const over = b > 0 && d > b;
-                        const pct = b > 0 ? (d / b) * 100 : (d > 0 ? 100 : 0);
+                        const pct = b > 0 ? (d / b) * 100 : 0;
                         return (
                           <div key={cat}>
                             <div className="flex items-baseline justify-between mb-2">
@@ -1854,43 +1896,32 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                           // antes era la fila entera con un icono decorativo sin ningún
                           // affordance (queja real: "no da feedback ni info al tocar").
                           const canDelete = selectedDiet.selfManaged || idx >= (origItemCounts[meal.id] ?? Infinity);
-                          return (
-                            <div key={key}
+                          const row = (
+                            <div
                               className={`flex items-center gap-3 p-3 rounded-surface border transition-colors duration-(--duration-state) ${st.done ? 'bg-surface border-accent/20 opacity-75' : 'bg-surface border-hairline'}`}
                             >
-                              {/* Checkbox */}
-                              <button
-                                onClick={() => handleToggleDone(meal.id, idx)}
-                                title={st.done ? 'Desmarcar' : 'Marcar'}
-                                className={`w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center transition-all active:scale-90 ${st.done ? 'bg-accent text-black border-transparent' : 'border border-ink-2/40 hover:border-accent'}`}
-                              >
-                                {st.done && <span className="material-symbols-outlined text-body-s font-bold">check</span>}
-                              </button>
-
-                              {/* Category tag — cuadro 44px del handoff */}
-                              <span className="w-11 h-11 rounded-control bg-inset border border-hairline flex-shrink-0 flex items-center justify-center px-0.5">
-                                <span className={`font-mono font-bold text-ink-3 leading-none text-center ${item.category.startsWith('MIX_') ? 'text-[9px] tracking-tight' : 'text-caption'}`}>
+                              {/* Category tag — compacto, no compite con el nombre */}
+                              <span className="w-8 h-8 rounded-control bg-inset border border-hairline flex-shrink-0 flex items-center justify-center px-0.5">
+                                <span className={`font-mono font-bold text-ink-3 leading-none text-center ${item.category.startsWith('MIX_') ? 'text-[8px] tracking-tight' : 'text-[10px]'}`}>
                                   {item.category.replace('_', '')}
                                 </span>
                               </span>
 
-                              {/* Nombre + gramos en oro (los gramos SOLO viven aquí — el resto de la pantalla habla en intercambios) + equivalencia humana.
-                                  También abre el intercambiador — misma acción que "Cambiar", dos zonas táctiles para el mismo gesto. */}
+                              {/* Cantidad (en oro) + nombre, seguidos, en una sola frase:
+                                  "250g harina de avena". Los gramos SOLO viven aquí; el
+                                  nombre nunca se trunca (si no cabe, envuelve). Tocar abre
+                                  el intercambiador. */}
                               <button
                                 type="button"
                                 onClick={() => handleOpenPicker(meal.id, idx, item.category)}
                                 className="flex-1 min-w-0 text-left rounded-control -m-1 p-1 transition-colors hover:bg-raised/60 active:bg-raised"
                               >
-                                <div className="flex items-baseline gap-2">
-                                  <span className={`text-body-s font-sans font-semibold leading-snug truncate ${st.done ? 'line-through text-ink-2' : 'text-ink'}`}>
-                                    {st.foodLabel}
-                                  </span>
-                                  <span className="font-mono text-body-s font-bold text-accent flex-shrink-0">
-                                    {itemWeightLabel(item.foodLabel, item.quantity)}
-                                  </span>
-                                </div>
-                                <span className="block font-sans text-caption text-ink-3 mt-1">
-                                  intercambio{item.quantity !== 1 ? 's' : ''} de {CAT_LABEL[item.category].toLowerCase()}
+                                <span className="font-mono text-body-s font-bold text-accent whitespace-nowrap">
+                                  {itemWeightLabel(item.foodLabel, item.quantity)}
+                                </span>
+                                {' '}
+                                <span className={`font-sans text-body-s font-semibold leading-snug ${st.done ? 'line-through text-ink-2' : 'text-ink'}`}>
+                                  {foodNameWithoutGrams(st.foodLabel)}
                                 </span>
                               </button>
 
@@ -1931,54 +1962,24 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                                 </button>
                               )}
 
-                              {/* Botón "Cambiar" real — antes era un icono decorativo sin onClick */}
-                              <button
-                                type="button"
-                                onClick={() => handleOpenPicker(meal.id, idx, item.category)}
-                                aria-label={`Cambiar ${st.foodLabel}`}
-                                className="flex-shrink-0 flex items-center gap-1 rounded-control border border-accent-line bg-accent-bg px-2 py-2 text-accent transition-transform duration-(--duration-state) hover:bg-accent/20 active:scale-95"
-                              >
-                                <Icon name="swap_horiz" size="s" />
-                                <span className="hidden sm:inline font-mono text-caption uppercase tracking-wider">Cambiar</span>
-                              </button>
-
-                              {/* Delete button — dietas propias: cualquier alimento; dietas
-                                  del coach: solo los que se añadieron aquí (no los originales) */}
-                              {canDelete && (
-                                <button
-                                  onClick={() => handleRemoveItem(meal.id, idx)}
-                                  title="Quitar"
-                                  className="text-ink-2 hover:text-red-400 transition-colors flex-shrink-0 p-2 -m-1.5 active:scale-90"
-                                >
-                                  <span className="material-symbols-outlined text-body-s select-none">close</span>
-                                </button>
-                              )}
                             </div>
+                          );
+                          // Sin botones en la fila: se toca el alimento para cambiarlo,
+                          // se desliza a la derecha para marcarlo "comido" y a la
+                          // izquierda para quitarlo. Así el nombre tiene todo el ancho.
+                          return (
+                            <React.Fragment key={key}>
+                              <MealItemSwipeRow
+                                className="rounded-surface"
+                                eaten={st.done}
+                                onToggleEaten={() => handleToggleDone(meal.id, idx)}
+                                onDelete={canDelete ? () => handleRemoveItem(meal.id, idx) : undefined}
+                              >
+                                {row}
+                              </MealItemSwipeRow>
+                            </React.Fragment>
                           );
                         })}
-                        {/* Alta rápida por categoría — solo cuando la comida tiene objetivo
-                            fijado por el coach, para ir directo a lo que falta. */}
-                        {meal.items.length > 0 && CATS.some(c => (meal.target?.[c] ?? 0) > 0) && (() => {
-                          const mDone = mealDoneByCat[meal.id] ?? {} as Record<FoodCategory, number>;
-                          return (
-                            <div className="flex gap-2 flex-wrap pt-1">
-                              {BUDGET_CATS.filter(cat => (meal.target?.[cat] ?? 0) > 0).map(cat => {
-                                const missing = (meal.target![cat]! - (mDone[cat] ?? 0)) > 0;
-                                return (
-                                  <button
-                                    key={cat}
-                                    onClick={() => handleOpenAddPicker(meal.id, cat)}
-                                    className={`px-3 py-1.5 rounded-full font-mono text-caption font-bold uppercase tracking-wider border transition-all active:scale-95 ${
-                                      missing
-                                        ? 'bg-accent-bg border-accent-line text-accent hover:bg-accent/20'
-                                        : 'bg-raised border-hairline text-ink-2 hover:border-hairline'
-                                    }`}
-                                  >+ {CHIP_LABEL[cat]}</button>
-                                );
-                              })}
-                            </div>
-                          );
-                        })()}
                         {meal.items.length > 0 && (
                           <button
                             onClick={() => handleOpenAddPicker(meal.id)}

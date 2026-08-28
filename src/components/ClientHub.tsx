@@ -688,7 +688,11 @@ export default function ClientHub({
 
       {/* ── Tab: Road map ─────────────────────────────────────────────────── */}
       {activeTab === 'roadmap' && (
-        <ClientRoadmapPanel athleteEmail={athlete.email} />
+        <ClientRoadmapPanel
+          athleteEmail={athlete.email}
+          coachId={coachId}
+          onGoToTab={tab => { setActiveZone('plan'); guardedTabChange(tab); }}
+        />
       )}
 
       {/* ── Tab: Reportes ────────────────────────────────────────────────── */}

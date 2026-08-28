@@ -9,14 +9,20 @@
 // progreso (que no depende del origen del reto).
 
 import { WeeklyChallenge } from '../types';
-import { avgSteps, totalSteps, bestSet, dailyDietPcts, lastBodyweight } from './athleteMetrics';
+import {
+  avgSteps, totalSteps, bestSet, dailyDietPcts, lastBodyweight,
+  fractionalSetsByGroup, bestRepsAtWeight, zone2Minutes, loggedDays,
+} from './athleteMetrics';
 import { ChallengeData, AutoChallengeInput, generateChallengeOptions, genericStepsOption, buildChallengeFromOption } from './challengeOptions';
 
 export type { ChallengeData, AutoChallengeInput, ChallengeOption } from './challengeOptions';
 export {
   isoWeekKey, isoWeekBounds, isCoachGraceDay, BASIC_LIFT_KEYWORDS, GENERIC_STEP_TARGET,
-  eligibleLiftIds, nextRoundMilestone, generateChallengeOptions, buildChallengeFromOption,
+  MAX_MILESTONE_ATTEMPTS, eligibleLiftIds, nextRoundMilestone, generateChallengeOptions,
+  buildChallengeFromOption, genericStepsOption,
 } from './challengeOptions';
+export type { ChallengeMemory } from './challengeMemory';
+export { buildChallengeMemory, difficultyFor } from './challengeMemory';
 
 // Elige la opción de mayor score (o el fallback genérico de pasos si no hay
 // ninguna viable) y la materializa como WeeklyChallenge con origin 'auto'.
@@ -89,6 +95,33 @@ export function evaluateChallengeProgress(
         a => a.date >= ch.weekStart && a.date <= ch.weekEnd && a.status === 'completed',
       ).length;
       return { progressValue: done, pct: clamp((done / ch.metric.target) * 100), achieved: done >= ch.metric.target };
+    }
+    case 'reps_ejercicio': {
+      const { exerciseId, atWeight } = ch.metric;
+      if (!exerciseId || atWeight == null) return { progressValue: 0, pct: 0, achieved: false };
+      const reps = bestRepsAtWeight(data.workoutLogs, exerciseId, atWeight, ch.weekStart, to);
+      return { progressValue: reps, pct: clamp((reps / ch.metric.target) * 100), achieved: reps >= ch.metric.target };
+    }
+    case 'series_grupo': {
+      const group = ch.metric.muscleGroup;
+      if (!group) return { progressValue: 0, pct: 0, achieved: false };
+      const sets = fractionalSetsByGroup(data.workoutLogs, data.exercises, ch.weekStart, to).get(group) ?? 0;
+      const value = Math.round(sets * 10) / 10;
+      return { progressValue: value, pct: clamp((value / ch.metric.target) * 100), achieved: value >= ch.metric.target };
+    }
+    case 'cardio_zona2': {
+      const min = zone2Minutes(data.cardioSessions ?? [], ch.weekStart, to);
+      return { progressValue: min, pct: clamp((min / ch.metric.target) * 100), achieved: min >= ch.metric.target };
+    }
+    case 'racha_registro': {
+      // El reto va de días con registro, así que se cuenta sobre la ventana ya
+      // transcurrida: a mitad de semana un 3/5 es progreso real, no un fallo.
+      const source = ch.metric.streakSource ?? 'pasos';
+      const entries = source === 'peso' ? data.bodyweightLogs
+        : source === 'dieta' ? data.completionLogs
+        : data.stepLogs;
+      const days = loggedDays(entries, ch.weekStart, to);
+      return { progressValue: days, pct: clamp((days / ch.metric.target) * 100), achieved: days >= ch.metric.target };
     }
     case 'custom':
       // Sin métrica automática: lo resuelve el coach cambiando el status a mano.

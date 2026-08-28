@@ -92,6 +92,15 @@ const GimnasioHarness = import.meta.env.DEV
   ? lazy(() => import('./features/gimnasio/DevHarness'))
   : null;
 
+// Banco de pruebas de Roadmap → Calendario (ruta /dev/calendario) — no hay
+// login sandbox de coach en este repo, así que sin esto la pantalla del
+// coach no se puede ver en el navegador sin credenciales reales. Datos de
+// ejemplo en memoria, ninguna escritura toca Firestore. Misma poda en
+// producción que UiShowcase/GimnasioHarness.
+const CalendarioHarness = import.meta.env.DEV
+  ? lazy(() => import('./components/roadmap/calendario/DevHarness'))
+  : null;
+
 /* La pantalla de espera de la app, con marca. Existe como componente y no como
    un `<div className="min-h-screen bg-bg" />` suelto por un motivo concreto:
    ese div es NEGRO Y VACÍO, exactamente igual que una app colgada. Cuando un
@@ -657,6 +666,14 @@ function AppContent() {
     return (
       <Suspense fallback={<div className="min-h-screen bg-bg" />}>
         <GimnasioHarness />
+      </Suspense>
+    );
+  }
+
+  if (CalendarioHarness && location.pathname === '/dev/calendario') {
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-bg" />}>
+        <CalendarioHarness />
       </Suspense>
     );
   }

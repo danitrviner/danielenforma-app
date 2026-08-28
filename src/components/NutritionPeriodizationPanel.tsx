@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Diet, NutritionPhase, NutritionProgram, OnboardingData } from '../types';
+import { Diet, NutritionPhase, NutritionProgram, NutritionPhaseType, OnboardingData } from '../types';
 import {
   getNutritionProgram,
   saveNutritionProgram,
@@ -46,6 +46,17 @@ interface FormState {
 // ── Constants ──────────────────────────────────────────────────────────────────
 
 const PHASE_COLORS = ['var(--color-accent)', 'var(--color-data)', 'var(--color-warning)', 'var(--color-chart-3)'];
+
+// Tipo de fase de nutrición (Roadmap → Calendario, coach) — decide el color
+// del bloque en el calendario. Opcional: sin marcar, `clasificarFaseNutricion`
+// (utils/roadmapCalendar.ts) lo deduce del delta de `targetKcal` contra la
+// fase anterior.
+const NUTRI_PHASE_TYPE_OPTIONS: { value: '' | NutritionPhaseType; label: string }[] = [
+  { value: '', label: 'Auto (según kcal)' },
+  { value: 'deficit', label: 'Déficit' },
+  { value: 'mantenimiento', label: 'Mantenimiento' },
+  { value: 'superavit', label: 'Superávit' },
+];
 
 function phaseTextColor(bgColor: string): string {
   // accent y data son claros, el resto son oscuros
@@ -533,6 +544,18 @@ export default function NutritionPeriodizationPanel({
                     <option value="">Sin dieta</option>
                     {diets.map(d => (
                       <option key={d.id} value={d.id}>{d.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-caption font-mono text-ink-2 uppercase tracking-wider flex-shrink-0">Tipo:</span>
+                  <select
+                    value={phase.phaseType ?? ''}
+                    onChange={e => updatePhase(idx, { phaseType: e.target.value === '' ? undefined : e.target.value as NutritionPhaseType })}
+                    className="bg-raised border border-hairline text-white text-title-s font-mono rounded-control px-2 py-2 focus:outline-none focus:border-chart-3/50 transition-colors"
+                  >
+                    {NUTRI_PHASE_TYPE_OPTIONS.map(o => (
+                      <option key={o.value} value={o.value}>{o.label}</option>
                     ))}
                   </select>
                 </div>

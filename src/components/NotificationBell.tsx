@@ -35,6 +35,7 @@ const TYPE_ICON: Record<AppNotification['type'], string> = {
   hrtest_approved:         'favorite',
   academy_access_granted:  'school',
   lesson_completed:        'play_lesson',
+  coach_day_note:          'sticky_note_2',
 };
 
 export default function NotificationBell({ recipientEmail, onNavigate, mutedTypes }: Props) {

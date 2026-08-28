@@ -1,17 +1,22 @@
-import React, { useEffect, useState } from 'react';
-import { Roadmap, WeeklyChallenge, ChallengeTemplate, ChallengeKind } from '../../types';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Roadmap, WeeklyChallenge, ChallengeTemplate, ChallengeKind, CardioSession } from '../../types';
 import {
   getWeeklyChallenge, saveWeeklyChallenge, getWeeklyChallengesForAthlete,
   getChallengeTemplates, saveChallengeTemplate, deleteChallengeTemplate,
+  getCardioSessionsSince,
 } from '../../dbService';
 import { isoWeekKey, isoWeekBounds, evaluateChallengeProgress, ChallengeData } from '../../utils/weeklyChallenge';
+import { buildChallengeMemory } from '../../utils/challengeMemory';
 import { addDays, getWeekStart } from '../../utils/trainingWeek';
 import ChallengeOptionsPanel from './ChallengeOptionsPanel';
 import { Icon } from '../ui';
 
 const KIND_LABEL: Record<ChallengeKind, string> = {
   pasos_media: 'Media de pasos', pasos_total: 'Pasos totales', carga_ejercicio: 'Carga en un ejercicio',
-  adherencia_dieta: 'Adherencia a la dieta', peso_objetivo: 'Peso objetivo', entrenos_completados: 'Entrenos completados',
+  reps_ejercicio: 'Repeticiones a mismo peso', adherencia_dieta: 'Adherencia a la dieta',
+  peso_objetivo: 'Peso objetivo', entrenos_completados: 'Entrenos completados',
+  series_grupo: 'Series de un grupo muscular', cardio_zona2: 'Minutos en Zona 2',
+  racha_registro: 'Racha de registro (hábito)',
   custom: 'Custom (sin métrica automática)',
 };
 
@@ -43,6 +48,7 @@ export default function ChallengeManager({ athleteEmail, challengeData, roadmap,
   const [previous, setPrevious] = useState<WeeklyChallenge | null>(null);
   const [history, setHistory] = useState<WeeklyChallenge[]>([]);
   const [templates, setTemplates] = useState<ChallengeTemplate[]>([]);
+  const [cardioSessions, setCardioSessions] = useState<CardioSession[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAssign, setShowAssign] = useState(false);
   const [form, setForm] = useState<AssignForm>(emptyForm());
@@ -59,12 +65,14 @@ export default function ChallengeManager({ athleteEmail, challengeData, roadmap,
   useEffect(() => {
     let cancelled = false;
     async function load() {
-      const [curr, nxt, prev, hist, tpls] = await Promise.all([
+      const [curr, nxt, prev, hist, tpls, cardio] = await Promise.all([
         getWeeklyChallenge(athleteEmail, currentKey),
         getWeeklyChallenge(athleteEmail, nextKey),
         getWeeklyChallenge(athleteEmail, prevKey),
         getWeeklyChallengesForAthlete(athleteEmail),
         getChallengeTemplates(),
+        // Ventana corta: el motor solo necesita 4 semanas de Zona 2.
+        getCardioSessionsSince(athleteEmail, addDays(today, -35)).catch(() => [] as CardioSession[]),
       ]);
       if (cancelled) return;
       setCurrent(curr);
@@ -72,6 +80,7 @@ export default function ChallengeManager({ athleteEmail, challengeData, roadmap,
       setPrevious(prev);
       setHistory(hist);
       setTemplates(tpls);
+      setCardioSessions(cardio);
       setLoading(false);
     }
     load();
@@ -142,15 +151,59 @@ export default function ChallengeManager({ athleteEmail, challengeData, roadmap,
     await deleteChallengeTemplate(id);
   }
 
+  // El historial y el cardio los carga este panel, así que se inyectan en los
+  // datos que bajan al generador: sin ellos el motor rotaría sobre una sola
+  // semana y no podría proponer retos de Zona 2.
+  const enrichedData: ChallengeData = useMemo(
+    () => ({ ...challengeData, history, cardioSessions }),
+    [challengeData, history, cardioSessions],
+  );
+
+  // Cómo le está funcionando el sistema a este atleta. Un motor de retos sin
+  // este número es fe ciega: si gana el 100% los retos son de adorno y si gana
+  // el 20% ha dejado de leerlos.
+  const memory = useMemo(() => buildChallengeMemory(history, currentKey), [history, currentKey]);
+
   if (loading) {
     return <p className="text-label text-ink-2 font-sans animate-pulse py-4">Cargando retos...</p>;
   }
 
-  const currentProgress = current ? evaluateChallengeProgress(current, challengeData, today) : null;
+  const currentProgress = current ? evaluateChallengeProgress(current, enrichedData, today) : null;
   const overwritingAuto = current?.origin === 'auto' && (current.progressValue ?? 0) > 0 && form.target === 'esta';
+  const winPct = Math.round(memory.winRate * 100);
+  // La diana del motor es ~65%: se afloja tras un fallo y se aprieta tras un
+  // éxito holgado. Fuera de la banda 45-85% conviene que el coach mire.
+  const dianaOk = memory.resolvedCount < 4 || (winPct >= 45 && winPct <= 85);
 
   return (
     <div className="space-y-5">
+      {/* Salud del motor de retos */}
+      {memory.resolvedCount > 0 && (
+        <div className="bg-raised border border-hairline rounded-surface p-3 flex flex-wrap items-center gap-x-5 gap-y-2">
+          <div>
+            <p className="font-mono text-caption uppercase tracking-widest text-ink-3">Conseguidos</p>
+            <p className="font-sans font-bold text-body-s" style={{ color: dianaOk ? 'var(--color-success)' : 'var(--color-warning)' }}>
+              {memory.wonCount} de {memory.resolvedCount} · {winPct}%
+            </p>
+          </div>
+          <div>
+            <p className="font-mono text-caption uppercase tracking-widest text-ink-3">Racha</p>
+            <p className="font-sans font-bold text-body-s text-white">
+              {memory.winStreak === 0 ? '—' : `${memory.winStreak} seguido${memory.winStreak === 1 ? '' : 's'}`}
+            </p>
+          </div>
+          <p className="text-caption text-ink-3 font-sans flex-1 min-w-[12rem]">
+            {memory.resolvedCount < 4
+              ? 'Todavía pocos retos resueltos: el motor los está mandando suaves a propósito.'
+              : dianaOk
+                ? 'En la diana (45-85%). El listón se autorregula solo.'
+                : winPct > 85
+                  ? 'Se los está comiendo todos — el motor ya está subiendo el listón, pero puedes forzarlo asignando una opción "ambiciosa".'
+                  : 'Está fallando demasiados. El motor ya está aflojando; revisa si el problema es el reto o el registro de datos.'}
+          </p>
+        </div>
+      )}
+
       {/* Reto actual */}
       <div className="bg-surface border border-hairline rounded-surface p-4">
         <p className="font-sans text-caption uppercase tracking-widest text-ink-2 mb-2">Reto de esta semana</p>
@@ -158,9 +211,14 @@ export default function ChallengeManager({ athleteEmail, challengeData, roadmap,
           <>
             <div className="flex items-center justify-between">
               <p className="font-sans font-bold text-white text-body-s">{current.title}</p>
-              <span className={`font-mono text-caption uppercase px-2 rounded-full flex-shrink-0 ${
-                current.origin === 'coach' ? 'bg-data/15 text-data' : 'bg-white/5 text-ink-2'
-              }`}>{current.origin === 'coach' ? 'asignado' : 'automático'}</span>
+              <div className="flex items-center gap-1.5 flex-shrink-0">
+                {current.difficulty && (
+                  <span className="font-mono text-caption uppercase px-2 rounded-full bg-white/5 text-ink-2">{current.difficulty}</span>
+                )}
+                <span className={`font-mono text-caption uppercase px-2 rounded-full ${
+                  current.origin === 'coach' ? 'bg-data/15 text-data' : 'bg-white/5 text-ink-2'
+                }`}>{current.origin === 'coach' ? 'asignado' : 'automático'}</span>
+              </div>
             </div>
             <p className="text-label text-ink-2 font-sans mt-1">{current.description}</p>
             {currentProgress && (
@@ -187,7 +245,7 @@ export default function ChallengeManager({ athleteEmail, challengeData, roadmap,
       {/* Opciones sugeridas */}
       <ChallengeOptionsPanel
         athleteEmail={athleteEmail}
-        challengeData={challengeData}
+        challengeData={enrichedData}
         roadmap={roadmap}
         onSaveRoadmap={onSaveRoadmap}
         previousKind={previous?.kind}

@@ -413,6 +413,19 @@ service cloud.firestore {
                             || (request.auth != null && request.auth.token.email == resource.data.athleteId && request.auth.token.email_verified == true);
     }
 
+    // ── coachDayNotes (docId = `${athleteId}_${date}`; athleteId = EMAIL) ──────
+    // Nota del coach sobre un día concreto (Roadmap → Calendario), visible en
+    // Inicio del atleta. Solo el coach escribe — el atleta únicamente lee la
+    // suya, nunca la crea ni la edita. Mismo guard de `resource == null` que
+    // dietCompletionLogs: se lee por getDoc directo sobre el id de hoy, y un
+    // día sin nota todavía no debe tumbar la app a modo local.
+    match /coachDayNotes/{docId} {
+      allow read: if isCoach()
+                  || (request.auth != null && (resource == null
+                      || (request.auth.token.email == resource.data.athleteId && request.auth.token.email_verified == true)));
+      allow write: if isCoach();
+    }
+
     // ── menuCompletionLogs (docId = `${athleteId}_${date}`; athleteId = EMAIL) ─
     // Athlete's tick-off of their published weekly menu — same ownership shape and
     // same non-existent-doc handling as dietCompletionLogs.

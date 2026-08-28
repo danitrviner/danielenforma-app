@@ -262,6 +262,26 @@
   --color-chart-4: #3ECF8E;  /* = success */
   --color-chart-5: #fdba74;  /* = warning */
 
+  /* ── Roadmap → Calendario (coach) · fase y celda de día ─────────────────────
+     Colores de fase del handoff de diseño (docs/design/roadmap-calendario si
+     se archiva) — un tono fijo por tipo de mesociclo, idéntico en los 3
+     niveles del calendario (Año/Mes/Día) y en el sheet. `phase-defi` repite
+     el valor de `--color-success` a propósito: incidentalmente coinciden,
+     pero son tokens con SIGNIFICADOS distintos (uno es "fase de definición",
+     el otro "completado") y no deben desincronizarse si alguno cambia por
+     separado el día de mañana. `cell` es el fondo de una celda de día PASADA
+     en el nivel Mes — distinto de `--color-surface`/`--color-inset` porque el
+     handoff pide un tono intermedio entre ambos, propio de esta pantalla. */
+  --color-cell:           #101010;
+  --color-phase-fuerza:   #7DA7FF;
+  --color-phase-hiper:    #B08CFF;
+  --color-phase-defi:     #3ECF8E;
+  --color-phase-mant:     #D8CFC0;
+  --color-phase-descarga: #8A8F98;
+  --color-cat-cardio:     #E8B04B;
+  /* Día de recarga (RefeedDay) — naranja cálido, distinto del oro (que es solo
+     acción y selección) y del ámbar del cardio. */
+  --color-refeed:         #FF9F6B;
 
   /* ── Radios · 6 + full (Fase 3) ─────────────────────────────────────────────
      El handoff pide más granularidad que los tres pasos originales — nueve

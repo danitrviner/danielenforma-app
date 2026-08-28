@@ -3,8 +3,12 @@
 // niveles (levelLadder.ts) y el progreso de fase (planPhase.ts) para que todos
 // midan igual las mismas cosas.
 
-import { BodyweightLog, StepLog, WorkoutLog, Exercise, DietCompletionLog, Diet } from '../types';
+import {
+  BodyweightLog, StepLog, WorkoutLog, Exercise, DietCompletionLog, Diet,
+  MuscleGroup, CardioSession,
+} from '../types';
 import { epley } from './oneRepMax';
+import { weightedGroupsOf } from './trainingReport';
 
 // Normaliza para comparar nombres de ejercicio: minúsculas y sin acentos.
 export function normalizeText(s: string): string {
@@ -157,4 +161,77 @@ export function dailyDietPcts(
   }
   if (pcts.length === 0) return { avg: 0, days: 0 };
   return { avg: pcts.reduce((s, v) => s + v, 0) / pcts.length, days: pcts.length };
+}
+
+// ── Primitivas de los retos de volumen, cardio y hábito ───────────────────────
+
+// Series FRACCIONALES por grupo muscular en [from, to]: el secundario de un
+// ejercicio cuenta con su peso parcial, igual que en los informes de
+// entrenamiento (weightedGroupsOf) — así "series de pierna" no ignora lo que
+// aporta un peso muerto al isquio.
+export function fractionalSetsByGroup(
+  logs: WorkoutLog[],
+  exercises: Exercise[],
+  from: string,
+  to: string,
+): Map<MuscleGroup, number> {
+  const acc = new Map<MuscleGroup, number>();
+  for (const log of logs) {
+    if (log.date < from || log.date > to) continue;
+    for (const entry of log.entries) {
+      if (entry.sets.length === 0) continue;
+      for (const { group, weight } of weightedGroupsOf(entry.exerciseId, exercises)) {
+        if (group === 'none') continue;
+        acc.set(group, (acc.get(group) ?? 0) + entry.sets.length * weight);
+      }
+    }
+  }
+  return acc;
+}
+
+// Mejores repeticiones logradas a `atWeight` kg o más en un ejercicio dentro de
+// [from, to]. Es la métrica del reto de "PR de reps": subir repeticiones sin
+// tocar el peso, que progresa igual pero no obliga a fallar un intento pesado.
+export function bestRepsAtWeight(
+  logs: WorkoutLog[],
+  exerciseId: string,
+  atWeight: number,
+  from: string,
+  to: string,
+): number {
+  let best = 0;
+  for (const log of logs) {
+    if (log.date < from || log.date > to) continue;
+    for (const entry of log.entries) {
+      if (entry.exerciseId !== exerciseId) continue;
+      for (const set of entry.sets) {
+        // Tolerancia de 0,01 kg: los discos se registran con decimales y un
+        // 79,999 no debe descalificar una serie hecha a 80.
+        if (set.weight + 0.01 >= atWeight && set.repsDone > best) best = set.repsDone;
+      }
+    }
+  }
+  return best;
+}
+
+// Minutos acumulados en Zona 2 en [from, to]. Las sesiones añadidas a mano
+// (`manual`) no cuentan: sin banda no hay zonas reales, solo una estimación que
+// el atleta podría inflar sin querer — misma regla que el XP de FITIV.
+export function zone2Minutes(sessions: CardioSession[], from: string, to: string): number {
+  let sec = 0;
+  for (const s of sessions) {
+    if (s.date < from || s.date > to || s.manual) continue;
+    sec += s.timeInZoneSec?.z2 ?? 0;
+  }
+  return Math.round(sec / 60);
+}
+
+// Días DISTINTOS con registro en [from, to]. Base de los retos de hábito: lo
+// que se mide es que el atleta abra la app y anote, no cuánto anotó.
+export function loggedDays(entries: { date: string }[], from: string, to: string): number {
+  const days = new Set<string>();
+  for (const e of entries) {
+    if (e.date >= from && e.date <= to) days.add(e.date);
+  }
+  return days.size;
 }

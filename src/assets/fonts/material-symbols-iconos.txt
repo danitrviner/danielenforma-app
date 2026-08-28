@@ -44,6 +44,7 @@ calendar_month
 calendar_today
 calendar_view_month
 calendar_view_week
+campaign
 capture
 category
 celebration
@@ -53,6 +54,7 @@ check_box
 check_box_outline_blank
 check_circle
 checklist
+chevron_left
 chevron_right
 circle
 close
@@ -77,8 +79,10 @@ distance
 done
 download
 draft
+drag_indicator
 eco
 edit
+edit_calendar
 edit_note
 egg
 email
@@ -90,6 +94,8 @@ event
 event_available
 event_busy
 event_note
+event_repeat
+exercise
 expand_less
 expand_more
 fact_check
@@ -148,6 +154,7 @@ male
 manage_accounts
 manufacturing
 map
+menu
 menu_book
 mic
 military_tech
@@ -206,6 +213,7 @@ reviews
 rice_bowl
 rocket_launch
 route
+rule
 save
 scale
 schedule
@@ -238,6 +246,7 @@ sticky_note_2
 stop_circle
 straighten
 swap_horiz
+swap_vert
 swipe
 switch
 sync
@@ -269,7 +278,6 @@ verified_user
 video_library
 videocam
 videocam_off
-view_timeline
 visibility
 visibility_off
 warning
@@ -279,3 +287,4 @@ web
 weight
 window
 workspace_premium
+zoom_out_map

@@ -6,6 +6,9 @@ import { Icon } from '../ui';
 interface Props {
   challenge: WeeklyChallenge;
   progress: ChallengeProgress;
+  // Retos conseguidos consecutivos ANTES de este. Solo se pinta a partir de 2:
+  // una racha de 1 no es una racha, y enseñarla resta en vez de sumar.
+  streak?: number;
 }
 
 function fmtMetric(value: number, unit: string): string {
@@ -24,10 +27,11 @@ function daysLeft(weekEnd: string): number {
 // Card destacada del reto activo de la semana — siempre hay uno (auto-generado
 // si el coach no asignó ninguno). Barra de progreso derivada de los datos
 // registrados por el atleta, sin input manual.
-export default function WeeklyChallengeCard({ challenge, progress }: Props) {
+export default function WeeklyChallengeCard({ challenge, progress, streak = 0 }: Props) {
   const achieved = challenge.status === 'conseguido';
   const remaining = daysLeft(challenge.weekEnd);
   const accent = achieved ? 'var(--color-success)' : 'var(--color-accent)';
+  const liveStreak = achieved ? streak + 1 : streak;
 
   return (
     <div
@@ -41,11 +45,18 @@ export default function WeeklyChallengeCard({ challenge, progress }: Props) {
             Reto de la semana · de tu entrenador
           </p>
         </div>
-        {!achieved && (
-          <span className="font-mono text-caption text-ink-2">
-            {remaining === 0 ? 'último día' : `${remaining}d restantes`}
-          </span>
-        )}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {liveStreak >= 2 && (
+            <span className="font-mono text-caption px-2 rounded-full" style={{ backgroundColor: `${accent}1F`, color: accent }}>
+              🔥 {liveStreak} seguidos
+            </span>
+          )}
+          {!achieved && (
+            <span className="font-mono text-caption text-ink-2">
+              {remaining === 0 ? 'último día' : `${remaining}d restantes`}
+            </span>
+          )}
+        </div>
       </div>
 
       <h3 className="font-sans font-bold text-title-m text-white leading-tight">{challenge.title}</h3>

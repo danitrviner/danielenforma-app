@@ -16,7 +16,12 @@ export type NotificationType =
   | 'hrtest_pending'
   | 'hrtest_approved'
   | 'academy_access_granted'
-  | 'lesson_completed';
+  | 'lesson_completed'
+  // Nota que el coach deja sobre un DÍA concreto desde el calendario del
+  // roadmap (ver `CoachDayNote`). Solo se manda si el coach marca "avisarle":
+  // la nota se ve sola en el Inicio del atleta ese día, la notificación es
+  // para cuando quiere que se entere ya.
+  | 'coach_day_note';
 
 export interface AppNotification {
   id: string;                   // deterministic dedup key
@@ -956,6 +961,36 @@ export interface NutritionPhase {
   dietId: string;
   targetWeight?: number; // kg at end of phase; undefined = not projected
   targetKcal?: number;   // kcal/day objective driving the deficit/surplus calc; undefined = derive from the linked diet's exchange budget
+  /**
+   * Tipo de fase nutricional (Roadmap → Calendario, coach): decide el color
+   * del bloque. `undefined` = el coach no lo ha marcado — `clasificarFaseNutricion`
+   * (utils/roadmapCalendar.ts) lo deduce del delta de `targetKcal` contra la
+   * fase anterior; sin fase anterior con la que comparar, color neutro.
+   */
+  phaseType?: NutritionPhaseType;
+}
+
+// Mismos 3 tipos que usa el color de fase de nutrición del Roadmap → Calendario.
+export type NutritionPhaseType = 'deficit' | 'mantenimiento' | 'superavit';
+
+/**
+ * Día de recarga suelto dentro de la periodización — el clásico refeed de un
+ * día en mitad de un déficit, o la carga de hidratos antes de una sesión de
+ * pierna dura.
+ *
+ * Vive en el PROGRAMA y no dentro de la fase a propósito. Las fases se definen
+ * por número de semanas desde `startDate`, no por fechas: guardar un refeed
+ * con fecha absoluta dentro de una fase lo dejaría huérfano en cuanto el coach
+ * alargue o acorte cualquier fase anterior. Un refeed es un evento de
+ * calendario, y va donde vive el calendario.
+ */
+export interface RefeedDay {
+  date: string;        // YYYY-MM-DD
+  /** Dieta que manda ESE día, por encima del calendario semanal del atleta.
+   *  Sin ella el refeed es solo una marca en el calendario del coach. */
+  dietId?: string;
+  /** Lo que el coach quiere que el atleta lea ese día ("sube 500 kcal de HC"). */
+  note?: string;
 }
 
 export interface NutritionProgram {
@@ -963,6 +998,7 @@ export interface NutritionProgram {
   startDate: string;          // YYYY-MM-DD
   phases: NutritionPhase[];
   lastSeenPhaseId?: string;   // tracks when athlete saw the phase change banner
+  refeedDays?: RefeedDay[];   // recargas sueltas — ver RefeedDay
 }
 
 export interface RoadmapItem {
@@ -982,6 +1018,13 @@ export interface Roadmap {
   planPhases?: PlanPhase[];   // fases macro por progresión; ausente en docs antiguos
   levelLadder?: LevelLadder;  // undefined → usar DEFAULT_LEVEL_LADDER
   challengeConfig?: ChallengeConfig;
+  /**
+   * Fechas ISO que el coach marcó como "Destacar día" desde el sheet del
+   * Roadmap → Calendario — independiente de los días que el propio calendario
+   * ya destaca solo (cambio de mesociclo, cambio de fase de nutrición, hito).
+   * `undefined` = ninguna marcada a mano todavía.
+   */
+  highlightedDays?: string[];
 }
 
 // Configuración de retos por atleta (dentro del doc roadmap).
@@ -1077,10 +1120,22 @@ export type ChallengeKind =
   | 'pasos_media'          // media diaria de pasos ≥ target
   | 'pasos_total'          // pasos totales de la semana ≥ target
   | 'carga_ejercicio'      // superar e1RM en un ejercicio concreto
+  | 'reps_ejercicio'       // sacar N reps a un peso ya dominado (PR de reps)
   | 'adherencia_dieta'     // adherencia semanal ≥ target %
   | 'peso_objetivo'        // terminar la semana en ≤/≥ target kg (según baseline)
   | 'entrenos_completados' // completar los entrenos asignados de la semana
+  | 'series_grupo'         // series fraccionales de un grupo muscular ≥ target
+  | 'cardio_zona2'         // minutos acumulados en Zona 2 ≥ target
+  | 'racha_registro'       // días con registro (peso/pasos/dieta) ≥ target — reto de hábito
   | 'custom';              // creado por el coach sin métrica automática
+
+// De qué registro habla un reto de racha (kind 'racha_registro').
+export type ChallengeStreakSource = 'peso' | 'pasos' | 'dieta';
+
+// Cómo de exigente es el objetivo respecto a lo que el atleta ya hace. Se
+// calcula en challengeMemory a partir del historial y se guarda en el reto
+// para que el coach vea a posteriori con qué listón se envió.
+export type ChallengeDifficulty = 'suave' | 'justo' | 'ambicioso';
 
 export interface WeeklyChallenge {
   id: string;               // `${athleteId}_${isoWeek}`
@@ -1094,16 +1149,24 @@ export interface WeeklyChallenge {
   origin: 'coach' | 'auto';
   templateId?: string;
   metric: {
-    unit: string;           // 'pasos' | 'kg' | '%' | 'sesiones'
+    unit: string;           // 'pasos' | 'kg' | '%' | 'sesiones' | 'series' | 'min' | 'días'
     target: number;
     baseline?: number;      // punto de partida (media previa, peso actual…)
-    exerciseId?: string;    // carga_ejercicio
+    exerciseId?: string;    // carga_ejercicio | reps_ejercicio
     exerciseName?: string;  // snapshot para pintar sin lookup
+    atWeight?: number;      // reps_ejercicio: peso al que hay que sacar las reps
+    muscleGroup?: MuscleGroup;    // series_grupo
+    muscleLabel?: string;         // snapshot para pintar sin lookup
+    streakSource?: ChallengeStreakSource; // racha_registro
   };
   status: 'activo' | 'conseguido' | 'fallido';
   progressValue?: number;   // snapshot de la última evaluación
   createdAt: string;        // ISO
   resolvedAt?: string;      // ISO
+  // Metadatos del motor (docs viejos no los tienen). isMilestone permite contar
+  // intentos fallidos de un mismo hito redondo para no reproponerlo eternamente.
+  isMilestone?: boolean;
+  difficulty?: ChallengeDifficulty;
 }
 
 // Plantilla de la biblioteca de retos del coach (colección challengeTemplates).
@@ -1406,7 +1469,21 @@ export interface Mesocycle {
   programOrder?: number;   // position in the sequence (0-based)
   splitId?: string;        // id del reparto de días elegido (ver utils/trainingSplits.ts)
   deloadWeek?: number;     // semana (1-indexada) de descarga dentro del meso; undefined = sin descarga marcada
+  /**
+   * Tipo de fase de entreno (Roadmap → Calendario, coach): decide el color/
+   * icono del bloque en los 3 niveles del calendario. `undefined` = el coach
+   * no lo ha marcado todavía — `clasificarFaseEntreno` (utils/roadmapCalendar.ts)
+   * lo deduce entonces por palabras clave de `objective`, y si tampoco
+   * reconoce nada usa un color neutro en vez de inventar un tipo.
+   */
+  phaseType?: PhaseType;
 }
+
+// Tipos de fase de un mesociclo, para el color/icono del Roadmap → Calendario.
+// Mismos 5 tipos que el handoff de diseño (fuerza/hipertrofia/definición/
+// mantenimiento/descarga) — no una taxonomía nueva, solo la etiqueta que
+// falta para no tener que adivinar el color a partir de texto libre.
+export type PhaseType = 'fuerza' | 'hipertrofia' | 'definicion' | 'mantenimiento' | 'descarga';
 
 export interface MesocycleTemplate {
   id: string;
@@ -1445,6 +1522,24 @@ export interface CoachNote {
   relatedAthleteName?: string;   // denormalized for display without extra lookups
   done: boolean;
   createdAt: string;             // ISO timestamp
+}
+
+// Nota del coach sobre un día CONCRETO del atleta (Roadmap → Calendario,
+// sheet de Día · botón "Nota"). Distinta de `CoachNote` (lista privada de
+// tareas del coach, nunca visible al atleta) y de `WorkoutLog.note` (nota del
+// ATLETA sobre su propia sesión): esta la escribe el coach y el atleta SÍ la
+// ve, en Inicio, el día al que corresponde — cierra el hueco que
+// `HomeScreen.tsx` documenta como pendiente por no existir "campo de nota por
+// asignación". Doc ID determinista `${athleteId}_${date}`, mismo patrón que
+// `DietCompletionLog`/`ProgressPhoto`: como mucho una nota por atleta y día,
+// escribir de nuevo la sustituye en vez de duplicarla.
+export interface CoachDayNote {
+  id: string;          // `${athleteId}_${date}`
+  athleteId: string;   // email
+  date: string;        // YYYY-MM-DD
+  text: string;
+  createdAt: string;   // ISO timestamp
+  updatedAt?: string;  // ISO timestamp — presente solo si se editó tras crearse
 }
 
 // Coach's setup checklist for a single client: seeded items (auto-detected steps

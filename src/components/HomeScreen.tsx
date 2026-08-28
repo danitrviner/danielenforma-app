@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { UserProfile, WeightCheckIn, WeekDay } from '../types';
-import { getWorkoutAssignmentsForAthlete, getWorkoutsByIds, getCardioAssignmentsForAthlete, getDietsForAthlete, getAthleteDietConfig, getDietCompletionLog, getOnboarding } from '../dbService';
+import { getWorkoutAssignmentsForAthlete, getWorkoutsByIds, getCardioAssignmentsForAthlete, getDietsForAthlete, getAthleteDietConfig, getDietCompletionLog, getOnboarding, getCoachDayNote } from '../dbService';
 import { getWeekRange, getWeekStart, formatDate, hoyIsoLocal } from '../utils/trainingWeek';
 import { pickActiveZona2Assignment, pickActiveIntervalAssignment } from '../utils/cardioSession';
 import { pickTodaysDiet, countMealsDone } from '../utils/nutritionSummary';
@@ -49,10 +49,13 @@ const DIA_SEMANA = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viern
    `profile.currentStreak`, ya usado en Perfil/Clientes). Se queda FUERA a
    propósito, por no tener dato real que no sea inventado: el pill "DÍA N ·
    SPLIT" y "~N MIN" (no hay campo de duración estimada ni de nombre de
-   split en `Workout`), y el aviso del coach ("D · Sube el peso...", no hay
-   campo de nota por asignación). "Semana N de M" tampoco se añade — exigiría
-   resolver el mesociclo activo y no hay ese cálculo ya hecho en ningún sitio
+   split en `Workout`). "Semana N de M" tampoco se añade — exigiría resolver
+   el mesociclo activo y no hay ese cálculo ya hecho en ningún sitio
    reutilizable. Todo esto queda anotado para Dani en vez de inventado.
+
+   El aviso del coach SÍ tiene ya campo propio (`CoachDayNote`, Roadmap →
+   Calendario · sheet de Día · botón "Nota") — se muestra debajo como tarjeta
+   propia cuando hay una para hoy, en vez de vivir dentro de esta cabecera.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreenProps) {
@@ -63,6 +66,14 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
   // recalculaban la fecha en cada render (p. ej. CardioScreen).
   const TODAY_DATE = hoyIsoLocal();
   const TODAY_WD: WeekDay = JS_TO_WD[new Date().getDay()];
+  // Nota del coach para hoy (Roadmap → Calendario, sheet de Día · botón
+  // "Nota") — cierra el hueco que este archivo documenta más abajo como
+  // pendiente por no existir "campo de nota por asignación". Un doc por
+  // fetch, no la lista entera: es un dato de un solo día.
+  const { data: coachDayNote } = useQuery({
+    queryKey: ['coachDayNote', profile.email, TODAY_DATE],
+    queryFn: () => getCoachDayNote(profile.email, TODAY_DATE),
+  });
   const { data: assignments = [], isPending: loadingAssignments } = useQuery({
     queryKey: ['workoutAssignments', profile.userId],
     queryFn: () => getWorkoutAssignmentsForAthlete({ uid: profile.userId, email: profile.email }),
@@ -160,6 +171,23 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
           </span>
         ) : undefined}
       />
+
+      {/* Nota del coach para hoy (Roadmap → Calendario) — encima del entreno
+          del día, solo si hay una escrita para la fecha de hoy. */}
+      {coachDayNote && (
+        <section className="rounded-canvas p-4 border border-accent-line bg-accent/8 flex gap-3">
+          <div
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-control font-mono text-caption font-bold text-accent"
+            style={{ background: 'rgba(255,199,44,0.16)' }}
+          >
+            <Icon name="sticky_note_2" size="s" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-caption font-mono uppercase tracking-wider text-accent">Nota de tu entrenador</p>
+            <p className="text-body-s font-sans text-ink mt-1 leading-relaxed" style={{ textWrap: 'pretty' }}>{coachDayNote.text}</p>
+          </div>
+        </section>
+      )}
 
       {!loadingTraining && assignments.length === 0 && (
         <PlanInPreparationCard profile={profile} onNavigate={onNavigate} />

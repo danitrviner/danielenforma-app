@@ -1,11 +1,19 @@
 import React, { useMemo, useState } from 'react';
-import { Roadmap, WeeklyChallenge, ChallengeKind } from '../../types';
+import { Roadmap, WeeklyChallenge, ChallengeKind, ChallengeDifficulty } from '../../types';
 import { saveWeeklyChallenge } from '../../dbService';
 import {
   generateChallengeOptions, buildChallengeFromOption, eligibleLiftIds,
   ChallengeData, ChallengeOption,
 } from '../../utils/challengeOptions';
 import { addDays } from '../../utils/trainingWeek';
+
+// Cómo de exigente es el objetivo respecto a lo que el atleta YA hace — no la
+// dificultad absoluta del reto. "suave" en un atleta fuerte sigue siendo duro.
+const DIFFICULTY_COLOR: Record<ChallengeDifficulty, string> = {
+  suave: 'var(--color-data)',
+  justo: 'var(--color-success)',
+  ambicioso: 'var(--color-warning)',
+};
 
 interface Props {
   athleteEmail: string;
@@ -122,6 +130,10 @@ export default function ChallengeOptionsPanel({
                   {opt.isMilestone && (
                     <span className="font-mono text-caption uppercase px-2 rounded-full bg-accent/15 text-accent">HITO</span>
                   )}
+                  <span
+                    className="font-mono text-caption uppercase px-2 rounded-full"
+                    style={{ backgroundColor: `${DIFFICULTY_COLOR[opt.difficulty]}22`, color: DIFFICULTY_COLOR[opt.difficulty] }}
+                  >{opt.difficulty}</span>
                   <span className="font-mono text-caption text-ink-2">{opt.score}</span>
                 </div>
               </div>

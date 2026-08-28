@@ -62,6 +62,16 @@ export function itemWeightLabel(foodLabel: string, qty: number): string {
   return g >= 1000 ? `${(g / 1000).toFixed(1)}kg` : `${g}g`;
 }
 
+// El nombre de un alimento suele traer los gramos base incrustados delante
+// ("100g plátano (uno pequeño)"). Cuando el peso ya se muestra aparte (la
+// etiqueta en oro de la fila), este helper quita ese prefijo para no repetir
+// la cifra y dejar sitio al nombre real. Si no hay prefijo de peso, o si al
+// quitarlo no queda nombre, devuelve el label tal cual.
+export function foodNameWithoutGrams(label: string): string {
+  const stripped = label.replace(/^\s*\d+(?:[.,]\d+)?\s*(?:g|ml|cc|kg|l)\b\s*(?:de\s+)?/i, '').trim();
+  return stripped || label;
+}
+
 // MIX_HC    → +0.5 HC    +0.5 PROT per exchange
 // MIX_GRASA → +0.5 GRASA +0.5 PROT per exchange
 export function addToPlaced(p: Record<FoodCategory, number>, category: FoodCategory, qty: number): void {

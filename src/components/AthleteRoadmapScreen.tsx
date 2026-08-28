@@ -8,7 +8,7 @@ import {
   getStepsForAthlete, getWorkoutLogs, getExercises, getDietCompletionLogsForAthlete,
   getDietsForAthlete, getOnboarding, getAthleteNutritionConfig, getWorkoutAssignmentsForAthlete,
   getWeeklyChallengesForAthlete, saveRoadmapLevelProgress, createNotificationDeduped,
-  getTasksForAthlete, getWorkouts,
+  getTasksForAthlete, getWorkouts, getCardioSessionsSince,
 } from '../dbService';
 import { bodyweightForAthleteKey } from '../hooks/useAthleteWeight';
 import { deriveReviewEvents, deriveVolumeIncreaseEvents, deriveKcalChangeEvents, deriveDeloadEvents } from '../utils/planEvents';
@@ -19,7 +19,8 @@ import PhasePathStepper from './roadmap/PhasePathStepper';
 import LevelLadderCard from './roadmap/LevelLadderCard';
 import RecentAchievements, { Achievement } from './roadmap/RecentAchievements';
 import { ensureWeeklyChallenge, EnsureChallengeResult } from '../utils/ensureWeeklyChallenge';
-import { ChallengeData } from '../utils/weeklyChallenge';
+import { ChallengeData, isoWeekKey } from '../utils/weeklyChallenge';
+import { buildChallengeMemory } from '../utils/challengeMemory';
 import { computeLadderStatus } from '../utils/levelLadder';
 import { computePhaseProgress, currentPhase, PhaseData } from '../utils/planPhase';
 import { DEFAULT_LEVEL_LADDER } from '../data/defaultLevelLadder';
@@ -108,11 +109,23 @@ export default function AthleteRoadmapScreen({ profile }: Props) {
     queryKey: ['workouts'],
     queryFn: getWorkouts,
   });
+  // Solo las últimas 5 semanas: el motor de retos calcula la media de Zona 2
+  // sobre 4 semanas, y traerse el histórico entero de la banda encarecería
+  // cada carga del Roadmap sin aportar nada.
+  const cardioSince = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 35);
+    return d.toISOString().split('T')[0];
+  }, []);
+  const { data: cardioSessions = [], isPending: loadingCardio } = useQuery({
+    queryKey: ['cardioSessionsSince', profile.email, cardioSince],
+    queryFn: () => getCardioSessionsSince(profile.email, cardioSince),
+  });
 
   const loading = loadingMesocycles || loadingNutritionProgram || loadingRoadmap || loadingBodyweight
     || loadingSteps || loadingWorkoutLogs || loadingExercises || loadingDietCompletionLogs
     || loadingDiets || loadingOnboarding || loadingNutConfig || loadingAssignments || loadingChallengeHistory
-    || loadingTasks || loadingWorkouts;
+    || loadingTasks || loadingWorkouts || loadingCardio;
 
   const stepGoal = nutConfig?.stepGoal ?? DEFAULT_STEP_GOAL;
   const kcalPerStep = nutConfig?.kcalPerStep ?? DEFAULT_KCAL_PER_STEP;
@@ -140,12 +153,23 @@ export default function AthleteRoadmapScreen({ profile }: Props) {
       stepLogs, bodyweightLogs, workoutLogs, exercises,
       completionLogs: dietCompletionLogs, coachDiets: diets.filter(d => !d.selfManaged),
       assignments, projection, liftExerciseIds: roadmap?.challengeConfig?.liftExerciseIds,
+      cardioSessions,
+      // Ya está cargado para la lista de logros, así que la memoria del motor
+      // (rotación de 4 semanas + dificultad adaptativa) sale gratis en lecturas.
+      history: challengeHistory,
     };
     ensureWeeklyChallenge(profile.email, challengeData, today)
       .then(result => setChallengeResult(result))
       .catch(err => console.warn('AthleteRoadmapScreen load error:', err));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, profile.email]);
+
+  // Racha de retos ganados ANTES del de esta semana — se calcula del historial
+  // ya cargado, sin lecturas extra.
+  const challengeStreak = useMemo(() => {
+    const key = challengeResult?.challenge?.isoWeek ?? isoWeekKey(new Date().toISOString().split('T')[0]);
+    return buildChallengeMemory(challengeHistory, key).winStreak;
+  }, [challengeHistory, challengeResult]);
 
   const ladderStatus = useMemo(() => {
     if (loading) return null;
@@ -261,7 +285,11 @@ export default function AthleteRoadmapScreen({ profile }: Props) {
 
       {challengeResult && (challengeResult.pending
         ? <ChallengePendingCard />
-        : <WeeklyChallengeCard challenge={challengeResult.challenge!} progress={challengeResult.progress!} />
+        : <WeeklyChallengeCard
+            challenge={challengeResult.challenge!}
+            progress={challengeResult.progress!}
+            streak={challengeStreak}
+          />
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

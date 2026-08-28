@@ -172,6 +172,27 @@ export async function getCardioSessionsForAthlete(athleteId: string): Promise<Ca
   }
 }
 
+// Variante CON VENTANA para el motor de retos semanales: solo necesita las
+// últimas semanas para calcular la media de Zona 2, y el histórico completo de
+// un atleta con dos años de banda son cientos de lecturas por cada carga del
+// Roadmap. Requiere el índice cardioSessions (athleteId ASC, date ASC), mismo
+// patrón que stepLogs y bodyweightLogs.
+export async function getCardioSessionsSince(athleteId: string, since: string): Promise<CardioSession[]> {
+  if (forceLocalOnly) return getLocalSessions().filter(s => s.athleteId === athleteId && s.date >= since);
+  try {
+    const snap = await getDocs(query(
+      collection(db, 'cardioSessions'),
+      where('athleteId', '==', athleteId),
+      where('date', '>=', since),
+    ));
+    return snap.docs.map(d => ({ id: d.id, ...d.data() } as CardioSession));
+  } catch (err) {
+    console.warn('getCardioSessionsSince Firestore failed, using local:', err);
+    setLocalBypassMode(true, err);
+    return getLocalSessions().filter(s => s.athleteId === athleteId && s.date >= since);
+  }
+}
+
 export async function createCardioSession(data: Omit<CardioSession, 'id'>): Promise<CardioSession> {
   if (forceLocalOnly) {
     const s: CardioSession = { ...data, id: `local_cs_${Date.now()}` };

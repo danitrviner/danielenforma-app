@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { StepLog, WorkoutLog, Exercise, WorkoutAssignment, WeeklyChallenge } from '../types';
+import { StepLog, WorkoutLog, Exercise, WorkoutAssignment, WeeklyChallenge, CardioSession } from '../types';
 import { isoWeekKey, isoWeekBounds, generateAutoChallenge, evaluateChallengeProgress, ChallengeData, AutoChallengeInput } from './weeklyChallenge';
 import { addDays } from './trainingWeek';
 
@@ -42,10 +42,11 @@ describe('isoWeekKey', () => {
 });
 
 describe('generateAutoChallenge', () => {
-  it('falls back to a generic steps challenge when there is no data at all', () => {
+  it('manda un reto de registro cuando no hay ningún dato (en vez del genérico de 8.000 pasos)', () => {
     const ch = generateAutoChallenge(input());
-    expect(ch.kind).toBe('pasos_media');
-    expect(ch.metric.target).toBe(8000);
+    expect(ch.kind).toBe('racha_registro');
+    expect(ch.metric.unit).toBe('días');
+    expect(ch.metric.target).toBe(3);   // suelo del reto de hábito: 3 de 7 días
     expect(ch.origin).toBe('auto');
     expect(ch.status).toBe('activo');
     expect(ch.id).toBe('a@x.com_2026-W28');
@@ -84,10 +85,13 @@ describe('generateAutoChallenge', () => {
     const { weekStart } = isoWeekBounds(TODAY);
     const logs: StepLog[] = [];
     for (let i = 1; i <= 20; i++) logs.push(stepLog(addDays(weekStart, -i), 10000));
-    // Con solo datos de pasos, pasos_media sufre la penalización de rotación
-    // (repite el kind de la semana pasada) y pasos_total (sin penalizar) gana —
-    // ambas opciones vienen de los mismos datos, ninguna es el genérico de 8.000.
-    const ch = generateAutoChallenge(input({ stepLogs: logs, previousKind: 'pasos_media' }));
+    // Se registra también el peso para que el reto de hábito no se dispare: con
+    // los dos registros cubiertos, la racha baja a score 40 y la competición
+    // queda entre pasos_media (penalizado por rotación) y pasos_total.
+    const bodyweightLogs = Array.from({ length: 14 }, (_, i) => ({
+      id: `bw-${i}`, athleteId: 'a@x.com', date: addDays(weekStart, -(i + 1)), weight: 80, createdAt: 'x',
+    }));
+    const ch = generateAutoChallenge(input({ stepLogs: logs, bodyweightLogs, previousKind: 'pasos_media' }));
     expect(ch.kind).toBe('pasos_total');
     expect(ch.metric.target).toBe(74000); // avg=10000 * 7 * 1.05 redondeado a miles
   });
@@ -166,5 +170,113 @@ describe('evaluateChallengeProgress', () => {
     expect(res.progressValue).toBe(2);
     expect(res.achieved).toBe(false);
     expect(res.pct).toBeCloseTo(66.7, 1);
+  });
+
+  // ── Tipos añadidos ──────────────────────────────────────────────────────────
+
+  it('reps_ejercicio: cuenta las mejores reps al peso pactado, no a uno menor', () => {
+    const ch: WeeklyChallenge = {
+      ...baseChallenge, kind: 'reps_ejercicio',
+      metric: { unit: 'reps', target: 9, baseline: 8, exerciseId: 'ex1', atWeight: 80 },
+    };
+    const data: ChallengeData = {
+      ...EMPTY_DATA,
+      workoutLogs: [{
+        id: 'w1', athleteId: 'a@x.com', workoutId: 'wk', assignmentId: 'as',
+        date: '2026-07-08', completedAt: '2026-07-08',
+        entries: [{ exerciseId: 'ex1', sets: [
+          { weight: 70, repsDone: 15, rir: 1 },  // más reps pero con menos peso: no vale
+          { weight: 80, repsDone: 8, rir: 0 },
+        ] }],
+      }],
+    };
+    const res = evaluateChallengeProgress(ch, data, '2026-07-09');
+    expect(res.progressValue).toBe(8);
+    expect(res.achieved).toBe(false);
+  });
+
+  it('reps_ejercicio: se consigue al llegar a las reps objetivo', () => {
+    const ch: WeeklyChallenge = {
+      ...baseChallenge, kind: 'reps_ejercicio',
+      metric: { unit: 'reps', target: 9, baseline: 8, exerciseId: 'ex1', atWeight: 80 },
+    };
+    const data: ChallengeData = {
+      ...EMPTY_DATA,
+      workoutLogs: [{
+        id: 'w1', athleteId: 'a@x.com', workoutId: 'wk', assignmentId: 'as',
+        date: '2026-07-08', completedAt: '2026-07-08',
+        entries: [{ exerciseId: 'ex1', sets: [{ weight: 80, repsDone: 10, rir: 0 }] }],
+      }],
+    };
+    expect(evaluateChallengeProgress(ch, data, '2026-07-09').achieved).toBe(true);
+  });
+
+  it('series_grupo: suma series fraccionales del grupo dentro de la semana', () => {
+    const ch: WeeklyChallenge = {
+      ...baseChallenge, kind: 'series_grupo',
+      metric: { unit: 'series', target: 10, muscleGroup: 'cuadriceps' },
+    };
+    const exercises: Exercise[] = [
+      { id: 'sq', ownerId: 'c', name: 'Sentadilla', primaryFocus: 'pierna', muscleGroup: 'cuadriceps', type: 'fuerza', isCustom: false },
+      { id: 'pm', ownerId: 'c', name: 'Peso muerto', primaryFocus: 'pierna', muscleGroup: 'isquios', secondaryMuscleGroups: ['cuadriceps'], type: 'fuerza', isCustom: false },
+    ];
+    const sets = (n: number) => Array.from({ length: n }, () => ({ weight: 100, repsDone: 8, rir: 2 }));
+    const data: ChallengeData = {
+      ...EMPTY_DATA, exercises,
+      workoutLogs: [
+        {
+          id: 'w1', athleteId: 'a@x.com', workoutId: 'wk', assignmentId: 'as',
+          date: '2026-07-07', completedAt: '2026-07-07',
+          entries: [{ exerciseId: 'sq', sets: sets(4) }, { exerciseId: 'pm', sets: sets(4) }],
+        },
+        {
+          // Fuera de la semana del reto: no cuenta.
+          id: 'w0', athleteId: 'a@x.com', workoutId: 'wk', assignmentId: 'as',
+          date: '2026-07-01', completedAt: '2026-07-01',
+          entries: [{ exerciseId: 'sq', sets: sets(10) }],
+        },
+      ],
+    };
+    const res = evaluateChallengeProgress(ch, data, '2026-07-09');
+    expect(res.progressValue).toBe(6);  // 4 principales + 4 secundarias × 0,5
+    expect(res.achieved).toBe(false);
+  });
+
+  it('cardio_zona2: acumula minutos de la semana y descarta sesiones manuales', () => {
+    const ch: WeeklyChallenge = {
+      ...baseChallenge, kind: 'cardio_zona2', metric: { unit: 'min', target: 60 },
+    };
+    const s = (date: string, min: number, manual = false): CardioSession => ({
+      id: `cs-${date}`, athleteId: 'a@x.com', type: 'zona2', date, startedAt: date,
+      durationSec: min * 60, timeInZoneSec: { z1: 0, z2: min * 60, z3: 0, z4: 0, z5: 0 },
+      samples: [], sampleIntervalSec: 5, manual,
+    });
+    const data: ChallengeData = {
+      ...EMPTY_DATA,
+      cardioSessions: [s('2026-07-07', 30), s('2026-07-09', 30), s('2026-07-09', 60, true)],
+    };
+    const res = evaluateChallengeProgress(ch, data, '2026-07-10');
+    expect(res.progressValue).toBe(60);
+    expect(res.achieved).toBe(true);
+  });
+
+  it('racha_registro: cuenta días distintos con registro de la fuente indicada', () => {
+    const ch: WeeklyChallenge = {
+      ...baseChallenge, kind: 'racha_registro',
+      metric: { unit: 'días', target: 4, streakSource: 'peso' },
+    };
+    const bw = (date: string, id: string) => ({ id, athleteId: 'a@x.com', date, weight: 80, createdAt: date });
+    const data: ChallengeData = {
+      ...EMPTY_DATA,
+      bodyweightLogs: [
+        bw('2026-07-06', 'b1'), bw('2026-07-06', 'b1b'),  // dos veces el mismo día = 1
+        bw('2026-07-07', 'b2'), bw('2026-07-08', 'b3'),
+        bw('2026-07-01', 'b0'),                            // semana anterior: fuera
+      ],
+    };
+    const res = evaluateChallengeProgress(ch, data, '2026-07-09');
+    expect(res.progressValue).toBe(3);
+    expect(res.achieved).toBe(false);
+    expect(res.pct).toBe(75);
   });
 });
