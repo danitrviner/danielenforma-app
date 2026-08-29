@@ -1,6 +1,6 @@
 {
   "rewrites": [
-    { "source": "/((?!api/|privacidad|terminos|eliminar-cuenta|legal\\.css).*)", "destination": "/index.html" }
+    { "source": "/((?!api/|privacidad|terminos|eliminar-cuenta|soporte|legal\\.css).*)", "destination": "/index.html" }
   ],
   "headers": [
     {
