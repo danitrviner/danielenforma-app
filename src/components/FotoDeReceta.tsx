@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { esFotoViva } from '../utils/fotoDeReceta';
+import { esFotoViva, sanearFoto } from '../utils/fotoDeReceta';
 
 interface Props {
   src?: string;
@@ -18,11 +18,14 @@ export default function FotoDeReceta({ src, alt, className, fallback }: Props) {
   const [fallo, setFallo] = useState(false);
   useEffect(() => { setFallo(false); }, [src]);
 
-  if (!esFotoViva(src) || fallo) return <>{fallback}</>;
+  // `src` puede llegar sin pasar por `fotoDeReceta` (p. ej. `meal.recipeImage`
+  // denormalizada en el menú), así que se repara también aquí.
+  const url = sanearFoto(src);
+  if (!esFotoViva(url) || fallo) return <>{fallback}</>;
 
   return (
     <img
-      src={src}
+      src={url}
       alt={alt}
       loading="lazy"
       decoding="async"
