@@ -972,11 +972,17 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     const meal = selectedDiet.meals.find(m => m.id === recipePickerMealId);
     if (!meal) return;
 
-    const newItems: DietItem[] = recipe.ingredients
-      .filter(ing => enabledModes.includes(ing.mode))
-      .map(ing => ({ category: ing.category, foodLabel: ing.foodLabel, quantity: ing.quantity, originRecipeId: recipe.id }));
+    // Las recetas del recetario importado (pestaña «Recetario») no traen
+    // `ingredients` estructurados —nunca—, solo `exchanges`. `recipeToDietItems`
+    // cae a esos intercambios; el `.map` a pelo de antes devolvía [] y el sheet
+    // se cerraba sin añadir nada.
+    const newItems: DietItem[] = recipeToDietItems(recipe, enabledModes);
 
-    if (newItems.length === 0) { setRecipePickerMealId(null); return; }
+    if (newItems.length === 0) {
+      showToast(`No se pudo añadir "${recipe.name}": no tiene datos de intercambios.`, 'error');
+      setRecipePickerMealId(null);
+      return;
+    }
 
     const startIdx = meal.items.length;
     setSelectedDiet(prev => {

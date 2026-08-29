@@ -51,7 +51,7 @@ export default function ClientBodyPanel({
   };
 
   const viewPhotos = athletePhotos
-    .filter(p => p.view === selectedView)
+    .filter(p => p.view === selectedView && p.athleteId === athlete.email && !!p.date)
     .sort((a, b) => a.date.localeCompare(b.date));
   const baseline = viewPhotos[0];
   const latest   = viewPhotos[viewPhotos.length - 1];

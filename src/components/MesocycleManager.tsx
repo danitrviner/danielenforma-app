@@ -103,10 +103,32 @@ function isStale(m: Mesocycle, dist: WeekDistribution): boolean {
 
 type GeneratorPhase = 'idle' | 'loading' | 'preview' | 'assigning' | 'done' | 'error';
 
+// OJO: la versión anterior hacía `new Date(str+'T00:00:00')` (medianoche LOCAL)
+// y luego `.toISOString()` (UTC). En España (UTC+1/+2) eso resta un día: con
+// `startDate` un domingo, la primera sesión del mesociclo se generaba el sábado
+// y el descanso caía en viernes en vez de en domingo. Mismo motivo por el que
+// existe `hoyIsoLocal` en trainingWeek.ts — aritmética de fecha en local de
+// principio a fin, sin pasar nunca por UTC.
+function pad2(n: number): string { return String(n).padStart(2, '0'); }
 function addDays(dateStr: string, days: number): string {
-  const d = new Date(dateStr + 'T00:00:00');
-  d.setDate(d.getDate() + days);
-  return d.toISOString().split('T')[0];
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const date = new Date(y, m - 1, d);
+  date.setDate(date.getDate() + days);
+  return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
+}
+
+const NOMBRE_DIA = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+/** 0 = domingo … 6 = sábado, en hora local (sin pasar por UTC). */
+function diaSemanaDe(dateStr: string): number {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  return new Date(y, m - 1, d).getDay();
+}
+/** El lunes más cercano a `dateStr` (hacia atrás o hacia delante). */
+function lunesMasCercano(dateStr: string): string {
+  let k = (1 - diaSemanaDe(dateStr)) % 7;
+  if (k > 3) k -= 7;
+  if (k < -3) k += 7;
+  return addDays(dateStr, k);
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -2087,12 +2109,27 @@ export default function MesocycleManager({
                       className="w-full bg-raised border border-hairline rounded-control px-3 py-2 text-title-s text-white font-mono focus:outline-none focus:border-accent"
                     />
                   </div>
-                  <Input
-                    label="Fecha inicio"
-                    type="date"
-                    value={editing.startDate}
-                    onChange={v => updateField('startDate', v)}
-                  />
+                  <div>
+                    <Input
+                      label="Fecha inicio"
+                      type="date"
+                      value={editing.startDate}
+                      onChange={v => updateField('startDate', v)}
+                    />
+                    {cicloDias === 7 && editing.startDate && diaSemanaDe(editing.startDate) !== 1 && (
+                      <p className="mt-1 font-sans text-caption text-amber-400/90 leading-snug">
+                        El microciclo es semanal y empieza en {NOMBRE_DIA[diaSemanaDe(editing.startDate)]}: los días de
+                        entreno y de descanso se repetirán desde ahí, el descanso no caerá en domingo.{' '}
+                        <button
+                          type="button"
+                          className="underline font-bold"
+                          onClick={() => updateField('startDate', lunesMasCercano(editing.startDate))}
+                        >
+                          Empezar el lunes ({lunesMasCercano(editing.startDate).slice(8)}/{lunesMasCercano(editing.startDate).slice(5, 7)})
+                        </button>
+                      </p>
+                    )}
+                  </div>
                   <div className="col-span-2 md:col-span-4">
                     <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Sesiones por ciclo</label>
                     <div className="flex gap-1 overflow-x-auto hide-scrollbar pb-1">

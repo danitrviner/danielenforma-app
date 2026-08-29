@@ -50,6 +50,11 @@ export async function getProgressPhotos(athleteEmail: string): Promise<ProgressP
     );
     const photos = snap.docs
       .map(d => d.data() as ProgressPhoto)
+      // Descarta documentos corruptos: sin `date` la ordenación reventaba
+      // («undefined is not an object … localeCompare»), sin `url` la tarjeta
+      // sale en blanco, y un `athleteId` que no cuadra con el pedido no debe
+      // colarse en la ficha de otro atleta.
+      .filter(p => p && p.athleteId === athleteEmail && !!p.url && !!p.date)
       .sort((a, b) => a.date.localeCompare(b.date));
     saveLocalProgressPhotos(athleteEmail, photos);
     return photos;

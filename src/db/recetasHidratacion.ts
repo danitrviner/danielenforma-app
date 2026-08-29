@@ -39,13 +39,36 @@ export const OWNER_RECETARIO_TODOS = [OWNER_RECETARIO, OWNER_RECETARIO_LEGACY];
  * en su inicialización (el SDK de Firebase lo hace) rompería el Worker entero
  * por una función que ni siquiera los necesita.
  */
+/**
+ * El recetario importado clasifica muchos suplementos puros (creatina, glutamina,
+ * beta-alanina, citrulina, arginina, cafeína en polvo/cápsulas…) como
+ * «Platos salados / principales» o «Bebidas». No son platos: no se cocinan, no
+ * llevan intakeType y ensuciaban la pestaña de principales del recetario. Se
+ * reetiquetan por nombre a «Suplementos deportivos», que es donde el atleta
+ * espera encontrarlos.
+ */
+const CAT_SUPLEMENTOS = 'Suplementos deportivos';
+const RE_SUPLEMENTO_PURO = /\b(creatina|glutamina|beta[\s-]?alanina|citrulina|arginina|taurina|bcaa|hmb)\b|^cafeina\b/;
+
+export function esSuplementoPuroPorNombre(nombre: string | undefined | null): boolean {
+  if (!nombre) return false;
+  const n = nombre
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .trim();
+  return RE_SUPLEMENTO_PURO.test(n);
+}
+
 export function hidratarEntradaIndice(r: Recipe): Recipe {
+  const categoria = esSuplementoPuroPorNombre(r.name) ? CAT_SUPLEMENTOS : r.categoria;
   return {
     ...r,
     ownerId: OWNER_RECETARIO,
+    categoria,
     // `categoria` es el campo real; `categories` es el array heredado con el que
     // filtran las pantallas antiguas y el motor de menús.
-    categories: r.categoria ? [r.categoria] : [],
+    categories: categoria ? [categoria] : [],
     // Vacíos en el documento real: una receta del recetario trae `ingredientsText`
     // y `stepsText`, no la estructura de ingredientes del constructor.
     ingredients: [],

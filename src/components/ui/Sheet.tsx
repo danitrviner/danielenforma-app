@@ -147,7 +147,7 @@ export default function Sheet({ open, onClose, title, children, footer, toolbar,
           + `${alto === 'completo' ? 'h-[100dvh] max-h-none' : 'max-h-[85vh]'} `
           + `${arrastreY ? '' : 'transition-transform duration-(--duration-state) ease-brand'} `
           + `border-t border-x border-strong bg-raised shadow-e2 focus:outline-none sm:border `
-          + `${alto === 'completo' ? '' : 'rounded-t-sheet sm:mb-6 sm:rounded-sheet'}`
+          + `${alto === 'completo' ? 'pt-[var(--safe-top)]' : 'rounded-t-sheet sm:mb-6 sm:rounded-sheet'}`
         }
       >
         {/* Asa: arrastrar hacia abajo sigue al dedo/ratón; soltar por encima
