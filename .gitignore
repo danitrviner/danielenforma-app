@@ -43,3 +43,4 @@ public/recetas-indice.json
 
 # Sesiones locales de Superdesign — no es código de la app
 .superdesign/
+copia-perfil-huerfano-*.json
