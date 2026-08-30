@@ -16,13 +16,19 @@
 //   node scripts/sembrarAtletaDemo.mjs --limpiar  # borra lo sembrado
 
 import { readFileSync } from 'fs';
+import { getAuth } from 'firebase-admin/auth';
 import { abrirDb } from './_lib/firestoreDb.mjs';
 
 const db = abrirDb(JSON.parse(readFileSync(new URL('../serviceAccount.json', import.meta.url))));
 
 const EMAIL = 'revision.appstore@danielenforma.app';
 const COACH_UID = 'THa4aRnQQVT2tPXBEqq5yytJxIm1';
-const UID_ATLETA = 'inLfw7oXvVTE6wGqtN0eDokKs1y2';
+// UID_ATLETA se resolvía hardcodeado y se desincronizó del UID real de Auth
+// en algún momento (la cuenta se recreó y cambió de UID): este script seguía
+// escribiendo planStartDate/actualWeight/etc. en un user_profiles/{uid} que
+// ya no era el que la app leía, así que esos campos nunca llegaban. Se
+// resuelve en caliente por email, como ya hace crear-atleta-demo.mjs.
+const UID_ATLETA = (await getAuth().getUserByEmail(EMAIL)).uid;
 const MARCA = { demoSeed: true };
 
 // Semanas de historial. 4 cerradas + la semana en curso.
