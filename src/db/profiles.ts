@@ -10,10 +10,24 @@ function isDefaultUserId(userId: string): boolean {
   return /^(client|coach)_\w+_(default|local)$/.test(userId);
 }
 
+// Un documento de `user_profiles` puede no tener `email`: las escrituras del
+// lado del coach (fechas de plan, pesos objetivo) usan `updateUserProfile`, que
+// hace `updateDoc` sobre el UID sin exigir que el perfil esté completo, así que
+// un atleta borrado de Auth puede dejar atrás un documento con solo esos
+// campos. Sin esta comprobación, `p.email.toLowerCase()` lanzaba un TypeError
+// que subía hasta el catch de `getAllUserProfiles` y tumbaba la lista ENTERA:
+// el coach dejaba de ver a todos sus atletas y en su lugar salía el atleta de
+// demo del fallback. Un documento sin email no es un atleta — se descarta.
+function esPerfilUtilizable(p: UserProfile): boolean {
+  return typeof p.email === 'string' && p.email.length > 0;
+}
+
 // Return one profile per email; prefer a real Firebase UID over a mock one.
-function deduplicateByEmail(profiles: UserProfile[]): UserProfile[] {
+// Exportada solo para el test de regresión (perfilesIncompletos.test.ts).
+export function deduplicateByEmail(profiles: UserProfile[]): UserProfile[] {
   const byEmail = new Map<string, UserProfile>();
   for (const p of profiles) {
+    if (!esPerfilUtilizable(p)) continue;
     const key = p.email.toLowerCase();
     const existing = byEmail.get(key);
     if (!existing) {
@@ -245,13 +259,17 @@ export async function getAllUserProfiles(): Promise<UserProfile[]> {
     // De-duplicate by email: one canonical record per email
     const deduped = deduplicateByEmail(profiles);
 
-    // Silently delete Firestore docs for "loser" duplicates
-    if (deduped.length < profiles.length) {
-      const keptIds = new Set(deduped.map(p => p.userId));
-      for (const p of profiles) {
-        if (!keptIds.has(p.userId)) {
-          deleteDoc(doc(db, 'user_profiles', p.userId)).catch(() => {});
-        }
+    // Silently delete Firestore docs for "loser" duplicates.
+    //
+    // Solo duplicados: el descarte se limita a perfiles que TIENEN email y han
+    // perdido contra otro con el mismo email. Un documento incompleto (sin
+    // email) también queda fuera de `deduped`, pero borrarlo aquí destruiría
+    // en silencio los datos que sí guarda —pesos, fechas de plan— desde una
+    // simple lectura de pantalla. Esos se limpian a mano, no de refilón.
+    const keptIds = new Set(deduped.map(p => p.userId));
+    for (const p of profiles) {
+      if (esPerfilUtilizable(p) && !keptIds.has(p.userId)) {
+        deleteDoc(doc(db, 'user_profiles', p.userId)).catch(() => {});
       }
     }
 
