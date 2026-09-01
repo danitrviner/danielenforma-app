@@ -523,6 +523,20 @@ export interface Workout {
   tags?: string[];
   exercises: WorkoutExercise[];
   mesocycleId?: string;
+  /**
+   * Qué sesión del microciclo es esta, 0-based. Solo lo llevan las rutinas
+   * generadas por un mesociclo (`mesocycleId` puesto).
+   *
+   * Existe porque el orden se estaba deduciendo del nombre («Día 1 – Meso
+   * #2») y del orden en que Firestore devolvía los documentos, que no es
+   * ninguno en concreto. Al renombrar una sesión o al leerlas en otro orden,
+   * la sesión 2 podía acabar pintada —y asignada— antes que la 1. El día al
+   * que pertenece una sesión es un dato, no algo que se adivine del texto.
+   *
+   * `undefined` en las rutinas creadas antes de esto: quien ordene debe caer
+   * al orden de siempre en vez de mandarlas todas al principio.
+   */
+  dayIndex?: number;
 }
 
 export interface WorkoutSetLog {
@@ -1431,6 +1445,17 @@ export interface Mesocycle {
   id: string;
   athleteId: string;
   number: number;
+  /**
+   * Nombre que le pone el coach («Fuerza invierno», «Vuelta tras lesión»).
+   * Opcional: sin él, el mesociclo se sigue llamando «Meso #N» en todas
+   * partes. No sustituye a `number` —que es lo que ordena los bloques y lo
+   * que compara el cierre— sino que se muestra en su lugar.
+   *
+   * Ver `nombreDeMeso()` en utils/nombresMeso.ts: nadie debería leer este
+   * campo a pelo, porque el fallback a «Meso #N» tiene que ser el mismo en
+   * las quince pantallas que enseñan un mesociclo.
+   */
+  name?: string;
   weeks: number;
   startDate: string;
   objective: string;

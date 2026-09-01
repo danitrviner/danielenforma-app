@@ -297,11 +297,6 @@ export function suggestVolume(input: VolumeSuggestionInput): VolumeSuggestionRes
     }
   }
 
-  const totalFinal = MUSCLE_ORDER.reduce((s, g) => s + groups[g].series, 0);
-  if (totalFinal > sesionesPorSemana * SERIES_POR_DIA_AVISO) {
-    warnings.push(`Con ${totalFinal} series a la semana, la pantalla de Distribución marcará sobrevolumen (avisa por encima de ${sesionesPorSemana} × ${SERIES_POR_DIA_AVISO} = ${sesionesPorSemana * SERIES_POR_DIA_AVISO}).`);
-  }
-
   // Un grupo al que el reparto no llega en ningún día acabaría colocado por el
   // fallback de la distribución, en un día que no le toca. Se dice, no se
   // esconde.

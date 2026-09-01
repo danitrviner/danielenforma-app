@@ -189,9 +189,12 @@ describe('suggestVolume · topes', () => {
     expect(r.warnings.join(' ')).toContain('no cabe');
   });
 
-  it('avisa cuando el total va a disparar el sobrevolumen de la distribución', () => {
+  it('ya no avisa de «sobrevolumen»: ese aviso se quitó de la app', () => {
+    // Decisión de producto (01-09): el aviso de «más de 12 series por sesión»
+    // saltaba constantemente y no cambiaba ninguna decisión. Al quitarlo de la
+    // pantalla de Distribución, prometerlo desde aquí sería mentir.
     const r = suggestVolume(base({ daysPerWeek: 3, level: 'avanzado', intent: 'agresivo' }));
-    expect(r.warnings.join(' ')).toContain('sobrevolumen');
+    expect(r.warnings.join(' ')).not.toContain('sobrevolumen');
   });
 
   it('al recortar protege primero a los grupos prioritarios', () => {

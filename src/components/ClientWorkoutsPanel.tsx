@@ -4,7 +4,9 @@ import {
   UserProfile, Mesocycle, WorkoutLog, Exercise, OnboardingData,
   WorkoutAssignment, Workout,
 } from '../types';
-import { createWorkoutAssignment, deleteWorkoutAssignment, updateWorkoutLog, updateUserProfile } from '../dbService';
+import { createWorkoutAssignment, deleteWorkoutAssignment, updateWorkoutLog, updateUserProfile, deleteWorkoutAssignmentsByMesocycleIdStrict } from '../dbService';
+import { sesionesDeMesociclo, fechasDelMesociclo } from '../utils/asignacionMesociclo';
+import { nombreDeMeso } from '../utils/nombresMeso';
 import { invalidateResource } from '../hooks/useResourceCache';
 import { adherenciaDeMesociclo } from '../utils/adherence';
 import { useToast } from '../hooks/useToast';
@@ -91,6 +93,20 @@ export default function ClientWorkoutsPanel({
   const [assignWorkoutId, setAssignWorkoutId] = useState('');
   const [assignDate, setAssignDate] = useState(new Date().toISOString().split('T')[0]);
   const [isAssigning, setIsAssigning] = useState(false);
+  // Asignar un BLOQUE entero o una rutina suelta. Por defecto el bloque: es lo
+  // que se hace el 95 % de las veces, y era justo lo que no se podía hacer
+  // desde aquí.
+  const [assignMode, setAssignMode] = useState<'mesociclo' | 'rutina'>('mesociclo');
+  const [assignMesoId, setAssignMesoId] = useState('');
+
+  // El desplegable de rutinas deja fuera las sesiones generadas por un
+  // mesociclo. Antes salían todas: un atleta con tres bloques de cuatro días
+  // eran doce entradas casi idénticas, y elegir la correcta a mano era
+  // imposible. Esas se asignan por bloque, que es el modo de al lado.
+  const rutinasSueltas = React.useMemo(() => workouts.filter(w => !w.mesocycleId), [workouts]);
+
+  const mesoAAsignar = mesocycles.find(m => m.id === assignMesoId) ?? null;
+  const sesionesDelMeso = mesoAAsignar ? sesionesDeMesociclo(workouts, mesoAAsignar.id) : [];
 
   const handleCreateAssignment = async () => {
     if (!assignWorkoutId || !assignDate) return;
@@ -108,6 +124,42 @@ export default function ClientWorkoutsPanel({
       setAssignWorkoutId('');
       invalidateResource(`assignments:${athlete.userId}`);
     } catch (err) { console.error(err); showToast('No se pudo asignar el entrenamiento.'); }
+    finally { setIsAssigning(false); }
+  };
+
+  /**
+   * Vuelca un mesociclo entero al calendario del atleta.
+   *
+   * Borra antes las asignaciones de ESE bloque —no las de los demás— para que
+   * volver a asignar sea idempotente en vez de duplicar el calendario. Las
+   * fechas y el orden los decide `utils/asignacionMesociclo`, el mismo módulo
+   * que usa el botón de la pantalla de Ejercicios: dos puertas, un cálculo.
+   */
+  const handleAssignMesociclo = async () => {
+    if (!mesoAAsignar || sesionesDelMeso.length === 0) return;
+    setIsAssigning(true);
+    try {
+      await deleteWorkoutAssignmentsByMesocycleIdStrict(mesoAAsignar.id);
+      const fechas = fechasDelMesociclo(mesoAAsignar, sesionesDelMeso.length);
+      const nuevas: WorkoutAssignment[] = [];
+      for (const { dayIdx, date } of fechas) {
+        nuevas.push(await createWorkoutAssignment({
+          workoutId:   sesionesDelMeso[dayIdx].id,
+          athleteId:   athlete.email,
+          mesocycleId: mesoAAsignar.id,
+          date,
+          status:      'pending',
+        }));
+      }
+      setAssignments(prev => [
+        ...prev.filter(a => a.mesocycleId !== mesoAAsignar.id),
+        ...nuevas,
+      ].sort((a, b) => a.date.localeCompare(b.date)));
+      setShowAssignModal(false);
+      setAssignMesoId('');
+      invalidateResource(`assignments:${athlete.userId}`);
+      showToast(`${nuevas.length} sesiones asignadas`, 'success');
+    } catch (err) { console.error(err); showToast('No se pudo asignar el mesociclo.'); }
     finally { setIsAssigning(false); }
   };
 
@@ -398,15 +450,27 @@ export default function ClientWorkoutsPanel({
               <Button variant="secondary" onClick={() => setShowAssignModal(false)} fullWidth>
                 Cancelar
               </Button>
-              <Button
-                onClick={handleCreateAssignment}
-                disabled={isAssigning || !assignWorkoutId || !assignDate || workouts.length === 0}
-                loading={isAssigning}
-                icon="event_available"
-                fullWidth
-              >
-                {isAssigning ? 'Asignando...' : 'Confirmar'}
-              </Button>
+              {assignMode === 'mesociclo' ? (
+                <Button
+                  onClick={handleAssignMesociclo}
+                  disabled={isAssigning || !mesoAAsignar || sesionesDelMeso.length === 0}
+                  loading={isAssigning}
+                  icon="event_available"
+                  fullWidth
+                >
+                  {isAssigning ? 'Asignando...' : 'Asignar mesociclo'}
+                </Button>
+              ) : (
+                <Button
+                  onClick={handleCreateAssignment}
+                  disabled={isAssigning || !assignWorkoutId || !assignDate || rutinasSueltas.length === 0}
+                  loading={isAssigning}
+                  icon="event_available"
+                  fullWidth
+                >
+                  {isAssigning ? 'Asignando...' : 'Confirmar'}
+                </Button>
+              )}
             </>
           )}
         >
@@ -415,27 +479,88 @@ export default function ClientWorkoutsPanel({
               <Icon name="person" size="s" className="text-accent" />
               Atleta: <strong className="text-white">{athlete.displayName}</strong>
             </p>
-            {workouts.length === 0 ? (
-              <div>
-                <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-2">Rutina *</label>
-                <p className="text-label text-ink-2 font-sans italic">No hay rutinas disponibles.</p>
-              </div>
-            ) : (
-              <Select
-                label="Rutina"
-                required
-                value={assignWorkoutId}
-                onChange={setAssignWorkoutId}
-                options={workouts.map(w => ({ value: w.id, label: `${w.name} (${w.exercises.length} ej.)` }))}
-              />
-            )}
-            <Input
-              label="Fecha"
-              required
-              type="date"
-              value={assignDate}
-              onChange={setAssignDate}
+
+            <SegmentedControl
+              label="Qué asignar"
+              value={assignMode}
+              onChange={v => setAssignMode(v as 'mesociclo' | 'rutina')}
+              options={[
+                { value: 'mesociclo', label: 'Mesociclo' },
+                { value: 'rutina',    label: 'Rutina suelta' },
+              ]}
             />
+
+            {assignMode === 'mesociclo' ? (
+              mesocycles.length === 0 ? (
+                <p className="text-label text-ink-2 font-sans italic">
+                  Este atleta no tiene mesociclos todavía. Créalo en «Programación».
+                </p>
+              ) : (
+                <>
+                  <Select
+                    label="Mesociclo"
+                    required
+                    value={assignMesoId}
+                    onChange={setAssignMesoId}
+                    options={mesocycles.map(m => ({
+                      value: m.id,
+                      label: `${nombreDeMeso(m)} · ${m.weeks} sem × ${m.daysPerWeek} ses. · desde ${m.startDate}`,
+                    }))}
+                  />
+                  {mesoAAsignar && (
+                    sesionesDelMeso.length === 0 ? (
+                      <p className="text-label text-warning font-sans leading-relaxed">
+                        Este mesociclo todavía no tiene rutinas generadas. Ábrelo en «Programación» y
+                        genera la rutina desde la pestaña «Distribución».
+                      </p>
+                    ) : (
+                      <div className="bg-raised border border-hairline rounded-surface p-3 space-y-1">
+                        <p className="font-mono text-caption text-ink-2 uppercase tracking-wider">
+                          Se asignarán {fechasDelMesociclo(mesoAAsignar, sesionesDelMeso.length).length} sesiones
+                        </p>
+                        {sesionesDelMeso.map((w, i) => (
+                          <p key={w.id} className="font-sans text-caption text-ink-2 truncate">
+                            {i + 1}. {w.name} <span className="text-ink-3">({w.exercises.length} ej.)</span>
+                          </p>
+                        ))}
+                        <p className="font-sans text-caption text-ink-3 leading-relaxed pt-1">
+                          Las fechas salen del calendario del bloque. Si ya estaba asignado, se
+                          reemplaza — no se duplica.
+                        </p>
+                      </div>
+                    )
+                  )}
+                </>
+              )
+            ) : (
+              <>
+                {/* Solo rutinas de biblioteca: las sesiones de un mesociclo se
+                    asignan por bloque, en la pestaña de al lado. */}
+                {rutinasSueltas.length === 0 ? (
+                  <div>
+                    <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-2">Rutina *</label>
+                    <p className="text-label text-ink-2 font-sans italic">
+                      No hay rutinas sueltas. Las sesiones de un mesociclo se asignan desde «Mesociclo».
+                    </p>
+                  </div>
+                ) : (
+                  <Select
+                    label="Rutina"
+                    required
+                    value={assignWorkoutId}
+                    onChange={setAssignWorkoutId}
+                    options={rutinasSueltas.map(w => ({ value: w.id, label: `${w.name} (${w.exercises.length} ej.)` }))}
+                  />
+                )}
+                <Input
+                  label="Fecha"
+                  required
+                  type="date"
+                  value={assignDate}
+                  onChange={setAssignDate}
+                />
+              </>
+            )}
           </div>
         </Sheet>
       )}

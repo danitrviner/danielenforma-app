@@ -37,11 +37,13 @@ import { VOLUME_LANDMARKS_DEFAULT, type VolumeLandmark } from '../data/volumeLan
 import { getVolumeLandmarks } from '../dbService';
 import VolumeSuggestionSheet from './VolumeSuggestionSheet';
 import { useToast } from '../hooks/useToast';
+import { nombreDeMeso, nombreDeSesion } from '../utils/nombresMeso';
+import { fechasDelMesociclo } from '../utils/asignacionMesociclo';
 import { useAthleteProfileSignals } from '../hooks/useAthleteProfileSignals';
 import { useAthleteWeight } from '../hooks/useAthleteWeight';
 import { useConfirm } from '../hooks/useConfirm';
 import { Avatar, Skeleton } from './ui';
-import { EmptyState, Dialog, Input, Icon, Tabs, TabItem, Sheet, Pager, Select } from './ui';
+import { EmptyState, Dialog, Input, Icon, Tabs, TabItem, Sheet, Pager, Select, Button } from './ui';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -118,6 +120,8 @@ function addDays(dateStr: string, days: number): string {
 }
 
 const NOMBRE_DIA = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+/** La misma lista en la abreviatura de una letra que se usa en los calendarios. */
+const INICIAL_DIA = ['D', 'L', 'M', 'X', 'J', 'V', 'S'];
 /** 0 = domingo … 6 = sábado, en hora local (sin pasar por UTC). */
 function diaSemanaDe(dateStr: string): number {
   const [y, m, d] = dateStr.split('-').map(Number);
@@ -268,13 +272,6 @@ Día {diaCalendario(dayIdx)}{day.dayType ? ` · ${day.dayType}` : ''}
         )}
       </div>
 
-      {over && (
-        <div className="flex items-start gap-2 bg-orange-500/10 border border-orange-500/30 rounded-control px-2.5 py-2">
-          <span className="font-mono text-caption font-bold text-orange-400 mt-px">!</span>
-          <span className="text-caption font-sans text-orange-300 leading-relaxed">Este día supera las 12 series recomendadas.</span>
-        </div>
-      )}
-
       {availableGroups.length > 0 && (
         <div className="relative flex items-center">
           <select
@@ -324,8 +321,32 @@ const CalendarioCiclo: React.FC<{
   onToggleDay?: (dia: number) => void;
   personalizado?: boolean;
   onRestablecer?: () => void;
-}> = ({ cicloDias, offsets, tipos, sesiones, onToggleDay, personalizado = false, onRestablecer }) => {
+  /**
+   * Fecha de inicio del mesociclo. Con ella cada casilla deja de ser un «D3»
+   * abstracto y dice el día de la semana REAL en el que va a caer.
+   *
+   * Sin esto el coach elegía a ciegas: marcaba los días 1, 3 y 6 pensando
+   * «lunes, miércoles, viernes» y, si el bloque no empezaba en lunes, al
+   * atleta le salían en otros días y en otro orden dentro de su semana.
+   */
+  fechaInicio?: string;
+}> = ({ cicloDias, offsets, tipos, sesiones, onToggleDay, personalizado = false, onRestablecer, fechaInicio }) => {
   const porDia = new Map(offsets.map((off, i) => [off, tipos[i] ?? `Sesión ${i + 1}`]));
+  // Con un ciclo de 7 días el día de la semana es fijo vuelta tras vuelta; con
+  // cualquier otro rota, así que lo que se enseña es el de la PRIMERA vuelta y
+  // se avisa debajo. Mentir aquí sería peor que no decir nada.
+  const fechaDe = (d: number) => (fechaInicio ? addDays(fechaInicio, d) : null);
+  const etiquetaCorta = (d: number) => {
+    const f = fechaDe(d);
+    if (!f) return `D${d + 1}`;
+    return `${INICIAL_DIA[diaSemanaDe(f)]}${Number(f.slice(8, 10))}`;
+  };
+  const etiquetaDia = (d: number) => {
+    const f = fechaDe(d);
+    if (!f) return `Día ${d + 1}`;
+    return `${NOMBRE_DIA[diaSemanaDe(f)]} ${Number(f.slice(8, 10))} (día ${d + 1} del ciclo)`;
+  };
+  const rota = !!fechaInicio && cicloDias !== 7;
   const tono = personalizado ? 'text-orange-400' : 'text-accent';
   const tonoFondo = personalizado ? 'border-orange-500/40 bg-orange-500/10' : 'border-accent-line bg-accent/10';
   return (
@@ -361,12 +382,12 @@ const CalendarioCiclo: React.FC<{
               key={d}
               type={onToggleDay ? 'button' : undefined}
               onClick={onToggleDay ? () => onToggleDay(d) : undefined}
-              title={tipo ? `Día ${d + 1}: ${tipo}${onToggleDay ? ' — pulsa para poner descanso' : ''}` : `Día ${d + 1}: descanso${onToggleDay ? ' — pulsa para poner sesión' : ''}`}
+              title={`${etiquetaDia(d)}${tipo ? `: ${tipo}` : ': descanso'}${onToggleDay ? (tipo ? ' — pulsa para poner descanso' : ' — pulsa para poner sesión') : ''}`}
               className={`min-w-[52px] flex-1 max-w-[92px] rounded-control border px-1.5 py-1 text-center transition-colors ${
                 tipo ? tonoFondo : 'border-hairline bg-inset'
               } ${onToggleDay ? 'cursor-pointer hover:border-strong' : ''}`}
             >
-              <span className={`block font-mono text-caption ${tipo ? tono : 'text-ink-3'}`}>D{d + 1}</span>
+              <span className={`block font-mono text-caption ${tipo ? tono : 'text-ink-3'}`}>{etiquetaCorta(d)}</span>
               <span className={`block font-sans text-caption truncate ${tipo ? 'text-white' : 'text-ink-3'}`}>
                 {tipo ?? '—'}
               </span>
@@ -374,6 +395,12 @@ const CalendarioCiclo: React.FC<{
           );
         })}
       </div>
+      {rota && (
+        <p className="font-sans text-caption text-ink-3 leading-relaxed">
+          Los días mostrados son los de la primera vuelta: con un ciclo de {cicloDias} días
+          el día de la semana va cambiando en cada vuelta.
+        </p>
+      )}
     </div>
   );
 };
@@ -444,9 +471,9 @@ function MesoExercisesView({
 
 const PREFIJO_DIA = /^(Día\s*\d+\s*–\s*)(.*)$/i;
 
-// Título del día, editable. Solo se toca lo que va después de «Día N – »
-// (ver comentario junto a `handleRenameDay`): ese prefijo es lo que mantiene
-// el orden de los días y la comparación contra la distribución semanal.
+// Título del día, editable. Si el nombre trae el viejo prefijo «Día N – » se
+// respeta (esas rutinas todavía se ordenan por él); los nombres nuevos
+// —«Torso · Ander · Meso 2»— se editan enteros, que es lo que pide el coach.
 function DayTitle({ name, editing, value, onStartEdit, onChangeValue, onCommit, onCancel }: {
   name: string;
   editing: boolean;
@@ -537,7 +564,7 @@ function MesoExercisesTabs({
       const exIdx = groups[dayIdx].exercises.findIndex(we =>
         (we.muscleGroup ?? allExercises.find(e => e.id === we.exerciseId)?.muscleGroup) === targetGroup);
       if (exIdx === -1) continue;
-      const key = `${groups[dayIdx].name}-${exIdx}`;
+      const key = `${claveDia(groups[dayIdx], dayIdx)}-${exIdx}`;
       const irYResaltar = () => {
         exerciseRefs.current.get(key)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
         setHighlightedKey(key);
@@ -553,14 +580,14 @@ function MesoExercisesTabs({
     }
   }, [groups, allExercises, activeIdx]);
 
-  // Renombrar un día. El generador nombra cada tarjeta «Día N – Meso #X»
-  // (línea ~1420) y `groupMesoWorkouts` ordena los días por ese nombre
-  // (numeric-aware) — tocar el «Día N –» rompería el orden Y el `dayIndexOf`
-  // de más abajo, que lo vuelve a parsear para saber contra qué día de la
-  // distribución comparar el balance. Por eso solo se edita lo que va
-  // después: el coach puede poner «Empuje», «Pierna dominante rodilla»… sin
-  // arriesgarse a desordenar el mesociclo sin querer.
-  const [renamingDay, setRenamingDay] = useState<{ name: string; value: string } | null>(null);
+  // Renombrar un día. Antes el nombre ERA la identidad de la sesión: ordenaba
+  // los días y `dayIndexOf` lo parseaba para saber contra qué día de la
+  // distribución comparar el balance, así que había que blindar el prefijo
+  // «Día N –» para que un renombrado no desordenara el mesociclo. Con
+  // `dayIndex` el orden ya no depende del texto, y el nombre es solo un
+  // nombre: el coach puede escribir lo que quiera, incluso repetirlo (tres
+  // sesiones «Full body» son perfectamente normales).
+  const [renamingDay, setRenamingDay] = useState<{ clave: string; value: string } | null>(null);
   const { showToast: showRenameToast } = useToast();
 
   function handleRenameDay(group: MesoWorkoutGroup, prefijo: string, sufijoNuevo: string) {
@@ -568,7 +595,10 @@ function MesoExercisesTabs({
     if (!sufijo) return;
     const nuevoNombre = `${prefijo}${sufijo}`;
     if (nuevoNombre === group.name) return;
-    if (groups.some(g => g !== group && g.name === nuevoNombre)) {
+    // Solo se bloquea el nombre repetido en las rutinas viejas, donde el
+    // nombre sigue siendo lo único que distingue un día de otro. Con
+    // `dayIndex` puesto, repetirlo es legítimo.
+    if (group.dayIndex == null && groups.some(g => g !== group && g.name === nuevoNombre)) {
       showRenameToast('Ya hay un día con ese nombre', 'error');
       return;
     }
@@ -604,10 +634,18 @@ function MesoExercisesTabs({
   // A qué día de la distribución corresponde cada tarjeta. El nombre que crea
   // el generador es «Día N – Meso #X»; si viene de una plantilla puede ser
   // cualquier cosa, y entonces vale la posición en la lista.
-  const dayIndexOf = (name: string, idx: number): number => {
-    const m = /d[ií]a\s*(\d+)/i.exec(name);
+  const dayIndexOf = (g: MesoWorkoutGroup, idx: number): number => {
+    // El día es un dato de la rutina (`dayIndex`). Solo cuando no lo hay
+    // —rutinas creadas antes de que existiera, o venidas de plantilla— se
+    // recurre a leerlo del nombre, y en último término a la posición.
+    if (g.dayIndex != null) return g.dayIndex;
+    const m = /d[ií]a\s*(\d+)/i.exec(g.name);
     return m ? parseInt(m[1], 10) - 1 : idx;
   };
+
+  /** Identificador estable de una tarjeta de día, para claves de React y refs. */
+  const claveDia = (g: MesoWorkoutGroup, idx: number): string =>
+    g.dayIndex != null ? `d${g.dayIndex}` : `n:${g.name}:${idx}`;
 
   const clearLongPress = () => {
     if (longPressTimer.current !== null) {
@@ -648,15 +686,15 @@ function MesoExercisesTabs({
       {groups.length > 0 && (
         <Pager label="Días del mesociclo" value={activeIdx} onChange={setActiveIdx}>
           {groups.map((g, gIdx) => (
-            <div key={g.name} className="bg-surface border border-hairline rounded-surface overflow-hidden">
+            <div key={claveDia(g, gIdx)} className="bg-surface border border-hairline rounded-surface overflow-hidden">
               <div className="px-4 py-3 bg-bg border-b border-hairline space-y-2">
                 <div className="flex items-center justify-between gap-2 flex-wrap">
                   <DayTitle
                     name={g.name}
-                    editing={renamingDay?.name === g.name}
-                    value={renamingDay?.name === g.name ? renamingDay.value : ''}
-                    onStartEdit={(_, sufijoActual) => setRenamingDay({ name: g.name, value: sufijoActual })}
-                    onChangeValue={v => setRenamingDay({ name: g.name, value: v })}
+                    editing={renamingDay?.clave === claveDia(g, gIdx)}
+                    value={renamingDay?.clave === claveDia(g, gIdx) ? renamingDay.value : ''}
+                    onStartEdit={(_, sufijoActual) => setRenamingDay({ clave: claveDia(g, gIdx), value: sufijoActual })}
+                    onChangeValue={v => setRenamingDay({ clave: claveDia(g, gIdx), value: v })}
                     onCommit={prefijo => { void handleRenameDay(g, prefijo, renamingDay?.value ?? ''); setRenamingDay(null); }}
                     onCancel={() => setRenamingDay(null)}
                   />
@@ -672,7 +710,7 @@ function MesoExercisesTabs({
                 <SeriesBalance
                   balance={balanceDeSeries(
                     seriesPorGrupo(g.exercises, allExercises),
-                    seriesPlanificadasDelDia(distribution?.days[dayIndexOf(g.name, gIdx)]),
+                    seriesPlanificadasDelDia(distribution?.days[dayIndexOf(g, gIdx)]),
                   )}
                   referencia="la distribución del día"
                   onGroupClick={g => jumpToGroup(g, gIdx)}
@@ -684,9 +722,9 @@ function MesoExercisesTabs({
                 ) : (
                   g.exercises.map((we, exIdx) => {
                     const ex = allExercises.find(e => e.id === we.exerciseId);
-                    const videoKey = `${g.name}-${exIdx}`;
+                    const videoKey = `${claveDia(g, gIdx)}-${exIdx}`;
                     const isDuplicate = duplicateExerciseIds.has(we.exerciseId);
-                    const jumpKey = `${g.name}-${exIdx}`;
+                    const jumpKey = `${claveDia(g, gIdx)}-${exIdx}`;
                     return (
                       <div
                         key={`${we.exerciseId}-${exIdx}`}
@@ -1112,22 +1150,43 @@ type EditorTab  = 'distribution' | 'exercises' | 'progression' | 'cierre';
 // e.g. an 8-week × 4-day meso from 32 near-identical Workout docs down to 4 real cards.
 interface MesoWorkoutGroup {
   name: string;
+  /** Sesión del microciclo a la que corresponde. `undefined` en rutinas antiguas. */
+  dayIndex?: number;
   workoutIds: string[];
   exercises: WorkoutExercise[];
 }
 
+/**
+ * Agrupa por DÍA DEL CICLO, no por nombre.
+ *
+ * Antes la clave era el nombre, y eso rompía por los dos lados: dos sesiones
+ * con el mismo nombre —un full body de tres días son tres «Full body»— se
+ * fundían en una sola tarjeta, y el orden salía de un `localeCompare` del
+ * texto, así que «Pierna» se pintaba antes que «Torso» aunque el torso fuera
+ * la sesión 1. Con `dayIndex` el orden es el del ciclo y punto.
+ *
+ * Las rutinas creadas antes de que existiera `dayIndex` siguen agrupándose
+ * por nombre y se ordenan detrás: no se puede inventar su día, pero tampoco
+ * hay que dejarlas fuera.
+ */
 function groupMesoWorkouts(workouts: Workout[], mesocycleId: string): MesoWorkoutGroup[] {
-  const byName = new Map<string, MesoWorkoutGroup>();
+  const porClave = new Map<string, MesoWorkoutGroup>();
   for (const w of workouts) {
     if (w.mesocycleId !== mesocycleId) continue;
-    let group = byName.get(w.name);
+    const clave = w.dayIndex != null ? `d${w.dayIndex}` : `n:${w.name}`;
+    let group = porClave.get(clave);
     if (!group) {
-      group = { name: w.name, workoutIds: [], exercises: w.exercises };
-      byName.set(w.name, group);
+      group = { name: w.name, dayIndex: w.dayIndex, workoutIds: [], exercises: w.exercises };
+      porClave.set(clave, group);
     }
     group.workoutIds.push(w.id);
   }
-  return Array.from(byName.values()).sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+  return Array.from(porClave.values()).sort((a, b) => {
+    if (a.dayIndex != null && b.dayIndex != null) return a.dayIndex - b.dayIndex;
+    if (a.dayIndex != null) return -1;
+    if (b.dayIndex != null) return 1;
+    return a.name.localeCompare(b.name, undefined, { numeric: true });
+  });
 }
 
 interface MesocycleManagerProps {
@@ -1181,6 +1240,11 @@ export default function MesocycleManager({
   const [athleteUid, setAthleteUid]       = useState<string | null>(null);
   const [assignProgress, setAssignProgress] = useState({ done: 0, total: 0 });
   const [genError, setGenError]           = useState('');
+  // Estado del botón «Asignar al atleta» de la pestaña Ejercicios. Aparte del
+  // `genPhase` del generador a propósito: son dos operaciones distintas y
+  // compartir estado hacía que asignar desde Ejercicios repintara la vista
+  // previa de Distribución.
+  const [volcado, setVolcado] = useState<{ estado: 'idle' | 'trabajando' | 'hecho' | 'error'; mensaje: string }>({ estado: 'idle', mensaje: '' });
 
   // Only load the full athlete list in standalone mode (no athleteEmail prop)
   const { data: allProfiles = [] } = useQuery({
@@ -1550,8 +1614,9 @@ export default function MesocycleManager({
         // createWorkoutStrict throws on Firestore failure — no silent local fallback
         const workout = await createWorkoutStrict({
           ownerId:     coachId,
-          name:        `Día ${dayIdx + 1} – Meso #${editing.number}`,
+          name:        nombreDeSesion({ tipo: tiposCiclo[dayIdx], dayIdx, athleteName, meso: editing }),
           mesocycleId: editing.id,
+          dayIndex:    dayIdx,
           exercises,
         });
         dayWorkoutIds.push(workout.id);
@@ -1603,6 +1668,58 @@ export default function MesocycleManager({
       console.error('[handleAssign]', err);
       setGenError(`Error Firestore: ${msg}`);
       setGenPhase('error');
+    }
+  };
+
+  /**
+   * Vuelca al calendario del atleta el mesociclo TAL Y COMO ESTÁ, sin volver a
+   * generar los ejercicios.
+   *
+   * Es lo que faltaba: `handleAssign` (el botón del final de la vista previa)
+   * borra las rutinas del bloque y las vuelve a crear desde `previewDays`, así
+   * que llamarlo después de haber retocado la pantalla de Ejercicios se
+   * llevaría por delante justo lo que el coach acaba de ajustar. Esto toca
+   * solo las FECHAS: borra las asignaciones del bloque y las rehace apuntando
+   * a las mismas rutinas, con el calendario que haya ahora mismo.
+   *
+   * El día de cada sesión sale de `dayIndex`, no del orden de lectura ni del
+   * nombre — ver `groupMesoWorkouts`.
+   */
+  const handleAsignarMesociclo = async () => {
+    if (!editing) return;
+    const sesiones = mesoGroupsForTabs;
+    if (sesiones.length === 0) {
+      setVolcado({ estado: 'error', mensaje: 'Este mesociclo todavía no tiene sesiones generadas. Genera la rutina desde «Distribución» primero.' });
+      return;
+    }
+
+    const fechas = fechasDelMesociclo(editing, sesiones.length);
+    const vueltas = fechas.length / Math.max(1, sesiones.length);
+    setVolcado({ estado: 'trabajando', mensaje: '' });
+
+    try {
+      await deleteWorkoutAssignmentsByMesocycleIdStrict(editing.id);
+
+      for (const { dayIdx, date } of fechas) {
+        await createWorkoutAssignmentStrict({
+          workoutId:   sesiones[dayIdx].workoutIds[0],
+          athleteId:   selectedEmail,
+          mesocycleId: editing.id,
+          date,
+          status:      'pending',
+        });
+      }
+
+      await queryClient.invalidateQueries({ queryKey: ['workoutAssignments'] });
+      setVolcado({
+        estado: 'hecho',
+        mensaje: `${fechas.length} ${fechas.length === 1 ? 'sesión asignada' : 'sesiones asignadas'} · ${vueltas} ${vueltas === 1 ? 'vuelta' : 'vueltas'} × ${sesiones.length} desde el ${editing.startDate}.`,
+      });
+      showToast('Mesociclo asignado al atleta', 'success');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error('[handleAsignarMesociclo]', err);
+      setVolcado({ estado: 'error', mensaje: `Error Firestore: ${msg}` });
     }
   };
 
@@ -2045,7 +2162,7 @@ export default function MesocycleManager({
             {mesocycles.map(m => (
               <button
                 key={m.id}
-                onClick={() => { setEditing(m); setEditorTab('progression'); setConfirmDelete(false); setGenPhase('idle'); }}
+                onClick={() => { setEditing(m); setEditorTab('progression'); setConfirmDelete(false); setGenPhase('idle'); setVolcado({ estado: 'idle', mensaje: '' }); }}
                 className={`w-full text-left p-3 rounded-control border transition-all ${
                   editing?.id === m.id
                     ? 'border-accent/60 bg-accent/5'
@@ -2053,7 +2170,7 @@ export default function MesocycleManager({
                 }`}
               >
                 <div className="flex items-center justify-between mb-1">
-                  <span className="font-mono text-caption text-ink-2 uppercase tracking-wider">Meso #{m.number}</span>
+                  <span className="font-mono text-caption text-ink-2 uppercase tracking-wider truncate">{nombreDeMeso(m)}</span>
                   <span className="font-mono text-caption text-ink-2">{m.weeks} sem · {m.daysPerWeek} ses.</span>
                 </div>
                 <p className="text-white text-label font-sans font-bold truncate">{m.objective || '(sin objetivo)'}</p>
@@ -2084,12 +2201,28 @@ export default function MesocycleManager({
               {/* Mesocycle header */}
               <div className="bg-surface border border-hairline rounded-surface p-5 space-y-4">
                 <div className="flex items-center justify-between">
-                  <h2 className="font-sans font-bold text-white text-title-s">Mesociclo #{editing.number}</h2>
+                  <h2 className="font-sans font-bold text-white text-title-s truncate">{nombreDeMeso(editing)}</h2>
                   <span className={`font-sans text-label uppercase tracking-wider transition-colors ${
                     saveState === 'saved'  ? 'text-success' :
                     saveState === 'error'  ? 'text-red-400' :
                     saveState === 'saving' ? 'text-accent animate-pulse' : 'text-ink-2'
                   }`}>{saveLabel}</span>
+                </div>
+
+                {/* Nombre del bloque. Antes no existía: un mesociclo solo era su
+                    número, así que el desplegable de asignar era una lista de
+                    «Meso #1» indistinguibles entre atletas. Vacío = se sigue
+                    llamando «Meso #N» (ver nombreDeMeso). */}
+                <div>
+                  <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Nombre del mesociclo</label>
+                  <input
+                    type="text"
+                    value={editing.name ?? ''}
+                    onChange={e => updateField('name', e.target.value)}
+                    placeholder={`Meso #${editing.number}`}
+                    maxLength={60}
+                    className="w-full bg-raised border border-hairline rounded-control px-3 py-2 text-body-s text-white font-sans focus:outline-none focus:border-accent placeholder:text-ink-3"
+                  />
                 </div>
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -2265,7 +2398,7 @@ export default function MesocycleManager({
               <Tabs
                 label="Pestañas del editor de mesociclo"
                 value={editorTab}
-                onChange={id => { setEditorTab(id as EditorTab); if (id !== 'distribution') setGenPhase('idle'); }}
+                onChange={id => { setEditorTab(id as EditorTab); if (id !== 'distribution') setGenPhase('idle'); setVolcado({ estado: 'idle', mensaje: '' }); }}
                 items={[
                   { id: 'progression',  label: 'Volumen',      icon: 'trending_up' },
                   { id: 'distribution', label: 'Distribución', icon: 'grid_view' },
@@ -2380,6 +2513,7 @@ export default function MesocycleManager({
                         personalizado={!!customCrudo}
                         onToggleDay={toggleDiaCiclo}
                         onRestablecer={customCrudo ? restablecerCalendario : undefined}
+                        fechaInicio={editing.startDate}
                       />
 
                       {/* Distribution controls */}
@@ -2406,19 +2540,6 @@ export default function MesocycleManager({
                           </div>
                         )}
                       </div>
-
-                      {/* Overload alert */}
-                      {editing.distribution?.overloadAlert && (
-                        <div className="flex items-start gap-3 px-4 py-3 bg-orange-500/10 border border-orange-500/30 rounded-surface">
-                          <span className="material-symbols-outlined text-orange-400 ">warning</span>
-                          <div>
-                            <p className="font-mono text-label font-bold text-orange-300 uppercase ">Sobrevolumen</p>
-                            <p className="font-mono text-label text-orange-300/80">
-                              El volumen del ciclo supera el límite de {editing.daysPerWeek} sesiones × 12 series.
-                            </p>
-                          </div>
-                        </div>
-                      )}
 
                       {/* Weekly grid */}
                       {editing.distribution ? (
@@ -2642,6 +2763,40 @@ export default function MesocycleManager({
                   onUseLibraryWorkout={handleUseLibraryWorkout}
                   onRenameDay={handleRenameDay}
                 />
+              )}
+
+              {/* Volcar el bloque al calendario del atleta desde AQUÍ.
+                  Antes había que volver a «Distribución», regenerar la vista
+                  previa y pulsar «Asignar» — que además reescribe los
+                  ejercicios y se lleva por delante lo que se acaba de ajustar
+                  en esta pantalla. Esto solo escribe fechas. */}
+              {editorTab === 'exercises' && mesoGroupsForTabs.length > 0 && (
+                <div className="bg-surface border border-hairline rounded-surface p-5 space-y-3">
+                  <div className="flex items-start justify-between gap-4 flex-wrap">
+                    <div className="min-w-0">
+                      <p className="font-sans font-bold text-body-s text-ink">Asignar al atleta</p>
+                      <p className="font-sans text-label text-ink-2 leading-relaxed mt-0.5">
+                        Vuelca las {mesoGroupsForTabs.length} sesiones de {nombreDeMeso(editing)} al calendario
+                        de {selectedAthlete?.displayName ?? athleteName ?? 'el atleta'}, desde el {editing.startDate}.
+                        No toca los ejercicios: reescribe solo las fechas.
+                      </p>
+                    </div>
+                    <Button
+                      onClick={handleAsignarMesociclo}
+                      loading={volcado.estado === 'trabajando'}
+                      icon="event_available"
+                    >
+                      {volcado.estado === 'trabajando' ? 'Asignando…' : 'Asignar mesociclo'}
+                    </Button>
+                  </div>
+
+                  {volcado.estado === 'hecho' && (
+                    <p className="font-mono text-caption text-success">✓ {volcado.mensaje}</p>
+                  )}
+                  {volcado.estado === 'error' && (
+                    <p className="font-mono text-caption text-danger">{volcado.mensaje}</p>
+                  )}
+                </div>
               )}
 
               {/* ── Cierre del mesociclo (solo coach) ── */}
