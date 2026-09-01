@@ -85,6 +85,7 @@ edit
 edit_calendar
 edit_note
 egg
+egg_alt
 email
 emoji_events
 energy_savings_leaf
@@ -154,6 +155,7 @@ male
 manage_accounts
 manufacturing
 map
+medical_information
 menu
 menu_book
 mic
@@ -168,6 +170,7 @@ notes
 notifications
 notifications_off
 nutrition
+open_in_new
 paid
 password
 pause

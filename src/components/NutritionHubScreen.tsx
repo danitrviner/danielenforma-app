@@ -6,6 +6,7 @@ import NutritionScreen from './NutritionScreen';
 import MyMenuScreen from './MyMenuScreen';
 import RecipesScreen from './RecipesScreen';
 import NutritionPerformanceDashboard from './NutritionPerformanceDashboard';
+import FuentesCientificasSheet, { EnlaceFuentes } from './FuentesCientificasSheet';
 import { Icon, Tabs } from './ui';
 
 interface NutritionHubScreenProps {
@@ -29,6 +30,10 @@ export default function NutritionHubScreen({ profile }: NutritionHubScreenProps)
   const nutritionConfigKey = ['athleteNutritionConfig', profile.email] as const;
   const [activeSubTab, setActiveSubTab] = useState<NutritionTab>('mi-plan');
   const [pendingRecipe, setPendingRecipe] = useState<Recipe | null>(null);
+  // 1.4.1 de Apple: las citas de las recomendaciones de salud tienen que ser
+  // fáciles de encontrar. Este es el sitio — la cabecera de Nutrición, visible
+  // desde las cuatro pestañas, no escondido al fondo de Ajustes.
+  const [showFuentes, setShowFuentes] = useState(false);
 
   const { data: nutritionConfig = null } = useQuery({
     queryKey: nutritionConfigKey,
@@ -73,6 +78,9 @@ export default function NutritionHubScreen({ profile }: NutritionHubScreenProps)
       {activeSubTab === 'periodizacion' && (
         <NutritionPerformanceDashboard athleteEmail={profile.email} targetWeightKg={profile.targetWeight} />
       )}
+
+      <EnlaceFuentes onClick={() => setShowFuentes(true)} />
+      <FuentesCientificasSheet open={showFuentes} onClose={() => setShowFuentes(false)} />
     </div>
   );
 }

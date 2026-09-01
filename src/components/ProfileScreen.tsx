@@ -27,6 +27,7 @@ import StatTile from './StatTile';
 import MiGimnasioPanel from '../features/gimnasio/MiGimnasioPanel';
 import { useBodyMeasurements } from '../hooks/useBodyMeasurements';
 import { useTourTarget } from '../features/tutorial/TourTargetContext';
+import FuentesCientificasSheet from './FuentesCientificasSheet';
 import { Avatar, Icon, Button, PageHeader, ListRow, Input, Sheet, Skeleton, Tabs } from './ui';
 
 interface ProfileScreenProps {
@@ -103,6 +104,7 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
      explicar qué se envía ni a quién. `legalLocal` existe porque `profile` lo
      posee App.tsx y no se refresca solo al guardar desde aquí. */
   const [showPermisos, setShowPermisos] = useState(false);
+  const [showFuentes, setShowFuentes] = useState(false);
   const [legalLocal, setLegalLocal] = useState<AceptacionesLegales | undefined>(profile.legal);
   const [searchParams] = useSearchParams();
   const requestedTab = searchParams.get('tab');
@@ -456,6 +458,15 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
                 chevron
               />
             )}
+            {/* 1.4.1 de Apple. La sección de Nutrición ya lleva su propio acceso
+                arriba del todo; esta segunda entrada existe porque «fácil de
+                encontrar» también significa «donde la gente busca los avisos». */}
+            <ListRow
+              onClick={() => { setShowSettings(false); setShowFuentes(true); }}
+              leading={<Icon name="menu_book" size="m" className="text-accent" />}
+              title="Fuentes científicas y aviso médico"
+              chevron
+            />
             <ListRow
               href="/privacidad"
               target="_blank"
@@ -503,6 +514,8 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
           onCompletado={legal => { setLegalLocal(legal); setShowPermisos(false); }}
         />
       )}
+
+      <FuentesCientificasSheet open={showFuentes} onClose={() => setShowFuentes(false)} />
 
       <EliminarCuentaDialog
         open={showEliminarCuenta}

@@ -17,6 +17,7 @@ import {
   buildPhaseEnergyPlans, buildWeightProjection, computePeriodizationPerformance,
   computePhaseEnergyBalance, resolvePhaseTargetKcal, PhaseEnergyPlan,
 } from '../utils/nutritionPeriodization';
+import { NotaDeFuente } from './FuentesCientificasSheet';
 import { Skeleton, SegmentedControl } from './ui';
 import {
   Icon, EmptyState,
@@ -458,6 +459,14 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
           </div>
         </div>
       )}
+
+      {/* 1.4.1 de Apple: la cita de los cálculos de salud del panel (gasto
+          estimado y equivalencia kcal↔kg). Al pie, por decisión de producto. */}
+      <NotaDeFuente>
+        Estimación orientativa: gasto calculado con la ecuación de Mifflin-St Jeor (1990) por su
+        factor de actividad, y proyección de peso con la equivalencia aproximada de 7.700 kcal por
+        kilo (Hall, 2008). No sustituye la valoración de un profesional sanitario.
+      </NotaDeFuente>
     </div>
   );
 }

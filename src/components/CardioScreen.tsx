@@ -15,6 +15,7 @@ import { DateRangeFilter, filterSessions, allTags } from '../utils/cardioHistory
 import { isCardioSkippedToday, skipCardioToday } from '../utils/cardioSkipToday';
 import { useCardioSession, SAMPLE_INTERVAL_SEC } from '../hooks/useCardioSession';
 import { Skeleton } from './ui';
+import FuentesCientificasSheet, { EnlaceFuentes } from './FuentesCientificasSheet';
 import CardioZonesSettingsCard from './cardio/CardioZonesSettingsCard';
 import LiveSession from './cardio/live/LiveSession';
 import EffortPrompt from './cardio/EffortPrompt';
@@ -83,6 +84,7 @@ export default function CardioScreen({ profile }: Props) {
 
   const [skippedToday, setSkippedToday] = useState(() => isCardioSkippedToday(profile.email, todayIso));
   const [showHrvTest, setShowHrvTest] = useState(false);
+  const [showFuentes, setShowFuentes] = useState(false);
   const [showManualAdd, setShowManualAdd] = useState(false);
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [historyRange, setHistoryRange] = useState<DateRangeFilter>('all');
@@ -359,6 +361,11 @@ export default function CardioScreen({ profile }: Props) {
       )}
 
       <CardioZonesSettingsCard profile={profile} />
+
+      {/* 1.4.1 de Apple: la FC máxima estimada y las zonas son información de
+          salud, así que llevan su cita, igual que en Nutrición. */}
+      <EnlaceFuentes onClick={() => setShowFuentes(true)} />
+      <FuentesCientificasSheet open={showFuentes} onClose={() => setShowFuentes(false)} />
     </div>
   );
 }

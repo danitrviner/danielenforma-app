@@ -18,6 +18,7 @@ import FotoDeReceta from './FotoDeReceta';
 import { Skeleton } from './ui';
 import { EmptyState, Sheet, Icon, Button, ProgressBar, RingSeal, Stepper, Dialog, ListRow } from './ui';
 import MealItemSwipeRow from './nutrition/MealItemSwipeRow';
+import { NotaDeFuente } from './FuentesCientificasSheet';
 
 import {
   COACH_EMAIL, makeId, blankDiet, dietSnapshot,
@@ -2122,6 +2123,14 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
           </Sheet>
         );
       })()}
+
+      {/* 1.4.1 de Apple: la cita de los cálculos de la pantalla. Va al pie, por
+          decisión de producto — arriba comía la cabecera de "Mi plan". */}
+      <NotaDeFuente>
+        Tu presupuesto lo fija tu entrenador. Los cálculos de la app (1 intercambio ≈ 100 kcal,
+        objetivos de proteína y grasa, valores de referencia de nutrientes) se apoyan en EFSA, OMS,
+        ACSM y BEDCA. Información educativa, no consejo médico.
+      </NotaDeFuente>
 
       {/* Confirmar borrado de una dieta propia */}
       {dietPendingDelete && (

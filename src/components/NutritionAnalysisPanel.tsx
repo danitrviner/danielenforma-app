@@ -8,6 +8,7 @@ import {
 import { bodyweightForAthleteKey } from '../hooks/useAthleteWeight';
 import { buildNutritionReport, NutritionReport } from '../utils/nutritionAnalysis';
 import { buildMicronutrientEstimate, MicroStatus } from '../utils/micronutrients';
+import { NotaDeFuente } from './FuentesCientificasSheet';
 import VegetableSelector from './VegetableSelector';
 import { Icon, Button, Skeleton, EmptyState } from './ui';
 
@@ -256,6 +257,14 @@ export default function NutritionAnalysisPanel({ athleteEmail, athleteName, targ
           {micros.unmatched.length > 0 && ` · ${micros.unmatched.length} alimento(s) sin estimación.`}
           {!activeDiet && ' · Sin dieta activa: sólo cuenta la línea base de verdura.'}
         </p>
+
+        {/* 1.4.1 de Apple: los porcentajes de IDR son información nutricional
+            de salud; su origen va aquí mismo, no a dos pantallas de distancia. */}
+        <NotaDeFuente>
+          Ingestas diarias de referencia según EFSA (Dietary Reference Values) y el límite de sodio de
+          la OMS; composición de los alimentos según BEDCA y USDA FoodData Central. Es una estimación a
+          partir de porciones tipo, no una analítica ni un diagnóstico.
+        </NotaDeFuente>
       </div>
 
       {/* Flags */}
