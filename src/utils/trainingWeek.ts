@@ -18,6 +18,25 @@ export function hoyIsoLocal(): string {
   return `${d.getFullYear()}-${padDate(d.getMonth() + 1)}-${padDate(d.getDate())}`;
 }
 
+/**
+ * ¿`s` es una fecha `YYYY-MM-DD` de calendario REAL? Año de exactamente 4
+ * cifras y día que existe (ni 2026-02-30 ni 2026-13-01).
+ *
+ * Nació de un fallo en producción: al crear un mesociclo, el `<input
+ * type="date">` de "Fecha inicio" suelta cadena vacía mientras se teclea y
+ * admite años de 5+ cifras ("20026"). Ninguna de las dos la sabe parsear
+ * `new Date(s + 'T00:00:00')` → `Invalid Date`, y el primer `.toISOString()`
+ * que cae encima lanza «Invalid time value», que sube hasta el ErrorBoundary
+ * y tumba la pantalla entera. Toda fecha que venga de un campo editable pasa
+ * por aquí antes de guardarse o de convertirse en `Date`.
+ */
+export function esFechaIso(s: unknown): s is string {
+  if (typeof s !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(s)) return false;
+  const [y, m, d] = s.split('-').map(Number);
+  const date = new Date(y, m - 1, d);
+  return date.getFullYear() === y && date.getMonth() === m - 1 && date.getDate() === d;
+}
+
 export function addDays(dateStr: string, days: number): string {
   const [y, m, d] = dateStr.split('-').map(Number);
   const date = new Date(y, m - 1, d);

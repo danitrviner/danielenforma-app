@@ -39,6 +39,7 @@ import VolumeSuggestionSheet from './VolumeSuggestionSheet';
 import { useToast } from '../hooks/useToast';
 import { nombreDeMeso, nombreDeSesion } from '../utils/nombresMeso';
 import { fechasDelMesociclo } from '../utils/asignacionMesociclo';
+import { esFechaIso } from '../utils/trainingWeek';
 import { useAthleteProfileSignals } from '../hooks/useAthleteProfileSignals';
 import { useAthleteWeight } from '../hooks/useAthleteWeight';
 import { useConfirm } from '../hooks/useConfirm';
@@ -2247,7 +2248,12 @@ export default function MesocycleManager({
                       label="Fecha inicio"
                       type="date"
                       value={editing.startDate}
-                      onChange={v => updateField('startDate', v)}
+                      // Solo se guarda una fecha de calendario real. El campo
+                      // nativo pasa por cadena vacía mientras se teclea y deja
+                      // meter años de 5 cifras: si eso llega a `startDate`, el
+                      // primer `new Date(startDate).toISOString()` de cualquier
+                      // pantalla peta con «Invalid time value» (ErrorBoundary).
+                      onChange={v => { if (esFechaIso(v)) updateField('startDate', v); }}
                     />
                     {cicloDias === 7 && editing.startDate && diaSemanaDe(editing.startDate) !== 1 && (
                       <p className="mt-1 font-sans text-caption text-amber-400/90 leading-snug">

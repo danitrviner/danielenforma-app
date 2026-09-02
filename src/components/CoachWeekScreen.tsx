@@ -7,7 +7,7 @@ import {
   getNutritionProgramsForAthletes, getWorkoutsByIds, getExercises,
 } from '../dbService';
 import { atletasActivos } from '../utils/atletas';
-import { getWeekRange, getWeekStart } from '../utils/trainingWeek';
+import { getWeekRange, getWeekStart, addDays, esFechaIso } from '../utils/trainingWeek';
 import { deriveReviewEvents, deriveVolumeIncreaseEvents, deriveKcalChangeEvents, deriveDeloadEvents, weekAdherence } from '../utils/planEvents';
 import { Avatar, PageHeader, EmptyState, Skeleton, Icon, Badge, BadgeTone } from './ui';
 
@@ -131,10 +131,13 @@ export default function CoachWeekScreen({ coachId: _coachId }: Props) {
     const nutritionProgram = nutritionByAthlete.get(a.email) ?? null;
 
     const sorted = [...mesocycles].sort((a2, b2) => a2.number - b2.number);
+    // Aritmética en cadena (`addDays`), no `new Date(...).toISOString()`: un
+    // `startDate` corrupto (vacío o año de 5 cifras, que el campo de fecha deja
+    // colar) hacía que `.toISOString()` lanzara «Invalid time value» y tumbara
+    // la pantalla entera.
     const currentMeso = sorted.find(m => {
-      const end = new Date(m.startDate + 'T00:00:00');
-      end.setDate(end.getDate() + m.weeks * 7);
-      return today >= m.startDate && today < end.toISOString().split('T')[0];
+      if (!esFechaIso(m.startDate)) return false;
+      return today >= m.startDate && today < addDays(m.startDate, m.weeks * 7);
     }) ?? null;
     const weekOfMeso = currentMeso
       ? Math.min(currentMeso.weeks, Math.floor((new Date(today).getTime() - new Date(currentMeso.startDate + 'T00:00:00').getTime()) / 86400000 / 7) + 1)

@@ -6,6 +6,7 @@ import {
 } from '../types';
 import { createWorkoutAssignment, deleteWorkoutAssignment, updateWorkoutLog, updateUserProfile, deleteWorkoutAssignmentsByMesocycleIdStrict } from '../dbService';
 import { sesionesDeMesociclo, fechasDelMesociclo } from '../utils/asignacionMesociclo';
+import { addDays, hoyIsoLocal, esFechaIso } from '../utils/trainingWeek';
 import { nombreDeMeso } from '../utils/nombresMeso';
 import { invalidateResource } from '../hooks/useResourceCache';
 import { adherenciaDeMesociclo } from '../utils/adherence';
@@ -352,12 +353,15 @@ export default function ClientWorkoutsPanel({
             fórmula nueva, solo resumida en un único número para el meso vigente. */}
         {(() => {
           if (mesocycles.length === 0 || assignments.length === 0) return null;
-          const today = new Date().toISOString().split('T')[0];
+          const today = hoyIsoLocal();
           const sorted = [...mesocycles].sort((a, b) => a.number - b.number);
+          // Aritmética en cadena (`addDays`), no `new Date(...).toISOString()`:
+          // un mesociclo con `startDate` corrupto (vacío, año de 5 cifras) hacía
+          // que `.toISOString()` lanzara «Invalid time value» y tumbara la
+          // pantalla entera al abrir la ficha del atleta.
           const current = sorted.find(m => {
-            const end = new Date(m.startDate + 'T00:00:00');
-            end.setDate(end.getDate() + m.weeks * 7);
-            return today >= m.startDate && today < end.toISOString().split('T')[0];
+            if (!esFechaIso(m.startDate)) return false;
+            return today >= m.startDate && today < addDays(m.startDate, m.weeks * 7);
           }) ?? sorted[sorted.length - 1];
           const mesoAssignments = assignments.filter(a => a.mesocycleId === current.id);
           if (mesoAssignments.length === 0) return null;
