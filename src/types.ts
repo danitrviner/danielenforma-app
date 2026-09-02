@@ -577,6 +577,14 @@ export interface WorkoutAssignment {
   date: string;
   status: 'pending' | 'completed' | 'skipped' | 'perdido';
   mesocycleId?: string;
+  /**
+   * Lo que el atleta lee ESE día, encima de su sesión ("hoy la última serie de
+   * press va al fallo: apunta las reps"). Va aquí y no en el `Workout` porque
+   * la rutina se reutiliza todas las semanas del mesociclo — una nota escrita
+   * en la rutina saldría también los otros días, que es justo lo contrario de
+   * lo que hace que un día se sienta especial.
+   */
+  note?: string;
 }
 
 // ─── QUESTIONNAIRES ───────────────────────────────────────────────────────────
@@ -1890,7 +1898,53 @@ export interface ProposalExpediente {
   notaAlAprobar?: string; // el porqué que escribe Dani al aprobar (opcional)
 }
 
-export type AiProposalKind = 'diet' | 'mesocycle' | 'checkinFeedback' | 'periodizationBlock' | 'dossier';
+// ── Lo que la IA puede programar además de dietas y mesociclos ─────────────
+// El entreno concreto lo sigue montando Dani. Esto es el resto del plan: los
+// hitos que el atleta ve venir, las fases de nutrición encadenadas, y los días
+// señalados que hacen que la programación se note viva.
+
+export interface RoadmapProposalPayload {
+  /** Se AÑADEN a los que ya tiene; no reemplazan el roadmap entero. */
+  items: RoadmapItem[];
+  /** Fases macro del plan, si la propuesta también las toca. */
+  planPhases?: PlanPhase[];
+}
+
+/** Una fase de nutrición propuesta: o enlaza una dieta que ya existe, o trae
+ *  la dieta que hay que crear con ella. */
+export interface NutritionPhaseProposal {
+  name: string;
+  weeks: number;
+  phaseType?: NutritionPhaseType;
+  targetKcal?: number;
+  targetWeight?: number;
+  /** Dieta existente del atleta. Excluyente con `diet`. */
+  dietId?: string;
+  /** Dieta nueva que se crea al aprobar y queda enlazada a esta fase. */
+  diet?: Omit<Diet, 'id'>;
+}
+
+export interface NutritionProgramProposalPayload {
+  startDate: string;
+  phases: NutritionPhaseProposal[];
+  refeedDays?: RefeedDay[];
+}
+
+export type SpecialDayKind = 'amrap' | 'marcas' | 'subida' | 'otro';
+
+/** Un día señalado: hito en el roadmap + tarea con fecha + la nota que el
+ *  atleta lee encima de su entreno de ese día. Las tres cosas a la vez, porque
+ *  por separado ninguna se nota. */
+export interface SpecialDayProposalPayload {
+  date: string;              // YYYY-MM-DD
+  kind: SpecialDayKind;
+  title: string;             // "Toma de marcas — press banca"
+  athleteNote: string;       // lo que lee ese día encima de la sesión
+  description?: string;      // detalle del hito en el roadmap
+}
+
+export type AiProposalKind = 'diet' | 'mesocycle' | 'checkinFeedback' | 'periodizationBlock' | 'dossier'
+  | 'roadmap' | 'nutritionProgram' | 'specialDay';
 export type AiProposalStatus = 'proposed' | 'approved' | 'rejected';
 
 // Bloque H2.1 — "la IA propone el bloque entero periodizado". Alcance real:
@@ -1913,7 +1967,10 @@ export type AiProposalPayload =
   | Omit<Mesocycle, 'id'>
   | { checkInId: string; feedback: string }
   | PeriodizationBlockPayload
-  | DossierPatch;
+  | DossierPatch
+  | RoadmapProposalPayload
+  | NutritionProgramProposalPayload
+  | SpecialDayProposalPayload;
 
 export interface AiProposal {
   id: string;

@@ -575,6 +575,15 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
             <p className="font-mono text-label text-ink-2 ">
               {formatDate(a.date)} · {wo ? `${wo.exercises.length} ejercicio${wo.exercises.length !== 1 ? 's' : ''}` : '—'}
             </p>
+            {/* Nota del coach para ESE día (día señalado: AMRAP, toma de marcas,
+                subida obligatoria). Va en la tarjeta y no dentro del player para
+                que se vea ANTES de empezar, que es cuando cambia lo que hace. */}
+            {a.note && (
+              <div className="flex gap-2 items-start mt-1 bg-accent-bg border border-accent-line rounded-surface p-2">
+                <Icon name="push_pin" size="s" filled className="text-accent mt-0.5 shrink-0" />
+                <p className="text-caption text-ink">{a.note}</p>
+              </div>
+            )}
           </div>
         </div>
         <div className="flex items-center gap-2 self-end md:self-auto">

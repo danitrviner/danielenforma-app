@@ -7,6 +7,7 @@ import { auth } from '../firebase';
 import { estadoConsentimiento, motivoParaElCoach, aliasDeAtleta } from './consentimientoIA';
 import { getDossier, appendDossierFacts, renderDossier } from '../db/dossier';
 import { calcularDerivas } from '../utils/derivaPropuestas';
+import type { RoadmapItem, NutritionPhaseProposal, NutritionProgramProposalPayload, RoadmapProposalPayload, SpecialDayProposalPayload, SpecialDayKind } from '../types';
 import {
   getAllUserProfiles,
   getCheckIns,
@@ -27,6 +28,8 @@ import {
   saveCoachReport,
   createAiProposal,
   getAiProposalsForAthlete,
+  getRoadmap,
+  getTasksForAthlete,
   getKnowledgeNotes,
   isLocalBypassActive,
 } from '../dbService';
@@ -42,7 +45,7 @@ import { addDays } from '../utils/trainingWeek';
 import { weekKey } from '../utils/seriesCorrelation';
 import { resolveQuestions } from '../utils/questionnaireResolve';
 import { SYSTEM_FOODS } from '../nutricion_seed_en_forma';
-import { validateDietPayload, DietUpdatePayload, validateMesocyclePayload, MesocycleProposalPayload } from './validators';
+import { validateDietPayload, DietUpdatePayload, validateMesocyclePayload, MesocycleProposalPayload, validateNutritionPhases } from './validators';
 import { UserProfile, WeightCheckIn, Diet, FoodCategory, Mesocycle, MuscleGroup, MuscleGroupConfig, MUSCLE_LABELS, PeriodizationBlockPayload, ProposalExpediente, DossierFact, DossierPatch } from '../types';
 
 // Definiciones que se envían a la API en cada petición. Mantener el orden y el
@@ -331,6 +334,139 @@ export const TOOL_DEFINITIONS = [
     },
   },
   {
+    name: 'get_plan_context',
+    description:
+      'Lee el PLAN del atleta más allá del mesociclo y la dieta: sus fases macro (roadmap), los hitos y objetivos que tiene puestos con fecha, la periodización nutricional en marcha (fases, semanas, kcal por fase, recargas) y las tareas pendientes. Consúltala antes de proponer hitos, fases de nutrición o días señalados: sin esto no sabes en qué punto del plan está ni qué tiene ya programado, y acabarás duplicando cosas.',
+    input_schema: {
+      type: 'object',
+      properties: { athlete_email: { type: 'string' } },
+      required: ['athlete_email'],
+    },
+  },
+  {
+    name: 'propose_roadmap_items',
+    description:
+      'PROPONE hitos y objetivos nuevos para el roadmap del atleta — lo que él ve en su app como el mapa de su plan. Se AÑADEN a los que ya tiene, no lo reemplazan. Úsala para dar horizonte ("primer dominada estricta", "test de 5RM en sentadilla el 14 de octubre") o para marcar el final de una etapa. No metas aquí los días señalados con instrucción concreta: para eso está propose_special_day.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        athlete_email: { type: 'string' },
+        items: {
+          type: 'array',
+          description: 'Hitos u objetivos nuevos',
+          items: {
+            type: 'object',
+            properties: {
+              title: { type: 'string', description: 'Corto y en su idioma, lo lee el atleta' },
+              description: { type: 'string' },
+              type: { type: 'string', enum: ['objetivo', 'hito', 'nota'] },
+              lane: { type: 'string', enum: ['entreno', 'nutricion', 'movilidad', 'general'] },
+              startDate: { type: 'string', description: 'YYYY-MM-DD' },
+              targetDate: { type: 'string', description: 'YYYY-MM-DD' },
+            },
+            required: ['title', 'type', 'lane'],
+          },
+        },
+        rationale: { type: 'string', description: 'Para Dani, no lo ve el atleta' },
+      },
+      required: ['athlete_email', 'items'],
+    },
+  },
+  {
+    name: 'propose_nutrition_program',
+    description:
+      'PROPONE la periodización nutricional entera: la cadena de fases (déficit 8 semanas → mantenimiento 2 → superávit 12), con sus kcal objetivo, y las recargas sueltas con la nota que el atleta lee ese día. Cada fase va enlazada a una dieta: usa dietId si ya existe una que sirva (mírala con get_diet), o manda la dieta completa en diet y se creará al aprobar. Reemplaza la periodización anterior: manda el plan completo, no un trozo.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        athlete_email: { type: 'string' },
+        start_date: { type: 'string', description: 'YYYY-MM-DD; por defecto hoy' },
+        phases: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              name: { type: 'string' },
+              weeks: { type: 'number' },
+              phase_type: { type: 'string', enum: ['deficit', 'mantenimiento', 'superavit'] },
+              target_kcal: { type: 'number' },
+              target_weight: { type: 'number', description: 'kg al final de la fase' },
+              diet_id: { type: 'string', description: 'Dieta existente del atleta' },
+              diet: {
+                type: 'object',
+                description: 'Dieta nueva para esta fase, mismo formato que propose_diet_update',
+                properties: {
+                  name: { type: 'string' },
+                  budget: {
+                    type: 'object',
+                    properties: { HC: { type: 'number' }, PROT: { type: 'number' }, GRASA: { type: 'number' } },
+                    required: ['HC', 'PROT', 'GRASA'],
+                  },
+                  meals: {
+                    type: 'array',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        name: { type: 'string' },
+                        items: {
+                          type: 'array',
+                          items: {
+                            type: 'object',
+                            properties: {
+                              category: { type: 'string', enum: ['HC', 'PROT', 'GRASA', 'MIX_HC', 'MIX_GRASA'] },
+                              foodLabel: { type: 'string' },
+                              quantity: { type: 'number' },
+                            },
+                            required: ['category', 'foodLabel', 'quantity'],
+                          },
+                        },
+                      },
+                      required: ['name', 'items'],
+                    },
+                  },
+                },
+                required: ['name', 'budget', 'meals'],
+              },
+            },
+            required: ['name', 'weeks'],
+          },
+        },
+        refeed_days: {
+          type: 'array',
+          description: 'Recargas sueltas: el día, y lo que el atleta lee ese día',
+          items: {
+            type: 'object',
+            properties: {
+              date: { type: 'string', description: 'YYYY-MM-DD' },
+              note: { type: 'string', description: 'Lo que lee el atleta ese día' },
+            },
+            required: ['date'],
+          },
+        },
+        rationale: { type: 'string' },
+      },
+      required: ['athlete_email', 'phases'],
+    },
+  },
+  {
+    name: 'propose_special_day',
+    description:
+      'PROPONE un día señalado. Al aprobarlo pasan tres cosas a la vez: aparece como hito en el roadmap del atleta (lo ve venir), le llega como tarea con fecha, y ese día lee tu nota encima de su entrenamiento. Es la herramienta para que la programación se note VIVA: un AMRAP para revisar técnica e intensidad, una toma de marcas, una subida de peso obligatoria, un test. No la uses para el trabajo normal del mesociclo: solo para lo que quieres que el atleta note.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        athlete_email: { type: 'string' },
+        date: { type: 'string', description: 'YYYY-MM-DD. Cae mejor en un día que ya tenga entreno asignado.' },
+        kind: { type: 'string', enum: ['amrap', 'marcas', 'subida', 'otro'] },
+        title: { type: 'string', description: 'Corto, lo lee el atleta: "Toma de marcas — press banca"' },
+        athlete_note: { type: 'string', description: 'Lo que lee ese día encima de su sesión. Concreto y accionable: qué hace, cómo lo registra y por qué.' },
+        description: { type: 'string', description: 'Detalle del hito en el roadmap (opcional)' },
+        rationale: { type: 'string' },
+      },
+      required: ['athlete_email', 'date', 'kind', 'title', 'athlete_note'],
+    },
+  },
+  {
     name: 'propose_dossier_update',
     description:
       'PROPONE cambiar los campos de juicio de la ficha viva (objetivos, evaluación, qué esperamos, foco de la siguiente revisión, preguntas abiertas). No se aplica solo: Dani lo aprueba desde el panel, igual que una dieta. Manda solo los campos que cambian, con el texto COMPLETO que debe quedar (sustituye, no se acumula). Úsala al cerrar un análisis o tras aprobar un bloque, no en cada mensaje.',
@@ -368,6 +504,10 @@ export function toolStatusLabel(name: string, input: Record<string, unknown>): s
     case 'get_exercise_library': return 'Consultando la librería de ejercicios…';
     case 'propose_mesocycle': return `Preparando propuesta de mesociclo${who}…`;
     case 'propose_periodization_block': return `Preparando propuesta de bloque completo${who}…`;
+    case 'get_plan_context': return `Mirando el plan${who}…`;
+    case 'propose_roadmap_items': return `Preparando hitos${who}…`;
+    case 'propose_nutrition_program': return `Preparando la periodización nutricional${who}…`;
+    case 'propose_special_day': return `Preparando un día señalado${who}…`;
     case 'get_athlete_dossier': return `Leyendo la ficha${who}…`;
     case 'log_dossier_fact': return `Apuntando en la ficha${who}…`;
     case 'propose_dossier_update': return `Preparando cambios de la ficha${who}…`;
@@ -741,6 +881,228 @@ async function generateReportDraft(email: string, periodDaysInput: number, intro
     sectionsIncluded: draft.sections.filter(s => s.included).map(s => s.id),
     introUsed: draft.intro,
     note: 'Borrador guardado (draft). El atleta no lo ve hasta que Dani lo revise y lo envíe desde Análisis > Reportes.',
+  });
+}
+
+/* ── El resto del plan ─────────────────────────────────────────────────────
+   El entreno concreto lo sigue montando Dani. Esto es lo demás: los hitos que
+   el atleta ve venir, las fases de nutrición encadenadas y los días señalados.
+   Todo pasa por propuesta: al aprobar, el atleta lo ve inmediatamente. */
+
+async function leerContextoDelPlan(email: string): Promise<string> {
+  const [roadmap, programa, tareas] = await Promise.all([
+    getRoadmap(email),
+    getNutritionProgram(email),
+    getTasksForAthlete(email),
+  ]);
+  const hoy = new Date().toISOString().slice(0, 10);
+
+  const fases = (roadmap?.planPhases ?? []).map(f => ({
+    nombre: f.name, estado: f.status, desde: f.startedAt,
+    semanasOrientativas: f.suggestedWeeks, direccionPeso: f.weightDirection,
+    criterioDeSalida: f.exitCriteria,
+  }));
+
+  const hitos = (roadmap?.items ?? [])
+    .filter(i => !i.targetDate || i.targetDate >= hoy || i.status !== 'logrado')
+    .slice(0, 25)
+    .map(i => ({ titulo: i.title, tipo: i.type, carril: i.lane, fecha: i.targetDate ?? i.startDate, estado: i.status }));
+
+  const nutricion = programa ? {
+    empieza: programa.startDate,
+    fases: programa.phases.map(f => ({ nombre: f.name, semanas: f.weeks, tipo: f.phaseType, kcal: f.targetKcal, dietId: f.dietId })),
+    recargas: (programa.refeedDays ?? []).map(r => ({ dia: r.date, nota: r.note })),
+  } : null;
+
+  const pendientes = tareas
+    .filter(t => t.status === 'pending')
+    .slice(0, 20)
+    .map(t => ({ titulo: t.title, tipo: t.type, dia: t.dueDate }));
+
+  return toResult({
+    fasesDelPlan: fases.length ? fases : null,
+    hitosYObjetivos: hitos.length ? hitos : null,
+    periodizacionNutricional: nutricion,
+    tareasPendientes: pendientes.length ? pendientes : null,
+    note: 'Antes de proponer nada de esto, comprueba que no esté ya puesto: duplicar un hito es peor que no ponerlo.',
+  });
+}
+
+async function proposeRoadmapItems(
+  athleteEmail: string, itemsInput: Partial<RoadmapItem>[], rationale: string, chatId: string, expediente?: ProposalExpediente,
+): Promise<string> {
+  const items: RoadmapItem[] = itemsInput
+    .filter(i => typeof i.title === 'string' && i.title.trim())
+    .map((i, idx) => ({
+      id: `rmi_${Date.now()}_${idx}`,
+      title: (i.title as string).trim(),
+      description: i.description,
+      type: i.type ?? 'hito',
+      lane: i.lane ?? 'general',
+      startDate: i.startDate,
+      targetDate: i.targetDate,
+      status: 'pendiente',
+    }));
+  if (items.length === 0) return toResult({ error: 'Ningún hito con título' });
+
+  const payload: RoadmapProposalPayload = { items };
+  const summary = items.length === 1
+    ? `Hito: ${items[0].title}${items[0].targetDate ? ` (${items[0].targetDate})` : ''}`
+    : `${items.length} hitos nuevos en el roadmap`;
+  const proposal = await createAiProposal({
+    athleteId: athleteEmail, kind: 'roadmap', status: 'proposed', chatId,
+    summary, rationale: rationale || '', payload,
+    ...(expediente ? { expediente } : {}),
+    createdAt: new Date().toISOString(),
+  });
+  await registrarPropuesta(athleteEmail, proposal.id, chatId, summary);
+  return toResult({ proposalCreated: true, proposalId: proposal.id, note: 'El atleta los verá en su roadmap en cuanto Dani apruebe.' });
+}
+
+async function proposeNutritionProgram(
+  athleteEmail: string,
+  startDate: string | undefined,
+  fasesInput: Record<string, unknown>[],
+  refeedsInput: Record<string, unknown>[],
+  rationale: string,
+  chatId: string,
+  expediente?: ProposalExpediente,
+): Promise<string> {
+  if (fasesInput.length === 0) return toResult({ error: 'La periodización necesita al menos una fase' });
+
+  const dietasDelAtleta = await getDietsForAthlete(athleteEmail);
+
+  // La validación vive en validators.ts, con sus tests: aquí solo se construye.
+  const issues = validateNutritionPhases(fasesInput, dietasDelAtleta.map(d => d.id));
+  if (issues.length) {
+    return toResult({ valid: false, issues, note: 'Corrige y vuelve a llamar a propose_nutrition_program.' });
+  }
+
+  const fases: NutritionPhaseProposal[] = [];
+  const problemas: string[] = [];
+
+  fasesInput.forEach((f, i) => {
+    const nombre = typeof f.name === 'string' ? f.name.trim() : '';
+    const semanas = Number(f.weeks);
+    if (!nombre || !Number.isFinite(semanas) || semanas <= 0) {
+      problemas.push(`Fase ${i + 1}: falta name o weeks`);
+      return;
+    }
+    const fase: NutritionPhaseProposal = {
+      name: nombre,
+      weeks: Math.round(semanas),
+      phaseType: typeof f.phase_type === 'string' ? f.phase_type as NutritionPhaseProposal['phaseType'] : undefined,
+      targetKcal: Number.isFinite(Number(f.target_kcal)) ? Number(f.target_kcal) : undefined,
+      targetWeight: Number.isFinite(Number(f.target_weight)) ? Number(f.target_weight) : undefined,
+    };
+
+    if (typeof f.diet_id === 'string' && f.diet_id) {
+      if (!dietasDelAtleta.some(d => d.id === f.diet_id)) {
+        problemas.push(`Fase "${nombre}": la dieta ${f.diet_id} no es de este atleta`);
+        return;
+      }
+      fase.dietId = f.diet_id;
+    } else if (f.diet && typeof f.diet === 'object') {
+      const bruta = f.diet as { name?: string; budget?: Record<FoodCategory, number>; meals?: DietUpdatePayload['meals'] };
+      if (!bruta.name || !bruta.budget || !Array.isArray(bruta.meals)) {
+        problemas.push(`Fase "${nombre}": la dieta necesita name, budget y meals`);
+        return;
+      }
+      const issues = validateDietPayload({ budget: bruta.budget, meals: bruta.meals });
+      if (issues.length) {
+        problemas.push(`Fase "${nombre}": ${issues.map(x => x.message).join(' · ')}`);
+        return;
+      }
+      fase.diet = {
+        athleteId: athleteEmail,
+        name: bruta.name,
+        budget: bruta.budget,
+        meals: bruta.meals.map((m, k) => ({
+          id: `meal_${Date.now()}_${i}_${k}`,
+          name: m.name,
+          items: m.items.map(it => ({
+            category: it.category,
+            foodLabel: it.foodLabel,
+            quantity: it.quantity,
+            grams: parseBaseGrams(it.foodLabel) != null ? Math.round((parseBaseGrams(it.foodLabel) as number) * it.quantity * 10) / 10 : undefined,
+          })),
+        })),
+      };
+    } else {
+      problemas.push(`Fase "${nombre}": necesita diet_id (dieta existente) o diet (dieta nueva)`);
+      return;
+    }
+    fases.push(fase);
+  });
+
+  if (problemas.length) {
+    return toResult({ valid: false, issues: problemas, note: 'Corrige y vuelve a llamar a propose_nutrition_program.' });
+  }
+
+  const payload: NutritionProgramProposalPayload = {
+    startDate: startDate?.trim() || new Date().toISOString().slice(0, 10),
+    phases: fases,
+    refeedDays: refeedsInput
+      .filter(r => typeof r.date === 'string')
+      .map(r => ({ date: r.date as string, note: typeof r.note === 'string' ? r.note : undefined })),
+  };
+
+  const semanas = fases.reduce((t, f) => t + f.weeks, 0);
+  const nuevas = fases.filter(f => f.diet).length;
+  const summary = `Periodización nutricional: ${fases.length} fases / ${semanas} semanas (${fases.map(f => f.name).join(' → ')})`
+    + (nuevas ? ` · ${nuevas} dieta${nuevas !== 1 ? 's' : ''} nueva${nuevas !== 1 ? 's' : ''}` : '')
+    + (payload.refeedDays?.length ? ` · ${payload.refeedDays.length} recarga(s)` : '');
+
+  const proposal = await createAiProposal({
+    athleteId: athleteEmail, kind: 'nutritionProgram', status: 'proposed', chatId,
+    summary, rationale: rationale || '', payload,
+    ...(expediente ? { expediente } : {}),
+    createdAt: new Date().toISOString(),
+  });
+  await registrarPropuesta(athleteEmail, proposal.id, chatId, summary);
+  return toResult({
+    proposalCreated: true, proposalId: proposal.id,
+    note: 'Al aprobar se crean las dietas nuevas y se reemplaza la periodización anterior.',
+  });
+}
+
+async function proposeSpecialDay(
+  athleteEmail: string, date: string, kind: string, title: string, athleteNote: string,
+  description: string | undefined, rationale: string, chatId: string, expediente?: ProposalExpediente,
+): Promise<string> {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return toResult({ error: 'date debe ser YYYY-MM-DD' });
+  if (!title.trim() || !athleteNote.trim()) return toResult({ error: 'Faltan title o athlete_note' });
+
+  // La consulta de asignaciones exige las DOS claves (email y uid): con solo el
+  // email devolvería cero documentos sin dar error — ver src/db/clavesDeAtleta.ts.
+  const perfil = (await getAllUserProfiles()).find(u => u.email === athleteEmail);
+  const asignaciones = perfil
+    ? await getWorkoutAssignments({ uid: perfil.userId, email: perfil.email })
+    : [];
+  const hayEntreno = asignaciones.some(a => a.date === date);
+
+  const payload: SpecialDayProposalPayload = {
+    date,
+    kind: (['amrap', 'marcas', 'subida', 'otro'].includes(kind) ? kind : 'otro') as SpecialDayKind,
+    title: title.trim(),
+    athleteNote: athleteNote.trim(),
+    description: description?.trim() || undefined,
+  };
+  const summary = `Día señalado ${date}: ${payload.title}`;
+  const proposal = await createAiProposal({
+    athleteId: athleteEmail, kind: 'specialDay', status: 'proposed', chatId,
+    summary, rationale: rationale || '', payload,
+    ...(expediente ? { expediente } : {}),
+    createdAt: new Date().toISOString(),
+  });
+  await registrarPropuesta(athleteEmail, proposal.id, chatId, summary);
+  return toResult({
+    proposalCreated: true,
+    proposalId: proposal.id,
+    entrenoEseDia: hayEntreno,
+    note: hayEntreno
+      ? 'Al aprobar: hito en su roadmap + tarea con fecha + la nota encima de su entreno de ese día.'
+      : 'OJO: ese día no tiene entreno asignado, así que la nota no tendrá dónde salir. Se creará el hito y la tarea igual. Si querías que cayera en un día de entreno, propón otra fecha.',
   });
 }
 
@@ -1292,6 +1654,50 @@ export async function executeTool(
         );
         const parsed = JSON.parse(content) as { valid?: boolean };
         return { content, isError: parsed.valid === false };
+      }
+      case 'get_plan_context':
+        if (!email) return { content: 'Falta athlete_email', isError: true };
+        return { content: await leerContextoDelPlan(email), isError: false };
+      case 'propose_roadmap_items': {
+        if (!email || !Array.isArray(input.items)) {
+          return { content: 'Faltan athlete_email o items', isError: true };
+        }
+        return {
+          content: await proposeRoadmapItems(
+            email, input.items as Partial<RoadmapItem>[],
+            typeof input.rationale === 'string' ? input.rationale : '', chatId, leerExpediente(input),
+          ),
+          isError: false,
+        };
+      }
+      case 'propose_nutrition_program': {
+        if (!email || !Array.isArray(input.phases)) {
+          return { content: 'Faltan athlete_email o phases', isError: true };
+        }
+        return {
+          content: await proposeNutritionProgram(
+            email,
+            typeof input.start_date === 'string' ? input.start_date : undefined,
+            input.phases as Record<string, unknown>[],
+            Array.isArray(input.refeed_days) ? input.refeed_days as Record<string, unknown>[] : [],
+            typeof input.rationale === 'string' ? input.rationale : '', chatId, leerExpediente(input),
+          ),
+          isError: false,
+        };
+      }
+      case 'propose_special_day': {
+        if (!email || typeof input.date !== 'string' || typeof input.title !== 'string' || typeof input.athlete_note !== 'string') {
+          return { content: 'Faltan athlete_email, date, title o athlete_note', isError: true };
+        }
+        return {
+          content: await proposeSpecialDay(
+            email, input.date, typeof input.kind === 'string' ? input.kind : 'otro',
+            input.title, input.athlete_note,
+            typeof input.description === 'string' ? input.description : undefined,
+            typeof input.rationale === 'string' ? input.rationale : '', chatId, leerExpediente(input),
+          ),
+          isError: false,
+        };
       }
       case 'get_athlete_dossier':
         if (!email) return { content: 'Falta athlete_email', isError: true };

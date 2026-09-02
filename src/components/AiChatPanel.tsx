@@ -1,13 +1,16 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { AiChat, AiChatMessage, AiProposal, Diet, DossierPatch, Mesocycle, MuscleGroup, MUSCLE_LABELS, MUSCLE_ORDER, KnowledgeNote, PeriodizationBlockPayload } from '../types';
+import { AiChat, AiChatMessage, AiProposal, Diet, DossierPatch, Mesocycle, MuscleGroup, MUSCLE_LABELS, MUSCLE_ORDER, KnowledgeNote, PeriodizationBlockPayload,
+  RoadmapProposalPayload, NutritionProgramProposalPayload, SpecialDayProposalPayload, NutritionPhase, Roadmap } from '../types';
 import {
   getAiChats, saveAiChat, deleteAiChat, getAiProposalsForAthlete, updateAiProposal,
   submitCoachFeedback, createDiet, updateDiet, createMesocycle, bulkUpsertKnowledgeNotes,
   getCoachInstructions, saveCoachInstructions,
   getDoctrina, getDoctrinaParaEditar, saveDoctrina, resetDoctrina, createTask,
   getVolumeLandmarks, getVolumeLandmarksParaEditar, saveVolumeLandmarks, resetVolumeLandmarks,
+  getRoadmap, saveRoadmap, saveNutritionProgram, getAllUserProfiles,
+  getWorkoutAssignments, updateWorkoutAssignment,
 } from '../dbService';
 import { VOLUME_LANDMARKS_DEFAULT, type VolumeLandmark } from '../data/volumeLandmarks';
 import { runAgentTurn, messageText, probarConexionProxy, TurnoCancelado } from '../ai/aiClient';
@@ -456,6 +459,74 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
       } else if (p.kind === 'mesocycle') {
         const created = await createMesocycle(p.payload as Omit<Mesocycle, 'id'>);
         await updateAiProposal(p.id, { status: 'approved', reviewedAt: new Date().toISOString(), resultEntityId: created.id });
+      } else if (p.kind === 'roadmap') {
+        // Se AÑADEN a lo que ya tiene: el roadmap es suyo, no se reemplaza.
+        const { items, planPhases } = p.payload as RoadmapProposalPayload;
+        const actual = await getRoadmap(p.athleteId);
+        const base: Roadmap = actual ?? { athleteId: p.athleteId, items: [] };
+        await saveRoadmap({
+          ...base,
+          items: [...base.items, ...items],
+          ...(planPhases ? { planPhases } : {}),
+        });
+        await updateAiProposal(p.id, { status: 'approved', reviewedAt: new Date().toISOString(), resultEntityId: p.athleteId });
+      } else if (p.kind === 'nutritionProgram') {
+        // Las fases que traían dieta nueva la crean AQUÍ y se enlazan por id:
+        // una fase sin dieta enlazada no le enseña nada al atleta.
+        const { startDate, phases, refeedDays } = p.payload as NutritionProgramProposalPayload;
+        const fases: NutritionPhase[] = [];
+        for (const [i, fase] of phases.entries()) {
+          let dietId = fase.dietId ?? '';
+          if (!dietId && fase.diet) {
+            const creada = await createDiet(fase.diet);
+            dietId = creada.id;
+          }
+          fases.push({
+            id: `nph_${Date.now()}_${i}`,
+            name: fase.name,
+            weeks: fase.weeks,
+            dietId,
+            ...(fase.targetKcal != null ? { targetKcal: fase.targetKcal } : {}),
+            ...(fase.targetWeight != null ? { targetWeight: fase.targetWeight } : {}),
+            ...(fase.phaseType ? { phaseType: fase.phaseType } : {}),
+          });
+        }
+        await saveNutritionProgram({
+          athleteId: p.athleteId,
+          startDate,
+          phases: fases,
+          ...(refeedDays?.length ? { refeedDays } : {}),
+        });
+        await updateAiProposal(p.id, { status: 'approved', reviewedAt: new Date().toISOString(), resultEntityId: p.athleteId });
+      } else if (p.kind === 'specialDay') {
+        // Las tres cosas a la vez: por separado ninguna se nota. El hito lo ve
+        // venir, la tarea le salta ese día, y la nota la lee encima de la sesión.
+        const dia = p.payload as SpecialDayProposalPayload;
+        const actual = await getRoadmap(p.athleteId);
+        const base: Roadmap = actual ?? { athleteId: p.athleteId, items: [] };
+        await saveRoadmap({
+          ...base,
+          items: [...base.items, {
+            id: `rmi_${Date.now()}`,
+            title: dia.title,
+            description: dia.description,
+            type: 'hito',
+            lane: dia.kind === 'otro' ? 'general' : 'entreno',
+            targetDate: dia.date,
+            status: 'pendiente',
+          }],
+        });
+        await createTask({
+          athleteId: p.athleteId, type: 'manual', title: dia.title, dueDate: dia.date,
+          status: 'pending', linkTab: 'training', createdBy: 'coach', createdAt: new Date().toISOString(),
+        });
+        const perfil = (await getAllUserProfiles()).find(u => u.email === p.athleteId);
+        if (perfil) {
+          const asignaciones = await getWorkoutAssignments({ uid: perfil.userId, email: perfil.email });
+          const delDia = asignaciones.find(a => a.date === dia.date);
+          if (delDia) await updateWorkoutAssignment(delDia.id, { note: dia.athleteNote });
+        }
+        await updateAiProposal(p.id, { status: 'approved', reviewedAt: new Date().toISOString(), resultEntityId: p.athleteId });
       } else if (p.kind === 'dossier') {
         // La IA solo propone los campos de juicio; aquí es donde se aplican.
         await saveDossierJudgement(p.athleteId, p.payload as DossierPatch);
@@ -804,6 +875,48 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                           {p.expediente.preguntas.map((q, i) => <li key={i}>{q}</li>)}
                         </ul>
                       )}
+                    </div>
+                  )}
+                  {p.kind === 'roadmap' && (
+                    <ul className="flex flex-col gap-1 bg-bg border border-hairline rounded-surface p-3">
+                      {(p.payload as RoadmapProposalPayload).items.map(it => (
+                        <li key={it.id} className="text-caption text-ink-2">
+                          <span className="text-ink">{it.title}</span>
+                          {it.targetDate && <span className="font-mono text-ink-4"> · {it.targetDate}</span>}
+                          <span className="text-ink-4"> · {it.lane}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  {p.kind === 'nutritionProgram' && (
+                    <div className="flex flex-col gap-1 bg-bg border border-hairline rounded-surface p-3">
+                      {(p.payload as NutritionProgramProposalPayload).phases.map((f, i) => (
+                        <div key={i} className="flex justify-between text-caption">
+                          <span className="text-ink-2">
+                            {f.name} <span className="text-ink-4">· {f.weeks} sem{f.phaseType ? ` · ${f.phaseType}` : ''}</span>
+                          </span>
+                          <span className="font-mono text-ink">
+                            {f.targetKcal ? `${f.targetKcal} kcal` : ''}{f.diet ? ' · dieta nueva' : ''}
+                          </span>
+                        </div>
+                      ))}
+                      {(p.payload as NutritionProgramProposalPayload).refeedDays?.map(r => (
+                        <div key={r.date} className="text-caption text-ink-2">
+                          <span className="font-mono text-ink-4">{r.date}</span> · recarga{r.note ? `: ${r.note}` : ''}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {p.kind === 'specialDay' && (
+                    <div className="flex flex-col gap-2 bg-bg border border-hairline rounded-surface p-3">
+                      <div className="flex gap-2 items-center flex-wrap">
+                        <Badge tone="accent">{(p.payload as SpecialDayProposalPayload).date}</Badge>
+                        <span className="text-label text-ink">{(p.payload as SpecialDayProposalPayload).title}</span>
+                      </div>
+                      {/* Esto es literalmente lo que va a leer el atleta ese día. */}
+                      <p className="text-caption text-ink-2 border-l-2 border-accent-line pl-3">
+                        {(p.payload as SpecialDayProposalPayload).athleteNote}
+                      </p>
                     </div>
                   )}
                   {p.kind === 'dossier' && (

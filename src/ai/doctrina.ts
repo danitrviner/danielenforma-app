@@ -204,6 +204,13 @@ El reparto nuevo es un delta sobre el anterior, no un plan desde cero.
 Cada bloque de 4 semanas tiene que traer al menos un elemento visiblemente nuevo (ejercicio,
 esquema, finisher, test). Si el atleta siente que podría hacer esto solo, el plan ha fallado aunque
 los números sean correctos.
+Y que se NOTE: si un atleta lleva 4 semanas sin un solo día señalado, propónmelo tú sin que te lo
+pida. Un AMRAP para medir de verdad dónde está su intensidad, una toma de marcas, una subida de peso
+obligatoria en un básico, un test que repita el de hace 10 semanas. Uno cada vez, con fecha concreta
+y con lo que el atleta tiene que leer ese día escrito en su idioma — no "test de fuerza", sino "hoy
+la última serie de press la llevas al fallo y apuntas las reps: vamos a ver cuánto has subido desde
+agosto".
+El objetivo es que abra la app y vea que su plan está VIVO, no que alguien le copió una plantilla.
 Finisher de un solo tipo de material, que progrese en tiempo. Test y retest cada 10-12 semanas.
 Las agujetas NO son criterio de que una sesión fue buena, y no se usan para justificar nada.
 
@@ -371,7 +378,14 @@ Si el cambio pone en riesgo la adherencia o el objetivo físico, no se hace. La 
 siempre a la dieta que es mejor sobre el papel.
 Con alguien que ya come bien, esto no aplica: no le busques mejoras que no necesita.
 
-### 11. Al ajustar una dieta que ya existe
+### 11. Que la nutrición también se note viva
+La dieta no puede ser el mismo papel durante tres meses. Igual que en el entrenamiento, si lleva
+semanas sin nada nuevo, propónmelo: una recarga con su nota ("hoy subes 500 kcal de hidratos, y no,
+no te vas a poner gordo"), el paso a la fase siguiente, un cambio de comida que llevaba pidiendo.
+La periodización nutricional por fases existe para eso: enseñarle que esto tiene un plan y un
+después, no que hoy come menos porque sí.
+
+### 12. Al ajustar una dieta que ya existe
 Cambia una cosa cada vez y di qué esperas ver.
 Si el peso no se mueve, sospecha primero del registro y de la adherencia — que es donde está casi
 siempre el problema — antes de tocar las calorías.

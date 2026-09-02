@@ -134,3 +134,61 @@ export function validateMesocyclePayload(payload: MesocycleProposalPayload): Val
 
   return issues;
 }
+
+// ── Periodización nutricional ───────────────────────────────────────────────
+// Cada fase va enlazada a una dieta: o una que ya existe (dietId) o una que se
+// crea al aprobar (diet). Una fase sin dieta enlazada no le enseña nada al
+// atleta, y una dieta que no cuadra con su presupuesto se cuela hasta que
+// alguien la abre — mejor rechazarla aquí, con el motivo, para que el modelo
+// se corrija solo.
+
+export interface NutritionPhaseInput {
+  name?: unknown;
+  weeks?: unknown;
+  diet_id?: unknown;
+  diet?: unknown;
+}
+
+export function validateNutritionPhases(
+  fases: NutritionPhaseInput[], dietIdsDelAtleta: string[],
+): ValidationIssue[] {
+  const issues: ValidationIssue[] = [];
+  if (!Array.isArray(fases) || fases.length === 0) {
+    return [{ field: 'phases', message: 'La periodización necesita al menos una fase' }];
+  }
+
+  const ids = new Set(dietIdsDelAtleta);
+  fases.forEach((f, i) => {
+    const donde = typeof f.name === 'string' && f.name.trim() ? `"${f.name.trim()}"` : `${i + 1}`;
+    if (typeof f.name !== 'string' || !f.name.trim()) {
+      issues.push({ field: `phases[${i}].name`, message: `Fase ${donde}: falta el nombre` });
+    }
+    const semanas = Number(f.weeks);
+    if (!Number.isFinite(semanas) || semanas <= 0 || semanas > 52) {
+      issues.push({ field: `phases[${i}].weeks`, message: `Fase ${donde}: weeks debe ser un número entre 1 y 52 (recibido: ${JSON.stringify(f.weeks)})` });
+    }
+
+    const tieneId = typeof f.diet_id === 'string' && f.diet_id.length > 0;
+    const tieneDieta = !!f.diet && typeof f.diet === 'object';
+    if (!tieneId && !tieneDieta) {
+      issues.push({ field: `phases[${i}].diet`, message: `Fase ${donde}: necesita diet_id (una dieta que ya existe) o diet (la dieta nueva de esta fase)` });
+    }
+    if (tieneId && tieneDieta) {
+      issues.push({ field: `phases[${i}].diet`, message: `Fase ${donde}: manda diet_id o diet, no las dos` });
+    }
+    if (tieneId && !ids.has(f.diet_id as string)) {
+      issues.push({ field: `phases[${i}].diet_id`, message: `Fase ${donde}: la dieta ${f.diet_id} no es de este atleta` });
+    }
+    if (tieneDieta) {
+      const d = f.diet as { name?: unknown; budget?: unknown; meals?: unknown };
+      if (typeof d.name !== 'string' || !d.name.trim() || !d.budget || !Array.isArray(d.meals)) {
+        issues.push({ field: `phases[${i}].diet`, message: `Fase ${donde}: la dieta necesita name, budget y meals` });
+      } else {
+        for (const issue of validateDietPayload({ budget: d.budget as Record<FoodCategory, number>, meals: d.meals as DietUpdatePayload['meals'] })) {
+          issues.push({ field: `phases[${i}].diet.${issue.field}`, message: `Fase ${donde}: ${issue.message}` });
+        }
+      }
+    }
+  });
+  return issues;
+}
