@@ -11,6 +11,7 @@ import {
 } from '../dbService';
 import { VOLUME_LANDMARKS_DEFAULT, type VolumeLandmark } from '../data/volumeLandmarks';
 import { runAgentTurn, messageText, probarConexionProxy, TurnoCancelado } from '../ai/aiClient';
+import { sanearHistorial } from '../ai/historial';
 import { OPEN_AI_PANEL_EVENT, OpenAiPanelDetail } from '../ai/events';
 import { exchangeToKcal } from '../utils/nutritionConstants';
 import { Icon, Button, ListRow, Badge, Dialog } from './ui';
@@ -504,7 +505,12 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
     setError(null);
     setBusy(true);
     setCostoTurnoUsd(0);
-    liveMessages.current = chat.messages;
+    // Único punto por el que pasa TODO lo que se manda a la API, así que es
+    // donde se repara un chat que se guardó a medias en su día (herramientas
+    // pedidas y nunca respondidas). Sin esto, un chat roto una vez devuelve un
+    // 400 en cada mensaje nuevo para siempre — ver ../ai/historial.ts.
+    const historial = sanearHistorial(chat.messages);
+    liveMessages.current = historial;
     const controller = new AbortController();
     cancelarTurnoRef.current = controller;
 
@@ -513,7 +519,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
       : undefined;
 
     try {
-      await runAgentTurn(chat.messages, userText, { chatId: chat.id, activeAthlete, coachInstructions, doctrina, volumeLandmarks, signal: controller.signal }, {
+      await runAgentTurn(historial, userText, { chatId: chat.id, activeAthlete, coachInstructions, doctrina, volumeLandmarks, signal: controller.signal }, {
         onUpdate: msgs => {
           liveMessages.current = msgs;
           setChat(c => ({ ...c, messages: msgs }));
@@ -531,7 +537,10 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
       cancelarTurnoRef.current = null;
       setBusy(false);
       setToolStatus(null);
-      const msgs = liveMessages.current;
+      // Se guarda saneado: si el turno murió a mitad (red, cancelación), lo que
+      // quede en pantalla no puede llegar a Firestore en un estado que la API
+      // vaya a rechazar en el siguiente mensaje.
+      const msgs = sanearHistorial(liveMessages.current);
       if (msgs.length > 0) {
         const title = chat.title || (messageText(msgs.find(m => m.role === 'user') ?? msgs[0]) || 'Chat').slice(0, 60);
         await persist({ ...chat, title, messages: msgs, updatedAt: new Date().toISOString() });

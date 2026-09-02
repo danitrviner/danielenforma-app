@@ -217,3 +217,74 @@ describe('runAgentTurn — reconstrucción del streaming', () => {
     await expect(runAgentTurn([], 'hola', { chatId: 'chat1' })).rejects.toThrow('Límite diario de 400 llamadas alcanzado');
   });
 });
+
+/* Un turno que se corta DESPUÉS de que el modelo haya pedido herramientas
+   dejaba el historial con tool_use sin tool_result. El panel lo guarda en
+   Firestore igual, así que a partir de ahí ese chat devolvía un 400
+   («tool_use ids were found without tool_result blocks») en CADA mensaje
+   nuevo, para siempre. */
+describe('runAgentTurn — el turno abortado no deja el historial roto', () => {
+  const eventosToolCortadas = (stopReason: string) => [
+    { tipo: 'content_block_start', datos: { type: 'content_block_start', index: 0, content_block: { type: 'tool_use', id: 'tu_1', name: 'get_diet' } } },
+    { tipo: 'content_block_stop', datos: { type: 'content_block_stop', index: 0 } },
+    { tipo: 'content_block_start', datos: { type: 'content_block_start', index: 1, content_block: { type: 'tool_use', id: 'tu_2', name: 'get_checkins' } } },
+    { tipo: 'content_block_stop', datos: { type: 'content_block_stop', index: 1 } },
+    { tipo: 'message_delta', datos: { type: 'message_delta', delta: { stop_reason: stopReason } } },
+    { tipo: 'costo', datos: { usd: 0.002 } },
+  ];
+
+  it('corte por longitud: cierra las herramientas pedidas con un resultado de interrumpido', async () => {
+    (fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValueOnce(respuestaSSE(eventosToolCortadas('max_tokens')));
+    let ultimaActualizacion: AiChatMessage[] = [];
+
+    await expect(
+      runAgentTurn([], 'dame el resumen', { chatId: 'chat1' }, { onUpdate: msgs => { ultimaActualizacion = [...msgs]; } })
+    ).rejects.toThrow(/se cortó por longitud/);
+
+    // user, assistant(2 tool_use), user(2 tool_result) — válido para la API.
+    expect(ultimaActualizacion).toHaveLength(3);
+    const cierre = ultimaActualizacion[2];
+    expect(cierre.role).toBe('user');
+    expect(cierre.content.map(b => b.type)).toEqual(['tool_result', 'tool_result']);
+    expect(cierre.content.map(b => (b as { tool_use_id: string }).tool_use_id)).toEqual(['tu_1', 'tu_2']);
+    expect(cierre.content.every(b => (b as { is_error?: boolean }).is_error)).toBe(true);
+    // Y las herramientas NO se ejecutan: el turno estaba abortado.
+    expect(executeTool).not.toHaveBeenCalled();
+  });
+
+  it('rechazo del modelo: mismo cierre', async () => {
+    (fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValueOnce(respuestaSSE(eventosToolCortadas('refusal')));
+    let ultimaActualizacion: AiChatMessage[] = [];
+
+    await expect(
+      runAgentTurn([], 'hola', { chatId: 'chat1' }, { onUpdate: msgs => { ultimaActualizacion = [...msgs]; } })
+    ).rejects.toThrow(/rechazado esta petición/);
+
+    expect(ultimaActualizacion.at(-1)?.content.map(b => b.type)).toEqual(['tool_result', 'tool_result']);
+  });
+
+  it('sin herramientas pendientes no inventa ningún mensaje', async () => {
+    (fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValueOnce(respuestaSSE([
+      { tipo: 'content_block_start', datos: { type: 'content_block_start', index: 0, content_block: { type: 'text', text: '' } } },
+      { tipo: 'content_block_delta', datos: { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: 'Se corta aquí' } } },
+      { tipo: 'content_block_stop', datos: { type: 'content_block_stop', index: 0 } },
+      { tipo: 'message_delta', datos: { type: 'message_delta', delta: { stop_reason: 'max_tokens' } } },
+    ]));
+    let ultimaActualizacion: AiChatMessage[] = [];
+
+    await expect(
+      runAgentTurn([], 'hola', { chatId: 'chat1' }, { onUpdate: msgs => { ultimaActualizacion = [...msgs]; } })
+    ).rejects.toThrow(/se cortó por longitud/);
+
+    expect(ultimaActualizacion).toHaveLength(2); // user + assistant, nada más
+  });
+
+  it('pide al proxy el tope de tokens que el proxy permite (8192)', async () => {
+    (fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValueOnce(respuestaSSE(eventosTextoSimple));
+
+    await runAgentTurn([], 'hola', { chatId: 'chat1' });
+
+    const [, init] = (fetch as unknown as ReturnType<typeof vi.fn>).mock.calls[0];
+    expect(JSON.parse((init as RequestInit).body as string).max_tokens).toBe(8192);
+  });
+});

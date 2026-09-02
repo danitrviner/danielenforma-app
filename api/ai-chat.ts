@@ -11,6 +11,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import Anthropic from '@anthropic-ai/sdk';
 import { esCoach, getAdminDb, setCors, tokenDeLaCabecera, verifyFirebaseIdToken } from './_lib/auth.js';
+import { sanearHistorial } from '../src/ai/historial.js';
+import type { AiChatMessage } from '../src/types.js';
 
 export const config = { maxDuration: 60 };
 
@@ -53,6 +55,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!Array.isArray(body.messages) || body.messages.length === 0) {
     res.status(400).json({ error: 'messages vacío' });
     return;
+  }
+  // Red de seguridad del historial. Un `tool_use` sin su `tool_result` detrás
+  // hace que Anthropic rechace la conversación ENTERA con un 400, y el cliente
+  // guarda el chat en Firestore: una vez roto, cada mensaje nuevo de ese chat
+  // vuelve a fallar. El cliente ya lo repara (src/ai/historial.ts), pero la web
+  // va empotrada en el binario nativo: las instalaciones con un bundle anterior
+  // a esa corrección seguirían mandando historiales rotos hasta que Apple
+  // publique una versión nueva. Repararlo también aquí las cura hoy mismo.
+  const mensajesValidos = body.messages.every(
+    m => m && typeof m === 'object' && Array.isArray((m as AiChatMessage).content),
+  );
+  const messages = mensajesValidos
+    ? sanearHistorial(body.messages as AiChatMessage[])
+    : (body.messages as AiChatMessage[]); // forma inesperada: que la rechace Anthropic, no nosotros
+  if (mensajesValidos && JSON.stringify(messages) !== JSON.stringify(body.messages)) {
+    console.warn(`Historial reparado en el proxy (chat ${body.chatId ?? '?'}): ${body.messages.length} → ${messages.length} mensajes`);
   }
   const effort = ['low', 'medium', 'high'].includes(body.output_config?.effort || '')
     ? (body.output_config!.effort as 'low' | 'medium' | 'high')
@@ -139,7 +157,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       model,
       max_tokens: maxTokens,
       system: body.system as never,
-      messages: body.messages as never,
+      messages: messages as never,
       tools: (body.tools ?? undefined) as never,
       output_config: { effort },
     } as never);

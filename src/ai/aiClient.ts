@@ -12,6 +12,7 @@ import { AiChatMessage, AiContentBlock, AiTextBlock, AiThinkingBlock, AiToolUseB
 import { SYSTEM_PROMPT, buildContextSuffix } from './systemPrompt';
 import { buildDoctrinaBlock } from './doctrina';
 import { TOOL_DEFINITIONS, executeTool, toolStatusLabel } from './tools';
+import { cierreDeToolUse } from './historial';
 import { apiUrl } from '../db/apiBase';
 
 // VITE_AI_PROXY_URL sigue teniendo prioridad (dev contra un despliegue
@@ -380,7 +381,11 @@ export async function runAgentTurn(
     try {
       ({ message, costoUsd } = await callProxy({
         model: DEFAULT_MODEL,
-        max_tokens: 4096,
+        // 8192 es el tope que aplica el proxy (MAX_TOKENS_CAP en api/ai-chat.ts).
+        // Con 4096 una ronda con varias herramientas en paralelo se cortaba a
+        // media petición: `stop_reason: 'max_tokens'` con tool_use ya emitidos,
+        // que es el estado que rompía el historial (ver ./historial.ts).
+        max_tokens: 8192,
         system,
         messages,
         tools: TOOL_DEFINITIONS,
@@ -405,11 +410,25 @@ export async function runAgentTurn(
     messages.push({ role: 'assistant', content: message.content });
     cb.onUpdate?.(messages);
 
+    // Abortar el turno con herramientas ya pedidas dejaba el historial
+    // inválido para la API — y el panel lo guarda igual en su `finally`, así
+    // que el chat quedaba roto para siempre. Se cierran esas herramientas con
+    // un resultado de «interrumpido» ANTES de avisar del error.
+    const abortarTurno = (aviso: string): never => {
+      const cierre = cierreDeToolUse(message.content);
+      if (cierre) {
+        messages.push(cierre);
+        cb.onUpdate?.(messages);
+      }
+      cb.onToolStatus?.(null);
+      throw new Error(aviso);
+    };
+
     if (message.stop_reason === 'refusal') {
-      throw new Error('El modelo ha rechazado esta petición por políticas de seguridad.');
+      abortarTurno('El modelo ha rechazado esta petición por políticas de seguridad.');
     }
     if (message.stop_reason === 'max_tokens') {
-      throw new Error('La respuesta se cortó por longitud — pide algo más acotado o continúa con otro mensaje.');
+      abortarTurno('La respuesta se cortó por longitud — pide algo más acotado o continúa con otro mensaje.');
     }
     if (message.stop_reason !== 'tool_use') {
       cb.onToolStatus?.(null);
