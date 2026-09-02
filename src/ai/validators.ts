@@ -70,7 +70,12 @@ export function validateDietPayload(payload: DietUpdatePayload): ValidationIssue
 
 const VALID_MUSCLE_GROUPS = new Set(Object.keys(MUSCLE_LABELS) as MuscleGroup[]);
 const MAX_SERIES_PER_GROUP = 25; // tope semanal por grupo (heatmap del MesocycleManager)
-const SERIES_PER_DAY_SOFT_CAP = 12; // > daysPerWeek*12 dispara overloadAlert en la app
+// Tope de series semanales totales, en función de los días que entrena. Estaba
+// en 12 y rechazaba repartos perfectamente normales: con 8-12 series por
+// músculo y sesión (criterio de Dani), un torso que toca 3 músculos ya son
+// ~30. Subido a 25 por sesión el 2026-09-02 — sigue bloqueando por encima,
+// que es lo que evita que un error del modelo cuele 200 series.
+const SERIES_PER_DAY_SOFT_CAP = 25;
 
 export interface MesocycleProposalPayload {
   weeks: number;

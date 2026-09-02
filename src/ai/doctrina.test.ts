@@ -58,3 +58,47 @@ describe('doctrina por defecto', () => {
     expect(DOCTRINA_NUTRICION_DEFAULT).toMatch(/g\/kg/);
   });
 });
+
+/* Cifras y reglas que Dani decidió expresamente (2026-09-02) y que no deben
+   perderse en una reescritura de estilo. No se comprueba la redacción: se
+   comprueba que el número o la regla siguen ahí. Si Dani cambia de criterio,
+   este test se actualiza CON él, no se borra. */
+describe('decisiones de Dani que no se pueden perder', () => {
+  it('la proteína va por fase: 0,8-1 en volumen y 1-1,4 en déficit', () => {
+    expect(DOCTRINA_NUTRICION_DEFAULT).toContain('0,8-1 g/kg');
+    expect(DOCTRINA_NUTRICION_DEFAULT).toContain('1-1,4 g/kg');
+  });
+
+  it('la dieta parte de lo que el atleta ya come, y el giro hacia comida vegetal se propone, no se aplica solo', () => {
+    expect(DOCTRINA_NUTRICION_DEFAULT).toMatch(/ya come/);
+    expect(DOCTRINA_NUTRICION_DEFAULT).toMatch(/PROPÓNMELA|propónmela/);
+  });
+
+  it('mantiene la ventana de 8-12 series por músculo y sesión', () => {
+    expect(DOCTRINA_ENTRENAMIENTO_DEFAULT).toContain('8-12 series por músculo y sesión');
+  });
+
+  it('en definición no se recorta volumen por defecto', () => {
+    expect(DOCTRINA_ENTRENAMIENTO_DEFAULT).toMatch(/No se recorta volumen por defecto/);
+  });
+
+  it('el superávit lo gobierna el ritmo de 150-250 g/semana, no las calorías', () => {
+    expect(DOCTRINA_NUTRICION_DEFAULT).toContain('150-250 g');
+    expect(DOCTRINA_NUTRICION_DEFAULT).toContain('0,2% del peso');
+  });
+
+  it('el techo del déficit es 700, con fase acelerada solo para quien llega con mucha grasa', () => {
+    expect(DOCTRINA_NUTRICION_DEFAULT).toContain('Techo general 700 kcal');
+    expect(DOCTRINA_NUTRICION_DEFAULT).toMatch(/pérdida acelerada/);
+  });
+
+  it('las dos doctrinas abren mandando preguntar en vez de asumir', () => {
+    expect(DOCTRINA_ENTRENAMIENTO_DEFAULT).toContain('Pregunta antes de asumir');
+    expect(DOCTRINA_NUTRICION_DEFAULT).toContain('Pregunta antes de asumir');
+  });
+
+  it('no repite lo que ya dice el SYSTEM_PROMPT (get_food_library, múltiplos de 0.25)', () => {
+    expect(DOCTRINA_NUTRICION_DEFAULT).not.toContain('get_food_library');
+    expect(DOCTRINA_NUTRICION_DEFAULT).not.toContain('0.25');
+  });
+});

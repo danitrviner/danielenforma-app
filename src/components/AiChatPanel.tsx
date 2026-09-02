@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { AiChat, AiChatMessage, AiProposal, Diet, Mesocycle, MuscleGroup, MUSCLE_LABELS, MUSCLE_ORDER, KnowledgeNote, PeriodizationBlockPayload } from '../types';
+import { AiChat, AiChatMessage, AiProposal, Diet, DossierPatch, Mesocycle, MuscleGroup, MUSCLE_LABELS, MUSCLE_ORDER, KnowledgeNote, PeriodizationBlockPayload } from '../types';
 import {
   getAiChats, saveAiChat, deleteAiChat, getAiProposalsForAthlete, updateAiProposal,
   submitCoachFeedback, createDiet, updateDiet, createMesocycle, bulkUpsertKnowledgeNotes,
@@ -12,6 +12,8 @@ import {
 import { VOLUME_LANDMARKS_DEFAULT, type VolumeLandmark } from '../data/volumeLandmarks';
 import { runAgentTurn, messageText, probarConexionProxy, TurnoCancelado } from '../ai/aiClient';
 import { sanearHistorial } from '../ai/historial';
+import DossierPanel, { dossierKey } from './DossierPanel';
+import { saveDossierJudgement, appendDossierFacts } from '../db/dossier';
 import { OPEN_AI_PANEL_EVENT, OpenAiPanelDetail } from '../ai/events';
 import { exchangeToKcal } from '../utils/nutritionConstants';
 import { Icon, Button, ListRow, Badge, Dialog } from './ui';
@@ -224,6 +226,10 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
     enabled: open && !!activeAthleteEmail,
   });
   const [reviewingId, setReviewingId] = useState<string | null>(null);
+  // El porqué que Dani escribe al aprobar. Opcional a propósito: si fuese
+  // obligatorio, la fricción se pagaría en cada propuesta y acabaría vacío.
+  const [notaAprobacion, setNotaAprobacion] = useState<Record<string, string>>({});
+  const [fichaAbierta, setFichaAbierta] = useState(false);
   const [syncMsg, setSyncMsg] = useState<string | null>(null);
   const [diagMsg, setDiagMsg] = useState<string | null>(null);
   const [diagnosticando, setDiagnosticando] = useState(false);
@@ -450,6 +456,11 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
       } else if (p.kind === 'mesocycle') {
         const created = await createMesocycle(p.payload as Omit<Mesocycle, 'id'>);
         await updateAiProposal(p.id, { status: 'approved', reviewedAt: new Date().toISOString(), resultEntityId: created.id });
+      } else if (p.kind === 'dossier') {
+        // La IA solo propone los campos de juicio; aquí es donde se aplican.
+        await saveDossierJudgement(p.athleteId, p.payload as DossierPatch);
+        await updateAiProposal(p.id, { status: 'approved', reviewedAt: new Date().toISOString(), resultEntityId: p.athleteId });
+        await queryClient.invalidateQueries({ queryKey: dossierKey(p.athleteId) });
       } else if (p.kind === 'periodizationBlock') {
         // Bloque H2.1 — al aprobar se crea el mesociclo Y toda la cadencia de
         // revisiones de golpe; el carril "Revisiones" del cuadro de mando las
@@ -471,6 +482,23 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
         }));
         await updateAiProposal(p.id, { status: 'approved', reviewedAt: new Date().toISOString(), resultEntityId: created.id });
       }
+      // Aprobar es un hecho: se apunta solo en la ficha, con el porqué si Dani
+      // lo ha escrito. Lo que él cambie DESPUÉS a mano no se pregunta aquí
+      // (todavía no ha cambiado nada): se detecta comparando la propuesta con
+      // la entidad viva — ver utils/derivaPropuestas.ts.
+      const nota = (notaAprobacion[p.id] ?? '').trim();
+      if (nota) {
+        await updateAiProposal(p.id, {
+          expediente: { datos: '', huecos: '', preguntas: [], esperado: '', ...p.expediente, notaAlAprobar: nota },
+        });
+      }
+      appendDossierFacts(p.athleteId, [{
+        at: new Date().toISOString(),
+        kind: 'aprobacion',
+        text: nota ? `${p.summary} — ${nota}` : p.summary,
+        proposalId: p.id,
+        chatId: p.chatId,
+      }]).catch(err => console.warn('No se pudo apuntar la aprobación en la ficha:', err));
       queryClient.setQueryData<AiProposal[]>(proposalsKey, prev => prev?.filter(x => x.id !== p.id));
     } catch {
       setError('No se pudo aprobar la propuesta — inténtalo de nuevo.');
@@ -604,6 +632,9 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
       <div className="flex items-center gap-2 px-4 py-3 pt-[calc(0.75rem+var(--safe-top))] border-b border-hairline">
         <Icon name="smart_toy" size="m" filled className="text-accent" />
         <span className="font-sans font-bold text-body-s uppercase tracking-wider text-accent flex-1">Asistente IA</span>
+        {activeAthleteEmail && (
+          <Button variant="ghost" size="s" onClick={() => setFichaAbierta(true)} icon="badge" label={`Ficha de ${activeAthleteName || activeAthleteEmail}`} />
+        )}
         <Button variant="ghost" size="s" onClick={openInstructionsEditor} icon="tune" label="Instrucciones fijas para la IA" />
         <Button variant="ghost" size="s" onClick={probarConexion} loading={diagnosticando} icon="network_check" label="Probar conexión con el asistente" />
         <Button variant="ghost" size="s" onClick={() => vaultInputRef.current?.click()} icon="menu_book" label="Sincronizar bóveda de conocimiento" />
@@ -758,6 +789,35 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                 <div key={p.id} className="bg-surface border border-amber-500/25 rounded-surface p-3 flex flex-col gap-2">
                   <p className="text-label text-white whitespace-pre-wrap">{p.summary}</p>
                   {p.rationale && <p className="text-caption text-ink-2 italic">{p.rationale}</p>}
+                  {/* El expediente es lo que se perdía: en qué se apoyó, qué no
+                      sabía y qué queda por preguntar. Se lee ANTES de aprobar. */}
+                  {p.expediente && (p.expediente.huecos || p.expediente.esperado || p.expediente.preguntas.length > 0) && (
+                    <div className="flex flex-col gap-1 bg-bg border border-hairline rounded-surface p-3">
+                      {p.expediente.esperado && (
+                        <p className="text-caption text-ink-2"><span className="text-ink-4">Espera ver:</span> {p.expediente.esperado}</p>
+                      )}
+                      {p.expediente.huecos && (
+                        <p className="text-caption text-ink-2"><span className="text-ink-4">No sabía:</span> {p.expediente.huecos}</p>
+                      )}
+                      {p.expediente.preguntas.length > 0 && (
+                        <ul className="text-caption text-ink-2 list-disc pl-4">
+                          {p.expediente.preguntas.map((q, i) => <li key={i}>{q}</li>)}
+                        </ul>
+                      )}
+                    </div>
+                  )}
+                  {p.kind === 'dossier' && (
+                    <div className="flex flex-col gap-2 bg-bg border border-hairline rounded-surface p-3">
+                      {Object.entries(p.payload as DossierPatch).map(([campo, valor]) => (
+                        <div key={campo} className="flex flex-col">
+                          <span className="text-caption text-ink-4 uppercase tracking-wide">{campo}</span>
+                          <span className="text-caption text-ink-2 whitespace-pre-wrap">
+                            {Array.isArray(valor) ? valor.map(v => `· ${v}`).join('\n') : String(valor)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                   {meso && (
                     <div className="flex flex-col gap-2 bg-bg border border-hairline rounded-surface p-3">
                       <div className="flex gap-2 flex-wrap text-caption font-mono text-ink-2">
@@ -792,6 +852,12 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                       </ul>
                     </div>
                   )}
+                  <input
+                    value={notaAprobacion[p.id] ?? ''}
+                    onChange={e => setNotaAprobacion(prev => ({ ...prev, [p.id]: e.target.value }))}
+                    placeholder="Por qué la apruebas así (opcional)"
+                    className="w-full bg-field border border-hairline rounded-control px-3 py-2 text-caption text-ink placeholder:text-ink-4 focus:border-accent-line focus:outline-none"
+                  />
                   <div className="flex gap-2 pt-1">
                     <button
                       onClick={() => approveProposal(p)}
@@ -851,6 +917,20 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
             )}
           </div>
         </>
+      )}
+
+      {/* La misma ficha que hay en la pestaña Ficha del ClientHub, aquí porque
+          es donde la IA la usa: se abre, se lee lo que quedó abierto la última
+          vez y se sigue desde ahí sin cambiar de pantalla. */}
+      {fichaAbierta && activeAthleteEmail && (
+        <Dialog
+          open
+          onClose={() => setFichaAbierta(false)}
+          title={`Ficha de ${activeAthleteName || activeAthleteEmail}`}
+          footer={<Button variant="secondary" onClick={() => setFichaAbierta(false)} className="flex-1">Cerrar</Button>}
+        >
+          <DossierPanel key={activeAthleteEmail} athleteEmail={activeAthleteEmail} athleteName={activeAthleteName} />
+        </Dialog>
       )}
 
       {editingInstructions && (

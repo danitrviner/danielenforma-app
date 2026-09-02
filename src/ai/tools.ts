@@ -5,6 +5,8 @@
 // src/utils (la IA narra sobre ellos, no los recalcula).
 import { auth } from '../firebase';
 import { estadoConsentimiento, motivoParaElCoach, aliasDeAtleta } from './consentimientoIA';
+import { getDossier, appendDossierFacts, renderDossier } from '../db/dossier';
+import { calcularDerivas } from '../utils/derivaPropuestas';
 import {
   getAllUserProfiles,
   getCheckIns,
@@ -24,6 +26,7 @@ import {
   getQuestionnairesByCoach,
   saveCoachReport,
   createAiProposal,
+  getAiProposalsForAthlete,
   getKnowledgeNotes,
   isLocalBypassActive,
 } from '../dbService';
@@ -40,7 +43,7 @@ import { weekKey } from '../utils/seriesCorrelation';
 import { resolveQuestions } from '../utils/questionnaireResolve';
 import { SYSTEM_FOODS } from '../nutricion_seed_en_forma';
 import { validateDietPayload, DietUpdatePayload, validateMesocyclePayload, MesocycleProposalPayload } from './validators';
-import { UserProfile, WeightCheckIn, Diet, FoodCategory, Mesocycle, MuscleGroup, MuscleGroupConfig, MUSCLE_LABELS, PeriodizationBlockPayload } from '../types';
+import { UserProfile, WeightCheckIn, Diet, FoodCategory, Mesocycle, MuscleGroup, MuscleGroupConfig, MUSCLE_LABELS, PeriodizationBlockPayload, ProposalExpediente, DossierFact, DossierPatch } from '../types';
 
 // Definiciones que se envían a la API en cada petición. Mantener el orden y el
 // contenido estables: forman parte del prefijo cacheado del prompt.
@@ -182,6 +185,10 @@ export const TOOL_DEFINITIONS = [
           },
         },
         rationale: { type: 'string', description: 'Justificación breve para Dani (no la ve el atleta)' },
+        expediente_datos: { type: 'string', description: 'En qué datos concretos te has apoyado (qué has mirado y qué has visto). Se guarda con la propuesta.' },
+        expediente_huecos: { type: 'string', description: 'Qué NO sabías al proponer esto y has tenido que asumir.' },
+        expediente_preguntas: { type: 'array', items: { type: 'string' }, description: 'Preguntas que quedan abiertas después de esta propuesta.' },
+        expediente_esperado: { type: 'string', description: 'Qué esperas ver, en cuánto tiempo, y qué harías si no pasa.' },
       },
       required: ['athlete_email', 'name', 'budget', 'meals'],
     },
@@ -236,6 +243,10 @@ export const TOOL_DEFINITIONS = [
           },
         },
         rationale: { type: 'string', description: 'Justificación breve para Dani (no la ve el atleta)' },
+        expediente_datos: { type: 'string', description: 'En qué datos concretos te has apoyado (qué has mirado y qué has visto). Se guarda con la propuesta.' },
+        expediente_huecos: { type: 'string', description: 'Qué NO sabías al proponer esto y has tenido que asumir.' },
+        expediente_preguntas: { type: 'array', items: { type: 'string' }, description: 'Preguntas que quedan abiertas después de esta propuesta.' },
+        expediente_esperado: { type: 'string', description: 'Qué esperas ver, en cuánto tiempo, y qué harías si no pasa.' },
       },
       required: ['athlete_email', 'weeks', 'days_per_week', 'objective', 'groups'],
     },
@@ -268,6 +279,10 @@ export const TOOL_DEFINITIONS = [
           },
         },
         rationale: { type: 'string', description: 'Justificación breve para Dani, incluyendo cómo debería progresar el volumen semana a semana (Dani lo configurará por ejercicio después) — no la ve el atleta.' },
+        expediente_datos: { type: 'string', description: 'En qué datos concretos te has apoyado (qué has mirado y qué has visto). Se guarda con la propuesta.' },
+        expediente_huecos: { type: 'string', description: 'Qué NO sabías al proponer esto y has tenido que asumir.' },
+        expediente_preguntas: { type: 'array', items: { type: 'string' }, description: 'Preguntas que quedan abiertas después de esta propuesta.' },
+        expediente_esperado: { type: 'string', description: 'Qué esperas ver, en cuánto tiempo, y qué harías si no pasa.' },
       },
       required: ['athlete_email', 'weeks', 'days_per_week', 'objective', 'groups', 'review_cadence_weeks', 'review_type'],
     },
@@ -283,8 +298,54 @@ export const TOOL_DEFINITIONS = [
         athlete_email: { type: 'string' },
         feedback: { type: 'string', description: 'Texto del feedback dirigido al atleta, en español, tono cercano y profesional' },
         rationale: { type: 'string', description: 'Justificación breve para Dani (no la ve el atleta)' },
+        expediente_datos: { type: 'string', description: 'En qué datos concretos te has apoyado (qué has mirado y qué has visto). Se guarda con la propuesta.' },
+        expediente_huecos: { type: 'string', description: 'Qué NO sabías al proponer esto y has tenido que asumir.' },
+        expediente_preguntas: { type: 'array', items: { type: 'string' }, description: 'Preguntas que quedan abiertas después de esta propuesta.' },
+        expediente_esperado: { type: 'string', description: 'Qué esperas ver, en cuánto tiempo, y qué harías si no pasa.' },
       },
       required: ['check_in_id', 'athlete_email', 'feedback'],
+    },
+  },
+  {
+    name: 'get_athlete_dossier',
+    description:
+      'Lee la FICHA VIVA del atleta: sus objetivos, dónde está hoy, qué esperamos ver en las próximas semanas, el foco de la siguiente revisión, las preguntas que quedaron abiertas y el historial de lo que se ha propuesto, aprobado y cambiado. OBLIGATORIO antes de proponer una dieta, un mesociclo o un bloque: es la memoria entre conversaciones, y sin ella repetirás lo que ya se probó y no funcionó.',
+    input_schema: {
+      type: 'object',
+      properties: { athlete_email: { type: 'string' } },
+      required: ['athlete_email'],
+    },
+  },
+  {
+    name: 'log_dossier_fact',
+    description:
+      'Apunta un HECHO en la ficha viva del atleta. No pide aprobación porque no es criterio: es algo que pasó o que el atleta dijo, y que se perdería al cerrar el chat (ej. "dice que en agosto su gimnasio cierra tres semanas", "probamos hip thrust en máquina y le sigue doliendo la cadera"). Las propuestas se apuntan solas: NO uses esta tool para registrar que has propuesto algo. Para lo que sea interpretación tuya (objetivos, evaluación, foco) usa propose_dossier_update.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        athlete_email: { type: 'string' },
+        kind: { type: 'string', enum: ['cambio', 'observacion'], description: '"cambio" si algo cambió en su situación, "observacion" para lo demás' },
+        text: { type: 'string', description: 'Una frase, concreta y con el dato dentro. Sin interpretación.' },
+      },
+      required: ['athlete_email', 'text'],
+    },
+  },
+  {
+    name: 'propose_dossier_update',
+    description:
+      'PROPONE cambiar los campos de juicio de la ficha viva (objetivos, evaluación, qué esperamos, foco de la siguiente revisión, preguntas abiertas). No se aplica solo: Dani lo aprueba desde el panel, igual que una dieta. Manda solo los campos que cambian, con el texto COMPLETO que debe quedar (sustituye, no se acumula). Úsala al cerrar un análisis o tras aprobar un bloque, no en cada mensaje.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        athlete_email: { type: 'string' },
+        objetivos: { type: 'string', description: 'Los objetivos del atleta, con sus palabras' },
+        evaluacion: { type: 'string', description: 'Dónde está hoy: fuerza, composición, adherencia, contexto' },
+        esperado: { type: 'string', description: 'Qué esperamos ver en las próximas semanas, con cifras si las hay' },
+        foco: { type: 'string', description: 'En qué hay que fijarse en la siguiente revisión' },
+        preguntas_abiertas: { type: 'array', items: { type: 'string' }, description: 'Lo que falta saber, y a quién preguntárselo' },
+        rationale: { type: 'string', description: 'Por qué cambia, para Dani' },
+      },
+      required: ['athlete_email'],
     },
   },
 ];
@@ -307,6 +368,9 @@ export function toolStatusLabel(name: string, input: Record<string, unknown>): s
     case 'get_exercise_library': return 'Consultando la librería de ejercicios…';
     case 'propose_mesocycle': return `Preparando propuesta de mesociclo${who}…`;
     case 'propose_periodization_block': return `Preparando propuesta de bloque completo${who}…`;
+    case 'get_athlete_dossier': return `Leyendo la ficha${who}…`;
+    case 'log_dossier_fact': return `Apuntando en la ficha${who}…`;
+    case 'propose_dossier_update': return `Preparando cambios de la ficha${who}…`;
     default: return `Ejecutando ${name}…`;
   }
 }
@@ -680,8 +744,107 @@ async function generateReportDraft(email: string, periodDaysInput: number, intro
   });
 }
 
+/* ── Ficha viva ────────────────────────────────────────────────────────────
+   Los HECHOS los escribe la IA sola; los JUICIOS (objetivos, evaluación, foco)
+   solo cambian con el OK de Dani, vía propose_dossier_update. Proponer algo es
+   un hecho, así que se apunta aquí y no hace falta que el modelo lo recuerde. */
+
+async function registrarPropuesta(email: string, proposalId: string, chatId: string, summary: string): Promise<void> {
+  try {
+    await appendDossierFacts(email, [{ at: new Date().toISOString(), kind: 'propuesta', text: summary, proposalId, chatId }]);
+  } catch (err) {
+    // La ficha es memoria, no el producto: si falla, la propuesta ya existe y
+    // tumbar la tool por esto sería peor que perder una línea de historial.
+    console.warn('No se pudo apuntar la propuesta en la ficha del atleta:', err);
+  }
+}
+
+/** Lee del input de la tool los cuatro campos del expediente, si vienen. */
+function leerExpediente(input: Record<string, unknown>): ProposalExpediente | undefined {
+  const datos = typeof input.expediente_datos === 'string' ? input.expediente_datos.trim() : '';
+  const huecos = typeof input.expediente_huecos === 'string' ? input.expediente_huecos.trim() : '';
+  const esperado = typeof input.expediente_esperado === 'string' ? input.expediente_esperado.trim() : '';
+  const preguntas = Array.isArray(input.expediente_preguntas)
+    ? input.expediente_preguntas.filter((x): x is string => typeof x === 'string')
+    : [];
+  if (!datos && !huecos && !esperado && preguntas.length === 0) return undefined;
+  return { datos, huecos, esperado, preguntas };
+}
+
+async function leerFicha(email: string): Promise<string> {
+  const [ficha, propuestas, mesos, dietas] = await Promise.all([
+    getDossier(email),
+    getAiProposalsForAthlete(email),
+    getMesocycles(email),
+    getDietsForAthlete(email),
+  ]);
+  const texto = renderDossier(ficha);
+
+  // Lo que Dani tocó DESPUÉS de aprobar. Es la señal más honesta que hay sobre
+  // su criterio: no lo que dijo que quería, sino lo que corrigió a mano.
+  const derivas = calcularDerivas(propuestas, mesos, dietas)
+    .slice(0, 6)
+    .map(d => `${d.fecha.slice(0, 10)} · ${d.que}: ${d.cambios.join(' · ')}`);
+
+  const notas = propuestas
+    .filter(p => p.expediente?.notaAlAprobar?.trim())
+    .slice(0, 6)
+    .map(p => `${(p.reviewedAt ?? p.createdAt).slice(0, 10)} · ${p.summary}: ${p.expediente!.notaAlAprobar}`);
+
+  if (!texto && derivas.length === 0 && notas.length === 0) {
+    return toResult({
+      ficha: null,
+      note: 'Este atleta todavía no tiene ficha. Si de esta conversación sale algo que deba sobrevivirla, apúntalo con log_dossier_fact o propónmelo con propose_dossier_update.',
+    });
+  }
+
+  return toResult({
+    ficha: texto || null,
+    cambiosQueHizoDani: derivas.length ? derivas : undefined,
+    porQueLosHizo: notas.length ? notas : undefined,
+    actualizada: ficha.updatedAt || null,
+    note: derivas.length
+      ? 'cambiosQueHizoDani son retoques suyos POSTERIORES a aprobar tu propuesta: trátalos como su criterio, no como un error a corregir.'
+      : undefined,
+  });
+}
+
+async function apuntarHecho(email: string, kind: string, text: string, chatId: string): Promise<string> {
+  const tipo: DossierFact['kind'] = kind === 'cambio' ? 'cambio' : 'observacion';
+  await appendDossierFacts(email, [{ at: new Date().toISOString(), kind: tipo, text: text.trim(), chatId }]);
+  return toResult({ apuntado: true, note: 'Queda en la ficha del atleta, visible para Dani en el ClientHub.' });
+}
+
+async function proposeDossierUpdate(
+  athleteEmail: string, patch: DossierPatch, rationale: string, chatId: string,
+): Promise<string> {
+  const campos = Object.keys(patch);
+  if (campos.length === 0) return toResult({ error: 'No has mandado ningún campo que cambiar' });
+  const etiquetas: Record<string, string> = {
+    objetivos: 'objetivos', evaluacion: 'evaluación', esperado: 'qué esperamos',
+    foco: 'foco de la revisión', preguntasAbiertas: 'preguntas abiertas',
+  };
+  const summary = `Ficha del atleta: ${campos.map(c => etiquetas[c] ?? c).join(', ')}`;
+  const proposal = await createAiProposal({
+    athleteId: athleteEmail,
+    kind: 'dossier',
+    status: 'proposed',
+    chatId,
+    summary,
+    rationale: rationale || '',
+    payload: patch,
+    createdAt: new Date().toISOString(),
+  });
+  return toResult({
+    proposalCreated: true,
+    proposalId: proposal.id,
+    note: 'Propuesta de ficha creada. No cambia nada hasta que Dani la apruebe en el panel.',
+  });
+}
+
 async function draftCheckinFeedback(
   checkInId: string, athleteEmail: string, feedback: string, rationale: string, chatId: string,
+  expediente?: ProposalExpediente,
 ): Promise<string> {
   if (!checkInId || !athleteEmail || !feedback.trim()) {
     return toResult({ error: 'Faltan check_in_id, athlete_email o feedback' });
@@ -696,8 +859,10 @@ async function draftCheckinFeedback(
     rationale: rationale || '',
     payload: { checkInId, feedback: feedback.trim() },
     baseEntityId: checkInId,
+    ...(expediente ? { expediente } : {}),
     createdAt: new Date().toISOString(),
   });
+  await registrarPropuesta(athleteEmail, proposal.id, chatId, summary);
   return toResult({
     proposalCreated: true,
     proposalId: proposal.id,
@@ -720,6 +885,7 @@ async function proposeDietUpdate(
   meals: DietUpdatePayload['meals'],
   rationale: string,
   chatId: string,
+  expediente?: ProposalExpediente,
 ): Promise<string> {
   const payload: DietUpdatePayload = { budget, meals };
   const issues = validateDietPayload(payload);
@@ -760,8 +926,10 @@ async function proposeDietUpdate(
     rationale: rationale || '',
     payload: dietPayload,
     baseEntityId: baseDietId,
+    ...(expediente ? { expediente } : {}),
     createdAt: new Date().toISOString(),
   });
+  await registrarPropuesta(athleteEmail, proposal.id, chatId, summary);
   return toResult({
     proposalCreated: true,
     proposalId: proposal.id,
@@ -839,6 +1007,7 @@ async function proposeMesocycle(
   startDate: string | undefined,
   rationale: string,
   chatId: string,
+  expediente?: ProposalExpediente,
 ): Promise<string> {
   const issues = validateMesocyclePayload({ weeks, daysPerWeek, objective, groups: groupsInput });
   if (issues.length > 0) {
@@ -887,8 +1056,10 @@ async function proposeMesocycle(
     summary,
     rationale: rationale || '',
     payload,
+    ...(expediente ? { expediente } : {}),
     createdAt: new Date().toISOString(),
   });
+  await registrarPropuesta(athleteEmail, proposal.id, chatId, summary);
   return toResult({
     proposalCreated: true,
     proposalId: proposal.id,
@@ -914,6 +1085,7 @@ async function proposePeriodizationBlock(
   reviewType: 'revision' | 'cuestionario' | 'foto',
   rationale: string,
   chatId: string,
+  expediente?: ProposalExpediente,
 ): Promise<string> {
   const issues = validateMesocyclePayload({ weeks, daysPerWeek, objective, groups: groupsInput });
   if (deloadWeek !== undefined && (deloadWeek < 1 || deloadWeek > weeks)) {
@@ -968,8 +1140,10 @@ async function proposePeriodizationBlock(
     summary,
     rationale: rationale || '',
     payload,
+    ...(expediente ? { expediente } : {}),
     createdAt: new Date().toISOString(),
   });
+  await registrarPropuesta(athleteEmail, proposal.id, chatId, summary);
   return toResult({
     proposalCreated: true,
     proposalId: proposal.id,
@@ -1050,7 +1224,7 @@ export async function executeTool(
           return { content: 'Faltan check_in_id, athlete_email o feedback', isError: true };
         }
         return {
-          content: await draftCheckinFeedback(input.check_in_id, email, input.feedback, typeof input.rationale === 'string' ? input.rationale : '', chatId),
+          content: await draftCheckinFeedback(input.check_in_id, email, input.feedback, typeof input.rationale === 'string' ? input.rationale : '', chatId, leerExpediente(input)),
           isError: false,
         };
       case 'get_food_library':
@@ -1070,6 +1244,7 @@ export async function executeTool(
           input.meals as DietUpdatePayload['meals'],
           typeof input.rationale === 'string' ? input.rationale : '',
           chatId,
+          leerExpediente(input),
         );
         const parsed = JSON.parse(content) as { valid?: boolean };
         return { content, isError: parsed.valid === false };
@@ -1092,6 +1267,7 @@ export async function executeTool(
           typeof input.start_date === 'string' ? input.start_date : undefined,
           typeof input.rationale === 'string' ? input.rationale : '',
           chatId,
+          leerExpediente(input),
         );
         const parsed = JSON.parse(content) as { valid?: boolean };
         return { content, isError: parsed.valid === false };
@@ -1112,9 +1288,35 @@ export async function executeTool(
           input.review_type as 'revision' | 'cuestionario' | 'foto',
           typeof input.rationale === 'string' ? input.rationale : '',
           chatId,
+          leerExpediente(input),
         );
         const parsed = JSON.parse(content) as { valid?: boolean };
         return { content, isError: parsed.valid === false };
+      }
+      case 'get_athlete_dossier':
+        if (!email) return { content: 'Falta athlete_email', isError: true };
+        return { content: await leerFicha(email), isError: false };
+      case 'log_dossier_fact': {
+        if (!email || typeof input.text !== 'string' || !input.text.trim()) {
+          return { content: 'Faltan athlete_email o text', isError: true };
+        }
+        const kind = typeof input.kind === 'string' ? input.kind : 'observacion';
+        return { content: await apuntarHecho(email, kind, input.text, chatId), isError: false };
+      }
+      case 'propose_dossier_update': {
+        if (!email) return { content: 'Falta athlete_email', isError: true };
+        const patch: DossierPatch = {};
+        if (typeof input.objetivos === 'string') patch.objetivos = input.objetivos.trim();
+        if (typeof input.evaluacion === 'string') patch.evaluacion = input.evaluacion.trim();
+        if (typeof input.esperado === 'string') patch.esperado = input.esperado.trim();
+        if (typeof input.foco === 'string') patch.foco = input.foco.trim();
+        if (Array.isArray(input.preguntas_abiertas)) {
+          patch.preguntasAbiertas = input.preguntas_abiertas.filter((x): x is string => typeof x === 'string');
+        }
+        return {
+          content: await proposeDossierUpdate(email, patch, typeof input.rationale === 'string' ? input.rationale : '', chatId),
+          isError: false,
+        };
       }
       default:
         return { content: `Tool desconocida: ${name}`, isError: true };

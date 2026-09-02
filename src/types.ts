@@ -1841,7 +1841,56 @@ export interface AiChat {
   messages: AiChatMessage[];
 }
 
-export type AiProposalKind = 'diet' | 'mesocycle' | 'checkinFeedback' | 'periodizationBlock';
+// ── Ficha viva del atleta ───────────────────────────────────────────────────
+// Vive en el MISMO documento que la nota de estado del ClientHub
+// (`athleteStatus/{email}`), que ya existía como texto libre del coach: sin
+// colección nueva, sin reglas nuevas que desplegar, y la nota de Dani se queda
+// donde estaba.
+//
+// La frontera que importa es quién escribe cada parte:
+//   · `hechos` es lo que PASÓ (se propuso esto, se aprobó, después cambió).
+//     La IA los añade sola, sin pedir permiso: son datos, no criterio.
+//   · lo demás son JUICIOS sobre el atleta. La IA solo puede PROPONERLOS
+//     (AiProposal de kind 'dossier') y Dani los aprueba, igual que una dieta.
+// Esa línea es la que evita las dos formas de fallar: una ficha que se llena
+// de ruido, y una ficha que nadie mantiene porque cada línea cuesta un clic.
+export type DossierFactKind = 'propuesta' | 'aprobacion' | 'cambio' | 'observacion';
+
+export interface DossierFact {
+  at: string;              // ISO
+  kind: DossierFactKind;
+  text: string;
+  proposalId?: string;
+  chatId?: string;
+}
+
+export interface AthleteDossier {
+  note: string;                 // nota libre del coach — la de siempre
+  objetivos: string;            // los suyos, con sus palabras
+  evaluacion: string;           // dónde está hoy
+  esperado: string;             // qué esperamos ver en las próximas semanas
+  foco: string;                 // foco de la siguiente revisión
+  preguntasAbiertas: string[];  // lo que falta saber, y a quién preguntárselo
+  hechos: DossierFact[];        // append-only, lo escribe la IA
+  updatedAt: string;
+}
+
+/** Los campos de juicio: los únicos que necesitan el OK de Dani. */
+export type DossierJudgement = Pick<AthleteDossier, 'objetivos' | 'evaluacion' | 'esperado' | 'foco' | 'preguntasAbiertas'>;
+export type DossierPatch = Partial<DossierJudgement>;
+
+// El contexto con el que la IA propuso algo. Se congela con la propuesta: la
+// ficha viva guarda la foto de AHORA, y esto guarda en qué se basaba entonces
+// — que es lo que se perdía al cerrar el chat.
+export interface ProposalExpediente {
+  datos: string;         // en qué datos concretos se apoyó
+  huecos: string;        // qué NO sabía al proponer
+  preguntas: string[];   // lo que queda por preguntar
+  esperado: string;      // qué espera ver, en cuánto tiempo, y qué haría si no pasa
+  notaAlAprobar?: string; // el porqué que escribe Dani al aprobar (opcional)
+}
+
+export type AiProposalKind = 'diet' | 'mesocycle' | 'checkinFeedback' | 'periodizationBlock' | 'dossier';
 export type AiProposalStatus = 'proposed' | 'approved' | 'rejected';
 
 // Bloque H2.1 — "la IA propone el bloque entero periodizado". Alcance real:
@@ -1863,7 +1912,8 @@ export type AiProposalPayload =
   | Omit<Diet, 'id'>
   | Omit<Mesocycle, 'id'>
   | { checkInId: string; feedback: string }
-  | PeriodizationBlockPayload;
+  | PeriodizationBlockPayload
+  | DossierPatch;
 
 export interface AiProposal {
   id: string;
@@ -1874,6 +1924,7 @@ export interface AiProposal {
   summary: string;         // una línea en español, para la tarjeta
   rationale: string;       // justificación de la IA, expandible
   payload: AiProposalPayload;
+  expediente?: ProposalExpediente; // en qué se basó y qué dejó sin saber
   baseEntityId?: string;   // dietId/mesocycleId que modifica (vs. nuevo)
   resultEntityId?: string; // id de la entidad real creada al aprobar
   createdAt: string;       // ISO
