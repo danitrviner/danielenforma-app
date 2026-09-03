@@ -15,6 +15,7 @@ import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getAllUserProfiles, getCrmContactos } from '../../../dbService';
 import type { UserProfile } from '../../../types';
+import { partirPorArchivado } from '../lib/archivado';
 import type { Cliente, CrmContacto, EstadoCrm } from '../types';
 
 function perfilACliente(p: UserProfile): Cliente {
@@ -30,6 +31,11 @@ function perfilACliente(p: UserProfile): Cliente {
     // Un perfil sin `estadoCrm` es un cliente que ya existía antes del CRM:
     // se trata como activo en vez de forzar un backfill.
     estadoCrm: p.estadoCrm ?? 'activo',
+    // Un perfil anonimizado (cuenta borrada, `borrado_xxxx@anonimo.local`) se
+    // trata como archivado: se conserva por el histórico del negocio, pero no
+    // es alguien con quien se pueda trabajar y no debe ensuciar ninguna lista.
+    archivado: p.archivadoCrm === true || p.anonimizado === true,
+    anonimizado: p.anonimizado === true,
     origen: p.origen,
     fechaBaja: p.fechaBaja,
     motivoBaja: p.motivoBaja,
@@ -52,6 +58,7 @@ function contactoACliente(c: CrmContacto): Cliente {
     telefono: c.telefono,
     estadoCrm: c.estadoCrm,
     origen: c.origen,
+    archivado: c.archivado === true,
     fechaBaja: c.fechaBaja,
     motivoBaja: c.motivoBaja,
     motivoBajaDetalle: c.motivoBajaDetalle,
@@ -60,9 +67,13 @@ function contactoACliente(c: CrmContacto): Cliente {
 }
 
 export interface UseClientesResult {
+  /** Los que se trabajan: sin archivados (salvo que se pidan expresamente). */
   clientes: Cliente[];
+  /** Solo los archivados — para el filtro «Archivados» y su contador. */
+  archivados: Cliente[];
   isPending: boolean;
   error: unknown;
+  /** Cuenta por estado SOBRE `clientes`: un archivado no suma en ningún lote. */
   contadores: Record<EstadoCrm, number>;
 }
 
@@ -98,6 +109,9 @@ export function useClientes(): UseClientesResult {
           // importado, no el perfil que se creó después al registrarse — el
           // perfil manda solo si de verdad ya tiene uno.
           origen: enlazado.origen ?? c.origen,
+          // Archivado si lo está por cualquiera de los dos lados: la fila es
+          // una sola, y basta con que se haya archivado desde uno.
+          archivado: enlazado.archivado || c.archivado === true,
         });
       } else {
         sueltos.push(contactoACliente(c));
@@ -108,25 +122,34 @@ export function useClientes(): UseClientesResult {
       .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
   }, [perfilesQ.data, contactosQ.data]);
 
+  // El archivado se parte AQUÍ, en el único sitio por el que pasa toda la UI
+  // del CRM, y no en cada pantalla: así ninguna lista, contador o selector
+  // nuevo se olvida de excluirlos y vuelve a enseñar a quien se quitó de en
+  // medio. Quien los necesite pide `archivados` a propósito.
+  const { visibles, archivados } = useMemo(() => partirPorArchivado(clientes), [clientes]);
+
   const contadores = useMemo(() => {
     const acc: Record<EstadoCrm, number> = { lead: 0, llamada_agendada: 0, activo: 0, pausado: 0, baja: 0 };
-    for (const c of clientes) acc[c.estadoCrm] += 1;
+    for (const c of visibles) acc[c.estadoCrm] += 1;
     return acc;
-  }, [clientes]);
+  }, [visibles]);
 
   return {
-    clientes,
+    clientes: visibles,
+    archivados,
     isPending: perfilesQ.isPending || contactosQ.isPending,
     error: perfilesQ.error ?? contactosQ.error,
     contadores,
   };
 }
 
+// La ficha SÍ busca entre los archivados: si no, archivar a alguien y pulsar
+// su fila dejaba un «Cliente no encontrado» del que no se podía desarchivar.
 export function useCliente(id?: string): { cliente: Cliente | null; isPending: boolean } {
-  const { clientes, isPending } = useClientes();
+  const { clientes, archivados, isPending } = useClientes();
   const cliente = useMemo(
-    () => (id ? clientes.find(c => c.id === id) ?? null : null),
-    [clientes, id]
+    () => (id ? [...clientes, ...archivados].find(c => c.id === id) ?? null : null),
+    [clientes, archivados, id]
   );
   return { cliente, isPending };
 }

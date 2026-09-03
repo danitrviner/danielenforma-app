@@ -19,6 +19,13 @@ export interface NuevoServicio {
   generarPago: boolean;
   /** 1 (o ausente) = un pago único. >1 = fraccionado en N cuotas mensuales. */
   cuotas?: number;
+  /**
+   * Día de emisión del primer cobro. Por defecto el inicio del servicio, no
+   * hoy: un plan contratado hoy que arranca dentro de dos semanas se cobra
+   * cuando arranca, no nace ya «pendiente desde hoy» (y en rojo por retraso a
+   * los ocho días).
+   */
+  primerCobro?: string;
 }
 
 export function useServicios() {
@@ -68,7 +75,7 @@ export function useCrearServicio() {
     mutationFn: async ({ cliente, datos, coachEmail }: {
       cliente: Cliente; datos: NuevoServicio; coachEmail: string;
     }) => {
-      const { generarPago, cuotas, ...resto } = datos;
+      const { generarPago, cuotas, primerCobro, ...resto } = datos;
       return createCrmServicioConPago(
         {
           ...resto,
@@ -76,7 +83,7 @@ export function useCrearServicio() {
           clientNombre: cliente.nombre,
           createdBy: coachEmail,
         },
-        { generarPago, cuotas }
+        { generarPago, cuotas, primerCobro }
       );
     },
     onSuccess: (_res, vars) => {

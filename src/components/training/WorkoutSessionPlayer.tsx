@@ -8,7 +8,8 @@ import Coachmark from '../Coachmark';
 import ExerciseBestSetCard from '../ExerciseBestSetCard';
 import { exerciseSessionHistory, ExerciseBestProgress } from '../../utils/athleteMetrics';
 import { allTimeBestBefore } from '../../utils/trainingReport';
-import { startRestTimer, stopRestTimer } from '../../services/restTimer';
+import { publicarEstado, cerrarSesionEnVivo, leerToquesDelBloqueo, EstadoEnVivo } from '../../services/sesionEnVivo';
+import { cargarDescanso, guardarDescanso, borrarDescanso, DescansoEnCurso } from '../../utils/sesionEnCurso';
 import { haptics } from '../../services/haptics';
 import { formatDate } from '../../utils/trainingWeek';
 import { useEstable } from '../../hooks/useEstable';
@@ -86,7 +87,13 @@ export default function WorkoutSessionPlayer({
   // (`endsAtMs`) y lo que falta se calcula contra `Date.now()`: se congele lo
   // que se congele, al volver el número es el correcto. Es el mismo criterio
   // que ya usaba la sesión de cardio (utils/cardioSession.ts).
-  const [restTimer, setRestTimer] = useState<{ totalSeconds: number; endsAtMs: number; exerciseName: string } | null>(null);
+  //
+  // 03-09 (handoff de notificaciones): el instante de fin además se PERSISTE
+  // y se publica a la actividad en vivo, así que sobrevive a que el sistema
+  // mate la app entre series — no solo a que la congele.
+  const [restTimer, setRestTimer] = useState<DescansoEnCurso | null>(
+    () => cargarDescanso(profile.email, activeAssignment.id),
+  );
   const [nowMs, setNowMs] = useState(() => Date.now());
 
   useEffect(() => {
@@ -109,14 +116,19 @@ export default function WorkoutSessionPlayer({
     };
   }, [restTimer]);
 
-  const restSecondsLeft = restTimer ? Math.max(0, Math.ceil((restTimer.endsAtMs - nowMs) / 1000)) : null;
+  const restSecondsLeft = restTimer ? Math.max(0, Math.ceil((restTimer.restEndsAt - nowMs) / 1000)) : null;
 
+  // Al llegar a 0: haptic de AVISO (doble golpe corto — categoría propia del
+  // handoff maestro, no es selección ni éxito).
+  //
+  // Lo que YA NO se hace: cerrar el cronómetro a los 3 s. La actividad en
+  // vivo «no desaparece nunca sola» (§3.2); se queda en «a por la serie N»
+  // contando hacia arriba hasta que el atleta marque la siguiente serie o
+  // pasen los 20 min de abandono. Cerrarla aquí era lo que dejaba al atleta
+  // sin nada en la pantalla de bloqueo justo cuando iba a apuntar.
   useEffect(() => {
     if (restSecondsLeft !== 0) return;
-    navigator.vibrate?.([150, 80, 150]);
-    stopRestTimer().catch(() => {});
-    const id = setTimeout(() => setRestTimer(null), 3000);
-    return () => clearTimeout(id);
+    void haptics.aviso();
   }, [restSecondsLeft]);
 
   // Igual que antes: se calcula una sola vez para toda la sesión, no dentro
@@ -133,11 +145,15 @@ export default function WorkoutSessionPlayer({
     updateSet(exIdx, sIdx, 'done', markingDone);
     if (markingDone) onMarkActionDone();
     if (markingDone && we.restSeconds) {
-      const nombre = ex?.name || 'tu ejercicio';
-      setRestTimer({ totalSeconds: we.restSeconds, endsAtMs: Date.now() + we.restSeconds * 1000, exerciseName: nombre });
-      startRestTimer(nombre, we.restSeconds).catch(() => {});
+      setRestTimer({
+        restTotalSeconds: we.restSeconds,
+        restEndsAt: Date.now() + we.restSeconds * 1000,
+        exerciseName: ex?.name || 'tu ejercicio',
+        exIdx, setIdx: sIdx,
+      });
     } else if (!markingDone) {
-      stopRestTimer().catch(() => {});
+      // Desmarcar es deshacer: el descanso que arrancó esa serie sobra.
+      setRestTimer(null);
     }
   };
 
@@ -145,13 +161,109 @@ export default function WorkoutSessionPlayer({
     if (!restTimer) return;
     // Si el descanso ya había llegado a 0, los segundos se suman desde AHORA,
     // no desde un fin que ya quedó atrás.
-    const endsAtMs = Math.max(Date.now(), restTimer.endsAtMs) + s * 1000;
-    setRestTimer({ ...restTimer, totalSeconds: restTimer.totalSeconds + s, endsAtMs });
-    // Y se reprograma el aviso nativo: si no, la notificación seguiría sonando
-    // a la hora vieja, que es justo cuando el móvil está bloqueado y el atleta
-    // depende de ella.
-    startRestTimer(restTimer.exerciseName, Math.round((endsAtMs - Date.now()) / 1000)).catch(() => {});
+    setRestTimer({
+      ...restTimer,
+      restTotalSeconds: restTimer.restTotalSeconds + s,
+      restEndsAt: Math.max(Date.now(), restTimer.restEndsAt) + s * 1000,
+    });
   };
+
+  /* ─── Actividad en vivo ────────────────────────────────────────────────
+     Una sola vía de salida: cualquier cambio de `restTimer` o de la serie en
+     curso re-publica el estado entero, y ahí dentro se (re)programa el aviso
+     del sistema. Antes cada handler llamaba a `startRestTimer` por su cuenta
+     y era cuestión de tiempo que uno se olvidara — `+30 S` reprogramaba el
+     aviso pero cambiar de ejercicio no, así que la notificación seguía
+     diciendo el ejercicio anterior.
+
+     `restEndsAt: 0` (sin descanso) NO cierra la actividad: se queda viva
+     mostrando la serie en curso durante toda la sesión (§3 del handoff). */
+
+  /** La serie que toca: la primera sin marcar del ejercicio que se está
+   *  viendo. Es lo que se apunta desde la pantalla de bloqueo. */
+  const serieEnCurso = useMemo(() => {
+    const exIdx = restTimer ? restTimer.exIdx : pageIdx;
+    const exSets = playerSets[exIdx] || [];
+    const pendiente = exSets.findIndex(x => !x.done);
+    // Si el descanso viene de marcar una serie, la que toca es la siguiente.
+    const setIdx = restTimer
+      ? Math.min(restTimer.setIdx + 1, Math.max(exSets.length - 1, 0))
+      : (pendiente === -1 ? Math.max(exSets.length - 1, 0) : pendiente);
+    return { exIdx, setIdx, exSets };
+  }, [restTimer, pageIdx, playerSets]);
+
+  const estadoEnVivo = useMemo((): EstadoEnVivo | null => {
+    const { exIdx, setIdx, exSets } = serieEnCurso;
+    const we = orderedExercises[exIdx];
+    if (!we) return null;
+    const fila = exSets[setIdx];
+    const prev = prevEntries.find(e => e.exerciseId === we.exerciseId);
+    // Última vez: la mejor referencia que existe de verdad. Si no hay
+    // histórico, se dejan sin definir — el handoff prohíbe rellenar la línea
+    // «arranca desde lo de la última vez» con nada inventado.
+    const ultima = prev?.sets?.[setIdx] ?? prev?.sets?.[prev.sets.length - 1];
+    return {
+      assignmentId: activeAssignment.id,
+      exerciseName: getExercise(we.exerciseId)?.name || 'tu ejercicio',
+      exIdx,
+      setIdx,
+      setNumber: setIdx + 1,
+      setTotal: exSets.length,
+      restEndsAt: restTimer?.restEndsAt ?? 0,
+      restTotalSeconds: restTimer?.restTotalSeconds ?? we.restSeconds ?? 0,
+      reps: Number(fila?.repsDone) || Number(ultima?.repsDone) || 0,
+      weight: Number(fila?.weight) || Number(ultima?.weight) || 0,
+      // 'fallo' no es un número: en el bloqueo se muestra como 0 y el valor
+      // literal se conserva intacto en la tabla de la app.
+      rir: Number(fila?.rir) || 0,
+      lastReps: ultima?.repsDone == null ? undefined : Number(ultima.repsDone),
+      lastWeight: ultima?.weight == null ? undefined : Number(ultima.weight),
+    };
+  }, [serieEnCurso, orderedExercises, prevEntries, activeAssignment.id, restTimer, getExercise]);
+
+  useEffect(() => {
+    if (!estadoEnVivo) return;
+    void publicarEstado(estadoEnVivo);
+  }, [estadoEnVivo]);
+
+  // Persistencia del descanso — sobrevive a que el sistema mate la app entre
+  // series, que en un gimnasio con 40 min de sesión es el caso normal.
+  useEffect(() => {
+    if (restTimer) guardarDescanso(profile.email, activeAssignment.id, restTimer);
+    else borrarDescanso(profile.email, activeAssignment.id);
+  }, [restTimer, profile.email, activeAssignment.id]);
+
+  // La actividad y los avisos mueren con el player, no con el descanso.
+  useEffect(() => () => { void cerrarSesionEnVivo(); }, []);
+
+  /* ─── Buzón: lo apuntado desde la pantalla de bloqueo ──────────────────
+     Los botones del bloqueo corren en otro proceso y dejan sus toques en el
+     almacén compartido. Al volver a primer plano se aplican TAL CUAL encima
+     del estado local: lo escrito desde el bloqueo es la verdad (§3.4), y la
+     app no lo pisa con lo que tuviera en memoria. */
+  const aplicarToques = useEstable(async () => {
+    const toques = await leerToquesDelBloqueo();
+    for (const t of toques) {
+      if (t.reps != null) updateSet(t.exIdx, t.setIdx, 'repsDone', String(t.reps));
+      if (t.weight != null) updateSet(t.exIdx, t.setIdx, 'weight', String(t.weight));
+      if (t.rir != null) updateSet(t.exIdx, t.setIdx, 'rir', String(t.rir));
+      if (t.done) updateSet(t.exIdx, t.setIdx, 'done', true);
+      if (t.restEndsAt != null) {
+        setRestTimer(r => (r ? { ...r, restEndsAt: t.restEndsAt as number } : r));
+      }
+    }
+  });
+
+  useEffect(() => {
+    void aplicarToques();
+    const alVolver = () => { if (document.visibilityState === 'visible') void aplicarToques(); };
+    document.addEventListener('visibilitychange', alVolver);
+    window.addEventListener('focus', alVolver);
+    return () => {
+      document.removeEventListener('visibilitychange', alVolver);
+      window.removeEventListener('focus', alVolver);
+    };
+  }, [aplicarToques]);
 
   // ExerciseCard va en React.memo (ver ExerciseCard.tsx): antes cada página
   // pasaba callbacks nuevos en cada render («() => updateSet(exIdx, ...)»),
@@ -170,7 +282,11 @@ export default function WorkoutSessionPlayer({
   const addSetRowStable = useEstable(addSetRow);
   const updateExerciseNoteStable = useEstable(updateExerciseNote);
   const handleMarkDoneStable = useEstable(handleMarkDone);
-  const onSkipRestStable = useEstable(() => { setRestTimer(null); stopRestTimer().catch(() => {}); });
+  // `EMPEZAR YA` / `SIGUIENTE`: el descanso termina AHORA, no desaparece.
+  // La actividad sigue viva en «a por la serie N» (§3.2).
+  const onSkipRestStable = useEstable(() => {
+    setRestTimer(r => (r ? { ...r, restEndsAt: Date.now() } : r));
+  });
   const addRestSecondsStable = useEstable(addRestSeconds);
 
   // Tabla de callbacks por índice — identidad estable por ejercicio. Depende
@@ -233,8 +349,8 @@ export default function WorkoutSessionPlayer({
         onAddRow={cb.onAddRow}
         noteValue={exerciseNoteInputs[exIdx] || ''}
         onNoteChange={cb.onNoteChange}
-        restTimer={pageIdx === exIdx && restTimer && restSecondsLeft !== null
-          ? { totalSeconds: restTimer.totalSeconds, secondsLeft: restSecondsLeft }
+        restTimer={pageIdx === exIdx && restTimer && restSecondsLeft
+          ? { totalSeconds: restTimer.restTotalSeconds, secondsLeft: restSecondsLeft }
           : null}
         onSkipRest={onSkipRestStable}
         onAddRestSeconds={addRestSecondsStable}

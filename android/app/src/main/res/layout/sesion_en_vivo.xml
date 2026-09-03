@@ -1,0 +1,251 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Tarjeta de la sesión en vivo · Android.
+
+  Es un layout PROPIO (RemoteViews), no una notificación estándar. Una
+  notificación normal solo admite 3 acciones y ninguna forma de enseñar tres
+  celdas con su valor: aquí caben los 6 steppers, HECHA y +30 S.
+
+  Solo se usan vistas que RemoteViews acepta (LinearLayout, TextView, Button,
+  Chronometer, ProgressBar). Cualquier otra revienta en tiempo de ejecución
+  con "couldn't inflate view", no al compilar.
+
+  El Chronometer es EL ARREGLO: se le da el instante de fin y lo cuenta el
+  sistema, con la app congelada y la pantalla bloqueada. La versión anterior
+  usaba un CountDownTimer que renotificaba cada segundo — con la app en
+  segundo plano Android lo estrangula y la cifra se quedaba clavada.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <!-- Cabecera -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:id="@+id/ef_logo"
+            android:layout_width="26dp"
+            android:layout_height="26dp"
+            android:background="@drawable/ef_logo"
+            android:gravity="center"
+            android:text="EF"
+            android:textColor="#0B0B0B"
+            android:textSize="11sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/ef_titulo"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="10dp"
+            android:letterSpacing="0.1"
+            android:textColor="#73FFFFFF"
+            android:textSize="10sp"
+            android:textStyle="bold"
+            android:fontFamily="monospace"
+            android:text="EN FORMA · DESCANSO" />
+
+        <TextView
+            android:id="@+id/ef_guardado"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#FFC72C"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:fontFamily="monospace"
+            android:visibility="gone"
+            android:text="GUARDADO" />
+    </LinearLayout>
+
+    <!-- Cuenta atrás dominante + ejercicio -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="bottom"
+        android:layout_marginTop="10dp">
+
+        <Chronometer
+            android:id="@+id/ef_crono"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#FFC72C"
+            android:textSize="42sp"
+            android:textStyle="bold"
+            android:fontFamily="monospace" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="12dp"
+            android:layout_marginBottom="6dp"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/ef_ejercicio"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:textColor="#F5F5F4"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/ef_serie"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:maxLines="1"
+                android:letterSpacing="0.08"
+                android:textColor="#73FFFFFF"
+                android:textSize="10sp"
+                android:fontFamily="monospace" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <ProgressBar
+        android:id="@+id/ef_barra"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent"
+        android:layout_height="4dp"
+        android:layout_marginTop="10dp"
+        android:max="100"
+        android:progressTint="#FFC72C" />
+
+    <!-- Las tres celdas -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="12dp">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center_horizontal"
+            android:background="@drawable/ef_celda"
+            android:padding="9dp">
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="REPS" android:letterSpacing="0.1" android:textColor="#57FFFFFF"
+                android:textSize="9sp" android:textStyle="bold" android:fontFamily="monospace" />
+            <TextView android:id="@+id/ef_reps" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:textColor="#F5F5F4" android:textSize="20sp" android:textStyle="bold"
+                android:fontFamily="monospace" android:layout_marginTop="2dp" />
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="horizontal" android:layout_marginTop="6dp">
+                <Button android:id="@+id/ef_reps_menos" android:layout_width="0dp" android:layout_height="30dp"
+                    android:layout_weight="1" android:text="−" android:textColor="#F5F5F4" android:textSize="14sp"
+                    android:background="@drawable/ef_boton" android:padding="0dp" />
+                <Button android:id="@+id/ef_reps_mas" android:layout_width="0dp" android:layout_height="30dp"
+                    android:layout_weight="1" android:layout_marginStart="6dp" android:text="+" android:textColor="#FFC72C"
+                    android:textSize="14sp" android:background="@drawable/ef_boton_mas" android:padding="0dp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:orientation="vertical"
+            android:gravity="center_horizontal"
+            android:background="@drawable/ef_celda"
+            android:padding="9dp">
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="PESO" android:letterSpacing="0.1" android:textColor="#57FFFFFF"
+                android:textSize="9sp" android:textStyle="bold" android:fontFamily="monospace" />
+            <TextView android:id="@+id/ef_peso" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:textColor="#F5F5F4" android:textSize="20sp" android:textStyle="bold"
+                android:fontFamily="monospace" android:layout_marginTop="2dp" />
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="horizontal" android:layout_marginTop="6dp">
+                <Button android:id="@+id/ef_peso_menos" android:layout_width="0dp" android:layout_height="30dp"
+                    android:layout_weight="1" android:text="−" android:textColor="#F5F5F4" android:textSize="14sp"
+                    android:background="@drawable/ef_boton" android:padding="0dp" />
+                <Button android:id="@+id/ef_peso_mas" android:layout_width="0dp" android:layout_height="30dp"
+                    android:layout_weight="1" android:layout_marginStart="6dp" android:text="+" android:textColor="#FFC72C"
+                    android:textSize="14sp" android:background="@drawable/ef_boton_mas" android:padding="0dp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:orientation="vertical"
+            android:gravity="center_horizontal"
+            android:background="@drawable/ef_celda"
+            android:padding="9dp">
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="RIR" android:letterSpacing="0.1" android:textColor="#57FFFFFF"
+                android:textSize="9sp" android:textStyle="bold" android:fontFamily="monospace" />
+            <TextView android:id="@+id/ef_rir" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:textColor="#F5F5F4" android:textSize="20sp" android:textStyle="bold"
+                android:fontFamily="monospace" android:layout_marginTop="2dp" />
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="horizontal" android:layout_marginTop="6dp">
+                <Button android:id="@+id/ef_rir_menos" android:layout_width="0dp" android:layout_height="30dp"
+                    android:layout_weight="1" android:text="−" android:textColor="#F5F5F4" android:textSize="14sp"
+                    android:background="@drawable/ef_boton" android:padding="0dp" />
+                <Button android:id="@+id/ef_rir_mas" android:layout_width="0dp" android:layout_height="30dp"
+                    android:layout_weight="1" android:layout_marginStart="6dp" android:text="+" android:textColor="#FFC72C"
+                    android:textSize="14sp" android:background="@drawable/ef_boton_mas" android:padding="0dp" />
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- "Arranca desde lo de la última vez": se OCULTA si no hay histórico.
+         No se rellena con nada inventado (§3.3 del handoff). -->
+    <TextView
+        android:id="@+id/ef_ultima"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:gravity="center"
+        android:textColor="#57FFFFFF"
+        android:textSize="9sp"
+        android:fontFamily="monospace"
+        android:visibility="gone" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="10dp">
+
+        <Button
+            android:id="@+id/ef_mas30"
+            android:layout_width="0dp"
+            android:layout_height="44dp"
+            android:layout_weight="1"
+            android:text="+30 S"
+            android:textColor="#F5F5F4"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:fontFamily="monospace"
+            android:background="@drawable/ef_boton" />
+
+        <Button
+            android:id="@+id/ef_principal"
+            android:layout_width="0dp"
+            android:layout_height="44dp"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:textColor="#0B0B0B"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:fontFamily="monospace"
+            android:background="@drawable/ef_boton_oro" />
+    </LinearLayout>
+</LinearLayout>

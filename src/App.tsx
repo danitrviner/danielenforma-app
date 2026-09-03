@@ -25,6 +25,7 @@ import { Icon } from './components/ui';
 import { OPEN_AI_PANEL_EVENT } from './ai/events';
 import { limpiarDatosDeSesion } from './utils/cierreDeSesion';
 import { iniciarBotonAtras, fijarManejadorDeRuta, salirDeLaApp } from './services/botonAtras';
+import { useHuecoInferiorVisible, ALTURA_MINIMA_TECLADO } from './utils/anclajeViewport';
 import { Avatar } from './components/ui';
 
 // Cada pantalla de abajo solo se monta tras elegir un tab, y ningún atleta
@@ -322,6 +323,10 @@ function AppContent() {
   // la pantalla exacta en la que estaba el usuario, no solo /clients/* como
   // antes. `goToTab` es ahora un simple `navigate`.
   const goToTab = (tab: NavTab) => navigate(`/${tab}`);
+
+  // Barra inferior de móvil: ver utils/anclajeViewport.ts y el <nav> de abajo.
+  const huecoInferior = useHuecoInferiorVisible();
+  const tecladoAbierto = huecoInferior > ALTURA_MINIMA_TECLADO;
 
   // Comprueba si el atleta ya hizo el onboarding guiado. El coach nunca se gatea.
   useEffect(() => {
@@ -734,7 +739,10 @@ function AppContent() {
   if (debeAceptarLegal(profile)) {
     return (
       <div className="min-h-screen bg-bg">
-        <Suspense fallback={null}>
+        {/* Splash y no `null`: con `null` este contenedor a pantalla completa
+            es un rectángulo negro y vacío mientras baja el chunk — el mismo
+            "la app se ha colgado" que se describe arriba, en Splash. */}
+        <Suspense fallback={<Splash texto="Un momento..." />}>
           <AceptacionLegalGate
             profile={profile}
             onCompletado={legal => setProfile(p => (p ? { ...p, legal } : p))}
@@ -1084,10 +1092,23 @@ function AppContent() {
           4 (Inicio · Revisiones · CRM · Biblioteca), que es lo que cierra
           R10: las etiquetas vuelven a los 11 px del Design System y se retira
           la excepción de los 10 px. */}
+      {/* `transform`/`hidden` sobre el hueco del viewport visual: `fixed` se
+          ancla al viewport de MAQUETA, que con el teclado abierto o con la
+          página ampliada ya no coincide con lo que se ve — y la barra
+          aparecía flotando a media pantalla, arrastrándose con el scroll.
+          Ver utils/anclajeViewport.ts. Con el teclado se esconde en vez de
+          recolocarse: encima de las teclas taparía el campo que se rellena. */}
       <nav
         ref={navTabsRef}
-        className="md:hidden fixed bottom-0 w-full z-[var(--z-nav)] flex items-stretch gap-1 px-2 py-4 bg-bg/92 backdrop-blur-md border-t border-hairline select-none"
-        style={{ paddingBottom: 'max(20px, env(safe-area-inset-bottom, 20px))' }}
+        aria-hidden={tecladoAbierto || undefined}
+        className={
+          'md:hidden fixed bottom-0 w-full z-[var(--z-nav)] flex items-stretch gap-1 px-2 py-4 bg-bg/92 backdrop-blur-md border-t border-hairline select-none'
+          + (tecladoAbierto ? ' invisible' : '')
+        }
+        style={{
+          paddingBottom: 'max(20px, env(safe-area-inset-bottom, 20px))',
+          transform: !tecladoAbierto && huecoInferior > 0 ? `translateY(-${huecoInferior}px)` : undefined,
+        }}
       >
         {mobileTabs.map((tab) => {
           const activa = esActiva(tab.id);

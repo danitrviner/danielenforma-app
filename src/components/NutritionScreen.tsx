@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { UserProfile, Diet, DietMeal, DietItem, FoodCategory, DietMode, MealItem, Recipe, RecipeFavorites, WeekDay, RefeedDay } from '../types';
-import { getDietsForAthlete, getAthleteDietConfig, saveAthleteDietConfig, createDiet, updateDiet, deleteDiet, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig, saveAthleteNutritionConfig, getRecipes, getRecipeFavorites, getNutritionProgram, markNutritionPhaseSeen, computeActivePhase, createNotificationDeduped, getDietCompletionLog, saveDietCompletionLog, createRecipe, queryRecetas, queryRecetasForGenerator, getOnboarding, getRecipeById } from '../dbService';
+import { UserProfile, Diet, DietMeal, DietItem, FoodCategory, DietMode, MealItem, Recipe, RecipeFavorites, RefeedDay } from '../types';
+import { getDietsForAthlete, getAthleteDietConfig, saveAthleteDietConfig, createDiet, deleteDiet, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig, saveAthleteNutritionConfig, getRecipes, getRecipeFavorites, getNutritionProgram, markNutritionPhaseSeen, computeActivePhase, createNotificationDeduped, getDietCompletionLog, saveDietCompletionLog, createRecipe, queryRecetas, queryRecetasForGenerator, getOnboarding, getRecipeById } from '../dbService';
 import type { RecetasCursor } from '../dbService';
-import { CATS, BUDGET_CATS, CAT_LABEL, CAT_COLOR, CAT_BG, MODE_LABEL, ALL_DIET_MODES, round2, fmtQty, itemWeightLabel, foodNameWithoutGrams, addToPlaced, recipeToDietItems, isDietPending, computeDietPlaced } from '../utils/exchangeHelpers';
-import { findRecipeAlternatives, recipeExchanges, groupByDishType, type RecipeAlternative, type AlternativePrefs } from '../utils/recipeMatch';
+import { CATS, BUDGET_CATS, CAT_LABEL, CAT_COLOR, CAT_BG, MODE_LABEL, ALL_DIET_MODES, round2, fmtQty, itemWeightLabel, foodNameWithoutGrams, addToPlaced, recipeToDietItems, computeDietPlaced } from '../utils/exchangeHelpers';
+import { findRecipeAlternatives, recipeExchanges, groupByDishType, ordenarPorCupo, type RecipeAlternative, type AlternativePrefs } from '../utils/recipeMatch';
 import { ingredientMatch, violatesDietType } from '../utils/foodPrefs';
 import { dishType, dishTypeLabel, type DishType } from '../utils/dishTypes';
+import { filasDeComida, escalarReceta } from '../utils/filasDelPlan';
 import { exchangeToKcal } from '../utils/nutritionConstants';
 import { useToast } from '../hooks/useToast';
 import Coachmark from './Coachmark';
@@ -21,10 +22,12 @@ import MealItemSwipeRow from './nutrition/MealItemSwipeRow';
 import { NotaDeFuente } from './FuentesCientificasSheet';
 
 import {
-  COACH_EMAIL, makeId, blankDiet, dietSnapshot,
-  TODAY_WD, TODAY_DATE, WD_ORDER, WD_SHORT, WD_FULL,
+  COACH_EMAIL, makeId, dietSnapshot, estructuraDeDia, fechaLarga,
+  WD_FULL,
   mealLabel, BAR_LABEL, CHIP_LABEL, ItemState,
 } from './nutrition/dietHelpers';
+import { useDiaActual, diaSemanaDe } from '../hooks/useDiaActual';
+import { addDays } from '../utils/trainingWeek';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 // (ItemState viene de dietHelpers.ts — compartido con el resto de "Mi plan")
@@ -39,6 +42,7 @@ const RECETAS_CATS = [
   'Desayuno y dulces',
   'Bebidas',
   'Suplementos deportivos',
+  'Alimentos y suplementos',
 ];
 
 interface Props {
@@ -163,6 +167,23 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
   const trackerTargetRef = useTourTarget('nutrition-tracker');
   const firstMealRowTargetRef = useTourTarget('nutrition-first-meal-row');
 
+  /* Qué día se está viendo (YYYY-MM-DD). Antes esto era un día de la SEMANA
+     (`viewDay: WeekDay`) porque el plan lo ponía el coach en un calendario
+     semanal y los otros días eran solo una ficha de consulta. Ahora el plan es
+     del atleta y de cada día concreto, así que se navega por fechas reales y
+     cualquier día pasado se puede editar igual que hoy. */
+  const { fecha: hoyFecha } = useDiaActual();
+  const [viewDate, setViewDate] = useState(hoyFecha);
+  const viendoHoy = viewDate === hoyFecha;
+  // Si la app cruza la medianoche con la pantalla abierta en "hoy", "hoy" pasa
+  // a ser el día nuevo — sin esto se quedaría escribiendo en el día anterior.
+  const hoyPrevioRef = useRef(hoyFecha);
+  useEffect(() => {
+    if (hoyPrevioRef.current === hoyFecha) return;
+    setViewDate(prev => (prev === hoyPrevioRef.current ? hoyFecha : prev));
+    hoyPrevioRef.current = hoyFecha;
+  }, [hoyFecha]);
+
   // ── Queries: Phase 1 (diet/config) ──────────────────────────────────────────
   const dietsKey = ['dietsForAthlete', profile.email] as const;
   const { data: allDietsList = [], isPending: loadingDiets } = useQuery({
@@ -203,12 +224,12 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     enabled: !loadingPhase1,
   });
   const { data: recipes = [], isPending: loadingRecipesQ } = useQuery({
-    queryKey: ['recipes'],
-    queryFn: () => getRecipes().catch(() => [] as Recipe[]),
+    queryKey: ['recipes', profile.userId],
+    queryFn: () => getRecipes({ ownerId: profile.userId }).catch(() => [] as Recipe[]),
     enabled: !loadingPhase1,
   });
   const setRecipes = (updater: React.SetStateAction<Recipe[]>) =>
-    queryClient.setQueryData<Recipe[]>(['recipes'], prev =>
+    queryClient.setQueryData<Recipe[]>(['recipes', profile.userId], prev =>
       typeof updater === 'function' ? (updater as (p: Recipe[]) => Recipe[])(prev ?? []) : updater);
 
   const { data: recipeFavorites = { athleteId: profile.email, recipeIds: [] }, isPending: loadingFavs } = useQuery({
@@ -226,14 +247,45 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     enabled: !loadingPhase1,
   });
 
-  const loading = loadingPhase1 || loadingFoodItems || loadingRecipesQ || loadingFavs;
+  /* ── El registro del día que se está viendo ────────────────────────────────
+     Este documento ES el plan de ese día: qué comidas tenía y cuáles se
+     comieron. Antes el plan vivía en una `Diet` compartida por todos los días y
+     el registro guardaba solo marcas de "hecho" que apuntaban a ella por
+     posición; de ahí venían los dos fallos que veía el atleta —al reabrir la
+     app el día aparecía vacío, y el histórico se reescribía solo al editar la
+     dieta. Ver el comentario de `DietCompletionLog.meals` en types.ts. */
+  const diaKey = ['dietCompletionLog', profile.email, viewDate] as const;
+  const { data: diaLog = null, isPending: loadingDia } = useQuery({
+    queryKey: diaKey,
+    queryFn: () => getDietCompletionLog(profile.email, viewDate),
+    enabled: !loadingPhase1,
+  });
+
+  /* Cupo pautado por el coach. Es lo ÚNICO que el coach fija en nutrición: ya
+     no programa comidas (nunca lo hizo — las pauta con el menú semanal), así
+     que su "dieta" es solo el presupuesto de intercambios del día. Sale de la
+     fase activa de periodización si la hay, y si no de la dieta activa. */
+  const cupoPautado = useMemo(() => {
+    // El coach puede tener cupos distintos por día (el "día A/B/C" del
+    // calendario semanal, que sigue usando el generador de menús): se respeta
+    // el del día que se está mirando, no el de hoy.
+    const programada = dietConfigRaw?.weeklySchedule?.[diaSemanaDe(viewDate)];
+    const activos = new Set(dietConfigRaw?.activeDietIds ?? []);
+    const pautada =
+      (programada && allDietsList.find(d => d.id === programada))
+      || allDietsList.find(d => activos.has(d.id) && !d.selfManaged)
+      || allDietsList.find(d => !d.selfManaged)
+      || null;
+    return pautada?.budget ?? null;
+  }, [allDietsList, dietConfigRaw, viewDate]);
+
+  const loading = loadingPhase1 || loadingFoodItems || loadingRecipesQ || loadingFavs || loadingDia;
 
   // ── Local editor/draft state — seeded once from the queries above, then
   // mutated locally as the athlete edits (this is a live editor, not a
   // read-only view, so it can't just be the query data directly) ───────────
   const [selectedDiet, setSelectedDiet] = useState<Diet | null>(null);
   const [savedDietSnapshot, setSavedDietSnapshot] = useState('');
-  const [saving, setSaving] = useState(false);
   // "Mis dietas" — gestión de las dietas del atleta (crear/duplicar/borrar),
   // absorbida aquí en la fusión de Intercambios + Mis Dietas ("Mi plan").
   const [misDietasOpen, setMisDietasOpen] = useState(false);
@@ -257,6 +309,14 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
 
   // Recipe picker
   const [recipePickerMealId, setRecipePickerMealId] = useState<string | null>(null);
+  /* Al abrir el recetario desde una comida se pregunta primero contra qué cupo
+     hay que cuadrar: el de ESA comida o el que queda del día entero. Son dos
+     respuestas distintas —a media tarde te sobra medio día pero la merienda ya
+     está casi llena— y adivinarlo por el atleta se equivocaba la mitad de las
+     veces. `null` = todavía no ha contestado; la hoja de recetas no se abre
+     hasta que lo haga. */
+  const [preguntaAmbito, setPreguntaAmbito] = useState<string | null>(null);
+  const [ambitoCupo, setAmbitoCupo] = useState<'comida' | 'dia'>('dia');
   const [recipeSearch, setRecipeSearch]             = useState('');
   const [recipeCatFilter, setRecipeCatFilter]       = useState<string>('all');
   // Dos fuentes en el mismo picker (a petición de Dani): "Mis recetas" (propias
@@ -299,14 +359,10 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
   const [recipeNameDraft, setRecipeNameDraft] = useState('');
   const [savingRecipe, setSavingRecipe] = useState(false);
 
-  // "Añadir a Intercambios" desde Recetas — primero elegir a qué dieta, luego (si
-  // tiene varias comidas) a cuál comida
-  const [chooseDietForRecipe, setChooseDietForRecipe] = useState<Recipe | null>(null);
+  // "Añadir a Intercambios" desde Recetas — solo queda elegir la comida del día
+  // (antes había un paso previo para elegir la dieta; ya no hay dietas).
   const [chooseMealForRecipe, setChooseMealForRecipe] = useState<Recipe | null>(null);
 
-  // Weekly schedule
-  const [weeklySchedule, setWeeklySchedule] = useState<Partial<Record<WeekDay, string | null>>>({});
-  const [viewDay, setViewDay]               = useState<WeekDay>(TODAY_WD);
 
   // Nutrition periodization
   const [phaseBanner, setPhaseBanner] = useState<string | null>(null);
@@ -336,7 +392,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
       }
 
       // Apply nutrition program phase if active
-      let dietConfig = dietConfigRaw;
+      const dietConfig = dietConfigRaw;
       if (program && program.phases.length > 0) {
         const todayStr = new Date().toISOString().split('T')[0];
         const activePhase = computeActivePhase(program, todayStr);
@@ -348,7 +404,6 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
               activeDietIds: [activePhase.dietId],
             };
             await saveAthleteDietConfig(newConfig).catch(() => {});
-            dietConfig = newConfig;
             queryClient.setQueryData(athleteDietConfigKey, newConfig);
           }
           if (program.lastSeenPhaseId !== activePhase.id) {
@@ -380,64 +435,60 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
         }
       }
 
-      const activeIds = new Set(dietConfig?.activeDietIds ?? []);
-      const active = allDietsList.filter(d => activeIds.has(d.id));
-      const schedule = dietConfig?.weeklySchedule ?? {};
-      setWeeklySchedule(schedule);
-
-      // Día de recarga: si el coach marcó hoy como refeed y le puso dieta, esa
-      // manda por encima del calendario semanal — es justo lo que significa
-      // una recarga. Sin dieta, es solo el aviso.
-      const recargaDeHoy = (program?.refeedDays ?? []).find(r => r.date === TODAY_DATE) ?? null;
-      setRefeedHoy(recargaDeHoy);
-
-      const rememberedId = localStorage.getItem(`enforma_intercambios_diet_${profile.email}`);
-      const todayId = recargaDeHoy?.dietId ?? schedule[TODAY_WD] ?? null;
-      const initDiet: Diet | null =
-        (todayId && allDietsList.find(d => d.id === todayId)) ||
-        (rememberedId && allDietsList.find(d => d.id === rememberedId)) ||
-        (active.length >= 1 ? active[0] : null) ||
-        (allDietsList.length >= 1 ? allDietsList[0] : null);
-      if (initDiet) {
-        setSelectedDiet(initDiet);
-        setSavedDietSnapshot(dietSnapshot(initDiet));
-        const counts: Record<string, number> = {};
-        initDiet.meals.forEach(m => { counts[m.id] = m.items.length; });
-        setOrigItemCounts(counts);
-      }
+      // Día de recarga marcado por el coach para hoy — es solo un aviso.
+      setRefeedHoy((program?.refeedDays ?? []).find(r => r.date === hoyFecha) ?? null);
     })().catch(err => console.error('NutritionScreen init error:', err));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loadingPhase1, profile.email]);
 
-  // ── Init item states when diet changes ──────────────────────────────────────
-  // Rebuilds the (done:false) shape synchronously, then merges in today's
-  // persisted completion log so consumido/restante survives reloads.
+  /* ── Cargar en el editor el día que se está viendo ─────────────────────────
 
+     Un solo sitio decide qué se ve: el registro de ESE día. Antes eran dos
+     efectos peleándose —uno elegía una `Diet` (la programada por el coach
+     ganaba a la que el atleta estaba usando) y otro le pegaba encima las
+     marcas de "hecho", que se descartaban enteras si el `dietId` del registro
+     no coincidía con la dieta elegida. Resultado práctico: registrabas el
+     desayuno, salías, volvías y no había nada, hasta que ibas a "Mis dietas" y
+     elegías a mano la dieta buena. Eso ya no puede pasar: no hay nada que
+     elegir, el día es el día.
+
+     `cargadoPara` evita repisar lo que el atleta está editando: el efecto solo
+     siembra el editor cuando de verdad cambia el día que se mira. */
+  const cargadoPara = useRef<string | null>(null);
   useEffect(() => {
-    if (!selectedDiet) { setItemStates({}); return; }
-    const initial: Record<string, ItemState> = {};
-    for (const meal of selectedDiet.meals) {
+    if (loadingPhase1 || loadingDia) return;
+    const marca = `${profile.email}_${viewDate}`;
+    if (cargadoPara.current === marca) return;
+    cargadoPara.current = marca;
+
+    const meals: DietMeal[] = diaLog?.meals?.length
+      ? diaLog.meals
+      : estructuraDeDia((onboarding?.meals ?? []).map(m => ({ name: m.name, slot: m.intakeType })));
+    const plan: Diet = {
+      id: `dia_${viewDate}`,
+      athleteId: profile.email,
+      name: `Plan del ${WD_FULL[diaSemanaDe(viewDate)]}`,
+      budget: diaLog?.budget ?? cupoPautado ?? { HC: 0, PROT: 0, GRASA: 0, MIX_HC: 0, MIX_GRASA: 0 },
+      meals,
+      selfManaged: true,
+    };
+
+    const hechos = new Set(diaLog?.doneItemIds ?? []);
+    const estados: Record<string, ItemState> = {};
+    const counts: Record<string, number> = {};
+    for (const meal of meals) {
+      counts[meal.id] = meal.items.length;
       meal.items.forEach((item, idx) => {
-        initial[`${meal.id}_${idx}`] = { foodLabel: item.foodLabel, done: false };
+        const key = `${meal.id}_${idx}`;
+        estados[key] = { foodLabel: item.foodLabel, done: hechos.has(key) };
       });
     }
-    setItemStates(initial);
-
-    let cancelled = false;
-    const dietId = selectedDiet.id;
-    getDietCompletionLog(profile.email, TODAY_DATE).then(log => {
-      if (cancelled || !log || log.dietId !== dietId) return;
-      const doneSet = new Set(log.doneItemIds);
-      setItemStates(prev => {
-        const next = { ...prev };
-        doneSet.forEach(key => {
-          if (next[key]) next[key] = { ...next[key], done: true };
-        });
-        return next;
-      });
-    }).catch(() => {});
-    return () => { cancelled = true; };
-  }, [selectedDiet?.id, profile.email]);
+    setSelectedDiet(plan);
+    setSavedDietSnapshot(dietSnapshot(plan));
+    setItemStates(estados);
+    setOrigItemCounts(counts);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loadingPhase1, loadingDia, viewDate, diaLog, cupoPautado, profile.email]);
 
   // ── Derived ──────────────────────────────────────────────────────────────────
 
@@ -490,11 +541,12 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
 
   // "TE QUEDAN" del tracker — suma de las tres categorías de presupuesto,
   // igual que el handoff (nunca desglosa MIX_HC/MIX_GRASA en la cifra grande).
-  const leftByCat = {
+  const leftByCat = useMemo(() => ({
     HC: effBudget.HC - doneByCat.HC,
     PROT: effBudget.PROT - doneByCat.PROT,
     GRASA: effBudget.GRASA - doneByCat.GRASA,
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [effBudget.HC, effBudget.PROT, effBudget.GRASA, doneByCat]);
   const totalBudget = effBudget.HC + effBudget.PROT + effBudget.GRASA;
   const totalEaten = BUDGET_CATS.reduce((s, c) => s + doneByCat[c], 0);
   const leftExch = round2(totalBudget - totalEaten);
@@ -514,15 +566,6 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     if (dayClosed && !dayClosedRef.current) void haptics.success();
     dayClosedRef.current = dayClosed;
   }, [dayClosed]);
-
-  // Distinct coach diets scheduled across the week (the "día A/B/C" concept) that
-  // still don't have enough food items placed to cover the budget the coach set.
-  const pendingScheduledDiets = useMemo(() => {
-    const scheduledIds = new Set(
-      WD_ORDER.map(d => weeklySchedule[d]).filter((id): id is string => typeof id === 'string'),
-    );
-    return allDietsList.filter(d => scheduledIds.has(d.id) && !d.selfManaged && isDietPending(d));
-  }, [weeklySchedule, allDietsList]);
 
   // While buscando, ignora la pestaña de categoría activa y busca en todas — así
   // el atleta no tiene que salir y volver a entrar cambiando de categoría para
@@ -578,6 +621,25 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     return [...lista].sort((a, b) => rango(a) - rango(b) || a.name.localeCompare(b.name));
   }, [swapPrefs, recipeFavorites]);
 
+  /* Lo que queda por cubrir, según lo que el atleta haya contestado: el cupo de
+     ESA comida (su reparto menos lo que ya lleva puesto ahí) o el del día
+     entero. Sin reparto asignado a la comida, "la comida" no tiene cupo propio
+     que mirar y se cae al del día — que es la respuesta honesta, no un cero
+     que dejaría la lista vacía. */
+  const cupoDisponible = useMemo(() => {
+    const delDia = { HC: Math.max(0, leftByCat.HC), PROT: Math.max(0, leftByCat.PROT), GRASA: Math.max(0, leftByCat.GRASA) };
+    if (ambitoCupo === 'dia' || !recipePickerMealId) return delDia;
+    const meal = selectedDiet?.meals.find(m => m.id === recipePickerMealId);
+    const target = meal?.target;
+    if (!target) return delDia;
+    const puesto = mealDoneByCat[recipePickerMealId] ?? { HC: 0, PROT: 0, GRASA: 0, MIX_HC: 0, MIX_GRASA: 0 };
+    return {
+      HC: Math.max(0, round2(target.HC - puesto.HC)),
+      PROT: Math.max(0, round2(target.PROT - puesto.PROT)),
+      GRASA: Math.max(0, round2(target.GRASA - puesto.GRASA)),
+    };
+  }, [ambitoCupo, recipePickerMealId, selectedDiet, mealDoneByCat, leftByCat]);
+
   const sortedPickerRecipes = useMemo(() => {
     const withIngredients = recipes.filter(r =>
       r.ingredients.some(ing => enabledModes.includes(ing.mode))
@@ -587,8 +649,10 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
       const matchSearch = !recipeSearch || r.name.toLowerCase().includes(recipeSearch.toLowerCase());
       return matchCat && matchSearch && isSafeForAthlete(r);
     });
-    return ordenarPorPreferencia(filtered);
-  }, [recipes, enabledModes, recipeCatFilter, recipeSearch, isSafeForAthlete, ordenarPorPreferencia]);
+    // Solo lo que cabe en el cupo elegido, y de lo que mejor lo aprovecha en
+    // adelante — ofrecer una receta que no entra no ayuda a nadie.
+    return ordenarPorPreferencia(ordenarPorCupo(filtered, cupoDisponible));
+  }, [recipes, enabledModes, recipeCatFilter, recipeSearch, isSafeForAthlete, ordenarPorPreferencia, cupoDisponible]);
 
   // Recetario (catálogo ~8.850) — queryRecetas solo filtra por categoría en el
   // servidor (no hay búsqueda de texto ahí), así que el término de búsqueda se
@@ -608,8 +672,8 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     // Antes salía en el orden del catálogo (alfabético): las favoritas del
     // atleta quedaban donde cayeran, y los tipos de plato que había pedido
     // tener más no se adelantaban.
-    return ordenarPorPreferencia(buscadas);
-  }, [recetarioResults, recipeSearch, isSafeForAthlete, ordenarPorPreferencia]);
+    return ordenarPorPreferencia(ordenarPorCupo(buscadas, cupoDisponible));
+  }, [recetarioResults, recipeSearch, isSafeForAthlete, ordenarPorPreferencia, cupoDisponible]);
 
   const swapCandidates = useMemo(() => {
     if (!swapSourceRecipe || swapPool.length === 0) return [];
@@ -629,65 +693,56 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     [swapCandidates, swapDishFilter],
   );
 
+  /** Los menús que el atleta se ha guardado para repetir (no son dietas del
+   *  coach ni planes de un día: son plantillas suyas). */
+  const menusGuardados = useMemo(
+    () => allDietsList.filter(d => d.selfManaged),
+    [allDietsList],
+  );
+
   // ── Handlers ─────────────────────────────────────────────────────────────────
 
   const isDirty = selectedDiet ? dietSnapshot(selectedDiet) !== savedDietSnapshot : false;
-  const isPersisted = selectedDiet ? allDietsList.some(d => d.id === selectedDiet.id) : true;
 
-  const handleSelectDiet = (dt: Diet, opts?: { skipDirtyCheck?: boolean }) => {
-    if (!opts?.skipDirtyCheck && isDirty && !window.confirm('Tienes cambios sin guardar en este menú. ¿Cambiar de dieta y descartarlos?')) {
-      return;
-    }
-    // Build itemStates for the new diet immediately in the same event handler so
-    // React batches both updates into one render. Relying only on a useEffect meant
-    // the content rendered once with the new selectedDiet but stale itemStates.
-    const initial: Record<string, ItemState> = {};
+  /**
+   * Vuelca un menú guardado sobre el día que se está viendo.
+   *
+   * Antes esto "cambiaba de dieta" y el día se quedaba colgando de ella; ahora
+   * el menú es una plantilla que se copia y ya está —lo que pase después con
+   * ella no toca este día. Los `mealId` se renuevan a propósito: si se
+   * reutilizaran, las marcas de "comido" de un día que ya usó ese mismo menú
+   * podrían colarse aquí.
+   *
+   * Todo lo que se carga entra ya como comido: si te pones el menú del día es
+   * porque es lo que has comido (ver `handleAddItem`).
+   */
+  const cargarMenuEnElDia = (dt: Diet) => {
+    const meals: DietMeal[] = dt.meals.map(m => ({ ...m, id: makeId(), items: [...m.items] }));
+    const plan: Diet = { ...selectedDiet, id: `dia_${viewDate}`, athleteId: profile.email, name: dt.name, budget: selectedDiet?.budget ?? dt.budget, meals, selfManaged: true };
+    const estados: Record<string, ItemState> = {};
     const counts: Record<string, number> = {};
-    for (const meal of dt.meals) {
-      counts[meal.id] = meal.items.length;
-      meal.items.forEach((item, idx) => {
-        initial[`${meal.id}_${idx}`] = { foodLabel: item.foodLabel, done: false };
-      });
+    for (const meal of meals) {
+      counts[meal.id] = 0;
+      meal.items.forEach((item, idx) => { estados[`${meal.id}_${idx}`] = { foodLabel: item.foodLabel, done: true }; });
     }
-    setItemStates(initial);
+    setItemStates(estados);
     setOrigItemCounts(counts);
-    setSelectedDiet(dt);
-    setSavedDietSnapshot(dietSnapshot(dt));
-    localStorage.setItem(`enforma_intercambios_diet_${profile.email}`, dt.id);
+    setSelectedDiet(plan);
   };
 
+  /** Vaciar el día — deja la estructura de comidas pero sin alimentos. */
   const handleStartBlank = () => {
-    handleSelectDiet(blankDiet(profile.email));
+    const meals = estructuraDeDia((onboarding?.meals ?? []).map(m => ({ name: m.name, slot: m.intakeType })));
+    setSelectedDiet(prev => prev ? { ...prev, meals } : prev);
+    setItemStates({});
+    setOrigItemCounts(Object.fromEntries(meals.map(m => [m.id, 0])));
   };
 
-  // ── "Mis dietas": crear/duplicar/borrar (absorbido de la antigua pestaña
-  // Mis Dietas en la fusión Intercambios + Mis Dietas → "Mi plan") ──────────
+  // ── "Mis menús": los menús que el atleta se guarda para repetir ───────────
 
   const handleStartBlankFromSheet = () => {
-    // Nombre vacío a propósito (a diferencia de handleStartBlank, que pone
-    // "Mi menú") — al crearla desde el gestor, el atleta espera ponerle
-    // nombre él mismo, como en la antigua pantalla "Nueva dieta".
-    handleSelectDiet(blankDiet(profile.email, ''), { skipDirtyCheck: true });
+    handleStartBlank();
     setMisDietasOpen(false);
-  };
-
-  const handleDuplicateDiet = async (dt: Diet) => {
-    try {
-      const created = await createDiet({
-        athleteId: profile.email,
-        name: `${dt.name} (copia)`,
-        budget: dt.budget,
-        meals: dt.meals.map(m => ({ ...m, id: makeId() })),
-        selfManaged: true,
-      });
-      setAllDietsList(prev => [...prev, created]);
-      handleSelectDiet(created, { skipDirtyCheck: true });
-      setMisDietasOpen(false);
-      showToast('Copia creada.', 'success');
-    } catch (err) {
-      console.error(err);
-      showToast('No se pudo duplicar la dieta.');
-    }
   };
 
   // "Guardar como menú" — plantilla de un día completo para repetir más
@@ -728,31 +783,18 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
       await deleteDiet(dt.id);
       setAllDietsList(prev => prev.filter(d => d.id !== dt.id));
 
-      // deleteDiet() no limpia las referencias a esta dieta en la config del
-      // atleta — sin esto, "activeDietIds"/"weeklySchedule" seguirían
-      // apuntando a un id que ya no existe.
+      // deleteDiet() no limpia la referencia a esta dieta en la config del
+      // atleta — sin esto `activeDietIds` seguiría apuntando a un id borrado.
       const activeIds = dietConfigRaw?.activeDietIds ?? [];
-      const schedule: Partial<Record<WeekDay, string | null>> = { ...(dietConfigRaw?.weeklySchedule ?? {}) };
-      const hadActiveRef = activeIds.includes(dt.id);
-      let hadScheduleRef = false;
-      WD_ORDER.forEach(day => { if (schedule[day] === dt.id) { schedule[day] = null; hadScheduleRef = true; } });
-      if (hadActiveRef || hadScheduleRef) {
+      if (activeIds.includes(dt.id)) {
         const nextConfig = {
           ...(dietConfigRaw ?? { athleteId: profile.email }),
           activeDietIds: activeIds.filter(id => id !== dt.id),
-          weeklySchedule: schedule,
         };
         await saveAthleteDietConfig(nextConfig).catch(() => {});
         queryClient.setQueryData(athleteDietConfigKey, nextConfig);
-        setWeeklySchedule(schedule);
       }
-
-      if (selectedDiet?.id === dt.id) {
-        const fallback = allDietsList.find(d => d.id !== dt.id) ?? null;
-        if (fallback) handleSelectDiet(fallback, { skipDirtyCheck: true });
-        else { setSelectedDiet(null); setSavedDietSnapshot(''); }
-      }
-      showToast('Dieta eliminada.', 'success');
+      showToast('Menú eliminado.', 'success');
     } catch (err) {
       console.error(err);
       showToast('No se pudo eliminar la dieta.');
@@ -762,56 +804,36 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     }
   };
 
-  // Unifica el guardado del registro de "hecho" del día — antes cada sitio
-  // que lo llamaba (checkbox de un alimento, comida entera, ajuste rápido,
-  // primer guardado, cambio de comida) fallaba en silencio con
-  // `.catch(() => {})`: el atleta marcaba algo y, si no había red, nunca se
-  // enteraba de que no se había guardado nada.
-  const persistCompletion = (dietId: string, doneItemIds: string[]) => {
-    saveDietCompletionLog({ athleteId: profile.email, date: TODAY_DATE, dietId, doneItemIds })
-      .catch(() => showToast('No se pudo guardar el registro de hoy. Se reintentará al recargar.', 'error'));
+  /**
+   * Guarda el día que se está viendo: sus comidas y qué se ha comido de ellas.
+   *
+   * Una sola escritura por día (`dietCompletionLogs/{email}_{fecha}`) en vez de
+   * las dos de antes —la dieta por un lado y las marcas por otro—, que era de
+   * donde salía el desajuste: se guardaba una y fallaba la otra, o la dieta
+   * cambiaba y las marcas quedaban apuntando a comidas que ya no existían.
+   *
+   * El fallo se dice. Antes esto era un `.catch(() => {})`: el atleta marcaba
+   * la cena, no había red, y no se enteraba nunca de que no se había guardado.
+   */
+  const guardarDia = useCallback((meals: DietMeal[], doneItemIds: string[], budget: Record<FoodCategory, number>) => {
+    const dietId = allDietsList.find(d => !d.selfManaged)?.id ?? '';
+    const log = { athleteId: profile.email, date: viewDate, dietId, doneItemIds, meals, budget };
+    queryClient.setQueryData(['dietCompletionLog', profile.email, viewDate], { ...log, id: `${profile.email}_${viewDate}` });
+    return saveDietCompletionLog(log)
+      .catch(() => showToast('No se pudo guardar el registro del día. Se reintentará al recargar.', 'error'));
+  }, [profile.email, viewDate, allDietsList, queryClient, showToast]);
+
+  /** Atajo para los sitios que solo cambian marcas, sin tocar las comidas. */
+  const persistCompletion = (_dietId: string, doneItemIds: string[]) => {
+    if (!selectedDiet) return;
+    void guardarDia(selectedDiet.meals, doneItemIds, selectedDiet.budget);
   };
 
-  const handleToggleDone = (mealId: string, itemIdx: number) => {
-    const key = `${mealId}_${itemIdx}`;
-    setItemStates(prev => {
-      const cur = prev[key];
-      if (!cur) return prev;
-      const next = { ...prev, [key]: { ...cur, done: !cur.done } };
-      if (selectedDiet) {
-        const doneItemIds = (Object.entries(next) as [string, ItemState][]).filter(([, v]) => v.done).map(([k]) => k);
-        persistCompletion(selectedDiet.id, doneItemIds);
-      }
-      return next;
-    });
-  };
-
-  // Registrar/desregistrar una ingesta entera de un toque (handoff, panel 01):
-  // marca (o desmarca) todos sus alimentos a la vez en vez de uno a uno.
-  const handleToggleMealDone = (meal: DietMeal) => {
-    const allDone = meal.items.length > 0 && meal.items.every((_, idx) => itemStates[`${meal.id}_${idx}`]?.done);
-    const nextDone = !allDone;
-    void haptics.light();
-    if (nextDone) tutorial.markActionDone('registrar-ingesta');
-    setItemStates(prev => {
-      const next = { ...prev };
-      meal.items.forEach((_, idx) => {
-        const key = `${meal.id}_${idx}`;
-        const cur = next[key];
-        if (cur) next[key] = { ...cur, done: nextDone };
-      });
-      if (selectedDiet) {
-        const doneItemIds = (Object.entries(next) as [string, ItemState][]).filter(([, v]) => v.done).map(([k]) => k);
-        persistCompletion(selectedDiet.id, doneItemIds);
-      }
-      return next;
-    });
-    const mealName = mealLabel(meal.name, (selectedDiet?.meals.findIndex(m => m.id === meal.id) ?? -1) + 1);
-    showToast(nextDone ? `${mealName} registrada.` : `${mealName} desmarcada.`, 'success', {
-      actionLabel: 'Deshacer',
-      onAction: () => handleToggleMealDone(meal),
-    });
-  };
+  /* Ya no hay `handleToggleDone` ni `handleToggleMealDone`. Marcar "comido"
+     era un paso que no decidía nada: si un alimento está en tu día es porque te
+     lo has comido. Se marca solo al añadirlo, y para deshacerlo se quita la
+     fila (deslizando a la izquierda), que es lo que el atleta quería hacer de
+     verdad cuando desmarcaba. */
 
   const handleOpenPicker = (mealId: string, itemIdx: number, category: FoodCategory) => {
     setPickerItem({ mealId, itemIdx, category });
@@ -843,12 +865,18 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
         if (!prev) return prev;
         return { ...prev, meals: prev.meals.map(m => m.id !== mealId ? m : { ...m, items: [...m.items, newItem] }) };
       });
-      setItemStates(prev => ({ ...prev, [`${mealId}_${newIdx}`]: { foodLabel: newItem.foodLabel, done: false } }));
+      // Nace COMIDO. Si lo has metido en el día es porque te lo has comido: el
+      // paso de "ahora deslízalo a la derecha" no aportaba nada y dejaba el cupo
+      // sin descontar hasta que te acordabas de hacerlo.
+      setItemStates(prev => ({ ...prev, [`${mealId}_${newIdx}`]: { foodLabel: newItem.foodLabel, done: true } }));
       setSearchTerm('');
       // El picker se queda abierto para encadenar varias añadidas seguidas
       // (ver comentario arriba) — sin esto, tocar "+" no daba ninguna señal
       // de que el toque había hecho algo.
       void haptics.light();
+      // El objetivo del tour "registrar una ingesta" se cumple aquí: antes lo
+      // marcaba el botón de marcar la comida entera, que ya no existe.
+      tutorial.markActionDone('registrar-ingesta');
       // T13: tick + ×N en la fila, y Deshacer en el toast.
       setPickerAddedCounts(prev => ({ ...prev, [food.id]: (prev[food.id] ?? 0) + 1 }));
       setPickerRecentlyAdded(food.id);
@@ -871,8 +899,10 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
       });
     } else {
       // Swap an existing item in place — a single replacement, so close afterwards.
+      // Cambiar un alimento por otro no lo "descome": es la misma ingesta, solo
+      // que ahora es pasta en vez de arroz.
       const key = `${mealId}_${itemIdx}`;
-      setItemStates(prev => ({ ...prev, [key]: { foodLabel: food.label, done: false } }));
+      setItemStates(prev => ({ ...prev, [key]: { foodLabel: food.label, done: prev[key]?.done ?? true } }));
       setSelectedDiet(prev => {
         if (!prev) return prev;
         return {
@@ -891,7 +921,14 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
 
   // ── Recipe picker handlers ─────────────────────────────────────────────────
 
+  /** Abrir el recetario desde una comida: primero la pregunta del cupo. */
   const handleOpenRecipePicker = (mealId: string) => {
+    setPreguntaAmbito(mealId);
+  };
+
+  const abrirRecetarioConAmbito = (mealId: string, ambito: 'comida' | 'dia') => {
+    setPreguntaAmbito(null);
+    setAmbitoCupo(ambito);
     setRecipePickerMealId(mealId);
     setRecipeSearch('');
     setRecipeCatFilter('all');
@@ -997,10 +1034,45 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     });
     const newStates: Record<string, ItemState> = {};
     newItems.forEach((item, i) => {
-      newStates[`${recipePickerMealId}_${startIdx + i}`] = { foodLabel: item.foodLabel, done: false };
+      newStates[`${recipePickerMealId}_${startIdx + i}`] = { foodLabel: item.foodLabel, done: true };
     });
     setItemStates(prev => ({ ...prev, ...newStates }));
     setRecipePickerMealId(null);
+  };
+
+  /** Quitar una receta entera: se van todos sus ítems de golpe, no uno a uno. */
+  const handleRemoveReceta = (mealId: string, idxs: number[]) => {
+    if (!selectedDiet) return;
+    const meal = selectedDiet.meals.find(m => m.id === mealId);
+    if (!meal) return;
+    const fuera = new Set(idxs);
+    const quedan = meal.items.filter((_, i) => !fuera.has(i));
+    const conservados = meal.items.map((_, i) => i).filter(i => !fuera.has(i));
+
+    setSelectedDiet(prev => prev ? {
+      ...prev,
+      meals: prev.meals.map(m => m.id !== mealId ? m : { ...m, items: quedan }),
+    } : prev);
+
+    // Reindexar: las claves de "comido" son posicionales, así que quitar por en
+    // medio desplaza todo lo que venía detrás.
+    setItemStates(prev => {
+      const next: Record<string, ItemState> = {};
+      Object.keys(prev).forEach(k => { if (!k.startsWith(`${mealId}_`)) next[k] = prev[k]; });
+      conservados.forEach((viejo, nuevo) => {
+        const st = prev[`${mealId}_${viejo}`];
+        if (st) next[`${mealId}_${nuevo}`] = st;
+      });
+      return next;
+    });
+  };
+
+  /** El +/− de un renglón de receta escala el plato completo. */
+  const handleEscalarReceta = (mealId: string, idxs: number[], delta: number) => {
+    setSelectedDiet(prev => prev ? {
+      ...prev,
+      meals: prev.meals.map(m => m.id !== mealId ? m : { ...m, items: escalarReceta(m.items, idxs, delta) }),
+    } : prev);
   };
 
   const handleRemoveItem = (mealId: string, itemIdx: number) => {
@@ -1029,7 +1101,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
       // Re-index this meal's states (skip deleted idx, shift down above it)
       for (let i = 0; i < oldLen; i++) {
         if (i === itemIdx) continue;
-        const oldState = prev[`${mealId}_${i}`] ?? { foodLabel: meal.items[i].foodLabel, done: false };
+        const oldState = prev[`${mealId}_${i}`] ?? { foodLabel: meal.items[i].foodLabel, done: true };
         next[`${mealId}_${i < itemIdx ? i : i - 1}`] = oldState;
       }
       return next;
@@ -1144,10 +1216,11 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
       Object.keys(prev).forEach(k => { if (!k.startsWith(`${mealId}_`)) next[k] = prev[k]; });
       keptItems.forEach((item, newIdx) => {
         const oldIdx = keptIndices[newIdx];
-        next[`${mealId}_${newIdx}`] = prev[`${mealId}_${oldIdx}`] ?? { foodLabel: item.foodLabel, done: false };
+        next[`${mealId}_${newIdx}`] = prev[`${mealId}_${oldIdx}`] ?? { foodLabel: item.foodLabel, done: true };
       });
+      // La receta que entra al cambiar de comida también cuenta ya como comida.
       newIngredientItems.forEach((item, i) => {
-        next[`${mealId}_${keptItems.length + i}`] = { foodLabel: item.foodLabel, done: false };
+        next[`${mealId}_${keptItems.length + i}`] = { foodLabel: item.foodLabel, done: true };
       });
       nextStates = next;
       return next;
@@ -1227,116 +1300,39 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
 
   // ── Guardar ──────────────────────────────────────────────────────────────────
 
-  const handleSaveDiet = async () => {
-    if (!selectedDiet) return;
-    if (!isPersisted) {
-      setSaving(true);
-      try {
-        const created = await createDiet({
-          athleteId: profile.email,
-          name: selectedDiet.name.trim() || 'Mi menú',
-          budget: selectedDiet.budget,
-          meals: selectedDiet.meals,
-          selfManaged: true,
-        });
-        setAllDietsList(prev => [...prev, created]);
-        setSelectedDiet(created);
-        setSavedDietSnapshot(dietSnapshot(created));
-        localStorage.setItem(`enforma_intercambios_diet_${profile.email}`, created.id);
-        // Re-point today's completion log from the temporary draft id to the real one,
-        // so checkmarks made before the first save survive a reload.
-        const doneItemIds = (Object.entries(itemStates) as [string, ItemState][]).filter(([, v]) => v.done).map(([k]) => k);
-        if (doneItemIds.length > 0) {
-          persistCompletion(created.id, doneItemIds);
-        }
-        showToast('Menú guardado.', 'success');
-      } catch (err) {
-        console.error(err);
-        showToast('No se pudo guardar el menú.');
-      } finally {
-        setSaving(false);
-      }
-      return;
-    }
-    if (selectedDiet.selfManaged) {
-      setSaving(true);
-      try {
-        await updateDiet(selectedDiet.id, { name: selectedDiet.name, budget: selectedDiet.budget, meals: selectedDiet.meals });
-        setAllDietsList(prev => prev.map(d => d.id === selectedDiet.id ? selectedDiet : d));
-        setSavedDietSnapshot(dietSnapshot(selectedDiet));
-        showToast('Cambios guardados.', 'success');
-      } catch (err) {
-        console.error(err);
-        showToast('No se pudieron guardar los cambios.');
-      } finally {
-        setSaving(false);
-      }
-      return;
-    }
-    // Dieta del entrenador: las reglas de Firestore prohíben que el atleta la
-    // actualice (solo puede update/delete si selfManaged=true) — antes había
-    // aquí una hoja "¿Cómo quieres guardar?" con un botón "Actualizar esta
-    // dieta" que SIEMPRE fallaba con permission-denied. En vez de ofrecer una
-    // opción que nunca funciona, se guarda como copia propia directamente
-    // (el `Banner` del header ya avisa de esto antes de que el atleta guarde).
-    await handleForkCoachDiet();
-  };
-
-  const handleForkCoachDiet = async () => {
-    if (!selectedDiet) return;
-    setSaving(true);
-    try {
-      // Un id nuevo por comida, pero recordando cuál viene de cuál — el
-      // registro de "hecho" de hoy está indexado por `${mealId}_${idx}` y sin
-      // este mapa el fork lo deja huérfano bajo un mealId que ya no existe
-      // (la barra "Objetivo comida" vuelve a 0% y el registro no sobrevive a
-      // un recargo, aunque el atleta acabe de marcarlo).
-      const idMap = new Map(selectedDiet.meals.map(m => [m.id, makeId()]));
-      const created = await createDiet({
-        athleteId: profile.email,
-        name: `${selectedDiet.name} (mi versión)`,
-        budget: selectedDiet.budget,
-        meals: selectedDiet.meals.map(m => ({ ...m, id: idMap.get(m.id)! })),
-        selfManaged: true,
-      });
-      setAllDietsList(prev => [...prev, created]);
-
-      const doneItemIds = (Object.entries(itemStates) as [string, ItemState][])
-        .filter(([, v]) => v.done)
-        .map(([key]) => {
-          const sep = key.lastIndexOf('_');
-          const newMealId = idMap.get(key.slice(0, sep));
-          return newMealId ? `${newMealId}${key.slice(sep)}` : key;
-        });
-      // Se espera esta escritura ANTES de seleccionar la dieta forkeada: el
-      // efecto que reconstruye `itemStates` al cambiar de dieta lee este
-      // mismo log (`getDietCompletionLog`) — si `handleSelectDiet` fuera
-      // primero, esa lectura podría llegar antes que esta escritura y
-      // encontrar el registro vacío.
-      if (doneItemIds.length > 0) {
-        await saveDietCompletionLog({ athleteId: profile.email, date: TODAY_DATE, dietId: created.id, doneItemIds });
-      }
-
-      handleSelectDiet(created, { skipDirtyCheck: true });
-      showToast('Guardada como copia tuya — la dieta de tu coach sigue intacta.', 'success');
-    } catch (err) {
-      console.error(err);
-      showToast('No se pudo guardar la copia.');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  // Autoguardado — sustituye al botón "Guardar" manual: en cuanto hay cambios
-  // sin guardar, se guardan solos tras una pausa corta de inactividad (evita
-  // disparar una escritura por cada tecla/tap). `saving` en las dependencias
-  // relanza el temporizador cuando el guardado en curso termina, por si el
-  // atleta siguió editando mientras tanto.
+  /* Autoguardado del día. Antes esto decidía entre tres caminos —crear una
+     dieta nueva, actualizar la propia, o clonar la del coach porque las reglas
+     de Firestore no dejan al atleta escribir en ella— y el tercero creaba por
+     detrás una dieta "(mi versión)" que al reabrir la app no se volvía a
+     seleccionar. Ya no hay nada que decidir: se escribe el día, siempre en el
+     mismo sitio. La pausa evita una escritura por cada tecla. */
+  /* Lo pendiente de guardar, en un ref, para poder soltarlo de golpe si el
+     atleta se va del día antes de que salte el temporizador. Sin esto, cambiar
+     de día (o de pantalla) justo después de tocar algo se comía el cambio: la
+     limpieza del efecto cancelaba el temporizador y nadie escribía nada. */
+  const pendiente = useRef<{ guardar: () => void } | null>(null);
   useEffect(() => {
-    if (!isDirty || saving) return;
-    const t = setTimeout(() => { handleSaveDiet(); }, 1200);
+    if (!selectedDiet || !isDirty) { pendiente.current = null; return; }
+    const plan = selectedDiet;
+    const escribir = () => {
+      pendiente.current = null;
+      const doneItemIds = (Object.entries(itemStates) as [string, ItemState][]).filter(([, v]) => v.done).map(([k]) => k);
+      setSavedDietSnapshot(dietSnapshot(plan));
+      void guardarDia(plan.meals, doneItemIds, plan.budget);
+    };
+    pendiente.current = { guardar: escribir };
+    const t = setTimeout(escribir, 1200);
     return () => clearTimeout(t);
-  }, [isDirty, saving, selectedDiet]);
+  }, [isDirty, selectedDiet, itemStates, guardarDia]);
+
+  /** Suelta lo pendiente ya. Se llama antes de cambiar de día y al salir. */
+  const guardarYa = useCallback(() => { pendiente.current?.guardar(); }, []);
+  useEffect(() => guardarYa, [guardarYa]);
+
+  const irAlDia = (fecha: string) => {
+    guardarYa();
+    setViewDate(fecha);
+  };
 
   // ── Recipe hand-off from Recetas (favoritos → "Añadir a Intercambios") ──────
 
@@ -1357,7 +1353,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
       return { ...prev, meals: prev.meals.map(m => m.id !== mealId ? m : { ...m, items: [...m.items, ...newItems] }) };
     });
     const newStates: Record<string, ItemState> = {};
-    newItems.forEach((item, i) => { newStates[`${mealId}_${startIdx + i}`] = { foodLabel: item.foodLabel, done: false }; });
+    newItems.forEach((item, i) => { newStates[`${mealId}_${startIdx + i}`] = { foodLabel: item.foodLabel, done: true }; });
     setItemStates(prev => ({ ...prev, ...newStates }));
     showToast(`"${recipe.name}" añadida a ${mealLabel(meal.name, currentDiet.meals.indexOf(meal) + 1)}.`, 'success');
   };
@@ -1379,49 +1375,13 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     if (!pendingRecipe || loading) return;
     if (pendingRecipeProcesadaRef.current === pendingRecipe) return;
     pendingRecipeProcesadaRef.current = pendingRecipe;
-    if (allDietsList.length === 0) {
-      // Athlete has no diets at all yet — nothing to choose from, start a blank one
-      const blank = blankDiet(profile.email);
-      blank.meals[0].items = recipeToDietItems(pendingRecipe, enabledModes);
-      handleSelectDiet(blank, { skipDirtyCheck: true });
-      onConsumedPendingRecipe?.();
-      return;
-    }
-    // Let the athlete choose which diet to add the recipe to (or start a new one)
-    setChooseDietForRecipe(pendingRecipe);
+    // Antes había que elegir primero A QUÉ DIETA iba la receta. Ya no hay
+    // dietas entre las que elegir: la receta va al día de hoy, y lo único que
+    // queda por decidir es en qué comida.
+    setChooseMealForRecipe(pendingRecipe);
     onConsumedPendingRecipe?.();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingRecipe, loading]);
-
-  const handleChooseDietForRecipe = (target: Diet | 'new') => {
-    const recipe = chooseDietForRecipe;
-    setChooseDietForRecipe(null);
-    if (!recipe) return;
-
-    const newItems = recipeToDietItems(recipe, enabledModes);
-    if (newItems.length === 0) {
-      showToast(`No se pudo añadir "${recipe.name}": no tiene datos de intercambios.`, 'error');
-      return;
-    }
-
-    if (target === 'new') {
-      const blank = blankDiet(profile.email);
-      blank.meals[0].items = newItems;
-      handleSelectDiet(blank, { skipDirtyCheck: true });
-      showToast(`"${recipe.name}" añadida a un nuevo menú.`, 'success');
-      return;
-    }
-
-    if (target.meals.length === 1) {
-      const meal = target.meals[0];
-      const updated: Diet = { ...target, meals: [{ ...meal, items: [...meal.items, ...newItems] }] };
-      handleSelectDiet(updated, { skipDirtyCheck: true });
-      showToast(`"${recipe.name}" añadida a ${mealLabel(meal.name, 1)}.`, 'success');
-    } else {
-      handleSelectDiet(target, { skipDirtyCheck: true });
-      setChooseMealForRecipe(recipe);
-    }
-  };
 
   // ── Render ────────────────────────────────────────────────────────────────────
 
@@ -1463,19 +1423,6 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
         </div>
       )}
 
-      {/* Pending coach diets banner — different days can carry different diets
-          (día A/B/C); this flags the ones still missing food items to hit budget. */}
-      {pendingScheduledDiets.length > 0 && (
-        <div className="flex items-center gap-2 bg-warning/10 border border-warning/25 text-warning px-4 py-3 rounded-surface text-body-s">
-          <Icon name="pending_actions" size="s" className="text-warning flex-shrink-0" />
-          <span>
-            Tienes <strong>{pendingScheduledDiets.length}</strong> {pendingScheduledDiets.length === 1 ? 'dieta pendiente de generar' : 'dietas pendientes de generar'}
-            {': '}
-            {pendingScheduledDiets.map(d => d.name).join(', ')}
-          </span>
-        </div>
-      )}
-
       {/* Diet mode selector — siempre visible (antes solo si el coach había
           habilitado más de un modo) para que el atleta pueda pasar a "Sin
           pesar" cualquier día, sin depender de que el coach lo active antes. */}
@@ -1491,31 +1438,49 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
         ))}
       </div>
 
-      {/* Week schedule navigation */}
-      {!loading && WD_ORDER.some(d => typeof weeklySchedule[d] === 'string') && (
-        <div className="flex gap-2">
-          {WD_ORDER.map(day => {
-            const isToday = day === TODAY_WD;
-            const isViewing = day === viewDay;
-            const hasDiet = typeof weeklySchedule[day] === 'string';
-            return (
-              <button
-                key={day}
-                onClick={() => setViewDay(day)}
-                className={`flex-1 flex flex-col items-center py-3 rounded-control font-mono text-caption font-bold uppercase tracking-wider border transition-all ${
-                  isViewing
-                    ? 'bg-accent/10 border-accent/50 text-accent'
-                    : isToday
-                    ? 'bg-raised border-hairline text-ink'
-                    : 'bg-raised border-hairline text-ink-2 hover:border-hairline hover:text-ink'
-                }`}
-              >
-                <span>{WD_SHORT[day]}</span>
-                <span className={`w-1 h-1 rounded-full ${isToday ? 'bg-accent' : hasDiet ? 'bg-info/50' : 'bg-transparent'}`} />
-              </button>
-            );
-          })}
+      {/* Navegación por días. Antes era una fila de siete letras (L M X J V S D)
+          que enseñaba QUÉ DIETA te había programado el coach cada día y no
+          dejaba tocar nada fuera de hoy. Ahora son días de verdad, hacia atrás,
+          y cualquiera de ellos se edita igual que hoy: si ayer se te olvidó
+          apuntar la cena, la apuntas. */}
+      {!loading && (
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => irAlDia(addDays(viewDate, -1))}
+            aria-label="Día anterior"
+            className="flex h-10 w-10 flex-none items-center justify-center rounded-control border border-hairline bg-raised text-ink-2 transition-colors hover:border-accent/40 hover:text-accent"
+          >
+            <Icon name="chevron_left" size="m" />
+          </button>
+
+          <div className="flex-1 min-w-0 text-center">
+            <span className="block font-mono text-caption uppercase tracking-widest font-bold text-accent">
+              {viendoHoy ? 'Hoy' : WD_FULL[diaSemanaDe(viewDate)]}
+            </span>
+            <span className="block font-sans text-label text-ink-2 truncate">{fechaLarga(viewDate)}</span>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => irAlDia(addDays(viewDate, 1))}
+            disabled={viendoHoy}
+            aria-label="Día siguiente"
+            className="flex h-10 w-10 flex-none items-center justify-center rounded-control border border-hairline bg-raised text-ink-2 transition-colors hover:border-accent/40 hover:text-accent disabled:opacity-30 disabled:hover:border-hairline disabled:hover:text-ink-2"
+          >
+            <Icon name="chevron_right" size="m" />
+          </button>
         </div>
+      )}
+
+      {!loading && !viendoHoy && (
+        <button
+          type="button"
+          onClick={() => irAlDia(hoyFecha)}
+          className="w-full rounded-control border border-accent/30 py-2 font-sans text-label font-bold uppercase tracking-wider text-accent transition-all hover:bg-accent/10"
+        >
+          ← Volver a hoy
+        </button>
       )}
 
       {loading ? (
@@ -1537,102 +1502,31 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
             ))}
           </div>
         </div>
-      ) : allDietsList.length === 0 && !selectedDiet ? (
-        // 04 · Vacío — sin dieta publicada. Ningún vacío culpa al atleta: dice
-        // qué falta y quién lo tiene que hacer (handoff).
-        <div className="flex flex-col items-center gap-4 px-6 py-10 text-center animate-fade-up">
-          <span className="flex h-16 w-16 items-center justify-center rounded-field border border-dashed border-accent-line">
-            <Icon name="nutrition" size="xl" className="text-accent" />
-          </span>
-          <div className="flex flex-col gap-2 max-w-[320px]">
-            <p className="font-display font-black text-title-l uppercase leading-tight tracking-tight text-ink">
-              Dani está montando<br />tu dieta
-            </p>
-            <p className="font-sans text-body-s text-ink-2">
-              En cuanto tu entrenador publique tu plan de nutrición, lo verás aquí y te avisamos.
-            </p>
-          </div>
-          <span className="inline-flex items-center gap-2 rounded-field border border-accent-line bg-accent-bg px-4 py-3">
-            <span className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse-dot" />
-            <span className="font-mono text-label font-semibold tracking-[.08em] text-accent">SIN PLAN PUBLICADO TODAVÍA</span>
-          </span>
-          <Button variant="ghost" onClick={handleStartBlank} className="mt-2">
-            Empezar mi propio menú mientras tanto
-          </Button>
-        </div>
-      ) : viewDay !== TODAY_WD ? (() => {
-        const browseDietId = weeklySchedule[viewDay] ?? null;
-        const browseDiet = browseDietId ? allDietsList.find(d => d.id === browseDietId) ?? null : null;
-        return (
-          <div className="space-y-4">
-            <div className="bg-raised rounded-surface p-4 border border-hairline">
-              <span className="block font-mono text-caption text-ink-2 uppercase tracking-widest font-bold mb-1">
-                {WD_FULL[viewDay].charAt(0).toUpperCase() + WD_FULL[viewDay].slice(1)}
-              </span>
-              {browseDiet ? (
-                <>
-                  <span className="block font-sans font-bold text-title-m text-ink leading-tight">{browseDiet.name}</span>
-                  {browseDiet.coachNote && (
-                    <span className="block text-label text-accent italic mt-1">{browseDiet.coachNote}</span>
-                  )}
-                  <div className="flex gap-2 mt-3 flex-wrap">
-                    {BUDGET_CATS.map(cat => {
-                      const b = browseDiet.budget[cat];
-                      return b > 0 ? (
-                        <span key={cat} className={`text-caption font-mono font-bold px-3 py-1 rounded-surface border ${CAT_BG[cat]} ${CAT_COLOR[cat]}`}>
-                          {cat}: {b} int.
-                        </span>
-                      ) : null;
-                    })}
-                  </div>
-                </>
-              ) : (
-                <span className="block font-sans text-ink-2 text-body-s mt-1">Día libre — sin dieta programada.</span>
-              )}
-            </div>
-            <button
-              onClick={() => setViewDay(TODAY_WD)}
-              className="w-full py-3 rounded-control border border-accent/30 text-accent font-sans text-label font-bold uppercase tracking-wider hover:bg-accent/10 transition-all"
-            >
-              ← Volver a hoy
-            </button>
-          </div>
-        );
-      })() : (
+      ) : (
         <>
-          {/* Selector de dieta — sustituye la fila de chips (desbordaba con
-              varias dietas). Un solo control que resume la dieta activa y
-              abre "Mis dietas" para cambiar, crear, duplicar o borrar. */}
-          {allDietsList.length > 0 && selectedDiet && (() => {
-            const isScheduledToday = weeklySchedule[TODAY_WD] === selectedDiet.id;
-            const subtitle = isScheduledToday
-              ? `Programada para hoy (${WD_FULL[TODAY_WD]}) por tu coach`
-              : !selectedDiet.selfManaged
-              ? 'De tu entrenador'
-              : 'Tuya';
-            const otherCount = allDietsList.length - 1;
-            return (
-              <button
-                type="button"
-                onClick={() => setMisDietasOpen(true)}
-                className="w-full flex items-center gap-3 p-3 rounded-control bg-raised border border-hairline hover:border-accent/40 transition-all text-left"
-              >
-                <span className="w-9 h-9 rounded-control bg-accent-bg flex items-center justify-center flex-shrink-0">
-                  <Icon name={selectedDiet.selfManaged ? 'bookmark' : 'military_tech'} size="s" className="text-accent" />
+          {/* Acceso a los menús guardados. Antes esto era el selector de DIETA
+              (la del coach, las tuyas, la programada de hoy…) y elegir mal era
+              justo lo que hacía desaparecer el registro del día. Ahora el día
+              no se elige: esto solo abre los menús que te has guardado para
+              volver a ponerte uno. */}
+          {menusGuardados.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setMisDietasOpen(true)}
+              className="w-full flex items-center gap-3 p-3 rounded-control bg-raised border border-hairline hover:border-accent/40 transition-all text-left"
+            >
+              <span className="w-9 h-9 rounded-control bg-accent-bg flex items-center justify-center flex-shrink-0">
+                <Icon name="bookmark" size="s" className="text-accent" />
+              </span>
+              <span className="flex-1 min-w-0">
+                <span className="block font-sans font-bold text-body-s text-ink truncate">Mis menús guardados</span>
+                <span className="block font-mono text-caption text-ink-2 truncate">
+                  {menusGuardados.length} {menusGuardados.length === 1 ? 'menú listo para repetir' : 'menús listos para repetir'}
                 </span>
-                <span className="flex-1 min-w-0">
-                  <span className="block font-sans font-bold text-body-s text-ink truncate">{selectedDiet.name}</span>
-                  <span className="block font-mono text-caption text-ink-2 truncate">{subtitle}</span>
-                </span>
-                {otherCount > 0 && (
-                  <span className="flex-shrink-0 font-mono text-caption font-bold text-ink-2 bg-bg border border-hairline rounded-full px-2 py-0.5">
-                    +{otherCount}
-                  </span>
-                )}
-                <Icon name="expand_more" size="s" className="text-ink-2 flex-shrink-0" />
-              </button>
-            );
-          })()}
+              </span>
+              <Icon name="expand_more" size="s" className="text-ink-2 flex-shrink-0" />
+            </button>
+          )}
 
           {selectedDiet && (
             <React.Fragment key={selectedDiet.id}>
@@ -1644,9 +1538,11 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                     aquí arriba lo que queda: nombre + nota del coach. */}
                 <div className="flex items-center justify-between">
                   <span className="font-mono text-caption text-ink-2 uppercase tracking-widest font-bold">
-                    {selectedDiet.selfManaged ? 'TU MENÚ' : 'DIETA DE TU ENTRENADOR'}
+                    TU PLAN DEL DÍA
                   </span>
-                  <span className="font-mono text-caption text-accent uppercase tracking-widest font-bold">Hoy, {WD_FULL[TODAY_WD]}</span>
+                  <span className="font-mono text-caption text-accent uppercase tracking-widest font-bold">
+                    {viendoHoy ? `Hoy, ${WD_FULL[diaSemanaDe(viewDate)]}` : fechaLarga(viewDate)}
+                  </span>
                 </div>
                 <div className="flex items-center gap-2 mt-1">
                   <input
@@ -1764,15 +1660,13 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                       {/* Meal header */}
                       <div className="px-4 py-3 bg-raised/80 flex items-center justify-between gap-2">
                         <div className="flex items-center gap-3 min-w-0 flex-1">
-                          <button
-                            type="button"
-                            onClick={() => handleToggleMealDone(meal)}
-                            title={mealDone ? 'Desmarcar ingesta' : 'Registrar ingesta'}
-                            aria-label={mealDone ? 'Desmarcar ingesta' : 'Registrar ingesta'}
-                            className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${mealDone ? 'bg-accent border-accent' : 'border-hairline hover:border-accent/50'}`}
-                          >
-                            {mealDone && <span className="material-symbols-outlined text-black" style={{ fontSize: '13px' }}>check</span>}
-                          </button>
+                          {/* Ya no hay botón de "registrar ingesta": lo que está
+                              en la comida cuenta como comido desde que se mete.
+                              El punto solo dice si la comida tiene algo. */}
+                          <span
+                            aria-hidden
+                            className={`w-2.5 h-2.5 rounded-full flex-shrink-0 transition-all ${mealDone ? 'bg-accent' : 'bg-hairline'}`}
+                          />
                           <input
                             type="text"
                             value={meal.name}
@@ -1896,93 +1790,117 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                             </span>
                             <span className="font-sans text-body-s font-semibold">Añadir alimento del banco</span>
                           </button>
-                        ) : meal.items.map((item, idx) => {
-                          const key = `${meal.id}_${idx}`;
-                          const st = itemStates[key] ?? { foodLabel: item.foodLabel, done: false };
-                          // El botón "Cambiar" es lo único que abre el intercambiador —
-                          // antes era la fila entera con un icono decorativo sin ningún
-                          // affordance (queja real: "no da feedback ni info al tocar").
-                          const canDelete = selectedDiet.selfManaged || idx >= (origItemCounts[meal.id] ?? Infinity);
-                          const row = (
-                            <div
-                              className={`flex items-center gap-3 p-3 rounded-surface border transition-colors duration-(--duration-state) ${st.done ? 'bg-surface border-accent/20 opacity-75' : 'bg-surface border-hairline'}`}
-                            >
-                              {/* Category tag — compacto, no compite con el nombre */}
-                              <span className="w-8 h-8 rounded-control bg-inset border border-hairline flex-shrink-0 flex items-center justify-center px-0.5">
-                                <span className={`font-mono font-bold text-ink-3 leading-none text-center ${item.category.startsWith('MIX_') ? 'text-[8px] tracking-tight' : 'text-[10px]'}`}>
-                                  {item.category.replace('_', '')}
-                                </span>
-                              </span>
-
-                              {/* Cantidad (en oro) + nombre, seguidos, en una sola frase:
-                                  "250g harina de avena". Los gramos SOLO viven aquí; el
-                                  nombre nunca se trunca (si no cabe, envuelve). Tocar abre
-                                  el intercambiador. */}
-                              <button
-                                type="button"
-                                onClick={() => handleOpenPicker(meal.id, idx, item.category)}
-                                className="flex-1 min-w-0 text-left rounded-control -m-1 p-1 transition-colors hover:bg-raised/60 active:bg-raised"
-                              >
-                                <span className="font-mono text-body-s font-bold text-accent whitespace-nowrap">
-                                  {itemWeightLabel(item.foodLabel, item.quantity)}
-                                </span>
-                                {' '}
-                                <span className={`font-sans text-body-s font-semibold leading-snug ${st.done ? 'line-through text-ink-2' : 'text-ink'}`}>
-                                  {foodNameWithoutGrams(st.foodLabel)}
-                                </span>
-                              </button>
-
-                              {/* Stepper de cantidad — pasos de 0.25 intercambio; los gramos
-                                  se recalculan solos vía itemWeightLabel (proporcional a la
-                                  equivalencia del alimento). */}
-                              <div
-                                className="flex items-center gap-1 bg-inset rounded-control border border-hairline flex-shrink-0"
-                                onClick={e => e.stopPropagation()}
-                              >
-                                <button
-                                  type="button"
-                                  onClick={() => handleUpdateQuantity(meal.id, idx, -0.25)}
-                                  aria-label="Restar 0.25 intercambios"
-                                  className="w-7 h-7 flex items-center justify-center text-ink-2 hover:text-white font-bold text-body-s active:scale-90"
-                                >−</button>
-                                <span className="w-9 text-center font-mono text-caption text-white">{fmtQty(item.quantity)}</span>
-                                <button
-                                  type="button"
-                                  onClick={() => handleUpdateQuantity(meal.id, idx, 0.25)}
-                                  aria-label="Sumar 0.25 intercambios"
-                                  className="w-7 h-7 flex items-center justify-center text-ink-2 hover:text-white font-bold text-body-s active:scale-90"
-                                >+</button>
-                              </div>
-
-                              {/* Abrir la receta — solo en el primer alimento del grupo que
-                                  vino de ella. Con texto y no solo icono: en móvil no hay
-                                  hover, así que un `title` no lo lee nadie. */}
-                              {item.originRecipeId && meal.items.findIndex(it => it.originRecipeId === item.originRecipeId) === idx && (
-                                <button
-                                  type="button"
-                                  onClick={() => abrirReceta(meal.id, item.originRecipeId!)}
-                                  aria-label="Ver la receta de esta comida"
-                                  className="flex-shrink-0 flex items-center gap-1 rounded-control border border-hairline bg-raised px-2 py-2 text-ink-2 transition-transform duration-(--duration-state) hover:text-accent hover:border-accent/40 active:scale-95"
+                        ) : filasDeComida(meal.items).map(fila => {
+                          /* Una receta ocupa UN renglón, con la suma de sus
+                             intercambios; un alimento suelto, el suyo. Ver
+                             utils/filasDelPlan.ts para por qué. */
+                          if (fila.tipo === 'receta') {
+                            const nombreReceta = recipes.find(r => r.id === fila.recipeId)?.name ?? fila.nombre;
+                            const total = round2(BUDGET_CATS.reduce((s, c) => s + fila.intercambios[c], 0));
+                            return (
+                              <React.Fragment key={`${meal.id}_receta_${fila.idxs[0]}`}>
+                                <MealItemSwipeRow
+                                  className="rounded-surface"
+                                  onDelete={() => handleRemoveReceta(meal.id, fila.idxs)}
                                 >
-                                  <span className="material-symbols-outlined text-body-s select-none">skillet</span>
-                                  <span className="hidden sm:inline font-mono text-caption uppercase tracking-wider">Receta</span>
-                                </button>
-                              )}
+                                  <div className="flex items-center gap-3 p-3 rounded-surface border border-hairline bg-surface transition-colors duration-(--duration-state)">
+                                    <span className="w-8 h-8 rounded-control bg-accent-bg border border-accent/20 flex-shrink-0 flex items-center justify-center">
+                                      <span className="material-symbols-outlined text-body-s text-accent select-none">skillet</span>
+                                    </span>
 
-                            </div>
-                          );
-                          // Sin botones en la fila: se toca el alimento para cambiarlo,
-                          // se desliza a la derecha para marcarlo "comido" y a la
-                          // izquierda para quitarlo. Así el nombre tiene todo el ancho.
+                                    {/* Toda la fila abre la receta: foto, ingredientes y
+                                        pasos, igual que desde el Recetario. */}
+                                    <button
+                                      type="button"
+                                      onClick={() => abrirReceta(meal.id, fila.recipeId)}
+                                      className="flex-1 min-w-0 text-left rounded-control -m-1 p-1 transition-colors hover:bg-raised/60 active:bg-raised"
+                                    >
+                                      <span className="block font-sans text-body-s font-semibold leading-snug text-ink">
+                                        {nombreReceta}
+                                      </span>
+                                      <span className="block font-mono text-caption text-ink-2">
+                                        {fmtQty(total)} int. · {BUDGET_CATS.filter(c => fila.intercambios[c] > 0).map(c => `${CHIP_LABEL[c]} ${fmtQty(fila.intercambios[c])}`).join(' · ') || 'sin intercambios'}
+                                      </span>
+                                    </button>
+
+                                    {/* El stepper mueve el plato entero, no un ingrediente. */}
+                                    <div className="flex items-center gap-1 bg-inset rounded-control border border-hairline flex-shrink-0">
+                                      <button
+                                        type="button"
+                                        onClick={() => handleEscalarReceta(meal.id, fila.idxs, -0.25)}
+                                        aria-label={`Reducir ${nombreReceta}`}
+                                        className="w-7 h-7 flex items-center justify-center text-ink-2 hover:text-white font-bold text-body-s active:scale-90"
+                                      >−</button>
+                                      <span className="w-9 text-center font-mono text-caption text-white">{fmtQty(total)}</span>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleEscalarReceta(meal.id, fila.idxs, 0.25)}
+                                        aria-label={`Aumentar ${nombreReceta}`}
+                                        className="w-7 h-7 flex items-center justify-center text-ink-2 hover:text-white font-bold text-body-s active:scale-90"
+                                      >+</button>
+                                    </div>
+                                  </div>
+                                </MealItemSwipeRow>
+                              </React.Fragment>
+                            );
+                          }
+
+                          const { idx, item } = fila;
+                          const key = `${meal.id}_${idx}`;
+                          const st = itemStates[key] ?? { foodLabel: item.foodLabel, done: true };
+                          const canDelete = selectedDiet.selfManaged || idx >= (origItemCounts[meal.id] ?? Infinity);
                           return (
                             <React.Fragment key={key}>
                               <MealItemSwipeRow
                                 className="rounded-surface"
-                                eaten={st.done}
-                                onToggleEaten={() => handleToggleDone(meal.id, idx)}
                                 onDelete={canDelete ? () => handleRemoveItem(meal.id, idx) : undefined}
                               >
-                                {row}
+                                {/* El alimento se ve SIEMPRE igual: ni tachado ni
+                                    apagado por estar comido. Está en tu día, cuenta en
+                                    tus intercambios y se puede sumar o restar; tacharlo
+                                    lo hacía parecer descartado. */}
+                                <div className="flex items-center gap-3 p-3 rounded-surface border border-hairline bg-surface transition-colors duration-(--duration-state)">
+                                  {/* Category tag — compacto, no compite con el nombre */}
+                                  <span className="w-8 h-8 rounded-control bg-inset border border-hairline flex-shrink-0 flex items-center justify-center px-0.5">
+                                    <span className={`font-mono font-bold text-ink-3 leading-none text-center ${item.category.startsWith('MIX_') ? 'text-[8px] tracking-tight' : 'text-[10px]'}`}>
+                                      {item.category.replace('_', '')}
+                                    </span>
+                                  </span>
+
+                                  {/* Cantidad (en oro) + nombre, seguidos: "250g harina de
+                                      avena". Los gramos SOLO viven aquí; el nombre nunca se
+                                      trunca. Tocar abre el intercambiador. */}
+                                  <button
+                                    type="button"
+                                    onClick={() => handleOpenPicker(meal.id, idx, item.category)}
+                                    className="flex-1 min-w-0 text-left rounded-control -m-1 p-1 transition-colors hover:bg-raised/60 active:bg-raised"
+                                  >
+                                    <span className="font-mono text-body-s font-bold text-accent whitespace-nowrap">
+                                      {itemWeightLabel(item.foodLabel, item.quantity)}
+                                    </span>
+                                    {' '}
+                                    <span className="font-sans text-body-s font-semibold leading-snug text-ink">
+                                      {foodNameWithoutGrams(st.foodLabel)}
+                                    </span>
+                                  </button>
+
+                                  {/* Stepper de cantidad — pasos de 0.25 intercambio. */}
+                                  <div className="flex items-center gap-1 bg-inset rounded-control border border-hairline flex-shrink-0">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleUpdateQuantity(meal.id, idx, -0.25)}
+                                      aria-label="Restar 0.25 intercambios"
+                                      className="w-7 h-7 flex items-center justify-center text-ink-2 hover:text-white font-bold text-body-s active:scale-90"
+                                    >−</button>
+                                    <span className="w-9 text-center font-mono text-caption text-white">{fmtQty(item.quantity)}</span>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleUpdateQuantity(meal.id, idx, 0.25)}
+                                      aria-label="Sumar 0.25 intercambios"
+                                      className="w-7 h-7 flex items-center justify-center text-ink-2 hover:text-white font-bold text-body-s active:scale-90"
+                                    >+</button>
+                                  </div>
+                                </div>
                               </MealItemSwipeRow>
                             </React.Fragment>
                           );
@@ -2016,19 +1934,11 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                 </button>
               </div>
 
-              {/* Autoguardado — sin botón "Guardar": el estado refleja lo que
-                  el autoguardado (más arriba) ya está haciendo solo. La
-                  etiqueta avisa de antemano si lo que se está a punto de
-                  guardar es un fork (dieta del coach, editada). */}
+              {/* Autoguardado — sin botón "Guardar". Ya no avisa de que se vaya a
+                  crear una copia: no hay dieta del coach que forkear, el día se
+                  guarda en su propio registro y punto. */}
               {(() => {
-                const willFork = !selectedDiet.selfManaged && isDirty;
-                const statusLabel = saving
-                  ? 'Guardando...'
-                  : willFork
-                  ? 'Se guardará como copia tuya'
-                  : isDirty
-                  ? 'Cambios pendientes de autoguardar'
-                  : 'Todo guardado';
+                const statusLabel = isDirty ? 'Guardando el día...' : 'Día guardado';
                 return (
                   <div className="sticky bottom-20 md:bottom-4 flex items-center justify-between gap-3 bg-raised border border-hairline rounded-surface p-3 shadow-e1">
                     <span className="font-mono text-caption text-ink-2 uppercase tracking-wider pl-1">
@@ -2050,44 +1960,43 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
         </>
       )}
 
-      {/* "Mis dietas" — gestión de todas las dietas del atleta (programada
-          hoy / del coach / propias), sustituye la antigua pestaña separada. */}
-      {misDietasOpen && (() => {
-        const scheduledTodayId = weeklySchedule[TODAY_WD] ?? null;
-        const scheduledToday = allDietsList.filter(d => d.id === scheduledTodayId);
-        const fromCoach = allDietsList.filter(d => d.id !== scheduledTodayId && !d.selfManaged);
-        const own = allDietsList.filter(d => d.id !== scheduledTodayId && d.selfManaged && !d.menuTemplate);
-        const savedMenus = allDietsList.filter(d => d.id !== scheduledTodayId && d.menuTemplate);
-        const renderGroup = (label: string, list: Diet[]) => list.length === 0 ? null : (
-          <div className="space-y-1">
-            <p className="font-mono text-caption text-ink-2 uppercase tracking-wider px-1">{label}</p>
-            {list.map(dt => {
-              const dPlaced = computeDietPlaced(dt.meals);
-              const chips = BUDGET_CATS.filter(cat => dt.budget[cat] > 0)
-                .map(cat => `${CHIP_LABEL[cat]} ${fmtQty(dPlaced[cat])}/${fmtQty(dt.budget[cat])}`)
-                .join(' · ');
-              return (
-                <ListRow
-                  key={dt.id}
-                  title={dt.name}
-                  subtitle={chips || 'Sin alimentos todavía'}
-                  leading={
-                    <span className="w-9 h-9 rounded-control bg-raised border border-hairline flex items-center justify-center flex-shrink-0">
-                      <Icon name={dt.menuTemplate ? 'restaurant_menu' : dt.selfManaged ? 'bookmark' : 'military_tech'} size="s" className="text-ink-2" />
-                    </span>
-                  }
-                  trailing={
-                    <div className="flex items-center gap-1 flex-shrink-0" onClick={e => e.stopPropagation()}>
-                      <button
-                        type="button"
-                        onClick={() => handleDuplicateDiet(dt)}
-                        title="Duplicar"
-                        aria-label={`Duplicar ${dt.name}`}
-                        className="text-ink-2 hover:text-accent transition-colors p-2"
-                      >
-                        <Icon name="content_copy" size="s" />
-                      </button>
-                      {dt.selfManaged && (
+      {/* Los menús que el atleta se ha guardado, para volver a ponerse uno en el
+          día que esté viendo. Antes esta hoja gestionaba DIETAS —la programada
+          de hoy, las del coach, las tuyas— y elegir una cambiaba de qué colgaba
+          el día; ya no hay nada de eso. */}
+      {misDietasOpen && (
+        <Sheet
+          open
+          onClose={() => setMisDietasOpen(false)}
+          title="Mis menús guardados"
+          size="l"
+          footer={<Button variant="secondary" fullWidth onClick={handleStartBlankFromSheet}>Vaciar el día</Button>}
+        >
+          {menusGuardados.length === 0 ? (
+            <EmptyState
+              icon="restaurant_menu"
+              title="Todavía no has guardado ningún menú"
+              description="Monta tu día y pulsa «Guardar como menú» para repetirlo cuando quieras."
+            />
+          ) : (
+            <div className="space-y-1">
+              {menusGuardados.map(dt => {
+                const dPlaced = computeDietPlaced(dt.meals);
+                const chips = BUDGET_CATS.filter(cat => dPlaced[cat] > 0)
+                  .map(cat => `${CHIP_LABEL[cat]} ${fmtQty(dPlaced[cat])}`)
+                  .join(' · ');
+                return (
+                  <ListRow
+                    key={dt.id}
+                    title={dt.name}
+                    subtitle={chips || 'Sin alimentos'}
+                    leading={
+                      <span className="w-9 h-9 rounded-control bg-raised border border-hairline flex items-center justify-center flex-shrink-0">
+                        <Icon name="restaurant_menu" size="s" className="text-ink-2" />
+                      </span>
+                    }
+                    trailing={
+                      <div className="flex items-center gap-1 flex-shrink-0" onClick={e => e.stopPropagation()}>
                         <button
                           type="button"
                           onClick={() => setDietPendingDelete(dt)}
@@ -2097,32 +2006,16 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                         >
                           <Icon name="delete" size="s" />
                         </button>
-                      )}
-                    </div>
-                  }
-                  onClick={() => { handleSelectDiet(dt); setMisDietasOpen(false); }}
-                />
-              );
-            })}
-          </div>
-        );
-        return (
-          <Sheet
-            open
-            onClose={() => setMisDietasOpen(false)}
-            title="Mis dietas"
-            size="l"
-            footer={<Button variant="primary" icon="add" fullWidth onClick={handleStartBlankFromSheet}>Nueva dieta</Button>}
-          >
-            <div className="space-y-4">
-              {renderGroup(`Programada hoy (${WD_FULL[TODAY_WD]})`, scheduledToday)}
-              {renderGroup('De tu entrenador', fromCoach)}
-              {renderGroup('Tuyas', own)}
-              {renderGroup('Tus menús guardados', savedMenus)}
+                      </div>
+                    }
+                    onClick={() => { cargarMenuEnElDia(dt); setMisDietasOpen(false); showToast(`"${dt.name}" cargado en el día.`, 'success'); }}
+                  />
+                );
+              })}
             </div>
-          </Sheet>
-        );
-      })()}
+          )}
+        </Sheet>
+      )}
 
       {/* 1.4.1 de Apple: la cita de los cálculos de la pantalla. Va al pie, por
           decisión de producto — arriba comía la cabecera de "Mi plan". */}
@@ -2581,36 +2474,64 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
       )}
 
 
-      {/* Choose which diet to add a recipe to (hand-off from Recetas, first step) */}
-      {chooseDietForRecipe && (
-        <Sheet
-          open
-          onClose={() => setChooseDietForRecipe(null)}
-          title={`¿A qué dieta añadir "${chooseDietForRecipe.name}"?`}
-          size="m"
-          footer={<Button variant="ghost" onClick={() => setChooseDietForRecipe(null)} fullWidth>Cancelar</Button>}
-        >
+      {/* ¿Contra qué cupo cuadramos? — a petición de Dani. Se pregunta antes de
+          enseñar recetas porque la respuesta cambia la lista entera. */}
+      {preguntaAmbito && (() => {
+        const meal = selectedDiet?.meals.find(m => m.id === preguntaAmbito);
+        const idx = selectedDiet?.meals.findIndex(m => m.id === preguntaAmbito) ?? 0;
+        const nombreComida = meal ? mealLabel(meal.name, idx + 1) : 'esta comida';
+        const sinReparto = !meal?.target;
+        const totalDia = round2(Math.max(0, leftByCat.HC) + Math.max(0, leftByCat.PROT) + Math.max(0, leftByCat.GRASA));
+        const restanteComida = meal?.target
+          ? round2(BUDGET_CATS.reduce((s, c) => s + Math.max(0, (meal.target![c] ?? 0) - (mealDoneByCat[meal.id]?.[c] ?? 0)), 0))
+          : null;
+        return (
+          <Sheet
+            open
+            onClose={() => setPreguntaAmbito(null)}
+            title="¿Qué recetas te enseño?"
+            size="m"
+            footer={<Button variant="ghost" onClick={() => setPreguntaAmbito(null)} fullWidth>Cancelar</Button>}
+          >
             <div className="space-y-2 pt-2">
-              {allDietsList.map(dt => (
-                <button
-                  key={dt.id}
-                  onClick={() => handleChooseDietForRecipe(dt)}
-                  className="w-full flex items-center justify-between p-4 bg-surface hover:bg-raised rounded-control border border-hairline hover:border-accent/40 text-left transition-all"
-                >
-                  <span className="text-body-s text-ink font-sans truncate">{dt.name}</span>
-                  <span className="material-symbols-outlined text-ink-2 text-title-s flex-shrink-0">add_circle</span>
-                </button>
-              ))}
+              <p className="font-sans text-body-s text-ink-2 px-1">
+                Solo verás recetas que te quepan en el cupo que elijas.
+              </p>
+
               <button
-                onClick={() => handleChooseDietForRecipe('new')}
-                className="w-full flex items-center justify-between p-4 bg-surface hover:bg-raised rounded-control border border-dashed border-accent/40 hover:border-accent text-left transition-all"
+                onClick={() => abrirRecetarioConAmbito(preguntaAmbito, 'comida')}
+                disabled={sinReparto}
+                className="w-full flex items-center gap-3 p-4 bg-surface hover:bg-raised rounded-control border border-hairline hover:border-accent/40 text-left transition-all disabled:opacity-40 disabled:hover:border-hairline"
               >
-                <span className="text-body-s text-accent font-sans font-bold">Nueva dieta</span>
-                <span className="material-symbols-outlined text-accent text-title-s flex-shrink-0">add_circle</span>
+                <span className="w-9 h-9 rounded-control bg-accent-bg flex items-center justify-center flex-shrink-0">
+                  <Icon name="restaurant" size="s" className="text-accent" />
+                </span>
+                <span className="flex-1 min-w-0">
+                  <span className="block font-sans font-bold text-body-s text-ink">Que cuadre en {nombreComida}</span>
+                  <span className="block font-mono text-caption text-ink-2">
+                    {sinReparto
+                      ? 'Esta comida no tiene reparto asignado todavía'
+                      : `Te quedan ${fmtQty(restanteComida ?? 0)} int. en esta comida`}
+                  </span>
+                </span>
+              </button>
+
+              <button
+                onClick={() => abrirRecetarioConAmbito(preguntaAmbito, 'dia')}
+                className="w-full flex items-center gap-3 p-4 bg-surface hover:bg-raised rounded-control border border-hairline hover:border-accent/40 text-left transition-all"
+              >
+                <span className="w-9 h-9 rounded-control bg-accent-bg flex items-center justify-center flex-shrink-0">
+                  <Icon name="today" size="s" className="text-accent" />
+                </span>
+                <span className="flex-1 min-w-0">
+                  <span className="block font-sans font-bold text-body-s text-ink">Que cuadre en lo que me queda del día</span>
+                  <span className="block font-mono text-caption text-ink-2">Te quedan {fmtQty(totalDia)} int. hoy</span>
+                </span>
               </button>
             </div>
-        </Sheet>
-      )}
+          </Sheet>
+        );
+      })()}
 
       {/* Choose which meal to add a recipe to (hand-off from Recetas, multi-meal case) */}
       {chooseMealForRecipe && selectedDiet && (

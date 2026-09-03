@@ -19,7 +19,7 @@ import { allTimeBestBefore } from '../utils/trainingReport';
 import { Skeleton } from './ui';
 import { useBotonAtras } from '../services/botonAtras';
 import {
-  guardarSesion, cargarSesion, borrarSesion, formaDeSesion, tieneSeriesHechas,
+  guardarSesion, cargarSesion, borrarSesion, borrarDescanso, formaDeSesion, tieneSeriesHechas,
   limpiarSesionesCaducadas, seriesHechasEnBorrador,
 } from '../utils/sesionEnCurso';
 import { haptics } from '../services/haptics';
@@ -491,6 +491,9 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
       // Va después de las escrituras y no antes, para que un fallo al
       // guardar deje el trabajo del atleta donde estaba.
       borrarSesion(profile.email, activeAssignment.id);
+      // Y el descanso con él: si no, reabrir la rutina resucitaría el
+      // cronómetro de la serie que se acaba de guardar.
+      borrarDescanso(profile.email, activeAssignment.id);
       void haptics.success();
       if (assignmentUpdateFailed) {
         showToast('Entreno guardado, pero no se pudo marcar como completado.');
@@ -635,6 +638,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
           await handleSkip(activeAssignment);
           // Saltar la sesión sí es abandonarla: aquí el borrador se va.
           borrarSesion(profile.email, activeAssignment.id);
+          borrarDescanso(profile.email, activeAssignment.id);
           cerrarPlayer();
         }}
         sameDayCardio={sameDayCardio}

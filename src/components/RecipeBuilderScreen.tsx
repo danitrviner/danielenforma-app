@@ -19,6 +19,7 @@ const RECETAS_CATS = [
   'Desayuno y dulces',
   'Bebidas',
   'Suplementos deportivos',
+  'Alimentos y suplementos',
 ];
 
 const INTAKE_LABELS: Record<number, string> = {
@@ -88,13 +89,16 @@ const EMPTY_FORM: FormState = {
 
 interface Props { coachId: string; }
 
-const recipesQueryKey = ['recipes'] as const;
+// La clave lleva el dueño: la caché de recetas es por persona desde que cada
+// uno solo ve las suyas (ver getRecipes) — sin el uid, coach y atleta que
+// compartan dispositivo se leerían la lista del otro.
+const recipesQueryKey = (ownerId: string) => ['recipes', ownerId] as const;
 
 export default function RecipeBuilderScreen({ coachId }: Props) {
   const queryClient = useQueryClient();
   const { data: recipes = [], isPending: loadingRecipes } = useQuery({
-    queryKey: recipesQueryKey,
-    queryFn: () => getRecipes(),
+    queryKey: recipesQueryKey(coachId),
+    queryFn: () => getRecipes({ ownerId: coachId }),
   });
   const { data: foodItems = [], isPending: loadingFoodItems } = useQuery({
     queryKey: ['foodItems'],
@@ -247,11 +251,11 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
     try {
       if (editingId) {
         await updateRecipe(editingId, data);
-        queryClient.setQueryData<Recipe[]>(recipesQueryKey, prev =>
+        queryClient.setQueryData<Recipe[]>(recipesQueryKey(coachId), prev =>
           prev?.map(r => r.id === editingId ? { id: editingId, ...data } : r));
       } else {
         const created = await createRecipe(data);
-        queryClient.setQueryData<Recipe[]>(recipesQueryKey, prev => [...(prev ?? []), created]);
+        queryClient.setQueryData<Recipe[]>(recipesQueryKey(coachId), prev => [...(prev ?? []), created]);
       }
       setShowForm(false);
     } finally {
@@ -264,7 +268,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
     setConfirmDelete(null);
     try {
       await deleteRecipe(id);
-      queryClient.setQueryData<Recipe[]>(recipesQueryKey, prev => prev?.filter(r => r.id !== id));
+      queryClient.setQueryData<Recipe[]>(recipesQueryKey(coachId), prev => prev?.filter(r => r.id !== id));
     } finally {
       setDeleting(null);
     }

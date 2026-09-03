@@ -154,6 +154,16 @@ export interface UserProfile {
   // que ya tenga cuenta en la app.
   origen?: string;                  // 'instagram' | 'referido' | 'ads' | ... (mismo campo libre que CrmContacto.origen)
 
+  // ── Archivado del CRM (2026-09-03) ─────────────────────────────────────────
+  // Baja LÓGICA de la vista del coach, no del negocio: un archivado desaparece
+  // de las listas, de los contadores y de los selectores del CRM hasta que se
+  // desarchiva. No es lo mismo que `estadoCrm: 'baja'` — una baja sigue siendo
+  // un hecho comercial que cuenta para el churn y hay que poder consultar;
+  // archivar es «quítamelo de delante». Lo escribe SOLO el coach (está en la
+  // lista de campos bloqueados del `allow update` del atleta, junto a
+  // estadoCrm/fechaBaja), porque si no, un cliente podría desarchivarse solo.
+  archivadoCrm?: boolean;
+
   // ── Borrado de cuenta (2026-07-23) ─────────────────────────────────────────
   // api/delete-account.ts ANONIMIZA en vez de borrar (a propósito: el cuadro de
   // mandos sigue contando altas/bajas sobre estos documentos), y ya escribe
@@ -885,6 +895,22 @@ export interface OnboardingData {
   techniqueLevel?:        TechniqueLevel;
   currentMotivation?:     number;     // 1–10
   muscleGroupsToImprove?: string;
+  /** Días a la semana que PUEDE entrenar, y minutos de los que dispone por
+   *  sesión. Son las dos primeras cosas que hacen falta para programar un
+   *  mesociclo y no estaban en ninguna parte del alta: vivían solo como
+   *  preguntas sueltas de la plantilla del coach, que rellenaba él a mano. */
+  availableDaysPerWeek?:  number;
+  sessionMaxMinutes?:     number;
+  /* 03-09. Hasta dónde quiere llegar la persona, y en qué se deja ayudar.
+     Es la diferencia entre alguien que quiere que le digan qué comer y punto, y
+     alguien dispuesto a tocar su alimentación y su descanso — y decide el tono
+     del acompañamiento entero, no solo el plan. Se le pregunta a él porque
+     suponerlo por su cuenta es lo que hace que un coach empuje donde no le han
+     dado permiso. */
+  /** 'solo_fisico' | 'abierto' | 'cambio_vida' */
+  lifestyleScope?:        string;
+  /** Áreas concretas en las que acepta que le metan mano (ver LIFESTYLE_AREAS). */
+  lifestyleAreas?:        string[];
   restDayActive?:         boolean;
   restDayActiveDetail?:   string;
   sittingHoursPerDay?:    number;
@@ -974,6 +1000,31 @@ export interface DietCompletionLog {
   date: string;        // YYYY-MM-DD
   dietId: string;
   doneItemIds: string[];
+  /**
+   * Lo que el atleta comió ESE día, congelado en el propio día (09-2026).
+   *
+   * Antes el día no guardaba comidas: guardaba solo marcas de "hecho"
+   * (`doneItemIds`) que apuntaban por posición —`${mealId}_${idx}`— a las
+   * comidas de la dieta `dietId`. Eso tenía dos consecuencias malas:
+   *
+   *  · El historial mentía. La dieta es un documento vivo: si el martes cambias
+   *    el arroz por pasta, el lunes —que apuntaba a la misma dieta— pasaba a
+   *    decir que comiste pasta. No había forma de ver de verdad qué comiste el
+   *    lunes, ni de corregirlo.
+   *  · Cambiar de dieta dejaba el registro huérfano: las claves apuntaban a
+   *    `mealId`s que ya no existían y el día aparecía vacío aunque estuviera
+   *    registrado (de ahí el "he registrado la comida y al volver no está").
+   *
+   * Ahora el día es el documento: `meals` es la lista real de ese día y
+   * `doneItemIds` sigue indexando sobre ella con las mismas claves. Los días
+   * anteriores a este cambio no lo traen — `dietDelDia()` (utils/diaDeDieta.ts)
+   * cae a la dieta de `dietId` para ellos, así que el histórico viejo se sigue
+   * leyendo igual.
+   */
+  meals?: DietMeal[];
+  /** Cupo de intercambios pautado ese día. Igual que `meals`: se congela para
+   *  que el histórico no se mueva si luego le cambias el cupo al atleta. */
+  budget?: Record<FoodCategory, number>;
 }
 
 export interface NutritionPhase {

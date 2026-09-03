@@ -1,7 +1,7 @@
 import { registerPlugin, Capacitor } from '@capacitor/core';
 
 // Puente a la sesión de cardio en segundo plano (F5 del plan de réplica
-// FITIV) — misma forma que services/restTimer.ts, pero con un tercer
+// FITIV) — misma forma que services/sesionEnVivo.ts, pero con un tercer
 // método `update` real: el descanso tiene un valor fijo al arrancar, cardio
 // necesita refrescar BPM y zona muchas veces durante la misma sesión.
 //

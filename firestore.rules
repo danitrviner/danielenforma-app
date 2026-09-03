@@ -148,6 +148,13 @@ service cloud.firestore {
       // motivoBaja, motivoBajaDetalle, origen— sigue bloqueado, que es donde
       // hacer trampas sí tendría consecuencias.
       //
+      // `archivadoCrm` se añade (03-09): archivar es una decisión de la vista
+      // del coach; si el atleta pudiera escribirlo, se desarchivaría solo y
+      // reaparecería en las listas de las que se le quitó. No se añade a la
+      // lista del `allow create` de arriba a propósito — ahí solo debe haber
+      // campos que el cliente no manda NUNCA al crear su perfil, y meter uno
+      // que sí manda es lo que rompió el alta de todos los atletas en 16-08.
+      //
       // `currentStreak`/`maxStreak` se quedan bloqueados: el cliente no los
       // escribe en ningún sitio, solo se inicializan al crear el perfil.
       // `planPublishedAt` se añade (T7.b, 18-08): es el momento en que el
@@ -160,7 +167,7 @@ service cloud.firestore {
                             .hasAny(['planStartDate', 'planDurationMonths', 'role', 'setupSummary',
                                      'currentStreak', 'maxStreak', 'estadoCrm',
                                      'fechaBaja', 'motivoBaja', 'motivoBajaDetalle', 'origen',
-                                     'planPublishedAt']));
+                                     'planPublishedAt', 'archivadoCrm']));
       allow delete: if isCoach();
     }
 
@@ -352,7 +359,25 @@ service cloud.firestore {
     // Ese centinela tiene dos valores por historia; ver OWNER_RECETARIO en
     // src/db/recipes.ts, que explica por qué y advierte de no quitar el heredado.
     match /recipes/{docId} {
-      allow read: if esUsuarioDeLaApp();  // 04-10
+      /* 09-01 · `get` y `list` separados a propósito.
+
+         ABRIR UNA RECETA CONCRETA (`get`) sigue permitido a cualquier usuario
+         de la app: hace falta para que un atleta abra la receta que el coach le
+         ha puesto en el menú semanal, y para que el coach abra la que un atleta
+         se ha creado y ha metido en su plan. Es una lectura por id, no se puede
+         barrer con ella.
+
+         LISTAR (`list`) pasa a exigir que la consulta esté acotada al dueño:
+         la regla se evalúa documento a documento sobre los candidatos, así que
+         Firestore rechaza de entrada cualquier consulta que no lleve el
+         `where('ownerId','==',uid)`. Es lo que impide de verdad que las recetas
+         de un atleta le salgan a otro; el filtro del cliente (db/recipes.ts)
+         por sí solo era cosmético.
+
+         El recetario importado NO se lista desde aquí —va por el índice
+         empaquetado, ver `queryRecetas`—, así que esta regla no lo esconde. */
+      allow get: if esUsuarioDeLaApp();
+      allow list: if isCoach() || isOwnerUid(resource.data.ownerId);
       allow create: if isCoach()
                     || (request.auth != null && request.resource.data.ownerId == request.auth.uid);
       allow update, delete: if isCoach() || isOwnerUid(resource.data.ownerId);

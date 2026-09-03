@@ -16,7 +16,7 @@ import androidx.core.app.NotificationCompat
 // "la sesión sobrevive al bolsillo". Arrancado/parado/actualizado desde
 // CardioSessionPlugin.kt.
 //
-// Diferencias con RestTimerService.kt, que sostiene el descanso entre
+// Diferencias con SesionEnVivoService.kt, que sostiene la serie/descanso entre
 // series (no se toca: está en producción):
 // - El cronómetro SUBE (sesión en curso), no baja — no hay CountDownTimer
 //   aquí, la app manda el tiempo transcurrido en cada `update()` desde su

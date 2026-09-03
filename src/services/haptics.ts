@@ -21,6 +21,13 @@ async function safe(fn: () => Promise<void>): Promise<void> {
  *   heavy   — cambio de intervalo en HIIT.
  *   success — cerrar día de nutrición en presupuesto, cerrar semana de
  *             cardio, terminar sesión.
+ *   aviso   — fin del descanso entre series. Doble golpe corto. Categoría
+ *             PROPIA del handoff de notificaciones (03-09): no es selección
+ *             (el atleta no ha tocado nada) ni éxito (no ha logrado nada) —
+ *             es el sistema reclamando su atención con el móvil bloqueado.
+ *             Por debajo usa el patrón de notificación de aviso del sistema,
+ *             que es exactamente ese doble golpe; se nombra aparte para que
+ *             nadie lo reutilice como «algo ha ido mal».
  *   warning — superar el presupuesto de una categoría, salirse de zona FC
  *             más de 30 s (una sola vez, no en bucle — el llamador decide
  *             cuándo, este servicio no debounce).
@@ -31,4 +38,5 @@ export const haptics = {
   heavy: () => safe(() => Haptics.impact({ style: ImpactStyle.Heavy })),
   success: () => safe(() => Haptics.notification({ type: NotificationType.Success })),
   warning: () => safe(() => Haptics.notification({ type: NotificationType.Warning })),
+  aviso: () => safe(() => Haptics.notification({ type: NotificationType.Warning })),
 };

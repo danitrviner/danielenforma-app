@@ -1,5 +1,6 @@
 import { Diet, DietCompletionLog, StepLog, BodyweightLog, OnboardingData, FoodCategory, MenuCompletionLog, WeeklyMenu, WeekDay } from '../types';
 import { GRAMS_PER_EXCHANGE } from './nutritionConstants';
+import { adherenciaDelDia } from './diaDeDieta';
 
 const WEEK_DAYS: WeekDay[] = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 
@@ -46,13 +47,7 @@ export function computeAdherenceRate(
   const inWindow = logs.filter(l => window.has(l.date));
   if (inWindow.length === 0) return { daysLogged: 0, windowDays: thresholds.windowDays, avgPct: 0 };
 
-  const dietsById = new Map(diets.map(d => [d.id, d]));
-  const pcts = inWindow.map(log => {
-    const diet = dietsById.get(log.dietId);
-    const totalItems = diet ? diet.meals.reduce((s, m) => s + m.items.length, 0) : 0;
-    if (totalItems === 0) return 0;
-    return Math.min(100, (log.doneItemIds.length / totalItems) * 100);
-  });
+  const pcts = inWindow.map(log => adherenciaDelDia(log, diets) ?? 0);
   const avgPct = Math.round(pcts.reduce((s, p) => s + p, 0) / pcts.length);
   return { daysLogged: inWindow.length, windowDays: thresholds.windowDays, avgPct };
 }

@@ -158,6 +158,81 @@ export async function importarCrmContactosBatch(
   return escritos;
 }
 
+// ── Borrado definitivo de un cliente ─────────────────────────────────────────
+
+/**
+ * Se lanza al intentar borrar un cliente que tiene cobros YA cobrados. No es
+ * un capricho de la UI: la regla de Firestore prohíbe borrar un `crmPagos` con
+ * `estado == 'pagado'`, así que el lote fallaría entero a mitad. Un cliente
+ * facturado se archiva, no se borra — si no, el mes que ya cuadraste deja de
+ * cuadrar.
+ */
+export class ClienteConCobros extends Error {
+  constructor(public readonly cobros: number, public readonly importeCents: number) {
+    super(
+      `Este cliente tiene ${cobros} ${cobros === 1 ? 'cobro' : 'cobros'} ya cobrados. ` +
+      `No se puede borrar sin descuadrar lo facturado: archívalo en su lugar.`
+    );
+    this.name = 'ClienteConCobros';
+  }
+}
+
+/**
+ * Borra un cliente y TODO su rastro comercial (servicios, pagos pendientes,
+ * suscripciones y reuniones) en lotes atómicos de 500.
+ *
+ * Solo para contactos sin cuenta y para perfiles ya anonimizados —quien tiene
+ * cuenta viva se borra desde `api/delete-account.ts`, que además limpia Auth,
+ * Storage y sus datos de entreno; borrar aquí su `user_profiles` dejaría todo
+ * eso huérfano y la app le crearía un perfil nuevo en su siguiente arranque.
+ * Esa comprobación vive en el hook que llama aquí (useEliminarCliente).
+ *
+ * Lo que NO se borra: nada con dinero ya cobrado — ver `ClienteConCobros`.
+ */
+export async function eliminarClienteDelCrm(objetivo: {
+  clientId: string;
+  contactoId?: string;
+  userId?: string;
+}): Promise<number> {
+  await authReady;
+
+  // Se filtra sobre los catálogos (ya en caché local a coste cero) en vez de
+  // consultar cinco veces a Firestore, igual que `getCrmXByCliente`.
+  const [servicios, pagos, suscripciones, reuniones] = await Promise.all([
+    getCrmServicios(), getCrmPagos(), getCrmSuscripciones(), getCrmReuniones(),
+  ]);
+
+  const mios = <T extends { clientId: string }>(xs: T[]) => xs.filter(x => x.clientId === objetivo.clientId);
+  const pagosDelCliente = mios(pagos);
+  const cobrados = pagosDelCliente.filter(p => p.estado === 'pagado');
+  if (cobrados.length > 0) {
+    throw new ClienteConCobros(cobrados.length, cobrados.reduce((t, p) => t + p.importeCents, 0));
+  }
+
+  const refs = [
+    ...mios(servicios).map(x => doc(db, COL_SERVICIOS, x.id)),
+    ...pagosDelCliente.map(x => doc(db, COL_PAGOS, x.id)),
+    ...mios(suscripciones).map(x => doc(db, COL_SUSCRIPCIONES, x.id)),
+    ...mios(reuniones).map(x => doc(db, COL_REUNIONES, x.id)),
+    ...(objetivo.contactoId ? [doc(db, COL_CONTACTOS, objetivo.contactoId)] : []),
+    ...(objetivo.userId ? [doc(db, 'user_profiles', objetivo.userId)] : []),
+  ];
+
+  for (const lote of enLotes(refs, TAMANO_LOTE)) {
+    const batch = writeBatch(db);
+    for (const ref of lote) batch.delete(ref);
+    await conTimeout('Borrar cliente', batch.commit());
+  }
+
+  // Se marcan los cinco sellos aunque no todos hayan cambiado: es una escritura
+  // puntual y manual, no un camino caliente, y equivocarse por defecto aquí
+  // significa dejarle al coach su propia caché mostrando a alguien que borró.
+  for (const col of [COL_CONTACTOS, COL_SERVICIOS, COL_PAGOS, COL_SUSCRIPCIONES, COL_REUNIONES]) {
+    void marcarCatalogoCambiado(col);
+  }
+  return refs.length;
+}
+
 // ── Campos CRM sobre user_profiles ───────────────────────────────────────────
 
 /**
@@ -175,7 +250,7 @@ export async function updateClienteCrmFields(
   userId: string,
   updates: Partial<Pick<UserProfile,
     'displayName' | 'dni' | 'direccion' | 'telefono' | 'estadoCrm' |
-    'fechaBaja' | 'motivoBaja' | 'motivoBajaDetalle' | 'origen'
+    'fechaBaja' | 'motivoBaja' | 'motivoBajaDetalle' | 'origen' | 'archivadoCrm'
   >>
 ): Promise<void> {
   await authReady;
@@ -207,7 +282,7 @@ export async function getCrmServiciosByCliente(clientId: string): Promise<CrmSer
  */
 export async function createCrmServicioConPago(
   data: Omit<CrmServicio, 'id' | 'createdAt' | 'updatedAt'>,
-  opciones: { generarPago: boolean; cuotas?: number }
+  opciones: { generarPago: boolean; cuotas?: number; primerCobro?: string }
 ): Promise<{ servicio: CrmServicio; pagos: CrmPago[] }> {
   await authReady;
   const ts = ahora();
@@ -220,7 +295,12 @@ export async function createCrmServicioConPago(
   const pagos: CrmPago[] = [];
   if (debeGenerarPago) {
     const importes = repartirEnCuotas(data.importeCents, numCuotas);
-    let fechaCuota = data.fechaContratacion;
+    // La emisión del primer cobro es la fecha en que TOCA cobrar, que no tiene
+    // por qué ser hoy: un plan que empieza el lunes que viene se cobra ese
+    // lunes. Antes se anclaba siempre a `fechaContratacion` y un servicio
+    // contratado hoy para empezar en dos semanas nacía ya con su cobro
+    // «pendiente desde hoy» — y a los ocho días, marcado en rojo por retraso.
+    let fechaCuota = opciones.primerCobro || data.fechaInicio || data.fechaContratacion;
     for (let i = 0; i < numCuotas; i++) {
       const pagoRef = doc(collection(db, COL_PAGOS));
       pagos.push({
@@ -329,20 +409,83 @@ export async function getCrmSuscripcionesByCliente(clientId: string): Promise<Cr
   return (await getCrmSuscripciones()).filter(s => s.clientId === clientId);
 }
 
+/**
+ * Da de alta una suscripción y, si `generarPrimerCobro`, su primer cobro
+ * pendiente en el MISMO lote — con `fechaEmision` en la fecha de ese primer
+ * cobro (que puede ser futura) y `proximoCobro` ya avanzado un periodo.
+ *
+ * Por qué existe la opción: sin ella, una suscripción que empieza el lunes que
+ * viene no aparecía en ningún sitio como dinero por cobrar hasta que alguien
+ * se acordara de pulsar «Registrar cobro» — el cobro no existía, así que ni
+ * salía en Pagos, ni en «Pendiente de cobro», ni en el resumen. Se cobra
+ * pronto o tarde, pero se ve desde el minuto uno.
+ */
 export async function createCrmSuscripcion(
-  data: Omit<CrmSuscripcion, 'id' | 'createdAt' | 'updatedAt' | 'ultimoCobroGeneradoEn'>
+  data: Omit<CrmSuscripcion, 'id' | 'createdAt' | 'updatedAt' | 'ultimoCobroGeneradoEn'>,
+  opciones: { generarPrimerCobro?: boolean } = {}
 ): Promise<CrmSuscripcion> {
   await authReady;
-  const payload = { ...data, createdAt: ahora(), updatedAt: ahora() };
-  const ref = await conTimeout('Crear suscripción', addDoc(collection(db, COL_SUSCRIPCIONES), stripUndefined(payload)));
+  const ts = ahora();
+  const generar = Boolean(opciones.generarPrimerCobro) && data.importeCents > 0;
+
+  if (!generar) {
+    const payload = { ...data, createdAt: ts, updatedAt: ts };
+    const ref = await conTimeout('Crear suscripción', addDoc(collection(db, COL_SUSCRIPCIONES), stripUndefined(payload)));
+    void marcarCatalogoCambiado(COL_SUSCRIPCIONES);
+    return { ...payload, id: ref.id };
+  }
+
+  const subRef = doc(collection(db, COL_SUSCRIPCIONES));
+  const pagoRef = doc(collection(db, COL_PAGOS));
+  const suscripcion: CrmSuscripcion = {
+    ...data,
+    id: subRef.id,
+    // El ciclo que se acaba de emitir ya no es el próximo: el siguiente es un
+    // periodo después. Es exactamente lo que hace `registrarCobroSuscripcion`.
+    proximoCobro: avanzarPeriodo(data.proximoCobro, data.periodicidad),
+    ultimoCobroGeneradoEn: ts,
+    createdAt: ts,
+    updatedAt: ts,
+  };
+
+  const batch = writeBatch(db);
+  const { id: _sid, ...subDoc } = suscripcion;
+  batch.set(subRef, stripUndefined(subDoc));
+  batch.set(pagoRef, stripUndefined({
+    clientId: data.clientId,
+    clientNombre: data.clientNombre,
+    suscripcionId: subRef.id,
+    concepto: data.concepto,
+    importeCents: data.importeCents,
+    estado: 'pendiente' as const,
+    fechaEmision: data.proximoCobro,
+    createdAt: ts,
+    updatedAt: ts,
+    createdBy: data.createdBy,
+  }));
+  await conTimeout('Crear suscripción', batch.commit());
+
   void marcarCatalogoCambiado(COL_SUSCRIPCIONES);
-  return { ...payload, id: ref.id };
+  void marcarCatalogoCambiado(COL_PAGOS);
+  return suscripcion;
 }
 
 export async function updateCrmSuscripcion(id: string, updates: Partial<CrmSuscripcion>): Promise<void> {
   await authReady;
   const payload = stripUndefined({ ...updates, updatedAt: ahora() }) as Record<string, unknown>;
   await conTimeout('Guardar suscripción', updateDoc(doc(db, COL_SUSCRIPCIONES, id), payload));
+  void marcarCatalogoCambiado(COL_SUSCRIPCIONES);
+}
+
+/**
+ * Borra una suscripción. Los pagos que YA generó no se tocan: son cobros que
+ * existieron (algunos ya cobrados), y borrarlos descuadraría meses cerrados.
+ * Se borra la regla de recurrencia, no su historial — si además sobra algún
+ * cobro pendiente que generó, se borra uno a uno desde la tabla de pagos.
+ */
+export async function deleteCrmSuscripcion(id: string): Promise<void> {
+  await authReady;
+  await conTimeout('Borrar suscripción', deleteDoc(doc(db, COL_SUSCRIPCIONES, id)));
   void marcarCatalogoCambiado(COL_SUSCRIPCIONES);
 }
 

@@ -1,7 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   getCrmSuscripciones, getCrmSuscripcionesByCliente,
-  createCrmSuscripcion, updateCrmSuscripcion, registrarCobroSuscripcion,
+  createCrmSuscripcion, updateCrmSuscripcion, deleteCrmSuscripcion,
+  registrarCobroSuscripcion,
 } from '../../../dbService';
 import { CobroYaRegistrado } from '../../../db/crm';
 import { useToast } from '../../../hooks/useToast';
@@ -13,6 +14,13 @@ export interface NuevaSuscripcion {
   importeCents: number;
   periodicidad: Periodicidad;
   proximoCobro: string;
+  /**
+   * Genera ya el cobro pendiente de ese primer ciclo (aunque su fecha sea
+   * futura) y deja `proximoCobro` en el ciclo siguiente. Sin esto, una
+   * suscripción que empieza el lunes que viene no era dinero por cobrar en
+   * ningún sitio hasta que alguien pulsara «Registrar cobro».
+   */
+  generarPrimerCobro?: boolean;
 }
 
 export function useSuscripciones() {
@@ -45,16 +53,19 @@ export function useCrearSuscripcion() {
   return useMutation({
     mutationFn: async ({ cliente, coachEmail, datos }: {
       cliente: Cliente; coachEmail: string; datos: NuevaSuscripcion;
-    }) => createCrmSuscripcion({
-      clientId: cliente.id,
-      clientNombre: cliente.nombre,
-      concepto: datos.concepto,
-      importeCents: datos.importeCents,
-      periodicidad: datos.periodicidad,
-      proximoCobro: datos.proximoCobro,
-      estado: 'activa',
-      createdBy: coachEmail,
-    }),
+    }) => createCrmSuscripcion(
+      {
+        clientId: cliente.id,
+        clientNombre: cliente.nombre,
+        concepto: datos.concepto,
+        importeCents: datos.importeCents,
+        periodicidad: datos.periodicidad,
+        proximoCobro: datos.proximoCobro,
+        estado: 'activa',
+        createdBy: coachEmail,
+      },
+      { generarPrimerCobro: datos.generarPrimerCobro },
+    ),
     onSuccess: (_res, vars) => invalidarTodo(qc, vars.cliente.id),
   });
 }
@@ -64,6 +75,19 @@ export function useActualizarSuscripcion() {
   return useMutation({
     mutationFn: ({ id, updates }: { id: string; clientId: string; updates: Partial<CrmSuscripcion> }) =>
       updateCrmSuscripcion(id, updates),
+    onSuccess: (_res, vars) => invalidarTodo(qc, vars.clientId),
+  });
+}
+
+/**
+ * Borra la suscripción (la regla de recurrencia). Los cobros que ya generó se
+ * quedan: son hechos, algunos ya cobrados. Para dejar de facturar sin perder
+ * la ficha, «Pausar» sigue siendo lo suyo — esto es para las creadas por error.
+ */
+export function useEliminarSuscripcion() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id }: { id: string; clientId: string }) => deleteCrmSuscripcion(id),
     onSuccess: (_res, vars) => invalidarTodo(qc, vars.clientId),
   });
 }

@@ -29,6 +29,10 @@ export default function NuevoServicioModal({ cliente, coachEmail, onCerrar }: {
   const [descripcion, setDescripcion] = useState('');
   const [generarPago, setGenerarPago] = useState(true);
   const [cuotas, setCuotas] = useState(1);
+  // Cadena vacía = «sigue al inicio». Así, mover el inicio arrastra el primer
+  // cobro con él mientras el coach no lo fije a mano a otra fecha.
+  const [primerCobro, setPrimerCobro] = useState('');
+  const fechaPrimerCobro = primerCobro || fechaInicio;
 
   const importeCents = parseEurosACents(importe);
   const importeInvalido = importe.trim().length > 0 && importeCents === null;
@@ -61,6 +65,7 @@ export default function NuevoServicioModal({ cliente, coachEmail, onCerrar }: {
           descripcion: descripcion.trim() || undefined,
           generarPago,
           cuotas,
+          primerCobro: fechaPrimerCobro,
         },
       });
       showToast(
@@ -161,6 +166,24 @@ export default function NuevoServicioModal({ cliente, coachEmail, onCerrar }: {
             </span>
           </span>
         </label>
+
+        {generarPago && (
+          <Campo
+            label="Primer cobro"
+            hint={
+              cuotas > 1
+                ? `Primera cuota el ${formatDia(fechaPrimerCobro)}; las demás, una al mes desde ahí.`
+                : `Se emite con fecha ${formatDia(fechaPrimerCobro)}. Por defecto, el día en que arranca el servicio.`
+            }
+          >
+            <input
+              className={inputClass}
+              type="date"
+              value={fechaPrimerCobro}
+              onChange={e => setPrimerCobro(e.target.value)}
+            />
+          </Campo>
+        )}
 
         {generarPago && (
           <Campo

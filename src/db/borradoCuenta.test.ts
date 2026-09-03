@@ -5,6 +5,7 @@ import {
   POR_ID_EMAIL,
   POR_CAMPO,
   CRM_A_ANONIMIZAR,
+  CRM_A_BORRAR,
   PREFIJOS_STORAGE,
 } from '../../api/delete-account';
 
@@ -19,9 +20,9 @@ import {
 
    Estas pruebas leen `firestore.rules` —la única lista completa y siempre
    actualizada de lo que existe— y obligan a que cada colección esté clasificada
-   a propósito: o se borra, o se anonimiza, o está declarada abajo como que no
-   contiene datos personales del atleta. Añadir una colección sin decidir cuál de
-   las tres es, rompe la prueba.
+   a propósito: o se borra, o se conserva anonimizada, o está declarada abajo
+   como que no contiene datos personales del atleta. Añadir una colección sin
+   decidir cuál de las tres es, rompe la prueba.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 // Colecciones que NO llevan datos personales del atleta, con el motivo. Cada
@@ -48,10 +49,6 @@ const SIN_DATOS_DEL_ATLETA: Record<string, string> = {
   // Cosas del coach, no del atleta.
   coachSettings: 'ajustes del propio coach',
   aiAuditLog: 'auditoría de uso de la API, sin datos del atleta y con retención propia',
-  // La ficha del atleta no se borra: se reemplaza por una versión anónima
-  // dentro del propio endpoint (ver el paso 3), porque el cuadro de mandos
-  // cuenta altas y bajas sobre ella.
-  user_profiles: 'se anonimiza in situ en el paso 3 del endpoint',
   // Ruido del parseo: `match /databases/{database}/documents` es el bloque raíz.
   databases: 'no es una colección, es el nodo raíz de las reglas',
 };
@@ -66,11 +63,20 @@ function coleccionesDeLasReglas(): string[] {
   return [...encontradas].sort();
 }
 
+// Colecciones que el endpoint trata en un paso propio, fuera de los dos mapas
+// genéricos, porque cada una necesita algo distinto. Sí llevan datos del
+// atleta: por eso están aquí y no en SIN_DATOS_DEL_ATLETA.
+const TRATADAS_APARTE: Record<string, string> = {
+  user_profiles: 'se borra entera en el paso 3 del endpoint',
+  crmContactos: 'se borra en el paso 5; era el único del CRM con datos personales propios',
+};
+
 const CUBIERTAS = new Set<string>([
   ...POR_ID_EMAIL,
   ...POR_CAMPO,
   ...CRM_A_ANONIMIZAR.map(c => c.coleccion),
-  'crmContactos', // se anonimiza aparte, tiene datos personales propios
+  ...CRM_A_BORRAR.map(c => c.coleccion),
+  ...Object.keys(TRATADAS_APARTE),
 ]);
 
 describe('inventario del borrado de cuenta', () => {
@@ -81,7 +87,8 @@ describe('inventario del borrado de cuenta', () => {
     expect(
       sinClasificar,
       `Colecciones sin clasificar en el borrado de cuenta: ${sinClasificar.join(', ')}.\n` +
-        'Añádelas a POR_ID_EMAIL / POR_CAMPO / CRM_A_ANONIMIZAR en api/delete-account.ts, ' +
+        'Añádelas a POR_ID_EMAIL / POR_CAMPO / CRM_A_ANONIMIZAR / CRM_A_BORRAR en ' +
+        'api/delete-account.ts, ' +
         'o a SIN_DATOS_DEL_ATLETA en esta prueba explicando por qué no llevan datos del atleta.'
     ).toEqual([]);
   });
@@ -90,6 +97,15 @@ describe('inventario del borrado de cuenta', () => {
     // Si una colección aparece en las dos listas, una de las dos miente.
     const enAmbas = [...CUBIERTAS].filter(c => c in SIN_DATOS_DEL_ATLETA);
     expect(enAmbas).toEqual([]);
+  });
+
+  it('ninguna colección del CRM se conserva y se borra a la vez', () => {
+    // Estar en los dos mapas es una contradicción: el bulkWriter aplicaría el
+    // update y el delete en el mismo lote y el resultado dependería del orden.
+    const enAmbos = CRM_A_ANONIMIZAR
+      .map(c => c.coleccion)
+      .filter(c => CRM_A_BORRAR.some(b => b.coleccion === c));
+    expect(enAmbos).toEqual([]);
   });
 
   it('no hay colecciones repetidas entre las dos estrategias de borrado', () => {
@@ -111,14 +127,18 @@ describe('inventario del borrado de cuenta', () => {
     expect([...conEmail].sort()).toEqual([...PREFIJOS_STORAGE].sort());
   });
 
-  it('las colecciones del CRM que se anonimizan son exactamente las que existen', () => {
+  it('cada colección del CRM está o conservada anonimizada o borrada, sin olvidar ninguna', () => {
     const reglas = readFileSync(resolve(__dirname, '../../firestore.rules'), 'utf8');
     const crmEnReglas = new Set<string>();
     for (const linea of reglas.split('\n')) {
       const m = linea.match(/^\s*match \/(crm[a-zA-Z]+)\//);
       if (m) crmEnReglas.add(m[1]);
     }
-    const tratadas = new Set([...CRM_A_ANONIMIZAR.map(c => c.coleccion), 'crmContactos']);
+    const tratadas = new Set([
+      ...CRM_A_ANONIMIZAR.map(c => c.coleccion),
+      ...CRM_A_BORRAR.map(c => c.coleccion),
+      'crmContactos',
+    ]);
     expect([...crmEnReglas].sort()).toEqual([...tratadas].sort());
   });
 });

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- El "+" de un stepper: oro al 16 %, con el glifo en oro. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="#29FFC72C" />
+    <corners android:radius="11dp" />
+</shape>

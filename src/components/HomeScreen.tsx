@@ -16,6 +16,7 @@ import RecordatorioGimnasioCard from '../features/gimnasio/RecordatorioGimnasioC
 import { useTourTarget } from '../features/tutorial/TourTargetContext';
 import { Skeleton } from './ui';
 import { Icon, Button, PageHeader, ListRow } from './ui';
+import { dietaDelDia } from '../utils/diaDeDieta';
 
 type NavTarget = 'checkin' | 'training' | 'nutrition' | 'roadmap' | 'academy' | 'cardio' | 'profile';
 
@@ -125,7 +126,11 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
   const intervalAssignment = pickActiveIntervalAssignment(cardioAssignments, TODAY_DATE);
   const cardioRx = zona2Assignment ?? intervalAssignment;
 
-  const todaysDiet = pickTodaysDiet(diets, dietConfig, TODAY_WD);
+  /* Las ingestas de HOY salen del registro del día, no de la dieta "programada
+     para el martes": el plan del día vive en su propio documento desde 09-2026
+     (ver DietCompletionLog.meals). `dietaDelDia` cae a la dieta antigua para
+     los días de antes del cambio, así que un histórico viejo se sigue leyendo. */
+  const todaysDiet = dietaDelDia(completionLog ?? null, diets) ?? pickTodaysDiet(diets, dietConfig, TODAY_WD);
   const mealsDone = todaysDiet ? countMealsDone(todaysDiet, completionLog?.doneItemIds ?? []) : null;
 
   /* A-2. Se le pregunta aquí, en la primera pantalla que abre, porque los

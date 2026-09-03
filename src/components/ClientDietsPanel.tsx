@@ -115,6 +115,7 @@ export default function ClientDietsPanel({
     /* ── Weekly menu editor (recipe-first generator) ── */
     <WeeklyMenuEditor
       athleteEmail={athlete.email}
+      coachId={coachId}
       onboarding={onboardingData}
       diets={athleteDiets}
       dietConfig={athleteDietConfig}

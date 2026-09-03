@@ -22,7 +22,13 @@ export async function getOnboarding(email: string): Promise<OnboardingData | nul
   if (forceLocalOnly) return local;
   try {
     const snap = await getDoc(doc(db, 'onboarding', email));
-    if (!snap.exists()) return null;
+    // Que Firestore no tenga el documento NO significa que el alta no se haya
+    // hecho: `saveOnboarding` escribe la copia local ANTES de intentar la
+    // nube, y si la escritura se encoló (sin red, `EscrituraEncolada`) el alta
+    // está completa a todos los efectos pero el documento aún no ha subido.
+    // Devolver `null` aquí es lo que mandaba al atleta a rellenar el
+    // cuestionario entero por segunda vez.
+    if (!snap.exists()) return local?.completedAt ? local : null;
     const data = snap.data() as OnboardingData;
     setLocalOnboardingAll([...localAll.filter(o => o.athleteId !== email), data]);
     return data;

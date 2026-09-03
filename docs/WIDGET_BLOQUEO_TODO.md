@@ -1,81 +1,101 @@
-# Widget de pantalla de bloqueo — estado y lo que falta
+# Notificaciones, actividad en vivo y pantalla de bloqueo
 
-> Continuación de `PLAN_TrainingLab_Cardio_Widget.md` §6. Este documento cubre
-> solo el módulo 4 (widget). Actualizado: 2026-07-21.
+> Fuente de verdad del bloque: `~/Downloads/design_handoff_notificaciones/README.md`.
+> Este documento cubre solo el estado de la implementación.
+> Actualizado: **2026-09-03**. Sustituye por completo a la versión de julio,
+> que describía un TODO manual en Xcode que ya no existe.
 
-## Android — completo, funciona sin pasos manuales
+## El bug que se arregla
 
-- `android/app/src/main/java/com/danielenforma/app/RestTimerService.kt`:
-  foreground service con notificación persistente, cuenta atrás en vivo cada
-  segundo, se retira sola 4s después de llegar a 0.
-- `RestTimerPlugin.kt`: puente Capacitor (`start(exerciseName, seconds)` /
-  `stop()`), registrado en `MainActivity.java`.
-- `AndroidManifest.xml`: servicio declarado (`foregroundServiceType=specialUse`)
-  + permisos `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_SPECIAL_USE`,
-  `POST_NOTIFICATIONS`.
-- No se ha podido compilar/verificar en este entorno — **no hay JDK ni
-  Android SDK instalados en esta máquina**. El código sigue el patrón
-  estándar de plugin Capacitor y debería compilar tal cual con Android
-  Studio, pero conviene una primera compilación de verificación en un
-  entorno con el SDK antes de darlo por bueno.
+El descanso se modelaba como un número de segundos que alguien iba
+decrementando (`CountDownTimer` en Android, `secondsLeft: Int` empujado desde
+la app en iOS). Eso obliga a que la app esté viva para refrescarlo, y con la
+pantalla bloqueada el sistema congela el proceso: la cifra se quedaba clavada
+en el segundo en que se apagó la pantalla.
 
-## iOS — código escrito, falta un paso único en Xcode
+Ahora el descanso es **`restEndsAt`, un instante**, y la cuenta atrás la pinta
+el sistema:
 
-**Xcode no está instalado en esta máquina** (solo las Command Line Tools),
-así que no se ha podido crear el target ni compilar nada. Los archivos están
-listos para pegar en cuanto instales Xcode:
+| | Antes | Ahora |
+|---|---|---|
+| iOS | `secondsLeft: Int` empujado desde la app | `Text(timerInterval:)` sobre `restEndsAt: Date` |
+| Android | `CountDownTimer` renotificando cada segundo | `Chronometer` con `setChronometerCountDown` |
+| React | `endsAtMs` en memoria, se perdía al morir la app | `endsAtMs` persistido (`utils/sesionEnCurso.ts`) |
 
-- `ios/App/RestTimerWidget/RestTimerAttributes.swift` — el `ActivityAttributes`.
-- `ios/App/RestTimerWidget/RestTimerWidgetLiveActivity.swift` — vista SwiftUI
-  (pantalla de bloqueo + Dynamic Island).
-- `ios/App/RestTimerWidget/RestTimerWidgetBundle.swift` — punto de entrada
-  `@main` del target.
-- `ios/App/App/LiveActivityPlugin.swift` — puente Capacitor (`start`/`stop`),
-  ya en el target principal `App`.
-- `Info.plist` del target `App` ya tiene `NSSupportsLiveActivities`.
+Cero actualizaciones nuestras. Corre con el móvil bloqueado, en otra app y con
+el proceso muerto.
 
-### Paso único que falta (con Mac + Xcode instalado, ~5 min)
+## Piezas
 
-1. Abre `ios/App/App.xcworkspace` en Xcode.
-2. `File > New > Target… > Widget Extension`.
-   - Product Name: `RestTimerWidget`.
-   - Activa **"Include Live Activity"**.
-   - Team/bundle id: que cuelgue de `com.danielenforma.app` (Xcode le pondrá
-     `com.danielenforma.app.RestTimerWidget` automáticamente).
-3. Xcode genera sus propios `RestTimerAttributes.swift`,
-   `RestTimerWidgetLiveActivity.swift` y `RestTimerWidgetBundle.swift` de
-   plantilla dentro de una carpeta `RestTimerWidget/` — **bórralos** y arrastra
-   los tres archivos ya escritos en `ios/App/RestTimerWidget/` al nuevo
-   target (Xcode pregunta a qué target(s) añadir cada archivo al arrastrar).
-4. Abre `RestTimerAttributes.swift` en el inspector de archivos (⌥⌘1) y marca
-   **ambas** casillas de "Target Membership": `App` y `RestTimerWidget`. Este
-   struct lo necesitan los dos targets.
-5. Arrastra `LiveActivityPlugin.swift` (ya está en `ios/App/App/`) al target
-   `App` si Xcode no lo detecta solo al abrir el proyecto.
-6. Build (⌘B). Si pide crear un bridging header para Swift/Obj-C, acepta —
-   Capacitor ya trae uno normalmente, pero si no existe Xcode te lo ofrece
-   automáticamente.
-7. Probar en dispositivo real (las Live Activities no funcionan en el
-   simulador de forma fiable): iniciar un entreno, marcar una serie, ver el
-   descanso en la pantalla de bloqueo / Dynamic Island.
+**Web (`src/`)**
+- `services/sesionEnVivo.ts` — única vía de salida hacia el nativo. Publica el
+  estado entero y (re)programa el aviso. Sustituye a `services/restTimer.ts`.
+- `services/restTimerNotification.ts` — notificaciones **programadas** de fin
+  de descanso y del «¿Sigues ahí?» a los 3 min. Dos ids fijos, nunca una cola.
+- `utils/sesionEnCurso.ts` — `guardarDescanso`/`cargarDescanso`, clave hermana
+  del borrador de series. Caduca a los 20 min de terminar.
+- `components/training/WorkoutSessionPlayer.tsx` — publica el estado en cada
+  cambio y aplica el buzón al volver a primer plano.
 
-### Pendiente tras el MVP (no bloqueante)
+**iOS (`ios/App/`)**
+- `RestTimerWidget/RestTimerAttributes.swift` — estado compartido. Dos targets.
+- `RestTimerWidget/EnFormaBuzon.swift` — buzón del App Group. Dos targets.
+- `RestTimerWidget/SesionEnVivoIntents.swift` — los botones (iOS 17+).
+- `RestTimerWidget/RestTimerWidgetLiveActivity.swift` — la vista.
+- `App/SesionEnVivoPlugin.swift` — puente Capacitor. Sustituye a
+  `LiveActivityPlugin.swift`.
 
-- Botones interactivos ("✓ serie hecha", "+30s") — iOS 17+, requieren un
-  `AppIntent` en el target del widget escribiendo a un App Group compartido
-  que la app principal lee al volver a primer plano.
-- Actualizar la Live Activity desde fuera de la app (push a través de APNs)
-  — no hace falta para el MVP, la app la actualiza mientras está activa.
+**Android (`android/app/src/main/`)**
+- `java/.../SesionEnVivoService.kt` — foreground service con layout propio.
+- `java/.../SesionEnVivoBuzon.kt` — buzón en SharedPreferences.
+- `java/.../SesionEnVivoPlugin.kt` — puente Capacitor.
+- `res/layout/sesion_en_vivo.xml` — la tarjeta. Layout propio y no una
+  notificación estándar porque una estándar solo admite 3 acciones y aquí
+  hacen falta 8.
+- `RestTimerService.kt` / `RestTimerPlugin.kt` — **borrados**.
 
-## Comportamiento actual en tiempo de ejecución
+## ⚠️ Paso pendiente que NO puede hacer Claude Code
 
-`src/services/restTimer.ts` decide en runtime:
-- **Android**: usa el foreground service real (`RestTimerPlugin`) — ya
-  funciona hoy, sin nada pendiente en Xcode/Android Studio.
-- **iOS**: intenta `LiveActivityPlugin.start()`; como el target aún no existe,
-  el plugin no tiene implementación nativa y la llamada falla — el código cae
-  automáticamente a una notificación local puntual (`restTimerNotification.ts`)
-  sin romper nada. En cuanto se complete el paso de Xcode de arriba, empieza a
-  usar la Live Activity real sin tocar el código React.
-- **Web**: siempre notificación local puntual (o silenciosamente ninguna si
-  el navegador no soporta Notifications).
+**Activar el App Group `group.app.danielenforma.entreno`** en la cuenta de
+Apple Developer. Los `.entitlements` de los dos targets ya lo declaran, pero
+el App ID tiene que tenerlo habilitado o el perfil de aprovisionamiento no lo
+firmará.
+
+1. developer.apple.com → Certificates, IDs & Profiles → **Identifiers**.
+2. **App Groups** → `+` → nombre «En Forma entreno», id
+   `group.app.danielenforma.entreno`.
+3. En **App IDs**, `app.danielenforma.entreno` → App Groups → Edit → marcarlo.
+4. Lo mismo en `app.danielenforma.entreno.temporizador` (la extensión).
+5. En Xcode, dejar que regenere los perfiles (Automatically manage signing).
+
+**Qué pasa si no se hace:** la tarjeta se ve y la cuenta atrás corre, pero
+`UserDefaults(suiteName:)` devuelve `nil` y **lo que se apunte desde la
+pantalla de bloqueo no llega nunca a la app**. Falla en silencio, sin error.
+
+## Qué está verificado y qué no
+
+Verificado en esta máquina:
+- iOS: `xcodebuild` de `App` + `RestTimerWidget` → **BUILD SUCCEEDED**.
+- Android: `./gradlew :app:assembleDebug` → **APK generado**.
+- 1.264 tests verdes, typecheck y eslint limpios.
+
+**Sin verificar — hace falta un móvil de verdad:**
+- Que la cuenta atrás siga corriendo con la pantalla bloqueada.
+- Que los botones del bloqueo escriban y que la app los recoja (depende del
+  App Group de arriba).
+- El aspecto real de la tarjeta: alto disponible, truncados, contraste.
+- Las Live Activities no son fiables en el simulador.
+
+## Límites conocidos
+
+- **Los botones son iOS 17+.** Apple no permitió ninguno antes. En iOS 16 la
+  tarjeta se ve y la cuenta atrás corre; para apuntar se abre la app.
+- **No hay «mantener pulsado» para escribir un valor raro.** Dentro de una
+  Live Activity el long-press lo secuestra el sistema. Tocar la tarjeta abre
+  la app.
+- **Tipografías.** El handoff pide IBM Plex Mono y Archivo; la extensión no
+  las lleva empaquetadas y usa las monoespaciadas del sistema con los mismos
+  pesos. Meter los `.ttf` en el `.appex` por una cifra no compensa.
+- **Nada se escribe en Firestore desde el bloqueo.** Los toques van al
+  borrador local y suben con «Terminar sesión», igual que el resto de la
+  sesión.

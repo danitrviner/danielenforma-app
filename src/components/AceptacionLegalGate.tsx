@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import type { UserProfile } from '../types';
 import {
   documentosPendientes, registrarAceptacion, DOCUMENTOS_LEGALES,
@@ -86,9 +86,18 @@ function marcasIniciales(
 export default function AceptacionLegalGate({
   profile, onCompletado, onSalir, documentos, onCerrar, guardar, revision,
 }: Props) {
-  const pasos = useMemo(
+  /* El comentario de abajo decía que `pasos` quedaba congelado, pero esto era
+     un `useMemo` sobre `profile.legal` —una prop—, así que NO lo estaba: en
+     cuanto quien monta el muro refrescaba el perfil, la lista de pasos se
+     recalculaba con el índice a medio camino y `pasos[indice]` pasaba a ser
+     `undefined`. Con el `return null` de más abajo eso es una PANTALLA NEGRA
+     dentro del contenedor a pantalla completa de App.tsx, y encima el efecto
+     de seguridad se re-disparaba en bucle (su dependencia `onCompletado` es
+     una función en línea, nueva en cada render), dejando la app congelada.
+     Ahora sí está congelado de verdad: se calcula UNA vez, en el
+     inicializador perezoso del `useState`. */
+  const [pasos] = useState<MetaDocumentoLegal[]>(
     () => documentos ?? documentosPendientes(profile.legal),
-    [documentos, profile.legal],
   );
   const [indice, setIndice] = useState(0);
   const [guardando, setGuardando] = useState(false);
@@ -133,8 +142,15 @@ export default function AceptacionLegalGate({
      nada, indistinguible de la app colgada y sin forma de salir. Ahora se
      avisa a quien lo montó para que deje de renderizarlo. No debería ocurrir
      nunca; precisamente por eso conviene que, si ocurre, no se coma la app. */
+  // `useRef` y no una dependencia más: `onCompletado` suele llegar como función
+  // en línea (nueva en cada render), así que sin el cerrojo este efecto se
+  // volvía a disparar en cada vuelta, y cada aviso provocaba otro render. Un
+  // bucle infinito sobre una pantalla que ya estaba en blanco.
+  const cierreAvisado = useRef(false);
   useEffect(() => {
     if (meta && doc) return;
+    if (cierreAvisado.current) return;
+    cierreAvisado.current = true;
     console.warn('Muro legal sin pasos que enseñar: se cierra solo.');
     (onCerrar ?? (() => onCompletado(guardado)))();
   }, [meta, doc, onCerrar, onCompletado, guardado]);
@@ -166,9 +182,17 @@ export default function AceptacionLegalGate({
       const nuevas: AceptacionesLegales = {
         [meta.id]: registrarAceptacion(meta, new Date().toISOString(), opciones),
       };
+      // `guardado`, no `profile.legal`. `profile` es una prop y quien monta el
+      // muro solo la refresca al TERMINAR (`onCompletado`), así que durante el
+      // recorrido se queda clavada en lo que había al entrar. Con dos
+      // documentos eso significaba que al guardar el segundo se fusionaba
+      // contra un `legal` sin el primero — y como `guardarAceptaciones`
+      // escribe el bloque entero, la aceptación de los términos que se acababa
+      // de registrar se BORRABA de Firestore. Al volver, el muro la pedía otra
+      // vez: era el bucle que dejaba la pantalla en negro.
       const legal = guardar
         ? await guardar(nuevas)
-        : await guardarAceptaciones(profile, nuevas);
+        : await guardarAceptaciones({ ...profile, legal: guardado }, nuevas);
       setGuardado(legal);
       if (esUltimo) {
         onCompletado(legal);

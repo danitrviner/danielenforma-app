@@ -51,6 +51,11 @@ export interface CrmContacto {
   fechaBaja?: string;
   motivoBaja?: MotivoBaja;
   motivoBajaDetalle?: string;
+  // Archivado: desaparece de las listas del CRM hasta que se desarchiva. No es
+  // `estadoCrm: 'baja'` (eso es un hecho comercial que cuenta para el churn);
+  // esto es «quítamelo de delante». El espejo en `user_profiles` se llama
+  // `archivadoCrm` — ahí `archivado` a secas se confundiría con otras cosas.
+  archivado?: boolean;
   createdAt: string;        // ISO
   updatedAt: string;        // ISO
 }
@@ -77,6 +82,15 @@ export interface Cliente {
   motivoBajaDetalle?: string;
   avatarUrl?: string;
   createdAt?: string;
+  /** Archivado por el coach: fuera de listas, contadores y selectores del CRM. */
+  archivado?: boolean;
+  /**
+   * Perfil de una cuenta ya borrada (`api/delete-account.ts` lo deja como
+   * `borrado_xxxx@anonimo.local`). Se conserva para no reescribir el histórico
+   * del negocio, pero no es una persona con la que se pueda trabajar: se trata
+   * como archivado en toda la UI del CRM.
+   */
+  anonimizado?: boolean;
 }
 
 // ── Servicio contratado ──────────────────────────────────────────────────────

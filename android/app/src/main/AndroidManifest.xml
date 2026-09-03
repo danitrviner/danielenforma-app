@@ -37,12 +37,15 @@
             <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/file_paths" />
         </provider>
 
-        <!-- Widget de bloqueo (§6.1): notificación persistente con la cuenta
-             atrás del descanso, sobrevive a la app en segundo plano. -->
-        <service android:name=".RestTimerService" android:exported="false" android:foregroundServiceType="specialUse">
+        <!-- Sesión en vivo (handoff de notificaciones, 03-09): notificación
+             persistente con layout propio — cuenta atrás llevada por el
+             sistema y los steppers de reps/peso/RIR, para poder registrar la
+             serie desde la pantalla de bloqueo sin desbloquear. Vive durante
+             toda la sesión, no solo durante el descanso. -->
+        <service android:name=".SesionEnVivoService" android:exported="false" android:foregroundServiceType="specialUse">
             <property
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="Cuenta atrás de descanso durante el entrenamiento"
+                android:value="Serie en curso y descanso durante el entrenamiento"
             />
         </service>
 

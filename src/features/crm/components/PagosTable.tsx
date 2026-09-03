@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useToast } from '../../../hooks/useToast';
 import { useActualizarPago, useEliminarPago } from '../hooks/usePagos';
 import { formatEuros } from '../lib/dinero';
-import { formatDia, hoyISO, diasDeRetraso } from '../lib/fechas';
+import { formatDia, hoyISO, diasDeRetraso, diasHasta, tiempoRelativo } from '../lib/fechas';
 import DataTable, { Columna } from './DataTable';
 import { EstadoPagoPill } from './StatusPill';
 import EmptyState from './EmptyState';
@@ -92,11 +92,18 @@ export default function PagosTable({ pagos, cargando, error, mostrarCliente, coa
       render: p => {
         const retraso = p.estado === 'pendiente' ? diasDeRetraso(p.fechaEmision) : 0;
         const atrasado = retraso > UMBRAL_DIAS_AVISO;
+        // Un pendiente con fecha futura (el plan que empieza el lunes que
+        // viene) no está atrasado ni es de hoy: sin decirlo, la fila parecía
+        // un cobro sin explicación en medio de la lista.
+        const porVenir = p.estado === 'pendiente' && diasHasta(p.fechaEmision) > 0;
         return (
           <div>
             <span className={`tabular-nums ${atrasado ? 'text-danger font-bold' : ''}`}>
               {formatDia(p.estado === 'pagado' ? p.fechaCobro : p.fechaEmision)}
             </span>
+            {porVenir && (
+              <p className="font-mono text-caption text-ink-3">{tiempoRelativo(p.fechaEmision)}</p>
+            )}
             {atrasado && (
               <p className="flex items-center font-mono text-caption text-danger">
                 <Icon name="warning" size="s" />

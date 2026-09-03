@@ -20,13 +20,16 @@
 		504EC30F1FED79650016851F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 504EC30E1FED79650016851F /* Assets.xcassets */; };
 		504EC3121FED79650016851F /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 504EC3101FED79650016851F /* LaunchScreen.storyboard */; };
 		50B271D11FEDC1A000F3C39B /* public in Resources */ = {isa = PBXBuildFile; fileRef = 50B271D01FEDC1A000F3C39B /* public */; };
-		7707F3587ED4F30DDCC5432D /* LiveActivityPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96BD13151F426F72F204A717 /* LiveActivityPlugin.swift */; };
+		7707F3587ED4F30DDCC5432D /* SesionEnVivoPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96BD13151F426F72F204A717 /* SesionEnVivoPlugin.swift */; };
 		7DA11A106F7375208BE718AF /* CardioActivityPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7349717EABFEBE173EB18448 /* CardioActivityPlugin.swift */; };
 		A630671BEA4067B88BB4BDAA /* RestTimerAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05C2806051CCF886490BC562 /* RestTimerAttributes.swift */; };
 		A91F987A75D11D4C3858CB2D /* CardioActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = C339F91285E0F7F56E2F9674 /* CardioActivityAttributes.swift */; };
 		CCDE8EF637DAE065C176BA7E /* RestTimerWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C0CC747C913804D9E1D5F369 /* RestTimerWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		EF01A1012E48000000000001 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = EF01A1002E48000000000001 /* PrivacyInfo.xcprivacy */; };
 		F9C855E992A665F411E2BB0C /* RestTimerWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC7AF07887BD879571457F1C /* RestTimerWidgetBundle.swift */; };
+		EF01B1002E48000000000011 /* EnFormaBuzon.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF01B1002E48000000000010 /* EnFormaBuzon.swift */; };
+		EF01B1002E48000000000012 /* EnFormaBuzon.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF01B1002E48000000000010 /* EnFormaBuzon.swift */; };
+		EF01B1002E48000000000014 /* SesionEnVivoIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF01B1002E48000000000013 /* SesionEnVivoIntents.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -68,12 +71,14 @@
 		7349717EABFEBE173EB18448 /* CardioActivityPlugin.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CardioActivityPlugin.swift; sourceTree = "<group>"; };
 		7A921129529DF6764AD0D273 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		958DCC722DB07C7200EA8C5F /* debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = debug.xcconfig; path = ../debug.xcconfig; sourceTree = SOURCE_ROOT; };
-		96BD13151F426F72F204A717 /* LiveActivityPlugin.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LiveActivityPlugin.swift; sourceTree = "<group>"; };
+		96BD13151F426F72F204A717 /* SesionEnVivoPlugin.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SesionEnVivoPlugin.swift; sourceTree = "<group>"; };
 		A50D38FA13E2E54FA156DF24 /* RestTimerWidgetLiveActivity.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RestTimerWidgetLiveActivity.swift; sourceTree = "<group>"; };
 		AC7AF07887BD879571457F1C /* RestTimerWidgetBundle.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RestTimerWidgetBundle.swift; sourceTree = "<group>"; };
 		C0CC747C913804D9E1D5F369 /* RestTimerWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = RestTimerWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		C339F91285E0F7F56E2F9674 /* CardioActivityAttributes.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CardioActivityAttributes.swift; sourceTree = "<group>"; };
 		EF01A1002E48000000000001 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		EF01B1002E48000000000010 /* EnFormaBuzon.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EnFormaBuzon.swift; sourceTree = "<group>"; };
+		EF01B1002E48000000000013 /* SesionEnVivoIntents.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SesionEnVivoIntents.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -136,7 +141,7 @@
 				EF01A1002E48000000000001 /* PrivacyInfo.xcprivacy */,
 				2FAD9762203C412B000D30F8 /* config.xml */,
 				50B271D01FEDC1A000F3C39B /* public */,
-				96BD13151F426F72F204A717 /* LiveActivityPlugin.swift */,
+				96BD13151F426F72F204A717 /* SesionEnVivoPlugin.swift */,
 				7349717EABFEBE173EB18448 /* CardioActivityPlugin.swift */,
 			);
 			path = App;
@@ -155,6 +160,8 @@
 			children = (
 				05C2806051CCF886490BC562 /* RestTimerAttributes.swift */,
 				AC7AF07887BD879571457F1C /* RestTimerWidgetBundle.swift */,
+				EF01B1002E48000000000010 /* EnFormaBuzon.swift */,
+				EF01B1002E48000000000013 /* SesionEnVivoIntents.swift */,
 				A50D38FA13E2E54FA156DF24 /* RestTimerWidgetLiveActivity.swift */,
 				C339F91285E0F7F56E2F9674 /* CardioActivityAttributes.swift */,
 				53F7B35506F290C6FDD5C25E /* CardioLiveActivity.swift */,
@@ -274,6 +281,8 @@
 			files = (
 				A630671BEA4067B88BB4BDAA /* RestTimerAttributes.swift in Sources */,
 				F9C855E992A665F411E2BB0C /* RestTimerWidgetBundle.swift in Sources */,
+				EF01B1002E48000000000012 /* EnFormaBuzon.swift in Sources */,
+				EF01B1002E48000000000014 /* SesionEnVivoIntents.swift in Sources */,
 				23394A955940E75FB0EEADB8 /* RestTimerWidgetLiveActivity.swift in Sources */,
 				030D98617FE7B01281AC7687 /* CardioActivityAttributes.swift in Sources */,
 				0EFBE8AFEBCB00A128680199 /* CardioLiveActivity.swift in Sources */,
@@ -286,7 +295,8 @@
 			files = (
 				504EC3081FED79650016851F /* AppDelegate.swift in Sources */,
 				25D8A59F52646A91E9944F63 /* RestTimerAttributes.swift in Sources */,
-				7707F3587ED4F30DDCC5432D /* LiveActivityPlugin.swift in Sources */,
+				7707F3587ED4F30DDCC5432D /* SesionEnVivoPlugin.swift in Sources */,
+				EF01B1002E48000000000011 /* EnFormaBuzon.swift in Sources */,
 				A91F987A75D11D4C3858CB2D /* CardioActivityAttributes.swift in Sources */,
 				7DA11A106F7375208BE718AF /* CardioActivityPlugin.swift in Sources */,
 			);
@@ -331,6 +341,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 5;
 				GENERATE_INFOPLIST_FILE = NO;
+				CODE_SIGN_ENTITLEMENTS = RestTimerWidget/RestTimerWidget.entitlements;
 				INFOPLIST_FILE = RestTimerWidget/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.1;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -523,6 +534,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 5;
 				GENERATE_INFOPLIST_FILE = NO;
+				CODE_SIGN_ENTITLEMENTS = RestTimerWidget/RestTimerWidget.entitlements;
 				INFOPLIST_FILE = RestTimerWidget/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.1;
 				LD_RUNPATH_SEARCH_PATHS = (

@@ -20,30 +20,37 @@ function setLocalRecipes(recipes: Recipe[]): void {
   localStorage.setItem(RECIPES_LOCAL_KEY, JSON.stringify(recipes));
 }
 
-export async function getRecipes(opts?: { ownerId?: string }): Promise<Recipe[]> {
-  if (forceLocalOnly) {
-    const local = getLocalRecipes();
-    return opts?.ownerId ? local.filter(r => r.ownerId === opts.ownerId) : local;
-  }
+/**
+ * Las recetas que puede ver `ownerId`: SOLO las suyas.
+ *
+ * `ownerId` es obligatorio, y eso es el arreglo. Antes era opcional y, sin él,
+ * esto devolvía TODAS las recetas con dueño real —las del coach y las de todos
+ * los atletas juntas—; cuatro pantallas lo llamaban así (Recetario, Mi plan, el
+ * constructor de recetas y el editor de menú semanal), de modo que la receta que
+ * se guardaba un atleta le aparecía a los demás. En 08-2026 se tapó solo el
+ * buscador de "Intercambiar", que era el único que pasaba `ownerId`.
+ *
+ * El recetario importado (8.850) no sale por aquí: se lista desde el índice
+ * empaquetado (`queryRecetas`), que es común a todo el mundo. Y una receta
+ * concreta sigue abriéndose por `getRecipeById` venga de donde venga —así el
+ * coach ve la receta que un atleta ha metido en su plan, y un menú semanal
+ * puede llevar recetas de quien sea.
+ */
+export async function getRecipes(opts: { ownerId: string }): Promise<Recipe[]> {
+  const propias = (list: Recipe[]) => list.filter(r => r.ownerId === opts.ownerId);
+  if (forceLocalOnly) return propias(getLocalRecipes());
   try {
-    // Excluye el recetario importado (8.850+) para no bajarse la colección entera.
-    // Con `ownerId` se acota además a las recetas propias de ese dueño — usado por
-    // el buscador de "Intercambiar" para que la receta guardada de un atleta no
-    // aparezca como sugerencia para otro (antes no había ningún filtro por dueño).
-    const q = opts?.ownerId
-      ? query(collection(db, 'recipes'), where('ownerId', '==', opts.ownerId))
-      : query(collection(db, 'recipes'), where('ownerId', 'not-in', OWNER_RECETARIO_TODOS));
-    const snap = await getDocs(q);
+    const snap = await getDocs(query(collection(db, 'recipes'), where('ownerId', '==', opts.ownerId)));
     const recipes = snap.docs.map(d => ({ id: d.id, ...d.data() } as Recipe));
-    // El caché local es la lista completa sin acotar — una llamada acotada por
-    // dueño no debe sobrescribirlo con un subconjunto parcial.
-    if (!opts?.ownerId) setLocalRecipes(recipes);
+    // El espejo local es común a todos los dueños que hayan usado este
+    // dispositivo, así que se reemplaza solo el tramo de ESTE dueño en vez de
+    // machacarlo entero con un subconjunto.
+    setLocalRecipes([...getLocalRecipes().filter(r => r.ownerId !== opts.ownerId), ...recipes]);
     return recipes;
   } catch (err) {
     console.warn('getRecipes Firestore failed, using local:', err);
     setLocalBypassMode(true, err);
-    const local = getLocalRecipes();
-    return opts?.ownerId ? local.filter(r => r.ownerId === opts.ownerId) : local;
+    return propias(getLocalRecipes());
   }
 }
 

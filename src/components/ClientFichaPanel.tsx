@@ -9,6 +9,7 @@ import {
   getAthleteStatusNote, saveAthleteStatusNote,
 } from '../dbService';
 import { ScoreStyle } from '../utils/adherence';
+import { dishTypeLabel } from '../utils/dishTypes';
 import OnboardingForm from './OnboardingForm';
 import EquipoClienteCard from '../features/gimnasio/EquipoClienteCard';
 import { Collapsible, Icon, Button } from './ui';
@@ -38,6 +39,27 @@ import { Collapsible, Icon, Button } from './ui';
    cabecera solo se quede con lo urgente (`ClientAlertsBar` — plan sin
    publicar, próxima revisión). Esto es lo descriptivo, no lo accionable.
    ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Espejo de ALCANCE y LIFESTYLE_AREAS del alta (AthleteOnboardingWizard). Se
+   guardan los ids y no las etiquetas para poder reescribir los textos sin tocar
+   lo ya guardado; el precio es esta tabla, que hay que mantener a la par. */
+const ALCANCE_LABELS: Record<string, string> = {
+  solo_fisico: 'Solo quiere el resultado físico — no quiere que le toquen los hábitos',
+  abierto:     'Abierto a cambiar cosas si se le explica el porqué',
+  cambio_vida: 'Quiere cambiar de hábitos, no solo de cuerpo',
+};
+
+const LIFESTYLE_AREA_LABELS: Record<string, string> = {
+  verdura_fruta:    'Más verdura y fruta',
+  legumbres_fibra:  'Legumbres y fibra',
+  mas_vegetal:      'Más vegetal',
+  menos_procesados: 'Menos ultraprocesados',
+  alcohol:          'Menos alcohol',
+  tabaco:           'Dejar de fumar',
+  sueno:            'Dormir mejor',
+  estres:           'Relajación / estrés',
+  mas_pasos:        'Moverse más',
+};
 
 const DIET_LABELS: Record<string, string> = {
   omnivoro: 'Omnívoro', vegetariano: 'Vegetariano', vegano: 'Vegano', otro: 'Otro',
@@ -449,7 +471,9 @@ export default function ClientFichaPanel({
             >
               <div className="space-y-2 pb-3">
                 <div className="flex flex-wrap gap-x-4 gap-y-1 text-label font-sans">
-                  <span className="text-ink-2">Dieta: <span className="text-white font-bold">{DIET_LABELS[onboardingData.dietType]}</span></span>
+                  <span className="text-ink-2">Dieta: <span className="text-white font-bold">{DIET_LABELS[onboardingData.dietType]}</span>
+                    {onboardingData.dietSince && <span className="text-ink-3"> · desde {onboardingData.dietSince}</span>}
+                  </span>
                   <span className="text-ink-2">Calorías: <span className="text-accent font-bold">{onboardingData.targetCalories} kcal/día</span></span>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -470,6 +494,40 @@ export default function ClientFichaPanel({
                     <span className="material-symbols-outlined text-label align-middle mr-1">warning</span>
                     Alergias: {onboardingData.allergies.join(', ')}
                   </p>
+                )}
+                {/* 03-09. Lo que el atleta marca en «Preferencias alimentarias»
+                    y escribe en «alimentos que no quiero» se guardaba y no se
+                    pintaba en ningún sitio: el coach montaba el menú a ciegas
+                    sobre lo único que el atleta le había dicho de la comida. */}
+                {(onboardingData.likedFoods?.length > 0 || onboardingData.dislikedFoods?.length > 0) && (
+                  <div className="space-y-1 pt-2 border-t border-hairline">
+                    {onboardingData.likedFoods?.length > 0 && (
+                      <p className="font-sans text-caption text-ink-2">
+                        <span className="text-ink-3 mr-1">Le gusta:</span>{onboardingData.likedFoods.join(', ')}
+                      </p>
+                    )}
+                    {onboardingData.dislikedFoods?.length > 0 && (
+                      <p className="font-sans text-caption text-amber-300">
+                        <span className="text-ink-3 mr-1">No quiere ver:</span>{onboardingData.dislikedFoods.join(', ')}
+                      </p>
+                    )}
+                  </div>
+                )}
+                {((onboardingData.preferredDishTypes?.length ?? 0) > 0 || (onboardingData.excludedDishTypes?.length ?? 0) > 0) && (
+                  <div className="space-y-1 pt-2 border-t border-hairline">
+                    {(onboardingData.preferredDishTypes?.length ?? 0) > 0 && (
+                      <p className="font-sans text-caption text-ink-2">
+                        <span className="text-ink-3 mr-1">Más platos de:</span>
+                        {onboardingData.preferredDishTypes!.map(dishTypeLabel).join(', ')}
+                      </p>
+                    )}
+                    {(onboardingData.excludedDishTypes?.length ?? 0) > 0 && (
+                      <p className="font-sans text-caption text-ink-2">
+                        <span className="text-ink-3 mr-1">Evitar platos de:</span>
+                        {onboardingData.excludedDishTypes!.map(dishTypeLabel).join(', ')}
+                      </p>
+                    )}
+                  </div>
                 )}
                 {(onboardingData.appetitePeakTime || onboardingData.hadOverweightHistory || !onboardingData.foodRelationshipGood ||
                   onboardingData.eatsTooFast || (onboardingData.supplements?.length ?? 0) > 0 || onboardingData.weightTendency ||
@@ -522,7 +580,8 @@ export default function ClientFichaPanel({
               </Collapsible>
             )}
 
-            {(onboardingData.cookingLevel || onboardingData.cookingMaxTime) && (
+            {(onboardingData.cookingLevel || onboardingData.cookingMaxTime
+              || onboardingData.menuVariety || onboardingData.batchCookingPreferred) && (
               <Collapsible
                 className="border-t border-hairline"
                 trigger={<p className="font-mono text-caption text-ink-2 uppercase tracking-wide">Cocina</p>}
@@ -540,6 +599,10 @@ export default function ClientFichaPanel({
                   {onboardingData.lunchVariety && (
                     <span className="text-ink-2">Variedad almuerzos: <span className="text-white font-bold">{onboardingData.lunchVariety}/5</span></span>
                   )}
+                  {onboardingData.menuVariety && (
+                    <span className="text-ink-2">Variedad del menú: <span className="text-white font-bold">{onboardingData.menuVariety}/5</span></span>
+                  )}
+                  {onboardingData.batchCookingPreferred && <span className="text-ink-2">Cocina de golpe (batch cooking)</span>}
                 </div>
               </Collapsible>
             )}
@@ -575,11 +638,18 @@ export default function ClientFichaPanel({
                     {onboardingData.injuries}
                   </p>
                 )}
-                {(onboardingData.oneRepMaxTotal || onboardingData.progressFrequency || onboardingData.techniqueLevel ||
+                {(onboardingData.availableDaysPerWeek || onboardingData.sessionMaxMinutes ||
+                  onboardingData.oneRepMaxTotal || onboardingData.progressFrequency || onboardingData.techniqueLevel ||
                   onboardingData.currentMotivation || onboardingData.muscleGroupsToImprove || onboardingData.restDayActive ||
                   onboardingData.sittingHoursPerDay || onboardingData.stressReason) && (
                   <div className="space-y-1 pt-2 border-t border-hairline">
                     <div className="flex flex-wrap gap-x-4 gap-y-1 text-label font-mono">
+                      {onboardingData.availableDaysPerWeek && (
+                        <span className="text-ink-2">Puede entrenar: <span className="text-white font-bold">{onboardingData.availableDaysPerWeek} días/sem</span></span>
+                      )}
+                      {onboardingData.sessionMaxMinutes && (
+                        <span className="text-ink-2">Por sesión: <span className="text-white font-bold">{onboardingData.sessionMaxMinutes} min</span></span>
+                      )}
                       {onboardingData.oneRepMaxTotal && (
                         <span className="text-ink-2">Total 1RM: <span className="text-white font-bold">{onboardingData.oneRepMaxTotal}kg</span></span>
                       )}
@@ -608,7 +678,7 @@ export default function ClientFichaPanel({
               </div>
             </Collapsible>
 
-            {(onboardingData.occupation || onboardingData.referralSource || onboardingData.goalFreeText) && (
+            {(onboardingData.occupation || onboardingData.referralSource) && (
               <Collapsible
                 className="border-t border-hairline"
                 trigger={<p className="font-mono text-caption text-ink-2 uppercase tracking-wide">Datos personales</p>}
@@ -622,8 +692,71 @@ export default function ClientFichaPanel({
                       <span className="text-ink-2">Nos conoció por: <span className="text-white font-bold">{onboardingData.referralSource}</span></span>
                     )}
                   </div>
+                </div>
+              </Collapsible>
+            )}
+
+            {/* 03-09. Hasta dónde le ha dado permiso el atleta. Va arriba y
+                abierto: decide el tono de TODO el acompañamiento, y empujar a
+                quien contestó «solo el resultado» es la vía rápida a que deje
+                de contestar. */}
+            {(onboardingData.lifestyleScope || (onboardingData.lifestyleAreas?.length ?? 0) > 0) && (
+              <Collapsible
+                className="border-t border-hairline"
+                defaultOpen
+                trigger={<p className="font-mono text-caption text-ink-2 uppercase tracking-wide">Hasta dónde quiere llegar</p>}
+              >
+                <div className="space-y-2 pb-3">
+                  {onboardingData.lifestyleScope && (
+                    <p className={`font-sans text-caption ${onboardingData.lifestyleScope === 'solo_fisico' ? 'text-amber-300' : 'text-white font-bold'}`}>
+                      {ALCANCE_LABELS[onboardingData.lifestyleScope] ?? onboardingData.lifestyleScope}
+                    </p>
+                  )}
+                  {(onboardingData.lifestyleAreas?.length ?? 0) > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {onboardingData.lifestyleAreas!.map(a => (
+                        <span key={a} className="font-mono text-caption bg-raised border border-hairline text-ink-2 rounded-control px-2 py-1">
+                          {LIFESTYLE_AREA_LABELS[a] ?? a}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </Collapsible>
+            )}
+
+            {/* Las tres respuestas escritas del alta. `goalFreeText` estaba
+                escondido dentro de «Datos personales» (una sección plegada, con
+                un título que no invita a abrirla) y las otras dos —el plazo/
+                motivo y, sobre todo, «qué esperas de tu entrenador»— no se
+                pintaban en NINGÚN sitio: se guardaban en Firestore y ahí se
+                quedaban. Sección propia y abierta por defecto: son texto libre
+                del atleta, lo más caro de conseguir y lo primero que hay que
+                leer antes de montarle nada. */}
+            {(onboardingData.goalFreeText || onboardingData.goalTimelineMotivation || onboardingData.coachExpectations) && (
+              <Collapsible
+                className="border-t border-hairline"
+                defaultOpen
+                trigger={<p className="font-mono text-caption text-ink-2 uppercase tracking-wide">En sus palabras</p>}
+              >
+                <div className="space-y-3 pb-3">
                   {onboardingData.goalFreeText && (
-                    <p className="font-sans text-caption text-ink-2 italic">"{onboardingData.goalFreeText}"</p>
+                    <div>
+                      <p className="font-mono text-caption text-ink-3 uppercase tracking-wide mb-1">Cómo se ve al conseguirlo</p>
+                      <p className="font-sans text-caption text-ink-2 italic whitespace-pre-line">"{onboardingData.goalFreeText}"</p>
+                    </div>
+                  )}
+                  {onboardingData.goalTimelineMotivation && (
+                    <div>
+                      <p className="font-mono text-caption text-ink-3 uppercase tracking-wide mb-1">Plazo y motivo</p>
+                      <p className="font-sans text-caption text-ink-2 italic whitespace-pre-line">"{onboardingData.goalTimelineMotivation}"</p>
+                    </div>
+                  )}
+                  {onboardingData.coachExpectations && (
+                    <div>
+                      <p className="font-mono text-caption text-ink-3 uppercase tracking-wide mb-1">Qué espera de su entrenador</p>
+                      <p className="font-sans text-caption text-ink-2 italic whitespace-pre-line">"{onboardingData.coachExpectations}"</p>
+                    </div>
                   )}
                 </div>
               </Collapsible>

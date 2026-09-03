@@ -3,6 +3,10 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { getCrmServicios } from '../../../dbService';
 import { useClientes } from '../hooks/useClientes';
+import { useArchivarCliente, useEliminarCliente } from '../hooks/useClienteMutations';
+import { motivoNoBorrable } from '../lib/archivado';
+import { useToast } from '../../../hooks/useToast';
+import { ClienteConCobros } from '../../../db/crm';
 import { servicioActual } from '../hooks/useServicios';
 import { useSuscripciones } from '../hooks/useSuscripciones';
 import { crmKeys } from '../lib/crmQueries';
@@ -29,13 +33,19 @@ const ImportarClientes = lazy(() => import('../components/ImportarClientes'));
 // puede compartir por enlace. Es el patrón que ya siguen las rutas de
 // /clients/:athleteId/:hubTab en App.tsx.
 
-const FILTROS: { id: EstadoCrm | 'todos'; label: string }[] = [
+// 'archivados' NO es un EstadoCrm: es una vista aparte, porque un archivado
+// conserva su estado comercial (un lead archivado sigue siendo un lead) y
+// mezclarlos obligaría a inventar un sexto estado que no existe en los datos.
+type Filtro = EstadoCrm | 'todos' | 'archivados';
+
+const FILTROS: { id: Filtro; label: string }[] = [
   { id: 'todos',            label: 'Todos' },
   { id: 'lead',             label: 'Leads' },
   { id: 'llamada_agendada', label: 'Llamadas' },
   { id: 'activo',           label: 'Activos' },
   { id: 'pausado',          label: 'Pausados' },
   { id: 'baja',             label: 'Bajas' },
+  { id: 'archivados',       label: 'Archivados' },
 ];
 
 export default function ClientesList({ coachEmail }: { coachEmail: string }) {
@@ -45,7 +55,7 @@ export default function ClientesList({ coachEmail }: { coachEmail: string }) {
   const [importarAbierto, setImportarAbierto] = useState(false);
   const [invitarAbierto, setInvitarAbierto] = useState(false);
 
-  const filtro = (params.get('estado') as EstadoCrm | 'todos') || 'todos';
+  const filtro = (params.get('estado') as Filtro) || 'todos';
   const busqueda = params.get('q') ?? '';
   // Solo "Activos" tiene suscripción que vigilar — leads, llamadas, pausados
   // y bajas no encajan en Requiere-acción/Al-día, así que se quedan en la
@@ -58,7 +68,37 @@ export default function ClientesList({ coachEmail }: { coachEmail: string }) {
     setParams(next, { replace: true });
   };
 
-  const { clientes, isPending, error, contadores } = useClientes();
+  const { showToast } = useToast();
+  const { clientes, archivados, isPending, error, contadores } = useClientes();
+  const archivar = useArchivarCliente();
+  const eliminar = useEliminarCliente();
+
+  const onArchivar = async (c: Cliente) => {
+    try {
+      await archivar.mutateAsync({ cliente: c, archivar: !c.archivado });
+      showToast(c.archivado ? `${c.nombre} vuelve a tus listas` : `${c.nombre} archivado`, 'success');
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'No se ha podido archivar', 'error');
+    }
+  };
+
+  const onEliminar = async (c: Cliente) => {
+    const bloqueo = motivoNoBorrable(c);
+    if (bloqueo) { showToast(bloqueo, 'info'); return; }
+    if (!window.confirm(
+      `¿Borrar «${c.nombre}» para siempre?\n\n` +
+      'Se borra también todo su rastro en el CRM: servicios, cobros pendientes, ' +
+      'suscripciones y reuniones. Esto no se puede deshacer.\n\n' +
+      'Si solo quieres quitarlo de en medio, archívalo.'
+    )) return;
+    try {
+      await eliminar.mutateAsync(c);
+      showToast(`${c.nombre} borrado`, 'success');
+    } catch (err) {
+      if (err instanceof ClienteConCobros) { showToast(err.message, 'error'); return; }
+      showToast(err instanceof Error ? err.message : 'No se ha podido borrar', 'error');
+    }
+  };
 
   const { data: servicios = [] } = useQuery({
     queryKey: crmKeys.servicios,
@@ -81,8 +121,9 @@ export default function ClientesList({ coachEmail }: { coachEmail: string }) {
   const filas = useMemo(() => {
     const q = busqueda.trim().toLowerCase();
     const qDni = normalizarDni(busqueda);
-    return clientes.filter(c => {
-      if (filtro !== 'todos' && c.estadoCrm !== filtro) return false;
+    const base = filtro === 'archivados' ? archivados : clientes;
+    return base.filter(c => {
+      if (filtro !== 'todos' && filtro !== 'archivados' && c.estadoCrm !== filtro) return false;
       if (!q) return true;
       return (
         c.nombre.toLowerCase().includes(q) ||
@@ -90,7 +131,7 @@ export default function ClientesList({ coachEmail }: { coachEmail: string }) {
         (qDni.length >= 3 && (c.dni ?? '').includes(qDni))
       );
     });
-  }, [clientes, filtro, busqueda]);
+  }, [clientes, archivados, filtro, busqueda]);
 
   const columnas: Columna<Cliente>[] = [
     {
@@ -140,11 +181,38 @@ export default function ClientesList({ coachEmail }: { coachEmail: string }) {
     {
       id: 'acciones',
       header: '',
-      width: '44px',
+      width: '120px',
       align: 'right',
-      render: () => (
-        <Icon name="chevron_right" size="m" className="text-ink-3" />
-      ),
+      // `stopPropagation` en cada botón: la fila entera navega a la ficha
+      // (onRowClick), y sin esto archivar abriría además el detalle.
+      render: c => {
+        const bloqueo = motivoNoBorrable(c);
+        return (
+          <div className="flex items-center justify-end gap-1">
+            <button
+              type="button"
+              onClick={e => { e.stopPropagation(); onArchivar(c); }}
+              aria-label={c.archivado ? `Desarchivar a ${c.nombre}` : `Archivar a ${c.nombre}`}
+              title={c.archivado ? 'Desarchivar' : 'Archivar — desaparece de tus listas'}
+              className="w-7 h-7 rounded-control inline-flex items-center justify-center text-ink-2 hover:bg-white/6 transition-colors"
+            >
+              <Icon name={c.archivado ? 'unarchive' : 'archive'} size="m" />
+            </button>
+            {!bloqueo && (
+              <button
+                type="button"
+                onClick={e => { e.stopPropagation(); onEliminar(c); }}
+                aria-label={`Borrar a ${c.nombre}`}
+                title="Borrar para siempre"
+                className="w-7 h-7 rounded-control inline-flex items-center justify-center text-danger hover:bg-white/6 transition-colors"
+              >
+                <Icon name="delete" size="m" />
+              </button>
+            )}
+            <Icon name="chevron_right" size="m" className="text-ink-3" />
+          </div>
+        );
+      },
     },
   ];
 
@@ -155,6 +223,7 @@ export default function ClientesList({ coachEmail }: { coachEmail: string }) {
           <h1 className="font-sans font-bold text-title-m text-ink">Clientes</h1>
           <p className="font-sans text-caption uppercase tracking-widest text-ink-3 tabular-nums">
             {contadores.lead} leads · {contadores.llamada_agendada} llamadas · {contadores.activo} activos · {contadores.pausado} pausados · {contadores.baja} bajas
+            {archivados.length > 0 && ` · ${archivados.length} archivados`}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -237,7 +306,13 @@ export default function ClientesList({ coachEmail }: { coachEmail: string }) {
             error={Boolean(error)}
             onRowClick={c => navigate(`/crm/clientes/${c.id}`)}
             vacio={
-              clientes.length === 0 ? (
+              filtro === 'archivados' ? (
+                <EmptyState
+                  icon="inventory_2"
+                  titulo="No has archivado a nadie"
+                  descripcion="Lo que archives desde la lista o desde su ficha se guarda aquí, fuera de los contadores, hasta que lo desarchives."
+                />
+              ) : clientes.length === 0 ? (
                 <EmptyState
                   icon="group"
                   titulo="Aquí vivirá tu negocio"

@@ -40,14 +40,28 @@ export const OWNER_RECETARIO_TODOS = [OWNER_RECETARIO, OWNER_RECETARIO_LEGACY];
  * por una función que ni siquiera los necesita.
  */
 /**
- * El recetario importado clasifica muchos suplementos puros (creatina, glutamina,
- * beta-alanina, citrulina, arginina, cafeína en polvo/cápsulas…) como
- * «Platos salados / principales» o «Bebidas». No son platos: no se cocinan, no
- * llevan intakeType y ensuciaban la pestaña de principales del recetario. Se
- * reetiquetan por nombre a «Suplementos deportivos», que es donde el atleta
- * espera encontrarlos.
+ * El recetario importado mete entre los «Platos salados / principales» un montón
+ * de cosas que no son platos: agua, aloe vera, amilopectina, Anxistop, aceitunas,
+ * aceite de oliva, barritas y geles de marca, proteína en polvo… No se cocinan y
+ * no hay nada que leer en ellas, pero ocupaban sitio en la pestaña de principales.
+ *
+ * El primer intento (08-2026) fue una lista de nombres —creatina, glutamina,
+ * beta-alanina…— y por eso se quedaron fuera el agua y compañía: son infinitas y
+ * cada marca inventa la suya. La señal buena no está en el nombre sino en el
+ * propio documento: una entrada que NO tiene ningún tipo de ingesta asignado y
+ * que lleva como mucho un ingrediente no es un plato, es un producto o un
+ * alimento suelto. Son 673 de 8.850, y con esa regla salen todas de una vez sin
+ * mantener ninguna lista.
+ *
+ * La lista de nombres se conserva igualmente: pilla al suplemento puro que sí
+ * viene con tipo de ingesta puesto, que la regla estructural dejaría pasar.
+ *
+ * OJO al tocar el umbral de ingredientes: hay platos de verdad con un solo
+ * ingrediente (una pieza de fruta), pero esos SÍ traen tipo de ingesta, así que
+ * las dos condiciones tienen que cumplirse a la vez.
  */
 const CAT_SUPLEMENTOS = 'Suplementos deportivos';
+const CAT_NO_PLATOS = 'Alimentos y suplementos';
 const RE_SUPLEMENTO_PURO = /\b(creatina|glutamina|beta[\s-]?alanina|citrulina|arginina|taurina|bcaa|hmb)\b|^cafeina\b/;
 
 export function esSuplementoPuroPorNombre(nombre: string | undefined | null): boolean {
@@ -60,8 +74,18 @@ export function esSuplementoPuroPorNombre(nombre: string | undefined | null): bo
   return RE_SUPLEMENTO_PURO.test(n);
 }
 
+/**
+ * Producto o alimento suelto, no un plato: sin tipo de ingesta y con un
+ * ingrediente como mucho. Ver el comentario de arriba para el porqué.
+ */
+export function noEsUnPlato(r: Pick<Recipe, 'intakeTypes' | 'ingredientsText'>): boolean {
+  return (r.intakeTypes ?? []).length === 0 && (r.ingredientsText ?? []).length <= 1;
+}
+
 export function hidratarEntradaIndice(r: Recipe): Recipe {
-  const categoria = esSuplementoPuroPorNombre(r.name) ? CAT_SUPLEMENTOS : r.categoria;
+  const categoria = noEsUnPlato(r)
+    ? CAT_NO_PLATOS
+    : esSuplementoPuroPorNombre(r.name) ? CAT_SUPLEMENTOS : r.categoria;
   return {
     ...r,
     ownerId: OWNER_RECETARIO,

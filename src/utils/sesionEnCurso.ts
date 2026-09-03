@@ -174,8 +174,22 @@ export function seriesHechasEnBorrador(athleteEmail: string, assignmentId: strin
 export function limpiarSesionesCaducadas(athleteEmail: string): void {
   try {
     const prefijo = `${PREFIJO}_${athleteEmail}_`;
+    const prefijoDescanso = `${PREFIJO_DESCANSO}_${athleteEmail}_`;
     for (let i = localStorage.length - 1; i >= 0; i--) {
       const k = localStorage.key(i);
+      // El descanso caduca por su cuenta y mucho antes (20 min): se barre
+      // aquí igual, o cada sesión abierta dejaría también su clave suelta.
+      if (k?.startsWith(prefijoDescanso)) {
+        try {
+          const d = JSON.parse(localStorage.getItem(k) || '') as DescansoEnCurso;
+          if (typeof d?.restEndsAt !== 'number' || Date.now() - d.restEndsAt > CADUCIDAD_DESCANSO_MS) {
+            localStorage.removeItem(k);
+          }
+        } catch {
+          localStorage.removeItem(k);
+        }
+        continue;
+      }
       if (!k?.startsWith(prefijo)) continue;
       try {
         const sesion = JSON.parse(localStorage.getItem(k) || '') as SesionEnCurso;
@@ -189,4 +203,71 @@ export function limpiarSesionesCaducadas(athleteEmail: string): void {
   } catch {
     // best-effort
   }
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+   Descanso en curso · su propia clave
+
+   Handoff de notificaciones (03-09): «al restaurar la app (cold start
+   incluido) se recalcula desde `restEndsAt` guardado en la sesión».
+
+   Va en una clave HERMANA y no dentro de `SesionEnCurso` a propósito: el
+   borrador de series se descarta entero si el coach cambió la forma de la
+   rutina, y perder el descanso por eso sería absurdo. Además el descanso lo
+   escribe el player varias veces por serie y las series las escribe
+   TrainingScreen — mezclarlos obligaría a subir el estado del cronómetro dos
+   componentes para nada.
+
+   Se guarda el INSTANTE de fin, nunca segundos restantes: es lo único que
+   sobrevive a que el móvil pase la noche apagado sin mentir al volver.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+export interface DescansoEnCurso {
+  /** Epoch ms del fin. Puede estar en el pasado: eso es «a por la serie N». */
+  restEndsAt: number;
+  /** Segundos prescritos, para la barra y el «DE 2:00». */
+  restTotalSeconds: number;
+  exerciseName: string;
+  exIdx: number;
+  setIdx: number;
+}
+
+const PREFIJO_DESCANSO = 'enforma_descanso_en_curso_v1';
+
+/** Un descanso más viejo que esto es de otra sesión, no del hueco entre dos
+ *  series. Coincide con el cierre automático de la actividad en vivo (§3.4:
+ *  «a los 20 min sin registrar nada la actividad se cierra»). */
+const CADUCIDAD_DESCANSO_MS = 20 * 60 * 1000;
+
+function claveDescanso(athleteEmail: string, assignmentId: string): string {
+  return `${PREFIJO_DESCANSO}_${athleteEmail}_${assignmentId}`;
+}
+
+export function guardarDescanso(athleteEmail: string, assignmentId: string, d: DescansoEnCurso): void {
+  try {
+    localStorage.setItem(claveDescanso(athleteEmail, assignmentId), JSON.stringify(d));
+  } catch { /* best-effort, igual que el borrador de series */ }
+}
+
+export function cargarDescanso(athleteEmail: string, assignmentId: string): DescansoEnCurso | null {
+  try {
+    const raw = localStorage.getItem(claveDescanso(athleteEmail, assignmentId));
+    if (!raw) return null;
+    const d = JSON.parse(raw) as DescansoEnCurso;
+    if (typeof d?.restEndsAt !== 'number') return null;
+    // Caduca por cuánto hace que TERMINÓ, no por cuándo se guardó: un
+    // descanso recién acabado sigue siendo el estado «a por la serie N».
+    if (Date.now() - d.restEndsAt > CADUCIDAD_DESCANSO_MS) {
+      borrarDescanso(athleteEmail, assignmentId);
+      return null;
+    }
+    return d;
+  } catch {
+    borrarDescanso(athleteEmail, assignmentId);
+    return null;
+  }
+}
+
+export function borrarDescanso(athleteEmail: string, assignmentId: string): void {
+  try { localStorage.removeItem(claveDescanso(athleteEmail, assignmentId)); } catch { /* best-effort */ }
 }

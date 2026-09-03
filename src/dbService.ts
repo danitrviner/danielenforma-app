@@ -220,7 +220,8 @@ export {
   updateCrmServicio, archivarCrmServicio, desarchivarCrmServicio,
   getCrmPagos, getCrmPagosByCliente, createCrmPago, updateCrmPago, deleteCrmPago,
   getCrmSuscripciones, getCrmSuscripcionesByCliente, createCrmSuscripcion,
-  updateCrmSuscripcion, registrarCobroSuscripcion,
+  updateCrmSuscripcion, deleteCrmSuscripcion, registrarCobroSuscripcion,
+  eliminarClienteDelCrm,
   getCrmReuniones, getCrmReunionesByCliente, createCrmReunion, updateCrmReunion,
   EscrituraEncolada, CobroYaRegistrado,
 } from './db/crm';

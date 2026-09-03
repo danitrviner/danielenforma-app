@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useToast } from '../../../hooks/useToast';
-import { useActualizarSuscripcion, useRegistrarCobro } from '../hooks/useSuscripciones';
+import { useActualizarSuscripcion, useEliminarSuscripcion, useRegistrarCobro } from '../hooks/useSuscripciones';
 import { formatEuros } from '../lib/dinero';
 import { formatDia, tiempoRelativo } from '../lib/fechas';
 import DataTable, { Columna } from './DataTable';
@@ -30,6 +30,7 @@ export default function SuscripcionesBlock({ suscripciones, cargando, error, mos
   const { showToast } = useToast();
   const actualizar = useActualizarSuscripcion();
   const registrar = useRegistrarCobro();
+  const eliminar = useEliminarSuscripcion();
   const [editando, setEditando] = useState<CrmSuscripcion | null>(null);
 
   const filaMutandoRegistro = (id: string) =>
@@ -47,6 +48,20 @@ export default function SuscripcionesBlock({ suscripciones, cargando, error, mos
       showToast(s.estado === 'activa' ? 'Suscripción pausada' : 'Suscripción reanudada', 'success');
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'No se ha podido actualizar la suscripción', 'error');
+    }
+  };
+
+  const onBorrar = async (s: CrmSuscripcion) => {
+    if (!window.confirm(
+      `¿Borrar la suscripción «${s.concepto}» (${formatEuros(s.importeCents)} / ${s.periodicidad})?\n\n` +
+      'Deja de renovarse y desaparece de la lista. Los cobros que ya generó se quedan ' +
+      'donde están: si sobra alguno pendiente, bórralo desde la tabla de pagos.'
+    )) return;
+    try {
+      await eliminar.mutateAsync({ id: s.id, clientId: s.clientId });
+      showToast('Suscripción borrada', 'success');
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'No se ha podido borrar la suscripción', 'error');
     }
   };
 
@@ -93,7 +108,7 @@ export default function SuscripcionesBlock({ suscripciones, cargando, error, mos
     {
       id: 'acciones',
       header: '',
-      width: '190px',
+      width: '230px',
       align: 'right',
       render: s => (
         <div className="flex items-center justify-end gap-1">
@@ -125,6 +140,16 @@ export default function SuscripcionesBlock({ suscripciones, cargando, error, mos
             className="w-7 h-7 rounded-control inline-flex items-center justify-center text-ink-2 hover:bg-white/6 transition-colors"
           >
             <Icon name="edit" size="m" />
+          </button>
+          <button
+            type="button"
+            onClick={() => onBorrar(s)}
+            disabled={eliminar.isPending}
+            aria-label="Borrar suscripción"
+            title="Borrar"
+            className="w-7 h-7 rounded-control inline-flex items-center justify-center text-danger hover:bg-white/6 disabled:opacity-40 transition-colors"
+          >
+            <Icon name="delete" size="m" />
           </button>
         </div>
       ),

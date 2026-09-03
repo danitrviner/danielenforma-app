@@ -25,6 +25,9 @@ const CAT_LABEL: Record<FoodCategory, string> = { HC: 'HC', PROT: 'PROT', GRASA:
 
 interface Props {
   athleteEmail: string;
+  /** UID del coach — el dueño de las recetas del constructor que puede usar el
+   *  menú. Sin él, `getRecipes` traía las de todo el mundo (ver db/recipes). */
+  coachId: string;
   onboarding: OnboardingData | null;
   diets: Diet[];
   dietConfig: AthleteDietConfig | null;
@@ -53,7 +56,7 @@ function devBadge(day: MenuDay): { label: string; cls: string } {
   return { label, cls };
 }
 
-export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, dietConfig, nutritionConfig, initialMenu, onSaved, onCancel }: Props) {
+export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, diets, dietConfig, nutritionConfig, initialMenu, onSaved, onCancel }: Props) {
   const today = new Date().toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: '2-digit' });
 
   const [step, setStep] = useState<Step>(initialMenu ? 'review' : 'config');
@@ -137,7 +140,7 @@ export default function WeeklyMenuEditor({ athleteEmail, onboarding, diets, diet
 
   async function ensureBuilderRecipes(): Promise<Recipe[]> {
     if (builderRecipes) return builderRecipes;
-    const list = await getRecipes();
+    const list = await getRecipes({ ownerId: coachId });
     setBuilderRecipes(list);
     return list;
   }

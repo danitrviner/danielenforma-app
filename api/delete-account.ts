@@ -14,11 +14,20 @@
 //   1. verifica el ID token y exige reautenticación reciente (auth_time)
 //   2. borra las colecciones del atleta, por doc-id y por campo
 //   3. borra sus ficheros de Storage
-//   4. ANONIMIZA el rastro comercial en vez de borrarlo (decisión de producto,
-//      10 ago 2026): la ley obliga a conservar la documentación de operaciones
-//      cobradas, y `firestore.rules:626` ya prohíbe borrar un pago en estado
-//      `pagado`. Se sustituyen nombre, email, DNI, dirección y teléfono por una
-//      etiqueta opaca, y se conservan importes y fechas.
+//   4. del rastro comercial conserva SOLO lo que es documentación de una
+//      operación —los servicios contratados y sus cobros—, anonimizado: la ley
+//      obliga a guardarlo, y `firestore.rules:626` ya prohíbe borrar un pago en
+//      estado `pagado`. Se sustituye el nombre por una etiqueta sin datos
+//      personales y se conservan importes y fechas. Todo lo demás (perfil,
+//      contacto del CRM, suscripciones y reuniones) se BORRA.
+//
+//      03-09: antes el perfil y el contacto se quedaban anonimizados, y el
+//      coach veía DOS filas «borrado_a1b2c3» por cada cuenta eliminada, sin
+//      poder quitarlas de en medio. No aportaban nada que no esté ya en los
+//      cobros conservados: una regla de renovación o una reunión con alguien
+//      que ya no está tampoco. Coste asumido a propósito: las bajas por
+//      borrado de cuenta dejan de contar en «Bajas (30 días)» y en el churn
+//      por graduación del resumen.
 //   5. borra el usuario de Firebase Auth, que es el último paso a propósito:
 //      si algo falla antes, la persona todavía puede entrar y reintentar.
 import type { VercelRequest, VercelResponse } from '@vercel/node';
@@ -67,10 +76,19 @@ const CAMPOS_PROPIETARIO = ['userId', 'athleteId', 'email'];
 // Prefijos de Storage. El bucket organiza por email, igual que storage.rules.
 export const PREFIJOS_STORAGE = ['progressPhotos', 'gymPhotos', 'questionnaireMedia'];
 
-// Colecciones del CRM que se anonimizan, con el campo que apunta al cliente.
+// Colecciones del CRM que se CONSERVAN anonimizadas: son la documentación de
+// una operación comercial (qué se contrató y qué se cobró), que hay obligación
+// de guardar. Solo se les quita el nombre.
 export const CRM_A_ANONIMIZAR: Array<{ coleccion: string; campos: string[] }> = [
-  { coleccion: 'crmServicios',     campos: ['clientId'] },
-  { coleccion: 'crmPagos',         campos: ['clientId'] },
+  { coleccion: 'crmServicios', campos: ['clientId'] },
+  { coleccion: 'crmPagos',     campos: ['clientId'] },
+];
+
+// Colecciones del CRM que se BORRAN. Una suscripción es la regla de que a
+// alguien le vuelva a tocar pagar, y una reunión es una cita: ninguna de las
+// dos es documentación de nada ya ocurrido, y conservarlas solo deja al coach
+// renovaciones y citas de gente que ya no existe.
+export const CRM_A_BORRAR: Array<{ coleccion: string; campos: string[] }> = [
   { coleccion: 'crmSuscripciones', campos: ['clientId'] },
   { coleccion: 'crmReuniones',     campos: ['clientId'] },
 ];
@@ -132,7 +150,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return;
   }
 
-  const etiquetaAnonima = `borrado_${randomBytes(6).toString('hex')}`;
+  // Legible a propósito: esta etiqueta ya no nombra a una persona en ninguna
+  // lista —el perfil y el contacto se borran—, solo encabeza los cobros
+  // conservados. «borrado_a1b2c3d4e5f6» ahí parecía un fallo de la app; el
+  // sufijo corto es lo justo para distinguir dos clientes eliminados entre sí
+  // sin decir nada de ninguno de los dos.
+  const etiquetaAnonima = `Cliente eliminado · ${randomBytes(2).toString('hex')}`;
   const resumen = { documentos: 0, ficheros: 0, crmAnonimizados: 0 };
 
   try {
@@ -176,27 +199,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
-    // ── 3. Perfil: se anonimiza, no se borra ────────────────────────────────
-    // Se conserva el documento sin un solo dato personal, porque el cuadro de
-    // mandos cuenta altas, bajas y permanencia sobre él: borrarlo entero
-    // reescribiría el histórico del negocio. Lo que queda —fecha de alta, fecha
-    // y motivo de baja, canal de captación— no permite identificar a nadie.
-    writer.set(
-      adminDb.collection('user_profiles').doc(uid),
-      {
-        userId: uid,
-        displayName: etiquetaAnonima,
-        email: `${etiquetaAnonima}@anonimo.local`,
-        role: 'client',
-        anonimizado: true,
-        anonimizadoEn: new Date().toISOString(),
-        estadoCrm: 'baja',
-      },
-      { merge: false } // reemplazo total: nada del documento anterior sobrevive
-    );
+    // ── 3. Perfil: se borra ─────────────────────────────────────────────────
+    // Hasta 03-09 se conservaba anonimizado para que el cuadro de mandos
+    // siguiera contando altas y bajas. En la práctica eso dejaba un
+    // «borrado_a1b2c3» en la lista de clientes del coach —uno por cada cuenta
+    // eliminada, imposible de quitar— a cambio de un histórico que ya se puede
+    // reconstruir por los cobros conservados. Se borra.
+    writer.delete(adminDb.collection('user_profiles').doc(uid));
     resumen.documentos++;
 
-    // ── 4. CRM: anonimizar conservando importes y fechas ────────────────────
+    // ── 4. CRM: lo que sí se conserva, anonimizado ──────────────────────────
+    // Solo servicios y cobros: importes y fechas intactos, sin nombre.
     for (const { coleccion, campos } of CRM_A_ANONIMIZAR) {
       const vistos = new Set<string>();
       for (const campo of campos) {
@@ -217,8 +230,34 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
-    // `crmContactos` es el único del CRM con datos personales propios (y no solo
-    // el nombre denormalizado): email, DNI, dirección, teléfono y notas.
+    // ── 5. CRM: lo que no es documentación de una operación, se borra ───────
+    for (const { coleccion, campos } of CRM_A_BORRAR) {
+      const vistos = new Set<string>();
+      for (const campo of campos) {
+        for (const valor of [uid, email]) {
+          let snap;
+          try {
+            snap = await adminDb.collection(coleccion).where(campo, '==', valor).get();
+          } catch {
+            continue;
+          }
+          for (const d of snap.docs) {
+            if (vistos.has(d.id)) continue;
+            vistos.add(d.id);
+            writer.delete(d.ref);
+            // Cuenta como CRM tocado: es lo que decide si se marcan los sellos
+            // de catálogo al final, y borrar también tiene que verse.
+            resumen.crmAnonimizados++;
+          }
+        }
+      }
+    }
+
+    // `crmContactos` era el único del CRM con datos personales propios (y no
+    // solo el nombre denormalizado): email, DNI, dirección, teléfono y notas.
+    // Ya no se anonimiza: se borra. Anonimizarlo dejaba la SEGUNDA fila
+    // fantasma de cada cuenta eliminada, y un contacto sin nombre, sin email,
+    // sin teléfono y sin notas no es nada que el coach pueda usar.
     const vistosContactos = new Set<string>();
     for (const [campo, valor] of [['userId', uid], ['email', email]] as const) {
       let snap;
@@ -230,18 +269,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       for (const d of snap.docs) {
         if (vistosContactos.has(d.id)) continue;
         vistosContactos.add(d.id);
-        const { FieldValue } = await import('firebase-admin/firestore');
-        writer.update(d.ref, {
-          nombre: etiquetaAnonima,
-          email: FieldValue.delete(),
-          dni: FieldValue.delete(),
-          direccion: FieldValue.delete(),
-          telefono: FieldValue.delete(),
-          notas: FieldValue.delete(),
-          userId: FieldValue.delete(),
-          anonimizado: true,
-          anonimizadoEn: new Date().toISOString(),
-        });
+        writer.delete(d.ref);
         resumen.crmAnonimizados++;
       }
     }
@@ -260,11 +288,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (resumen.crmAnonimizados > 0) {
       await marcarCatalogosCambiados(adminDb, [
         ...CRM_A_ANONIMIZAR.map(c => c.coleccion),
+        ...CRM_A_BORRAR.map(c => c.coleccion),
         'crmContactos',
       ]);
     }
 
-    // ── 5. Storage ──────────────────────────────────────────────────────────
+    // ── 6. Storage ──────────────────────────────────────────────────────────
     try {
       const { getStorage } = await import('firebase-admin/storage');
       const { getApps } = await import('firebase-admin/app');
@@ -282,7 +311,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       console.error('delete-account: fallo borrando Storage de', email, err);
     }
 
-    // ── 6. La cuenta de acceso, al final ────────────────────────────────────
+    // ── 7. La cuenta de acceso, al final ────────────────────────────────────
     await adminAuth.deleteUser(uid);
 
     console.info('delete-account: completado', { etiquetaAnonima, ...resumen, restos: fallidos.length });

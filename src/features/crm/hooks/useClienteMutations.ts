@@ -10,9 +10,12 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 // `updateClienteCrmFields` y no `updateUserProfile`: la segunda cae a
 // localStorage en silencio cuando Firestore falla (src/db/profiles.ts:326) y un
 // cambio de estado comercial no puede perderse así.
-import { updateClienteCrmFields, updateCrmContacto, createCrmContacto } from '../../../dbService';
+import {
+  updateClienteCrmFields, updateCrmContacto, createCrmContacto, eliminarClienteDelCrm,
+} from '../../../dbService';
 import { normalizarDni, normalizarPrefijo, normalizarNumero } from '../lib/identidad';
 import { crmKeys } from '../lib/crmQueries';
+import { motivoNoBorrable } from '../lib/archivado';
 import type { Cliente, CrmContacto, EstadoCrm, MotivoBaja } from '../types';
 
 export interface DatosPersonales {
@@ -117,6 +120,70 @@ export function useCrearContacto() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: crmKeys.contactos });
+    },
+  });
+}
+
+/**
+ * Archivar / desarchivar. Es baja LÓGICA de la vista del coach: el documento
+ * no se toca más allá de un flag, y el cliente vuelve entero al desarchivar.
+ * No confundir con `estadoCrm: 'baja'`, que es un hecho de negocio (con su
+ * fecha y su motivo) y sigue contando para el churn.
+ *
+ * Escribe en `user_profiles.archivadoCrm` o en `crmContactos.archivado` según
+ * de dónde venga el cliente — igual que `useGuardarCliente`, el componente no
+ * decide eso. Un cliente fusionado (contacto + perfil) se archiva por el lado
+ * del perfil, que es el que manda.
+ */
+export function useArchivarCliente() {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ cliente, archivar }: { cliente: Cliente; archivar: boolean }) => {
+      // Mismo encaminado que `useGuardarCliente`: perfil primero (es el que
+      // manda en un cliente fusionado), contacto si no lo hay.
+      if (cliente.fuente === 'perfil' && cliente.userId) {
+        await updateClienteCrmFields(cliente.userId, { archivadoCrm: archivar });
+        return;
+      }
+      if (cliente.contactoId) {
+        await updateCrmContacto(cliente.contactoId, { archivado: archivar });
+        return;
+      }
+      throw new Error('Cliente sin destino de escritura: no tiene ni perfil ni contacto.');
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: crmKeys.perfiles });
+      qc.invalidateQueries({ queryKey: crmKeys.contactos });
+    },
+  });
+}
+
+/**
+ * Borrado DEFINITIVO de un contacto sin cuenta o de un perfil ya anonimizado,
+ * con todo su rastro comercial. Lanza `ClienteConCobros` si tiene cobros ya
+ * cobrados — eso se archiva, no se borra.
+ */
+export function useEliminarCliente() {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (cliente: Cliente) => {
+      const bloqueo = motivoNoBorrable(cliente);
+      if (bloqueo) throw new Error(bloqueo);
+      return eliminarClienteDelCrm({
+        clientId: cliente.id,
+        contactoId: cliente.contactoId,
+        userId: cliente.anonimizado ? cliente.userId : undefined,
+      });
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: crmKeys.perfiles });
+      qc.invalidateQueries({ queryKey: crmKeys.contactos });
+      qc.invalidateQueries({ queryKey: crmKeys.servicios });
+      qc.invalidateQueries({ queryKey: crmKeys.pagos });
+      qc.invalidateQueries({ queryKey: crmKeys.suscripciones });
+      qc.invalidateQueries({ queryKey: crmKeys.reuniones });
     },
   });
 }

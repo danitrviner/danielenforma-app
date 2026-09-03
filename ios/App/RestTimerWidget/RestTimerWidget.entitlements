@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- El MISMO grupo que la app. Si los dos no coinciden exactamente, cada
+	     proceso escribe en su propio contenedor y el buzón queda vacío para
+	     siempre, sin ningún error visible. -->
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>group.app.danielenforma.entreno</string>
+	</array>
+</dict>
+</plist>

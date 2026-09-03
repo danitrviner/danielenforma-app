@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Celda de la tarjeta: rgba(255,255,255,.05), radio 16 (tokens §6). -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="#0DFFFFFF" />
+    <corners android:radius="16dp" />
+</shape>

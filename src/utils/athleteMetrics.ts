@@ -9,6 +9,7 @@ import {
 } from '../types';
 import { epley } from './oneRepMax';
 import { weightedGroupsOf } from './trainingReport';
+import { adherenciaDelDia } from './diaDeDieta';
 
 // Normaliza para comparar nombres de ejercicio: minúsculas y sin acentos.
 export function normalizeText(s: string): string {
@@ -150,14 +151,12 @@ export function dailyDietPcts(
   from: string,
   to: string,
 ): { avg: number; days: number } {
-  const dietsById = new Map(diets.map(d => [d.id, d]));
   const pcts: number[] = [];
   for (const log of completionLogs) {
     if (log.date < from || log.date > to) continue;
-    const diet = dietsById.get(log.dietId);
-    const totalItems = diet ? diet.meals.reduce((s, m) => s + m.items.length, 0) : 0;
-    if (totalItems === 0) continue;
-    pcts.push(Math.min(100, (log.doneItemIds.length / totalItems) * 100));
+    const pct = adherenciaDelDia(log, diets);
+    if (pct === null) continue;
+    pcts.push(pct);
   }
   if (pcts.length === 0) return { avg: 0, days: 0 };
   return { avg: pcts.reduce((s, v) => s + v, 0) / pcts.length, days: pcts.length };

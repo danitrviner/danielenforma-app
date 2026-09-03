@@ -3,6 +3,7 @@ import {
   QuestionnaireResponse, QuestionnaireAssignment, Questionnaire,
 } from '../types';
 import { resolveQuestions } from './questionnaireResolve';
+import { adherenciaDelDia } from './diaDeDieta';
 
 // Extra report sections beyond pure training performance (peso corporal,
 // adherencia a sesiones, nutrición y retos). Same deterministic philosophy as
@@ -91,15 +92,9 @@ export interface NutritionSectionData {
 }
 
 function dietAvgPct(logs: DietCompletionLog[], diets: Diet[], start: string, end: string): { daysLogged: number; avgPct: number | null } {
-  const dietsById = new Map(diets.map(d => [d.id, d]));
   const win = logs.filter(l => inRange(l.date, start, end));
   if (win.length === 0) return { daysLogged: 0, avgPct: null };
-  const pcts = win.map(log => {
-    const diet = dietsById.get(log.dietId);
-    const totalItems = diet ? diet.meals.reduce((s, m) => s + m.items.length, 0) : 0;
-    if (totalItems === 0) return 0;
-    return Math.min(100, (log.doneItemIds.length / totalItems) * 100);
-  });
+  const pcts = win.map(log => adherenciaDelDia(log, diets) ?? 0);
   return { daysLogged: win.length, avgPct: Math.round(pcts.reduce((s, p) => s + p, 0) / pcts.length) };
 }
 

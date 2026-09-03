@@ -68,6 +68,7 @@ const RECETAS_CATS = [
   'Desayuno y dulces',
   'Bebidas',
   'Suplementos deportivos',
+  'Alimentos y suplementos',
 ];
 
 const INTAKE_LABELS: Record<number, string> = {
@@ -621,8 +622,8 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
   // ('recipes'), WeeklyMenuEditor/MyMenuScreen ('recipeFavorites'), and
   // StepsWidget/NutritionAnalysisPanel/NutritionHubScreen ('athleteNutritionConfig').
   const { data: recipes = [], isPending: loadingRecipes } = useQuery({
-    queryKey: ['recipes'],
-    queryFn: () => getRecipes(),
+    queryKey: ['recipes', profile.userId],
+    queryFn: () => getRecipes({ ownerId: profile.userId }),
   });
   const favoritesKey = ['recipeFavorites', profile.email] as const;
   const { data: favoritesData, isPending: loadingFavorites } = useQuery({
@@ -931,7 +932,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
     setDeletingOwn(true);
     try {
       await deleteRecipe(recipeId);
-      queryClient.setQueryData<Recipe[]>(['recipes'], prev => prev?.filter(r => r.id !== recipeId));
+      queryClient.setQueryData<Recipe[]>(['recipes', profile.userId], prev => prev?.filter(r => r.id !== recipeId));
       setActiveRecipe(null);
     } finally {
       setDeletingOwn(false);

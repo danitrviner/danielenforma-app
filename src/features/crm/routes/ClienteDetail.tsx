@@ -1,6 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useCliente } from '../hooks/useClientes';
+import { useArchivarCliente, useEliminarCliente } from '../hooks/useClienteMutations';
+import { motivoNoBorrable } from '../lib/archivado';
+import { useToast } from '../../../hooks/useToast';
+import { ClienteConCobros } from '../../../db/crm';
 import { useSuscripcionesDe, useRegistrarCobro } from '../hooks/useSuscripciones';
 import { estadoSuscripcionCliente } from '../lib/suscripcionEstado';
 import { EstadoClientePill } from '../components/StatusPill';
@@ -41,7 +45,10 @@ export default function ClienteDetail({ coachEmail }: { coachEmail: string }) {
   const [params, setParams] = useSearchParams();
   const [invitando, setInvitando] = useState(false);
 
+  const { showToast } = useToast();
   const { cliente, isPending } = useCliente(id);
+  const archivar = useArchivarCliente();
+  const eliminar = useEliminarCliente();
   const { data: suscripciones = [] } = useSuscripcionesDe(id);
   const registrar = useRegistrarCobro();
   const tab = (params.get('tab') as Tab) || 'datos';
@@ -75,6 +82,34 @@ export default function ClienteDetail({ coachEmail }: { coachEmail: string }) {
   // botón destacado. No se duplica adherencia/KPIs de entreno aquí — eso es
   // de ClientHub, no de esta ficha de facturación (decisión con Dani, F3.13d).
   const estadoSuscripcion = estadoSuscripcionCliente(suscripciones);
+  const bloqueoBorrado = motivoNoBorrable(cliente);
+
+  const onArchivar = async () => {
+    try {
+      await archivar.mutateAsync({ cliente, archivar: !cliente.archivado });
+      showToast(cliente.archivado ? 'Vuelve a tus listas' : 'Archivado — ya no sale en tus listas', 'success');
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'No se ha podido archivar', 'error');
+    }
+  };
+
+  const onEliminar = async () => {
+    if (bloqueoBorrado) { showToast(bloqueoBorrado, 'info'); return; }
+    if (!window.confirm(
+      `¿Borrar «${cliente.nombre}» para siempre?\n\n` +
+      'Se borra también todo su rastro en el CRM: servicios, cobros pendientes, ' +
+      'suscripciones y reuniones. Esto no se puede deshacer.\n\n' +
+      'Si solo quieres quitarlo de en medio, archívalo.'
+    )) return;
+    try {
+      await eliminar.mutateAsync(cliente);
+      showToast('Cliente borrado', 'success');
+      navigate('/crm/clientes');
+    } catch (err) {
+      if (err instanceof ClienteConCobros) { showToast(err.message, 'error'); return; }
+      showToast(err instanceof Error ? err.message : 'No se ha podido borrar', 'error');
+    }
+  };
 
   return (
     <div className="space-y-3">
@@ -122,6 +157,28 @@ export default function ClienteDetail({ coachEmail }: { coachEmail: string }) {
               WhatsApp
             </a>
           )}
+          <button
+            type="button"
+            onClick={onArchivar}
+            disabled={archivar.isPending}
+            className="flex items-center gap-1 px-3 py-2 rounded-control bg-white/6 text-ink font-sans font-bold text-caption hover:bg-white/10 disabled:opacity-40 transition-colors"
+          >
+            <Icon name={cliente.archivado ? 'unarchive' : 'archive'} size="s" />
+            {cliente.archivado ? 'Desarchivar' : 'Archivar'}
+          </button>
+          {/* Borrar solo donde no deja huérfano a nadie: contactos sin cuenta y
+              perfiles ya anonimizados. Ver `motivoNoBorrable`. */}
+          {!bloqueoBorrado && (
+            <button
+              type="button"
+              onClick={onEliminar}
+              disabled={eliminar.isPending}
+              className="flex items-center gap-1 px-3 py-2 rounded-control bg-danger/12 text-danger font-sans font-bold text-caption hover:bg-danger/20 disabled:opacity-40 transition-colors"
+            >
+              <Icon name="delete" size="s" />
+              {eliminar.isPending ? 'Borrando…' : 'Borrar'}
+            </button>
+          )}
           {/* Puente con la app de entrenamiento: solo tiene sentido si la
               persona tiene cuenta. Un contacto importado no tiene ClientHub. */}
           {cliente.userId ? (
@@ -148,6 +205,17 @@ export default function ClienteDetail({ coachEmail }: { coachEmail: string }) {
           )}
         </div>
       </header>
+
+      {cliente.archivado && (
+        <div className="flex items-center gap-2 px-3 py-2 rounded-surface bg-warning/10 border border-warning/25">
+          <Icon name="inventory_2" size="s" className="text-warning shrink-0" />
+          <p className="font-sans text-caption text-warning">
+            {cliente.anonimizado
+              ? 'Cuenta borrada por la propia persona. Se conserva anonimizada para no reescribir el histórico del negocio.'
+              : 'Archivado: no sale en tus listas ni en los contadores del CRM hasta que lo desarchives.'}
+          </p>
+        </div>
+      )}
 
       {/* Las seis pestañas no caben en 402 pt. Sin `overflow-x-auto` la fila
           desbordaba su contenedor y el scroll horizontal se lo comía el

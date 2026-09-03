@@ -2,6 +2,7 @@ import { Diet, NutritionProgram, NutritionPhase, OnboardingData, BodyweightLog, 
 import { computePhaseStartDate } from '../dbService';
 import { estimateMaintenanceKcal, KCAL_PER_KG } from './energyCalc';
 import { exchangeToKcal } from './nutritionConstants';
+import { adherenciaDelDia } from './diaDeDieta';
 
 // Deterministic engine that turns a NutritionProgram (phases with weeks +
 // linked diet) into a week-by-week weight projection, contrasts it with the
@@ -136,13 +137,10 @@ function averageKnown(series: (number | null)[], uptoIdx: number): number | null
 export function weeklyDietAdherencePct(
   logs: DietCompletionLog[], diets: Diet[], programStart: string, weekCount: number,
 ): (number | null)[] {
-  const dietsById = new Map(diets.map(d => [d.id, d]));
   const entries = logs
     .map(l => {
-      const diet = dietsById.get(l.dietId);
-      const totalItems = diet ? diet.meals.reduce((s, m) => s + m.items.length, 0) : 0;
-      if (totalItems === 0) return null;
-      return { date: l.date, value: Math.min(100, (l.doneItemIds.length / totalItems) * 100) };
+      const value = adherenciaDelDia(l, diets);
+      return value === null ? null : { date: l.date, value };
     })
     .filter((x): x is { date: string; value: number } => x != null);
   return bucketAverage(entries, programStart, weekCount);
@@ -156,16 +154,10 @@ export function weeklyDietAdherencePct(
 export function recentDietAdherencePct(
   logs: DietCompletionLog[], diets: Diet[], today: string, windowDays = 14,
 ): number | undefined {
-  const dietsById = new Map(diets.map(d => [d.id, d]));
   const windowStart = addDays(today, -windowDays);
   const values = logs
     .filter(l => l.date >= windowStart && l.date <= today)
-    .map(l => {
-      const diet = dietsById.get(l.dietId);
-      const totalItems = diet ? diet.meals.reduce((s, m) => s + m.items.length, 0) : 0;
-      if (totalItems === 0) return null;
-      return Math.min(100, (l.doneItemIds.length / totalItems) * 100);
-    })
+    .map(l => adherenciaDelDia(l, diets))
     .filter((v): v is number => v != null);
   if (values.length === 0) return undefined;
   return values.reduce((s, v) => s + v, 0) / values.length;

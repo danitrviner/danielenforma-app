@@ -80,6 +80,8 @@ interface FormState {
   musclePct:        number | '';
   occupation:       string;
   referralSource:   string;
+  goalTimelineMotivation: string;
+  coachExpectations:      string;
   goalFreeText:     string;
   activityLevel:    ActivityLevel | '';
   goalBody:         GoalBody | '';
@@ -155,6 +157,8 @@ function fromOnboarding(d: OnboardingData): FormState {
     musclePct:        d.musclePct ?? '',
     occupation:       d.occupation ?? '',
     referralSource:   d.referralSource ?? '',
+    goalTimelineMotivation: d.goalTimelineMotivation ?? '',
+    coachExpectations:      d.coachExpectations ?? '',
     goalFreeText:     d.goalFreeText ?? '',
     activityLevel:    d.activityLevel ?? '',
     goalBody:         d.goalBody ?? '',
@@ -229,6 +233,8 @@ const DEFAULTS: FormState = {
   musclePct:        '',
   occupation:       '',
   referralSource:   '',
+  goalTimelineMotivation: '',
+  coachExpectations:      '',
   goalFreeText:     '',
   activityLevel:    '',
   goalBody:         '',
@@ -619,6 +625,8 @@ export default function OnboardingForm({
       musclePct:          form.musclePct  !== '' ? Number(form.musclePct)  : undefined,
       occupation:         form.occupation || undefined,
       referralSource:     form.referralSource || undefined,
+      goalTimelineMotivation: form.goalTimelineMotivation || undefined,
+      coachExpectations:      form.coachExpectations || undefined,
       goalFreeText:       form.goalFreeText || undefined,
       activityLevel:      form.activityLevel !== '' ? form.activityLevel : undefined,
       goalBody:           form.goalBody      !== '' ? form.goalBody      : undefined,
@@ -898,6 +906,22 @@ export default function OnboardingForm({
           <p className="font-sans text-caption text-ink-2 uppercase tracking-wide">Objetivo, en tus palabras <span className="text-ink-3 normal-case">(opc)</span></p>
           <textarea rows={2} value={form.goalFreeText} onChange={e => set('goalFreeText', e.target.value)}
             placeholder="Describe con tus palabras qué quieres conseguir…"
+            className={`${FIELD} resize-none placeholder:text-ink-3`} />
+        </div>
+        {/* Las dos respuestas escritas que el alta del atleta SÍ recogía y
+            este formulario no: no aparecían aquí ni en la ficha, así que el
+            coach no tenía dónde leerlas. Y como este formulario reescribe el
+            documento entero, tampoco podían editarse sin perderlas. */}
+        <div className="space-y-2">
+          <p className="font-sans text-caption text-ink-2 uppercase tracking-wide">Plazo y motivo <span className="text-ink-3 normal-case">(opc)</span></p>
+          <textarea rows={2} value={form.goalTimelineMotivation} onChange={e => set('goalTimelineMotivation', e.target.value)}
+            placeholder="¿Para cuándo lo quiere? ¿Hay una fecha, un evento, un motivo detrás?"
+            className={`${FIELD} resize-none placeholder:text-ink-3`} />
+        </div>
+        <div className="space-y-2">
+          <p className="font-sans text-caption text-ink-2 uppercase tracking-wide">Qué espera de su entrenador <span className="text-ink-3 normal-case">(opc)</span></p>
+          <textarea rows={3} value={form.coachExpectations} onChange={e => set('coachExpectations', e.target.value)}
+            placeholder="Cómo le gusta que le hablen cuando falla, cuánto acompañamiento necesita…"
             className={`${FIELD} resize-none placeholder:text-ink-3`} />
         </div>
       </Section>

@@ -8,7 +8,7 @@ import com.getcapacitor.PluginMethod
 import com.getcapacitor.annotation.CapacitorPlugin
 
 // Puente React → CardioSessionService. Espejo de
-// src/services/cardioLiveActivity.ts y de RestTimerPlugin.kt: start()
+// src/services/cardioLiveActivity.ts y de SesionEnVivoPlugin.kt: start()
 // arranca el foreground service con la notificación persistente; update()
 // la redibuja con el dato más reciente (el throttle de "cada 2s como mucho"
 // vive en TypeScript, aquí se hace caso siempre); stop() la retira al

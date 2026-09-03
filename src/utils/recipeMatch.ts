@@ -241,3 +241,35 @@ export function groupByDishType(alts: RecipeAlternative[]): { type: DishType; co
     .map(([type, count]) => ({ type, count }))
     .sort((a, b) => b.count - a.count);
 }
+
+/**
+ * ¿Cabe esta receta en lo que te queda?
+ *
+ * Se usa al abrir el recetario DESDE una comida del plan: el atleta que lleva
+ * el desayuno y la comida registrados no quiere ver las 8.850 recetas, quiere
+ * ver las que le entran en lo que le sobra. Antes el recetario no miraba el
+ * cupo para nada —solo categoría, alergias y preferencias—, así que la mitad de
+ * lo que ofrecía no cabía.
+ *
+ * El margen existe porque cuadrar al gramo no pasa nunca: una receta que se
+ * pasa un cuarto de intercambio sigue siendo una respuesta razonable, y ser
+ * estricto dejaba la lista casi vacía.
+ */
+export function cabeEnElCupo(recipe: Recipe, cupo: BudgetVec, margen = 0.5): boolean {
+  const e = recipeExchanges(recipe);
+  return (['HC', 'PROT', 'GRASA'] as const).every(c => e[c] <= (cupo[c] ?? 0) + margen);
+}
+
+/**
+ * Las recetas que caben, de la que mejor aprovecha el cupo a la que menos.
+ * Ordenar por sobra (y no por "lo más pequeño primero") evita que arriba salgan
+ * siempre las recetas de medio intercambio, que caben en todo y no resuelven la
+ * comida de nadie.
+ */
+export function ordenarPorCupo(recipes: Recipe[], cupo: BudgetVec, margen = 0.5): Recipe[] {
+  const sobra = (r: Recipe) => {
+    const e = recipeExchanges(r);
+    return (['HC', 'PROT', 'GRASA'] as const).reduce((s, c) => s + Math.abs((cupo[c] ?? 0) - e[c]), 0);
+  };
+  return recipes.filter(r => cabeEnElCupo(r, cupo, margen)).sort((a, b) => sobra(a) - sobra(b));
+}

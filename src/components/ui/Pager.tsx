@@ -140,13 +140,11 @@ export default function Pager({ children, value, onChange, label, dots = 'outsid
   // Se comprueba SIEMPRE al asentarse, no solo cuando cambia el índice: el
   // caso roto es justo el de quedarse descuadrado dentro de la misma página.
   const settleRef = useRef<number | null>(null);
-  const [dragging, setDragging] = useState(false);
 
   const anclarAlAsentarse = useCallback(() => {
     if (settleRef.current !== null) window.clearTimeout(settleRef.current);
     settleRef.current = window.setTimeout(() => {
       settleRef.current = null;
-      setDragging(false);
       const el = scrollRef.current;
       if (!el || el.clientWidth === 0) return;
       const index = Math.max(0, Math.min(Math.round(el.scrollLeft / el.clientWidth), pageCount - 1));
@@ -154,19 +152,19 @@ export default function Pager({ children, value, onChange, label, dots = 'outsid
       // 1px de tolerancia: en pantallas con escala fraccionaria el propio
       // anclado nativo deja décimas de píxel, y corregir eso sería un bucle.
       if (Math.abs(el.scrollLeft - target) <= 1) return;
+      // El anclado correctivo va SIEMPRE instantáneo (Dani, 03-09): con
+      // `smooth` se veía la tarjeta descuadrada y luego deslizándose sola
+      // hasta cuadrar — parecía un fallo. Instantáneo no se percibe como
+      // animación: el dedo ya se ha levantado y la inercia ha parado.
       programmaticRef.current = true;
-      el.scrollTo({ left: target, behavior: reducedMotion ? 'auto' : 'smooth' });
-      window.setTimeout(() => {
-        programmaticRef.current = false;
-        if (Math.abs(el.scrollLeft - target) > 2) el.scrollTo({ left: target, behavior: 'auto' });
-      }, reducedMotion ? 50 : 400);
-    }, 160);
-  }, [pageCount, reducedMotion]);
+      el.scrollTo({ left: target, behavior: 'auto' });
+      window.setTimeout(() => { programmaticRef.current = false; }, 50);
+    }, 120);
+  }, [pageCount]);
 
   const rafRef = useRef<number | null>(null);
   const handleScroll = useCallback(() => {
     if (programmaticRef.current) return;
-    setDragging(true);
     anclarAlAsentarse();
     if (rafRef.current !== null) return;
     rafRef.current = requestAnimationFrame(() => {
@@ -229,11 +227,11 @@ export default function Pager({ children, value, onChange, label, dots = 'outsid
           'flex overflow-x-auto snap-x snap-mandatory overscroll-x-contain hide-scrollbar focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-line '
           + (fill ? 'h-full items-stretch' : 'items-start')
         }
-        /* Mientras el dedo (o la inercia) manda, el alto cambia de golpe y sin
-           animar: una transición de alto en marcha es re-maquetación continua
-           dentro del contenedor que está scrolleando, justo lo que hace que
-           iOS suelte el anclado (trampa 3). */
-        style={!fill && activeHeight != null ? { height: activeHeight, transition: reducedMotion || dragging ? undefined : 'height 200ms ease' } : undefined}
+        /* El alto cambia de golpe y sin animar, siempre: una transición de alto
+           es re-maquetación continua dentro del contenedor que está
+           scrolleando, justo lo que hace que iOS suelte el anclado (trampa 3),
+           y al pasar de ejercicio se veía la tarjeta estirándose sola. */
+        style={!fill && activeHeight != null ? { height: activeHeight } : undefined}
       >
         {React.Children.map(children, (child, i) => (
           <div

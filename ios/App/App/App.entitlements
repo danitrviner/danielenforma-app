@@ -4,5 +4,14 @@
 <dict>
 	<key>com.apple.developer.healthkit</key>
 	<true/>
+	<!-- App Group: el ÚNICO sitio que comparten la app y la extensión del
+	     widget. Sin esto, los botones de la pantalla de bloqueo se ven pero
+	     lo que apuntas no llega nunca a la app (ver EnFormaBuzon.swift).
+	     Hay que activarlo también en el App ID en developer.apple.com y
+	     regenerar el perfil de aprovisionamiento. -->
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>group.app.danielenforma.entreno</string>
+	</array>
 </dict>
 </plist>

@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
   guardarSesion, cargarSesion, borrarSesion, formaDeSesion, tieneSeriesHechas,
   limpiarSesionesCaducadas, seriesHechasEnBorrador, SerieBorrador, SesionEnCurso,
+  guardarDescanso, cargarDescanso, borrarDescanso,
 } from './sesionEnCurso';
 
 /* Las pruebas corren en Node, sin DOM, así que localStorage no existe: se
@@ -191,5 +192,84 @@ describe('seriesHechasEnBorrador — el aviso «Sin terminar» de la lista', () 
   it('no mezcla atletas en un móvil compartido', () => {
     guardarSesion(ATLETA, sesion());
     expect(seriesHechasEnBorrador('luis@ejemplo.com', 'a1')).toBe(0);
+  });
+});
+
+/* ───────────────────────────────────────────────────────────────────────────
+   Descanso en curso (handoff de notificaciones, 03-09)
+
+   Es lo que hace que el cronómetro sobreviva a que el sistema mate la app
+   entre series — en un gimnasio, con la pantalla apagada y 40 min de sesión,
+   ese es el caso normal, no el raro. Lo que se prueba es justo lo que estaba
+   roto: que el descanso se guarde como INSTANTE de fin y no como segundos
+   restantes.
+   ─────────────────────────────────────────────────────────────────────────── */
+describe('descanso en curso', () => {
+  beforeEach(() => { datos = montarLocalStorage(); });
+  afterEach(() => { vi.unstubAllGlobals(); vi.useRealTimers(); });
+
+  const descanso = (restEndsAt: number) => ({
+    restEndsAt, restTotalSeconds: 120, exerciseName: 'Press banca', exIdx: 0, setIdx: 2,
+  });
+
+  it('devuelve el instante de fin tal cual', () => {
+    const fin = Date.now() + 90_000;
+    guardarDescanso(ATLETA, 'a1', descanso(fin));
+    expect(cargarDescanso(ATLETA, 'a1')?.restEndsAt).toBe(fin);
+  });
+
+  it('el tiempo que pasa con la app muerta NO se recupera al volver', () => {
+    // El bug original: el descanso se reanudaba donde se apagó la pantalla.
+    // Con un instante de fin, 90 s fuera son 90 s consumidos.
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-09-03T10:00:00Z'));
+    guardarDescanso(ATLETA, 'a1', descanso(Date.now() + 120_000));
+    vi.setSystemTime(new Date('2026-09-03T10:01:30Z'));
+    expect(cargarDescanso(ATLETA, 'a1')!.restEndsAt - Date.now()).toBe(30_000);
+  });
+
+  it('un descanso ya terminado sigue existiendo — es "a por la serie N"', () => {
+    // La actividad en vivo no desaparece sola al llegar a 0 (§3.2): si esto
+    // devolviera null, la tarjeta moriría justo cuando se va a apuntar.
+    guardarDescanso(ATLETA, 'a1', descanso(Date.now() - 5_000));
+    expect(cargarDescanso(ATLETA, 'a1')).not.toBeNull();
+  });
+
+  it('caduca a los 20 min de haber terminado (sesión abandonada)', () => {
+    guardarDescanso(ATLETA, 'a1', descanso(Date.now() - 21 * 60 * 1000));
+    expect(cargarDescanso(ATLETA, 'a1')).toBeNull();
+  });
+
+  it('no mezcla el descanso de dos atletas en el mismo móvil', () => {
+    guardarDescanso(ATLETA, 'a1', descanso(Date.now() + 60_000));
+    expect(cargarDescanso('luis@ejemplo.com', 'a1')).toBeNull();
+  });
+
+  it('borrarDescanso lo quita', () => {
+    guardarDescanso(ATLETA, 'a1', descanso(Date.now() + 60_000));
+    borrarDescanso(ATLETA, 'a1');
+    expect(cargarDescanso(ATLETA, 'a1')).toBeNull();
+  });
+
+  it('un JSON corrupto se trata como que no hay descanso', () => {
+    datos.set(`enforma_descanso_en_curso_v1_${ATLETA}_a1`, '{no es json');
+    expect(cargarDescanso(ATLETA, 'a1')).toBeNull();
+  });
+
+  it('el barrido se lleva los caducados y respeta los vivos', () => {
+    guardarDescanso(ATLETA, 'viejo', descanso(Date.now() - 60 * 60 * 1000));
+    guardarDescanso(ATLETA, 'vivo', descanso(Date.now() + 60_000));
+    limpiarSesionesCaducadas(ATLETA);
+    expect(cargarDescanso(ATLETA, 'viejo')).toBeNull();
+    expect(cargarDescanso(ATLETA, 'vivo')).not.toBeNull();
+  });
+
+  it('el barrido NO se lleva por delante el borrador de series', () => {
+    // Las dos claves comparten atleta y viven en el mismo almacén: si el
+    // barrido las confundiera, arreglar el descanso costaría el entreno.
+    guardarSesion(ATLETA, sesion());
+    guardarDescanso(ATLETA, 'a1', descanso(Date.now() - 60 * 60 * 1000));
+    limpiarSesionesCaducadas(ATLETA);
+    expect(cargarSesion(ATLETA, 'a1', 'w1', [2, 1])).not.toBeNull();
   });
 });

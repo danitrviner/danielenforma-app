@@ -14,6 +14,7 @@ import {
   WorkoutAssignment, WorkoutLog, Workout, TaskItem, RoadmapItem, DietCompletionLog,
   Diet, CardioSession, BodyweightLog, FoodCategory, RefeedDay,
 } from '../types';
+import { adherenciaDelDia, dietaDelDia } from './diaDeDieta';
 import { addDays as addDaysStr } from './trainingWeek';
 import { aggregate } from './trainingReport';
 import { exchangeToKcal, GRAMS_PER_EXCHANGE } from './nutritionConstants';
@@ -368,10 +369,6 @@ function kcalDeItemsHechos(diet: Diet | undefined, doneItemIds: string[]): numbe
   return Math.round(total);
 }
 
-function totalItemsDeDieta(diet: Diet | undefined): number {
-  if (!diet) return 0;
-  return diet.meals.reduce((s, m) => s + m.items.length, 0);
-}
 
 // Gramos de un ítem según su categoría — misma fórmula que documenta
 // CLAUDE.md: HC/PROT/GRASA van directos a GRAMS_PER_EXCHANGE; MIX_HC reparte
@@ -569,16 +566,20 @@ export function construirIndiceDeDias(datos: DatosCalendario, hoy: string): Map<
         detalleNutricion = { kcalObjetivo, comidasTotal: diet?.meals.filter(m => m.items.length > 0).length };
       } else {
         const log = dietLogsPorFecha.get(fecha);
-        const totalItems = totalItemsDeDieta(diet);
-        const adherenciaPct = log && totalItems > 0 ? Math.round(Math.min(100, (log.doneItemIds.length / totalItems) * 100)) : undefined;
-        const comidasTotal = diet?.meals.filter(m => m.items.length > 0).length;
-        const comidasHechas = log && diet
-          ? diet.meals.filter(m => m.items.length > 0 && m.items.every((_, idx) => log.doneItemIds.includes(`${m.id}_${idx}`))).length
+        // Un día ya vivido se lee de SU registro, no de la dieta de hoy: la
+        // dieta cambia y reescribiría el pasado (ver utils/diaDeDieta.ts).
+        const dietaDeEseDia = log ? dietaDelDia(log, datos.diets) : diet;
+        const adherenciaPct = log ? (adherenciaDelDia(log, datos.diets) ?? undefined) : undefined;
+        const comidasTotal = dietaDeEseDia?.meals.filter(m => m.items.length > 0).length;
+        const comidasHechas = log && dietaDeEseDia
+          ? dietaDeEseDia.meals.filter(m => m.items.length > 0 && m.items.every((_, idx) => log.doneItemIds.includes(`${m.id}_${idx}`))).length
           : undefined;
         detalleNutricion = {
-          kcal: log ? kcalDeItemsHechos(diet, log.doneItemIds) : undefined,
-          kcalObjetivo, adherenciaPct, comidasHechas, comidasTotal,
-          macros: log ? macrosDelDia(diet, log.doneItemIds) : undefined,
+          kcal: log ? kcalDeItemsHechos(dietaDeEseDia, log.doneItemIds) : undefined,
+          kcalObjetivo,
+          adherenciaPct: adherenciaPct === undefined ? undefined : Math.round(adherenciaPct),
+          comidasHechas, comidasTotal,
+          macros: log ? macrosDelDia(dietaDeEseDia, log.doneItemIds) : undefined,
         };
       }
     }

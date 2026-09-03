@@ -22,36 +22,60 @@ function genId() {
   return `q_${Date.now()}_${Math.random().toString(36).slice(2, 5)}`;
 }
 
+/* 03-09. Aquí había 26 preguntas y NUEVE de ellas ya las hace el alta del
+   atleta —comidas al día, nivel de cocina, suplementos, relación con la comida,
+   intolerancias, pasos al día, tipo de trabajo, lesiones por articulación y
+   dolores recurrentes—, además de «años entrenando», que es el nivel de
+   experiencia con otro nombre. Preguntar dos veces lo mismo no da más
+   información: da dos respuestas que se contradicen y ninguna forma de saber
+   cuál vale.
+
+   «Días disponibles por semana» y «Tiempo por sesión» tampoco están ya aquí,
+   pero por el motivo contrario: se han subido al alta (paso 7), que es donde
+   tenían que estar desde el principio — sin esos dos datos no se puede
+   programar un mesociclo, y dependían de que el coach se acordara de
+   rellenarlos a mano.
+
+   Lo que queda son las que el alta NO pregunta y aportan algo propio: escalas
+   del 1 al 10 para seguir la evolución, y detalles finos de horarios. */
 export const DEFAULT_TEMPLATE_QUESTIONS: Omit<OnboardingTemplateQuestion, 'id'>[] = [
   // ENTRENAMIENTO
-  { label: 'Años entrenando',                                            section: 'entrenamiento', type: 'numeric', unit: 'años'      },
-  { label: 'Días disponibles por semana',                                section: 'entrenamiento', type: 'numeric', unit: 'días/sem'   },
-  { label: 'Tiempo por sesión',                                          section: 'entrenamiento', type: 'numeric', unit: 'min'        },
-  { label: 'Dónde entrena',                                              section: 'entrenamiento', type: 'choice',  options: ['Casa', 'Gym', 'Mixto'] },
   { label: 'Experiencia con básicos (sentadilla / peso muerto / press)', section: 'entrenamiento', type: 'scale',   scaleMin: 1, scaleMax: 10 },
   { label: 'Limitaciones de movilidad',                                  section: 'entrenamiento', type: 'text'    },
-  { label: 'Lesiones por articulación',                                  section: 'entrenamiento', type: 'text'    },
-  { label: 'Pasos por día aproximados',                                  section: 'entrenamiento', type: 'numeric', unit: 'pasos/día'  },
   { label: 'Preferencia de cardio',                                      section: 'entrenamiento', type: 'choice',  options: ['HIIT', 'LISS', 'Mixto', 'Ninguna'] },
   // NUTRICIÓN
-  { label: 'Comidas por día',                                            section: 'nutricion', type: 'numeric', unit: 'comidas'        },
   { label: 'Horario habitual de comidas',                                section: 'nutricion', type: 'text'                            },
-  { label: 'Quién cocina / nivel de cocina',                             section: 'nutricion', type: 'choice',  options: ['Yo cocino', 'Cocinamos en casa', 'Poco / delivery', 'Prep semanal'] },
   { label: 'Consumo de agua por día',                                    section: 'nutricion', type: 'numeric', unit: 'litros/día'     },
   { label: 'Alcohol por semana',                                         section: 'nutricion', type: 'numeric', unit: 'unidades/sem'   },
   { label: 'Frecuencia comer fuera',                                     section: 'nutricion', type: 'choice',  options: ['Nunca / raramente', '1-2 veces/sem', '3-4 veces/sem', 'Diario'] },
-  { label: 'Suplementos actuales',                                       section: 'nutricion', type: 'text'                            },
-  { label: 'Relación con la comida / atracones',                         section: 'nutricion', type: 'scale',   scaleMin: 1, scaleMax: 10 },
-  { label: 'Intolerancias alimentarias',                                 section: 'nutricion', type: 'text'                            },
   // DESCANSO
   { label: 'Horas de sueño',                                            section: 'descanso', type: 'numeric', unit: 'h/noche'         },
   { label: 'Calidad de sueño',                                          section: 'descanso', type: 'scale',   scaleMin: 1, scaleMax: 10 },
   { label: 'Hora de acostarse y levantarse',                             section: 'descanso', type: 'text'                             },
   { label: 'Nivel de estrés',                                           section: 'descanso', type: 'scale',   scaleMin: 1, scaleMax: 10 },
   { label: 'Energía diaria',                                            section: 'descanso', type: 'scale',   scaleMin: 1, scaleMax: 10 },
-  { label: 'Tipo de trabajo',                                           section: 'descanso', type: 'choice',  options: ['Sedentario', 'Mixto', 'Activo / de pie', 'Trabajo físico'] },
-  { label: 'Dolores o molestias recurrentes',                           section: 'descanso', type: 'text'                             },
   { label: 'Recuperación percibida entre sesiones',                     section: 'descanso', type: 'scale',   scaleMin: 1, scaleMax: 10 },
+];
+
+/* Las que se han retirado de la plantilla por preguntar lo mismo que el alta.
+   Hace falta la lista literal porque la plantilla que Dani ya tiene guardada en
+   Firestore sigue teniéndolas: cambiar el valor por defecto solo arregla las
+   plantillas nuevas, no la suya. El botón de limpieza del editor las busca por
+   esta lista. */
+export const PREGUNTAS_YA_EN_EL_ALTA = [
+  'Años entrenando',
+  'Días disponibles por semana',
+  'Tiempo por sesión',
+  'Dónde entrena',
+  'Lesiones por articulación',
+  'Pasos por día aproximados',
+  'Comidas por día',
+  'Quién cocina / nivel de cocina',
+  'Suplementos actuales',
+  'Relación con la comida / atracones',
+  'Intolerancias alimentarias',
+  'Tipo de trabajo',
+  'Dolores o molestias recurrentes',
 ];
 
 function makeDefaultTemplate(coachEmail: string): OnboardingTemplate {
@@ -163,6 +187,17 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
     );
   }
 
+  // Preguntas guardadas que el alta del atleta ya hace por su cuenta. Se
+  // comparan por etiqueta porque los ids se generan al crear la plantilla y no
+  // son estables entre coaches.
+  const repetidas = questions.filter(q => PREGUNTAS_YA_EN_EL_ALTA.includes(q.label));
+
+  const quitarRepetidas = () => {
+    if (!template) return;
+    setTemplate({ ...template, questions: questions.filter(q => !PREGUNTAS_YA_EN_EL_ALTA.includes(q.label)) });
+    setDirty(true);
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -170,7 +205,7 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
         <div>
           <p className="font-sans text-caption text-ink-3 uppercase tracking-widest">Plantilla de ficha de iniciación</p>
           <p className="font-sans text-caption text-ink-3 ">
-            Define las preguntas que el coach rellena para cada atleta. Los atletas no ven esto.
+            Preguntas extra que rellenas tú para cada atleta, además de las que ya contesta él en su alta.
           </p>
         </div>
         <div className="flex gap-2">
@@ -184,6 +219,25 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
           </button>
         </div>
       </div>
+
+      {/* Aviso de preguntas repetidas. Cambiar DEFAULT_TEMPLATE_QUESTIONS solo
+          arregla las plantillas nuevas; la que ya está guardada en Firestore
+          sigue con las suyas, y nadie va a ir borrándolas una a una. */}
+      {repetidas.length > 0 && (
+        <div className="bg-surface border border-amber-400/30 rounded-surface p-4 space-y-3">
+          <p className="font-sans text-caption text-amber-300">
+            {repetidas.length} de estas preguntas ya las contesta el atleta en su alta, así que las
+            estás rellenando dos veces — y si las dos respuestas no coinciden, no hay forma de saber cuál vale.
+          </p>
+          <p className="font-sans text-caption text-ink-3">
+            {repetidas.map(q => q.label).join(' · ')}
+          </p>
+          <button type="button" onClick={quitarRepetidas}
+            className="px-3 py-2 font-sans text-caption uppercase border border-amber-400/40 text-amber-300 hover:bg-amber-400/10 rounded-control transition-all">
+            Quitarlas de la plantilla
+          </button>
+        </div>
+      )}
 
       {/* Section editors */}
       {(['entrenamiento', 'nutricion', 'descanso'] as OnboardingSection[]).map(section => {
