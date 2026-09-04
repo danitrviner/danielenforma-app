@@ -151,6 +151,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const enviarEvento = (tipo: string, datos: unknown) => {
     res.write(`event: ${tipo}\ndata: ${JSON.stringify(datos)}\n\n`);
   };
+  // Las cabeceras salen YA, sin esperar al primer evento de Anthropic: el
+  // cliente vigila un plazo de silencio (aiClient.ts) y hasta aquí no había
+  // recibido ni un byte desde que abrió la conexión — arranque en frío,
+  // verificación del token y contador diario iban todos dentro de su plazo.
+  res.flushHeaders?.();
+  enviarEvento('abierto', { ts: Date.now() });
+
+  // Anthropic puede tardar en soltar el primer token (razonamiento, prompt
+  // grande, cola). Sin nada en la línea, el cliente lo interpretaba como que
+  // la función se había colgado y cortaba el turno a mitad de la ronda. Un
+  // latido cada 10s (comentario SSE: el parseador del cliente lo ignora)
+  // mantiene viva la conexión y reinicia ese plazo.
+  const latido = setInterval(() => { res.write(': latido\n\n'); }, 10_000);
 
   try {
     const stream = anthropic.messages.stream({
@@ -193,6 +206,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     console.error('Anthropic stream error:', e);
     enviarEvento('error', { error: e.message || 'Error llamando a la API de Anthropic' });
   } finally {
+    clearInterval(latido);
     res.end();
   }
 }
