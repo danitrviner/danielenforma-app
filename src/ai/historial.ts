@@ -19,6 +19,13 @@
 // herramienta no llegó a ejecutarse) y conserva todo lo que el coach ya ve
 // escrito en su chat, que es lo que perdería un recorte.
 
+//
+// El mismo problema lo tiene un bloque `thinking` que se quedó sin su
+// `signature` porque el stream se cortó a mitad: la API lo rechaza con un 400
+// («thinking.signature: Field required») y el chat vuelve a quedar inservible.
+// Ese sí se descarta, porque un razonamiento a medias no le sirve a nadie y el
+// coach no lo ve en pantalla.
+
 import type { AiChatMessage, AiContentBlock, AiToolResultBlock } from '../types';
 
 export const RESULTADO_INTERRUMPIDO =
@@ -26,6 +33,17 @@ export const RESULTADO_INTERRUMPIDO =
 
 function resultadoSintetico(id: string): AiToolResultBlock {
   return { type: 'tool_result', tool_use_id: id, content: RESULTADO_INTERRUMPIDO, is_error: true };
+}
+
+/** Un bloque de razonamiento SIN `signature` es un bloque a medias: el stream
+ *  se cortó antes de que llegara su `signature_delta` (la función de Vercel
+ *  muere a los 60 s, se va la red...). La API lo rechaza con
+ *  «thinking.signature: Field required», y como el chat se guarda en Firestore
+ *  ese 400 se repite en CADA mensaje nuevo: el chat queda muerto igual que con
+ *  un `tool_use` sin resultado. Aquí se descarta el bloque incompleto — el
+ *  razonamiento no se le enseña al coach, así que no pierde nada visible. */
+function bloqueUtilizable(b: AiContentBlock): boolean {
+  return b.type !== 'thinking' || Boolean(b.signature);
 }
 
 function idsPedidos(content: AiContentBlock[]): string[] {
@@ -68,9 +86,10 @@ export function sanearHistorial(messages: AiChatMessage[]): AiChatMessage[] {
     if (msg.role === 'assistant') {
       // Dos assistant seguidos: el primero se quedó sin sus resultados.
       cerrarPendientes();
-      if (msg.content.length === 0) continue;
-      salida.push(msg);
-      pendientes = idsPedidos(msg.content);
+      const contenido = msg.content.filter(bloqueUtilizable);
+      if (contenido.length === 0) continue;
+      salida.push(contenido.length === msg.content.length ? msg : { ...msg, content: contenido });
+      pendientes = idsPedidos(contenido);
       continue;
     }
 
@@ -79,7 +98,7 @@ export function sanearHistorial(messages: AiChatMessage[]): AiChatMessage[] {
     const resultados = new Map<string, AiToolResultBlock>();
     const resto: AiContentBlock[] = [];
     for (const b of msg.content) {
-      if (b.type !== 'tool_result') { resto.push(b); continue; }
+      if (b.type !== 'tool_result') { if (bloqueUtilizable(b)) resto.push(b); continue; }
       if (!esperados.has(b.tool_use_id) || vistos.has(b.tool_use_id)) continue;
       vistos.add(b.tool_use_id);
       resultados.set(b.tool_use_id, b);

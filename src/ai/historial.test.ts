@@ -124,3 +124,46 @@ describe('cierreDeToolUse', () => {
     expect(cierre?.content.map(b => (b as { tool_use_id: string }).tool_use_id)).toEqual(['a', 'b']);
   });
 });
+
+describe('bloques de razonamiento a medias', () => {
+  it('descarta un thinking sin signature (stream cortado) y conserva el resto', () => {
+    const salida = sanearHistorial([
+      { role: 'user', content: [{ type: 'text', text: 'hola' }] },
+      { role: 'assistant', content: [
+        { type: 'thinking', thinking: 'a medio pensar' },
+        { type: 'text', text: 'respuesta' },
+      ] },
+    ]);
+    expect(salida[1].content).toEqual([{ type: 'text', text: 'respuesta' }]);
+  });
+
+  it('conserva un thinking que sí llegó firmado', () => {
+    const firmado = { type: 'thinking' as const, thinking: 'pensado', signature: 'abc' };
+    const salida = sanearHistorial([
+      { role: 'user', content: [{ type: 'text', text: 'hola' }] },
+      { role: 'assistant', content: [firmado, { type: 'text', text: 'ok' }] },
+    ]);
+    expect(salida[1].content).toEqual([firmado, { type: 'text', text: 'ok' }]);
+  });
+
+  it('tira el mensaje entero si solo tenía un thinking sin firmar', () => {
+    const salida = sanearHistorial([
+      { role: 'user', content: [{ type: 'text', text: 'hola' }] },
+      { role: 'assistant', content: [{ type: 'thinking', thinking: 'a medias' }] },
+    ]);
+    expect(salida).toHaveLength(1);
+  });
+
+  it('un thinking sin firmar no se lleva por delante los tool_use del mismo mensaje', () => {
+    const salida = sanearHistorial([
+      { role: 'user', content: [{ type: 'text', text: 'hola' }] },
+      { role: 'assistant', content: [
+        { type: 'thinking', thinking: 'a medias' },
+        { type: 'tool_use', id: 't1', name: 'get_diet', input: {} },
+      ] },
+    ]);
+    expect(salida[1].content).toEqual([{ type: 'tool_use', id: 't1', name: 'get_diet', input: {} }]);
+    // y sigue cerrándose la herramienta pendiente
+    expect(salida[2].content[0]).toMatchObject({ type: 'tool_result', tool_use_id: 't1', is_error: true });
+  });
+});
