@@ -14,7 +14,15 @@ import { esCoach, getAdminDb, setCors, tokenDeLaCabecera, verifyFirebaseIdToken 
 import { sanearHistorial } from '../src/ai/historial.js';
 import type { AiChatMessage } from '../src/types.js';
 
-export const config = { maxDuration: 60 };
+// Vercel mata la función al llegar aquí, y hasta ahora lo hacía en seco: el
+// coach veía las herramientas ejecutarse, el coste, y después NADA. Subimos el
+// tope todo lo que permite el plan y, cinco segundos antes, cortamos nosotros
+// con un mensaje que se entiende (ver GUARDA_MS más abajo).
+const MAX_DURACION_S = 300;
+export const config = { maxDuration: MAX_DURACION_S };
+// Margen para que nuestro aviso salga por el stream ANTES de que la plataforma
+// corte la conexión: un corte suyo no deja escribir nada.
+const GUARDA_MS = (MAX_DURACION_S - 5) * 1000;
 
 const ALLOWED_MODELS = new Set(['claude-sonnet-5', 'claude-haiku-4-5']);
 const MAX_TOKENS_CAP = 8192;
@@ -165,6 +173,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // mantiene viva la conexión y reinicia ese plazo.
   const latido = setInterval(() => { res.write(': latido\n\n'); }, 10_000);
 
+  // Corte propio antes del de la plataforma: aborta la llamada a Anthropic y
+  // deja que el catch de abajo mande el evento `error`, que el cliente sí sabe
+  // enseñar (incluso los binarios ya publicados).
+  const abortoPorTiempo = new AbortController();
+  let cortadoPorTiempo = false;
+  const guarda = setTimeout(() => { cortadoPorTiempo = true; abortoPorTiempo.abort(); }, GUARDA_MS);
+
   try {
     const stream = anthropic.messages.stream({
       model,
@@ -173,7 +188,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       messages: messages as never,
       tools: (body.tools ?? undefined) as never,
       output_config: { effort },
-    } as never);
+    } as never, { signal: abortoPorTiempo.signal });
 
     for await (const event of stream) {
       enviarEvento(event.type, event);
@@ -203,9 +218,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     enviarEvento('costo', { usd: costoUsd, usage: message.usage });
   } catch (err) {
     const e = err as { status?: number; message?: string };
-    console.error('Anthropic stream error:', e);
-    enviarEvento('error', { error: e.message || 'Error llamando a la API de Anthropic' });
+    if (cortadoPorTiempo) {
+      console.error(`Turno cortado a los ${MAX_DURACION_S - 5}s (tope de la función):`, e.message);
+      enviarEvento('error', {
+        error: `La respuesta tardó más de ${MAX_DURACION_S - 5} segundos y se ha cortado. `
+          + 'Pídelo por partes (primero el contexto, luego cada apartado) en vez de todo de una vez.',
+      });
+    } else {
+      console.error('Anthropic stream error:', e);
+      enviarEvento('error', { error: e.message || 'Error llamando a la API de Anthropic' });
+    }
   } finally {
+    clearTimeout(guarda);
     clearInterval(latido);
     res.end();
   }
