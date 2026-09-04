@@ -13,7 +13,6 @@
 
 import { readFileSync } from 'fs';
 import { getAuth } from 'firebase-admin/auth';
-// @ts-expect-error — _lib es .mjs sin tipos
 import { abrirDb } from './_lib/firestoreDb.mjs';
 import { QUESTIONNAIRE_PRESETS, buildQuestionnaireFromPreset } from '../src/data/questionnairePresets';
 import type { Questionnaire, QuestionnaireQuestion, QSchedule, BodyMetricKey } from '../src/types';
