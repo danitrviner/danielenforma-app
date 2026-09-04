@@ -18,8 +18,11 @@ import type { AiChatMessage } from '../src/types.js';
 // coach veía las herramientas ejecutarse, el coste, y después NADA. Subimos el
 // tope todo lo que permite el plan y, cinco segundos antes, cortamos nosotros
 // con un mensaje que se entiende (ver GUARDA_MS más abajo).
+// OJO: Vercel lee este objeto con análisis estático, así que el número tiene
+// que ir escrito a mano aquí (una constante da «Unhandled type: Identifier» y
+// la build no sale). Si cambias uno, cambia el otro.
+export const config = { maxDuration: 300 };
 const MAX_DURACION_S = 300;
-export const config = { maxDuration: MAX_DURACION_S };
 // Margen para que nuestro aviso salga por el stream ANTES de que la plataforma
 // corte la conexión: un corte suyo no deja escribir nada.
 const GUARDA_MS = (MAX_DURACION_S - 5) * 1000;
