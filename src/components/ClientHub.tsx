@@ -12,6 +12,7 @@ import {
 import { OPEN_AI_PANEL_EVENT } from '../ai/events';
 import { computeAdherenceScore, scoreStyle, SIN_DATOS_ADHERENCIA } from '../utils/adherence';
 import { atletasActivos } from '../utils/atletas';
+import { makeId } from './nutrition/dietHelpers';
 import { computeAverageRir } from '../utils/rirStats';
 import { leerSexo } from '../utils/athleteProfileSignals';
 import { calcPlanExpiry } from '../hooks/usePlanExpiry';
@@ -21,6 +22,7 @@ import {
   getWorkouts, getWorkoutAssignments,
   getWorkoutLogs,
   getExercises, seedExercisesIfEmpty, getDietsForAthlete,
+  createDiet, deleteDiet,
   getAthleteNutritionConfig, saveAthleteNutritionConfig,
   getAthleteDietConfig, saveAthleteDietConfig, getProgressPhotos,
   updateUserProfile,
@@ -431,6 +433,63 @@ export default function ClientHub({
     await saveAthleteDietConfig(next).catch(err => { console.error(err); showToast('No se pudo guardar el calendario de dietas.'); });
   };
 
+  /* Borrar una dieta del atleta. El documento se va, pero la referencia a él
+     vive en OTRO sitio (AthleteDietConfig: activas + calendario semanal), así
+     que hay que limpiarla en la MISMA escritura — encadenar onToggleDiet y
+     onScheduleDay habría hecho varias, cada una leyendo el config de antes de
+     la anterior y pisándose entre ellas. */
+  const handleDeleteDiet = async (dietId: string) => {
+    try {
+      await deleteDiet(dietId);
+    } catch (err) {
+      console.error(err);
+      showToast('No se pudo eliminar la dieta.');
+      return;
+    }
+    setAthleteDiets(prev => prev.filter(d => d.id !== dietId));
+
+    const current = athleteDietConfig;
+    if (current) {
+      const activeDietIds = (current.activeDietIds ?? []).filter(id => id !== dietId);
+      const schedule = current.weeklySchedule ?? {};
+      const weeklySchedule = Object.fromEntries(
+        Object.entries(schedule).map(([day, id]) => [day, id === dietId ? null : id]),
+      ) as AthleteDietConfig['weeklySchedule'];
+      const next: AthleteDietConfig = { ...current, activeDietIds, weeklySchedule };
+      queryClient.setQueryData(athleteDietConfigKey, next);
+      await saveAthleteDietConfig(next).catch(err => {
+        console.error(err);
+        showToast('La dieta se borró, pero no se pudo actualizar la programación.');
+      });
+    }
+    showToast('Dieta eliminada.', 'success');
+  };
+
+  /* Duplicar: copia inactiva y sin programar (los ids de comida se regeneran
+     para que editar la copia no toque la original). Es el atajo para "esta
+     misma dieta pero con un cambio", que hasta ahora obligaba a rehacerla. */
+  const handleDuplicateDiet = async (diet: Diet) => {
+    try {
+      const copia = await createDiet({
+        athleteId: diet.athleteId,
+        name: `${diet.name} (copia)`,
+        budget: { ...diet.budget },
+        meals: diet.meals.map(m => ({
+          ...m,
+          id: makeId(),
+          items: m.items.map(it => ({ ...it })),
+        })),
+        ...(diet.coachNote ? { coachNote: diet.coachNote } : {}),
+        isDraft: false,
+      });
+      setAthleteDiets(prev => [...prev, copia]);
+      showToast('Dieta duplicada.', 'success');
+    } catch (err) {
+      console.error(err);
+      showToast('No se pudo duplicar la dieta.');
+    }
+  };
+
   const handleToggleDietMode = async (mode: DietMode) => {
     if (!nutritionConfig) return;
     const enabledModes = nutritionConfig.enabledModes ?? [];
@@ -690,6 +749,8 @@ export default function ClientHub({
           menuCompletionLogs={menuCompletionLogs}
           bodyweightLogs={bodyweightLogs}
           onToggleDiet={handleToggleDiet}
+          onDeleteDiet={handleDeleteDiet}
+          onDuplicateDiet={handleDuplicateDiet}
           onScheduleDay={handleScheduleDay}
           onToggleDietMode={handleToggleDietMode}
           onSaveStepConfig={handleSaveStepConfig}

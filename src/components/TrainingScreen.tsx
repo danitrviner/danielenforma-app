@@ -7,7 +7,8 @@ import {
   createWorkoutLog, updateWorkoutAssignment, getWorkoutLogs, getExerciseNotesForAthlete,
   getCardioAssignmentsForAthlete, getMesocycles,
 } from '../dbService';
-import { getWeekRange, getWeekStart, MONTHS_ES, formatDate } from '../utils/trainingWeek';
+import { MONTHS_ES, formatDate, hoyIsoLocal } from '../utils/trainingWeek';
+import { bloquesDelCiclo, bloqueActual, BloqueDelCiclo, DiaDelCiclo, EstadoDeDia } from '../utils/cicloDelAtleta';
 import { prefillWorkoutSets } from '../utils/setPrefill';
 import { mesocycleWeekNumber, resolveExerciseForWeek, diasDeCiclo } from '../utils/progression';
 import { useToast } from '../hooks/useToast';
@@ -37,27 +38,51 @@ type MainTab = 'programa' | 'progresion';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-function formatWeekLabel(weekStartStr: string, isCurrent: boolean): string {
-  const s = new Date(weekStartStr + 'T00:00:00');
-  const e = new Date(weekStartStr + 'T00:00:00');
-  e.setDate(e.getDate() + 6);
-  const sl = `${s.getDate()} ${MONTHS_ES[s.getMonth()]}`;
-  const el = `${e.getDate()} ${MONTHS_ES[e.getMonth()]}`;
-  return isCurrent ? `Esta semana · ${sl} – ${el}` : `${sl} – ${el}`;
+function diaCorto(dateStr: string): string {
+  const [, m, d] = dateStr.split('-');
+  return `${parseInt(d)} ${MONTHS_ES[parseInt(m) - 1]}`;
 }
 
-const STATUS_LABEL: Record<WorkoutAssignment['status'], string> = {
-  pending:   'Pendiente',
-  completed: 'Completado',
-  skipped:   'Saltado',
-  perdido:   'Perdido',
+/** «Esta semana · 6 sep – 11 sep» — el rango REAL de la vuelta, no lunes-domingo. */
+function etiquetaBloque(b: BloqueDelCiclo, esActual: boolean): string {
+  const rango = `${diaCorto(b.primeraFecha)} – ${diaCorto(b.ultimaFecha)}`;
+  return esActual ? `Esta semana · ${rango}` : rango;
+}
+
+// Un día del ciclo tiene un solo estado y un solo color: verde hecho, amarillo
+// el de hoy, rojo el que se pasó, gris el que aún no toca. Antes el color salía
+// del `status` de Firestore, que no distingue "pendiente de mañana" de
+// "pendiente de anteayer" — las dos se pintaban de amarillo.
+const ESTADO_LABEL: Record<EstadoDeDia, string> = {
+  completado: 'Completado',
+  saltado:    'Saltado',
+  hoy:        'Hoy',
+  perdido:    'No hecho',
+  pendiente:  'Pendiente',
 };
 
-const STATUS_TONE: Record<WorkoutAssignment['status'], BadgeTone> = {
-  pending:   'warning',
-  completed: 'success',
-  skipped:   'neutral',
-  perdido:   'danger',
+const ESTADO_TONE: Record<EstadoDeDia, BadgeTone> = {
+  completado: 'success',
+  saltado:    'neutral',
+  hoy:        'accent',
+  perdido:    'danger',
+  pendiente:  'neutral',
+};
+
+const ESTADO_ICONO: Record<EstadoDeDia, string> = {
+  completado: 'check_circle',
+  saltado:    'skip_next',
+  hoy:        'bolt',
+  perdido:    'event_busy',
+  pendiente:  'fitness_center',
+};
+
+const ESTADO_CIRCULO: Record<EstadoDeDia, string> = {
+  completado: 'bg-success/15 text-success',
+  saltado:    'bg-raised text-ink-2',
+  hoy:        'bg-accent/15 text-accent',
+  perdido:    'bg-danger/10 text-danger',
+  pendiente:  'bg-raised text-ink-2',
 };
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -131,11 +156,14 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
   // Solo para resolver la progresión por semanas (Bloque F) al abrir una sesión — saber
   // en qué semana del mesociclo cae `activeAssignment.date` requiere el `startDate` del
   // Mesocycle, que hasta ahora esta pantalla no necesitaba cargar.
-  const { data: mesocycles = [] } = useQuery({
+  const { data: mesocycles = [], isPending: loadingMesocycles } = useQuery({
     queryKey: ['mesocycles', profile.email],
     queryFn: () => getMesocycles(profile.email),
   });
-  const loading = loadingAssignments || loadingWorkouts || loadingExercises || loadingLogs || loadingNotes;
+  // Los mesociclos entran en el `loading` porque son los que dicen dónde
+  // empieza y acaba la vuelta: sin ellos la lista se agruparía un instante por
+  // semanas de calendario y se recolocaría sola al llegar la consulta.
+  const loading = loadingAssignments || loadingWorkouts || loadingExercises || loadingLogs || loadingNotes || loadingMesocycles;
 
   // Pending assignments more than a week past their date are lost — the athlete missed
   // the weekly block entirely. Persist so the coach sees it too (ClientHub). Runs once
@@ -233,28 +261,37 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
   const getExercise = (id: string) => exercises.find(e => e.id === id);
   const getPersonalNote = (exerciseId: string) => personalNotes.find(n => n.exerciseId === exerciseId)?.observation;
 
-  const today = new Date().toISOString().split('T')[0];
-  const curWeekStart = getWeekRange().start;
+  // La fecha LOCAL, no la de `toISOString()` (que es UTC): entre medianoche y
+  // las 2 de la mañana en España el UTC va un día por detrás, y con él se
+  // pintaba de rojo la sesión de hoy y de amarillo la de ayer.
+  const today = hoyIsoLocal();
 
   const sortedAssignments = [...assignments].sort((a, b) => a.date.localeCompare(b.date));
   const filteredAssignments = listFilter === 'all'
     ? sortedAssignments
     : sortedAssignments.filter(a => a.status === listFilter);
 
-  // Current week's block (any status) + overdue pending carried over from earlier weeks.
-  // Future weeks stay hidden until they become the current week; anything pending for
-  // more than 7 days already flipped to 'perdido' in loadAll, so overdueBlock is always
-  // recent backlog, never a growing pile.
-  const thisWeekBlock = sortedAssignments.filter(a => getWeekStart(a.date) === curWeekStart);
-  const overdueBlock = sortedAssignments.filter(a => a.status === 'pending' && getWeekStart(a.date) < curWeekStart);
-  const nextAssignmentId = thisWeekBlock.find(a => a.status === 'pending')?.id ?? null;
+  // La vuelta del microciclo que el atleta está viviendo, del Día 1 al Día N y
+  // en ese orden. Sustituye al par «Esta semana (lunes-domingo) + Atrasados»:
+  // la semana natural partía el ciclo por la mitad (Día 2…Día 6, Día 1, Día 2)
+  // y los que se pasaban se acumulaban en un cajón al final. Ahora cada día
+  // sale en su sitio con su color, y lo de vueltas anteriores no se arrastra.
+  const bloques = useMemo(
+    () => bloquesDelCiclo(assignments, workouts, mesocycles, today),
+    [assignments, workouts, mesocycles, today],
+  );
+  const bloqueHoy = useMemo(() => bloqueActual(bloques, today), [bloques, today]);
+  const diasDelBloque = bloqueHoy?.dias ?? [];
 
-  const visiblePendingCount = thisWeekBlock.filter(a => a.status === 'pending').length + overdueBlock.length;
+  // El destacado es el de HOY; si hoy es descanso (o ya está hecho), el
+  // siguiente que quede por hacer — nunca uno del pasado, que ya sale en rojo.
+  const destacadoId =
+    diasDelBloque.find(d => d.estado === 'hoy')?.assignment.id
+    ?? diasDelBloque.find(d => d.estado === 'pendiente')?.assignment.id
+    ?? null;
 
-  // Weekly stats
-  const { start: weekStart, end: weekEnd } = getWeekRange();
-  const weekAssignments = assignments.filter(a => a.date >= weekStart && a.date <= weekEnd);
-  const weekCompleted = weekAssignments.filter(a => a.status === 'completed').length;
+  const visiblePendingCount = diasDelBloque.filter(d => d.estado === 'hoy' || d.estado === 'pendiente' || d.estado === 'perdido').length;
+  const bloqueCompletados = diasDelBloque.filter(d => d.estado === 'completado').length;
 
   // ── Player helpers ─────────────────────────────────────────────────────────
   // Fase 3 (decisión de Dani, 2026-08-07 — "Registro editable en la sesión"):
@@ -526,13 +563,15 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
     }
   };
 
-  // ── Assignment card (shared by the "Esta semana / Atrasados" view and the classic
-  // per-week history view) ────────────────────────────────────────────────────
-  const renderAssignmentCard = (a: WorkoutAssignment, opts?: { isNext?: boolean }) => {
+  // ── Tarjeta de un día del ciclo (la usan tanto la vuelta en curso como el
+  // histórico por vueltas) ───────────────────────────────────────────────────
+  const renderAssignmentCard = (dia: DiaDelCiclo, opts?: { destacado?: boolean }) => {
+    const a = dia.assignment;
+    const estado = dia.estado;
     const wo = getWorkout(a.workoutId);
-    const isToday = a.date === today;
-    const isPast = a.date < today;
-    const isNext = opts?.isNext ?? false;
+    // Destacado = el día que toca ahora. Se pinta con el marco dorado, y solo
+    // uno por lista: los demás son verdes, rojos o grises según su estado.
+    const isNext = opts?.destacado ?? false;
     const canAct = a.status === 'pending' || a.status === 'perdido';
     // Series ya marcadas en el borrador local de esta sesión (0 = no hay nada
     // a medias). Solo se muestra en las sesiones que todavía se pueden hacer:
@@ -544,22 +583,17 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
         className={`border p-4 transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 ${
           isNext
             ? 'rounded-canvas bg-accent-bg border-accent/50 shadow-glow'
-            : 'rounded-surface bg-surface border-hairline'
+            : estado === 'perdido'
+              ? 'rounded-surface bg-surface border-danger/40'
+              : 'rounded-surface bg-surface border-hairline'
         }`}
       >
         <div className="flex items-center gap-4">
           <div className={`w-10 h-10 rounded-surface flex items-center justify-center flex-shrink-0 ${
-            a.status === 'completed' ? 'bg-success/15 text-success'
-            : a.status === 'skipped'  ? 'bg-raised text-ink-2'
-            : a.status === 'perdido'  ? 'bg-danger/10 text-danger'
-            : isNext ? 'bg-accent/15 text-accent'
-            : 'bg-raised text-ink-2'
+            isNext && estado === 'pendiente' ? 'bg-accent/15 text-accent' : ESTADO_CIRCULO[estado]
           }`}>
             <Icon
-              name={a.status === 'completed' ? 'check_circle'
-                : a.status === 'skipped' ? 'skip_next'
-                : a.status === 'perdido' ? 'event_busy'
-                : isNext || isToday ? 'bolt' : 'fitness_center'}
+              name={isNext && estado === 'pendiente' ? 'bolt' : ESTADO_ICONO[estado]}
               size="m"
               filled
             />
@@ -567,8 +601,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
           <div>
             <div className="flex items-center gap-2 flex-wrap">
               <p className="font-sans font-bold text-ink text-title-s">{wo?.name || 'Rutina'}</p>
-              {isNext && a.status === 'pending' && <Badge tone="accent">Siguiente</Badge>}
-              {!isNext && isPast && a.status === 'pending' && <Badge tone="danger">Atrasado</Badge>}
+              {isNext && estado === 'pendiente' && <Badge tone="accent">Siguiente</Badge>}
               {seriesAMedias > 0 && (
                 <Badge tone="warning" icon="pause_circle">
                   Sin terminar · {seriesAMedias} serie{seriesAMedias !== 1 ? 's' : ''}
@@ -590,7 +623,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
           </div>
         </div>
         <div className="flex items-center gap-2 self-end md:self-auto">
-          <Badge tone={STATUS_TONE[a.status]}>{STATUS_LABEL[a.status]}</Badge>
+          <Badge tone={ESTADO_TONE[estado]}>{ESTADO_LABEL[estado]}</Badge>
           {canAct && (
             <>
               <Button variant="secondary" size="s" icon="skip_next" onClick={() => handleSkip(a)}>Saltar</Button>
@@ -600,7 +633,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                   icon={seriesAMedias > 0 ? 'play_arrow' : 'play_circle'}
                   onClick={() => openPlayer(a)}
                 >
-                  {seriesAMedias > 0 ? 'Continuar' : a.status === 'perdido' ? 'Recuperar' : 'Empezar'}
+                  {seriesAMedias > 0 ? 'Continuar' : estado === 'perdido' ? 'Recuperar' : 'Empezar'}
                 </Button>
               )}
             </>
@@ -667,7 +700,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
         <div className="flex items-center gap-2 bg-surface border border-hairline px-4 py-2 rounded-surface">
           <Icon name="calendar_today" size="s" className="text-accent" />
           <span className="font-sans text-label text-ink-2">Esta semana:</span>
-          <span className="font-mono text-body-s font-bold text-ink">{weekCompleted}/{weekAssignments.length}</span>
+          <span className="font-mono text-body-s font-bold text-ink">{bloqueCompletados}/{diasDelBloque.length}</span>
           <span className="font-mono text-label text-ink-2">completados</span>
         </div>
       </header>
@@ -688,7 +721,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
           <div className="flex gap-2 flex-wrap">
             {(['pending', 'completed', 'all'] as const).map(f => (
               <Chip key={f} selected={listFilter === f} onClick={() => setListFilter(f)}>
-                {f === 'pending' ? `Pendientes (${visiblePendingCount})` :
+                {f === 'pending' ? `Esta semana (${visiblePendingCount})` :
                  f === 'completed' ? `Completados (${assignments.filter(a => a.status === 'completed').length})` :
                  `Todos (${assignments.length})`}
               </Chip>
@@ -702,7 +735,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
               <Skeleton className="h-20 w-full" />
             </div>
           ) : listFilter === 'pending' ? (
-            thisWeekBlock.length === 0 && overdueBlock.length === 0 ? (
+            diasDelBloque.length === 0 ? (
               <div className="rounded-surface border border-dashed border-accent/45 bg-surface p-10">
                 <EmptyState
                   icon="fitness_center"
@@ -711,34 +744,19 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                 />
               </div>
             ) : (
-              <div className="space-y-6">
-                {/* Esta semana — siempre primero */}
-                {thisWeekBlock.length > 0 && (
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-3">
-                      <span className="font-mono text-caption uppercase font-bold tracking-widest text-accent">
-                        {formatWeekLabel(curWeekStart, true)}
-                      </span>
-                      <div className="flex-1 h-px bg-raised" />
-                      <span className="font-mono text-caption text-ink-2">
-                        {thisWeekBlock.filter(a => a.status === 'completed').length}/{thisWeekBlock.length}
-                      </span>
-                    </div>
-                    {thisWeekBlock.map(a => renderAssignmentCard(a, { isNext: a.id === nextAssignmentId }))}
-                  </div>
-                )}
-
-                {/* Atrasados — semanas anteriores, todavía dentro de la semana de gracia */}
-                {overdueBlock.length > 0 && (
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-3">
-                      <span className="font-mono text-caption uppercase font-bold tracking-widest text-red-300">Atrasados</span>
-                      <div className="flex-1 h-px bg-raised" />
-                      <span className="font-mono text-caption text-ink-2">{overdueBlock.length}</span>
-                    </div>
-                    {overdueBlock.map(a => renderAssignmentCard(a))}
-                  </div>
-                )}
+              /* La vuelta en curso, del Día 1 al Día N y en ese orden. Sin bloque
+                 «Atrasados» al final: el que se pasó sale en su sitio, en rojo. */
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <span className="font-mono text-caption uppercase font-bold tracking-widest text-accent">
+                    {bloqueHoy ? etiquetaBloque(bloqueHoy, true) : 'Esta semana'}
+                  </span>
+                  <div className="flex-1 h-px bg-raised" />
+                  <span className="font-mono text-caption text-ink-2">
+                    {bloqueCompletados}/{diasDelBloque.length}
+                  </span>
+                </div>
+                {diasDelBloque.map(d => renderAssignmentCard(d, { destacado: d.assignment.id === destacadoId }))}
               </div>
             )
           ) : filteredAssignments.length === 0 ? (
@@ -749,33 +767,27 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
             />
           ) : (
             (() => {
-              // Group by week — used for "Completados" (history) and "Todos" (full picture,
-              // including future weeks and 'perdido' items for recovery).
-              const weekMap = new Map<string, WorkoutAssignment[]>();
-              for (const a of filteredAssignments) {
-                const ws = getWeekStart(a.date);
-                if (!weekMap.has(ws)) weekMap.set(ws, []);
-                weekMap.get(ws)!.push(a);
-              }
-              const weeks = Array.from(weekMap.entries()).sort(([a], [b]) => a.localeCompare(b));
+              // Histórico de «Completados» y «Todos»: las mismas vueltas del
+              // microciclo que la lista de arriba —no semanas de calendario—,
+              // para que el Día 1 siga siendo el primero también aquí.
+              const bloquesFiltrados = bloquesDelCiclo(filteredAssignments, workouts, mesocycles, today);
               return (
                 <div className="space-y-6">
-                  {weeks.map(([weekStart, items]) => {
-                    const isCurWeek = weekStart === curWeekStart;
+                  {bloquesFiltrados.map(b => {
+                    const esActual = b.clave === bloqueHoy?.clave;
                     return (
-                      <div key={weekStart} className="space-y-3">
-                        {/* Week header */}
+                      <div key={b.clave} className="space-y-3">
                         <div className="flex items-center gap-3">
-                          <span className={`font-mono text-caption uppercase font-bold tracking-widest ${isCurWeek ? 'text-accent' : 'text-ink-2'}`}>
-                            {formatWeekLabel(weekStart, isCurWeek)}
+                          <span className={`font-mono text-caption uppercase font-bold tracking-widest ${esActual ? 'text-accent' : 'text-ink-2'}`}>
+                            {etiquetaBloque(b, esActual)}
                           </span>
                           <div className="flex-1 h-px bg-raised" />
                           <span className="font-mono text-caption text-ink-2">
-                            {items.filter(a => a.status === 'completed').length}/{items.length}
+                            {b.dias.filter(d => d.estado === 'completado').length}/{b.dias.length}
                           </span>
                         </div>
 
-                        {items.map(a => renderAssignmentCard(a, { isNext: isCurWeek && a.id === nextAssignmentId }))}
+                        {b.dias.map(d => renderAssignmentCard(d, { destacado: esActual && d.assignment.id === destacadoId }))}
                       </div>
                     );
                   })}

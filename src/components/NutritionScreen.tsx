@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { UserProfile, Diet, DietMeal, DietItem, FoodCategory, DietMode, MealItem, Recipe, RecipeFavorites, RefeedDay } from '../types';
-import { getDietsForAthlete, getAthleteDietConfig, saveAthleteDietConfig, createDiet, deleteDiet, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig, saveAthleteNutritionConfig, getRecipes, getRecipeFavorites, getNutritionProgram, markNutritionPhaseSeen, computeActivePhase, createNotificationDeduped, getDietCompletionLog, saveDietCompletionLog, createRecipe, queryRecetas, queryRecetasForGenerator, getOnboarding, getRecipeById } from '../dbService';
+import { getDietsForAthlete, getAthleteDietConfig, saveAthleteDietConfig, createDiet, updateDiet, deleteDiet, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig, saveAthleteNutritionConfig, getRecipes, getRecipeFavorites, getNutritionProgram, markNutritionPhaseSeen, computeActivePhase, createNotificationDeduped, getDietCompletionLog, saveDietCompletionLog, createRecipe, queryRecetas, queryRecetasForGenerator, getOnboarding, getRecipeById } from '../dbService';
 import type { RecetasCursor } from '../dbService';
 import { CATS, BUDGET_CATS, CAT_LABEL, CAT_COLOR, CAT_BG, MODE_LABEL, ALL_DIET_MODES, round2, fmtQty, itemWeightLabel, foodNameWithoutGrams, addToPlaced, recipeToDietItems, computeDietPlaced } from '../utils/exchangeHelpers';
 import { findRecipeAlternatives, recipeExchanges, groupByDishType, ordenarPorCupo, type RecipeAlternative, type AlternativePrefs } from '../utils/recipeMatch';
@@ -17,7 +17,7 @@ import { useTutorialEngine } from '../features/tutorial/TutorialEngine';
 import { fotoDeReceta } from '../utils/fotoDeReceta';
 import FotoDeReceta from './FotoDeReceta';
 import { Skeleton } from './ui';
-import { EmptyState, Sheet, Icon, Button, ProgressBar, RingSeal, Stepper, Dialog, ListRow } from './ui';
+import { EmptyState, Sheet, Icon, Button, ProgressBar, RingSeal, Stepper, Dialog, ListRow, Input } from './ui';
 import MealItemSwipeRow from './nutrition/MealItemSwipeRow';
 import { NotaDeFuente } from './FuentesCientificasSheet';
 
@@ -774,6 +774,55 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
 
   const [dietPendingDelete, setDietPendingDelete] = useState<Diet | null>(null);
   const [deletingDiet, setDeletingDiet] = useState(false);
+
+  /* Renombrar y duplicar un menú guardado. Antes solo se podía borrar: si te
+     equivocabas con el nombre, o querías una variante de "Día de entreno",
+     tocaba rehacer el día entero y volver a guardarlo. */
+  const [menuPendingRename, setMenuPendingRename] = useState<Diet | null>(null);
+  const [renameDraft, setRenameDraft] = useState('');
+  const [renamingMenu, setRenamingMenu] = useState(false);
+  const [duplicandoMenuId, setDuplicandoMenuId] = useState<string | null>(null);
+
+  const abrirRenombrar = (dt: Diet) => { setRenameDraft(dt.name); setMenuPendingRename(dt); };
+
+  const confirmRenameMenu = async () => {
+    const dt = menuPendingRename;
+    const nombre = renameDraft.trim();
+    if (!dt || !nombre) return;
+    setRenamingMenu(true);
+    try {
+      await updateDiet(dt.id, { name: nombre });
+      setAllDietsList(prev => prev.map(d => d.id === dt.id ? { ...d, name: nombre } : d));
+      showToast('Menú renombrado.', 'success');
+      setMenuPendingRename(null);
+    } catch (err) {
+      console.error(err);
+      showToast('No se pudo renombrar el menú.');
+    } finally {
+      setRenamingMenu(false);
+    }
+  };
+
+  const handleDuplicateMenu = async (dt: Diet) => {
+    setDuplicandoMenuId(dt.id);
+    try {
+      const copia = await createDiet({
+        athleteId: profile.email,
+        name: `${dt.name} (copia)`,
+        budget: { ...dt.budget },
+        meals: dt.meals.map(m => ({ ...m, id: makeId(), items: m.items.map(it => ({ ...it })) })),
+        selfManaged: true,
+        menuTemplate: dt.menuTemplate ?? true,
+      });
+      setAllDietsList(prev => [...prev, copia]);
+      showToast('Menú duplicado.', 'success');
+    } catch (err) {
+      console.error(err);
+      showToast('No se pudo duplicar el menú.');
+    } finally {
+      setDuplicandoMenuId(null);
+    }
+  };
 
   const confirmDeleteDiet = async () => {
     const dt = dietPendingDelete;
@@ -1999,6 +2048,25 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                       <div className="flex items-center gap-1 flex-shrink-0" onClick={e => e.stopPropagation()}>
                         <button
                           type="button"
+                          onClick={() => abrirRenombrar(dt)}
+                          title="Renombrar"
+                          aria-label={`Renombrar ${dt.name}`}
+                          className="text-ink-2 hover:text-accent transition-colors p-2"
+                        >
+                          <Icon name="edit" size="s" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void handleDuplicateMenu(dt)}
+                          disabled={duplicandoMenuId === dt.id}
+                          title="Duplicar"
+                          aria-label={`Duplicar ${dt.name}`}
+                          className="text-ink-2 hover:text-accent disabled:opacity-40 transition-colors p-2"
+                        >
+                          <Icon name="content_copy" size="s" />
+                        </button>
+                        <button
+                          type="button"
                           onClick={() => setDietPendingDelete(dt)}
                           title="Eliminar"
                           aria-label={`Eliminar ${dt.name}`}
@@ -2024,6 +2092,34 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
         objetivos de proteína y grasa, valores de referencia de nutrientes) se apoyan en EFSA, OMS,
         ACSM y BEDCA. Información educativa, no consejo médico.
       </NotaDeFuente>
+
+      {/* Renombrar un menú guardado */}
+      {menuPendingRename && (
+        <Dialog
+          open
+          onClose={() => setMenuPendingRename(null)}
+          title="Renombrar menú"
+          size="s"
+          footer={(
+            <>
+              <Button onClick={() => setMenuPendingRename(null)} variant="secondary">Cancelar</Button>
+              <Button
+                onClick={() => void confirmRenameMenu()}
+                variant="primary"
+                loading={renamingMenu}
+                disabled={!renameDraft.trim()}
+              >Guardar</Button>
+            </>
+          )}
+        >
+          <Input
+            label="Nombre"
+            value={renameDraft}
+            onChange={setRenameDraft}
+            placeholder="Día de entreno"
+          />
+        </Dialog>
+      )}
 
       {/* Confirmar borrado de una dieta propia */}
       {dietPendingDelete && (

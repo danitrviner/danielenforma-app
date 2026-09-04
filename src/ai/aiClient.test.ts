@@ -279,6 +279,18 @@ describe('runAgentTurn — el turno abortado no deja el historial roto', () => {
     expect(ultimaActualizacion).toHaveLength(2); // user + assistant, nada más
   });
 
+  it('un stream cortado en seco (función muerta a los 60s) es un error, no una respuesta', async () => {
+    (fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValueOnce(respuestaSSE([
+      { tipo: 'content_block_start', datos: { type: 'content_block_start', index: 0, content_block: { type: 'text', text: '' } } },
+      { tipo: 'content_block_delta', datos: { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: 'Empiezo a contestar' } } },
+      // y aquí se acaba: ni stop_reason, ni message_stop, ni costo.
+    ]));
+
+    await expect(
+      runAgentTurn([], 'hola', { chatId: 'chat1' })
+    ).rejects.toThrow(/se cortó antes de terminar/);
+  });
+
   it('pide al proxy el tope de tokens que el proxy permite (8192)', async () => {
     (fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValueOnce(respuestaSSE(eventosTextoSimple));
 

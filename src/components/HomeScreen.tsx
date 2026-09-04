@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { UserProfile, WeightCheckIn, WeekDay } from '../types';
-import { getWorkoutAssignmentsForAthlete, getWorkoutsByIds, getCardioAssignmentsForAthlete, getDietsForAthlete, getAthleteDietConfig, getDietCompletionLog, getOnboarding, getCoachDayNote } from '../dbService';
-import { getWeekRange, getWeekStart, formatDate, hoyIsoLocal } from '../utils/trainingWeek';
+import { getWorkoutAssignmentsForAthlete, getWorkoutsByIds, getCardioAssignmentsForAthlete, getDietsForAthlete, getAthleteDietConfig, getDietCompletionLog, getOnboarding, getCoachDayNote, getMesocycles } from '../dbService';
+import { formatDate, hoyIsoLocal } from '../utils/trainingWeek';
+import { bloquesDelCiclo, bloqueActual, EstadoDeDia } from '../utils/cicloDelAtleta';
 import { pickActiveZona2Assignment, pickActiveIntervalAssignment } from '../utils/cardioSession';
 import { pickTodaysDiet, countMealsDone } from '../utils/nutritionSummary';
 import PendingTasksPanel from './PendingTasksPanel';
@@ -59,6 +60,24 @@ const DIA_SEMANA = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viern
    propia cuando hay una para hoy, en vez de vivir dentro de esta cabecera.
    ═══════════════════════════════════════════════════════════════════════════ */
 
+// Mismos colores que la pantalla de Rutinas: verde hecho, amarillo el de hoy,
+// rojo el que se pasó, gris el que aún no toca.
+const MARCO_DEL_DIA: Record<EstadoDeDia, string> = {
+  completado: 'border-success/30',
+  saltado:    'border-hairline',
+  hoy:        'border-accent/50',
+  perdido:    'border-danger/30',
+  pendiente:  'border-hairline',
+};
+
+const TEXTO_DEL_DIA: Record<EstadoDeDia, string> = {
+  completado: 'text-success',
+  saltado:    'text-ink-3',
+  hoy:        'text-accent',
+  perdido:    'text-danger',
+  pendiente:  'text-ink-2',
+};
+
 export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreenProps) {
   // Dentro del componente, no a nivel de módulo: una constante de módulo se
   // calcula una sola vez y se queda anclada al día en que se cargó la app —
@@ -93,12 +112,18 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
   // un atleta sin asignaciones vería el esqueleto de carga sin fin en vez del
   // estado vacío.
   const loadingWorkouts = workoutIds.length > 0 && loadingWorkoutsQuery;
-  const loadingTraining = loadingAssignments || loadingWorkouts;
 
   const { data: cardioAssignments = [] } = useQuery({
     queryKey: ['cardioAssignments', profile.email],
     queryFn: () => getCardioAssignmentsForAthlete(profile.email),
   });
+  const { data: mesocycles = [], isPending: loadingMesocycles } = useQuery({
+    queryKey: ['mesocycles', profile.email],
+    queryFn: () => getMesocycles(profile.email),
+  });
+  // Los mesociclos delimitan la vuelta: sin ellos la lista se agruparía un
+  // instante por semanas de calendario y se recolocaría sola al llegar.
+  const loadingTraining = loadingAssignments || loadingWorkouts || loadingMesocycles;
   const { data: diets = [] } = useQuery({
     queryKey: ['dietsForAthlete', profile.email],
     queryFn: () => getDietsForAthlete(profile.email),
@@ -112,10 +137,12 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
     queryFn: () => getDietCompletionLog(profile.email, TODAY_DATE),
   });
 
-  const curWeekStart = getWeekRange().start;
   const sorted = [...assignments].sort((a, b) => a.date.localeCompare(b.date));
-  const thisWeekPending = sorted.filter(a => getWeekStart(a.date) === curWeekStart && a.status === 'pending');
-  const overdue = sorted.filter(a => a.status === 'pending' && getWeekStart(a.date) < curWeekStart);
+  // La misma vuelta del microciclo que enseña Rutinas (Día 1 → Día N, sin cajón
+  // de «Atrasados» al final), para que el resumen y la pantalla no cuenten dos
+  // historias distintas. La consulta de mesociclos comparte clave de caché con
+  // TrainingScreen, así que no añade una lectura por pantalla.
+  const diasDelBloque = bloqueActual(bloquesDelCiclo(assignments, workouts, mesocycles, TODAY_DATE), TODAY_DATE)?.dias ?? [];
   const getWorkout = (id: string) => workouts.find(w => w.id === id);
 
   const todayAssignment = assignments.find(a => a.date === TODAY_DATE);
@@ -292,7 +319,7 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
 
       <StepsWidget athleteEmail={profile.email} />
 
-      {/* ── Semana: pendientes + atrasados ─────────────────────────────────── */}
+      {/* ── La vuelta del microciclo en curso, del Día 1 al Día N ────────────── */}
       {(loadingTraining || assignments.length > 0) && (
       <section className="bg-surface border border-hairline rounded-surface p-4 sm:p-5">
         <h2 className="font-sans font-bold uppercase tracking-tight text-title-s text-white mb-3 pb-2 border-b border-hairline flex items-center gap-2">
@@ -311,38 +338,19 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
             <Skeleton className="h-11 w-full rounded-surface" />
             <Skeleton className="h-11 w-full rounded-surface" />
           </div>
-        ) : thisWeekPending.length === 0 && overdue.length === 0 ? (
+        ) : diasDelBloque.length === 0 ? (
           <p className="text-label text-ink-3 font-sans py-2">Sin entrenamientos pendientes esta semana.</p>
         ) : (
-          <div className="space-y-3">
-            {thisWeekPending.length > 0 && (
-              <div className="space-y-2">
-                <span className="font-mono text-caption uppercase font-bold tracking-widest text-accent">Esta semana</span>
-                {thisWeekPending.map(a => (
-                  <ListRow
-                    key={a.id}
-                    onClick={() => onNavigate('training')}
-                    className="rounded-control border bg-raised border-hairline"
-                    title={getWorkout(a.workoutId)?.name || 'Rutina'}
-                    trailing={<span className="font-mono text-caption text-ink-2 flex-shrink-0">{formatDate(a.date)}</span>}
-                  />
-                ))}
-              </div>
-            )}
-            {overdue.length > 0 && (
-              <div className="space-y-2">
-                <span className="font-mono text-caption uppercase font-bold tracking-widest text-danger">Atrasados</span>
-                {overdue.map(a => (
-                  <ListRow
-                    key={a.id}
-                    onClick={() => onNavigate('training')}
-                    className="rounded-control border bg-raised border-danger/20"
-                    title={getWorkout(a.workoutId)?.name || 'Rutina'}
-                    trailing={<span className="font-mono text-caption text-danger flex-shrink-0">{formatDate(a.date)}</span>}
-                  />
-                ))}
-              </div>
-            )}
+          <div className="space-y-2">
+            {diasDelBloque.map(({ assignment: a, estado }) => (
+              <ListRow
+                key={a.id}
+                onClick={() => onNavigate('training')}
+                className={`rounded-control border bg-raised ${MARCO_DEL_DIA[estado]}`}
+                title={getWorkout(a.workoutId)?.name || 'Rutina'}
+                trailing={<span className={`font-mono text-caption flex-shrink-0 ${TEXTO_DEL_DIA[estado]}`}>{formatDate(a.date)}</span>}
+              />
+            ))}
           </div>
         )}
       </section>

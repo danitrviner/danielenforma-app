@@ -14,7 +14,7 @@ import NutritionPeriodizationPanel from './NutritionPeriodizationPanel';
 import NutritionPlansScreen from './NutritionPlansScreen';
 import WeeklyMenuEditor from './WeeklyMenuEditor';
 import FoodPreferencesPanel from './FoodPreferencesPanel';
-import { EmptyState, SegmentedControl } from './ui';
+import { EmptyState, SegmentedControl, Dialog, Button } from './ui';
 
 const GOAL_BODY_LABELS: Record<string, string> = {
   aumentar_musculo: 'Aumentar músculo',
@@ -56,6 +56,8 @@ interface Props {
   menuCompletionLogs: MenuCompletionLog[];
   bodyweightLogs: BodyweightLog[];
   onToggleDiet: (dietId: string) => void;
+  onDeleteDiet: (dietId: string) => Promise<void> | void;
+  onDuplicateDiet: (diet: Diet) => Promise<void> | void;
   onScheduleDay: (day: WeekDay, dietId: string | null) => void;
   onToggleDietMode: (mode: DietMode) => void;
   onSaveStepConfig: (updates: Partial<Pick<AthleteNutritionConfig, 'stepGoal' | 'kcalPerStep'>>) => void;
@@ -64,10 +66,30 @@ interface Props {
 export default function ClientDietsPanel({
   athlete, coachId, onboardingData, setOnboardingData, athleteDiets, setAthleteDiets, athleteDietConfig,
   nutritionConfig, weeklyMenus, setWeeklyMenus, menuCompletionLogs, bodyweightLogs,
-  onToggleDiet, onScheduleDay, onToggleDietMode, onSaveStepConfig,
+  onToggleDiet, onDeleteDiet, onDuplicateDiet, onScheduleDay, onToggleDietMode, onSaveStepConfig,
 }: Props) {
   // Diet editor state: undefined = closed, null = create new, Diet = edit existing
   const [dietEditorDiet, setDietEditorDiet] = useState<Diet | null | undefined>(undefined);
+
+  /* Borrar y duplicar dietas desde esta lista. Hasta ahora el único botón era
+     "Editar": una dieta creada aquí no se podía quitar ni copiar sin salir a la
+     pantalla de Nutrición del coach, así que en la práctica se acumulaban. */
+  const [dietPendingDelete, setDietPendingDelete] = useState<Diet | null>(null);
+  const [dietBusyId, setDietBusyId] = useState<string | null>(null);
+
+  const handleConfirmDelete = async () => {
+    const dt = dietPendingDelete;
+    if (!dt) return;
+    setDietBusyId(dt.id);
+    try { await onDeleteDiet(dt.id); }
+    finally { setDietBusyId(null); setDietPendingDelete(null); }
+  };
+
+  const handleDuplicate = async (dt: Diet) => {
+    setDietBusyId(dt.id);
+    try { await onDuplicateDiet(dt); }
+    finally { setDietBusyId(null); }
+  };
 
   const [subView, setSubView] = useState<SubView>(readSubView);
   const changeSubView = (v: string) => {
@@ -223,15 +245,35 @@ export default function ClientDietsPanel({
                     </span>
                   )}
 
-                  {/* Edit button */}
-                  <button
-                    onClick={() => setDietEditorDiet(dt)}
-                    className="flex-shrink-0 flex items-center gap-1 px-3 py-1 bg-raised border border-hairline text-data hover:border-data/40 font-mono text-caption uppercase rounded-control transition-all"
-                    title="Editar dieta"
-                  >
-                    <span className="material-symbols-outlined text-body-s">edit</span>
-                    Editar
-                  </button>
+                  {/* Editar · duplicar · eliminar */}
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    <button
+                      onClick={() => setDietEditorDiet(dt)}
+                      className="flex items-center gap-1 px-3 py-1 bg-raised border border-hairline text-data hover:border-data/40 font-mono text-caption uppercase rounded-control transition-all"
+                      title="Editar dieta"
+                    >
+                      <span className="material-symbols-outlined text-body-s">edit</span>
+                      Editar
+                    </button>
+                    <button
+                      onClick={() => void handleDuplicate(dt)}
+                      disabled={dietBusyId === dt.id}
+                      className="p-2 text-ink-2 hover:text-accent disabled:opacity-40 transition-colors"
+                      title="Duplicar dieta"
+                      aria-label={`Duplicar ${dt.name}`}
+                    >
+                      <span className="material-symbols-outlined text-body-s">content_copy</span>
+                    </button>
+                    <button
+                      onClick={() => setDietPendingDelete(dt)}
+                      disabled={dietBusyId === dt.id}
+                      className="p-2 text-ink-2 hover:text-danger disabled:opacity-40 transition-colors"
+                      title="Eliminar dieta"
+                      aria-label={`Eliminar ${dt.name}`}
+                    >
+                      <span className="material-symbols-outlined text-body-s">delete</span>
+                    </button>
+                  </div>
                 </div>
               );
             })}
@@ -519,6 +561,31 @@ export default function ClientDietsPanel({
             Por defecto {DEFAULT_KCAL_PER_STEP} kcal/paso (1000 pasos ≈ 46 kcal).
           </p>
         </div>
+      )}
+
+      {/* Confirmar el borrado de una dieta */}
+      {dietPendingDelete && (
+        <Dialog
+          open
+          onClose={() => setDietPendingDelete(null)}
+          title="¿Eliminar esta dieta?"
+          size="s"
+          footer={(
+            <>
+              <Button onClick={() => setDietPendingDelete(null)} variant="secondary">Cancelar</Button>
+              <Button
+                onClick={() => void handleConfirmDelete()}
+                variant="danger"
+                loading={dietBusyId === dietPendingDelete.id}
+              >Eliminar</Button>
+            </>
+          )}
+        >
+          <p className="text-body-s text-ink-2">
+            Se eliminará «{dietPendingDelete.name}». Si estaba activa o programada algún día de la
+            semana, dejará de estarlo. El atleta ya no la verá.
+          </p>
+        </Dialog>
       )}
     </div>
   );

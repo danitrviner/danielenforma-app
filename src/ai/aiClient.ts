@@ -30,6 +30,12 @@ const MAX_TOOL_ROUNDS = 12;
 // que llega de verdad, y solo salta si el servidor deja de mandar nada en
 // absoluto (función de Vercel colgada, conexión cortada a medias...).
 const SILENCIO_MAX_MS = 30_000;
+// El primer byte tarda más que los siguientes: arranque en frío de la función
+// de Vercel, verificación del token de Firebase y contador diario pasan antes
+// de que el proxy escriba nada. A partir de ahí el proxy manda un latido cada
+// 10s, así que el plazo corto de arriba solo salta si la conexión muere de
+// verdad.
+const APERTURA_MAX_MS = 60_000;
 const NETWORK_RETRY_DELAY_MS = 1500;
 
 export interface AgentCallbacks {
@@ -63,9 +69,9 @@ export class TurnoCancelado extends Error {
 
 async function abrirConexion(
   idToken: string, body: Record<string, unknown>, round: number,
-  controller: AbortController, reiniciarSilencio: () => void, señalExterna?: AbortSignal,
+  controller: AbortController, reiniciarSilencio: (ms?: number) => void, señalExterna?: AbortSignal,
 ): Promise<Response> {
-  reiniciarSilencio();
+  reiniciarSilencio(APERTURA_MAX_MS);
   try {
     return await fetch(PROXY_URL, {
       method: 'POST',
@@ -98,7 +104,7 @@ async function abrirConexion(
  *  silencio con cada trozo que llega de verdad, no con cada evento parseado —
  *  un solo trozo de red puede traer varios eventos SSE juntos. */
 async function* leerEventosSSE(
-  response: Response, reiniciarSilencio: () => void,
+  response: Response, reiniciarSilencio: (ms?: number) => void,
 ): AsyncGenerator<{ tipo: string; datos: any }> {
   if (!response.body) throw new Error('El servidor no devolvió un cuerpo de respuesta.');
   const reader = response.body.getReader();
@@ -141,13 +147,20 @@ async function* leerEventosSSE(
 async function leerRespuestaEnStreaming(
   response: Response,
   mensajesPrevios: AiChatMessage[],
-  reiniciarSilencio: () => void,
+  reiniciarSilencio: (ms?: number) => void,
   cb: AgentCallbacks,
 ): Promise<{ message: MensajeStreameado; costoUsd: number }> {
   const contenido: AiContentBlock[] = [];
   const jsonParcialPorIndice: Record<number, string> = {};
   let stopReason = 'end_turn';
   let costoUsd = 0;
+  // Un turno que termina de verdad se despide: `message_delta` con su
+  // `stop_reason`, `message_stop`, y el `costo` del proxy (o un `error`, que
+  // lanza abajo). Si el stream se acaba sin nada de eso, la respuesta se cortó
+  // a mitad — típicamente la función de Vercel muriendo a los 60 s. Antes eso
+  // devolvía un mensaje incompleto como si fuera bueno: el panel se quedaba
+  // mudo y el bloque de razonamiento a medias envenenaba el chat para siempre.
+  let cerradoPorElServidor = false;
   const mensajeEnCurso = (): AiChatMessage => ({ role: 'assistant', content: contenido });
 
   for await (const { tipo, datos } of leerEventosSSE(response, reiniciarSilencio)) {
@@ -157,6 +170,7 @@ async function leerRespuestaEnStreaming(
 
       case 'costo':
         costoUsd = typeof datos?.usd === 'number' ? datos.usd : 0;
+        cerradoPorElServidor = true;
         break;
 
       case 'content_block_start': {
@@ -204,12 +218,23 @@ async function leerRespuestaEnStreaming(
       }
 
       case 'message_delta':
-        if (datos.delta?.stop_reason) stopReason = datos.delta.stop_reason;
+        if (datos.delta?.stop_reason) { stopReason = datos.delta.stop_reason; cerradoPorElServidor = true; }
+        break;
+
+      case 'message_stop':
+        cerradoPorElServidor = true;
         break;
 
       default:
-        break; // message_start / message_stop / eventos futuros: nada que reconstruir aquí.
+        break; // message_start / eventos futuros: nada que reconstruir aquí.
     }
+  }
+
+  if (!cerradoPorElServidor) {
+    throw new Error(
+      'La respuesta se cortó antes de terminar (el servidor corta a los 60 segundos). ' +
+      'Puedes reintentar; si pasa siempre, pídeselo por partes.'
+    );
   }
 
   return { message: { content: contenido, stop_reason: stopReason }, costoUsd };
@@ -232,9 +257,9 @@ async function callProxy(
   const reenviarCancelacion = () => controller.abort();
   señalExterna?.addEventListener('abort', reenviarCancelacion, { once: true });
   let temporizadorSilencio: ReturnType<typeof setTimeout> | undefined;
-  const reiniciarSilencio = () => {
+  const reiniciarSilencio = (ms: number = SILENCIO_MAX_MS) => {
     clearTimeout(temporizadorSilencio);
-    temporizadorSilencio = setTimeout(() => controller.abort(), SILENCIO_MAX_MS);
+    temporizadorSilencio = setTimeout(() => controller.abort(), ms);
   };
 
   try {
