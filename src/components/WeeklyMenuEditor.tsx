@@ -49,6 +49,17 @@ function fmtExch(exch: { HC: number; PROT: number; GRASA: number }): string {
 
 function devBadge(day: MenuDay): { label: string; cls: string } {
   if (day.meals.length === 0) return { label: 'Libre', cls: 'text-ink-3 bg-raised border-hairline' };
+  // Una comida sin receta significa que NINGÚN plato del recetario llega a ese
+  // objetivo, ni multiplicado por cuatro. No es un error a tapar: es la señal de
+  // que hace falta una receta más alta en calorías para esa franja, y por eso se
+  // enseña antes que la desviación (Dani, 2026-09-05).
+  const sinReceta = day.meals.filter(m => !m.recipeId).length;
+  if (sinReceta > 0) {
+    return {
+      label: sinReceta === 1 ? 'Falta 1 receta' : `Faltan ${sinReceta} recetas`,
+      cls: 'text-red-400 bg-red-400/10 border-red-400/20',
+    };
+  }
   const dev = dayGlobalDeviation(day);
   const ok = isDayWithinTolerance(day);
   const cls = ok ? 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20' : 'text-red-400 bg-red-400/10 border-red-400/20';

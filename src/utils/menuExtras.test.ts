@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
-  topeDeReceta, objetivoDePlato, fillComplements, generateDay,
-  findSwapAlternatives, totalConExtras, GeneratorPrefs,
+  bestScaleFit, fillComplements, generateDay,
+  findSwapAlternatives, totalConExtras, MENU_SCALES, GeneratorPrefs,
 } from './menuEngine';
 import { complementosDisponibles, isSimpleComplement } from './menuComplements';
 import { Recipe, Diet, BudgetVec, MealItem, MenuDay } from '../types';
@@ -88,29 +88,41 @@ describe('extras que propone el generador', () => {
   });
 });
 
-describe('tope del plato', () => {
-  it('sale del recetario: la receta mediana a doble ración', () => {
-    const pool = [1, 2, 3, 4, 5].map((n, i) => receta(`r${i}`, { HC: n, PROT: 0, GRASA: 0 }));
-    expect(topeDeReceta(pool)).toBe(6); // mediana 3 × escala 2
+describe('la receta cubre la comida, o se descarta', () => {
+  // Dani, 2026-09-05: "si la comida es de 600 kcal, buscamos recetas de 600 o
+  // que se puedan multiplicar, punto. Y todas las demás se quedan eliminadas".
+  it('multiplica hasta x4 para llegar al objetivo', () => {
+    expect(MENU_SCALES[MENU_SCALES.length - 1]).toBe(4);
+    const plato = receta('r', { HC: 2, PROT: 1, GRASA: 0.5 });     // 3,5 int base
+    const fit = bestScaleFit(plato, { HC: 8, PROT: 4, GRASA: 2 }); // 14 int → x4
+    expect(fit?.scale).toBe(4);
   });
 
-  it('sin recetas no hay nada que topar', () => {
-    expect(topeDeReceta([])).toBe(Infinity);
+  it('descarta la receta que no llega ni multiplicada por cuatro', () => {
+    const pequena = receta('r', { HC: 1, PROT: 0, GRASA: 0 });          // 1 int
+    expect(bestScaleFit(pequena, { HC: 10, PROT: 5, GRASA: 5 })).toBeNull();
   });
 
-  it('recorta manteniendo la proporción entre macros', () => {
-    const recortado = objetivoDePlato({ HC: 8, PROT: 4, GRASA: 4 }, 8);
-    expect(recortado.HC + recortado.PROT + recortado.GRASA).toBeCloseTo(8, 2);
-    expect(recortado.HC / recortado.PROT).toBeCloseTo(2, 2); // 8/4 se mantiene
+  it('descarta también la que se pasa a media ración', () => {
+    const enorme = receta('r', { HC: 10, PROT: 5, GRASA: 5 });
+    expect(bestScaleFit(enorme, { HC: 1, PROT: 0, GRASA: 0 })).toBeNull();
   });
 
-  it('deja el objetivo intacto si ya cabe', () => {
-    const objetivo: BudgetVec = { HC: 2, PROT: 1, GRASA: 1 };
-    expect(objetivoDePlato(objetivo, 8)).toEqual(objetivo);
+  it('ya no hay reintento que readmita a las descartadas', () => {
+    // El modo "permitirFueraDeRango" servía el plato a su escala máxima cuando
+    // ninguna llegaba, y era el origen del plato escoltado por extras.
+    const pool = [receta('p', { HC: 1, PROT: 0, GRASA: 0 })];
+    const day = generateDay({
+      day: 'mon',
+      diet: { id: 'd', athleteId: 'a', name: 'D', budget: { HC: 20, PROT: 10, GRASA: 8, MIX_HC: 0, MIX_GRASA: 0 }, meals: [] } as Diet,
+      slots: [{ slot: 3, name: 'Comida', pct: 100 }],
+      pools: { 3: pool }, foods: BANCO, prefs, usedIds: new Set(),
+    });
+    expect(day.meals[0].recipeId).toBe('');  // vacía, para que el entrenador lo vea
   });
 });
 
-describe('el día completo: plato topado + extras', () => {
+describe('el día completo: la receta cubre, el comodín remata', () => {
   // Recetario de platos medianos y una comida que pide mucho más que cualquiera
   // de ellos — el caso que dejaba al atleta con dos o tres platos posibles.
   // Con ingredientes escalables, como el 79 % del recetario real: así el hueco
@@ -144,7 +156,14 @@ describe('el día completo: plato topado + extras', () => {
   });
 
   it('ninguna receta se sirve por encima de la ración máxima', () => {
-    expect(dia().meals.every(m => m.scale <= 2)).toBe(true);
+    expect(dia().meals.every(m => m.scale <= 4)).toBe(true);
+  });
+
+  it('el comodín nunca pasa de dos piezas NI de tres intercambios', () => {
+    for (const m of dia().meals) {
+      expect(m.complements.length).toBeLessThanOrEqual(2);
+      expect(m.complements.reduce((s, c) => s + c.quantity, 0)).toBeLessThanOrEqual(3);
+    }
   });
 
   it('los extras se reparten entre comidas, no se apilan todos en la comida', () => {
@@ -178,9 +197,5 @@ describe('el día completo: plato topado + extras', () => {
     }
   });
 
-  it('nunca cuelga más de dos acompañamientos a una comida', () => {
-    // Dani, 2026-09-05: "tampoco quiero que una receta vaya con cinco
-    // acompañamientos". Antes podían salir hasta nueve, tres por macro.
-    for (const m of dia().meals) expect(m.complements.length).toBeLessThanOrEqual(2);
-  });
+
 });

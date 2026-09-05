@@ -424,10 +424,29 @@ describe('precisión del día generado', () => {
     }));
   }
 
-  it('no deja una comida vacía cuando ninguna receta llega al objetivo de la franja', () => {
-    // Comida = 40 % de 58 int ≈ 23; el recetario solo tiene platos de 5.
+  // Este test defendía lo contrario: que la comida NUNCA saliera vacía, sirviendo
+  // el plato más grande disponible y fiando el resto a los complementos. Esa era
+  // justo la causa de "arroz con pollo + cinco acompañamientos". Decisión de Dani
+  // (2026-09-05): la receta tiene que cubrir prácticamente el 100 % de la comida;
+  // si ninguna llega ni multiplicada por cuatro, "se busca una receta más alta en
+  // calorías y ya está, y todas las demás se quedan eliminadas". La comida sale
+  // vacía a propósito, para que el entrenador lo vea y cambie el recetario.
+  it('deja la comida vacía si ninguna receta llega, en vez de taparlo con extras', () => {
+    // Comida ≈ 23 int; el recetario solo tiene platos de 5, que ni a ×4 llegan.
     const pequenas = poolDe(20, { HC: 2, PROT: 2, GRASA: 1 });
     const pools = { 1: pequenas, 2: pequenas, 3: pequenas, 5: pequenas };
+    const day = generateDay({
+      day: 'mon',
+      diet: diet({ budget: { HC: 28, PROT: 18, GRASA: 12, MIX_HC: 0, MIX_GRASA: 0 } }),
+      slots, pools, foods: [], prefs: basePrefs, usedIds: new Set(),
+    });
+    expect(day.meals.some(m => m.recipeId === '')).toBe(true);
+  });
+
+  it('con platos que SÍ llegan multiplicando, ninguna comida se queda vacía', () => {
+    // Los mismos 23 int, pero con platos de 7: ×3,25 llega, así que se sirven.
+    const suficientes = poolDe(20, { HC: 3, PROT: 3, GRASA: 1 });
+    const pools = { 1: suficientes, 2: suficientes, 3: suficientes, 5: suficientes };
     const day = generateDay({
       day: 'mon',
       diet: diet({ budget: { HC: 28, PROT: 18, GRASA: 12, MIX_HC: 0, MIX_GRASA: 0 } }),
