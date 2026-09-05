@@ -1351,6 +1351,21 @@ export interface MenuComplement {
   quantity: number; // exchanges, multiples of 0.25
 }
 
+/** Más ración de algo que la receta YA lleva: "+60g de arroz" en el arroz con
+ *  pollo, en vez de colgarle dos tostadas al lado. Es la primera opción para
+ *  cerrar lo que al plato le falta; los `MenuComplement` son el plan B, para
+ *  cuando la receta no tiene nada de esa categoría que subir.
+ *  Ver `utils/escalarIngrediente.ts`. */
+export interface MenuRacionExtra {
+  /** Nombre tal cual aparece en la receta ("Pechuga de pollo"). */
+  ingrediente: string;
+  /** Cómo se le llama al atleta ("pollo"). */
+  nombre: string;
+  category: FoodCategory;
+  quantity: number; // intercambios, múltiplos de 0,25
+  gramos: number;   // lo que hay que añadir, ya calculado
+}
+
 export interface MenuMeal {
   id: string;
   slot: number; // intakeType 1-5
@@ -1361,7 +1376,12 @@ export interface MenuMeal {
   scale: number;       // 0.5-2.0, steps of 0.25
   exch: BudgetVec;      // exchanges already scaled
   kcal: number;
+  /** Acompañamientos: alimentos sueltos que cierran lo que el plato no llega a
+   *  cubrir. Plan B de `racionesExtra`. */
   complements: MenuComplement[];
+  /** Más ración de un ingrediente de la propia receta. Se intenta ANTES que un
+   *  acompañamiento (ver `MenuRacionExtra`). */
+  racionesExtra?: MenuRacionExtra[];
   // Athlete swapped an ingredient for a same-group equivalent (e.g. leche → bebida
   // de avena). Approximate equivalence, so exch/kcal are left unchanged; the viewer
   // renders `to` in place of `from`. See utils/ingredientSubstitutions.

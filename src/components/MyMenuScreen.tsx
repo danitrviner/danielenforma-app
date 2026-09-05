@@ -277,7 +277,10 @@ export default function MyMenuScreen({ profile }: Props) {
         getRecipes({ ownerId: profile.userId }),
       ]);
       const pool = [...recetas, ...builder.filter(r => recipeMatchesSlot(r, meal.slot))];
-      setSwapCandidates(findSwapAlternatives(day, meal.id, pool, prefs));
+      // `foodList` y el modo van hasta el final: con ellos, cada alternativa se
+      // evalúa con las raciones extra que le tocarían a ELLA, no con el plato
+      // pelado (ver `findSwapAlternatives`).
+      setSwapCandidates(findSwapAlternatives(day, meal.id, pool, prefs, Infinity, dietMode, foodList));
     }
     setSwapLoading(false);
   }
@@ -314,17 +317,19 @@ export default function MyMenuScreen({ profile }: Props) {
     const meal = day.meals.find(m => m.id === swapFor.mealId);
     if (!meal) return;
 
-    // Los extras se CONSERVAN: la alternativa se ha buscado para sustituir al
-    // plato, no a la comida entera (ver `findSwapAlternatives`). Antes se
-    // vaciaban, porque la búsqueda apuntaba al total de la comida y la receta
-    // nueva tenía que absorberlos.
+    // Los ACOMPAÑAMIENTOS se conservan (una pieza de fruta sigue valiendo con
+    // otro plato), pero las RACIONES EXTRA se caen: "+45g de arroz" solo tiene
+    // sentido mientras el plato sea el arroz con pollo, y la receta nueva puede
+    // no llevar arroz. Por eso la alternativa se busca para cubrir el plato MÁS
+    // sus raciones extra (ver `findSwapAlternatives`).
     const nextMeals = day.meals.map(m => m.id === meal.id
       ? {
         ...m,
         recipeId: candidate.recipe.id, recipeName: candidate.recipe.name,
         recipeImage: fotoDeReceta(candidate.recipe),
         scale: candidate.scale, exch: candidate.exch,
-        kcal: Math.round(exchangeToKcal(totalConExtras(candidate.exch, m.complements))),
+        racionesExtra: candidate.raciones.length > 0 ? candidate.raciones : undefined,
+        kcal: Math.round(exchangeToKcal(totalConExtras(candidate.exch, m.complements, candidate.raciones))),
       }
       : m);
     const nextDay: MenuDay = { ...day, meals: nextMeals };
@@ -493,10 +498,29 @@ export default function MyMenuScreen({ profile }: Props) {
 
                   <div className="flex-1 min-w-0">
                     <p className="font-mono text-caption text-ink-2">{fmtExch(meal.exch)} · {meal.kcal} kcal</p>
-                    {/* Los extras son EDITABLES. Los pone el generador para
-                        cerrar lo que la receta no llega a cubrir, pero quien
-                        decide si eso es pan, fruta o un yogur es el atleta: son
-                        sus intercambios y su nevera. */}
+                    {/* Más ración de algo que el plato YA lleva. Va antes que los
+                        acompañamientos y con otro aspecto, porque no es algo que
+                        se añade al lado: es el mismo plato, servido más grande. */}
+                    {(meal.racionesExtra?.length ?? 0) > 0 && (
+                      <div className="flex flex-wrap items-center gap-1 mt-2">
+                        {meal.racionesExtra!.map((r, ri) => (
+                          <span
+                            key={ri}
+                            className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-accent/10 border border-accent/25"
+                          >
+                            <Icon name="add" size="s" className="text-accent" />
+                            <span className="font-mono text-caption text-accent">
+                              {r.gramos}g de {r.nombre}
+                            </span>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Los acompañamientos son EDITABLES. Los pone el generador
+                        para cerrar lo que ni el plato ni su ración extra llegan a
+                        cubrir, pero quien decide si eso es pan, fruta o un yogur
+                        es el atleta: son sus intercambios y su nevera. */}
                     <div className="flex flex-wrap items-center gap-1 mt-2">
                       {meal.complements.map((c, ci) => (
                         <button

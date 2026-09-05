@@ -81,7 +81,27 @@ export function encajaEnCategoria(item: MealItem, category: FoodCategory): boole
   return category === 'PROT' && item.category === 'MIX_HC';
 }
 
-/** Los que el generador propone por sí solo cuando nadie ha elegido nada. */
+/* Orden en que el generador los propone. No es el orden del banco: un plato
+   admite un acompañamiento o un postre, así que primero va lo que se come JUNTO
+   a una comida o DESPUÉS de ella —una pieza de fruta, un yogur, pan— y detrás lo
+   demás. Antes salía lo primero que hubiera en el banco, y al arroz con pavo le
+   tocaba "165g de queso fresco batido", que no es ni acompañamiento ni postre
+   (Dani, 2026-09-05). */
+const ORDEN_PROPUESTA: RegExp[] = [
+  /manzana|pera|platano|plátano|mandarina|kiwi|naranja|fruta/i,  // postre de siempre
+  /yogur/i,                                                       // postre
+  /\bpan\b/i,                                                     // acompañamiento
+  /frutos secos/i,
+  /tortitas|cereales/i,
+];
+
+/** Los que el generador propone por sí solo cuando nadie ha elegido nada, en el
+ *  orden en que tiene sentido proponerlos. */
 export function simpleComplementsFor(foods: MealItem[]): MealItem[] {
-  return foods.filter(isSimpleComplement);
+  const simples = foods.filter(isSimpleComplement);
+  const rango = (f: MealItem) => {
+    const i = ORDEN_PROPUESTA.findIndex(re => re.test(f.label));
+    return i === -1 ? ORDEN_PROPUESTA.length : i;
+  };
+  return [...simples].sort((a, b) => rango(a) - rango(b));
 }

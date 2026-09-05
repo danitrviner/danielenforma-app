@@ -8,8 +8,12 @@ import { Recipe, Diet, BudgetVec, MealItem, MenuDay } from '../types';
 
 const prefs: GeneratorPrefs = { allergies: [], disliked: [], liked: [], variety: 3 };
 
-function receta(id: string, exch: BudgetVec, name = `Receta ${id}`): Recipe {
-  return { id, ownerId: 'recetas', name, categories: [], ingredients: [], extras: [], steps: [], exchanges: exch };
+function receta(id: string, exch: BudgetVec, name = `Receta ${id}`, ingredientes: string[] = []): Recipe {
+  return {
+    id, ownerId: 'recetas', name, categories: [], ingredients: [], extras: [], steps: [],
+    exchanges: exch,
+    ingredientsText: ingredientes.map(n => ({ name: n })),
+  } as Recipe;
 }
 
 function alimento(id: string, category: MealItem['category'], label: string): MealItem {
@@ -24,6 +28,8 @@ const BANCO: MealItem[] = [
   alimento('mermelada', 'HC', '40g mermelada (la que sea)'),
   alimento('yogur', 'PROT', '1 yogurt YoPro Danone (no choco)'),
   alimento('nueces', 'GRASA', '15g frutos secos sin freír (cualquier fruto seco)'),
+  alimento('pollo', 'PROT', '100g carne blanca sin piel (pollo, pavo...)'),
+  alimento('aceite', 'GRASA', '10ml (1 cuchara) aceite (preferible AOVE)'),
 ];
 
 describe('catálogo de extras', () => {
@@ -107,8 +113,10 @@ describe('tope del plato', () => {
 describe('el día completo: plato topado + extras', () => {
   // Recetario de platos medianos y una comida que pide mucho más que cualquiera
   // de ellos — el caso que dejaba al atleta con dos o tres platos posibles.
+  // Con ingredientes escalables, como el 79 % del recetario real: así el hueco
+  // se cierra subiendo la ración del propio plato y no solo con acompañamientos.
   const pool: Recipe[] = Array.from({ length: 12 }, (_, i) =>
-    receta(`p${i}`, { HC: 2, PROT: 1, GRASA: 0.5 }, `Plato ${i}`));
+    receta(`p${i}`, { HC: 2, PROT: 1, GRASA: 0.5 }, `Plato ${i}`, ['Arroz', 'Pechuga de pollo', 'Aceite de oliva']));
   const pools = { 1: pool, 2: pool, 3: pool, 5: pool };
   const dieta: Diet = {
     id: 'd1', athleteId: 'a@x.com', name: 'Día',
@@ -129,7 +137,7 @@ describe('el día completo: plato topado + extras', () => {
   it('el día cuadra con su presupuesto contando plato + extras', () => {
     const d = dia();
     const puesto = d.meals.reduce((s, m) => {
-      const t = totalConExtras(m.exch, m.complements);
+      const t = totalConExtras(m.exch, m.complements, m.racionesExtra);
       return s + t.HC + t.PROT + t.GRASA;
     }, 0);
     expect(Math.abs(puesto - 30)).toBeLessThanOrEqual(1);
@@ -151,9 +159,28 @@ describe('el día completo: plato topado + extras', () => {
   it('buscar alternativas mira el PLATO, no el plato más sus extras', () => {
     const d = dia();
     const comida = d.meals.find(m => m.slot === 3)!;
-    expect(comida.complements.length).toBeGreaterThan(0); // si no, el test no prueba nada
+    const extras = comida.complements.length + (comida.racionesExtra?.length ?? 0);
+    expect(extras).toBeGreaterThan(0); // si no, el test no prueba nada
     // Todas las recetas del pool son iguales al plato servido, así que todas
     // deberían valer. Apuntando al total de la comida no llegaría ninguna.
-    expect(findSwapAlternatives(d, comida.id, pool, prefs).length).toBeGreaterThan(1);
+    expect(findSwapAlternatives(d, comida.id, pool, prefs, Infinity, 'OMNIVORO', BANCO).length).toBeGreaterThan(1);
+  });
+
+  it('sube la ración del propio plato antes que colgarle un acompañamiento', () => {
+    const conRaciones = dia().meals.filter(m => (m.racionesExtra?.length ?? 0) > 0);
+    expect(conRaciones.length).toBeGreaterThan(0);
+    // Y lo que sube es un ingrediente que la receta lleva de verdad.
+    for (const m of conRaciones) {
+      for (const r of m.racionesExtra!) {
+        expect(['Arroz', 'Pechuga de pollo', 'Aceite de oliva']).toContain(r.ingrediente);
+        expect(r.gramos).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it('nunca cuelga más de dos acompañamientos a una comida', () => {
+    // Dani, 2026-09-05: "tampoco quiero que una receta vaya con cinco
+    // acompañamientos". Antes podían salir hasta nueve, tres por macro.
+    for (const m of dia().meals) expect(m.complements.length).toBeLessThanOrEqual(2);
   });
 });
