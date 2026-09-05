@@ -41,21 +41,9 @@ const FICHA_CAMPOS = {
     label: 'Tiempo para cocinar',
     options: [10, 15, 20, 30, 45, 60, 90].map(m => ({ value: String(m), label: `${m} min` })),
   },
-  cookingLevel: {
-    label: 'Nivel en la cocina',
-    options: escala('me defiendo', 'cocino de todo'),
-  },
   mealCount: {
     label: 'Comidas al día',
     options: [3, 4, 5].map(n => ({ value: String(n), label: String(n) })),
-  },
-  breakfastVariety: {
-    label: 'Variedad en desayunos',
-    options: escala('siempre igual', 'cada día algo'),
-  },
-  lunchVariety: {
-    label: 'Variedad en comidas',
-    options: escala('siempre igual', 'cada día algo'),
   },
 } as const;
 

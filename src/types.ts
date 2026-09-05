@@ -259,11 +259,8 @@ export interface AthleteNutritionConfig {
      patrón que `menuVariety`: aquí vive lo que el atleta cambie, y
      `OnboardingData` es el valor de partida cuando esto no tiene nada. */
   dietType?: DietType;
-  cookingLevel?: number;      // 1–5
   cookingMaxTime?: number;    // minutos
   mealCount?: number;         // 3 | 4 | 5
-  breakfastVariety?: number;  // 1–5
-  lunchVariety?: number;      // 1–5
 }
 
 export type HungerProfile = 'manana' | 'equilibrado' | 'noche';
@@ -876,10 +873,13 @@ export interface OnboardingData {
   mealCount?:         number;         // 3 | 4 | 5
   meals?:             OnboardingMeal[];
   // ── Cocina ────────────────────────────────────────────────────────────────
-  cookingLevel?:      number;         // 1–5
+  /* `cookingLevel`, `breakfastVariety` y `lunchVariety` se preguntaban aquí y
+     no los leía NADIE: se guardaban, se pintaban en la ficha y ahí morían. Tres
+     preguntas obligatorias del alta que el atleta contestaba creyendo que
+     afinaban su plan. Se retiraron el 2026-09-05 (decisión de Dani: mejor
+     quitar la pregunta que fingir que hace algo). Los documentos antiguos de
+     Firestore conservan los campos; simplemente se ignoran. */
   cookingMaxTime?:    number;         // minutes
-  breakfastVariety?:  number;         // 1–5
-  lunchVariety?:      number;         // 1–5
   menuVariety?:       number;         // 1–5, preference for the auto-generated weekly menu (1=repetitive, 5=max variety)
   batchCookingPreferred?: boolean;    // prefers cooking the whole week's meals in one session
   preferredDishTypes?: string[];      // dish types the athlete wants more of (see utils/dishTypes)

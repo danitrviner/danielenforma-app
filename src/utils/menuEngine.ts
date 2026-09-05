@@ -1,9 +1,10 @@
 import {
   Recipe, MealItem, Diet, WeekDay, DietType, DietMode, FoodCategory,
-  BudgetVec, MenuDay, MenuMeal, MenuComplement,
+  BudgetVec, MenuDay, MenuMeal, MenuComplement, HungerProfile,
 } from '../types';
 import { addToPlaced, round2 } from './exchangeHelpers';
 import { quotaSplit } from './quotaSplit';
+import { slotPercents } from './slotWeights';
 import { ingredientMatch, normalizeStr, violatesDietType } from './foodPrefs';
 import { fitScore } from './recipeMatch';
 import { exchangeToKcal } from './nutritionConstants';
@@ -63,46 +64,58 @@ export interface MenuCandidate {
 
 // ─── Meal slots from anamnesis ──────────────────────────────────────────────
 
-const PRESET_PCTS: Record<3 | 4 | 5, number[]> = {
-  3: [25, 45, 30],
-  4: [20, 10, 40, 30],
-  5: [20, 10, 35, 10, 25],
+const SLOT_NAME: Record<number, string> = {
+  1: 'Desayuno', 2: 'Media mañana', 3: 'Comida', 4: 'Merienda', 5: 'Cena',
 };
 
+const SLOTS_POR_CONTEO: Record<3 | 4 | 5, number[]> = {
+  3: [1, 3, 5],
+  4: [1, 2, 3, 5],
+  5: [1, 2, 3, 4, 5],
+};
+
+function slotsPorConteo(count: 3 | 4 | 5, hungerProfile?: HungerProfile): MealSlotSpec[] {
+  const nums = SLOTS_POR_CONTEO[count];
+  const pcts = slotPercents(nums, hungerProfile);
+  return nums.map((slot, i) => ({ slot, name: SLOT_NAME[slot], pct: pcts[i] }));
+}
+
+/** Reparto de referencia sin perfil de hambre. Se conserva como export porque
+ *  `mealDistribution.resolveSlots` lo usa para deducir la franja de una dieta
+ *  vieja que no trae `slot`; ahí solo importan los números de franja. */
 export const FALLBACK_SLOTS: Record<3 | 4 | 5, MealSlotSpec[]> = {
-  3: [
-    { slot: 1, name: 'Desayuno', pct: 25 },
-    { slot: 3, name: 'Comida', pct: 45 },
-    { slot: 5, name: 'Cena', pct: 30 },
-  ],
-  4: [
-    { slot: 1, name: 'Desayuno', pct: 20 },
-    { slot: 2, name: 'Media mañana', pct: 10 },
-    { slot: 3, name: 'Comida', pct: 40 },
-    { slot: 5, name: 'Cena', pct: 30 },
-  ],
-  5: [
-    { slot: 1, name: 'Desayuno', pct: 20 },
-    { slot: 2, name: 'Media mañana', pct: 10 },
-    { slot: 3, name: 'Comida', pct: 35 },
-    { slot: 4, name: 'Merienda', pct: 10 },
-    { slot: 5, name: 'Cena', pct: 25 },
-  ],
+  3: slotsPorConteo(3),
+  4: slotsPorConteo(4),
+  5: slotsPorConteo(5),
 };
 
 // Prefers the athlete's own anamnesis meals (name + needsTupper preserved);
 // falls back to a generic preset when onboarding is missing or incomplete.
+//
+// El reparto sale de `utils/slotWeights.ts`, el MISMO que usa la dieta de
+// intercambios del entrenador, y hace caso al perfil de hambre del atleta. Antes
+// eran porcentajes fijos escritos aquí a mano (20/10/40/30) que no coincidían
+// con los de la dieta (20/10/38/10/27) y que ignoraban por completo la pregunta
+// de "¿cuándo tienes más hambre?": el atleta decía que cenaba fuerte, lo veía
+// aplicado en su dieta, y el menú de recetas le seguía plantando un desayunazo.
+//
+// `hungerProfile` se lee del PERFIL del atleta (AthleteNutritionConfig, o su
+// ficha de iniciación como valor de partida), nunca de la dieta que el
+// entrenador tenga abierta: retocar a mano los intercambios de una dieta no debe
+// reescribir el menú, y cambiar el menú se hace desde la ficha o desde
+// Perfil > Preferencias (Dani, 2026-09-05).
 export function slotsFromOnboarding(
   ob: { mealCount?: number; meals?: { intakeType: number; name: string; needsTupper: boolean }[] } | null,
+  hungerProfile?: HungerProfile,
 ): MealSlotSpec[] {
   const count: 3 | 4 | 5 = ob?.mealCount === 3 || ob?.mealCount === 5 ? ob.mealCount : 4;
   if (ob?.meals && ob.meals.length === count) {
-    const pcts = PRESET_PCTS[count];
+    const pcts = slotPercents(ob.meals.map(m => m.intakeType), hungerProfile);
     return ob.meals.map((m, i) => ({
-      slot: m.intakeType, name: m.name, pct: pcts[i] ?? Math.round(100 / count), needsTupper: m.needsTupper,
+      slot: m.intakeType, name: m.name, pct: pcts[i], needsTupper: m.needsTupper,
     }));
   }
-  return FALLBACK_SLOTS[count];
+  return slotsPorConteo(count, hungerProfile);
 }
 
 // Recipes from the imported recetario carry a reliable intakeTypes tag; builder recipes (coach/athlete)

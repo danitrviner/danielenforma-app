@@ -117,10 +117,7 @@ interface FormState {
   allergies:        string[];
   mealCount:        3 | 4 | 5;
   meals:            OnboardingMeal[];
-  cookingLevel:     number;
   cookingMaxTime:   number;
-  breakfastVariety: number;
-  lunchVariety:     number;
   menuVariety:      number;
   preferredDishTypes: string[];
   excludedDishTypes:  string[];
@@ -194,10 +191,7 @@ function fromOnboarding(d: OnboardingData): FormState {
     allergies:        d.allergies,
     mealCount:        count,
     meals:            d.meals ?? MEAL_PRESETS[count].map(m => ({ ...m })),
-    cookingLevel:     d.cookingLevel ?? 3,
     cookingMaxTime:   d.cookingMaxTime ?? 45,
-    breakfastVariety: d.breakfastVariety ?? 3,
-    lunchVariety:     d.lunchVariety ?? 3,
     menuVariety:      d.menuVariety ?? 3,
     preferredDishTypes: d.preferredDishTypes ?? [],
     excludedDishTypes:  d.excludedDishTypes ?? [],
@@ -270,10 +264,7 @@ const DEFAULTS: FormState = {
   allergies:        [],
   mealCount:        4,
   meals:            MEAL_PRESETS[4].map(m => ({ ...m })),
-  cookingLevel:     3,
   cookingMaxTime:   45,
-  breakfastVariety: 3,
-  lunchVariety:     3,
   menuVariety:      3,
   batchCookingPreferred: false,
   preferredDishTypes: [],
@@ -663,10 +654,7 @@ export default function OnboardingForm({
       allergies:          form.allergies,
       mealCount:          form.mealCount,
       meals:              form.meals,
-      cookingLevel:       form.cookingLevel,
       cookingMaxTime:     form.cookingMaxTime,
-      breakfastVariety:   form.breakfastVariety,
-      lunchVariety:       form.lunchVariety,
       menuVariety:        form.menuVariety,
       batchCookingPreferred: form.batchCookingPreferred,
       preferredDishTypes: form.preferredDishTypes,
@@ -1137,13 +1125,9 @@ export default function OnboardingForm({
 
       {/* ── COCINA ───────────────────────────────────────────────────── */}
       <Section icon="soup_kitchen" title="Cocina">
-        <SliderField
-          label="Nivel de cocina"
-          min={1} max={5} value={form.cookingLevel}
-          onChange={v => set('cookingLevel', v)}
-          minLabel="Básico (hervir agua)"
-          maxLabel="Chef avanzado"
-        />
+        {/* "Nivel de cocina" y las variedades de desayuno/almuerzo se
+            preguntaban aquí y no las leía nadie — ver el comentario en
+            OnboardingData (types.ts). Retiradas el 2026-09-05. */}
         <SliderField
           label="Tiempo máximo por receta"
           min={15} max={90} step={5} value={form.cookingMaxTime}
@@ -1151,20 +1135,6 @@ export default function OnboardingForm({
           unit=" min"
           minLabel="15 min"
           maxLabel="90 min"
-        />
-        <SliderField
-          label="Variedad en desayunos"
-          min={1} max={5} value={form.breakfastVariety}
-          onChange={v => set('breakfastVariety', v)}
-          minLabel="Siempre lo mismo"
-          maxLabel="Mucha variedad"
-        />
-        <SliderField
-          label="Variedad en almuerzos y meriendas"
-          min={1} max={5} value={form.lunchVariety}
-          onChange={v => set('lunchVariety', v)}
-          minLabel="Siempre lo mismo"
-          maxLabel="Mucha variedad"
         />
         <SliderField
           label="Variedad del menú semanal generado"

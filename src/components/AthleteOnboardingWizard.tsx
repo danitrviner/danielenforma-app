@@ -61,16 +61,8 @@ const ACTIVITY: { id: ActivityLevel; label: string; desc: string }[] = [
     desc: 'Trabajo físico de verdad —obra, mudanzas, reparto— o mucho deporte además del gimnasio. Más de 12.000 pasos.' },
 ];
 
-/** Etiquetas de las escalas del 1 al 5. Un número suelto no dice nada: «3 de 5»
+/** Etiquetas de la escala del 1 al 5. Un número suelto no dice nada: «3 de 5»
  *  en variedad significa cosas distintas para cada persona. */
-const NIVEL_COCINA = [
-  'Sé hervir agua y poco más',
-  'Me defiendo con lo básico: plancha, horno, arroz',
-  'Cocino a diario sin complicarme',
-  'Se me da bien y disfruto cocinando',
-  'Me manejo con cualquier receta',
-];
-
 const NIVEL_VARIEDAD = [
   'Siempre lo mismo, y me va bien así',
   'Casi siempre lo mismo, con algún cambio',
@@ -230,7 +222,6 @@ interface BorradorCampos {
   batchCookingPreferred: boolean | null;
   allergies: string;
   meals: OnboardingMeal[];
-  cookingLevel: number | null;
   cookingMaxTime: number | null;
   prefLiked: string[];
   prefDisliked: string[];
@@ -251,8 +242,6 @@ interface BorradorCampos {
   weightTendency: string;
   tomaSuplementos: boolean | null;
   supplements: SupplementEntry[];
-  breakfastVariety: number | null;
-  lunchVariety: number | null;
   preferredDishTypes: string[];
   excludedDishTypes: string[];
   sleepDeficitCauses: string[];
@@ -327,7 +316,6 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
   const [batchCookingPreferred, setBatchCookingPreferred] = useState<boolean | null>(borrador?.batchCookingPreferred ?? null);
   const [allergies, setAllergies] = useState(borrador?.allergies ?? '');
   const [meals, setMeals] = useState<OnboardingMeal[]>(borrador?.meals ?? []);
-  const [cookingLevel, setCookingLevel] = useState<number | null>(borrador?.cookingLevel ?? null);
   const [cookingMaxTime, setCookingMaxTime] = useState<number | null>(borrador?.cookingMaxTime ?? null);
   const [prefLiked, setPrefLiked] = useState<string[]>(borrador?.prefLiked ?? []);
   const [prefDisliked, setPrefDisliked] = useState<string[]>(borrador?.prefDisliked ?? []);
@@ -352,8 +340,6 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
   const [weightTendency, setWeightTendency] = useState(borrador?.weightTendency ?? '');
   const [tomaSuplementos, setTomaSuplementos] = useState<boolean | null>(borrador?.tomaSuplementos ?? null);
   const [supplements, setSupplements] = useState<SupplementEntry[]>(borrador?.supplements ?? []);
-  const [breakfastVariety, setBreakfastVariety] = useState<number | null>(borrador?.breakfastVariety ?? null);
-  const [lunchVariety, setLunchVariety] = useState<number | null>(borrador?.lunchVariety ?? null);
   const [preferredDishTypes, setPreferredDishTypes] = useState<string[]>(borrador?.preferredDishTypes ?? []);
   const [excludedDishTypes, setExcludedDishTypes] = useState<string[]>(borrador?.excludedDishTypes ?? []);
   const [sleepDeficitCauses, setSleepDeficitCauses] = useState<string[]>(borrador?.sleepDeficitCauses ?? []);
@@ -397,12 +383,12 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
       hadPastInjuries, pastInjuriesDetail, takesMedication, medicationDetail,
       recentSurgery, recentSurgeryDetail,
       dietType, mealCount, menuVariety, batchCookingPreferred, allergies,
-      meals, cookingLevel, cookingMaxTime, prefLiked, prefDisliked, sinPreferencias,
+      meals, cookingMaxTime, prefLiked, prefDisliked, sinPreferencias,
       availableDaysPerWeek, sessionMaxMinutes,
       lifestyleScope, lifestyleAreas, muscleGroupsToImprove, sinPreferenciaMuscular, hatedExercises,
       appetitePeakTime, dietSince, hadOverweightHistory, foodRelationshipGood,
       foodRelationshipReason, eatsTooFast, weightTendency, tomaSuplementos, supplements,
-      breakfastVariety, lunchVariety, preferredDishTypes, excludedDishTypes,
+      preferredDishTypes, excludedDishTypes,
       sleepDeficitCauses, sleepRoutineOrScreen, sleepMedication, sleepMedicationDetail,
       sittingHoursPerDay, stressReason, restDayActive, restDayActiveDetail,
       neckCm, waistCm, hipCm, sinCinta,
@@ -413,12 +399,12 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
       goalFreeText, goalTimelineMotivation, coachExpectations, experienceLevel, equipment, injuries, noInjuries,
       hadPastInjuries, pastInjuriesDetail, takesMedication, medicationDetail, recentSurgery, recentSurgeryDetail,
       dietType, mealCount, menuVariety, batchCookingPreferred, allergies,
-      meals, cookingLevel, cookingMaxTime, prefLiked, prefDisliked, sinPreferencias,
+      meals, cookingMaxTime, prefLiked, prefDisliked, sinPreferencias,
       availableDaysPerWeek, sessionMaxMinutes,
       lifestyleScope, lifestyleAreas, muscleGroupsToImprove, sinPreferenciaMuscular, hatedExercises,
       appetitePeakTime, dietSince, hadOverweightHistory, foodRelationshipGood,
       foodRelationshipReason, eatsTooFast, weightTendency, tomaSuplementos, supplements,
-      breakfastVariety, lunchVariety, preferredDishTypes, excludedDishTypes,
+      preferredDishTypes, excludedDishTypes,
       sleepDeficitCauses, sleepRoutineOrScreen, sleepMedication, sleepMedicationDetail,
       sittingHoursPerDay, stressReason, restDayActive, restDayActiveDetail,
       neckCm, waistCm, hipCm, sinCinta,
@@ -484,9 +470,9 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
       // 13 Verduras
       case 15: return sinVerduras || vegTypes.length > 0;
       // 14 Menú — los tipos de plato son opcionales a propósito
-      case 16: return menuVariety != null && breakfastVariety != null && lunchVariety != null;
+      case 16: return menuVariety != null;
       // 15 Cocina
-      case 17: return cookingLevel != null && cookingMaxTime != null && batchCookingPreferred != null;
+      case 17: return cookingMaxTime != null && batchCookingPreferred != null;
       // 17 Qué espera de su coach
       case 19: return textoRelleno(coachExpectations);
       // 0 bienvenida, 10 tupper y 16 resumen no piden nada.
@@ -593,8 +579,6 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
         eatsTooFast: eatsTooFast === true,
         weightTendency: weightTendency.trim() || undefined,
         supplements: tomaSuplementos === true ? supplements.filter(x => x.name.trim()) : [],
-        breakfastVariety: breakfastVariety ?? 3,
-        lunchVariety: lunchVariety ?? 3,
         preferredDishTypes,
         excludedDishTypes,
         sleepDeficitCauses: sleepDeficitCauses.filter(c => c !== DUERMO_BIEN),
@@ -608,7 +592,6 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
         neckCm: Number(neckCm) > 0 ? Number(neckCm) : undefined,
         waistCm: Number(waistCm) > 0 ? Number(waistCm) : undefined,
         hipCm: Number(hipCm) > 0 ? Number(hipCm) : undefined,
-        cookingLevel: cookingLevel ?? 3,
         cookingMaxTime: cookingMaxTime ?? 45,
         menuVariety: menuVariety ?? 3,
         batchCookingPreferred: batchCookingPreferred === true,
@@ -1403,10 +1386,10 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
           </StepShell>
         )}
 
-        {/* Las TRES escalas de variedad (menú, desayuno y comida) estaban
-            repartidas entre dos pantallas separadas por cinco pasos, así que
-            parecían la misma pregunta repetida. Juntas y con etiqueta se ve que
-            son tres cosas distintas. */}
+        {/* Había TRES escalas de variedad aquí (menú, desayunos, comidas
+            principales) y solo la primera llegaba al generador: las otras dos se
+            guardaban y no las leía nadie. Retiradas el 2026-09-05 — una pregunta
+            obligatoria que no cambia el plan es peor que no preguntar. */}
         {step === 16 && (
           <StepShell title="Cómo quieres tu menú" subtitle="Cuánta variedad aguantas. No hay respuesta buena: repetir es más cómodo y más barato, variar se hace más llevadero a la larga.">
             <div>
@@ -1417,26 +1400,6 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
                 ))}
               </div>
               {menuVariety && <p className="text-body-s text-ink-2 mt-2">{NIVEL_VARIEDAD[menuVariety - 1]}</p>}
-            </div>
-
-            <div>
-              <p className="font-sans text-caption text-ink-2 uppercase tracking-wider mb-2">Los desayunos</p>
-              <div className="flex gap-2">
-                {[1, 2, 3, 4, 5].map(n => (
-                  <Chip key={n} selected={breakfastVariety === n} onClick={() => setBreakfastVariety(n)}>{n}</Chip>
-                ))}
-              </div>
-              {breakfastVariety && <p className="text-body-s text-ink-2 mt-2">{NIVEL_VARIEDAD[breakfastVariety - 1]}</p>}
-            </div>
-
-            <div>
-              <p className="font-sans text-caption text-ink-2 uppercase tracking-wider mb-2">Las comidas principales</p>
-              <div className="flex gap-2">
-                {[1, 2, 3, 4, 5].map(n => (
-                  <Chip key={n} selected={lunchVariety === n} onClick={() => setLunchVariety(n)}>{n}</Chip>
-                ))}
-              </div>
-              {lunchVariety && <p className="text-body-s text-ink-2 mt-2">{NIVEL_VARIEDAD[lunchVariety - 1]}</p>}
             </div>
 
             <div>
@@ -1475,17 +1438,11 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
         {/* El batch cooking se preguntaba en el paso de Alimentación, a cinco
             pantallas de aquí: es una pregunta de cocina, y su sitio es esta. */}
         {step === 17 && (
-          <StepShell title="Cómo cocinas" subtitle="Para que las recetas se ajusten a tu maña y a tu tiempo, no a un ideal.">
-            <div>
-              <p className="font-sans text-caption text-ink-2 uppercase tracking-wider mb-2">Tu nivel de cocina</p>
-              <div className="flex gap-2">
-                {[1, 2, 3, 4, 5].map(n => (
-                  <Chip key={n} selected={cookingLevel === n} onClick={() => setCookingLevel(n)}>{n}</Chip>
-                ))}
-              </div>
-              {cookingLevel && <p className="text-body-s text-ink-2 mt-2">{NIVEL_COCINA[cookingLevel - 1]}</p>}
-            </div>
-
+          <StepShell title="Cómo cocinas" subtitle="Para que las recetas se ajusten a tu tiempo, no a un ideal.">
+            {/* "Tu nivel de cocina" (1-5) vivía aquí y no filtraba nada: el
+                recetario no trae dificultad, así que la respuesta no podía
+                cambiar ninguna receta. Retirada el 2026-09-05. Lo que sí filtra
+                de verdad es el tiempo, que se queda. */}
             <div>
               <p className="font-sans text-caption text-ink-2 uppercase tracking-wider mb-1">¿Cuánto tiempo puedes dedicarle a una receta?</p>
               <p className="text-body-s text-ink-2 mb-2">

@@ -61,7 +61,12 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
 
   const [step, setStep] = useState<Step>(initialMenu ? 'review' : 'config');
   const [name, setName] = useState(initialMenu?.name ?? `Menú semanal · ${today}`);
-  const [slots, setSlots] = useState<MealSlotSpec[]>(() => slotsFromOnboarding(onboarding));
+  // El reparto de partida hace caso a cuándo tiene más hambre el atleta (lo que
+  // contestó en su ficha o corrigió en Perfil > Preferencias), igual que ya hacía
+  // su dieta de intercambios. Sigue siendo editable a mano aquí abajo.
+  const [slots, setSlots] = useState<MealSlotSpec[]>(
+    () => slotsFromOnboarding(onboarding, nutritionConfig?.hungerProfile),
+  );
   const [variety, setVariety] = useState(initialMenu?.varietyLevel ?? nutritionConfig?.menuVariety ?? onboarding?.menuVariety ?? 3);
   const [batch, setBatch] = useState<boolean>(initialMenu?.batchCooking ?? nutritionConfig?.batchCookingPreferred ?? onboarding?.batchCookingPreferred ?? false);
   const [genPhase, setGenPhase] = useState('');

@@ -7,6 +7,7 @@
 import { FoodCategory, HungerProfile } from '../types';
 import { normalizeStr } from './foodPrefs';
 import { FALLBACK_SLOTS } from './menuEngine';
+import { slotWeights } from './slotWeights';
 import { quotaSplit } from './quotaSplit';
 
 export { quotaSplit };
@@ -88,14 +89,6 @@ export function resolveSlots(meals: { slot?: number; name: string }[]): number[]
 
 // ── Pesos por franja + perfil de hambre ─────────────────────────────────────
 
-const BASE_BY_SLOT: Record<number, number> = { 1: 20, 2: 10, 3: 38, 4: 10, 5: 27 };
-
-const HUNGER_MULT: Record<HungerProfile, Record<number, number>> = {
-  manana:      { 1: 1.45, 2: 1.20, 3: 1.05, 4: 0.85, 5: 0.65 },
-  equilibrado: { 1: 1,    2: 1,    3: 1,    4: 1,    5: 1 },
-  noche:       { 1: 0.65, 2: 0.85, 3: 1.00, 4: 1.15, 5: 1.45 },
-};
-
 const TRAINING_HC_BOOST = 1.6;   // hidratos hacia la ingesta peri-entreno
 const TRAINING_GRASA_DAMP = 0.5; // grasa se aparta de la ingesta de entreno
 const PROT_FLATTEN = 0.65;       // proteína casi plana entre comidas (0=uniforme, 1=perfectamente plana)
@@ -143,7 +136,7 @@ export function distributeMealTargets(input: DistributeInput): DistributeResult 
   const targets: Record<FoodCategory, number>[] = meals.map(() => blankBudget());
   const cats: FoodCategory[] = ['HC', 'PROT', 'GRASA', 'MIX_HC', 'MIX_GRASA'];
 
-  const baseWeights = slots.map(slot => (BASE_BY_SLOT[slot] ?? 20) * (HUNGER_MULT[effectiveProfile][slot] ?? 1));
+  const baseWeights = slotWeights(slots, effectiveProfile);
 
   for (const cat of cats) {
     const total = budget[cat] ?? 0;
