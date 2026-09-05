@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { AthleteNutritionConfig, HungerProfile } from '../types';
+import { CONTEOS_COMIDAS } from '../utils/menuEngine';
 import { getOnboarding, getAthleteNutritionConfig, saveAthleteNutritionConfig } from '../dbService';
 import VegetableSelector from './VegetableSelector';
 import { DISH_TYPES, DishType } from '../utils/dishTypes';
@@ -43,7 +44,7 @@ const FICHA_CAMPOS = {
   },
   mealCount: {
     label: 'Comidas al día',
-    options: [3, 4, 5].map(n => ({ value: String(n), label: String(n) })),
+    options: CONTEOS_COMIDAS.map(n => ({ value: String(n), label: String(n) })),
   },
 } as const;
 

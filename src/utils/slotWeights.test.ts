@@ -104,3 +104,27 @@ describe('slotWeights', () => {
     expect(slotWeights([1, 2, 3, 4, 5], 'equilibrado')).toEqual(slotWeights([1, 2, 3, 4, 5], undefined));
   });
 });
+
+describe('seis comidas', () => {
+  it('no mueve el reparto de 3, 4 ni 5 comidas', () => {
+    // Dani, 2026-09-05: "lo del reparto de comida, déjalo como está".
+    expect(slotsFromOnboarding({ mealCount: 3 }).map(s => s.pct)).toEqual([23, 45, 32]);
+    expect(slotsFromOnboarding({ mealCount: 4 }).map(s => s.pct)).toEqual([21, 11, 40, 28]);
+    expect(slotsFromOnboarding({ mealCount: 5 }).map(s => s.pct)).toEqual([19, 10, 36, 9, 26]);
+  });
+
+  it('la recena parte la franja de la cena en vez de duplicarla', () => {
+    const seis = slotsFromOnboarding({ mealCount: 6 });
+    expect(seis.map(s => s.name)).toEqual(
+      ['Desayuno', 'Media mañana', 'Comida', 'Merienda', 'Cena', 'Recena']);
+    // Cena y recena comparten la franja 5: juntas pesan lo que pesaba la cena
+    // sola (26 %), no el doble.
+    const cena = seis[4].pct + seis[5].pct;
+    expect(Math.abs(cena - 26)).toBeLessThanOrEqual(1);
+    expect(seis.reduce((s, x) => s + x.pct, 0)).toBe(100);
+  });
+
+  it('la recena usa la franja de cena, que es de donde salen sus recetas', () => {
+    expect(slotsFromOnboarding({ mealCount: 6 }).map(s => s.slot)).toEqual([1, 2, 3, 4, 5, 5]);
+  });
+});

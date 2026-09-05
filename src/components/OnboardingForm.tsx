@@ -5,6 +5,7 @@ import {
   ProgressFrequency, TechniqueLevel, SleepRoutineOrScreen,
   OnboardingSection, OnboardingTemplateQuestion,
 } from '../types';
+import { CONTEOS_COMIDAS, ConteoComidas } from '../utils/menuEngine';
 import { saveOnboarding, updateOnboarding } from '../dbService';
 import { ACTIVITY_FACTORS, calcAge, computeAuto } from '../utils/energyCalc';
 import type { AutoCalc } from '../utils/energyCalc';
@@ -28,7 +29,7 @@ const GOAL_ADJ_LABEL: Record<GoalBody, string> = {
   aumentar_musculo: '+10%',
 };
 
-const MEAL_PRESETS: Record<3 | 4 | 5, OnboardingMeal[]> = {
+const MEAL_PRESETS: Record<ConteoComidas, OnboardingMeal[]> = {
   3: [
     { intakeType: 1, name: 'Desayuno',     needsTupper: false },
     { intakeType: 3, name: 'Comida',       needsTupper: false },
@@ -46,6 +47,17 @@ const MEAL_PRESETS: Record<3 | 4 | 5, OnboardingMeal[]> = {
     { intakeType: 3, name: 'Comida',       needsTupper: false },
     { intakeType: 4, name: 'Merienda',     needsTupper: false },
     { intakeType: 5, name: 'Cena',         needsTupper: false },
+  ],
+  // La recena comparte franja con la cena: solo hay cinco tipos de ingesta y son
+  // las recetas de cena las que le sirven. El reparto divide el peso de esa
+  // franja entre las dos (ver utils/slotWeights.ts).
+  6: [
+    { intakeType: 1, name: 'Desayuno',     needsTupper: false },
+    { intakeType: 2, name: 'Media mañana', needsTupper: false },
+    { intakeType: 3, name: 'Comida',       needsTupper: false },
+    { intakeType: 4, name: 'Merienda',     needsTupper: false },
+    { intakeType: 5, name: 'Cena',         needsTupper: false },
+    { intakeType: 5, name: 'Recena',       needsTupper: false },
   ],
 };
 
@@ -115,7 +127,7 @@ interface FormState {
   waistCm:                number | '';
   hipCm:                  number | '';
   allergies:        string[];
-  mealCount:        3 | 4 | 5;
+  mealCount:        ConteoComidas;
   meals:            OnboardingMeal[];
   cookingMaxTime:   number;
   menuVariety:      number;
@@ -144,7 +156,7 @@ interface FormState {
 }
 
 function fromOnboarding(d: OnboardingData): FormState {
-  const count = ((d.mealCount ?? 4) as 3 | 4 | 5);
+  const count = (CONTEOS_COMIDAS.includes(d.mealCount as ConteoComidas) ? d.mealCount : 4) as ConteoComidas;
   return {
     sex:              d.sex ?? '',
     birthDate:        d.birthDate ?? '',
@@ -572,7 +584,7 @@ export default function OnboardingForm({
   };
 
   // ── Meal helpers ───────────────────────────────────────────────────────────
-  const changeMealCount = (n: 3 | 4 | 5) => {
+  const changeMealCount = (n: ConteoComidas) => {
     setForm(prev => ({ ...prev, mealCount: n, meals: MEAL_PRESETS[n].map(m => ({ ...m })) }));
   };
 
@@ -1088,7 +1100,7 @@ export default function OnboardingForm({
         <div className="space-y-2">
           <p className="font-mono text-caption text-ink-2 uppercase tracking-wide">Número de ingestas</p>
           <div className="flex gap-2">
-            {([3, 4, 5] as const).map(n => (
+            {CONTEOS_COMIDAS.map(n => (
               <button key={n} type="button" onClick={() => changeMealCount(n)}
                 className={`flex-1 py-2 rounded-control font-mono text-body-s font-bold border transition-all ${
                   form.mealCount === n

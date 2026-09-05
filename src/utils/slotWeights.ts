@@ -29,10 +29,18 @@ export const HUNGER_MULT: Record<HungerProfile, Record<number, number>> = {
   noche:       { 1: 0.65, 2: 0.85, 3: 1.00, 4: 1.15, 5: 1.45 },
 };
 
-/** Peso de cada franja con el perfil de hambre ya aplicado. */
+/** Peso de cada franja con el perfil de hambre ya aplicado.
+ *
+ *  Si una franja aparece REPETIDA, su peso se reparte entre las veces que sale.
+ *  Hay cinco franjas de ingesta (1-5) y un atleta puede hacer seis comidas: la
+ *  recena comparte franja con la cena, porque las recetas de cena son las que le
+ *  sirven. Sin este reparto, esas dos comidas se llevarían 27 puntos CADA UNA y
+ *  la noche pasaría a ser el 38 % del día en vez del 27 % de siempre. */
 export function slotWeights(slots: number[], hungerProfile?: HungerProfile): number[] {
   const mult = HUNGER_MULT[hungerProfile ?? 'equilibrado'];
-  return slots.map(slot => (BASE_BY_SLOT[slot] ?? 20) * (mult[slot] ?? 1));
+  const veces = new Map<number, number>();
+  for (const s of slots) veces.set(s, (veces.get(s) ?? 0) + 1);
+  return slots.map(slot => ((BASE_BY_SLOT[slot] ?? 20) / (veces.get(slot) ?? 1)) * (mult[slot] ?? 1));
 }
 
 /** Los mismos pesos convertidos a porcentajes ENTEROS que suman exactamente 100

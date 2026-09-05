@@ -4,6 +4,7 @@ import {
   ActivityLevel, DietType, OnboardingMeal, SupplementEntry, SleepRoutineOrScreen,
   MUSCLE_LABELS, MUSCLE_ORDER, type MuscleGroup,
 } from '../types';
+import { CONTEOS_COMIDAS, ConteoComidas } from '../utils/menuEngine';
 import { DISH_TYPES } from '../utils/dishTypes';
 import { computeAuto } from '../utils/energyCalc';
 import { mensajeDeErrorFirestore } from '../utils/erroresFirestore';
@@ -116,7 +117,7 @@ const RUTINA_PANTALLA: { id: SleepRoutineOrScreen; label: string; desc: string }
 // Mismos presets que el cuestionario largo del coach (OnboardingForm), pero
 // duplicados a propósito: el wizard es un subconjunto deliberadamente aparte,
 // no comparte estado con el formulario del coach.
-const MEAL_PRESETS: Record<3 | 4 | 5, OnboardingMeal[]> = {
+const MEAL_PRESETS: Record<ConteoComidas, OnboardingMeal[]> = {
   3: [
     { intakeType: 1, name: 'Desayuno', needsTupper: false },
     { intakeType: 3, name: 'Comida', needsTupper: false },
@@ -134,6 +135,17 @@ const MEAL_PRESETS: Record<3 | 4 | 5, OnboardingMeal[]> = {
     { intakeType: 3, name: 'Comida', needsTupper: false },
     { intakeType: 4, name: 'Merienda', needsTupper: false },
     { intakeType: 5, name: 'Cena', needsTupper: false },
+  ],
+  // La recena comparte franja con la cena: solo hay cinco tipos de ingesta y son
+  // las recetas de cena las que le sirven. El reparto divide el peso de esa
+  // franja entre las dos (ver utils/slotWeights.ts).
+  6: [
+    { intakeType: 1, name: 'Desayuno', needsTupper: false },
+    { intakeType: 2, name: 'Media mañana', needsTupper: false },
+    { intakeType: 3, name: 'Comida', needsTupper: false },
+    { intakeType: 4, name: 'Merienda', needsTupper: false },
+    { intakeType: 5, name: 'Cena', needsTupper: false },
+    { intakeType: 5, name: 'Recena', needsTupper: false },
   ],
 };
 
@@ -363,9 +375,9 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
   // Comida, Cena…), conservando los tupper ya marcados cuando el número de
   // ingestas no cambia realmente (p.ej. al volver «Atrás» y «Siguiente»).
   useEffect(() => {
-    if (mealCount !== 3 && mealCount !== 4 && mealCount !== 5) return;
+    if (!CONTEOS_COMIDAS.includes(mealCount as ConteoComidas)) return;
     setMeals(prev => {
-      const preset = MEAL_PRESETS[mealCount];
+      const preset = MEAL_PRESETS[mealCount as ConteoComidas];
       const yaCoincide = prev.length === preset.length && prev.every((m, i) => m.intakeType === preset[i].intakeType);
       return yaCoincide ? prev : preset.map(m => ({ ...m }));
     });
@@ -1205,7 +1217,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
                 No hay una mejor que otra: elige la que puedas cumplir un martes cualquiera.
               </p>
               <div className="flex gap-2">
-                {[3, 4, 5].map(n => (
+                {CONTEOS_COMIDAS.map(n => (
                   <Chip key={n} selected={mealCount === n} onClick={() => setMealCount(n)}>{n} comidas</Chip>
                 ))}
               </div>

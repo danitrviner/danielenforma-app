@@ -6,7 +6,7 @@
 // equivalencia con distributeEvenly).
 import { FoodCategory, HungerProfile } from '../types';
 import { normalizeStr } from './foodPrefs';
-import { FALLBACK_SLOTS } from './menuEngine';
+import { FALLBACK_SLOTS, CONTEOS_COMIDAS, ConteoComidas } from './menuEngine';
 import { slotWeights } from './slotWeights';
 import { quotaSplit } from './quotaSplit';
 
@@ -77,8 +77,8 @@ export function resolveSlots(meals: { slot?: number; name: string }[]): number[]
 
   const unresolvedIdx = resolved.reduce<number[]>((acc, v, i) => (v == null ? [...acc, i] : acc), []);
   if (unresolvedIdx.length > 0) {
-    if (n === 3 || n === 4 || n === 5) {
-      const fallback = FALLBACK_SLOTS[n as 3 | 4 | 5];
+    if (CONTEOS_COMIDAS.includes(n as ConteoComidas)) {
+      const fallback = FALLBACK_SLOTS[n as ConteoComidas];
       unresolvedIdx.forEach(i => { resolved[i] = fallback[i]?.slot ?? clampSlot(i, n); });
     } else {
       unresolvedIdx.forEach(i => { resolved[i] = clampSlot(i, n); });

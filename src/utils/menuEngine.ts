@@ -98,25 +98,40 @@ const SLOT_NAME: Record<number, string> = {
   1: 'Desayuno', 2: 'Media mañana', 3: 'Comida', 4: 'Merienda', 5: 'Cena',
 };
 
-const SLOTS_POR_CONTEO: Record<3 | 4 | 5, number[]> = {
+/** Franjas de ingesta (1-5) que usa cada número de comidas. La sexta comida
+ *  —la recena— repite la franja 5: solo hay cinco tipos de ingesta y son las
+ *  recetas de cena las que le sirven. `slotWeights` reparte el peso de la franja
+ *  entre las dos para que la noche no se lleve el doble. */
+const SLOTS_POR_CONTEO: Record<ConteoComidas, number[]> = {
   3: [1, 3, 5],
   4: [1, 2, 3, 5],
   5: [1, 2, 3, 4, 5],
+  6: [1, 2, 3, 4, 5, 5],
 };
 
-function slotsPorConteo(count: 3 | 4 | 5, hungerProfile?: HungerProfile): MealSlotSpec[] {
+/** Nombre de cada comida cuando se repite la franja (la 2ª de la 5 es recena). */
+const NOMBRES_POR_CONTEO: Partial<Record<ConteoComidas, string[]>> = {
+  6: ['Desayuno', 'Media mañana', 'Comida', 'Merienda', 'Cena', 'Recena'],
+};
+
+export type ConteoComidas = 3 | 4 | 5 | 6;
+export const CONTEOS_COMIDAS: ConteoComidas[] = [3, 4, 5, 6];
+
+function slotsPorConteo(count: ConteoComidas, hungerProfile?: HungerProfile): MealSlotSpec[] {
   const nums = SLOTS_POR_CONTEO[count];
   const pcts = slotPercents(nums, hungerProfile);
-  return nums.map((slot, i) => ({ slot, name: SLOT_NAME[slot], pct: pcts[i] }));
+  const nombres = NOMBRES_POR_CONTEO[count];
+  return nums.map((slot, i) => ({ slot, name: nombres?.[i] ?? SLOT_NAME[slot], pct: pcts[i] }));
 }
 
 /** Reparto de referencia sin perfil de hambre. Se conserva como export porque
  *  `mealDistribution.resolveSlots` lo usa para deducir la franja de una dieta
  *  vieja que no trae `slot`; ahí solo importan los números de franja. */
-export const FALLBACK_SLOTS: Record<3 | 4 | 5, MealSlotSpec[]> = {
+export const FALLBACK_SLOTS: Record<ConteoComidas, MealSlotSpec[]> = {
   3: slotsPorConteo(3),
   4: slotsPorConteo(4),
   5: slotsPorConteo(5),
+  6: slotsPorConteo(6),
 };
 
 // Prefers the athlete's own anamnesis meals (name + needsTupper preserved);
@@ -138,7 +153,8 @@ export function slotsFromOnboarding(
   ob: { mealCount?: number; meals?: { intakeType: number; name: string; needsTupper: boolean }[] } | null,
   hungerProfile?: HungerProfile,
 ): MealSlotSpec[] {
-  const count: 3 | 4 | 5 = ob?.mealCount === 3 || ob?.mealCount === 5 ? ob.mealCount : 4;
+  const count: ConteoComidas = CONTEOS_COMIDAS.includes(ob?.mealCount as ConteoComidas)
+    ? (ob!.mealCount as ConteoComidas) : 4;
   if (ob?.meals && ob.meals.length === count) {
     const pcts = slotPercents(ob.meals.map(m => m.intakeType), hungerProfile);
     return ob.meals.map((m, i) => ({

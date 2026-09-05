@@ -260,7 +260,7 @@ export interface AthleteNutritionConfig {
      `OnboardingData` es el valor de partida cuando esto no tiene nada. */
   dietType?: DietType;
   cookingMaxTime?: number;    // minutos
-  mealCount?: number;         // 3 | 4 | 5
+  mealCount?: number;         // 3 | 4 | 5 | 6 (ver CONTEOS_COMIDAS)
 }
 
 export type HungerProfile = 'manana' | 'equilibrado' | 'noche';
@@ -870,7 +870,7 @@ export interface OnboardingData {
   dislikedFoods:      string[];
   allergies:          string[];
   // ── Comidas ───────────────────────────────────────────────────────────────
-  mealCount?:         number;         // 3 | 4 | 5
+  mealCount?:         number;         // 3 | 4 | 5 | 6 (ver CONTEOS_COMIDAS)
   meals?:             OnboardingMeal[];
   // ── Cocina ────────────────────────────────────────────────────────────────
   /* `cookingLevel`, `breakfastVariety` y `lunchVariety` se preguntaban aquí y
