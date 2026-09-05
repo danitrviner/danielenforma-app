@@ -140,6 +140,58 @@ describe('findSwapAlternatives', () => {
     const day: MenuDay = { day: 'mon', dietId: 'd1', target: { HC: 1, PROT: 1, GRASA: 1 }, meals: [] };
     expect(findSwapAlternatives(day, 'missing', [recipe({})], basePrefs)).toEqual([]);
   });
+
+  // El filtro miraba solo la SUMA de los tres macros, así que una receta que
+  // cambiaba hidratos por grasa a partes iguales pasaba como "mantiene tus
+  // puntos". Sobre el recetario real eso era el 65 % de lo que se ofrecía.
+  it('no ofrece como exacta una receta que cuadra el total pero mueve los macros', () => {
+    const target: BudgetVec = { HC: 8, PROT: 4, GRASA: 4 };
+    const day: MenuDay = {
+      day: 'mon', dietId: 'd1', target,
+      meals: [{ id: 'mon_m1', slot: 3, name: 'Comida', recipeId: 'cur', recipeName: 'Actual', scale: 1, exch: target, kcal: 100, complements: [] }],
+    };
+    // Mismo total (16) que el objetivo, pero 3 de HC trasvasados a grasa: el
+    // filtro viejo la daba por buena. Ahora se cae de la lista entera.
+    const trasvase = recipe({ id: 'trasvase', exchanges: { HC: 5, PROT: 4, GRASA: 7 } });
+    // Se pasa 1,5 de HC: no cuadra, pero tampoco saca del plan → 'aproximado'.
+    const rozando = recipe({ id: 'rozando', exchanges: { HC: 9.5, PROT: 4, GRASA: 4 } });
+    const clavada = recipe({ id: 'clavada', exchanges: { HC: 8, PROT: 4, GRASA: 4 } });
+
+    const alts = findSwapAlternatives(day, 'mon_m1', [trasvase, rozando, clavada], basePrefs);
+    const porId = new Map(alts.map(a => [a.recipe.id, a]));
+
+    expect(porId.get('clavada')?.fit).toBe('exacto');
+    expect(porId.get('rozando')?.fit).toBe('aproximado');
+    expect(porId.has('trasvase')).toBe(false);
+  });
+
+  it('devuelve TODAS las alternativas válidas, no una terna corta', () => {
+    const target: BudgetVec = { HC: 2, PROT: 2, GRASA: 1 };
+    const day: MenuDay = {
+      day: 'mon', dietId: 'd1', target,
+      meals: [{ id: 'mon_m1', slot: 1, name: 'Desayuno', recipeId: 'cur', recipeName: 'Actual', scale: 1, exch: target, kcal: 100, complements: [] }],
+    };
+    const pool = Array.from({ length: 30 }, (_, i) =>
+      recipe({ id: `r${i}`, name: `Receta ${i}`, exchanges: { HC: 2, PROT: 2, GRASA: 1 } }));
+
+    expect(findSwapAlternatives(day, 'mon_m1', pool, basePrefs)).toHaveLength(30);
+    // El tope sigue disponible para quien lo necesite.
+    expect(findSwapAlternatives(day, 'mon_m1', pool, basePrefs, 4)).toHaveLength(4);
+  });
+
+  it('ordena las exactas antes que las aproximadas', () => {
+    const target: BudgetVec = { HC: 8, PROT: 4, GRASA: 4 };
+    const day: MenuDay = {
+      day: 'mon', dietId: 'd1', target,
+      meals: [{ id: 'mon_m1', slot: 3, name: 'Comida', recipeId: 'cur', recipeName: 'Actual', scale: 1, exch: target, kcal: 100, complements: [] }],
+    };
+    const alts = findSwapAlternatives(day, 'mon_m1', [
+      recipe({ id: 'aprox', name: 'Aproximada', exchanges: { HC: 9.5, PROT: 4, GRASA: 4 } }),
+      recipe({ id: 'exacta', name: 'Exacta', exchanges: { HC: 8, PROT: 4, GRASA: 4 } }),
+    ], basePrefs);
+
+    expect(alts.map(a => a.fit)).toEqual(['exacto', 'aproximado']);
+  });
 });
 
 describe('generateWeek batch cooking', () => {

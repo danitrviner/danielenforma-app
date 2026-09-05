@@ -627,18 +627,55 @@ export function isDayWithinTolerance(day: MenuDay): boolean {
 
 // ─── Athlete-facing swap ─────────────────────────────────────────────────────
 
-// Alternatives that, if substituted in, keep the *day's* global deviation
-// within tolerance — not just a like-for-like match on the single meal. Uses
-// the meal's current exchanges (recipe + its complements) as the matching
-// target, since that's what the coach already approved for this slot.
+export type SwapFit = 'exacto' | 'aproximado';
+
+export interface SwapCandidate extends MenuCandidate {
+  fit: SwapFit;
+  /** Cómo quedaría el día en cada macro si se acepta el cambio (actual − objetivo). */
+  drift: BudgetVec;
+  /** Lo mismo sobre la suma de los tres. */
+  driftTotal: number;
+}
+
+// Hasta dónde puede moverse el DÍA al aceptar un cambio. El tope sobre el total
+// es el que ya se exigía; el reparto POR MACRO es nuevo, y es el arreglo de
+// fondo: antes solo se miraba la suma de los tres, así que una receta que
+// cambiaba 3 de hidratos por 3 de grasa entraba en la lista rotulada "mantiene
+// tus puntos del día". Medido contra el recetario real (8.850 recetas,
+// 2026-09-05), el 65 % de las alternativas que se ofrecían para la comida se
+// desviaban más de un intercambio en algún macro concreto, con picos de 2 sobre
+// un presupuesto de 10,5 de HC. El tope crece con el presupuesto del día para no
+// dejar sin alternativas a quien come poco, y el suelo evita que una categoría
+// pequeña (grasa) quede tan encorsetada que no admita ninguna receta.
+const SWAP_TOTAL_EXACTO = 1;
+const SWAP_TOTAL_APROX = 2;
+const SWAP_MACRO_MIN_EXACTO = 1;
+const SWAP_MACRO_MIN_APROX = 1.5;
+const SWAP_MACRO_PCT_EXACTO = 0.15;
+const SWAP_MACRO_PCT_APROX = 0.25;
+
+function swapMacroTol(budget: number, min: number, pct: number): number {
+  return Math.max(min, budget * pct);
+}
+
+// Alternatives that, if substituted in, keep the *day's* deviation within
+// tolerance — in each macro, not just in the sum. Uses the meal's current
+// exchanges (recipe + its complements) as the matching target, since that's what
+// the coach already approved for this slot.
+//
+// Devuelve TODAS las que encajan, no una terna corta: el atleta que abre
+// "Cambiar comida" es justo el que no quiere lo que hay, y cortar la lista a
+// cinco le dejaba fuera cientos de opciones válidas del recetario. Se etiquetan
+// en dos niveles ('exacto' / 'aproximado') para que la pantalla pueda enseñarlas
+// todas sin mentir sobre cuáles cuadran clavadas.
 export function findSwapAlternatives(
   day: MenuDay,
   mealId: string,
   pool: Recipe[],
   prefs: GeneratorPrefs,
-  count = 5,
+  count = Infinity,
   mode: DietMode = 'OMNIVORO',
-): MenuCandidate[] {
+): SwapCandidate[] {
   const meal = day.meals.find(m => m.id === mealId);
   if (!meal) return [];
 
@@ -649,40 +686,67 @@ export function findSwapAlternatives(
   const targetTotal = day.target.HC + day.target.PROT + day.target.GRASA;
   const usedIds = new Set(day.meals.filter(m => m.id !== mealId).map(m => m.recipeId));
 
-  const withinTolerance = rankCandidates(pool, mealTarget, prefs, usedIds, { mode })
-    .filter(c => {
-      const newTotal = otherMealsTotal.HC + c.exch.HC + otherMealsTotal.PROT + c.exch.PROT + otherMealsTotal.GRASA + c.exch.GRASA;
-      return Math.abs(newTotal - targetTotal) <= 1;
-    });
+  const cats: (keyof BudgetVec)[] = ['HC', 'PROT', 'GRASA'];
+  const tolExacto = { HC: 0, PROT: 0, GRASA: 0 } as BudgetVec;
+  const tolAprox = { HC: 0, PROT: 0, GRASA: 0 } as BudgetVec;
+  for (const cat of cats) {
+    tolExacto[cat] = swapMacroTol(day.target[cat], SWAP_MACRO_MIN_EXACTO, SWAP_MACRO_PCT_EXACTO);
+    tolAprox[cat] = swapMacroTol(day.target[cat], SWAP_MACRO_MIN_APROX, SWAP_MACRO_PCT_APROX);
+  }
 
-  // Diversify the shortlist by dish type so the athlete sees genuinely different
-  // options (a batido, a tostada, a tortilla…) rather than five variations of the
-  // same thing.
+  const graded: SwapCandidate[] = [];
+  for (const c of rankCandidates(pool, mealTarget, prefs, usedIds, { mode })) {
+    const drift: BudgetVec = {
+      HC: round2(otherMealsTotal.HC + c.exch.HC - day.target.HC),
+      PROT: round2(otherMealsTotal.PROT + c.exch.PROT - day.target.PROT),
+      GRASA: round2(otherMealsTotal.GRASA + c.exch.GRASA - day.target.GRASA),
+    };
+    const driftTotal = round2(
+      otherMealsTotal.HC + c.exch.HC + otherMealsTotal.PROT + c.exch.PROT
+      + otherMealsTotal.GRASA + c.exch.GRASA - targetTotal,
+    );
+    const dentroDe = (topeTotal: number, topeMacro: BudgetVec) =>
+      Math.abs(driftTotal) <= topeTotal && cats.every(cat => Math.abs(drift[cat]) <= topeMacro[cat]);
+
+    if (dentroDe(SWAP_TOTAL_EXACTO, tolExacto)) graded.push({ ...c, fit: 'exacto', drift, driftTotal });
+    else if (dentroDe(SWAP_TOTAL_APROX, tolAprox)) graded.push({ ...c, fit: 'aproximado', drift, driftTotal });
+    // Más allá de eso el cambio saca del plan: no se ofrece.
+  }
+
+  // Diversify by dish type so the athlete sees genuinely different options (a
+  // batido, a tostada, a tortilla…) rather than variations of the same thing.
   //
   // Reparto en RONDA, no "el mejor de cada tipo y luego relleno por puntuación":
   // ese relleno volvía a ser monotemático en cuanto se agotaban los tipos nuevos,
   // justo en la parte de la lista donde mira quien no quiere nada de lo primero.
-  // Misma regla que el "Cambiar comida" de Mi plan (utils/recipeMatch.ts).
-  const groups = new Map<DishType, MenuCandidate[]>();
-  for (const c of withinTolerance) {
-    const dt = dishType(c.recipe);
-    const g = groups.get(dt);
-    if (g) g.push(c); else groups.set(dt, [c]);
-  }
-  const queues = [...groups.values()].sort((a, b) => a[0].score - b[0].score);
-
-  const picked: MenuCandidate[] = [];
-  let anyLeft = true;
-  for (let round = 0; anyLeft && picked.length < count; round++) {
-    anyLeft = false;
-    for (const q of queues) {
-      if (round >= q.length) continue;
-      anyLeft = true;
-      picked.push(q[round]);
-      if (picked.length >= count) break;
+  // Misma regla que el "Cambiar comida" de Mi plan (utils/recipeMatch.ts). Se
+  // hace DENTRO de cada nivel de encaje para que las exactas sigan yendo antes.
+  const porRondas = (cands: SwapCandidate[]): SwapCandidate[] => {
+    const groups = new Map<DishType, SwapCandidate[]>();
+    for (const c of cands) {
+      const dt = dishType(c.recipe);
+      const g = groups.get(dt);
+      if (g) g.push(c); else groups.set(dt, [c]);
     }
-  }
-  return picked;
+    const queues = [...groups.values()].sort((a, b) => a[0].score - b[0].score);
+    const out: SwapCandidate[] = [];
+    let anyLeft = true;
+    for (let round = 0; anyLeft; round++) {
+      anyLeft = false;
+      for (const q of queues) {
+        if (round >= q.length) continue;
+        anyLeft = true;
+        out.push(q[round]);
+      }
+    }
+    return out;
+  };
+
+  const ordenadas = [
+    ...porRondas(graded.filter(c => c.fit === 'exacto')),
+    ...porRondas(graded.filter(c => c.fit === 'aproximado')),
+  ];
+  return count === Infinity ? ordenadas : ordenadas.slice(0, count);
 }
 
 // ─── Batch-cooking plan ──────────────────────────────────────────────────────

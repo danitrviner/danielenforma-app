@@ -11,7 +11,8 @@ import {
   queryRecetasForGenerator, getRecipes, getRecipeById,
   getRecipeFavorites, saveRecipeFavorites,
 } from '../dbService';
-import { findSwapAlternatives, recipeMatchesSlot, buildBatchPlan, GeneratorPrefs, MenuCandidate } from '../utils/menuEngine';
+import { findSwapAlternatives, recipeMatchesSlot, buildBatchPlan, GeneratorPrefs, SwapCandidate } from '../utils/menuEngine';
+import { normalizeStr } from '../utils/foodPrefs';
 import { exchangeToKcal } from '../utils/nutritionConstants';
 import { buildShoppingList, ShoppingListItem } from '../utils/menuShoppingList';
 import { DishType } from '../utils/dishTypes';
@@ -41,6 +42,21 @@ function fmtExch(exch: { HC: number; PROT: number; GRASA: number }): string {
   if (exch.PROT > 0) parts.push(`${exch.PROT} PROT`);
   if (exch.GRASA > 0) parts.push(`${exch.GRASA} GRASA`);
   return parts.join(' · ') || '—';
+}
+
+/** Cuántas alternativas se pintan de golpe por bloque (el resto, bajo demanda). */
+const SWAP_PAGE = 12;
+
+// Qué le pasa al día si acepta una alternativa "aproximada". Se dice el macro y
+// la dirección, no un número abstracto: "te deja corto de HC" es accionable,
+// "desviación 1,4" no. Solo se nombra el macro que más se mueve.
+function describeDrift(drift: { HC: number; PROT: number; GRASA: number }): string {
+  const cats: [keyof typeof drift, string][] = [['HC', 'hidratos'], ['PROT', 'proteína'], ['GRASA', 'grasa']];
+  const [cat, label] = cats.reduce((peor, actual) =>
+    Math.abs(drift[actual[0]]) > Math.abs(drift[peor[0]]) ? actual : peor);
+  const v = drift[cat];
+  if (Math.abs(v) < 0.25) return 'te deja casi igual';
+  return v > 0 ? `te pasa ${v} de ${label}` : `te deja ${Math.abs(v)} corto de ${label}`;
 }
 
 interface Props {
@@ -93,7 +109,9 @@ export default function MyMenuScreen({ profile }: Props) {
   const [subForIngredient, setSubForIngredient] = useState<string | null>(null);
   const [swapFor, setSwapFor] = useState<{ mealId: string; slot: number } | null>(null);
   const [swapLoading, setSwapLoading] = useState(false);
-  const [swapCandidates, setSwapCandidates] = useState<MenuCandidate[]>([]);
+  const [swapCandidates, setSwapCandidates] = useState<SwapCandidate[]>([]);
+  const [swapQuery, setSwapQuery] = useState('');
+  const [swapVisible, setSwapVisible] = useState(SWAP_PAGE);
   const [shoppingOpen, setShoppingOpen] = useState(false);
   const [shoppingLoading, setShoppingLoading] = useState(false);
   const [shoppingItems, setShoppingItems] = useState<ShoppingListItem[] | null>(null);
@@ -113,6 +131,14 @@ export default function MyMenuScreen({ profile }: Props) {
     preferredDishTypes: (nutritionConfig?.preferredDishTypes ?? onboarding?.preferredDishTypes ?? []) as DishType[],
     excludedDishTypes: (nutritionConfig?.excludedDishTypes ?? onboarding?.excludedDishTypes ?? []) as DishType[],
   }), [onboarding, nutritionConfig, favorites]);
+
+  const swapFiltradas = useMemo(() => {
+    const q = normalizeStr(swapQuery.trim());
+    if (!q) return swapCandidates;
+    return swapCandidates.filter(c => normalizeStr(c.recipe.name).includes(q));
+  }, [swapCandidates, swapQuery]);
+  const swapExactas = useMemo(() => swapFiltradas.filter(c => c.fit === 'exacto'), [swapFiltradas]);
+  const swapAproximadas = useMemo(() => swapFiltradas.filter(c => c.fit === 'aproximado'), [swapFiltradas]);
 
   const day: MenuDay | undefined = menu?.days.find(d => d.day === selectedDay);
   const batchPlan = useMemo(() => (menu ? buildBatchPlan(menu.days) : []), [menu]);
@@ -224,16 +250,25 @@ export default function MyMenuScreen({ profile }: Props) {
     setSwapFor({ mealId: meal.id, slot: meal.slot });
     setSwapLoading(true);
     setSwapCandidates([]);
+    setSwapQuery('');
+    setSwapVisible(SWAP_PAGE);
     if (day) {
-      const [recetas, builder] = await Promise.all([queryRecetasForGenerator(meal.slot, 300), getRecipes({ ownerId: profile.userId })]);
+      // Recetario ENTERO de la franja, no la muestra de 300 que usa el generador.
+      // El índice ya está en memoria (se descarga una vez), así que recortarlo
+      // aquí no ahorraba nada y sí escondía opciones: con un día de 2.200 kcal,
+      // de las ~660 alternativas válidas que hay para la comida, la muestra de
+      // 300 solo contenía ~40, y de esas se enseñaban 5.
+      const [recetas, builder] = await Promise.all([
+        queryRecetasForGenerator(meal.slot, Infinity),
+        getRecipes({ ownerId: profile.userId }),
+      ]);
       const pool = [...recetas, ...builder.filter(r => recipeMatchesSlot(r, meal.slot))];
-      const alts = findSwapAlternatives(day, meal.id, pool, prefs, 5);
-      setSwapCandidates(alts);
+      setSwapCandidates(findSwapAlternatives(day, meal.id, pool, prefs));
     }
     setSwapLoading(false);
   }
 
-  async function confirmSwap(candidate: MenuCandidate) {
+  async function confirmSwap(candidate: SwapCandidate) {
     if (!menu || !day || !swapFor) return;
     const meal = day.meals.find(m => m.id === swapFor.mealId);
     if (!meal) return;
@@ -483,21 +518,57 @@ export default function MyMenuScreen({ profile }: Props) {
             ) : swapCandidates.length === 0 ? (
               <p className="font-sans text-label text-ink-3 text-center py-6">No hay alternativas disponibles ahora mismo para este hueco.</p>
             ) : (
-              swapCandidates.map((c, ci) => (
-                <button
-                  key={ci}
-                  onClick={() => confirmSwap(c)}
-                  className="w-full flex items-center gap-3 px-3 py-3 text-left bg-bg border border-hairline hover:border-accent/40 rounded-control transition-all"
-                >
-                  <div className="w-10 h-10 rounded-surface overflow-hidden flex-shrink-0 bg-raised">
-                    <FotoDeReceta src={fotoDeReceta(c.recipe)} alt="" className="w-full h-full object-cover" fallback={null} />
+              <>
+                {/* La lista ya no son 5 sino todo lo que encaja (cientos en las
+                    franjas grandes), así que hace falta poder buscar dentro. */}
+                <input
+                  type="search"
+                  value={swapQuery}
+                  onChange={e => setSwapQuery(e.target.value)}
+                  placeholder="Buscar entre las alternativas…"
+                  className="w-full px-3 py-2 bg-bg border border-hairline rounded-control font-sans text-body-s text-ink placeholder:text-ink-3 focus:border-accent/40 outline-none"
+                />
+                <p className="font-mono text-caption text-ink-3">
+                  {swapExactas.length} cuadran con tus puntos
+                  {swapAproximadas.length > 0 && ` · ${swapAproximadas.length} se acercan`}
+                </p>
+
+                {[
+                  { titulo: 'Cuadran con tus puntos', lista: swapExactas },
+                  { titulo: 'Se acercan (te dejan algo desajustado)', lista: swapAproximadas },
+                ].map(({ titulo, lista }) => lista.length === 0 ? null : (
+                  <div key={titulo} className="space-y-2">
+                    <p className="font-sans text-caption text-ink-2 uppercase tracking-wider pt-2">{titulo}</p>
+                    {lista.slice(0, swapVisible).map(c => (
+                      <button
+                        key={c.recipe.id}
+                        onClick={() => confirmSwap(c)}
+                        className="w-full flex items-center gap-3 px-3 py-3 text-left bg-bg border border-hairline hover:border-accent/40 rounded-control transition-all"
+                      >
+                        <div className="w-10 h-10 rounded-surface overflow-hidden flex-shrink-0 bg-raised">
+                          <FotoDeReceta src={fotoDeReceta(c.recipe)} alt="" className="w-full h-full object-cover" fallback={null} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-sans text-body-s text-ink truncate">{c.recipe.name}</p>
+                          <p className="font-mono text-caption text-ink-2">
+                            {fmtExch(c.exch)}
+                            {c.fit === 'exacto' ? ' · mantiene tus puntos del día' : ` · ${describeDrift(c.drift)}`}
+                          </p>
+                        </div>
+                      </button>
+                    ))}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-sans text-body-s text-ink truncate">{c.recipe.name}</p>
-                    <p className="font-mono text-caption text-ink-2">{fmtExch(c.exch)} · mantiene tus puntos del día</p>
-                  </div>
-                </button>
-              ))
+                ))}
+
+                {swapExactas.length + swapAproximadas.length > swapVisible * 2 && (
+                  <button
+                    onClick={() => setSwapVisible(v => v + SWAP_PAGE)}
+                    className="w-full py-3 font-sans text-body-s text-accent hover:text-accent/80 transition-colors"
+                  >
+                    Ver más alternativas
+                  </button>
+                )}
+              </>
             )}
           </div>
         </Sheet>
