@@ -14,7 +14,7 @@ import {
 import { findSwapAlternatives, recipeMatchesSlot, buildBatchPlan, totalConExtras, GeneratorPrefs, SwapCandidate } from '../utils/menuEngine';
 import { normalizeStr } from '../utils/foodPrefs';
 import { complementosDisponibles } from '../utils/menuComplements';
-import { foodNameWithoutGrams, itemWeightLabel } from '../utils/exchangeHelpers';
+import { foodNameWithoutGrams, foodNameShort, itemWeightLabel } from '../utils/exchangeHelpers';
 import { exchangeToKcal } from '../utils/nutritionConstants';
 import { buildShoppingList, ShoppingListItem } from '../utils/menuShoppingList';
 import { DishType } from '../utils/dishTypes';
@@ -504,8 +504,12 @@ export default function MyMenuScreen({ profile }: Props) {
                           onClick={() => abrirExtras(meal, ci)}
                           className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-raised border border-hairline hover:border-accent/40 transition-colors"
                         >
-                          <span className="font-mono text-caption text-ink-2">
-                            +{c.quantity} {CAT_LABEL[c.category]} · {foodNameWithoutGrams(c.foodLabel)}
+                          {/* El peso primero: es lo accionable ("30g de pan"),
+                              no el número de intercambios. Nombre corto, sin la
+                              coletilla entre paréntesis del banco, que en un
+                              móvil de 375px se comía la fila entera. */}
+                          <span className="font-mono text-caption text-ink-2 truncate max-w-[10rem]">
+                            {itemWeightLabel(c.foodLabel, c.quantity)} {foodNameShort(c.foodLabel)}
                           </span>
                           <Icon name="edit" size="s" className="text-ink-3" />
                         </button>

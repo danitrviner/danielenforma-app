@@ -72,6 +72,16 @@ export function foodNameWithoutGrams(label: string): string {
   return stripped || label;
 }
 
+// Igual que el anterior pero además sin el paréntesis aclaratorio, para sitios
+// donde solo cabe una línea corta: las etiquetas del banco llevan una coletilla
+// larga ("pan (de molde, tostado, con o sin semillas...)", "frutos secos sin
+// freír (cualquier fruto seco)") que en un chip de móvil ocupa media pantalla y
+// no aporta nada — el detalle completo sigue estando al abrirlo.
+export function foodNameShort(label: string): string {
+  const sinParentesis = foodNameWithoutGrams(label).replace(/\s*\([^)]*\)\s*/g, ' ').trim();
+  return sinParentesis || foodNameWithoutGrams(label);
+}
+
 // MIX_HC    → +0.5 HC    +0.5 PROT per exchange
 // MIX_GRASA → +0.5 GRASA +0.5 PROT per exchange
 export function addToPlaced(p: Record<FoodCategory, number>, category: FoodCategory, qty: number): void {
