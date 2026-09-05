@@ -508,7 +508,7 @@ export default function MyMenuScreen({ profile }: Props) {
                               no el número de intercambios. Nombre corto, sin la
                               coletilla entre paréntesis del banco, que en un
                               móvil de 375px se comía la fila entera. */}
-                          <span className="font-mono text-caption text-ink-2 truncate max-w-[10rem]">
+                          <span className="font-mono text-caption text-ink-2 truncate max-w-[13rem]">
                             {itemWeightLabel(c.foodLabel, c.quantity)} {foodNameShort(c.foodLabel)}
                           </span>
                           <Icon name="edit" size="s" className="text-ink-3" />
@@ -688,14 +688,22 @@ export default function MyMenuScreen({ profile }: Props) {
                     <p className="font-sans text-body-s text-ink truncate">{foodNameWithoutGrams(actual.foodLabel)}</p>
                     <p className="font-mono text-caption text-ink-2">{itemWeightLabel(actual.foodLabel, actual.quantity)}</p>
                   </div>
+                  {/* Mismo patrón que el `Stepper` de MesocycleManager: el
+                      carácter, no un <Icon>. Con el icono sobre `bg-bg` y sin
+                      color explícito los dos botones salían casi invisibles
+                      (comprobado en navegador a 375px). */}
                   <div className="flex items-center gap-2 flex-shrink-0">
-                    <button onClick={() => cambiarCantidad(-0.25)} className="w-11 h-11 rounded-xl bg-bg border border-hairline flex items-center justify-center hover:border-accent/40" title="Menos cantidad">
-                      <Icon name="remove" size="s" />
-                    </button>
+                    <button
+                      onClick={() => cambiarCantidad(-0.25)}
+                      className="w-11 h-11 rounded-control bg-raised text-ink-2 hover:text-ink text-body-s font-bold flex items-center justify-center"
+                      title="Menos cantidad"
+                    >−</button>
                     <span className="font-mono text-body-s text-ink w-10 text-center">{actual.quantity}</span>
-                    <button onClick={() => cambiarCantidad(0.25)} className="w-11 h-11 rounded-xl bg-bg border border-hairline flex items-center justify-center hover:border-accent/40" title="Más cantidad">
-                      <Icon name="add" size="s" />
-                    </button>
+                    <button
+                      onClick={() => cambiarCantidad(0.25)}
+                      className="w-11 h-11 rounded-control bg-raised text-ink-2 hover:text-ink text-body-s font-bold flex items-center justify-center"
+                      title="Más cantidad"
+                    >+</button>
                   </div>
                 </div>
               )}
