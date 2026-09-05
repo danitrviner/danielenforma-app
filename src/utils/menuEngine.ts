@@ -47,6 +47,10 @@ const MAX_ACOMPANAMIENTOS_POR_COMIDA = 2;
  *  el plato no era el adecuado y hay que buscar otro más alto en calorías — se
  *  avisa en vez de estirar el comodín. */
 const MAX_INTERCAMBIOS_ACOMPANAMIENTOS = 3;
+/** Lo lejos que puede quedarse una receta del objetivo de su franja y aun así
+ *  valer. Es el mismo tope que el comodín a propósito: se admite justo lo que el
+ *  comodín puede cerrar, ni un intercambio más (ver `bestScaleFit`). */
+const MARGEN_COMODIN = MAX_INTERCAMBIOS_ACOMPANAMIENTOS;
 /** Tope de ingredientes distintos de la receta a los que subir la ración. */
 const MAX_RACIONES_EXTRA_POR_COMIDA = 2;
 /** Mínimo para que subir la ración merezca la pena. Por debajo salían consejos
@@ -247,13 +251,26 @@ export function bestScaleFit(
   if (baseTotal <= 0 || targetTotal <= 0) return null;
 
   const idealScale = targetTotal / baseTotal;
-  // Fuera del rango de raciones, la receta se descarta. No hay excepción: había
-  // un modo "permitirFueraDeRango" que servía el plato a su escala máxima cuando
-  // ninguna receta llegaba, y era el origen del plato escoltado por extras.
-  if (idealScale < MENU_SCALES[0] || idealScale > MENU_SCALES[MENU_SCALES.length - 1]) return null;
-  // Un plato que ya es demasiado grande a media ración no se puede recortar más:
-  // ese sí se descarta siempre, aunque no haya alternativa.
+
+  // Un plato que a MEDIA ración ya se pasa del objetivo se descarta siempre: lo
+  // que sobra no lo quita nadie.
   if (idealScale < MENU_SCALES[0]) return null;
+
+  // Por arriba hay un margen, y solo uno: el del comodín. Una receta que a su
+  // ración máxima se queda a tres intercambios o menos del objetivo SÍ vale,
+  // porque ese hueco es exactamente lo que cierran la ración extra y el
+  // acompañamiento. Más lejos, se descarta.
+  //
+  // Este margen sustituye al viejo `permitirFueraDeRango`, que readmitía a TODAS
+  // las recetas cuando ninguna llegaba y servía la más grande fiando el resto a
+  // los complementos: de ahí salía el plato escoltado por media despensa. La
+  // diferencia está en que aquí el margen está acotado por el mismo tope que el
+  // comodín, así que por construcción no puede producir aquello (Dani,
+  // 2026-09-05: "si esa receta no llega pero queda relativamente cerca de
+  // intercambios, se pueden añadir complementos para llegar").
+  const escalaMaxima = MENU_SCALES[MENU_SCALES.length - 1];
+  const alcanzaConMargen = baseTotal * escalaMaxima >= targetTotal - MARGEN_COMODIN;
+  if (idealScale > escalaMaxima && !alcanzaConMargen) return null;
 
   // Distancia L1 PONDERADA por categoría. `fitScore` mide en intercambios
   // absolutos y trata igual los tres macros; con una dieta de definición

@@ -432,8 +432,9 @@ describe('precisión del día generado', () => {
   // calorías y ya está, y todas las demás se quedan eliminadas". La comida sale
   // vacía a propósito, para que el entrenador lo vea y cambie el recetario.
   it('deja la comida vacía si ninguna receta llega, en vez de taparlo con extras', () => {
-    // Comida ≈ 23 int; el recetario solo tiene platos de 5, que ni a ×4 llegan.
-    const pequenas = poolDe(20, { HC: 2, PROT: 2, GRASA: 1 });
+    // Comida ≈ 23 int; el recetario solo tiene platos de 3, que a ×4 se quedan
+    // en 12 — a once del objetivo, muy por encima de lo que cierra el comodín.
+    const pequenas = poolDe(20, { HC: 1, PROT: 1, GRASA: 1 });
     const pools = { 1: pequenas, 2: pequenas, 3: pequenas, 5: pequenas };
     const day = generateDay({
       day: 'mon',
@@ -441,6 +442,21 @@ describe('precisión del día generado', () => {
       slots, pools, foods: [], prefs: basePrefs, usedIds: new Set(),
     });
     expect(day.meals.some(m => m.recipeId === '')).toBe(true);
+  });
+
+  it('admite la receta que se queda a un comodín del objetivo', () => {
+    // Platos de 5 int para una comida de ~23: a ×4 llegan a 20, se quedan a 3.
+    // Ese hueco es justo lo que cierran la ración extra y el acompañamiento, así
+    // que la receta vale (Dani, 2026-09-05: "si queda relativamente cerca de
+    // intercambios, se pueden añadir complementos para llegar").
+    const casi = poolDe(20, { HC: 2, PROT: 2, GRASA: 1 });
+    const pools = { 1: casi, 2: casi, 3: casi, 5: casi };
+    const day = generateDay({
+      day: 'mon',
+      diet: diet({ budget: { HC: 28, PROT: 18, GRASA: 12, MIX_HC: 0, MIX_GRASA: 0 } }),
+      slots, pools, foods: [], prefs: basePrefs, usedIds: new Set(),
+    });
+    expect(day.meals.every(m => m.recipeId !== '')).toBe(true);
   });
 
   it('con platos que SÍ llegan multiplicando, ninguna comida se queda vacía', () => {
