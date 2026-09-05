@@ -3,16 +3,18 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   UserProfile, WeeklyMenu, RecipeFavorites, MenuCompletionLog,
-  WeekDay, MenuDay, MenuMeal, Recipe, FoodCategory,
+  WeekDay, MenuDay, MenuMeal, Recipe, FoodCategory, MenuComplement, MealItem, DietMode,
 } from '../types';
 import {
   getPublishedMenu, getOnboarding, getAthleteNutritionConfig,
   updateWeeklyMenu, getMenuCompletionLog, saveMenuCompletionLog,
   queryRecetasForGenerator, getRecipes, getRecipeById,
-  getRecipeFavorites, saveRecipeFavorites,
+  getRecipeFavorites, saveRecipeFavorites, getFoodItems, seedFoodItemsIfEmpty,
 } from '../dbService';
-import { findSwapAlternatives, recipeMatchesSlot, buildBatchPlan, GeneratorPrefs, SwapCandidate } from '../utils/menuEngine';
+import { findSwapAlternatives, recipeMatchesSlot, buildBatchPlan, totalConExtras, GeneratorPrefs, SwapCandidate } from '../utils/menuEngine';
 import { normalizeStr } from '../utils/foodPrefs';
+import { complementosDisponibles } from '../utils/menuComplements';
+import { foodNameWithoutGrams, itemWeightLabel } from '../utils/exchangeHelpers';
 import { exchangeToKcal } from '../utils/nutritionConstants';
 import { buildShoppingList, ShoppingListItem } from '../utils/menuShoppingList';
 import { DishType } from '../utils/dishTypes';
@@ -100,6 +102,15 @@ export default function MyMenuScreen({ profile }: Props) {
     [favoritesData, profile.email]
   );
 
+  // Banco de intercambios: es el catálogo de extras que puede elegir el atleta.
+  const { data: foodList = [] } = useQuery({
+    queryKey: ['foodItems'],
+    queryFn: () => seedFoodItemsIfEmpty().catch(() => {}).then(getFoodItems),
+    staleTime: Infinity, // no cambia dentro de una sesión
+  });
+  // El modo lo fija el entrenador; si habilitó varios, manda el primero.
+  const dietMode: DietMode = nutritionConfig?.enabledModes?.[0] ?? 'OMNIVORO';
+
   const loading = loadingMenu || loadingOnboarding || loadingNutritionConfig || loadingCompletionLog || loadingFavorites;
 
   const [detailOpen, setDetailOpen] = useState(false);
@@ -112,6 +123,9 @@ export default function MyMenuScreen({ profile }: Props) {
   const [swapCandidates, setSwapCandidates] = useState<SwapCandidate[]>([]);
   const [swapQuery, setSwapQuery] = useState('');
   const [swapVisible, setSwapVisible] = useState(SWAP_PAGE);
+  // Edición de extras: `idx` null = añadir uno nuevo a esa comida.
+  const [extrasFor, setExtrasFor] = useState<{ mealId: string; idx: number | null } | null>(null);
+  const [extraQuery, setExtraQuery] = useState('');
   const [shoppingOpen, setShoppingOpen] = useState(false);
   const [shoppingLoading, setShoppingLoading] = useState(false);
   const [shoppingItems, setShoppingItems] = useState<ShoppingListItem[] | null>(null);
@@ -268,13 +282,50 @@ export default function MyMenuScreen({ profile }: Props) {
     setSwapLoading(false);
   }
 
+  function abrirExtras(meal: MenuMeal, idx: number | null) {
+    setExtrasFor({ mealId: meal.id, idx });
+    setExtraQuery('');
+  }
+
+  /** Escribe los extras de una comida y persiste. Un solo camino para cambiar,
+   *  añadir, subir/bajar cantidad y quitar, para que las kcal se recalculen
+   *  siempre igual y no haya forma de dejar la comida descuadrada. */
+  async function guardarExtras(mealId: string, siguiente: MenuComplement[]) {
+    if (!menu || !day) return;
+    const nextDays = menu.days.map(d => d.day !== selectedDay ? d : {
+      ...d,
+      meals: d.meals.map(m => m.id !== mealId ? m : {
+        ...m,
+        complements: siguiente,
+        kcal: Math.round(exchangeToKcal(totalConExtras(m.exch, siguiente))),
+      }),
+    });
+    queryClient.setQueryData<WeeklyMenu | null>(menuKey, prev => prev ? { ...prev, days: nextDays } : prev);
+    setShoppingItems(null); // la lista de la compra cacheada ya no vale
+    await updateWeeklyMenu(menu.id, { days: nextDays }).catch(() => {});
+  }
+
+  function extrasDe(mealId: string): MenuComplement[] {
+    return day?.meals.find(m => m.id === mealId)?.complements ?? [];
+  }
+
   async function confirmSwap(candidate: SwapCandidate) {
     if (!menu || !day || !swapFor) return;
     const meal = day.meals.find(m => m.id === swapFor.mealId);
     if (!meal) return;
 
+    // Los extras se CONSERVAN: la alternativa se ha buscado para sustituir al
+    // plato, no a la comida entera (ver `findSwapAlternatives`). Antes se
+    // vaciaban, porque la búsqueda apuntaba al total de la comida y la receta
+    // nueva tenía que absorberlos.
     const nextMeals = day.meals.map(m => m.id === meal.id
-      ? { ...m, recipeId: candidate.recipe.id, recipeName: candidate.recipe.name, recipeImage: fotoDeReceta(candidate.recipe), scale: candidate.scale, exch: candidate.exch, kcal: Math.round(exchangeToKcal(candidate.exch)), complements: [] }
+      ? {
+        ...m,
+        recipeId: candidate.recipe.id, recipeName: candidate.recipe.name,
+        recipeImage: fotoDeReceta(candidate.recipe),
+        scale: candidate.scale, exch: candidate.exch,
+        kcal: Math.round(exchangeToKcal(totalConExtras(candidate.exch, m.complements))),
+      }
       : m);
     const nextDay: MenuDay = { ...day, meals: nextMeals };
     const nextDays = menu.days.map(d => d.day === selectedDay ? nextDay : d);
@@ -442,13 +493,31 @@ export default function MyMenuScreen({ profile }: Props) {
 
                   <div className="flex-1 min-w-0">
                     <p className="font-mono text-caption text-ink-2">{fmtExch(meal.exch)} · {meal.kcal} kcal</p>
-                    {meal.complements.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-2">
-                        {meal.complements.map((c, ci) => (
-                          <Badge key={ci} tone="neutral">+{c.quantity} {CAT_LABEL[c.category]} · {c.foodLabel}</Badge>
-                        ))}
-                      </div>
-                    )}
+                    {/* Los extras son EDITABLES. Los pone el generador para
+                        cerrar lo que la receta no llega a cubrir, pero quien
+                        decide si eso es pan, fruta o un yogur es el atleta: son
+                        sus intercambios y su nevera. */}
+                    <div className="flex flex-wrap items-center gap-1 mt-2">
+                      {meal.complements.map((c, ci) => (
+                        <button
+                          key={ci}
+                          onClick={() => abrirExtras(meal, ci)}
+                          className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-raised border border-hairline hover:border-accent/40 transition-colors"
+                        >
+                          <span className="font-mono text-caption text-ink-2">
+                            +{c.quantity} {CAT_LABEL[c.category]} · {foodNameWithoutGrams(c.foodLabel)}
+                          </span>
+                          <Icon name="edit" size="s" className="text-ink-3" />
+                        </button>
+                      ))}
+                      <button
+                        onClick={() => abrirExtras(meal, null)}
+                        className="inline-flex items-center gap-1 px-2 py-1 rounded-lg border border-dashed border-hairline text-caption font-mono text-ink-3 hover:text-ink hover:border-accent/40 transition-colors"
+                      >
+                        <Icon name="add" size="s" />
+                        Extra
+                      </button>
+                    </div>
                     <div className="flex items-center gap-3 mt-2">
                       <button
                         onClick={() => openSwap(meal)}
@@ -573,6 +642,105 @@ export default function MyMenuScreen({ profile }: Props) {
           </div>
         </Sheet>
       )}
+
+      {/* Elegir extras — catálogo = banco de intercambios entero */}
+      {extrasFor && (() => {
+        const extras = extrasDe(extrasFor.mealId);
+        const actual = extrasFor.idx != null ? extras[extrasFor.idx] : null;
+        const q = normalizeStr(extraQuery.trim());
+        const catalogo = complementosDisponibles(foodList, dietMode, actual?.category)
+          .filter(f => !q || normalizeStr(f.label).includes(q));
+
+        function cambiarCantidad(delta: number) {
+          if (extrasFor?.idx == null || !actual) return;
+          const cantidad = Math.round((actual.quantity + delta) * 4) / 4;
+          const siguiente = cantidad < 0.25
+            ? extras.filter((_, i) => i !== extrasFor.idx)
+            : extras.map((c, i) => i === extrasFor.idx ? { ...c, quantity: cantidad } : c);
+          guardarExtras(extrasFor.mealId, siguiente);
+          if (cantidad < 0.25) setExtrasFor(null);
+        }
+
+        function elegirAlimento(item: MealItem) {
+          if (!extrasFor) return;
+          const siguiente = extrasFor.idx != null
+            ? extras.map((c, i) => i === extrasFor.idx ? { ...c, foodLabel: item.label, category: item.category } : c)
+            : [...extras, { foodLabel: item.label, category: item.category, quantity: 1 }];
+          guardarExtras(extrasFor.mealId, siguiente);
+          setExtrasFor(null);
+        }
+
+        return (
+          <Sheet
+            open
+            onClose={() => setExtrasFor(null)}
+            title={actual ? 'Cambiar este extra' : 'Añadir un extra'}
+            size="m"
+          >
+            <div className="space-y-3 pt-2">
+              {actual && (
+                <div className="flex items-center justify-between gap-3 p-3 bg-raised border border-hairline rounded-control">
+                  <div className="min-w-0">
+                    <p className="font-sans text-body-s text-ink truncate">{foodNameWithoutGrams(actual.foodLabel)}</p>
+                    <p className="font-mono text-caption text-ink-2">{itemWeightLabel(actual.foodLabel, actual.quantity)}</p>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <button onClick={() => cambiarCantidad(-0.25)} className="w-11 h-11 rounded-xl bg-bg border border-hairline flex items-center justify-center hover:border-accent/40" title="Menos cantidad">
+                      <Icon name="remove" size="s" />
+                    </button>
+                    <span className="font-mono text-body-s text-ink w-10 text-center">{actual.quantity}</span>
+                    <button onClick={() => cambiarCantidad(0.25)} className="w-11 h-11 rounded-xl bg-bg border border-hairline flex items-center justify-center hover:border-accent/40" title="Más cantidad">
+                      <Icon name="add" size="s" />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {actual && (
+                <button
+                  onClick={() => {
+                    guardarExtras(extrasFor!.mealId, extras.filter((_, i) => i !== extrasFor!.idx));
+                    setExtrasFor(null);
+                  }}
+                  className="w-full py-2 font-sans text-body-s text-danger hover:text-danger/80 transition-colors"
+                >
+                  Quitar este extra
+                </button>
+              )}
+
+              <div>
+                <p className="font-mono text-caption text-ink-3 mb-2">
+                  {actual
+                    ? `Cámbialo por otro de ${CAT_LABEL[actual.category]} — mismos intercambios`
+                    : 'Elige de tu banco de intercambios'}
+                </p>
+                <input
+                  type="search"
+                  value={extraQuery}
+                  onChange={e => setExtraQuery(e.target.value)}
+                  placeholder="Buscar (pan, fruta, arroz…)"
+                  className="w-full px-3 py-2 bg-bg border border-hairline rounded-control font-sans text-body-s text-ink placeholder:text-ink-3 focus:border-accent/40 outline-none"
+                />
+              </div>
+
+              <div className="space-y-1">
+                {catalogo.length === 0 ? (
+                  <p className="font-sans text-label text-ink-3 text-center py-6">Nada con ese nombre en tu banco.</p>
+                ) : catalogo.slice(0, 60).map(item => (
+                  <button
+                    key={item.id}
+                    onClick={() => elegirAlimento(item)}
+                    className="w-full flex items-center justify-between gap-3 px-3 py-3 text-left bg-bg border border-hairline hover:border-accent/40 rounded-control transition-all"
+                  >
+                    <span className="font-sans text-body-s text-ink truncate">{item.label}</span>
+                    <Badge tone="neutral">{CAT_LABEL[item.category]}</Badge>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </Sheet>
+        );
+      })()}
 
       {/* Recipe detail */}
       {detailOpen && (

@@ -8,7 +8,7 @@ import { slotPercents } from './slotWeights';
 import { ingredientMatch, normalizeStr, violatesDietType } from './foodPrefs';
 import { fitScore } from './recipeMatch';
 import { exchangeToKcal } from './nutritionConstants';
-import { simpleComplementsFor } from './menuComplements';
+import { simpleComplementsFor, encajaEnCategoria } from './menuComplements';
 import { dishType, DishType } from './dishTypes';
 import { fotoDeReceta } from './fotoDeReceta';
 
@@ -27,8 +27,11 @@ const BANDA_PCT    = 0.15;  // …o el 15 % del objetivo de la franja, lo que se
 const FUERA_DE_BANDA = 100; // constante para que lo que no encaja quede siempre al final
 /** Tope de complementos encadenados por categoría (ver `fillComplements`). */
 const MAX_COMPLEMENTOS_POR_CATEGORIA = 3;
-/** Tope de raciones de UN mismo complemento — más que esto deja de ser realista. */
-const MAX_RACIONES_POR_COMPLEMENTO = 4;
+/** Tope de raciones de UN mismo complemento — más que esto deja de ser realista.
+ *  Al llegar aquí se pasa al siguiente alimento (ver `fillComplements`). */
+const MAX_RACIONES_POR_COMPLEMENTO = 2;
+/** Unidad del sistema de intercambios: todo se redondea a múltiplos de 0,25. */
+const PASO_INTERCAMBIO = 0.25;
 /** Suelo y techo del peso por macro (ver `pesosPorCategoria`). */
 const PRESUPUESTO_MINIMO = 0.5;
 const PESO_MAXIMO = 4;
@@ -142,6 +145,62 @@ export function slotTargets(dayBudget: BudgetVec, slots: MealSlotSpec[]): Budget
   return slots.map((_, i) => ({ HC: hc[i], PROT: prot[i], GRASA: grasa[i] }));
 }
 
+// ─── Tope de la receta dentro de una comida ─────────────────────────────────
+
+/* Una comida grande le pedía TODO su presupuesto a un solo plato. Con 3.000 kcal
+   y 3 comidas, la comida pide 13,75 intercambios: solo 85 de 4.468 recetas
+   (1,9 %) pueden llegar ahí a doble ración. A ese atleta le salía siempre lo
+   mismo y con la lista de "cambiar comida" casi vacía.
+
+   La salida NO es un segundo plato —sería el doble de cocina, justo lo que no
+   quiere quien ha marcado poco tiempo o recetas simples— sino topar lo que se le
+   pide al plato y cerrar el resto con extras del banco de intercambios: la
+   receta te da 8 y le añades 2 de pan y 1 de fruta. Cero minutos de cocina de
+   más, y con el tope la cobertura del recetario para esa comida pasa del 1,9 %
+   al 51 % (Dani, 2026-09-05).
+
+   El tope sale del propio recetario, no es un número a mano: la receta MEDIANA
+   de esa franja servida a su ración máxima. Se ajusta solo si el recetario
+   cambia, y por construcción la mitad de las recetas de la franja lo alcanzan. */
+
+const PERCENTIL_TOPE = 0.5;
+const ESCALA_MAXIMA = MENU_SCALES[MENU_SCALES.length - 1];
+
+const topeCache = new WeakMap<Recipe[], Map<DietMode, number>>();
+
+/** Intercambios que como mucho se le piden a UN plato de esta franja. Infinity
+ *  si la franja no tiene recetas: ahí no hay nada que topar. */
+export function topeDeReceta(pool: Recipe[], mode: DietMode = 'OMNIVORO'): number {
+  let porModo = topeCache.get(pool);
+  if (!porModo) { porModo = new Map(); topeCache.set(pool, porModo); }
+  const cached = porModo.get(mode);
+  if (cached != null) return cached;
+
+  const totales: number[] = [];
+  for (const r of pool) {
+    const e = recipeExchanges(r, mode);
+    if (e) {
+      const t = e.HC + e.PROT + e.GRASA;
+      if (t > 0) totales.push(t);
+    }
+  }
+  const tope = totales.length === 0
+    ? Infinity
+    : totales.sort((a, b) => a - b)[Math.floor(PERCENTIL_TOPE * (totales.length - 1))] * ESCALA_MAXIMA;
+  porModo.set(mode, tope);
+  return tope;
+}
+
+/** Recorta el objetivo de una comida al tope del plato, manteniendo la
+ *  proporción entre macros. Lo que se recorta no se pierde: lo recoge
+ *  `finalizeDay` como hueco y acaba en extras que el atleta puede cambiar. */
+export function objetivoDePlato(objetivo: BudgetVec, tope: number): BudgetVec {
+  const total = objetivo.HC + objetivo.PROT + objetivo.GRASA;
+  if (!Number.isFinite(tope) || total <= tope || total <= 0) return objetivo;
+  const f = tope / total;
+  return { HC: round2(objetivo.HC * f), PROT: round2(objetivo.PROT * f), GRASA: round2(objetivo.GRASA * f) };
+}
+
 // ─── Recipe → exchanges ──────────────────────────────────────────────────────
 
 // Recipes from the imported recetario carry a precomputed aggregate; coach/athlete builder recipes
@@ -170,7 +229,13 @@ function sumVec(a: BudgetVec, b: BudgetVec): BudgetVec {
 }
 
 function mealTotalExch(meal: MenuMeal): BudgetVec {
-  return meal.complements.reduce((acc, c) => sumVec(acc, complementExchanges(c)), meal.exch);
+  return totalConExtras(meal.exch, meal.complements);
+}
+
+/** Lo que suma una comida: el plato más sus extras. Exportado porque la pantalla
+ *  del atleta recalcula las kcal cada vez que toca un extra. */
+export function totalConExtras(exch: BudgetVec, complements: MenuComplement[]): BudgetVec {
+  return complements.reduce((acc, c) => sumVec(acc, complementExchanges(c)), exch);
 }
 
 // ─── Scaling & ranking ───────────────────────────────────────────────────────
@@ -358,8 +423,8 @@ export function fillComplements(gap: BudgetVec, foods: MealItem[], mode: DietMod
   const result: MenuComplement[] = [];
   for (const cat of cats) {
     let need = gap[cat];
-    if (need < 0.5) continue;
-    const candidates = simple.filter(f => f.category === cat || (cat === 'PROT' && f.category === 'MIX_HC'));
+    if (need < PASO_INTERCAMBIO) continue;
+    const candidates = simple.filter(f => encajaEnCategoria(f, cat));
     if (candidates.length === 0) continue;
     // Antes se ponía UN solo complemento tapado a 2 intercambios: un hueco de 4
     // se quedaba a medias y el día seguía descuadrado sin decirlo. Ahora se
@@ -367,18 +432,29 @@ export function fillComplements(gap: BudgetVec, foods: MealItem[], mode: DietMod
     // haya (3 raciones de pan es peor consejo que pan + fruta + arroz) y un
     // tope de seguridad para no escribir una lista absurda si el hueco es
     // enorme por un fallo de configuración de la dieta.
+    // El alimento concreto se elige por ORDEN, no al azar. Antes era
+    // `Math.random()`: regenerar el mismo menú dos veces daba extras distintos
+    // sin que nada hubiera cambiado, y no había forma de reproducir un menú para
+    // depurarlo. Ahora es siempre el mismo para la misma situación — y sobre
+    // todo, ya no importa tanto acertar: el atleta puede cambiarlo (ver
+    // `complementosDisponibles`, que le abre el banco entero).
     const usados = new Set<string>();
-    for (let n = 0; n < MAX_COMPLEMENTOS_POR_CATEGORIA && need >= 0.5; n++) {
+    for (let n = 0; n < MAX_COMPLEMENTOS_POR_CATEGORIA && need >= PASO_INTERCAMBIO; n++) {
       const frescos = candidates.filter(f => !usados.has(f.label));
       const pool = frescos.length > 0 ? frescos : candidates;
-      const food = pool[Math.floor(Math.random() * pool.length)];
-      // Se reparte el hueco entre los complementos que quedan por poner, en vez
-      // de vaciar 2 en el primero: 3+3 raciones repartidas es un consejo más
-      // realista que 2+2+2 arbitrario, y evita quedarse corto en huecos grandes.
-      const restantes = MAX_COMPLEMENTOS_POR_CATEGORIA - n;
-      const objetivo = Math.max(0.5, need / restantes);
-      const qty = Math.min(MAX_RACIONES_POR_COMPLEMENTO, Math.floor(objetivo * 2) / 2, Math.floor(need * 2) / 2);
-      if (qty < 0.5) break;
+      const food = pool[n % pool.length];
+      // Se LLENA cada alimento hasta una ración razonable antes de pasar al
+      // siguiente, en vez de repartir el hueco a partes iguales entre los tres.
+      // Repartiendo, un hueco de 0,75 salía como tres extras de 0,25 —"cómete un
+      // cuarto de tortita de arroz, un cuarto de yogur y un cuarto de dátiles"—
+      // y un día entero podía acabar con quince extras minúsculos. Así, 0,75 es
+      // un solo alimento y solo se encadena cuando de verdad no cabe en uno.
+      // En pasos de 0,25, la unidad del sistema de intercambios: con pasos de
+      // 0,5 el resto que no llegaba a media ración se perdía y el día acababa
+      // por debajo de su presupuesto sin que nada lo dijera.
+      const aPaso = (v: number) => Math.floor(v / PASO_INTERCAMBIO) * PASO_INTERCAMBIO;
+      const qty = Math.min(MAX_RACIONES_POR_COMPLEMENTO, aPaso(need));
+      if (qty < PASO_INTERCAMBIO) break;
       usados.add(food.label);
       result.push({ foodLabel: food.label, category: food.category, quantity: qty });
       need = round2(need - qty);
@@ -387,13 +463,16 @@ export function fillComplements(gap: BudgetVec, foods: MealItem[], mode: DietMod
   return result;
 }
 
-function attachComplementsToMeals(meals: MenuMeal[], targets: BudgetVec[], complements: MenuComplement[]): void {
-  for (const comp of complements) {
-    const cat = comp.category === 'MIX_HC' || comp.category === 'MIX_GRASA' ? 'PROT' : comp.category;
-    let bestIdx = 0, bestVal = -1;
-    targets.forEach((t, i) => { if (t[cat as 'HC' | 'PROT' | 'GRASA'] > bestVal) { bestVal = t[cat as 'HC' | 'PROT' | 'GRASA']; bestIdx = i; } });
-    meals[bestIdx].complements.push(comp);
-  }
+/** Lo que le falta a UNA comida para llegar a su objetivo, una vez puesto el
+ *  plato. Nunca negativo: si el plato se pasó, esa comida no lleva extras (lo
+ *  que sobra ya lo absorbe la comida siguiente, ver `generateDay`). */
+function huecoDeComida(meal: MenuMeal, objetivo: BudgetVec): BudgetVec {
+  const puesto = mealTotalExch(meal);
+  return {
+    HC: Math.max(0, round2(objetivo.HC - puesto.HC)),
+    PROT: Math.max(0, round2(objetivo.PROT - puesto.PROT)),
+    GRASA: Math.max(0, round2(objetivo.GRASA - puesto.GRASA)),
+  };
 }
 
 function mealKcal(meal: MenuMeal): number {
@@ -425,14 +504,35 @@ function buildMeal(id: string, slot: MealSlotSpec, recipe: Recipe, scale: number
 // Shared tail of day generation: fill the remaining category gap with simple
 // complements and recompute kcal. Used by both per-day and batch generation.
 function finalizeDay(day: WeekDay, diet: Diet, target: BudgetVec, targets: BudgetVec[], meals: MenuMeal[], foods: MealItem[], mode: DietMode): MenuDay {
-  const totals = meals.reduce((acc, m) => sumVec(acc, mealTotalExch(m)), { HC: 0, PROT: 0, GRASA: 0 });
-  const gap: BudgetVec = {
-    HC: Math.max(0, round2(target.HC - totals.HC)),
-    PROT: Math.max(0, round2(target.PROT - totals.PROT)),
-    GRASA: Math.max(0, round2(target.GRASA - totals.GRASA)),
+  // Cuánto falta para el DÍA (nunca negativo: si los platos se pasaron, no hay
+  // extras). Es el día y no cada comida por su cuenta lo que manda: los platos
+  // se eligen arrastrando el resto de la comida anterior, así que una comida
+  // puede venir servida de más. Rellenar cada una contra su objetivo fijo
+  // ignoraba ese arrastre y el día acababa pasado de presupuesto.
+  const puesto = meals.reduce((acc, m) => sumVec(acc, mealTotalExch(m)), { HC: 0, PROT: 0, GRASA: 0 });
+  const restanteDelDia: BudgetVec = {
+    HC: Math.max(0, round2(target.HC - puesto.HC)),
+    PROT: Math.max(0, round2(target.PROT - puesto.PROT)),
+    GRASA: Math.max(0, round2(target.GRASA - puesto.GRASA)),
   };
-  const complements = fillComplements(gap, foods, mode);
-  attachComplementsToMeals(meals, targets, complements);
+
+  // Ese resto se REPARTE entre las comidas que se han quedado cortas, en
+  // proporción a lo cortas que estén. Antes se metía entero en la franja con más
+  // presupuesto de cada macro; con un tope de plato esa franja es siempre la
+  // comida, y el atleta se encontraba el arroz a la cubana escoltado por nueve
+  // extras mientras el desayuno y la cena iban limpios.
+  const cats: (keyof BudgetVec)[] = ['HC', 'PROT', 'GRASA'];
+  const huecos = meals.map((meal, i) => (targets[i] ? huecoDeComida(meal, targets[i]) : { HC: 0, PROT: 0, GRASA: 0 }));
+  const reparto: BudgetVec[] = meals.map(() => ({ HC: 0, PROT: 0, GRASA: 0 }));
+  for (const cat of cats) {
+    const pesos = huecos.map(h => h[cat]);
+    if (pesos.reduce((s, v) => s + v, 0) <= 0) continue;
+    quotaSplit(restanteDelDia[cat], pesos).forEach((v, i) => { reparto[i][cat] = v; });
+  }
+
+  meals.forEach((meal, i) => {
+    meal.complements.push(...fillComplements(reparto[i], foods, mode));
+  });
   for (const meal of meals) meal.kcal = mealKcal(meal);
   return { day, dietId: diet.id, dietName: diet.name, target, meals };
 }
@@ -484,7 +584,11 @@ export function generateDay(args: GenerateDayArgs): MenuDay {
     };
     const objetivoFranja = slotTargets(disponible, slots.slice(i))[0] ?? targets[i];
     const pool = pools[slot.slot] ?? [];
-    const ranked = rankCandidates(pool, objetivoFranja, prefs, usedIds, { needsTupper: slot.needsTupper, mode, usedDishTypes: dishTypes });
+    // Al plato se le pide como mucho su tope; el resto irá a extras (ver
+    // `topeDeReceta`). Sin esto, una comida de 13 intercambios solo la podía
+    // servir el 2 % del recetario.
+    const objetivoPlato = objetivoDePlato(objetivoFranja, topeDeReceta(pool, mode));
+    const ranked = rankCandidates(pool, objetivoPlato, prefs, usedIds, { needsTupper: slot.needsTupper, mode, usedDishTypes: dishTypes });
     const pick = ranked[0];
     const id = `${day}_m${i + 1}`;
     if (!pick) return emptyMeal(id, slot);
@@ -692,10 +796,16 @@ export function findSwapAlternatives(
   const meal = day.meals.find(m => m.id === mealId);
   if (!meal) return [];
 
-  const mealTarget = mealTotalExch(meal);
+  // Se busca sustituto para el PLATO, no para el plato más sus extras: los
+  // extras siguen ahí después del cambio. Apuntar al total de la comida hacía
+  // que una comida con extras solo admitiera recetas enormes —justo las que casi
+  // no existen— y dejaba la lista de alternativas en dos o tres opciones.
+  const mealTarget = meal.exch;
+  const complementosDeEstaComida = meal.complements
+    .reduce((acc, c) => sumVec(acc, complementExchanges(c)), { HC: 0, PROT: 0, GRASA: 0 });
   const otherMealsTotal = day.meals
     .filter(m => m.id !== mealId)
-    .reduce((acc, m) => sumVec(acc, mealTotalExch(m)), { HC: 0, PROT: 0, GRASA: 0 });
+    .reduce((acc, m) => sumVec(acc, mealTotalExch(m)), complementosDeEstaComida);
   const targetTotal = day.target.HC + day.target.PROT + day.target.GRASA;
   const usedIds = new Set(day.meals.filter(m => m.id !== mealId).map(m => m.recipeId));
 
