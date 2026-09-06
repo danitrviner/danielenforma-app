@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { superaElTiempo, minutosDeReceta } from '../utils/tiempoDeReceta';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   UserProfile, Recipe, RecipeFavorites, FoodCategory, DietMode,
@@ -224,7 +225,7 @@ const RecetaCard = React.memo(function RecetaCard({ recipe, isFav, isFeatured, e
               title={excedeTiempo ? 'Tarda más de lo que sueles tener para cocinar' : undefined}
             >
               <span className="material-symbols-outlined" style={{ fontSize: '10px' }}>schedule</span>
-              {recipe.cookingTime}min
+              ~{minutosDeReceta(recipe)}min
             </span>
           )}
           {recipe.tupper && (
@@ -392,7 +393,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, isOwn, enabledModes, savingFa
             {recipe.cookingTime != null && (
               <span className="flex items-center gap-1">
                 <span className="material-symbols-outlined" style={{ fontSize: '12px' }}>schedule</span>
-                {recipe.cookingTime} min
+                ~{minutosDeReceta(recipe)} min
               </span>
             )}
             {recipe.weight != null && (
@@ -692,9 +693,10 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
   // atleta; aquí no se descarta —navegando puede querer algo para un domingo—
   // pero sí se avisa, para que no abra una receta de hora y media creyendo que
   // le encaja entre semana.
-  const excedeTiempoDeCocina = useCallback((r: Recipe) => (
-    prefs.tiempoMaxCocina != null && r.cookingTime != null && r.cookingTime > prefs.tiempoMaxCocina
-  ), [prefs.tiempoMaxCocina]);
+  const excedeTiempoDeCocina = useCallback(
+    (r: Recipe) => superaElTiempo(r, prefs.tiempoMaxCocina),
+    [prefs.tiempoMaxCocina],
+  );
   const [selectedCat, setSelectedCat]   = useState<string>('all');
 
   const [showDislikedSection, setShowDislikedSection] = useState(false);

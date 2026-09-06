@@ -1,15 +1,16 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   OnboardingData, Diet, AthleteDietConfig, AthleteNutritionConfig, Recipe, RecipeFavorites,
-  MealItem, WeeklyMenu, MenuDay, WeekDay, FoodCategory,
+  MealItem, WeeklyMenu, MenuDay, WeekDay, FoodCategory, DietMode,
 } from '../types';
-import { queryRecetasForGenerator, getRecipes, getFoodItems, createWeeklyMenu, updateWeeklyMenu, publishWeeklyMenu, getRecipeFavorites } from '../dbService';
+import { queryRecetasForGenerator, getRecipes, getRecipeById, getFoodItems, createWeeklyMenu, updateWeeklyMenu, publishWeeklyMenu, getRecipeFavorites } from '../dbService';
 import {
   slotsFromOnboarding, generateWeek, generateDay, isDayWithinTolerance,
   dayGlobalDeviation, rankCandidates, slotTargets, recipeMatchesSlot,
   buildBatchPlan, MealSlotSpec, GeneratorPrefs, MenuCandidate,
 } from '../utils/menuEngine';
+import { exchangeToKcal } from '../utils/nutritionConstants';
 import { buildShoppingList } from '../utils/menuShoppingList';
 import { DISH_TYPES, DishType } from '../utils/dishTypes';
 import { Icon, Button, Input, ProgressBar } from './ui';
@@ -49,6 +50,17 @@ function fmtExch(exch: { HC: number; PROT: number; GRASA: number }): string {
 
 function devBadge(day: MenuDay): { label: string; cls: string } {
   if (day.meals.length === 0) return { label: 'Libre', cls: 'text-ink-3 bg-raised border-hairline' };
+  // Una comida sin receta significa que NINGÚN plato del recetario llega a ese
+  // objetivo, ni multiplicado por cuatro. No es un error a tapar: es la señal de
+  // que hace falta una receta más alta en calorías para esa franja, y por eso se
+  // enseña antes que la desviación (Dani, 2026-09-05).
+  const sinReceta = day.meals.filter(m => !m.recipeId).length;
+  if (sinReceta > 0) {
+    return {
+      label: sinReceta === 1 ? 'Falta 1 receta' : `Faltan ${sinReceta} recetas`,
+      cls: 'text-red-400 bg-red-400/10 border-red-400/20',
+    };
+  }
   const dev = dayGlobalDeviation(day);
   const ok = isDayWithinTolerance(day);
   const cls = ok ? 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20' : 'text-red-400 bg-red-400/10 border-red-400/20';
@@ -61,7 +73,27 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
 
   const [step, setStep] = useState<Step>(initialMenu ? 'review' : 'config');
   const [name, setName] = useState(initialMenu?.name ?? `Menú semanal · ${today}`);
-  const [slots, setSlots] = useState<MealSlotSpec[]>(() => slotsFromOnboarding(onboarding));
+  // El reparto de partida hace caso a cuándo tiene más hambre el atleta (lo que
+  // contestó en su ficha o corrigió en Perfil > Preferencias), igual que ya hacía
+  // su dieta de intercambios. Sigue siendo editable a mano aquí abajo.
+  const [slots, setSlots] = useState<MealSlotSpec[]>(
+    () => slotsFromOnboarding(onboarding, nutritionConfig?.hungerProfile, nutritionConfig?.mealCount),
+  );
+  // La semilla de arriba se calcula UNA vez, al montar. La ficha y la config del
+  // atleta llegan por consulta, así que si el editor se abre antes de que estén
+  // el reparto se quedaría con el genérico de cuatro comidas para siempre. Esto
+  // vuelve a sembrarlo cuando llegan — pero solo mientras el entrenador no haya
+  // tocado los porcentajes a mano, que es lo único que no se puede pisar.
+  const slotsTocados = useRef(false);
+  useEffect(() => {
+    if (slotsTocados.current) return;
+    setSlots(slotsFromOnboarding(onboarding, nutritionConfig?.hungerProfile, nutritionConfig?.mealCount));
+  }, [onboarding, nutritionConfig?.hungerProfile, nutritionConfig?.mealCount]);
+  // El MISMO modo que usa la pantalla del atleta (`MyMenuScreen`). Antes aquí se
+  // caía al 'OMNIVORO' por defecto del generador: si el entrenador tenía
+  // habilitado otro banco, el menú se generaba con alimentos de un modo y el
+  // atleta veía los extras de otro.
+  const dietMode: DietMode = nutritionConfig?.enabledModes?.[0] ?? 'OMNIVORO';
   const [variety, setVariety] = useState(initialMenu?.varietyLevel ?? nutritionConfig?.menuVariety ?? onboarding?.menuVariety ?? 3);
   const [batch, setBatch] = useState<boolean>(initialMenu?.batchCooking ?? nutritionConfig?.batchCookingPreferred ?? onboarding?.batchCookingPreferred ?? false);
   const [genPhase, setGenPhase] = useState('');
@@ -126,14 +158,31 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
     return 'neutral';
   }
 
-  // Recipe lookup for the prep/shopping preview, built from the pools + builder
-  // recipes already loaded during generation (no extra fetches).
+  // Las recetas del ÍNDICE no traen las cantidades de los ingredientes (se
+  // quitan a propósito para que quepa en el móvil), así que la lista de la
+  // compra hecha solo con ellas salía sin pesos. Se piden enteras las del menú
+  // —solo esas, una vez— igual que hace la pantalla del atleta.
+  const idsDelMenu = useMemo(
+    () => Array.from(new Set((menu?.days ?? []).flatMap(d => d.meals.map(m => m.recipeId).filter(Boolean)))),
+    [menu],
+  );
+  const { data: recetasEnteras } = useQuery({
+    queryKey: ['recipesFull', idsDelMenu],
+    queryFn: async () => (await Promise.all(idsDelMenu.map(id => getRecipeById(id))))
+      .filter((r): r is Recipe => !!r),
+    enabled: idsDelMenu.length > 0,
+    staleTime: Infinity,
+  });
+
+  // Búsqueda de recetas para la vista previa de preparación y la compra. La
+  // receta entera pisa a la del índice cuando ya ha llegado.
   const recipesById = useMemo(() => {
     const map = new Map<string, Recipe>();
     for (const list of Object.values(pools) as Recipe[][]) for (const r of list) map.set(r.id, r);
     for (const r of builderRecipes ?? []) map.set(r.id, r);
+    for (const r of recetasEnteras ?? []) map.set(r.id, r);
     return map;
-  }, [pools, builderRecipes]);
+  }, [pools, builderRecipes, recetasEnteras]);
 
   const batchPlan = useMemo(() => (menu ? buildBatchPlan(menu.days) : []), [menu]);
   const shoppingList = useMemo(() => (menu ? buildShoppingList(menu.days, recipesById) : []), [menu, recipesById]);
@@ -172,7 +221,7 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
     }
     const foodList = await ensureFoods();
     setGenPhase('Generando el menú de la semana…');
-    const days = generateWeek({ schedule, diets, slots, pools: nextPools, foods: foodList, prefs, batch });
+    const days = generateWeek({ schedule, diets, slots, pools: nextPools, foods: foodList, prefs, batch, mode: dietMode });
     const draft: Omit<WeeklyMenu, 'id'> = {
       athleteId: athleteEmail,
       status: 'draft',
@@ -201,7 +250,7 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
     const usedSlots = Array.from(new Set<number>(slots.map(s => s.slot)));
     for (const s of usedSlots) await ensurePool(s);
     const foodList = await ensureFoods();
-    const nextDay = generateDay({ day, diet, slots, pools, foods: foodList, prefs, usedIds: new Set() });
+    const nextDay = generateDay({ day, diet, slots, pools, foods: foodList, prefs, usedIds: new Set(), mode: dietMode });
     updateDay(day, nextDay);
   };
 
@@ -224,6 +273,11 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
       recipeId: pick.recipe.id, recipeName: pick.recipe.name,
       recipeImage: fotoDeReceta(pick.recipe),
       scale: pick.scale, exch: pick.exch, complements: [],
+      // Las raciones extra eran de la receta ANTERIOR ("+45g de arroz" con un
+      // plato que ya no lleva arroz), y las kcal se quedaban con las del plato
+      // viejo. Al cambiar de receta se caen las dos cosas y se recalcula.
+      racionesExtra: undefined,
+      kcal: Math.round(exchangeToKcal(pick.exch)),
     };
     updateDay(day, { ...menuDay, meals: nextMeals });
   };
@@ -252,6 +306,8 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
       recipeId: c.recipe.id, recipeName: c.recipe.name,
       recipeImage: fotoDeReceta(c.recipe),
       scale: c.scale, exch: c.exch, complements: [],
+      racionesExtra: undefined,
+      kcal: Math.round(exchangeToKcal(c.exch)),
     };
     updateDay(day, { ...menuDay, meals: nextMeals });
     setPickerFor(null);
@@ -340,7 +396,7 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
                 <ProgressBar value={sl.pct} label={`${sl.name}, ${sl.pct}%`} className="flex-1" />
                 <input
                   type="number" min={0} max={100} value={sl.pct}
-                  onChange={e => setSlots(prev => prev.map((s, idx) => idx === i ? { ...s, pct: Number(e.target.value) } : s))}
+                  onChange={e => { slotsTocados.current = true; setSlots(prev => prev.map((s, idx) => idx === i ? { ...s, pct: Number(e.target.value) } : s)); }}
                   className="w-16 text-right bg-raised border border-hairline rounded-control px-2 py-1 text-title-s text-white font-mono focus:outline-none focus:border-accent/50"
                 />
                 <span className="font-mono text-ink-3 text-label">%</span>

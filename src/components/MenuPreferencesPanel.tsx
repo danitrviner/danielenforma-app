@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { AthleteNutritionConfig, HungerProfile } from '../types';
+import { CONTEOS_COMIDAS } from '../utils/menuEngine';
 import { getOnboarding, getAthleteNutritionConfig, saveAthleteNutritionConfig } from '../dbService';
 import VegetableSelector from './VegetableSelector';
 import { DISH_TYPES, DishType } from '../utils/dishTypes';
@@ -20,9 +21,6 @@ const HUNGER_OPTIONS: SegmentedOption[] = [
 
 const TRAINING_SLOT_FALLBACK_OPTIONS = [1, 2, 3, 4, 5].map(s => ({ value: String(s), label: SLOT_LABEL[s] }));
 
-const escala = (uno: string, cinco: string) =>
-  [1, 2, 3, 4, 5].map(n => ({ value: String(n), label: n === 1 ? `1 · ${uno}` : n === 5 ? `5 · ${cinco}` : String(n) }));
-
 /** Las respuestas de la ficha que el atleta puede corregir, en el orden en que
  *  se le enseñan. La clave es la misma en `OnboardingData` y en
  *  `AthleteNutritionConfig` a propósito: así el valor guardado y el de partida
@@ -41,21 +39,9 @@ const FICHA_CAMPOS = {
     label: 'Tiempo para cocinar',
     options: [10, 15, 20, 30, 45, 60, 90].map(m => ({ value: String(m), label: `${m} min` })),
   },
-  cookingLevel: {
-    label: 'Nivel en la cocina',
-    options: escala('me defiendo', 'cocino de todo'),
-  },
   mealCount: {
     label: 'Comidas al día',
-    options: [3, 4, 5].map(n => ({ value: String(n), label: String(n) })),
-  },
-  breakfastVariety: {
-    label: 'Variedad en desayunos',
-    options: escala('siempre igual', 'cada día algo'),
-  },
-  lunchVariety: {
-    label: 'Variedad en comidas',
-    options: escala('siempre igual', 'cada día algo'),
+    options: CONTEOS_COMIDAS.map(n => ({ value: String(n), label: String(n) })),
   },
 } as const;
 

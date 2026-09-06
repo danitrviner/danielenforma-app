@@ -5,6 +5,7 @@ import {
   ProgressFrequency, TechniqueLevel, SleepRoutineOrScreen,
   OnboardingSection, OnboardingTemplateQuestion,
 } from '../types';
+import { CONTEOS_COMIDAS, ConteoComidas } from '../utils/menuEngine';
 import { saveOnboarding, updateOnboarding } from '../dbService';
 import { ACTIVITY_FACTORS, calcAge, computeAuto } from '../utils/energyCalc';
 import type { AutoCalc } from '../utils/energyCalc';
@@ -28,7 +29,7 @@ const GOAL_ADJ_LABEL: Record<GoalBody, string> = {
   aumentar_musculo: '+10%',
 };
 
-const MEAL_PRESETS: Record<3 | 4 | 5, OnboardingMeal[]> = {
+const MEAL_PRESETS: Record<ConteoComidas, OnboardingMeal[]> = {
   3: [
     { intakeType: 1, name: 'Desayuno',     needsTupper: false },
     { intakeType: 3, name: 'Comida',       needsTupper: false },
@@ -46,6 +47,17 @@ const MEAL_PRESETS: Record<3 | 4 | 5, OnboardingMeal[]> = {
     { intakeType: 3, name: 'Comida',       needsTupper: false },
     { intakeType: 4, name: 'Merienda',     needsTupper: false },
     { intakeType: 5, name: 'Cena',         needsTupper: false },
+  ],
+  // La recena comparte franja con la cena: solo hay cinco tipos de ingesta y son
+  // las recetas de cena las que le sirven. El reparto divide el peso de esa
+  // franja entre las dos (ver utils/slotWeights.ts).
+  6: [
+    { intakeType: 1, name: 'Desayuno',     needsTupper: false },
+    { intakeType: 2, name: 'Media mañana', needsTupper: false },
+    { intakeType: 3, name: 'Comida',       needsTupper: false },
+    { intakeType: 4, name: 'Merienda',     needsTupper: false },
+    { intakeType: 5, name: 'Cena',         needsTupper: false },
+    { intakeType: 5, name: 'Recena',       needsTupper: false },
   ],
 };
 
@@ -115,12 +127,9 @@ interface FormState {
   waistCm:                number | '';
   hipCm:                  number | '';
   allergies:        string[];
-  mealCount:        3 | 4 | 5;
+  mealCount:        ConteoComidas;
   meals:            OnboardingMeal[];
-  cookingLevel:     number;
   cookingMaxTime:   number;
-  breakfastVariety: number;
-  lunchVariety:     number;
   menuVariety:      number;
   preferredDishTypes: string[];
   excludedDishTypes:  string[];
@@ -147,7 +156,7 @@ interface FormState {
 }
 
 function fromOnboarding(d: OnboardingData): FormState {
-  const count = ((d.mealCount ?? 4) as 3 | 4 | 5);
+  const count = (CONTEOS_COMIDAS.includes(d.mealCount as ConteoComidas) ? d.mealCount : 4) as ConteoComidas;
   return {
     sex:              d.sex ?? '',
     birthDate:        d.birthDate ?? '',
@@ -194,10 +203,7 @@ function fromOnboarding(d: OnboardingData): FormState {
     allergies:        d.allergies,
     mealCount:        count,
     meals:            d.meals ?? MEAL_PRESETS[count].map(m => ({ ...m })),
-    cookingLevel:     d.cookingLevel ?? 3,
     cookingMaxTime:   d.cookingMaxTime ?? 45,
-    breakfastVariety: d.breakfastVariety ?? 3,
-    lunchVariety:     d.lunchVariety ?? 3,
     menuVariety:      d.menuVariety ?? 3,
     preferredDishTypes: d.preferredDishTypes ?? [],
     excludedDishTypes:  d.excludedDishTypes ?? [],
@@ -270,10 +276,7 @@ const DEFAULTS: FormState = {
   allergies:        [],
   mealCount:        4,
   meals:            MEAL_PRESETS[4].map(m => ({ ...m })),
-  cookingLevel:     3,
   cookingMaxTime:   45,
-  breakfastVariety: 3,
-  lunchVariety:     3,
   menuVariety:      3,
   batchCookingPreferred: false,
   preferredDishTypes: [],
@@ -581,7 +584,7 @@ export default function OnboardingForm({
   };
 
   // ── Meal helpers ───────────────────────────────────────────────────────────
-  const changeMealCount = (n: 3 | 4 | 5) => {
+  const changeMealCount = (n: ConteoComidas) => {
     setForm(prev => ({ ...prev, mealCount: n, meals: MEAL_PRESETS[n].map(m => ({ ...m })) }));
   };
 
@@ -663,10 +666,7 @@ export default function OnboardingForm({
       allergies:          form.allergies,
       mealCount:          form.mealCount,
       meals:              form.meals,
-      cookingLevel:       form.cookingLevel,
       cookingMaxTime:     form.cookingMaxTime,
-      breakfastVariety:   form.breakfastVariety,
-      lunchVariety:       form.lunchVariety,
       menuVariety:        form.menuVariety,
       batchCookingPreferred: form.batchCookingPreferred,
       preferredDishTypes: form.preferredDishTypes,
@@ -1100,7 +1100,7 @@ export default function OnboardingForm({
         <div className="space-y-2">
           <p className="font-mono text-caption text-ink-2 uppercase tracking-wide">Número de ingestas</p>
           <div className="flex gap-2">
-            {([3, 4, 5] as const).map(n => (
+            {CONTEOS_COMIDAS.map(n => (
               <button key={n} type="button" onClick={() => changeMealCount(n)}
                 className={`flex-1 py-2 rounded-control font-mono text-body-s font-bold border transition-all ${
                   form.mealCount === n
@@ -1117,7 +1117,9 @@ export default function OnboardingForm({
           <p className="font-mono text-caption text-ink-2 uppercase tracking-wide">Ingestas y tupper</p>
           <div className="divide-y divide-hairline rounded-surface overflow-hidden border border-hairline">
             {form.meals.map((meal, i) => (
-              <div key={meal.intakeType} className="flex items-center gap-3 px-4 py-3 bg-bg">
+              // La clave lleva el índice porque con seis comidas Cena y Recena
+              // comparten franja (`intakeType: 5`) y la clave se repetía.
+              <div key={`${meal.intakeType}-${i}`} className="flex items-center gap-3 px-4 py-3 bg-bg">
                 <Icon name={INTAKE_ICONS[meal.intakeType]} size="m" className="text-ink-3" />
                 <span className="flex-1 font-sans text-label text-white">{meal.name}</span>
                 <button type="button" onClick={() => toggleTupper(i)}
@@ -1137,13 +1139,9 @@ export default function OnboardingForm({
 
       {/* ── COCINA ───────────────────────────────────────────────────── */}
       <Section icon="soup_kitchen" title="Cocina">
-        <SliderField
-          label="Nivel de cocina"
-          min={1} max={5} value={form.cookingLevel}
-          onChange={v => set('cookingLevel', v)}
-          minLabel="Básico (hervir agua)"
-          maxLabel="Chef avanzado"
-        />
+        {/* "Nivel de cocina" y las variedades de desayuno/almuerzo se
+            preguntaban aquí y no las leía nadie — ver el comentario en
+            OnboardingData (types.ts). Retiradas el 2026-09-05. */}
         <SliderField
           label="Tiempo máximo por receta"
           min={15} max={90} step={5} value={form.cookingMaxTime}
@@ -1151,20 +1149,6 @@ export default function OnboardingForm({
           unit=" min"
           minLabel="15 min"
           maxLabel="90 min"
-        />
-        <SliderField
-          label="Variedad en desayunos"
-          min={1} max={5} value={form.breakfastVariety}
-          onChange={v => set('breakfastVariety', v)}
-          minLabel="Siempre lo mismo"
-          maxLabel="Mucha variedad"
-        />
-        <SliderField
-          label="Variedad en almuerzos y meriendas"
-          min={1} max={5} value={form.lunchVariety}
-          onChange={v => set('lunchVariety', v)}
-          minLabel="Siempre lo mismo"
-          maxLabel="Mucha variedad"
         />
         <SliderField
           label="Variedad del menú semanal generado"

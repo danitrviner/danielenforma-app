@@ -1,17 +1,21 @@
 import React, { useMemo, useState } from 'react';
+import { minutosDeReceta } from '../utils/tiempoDeReceta';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   UserProfile, WeeklyMenu, RecipeFavorites, MenuCompletionLog,
-  WeekDay, MenuDay, MenuMeal, Recipe, FoodCategory,
+  WeekDay, MenuDay, MenuMeal, Recipe, FoodCategory, MenuComplement, MealItem, DietMode,
 } from '../types';
 import {
   getPublishedMenu, getOnboarding, getAthleteNutritionConfig,
   updateWeeklyMenu, getMenuCompletionLog, saveMenuCompletionLog,
   queryRecetasForGenerator, getRecipes, getRecipeById,
-  getRecipeFavorites, saveRecipeFavorites,
+  getRecipeFavorites, saveRecipeFavorites, getFoodItems, seedFoodItemsIfEmpty,
 } from '../dbService';
-import { findSwapAlternatives, recipeMatchesSlot, buildBatchPlan, GeneratorPrefs, MenuCandidate } from '../utils/menuEngine';
+import { findSwapAlternatives, recipeMatchesSlot, buildBatchPlan, totalConExtras, GeneratorPrefs, SwapCandidate } from '../utils/menuEngine';
+import { normalizeStr } from '../utils/foodPrefs';
+import { complementosDisponibles } from '../utils/menuComplements';
+import { foodNameWithoutGrams, foodNameShort, itemWeightLabel } from '../utils/exchangeHelpers';
 import { exchangeToKcal } from '../utils/nutritionConstants';
 import { buildShoppingList, ShoppingListItem } from '../utils/menuShoppingList';
 import { DishType } from '../utils/dishTypes';
@@ -41,6 +45,21 @@ function fmtExch(exch: { HC: number; PROT: number; GRASA: number }): string {
   if (exch.PROT > 0) parts.push(`${exch.PROT} PROT`);
   if (exch.GRASA > 0) parts.push(`${exch.GRASA} GRASA`);
   return parts.join(' · ') || '—';
+}
+
+/** Cuántas alternativas se pintan de golpe por bloque (el resto, bajo demanda). */
+const SWAP_PAGE = 12;
+
+// Qué le pasa al día si acepta una alternativa "aproximada". Se dice el macro y
+// la dirección, no un número abstracto: "te deja corto de HC" es accionable,
+// "desviación 1,4" no. Solo se nombra el macro que más se mueve.
+function describeDrift(drift: { HC: number; PROT: number; GRASA: number }): string {
+  const cats: [keyof typeof drift, string][] = [['HC', 'hidratos'], ['PROT', 'proteína'], ['GRASA', 'grasa']];
+  const [cat, label] = cats.reduce((peor, actual) =>
+    Math.abs(drift[actual[0]]) > Math.abs(drift[peor[0]]) ? actual : peor);
+  const v = drift[cat];
+  if (Math.abs(v) < 0.25) return 'te deja casi igual';
+  return v > 0 ? `te pasa ${v} de ${label}` : `te deja ${Math.abs(v)} corto de ${label}`;
 }
 
 interface Props {
@@ -84,6 +103,15 @@ export default function MyMenuScreen({ profile }: Props) {
     [favoritesData, profile.email]
   );
 
+  // Banco de intercambios: es el catálogo de extras que puede elegir el atleta.
+  const { data: foodList = [] } = useQuery({
+    queryKey: ['foodItems'],
+    queryFn: () => seedFoodItemsIfEmpty().catch(() => {}).then(getFoodItems),
+    staleTime: Infinity, // no cambia dentro de una sesión
+  });
+  // El modo lo fija el entrenador; si habilitó varios, manda el primero.
+  const dietMode: DietMode = nutritionConfig?.enabledModes?.[0] ?? 'OMNIVORO';
+
   const loading = loadingMenu || loadingOnboarding || loadingNutritionConfig || loadingCompletionLog || loadingFavorites;
 
   const [detailOpen, setDetailOpen] = useState(false);
@@ -93,7 +121,12 @@ export default function MyMenuScreen({ profile }: Props) {
   const [subForIngredient, setSubForIngredient] = useState<string | null>(null);
   const [swapFor, setSwapFor] = useState<{ mealId: string; slot: number } | null>(null);
   const [swapLoading, setSwapLoading] = useState(false);
-  const [swapCandidates, setSwapCandidates] = useState<MenuCandidate[]>([]);
+  const [swapCandidates, setSwapCandidates] = useState<SwapCandidate[]>([]);
+  const [swapQuery, setSwapQuery] = useState('');
+  const [swapVisible, setSwapVisible] = useState(SWAP_PAGE);
+  // Edición de extras: `idx` null = añadir uno nuevo a esa comida.
+  const [extrasFor, setExtrasFor] = useState<{ mealId: string; idx: number | null } | null>(null);
+  const [extraQuery, setExtraQuery] = useState('');
   const [shoppingOpen, setShoppingOpen] = useState(false);
   const [shoppingLoading, setShoppingLoading] = useState(false);
   const [shoppingItems, setShoppingItems] = useState<ShoppingListItem[] | null>(null);
@@ -113,6 +146,14 @@ export default function MyMenuScreen({ profile }: Props) {
     preferredDishTypes: (nutritionConfig?.preferredDishTypes ?? onboarding?.preferredDishTypes ?? []) as DishType[],
     excludedDishTypes: (nutritionConfig?.excludedDishTypes ?? onboarding?.excludedDishTypes ?? []) as DishType[],
   }), [onboarding, nutritionConfig, favorites]);
+
+  const swapFiltradas = useMemo(() => {
+    const q = normalizeStr(swapQuery.trim());
+    if (!q) return swapCandidates;
+    return swapCandidates.filter(c => normalizeStr(c.recipe.name).includes(q));
+  }, [swapCandidates, swapQuery]);
+  const swapExactas = useMemo(() => swapFiltradas.filter(c => c.fit === 'exacto'), [swapFiltradas]);
+  const swapAproximadas = useMemo(() => swapFiltradas.filter(c => c.fit === 'aproximado'), [swapFiltradas]);
 
   const day: MenuDay | undefined = menu?.days.find(d => d.day === selectedDay);
   const batchPlan = useMemo(() => (menu ? buildBatchPlan(menu.days) : []), [menu]);
@@ -224,22 +265,73 @@ export default function MyMenuScreen({ profile }: Props) {
     setSwapFor({ mealId: meal.id, slot: meal.slot });
     setSwapLoading(true);
     setSwapCandidates([]);
+    setSwapQuery('');
+    setSwapVisible(SWAP_PAGE);
     if (day) {
-      const [recetas, builder] = await Promise.all([queryRecetasForGenerator(meal.slot, 300), getRecipes({ ownerId: profile.userId })]);
+      // Recetario ENTERO de la franja, no la muestra de 300 que usa el generador.
+      // El índice ya está en memoria (se descarga una vez), así que recortarlo
+      // aquí no ahorraba nada y sí escondía opciones: con un día de 2.200 kcal,
+      // de las ~660 alternativas válidas que hay para la comida, la muestra de
+      // 300 solo contenía ~40, y de esas se enseñaban 5.
+      const [recetas, builder] = await Promise.all([
+        queryRecetasForGenerator(meal.slot, Infinity),
+        getRecipes({ ownerId: profile.userId }),
+      ]);
       const pool = [...recetas, ...builder.filter(r => recipeMatchesSlot(r, meal.slot))];
-      const alts = findSwapAlternatives(day, meal.id, pool, prefs, 5);
-      setSwapCandidates(alts);
+      // `foodList` y el modo van hasta el final: con ellos, cada alternativa se
+      // evalúa con las raciones extra que le tocarían a ELLA, no con el plato
+      // pelado (ver `findSwapAlternatives`).
+      setSwapCandidates(findSwapAlternatives(day, meal.id, pool, prefs, Infinity, dietMode, foodList));
     }
     setSwapLoading(false);
   }
 
-  async function confirmSwap(candidate: MenuCandidate) {
+  function abrirExtras(meal: MenuMeal, idx: number | null) {
+    setExtrasFor({ mealId: meal.id, idx });
+    setExtraQuery('');
+  }
+
+  /** Escribe los extras de una comida y persiste. Un solo camino para cambiar,
+   *  añadir, subir/bajar cantidad y quitar, para que las kcal se recalculen
+   *  siempre igual y no haya forma de dejar la comida descuadrada. */
+  async function guardarExtras(mealId: string, siguiente: MenuComplement[]) {
+    if (!menu || !day) return;
+    const nextDays = menu.days.map(d => d.day !== selectedDay ? d : {
+      ...d,
+      meals: d.meals.map(m => m.id !== mealId ? m : {
+        ...m,
+        complements: siguiente,
+        kcal: Math.round(exchangeToKcal(totalConExtras(m.exch, siguiente, m.racionesExtra))),
+      }),
+    });
+    queryClient.setQueryData<WeeklyMenu | null>(menuKey, prev => prev ? { ...prev, days: nextDays } : prev);
+    setShoppingItems(null); // la lista de la compra cacheada ya no vale
+    await updateWeeklyMenu(menu.id, { days: nextDays }).catch(() => {});
+  }
+
+  function extrasDe(mealId: string): MenuComplement[] {
+    return day?.meals.find(m => m.id === mealId)?.complements ?? [];
+  }
+
+  async function confirmSwap(candidate: SwapCandidate) {
     if (!menu || !day || !swapFor) return;
     const meal = day.meals.find(m => m.id === swapFor.mealId);
     if (!meal) return;
 
+    // Los ACOMPAÑAMIENTOS se conservan (una pieza de fruta sigue valiendo con
+    // otro plato), pero las RACIONES EXTRA se caen: "+45g de arroz" solo tiene
+    // sentido mientras el plato sea el arroz con pollo, y la receta nueva puede
+    // no llevar arroz. Por eso la alternativa se busca para cubrir el plato MÁS
+    // sus raciones extra (ver `findSwapAlternatives`).
     const nextMeals = day.meals.map(m => m.id === meal.id
-      ? { ...m, recipeId: candidate.recipe.id, recipeName: candidate.recipe.name, recipeImage: fotoDeReceta(candidate.recipe), scale: candidate.scale, exch: candidate.exch, kcal: Math.round(exchangeToKcal(candidate.exch)), complements: [] }
+      ? {
+        ...m,
+        recipeId: candidate.recipe.id, recipeName: candidate.recipe.name,
+        recipeImage: fotoDeReceta(candidate.recipe),
+        scale: candidate.scale, exch: candidate.exch,
+        racionesExtra: candidate.raciones.length > 0 ? candidate.raciones : undefined,
+        kcal: Math.round(exchangeToKcal(totalConExtras(candidate.exch, m.complements, candidate.raciones))),
+      }
       : m);
     const nextDay: MenuDay = { ...day, meals: nextMeals };
     const nextDays = menu.days.map(d => d.day === selectedDay ? nextDay : d);
@@ -407,13 +499,54 @@ export default function MyMenuScreen({ profile }: Props) {
 
                   <div className="flex-1 min-w-0">
                     <p className="font-mono text-caption text-ink-2">{fmtExch(meal.exch)} · {meal.kcal} kcal</p>
-                    {meal.complements.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-2">
-                        {meal.complements.map((c, ci) => (
-                          <Badge key={ci} tone="neutral">+{c.quantity} {CAT_LABEL[c.category]} · {c.foodLabel}</Badge>
+                    {/* Más ración de algo que el plato YA lleva. Va antes que los
+                        acompañamientos y con otro aspecto, porque no es algo que
+                        se añade al lado: es el mismo plato, servido más grande. */}
+                    {(meal.racionesExtra?.length ?? 0) > 0 && (
+                      <div className="flex flex-wrap items-center gap-1 mt-2">
+                        {meal.racionesExtra!.map((r, ri) => (
+                          <span
+                            key={ri}
+                            className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-accent/10 border border-accent/25"
+                          >
+                            <Icon name="add" size="s" className="text-accent" />
+                            <span className="font-mono text-caption text-accent">
+                              {r.gramos}g de {r.nombre}
+                            </span>
+                          </span>
                         ))}
                       </div>
                     )}
+
+                    {/* Los acompañamientos son EDITABLES. Los pone el generador
+                        para cerrar lo que ni el plato ni su ración extra llegan a
+                        cubrir, pero quien decide si eso es pan, fruta o un yogur
+                        es el atleta: son sus intercambios y su nevera. */}
+                    <div className="flex flex-wrap items-center gap-1 mt-2">
+                      {meal.complements.map((c, ci) => (
+                        <button
+                          key={ci}
+                          onClick={() => abrirExtras(meal, ci)}
+                          className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-raised border border-hairline hover:border-accent/40 transition-colors"
+                        >
+                          {/* El peso primero: es lo accionable ("30g de pan"),
+                              no el número de intercambios. Nombre corto, sin la
+                              coletilla entre paréntesis del banco, que en un
+                              móvil de 375px se comía la fila entera. */}
+                          <span className="font-mono text-caption text-ink-2 truncate max-w-[13rem]">
+                            {itemWeightLabel(c.foodLabel, c.quantity)} {foodNameShort(c.foodLabel)}
+                          </span>
+                          <Icon name="edit" size="s" className="text-ink-3" />
+                        </button>
+                      ))}
+                      <button
+                        onClick={() => abrirExtras(meal, null)}
+                        className="inline-flex items-center gap-1 px-2 py-1 rounded-lg border border-dashed border-hairline text-caption font-mono text-ink-3 hover:text-ink hover:border-accent/40 transition-colors"
+                      >
+                        <Icon name="add" size="s" />
+                        Extra
+                      </button>
+                    </div>
                     <div className="flex items-center gap-3 mt-2">
                       <button
                         onClick={() => openSwap(meal)}
@@ -483,25 +616,172 @@ export default function MyMenuScreen({ profile }: Props) {
             ) : swapCandidates.length === 0 ? (
               <p className="font-sans text-label text-ink-3 text-center py-6">No hay alternativas disponibles ahora mismo para este hueco.</p>
             ) : (
-              swapCandidates.map((c, ci) => (
-                <button
-                  key={ci}
-                  onClick={() => confirmSwap(c)}
-                  className="w-full flex items-center gap-3 px-3 py-3 text-left bg-bg border border-hairline hover:border-accent/40 rounded-control transition-all"
-                >
-                  <div className="w-10 h-10 rounded-surface overflow-hidden flex-shrink-0 bg-raised">
-                    <FotoDeReceta src={fotoDeReceta(c.recipe)} alt="" className="w-full h-full object-cover" fallback={null} />
+              <>
+                {/* La lista ya no son 5 sino todo lo que encaja (cientos en las
+                    franjas grandes), así que hace falta poder buscar dentro. */}
+                <input
+                  type="search"
+                  value={swapQuery}
+                  onChange={e => setSwapQuery(e.target.value)}
+                  placeholder="Buscar entre las alternativas…"
+                  className="w-full px-3 py-2 bg-bg border border-hairline rounded-control font-sans text-body-s text-ink placeholder:text-ink-3 focus:border-accent/40 outline-none"
+                />
+                <p className="font-mono text-caption text-ink-3">
+                  {swapExactas.length} cuadran con tus puntos
+                  {swapAproximadas.length > 0 && ` · ${swapAproximadas.length} se acercan`}
+                </p>
+
+                {[
+                  { titulo: 'Cuadran con tus puntos', lista: swapExactas },
+                  { titulo: 'Se acercan (te dejan algo desajustado)', lista: swapAproximadas },
+                ].map(({ titulo, lista }) => lista.length === 0 ? null : (
+                  <div key={titulo} className="space-y-2">
+                    <p className="font-sans text-caption text-ink-2 uppercase tracking-wider pt-2">{titulo}</p>
+                    {lista.slice(0, swapVisible).map(c => (
+                      <button
+                        key={c.recipe.id}
+                        onClick={() => confirmSwap(c)}
+                        className="w-full flex items-center gap-3 px-3 py-3 text-left bg-bg border border-hairline hover:border-accent/40 rounded-control transition-all"
+                      >
+                        <div className="w-10 h-10 rounded-surface overflow-hidden flex-shrink-0 bg-raised">
+                          <FotoDeReceta src={fotoDeReceta(c.recipe)} alt="" className="w-full h-full object-cover" fallback={null} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-sans text-body-s text-ink truncate">{c.recipe.name}</p>
+                          <p className="font-mono text-caption text-ink-2">
+                            {fmtExch(c.exch)}
+                            {c.fit === 'exacto' ? ' · mantiene tus puntos del día' : ` · ${describeDrift(c.drift)}`}
+                          </p>
+                        </div>
+                      </button>
+                    ))}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-sans text-body-s text-ink truncate">{c.recipe.name}</p>
-                    <p className="font-mono text-caption text-ink-2">{fmtExch(c.exch)} · mantiene tus puntos del día</p>
-                  </div>
-                </button>
-              ))
+                ))}
+
+                {/* Cada nivel se corta por separado a `swapVisible`, así que el
+                    botón tiene que mirar cada uno: comparando la suma contra
+                    `swapVisible * 2` se escondía "ver más" habiendo 30 exactas y
+                    ninguna aproximada. */}
+                {(swapExactas.length > swapVisible || swapAproximadas.length > swapVisible) && (
+                  <button
+                    onClick={() => setSwapVisible(v => v + SWAP_PAGE)}
+                    className="w-full py-3 font-sans text-body-s text-accent hover:text-accent/80 transition-colors"
+                  >
+                    Ver más alternativas
+                  </button>
+                )}
+              </>
             )}
           </div>
         </Sheet>
       )}
+
+      {/* Elegir extras — catálogo = banco de intercambios entero */}
+      {extrasFor && (() => {
+        const extras = extrasDe(extrasFor.mealId);
+        const actual = extrasFor.idx != null ? extras[extrasFor.idx] : null;
+        const q = normalizeStr(extraQuery.trim());
+        const catalogo = complementosDisponibles(foodList, dietMode, actual?.category)
+          .filter(f => !q || normalizeStr(f.label).includes(q));
+
+        function cambiarCantidad(delta: number) {
+          if (extrasFor?.idx == null || !actual) return;
+          const cantidad = Math.round((actual.quantity + delta) * 4) / 4;
+          const siguiente = cantidad < 0.25
+            ? extras.filter((_, i) => i !== extrasFor.idx)
+            : extras.map((c, i) => i === extrasFor.idx ? { ...c, quantity: cantidad } : c);
+          guardarExtras(extrasFor.mealId, siguiente);
+          if (cantidad < 0.25) setExtrasFor(null);
+        }
+
+        function elegirAlimento(item: MealItem) {
+          if (!extrasFor) return;
+          const siguiente = extrasFor.idx != null
+            ? extras.map((c, i) => i === extrasFor.idx ? { ...c, foodLabel: item.label, category: item.category } : c)
+            : [...extras, { foodLabel: item.label, category: item.category, quantity: 1 }];
+          guardarExtras(extrasFor.mealId, siguiente);
+          setExtrasFor(null);
+        }
+
+        return (
+          <Sheet
+            open
+            onClose={() => setExtrasFor(null)}
+            title={actual ? 'Cambiar este extra' : 'Añadir un extra'}
+            size="m"
+          >
+            <div className="space-y-3 pt-2">
+              {actual && (
+                <div className="flex items-center justify-between gap-3 p-3 bg-raised border border-hairline rounded-control">
+                  <div className="min-w-0">
+                    <p className="font-sans text-body-s text-ink truncate">{foodNameWithoutGrams(actual.foodLabel)}</p>
+                    <p className="font-mono text-caption text-ink-2">{itemWeightLabel(actual.foodLabel, actual.quantity)}</p>
+                  </div>
+                  {/* Mismo patrón que el `Stepper` de MesocycleManager: el
+                      carácter, no un <Icon>. Con el icono sobre `bg-bg` y sin
+                      color explícito los dos botones salían casi invisibles
+                      (comprobado en navegador a 375px). */}
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <button
+                      onClick={() => cambiarCantidad(-0.25)}
+                      className="w-11 h-11 rounded-control bg-raised text-ink-2 hover:text-ink text-body-s font-bold flex items-center justify-center"
+                      title="Menos cantidad"
+                    >−</button>
+                    <span className="font-mono text-body-s text-ink w-10 text-center">{actual.quantity}</span>
+                    <button
+                      onClick={() => cambiarCantidad(0.25)}
+                      className="w-11 h-11 rounded-control bg-raised text-ink-2 hover:text-ink text-body-s font-bold flex items-center justify-center"
+                      title="Más cantidad"
+                    >+</button>
+                  </div>
+                </div>
+              )}
+
+              {actual && (
+                <button
+                  onClick={() => {
+                    guardarExtras(extrasFor!.mealId, extras.filter((_, i) => i !== extrasFor!.idx));
+                    setExtrasFor(null);
+                  }}
+                  className="w-full py-2 font-sans text-body-s text-danger hover:text-danger/80 transition-colors"
+                >
+                  Quitar este extra
+                </button>
+              )}
+
+              <div>
+                <p className="font-mono text-caption text-ink-3 mb-2">
+                  {actual
+                    ? `Cámbialo por otro de ${CAT_LABEL[actual.category]} — mismos intercambios`
+                    : 'Elige de tu banco de intercambios'}
+                </p>
+                <input
+                  type="search"
+                  value={extraQuery}
+                  onChange={e => setExtraQuery(e.target.value)}
+                  placeholder="Buscar (pan, fruta, arroz…)"
+                  className="w-full px-3 py-2 bg-bg border border-hairline rounded-control font-sans text-body-s text-ink placeholder:text-ink-3 focus:border-accent/40 outline-none"
+                />
+              </div>
+
+              <div className="space-y-1">
+                {catalogo.length === 0 ? (
+                  <p className="font-sans text-label text-ink-3 text-center py-6">Nada con ese nombre en tu banco.</p>
+                ) : catalogo.slice(0, 60).map(item => (
+                  <button
+                    key={item.id}
+                    onClick={() => elegirAlimento(item)}
+                    className="w-full flex items-center justify-between gap-3 px-3 py-3 text-left bg-bg border border-hairline hover:border-accent/40 rounded-control transition-all"
+                  >
+                    <span className="font-sans text-body-s text-ink truncate">{item.label}</span>
+                    <Badge tone="neutral">{CAT_LABEL[item.category]}</Badge>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </Sheet>
+        );
+      })()}
 
       {/* Recipe detail */}
       {detailOpen && (
@@ -524,7 +804,7 @@ export default function MyMenuScreen({ profile }: Props) {
                   </div>
                 )}
                 {detailRecipe.kcal != null && (
-                  <p className="font-mono text-caption text-ink-2">{detailRecipe.kcal} kcal{detailRecipe.cookingTime != null ? ` · ${detailRecipe.cookingTime} min` : ''}</p>
+                  <p className="font-mono text-caption text-ink-2">{detailRecipe.kcal} kcal{detailRecipe.cookingTime != null ? ` · ~${minutosDeReceta(detailRecipe)} min` : ''}</p>
                 )}
                 {(detailRecipe.ingredientsText?.length || detailRecipe.ingredients?.length) ? (
                   <div>

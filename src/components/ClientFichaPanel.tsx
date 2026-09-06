@@ -580,24 +580,15 @@ export default function ClientFichaPanel({
               </Collapsible>
             )}
 
-            {(onboardingData.cookingLevel || onboardingData.cookingMaxTime
+            {(onboardingData.cookingMaxTime
               || onboardingData.menuVariety || onboardingData.batchCookingPreferred) && (
               <Collapsible
                 className="border-t border-hairline"
                 trigger={<p className="font-mono text-caption text-ink-2 uppercase tracking-wide">Cocina</p>}
               >
                 <div className="flex flex-wrap gap-x-4 gap-y-1 text-label font-mono pb-3">
-                  {onboardingData.cookingLevel && (
-                    <span className="text-ink-2">Nivel: <span className="text-white font-bold">{onboardingData.cookingLevel}/5</span></span>
-                  )}
                   {onboardingData.cookingMaxTime && (
                     <span className="text-ink-2">Tiempo máx: <span className="text-white font-bold">{onboardingData.cookingMaxTime} min</span></span>
-                  )}
-                  {onboardingData.breakfastVariety && (
-                    <span className="text-ink-2">Variedad desayunos: <span className="text-white font-bold">{onboardingData.breakfastVariety}/5</span></span>
-                  )}
-                  {onboardingData.lunchVariety && (
-                    <span className="text-ink-2">Variedad almuerzos: <span className="text-white font-bold">{onboardingData.lunchVariety}/5</span></span>
                   )}
                   {onboardingData.menuVariety && (
                     <span className="text-ink-2">Variedad del menú: <span className="text-white font-bold">{onboardingData.menuVariety}/5</span></span>

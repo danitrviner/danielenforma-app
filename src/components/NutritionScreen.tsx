@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { minutosDeReceta } from '../utils/tiempoDeReceta';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { UserProfile, Diet, DietMeal, DietItem, FoodCategory, DietMode, MealItem, Recipe, RecipeFavorites, RefeedDay } from '../types';
 import { getDietsForAthlete, getAthleteDietConfig, saveAthleteDietConfig, createDiet, updateDiet, deleteDiet, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig, saveAthleteNutritionConfig, getRecipes, getRecipeFavorites, getNutritionProgram, markNutritionPhaseSeen, computeActivePhase, createNotificationDeduped, getDietCompletionLog, saveDietCompletionLog, createRecipe, queryRecetas, queryRecetasForGenerator, getOnboarding, getRecipeById } from '../dbService';
@@ -2281,7 +2282,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                 {(recetaDetalle.kcal != null || recetaDetalle.cookingTime != null) && (
                   <p className="font-mono text-caption text-ink-2">
                     {[recetaDetalle.kcal != null && `${recetaDetalle.kcal} kcal`,
-                      recetaDetalle.cookingTime != null && `${recetaDetalle.cookingTime} min`]
+                      recetaDetalle.cookingTime != null && `~${minutosDeReceta(recetaDetalle)} min`]
                       .filter(Boolean).join(' · ')}
                   </p>
                 )}

@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Motor de menús</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;800&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* La app es oscura y solo oscura: el prototipo se compromete con ese mundo, así
+   que pinta fondo y colores siempre a mano y no hereda nada del anfitrión. */
+:root{
+  --bg:#111110; --card:#181816; --raised:#1e1e1b; --hair:rgba(255,255,255,.07);
+  --hair2:rgba(255,255,255,.12);
+  --ink:#f3f1ea; --ink2:#a09d94; --ink3:#6c6960;
+  --oro:#fbcb1a; --oro-d:#d4a800; --cian:#00eefc;
+  --ok:#7ad19a; --mal:#ff6f5e;
+  --sans:'Archivo','Helvetica Neue',Arial,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,'SF Mono',Menlo,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);
+  font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+body.sin-scroll{overflow:hidden}
+h1,h2,h3,h4{margin:0;text-wrap:balance;font-weight:600}
+p{margin:0}
+button{font:inherit;color:inherit;cursor:pointer;background:none;border:none}
+button:focus-visible,input:focus-visible{outline:2px solid var(--oro);outline-offset:2px}
+ul{margin:0;padding:0;list-style:none}
+
+/* ── Cabecera ─────────────────────────────────────────────────────────────── */
+.top{border-bottom:1px solid var(--hair);padding:22px 24px 18px;
+  display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end;justify-content:space-between}
+.top h1{font-size:26px;font-weight:800;letter-spacing:-.02em}
+.top .sub{color:var(--ink2);font-size:13.5px;max-width:62ch;margin-top:5px}
+.top .sub b{color:var(--ink);font-weight:600}
+.marca{font-family:var(--mono);font-size:11px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--oro);margin-bottom:7px}
+
+/* ── Rejilla general ──────────────────────────────────────────────────────── */
+.zona{display:grid;grid-template-columns:340px minmax(0,1fr);gap:0;align-items:start}
+@media (max-width:1000px){.zona{grid-template-columns:1fr}}
+
+/* ── Ficha (izquierda) ────────────────────────────────────────────────────── */
+.rail{border-right:1px solid var(--hair);padding:20px 20px 40px;
+  position:sticky;top:0;max-height:100vh;overflow-y:auto}
+/* En móvil la ficha es alta y empujaba el menú —que es lo que se viene a ver—
+   fuera de la pantalla. Se queda con su propio scroll para que el menú esté a
+   un empujón, sin llevarse los controles al final de la página. */
+@media (max-width:1000px){.rail{position:static;max-height:44vh;border-right:none;
+  border-bottom:1px solid var(--hair)}}
+.rail-t{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--ink3);margin-bottom:14px}
+.grupo{margin-bottom:26px}
+.grupo-cab{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.grupo-cab h3{font-size:12.5px;letter-spacing:.01em;color:var(--ink2);font-weight:600}
+.punto{width:7px;height:7px;border-radius:50%;flex:none}
+.punto-coach{background:var(--cian)}
+.punto-alta{background:var(--ink3)}
+.punto-perfil{background:var(--oro)}
+.fila{margin-bottom:14px}
+.fila-lab{display:block;font-size:12.5px;color:var(--ink2);margin-bottom:6px}
+.fila-nota{font-size:11.5px;color:var(--oro);margin-top:6px;line-height:1.4}
+.segmentos{display:flex;flex-wrap:wrap;gap:4px}
+.seg{padding:6px 10px;border-radius:9px;background:var(--raised);
+  border:1px solid transparent;font-size:12.5px;color:var(--ink2);
+  font-family:var(--mono);transition:.12s}
+.seg:hover{color:var(--ink);border-color:var(--hair2)}
+.seg-on{background:rgba(251,203,26,.14);border-color:rgba(251,203,26,.5);color:var(--oro)}
+.etiquetas{display:flex;flex-wrap:wrap;gap:5px}
+.etiq{padding:5px 9px;border-radius:8px;background:var(--raised);
+  border:1px solid transparent;font-size:12px;color:var(--ink3);transition:.12s}
+.etiq:hover{color:var(--ink2)}
+.etiq-on{background:rgba(255,111,94,.14);border-color:rgba(255,111,94,.45);color:#ffa094}
+.rango{display:flex;align-items:center;gap:10px}
+.slider{flex:1;accent-color:var(--oro);min-width:0}
+.rango-val{font-family:var(--mono);font-size:13px;color:var(--oro);
+  min-width:78px;text-align:right;font-variant-numeric:tabular-nums}
+
+/* ── Panel derecho ────────────────────────────────────────────────────────── */
+.panel{padding:20px 24px 60px;min-width:0}
+.barra{display:flex;flex-wrap:wrap;gap:12px;align-items:center;
+  justify-content:space-between;margin-bottom:16px}
+.btn{background:var(--oro);color:#141308;font-weight:600;font-size:13.5px;
+  padding:9px 18px;border-radius:11px;transition:.12s}
+.btn:hover:not(:disabled){background:var(--oro-d)}
+.btn:disabled{opacity:.5;cursor:default}
+.btn-2{background:var(--raised);color:var(--ink);border:1px solid var(--hair2)}
+.btn-2:hover{border-color:var(--ink3)}
+
+/* Cuadro de mando */
+.mando{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
+  gap:8px;margin-bottom:26px}
+.tile{background:var(--card);border:1px solid var(--hair);border-radius:14px;
+  padding:12px 14px;border-left:3px solid var(--ink3)}
+.tile-ok{border-left-color:var(--ok)}
+.tile-mal{border-left-color:var(--mal)}
+.tile-k{font-size:11.5px;color:var(--ink2)}
+.tile-v{font-family:var(--mono);font-size:23px;font-weight:600;
+  line-height:1.2;margin-top:3px;font-variant-numeric:tabular-nums}
+.tile-mal .tile-v{color:var(--mal)}
+.tile-sub{font-size:11px;color:var(--ink3);margin-top:1px}
+
+/* Días */
+.seccion-t{display:flex;align-items:baseline;gap:12px;
+  justify-content:space-between;margin-bottom:12px;flex-wrap:wrap}
+.seccion-t h2{font-size:17px}
+.resumen{font-family:var(--mono);font-size:12.5px;color:var(--ink2);
+  font-variant-numeric:tabular-nums}
+.resumen .sep{margin:0 7px;color:var(--ink3)}
+.dias{display:flex;gap:5px;margin-bottom:16px;overflow-x:auto;padding-bottom:3px}
+.dia-tab{padding:7px 13px;border-radius:10px;background:var(--card);
+  border:1px solid var(--hair);font-size:13px;color:var(--ink2);
+  white-space:nowrap;transition:.12s}
+.dia-tab:hover{border-color:var(--hair2);color:var(--ink)}
+.dia-on{background:rgba(251,203,26,.13);border-color:rgba(251,203,26,.5);color:var(--oro)}
+.dia-corto{display:none;font-family:var(--mono)}
+@media (max-width:640px){.dia-corto{display:inline}.dia-largo{display:none}}
+
+/* Comidas */
+.comidas{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:12px}
+.comida{background:var(--card);border:1px solid var(--hair);border-radius:16px;
+  padding:16px;display:flex;flex-direction:column;gap:12px}
+.comida-cab{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.comida-cab h4{font-size:14.5px}
+.comida-obj{font-family:var(--mono);font-size:11px;color:var(--ink3);margin-top:2px}
+.comida-kcal{font-family:var(--mono);font-size:12.5px;color:var(--oro);
+  white-space:nowrap;font-variant-numeric:tabular-nums}
+.plato{display:flex;flex-direction:column;gap:9px}
+.plato-n{font-size:14px;line-height:1.35}
+.plato-meta{font-size:11.5px;color:var(--ink3);margin-top:3px}
+.macros{display:flex;gap:5px;flex-wrap:wrap}
+.macro{font-family:var(--mono);font-size:11px;padding:3px 7px;border-radius:7px;
+  background:var(--raised);color:var(--ink2);font-variant-numeric:tabular-nums}
+.macro b{font-weight:600;margin-right:5px;color:var(--ink3)}
+.macro-hc b{color:var(--cian)}
+.macro-prot b{color:var(--oro)}
+.macro-grasa b{color:#ff9f6e}
+.extras{border-top:1px solid var(--hair);padding-top:10px}
+.extras-t{font-family:var(--mono);font-size:10px;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--ink3);margin-bottom:5px}
+.extras-l li{font-size:12.5px;color:var(--ink2);padding:1px 0}
+.comida-pie{margin-top:auto;display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+.comida-pie .btn{background:var(--raised);color:var(--ink);
+  border:1px solid var(--hair2);font-size:12.5px;padding:7px 13px}
+.comida-pie .btn:hover{border-color:var(--oro);color:var(--oro)}
+.pie-nota{font-size:11px;color:var(--ink3)}
+.aviso{background:rgba(255,111,94,.1);border:1px solid rgba(255,111,94,.3);
+  border-radius:10px;padding:9px 11px;font-size:12.5px;color:#ffa094}
+
+/* Compra */
+.compra{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:2px 18px}
+.compra-l{display:flex;justify-content:space-between;gap:10px;
+  padding:6px 0;border-bottom:1px solid var(--hair)}
+.compra-n2{font-size:12.5px;color:var(--ink2);min-width:0;overflow-wrap:anywhere}
+.compra-q{font-family:var(--mono);font-size:12px;color:var(--ink);
+  white-space:nowrap;font-variant-numeric:tabular-nums}
+
+/* Cajón de alternativas */
+.cajon{position:fixed;inset:0;z-index:40;pointer-events:none;visibility:hidden}
+.cajon.abierto{pointer-events:auto;visibility:visible}
+.cajon-fondo{position:absolute;inset:0;background:rgba(0,0,0,.65);
+  opacity:0;transition:opacity .18s}
+.cajon.abierto .cajon-fondo{opacity:1}
+.cajon-hoja{position:absolute;top:0;right:0;bottom:0;width:min(560px,100%);
+  background:var(--card);border-left:1px solid var(--hair2);
+  display:flex;flex-direction:column;transform:translateX(100%);transition:transform .22s}
+.cajon.abierto .cajon-hoja{transform:none}
+@media (prefers-reduced-motion:reduce){
+  .cajon-hoja,.cajon-fondo{transition:none}
+}
+.cajon-cab{display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:16px 18px;border-bottom:1px solid var(--hair)}
+.cajon-cab h3{font-size:15px}
+.cajon-x{font-size:20px;color:var(--ink3);line-height:1;padding:4px 8px;border-radius:8px}
+.cajon-x:hover{color:var(--ink);background:var(--raised)}
+.cajon-cuerpo{overflow-y:auto;padding:16px 18px 40px;flex:1}
+.cajon-intro{font-size:13px;color:var(--ink2);margin-bottom:16px;line-height:1.5}
+.cargando{font-size:13px;color:var(--ink3)}
+.bloque{margin-bottom:22px}
+.bloque-cab{display:flex;align-items:baseline;gap:9px;margin-bottom:9px;flex-wrap:wrap}
+.bloque-cab h4{font-size:13px}
+.bloque-nota{font-family:var(--mono);font-size:10.5px;color:var(--ink3)}
+.alts{display:flex;flex-direction:column;gap:2px}
+.alt{display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:9px 0;border-bottom:1px solid var(--hair)}
+.alt-n{font-size:13px;line-height:1.35}
+.alt-meta{font-size:11px;color:var(--ink3);margin-top:2px}
+.alt-txt{min-width:0}
+.alt-mas{font-size:12px;color:var(--ink3);padding-top:9px}
+
+/* Pie */
+.pie{border-top:1px solid var(--hair);margin-top:34px;padding-top:16px;
+  font-size:12px;color:var(--ink3);line-height:1.6;max-width:75ch}
+.pie b{color:var(--ink2);font-weight:500}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div>
+    <p class="marca">En Forma · banco de pruebas</p>
+    <h1>Motor de menús</h1>
+    <p class="sub">Corre el <b>mismo código que la app</b> contra las
+      <b id="n-recetas">—</b> recetas del recetario y los <b id="n-alimentos">—</b>
+      alimentos del banco de intercambios. Cambia una respuesta de la ficha y
+      mira qué menú sale.</p>
+  </div>
+  <button id="generar" class="btn" type="button">Generar de nuevo</button>
+</header>
+
+<div class="zona">
+  <aside class="rail">
+    <p class="rail-t">La ficha del atleta</p>
+    <div id="ficha"></div>
+  </aside>
+
+  <main class="panel">
+    <div id="mando" class="mando"></div>
+
+    <div class="seccion-t">
+      <h2>La semana</h2>
+      <p id="resumen-dia" class="resumen"></p>
+    </div>
+    <div id="dias" class="dias"></div>
+    <div id="comidas" class="comidas"></div>
+
+    <div class="seccion-t" style="margin-top:34px">
+      <h2>La compra de la semana</h2>
+      <p id="compra-n" class="resumen"></p>
+    </div>
+    <div id="compra" class="compra"></div>
+
+    <p class="pie">
+      Los tres puntos de colores dicen <b>dónde se contesta cada cosa</b>: cian
+      lo pone el entrenador, gris lo contestó el atleta al darse de alta, y dorado
+      es lo que él puede cambiar después desde su perfil — que es lo que manda
+      cuando las dos cosas no coinciden. <b>Sin fotos de las recetas</b>: esta
+      página no puede cargar imágenes de fuera, en la app sí se ven.
+    </p>
+  </main>
+</div>
+
+<div id="cajon" class="cajon" role="dialog" aria-modal="true" aria-labelledby="cajon-titulo">
+  <div id="cajon-fondo" class="cajon-fondo"></div>
+  <div class="cajon-hoja">
+    <div class="cajon-cab">
+      <h3 id="cajon-titulo">Alternativas</h3>
+      <button id="cajon-cerrar" class="cajon-x" type="button" aria-label="Cerrar">×</button>
+    </div>
+    <div id="cajon-cuerpo" class="cajon-cuerpo"></div>
+  </div>
+</div>
+
+<script type="module" src="./main.ts"></script>
+</body>
+</html>

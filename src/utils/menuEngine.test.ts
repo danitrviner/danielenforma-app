@@ -140,6 +140,58 @@ describe('findSwapAlternatives', () => {
     const day: MenuDay = { day: 'mon', dietId: 'd1', target: { HC: 1, PROT: 1, GRASA: 1 }, meals: [] };
     expect(findSwapAlternatives(day, 'missing', [recipe({})], basePrefs)).toEqual([]);
   });
+
+  // El filtro miraba solo la SUMA de los tres macros, así que una receta que
+  // cambiaba hidratos por grasa a partes iguales pasaba como "mantiene tus
+  // puntos". Sobre el recetario real eso era el 65 % de lo que se ofrecía.
+  it('no ofrece como exacta una receta que cuadra el total pero mueve los macros', () => {
+    const target: BudgetVec = { HC: 8, PROT: 4, GRASA: 4 };
+    const day: MenuDay = {
+      day: 'mon', dietId: 'd1', target,
+      meals: [{ id: 'mon_m1', slot: 3, name: 'Comida', recipeId: 'cur', recipeName: 'Actual', scale: 1, exch: target, kcal: 100, complements: [] }],
+    };
+    // Mismo total (16) que el objetivo, pero 3 de HC trasvasados a grasa: el
+    // filtro viejo la daba por buena. Ahora se cae de la lista entera.
+    const trasvase = recipe({ id: 'trasvase', exchanges: { HC: 5, PROT: 4, GRASA: 7 } });
+    // Se pasa 1,5 de HC: no cuadra, pero tampoco saca del plan → 'aproximado'.
+    const rozando = recipe({ id: 'rozando', exchanges: { HC: 9.5, PROT: 4, GRASA: 4 } });
+    const clavada = recipe({ id: 'clavada', exchanges: { HC: 8, PROT: 4, GRASA: 4 } });
+
+    const alts = findSwapAlternatives(day, 'mon_m1', [trasvase, rozando, clavada], basePrefs);
+    const porId = new Map(alts.map(a => [a.recipe.id, a]));
+
+    expect(porId.get('clavada')?.fit).toBe('exacto');
+    expect(porId.get('rozando')?.fit).toBe('aproximado');
+    expect(porId.has('trasvase')).toBe(false);
+  });
+
+  it('devuelve TODAS las alternativas válidas, no una terna corta', () => {
+    const target: BudgetVec = { HC: 2, PROT: 2, GRASA: 1 };
+    const day: MenuDay = {
+      day: 'mon', dietId: 'd1', target,
+      meals: [{ id: 'mon_m1', slot: 1, name: 'Desayuno', recipeId: 'cur', recipeName: 'Actual', scale: 1, exch: target, kcal: 100, complements: [] }],
+    };
+    const pool = Array.from({ length: 30 }, (_, i) =>
+      recipe({ id: `r${i}`, name: `Receta ${i}`, exchanges: { HC: 2, PROT: 2, GRASA: 1 } }));
+
+    expect(findSwapAlternatives(day, 'mon_m1', pool, basePrefs)).toHaveLength(30);
+    // El tope sigue disponible para quien lo necesite.
+    expect(findSwapAlternatives(day, 'mon_m1', pool, basePrefs, 4)).toHaveLength(4);
+  });
+
+  it('ordena las exactas antes que las aproximadas', () => {
+    const target: BudgetVec = { HC: 8, PROT: 4, GRASA: 4 };
+    const day: MenuDay = {
+      day: 'mon', dietId: 'd1', target,
+      meals: [{ id: 'mon_m1', slot: 3, name: 'Comida', recipeId: 'cur', recipeName: 'Actual', scale: 1, exch: target, kcal: 100, complements: [] }],
+    };
+    const alts = findSwapAlternatives(day, 'mon_m1', [
+      recipe({ id: 'aprox', name: 'Aproximada', exchanges: { HC: 9.5, PROT: 4, GRASA: 4 } }),
+      recipe({ id: 'exacta', name: 'Exacta', exchanges: { HC: 8, PROT: 4, GRASA: 4 } }),
+    ], basePrefs);
+
+    expect(alts.map(a => a.fit)).toEqual(['exacto', 'aproximado']);
+  });
 });
 
 describe('generateWeek batch cooking', () => {
@@ -372,10 +424,45 @@ describe('precisión del día generado', () => {
     }));
   }
 
-  it('no deja una comida vacía cuando ninguna receta llega al objetivo de la franja', () => {
-    // Comida = 40 % de 58 int ≈ 23; el recetario solo tiene platos de 5.
-    const pequenas = poolDe(20, { HC: 2, PROT: 2, GRASA: 1 });
+  // Este test defendía lo contrario: que la comida NUNCA saliera vacía, sirviendo
+  // el plato más grande disponible y fiando el resto a los complementos. Esa era
+  // justo la causa de "arroz con pollo + cinco acompañamientos". Decisión de Dani
+  // (2026-09-05): la receta tiene que cubrir prácticamente el 100 % de la comida;
+  // si ninguna llega ni multiplicada por cuatro, "se busca una receta más alta en
+  // calorías y ya está, y todas las demás se quedan eliminadas". La comida sale
+  // vacía a propósito, para que el entrenador lo vea y cambie el recetario.
+  it('deja la comida vacía si ninguna receta llega, en vez de taparlo con extras', () => {
+    // Comida ≈ 23 int; el recetario solo tiene platos de 3, que a ×4 se quedan
+    // en 12 — a once del objetivo, muy por encima de lo que cierra el comodín.
+    const pequenas = poolDe(20, { HC: 1, PROT: 1, GRASA: 1 });
     const pools = { 1: pequenas, 2: pequenas, 3: pequenas, 5: pequenas };
+    const day = generateDay({
+      day: 'mon',
+      diet: diet({ budget: { HC: 28, PROT: 18, GRASA: 12, MIX_HC: 0, MIX_GRASA: 0 } }),
+      slots, pools, foods: [], prefs: basePrefs, usedIds: new Set(),
+    });
+    expect(day.meals.some(m => m.recipeId === '')).toBe(true);
+  });
+
+  it('admite la receta que se queda a un comodín del objetivo', () => {
+    // Platos de 5 int para una comida de ~23: a ×4 llegan a 20, se quedan a 3.
+    // Ese hueco es justo lo que cierran la ración extra y el acompañamiento, así
+    // que la receta vale (Dani, 2026-09-05: "si queda relativamente cerca de
+    // intercambios, se pueden añadir complementos para llegar").
+    const casi = poolDe(20, { HC: 2, PROT: 2, GRASA: 1 });
+    const pools = { 1: casi, 2: casi, 3: casi, 5: casi };
+    const day = generateDay({
+      day: 'mon',
+      diet: diet({ budget: { HC: 28, PROT: 18, GRASA: 12, MIX_HC: 0, MIX_GRASA: 0 } }),
+      slots, pools, foods: [], prefs: basePrefs, usedIds: new Set(),
+    });
+    expect(day.meals.every(m => m.recipeId !== '')).toBe(true);
+  });
+
+  it('con platos que SÍ llegan multiplicando, ninguna comida se queda vacía', () => {
+    // Los mismos 23 int, pero con platos de 7: ×3,25 llega, así que se sirven.
+    const suficientes = poolDe(20, { HC: 3, PROT: 3, GRASA: 1 });
+    const pools = { 1: suficientes, 2: suficientes, 3: suficientes, 5: suficientes };
     const day = generateDay({
       day: 'mon',
       diet: diet({ budget: { HC: 28, PROT: 18, GRASA: 12, MIX_HC: 0, MIX_GRASA: 0 } }),

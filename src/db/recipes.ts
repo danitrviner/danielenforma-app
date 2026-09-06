@@ -288,18 +288,20 @@ function shuffle<T>(arr: T[]): T[] {
   return copy;
 }
 
+// La caché guarda la franja ENTERA ya barajada, y el recorte se aplica al
+// devolverla. Guardar la lista ya recortada ataba el tamaño al de la primera
+// llamada de la sesión: si el generador (300) se adelantaba al buscador de
+// alternativas (todas), el buscador recibía las mismas 300 sin enterarse.
 export async function queryRecetasForGenerator(intakeType: number, maxResults = 300): Promise<Recipe[]> {
-  const cached = recetasGeneratorCache.get(intakeType);
-  if (cached) return cached;
-
-  const indice = await cargarIndiceRecetas();
-  const candidatas = indice.filter(r => (r.intakeTypes ?? []).includes(intakeType));
-
-  // Se baraja ANTES de recortar: el índice está ordenado por nombre, así que
-  // quedarse con las primeras `maxResults` dejaría al generador proponiendo
-  // siempre las mismas recetas del principio del alfabeto.
-  const recipes = shuffle(candidatas).slice(0, maxResults);
-  recetasGeneratorCache.set(intakeType, recipes);
-  return recipes;
+  let franja = recetasGeneratorCache.get(intakeType);
+  if (!franja) {
+    const indice = await cargarIndiceRecetas();
+    // Se baraja ANTES de recortar: el índice está ordenado por nombre, así que
+    // quedarse con las primeras `maxResults` dejaría al generador proponiendo
+    // siempre las mismas recetas del principio del alfabeto.
+    franja = shuffle(indice.filter(r => (r.intakeTypes ?? []).includes(intakeType)));
+    recetasGeneratorCache.set(intakeType, franja);
+  }
+  return maxResults >= franja.length ? franja : franja.slice(0, maxResults);
 }
 
