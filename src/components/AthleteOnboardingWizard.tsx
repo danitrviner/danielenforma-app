@@ -1239,7 +1239,8 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
           <StepShell title="Tus comidas" subtitle="Marca las que te toca comer fuera de casa. A esas, tu coach les pondrá recetas que aguanten en un táper.">
             <div className="divide-y divide-hairline rounded-surface overflow-hidden border border-hairline">
               {meals.map((meal, i) => (
-                <div key={meal.intakeType} className="flex items-center gap-3 px-4 py-3 bg-surface">
+                // Con seis comidas, Cena y Recena comparten `intakeType: 5`.
+                <div key={`${meal.intakeType}-${i}`} className="flex items-center gap-3 px-4 py-3 bg-surface">
                   <Icon name={INTAKE_ICONS[meal.intakeType]} size="m" className="text-ink-2" />
                   <span className="flex-1 font-sans text-body-s text-white">{meal.name}</span>
                   <button type="button"

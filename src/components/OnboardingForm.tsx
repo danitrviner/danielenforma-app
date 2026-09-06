@@ -1117,7 +1117,9 @@ export default function OnboardingForm({
           <p className="font-mono text-caption text-ink-2 uppercase tracking-wide">Ingestas y tupper</p>
           <div className="divide-y divide-hairline rounded-surface overflow-hidden border border-hairline">
             {form.meals.map((meal, i) => (
-              <div key={meal.intakeType} className="flex items-center gap-3 px-4 py-3 bg-bg">
+              // La clave lleva el índice porque con seis comidas Cena y Recena
+              // comparten franja (`intakeType: 5`) y la clave se repetía.
+              <div key={`${meal.intakeType}-${i}`} className="flex items-center gap-3 px-4 py-3 bg-bg">
                 <Icon name={INTAKE_ICONS[meal.intakeType]} size="m" className="text-ink-3" />
                 <span className="flex-1 font-sans text-label text-white">{meal.name}</span>
                 <button type="button" onClick={() => toggleTupper(i)}

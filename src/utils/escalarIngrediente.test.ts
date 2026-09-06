@@ -102,3 +102,26 @@ describe('falsos positivos de nombre', () => {
     }
   });
 });
+
+describe('derivados: lleva el nombre pero ya no es el alimento', () => {
+  // 637 apariciones en el recetario real ofrecían una ración absurda o con los
+  // macros mal antes de excluirlos.
+  it.each([
+    ['Vinagre de arroz', 25],
+    ['Caldo de pollo', 34],
+    ['Pan rallado', 49],
+    ['Crema de tofu envasada', 27],
+    ['Harina de garbanzo', 9],
+    ['Harina de avena', 117],
+    ['Bonito en lata (aceite)', 9],
+    ['Pastillas de caldo de pollo', 2],
+  ])('%s no se sirve en más cantidad', (nombre) => {
+    expect(ingredientesEscalables([{ name: nombre }], BANCO)).toEqual([]);
+  });
+
+  it('el alimento de verdad sí sigue subiendo', () => {
+    expect(ingredientesEscalables([{ name: 'Arroz basmati' }], BANCO)[0]?.nombre).toBe('arroz');
+    expect(ingredientesEscalables([{ name: 'Caldo' }, { name: 'Pechuga de pollo' }], BANCO)[0]?.nombre).toBe('pollo');
+    expect(ingredientesEscalables([{ name: 'Atún en lata (al natural)' }], BANCO)[0]?.nombre).toBe('atún');
+  });
+});

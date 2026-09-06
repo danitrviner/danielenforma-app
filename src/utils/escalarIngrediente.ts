@@ -55,6 +55,26 @@ const ESCALABLES: Escalable[] = [
   { patron: /frutos secos|\b(?:almendras|nueces|anacardos?|pistachos?|avellanas)\b|\bnuez\b(?!\s+moscada)/, etiqueta: '15g frutos secos sin freír (cualquier fruto seco)', nombre: 'frutos secos' },
 ];
 
+// Un DERIVADO lleva el nombre del alimento pero ya no es ese alimento, así que
+// no se puede servir "más cantidad" de él con los gramos del original. Medido
+// contra el recetario real, sin esta lista 637 recetas ofrecían una ración
+// absurda o con los macros mal: "+30g de arroz" señalando el VINAGRE de arroz
+// (25 recetas), "+100g de pollo" señalando el CALDO (36), "+40g de pan"
+// señalando el pan RALLADO (49, y además más denso que el pan), "+100g de tofu"
+// señalando una CREMA de tofu envasada (27), o "+100g de legumbre cocida"
+// señalando HARINA de garbanzo (9), que pesa tres veces menos que la cocida.
+//
+// La regla es deliberadamente conservadora: se descartan también derivados que
+// nutricionalmente valdrían (la harina de avena es avena molida), porque el
+// coste de equivocarse es distinto en cada lado — si aquí no se ofrece nada, el
+// hueco lo cierra un acompañamiento y no pasa nada; si se ofrece de más, el
+// atleta se come unos macros que no son los suyos.
+const DERIVADOS = /\bbebida\b|\bleche\b|\bharina\b|rallad|\bcaldo\b|vinagre|\bsalsa\b|pastilla|\bcrema de\b|\bsopa\b|en aceite|\(aceite/;
+
+function esDerivado(nombreNormalizado: string): boolean {
+  return DERIVADOS.test(nombreNormalizado);
+}
+
 /** Las etiquetas del banco que esta tabla necesita (lo usa el test). */
 export const ETIQUETAS_ESCALABLES: string[] = [...new Set(ESCALABLES.map(e => e.etiqueta))];
 
@@ -77,22 +97,38 @@ export interface IngredienteEscalable {
  * "añade 0,75 huevos" sin inventarse un peso. Antes que dar un gramaje a ojo,
  * ese ingrediente no se ofrece y el hueco lo cierra un acompañamiento.
  */
+// El índice del banco se cachea por (array de alimentos, modo). Buscar
+// alternativas recorre las ~4.500 recetas de la franja y llama aquí una vez por
+// candidata: reconstruir el Map de 310 entradas en cada una se llevaba ~75 ms de
+// los 270 que tardaba la búsqueda, y eso en un móvil es la pantalla congelada.
+// `WeakMap` para que el caché se vaya solo cuando el banco deja de usarse.
+const CACHE_BANCO = new WeakMap<MealItem[], Map<DietMode, Map<string, MealItem>>>();
+
+function bancoPorEtiqueta(foods: MealItem[], mode: DietMode): Map<string, MealItem> {
+  let porModo = CACHE_BANCO.get(foods);
+  if (!porModo) { porModo = new Map(); CACHE_BANCO.set(foods, porModo); }
+  let idx = porModo.get(mode);
+  if (!idx) {
+    idx = new Map(foods.filter(f => f.mode === mode).map(f => [f.label, f]));
+    porModo.set(mode, idx);
+  }
+  return idx;
+}
+
 export function ingredientesEscalables(
   ingredientes: { name: string }[] | undefined,
   foods: MealItem[],
   mode: DietMode = 'OMNIVORO',
 ): IngredienteEscalable[] {
   if (!ingredientes?.length) return [];
-  const banco = new Map(foods.filter(f => f.mode === mode).map(f => [f.label, f]));
+  const banco = bancoPorEtiqueta(foods, mode);
   const out: IngredienteEscalable[] = [];
   const vistos = new Set<string>();
 
   for (const ing of ingredientes) {
     const n = normalizeStr(ing.name ?? '');
     if (!n) continue;
-    // Una bebida vegetal no es el fruto seco del que sale: "bebida de almendra"
-    // no se sube a cucharadas de almendras.
-    if (/\bbebida\b|\bleche\b/.test(n)) continue;
+    if (esDerivado(n)) continue;
     const match = ESCALABLES.find(e => e.patron.test(n));
     if (!match || vistos.has(match.etiqueta)) continue;
     const entrada = banco.get(match.etiqueta);
@@ -119,6 +155,7 @@ export function textoDeRacionExtra(ing: IngredienteEscalable, intercambios: numb
 /** Etiqueta del banco a la que corresponde un escalable, para depurar. */
 export function etiquetaDelBanco(nombreIngrediente: string): string | null {
   const n = normalizeStr(nombreIngrediente ?? '');
+  if (esDerivado(n)) return null;
   return ESCALABLES.find(e => e.patron.test(n))?.etiqueta ?? null;
 }
 

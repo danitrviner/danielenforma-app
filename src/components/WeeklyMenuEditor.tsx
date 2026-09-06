@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   OnboardingData, Diet, AthleteDietConfig, AthleteNutritionConfig, Recipe, RecipeFavorites,
-  MealItem, WeeklyMenu, MenuDay, WeekDay, FoodCategory,
+  MealItem, WeeklyMenu, MenuDay, WeekDay, FoodCategory, DietMode,
 } from '../types';
 import { queryRecetasForGenerator, getRecipes, getFoodItems, createWeeklyMenu, updateWeeklyMenu, publishWeeklyMenu, getRecipeFavorites } from '../dbService';
 import {
@@ -79,6 +79,11 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
   const [slots, setSlots] = useState<MealSlotSpec[]>(
     () => slotsFromOnboarding(onboarding, nutritionConfig?.hungerProfile),
   );
+  // El MISMO modo que usa la pantalla del atleta (`MyMenuScreen`). Antes aquí se
+  // caía al 'OMNIVORO' por defecto del generador: si el entrenador tenía
+  // habilitado otro banco, el menú se generaba con alimentos de un modo y el
+  // atleta veía los extras de otro.
+  const dietMode: DietMode = nutritionConfig?.enabledModes?.[0] ?? 'OMNIVORO';
   const [variety, setVariety] = useState(initialMenu?.varietyLevel ?? nutritionConfig?.menuVariety ?? onboarding?.menuVariety ?? 3);
   const [batch, setBatch] = useState<boolean>(initialMenu?.batchCooking ?? nutritionConfig?.batchCookingPreferred ?? onboarding?.batchCookingPreferred ?? false);
   const [genPhase, setGenPhase] = useState('');
@@ -189,7 +194,7 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
     }
     const foodList = await ensureFoods();
     setGenPhase('Generando el menú de la semana…');
-    const days = generateWeek({ schedule, diets, slots, pools: nextPools, foods: foodList, prefs, batch });
+    const days = generateWeek({ schedule, diets, slots, pools: nextPools, foods: foodList, prefs, batch, mode: dietMode });
     const draft: Omit<WeeklyMenu, 'id'> = {
       athleteId: athleteEmail,
       status: 'draft',
@@ -218,7 +223,7 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
     const usedSlots = Array.from(new Set<number>(slots.map(s => s.slot)));
     for (const s of usedSlots) await ensurePool(s);
     const foodList = await ensureFoods();
-    const nextDay = generateDay({ day, diet, slots, pools, foods: foodList, prefs, usedIds: new Set() });
+    const nextDay = generateDay({ day, diet, slots, pools, foods: foodList, prefs, usedIds: new Set(), mode: dietMode });
     updateDay(day, nextDay);
   };
 

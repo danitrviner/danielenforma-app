@@ -242,3 +242,25 @@ describe('regresiones encontradas en revisión', () => {
     expect(ids).not.toContain('alto');
   });
 });
+
+describe('segunda ronda de revisión', () => {
+  // Una comida que se quedó sin receta es justo donde más falta hace poder
+  // cambiarla, y era donde la lista salía siempre vacía: el objetivo se sacaba
+  // de lo que la comida APORTA (cero), no de lo que le falta al día.
+  it('una comida sin plato ofrece alternativas del tamaño que le falta al día', () => {
+    const receta = (id: string, hc: number): Recipe => ({
+      id, name: id, ownerId: 'recetas', intakeTypes: [3],
+      exchanges: { HC: hc, PROT: 0, GRASA: 0 },
+    } as unknown as Recipe);
+    const dia: MenuDay = {
+      day: 'mon', dietId: 'd', target: { HC: 10, PROT: 0, GRASA: 0 },
+      meals: [
+        { id: 'ok', slot: 3, name: 'Comida', recipeId: 'r', recipeName: 'p', scale: 1, exch: { HC: 4, PROT: 0, GRASA: 0 }, kcal: 400, complements: [] },
+        { id: 'vacia', slot: 3, name: 'Cena', recipeId: '', recipeName: '', scale: 1, exch: { HC: 0, PROT: 0, GRASA: 0 }, kcal: 0, complements: [] },
+      ],
+    } as unknown as MenuDay;
+    const alt = findSwapAlternatives(dia, 'vacia', [receta('justa', 6), receta('pequena', 3)], prefs, Infinity, 'OMNIVORO', []);
+    expect(alt.length).toBeGreaterThan(0);
+    expect(alt[0].recipe.id).toBe('justa'); // los 6 que le faltan al día
+  });
+});

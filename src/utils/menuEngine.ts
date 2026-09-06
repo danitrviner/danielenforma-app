@@ -963,16 +963,21 @@ export function findSwapAlternatives(
   // Lo que esta comida tiene que aportar en total, que es lo que el entrenador
   // aprobó al generar el menú.
   const objetivoDeLaComida = mealTotalExch(meal);
-  const mealTarget = platoVacio
-    ? {
-      HC: Math.max(0, round2(objetivoDeLaComida.HC - complementosDeEstaComida.HC)),
-      PROT: Math.max(0, round2(objetivoDeLaComida.PROT - complementosDeEstaComida.PROT)),
-      GRASA: Math.max(0, round2(objetivoDeLaComida.GRASA - complementosDeEstaComida.GRASA)),
-    }
-    : meal.exch;
+  // Para una comida sin plato, el objetivo NO puede salir de lo que la comida
+  // aporta —que es cero, y con cero `bestScaleFit` no admite ninguna receta: ese
+  // fue el primer intento y dejaba la lista igual de vacía—. Sale de lo que le
+  // falta al DÍA: el presupuesto menos lo que ya ponen las demás comidas (y los
+  // acompañamientos de esta, que siguen ahí después del cambio).
   const otherMealsTotal = day.meals
     .filter(m => m.id !== mealId)
     .reduce((acc, m) => sumVec(acc, mealTotalExch(m)), complementosDeEstaComida);
+  const mealTarget = platoVacio
+    ? {
+      HC: Math.max(0, round2(day.target.HC - otherMealsTotal.HC)),
+      PROT: Math.max(0, round2(day.target.PROT - otherMealsTotal.PROT)),
+      GRASA: Math.max(0, round2(day.target.GRASA - otherMealsTotal.GRASA)),
+    }
+    : meal.exch;
   const targetTotal = day.target.HC + day.target.PROT + day.target.GRASA;
   const usedIds = new Set(day.meals.filter(m => m.id !== mealId).map(m => m.recipeId));
 
