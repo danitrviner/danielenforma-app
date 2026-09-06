@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, afterEach } from 'vitest';
 import { Mesocycle, QSchedule } from '../types';
-import { isDueToday, isUpcoming, Scheduled } from './scheduleEngine';
+import { isDueToday, isUpcoming, Scheduled, cadenciaEnCristiano, scheduleLabel } from './scheduleEngine';
 
 afterEach(() => { vi.useRealTimers(); });
 
@@ -110,5 +110,31 @@ describe("'mesocycle_end' trigger", () => {
     expect(isUpcoming(a, { mesocycles: [meso] })).toBe(true);
     vi.setSystemTime(new Date('2026-07-29T12:00:00'));
     expect(isUpcoming(a, { mesocycles: [meso] })).toBe(false);
+  });
+});
+
+describe('cadenciaEnCristiano', () => {
+  it('dice los días con nombre y con la «y» del final', () => {
+    expect(cadenciaEnCristiano({ type: 'weekdays', weekdays: [0] })).toBe('Los domingos');
+    expect(cadenciaEnCristiano({ type: 'weekdays', weekdays: [1, 4] })).toBe('Los lunes y los jueves');
+  });
+
+  it('traduce los intervalos redondos en vez de decir «Cada 14d»', () => {
+    expect(cadenciaEnCristiano({ type: 'interval', intervalDays: 1 })).toBe('Todos los días');
+    expect(cadenciaEnCristiano({ type: 'interval', intervalDays: 7 })).toBe('Cada semana');
+    expect(cadenciaEnCristiano({ type: 'interval', intervalDays: 14 })).toBe('Cada dos semanas');
+    expect(cadenciaEnCristiano({ type: 'interval', intervalDays: 10 })).toBe('Cada 10 días');
+  });
+
+  it('cubre el resto de tipos sin dejar guiones sueltos', () => {
+    expect(cadenciaEnCristiano({ type: 'monthly', dayOfMonth: 26 })).toBe('El día 26 de cada mes');
+    expect(cadenciaEnCristiano({ type: 'once' })).toBe('Una sola vez');
+    expect(cadenciaEnCristiano({ type: 'mesocycle_end' })).toBe('Al acabar el bloque');
+    expect(cadenciaEnCristiano({ type: 'mesocycle_end', mesocycleOffsetDays: 1 })).toBe('1 día antes de acabar el bloque');
+    expect(cadenciaEnCristiano({ type: 'weekdays', weekdays: [] })).toBe('Sin fecha fija');
+  });
+
+  it('no toca la etiqueta compacta del coach', () => {
+    expect(scheduleLabel({ type: 'interval', intervalDays: 14 })).toBe('Cada 14d');
   });
 });

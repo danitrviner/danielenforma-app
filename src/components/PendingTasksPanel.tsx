@@ -31,6 +31,31 @@ const TYPE_COLOR: Record<TaskType, string> = {
   otro: 'text-ink-2',
 };
 
+/** "frente, lateral y espalda": con la "y" del final, como lo diría una
+ *  persona, en vez de una lista separada por comas hasta el último elemento. */
+function listaNatural(partes: string[]): string {
+  if (partes.length <= 1) return partes[0] ?? '';
+  return `${partes.slice(0, -1).join(', ')} y ${partes[partes.length - 1]}`;
+}
+
+/** "Para hoy" / "Para mañana" / "Se te pasó el lunes", en vez de
+ *  "Vence: 2026-09-06" — una fecha de máquina en la pantalla de Inicio. */
+function textoVencimiento(fechaIso: string): string {
+  const [y, m, d] = fechaIso.split('-').map(Number);
+  if (!y || !m || !d) return fechaIso;
+  const objetivo = new Date(y, m - 1, d);
+  if (isNaN(objetivo.getTime())) return fechaIso;
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
+  const dias = Math.round((objetivo.getTime() - hoy.getTime()) / 86_400_000);
+  const largo = objetivo.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
+  if (dias === 0) return 'Para hoy';
+  if (dias === 1) return 'Para mañana';
+  if (dias > 1) return `Para el ${largo}`;
+  if (dias === -1) return 'Se te pasó ayer';
+  return `Se te pasó el ${largo}`;
+}
+
 export default function PendingTasksPanel({ profile, checkins, onNavigate }: Props) {
   const { data: tasks = [], isPending: loadingTasks } = useQuery({
     queryKey: ['tasksForAthlete', profile.email],
@@ -100,7 +125,7 @@ export default function PendingTasksPanel({ profile, checkins, onNavigate }: Pro
   const duePhotos = effectivePhotoAssignments.filter(a => isDueToday(a) && !hasUploadedThisOccurrence(a, photos));
   const pendingPhotos = duePhotos.map(a => ({
     id: a.id,
-    viewsLabel: a.views.map(v => v === 'front' ? 'Frente' : v === 'side' ? 'Lateral' : 'Espalda').join(', '),
+    viewsLabel: listaNatural(a.views.map(v => v === 'front' ? 'frente' : v === 'side' ? 'lateral' : 'espalda')),
   }));
 
   const loading = loadingTasks || loadingAssignments || loadingResponses || loadingPhotoAssignments || loadingPhotos
@@ -132,14 +157,14 @@ export default function PendingTasksPanel({ profile, checkins, onNavigate }: Pro
     ...(needsCheckin ? [{
       key: 'checkin-due',
       type: 'revision' as TaskType,
-      title: 'Enviar check-in semanal',
+      title: 'Enviar tu revisión',
       dueDate: todayStr(),
       onOpen: () => onNavigate('checkin'),
     }] : []),
     ...pendingPhotos.map(p => ({
       key: `foto_${p.id}`,
       type: 'foto' as TaskType,
-      title: `Fotos de check-in: ${p.viewsLabel}`,
+      title: `Hacerte las fotos de ${p.viewsLabel}`,
       dueDate: todayStr(),
       onOpen: () => onNavigate('checkin'),
     })),
@@ -189,7 +214,7 @@ export default function PendingTasksPanel({ profile, checkins, onNavigate }: Pro
                 : 'bg-raised border border-hairline rounded-control'}
               leading={<span className={`material-symbols-outlined flex-shrink-0 ${row.urgent ? 'text-warning' : TYPE_COLOR[row.type]}`}>{row.urgent ? 'warning' : TYPE_ICON[row.type]}</span>}
               title={row.title}
-              subtitle={row.dueDate ? `Vence: ${row.dueDate}` : undefined}
+              subtitle={row.dueDate ? textoVencimiento(row.dueDate) : undefined}
               chevron
             />
           ))}

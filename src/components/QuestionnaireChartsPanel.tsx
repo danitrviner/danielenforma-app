@@ -13,6 +13,25 @@ import { weekKey } from '../utils/seriesCorrelation';
 interface Props {
   questionnaires: Questionnaire[];
   responses: QuestionnaireResponse[];
+  /**
+   * Deja fuera las series de agujetas (DOM's). Decisión de Dani: el atleta no
+   * ve esas gráficas — las agujetas no son criterio de que una sesión haya
+   * sido buena (ver `ai/doctrina.ts`) y enseñárselas invita justo a leerlas
+   * así. El coach SÍ las ve (ClientBodyPanel), que es quien las usa para
+   * ajustar volumen (`utils/volumeSuggestion.ts`).
+   */
+  ocultarDoms?: boolean;
+}
+
+/** Una serie de agujetas: por `signalKey` (`doms.<grupo>`) en los
+ *  cuestionarios nuevos, y por el título en los que se crearon antes de que
+ *  existieran las señales. */
+export function esSerieDeAgujetas(question: QuestionnaireQuestion, qTitle: string): boolean {
+  if (question.signalKey?.startsWith('doms.')) return true;
+  // Con `\b`: sin los límites de palabra, "dom's" casaba dentro de cualquier
+  // palabra que lo contuviera y habría escondido de las gráficas un
+  // cuestionario que no tiene nada que ver con las agujetas.
+  return /\bagujetas\b|\bdom['\u2019]?s\b/i.test(qTitle);
 }
 
 // ── Data helpers ──────────────────────────────────────────────────────────────
@@ -60,6 +79,14 @@ function fmtDate(dateStr: string): string {
   return d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
 }
 
+/** ¿Le caen a esta serie dos o más respuestas en una misma semana? Es la
+ *  única situación en la que la media semanal dibuja algo distinto a los
+ *  puntos sueltos. */
+export function serieAgregable(questionId: string, responses: QuestionnaireResponse[]): boolean {
+  const raw = extractSeries(questionId, responses);
+  return toWeekly(raw).length < raw.length;
+}
+
 // ── Custom tooltip ────────────────────────────────────────────────────────────
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -105,14 +132,13 @@ function QuestionChart({
         <p className="font-sans font-bold text-white text-body-s leading-tight">{question.label}</p>
         <div className="flex items-center gap-2 ">
           {question.unit && <Badge tone="neutral">{question.unit}</Badge>}
-          <Badge tone="data" icon="show_chart">{question.type}</Badge>
           <span className="font-mono text-caption text-ink-2">
-            {weekly ? `${toWeekly(raw).length} semanas` : `${raw.length} puntos`}
+            {weekly ? `${toWeekly(raw).length} semanas` : `${raw.length} registro${raw.length === 1 ? '' : 's'}`}
           </span>
         </div>
       </div>
 
-      <ResponsiveContainer width="100%" height={ALTURA_GRAFICA.s}>
+      <ResponsiveContainer width="100%" height={ALTURA_GRAFICA.m}>
         <LineChart data={data} margin={MARGEN_GRAFICA}>
           <CartesianGrid {...REJILLA_GRAFICA} />
           <XAxis
@@ -157,8 +183,9 @@ function QuestionChart({
 
 // ── Main panel ────────────────────────────────────────────────────────────────
 
-export default function QuestionnaireChartsPanel({ questionnaires, responses }: Props) {
+export default function QuestionnaireChartsPanel({ questionnaires, responses, ocultarDoms = false }: Props) {
   const [weekly, setWeekly] = useState(false);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   // Collect all graphable questions that have at least one numeric answer
   const graphable = useMemo(() => {
@@ -166,6 +193,7 @@ export default function QuestionnaireChartsPanel({ questionnaires, responses }: 
     for (const q of questionnaires) {
       for (const question of q.questions) {
         if (question.type !== 'numeric' && question.type !== 'scale') continue;
+        if (ocultarDoms && esSerieDeAgujetas(question, q.title)) continue;
         const hasData = responses.some(r =>
           r.answers.some(a => a.questionId === question.id && typeof a.value === 'number')
         );
@@ -173,9 +201,40 @@ export default function QuestionnaireChartsPanel({ questionnaires, responses }: 
       }
     }
     return result;
-  }, [questionnaires, responses]);
+  }, [questionnaires, responses, ocultarDoms]);
 
-  if (graphable.length === 0) return null;
+  /* Una sola gráfica con selector, no una rejilla con todas. El cuestionario
+     de agujetas solo ya trae 14 zonas (cuádriceps, pectoral, trapecio…): con
+     una tarjeta por serie, la pestaña era un scroll infinito de gráficas
+     diminutas donde no se leía ninguna. Se elige la serie y se ve grande. */
+  const selected = useMemo(
+    () => graphable.find(g => g.question.id === selectedId) ?? graphable[0] ?? null,
+    [graphable, selectedId]
+  );
+
+  /* El interruptor "Puntos / Media semanal" solo aparece si de verdad cambia
+     algo, es decir si a la serie elegida le caen DOS o más respuestas en una
+     misma semana. Con un cuestionario semanal, quincenal o mensual —que es lo
+     normal— la media semanal dibuja exactamente la misma curva, y era un
+     botón que no hacía nada. */
+  const puedeAgregar = useMemo(
+    () => !!selected && serieAgregable(selected.question.id, responses),
+    [selected, responses]
+  );
+  const agregado = weekly && puedeAgregar;
+
+  // Agrupadas por cuestionario para el <select>: con varios asignados, dos
+  // series pueden llamarse igual ("Energía") y venir de sitios distintos.
+  const porCuestionario = useMemo(() => {
+    const map = new Map<string, QuestionnaireQuestion[]>();
+    for (const { question, qTitle } of graphable) {
+      if (!map.has(qTitle)) map.set(qTitle, []);
+      map.get(qTitle)!.push(question);
+    }
+    return [...map.entries()];
+  }, [graphable]);
+
+  if (graphable.length === 0 || !selected) return null;
 
   return (
     <div className="space-y-4">
@@ -183,33 +242,51 @@ export default function QuestionnaireChartsPanel({ questionnaires, responses }: 
       <div className="flex items-center justify-between flex-wrap gap-2">
         <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
           <Icon name="show_chart" size="m" className="text-accent" />
-          Evolución ({graphable.length} serie{graphable.length !== 1 ? 's' : ''})
+          Evolución
+          <span className="font-mono text-caption text-ink-2 font-normal">
+            {graphable.length} serie{graphable.length !== 1 ? 's' : ''}
+          </span>
         </h3>
-        <div className="flex bg-surface border border-hairline rounded-surface ">
-          {(['Puntos', 'Media semanal'] as const).map((label, i) => (
-            <button
-              key={label}
-              onClick={() => setWeekly(i === 1)}
-              className={`px-3 min-h-[44px] rounded-control font-sans text-caption uppercase font-bold transition-all ${
-                weekly === (i === 1)
-                  ? 'bg-accent text-black shadow'
-                  : 'text-ink-2 hover:text-white'
-              }`}
-            >{label}</button>
-          ))}
-        </div>
+        {puedeAgregar && (
+          <div className="flex bg-surface border border-hairline rounded-surface ">
+            {(['Puntos', 'Media semanal'] as const).map((label, i) => (
+              <button
+                key={label}
+                onClick={() => setWeekly(i === 1)}
+                className={`px-3 min-h-[44px] rounded-control font-sans text-caption uppercase font-bold transition-all ${
+                  weekly === (i === 1)
+                    ? 'bg-accent text-black shadow'
+                    : 'text-ink-2 hover:text-white'
+                }`}
+              >{label}</button>
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* Charts grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {graphable.map(({ question, qTitle }) => (
-          <div key={question.id}>
-            <p className="font-sans text-caption text-ink-2/60 uppercase tracking-wider mb-2 px-1">
-              {qTitle}
-            </p>
-            <QuestionChart question={question} responses={responses} weekly={weekly} />
-          </div>
-        ))}
+      {/* Selector de serie */}
+      <label className="block">
+        <span className="sr-only">Elige qué medida ver</span>
+        <select
+          value={selected.question.id}
+          onChange={e => setSelectedId(e.target.value)}
+          className="w-full bg-surface border border-hairline rounded-control px-3 min-h-[44px] font-sans text-body-s text-white focus:outline-none focus:border-accent"
+        >
+          {porCuestionario.map(([qTitle, preguntas]) => (
+            <optgroup key={qTitle} label={qTitle}>
+              {preguntas.map(question => (
+                <option key={question.id} value={question.id}>{question.label}</option>
+              ))}
+            </optgroup>
+          ))}
+        </select>
+      </label>
+
+      <div>
+        <p className="font-sans text-caption text-ink-2/60 uppercase tracking-wider mb-2 px-1">
+          {selected.qTitle}
+        </p>
+        <QuestionChart question={selected.question} responses={responses} weekly={agregado} />
       </div>
     </div>
   );

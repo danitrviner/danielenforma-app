@@ -1,18 +1,10 @@
-import React, { useState, useMemo, Suspense, lazy } from 'react';
+import React, { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { useQuery, useQueries, useQueryClient } from '@tanstack/react-query';
-import { UserProfile, Questionnaire, OnboardingData, WeightCheckIn, NotificationType } from '../types';
-import { updateUserProfile, getAssignmentsForAthlete, getResponsesForAthlete, getQuestionnaireById, getOnboarding } from '../dbService';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { UserProfile, OnboardingData, WeightCheckIn, NotificationType } from '../types';
+import { updateUserProfile, getOnboarding } from '../dbService';
 import { signOut, auth } from '../firebase';
-import { leerSexo } from '../utils/athleteProfileSignals';
 import { useToast } from '../hooks/useToast';
-/* 06-6. Estos tres paneles arrastran recharts —344 KB— y se importaban en
-   estático, así que el atleta los descargaba y evaluaba aunque entrase a
-   Perfil solo a cambiarse el avatar. Van en diferido: además de los bloques,
-   Perfil es una pantalla con orden configurable donde varios de ellos ni
-   siquiera se renderizan si el atleta los tiene ocultos. */
-const BodyMeasurementsPanel = lazy(() => import('./BodyMeasurementsPanel'));
-const QuestionnaireChartsPanel = lazy(() => import('./QuestionnaireChartsPanel'));
 import FoodPreferencesPanel from './FoodPreferencesPanel';
 import MenuPreferencesPanel from './MenuPreferencesPanel';
 import MiFichaCard from './MiFichaCard';
@@ -25,10 +17,9 @@ import CheckInScreen from './CheckInScreen';
 import AthleteRoadmapScreen from './AthleteRoadmapScreen';
 import StatTile from './StatTile';
 import MiGimnasioPanel from '../features/gimnasio/MiGimnasioPanel';
-import { useBodyMeasurements } from '../hooks/useBodyMeasurements';
 import { useTourTarget } from '../features/tutorial/TourTargetContext';
 import FuentesCientificasSheet from './FuentesCientificasSheet';
-import { Avatar, Icon, Button, PageHeader, ListRow, Input, Sheet, Skeleton, Tabs } from './ui';
+import { Avatar, Icon, Button, PageHeader, ListRow, Input, Sheet, Tabs } from './ui';
 
 interface ProfileScreenProps {
   profile: UserProfile;
@@ -43,10 +34,10 @@ interface ProfileScreenProps {
 // pidió que fueran seleccionables, no un scroll largo). Las pantallas que se
 // embeben (CheckInScreen, AthleteRoadmapScreen, paneles con gráfica) van tal
 // cual, sin reescribirlas: cero riesgo de regresión en su lógica.
-type ProfileTab = 'resumen' | 'progreso' | 'roadmap' | 'preferencias' | 'gimnasio';
+type ProfileTab = 'resumen' | 'revision' | 'roadmap' | 'preferencias' | 'gimnasio';
 const PROFILE_TABS: { id: ProfileTab; label: string; icon: string }[] = [
   { id: 'resumen',      label: 'Resumen',       icon: 'person' },
-  { id: 'progreso',     label: 'Progreso',      icon: 'edit_note' },
+  { id: 'revision',     label: 'Revisión',      icon: 'fact_check' },
   { id: 'roadmap',      label: 'Road map',      icon: 'map' },
   { id: 'preferencias', label: 'Preferencias',  icon: 'restaurant' },
   { id: 'gimnasio',     label: 'Mi gimnasio',   icon: 'fitness_center' },
@@ -64,13 +55,6 @@ const COACH_NOTIF_TYPES: { type: NotificationType; label: string; sub: string }[
   { type: 'questionnaire_submitted', label: 'Cuestionario enviado', sub: 'Un atleta envía una revisión' },
   { type: 'hrtest_pending', label: 'Test de FC pendiente', sub: 'Un atleta espera tu aprobación de zonas' },
 ];
-
-/** Hueco mientras baja el trozo de recharts. Alto fijo para que el bloque no
- *  dé un salto cuando el panel real entra — el orden de bloques de esta
- *  pantalla lo configura el atleta, y un reflow aquí desplaza todo lo de abajo. */
-function PanelCargando() {
-  return <Skeleton className="w-full h-48 rounded-surface" />;
-}
 
 function Switch({ on, onToggle }: { on: boolean; onToggle: () => void }) {
   return (
@@ -106,10 +90,24 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
   const [showPermisos, setShowPermisos] = useState(false);
   const [showFuentes, setShowFuentes] = useState(false);
   const [legalLocal, setLegalLocal] = useState<AceptacionesLegales | undefined>(profile.legal);
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const requestedTab = searchParams.get('tab');
-  const initialTab: ProfileTab = PROFILE_TABS.some(t => t.id === requestedTab) ? (requestedTab as ProfileTab) : 'resumen';
-  const [activeTab, setActiveTab] = useState<ProfileTab>(initialTab);
+  /* La pestaña visible la manda LA URL, no un `useState` en paralelo. Antes
+     era estado local sincronizado a mano con un efecto, y eso tenía un
+     agujero: si ya estabas en `?tab=revision`, te movías a otra pestaña a
+     mano (que no tocaba la URL) y volvías a pulsar una tarea pendiente de
+     "Hoy", el `navigate` apuntaba a la MISMA URL, el efecto no se disparaba
+     —el valor no había cambiado— y te quedabas donde estabas. Con una sola
+     fuente de verdad ese caso no existe.
+     'progreso' era el id de "Revisión" antes de cambiarle el nombre: los
+     enlaces que ya circulen con ?tab=progreso siguen abriéndola. */
+  const normalizedTab = requestedTab === 'progreso' ? 'revision' : requestedTab;
+  const activeTab: ProfileTab = PROFILE_TABS.some(t => t.id === normalizedTab)
+    ? (normalizedTab as ProfileTab)
+    : 'resumen';
+  /* `replace` para que el botón atrás salga de Perfil, en vez de ir
+     deshaciendo una a una todas las pestañas que hayas mirado. */
+  const setActiveTab = (id: ProfileTab) => setSearchParams({ tab: id }, { replace: true });
   const [displayName, setDisplayName] = useState(profile.displayName);
   const [targetWeight, setTargetWeight] = useState(profile.targetWeight.toString());
   const [avatarUrl, setAvatarUrl] = useState(profile.avatarUrl);
@@ -129,36 +127,6 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
       setNotifPrefs(notifPrefs);
     }
   };
-
-  // Questionnaire data for charts
-  const { data: assignments = [] } = useQuery({
-    queryKey: ['assignmentsForAthlete', profile.email],
-    queryFn: () => getAssignmentsForAthlete(profile.email),
-  });
-  const { data: responses = [] } = useQuery({
-    queryKey: ['responsesForAthlete', profile.email],
-    queryFn: () => getResponsesForAthlete(profile.email),
-  });
-  const activeQuestionnaireIds = useMemo(
-    () => [...new Set(assignments.filter(a => a.active).map(a => a.questionnaireId))],
-    [assignments]
-  );
-  // One cache entry per questionnaire id, same key PendingTasksPanel uses for
-  // the same lookup — reuses/gets reused by it instead of fetching twice.
-  const questionnaireQueries = useQueries({
-    queries: activeQuestionnaireIds.map(id => ({
-      queryKey: ['questionnaireById', id],
-      queryFn: (): Promise<Questionnaire | null> => getQuestionnaireById(id),
-    })),
-  });
-  const questionnaires = useMemo(
-    () => questionnaireQueries.map(q => q.data).filter((q): q is Questionnaire => !!q),
-    [questionnaireQueries]
-  );
-
-  // Medidas corporales — mismo query key que BodyMeasurementsPanel (comparten
-  // caché), solo para saber si hay algo que mostrar antes de renderizar el bloque.
-  const { all: bodyMeasurements } = useBodyMeasurements(profile.email);
 
   // Food preferences + ficha editing
   const onboardingKey = ['onboarding', profile.email] as const;
@@ -217,37 +185,15 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
           </div>
         );
 
-      case 'progreso':
+      case 'revision':
+        /* Todo el seguimiento del atleta (peso, cuestionarios pendientes y
+           respondidos, fotos, mediciones, gráficas de evolución y el hilo de
+           revisiones) vive DENTRO de CheckInScreen: así esta pestaña y la
+           ruta /checkin —a la que saltan las tareas pendientes de Inicio—
+           enseñan exactamente lo mismo, sin dos sitios que mantener. */
         return (
-          <div className="space-y-4">
-            {/* Peso corporal vive DENTRO de CheckInScreen (primera sección,
-                antes de cuestionarios/fotos/revisiones) — así la misma
-                pantalla sirve tanto aquí como en la ruta /checkin a la que
-                saltan las tareas pendientes de Home, y hay un único sitio
-                para pesarse en los dos puntos de entrada. */}
-            <div className="bg-surface border border-hairline rounded-surface p-4 sm:p-5">
-              <CheckInScreen profile={profile} checkins={checkins} />
-            </div>
-            {bodyMeasurements.some(m => m.metricKey !== 'bodyweight') && (
-              <div className="bg-surface border border-hairline p-4 sm:p-6 rounded-canvas space-y-3">
-                <h3 className="font-sans font-bold text-title-s text-ink flex items-center gap-2">
-                  <Icon name="straighten" size="m" className="text-accent" />
-                  Mediciones
-                </h3>
-                <Suspense fallback={<PanelCargando />}>
-                  <BodyMeasurementsPanel
-                    athleteEmail={profile.email}
-                    sexo={leerSexo(responses, questionnaires)}
-                    pesoKg={profile.actualWeight || null}
-                  />
-                </Suspense>
-              </div>
-            )}
-            {questionnaires.length > 0 && responses.length > 0 && (
-              <div className="bg-surface border border-hairline p-4 sm:p-6 rounded-canvas">
-                <Suspense fallback={<PanelCargando />}><QuestionnaireChartsPanel questionnaires={questionnaires} responses={responses} /></Suspense>
-              </div>
-            )}
+          <div className="bg-surface border border-hairline rounded-surface p-4 sm:p-5">
+            <CheckInScreen profile={profile} checkins={checkins} />
           </div>
         );
 
@@ -287,7 +233,7 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
     <div className="space-y-4">
       <PageHeader
         title="Mi Perfil"
-        subtitle={isCoach ? 'Tu cuenta y tus ajustes.' : 'Progreso, gráficas y ficha.'}
+        subtitle={isCoach ? 'Tu cuenta y tus ajustes.' : 'Revisión, gráficas y ficha.'}
         // La acción es un botón de solo-icono, no le hace falta renglón
         // propio: actionInline la mete en la fila del título, a la misma
         // altura que "MI PERFIL", en vez de apilarse debajo con un hueco
@@ -451,10 +397,15 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
 
           <div className="bg-surface border border-hairline rounded-surface divide-y divide-hairline">
             {!isCoach && (
+              /* Abre el documento de TÉRMINOS en modo revisión (DOC_CON_OPCIONALES
+                 = el doc 'terminos'), y dentro va la casilla suelta del análisis
+                 asistido por IA. Se llamaba "Análisis automático", que nombraba
+                 solo la casilla y escondía que los términos se leen aquí — y
+                 "encontrable" es requisito literal de las dos tiendas. */
               <ListRow
                 onClick={() => { setShowSettings(false); setShowPermisos(true); }}
-                leading={<Icon name="tune" size="m" className="text-accent" />}
-                title="Análisis automático"
+                leading={<Icon name="gavel" size="m" className="text-accent" />}
+                title="Términos y condiciones"
                 chevron
               />
             )}

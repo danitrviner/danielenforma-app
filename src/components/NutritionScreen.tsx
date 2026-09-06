@@ -1473,21 +1473,6 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
         </div>
       )}
 
-      {/* Diet mode selector — siempre visible (antes solo si el coach había
-          habilitado más de un modo) para que el atleta pueda pasar a "Sin
-          pesar" cualquier día, sin depender de que el coach lo active antes. */}
-      <div className="flex gap-2 flex-wrap">
-        {ALL_DIET_MODES.map(mode => (
-          <button key={mode} onClick={() => selectDietMode(mode)}
-            className={`px-4 py-2 rounded-control font-sans text-label font-bold uppercase tracking-wider transition-all ${
-              activeDietMode === mode
-                ? 'bg-accent text-black'
-                : 'bg-raised text-ink-2 border border-hairline hover:border-accent/40 hover:text-ink'
-            }`}
-          >{MODE_LABEL[mode]}</button>
-        ))}
-      </div>
-
       {/* Navegación por días. Antes era una fila de siete letras (L M X J V S D)
           que enseñaba QUÉ DIETA te había programado el coach cada día y no
           dejaba tocar nada fuera de hoy. Ahora son días de verdad, hacia atrás,
@@ -2443,15 +2428,23 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                 {isSearchingFoods ? `Todas las categorías · ${MODE_LABEL[activeDietMode]}` : `${CAT_LABEL[pickerCategory]} · ${MODE_LABEL[activeDietMode]}`}
               </div>
 
-            {enabledModes.length > 1 && (
-              <div className="px-4 py-2 bg-bg border-b border-hairline flex gap-2 flex-wrap">
-                {enabledModes.map(mode => (
-                  <button key={mode} onClick={() => setActiveDietMode(mode)}
-                    className={`px-3 py-1 rounded-full font-sans text-caption font-bold uppercase tracking-wider transition-all ${activeDietMode === mode ? 'bg-accent text-black' : 'bg-raised text-ink-2 border border-hairline'}`}
-                  >{MODE_LABEL[mode]}</button>
-                ))}
-              </div>
-            )}
+            {/* Único sitio donde se elige el modo. La misma fila vivía además
+                en la cabecera de "Mi plan", y ahí no pintaba nada: el modo
+                decide QUÉ ALIMENTOS salen, así que su sitio es el buscador de
+                alimentos, no el encabezado de la pantalla (Dani, 06-09).
+                Se ofrecen los TRES modos, no solo `enabledModes`: antes esta
+                fila se escondía si el coach solo había habilitado uno, y era
+                el selector de arriba —el que se ha quitado— el que dejaba al
+                atleta pasarse a "Sin pesar" por su cuenta. Usa `selectDietMode`
+                (no `setActiveDietMode`) para conservar ese comportamiento:
+                habilita el modo y lo persiste. */}
+            <div className="px-4 py-2 bg-bg border-b border-hairline flex gap-2 flex-wrap">
+              {ALL_DIET_MODES.map(mode => (
+                <button key={mode} onClick={() => selectDietMode(mode)}
+                  className={`px-3 py-1 rounded-full font-sans text-caption font-bold uppercase tracking-wider transition-all ${activeDietMode === mode ? 'bg-accent text-black' : 'bg-raised text-ink-2 border border-hairline'}`}
+                >{MODE_LABEL[mode]}</button>
+              ))}
+            </div>
 
             <div className={`p-3 bg-surface border-b border-hairline flex gap-2 flex-wrap transition-opacity ${isSearchingFoods ? 'opacity-40' : ''}`}>
               {CATS.map(cat => (

@@ -96,6 +96,45 @@ export function isUpcoming(a: Scheduled, ctx?: ScheduleContext): boolean {
 
 // Short human label for an "active assignments" list row — shared by the
 // questionnaire and photo check-in assignment UIs in ClientHub.
+/** La misma cadencia, pero para el ATLETA. `scheduleLabel` es una etiqueta
+ *  compacta pensada para las tablas del coach, donde caben pocos caracteres y
+ *  se leen muchas seguidas ("Cada 14d", "Día 26/mes"); en la pantalla de
+ *  Revisión eso son abreviaturas de máquina delante de alguien que solo quiere
+ *  saber cada cuánto le toca. Función aparte a propósito: cambiar
+ *  `scheduleLabel` alteraría las dos pantallas del coach. */
+export function cadenciaEnCristiano(schedule: QSchedule): string {
+  const DIAS = ['los domingos', 'los lunes', 'los martes', 'los miércoles', 'los jueves', 'los viernes', 'los sábados'];
+  switch (schedule?.type) {
+    case 'once': return 'Una sola vez';
+    case 'weekdays': {
+      const dias = (schedule.weekdays ?? []).map(d => DIAS[d]).filter(Boolean);
+      if (dias.length === 0) return 'Sin fecha fija';
+      const texto = dias.length === 1
+        ? dias[0]
+        : `${dias.slice(0, -1).join(', ')} y ${dias[dias.length - 1]}`;
+      return texto.charAt(0).toUpperCase() + texto.slice(1);
+    }
+    case 'interval': {
+      const n = schedule.intervalDays ?? 1;
+      if (n === 1) return 'Todos los días';
+      if (n === 7) return 'Cada semana';
+      if (n === 14) return 'Cada dos semanas';
+      if (n === 30 || n === 31) return 'Cada mes';
+      return `Cada ${n} días`;
+    }
+    case 'monthly': return `El día ${schedule.dayOfMonth ?? 1} de cada mes`;
+    case 'plan_week': return `En la semana ${schedule.planWeek ?? 1} de tu plan`;
+    case 'mesocycle_end': {
+      const off = schedule.mesocycleOffsetDays ?? 0;
+      if (off === 0) return 'Al acabar el bloque';
+      return off > 0
+        ? `${off} día${off === 1 ? '' : 's'} antes de acabar el bloque`
+        : `${-off} día${-off === 1 ? '' : 's'} después de acabar el bloque`;
+    }
+    default: return 'Sin fecha fija';
+  }
+}
+
 export function scheduleLabel(schedule: QSchedule): string {
   const DAYS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
   switch (schedule?.type) {

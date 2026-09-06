@@ -38,12 +38,8 @@ const ProfileScreen        = lazy(() => import('./components/ProfileScreen'));
 const HomeScreen           = lazy(() => import('./components/HomeScreen'));
 const TrainingScreen       = lazy(() => import('./components/TrainingScreen'));
 const NutritionHubScreen   = lazy(() => import('./components/NutritionHubScreen'));
-const CheckInScreen        = lazy(() => import('./components/CheckInScreen'));
 const AcademyScreen        = lazy(() => import('./components/AcademyScreen'));
 const CardioScreen         = lazy(() => import('./components/CardioScreen'));
-
-// Shared screens
-const AthleteRoadmapScreen = lazy(() => import('./components/AthleteRoadmapScreen'));
 
 // Coach screens
 const ClientsScreen        = lazy(() => import('./components/ClientsScreen'));
@@ -100,6 +96,14 @@ const GimnasioHarness = import.meta.env.DEV
 // producción que UiShowcase/GimnasioHarness.
 const CalendarioHarness = import.meta.env.DEV
   ? lazy(() => import('./components/roadmap/calendario/DevHarness'))
+  : null;
+
+// Banco de pruebas de Perfil › Revisión (ruta /dev/revision) — misma razón
+// que los dos de arriba, pero del lado ATLETA: tampoco hay login sandbox de
+// atleta. Caché de react-query sembrada a mano, ninguna lectura ni escritura
+// llega a Firestore.
+const RevisionHarness = import.meta.env.DEV
+  ? lazy(() => import('./components/RevisionDevHarness'))
   : null;
 
 /* La pantalla de espera de la app, con marca. Existe como componente y no como
@@ -164,6 +168,18 @@ const ATHLETE_TABS: NavItem[] = [
   { id: 'nutrition', label: 'Nutrición', shortLabel: 'Nutri.',  icon: 'restaurant' },
   { id: 'profile',   label: 'Perfil',   shortLabel: 'Perfil',   icon: 'person' },
 ];
+
+// Check-in y Road map dejaron de ser pestañas de la barra (Perfil los absorbió,
+// ver el comentario de arriba) pero sus rutas seguían sueltas: quien entraba
+// desde una tarea pendiente de "Hoy" aterrizaba en una pantalla sin ninguna
+// pestaña marcada en la barra y sin forma normal de volver — "una página
+// aparte", en palabras de Dani. Se va a su sección DENTRO de Perfil, que es
+// donde vive ese contenido. Las rutas viejas siguen existiendo y redirigen
+// aquí (ver <Routes>), para no romper enlaces ya enviados.
+const SECCION_DE_PERFIL: Partial<Record<NavTab, string>> = {
+  checkin: 'revision',
+  roadmap: 'roadmap',
+};
 
 // F3.13a: "Home Coach sustituye la entrada del coach" (decisión de Dani,
 // 2026-08-07) — la ruta sigue siendo /clients (no romper enlaces existentes
@@ -321,8 +337,11 @@ function AppContent() {
   // La pestaña activa se lee directo de la URL (primer segmento) en vez de
   // guardarse en estado — así un refresh o el botón atrás de móvil recuperan
   // la pantalla exacta en la que estaba el usuario, no solo /clients/* como
-  // antes. `goToTab` es ahora un simple `navigate`.
-  const goToTab = (tab: NavTab) => navigate(`/${tab}`);
+  // antes. `goToTab` es un `navigate`, salvo por los dos destinos de abajo.
+  const goToTab = (tab: NavTab) => {
+    const seccion = SECCION_DE_PERFIL[tab];
+    navigate(seccion ? `/profile?tab=${seccion}` : `/${tab}`);
+  };
 
   // Barra inferior de móvil: ver utils/anclajeViewport.ts y el <nav> de abajo.
   const huecoInferior = useHuecoInferiorVisible();
@@ -683,6 +702,14 @@ function AppContent() {
     );
   }
 
+  if (RevisionHarness && location.pathname === '/dev/revision') {
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-bg" />}>
+        <RevisionHarness />
+      </Suspense>
+    );
+  }
+
   // Banco de pruebas del wizard de alta: sin esto había que crear una cuenta
   // nueva de verdad cada vez que se quería ver un paso concreto. Misma poda
   // en producción que UiShowcase/GimnasioHarness.
@@ -1000,8 +1027,12 @@ function AppContent() {
               dos veces. */}
           {!isCoach && <Route path="/training" element={<TrainingScreen profile={profile} />} />}
           {!isCoach && <Route path="/nutrition" element={<NutritionHubScreen profile={profile} />} />}
-          {!isCoach && <Route path="/checkin" element={<CheckInScreen profile={profile} checkins={checkins} />} />}
-          {!isCoach && <Route path="/roadmap" element={<AthleteRoadmapScreen profile={profile} />} />}
+          {/* Rutas heredadas: el contenido vive en Perfil desde F3.11, así que
+              aterrizar aquí dejaba al atleta en una pantalla suelta sin
+              barra activa ni salida. Redirigen a su pestaña de Perfil, con
+              `replace` para que el botón atrás no rebote de vuelta. */}
+          {!isCoach && <Route path="/checkin" element={<Navigate to="/profile?tab=revision" replace />} />}
+          {!isCoach && <Route path="/roadmap" element={<Navigate to="/profile?tab=roadmap" replace />} />}
           {!isCoach && <Route path="/academy" element={<AcademyScreen profile={profile} />} />}
           {!isCoach && <Route path="/cardio" element={<CardioScreen profile={profile} />} />}
 

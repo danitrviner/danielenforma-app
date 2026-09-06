@@ -20,6 +20,14 @@ interface Props {
   athleteEmail: string;
   sexo: Sexo | null;    // de la anamnesis (perfil.sexo_biologico) — para %grasa US Navy
   pesoKg: number | null; // último peso conocido del atleta — idem
+  /**
+   * Quién está mirando. Solo cambia el estado vacío: el texto de siempre le
+   * dice a QUIEN MIRA que asigne el cuestionario "Mediciones", y eso solo lo
+   * puede hacer el coach. Desde que este panel también se pinta en la pantalla
+   * de Revisión del atleta, ese texto le mandaba hacer algo que no está en su
+   * mano. Por defecto 'coach', para no cambiar la pantalla del cliente.
+   */
+  audiencia?: 'coach' | 'atleta';
 }
 
 function fmtDate(dateStr: string): string {
@@ -27,7 +35,7 @@ function fmtDate(dateStr: string): string {
   return d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
 }
 
-export default function BodyMeasurementsPanel({ athleteEmail, sexo, pesoKg }: Props) {
+export default function BodyMeasurementsPanel({ athleteEmail, sexo, pesoKg, audiencia = 'coach' }: Props) {
   const { all, latest, loading } = useBodyMeasurements(athleteEmail);
   const [expanded, setExpanded] = useState<BodyMetricKey | null>(null);
 
@@ -83,9 +91,11 @@ export default function BodyMeasurementsPanel({ athleteEmail, sexo, pesoKg }: Pr
     return (
       <div className="py-10 text-center border border-dashed border-white/7 rounded-2xl px-6">
         <span className="material-symbols-outlined text-4xl text-[#2a2a2a] block mb-2">straighten</span>
-        <p className="font-sans font-bold text-white text-sm mb-1">Sin mediciones todavía</p>
+        <p className="font-sans font-bold text-white text-sm mb-1">Sin medidas todavía</p>
         <p className="text-[#c6c9ab] text-xs font-mono max-w-xs mx-auto">
-          Asigna el cuestionario "Mediciones" para empezar a registrar perímetros.
+          {audiencia === 'atleta'
+            ? 'En cuanto respondas el cuestionario de mediciones, aquí verás tus centímetros y cómo van cambiando.'
+            : 'Asigna el cuestionario "Mediciones" para empezar a registrar perímetros.'}
         </p>
       </div>
     );
