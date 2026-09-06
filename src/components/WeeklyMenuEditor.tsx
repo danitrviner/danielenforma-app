@@ -4,7 +4,7 @@ import {
   OnboardingData, Diet, AthleteDietConfig, AthleteNutritionConfig, Recipe, RecipeFavorites,
   MealItem, WeeklyMenu, MenuDay, WeekDay, FoodCategory, DietMode,
 } from '../types';
-import { queryRecetasForGenerator, getRecipes, getFoodItems, createWeeklyMenu, updateWeeklyMenu, publishWeeklyMenu, getRecipeFavorites } from '../dbService';
+import { queryRecetasForGenerator, getRecipes, getRecipeById, getFoodItems, createWeeklyMenu, updateWeeklyMenu, publishWeeklyMenu, getRecipeFavorites } from '../dbService';
 import {
   slotsFromOnboarding, generateWeek, generateDay, isDayWithinTolerance,
   dayGlobalDeviation, rankCandidates, slotTargets, recipeMatchesSlot,
@@ -158,14 +158,31 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
     return 'neutral';
   }
 
-  // Recipe lookup for the prep/shopping preview, built from the pools + builder
-  // recipes already loaded during generation (no extra fetches).
+  // Las recetas del ÍNDICE no traen las cantidades de los ingredientes (se
+  // quitan a propósito para que quepa en el móvil), así que la lista de la
+  // compra hecha solo con ellas salía sin pesos. Se piden enteras las del menú
+  // —solo esas, una vez— igual que hace la pantalla del atleta.
+  const idsDelMenu = useMemo(
+    () => Array.from(new Set((menu?.days ?? []).flatMap(d => d.meals.map(m => m.recipeId).filter(Boolean)))),
+    [menu],
+  );
+  const { data: recetasEnteras } = useQuery({
+    queryKey: ['recipesFull', idsDelMenu],
+    queryFn: async () => (await Promise.all(idsDelMenu.map(id => getRecipeById(id))))
+      .filter((r): r is Recipe => !!r),
+    enabled: idsDelMenu.length > 0,
+    staleTime: Infinity,
+  });
+
+  // Búsqueda de recetas para la vista previa de preparación y la compra. La
+  // receta entera pisa a la del índice cuando ya ha llegado.
   const recipesById = useMemo(() => {
     const map = new Map<string, Recipe>();
     for (const list of Object.values(pools) as Recipe[][]) for (const r of list) map.set(r.id, r);
     for (const r of builderRecipes ?? []) map.set(r.id, r);
+    for (const r of recetasEnteras ?? []) map.set(r.id, r);
     return map;
-  }, [pools, builderRecipes]);
+  }, [pools, builderRecipes, recetasEnteras]);
 
   const batchPlan = useMemo(() => (menu ? buildBatchPlan(menu.days) : []), [menu]);
   const shoppingList = useMemo(() => (menu ? buildShoppingList(menu.days, recipesById) : []), [menu, recipesById]);

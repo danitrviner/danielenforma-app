@@ -45,6 +45,11 @@ export function buildShoppingList(days: MenuDay[], recipesById: Map<string, Reci
     cur.hasGrams = true;
     acc.set(key, cur);
   };
+  // Ingrediente que hace falta comprar pero del que no se sabe el peso.
+  const sinCantidad = (rawName: string) => {
+    const key = normalizeName(rawName);
+    if (!acc.has(key)) acc.set(key, { name: rawName.trim(), grams: 0, exchanges: 0, hasGrams: false });
+  };
   const addExchanges = (rawName: string, exchanges: number) => {
     const key = normalizeName(rawName);
     const cur = acc.get(key) ?? { name: rawName.trim(), grams: 0, exchanges: 0, hasGrams: false };
@@ -56,7 +61,16 @@ export function buildShoppingList(days: MenuDay[], recipesById: Map<string, Reci
     for (const meal of day.meals) {
       const recipe = meal.recipeId ? recipesById.get(meal.recipeId) : undefined;
       if (recipe?.ingredientsText?.length) {
-        for (const ing of recipe.ingredientsText) addGrams(ing.name, ing.quantity * meal.scale);
+        for (const ing of recipe.ingredientsText) {
+          // El ÍNDICE del recetario guarda los ingredientes solo por nombre: las
+          // cantidades se quitan a propósito para que quepa en el móvil, y
+          // llegan al pedir la receta entera. Multiplicar ese hueco por la
+          // ración escribía "NaN g" en la lista de la compra del entrenador,
+          // que construye la suya con las recetas del índice. Sin cantidad se
+          // pone el ingrediente sin peso: mejor "hace falta arroz" que un NaN.
+          if (Number.isFinite(ing.quantity)) addGrams(ing.name, ing.quantity * meal.scale);
+          else sinCantidad(ing.name);
+        }
       } else if (recipe?.ingredients?.length) {
         for (const ing of recipe.ingredients) {
           const base = parseBaseGrams(ing.foodLabel);
@@ -86,7 +100,9 @@ export function buildShoppingList(days: MenuDay[], recipesById: Map<string, Reci
     name: a.name,
     grams: a.hasGrams ? Math.round(a.grams) : null,
     exchanges: a.hasGrams ? null : Math.round(a.exchanges * 100) / 100,
-    display: a.hasGrams ? fmtGrams(a.grams) : `${Math.round(a.exchanges * 100) / 100} int.`,
+    display: a.hasGrams ? fmtGrams(a.grams)
+      : a.exchanges > 0 ? `${Math.round(a.exchanges * 100) / 100} int.`
+      : 'al gusto',
   }));
 
   // Grams-known items first (sorted by weight), then exchange-only, alphabetical.

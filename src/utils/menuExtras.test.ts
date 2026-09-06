@@ -264,3 +264,32 @@ describe('segunda ronda de revisión', () => {
     expect(alt[0].recipe.id).toBe('justa'); // los 6 que le faltan al día
   });
 });
+
+describe('lista de la compra con recetas del índice', () => {
+  // El índice del recetario guarda los ingredientes SOLO por nombre. La lista
+  // del entrenador se construye con esas, así que multiplicar la cantidad que
+  // no está por la ración escribía "NaN g" en pantalla.
+  const dia: MenuDay = {
+    day: 'mon', dietId: 'd', target: { HC: 4, PROT: 0, GRASA: 0 },
+    meals: [{
+      id: 'm1', slot: 3, name: 'Comida', recipeId: 'r1', recipeName: 'Arroz con pollo',
+      scale: 2, exch: { HC: 4, PROT: 0, GRASA: 0 }, kcal: 400, complements: [],
+    }],
+  } as unknown as MenuDay;
+
+  it('sin cantidad no escribe NaN: pone el ingrediente sin peso', () => {
+    const delIndice = { id: 'r1', name: 'Arroz con pollo', ownerId: 'recetas',
+      ingredientsText: [{ name: 'Arroz' }] } as unknown as Recipe;
+    const [item] = buildShoppingList([dia], new Map([['r1', delIndice]]));
+    expect(item.name).toBe('Arroz');
+    expect(item.display).not.toContain('NaN');
+    expect(item.grams).toBeNull();
+  });
+
+  it('con la receta entera sí pesa, y escala con la ración', () => {
+    const entera = { id: 'r1', name: 'Arroz con pollo', ownerId: 'recetas',
+      ingredientsText: [{ name: 'Arroz', quantity: 60 }] } as unknown as Recipe;
+    const [item] = buildShoppingList([dia], new Map([['r1', entera]]));
+    expect(item.grams).toBe(120); // 60 g × ración 2
+  });
+});
