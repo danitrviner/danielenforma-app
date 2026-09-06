@@ -4,6 +4,7 @@ import {
 } from '../types';
 import { addToPlaced, round2 } from './exchangeHelpers';
 import { ingredientesEscalables } from './escalarIngrediente';
+import { superaElTiempo } from './tiempoDeReceta';
 import { quotaSplit } from './quotaSplit';
 import { slotPercents } from './slotWeights';
 import { ingredientMatch, normalizeStr, violatesDietType } from './foodPrefs';
@@ -345,7 +346,7 @@ export function rankCandidates(
     !excludedDish.has(dishType(r)) &&
     !prefs.allergies.some(f => ingredientMatch(r, f)) &&
     !violatesDietType(r, prefs.dietType) &&
-    !(prefs.cookingMaxTime != null && r.cookingTime != null && r.cookingTime > prefs.cookingMaxTime),
+    !superaElTiempo(r, prefs.cookingMaxTime),
   );
 
   // Los alimentos marcados "no me gusta" en Preferencias alimentarias se

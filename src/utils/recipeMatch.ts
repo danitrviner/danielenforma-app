@@ -1,4 +1,5 @@
 import type { Recipe, BudgetVec, DietType, FoodCategory } from '../types';
+import { superaElTiempo } from './tiempoDeReceta';
 import { ingredientMatch, violatesDietType } from './foodPrefs';
 import { dishType, DishType } from './dishTypes';
 import { GRAMS_PER_EXCHANGE } from './nutritionConstants';
@@ -168,7 +169,7 @@ export function findRecipeAlternatives(
     if (allergies.some(f => ingredientMatch(r, f))) continue;
     if (disliked.has(r.id)) continue;
     if (violatesDietType(r, prefs.dietType)) continue;
-    if (prefs.cookingMaxTime != null && r.cookingTime != null && r.cookingTime > prefs.cookingMaxTime) continue;
+    if (superaElTiempo(r, prefs.cookingMaxTime)) continue;
     if (!matchesIntake(r, intakeType)) continue;
     if (onlyTupper && !r.tupper) continue;
     if (nSearch && !norm(r.name).includes(nSearch)) continue;
