@@ -128,3 +128,34 @@ describe('seis comidas', () => {
     expect(slotsFromOnboarding({ mealCount: 6 }).map(s => s.slot)).toEqual([1, 2, 3, 4, 5, 5]);
   });
 });
+
+describe('el número de comidas del PERFIL manda sobre la ficha de alta', () => {
+  // El atleta cambiaba "comidas al día" en Perfil > Preferencias, se guardaba en
+  // AthleteNutritionConfig, y el generador seguía leyendo solo la ficha: veía su
+  // elección guardada y el menú le llegaba con las comidas de antes.
+  const ficha = {
+    mealCount: 4,
+    meals: [
+      { intakeType: 1, name: 'Desayuno', needsTupper: false },
+      { intakeType: 2, name: 'Media mañana', needsTupper: false },
+      { intakeType: 3, name: 'Comida', needsTupper: true },
+      { intakeType: 5, name: 'Cena', needsTupper: false },
+    ],
+  };
+
+  it('sin override se respeta la ficha', () => {
+    expect(slotsFromOnboarding(ficha).length).toBe(4);
+  });
+
+  it('con override manda el perfil, y el reparto sigue sumando 100', () => {
+    for (const n of [3, 5, 6]) {
+      const slots = slotsFromOnboarding(ficha, undefined, n);
+      expect(slots.length).toBe(n);
+      expect(slots.reduce((s, sl) => s + sl.pct, 0)).toBe(100);
+    }
+  });
+
+  it('un valor imposible no rompe: se cae al preset de 4', () => {
+    expect(slotsFromOnboarding(ficha, undefined, 99).length).toBe(4);
+  });
+});

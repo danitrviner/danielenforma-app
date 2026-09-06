@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   OnboardingData, Diet, AthleteDietConfig, AthleteNutritionConfig, Recipe, RecipeFavorites,
@@ -77,8 +77,18 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
   // contestó en su ficha o corrigió en Perfil > Preferencias), igual que ya hacía
   // su dieta de intercambios. Sigue siendo editable a mano aquí abajo.
   const [slots, setSlots] = useState<MealSlotSpec[]>(
-    () => slotsFromOnboarding(onboarding, nutritionConfig?.hungerProfile),
+    () => slotsFromOnboarding(onboarding, nutritionConfig?.hungerProfile, nutritionConfig?.mealCount),
   );
+  // La semilla de arriba se calcula UNA vez, al montar. La ficha y la config del
+  // atleta llegan por consulta, así que si el editor se abre antes de que estén
+  // el reparto se quedaría con el genérico de cuatro comidas para siempre. Esto
+  // vuelve a sembrarlo cuando llegan — pero solo mientras el entrenador no haya
+  // tocado los porcentajes a mano, que es lo único que no se puede pisar.
+  const slotsTocados = useRef(false);
+  useEffect(() => {
+    if (slotsTocados.current) return;
+    setSlots(slotsFromOnboarding(onboarding, nutritionConfig?.hungerProfile, nutritionConfig?.mealCount));
+  }, [onboarding, nutritionConfig?.hungerProfile, nutritionConfig?.mealCount]);
   // El MISMO modo que usa la pantalla del atleta (`MyMenuScreen`). Antes aquí se
   // caía al 'OMNIVORO' por defecto del generador: si el entrenador tenía
   // habilitado otro banco, el menú se generaba con alimentos de un modo y el
@@ -369,7 +379,7 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
                 <ProgressBar value={sl.pct} label={`${sl.name}, ${sl.pct}%`} className="flex-1" />
                 <input
                   type="number" min={0} max={100} value={sl.pct}
-                  onChange={e => setSlots(prev => prev.map((s, idx) => idx === i ? { ...s, pct: Number(e.target.value) } : s))}
+                  onChange={e => { slotsTocados.current = true; setSlots(prev => prev.map((s, idx) => idx === i ? { ...s, pct: Number(e.target.value) } : s)); }}
                   className="w-16 text-right bg-raised border border-hairline rounded-control px-2 py-1 text-title-s text-white font-mono focus:outline-none focus:border-accent/50"
                 />
                 <span className="font-mono text-ink-3 text-label">%</span>

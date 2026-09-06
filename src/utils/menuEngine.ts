@@ -157,9 +157,20 @@ export const FALLBACK_SLOTS: Record<ConteoComidas, MealSlotSpec[]> = {
 export function slotsFromOnboarding(
   ob: { mealCount?: number; meals?: { intakeType: number; name: string; needsTupper: boolean }[] } | null,
   hungerProfile?: HungerProfile,
+  /** Lo que el atleta haya cambiado en Perfil > Preferencias
+   *  (`AthleteNutritionConfig.mealCount`). Manda sobre la ficha de alta, igual
+   *  que `dietType` y `cookingMaxTime`, que ya se leían así en las prefs.
+   *
+   *  Sin este parámetro, el panel guardaba el cambio y el generador seguía
+   *  leyendo solo la ficha: el atleta pedía cinco comidas, veía su elección
+   *  guardada, y el menú le llegaba con cuatro. Es un parámetro explícito y no
+   *  una lectura interna para que quien llame tenga que decidir a propósito qué
+   *  manda. */
+  mealCountOverride?: number,
 ): MealSlotSpec[] {
-  const count: ConteoComidas = CONTEOS_COMIDAS.includes(ob?.mealCount as ConteoComidas)
-    ? (ob!.mealCount as ConteoComidas) : 4;
+  const pedidas = mealCountOverride ?? ob?.mealCount;
+  const count: ConteoComidas = CONTEOS_COMIDAS.includes(pedidas as ConteoComidas)
+    ? (pedidas as ConteoComidas) : 4;
   if (ob?.meals && ob.meals.length === count) {
     const pcts = slotPercents(ob.meals.map(m => m.intakeType), hungerProfile);
     return ob.meals.map((m, i) => ({
