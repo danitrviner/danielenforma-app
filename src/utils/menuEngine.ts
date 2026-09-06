@@ -447,9 +447,13 @@ export function fillComplements(gap: BudgetVec, foods: MealItem[], mode: DietMod
     // `complementosDisponibles`, que le abre el banco entero).
     const usados = new Set<string>();
     for (let n = 0; n < MAX_COMPLEMENTOS_POR_CATEGORIA && need >= PASO_INTERCAMBIO; n++) {
+      // `frescos` ENCOGE en cada vuelta (se le quita el que se acaba de usar),
+      // así que indexarla con el contador de la vuelta se saltaba alimentos: en
+      // la segunda vuelta n=1 sobre una lista ya sin el primero apuntaba al
+      // tercero. Mientras queden frescos se coge el primero; solo al agotarlos
+      // se rota sobre la lista completa.
       const frescos = candidates.filter(f => !usados.has(f.label));
-      const pool = frescos.length > 0 ? frescos : candidates;
-      const food = pool[n % pool.length];
+      const food = frescos.length > 0 ? frescos[0] : candidates[n % candidates.length];
       // Se LLENA cada alimento hasta una ración razonable antes de pasar al
       // siguiente, en vez de repartir el hueco a partes iguales entre los tres.
       // Repartiendo, un hueco de 0,75 salía como tres extras de 0,25 —"cómete un
@@ -948,12 +952,24 @@ export function findSwapAlternatives(
   // ración máxima y las raciones sumaban 4 intercambios encima, así que no había
   // receta en el recetario capaz de sustituir a las dos cosas juntas y la lista
   // salía vacía.
-  const mealTarget = meal.exch;
+  // Una comida sin plato (el generador no encontró receta) tiene `exch` a cero:
+  // buscarle sustituto contra un objetivo de cero solo devuelve recetas
+  // minúsculas, que es justo lo contrario de lo que hace falta. En ese caso el
+  // objetivo es lo que la comida DEBERÍA aportar, no lo que aporta.
+  const platoVacio = !meal.recipeId
+    || (meal.exch.HC + meal.exch.PROT + meal.exch.GRASA) < PASO_INTERCAMBIO;
   const complementosDeEstaComida = meal.complements
     .reduce((acc, c) => sumVec(acc, complementExchanges(c)), { HC: 0, PROT: 0, GRASA: 0 });
   // Lo que esta comida tiene que aportar en total, que es lo que el entrenador
   // aprobó al generar el menú.
   const objetivoDeLaComida = mealTotalExch(meal);
+  const mealTarget = platoVacio
+    ? {
+      HC: Math.max(0, round2(objetivoDeLaComida.HC - complementosDeEstaComida.HC)),
+      PROT: Math.max(0, round2(objetivoDeLaComida.PROT - complementosDeEstaComida.PROT)),
+      GRASA: Math.max(0, round2(objetivoDeLaComida.GRASA - complementosDeEstaComida.GRASA)),
+    }
+    : meal.exch;
   const otherMealsTotal = day.meals
     .filter(m => m.id !== mealId)
     .reduce((acc, m) => sumVec(acc, mealTotalExch(m)), complementosDeEstaComida);
@@ -968,23 +984,29 @@ export function findSwapAlternatives(
   // quiere por un desajuste que no ha provocado él. La regla correcta es que un
   // cambio no puede dejar el día PEOR de lo que ya estaba.
   const actual = day.meals.reduce((acc, m) => sumVec(acc, mealTotalExch(m)), { HC: 0, PROT: 0, GRASA: 0 });
-  const desvioActual: BudgetVec = {
-    HC: Math.abs(round2(actual.HC - day.target.HC)),
-    PROT: Math.abs(round2(actual.PROT - day.target.PROT)),
-    GRASA: Math.abs(round2(actual.GRASA - day.target.GRASA)),
+  const desvioConSigno: BudgetVec = {
+    HC: round2(actual.HC - day.target.HC),
+    PROT: round2(actual.PROT - day.target.PROT),
+    GRASA: round2(actual.GRASA - day.target.GRASA),
   };
-  const desvioTotalActual = Math.abs(round2(
-    actual.HC + actual.PROT + actual.GRASA - (day.target.HC + day.target.PROT + day.target.GRASA)));
+  const desvioTotalConSigno = round2(
+    actual.HC + actual.PROT + actual.GRASA - (day.target.HC + day.target.PROT + day.target.GRASA));
 
   const cats: (keyof BudgetVec)[] = ['HC', 'PROT', 'GRASA'];
   const tolExacto = { HC: 0, PROT: 0, GRASA: 0 } as BudgetVec;
   const tolAprox = { HC: 0, PROT: 0, GRASA: 0 } as BudgetVec;
   for (const cat of cats) {
-    tolExacto[cat] = Math.max(desvioActual[cat], swapMacroTol(day.target[cat], SWAP_MACRO_MIN_EXACTO, SWAP_MACRO_PCT_EXACTO));
-    tolAprox[cat] = Math.max(desvioActual[cat], swapMacroTol(day.target[cat], SWAP_MACRO_MIN_APROX, SWAP_MACRO_PCT_APROX));
+    tolExacto[cat] = swapMacroTol(day.target[cat], SWAP_MACRO_MIN_EXACTO, SWAP_MACRO_PCT_EXACTO);
+    tolAprox[cat] = swapMacroTol(day.target[cat], SWAP_MACRO_MIN_APROX, SWAP_MACRO_PCT_APROX);
   }
-  const topeTotalExacto = Math.max(desvioTotalActual, SWAP_TOTAL_EXACTO);
-  const topeTotalAprox = Math.max(desvioTotalActual, SWAP_TOTAL_APROX);
+  const topeTotalExacto = SWAP_TOTAL_EXACTO;
+  const topeTotalAprox = SWAP_TOTAL_APROX;
+  // "No dejar el día peor de lo que ya estaba" se aplica por SIGNO, no por
+  // magnitud. Subiendo el tope al desvío actual en valor absoluto, un día que ya
+  // iba 2 puntos CORTO admitía también alternativas 2 puntos PASADAS: el margen
+  // se abría hacia los dos lados y el cambio podía empeorar el día justo en la
+  // dirección contraria. Ahora solo se perdona el exceso que ya venía de antes y
+  // en su mismo sentido.
 
   const graded: SwapCandidate[] = [];
   for (const c of rankCandidates(pool, mealTarget, prefs, usedIds, { mode })) {
@@ -1007,8 +1029,15 @@ export function findSwapAlternatives(
       otherMealsTotal.HC + aporta.HC + otherMealsTotal.PROT + aporta.PROT
       + otherMealsTotal.GRASA + aporta.GRASA - targetTotal,
     );
+    // Cuánto se sale por un lado, descontando lo que el día ya se salía POR ESE
+    // MISMO lado (`desvioActual` guarda la magnitud; `actual` da el signo).
+    const exceso = (valor: number, yaHabia: number): number => {
+      if (valor >= 0) return Math.max(0, valor - Math.max(0, yaHabia));
+      return Math.max(0, -valor - Math.max(0, -yaHabia));
+    };
     const dentroDe = (topeTotal: number, topeMacro: BudgetVec) =>
-      Math.abs(driftTotal) <= topeTotal && cats.every(cat => Math.abs(drift[cat]) <= topeMacro[cat]);
+      exceso(driftTotal, desvioTotalConSigno) <= topeTotal
+      && cats.every(cat => exceso(drift[cat], desvioConSigno[cat]) <= topeMacro[cat]);
 
     if (dentroDe(topeTotalExacto, tolExacto)) graded.push({ ...c, fit: 'exacto', drift, driftTotal, raciones });
     else if (dentroDe(topeTotalAprox, tolAprox)) graded.push({ ...c, fit: 'aproximado', drift, driftTotal, raciones });

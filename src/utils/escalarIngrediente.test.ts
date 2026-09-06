@@ -82,3 +82,23 @@ describe('textoDeRacionExtra', () => {
     expect(textoDeRacionExtra(arroz, 0.5)).toBe('+15g de arroz');
   });
 });
+
+describe('falsos positivos de nombre', () => {
+  // Encontrados midiendo contra el recetario real: `nuez` y `almendra` sueltos
+  // convertían una ESPECIA y una BEBIDA VEGETAL en "añade 15g de frutos secos".
+  it('la nuez moscada es una especia, no un fruto seco (35 recetas)', () => {
+    expect(ingredientesEscalables([{ name: 'Nuez moscada' }], BANCO)).toEqual([]);
+  });
+
+  it('la bebida de almendra o avellanas no se sube a cucharadas (119 recetas)', () => {
+    expect(ingredientesEscalables([{ name: 'Bebida de almendra' }], BANCO)).toEqual([]);
+    expect(ingredientesEscalables([{ name: 'Bebida de avellanas' }], BANCO)).toEqual([]);
+    expect(ingredientesEscalables([{ name: 'Leche de almendras' }], BANCO)).toEqual([]);
+  });
+
+  it('los frutos secos de verdad se siguen ofreciendo', () => {
+    for (const n of ['Nueces', 'Almendras crudas', 'Anacardos', 'Pistachos', 'Nuez']) {
+      expect(ingredientesEscalables([{ name: n }], BANCO)[0]?.nombre).toBe('frutos secos');
+    }
+  });
+});

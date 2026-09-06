@@ -21,9 +21,6 @@ const HUNGER_OPTIONS: SegmentedOption[] = [
 
 const TRAINING_SLOT_FALLBACK_OPTIONS = [1, 2, 3, 4, 5].map(s => ({ value: String(s), label: SLOT_LABEL[s] }));
 
-const escala = (uno: string, cinco: string) =>
-  [1, 2, 3, 4, 5].map(n => ({ value: String(n), label: n === 1 ? `1 · ${uno}` : n === 5 ? `5 · ${cinco}` : String(n) }));
-
 /** Las respuestas de la ficha que el atleta puede corregir, en el orden en que
  *  se le enseñan. La clave es la misma en `OnboardingData` y en
  *  `AthleteNutritionConfig` a propósito: así el valor guardado y el de partida

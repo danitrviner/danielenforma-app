@@ -10,6 +10,7 @@ import {
   dayGlobalDeviation, rankCandidates, slotTargets, recipeMatchesSlot,
   buildBatchPlan, MealSlotSpec, GeneratorPrefs, MenuCandidate,
 } from '../utils/menuEngine';
+import { exchangeToKcal } from '../utils/nutritionConstants';
 import { buildShoppingList } from '../utils/menuShoppingList';
 import { DISH_TYPES, DishType } from '../utils/dishTypes';
 import { Icon, Button, Input, ProgressBar } from './ui';
@@ -240,6 +241,11 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
       recipeId: pick.recipe.id, recipeName: pick.recipe.name,
       recipeImage: fotoDeReceta(pick.recipe),
       scale: pick.scale, exch: pick.exch, complements: [],
+      // Las raciones extra eran de la receta ANTERIOR ("+45g de arroz" con un
+      // plato que ya no lleva arroz), y las kcal se quedaban con las del plato
+      // viejo. Al cambiar de receta se caen las dos cosas y se recalcula.
+      racionesExtra: undefined,
+      kcal: Math.round(exchangeToKcal(pick.exch)),
     };
     updateDay(day, { ...menuDay, meals: nextMeals });
   };
@@ -268,6 +274,8 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
       recipeId: c.recipe.id, recipeName: c.recipe.name,
       recipeImage: fotoDeReceta(c.recipe),
       scale: c.scale, exch: c.exch, complements: [],
+      racionesExtra: undefined,
+      kcal: Math.round(exchangeToKcal(c.exch)),
     };
     updateDay(day, { ...menuDay, meals: nextMeals });
     setPickerFor(null);

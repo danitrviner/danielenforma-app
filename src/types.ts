@@ -1373,7 +1373,7 @@ export interface MenuMeal {
   recipeId: string;
   recipeName: string;  // denormalized so the viewer can render without a fetch
   recipeImage?: string;
-  scale: number;       // 0.5-2.0, steps of 0.25
+  scale: number;       // 0.5-4.0, en pasos de 0.25 (ver MENU_SCALES)
   exch: BudgetVec;      // exchanges already scaled
   kcal: number;
   /** Acompañamientos: alimentos sueltos que cierran lo que el plato no llega a

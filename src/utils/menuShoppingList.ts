@@ -65,6 +65,13 @@ export function buildShoppingList(days: MenuDay[], recipesById: Map<string, Reci
           else addExchanges(name, ing.quantity * meal.scale);
         }
       }
+      // Las RACIONES EXTRA son más cantidad de un ingrediente que la receta ya
+      // lleva ("+45g de arroz"): si no se suman aquí, la compra se queda corta
+      // justo en el alimento del que más se come.
+      for (const r of meal.racionesExtra ?? []) {
+        if (r.gramos > 0) addGrams(r.ingrediente, r.gramos);
+        else addExchanges(r.nombre, r.quantity);
+      }
       // Complements are eaten fresh but still need buying.
       for (const comp of meal.complements) {
         const base = parseBaseGrams(comp.foodLabel);

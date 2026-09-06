@@ -4,6 +4,7 @@ import {
   findSwapAlternatives, totalConExtras, MENU_SCALES, GeneratorPrefs,
 } from './menuEngine';
 import { complementosDisponibles, isSimpleComplement } from './menuComplements';
+import { buildShoppingList } from './menuShoppingList';
 import { Recipe, Diet, BudgetVec, MealItem, MenuDay } from '../types';
 
 const prefs: GeneratorPrefs = { allergies: [], disliked: [], liked: [], variety: 3 };
@@ -198,4 +199,46 @@ describe('el día completo: la receta cubre, el comodín remata', () => {
   });
 
 
+});
+
+describe('regresiones encontradas en revisión', () => {
+  // La lista de la compra sumaba plato + acompañamientos, pero NO las raciones
+  // extra: justo el alimento del que más se come es del que menos se compraba.
+  it('la lista de la compra suma las raciones extra del plato', () => {
+    const receta: Recipe = {
+      id: 'r1', name: 'Arroz con pollo', ownerId: 'recetas',
+      ingredientsText: [{ name: 'Arroz', quantity: 100 }],
+    } as unknown as Recipe;
+    const dia: MenuDay = {
+      day: 'mon', dietId: 'd', target: { HC: 4, PROT: 0, GRASA: 0 },
+      meals: [{
+        id: 'm1', slot: 3, name: 'Comida', recipeId: 'r1', recipeName: 'Arroz con pollo',
+        scale: 1, exch: { HC: 4, PROT: 0, GRASA: 0 }, kcal: 400, complements: [],
+        racionesExtra: [{ ingrediente: 'Arroz', nombre: 'arroz', category: 'HC', quantity: 2, gramos: 60 }],
+      }],
+    } as unknown as MenuDay;
+    const lista = buildShoppingList([dia], new Map([['r1', receta]]));
+    expect(lista.find(i => i.name === 'Arroz')?.grams).toBe(160); // 100 del plato + 60 de la ración
+  });
+
+  // "No dejar el día peor de lo que ya estaba" se aplicaba en valor absoluto:
+  // un día 2 puntos CORTO abría también 2 puntos de margen por ARRIBA.
+  it('un día que va corto no admite alternativas que lo dejen pasado', () => {
+    const dia: MenuDay = {
+      day: 'mon', dietId: 'd', target: { HC: 10, PROT: 0, GRASA: 0 },
+      meals: [{
+        id: 'm1', slot: 3, name: 'Comida', recipeId: 'x', recipeName: 'plato',
+        scale: 1, exch: { HC: 6, PROT: 0, GRASA: 0 }, kcal: 600, complements: [],
+      }],
+    } as unknown as MenuDay;
+    const receta = (id: string, hc: number): Recipe => ({
+      id, name: id, ownerId: 'recetas', intakeTypes: [3],
+      exchanges: { HC: hc, PROT: 0, GRASA: 0 },
+    } as unknown as Recipe);
+    // El día va 4 puntos corto. Una receta de 14 lo dejaría 4 puntos PASADO:
+    // mismo tamaño de desvío, dirección contraria, y no debe ofrecerse.
+    const ids = findSwapAlternatives(dia, 'm1', [receta('bajo', 6), receta('alto', 14)], prefs, Infinity, 'OMNIVORO', [])
+      .map(c => c.recipe.id);
+    expect(ids).not.toContain('alto');
+  });
 });

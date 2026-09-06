@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { minutosDeReceta } from '../utils/tiempoDeReceta';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -300,7 +301,7 @@ export default function MyMenuScreen({ profile }: Props) {
       meals: d.meals.map(m => m.id !== mealId ? m : {
         ...m,
         complements: siguiente,
-        kcal: Math.round(exchangeToKcal(totalConExtras(m.exch, siguiente))),
+        kcal: Math.round(exchangeToKcal(totalConExtras(m.exch, siguiente, m.racionesExtra))),
       }),
     });
     queryClient.setQueryData<WeeklyMenu | null>(menuKey, prev => prev ? { ...prev, days: nextDays } : prev);
@@ -657,7 +658,11 @@ export default function MyMenuScreen({ profile }: Props) {
                   </div>
                 ))}
 
-                {swapExactas.length + swapAproximadas.length > swapVisible * 2 && (
+                {/* Cada nivel se corta por separado a `swapVisible`, así que el
+                    botón tiene que mirar cada uno: comparando la suma contra
+                    `swapVisible * 2` se escondía "ver más" habiendo 30 exactas y
+                    ninguna aproximada. */}
+                {(swapExactas.length > swapVisible || swapAproximadas.length > swapVisible) && (
                   <button
                     onClick={() => setSwapVisible(v => v + SWAP_PAGE)}
                     className="w-full py-3 font-sans text-body-s text-accent hover:text-accent/80 transition-colors"
@@ -799,7 +804,7 @@ export default function MyMenuScreen({ profile }: Props) {
                   </div>
                 )}
                 {detailRecipe.kcal != null && (
-                  <p className="font-mono text-caption text-ink-2">{detailRecipe.kcal} kcal{detailRecipe.cookingTime != null ? ` · ${detailRecipe.cookingTime} min` : ''}</p>
+                  <p className="font-mono text-caption text-ink-2">{detailRecipe.kcal} kcal{detailRecipe.cookingTime != null ? ` · ~${minutosDeReceta(detailRecipe)} min` : ''}</p>
                 )}
                 {(detailRecipe.ingredientsText?.length || detailRecipe.ingredients?.length) ? (
                   <div>

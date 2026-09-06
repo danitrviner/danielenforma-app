@@ -49,7 +49,10 @@ const ESCALABLES: Escalable[] = [
   { patron: /\btofu\b/, etiqueta: '100g tofu magro (menos de 115kcal a los 100g)', nombre: 'tofu' },
   { patron: /aceite/, etiqueta: '10ml (1 cuchara) aceite (preferible AOVE)', nombre: 'aceite' },
   { patron: /aguacate|guacamole/, etiqueta: '60g aguacate o guacamole', nombre: 'aguacate' },
-  { patron: /frutos secos|almendra|nuez|nueces|anacardo|pistacho|avellana/, etiqueta: '15g frutos secos sin freír (cualquier fruto seco)', nombre: 'frutos secos' },
+  // `nuez` y `almendra` sueltos casaban con "Nuez moscada" (35 recetas) y con
+  // "Bebida de almendra/avellanas" (119): una especia y una bebida vegetal
+  // convertidas en "añade 15g de frutos secos". Se excluyen explícitamente.
+  { patron: /frutos secos|\b(?:almendras|nueces|anacardos?|pistachos?|avellanas)\b|\bnuez\b(?!\s+moscada)/, etiqueta: '15g frutos secos sin freír (cualquier fruto seco)', nombre: 'frutos secos' },
 ];
 
 /** Las etiquetas del banco que esta tabla necesita (lo usa el test). */
@@ -87,6 +90,9 @@ export function ingredientesEscalables(
   for (const ing of ingredientes) {
     const n = normalizeStr(ing.name ?? '');
     if (!n) continue;
+    // Una bebida vegetal no es el fruto seco del que sale: "bebida de almendra"
+    // no se sube a cucharadas de almendras.
+    if (/\bbebida\b|\bleche\b/.test(n)) continue;
     const match = ESCALABLES.find(e => e.patron.test(n));
     if (!match || vistos.has(match.etiqueta)) continue;
     const entrada = banco.get(match.etiqueta);
