@@ -30,9 +30,18 @@ interface Props {
   bandasEntreno: BandaEntreno[];
   indice: Map<string, DiaCalendario>;
   onOpenMonth: (mes: number) => void;
+  /**
+   * Barra horizontal de bloques del año. El calendario del ATLETA la apaga:
+   * lleva justo encima su propia barra de «Tu camino», que dice lo mismo pero
+   * con el progreso dentro de cada bloque — y dos barras seguidas contando lo
+   * mismo, en un móvil, es la mitad de la pantalla repetida. La leyenda de
+   * colores de fase se queda en los dos casos: sin ella los bloques de los
+   * mini-meses son colores sin nombre.
+   */
+  mostrarBandas?: boolean;
 }
 
-export default function NivelAno({ anio, hoy, bandasEntreno, indice, onOpenMonth }: Props) {
+export default function NivelAno({ anio, hoy, bandasEntreno, indice, onOpenMonth, mostrarBandas = true }: Props) {
   const totalDias = diasEnAnio(anio);
   const mesActual = new Date(hoy + 'T00:00:00').getFullYear() === anio ? new Date(hoy + 'T00:00:00').getMonth() : -1;
   const hoyPct = (diaDelAnio(hoy, anio) / totalDias) * 100;
@@ -41,7 +50,7 @@ export default function NivelAno({ anio, hoy, bandasEntreno, indice, onOpenMonth
     <div className="space-y-3.5" style={{ animation: 'fade-up 260ms cubic-bezier(0.2,0.8,0.2,1) both' }}>
       {/* Tarjeta de bandas de periodización */}
       <div className="bg-surface border border-hairline rounded-surface px-5 pt-[18px] pb-3.5">
-        <div className="flex items-center justify-between mb-3.5 flex-wrap gap-3">
+        <div className={`flex items-center justify-between flex-wrap gap-3 ${mostrarBandas ? 'mb-3.5' : ''}`}>
           <p className="font-mono text-caption uppercase tracking-wider text-ink-3">Bloques de periodización · {anio}</p>
           <div className="flex items-center gap-4 flex-wrap">
             {LEYENDA_FASE.map(l => (
@@ -52,6 +61,8 @@ export default function NivelAno({ anio, hoy, bandasEntreno, indice, onOpenMonth
           </div>
         </div>
 
+        {mostrarBandas && (
+        <>
         <div className="relative" style={{ height: 58 }}>
           {bandasEntreno.map(b => {
             const a = diaDelAnio(b.inicio, anio);
@@ -99,6 +110,8 @@ export default function NivelAno({ anio, hoy, bandasEntreno, indice, onOpenMonth
             <div key={m} className="font-mono text-caption tracking-wider text-ink-5 text-center">{m}</div>
           ))}
         </div>
+        </>
+        )}
       </div>
 
       {/* Rejilla de meses */}

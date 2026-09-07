@@ -91,10 +91,12 @@ export default function CommandPalette({ onNavigateTab }: Props) {
        scroll compartido. Decisión de Dani el 4 ago 2026: queda para la fase de
        diseño, que decidirá si la posición superior se convierte en una
        variante de la primitiva. */
+    // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- fondo del diálogo: cerrar al pulsar fuera es comodidad de ratón; con teclado ya cierra Escape
     <div
       className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[200] flex items-start justify-center pt-14 px-4"
       onClick={() => setOpen(false)}
     >
+      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- solo evita que un clic dentro del panel llegue al fondo y lo cierre */}
       <div
         className="bg-surface border border-hairline rounded-surface w-full max-w-lg shadow-e2 overflow-hidden"
         onClick={e => e.stopPropagation()}

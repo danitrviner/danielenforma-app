@@ -190,15 +190,15 @@ function ProgramaProgresivoEditor({
         </div>
       ) : (
         <div className="flex items-center gap-2">
-          <label className="text-caption font-sans uppercase text-ink-2">Minutos de la semana 1</label>
-          <input type="number" min={10} value={baseMin} onChange={e => onBaseMin(e.target.value)}
+          <label htmlFor="cardioprescriptionform-minutos-de-la-semana-1" className="text-caption font-sans uppercase text-ink-2">Minutos de la semana 1</label>
+          <input id="cardioprescriptionform-minutos-de-la-semana-1" type="number" min={10} value={baseMin} onChange={e => onBaseMin(e.target.value)}
             className="w-20 bg-surface border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent" />
         </div>
       )}
 
       <div className="flex items-center gap-2">
-        <label className="text-caption font-sans uppercase text-ink-2">Empieza el</label>
-        <input type="date" value={startDate} onChange={e => onStartDate(e.target.value)}
+        <label htmlFor="cardioprescriptionform-empieza-el" className="text-caption font-sans uppercase text-ink-2">Empieza el</label>
+        <input id="cardioprescriptionform-empieza-el" type="date" value={startDate} onChange={e => onStartDate(e.target.value)}
           className="bg-surface border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent" />
       </div>
 

@@ -239,7 +239,7 @@ export default function MesocycleReviewPanel({
               {cierre.resumenParaCliente}
             </p>
             <p className="font-mono text-caption text-ink-3">
-              Escrito con sus propios datos, sin IA. Es un punto de partida — edítalo antes de mandarlo.
+              Escrito con sus propios datos. Es un punto de partida — edítalo antes de mandarlo.
             </p>
           </div>
         </>

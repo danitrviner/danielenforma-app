@@ -19,6 +19,7 @@ import { fotoDeReceta } from '../utils/fotoDeReceta';
 import FotoDeReceta from './FotoDeReceta';
 import { Skeleton } from './ui';
 import { EmptyState, Badge, Chip, SearchField, Button, Select } from './ui';
+import { pulsable } from '../utils/a11y';
 
 // ── Exchange helpers ──────────────────────────────────────────────────────────
 
@@ -123,7 +124,7 @@ const RecipeCard = React.memo(function RecipeCard({ recipe, isFav, large = false
 
   return (
     <article
-      onClick={() => onOpen(recipe)}
+      {...pulsable(() => onOpen(recipe), `Abrir la receta ${recipe.name}`)}
       className={`${colSpan} group relative rounded-surface overflow-hidden bg-raised border border-hairline ${minH} flex flex-col justify-end cursor-pointer hover:border-accent/40 transition-all`}
     >
       <FotoDeReceta
@@ -170,7 +171,7 @@ const RecetaCard = React.memo(function RecetaCard({ recipe, isFav, isFeatured, e
 
   return (
     <article
-      onClick={() => onOpen(recipe)}
+      {...pulsable(() => onOpen(recipe), `Abrir la receta ${recipe.name}`)}
       className={`group relative rounded-surface overflow-hidden bg-raised border aspect-[4/5] flex flex-col justify-end cursor-pointer transition-all ${
         isFeatured
           ? 'border-accent/40 hover:border-accent/70'
@@ -587,7 +588,8 @@ function RecipeDetail({ recipe, isFav, isDisliked, isOwn, enabledModes, savingFa
                 return (
                   <div
                     key={idx}
-                    onClick={() => setCheckedSteps(prev => ({ ...prev, [idx]: !prev[idx] }))}
+                    {...pulsable(() => setCheckedSteps(prev => ({ ...prev, [idx]: !prev[idx] })), `Paso ${idx + 1}${done ? ', hecho' : ''}`)}
+                    aria-pressed={done}
                     className="flex gap-3 group cursor-pointer"
                   >
                     <div className="flex flex-col items-center shrink-0">

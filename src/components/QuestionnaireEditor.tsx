@@ -180,9 +180,15 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
                 </span>
               )}
               <label className="flex items-center gap-1 cursor-pointer flex-shrink-0 mt-2" title="Obligatoria">
+                <input
+                  type="checkbox"
+                  className="sr-only peer"
+                  checked={q.required}
+                  onChange={() => setQ(idx, { required: !q.required })}
+                />
                 <span
-                  className={`w-4 h-4 rounded-control border-2 flex items-center justify-center transition-colors ${q.required ? 'bg-accent border-accent' : 'border-hairline'}`}
-                  onClick={() => setQ(idx, { required: !q.required })}
+                  aria-hidden
+                  className={`w-4 h-4 rounded-control border-2 flex items-center justify-center transition-colors peer-focus-visible:ring-1 peer-focus-visible:ring-accent ${q.required ? 'bg-accent border-accent' : 'border-hairline'}`}
                 >
                   {q.required && <Icon name="check" size="s" className="text-black" />}
                 </span>
@@ -234,25 +240,25 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
               {q.type === 'numeric' && (
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   <div>
-                    <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Unidad</label>
-                    <input value={q.unit ?? ''} onChange={e => setQ(idx, { unit: e.target.value || undefined })}
+                    <label htmlFor={`q-${q.id}-unidad`} className="block font-mono text-caption text-ink-2 uppercase mb-1">Unidad</label>
+                    <input id={`q-${q.id}-unidad`} value={q.unit ?? ''} onChange={e => setQ(idx, { unit: e.target.value || undefined })}
                       placeholder="kg, cm, %…" className={`w-full ${MINI_INPUT_CLS}`} />
                   </div>
                   <div>
-                    <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Mínimo</label>
-                    <input type="number" value={q.min ?? ''}
+                    <label htmlFor={`q-${q.id}-minimo`} className="block font-mono text-caption text-ink-2 uppercase mb-1">Mínimo</label>
+                    <input id={`q-${q.id}-minimo`} type="number" value={q.min ?? ''}
                       onChange={e => setQ(idx, { min: e.target.value === '' ? undefined : Number(e.target.value) })}
                       placeholder="—" className={`w-full ${MINI_INPUT_CLS}`} />
                   </div>
                   <div>
-                    <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Máximo</label>
-                    <input type="number" value={q.max ?? ''}
+                    <label htmlFor={`q-${q.id}-maximo`} className="block font-mono text-caption text-ink-2 uppercase mb-1">Máximo</label>
+                    <input id={`q-${q.id}-maximo`} type="number" value={q.max ?? ''}
                       onChange={e => setQ(idx, { max: e.target.value === '' ? undefined : Number(e.target.value) })}
                       placeholder="—" className={`w-full ${MINI_INPUT_CLS}`} />
                   </div>
                   <div>
-                    <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Decimales</label>
-                    <input type="number" value={q.decimals ?? ''} min={0} max={4}
+                    <label htmlFor={`q-${q.id}-decimales`} className="block font-mono text-caption text-ink-2 uppercase mb-1">Decimales</label>
+                    <input id={`q-${q.id}-decimales`} type="number" value={q.decimals ?? ''} min={0} max={4}
                       onChange={e => setQ(idx, { decimals: e.target.value === '' ? undefined : Number(e.target.value) })}
                       placeholder="0" className={`w-full ${MINI_INPUT_CLS}`} />
                   </div>
@@ -262,28 +268,28 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
                 <div className="space-y-2">
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Desde</label>
-                      <input type="number" value={q.scaleMin ?? 1} min={0}
+                      <label htmlFor={`q-${q.id}-desde`} className="block font-mono text-caption text-ink-2 uppercase mb-1">Desde</label>
+                      <input id={`q-${q.id}-desde`} type="number" value={q.scaleMin ?? 1} min={0}
                         onChange={e => setQ(idx, { scaleMin: Number(e.target.value) })}
                         className={`w-full ${MINI_INPUT_CLS}`} />
                     </div>
                     <div>
-                      <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Hasta</label>
-                      <input type="number" value={q.scaleMax ?? 10} min={1}
+                      <label htmlFor={`q-${q.id}-hasta`} className="block font-mono text-caption text-ink-2 uppercase mb-1">Hasta</label>
+                      <input id={`q-${q.id}-hasta`} type="number" value={q.scaleMax ?? 10} min={1}
                         onChange={e => setQ(idx, { scaleMax: Number(e.target.value) })}
                         className={`w-full ${MINI_INPUT_CLS}`} />
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Etiqueta inicio</label>
-                      <input value={q.scaleMinLabel ?? ''}
+                      <label htmlFor={`q-${q.id}-etiqueta-inicio`} className="block font-mono text-caption text-ink-2 uppercase mb-1">Etiqueta inicio</label>
+                      <input id={`q-${q.id}-etiqueta-inicio`} value={q.scaleMinLabel ?? ''}
                         onChange={e => setQ(idx, { scaleMinLabel: e.target.value || undefined })}
                         placeholder="Ej: Nada" className={`w-full ${MINI_INPUT_CLS}`} />
                     </div>
                     <div>
-                      <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Etiqueta fin</label>
-                      <input value={q.scaleMaxLabel ?? ''}
+                      <label htmlFor={`q-${q.id}-etiqueta-fin`} className="block font-mono text-caption text-ink-2 uppercase mb-1">Etiqueta fin</label>
+                      <input id={`q-${q.id}-etiqueta-fin`} value={q.scaleMaxLabel ?? ''}
                         onChange={e => setQ(idx, { scaleMaxLabel: e.target.value || undefined })}
                         placeholder="Ej: Muchísimo" className={`w-full ${MINI_INPUT_CLS}`} />
                     </div>
@@ -293,17 +299,23 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
               {q.type === 'choice' && (
                 <div className="space-y-2">
                   <label className="flex items-center gap-2 cursor-pointer w-fit">
+                    <input
+                      type="checkbox"
+                      className="sr-only peer"
+                      checked={q.multiSelect}
+                      onChange={() => setQ(idx, { multiSelect: !q.multiSelect })}
+                    />
                     <span
-                      className={`w-4 h-4 rounded-control border-2 flex items-center justify-center transition-colors ${q.multiSelect ? 'bg-accent border-accent' : 'border-hairline'}`}
-                      onClick={() => setQ(idx, { multiSelect: !q.multiSelect })}
+                      aria-hidden
+                      className={`w-4 h-4 rounded-control border-2 flex items-center justify-center transition-colors peer-focus-visible:ring-1 peer-focus-visible:ring-accent ${q.multiSelect ? 'bg-accent border-accent' : 'border-hairline'}`}
                     >
                       {q.multiSelect && <Icon name="check" size="s" className="text-black" />}
                     </span>
                     <span className="font-mono text-caption text-ink-2">Selección múltiple</span>
                   </label>
                   <div>
-                    <label className="block font-sans text-caption text-ink-2 uppercase mb-2">Opciones (una por línea)</label>
-                    <textarea
+                    <label htmlFor={`q-${q.id}-opciones-una-por-linea`} className="block font-sans text-caption text-ink-2 uppercase mb-2">Opciones (una por línea)</label>
+                    <textarea id={`q-${q.id}-opciones-una-por-linea`}
                       value={(q.options ?? []).join('\n')}
                       onChange={e => setQ(idx, { options: e.target.value.split('\n').map(s => s.trim()).filter(Boolean) })}
                       placeholder={'Opción A\nOpción B\nOpción C'}
@@ -315,8 +327,8 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
               )}
               {q.type === 'text' && (
                 <div className="w-40">
-                  <label className="block font-sans text-caption text-ink-2 uppercase mb-1">Máx. caracteres</label>
-                  <input type="number" value={q.maxChars ?? ''} min={1}
+                  <label htmlFor={`q-${q.id}-max-caracteres`} className="block font-sans text-caption text-ink-2 uppercase mb-1">Máx. caracteres</label>
+                  <input id={`q-${q.id}-max-caracteres`} type="number" value={q.maxChars ?? ''} min={1}
                     onChange={e => setQ(idx, { maxChars: e.target.value === '' ? undefined : Number(e.target.value) })}
                     placeholder="Sin límite" className={`w-full ${MINI_INPUT_CLS}`} />
                 </div>
@@ -324,14 +336,14 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
               {q.type === 'boolean' && (
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Etiqueta Sí</label>
-                    <input value={q.labelTrue ?? ''}
+                    <label htmlFor={`q-${q.id}-etiqueta-si`} className="block font-mono text-caption text-ink-2 uppercase mb-1">Etiqueta Sí</label>
+                    <input id={`q-${q.id}-etiqueta-si`} value={q.labelTrue ?? ''}
                       onChange={e => setQ(idx, { labelTrue: e.target.value || undefined })}
                       placeholder="Sí" className={`w-full ${MINI_INPUT_CLS}`} />
                   </div>
                   <div>
-                    <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Etiqueta No</label>
-                    <input value={q.labelFalse ?? ''}
+                    <label htmlFor={`q-${q.id}-etiqueta-no`} className="block font-mono text-caption text-ink-2 uppercase mb-1">Etiqueta No</label>
+                    <input id={`q-${q.id}-etiqueta-no`} value={q.labelFalse ?? ''}
                       onChange={e => setQ(idx, { labelFalse: e.target.value || undefined })}
                       placeholder="No" className={`w-full ${MINI_INPUT_CLS}`} />
                   </div>
@@ -339,8 +351,8 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
               )}
               {q.type === 'metric' && (
                 <div className="w-56">
-                  <label className="block font-mono text-[9px] text-[#c6c9ab] uppercase mb-1">Qué mide</label>
-                  <select
+                  <label htmlFor={`q-${q.id}-que-mide`} className="block font-mono text-[9px] text-[#c6c9ab] uppercase mb-1">Qué mide</label>
+                  <select id={`q-${q.id}-que-mide`}
                     value={q.metricKey ?? ''}
                     onChange={e => setQ(idx, { metricKey: (e.target.value || undefined) as BodyMetricKey | undefined })}
                     className={`w-full ${MINI_INPUT_CLS}`}
@@ -355,8 +367,8 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
               {q.type === 'media' && (
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="block font-mono text-[9px] text-[#c6c9ab] uppercase mb-1">Tipo</label>
-                    <select
+                    <label htmlFor={`q-${q.id}-tipo`} className="block font-mono text-[9px] text-[#c6c9ab] uppercase mb-1">Tipo</label>
+                    <select id={`q-${q.id}-tipo`}
                       value={q.mediaKind ?? ''}
                       onChange={e => setQ(idx, { mediaKind: (e.target.value || undefined) as 'video' | 'image' | undefined })}
                       className={`w-full ${MINI_INPUT_CLS}`}
@@ -367,8 +379,8 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
                     </select>
                   </div>
                   <div>
-                    <label className="block font-mono text-[9px] text-[#c6c9ab] uppercase mb-1">Tamaño máx. (MB)</label>
-                    <input type="number" value={q.maxSizeMb ?? ''} min={1} max={50}
+                    <label htmlFor={`q-${q.id}-tamano-max-mb`} className="block font-mono text-[9px] text-[#c6c9ab] uppercase mb-1">Tamaño máx. (MB)</label>
+                    <input id={`q-${q.id}-tamano-max-mb`} type="number" value={q.maxSizeMb ?? ''} min={1} max={50}
                       onChange={e => setQ(idx, { maxSizeMb: e.target.value === '' ? undefined : Number(e.target.value) })}
                       placeholder="50" className={`w-full ${MINI_INPUT_CLS}`} />
                   </div>

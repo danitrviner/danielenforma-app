@@ -318,8 +318,8 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
             <Input label={isCoach ? 'Nombre' : 'Nombre deportivo'} required value={displayName} onChange={setDisplayName} />
             {!isCoach && (
               <div>
-                <label className="block font-sans text-caption text-ink-2 uppercase mb-1">Meta de peso personal (kg)</label>
-                <input
+                <label htmlFor="profilescreen-meta-de-peso-personal-kg" className="block font-sans text-caption text-ink-2 uppercase mb-1">Meta de peso personal (kg)</label>
+                <input id="profilescreen-meta-de-peso-personal-kg"
                   type="number"
                   step="0.1"
                   value={targetWeight}

@@ -59,6 +59,10 @@ export default function ExerciseVideoPlayer({ videoUrl }: Props) {
             onLoad={() => setEmbedPlaybackRate(iframeRef.current, parsed.provider, tasa(speed))}
           />
         ) : (
+          // Sin pista de subtítulos a propósito: son clips mudos de técnica,
+          // sin voz ni texto en pantalla que transcribir. Un `<track>` vacío
+          // solo añadiría un botón de subtítulos que no enseña nada.
+          // eslint-disable-next-line jsx-a11y/media-has-caption
           <video
             // Ref-callback, no onLoadedMetadata: con un vídeo pequeño/cacheado
             // el evento puede disparar antes de que React llegue a engancharlo

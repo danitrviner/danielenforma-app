@@ -65,12 +65,14 @@ coffee
 contacts
 content_copy
 content_cut
+cottage
 create
 dashboard
 database
 delete
 delete_forever
 description
+details
 dining
 dinner_dining
 directions_run
@@ -235,6 +237,7 @@ shopping_cart
 show_chart
 shuffle
 signal_cellular_alt
+signature
 skillet
 skip_next
 smart_toy

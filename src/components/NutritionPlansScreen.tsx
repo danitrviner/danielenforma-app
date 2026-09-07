@@ -781,10 +781,10 @@ export default function NutritionPlansScreen({
           placeholder="Ej: Día Alto, Día Bajo, Día Libre"
         />
         <div>
-          <label className="block font-mono text-caption text-ink-2 uppercase mb-2">
+          <label htmlFor="nutritionplansscreen-nota-del-coach" className="block font-mono text-caption text-ink-2 uppercase mb-2">
             Nota del coach
           </label>
-          <textarea
+          <textarea id="nutritionplansscreen-nota-del-coach"
             value={form.coachNote}
             onChange={e => setForm(f => ({ ...f, coachNote: e.target.value }))}
             rows={3}

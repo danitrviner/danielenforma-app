@@ -15,6 +15,7 @@ import ScheduleFields from './ScheduleFields';
 import QuestionnaireEditor, { FormState as QFormState, blankForm as blankQForm, newQuestion, applyTypeChange } from './QuestionnaireEditor';
 import TaskManagerPanel from './TaskManagerPanel';
 import { Badge, Sheet, SegmentedControl } from './ui';
+import { pulsable } from '../utils/a11y';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    ClientReviewsPanel (reorganización del Hub — pestaña "Revisiones", zona "Hoy")
@@ -314,7 +315,8 @@ export default function ClientReviewsPanel({
                       return (
                         <div key={key}>
                           <div
-                            onClick={toggle}
+                            {...pulsable(toggle)}
+                            aria-expanded={isExpanded}
                             className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-all hover:bg-raised ${isExpanded ? 'bg-raised' : ''} ${isLatest ? 'border-l-2 border-l-accent' : ''}`}
                           >
                             <span
@@ -360,30 +362,30 @@ export default function ClientReviewsPanel({
                                 <div className="space-y-3">
                                   <div className="grid grid-cols-2 gap-3">
                                     <div>
-                                      <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Peso (kg)</label>
-                                      <input type="number" step="0.1" value={checkinEditForm.weight}
+                                      <label htmlFor="clientreviewspanel-peso-kg" className="block font-mono text-caption text-ink-2 uppercase mb-1">Peso (kg)</label>
+                                      <input id="clientreviewspanel-peso-kg" type="number" step="0.1" value={checkinEditForm.weight}
                                         onChange={e => setCheckinEditForm(f => f && ({ ...f, weight: parseFloat(e.target.value) || 0 }))}
                                         className="w-full bg-raised border border-hairline rounded-control px-2 py-2 text-title-s text-white focus:outline-none focus:border-data/50 font-mono" />
                                     </div>
                                     <div>
-                                      <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Fecha</label>
-                                      <input type="text" value={checkinEditForm.dateStr}
+                                      <label htmlFor="clientreviewspanel-fecha" className="block font-mono text-caption text-ink-2 uppercase mb-1">Fecha</label>
+                                      <input id="clientreviewspanel-fecha" type="text" value={checkinEditForm.dateStr}
                                         onChange={e => setCheckinEditForm(f => f && ({ ...f, dateStr: e.target.value }))}
                                         className="w-full bg-raised border border-hairline rounded-control px-2 py-2 text-title-s text-white focus:outline-none focus:border-data/50 font-mono" />
                                     </div>
                                   </div>
                                   <div className="grid grid-cols-2 gap-3">
                                     <div>
-                                      <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Adherencia</label>
-                                      <select value={checkinEditForm.adherence}
+                                      <label htmlFor="clientreviewspanel-adherencia" className="block font-mono text-caption text-ink-2 uppercase mb-1">Adherencia</label>
+                                      <select id="clientreviewspanel-adherencia" value={checkinEditForm.adherence}
                                         onChange={e => setCheckinEditForm(f => f && ({ ...f, adherence: e.target.value as WeightCheckIn['adherence'] }))}
                                         className="w-full bg-raised border border-hairline rounded-control px-2 py-2 text-title-s text-white focus:outline-none focus:border-data/50 font-mono">
                                         {['Sí', 'Parcial', 'No'].map(v => <option key={v} value={v}>{v}</option>)}
                                       </select>
                                     </div>
                                     <div>
-                                      <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Humor</label>
-                                      <select value={checkinEditForm.mood}
+                                      <label htmlFor="clientreviewspanel-humor" className="block font-mono text-caption text-ink-2 uppercase mb-1">Humor</label>
+                                      <select id="clientreviewspanel-humor" value={checkinEditForm.mood}
                                         onChange={e => setCheckinEditForm(f => f && ({ ...f, mood: e.target.value }))}
                                         className="w-full bg-raised border border-hairline rounded-control px-2 py-2 text-title-s text-white focus:outline-none focus:border-data/50 font-mono">
                                         {['😩', '😴', '😐', '😊', '🔥'].map(v => <option key={v} value={v}>{v}</option>)}
@@ -391,8 +393,8 @@ export default function ClientReviewsPanel({
                                     </div>
                                   </div>
                                   <div>
-                                    <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Notas</label>
-                                    <textarea value={checkinEditForm.notes}
+                                    <label htmlFor="clientreviewspanel-notas" className="block font-mono text-caption text-ink-2 uppercase mb-1">Notas</label>
+                                    <textarea id="clientreviewspanel-notas" value={checkinEditForm.notes}
                                       onChange={e => setCheckinEditForm(f => f && ({ ...f, notes: e.target.value }))}
                                       className="w-full bg-raised border border-hairline rounded-control px-2 py-2 text-title-s text-white focus:outline-none focus:border-data/50 font-sans resize-none min-h-[60px]" />
                                   </div>
@@ -472,7 +474,8 @@ export default function ClientReviewsPanel({
                     return (
                       <div key={key}>
                         <div
-                          onClick={toggle}
+                          {...pulsable(toggle)}
+                          aria-expanded={isExpanded}
                           className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-all hover:bg-raised ${isExpanded ? 'bg-raised' : ''} ${isLatest ? 'border-l-2 border-l-accent' : ''}`}
                         >
                           <span
@@ -770,9 +773,16 @@ export default function ClientReviewsPanel({
                                     className="w-full bg-bg border border-hairline rounded-control px-2 py-2 text-title-s text-white font-sans focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-40"
                                   />
                                   <label className="flex items-center gap-1.5 cursor-pointer w-fit">
+                                    <input
+                                      type="checkbox"
+                                      className="sr-only peer"
+                                      checked={assignRequiredOverride[q.id] ?? q.required}
+                                      disabled={hidden}
+                                      onChange={() => !hidden && setAssignRequiredOverride(prev => ({ ...prev, [q.id]: !(prev[q.id] ?? q.required) }))}
+                                    />
                                     <span
-                                      className={`w-3.5 h-3.5 rounded border flex items-center justify-center transition-colors ${(assignRequiredOverride[q.id] ?? q.required) ? 'bg-accent border-accent' : 'border-hairline'}`}
-                                      onClick={() => !hidden && setAssignRequiredOverride(prev => ({ ...prev, [q.id]: !(prev[q.id] ?? q.required) }))}
+                                      aria-hidden
+                                      className={`w-3.5 h-3.5 rounded border flex items-center justify-center transition-colors peer-focus-visible:ring-1 peer-focus-visible:ring-accent ${(assignRequiredOverride[q.id] ?? q.required) ? 'bg-accent border-accent' : 'border-hairline'}`}
                                     >
                                       {(assignRequiredOverride[q.id] ?? q.required) && <span className="material-symbols-outlined text-on-accent" style={{ fontSize: '9px' }}>check</span>}
                                     </span>

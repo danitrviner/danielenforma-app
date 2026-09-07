@@ -663,10 +663,10 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
 
               {/* Equipment multi-select */}
               <div>
-                <label className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-2">
+                <span className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-2">
                   Material necesario
                   <span className="ml-2 text-ink-3 normal-case font-sans text-caption">(sin tag = siempre disponible)</span>
-                </label>
+                </span>
                 <div className="flex flex-wrap gap-2">
                   {EQUIPMENT_OPTIONS.map(eq => {
                     const selected = (form.equipment ?? []).includes(eq);
@@ -715,11 +715,11 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
 
               {/* Global description — visible to any athlete */}
               <div>
-                <label className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-2">
+                <label htmlFor="exerciselibraryscreen-descripcion-global-visible-para-cu" className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-2">
                   Descripción global
                   <span className="ml-2 text-ink-3 normal-case font-sans text-caption">(visible para cualquier atleta)</span>
                 </label>
-                <textarea
+                <textarea id="exerciselibraryscreen-descripcion-global-visible-para-cu"
                   value={form.instructions}
                   onChange={e => setForm(f => ({ ...f, instructions: e.target.value }))}
                   placeholder="ej. Mantén la espalda neutra durante todo el recorrido..."

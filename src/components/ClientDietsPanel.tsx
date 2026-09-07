@@ -529,8 +529,8 @@ export default function ClientDietsPanel({
           </h3>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Pasos/día</label>
-              <input
+              <label htmlFor="clientdietspanel-pasos-dia" className="block font-mono text-caption text-ink-2 uppercase mb-1">Pasos/día</label>
+              <input id="clientdietspanel-pasos-dia"
                 type="number"
                 min={0}
                 defaultValue={nutritionConfig.stepGoal ?? ''}
@@ -543,8 +543,8 @@ export default function ClientDietsPanel({
               />
             </div>
             <div>
-              <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Kcal/paso</label>
-              <input
+              <label htmlFor="clientdietspanel-kcal-paso" className="block font-mono text-caption text-ink-2 uppercase mb-1">Kcal/paso</label>
+              <input id="clientdietspanel-kcal-paso"
                 type="number"
                 min={0}
                 step={0.001}

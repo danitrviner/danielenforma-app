@@ -215,8 +215,17 @@ const DayBlock: React.FC<{
   return (
     <div className="border border-hairline rounded-surface overflow-hidden">
       {/* Header */}
+      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- el control accesible es el botón del chevron; esta cabecera lleva dentro un campo de texto, así que no puede ser ella misma el botón */}
       <div className="flex items-center gap-2 px-3 py-2 bg-surface cursor-pointer group" onClick={() => setOpen(o => !o)}>
-        <Icon name="chevron_right" size="s" className={`text-ink-2 transition-transform ${open ? 'rotate-90' : ''}`} />
+        <button
+          type="button"
+          onClick={e => { e.stopPropagation(); setOpen(o => !o); }}
+          aria-expanded={open}
+          aria-label={open ? 'Plegar el día' : 'Desplegar el día'}
+          className="flex-shrink-0 flex items-center justify-center"
+        >
+          <Icon name="chevron_right" size="s" className={`text-ink-2 transition-transform ${open ? 'rotate-90' : ''}`} />
+        </button>
         <input
           type="text"
           value={day.name}
@@ -352,8 +361,17 @@ const StageAccordion: React.FC<StageFormProps> = ({
   return (
     <div className="border border-hairline rounded-surface overflow-hidden">
       {/* Stage header */}
+      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- mismo caso que la cabecera de día: el control accesible es el botón del chevron */}
       <div className="flex items-center gap-2 px-4 py-3 bg-surface cursor-pointer" onClick={() => setOpen(o => !o)}>
-        <Icon name="chevron_right" size="s" className={`text-ink-2 transition-transform ${open ? 'rotate-90' : ''}`} />
+        <button
+          type="button"
+          onClick={e => { e.stopPropagation(); setOpen(o => !o); }}
+          aria-expanded={open}
+          aria-label={open ? 'Plegar el mesociclo' : 'Desplegar el mesociclo'}
+          className="flex-shrink-0 flex items-center justify-center"
+        >
+          <Icon name="chevron_right" size="s" className={`text-ink-2 transition-transform ${open ? 'rotate-90' : ''}`} />
+        </button>
         <span className="font-mono text-caption text-ink-3 flex-shrink-0">#{stageIdx + 1}</span>
         <input
           type="text"
@@ -363,6 +381,7 @@ const StageAccordion: React.FC<StageFormProps> = ({
           className="flex-1 bg-transparent font-sans font-bold text-title-s text-white focus:outline-none"
           placeholder="Nombre del mesociclo"
         />
+        {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- solo corta la propagación del clic de la cabecera; los controles de verdad son los steppers de dentro */}
         <div className="flex items-center gap-3 flex-shrink-0" onClick={e => e.stopPropagation()}>
           <div className="flex items-center gap-1">
             <span className="font-mono text-caption text-ink-3">sem</span>

@@ -1,3 +1,9 @@
+/* eslint-disable jsx-a11y/no-noninteractive-element-interactions, jsx-a11y/no-noninteractive-tabindex --
+   Un contenedor con scroll TIENE que poder recibir el foco: es la única forma
+   de recorrerlo con el teclado (WCAG 2.1.1, «Teclado»). Las dos reglas miran
+   el `role="group"` y ven un elemento no interactivo con tabIndex, que es
+   justo lo que aquí hace falta. Excepción de fichero porque el aviso del
+   tabIndex cae en la línea del atributo, donde no cabe un comentario. */
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useReducedMotion } from './internal/useReducedMotion';
 

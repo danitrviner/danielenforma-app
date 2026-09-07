@@ -224,7 +224,7 @@ export default function ClienteDetail({ coachEmail }: { coachEmail: string }) {
           pantalla en negro. `min-w-0` es lo que impide que la fila estire a su
           padre flex; sin él, `overflow-x-auto` no llega a activarse nunca.
           `hide-scrollbar` quita la barra gris, que aquí sobra. */}
-      <nav className="flex items-center gap-1 min-w-0 overflow-x-auto hide-scrollbar" role="tablist">
+      <div className="flex items-center gap-1 min-w-0 overflow-x-auto hide-scrollbar" role="tablist">
         {TABS.map(t => (
           <button
             key={t.id}
@@ -242,7 +242,7 @@ export default function ClienteDetail({ coachEmail }: { coachEmail: string }) {
             {t.label}
           </button>
         ))}
-      </nav>
+      </div>
 
       {tab === 'datos' && <DatosPersonalesTab cliente={cliente} />}
       {tab === 'servicios' && <ServiciosTab cliente={cliente} coachEmail={coachEmail} />}

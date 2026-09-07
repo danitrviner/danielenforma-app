@@ -468,7 +468,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
 
             {/* Categories */}
             <div className="space-y-2">
-              <label className="font-mono text-caption text-ink-2 uppercase tracking-wider">Categorías</label>
+              <span className="font-mono text-caption text-ink-2 uppercase tracking-wider">Categorías</span>
               <div className="flex flex-wrap gap-2">
                 {RECIPE_CATEGORIES.map(cat => (
                   <Chip key={cat} selected={form.categories.includes(cat)} onClick={() => toggleCategory(cat)}>
@@ -497,7 +497,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
 
             {/* Ingredients */}
             <div className="space-y-3">
-              <label className="font-mono text-caption text-ink-2 uppercase tracking-wider">Ingredientes</label>
+              <span className="font-mono text-caption text-ink-2 uppercase tracking-wider">Ingredientes</span>
 
               <div className="flex gap-2 items-center">
                 <div className="relative flex-1">
@@ -555,9 +555,9 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
 
             {/* Extras */}
             <div className="space-y-2">
-              <label className="font-sans text-caption text-ink-2 uppercase tracking-wider">Extras (condimentos, sal…)</label>
+              <label htmlFor="recipebuilderscreen-extras-condimentos-sal" className="font-sans text-caption text-ink-2 uppercase tracking-wider">Extras (condimentos, sal…)</label>
               <div className="flex gap-2">
-                <input
+                <input id="recipebuilderscreen-extras-condimentos-sal"
                   type="text"
                   value={newExtra}
                   onChange={e => setNewExtra(e.target.value)}
@@ -583,9 +583,9 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
 
             {/* Steps */}
             <div className="space-y-2">
-              <label className="font-mono text-caption text-ink-2 uppercase tracking-wider">Pasos de preparación</label>
+              <label htmlFor="recipebuilderscreen-pasos-de-preparacion" className="font-mono text-caption text-ink-2 uppercase tracking-wider">Pasos de preparación</label>
               <div className="flex gap-2 items-end">
-                <textarea
+                <textarea id="recipebuilderscreen-pasos-de-preparacion"
                   value={newStep}
                   onChange={e => setNewStep(e.target.value)}
                   placeholder="Describe el paso..."

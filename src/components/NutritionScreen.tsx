@@ -2031,6 +2031,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                       </span>
                     }
                     trailing={
+                      // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- solo corta la propagación hacia la fila; los controles son los botones de dentro
                       <div className="flex items-center gap-1 flex-shrink-0" onClick={e => e.stopPropagation()}>
                         <button
                           type="button"

@@ -56,7 +56,6 @@ const ClientReviewsPanel = lazy(() => import('./ClientReviewsPanel'));
 const ClientSetupPanel = lazy(() => import('./ClientSetupPanel'));
 import PendingTray from './PendingTray';
 import ClientAlertsBar from './ClientAlertsBar';
-import DossierPanel from './DossierPanel';
 import { Avatar, Badge, Tabs, Skeleton, Sheet, SearchField, ListRow, Icon } from './ui';
 
 export type HubTab =
@@ -666,15 +665,11 @@ export default function ClientHub({
       )}
 
       {/* ── Tab: Ficha ───────────────────────────────────────────────────── */}
-      {/* La ficha viva va PRIMERO, antes de la anamnesis: es lo que se lee para
-          preparar una revisión (objetivos, foco, preguntas abiertas, qué
-          cambiaste después de aprobar una propuesta). Los datos del onboarding
-          se consultan de vez en cuando; esto, cada semana. */}
-      {activeTab === 'ficha' && (
-        <div className="mb-4">
-          <DossierPanel key={athlete.email} athleteEmail={athlete.email} athleteName={athlete.displayName} />
-        </div>
-      )}
+      {/* Un solo componente. Antes se montaban DOS aquí (DossierPanel y
+          ClientFichaPanel), diseñados sin mirarse, con la nota del coach y la
+          lista de actividad duplicadas cada una en el suyo. ClientFichaPanel
+          es ahora el dueño de la ficha entera y monta la ficha viva por dentro
+          — ver la cabecera de ese archivo para el orden de los 4 bloques. */}
       {activeTab === 'ficha' && (
         <ClientFichaPanel
           key={athlete.email}

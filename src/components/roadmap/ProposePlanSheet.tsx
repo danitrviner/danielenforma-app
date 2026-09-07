@@ -50,7 +50,7 @@ export default function ProposePlanSheet({ open, onClose }: Props) {
     <Sheet
       open
       onClose={onClose}
-      title="Proponer plan con IA"
+      title="Proponer plan"
       footer={(
         <>
           <Button variant="secondary" className="flex-1" onClick={onClose}>Cancelar</Button>
@@ -71,17 +71,17 @@ export default function ProposePlanSheet({ open, onClose }: Props) {
         />
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-1">Semanas</label>
+            <span className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-1">Semanas</span>
             <Stepper label="Semanas" dense value={weeks} min={1} max={16} onChange={setWeeks} />
           </div>
           <div>
-            <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-1">Días/semana</label>
+            <span className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-1">Días/semana</span>
             <Stepper label="Días por ciclo" dense value={daysPerWeek} min={1} max={10} onChange={setDaysPerWeek} />
           </div>
         </div>
         <div>
-          <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-1">Restricciones o notas</label>
-          <textarea
+          <label htmlFor="proposeplansheet-restricciones-o-notas" className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-1">Restricciones o notas</label>
+          <textarea id="proposeplansheet-restricciones-o-notas"
             value={notes}
             onChange={e => setNotes(e.target.value)}
             rows={3}

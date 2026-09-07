@@ -192,7 +192,7 @@ export default function EventPlannerSheet({
       <div className="space-y-5">
         {/* Tipo de evento */}
         <div className="space-y-2">
-          <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider">Tipo de evento</label>
+          <span className="block font-mono text-caption text-ink-2 uppercase tracking-wider">Tipo de evento</span>
           <div className="flex gap-1.5 flex-wrap">
             {(Object.keys(LANE_LABEL) as Lane[]).map(l => (
               <button

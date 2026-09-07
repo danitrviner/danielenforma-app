@@ -16,6 +16,7 @@ import { VOLUME_LANDMARKS_DEFAULT, type VolumeLandmark } from '../data/volumeLan
 import { runAgentTurn, messageText, probarConexionProxy, TurnoCancelado } from '../ai/aiClient';
 import { sanearHistorial } from '../ai/historial';
 import DossierPanel, { dossierKey } from './DossierPanel';
+import HistorialFichaPanel from './HistorialFichaPanel';
 import { saveDossierJudgement, appendDossierFacts } from '../db/dossier';
 import { OPEN_AI_PANEL_EVENT, OpenAiPanelDetail } from '../ai/events';
 import { exchangeToKcal } from '../utils/nutritionConstants';
@@ -121,7 +122,7 @@ function DoctrinaEditor({ descripcion, valor, onChange, esDefault, onRestaurar, 
         className="w-full resize-none bg-surface border border-hairline focus:border-accent/50 rounded-control px-4 py-3 text-body-s font-mono text-ink outline-none"
       />
       <p className="text-caption text-ink-2">
-        Se manda entero en cada conversación. Escribe reglas concretas y accionables — cuanto más vago, menos cambia lo que hace la IA.
+        Se manda entero en cada conversación. Escribe reglas concretas y accionables — cuanto más vago, menos cambia lo que hace el asistente.
       </p>
     </>
   );
@@ -154,7 +155,7 @@ function VolumeLandmarksEditor({ valor, onChange, esDefault, onRestaurar, disabl
   return (
     <>
       <p className="text-label text-ink-2">
-        Series efectivas por semana, por grupo muscular. MAV min-max son los rangos que ya usas al programar; MV, MEV y MRV acotan por debajo y por arriba. El sugeridor de volumen del mesociclo y la IA parten de estos números.
+        Series efectivas por semana, por grupo muscular. MAV min-max son los rangos que ya usas al programar; MV, MEV y MRV acotan por debajo y por arriba. El sugeridor de volumen del mesociclo y el asistente parten de estos números.
       </p>
       <div className="flex items-center justify-between gap-2">
         <span className="text-caption font-mono text-ink-2">
@@ -677,7 +678,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
     return (
       <button
         onClick={() => setOpen(true)}
-        title="Asistente IA"
+        title="Asistente"
         // Solo en escritorio. En móvil el disparador vive en la cabecera,
         // junto al avatar (App.tsx): ahí no tapa contenido, no compite con la
         // barra inferior y no hay que reservarle hueco al final de cada
@@ -702,11 +703,11 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
           quedó fuera por ser un panel flotante y no una cabecera de pantalla. */}
       <div className="flex items-center gap-2 px-4 py-3 pt-[calc(0.75rem+var(--safe-top))] border-b border-hairline">
         <Icon name="smart_toy" size="m" filled className="text-accent" />
-        <span className="font-sans font-bold text-body-s uppercase tracking-wider text-accent flex-1">Asistente IA</span>
+        <span className="font-sans font-bold text-body-s uppercase tracking-wider text-accent flex-1">Asistente</span>
         {activeAthleteEmail && (
           <Button variant="ghost" size="s" onClick={() => setFichaAbierta(true)} icon="badge" label={`Ficha de ${activeAthleteName || activeAthleteEmail}`} />
         )}
-        <Button variant="ghost" size="s" onClick={openInstructionsEditor} icon="tune" label="Instrucciones fijas para la IA" />
+        <Button variant="ghost" size="s" onClick={openInstructionsEditor} icon="tune" label="Instrucciones fijas del asistente" />
         <Button variant="ghost" size="s" onClick={probarConexion} loading={diagnosticando} icon="network_check" label="Probar conexión con el asistente" />
         <Button variant="ghost" size="s" onClick={() => vaultInputRef.current?.click()} icon="menu_book" label="Sincronizar bóveda de conocimiento" />
         <input ref={vaultInputRef} type="file" accept="application/json,.json" className="hidden"
@@ -1033,8 +1034,12 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
       )}
 
       {/* La misma ficha que hay en la pestaña Ficha del ClientHub, aquí porque
-          es donde la IA la usa: se abre, se lee lo que quedó abierto la última
-          vez y se sigue desde ahí sin cambiar de pantalla. */}
+          es donde se usa mientras se trabaja: se abre, se lee lo que quedó
+          abierto la última vez y se sigue desde ahí sin cambiar de pantalla.
+          Van los dos bloques vivos (ficha viva + historial); lo estático
+          —iniciación, equipamiento, plan— se queda en el Hub. El historial sale
+          sin `actividad` a propósito: esos datos los tiene cargados el Hub y
+          aquí no hay Hub, así que muestra solo la cronología de decisiones. */}
       {fichaAbierta && activeAthleteEmail && (
         <Dialog
           open
@@ -1042,7 +1047,10 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
           title={`Ficha de ${activeAthleteName || activeAthleteEmail}`}
           footer={<Button variant="secondary" onClick={() => setFichaAbierta(false)} className="flex-1">Cerrar</Button>}
         >
-          <DossierPanel key={activeAthleteEmail} athleteEmail={activeAthleteEmail} athleteName={activeAthleteName} />
+          <div className="flex flex-col gap-4">
+            <DossierPanel key={activeAthleteEmail} athleteEmail={activeAthleteEmail} athleteName={activeAthleteName} />
+            <HistorialFichaPanel key={`hist-${activeAthleteEmail}`} athleteEmail={activeAthleteEmail} />
+          </div>
         </Dialog>
       )}
 
@@ -1050,7 +1058,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
         <Dialog
           open
           onClose={() => { if (!savingInstructions) setEditingInstructions(false); }}
-          title="Lo que sigue la IA"
+          title="Lo que sigue el asistente"
           footer={(
             <>
               <Button variant="secondary" onClick={() => setEditingInstructions(false)} disabled={savingInstructions} className="flex-1">
@@ -1097,7 +1105,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
 
               {promptTab === 'entrenamiento' && (
                 <DoctrinaEditor
-                  descripcion="Tu criterio para programar: volumen por grupo, RIR, frecuencia, rangos de reps, orden de la sesión, descansos y progresión. La IA lo aplica al proponer mesociclos y al analizar entrenamientos."
+                  descripcion="Tu criterio para programar: volumen por grupo, RIR, frecuencia, rangos de reps, orden de la sesión, descansos y progresión. Se aplica al proponer mesociclos y al analizar entrenamientos."
                   valor={entrenoDraft}
                   onChange={setEntrenoDraft}
                   esDefault={entrenoEsDefault}
@@ -1108,7 +1116,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
 
               {promptTab === 'nutricion' && (
                 <DoctrinaEditor
-                  descripcion="Tu criterio nutricional: prioridades, cálculo de calorías, superávit/déficit, proteína y distribución. La IA lo aplica al proponer o ajustar dietas."
+                  descripcion="Tu criterio nutricional: prioridades, cálculo de calorías, superávit/déficit, proteína y distribución. Se aplica al proponer o ajustar dietas."
                   valor={nutricionDraft}
                   onChange={setNutricionDraft}
                   esDefault={nutricionEsDefault}

@@ -67,7 +67,7 @@ export default function PendingTray({
     items.push({
       key: 'ai-proposals',
       icon: 'smart_toy',
-      text: pendingProposals.length === 1 ? '1 propuesta IA por revisar' : `${pendingProposals.length} propuestas IA por revisar`,
+      text: pendingProposals.length === 1 ? '1 propuesta por revisar' : `${pendingProposals.length} propuestas por revisar`,
       onClick: onGoToAiProposals,
     });
   }

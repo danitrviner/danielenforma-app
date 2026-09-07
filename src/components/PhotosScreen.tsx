@@ -244,10 +244,12 @@ export default function PhotosScreen({ profile }: Props) {
       )}
 
       {historyView && (
+        // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- fondo del diálogo: cerrar al pulsar fuera es comodidad de ratón, el teclado cierra con Escape
         <div
           className="fixed inset-0 z-50 bg-bg/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4"
           onClick={() => setHistoryView(null)}
         >
+          {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- solo evita que un clic dentro del panel llegue al fondo y lo cierre */}
           <div
             className="bg-surface border border-hairline rounded-t-surface sm:rounded-surface w-full sm:max-w-md max-h-[85vh] flex flex-col"
             onClick={e => e.stopPropagation()}

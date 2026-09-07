@@ -15,6 +15,7 @@ import MesocycleDashboard from './MesocycleDashboard';
 import LoadHistoryPanel from './LoadHistoryPanel';
 import MesocycleManager from './MesocycleManager';
 import { Badge, BadgeTone, Sheet, Button, Icon, Input, Select, SegmentedControl } from './ui';
+import { pulsable } from '../utils/a11y';
 
 type SubView = 'info' | 'programacion';
 const SUBVIEW_KEY = 'enforma_coach_workouts_subview';
@@ -288,7 +289,7 @@ export default function ClientWorkoutsPanel({
                       {notes.map(n => (
                         <div
                           key={n.key}
-                          onClick={n.unread ? n.onSeen : undefined}
+                          {...(n.unread ? pulsable(n.onSeen, 'Marcar la nota como vista') : {})}
                           className={`rounded-surface border p-3.5 transition-colors ${
                             n.unread ? 'bg-accent-bg border-accent-line cursor-pointer' : 'bg-raised border-hairline'
                           }`}
@@ -542,7 +543,7 @@ export default function ClientWorkoutsPanel({
                     asignan por bloque, en la pestaña de al lado. */}
                 {rutinasSueltas.length === 0 ? (
                   <div>
-                    <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-2">Rutina *</label>
+                    <span className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-2">Rutina *</span>
                     <p className="text-label text-ink-2 font-sans italic">
                       No hay rutinas sueltas. Las sesiones de un mesociclo se asignan desde «Mesociclo».
                     </p>

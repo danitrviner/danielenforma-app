@@ -8,6 +8,7 @@ import { useToast } from '../hooks/useToast';
 import { mensajeDeErrorFirestore } from '../utils/erroresFirestore';
 import { atletasActivos } from '../utils/atletas';
 import { Badge, PageHeader, Button, Dialog, Icon } from './ui';
+import { pulsable } from '../utils/a11y';
 
 interface ReviewsScreenProps {
   checkins: WeightCheckIn[];
@@ -275,7 +276,8 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                 return (
                   <div key={key} ref={isExpanded ? expandedRowRef : undefined}>
                     <div
-                      onClick={toggle}
+                      {...pulsable(toggle)}
+                      aria-expanded={isExpanded}
                       className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-all hover:bg-raised ${isExpanded ? 'bg-raised' : ''}`}
                     >
                       <div className="w-7 h-7 rounded-full overflow-hidden border border-hairline flex-shrink-0">
@@ -410,7 +412,8 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
               return (
                 <div key={key}>
                   <div
-                    onClick={toggle}
+                    {...pulsable(toggle)}
+                    aria-expanded={isExpanded}
                     className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-all hover:bg-raised ${isExpanded ? 'bg-raised' : ''}`}
                   >
                     <div className="w-7 h-7 rounded-full overflow-hidden border border-hairline flex-shrink-0">

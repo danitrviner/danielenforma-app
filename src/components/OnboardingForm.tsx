@@ -1160,7 +1160,7 @@ export default function OnboardingForm({
         <YesNo label="¿Prefieres cocinar todo de una vez para la semana (batch cooking)?" value={form.batchCookingPreferred} onChange={v => set('batchCookingPreferred', v)} />
 
         <div>
-          <label className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-2">Tipos de comida que prefieres</label>
+          <span className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-2">Tipos de comida que prefieres</span>
           <p className="font-sans text-caption text-ink-3 mb-2">
             Toca: neutral → <span className="text-accent">priorizar</span> → <span className="text-red-400">evitar</span>. Guía las recetas del menú generado.
           </p>

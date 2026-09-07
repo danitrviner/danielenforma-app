@@ -46,6 +46,7 @@ export default function ExerciseCloseCard({
   we, ex, exSets, priorBestOrm, noteValue, onNoteChange, isLast, nextExerciseName,
   onNext, sameDayCardio,
 }: Props) {
+  const idNota = React.useId();
   const doneSets = exSets.filter(s => s.done);
   const volumen = doneSets.reduce((sum, s) => sum + (parseFloat(s.weight) || 0) * (parseInt(s.repsDone) || 0), 0);
 
@@ -100,8 +101,9 @@ export default function ExerciseCloseCard({
       </div>
 
       <div className="mx-4 mt-4 space-y-2.5">
-        <label className="font-mono text-caption text-ink-2 uppercase tracking-wide block">Nota para tu coach</label>
+        <label htmlFor={idNota} className="font-mono text-caption text-ink-2 uppercase tracking-wide block">Nota para tu coach</label>
         <textarea
+          id={idNota}
           value={noteValue}
           onChange={e => onNoteChange(e.target.value)}
           placeholder="Escribe cómo te has sentido…"

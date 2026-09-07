@@ -265,8 +265,8 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
               {/* Descripción: área de texto multilínea, sin variante en Input —
                   se queda a mano. */}
               <div>
-                <label className="block font-sans text-caption text-ink-2 uppercase mb-2">Descripción (1 intercambio = ...) *</label>
-                <textarea
+                <label htmlFor="foodlibraryscreen-descripcion-1-intercambio" className="block font-sans text-caption text-ink-2 uppercase mb-2">Descripción (1 intercambio = ...) *</label>
+                <textarea id="foodlibraryscreen-descripcion-1-intercambio"
                   value={form.label}
                   onChange={e => setForm(f => ({ ...f, label: e.target.value }))}
                   placeholder="Ej: 100g pechuga de pollo sin piel"

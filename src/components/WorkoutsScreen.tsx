@@ -8,6 +8,7 @@ import { TECHNIQUE_EMOJI, TECHNIQUE_LABEL, TECHNIQUE_COLOR } from '../utils/work
 import { useToast } from '../hooks/useToast';
 import { Skeleton } from './ui';
 import { Icon, Button, EmptyState, Dialog, Sheet } from './ui';
+import { pulsable } from '../utils/a11y';
 
 interface WorkoutsScreenProps {
   coachId: string;
@@ -417,8 +418,8 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
 
       {/* Name */}
       <div>
-        <label className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-2">Nombre de la rutina *</label>
-        <input
+        <label htmlFor="workoutsscreen-nombre-de-la-rutina" className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-2">Nombre de la rutina *</label>
+        <input id="workoutsscreen-nombre-de-la-rutina"
           type="text"
           autoFocus
           value={editorName}
@@ -445,7 +446,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
 
         {editorExercises.length === 0 ? (
           <div
-            onClick={openPicker}
+            {...pulsable(openPicker, 'Añadir el primer ejercicio')}
             className="bg-surface border border-dashed border-hairline hover:border-accent/30 rounded-surface p-10 text-center cursor-pointer transition-all group"
           >
             <Icon name="add_circle" size="xl" className="text-accent/30 group-hover:text-accent/60 transition-all block mb-2" />

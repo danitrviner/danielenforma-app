@@ -45,7 +45,10 @@ function grupos(): Record<MuscleGroup, MuscleGroupConfig> {
   return g;
 }
 
-function construirFixture(hoyBase: string) {
+/** Exportado para que el harness del lado ATLETA (`/dev/calendario-atleta`)
+ *  mire exactamente los mismos datos que el del coach: si una fecha se ve
+ *  distinta en las dos pantallas, es un fallo de pintado, no del fixture. */
+export function construirFixture(hoyBase: string) {
   // Ancla el año de la periodización 8 meses antes de hoy, para que la fecha
   // real de apertura caiga siempre dentro del bloque "Mantenimiento" (semana
   // intermedia), como en las capturas de referencia del handoff.

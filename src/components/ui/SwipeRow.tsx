@@ -67,6 +67,7 @@ export default function SwipeRow({ children, actionLabel, actionIcon = 'delete',
           {actionLabel}
         </button>
       </div>
+      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- capa de gesto: el clic solo deshace el deslizamiento. La acción de verdad es el botón que queda detrás, que ya es accesible por teclado */}
       <div
         onPointerDown={alBajarPuntero}
         onPointerMove={alMoverPuntero}

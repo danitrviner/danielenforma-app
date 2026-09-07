@@ -2,6 +2,7 @@ import React from 'react';
 import { useCardioSession } from '../../hooks/useCardioSession';
 import { ZONE_LABEL, ZONE_COLOR, BELOW_ZONE_LABEL } from '../../utils/cardioZones';
 import { Icon } from '../ui';
+import { pulsable } from '../../utils/a11y';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Mini-reproductor persistente (F6 del plan de réplica FITIV, §4bis.3 del
@@ -58,7 +59,7 @@ export default function CardioMiniPlayer({ currentPath, onOpen }: Props) {
 
   return (
     <div
-      onClick={onOpen}
+      {...pulsable(onOpen, 'Abrir la sesión de cardio en curso')}
       className="fixed inset-x-0 bottom-[var(--nav-h)] md:bottom-0 md:left-[var(--sidebar-w)] z-[var(--z-nav)] flex items-center gap-3 bg-bg/92 backdrop-blur-md border-t border-hairline px-4 py-3 cursor-pointer select-none"
       aria-live="off"
     >

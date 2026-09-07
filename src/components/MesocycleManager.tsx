@@ -2215,8 +2215,8 @@ export default function MesocycleManager({
                     «Meso #1» indistinguibles entre atletas. Vacío = se sigue
                     llamando «Meso #N» (ver nombreDeMeso). */}
                 <div>
-                  <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Nombre del mesociclo</label>
-                  <input
+                  <label htmlFor="mesocyclemanager-nombre-del-mesociclo" className="block font-mono text-caption text-ink-2 uppercase mb-1">Nombre del mesociclo</label>
+                  <input id="mesocyclemanager-nombre-del-mesociclo"
                     type="text"
                     value={editing.name ?? ''}
                     onChange={e => updateField('name', e.target.value)}
@@ -2228,16 +2228,16 @@ export default function MesocycleManager({
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   <div>
-                    <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Nº Meso</label>
-                    <input type="number" min={1}
+                    <label htmlFor="mesocyclemanager-no-meso" className="block font-mono text-caption text-ink-2 uppercase mb-1">Nº Meso</label>
+                    <input id="mesocyclemanager-no-meso" type="number" min={1}
                       value={editing.number}
                       onChange={e => updateField('number', parseInt(e.target.value) || 1)}
                       className="w-full bg-raised border border-hairline rounded-control px-3 py-2 text-title-s text-white font-mono focus:outline-none focus:border-accent"
                     />
                   </div>
                   <div>
-                    <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Semanas</label>
-                    <input type="number" min={1} max={16}
+                    <label htmlFor="mesocyclemanager-semanas" className="block font-mono text-caption text-ink-2 uppercase mb-1">Semanas</label>
+                    <input id="mesocyclemanager-semanas" type="number" min={1} max={16}
                       value={editing.weeks}
                       onChange={e => updateField('weeks', parseInt(e.target.value) || 1)}
                       className="w-full bg-raised border border-hairline rounded-control px-3 py-2 text-title-s text-white font-mono focus:outline-none focus:border-accent"
@@ -2270,7 +2270,7 @@ export default function MesocycleManager({
                     )}
                   </div>
                   <div className="col-span-2 md:col-span-4">
-                    <label className="block font-mono text-caption text-ink-2 uppercase mb-1">Sesiones por ciclo</label>
+                    <span className="block font-mono text-caption text-ink-2 uppercase mb-1">Sesiones por ciclo</span>
                     <div className="flex gap-1 overflow-x-auto hide-scrollbar pb-1">
                       {[2,3,4,5,6,7,8,9,10].map(d => (
                         <button key={d} onClick={() => {

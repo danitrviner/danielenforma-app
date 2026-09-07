@@ -102,12 +102,12 @@ function AthleteZonesEditor({ athleteEmail, coachEmail, onBack }: { athleteEmail
       <Button variant="ghost" size="s" onClick={onBack} icon="arrow_back">Atletas</Button>
       <div className="flex gap-2">
         <div className="flex-1">
-          <label className="text-caption font-mono uppercase text-ink-2">FC reposo</label>
-          <input type="number" value={restingHR} onChange={e => setRestingHR(e.target.value)} className="w-full bg-bg border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent" />
+          <label htmlFor="cardiocoach-fc-reposo" className="text-caption font-mono uppercase text-ink-2">FC reposo</label>
+          <input id="cardiocoach-fc-reposo" type="number" value={restingHR} onChange={e => setRestingHR(e.target.value)} className="w-full bg-bg border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent" />
         </div>
         <div className="flex-1">
-          <label className="text-caption font-mono uppercase text-ink-2">FCmax</label>
-          <input type="number" value={maxHR} onChange={e => setMaxHR(e.target.value)} className="w-full bg-bg border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent" />
+          <label htmlFor="cardiocoachscreen-fcmax" className="text-caption font-mono uppercase text-ink-2">FCmax</label>
+          <input id="cardiocoachscreen-fcmax" type="number" value={maxHR} onChange={e => setMaxHR(e.target.value)} className="w-full bg-bg border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent" />
         </div>
         <Button variant="secondary" size="s" onClick={regenerate} className="self-end">Recalcular</Button>
       </div>

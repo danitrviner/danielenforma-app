@@ -26,6 +26,7 @@ import { OPEN_AI_PANEL_EVENT } from './ai/events';
 import { limpiarDatosDeSesion } from './utils/cierreDeSesion';
 import { iniciarBotonAtras, fijarManejadorDeRuta, salirDeLaApp } from './services/botonAtras';
 import { useHuecoInferiorVisible, ALTURA_MINIMA_TECLADO } from './utils/anclajeViewport';
+import { pulsable } from './utils/a11y';
 import { Avatar } from './components/ui';
 
 // Cada pantalla de abajo solo se monta tras elegir un tab, y ningún atleta
@@ -96,6 +97,12 @@ const GimnasioHarness = import.meta.env.DEV
 // producción que UiShowcase/GimnasioHarness.
 const CalendarioHarness = import.meta.env.DEV
   ? lazy(() => import('./components/roadmap/calendario/DevHarness'))
+  : null;
+
+// El mismo banco de pruebas, pero del calendario del ATLETA (ruta
+// /dev/calendario-atleta) — comparte fixture con el del coach a propósito.
+const CalendarioAtletaHarness = import.meta.env.DEV
+  ? lazy(() => import('./components/roadmap/calendario/atleta/DevHarnessAtleta'))
   : null;
 
 // Banco de pruebas de Perfil › Revisión (ruta /dev/revision) — misma razón
@@ -702,6 +709,14 @@ function AppContent() {
     );
   }
 
+  if (CalendarioAtletaHarness && location.pathname === '/dev/calendario-atleta') {
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-bg" />}>
+        <CalendarioAtletaHarness />
+      </Suspense>
+    );
+  }
+
   if (RevisionHarness && location.pathname === '/dev/revision') {
     return (
       <Suspense fallback={<div className="min-h-screen bg-bg" />}>
@@ -897,7 +912,7 @@ function AppContent() {
           <div className="flex items-center gap-3">
             <NotificationBell recipientEmail={profile.email} onNavigate={goToTab} mutedTypes={mutedNotifTypes} />
             <span className="w-px h-6 bg-white/7"></span>
-            <div className="flex items-center gap-2 cursor-pointer" onClick={() => goToTab('profile')}>
+            <div {...pulsable(() => goToTab('profile'), 'Ir a mi perfil')} className="flex items-center gap-2 cursor-pointer">
               <Avatar src={profile.avatarUrl} name={profile.displayName} alt="Avatar" className="w-7 h-7 rounded-full object-cover border border-accent/40" />
               <span className="text-label font-sans font-medium text-white">{profile.displayName}</span>
             </div>
@@ -924,7 +939,7 @@ function AppContent() {
           {isCoach && (
             <button
               onClick={() => window.dispatchEvent(new CustomEvent(OPEN_AI_PANEL_EVENT))}
-              aria-label="Asistente IA"
+              aria-label="Asistente"
               className="flex h-8 w-8 items-center justify-center rounded-full text-accent transition-colors hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-line"
             >
               <Icon name="smart_toy" size="m" filled />
@@ -948,7 +963,7 @@ function AppContent() {
             </button>
           )}
           <NotificationBell recipientEmail={profile.email} onNavigate={goToTab} mutedTypes={mutedNotifTypes} />
-          <div className="w-6 h-6 rounded-full overflow-hidden border border-accent/40" onClick={() => goToTab('profile')}>
+          <div {...pulsable(() => goToTab('profile'), 'Ir a mi perfil')} className="w-6 h-6 rounded-full overflow-hidden border border-accent/40">
             <Avatar src={profile.avatarUrl} name={profile.displayName} alt="Avatar" className="w-full h-full object-cover" />
           </div>
         </div>

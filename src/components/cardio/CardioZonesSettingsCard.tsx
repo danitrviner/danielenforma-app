@@ -95,9 +95,9 @@ export default function CardioZonesSettingsCard({ profile }: Props) {
       </h3>
 
       <div>
-        <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-1">FC máxima (ppm)</label>
+        <label htmlFor="cardiozonessettingscard-fc-maxima-ppm" className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-1">FC máxima (ppm)</label>
         <div className="flex items-center gap-2">
-          <input
+          <input id="cardiozonessettingscard-fc-maxima-ppm"
             type="number"
             min={100}
             max={230}

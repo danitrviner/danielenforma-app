@@ -71,6 +71,7 @@ export default function ModalPlantillaCuestionarios({ mesocycle, questionnaires,
 
   return createPortal(
     <div className="fixed inset-0 z-modal flex items-center justify-center p-10" style={{ background: 'rgba(0,0,0,0.62)' }}>
+      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- fondo del modal: cerrar al pulsar fuera es comodidad de ratón, no una parada de tabulación */}
       <div className="absolute inset-0" onClick={onClose} />
       <div
         className="relative bg-surface border border-hairline rounded-canvas overflow-y-auto"

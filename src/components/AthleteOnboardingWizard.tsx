@@ -758,18 +758,18 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
                 </div>
               </div>
               <div>
-                <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-2">Fecha de nacimiento</label>
-                <input type="date" value={birthDate} onChange={e => setBirthDate(e.target.value)} className={inputCls} />
+                <label htmlFor="athleteonboardingwizard-fecha-de-nacimiento" className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-2">Fecha de nacimiento</label>
+                <input id="athleteonboardingwizard-fecha-de-nacimiento" type="date" value={birthDate} onChange={e => setBirthDate(e.target.value)} className={inputCls} />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-2">Peso (kg)</label>
-                  <input type="number" inputMode="decimal" value={weightKg} onChange={e => setWeightKg(e.target.value)} placeholder="75" className={inputCls} />
+                  <label htmlFor="onboarding-peso-kg" className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-2">Peso (kg)</label>
+                  <input id="onboarding-peso-kg" type="number" inputMode="decimal" value={weightKg} onChange={e => setWeightKg(e.target.value)} placeholder="75" className={inputCls} />
                   <p className="text-body-s text-ink-3 mt-1">Por la mañana, en ayunas y después de ir al baño.</p>
                 </div>
                 <div>
-                  <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-2">Altura (cm)</label>
-                  <input type="number" inputMode="numeric" value={heightCm} onChange={e => setHeightCm(e.target.value)} placeholder="175" className={inputCls} />
+                  <label htmlFor="athleteonboardingwizard-altura-cm" className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-2">Altura (cm)</label>
+                  <input id="athleteonboardingwizard-altura-cm" type="number" inputMode="numeric" value={heightCm} onChange={e => setHeightCm(e.target.value)} placeholder="175" className={inputCls} />
                   <p className="text-body-s text-ink-3 mt-1">Sin zapatos, de espaldas a la pared.</p>
                 </div>
               </div>
@@ -793,29 +793,29 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
             </div>
 
             <div>
-              <label className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-1">Cuello</label>
+              <label htmlFor="athleteonboardingwizard-cuello" className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-1">Cuello</label>
               <p className="text-body-s text-ink-2 mb-2">
                 Justo por debajo de la nuez, con la cinta un poco caída hacia delante. Mira al frente y suelta los hombros.
               </p>
-              <input type="number" inputMode="decimal" value={neckCm} onChange={e => { setNeckCm(e.target.value); setSinCinta(false); }}
+              <input id="athleteonboardingwizard-cuello" type="number" inputMode="decimal" value={neckCm} onChange={e => { setNeckCm(e.target.value); setSinCinta(false); }}
                 placeholder="cm" className={inputCls} />
             </div>
 
             <div>
-              <label className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-1">Cintura</label>
+              <label htmlFor="athleteonboardingwizard-cintura" className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-1">Cintura</label>
               <p className="text-body-s text-ink-2 mb-2">
                 A la altura del ombligo, no por donde te queda el pantalón. Es la que más se falsea sin querer: no metas tripa.
               </p>
-              <input type="number" inputMode="decimal" value={waistCm} onChange={e => { setWaistCm(e.target.value); setSinCinta(false); }}
+              <input id="athleteonboardingwizard-cintura" type="number" inputMode="decimal" value={waistCm} onChange={e => { setWaistCm(e.target.value); setSinCinta(false); }}
                 placeholder="cm" className={inputCls} />
             </div>
 
             <div>
-              <label className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-1">Cadera</label>
+              <label htmlFor="athleteonboardingwizard-cadera" className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-1">Cadera</label>
               <p className="text-body-s text-ink-2 mb-2">
                 Por la parte más ancha del glúteo, con los pies juntos. Mírate en un espejo para que la cinta quede recta por detrás.
               </p>
-              <input type="number" inputMode="decimal" value={hipCm} onChange={e => { setHipCm(e.target.value); setSinCinta(false); }}
+              <input id="athleteonboardingwizard-cadera" type="number" inputMode="decimal" value={hipCm} onChange={e => { setHipCm(e.target.value); setSinCinta(false); }}
                 placeholder="cm" className={inputCls} />
             </div>
 
@@ -849,24 +849,24 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
         {step === 4 && (
           <StepShell title="Tu objetivo" subtitle="La pregunta más importante de todo el cuestionario. Escribe de más, no de menos.">
             <div>
-              <label className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-2">
+              <label htmlFor="athleteonboardingwizard-para-cuando-lo-quieres-hay-algo-de" className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-2">
                 ¿Para cuándo lo quieres? ¿Hay algo detrás?
               </label>
               <p className="text-body-s text-ink-2 mb-2">
                 Una fecha, un evento, un motivo. No hace falta que sea nada gordo: «estoy harto de sentirme así» también vale.
               </p>
-              <textarea value={goalTimelineMotivation} onChange={e => setGoalTimelineMotivation(e.target.value)} rows={3}
+              <textarea id="athleteonboardingwizard-para-cuando-lo-quieres-hay-algo-de" value={goalTimelineMotivation} onChange={e => setGoalTimelineMotivation(e.target.value)} rows={3}
                 placeholder="Ej: en 4 meses tengo una boda; o simplemente estoy cansado de sentirme así"
                 className={`${inputCls} resize-none`} />
             </div>
             <div>
-              <label className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-2">
+              <label htmlFor="athleteonboardingwizard-como-te-ves-o-te-sientes-cuando-lo" className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-2">
                 ¿Cómo te ves o te sientes cuando lo consigas?
               </label>
               <p className="text-body-s text-ink-2 mb-2">
                 Descríbelo con tus palabras, como se lo contarías a un amigo. No hace falta hablar de kilos.
               </p>
-              <textarea value={goalFreeText} onChange={e => setGoalFreeText(e.target.value)} rows={3}
+              <textarea id="athleteonboardingwizard-como-te-ves-o-te-sientes-cuando-lo" value={goalFreeText} onChange={e => setGoalFreeText(e.target.value)} rows={3}
                 placeholder="Ej: me veo con más energía, con la ropa que quiero ponerme, sin agobiarme al subir escaleras"
                 className={`${inputCls} resize-none`} />
             </div>
@@ -1059,14 +1059,14 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
             </div>
 
             <div>
-              <label className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-1">
+              <label htmlFor="athleteonboardingwizard-hay-algun-ejercicio-que-odies-opci" className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-1">
                 ¿Hay algún ejercicio que odies? <span className="normal-case text-ink-3">(opcional)</span>
               </label>
               <p className="text-body-s text-ink-2 mb-2">
                 El que te aburre, el que te da miedo o el que te sienta mal. Si se puede cambiar por otro que haga lo
                 mismo, tu coach lo cambia. Sepáralos por comas.
               </p>
-              <input value={hatedExercises} onChange={e => setHatedExercises(e.target.value)}
+              <input id="athleteonboardingwizard-hay-algun-ejercicio-que-odies-opci" value={hatedExercises} onChange={e => setHatedExercises(e.target.value)}
                 placeholder="Ej: burpees, sentadilla con barra, cinta" className={inputCls} />
             </div>
           </StepShell>
@@ -1090,11 +1090,11 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
             </div>
 
             <div>
-              <label className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-1">¿Cuántas horas pasas sentado al día?</label>
+              <label htmlFor="athleteonboardingwizard-cuantas-horas-pasas-sentado-al-dia" className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-1">¿Cuántas horas pasas sentado al día?</label>
               <p className="text-body-s text-ink-2 mb-2">
                 Suma trabajo, coche y sofá. A ojo vale: si trabajas sentado de 9 a 18 y luego cenas viendo la tele, son unas 10.
               </p>
-              <input type="number" inputMode="numeric" min={0} max={24} value={sittingHoursPerDay}
+              <input id="athleteonboardingwizard-cuantas-horas-pasas-sentado-al-dia" type="number" inputMode="numeric" min={0} max={24} value={sittingHoursPerDay}
                 onChange={e => setSittingHoursPerDay(e.target.value)} placeholder="Ej: 8" className={inputCls} />
             </div>
 
@@ -1168,11 +1168,11 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
             </div>
 
             <div>
-              <label className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-1">¿Qué es lo que más te estresa ahora mismo?</label>
+              <label htmlFor="athleteonboardingwizard-que-es-lo-que-mas-te-estresa-ahora" className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-1">¿Qué es lo que más te estresa ahora mismo?</label>
               <p className="text-body-s text-ink-2 mb-2">
                 Si no estás especialmente estresado, dilo también — es un dato igual de útil.
               </p>
-              <textarea value={stressReason} onChange={e => setStressReason(e.target.value)} rows={2}
+              <textarea id="athleteonboardingwizard-que-es-lo-que-mas-te-estresa-ahora" value={stressReason} onChange={e => setStressReason(e.target.value)} rows={2}
                 placeholder="Ej: el trabajo y los turnos de noche; o: la verdad es que estoy tranquilo"
                 className={`${inputCls} resize-none`} />
             </div>
@@ -1224,12 +1224,12 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
             </div>
 
             <div>
-              <label className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-1">Alergias o intolerancias</label>
+              <label htmlFor="athleteonboardingwizard-alergias-o-intolerancias" className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-1">Alergias o intolerancias</label>
               <p className="text-body-s text-ink-2 mb-2">
                 Solo lo que te siente mal de verdad. Lo que simplemente no te gusta lo eliges más adelante, en una pantalla propia.
                 Sepáralas por comas, o déjalo vacío.
               </p>
-              <input value={allergies} onChange={e => setAllergies(e.target.value)}
+              <input id="athleteonboardingwizard-alergias-o-intolerancias" value={allergies} onChange={e => setAllergies(e.target.value)}
                 placeholder="Ej: lactosa, frutos secos" className={inputCls} />
             </div>
           </StepShell>
@@ -1266,13 +1266,13 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
         {step === 13 && (
           <StepShell title="Tu relación con la comida" subtitle="Esto es lo que separa una dieta que aguantas de una que abandonas en dos semanas. Contesta sin maquillar.">
             <div>
-              <label className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-1">
+              <label htmlFor="athleteonboardingwizard-en-que-momento-del-dia-tienes-mas-" className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-1">
                 ¿En qué momento del día tienes más hambre?
               </label>
               <p className="text-body-s text-ink-2 mb-2">
                 Sirve para repartir las calorías donde de verdad las necesitas, en vez de dejarte con hambre justo a tu peor hora.
               </p>
-              <input value={appetitePeakTime} onChange={e => setAppetitePeakTime(e.target.value)}
+              <input id="athleteonboardingwizard-en-que-momento-del-dia-tienes-mas-" value={appetitePeakTime} onChange={e => setAppetitePeakTime(e.target.value)}
                 placeholder="Ej: por la noche, al llegar a casa del trabajo" className={inputCls} />
             </div>
 
@@ -1316,13 +1316,13 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
             </div>
 
             <div>
-              <label className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-1">
+              <label htmlFor="athleteonboardingwizard-engordas-con-facilidad-adelgazas-c" className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-1">
                 ¿Engordas con facilidad, adelgazas con facilidad, o te mantienes?
               </label>
               <p className="text-body-s text-ink-2 mb-2">
                 Lo que hayas notado en tu vida, sin más. No hace falta que sea científico.
               </p>
-              <input value={weightTendency} onChange={e => setWeightTendency(e.target.value)}
+              <input id="athleteonboardingwizard-engordas-con-facilidad-adelgazas-c" value={weightTendency} onChange={e => setWeightTendency(e.target.value)}
                 placeholder="Ej: engordo solo con mirar el pan" className={inputCls} />
             </div>
 
@@ -1511,7 +1511,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
         {step === 19 && (
           <StepShell title="Una última cosa" subtitle="Tómate tu tiempo con esta — es la que más le importa a tu coach.">
             <div>
-              <label className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-2">
+              <label htmlFor="athleteonboardingwizard-que-esperas-de-tu-entrenador" className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-2">
                 ¿Qué esperas de tu entrenador?
               </label>
               <p className="text-body-s text-ink-2 mb-3">
@@ -1519,7 +1519,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
                 cuánto acompañamiento necesitas, qué te ha faltado en intentos anteriores — lo que sea que
                 marque la diferencia entre un plan que sigues y uno que abandonas.
               </p>
-              <textarea value={coachExpectations} onChange={e => setCoachExpectations(e.target.value)} rows={5}
+              <textarea id="athleteonboardingwizard-que-esperas-de-tu-entrenador" value={coachExpectations} onChange={e => setCoachExpectations(e.target.value)} rows={5}
                 placeholder="Tómate el tiempo que necesites..." className={`${inputCls} resize-none`} />
             </div>
 

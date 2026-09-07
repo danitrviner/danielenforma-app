@@ -1,25 +1,32 @@
 /* Ficha viva del atleta.
  *
- * Lo que se perdía al revisar un plan de la IA: el porqué de cada decisión,
+ * Lo que se perdía al revisar un plan propuesto: el porqué de cada decisión,
  * las preguntas que quedaron abiertas, los objetivos con las palabras del
  * atleta, y lo que Dani cambiaba a mano después de aprobar. Todo eso vivía en
  * un chat que se cierra.
  *
- * La ficha tiene dos mitades con reglas distintas, y la separación es
- * deliberada: arriba los JUICIOS (los edita Dani; la IA solo puede proponerlos
- * y él aprueba desde el panel del asistente), abajo los HECHOS (los apunta la
- * IA sola, y no se editan: es un registro, no un borrador).
+ * Este panel es la mitad de JUICIO de la ficha: la editas tú, y el asistente
+ * solo puede PROPONER cambios que apruebas desde su panel. La mitad de HECHOS
+ * (el registro de qué se propuso y qué hizo el atleta) vive ahora en
+ * `HistorialFichaPanel`, fusionada con la actividad del atleta — antes eran dos
+ * listas separadas en la misma pantalla que nunca se veían juntas.
  *
  * El mismo componente se monta en dos sitios: la pestaña Ficha del ClientHub,
  * que es donde Dani prepara la revisión, y un diálogo del panel del asistente,
- * que es donde la IA la usa.
+ * que es donde se consulta mientras se trabaja.
+ *
+ * LA NOTA LIBRE. Había dos, en dos colecciones distintas y con el mismo
+ * propósito: «Nota tuya» (aquí, `dossier.note`) y «Nota del coach»
+ * (`athleteStatusNote`, en el bloque de estado). Se queda esta. La otra no se
+ * migra en lote a propósito —eso serían escrituras masivas en producción—:
+ * cuando esta está vacía y la vieja tiene texto, se precarga aquí y se guarda
+ * en cuanto Dani guarde la ficha. Migración perezosa, atleta a atleta.
  */
 import React, { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { AthleteDossier, DossierPatch } from '../types';
 import { getDossier, saveDossierJudgement, saveDossierNote, DOSSIER_VACIO } from '../db/dossier';
-import { getAiProposalsForAthlete, getMesocycles, getDietsForAthlete } from '../dbService';
-import { calcularDerivas } from '../utils/derivaPropuestas';
+import { getAthleteStatusNote } from '../db/coachSettings';
 import { Button, Card, Icon } from './ui';
 
 export const dossierKey = (email: string) => ['dossier', email] as const;
@@ -30,10 +37,6 @@ const CAMPOS: { clave: keyof DossierPatch; titulo: string; ayuda: string; filas:
   { clave: 'esperado', titulo: 'Qué esperamos en las próximas semanas', ayuda: 'Con cifras, para poder contrastarlo', filas: 3 },
   { clave: 'foco', titulo: 'Foco de la siguiente revisión', ayuda: 'En qué te vas a fijar cuando vuelvas', filas: 2 },
 ];
-
-const ETIQUETA_HECHO: Record<string, string> = {
-  propuesta: 'Propuso', aprobacion: 'Aprobaste', cambio: 'Cambió', observacion: 'Anotó',
-};
 
 type Props = {
   athleteEmail: string;
@@ -49,6 +52,7 @@ export default function DossierPanel({ athleteEmail, athleteName }: Props) {
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sucio, setSucio] = useState(false);
+  const [notaHeredada, setNotaHeredada] = useState(false);
 
   const { data: ficha } = useQuery({
     queryKey: dossierKey(athleteEmail),
@@ -56,14 +60,10 @@ export default function DossierPanel({ athleteEmail, athleteName }: Props) {
     staleTime: 60_000,
   });
 
-  const { data: derivas = [] } = useQuery({
-    queryKey: ['dossierDerivas', athleteEmail],
-    queryFn: async () => {
-      const [propuestas, mesos, dietas] = await Promise.all([
-        getAiProposalsForAthlete(athleteEmail), getMesocycles(athleteEmail), getDietsForAthlete(athleteEmail),
-      ]);
-      return calcularDerivas(propuestas, mesos, dietas);
-    },
+  // La nota vieja del bloque de estado, solo para heredarla si esta está vacía.
+  const { data: notaEstado = '' } = useQuery({
+    queryKey: ['athleteStatusNote', athleteEmail],
+    queryFn: () => getAthleteStatusNote(athleteEmail),
     staleTime: 60_000,
   });
 
@@ -71,9 +71,17 @@ export default function DossierPanel({ athleteEmail, athleteName }: Props) {
   // nunca encima de algo que Dani esté escribiendo.
   useEffect(() => {
     if (!ficha || sucio) return;
-    setBorrador(ficha);
+    // `?? ''` porque las ramas de respaldo de getDossier leen de localStorage
+    // sin pasar por `normalizar`: una entrada vieja puede no traer `note`.
+    const vieja = (notaEstado ?? '').trim();
+    const heredar = !(ficha.note ?? '').trim() && vieja.length > 0;
+    setBorrador(heredar ? { ...ficha, note: vieja } : ficha);
     setPreguntas(ficha.preguntasAbiertas.join('\n'));
-  }, [ficha, sucio]);
+    setNotaHeredada(heredar);
+    // Se marca sucio a posta: así aparece «Guardar» y la nota heredada no se
+    // queda en pantalla dando la falsa impresión de estar ya guardada aquí.
+    if (heredar) setSucio(true);
+  }, [ficha, notaEstado, sucio]);
 
   const editar = (clave: keyof DossierPatch, valor: string) => {
     setSucio(true);
@@ -95,6 +103,7 @@ export default function DossierPanel({ athleteEmail, athleteName }: Props) {
       await saveDossierNote(athleteEmail, borrador.note);
       await queryClient.invalidateQueries({ queryKey: dossierKey(athleteEmail) });
       setSucio(false);
+      setNotaHeredada(false);
     } catch {
       setError('No se pudo guardar la ficha. Vuelve a intentarlo.');
     } finally {
@@ -102,99 +111,64 @@ export default function DossierPanel({ athleteEmail, athleteName }: Props) {
     }
   };
 
-  const hechos = [...(ficha?.hechos ?? [])].reverse();
-
   return (
-    <div className="flex flex-col gap-4">
-      <Card
-        title="Ficha viva"
-        subtitle={`Lo que hay que saber de ${athleteName || athleteEmail} sin releer el chat. La IA la lee antes de proponer nada.`}
-        action={sucio ? (
-          <Button size="s" variant="primary" onClick={guardar} disabled={guardando}>
-            {guardando ? 'Guardando…' : 'Guardar'}
-          </Button>
-        ) : undefined}
-      >
-        <div className="flex flex-col gap-4">
-          {error && <p className="text-caption text-danger">{error}</p>}
+    <Card
+      title="Ficha viva"
+      subtitle={`Lo que hay que saber de ${athleteName || athleteEmail} sin releer el chat. El entrenador la lee antes de proponer nada.`}
+      action={sucio ? (
+        <Button size="s" variant="primary" onClick={guardar} disabled={guardando}>
+          {guardando ? 'Guardando…' : 'Guardar'}
+        </Button>
+      ) : undefined}
+    >
+      <div className="flex flex-col gap-4">
+        {error && <p className="text-caption text-danger">{error}</p>}
 
-          {CAMPOS.map(campo => (
-            <label key={campo.clave} className="flex flex-col gap-1">
-              <span className="text-label text-ink">{campo.titulo}</span>
-              <span className="text-caption text-ink-3">{campo.ayuda}</span>
-              <textarea
-                value={(borrador[campo.clave] as string) ?? ''}
-                onChange={e => editar(campo.clave, e.target.value)}
-                rows={campo.filas}
-                className="w-full bg-field border border-hairline rounded-control p-3 text-label text-ink resize-y focus:border-accent-line focus:outline-none"
-              />
-            </label>
-          ))}
-
-          <label className="flex flex-col gap-1">
-            <span className="text-label text-ink">Preguntas abiertas</span>
-            <span className="text-caption text-ink-3">Una por línea. Lo que falta saber, y a quién preguntárselo.</span>
+        {CAMPOS.map(campo => (
+          <label key={campo.clave} className="flex flex-col gap-1">
+            <span className="text-label text-ink">{campo.titulo}</span>
+            <span className="text-caption text-ink-3">{campo.ayuda}</span>
             <textarea
-              value={preguntas}
-              onChange={e => { setSucio(true); setPreguntas(e.target.value); }}
-              rows={3}
+              value={(borrador[campo.clave] as string) ?? ''}
+              onChange={e => editar(campo.clave, e.target.value)}
+              rows={campo.filas}
               className="w-full bg-field border border-hairline rounded-control p-3 text-label text-ink resize-y focus:border-accent-line focus:outline-none"
             />
           </label>
+        ))}
 
-          <label className="flex flex-col gap-1">
-            <span className="text-label text-ink">Nota tuya</span>
-            <span className="text-caption text-ink-3">Texto libre. Lo que no encaja en ningún campo.</span>
-            <textarea
-              value={borrador.note}
-              onChange={e => { setSucio(true); setBorrador(b => ({ ...b, note: e.target.value })); }}
-              rows={2}
-              className="w-full bg-field border border-hairline rounded-control p-3 text-label text-ink resize-y focus:border-accent-line focus:outline-none"
-            />
-          </label>
+        <label className="flex flex-col gap-1">
+          <span className="text-label text-ink">Preguntas abiertas</span>
+          <span className="text-caption text-ink-3">Una por línea. Lo que falta saber, y a quién preguntárselo.</span>
+          <textarea
+            value={preguntas}
+            onChange={e => { setSucio(true); setPreguntas(e.target.value); }}
+            rows={3}
+            className="w-full bg-field border border-hairline rounded-control p-3 text-label text-ink resize-y focus:border-accent-line focus:outline-none"
+          />
+        </label>
 
-          {ficha?.updatedAt && !sucio && (
-            <p className="text-caption text-ink-4">Actualizada el {ficha.updatedAt.slice(0, 10)}</p>
+        <label className="flex flex-col gap-1">
+          <span className="text-label text-ink">Nota tuya</span>
+          <span className="text-caption text-ink-3">Texto libre. Lo que no encaja en ningún campo.</span>
+          <textarea
+            value={borrador.note}
+            onChange={e => { setSucio(true); setBorrador(b => ({ ...b, note: e.target.value })); }}
+            rows={2}
+            className="w-full bg-field border border-hairline rounded-control p-3 text-label text-ink resize-y focus:border-accent-line focus:outline-none"
+          />
+          {notaHeredada && (
+            <span className="text-caption text-warning flex items-start gap-1">
+              <Icon name="info" size="s" className="mt-0.5 shrink-0" />
+              Esta nota estaba en «Nota del coach», que era la misma cosa en otro sitio. Guarda la ficha para dejarla aquí.
+            </span>
           )}
-        </div>
-      </Card>
+        </label>
 
-      {derivas.length > 0 && (
-        <Card title="Lo que cambiaste después de aprobar" subtitle="Comparado con lo que propuso la IA. Ella también lo lee.">
-          <ul className="flex flex-col gap-3">
-            {derivas.slice(0, 8).map(d => (
-              <li key={d.proposalId} className="flex flex-col gap-1 border-l-2 border-accent-line pl-3">
-                <span className="text-label text-ink">{d.que}</span>
-                <span className="text-caption font-mono text-ink-2">{d.cambios.join(' · ')}</span>
-                <span className="text-caption text-ink-4">{d.fecha.slice(0, 10)}</span>
-              </li>
-            ))}
-          </ul>
-        </Card>
-      )}
-
-      <Card title="Qué se ha hecho" subtitle="Lo apunta la IA sola. No se edita: es el registro.">
-        {hechos.length === 0 ? (
-          <p className="text-caption text-ink-3">Todavía no hay nada. Se llena solo en cuanto la IA proponga algo de este atleta.</p>
-        ) : (
-          <ul className="flex flex-col gap-2 max-h-80 overflow-y-auto">
-            {hechos.slice(0, 40).map((h, i) => (
-              <li key={`${h.at}-${i}`} className="flex gap-2 items-start">
-                <Icon name="chevron_right" size="s" className="text-ink-4 mt-0.5 shrink-0" />
-                <div className="flex flex-col">
-                  <span className="text-caption text-ink-2">
-                    <span className="text-ink-4 font-mono">{h.at.slice(0, 10)}</span>
-                    {' · '}
-                    <span className="text-ink-3">{ETIQUETA_HECHO[h.kind] ?? h.kind}</span>
-                    {': '}
-                    {h.text}
-                  </span>
-                </div>
-              </li>
-            ))}
-          </ul>
+        {ficha?.updatedAt && !sucio && (
+          <p className="text-caption text-ink-4">Actualizada el {ficha.updatedAt.slice(0, 10)}</p>
         )}
-      </Card>
-    </div>
+      </div>
+    </Card>
   );
 }

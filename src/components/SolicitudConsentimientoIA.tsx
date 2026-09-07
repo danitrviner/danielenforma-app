@@ -55,7 +55,7 @@ export default function SolicitudConsentimientoIA({ onboarding, onRespondido, on
         ['onboarding', onboarding.athleteId],
         prev => (prev ? { ...prev, consentimientoIA } : prev),
       );
-      showToast(aceptado ? 'Gracias, guardado.' : 'Guardado. Tus datos no se analizarán con IA.');
+      showToast(aceptado ? 'Gracias, guardado.' : 'Guardado. Tus datos no se analizarán con el asistente.');
       onRespondido?.(aceptado);
     } catch (err) {
       console.error('No se pudo guardar el consentimiento de IA:', err);
@@ -68,7 +68,7 @@ export default function SolicitudConsentimientoIA({ onboarding, onRespondido, on
     <Dialog
       open
       onClose={onAhoraNo ?? (() => {})}
-      title="¿Podemos analizar tus datos con IA?"
+      title="¿Podemos analizar tus datos con el asistente?"
       size="m"
       footer={
         <div className="flex flex-col gap-2 w-full">
@@ -105,7 +105,7 @@ export default function SolicitudConsentimientoIA({ onboarding, onRespondido, on
     >
       <div className="space-y-4 text-body-s font-sans text-ink-2">
         <p>
-          Tu entrenador puede usar un asistente de inteligencia artificial para <strong className="text-ink">revisar
+          Tu entrenador puede usar un asistente para <strong className="text-ink">revisar
           tu evolución</strong> (entrenos, dieta y revisiones) cuando prepara tus ajustes. Los planes
           los decide y los firma él.
         </p>

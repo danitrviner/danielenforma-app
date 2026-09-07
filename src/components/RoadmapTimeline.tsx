@@ -5,6 +5,7 @@ import { mesocycleWeekNumber, diasDeCiclo } from '../utils/progression';
 import { Icon, Button, EmptyState, Sheet, Input, Select, Badge, BadgeTone } from './ui';
 import EventPlannerSheet from './roadmap/EventPlannerSheet';
 import ProposePlanSheet from './roadmap/ProposePlanSheet';
+import { pulsable } from '../utils/a11y';
 
 type PlannerLane = 'entrenamiento' | 'nutricion' | 'revisiones' | 'objetivos';
 
@@ -210,8 +211,8 @@ function ItemEditor({ item, onChange, onConfirm, onDelete, onCancel, saving, isN
         {/* Description — sigue a mano: `Input` no tiene variante de textarea y
             crear una sería ampliar el alcance de F11. */}
         <div>
-          <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-1">Descripción</label>
-          <textarea
+          <label htmlFor="roadmaptimeline-descripcion" className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-1">Descripción</label>
+          <textarea id="roadmaptimeline-descripcion"
             value={item.description ?? ''}
             onChange={e => onChange({ ...item, description: e.target.value || undefined })}
             rows={2}
@@ -806,6 +807,10 @@ export default function RoadmapTimeline({ mesocycles: mesocyclesProp, nutritionP
           <div
             role="slider"
             aria-label={`Alargar o acortar ${b.label}`}
+            aria-valuenow={nutritionProgramProp?.phases.find(p => p.id === b.key)?.weeks ?? 1}
+            aria-valuemin={1}
+            aria-valuemax={52}
+            aria-valuetext={`${nutritionProgramProp?.phases.find(p => p.id === b.key)?.weeks ?? 1} semanas`}
             onPointerDown={e => {
               e.preventDefault();
               e.stopPropagation();
@@ -835,7 +840,7 @@ export default function RoadmapTimeline({ mesocycles: mesocyclesProp, nutritionP
         style={{ position: 'absolute', left: x, top: topBase + ITEM_Y, width: w, height: ITEM_H, zIndex: 5 }}
         className={`rounded-surface overflow-hidden border border-hairline transition-transform ${readonly ? 'cursor-default' : 'cursor-pointer hover:scale-[1.02]'}`}
         title={`${item.title}${item.description ? ' — ' + item.description : ''}${item.targetDate ? ' · ' + fmtDate(item.targetDate) : ''}`}
-        onClick={() => !readonly && openEdit(item)}
+        {...(readonly ? {} : pulsable(() => openEdit(item), `Editar ${item.title}`))}
       >
         <div style={{ background: color }} className="h-full px-3 flex items-center gap-2">
           <span
@@ -993,7 +998,7 @@ export default function RoadmapTimeline({ mesocycles: mesocyclesProp, nutritionP
           </p>
           <div className="flex items-center gap-2">
             {onAddVolumeRule && (
-              <Button size="s" onClick={() => setProposePlanOpen(true)} icon="auto_awesome">Proponer plan con IA</Button>
+              <Button size="s" onClick={() => setProposePlanOpen(true)} icon="auto_awesome">Proponer plan</Button>
             )}
             {onCreateReview && onAddVolumeRule && (
               <Button size="s" variant="secondary" onClick={() => { setPlannerDate(today); setPlannerLane('entrenamiento'); setPlannerOpen(true); }} icon="add">Evento</Button>
@@ -1267,16 +1272,16 @@ export default function RoadmapTimeline({ mesocycles: mesocyclesProp, nutritionP
         >
           <div className="space-y-4">
             <div>
-              <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-1">Cuándo</label>
+              <span className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-1">Cuándo</span>
               <p className="text-title-s text-white font-sans">{fmtDate(viewingEvent.date)}</p>
             </div>
             <div>
-              <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-1">Estado</label>
+              <span className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-1">Estado</span>
               <Badge tone={REVIEW_STATUS_TONE[viewingEvent.status]}>{viewingEvent.status}</Badge>
             </div>
             {viewingEvent.conditional && (
               <div>
-                <label className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-1">Condición</label>
+                <span className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-1">Condición</span>
                 <p className="font-sans text-caption text-ink-2 leading-relaxed">
                   Este escalón de progresión solo se aplica si se cumple la condición configurada. Con los datos de hoy,
                   {viewingEvent.conditional.met ? ' se cumple.' : ' no se cumple todavía.'}

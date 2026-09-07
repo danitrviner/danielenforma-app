@@ -38,7 +38,7 @@ export default function ClientAlertsBar({
   if (!planUnpublished && pendingReviewsCount === 0) {
     return (
       <Button variant="ghost" size="s" icon="smart_toy" onClick={openAiSummary}>
-        Ver resumen IA
+        Ver resumen
       </Button>
     );
   }
@@ -46,7 +46,7 @@ export default function ClientAlertsBar({
   return (
     <div className="space-y-3">
       <Button variant="ghost" size="s" icon="smart_toy" onClick={openAiSummary}>
-        Ver resumen IA
+        Ver resumen
       </Button>
 
       {planUnpublished && (

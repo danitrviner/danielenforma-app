@@ -8,11 +8,11 @@ import {
   getStepsForAthlete, getWorkoutLogs, getExercises, getDietCompletionLogsForAthlete,
   getDietsForAthlete, getOnboarding, getAthleteNutritionConfig, getWorkoutAssignmentsForAthlete,
   getWeeklyChallengesForAthlete, saveRoadmapLevelProgress, createNotificationDeduped,
-  getTasksForAthlete, getWorkouts, getCardioSessionsSince,
+  getTasksForAthlete, getWorkouts, getCardioSessionsSince, getProgressPhotos,
+  getCoachDayNotesForAthlete,
 } from '../dbService';
 import { bodyweightForAthleteKey } from '../hooks/useAthleteWeight';
-import { deriveReviewEvents, deriveVolumeIncreaseEvents, deriveKcalChangeEvents, deriveDeloadEvents } from '../utils/planEvents';
-import RoadmapTimeline from './RoadmapTimeline';
+import CalendarioAtleta from './roadmap/calendario/atleta/CalendarioAtleta';
 import PhaseHeroCard from './roadmap/PhaseHeroCard';
 import WeeklyChallengeCard, { ChallengePendingCard } from './roadmap/WeeklyChallengeCard';
 import PhasePathStepper from './roadmap/PhasePathStepper';
@@ -109,23 +109,30 @@ export default function AthleteRoadmapScreen({ profile }: Props) {
     queryKey: ['workouts'],
     queryFn: getWorkouts,
   });
-  // Solo las últimas 5 semanas: el motor de retos calcula la media de Zona 2
-  // sobre 4 semanas, y traerse el histórico entero de la banda encarecería
-  // cada carga del Roadmap sin aportar nada.
-  const cardioSince = useMemo(() => {
-    const d = new Date();
-    d.setDate(d.getDate() - 35);
-    return d.toISOString().split('T')[0];
-  }, []);
+  // El año natural en curso: es exactamente el rango que puede pintar el
+  // calendario (sus tres niveles cuelgan de `new Date().getFullYear()`), y de
+  // paso da de sobra para el motor de retos, que solo mira 4 semanas atrás.
+  // Una consulta con ventana en vez de dos —ni el histórico entero de la
+  // banda, que son cientos de lecturas por cada visita al Road map.
+  const cardioSince = useMemo(() => `${new Date().getFullYear()}-01-01`, []);
   const { data: cardioSessions = [], isPending: loadingCardio } = useQuery({
     queryKey: ['cardioSessionsSince', profile.email, cardioSince],
     queryFn: () => getCardioSessionsSince(profile.email, cardioSince),
+  });
+  // Solo para el calendario: la foto y la nota del entrenador de cada día.
+  const { data: progressPhotos = [], isPending: loadingPhotos } = useQuery({
+    queryKey: ['progressPhotos', profile.email],
+    queryFn: () => getProgressPhotos(profile.email),
+  });
+  const { data: coachDayNotes = [], isPending: loadingDayNotes } = useQuery({
+    queryKey: ['coachDayNotes', profile.email],
+    queryFn: () => getCoachDayNotesForAthlete(profile.email),
   });
 
   const loading = loadingMesocycles || loadingNutritionProgram || loadingRoadmap || loadingBodyweight
     || loadingSteps || loadingWorkoutLogs || loadingExercises || loadingDietCompletionLogs
     || loadingDiets || loadingOnboarding || loadingNutConfig || loadingAssignments || loadingChallengeHistory
-    || loadingTasks || loadingWorkouts || loadingCardio;
+    || loadingTasks || loadingWorkouts || loadingCardio || loadingPhotos || loadingDayNotes;
 
   const stepGoal = nutConfig?.stepGoal ?? DEFAULT_STEP_GOAL;
   const kcalPerStep = nutConfig?.kcalPerStep ?? DEFAULT_KCAL_PER_STEP;
@@ -149,11 +156,20 @@ export default function AthleteRoadmapScreen({ profile }: Props) {
     if (loading || challengeInitFor.current === profile.email) return;
     challengeInitFor.current = profile.email;
     const today = new Date().toISOString().split('T')[0];
+    // El generador de retos razona sobre las últimas 4-5 semanas; ahora que la
+    // consulta trae el año entero para el calendario, la ventana se recorta
+    // aquí para no cambiarle la base de cálculo. El corte se calcula en UTC
+    // (`toISOString`) a propósito, no con `hoyIsoLocal()`: es exactamente lo
+    // que hacía la consulta anterior, y en una ventana de 35 días un día de
+    // margen no significa nada frente a mover el suelo del motor de retos.
+    const desde = new Date();
+    desde.setDate(desde.getDate() - 35);
+    const cardioRecientes = cardioSessions.filter(s => s.date >= desde.toISOString().split('T')[0]);
     const challengeData: ChallengeData = {
       stepLogs, bodyweightLogs, workoutLogs, exercises,
       completionLogs: dietCompletionLogs, coachDiets: diets.filter(d => !d.selfManaged),
       assignments, projection, liftExerciseIds: roadmap?.challengeConfig?.liftExerciseIds,
-      cardioSessions,
+      cardioSessions: cardioRecientes,
       // Ya está cargado para la lista de logros, así que la memoria del motor
       // (rotación de 4 semanas + dificultad adaptativa) sale gratis en lecturas.
       history: challengeHistory,
@@ -273,7 +289,6 @@ export default function AthleteRoadmapScreen({ profile }: Props) {
   }
 
   const phases = roadmap.planPhases ?? [];
-  const today = new Date().toISOString().split('T')[0];
 
   return (
     <div className="space-y-6">
@@ -300,19 +315,22 @@ export default function AthleteRoadmapScreen({ profile }: Props) {
       <RecentAchievements achievements={achievements} />
 
       <div>
-        <p className="font-mono text-caption uppercase tracking-widest text-ink-2 mb-3 px-1">Planificación completa</p>
-        <RoadmapTimeline
+        <p className="font-mono text-caption uppercase tracking-widest text-ink-2 mb-3 px-1">Tu planificación completa</p>
+        <CalendarioAtleta
           mesocycles={mesocycles}
           nutritionProgram={nutritionProgram}
           roadmap={roadmap}
-          readonly={true}
-          bodyweightLogs={bodyweightLogs}
-          initialWeight={profile.actualWeight ?? profile.initialWeight}
-          reviewEvents={deriveReviewEvents(tasks, today)}
           workoutAssignments={assignments}
-          volumeEvents={mesocycles.flatMap(m => deriveVolumeIncreaseEvents(workouts, exercises, m, today))}
-          nutritionEvents={deriveKcalChangeEvents(nutritionProgram, today)}
-          deloadEvents={deriveDeloadEvents(mesocycles, today)}
+          workoutLogs={workoutLogs}
+          workouts={workouts}
+          exercises={exercises}
+          diets={diets}
+          dietCompletionLogs={dietCompletionLogs}
+          cardioSessions={cardioSessions}
+          bodyweightLogs={bodyweightLogs}
+          tasks={tasks}
+          progressPhotos={progressPhotos}
+          coachDayNotes={coachDayNotes}
         />
       </div>
     </div>

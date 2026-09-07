@@ -73,8 +73,8 @@ export default function ReportEditor({ initial, onSaveDraft, onSend, onDelete, o
               />
 
               <div>
-                <label className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-2">Mensaje para el atleta</label>
-                <textarea
+                <label htmlFor="reporteditor-mensaje-para-el-atleta" className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-2">Mensaje para el atleta</label>
+                <textarea id="reporteditor-mensaje-para-el-atleta"
                   value={draft.intro}
                   onChange={e => setDraft(d => ({ ...d, intro: e.target.value }))}
                   rows={4}
@@ -84,7 +84,7 @@ export default function ReportEditor({ initial, onSaveDraft, onSend, onDelete, o
               </div>
 
               <div className="space-y-3">
-                <label className="block font-sans text-caption text-ink-2 uppercase tracking-wider">Secciones (marca qué se cuenta)</label>
+                <label htmlFor="reporteditor-secciones-marca-que-se-cuenta" className="block font-sans text-caption text-ink-2 uppercase tracking-wider">Secciones (marca qué se cuenta)</label>
                 {draft.sections.map(s => (
                   <div key={s.id} className="bg-surface border border-hairline rounded-surface p-3 space-y-2">
                     <button
@@ -95,7 +95,7 @@ export default function ReportEditor({ initial, onSaveDraft, onSend, onDelete, o
                       <span className={`text-body-s font-sans font-bold ${s.included ? 'text-white' : 'text-ink-3'}`}>{s.title}</span>
                     </button>
                     {s.included && (
-                      <input
+                      <input id="reporteditor-secciones-marca-que-se-cuenta"
                         value={s.coachNote ?? ''}
                         onChange={e => setSection(s.id, { coachNote: e.target.value })}
                         placeholder="Nota opcional para esta sección..."

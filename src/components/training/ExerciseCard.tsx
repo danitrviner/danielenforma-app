@@ -53,6 +53,7 @@ export default React.memo(function ExerciseCard({
   restTimer, onSkipRest, onAddRestSeconds,
   videoTargetRef, setEditorTargetRef, firstSetRowTargetRef,
 }: Props) {
+  const idNota = React.useId();
   const expanded = expandSetGroups(we);
   const totalSets = exSets.length;
   const doneSets = exSets.filter(s => s.done).length;
@@ -190,8 +191,9 @@ export default React.memo(function ExerciseCard({
 
       {/* Nota del atleta para este ejercicio */}
       <div className="px-4 py-3 bg-bg border-t border-hairline">
-        <label className="font-mono text-caption text-ink-2 uppercase tracking-wider block mb-2">Tu nota (opcional)</label>
+        <label htmlFor={idNota} className="font-mono text-caption text-ink-2 uppercase tracking-wider block mb-2">Tu nota (opcional)</label>
         <textarea
+          id={idNota}
           value={noteValue}
           onChange={e => onNoteChange(e.target.value)}
           placeholder="ej. Molestia leve en el hombro derecho..."

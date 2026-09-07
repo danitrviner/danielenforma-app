@@ -1,5 +1,6 @@
 import React from 'react';
 import Icon from '../ui/Icon';
+import { pulsable } from '../../utils/a11y';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    MealItemSwipeRow
@@ -72,6 +73,7 @@ export default function MealItemSwipeRow({ children, onDelete, className = '' }:
         </div>
       )}
 
+      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- capa de gesto: el clic solo deshace el deslizamiento. La acción de verdad es el botón que queda detrás, ya accesible por teclado */}
       <div
         onPointerDown={alBajarPuntero}
         onPointerMove={alMoverPuntero}

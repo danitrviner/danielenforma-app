@@ -386,7 +386,7 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
 
         <div>
           <div className="flex items-center justify-between mb-2">
-            <label className="font-sans text-caption text-ink-2 uppercase">Ingestas (de la anamnesis, ajustable)</label>
+            <label htmlFor="weeklymenueditor-ingestas-de-la-anamnesis-ajustable" className="font-sans text-caption text-ink-2 uppercase">Ingestas (de la anamnesis, ajustable)</label>
             <span className={`font-mono text-caption font-bold ${pctSum === 100 ? 'text-emerald-400' : 'text-red-400'}`}>Suma: {pctSum}%</span>
           </div>
           <div className="space-y-2">
@@ -394,7 +394,7 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
               <div key={i} className="flex items-center gap-3 bg-surface border border-hairline rounded-surface px-4 py-3">
                 <span className="font-sans text-label text-white w-32 flex-shrink-0 truncate">{sl.name}</span>
                 <ProgressBar value={sl.pct} label={`${sl.name}, ${sl.pct}%`} className="flex-1" />
-                <input
+                <input id="weeklymenueditor-ingestas-de-la-anamnesis-ajustable"
                   type="number" min={0} max={100} value={sl.pct}
                   onChange={e => { slotsTocados.current = true; setSlots(prev => prev.map((s, idx) => idx === i ? { ...s, pct: Number(e.target.value) } : s)); }}
                   className="w-16 text-right bg-raised border border-hairline rounded-control px-2 py-1 text-title-s text-white font-mono focus:outline-none focus:border-accent/50"
@@ -425,9 +425,9 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
         </button>
 
         <div className={batch ? 'opacity-40 pointer-events-none' : ''}>
-          <label className="block font-sans text-caption text-ink-2 uppercase mb-2">
+          <span className="block font-sans text-caption text-ink-2 uppercase mb-2">
             Variedad — cuánto se repiten las recetas entre días
-          </label>
+          </span>
           <div className="flex gap-2">
             {[1, 2, 3, 4, 5].map(v => (
               <button
@@ -447,7 +447,7 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
 
         {/* Dish-type filter — prefilled from the athlete's preference */}
         <div>
-          <label className="block font-mono text-caption text-ink-2 uppercase mb-2">Tipos de plato</label>
+          <span className="block font-mono text-caption text-ink-2 uppercase mb-2">Tipos de plato</span>
           <p className="font-sans text-caption text-ink-3 mb-2">
             Prellenado con lo que eligió el atleta. Toca: neutral → <span className="text-accent">priorizar</span> → <span className="text-red-400">excluir</span>.
           </p>

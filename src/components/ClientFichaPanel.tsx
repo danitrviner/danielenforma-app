@@ -1,44 +1,68 @@
 import React, { useMemo, useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import {
   UserProfile, OnboardingData, OnboardingTemplateQuestion,
   Mesocycle, WeightCheckIn, CoachReport, WorkoutLog, BodyweightLog,
 } from '../types';
 import {
   getRoadmap, getNutritionProgram, computeActivePhase,
-  getAthleteStatusNote, saveAthleteStatusNote,
 } from '../dbService';
 import { ScoreStyle } from '../utils/adherence';
 import { dishTypeLabel } from '../utils/dishTypes';
 import OnboardingForm from './OnboardingForm';
+import DossierPanel from './DossierPanel';
+import HistorialFichaPanel, { ActividadAtleta } from './HistorialFichaPanel';
 import EquipoClienteCard from '../features/gimnasio/EquipoClienteCard';
-import { Collapsible, Icon, Button } from './ui';
+import { Collapsible, Icon } from './ui';
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   ClientFichaPanel (reorganización del Hub — pestaña "Ficha", zona "Atleta")
+   ClientFichaPanel — LA ficha del atleta (Hub, pestaña "Ficha", zona "Atleta")
 
-   Todo lo IDENTITARIO y ESTÁTICO del cliente: quién es, qué quiere, con qué
-   equipamiento cuenta y la duración de su plan. Antes vivía repartido entre
-   la cabecera fija del Hub (formulario de plan + EquipoClienteCard, siempre
-   visibles aunque casi nunca cambien) y el primer tercio de Revisiones (la
-   ficha de iniciación, antes un solo bloque plegable con TODO dentro).
+   Es el único sitio de la ficha. Antes eran DOS componentes apilados en el
+   mismo scroll (este y `DossierPanel`, montados por separado desde el Hub) y
+   cada uno se había diseñado sin mirar al otro, con tres solapamientos:
 
-   Cada sección temática es ahora un <Collapsible/> independiente en vez de un
-   único interruptor "todo o nada" — el coach abre solo lo que necesita
-   consultar. Composición y Salud empiezan abiertas por ser las que más se
-   consultan de un vistazo; el resto arranca cerrado.
+     · dos notas libres del coach en colecciones distintas — «Nota tuya»
+       (`dossier.note`) y «Nota del coach» (`athleteStatusNote`);
+     · dos listas de actividad que nunca se veían juntas — «Qué se ha hecho»
+       (lo que se propuso/aprobó) y «Últimos cambios» (lo que hizo el atleta);
+     · dos sitios que decían "objetivos" — el campo de la ficha viva y una
+       sección "Plan y objetivos" que en realidad solo tenía fechas.
+
+   Ahora el orden responde a las preguntas en el orden en que se hacen al
+   preparar una revisión, de lo más vivo a lo más estático:
+
+     1. ESTADO    — ¿cómo va? KPIs y fase. Sin plegar: es lo que más se mira.
+     2. AHORA     — ¿qué sé de él y qué miro la semana que viene? La ficha
+                    viva (`DossierPanel`), con UNA sola nota libre.
+     3. HISTORIAL — ¿qué ha pasado desde la última vez? Las dos listas de
+                    actividad fusionadas (`HistorialFichaPanel`), filtrables.
+     4. QUIÉN ES  — lo estático: plan y metas, ficha de iniciación,
+                    equipamiento. Se consulta de vez en cuando, va al final.
+
+   Dentro de "Quién es", cada sección temática es un <Collapsible/>
+   independiente en vez de un único interruptor "todo o nada" — el coach abre
+   solo lo que necesita. Composición y Salud empiezan abiertas por ser las que
+   más se consultan de un vistazo; el resto arranca cerrado.
 
    Preferencias alimentarias y notas personales de ejercicio NO están aquí:
    preferencias vive en Dietas (ClientDietsPanel, junto al resto de config.
    nutricional) y las notas por ejercicio se retiraron del producto.
 
-   "Estado actual" (KPIs, fase, nota del coach, últimos cambios) se suma
-   aquí desde la cabecera fija del Hub, que antes montaba `ClientOverviewCard`
-   siempre visible sea cual sea la pestaña: Dani pidió que la ficha sea el
-   sitio con TODO lo que está haciendo el atleta en una sola vista, y que la
-   cabecera solo se quede con lo urgente (`ClientAlertsBar` — plan sin
-   publicar, próxima revisión). Esto es lo descriptivo, no lo accionable.
+   Lo URGENTE (plan sin publicar, próxima revisión) sigue fuera, en
+   `ClientAlertsBar`, siempre visible sea cual sea la pestaña. Aquí solo va lo
+   descriptivo, no lo accionable.
    ═══════════════════════════════════════════════════════════════════════════ */
+
+/** Cabecera de zona. Separa los 4 bloques sin meter un nivel de navegación. */
+function ZonaTitulo({ icon, children }: { icon: string; children: React.ReactNode }) {
+  return (
+    <p className="font-mono text-caption text-ink-3 uppercase tracking-widest flex items-center gap-2 pt-2">
+      <Icon name={icon} size="s" className="text-accent" />
+      {children}
+    </p>
+  );
+}
 
 /* Espejo de ALCANCE y LIFESTYLE_AREAS del alta (AthleteOnboardingWizard). Se
    guardan los ids y no las etiquetas para poder reescribir los textos sin tocar
@@ -89,17 +113,8 @@ const TECHNIQUE_LABELS: Record<string, string> = {
   mala: 'Mala', regular: 'Regular', buena: 'Buena', muy_buena: 'Muy buena',
 };
 
-interface ChangeEvent { date: string; icon: string; text: string }
-
 function esFormat(n: number): string {
   return String(n).replace('.', ',');
-}
-
-function daysAgo(iso: string): string {
-  const d = Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
-  if (d <= 0) return 'hoy';
-  if (d === 1) return 'ayer';
-  return `hace ${d} días`;
 }
 
 function displayAge(birthDate: string): number {
@@ -152,9 +167,6 @@ export default function ClientFichaPanel({
   const [editingOnboarding, setEditingOnboarding] = useState(false);
 
   // ── Estado actual (antes ClientOverviewCard) ──────────────────────────
-  const queryClient = useQueryClient();
-  const statusNoteKey = ['athleteStatusNote', athlete.email] as const;
-
   const { data: roadmap } = useQuery({
     queryKey: ['roadmap', athlete.email],
     queryFn: () => getRoadmap(athlete.email),
@@ -162,10 +174,6 @@ export default function ClientFichaPanel({
   const { data: nutritionProgram } = useQuery({
     queryKey: ['nutritionProgram', athlete.email],
     queryFn: () => getNutritionProgram(athlete.email),
-  });
-  const { data: note = '' } = useQuery({
-    queryKey: statusNoteKey,
-    queryFn: () => getAthleteStatusNote(athlete.email),
   });
 
   const planPhase = useMemo(
@@ -177,10 +185,6 @@ export default function ClientFichaPanel({
     [nutritionProgram]
   );
 
-  const [editingNote, setEditingNote] = useState(false);
-  const [noteDraft, setNoteDraft] = useState('');
-  const [savingNote, setSavingNote] = useState(false);
-
   const activeMeso = useMemo(() => {
     const today = new Date().toISOString().slice(0, 10);
     const started = mesocycles.filter(m => m.startDate <= today);
@@ -190,8 +194,11 @@ export default function ClientFichaPanel({
     return { meso: current, week: Math.min(Math.max(week, 1), current.weeks), inRange: week <= current.weeks };
   }, [mesocycles]);
 
-  const recentChanges = useMemo(() => {
-    const events: ChangeEvent[] = [];
+  /* Lo que hizo el atleta, para el Historial. Lo ÚLTIMO de cada tipo, no todo:
+     los pesos son diarios y ahogarían la cronología de decisiones, que es la
+     que de verdad se relee al preparar una revisión. */
+  const actividadAtleta = useMemo(() => {
+    const events: ActividadAtleta[] = [];
     const lastCheckin = [...checkins].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())[0];
     if (lastCheckin) {
       const ts = new Date(lastCheckin.timestamp);
@@ -207,22 +214,8 @@ export default function ClientFichaPanel({
       events.push({ date: lastBw.date, icon: 'scale', text: `Peso registrado (${lastBw.weight} kg${tag})` });
     }
     if (activeMeso) events.push({ date: activeMeso.meso.startDate, icon: 'calendar_month', text: `Empezó mesociclo #${activeMeso.meso.number}` });
-    return events
-      .filter(e => !isNaN(new Date(e.date).getTime()))
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-      .slice(0, 4);
+    return events.filter(e => !isNaN(new Date(e.date).getTime()));
   }, [checkins, athleteLogs, coachReports, bodyweightLogs, activeMeso]);
-
-  const saveNote = async () => {
-    setSavingNote(true);
-    try {
-      await saveAthleteStatusNote(athlete.email, noteDraft.trim());
-      queryClient.setQueryData(statusNoteKey, noteDraft.trim());
-      setEditingNote(false);
-    } finally {
-      setSavingNote(false);
-    }
-  };
 
   const latestWeight = bodyweightLogs.length > 0
     ? [...bodyweightLogs].sort((a, b) => b.date.localeCompare(a.date))[0].weight
@@ -230,10 +223,9 @@ export default function ClientFichaPanel({
 
   return (
     <div className="space-y-6">
-      {/* ── Estado actual (antes ClientOverviewCard, en la cabecera fija
-          del Hub) — KPIs, fase, y lo que ha cambiado últimamente. Lo
-          urgente (plan sin publicar, próxima revisión) se queda en
-          ClientAlertsBar, siempre visible; esto es lo descriptivo. */}
+      {/* ══ 1. ESTADO — cómo va. Lo que más se mira, así que va primero y sin
+             plegar. Lo urgente (plan sin publicar, próxima revisión) se queda
+             en ClientAlertsBar; esto es lo descriptivo. */}
       <div className="bg-gradient-to-br from-surface to-bg border border-accent/20 rounded-surface p-5 space-y-4">
         <div className="grid grid-cols-3 gap-2">
           <div className="bg-field border border-hairline rounded-field p-3">
@@ -292,67 +284,35 @@ export default function ClientFichaPanel({
           </div>
         </Collapsible>
 
-        <Collapsible
-          className="border-t border-hairline"
-          trigger={<p className="font-mono text-caption text-ink-2 uppercase tracking-wide">Nota del coach</p>}
-        >
-          <div className="flex items-start gap-3 pb-3">
-            <Icon name="sticky_note_2" size="l" filled className="text-accent" />
-            {editingNote ? (
-              <div className="flex-1 space-y-2">
-                <textarea
-                  value={noteDraft}
-                  onChange={e => setNoteDraft(e.target.value)}
-                  rows={2}
-                  autoFocus
-                  placeholder="¿Qué está haciendo ahora este cliente? (ej. semana 2 de definición, volviendo de lesión de hombro…)"
-                  className="w-full resize-none bg-surface border border-hairline focus:border-accent/50 rounded-control px-3 py-2 text-title-s text-ink placeholder-ink-2/50 outline-none"
-                />
-                <div className="flex gap-2">
-                  <Button size="s" onClick={saveNote} disabled={savingNote}>{savingNote ? 'Guardando…' : 'Guardar'}</Button>
-                  <Button variant="secondary" size="s" onClick={() => setEditingNote(false)} disabled={savingNote}>Cancelar</Button>
-                </div>
-              </div>
-            ) : (
-              <button onClick={() => { setNoteDraft(note); setEditingNote(true); }} className="flex-1 text-left group">
-                {note ? (
-                  <p className="text-body-s text-ink leading-relaxed">{note}</p>
-                ) : (
-                  <p className="text-body-s text-ink-2/60 italic">Añade una nota: qué está haciendo ahora este cliente…</p>
-                )}
-                <span className="text-caption font-mono uppercase text-ink-2/50 group-hover:text-accent transition-colors">Editar</span>
-              </button>
-            )}
-          </div>
-        </Collapsible>
-
-        <Collapsible
-          className="border-t border-hairline"
-          trigger={<p className="font-mono text-caption text-ink-2 uppercase tracking-wide flex items-center gap-1"><Icon name="history" size="s" className="text-accent" /> Últimos cambios</p>}
-        >
-          <div className="pb-3">
-            {recentChanges.length === 0 ? (
-              <p className="text-label text-ink-2/60 italic">Sin actividad registrada aún</p>
-            ) : (
-              <ul className="space-y-1">
-                {recentChanges.map((e, i) => (
-                  <li key={i} className="flex items-center gap-2 text-caption text-ink">
-                    <Icon name={e.icon} size="s" className="text-ink-2" />
-                    <span className="flex-1 truncate">{e.text}</span>
-                    <span className="font-mono text-caption text-ink-2/70 flex-shrink-0">{daysAgo(e.date)}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        </Collapsible>
       </div>
 
-      {/* ── Plan y objetivos ─────────────────────────────────────────── */}
+      {/* ══ 2. AHORA — qué sé de él y qué miro la semana que viene.
+             La nota libre del coach vive AQUÍ dentro y en ningún otro sitio:
+             el bloque de estado tenía otra («Nota del coach») que era la misma
+             cosa en otra colección. Ver la cabecera de DossierPanel. */}
+      <ZonaTitulo icon="edit_note">Ahora</ZonaTitulo>
+      <DossierPanel athleteEmail={athlete.email} athleteName={athlete.displayName} />
+
+      {/* ══ 3. HISTORIAL — qué ha pasado desde la última revisión.
+             Fusiona lo que antes eran dos listas sueltas: los hechos del
+             dossier («Qué se ha hecho») y la actividad del atleta («Últimos
+             cambios», que estaba plegada dentro del bloque de estado). */}
+      <ZonaTitulo icon="history">Historial</ZonaTitulo>
+      <HistorialFichaPanel
+        key={athlete.email}
+        athleteEmail={athlete.email}
+        actividad={actividadAtleta}
+      />
+
+      {/* ══ 4. QUIÉN ES — lo estático. Se consulta de vez en cuando: va al
+             final para no empujar hacia abajo lo que se mira cada semana. */}
+      <ZonaTitulo icon="person">Quién es</ZonaTitulo>
+
+      {/* ── Plan y metas ─────────────────────────────────────────────── */}
       <div className="bg-surface border border-hairline rounded-surface p-5 space-y-3">
         <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
           <span className="material-symbols-outlined text-accent text-title-s">event_note</span>
-          Plan
+          Plan y metas
         </h3>
         <div className="flex items-center gap-2 flex-wrap">
           <span className="font-mono text-caption text-ink-2 uppercase">Duración:</span>
