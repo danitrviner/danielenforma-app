@@ -60,3 +60,39 @@ describe('sembrarDiaDelPlan', () => {
     expect(sembrarDiaDelPlan(sinCupo, [], null, CUPO).budget).toEqual(CUPO);
   });
 });
+
+describe('sembrarDiaDelPlan — la dieta del coach solo siembra días sin registro', () => {
+  const programada: Diet = {
+    id: 'd_prog', athleteId: 'ana@x.com', name: 'Volumen — Día alto',
+    budget: CUPO,
+    meals: [{ id: 'p1', name: 'Comida', items: [{ category: 'HC', foodLabel: '60g arroz', quantity: 2 }] }],
+  };
+
+  it('un día sin registro se carga con la que el coach programó', () => {
+    const { meals, budget } = sembrarDiaDelPlan(null, [], null, null, programada);
+    expect(meals[0].items[0].foodLabel).toBe('60g arroz');
+    expect(budget).toEqual(CUPO);
+    // Copiadas, no las mismas: editar el día del atleta no puede tocar la
+    // dieta del coach (que además él no tiene permiso para escribir).
+    expect(meals[0].id).not.toBe('p1');
+  });
+
+  it('lo que el atleta esté trabajando MANDA sobre la programada de hoy', () => {
+    const suyo: DietCompletionLog = {
+      id: 'ana@x.com_2026-09-07', athleteId: 'ana@x.com', date: '2026-09-07', dietId: 'd_prueba',
+      doneItemIds: [],
+      meals: [{ id: 'x', name: 'Comida', items: [{ category: 'PROT', foodLabel: '150g merluza', quantity: 1 }] }],
+    };
+    expect(sembrarDiaDelPlan(suyo, [], null, CUPO, programada).meals[0].items[0].foodLabel)
+      .toBe('150g merluza');
+  });
+
+  // El día vaciado a propósito: `meals: []` es una respuesta, no un hueco.
+  it('un día vaciado a mano no se repinta con la del coach', () => {
+    const vaciado: DietCompletionLog = {
+      id: 'ana@x.com_2026-09-07', athleteId: 'ana@x.com', date: '2026-09-07', dietId: '',
+      doneItemIds: [], meals: [],
+    };
+    expect(sembrarDiaDelPlan(vaciado, [], null, CUPO, programada).meals).toEqual([]);
+  });
+});

@@ -118,13 +118,21 @@ export function sembrarDiaDelPlan(
   dietaPautada?: Diet | null,
 ): { meals: DietMeal[]; budget: Record<FoodCategory, number> } {
   const registradas = comidasDelDia(log, dietas);
-  const meals = registradas.length > 0
+  /* «Hay registro» incluye el día que el atleta vació a propósito: `meals: []`
+     es una respuesta, no la ausencia de una. Sin esta distinción, vaciar el día
+     y volver a entrar te lo repintaba con la dieta programada por el coach —
+     justo lo contrario de lo que acabas de hacer. Solo un día del que no hay
+     NADA escrito se siembra con la dieta del coach. */
+  const hayRegistro = !!log && (Array.isArray(log.meals) || registradas.length > 0);
+  const meals = hayRegistro
     ? registradas
     : (clonarComidas(dietaPautada) ?? estructuraDeDia(plantilla));
 
   const delDia = log ? cupoDelDia(log, dietas) : null;
   const tieneCupo = delDia && BUDGET_CATS.some(c => (delDia[c] ?? 0) > 0);
-  const budget = tieneCupo ? delDia : (cupoPautado ?? { HC: 0, PROT: 0, GRASA: 0, MIX_HC: 0, MIX_GRASA: 0 });
+  const budget = tieneCupo
+    ? delDia
+    : (cupoPautado ?? dietaPautada?.budget ?? { HC: 0, PROT: 0, GRASA: 0, MIX_HC: 0, MIX_GRASA: 0 });
 
   return { meals, budget };
 }
