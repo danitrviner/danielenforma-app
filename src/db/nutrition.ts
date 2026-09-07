@@ -474,19 +474,21 @@ export async function getDietCompletionLogsForAthlete(athleteId: string, desde?:
 export async function saveDietCompletionLog(data: Omit<DietCompletionLog, 'id'>): Promise<DietCompletionLog> {
   const docId = `${data.athleteId}_${data.date}`;
   const log: DietCompletionLog = { ...data, id: docId };
-  if (forceLocalOnly) {
-    saveLocalDietCompletionLogs([...getLocalDietCompletionLogs().filter(l => l.id !== docId), log]);
-    return log;
-  }
+  // El espejo local se escribe SIEMPRE y ANTES de la red. El día del atleta se
+  // registra en el móvil, a ratos y a veces sin cobertura: si la escritura
+  // remota se queda a medias porque cierra la app, lo que había puesto tiene
+  // que seguir ahí al volver. Antes solo se guardaba local DESPUÉS de que
+  // Firestore confirmara, así que ese caso se perdía entero y el día
+  // aparecía en blanco.
+  saveLocalDietCompletionLogs([...getLocalDietCompletionLogs().filter(l => l.id !== docId), log]);
+  if (forceLocalOnly) return log;
   try {
     await setDoc(doc(db, 'dietCompletionLogs', docId), stripUndefined(data));
-    saveLocalDietCompletionLogs([...getLocalDietCompletionLogs().filter(l => l.id !== docId), log]);
     return log;
   } catch (err) {
-    console.warn('saveDietCompletionLog Firestore failed, saving local:', err);
+    console.warn('saveDietCompletionLog Firestore failed, saved local:', err);
     setLocalBypassMode(true, err);
     if (esFalloDePermisos(err)) throw err;
-    saveLocalDietCompletionLogs([...getLocalDietCompletionLogs().filter(l => l.id !== docId), log]);
     return log;
   }
 }

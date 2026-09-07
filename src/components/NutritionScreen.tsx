@@ -1379,6 +1379,22 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
   const guardarYa = useCallback(() => { pendiente.current?.guardar(); }, []);
   useEffect(() => guardarYa, [guardarYa]);
 
+  /* Y también al irse de la app, que es lo que de verdad pasa aquí.
+     El atleta apunta el desayuno y se va: pulsa el botón de inicio, cambia de
+     app, bloquea el móvil. Nada de eso desmonta el componente, así que la
+     limpieza de arriba no corre y lo que quedara dentro de la pausa de 1,2 s
+     se perdía — el día volvía a aparecer en blanco. `visibilitychange` cubre
+     el navegador y la web dentro del binario; `pagehide` cubre el cierre. */
+  useEffect(() => {
+    const alOcultarse = () => { if (document.visibilityState === 'hidden') guardarYa(); };
+    document.addEventListener('visibilitychange', alOcultarse);
+    window.addEventListener('pagehide', guardarYa);
+    return () => {
+      document.removeEventListener('visibilitychange', alOcultarse);
+      window.removeEventListener('pagehide', guardarYa);
+    };
+  }, [guardarYa]);
+
   const irAlDia = (fecha: string) => {
     guardarYa();
     setViewDate(fecha);
