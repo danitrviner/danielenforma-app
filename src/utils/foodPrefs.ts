@@ -1,9 +1,12 @@
 import type { Recipe, DietType } from '../types';
-import { violatesRestrictions } from './dietaryRestrictions';
+import { violatesRestrictions, violatesHealthConditions } from './dietaryRestrictions';
+import { normalizarTexto } from './busqueda';
 
-export function normalizeStr(s: string): string {
-  return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
-}
+/** Alias histórico de `normalizarTexto` (utils/busqueda). Había tres copias del
+ *  mismo criterio y dos se dejaban los espacios de sobra sin colapsar, que es
+ *  justo lo que rompe con los nombres del recetario importado (" Fideos de
+ *  arroz…", "…y tomate\n"). */
+export const normalizeStr = normalizarTexto;
 
 export function ingredientMatch(recipe: Recipe, food: string): boolean {
   const nFood = normalizeStr(food);
@@ -20,7 +23,13 @@ export function classifyRecipe(
   liked: string[],
   disliked: string[],
   allergies: string[],
+  // Las condiciones de salud (celiaquía, intolerancias…) se clasifican como
+  // 'allergy' a propósito: para quien mira la pantalla son lo mismo —una receta
+  // que no puede comerse— y así todos los sitios que ya escondían o marcaban
+  // los alérgenos hacen lo correcto sin cambiar su lógica.
+  conditions: readonly number[] = [],
 ): RecipeClass {
+  if (violatesHealthConditions(recipe, conditions)) return 'allergy';
   if (allergies.some(f => ingredientMatch(recipe, f))) return 'allergy';
   if (liked.some(f => ingredientMatch(recipe, f))) return 'featured';
   if (disliked.some(f => ingredientMatch(recipe, f))) return 'disliked';

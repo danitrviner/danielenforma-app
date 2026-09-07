@@ -57,6 +57,7 @@ const ClientSetupPanel = lazy(() => import('./ClientSetupPanel'));
 import PendingTray from './PendingTray';
 import ClientAlertsBar from './ClientAlertsBar';
 import { Avatar, Badge, Tabs, Skeleton, Sheet, SearchField, ListRow, Icon } from './ui';
+import { coincideBusqueda } from '../utils/busqueda';
 
 export type HubTab =
   | 'setup' | 'revisiones'
@@ -145,7 +146,7 @@ export default function ClientHub({
     const q = switcherSearch.trim().toLowerCase();
     return atletasActivos(allProfiles)
       .filter(p => p.role === 'client' && p.email !== athlete.email)
-      .filter(p => !q || p.displayName.toLowerCase().includes(q) || p.email.toLowerCase().includes(q))
+      .filter(p => coincideBusqueda(p.displayName, q) || coincideBusqueda(p.email, q))
       .sort((a, b) => a.displayName.localeCompare(b.displayName));
   }, [allProfiles, switcherSearch, athlete.email]);
 

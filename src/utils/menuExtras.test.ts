@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   bestScaleFit, fillComplements, generateDay,
   findSwapAlternatives, totalConExtras, MENU_SCALES, GeneratorPrefs,
+  sinExtrasPorLaSemana, desviacionDelDia,
 } from './menuEngine';
 import { complementosDisponibles, isSimpleComplement } from './menuComplements';
 import { buildShoppingList } from './menuShoppingList';
@@ -167,9 +168,25 @@ describe('el día completo: la receta cubre, el comodín remata', () => {
     }
   });
 
-  it('los extras se reparten entre comidas, no se apilan todos en la comida', () => {
-    const conExtras = dia().meals.filter(m => m.complements.length > 0);
-    expect(conExtras.length).toBeGreaterThan(1);
+  // Antes esto comprobaba que los extras salieran repartidos entre varias
+  // comidas. Con el suelo de media ración (07-09-2026) este día ya no lleva
+  // ninguno: lo que le faltaba a cada comida eran cuartos de intercambio, y
+  // "0,25 de plátano" no es un consejo que nadie pueda seguir. El día sigue
+  // cuadrando dentro de tolerancia sin ellos —lo comprueba el primer test de
+  // este bloque—, que es justo el argumento de Dani: lo que sobra o falta por
+  // debajo de media ración lo absorbe la semana.
+  it('no cuelga extras de menos de media ración', () => {
+    for (const m of dia().meals) {
+      expect(m.complements.every(c => c.quantity >= 0.5)).toBe(true);
+    }
+  });
+
+  it('cuando el hueco SÍ da para extras, se reparten entre comidas', () => {
+    // Mismo día con un cupo bastante mayor que lo que los platos pueden cubrir:
+    // ahí el comodín tiene trabajo de verdad.
+    const conHueco: Diet = { ...dieta, budget: { HC: 24, PROT: 13, GRASA: 9, MIX_HC: 0, MIX_GRASA: 0 } };
+    const d = generateDay({ day: 'mon', diet: conHueco, slots, pools, foods: BANCO, prefs, usedIds: new Set() });
+    expect(d.meals.filter(m => m.complements.length > 0).length).toBeGreaterThan(1);
   });
 
   it('generar dos veces da lo mismo (antes los extras salían al azar)', () => {
@@ -291,5 +308,76 @@ describe('lista de la compra con recetas del índice', () => {
       ingredientsText: [{ name: 'Arroz', quantity: 60 }] } as unknown as Recipe;
     const [item] = buildShoppingList([dia], new Map([['r1', entera]]));
     expect(item.grams).toBe(120); // 60 g × ración 2
+  });
+});
+
+// Segunda mitad del caso de Javier: aunque el generador ya no le pone una receta
+// con seitán, el hueco del día se cerraba con extras del banco de intercambios,
+// que no tiene el campo `restrictions` y donde hay pan, pasta y hasta seitán.
+describe('extras y condiciones de salud', () => {
+  const CELIACO = [66];
+
+  it('no le ofrece pan a un celíaco', () => {
+    const catalogo = complementosDisponibles(BANCO, 'OMNIVORO', undefined, CELIACO).map(f => f.id);
+    expect(catalogo).not.toContain('pan');
+    expect(catalogo).toContain('manzana');
+  });
+
+  it('descarta la etiqueta entera cuando mezcla apto y no apto', () => {
+    // "30g arroz, pasta, couscous o quinoa" es un solo alimento del banco.
+    expect(complementosDisponibles(BANCO, 'OMNIVORO', undefined, CELIACO).map(f => f.id)).not.toContain('arroz');
+  });
+
+  it('tampoco lo cuela como relleno automático del día', () => {
+    const gap: BudgetVec = { HC: 2, PROT: 0, GRASA: 0 };
+    // Banco donde el único HC "de abrir y comer" es el pan: sin el filtro, el
+    // relleno automático solo puede echar mano de él.
+    const soloPan = BANCO.filter(f => f.id !== 'manzana');
+    expect(fillComplements(gap, soloPan, 'OMNIVORO').some(c => /pan/i.test(c.foodLabel))).toBe(true);
+    expect(fillComplements(gap, soloPan, 'OMNIVORO', CELIACO)).toEqual([]);
+    // Y con fruta en el banco, cierra el hueco con ella en vez de con pan.
+    const conFruta = fillComplements(gap, BANCO, 'OMNIVORO', CELIACO);
+    expect(conFruta.length).toBeGreaterThan(0);
+    expect(conFruta.every(c => !/pan/i.test(c.foodLabel))).toBe(true);
+  });
+
+  it('la intolerancia total a la lactosa deja fuera el yogur', () => {
+    expect(complementosDisponibles(BANCO, 'OMNIVORO', undefined, [87]).map(f => f.id)).not.toContain('yogur');
+  });
+
+  it('sin condiciones no cambia nada', () => {
+    expect(complementosDisponibles(BANCO, 'OMNIVORO', undefined, [])).toHaveLength(BANCO.length);
+    expect(complementosDisponibles(BANCO, 'OMNIVORO')).toHaveLength(BANCO.length);
+  });
+});
+
+// «Si el sumatorio de la semana sale en positivo, no pongas extras: la semana
+// ya está en positivo. Aunque un día se quede con menos de lo que debe, la
+// semana va a estar bien puesta» (Dani, 07-09-2026).
+describe('los extras miran la semana, no solo el día', () => {
+  it('con la semana ya sobrada, el día sale sin acompañamientos', () => {
+    expect(sinExtrasPorLaSemana(2)).toBe(true);
+    expect(sinExtrasPorLaSemana(0.75)).toBe(true);
+  });
+
+  it('con la semana corta o en su sitio, los extras siguen puestos', () => {
+    expect(sinExtrasPorLaSemana(-3)).toBe(false);
+    expect(sinExtrasPorLaSemana(0)).toBe(false);
+  });
+
+  it('un sobrante de redondeo no apaga los extras de toda la semana', () => {
+    expect(sinExtrasPorLaSemana(0.25)).toBe(false);
+    expect(sinExtrasPorLaSemana(0.5)).toBe(false);
+  });
+
+  it('la desviación de un día es lo puesto menos su objetivo', () => {
+    const dia: MenuDay = {
+      day: 'mon', dietId: 'd', target: { HC: 4, PROT: 2, GRASA: 1 },
+      meals: [{
+        id: 'm1', slot: 3, name: 'Comida', recipeId: 'r', recipeName: 'R', scale: 1,
+        exch: { HC: 5, PROT: 2, GRASA: 1 }, kcal: 0, complements: [],
+      }],
+    };
+    expect(desviacionDelDia(dia)).toBe(1);      // un intercambio de más
   });
 });

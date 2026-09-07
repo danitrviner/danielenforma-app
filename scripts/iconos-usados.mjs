@@ -102,8 +102,23 @@ function* ficheros(dir) {
 const usados = new Set();
 const inventados = new Map(); // nombre → fichero donde se nombró como icono
 
+/* Los COMENTARIOS no cuentan. El escaneo de literales es a propósito laxo
+   —cualquier cadena que parezca un nombre de icono— y eso convertía en "icono
+   usado" cualquier palabra en snake_case escrita entre comillas o backticks
+   dentro de una explicación: `note` en DossierPanel, `sort` o `conditions` en
+   Nutrición. Resultado: `npm run lint` fallaba pidiendo empaquetar iconos que
+   nadie pinta, por haber escrito un comentario. Quitarlos antes de mirar es
+   aproximado (una URL con // dentro de una cadena se recorta), pero para
+   CONTAR iconos no hay riesgo: como mucho deja de ver uno que igualmente
+   tendría que estar en un `<Icon>` de verdad, y esos se leen aparte. */
+function sinComentarios(fuente) {
+  return fuente
+    .replace(/\/\*[\s\S]*?\*\//g, ' ')
+    .replace(/(^|[^:])\/\/[^\n]*/g, '$1');
+}
+
 for (const ruta of ficheros(RAÍZ)) {
-  const fuente = readFileSync(ruta, 'utf8');
+  const fuente = sinComentarios(readFileSync(ruta, 'utf8'));
 
   for (const [, nombre] of fuente.matchAll(LITERAL)) {
     if (catálogo.has(nombre)) usados.add(nombre);

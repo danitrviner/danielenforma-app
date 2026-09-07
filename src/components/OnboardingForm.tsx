@@ -10,6 +10,7 @@ import { saveOnboarding, updateOnboarding } from '../dbService';
 import { ACTIVITY_FACTORS, calcAge, computeAuto } from '../utils/energyCalc';
 import type { AutoCalc } from '../utils/energyCalc';
 import { DISH_TYPES } from '../utils/dishTypes';
+import { HEALTH_CONDITIONS, type DietaryRestrictionCode } from '../utils/dietaryRestrictions';
 import { roundQuarter } from '../utils/exchangeHelpers';
 import { Icon, Button } from './ui';
 
@@ -127,6 +128,7 @@ interface FormState {
   waistCm:                number | '';
   hipCm:                  number | '';
   allergies:        string[];
+  healthConditions: DietaryRestrictionCode[];
   mealCount:        ConteoComidas;
   meals:            OnboardingMeal[];
   cookingMaxTime:   number;
@@ -201,6 +203,7 @@ function fromOnboarding(d: OnboardingData): FormState {
     waistCm:                d.waistCm ?? '',
     hipCm:                  d.hipCm ?? '',
     allergies:        d.allergies,
+    healthConditions: d.healthConditions ?? [],
     mealCount:        count,
     meals:            d.meals ?? MEAL_PRESETS[count].map(m => ({ ...m })),
     cookingMaxTime:   d.cookingMaxTime ?? 45,
@@ -274,6 +277,7 @@ const DEFAULTS: FormState = {
   waistCm:                '',
   hipCm:                  '',
   allergies:        [],
+  healthConditions: [],
   mealCount:        4,
   meals:            MEAL_PRESETS[4].map(m => ({ ...m })),
   cookingMaxTime:   45,
@@ -664,6 +668,7 @@ export default function OnboardingForm({
       likedFoods:         initialData?.likedFoods    ?? [],
       dislikedFoods:      initialData?.dislikedFoods ?? [],
       allergies:          form.allergies,
+      healthConditions:   form.healthConditions,
       mealCount:          form.mealCount,
       meals:              form.meals,
       cookingMaxTime:     form.cookingMaxTime,
@@ -1069,9 +1074,48 @@ export default function OnboardingForm({
           </div>
         </div>
 
+        {/* Condiciones de salud — casillas, no texto libre.
+            El texto libre de abajo se compara contra el NOMBRE de cada
+            ingrediente, así que escribir "gluten" no descartaba una receta con
+            seitán. Estas casillas descartan la receta entera por su código de
+            recetario. */}
+        <div>
+          <p id="ficha-condiciones-salud" className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-1">Condiciones de salud</p>
+          <p className="text-body-s text-ink-3 mb-2">
+            Excluyen la receta entera del generador y del recetario, no solo un ingrediente.
+          </p>
+          <div role="group" aria-labelledby="ficha-condiciones-salud" className="flex flex-wrap gap-2">
+            {HEALTH_CONDITIONS.map(c => {
+              const on = form.healthConditions.includes(c.code);
+              return (
+                <button key={c.code} type="button"
+                  aria-pressed={on}
+                  onClick={() => set('healthConditions', on
+                    ? form.healthConditions.filter(x => x !== c.code)
+                    : [...form.healthConditions, c.code])}
+                  className={`px-3 py-2 rounded-control border font-sans text-body-s transition-all active:scale-95 ${
+                    on ? 'bg-accent/15 border-accent text-white' : 'bg-surface border-hairline text-ink-2 hover:border-strong'
+                  }`}>
+                  {c.label}
+                </button>
+              );
+            })}
+          </div>
+          {/* La aclaración, visible. Estaba solo en el `title` del botón: en
+              tablet no hay hover y hay lectores de pantalla que no lo anuncian,
+              justo donde importa saber que la fructosa deja casi sin recetas. */}
+          {HEALTH_CONDITIONS.some(c => form.healthConditions.includes(c.code) && c.help) && (
+            <ul className="mt-2 space-y-1">
+              {HEALTH_CONDITIONS.filter(c => form.healthConditions.includes(c.code) && c.help).map(c => (
+                <li key={c.code} className="font-sans text-caption text-ink-3">{c.label}: {c.help}</li>
+              ))}
+            </ul>
+          )}
+        </div>
+
         {/* Allergies */}
-        <TagInput label="Alergias / intolerancias" placeholder="p.ej. lactosa, gluten, frutos secos…"
-          helpText="Pulsa Enter o coma para añadir. Excluyen recetas del generador."
+        <TagInput label="Otras alergias / intolerancias" placeholder="p.ej. frutos secos, marisco…"
+          helpText="Pulsa Enter o coma para añadir. Excluyen las recetas que lleven ese ingrediente."
           tags={form.allergies} onChange={v => set('allergies', v)} />
 
         {(form.dietType === 'vegano' || form.dietType === 'vegetariano') && (

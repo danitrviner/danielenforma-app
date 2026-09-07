@@ -9,6 +9,7 @@ import {
 } from '../../dbService';
 import { useToast } from '../../hooks/useToast';
 import { ORDEN_CATEGORIAS } from './useCatalogoSwipe';
+import { coincideBusqueda } from '../../utils/busqueda';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Catálogo administrable — pantalla 09 del handoff.
@@ -58,7 +59,7 @@ export default function AdminMaquinasTab() {
     const f = busqueda.trim().toLowerCase();
     return catalogo
       .filter(m => (filtro === 'pendientes' ? !m.publicadoEn : filtro === 'todas' ? true : String(m.marca) === filtro))
-      .filter(m => !f || `${m.nombreMostrado} ${m.nombreOriginal}`.toLowerCase().includes(f));
+      .filter(m => coincideBusqueda(`${m.nombreMostrado} ${m.nombreOriginal}`, f));
   }, [catalogo, filtro, busqueda]);
 
   const publicarTodoPendiente = async () => {

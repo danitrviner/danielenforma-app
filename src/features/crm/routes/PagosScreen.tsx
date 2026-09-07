@@ -10,6 +10,7 @@ import SuscripcionModal from '../components/SuscripcionModal';
 import PagoModal from '../components/PagoModal';
 import type { EstadoPago } from '../types';
 import { Button, Icon } from '../../../components/ui';
+import { coincideBusqueda } from '../../../utils/busqueda';
 
 // Pantalla global /crm/pagos: vista de negocio a través de TODOS los clientes,
 // a diferencia de PagosTab/RenovacionesTab que están scopeados a uno. El
@@ -41,7 +42,7 @@ export default function PagosScreen({ coachEmail }: { coachEmail: string }) {
     return pagos.filter(p => {
       if (filtro !== 'todos' && p.estado !== filtro) return false;
       if (!q) return true;
-      return p.clientNombre.toLowerCase().includes(q) || p.concepto.toLowerCase().includes(q);
+      return coincideBusqueda(p.clientNombre, q) || coincideBusqueda(p.concepto, q);
     });
   }, [pagos, filtro, busqueda]);
 

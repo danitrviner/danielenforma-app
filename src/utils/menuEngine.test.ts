@@ -53,6 +53,29 @@ describe('rankCandidates', () => {
     expect(ranked.map(c => c.recipe.id)).toEqual(['safe']);
   });
 
+  // El caso de Javier (07-09-2026): celíaco, y el generador le puso seitán. El
+  // filtro de alergias comparaba "gluten" contra el nombre de los ingredientes
+  // y "Seitán" no lo contiene, así que la receta pasaba.
+  it('no ofrece una receta con seitán a un atleta celíaco', () => {
+    const seitan = recipe({ id: 'seitan', exchanges: { HC: 2, PROT: 2, GRASA: 1 }, restrictions: [66, 89], ingredientsText: [{ name: 'Seitán', quantity: 100 }] });
+    const arroz  = recipe({ id: 'arroz',  exchanges: { HC: 2, PROT: 2, GRASA: 1 }, restrictions: [55], ingredientsText: [{ name: 'Arroz', quantity: 100 }] });
+    const target: BudgetVec = { HC: 2, PROT: 2, GRASA: 1 };
+    const prefs: GeneratorPrefs = { ...basePrefs, allergies: ['gluten'], conditions: [66] };
+
+    const ranked = rankCandidates([seitan, arroz], target, prefs, new Set());
+
+    expect(ranked.map(c => c.recipe.id)).toEqual(['arroz']);
+  });
+
+  it('tampoco ofrece las recetas sin el dato de restricciones a quien tiene una condición', () => {
+    const sinDato = recipe({ id: 'sinDato', exchanges: { HC: 2, PROT: 2, GRASA: 1 }, ingredientsText: [{ name: 'Arroz', quantity: 100 }] });
+    const target: BudgetVec = { HC: 2, PROT: 2, GRASA: 1 };
+
+    expect(rankCandidates([sinDato], target, { ...basePrefs, conditions: [66] }, new Set())).toEqual([]);
+    // Sin condiciones, esa misma receta sigue estando disponible.
+    expect(rankCandidates([sinDato], target, basePrefs, new Set()).map(c => c.recipe.id)).toEqual(['sinDato']);
+  });
+
   it('excludes recipes with meat/fish/animal ingredients for a vegan athlete', () => {
     const veganOk = recipe({ id: 'v1', exchanges: { HC: 2, PROT: 2, GRASA: 1 }, ingredientsText: [{ name: 'Lentejas', quantity: 100 }] });
     const notVegan = recipe({ id: 'v2', exchanges: { HC: 2, PROT: 2, GRASA: 1 }, ingredientsText: [{ name: 'Pechuga de pollo', quantity: 150 }] });

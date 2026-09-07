@@ -9,6 +9,7 @@ import { useToast } from '../hooks/useToast';
 import { Skeleton } from './ui';
 import { Icon, Button, EmptyState, Dialog, Sheet } from './ui';
 import { pulsable } from '../utils/a11y';
+import { coincideBusqueda } from '../utils/busqueda';
 
 interface WorkoutsScreenProps {
   coachId: string;
@@ -171,7 +172,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
   };
 
   const pickerFiltered = allExercises.filter(ex => {
-    if (pickerSearch && !ex.name.toLowerCase().includes(pickerSearch.toLowerCase())) return false;
+    if (!coincideBusqueda(ex.name, pickerSearch)) return false;
     if (pickerFocus && ex.primaryFocus !== pickerFocus) return false;
     if (pickerType && ex.type !== pickerType) return false;
     // exclude already added

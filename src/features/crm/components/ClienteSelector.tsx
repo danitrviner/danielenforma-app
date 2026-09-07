@@ -3,6 +3,7 @@ import { useClientes } from '../hooks/useClientes';
 import { normalizarDni } from '../lib/identidad';
 import { inputClass } from './Modal';
 import type { Cliente } from '../types';
+import { coincideBusqueda } from '../../../utils/busqueda';
 
 interface Props {
   value: Cliente | null;
@@ -26,8 +27,8 @@ export default function ClienteSelector({ value, onChange }: Props) {
     const qDni = normalizarDni(busqueda);
     return clientes
       .filter(c =>
-        c.nombre.toLowerCase().includes(q) ||
-        (c.email ?? '').toLowerCase().includes(q) ||
+        coincideBusqueda(c.nombre, q) ||
+        coincideBusqueda(c.email ?? '', q) ||
         (qDni.length >= 3 && (c.dni ?? '').includes(qDni))
       )
       .slice(0, 8);

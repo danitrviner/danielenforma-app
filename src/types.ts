@@ -1,4 +1,5 @@
 import type { AceptacionesLegales } from './legal/aceptacion';
+import type { DietaryRestrictionCode } from './utils/dietaryRestrictions';
 
 // ─── NOTIFICATIONS ────────────────────────────────────────────────────────────
 
@@ -869,6 +870,14 @@ export interface OnboardingData {
   likedFoods:         string[];
   dislikedFoods:      string[];
   allergies:          string[];
+  /* Condiciones de salud que hacen que una receta entera no sea apta (celiaquía,
+     intolerancias, embarazo…). Son los códigos `forbiddenFor` del recetario, ver
+     `utils/dietaryRestrictions.ts`. Antes esto se contestaba dentro de
+     `allergies` como texto libre y no filtraba NADA: el filtro de alergias busca
+     la palabra dentro del nombre de los ingredientes, y "gluten" no aparece en
+     "Seitán". Los perfiles antiguos no lo tienen; para ellos se deduce del texto
+     de `allergies` con `conditionCodesFromText`. */
+  healthConditions?:  DietaryRestrictionCode[];
   // ── Comidas ───────────────────────────────────────────────────────────────
   mealCount?:         number;         // 3 | 4 | 5 | 6 (ver CONTEOS_COMIDAS)
   meals?:             OnboardingMeal[];
@@ -951,6 +960,11 @@ export interface DietItem {
   quantity: number;   // multiples of 0.25 (e.g. 0.25, 0.5, 1, 1.25)
   grams?: number;     // computed: parsed base weight × quantity
   originRecipeId?: string; // set when the item was added via "Usar receta" — scopes "Cambiar comida"
+  /** Puesto aquí automáticamente al marcar una comida del menú semanal como
+   *  hecha: `${día}_${idComidaDelMenu}`. Es lo que evita contar dos veces si se
+   *  marca y desmarca, y lo que permite quitar exactamente lo que se puso sin
+   *  tocar lo que el atleta apuntó a mano. Ver utils/registroDesdeElMenu.ts. */
+  origenMenu?: string;
 }
 
 export interface DietMeal {
@@ -1025,6 +1039,11 @@ export interface DietCompletionLog {
   /** Cupo de intercambios pautado ese día. Igual que `meals`: se congela para
    *  que el histórico no se mueva si luego le cambias el cupo al atleta. */
   budget?: Record<FoodCategory, number>;
+  /** Cuándo se guardó por última vez (ISO). Lo pone `saveDietCompletionLog` y
+   *  sirve para decidir, al reabrir la app, si manda el día que hay en el móvil
+   *  o el del servidor — ver `db/registroDelDia.ts`. Los días anteriores a
+   *  09-2026 no lo traen. */
+  updatedAt?: string;
 }
 
 export interface NutritionPhase {
@@ -1431,6 +1450,8 @@ export interface MenuCompletionLog {
   date: string;        // YYYY-MM-DD
   menuId: string;
   doneMealKeys: string[];
+  /** Igual que en `DietCompletionLog`: ver `db/registroDelDia.ts`. */
+  updatedAt?: string;
 }
 
 // ─── MESOCYCLE ────────────────────────────────────────────────────────────────

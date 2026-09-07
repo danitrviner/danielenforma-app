@@ -7,6 +7,7 @@ import { SYSTEM_FOODS } from '../nutricion_seed_en_forma';
 import { useToast } from '../hooks/useToast';
 import { Skeleton } from './ui';
 import { EmptyState, Dialog, Button, Select } from './ui';
+import { coincideBusqueda } from '../utils/busqueda';
 
 const SYSTEM_LABELS = new Set(SYSTEM_FOODS.map(f => f.label));
 
@@ -69,7 +70,7 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
   const filtered = items.filter(f => {
     if (f.mode !== filterMode) return false;
     if (filterCat !== 'all' && f.category !== filterCat) return false;
-    if (searchDebounced && !f.label.toLowerCase().includes(searchDebounced.toLowerCase())) return false;
+    if (!coincideBusqueda(f.label, searchDebounced)) return false;
     return true;
   });
 

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Exercise, MuscleGroup, MUSCLE_ORDER, MUSCLE_LABELS } from '../types';
 import { Sheet, Icon, EmptyState, Chip } from './ui';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
+import { coincideBusqueda } from '../utils/busqueda';
 
 /* T11.a (18-08). Antes solo se podía "cambiar" un ejercicio desde la vista
    previa del generador (un <select> con la biblioteca entera, sin filtro).
@@ -50,7 +51,7 @@ export default function ExercisePickerSheet({
   const termDebounced = searchDebounced.trim().toLowerCase();
   const filtered = exercises.filter(ex => {
     if (!termDebounced && group !== 'all' && ex.muscleGroup !== group) return false;
-    if (termDebounced && !ex.name.toLowerCase().includes(termDebounced)) return false;
+    if (!coincideBusqueda(ex.name, termDebounced)) return false;
     return true;
   });
 

@@ -8,6 +8,7 @@ import { superaElTiempo } from './tiempoDeReceta';
 import { quotaSplit } from './quotaSplit';
 import { slotPercents } from './slotWeights';
 import { ingredientMatch, normalizeStr, violatesDietType } from './foodPrefs';
+import { violatesHealthConditions } from './dietaryRestrictions';
 import { fitScore } from './recipeMatch';
 import { exchangeToKcal } from './nutritionConstants';
 import { simpleComplementsFor, encajaEnCategoria } from './menuComplements';
@@ -62,6 +63,14 @@ const MIN_RACION_EXTRA = 0.5;
 /** Tope de raciones de UN mismo complemento — más que esto deja de ser realista.
  *  Al llegar aquí se pasa al siguiente alimento (ver `fillComplements`). */
 const MAX_RACIONES_POR_COMPLEMENTO = 2;
+/** Y el suelo: por debajo de media ración, no se pone nada.
+ *
+ *  "0,25 de plátano" no es un consejo, es ruido: nadie pesa un cuarto de
+ *  plátano, y el atleta que lo lee o lo ignora o se queda con la sensación de
+ *  que la app le pide cosas absurdas (Dani, 07-09-2026). Lo que queda por
+ *  debajo de este suelo se deja sin cerrar a propósito: cabe de sobra en la
+ *  tolerancia del día y, sobre todo, lo compensa el balance de la semana. */
+const MIN_COMPLEMENTO = 0.5;
 /** Unidad del sistema de intercambios: todo se redondea a múltiplos de 0,25. */
 const PASO_INTERCAMBIO = 0.25;
 /** Suelo y techo del peso por macro (ver `pesosPorCategoria`). */
@@ -79,6 +88,10 @@ export interface MealSlotSpec {
 
 export interface GeneratorPrefs {
   allergies: string[];
+  /** Filtro DURO por condición de salud (celiaquía, intolerancias, embarazo…).
+   *  Códigos del recetario, ver `utils/dietaryRestrictions.ts`. Una receta que
+   *  no lleva el dato tampoco sale: ver `violatesHealthConditions`. */
+  conditions?: number[];
   disliked: string[];
   liked: string[];
   dietType?: DietType;
@@ -331,7 +344,7 @@ export interface RankOptions {
   usedDishTypes?: ReadonlyMap<DishType, number>;
 }
 
-// Filtros duros (nunca salen): alergias, incompatibilidad con el tipo de dieta,
+// Filtros duros (nunca salen): alergias, condiciones de salud, incompatibilidad con el tipo de dieta,
 // tiempo de cocina por encima del máximo, recetas marcadas "no me gusta", tipos
 // de plato excluidos y —desde 24-08— los ALIMENTOS marcados "no me gusta" en
 // Preferencias alimentarias, con reserva si dejaran la franja sin recetas.
@@ -356,6 +369,7 @@ export function rankCandidates(
     !disliked.has(r.id) &&
     !excludedDish.has(dishType(r)) &&
     !prefs.allergies.some(f => ingredientMatch(r, f)) &&
+    !violatesHealthConditions(r, prefs.conditions) &&
     !violatesDietType(r, prefs.dietType) &&
     !superaElTiempo(r, prefs.cookingMaxTime),
   );
@@ -435,13 +449,19 @@ export function rankCandidates(
 // Closes positive shortfalls only (never trims an overshoot) with simple,
 // ready-to-eat foods — never invents an unrealistic recipe scale to chase the
 // last 0.25 of a category. Capped at 2 exchanges of a single complement.
-export function fillComplements(gap: BudgetVec, foods: MealItem[], mode: DietMode): MenuComplement[] {
-  const simple = simpleComplementsFor(foods).filter(f => f.mode === mode);
+export function fillComplements(
+  gap: BudgetVec, foods: MealItem[], mode: DietMode, conditions?: readonly number[],
+): MenuComplement[] {
+  // Los extras salen del banco de intercambios, no del recetario, así que el
+  // filtro por condición es el de `menuComplements` (por nombre) y no el de
+  // códigos. Sin esto, al celíaco al que ya no se le pone seitán se le seguía
+  // colgando "40g de pan" al lado del plato.
+  const simple = simpleComplementsFor(foods, conditions).filter(f => f.mode === mode);
   const cats: (keyof BudgetVec)[] = ['HC', 'PROT', 'GRASA'];
   const result: MenuComplement[] = [];
   for (const cat of cats) {
     let need = gap[cat];
-    if (need < PASO_INTERCAMBIO) continue;
+    if (need < MIN_COMPLEMENTO) continue;
     const candidates = simple.filter(f => encajaEnCategoria(f, cat));
     if (candidates.length === 0) continue;
     // Antes se ponía UN solo complemento tapado a 2 intercambios: un hueco de 4
@@ -457,7 +477,7 @@ export function fillComplements(gap: BudgetVec, foods: MealItem[], mode: DietMod
     // todo, ya no importa tanto acertar: el atleta puede cambiarlo (ver
     // `complementosDisponibles`, que le abre el banco entero).
     const usados = new Set<string>();
-    for (let n = 0; n < MAX_COMPLEMENTOS_POR_CATEGORIA && need >= PASO_INTERCAMBIO; n++) {
+    for (let n = 0; n < MAX_COMPLEMENTOS_POR_CATEGORIA && need >= MIN_COMPLEMENTO; n++) {
       // `frescos` ENCOGE en cada vuelta (se le quita el que se acaba de usar),
       // así que indexarla con el contador de la vuelta se saltaba alimentos: en
       // la segunda vuelta n=1 sobre una lista ya sin el primero apuntaba al
@@ -476,13 +496,39 @@ export function fillComplements(gap: BudgetVec, foods: MealItem[], mode: DietMod
       // por debajo de su presupuesto sin que nada lo dijera.
       const aPaso = (v: number) => Math.floor(v / PASO_INTERCAMBIO) * PASO_INTERCAMBIO;
       const qty = Math.min(MAX_RACIONES_POR_COMPLEMENTO, aPaso(need));
-      if (qty < PASO_INTERCAMBIO) break;
+      if (qty < MIN_COMPLEMENTO) break;
       usados.add(food.label);
       result.push({ foodLabel: food.label, category: food.category, quantity: qty });
       need = round2(need - qty);
     }
   }
   return result;
+}
+
+/**
+ * ¿Hay que dejar el día sin acompañamientos porque la semana ya va sobrada?
+ *
+ * Un extra existe para cerrar lo que le falta al día. Pero el presupuesto que
+ * de verdad importa es el de la SEMANA: si los días ya generados suman de más,
+ * añadirle comida a este día empeora justo lo que se quiere corregir. Y al
+ * revés, un día que se quede algo corto no es un problema si la semana cuadra
+ * (Dani, 07-09-2026: "aunque un día se quede con menos de lo que debe, la
+ * semana va a estar bien puesta").
+ *
+ * El margen es medio intercambio —el mismo suelo que `MIN_COMPLEMENTO`— para
+ * que un sobrante de redondeo no apague los extras de toda la semana.
+ */
+export function sinExtrasPorLaSemana(balanceSemana: number): boolean {
+  return balanceSemana > MIN_COMPLEMENTO;
+}
+
+/** Lo que un día generado lleva de más (+) o de menos (−) respecto a su cupo,
+ *  en intercambios. Es el sumatorio que alimenta `sinExtrasPorLaSemana`. */
+export function desviacionDelDia(dia: MenuDay): number {
+  const puesto = dayTotals(dia);
+  return round2(
+    (puesto.HC - dia.target.HC) + (puesto.PROT - dia.target.PROT) + (puesto.GRASA - dia.target.GRASA),
+  );
 }
 
 /** Índice id → receta a partir de los pools, para que `finalizeDay` pueda mirar
@@ -644,6 +690,13 @@ function finalizeDay(
   // Para saber qué ingredientes lleva cada plato y poder subirle la ración; la
   // comida solo guarda el id y el nombre de la receta.
   recetasPorId?: Map<string, Recipe>,
+  // Condiciones de salud del atleta. Los extras se eligen aquí dentro, así que
+  // sin esto el día terminaba de cuadrarse con comida que el atleta no puede
+  // comer, por muy bien filtrados que estuvieran los platos.
+  conditions?: readonly number[],
+  // Lo que llevan de más (positivo) o de menos (negativo) los días de la semana
+  // ya generados, en intercambios. Ver `sinExtrasPorLaSemana`.
+  balanceSemana = 0,
 ): MenuDay {
   // Cuánto falta para el DÍA (nunca negativo: si los platos se pasaron, no hay
   // extras). Es el día y no cada comida por su cuenta lo que manda: los platos
@@ -678,7 +731,9 @@ function finalizeDay(
     const receta = recetasPorId?.get(meal.recipeId) ?? null;
     const { raciones, restante } = subirRaciones(receta, reparto[i], foods, mode);
     if (raciones.length > 0) meal.racionesExtra = raciones;
-    meal.complements.push(...acotarAcompanamientos(fillComplements(restante, foods, mode)));
+    if (!sinExtrasPorLaSemana(balanceSemana)) {
+      meal.complements.push(...acotarAcompanamientos(fillComplements(restante, foods, mode, conditions)));
+    }
   });
   for (const meal of meals) meal.kcal = mealKcal(meal);
   return { day, dietId: diet.id, dietName: diet.name, target, meals };
@@ -694,6 +749,10 @@ export interface GenerateDayArgs {
   usedIds: Set<string>; // mutated in place to track recipe variety across days
   usedDishTypes?: Map<DishType, number>; // mutated in place to spread dish types across days
   mode?: DietMode;
+  /** Lo que llevan de más (+) o de menos (−) los días ya generados de esta
+   *  semana. Con la semana en positivo, este día sale sin acompañamientos
+   *  (ver `sinExtrasPorLaSemana`). */
+  balanceSemana?: number;
 }
 
 function bumpDishType(map: Map<DishType, number>, dt: DishType): void {
@@ -749,7 +808,7 @@ export function generateDay(args: GenerateDayArgs): MenuDay {
     return buildMeal(id, slot, pick.recipe, pick.scale, pick.exch);
   });
 
-  return finalizeDay(day, diet, target, targets, meals, foods, mode, recetasDe(pools));
+  return finalizeDay(day, diet, target, targets, meals, foods, mode, recetasDe(pools), prefs.conditions, args.balanceSemana ?? 0);
 }
 
 // ─── Week generation ─────────────────────────────────────────────────────────
@@ -798,6 +857,9 @@ function generateWeekBatch(args: GenerateWeekArgs): MenuDay[] {
     return pick;
   });
 
+  // Igual que en `generateWeek`: los extras de un día miran lo que llevan los
+  // días ya generados, no solo lo que le falta a ese día.
+  let balanceSemana = 0;
   return WEEK_DAYS.map(day => {
     const dietId = schedule[day] ?? null;
     const diet = dietId ? dietsById.get(dietId) ?? null : null;
@@ -818,7 +880,9 @@ function generateWeekBatch(args: GenerateWeekArgs): MenuDay[] {
       return pick ? buildMeal(id, slot, pick.recipe, pick.scale, pick.exch) : emptyMeal(id, slot);
     });
 
-    return finalizeDay(day, diet, target, targets, meals, foods, mode, recetasDe(pools));
+    const generado = finalizeDay(day, diet, target, targets, meals, foods, mode, recetasDe(pools), prefs.conditions, balanceSemana);
+    balanceSemana = round2(balanceSemana + desviacionDelDia(generado));
+    return generado;
   });
 }
 
@@ -844,6 +908,16 @@ export function generateWeek(args: GenerateWeekArgs): MenuDay[] {
   const globalDishTypes = new Map<DishType, number>();
   const perDietDishTypes = new Map<string, Map<DishType, number>>();
 
+  /* El sumatorio de la semana, día a día. Lo que decide si un día lleva
+     acompañamientos no es solo lo que le falta a ÉL: si lo ya generado suma de
+     más, añadirle comida a este día empeora la semana entera. Ver
+     `sinExtrasPorLaSemana`. */
+  let balanceSemana = 0;
+  const conBalance = (dia: MenuDay): MenuDay => {
+    balanceSemana = round2(balanceSemana + desviacionDelDia(dia));
+    return dia;
+  };
+
   return WEEK_DAYS.map(day => {
     const dietId = schedule[day] ?? null;
     const diet = dietId ? dietsById.get(dietId) ?? null : null;
@@ -852,9 +926,11 @@ export function generateWeek(args: GenerateWeekArgs): MenuDay[] {
     if (prefs.variety <= 2) {
       const template = perDietTemplate.get(diet.id);
       if (template) {
-        return { ...template, day, meals: template.meals.map((m, i) => ({ ...m, id: `${day}_m${i + 1}` })) };
+        // El clon repite el día tal cual, extras incluidos: es el punto de
+        // este modo. Cuenta igual para el balance de la semana.
+        return conBalance({ ...template, day, meals: template.meals.map((m, i) => ({ ...m, id: `${day}_m${i + 1}` })) });
       }
-      const generated = generateDay({ day, diet, slots, pools, foods, prefs, usedIds: new Set(), mode });
+      const generated = conBalance(generateDay({ day, diet, slots, pools, foods, prefs, usedIds: new Set(), mode, balanceSemana }));
       perDietTemplate.set(diet.id, generated);
       return generated;
     }
@@ -864,10 +940,10 @@ export function generateWeek(args: GenerateWeekArgs): MenuDay[] {
       perDietUsed.set(diet.id, usedIds);
       const usedDishTypes = perDietDishTypes.get(diet.id) ?? new Map<DishType, number>();
       perDietDishTypes.set(diet.id, usedDishTypes);
-      return generateDay({ day, diet, slots, pools, foods, prefs, usedIds, usedDishTypes, mode });
+      return conBalance(generateDay({ day, diet, slots, pools, foods, prefs, usedIds, usedDishTypes, mode, balanceSemana }));
     }
 
-    return generateDay({ day, diet, slots, pools, foods, prefs, usedIds: globalUsed, usedDishTypes: globalDishTypes, mode });
+    return conBalance(generateDay({ day, diet, slots, pools, foods, prefs, usedIds: globalUsed, usedDishTypes: globalDishTypes, mode, balanceSemana }));
   });
 }
 

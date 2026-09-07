@@ -8,6 +8,7 @@ import { Skeleton, Icon } from './ui';
 import { EmptyState, Badge, Chip, Dialog, Button, Input } from './ui';
 import { fotoDeReceta } from '../utils/fotoDeReceta';
 import FotoDeReceta from './FotoDeReceta';
+import { coincideBusqueda } from '../utils/busqueda';
 
 const RECIPE_CATEGORIES = ['Alta proteína', 'Rápida', 'Pre-entreno', 'Recuperación', 'Desayuno', 'Cena'];
 
@@ -151,7 +152,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
 
   const filteredRecetas = useMemo(() =>
     recetasSearch.trim()
-      ? recetasRecipes.filter(r => r.name.toLowerCase().includes(recetasSearch.toLowerCase()))
+      ? recetasRecipes.filter(r => coincideBusqueda(r.name, recetasSearch))
       : recetasRecipes,
     [recetasRecipes, recetasSearch]
   );
@@ -161,7 +162,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
   const filteredFoods = useMemo(() =>
     ingredientSearch.trim().length < 2
       ? []
-      : foodItems.filter(f => f.label.toLowerCase().includes(ingredientSearch.toLowerCase())).slice(0, 8),
+      : foodItems.filter(f => coincideBusqueda(f.label, ingredientSearch)).slice(0, 8),
     [foodItems, ingredientSearch]
   );
 

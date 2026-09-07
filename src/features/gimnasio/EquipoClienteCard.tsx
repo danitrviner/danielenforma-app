@@ -6,6 +6,7 @@ import type { MuscleGroup, Maquina } from '../../types';
 import { getEstadoCatalogo } from '../../dbService';
 import { gimnasioQueryKey } from './MiGimnasioPanel';
 import { ORDEN_CATEGORIAS } from './useCatalogoSwipe';
+import { coincideBusqueda } from '../../utils/busqueda';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Equipamiento del cliente — pantalla 08 del handoff. Vive en el Hub del atleta.
@@ -114,13 +115,13 @@ export default function EquipoClienteCard({ athleteEmail }: Props) {
           <div className="space-y-2">
             {(() => {
               const q = buscar.trim().toLowerCase();
-              const hayResultados = !q || resumen.porGrupo.some(({ maquinas }) => maquinas.some(m => m.nombreMostrado.toLowerCase().includes(q)));
+              const hayResultados = !q || resumen.porGrupo.some(({ maquinas }) => maquinas.some(m => coincideBusqueda(m.nombreMostrado, q)));
               if (!hayResultados) return <p className="font-sans text-body-s text-ink-3">Ninguna máquina coincide.</p>;
               return null;
             })()}
             {resumen.porGrupo.map(({ categoria, maquinas }) => {
               const q = buscar.trim().toLowerCase();
-              const filtradas = q ? maquinas.filter(m => m.nombreMostrado.toLowerCase().includes(q)) : maquinas;
+              const filtradas = q ? maquinas.filter(m => coincideBusqueda(m.nombreMostrado, q)) : maquinas;
               if (q && filtradas.length === 0) return null;
               return (
                 <Collapsible

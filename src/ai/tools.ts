@@ -42,6 +42,7 @@ import {
   getKnowledgeNotes,
   isLocalBypassActive,
 } from '../dbService';
+import { athleteConditions, restrictionLabel } from '../utils/dietaryRestrictions';
 import { computeAdherenceScore } from '../utils/adherence';
 import { computeSetupChecklist } from '../utils/clientSetup';
 import { isoWeekKey } from '../utils/challengeOptions';
@@ -791,6 +792,10 @@ async function getClientOverview(email: string): Promise<string> {
       targetCalories: onboarding.targetCalories,
       injuries: markAthleteText(onboarding.injuries || onboarding.currentInjuryLocation),
       allergies: onboarding.allergies,
+      // Condiciones que descartan recetas enteras (celiaquía, intolerancias…).
+      // Sin esto el modelo solo veía el texto libre de alergias y podía
+      // proponerle seitán a un celíaco, igual que hacía el generador.
+      healthConditions: athleteConditions(onboarding).map(restrictionLabel),
       dislikedFoods: onboarding.dislikedFoods,
     } : null,
     weightTrend28d: weightTrend,
@@ -918,6 +923,7 @@ async function getOnboardingCompleto(email: string): Promise<string> {
       leGustan: ob.likedFoods ?? [],
       noLeGustan: ob.dislikedFoods ?? [],
       alergias: ob.allergies ?? [],
+      condicionesQueDescartanRecetas: athleteConditions(ob).map(restrictionLabel),
     },
     cocina: {
       minutosMaximos: ob.cookingMaxTime ?? null,

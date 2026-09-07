@@ -21,6 +21,7 @@ import InvitarAtletaModal from '../components/InvitarAtletaModal';
 import InvitacionesPendientesPanel from '../components/InvitacionesPendientesPanel';
 import type { Cliente, EstadoCrm, CrmServicio } from '../types';
 import { Button, Icon } from '../../../components/ui';
+import { coincideBusqueda } from '../../../utils/busqueda';
 
 // Lazy: read-excel-file + papaparse (las dependencias de este modal) pesan más
 // que el resto de la pantalla junta, y la mayoría de visitas a /crm/clientes
@@ -126,8 +127,8 @@ export default function ClientesList({ coachEmail }: { coachEmail: string }) {
       if (filtro !== 'todos' && filtro !== 'archivados' && c.estadoCrm !== filtro) return false;
       if (!q) return true;
       return (
-        c.nombre.toLowerCase().includes(q) ||
-        (c.email ?? '').toLowerCase().includes(q) ||
+        coincideBusqueda(c.nombre, q) ||
+        coincideBusqueda(c.email ?? '', q) ||
         (qDni.length >= 3 && (c.dni ?? '').includes(qDni))
       );
     });

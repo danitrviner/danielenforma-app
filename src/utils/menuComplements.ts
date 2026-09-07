@@ -65,11 +65,54 @@ export function isSimpleComplement(item: MealItem): boolean {
   return false;
 }
 
+// ─── Condiciones de salud ───────────────────────────────────────────────────
+//
+// Los extras NO son recetas: salen del banco de intercambios, que son etiquetas
+// de texto ("40g pan (de molde, tostado...)") sin el campo `restrictions` del
+// recetario. Así que aquí no hay dato explícito que cruzar y toca lo único que
+// queda: mirar el nombre. Solo se cubren las dos condiciones cuyos alimentos se
+// reconocen por el nombre con seguridad; la fructosa, la histamina o el embarazo
+// no se pueden deducir de "150g patata" y no se fingen.
+//
+// Se peca de excluir de más a propósito. "30g arroz, pasta, couscous o quinoa"
+// es una sola etiqueta con cuatro alimentos, tres aptos y uno no: se va entera.
+// Quitarle el arroz a un celíaco es un extra peor; ponerle pasta es hacerle daño.
+const ALIMENTOS_VETADOS: Partial<Record<number, string[]>> = {
+  // Celiaquía. La avena entra por contaminación cruzada: la del banco no dice
+  // "sin gluten" por ningún lado.
+  66: [
+    'pan', 'cereales', 'corn flakes', 'muesli', 'copos', 'harinas', 'papilla',
+    'pasta', 'couscous', 'cuscus', 'gnocchi', 'base para pizza', 'tortillas',
+    'seitan', 'trigo', 'cebada', 'centeno', 'espelta', 'avena', 'bulgur',
+    'galleta', 'biscote', 'rebozado', 'empanado',
+  ],
+  // Intolerancia total a la lactosa.
+  87: [
+    'yogur', 'yogurt', 'skyr', 'queso', 'requeson', 'cottage', 'leche', 'nata',
+    'mantequilla', 'kefir', 'yopro',
+  ],
+  // La leve (113) no aparece a propósito: tolera cantidades pequeñas y un extra
+  // ES una cantidad pequeña. Dejarla fuera del banco entero sería quitarle
+  // comida sin motivo.
+};
+
+/** ¿Alguna condición del atleta deja este alimento del banco fuera? */
+export function vetadoPorCondicion(item: MealItem, conditions?: readonly number[]): boolean {
+  if (!conditions || conditions.length === 0) return false;
+  return conditions.some(c => {
+    const palabras = ALIMENTOS_VETADOS[c];
+    return !!palabras && labelIncludesAny(item.label, palabras);
+  });
+}
+
 /** Todo lo que el atleta puede elegir como extra: el banco entero de su modo de
  *  dieta. Ordenado con lo más "de abrir y comer" delante, que es lo que busca
  *  quien va justo de tiempo, pero sin esconder nada. */
-export function complementosDisponibles(foods: MealItem[], mode: DietMode, category?: FoodCategory): MealItem[] {
-  const propios = foods.filter(f => f.mode === mode && (category == null || encajaEnCategoria(f, category)));
+export function complementosDisponibles(
+  foods: MealItem[], mode: DietMode, category?: FoodCategory, conditions?: readonly number[],
+): MealItem[] {
+  const propios = foods.filter(f =>
+    f.mode === mode && (category == null || encajaEnCategoria(f, category)) && !vetadoPorCondicion(f, conditions));
   return [...propios].sort((a, b) => Number(isSimpleComplement(b)) - Number(isSimpleComplement(a)));
 }
 
@@ -97,8 +140,8 @@ const ORDEN_PROPUESTA: RegExp[] = [
 
 /** Los que el generador propone por sí solo cuando nadie ha elegido nada, en el
  *  orden en que tiene sentido proponerlos. */
-export function simpleComplementsFor(foods: MealItem[]): MealItem[] {
-  const simples = foods.filter(isSimpleComplement);
+export function simpleComplementsFor(foods: MealItem[], conditions?: readonly number[]): MealItem[] {
+  const simples = foods.filter(f => isSimpleComplement(f) && !vetadoPorCondicion(f, conditions));
   const rango = (f: MealItem) => {
     const i = ORDEN_PROPUESTA.findIndex(re => re.test(f.label));
     return i === -1 ? ORDEN_PROPUESTA.length : i;

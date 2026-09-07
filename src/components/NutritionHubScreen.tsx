@@ -73,7 +73,7 @@ export default function NutritionHubScreen({ profile }: NutritionHubScreenProps)
           onConsumedPendingRecipe={() => setPendingRecipe(null)}
         />
       )}
-      {activeSubTab === 'mi-menu'      && <MyMenuScreen profile={profile} />}
+      {activeSubTab === 'mi-menu'      && <MyMenuScreen profile={profile} onAddToPlan={handleAddToIntercambios} />}
       {activeSubTab === 'recetas'      && <RecipesScreen profile={profile} onAddToIntercambios={handleAddToIntercambios} />}
       {activeSubTab === 'periodizacion' && (
         <NutritionPerformanceDashboard athleteEmail={profile.email} targetWeightKg={profile.targetWeight} />

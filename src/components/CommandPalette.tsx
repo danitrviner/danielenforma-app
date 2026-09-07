@@ -6,6 +6,7 @@ import { getAllUserProfiles } from '../dbService';
 import { atletasActivos } from '../utils/atletas';
 import type { NavTab } from '../App';
 import { Avatar, Icon, ListRow, EmptyState } from './ui';
+import { coincideBusqueda } from '../utils/busqueda';
 
 interface Props {
   onNavigateTab: (tab: NavTab) => void;
@@ -70,9 +71,9 @@ export default function CommandPalette({ onNavigateTab }: Props) {
   const q = query.trim().toLowerCase();
   const matchedAthletes = athletes
     .filter(a => a.role !== 'coach')
-    .filter(a => !q || a.displayName.toLowerCase().includes(q) || a.email.toLowerCase().includes(q))
+    .filter(a => coincideBusqueda(a.displayName, q) || coincideBusqueda(a.email, q))
     .slice(0, 8);
-  const matchedActions = ACTIONS.filter(a => !q || a.label.toLowerCase().includes(q));
+  const matchedActions = ACTIONS.filter(a => coincideBusqueda(a.label, q));
 
   const goToAthlete = (a: UserProfile) => {
     setOpen(false);

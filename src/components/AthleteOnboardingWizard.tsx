@@ -6,6 +6,7 @@ import {
 } from '../types';
 import { CONTEOS_COMIDAS, ConteoComidas } from '../utils/menuEngine';
 import { DISH_TYPES } from '../utils/dishTypes';
+import { HEALTH_CONDITIONS, type DietaryRestrictionCode } from '../utils/dietaryRestrictions';
 import { computeAuto } from '../utils/energyCalc';
 import { mensajeDeErrorFirestore } from '../utils/erroresFirestore';
 import { saveOnboarding, getAthleteNutritionConfig, saveAthleteNutritionConfig } from '../dbService';
@@ -168,14 +169,19 @@ interface ChipProps {
   onClick: () => void;
   children: React.ReactNode;
   big?: boolean;
+  /* Solo para los grupos donde el chip es una casilla que se queda marcada
+     (elegir varias). En los pasos de una sola respuesta el chip es una opción,
+     no un interruptor, y `aria-pressed` ahí confundiría más que ayuda. */
+  toggle?: boolean;
   key?: React.Key; // convención del proyecto: los tipos de React aquí no fusionan IntrinsicAttributes
 }
 
-function Chip({ selected, onClick, children, big = false }: ChipProps) {
+function Chip({ selected, onClick, children, big = false, toggle = false }: ChipProps) {
   return (
     <button
       type="button"
       onClick={onClick}
+      aria-pressed={toggle ? selected : undefined}
       className={`${big ? 'p-4 rounded-control text-left w-full' : 'px-4 py-3 rounded-control'} border font-sans text-body-s transition-all active:scale-95 ${
         selected
           ? 'bg-accent/15 border-accent text-white'
@@ -233,6 +239,7 @@ interface BorradorCampos {
   menuVariety: number | null;
   batchCookingPreferred: boolean | null;
   allergies: string;
+  healthConditions: DietaryRestrictionCode[];
   meals: OnboardingMeal[];
   cookingMaxTime: number | null;
   prefLiked: string[];
@@ -327,6 +334,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
   const [menuVariety, setMenuVariety] = useState<number | null>(borrador?.menuVariety ?? null);
   const [batchCookingPreferred, setBatchCookingPreferred] = useState<boolean | null>(borrador?.batchCookingPreferred ?? null);
   const [allergies, setAllergies] = useState(borrador?.allergies ?? '');
+  const [healthConditions, setHealthConditions] = useState<DietaryRestrictionCode[]>(borrador?.healthConditions ?? []);
   const [meals, setMeals] = useState<OnboardingMeal[]>(borrador?.meals ?? []);
   const [cookingMaxTime, setCookingMaxTime] = useState<number | null>(borrador?.cookingMaxTime ?? null);
   const [prefLiked, setPrefLiked] = useState<string[]>(borrador?.prefLiked ?? []);
@@ -394,7 +402,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
       experienceLevel, equipment, injuries, noInjuries,
       hadPastInjuries, pastInjuriesDetail, takesMedication, medicationDetail,
       recentSurgery, recentSurgeryDetail,
-      dietType, mealCount, menuVariety, batchCookingPreferred, allergies,
+      dietType, mealCount, menuVariety, batchCookingPreferred, allergies, healthConditions,
       meals, cookingMaxTime, prefLiked, prefDisliked, sinPreferencias,
       availableDaysPerWeek, sessionMaxMinutes,
       lifestyleScope, lifestyleAreas, muscleGroupsToImprove, sinPreferenciaMuscular, hatedExercises,
@@ -410,7 +418,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
   }, [saving, enviado, profile.email, step, sex, birthDate, weightKg, heightCm, occupation, referralSource,
       goalFreeText, goalTimelineMotivation, coachExpectations, experienceLevel, equipment, injuries, noInjuries,
       hadPastInjuries, pastInjuriesDetail, takesMedication, medicationDetail, recentSurgery, recentSurgeryDetail,
-      dietType, mealCount, menuVariety, batchCookingPreferred, allergies,
+      dietType, mealCount, menuVariety, batchCookingPreferred, allergies, healthConditions,
       meals, cookingMaxTime, prefLiked, prefDisliked, sinPreferencias,
       availableDaysPerWeek, sessionMaxMinutes,
       lifestyleScope, lifestyleAreas, muscleGroupsToImprove, sinPreferenciaMuscular, hatedExercises,
@@ -581,6 +589,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
         likedFoods: prefLiked,
         dislikedFoods: prefDisliked,
         allergies: allergies.split(',').map(s => s.trim()).filter(Boolean),
+        healthConditions,
         mealCount: mealCount ?? undefined,
         meals: meals.length > 0 ? meals : undefined,
         appetitePeakTime: appetitePeakTime.trim() || undefined,
@@ -1223,14 +1232,42 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
               </div>
             </div>
 
+            {/* Estas van con casilla y no en el texto libre de abajo a propósito.
+                Escritas a mano no filtraban nada: el buscador de alergias compara
+                la palabra contra el nombre de cada ingrediente, y "gluten" no
+                aparece en "Seitán". Marcadas aquí descartan la receta entera. */}
             <div>
-              <label htmlFor="athleteonboardingwizard-alergias-o-intolerancias" className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-1">Alergias o intolerancias</label>
+              <p id="alta-condiciones-salud" className="font-sans text-caption text-ink-2 uppercase tracking-wider mb-1">¿Tienes alguna de estas condiciones?</p>
+              <p className="text-body-s text-ink-2 mb-2">
+                Marca las que te afecten. Ninguna receta que las incumpla entrará en tu menú. Si no tienes ninguna, sigue.
+              </p>
+              <div role="group" aria-labelledby="alta-condiciones-salud" className="flex flex-wrap gap-2">
+                {HEALTH_CONDITIONS.map(c => (
+                  <Chip key={c.code} toggle
+                    selected={healthConditions.includes(c.code)}
+                    onClick={() => setHealthConditions(prev =>
+                      prev.includes(c.code) ? prev.filter(x => x !== c.code) : [...prev, c.code])}>
+                    {c.label}
+                  </Chip>
+                ))}
+              </div>
+              {healthConditions.some(code => HEALTH_CONDITIONS.find(c => c.code === code)?.help) && (
+                <ul className="mt-2 space-y-1">
+                  {HEALTH_CONDITIONS.filter(c => healthConditions.includes(c.code) && c.help).map(c => (
+                    <li key={c.code} className="text-body-s text-ink-2">{c.label}: {c.help}</li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            <div>
+              <label htmlFor="athleteonboardingwizard-alergias-o-intolerancias" className="block font-sans text-caption text-ink-2 uppercase tracking-wider mb-1">Otras alergias o intolerancias</label>
               <p className="text-body-s text-ink-2 mb-2">
                 Solo lo que te siente mal de verdad. Lo que simplemente no te gusta lo eliges más adelante, en una pantalla propia.
                 Sepáralas por comas, o déjalo vacío.
               </p>
               <input id="athleteonboardingwizard-alergias-o-intolerancias" value={allergies} onChange={e => setAllergies(e.target.value)}
-                placeholder="Ej: lactosa, frutos secos" className={inputCls} />
+                placeholder="Ej: frutos secos, marisco" className={inputCls} />
             </div>
           </StepShell>
         )}

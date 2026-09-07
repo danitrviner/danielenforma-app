@@ -10,6 +10,7 @@ import { Skeleton } from './ui';
 import { Badge, EmptyState, Dialog, Button, Icon, Input, PageHeader, Select, Sheet, Chip, SearchField, ListRow } from './ui';
 import type { BadgeTone } from './ui';
 import ExerciseTriageScreen from './ExerciseTriageScreen';
+import { coincideBusqueda } from '../utils/busqueda';
 
 interface ExerciseLibraryScreenProps {
   coachId: string;
@@ -131,7 +132,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
   const sinRevisar = exercises.filter(e => !e.revisado).length;
 
   function matchesFilters(ex: Exercise, groups: MuscleGroup[], equipment: string[]): boolean {
-    if (searchDebounced && !ex.name.toLowerCase().includes(searchDebounced.toLowerCase())) return false;
+    if (!coincideBusqueda(ex.name, searchDebounced)) return false;
     if (groups.length > 0 && (!ex.muscleGroup || !groups.includes(ex.muscleGroup))) return false;
     if (filterType && ex.type !== filterType) return false;
     if (filterEndurance && ex.enduranceProfile !== filterEndurance) return false;

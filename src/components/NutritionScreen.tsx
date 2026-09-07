@@ -2,15 +2,18 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { minutosDeReceta } from '../utils/tiempoDeReceta';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { UserProfile, Diet, DietMeal, DietItem, FoodCategory, DietMode, MealItem, Recipe, RecipeFavorites, RefeedDay } from '../types';
-import { getDietsForAthlete, getAthleteDietConfig, saveAthleteDietConfig, createDiet, updateDiet, deleteDiet, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig, saveAthleteNutritionConfig, getRecipes, getRecipeFavorites, getNutritionProgram, markNutritionPhaseSeen, computeActivePhase, createNotificationDeduped, getDietCompletionLog, saveDietCompletionLog, createRecipe, queryRecetas, queryRecetasForGenerator, getOnboarding, getRecipeById } from '../dbService';
+import { getDietsForAthlete, getAthleteDietConfig, saveAthleteDietConfig, createDiet, updateDiet, deleteDiet, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig, saveAthleteNutritionConfig, getRecipes, getRecipeFavorites, getNutritionProgram, markNutritionPhaseSeen, computeActivePhase, createNotificationDeduped, getDietCompletionLog, saveDietCompletionLog, createRecipe, queryRecetas, queryRecetasForGenerator, cargarIndiceRecetas, getOnboarding, getRecipeById } from '../dbService';
 import type { RecetasCursor } from '../dbService';
 import { CATS, BUDGET_CATS, CAT_LABEL, CAT_COLOR, CAT_BG, MODE_LABEL, ALL_DIET_MODES, round2, fmtQty, itemWeightLabel, foodNameWithoutGrams, addToPlaced, recipeToDietItems, computeDietPlaced } from '../utils/exchangeHelpers';
 import { findRecipeAlternatives, recipeExchanges, groupByDishType, ordenarPorCupo, type RecipeAlternative, type AlternativePrefs } from '../utils/recipeMatch';
 import { ingredientMatch, violatesDietType } from '../utils/foodPrefs';
+import { athleteConditions, violatesHealthConditions } from '../utils/dietaryRestrictions';
+import { coincideBusqueda, normalizarTexto } from '../utils/busqueda';
 import { dishType, dishTypeLabel, type DishType } from '../utils/dishTypes';
 import { filasDeComida, escalarReceta } from '../utils/filasDelPlan';
 import { exchangeToKcal } from '../utils/nutritionConstants';
 import { useToast } from '../hooks/useToast';
+import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import Coachmark from './Coachmark';
 import { haptics } from '../services/haptics';
 import { useTourTarget } from '../features/tutorial/TourTargetContext';
@@ -23,7 +26,7 @@ import MealItemSwipeRow from './nutrition/MealItemSwipeRow';
 import { NotaDeFuente } from './FuentesCientificasSheet';
 
 import {
-  COACH_EMAIL, makeId, dietSnapshot, estructuraDeDia, fechaLarga,
+  COACH_EMAIL, makeId, dietSnapshot, estructuraDeDia, sembrarDiaDelPlan, fechaLarga,
   WD_FULL,
   mealLabel, BAR_LABEL, CHIP_LABEL, ItemState,
 } from './nutrition/dietHelpers';
@@ -34,6 +37,17 @@ import { addDays } from '../utils/trainingWeek';
 // (ItemState viene de dietHelpers.ts — compartido con el resto de "Mi plan")
 
 // Mismas categorías fijas que RecipesScreen.tsx/RecipeBuilderScreen.tsx — el
+/** Tope de resultados del buscador del recetario. Sin él, una búsqueda de una
+ *  letra pinta miles de filas de golpe y el móvil se queda clavado; con él,
+ *  quien busca algo concreto lo encuentra igual y quien escribe "a" ve una
+ *  muestra. No es paginación: es el freno de la lista renderizada. */
+const LIMITE_RESULTADOS_BUSQUEDA = 200;
+/** Cuántas coincidencias se recogen del catálogo antes de ordenarlas. Más alto
+ *  que el tope de lo que se pinta para que el orden por cupo y preferencias
+ *  tenga entre qué elegir, y acotado para que un término de una letra no
+ *  arrastre miles de recetas hasta la ordenación. */
+const MAX_CANDIDATOS_BUSQUEDA = 500;
+
 // catálogo `queryRecetas` filtra por `categoria`, no hay forma de listarlas
 // dinámicamente sin traerse la colección entera, así que cada sitio que
 // navega el recetario mantiene su propia copia de esta lista corta.
@@ -266,19 +280,38 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
      no programa comidas (nunca lo hizo — las pauta con el menú semanal), así
      que su "dieta" es solo el presupuesto de intercambios del día. Sale de la
      fase activa de periodización si la hay, y si no de la dieta activa. */
-  const cupoPautado = useMemo(() => {
+  /* La dieta que el coach ha puesto para ESTE día. Antes de aquí solo salía el
+     cupo; ahora se conserva la dieta entera porque también siembra las comidas
+     del día (ver `sembrarDiaDelPlan`). El panel del coach dice literalmente
+     "Asigna una dieta a cada día. El atleta la verá cargada automáticamente" y
+     eso no era cierto: al atleta le llegaba el cupo y un día en blanco, y si el
+     coach le había puesto Día A de lunes a viernes y Día B el fin de semana,
+     el Día B no aparecía por ningún lado (caso de Pedro, 07-09-2026). */
+  const dietaPautada = useMemo(() => {
     // El coach puede tener cupos distintos por día (el "día A/B/C" del
     // calendario semanal, que sigue usando el generador de menús): se respeta
     // el del día que se está mirando, no el de hoy.
     const programada = dietConfigRaw?.weeklySchedule?.[diaSemanaDe(viewDate)];
     const activos = new Set(dietConfigRaw?.activeDietIds ?? []);
-    const pautada =
-      (programada && allDietsList.find(d => d.id === programada))
+    return (programada && allDietsList.find(d => d.id === programada))
       || allDietsList.find(d => activos.has(d.id) && !d.selfManaged)
       || allDietsList.find(d => !d.selfManaged)
       || null;
-    return pautada?.budget ?? null;
   }, [allDietsList, dietConfigRaw, viewDate]);
+  const cupoPautado = dietaPautada?.budget ?? null;
+
+  /* Las dietas del coach que el atleta puede cargarse en un día. Solo las
+     ACTIVAS: una dieta que el coach dejó a medias o desactivó no tiene por qué
+     salirle al atleta (Dani, 07-09-2026). La programada del día va la primera
+     aunque no esté marcada activa: es la de hoy. */
+  const dietasDelCoach = useMemo(() => {
+    const activos = new Set(dietConfigRaw?.activeDietIds ?? []);
+    const programadas = new Set(Object.values(dietConfigRaw?.weeklySchedule ?? {}).filter(Boolean) as string[]);
+    return allDietsList
+      .filter(d => !d.selfManaged && (activos.has(d.id) || programadas.has(d.id)))
+      .sort((a, b) => Number(b.id === dietaPautada?.id) - Number(a.id === dietaPautada?.id)
+        || a.name.localeCompare(b.name));
+  }, [allDietsList, dietConfigRaw, dietaPautada]);
 
   const loading = loadingPhase1 || loadingFoodItems || loadingRecipesQ || loadingFavs || loadingDia;
 
@@ -319,6 +352,11 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
   const [preguntaAmbito, setPreguntaAmbito] = useState<string | null>(null);
   const [ambitoCupo, setAmbitoCupo] = useState<'comida' | 'dia'>('dia');
   const [recipeSearch, setRecipeSearch]             = useState('');
+  /* El buscador filtra el catálogo ENTERO (8.850) en cada tecla, así que sin
+     debounce se ordena y recorre todo el índice mientras el atleta escribe, en
+     el hilo principal y en un móvil. Mismo patrón (y mismos 200 ms) que la
+     pestaña Recetas, que ya buscaba sobre el índice completo. */
+  const recipeSearchDebounced = useDebouncedValue(recipeSearch, 200);
   const [recipeCatFilter, setRecipeCatFilter]       = useState<string>('all');
   // Dos fuentes en el mismo picker (a petición de Dani): "Mis recetas" (propias
   // + del coach, via getRecipes — lo que ya había) y "Recetario" (el catálogo
@@ -331,6 +369,12 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
   const [recetarioHasMore, setRecetarioHasMore]     = useState(false);
   const [recetarioLoading, setRecetarioLoading]     = useState(false);
   const [recetarioLoadingMore, setRecetarioLoadingMore] = useState(false);
+  // El índice ENTERO (8.850) para el buscador. `recetarioResults` es solo la
+  // página que se está mostrando —48 recetas— y el término de búsqueda se
+  // aplicaba sobre ella: buscar "sandwich" miraba 48 de 8.850 y contestaba que
+  // no existe. `cargarIndiceRecetas` memoiza la promesa, así que esto no
+  // descarga nada que `queryRecetas` no estuviera pidiendo ya.
+  const [indiceRecetario, setIndiceRecetario] = useState<Recipe[]>([]);
   // Tracks how many items each meal had originally (before any recipe was applied)
   const [origItemCounts, setOrigItemCounts]         = useState<Record<string, number>>({});
 
@@ -462,14 +506,23 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     if (cargadoPara.current === marca) return;
     cargadoPara.current = marca;
 
-    const meals: DietMeal[] = diaLog?.meals?.length
-      ? diaLog.meals
-      : estructuraDeDia((onboarding?.meals ?? []).map(m => ({ name: m.name, slot: m.intakeType })));
+    // Ojo: esto NO es `diaLog.meals ?? estructura vacía`. Un registro anterior
+    // a 09-2026 guarda las comidas fuera, en la dieta a la que apunta con
+    // `dietId`; sembrar una estructura nueva para esos días le enseñaba al
+    // atleta el día en blanco Y con ids de comida nuevos, contra los que sus
+    // marcas guardadas ya no casaban. Ver `sembrarDiaDelPlan`.
+    const { meals, budget } = sembrarDiaDelPlan(
+      diaLog,
+      allDietsList,
+      (onboarding?.meals ?? []).map(m => ({ name: m.name, slot: m.intakeType })),
+      cupoPautado,
+      dietaPautada,
+    );
     const plan: Diet = {
       id: `dia_${viewDate}`,
       athleteId: profile.email,
       name: `Plan del ${WD_FULL[diaSemanaDe(viewDate)]}`,
-      budget: diaLog?.budget ?? cupoPautado ?? { HC: 0, PROT: 0, GRASA: 0, MIX_HC: 0, MIX_GRASA: 0 },
+      budget,
       meals,
       selfManaged: true,
     };
@@ -489,7 +542,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     setItemStates(estados);
     setOrigItemCounts(counts);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loadingPhase1, loadingDia, viewDate, diaLog, cupoPautado, profile.email]);
+  }, [loadingPhase1, loadingDia, viewDate, diaLog, cupoPautado, dietaPautada, allDietsList, profile.email]);
 
   // ── Derived ──────────────────────────────────────────────────────────────────
 
@@ -573,10 +626,10 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
   // encontrar un alimento que no sabía en qué grupo estaba.
   const isSearchingFoods = searchTerm.trim().length > 0;
   const filteredFoods = useMemo(() => {
-    const term = searchTerm.trim().toLowerCase();
+    const term = searchTerm.trim();
     return foodItems.filter(f =>
       f.mode === activeDietMode &&
-      (term ? f.label.toLowerCase().includes(term) : f.category === pickerCategory)
+      (term ? coincideBusqueda(f.label, term) : f.category === pickerCategory)
     );
   }, [foodItems, activeDietMode, pickerCategory, searchTerm]);
 
@@ -592,6 +645,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
   // recetario) no miraban nada de esto.
   const swapPrefs: AlternativePrefs = useMemo(() => ({
     allergies:         onboarding?.allergies ?? [],
+    conditions:        athleteConditions(onboarding),
     dislikedFoods:     onboarding?.dislikedFoods ?? [],
     likedFoods:        onboarding?.likedFoods ?? [],
     // Igual que los tipos de plato de abajo: manda lo corregido en el perfil.
@@ -609,6 +663,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
   // marcado que no quería ver.
   const isSafeForAthlete = useCallback((r: Recipe) =>
     !swapPrefs.allergies!.some(f => ingredientMatch(r, f)) &&
+    !violatesHealthConditions(r, swapPrefs.conditions) &&
     !swapPrefs.dislikedRecipeIds!.includes(r.id) &&
     !(swapPrefs.excludedDishTypes ?? []).includes(dishType(r)) &&
     !violatesDietType(r, swapPrefs.dietType), [swapPrefs]);
@@ -647,13 +702,14 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     );
     const filtered = withIngredients.filter(r => {
       const matchCat = recipeCatFilter === 'all' || r.categories.includes(recipeCatFilter);
-      const matchSearch = !recipeSearch || r.name.toLowerCase().includes(recipeSearch.toLowerCase());
+      const matchSearch = coincideBusqueda(r.name, recipeSearchDebounced);
       return matchCat && matchSearch && isSafeForAthlete(r);
     });
     // Solo lo que cabe en el cupo elegido, y de lo que mejor lo aprovecha en
     // adelante — ofrecer una receta que no entra no ayuda a nadie.
-    return ordenarPorPreferencia(ordenarPorCupo(filtered, cupoDisponible));
-  }, [recipes, enabledModes, recipeCatFilter, recipeSearch, isSafeForAthlete, ordenarPorPreferencia, cupoDisponible]);
+    return ordenarPorPreferencia(
+      ordenarPorCupo(filtered, cupoDisponible, 0.5, recipeSearchDebounced.trim().length === 0));
+  }, [recipes, enabledModes, recipeCatFilter, recipeSearchDebounced, isSafeForAthlete, ordenarPorPreferencia, cupoDisponible]);
 
   // Recetario (catálogo ~8.850) — queryRecetas solo filtra por categoría en el
   // servidor (no hay búsqueda de texto ahí), así que el término de búsqueda se
@@ -665,16 +721,44 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
   // `false` y esta pestaña no mostraba NUNCA ninguna receta del catálogo, para
   // nadie. Bug de disponibilidad puro, no de preferencias, pero apareció al
   // auditar esta pantalla para que respete alergias en todos los apartados.
+  /* El nombre normalizado se calcula UNA vez por receta, no en cada tecla:
+     `normalizarTexto` hace NFD + dos regex por nombre y son 8.850. */
+  const indiceBuscable = useMemo(
+    () => indiceRecetario.map(r => ({ receta: r, nombre: normalizarTexto(r.name) })),
+    [indiceRecetario],
+  );
+
   const sortedRecetarioResults = useMemo(() => {
-    const safe = recetarioResults.filter(isSafeForAthlete);
-    const buscadas = recipeSearch
-      ? safe.filter(r => r.name.toLowerCase().includes(recipeSearch.toLowerCase()))
-      : safe;
+    const termino = normalizarTexto(recipeSearchDebounced);
+    const buscando = termino.length > 0;
+    // Buscando se mira el catálogo ENTERO (con su filtro de categoría, el mismo
+    // que aplica la paginación); sin buscar, la página cargada. Antes se
+    // buscaba siempre sobre la página: el "Sándwich de jamón serrano" que le
+    // había salido a Javier en el menú no aparecía nunca (Dani, 07-09-2026).
+    let base: Recipe[];
+    if (buscando) {
+      // El corte va ANTES de ordenar. Ordenar es lo caro (el comparador
+      // recalcula los intercambios de cada receta), así que recortar después
+      // no ahorraba nada: con un término de una letra se ordenaban miles de
+      // recetas para tirar todas menos 200.
+      const encontradas: Recipe[] = [];
+      for (const { receta, nombre } of indiceBuscable) {
+        if (recetarioCat !== 'Todas' && receta.categoria !== recetarioCat) continue;
+        if (!nombre.includes(termino)) continue;
+        encontradas.push(receta);
+        if (encontradas.length >= MAX_CANDIDATOS_BUSQUEDA) break;
+      }
+      base = encontradas;
+    } else {
+      base = recetarioResults;
+    }
+    const safe = base.filter(isSafeForAthlete);
     // Antes salía en el orden del catálogo (alfabético): las favoritas del
     // atleta quedaban donde cayeran, y los tipos de plato que había pedido
-    // tener más no se adelantaban.
-    return ordenarPorPreferencia(ordenarPorCupo(buscadas, cupoDisponible));
-  }, [recetarioResults, recipeSearch, isSafeForAthlete, ordenarPorPreferencia, cupoDisponible]);
+    // tener más no se adelantaban. Y buscando no se esconde lo que no cabe en
+    // el cupo del día: quien escribe un nombre quiere ESA receta.
+    return ordenarPorPreferencia(ordenarPorCupo(safe, cupoDisponible, 0.5, !buscando)).slice(0, LIMITE_RESULTADOS_BUSQUEDA);
+  }, [recetarioResults, indiceBuscable, recetarioCat, recipeSearchDebounced, isSafeForAthlete, ordenarPorPreferencia, cupoDisponible]);
 
   const swapCandidates = useMemo(() => {
     if (!swapSourceRecipe || swapPool.length === 0) return [];
@@ -1001,6 +1085,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
   // atleta se queda en "Mis recetas".
   useEffect(() => {
     if (!recipePickerMealId || recipeSource !== 'recetario') return;
+    if (indiceRecetario.length === 0) cargarIndiceRecetas().then(setIndiceRecetario).catch(() => {});
     setRecetarioLoading(true);
     loadRecetario(recetarioCat, null, false)
       .catch(() => showToast('No se pudo cargar el recetario.'))
@@ -1560,7 +1645,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
               justo lo que hacía desaparecer el registro del día. Ahora el día
               no se elige: esto solo abre los menús que te has guardado para
               volver a ponerte uno. */}
-          {menusGuardados.length > 0 && (
+          {(menusGuardados.length > 0 || dietasDelCoach.length > 0) && (
             <button
               type="button"
               onClick={() => setMisDietasOpen(true)}
@@ -1570,9 +1655,16 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                 <Icon name="bookmark" size="s" className="text-accent" />
               </span>
               <span className="flex-1 min-w-0">
-                <span className="block font-sans font-bold text-body-s text-ink truncate">Mis menús guardados</span>
+                <span className="block font-sans font-bold text-body-s text-ink truncate">Menús</span>
                 <span className="block font-mono text-caption text-ink-2 truncate">
-                  {menusGuardados.length} {menusGuardados.length === 1 ? 'menú listo para repetir' : 'menús listos para repetir'}
+                  {[
+                    dietasDelCoach.length > 0
+                      ? `${dietasDelCoach.length} de tu entrenador`
+                      : null,
+                    menusGuardados.length > 0
+                      ? `${menusGuardados.length} ${menusGuardados.length === 1 ? 'tuyo' : 'tuyos'}`
+                      : null,
+                  ].filter(Boolean).join(' · ')}
                 </span>
               </span>
               <Icon name="expand_more" size="s" className="text-ink-2 flex-shrink-0" />
@@ -2019,16 +2111,56 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
         <Sheet
           open
           onClose={() => setMisDietasOpen(false)}
-          title="Mis menús guardados"
+          title="Menús"
           size="l"
           footer={<Button variant="secondary" fullWidth onClick={handleStartBlankFromSheet}>Vaciar el día</Button>}
         >
+          {/* Las dietas del coach. Faltaban: si te había puesto Día A entre
+              semana y Día B el fin de semana, el Día B no aparecía por ningún
+              lado y solo podías usar el que te hubiera tocado (caso de Pedro,
+              07-09-2026). Solo salen las ACTIVAS: las que el coach dejó a
+              medias o desactivó no son cosa del atleta. */}
+          {dietasDelCoach.length > 0 && (
+            <div className="mb-4">
+              <p className="font-sans text-caption text-ink-2 uppercase tracking-wider mb-2">De tu entrenador</p>
+              <div className="space-y-1">
+                {dietasDelCoach.map(dt => {
+                  const dPlaced = computeDietPlaced(dt.meals);
+                  const chips = BUDGET_CATS.filter(cat => dPlaced[cat] > 0)
+                    .map(cat => `${CHIP_LABEL[cat]} ${fmtQty(dPlaced[cat])}`)
+                    .join(' · ');
+                  const esLaDeHoy = dt.id === dietaPautada?.id;
+                  return (
+                    <ListRow
+                      key={dt.id}
+                      title={dt.name}
+                      subtitle={[esLaDeHoy ? 'La de este día' : null, chips || 'Solo cupo, sin alimentos']
+                        .filter(Boolean).join(' · ')}
+                      leading={
+                        <span className="w-9 h-9 rounded-control bg-accent-bg flex items-center justify-center flex-shrink-0">
+                          <Icon name="restaurant" size="s" className="text-accent" />
+                        </span>
+                      }
+                      onClick={() => { cargarMenuEnElDia(dt); setMisDietasOpen(false); }}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {dietasDelCoach.length > 0 && menusGuardados.length > 0 && (
+            <p className="font-sans text-caption text-ink-2 uppercase tracking-wider mb-2">Tuyos</p>
+          )}
+
           {menusGuardados.length === 0 ? (
+            dietasDelCoach.length > 0 ? null : (
             <EmptyState
               icon="restaurant_menu"
               title="Todavía no has guardado ningún menú"
               description="Monta tu día y pulsa «Guardar como menú» para repetirlo cuando quieras."
             />
+            )
           ) : (
             <div className="space-y-1">
               {menusGuardados.map(dt => {

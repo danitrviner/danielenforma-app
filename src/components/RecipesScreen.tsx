@@ -12,6 +12,8 @@ import {
 import type { RecetasCursor } from '../dbService';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { classifyRecipe, violatesDietType } from '../utils/foodPrefs';
+import { athleteConditions } from '../utils/dietaryRestrictions';
+import { coincideBusqueda } from '../utils/busqueda';
 import { dishType } from '../utils/dishTypes';
 import { BUDGET_CATS, roundQuarter, CAT_COLOR, CAT_BG } from '../utils/exchangeHelpers';
 import { exchangeToKcal } from '../utils/nutritionConstants';
@@ -681,6 +683,9 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
     liked:     onboardingData?.likedFoods     ?? [],
     disliked:  onboardingData?.dislikedFoods  ?? [],
     allergies: onboardingData?.allergies      ?? [],
+    // Filtro duro por condición de salud: sin esto el recetario le ofrecía al
+    // celíaco recetas con seitán aunque el menú generado ya no se las pusiera.
+    conditions: athleteConditions(onboardingData),
     dietType:  onboardingData?.dietType,
     // Misma precedencia que MenuPreferencesPanel: manda lo que el atleta haya
     // editado luego en su perfil, y la ficha de iniciación es el valor de
@@ -788,7 +793,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
     // Un tipo de plato excluido es una decisión explícita del atleta, igual de
     // firme que una alergia a efectos de no enseñárselo.
     if (prefs.tiposExcluidos.size > 0 && prefs.tiposExcluidos.has(dishType(r))) return false;
-    return classifyRecipe(r, prefs.liked, prefs.disliked, prefs.allergies) !== 'allergy';
+    return classifyRecipe(r, prefs.liked, prefs.disliked, prefs.allergies, prefs.conditions) !== 'allergy';
   }, [onlyFitsBudget, fitsBudget, prefs]);
 
   const handleLoadMore = useCallback(async () => {
@@ -827,13 +832,13 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
     // contiene un alérgeno o rompe su régimen.
     const safe = base.filter(r =>
       selectedCat === 'MisRecetas' ||
-      (classifyRecipe(r, [], [], prefs.allergies) !== 'allergy' && !violatesDietType(r, prefs.dietType))
+      (classifyRecipe(r, [], [], prefs.allergies, prefs.conditions) !== 'allergy' && !violatesDietType(r, prefs.dietType))
     );
     return onlyFitsBudget ? safe.filter(fitsBudget) : safe;
   }, [recipes, favoritosSet, selectedCat, profile.userId, onlyFitsBudget, fitsBudget, prefs]);
 
   const { recetasFeatured, recetasNormal, recetasDisliked, recetasTotalVisible } = useMemo(() => {
-    const termino = recetasSearchDebounced.trim().toLowerCase();
+    const termino = recetasSearchDebounced.trim();
     // Con término de búsqueda se filtra el ÍNDICE COMPLETO (mismos filtros de
     // categoría/momento que ya aplica queryRecetas para paginar), no solo lo
     // ya paginado — de lo contrario solo aparecían coincidencias que hubieran
@@ -842,11 +847,18 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
       ? indiceRecetas.filter(r =>
           (recetasCat === 'Todas' || r.categoria === recetasCat) &&
           (recetasIntake == null || (r.intakeTypes ?? []).includes(recetasIntake)) &&
-          r.name.toLowerCase().includes(termino))
+          coincideBusqueda(r.name, termino))
       : recetasRecipes;
     const searched = onlyFitsBudget ? bySearch.filter(fitsBudget) : bySearch;
 
+    // Ojo con este atajo: lo que no esté aquí no se filtra. Devuelve la lista
+    // TAL CUAL, sin pasar por `esVisible`, así que olvidar una restricción aquí
+    // la desactiva entera para el buscador aunque el resto de la pantalla la
+    // respete. Le pasó al filtro por condición de salud nada más añadirlo: un
+    // celíaco omnívoro y sin más preferencias caía por este return y volvía a
+    // ver el seitán.
     const hasPrefs = prefs.liked.length > 0 || prefs.disliked.length > 0 || prefs.allergies.length > 0 ||
+      prefs.conditions.length > 0 ||
       prefs.tiposPreferidos.size > 0 || prefs.tiposExcluidos.size > 0 || favoritosSet.size > 0 ||
       (!!prefs.dietType && prefs.dietType !== 'omnivoro' && prefs.dietType !== 'otro');
     if (!hasPrefs) {
@@ -863,7 +875,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
     for (const r of searched) {
       if (!esVisible(r)) continue;
       if (favoritosSet.has(r.id)) { favoritas.push(r); continue; }
-      const cls = classifyRecipe(r, prefs.liked, prefs.disliked, prefs.allergies);
+      const cls = classifyRecipe(r, prefs.liked, prefs.disliked, prefs.allergies, prefs.conditions);
       if (cls === 'disliked') { disliked.push(r); continue; }
       if (cls === 'featured' || prefs.tiposPreferidos.has(dishType(r))) featured.push(r);
       else normal.push(r);

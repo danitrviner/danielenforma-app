@@ -10,6 +10,8 @@ import { exchangeToKcal } from '../utils/nutritionConstants';
 import { computePhaseStartDate } from '../dbService';
 import { useToast } from '../hooks/useToast';
 import { atletasActivos } from '../utils/atletas';
+import { athleteConditions, restrictionLabel } from '../utils/dietaryRestrictions';
+import { coincideBusqueda } from '../utils/busqueda';
 import { haptics } from '../services/haptics';
 import { Skeleton } from './ui';
 import { Icon, Button, Chip, EmptyState, Sheet, Dialog, Input, Select } from './ui';
@@ -574,10 +576,10 @@ export default function NutritionPlansScreen({
   // tenía que adivinar en qué categoría vive un alimento antes de poder
   // buscarlo.
   const filteredFoods = (() => {
-    const term = searchTerm.trim().toLowerCase();
+    const term = searchTerm.trim();
     return foodItems.filter(f =>
       f.mode === activeDietMode &&
-      (term ? f.label.toLowerCase().includes(term) : f.category === pickerCategory)
+      (term ? coincideBusqueda(f.label, term) : f.category === pickerCategory)
     );
   })();
 
@@ -900,8 +902,16 @@ export default function NutritionPlansScreen({
       {/* T12: alergias y no-le-gusta, movidas aquí desde "Referencia del
           atleta" — es donde se necesitan de verdad, justo antes de elegir
           alimentos para cada comida. No desaparecen, cambian de sitio. */}
-      {onboardingData && (onboardingData.allergies.length > 0 || onboardingData.dislikedFoods.length > 0) && (
+      {onboardingData && (athleteConditions(onboardingData).length > 0 || onboardingData.allergies.length > 0 || onboardingData.dislikedFoods.length > 0) && (
         <div className="flex flex-wrap gap-2">
+          {/* Las condiciones van delante de las alergias: aquí se eligen los
+              alimentos a mano, y una celiaquía no la salva ningún filtro. */}
+          {athleteConditions(onboardingData).length > 0 && (
+            <span className="inline-flex items-center gap-1 font-mono text-caption text-warning bg-warning/10 border border-warning/25 px-2 py-1 rounded-control">
+              <Icon name="warning" size="s" />
+              Condiciones: <span className="font-bold">{athleteConditions(onboardingData).map(restrictionLabel).join(', ')}</span>
+            </span>
+          )}
           {onboardingData.allergies.length > 0 && (
             <span className="inline-flex items-center gap-1 font-mono text-caption text-warning bg-warning/10 border border-warning/25 px-2 py-1 rounded-control">
               <Icon name="warning" size="s" />

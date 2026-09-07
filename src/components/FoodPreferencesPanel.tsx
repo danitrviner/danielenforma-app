@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { FOOD_GROUPS, FoodGroup } from '../data/alimentos_anamnesis';
 import { updateOnboardingFoods } from '../dbService';
 import { EmptyState } from './ui';
+import { coincideBusqueda } from '../utils/busqueda';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -49,7 +50,7 @@ export default function FoodPreferencesPanel({
     if (!activeGroup) return [];
     const q = search.toLowerCase().trim();
     return q
-      ? activeGroup.foods.filter(f => f.toLowerCase().includes(q))
+      ? activeGroup.foods.filter(f => coincideBusqueda(f, q))
       : activeGroup.foods;
   }, [activeGroup, search]);
 
@@ -232,7 +233,7 @@ export default function FoodPreferencesPanel({
           filteredFoods.map(food => {
             const pref    = prefs[food] ?? 'neutral';
             const isAllergen = allergies.some(
-              a => a.toLowerCase().includes(food.toLowerCase()) || food.toLowerCase().includes(a.toLowerCase()),
+              a => coincideBusqueda(a, food) || coincideBusqueda(food, a),
             );
 
             return (

@@ -11,9 +11,11 @@ import {
   updateWeeklyMenu, getMenuCompletionLog, saveMenuCompletionLog,
   queryRecetasForGenerator, getRecipes, getRecipeById,
   getRecipeFavorites, saveRecipeFavorites, getFoodItems, seedFoodItemsIfEmpty,
+  getDietCompletionLog, saveDietCompletionLog,
 } from '../dbService';
 import { findSwapAlternatives, recipeMatchesSlot, buildBatchPlan, totalConExtras, GeneratorPrefs, SwapCandidate } from '../utils/menuEngine';
 import { normalizeStr } from '../utils/foodPrefs';
+import { athleteConditions } from '../utils/dietaryRestrictions';
 import { complementosDisponibles } from '../utils/menuComplements';
 import { foodNameWithoutGrams, foodNameShort, itemWeightLabel } from '../utils/exchangeHelpers';
 import { exchangeToKcal } from '../utils/nutritionConstants';
@@ -22,6 +24,10 @@ import { DishType } from '../utils/dishTypes';
 import { substitutesFor } from '../utils/ingredientSubstitutions';
 import { Icon, EmptyState, ListRow, Badge, Sheet, Dialog, ScreenSkeleton } from './ui';
 import { fotoDeReceta } from '../utils/fotoDeReceta';
+import { useToast } from '../hooks/useToast';
+import { useDiaActual } from '../hooks/useDiaActual';
+import { registrarComidaDelMenu, quitarComidaDelMenu, type DiaDelPlan } from '../utils/registroDesdeElMenu';
+import { estructuraDeDia } from './nutrition/dietHelpers';
 import FotoDeReceta from './FotoDeReceta';
 
 const WEEK_DAYS: WeekDay[] = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
@@ -31,13 +37,12 @@ const WEEK_DAY_FULL: Record<WeekDay, string> = {
 };
 const CAT_LABEL: Record<FoodCategory, string> = { HC: 'HC', PROT: 'PROT', GRASA: 'GRASA', MIX_HC: 'MIX·HC', MIX_GRASA: 'MIX·GRASA' };
 
-const TODAY_DATE: string = new Date().toISOString().split('T')[0];
-
-// JS getDay(): 0=Sun..6=Sat → our WeekDay array is Mon-first.
-function todayWeekDay(): WeekDay {
-  const jsDay = new Date().getDay();
-  return WEEK_DAYS[(jsDay + 6) % 7];
-}
+/* La fecha y el día de la semana salen de `useDiaActual`, no de constantes de
+   módulo. Aquí estaban los dos fallos que ese hook ya arregló en «Mi plan»:
+   `toISOString()` da la fecha en UTC (en España, entre medianoche y las 2:00
+   se escribía con la de AYER) y una constante de módulo se calcula una sola
+   vez, al cargar — y la app nativa no se recarga, se queda en segundo plano y
+   vuelve al día siguiente escribiendo todavía en el día anterior. */
 
 function fmtExch(exch: { HC: number; PROT: number; GRASA: number }): string {
   const parts: string[] = [];
@@ -64,10 +69,17 @@ function describeDrift(drift: { HC: number; PROT: number; GRASA: number }): stri
 
 interface Props {
   profile: UserProfile;
+  /* Mandar una receta del menú a "Mi plan" (el hub la recoge y abre el
+     selector de comida). Marcar una comida como hecha aquí NO la registra en
+     el plan —son dos registros distintos, ver `toggleDone`—, y sin este puente
+     el atleta que veía su sándwich en el menú no tenía forma de meterlo en el
+     plan sin buscarlo a mano ni de que le contara en los macros del día. */
+  onAddToPlan?: (recipe: Recipe) => void;
 }
 
-export default function MyMenuScreen({ profile }: Props) {
+export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
   const navigate = useNavigate();
   const menuKey = ['publishedMenu', profile.email] as const;
   const { data: menu = null, isPending: loadingMenu } = useQuery({
@@ -83,11 +95,12 @@ export default function MyMenuScreen({ profile }: Props) {
     queryKey: nutritionConfigKey,
     queryFn: () => getAthleteNutritionConfig(profile.email),
   });
-  const [selectedDay, setSelectedDay] = useState<WeekDay>(todayWeekDay());
-  const completionLogKey = ['menuCompletionLog', profile.email, TODAY_DATE] as const;
+  const { fecha: hoyFecha, diaSemana: hoyWD } = useDiaActual();
+  const [selectedDay, setSelectedDay] = useState<WeekDay>(hoyWD);
+  const completionLogKey = ['menuCompletionLog', profile.email, hoyFecha] as const;
   const { data: completionLog, isPending: loadingCompletionLog } = useQuery({
     queryKey: completionLogKey,
-    queryFn: () => getMenuCompletionLog(profile.email, TODAY_DATE),
+    queryFn: () => getMenuCompletionLog(profile.email, hoyFecha),
   });
   const doneKeys = useMemo(() => new Set(completionLog?.doneMealKeys ?? []), [completionLog]);
 
@@ -128,11 +141,13 @@ export default function MyMenuScreen({ profile }: Props) {
   const [extrasFor, setExtrasFor] = useState<{ mealId: string; idx: number | null } | null>(null);
   const [extraQuery, setExtraQuery] = useState('');
   const [shoppingOpen, setShoppingOpen] = useState(false);
+  const [anadiendoId, setAnadiendoId] = useState<string | null>(null);
   const [shoppingLoading, setShoppingLoading] = useState(false);
   const [shoppingItems, setShoppingItems] = useState<ShoppingListItem[] | null>(null);
 
   const prefs: GeneratorPrefs = useMemo(() => ({
     allergies: onboarding?.allergies ?? [],
+    conditions: athleteConditions(onboarding),
     disliked: onboarding?.dislikedFoods ?? [],
     liked: onboarding?.likedFoods ?? [],
     // Manda lo que el atleta haya corregido en Perfil > Preferencias; la ficha
@@ -186,12 +201,89 @@ export default function MyMenuScreen({ profile }: Props) {
     // optimistic cache entry matches what a fresh getMenuCompletionLog would return.
     queryClient.setQueryData<MenuCompletionLog | null>(completionLogKey, prev => prev
       ? { ...prev, doneMealKeys: nextArr }
-      : { id: `${profile.email}_${TODAY_DATE}`, athleteId: profile.email, date: TODAY_DATE, menuId: menu.id, doneMealKeys: nextArr });
+      : { id: `${profile.email}_${hoyFecha}`, athleteId: profile.email, date: hoyFecha, menuId: menu.id, doneMealKeys: nextArr });
     await saveMenuCompletionLog({
-      athleteId: profile.email, date: TODAY_DATE,
+      athleteId: profile.email, date: hoyFecha,
       menuId: menu.id,
       doneMealKeys: nextArr,
     }).catch(() => {});
+
+    // Y al registro del día, que es lo que de verdad cuenta en los macros.
+    // Solo del día de HOY: mirando el menú del jueves un martes, marcar una
+    // comida no puede meterle la cena del jueves en el registro del martes.
+    if (selectedDay === hoyWD) {
+      const comida = day?.meals.find(m => m.id === mealId);
+      if (comida) void sincronizarConElPlan(comida, key, next.has(key));
+    }
+  }
+
+  /**
+   * Lleva (o quita) una comida del menú al registro del día de «Mi plan».
+   *
+   * Las dos pantallas guardan en documentos distintos y son pestañas hermanas
+   * —solo una está montada a la vez—, así que esto escribe el día directamente
+   * y deja el resultado en la caché de React Query con la MISMA clave que usa
+   * «Mi plan», para que al cambiar de pestaña lo encuentre ya hecho.
+   *
+   * Contar dos veces lo impide `origenMenu` (ver utils/registroDesdeElMenu):
+   * marcar dos veces no suma dos veces, y desmarcar quita exactamente lo que
+   * puso el menú, sin tocar lo que el atleta apuntó a mano.
+   */
+  async function sincronizarConElPlan(meal: MenuMeal, clave: string, marcando: boolean) {
+    try {
+      const log = await getDietCompletionLog(profile.email, hoyFecha);
+      const dia: DiaDelPlan = {
+        meals: log?.meals?.length
+          ? log.meals
+          : estructuraDeDia((onboarding?.meals ?? []).map(m => ({ name: m.name, slot: m.intakeType }))),
+        doneItemIds: log?.doneItemIds ?? [],
+      };
+      const total = totalConExtras(meal.exch, meal.complements, meal.racionesExtra);
+      const siguiente = marcando
+        ? registrarComidaDelMenu(dia, {
+            clave,
+            nombre: meal.name,
+            slot: meal.slot,
+            intercambios: total,
+            etiqueta: meal.recipeName,
+          })
+        : quitarComidaDelMenu(dia, clave);
+      if (siguiente === dia) return;   // nada que cambiar
+
+      const guardado = {
+        athleteId: profile.email,
+        date: hoyFecha,
+        dietId: log?.dietId ?? '',
+        doneItemIds: siguiente.doneItemIds,
+        meals: siguiente.meals,
+        ...(log?.budget ? { budget: log.budget } : {}),
+      };
+      queryClient.setQueryData(['dietCompletionLog', profile.email, hoyFecha], {
+        ...guardado, id: `${profile.email}_${hoyFecha}`,
+      });
+      await saveDietCompletionLog(guardado);
+      showToast(marcando ? 'Añadida a tu plan del día.' : 'Quitada de tu plan del día.', 'success');
+    } catch {
+      // Lo del menú ya está marcado; lo que ha fallado es el registro del día.
+      showToast('Marcada, pero no se pudo sumar a tu plan. Inténtalo otra vez.');
+    }
+  }
+
+  async function anadirAlPlan(meal: MenuMeal) {
+    if (!meal.recipeId || !onAddToPlan || anadiendoId) return;
+    setAnadiendoId(meal.id);
+    try {
+      const receta = await getRecipeById(meal.recipeId);
+      if (!receta) { showToast('No se pudo cargar la receta.'); return; }
+      onAddToPlan(receta);
+    } catch {
+      // Sin esto, con la red a medias el botón no hacía nada y dejaba una
+      // promesa rechazada suelta: al atleta le parece que la app se ha comido
+      // el toque.
+      showToast('No se pudo cargar la receta.');
+    } finally {
+      setAnadiendoId(null);
+    }
   }
 
   async function openDetail(meal: MenuMeal) {
@@ -369,7 +461,7 @@ export default function MyMenuScreen({ profile }: Props) {
       <div className="grid grid-cols-7 gap-2">
         {WEEK_DAYS.map(d => {
           const active = d === selectedDay;
-          const isToday = d === todayWeekDay();
+          const isToday = d === hoyWD;
           const md = menu.days.find(x => x.day === d);
           const hasMeals = (md?.meals.length ?? 0) > 0;
           return (
@@ -555,6 +647,17 @@ export default function MyMenuScreen({ profile }: Props) {
                         <Icon name="swap_horiz" size="s" />
                         Intercambiar
                       </button>
+                      {meal.recipeId && onAddToPlan && selectedDay !== hoyWD && (
+                        <button
+                          onClick={() => anadirAlPlan(meal)}
+                          disabled={anadiendoId === meal.id}
+                          title="Registrar esta comida en tu plan del día"
+                          className="flex items-center gap-1 text-caption font-mono text-accent hover:text-ink transition-colors disabled:opacity-50"
+                        >
+                          <Icon name="restaurant" size="s" />
+                          {anadiendoId === meal.id ? 'Añadiendo…' : 'Añadir a mi plan'}
+                        </button>
+                      )}
                       {meal.recipeId && (
                         <>
                           <button
@@ -576,6 +679,18 @@ export default function MyMenuScreen({ profile }: Props) {
                         </>
                       )}
                     </div>
+                    {/* Marcar aquí ya suma en «Mi plan» (ver `toggleDone` →
+                        `sincronizarConElPlan`). Se dice en la propia fila
+                        porque el fallo que esto arregla era justo ese: la
+                        atleta veía la comida verde y tachada, se iba al plan y
+                        no había cambiado ni una caloría. */}
+                    {done && meal.recipeId && (
+                      <p className="mt-2 font-mono text-caption text-success">
+                        {selectedDay === hoyWD
+                          ? 'Sumada a tu plan del día.'
+                          : 'Marcada. Para que cuente en los macros, añádela a tu plan.'}
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -681,7 +796,9 @@ export default function MyMenuScreen({ profile }: Props) {
         const extras = extrasDe(extrasFor.mealId);
         const actual = extrasFor.idx != null ? extras[extrasFor.idx] : null;
         const q = normalizeStr(extraQuery.trim());
-        const catalogo = complementosDisponibles(foodList, dietMode, actual?.category)
+        // `prefs.conditions` también aquí: el buscador de extras le abre al
+        // atleta el banco entero, y ahí dentro hay pan, pasta y hasta seitán.
+        const catalogo = complementosDisponibles(foodList, dietMode, actual?.category, prefs.conditions)
           .filter(f => !q || normalizeStr(f.label).includes(q));
 
         function cambiarCantidad(delta: number) {

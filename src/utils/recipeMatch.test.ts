@@ -77,6 +77,23 @@ describe('findRecipeAlternatives — seguridad', () => {
     expect(findRecipeAlternatives(source, pool, { prefs: { allergies: ['MELOCOTON'] } })).toHaveLength(0);
   });
 
+  it('no ofrece como alternativa una receta prohibida por una condición de salud', () => {
+    const source = receta('Tortilla', TRES);
+    const pool = [
+      receta('Salteado de seitán', TRES, { restrictions: [66], ingredientsText: [{ name: 'Seitán', quantity: 100 }] }),
+      receta('Arroz con pollo', TRES, { restrictions: [55], ingredientsText: [{ name: 'Arroz', quantity: 60 }] }),
+    ];
+    const out = findRecipeAlternatives(source, pool, { prefs: { conditions: [66] } });
+    expect(out.map(a => a.recipe.name)).toEqual(['Arroz con pollo']);
+  });
+
+  it('con una condición, deja fuera también las recetas sin el dato de restricciones', () => {
+    const source = receta('Tortilla', TRES);
+    const pool = [receta('Guiso sin catalogar', TRES, { ingredientsText: [{ name: 'Arroz', quantity: 60 }] })];
+    expect(findRecipeAlternatives(source, pool, { prefs: { conditions: [66] } })).toHaveLength(0);
+    expect(findRecipeAlternatives(source, pool, { prefs: {} })).toHaveLength(1);
+  });
+
   it('excluye carne y pescado si el atleta es vegetariano', () => {
     const source = receta('Ensalada', TRES);
     const pool = [

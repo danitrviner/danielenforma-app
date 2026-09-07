@@ -10,6 +10,7 @@ import {
   dayGlobalDeviation, rankCandidates, slotTargets, recipeMatchesSlot,
   buildBatchPlan, MealSlotSpec, GeneratorPrefs, MenuCandidate,
 } from '../utils/menuEngine';
+import { athleteConditions } from '../utils/dietaryRestrictions';
 import { exchangeToKcal } from '../utils/nutritionConstants';
 import { buildShoppingList } from '../utils/menuShoppingList';
 import { DISH_TYPES, DishType } from '../utils/dishTypes';
@@ -134,6 +135,7 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
 
   const prefs: GeneratorPrefs = useMemo(() => ({
     allergies: onboarding?.allergies ?? [],
+    conditions: athleteConditions(onboarding),
     disliked: onboarding?.dislikedFoods ?? [],
     liked: onboarding?.likedFoods ?? [],
     // Manda lo corregido por el atleta en su perfil, igual que `variety` y

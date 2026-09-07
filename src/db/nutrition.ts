@@ -1,5 +1,6 @@
 import { db, collection, doc, getDoc, setDoc, getDocs, addDoc, updateDoc, deleteDoc, query, where, limit, documentId } from '../firebase';
 import { MealItem, AthleteNutritionConfig, Diet, AthleteDietConfig, DietCompletionLog, WeeklyMenu, MenuCompletionLog, NutritionProgram, NutritionPhase } from '../types';
+import { registroQueGana } from './registroDelDia';
 import { forceLocalOnly, setLocalBypassMode, stripUndefined, authReady, withAuthRetry, esFalloDePermisos } from './core';
 import { SYSTEM_FOODS } from '../nutricion_seed_en_forma';
 import { idDeFoodItem } from '../utils/foodItemId';
@@ -433,19 +434,37 @@ function saveLocalDietCompletionLogs(list: DietCompletionLog[]): void {
   localStorage.setItem(LOCAL_DIET_COMPLETION_LOGS, JSON.stringify(list));
 }
 
+/** Sube otra vez un día que solo estaba en el móvil. Silencioso a propósito:
+ *  se dispara al LEER, el atleta no ha pedido nada y si vuelve a fallar el dato
+ *  sigue estando en el espejo local, que es de donde se acaba de sacar. */
+async function reintentarSubidaDelDia(coleccion: string, log: { id: string }): Promise<void> {
+  const { id, ...datos } = log;
+  try {
+    await setDoc(doc(db, coleccion, id), stripUndefined(datos));
+  } catch (err) {
+    console.warn(`reintento de subida fallido (${coleccion}/${id}):`, err);
+  }
+}
+
 export async function getDietCompletionLog(athleteId: string, date: string): Promise<DietCompletionLog | null> {
   const docId = `${athleteId}_${date}`;
-  if (forceLocalOnly) return getLocalDietCompletionLogs().find(l => l.id === docId) ?? null;
+  const local = getLocalDietCompletionLogs().find(l => l.id === docId) ?? null;
+  if (forceLocalOnly) return local;
   try {
     const snap = await getDoc(doc(db, 'dietCompletionLogs', docId));
-    if (!snap.exists()) return null;
-    const log = { id: snap.id, ...snap.data() } as DietCompletionLog;
-    saveLocalDietCompletionLogs([...getLocalDietCompletionLogs().filter(l => l.id !== docId), log]);
+    const remoto = snap.exists() ? ({ id: snap.id, ...snap.data() } as DietCompletionLog) : null;
+    // Antes esto era `if (!snap.exists()) return null`, y ahí se perdía el día:
+    // lo que el atleta había registrado seguía en el móvil, entero, y la
+    // pantalla se pintaba vacía porque el servidor no lo tenía. Ver
+    // `registroQueGana`.
+    const { log, hayQueSubir } = registroQueGana(remoto, local);
+    if (hayQueSubir && log) void reintentarSubidaDelDia('dietCompletionLogs', log);
+    if (log) saveLocalDietCompletionLogs([...getLocalDietCompletionLogs().filter(l => l.id !== docId), log]);
     return log;
   } catch (err) {
     console.warn('getDietCompletionLog Firestore failed, using local:', err);
     setLocalBypassMode(true, err);
-    return getLocalDietCompletionLogs().find(l => l.id === docId) ?? null;
+    return local;
   }
 }
 
@@ -459,10 +478,18 @@ export async function getDietCompletionLogsForAthlete(athleteId: string, desde?:
     let q = query(collection(db, 'dietCompletionLogs'), where('athleteId', '==', athleteId));
     if (desde) q = query(q, where('date', '>=', desde));
     const snap = await getDocs(q);
-    const list = snap.docs.map(d => ({ id: d.id, ...d.data() } as DietCompletionLog)).sort((a, b) => a.date.localeCompare(b.date));
+    const list = snap.docs.map(d => ({ id: d.id, ...d.data() } as DietCompletionLog));
+    // Los días que solo están en el móvil cuentan igual: son comida registrada.
+    // Sin esto, un día que no llegó a subir desaparecía también del historial y
+    // de la adherencia, no solo de la pantalla del día.
+    const soloLocales = getLocalDietCompletionLogs().filter(l =>
+      l.athleteId === athleteId &&
+      (!desde || l.date >= desde) &&
+      !list.some(r => r.id === l.id));
+    const completa = [...list, ...soloLocales].sort((a, b) => a.date.localeCompare(b.date));
     // Con ventana NO se toca el espejo local (ver getBodyweightForAthlete).
-    if (!desde) saveLocalDietCompletionLogs([...getLocalDietCompletionLogs().filter(l => l.athleteId !== athleteId), ...list]);
-    return list;
+    if (!desde) saveLocalDietCompletionLogs([...getLocalDietCompletionLogs().filter(l => l.athleteId !== athleteId), ...completa]);
+    return completa;
   } catch (err) {
     console.warn('getDietCompletionLogsForAthlete Firestore failed, using local:', err);
     setLocalBypassMode(true, err);
@@ -473,7 +500,10 @@ export async function getDietCompletionLogsForAthlete(athleteId: string, desde?:
 
 export async function saveDietCompletionLog(data: Omit<DietCompletionLog, 'id'>): Promise<DietCompletionLog> {
   const docId = `${data.athleteId}_${data.date}`;
-  const log: DietCompletionLog = { ...data, id: docId };
+  // Sin esta marca no hay forma de saber, al volver a abrir la app, si el día
+  // que hay en el móvil es más nuevo que el del servidor (ver `registroQueGana`).
+  const conMarca = { ...data, updatedAt: new Date().toISOString() };
+  const log: DietCompletionLog = { ...conMarca, id: docId };
   // El espejo local se escribe SIEMPRE y ANTES de la red. El día del atleta se
   // registra en el móvil, a ratos y a veces sin cobertura: si la escritura
   // remota se queda a medias porque cierra la app, lo que había puesto tiene
@@ -483,7 +513,7 @@ export async function saveDietCompletionLog(data: Omit<DietCompletionLog, 'id'>)
   saveLocalDietCompletionLogs([...getLocalDietCompletionLogs().filter(l => l.id !== docId), log]);
   if (forceLocalOnly) return log;
   try {
-    await setDoc(doc(db, 'dietCompletionLogs', docId), stripUndefined(data));
+    await setDoc(doc(db, 'dietCompletionLogs', docId), stripUndefined(conMarca));
     return log;
   } catch (err) {
     console.warn('saveDietCompletionLog Firestore failed, saved local:', err);
@@ -508,17 +538,21 @@ function saveLocalMenuCompletionLogs(list: MenuCompletionLog[]): void {
 
 export async function getMenuCompletionLog(athleteId: string, date: string): Promise<MenuCompletionLog | null> {
   const docId = `${athleteId}_${date}`;
-  if (forceLocalOnly) return getLocalMenuCompletionLogs().find(l => l.id === docId) ?? null;
+  const local = getLocalMenuCompletionLogs().find(l => l.id === docId) ?? null;
+  if (forceLocalOnly) return local;
   try {
     const snap = await getDoc(doc(db, 'menuCompletionLogs', docId));
-    if (!snap.exists()) return null;
-    const log = { id: snap.id, ...snap.data() } as MenuCompletionLog;
-    saveLocalMenuCompletionLogs([...getLocalMenuCompletionLogs().filter(l => l.id !== docId), log]);
+    const remoto = snap.exists() ? ({ id: snap.id, ...snap.data() } as MenuCompletionLog) : null;
+    // Mismo agujero que en el registro del día: las marcas del menú también se
+    // perdían al reabrir si la escritura no había llegado a Firestore.
+    const { log, hayQueSubir } = registroQueGana(remoto, local);
+    if (hayQueSubir && log) void reintentarSubidaDelDia('menuCompletionLogs', log);
+    if (log) saveLocalMenuCompletionLogs([...getLocalMenuCompletionLogs().filter(l => l.id !== docId), log]);
     return log;
   } catch (err) {
     console.warn('getMenuCompletionLog Firestore failed, using local:', err);
     setLocalBypassMode(true, err);
-    return getLocalMenuCompletionLogs().find(l => l.id === docId) ?? null;
+    return local;
   }
 }
 
@@ -541,20 +575,20 @@ export async function getMenuCompletionLogsForAthlete(athleteId: string): Promis
 
 export async function saveMenuCompletionLog(data: Omit<MenuCompletionLog, 'id'>): Promise<MenuCompletionLog> {
   const docId = `${data.athleteId}_${data.date}`;
-  const log: MenuCompletionLog = { ...data, id: docId };
-  if (forceLocalOnly) {
-    saveLocalMenuCompletionLogs([...getLocalMenuCompletionLogs().filter(l => l.id !== docId), log]);
-    return log;
-  }
+  const conMarca = { ...data, updatedAt: new Date().toISOString() };
+  const log: MenuCompletionLog = { ...conMarca, id: docId };
+  // El espejo local, SIEMPRE y ANTES de la red — igual que el registro del día.
+  // Escribirlo solo después de que Firestore confirmara perdía las marcas de
+  // quien cierra la app con el móvil sin cobertura.
+  saveLocalMenuCompletionLogs([...getLocalMenuCompletionLogs().filter(l => l.id !== docId), log]);
+  if (forceLocalOnly) return log;
   try {
-    await setDoc(doc(db, 'menuCompletionLogs', docId), stripUndefined(data));
-    saveLocalMenuCompletionLogs([...getLocalMenuCompletionLogs().filter(l => l.id !== docId), log]);
+    await setDoc(doc(db, 'menuCompletionLogs', docId), stripUndefined(conMarca));
     return log;
   } catch (err) {
     console.warn('saveMenuCompletionLog Firestore failed, saving local:', err);
     setLocalBypassMode(true, err);
     if (esFalloDePermisos(err)) throw err;
-    saveLocalMenuCompletionLogs([...getLocalMenuCompletionLogs().filter(l => l.id !== docId), log]);
     return log;
   }
 }

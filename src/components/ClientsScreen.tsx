@@ -14,6 +14,7 @@ import { estimateSetupPct } from '../utils/clientSetup';
 import { atletasActivos, esBaja, esAnonimizado } from '../utils/atletas';
 import { Avatar, Skeleton } from './ui';
 import { EmptyState, Badge } from './ui';
+import { coincideBusqueda } from '../utils/busqueda';
 
 const DEFAULT_HUB_TAB: HubTab = 'revisiones';
 
@@ -271,7 +272,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
     const q = search.trim().toLowerCase();
     if (!q) return enrichedAthletes;
     return enrichedAthletes.filter(a =>
-      a.displayName.toLowerCase().includes(q) || a.email.toLowerCase().includes(q)
+      coincideBusqueda(a.displayName, q) || coincideBusqueda(a.email, q)
     );
   }, [enrichedAthletes, search]);
 

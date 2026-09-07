@@ -7,6 +7,7 @@ import { getEstadoCatalogo, guardarGimnasio, deleteMaquinaPropia } from '../../d
 import { useToast } from '../../hooks/useToast';
 import AddOwnMachineSheet from './AddOwnMachineSheet';
 import CatalogoSwipe from './CatalogoSwipe';
+import { coincideBusqueda } from '../../utils/busqueda';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Mi gimnasio — pantalla 06 del handoff. Vive en Perfil.
@@ -51,7 +52,7 @@ export default function MiGimnasioPanel({ email }: Props) {
   const pendientes = data?.pendientes.length ?? 0;
 
   const filtro = busqueda.trim().toLowerCase();
-  const coincide = (texto: string) => !filtro || texto.toLowerCase().includes(filtro);
+  const coincide = (texto: string) => coincideBusqueda(texto, filtro);
   const catalogoVisible = misMaquinas.filter(m => coincide(`${m.nombreMostrado} ${MARCA_LABELS[m.marca] ?? m.marca}`));
   const propiasVisibles = propias.filter(p => coincide(p.nombre));
 

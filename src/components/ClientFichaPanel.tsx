@@ -9,6 +9,7 @@ import {
 } from '../dbService';
 import { ScoreStyle } from '../utils/adherence';
 import { dishTypeLabel } from '../utils/dishTypes';
+import { athleteConditions, restrictionLabel } from '../utils/dietaryRestrictions';
 import OnboardingForm from './OnboardingForm';
 import DossierPanel from './DossierPanel';
 import HistorialFichaPanel, { ActividadAtleta } from './HistorialFichaPanel';
@@ -449,6 +450,20 @@ export default function ClientFichaPanel({
                     </div>
                   ))}
                 </div>
+                {/* Condiciones de salud. Se pintan aparte de las alergias y por
+                    encima porque no son "un ingrediente fuera": descartan
+                    recetas enteras del generador, y el coach tiene que verlo
+                    antes de publicar un plan. Incluye las deducidas del texto
+                    libre de alergias de los perfiles anteriores a esta pantalla. */}
+                {(() => {
+                  const condiciones = athleteConditions(onboardingData);
+                  return condiciones.length > 0 && (
+                    <p className="font-mono text-caption text-amber-400 pt-1">
+                      <span className="material-symbols-outlined text-label align-middle mr-1">warning</span>
+                      Condiciones: {condiciones.map(restrictionLabel).join(', ')}
+                    </p>
+                  );
+                })()}
                 {onboardingData.allergies.length > 0 && (
                   <p className="font-mono text-caption text-amber-400 pt-1">
                     <span className="material-symbols-outlined text-label align-middle mr-1">warning</span>

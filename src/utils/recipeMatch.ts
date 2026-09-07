@@ -1,6 +1,8 @@
 import type { Recipe, BudgetVec, DietType, FoodCategory } from '../types';
 import { superaElTiempo } from './tiempoDeReceta';
 import { ingredientMatch, violatesDietType } from './foodPrefs';
+import { violatesHealthConditions } from './dietaryRestrictions';
+import { normalizarTexto } from './busqueda';
 import { dishType, DishType } from './dishTypes';
 import { GRAMS_PER_EXCHANGE } from './nutritionConstants';
 import { snapExchanges, totalExchanges } from './exchangeRounding';
@@ -58,6 +60,9 @@ export function recipeExchanges(recipe: Recipe): BudgetVec {
 export interface AlternativePrefs {
   /** Filtro DURO. Una receta con un ingrediente que coincida nunca se ofrece. */
   allergies?: string[];
+  /** Filtro DURO por condición de salud (celiaquía, intolerancias, embarazo…).
+   *  Códigos del recetario, ver `utils/dietaryRestrictions.ts`. */
+  conditions?: number[];
   /** Filtro duro: recetas que el atleta marcó "no me gusta". */
   dislikedRecipeIds?: string[];
   /** Filtro duro: tipos de plato que el atleta excluyó de su menú. */
@@ -114,7 +119,7 @@ function matchesIntake(recipe: Recipe, intakeType?: number): boolean {
   return true;
 }
 
-const norm = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+const norm = normalizarTexto;   // ver utils/busqueda: un solo criterio para toda la app
 
 /**
  * Busca recetas que puedan sustituir a `source` sin romper la dieta del atleta.
@@ -167,6 +172,7 @@ export function findRecipeAlternatives(
     // Las alergias van primero y no las relaja ninguna opción: ofrecer un
     // alérgeno es el único fallo de este buscador que puede hacer daño de verdad.
     if (allergies.some(f => ingredientMatch(r, f))) continue;
+    if (violatesHealthConditions(r, prefs.conditions)) continue;
     if (disliked.has(r.id)) continue;
     if (violatesDietType(r, prefs.dietType)) continue;
     if (superaElTiempo(r, prefs.cookingMaxTime)) continue;
@@ -182,7 +188,10 @@ export function findRecipeAlternatives(
     if (total <= 0) continue;
 
     const totalDrift = Math.abs(total - sourceTotal);
-    if (totalDrift > maxTotalDrift + 1e-9) continue;
+    // Con un término de búsqueda no se descarta por tamaño: el atleta que
+    // escribe el nombre de un plato quiere ESE plato, y la lista sigue
+    // ordenada por parecido, así que lo equivalente sale primero igual.
+    if (!nSearch && totalDrift > maxTotalDrift + 1e-9) continue;
 
     // ── Puntuación ───────────────────────────────────────────────────────────
     // El total pesa 4× el reparto: dar las mismas calorías es el objetivo, que
@@ -266,11 +275,24 @@ export function cabeEnElCupo(recipe: Recipe, cupo: BudgetVec, margen = 0.5): boo
  * Ordenar por sobra (y no por "lo más pequeño primero") evita que arriba salgan
  * siempre las recetas de medio intercambio, que caben en todo y no resuelven la
  * comida de nadie.
+ *
+ * `descartarLasQueNoCaben` existe porque este filtro es correcto MIRANDO una
+ * lista y equivocado BUSCANDO en ella. Quien navega el recetario para llenar
+ * una comida quiere ver lo que le entra; quien escribe el nombre de un plato
+ * concreto ya sabe cuál quiere, y esconderle justo ese —porque hoy ya ha
+ * comido— es la queja de "busco una receta que tengo en mi menú y no me sale"
+ * (Dani, 07-09-2026). Con búsqueda se ordenan igual, pero no se esconde nada.
  */
-export function ordenarPorCupo(recipes: Recipe[], cupo: BudgetVec, margen = 0.5): Recipe[] {
+export function ordenarPorCupo(
+  recipes: Recipe[], cupo: BudgetVec, margen = 0.5, descartarLasQueNoCaben = true,
+): Recipe[] {
   const sobra = (r: Recipe) => {
     const e = recipeExchanges(r);
     return (['HC', 'PROT', 'GRASA'] as const).reduce((s, c) => s + Math.abs((cupo[c] ?? 0) - e[c]), 0);
   };
-  return recipes.filter(r => cabeEnElCupo(r, cupo, margen)).sort((a, b) => sobra(a) - sobra(b));
+  const base = descartarLasQueNoCaben ? recipes.filter(r => cabeEnElCupo(r, cupo, margen)) : [...recipes];
+  // Con la búsqueda abierta las que caben siguen saliendo primero: la lista no
+  // cambia de criterio, solo deja de ocultar el resto.
+  return base.sort((a, b) =>
+    Number(cabeEnElCupo(b, cupo, margen)) - Number(cabeEnElCupo(a, cupo, margen)) || sobra(a) - sobra(b));
 }
