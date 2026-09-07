@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { AiChat, AiChatMessage, AiProposal, Diet, DossierPatch, Mesocycle, MuscleGroup, MUSCLE_LABELS, MUSCLE_ORDER, KnowledgeNote, PeriodizationBlockPayload,
-  RoadmapProposalPayload, NutritionProgramProposalPayload, SpecialDayProposalPayload, NutritionPhase, Roadmap } from '../types';
+import { AiChat, AiChatMessage, AiProposal, AiProposalPayload, Diet, DossierPatch, LevelLadder, Mesocycle, MuscleGroup, MUSCLE_LABELS, MUSCLE_ORDER, KnowledgeNote, PeriodizationBlockPayload,
+  RoadmapProposalPayload, NutritionProgramProposalPayload, SpecialDayProposalPayload, WorkoutDaysProposalPayload, WorkoutExercise, NutritionPhase, Roadmap } from '../types';
 import {
   getAiChats, saveAiChat, deleteAiChat, getAiProposalsForAthlete, updateAiProposal,
   submitCoachFeedback, createDiet, updateDiet, createMesocycle, bulkUpsertKnowledgeNotes,
@@ -11,6 +11,7 @@ import {
   getVolumeLandmarks, getVolumeLandmarksParaEditar, saveVolumeLandmarks, resetVolumeLandmarks,
   getRoadmap, saveRoadmap, saveNutritionProgram, getAllUserProfiles,
   getWorkoutAssignments, updateWorkoutAssignment,
+  getWorkouts, createWorkoutStrict, updateWorkout, getMesocycles,
 } from '../dbService';
 import { VOLUME_LANDMARKS_DEFAULT, type VolumeLandmark } from '../data/volumeLandmarks';
 import { runAgentTurn, messageText, probarConexionProxy, TurnoCancelado } from '../ai/aiClient';
@@ -19,8 +20,13 @@ import DossierPanel, { dossierKey } from './DossierPanel';
 import HistorialFichaPanel from './HistorialFichaPanel';
 import { saveDossierJudgement, appendDossierFacts } from '../db/dossier';
 import { OPEN_AI_PANEL_EVENT, OpenAiPanelDetail } from '../ai/events';
-import { exchangeToKcal } from '../utils/nutritionConstants';
-import { Icon, Button, ListRow, Badge, Dialog } from './ui';
+import { Icon, Button, ListRow, Dialog } from './ui';
+import { useNavigate } from 'react-router-dom';
+import ProposalEditor from './ai/ProposalEditor';
+import { nombreDeSesion } from '../utils/nombresMeso';
+import { describirEdicion, motivoParaNoAprobar } from '../utils/edicionPropuesta';
+import { dejarBorradorDeDieta } from '../ai/borradorDieta';
+import { auth } from '../firebase';
 
 interface Props {
   activeAthleteEmail?: string;
@@ -28,6 +34,39 @@ interface Props {
 }
 
 const MAX_MESSAGES_PER_CHAT = 60; // ~30 turnos; después se pide empezar chat nuevo
+
+/**
+ * Qué hay que releer después de aprobar cada tipo de propuesta. Las claves son
+ * las mismas que usan las pantallas que leen ese dato (road map del atleta,
+ * ficha del cliente, rutinas): si no coinciden, la escritura entra en Firestore
+ * y la pantalla sigue enseñando lo de antes.
+ */
+function clavesQueRefrescar(kind: AiProposal['kind'], athleteEmail: string): unknown[][] {
+  switch (kind) {
+    case 'workoutDays':
+      return [['workouts']];
+    case 'mesocycle':
+    case 'periodizationBlock':
+      return [['mesocycles', athleteEmail], ['workouts'], ['tasksForAthlete', athleteEmail]];
+    case 'levelLadder':
+    case 'roadmap':
+      return [['roadmap', athleteEmail]];
+    case 'specialDay':
+      return [['roadmap', athleteEmail], ['tasksForAthlete', athleteEmail]];
+    case 'nutritionProgram':
+      return [['nutritionProgram', athleteEmail], ['dietsForAthlete', athleteEmail]];
+    case 'diet':
+      return [['dietsForAthlete', athleteEmail]];
+    default:
+      return [];
+  }
+}
+
+/** Un fallo del que ya se le ha dado a Dani el detalle que importa (qué se
+ *  guardó y qué no). El catch general lo deja pasar sin pisar el mensaje. */
+class AprobacionYaAvisada extends Error {
+  constructor(readonly causa: unknown) { super('aprobación fallida, ya avisada'); }
+}
 
 // Dictado por voz vía Web Speech API (nativa del navegador, sin backend ni coste
 // extra). Solo Chrome/Edge la implementan de forma fiable (prefijo webkit); en
@@ -208,6 +247,7 @@ function VolumeLandmarksEditor({ valor, onChange, esDefault, onRestaurar, disabl
 export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: Props) {
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
+  const navigate = useNavigate();
   const [showList, setShowList] = useState(false);
   const { data: chats = [] } = useQuery({
     queryKey: aiChatsKey,
@@ -233,6 +273,10 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
   // El porqué que Dani escribe al aprobar. Opcional a propósito: si fuese
   // obligatorio, la fricción se pagaría en cada propuesta y acabaría vacío.
   const [notaAprobacion, setNotaAprobacion] = useState<Record<string, string>>({});
+  // Lo que Dani ha tocado de una propuesta antes de aprobarla. Vacío = se
+  // aprueba tal cual vino. Vive en el panel y no en la propuesta a propósito:
+  // mientras no apruebe, lo que la IA propuso sigue siendo lo que propuso.
+  const [edits, setEdits] = useState<Record<string, AiProposalPayload>>({});
   const [fichaAbierta, setFichaAbierta] = useState(false);
   const [syncMsg, setSyncMsg] = useState<string | null>(null);
   const [diagMsg, setDiagMsg] = useState<string | null>(null);
@@ -441,8 +485,11 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
   }, [chat.messages.length, toolStatus, busy]);
 
-  const approveProposal = async (p: AiProposal) => {
-    setReviewingId(p.id);
+  const approveProposal = async (original: AiProposal) => {
+    setReviewingId(original.id);
+    // Se aprueba lo que Dani tiene delante, no lo que propuso la IA.
+    const editado = edits[original.id];
+    const p: AiProposal = editado ? { ...original, payload: editado } : original;
     try {
       if (p.kind === 'checkinFeedback') {
         const { checkInId, feedback } = p.payload as { checkInId: string; feedback: string };
@@ -533,6 +580,66 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
         await saveDossierJudgement(p.athleteId, p.payload as DossierPatch);
         await updateAiProposal(p.id, { status: 'approved', reviewedAt: new Date().toISOString(), resultEntityId: p.athleteId });
         await queryClient.invalidateQueries({ queryKey: dossierKey(p.athleteId) });
+      } else if (p.kind === 'workoutDays') {
+        // Cada día se guarda como LA rutina de ese día del mesociclo. Si ya
+        // había una, se reescribe conservando su id: las asignaciones del
+        // calendario del atleta apuntan a ese documento, y crear uno nuevo
+        // dejaría al atleta entrenando la rutina vieja para siempre.
+        const { mesocycleId, days } = p.payload as WorkoutDaysProposalPayload;
+        const [todas, mesos] = await Promise.all([getWorkouts(), getMesocycles(p.athleteId)]);
+        const meso = mesos.find(m => m.id === mesocycleId);
+        const delMeso = todas.filter(w => w.mesocycleId === mesocycleId);
+        const athleteName = (await getAllUserProfiles()).find(u => u.email === p.athleteId)?.displayName;
+        // Se escribe día a día y no hay transacción posible (son documentos
+        // sueltos). Si peta a mitad, lo que NO puede pasar es que el error diga
+        // solo "no se pudo": los días ya escritos están vivos y el atleta los
+        // ve. Se lleva la cuenta para decirlo.
+        const guardados: number[] = [];
+        for (const dia of days) {
+          const exercises: WorkoutExercise[] = dia.exercises.map((ex, i) => ({
+            exerciseId: ex.exerciseId,
+            order: i,
+            sets: ex.sets,
+            reps: ex.reps,
+            rir: ex.rir,
+            restSeconds: ex.restSeconds,
+            ...(ex.notes ? { notes: ex.notes } : {}),
+            ...(ex.muscleGroup ? { muscleGroup: ex.muscleGroup } : {}),
+          }));
+          const nombre = dia.name?.trim() || (meso
+            ? nombreDeSesion({ dayIdx: dia.dayIndex, athleteName, meso })
+            : `Sesión ${dia.dayIndex + 1}`);
+          const existente = delMeso.find(w => w.dayIndex === dia.dayIndex);
+          try {
+            if (existente) {
+              await updateWorkout(existente.id, { name: nombre, exercises });
+            } else {
+              await createWorkoutStrict({
+                ownerId: auth.currentUser?.uid ?? '',
+                name: nombre,
+                mesocycleId,
+                dayIndex: dia.dayIndex,
+                exercises,
+              });
+            }
+            guardados.push(dia.dayIndex + 1);
+          } catch (err) {
+            queryClient.invalidateQueries({ queryKey: ['workouts'] });
+            const yaHechos = guardados.length
+              ? ` Los días ${guardados.join(', ')} sí se guardaron: vuelve a aprobarla para terminar (reescribe los mismos días, no duplica).`
+              : ' No se guardó ningún día.';
+            setError(`Falló al guardar el día ${dia.dayIndex + 1}.${yaHechos}`);
+            setReviewingId(null);
+            throw new AprobacionYaAvisada(err);
+          }
+        }
+        await updateAiProposal(p.id, { status: 'approved', reviewedAt: new Date().toISOString(), resultEntityId: mesocycleId });
+      } else if (p.kind === 'levelLadder') {
+        const ladder = p.payload as LevelLadder;
+        const actual = await getRoadmap(p.athleteId);
+        const base: Roadmap = actual ?? { athleteId: p.athleteId, items: [] };
+        await saveRoadmap({ ...base, levelLadder: ladder });
+        await updateAiProposal(p.id, { status: 'approved', reviewedAt: new Date().toISOString(), resultEntityId: p.athleteId });
       } else if (p.kind === 'periodizationBlock') {
         // Bloque H2.1 — al aprobar se crea el mesociclo Y toda la cadencia de
         // revisiones de golpe; el carril "Revisiones" del cuadro de mando las
@@ -564,25 +671,62 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
           expediente: { datos: '', huecos: '', preguntas: [], esperado: '', ...p.expediente, notaAlAprobar: nota },
         });
       }
-      appendDossierFacts(p.athleteId, [{
+      // Lo que se acaba de escribir tiene que verse SIN recargar. Antes solo
+      // invalidaba la ficha viva, así que aprobar un roadmap o una
+      // periodización no cambiaba nada en pantalla hasta salir y volver.
+      for (const clave of clavesQueRefrescar(p.kind, p.athleteId)) {
+        queryClient.invalidateQueries({ queryKey: clave });
+      }
+
+      // Editarla antes de aprobar es la corrección más barata que existe, y la
+      // que más dice de su criterio. Se apunta como hecho para que la próxima
+      // propuesta ya venga con ella dentro (la IA lo lee en get_athlete_dossier).
+      const hechos = [{
         at: new Date().toISOString(),
-        kind: 'aprobacion',
+        kind: 'aprobacion' as const,
         text: nota ? `${p.summary} — ${nota}` : p.summary,
         proposalId: p.id,
         chatId: p.chatId,
-      }]).catch(err => console.warn('No se pudo apuntar la aprobación en la ficha:', err));
+      }];
+      if (editado) {
+        hechos.push({
+          at: new Date().toISOString(),
+          kind: 'aprobacion' as const,
+          text: `Dani editó la propuesta antes de aprobarla: ${describirEdicion(original, editado)}`,
+          proposalId: p.id,
+          chatId: p.chatId,
+        });
+      }
+      appendDossierFacts(p.athleteId, hechos)
+        .catch(err => console.warn('No se pudo apuntar la aprobación en la ficha:', err));
+      setEdits(prev => { const { [p.id]: _quitado, ...resto } = prev; return resto; });
       queryClient.setQueryData<AiProposal[]>(proposalsKey, prev => prev?.filter(x => x.id !== p.id));
-    } catch {
-      setError('No se pudo aprobar la propuesta — inténtalo de nuevo.');
+    } catch (err) {
+      // El error del guardado por días ya trae su propio mensaje, con qué se
+      // llegó a guardar. Pisarlo con el genérico sería peor que no decir nada.
+      if (!(err instanceof AprobacionYaAvisada)) {
+        setError('No se pudo aprobar la propuesta — inténtalo de nuevo.');
+      }
     } finally {
       setReviewingId(null);
     }
+  };
+
+  // Manda la propuesta al editor de dietas de verdad. No aprueba nada: la
+  // propuesta se queda pendiente hasta que Dani guarde allí, y es el propio
+  // editor el que la cierra (ver ClientDietsPanel). Si la abandona a medias,
+  // sigue en la lista de por revisar, que es lo correcto.
+  const abrirEnEditorDeDietas = (p: AiProposal, diet: Omit<Diet, 'id'>) => {
+    dejarBorradorDeDieta({ proposalId: p.id, athleteEmail: p.athleteId, diet });
+    setOpen(false);
+    navigate(`/clients/${encodeURIComponent(p.athleteId)}/dietas`);
   };
 
   const rejectProposal = async (p: AiProposal) => {
     setReviewingId(p.id);
     try {
       await updateAiProposal(p.id, { status: 'rejected', reviewedAt: new Date().toISOString() });
+      setEdits(prev => { const { [p.id]: _quitado, ...resto } = prev; return resto; });
       queryClient.setQueryData<AiProposal[]>(proposalsKey, prev => prev?.filter(x => x.id !== p.id));
     } catch {
       setError('No se pudo rechazar la propuesta — inténtalo de nuevo.');
@@ -843,20 +987,19 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
             )}
           </div>
 
-          {/* Propuestas pendientes del cliente activo — la IA propone, Dani aprueba */}
+          {/* Propuestas pendientes del cliente activo. La IA propone, Dani las
+              edita aquí mismo y aprueba. max-h al 55% (antes 40%) porque la
+              tarjeta ya no es un resumen: es el editor, y una propuesta de
+              sesiones trae varios días con sus ejercicios dentro. */}
           {proposals.length > 0 && (
-            <div className="border-t border-amber-500/20 bg-amber-500/5 p-3 flex flex-col gap-2 max-h-[40%] overflow-y-auto">
+            <div className="border-t border-amber-500/20 bg-amber-500/5 p-3 flex flex-col gap-2 max-h-[55%] overflow-y-auto">
               <p className="text-caption font-sans font-bold uppercase tracking-wider text-amber-300/80">
                 {proposals.length === 1 ? '1 propuesta por revisar' : `${proposals.length} propuestas por revisar`}
               </p>
               {proposals.map(p => {
-                const diet = p.kind === 'diet' ? (p.payload as Omit<Diet, 'id'>) : null;
-                const meso = p.kind === 'mesocycle' ? (p.payload as Omit<Mesocycle, 'id'>)
-                  : p.kind === 'periodizationBlock' ? (p.payload as PeriodizationBlockPayload).mesocycle
-                  : null;
-                const mesoTrained = meso
-                  ? (Object.keys(MUSCLE_LABELS) as MuscleGroup[]).filter(g => meso.groups[g]?.series > 0)
-                  : [];
+                const payload = edits[p.id] ?? p.payload;
+                const tocada = !!edits[p.id];
+                const bloqueo = motivoParaNoAprobar(p.kind, payload);
                 return (
                 <div key={p.id} className="bg-surface border border-amber-500/25 rounded-surface p-3 flex flex-col gap-2">
                   <p className="text-label text-white whitespace-pre-wrap">{p.summary}</p>
@@ -878,92 +1021,24 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                       )}
                     </div>
                   )}
-                  {p.kind === 'roadmap' && (
-                    <ul className="flex flex-col gap-1 bg-bg border border-hairline rounded-surface p-3">
-                      {(p.payload as RoadmapProposalPayload).items.map(it => (
-                        <li key={it.id} className="text-caption text-ink-2">
-                          <span className="text-ink">{it.title}</span>
-                          {it.targetDate && <span className="font-mono text-ink-4"> · {it.targetDate}</span>}
-                          <span className="text-ink-4"> · {it.lane}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                  {p.kind === 'nutritionProgram' && (
-                    <div className="flex flex-col gap-1 bg-bg border border-hairline rounded-surface p-3">
-                      {(p.payload as NutritionProgramProposalPayload).phases.map((f, i) => (
-                        <div key={i} className="flex justify-between text-caption">
-                          <span className="text-ink-2">
-                            {f.name} <span className="text-ink-4">· {f.weeks} sem{f.phaseType ? ` · ${f.phaseType}` : ''}</span>
-                          </span>
-                          <span className="font-mono text-ink">
-                            {f.targetKcal ? `${f.targetKcal} kcal` : ''}{f.diet ? ' · dieta nueva' : ''}
-                          </span>
-                        </div>
-                      ))}
-                      {(p.payload as NutritionProgramProposalPayload).refeedDays?.map(r => (
-                        <div key={r.date} className="text-caption text-ink-2">
-                          <span className="font-mono text-ink-4">{r.date}</span> · recarga{r.note ? `: ${r.note}` : ''}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  {p.kind === 'specialDay' && (
-                    <div className="flex flex-col gap-2 bg-bg border border-hairline rounded-surface p-3">
-                      <div className="flex gap-2 items-center flex-wrap">
-                        <Badge tone="accent">{(p.payload as SpecialDayProposalPayload).date}</Badge>
-                        <span className="text-label text-ink">{(p.payload as SpecialDayProposalPayload).title}</span>
-                      </div>
-                      {/* Esto es literalmente lo que va a leer el atleta ese día. */}
-                      <p className="text-caption text-ink-2 border-l-2 border-accent-line pl-3">
-                        {(p.payload as SpecialDayProposalPayload).athleteNote}
-                      </p>
-                    </div>
-                  )}
-                  {p.kind === 'dossier' && (
-                    <div className="flex flex-col gap-2 bg-bg border border-hairline rounded-surface p-3">
-                      {Object.entries(p.payload as DossierPatch).map(([campo, valor]) => (
-                        <div key={campo} className="flex flex-col">
-                          <span className="text-caption text-ink-4 uppercase tracking-wide">{campo}</span>
-                          <span className="text-caption text-ink-2 whitespace-pre-wrap">
-                            {Array.isArray(valor) ? valor.map(v => `· ${v}`).join('\n') : String(valor)}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  {meso && (
-                    <div className="flex flex-col gap-2 bg-bg border border-hairline rounded-surface p-3">
-                      <div className="flex gap-2 flex-wrap text-caption font-mono text-ink-2">
-                        <span>{meso.weeks} sem</span>
-                        <span>·</span>
-                        <span>{meso.daysPerWeek} días/sem</span>
-                        <span>·</span>
-                        <span>{mesoTrained.reduce((s, g) => s + meso.groups[g].series, 0)} series/sem</span>
-                      </div>
-                      <div className="grid grid-cols-2 gap-x-3 ">
-                        {mesoTrained.map(g => (
-                          <div key={g} className="flex justify-between text-caption">
-                            <span className="text-ink-2">{MUSCLE_LABELS[g]}</span>
-                            <span className="text-ink font-mono">{meso.groups[g].series}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  {diet && (
-                    <div className="flex flex-col gap-2 bg-bg border border-hairline rounded-surface p-3">
-                      <div className="flex gap-2 flex-wrap">
-                        {(['HC', 'PROT', 'GRASA'] as const).map(cat => (
-                          <Badge key={cat} tone="neutral">{cat} {diet.budget[cat]}</Badge>
-                        ))}
-                        <span className="text-caption font-mono text-ink-2">≈ {exchangeToKcal(diet.budget)} kcal</span>
-                      </div>
-                      <ul className="text-caption text-ink-2 flex flex-col ">
-                        {diet.meals.map(m => (
-                          <li key={m.id}>{m.name}: {m.items.length} {m.items.length === 1 ? 'item' : 'items'}</li>
-                        ))}
-                      </ul>
+                  {/* La propuesta se toca aquí mismo. Lo que se aprueba es esto,
+                      no lo que propuso la IA — y la diferencia se le cuenta a la
+                      ficha para que la próxima venga ya corregida. */}
+                  <ProposalEditor
+                    proposal={p}
+                    payload={payload}
+                    onChange={nuevo => setEdits(prev => ({ ...prev, [p.id]: nuevo }))}
+                  />
+                  {tocada && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-caption text-accent">Editada por ti</span>
+                      <button
+                        type="button"
+                        onClick={() => setEdits(prev => { const { [p.id]: _q, ...resto } = prev; return resto; })}
+                        className="text-caption text-ink-4 underline"
+                      >
+                        volver a la propuesta original
+                      </button>
                     </div>
                   )}
                   <input
@@ -972,10 +1047,24 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                     placeholder="Por qué la apruebas así (opcional)"
                     className="w-full bg-field border border-hairline rounded-control px-3 py-2 text-caption text-ink placeholder:text-ink-4 focus:border-accent-line focus:outline-none"
                   />
+                  {/* Las comidas se cuadran en el editor de dietas, no aquí:
+                      allí están el buscador de alimentos, las recetas y el
+                      balance de colocado vs presupuesto. Se lleva la propuesta
+                      entera y se guarda desde allí como una dieta normal. */}
+                  {p.kind === 'diet' && (
+                    <Button
+                      variant="secondary"
+                      icon="edit_note"
+                      onClick={() => abrirEnEditorDeDietas(p, payload as Omit<Diet, 'id'>)}
+                    >
+                      Abrir en el editor de dietas
+                    </Button>
+                  )}
+                  {bloqueo && <p className="text-caption text-warning">{bloqueo}</p>}
                   <div className="flex gap-2 pt-1">
                     <button
                       onClick={() => approveProposal(p)}
-                      disabled={reviewingId === p.id}
+                      disabled={reviewingId === p.id || !!bloqueo}
                       className="flex-1 py-2 rounded-control bg-success/15 border border-success/40 text-success text-caption font-bold uppercase tracking-wide disabled:opacity-40"
                     >
                       Aprobar

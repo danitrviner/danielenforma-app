@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import React, { useState, useMemo, useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   UserProfile, OnboardingData, Diet, AthleteDietConfig, AthleteNutritionConfig,
   DietMode, WeekDay, WeeklyMenu, BodyweightLog, MenuCompletionLog,
@@ -9,7 +9,9 @@ import { computeMenuAdherenceRate } from '../utils/nutritionAnalysis';
 import { DEFAULT_KCAL_PER_STEP } from '../utils/nutritionConstants';
 import { isDietPending } from '../utils/exchangeHelpers';
 import { SLOT_LABEL, HUNGER_PROFILE_LABEL } from '../utils/mealDistribution';
-import { getDietsForAthlete, deleteWeeklyMenu, getWeeklyMenusForAthlete, getNutritionProgram, computeActivePhase } from '../dbService';
+import { getDietsForAthlete, deleteWeeklyMenu, getWeeklyMenusForAthlete, getNutritionProgram, computeActivePhase, updateAiProposal } from '../dbService';
+import { appendDossierFacts } from '../db/dossier';
+import { recogerBorradorDeDieta } from '../ai/borradorDieta';
 import NutritionPeriodizationPanel from './NutritionPeriodizationPanel';
 import NutritionPlansScreen from './NutritionPlansScreen';
 import WeeklyMenuEditor from './WeeklyMenuEditor';
@@ -70,6 +72,19 @@ export default function ClientDietsPanel({
 }: Props) {
   // Diet editor state: undefined = closed, null = create new, Diet = edit existing
   const [dietEditorDiet, setDietEditorDiet] = useState<Diet | null | undefined>(undefined);
+  const queryClient = useQueryClient();
+
+  /* Propuesta de dieta de la IA abierta aquí para tocarla de verdad.
+     El botón "Abrir en el editor de dietas" del panel del asistente deja el
+     borrador y navega hasta aquí; se recoge una sola vez al montar. El id vacío
+     hace que el editor la trate como dieta nueva: al guardar, la crea. */
+  const [propuestaAbierta, setPropuestaAbierta] = useState<string | null>(null);
+  useEffect(() => {
+    const borrador = recogerBorradorDeDieta(athlete.email);
+    if (!borrador) return;
+    setPropuestaAbierta(borrador.proposalId);
+    setDietEditorDiet({ id: '', ...borrador.diet } as Diet);
+  }, [athlete.email]);
 
   /* Borrar y duplicar dietas desde esta lista. Hasta ahora el único botón era
      "Editar": una dieta creada aquí no se podía quitar ni copiar sin salir a la
@@ -155,13 +170,31 @@ export default function ClientDietsPanel({
       onboardingData={onboardingData}
       nutritionProgram={nutritionProgram}
       activePhase={activePhase}
-      onSaved={async (_saved) => {
+      onSaved={async (saved) => {
         setDietEditorDiet(undefined);
+        // Si lo que se acaba de guardar venía de una propuesta, la propuesta
+        // queda aprobada aquí: es donde de verdad ha terminado. Cerrarla en el
+        // panel al pulsar "Abrir en el editor" habría dado por buena una dieta
+        // que Dani todavía no había visto.
+        if (propuestaAbierta) {
+          const id = propuestaAbierta;
+          setPropuestaAbierta(null);
+          updateAiProposal(id, {
+            status: 'approved', reviewedAt: new Date().toISOString(), resultEntityId: saved.id,
+          }).catch(console.error);
+          appendDossierFacts(athlete.email, [{
+            at: new Date().toISOString(),
+            kind: 'aprobacion',
+            text: `Dieta "${saved.name}" aprobada desde el editor (Dani la retocó allí antes de guardarla)`,
+            proposalId: id,
+          }]).catch(console.error);
+          queryClient.invalidateQueries({ queryKey: ['aiProposalsForAthlete', athlete.email] });
+        }
         getDietsForAthlete(athlete.email)
           .then(diets => setAthleteDiets(diets.filter(d => !d.selfManaged)))
           .catch(console.error);
       }}
-      onCancelled={() => setDietEditorDiet(undefined)}
+      onCancelled={() => { setPropuestaAbierta(null); setDietEditorDiet(undefined); }}
     />
   ) : (
     /* ── Diet list + config ── */

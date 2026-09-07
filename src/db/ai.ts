@@ -89,6 +89,31 @@ export async function getAiProposalsForAthlete(athleteEmail: string): Promise<Ai
   }
 }
 
+/**
+ * Todas las propuestas ya APROBADAS, de todos los atletas. Sirve para una cosa
+ * concreta: comparar lo que la IA propuso con lo que quedó vivo y aprender qué
+ * corrige Dani sistemáticamente (ver utils/derivaPropuestas.ts).
+ *
+ * Es un `where` de igualdad sin `orderBy`, a propósito: así le basta el índice
+ * de campo simple que Firestore crea solo. Ordenar por `reviewedAt` en la
+ * consulta pediría un índice compuesto que habría que desplegar, y las reglas
+ * y los índices no se tocan mientras haya una build en revisión.
+ */
+export async function getApprovedAiProposals(): Promise<AiProposal[]> {
+  const ordenar = (list: AiProposal[]) =>
+    list.sort((a, b) => (b.reviewedAt ?? b.createdAt).localeCompare(a.reviewedAt ?? a.createdAt));
+  if (forceLocalOnly) return ordenar(getLocalAiProposals().filter(p => p.status === 'approved'));
+  try {
+    const q = query(collection(db, 'aiProposals'), where('status', '==', 'approved'));
+    const snap = await getDocs(q);
+    return ordenar(snap.docs.map(d => ({ id: d.id, ...d.data() } as AiProposal)));
+  } catch (err) {
+    console.warn('getApprovedAiProposals Firestore failed, using local:', err);
+    setLocalBypassMode(true, err);
+    return ordenar(getLocalAiProposals().filter(p => p.status === 'approved'));
+  }
+}
+
 export async function createAiProposal(data: Omit<AiProposal, 'id'>): Promise<AiProposal> {
   if (forceLocalOnly) {
     const proposal: AiProposal = { id: `aiprop_${Date.now()}`, ...data };

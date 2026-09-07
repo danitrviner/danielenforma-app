@@ -192,3 +192,175 @@ export function validateNutritionPhases(
   });
   return issues;
 }
+
+// ── Sesiones de un mesociclo (los días con sus ejercicios) ───────────────────
+// Es la propuesta con más superficie de error de todas: un nombre de ejercicio
+// que no existe, un RIR de 9, 40 series en un día. Nada de eso puede llegar a
+// la tarjeta de revisión, así que se valida aquí y el modelo se corrige solo
+// con los issues de vuelta.
+
+export interface WorkoutDayInput {
+  day_index?: unknown;
+  name?: unknown;
+  exercises?: unknown;
+}
+
+export interface WorkoutExerciseInput {
+  exercise?: unknown;
+  sets?: unknown;
+  reps?: unknown;
+  rir?: unknown;
+  rest_seconds?: unknown;
+  notes?: unknown;
+}
+
+const MAX_SETS_POR_EJERCICIO = 10;
+const MAX_SERIES_POR_SESION = 40;
+
+/** Normaliza para comparar nombres de ejercicio: sin acentos, sin dobles
+ *  espacios, en minúsculas. "Press Banca " y "press banca" son el mismo. */
+export function claveDeEjercicio(nombre: string): string {
+  return nombre.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
+}
+
+export function validateWorkoutDays(
+  dias: WorkoutDayInput[],
+  catalogo: { id: string; name: string }[],
+  daysPerWeek: number,
+): ValidationIssue[] {
+  const issues: ValidationIssue[] = [];
+  if (!Array.isArray(dias) || dias.length === 0) {
+    return [{ field: 'days', message: 'days necesita al menos una sesión' }];
+  }
+
+  const porNombre = new Map(catalogo.map(e => [claveDeEjercicio(e.name), e]));
+  const vistos = new Set<number>();
+
+  dias.forEach((dia, i) => {
+    const idx = Number(dia.day_index);
+    if (!Number.isInteger(idx) || idx < 0 || idx >= daysPerWeek) {
+      issues.push({ field: `days[${i}].day_index`, message: `day_index debe ser un entero entre 0 y ${daysPerWeek - 1} (el mesociclo tiene ${daysPerWeek} sesiones por ciclo); recibido ${JSON.stringify(dia.day_index)}` });
+    } else if (vistos.has(idx)) {
+      issues.push({ field: `days[${i}].day_index`, message: `day_index ${idx} repetido — una sesión por día` });
+    } else {
+      vistos.add(idx);
+    }
+
+    const ejercicios = Array.isArray(dia.exercises) ? (dia.exercises as WorkoutExerciseInput[]) : [];
+    if (ejercicios.length === 0) {
+      issues.push({ field: `days[${i}].exercises`, message: `La sesión ${idx} no tiene ejercicios` });
+    }
+
+    let seriesDelDia = 0;
+    ejercicios.forEach((ex, j) => {
+      const donde = `days[${i}].exercises[${j}]`;
+      const nombre = typeof ex.exercise === 'string' ? ex.exercise.trim() : '';
+      if (!nombre) {
+        issues.push({ field: `${donde}.exercise`, message: 'Falta el nombre del ejercicio' });
+      } else if (!porNombre.has(claveDeEjercicio(nombre))) {
+        // Sugerir por prefijo ahorra una vuelta entera del modelo.
+        const pista = catalogo
+          .filter(e => claveDeEjercicio(e.name).includes(claveDeEjercicio(nombre).split(' ')[0]))
+          .slice(0, 5)
+          .map(e => e.name);
+        issues.push({
+          field: `${donde}.exercise`,
+          message: `"${nombre}" no está en el catálogo${pista.length ? ` — ¿querías decir ${pista.join(' / ')}?` : ''}. Usa get_exercise_library para los nombres exactos.`,
+        });
+      }
+
+      const sets = Number(ex.sets);
+      if (!Number.isInteger(sets) || sets < 1 || sets > MAX_SETS_POR_EJERCICIO) {
+        issues.push({ field: `${donde}.sets`, message: `sets debe ser un entero entre 1 y ${MAX_SETS_POR_EJERCICIO} (recibido: ${JSON.stringify(ex.sets)})` });
+      } else {
+        seriesDelDia += sets;
+      }
+
+      if (typeof ex.reps !== 'string' || !ex.reps.trim()) {
+        issues.push({ field: `${donde}.reps`, message: 'reps es obligatorio — un rango ("8-10"), un número ("12") o "AMRAP"' });
+      }
+
+      const rir = Number(ex.rir);
+      if (!Number.isFinite(rir) || rir < 0 || rir > 5) {
+        issues.push({ field: `${donde}.rir`, message: `rir debe estar entre 0 y 5 (recibido: ${JSON.stringify(ex.rir)})` });
+      }
+
+      if (ex.rest_seconds !== undefined) {
+        const rest = Number(ex.rest_seconds);
+        if (!Number.isFinite(rest) || rest < 0 || rest > 600) {
+          issues.push({ field: `${donde}.rest_seconds`, message: `rest_seconds debe estar entre 0 y 600 (recibido: ${JSON.stringify(ex.rest_seconds)})` });
+        }
+      }
+    });
+
+    if (seriesDelDia > MAX_SERIES_POR_SESION) {
+      issues.push({ field: `days[${i}].exercises`, message: `La sesión ${idx} suma ${seriesDelDia} series — por encima de ${MAX_SERIES_POR_SESION} no es una sesión, es un error` });
+    }
+  });
+
+  return issues;
+}
+
+// ── Escalera de niveles ─────────────────────────────────────────────────────
+// La escalera la ve el atleta como su progresión ("Club" → "Hombre Sano" → …),
+// así que un criterio mal formado no es un dato feo: es un nivel que no se
+// desbloquea nunca o que se desbloquea solo.
+
+const KINDS_CRITERIO = ['peso_perdido_kg', 'sentadilla_xbw', 'pasos_media_diaria', 'manual'];
+
+export interface LadderLevelInput {
+  name?: unknown;
+  icon?: unknown;
+  criteria?: unknown;
+}
+
+export interface LadderCriterionInput {
+  kind?: unknown;
+  label?: unknown;
+  target_value?: unknown;
+  exercise_name_match?: unknown;
+}
+
+export function validateLevelLadder(niveles: LadderLevelInput[]): ValidationIssue[] {
+  const issues: ValidationIssue[] = [];
+  if (!Array.isArray(niveles) || niveles.length < 2) {
+    return [{ field: 'levels', message: 'Una escalera necesita al menos 2 niveles — si no, no es una escalera' }];
+  }
+  if (niveles.length > 8) {
+    issues.push({ field: 'levels', message: `${niveles.length} niveles es demasiado: el atleta deja de verle el final. Máximo 8.` });
+  }
+
+  const nombres = new Set<string>();
+  niveles.forEach((n, i) => {
+    const nombre = typeof n.name === 'string' ? n.name.trim() : '';
+    if (!nombre) issues.push({ field: `levels[${i}].name`, message: 'Cada nivel necesita nombre — lo lee el atleta' });
+    else if (nombres.has(nombre.toLowerCase())) issues.push({ field: `levels[${i}].name`, message: `Nivel "${nombre}" repetido` });
+    else nombres.add(nombre.toLowerCase());
+
+    const criterios = Array.isArray(n.criteria) ? (n.criteria as LadderCriterionInput[]) : [];
+    if (criterios.length === 0) {
+      issues.push({ field: `levels[${i}].criteria`, message: `El nivel "${nombre || i}" no tiene criterios: se desbloquearía solo` });
+    }
+    criterios.forEach((c, j) => {
+      const donde = `levels[${i}].criteria[${j}]`;
+      const kind = typeof c.kind === 'string' ? c.kind : '';
+      if (!KINDS_CRITERIO.includes(kind)) {
+        issues.push({ field: `${donde}.kind`, message: `kind inválido "${kind}" — válidos: ${KINDS_CRITERIO.join(', ')}` });
+      }
+      if (typeof c.label !== 'string' || !c.label.trim()) {
+        issues.push({ field: `${donde}.label`, message: 'label es obligatorio — es la frase que lee el atleta ("10 dominadas estrictas")' });
+      }
+      if (kind !== 'manual') {
+        const v = Number(c.target_value);
+        if (!Number.isFinite(v) || v <= 0) {
+          issues.push({ field: `${donde}.target_value`, message: `target_value es obligatorio y positivo para kind "${kind}" (recibido: ${JSON.stringify(c.target_value)})` });
+        }
+      }
+      if (kind === 'sentadilla_xbw' && (typeof c.exercise_name_match !== 'string' || !c.exercise_name_match.trim())) {
+        issues.push({ field: `${donde}.exercise_name_match`, message: 'exercise_name_match es obligatorio con kind "sentadilla_xbw" — el trozo del nombre del ejercicio contra el que se mide (ej. "sentadilla")' });
+      }
+    });
+  });
+
+  return issues;
+}

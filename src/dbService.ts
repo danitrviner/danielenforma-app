@@ -187,7 +187,7 @@ export {
 // import existente (`from '../dbService'`) tenga que cambiar.
 export {
   getAiChats, saveAiChat, deleteAiChat,
-  getAiProposalsForAthlete, createAiProposal, updateAiProposal,
+  getAiProposalsForAthlete, getApprovedAiProposals, createAiProposal, updateAiProposal,
   getKnowledgeNotes, bulkUpsertKnowledgeNotes,
 } from './db/ai';
 

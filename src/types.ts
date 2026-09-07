@@ -2014,8 +2014,37 @@ export interface SpecialDayProposalPayload {
   description?: string;      // detalle del hito en el roadmap
 }
 
+/** Un ejercicio dentro de una sesión propuesta. Se referencia por NOMBRE
+ *  (el del catálogo) porque es lo que el modelo maneja; la validación lo
+ *  resuelve a `exerciseId` antes de guardar la propuesta, así lo que se aprueba
+ *  ya apunta a un ejercicio real y no a una cadena que se parecía. */
+export interface WorkoutDayExerciseProposal {
+  exerciseId: string;
+  exerciseName: string;      // para pintar la tarjeta sin cargar el catálogo
+  sets: number;
+  reps: string;
+  rir: number;
+  restSeconds: number;
+  notes?: string;
+  muscleGroup?: MuscleGroup;
+}
+
+export interface WorkoutDayProposal {
+  dayIndex: number;          // 0-based, la sesión del microciclo
+  name?: string;             // si falta, se nombra como las que genera la app
+  exercises: WorkoutDayExerciseProposal[];
+}
+
+/** Las sesiones de un mesociclo que YA existe. Al aprobar, cada día se guarda
+ *  como el `Workout` de ese `dayIndex`: si ya había uno, se reescribe conservando
+ *  su id — las asignaciones del calendario siguen apuntando a él. */
+export interface WorkoutDaysProposalPayload {
+  mesocycleId: string;
+  days: WorkoutDayProposal[];
+}
+
 export type AiProposalKind = 'diet' | 'mesocycle' | 'checkinFeedback' | 'periodizationBlock' | 'dossier'
-  | 'roadmap' | 'nutritionProgram' | 'specialDay';
+  | 'roadmap' | 'nutritionProgram' | 'specialDay' | 'workoutDays' | 'levelLadder';
 export type AiProposalStatus = 'proposed' | 'approved' | 'rejected';
 
 // Bloque H2.1 — "la IA propone el bloque entero periodizado". Alcance real:
@@ -2041,7 +2070,9 @@ export type AiProposalPayload =
   | DossierPatch
   | RoadmapProposalPayload
   | NutritionProgramProposalPayload
-  | SpecialDayProposalPayload;
+  | SpecialDayProposalPayload
+  | WorkoutDaysProposalPayload
+  | LevelLadder;
 
 export interface AiProposal {
   id: string;

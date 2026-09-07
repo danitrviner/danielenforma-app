@@ -23,6 +23,18 @@ function derivaDeMesociclo(p: AiProposal, actual: Mesocycle): string[] {
   const cambios: string[] = [];
   if (propuesto.weeks !== actual.weeks) cambios.push(`semanas ${propuesto.weeks} → ${actual.weeks}`);
   if (propuesto.daysPerWeek !== actual.daysPerWeek) cambios.push(`días/semana ${propuesto.daysPerWeek} → ${actual.daysPerWeek}`);
+  if (propuesto.startDate !== actual.startDate) cambios.push(`inicio ${propuesto.startDate} → ${actual.startDate}`);
+  if ((propuesto.objective ?? '') !== (actual.objective ?? '')) cambios.push(`objetivo "${propuesto.objective ?? ''}" → "${actual.objective ?? ''}"`);
+  if (propuesto.deloadWeek !== actual.deloadWeek) {
+    cambios.push(propuesto.deloadWeek === undefined
+      ? `añadió descarga en la semana ${actual.deloadWeek}`
+      : actual.deloadWeek === undefined
+        ? `quitó la semana de descarga (proponías la ${propuesto.deloadWeek})`
+        : `descarga semana ${propuesto.deloadWeek} → ${actual.deloadWeek}`);
+  }
+  if (propuesto.cycleDays !== actual.cycleDays) {
+    cambios.push(`duración del ciclo ${propuesto.cycleDays ?? 7} → ${actual.cycleDays ?? 7} días`);
+  }
 
   for (const grupo of Object.keys(MUSCLE_LABELS) as MuscleGroup[]) {
     const antes = (propuesto.groups?.[grupo] as MuscleGroupConfig | undefined)?.series ?? 0;
@@ -43,6 +55,17 @@ function derivaDeDieta(p: AiProposal, actual: Diet): string[] {
   const comidasAntes = propuesta.meals?.length ?? 0;
   const comidasAhora = actual.meals?.length ?? 0;
   if (comidasAntes !== comidasAhora) cambios.push(`comidas ${comidasAntes} → ${comidasAhora}`);
+
+  // Qué alimentos concretos quitó o metió. Es lo que más dice de su criterio:
+  // el presupuesto se respeta casi siempre, los alimentos no.
+  const alimentos = (d: { meals?: { items?: { foodLabel: string }[] }[] }): Set<string> =>
+    new Set((d.meals ?? []).flatMap(m => (m.items ?? []).map(i => i.foodLabel)));
+  const antes = alimentos(propuesta);
+  const ahora = alimentos(actual);
+  const quitados = [...antes].filter(f => !ahora.has(f));
+  const metidos = [...ahora].filter(f => !antes.has(f));
+  if (quitados.length) cambios.push(`quitó ${quitados.slice(0, 6).join(', ')}`);
+  if (metidos.length) cambios.push(`metió ${metidos.slice(0, 6).join(', ')}`);
   return cambios;
 }
 
@@ -77,4 +100,38 @@ export function calcularDerivas(
     }
   }
   return derivas.sort((a, b) => b.fecha.localeCompare(a.fecha));
+}
+
+/**
+ * Los mismos retoques, vistos de golpe. Una deriva suelta es una anécdota; que
+ * el mismo cambio salga en cinco bloques seguidos es el criterio de Dani, y es
+ * lo que la IA tiene que dejar de hacerle corregir cada vez.
+ */
+export function resumirPatrones(derivas: Deriva[]): string[] {
+  const cuenta = new Map<string, number>();
+  for (const d of derivas) {
+    for (const c of d.cambios) {
+      // "dorsal 14 → 16 series" → "dorsal: sube series". Interesa la dirección
+      // repetida, no la cifra exacta de un bloque concreto.
+      const m = c.match(/^(\S+) (\d+(?:\.\d+)?) → (\d+(?:\.\d+)?) series$/);
+      if (m) {
+        const clave = `${m[1]}: ${Number(m[3]) > Number(m[2]) ? 'sube' : 'baja'} series sobre lo propuesto`;
+        cuenta.set(clave, (cuenta.get(clave) ?? 0) + 1);
+        continue;
+      }
+      const cat = c.match(/^(HC|PROT|GRASA) (\d+(?:\.\d+)?) → (\d+(?:\.\d+)?) intercambios$/);
+      if (cat) {
+        const clave = `${cat[1]}: ${Number(cat[3]) > Number(cat[2]) ? 'sube' : 'baja'} intercambios sobre lo propuesto`;
+        cuenta.set(clave, (cuenta.get(clave) ?? 0) + 1);
+        continue;
+      }
+      const gen = c.split(' ')[0];
+      cuenta.set(`toca ${gen}`, (cuenta.get(`toca ${gen}`) ?? 0) + 1);
+    }
+  }
+  return [...cuenta.entries()]
+    .filter(([, n]) => n >= 2)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 12)
+    .map(([clave, n]) => `${clave} (${n} veces)`);
 }
