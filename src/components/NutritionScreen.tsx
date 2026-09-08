@@ -8,6 +8,7 @@ import { CATS, BUDGET_CATS, CAT_LABEL, CAT_COLOR, CAT_BG, MODE_LABEL, ALL_DIET_M
 import { findRecipeAlternatives, recipeExchanges, groupByDishType, ordenarPorCupo, type RecipeAlternative, type AlternativePrefs } from '../utils/recipeMatch';
 import { ingredientMatch, violatesDietType } from '../utils/foodPrefs';
 import { athleteConditions, violatesHealthConditions } from '../utils/dietaryRestrictions';
+import { dietTypeVigente } from '../utils/foodPrefs';
 import { coincideBusqueda, normalizarTexto } from '../utils/busqueda';
 import { dishType, dishTypeLabel, type DishType } from '../utils/dishTypes';
 import { filasDeComida, escalarReceta } from '../utils/filasDelPlan';
@@ -649,7 +650,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     dislikedFoods:     onboarding?.dislikedFoods ?? [],
     likedFoods:        onboarding?.likedFoods ?? [],
     // Igual que los tipos de plato de abajo: manda lo corregido en el perfil.
-    dietType:          nutConfig?.dietType ?? onboarding?.dietType,
+    dietType:          dietTypeVigente(nutConfig?.dietType, onboarding?.dietType),
     cookingMaxTime:    nutConfig?.cookingMaxTime ?? onboarding?.cookingMaxTime,
     favoriteRecipeIds: recipeFavorites.recipeIds,
     dislikedRecipeIds: recipeFavorites.dislikedIds ?? [],

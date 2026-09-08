@@ -62,3 +62,21 @@ export function violatesDietType(recipe: Recipe, dietType?: DietType): boolean {
   const keywords = dietType === 'vegano' ? ANIMAL_KEYWORDS : MEAT_FISH_KEYWORDS;
   return keywords.some(k => text.includes(normalizeStr(k)));
 }
+
+/**
+ * Qué régimen alimentario rige: el que el atleta haya corregido en su perfil y,
+ * si no, el que contestó en el alta.
+ *
+ * Existe por un `??` que dejaba pasar la cadena vacía. `AthleteNutritionConfig`
+ * guarda `dietType: ''` cuando nunca se ha tocado, y `'' ?? 'vegano'` es `''`:
+ * unas pantallas leían "sin régimen" (y no filtraban nada) mientras el recetario
+ * leía directamente el alta y sí filtraba. Resultado: la misma receta salía en
+ * una pantalla y no en otra, sin nada que lo explicara (Dani, 07-09-2026, con la
+ * cuenta danielbriz8 marcada como vegana).
+ */
+export function dietTypeVigente(
+  delPerfil: DietType | '' | undefined | null,
+  delAlta: DietType | undefined | null,
+): DietType | undefined {
+  return (delPerfil || delAlta) || undefined;
+}

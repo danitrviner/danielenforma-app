@@ -11,6 +11,7 @@ import {
   buildBatchPlan, MealSlotSpec, GeneratorPrefs, MenuCandidate,
 } from '../utils/menuEngine';
 import { athleteConditions } from '../utils/dietaryRestrictions';
+import { dietTypeVigente } from '../utils/foodPrefs';
 import { exchangeToKcal } from '../utils/nutritionConstants';
 import { buildShoppingList } from '../utils/menuShoppingList';
 import { DISH_TYPES, DishType } from '../utils/dishTypes';
@@ -140,7 +141,7 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
     liked: onboarding?.likedFoods ?? [],
     // Manda lo corregido por el atleta en su perfil, igual que `variety` y
     // `batch` arriba; la ficha de iniciación es el valor de partida.
-    dietType: nutritionConfig?.dietType ?? onboarding?.dietType,
+    dietType: dietTypeVigente(nutritionConfig?.dietType, onboarding?.dietType),
     cookingMaxTime: nutritionConfig?.cookingMaxTime ?? onboarding?.cookingMaxTime,
     variety,
     favoriteRecipeIds: favorites.recipeIds,

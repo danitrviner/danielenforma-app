@@ -16,6 +16,7 @@ import {
 import { findSwapAlternatives, recipeMatchesSlot, buildBatchPlan, totalConExtras, GeneratorPrefs, SwapCandidate } from '../utils/menuEngine';
 import { normalizeStr } from '../utils/foodPrefs';
 import { athleteConditions } from '../utils/dietaryRestrictions';
+import { dietTypeVigente } from '../utils/foodPrefs';
 import { complementosDisponibles } from '../utils/menuComplements';
 import { foodNameWithoutGrams, foodNameShort, itemWeightLabel } from '../utils/exchangeHelpers';
 import { exchangeToKcal } from '../utils/nutritionConstants';
@@ -153,7 +154,7 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
     // Manda lo que el atleta haya corregido en Perfil > Preferencias; la ficha
     // de iniciación es solo el valor de partida (igual que `variety` y los
     // tipos de plato, justo debajo).
-    dietType: nutritionConfig?.dietType ?? onboarding?.dietType,
+    dietType: dietTypeVigente(nutritionConfig?.dietType, onboarding?.dietType),
     cookingMaxTime: nutritionConfig?.cookingMaxTime ?? onboarding?.cookingMaxTime,
     variety: nutritionConfig?.menuVariety ?? onboarding?.menuVariety ?? 3,
     favoriteRecipeIds: favorites.recipeIds,

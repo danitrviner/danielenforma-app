@@ -13,6 +13,7 @@ import type { RecetasCursor } from '../dbService';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { classifyRecipe, violatesDietType } from '../utils/foodPrefs';
 import { athleteConditions } from '../utils/dietaryRestrictions';
+import { dietTypeVigente } from '../utils/foodPrefs';
 import { coincideBusqueda } from '../utils/busqueda';
 import { dishType } from '../utils/dishTypes';
 import { BUDGET_CATS, roundQuarter, CAT_COLOR, CAT_BG } from '../utils/exchangeHelpers';
@@ -686,7 +687,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
     // Filtro duro por condición de salud: sin esto el recetario le ofrecía al
     // celíaco recetas con seitán aunque el menú generado ya no se las pusiera.
     conditions: athleteConditions(onboardingData),
-    dietType:  onboardingData?.dietType,
+    dietType:  dietTypeVigente(nutritionConfig?.dietType, onboardingData?.dietType),
     // Misma precedencia que MenuPreferencesPanel: manda lo que el atleta haya
     // editado luego en su perfil, y la ficha de iniciación es el valor de
     // partida. Leer solo el onboarding dejaría el recetario obedeciendo a

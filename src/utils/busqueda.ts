@@ -23,9 +23,25 @@ export function normalizarTexto(s: string): string {
     .trim();
 }
 
-/** ¿El término buscado aparece en el texto? Un término vacío casa con todo,
- *  que es lo que espera un buscador cuando aún no has escrito nada. */
+/**
+ * ¿El término buscado aparece en el texto?
+ *
+ * Casa PALABRA A PALABRA y en cualquier orden, no la frase entera. Buscando
+ * "queso batido cacao granola" tiene que salir "Queso batido con cacao 0%,
+ * plátano, granola y chocolate": pidiendo la frase literal no salía, porque
+ * entre medias hay un "0%," y un "plátano" que nadie va a teclear en el mismo
+ * sitio (Dani, 07-09-2026). Nadie recuerda el nombre exacto de una receta; se
+ * acuerda de tres ingredientes.
+ *
+ * Un término vacío casa con todo, que es lo que espera un buscador cuando aún
+ * no has escrito nada.
+ */
 export function coincideBusqueda(texto: string, termino: string): boolean {
   const t = normalizarTexto(termino);
-  return t === '' || normalizarTexto(texto).includes(t);
+  if (t === '') return true;
+  const n = normalizarTexto(texto);
+  // El camino corto —la frase tal cual— primero: es lo más común y así una
+  // búsqueda de una sola palabra no paga el reparto.
+  if (n.includes(t)) return true;
+  return t.split(' ').every(palabra => n.includes(palabra));
 }
