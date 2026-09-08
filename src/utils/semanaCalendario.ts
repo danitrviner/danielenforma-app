@@ -11,7 +11,8 @@
 import {
   WorkoutAssignment, WorkoutLog, Workout, Exercise, Mesocycle,
 } from '../types';
-import { mesocycleWeekNumber, diasDeCiclo, resolveExerciseForWeek } from './progression';
+import { mesocycleWeekNumber, resolveExerciseForWeek } from './progression';
+import { cicloDiasDeMeso } from './asignacionMesociclo';
 import { addDays } from './trainingWeek';
 
 export interface EjercicioDelDia {
@@ -47,7 +48,7 @@ export function ejerciciosDelDia(fecha: string, datos: DatosSemana): EjercicioDe
 
   const meso = datos.mesocycles.find(m => m.id === (workout.mesocycleId ?? asignacion.mesocycleId));
   const semanaDelMeso = meso
-    ? mesocycleWeekNumber(meso.startDate, fecha, diasDeCiclo(meso.daysPerWeek, meso.cycleDays))
+    ? mesocycleWeekNumber(meso.startDate, fecha, cicloDiasDeMeso(meso))
     : 1;
 
   const log = datos.workoutLogs.find(l => l.assignmentId === asignacion.id)

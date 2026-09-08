@@ -5,7 +5,8 @@ import {
   hitosDelMes, objetivosSinFecha,
 } from '../../../utils/roadmapCalendar';
 import { PlanEvent, PlanConflict } from '../../../utils/planEvents';
-import { mesocycleWeekNumber, diasDeCiclo } from '../../../utils/progression';
+import { mesocycleWeekNumber } from '../../../utils/progression';
+import { cicloDiasDeMeso } from '../../../utils/asignacionMesociclo';
 import { addDays } from '../../../utils/trainingWeek';
 import { mezcla } from './paleta';
 import { Filtro } from './RoadmapCalendario';
@@ -140,7 +141,7 @@ export default function NivelMes({
         if (!ev?.moveRef) return;
         const meso = mesocycles.find(m => m.id === ev.moveRef!.mesocycleId);
         if (!meso) return;
-        const nuevaSemana = mesocycleWeekNumber(meso.startDate, fechaDestino, diasDeCiclo(meso.daysPerWeek, meso.cycleDays));
+        const nuevaSemana = mesocycleWeekNumber(meso.startDate, fechaDestino, cicloDiasDeMeso(meso));
         if (nuevaSemana !== ev.moveRef.atWeek) onMoveVolumeEvent(ev.moveRef.workoutId, ev.moveRef.exerciseId, ev.moveRef.atWeek, nuevaSemana);
       }
     } catch { /* dataTransfer ajeno — ignorar */ }

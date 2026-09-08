@@ -1,7 +1,30 @@
 import type { Mesocycle, Workout } from '../types';
 import { diasDeCiclo, vueltasDelCiclo, offsetsDeSesiones } from './progression';
-import { TRAINING_SPLITS, offsetsDeSplit } from './trainingSplits';
+import { TRAINING_SPLITS, offsetsDeSplit, cicloDeSplit } from './trainingSplits';
 import { addDays } from './trainingWeek';
+
+/**
+ * Días que dura una vuelta del microciclo, con el REPARTO elegido como fuente
+ * de verdad de su propio calendario.
+ *
+ * `Mesocycle.cycleDays` es un campo suelto: elegir un reparto de la lista lo
+ * rellena (`cicloDeSplit`), pero los dos se pueden desincronizar —mesociclos
+ * viejos, un `cicloDeSplit` que cambió, o un split semanal cuyo `cycleDays`
+ * quedó en 6 tras tocar el calendario a mano—. Cuando pasa, el generador
+ * acababa produciendo un ciclo rotativo más corto que una semana y SIN día de
+ * descanso, y las sesiones se desplazaban por el calendario vuelta tras vuelta
+ * (cayendo en domingo, y saliendo en rojo días que aún no han llegado). Con un
+ * `splitId` puesto manda el reparto; sin él, el cálculo de siempre.
+ */
+export function cicloDiasDeMeso(
+  meso: Pick<Mesocycle, 'daysPerWeek' | 'cycleDays' | 'splitId'>,
+): number {
+  if (meso.splitId) {
+    const split = TRAINING_SPLITS.find(sp => sp.id === meso.splitId);
+    if (split) return cicloDeSplit(split);
+  }
+  return diasDeCiclo(meso.daysPerWeek, meso.cycleDays);
+}
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Volcar un mesociclo al calendario del atleta
@@ -53,7 +76,7 @@ export function sesionesDeMesociclo(workouts: Workout[], mesocycleId: string): W
  * que cae antes, pase lo que pase.
  */
 export function offsetsDelMesociclo(meso: Mesocycle): number[] {
-  const cicloDias = diasDeCiclo(meso.daysPerWeek, meso.cycleDays);
+  const cicloDias = cicloDiasDeMeso(meso);
   if (meso.customOffsets && meso.customOffsets.length === meso.daysPerWeek) {
     return [...meso.customOffsets].sort((a, b) => a - b);
   }
@@ -83,7 +106,7 @@ export interface FechaDeSesion {
  * no está creada dejaría al atleta con un hueco en el calendario.
  */
 export function fechasDelMesociclo(meso: Mesocycle, nSesiones: number): FechaDeSesion[] {
-  const cicloDias = diasDeCiclo(meso.daysPerWeek, meso.cycleDays);
+  const cicloDias = cicloDiasDeMeso(meso);
   const vueltas = vueltasDelCiclo(meso.weeks, cicloDias);
   const offsets = offsetsDelMesociclo(meso);
   const fechas: FechaDeSesion[] = [];

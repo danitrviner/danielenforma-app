@@ -10,7 +10,8 @@ import { fileURLToPath } from 'url';
 import { initializeApp, cert } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { repartoDeSeries } from '../src/utils/programacion';
-import { diasDeCiclo, vueltasDelCiclo } from '../src/utils/progression';
+import { vueltasDelCiclo } from '../src/utils/progression';
+import { cicloDiasDeMeso } from '../src/utils/asignacionMesociclo';
 import { MUSCLE_ORDER } from '../src/types';
 
 const APPLY = process.argv.includes('--apply');
@@ -68,7 +69,7 @@ for (let dayIdx = 0; dayIdx < meso.daysPerWeek; dayIdx++) {
   rutinas.push({ name: `Dia ${dayIdx + 1} - Meso #${meso.number}`, exercises: exs });
 }
 
-const cicloDias = diasDeCiclo(meso.daysPerWeek, meso.cycleDays);
+const cicloDias = cicloDiasDeMeso(meso);
 const vueltas = vueltasDelCiclo(meso.weeks, cicloDias);
 const offsets: number[] = (meso.customOffsets && meso.customOffsets.length === meso.daysPerWeek)
   ? [...meso.customOffsets].sort((a: number, b: number) => a - b)

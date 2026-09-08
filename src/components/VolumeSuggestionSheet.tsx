@@ -7,7 +7,7 @@ import type { VolumeLandmark } from '../data/volumeLandmarks';
 import { suggestVolume, VolumeIntent, SERIES_POR_DIA_TOPE } from '../utils/volumeSuggestion';
 import { buildVolumeHistoryFrom } from '../utils/volumeHistory';
 import { TRAINING_SPLITS } from '../utils/trainingSplits';
-import { diasDeCiclo } from '../utils/progression';
+import { cicloDiasDeMeso } from '../utils/asignacionMesociclo';
 import { zoneLabel, heatmapText } from '../utils/volumeZones';
 import {
   getExercises, getWorkoutLogs, getWorkoutAssignmentsByMesocycleIds,
@@ -109,7 +109,7 @@ export default function VolumeSuggestionSheet({
   }, [prioridades, prioridadesTocadas, history.feedback]);
 
   const split = editing.splitId ? TRAINING_SPLITS.find(s => s.id === editing.splitId) : undefined;
-  const cicloDias = diasDeCiclo(editing.daysPerWeek, editing.cycleDays);
+  const cicloDias = cicloDiasDeMeso(editing);
   const semanasDelCiclo = cicloDias / 7;
   const sesionesPorSemana = Math.max(1, Math.round(editing.daysPerWeek / semanasDelCiclo));
 

@@ -25,7 +25,7 @@ import {
 import ExercisePickerSheet from './ExercisePickerSheet';
 import ExerciseVideoPlayer from './ExerciseVideoPlayer';
 import { MesocycleTemplate } from '../types';
-import { diasDeCiclo, offsetsDeSesiones, formateaFrecuencia, vueltasDelCiclo } from '../utils/progression';
+import { offsetsDeSesiones, formateaFrecuencia, vueltasDelCiclo } from '../utils/progression';
 import { atletasActivos } from '../utils/atletas';
 import {
   TRAINING_SPLITS, DAY_TYPE_MUSCLES, getSplitsForDays, recommendSplit,
@@ -38,7 +38,7 @@ import { getVolumeLandmarks } from '../dbService';
 import VolumeSuggestionSheet from './VolumeSuggestionSheet';
 import { useToast } from '../hooks/useToast';
 import { nombreDeMeso, nombreDeSesion } from '../utils/nombresMeso';
-import { fechasDelMesociclo } from '../utils/asignacionMesociclo';
+import { fechasDelMesociclo, cicloDiasDeMeso } from '../utils/asignacionMesociclo';
 import { esFechaIso } from '../utils/trainingWeek';
 import { useAthleteProfileSignals } from '../hooks/useAthleteProfileSignals';
 import { useAthleteWeight } from '../hooks/useAthleteWeight';
@@ -1590,7 +1590,7 @@ export default function MesocycleManager({
     if (!editing || !athleteUid) return;
     // Las semanas del mesociclo son semanas de calendario; lo que se repite es
     // el MICROCICLO. Con uno de 14 días, 8 semanas son 4 vueltas, no 8.
-    const vueltas = vueltasDelCiclo(editing.weeks, diasDeCiclo(editing.daysPerWeek, editing.cycleDays));
+    const vueltas = vueltasDelCiclo(editing.weeks, cicloDiasDeMeso(editing));
     const total = vueltas * editing.daysPerWeek;
     setGenPhase('assigning');
     setAssignProgress({ done: 0, total });
@@ -1629,7 +1629,7 @@ export default function MesocycleManager({
       // no son los primeros N días — y si se siguiera sumando de 7 en 7, la
       // segunda vuelta de un ciclo de 9 pisaría las fechas de la primera.
       const splitAsignado = editing.splitId ? TRAINING_SPLITS.find(sp => sp.id === editing.splitId) : undefined;
-      const cicloDias = diasDeCiclo(editing.daysPerWeek, editing.cycleDays);
+      const cicloDias = cicloDiasDeMeso(editing);
       // Un patrón tocado a mano en el calendario manda sobre el cálculo
       // automático — mismo criterio que `offsetsCiclo` más abajo en el
       // componente, para que lo que se ve en el calendario sea exactamente lo
@@ -2032,7 +2032,7 @@ export default function MesocycleManager({
   // ciclo después de haber tocado el calendario, el patrón a mano deja de
   // encajar y se cae al automático en vez de dejar el mesociclo sin calendario.
   const splitActual = editing?.splitId ? TRAINING_SPLITS.find(sp => sp.id === editing.splitId) : undefined;
-  const cicloDias = editing ? diasDeCiclo(editing.daysPerWeek, editing.cycleDays) : 7;
+  const cicloDias = editing ? cicloDiasDeMeso(editing) : 7;
 
   // Dos versiones del patrón a mano, y no es redundante:
   //  - `customCrudo` es lo que hay tecleado AHORA MISMO, tenga o no el número
@@ -2075,6 +2075,16 @@ export default function MesocycleManager({
     const yaEsta = actual.includes(dia);
     const siguiente = yaEsta ? actual.filter(d => d !== dia) : [...actual, dia].sort((a, b) => a - b);
     const updated: Mesocycle = { ...editing, customOffsets: siguiente, splitId: undefined };
+    // Tocar el calendario descarta el reparto de la lista (`splitId`), y con él
+    // hay que soltar su `cycleDays`: dejarlo puesto es lo que convertía «6
+    // sesiones de lunes a sábado» en un ciclo rotativo de 6 días sin descanso
+    // que se desplaza por el calendario vuelta tras vuelta. Si el patrón a mano
+    // cabe en una semana, el ciclo vuelve a ser semanal; si no, dura lo justo
+    // para contenerlo. Mismo criterio que el botón de «Sesiones por ciclo».
+    if (editing.splitId) {
+      const span = siguiente.length ? Math.max(...siguiente) + 1 : 1;
+      updated.cycleDays = span <= 7 ? undefined : Math.max(span, editing.cycleDays ?? 0);
+    }
     setEditing(updated);
     scheduleAutoSave(updated);
   };
@@ -2348,6 +2358,28 @@ export default function MesocycleManager({
                         : `Ciclo rotativo de ${cicloDias} días: los días de entrenamiento se mueven por el calendario (no se entrena «los lunes», se entrena «el día 1 del ciclo»). Da frecuencias como 1,4 o 1,75 por grupo.`}
                       {' '}El volumen sigue configurándose por SEMANA; la vuelta entera moverá {cicloDias / 7 === 1 ? 'ese mismo' : `${(cicloDias / 7).toLocaleString('es-ES')}×`} volumen.
                     </p>
+                  )}
+                  {/* Ciclo más corto que una semana y con sesión TODOS sus días:
+                      no queda hueco de descanso, así que el patrón se corre un
+                      día por el calendario en cada vuelta (sesiones en domingo,
+                      días que aún no llegan pintados de rojo). Casi siempre es un
+                      `cycleDays` que se quedó de un split ya cambiado. */}
+                  {!splitActual && editing.cycleDays !== undefined && editing.cycleDays < 7 && editing.cycleDays <= editing.daysPerWeek && (
+                    <div className="flex items-start gap-2 px-3 py-2 bg-orange-500/10 border border-orange-500/30 rounded-surface">
+                      <Icon name="warning" size="s" className="text-orange-400 flex-shrink-0 mt-px" />
+                      <div className="space-y-1">
+                        <p className="font-sans text-caption text-orange-300 leading-relaxed">
+                          Ciclo de {cicloDias} días con {editing.daysPerWeek} sesiones: no queda día de descanso, así que las sesiones se desplazan por el calendario en cada vuelta (caen en domingo y van corriéndose de día). Si querías {editing.daysPerWeek} sesiones fijas de lunes a {['', '', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo'][editing.daysPerWeek] ?? 'sábado'}, el ciclo tiene que ser semanal.
+                        </p>
+                        <button
+                          type="button"
+                          className="font-sans text-caption font-bold text-orange-200 underline"
+                          onClick={() => updateField('cycleDays', undefined)}
+                        >
+                          Hacerlo semanal (descanso el 7.º día)
+                        </button>
+                      </div>
+                    </div>
                   )}
                 </div>
 

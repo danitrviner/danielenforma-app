@@ -1,5 +1,6 @@
 import type { Mesocycle, Workout, WorkoutAssignment } from '../types';
-import { diasDeCiclo, mesocycleWeekNumber } from './progression';
+import { mesocycleWeekNumber } from './progression';
+import { cicloDiasDeMeso } from './asignacionMesociclo';
 import { addDays, getWeekStart } from './trainingWeek';
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -99,7 +100,7 @@ export function bloquesDelCiclo(
 
   for (const a of assignments) {
     const meso = mesoDe(a, mesos);
-    const vuelta = meso ? mesocycleWeekNumber(meso.startDate, a.date, diasDeCiclo(meso.daysPerWeek, meso.cycleDays)) : undefined;
+    const vuelta = meso ? mesocycleWeekNumber(meso.startDate, a.date, cicloDiasDeMeso(meso)) : undefined;
     const clave = meso ? `meso:${meso.id}:${vuelta}` : `semana:${getWeekStart(a.date)}`;
     let grupo = porClave.get(clave);
     if (!grupo) {
@@ -120,7 +121,7 @@ export function bloquesDelCiclo(
     let inicio: string;
     let fin: string;
     if (meso && vuelta != null) {
-      const cicloDias = diasDeCiclo(meso.daysPerWeek, meso.cycleDays);
+      const cicloDias = cicloDiasDeMeso(meso);
       inicio = addDays(meso.startDate, (vuelta - 1) * cicloDias);
       fin = addDays(inicio, cicloDias - 1);
       // Una asignación movida a mano fuera de su ventana no se queda huérfana.

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { Mesocycle, Workout } from '../types';
-import { sesionesDeMesociclo, offsetsDelMesociclo, fechasDelMesociclo } from './asignacionMesociclo';
+import { sesionesDeMesociclo, offsetsDelMesociclo, fechasDelMesociclo, cicloDiasDeMeso } from './asignacionMesociclo';
 
 function w(id: string, name: string, mesocycleId?: string, dayIndex?: number): Workout {
   return { id, ownerId: 'coach', name, exercises: [], mesocycleId, dayIndex };
@@ -64,6 +64,52 @@ describe('offsetsDelMesociclo', () => {
   it('un calendario a mano que ya no cuadra con las sesiones se ignora', () => {
     const meso = { ...MESO_BASE, daysPerWeek: 4, customOffsets: [0, 2, 4] };
     expect(offsetsDelMesociclo(meso)).toEqual([0, 1, 2, 3]);
+  });
+});
+
+describe('cicloDiasDeMeso · el reparto manda sobre un cycleDays desincronizado', () => {
+  it('sin reparto ni cycleDays, la vuelta es la semana', () => {
+    expect(cicloDiasDeMeso({ daysPerWeek: 3 })).toBe(7);
+  });
+
+  it('sin reparto, un cycleDays rotativo legítimo se respeta', () => {
+    expect(cicloDiasDeMeso({ daysPerWeek: 3, cycleDays: 5 })).toBe(5);
+  });
+
+  it('con un reparto semanal de la lista, un cycleDays que quedó en 6 NO lo convierte en rotativo', () => {
+    // Es el bug real: elegir el split de 6 días dejó `cycleDays: 6`, y al tocar
+    // el calendario el split se limpió a medias. La vuelta tiene que seguir
+    // durando 7 días (6 sesiones + 1 descanso), no 6.
+    expect(cicloDiasDeMeso({
+      daysPerWeek: 6,
+      cycleDays: 6,
+      splitId: '6-empujes-tiron-pierna-hombro-x2',
+    })).toBe(7);
+  });
+
+  it('un splitId que ya no existe cae al cálculo de siempre', () => {
+    expect(cicloDiasDeMeso({ daysPerWeek: 6, cycleDays: 6, splitId: 'inventado' })).toBe(6);
+  });
+});
+
+describe('fechasDelMesociclo · no se desplaza por el calendario con un split semanal', () => {
+  it('6 sesiones lunes-sábado con cycleDays:6 obsoleto: la vuelta 2 empieza el lunes siguiente', () => {
+    const meso: Mesocycle = {
+      ...MESO_BASE,
+      weeks: 2,
+      daysPerWeek: 6,
+      cycleDays: 6,
+      splitId: '6-empujes-tiron-pierna-hombro-x2',
+      customOffsets: [0, 1, 2, 3, 4, 5],
+    };
+    const fechas = fechasDelMesociclo(meso, 6);
+    // Vuelta 1: lun 7 → sáb 12. Vuelta 2 arranca el lun 14, no el dom 13.
+    expect(fechas.slice(0, 6).map(f => f.date)).toEqual([
+      '2026-09-07', '2026-09-08', '2026-09-09', '2026-09-10', '2026-09-11', '2026-09-12',
+    ]);
+    expect(fechas[6].date).toBe('2026-09-14');
+    // Ningún entreno cae en domingo.
+    expect(fechas.some(f => new Date(f.date + 'T00:00:00').getDay() === 0)).toBe(false);
   });
 });
 
