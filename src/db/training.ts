@@ -1,4 +1,4 @@
-import { db, collection, doc, getDocs, setDoc, addDoc, updateDoc, deleteDoc, query, where, orderBy, limit, documentId } from '../firebase';
+import { db, collection, doc, getDocs, setDoc, addDoc, updateDoc, deleteDoc, deleteField, query, where, orderBy, limit, documentId } from '../firebase';
 import { Exercise, ExercisePersonalNote, Workout, WorkoutAssignment, WorkoutLog, MuscleGroup, Mesocycle, MesocycleTemplate, MuscleGroupConfig, TemplateDay } from '../types';
 import {
   forceLocalOnly, setLocalBypassMode, stripUndefined, esFalloDePermisos,
@@ -1064,7 +1064,15 @@ export async function updateMesocycle(id: string, updates: Partial<Omit<Mesocycl
   const next = all.map(m => m.id === id ? { ...m, ...normalizedUpdates } : m);
   if (forceLocalOnly) { setLocalMesocycles(next); return; }
   try {
-    await updateDoc(doc(db, 'mesocycles', id), stripUndefined(normalizedUpdates) as Record<string, unknown>);
+    // Un `undefined` aquí es un campo que el coach ha BORRADO (volver a
+    // «Semanal» quita `cycleDays`, tocar el calendario quita `splitId`…). Con
+    // `stripUndefined` esos borrados se perdían: el campo se quedaba con el
+    // valor viejo en Firestore y «Semanal» no surtía efecto. `deleteField()`
+    // lo quita de verdad; si no existía, es un no-op inofensivo.
+    const payload = Object.fromEntries(
+      Object.entries(normalizedUpdates).map(([k, v]) => [k, v === undefined ? deleteField() : v]),
+    );
+    await updateDoc(doc(db, 'mesocycles', id), payload as Record<string, unknown>);
     setLocalMesocycles(next);
   } catch (err) {
     console.warn('updateMesocycle Firestore failed, saving local:', err);

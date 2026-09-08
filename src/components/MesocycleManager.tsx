@@ -2091,9 +2091,11 @@ export default function MesocycleManager({
 
   const restablecerCalendario = () => {
     if (!editing) return;
-    const { customOffsets: _fuera, ...resto } = editing;
-    setEditing(resto as Mesocycle);
-    scheduleAutoSave(resto as Mesocycle);
+    // `undefined` explícito, no quitar la clave: así `updateMesocycle` lo borra
+    // de Firestore con `deleteField()` en vez de dejar el patrón viejo puesto.
+    const resto: Mesocycle = { ...editing, customOffsets: undefined };
+    setEditing(resto);
+    scheduleAutoSave(resto);
   };
 
   const selectedAthlete = athletes.find(a => a.email === selectedEmail);
