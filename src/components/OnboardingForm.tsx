@@ -6,7 +6,7 @@ import {
   OnboardingSection, OnboardingTemplateQuestion,
 } from '../types';
 import { CONTEOS_COMIDAS, ConteoComidas } from '../utils/menuEngine';
-import { saveOnboarding, updateOnboarding } from '../dbService';
+import { saveOnboarding, updateOnboarding, getAthleteNutritionConfig, saveAthleteNutritionConfig } from '../dbService';
 import { ACTIVITY_FACTORS, calcAge, computeAuto } from '../utils/energyCalc';
 import type { AutoCalc } from '../utils/energyCalc';
 import { DISH_TYPES } from '../utils/dishTypes';
@@ -702,6 +702,22 @@ export default function OnboardingForm({
         await updateOnboarding(data);
       } else {
         await saveOnboarding(data);
+      }
+      /* El régimen alimentario vive en DOS sitios: aquí (el alta) y en la
+         configuración de nutrición, que es lo que el atleta puede corregir
+         desde su perfil y lo que MANDA a la hora de filtrar recetas. Cambiarlo
+         solo aquí no surtía ningún efecto: la ficha decía "omnívoro" y la app
+         seguía filtrando como vegano, sin nada que lo explicara (Dani,
+         08-09-2026). Al guardar la ficha, los dos quedan de acuerdo. */
+      if (data.dietType) {
+        const config = await getAthleteNutritionConfig(data.athleteId).catch(() => null);
+        if (config?.dietType !== data.dietType) {
+          await saveAthleteNutritionConfig({
+            ...(config ?? { athleteId: data.athleteId }),
+            athleteId: data.athleteId,
+            dietType: data.dietType,
+          }).catch(() => {});
+        }
       }
       onSaved(data);
     } catch (err) {
