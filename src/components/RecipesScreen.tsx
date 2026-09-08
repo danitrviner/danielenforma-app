@@ -738,7 +738,18 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
   // memoria. `cargarIndiceRecetas` memoiza la promesa: `queryRecetas` (arriba)
   // pide el mismo índice, así que esto no duplica la descarga.
   const [indiceRecetas, setIndiceRecetas] = useState<Recipe[]>([]);
-  useEffect(() => { cargarIndiceRecetas().then(setIndiceRecetas); }, []);
+  /* Y en qué estado está esa carga. Sin esto, mientras el índice no estaba (aún
+     bajando, o porque falló) el buscador contestaba «Nada para X» — o sea, "esa
+     receta no existe" — cuando lo que pasaba es que no había dónde buscar. Es
+     la diferencia entre "no la tenemos" y "no he podido mirar". */
+  const [indiceEstado, setIndiceEstado] = useState<'cargando' | 'listo' | 'error'>('cargando');
+  const cargarIndice = useCallback(() => {
+    setIndiceEstado('cargando');
+    cargarIndiceRecetas()
+      .then(rs => { setIndiceRecetas(rs); setIndiceEstado(rs.length > 0 ? 'listo' : 'error'); })
+      .catch(() => setIndiceEstado('error'));
+  }, []);
+  useEffect(() => { cargarIndice(); }, [cargarIndice]);
   const [recetasCursor, setRecetasCursor]   = useState<RecetasCursor | null>(null);
   const [recetasHasMore, setRecetasHasMore] = useState(false);
   const [recetasLoading, setRecetasLoading] = useState(true);
@@ -1121,6 +1132,18 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
               }
             </button>
           </div>
+        ) : recetasSearch && indiceEstado !== 'listo' ? (
+          /* Buscando sin catálogo cargado no se puede decir que no haya nada:
+             se dice lo que de verdad pasa. */
+          <EmptyState
+            icon={indiceEstado === 'cargando' ? 'hourglass_top' : 'cloud_off'}
+            title={indiceEstado === 'cargando' ? 'Cargando el recetario…' : 'No se pudo cargar el recetario'}
+            description={indiceEstado === 'cargando'
+              ? 'Son 8.850 recetas; un momento y vuelve a buscar.'
+              : 'Sin él no se puede buscar entre las 8.850 recetas.'}
+            actionLabel={indiceEstado === 'error' ? 'Reintentar' : undefined}
+            onAction={indiceEstado === 'error' ? cargarIndice : undefined}
+          />
         ) : recetasTotalVisible === 0 ? (
           <EmptyState
             icon="search_off"

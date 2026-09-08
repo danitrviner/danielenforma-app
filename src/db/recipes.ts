@@ -142,7 +142,18 @@ export function cargarIndiceRecetas(): Promise<Recipe[]> {
     // Sin Worker disponible (navegador viejo, o los tests que corren en
     // Node) se cae al parseo normal en el hilo principal — mismo resultado,
     // solo que sin el ahorro de no congelar la pantalla.
-    .then(texto => (typeof Worker !== 'undefined' ? parsearIndiceEnWorker(texto) : parsearIndiceEnPrincipal(texto)))
+    .then(texto => {
+      if (typeof Worker === 'undefined') return parsearIndiceEnPrincipal(texto);
+      // Si el Worker falla —no está soportado, lo bloquea una política, se queda
+      // sin memoria en un móvil justo— se parsea aquí y ya está. Antes ese
+      // rechazo caía en el `.catch` de abajo y el recetario ENTERO se quedaba
+      // vacío para toda la sesión: el buscador contestaba "nada para X" sobre
+      // las 8.850 recetas, indistinguible de que la receta no exista.
+      return parsearIndiceEnWorker(texto).catch(err => {
+        console.warn('El parseo en Worker falló; se parsea en el hilo principal:', err);
+        return parsearIndiceEnPrincipal(texto);
+      });
+    })
     .catch(err => {
       console.warn('No se pudo cargar el índice del recetario:', err);
       indicePromesa = null;   // que el siguiente intento vuelva a probar
