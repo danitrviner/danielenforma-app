@@ -1317,6 +1317,13 @@ export interface RecetaIngrediente {
 export interface RecetaPaso {
   position: number;
   description: string;
+  /** Lo que va DEBAJO del enunciado del paso. Casi todos los pasos del recetario
+   *  original son del tipo "Coloca en un bol y mezcla bien:" seguidos de una
+   *  lista ("El queso batido", "El cacao en polvo"…), y el importador se quedaba
+   *  solo con el enunciado: 32.408 líneas de instrucciones tiradas en 6.308 de
+   *  las 8.850 recetas, que quedaban como una frase acabada en dos puntos y
+   *  nada más (07-09-2026). */
+  items?: { position: number; description: string }[];
 }
 
 export interface Recipe {

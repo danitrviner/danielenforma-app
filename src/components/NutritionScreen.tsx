@@ -2444,7 +2444,20 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                       {recetaDetalle.stepsText.map((s, i) => (
                         <li key={i} className="flex gap-2">
                           <span className="font-mono text-caption text-accent flex-shrink-0">{s.position ?? i + 1}</span>
-                          <span className="text-label font-sans text-ink-2">{s.description}</span>
+                          <span className="text-label font-sans text-ink-2 min-w-0">
+                            {s.description}
+                            {/* Lo que cuelga del paso ("…mezcla bien:" + la lista). */}
+                            {(s.items ?? []).length > 0 && (
+                              <ul className="mt-1 space-y-0.5">
+                                {(s.items ?? []).map(sub => (
+                                  <li key={sub.position} className="flex gap-2">
+                                    <span aria-hidden="true" className="text-ink-3">·</span>
+                                    <span>{sub.description.trim()}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                          </span>
                         </li>
                       ))}
                     </ol>

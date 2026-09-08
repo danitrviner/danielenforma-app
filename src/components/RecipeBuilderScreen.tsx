@@ -1,16 +1,21 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Recipe, RecipeIngredient, MealItem, FoodCategory } from '../types';
-import { getRecipes, createRecipe, updateRecipe, deleteRecipe, getFoodItems, queryRecetas } from '../dbService';
+import { getRecipes, createRecipe, updateRecipe, deleteRecipe, getFoodItems, queryRecetas, cargarIndiceRecetas, getRecipeById } from '../dbService';
 import type { RecetasCursor } from '../dbService';
 import { roundQuarter } from '../utils/exchangeHelpers';
 import { Skeleton, Icon } from './ui';
 import { EmptyState, Badge, Chip, Dialog, Button, Input } from './ui';
 import { fotoDeReceta } from '../utils/fotoDeReceta';
 import FotoDeReceta from './FotoDeReceta';
-import { coincideBusqueda } from '../utils/busqueda';
+import { coincideBusqueda, normalizarTexto } from '../utils/busqueda';
+import { useDebouncedValue } from '../hooks/useDebouncedValue';
 
 const RECIPE_CATEGORIES = ['Alta proteína', 'Rápida', 'Pre-entreno', 'Recuperación', 'Desayuno', 'Cena'];
+
+/** Tope de tarjetas que pinta el buscador del catálogo. Quien busca algo
+ *  concreto lo encuentra igual; quien escribe una letra ve una muestra. */
+const TOPE_RESULTADOS_BUSQUEDA = 200;
 
 // Categories/intake types as stored on imported imported recipes (see scripts/importRecetas.mjs) —
 // mirrors the athlete-facing browser in RecipesScreen.tsx.
@@ -27,10 +32,16 @@ const INTAKE_LABELS: Record<number, string> = {
   1: 'Desayuno', 2: 'Media mañana', 3: 'Comida', 4: 'Merienda', 5: 'Cena',
 };
 
-function RecetaCard({ recipe }: { recipe: Recipe; key?: React.Key }) {
+function RecetaCard({ recipe, onOpen }: { recipe: Recipe; onOpen: (r: Recipe) => void; key?: React.Key }) {
   const photo = fotoDeReceta(recipe);
   return (
-    <article className="relative rounded-surface overflow-hidden bg-raised border border-hairline aspect-[4/5] flex flex-col justify-end">
+    // Antes era un <article> sin más: el coach veía el catálogo pero no podía
+    // abrir ninguna receta para leer sus ingredientes ni su preparación.
+    <button
+      type="button"
+      onClick={() => onOpen(recipe)}
+      aria-label={`Ver ${recipe.name}`}
+      className="relative rounded-surface overflow-hidden bg-raised border border-hairline hover:border-accent/40 transition-colors aspect-[4/5] flex flex-col justify-end text-left">
       {photo
         ? <FotoDeReceta src={photo} alt={recipe.name} className="absolute inset-0 w-full h-full object-cover opacity-70" fallback={null} />
         : <div className="absolute inset-0 bg-gradient-to-br from-raised to-bg flex items-center justify-center">
@@ -44,7 +55,7 @@ function RecetaCard({ recipe }: { recipe: Recipe; key?: React.Key }) {
         </div>
       ) : null}
       <p className="relative z-10 p-3 text-label text-white font-sans font-bold leading-tight">{recipe.name}</p>
-    </article>
+    </button>
   );
 }
 
@@ -123,7 +134,26 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
   const [recetasCat, setRecetasCat]             = useState<string>('Todas');
   const [recetasIntake, setRecetasIntake]       = useState<number | null>(null);
   const [recetasSearch, setRecetasSearch]       = useState('');
+  const recetasSearchDebounced = useDebouncedValue(recetasSearch, 200);
   const [recetasRecipes, setRecetasRecipes]     = useState<Recipe[]>([]);
+  /* El catálogo ENTERO para buscar. `recetasRecipes` es solo la página que se
+     está viendo (48), y el buscador miraba únicamente esa: escribir el nombre
+     de una receta que existe entre las 8.850 contestaba que no hay nada, salvo
+     que hubiera caído por casualidad en las páginas ya cargadas. El lado del
+     atleta se arregló el 07-09-2026; esta pantalla se quedó fuera. */
+  const [indiceRecetas, setIndiceRecetas]       = useState<Recipe[]>([]);
+  useEffect(() => { cargarIndiceRecetas().then(setIndiceRecetas).catch(() => {}); }, []);
+  /* La receta abierta. El índice empaquetado NO trae la preparación ni los
+     gramos —se dejaron fuera a propósito, son 4,9 MB solo con lo demás—, así
+     que al abrirla se pide el documento completo. Se pinta lo que ya se tiene y
+     el resto entra cuando llega, igual que en el recetario del atleta. */
+  const [recetaAbierta, setRecetaAbierta]       = useState<Recipe | null>(null);
+  const abrirReceta = useCallback(async (r: Recipe) => {
+    setRecetaAbierta(r);
+    if (r.stepsText) return;
+    const completa = await getRecipeById(r.id).catch(() => null);
+    if (completa) setRecetaAbierta(prev => (prev?.id === r.id ? completa : prev));
+  }, []);
   const [recetasCursor, setRecetasCursor]       = useState<RecetasCursor | null>(null);
   const [recetasHasMore, setRecetasHasMore]     = useState(false);
   const [recetasLoading, setRecetasLoading]     = useState(true);
@@ -150,12 +180,28 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
     setRecetasLoadingMore(false);
   };
 
-  const filteredRecetas = useMemo(() =>
-    recetasSearch.trim()
-      ? recetasRecipes.filter(r => coincideBusqueda(r.name, recetasSearch))
-      : recetasRecipes,
-    [recetasRecipes, recetasSearch]
+  /** El nombre normalizado de cada receta, una sola vez y no en cada tecla. */
+  const indiceBuscable = useMemo(
+    () => indiceRecetas.map(r => ({ receta: r, nombre: normalizarTexto(r.name) })),
+    [indiceRecetas],
   );
+
+  const filteredRecetas = useMemo(() => {
+    const termino = recetasSearchDebounced.trim();
+    if (!termino) return recetasRecipes;
+    // Con búsqueda se mira el catálogo entero, con los mismos filtros de
+    // categoría y momento que aplica la paginación. Tope de resultados para no
+    // pintar miles de tarjetas si el término es de una letra.
+    const encontradas: Recipe[] = [];
+    for (const { receta, nombre } of indiceBuscable) {
+      if (recetasCat !== 'Todas' && receta.categoria !== recetasCat) continue;
+      if (recetasIntake != null && !(receta.intakeTypes ?? []).includes(recetasIntake)) continue;
+      if (!coincideBusqueda(nombre, termino)) continue;
+      encontradas.push(receta);
+      if (encontradas.length >= TOPE_RESULTADOS_BUSQUEDA) break;
+    }
+    return encontradas;
+  }, [recetasRecipes, indiceBuscable, recetasCat, recetasIntake, recetasSearchDebounced]);
 
   const liveExchanges = useMemo(() => calcExchanges(form.ingredients), [form.ingredients]);
 
@@ -374,7 +420,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
           icon="search"
           value={recetasSearch}
           onChange={setRecetasSearch}
-          placeholder="Buscar en esta página…"
+          placeholder="Buscar en las 8.850 recetas…"
         />
 
         {recetasLoading ? (
@@ -384,17 +430,17 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
             <Skeleton className="h-32 w-full rounded-surface" />
           </div>
         ) : filteredRecetas.length === 0 ? (
-          <EmptyState icon="search_off" title={recetasSearch ? 'Sin resultados en esta página.' : 'Sin recetas para estos filtros.'} />
+          <EmptyState icon="search_off" title={recetasSearch ? `Ninguna receta coincide con «${recetasSearch}».` : 'Sin recetas para estos filtros.'} />
         ) : (
           <div className="space-y-3">
             <p className="font-sans text-caption text-ink-2 uppercase">
               {recetasSearch
-                ? `${filteredRecetas.length} de ${recetasRecipes.length} resultados en esta página`
+                ? `${filteredRecetas.length} resultado${filteredRecetas.length !== 1 ? 's' : ''}${filteredRecetas.length >= TOPE_RESULTADOS_BUSQUEDA ? '+ (afina la búsqueda)' : ''}`
                 : `${recetasRecipes.length} receta${recetasRecipes.length !== 1 ? 's' : ''} cargada${recetasRecipes.length !== 1 ? 's' : ''}${recetasHasMore ? ' · hay más' : ''}`
               }
             </p>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-              {filteredRecetas.map(r => <RecetaCard key={r.id} recipe={r} />)}
+              {filteredRecetas.map(r => <RecetaCard key={r.id} recipe={r} onOpen={abrirReceta} />)}
             </div>
             {recetasHasMore && !recetasSearch && (
               <div className="flex justify-center pt-2">
@@ -412,6 +458,72 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
           </div>
         )}
       </section>
+
+      {/* ── DETALLE DE UNA RECETA DEL CATÁLOGO ──────────────────────────── */}
+      {recetaAbierta && (
+        <Dialog open onClose={() => setRecetaAbierta(null)} title={recetaAbierta.name.trim()}>
+          <div className="space-y-5">
+            {fotoDeReceta(recetaAbierta) && (
+              <FotoDeReceta
+                src={fotoDeReceta(recetaAbierta)}
+                alt={recetaAbierta.name}
+                className="w-full aspect-[16/9] object-cover rounded-surface"
+                fallback={null}
+              />
+            )}
+
+            <p className="font-mono text-caption text-ink-2">
+              {[
+                recetaAbierta.kcal ? `${recetaAbierta.kcal} kcal` : null,
+                recetaAbierta.cookingTime ? `${recetaAbierta.cookingTime} min` : null,
+                recetaAbierta.categoria,
+              ].filter(Boolean).join(' · ')}
+            </p>
+
+            {(recetaAbierta.ingredientsText ?? []).length > 0 && (
+              <div>
+                <p className="font-sans text-caption text-ink-2 uppercase tracking-wider mb-2">Ingredientes</p>
+                <ul className="space-y-1">
+                  {(recetaAbierta.ingredientsText ?? []).map((ing, i) => (
+                    <li key={i} className="flex justify-between gap-3 text-label font-sans text-ink-2">
+                      <span className="min-w-0">{ing.name}</span>
+                      {ing.quantity ? <span className="font-mono text-ink-3 flex-shrink-0">{ing.quantity} g</span> : null}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {(recetaAbierta.stepsText ?? []).length > 0 ? (
+              <div>
+                <p className="font-sans text-caption text-ink-2 uppercase tracking-wider mb-2">Preparación</p>
+                <ol className="space-y-3">
+                  {(recetaAbierta.stepsText ?? []).map((paso, i) => (
+                    <li key={i} className="flex gap-2">
+                      <span className="font-mono text-caption text-accent flex-shrink-0">{paso.position ?? i + 1}</span>
+                      <div className="min-w-0">
+                        <p className="text-label font-sans text-ink-2">{paso.description}</p>
+                        {(paso.items ?? []).length > 0 && (
+                          <ul className="mt-1 space-y-0.5">
+                            {(paso.items ?? []).map(sub => (
+                              <li key={sub.position} className="flex gap-2 text-label font-sans text-ink-2">
+                                <span aria-hidden="true" className="text-ink-3">·</span>
+                                <span>{sub.description.trim()}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            ) : (
+              <p className="font-mono text-caption text-ink-3">Cargando la preparación…</p>
+            )}
+          </div>
+        </Dialog>
+      )}
 
       {/* ── FORM MODAL ──────────────────────────────────────────────────── */}
       {showForm && (

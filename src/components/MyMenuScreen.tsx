@@ -990,10 +990,23 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
                     <p className="font-mono text-caption text-ink-3 uppercase mb-2">Preparación</p>
                     <ol className="space-y-2 list-decimal list-inside">
                       {(detailRecipe.stepsText?.length
-                        ? detailRecipe.stepsText.map(s => s.description)
-                        : detailRecipe.steps ?? []
-                      ).map((text, idx) => (
-                        <li key={idx} className="text-label text-ink-2 font-sans leading-relaxed">{text}</li>
+                        ? detailRecipe.stepsText.map(s => ({ texto: s.description, items: s.items ?? [] }))
+                        : (detailRecipe.steps ?? []).map(t => ({ texto: t, items: [] as { position: number; description: string }[] }))
+                      ).map(({ texto, items }, idx) => (
+                        <li key={idx} className="text-label text-ink-2 font-sans leading-relaxed">
+                          {texto}
+                          {/* Lo que cuelga del paso ("…mezcla bien:" + la lista). */}
+                          {items.length > 0 && (
+                            <ul className="mt-1 ml-4 space-y-0.5">
+                              {items.map(sub => (
+                                <li key={sub.position} className="flex gap-2">
+                                  <span aria-hidden="true" className="text-ink-3">·</span>
+                                  <span>{sub.description.trim()}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </li>
                       ))}
                     </ol>
                   </div>

@@ -387,7 +387,7 @@ interface RecetaImportada {
   name: string;
   image?: string;
   ingredients?: Array<{ name: string; quantity: number }>;
-  steps?: Array<{ position: number; description: string }>;
+  steps?: Array<{ position: number; description: string; items?: Array<{ position: number; description: string }> }>;
   macros?: RecetaMacros;
   kcal?: number;
   weight?: number;
@@ -416,7 +416,13 @@ function mapRecetasRecipe(r: RecetaImportada): Omit<Recipe, 'id'> {
   };
   if (r.image)               out.image           = r.image;
   if (r.ingredients?.length) out.ingredientsText = r.ingredients.map(i => ({ name: i.name, quantity: i.quantity }));
-  if (r.steps?.length)       out.stepsText       = r.steps.map(s => ({ position: s.position, description: s.description }));
+  // `items` es la lista que cuelga de cada paso; sin ella la preparación se
+  // queda en "Coloca en un bol y mezcla bien:" y nada más.
+  if (r.steps?.length)       out.stepsText       = r.steps.map(s => ({
+    position: s.position,
+    description: s.description,
+    items: (s.items ?? []).map(i => ({ position: i.position, description: i.description })),
+  }));
   if (r.macros)              out.macros          = { carb: r.macros.carbohydrate?.grams ?? 0, prot: r.macros.protein?.grams ?? 0, fat: r.macros.fat?.grams ?? 0 };
   if (r.kcal        != null) out.kcal            = r.kcal;
   if (r.weight      != null) out.weight          = r.weight;

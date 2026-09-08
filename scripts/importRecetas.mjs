@@ -84,7 +84,14 @@ function mapRecipe(r) {
     // Recetas-specific fields
     image:           r.image           ?? null,
     ingredientsText: (r.ingredients    ?? []).map(i => ({ name: i.name, quantity: i.quantity })),
-    stepsText:       (r.steps          ?? []).map(s => ({ position: s.position, description: s.description })),
+    // `items` es la lista que cuelga de cada paso ("Coloca en un bol y mezcla
+    // bien:" → "El queso batido", "El cacao en polvo"). Se perdía aquí: 32.408
+    // líneas de instrucciones en 6.308 recetas quedaban en un enunciado suelto.
+    stepsText:       (r.steps          ?? []).map(s => ({
+      position: s.position,
+      description: s.description,
+      items: (s.items ?? []).map(i => ({ position: i.position, description: i.description })),
+    })),
     macros: r.macros ? {
       carb: r.macros.carbohydrate?.grams ?? 0,
       prot: r.macros.protein?.grams      ?? 0,

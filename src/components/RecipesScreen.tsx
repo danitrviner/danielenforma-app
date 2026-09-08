@@ -584,9 +584,9 @@ function RecipeDetail({ recipe, isFav, isDisliked, isOwn, enabledModes, savingFa
             </h2>
             <div className="space-y-4">
               {(isRecetas
-                ? (recipe.stepsText ?? []).map((s, i) => ({ idx: i, text: s.description }))
-                : recipe.steps.map((s, i) => ({ idx: i, text: s }))
-              ).map(({ idx, text }) => {
+                ? (recipe.stepsText ?? []).map((s, i) => ({ idx: i, text: s.description, items: s.items ?? [] }))
+                : recipe.steps.map((s, i) => ({ idx: i, text: s, items: [] as { position: number; description: string }[] }))
+              ).map(({ idx, text, items }) => {
                 const done = !!checkedSteps[idx];
                 return (
                   <div
@@ -600,9 +600,25 @@ function RecipeDetail({ recipe, isFav, isDisliked, isOwn, enabledModes, savingFa
                         {done ? <span className="material-symbols-outlined text-label font-bold">check</span> : idx + 1}
                       </div>
                     </div>
-                    <p className={`text-label font-sans leading-relaxed pt-1 pb-3 transition-colors ${done ? 'text-ink-2/50 line-through' : 'text-ink-2'}`}>
-                      {text}
-                    </p>
+                    <div className="pt-1 pb-3 min-w-0">
+                      <p className={`text-label font-sans leading-relaxed transition-colors ${done ? 'text-ink-2/50 line-through' : 'text-ink-2'}`}>
+                        {text}
+                      </p>
+                      {/* Lo que cuelga del paso. Casi todos los pasos del
+                          recetario son "Coloca en un bol y mezcla bien:" + una
+                          lista, y sin esto la preparación se quedaba en la
+                          frase acabada en dos puntos. */}
+                      {items.length > 0 && (
+                        <ul className={`mt-1 space-y-0.5 transition-colors ${done ? 'text-ink-2/50 line-through' : 'text-ink-2'}`}>
+                          {items.map(sub => (
+                            <li key={sub.position} className="text-label font-sans leading-relaxed flex gap-2">
+                              <span aria-hidden="true" className="text-ink-3">·</span>
+                              <span>{sub.description.trim()}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
                   </div>
                 );
               })}
