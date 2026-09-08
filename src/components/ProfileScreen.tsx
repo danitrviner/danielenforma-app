@@ -453,6 +453,16 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
               Eliminar mi cuenta
             </button>
           )}
+
+          {/* Qué versión se está ejecutando. Parece un detalle y no lo es: la
+              web se actualiza sola en cada despliegue, pero la app instalada
+              lleva su propia copia dentro y puede ser de hace semanas. Sin este
+              dato, un fallo ya arreglado y uno real se ven exactamente igual, y
+              se pierden horas arreglando lo que ya estaba arreglado
+              (08-09-2026). */}
+          <p className="pt-2 text-center font-mono text-caption text-ink-3">
+            Versión {__APP_RELEASE__}
+          </p>
         </div>
       </Sheet>
 
