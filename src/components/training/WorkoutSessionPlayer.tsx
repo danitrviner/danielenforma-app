@@ -44,7 +44,6 @@ interface Props {
   celebration: SessionCelebration | null;
   dismissCelebration: () => void;
   cerrarPlayer: () => void;
-  onSkipSession: () => void | Promise<void>;
   sameDayCardio: CardioAssignment | null;
   videoTargetRef?: (el: HTMLElement | null) => void;
   setEditorTargetRef?: (el: HTMLElement | null) => void;
@@ -63,7 +62,7 @@ export default function WorkoutSessionPlayer({
   profile, activeAssignment, activeWorkout, playerSets, updateSet, addSetRow, prevEntries,
   exerciseNoteInputs, updateExerciseNote,
   getExercise, getPersonalNote, logs, exerciseProgressById, handleFinish, isFinishing, canFinish,
-  celebration, dismissCelebration, cerrarPlayer, onSkipSession, sameDayCardio,
+  celebration, dismissCelebration, cerrarPlayer, sameDayCardio,
   videoTargetRef, setEditorTargetRef, firstSetRowTargetRef, onMarkActionDone,
 }: Props) {
   const orderedExercises = activeWorkout.exercises.slice().sort((a, b) => a.order - b.order);
@@ -409,11 +408,10 @@ export default function WorkoutSessionPlayer({
 
       {/* Player action bar — ya no fija ni pegajosa: en el flujo normal, solo
           en la página del último ejercicio programado. En el resto de
-          páginas no hay forma de terminar/saltar la sesión desde aquí. */}
+          páginas no hay forma de terminar la sesión desde aquí. */}
       {pageIdx === orderedExercises.length - 1 && (
         <div className="px-4 pt-4">
           <div className="flex justify-center gap-3">
-            <Button variant="secondary" size="l" icon="skip_next" label="Saltar sesión" onClick={onSkipSession} />
             <Button
               variant="primary" size="l" icon="flag" loading={isFinishing} loadingLabel="Guardando"
               disabled={!canFinish || !!celebration} onClick={handleFinish} className="flex-1 max-w-xs"

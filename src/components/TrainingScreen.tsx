@@ -551,18 +551,6 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
     cerrarPlayer();
   };
 
-  const handleSkip = async (assignment: WorkoutAssignment) => {
-    try {
-      await updateWorkoutAssignment(assignment.id, { status: 'skipped' });
-      queryClient.setQueryData<WorkoutAssignment[]>(assignmentsKey, prev => prev?.map(a =>
-        a.id === assignment.id ? { ...a, status: 'skipped' } : a
-      ));
-    } catch (err) {
-      console.error('Error saltando sesión:', err);
-      showToast('No se pudo saltar la sesión.');
-    }
-  };
-
   // ── Tarjeta de un día del ciclo (la usan tanto la vuelta en curso como el
   // histórico por vueltas) ───────────────────────────────────────────────────
   const renderAssignmentCard = (dia: DiaDelCiclo, opts?: { destacado?: boolean }) => {
@@ -624,19 +612,14 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
         </div>
         <div className="flex items-center gap-2 self-end md:self-auto">
           <Badge tone={ESTADO_TONE[estado]}>{ESTADO_LABEL[estado]}</Badge>
-          {canAct && (
-            <>
-              <Button variant="secondary" size="s" icon="skip_next" onClick={() => handleSkip(a)}>Saltar</Button>
-              {wo && (
-                <Button
-                  variant="primary" size="s"
-                  icon={seriesAMedias > 0 ? 'play_arrow' : 'play_circle'}
-                  onClick={() => openPlayer(a)}
-                >
-                  {seriesAMedias > 0 ? 'Continuar' : estado === 'perdido' ? 'Recuperar' : 'Empezar'}
-                </Button>
-              )}
-            </>
+          {canAct && wo && (
+            <Button
+              variant="primary" size="s"
+              icon={seriesAMedias > 0 ? 'play_arrow' : 'play_circle'}
+              onClick={() => openPlayer(a)}
+            >
+              {seriesAMedias > 0 ? 'Continuar' : estado === 'perdido' ? 'Recuperar' : 'Empezar'}
+            </Button>
           )}
           {a.status === 'completed' && <Icon name="task_alt" size="l" filled className="text-success" />}
         </div>
@@ -667,13 +650,6 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
         celebration={celebration}
         dismissCelebration={dismissCelebration}
         cerrarPlayer={cerrarPlayer}
-        onSkipSession={async () => {
-          await handleSkip(activeAssignment);
-          // Saltar la sesión sí es abandonarla: aquí el borrador se va.
-          borrarSesion(profile.email, activeAssignment.id);
-          borrarDescanso(profile.email, activeAssignment.id);
-          cerrarPlayer();
-        }}
         sameDayCardio={sameDayCardio}
         videoTargetRef={videoTargetRef}
         setEditorTargetRef={setEditorTargetRef}
