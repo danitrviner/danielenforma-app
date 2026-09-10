@@ -141,6 +141,8 @@ export default function StepsWidget({ athleteEmail, compacto = false }: Props) {
   }
 
   if (compacto) {
+    // `button` cuando se puede tocar, `div` cuando no. Ver más abajo.
+    const Envoltorio = (linked ? 'div' : 'button') as React.ElementType;
     /* Sin vincular Y sin nada apuntado hoy, la tarjeta NO enseña «0 / 8.000»:
        un cero es un hueco con forma de dato y encima desanima justo a quien
        menos ha andado. Se convierte en la invitación a conectarlo, y mide lo
@@ -163,13 +165,24 @@ export default function StepsWidget({ athleteEmail, compacto = false }: Props) {
         </button>
       );
     }
+    /* Vinculado a Salud, la tarjeta no se edita: los pasos los manda el
+       teléfono. Se pinta como un `div`, no como un botón deshabilitado — un
+       botón que no responde parece roto, sobre todo en móvil, donde no hay
+       `hover` que delate que no es pulsable. */
     return (
-      <button
-        onClick={() => { setInput(String(steps)); setEditing(true); }}
-        disabled={linked}
-        className="text-left bg-surface border border-hairline rounded-surface p-4 flex flex-col gap-2 hover:border-strong transition-colors duration-(--duration-state) disabled:hover:border-hairline"
+      <Envoltorio
+        {...(linked ? {} : { onClick: () => { setInput(String(steps)); setEditing(true); } })}
+        aria-label={`Pasos de hoy: ${steps.toLocaleString('es-ES')} de ${goal.toLocaleString('es-ES')}.${
+          remaining > 0 ? ` Te faltan ${remaining.toLocaleString('es-ES')}.` : ' Objetivo cumplido.'
+        }${linked ? '' : ' Pulsa para editarlos.'}`}
+        className={`text-left bg-surface border border-hairline rounded-surface p-4 flex flex-col gap-2 transition-colors duration-(--duration-state)${
+          linked ? '' : ' hover:border-strong'
+        }`}
       >
-        <p className="font-mono text-caption uppercase tracking-wider text-accent">Pasos</p>
+        <p className="font-mono text-caption uppercase tracking-wider text-accent flex items-center gap-1.5">
+          Pasos
+          {linked && <Icon name="check_circle" size="s" className="text-success" label="Vinculado con Salud" />}
+        </p>
         <p className="font-mono font-bold text-feature text-ink tracking-tight leading-none tabular-nums">
           {Math.round(pasosAnimados).toLocaleString('es-ES')}
         </p>
@@ -185,7 +198,7 @@ export default function StepsWidget({ athleteEmail, compacto = false }: Props) {
           de {goal.toLocaleString('es-ES')}
           {remaining > 0 ? ` · faltan ${remaining.toLocaleString('es-ES')}` : ' · cumplido'}
         </p>
-      </button>
+      </Envoltorio>
     );
   }
 

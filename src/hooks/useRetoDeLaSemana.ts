@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { WorkoutAssignment } from '../types';
 import {
   getNutritionProgram, getRoadmap, getBodyweightForAthlete, getStepsForAthlete,
   getWorkoutLogs, getExercises, getDietCompletionLogsForAthlete, getDietsForAthlete,
-  getOnboarding, getAthleteNutritionConfig, getWorkoutAssignmentsForAthlete,
+  getOnboarding, getAthleteNutritionConfig,
   getWeeklyChallengesForAthlete, getCardioSessionsSince, getWeeklyChallenge,
 } from '../dbService';
 import { bodyweightForAthleteKey } from './useAthleteWeight';
@@ -28,13 +29,20 @@ const DEFAULT_STEP_GOAL = 8000;
  * lecturas dos veces sin que nada falle a la vista, que es la forma más cara
  * de romper esto.
  *
+ * Las ASIGNACIONES las pasa quien llama, en vez de pedirlas aquí: la app
+ * tiene dos claves distintas para el mismo dato (`workoutAssignments` en
+ * Inicio y App, `workoutAssignmentsForAthlete` en Road map y Entrenamiento).
+ * Elegir una habría obligado a la otra pantalla a leerlas dos veces, y unificar
+ * las dos claves toca seis ficheros que no van en esta tanda.
+ *
  * `ensureWeeklyChallenge` es «generate-on-read»: garantiza que la semana en
  * curso tiene reto (lo genera si el coach no asignó ninguno), refresca el
  * progreso con los datos ya registrados y cierra el de la semana anterior.
  * Se dispara UNA vez por atleta cuando todo ha cargado, no en cada refetch de
  * fondo — mismo patrón de guard con ref que ya usaba el Road map.
  */
-export function useRetoDeLaSemana(athleteEmail: string, userId: string) {
+export function useRetoDeLaSemana(athleteEmail: string, assignments: WorkoutAssignment[]) {
+  const qc = useQueryClient();
   const [resultado, setResultado] = useState<EnsureChallengeResult | null>(null);
   const hoy = useMemo(() => new Date().toISOString().split('T')[0], []);
   const semana = useMemo(() => isoWeekKey(hoy), [hoy]);
@@ -99,17 +107,12 @@ export function useRetoDeLaSemana(athleteEmail: string, userId: string) {
   });
   const { data: onboarding = null, isPending: cargandoAlta } = useQuery({
     queryKey: ['onboarding', athleteEmail],
-    queryFn: () => getOnboarding(athleteEmail),
+    queryFn: () => getOnboarding(athleteEmail).catch(() => null),
     enabled: hazFalta,
   });
   const { data: nutConfig = null, isPending: cargandoConfig } = useQuery({
     queryKey: ['athleteNutritionConfig', athleteEmail],
-    queryFn: () => getAthleteNutritionConfig(athleteEmail),
-    enabled: hazFalta,
-  });
-  const { data: assignments = [], isPending: cargandoAsignaciones } = useQuery({
-    queryKey: ['workoutAssignmentsForAthlete', userId],
-    queryFn: () => getWorkoutAssignmentsForAthlete({ uid: userId, email: athleteEmail }),
+    queryFn: () => getAthleteNutritionConfig(athleteEmail).catch(() => null),
     enabled: hazFalta,
   });
   const { data: historial = [], isPending: cargandoHistorial } = useQuery({
@@ -128,7 +131,7 @@ export function useRetoDeLaSemana(athleteEmail: string, userId: string) {
 
   const cargando = cargandoPrograma || cargandoRoadmap || cargandoPeso || cargandoPasos
     || cargandoLogs || cargandoEjercicios || cargandoDieta || cargandoDietas || cargandoAlta
-    || cargandoConfig || cargandoAsignaciones || cargandoHistorial || cargandoCardio;
+    || cargandoConfig || cargandoHistorial || cargandoCardio;
 
   const stepGoal = nutConfig?.stepGoal ?? DEFAULT_STEP_GOAL;
   const kcalPerStep = nutConfig?.kcalPerStep ?? DEFAULT_KCAL_PER_STEP;
@@ -166,7 +169,14 @@ export function useRetoDeLaSemana(athleteEmail: string, userId: string) {
       history: historial,
     };
     ensureWeeklyChallenge(athleteEmail, datos, today)
-      .then(setResultado)
+      .then(res => {
+        setResultado(res);
+        // Se ceba la caché del documento con lo que acaba de guardarse. Sin
+        // esto, volver a montar el hook —navegar al Road map y atrás— leía el
+        // reto de antes, veía `evaluadoEn` viejo y encendía el motor entero
+        // otra vez en cada ida y vuelta.
+        if (res.challenge) qc.setQueryData(['weeklyChallenge', athleteEmail, semana], res.challenge);
+      })
       .catch(err => console.warn('useRetoDeLaSemana:', err));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cargando, athleteEmail]);

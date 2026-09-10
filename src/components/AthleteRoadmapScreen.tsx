@@ -150,7 +150,7 @@ export default function AthleteRoadmapScreen({ profile }: Props) {
      El hook usa las MISMAS claves de React Query que esta pantalla, así que
      aquí no añade ni una lectura. */
   const { resultado: challengeResult, racha: challengeStreak } =
-    useRetoDeLaSemana(profile.email, profile.userId);
+    useRetoDeLaSemana(profile.email, assignments);
 
 
   const ladderStatus = useMemo(() => {

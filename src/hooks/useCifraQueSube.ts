@@ -19,9 +19,20 @@ export function useCifraQueSube(objetivo: number, duracionMs = 900): number {
   const [valor, setValor] = useState(reducido ? objetivo : 0);
   const rafRef = useRef<number | null>(null);
 
+  // De dónde sale la cuenta. La PRIMERA vez, de cero: es el gesto de entrada.
+  // Después, del valor que ya se estaba enseñando — si no, cualquier refresco
+  // de fondo (los pasos se releen cada 60 s cuando están vinculados a Salud)
+  // tiraba la cifra a cero y la volvía a subir entera, en una pantalla que
+  // tiene que estar quieta.
+  const anterior = useRef(0);
+  const primera = useRef(true);
+
   useEffect(() => {
-    if (reducido || !Number.isFinite(objetivo)) { setValor(objetivo); return; }
-    const desde = 0;
+    if (reducido || !Number.isFinite(objetivo)) { setValor(objetivo); anterior.current = objetivo; return; }
+    const desde = primera.current ? 0 : anterior.current;
+    primera.current = false;
+    anterior.current = objetivo;
+    if (desde === objetivo) { setValor(objetivo); return; }
     const inicio = performance.now();
     const paso = (ahora: number) => {
       const t = Math.min(1, (ahora - inicio) / duracionMs);

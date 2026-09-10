@@ -48,7 +48,9 @@ export default function TarjetaPeso({ logs, metaKg, onClick }: Props) {
   }
 
   const primero = serie[0].weight;
-  const delta = peso - primero;
+  // Con tolerancia: por debajo de 50 g no ha cambiado nada, y «+0,0» sobra.
+  const bruto = peso - primero;
+  const delta = Math.abs(bruto) < 0.05 ? 0 : bruto;
   const hayMeta = (metaKg ?? 0) > 0;
   // Bajando hacia la meta o subiendo hacia ella: el verde es «vas hacia donde
   // querías», no «has adelgazado». Un atleta en superávit sube a propósito.
@@ -66,6 +68,11 @@ export default function TarjetaPeso({ logs, metaKg, onClick }: Props) {
   return (
     <button
       onClick={onClick}
+      aria-label={[
+        `Tu peso: ${peso.toFixed(1).replace('.', ',')} kilos.`,
+        delta !== 0 && `${delta > 0 ? 'Has subido' : 'Has bajado'} ${Math.abs(delta).toFixed(1).replace('.', ',')} kilos.`,
+        hayMeta ? `Tu meta son ${metaKg!.toFixed(1).replace('.', ',')} kilos.` : 'No has puesto meta.',
+      ].filter(Boolean).join(' ')}
       className="text-left bg-surface border border-hairline rounded-surface p-4 flex flex-col gap-2 hover:border-strong transition-colors duration-(--duration-state)"
     >
       <p className="font-mono text-caption uppercase tracking-wider text-success">Tu peso</p>

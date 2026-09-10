@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 /* La curva de la cuenta atrás está dentro del hook, así que se prueba lo que
    de verdad puede romperse: que la interpolación empiece en 0, termine EXACTO
