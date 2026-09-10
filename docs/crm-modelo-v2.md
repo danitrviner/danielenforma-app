@@ -147,9 +147,14 @@ Notas de diseño que importan:
   `pendiente`, y por eso no se puede contestar «¿cuánto tengo impagado?». El paso de
   uno a otro **lo marca el coach a mano** — deducirlo por «lleva N días de retraso»
   convertiría un olvido en una deuda.
-- El **estado financiero del cliente** («al día / pendiente / impagado / parcial /
-  en devolución») que pide Dani **se deriva**, no se guarda: es el peor estado entre
-  sus movimientos. Guardarlo sería una segunda verdad que hay que mantener a mano.
+- **No hay estado `devuelto`, y es a propósito.** Una devolución es su propio
+  movimiento negativo y el cobro original se queda `pagado`: el dinero entró y luego
+  salió. Marcar además el original como devuelto lo restaría **dos veces** —una por
+  sacarlo de la facturación y otra por el movimiento negativo—, que es el tipo de
+  fallo que no se ve hasta que los números no cuadran meses después.
+- El **estado financiero del cliente** («al día / pendiente / impagado / parcial»)
+  que pide Dani **se deriva**, no se guarda: es el peor estado entre sus movimientos.
+  Guardarlo sería una segunda verdad que hay que mantener a mano.
 
 ### 2.4 `crmSuscripciones` — se apaga
 

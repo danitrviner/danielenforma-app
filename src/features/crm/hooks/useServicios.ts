@@ -5,11 +5,13 @@ import {
 } from '../../../dbService';
 import { crmKeys } from '../lib/crmQueries';
 import { hoyISO } from '../lib/fechas';
-import type { Cliente, CrmServicio, Periodicidad } from '../types';
+import type { Cliente, CrmServicio, Periodicidad, TipoServicio } from '../types';
 
 export interface NuevoServicio {
   nombre: string;
   importeCents: number;
+  /** Alta, renovación o upsell. Ver docs/crm-modelo-v2.md. */
+  tipo: TipoServicio;
   periodicidad: Periodicidad;
   fechaContratacion: string;
   fechaInicio: string;

@@ -94,8 +94,10 @@ export function ingresosPorMes(
 }
 
 // Tipado laxo a propósito: `dinero.ts` no importa `EstadoPago` de `../types`
-// para no crear una dependencia circular entre lib y types.
-type EstadoPagoLike = 'pendiente' | 'pagado';
+// para no crear una dependencia circular entre lib y types. Tiene que llevar
+// los mismos valores que `EstadoPago`: si se añade uno allí y no aquí, esto
+// deja de compilar donde se le pasa un `CrmPago`, que es lo que queremos.
+type EstadoPagoLike = 'pendiente' | 'pagado' | 'impagado' | 'parcial';
 
 /**
  * % de variación del último mes de la serie respecto al anterior. `null` si

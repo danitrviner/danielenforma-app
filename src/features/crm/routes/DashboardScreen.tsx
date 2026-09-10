@@ -4,6 +4,7 @@ import { useClientes } from '../hooks/useClientes';
 import { useReuniones } from '../hooks/useReuniones';
 import { usePagos } from '../hooks/usePagos';
 import { formatEuros, sumaCents, ingresosPorMes } from '../lib/dinero';
+import { facturacionDelMes, mesDe } from '../lib/metricas';
 import { formatDia, tiempoRelativo, hoyISO, aDiaISO } from '../lib/fechas';
 import MetricCard from '../components/MetricCard';
 import RecurringRevenueCard from '../components/RecurringRevenueCard';
@@ -41,6 +42,10 @@ export default function DashboardScreen() {
 
   const facturado = sumaCents(pagos.filter(p => p.estado === 'pagado'));
   const totalPendiente = sumaCents(pagos.filter(p => p.estado === 'pendiente'));
+
+  // Lo del MES en curso, desglosado por clase de venta.
+  const delMes = useMemo(() => facturacionDelMes(pagos, mesDe(hoy)), [pagos, hoy]);
+  const desgloseClasificado = delMes.altasCents + delMes.renovacionesCents + delMes.upsellsCents;
 
   // Conversión a continuidad: % de graduaciones YA resueltas que pasan a
   // continuidad. Es la palanca de negocio más grande según
@@ -91,17 +96,32 @@ export default function DashboardScreen() {
           accent="var(--color-warning)"
           onClick={() => navigate('/crm/pagos?estado=pendiente')}
         />
-        {/* «Facturado» a secas se lee como «este mes», y es el total de toda
+        {/* «Facturado» a secas se leía como «este mes» y era el total de toda
             la vida: un mes flojo seguía enseñando una cifra enorme y parecía
-            que las fechas no funcionaban. Se dice lo que es (Dani,
-            10-09-2026). El corte por mes de verdad está justo debajo, en la
-            tarjeta de ingresos recurrentes. */}
+            que las fechas no funcionaban (Dani, 10-09-2026). Ahora la tarjeta
+            grande es la del MES, que es lo que se mira para saber cómo va, y
+            el histórico queda de subtítulo. */}
         <MetricCard
-          icon="paid" label="Facturado (histórico)"
-          value={pagosSinDato ? '—' : formatEuros(facturado)}
+          icon="paid" label="Facturado este mes"
+          value={pagosSinDato ? '—' : formatEuros(delMes.totalCents)}
+          sub={pagosSinDato ? undefined : `${formatEuros(facturado)} en total`}
           onClick={() => navigate('/crm/pagos?estado=pagado')}
         />
       </div>
+
+      {/* De dónde sale el dinero del mes: vender a alguien nuevo, que un
+          cliente siga, o venderle más al que ya está. Es la pregunta que el
+          CRM no podía contestar porque los movimientos no llevaban `tipo`
+          (docs/crm-modelo-v2.md). Solo se pinta cuando hay algo clasificado:
+          antes de pasar `scripts/migrarCrmTipos.mjs` esto sería una fila de
+          ceros que haría pensar que no se ha facturado nada. */}
+      {!pagosSinDato && desgloseClasificado > 0 && (
+        <div className="grid grid-cols-3 gap-2">
+          <MetricCard icon="person_add"     label="Altas"        value={formatEuros(delMes.altasCents)} sub="este mes" />
+          <MetricCard icon="autorenew"      label="Renovaciones" value={formatEuros(delMes.renovacionesCents)} sub="este mes" />
+          <MetricCard icon="trending_up"    label="Upsells"      value={formatEuros(delMes.upsellsCents)} sub="este mes" />
+        </div>
+      )}
 
       {pagosSinDato ? (
         <Skeleton className="h-[104px] w-full" />

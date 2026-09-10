@@ -20,6 +20,10 @@ const ESTADO_CLIENTE: Record<EstadoCrm, { label: string; tono: Tono }> = {
 const ESTADO_PAGO: Record<EstadoPago, { label: string; tono: Tono }> = {
   pagado:    { label: 'Pagado',    tono: 'ok' },
   pendiente: { label: 'Pendiente', tono: 'aviso' },
+  // «Impagado» es peligro y «pendiente» solo aviso a propósito: pendiente es
+  // que aún no ha llegado, impagado es que tenía que haber llegado.
+  impagado:  { label: 'Impagado',  tono: 'peligro' },
+  parcial:   { label: 'Parcial',   tono: 'aviso' },
 };
 
 const ESTADO_SUSCRIPCION: Record<EstadoSuscripcion, { label: string; tono: Tono }> = {

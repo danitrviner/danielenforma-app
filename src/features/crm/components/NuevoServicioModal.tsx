@@ -1,11 +1,20 @@
 import React, { useState } from 'react';
 import { useToast } from '../../../hooks/useToast';
-import { useCrearServicio } from '../hooks/useServicios';
+import { useCrearServicio, useServiciosDe } from '../hooks/useServicios';
 import { parseEurosACents, formatEuros, repartirEnCuotas } from '../lib/dinero';
 import { hoyISO, sumarMeses, mesesDePeriodicidad, formatDia } from '../lib/fechas';
 import { EscrituraEncolada } from '../../../db/crm';
 import Modal, { Campo, inputClass, BotonPrimario, BotonSecundario } from './Modal';
-import type { Cliente, Periodicidad } from '../types';
+import type { Cliente, Periodicidad, TipoServicio } from '../types';
+
+// Qué clase de venta es un servicio. Es lo que permite separar «facturación de
+// altas» de «facturación de renovaciones», y de ahí salen el LTV por servicio y
+// la tasa de renovación (docs/crm-modelo-v2.md).
+const TIPOS: { id: TipoServicio; label: string }[] = [
+  { id: 'alta',       label: 'Alta' },
+  { id: 'renovacion', label: 'Renovación' },
+  { id: 'upsell',     label: 'Upsell' },
+];
 
 const PERIODICIDADES: { id: Periodicidad; label: string }[] = [
   { id: 'mensual',     label: 'Mensual' },
@@ -21,6 +30,8 @@ export default function NuevoServicioModal({ cliente, coachEmail, onCerrar }: {
   const { showToast } = useToast();
   const crear = useCrearServicio();
 
+  const { data: yaTiene = [] } = useServiciosDe(cliente.id);
+
   const [nombre, setNombre] = useState('');
   const [importe, setImporte] = useState('');
   const [periodicidad, setPeriodicidad] = useState<Periodicidad>('mensual');
@@ -33,6 +44,13 @@ export default function NuevoServicioModal({ cliente, coachEmail, onCerrar }: {
   // cobro con él mientras el coach no lo fije a mano a otra fecha.
   const [primerCobro, setPrimerCobro] = useState('');
   const [yaCobrado, setYaCobrado] = useState(false);
+  /* Qué clase de venta es. Se sugiere —el primer servicio de un cliente es su
+     alta— pero se pregunta igual: distinguir una renovación de un upsell es
+     una decisión de negocio, no algo que la app pueda deducir, y de esto
+     dependen el LTV por servicio y la tasa de renovación. */
+  const sugerido: TipoServicio = yaTiene.filter(s => !s.archivado).length === 0 ? 'alta' : 'renovacion';
+  const [tipo, setTipo] = useState<TipoServicio | null>(null);
+  const tipoElegido = tipo ?? sugerido;
   const fechaPrimerCobro = primerCobro || fechaInicio;
   // Cuántas cuotas quedarían cobradas al marcar «ya cobrado»: las que ya han
   // vencido. Se dice el número para que el coach no tenga que deducirlo.
@@ -67,6 +85,7 @@ export default function NuevoServicioModal({ cliente, coachEmail, onCerrar }: {
         datos: {
           nombre: nombre.trim(),
           importeCents: importeCents ?? 0,
+          tipo: tipoElegido,
           periodicidad,
           fechaContratacion: hoyISO(),
           fechaInicio,
@@ -115,6 +134,31 @@ export default function NuevoServicioModal({ cliente, coachEmail, onCerrar }: {
           <input className={inputClass} value={nombre} onChange={e => setNombre(e.target.value)} placeholder="Asesoría 3 meses" />
         </Campo>
 
+        <Campo
+          label="Qué venta es"
+          hint={
+            tipoElegido === 'alta' ? 'Cliente nuevo: es su primera venta.'
+              : tipoElegido === 'renovacion' ? 'Sigue con lo mismo cuando se le acaba.'
+              : 'Le vendes algo más, además de lo que ya tiene.'
+          }
+        >
+          <div className="flex gap-2">
+            {TIPOS.map(t => (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => setTipo(t.id)}
+                aria-pressed={tipoElegido === t.id}
+                className={`flex-1 rounded-control border px-3 py-2 font-sans text-caption font-bold transition-colors ${
+                  tipoElegido === t.id
+                    ? 'bg-accent text-black border-accent'
+                    : 'bg-raised text-ink-2 border-hairline hover:text-ink'
+                }`}
+              >{t.label}</button>
+            ))}
+          </div>
+        </Campo>
+
         <div className="grid grid-cols-2 gap-3">
           <Campo
             label="Importe"
@@ -124,7 +168,7 @@ export default function NuevoServicioModal({ cliente, coachEmail, onCerrar }: {
             <input className={inputClass} value={importe} onChange={e => setImporte(e.target.value)} placeholder="149,90" inputMode="decimal" />
           </Campo>
 
-          <Campo label="Periodicidad">
+          <Campo label="Duración" hint="Solo para sugerir el fin">
             <select
               className={inputClass}
               value={periodicidad}

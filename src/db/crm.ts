@@ -320,6 +320,10 @@ export async function createCrmServicioConPago(
         servicioId: servicioRef.id,
         concepto: numCuotas > 1 ? `${data.nombre} (${i + 1}/${numCuotas})` : data.nombre,
         importeCents: importes[i],
+        // El movimiento hereda del servicio qué clase de venta es. Es lo que
+        // permite luego separar «facturación de altas» de «facturación de
+        // renovaciones» sin volver a cruzar las dos colecciones.
+        ...(data.tipo ? { tipo: data.tipo } : {}),
         estado: cobrada ? 'pagado' : 'pendiente',
         fechaEmision: fechaCuota,
         ...(cobrada ? { fechaCobro: fechaCuota } : {}),

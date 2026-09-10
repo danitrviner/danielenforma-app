@@ -17,7 +17,39 @@ export type { EstadoCrm, MotivoBaja };
 
 export type Periodicidad = 'mensual' | 'trimestral' | 'semestral' | 'anual' | 'unico';
 
-export type EstadoPago = 'pendiente' | 'pagado';
+/**
+ * Qué clase de dinero es un movimiento. Es la columna que faltaba para poder
+ * separar «facturación de altas» de «facturación de renovaciones», y de ahí
+ * salen el LTV por servicio, el ticket medio de alta y la tasa de renovación.
+ * Ver docs/crm-modelo-v2.md.
+ *
+ * `descuento` y `devolucion` llevan `importeCents` NEGATIVO a propósito: así
+ * toda la facturación sigue siendo una suma simple y ningún informe tiene que
+ * acordarse de restar.
+ */
+export type TipoMovimiento = 'alta' | 'renovacion' | 'upsell' | 'descuento' | 'devolucion';
+
+/** Qué clase de venta es un contrato. Un cliente empieza con un `alta`. */
+export type TipoServicio = 'alta' | 'renovacion' | 'upsell';
+
+export type MetodoPago = 'transferencia' | 'tarjeta' | 'bizum' | 'efectivo' | 'stripe' | 'otro';
+
+/**
+ * `pendiente` es «aún no toca o aún no ha llegado»; `impagado` es «tenía que
+ * haber llegado y no ha llegado». Son cosas distintas y el CRM no podía
+ * distinguirlas, así que no se podía contestar cuánto había impagado.
+ *
+ * El paso de `pendiente` a `impagado` LO MARCA EL COACH, nunca el reloj:
+ * deducirlo de los días de retraso convertiría un olvido en una deuda.
+ *
+ * NO hay estado `devuelto`, y es a propósito. Una devolución es su propio
+ * movimiento (`tipo: 'devolucion'`, importe negativo) y el cobro original se
+ * queda `pagado`: el dinero entró de verdad y luego salió. Marcar además el
+ * original como devuelto lo restaría DOS veces —una por sacarlo de la
+ * facturación y otra por el movimiento negativo—, que es justo el tipo de
+ * fallo que no se ve hasta que los números no cuadran meses después.
+ */
+export type EstadoPago = 'pendiente' | 'pagado' | 'impagado' | 'parcial';
 
 export type EstadoSuscripcion = 'activa' | 'pausada';
 
@@ -104,28 +136,80 @@ export interface CrmServicio {
   clientNombre: string;       // denormalizado — evita N lecturas para pintar una tabla
   nombre: string;
   importeCents: number;
+  /**
+   * Qué clase de venta es. Opcional solo por los documentos escritos antes de
+   * 09-2026: `scripts/migrarCrmTipos.mjs` los rellena, y la UI de creación lo
+   * pide siempre. Trátalo como obligatorio en código nuevo.
+   */
+  tipo?: TipoServicio;
+  /**
+   * OJO: `periodicidad` NO genera nada. Quien crea los movimientos es el número
+   * de cuotas que se pide al dar de alta el servicio (pago único = 1 cuota,
+   * fraccionado = N). Esto es solo la DURACIÓN del contrato, y sirve para
+   * sugerir la fecha de fin y para la etiqueta de la tabla. Había dos ejes
+   * diciendo lo mismo a medias y este es el que no manda.
+   */
   periodicidad: Periodicidad;
   fechaContratacion: string;  // ISO 'YYYY-MM-DD'
   fechaInicio: string;        // ISO 'YYYY-MM-DD'
   fechaFin?: string;          // ISO 'YYYY-MM-DD'; ausente en servicios sin fin previsto
   descripcion?: string;
   archivado?: boolean;        // baja lógica: un servicio pasado sigue contando en el historial
+  /** Se renueva solo al llegar a `proximoCobro`. Absorbe lo que era `CrmSuscripcion`. */
+  renovacionAutomatica?: boolean;
+  /** Solo con `renovacionAutomatica`. ISO 'YYYY-MM-DD'. */
+  proximoCobro?: string;
+  /**
+   * Cómo acabó este contrato al llegar a su fin. Es lo que llena la pantalla de
+   * Renovaciones (previsto / renovado / pendiente / perdido) sin necesitar una
+   * colección aparte: se pregunta sobre los servicios que caducan.
+   */
+  resultadoRenovacion?: ResultadoRenovacion;
+  /**
+   * Por qué no renovó. Reutiliza los seis motivos de baja (decidido con Dani el
+   * 10-09-2026) pero es un campo DISTINTO: terminar el programa y no seguir no
+   * es lo mismo que darse de baja a mitad. «Terminó su objetivo» va como
+   * `otro` + detalle.
+   */
+  motivoNoRenovacion?: MotivoBaja;
+  motivoNoRenovacionDetalle?: string;
   createdAt: string;
   updatedAt: string;
   createdBy: string;          // email del coach — trazabilidad
 }
 
+export type ResultadoRenovacion = 'renovado' | 'perdido' | 'pendiente';
+
+/**
+ * UN MOVIMIENTO ECONÓMICO. Se sigue llamando `CrmPago` y viviendo en
+ * `crmPagos` —renombrar una colección con documentos dentro no compra nada—
+ * pero conceptualmente es la tabla de movimientos de docs/crm-modelo-v2.md: de
+ * aquí sale cualquier informe sin volver a tocar la estructura.
+ */
 export interface CrmPago {
   id: string;
   clientId: string;
   clientNombre: string;
+  /**
+   * De qué servicio cuelga. Opcional solo por los huérfanos ya escritos (los
+   * que creaba «Registrar pago» suelto y los que generaba una suscripción):
+   * un movimiento sin servicio no se puede atribuir a nada, ni a un canal ni al
+   * LTV de un servicio, y es la razón por la que no se podía contestar qué
+   * servicio genera más dinero. `scripts/migrarCrmTipos.mjs` les crea uno.
+   */
   servicioId?: string;
   suscripcionId?: string;
   concepto: string;
+  /** En céntimos. NEGATIVO en `descuento` y `devolucion` — ver `TipoMovimiento`. */
   importeCents: number;
+  /** Qué clase de dinero es. Opcional solo por los documentos ya escritos. */
+  tipo?: TipoMovimiento;
+  metodoPago?: MetodoPago;
   estado: EstadoPago;
+  /** Cuánto se ha cobrado de verdad. Solo con `estado: 'parcial'`. */
+  importeCobradoCents?: number;
   fechaEmision: string;       // ISO 'YYYY-MM-DD'
-  fechaCobro?: string;        // ISO 'YYYY-MM-DD'; presente solo si estado === 'pagado'
+  fechaCobro?: string;        // ISO 'YYYY-MM-DD'; presente solo si el dinero ha entrado
   // Presentes solo si el pago viene de fraccionar un servicio en N cuotas
   // (p.ej. el 3× 329€ de la oferta de 12 semanas) — un mismo `servicioId`
   // puede tener varios `CrmPago`, cada uno con su cuota/total y su propia
@@ -137,6 +221,12 @@ export interface CrmPago {
   createdBy: string;
 }
 
+/**
+ * @deprecated Desde 09-2026 no se escribe: una suscripción es un servicio con
+ * `renovacionAutomatica` y `proximoCobro`. Se sigue LEYENDO para no perder las
+ * que ya existen, y la pantalla de Renovaciones las muestra junto a los
+ * servicios que caducan. No crear ninguna nueva.
+ */
 export interface CrmSuscripcion {
   id: string;
   clientId: string;
