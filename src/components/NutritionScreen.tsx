@@ -1589,10 +1589,9 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
 
   return (
     <div className="w-full space-y-6">
-      <div>
-        <h1 className="font-sans font-extrabold text-display text-ink tracking-tight">Mi plan</h1>
-        <p className="text-ink-2 text-body-s mt-1">Construye tu menú del día con intercambios.</p>
-      </div>
+      {/* Sin cabecera propia: la barra de pestañas de Nutrición ya dice en qué
+          pantalla estás, y repetirlo debajo con letra de titular se comía la
+          primera pantalla entera del móvil (Dani, 10-09-2026). */}
 
       {/* Día de recarga marcado por el coach — va antes que el cambio de fase
           porque es lo que cambia lo que come HOY. */}
