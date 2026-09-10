@@ -112,12 +112,16 @@ export async function ensureWeeklyChallenge(
       status: 'conseguido',
       progressValue: progress.progressValue,
       resolvedAt: new Date().toISOString(),
+      evaluadoEn: today,
     };
     await saveWeeklyChallenge(challenge);
     await notifyChallengeWon(challenge);
-  } else if (challenge.status === 'activo' && challenge.progressValue !== progress.progressValue) {
-    // Snapshot para que el coach vea el avance sin recalcular todos los logs.
-    challenge = { ...challenge, progressValue: progress.progressValue };
+  } else if (challenge.status === 'activo'
+      && (challenge.progressValue !== progress.progressValue || challenge.evaluadoEn !== today)) {
+    // Snapshot para que el coach vea el avance sin recalcular todos los logs —
+    // y para que la próxima apertura del día no tenga que volver a cargar el
+    // historial entero (ver `evaluadoEn` en types.ts).
+    challenge = { ...challenge, progressValue: progress.progressValue, evaluadoEn: today };
     await saveWeeklyChallenge(challenge);
   }
 

@@ -4,7 +4,7 @@ import {
   getNutritionProgram, getRoadmap, getBodyweightForAthlete, getStepsForAthlete,
   getWorkoutLogs, getExercises, getDietCompletionLogsForAthlete, getDietsForAthlete,
   getOnboarding, getAthleteNutritionConfig, getWorkoutAssignmentsForAthlete,
-  getWeeklyChallengesForAthlete, getCardioSessionsSince,
+  getWeeklyChallengesForAthlete, getCardioSessionsSince, getWeeklyChallenge,
 } from '../dbService';
 import { bodyweightForAthleteKey } from './useAthleteWeight';
 import { ensureWeeklyChallenge, EnsureChallengeResult } from '../utils/ensureWeeklyChallenge';
@@ -36,54 +36,86 @@ const DEFAULT_STEP_GOAL = 8000;
  */
 export function useRetoDeLaSemana(athleteEmail: string, userId: string) {
   const [resultado, setResultado] = useState<EnsureChallengeResult | null>(null);
+  const hoy = useMemo(() => new Date().toISOString().split('T')[0], []);
+  const semana = useMemo(() => isoWeekKey(hoy), [hoy]);
+
+  /* El reto guardado de esta semana: UN documento. Es lo que decide si hay que
+     encender el motor o no. Sin esto, Inicio pagaba el historial completo de
+     pasos, pesajes, entrenos y comidas en cada apertura de la app — y solo
+     `stepLogs` son ~728 documentos a los dos años. */
+  const { data: guardado = null, isPending: cargandoGuardado } = useQuery({
+    queryKey: ['weeklyChallenge', athleteEmail, semana],
+    queryFn: () => getWeeklyChallenge(athleteEmail, semana),
+  });
+
+  /* Si ya se evaluó HOY, se pinta el snapshot y no se carga nada más. El
+     progreso puede quedarse corto dentro del mismo día (si el atleta entrena
+     y vuelve a Inicio sin pasar por el Road map), pero antes de esto solo se
+     refrescaba al visitar el Road map: es estrictamente mejor que lo de antes.
+     Un reto ya conseguido tampoco necesita motor: no va a desconseguirse. */
+  const alDia = !!guardado
+    && (guardado.evaluadoEn === hoy || guardado.status === 'conseguido');
+  const hazFalta = !cargandoGuardado && !alDia;
 
   const { data: nutritionProgram = null, isPending: cargandoPrograma } = useQuery({
     queryKey: ['nutritionProgram', athleteEmail],
     queryFn: () => getNutritionProgram(athleteEmail),
+    enabled: hazFalta,
   });
   const { data: roadmap = null, isPending: cargandoRoadmap } = useQuery({
     queryKey: ['roadmap', athleteEmail],
     queryFn: () => getRoadmap(athleteEmail),
+    enabled: hazFalta,
   });
   const { data: bodyweightLogs = [], isPending: cargandoPeso } = useQuery({
     queryKey: bodyweightForAthleteKey(athleteEmail),
     queryFn: () => getBodyweightForAthlete(athleteEmail),
+    enabled: hazFalta,
   });
   const { data: stepLogs = [], isPending: cargandoPasos } = useQuery({
     queryKey: ['stepsForAthlete', athleteEmail],
     queryFn: () => getStepsForAthlete(athleteEmail),
+    enabled: hazFalta,
   });
   const { data: workoutLogs = [], isPending: cargandoLogs } = useQuery({
     queryKey: ['workoutLogs', athleteEmail],
     queryFn: () => getWorkoutLogs(athleteEmail),
+    enabled: hazFalta,
   });
   const { data: exercises = [], isPending: cargandoEjercicios } = useQuery({
     queryKey: ['exercises'],
     queryFn: getExercises,
+    enabled: hazFalta,
   });
   const { data: dietCompletionLogs = [], isPending: cargandoDieta } = useQuery({
     queryKey: ['dietCompletionLogsForAthlete', athleteEmail],
     queryFn: () => getDietCompletionLogsForAthlete(athleteEmail),
+    enabled: hazFalta,
   });
   const { data: diets = [], isPending: cargandoDietas } = useQuery({
     queryKey: ['dietsForAthlete', athleteEmail],
     queryFn: () => getDietsForAthlete(athleteEmail),
+    enabled: hazFalta,
   });
   const { data: onboarding = null, isPending: cargandoAlta } = useQuery({
     queryKey: ['onboarding', athleteEmail],
     queryFn: () => getOnboarding(athleteEmail),
+    enabled: hazFalta,
   });
   const { data: nutConfig = null, isPending: cargandoConfig } = useQuery({
     queryKey: ['athleteNutritionConfig', athleteEmail],
     queryFn: () => getAthleteNutritionConfig(athleteEmail),
+    enabled: hazFalta,
   });
   const { data: assignments = [], isPending: cargandoAsignaciones } = useQuery({
     queryKey: ['workoutAssignmentsForAthlete', userId],
     queryFn: () => getWorkoutAssignmentsForAthlete({ uid: userId, email: athleteEmail }),
+    enabled: hazFalta,
   });
   const { data: historial = [], isPending: cargandoHistorial } = useQuery({
     queryKey: ['weeklyChallengesForAthlete', athleteEmail],
     queryFn: () => getWeeklyChallengesForAthlete(athleteEmail),
+    enabled: hazFalta,
   });
   // Misma ventana que el Road map — el año en curso. El motor solo mira cuatro
   // semanas atrás, pero la clave tiene que coincidir para compartir caché.
@@ -91,6 +123,7 @@ export function useRetoDeLaSemana(athleteEmail: string, userId: string) {
   const { data: cardioSessions = [], isPending: cargandoCardio } = useQuery({
     queryKey: ['cardioSessionsSince', athleteEmail, cardioSince],
     queryFn: () => getCardioSessionsSince(athleteEmail, cardioSince),
+    enabled: hazFalta,
   });
 
   const cargando = cargandoPrograma || cargandoRoadmap || cargandoPeso || cargandoPasos
@@ -138,11 +171,40 @@ export function useRetoDeLaSemana(athleteEmail: string, userId: string) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cargando, athleteEmail]);
 
+  /* Con el motor apagado, el reto se pinta del snapshot guardado. `pct` se
+     recalcula del progreso y el objetivo en vez de guardarse: es aritmética,
+     y un porcentaje guardado es un segundo sitio del que se puede quedar
+     viejo. `achieved` sale del estado, que es la verdad. */
+  const delSnapshot = useMemo<EnsureChallengeResult | null>(() => {
+    if (!guardado) return null;
+    const objetivo = guardado.metric.target || 1;
+    const valor = guardado.progressValue ?? 0;
+    return {
+      challenge: guardado,
+      progress: {
+        progressValue: valor,
+        pct: Math.max(0, Math.min(100, (valor / objetivo) * 100)),
+        achieved: guardado.status === 'conseguido',
+      },
+      pending: false,
+    };
+  }, [guardado]);
+
   /** Retos ganados seguidos ANTES del de esta semana, del historial ya cargado. */
   const racha = useMemo(() => {
-    const clave = resultado?.challenge?.isoWeek ?? isoWeekKey(new Date().toISOString().split('T')[0]);
-    return buildChallengeMemory(historial, clave).winStreak;
-  }, [historial, resultado]);
+    // Sin historial cargado (motor apagado) no hay racha que calcular. Se
+    // devuelve 0, que la tarjeta traduce en «no pintar nada»: mejor callarse
+    // que enseñar una racha inventada.
+    if (historial.length === 0) return 0;
+    return buildChallengeMemory(historial, semana).winStreak;
+  }, [historial, semana]);
 
-  return { resultado, racha, cargando, historial, roadmap, projection, bodyweightLogs };
+  return {
+    // El del motor manda en cuanto llega; hasta entonces (y todo el resto del
+    // día, si ya se evaluó) vale el snapshot.
+    resultado: resultado ?? (alDia ? delSnapshot : null),
+    racha,
+    cargando: cargandoGuardado || (hazFalta && cargando),
+    historial, roadmap, projection,
+  };
 }

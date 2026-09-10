@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { UserProfile, WeightCheckIn, WeekDay } from '../types';
-import { getWorkoutAssignmentsForAthlete, getWorkoutsByIds, getCardioAssignmentsForAthlete, getDietsForAthlete, getAthleteDietConfig, getDietCompletionLog, getOnboarding, getCoachDayNote, getMesocycles } from '../dbService';
+import { getWorkoutAssignmentsForAthlete, getWorkoutsByIds, getCardioAssignmentsForAthlete, getDietsForAthlete, getAthleteDietConfig, getDietCompletionLog, getOnboarding, getCoachDayNote, getMesocycles, getBodyweightForAthlete } from '../dbService';
 import { formatDate, hoyIsoLocal } from '../utils/trainingWeek';
 import { bloquesDelCiclo, bloqueActual, EstadoDeDia } from '../utils/cicloDelAtleta';
 import { pickActiveZona2Assignment, pickActiveIntervalAssignment } from '../utils/cardioSession';
@@ -143,8 +143,22 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
   /* El reto de la semana, que desde 09-2026 es lo primero que se ve.
      Comparte todas las claves de consulta con el Road map, así que un atleta
      que pase por las dos pantallas paga las lecturas UNA vez. */
-  const { resultado: reto, racha, cargando: cargandoReto, bodyweightLogs } =
+  const { resultado: reto, racha, cargando: cargandoReto } =
     useRetoDeLaSemana(profile.email, profile.userId);
+
+  /* Los pesajes de la curva, con VENTANA y clave propia. El historial entero
+     son cientos de documentos y aquí solo hacen falta los últimos doce puntos;
+     la clave no se comparte con Revisión ni con el Road map a propósito, que
+     esos sí necesitan el histórico completo. */
+  const desdePeso = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 120);
+    return d.toISOString().split('T')[0];
+  }, []);
+  const { data: pesajes = [] } = useQuery({
+    queryKey: ['bodyweightDesde', profile.email, desdePeso],
+    queryFn: () => getBodyweightForAthlete(profile.email, desdePeso),
+  });
 
   const sorted = [...assignments].sort((a, b) => a.date.localeCompare(b.date));
   // La misma vuelta del microciclo que enseña Rutinas (Día 1 → Día N, sin cajón
@@ -236,7 +250,7 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
           su propio hueco por dentro. */}
       <div className="grid grid-cols-2 gap-2">
         <TarjetaPeso
-          logs={bodyweightLogs}
+          logs={pesajes}
           metaKg={profile.targetWeight}
           onClick={() => onNavigate('checkin')}
         />

@@ -1259,6 +1259,17 @@ export interface WeeklyChallenge {
   // intentos fallidos de un mismo hito redondo para no reproponerlo eternamente.
   isMilestone?: boolean;
   difficulty?: ChallengeDifficulty;
+  /**
+   * Día (YYYY-MM-DD) en que el motor evaluó el progreso por última vez.
+   *
+   * Existe para no pagar el motor entero en cada apertura de la app. Desde
+   * 09-2026 el reto es lo primero que se ve en Inicio, y `ensureWeeklyChallenge`
+   * necesita el historial de pasos, pesajes, entrenos y comidas: sin ventana,
+   * eso son cientos de lecturas (solo `stepLogs` son ~728 documentos a los dos
+   * años). Si ya se evaluó hoy, se pinta el snapshot guardado y no se carga
+   * nada. Los documentos anteriores a 09-2026 no lo llevan y se reevalúan.
+   */
+  evaluadoEn?: string;
 }
 
 // Plantilla de la biblioteca de retos del coach (colección challengeTemplates).
