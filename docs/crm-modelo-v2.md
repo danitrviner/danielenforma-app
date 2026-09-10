@@ -1,6 +1,7 @@
 # CRM v2 — modelo de datos, KPIs y plan de migración
 
-> Estado: **propuesta**, pendiente del OK de Dani. Nada de esto está implementado.
+> Estado: **alcance cerrado con Dani el 10-09-2026**. Las cuatro decisiones abiertas
+> están contestadas al final del documento.
 > Escrito el 2026-09-10 a partir de la especificación que dio Dani (seis bloques:
 > ficha maestra, economía del cliente, altas y bajas, renovaciones, LTV, KPIs).
 
@@ -64,7 +65,6 @@ convenciones son correctas y no se tocan.
 |---|---|
 | Distinguir alta / renovación / upsell / descuento / devolución / impago | `CrmPago.tipo` y `CrmServicio.tipo` |
 | Cómo se cobró | `CrmPago.metodoPago` |
-| Quién lo vendió | `CrmServicio.closer` |
 | Por qué NO renovó (distinto de por qué se dio de baja) | `CrmServicio.motivoNoRenovacion` |
 | LTV, permanencia media, ticket medio, tasa de renovación | Capa de cálculo nueva (`lib/metricas.ts`) |
 | Pantalla de renovaciones con previsto / renovado / pendiente / perdido | Vista sobre servicios, no colección |
@@ -78,23 +78,23 @@ CLIENTE  ──1:N──  SERVICIO  ──1:N──  MOVIMIENTO
    │                  │
    │                  └── tipo: alta | renovacion | upsell
    │
-   └── estadoCrm, origen, closer, fechaBaja, motivoBaja
+   └── estadoCrm, origen, fechaBaja, motivoBaja
 ```
 
 **Un movimiento SIEMPRE cuelga de un servicio.** Es el cambio estructural de verdad:
 hoy `CrmPago.servicioId` es opcional y hay pagos huérfanos (los que crea
 `PagoModal`, y los que genera una suscripción). Un movimiento huérfano no se puede
-atribuir a nada — ni a un canal, ni a un closer, ni al LTV de un servicio — y es la
+atribuir a nada — ni a un canal ni al LTV de un servicio — y es la
 razón por la que hoy no se puede contestar «¿qué servicio genera más dinero?».
 
 ### 2.1 Cliente (`crmContactos` + `user_profiles`)
 
-Se añaden **dos campos**; el resto ya está.
+**No cambia nada.** `origen` (canal de captación), `estadoCrm`, `fechaBaja` y
+`motivoBaja` ya están.
 
-```ts
-closer?: string;              // quién lo vendió (email del coach o nombre libre)
-// `origen` ya existe: 'instagram' | 'referido' | 'ads' | 'importacion' | ...
-```
+`closer` **se descarta**: Dani vende siempre él, así que sería un campo muerto en
+todos los formularios (decidido el 10-09-2026). Si algún día entra un setter o un
+closer, se añade entonces — es una columna opcional, no una migración.
 
 `fechaAlta` **no se añade**: es la `fechaInicio` del primer servicio del cliente, y
 duplicarla crea dos verdades que se desincronizan. Se calcula.
@@ -103,12 +103,17 @@ duplicarla crea dos verdades que se desincronizan. Se calcula.
 
 ```ts
 tipo: 'alta' | 'renovacion' | 'upsell';   // NUEVO — obligatorio
-closer?: string;                           // NUEVO — quién cerró ESTA venta
 renovacionAutomatica?: boolean;            // NUEVO — absorbe CrmSuscripcion
 proximoCobro?: string;                     // NUEVO — solo si renovacionAutomatica
 resultadoRenovacion?: 'renovado' | 'perdido' | 'pendiente';   // NUEVO
-motivoNoRenovacion?: MotivoBaja;           // NUEVO — distinto de la baja
+motivoNoRenovacion?: MotivoBaja;           // NUEVO — los MISMOS seis motivos
+motivoNoRenovacionDetalle?: string;        // NUEVO — el texto libre de 'otro'
 ```
+
+`motivoNoRenovacion` reutiliza los seis valores de `MotivoBaja` (decidido el
+10-09-2026). Es un campo distinto porque son hechos distintos —terminar el programa
+y no renovar no es darse de baja a mitad—, pero la lista de motivos es la misma.
+«Terminó su objetivo» entra como `otro` + detalle.
 
 **`periodicidad` se deja de usar para generar nada.** Hoy hay dos ejes que dicen lo
 mismo a medias: `periodicidad` (`mensual | trimestral | ... | unico`) y `cuotas`.
@@ -196,10 +201,18 @@ implementada y testada (`ingresosPorMes`, `fechaDeCobroSugerida`).
 | **Nuevos del mes** | Clientes cuyo primer servicio empieza en el mes |
 | **Bajas del mes** | Clientes con `fechaBaja` en el mes |
 | **Churn mensual** | bajas del mes / activos al principio del mes |
-| **Permanencia media (meses)** | Media de (`fechaBaja` − primera `fechaInicio`) / 30,44 sobre las bajas; los activos cuentan con `hoy` |
+| **Permanencia media (meses)** | Media de los **meses cubiertos por servicios** de cada cliente (unión de los rangos `fechaInicio`–`fechaFin`), no de la distancia entre alta y baja |
 
 La permanencia media es la que Dani señala como la que falta: cien clientes de tres
 meses no son cien clientes de doce, y hoy el CRM no distingue esos dos negocios.
+
+**Las pausas no cuentan** (decidido el 10-09-2026). Un cliente que entra en enero,
+pausa marzo y abril y se da de baja en junio ha durado **tres meses**, no cinco. Y
+eso sale solo sin inventar un histórico de pausas: se miden **los meses cubiertos
+por sus servicios**, no la distancia entre el alta y la baja. Mientras está pausado
+no hay servicio corriendo, así que esos meses no entran. La cifra que resulta cuadra
+con la facturación —10 clientes × 3 meses × el precio es una previsión que se
+cumple— que es justo para lo que sirve.
 
 ### Valor
 
@@ -207,7 +220,7 @@ meses no son cien clientes de doce, y hoy el CRM no distingue esos dos negocios.
 |---|---|
 | **LTV de un cliente** | Σ `importeCents` de sus movimientos cobrados (netos de devoluciones) |
 | **LTV medio** | Σ LTV / nº de clientes que han comprado alguna vez (no sobre leads) |
-| **LTV por servicio / canal / closer** | Agrupando por `nombre` de servicio, `origen`, `closer` |
+| **LTV por servicio / canal** | Agrupando por `nombre` de servicio y por `origen` |
 | **Ticket medio de alta** | Σ movimientos `tipo === 'alta'` cobrados / nº de altas |
 | **Tasa de renovación** | renovados / (renovados + perdidos) en la ventana |
 
@@ -259,15 +272,14 @@ hay.
 - `impagado` lo marca el coach, no el reloj.
 - `fechaAlta` del cliente calculada, no duplicada.
 
-**Pendiente del criterio de Dani:**
+**Contestado por Dani el 10-09-2026:**
 
-1. **¿Hay más de un closer?** Si vende siempre él, `closer` es un campo muerto que
-   ensucia todos los formularios. Se implementa solo si va a haber setter/closer
-   distintos de él.
-2. **Motivos de no renovación**: ¿valen los seis de `MotivoBaja` o hace falta una
-   lista propia? («terminó su objetivo» no es una baja, y hoy no cabe en ninguno.)
-3. **Márgenes**: el bloque 5 de Dani menciona «margen por cliente (si introduces
-   costes)». Eso es una tabla de costes que ahora mismo no existe en ningún sitio.
-   Queda fuera de esta propuesta salvo que la quiera.
-4. **Pausas**: `estadoCrm: 'pausado'` existe pero no para el reloj de la permanencia.
-   ¿Un cliente que pausa dos meses tiene 12 meses de permanencia o 10?
+- **Sin closer.** Vende siempre él: el campo se descarta de esta versión.
+- **Los motivos de no renovación son los seis de baja**, en un campo aparte.
+- **Sin márgenes ni tabla de costes.** El CRM se queda con el dinero que entra, que
+  es lo que la app puede saber de verdad; el CAC y los gastos de anuncios siguen en
+  el cuadro de mandos de Google Sheets, donde ya están.
+- **Las pausas no cuentan para la permanencia.** Se miden los meses cubiertos por
+  servicios, no la distancia entre alta y baja.
+
+**Nada pendiente.** El alcance está cerrado: se puede implementar.
