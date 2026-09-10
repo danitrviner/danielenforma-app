@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { Diet, AthleteDietConfig } from '../types';
-import { pickTodaysDiet, countMealsDone } from './nutritionSummary';
+import { pickTodaysDiet, dietaPautadaDelDia, countMealsDone } from './nutritionSummary';
 
 function diet(id: string, mealsItemCounts: number[]): Diet {
   return {
@@ -57,5 +57,43 @@ describe('countMealsDone', () => {
   it('sin ninguna marcada, 0 de N', () => {
     const d = diet('d1', [1, 1]);
     expect(countMealsDone(d, [])).toEqual({ done: 0, total: 2 });
+  });
+});
+
+describe('dietaPautadaDelDia', () => {
+  it('sin ninguna dieta activa el atleta se queda SIN cupo pautado', () => {
+    // El fallo: aquí caía «cualquier dieta del coach» y desactivarlas en
+    // «Dietas disponibles» no servía de nada.
+    const diets = [diet('d1', [1]), diet('d2', [1])];
+    const config: AthleteDietConfig = { athleteId: 'a@x.com', activeDietIds: [] };
+    expect(dietaPautadaDelDia(diets, config, 'mon')).toBeNull();
+  });
+
+  it('sin configuración tampoco se cuela ninguna', () => {
+    expect(dietaPautadaDelDia([diet('d1', [1])], null, 'mon')).toBeNull();
+  });
+
+  it('coge la primera activa cuando no hay programada ese día', () => {
+    const diets = [diet('d1', [1]), diet('d2', [1])];
+    const config: AthleteDietConfig = { athleteId: 'a@x.com', activeDietIds: ['d2'] };
+    expect(dietaPautadaDelDia(diets, config, 'mon')?.id).toBe('d2');
+  });
+
+  it('la programada del día gana aunque no esté marcada activa', () => {
+    const diets = [diet('d1', [1]), diet('d2', [1])];
+    const config: AthleteDietConfig = { athleteId: 'a@x.com', activeDietIds: ['d1'], weeklySchedule: { mon: 'd2' } };
+    expect(dietaPautadaDelDia(diets, config, 'mon')?.id).toBe('d2');
+  });
+
+  it('una dieta del propio atleta nunca es la pautada', () => {
+    const propia: Diet = { ...diet('mia', [1]), selfManaged: true };
+    const config: AthleteDietConfig = { athleteId: 'a@x.com', activeDietIds: ['mia'] };
+    expect(dietaPautadaDelDia([propia], config, 'mon')).toBeNull();
+  });
+
+  it('una programada que ya no existe no arrastra a otra dieta cualquiera', () => {
+    const diets = [diet('d1', [1])];
+    const config: AthleteDietConfig = { athleteId: 'a@x.com', activeDietIds: [], weeklySchedule: { mon: 'borrada' } };
+    expect(dietaPautadaDelDia(diets, config, 'mon')).toBeNull();
   });
 });

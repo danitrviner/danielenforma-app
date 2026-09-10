@@ -19,6 +19,7 @@ import { dishType } from '../utils/dishTypes';
 import { BUDGET_CATS, roundQuarter, CAT_COLOR, CAT_BG } from '../utils/exchangeHelpers';
 import { exchangeToKcal } from '../utils/nutritionConstants';
 import { fotoDeReceta } from '../utils/fotoDeReceta';
+import { escalarRecetaEntera } from '../utils/escalarRecetaEntera';
 import FotoDeReceta from './FotoDeReceta';
 import { Skeleton } from './ui';
 import { EmptyState, Badge, Chip, SearchField, Button, Select } from './ui';
@@ -261,22 +262,6 @@ interface DetailProps {
   onAddToIntercambios?: (recipe: Recipe) => void;
 }
 
-// Escala una receta ×0,25–×3 (handoff, panel 03): intercambios e ingredientes
-// se redondean al cuarto más cercano, kcal recalcula proporcional.
-function scaleRecipe(recipe: Recipe, scale: number): Recipe {
-  if (scale === 1) return recipe;
-  return {
-    ...recipe,
-    ingredients: (recipe.ingredients ?? []).map(ing => ({ ...ing, quantity: roundQuarter(ing.quantity * scale) })),
-    exchanges: recipe.exchanges ? {
-      HC: roundQuarter(recipe.exchanges.HC * scale),
-      PROT: roundQuarter(recipe.exchanges.PROT * scale),
-      GRASA: roundQuarter(recipe.exchanges.GRASA * scale),
-    } : undefined,
-    kcal: recipe.kcal != null ? Math.round(recipe.kcal * scale) : recipe.kcal,
-  };
-}
-
 const SCALE_STEPS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3];
 
 function RecipeDetail({ recipe, isFav, isDisliked, isOwn, enabledModes, savingFav, deletingOwn, dailyBudgetTotal, onBack, onToggleFav, onToggleDislike, onDelete, onAddToIntercambios }: DetailProps) {
@@ -287,7 +272,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, isOwn, enabledModes, savingFa
   // ownerId heredado 'indya' (miles de ellas, ver comentario en db/recipes.ts)
   // caían por el hueco y se trataban como receta propia sin ingredientes.
   const isRecetas = OWNER_RECETARIO_TODOS.includes(recipe.ownerId);
-  const scaledRecipe = useMemo(() => scaleRecipe(recipe, scale), [recipe, scale]);
+  const scaledRecipe = useMemo(() => escalarRecetaEntera(recipe, scale), [recipe, scale]);
   const exch = calcExchanges(scaledRecipe);
   const scaledTotal = BUDGET_CATS.reduce((s, c) => s + (exch[c] ?? 0), 0);
   const fitsBudget = dailyBudgetTotal == null || scaledTotal <= dailyBudgetTotal;
@@ -530,9 +515,9 @@ function RecipeDetail({ recipe, isFav, isDisliked, isOwn, enabledModes, savingFa
             Ingredientes
           </h2>
 
-          {isRecetas && recipe.ingredientsText && recipe.ingredientsText.length > 0 ? (
+          {isRecetas && scaledRecipe.ingredientsText && scaledRecipe.ingredientsText.length > 0 ? (
             <ul className="space-y-2">
-              {recipe.ingredientsText.map((ing, idx) => (
+              {scaledRecipe.ingredientsText.map((ing, idx) => (
                 <li key={idx} className="flex items-center justify-between py-2 border-b border-hairline last:border-0">
                   <span className="text-label text-ink font-sans flex-1 pr-2 leading-relaxed">{ing.name}</span>
                   {/* El índice del recetario NO trae cantidades (pesa la mitad
@@ -541,7 +526,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, isOwn, enabledModes, savingFa
                       lectura viaja —y para siempre si falla, por ejemplo sin
                       conexión— aquí solo hay nombre, y pintar `{ing.quantity}g`
                       a secas ponía un «undefinedg» junto a cada ingrediente. */}
-                  {ing.quantity != null && (
+                  {ing.quantity != null && Number.isFinite(ing.quantity) && (
                     <span className="font-mono text-caption text-ink-2 shrink-0">{ing.quantity}g</span>
                   )}
                 </li>

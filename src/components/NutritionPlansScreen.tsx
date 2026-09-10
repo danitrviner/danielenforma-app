@@ -5,6 +5,7 @@ import { getDietsForAthlete, createDiet, updateDiet, deleteDiet, getFoodItems, s
 import { DietNumerosView } from './DietMealsView';
 import { CATS, BUDGET_CATS, CAT_LABEL, CAT_COLOR, MODE_LABEL, round2, fmtQty, parseBaseGrams, addToPlaced } from '../utils/exchangeHelpers';
 import { distributeMealTargets, inferSlot, DistributeResult, SLOT_LABEL, HUNGER_PROFILE_LABEL } from '../utils/mealDistribution';
+import { perfilDeHambreVigente } from '../utils/perfilDeHambre';
 import { resolvePhaseTargetKcal } from '../utils/nutritionPeriodization';
 import { exchangeToKcal } from '../utils/nutritionConstants';
 import { computePhaseStartDate } from '../dbService';
@@ -492,11 +493,19 @@ export default function NutritionPlansScreen({
     }));
   };
 
+  /* El perfil de hambre efectivo. Antes solo se miraba `nutConfig.hungerProfile`,
+     que únicamente se rellena si el atleta entra a Perfil › Preferencias y lo
+     elige a mano: en la práctica estaba vacío casi siempre y el reparto salía
+     uniforme, ignorando que el atleta ya había contestado en el alta a qué hora
+     tiene más hambre (Dani, 10-09-2026). */
+  const perfilDeHambre = perfilDeHambreVigente(nutConfig?.hungerProfile, onboardingData?.appetitePeakTime);
+  const hambreDeducidaDelAlta = !nutConfig?.hungerProfile && !!perfilDeHambre;
+
   const runAutoDistribute = () => {
     const result = distributeMealTargets({
       budget: form.budget,
       meals: form.meals,
-      hungerProfile: nutConfig?.hungerProfile,
+      hungerProfile: perfilDeHambre,
       trainingSlot: nutConfig?.trainingSlot,
     });
     const prevMeals = form.meals;
@@ -956,8 +965,8 @@ export default function NutritionPlansScreen({
             hungerProfile/trainingSlot a distributeMealTargets), pero eso no
             se veía en ningún sitio hasta que se pulsaba. */}
         <p className="text-caption font-mono text-ink-3">
-          {nutConfig?.hungerProfile
-            ? `Reparto según su hambre: ${HUNGER_PROFILE_LABEL[nutConfig.hungerProfile]}${nutConfig.trainingSlot != null ? ` · entreno cerca de: ${SLOT_LABEL[nutConfig.trainingSlot]}` : ''}`
+          {perfilDeHambre
+            ? `Reparto según su hambre: ${HUNGER_PROFILE_LABEL[perfilDeHambre]}${hambreDeducidaDelAlta ? ' (por lo que contestó en el alta)' : ''}${nutConfig?.trainingSlot != null ? ` · entreno cerca de: ${SLOT_LABEL[nutConfig.trainingSlot]}` : ''}`
             : 'Sin perfil de hambre — reparto uniforme'}
         </p>
 

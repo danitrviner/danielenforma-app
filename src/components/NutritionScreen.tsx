@@ -12,6 +12,10 @@ import { dietTypeVigente } from '../utils/foodPrefs';
 import { coincideBusqueda, normalizarTexto } from '../utils/busqueda';
 import { dishType, dishTypeLabel, type DishType } from '../utils/dishTypes';
 import { filasDeComida, escalarReceta } from '../utils/filasDelPlan';
+import { escalarRecetaEntera, factorDeReceta } from '../utils/escalarRecetaEntera';
+import { dietaPautadaDelDia } from '../utils/nutritionSummary';
+import { perfilDeHambreVigente } from '../utils/perfilDeHambre';
+import { distributeMealTargets } from '../utils/mealDistribution';
 import { exchangeToKcal } from '../utils/nutritionConstants';
 import { useToast } from '../hooks/useToast';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
@@ -33,6 +37,12 @@ import {
 } from './nutrition/dietHelpers';
 import { useDiaActual, diaSemanaDe } from '../hooks/useDiaActual';
 import { addDays } from '../utils/trainingWeek';
+
+const HAMBRE_TEXTO: Record<'manana' | 'equilibrado' | 'noche', string> = {
+  manana: 'por la mañana',
+  equilibrado: 'repartida a lo largo del día',
+  noche: 'por la noche',
+};
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 // (ItemState viene de dietHelpers.ts — compartido con el resto de "Mi plan")
@@ -288,17 +298,14 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
      eso no era cierto: al atleta le llegaba el cupo y un día en blanco, y si el
      coach le había puesto Día A de lunes a viernes y Día B el fin de semana,
      el Día B no aparecía por ningún lado (caso de Pedro, 07-09-2026). */
-  const dietaPautada = useMemo(() => {
-    // El coach puede tener cupos distintos por día (el "día A/B/C" del
-    // calendario semanal, que sigue usando el generador de menús): se respeta
-    // el del día que se está mirando, no el de hoy.
-    const programada = dietConfigRaw?.weeklySchedule?.[diaSemanaDe(viewDate)];
-    const activos = new Set(dietConfigRaw?.activeDietIds ?? []);
-    return (programada && allDietsList.find(d => d.id === programada))
-      || allDietsList.find(d => activos.has(d.id) && !d.selfManaged)
-      || allDietsList.find(d => !d.selfManaged)
-      || null;
-  }, [allDietsList, dietConfigRaw, viewDate]);
+  // El coach puede tener cupos distintos por día (el "día A/B/C" del calendario
+  // semanal, que sigue usando el generador de menús): se respeta el del día que
+  // se está mirando, no el de hoy. La regla vive en utils/nutritionSummary
+  // porque es la misma que usa el resumen de Hoy y tiene tests.
+  const dietaPautada = useMemo(
+    () => dietaPautadaDelDia(allDietsList, dietConfigRaw ?? null, diaSemanaDe(viewDate)),
+    [allDietsList, dietConfigRaw, viewDate],
+  );
   const cupoPautado = dietaPautada?.budget ?? null;
 
   /* Las dietas del coach que el atleta puede cargarse en un día. Solo las
@@ -385,9 +392,15 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
      que en un móvil no se ve nunca: en la práctica nadie llegaba. Ahora la
      receta se abre como en Mi menú (foto, ingredientes, pasos) y desde dentro
      se cambia, que es donde uno la busca después de leerla. */
-  const [recetaAbierta, setRecetaAbierta] = useState<{ mealId: string; recipeId: string } | null>(null);
+  const [recetaAbierta, setRecetaAbierta] = useState<{ mealId: string; recipeId: string; factor: number } | null>(null);
   const [recetaDetalle, setRecetaDetalle] = useState<Recipe | null>(null);
   const [cargandoReceta, setCargandoReceta] = useState(false);
+  /* La receta tal y como está EN EL PLATO: con sus gramos, kcal e intercambios
+     multiplicados por las veces que el atleta la ha escalado en la comida. */
+  const recetaEscalada = useMemo(
+    () => (recetaDetalle ? escalarRecetaEntera(recetaDetalle, recetaAbierta?.factor ?? 1) : null),
+    [recetaDetalle, recetaAbierta?.factor],
+  );
 
   // Recipe swap ("Cambiar comida")
   const [swapContext, setSwapContext] = useState<{ mealId: string; recipeId: string; slot?: number } | null>(null);
@@ -1268,14 +1281,25 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
 
   // ── Recipe swap ("Cambiar comida") ──────────────────────────────────────────
 
-  const abrirReceta = async (mealId: string, recipeId: string) => {
-    setRecetaAbierta({ mealId, recipeId });
+  /**
+   * Abre la ficha de una receta del plan. `intercambiosEnElPlato` es lo que esa
+   * receta ocupa AHORA en la comida, que no tiene por qué ser lo que ocupa de
+   * fábrica: si el atleta le ha dado al + del renglón, la ficha tiene que
+   * enseñar los gramos escalados y no los originales (era el fallo: subías los
+   * intercambios y la avena seguía diciendo 40 g).
+   */
+  const abrirReceta = async (mealId: string, recipeId: string, intercambiosEnElPlato: number) => {
+    setRecetaAbierta({ mealId, recipeId, factor: 1 });
     setRecetaDetalle(null);
     setCargandoReceta(true);
     // Puede estar ya entre las recetas cargadas (las del coach y las propias);
     // si no, es una del recetario y se pide la completa, con pasos y cantidades.
     const yaCargada = recipes.find(r => r.id === recipeId);
     const completa = yaCargada ?? await getRecipeById(recipeId).catch(() => null);
+    if (completa) {
+      const base = BUDGET_CATS.reduce((s, c) => s + recipeExchanges(completa)[c], 0);
+      setRecetaAbierta({ mealId, recipeId, factor: factorDeReceta(intercambiosEnElPlato, base) });
+    }
     setRecetaDetalle(completa);
     setCargandoReceta(false);
   };
@@ -1400,6 +1424,32 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
   // que `setMealTarget` del lado coach (NutritionPlansScreen.tsx), adaptado a
   // `setSelectedDiet` — esto ya dispara `isDirty`/autoguardado solo, porque
   // `dietSnapshot` serializa `meals` completo.
+  /* El perfil de hambre efectivo del atleta: lo que eligió en Preferencias y,
+     si no ha elegido nada, lo que contestó en el alta. */
+  const perfilDeHambreAtleta = useMemo(
+    () => perfilDeHambreVigente(nutConfig?.hungerProfile, onboarding?.appetitePeakTime),
+    [nutConfig?.hungerProfile, onboarding?.appetitePeakTime],
+  );
+
+  const repartirObjetivoSolo = () => {
+    if (!selectedDiet) return;
+    const anterior = selectedDiet.meals;
+    const resultado = distributeMealTargets({
+      budget: selectedDiet.budget,
+      meals: selectedDiet.meals,
+      hungerProfile: perfilDeHambreAtleta,
+      trainingSlot: nutConfig?.trainingSlot,
+    });
+    setSelectedDiet(prev => prev ? {
+      ...prev,
+      meals: prev.meals.map((m, idx) => ({ ...m, target: resultado.targets[idx], slot: m.slot ?? resultado.slots[idx] })),
+    } : prev);
+    showToast('Cupo repartido por comidas.', 'success', {
+      actionLabel: 'Deshacer',
+      onAction: () => setSelectedDiet(prev => prev ? { ...prev, meals: anterior } : prev),
+    });
+  };
+
   const updateMealTargetCat = (mealId: string, cat: FoodCategory, delta: number) => {
     setSelectedDiet(prev => {
       if (!prev) return prev;
@@ -1956,7 +2006,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                                         pasos, igual que desde el Recetario. */}
                                     <button
                                       type="button"
-                                      onClick={() => abrirReceta(meal.id, fila.recipeId)}
+                                      onClick={() => abrirReceta(meal.id, fila.recipeId, total)}
                                       className="flex-1 min-w-0 text-left rounded-control -m-1 p-1 transition-colors hover:bg-raised/60 active:bg-raised"
                                     >
                                       <span className="block font-sans text-body-s font-semibold leading-snug text-ink">
@@ -2402,32 +2452,41 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
               <div className="flex items-center justify-center py-10">
                 <Icon name="progress_activity" size="l" className="text-accent animate-spin" />
               </div>
-            ) : recetaDetalle ? (
+            ) : recetaEscalada ? (
               <>
-                {fotoDeReceta(recetaDetalle) && (
+                {/* Las cantidades que se enseñan son las del PLATO, no las de la
+                    receta de fábrica: si ocupa el doble de intercambios en la
+                    comida, los gramos van doblados. Sin este aviso el atleta no
+                    tiene forma de saber que está viendo una ración escalada. */}
+                {recetaAbierta.factor !== 1 && (
+                  <p className="font-mono text-caption text-accent">
+                    Cantidades para ×{fmtQty(round2(recetaAbierta.factor))} de la receta
+                  </p>
+                )}
+                {fotoDeReceta(recetaEscalada) && (
                   <div className="w-full aspect-[16/9] rounded-surface overflow-hidden bg-raised">
                     <FotoDeReceta
-                      src={fotoDeReceta(recetaDetalle)}
-                      alt={recetaDetalle.name}
+                      src={fotoDeReceta(recetaEscalada)}
+                      alt={recetaEscalada.name}
                       className="w-full h-full object-cover"
                       fallback={null}
                     />
                   </div>
                 )}
-                {(recetaDetalle.kcal != null || recetaDetalle.cookingTime != null) && (
+                {(recetaEscalada.kcal != null || recetaEscalada.cookingTime != null) && (
                   <p className="font-mono text-caption text-ink-2">
-                    {[recetaDetalle.kcal != null && `${recetaDetalle.kcal} kcal`,
-                      recetaDetalle.cookingTime != null && `~${minutosDeReceta(recetaDetalle)} min`]
+                    {[recetaEscalada.kcal != null && `${recetaEscalada.kcal} kcal`,
+                      recetaEscalada.cookingTime != null && `~${minutosDeReceta(recetaEscalada)} min`]
                       .filter(Boolean).join(' · ')}
                   </p>
                 )}
-                {(recetaDetalle.ingredientsText?.length || recetaDetalle.ingredients?.length) ? (
+                {(recetaEscalada.ingredientsText?.length || recetaEscalada.ingredients?.length) ? (
                   <div>
                     <p className="font-mono text-caption text-ink-3 uppercase mb-2">Ingredientes</p>
                     <ul>
-                      {(recetaDetalle.ingredientsText?.length
-                        ? recetaDetalle.ingredientsText.map(i => ({ label: i.name, qty: `${i.quantity}g` }))
-                        : (recetaDetalle.ingredients ?? []).map(i => ({ label: i.foodLabel, qty: `×${i.quantity}` }))
+                      {(recetaEscalada.ingredientsText?.length
+                        ? recetaEscalada.ingredientsText.map(i => ({ label: i.name, qty: Number.isFinite(i.quantity) ? `${i.quantity}g` : '' }))
+                        : (recetaEscalada.ingredients ?? []).map(i => ({ label: i.foodLabel, qty: `×${fmtQty(i.quantity)}` }))
                       ).map((ing, i) => (
                         <li key={i} className="flex items-center justify-between gap-2 py-1 border-b border-hairline last:border-0">
                           <span className="text-label font-sans flex-1 pr-2">{ing.label}</span>
@@ -2437,11 +2496,11 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                     </ul>
                   </div>
                 ) : null}
-                {recetaDetalle.stepsText?.length ? (
+                {recetaEscalada.stepsText?.length ? (
                   <div>
                     <p className="font-mono text-caption text-ink-3 uppercase mb-2">Preparación</p>
                     <ol className="space-y-2">
-                      {recetaDetalle.stepsText.map((s, i) => (
+                      {recetaEscalada.stepsText.map((s, i) => (
                         <li key={i} className="flex gap-2">
                           <span className="font-mono text-caption text-accent flex-shrink-0">{s.position ?? i + 1}</span>
                           <span className="text-label font-sans text-ink-2 min-w-0">
@@ -2683,6 +2742,25 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
             <p className="font-sans text-body-s text-ink-2">
               El total del día lo fija tu coach. Reparte cuánto de ese cupo va a cada comida.
             </p>
+
+            {/* Repartir solo: la misma máquina que usa el coach
+                (utils/mealDistribution), con el perfil de hambre del atleta.
+                Aquí antes solo había steppers manuales: repartir 12
+                intercambios entre 5 comidas a mano, categoría a categoría, son
+                sesenta pulsaciones (Dani, 10-09-2026). */}
+            <button
+              type="button"
+              onClick={repartirObjetivoSolo}
+              className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-control bg-accent-bg border border-accent/20 text-accent font-sans font-bold text-body-s transition-colors hover:bg-accent/15 active:scale-[.99]"
+            >
+              <Icon name="auto_fix_high" size="s" />
+              Repartir el cupo por mí
+            </button>
+            {perfilDeHambreAtleta && (
+              <p className="font-mono text-caption text-ink-3 -mt-1">
+                Se reparte teniendo en cuenta que tienes más hambre {HAMBRE_TEXTO[perfilDeHambreAtleta]}.
+              </p>
+            )}
 
             {/* Restantes por repartir — siempre visible, no solo cuando no
                 cuadra, para que se vea en vivo mientras se mueven los

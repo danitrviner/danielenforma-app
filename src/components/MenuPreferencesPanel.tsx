@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { AthleteNutritionConfig, HungerProfile } from '../types';
+import { perfilDeHambreDelTexto } from '../utils/perfilDeHambre';
 import { CONTEOS_COMIDAS } from '../utils/menuEngine';
 import { getOnboarding, getAthleteNutritionConfig, saveAthleteNutritionConfig } from '../dbService';
 import VegetableSelector from './VegetableSelector';
@@ -44,17 +45,6 @@ const FICHA_CAMPOS = {
     options: CONTEOS_COMIDAS.map(n => ({ value: String(n), label: String(n) })),
   },
 } as const;
-
-// Deducción de partida desde la ficha — el atleta ya contó en el onboarding
-// cuándo tiene más apetito, en texto libre. Sirve de valor por defecto
-// mientras no diga lo contrario aquí, no sustituye a su elección explícita.
-function inferHungerProfile(text?: string): HungerProfile | undefined {
-  if (!text) return undefined;
-  const t = text.toLowerCase();
-  if (/noche|cena/.test(t)) return 'noche';
-  if (/mañana|desayun/.test(t)) return 'manana';
-  return undefined;
-}
 
 // Preferencias de menú del atleta — antes repartidas entre MyMenuScreen
 // (tipos de comida, variedad, batch cooking) y NutritionHubScreen (verduras
@@ -116,7 +106,7 @@ export default function MenuPreferencesPanel({ athleteEmail }: Props) {
     try { await patch({ batchCookingPreferred: value }); } finally { setSavingBatchPref(false); }
   }
 
-  const inferredHunger = inferHungerProfile(onboarding?.appetitePeakTime);
+  const inferredHunger = perfilDeHambreDelTexto(onboarding?.appetitePeakTime);
   const hungerValue: HungerProfile = nutritionConfig?.hungerProfile ?? inferredHunger ?? 'equilibrado';
   const hungerIsInferred = !nutritionConfig?.hungerProfile && !!inferredHunger;
   async function handleHungerChange(v: string) {

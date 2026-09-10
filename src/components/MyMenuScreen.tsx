@@ -25,6 +25,7 @@ import { DishType } from '../utils/dishTypes';
 import { substitutesFor } from '../utils/ingredientSubstitutions';
 import { Icon, EmptyState, ListRow, Badge, Sheet, Dialog, ScreenSkeleton } from './ui';
 import { fotoDeReceta } from '../utils/fotoDeReceta';
+import { escalarRecetaEntera } from '../utils/escalarRecetaEntera';
 import { useToast } from '../hooks/useToast';
 import { useDiaActual } from '../hooks/useDiaActual';
 import { registrarComidaDelMenu, quitarComidaDelMenu, type DiaDelPlan } from '../utils/registroDesdeElMenu';
@@ -174,6 +175,13 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
   const day: MenuDay | undefined = menu?.days.find(d => d.day === selectedDay);
   const batchPlan = useMemo(() => (menu ? buildBatchPlan(menu.days) : []), [menu]);
   const detailMeal = detailMealId ? menu?.days.flatMap(d => d.meals).find(m => m.id === detailMealId) : undefined;
+  /* La receta con las cantidades de la RACIÓN que toca comer, no las de la
+     receta de fábrica. La cabecera de la comida ya decía «×2» y los gramos de
+     abajo seguían siendo los de una ración (Dani, 10-09-2026). */
+  const detailRecipeVista = useMemo(
+    () => (detailRecipe ? escalarRecetaEntera(detailRecipe, detailMeal?.scale ?? 1) : null),
+    [detailRecipe, detailMeal?.scale],
+  );
   const detailSwaps = new Map((detailMeal?.ingredientSwaps ?? []).map(s => [s.from, s.to]));
 
   // Shopping list needs each recipe's full ingredient list — fetched lazily the
@@ -921,16 +929,21 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
                     <FotoDeReceta src={fotoDeReceta(detailRecipe)} alt={detailRecipe.name} className="w-full h-full object-cover" fallback={null} />
                   </div>
                 )}
-                {detailRecipe.kcal != null && (
-                  <p className="font-mono text-caption text-ink-2">{detailRecipe.kcal} kcal{detailRecipe.cookingTime != null ? ` · ~${minutosDeReceta(detailRecipe)} min` : ''}</p>
+                {(detailMeal?.scale ?? 1) !== 1 && (
+                  <p className="font-mono text-caption text-accent">
+                    Cantidades para ×{detailMeal!.scale} de la receta
+                  </p>
                 )}
-                {(detailRecipe.ingredientsText?.length || detailRecipe.ingredients?.length) ? (
+                {detailRecipeVista?.kcal != null && (
+                  <p className="font-mono text-caption text-ink-2">{detailRecipeVista.kcal} kcal{detailRecipe.cookingTime != null ? ` · ~${minutosDeReceta(detailRecipe)} min` : ''}</p>
+                )}
+                {(detailRecipeVista?.ingredientsText?.length || detailRecipeVista?.ingredients?.length) ? (
                   <div>
                     <p className="font-mono text-caption text-ink-3 uppercase mb-2">Ingredientes</p>
                     <ul className="">
-                      {(detailRecipe.ingredientsText?.length
-                        ? detailRecipe.ingredientsText.map(i => ({ label: i.name, qty: `${i.quantity}g` }))
-                        : (detailRecipe.ingredients ?? []).map(i => ({ label: i.foodLabel, qty: `×${i.quantity}` }))
+                      {(detailRecipeVista.ingredientsText?.length
+                        ? detailRecipeVista.ingredientsText.map(i => ({ label: i.name, qty: Number.isFinite(i.quantity) ? `${i.quantity}g` : '' }))
+                        : (detailRecipeVista.ingredients ?? []).map(i => ({ label: i.foodLabel, qty: `×${i.quantity}` }))
                       ).map((ing, idx) => {
                         const swappedTo = detailSwaps.get(ing.label);
                         const subs = detailMealId ? substitutesFor(ing.label) : [];
