@@ -39,3 +39,21 @@ export function rirClaseColor(valor: string): string {
 export function nuevaSerieVacia(): SetInput {
   return { weight: '', repsDone: '', rir: '0', done: false };
 }
+
+/**
+ * Lo que el entrenador ha pautado para una serie, en una línea: «8-10 · RIR 2».
+ *
+ * Va debajo del campo de repeticiones, donde antes se repetía por tercera vez
+ * lo de la última sesión. `ExpandedSet` ya trae la prescripción EFECTIVA de la
+ * semana (`resolveExerciseForWeek` aplica la progresión antes de expandir), así
+ * que en la semana 3 de una progresión dice el rango de la semana 3, no el que
+ * el coach escribió el primer día.
+ */
+export function textoPautado(pautado: { reps: string; rir: number }): string {
+  const reps = pautado.reps?.trim();
+  // «8-10 reps» se lee solo; «AMRAP reps» no. Solo se añade la palabra cuando
+  // lo pautado es una cifra o un rango.
+  const esCifra = !!reps && /^\d+(\s*[-–/]\s*\d+)?$/.test(reps);
+  const partes = [reps ? (esCifra ? `${reps} reps` : reps) : null, `RIR ${pautado.rir}`].filter(Boolean);
+  return partes.join(' · ');
+}

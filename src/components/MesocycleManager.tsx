@@ -369,9 +369,8 @@ const CalendarioCiclo: React.FC<{
       </div>
       {onToggleDay && (
         <p className="font-sans text-caption text-ink-3 leading-relaxed">
-          Pulsa un día para cambiarlo entre sesión y descanso. {offsets.length < sesiones
-            ? `Faltan ${sesiones - offsets.length} por colocar.`
-            : offsets.length > sesiones ? `Sobran ${offsets.length - sesiones} — quita alguna.` : ''}
+          Pulsa un día para cambiarlo entre sesión y descanso. Los días que marques
+          son las sesiones del bloque, y puedes dejar descansos en medio.
         </p>
       )}
       <div className="flex flex-wrap gap-1">
@@ -547,6 +546,23 @@ function MesoExercisesTabs({
 }) {
   const [activeIdx, setActiveIdx] = useState(0);
   const [videoModal, setVideoModal] = useState<{ key: string; url: string; name: string } | null>(null);
+  /* Cuántas columnas de día caben. Se mide el CONTENEDOR, no la ventana: esta
+     pestaña vive dentro del panel del cliente, que ya cambia de ancho por su
+     cuenta según la pantalla del coach, así que un `md:` de Tailwind (que mira
+     el viewport) prometería dos columnas donde no caben. 380 px es el ancho
+     mínimo con el que una tarjeta de ejercicio compactada sigue siendo legible. */
+  const [anchoZona, setAnchoZona] = useState(0);
+  const zonaRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = zonaRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(([e]) => setAnchoZona(e.contentRect.width));
+    ro.observe(el);
+    setAnchoZona(el.getBoundingClientRect().width);
+    return () => ro.disconnect();
+  }, []);
+  const columnas = Math.min(3, Math.max(1, Math.floor(anchoZona / 380)));
+  const enRejilla = columnas > 1 && groups.length > 1;
   const [libraryPickerFor, setLibraryPickerFor] = useState<MesoWorkoutGroup | null>(null);
   const longPressTimer = useRef<number | null>(null);
   const group = groups[Math.min(activeIdx, groups.length - 1)];
@@ -660,6 +676,162 @@ function MesoExercisesTabs({
     setVideoModal({ key: videoKey, url: ex.videoUrl, name: ex.name });
   };
 
+  /* El panel de un día. Vive en una función porque se pinta desde dos sitios:
+     el carrusel (una pestaña por día, en estrecho) y la rejilla de columnas
+     (varios días a la vez, en ancho). Duplicar el árbol en las dos ramas
+     rompería `exerciseRefs`, que se indexa por día y ejercicio. */
+  const panelDelDia = (g: MesoWorkoutGroup, gIdx: number) => (
+          <div key={claveDia(g, gIdx)} className="bg-surface border border-hairline rounded-surface overflow-hidden">
+            <div className="px-3 py-2 bg-bg border-b border-hairline space-y-1.5">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <DayTitle
+                  name={g.name}
+                  editing={renamingDay?.clave === claveDia(g, gIdx)}
+                  value={renamingDay?.clave === claveDia(g, gIdx) ? renamingDay.value : ''}
+                  onStartEdit={(_, sufijoActual) => setRenamingDay({ clave: claveDia(g, gIdx), value: sufijoActual })}
+                  onChangeValue={v => setRenamingDay({ clave: claveDia(g, gIdx), value: v })}
+                  onCommit={prefijo => { void handleRenameDay(g, prefijo, renamingDay?.value ?? ''); setRenamingDay(null); }}
+                  onCancel={() => setRenamingDay(null)}
+                />
+                <span className="font-mono text-caption text-ink-2 tabular-nums">
+                  {g.exercises.reduce((s, e) => s + e.sets, 0)} series · {g.exercises.length} ejercicios
+                  {duracionEstimadaMin(g.exercises) > 0 && (
+                    <span title="Series × (45 s de trabajo + descanso). Sin contar el calentamiento.">
+                      {' · ~'}{duracionEstimadaMin(g.exercises)} min
+                    </span>
+                  )}
+                </span>
+              </div>
+              <SeriesBalance
+                balance={balanceDeSeries(
+                  seriesPorGrupo(g.exercises, allExercises),
+                  seriesPlanificadasDelDia(distribution?.days[dayIndexOf(g, gIdx)]),
+                )}
+                referencia="la distribución del día"
+                onGroupClick={g => jumpToGroup(g, gIdx)}
+              />
+            </div>
+            <div className="p-2 space-y-1.5">
+              {g.exercises.length === 0 ? (
+                <p className="text-label text-ink-3 font-sans px-1 py-2">Sin ejercicios en este día.</p>
+              ) : (
+                g.exercises.map((we, exIdx) => {
+                  const ex = allExercises.find(e => e.id === we.exerciseId);
+                  const videoKey = `${claveDia(g, gIdx)}-${exIdx}`;
+                  const isDuplicate = duplicateExerciseIds.has(we.exerciseId);
+                  const jumpKey = `${claveDia(g, gIdx)}-${exIdx}`;
+                  return (
+                    <div
+                      key={`${we.exerciseId}-${exIdx}`}
+                      ref={el => { if (el) exerciseRefs.current.set(jumpKey, el); else exerciseRefs.current.delete(jumpKey); }}
+                      className={`bg-raised rounded-surface overflow-hidden transition-shadow ${isDuplicate ? 'border border-red-500/50' : ''} ${highlightedKey === jumpKey ? 'ring-2 ring-accent' : ''}`}
+                    >
+                      <div className="p-2 space-y-1.5">
+                        <div className="flex items-start gap-2">
+                          {/* Reordenar — el orden en que se hacen los ejercicios
+                              es una decisión de programación (básicos primero,
+                              aislamiento después), y hasta ahora la única forma
+                              de cambiarlo era borrar y volver a añadir. */}
+                          <div className="flex flex-col flex-shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => onMoveExercise(g, exIdx, -1)}
+                              disabled={exIdx === 0}
+                              aria-label="Subir ejercicio"
+                              className="text-ink-3 hover:text-accent disabled:opacity-20 disabled:hover:text-ink-3 transition-colors"
+                            ><Icon name="keyboard_arrow_up" size="s" /></button>
+                            <button
+                              type="button"
+                              onClick={() => onMoveExercise(g, exIdx, 1)}
+                              disabled={exIdx === g.exercises.length - 1}
+                              aria-label="Bajar ejercicio"
+                              className="text-ink-3 hover:text-accent disabled:opacity-20 disabled:hover:text-ink-3 transition-colors"
+                            ><Icon name="keyboard_arrow_down" size="s" /></button>
+                          </div>
+                          <span className="font-mono text-caption text-ink-3 tabular-nums w-4 flex-shrink-0 pt-1">{exIdx + 1}</span>
+                          <div className="min-w-0 flex-1">
+                            <p
+                              className={`text-label font-sans font-bold truncate ${isDuplicate ? 'text-red-400' : 'text-white'} ${ex?.videoUrl ? 'cursor-pointer select-none' : ''}`}
+                              title={ex?.videoUrl ? 'Mantén pulsado o clic derecho para ver el vídeo' : undefined}
+                              onContextMenu={e => { if (ex?.videoUrl) { e.preventDefault(); openVideoModal(videoKey, ex); } }}
+                              onPointerDown={() => {
+                                if (!ex?.videoUrl) return;
+                                clearLongPress();
+                                longPressTimer.current = window.setTimeout(() => openVideoModal(videoKey, ex), 500);
+                              }}
+                              onPointerUp={clearLongPress}
+                              onPointerLeave={clearLongPress}
+                              onPointerCancel={clearLongPress}
+                            >
+                              {ex?.name || we.exerciseId}
+                              {we.muscleGroup && <span className="text-caption font-sans text-ink-2 ml-2">{MUSCLE_LABELS[we.muscleGroup]}</span>}
+                            </p>
+                            {isDuplicate && (
+                              <span className="inline-flex items-center gap-1 mt-1 font-mono text-caption font-bold text-red-400">
+                                <Icon name="warning" size="s" />
+                                También programado otro día
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-1 flex-shrink-0">
+                            {ex?.videoUrl && (
+                              <button
+                                onClick={() => openVideoModal(videoKey, ex)}
+                                title="Ver vídeo"
+                                className="flex items-center gap-1 px-2 py-1 rounded-control text-ink-3 hover:text-accent transition-colors"
+                              >
+                                <Icon name="videocam" size="s" />
+                                <span className="font-mono text-caption">Vídeo</span>
+                              </button>
+                            )}
+                            <button
+                              onClick={() => onReplaceExercise(g, exIdx)}
+                              title="Cambiar ejercicio"
+                              className="text-ink-3 hover:text-accent transition-colors"
+                            >
+                              <Icon name="swap_horiz" size="s" />
+                            </button>
+                            <button
+                              onClick={() => onRemoveExercise(g, exIdx)}
+                              title="Quitar ejercicio"
+                              className="text-ink-3 hover:text-red-400 transition-colors"
+                            >
+                              <Icon name="close" size="s" />
+                            </button>
+                          </div>
+                        </div>
+                        <ExerciseConfigEditor we={we} onChange={patch => onUpdateExercise(g, exIdx, patch)} mesoWeeks={weeks} />
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+              <div className="flex gap-2">
+                <button
+                  onClick={() => onAddExercise(g)}
+                  className="flex-1 flex items-center justify-center gap-2 bg-bg border border-dashed border-hairline rounded-control px-3 py-2 text-title-s font-sans text-ink-2 hover:text-accent hover:border-accent/40 transition-all"
+                >
+                  <Icon name="add" size="s" />
+                  Añadir ejercicio
+                </button>
+                {libraryWorkouts.length > 0 && (
+                  <button
+                    onClick={() => setLibraryPickerFor(g)}
+                    title="Copiar los ejercicios de una rutina de la biblioteca a este día"
+                    className="flex items-center justify-center gap-2 bg-bg border border-dashed border-hairline rounded-control px-3 py-2 text-title-s font-sans text-ink-2 hover:text-accent hover:border-accent/40 transition-all"
+                  >
+                    <Icon name="library_books" size="s" />
+                    Usar de biblioteca
+                  </button>
+                )}
+              </div>
+              <p className="font-mono text-caption text-ink-3">
+                Se aplica a todas las semanas de este mesociclo — las sesiones ya completadas no se tocan.
+              </p>
+            </div>
+          </div>
+  );
+
   return (
     <div className="space-y-4">
       <p className="font-mono text-caption text-ink-2">
@@ -670,175 +842,39 @@ function MesoExercisesTabs({
         <SeriesBalance balance={balanceSemana} referencia={referenciaCiclo} ocultarSiVacio={false} onGroupClick={jumpToGroup} />
       </div>
 
-      {/* Carrusel de días — solo el día activo muestra su contenido debajo */}
-      <Tabs
-        label="Días del mesociclo"
-        value={group?.name ?? ''}
-        onChange={id => {
-          const i = groups.findIndex(g => g.name === id);
-          if (i >= 0) setActiveIdx(i);
-        }}
-        items={groups.map(g => ({ id: g.name, label: g.name } as TabItem))}
-      />
-
-      {/* Swipe entre días (Bloque C1) — misma `activeIdx` que los Tabs de
-          arriba, así que saltar directo y deslizar con el dedo nunca se
-          desincronizan: los dos mueven el mismo estado. */}
-      {groups.length > 0 && (
-        <Pager label="Días del mesociclo" value={activeIdx} onChange={setActiveIdx}>
-          {groups.map((g, gIdx) => (
-            <div key={claveDia(g, gIdx)} className="bg-surface border border-hairline rounded-surface overflow-hidden">
-              <div className="px-4 py-3 bg-bg border-b border-hairline space-y-2">
-                <div className="flex items-center justify-between gap-2 flex-wrap">
-                  <DayTitle
-                    name={g.name}
-                    editing={renamingDay?.clave === claveDia(g, gIdx)}
-                    value={renamingDay?.clave === claveDia(g, gIdx) ? renamingDay.value : ''}
-                    onStartEdit={(_, sufijoActual) => setRenamingDay({ clave: claveDia(g, gIdx), value: sufijoActual })}
-                    onChangeValue={v => setRenamingDay({ clave: claveDia(g, gIdx), value: v })}
-                    onCommit={prefijo => { void handleRenameDay(g, prefijo, renamingDay?.value ?? ''); setRenamingDay(null); }}
-                    onCancel={() => setRenamingDay(null)}
-                  />
-                  <span className="font-mono text-caption text-ink-2 tabular-nums">
-                    {g.exercises.reduce((s, e) => s + e.sets, 0)} series · {g.exercises.length} ejercicios
-                    {duracionEstimadaMin(g.exercises) > 0 && (
-                      <span title="Series × (45 s de trabajo + descanso). Sin contar el calentamiento.">
-                        {' · ~'}{duracionEstimadaMin(g.exercises)} min
-                      </span>
-                    )}
-                  </span>
-                </div>
-                <SeriesBalance
-                  balance={balanceDeSeries(
-                    seriesPorGrupo(g.exercises, allExercises),
-                    seriesPlanificadasDelDia(distribution?.days[dayIndexOf(g, gIdx)]),
-                  )}
-                  referencia="la distribución del día"
-                  onGroupClick={g => jumpToGroup(g, gIdx)}
-                />
-              </div>
-              <div className="p-3 space-y-2">
-                {g.exercises.length === 0 ? (
-                  <p className="text-label text-ink-3 font-sans px-1 py-2">Sin ejercicios en este día.</p>
-                ) : (
-                  g.exercises.map((we, exIdx) => {
-                    const ex = allExercises.find(e => e.id === we.exerciseId);
-                    const videoKey = `${claveDia(g, gIdx)}-${exIdx}`;
-                    const isDuplicate = duplicateExerciseIds.has(we.exerciseId);
-                    const jumpKey = `${claveDia(g, gIdx)}-${exIdx}`;
-                    return (
-                      <div
-                        key={`${we.exerciseId}-${exIdx}`}
-                        ref={el => { if (el) exerciseRefs.current.set(jumpKey, el); else exerciseRefs.current.delete(jumpKey); }}
-                        className={`bg-raised rounded-surface overflow-hidden transition-shadow ${isDuplicate ? 'border border-red-500/50' : ''} ${highlightedKey === jumpKey ? 'ring-2 ring-accent' : ''}`}
-                      >
-                        <div className="p-3 space-y-2">
-                          <div className="flex items-start gap-2">
-                            {/* Reordenar — el orden en que se hacen los ejercicios
-                                es una decisión de programación (básicos primero,
-                                aislamiento después), y hasta ahora la única forma
-                                de cambiarlo era borrar y volver a añadir. */}
-                            <div className="flex flex-col flex-shrink-0">
-                              <button
-                                type="button"
-                                onClick={() => onMoveExercise(g, exIdx, -1)}
-                                disabled={exIdx === 0}
-                                aria-label="Subir ejercicio"
-                                className="text-ink-3 hover:text-accent disabled:opacity-20 disabled:hover:text-ink-3 transition-colors"
-                              ><Icon name="keyboard_arrow_up" size="s" /></button>
-                              <button
-                                type="button"
-                                onClick={() => onMoveExercise(g, exIdx, 1)}
-                                disabled={exIdx === g.exercises.length - 1}
-                                aria-label="Bajar ejercicio"
-                                className="text-ink-3 hover:text-accent disabled:opacity-20 disabled:hover:text-ink-3 transition-colors"
-                              ><Icon name="keyboard_arrow_down" size="s" /></button>
-                            </div>
-                            <span className="font-mono text-caption text-ink-3 tabular-nums w-4 flex-shrink-0 pt-1">{exIdx + 1}</span>
-                            <div className="min-w-0 flex-1">
-                              <p
-                                className={`text-label font-sans font-bold truncate ${isDuplicate ? 'text-red-400' : 'text-white'} ${ex?.videoUrl ? 'cursor-pointer select-none' : ''}`}
-                                title={ex?.videoUrl ? 'Mantén pulsado o clic derecho para ver el vídeo' : undefined}
-                                onContextMenu={e => { if (ex?.videoUrl) { e.preventDefault(); openVideoModal(videoKey, ex); } }}
-                                onPointerDown={() => {
-                                  if (!ex?.videoUrl) return;
-                                  clearLongPress();
-                                  longPressTimer.current = window.setTimeout(() => openVideoModal(videoKey, ex), 500);
-                                }}
-                                onPointerUp={clearLongPress}
-                                onPointerLeave={clearLongPress}
-                                onPointerCancel={clearLongPress}
-                              >
-                                {ex?.name || we.exerciseId}
-                                {we.muscleGroup && <span className="text-caption font-sans text-ink-2 ml-2">{MUSCLE_LABELS[we.muscleGroup]}</span>}
-                              </p>
-                              {isDuplicate && (
-                                <span className="inline-flex items-center gap-1 mt-1 font-mono text-caption font-bold text-red-400">
-                                  <Icon name="warning" size="s" />
-                                  También programado otro día
-                                </span>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-1 flex-shrink-0">
-                              {ex?.videoUrl && (
-                                <button
-                                  onClick={() => openVideoModal(videoKey, ex)}
-                                  title="Ver vídeo"
-                                  className="flex items-center gap-1 px-2 py-1 rounded-control text-ink-3 hover:text-accent transition-colors"
-                                >
-                                  <Icon name="videocam" size="s" />
-                                  <span className="font-mono text-caption">Vídeo</span>
-                                </button>
-                              )}
-                              <button
-                                onClick={() => onReplaceExercise(g, exIdx)}
-                                title="Cambiar ejercicio"
-                                className="text-ink-3 hover:text-accent transition-colors"
-                              >
-                                <Icon name="swap_horiz" size="s" />
-                              </button>
-                              <button
-                                onClick={() => onRemoveExercise(g, exIdx)}
-                                title="Quitar ejercicio"
-                                className="text-ink-3 hover:text-red-400 transition-colors"
-                              >
-                                <Icon name="close" size="s" />
-                              </button>
-                            </div>
-                          </div>
-                          <ExerciseConfigEditor we={we} onChange={patch => onUpdateExercise(g, exIdx, patch)} mesoWeeks={weeks} />
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => onAddExercise(g)}
-                    className="flex-1 flex items-center justify-center gap-2 bg-bg border border-dashed border-hairline rounded-control px-3 py-2 text-title-s font-sans text-ink-2 hover:text-accent hover:border-accent/40 transition-all"
-                  >
-                    <Icon name="add" size="s" />
-                    Añadir ejercicio
-                  </button>
-                  {libraryWorkouts.length > 0 && (
-                    <button
-                      onClick={() => setLibraryPickerFor(g)}
-                      title="Copiar los ejercicios de una rutina de la biblioteca a este día"
-                      className="flex items-center justify-center gap-2 bg-bg border border-dashed border-hairline rounded-control px-3 py-2 text-title-s font-sans text-ink-2 hover:text-accent hover:border-accent/40 transition-all"
-                    >
-                      <Icon name="library_books" size="s" />
-                      Usar de biblioteca
-                    </button>
-                  )}
-                </div>
-                <p className="font-mono text-caption text-ink-3">
-                  Se aplica a todas las semanas de este mesociclo — las sesiones ya completadas no se tocan.
-                </p>
-              </div>
-            </div>
-          ))}
-        </Pager>
+      <div ref={zonaRef} className="space-y-4">
+      {/* Carrusel de días — solo el día activo muestra su contenido debajo. Con
+          sitio para varias columnas las pestañas sobran: los días ya se ven
+          todos. */}
+      {!enRejilla && (
+        <Tabs
+          label="Días del mesociclo"
+          value={group?.name ?? ''}
+          onChange={id => {
+            const i = groups.findIndex(g => g.name === id);
+            if (i >= 0) setActiveIdx(i);
+          }}
+          items={groups.map(g => ({ id: g.name, label: g.name } as TabItem))}
+        />
       )}
+
+      {/* Un día a la vez con swipe (Bloque C1) cuando no cabe más, y todos los
+          días en columnas cuando el hueco da de sí. La anchura que manda es la
+          del CONTENEDOR, no la de la ventana: esta pestaña vive dentro del
+          panel del cliente, que a su vez cambia de ancho según la pantalla del
+          coach (Dani, 10-09-2026). */}
+      {groups.length > 0 && (
+        enRejilla ? (
+          <div className={`grid gap-3 ${columnas >= 3 ? 'grid-cols-3' : 'grid-cols-2'}`}>
+            {groups.map((g, gIdx) => panelDelDia(g, gIdx))}
+          </div>
+        ) : (
+          <Pager label="Días del mesociclo" value={activeIdx} onChange={setActiveIdx}>
+            {groups.map((g, gIdx) => panelDelDia(g, gIdx))}
+          </Pager>
+        )
+      )}
+      </div>
 
       <Sheet
         open={videoModal !== null}
@@ -2043,6 +2079,11 @@ export default function MesocycleManager({
   //    cuadra con las sesiones configuradas — el único que es seguro usar
   //    para generar rutinas, calcular frecuencias o guardar fechas reales.
   const customCrudo = editing?.customOffsets ? [...editing.customOffsets].sort((a, b) => a - b) : null;
+  // Sigue comprobándose la longitud: un mesociclo guardado hace meses puede
+  // traer un `customOffsets` que ya no cuadra porque el coach cambió las
+  // sesiones desde el selector «Sesiones por ciclo», y asignar con un patrón
+  // que no encaja descuadra las fechas. Lo que ya no pasa es que TOCAR el
+  // calendario deje el patrón inválido: `toggleDiaCiclo` mueve `daysPerWeek`.
   const customValido = customCrudo && customCrudo.length === editing?.daysPerWeek ? customCrudo : null;
 
   const offsetsAutomaticos = editing
@@ -2074,16 +2115,35 @@ export default function MesocycleManager({
     const actual = editing.customOffsets ?? offsetsAutomaticos;
     const yaEsta = actual.includes(dia);
     const siguiente = yaEsta ? actual.filter(d => d !== dia) : [...actual, dia].sort((a, b) => a - b);
-    const updated: Mesocycle = { ...editing, customOffsets: siguiente, splitId: undefined };
+    // Un mesociclo sin ningún día no existe: el último no se puede quitar.
+    if (siguiente.length === 0) return;
+    // El calendario ES el número de sesiones, no algo que tenga que cuadrar con
+    // él. Antes `daysPerWeek` se quedaba fijo y marcar un día de más dejaba el
+    // patrón «incompleto»: el botón de repartir se deshabilitaba y no se podía
+    // pasar a Ejercicios hasta quitar otro día primero. Querer L-M-X, descanso,
+    // V-S obligaba a hacerlo en el orden exacto que la pantalla admitía
+    // (Dani, 10-09-2026).
+    const updated: Mesocycle = {
+      ...editing,
+      customOffsets: siguiente,
+      daysPerWeek: siguiente.length,
+      splitId: undefined,
+    };
     // Tocar el calendario descarta el reparto de la lista (`splitId`), y con él
     // hay que soltar su `cycleDays`: dejarlo puesto es lo que convertía «6
     // sesiones de lunes a sábado» en un ciclo rotativo de 6 días sin descanso
     // que se desplaza por el calendario vuelta tras vuelta. Si el patrón a mano
     // cabe en una semana, el ciclo vuelve a ser semanal; si no, dura lo justo
     // para contenerlo. Mismo criterio que el botón de «Sesiones por ciclo».
+    const span = Math.max(...siguiente) + 1;
     if (editing.splitId) {
-      const span = siguiente.length ? Math.max(...siguiente) + 1 : 1;
       updated.cycleDays = span <= 7 ? undefined : Math.max(span, editing.cycleDays ?? 0);
+    } else if (span > (editing.cycleDays ?? 7)) {
+      // El ciclo tiene que caber el patrón. Sin esto, bajar de 9 sesiones a 4
+      // encogía el calendario a una semana (`diasDeCiclo` cae a 7 cuando no hay
+      // `cycleDays`) y el día 9 que quedaba marcado se salía de la rejilla:
+      // desaparecía de la vista y seguía contando al asignar fechas.
+      updated.cycleDays = span;
     }
     setEditing(updated);
     scheduleAutoSave(updated);
@@ -2499,10 +2559,18 @@ export default function MesocycleManager({
                                       // rotativo de 5 días trae su ciclo puesto,
                                       // uno semanal vuelve a los 7 de siempre.
                                       const quitando = editing.splitId === split.id;
+                                      // Un reparto semanal deja `cycleDays` sin
+                                      // poner, que es lo que significa
+                                      // «Semanal»: escribirle un 7 apagaba la
+                                      // píldora, encendía la del 7 y además
+                                      // cambiaba el reparto de sesiones, porque
+                                      // `repartirEnElCiclo` mira si hay valor,
+                                      // no cuál es (Dani, 10-09-2026).
+                                      const ciclo = cicloDeSplit(split);
                                       const updated: Mesocycle = {
                                         ...editing,
                                         splitId: quitando ? undefined : split.id,
-                                        cycleDays: quitando ? undefined : cicloDeSplit(split),
+                                        cycleDays: quitando || ciclo === 7 ? undefined : ciclo,
                                         // Un reparto de la lista trae su propio calendario —
                                         // pisa cualquier patrón que el coach hubiera tocado a mano.
                                         customOffsets: undefined,
@@ -2566,9 +2634,14 @@ export default function MesocycleManager({
                           <span className="material-symbols-outlined text-body-s">shuffle</span>
                           Distribución Automática
                         </button>
+                        {/* Solo puede pasar con un mesociclo guardado antes: el
+                            coach cambió «Sesiones por ciclo» y dejó puesto un
+                            calendario a mano de otra cantidad. Tocar el
+                            calendario ya no deja el bloque en este estado. */}
                         {customCrudo && !customValido && (
                           <span className="font-sans text-label text-orange-300">
-                            Termina el calendario a mano ({customCrudo.length}/{editing.daysPerWeek}) antes de repartir.
+                            El calendario a mano tiene {customCrudo.length} día{customCrudo.length === 1 ? '' : 's'} y
+                            el bloque {editing.daysPerWeek} sesiones. Ajusta uno de los dos, o vuelve al automático.
                           </span>
                         )}
                         {editing.distribution && isStale(editing, editing.distribution) && (

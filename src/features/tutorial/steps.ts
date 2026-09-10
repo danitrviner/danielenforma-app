@@ -107,7 +107,10 @@ export const TOUR_STEPS: TourStep[] = [
     skippable: true,
   },
   {
-    id: 'isla-widgets', section: 'Perfil', tab: 'profile', targetId: 'profile-settings-action',
+    // Apunta a la fila de pestañas, no al icono de la cabecera: en el lado del
+    // atleta ese icono ya no existe — Ajustes es una pestaña más del selector
+    // (Dani, 10-09-2026). El del coach sigue ahí, pero el tour es del atleta.
+    id: 'isla-widgets', section: 'Perfil', tab: 'profile', targetId: 'profile-progress-row',
     title: 'Fuera de la app también hay avisos',
     body: 'Cuando actives las notificaciones, verás el descanso entre series y tu cardio incluso con el móvil bloqueado. Te lo pido ahora, en contexto.',
     skippable: true,

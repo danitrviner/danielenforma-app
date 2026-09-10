@@ -9,7 +9,6 @@ const perfil = (p: Partial<UserProfile>): UserProfile => ({
   role: 'client',
   avatarUrl: '',
   level: 1,
-  xp: 0,
   currentStreak: 0,
   maxStreak: 0,
   initialWeight: 0,

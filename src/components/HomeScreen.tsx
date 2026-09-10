@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { UserProfile, WeightCheckIn, WeekDay } from '../types';
-import { getWorkoutAssignmentsForAthlete, getWorkoutsByIds, getCardioAssignmentsForAthlete, getDietsForAthlete, getAthleteDietConfig, getDietCompletionLog, getOnboarding, getCoachDayNote, getMesocycles } from '../dbService';
+import { getWorkoutAssignmentsForAthlete, getWorkoutsByIds, getCardioAssignmentsForAthlete, getDietsForAthlete, getAthleteDietConfig, getDietCompletionLog, getOnboarding, getCoachDayNote, getMesocycles, getBodyweightForAthlete } from '../dbService';
 import { formatDate, hoyIsoLocal } from '../utils/trainingWeek';
 import { bloquesDelCiclo, bloqueActual, EstadoDeDia } from '../utils/cicloDelAtleta';
 import { pickActiveZona2Assignment, pickActiveIntervalAssignment } from '../utils/cardioSession';
@@ -10,6 +10,9 @@ import PendingTasksPanel from './PendingTasksPanel';
 import SolicitudConsentimientoIA from './SolicitudConsentimientoIA';
 import { debePedirseConsentimiento, haSidoAplazado, marcarAplazado } from '../ai/consentimientoIA';
 import StepsWidget from './StepsWidget';
+import TarjetaPeso from './home/TarjetaPeso';
+import WeeklyChallengeCard, { ChallengePendingCard } from './roadmap/WeeklyChallengeCard';
+import { useRetoDeLaSemana } from '../hooks/useRetoDeLaSemana';
 import ResourcesPanel from './ResourcesPanel';
 import AthleteReportsPanel from './AthleteReportsPanel';
 import PlanInPreparationCard from './PlanInPreparationCard';
@@ -137,6 +140,26 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
     queryFn: () => getDietCompletionLog(profile.email, TODAY_DATE),
   });
 
+  /* El reto de la semana, que desde 09-2026 es lo primero que se ve.
+     Comparte todas las claves de consulta con el Road map, así que un atleta
+     que pase por las dos pantallas paga las lecturas UNA vez. */
+  const { resultado: reto, racha, cargando: cargandoReto } =
+    useRetoDeLaSemana(profile.email, assignments);
+
+  /* Los pesajes de la curva, con VENTANA y clave propia. El historial entero
+     son cientos de documentos y aquí solo hacen falta los últimos doce puntos;
+     la clave no se comparte con Revisión ni con el Road map a propósito, que
+     esos sí necesitan el histórico completo. */
+  const desdePeso = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 120);
+    return d.toISOString().split('T')[0];
+  }, []);
+  const { data: pesajes = [] } = useQuery({
+    queryKey: ['bodyweightDesde', profile.email, desdePeso],
+    queryFn: () => getBodyweightForAthlete(profile.email, desdePeso),
+  });
+
   const sorted = [...assignments].sort((a, b) => a.date.localeCompare(b.date));
   // La misma vuelta del microciclo que enseña Rutinas (Día 1 → Día N, sin cajón
   // de «Atrasados» al final), para que el resumen y la pantalla no cuenten dos
@@ -203,6 +226,36 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
           </span>
         ) : undefined}
       />
+
+      {/* ═══ El reto de la semana ══════════════════════════════════════════
+          Lo primero que se ve, y es el único candidato que aguanta ahí:
+           · Siempre hay uno — si el coach no asigna, se genera solo.
+           · El progreso sale de lo ya registrado, sin marcar nada a mano.
+           · El generador solo propone retos de los que HAY datos, así que un
+             atleta que no ha sincronizado los pasos no recibe un reto de
+             pasos que no pueda cumplir.
+          Los pasos fallaban lo tercero y las fases lo primero: una fase la
+          monta el coach a mano cliente a cliente, y ponerle los objetivos en
+          la cara exige que eso esté impecable (Dani, 10-09-2026). */}
+      {cargandoReto ? (
+        <Skeleton className="h-[188px] w-full rounded-canvas" />
+      ) : reto && (reto.pending
+        ? <ChallengePendingCard />
+        : <WeeklyChallengeCard challenge={reto.challenge!} progress={reto.progress!} streak={racha} destacado />
+      )}
+
+      {/* ── Peso y pasos: los dos de un vistazo, sin hacer scroll ───────────
+          En segunda fila y no de protagonistas: si a uno le faltan datos, no
+          deja un agujero en lo primero que ve el atleta. Cada tarjeta resuelve
+          su propio hueco por dentro. */}
+      <div className="grid grid-cols-2 gap-2">
+        <TarjetaPeso
+          logs={pesajes}
+          metaKg={profile.targetWeight}
+          onClick={() => onNavigate('checkin')}
+        />
+        <StepsWidget athleteEmail={profile.email} compacto />
+      </div>
 
       {/* Nota del coach para hoy (Roadmap → Calendario) — encima del entreno
           del día, solo si hay una escrita para la fecha de hoy. */}
@@ -316,8 +369,6 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
       <PendingTasksPanel profile={profile} checkins={checkins} onNavigate={onNavigate} />
 
       <AthleteReportsPanel athleteEmail={profile.email} />
-
-      <StepsWidget athleteEmail={profile.email} />
 
       {/* ── La vuelta del microciclo en curso, del Día 1 al Día N ────────────── */}
       {(loadingTraining || assignments.length > 0) && (

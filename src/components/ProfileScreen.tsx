@@ -15,7 +15,6 @@ import AceptacionLegalGate, { DOC_CON_OPCIONALES } from './AceptacionLegalGate';
 import type { AceptacionesLegales } from '../legal/aceptacion';
 import CheckInScreen from './CheckInScreen';
 import AthleteRoadmapScreen from './AthleteRoadmapScreen';
-import StatTile from './StatTile';
 import MiGimnasioPanel from '../features/gimnasio/MiGimnasioPanel';
 import { useTourTarget } from '../features/tutorial/TourTargetContext';
 import FuentesCientificasSheet from './FuentesCientificasSheet';
@@ -34,13 +33,17 @@ interface ProfileScreenProps {
 // pidió que fueran seleccionables, no un scroll largo). Las pantallas que se
 // embeben (CheckInScreen, AthleteRoadmapScreen, paneles con gráfica) van tal
 // cual, sin reescribirlas: cero riesgo de regresión en su lógica.
-type ProfileTab = 'resumen' | 'revision' | 'roadmap' | 'preferencias' | 'gimnasio';
+type ProfileTab = 'resumen' | 'revision' | 'roadmap' | 'preferencias' | 'gimnasio' | 'ajustes';
 const PROFILE_TABS: { id: ProfileTab; label: string; icon: string }[] = [
   { id: 'resumen',      label: 'Resumen',       icon: 'person' },
   { id: 'revision',     label: 'Revisión',      icon: 'fact_check' },
   { id: 'roadmap',      label: 'Road map',      icon: 'map' },
   { id: 'preferencias', label: 'Preferencias',  icon: 'restaurant' },
   { id: 'gimnasio',     label: 'Mi gimnasio',   icon: 'fitness_center' },
+  // Ajustes era un icono suelto en la cabecera, el único destino del perfil
+  // que no estaba en el selector: había que saber que estaba ahí (Dani,
+  // 10-09-2026). El coach sigue con el icono, que él no tiene selector.
+  { id: 'ajustes',      label: 'Ajustes',       icon: 'settings' },
 ];
 
 // Ajustes › Notificaciones (F3.13e) — SOLO los tipos que de verdad se generan
@@ -175,6 +178,165 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
     }
   };
 
+  /* El cuerpo de Ajustes, en una variable porque se pinta desde dos sitios:
+     una pestaña más del selector (atleta) y la hoja del icono de la cabecera
+     (coach, que no tiene selector de pestañas). Es el mismo árbol, no dos
+     copias que se vayan separando con el tiempo. */
+  const cuerpoAjustes = (
+      <div className="space-y-6">
+        <p className="font-mono text-caption text-ink-3 uppercase tracking-widest">Cuenta</p>
+        <form onSubmit={handleUpdate} className="space-y-4">
+          <Input label={isCoach ? 'Nombre' : 'Nombre deportivo'} required value={displayName} onChange={setDisplayName} />
+          {!isCoach && (
+            <div>
+              <label htmlFor="profilescreen-meta-de-peso-personal-kg" className="block font-sans text-caption text-ink-2 uppercase mb-1">Meta de peso personal (kg)</label>
+              <input id="profilescreen-meta-de-peso-personal-kg"
+                type="number"
+                step="0.1"
+                value={targetWeight}
+                onChange={(e) => setTargetWeight(e.target.value)}
+                className="w-full bg-raised border border-hairline rounded-control p-3 text-title-s text-white focus:outline-none focus:border-accent"
+              />
+            </div>
+          )}
+          <Input label="Avatar (URL de imagen)" type="url" value={avatarUrl} onChange={setAvatarUrl} />
+          <Button type="submit" disabled={loading} loading={loading} loadingLabel="Guardando" fullWidth>Guardar cambios</Button>
+          {success && <p className="text-label font-sans font-bold text-accent text-center">{success}</p>}
+        </form>
+
+        {isCoach && (
+          <>
+          <p className="font-mono text-caption text-ink-3 uppercase tracking-widest">Preferencias</p>
+          <div className="space-y-2">
+            <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
+              <Icon name="notifications" size="m" className="text-accent" />
+              Notificaciones
+            </h3>
+            <div className="bg-surface border border-hairline rounded-surface divide-y divide-hairline">
+              {COACH_NOTIF_TYPES.map(n => (
+                <div key={n.type} className="flex items-center justify-between gap-3 p-3">
+                  <div className="min-w-0">
+                    <p className="font-sans text-caption font-bold text-white">{n.label}</p>
+                    <p className="font-sans text-caption text-ink-3">{n.sub}</p>
+                  </div>
+                  <Switch on={notifPrefs[n.type] !== false} onToggle={() => toggleNotifPref(n.type)} />
+                </div>
+              ))}
+            </div>
+          </div>
+          </>
+        )}
+
+        <p className="font-mono text-caption text-ink-3 uppercase tracking-widest">Soporte</p>
+
+        {isCoach && (
+          showCoaches ? (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
+                  <Icon name="groups" size="m" className="text-accent" />
+                  Entrenadores
+                </h3>
+                <Button variant="ghost" size="s" onClick={() => setShowCoaches(false)} icon="close" label="Cerrar" />
+              </div>
+              <CoachesScreen currentUserId={profile.userId} currentUserEmail={profile.email} />
+            </div>
+          ) : (
+            <ListRow
+              onClick={() => setShowCoaches(true)}
+              className="rounded-control border bg-surface border-hairline"
+              leading={<Icon name="groups" size="m" className="text-accent" />}
+              title="Entrenadores"
+              chevron
+            />
+          )
+        )}
+
+        {/* Legales. Apple (5.1.1.i) y Google exigen el enlace a la política de
+            privacidad DENTRO de la app, no solo en la ficha de la tienda; y
+            Google exige además que el camino de borrado sea accesible desde
+            aquí. Son páginas estáticas fuera de la SPA, así que se abren en el
+            navegador del sistema: `target="_blank"` con `rel="noopener"` para
+            no dejarles acceso a `window.opener`.
+
+            Con el mismo peso visual que el resto de ajustes (ListRow), no como
+            dos líneas de texto tenue al fondo del panel: Dani no las encontró
+            probando la cuenta del revisor, y lo que no encuentra quien hizo la
+            app tampoco lo encuentra quien la revisa. «Encontrable» es el
+            requisito literal de las dos tiendas. */}
+        <p className="font-mono text-caption text-ink-3 uppercase tracking-widest pt-2">Legal</p>
+
+        <div className="bg-surface border border-hairline rounded-surface divide-y divide-hairline">
+          {!isCoach && (
+            /* Abre el documento de TÉRMINOS en modo revisión (DOC_CON_OPCIONALES
+               = el doc 'terminos'), y dentro va la casilla suelta del análisis
+               asistido por IA. Se llamaba "Análisis automático", que nombraba
+               solo la casilla y escondía que los términos se leen aquí — y
+               "encontrable" es requisito literal de las dos tiendas. */
+            <ListRow
+              onClick={() => { setShowSettings(false); setShowPermisos(true); }}
+              leading={<Icon name="gavel" size="m" className="text-accent" />}
+              title="Términos y condiciones"
+              chevron
+            />
+          )}
+          {/* 1.4.1 de Apple. La sección de Nutrición ya lleva su propio acceso
+              arriba del todo; esta segunda entrada existe porque «fácil de
+              encontrar» también significa «donde la gente busca los avisos». */}
+          <ListRow
+            onClick={() => { setShowSettings(false); setShowFuentes(true); }}
+            leading={<Icon name="menu_book" size="m" className="text-accent" />}
+            title="Fuentes científicas y aviso médico"
+            chevron
+          />
+          <ListRow
+            href="/privacidad"
+            target="_blank"
+            leading={<Icon name="shield" size="m" className="text-accent" />}
+            title="Política de privacidad"
+            chevron
+          />
+          <ListRow
+            href="/terminos"
+            target="_blank"
+            leading={<Icon name="gavel" size="m" className="text-accent" />}
+            title="Términos de uso"
+            chevron
+          />
+        </div>
+
+        <button onClick={handleSignOut} className="w-full flex items-center justify-center gap-2 py-3 text-label font-sans font-bold text-danger">
+          <Icon name="logout" size="m" />
+          Cerrar sesión
+        </button>
+
+        {/* B-1. Apple (5.1.1.v) exige que una app que crea cuentas ofrezca
+            borrarlas DENTRO de la app, y no admite «desactivar» ni «escríbenos».
+            Va debajo de «Cerrar sesión» y en tono apagado a propósito: tiene
+            que ser encontrable sin esfuerzo, pero no competir con la acción que
+            casi todo el mundo viene a hacer aquí. */}
+        {!isCoach && (
+          <button
+            onClick={() => setShowEliminarCuenta(true)}
+            className="w-full flex items-center justify-center gap-2 py-3 text-body-s font-sans text-ink-3 hover:text-danger transition-colors"
+          >
+            <Icon name="delete_forever" size="s" />
+            Eliminar mi cuenta
+          </button>
+        )}
+
+        {/* Qué versión se está ejecutando. Parece un detalle y no lo es: la
+            web se actualiza sola en cada despliegue, pero la app instalada
+            lleva su propia copia dentro y puede ser de hace semanas. Sin este
+            dato, un fallo ya arreglado y uno real se ven exactamente igual, y
+            se pierden horas arreglando lo que ya estaba arreglado
+            (08-09-2026). */}
+        <p className="pt-2 text-center font-mono text-caption text-ink-3">
+          Versión {__APP_RELEASE__}
+        </p>
+      </div>
+  );
+
   function renderTab(): React.ReactNode {
     switch (activeTab) {
       case 'resumen':
@@ -226,22 +388,34 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
 
       case 'gimnasio':
         return <MiGimnasioPanel email={profile.email} />;
+
+      case 'ajustes':
+        return (
+          <div className="bg-surface border border-hairline rounded-surface p-4 sm:p-5">
+            {cuerpoAjustes}
+          </div>
+        );
     }
   }
 
   return (
     <div className="space-y-4">
-      <PageHeader
-        title="Mi Perfil"
-        subtitle={isCoach ? 'Tu cuenta y tus ajustes.' : 'Revisión, gráficas y ficha.'}
-        // La acción es un botón de solo-icono, no le hace falta renglón
-        // propio: actionInline la mete en la fila del título, a la misma
-        // altura que "MI PERFIL", en vez de apilarse debajo con un hueco
-        // vacío al lado (comportamiento por defecto de PageHeader, pensado
-        // para acciones con texto).
-        actionInline
-        action={<span ref={settingsActionRef}><Button variant="ghost" size="m" icon="settings" onClick={() => setShowSettings(true)} label="Ajustes" /></span>}
-      />
+      {/* Cabecera solo para el coach. En el lado del atleta el selector ya dice
+          dónde está, y «Mi Perfil / Revisión, gráficas y ficha» repetía con
+          letra de titular lo que las pestañas de debajo enumeran mejor. */}
+      {isCoach && (
+        <PageHeader
+          title="Mi Perfil"
+          subtitle="Tu cuenta y tus ajustes."
+          // La acción es un botón de solo-icono, no le hace falta renglón
+          // propio: actionInline la mete en la fila del título, a la misma
+          // altura que "MI PERFIL", en vez de apilarse debajo con un hueco
+          // vacío al lado (comportamiento por defecto de PageHeader, pensado
+          // para acciones con texto).
+          actionInline
+          action={<span ref={settingsActionRef}><Button variant="ghost" size="m" icon="settings" onClick={() => setShowSettings(true)} label="Ajustes" /></span>}
+        />
+      )}
 
       {/* Tarjeta de identidad del coach (F3.13e) — antes esta pantalla le
           pintaba al coach los mismos bloques de gamificación/peso del
@@ -259,41 +433,6 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
         </div>
       )}
 
-      {/* Identidad + XP + racha/nivel — persistente encima de las pestañas
-          (1:1 con `OFICIAL - Perfil (atleta).dc.html`): antes vivía SOLO
-          dentro de la pestaña "Resumen" y desaparecía al cambiar a
-          Progreso/Road map/Preferencias/Mi gimnasio. */}
-      {!isCoach && (
-        <div className="bg-surface border border-hairline rounded-canvas p-5 relative overflow-hidden flex flex-col gap-5">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-accent/5 blur-3xl rounded-full pointer-events-none"></div>
-
-          <div className="flex items-center gap-4">
-            <div className="relative inline-block flex-shrink-0">
-              <div className="w-16 h-16 rounded-full border-2 border-accent overflow-hidden">
-                <Avatar src={profile.avatarUrl} name={profile.displayName} alt="Avatar" className="w-full h-full object-cover" />
-              </div>
-              <div className="absolute -bottom-1 -right-1 bg-accent text-black text-caption font-bold px-2 rounded-full leading-tight whitespace-nowrap shadow">Lv {profile.level}</div>
-            </div>
-            <div className="flex-1 min-w-0">
-              <h3 className="font-sans font-bold text-title-m text-ink">{profile.displayName}</h3>
-              <p className="font-mono text-caption text-ink-2 truncate">{profile.email}</p>
-              <div className="flex items-center gap-2 mt-2">
-                <div className="flex-1 h-2 bg-raised rounded-full overflow-hidden">
-                  <div className="h-full bg-accent" style={{ width: `${Math.min(100, (profile.xp / 400) * 100)}%` }}></div>
-                </div>
-                <span className="font-mono text-caption text-ink-2 flex-shrink-0">{profile.xp}/400 XP</span>
-              </div>
-            </div>
-          </div>
-
-          <div className={`grid gap-3 ${profile.targetWeight > 0 ? 'grid-cols-2' : 'grid-cols-1'}`}>
-            <StatTile icon="workspace_premium" label="Nivel" value={profile.level} />
-            {profile.targetWeight > 0 && (
-              <StatTile icon="flag" label="Meta" value={`${profile.targetWeight}kg`} />
-            )}
-          </div>
-        </div>
-      )}
 
       {/* Submenú de pestañas (antes: "Progreso" y "Road map" eran desplegables
           y el resto un scroll único apilado — Dani pidió que fueran
@@ -311,160 +450,15 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
           entrenadores (coach), "Repetir el tour" (F3.12/T7.c, más abajo) y
           cerrar sesión, la única acción destructiva de la pantalla en texto
           rojo sobre fondo neutro, no un botón relleno. */}
-      <Sheet open={showSettings} onClose={() => setShowSettings(false)} title="Ajustes">
-        <div className="space-y-6">
-          <p className="font-mono text-caption text-ink-3 uppercase tracking-widest">Cuenta</p>
-          <form onSubmit={handleUpdate} className="space-y-4">
-            <Input label={isCoach ? 'Nombre' : 'Nombre deportivo'} required value={displayName} onChange={setDisplayName} />
-            {!isCoach && (
-              <div>
-                <label htmlFor="profilescreen-meta-de-peso-personal-kg" className="block font-sans text-caption text-ink-2 uppercase mb-1">Meta de peso personal (kg)</label>
-                <input id="profilescreen-meta-de-peso-personal-kg"
-                  type="number"
-                  step="0.1"
-                  value={targetWeight}
-                  onChange={(e) => setTargetWeight(e.target.value)}
-                  className="w-full bg-raised border border-hairline rounded-control p-3 text-title-s text-white focus:outline-none focus:border-accent"
-                />
-              </div>
-            )}
-            <Input label="Avatar (URL de imagen)" type="url" value={avatarUrl} onChange={setAvatarUrl} />
-            <Button type="submit" disabled={loading} loading={loading} loadingLabel="Guardando" fullWidth>Guardar cambios</Button>
-            {success && <p className="text-label font-sans font-bold text-accent text-center">{success}</p>}
-          </form>
-
-          {isCoach && (
-            <>
-            <p className="font-mono text-caption text-ink-3 uppercase tracking-widest">Preferencias</p>
-            <div className="space-y-2">
-              <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
-                <Icon name="notifications" size="m" className="text-accent" />
-                Notificaciones
-              </h3>
-              <div className="bg-surface border border-hairline rounded-surface divide-y divide-hairline">
-                {COACH_NOTIF_TYPES.map(n => (
-                  <div key={n.type} className="flex items-center justify-between gap-3 p-3">
-                    <div className="min-w-0">
-                      <p className="font-sans text-caption font-bold text-white">{n.label}</p>
-                      <p className="font-sans text-caption text-ink-3">{n.sub}</p>
-                    </div>
-                    <Switch on={notifPrefs[n.type] !== false} onToggle={() => toggleNotifPref(n.type)} />
-                  </div>
-                ))}
-              </div>
-            </div>
-            </>
-          )}
-
-          <p className="font-mono text-caption text-ink-3 uppercase tracking-widest">Soporte</p>
-
-          {isCoach && (
-            showCoaches ? (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
-                    <Icon name="groups" size="m" className="text-accent" />
-                    Entrenadores
-                  </h3>
-                  <Button variant="ghost" size="s" onClick={() => setShowCoaches(false)} icon="close" label="Cerrar" />
-                </div>
-                <CoachesScreen currentUserId={profile.userId} currentUserEmail={profile.email} />
-              </div>
-            ) : (
-              <ListRow
-                onClick={() => setShowCoaches(true)}
-                className="rounded-control border bg-surface border-hairline"
-                leading={<Icon name="groups" size="m" className="text-accent" />}
-                title="Entrenadores"
-                chevron
-              />
-            )
-          )}
-
-          {/* Legales. Apple (5.1.1.i) y Google exigen el enlace a la política de
-              privacidad DENTRO de la app, no solo en la ficha de la tienda; y
-              Google exige además que el camino de borrado sea accesible desde
-              aquí. Son páginas estáticas fuera de la SPA, así que se abren en el
-              navegador del sistema: `target="_blank"` con `rel="noopener"` para
-              no dejarles acceso a `window.opener`.
-
-              Con el mismo peso visual que el resto de ajustes (ListRow), no como
-              dos líneas de texto tenue al fondo del panel: Dani no las encontró
-              probando la cuenta del revisor, y lo que no encuentra quien hizo la
-              app tampoco lo encuentra quien la revisa. «Encontrable» es el
-              requisito literal de las dos tiendas. */}
-          <p className="font-mono text-caption text-ink-3 uppercase tracking-widest pt-2">Legal</p>
-
-          <div className="bg-surface border border-hairline rounded-surface divide-y divide-hairline">
-            {!isCoach && (
-              /* Abre el documento de TÉRMINOS en modo revisión (DOC_CON_OPCIONALES
-                 = el doc 'terminos'), y dentro va la casilla suelta del análisis
-                 asistido por IA. Se llamaba "Análisis automático", que nombraba
-                 solo la casilla y escondía que los términos se leen aquí — y
-                 "encontrable" es requisito literal de las dos tiendas. */
-              <ListRow
-                onClick={() => { setShowSettings(false); setShowPermisos(true); }}
-                leading={<Icon name="gavel" size="m" className="text-accent" />}
-                title="Términos y condiciones"
-                chevron
-              />
-            )}
-            {/* 1.4.1 de Apple. La sección de Nutrición ya lleva su propio acceso
-                arriba del todo; esta segunda entrada existe porque «fácil de
-                encontrar» también significa «donde la gente busca los avisos». */}
-            <ListRow
-              onClick={() => { setShowSettings(false); setShowFuentes(true); }}
-              leading={<Icon name="menu_book" size="m" className="text-accent" />}
-              title="Fuentes científicas y aviso médico"
-              chevron
-            />
-            <ListRow
-              href="/privacidad"
-              target="_blank"
-              leading={<Icon name="shield" size="m" className="text-accent" />}
-              title="Política de privacidad"
-              chevron
-            />
-            <ListRow
-              href="/terminos"
-              target="_blank"
-              leading={<Icon name="gavel" size="m" className="text-accent" />}
-              title="Términos de uso"
-              chevron
-            />
-          </div>
-
-          <button onClick={handleSignOut} className="w-full flex items-center justify-center gap-2 py-3 text-label font-sans font-bold text-danger">
-            <Icon name="logout" size="m" />
-            Cerrar sesión
-          </button>
-
-          {/* B-1. Apple (5.1.1.v) exige que una app que crea cuentas ofrezca
-              borrarlas DENTRO de la app, y no admite «desactivar» ni «escríbenos».
-              Va debajo de «Cerrar sesión» y en tono apagado a propósito: tiene
-              que ser encontrable sin esfuerzo, pero no competir con la acción que
-              casi todo el mundo viene a hacer aquí. */}
-          {!isCoach && (
-            <button
-              onClick={() => setShowEliminarCuenta(true)}
-              className="w-full flex items-center justify-center gap-2 py-3 text-body-s font-sans text-ink-3 hover:text-danger transition-colors"
-            >
-              <Icon name="delete_forever" size="s" />
-              Eliminar mi cuenta
-            </button>
-          )}
-
-          {/* Qué versión se está ejecutando. Parece un detalle y no lo es: la
-              web se actualiza sola en cada despliegue, pero la app instalada
-              lleva su propia copia dentro y puede ser de hace semanas. Sin este
-              dato, un fallo ya arreglado y uno real se ven exactamente igual, y
-              se pierden horas arreglando lo que ya estaba arreglado
-              (08-09-2026). */}
-          <p className="pt-2 text-center font-mono text-caption text-ink-3">
-            Versión {__APP_RELEASE__}
-          </p>
-        </div>
-      </Sheet>
+      {/* Ajustes del COACH — el atleta los tiene como una pestaña más del
+          selector; el coach no tiene selector, así que conserva el icono de la
+          cabecera y su hoja (F3.11, módulo 11: "vive detrás de un icono en la
+          cabecera, nunca en la barra inferior"). */}
+      {isCoach && (
+        <Sheet open={showSettings} onClose={() => setShowSettings(false)} title="Ajustes">
+          {cuerpoAjustes}
+        </Sheet>
+      )}
 
       {showPermisos && (
         <AceptacionLegalGate

@@ -1,5 +1,6 @@
 import React from 'react';
 import type { EstadoCrm, EstadoPago, EstadoSuscripcion } from '../types';
+import type { EstadoFinanciero } from '../lib/metricas';
 import { Badge, type BadgeTone } from '../../../components/ui';
 
 // Colores tomados del bloque @theme de src/index.css. Van como literales de
@@ -20,6 +21,19 @@ const ESTADO_CLIENTE: Record<EstadoCrm, { label: string; tono: Tono }> = {
 const ESTADO_PAGO: Record<EstadoPago, { label: string; tono: Tono }> = {
   pagado:    { label: 'Pagado',    tono: 'ok' },
   pendiente: { label: 'Pendiente', tono: 'aviso' },
+  // «Impagado» es peligro y «pendiente» solo aviso a propósito: pendiente es
+  // que aún no ha llegado, impagado es que tenía que haber llegado.
+  impagado:  { label: 'Impagado',  tono: 'peligro' },
+  parcial:   { label: 'Parcial',   tono: 'aviso' },
+};
+
+/* Cómo está un cliente de pagos. NO tiene entrada para «al día»: esa pastilla
+   no se pinta nunca — en una lista donde casi todos están al día, decirlo en
+   cada fila es ruido, y lo que se busca aquí es a quién hay que llamar. */
+const ESTADO_FINANCIERO: Record<Exclude<EstadoFinanciero, 'al_dia'>, { label: string; tono: Tono }> = {
+  pendiente: { label: 'Debe',     tono: 'aviso' },
+  parcial:   { label: 'A medias', tono: 'aviso' },
+  impagado:  { label: 'Impagado', tono: 'peligro' },
 };
 
 const ESTADO_SUSCRIPCION: Record<EstadoSuscripcion, { label: string; tono: Tono }> = {
@@ -52,6 +66,12 @@ export function EstadoClientePill({ estado }: { estado: EstadoCrm }) {
 
 export function EstadoPagoPill({ estado }: { estado: EstadoPago }) {
   const m = ESTADO_PAGO[estado] ?? ESTADO_PAGO.pendiente;
+  return <Pill label={m.label} tono={m.tono} />;
+}
+
+export function EstadoFinancieroPill({ estado }: { estado: EstadoFinanciero }) {
+  if (estado === 'al_dia') return null;
+  const m = ESTADO_FINANCIERO[estado];
   return <Pill label={m.label} tono={m.tono} />;
 }
 

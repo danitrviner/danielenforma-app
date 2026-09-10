@@ -10,7 +10,9 @@ import {
 import { MONTHS_ES, formatDate, hoyIsoLocal } from '../utils/trainingWeek';
 import { bloquesDelCiclo, bloqueActual, BloqueDelCiclo, DiaDelCiclo, EstadoDeDia } from '../utils/cicloDelAtleta';
 import { prefillWorkoutSets } from '../utils/setPrefill';
-import { mesocycleWeekNumber, resolveExerciseForWeek, diasDeCiclo } from '../utils/progression';
+import { mesocycleWeekNumber, resolveExerciseForWeek } from '../utils/progression';
+import { marcarRetoParaReevaluar } from '../hooks/useRetoDeLaSemana';
+import { cicloDiasDeMeso } from '../utils/asignacionMesociclo';
 import { useToast } from '../hooks/useToast';
 import { useTourTarget } from '../features/tutorial/TourTargetContext';
 import { useTutorialEngine } from '../features/tutorial/TutorialEngine';
@@ -318,7 +320,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
       ? {
           ...baseWorkout,
           exercises: baseWorkout.exercises.map(we =>
-            resolveExerciseForWeek(we, mesocycleWeekNumber(meso.startDate, assignment.date, diasDeCiclo(meso.daysPerWeek)), conditionCtx)
+            resolveExerciseForWeek(we, mesocycleWeekNumber(meso.startDate, assignment.date, cicloDiasDeMeso(meso)), conditionCtx)
           ),
         }
       : baseWorkout;
@@ -524,6 +526,14 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
       }
 
       queryClient.setQueryData<WorkoutLog[]>(logsKey, prev => [...(prev ?? []), newLog]);
+      /* El reto de la semana puede haberse movido con este entreno —«sentadilla
+         a 100 kg», «12 series de pecho»— así que se marca para reevaluar. Sin
+         esto, Inicio seguiría enseñando el progreso de la última evaluación
+         (ver `evaluadoEn` en types.ts) y la barra no se movía hasta el día
+         siguiente: justo después de entrenar es cuando el atleta quiere verla
+         subir. Solo cuesta lecturas al terminar una sesión, no en cada
+         apertura de la app. */
+      marcarRetoParaReevaluar(queryClient, profile.email);
       // 05-5. El entrenamiento ya está en Firestore: el borrador local sobra.
       // Va después de las escrituras y no antes, para que un fallo al
       // guardar deje el trabajo del atleta donde estaba.

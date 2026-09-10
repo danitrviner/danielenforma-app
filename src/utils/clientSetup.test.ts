@@ -9,7 +9,7 @@ const TODAY = '2026-07-06';
 function makeProfile(overrides: Partial<UserProfile> = {}): UserProfile {
   return {
     userId: 'u1', email: 'a@x.com', displayName: 'Ana', role: 'client', avatarUrl: '',
-    level: 1, xp: 0, currentStreak: 0, maxStreak: 0,
+    level: 1, currentStreak: 0, maxStreak: 0,
     initialWeight: 0, targetWeight: 0, actualWeight: 0,
     ...overrides,
   };

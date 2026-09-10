@@ -8,9 +8,16 @@ import { DEFAULT_KCAL_PER_STEP } from '../utils/nutritionConstants';
 import { isHealthStepsSupported, isHealthStepsLinked, linkHealthSteps, getTodaySteps } from '../services/healthSteps';
 import { Skeleton } from './ui';
 import { Icon, Button } from './ui';
+import { useCifraQueSube } from '../hooks/useCifraQueSube';
 
 interface Props {
   athleteEmail: string;
+  /**
+   * Versión pequeña, para la segunda fila de Inicio: una tarjeta de columna
+   * con la cifra y la barra, sin la fila de acciones. Desde 09-2026 los pasos
+   * suben arriba del todo, y ahí no cabe —ni hace falta— la carcasa entera.
+   */
+  compacto?: boolean;
 }
 
 const DEFAULT_STEP_GOAL = 8000;
@@ -19,7 +26,7 @@ function stepsForAthleteKey(athleteEmail: string) {
   return ['stepsForAthlete', athleteEmail] as const;
 }
 
-export default function StepsWidget({ athleteEmail }: Props) {
+export default function StepsWidget({ athleteEmail, compacto = false }: Props) {
   const queryClient = useQueryClient();
   const stepsKey = stepsForAthleteKey(athleteEmail);
   const { data: config, isPending: loadingConfig } = useQuery({
@@ -122,13 +129,76 @@ export default function StepsWidget({ athleteEmail }: Props) {
 
   const remaining = Math.max(0, goal - steps);
   const pct = Math.min(100, (steps / goal) * 100);
+  const pasosAnimados = useCifraQueSube(steps);
   const kcalEarned = Math.round(steps * kcalPerStep);
 
   if (loading) {
     return (
       <div className="bg-surface border border-hairline rounded-surface p-4">
-        <Skeleton className="h-16 w-full" />
+        <Skeleton className={compacto ? 'h-24 w-full' : 'h-16 w-full'} />
       </div>
+    );
+  }
+
+  if (compacto) {
+    // `button` cuando se puede tocar, `div` cuando no. Ver más abajo.
+    const Envoltorio = (linked ? 'div' : 'button') as React.ElementType;
+    /* Sin vincular Y sin nada apuntado hoy, la tarjeta NO enseña «0 / 8.000»:
+       un cero es un hueco con forma de dato y encima desanima justo a quien
+       menos ha andado. Se convierte en la invitación a conectarlo, y mide lo
+       mismo de alto para que la pantalla no pegue un salto el día que lo haga
+       (Dani, 10-09-2026). */
+    if (!linked && steps === 0) {
+      return (
+        <button
+          onClick={healthSupported ? handleLink : () => { setInput(''); setEditing(true); }}
+          className="text-left bg-surface border border-dashed border-strong rounded-surface p-4 flex flex-col gap-2 hover:border-accent-line transition-colors duration-(--duration-state)"
+        >
+          <p className="font-mono text-caption uppercase tracking-wider text-ink-2">Pasos</p>
+          <Icon name="directions_walk" size="l" className="text-ink-3" />
+          <p className="font-sans text-body-s font-bold text-ink leading-snug">
+            {healthSupported ? 'Conéctalo con Salud' : 'Apunta los de hoy'}
+          </p>
+          <p className="font-mono text-caption text-ink-4 leading-snug">
+            {healthSupported ? 'Se actualizan solos' : 'Sin báscula ni pulsera'}
+          </p>
+        </button>
+      );
+    }
+    /* Vinculado a Salud, la tarjeta no se edita: los pasos los manda el
+       teléfono. Se pinta como un `div`, no como un botón deshabilitado — un
+       botón que no responde parece roto, sobre todo en móvil, donde no hay
+       `hover` que delate que no es pulsable. */
+    return (
+      <Envoltorio
+        {...(linked ? {} : { onClick: () => { setInput(String(steps)); setEditing(true); } })}
+        aria-label={`Pasos de hoy: ${steps.toLocaleString('es-ES')} de ${goal.toLocaleString('es-ES')}.${
+          remaining > 0 ? ` Te faltan ${remaining.toLocaleString('es-ES')}.` : ' Objetivo cumplido.'
+        }${linked ? '' : ' Pulsa para editarlos.'}`}
+        className={`text-left bg-surface border border-hairline rounded-surface p-4 flex flex-col gap-2 transition-colors duration-(--duration-state)${
+          linked ? '' : ' hover:border-strong'
+        }`}
+      >
+        <p className="font-mono text-caption uppercase tracking-wider text-accent flex items-center gap-1.5">
+          Pasos
+          {linked && <Icon name="check_circle" size="s" className="text-success" label="Vinculado con Salud" />}
+        </p>
+        <p className="font-mono font-bold text-feature text-ink tracking-tight leading-none tabular-nums">
+          {Math.round(pasosAnimados).toLocaleString('es-ES')}
+        </p>
+        <div className="h-[26px] flex items-center">
+          <div className="h-1.5 w-full bg-track rounded-full overflow-hidden">
+            <div
+              className="h-full bg-accent rounded-full transition-all duration-(--duration-slide)"
+              style={{ width: `${pct}%` }}
+            />
+          </div>
+        </div>
+        <p className="font-mono text-caption text-ink-4 leading-snug">
+          de {goal.toLocaleString('es-ES')}
+          {remaining > 0 ? ` · faltan ${remaining.toLocaleString('es-ES')}` : ' · cumplido'}
+        </p>
+      </Envoltorio>
     );
   }
 

@@ -59,8 +59,7 @@ function getLocalUserProfile(userId: string, email: string, displayName?: string
     displayName: displayName || email.split('@')[0],
     role: isDanitrviner ? 'coach' : 'client',
     avatarUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCYz2_Air0WvwmWSYIQa5y_UDyaCn_Q6_9svDchpvtBkmUWTc8FiyWhSMuCjtRY7LlsNOw4V_5kLPOiJKltz34rykip9l0MOBlGocGYKgm8e52cdv4ITKm6PCscmnFqa-nyGlSEIQ0SR5yfQ-MMuRYVQuqIVZnGzTjaiE48OhsGciJFk_Ab8qsRKRmi_XQcWbQSWiHga5jHiVNC6Lp1hPwVFbwiVbD_Q4Qd3sMFxZiVeNoyuZKvU-Xm46DHhVyDcfKicnVJGjCcwF1K',
-    level: 1,
-    xp: 0,
+    level: 0,
     currentStreak: 0,
     maxStreak: 0,
     initialWeight: 0,
@@ -175,8 +174,7 @@ export async function getOrCreateUserProfile(userId: string, email: string, disp
       displayName: displayName || email.split('@')[0],
       role: isDanitrviner ? 'coach' : 'client',
       avatarUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCYz2_Air0WvwmWSYIQa5y_UDyaCn_Q6_9svDchpvtBkmUWTc8FiyWhSMuCjtRY7LlsNOw4V_5kLPOiJKltz34rykip9l0MOBlGocGYKgm8e52cdv4ITKm6PCscmnFqa-nyGlSEIQ0SR5yfQ-MMuRYVQuqIVZnGzTjaiE48OhsGciJFk_Ab8qsRKRmi_XQcWbQSWiHga5jHiVNC6Lp1hPwVFbwiVbD_Q4Qd3sMFxZiVeNoyuZKvU-Xm46DHhVyDcfKicnVJGjCcwF1K',
-      level: 1,
-      xp: 0,
+      level: 0,
       currentStreak: 0,
       maxStreak: 0,
       initialWeight: 0,
@@ -234,7 +232,6 @@ export async function getAllUserProfiles(): Promise<UserProfile[]> {
         role: 'client',
         avatarUrl: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&q=80&w=200',
         level: 5,
-        xp: 320,
         currentStreak: 12,
         maxStreak: 24,
         initialWeight: 82.0,
@@ -281,7 +278,6 @@ export async function getAllUserProfiles(): Promise<UserProfile[]> {
         role: 'client',
         avatarUrl: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&q=80&w=200',
         level: 5,
-        xp: 320,
         currentStreak: 12,
         maxStreak: 24,
         initialWeight: 82.0,
@@ -300,7 +296,6 @@ export async function getAllUserProfiles(): Promise<UserProfile[]> {
         role: 'client',
         avatarUrl: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&q=80&w=200',
         level: 5,
-        xp: 320,
         currentStreak: 12,
         maxStreak: 24,
         initialWeight: 82.0,
@@ -442,31 +437,22 @@ export async function addWeightCheckIn(
       await updateUserProfile(userId, { actualWeight: checkInData.weight });
     } catch (e) {}
     
-    // Award XP
+    /* La racha. Antes esto repartía además 50 XP y subía de nivel al llegar a
+       400 — un contador que solo se veía en la tarjeta de identidad, que nadie
+       usaba para nada, y que además contaba distinto desde sus dos
+       escritores. Se quitó entero: el nivel que significa algo es la escalera
+       con nombres y criterios del Road map (Dani, 10-09-2026). */
     try {
       const profileRef = doc(db, 'user_profiles', userId);
       const profileSnap = await getDoc(profileRef);
       if (profileSnap.exists()) {
         const profile = profileSnap.data() as UserProfile;
-        let newXp = profile.xp + 50; 
-        let newLevel = profile.level;
-        if (newXp >= 400) {
-          newXp = newXp - 400;
-          newLevel += 1;
-        }
         const newStreak = profile.currentStreak + 1;
         const maxStreak = Math.max(profile.maxStreak, newStreak);
-        
-        await updateDoc(profileRef, {
-          xp: newXp,
-          level: newLevel,
-          currentStreak: newStreak,
-          maxStreak
-        });
-        
+
+        await updateDoc(profileRef, { currentStreak: newStreak, maxStreak });
+
         updateLocalUserProfile(userId, {
-          xp: newXp,
-          level: newLevel,
           currentStreak: newStreak,
           maxStreak,
           actualWeight: checkInData.weight
@@ -503,18 +489,10 @@ function addLocalWeightCheckIn(userId: string, email: string, entry: any): Weigh
   // Update profile
   try {
     const profile = getLocalUserProfile(userId, email);
-    let newXp = profile.xp + 50; 
-    let newLevel = profile.level;
-    if (newXp >= 400) {
-      newXp = newXp - 400;
-      newLevel += 1;
-    }
     const newStreak = profile.currentStreak + 1;
     const maxStreak = Math.max(profile.maxStreak, newStreak);
 
     updateLocalUserProfile(userId, {
-      xp: newXp,
-      level: newLevel,
       currentStreak: newStreak,
       maxStreak,
       actualWeight: entry.weight

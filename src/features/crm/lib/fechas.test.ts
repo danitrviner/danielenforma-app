@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   parseDia, aDiaISO, formatDia, diasHasta, tiempoRelativo,
-  avanzarPeriodo, sumarMeses, parseFechaFlexible, diasDeRetraso,
+  avanzarPeriodo, sumarMeses, parseFechaFlexible, diasDeRetraso, fechaDeCobroSugerida,
 } from './fechas';
 
 describe('parseDia / aDiaISO', () => {
@@ -128,5 +128,28 @@ describe('diasDeRetraso', () => {
     expect(diasDeRetraso('2026-08-15', hoy)).toBe(0);
     expect(diasDeRetraso('2026-08-20', hoy)).toBe(0);
     expect(diasDeRetraso('2026-09-01', hoy)).toBe(0);
+  });
+});
+
+describe('fechaDeCobroSugerida', () => {
+  it('una cuota vencida el mes pasado se cobra con SU fecha, no con la de hoy', () => {
+    // Si no, la facturación de agosto se iba a septiembre sin decir nada.
+    expect(fechaDeCobroSugerida('2026-08-31', '2026-09-03')).toBe('2026-08-31');
+  });
+
+  it('dentro del mes en curso el día da igual: se pone hoy', () => {
+    expect(fechaDeCobroSugerida('2026-09-01', '2026-09-10')).toBe('2026-09-10');
+  });
+
+  it('una emisión futura no se cobra antes de emitirse', () => {
+    expect(fechaDeCobroSugerida('2026-10-01', '2026-09-10')).toBe('2026-09-10');
+  });
+
+  it('cruza el año sin confundirse', () => {
+    expect(fechaDeCobroSugerida('2025-12-28', '2026-01-04')).toBe('2025-12-28');
+  });
+
+  it('sin fecha de emisión se queda con hoy', () => {
+    expect(fechaDeCobroSugerida('', '2026-09-10')).toBe('2026-09-10');
   });
 });

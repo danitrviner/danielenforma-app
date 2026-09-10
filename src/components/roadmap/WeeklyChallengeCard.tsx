@@ -9,6 +9,13 @@ interface Props {
   // Retos conseguidos consecutivos ANTES de este. Solo se pinta a partir de 2:
   // una racha de 1 no es una racha, y enseñarla resta en vez de sumar.
   streak?: number;
+  /**
+   * Versión protagonista, para Inicio: título a tamaño de titular, la cifra
+   * grande y la entrada animada. La del Road map se queda como estaba — ahí
+   * el reto convive con la fase, la escalera y los logros, y competir con
+   * ellos por la atención no ayudaría a ninguno.
+   */
+  destacado?: boolean;
 }
 
 function fmtMetric(value: number, unit: string): string {
@@ -27,7 +34,7 @@ function daysLeft(weekEnd: string): number {
 // Card destacada del reto activo de la semana — siempre hay uno (auto-generado
 // si el coach no asignó ninguno). Barra de progreso derivada de los datos
 // registrados por el atleta, sin input manual.
-export default function WeeklyChallengeCard({ challenge, progress, streak = 0 }: Props) {
+export default function WeeklyChallengeCard({ challenge, progress, streak = 0, destacado = false }: Props) {
   const achieved = challenge.status === 'conseguido';
   const remaining = daysLeft(challenge.weekEnd);
   const accent = achieved ? 'var(--color-success)' : 'var(--color-accent)';
@@ -41,8 +48,13 @@ export default function WeeklyChallengeCard({ challenge, progress, streak = 0 }:
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Icon name={achieved ? 'emoji_events' : 'flag'} size="l" style={{ color: accent }} />
+          {/* «Reto de la semana» a secas, sin «de tu entrenador»: la mayoría
+              se generan solos cuando el coach no asigna ninguno, así que esa
+              coletilla era mentira casi siempre — y desde 09-2026 esta tarjeta
+              es lo primero que se ve en Inicio, o sea, todos los días
+              (Dani, 10-09-2026). */}
           <p className="font-sans text-caption uppercase tracking-widest text-ink-2">
-            Reto de la semana · de tu entrenador
+            Reto de la semana
           </p>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
@@ -59,12 +71,18 @@ export default function WeeklyChallengeCard({ challenge, progress, streak = 0 }:
         </div>
       </div>
 
-      <h3 className="font-sans font-bold text-title-m text-white leading-tight">{challenge.title}</h3>
+      {destacado ? (
+        <h3 className="font-display font-black text-feature uppercase text-ink leading-tight text-balance">{challenge.title}</h3>
+      ) : (
+        <h3 className="font-sans font-bold text-title-m text-white leading-tight">{challenge.title}</h3>
+      )}
       <p className="text-ink-2 text-label font-sans leading-relaxed">{challenge.description}</p>
 
       <div className="mt-1">
         <div className="flex items-center justify-between mb-2">
-          <span className="font-mono text-caption text-white font-bold">
+          <span className={destacado
+            ? 'font-mono text-headline font-bold text-ink tracking-tight'
+            : 'font-mono text-caption text-white font-bold'}>
             {fmtMetric(progress.progressValue, challenge.metric.unit)}
           </span>
           <span className="font-mono text-caption text-ink-2">
@@ -101,7 +119,7 @@ export function ChallengePendingCard() {
         <Icon name="hourglass_top" size="l" className="animate-pulse" />
         <p className="font-sans text-caption uppercase tracking-widest text-ink-2">Reto de la semana</p>
       </div>
-      <h3 className="font-sans font-bold text-title-m text-white leading-tight">Tu entrenador está preparando tu reto</h3>
+      <h3 className="font-sans font-bold text-title-m text-white leading-tight">Preparando tu reto de la semana</h3>
       <p className="text-ink-2 text-label font-sans leading-relaxed">
         Mientras tanto: entrena, camina y registra. El reto llega en breve.
       </p>

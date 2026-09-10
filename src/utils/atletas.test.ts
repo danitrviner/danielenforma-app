@@ -5,7 +5,7 @@ import { esAnonimizado, esBaja, atletasActivos } from './atletas';
 function perfil(overrides: Partial<UserProfile> = {}): UserProfile {
   return {
     userId: 'u1', email: 'a@x.com', displayName: 'A', role: 'client',
-    avatarUrl: '', level: 1, xp: 0, currentStreak: 0, maxStreak: 0,
+    avatarUrl: '', level: 1, currentStreak: 0, maxStreak: 0,
     initialWeight: 70, targetWeight: 70, actualWeight: 70,
     ...overrides,
   };

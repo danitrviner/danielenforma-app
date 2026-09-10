@@ -18,7 +18,10 @@ describe('prefillWorkoutSets', () => {
     expect(rows[0][0]).toEqual({ weight: '', repsDone: '', rir: '2', done: false });
   });
 
-  it('con histórico: prerrellena peso y reps reales de la última sesión, no solo la prescripción', () => {
+  it('con histórico: el peso y las reps salen de la última sesión, el RIR NO', () => {
+    // El RIR es la pauta del entrenador, no una marca personal. Heredarlo
+    // hacía que a partir del segundo día el atleta viera el que tecleó él, no
+    // el que le pautaron — y un error de dedo se arrastraba para siempre.
     const prev: WorkoutEntryLog[] = [{
       exerciseId: 'ex1',
       sets: [
@@ -28,17 +31,17 @@ describe('prefillWorkoutSets', () => {
       ],
     }];
     const rows = prefillWorkoutSets(WORKOUT, prev);
-    expect(rows[0][0]).toEqual({ weight: '60', repsDone: '8', rir: '1', done: false });
-    expect(rows[0][2]).toEqual({ weight: '57.5', repsDone: '6', rir: '0', done: false });
+    expect(rows[0][0]).toEqual({ weight: '60', repsDone: '8', rir: '2', done: false });
+    expect(rows[0][2]).toEqual({ weight: '57.5', repsDone: '6', rir: '2', done: false });
   });
 
-  it('serie previa al fallo: rir se prerrellena como "fallo", no como "0"', () => {
+  it('haber ido al fallo un día no convierte el ejercicio en un ejercicio al fallo', () => {
     const prev: WorkoutEntryLog[] = [{
       exerciseId: 'ex1',
       sets: [{ weight: 60, repsDone: 9, rir: 0, alFallo: true }],
     }];
     const rows = prefillWorkoutSets({ ...WORKOUT, exercises: [{ ...EX, sets: 1 }] }, prev);
-    expect(rows[0][0].rir).toBe('fallo');
+    expect(rows[0][0].rir).toBe('2');
   });
 
   it('usa la sesión más reciente por ejercicio, ignorando sesiones más antiguas ya superadas', () => {

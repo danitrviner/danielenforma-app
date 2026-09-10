@@ -27,9 +27,19 @@ export function evaluateUnlockRule(rule: UnlockRule | undefined, ctx: UnlockCont
     return { unlocked: false, reason: `Se desbloquea en ${rule.value - elapsed} día${rule.value - elapsed === 1 ? '' : 's'}` };
   }
 
+  /* `profile.level` son los PELDAÑOS de la escalera del Road map que lleva
+     alcanzados. Antes era un contador de XP que subía viendo lecciones —o sea,
+     que ver vídeos desbloqueaba vídeos— y que ni siquiera contaba igual desde
+     sus dos escritores. Ahora se gana con los criterios de la escalera
+     (peso, fuerza, constancia), que es lo que el curso quiere pedir de verdad
+     cuando se le pone un nivel mínimo (Dani, 10-09-2026). */
   if (rule.type === 'level') {
     if (ctx.profile.level >= rule.value) return { unlocked: true };
-    return { unlocked: false, reason: `Nivel ${rule.value} requerido (vas por nivel ${ctx.profile.level})` };
+    const faltan = rule.value - ctx.profile.level;
+    return {
+      unlocked: false,
+      reason: `Te ${faltan === 1 ? 'falta 1 nivel' : `faltan ${faltan} niveles`} de tu escalera`,
+    };
   }
 
   if (rule.type === 'prerequisite') {

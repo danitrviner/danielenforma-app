@@ -6,7 +6,7 @@ import { expandSetGroups } from '../../utils/setGroups';
 import { generateWarmup } from '../../utils/warmup/WarmupGenerator';
 import { parseTargetReps } from '../../utils/warmup/WarmupEngine';
 import ExerciseVideoPlayer from '../ExerciseVideoPlayer';
-import { SetInput, RIR_OPCIONES, rirTexto, rirClaseColor } from './setInput';
+import { SetInput, RIR_OPCIONES, rirTexto, rirClaseColor, textoPautado } from './setInput';
 import RestRing from './RestRing';
 
 interface Props {
@@ -304,9 +304,12 @@ function NormalTable({
                     disabled={setInput.done}
                     className={`w-16 sm:w-20 rounded-control border bg-field px-1 sm:px-2 py-2 text-center font-mono text-title-s text-ink focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50 disabled:cursor-not-allowed ${esSiguiente ? 'border-accent/55' : 'border-hairline'}`}
                   />
-                  {prev && prev.weight > 0 && (
-                    <span className="block text-center font-mono text-caption text-ink-3 mt-1">{prev.weight} kg</span>
-                  )}
+                  {/* El peso de la última sesión ya está DENTRO del campo (el
+                      prerrelleno lo mete como valor) y además en la columna
+                      «Anterior»: repetirlo aquí abajo era la tercera vez. Este
+                      renglón pasa a decir lo que el entrenador ha pautado, que
+                      no se veía en ninguna parte a partir del segundo día
+                      (Dani, 10-09-2026). */}
                 </td>
                 <td className="px-2 sm:px-3 py-2">
                   <input
@@ -317,8 +320,15 @@ function NormalTable({
                     disabled={setInput.done}
                     className={`w-14 sm:w-16 rounded-control border bg-field px-1 sm:px-2 py-2 text-center font-mono text-title-s text-ink focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50 disabled:cursor-not-allowed ${esSiguiente ? 'border-accent/55' : 'border-hairline'}`}
                   />
-                  {prev && prev.repsDone > 0 && (
-                    <span className="block text-center font-mono text-caption text-ink-3 mt-1">{prev.repsDone} reps</span>
+                  {/* Lo PAUTADO para esta serie: el rango de repeticiones y el
+                      RIR que ha puesto el entrenador. Hasta ahora el rango solo
+                      asomaba como placeholder mientras no hubiera histórico, así
+                      que desde la segunda sesión desaparecía para siempre y el
+                      atleta no tenía forma de saber contra qué iba. */}
+                  {expanded[sIdx] && (
+                    <span className="block text-center font-mono text-caption text-ink-3 mt-1 whitespace-nowrap">
+                      {textoPautado(expanded[sIdx])}
+                    </span>
                   )}
                 </td>
                 <td className="px-2 sm:px-3 py-2">

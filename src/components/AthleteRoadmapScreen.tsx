@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   UserProfile,
@@ -8,6 +8,7 @@ import {
   getStepsForAthlete, getWorkoutLogs, getExercises, getDietCompletionLogsForAthlete,
   getDietsForAthlete, getOnboarding, getAthleteNutritionConfig, getWorkoutAssignmentsForAthlete,
   getWeeklyChallengesForAthlete, saveRoadmapLevelProgress, createNotificationDeduped,
+  updateUserProfile,
   getTasksForAthlete, getWorkouts, getCardioSessionsSince, getProgressPhotos,
   getCoachDayNotesForAthlete,
 } from '../dbService';
@@ -18,9 +19,7 @@ import WeeklyChallengeCard, { ChallengePendingCard } from './roadmap/WeeklyChall
 import PhasePathStepper from './roadmap/PhasePathStepper';
 import LevelLadderCard from './roadmap/LevelLadderCard';
 import RecentAchievements, { Achievement } from './roadmap/RecentAchievements';
-import { ensureWeeklyChallenge, EnsureChallengeResult } from '../utils/ensureWeeklyChallenge';
-import { ChallengeData, isoWeekKey } from '../utils/weeklyChallenge';
-import { buildChallengeMemory } from '../utils/challengeMemory';
+import { useRetoDeLaSemana } from '../hooks/useRetoDeLaSemana';
 import { computeLadderStatus } from '../utils/levelLadder';
 import { computePhaseProgress, currentPhase, PhaseData } from '../utils/planPhase';
 import { DEFAULT_LEVEL_LADDER } from '../data/defaultLevelLadder';
@@ -29,6 +28,7 @@ import { DEFAULT_KCAL_PER_STEP } from '../utils/nutritionConstants';
 import { computePhaseWeightStatus } from '../utils/planNutritionBridge';
 import { markRoadmapVisited } from './PlanInPreparationCard';
 import { Icon, PageHeader, EmptyState } from './ui';
+import TarjetaIdentidadAtleta from './TarjetaIdentidadAtleta';
 
 const PHASE_COLORS = ['var(--color-accent)', 'var(--color-data)', 'var(--color-warning)', 'var(--color-chart-3)'];
 const DEFAULT_STEP_GOAL = 8000;
@@ -39,8 +39,6 @@ interface Props {
 }
 
 export default function AthleteRoadmapScreen({ profile }: Props) {
-  const [challengeResult, setChallengeResult] = useState<EnsureChallengeResult | null>(null);
-
   // El checklist de "primeros pasos" en Inicio (PlanInPreparationCard) marca
   // este ítem como hecho también si el atleta llega aquí directo por la nav,
   // no solo pulsando el ítem desde el checklist.
@@ -148,44 +146,13 @@ export default function AthleteRoadmapScreen({ profile }: Props) {
     });
   }, [loading, nutritionProgram, diets, onboarding, bodyweightLogs, dietCompletionLogs, stepLogs, stepGoal, kcalPerStep]);
 
-  // Igual que el Promise.all().then() original: ensureWeeklyChallenge se
-  // dispara una sola vez por atleta cuando todos los datos ya cargaron, no en
-  // cada refetch de fondo — mismo patrón de guard con ref que StepsWidget.
-  const challengeInitFor = useRef<string | null>(null);
-  useEffect(() => {
-    if (loading || challengeInitFor.current === profile.email) return;
-    challengeInitFor.current = profile.email;
-    const today = new Date().toISOString().split('T')[0];
-    // El generador de retos razona sobre las últimas 4-5 semanas; ahora que la
-    // consulta trae el año entero para el calendario, la ventana se recorta
-    // aquí para no cambiarle la base de cálculo. El corte se calcula en UTC
-    // (`toISOString`) a propósito, no con `hoyIsoLocal()`: es exactamente lo
-    // que hacía la consulta anterior, y en una ventana de 35 días un día de
-    // margen no significa nada frente a mover el suelo del motor de retos.
-    const desde = new Date();
-    desde.setDate(desde.getDate() - 35);
-    const cardioRecientes = cardioSessions.filter(s => s.date >= desde.toISOString().split('T')[0]);
-    const challengeData: ChallengeData = {
-      stepLogs, bodyweightLogs, workoutLogs, exercises,
-      completionLogs: dietCompletionLogs, coachDiets: diets.filter(d => !d.selfManaged),
-      assignments, projection, liftExerciseIds: roadmap?.challengeConfig?.liftExerciseIds,
-      cardioSessions: cardioRecientes,
-      // Ya está cargado para la lista de logros, así que la memoria del motor
-      // (rotación de 4 semanas + dificultad adaptativa) sale gratis en lecturas.
-      history: challengeHistory,
-    };
-    ensureWeeklyChallenge(profile.email, challengeData, today)
-      .then(result => setChallengeResult(result))
-      .catch(err => console.warn('AthleteRoadmapScreen load error:', err));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading, profile.email]);
+  /* El reto vive en `useRetoDeLaSemana`, compartido con Inicio: las dos
+     pantallas lo enseñan y duplicar el efecto habría duplicado sus consultas.
+     El hook usa las MISMAS claves de React Query que esta pantalla, así que
+     aquí no añade ni una lectura. */
+  const { resultado: challengeResult, racha: challengeStreak } =
+    useRetoDeLaSemana(profile.email, assignments);
 
-  // Racha de retos ganados ANTES del de esta semana — se calcula del historial
-  // ya cargado, sin lecturas extra.
-  const challengeStreak = useMemo(() => {
-    const key = challengeResult?.challenge?.isoWeek ?? isoWeekKey(new Date().toISOString().split('T')[0]);
-    return buildChallengeMemory(challengeHistory, key).winStreak;
-  }, [challengeHistory, challengeResult]);
 
   const ladderStatus = useMemo(() => {
     if (loading) return null;
@@ -209,6 +176,19 @@ export default function AthleteRoadmapScreen({ profile }: Props) {
     saveRoadmapLevelProgress(profile.email, { ...baseLadder, achievedLevelIds }).catch(err =>
       console.warn('saveRoadmapLevelProgress (level up) failed:', err),
     );
+    /* `UserProfile.level` pasa a ser CUÁNTOS PELDAÑOS de la escalera lleva.
+       Antes lo movía un contador de XP que subía viendo lecciones y que nadie
+       leía salvo una tarjeta decorativa — pero la Academia sí lo usa para la
+       regla de desbloqueo «Nivel mínimo», así que en vez de borrarlo se le
+       pone detrás el sistema que significa algo. Un curso pedido a «nivel 3»
+       ahora se abre al llegar al tercer peldaño, no a los 1.200 XP de vídeos
+       (Dani, 10-09-2026). */
+    const peldaños = Object.keys(achievedLevelIds).length;
+    if (peldaños !== profile.level) {
+      updateUserProfile(profile.userId, { level: peldaños }).catch(err =>
+        console.warn('updateUserProfile (nivel de la escalera) failed:', err),
+      );
+    }
     for (const lvl of ladderStatus.newlyAchieved) {
       const body = `Has alcanzado el nivel ${lvl.name}. ¡Enorme!`;
       createNotificationDeduped(`notif_lvl_${profile.email}_${lvl.id}`, {
@@ -221,7 +201,7 @@ export default function AthleteRoadmapScreen({ profile }: Props) {
         createdAt: new Date().toISOString(), read: false,
       }).catch(err => console.warn('createNotificationDeduped (level up, coach) failed:', err));
     }
-  }, [roadmap, ladderStatus, profile.email]);
+  }, [roadmap, ladderStatus, profile.email, profile.userId, profile.level]);
 
   const activePhase = useMemo(() => currentPhase(roadmap?.planPhases), [roadmap]);
   const phaseProgress = useMemo(() => {
@@ -292,8 +272,6 @@ export default function AthleteRoadmapScreen({ profile }: Props) {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Road map" subtitle="Tu progreso y lo que te queda por delante" />
-
       {activePhase && phaseProgress && (
         <PhaseHeroCard phase={activePhase} progress={phaseProgress} weightStatus={phaseWeightStatus} />
       )}
@@ -333,6 +311,12 @@ export default function AthleteRoadmapScreen({ profile }: Props) {
           coachDayNotes={coachDayNotes}
         />
       </div>
+
+      {/* Quién eres, al final: nombre, nivel, XP y meta. Estaba encima de las
+          pestañas del Perfil ocupando la primera pantalla entera antes de
+          poder llegar a nada, y aquí cierra el relato de por dónde vas, detrás
+          del calendario y de los logros (Dani, 10-09-2026). */}
+      <TarjetaIdentidadAtleta profile={profile} />
     </div>
   );
 }

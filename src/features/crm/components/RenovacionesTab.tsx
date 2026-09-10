@@ -1,59 +1,178 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
+import { useToast } from '../../../hooks/useToast';
+import { useServiciosDe, useActualizarServicio } from '../hooks/useServicios';
 import { useSuscripcionesDe } from '../hooks/useSuscripciones';
-import { formatEuros, sumaCents } from '../lib/dinero';
-import { mesesDePeriodicidad } from '../lib/fechas';
+import { formatEuros } from '../lib/dinero';
+import { formatDia, tiempoRelativo, hoyISO } from '../lib/fechas';
+import { renovacionesDelMes, mesDe, tasaDeRenovacion } from '../lib/metricas';
+import DataTable, { Columna } from './DataTable';
+import EmptyState from './EmptyState';
 import MetricCard from './MetricCard';
 import SuscripcionesBlock from './SuscripcionesBlock';
-import SuscripcionModal from './SuscripcionModal';
-import type { Cliente, CrmSuscripcion, Periodicidad } from '../types';
-import { Button } from '../../../components/ui';
+import type { Cliente, CrmServicio, ResultadoRenovacion } from '../types';
+import { Badge, Icon } from '../../../components/ui';
 
-// Mensualiza el importe de una suscripción activa para poder sumarlas todas
-// en una sola cifra comparable, aunque tengan periodicidades distintas
-// (mensual, trimestral, semestral, anual). No incluye 'unico': una
-// suscripción no debería tener esa periodicidad (el tipo la hereda de
-// Periodicidad pero en la práctica solo usa mensual/trimestral/semestral/anual).
-function mensualizado(s: CrmSuscripcion): number {
-  const meses = mesesDePeriodicidad(s.periodicidad as Periodicidad);
-  if (!meses) return s.importeCents;
-  return Math.round(s.importeCents / meses);
-}
+/* Renovaciones ya no es «la pantalla de las suscripciones»: son los SERVICIOS
+   que caducan y qué ha pasado con cada uno (docs/crm-modelo-v2.md).
+
+   El motivo es que una suscripción era un tercer concepto —con su concepto, su
+   importe y su periodicidad propios— que no apuntaba a ningún servicio, así que
+   el dinero que generaba no se podía atribuir a nada. Un servicio con fecha de
+   fin contesta lo mismo y además cuadra con el resto del CRM.
+
+   Las suscripciones que ya existen se siguen enseñando debajo para no perder
+   nada de vista, pero no se crean nuevas. */
+
+const RESULTADO: Record<ResultadoRenovacion, { label: string; tone: 'success' | 'danger' | 'warning' }> = {
+  renovado:  { label: 'Renovado',  tone: 'success' },
+  perdido:   { label: 'Perdido',   tone: 'danger' },
+  pendiente: { label: 'Pendiente', tone: 'warning' },
+};
 
 export default function RenovacionesTab({ cliente, coachEmail }: { cliente: Cliente; coachEmail: string }) {
-  const { data: suscripciones = [], isPending, isError } = useSuscripcionesDe(cliente.id);
-  const [modalAbierto, setModalAbierto] = useState(false);
+  const { showToast } = useToast();
+  const { data: servicios = [], isPending, isError } = useServiciosDe(cliente.id);
+  const { data: suscripciones = [] } = useSuscripcionesDe(cliente.id);
+  const actualizar = useActualizarServicio(cliente.id);
+  const [mes, setMes] = useState(() => mesDe(hoyISO()));
 
-  const activas = suscripciones.filter(s => s.estado === 'activa');
-  const recurrenteMensual = sumaCents(activas.map(s => ({ importeCents: mensualizado(s) })));
+  const hoy = hoyISO();
+
+  // Los contratos con fecha de fin, del más próximo al más lejano: los que
+  // vencen pronto son los que hay que trabajar.
+  const conVencimiento = useMemo(
+    () => servicios
+      .filter(s => !s.archivado && s.fechaFin)
+      .sort((a, b) => a.fechaFin!.localeCompare(b.fechaFin!)),
+    [servicios],
+  );
+
+  const resumen = useMemo(() => renovacionesDelMes(servicios, mes), [servicios, mes]);
+  const tasa = useMemo(() => tasaDeRenovacion(servicios), [servicios]);
+
+  const marcar = async (s: CrmServicio, resultado: ResultadoRenovacion) => {
+    try {
+      await actualizar.mutateAsync({ id: s.id, updates: { resultadoRenovacion: resultado } });
+      showToast(resultado === 'renovado' ? 'Marcado como renovado' : resultado === 'perdido' ? 'Marcado como perdido' : 'Vuelve a estar pendiente', 'success');
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'No se ha podido guardar', 'error');
+    }
+  };
+
+  const columnas: Columna<CrmServicio>[] = [
+    {
+      id: 'servicio',
+      header: 'Servicio',
+      render: s => (
+        <div className="min-w-0">
+          <p className="font-bold truncate">{s.nombre}</p>
+          {s.tipo && <p className="font-mono text-caption text-ink-3">{s.tipo}</p>}
+        </div>
+      ),
+    },
+    {
+      id: 'finaliza',
+      header: 'Finaliza',
+      width: '150px',
+      render: s => (
+        <div>
+          <p className={s.fechaFin! < hoy ? 'text-ink-3' : ''}>{formatDia(s.fechaFin)}</p>
+          <p className="font-mono text-caption text-ink-3">{tiempoRelativo(s.fechaFin)}</p>
+        </div>
+      ),
+    },
+    {
+      id: 'importe',
+      header: 'Importe',
+      width: '110px',
+      align: 'right',
+      render: s => <span className="font-bold">{formatEuros(s.importeCents)}</span>,
+    },
+    {
+      id: 'estado',
+      header: 'Cómo acabó',
+      width: '210px',
+      render: s => {
+        const r = s.resultadoRenovacion ?? 'pendiente';
+        return (
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <Badge tone={RESULTADO[r].tone}>{RESULTADO[r].label}</Badge>
+            {/* Se puede corregir siempre: marcar «perdido» por error y no
+                poder deshacerlo falsearía la tasa de renovación para siempre. */}
+            {(['renovado', 'perdido', 'pendiente'] as ResultadoRenovacion[])
+              .filter(v => v !== r)
+              .map(v => (
+                <button
+                  key={v}
+                  type="button"
+                  onClick={e => { e.stopPropagation(); void marcar(s, v); }}
+                  className="font-mono text-caption text-ink-3 hover:text-accent underline underline-offset-2 transition-colors"
+                >{RESULTADO[v].label.toLowerCase()}</button>
+              ))}
+          </div>
+        );
+      },
+    },
+  ];
 
   return (
     <div className="space-y-3">
-      <div className="grid grid-cols-2 gap-2">
-        <MetricCard icon="autorenew" label="Suscripciones activas" value={activas.length} sub={`${suscripciones.length} en total`} />
-        <MetricCard icon="calendar_month" label="Recurrente / mes" value={formatEuros(recurrenteMensual)} sub="mensualizado" />
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <MetricCard icon="calendar_month" label="Previsto" value={formatEuros(resumen.previstoCents)} sub="vence este mes" />
+        <MetricCard icon="check_circle" label="Renovado" value={formatEuros(resumen.renovadoCents)} accent="var(--color-success)" />
+        <MetricCard icon="schedule" label="Pendiente" value={formatEuros(resumen.pendienteCents)} accent="var(--color-warning)" />
+        <MetricCard icon="trending_down" label="Perdido" value={formatEuros(resumen.perdidoCents)} accent="var(--color-danger)" />
       </div>
 
-      <div className="flex items-center justify-end">
-        <Button variant="primary" size="s" icon="add" onClick={() => setModalAbierto(true)}>
-          Nueva suscripción
-        </Button>
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <label className="flex items-center gap-2 font-sans text-caption text-ink-2">
+          Mes
+          <input
+            type="month"
+            value={mes}
+            onChange={e => setMes(e.target.value)}
+            className="bg-field border border-hairline rounded-control px-2 py-1 font-mono text-caption text-ink"
+          />
+        </label>
+        {tasa != null && (
+          <span className="font-mono text-caption text-ink-2">
+            Tasa de renovación de este cliente: <strong className="text-ink">{tasa} %</strong>
+          </span>
+        )}
       </div>
 
-      <SuscripcionesBlock
-        suscripciones={suscripciones}
+      <DataTable
+        columnas={columnas}
+        filas={conVencimiento}
+        keyOf={s => s.id}
         cargando={isPending}
         error={isError}
-        mostrarCliente={false}
-        coachEmail={coachEmail}
-        onNuevaSuscripcion={() => setModalAbierto(true)}
+        vacio={
+          <EmptyState
+            icon="autorenew"
+            titulo="Ningún contrato con fecha de fin"
+            descripcion="Las renovaciones salen de los servicios que caducan. Ponle una fecha de fin a un servicio y aparecerá aquí."
+          />
+        }
       />
 
-      {modalAbierto && (
-        <SuscripcionModal
-          cliente={cliente}
-          coachEmail={coachEmail}
-          onCerrar={() => setModalAbierto(false)}
-        />
+      {/* Las suscripciones de antes. No se crean nuevas —una suscripción es un
+          servicio con renovación automática— pero las que hay se siguen viendo
+          para no perderlas de vista. */}
+      {suscripciones.length > 0 && (
+        <div className="space-y-2 pt-2">
+          <p className="flex items-center gap-1.5 font-mono text-caption text-ink-3 uppercase tracking-wider">
+            <Icon name="history" size="s" />
+            Suscripciones antiguas
+          </p>
+          <SuscripcionesBlock
+            suscripciones={suscripciones}
+            cargando={false}
+            error={false}
+            mostrarCliente={false}
+            coachEmail={coachEmail}
+          />
+        </div>
       )}
     </div>
   );

@@ -4,7 +4,7 @@
 //
 // `estadoCrm` de un cliente CON cuenta lo escribe el coach sobre user_profiles,
 // y las reglas lo permiten solo a él (está en la lista de campos bloqueados del
-// `allow update` del atleta, junto a planStartDate/role/xp).
+// `allow update` del atleta, junto a planStartDate/role).
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 // `updateClienteCrmFields` y no `updateUserProfile`: la segunda cae a

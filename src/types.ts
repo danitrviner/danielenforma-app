@@ -76,8 +76,16 @@ export interface UserProfile {
   displayName: string;
   role: 'client' | 'coach';
   avatarUrl: string;
+  /**
+   * Cuántos peldaños de su escalera de niveles (Road map) lleva alcanzados.
+   * Lo escribe `AthleteRoadmapScreen` al detectar uno nuevo, y solo lo lee la
+   * regla de desbloqueo «Nivel mínimo» de la Academia.
+   *
+   * Antes era un contador de XP (ver `xp`, ya retirado): subía viendo
+   * lecciones, no lo leía nadie salvo una tarjeta decorativa, y sus dos
+   * escritores no coincidían en cuántos puntos vale un nivel.
+   */
   level: number;
-  xp: number;
   currentStreak: number;
   maxStreak: number;
   initialWeight: number;
@@ -109,7 +117,7 @@ export interface UserProfile {
   //
   // OJO con las reglas: `dni`, `direccion` y `telefono` son datos del propio
   // atleta y puede editarlos; `estadoCrm` NO — está en la lista de campos
-  // bloqueados del `allow update` de user_profiles, junto a planStartDate/role/xp,
+  // bloqueados del `allow update` de user_profiles, junto a planStartDate/role,
   // porque es una decisión comercial del coach. Sin eso, un cliente se
   // reactivaría solo desde la consola del navegador.
   dni?: string;                                  // normalizado: mayúsculas, sin guiones ni espacios
@@ -1259,6 +1267,17 @@ export interface WeeklyChallenge {
   // intentos fallidos de un mismo hito redondo para no reproponerlo eternamente.
   isMilestone?: boolean;
   difficulty?: ChallengeDifficulty;
+  /**
+   * Día (YYYY-MM-DD) en que el motor evaluó el progreso por última vez.
+   *
+   * Existe para no pagar el motor entero en cada apertura de la app. Desde
+   * 09-2026 el reto es lo primero que se ve en Inicio, y `ensureWeeklyChallenge`
+   * necesita el historial de pasos, pesajes, entrenos y comidas: sin ventana,
+   * eso son cientos de lecturas (solo `stepLogs` son ~728 documentos a los dos
+   * años). Si ya se evaluó hoy, se pinta el snapshot guardado y no se carga
+   * nada. Los documentos anteriores a 09-2026 no lo llevan y se reevalúan.
+   */
+  evaluadoEn?: string;
 }
 
 // Plantilla de la biblioteca de retos del coach (colección challengeTemplates).

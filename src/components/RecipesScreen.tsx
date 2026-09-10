@@ -19,9 +19,10 @@ import { dishType } from '../utils/dishTypes';
 import { BUDGET_CATS, roundQuarter, CAT_COLOR, CAT_BG } from '../utils/exchangeHelpers';
 import { exchangeToKcal } from '../utils/nutritionConstants';
 import { fotoDeReceta } from '../utils/fotoDeReceta';
+import { escalarRecetaEntera } from '../utils/escalarRecetaEntera';
 import FotoDeReceta from './FotoDeReceta';
 import { Skeleton } from './ui';
-import { EmptyState, Badge, Chip, SearchField, Button, Select } from './ui';
+import { EmptyState, Badge, Chip, SearchField, Button, Select, ListRow } from './ui';
 import { pulsable } from '../utils/a11y';
 
 // ── Exchange helpers ──────────────────────────────────────────────────────────
@@ -98,6 +99,48 @@ function RecipePlaceholder() {
     </div>
   );
 }
+
+/* Fila compacta para una receta SIN foto. Las que el atleta guarda desde una
+   comida de su plan (`confirmSaveMealAsRecipe`) nunca llevan foto por
+   construcción, y la tarjeta grande les reservaba 220-360 px de alto para
+   pintar un marcador de posición gris: tres dedos de pantalla para decir un
+   nombre y tres intercambios (Dani, 10-09-2026). Con foto se mantiene la
+   tarjeta, que ahí el espacio sí lo justifica la imagen. */
+const RecetaFilaCompacta = React.memo(function RecetaFilaCompacta({ recipe, isFav, onOpen, onToggleFav }: CardProps) {
+  const exchStr = formatExchanges(calcExchanges(recipe));
+  return (
+    /* El botón de favorita va FUERA de la ListRow, no en su `trailing`: con
+       `onClick`, ListRow es ella misma un `<button>`, y un botón dentro de otro
+       es HTML inválido — además el nombre que anuncia el lector de pantalla se
+       calcula del texto de dentro, así que la fila se leía «Tortilla de patata,
+       3 int., Marcar como favorita». Dos hermanos en una fila flex. */
+    <div className="col-span-1 md:col-span-12 flex items-center bg-raised border border-hairline rounded-surface pr-1">
+      <ListRow
+        className="min-w-0 flex-1"
+        title={recipe.name}
+        subtitle={[exchStr, recipe.kcal != null ? `${recipe.kcal} kcal` : null].filter(Boolean).join(' · ')}
+        leading={
+          <span className="w-9 h-9 rounded-control bg-accent-bg border border-accent/20 flex items-center justify-center">
+            <span className="material-symbols-outlined text-body-s text-accent select-none">skillet</span>
+          </span>
+        }
+        onClick={() => onOpen(recipe)}
+      />
+      <button
+        type="button"
+        onClick={() => onToggleFav(recipe.id)}
+        aria-pressed={isFav}
+        aria-label={`${recipe.name}, favorita`}
+        className="w-11 h-11 shrink-0 rounded-full flex items-center justify-center hover:bg-black/30 transition-colors"
+      >
+        <span
+          className="material-symbols-outlined text-title-s"
+          style={{ fontVariationSettings: isFav ? "'FILL' 1" : "'FILL' 0", color: isFav ? 'var(--color-accent)' : 'var(--color-ink-2)' }}
+        >favorite</span>
+      </button>
+    </div>
+  );
+});
 
 interface CardProps {
   recipe: Recipe;
@@ -261,22 +304,6 @@ interface DetailProps {
   onAddToIntercambios?: (recipe: Recipe) => void;
 }
 
-// Escala una receta ×0,25–×3 (handoff, panel 03): intercambios e ingredientes
-// se redondean al cuarto más cercano, kcal recalcula proporcional.
-function scaleRecipe(recipe: Recipe, scale: number): Recipe {
-  if (scale === 1) return recipe;
-  return {
-    ...recipe,
-    ingredients: (recipe.ingredients ?? []).map(ing => ({ ...ing, quantity: roundQuarter(ing.quantity * scale) })),
-    exchanges: recipe.exchanges ? {
-      HC: roundQuarter(recipe.exchanges.HC * scale),
-      PROT: roundQuarter(recipe.exchanges.PROT * scale),
-      GRASA: roundQuarter(recipe.exchanges.GRASA * scale),
-    } : undefined,
-    kcal: recipe.kcal != null ? Math.round(recipe.kcal * scale) : recipe.kcal,
-  };
-}
-
 const SCALE_STEPS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3];
 
 function RecipeDetail({ recipe, isFav, isDisliked, isOwn, enabledModes, savingFav, deletingOwn, dailyBudgetTotal, onBack, onToggleFav, onToggleDislike, onDelete, onAddToIntercambios }: DetailProps) {
@@ -287,7 +314,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, isOwn, enabledModes, savingFa
   // ownerId heredado 'indya' (miles de ellas, ver comentario en db/recipes.ts)
   // caían por el hueco y se trataban como receta propia sin ingredientes.
   const isRecetas = OWNER_RECETARIO_TODOS.includes(recipe.ownerId);
-  const scaledRecipe = useMemo(() => scaleRecipe(recipe, scale), [recipe, scale]);
+  const scaledRecipe = useMemo(() => escalarRecetaEntera(recipe, scale), [recipe, scale]);
   const exch = calcExchanges(scaledRecipe);
   const scaledTotal = BUDGET_CATS.reduce((s, c) => s + (exch[c] ?? 0), 0);
   const fitsBudget = dailyBudgetTotal == null || scaledTotal <= dailyBudgetTotal;
@@ -505,13 +532,17 @@ function RecipeDetail({ recipe, isFav, isDisliked, isOwn, enabledModes, savingFa
           </div>
         )}
 
-        {/* Recetas macros breakdown */}
-        {isRecetas && recipe.macros && (
+        {/* Recetas macros breakdown — con la ESCALA aplicada, como las kcal y
+            los ingredientes de arriba. Leía `recipe.macros` sin escalar, así
+            que poner la receta a ×2 doblaba kcal e ingredientes y dejaba los
+            gramos de macros clavados, justo debajo del renglón que promete que
+            «la escala recalcula en vivo». */}
+        {isRecetas && scaledRecipe.macros && (
           <div className="grid grid-cols-3 gap-2 bg-raised border border-hairline rounded-surface p-3">
             {[
-              { label: 'Carbos', val: recipe.macros.carb },
-              { label: 'Proteína', val: recipe.macros.prot },
-              { label: 'Grasa', val: recipe.macros.fat },
+              { label: 'Carbos', val: scaledRecipe.macros.carb },
+              { label: 'Proteína', val: scaledRecipe.macros.prot },
+              { label: 'Grasa', val: scaledRecipe.macros.fat },
             ].map(({ label, val }) => (
               <div key={label} className="text-center">
                 <span className="block font-sans text-caption text-ink-2 uppercase">{label}</span>
@@ -530,9 +561,9 @@ function RecipeDetail({ recipe, isFav, isDisliked, isOwn, enabledModes, savingFa
             Ingredientes
           </h2>
 
-          {isRecetas && recipe.ingredientsText && recipe.ingredientsText.length > 0 ? (
+          {isRecetas && scaledRecipe.ingredientsText && scaledRecipe.ingredientsText.length > 0 ? (
             <ul className="space-y-2">
-              {recipe.ingredientsText.map((ing, idx) => (
+              {scaledRecipe.ingredientsText.map((ing, idx) => (
                 <li key={idx} className="flex items-center justify-between py-2 border-b border-hairline last:border-0">
                   <span className="text-label text-ink font-sans flex-1 pr-2 leading-relaxed">{ing.name}</span>
                   {/* El índice del recetario NO trae cantidades (pesa la mitad
@@ -541,7 +572,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, isOwn, enabledModes, savingFa
                       lectura viaja —y para siempre si falla, por ejemplo sin
                       conexión— aquí solo hay nombre, y pintar `{ing.quantity}g`
                       a secas ponía un «undefinedg» junto a cada ingrediente. */}
-                  {ing.quantity != null && (
+                  {ing.quantity != null && Number.isFinite(ing.quantity) && (
                     <span className="font-mono text-caption text-ink-2 shrink-0">{ing.quantity}g</span>
                   )}
                 </li>
@@ -850,9 +881,14 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
   }, [recipes]);
 
   const filteredRecipes = useMemo(() => {
+    // OJO: `recipes` son SOLO las del propio usuario (getRecipes filtra por
+    // ownerId), así que "Todas" y "Mis recetas" enseñaban exactamente lo mismo
+    // y las recetas propias salían siempre, empujando la biblioteca fuera de
+    // la primera pantalla. Bajo "Todas" esta sección se queda vacía a
+    // propósito: las propias viven en su chip (Dani, 10-09-2026).
     const base = selectedCat === 'Favoritas' ? recipes.filter(r => favoritosSet.has(r.id))
       : selectedCat === 'MisRecetas' ? recipes.filter(r => r.ownerId === profile.userId)
-      : selectedCat === 'all' ? recipes
+      : selectedCat === 'all' ? []
       : recipes.filter(r => r.categories.includes(selectedCat));
     // Filtro duro: esta lista (recetas del coach/atleta) no miraba alergias ni
     // tipo de dieta en absoluto — el propio autor de la receta puede verla
@@ -1009,10 +1045,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="font-sans font-extrabold text-display tracking-tight text-ink">Recetas</h1>
-        <p className="text-ink-2 text-body-s mt-1">Tus recetas y la biblioteca completa de recetas.</p>
-      </div>
+      {/* Sin cabecera propia — ver NutritionScreen. */}
 
       {/* "Cabe en mi presupuesto" — primer chip, seleccionado por defecto (handoff, panel 03) */}
       {dailyBudgetTotal != null && (
@@ -1021,12 +1054,31 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
         </Chip>
       )}
 
-      {/* ── Coach / athlete recipes ─────────────────────────────────────────── */}
-      {!loading && recipes.length > 0 && (
+      {/* ── Recetas propias ──────────────────────────────────────────────────
+          Con "Todas" puesto (el estado de entrada) esto es UNA fila: al abrir
+          Recetas lo primero que se ve es la biblioteca con su buscador, sus
+          categorías y su momento del día, no la lista de recetas propias
+          ocupando media pantalla (Dani, 10-09-2026). */}
+      {!loading && recipes.length > 0 && selectedCat === 'all' && (
+        <ListRow
+          className="bg-raised border border-hairline rounded-surface"
+          title="Mis recetas"
+          subtitle={`${recipes.length} ${recipes.length === 1 ? 'receta guardada' : 'recetas guardadas'}`}
+          leading={
+            <span className="w-9 h-9 rounded-control bg-accent-bg border border-accent/20 flex items-center justify-center">
+              <span className="material-symbols-outlined text-body-s text-accent select-none">restaurant_menu</span>
+            </span>
+          }
+          chevron
+          onClick={() => setSelectedCat('MisRecetas')}
+        />
+      )}
+
+      {!loading && recipes.length > 0 && selectedCat !== 'all' && (
         <section className="space-y-4">
           <h2 className="font-sans font-bold text-body-s text-ink uppercase tracking-wider flex items-center gap-2">
             <span className="material-symbols-outlined text-accent text-title-s">restaurant_menu</span>
-            Recetas del programa
+            Mis recetas
           </h2>
 
           <div className="w-full overflow-x-auto hide-scrollbar -mx-4 px-4 md:mx-0 md:px-0">
@@ -1052,10 +1104,13 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
               }
             />
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
-              <RecipeCard recipe={filteredRecipes[0]} isFav={favoritosSet.has(filteredRecipes[0].id)} large onOpen={openRecipe} onToggleFav={toggleFavorite} />
-              {filteredRecipes.slice(1).map(r => (
-                <RecipeCard key={r.id} recipe={r} isFav={favoritosSet.has(r.id)} onOpen={openRecipe} onToggleFav={toggleFavorite} />
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
+              {filteredRecipes.map((r, i) => (
+                fotoDeReceta(r)
+                  // Solo la primera CON foto se pinta en grande: destacar una
+                  // sin foto era estirar un marcador de posición a 360 px.
+                  ? <RecipeCard key={r.id} recipe={r} isFav={favoritosSet.has(r.id)} large={i === 0} onOpen={openRecipe} onToggleFav={toggleFavorite} />
+                  : <RecetaFilaCompacta key={r.id} recipe={r} isFav={favoritosSet.has(r.id)} onOpen={openRecipe} onToggleFav={toggleFavorite} />
               ))}
             </div>
           )}
