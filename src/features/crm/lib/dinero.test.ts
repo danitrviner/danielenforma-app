@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseEurosACents, centsAInputEuros, formatEuros, sumaCents, repartirEnCuotas } from './dinero';
+import { parseEurosACents, centsAInputEuros, formatEuros, sumaCents, repartirEnCuotas, ingresosPorMes, variacionMensualPct } from './dinero';
 
 describe('parseEurosACents', () => {
   it('acepta coma y punto decimal', () => {
@@ -72,5 +72,74 @@ describe('repartirEnCuotas', () => {
 
   it('cuotas <= 0 se trata como 1', () => {
     expect(repartirEnCuotas(4990, 0)).toEqual([4990]);
+  });
+});
+
+// La única agregación mensual del CRM, y no tenía ni un test — pese a aceptar
+// un `hoy` inyectable justo para poder escribirlos. Es de donde sale la cifra
+// de facturación que Dani mira para saber cómo va el mes.
+describe('ingresosPorMes', () => {
+  const HOY = new Date(2026, 8, 10); // 10 de septiembre de 2026
+
+  it('agrupa por la fecha de COBRO — una cuota de agosto cobrada en septiembre es de septiembre', () => {
+    const serie = ingresosPorMes(
+      [{ estado: 'pagado', fechaCobro: '2026-09-03', importeCents: 60000 }],
+      3, HOY,
+    );
+    expect(serie).toEqual([
+      { mes: '2026-07', totalCents: 0 },
+      { mes: '2026-08', totalCents: 0 },
+      { mes: '2026-09', totalCents: 60000 },
+    ]);
+  });
+
+  it('un pago pendiente no es facturación, por vencido que esté', () => {
+    const serie = ingresosPorMes([{ estado: 'pendiente', fechaCobro: '2026-09-01', importeCents: 60000 }], 2, HOY);
+    expect(serie.at(-1)!.totalCents).toBe(0);
+  });
+
+  it('un pago cobrado sin fecha de cobro no se cuenta en ningún mes', () => {
+    const serie = ingresosPorMes([{ estado: 'pagado', importeCents: 60000 }], 2, HOY);
+    expect(serie.every(m => m.totalCents === 0)).toBe(true);
+  });
+
+  it('suma varios pagos del mismo mes', () => {
+    const serie = ingresosPorMes([
+      { estado: 'pagado', fechaCobro: '2026-09-01', importeCents: 30000 },
+      { estado: 'pagado', fechaCobro: '2026-09-28', importeCents: 45000 },
+    ], 2, HOY);
+    expect(serie.at(-1)!.totalCents).toBe(75000);
+  });
+
+  it('un mes sin cobros sale con 0, no se omite', () => {
+    expect(ingresosPorMes([], 4, HOY).map(m => m.mes))
+      .toEqual(['2026-06', '2026-07', '2026-08', '2026-09']);
+  });
+
+  it('lo cobrado fuera de la ventana no se cuela en el primer mes', () => {
+    // El histograma enseña 7 meses; lo de hace un año no puede aparecer
+    // amontonado en el borde.
+    const serie = ingresosPorMes([{ estado: 'pagado', fechaCobro: '2025-01-15', importeCents: 99900 }], 3, HOY);
+    expect(serie.every(m => m.totalCents === 0)).toBe(true);
+  });
+
+  it('cruza el año hacia atrás sin saltarse diciembre', () => {
+    const enero = new Date(2026, 0, 15);
+    expect(ingresosPorMes([], 3, enero).map(m => m.mes)).toEqual(['2025-11', '2025-12', '2026-01']);
+  });
+});
+
+describe('variacionMensualPct', () => {
+  it('de 1.000 a 1.500 es un +50 %', () => {
+    expect(variacionMensualPct([{ mes: '2026-08', totalCents: 100000 }, { mes: '2026-09', totalCents: 150000 }])).toBe(50);
+  });
+
+  it('una caída sale en negativo', () => {
+    expect(variacionMensualPct([{ mes: '2026-08', totalCents: 100000 }, { mes: '2026-09', totalCents: 60000 }])).toBe(-40);
+  });
+
+  it('sin mes anterior con el que comparar, no hay porcentaje', () => {
+    expect(variacionMensualPct([{ mes: '2026-09', totalCents: 100000 }])).toBeNull();
+    expect(variacionMensualPct([{ mes: '2026-08', totalCents: 0 }, { mes: '2026-09', totalCents: 5000 }])).toBeNull();
   });
 });

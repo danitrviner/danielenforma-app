@@ -28,7 +28,7 @@ import type {
 import type { UserProfile } from '../types';
 import { stripUndefined, authReady, conTimeout } from './core';
 import { leerCatalogo, marcarCatalogoCambiado } from './catalogoVersionado';
-import { avanzarPeriodo, sumarMeses } from '../features/crm/lib/fechas';
+import { avanzarPeriodo, sumarMeses, hoyISO } from '../features/crm/lib/fechas';
 import { repartirEnCuotas } from '../features/crm/lib/dinero';
 
 const COL_CONTACTOS = 'crmContactos';
@@ -282,7 +282,7 @@ export async function getCrmServiciosByCliente(clientId: string): Promise<CrmSer
  */
 export async function createCrmServicioConPago(
   data: Omit<CrmServicio, 'id' | 'createdAt' | 'updatedAt'>,
-  opciones: { generarPago: boolean; cuotas?: number; primerCobro?: string }
+  opciones: { generarPago: boolean; cuotas?: number; primerCobro?: string; yaCobrado?: boolean }
 ): Promise<{ servicio: CrmServicio; pagos: CrmPago[] }> {
   await authReady;
   const ts = ahora();
@@ -301,8 +301,18 @@ export async function createCrmServicioConPago(
     // contratado hoy para empezar en dos semanas nacía ya con su cobro
     // «pendiente desde hoy» — y a los ocho días, marcado en rojo por retraso.
     let fechaCuota = opciones.primerCobro || data.fechaInicio || data.fechaContratacion;
+    const hoy = hoyISO();
     for (let i = 0; i < numCuotas; i++) {
       const pagoRef = doc(collection(db, COL_PAGOS));
+      // Un servicio que el coach está apuntando DESPUÉS de haberlo cobrado
+      // («lo vendí el martes y lo meto el jueves») nacía igualmente pendiente y
+      // sin fecha de cobro, y como toda la facturación se cuenta sobre pagos
+      // `pagado` con `fechaCobro`, ese dinero no aparecía por ningún lado: el
+      // servicio con fecha de ayer daba 0 € (Dani, 10-09-2026). Con «ya
+      // cobrado» marcado, las cuotas ya vencidas nacen cobradas EN SU FECHA —
+      // no hoy, o la facturación se iría al mes que no toca. Las futuras siguen
+      // pendientes, que todavía no se han cobrado.
+      const cobrada = opciones.yaCobrado === true && fechaCuota <= hoy;
       pagos.push({
         id: pagoRef.id,
         clientId: data.clientId,
@@ -310,8 +320,9 @@ export async function createCrmServicioConPago(
         servicioId: servicioRef.id,
         concepto: numCuotas > 1 ? `${data.nombre} (${i + 1}/${numCuotas})` : data.nombre,
         importeCents: importes[i],
-        estado: 'pendiente',
+        estado: cobrada ? 'pagado' : 'pendiente',
         fechaEmision: fechaCuota,
+        ...(cobrada ? { fechaCobro: fechaCuota } : {}),
         ...(numCuotas > 1 ? { numeroCuota: i + 1, totalCuotas: numCuotas } : {}),
         createdAt: ts,
         updatedAt: ts,

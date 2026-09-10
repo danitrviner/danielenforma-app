@@ -139,3 +139,26 @@ function validarYFormatear(y: number, m: number, d: number): string | null {
   if (fecha.getMonth() !== m - 1 || fecha.getDate() !== d) return null;
   return aDiaISO(fecha);
 }
+
+/**
+ * Qué fecha de cobro poner al marcar un pago como cobrado de un solo toque.
+ *
+ * Escribía siempre `hoyISO()`, y toda la facturación mensual se agrupa por
+ * `fechaCobro` (`ingresosPorMes`). Una cuota que vencía el 31 de agosto y que
+ * el coach confirma el 3 de septiembre se contaba en SEPTIEMBRE: el mes se
+ * cerraba con menos de lo que se había cobrado de verdad y el siguiente
+ * empezaba inflado, sin que nada lo dijera. La única forma de arreglarlo era
+ * abrir el pago y escribir la fecha a mano.
+ *
+ * Criterio: si la emisión cae en un mes anterior, el dinero es de ese mes y se
+ * usa su fecha de emisión. Dentro del mes en curso da igual el día para la
+ * facturación, así que se deja hoy, que es lo más honesto (es cuando el coach
+ * ha confirmado el cobro). Sigue siendo un valor por defecto: el coach puede
+ * corregirlo abriendo el pago.
+ */
+export function fechaDeCobroSugerida(fechaEmision: string, hoy: string = hoyISO()): string {
+  if (!fechaEmision) return hoy;
+  // Emisión futura: no se ha podido cobrar antes de emitirse.
+  if (fechaEmision > hoy) return hoy;
+  return fechaEmision.slice(0, 7) < hoy.slice(0, 7) ? fechaEmision : hoy;
+}

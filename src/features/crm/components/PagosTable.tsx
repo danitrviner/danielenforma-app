@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useToast } from '../../../hooks/useToast';
 import { useActualizarPago, useEliminarPago } from '../hooks/usePagos';
 import { formatEuros } from '../lib/dinero';
-import { formatDia, hoyISO, diasDeRetraso, diasHasta, tiempoRelativo } from '../lib/fechas';
+import { formatDia, hoyISO, diasDeRetraso, diasHasta, tiempoRelativo, fechaDeCobroSugerida } from '../lib/fechas';
 import DataTable, { Columna } from './DataTable';
 import { EstadoPagoPill } from './StatusPill';
 import EmptyState from './EmptyState';
@@ -40,12 +40,22 @@ export default function PagosTable({ pagos, cargando, error, mostrarCliente, coa
 
   const marcarPagado = async (p: CrmPago) => {
     try {
+      // La fecha de cobro NO es siempre hoy: una cuota que vencía el 31 de
+      // agosto y se confirma el 3 de septiembre es facturación de agosto. Ver
+      // `fechaDeCobroSugerida` — antes esto escribía `hoyISO()` a pelo y el
+      // dinero cambiaba de mes en silencio.
+      const fechaCobro = fechaDeCobroSugerida(p.fechaEmision);
       await actualizar.mutateAsync({
         id: p.id,
         clientId: p.clientId,
-        updates: { estado: 'pagado', fechaCobro: hoyISO() },
+        updates: { estado: 'pagado', fechaCobro },
       });
-      showToast('Pago marcado como cobrado', 'success');
+      showToast(
+        fechaCobro === hoyISO()
+          ? 'Pago marcado como cobrado'
+          : `Cobrado con fecha ${formatDia(fechaCobro)}, que es cuando vencía`,
+        'success',
+      );
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'No se ha podido marcar como pagado', 'error');
     }

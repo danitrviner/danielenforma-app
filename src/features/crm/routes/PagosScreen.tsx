@@ -53,7 +53,7 @@ export default function PagosScreen({ coachEmail }: { coachEmail: string }) {
       </header>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-        <MetricCard icon="paid" label="Facturado" value={formatEuros(facturado)} sub="pagos cobrados" />
+        <MetricCard icon="paid" label="Facturado" value={formatEuros(facturado)} sub="histórico, todos los cobros" />
         <MetricCard icon="schedule" label="Pendiente de cobro" value={formatEuros(pendienteDeCobro)} sub="pagos pendientes" accent="var(--color-warning)" />
         <MetricCard icon="autorenew" label="Suscripciones activas" value={suscripcionesActivas} sub={`${suscripciones.length} en total`} />
       </div>

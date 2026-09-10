@@ -91,8 +91,13 @@ export default function DashboardScreen() {
           accent="var(--color-warning)"
           onClick={() => navigate('/crm/pagos?estado=pendiente')}
         />
+        {/* «Facturado» a secas se lee como «este mes», y es el total de toda
+            la vida: un mes flojo seguía enseñando una cifra enorme y parecía
+            que las fechas no funcionaban. Se dice lo que es (Dani,
+            10-09-2026). El corte por mes de verdad está justo debajo, en la
+            tarjeta de ingresos recurrentes. */}
         <MetricCard
-          icon="paid" label="Facturado"
+          icon="paid" label="Facturado (histórico)"
           value={pagosSinDato ? '—' : formatEuros(facturado)}
           onClick={() => navigate('/crm/pagos?estado=pagado')}
         />

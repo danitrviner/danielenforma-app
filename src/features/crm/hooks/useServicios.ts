@@ -26,6 +26,13 @@ export interface NuevoServicio {
    * los ocho días).
    */
   primerCobro?: string;
+  /**
+   * El servicio ya está cobrado: las cuotas que ya han vencido nacen `pagado`
+   * con su propia fecha de emisión como fecha de cobro. Es lo que hace que un
+   * servicio apuntado con fecha de la semana pasada cuente en la facturación
+   * en vez de quedarse eternamente en «pendiente de cobro».
+   */
+  yaCobrado?: boolean;
 }
 
 export function useServicios() {
@@ -75,7 +82,7 @@ export function useCrearServicio() {
     mutationFn: async ({ cliente, datos, coachEmail }: {
       cliente: Cliente; datos: NuevoServicio; coachEmail: string;
     }) => {
-      const { generarPago, cuotas, primerCobro, ...resto } = datos;
+      const { generarPago, cuotas, primerCobro, yaCobrado, ...resto } = datos;
       return createCrmServicioConPago(
         {
           ...resto,
@@ -83,7 +90,7 @@ export function useCrearServicio() {
           clientNombre: cliente.nombre,
           createdBy: coachEmail,
         },
-        { generarPago, cuotas, primerCobro }
+        { generarPago, cuotas, primerCobro, yaCobrado }
       );
     },
     onSuccess: (_res, vars) => {

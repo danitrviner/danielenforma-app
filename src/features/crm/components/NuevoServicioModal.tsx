@@ -32,7 +32,16 @@ export default function NuevoServicioModal({ cliente, coachEmail, onCerrar }: {
   // Cadena vacía = «sigue al inicio». Así, mover el inicio arrastra el primer
   // cobro con él mientras el coach no lo fije a mano a otra fecha.
   const [primerCobro, setPrimerCobro] = useState('');
+  const [yaCobrado, setYaCobrado] = useState(false);
   const fechaPrimerCobro = primerCobro || fechaInicio;
+  // Cuántas cuotas quedarían cobradas al marcar «ya cobrado»: las que ya han
+  // vencido. Se dice el número para que el coach no tenga que deducirlo.
+  const cuotasVencidas = (() => {
+    const hoy = hoyISO();
+    let f = fechaPrimerCobro, n = 0;
+    for (let i = 0; i < cuotas; i++) { if (f <= hoy) n++; f = sumarMeses(f, 1); }
+    return n;
+  })();
 
   const importeCents = parseEurosACents(importe);
   const importeInvalido = importe.trim().length > 0 && importeCents === null;
@@ -66,6 +75,7 @@ export default function NuevoServicioModal({ cliente, coachEmail, onCerrar }: {
           generarPago,
           cuotas,
           primerCobro: fechaPrimerCobro,
+          yaCobrado,
         },
       });
       showToast(
@@ -208,6 +218,29 @@ export default function NuevoServicioModal({ cliente, coachEmail, onCerrar }: {
               </span>
             </div>
           </Campo>
+        )}
+
+        {/* Un servicio que se apunta DESPUÉS de haberlo cobrado. Sin esto,
+            meter en el CRM lo que se vendió ayer lo dejaba «pendiente de
+            cobro» para siempre y ese dinero no salía en la facturación: el
+            servicio con fecha de ayer daba 0 € (Dani, 10-09-2026). */}
+        {generarPago && (importeCents ?? 0) > 0 && cuotasVencidas > 0 && (
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={yaCobrado}
+              onChange={e => setYaCobrado(e.target.checked)}
+              className="mt-0.5 w-4 h-4 shrink-0 accent-[var(--color-accent)]"
+            />
+            <span className="font-sans text-caption text-ink leading-relaxed">
+              Ya lo he cobrado
+              <span className="block text-ink-2">
+                {cuotasVencidas === cuotas
+                  ? `Se da${cuotas > 1 ? 'n' : ''} por cobrada${cuotas > 1 ? 's' : ''} ${cuotas > 1 ? `las ${cuotas} cuotas` : 'la cuota'}, cada una en su fecha de emisión.`
+                  : `Se dan por cobradas las ${cuotasVencidas} cuota${cuotasVencidas > 1 ? 's' : ''} ya vencida${cuotasVencidas > 1 ? 's' : ''}; las ${cuotas - cuotasVencidas} restantes quedan pendientes.`}
+              </span>
+            </span>
+          </label>
         )}
       </div>
     </Modal>
