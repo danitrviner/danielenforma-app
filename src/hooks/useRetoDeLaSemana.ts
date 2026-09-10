@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { WorkoutAssignment } from '../types';
+import { useQuery, useQueryClient, QueryClient } from '@tanstack/react-query';
+import { WeeklyChallenge, WorkoutAssignment } from '../types';
 import {
   getNutritionProgram, getRoadmap, getBodyweightForAthlete, getStepsForAthlete,
   getWorkoutLogs, getExercises, getDietCompletionLogsForAthlete, getDietsForAthlete,
@@ -217,4 +217,23 @@ export function useRetoDeLaSemana(athleteEmail: string, assignments: WorkoutAssi
     cargando: cargandoGuardado || (hazFalta && cargando),
     historial, roadmap, projection,
   };
+}
+
+/**
+ * Marca el reto de esta semana para que se vuelva a evaluar.
+ *
+ * Lo llama quien acaba de escribir algo que puede haberlo movido — de momento,
+ * terminar un entreno. Suelta el sello `evaluadoEn` EN LA CACHÉ (no en
+ * Firestore: el motor lo reescribe al reevaluar), que es lo que hace que el
+ * siguiente montaje del hook encienda el motor en vez de pintar el snapshot.
+ *
+ * Invalidar la consulta a secas no vale: releería el mismo documento, con el
+ * mismo sello de hoy, y seguiría saltándose el motor.
+ */
+export function marcarRetoParaReevaluar(qc: QueryClient, athleteEmail: string): void {
+  const semana = isoWeekKey(new Date().toISOString().split('T')[0]);
+  qc.setQueryData<WeeklyChallenge | null>(
+    ['weeklyChallenge', athleteEmail, semana],
+    prev => (prev ? { ...prev, evaluadoEn: undefined } : prev),
+  );
 }

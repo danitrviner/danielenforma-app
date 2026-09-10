@@ -14,12 +14,14 @@ import { normalizarDni, formatDni } from '../lib/identidad';
 import { formatEurosCompacto } from '../lib/dinero';
 import DataTable, { Columna } from '../components/DataTable';
 import ClientesActionList from '../components/ClientesActionList';
-import { EstadoClientePill } from '../components/StatusPill';
+import { EstadoClientePill, EstadoFinancieroPill } from '../components/StatusPill';
+import { usePagos } from '../hooks/usePagos';
+import { estadoFinancieroDe, type EstadoFinanciero } from '../lib/metricas';
 import EmptyState from '../components/EmptyState';
 import NuevoClienteModal from '../components/NuevoClienteModal';
 import InvitarAtletaModal from '../components/InvitarAtletaModal';
 import InvitacionesPendientesPanel from '../components/InvitacionesPendientesPanel';
-import type { Cliente, EstadoCrm, CrmServicio } from '../types';
+import type { Cliente, EstadoCrm, CrmServicio, CrmPago } from '../types';
 import { Button, Icon } from '../../../components/ui';
 import { coincideBusqueda } from '../../../utils/busqueda';
 
@@ -119,6 +121,21 @@ export default function ClientesList({ coachEmail }: { coachEmail: string }) {
     return m;
   }, [servicios]);
 
+  /* Quién te debe dinero, de un vistazo. Se DERIVA de los movimientos de cada
+     cliente (el peor estado manda) en vez de guardarse: un campo aparte sería
+     una segunda verdad que hay que mantener a mano (docs/crm-modelo-v2.md). */
+  const { data: pagos = [] } = usePagos();
+  const finanzasPorCliente = useMemo(() => {
+    const porCliente = new Map<string, CrmPago[]>();
+    for (const p of pagos) {
+      const lista = porCliente.get(p.clientId);
+      if (lista) lista.push(p); else porCliente.set(p.clientId, [p]);
+    }
+    const m = new Map<string, EstadoFinanciero>();
+    for (const [id, lista] of porCliente) m.set(id, estadoFinancieroDe(lista));
+    return m;
+  }, [pagos]);
+
   const filas = useMemo(() => {
     const q = busqueda.trim().toLowerCase();
     const qDni = normalizarDni(busqueda);
@@ -176,8 +193,18 @@ export default function ClientesList({ coachEmail }: { coachEmail: string }) {
     {
       id: 'estado',
       header: 'Estado',
-      width: '110px',
-      render: c => <EstadoClientePill estado={c.estadoCrm} />,
+      width: '150px',
+      render: c => {
+        // El de pagos solo se pinta cuando dice algo: «al día» en cada fila
+        // sería ruido, y lo que se busca aquí es a quién hay que llamar.
+        const finanzas = finanzasPorCliente.get(c.id);
+        return (
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <EstadoClientePill estado={c.estadoCrm} />
+            {finanzas && finanzas !== 'al_dia' && <EstadoFinancieroPill estado={finanzas} />}
+          </div>
+        );
+      },
     },
     {
       id: 'acciones',

@@ -3,7 +3,7 @@ import type { Cliente, CrmPago, CrmServicio } from '../types';
 import {
   cobradoDe, pendienteDe, facturacionDelMes, porCobrar, mrr,
   fechaAltaDe, mesesContratados, permanenciaMedia, churnDelMes,
-  ltvDe, ltvMedio, ticketMedio, agrupaCobrado,
+  ltvMedio, ticketMedio, agrupaCobrado,
   renovacionesDelMes, tasaDeRenovacion, estadoFinancieroDe,
 } from './metricas';
 
@@ -243,10 +243,6 @@ describe('ltvDe / ltvMedio / ticketMedio', () => {
     mov({ tipo: 'devolucion', estado: 'pagado', importeCents: -10000 }),
     mov({ tipo: 'renovacion', estado: 'pendiente', importeCents: 60000 }),  // aún no ha entrado
   ];
-
-  it('el LTV es lo cobrado, neto de devoluciones y sin contar lo pendiente', () => {
-    expect(ltvDe(juan)).toBe(150000);
-  });
 
   it('el LTV medio ignora a los leads, que si no hunden la media', () => {
     const mapa = new Map([['juan', juan], ['lead', []]]);

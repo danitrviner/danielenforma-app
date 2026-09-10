@@ -4,6 +4,7 @@ import { usePagosDe } from '../hooks/usePagos';
 import { useReunionesDe } from '../hooks/useReuniones';
 import { formatEuros, sumaCobrado, sumaPendiente, cobradoDe } from '../lib/dinero';
 import { formatDia, hoyISO } from '../lib/fechas';
+import { mesesContratados } from '../lib/metricas';
 import MetricCard from './MetricCard';
 import EmptyState from './EmptyState';
 import ErrorState from './ErrorState';
@@ -52,7 +53,14 @@ export default function HistorialTab({ cliente }: { cliente: Cliente }) {
 
     return {
       numProgramas: servicios.length,
+      // Esto ES el LTV del cliente: todo lo que ha dejado, neto de
+      // devoluciones. Se llamaba «total pagado», que es lo mismo dicho de una
+      // forma que no invita a compararlo con nada.
       totalPagado: sumaCobrado(pagos),
+      // Meses que ha estado contratado de verdad — la unión de los rangos de
+      // sus servicios, no la distancia entre el alta y hoy: si pausó, esos
+      // meses no cuentan (docs/crm-modelo-v2.md).
+      meses: mesesContratados(servicios, hoy),
       pagosRealizados: pagosPagados.length,
       reunionesRealizadas: reunionesRealizadas.length,
       primerPrograma,
@@ -61,7 +69,7 @@ export default function HistorialTab({ cliente }: { cliente: Cliente }) {
       timeline,
       conversionContinuidad,
     };
-  }, [servicios, pagos, reuniones]);
+  }, [servicios, pagos, reuniones, hoy]);
 
   if (error) return <ErrorState />;
 
@@ -78,8 +86,16 @@ export default function HistorialTab({ cliente }: { cliente: Cliente }) {
   return (
     <div className="space-y-3">
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-        <MetricCard icon="layers" label="Programas" value={resumen.numProgramas} />
-        <MetricCard icon="paid" label="Total pagado" value={formatEuros(resumen.totalPagado)} sub={`${resumen.pagosRealizados} pagos`} />
+        <MetricCard
+          icon="layers" label="Contratado"
+          value={resumen.numProgramas}
+          sub={resumen.meses > 0 ? `${resumen.meses.toString().replace('.', ',')} meses` : undefined}
+        />
+        <MetricCard
+          icon="paid" label="Ha dejado"
+          value={formatEuros(resumen.totalPagado)}
+          sub={`${resumen.pagosRealizados} ${resumen.pagosRealizados === 1 ? 'cobro' : 'cobros'}`}
+        />
         <MetricCard icon="event_available" label="Reuniones" value={resumen.reunionesRealizadas} sub="realizadas" />
         <MetricCard icon="schedule" label="Pendiente" value={formatEuros(resumen.pendienteCobro)} accent="var(--color-warning)" />
       </div>

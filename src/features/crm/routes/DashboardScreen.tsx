@@ -3,8 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { useClientes } from '../hooks/useClientes';
 import { useReuniones } from '../hooks/useReuniones';
 import { usePagos } from '../hooks/usePagos';
-import { formatEuros, sumaCobrado, sumaPendiente, pendienteDe, ingresosPorMes } from '../lib/dinero';
-import { facturacionDelMes, mesDe } from '../lib/metricas';
+import { formatEuros, sumaCobrado, pendienteDe, ingresosPorMes } from '../lib/dinero';
+import {
+  facturacionDelMes, mesDe, mrr, permanenciaMedia, ltvMedio, ticketMedio, agrupaCobrado,
+  churnDelMes, porCobrar,
+} from '../lib/metricas';
+import { cobradoDe } from '../lib/dinero';
+import type { CrmPago } from '../types';
+import { useServicios } from '../hooks/useServicios';
 import { formatDia, tiempoRelativo, hoyISO, aDiaISO } from '../lib/fechas';
 import MetricCard from '../components/MetricCard';
 import RecurringRevenueCard from '../components/RecurringRevenueCard';
@@ -48,8 +54,41 @@ export default function DashboardScreen() {
   // lleva dinero dentro que el primero se deja fuera, y un `impagado` no es
   // `pendiente`, así que se caía de las dos cifras (Dani, 10-09-2026).
   const facturado = sumaCobrado(pagos);
-  const totalPendiente = sumaPendiente(pagos);
-  const impagado = sumaPendiente(pagos.filter(p => p.estado === 'impagado'));
+  const { pendienteCents: totalPendiente, impagadoCents: impagado } = porCobrar(pagos);
+
+  /* Las métricas de valor razonan POR CLIENTE, así que hacen falta los
+     movimientos y los servicios agrupados por su id. Se hace una vez aquí y
+     no dentro de cada métrica: son los mismos dos recorridos para las cinco. */
+  const { data: servicios = [] } = useServicios();
+  const porClienteMovimientos = useMemo(() => {
+    const m = new Map<string, typeof pagos>();
+    for (const p of pagos) m.set(p.clientId, [...(m.get(p.clientId) ?? []), p]);
+    return m;
+  }, [pagos]);
+  const porClienteServicios = useMemo(() => {
+    const m = new Map<string, typeof servicios>();
+    for (const sv of servicios) m.set(sv.clientId, [...(m.get(sv.clientId) ?? []), sv]);
+    return m;
+  }, [servicios]);
+
+  const recurrente = useMemo(() => mrr(servicios, hoy), [servicios, hoy]);
+  const churnMes = useMemo(
+    () => churnDelMes(clientes, mesDe(hoy), porClienteServicios),
+    [clientes, hoy, porClienteServicios],
+  );
+  const permanencia = useMemo(() => permanenciaMedia(porClienteServicios, hoy), [porClienteServicios, hoy]);
+  const valorMedio = useMemo(() => ltvMedio(porClienteMovimientos), [porClienteMovimientos]);
+  const ticketAlta = useMemo(() => ticketMedio(pagos, 'alta'), [pagos]);
+
+  /* Qué servicio deja más dinero. Es la comparación que no se podía hacer
+     —«el B cobra menos de alta pero tiene más recorrido»— y sale de agrupar lo
+     cobrado por el NOMBRE del servicio del que cuelga cada movimiento. */
+  const porServicio = useMemo(() => {
+    const nombrePorId = new Map(servicios.map(sv => [sv.id, sv.nombre]));
+    return agrupaCobrado<CrmPago>(pagos, p => (p.servicioId ? nombrePorId.get(p.servicioId) : undefined), cobradoDe)
+      .filter(g => g.totalCents > 0)
+      .slice(0, 4);
+  }, [pagos, servicios]);
 
   // Lo del MES en curso, desglosado por clase de venta.
   const delMes = useMemo(() => facturacionDelMes(pagos, mesDe(hoy)), [pagos, hoy]);
@@ -138,6 +177,69 @@ export default function DashboardScreen() {
         <RecurringRevenueCard serie={serieIngresos} onClick={() => navigate('/crm/pagos?estado=pagado')} />
       )}
 
+      {/* ── La forma del negocio ────────────────────────────────────────────
+          Las cuatro de arriba dicen cómo va ESTE mes; estas cuatro dicen qué
+          clase de negocio es. Cien clientes de tres meses no son cien clientes
+          de doce, y hasta ahora el CRM no distinguía esos dos negocios
+          (docs/crm-modelo-v2.md). Cada una se calla si aún no tiene con qué
+          responder, en vez de enseñar un cero que se lee como un dato malo. */}
+      <section className="space-y-2">
+        <h2 className="font-mono text-caption uppercase tracking-widest text-ink-3">Cómo es tu negocio</h2>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          <MetricCard
+            icon="autorenew" label="Recurrente / mes"
+            value={recurrente > 0 ? formatEuros(recurrente) : '—'}
+            sub="servicios en curso"
+          />
+          <MetricCard
+            icon="schedule" label="Permanencia"
+            value={permanencia != null ? `${permanencia.toString().replace('.', ',')} meses` : '—'}
+            sub="de media"
+          />
+          <MetricCard
+            icon="insights" label="Valor por cliente"
+            value={valorMedio != null ? formatEuros(valorMedio) : '—'}
+            sub="cobrado, de media"
+          />
+          <MetricCard
+            icon="sell" label="Ticket de alta"
+            value={ticketAlta != null ? formatEuros(ticketAlta) : '—'}
+            sub="medio"
+          />
+        </div>
+      </section>
+
+      {/* Qué servicio deja más. Solo con dos o más: con uno no hay comparación
+          que hacer, solo un número que ya está arriba. */}
+      {porServicio.length >= 2 && (
+        <section className="space-y-2">
+          <h2 className="font-mono text-caption uppercase tracking-widest text-ink-3">Qué servicio deja más</h2>
+          <div className="bg-surface border border-hairline rounded-surface divide-y divide-hairline">
+            {porServicio.map(g => {
+              const pct = Math.round((g.totalCents / porServicio[0].totalCents) * 100);
+              return (
+                <div key={g.grupo} className="p-3 space-y-1.5">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <span className="font-sans text-body-s text-ink truncate">{g.grupo}</span>
+                    <span className="font-mono text-caption text-ink font-bold tabular-nums shrink-0">
+                      {formatEuros(g.totalCents)}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="h-1.5 flex-1 bg-track rounded-full overflow-hidden">
+                      <div className="h-full bg-accent/60 rounded-full" style={{ width: `${pct}%` }} />
+                    </div>
+                    <span className="font-mono text-caption text-ink-4 shrink-0">
+                      {g.n} {g.n === 1 ? 'cobro' : 'cobros'}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
       <div className="grid grid-cols-3 gap-2">
         <MetricCard
           icon="trending_up" label="Continuidad"
@@ -154,6 +256,11 @@ export default function DashboardScreen() {
           icon="person_remove" label="Bajas (30 días)"
           value={clientesSinDato ? '—' : bajasRecientes.length}
           accent={bajasRecientes.length > 0 ? 'var(--color-danger)' : undefined}
+          // El porcentaje va de subtítulo y no de tarjeta propia: arriba ya
+          // hay un «churn» (el de graduaciones, que mide otra cosa) y dos
+          // cosas llamadas churn en la misma pantalla no se distinguen. Este
+          // es el de verdad: bajas del mes sobre los que ya eran clientes.
+          sub={churnMes != null ? `${churnMes.toString().replace('.', ',')} % de tus clientes` : undefined}
           onClick={() => navigate('/crm/clientes?estado=baja')}
         />
       </div>

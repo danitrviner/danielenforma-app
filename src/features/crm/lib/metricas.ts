@@ -206,10 +206,9 @@ export function churnDelMes(
 
 // ─── Valor ───────────────────────────────────────────────────────────────────
 
-/** Todo el dinero que ha dejado un cliente, neto de devoluciones. */
-export function ltvDe(movimientosDelCliente: CrmPago[]): number {
-  return movimientosDelCliente.reduce((s, m) => s + cobradoDe(m), 0);
-}
+/* El LTV de UN cliente no tiene función propia: es `sumaCobrado` de sus
+   movimientos, y tener dos nombres para la misma suma es cómo acaban
+   separándose. `HistorialTab` la usa directamente. */
 
 /**
  * LTV medio sobre los clientes QUE HAN COMPRADO, no sobre toda la lista.
@@ -217,7 +216,9 @@ export function ltvDe(movimientosDelCliente: CrmPago[]): number {
  * menos de lo que vale.
  */
 export function ltvMedio(movimientosPorCliente: Map<string, CrmPago[]>): number | null {
-  const valores = [...movimientosPorCliente.values()].map(ltvDe).filter(v => v > 0);
+  const valores = [...movimientosPorCliente.values()]
+    .map(ms => ms.reduce((t, m) => t + cobradoDe(m), 0))
+    .filter(v => v > 0);
   if (valores.length === 0) return null;
   return Math.round(valores.reduce((a, b) => a + b, 0) / valores.length);
 }
