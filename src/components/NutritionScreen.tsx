@@ -395,6 +395,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
   const [recetaAbierta, setRecetaAbierta] = useState<{ mealId: string; recipeId: string; factor: number } | null>(null);
   const [recetaDetalle, setRecetaDetalle] = useState<Recipe | null>(null);
   const [cargandoReceta, setCargandoReceta] = useState(false);
+  const peticionRecetaRef = useRef(0);
   /* La receta tal y como está EN EL PLATO: con sus gramos, kcal e intercambios
      multiplicados por las veces que el atleta la ha escalado en la comida. */
   const recetaEscalada = useMemo(
@@ -1289,6 +1290,11 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
    * intercambios y la avena seguía diciendo 40 g).
    */
   const abrirReceta = async (mealId: string, recipeId: string, intercambiosEnElPlato: number) => {
+    // Testigo de "esta es la petición que vale". Sin él, abrir una receta que
+    // hay que ir a buscar y pasar deprisa a otra dejaba ganar a la que
+    // respondiera la última: la ficha se cambiaba sola por la anterior, y si
+    // para entonces ya se había cerrado el diálogo, volvía a abrirse solo.
+    const peticion = ++peticionRecetaRef.current;
     setRecetaAbierta({ mealId, recipeId, factor: 1 });
     setRecetaDetalle(null);
     setCargandoReceta(true);
@@ -1296,6 +1302,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     // si no, es una del recetario y se pide la completa, con pasos y cantidades.
     const yaCargada = recipes.find(r => r.id === recipeId);
     const completa = yaCargada ?? await getRecipeById(recipeId).catch(() => null);
+    if (peticion !== peticionRecetaRef.current) return;
     if (completa) {
       const base = BUDGET_CATS.reduce((s, c) => s + recipeExchanges(completa)[c], 0);
       setRecetaAbierta({ mealId, recipeId, factor: factorDeReceta(intercambiosEnElPlato, base) });
@@ -1305,6 +1312,8 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
   };
 
   const cerrarReceta = () => {
+    peticionRecetaRef.current++;
+    setCargandoReceta(false);
     setRecetaAbierta(null);
     setRecetaDetalle(null);
   };

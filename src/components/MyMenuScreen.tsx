@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useRef } from 'react';
 import { minutosDeReceta } from '../utils/tiempoDeReceta';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -132,6 +132,7 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailRecipe, setDetailRecipe] = useState<Recipe | null>(null);
   const [detailMealId, setDetailMealId] = useState<string | null>(null);
+  const peticionDetalleRef = useRef(0);
   const [detailLoading, setDetailLoading] = useState(false);
   const [subForIngredient, setSubForIngredient] = useState<string | null>(null);
   const [swapFor, setSwapFor] = useState<{ mealId: string; slot: number } | null>(null);
@@ -297,17 +298,26 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
 
   async function openDetail(meal: MenuMeal) {
     if (!meal.recipeId) return;
+    // Testigo de "esta es la petición que vale". `detailMealId` se escribía
+    // ANTES del await y `detailRecipe` DESPUÉS, así que abrir una comida y
+    // pasar deprisa a otra podía emparejar la receta de la primera con el id
+    // de la segunda: la ficha enseñaba una receta y los cambios de ingrediente
+    // se escribían en la otra comida.
+    const peticion = ++peticionDetalleRef.current;
     setDetailOpen(true);
     setDetailMealId(meal.id);
     setSubForIngredient(null);
     setDetailLoading(true);
     setDetailRecipe(null);
     const r = await getRecipeById(meal.recipeId);
+    if (peticion !== peticionDetalleRef.current) return;
     setDetailRecipe(r);
     setDetailLoading(false);
   }
 
   function closeDetail() {
+    peticionDetalleRef.current++;
+    setDetailLoading(false);
     setDetailOpen(false);
     setDetailRecipe(null);
     setDetailMealId(null);

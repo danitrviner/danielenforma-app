@@ -15,9 +15,19 @@ export interface SetPrefill {
  * Fase 3 (decisión de Dani, 2026-08-07 — "Registro editable en la sesión"):
  * la tabla llega PRERRELLENADA con lo del último día, no vacía con el dato
  * anterior solo como referencia. Regla de prerelleno (Contrato-de-datos.md):
- * los valores por defecto salen de la última sesión del mismo `exerciseId`
- * con el mismo número de serie; si no hay histórico, se usa `reps`/`rir` de
- * la prescripción y la carga queda vacía (no hay peso previo que sugerir).
+ * el peso y las repeticiones por defecto salen de la última sesión del mismo
+ * `exerciseId` con el mismo número de serie.
+ *
+ * El RIR NO. El RIR es una PAUTA del entrenador, no una marca personal: dice
+ * cuánto esfuerzo quiere que le meta a esa serie. Heredar el de la sesión
+ * anterior hacía que a partir del segundo día el atleta viera el RIR que él
+ * mismo tecleó la vez pasada en vez del que le ha puesto su entrenador, y si
+ * un día se equivocaba, el error se arrastraba sesión tras sesión. Siempre
+ * manda `row.rir` (Dani, 10-09-2026).
+ *
+ * El desplegable sigue siendo editable: lo que el atleta anote se guarda en su
+ * `WorkoutLog`, que es otro documento — la prescripción del coach en
+ * `Workout.exercises[].rir` no se toca nunca desde aquí.
  */
 export function prefillWorkoutSets(workout: Workout, prevEntries: WorkoutEntryLog[]): SetPrefill[][] {
   return workout.exercises
@@ -30,7 +40,7 @@ export function prefillWorkoutSets(workout: Workout, prevEntries: WorkoutEntryLo
         return {
           weight: prev && prev.weight > 0 ? String(prev.weight) : '',
           repsDone: prev && prev.repsDone > 0 ? String(prev.repsDone) : '',
-          rir: prev ? (prev.alFallo ? 'fallo' : String(prev.rir)) : String(row.rir),
+          rir: String(row.rir),
           done: false,
         };
       });

@@ -31,6 +31,31 @@ export function vueltasDelCiclo(weeks: number, cicloDias: number): number {
 }
 
 /**
+ * Dónde caen las sesiones dentro de una SEMANA (ciclo de 7 días).
+ *
+ * Antes esto no existía y la semana caía en el caso general: 4 sesiones daban
+ * los días 0,1,2,3 — lunes, martes, miércoles y jueves seguidos, y luego tres
+ * días libres del tirón. Nadie entrena así. El coach tenía que corregirlo a
+ * mano en el calendario cada vez que creaba un bloque (Dani, 10-09-2026).
+ *
+ * Los patrones son los de siempre en una sala de pesas: los descansos van
+ * INTERCALADOS y el domingo es el último día en usarse.
+ *   2 → L, J          3 → L, X, V        4 → L, M, J, V
+ *   5 → L, M, X, V, S 6 → L a S          7 → toda la semana
+ *
+ * Sigue siendo solo la propuesta de partida: el coach toca el calendario del
+ * ciclo y su patrón a mano manda sobre esto (`Mesocycle.customOffsets`).
+ */
+const SEMANA_ESTANDAR: Record<number, number[]> = {
+  2: [0, 3],
+  3: [0, 2, 4],
+  4: [0, 1, 3, 4],
+  5: [0, 1, 2, 4, 5],
+  6: [0, 1, 2, 3, 4, 5],
+  7: [0, 1, 2, 3, 4, 5, 6],
+};
+
+/**
  * En qué día del ciclo (0-based) cae cada sesión.
  *
  * El mecanismo es SIEMPRE el mismo, tenga el ciclo 5, 9 o 14 días: las
@@ -43,13 +68,13 @@ export function vueltasDelCiclo(weeks: number, cicloDias: number): number {
  * semana de media (2×7/9), y en una ventana de 7 días cualquiera a veces
  * caerá una vez, a veces dos, según por dónde ande el ciclo esa semana.
  *
- * Dos casos, por orden:
+ * Tres casos, por orden:
  *  1. El reparto elegido trae su propio patrón (`Push, Pull, Legs, Descanso`):
  *     manda él, porque el coach eligió exactamente dónde van los descansos y
  *     ya escribió la secuencia entera, con sus días sueltos incluidos.
- *  2. Sin patrón: se reparte uniforme a lo largo de `cicloDias`. Con
- *     `cicloDias` igual a las sesiones (o sin `repartirEnElCiclo`), esto da
- *     0,1,2…N-1 — el comportamiento de toda la vida para una semana normal.
+ *  2. Ciclo semanal: el patrón de toda la vida en una sala de pesas, con los
+ *     descansos INTERCALADOS y el domingo el último día en usarse.
+ *  3. Cualquier otra duración: reparto uniforme a lo largo de `cicloDias`.
  */
 export function offsetsDeSesiones(params: {
   sesiones: number;
@@ -60,6 +85,9 @@ export function offsetsDeSesiones(params: {
   const { sesiones, cicloDias, offsetsDelSplit, repartirEnElCiclo } = params;
   if (sesiones <= 0) return [];
   if (offsetsDelSplit && offsetsDelSplit.length === sesiones) return offsetsDelSplit;
+
+  const semanal = SEMANA_ESTANDAR[sesiones];
+  if (cicloDias === 7 && semanal) return semanal;
 
   if (repartirEnElCiclo && cicloDias > sesiones) {
     return Array.from({ length: sesiones }, (_, i) => Math.floor((i * cicloDias) / sesiones));

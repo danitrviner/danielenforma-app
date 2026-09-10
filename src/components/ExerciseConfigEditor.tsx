@@ -42,16 +42,16 @@ function BlockStepper({ value, min = 0, max = 99, step = 1, format, onChange }: 
         type="button"
         onClick={() => onChange(Math.max(min, value - step))}
         disabled={value <= min}
-        className="w-9 h-9 sm:w-6 sm:h-6 rounded-control bg-inset text-ink-2 hover:bg-white/5 disabled:opacity-30 font-mono text-body-s sm:text-label font-bold flex items-center justify-center flex-shrink-0 transition-colors"
+        className="w-7 h-7 sm:w-5 sm:h-5 rounded-control bg-inset text-ink-2 hover:bg-white/5 disabled:opacity-30 font-mono text-caption font-bold flex items-center justify-center flex-shrink-0 transition-colors"
       >−</button>
-      <span className="flex-1 text-center font-mono text-title-s font-bold text-ink tabular-nums">
+      <span className="flex-1 text-center font-mono text-body-s font-bold text-ink tabular-nums">
         {format ? format(value) : value}
       </span>
       <button
         type="button"
         onClick={() => onChange(Math.min(max, value + step))}
         disabled={value >= max}
-        className="w-9 h-9 sm:w-6 sm:h-6 rounded-control bg-accent/14 text-accent hover:bg-accent/22 disabled:opacity-30 font-mono text-body-s sm:text-label font-bold flex items-center justify-center flex-shrink-0 transition-colors"
+        className="w-7 h-7 sm:w-5 sm:h-5 rounded-control bg-accent/14 text-accent hover:bg-accent/22 disabled:opacity-30 font-mono text-caption font-bold flex items-center justify-center flex-shrink-0 transition-colors"
       >+</button>
     </div>
   );
@@ -75,7 +75,7 @@ function RirRow({ value, onChange }: { value: number; onChange: (v: number) => v
           <button
             key={v} type="button" role="radio" aria-checked={activo}
             onClick={() => onChange(v)}
-            className={`flex-1 h-8 rounded-control border font-mono text-label font-bold transition-colors ${
+            className={`flex-1 h-6 rounded-control border font-mono text-caption font-bold transition-colors ${
               activo ? tono(v) : 'border-hairline bg-inset text-ink-3 hover:border-strong'
             }`}
           >{v}</button>
@@ -95,21 +95,21 @@ function ConfigCells({ sets, reps, rest, onSets, onReps, onRest }: {
 }) {
   return (
     <div className="flex gap-2">
-      <div className="flex-1 min-w-[72px] bg-inset rounded-control p-2 flex flex-col gap-1.5">
+      <div className="flex-1 min-w-[62px] bg-inset rounded-control px-2 py-1.5 flex flex-col gap-0.5">
         <span className="font-mono text-caption text-ink-2 uppercase tracking-wider">Series</span>
         <BlockStepper value={sets} min={1} max={20} onChange={onSets} />
       </div>
-      <div className="flex-1 min-w-[72px] bg-inset rounded-control p-2 flex flex-col gap-1.5">
+      <div className="flex-1 min-w-[62px] bg-inset rounded-control px-2 py-1.5 flex flex-col gap-0.5">
         <span className="font-mono text-caption text-ink-2 uppercase tracking-wider">Reps</span>
         <input
           type="text"
           value={reps}
           onChange={e => onReps(e.target.value)}
           placeholder="8-10"
-          className="w-full bg-transparent border-none p-0 text-center text-white font-mono text-title-s font-bold focus:outline-none focus:ring-0"
+          className="w-full bg-transparent border-none p-0 text-center text-white font-mono text-body-s font-bold focus:outline-none focus:ring-0"
         />
       </div>
-      <div className="flex-1 min-w-[72px] bg-inset rounded-control p-2 flex flex-col gap-1.5">
+      <div className="flex-1 min-w-[62px] bg-inset rounded-control px-2 py-1.5 flex flex-col gap-0.5">
         <span className="font-mono text-caption text-ink-2 uppercase tracking-wider">Descanso</span>
         <BlockStepper value={rest} min={0} max={600} step={15} format={formatRest} onChange={onRest} />
       </div>
@@ -272,9 +272,9 @@ export default function ExerciseConfigEditor({ we, onChange, mesoWeeks }: Props)
   const totalSets = hasGroups ? (we.setGroups || []).reduce((s, g) => s + Math.max(1, g.sets || 1), 0) : we.sets;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-2.5">
       {/* Series / Reps / Descanso / RIR — uniforme o por bloques */}
-      <div className="space-y-2">
+      <div className="space-y-1.5">
         <div className="flex items-center justify-between">
           <span className="font-mono text-caption text-ink-2 uppercase tracking-wider">
             {totalSets} series{hasGroups ? ` · ${(we.setGroups || []).length} bloques` : ''}
@@ -309,7 +309,7 @@ export default function ExerciseConfigEditor({ we, onChange, mesoWeeks }: Props)
               const esSugerida = !g.label || ETIQUETAS_SUGERIDAS.includes(g.label);
               const mostrarLibre = etiquetaLibre.has(gIdx) || !esSugerida;
               return (
-                <div key={gIdx} className="bg-raised border border-hairline rounded-surface p-3 space-y-3">
+                <div key={gIdx} className="bg-raised border border-hairline rounded-surface p-2 space-y-1.5">
                   <div className="flex items-center gap-2">
                     {mostrarLibre ? (
                       <input
@@ -365,7 +365,7 @@ export default function ExerciseConfigEditor({ we, onChange, mesoWeeks }: Props)
 
         <button
           onClick={hasGroups ? addGroup : enableGroups}
-          className="w-full flex items-center justify-center gap-2 bg-bg border border-dashed border-hairline rounded-control px-3 py-2.5 text-title-s font-sans text-ink-2 hover:text-accent hover:border-accent/40 transition-all"
+          className="w-full flex items-center justify-center gap-2 bg-bg border border-dashed border-hairline rounded-control px-3 py-2 text-body-s font-sans text-ink-2 hover:text-accent hover:border-accent/40 transition-all"
         >
           <Icon name="add" size="s" />
           Añadir bloque con otra configuración
@@ -379,7 +379,7 @@ export default function ExerciseConfigEditor({ we, onChange, mesoWeeks }: Props)
           seis ejercicios era una pared de controles. Ahora es una sola fila de
           chips, SIEMPRE recogida, con uno abierto como mucho. Lo configurado no
           queda escondido: el chip se pinta en oro y lleva el valor al lado. */}
-      <div className="space-y-2 border-t border-hairline pt-3">
+      <div className="space-y-1.5 border-t border-hairline pt-2">
         <div className="flex flex-wrap gap-1.5">
           {SECCIONES.filter(sec => sec !== 'progresion' || mesoWeeks !== undefined).map(sec => (
             <ChipSeccion
@@ -541,7 +541,7 @@ export default function ExerciseConfigEditor({ we, onChange, mesoWeeks }: Props)
             ))}
             <button
               onClick={addProgressionRule}
-              className="w-full flex items-center justify-center gap-2 bg-bg border border-dashed border-hairline rounded-control px-3 py-2.5 text-title-s font-sans text-ink-2 hover:text-accent hover:border-accent/40 transition-all"
+              className="w-full flex items-center justify-center gap-2 bg-bg border border-dashed border-hairline rounded-control px-3 py-2 text-body-s font-sans text-ink-2 hover:text-accent hover:border-accent/40 transition-all"
             >
               <Icon name="add" size="s" />
               Añadir escalón de progresión

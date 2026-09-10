@@ -71,4 +71,17 @@ describe('factorDeReceta', () => {
   it('una receta sin intercambios base no escala nada', () => {
     expect(factorDeReceta(4, 0)).toBe(1);
   });
+
+  it('la deriva de redondeo no convierte una receta intacta en un ×0,98', () => {
+    // Los dos totales se redondean por caminos distintos (snapExchanges vs
+    // round2), y con ingredientes MIX pueden no cuadrar al céntimo.
+    expect(factorDeReceta(2.95, 3)).toBe(1);
+    expect(factorDeReceta(3.1, 3)).toBe(1);
+  });
+
+  it('media ración y ración doble sí se detectan', () => {
+    expect(factorDeReceta(1.5, 3)).toBe(0.5);
+    expect(factorDeReceta(6, 3)).toBe(2);
+    expect(factorDeReceta(3.75, 3)).toBeCloseTo(1.25);
+  });
 });

@@ -109,30 +109,36 @@ function RecipePlaceholder() {
 const RecetaFilaCompacta = React.memo(function RecetaFilaCompacta({ recipe, isFav, onOpen, onToggleFav }: CardProps) {
   const exchStr = formatExchanges(calcExchanges(recipe));
   return (
-    <ListRow
-      className="col-span-1 md:col-span-12 bg-raised border border-hairline rounded-surface"
-      title={recipe.name}
-      subtitle={[exchStr, recipe.kcal != null ? `${recipe.kcal} kcal` : null].filter(Boolean).join(' · ')}
-      leading={
-        <span className="w-9 h-9 rounded-control bg-accent-bg border border-accent/20 flex items-center justify-center">
-          <span className="material-symbols-outlined text-body-s text-accent select-none">skillet</span>
-        </span>
-      }
-      trailing={
-        <button
-          type="button"
-          onClick={e => { e.stopPropagation(); onToggleFav(recipe.id); }}
-          aria-label={isFav ? `Quitar ${recipe.name} de favoritas` : `Marcar ${recipe.name} como favorita`}
-          className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-black/30 transition-colors"
-        >
-          <span
-            className="material-symbols-outlined text-title-s"
-            style={{ fontVariationSettings: isFav ? "'FILL' 1" : "'FILL' 0", color: isFav ? 'var(--color-accent)' : 'var(--color-ink-2)' }}
-          >favorite</span>
-        </button>
-      }
-      onClick={() => onOpen(recipe)}
-    />
+    /* El botón de favorita va FUERA de la ListRow, no en su `trailing`: con
+       `onClick`, ListRow es ella misma un `<button>`, y un botón dentro de otro
+       es HTML inválido — además el nombre que anuncia el lector de pantalla se
+       calcula del texto de dentro, así que la fila se leía «Tortilla de patata,
+       3 int., Marcar como favorita». Dos hermanos en una fila flex. */
+    <div className="col-span-1 md:col-span-12 flex items-center bg-raised border border-hairline rounded-surface pr-1">
+      <ListRow
+        className="min-w-0 flex-1"
+        title={recipe.name}
+        subtitle={[exchStr, recipe.kcal != null ? `${recipe.kcal} kcal` : null].filter(Boolean).join(' · ')}
+        leading={
+          <span className="w-9 h-9 rounded-control bg-accent-bg border border-accent/20 flex items-center justify-center">
+            <span className="material-symbols-outlined text-body-s text-accent select-none">skillet</span>
+          </span>
+        }
+        onClick={() => onOpen(recipe)}
+      />
+      <button
+        type="button"
+        onClick={() => onToggleFav(recipe.id)}
+        aria-pressed={isFav}
+        aria-label={`${recipe.name}, favorita`}
+        className="w-11 h-11 shrink-0 rounded-full flex items-center justify-center hover:bg-black/30 transition-colors"
+      >
+        <span
+          className="material-symbols-outlined text-title-s"
+          style={{ fontVariationSettings: isFav ? "'FILL' 1" : "'FILL' 0", color: isFav ? 'var(--color-accent)' : 'var(--color-ink-2)' }}
+        >favorite</span>
+      </button>
+    </div>
   );
 });
 
@@ -526,13 +532,17 @@ function RecipeDetail({ recipe, isFav, isDisliked, isOwn, enabledModes, savingFa
           </div>
         )}
 
-        {/* Recetas macros breakdown */}
-        {isRecetas && recipe.macros && (
+        {/* Recetas macros breakdown — con la ESCALA aplicada, como las kcal y
+            los ingredientes de arriba. Leía `recipe.macros` sin escalar, así
+            que poner la receta a ×2 doblaba kcal e ingredientes y dejaba los
+            gramos de macros clavados, justo debajo del renglón que promete que
+            «la escala recalcula en vivo». */}
+        {isRecetas && scaledRecipe.macros && (
           <div className="grid grid-cols-3 gap-2 bg-raised border border-hairline rounded-surface p-3">
             {[
-              { label: 'Carbos', val: recipe.macros.carb },
-              { label: 'Proteína', val: recipe.macros.prot },
-              { label: 'Grasa', val: recipe.macros.fat },
+              { label: 'Carbos', val: scaledRecipe.macros.carb },
+              { label: 'Proteína', val: scaledRecipe.macros.prot },
+              { label: 'Grasa', val: scaledRecipe.macros.fat },
             ].map(({ label, val }) => (
               <div key={label} className="text-center">
                 <span className="block font-sans text-caption text-ink-2 uppercase">{label}</span>

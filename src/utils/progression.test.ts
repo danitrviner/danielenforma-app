@@ -49,8 +49,22 @@ describe('diasDeCiclo', () => {
 });
 
 describe('offsetsDeSesiones', () => {
-  it('sin ciclo declarado, las sesiones van al principio (comportamiento histórico)', () => {
-    expect(offsetsDeSesiones({ sesiones: 4, cicloDias: 7 })).toEqual([0, 1, 2, 3]);
+  it('una semana reparte los descansos, no amontona las sesiones al principio', () => {
+    // El fallo: 4 sesiones daban lunes, martes, miércoles y jueves seguidos y
+    // luego tres días libres del tirón. Nadie entrena así.
+    expect(offsetsDeSesiones({ sesiones: 2, cicloDias: 7 })).toEqual([0, 3]);
+    expect(offsetsDeSesiones({ sesiones: 3, cicloDias: 7 })).toEqual([0, 2, 4]);
+    expect(offsetsDeSesiones({ sesiones: 4, cicloDias: 7 })).toEqual([0, 1, 3, 4]);
+    expect(offsetsDeSesiones({ sesiones: 5, cicloDias: 7 })).toEqual([0, 1, 2, 4, 5]);
+  });
+
+  it('el domingo es el último día en usarse', () => {
+    expect(offsetsDeSesiones({ sesiones: 6, cicloDias: 7 })).toEqual([0, 1, 2, 3, 4, 5]);
+    expect(offsetsDeSesiones({ sesiones: 7, cicloDias: 7 })).toEqual([0, 1, 2, 3, 4, 5, 6]);
+  });
+
+  it('con más sesiones que días de semana, el ciclo deja de ser semanal y se entrena a diario', () => {
+    expect(offsetsDeSesiones({ sesiones: 9, cicloDias: 9 })).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8]);
   });
 
   it('el patrón del reparto manda sobre cualquier reparto automático', () => {
@@ -60,7 +74,7 @@ describe('offsetsDeSesiones', () => {
   });
 
   it('un patrón que no cuadra con las sesiones se ignora', () => {
-    expect(offsetsDeSesiones({ sesiones: 4, cicloDias: 7, offsetsDelSplit: [0, 1, 3] })).toEqual([0, 1, 2, 3]);
+    expect(offsetsDeSesiones({ sesiones: 4, cicloDias: 7, offsetsDelSplit: [0, 1, 3] })).toEqual([0, 1, 3, 4]);
   });
 
   it('un ciclo de 14 días también reparte a lo largo, sin anclar a semanas de 7', () => {
@@ -74,10 +88,6 @@ describe('offsetsDeSesiones', () => {
   it('un número impar de sesiones en un ciclo largo también se reparte uniforme', () => {
     expect(offsetsDeSesiones({ sesiones: 9, cicloDias: 14, repartirEnElCiclo: true }))
       .toEqual([0, 1, 3, 4, 6, 7, 9, 10, 12]);
-  });
-
-  it('sin duración de ciclo explícita, las sesiones van al principio (comportamiento histórico)', () => {
-    expect(offsetsDeSesiones({ sesiones: 4, cicloDias: 7 })).toEqual([0, 1, 2, 3]);
   });
 
   it('el mismo mecanismo vale para cualquier duración, cuadre o no con semanas', () => {

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Mesocycle, Workout, Exercise, WeeklyProgressionRule, ConditionMetric, ConditionOperator, ConditionFallback, RuleCondition } from '../../types';
-import { mesocycleWeekNumber, diasDeCiclo } from '../../utils/progression';
+import { mesocycleWeekNumber } from '../../utils/progression';
+import { cicloDiasDeMeso } from '../../utils/asignacionMesociclo';
 import { Sheet, Button, Input, Select, Chip, Stepper } from '../ui';
 
 type Lane = 'entrenamiento' | 'nutricion' | 'revisiones' | 'objetivos';
@@ -165,7 +166,7 @@ export default function EventPlannerSheet({
       if (lane === 'revisiones') {
         await onCreateReview({ title: title.trim() + conditionText(), date, type: subtype as ReviewType });
       } else if (lane === 'entrenamiento' && subtype === 'volumen' && selectedWorkout && activeMeso) {
-        const atWeek = mesocycleWeekNumber(activeMeso.startDate, date, diasDeCiclo(activeMeso.daysPerWeek));
+        const atWeek = mesocycleWeekNumber(activeMeso.startDate, date, cicloDiasDeMeso(activeMeso));
         const condition = structuredCondition();
         await onAddVolumeRule(selectedWorkout.id, exerciseId, { atWeek, addSets, ...(condition ? { condition } : {}) });
       }

@@ -60,5 +60,12 @@ export function escalarRecetaEntera(recipe: Recipe, factor: number): Recipe {
  */
 export function factorDeReceta(actuales: number, base: number): number {
   if (!(base > 0) || !Number.isFinite(actuales)) return 1;
-  return actuales / base;
+  const factor = actuales / base;
+  // Los dos totales se redondean por caminos distintos: `recipeExchanges` pasa
+  // por `snapExchanges` (al cuarto, repartiendo la deriva entre categorías) y
+  // el del plato por `round2` ítem a ítem. Con ingredientes MIX (medio HC,
+  // medio PROT) esa diferencia puede dejar un 0,98 donde debería haber un 1
+  // exacto, y una receta que nadie ha tocado saldría con un cartel de
+  // «Cantidades para ×0,98». Por debajo de un 5 % se considera sin escalar.
+  return Math.abs(factor - 1) < 0.05 ? 1 : factor;
 }

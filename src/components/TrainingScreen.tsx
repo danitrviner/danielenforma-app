@@ -10,7 +10,8 @@ import {
 import { MONTHS_ES, formatDate, hoyIsoLocal } from '../utils/trainingWeek';
 import { bloquesDelCiclo, bloqueActual, BloqueDelCiclo, DiaDelCiclo, EstadoDeDia } from '../utils/cicloDelAtleta';
 import { prefillWorkoutSets } from '../utils/setPrefill';
-import { mesocycleWeekNumber, resolveExerciseForWeek, diasDeCiclo } from '../utils/progression';
+import { mesocycleWeekNumber, resolveExerciseForWeek } from '../utils/progression';
+import { cicloDiasDeMeso } from '../utils/asignacionMesociclo';
 import { useToast } from '../hooks/useToast';
 import { useTourTarget } from '../features/tutorial/TourTargetContext';
 import { useTutorialEngine } from '../features/tutorial/TutorialEngine';
@@ -318,7 +319,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
       ? {
           ...baseWorkout,
           exercises: baseWorkout.exercises.map(we =>
-            resolveExerciseForWeek(we, mesocycleWeekNumber(meso.startDate, assignment.date, diasDeCiclo(meso.daysPerWeek)), conditionCtx)
+            resolveExerciseForWeek(we, mesocycleWeekNumber(meso.startDate, assignment.date, cicloDiasDeMeso(meso)), conditionCtx)
           ),
         }
       : baseWorkout;

@@ -62,8 +62,9 @@ describe('offsetsDelMesociclo', () => {
   });
 
   it('un calendario a mano que ya no cuadra con las sesiones se ignora', () => {
+    // Se cae al automático — que para una semana de 4 sesiones es L, M, J, V.
     const meso = { ...MESO_BASE, daysPerWeek: 4, customOffsets: [0, 2, 4] };
-    expect(offsetsDelMesociclo(meso)).toEqual([0, 1, 2, 3]);
+    expect(offsetsDelMesociclo(meso)).toEqual([0, 1, 3, 4]);
   });
 });
 
