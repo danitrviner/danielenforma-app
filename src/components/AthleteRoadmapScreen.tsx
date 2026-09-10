@@ -8,6 +8,7 @@ import {
   getStepsForAthlete, getWorkoutLogs, getExercises, getDietCompletionLogsForAthlete,
   getDietsForAthlete, getOnboarding, getAthleteNutritionConfig, getWorkoutAssignmentsForAthlete,
   getWeeklyChallengesForAthlete, saveRoadmapLevelProgress, createNotificationDeduped,
+  updateUserProfile,
   getTasksForAthlete, getWorkouts, getCardioSessionsSince, getProgressPhotos,
   getCoachDayNotesForAthlete,
 } from '../dbService';
@@ -175,6 +176,19 @@ export default function AthleteRoadmapScreen({ profile }: Props) {
     saveRoadmapLevelProgress(profile.email, { ...baseLadder, achievedLevelIds }).catch(err =>
       console.warn('saveRoadmapLevelProgress (level up) failed:', err),
     );
+    /* `UserProfile.level` pasa a ser CUÁNTOS PELDAÑOS de la escalera lleva.
+       Antes lo movía un contador de XP que subía viendo lecciones y que nadie
+       leía salvo una tarjeta decorativa — pero la Academia sí lo usa para la
+       regla de desbloqueo «Nivel mínimo», así que en vez de borrarlo se le
+       pone detrás el sistema que significa algo. Un curso pedido a «nivel 3»
+       ahora se abre al llegar al tercer peldaño, no a los 1.200 XP de vídeos
+       (Dani, 10-09-2026). */
+    const peldaños = Object.keys(achievedLevelIds).length;
+    if (peldaños !== profile.level) {
+      updateUserProfile(profile.userId, { level: peldaños }).catch(err =>
+        console.warn('updateUserProfile (nivel de la escalera) failed:', err),
+      );
+    }
     for (const lvl of ladderStatus.newlyAchieved) {
       const body = `Has alcanzado el nivel ${lvl.name}. ¡Enorme!`;
       createNotificationDeduped(`notif_lvl_${profile.email}_${lvl.id}`, {
@@ -187,7 +201,7 @@ export default function AthleteRoadmapScreen({ profile }: Props) {
         createdAt: new Date().toISOString(), read: false,
       }).catch(err => console.warn('createNotificationDeduped (level up, coach) failed:', err));
     }
-  }, [roadmap, ladderStatus, profile.email]);
+  }, [roadmap, ladderStatus, profile.email, profile.userId, profile.level]);
 
   const activePhase = useMemo(() => currentPhase(roadmap?.planPhases), [roadmap]);
   const phaseProgress = useMemo(() => {

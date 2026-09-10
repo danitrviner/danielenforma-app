@@ -734,7 +734,7 @@ function AppContent() {
         <AthleteOnboardingWizard
           profile={{
             userId: 'dev', email: 'dev@example.com', displayName: 'Dev Atleta',
-            role: 'client', avatarUrl: '', level: 1, xp: 0, currentStreak: 0, maxStreak: 0,
+            role: 'client', avatarUrl: '', level: 0, currentStreak: 0, maxStreak: 0,
             initialWeight: 0, targetWeight: 0, actualWeight: 0,
           } as UserProfile}
           onComplete={() => console.log('onComplete')}
@@ -752,7 +752,7 @@ function AppContent() {
           <AceptacionLegalGate
             profile={{
               userId: 'dev', email: 'dev@example.com', displayName: 'Dev Atleta',
-              role: 'client', avatarUrl: '', level: 1, xp: 0, currentStreak: 0, maxStreak: 0,
+              role: 'client', avatarUrl: '', level: 0, currentStreak: 0, maxStreak: 0,
               initialWeight: 0, targetWeight: 0, actualWeight: 0,
             } as UserProfile}
             guardar={async nuevas => { console.log('guardaría', nuevas); return nuevas; }}

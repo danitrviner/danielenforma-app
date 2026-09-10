@@ -3,7 +3,6 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { UserProfile, AcademyCourse, AcademyLesson, AcademyCategory } from '../types';
 import { getAllCourses, getAllLessons, getAcademyProgress, markLessonComplete, getAcademyAccess } from '../dbService';
 import { evaluateUnlockRule } from '../utils/academyUnlock';
-import { grantXp } from '../utils/xp';
 import { addRoadmapMilestone } from '../utils/roadmapMilestones';
 import LessonPlayer from './academy/LessonPlayer';
 import { Skeleton } from './ui';
@@ -17,8 +16,6 @@ const CATEGORY_LABEL: Record<AcademyCategory, string> = {
   entrenamiento: 'Entrenamiento', nutricion: 'Nutrición', fisiologia: 'Fisiología',
   biomecanica: 'Biomecánica', mentalidad: 'Mentalidad', recuperacion: 'Recuperación',
 };
-
-const XP_PER_LESSON = 20;
 
 export default function AcademyScreen({ profile }: Props) {
   const queryClient = useQueryClient();
@@ -71,14 +68,12 @@ export default function AcademyScreen({ profile }: Props) {
 
   const handleCompleteLesson = async (lesson: AcademyLesson) => {
     if (!openCourse) return;
-    const alreadyDone = !!progressSafe.completed[lesson.id];
     const courseLessonIds = courseLessons.map(l => l.id);
     const updated = await markLessonComplete(profile.email, lesson.id, openCourse.id, courseLessonIds);
     queryClient.setQueryData(['academyProgress', profile.email], updated);
-    if (!alreadyDone) {
-      await grantXp(profile, XP_PER_LESSON);
-      queryClient.invalidateQueries({ queryKey: ['profile'] });
-    }
+    /* Aquí se recargaba el perfil para que se viera subir el XP de la lección.
+       Sin XP, el perfil no cambia al completar una lección: la única marca de
+       progreso es `academyProgress`, que ya se acaba de escribir arriba. */
     const justCompletedCourse = updated.courseProgress[openCourse.id] === 100 && progressSafe.courseProgress[openCourse.id] !== 100;
     if (justCompletedCourse) {
       addRoadmapMilestone(profile.email, `milestone_course_${openCourse.id}`, `Completaste el curso "${openCourse.title}"`)

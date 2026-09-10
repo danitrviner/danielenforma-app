@@ -121,7 +121,7 @@ function CoursesTab() {
               className="bg-bg border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent">
               <option value="immediate">Desbloqueo inmediato</option>
               <option value="daysSinceJoin">Días desde el alta</option>
-              <option value="level">Nivel mínimo</option>
+              <option value="level">Nivel mínimo de su escalera</option>
               <option value="prerequisite">Requiere otro curso (ID)</option>
             </select>
             {unlockType !== 'immediate' && (

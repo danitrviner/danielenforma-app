@@ -27,7 +27,7 @@ function haceDias(n: number): string { const d = new Date(); d.setDate(d.getDate
 
 const PERFIL: UserProfile = {
   userId: 'dev', email: EMAIL, displayName: 'Marcos Dev', role: 'client',
-  avatarUrl: '', level: 4, xp: 260, currentStreak: 6, maxStreak: 11,
+  avatarUrl: '', level: 4, currentStreak: 6, maxStreak: 11,
   initialWeight: 84.2, targetWeight: 78, actualWeight: 80.4,
 } as UserProfile;
 

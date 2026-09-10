@@ -20,7 +20,6 @@ import {
 import { calcAge, mifflinBMR } from '../utils/energyCalc';
 import { haptics } from '../services/haptics';
 import { speak, speakUrgent, cancelSpeech, setVoiceEnabled } from '../services/cardioVoice';
-import { grantXp } from '../utils/xp';
 import { loadLivePrefs, saveLivePrefs, CardioLivePrefs } from '../utils/cardioLivePrefs';
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -71,7 +70,6 @@ function useEstable<T extends (...args: any[]) => any>(fn: T): T {
   return useRef(((...args: Parameters<T>) => fnRef.current(...args)) as T).current;
 }
 
-const XP_PER_SESSION = 15;
 export const SAMPLE_INTERVAL_SEC = 4; // submuestreo — nunca FC cruda por segundo (§7.4)
 const ZONE_ALERT_COOLDOWN_MS = 20_000;
 const COOLDOWN_TARGET_SEC = [60, 120] as const;
@@ -832,7 +830,6 @@ function CardioSessionProviderInner({ profile, children }: { profile: UserProfil
       hrr1Min: draft.hrr1Min, hrr2Min: draft.hrr2Min,
     });
     queryClient.setQueryData(['cardioSessions', profile.email], (prev: any[] = []) => [...prev, session]);
-    grantXp(profile, XP_PER_SESSION).catch(err => console.warn('grantXp (cardio session) failed:', err));
 
     // Semana de cardio (§F3.9, contrato "objetivosCardio"): los minutos
     // hechos siempre se derivan de las sesiones reales, nunca se guardan.

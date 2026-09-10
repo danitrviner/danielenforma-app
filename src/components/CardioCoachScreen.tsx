@@ -6,14 +6,12 @@ import {
   getAllPendingHrTests, updateHrTest, createNotificationDeduped,
 } from '../dbService';
 import { ZONE_ORDER, ZONE_LABEL } from '../utils/cardioZones';
-import { grantXp } from '../utils/xp';
 import { addRoadmapMilestone } from '../utils/roadmapMilestones';
 import { Avatar, Skeleton } from './ui';
 import { atletasActivos } from '../utils/atletas';
 import { Button, Tabs, ListRow } from './ui';
 import CardioPrescriptionForm from './cardio/CardioPrescriptionForm';
 
-const XP_PER_APPROVED_TEST = 30;
 
 interface Props {
   coachEmail: string;
@@ -157,7 +155,6 @@ function PendingTestsTab({ coachEmail }: { coachEmail: string }) {
       });
     }
     const athlete = profiles.find(p => p.email === t.athleteId);
-    if (athlete) grantXp(athlete, XP_PER_APPROVED_TEST).catch(err => console.warn('grantXp (hrtest approved) failed:', err));
     createNotificationDeduped(`notif_hrtest_approved_${t.id}`, {
       recipientEmail: t.athleteId, type: 'hrtest_approved', title: 'Zonas de FC actualizadas',
       body: 'Tu entrenador aprobó tu test y actualizó tus zonas de frecuencia cardíaca.',
