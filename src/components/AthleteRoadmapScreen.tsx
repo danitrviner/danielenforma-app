@@ -29,6 +29,7 @@ import { DEFAULT_KCAL_PER_STEP } from '../utils/nutritionConstants';
 import { computePhaseWeightStatus } from '../utils/planNutritionBridge';
 import { markRoadmapVisited } from './PlanInPreparationCard';
 import { Icon, PageHeader, EmptyState } from './ui';
+import TarjetaIdentidadAtleta from './TarjetaIdentidadAtleta';
 
 const PHASE_COLORS = ['var(--color-accent)', 'var(--color-data)', 'var(--color-warning)', 'var(--color-chart-3)'];
 const DEFAULT_STEP_GOAL = 8000;
@@ -292,8 +293,6 @@ export default function AthleteRoadmapScreen({ profile }: Props) {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Road map" subtitle="Tu progreso y lo que te queda por delante" />
-
       {activePhase && phaseProgress && (
         <PhaseHeroCard phase={activePhase} progress={phaseProgress} weightStatus={phaseWeightStatus} />
       )}
@@ -333,6 +332,12 @@ export default function AthleteRoadmapScreen({ profile }: Props) {
           coachDayNotes={coachDayNotes}
         />
       </div>
+
+      {/* Quién eres, al final: nombre, nivel, XP y meta. Estaba encima de las
+          pestañas del Perfil ocupando la primera pantalla entera antes de
+          poder llegar a nada, y aquí cierra el relato de por dónde vas, detrás
+          del calendario y de los logros (Dani, 10-09-2026). */}
+      <TarjetaIdentidadAtleta profile={profile} />
     </div>
   );
 }
