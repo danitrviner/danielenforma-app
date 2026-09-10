@@ -106,9 +106,15 @@ describe('porCobrar', () => {
 
 describe('mrr', () => {
   it('reparte el contrato entre los meses que dura, no por la periodicidad declarada', () => {
-    // 900 € a seis meses son 150 €/mes, se cobren de una vez o en tres cuotas.
+    // 900 € de julio a diciembre son ~150 €/mes, se cobren de una vez o en tres
+    // cuotas. «~» porque los meses se cuentan por días entre 30,44 (la media
+    // real), y del 1 de julio al 31 de diciembre hay 184 días = 6,05 meses. La
+    // diferencia es de un euro y pico sobre 150: para una cifra de recurrente
+    // no importa, y a cambio no hay que decidir qué es «un mes» del 31 de enero.
     const s = serv({ importeCents: 90000, fechaInicio: '2026-07-01', fechaFin: '2026-12-31' });
-    expect(mrr([s], '2026-09-10')).toBeCloseTo(15000, -2);
+    const v = mrr([s], '2026-09-10');
+    expect(v).toBeGreaterThan(14500);
+    expect(v).toBeLessThan(15200);
   });
 
   it('un servicio ya terminado o aún sin empezar no es recurrente', () => {
@@ -182,20 +188,51 @@ describe('permanenciaMedia', () => {
 });
 
 describe('churnDelMes', () => {
-  it('bajas del mes sobre los que estaban', () => {
+  // Todos con un servicio empezado en enero: ya eran clientes en septiembre.
+  const desdeEnero = (...ids: string[]) =>
+    new Map(ids.map(id => [id, [serv({ clientId: id, fechaInicio: '2026-01-01' })]]));
+
+  it('bajas del mes sobre los que ya eran clientes', () => {
     const clientes = [
       cli({ id: 'a', fechaBaja: '2026-09-15' }),
       cli({ id: 'b' }), cli({ id: 'c' }), cli({ id: 'd' }),
     ];
-    expect(churnDelMes(clientes, '2026-09')).toBe(25);
+    expect(churnDelMes(clientes, '2026-09', desdeEnero('a', 'b', 'c', 'd'))).toBe(25);
+  });
+
+  it('LOS LEADS NO CUENTAN EN EL DENOMINADOR', () => {
+    // Cinco clientes de verdad y una baja son un 20 %. Con diez contactos
+    // nuevos apuntados ese mes salía un 7 % — un churn que mejora cuando
+    // entran leads no mide nada.
+    const clientes = [
+      cli({ id: 'a', fechaBaja: '2026-09-15' }),
+      cli({ id: 'b' }), cli({ id: 'c' }), cli({ id: 'd' }), cli({ id: 'e' }),
+      ...Array.from({ length: 10 }, (_, i) => cli({ id: `lead${i}`, estadoCrm: 'lead' })),
+    ];
+    expect(churnDelMes(clientes, '2026-09', desdeEnero('a', 'b', 'c', 'd', 'e'))).toBe(20);
+  });
+
+  it('quien empezó ESTE mes no estaba al empezarlo', () => {
+    const clientes = [cli({ id: 'a', fechaBaja: '2026-09-20' }), cli({ id: 'nuevo' })];
+    const servicios = new Map([
+      ['a', [serv({ clientId: 'a', fechaInicio: '2026-01-01' })]],
+      ['nuevo', [serv({ clientId: 'nuevo', fechaInicio: '2026-09-05' })]],
+    ]);
+    expect(churnDelMes(clientes, '2026-09', servicios)).toBe(100);
+  });
+
+  it('quien ya se había ido antes tampoco estaba', () => {
+    const clientes = [cli({ id: 'a', fechaBaja: '2026-09-15' }), cli({ id: 'viejo', fechaBaja: '2026-03-01' })];
+    expect(churnDelMes(clientes, '2026-09', desdeEnero('a', 'viejo'))).toBe(100);
   });
 
   it('sin nadie activo no hay churn que calcular: es ruido, no un 100 %', () => {
-    expect(churnDelMes([], '2026-09')).toBeNull();
+    expect(churnDelMes([], '2026-09', new Map())).toBeNull();
+    expect(churnDelMes([cli({ id: 'solo-lead' })], '2026-09', new Map())).toBeNull();
   });
 
   it('una baja de otro mes no cuenta en este', () => {
-    expect(churnDelMes([cli({ fechaBaja: '2026-07-01' }), cli({ id: 'b' })], '2026-09')).toBe(0);
+    expect(churnDelMes([cli({ id: 'a', fechaBaja: '2026-07-01' }), cli({ id: 'b' })], '2026-09', desdeEnero('b'))).toBe(0);
   });
 });
 

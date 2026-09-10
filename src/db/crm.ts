@@ -29,6 +29,7 @@ import type { UserProfile } from '../types';
 import { stripUndefined, authReady, conTimeout } from './core';
 import { leerCatalogo, marcarCatalogoCambiado } from './catalogoVersionado';
 import { avanzarPeriodo, sumarMeses, hoyISO } from '../features/crm/lib/fechas';
+import { cobradoDe } from '../features/crm/lib/dinero';
 import { repartirEnCuotas } from '../features/crm/lib/dinero';
 
 const COL_CONTACTOS = 'crmContactos';
@@ -204,9 +205,14 @@ export async function eliminarClienteDelCrm(objetivo: {
 
   const mios = <T extends { clientId: string }>(xs: T[]) => xs.filter(x => x.clientId === objetivo.clientId);
   const pagosDelCliente = mios(pagos);
-  const cobrados = pagosDelCliente.filter(p => p.estado === 'pagado');
+  // Cualquier movimiento con dinero DENTRO bloquea el borrado, no solo los
+  // `pagado`: un pago `parcial` con 200 € ya cobrados se colaba por este filtro
+  // y el cliente se borraba en cascada, llevándose por delante ese cobro sin un
+  // aviso ni un error. Las reglas de Firestore tampoco lo paraban: solo
+  // rechazan borrar documentos con `estado == 'pagado'`.
+  const cobrados = pagosDelCliente.filter(p => cobradoDe(p) > 0);
   if (cobrados.length > 0) {
-    throw new ClienteConCobros(cobrados.length, cobrados.reduce((t, p) => t + p.importeCents, 0));
+    throw new ClienteConCobros(cobrados.length, cobrados.reduce((t, p) => t + cobradoDe(p), 0));
   }
 
   const refs = [

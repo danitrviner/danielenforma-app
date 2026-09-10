@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { usePagos } from '../hooks/usePagos';
 import { useSuscripciones } from '../hooks/useSuscripciones';
-import { formatEuros, sumaCents } from '../lib/dinero';
+import { formatEuros, sumaCobrado, sumaPendiente } from '../lib/dinero';
 import MetricCard from '../components/MetricCard';
 import SuscripcionesBlock from '../components/SuscripcionesBlock';
 import PagosTable from '../components/PagosTable';
@@ -16,6 +16,14 @@ import { coincideBusqueda } from '../../../utils/busqueda';
 // a diferencia de PagosTab/RenovacionesTab que están scopeados a uno. El
 // buscador y el filtro viven en la URL (?estado=&q=), mismo patrón que
 // ClientesList.tsx — un refresco o el botón atrás recuperan la vista exacta.
+const FILTROS: { id: EstadoPago | 'todos'; label: string }[] = [
+  { id: 'todos',     label: 'Todos' },
+  { id: 'pendiente', label: 'Pendientes' },
+  { id: 'impagado',  label: 'Impagados' },
+  { id: 'parcial',   label: 'A medias' },
+  { id: 'pagado',    label: 'Pagados' },
+];
+
 export default function PagosScreen({ coachEmail }: { coachEmail: string }) {
   const [params, setParams] = useSearchParams();
   const [modalSuscripcion, setModalSuscripcion] = useState(false);
@@ -33,8 +41,12 @@ export default function PagosScreen({ coachEmail }: { coachEmail: string }) {
   const { data: pagos = [], isPending: cargandoPagos, isError: errorPagos } = usePagos();
   const { data: suscripciones = [], isPending: cargandoSuscripciones, isError: errorSuscripciones } = useSuscripciones();
 
-  const facturado = sumaCents(pagos.filter(p => p.estado === 'pagado'));
-  const pendienteDeCobro = sumaCents(pagos.filter(p => p.estado === 'pendiente'));
+  // Nada de filtrar por `estado === 'pagado'`/`'pendiente'`: un pago `parcial`
+  // lleva dinero dentro que el primero se deja fuera, y un `impagado` no es
+  // `pendiente`, así que se caía de las dos cifras (Dani, 10-09-2026).
+  const facturado = sumaCobrado(pagos);
+  const pendienteDeCobro = sumaPendiente(pagos);
+  const impagado = sumaPendiente(pagos.filter(p => p.estado === 'impagado'));
   const suscripcionesActivas = suscripciones.filter(s => s.estado === 'activa').length;
 
   const pagosFiltrados = useMemo(() => {
@@ -54,7 +66,11 @@ export default function PagosScreen({ coachEmail }: { coachEmail: string }) {
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
         <MetricCard icon="paid" label="Facturado" value={formatEuros(facturado)} sub="histórico, todos los cobros" />
-        <MetricCard icon="schedule" label="Pendiente de cobro" value={formatEuros(pendienteDeCobro)} sub="pagos pendientes" accent="var(--color-warning)" />
+        <MetricCard
+          icon="schedule" label="Pendiente de cobro" value={formatEuros(pendienteDeCobro)}
+          sub={impagado > 0 ? `${formatEuros(impagado)} impagado` : 'pagos pendientes'}
+          accent={impagado > 0 ? 'var(--color-danger)' : 'var(--color-warning)'}
+        />
         <MetricCard icon="autorenew" label="Suscripciones activas" value={suscripcionesActivas} sub={`${suscripciones.length} en total`} />
       </div>
 
@@ -101,19 +117,22 @@ export default function PagosScreen({ coachEmail }: { coachEmail: string }) {
             />
           </div>
           <div className="flex items-center gap-1 min-w-0 overflow-x-auto hide-scrollbar" role="group" aria-label="Filtrar por estado">
-            {(['todos', 'pendiente', 'pagado'] as const).map(f => (
+            {/* Los cinco estados. Antes solo se podía filtrar por pendiente y
+                pagado, así que un pago marcado como impagado o cobrado a medias
+                no había forma de sacarlo por pantalla (Dani, 10-09-2026). */}
+            {FILTROS.map(({ id, label }) => (
               <button
-                key={f}
+                key={id}
                 type="button"
-                onClick={() => setParam('estado', f === 'todos' ? '' : f)}
-                aria-pressed={filtro === f}
+                onClick={() => setParam('estado', id === 'todos' ? '' : id)}
+                aria-pressed={filtro === id}
                 className={`shrink-0 px-3 py-2 rounded-control font-mono text-caption uppercase tracking-widest transition-colors ${
-                  filtro === f
+                  filtro === id
                     ? 'bg-accent/15 text-accent border border-accent/30'
                     : 'bg-field text-ink-2 border border-hairline hover:border-strong'
                 }`}
               >
-                {f === 'todos' ? 'Todos' : f === 'pendiente' ? 'Pendientes' : 'Pagados'}
+                {label}
               </button>
             ))}
           </div>

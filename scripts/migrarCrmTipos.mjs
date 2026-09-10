@@ -100,9 +100,14 @@ async function main() {
       const nombre = normaliza(s.nombre);
       const tipo = i === 0 ? 'alta' : nombresVistos.has(nombre) ? 'renovacion' : 'upsell';
       // Dos servicios el MISMO día no tienen un orden real: cuál es el alta y
-      // cuál el upsell es una decisión de negocio, no de fecha.
+      // cuál el upsell es una decisión de negocio, no de fecha. Ahí NO se
+      // escribe nada — el documento se queda sin tipo y se lista para que Dani
+      // lo clasifique. Un desglose que se queda corto se nota; uno que cuadra
+      // por casualidad, no.
       if (i > 0 && lista[i - 1].fechaInicio === s.fechaInicio) {
-        dudas.push(`Servicios ${lista[i - 1].id} y ${s.id} de ${s.clientNombre ?? s.clientId} empiezan el mismo día (${s.fechaInicio}) — se ha supuesto «${tipo}» para «${s.nombre}».`);
+        dudas.push(`Servicios ${lista[i - 1].id} y ${s.id} de ${s.clientNombre ?? s.clientId} empiezan el mismo día (${s.fechaInicio}) — «${s.nombre}» se queda SIN tipo, clasifícalo a mano.`);
+        nombresVistos.add(nombre);
+        return;
       }
       tipoPorServicio.set(s.id, tipo);
       cuenta[tipo]++;
@@ -158,11 +163,13 @@ async function main() {
   }
 
   // ── 3. Informe ─────────────────────────────────────────────────────────────
+  const sinClasificar = servicios.filter(s => !s.tipo && !tipoPorServicio.has(s.id)).length;
   console.log('SERVICIOS');
   console.log(`  altas          ${cuenta.alta}`);
   console.log(`  renovaciones   ${cuenta.renovacion}`);
   console.log(`  upsells        ${cuenta.upsell}`);
-  console.log(`  ya tenían tipo ${cuenta.yaTenia}\n`);
+  console.log(`  ya tenían tipo ${cuenta.yaTenia}`);
+  console.log(`  SIN clasificar ${sinClasificar}  (ambiguos — se dejan a mano)\n`);
 
   const porTipo = { alta: 0, renovacion: 0, upsell: 0 };
   const dineroPorTipo = { alta: 0, renovacion: 0, upsell: 0 };
@@ -196,19 +203,40 @@ async function main() {
   let batch = db.batch();
   let n = 0;
   const commit = async () => { if (n > 0) { await batch.commit(); batch = db.batch(); n = 0; } };
-  const encolar = async (fn) => { fn(); if (++n >= BATCH_SIZE) await commit(); };
+  /**
+   * Encola un GRUPO de escrituras que tienen que entrar juntas. Si no caben en
+   * lo que queda del lote, se cierra el lote antes de empezarlas.
+   *
+   * Importa para los huérfanos: crear el servicio suelto y apuntarlo en su
+   * movimiento son dos escrituras, y si el corte de lote caía entre las dos y
+   * el segundo commit fallaba (un corte de red contra producción), quedaba el
+   * servicio creado y el movimiento sin enlazar. Volver a pasar el script
+   * —que se supone que es seguro— le creaba un SEGUNDO servicio suelto.
+   */
+  const encolarGrupo = async (fns) => {
+    if (n + fns.length > BATCH_SIZE) await commit();
+    for (const fn of fns) fn();
+    n += fns.length;
+  };
 
   for (const s of servicios) {
     const tipo = tipoPorServicio.get(s.id);
     if (!tipo || s.tipo) continue;
-    await encolar(() => batch.update(db.collection(COL_SERVICIOS).doc(s.id), { tipo, updatedAt: ahora }));
+    await encolarGrupo([() => batch.update(db.collection(COL_SERVICIOS).doc(s.id), { tipo, updatedAt: ahora })]);
   }
   for (const { ref, datos, movimientoId } of serviciosNuevos) {
-    await encolar(() => batch.set(ref, datos));
-    await encolar(() => batch.update(db.collection(COL_PAGOS).doc(movimientoId), { servicioId: ref.id, updatedAt: ahora }));
+    // El tipo del movimiento va aquí también: así el huérfano queda enlazado y
+    // clasificado en la MISMA escritura, y no hay un estado intermedio en el
+    // que tenga servicio pero no tipo.
+    const tipo = tipoPorMovimiento.get(movimientoId);
+    tipoPorMovimiento.delete(movimientoId);
+    await encolarGrupo([
+      () => batch.set(ref, datos),
+      () => batch.update(db.collection(COL_PAGOS).doc(movimientoId), { servicioId: ref.id, tipo, updatedAt: ahora }),
+    ]);
   }
   for (const [id, tipo] of tipoPorMovimiento) {
-    await encolar(() => batch.update(db.collection(COL_PAGOS).doc(id), { tipo, updatedAt: ahora }));
+    await encolarGrupo([() => batch.update(db.collection(COL_PAGOS).doc(id), { tipo, updatedAt: ahora })]);
   }
   await commit();
 

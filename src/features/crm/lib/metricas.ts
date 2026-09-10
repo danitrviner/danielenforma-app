@@ -1,5 +1,11 @@
 import type { CrmPago, CrmServicio, Cliente, EstadoPago, TipoMovimiento } from '../types';
 import { hoyISO } from './fechas';
+import { cobradoDe, pendienteDe } from './dinero';
+
+// `cobradoDe`/`pendienteDe` viven en `dinero.ts` —son primitivas de dinero, no
+// KPIs— y se reexportan aquí para que quien calcule métricas no tenga que
+// importar de los dos sitios.
+export { cobradoDe, pendienteDe } from './dinero';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Los KPIs del negocio.
@@ -21,30 +27,6 @@ export type ClaveMes = string;
 
 export function mesDe(iso: string): ClaveMes {
   return iso.slice(0, 7);
-}
-
-/**
- * Dinero que ENTRÓ de verdad en un movimiento.
- *
- * Tres casos que no se pueden tratar igual:
- *  - `pagado`  → todo el importe.
- *  - `parcial` → solo lo que se llegó a cobrar (`importeCobradoCents`).
- *  - lo demás  → nada; un pendiente o un impagado no es facturación.
- *
- * Los descuentos y las devoluciones ya vienen con importe negativo, así que
- * entran por el primer caso y restan solos: nadie tiene que acordarse.
- */
-export function cobradoDe(m: Pick<CrmPago, 'estado' | 'importeCents' | 'importeCobradoCents'>): number {
-  if (m.estado === 'pagado') return m.importeCents;
-  if (m.estado === 'parcial') return m.importeCobradoCents ?? 0;
-  return 0;
-}
-
-/** Lo que falta por cobrar de un movimiento: nada si ya está pagado. */
-export function pendienteDe(m: Pick<CrmPago, 'estado' | 'importeCents' | 'importeCobradoCents'>): number {
-  if (m.estado === 'pendiente' || m.estado === 'impagado') return m.importeCents;
-  if (m.estado === 'parcial') return m.importeCents - (m.importeCobradoCents ?? 0);
-  return 0;
 }
 
 // ─── Dinero ──────────────────────────────────────────────────────────────────
@@ -97,8 +79,14 @@ export function porCobrar(movimientos: CrmPago[]): { pendienteCents: number; imp
   let pendienteCents = 0;
   let impagadoCents = 0;
   for (const m of movimientos) {
-    if (m.estado === 'impagado') impagadoCents += pendienteDe(m);
-    else pendienteCents += pendienteDe(m);
+    const cents = pendienteDe(m);
+    // Los movimientos NEGATIVOS (un descuento aún sin aplicar, una devolución
+    // aún sin hacer) no son dinero que nadie te deba. Sumarlos aquí tapaba
+    // deudas reales: un descuento pendiente de −100 € y una cuota impagada de
+    // 300 € daban «200 € pendientes», y esos 300 € dejaban de verse.
+    if (cents <= 0) continue;
+    if (m.estado === 'impagado') impagadoCents += cents;
+    else pendienteCents += cents;
   }
   return { pendienteCents, impagadoCents };
 }
@@ -185,17 +173,35 @@ export function permanenciaMedia(
 }
 
 /**
- * Bajas del mes partido por los que estaban activos al empezarlo.
+ * Bajas del mes partido por los que ya eran clientes al empezarlo.
  *
- * `null` cuando no había nadie activo: un churn del 100 % porque se fue el
- * único cliente que había en el primer mes no es un dato, es ruido.
+ * El denominador son CLIENTES DE VERDAD, no la lista entera: hace falta el
+ * mapa de servicios para saber quién había contratado ya algo antes de que
+ * empezara el mes. Sin él, el cálculo contaba también a los leads que se
+ * apuntaron a la agenda ese mes y nunca compraron — cinco clientes con una baja
+ * salían al 7 % de churn en vez del 20 % real solo porque habían entrado diez
+ * contactos nuevos. Un churn que mejora cuando entran leads no mide nada.
+ *
+ * `null` cuando no había nadie: un 100 % porque se fue el único cliente del
+ * primer mes no es un dato, es ruido.
  */
-export function churnDelMes(clientes: Cliente[], mes: ClaveMes): number | null {
-  const bajas = clientes.filter(c => c.fechaBaja && mesDe(c.fechaBaja) === mes).length;
-  const activosAlEmpezar = clientes.filter(c =>
-    !c.archivado && (!c.fechaBaja || mesDe(c.fechaBaja) >= mes)).length;
-  if (activosAlEmpezar === 0) return null;
-  return Math.round((bajas / activosAlEmpezar) * 1000) / 10;
+export function churnDelMes(
+  clientes: Cliente[],
+  mes: ClaveMes,
+  serviciosPorCliente: Map<string, CrmServicio[]>,
+): number | null {
+  const eraClienteAlEmpezar = (c: Cliente) => {
+    if (c.archivado) return false;
+    const alta = fechaAltaDe(serviciosPorCliente.get(c.id) ?? []);
+    // Sin ningún servicio contratado no es un cliente, es un contacto.
+    if (!alta || mesDe(alta) >= mes) return false;
+    // Y si ya se había ido antes de empezar el mes, tampoco estaba.
+    return !c.fechaBaja || mesDe(c.fechaBaja) >= mes;
+  };
+  const base = clientes.filter(eraClienteAlEmpezar);
+  if (base.length === 0) return null;
+  const bajas = base.filter(c => c.fechaBaja && mesDe(c.fechaBaja) === mes).length;
+  return Math.round((bajas / base.length) * 1000) / 10;
 }
 
 // ─── Valor ───────────────────────────────────────────────────────────────────
@@ -320,5 +326,8 @@ function mesesEntre(desde: string, hasta: string): number {
   const d = Date.parse(`${desde}T00:00:00`);
   const h = Date.parse(`${hasta}T00:00:00`);
   if (!Number.isFinite(d) || !Number.isFinite(h) || h < d) return 0;
-  return (h - d) / 86_400_000 / 30.44;
+  // +1 día porque el rango es INCLUSIVO: un servicio del 1 al 31 de enero dura
+  // 31 días, no 30. Sin esto la permanencia salía sistemáticamente un pelo
+  // corta, un día por cada tramo contratado.
+  return ((h - d) / 86_400_000 + 1) / 30.44;
 }

@@ -61,6 +61,23 @@ export default function PagosTable({ pagos, cargando, error, mostrarCliente, coa
     }
   };
 
+  /* Un pendiente que ya tenía que haber entrado. Lo marca el coach, NUNCA el
+     reloj: deducirlo de los días de retraso convertiría un olvido en una deuda
+     (docs/crm-modelo-v2.md). Y se puede deshacer, que marcarlo por error y no
+     poder volver atrás dejaría la cifra de impagados mintiendo para siempre. */
+  const marcarImpagado = async (p: CrmPago, impagado: boolean) => {
+    try {
+      await actualizar.mutateAsync({
+        id: p.id,
+        clientId: p.clientId,
+        updates: { estado: impagado ? 'impagado' : 'pendiente' },
+      });
+      showToast(impagado ? 'Marcado como impagado' : 'Vuelve a estar pendiente', 'success');
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'No se ha podido guardar', 'error');
+    }
+  };
+
   const borrar = async (p: CrmPago) => {
     if (!window.confirm(`¿Borrar el pago «${p.concepto}» (${formatEuros(p.importeCents)})?\n\nSolo se puede borrar mientras está pendiente.`)) return;
     try {
@@ -100,7 +117,7 @@ export default function PagosTable({ pagos, cargando, error, mostrarCliente, coa
       header: 'Fecha',
       width: '110px',
       render: p => {
-        const retraso = p.estado === 'pendiente' ? diasDeRetraso(p.fechaEmision) : 0;
+        const retraso = (p.estado === 'pendiente' || p.estado === 'impagado') ? diasDeRetraso(p.fechaEmision) : 0;
         const atrasado = retraso > UMBRAL_DIAS_AVISO;
         // Un pendiente con fecha futura (el plan que empieza el lunes que
         // viene) no está atrasado ni es de hoy: sin decirlo, la fila parecía
@@ -131,7 +148,7 @@ export default function PagosTable({ pagos, cargando, error, mostrarCliente, coa
       align: 'right',
       render: p => (
         <div className="flex items-center justify-end gap-1">
-          {p.estado === 'pendiente' && (
+          {(p.estado === 'pendiente' || p.estado === 'impagado' || p.estado === 'parcial') && (
             <button
               type="button"
               onClick={() => marcarPagado(p)}
@@ -140,6 +157,19 @@ export default function PagosTable({ pagos, cargando, error, mostrarCliente, coa
               className="w-7 h-7 rounded-control inline-flex items-center justify-center text-success hover:bg-white/6 transition-colors"
             >
               <Icon name="check_circle" size="m" />
+            </button>
+          )}
+          {(p.estado === 'pendiente' || p.estado === 'impagado') && (
+            <button
+              type="button"
+              onClick={() => marcarImpagado(p, p.estado !== 'impagado')}
+              aria-label={p.estado === 'impagado' ? 'Volver a pendiente' : 'Marcar como impagado'}
+              title={p.estado === 'impagado' ? 'Volver a pendiente' : 'Marcar como impagado'}
+              className={`w-7 h-7 rounded-control inline-flex items-center justify-center hover:bg-white/6 transition-colors ${
+                p.estado === 'impagado' ? 'text-warning' : 'text-ink-2'
+              }`}
+            >
+              <Icon name={p.estado === 'impagado' ? 'undo' : 'report'} size="m" />
             </button>
           )}
           <button
@@ -151,7 +181,7 @@ export default function PagosTable({ pagos, cargando, error, mostrarCliente, coa
           >
             <Icon name="edit" size="m" />
           </button>
-          {p.estado === 'pendiente' && (
+          {(p.estado === 'pendiente' || p.estado === 'impagado') && (
             <button
               type="button"
               onClick={() => borrar(p)}

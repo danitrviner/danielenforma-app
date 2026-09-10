@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { useServiciosDe } from '../hooks/useServicios';
 import { usePagosDe } from '../hooks/usePagos';
 import { useReunionesDe } from '../hooks/useReuniones';
-import { formatEuros, sumaCents } from '../lib/dinero';
+import { formatEuros, sumaCobrado, sumaPendiente, cobradoDe } from '../lib/dinero';
 import { formatDia, hoyISO } from '../lib/fechas';
 import MetricCard from './MetricCard';
 import EmptyState from './EmptyState';
@@ -25,8 +25,10 @@ export default function HistorialTab({ cliente }: { cliente: Cliente }) {
   const hoy = hoyISO();
 
   const resumen = useMemo(() => {
-    const pagosPagados = pagos.filter(p => p.estado === 'pagado');
-    const pagosPendientes = pagos.filter(p => p.estado === 'pendiente');
+  // Nada de filtrar por `estado === 'pagado'`/`'pendiente'`: un pago `parcial`
+  // lleva dinero dentro que el primero se deja fuera, y un `impagado` no es
+  // `pendiente`, así que se caía de las dos cifras (Dani, 10-09-2026).
+    const pagosPagados = pagos.filter(p => cobradoDe(p) > 0);
     const reunionesRealizadas = reuniones.filter(r => r.realizada);
 
     const primerPrograma = servicios.length
@@ -50,12 +52,12 @@ export default function HistorialTab({ cliente }: { cliente: Cliente }) {
 
     return {
       numProgramas: servicios.length,
-      totalPagado: sumaCents(pagosPagados),
+      totalPagado: sumaCobrado(pagos),
       pagosRealizados: pagosPagados.length,
       reunionesRealizadas: reunionesRealizadas.length,
       primerPrograma,
       ultimoFin,
-      pendienteCobro: sumaCents(pagosPendientes),
+      pendienteCobro: sumaPendiente(pagos),
       timeline,
       conversionContinuidad,
     };

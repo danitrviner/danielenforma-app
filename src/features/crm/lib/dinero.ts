@@ -69,14 +69,58 @@ export interface IngresoMensual {
 }
 
 /**
- * Cobrado real por mes (solo `estado === 'pagado'`, agrupado por `fechaCobro`
+ * Dinero que ENTRÓ de verdad en un movimiento.
+ *
+ * No vale con `estado === 'pagado'`: desde 09-2026 un movimiento puede estar
+ * `parcial` (llegó parte) o `impagado` (tenía que haber llegado y no llegó), y
+ * un `filter(p => p.estado === 'pagado')` se deja fuera el dinero de los
+ * parciales. Los descuentos y devoluciones ya vienen en negativo, así que
+ * entran por aquí y restan solos.
+ */
+export function cobradoDe(m: MovimientoLike): number {
+  if (m.estado === 'pagado') return m.importeCents;
+  if (m.estado === 'parcial') return m.importeCobradoCents ?? 0;
+  return 0;
+}
+
+/**
+ * Lo que falta por cobrar de un movimiento.
+ *
+ * Ojo con `estado === 'pendiente'` a pelo: un `impagado` NO es `pendiente`, así
+ * que desaparecía de los totales de «pendiente de cobro» — el dinero que más
+ * falta hacía era justo el que no se veía por ningún lado.
+ */
+export function pendienteDe(m: MovimientoLike): number {
+  if (m.estado === 'pendiente' || m.estado === 'impagado') return m.importeCents;
+  if (m.estado === 'parcial') return m.importeCents - (m.importeCobradoCents ?? 0);
+  return 0;
+}
+
+/** Suma lo cobrado de una lista de movimientos. */
+export function sumaCobrado(movimientos: MovimientoLike[]): number {
+  return movimientos.reduce((s, m) => s + cobradoDe(m), 0);
+}
+
+/** Suma lo que queda por cobrar, esté al día o impagado. */
+export function sumaPendiente(movimientos: MovimientoLike[]): number {
+  return movimientos.reduce((s, m) => s + pendienteDe(m), 0);
+}
+
+interface MovimientoLike {
+  estado: EstadoPagoLike;
+  importeCents: number;
+  importeCobradoCents?: number;
+}
+
+/**
+ * Cobrado real por mes (agrupado por `fechaCobro`
  * — NO por `fechaEmision`, que puede caer en un mes distinto de cuando entró
  * el dinero), para los últimos `meses` meses incluyendo el actual. Meses sin
  * ningún pago cobrado salen con `totalCents: 0`, no se omiten — el histograma
  * necesita huecos visibles, no una serie comprimida.
  */
 export function ingresosPorMes(
-  pagos: { estado: EstadoPagoLike; fechaCobro?: string; importeCents: number }[],
+  pagos: (MovimientoLike & { fechaCobro?: string })[],
   meses = 7,
   hoy: Date = new Date()
 ): IngresoMensual[] {
@@ -86,9 +130,11 @@ export function ingresosPorMes(
   });
   const totales = new Map(claves.map(c => [c, 0]));
   for (const p of pagos) {
-    if (p.estado !== 'pagado' || !p.fechaCobro) continue;
+    if (!p.fechaCobro) continue;
+    const cents = cobradoDe(p);
+    if (cents === 0) continue;
     const clave = p.fechaCobro.slice(0, 7);
-    if (totales.has(clave)) totales.set(clave, totales.get(clave)! + p.importeCents);
+    if (totales.has(clave)) totales.set(clave, totales.get(clave)! + cents);
   }
   return claves.map(mes => ({ mes, totalCents: totales.get(mes)! }));
 }

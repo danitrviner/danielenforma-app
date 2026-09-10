@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useClientes } from '../hooks/useClientes';
 import { useReuniones } from '../hooks/useReuniones';
 import { usePagos } from '../hooks/usePagos';
-import { formatEuros, sumaCents, ingresosPorMes } from '../lib/dinero';
+import { formatEuros, sumaCobrado, sumaPendiente, pendienteDe, ingresosPorMes } from '../lib/dinero';
 import { facturacionDelMes, mesDe } from '../lib/metricas';
 import { formatDia, tiempoRelativo, hoyISO, aDiaISO } from '../lib/fechas';
 import MetricCard from '../components/MetricCard';
@@ -34,14 +34,22 @@ export default function DashboardScreen() {
     [reuniones]
   );
   const pagosPendientes = useMemo(
-    () => pagos.filter(p => p.estado === 'pendiente').sort((a, b) => a.fechaEmision.localeCompare(b.fechaEmision)).slice(0, MAX_FILAS),
+    // Los impagados primero: son los que hay que llamar hoy.
+    () => pagos.filter(p => pendienteDe(p) > 0)
+      .sort((a, b) => Number(b.estado === 'impagado') - Number(a.estado === 'impagado')
+        || a.fechaEmision.localeCompare(b.fechaEmision))
+      .slice(0, MAX_FILAS),
     [pagos]
   );
 
   const serieIngresos = useMemo(() => ingresosPorMes(pagos), [pagos]);
 
-  const facturado = sumaCents(pagos.filter(p => p.estado === 'pagado'));
-  const totalPendiente = sumaCents(pagos.filter(p => p.estado === 'pendiente'));
+  // Nada de filtrar por `estado === 'pagado'`/`'pendiente'`: un pago `parcial`
+  // lleva dinero dentro que el primero se deja fuera, y un `impagado` no es
+  // `pendiente`, así que se caía de las dos cifras (Dani, 10-09-2026).
+  const facturado = sumaCobrado(pagos);
+  const totalPendiente = sumaPendiente(pagos);
+  const impagado = sumaPendiente(pagos.filter(p => p.estado === 'impagado'));
 
   // Lo del MES en curso, desglosado por clase de venta.
   const delMes = useMemo(() => facturacionDelMes(pagos, mesDe(hoy)), [pagos, hoy]);
@@ -93,7 +101,8 @@ export default function DashboardScreen() {
         <MetricCard
           icon="schedule" label="Pagos pendientes"
           value={pagosSinDato ? '—' : formatEuros(totalPendiente)}
-          accent="var(--color-warning)"
+          sub={!pagosSinDato && impagado > 0 ? `${formatEuros(impagado)} impagado` : undefined}
+          accent={impagado > 0 ? 'var(--color-danger)' : 'var(--color-warning)'}
           onClick={() => navigate('/crm/pagos?estado=pendiente')}
         />
         {/* «Facturado» a secas se leía como «este mes» y era el total de toda
