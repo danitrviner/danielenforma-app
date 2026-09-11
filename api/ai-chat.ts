@@ -128,17 +128,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     'claude-sonnet-5': { input: 2, output: 10 },
     'claude-haiku-4-5': { input: 1, output: 5 },
   };
+  // Desde el 11-09 el prompt de sistema se cachea con TTL de 1 hora (2× al
+  // escribir) y el historial con el de 5 minutos (1,25×). Anthropic desglosa
+  // la escritura por TTL en `usage.cache_creation`; si falta el desglose
+  // (respuesta antigua), todo se cobra al 1,25× de antes.
   function calcularCosteUsd(modelo: string, usage: {
     input_tokens: number; output_tokens: number;
     cache_creation_input_tokens?: number | null; cache_read_input_tokens?: number | null;
+    cache_creation?: { ephemeral_5m_input_tokens?: number | null; ephemeral_1h_input_tokens?: number | null } | null;
   }): number {
     const precio = PRECIOS_POR_MTOK[modelo];
     if (!precio) return 0;
     const MTOK = 1_000_000;
+    const escritura1h = usage.cache_creation?.ephemeral_1h_input_tokens ?? 0;
+    const escritura5m = usage.cache_creation
+      ? (usage.cache_creation.ephemeral_5m_input_tokens ?? 0)
+      : (usage.cache_creation_input_tokens ?? 0);
     return (
       (usage.input_tokens * precio.input) / MTOK +
       (usage.output_tokens * precio.output) / MTOK +
-      ((usage.cache_creation_input_tokens ?? 0) * precio.input * 1.25) / MTOK +
+      (escritura5m * precio.input * 1.25) / MTOK +
+      (escritura1h * precio.input * 2) / MTOK +
       ((usage.cache_read_input_tokens ?? 0) * precio.input * 0.1) / MTOK
     );
   }

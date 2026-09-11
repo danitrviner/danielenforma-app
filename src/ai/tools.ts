@@ -7,6 +7,7 @@ import { auth } from '../firebase';
 import { estadoConsentimiento, motivoParaElCoach, aliasDeAtleta } from './consentimientoIA';
 import { getDossier, appendDossierFacts, renderDossier } from '../db/dossier';
 import { calcularDerivas, resumirPatrones } from '../utils/derivaPropuestas';
+import { sesionesDeMesociclo, fechasDelMesociclo } from '../utils/asignacionMesociclo';
 import { nombreDeMeso } from '../utils/nombresMeso';
 import type { LevelLadder, LadderLevel, LevelCriterionKind, WorkoutDayProposal, WorkoutDaysProposalPayload, RoadmapItem, NutritionPhaseProposal, NutritionProgramProposalPayload, RoadmapProposalPayload, SpecialDayProposalPayload, SpecialDayKind } from '../types';
 import {
@@ -41,7 +42,22 @@ import {
   getTasksForAthlete,
   getKnowledgeNotes,
   isLocalBypassActive,
+  getStepsForAthlete,
+  getCardioSessionsForAthlete,
+  createCoachClientTask,
+  getBodyMeasurementsForAthlete,
 } from '../dbService';
+import { computeAnthropometricIndices, ANTHROPOMETRIC_INDEX_LABELS } from '../utils/anthropometricIndices';
+import { pctGrasaUSNavy, masaMagraEstimadaKg, computeIRC } from '../utils/bodyFatUSNavy';
+import { historialIRP } from '../utils/readinessIndex';
+import { resumirSerie } from '../utils/progressSummary';
+import { mdcDeMetrica } from '../utils/mdc';
+import { leerSexo } from '../utils/athleteProfileSignals';
+import { BODY_METRIC_LABELS, type BodyMetricKey } from '../types';
+import { generateChallengeOptions, buildChallengeMemory } from '../utils/weeklyChallenge';
+import { PROTOCOLOS_VO2MAX } from '../utils/cardioProgression';
+import { buildNutritionReport } from '../utils/nutritionAnalysis';
+import type { SetupConfigProposalPayload, PublishBlockProposalPayload, WeeklyChallengeProposalPayload, WorkoutTemplateProposalPayload, MesocycleTemplateProposalPayload, MesocycleTemplateStageProposal, WorkoutDayExerciseProposal, QSchedule, WeekDay, ChallengeKind } from '../types';
 import { athleteConditions, restrictionLabel } from '../utils/dietaryRestrictions';
 import { computeAdherenceScore } from '../utils/adherence';
 import { computeSetupChecklist } from '../utils/clientSetup';
@@ -59,10 +75,29 @@ import { resolveQuestions } from '../utils/questionnaireResolve';
 import { SYSTEM_FOODS } from '../nutricion_seed_en_forma';
 import { validateDietPayload, DietUpdatePayload, validateMesocyclePayload, MesocycleProposalPayload, validateNutritionPhases, validateWorkoutDays, claveDeEjercicio, WorkoutDayInput, WorkoutExerciseInput, validateLevelLadder, LadderLevelInput, LadderCriterionInput } from './validators';
 import { UserProfile, WeightCheckIn, Diet, FoodCategory, Mesocycle, MuscleGroup, MuscleGroupConfig, MUSCLE_LABELS, PeriodizationBlockPayload, ProposalExpediente, DossierFact, DossierPatch } from '../types';
+import { cambiosDeMesociclo, cambiosDeDieta, cambiosDePeriodizacion } from './cambiosPropuesta';
+import { tareaPorId, type BriefSeccion } from './tareas';
 
 // Definiciones que se envían a la API en cada petición. Mantener el orden y el
 // contenido estables: forman parte del prefijo cacheado del prompt.
 export const TOOL_DEFINITIONS = [
+  {
+    name: 'get_client_brief',
+    description:
+      'TODO el contexto de un cliente en UNA llamada, según la tarea: estado del montaje por fases, ficha viva, resumen (peso, adherencia, dietas, mesociclo), el alta entera, el plan (roadmap, periodización, tareas), la dieta activa, los entrenos de las últimas 4 semanas, los check-ins, las tendencias de cuestionarios y lo que Dani corrige a mano. Es la PRIMERA llamada de "montar el primer mes", "preparar la revisión" y "montar el mes siguiente"; sustituye a encadenar get_client_overview + get_onboarding + get_athlete_dossier + get_plan_context + get_diet + get_training_history + get_checkins una a una. Después de esto no vuelvas a pedir esas piezas por separado: ya las tienes.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        athlete_email: { type: 'string' },
+        tarea: {
+          type: 'string',
+          enum: ['mes_nuevo', 'revision', 'renovar_mes'],
+          description: 'Qué vas a hacer con el cliente: decide qué secciones trae el brief. "mes_nuevo" = alta + ficha + estado; "revision" = plan en marcha + entrenos + check-ins + cuestionarios; "renovar_mes" = todo.',
+        },
+      },
+      required: ['athlete_email', 'tarea'],
+    },
+  },
   {
     name: 'list_clients',
     description:
@@ -217,7 +252,7 @@ export const TOOL_DEFINITIONS = [
         expediente_preguntas: { type: 'array', items: { type: 'string' }, description: 'Preguntas que quedan abiertas después de esta propuesta.' },
         expediente_esperado: { type: 'string', description: 'Qué esperas ver, en cuánto tiempo, y qué harías si no pasa.' },
       },
-      required: ['athlete_email', 'name', 'budget', 'meals'],
+      required: ['athlete_email', 'name', 'budget'],
     },
   },
   {
@@ -567,7 +602,7 @@ export const TOOL_DEFINITIONS = [
                     },
                   },
                 },
-                required: ['name', 'budget', 'meals'],
+                required: ['name', 'budget'],
               },
             },
             required: ['name', 'weeks'],
@@ -626,12 +661,246 @@ export const TOOL_DEFINITIONS = [
       required: ['athlete_email'],
     },
   },
+  // ── Lo demás que se programa al atleta ────────────────────────────────────
+  {
+    name: 'propose_setup_config',
+    description:
+      'PROPONE la configuración del plan que no es ni entreno ni dieta, y que la checklist de Setup pide: fecha de inicio y duración del plan, peso objetivo, objetivo diario de PASOS, qué dietas quedan activas y el CALENDARIO semanal de dietas, el CUESTIONARIO periódico con su cadencia, las FOTOS de seguimiento, los ejercicios elegibles para retos de carga y el programa de CARDIO (Zona 2 o VO₂máx). Manda solo los campos que toque cambiar. Sin esto, un plan queda a medias aunque el mesociclo y la dieta estén: el atleta no tiene pasos, ni calendario de comidas, ni cuestionario, ni fotos.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        athlete_email: { type: 'string' },
+        plan_start_date: { type: 'string', description: 'YYYY-MM-DD — cuándo arranca su plan' },
+        plan_duration_months: { type: 'number', description: 'Meses de plan contratados (1-24)' },
+        target_weight: { type: 'number', description: 'Peso objetivo en kg' },
+        step_goal: { type: 'number', description: 'Pasos diarios objetivo (1000-30000)' },
+        active_diet_names: { type: 'array', items: { type: 'string' }, description: 'Nombres EXACTOS de las dietas que quedan activas en su registro diario. Se resuelven a id al aprobar.' },
+        weekly_schedule: {
+          type: 'object',
+          description: 'Calendario semanal de dietas: {"mon":"Día de entreno","tue":"Día de descanso",...}. null en un día = libre. Los nombres tienen que ser los de active_diet_names o dietas suyas ya existentes.',
+        },
+        questionnaire: {
+          type: 'object',
+          description: 'Cuestionario periódico a asignar.',
+          properties: {
+            title: { type: 'string', description: 'Título EXACTO de un cuestionario de Dani (si no existe, la tool te devuelve la lista de los que hay)' },
+            schedule: { type: 'object', description: '{"type":"weekdays","weekdays":[1]} | {"type":"interval","interval_days":14} | {"type":"monthly","day_of_month":1} | {"type":"plan_week","plan_week":2} | {"type":"mesocycle_end"} | {"type":"once"}' },
+            start_date: { type: 'string', description: 'YYYY-MM-DD' },
+          },
+        },
+        photos: {
+          type: 'object',
+          description: 'Fotos de seguimiento periódicas.',
+          properties: {
+            schedule: { type: 'object', description: 'Mismo formato que questionnaire.schedule' },
+            start_date: { type: 'string' },
+            views: { type: 'array', items: { type: 'string', enum: ['front', 'side', 'back'] } },
+          },
+        },
+        lift_exercise_names: { type: 'array', items: { type: 'string' }, description: 'Ejercicios del catálogo en los que se pueden proponer retos de carga (sus básicos reales, no los del libro)' },
+        cardio: {
+          type: 'object',
+          description: 'Programa de cardio progresivo.',
+          properties: {
+            kind: { type: 'string', enum: ['zona2', 'vo2max'] },
+            protocol_id: { type: 'string', description: 'Solo vo2max: noruego4x4 | billat30_30 | sprints30_90' },
+            base_minutes: { type: 'number', description: 'Solo zona2: minutos de la semana 1 (10-120)' },
+            start_date: { type: 'string', description: 'YYYY-MM-DD' },
+          },
+        },
+        rationale: { type: 'string' },
+        expediente_datos: { type: 'string' },
+        expediente_huecos: { type: 'string' },
+        expediente_preguntas: { type: 'array', items: { type: 'string' } },
+        expediente_esperado: { type: 'string' },
+      },
+      required: ['athlete_email'],
+    },
+  },
+  {
+    name: 'propose_publish_block',
+    description:
+      'PROPONE volcar al calendario del atleta las sesiones de un mesociclo: crea las asignaciones de cada día y cada vuelta, con las fechas que salen del propio mesociclo. Es el paso que hace que el atleta VEA sus entrenos; sin él, el mesociclo y las sesiones existen pero su calendario está vacío. Va SIEMPRE después de propose_workout_days, y su propuesta se aprueba después de la de las sesiones.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        athlete_email: { type: 'string' },
+        mesocycle_id: { type: 'string', description: 'Opcional: si falta, el mesociclo más reciente del atleta' },
+        rationale: { type: 'string' },
+      },
+      required: ['athlete_email'],
+    },
+  },
+  {
+    name: 'get_challenge_options',
+    description:
+      'Los RETOS que el motor de la app propone para este atleta esta semana, con sus datos reales (memoria de 4 semanas, dificultad adaptativa, hitos redondos), más el reto que ya tiene puesto y cómo le fue en los últimos. Llámala antes de proponer un reto: las opciones vienen calculadas con sus pasos, sus marcas y su adherencia, no inventadas.',
+    input_schema: {
+      type: 'object',
+      properties: { athlete_email: { type: 'string' } },
+      required: ['athlete_email'],
+    },
+  },
+  {
+    name: 'propose_weekly_challenge',
+    description:
+      'PROPONE el reto de la semana del atleta. Copia kind, title, description y metric de una opción de get_challenge_options salvo que tengas un motivo para cambiarlo. Al aprobar, sustituye al reto de esa semana (el automático incluido) y el atleta lo ve en su road map.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        athlete_email: { type: 'string' },
+        kind: { type: 'string', enum: ['pasos_media', 'pasos_total', 'carga_ejercicio', 'reps_ejercicio', 'adherencia_dieta', 'peso_objetivo', 'entrenos_completados', 'series_grupo', 'cardio_zona2', 'racha_registro', 'custom'] },
+        title: { type: 'string', description: 'Título corto, lo ve el atleta' },
+        description: { type: 'string', description: 'Lo que lee el atleta: qué tiene que hacer, con su número dentro' },
+        metric: {
+          type: 'object',
+          description: 'Cómo se mide.',
+          properties: {
+            unit: { type: 'string', description: 'pasos | kg | % | sesiones | series | min | días' },
+            target: { type: 'number' },
+            baseline: { type: 'number', description: 'De dónde parte (media previa, peso actual…)' },
+            exercise_name: { type: 'string', description: 'carga_ejercicio / reps_ejercicio: nombre del catálogo' },
+            at_weight: { type: 'number', description: 'reps_ejercicio: peso al que hay que sacar las reps' },
+            muscle_group: { type: 'string', description: 'series_grupo: clave del grupo muscular' },
+          },
+        },
+        difficulty: { type: 'string', enum: ['suave', 'justo', 'ambicioso'] },
+        is_milestone: { type: 'boolean' },
+        today: { type: 'string', description: 'YYYY-MM-DD de la semana a la que va el reto (por defecto hoy)' },
+        rationale: { type: 'string' },
+      },
+      required: ['athlete_email', 'kind', 'title', 'description', 'metric'],
+    },
+  },
+  {
+    name: 'propose_workout_template',
+    description:
+      'PROPONE una PLANTILLA de rutina del coach: una sesión con sus ejercicios, series, reps, RIR y descansos, SIN atleta ni mesociclo. Al aprobar se guarda en las rutinas de Dani y puede reutilizarla con cualquier cliente. Úsala cuando te pida "hazme una plantilla de torso", "guárdame esta sesión" o quiera dejar montado un día tipo; para las sesiones de un cliente concreto, propose_workout_days.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        athlete_email: { type: 'string', description: 'El cliente desde cuyo contexto se propone (la plantilla no es suya; sirve para saber a quién enseñarle la propuesta)' },
+        name: { type: 'string', description: 'Nombre de la plantilla, ej. "Torso A — fuerza"' },
+        exercises: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              exercise: { type: 'string', description: 'Nombre EXACTO del catálogo' },
+              sets: { type: 'number' },
+              reps: { type: 'string', description: '"8-10", "AMRAP", "12"' },
+              rir: { type: 'number', description: '0-5' },
+              rest_seconds: { type: 'number' },
+              notes: { type: 'string' },
+            },
+            required: ['exercise', 'sets', 'reps', 'rir'],
+          },
+        },
+        rationale: { type: 'string' },
+      },
+      required: ['athlete_email', 'name', 'exercises'],
+    },
+  },
+  {
+    name: 'propose_mesocycle_template',
+    description:
+      'PROPONE una PLANTILLA de mesociclo (biblioteca de plantillas del coach): una o varias etapas encadenadas, cada una con sus semanas, días, reparto de series por grupo y, si quieres, las sesiones con sus ejercicios. Al aprobar queda en Entrenamientos › Plantillas y Dani la aplica a cualquier atleta en dos clics. Úsala para bloques que va a repetir ("plantilla de definición 8 semanas"), no para el plan de un cliente concreto.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        athlete_email: { type: 'string', description: 'Desde qué cliente se propone (la plantilla no es suya)' },
+        name: { type: 'string' },
+        description: { type: 'string' },
+        stages: {
+          type: 'array',
+          description: 'Las etapas en orden.',
+          items: {
+            type: 'object',
+            properties: {
+              name: { type: 'string' },
+              weeks: { type: 'number' },
+              days_per_week: { type: 'number' },
+              groups: { type: 'object', description: 'Igual que en propose_mesocycle: {"pecho":{"series":12,"priority":"alta"},…}' },
+              deload_week: { type: 'number' },
+              review_cadence_weeks: { type: 'number' },
+              review_type: { type: 'string', enum: ['revision', 'cuestionario', 'foto'] },
+              days: {
+                type: 'array',
+                description: 'Opcional: las sesiones de la etapa, en orden.',
+                items: {
+                  type: 'object',
+                  properties: {
+                    name: { type: 'string' },
+                    exercises: {
+                      type: 'array',
+                      items: {
+                        type: 'object',
+                        properties: {
+                          exercise: { type: 'string' },
+                          sets: { type: 'number' },
+                          reps: { type: 'string' },
+                          rir: { type: 'number' },
+                          rest_seconds: { type: 'number' },
+                          notes: { type: 'string' },
+                        },
+                        required: ['exercise', 'sets', 'reps', 'rir'],
+                      },
+                    },
+                  },
+                  required: ['exercises'],
+                },
+              },
+            },
+            required: ['name', 'weeks', 'days_per_week', 'groups'],
+          },
+        },
+        rationale: { type: 'string' },
+      },
+      required: ['athlete_email', 'name', 'stages'],
+    },
+  },
+  {
+    name: 'add_coach_task',
+    description:
+      'Deja una NOTA PENDIENTE para Dani en la pestaña Setup del cliente. No pide aprobación y no la ve el atleta: es un recordatorio suyo. Úsala cuando encuentres algo que TÚ no puedes arreglar y él sí — un alta a medias (no dijo los días que entrena, ni el material, ni contestó lo de las lesiones), un peso inicial que falta, una foto que no subió, una pregunta que hay que hacerle al atleta. Una nota por cosa, con el dato concreto dentro. No repitas una que ya exista.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        athlete_email: { type: 'string' },
+        title: { type: 'string', description: 'Qué falta, concreto: "Preguntarle cuántos días puede entrenar de verdad (en el alta puso 5 pero entrena 3)"' },
+        phase: { type: 'string', enum: ['alta', 'programacion', 'primeras_semanas', 'consolidacion'], description: 'De qué fase del montaje es' },
+        due_date: { type: 'string', description: 'YYYY-MM-DD, si tiene fecha tope' },
+      },
+      required: ['athlete_email', 'title'],
+    },
+  },
+  {
+    name: 'get_progress_metrics',
+    description:
+      'El PROGRESO medido del atleta, lo mismo que Dani ve en Análisis › Correlaciones: perímetros corporales con su cambio desde la primera medición (y si ese cambio supera el error de medición o es ruido), % de grasa y masa magra estimados (US Navy), índices antropométricos, y el índice de readiness (sueño y estrés). El entrenamiento y las marcas van en get_training_history; esto es el CUERPO. Míralo en una revisión antes de decir si algo está funcionando: el peso solo no distingue perder grasa de perder músculo.',
+    input_schema: {
+      type: 'object',
+      properties: { athlete_email: { type: 'string' } },
+      required: ['athlete_email'],
+    },
+  },
+  {
+    name: 'get_nutrition_analysis',
+    description:
+      'El análisis nutricional del atleta tal y como lo ve Dani en Análisis › Nutrición: adherencia a la dieta, cumplimiento de pasos, desviación de macros del plan frente a su objetivo, tendencia de peso y alertas. Úsalo en las revisiones antes de tocar la dieta: ajustar kcal sin mirar la adherencia es cambiar un plan que quizá no se está siguiendo.',
+    input_schema: {
+      type: 'object',
+      properties: { athlete_email: { type: 'string' } },
+      required: ['athlete_email'],
+    },
+  },
 ];
 
 // Etiqueta que el panel muestra mientras corre cada tool.
 export function toolStatusLabel(name: string, input: Record<string, unknown>): string {
   const who = typeof input.athlete_email === 'string' ? ` de ${input.athlete_email}` : '';
   switch (name) {
+    case 'get_client_brief': return `Leyendo todo el expediente${who}…`;
     case 'list_clients': return 'Consultando la lista de clientes…';
     case 'get_client_overview': return `Consultando la ficha${who}…`;
     case 'get_onboarding': return `Leyendo el alta${who}…`;
@@ -659,6 +928,15 @@ export function toolStatusLabel(name: string, input: Record<string, unknown>): s
     case 'get_athlete_dossier': return `Leyendo la ficha${who}…`;
     case 'log_dossier_fact': return `Apuntando en la ficha${who}…`;
     case 'propose_dossier_update': return `Preparando cambios de la ficha${who}…`;
+    case 'propose_setup_config': return `Configurando el plan${who}…`;
+    case 'propose_publish_block': return `Preparando la publicación del bloque${who}…`;
+    case 'get_challenge_options': return `Mirando los retos posibles${who}…`;
+    case 'propose_weekly_challenge': return `Preparando el reto de la semana${who}…`;
+    case 'propose_workout_template': return 'Montando una plantilla de rutina…';
+    case 'propose_mesocycle_template': return 'Montando una plantilla de mesociclo…';
+    case 'add_coach_task': return `Apuntándote una tarea${who}…`;
+    case 'get_nutrition_analysis': return `Analizando la nutrición${who}…`;
+    case 'get_progress_metrics': return `Mirando cómo cambia el cuerpo${who}…`;
     default: return `Ejecutando ${name}…`;
   }
 }
@@ -1010,6 +1288,50 @@ async function getSetupStatus(email: string): Promise<string> {
     avisos: resultado.alerts.map(a => `${a.severity === 'critical' ? '[grave] ' : ''}${a.title}${a.detail ? ` — ${a.detail}` : ''}`),
     note: 'Trabaja por fases y en este orden. Lo que sale como "todavía no aplica" es porque falta la fecha de inicio del plan o el cliente no ha llegado a ese punto: no lo propongas.',
   });
+}
+
+// El expediente entero en una llamada. Cada sección reutiliza la tool que ya
+// existía (misma proyección, mismas marcas de «dato del atleta») — lo único
+// nuevo es que van juntas: una ronda del modelo en vez de siete u ocho, y el
+// historial que se cachea después es uno solo en vez de ocho intercalados.
+async function getClientBrief(email: string, tareaId: string): Promise<string> {
+  const profile = await findProfile(email);
+  if (!profile) return toResult({ error: `No existe ningún cliente con email ${email}` });
+
+  const tarea = tareaPorId(tareaId);
+  const secciones: BriefSeccion[] = tarea?.brief ?? ['estado', 'ficha', 'resumen', 'alta', 'plan', 'dieta', 'entrenos', 'revisiones', 'cuestionarios', 'ajustes'];
+
+  const lectores: Record<BriefSeccion, { titulo: string; leer: () => Promise<string> }> = {
+    estado: { titulo: 'ESTADO DEL MONTAJE (get_setup_status)', leer: () => getSetupStatus(email) },
+    ficha: { titulo: 'FICHA VIVA (get_athlete_dossier)', leer: () => leerFicha(email) },
+    resumen: { titulo: 'RESUMEN (get_client_overview)', leer: () => getClientOverview(email) },
+    alta: { titulo: 'ALTA COMPLETA (get_onboarding)', leer: () => getOnboardingCompleto(email) },
+    plan: { titulo: 'PLAN: ROADMAP, PERIODIZACIÓN Y TAREAS (get_plan_context)', leer: () => leerContextoDelPlan(email) },
+    dieta: { titulo: 'DIETA (get_diet)', leer: () => getDietInfo(email) },
+    entrenos: { titulo: 'ENTRENOS DE LAS ÚLTIMAS 4 SEMANAS (get_training_history)', leer: () => getTrainingHistory(email, 4) },
+    revisiones: { titulo: 'ÚLTIMOS CHECK-INS (get_checkins)', leer: () => getCheckinsInfo(email, 3) },
+    cuestionarios: { titulo: 'TENDENCIAS DE CUESTIONARIOS (get_questionnaire_trends)', leer: () => getQuestionnaireTrends(email, undefined, 8) },
+    ajustes: { titulo: 'LO QUE DANI CORRIGE A MANO (get_coach_adjustments)', leer: () => getCoachAdjustments(email) },
+    nutricion: { titulo: 'ANÁLISIS NUTRICIONAL (get_nutrition_analysis)', leer: () => getNutritionAnalysis(email) },
+    cuerpo: { titulo: 'PROGRESO DEL CUERPO (get_progress_metrics)', leer: () => getProgressMetrics(email) },
+  };
+
+  const partes = await Promise.all(secciones.map(async s => {
+    const { titulo, leer } = lectores[s];
+    let cuerpo: string;
+    try {
+      cuerpo = await leer();
+    } catch (err) {
+      cuerpo = `(no disponible: ${err instanceof Error ? err.message : String(err)})`;
+    }
+    return `## ${titulo}\n${cuerpo}`;
+  }));
+
+  const cabecera = `BRIEF DE ${aliasDeAtleta(profile.displayName, profile.email)} (${profile.email}) para la tarea "${tarea?.label ?? tareaId}". `
+    + 'Ya tienes aquí todo lo que leerían las tools entre paréntesis: no las llames por separado.';
+  // Sin toResult: cada sección ya viene acotada por su propia tool, y el
+  // brief entero no cabe en el tope de una sola.
+  return [cabecera, ...partes].join('\n\n');
 }
 
 async function getTrainingHistory(email: string, weeks: number): Promise<string> {
@@ -1403,11 +1725,12 @@ async function proposeNutritionProgram(
       fase.dietId = f.diet_id;
     } else if (f.diet && typeof f.diet === 'object') {
       const bruta = f.diet as { name?: string; budget?: Record<FoodCategory, number>; meals?: DietUpdatePayload['meals'] };
-      if (!bruta.name || !bruta.budget || !Array.isArray(bruta.meals)) {
-        problemas.push(`Fase "${nombre}": la dieta necesita name, budget y meals`);
+      if (!bruta.name || !bruta.budget) {
+        problemas.push(`Fase "${nombre}": la dieta necesita name y budget`);
         return;
       }
-      const issues = validateDietPayload({ budget: bruta.budget, meals: bruta.meals });
+      const comidas = Array.isArray(bruta.meals) ? bruta.meals : [];
+      const issues = validateDietPayload({ budget: bruta.budget, meals: comidas });
       if (issues.length) {
         problemas.push(`Fase "${nombre}": ${issues.map(x => x.message).join(' · ')}`);
         return;
@@ -1416,7 +1739,7 @@ async function proposeNutritionProgram(
         athleteId: athleteEmail,
         name: bruta.name,
         budget: bruta.budget,
-        meals: bruta.meals.map((m, k) => ({
+        meals: comidas.map((m, k) => ({
           id: `meal_${Date.now()}_${i}_${k}`,
           name: m.name,
           items: m.items.map(it => ({
@@ -1452,9 +1775,11 @@ async function proposeNutritionProgram(
     + (nuevas ? ` · ${nuevas} dieta${nuevas !== 1 ? 's' : ''} nueva${nuevas !== 1 ? 's' : ''}` : '')
     + (payload.refeedDays?.length ? ` · ${payload.refeedDays.length} recarga(s)` : '');
 
+  const cambios = cambiosDePeriodizacion(await getNutritionProgram(athleteEmail), payload);
   const proposal = await createAiProposal({
     athleteId: athleteEmail, kind: 'nutritionProgram', status: 'proposed', chatId,
     summary, rationale: rationale || '', payload,
+    ...(cambios.length ? { cambios } : {}),
     ...(expediente ? { expediente } : {}),
     createdAt: new Date().toISOString(),
   });
@@ -1643,7 +1968,7 @@ async function proposeDietUpdate(
   baseDietId: string | undefined,
   name: string,
   budget: Record<FoodCategory, number>,
-  meals: DietUpdatePayload['meals'],
+  meals: NonNullable<DietUpdatePayload['meals']>,
   rationale: string,
   chatId: string,
   expediente?: ProposalExpediente,
@@ -1669,13 +1994,15 @@ async function proposeDietUpdate(
   const kcal = exchangeToKcal(budget);
 
   let baseSummary = '';
+  let base: Diet | undefined;
   if (baseDietId) {
-    const existing = (await getDietsForAthlete(athleteEmail)).find(d => d.id === baseDietId);
-    if (existing) {
-      const prevKcal = exchangeToKcal(existing.budget);
-      baseSummary = ` (ajuste de "${existing.name}": ${prevKcal} → ${kcal} kcal)`;
+    base = (await getDietsForAthlete(athleteEmail)).find(d => d.id === baseDietId);
+    if (base) {
+      const prevKcal = exchangeToKcal(base.budget);
+      baseSummary = ` (ajuste de "${base.name}": ${prevKcal} → ${kcal} kcal)`;
     }
   }
+  const cambios = cambiosDeDieta(base, dietPayload);
 
   const summary = `Dieta "${name}"${baseSummary || ' (nueva)'} · HC ${budget.HC} / PROT ${budget.PROT} / GRASA ${budget.GRASA} ≈ ${kcal} kcal`;
   const proposal = await createAiProposal({
@@ -1686,6 +2013,7 @@ async function proposeDietUpdate(
     summary,
     rationale: rationale || '',
     payload: dietPayload,
+    ...(cambios.length ? { cambios } : {}),
     baseEntityId: baseDietId,
     ...(expediente ? { expediente } : {}),
     createdAt: new Date().toISOString(),
@@ -1951,6 +2279,8 @@ async function proposeMesocycle(
     ? (Object.keys(MUSCLE_LABELS) as MuscleGroup[]).reduce((s, g) => s + groups[g].series, 0)
     : 0;
   const summary = `Mesociclo #${number} · ${objective} · ${weeks} sem × ${daysPerWeek} días · ${totalSeries} series/sem`;
+  const anterior = [...existing].sort((a, b) => b.startDate.localeCompare(a.startDate))[0];
+  const cambios = cambiosDeMesociclo(anterior, payload);
 
   const proposal = await createAiProposal({
     athleteId: athleteEmail,
@@ -1960,6 +2290,7 @@ async function proposeMesocycle(
     summary,
     rationale: rationale || '',
     payload,
+    ...(cambios.length ? { cambios } : {}),
     ...(expediente ? { expediente } : {}),
     createdAt: new Date().toISOString(),
   });
@@ -2136,6 +2467,8 @@ async function proposePeriodizationBlock(
     + ` · revisión cada ${reviewCadenceWeeks} sem (${reviewCount})`;
 
   const payload: PeriodizationBlockPayload = { mesocycle, reviewCadenceWeeks, reviewType };
+  const anterior = [...existing].sort((a, b) => b.startDate.localeCompare(a.startDate))[0];
+  const cambios = cambiosDeMesociclo(anterior, mesocycle);
 
   const proposal = await createAiProposal({
     athleteId: athleteEmail,
@@ -2145,6 +2478,7 @@ async function proposePeriodizationBlock(
     summary,
     rationale: rationale || '',
     payload,
+    ...(cambios.length ? { cambios } : {}),
     ...(expediente ? { expediente } : {}),
     createdAt: new Date().toISOString(),
   });
@@ -2185,6 +2519,522 @@ async function comprobarConsentimiento(email: string): Promise<string | null> {
   return motivoParaElCoach(estado, aliasDeAtleta(perfil?.displayName, email));
 }
 
+/* ── Lo demás que se programa al atleta ─────────────────────────────────────
+   La checklist de Setup pide cosas que la IA no podía tocar: fechas del plan,
+   pasos, calendario de dietas, cuestionario y fotos periódicas, retos
+   elegibles, cardio, publicar el bloque, el reto de la semana. Y las
+   plantillas del coach. Todo pasa por propuesta; lo único que se escribe
+   directo es la NOTA para Dani (add_coach_task), que es para él, no para el
+   atleta. */
+
+const WEEKDAYS: WeekDay[] = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+const CHALLENGE_KINDS: ChallengeKind[] = ['pasos_media', 'pasos_total', 'carga_ejercicio', 'reps_ejercicio', 'adherencia_dieta', 'peso_objetivo', 'entrenos_completados', 'series_grupo', 'cardio_zona2', 'racha_registro', 'custom'];
+
+function leerSchedule(raw: unknown): QSchedule | string {
+  if (!raw || typeof raw !== 'object') return 'schedule tiene que ser un objeto {type, ...}';
+  const r = raw as Record<string, unknown>;
+  const type = r.type;
+  if (type === 'once') return { type: 'once' };
+  if (type === 'weekdays') {
+    const dias = Array.isArray(r.weekdays) ? r.weekdays.filter((d): d is number => Number.isInteger(d) && d >= 0 && d <= 6) : [];
+    return dias.length ? { type: 'weekdays', weekdays: dias } : 'schedule.weekdays necesita días 0 (domingo) a 6 (sábado)';
+  }
+  if (type === 'interval') {
+    const n = Number(r.interval_days);
+    return Number.isInteger(n) && n >= 1 ? { type: 'interval', intervalDays: n } : 'schedule.interval_days debe ser un entero ≥ 1';
+  }
+  if (type === 'monthly') {
+    const d = Number(r.day_of_month);
+    return Number.isInteger(d) && d >= 1 && d <= 28 ? { type: 'monthly', dayOfMonth: d } : 'schedule.day_of_month va de 1 a 28';
+  }
+  if (type === 'plan_week') {
+    const w = Number(r.plan_week);
+    if (!Number.isInteger(w) || w < 1) return 'schedule.plan_week debe ser un entero ≥ 1';
+    const wd = r.plan_weekday === undefined ? undefined : Number(r.plan_weekday);
+    return { type: 'plan_week', planWeek: w, ...(wd !== undefined && Number.isInteger(wd) ? { planWeekday: wd } : {}) };
+  }
+  if (type === 'mesocycle_end') {
+    const off = r.mesocycle_offset_days === undefined ? 0 : Number(r.mesocycle_offset_days);
+    return { type: 'mesocycle_end', mesocycleOffsetDays: Number.isFinite(off) ? off : 0 };
+  }
+  return 'schedule.type debe ser once | weekdays | interval | monthly | plan_week | mesocycle_end';
+}
+
+function describirSchedule(s: QSchedule): string {
+  switch (s.type) {
+    case 'once': return 'una vez';
+    case 'weekdays': return `los días ${(s.weekdays ?? []).join(',')} de la semana`;
+    case 'interval': return `cada ${s.intervalDays} días`;
+    case 'monthly': return `el día ${s.dayOfMonth} de cada mes`;
+    case 'plan_week': return `la semana ${s.planWeek} del plan`;
+    case 'mesocycle_end': return 'al acabar el mesociclo';
+  }
+}
+
+/** Resuelve nombres del catálogo a ejercicios reales, tras validateWorkoutDays. */
+function ejerciciosResueltos(
+  exs: WorkoutExerciseInput[],
+  porNombre: Map<string, { id: string; name: string; muscleGroup?: MuscleGroup }>,
+): WorkoutDayExerciseProposal[] {
+  return exs.map(ex => {
+    const cat = porNombre.get(claveDeEjercicio(String(ex.exercise)))!;
+    const notas = typeof ex.notes === 'string' ? ex.notes.trim() : '';
+    return {
+      exerciseId: cat.id,
+      exerciseName: cat.name,
+      sets: Number(ex.sets),
+      reps: String(ex.reps).trim(),
+      rir: Number(ex.rir),
+      restSeconds: ex.rest_seconds === undefined ? 90 : Number(ex.rest_seconds),
+      ...(notas ? { notes: notas } : {}),
+      ...(cat.muscleGroup ? { muscleGroup: cat.muscleGroup } : {}),
+    };
+  });
+}
+
+async function proposeSetupConfig(
+  athleteEmail: string, input: Record<string, unknown>, rationale: string, chatId: string, expediente?: ProposalExpediente,
+): Promise<string> {
+  const profile = await findProfile(athleteEmail);
+  if (!profile) return toResult({ valid: false, issues: [`No existe ningún cliente con email ${athleteEmail}`] });
+
+  const payload: SetupConfigProposalPayload = {};
+  const problemas: string[] = [];
+  const partes: string[] = [];
+  const cambios: string[] = [];
+  const iso = /^\d{4}-\d{2}-\d{2}$/;
+
+  if (input.plan_start_date !== undefined) {
+    if (typeof input.plan_start_date !== 'string' || !iso.test(input.plan_start_date)) problemas.push('plan_start_date debe ser YYYY-MM-DD');
+    else { payload.planStartDate = input.plan_start_date; partes.push(`inicio ${input.plan_start_date}`); cambios.push(`Inicio del plan: ${profile.planStartDate ?? '—'} → ${input.plan_start_date}`); }
+  }
+  if (input.plan_duration_months !== undefined) {
+    const n = Number(input.plan_duration_months);
+    if (!Number.isInteger(n) || n < 1 || n > 24) problemas.push('plan_duration_months va de 1 a 24');
+    else { payload.planDurationMonths = n; partes.push(`${n} meses`); cambios.push(`Duración: ${profile.planDurationMonths ?? '—'} → ${n} meses`); }
+  }
+  if (input.target_weight !== undefined) {
+    const n = Number(input.target_weight);
+    if (!Number.isFinite(n) || n < 30 || n > 250) problemas.push('target_weight debe ser un peso en kg (30-250)');
+    else { payload.targetWeight = n; partes.push(`objetivo ${n} kg`); cambios.push(`Peso objetivo: ${profile.targetWeight || '—'} → ${n} kg`); }
+  }
+  if (input.step_goal !== undefined) {
+    const n = Number(input.step_goal);
+    if (!Number.isInteger(n) || n < 1000 || n > 30000) problemas.push('step_goal va de 1000 a 30000');
+    else {
+      payload.stepGoal = n; partes.push(`${n} pasos/día`);
+      const cfg = await getAthleteNutritionConfig(athleteEmail);
+      cambios.push(`Pasos diarios: ${cfg.stepGoal ?? '—'} → ${n}`);
+    }
+  }
+  if (input.active_diet_names !== undefined) {
+    const nombres = Array.isArray(input.active_diet_names) ? input.active_diet_names.filter((x): x is string => typeof x === 'string' && !!x.trim()) : [];
+    if (!nombres.length) problemas.push('active_diet_names debe ser una lista de nombres de dieta');
+    else { payload.activeDietNames = nombres; partes.push(`dietas activas: ${nombres.join(', ')}`); }
+  }
+  if (input.weekly_schedule !== undefined) {
+    const raw = input.weekly_schedule;
+    if (!raw || typeof raw !== 'object') problemas.push('weekly_schedule debe ser {mon..sun: nombre de dieta | null}');
+    else {
+      const sched: Partial<Record<WeekDay, string | null>> = {};
+      for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
+        if (!WEEKDAYS.includes(k as WeekDay)) { problemas.push(`weekly_schedule: día desconocido "${k}" (usa mon..sun)`); continue; }
+        if (v !== null && typeof v !== 'string') { problemas.push(`weekly_schedule.${k} debe ser el nombre de una dieta o null`); continue; }
+        sched[k as WeekDay] = v as string | null;
+      }
+      payload.weeklyScheduleByName = sched;
+      partes.push(`calendario de dietas (${Object.values(sched).filter(Boolean).length} días)`);
+    }
+  }
+  if (input.questionnaire !== undefined) {
+    const q = input.questionnaire as Record<string, unknown> | null;
+    const coachUid = auth.currentUser?.uid;
+    const disponibles = coachUid ? await getQuestionnairesByCoach(coachUid) : [];
+    const titulo = typeof q?.title === 'string' ? q.title : '';
+    const encontrado = disponibles.find(x => claveDeEjercicio(x.title) === claveDeEjercicio(titulo));
+    const schedule = leerSchedule(q?.schedule);
+    if (!encontrado) problemas.push(`questionnaire.title "${titulo}" no existe. Disponibles: ${disponibles.map(x => x.title).join(' | ') || '(ninguno: Dani tiene que crear uno en Cuestionarios)'}`);
+    else if (typeof schedule === 'string') problemas.push(`questionnaire: ${schedule}`);
+    else {
+      const startDate = typeof q?.start_date === 'string' && iso.test(q.start_date) ? q.start_date : new Date().toISOString().slice(0, 10);
+      payload.questionnaire = { questionnaireId: encontrado.id, questionnaireTitle: encontrado.title, schedule, startDate };
+      partes.push(`cuestionario «${encontrado.title}» ${describirSchedule(schedule)}`);
+    }
+  }
+  if (input.photos !== undefined) {
+    const f = input.photos as Record<string, unknown> | null;
+    const schedule = leerSchedule(f?.schedule);
+    const views = Array.isArray(f?.views) ? f!.views.filter((v): v is 'front' | 'side' | 'back' => v === 'front' || v === 'side' || v === 'back') : [];
+    if (typeof schedule === 'string') problemas.push(`photos: ${schedule}`);
+    else if (!views.length) problemas.push('photos.views necesita al menos una de front | side | back');
+    else {
+      const startDate = typeof f?.start_date === 'string' && iso.test(f.start_date) ? f.start_date : new Date().toISOString().slice(0, 10);
+      payload.photos = { schedule, startDate, views };
+      partes.push(`fotos (${views.join('/')}) ${describirSchedule(schedule)}`);
+    }
+  }
+  if (input.lift_exercise_names !== undefined) {
+    const nombres = Array.isArray(input.lift_exercise_names) ? input.lift_exercise_names.filter((x): x is string => typeof x === 'string') : [];
+    const catalogo = await getExercises();
+    const porNombre = new Map(catalogo.map(e => [claveDeEjercicio(e.name), e.name]));
+    const noEstan = nombres.filter(n => !porNombre.has(claveDeEjercicio(n)));
+    if (!nombres.length) problemas.push('lift_exercise_names debe ser una lista de nombres del catálogo');
+    else if (noEstan.length) problemas.push(`lift_exercise_names: no están en el catálogo: ${noEstan.join(', ')}`);
+    else { payload.liftExerciseNames = nombres.map(n => porNombre.get(claveDeEjercicio(n))!); partes.push(`retos de carga en ${payload.liftExerciseNames.join(', ')}`); }
+  }
+  if (input.cardio !== undefined) {
+    const c = input.cardio as Record<string, unknown> | null;
+    const kind = c?.kind;
+    const startDate = typeof c?.start_date === 'string' && iso.test(c.start_date) ? c.start_date : new Date().toISOString().slice(0, 10);
+    if (kind === 'zona2') {
+      const base = c?.base_minutes === undefined ? undefined : Number(c.base_minutes);
+      if (base !== undefined && (!Number.isFinite(base) || base < 10 || base > 120)) problemas.push('cardio.base_minutes va de 10 a 120');
+      else { payload.cardio = { kind: 'zona2', startDate, ...(base !== undefined ? { baseMinutes: base } : {}) }; partes.push(`programa de Zona 2 desde ${startDate}`); }
+    } else if (kind === 'vo2max') {
+      const protocolo = PROTOCOLOS_VO2MAX.find(p => p.id === c?.protocol_id);
+      if (!protocolo) problemas.push(`cardio.protocol_id debe ser uno de: ${PROTOCOLOS_VO2MAX.map(p => p.id).join(' | ')}`);
+      else { payload.cardio = { kind: 'vo2max', protocolId: protocolo.id, startDate }; partes.push(`programa VO₂máx «${protocolo.label}» desde ${startDate}`); }
+    } else problemas.push('cardio.kind debe ser zona2 | vo2max');
+  }
+
+  if (problemas.length) return toResult({ valid: false, issues: problemas, note: 'Corrige y vuelve a llamar a propose_setup_config.' });
+  if (!partes.length) return toResult({ valid: false, issues: ['No has mandado ningún campo que configurar.'] });
+
+  const summary = `Configuración del plan: ${partes.join(' · ')}`;
+  const proposal = await createAiProposal({
+    athleteId: athleteEmail, kind: 'setupConfig', status: 'proposed', chatId,
+    summary, rationale: rationale || '', payload,
+    ...(cambios.length ? { cambios } : {}),
+    ...(expediente ? { expediente } : {}),
+    createdAt: new Date().toISOString(),
+  });
+  await registrarPropuesta(athleteEmail, proposal.id, chatId, summary);
+  return toResult({ proposalCreated: true, proposalId: proposal.id, configurado: partes, note: 'Propuesta creada. Las dietas del calendario se resuelven por NOMBRE al aprobar: si vienen de una periodización propuesta en este mismo chat, Dani tiene que aprobar antes la periodización.' });
+}
+
+async function proposePublishBlock(athleteEmail: string, mesocycleId: string | undefined, rationale: string, chatId: string): Promise<string> {
+  const profile = await findProfile(athleteEmail);
+  if (!profile) return toResult({ valid: false, issues: [`No existe ningún cliente con email ${athleteEmail}`] });
+  const mesos = await getMesocycles(athleteEmail);
+  const meso = mesocycleId
+    ? mesos.find(m => m.id === mesocycleId)
+    : [...mesos].sort((a, b) => b.startDate.localeCompare(a.startDate))[0];
+  if (!meso) return toResult({ valid: false, issues: [mesocycleId ? `El mesociclo ${mesocycleId} no es de este atleta` : 'El atleta no tiene ningún mesociclo todavía: propón primero propose_mesocycle.'] });
+  const sesiones = sesionesDeMesociclo(await getWorkouts(), meso.id);
+  const asignadas = (await getWorkoutAssignments({ uid: profile.userId, email: profile.email })).filter(a => a.mesocycleId === meso.id);
+  const fechas = sesiones.length ? fechasDelMesociclo(meso, sesiones.length) : [];
+  const nombre = nombreDeMeso(meso);
+  const summary = sesiones.length
+    ? `Publicar ${nombre} en el calendario: ${sesiones.length} sesiones × ${Math.max(...fechas.map(f => f.vuelta), 0)} vueltas = ${fechas.length} entrenos${asignadas.length ? ` (ya había ${asignadas.length})` : ''}`
+    : `Publicar ${nombre} en el calendario (todavía sin sesiones: aprueba antes las sesiones)`;
+  const payload: PublishBlockProposalPayload = { mesocycleId: meso.id, mesocycleName: nombre };
+  const proposal = await createAiProposal({
+    athleteId: athleteEmail, kind: 'publishBlock', status: 'proposed', chatId,
+    summary, rationale: rationale || '', payload, baseEntityId: meso.id, createdAt: new Date().toISOString(),
+  });
+  await registrarPropuesta(athleteEmail, proposal.id, chatId, summary);
+  return toResult({
+    proposalCreated: true, proposalId: proposal.id, mesociclo: nombre, sesionesExistentes: sesiones.length,
+    note: sesiones.length
+      ? 'Al aprobar se crean las asignaciones que falten (las fechas ya asignadas no se duplican).'
+      : 'Las sesiones todavía no existen: esta propuesta se aprueba DESPUÉS de las de propose_workout_days, y entonces publica lo que haya.',
+  });
+}
+
+async function cargarDatosDeRetos(email: string) {
+  const profile = await findProfile(email);
+  if (!profile) return null;
+  const [stepLogs, bodyweightLogs, workoutLogs, exercises, completionLogs, diets, assignments, roadmap, cardioSessions, history] = await Promise.all([
+    getStepsForAthlete(email), getBodyweightForAthlete(email), getWorkoutLogs(email), getExercises(),
+    getDietCompletionLogsForAthlete(email), getDietsForAthlete(email),
+    getWorkoutAssignments({ uid: profile.userId, email: profile.email }), getRoadmap(email),
+    getCardioSessionsForAthlete(email), getWeeklyChallengesForAthlete(email),
+  ]);
+  return {
+    stepLogs, bodyweightLogs, workoutLogs, exercises, completionLogs,
+    coachDiets: diets.filter(d => !d.selfManaged), assignments,
+    liftExerciseIds: roadmap?.challengeConfig?.liftExerciseIds, cardioSessions, history,
+  };
+}
+
+async function getChallengeOptions(email: string): Promise<string> {
+  const datos = await cargarDatosDeRetos(email);
+  if (!datos) return toResult({ error: `No existe ningún cliente con email ${email}` });
+  const today = new Date().toISOString().slice(0, 10);
+  const actual = await getWeeklyChallenge(email, isoWeekKey(today));
+  const opciones = generateChallengeOptions({ ...datos, athleteId: email, today });
+  const memoria = buildChallengeMemory(datos.history, isoWeekKey(today));
+  const ultimos = [...datos.history].sort((a, b) => b.isoWeek.localeCompare(a.isoWeek)).slice(0, 4)
+    .map(c => ({ semana: c.isoWeek, titulo: c.title, tipo: c.kind, estado: c.status, dificultad: c.difficulty ?? null, origen: c.origin }));
+  return toResult({
+    semana: isoWeekKey(today),
+    retoDeEstaSemana: actual ? { titulo: actual.title, tipo: actual.kind, estado: actual.status, origen: actual.origin, objetivo: `${actual.metric.target} ${actual.metric.unit}` } : null,
+    ultimosRetos: ultimos,
+    retosResueltos: memoria.resolvedCount,
+    retosConseguidos: memoria.wonCount,
+    tasaDeExito: memoria.resolvedCount > 0 ? Math.round(memoria.winRate * 100) : null,
+    opciones: opciones.slice(0, 6).map(o => ({
+      kind: o.kind, title: o.title, description: o.description, reason: o.reason, difficulty: o.difficulty,
+      score: o.score, metric: o.metric, isMilestone: !!o.isMilestone,
+    })),
+    note: 'Las opciones salen del motor de retos de la app con SUS datos (memoria de 4 semanas, dificultad adaptativa). Para poner una, llama a propose_weekly_challenge copiando kind, title, description y metric tal cual; si ya hay reto esta semana, la propuesta lo sustituye al aprobar.',
+  });
+}
+
+async function proposeWeeklyChallenge(email: string, input: Record<string, unknown>, rationale: string, chatId: string): Promise<string> {
+  const profile = await findProfile(email);
+  if (!profile) return toResult({ valid: false, issues: [`No existe ningún cliente con email ${email}`] });
+  const problemas: string[] = [];
+  const kind = input.kind as ChallengeKind;
+  if (!CHALLENGE_KINDS.includes(kind)) problemas.push(`kind debe ser uno de: ${CHALLENGE_KINDS.join(' | ')}`);
+  const title = typeof input.title === 'string' ? input.title.trim() : '';
+  const description = typeof input.description === 'string' ? input.description.trim() : '';
+  if (!title) problemas.push('Falta title');
+  if (!description) problemas.push('Falta description (lo que lee el atleta)');
+  const m = (input.metric ?? {}) as Record<string, unknown>;
+  const target = Number(m.target);
+  if (typeof m.unit !== 'string' || !m.unit.trim()) problemas.push('metric.unit es obligatorio (pasos, kg, %, sesiones, series, min, días…)');
+  if (!Number.isFinite(target) || target <= 0) problemas.push('metric.target debe ser un número > 0');
+  const metric: WeeklyChallengeProposalPayload['metric'] = { unit: String(m.unit ?? ''), target };
+  if (m.baseline !== undefined && Number.isFinite(Number(m.baseline))) metric.baseline = Number(m.baseline);
+  if (m.at_weight !== undefined && Number.isFinite(Number(m.at_weight))) metric.atWeight = Number(m.at_weight);
+  if (typeof m.muscle_group === 'string') {
+    if (!(m.muscle_group in MUSCLE_LABELS)) problemas.push(`metric.muscle_group desconocido: ${m.muscle_group}`);
+    else metric.muscleGroup = m.muscle_group as MuscleGroup;
+  }
+  if (typeof m.exercise_name === 'string' && m.exercise_name.trim()) {
+    const cat = (await getExercises()).find(e => claveDeEjercicio(e.name) === claveDeEjercicio(String(m.exercise_name)));
+    if (!cat) problemas.push(`metric.exercise_name "${m.exercise_name}" no está en el catálogo`);
+    else { metric.exerciseId = cat.id; metric.exerciseName = cat.name; }
+  }
+  if ((kind === 'carga_ejercicio' || kind === 'reps_ejercicio') && !metric.exerciseId) problemas.push(`${kind} necesita metric.exercise_name`);
+  if (kind === 'series_grupo' && !metric.muscleGroup) problemas.push('series_grupo necesita metric.muscle_group');
+  if (problemas.length) return toResult({ valid: false, issues: problemas, note: 'Corrige y vuelve a llamar a propose_weekly_challenge.' });
+
+  const today = typeof input.today === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(input.today) ? input.today : new Date().toISOString().slice(0, 10);
+  const semana = isoWeekKey(today);
+  const actual = await getWeeklyChallenge(email, semana);
+  const payload: WeeklyChallengeProposalPayload = {
+    kind, title, description, metric, today,
+    ...(typeof input.difficulty === 'string' && ['suave', 'justo', 'ambicioso'].includes(input.difficulty) ? { difficulty: input.difficulty as WeeklyChallengeProposalPayload['difficulty'] } : {}),
+    ...(input.is_milestone === true ? { isMilestone: true } : {}),
+  };
+  const summary = `Reto de la semana ${semana}: ${title} (${target} ${metric.unit})${actual ? ` · sustituye a «${actual.title}»` : ''}`;
+  const proposal = await createAiProposal({
+    athleteId: email, kind: 'weeklyChallenge', status: 'proposed', chatId,
+    summary, rationale: rationale || '', payload,
+    ...(actual ? { cambios: [`Reto de la semana: «${actual.title}» (${actual.origin === 'auto' ? 'automático' : 'del coach'}) → «${title}»`] } : {}),
+    createdAt: new Date().toISOString(),
+  });
+  await registrarPropuesta(email, proposal.id, chatId, summary);
+  return toResult({ proposalCreated: true, proposalId: proposal.id, semana, note: 'Al aprobar, el atleta lo ve en su road map esa misma semana.' });
+}
+
+async function proposeWorkoutTemplate(email: string, name: string, exsInput: WorkoutExerciseInput[], rationale: string, chatId: string): Promise<string> {
+  const catalogo = await getExercises();
+  const issues = validateWorkoutDays([{ day_index: 0, name, exercises: exsInput }], catalogo, 1);
+  if (issues.length) return toResult({ valid: false, issues, note: 'Corrige y vuelve a llamar a propose_workout_template.' });
+  const porNombre = new Map(catalogo.map(e => [claveDeEjercicio(e.name), e]));
+  const exercises = ejerciciosResueltos(exsInput, porNombre);
+  const payload: WorkoutTemplateProposalPayload = { name: name.trim(), exercises };
+  const series = exercises.reduce((s, e) => s + e.sets, 0);
+  const summary = `Plantilla de rutina «${payload.name}»: ${exercises.length} ejercicios · ${series} series`;
+  const proposal = await createAiProposal({
+    athleteId: email, kind: 'workoutTemplate', status: 'proposed', chatId,
+    summary, rationale: rationale || '', payload, createdAt: new Date().toISOString(),
+  });
+  return toResult({ proposalCreated: true, proposalId: proposal.id, ejercicios: exercises.map(e => e.exerciseName), note: 'Al aprobar se guarda como rutina del coach (sin mesociclo), reutilizable desde Entrenamientos con cualquier atleta.' });
+}
+
+async function proposeMesocycleTemplate(email: string, name: string, description: string | undefined, stagesInput: Record<string, unknown>[], rationale: string, chatId: string): Promise<string> {
+  const catalogo = await getExercises();
+  const porNombre = new Map(catalogo.map(e => [claveDeEjercicio(e.name), e]));
+  const problemas: string[] = [];
+  const stages: MesocycleTemplateStageProposal[] = [];
+  stagesInput.forEach((st, i) => {
+    const nombre = typeof st.name === 'string' && st.name.trim() ? st.name.trim() : `Etapa ${i + 1}`;
+    const weeks = Number(st.weeks);
+    const daysPerWeek = Number(st.days_per_week);
+    const groupsInput = (st.groups ?? {}) as MesocycleProposalPayload['groups'];
+    const issues = validateMesocyclePayload({ weeks, daysPerWeek, objective: nombre, groups: groupsInput });
+    if (issues.length) { problemas.push(`Etapa "${nombre}": ${issues.map(x => x.message).join(' · ')}`); return; }
+    const groups = Object.fromEntries(
+      (Object.keys(MUSCLE_LABELS) as MuscleGroup[]).map(g => [g, { series: groupsInput[g]?.series ?? 0, priority: groupsInput[g]?.priority ?? 'media' }]),
+    ) as Record<MuscleGroup, MuscleGroupConfig>;
+    const stage: MesocycleTemplateStageProposal = { name: nombre, weeks, daysPerWeek, groups };
+    if (Array.isArray(st.days) && st.days.length) {
+      const dias = (st.days as Record<string, unknown>[]).map((d, k) => ({ day_index: k, name: d.name, exercises: d.exercises }));
+      const issuesDias = validateWorkoutDays(dias as WorkoutDayInput[], catalogo, daysPerWeek);
+      if (issuesDias.length) { problemas.push(`Etapa "${nombre}", sesiones: ${issuesDias.map(x => x.message).join(' · ')}`); return; }
+      stage.days = dias.map((d, k) => ({
+        name: typeof d.name === 'string' && d.name.trim() ? d.name.trim() : `Día ${k + 1}`,
+        exercises: ejerciciosResueltos(d.exercises as WorkoutExerciseInput[], porNombre),
+      }));
+    }
+    if (st.deload_week !== undefined) {
+      const dw = Number(st.deload_week);
+      if (Number.isInteger(dw) && dw >= 1 && dw <= weeks) stage.deloadWeek = dw; else problemas.push(`Etapa "${nombre}": deload_week fuera de 1..${weeks}`);
+    }
+    if (st.review_cadence_weeks !== undefined) {
+      const rc = Number(st.review_cadence_weeks);
+      if (Number.isInteger(rc) && rc >= 1) { stage.reviewCadenceWeeks = rc; stage.reviewType = st.review_type === 'cuestionario' || st.review_type === 'foto' ? st.review_type : 'revision'; }
+      else problemas.push(`Etapa "${nombre}": review_cadence_weeks debe ser ≥ 1`);
+    }
+    stages.push(stage);
+  });
+  if (!stagesInput.length) problemas.push('stages necesita al menos una etapa');
+  if (problemas.length) return toResult({ valid: false, issues: problemas, note: 'Corrige y vuelve a llamar a propose_mesocycle_template.' });
+
+  const payload: MesocycleTemplateProposalPayload = { name: name.trim(), ...(description?.trim() ? { description: description.trim() } : {}), stages };
+  const semanas = stages.reduce((s, st) => s + st.weeks, 0);
+  const summary = `Plantilla de mesociclo «${payload.name}»: ${stages.length} etapa${stages.length !== 1 ? 's' : ''} / ${semanas} semanas (${stages.map(s => `${s.name} ${s.weeks}sem×${s.daysPerWeek}d`).join(' → ')})`;
+  const proposal = await createAiProposal({
+    athleteId: email, kind: 'mesocycleTemplate', status: 'proposed', chatId,
+    summary, rationale: rationale || '', payload, createdAt: new Date().toISOString(),
+  });
+  return toResult({ proposalCreated: true, proposalId: proposal.id, etapas: stages.map(s => `${s.name}: ${s.weeks} sem × ${s.daysPerWeek} días${s.days ? `, ${s.days.length} sesiones` : ''}`), note: 'Al aprobar se guarda en la biblioteca de plantillas del coach (Entrenamientos › Plantillas), lista para aplicar a cualquier atleta.' });
+}
+
+async function addCoachTask(email: string, title: string, phase: string | undefined, dueDate: string | undefined, chatId: string): Promise<string> {
+  const profile = await findProfile(email);
+  if (!profile) return toResult({ error: `No existe ningún cliente con email ${email}` });
+  const fases = ['alta', 'programacion', 'primeras_semanas', 'consolidacion'];
+  const existentes = await getCoachClientTasks(email);
+  const repetida = existentes.find(t => !t.done && claveDeEjercicio(t.title) === claveDeEjercicio(title));
+  if (repetida) return toResult({ creada: false, note: `Ya existe esa nota pendiente («${repetida.title}»), no se duplica.` });
+  const tarea = await createCoachClientTask({
+    athleteId: email, title: title.trim(), done: false, createdBy: 'coach', createdAt: new Date().toISOString(),
+    ...(phase && fases.includes(phase) ? { phase } : {}),
+    ...(dueDate && /^\d{4}-\d{2}-\d{2}$/.test(dueDate) ? { dueDate } : {}),
+  });
+  await appendDossierFacts(email, [{ at: new Date().toISOString(), kind: 'observacion', text: `Nota para Dani: ${title.trim()}`, chatId }]);
+  return toResult({ creada: true, taskId: tarea.id, note: 'Queda en la pestaña Setup del cliente como tarea pendiente de Dani. No la ve el atleta.' });
+}
+
+/* El mismo progreso que pinta Análisis › Correlaciones, en texto.
+   Se reutilizan las utilidades de esa pantalla (US Navy, índices, IRP,
+   resumirSerie con el margen de error de cada perímetro) para que lo que lea
+   la IA y lo que vea Dani no puedan contarse distinto. */
+async function getProgressMetrics(email: string): Promise<string> {
+  const profile = await findProfile(email);
+  if (!profile) return toResult({ error: `No existe ningún cliente con email ${email}` });
+  const coachUid = auth.currentUser?.uid;
+  const [medidas, bwLogs, responses, questionnaires] = await Promise.all([
+    getBodyMeasurementsForAthlete(email),
+    getBodyweightForAthlete(email),
+    getResponsesForAthlete(email),
+    coachUid ? getQuestionnairesByCoach(coachUid) : Promise.resolve([]),
+  ]);
+  if (medidas.length === 0 && bwLogs.length === 0) {
+    return toResult({ note: 'Este atleta no tiene todavía ni mediciones corporales ni registros de peso: no hay progreso que medir.' });
+  }
+
+  const sexo = leerSexo(responses, questionnaires);
+  const alturaCm = [...medidas].reverse().find(m => m.metricKey === 'altura')?.value;
+  const pesoEn = (fecha: string): number | null => {
+    const previos = bwLogs.filter(b => b.date <= fecha).sort((a, b) => a.date.localeCompare(b.date));
+    return previos.length ? previos[previos.length - 1].weight : null;
+  };
+
+  // Un resumen por perímetro, con su margen de error: un cambio por debajo del
+  // MDC es ruido de la cinta métrica, no progreso.
+  const porMetrica = new Map<string, { date: string; value: number }[]>();
+  for (const m of medidas) {
+    if (!porMetrica.has(m.metricKey)) porMetrica.set(m.metricKey, []);
+    porMetrica.get(m.metricKey)!.push({ date: m.date, value: m.value });
+  }
+  const perimetros = [...porMetrica.entries()]
+    .map(([clave, pts]) => {
+      const r = resumirSerie({
+        id: clave,
+        label: BODY_METRIC_LABELS[clave as BodyMetricKey] ?? clave,
+        unit: clave === 'bodyweight' ? 'kg' : 'cm',
+        points: [...pts].sort((a, b) => a.date.localeCompare(b.date)),
+        mejorSiSube: null,
+        umbralRuido: mdcDeMetrica(clave as BodyMetricKey) ?? 0,
+      });
+      return r && {
+        medida: r.label, desde: r.desde, mediciones: r.puntos,
+        primero: r.primero, ultimo: r.ultimo, cambio: r.delta,
+        esRuidoDeMedicion: r.direccion === 'neutro' && r.delta !== 0,
+      };
+    })
+    .filter(Boolean);
+
+  // Composición corporal por fecha de medición (mismo cálculo que la pantalla).
+  const porFecha = new Map<string, Partial<Record<BodyMetricKey, number>>>();
+  for (const m of medidas) {
+    if (m.metricKey === 'bodyweight' || m.metricKey === 'altura') continue;
+    if (!porFecha.has(m.date)) porFecha.set(m.date, {});
+    porFecha.get(m.date)![m.metricKey] = m.value;
+  }
+  const composicion: { fecha: string; pctGrasa: number; masaMagraKg: number | null; irc: number | null }[] = [];
+  let ultimosIndices: Record<string, number> | null = null;
+  for (const [fecha, vals] of [...porFecha.entries()].sort(([a], [b]) => a.localeCompare(b))) {
+    const snapshot: Partial<Record<BodyMetricKey, { value: number }>> = {};
+    for (const [k, v] of Object.entries(vals)) snapshot[k as BodyMetricKey] = { value: v! };
+    if (alturaCm != null) snapshot.altura = { value: alturaCm };
+    const indices = computeAnthropometricIndices(snapshot as Parameters<typeof computeAnthropometricIndices>[0]);
+    ultimosIndices = Object.fromEntries(
+      Object.entries(indices)
+        .filter(([, v]) => v != null)
+        .map(([k, v]) => [ANTHROPOMETRIC_INDEX_LABELS[k as keyof typeof ANTHROPOMETRIC_INDEX_LABELS] ?? k, v as number]),
+    );
+    if (!sexo || alturaCm == null || vals.cuello == null || vals.cintura == null) continue;
+    const pct = pctGrasaUSNavy({ sexo, cuelloCm: vals.cuello, cinturaCm: vals.cintura, caderaCm: vals.cadera, alturaCm });
+    if (pct == null) continue;
+    const peso = pesoEn(fecha);
+    const magra = peso != null ? masaMagraEstimadaKg(peso, pct) : null;
+    const whtr = indices.whtr;
+    composicion.push({
+      fecha, pctGrasa: pct, masaMagraKg: magra,
+      irc: magra != null && whtr != null ? computeIRC(magra, whtr) : null,
+    });
+  }
+
+  const irp = historialIRP({ responses, questionnaires });
+  const resumenIrp = resumirSerie({ id: 'irp', label: 'IRP (readiness)', points: irp, mejorSiSube: true });
+
+  return toResult({
+    sexoConocido: sexo ?? null,
+    alturaCm: alturaCm ?? null,
+    perimetros,
+    composicionCorporal: composicion.slice(-6),
+    indicesAntropometricos: ultimosIndices,
+    readiness: resumenIrp ? { ultimo: resumenIrp.ultimo, cambio: resumenIrp.delta, desde: resumenIrp.desde, mediciones: resumenIrp.puntos } : null,
+    note: composicion.length === 0
+      ? 'Sin % de grasa: hace falta sexo (de la anamnesis), altura, cuello y cintura en la misma medición. Si falta, díselo a Dani con add_coach_task en vez de estimarlo a ojo.'
+      : 'El % de grasa es una estimación US Navy por perímetros, no una analítica. Un cambio marcado como ruido de medición NO es progreso.',
+  });
+}
+
+async function getNutritionAnalysis(email: string): Promise<string> {
+  const profile = await findProfile(email);
+  if (!profile) return toResult({ error: `No existe ningún cliente con email ${email}` });
+  const [diets, dietConfig, completionLogs, stepLogs, bodyweightLogs, onboarding, nutriConfig] = await Promise.all([
+    getDietsForAthlete(email), getAthleteDietConfig(email), getDietCompletionLogsForAthlete(email),
+    getStepsForAthlete(email), getBodyweightForAthlete(email), getOnboarding(email), getAthleteNutritionConfig(email),
+  ]);
+  const coachDiets = diets.filter(d => !d.selfManaged);
+  const activeId = dietConfig?.activeDietIds?.[0] ?? null;
+  const activeDiet = activeId ? coachDiets.find(d => d.id === activeId) ?? null : (coachDiets[0] ?? null);
+  const informe = buildNutritionReport({
+    completionLogs, diets: coachDiets, activeDiet, stepLogs, stepGoal: nutriConfig.stepGoal ?? 8000,
+    bodyweightLogs, targetWeight: profile.targetWeight || undefined, onboarding,
+  });
+  return toResult({
+    dietaActiva: activeDiet ? { id: activeDiet.id, nombre: activeDiet.name, kcalAprox: exchangeToKcal(activeDiet.budget), budget: activeDiet.budget } : null,
+    objetivoPasos: nutriConfig.stepGoal ?? null,
+    resumen: informe.summary,
+    adherencia: informe.adherence,
+    pasos: informe.steps,
+    desviacionMacros: informe.macroDeviation,
+    tendenciaPeso: informe.weightTrend,
+    alertas: informe.flags,
+    note: 'Es el mismo análisis que Dani ve en Análisis › Nutrición. Ventana: la de la app (últimas semanas con registro).',
+  });
+}
+
 export async function executeTool(
   name: string, input: Record<string, unknown>, chatId: string,
 ): Promise<{ content: string; isError: boolean }> {
@@ -2200,6 +3050,9 @@ export async function executeTool(
     }
 
     switch (name) {
+      case 'get_client_brief':
+        if (!email) return { content: 'Falta athlete_email', isError: true };
+        return { content: await getClientBrief(email, typeof input.tarea === 'string' ? input.tarea : 'renovar_mes'), isError: false };
       case 'list_clients':
         return { content: await listClients(), isError: false };
       case 'get_client_overview':
@@ -2241,15 +3094,15 @@ export async function executeTool(
           isError: false,
         };
       case 'propose_diet_update': {
-        if (!email || typeof input.name !== 'string' || !input.budget || !Array.isArray(input.meals)) {
-          return { content: 'Faltan athlete_email, name, budget o meals', isError: true };
+        if (!email || typeof input.name !== 'string' || !input.budget) {
+          return { content: 'Faltan athlete_email, name o budget', isError: true };
         }
         const content = await proposeDietUpdate(
           email,
           typeof input.base_diet_id === 'string' ? input.base_diet_id : undefined,
           input.name,
           input.budget as Record<FoodCategory, number>,
-          input.meals as DietUpdatePayload['meals'],
+          (Array.isArray(input.meals) ? input.meals : []) as NonNullable<DietUpdatePayload['meals']>,
           typeof input.rationale === 'string' ? input.rationale : '',
           chatId,
           leerExpediente(input),
@@ -2394,6 +3247,60 @@ export async function executeTool(
         const kind = typeof input.kind === 'string' ? input.kind : 'observacion';
         return { content: await apuntarHecho(email, kind, input.text, chatId), isError: false };
       }
+      case 'propose_setup_config':
+        if (!email) return { content: 'Falta athlete_email', isError: true };
+        {
+          const content = await proposeSetupConfig(email, input, typeof input.rationale === 'string' ? input.rationale : '', chatId, leerExpediente(input));
+          const parsed = JSON.parse(content) as { valid?: boolean };
+          return { content, isError: parsed.valid === false };
+        }
+      case 'propose_publish_block':
+        if (!email) return { content: 'Falta athlete_email', isError: true };
+        {
+          const content = await proposePublishBlock(email, typeof input.mesocycle_id === 'string' ? input.mesocycle_id : undefined, typeof input.rationale === 'string' ? input.rationale : '', chatId);
+          const parsed = JSON.parse(content) as { valid?: boolean };
+          return { content, isError: parsed.valid === false };
+        }
+      case 'get_challenge_options':
+        if (!email) return { content: 'Falta athlete_email', isError: true };
+        return { content: await getChallengeOptions(email), isError: false };
+      case 'propose_weekly_challenge':
+        if (!email) return { content: 'Falta athlete_email', isError: true };
+        {
+          const content = await proposeWeeklyChallenge(email, input, typeof input.rationale === 'string' ? input.rationale : '', chatId);
+          const parsed = JSON.parse(content) as { valid?: boolean };
+          return { content, isError: parsed.valid === false };
+        }
+      case 'propose_workout_template': {
+        if (!email || typeof input.name !== 'string' || !Array.isArray(input.exercises)) {
+          return { content: 'Faltan athlete_email, name o exercises', isError: true };
+        }
+        const content = await proposeWorkoutTemplate(email, input.name, input.exercises as WorkoutExerciseInput[], typeof input.rationale === 'string' ? input.rationale : '', chatId);
+        const parsed = JSON.parse(content) as { valid?: boolean };
+        return { content, isError: parsed.valid === false };
+      }
+      case 'propose_mesocycle_template': {
+        if (!email || typeof input.name !== 'string' || !Array.isArray(input.stages)) {
+          return { content: 'Faltan athlete_email, name o stages', isError: true };
+        }
+        const content = await proposeMesocycleTemplate(email, input.name, typeof input.description === 'string' ? input.description : undefined, input.stages as Record<string, unknown>[], typeof input.rationale === 'string' ? input.rationale : '', chatId);
+        const parsed = JSON.parse(content) as { valid?: boolean };
+        return { content, isError: parsed.valid === false };
+      }
+      case 'add_coach_task':
+        if (!email || typeof input.title !== 'string' || !input.title.trim()) {
+          return { content: 'Faltan athlete_email o title', isError: true };
+        }
+        return {
+          content: await addCoachTask(email, input.title, typeof input.phase === 'string' ? input.phase : undefined, typeof input.due_date === 'string' ? input.due_date : undefined, chatId),
+          isError: false,
+        };
+      case 'get_nutrition_analysis':
+        if (!email) return { content: 'Falta athlete_email', isError: true };
+        return { content: await getNutritionAnalysis(email), isError: false };
+      case 'get_progress_metrics':
+        if (!email) return { content: 'Falta athlete_email', isError: true };
+        return { content: await getProgressMetrics(email), isError: false };
       case 'propose_dossier_update': {
         if (!email) return { content: 'Falta athlete_email', isError: true };
         const patch: DossierPatch = {};

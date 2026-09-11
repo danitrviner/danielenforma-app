@@ -3,6 +3,8 @@ import {
   AiProposal, AiProposalPayload, Diet, DossierPatch, LevelLadder, Mesocycle,
   MuscleGroup, MUSCLE_LABELS, PeriodizationBlockPayload, RoadmapProposalPayload,
   NutritionProgramProposalPayload, SpecialDayProposalPayload, WorkoutDaysProposalPayload,
+  SetupConfigProposalPayload, PublishBlockProposalPayload, WeeklyChallengeProposalPayload,
+  WorkoutTemplateProposalPayload, MesocycleTemplateProposalPayload,
 } from '../../types';
 import { exchangeToKcal } from '../../utils/nutritionConstants';
 import { Badge, Icon } from '../ui';
@@ -329,6 +331,125 @@ export default function ProposalEditor({ proposal: p, payload, onChange }: Props
               onClick={() => onChange({ ...v, meals: v.meals.filter((_, j) => j !== i) })} />
           </div>
         ))}
+      </div>
+    );
+  }
+
+  if (p.kind === 'setupConfig') {
+    /* Una lista de lo que se va a configurar, no veinte campos: el peso
+       objetivo o la cadencia del cuestionario se tocan en su propia pantalla,
+       que es donde Dani los ve en contexto. Aquí se decide si eso es lo que
+       quiere, y los números que SÍ se retocan a ojo (pasos, peso, duración)
+       están a mano. */
+    const v = payload as SetupConfigProposalPayload;
+    const linea = (etiqueta: string, valor: React.ReactNode) => (
+      <div className="flex items-center gap-2 text-caption text-ink-2">
+        <span className="text-ink-4 w-32 flex-shrink-0">{etiqueta}</span>
+        <span className="min-w-0">{valor}</span>
+      </div>
+    );
+    return (
+      <div className={caja}>
+        {v.planStartDate && linea('Inicio del plan', v.planStartDate)}
+        {v.planDurationMonths !== undefined && linea('Duración', (
+          <span className="flex items-center gap-1">
+            <Num etiqueta="Meses de plan" value={v.planDurationMonths} min={1} max={24}
+              onChange={n => onChange({ ...v, planDurationMonths: n })} /> meses
+          </span>
+        ))}
+        {v.targetWeight !== undefined && linea('Peso objetivo', (
+          <span className="flex items-center gap-1">
+            <Num etiqueta="Peso objetivo en kg" value={v.targetWeight} min={30} max={250} step={0.5}
+              onChange={n => onChange({ ...v, targetWeight: n })} /> kg
+          </span>
+        ))}
+        {v.stepGoal !== undefined && linea('Pasos al día', (
+          <Num etiqueta="Pasos diarios objetivo" value={v.stepGoal} min={1000} max={30000} step={500} ancho="w-20"
+            onChange={n => onChange({ ...v, stepGoal: n })} />
+        ))}
+        {v.activeDietNames && linea('Dietas activas', v.activeDietNames.join(', '))}
+        {v.weeklyScheduleByName && linea('Calendario', Object.entries(v.weeklyScheduleByName)
+          .map(([d, n]) => `${d}: ${n ?? 'libre'}`).join(' · '))}
+        {v.questionnaire && linea('Cuestionario', `${v.questionnaire.questionnaireTitle} desde ${v.questionnaire.startDate}`)}
+        {v.photos && linea('Fotos', `${v.photos.views.join('/')} desde ${v.photos.startDate}`)}
+        {v.liftExerciseNames && linea('Retos de carga', v.liftExerciseNames.join(', '))}
+        {v.cardio && linea('Cardio', `${v.cardio.kind === 'vo2max' ? `VO₂máx (${v.cardio.protocolId})` : `Zona 2${v.cardio.baseMinutes ? ` desde ${v.cardio.baseMinutes} min` : ''}`} · ${v.cardio.startDate}`)}
+        <p className="text-caption text-ink-4">Lo que no aparece aquí no se toca.</p>
+      </div>
+    );
+  }
+
+  if (p.kind === 'publishBlock') {
+    const v = payload as PublishBlockProposalPayload;
+    return (
+      <div className={caja}>
+        <p className="text-caption text-ink-2">
+          Vuelca <span className="text-ink">{v.mesocycleName}</span> al calendario del atleta con las fechas del propio
+          bloque. Las que ya estén asignadas no se duplican.
+        </p>
+      </div>
+    );
+  }
+
+  if (p.kind === 'weeklyChallenge') {
+    const v = payload as WeeklyChallengeProposalPayload;
+    return (
+      <div className={caja}>
+        <Texto etiqueta="Título del reto" value={v.title} onChange={title => onChange({ ...v, title })} />
+        <Texto multilinea etiqueta="Lo que lee el atleta" value={v.description}
+          onChange={description => onChange({ ...v, description })} />
+        <div className="flex items-center gap-2 text-caption text-ink-2">
+          <span className="text-ink-4">Objetivo</span>
+          <Num etiqueta="Objetivo del reto" value={v.metric.target} min={0} step={1} ancho="w-20"
+            onChange={target => onChange({ ...v, metric: { ...v.metric, target } })} />
+          <span>{v.metric.unit}</span>
+          {v.metric.baseline !== undefined && <span className="text-ink-4">· parte de {v.metric.baseline}</span>}
+          {v.difficulty && <Badge tone={v.difficulty === 'ambicioso' ? 'warning' : 'neutral'}>{v.difficulty}</Badge>}
+        </div>
+        {v.metric.exerciseName && <p className="text-caption text-ink-4">En {v.metric.exerciseName}</p>}
+      </div>
+    );
+  }
+
+  if (p.kind === 'workoutTemplate') {
+    const v = payload as WorkoutTemplateProposalPayload;
+    return (
+      <div className={caja}>
+        <Texto etiqueta="Nombre de la plantilla" value={v.name} onChange={name => onChange({ ...v, name })} />
+        {v.exercises.map((ex, i) => (
+          <div key={`${ex.exerciseId}_${i}`} className="flex items-center gap-2">
+            <span className="text-caption text-ink-2 flex-1 truncate">{ex.exerciseName}</span>
+            <Num etiqueta={`Series de ${ex.exerciseName}`} value={ex.sets} min={1} max={10} ancho="w-12"
+              onChange={sets => onChange({ ...v, exercises: v.exercises.map((x, j) => j === i ? { ...x, sets } : x) })} />
+            <span className="text-caption font-mono text-ink-4">×{ex.reps} · RIR {ex.rir}</span>
+            <BotonQuitar titulo={`Quitar ${ex.exerciseName}`}
+              onClick={() => onChange({ ...v, exercises: v.exercises.filter((_, j) => j !== i) })} />
+          </div>
+        ))}
+        {v.exercises.length === 0 && <p className="text-caption text-warning">Sin ejercicios no es una plantilla.</p>}
+      </div>
+    );
+  }
+
+  if (p.kind === 'mesocycleTemplate') {
+    const v = payload as MesocycleTemplateProposalPayload;
+    return (
+      <div className={caja}>
+        <Texto etiqueta="Nombre de la plantilla" value={v.name} onChange={name => onChange({ ...v, name })} />
+        {v.stages.map((st, i) => {
+          const series = (Object.keys(MUSCLE_LABELS) as MuscleGroup[]).reduce((sum, g) => sum + (st.groups[g]?.series ?? 0), 0);
+          return (
+            <div key={`${st.name}_${i}`} className="flex items-center gap-2 border-l-2 border-accent-line pl-2">
+              <span className="text-caption text-ink-2 flex-1 truncate">{st.name}</span>
+              <span className="text-caption font-mono text-ink-4">
+                {st.weeks} sem × {st.daysPerWeek} d · {series} series{st.days ? ` · ${st.days.length} sesiones` : ''}
+              </span>
+              <BotonQuitar titulo={`Quitar la etapa ${st.name}`}
+                onClick={() => onChange({ ...v, stages: v.stages.filter((_, j) => j !== i) })} />
+            </div>
+          );
+        })}
+        {v.stages.length === 0 && <p className="text-caption text-warning">Sin etapas no queda plantilla.</p>}
       </div>
     );
   }

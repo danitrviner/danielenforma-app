@@ -2091,7 +2091,70 @@ export interface WorkoutDaysProposalPayload {
 }
 
 export type AiProposalKind = 'diet' | 'mesocycle' | 'checkinFeedback' | 'periodizationBlock' | 'dossier'
-  | 'roadmap' | 'nutritionProgram' | 'specialDay' | 'workoutDays' | 'levelLadder';
+  | 'roadmap' | 'nutritionProgram' | 'specialDay' | 'workoutDays' | 'levelLadder'
+  | 'setupConfig' | 'publishBlock' | 'weeklyChallenge' | 'workoutTemplate' | 'mesocycleTemplate';
+
+// ── Lo demás que se programa al atleta ──────────────────────────────────────
+// Todo lo que la checklist de Setup pide y que hasta ahora la IA no podía
+// tocar: fechas del plan, pasos, calendario de dietas, cuestionario y fotos
+// periódicas, retos elegibles, cardio. Un solo tipo de propuesta con campos
+// opcionales: la IA manda los que aplican y al aprobar se escriben todos.
+export interface SetupConfigProposalPayload {
+  planStartDate?: string;          // YYYY-MM-DD
+  planDurationMonths?: number;
+  targetWeight?: number;
+  stepGoal?: number;
+  /** Dietas del atleta por NOMBRE: se resuelven a id al aprobar, porque las
+   *  dietas de la periodización todavía no existen cuando se propone esto. */
+  activeDietNames?: string[];
+  weeklyScheduleByName?: Partial<Record<WeekDay, string | null>>;
+  questionnaire?: { questionnaireId: string; questionnaireTitle: string; schedule: QSchedule; startDate: string };
+  photos?: { schedule: QSchedule; startDate: string; views: PhotoView[] };
+  /** Ejercicios elegibles para retos de carga, por nombre del catálogo. */
+  liftExerciseNames?: string[];
+  cardio?: { kind: 'zona2' | 'vo2max'; protocolId?: string; startDate: string; baseMinutes?: number };
+}
+
+/** Vuelca al calendario del atleta las sesiones de un mesociclo que ya tiene
+ *  rutinas (las de propose_workout_days, una vez aprobadas). */
+export interface PublishBlockProposalPayload {
+  mesocycleId: string;
+  mesocycleName: string;
+}
+
+export interface WeeklyChallengeProposalPayload {
+  kind: ChallengeKind;
+  title: string;
+  description: string;
+  metric: WeeklyChallenge['metric'];
+  difficulty?: ChallengeDifficulty;
+  isMilestone?: boolean;
+  /** Para qué semana: el reto se guarda con el id `${email}_${isoWeek}` de este día. */
+  today: string;
+}
+
+/** Una rutina del coach (sin mesociclo): la plantilla que luego reutiliza. */
+export interface WorkoutTemplateProposalPayload {
+  name: string;
+  exercises: WorkoutDayExerciseProposal[];
+}
+
+export interface MesocycleTemplateStageProposal {
+  name: string;
+  weeks: number;
+  daysPerWeek: number;
+  groups: Record<MuscleGroup, MuscleGroupConfig>;
+  days?: { name: string; exercises: WorkoutDayExerciseProposal[] }[];
+  deloadWeek?: number;
+  reviewCadenceWeeks?: number;
+  reviewType?: TaskType;
+}
+
+export interface MesocycleTemplateProposalPayload {
+  name: string;
+  description?: string;
+  stages: MesocycleTemplateStageProposal[];
+}
 export type AiProposalStatus = 'proposed' | 'approved' | 'rejected';
 
 // Bloque H2.1 — "la IA propone el bloque entero periodizado". Alcance real:
@@ -2119,7 +2182,12 @@ export type AiProposalPayload =
   | NutritionProgramProposalPayload
   | SpecialDayProposalPayload
   | WorkoutDaysProposalPayload
-  | LevelLadder;
+  | LevelLadder
+  | SetupConfigProposalPayload
+  | PublishBlockProposalPayload
+  | WeeklyChallengeProposalPayload
+  | WorkoutTemplateProposalPayload
+  | MesocycleTemplateProposalPayload;
 
 export interface AiProposal {
   id: string;
@@ -2131,6 +2199,11 @@ export interface AiProposal {
   rationale: string;       // justificación de la IA, expandible
   payload: AiProposalPayload;
   expediente?: ProposalExpediente; // en qué se basó y qué dejó sin saber
+  // «Antes → después» frente a lo que el atleta tiene hoy (su último
+  // mesociclo, la dieta que ajusta, su periodización). Lo calcula la app al
+  // crear la propuesta (src/ai/cambiosPropuesta.ts); vacío o ausente cuando no
+  // hay nada con qué comparar (primer mes).
+  cambios?: string[];
   baseEntityId?: string;   // dietId/mesocycleId que modifica (vs. nuevo)
   resultEntityId?: string; // id de la entidad real creada al aprobar
   createdAt: string;       // ISO

@@ -16,6 +16,8 @@ import { HubTab } from './ClientHub';
 import { useToast } from '../hooks/useToast';
 import { mensajeDeErrorFirestore } from '../utils/erroresFirestore';
 import { Icon, Button, ListRow, RingSeal, Skeleton } from './ui';
+import { TAREAS } from '../ai/tareas';
+import { OPEN_AI_PANEL_EVENT, OpenAiPanelDetail } from '../ai/events';
 
 interface Props {
   athlete: UserProfile;
@@ -225,6 +227,33 @@ export default function ClientSetupPanel({
           ) : (
             <p className="font-sans font-bold text-body-s text-success">Todo configurado</p>
           )}
+        </div>
+      </div>
+
+      {/* Las tres tareas del asistente, aquí donde Dani mira qué le falta al
+          cliente. Cada botón abre el panel con el guion ya mandado; nada se
+          crea hasta que apruebe las propuestas que salgan. */}
+      <div className="bg-surface border border-hairline rounded-surface p-4">
+        <p className="font-mono text-caption text-ink-2 uppercase tracking-wide mb-3 flex items-center gap-2">
+          <Icon name="smart_toy" size="s" /> Con el asistente
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+          {TAREAS.map(t => (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => window.dispatchEvent(new CustomEvent<OpenAiPanelDetail>(OPEN_AI_PANEL_EVENT, {
+                detail: { prompt: t.prompt(athlete.displayName || athlete.email, athlete.email), enviar: true },
+              }))}
+              className="flex items-start gap-3 text-left bg-field border border-hairline hover:border-accent rounded-control px-3 py-3 transition-colors"
+            >
+              <Icon name={t.icon} size="m" className="text-accent flex-shrink-0" />
+              <span className="min-w-0">
+                <span className="block font-sans font-bold text-label text-white">{t.label}</span>
+                <span className="block text-caption text-ink-2">{t.descripcion}</span>
+              </span>
+            </button>
+          ))}
         </div>
       </div>
 

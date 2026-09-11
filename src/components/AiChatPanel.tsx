@@ -1,8 +1,11 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { AiChat, AiChatMessage, AiProposal, AiProposalPayload, Diet, DossierPatch, LevelLadder, Mesocycle, MuscleGroup, MUSCLE_LABELS, MUSCLE_ORDER, KnowledgeNote, PeriodizationBlockPayload,
-  RoadmapProposalPayload, NutritionProgramProposalPayload, SpecialDayProposalPayload, WorkoutDaysProposalPayload, WorkoutExercise, NutritionPhase, Roadmap } from '../types';
+  RoadmapProposalPayload, NutritionProgramProposalPayload, SpecialDayProposalPayload, WorkoutDaysProposalPayload, WorkoutExercise, NutritionPhase, Roadmap,
+  SetupConfigProposalPayload, PublishBlockProposalPayload, WeeklyChallengeProposalPayload,
+  WorkoutTemplateProposalPayload, MesocycleTemplateProposalPayload, WeeklyChallenge, CardioProgram,
+  TemplateStage, WeekDay } from '../types';
 import {
   getAiChats, saveAiChat, deleteAiChat, getAiProposalsForAthlete, updateAiProposal,
   submitCoachFeedback, createDiet, updateDiet, createMesocycle, bulkUpsertKnowledgeNotes,
@@ -11,10 +14,21 @@ import {
   getVolumeLandmarks, getVolumeLandmarksParaEditar, saveVolumeLandmarks, resetVolumeLandmarks,
   getRoadmap, saveRoadmap, saveNutritionProgram, getAllUserProfiles,
   getWorkoutAssignments, updateWorkoutAssignment,
-  getWorkouts, createWorkoutStrict, updateWorkout, getMesocycles,
+  getWorkouts, createWorkoutStrict, updateWorkout, getMesocycles, getExercises,
+  updateUserProfile, getAthleteNutritionConfig, saveAthleteNutritionConfig,
+  getAthleteDietConfig, saveAthleteDietConfig, assignQuestionnaire, assignPhotoCheckIn,
+  createCardioAssignment, saveWeeklyChallenge, createMesocycleTemplate,
+  createWorkoutAssignmentStrict, getDietsForAthlete,
 } from '../dbService';
+import { sesionesDeMesociclo, fechasDelMesociclo } from '../utils/asignacionMesociclo';
+import { prescripcionDeSemana, ZONA2_BASE_MIN_DEFECTO } from '../utils/cardioProgression';
+import { isoWeekKey, isoWeekBounds } from '../utils/challengeOptions';
 import { VOLUME_LANDMARKS_DEFAULT, type VolumeLandmark } from '../data/volumeLandmarks';
 import { runAgentTurn, messageText, probarConexionProxy, TurnoCancelado } from '../ai/aiClient';
+import { TAREAS, type Tarea } from '../ai/tareas';
+import { renderPerfilProgramacion } from '../ai/perfilProgramacion';
+import { ordenarPropuestasPorPlan } from '../utils/ordenPropuestas';
+import { toolStatusLabel } from '../ai/tools';
 import { sanearHistorial } from '../ai/historial';
 import DossierPanel, { dossierKey } from './DossierPanel';
 import HistorialFichaPanel from './HistorialFichaPanel';
@@ -57,6 +71,23 @@ function clavesQueRefrescar(kind: AiProposal['kind'], athleteEmail: string): unk
       return [['nutritionProgram', athleteEmail], ['dietsForAthlete', athleteEmail]];
     case 'diet':
       return [['dietsForAthlete', athleteEmail]];
+    case 'setupConfig':
+      return [
+        ['userProfiles'], ['athleteNutritionConfig', athleteEmail], ['athleteDietConfig', athleteEmail],
+        ['assignmentsForAthlete', athleteEmail], ['photoAssignmentsForAthlete', athleteEmail],
+        ['roadmap', athleteEmail], ['cardioAssignments', athleteEmail],
+      ];
+    case 'publishBlock':
+      // Las asignaciones se cachean por UID (ClientHub) y con otra raíz en la
+      // pantalla del atleta: se invalidan las dos por prefijo, porque aquí solo
+      // tenemos el email.
+      return [['workoutAssignments'], ['workoutAssignmentsForAthlete'], ['workouts'], ['mesocycles', athleteEmail]];
+    case 'weeklyChallenge':
+      return [['weeklyChallenge', athleteEmail], ['weeklyChallengesForAthlete', athleteEmail], ['roadmap', athleteEmail]];
+    case 'workoutTemplate':
+      return [['workouts']];
+    case 'mesocycleTemplate':
+      return [['mesocycleTemplates']];
     default:
       return [];
   }
@@ -277,6 +308,12 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
   // aprueba tal cual vino. Vive en el panel y no en la propuesta a propósito:
   // mientras no apruebe, lo que la IA propuso sigue siendo lo que propuso.
   const [edits, setEdits] = useState<Record<string, AiProposalPayload>>({});
+  /* Qué tarjetas están abiertas. Por defecto TODAS cerradas: la tarjeta
+     enseña el titular y el «qué cambia», que es lo que se lee para decidir;
+     el editor completo (con sus veinte campos) se abre solo si vas a tocar
+     algo. Con ocho propuestas de un mes entero, abrir todos los editores a la
+     vez convertía la bandeja en un formulario de tres pantallas de largo. */
+  const [abiertas, setAbiertas] = useState<Record<string, boolean>>({});
   const [fichaAbierta, setFichaAbierta] = useState(false);
   const [syncMsg, setSyncMsg] = useState<string | null>(null);
   const [diagMsg, setDiagMsg] = useState<string | null>(null);
@@ -305,6 +342,16 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
     queryFn: getVolumeLandmarks,
     enabled: open,
   });
+  // «Cómo programa Dani»: sus rutinas y el catálogo, con las mismas claves que
+  // usan las pantallas de entrenamiento para compartir caché. El texto se
+  // recalcula solo cuando cambian, y va como bloque cacheado del prompt
+  // (ver runAgentTurn) en vez de pedirse por tools grupo a grupo.
+  const { data: rutinasDelCoach = [] } = useQuery({ queryKey: ['workouts'], queryFn: getWorkouts, enabled: open });
+  const { data: catalogoEjercicios = [] } = useQuery({ queryKey: ['exercises'], queryFn: getExercises, enabled: open });
+  const perfilProgramacion = useMemo(
+    () => renderPerfilProgramacion(rutinasDelCoach, catalogoEjercicios),
+    [rutinasDelCoach, catalogoEjercicios],
+  );
   const [editingInstructions, setEditingInstructions] = useState(false);
   const [instructionsDraft, setInstructionsDraft] = useState('');
   const [savingInstructions, setSavingInstructions] = useState(false);
@@ -474,8 +521,10 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
   useEffect(() => {
     const onOpen = (e: Event) => {
       setOpen(true);
-      const prompt = (e as CustomEvent<OpenAiPanelDetail>).detail?.prompt;
-      if (prompt) setInput(prompt);
+      const detail = (e as CustomEvent<OpenAiPanelDetail>).detail;
+      if (!detail?.prompt) return;
+      if (detail.enviar) enviarDesdeEvento.current(detail.prompt);
+      else setInput(detail.prompt);
     };
     window.addEventListener(OPEN_AI_PANEL_EVENT, onOpen);
     return () => window.removeEventListener(OPEN_AI_PANEL_EVENT, onOpen);
@@ -485,7 +534,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
   }, [chat.messages.length, toolStatus, busy]);
 
-  const approveProposal = async (original: AiProposal) => {
+  const approveProposal = async (original: AiProposal): Promise<boolean> => {
     setReviewingId(original.id);
     // Se aprueba lo que Dani tiene delante, no lo que propuso la IA.
     const editado = edits[original.id];
@@ -640,6 +689,196 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
         const base: Roadmap = actual ?? { athleteId: p.athleteId, items: [] };
         await saveRoadmap({ ...base, levelLadder: ladder });
         await updateAiProposal(p.id, { status: 'approved', reviewedAt: new Date().toISOString(), resultEntityId: p.athleteId });
+      } else if (p.kind === 'setupConfig') {
+        // Cada campo va a su sitio; los que no vengan no se tocan. Las dietas
+        // del calendario llegan por NOMBRE porque al proponerlas todavía no
+        // existían (las crea la periodización al aprobarse), así que se
+        // resuelven aquí contra las que el atleta tiene YA.
+        const v = p.payload as SetupConfigProposalPayload;
+        const perfilUpdates: Record<string, unknown> = {};
+        if (v.planStartDate) perfilUpdates.planStartDate = v.planStartDate;
+        if (v.planDurationMonths) perfilUpdates.planDurationMonths = v.planDurationMonths;
+        if (v.targetWeight) perfilUpdates.targetWeight = v.targetWeight;
+        if (Object.keys(perfilUpdates).length) {
+          const perfil = (await getAllUserProfiles()).find(u => u.email === p.athleteId);
+          if (!perfil) throw new Error(`No se encuentra el perfil de ${p.athleteId}.`);
+          await updateUserProfile(perfil.userId, perfilUpdates);
+        }
+        if (v.stepGoal !== undefined) {
+          const cfg = await getAthleteNutritionConfig(p.athleteId);
+          await saveAthleteNutritionConfig({ ...cfg, stepGoal: v.stepGoal });
+        }
+        if (v.activeDietNames || v.weeklyScheduleByName) {
+          const dietas = await getDietsForAthlete(p.athleteId);
+          const idDe = (nombre: string) => dietas.find(d => d.name.trim().toLowerCase() === nombre.trim().toLowerCase())?.id ?? null;
+          const sinResolver = [
+            ...(v.activeDietNames ?? []),
+            ...Object.values(v.weeklyScheduleByName ?? {}).filter((x): x is string => typeof x === 'string'),
+          ].filter(n => !idDe(n));
+          if (sinResolver.length) {
+            setError(`No encuentro estas dietas de ${p.athleteId}: ${[...new Set(sinResolver)].join(', ')}. Aprueba antes la propuesta de dietas o de periodización nutricional.`);
+            setReviewingId(null);
+            throw new AprobacionYaAvisada(new Error('dietas sin resolver'));
+          }
+          const cfg = await getAthleteDietConfig(p.athleteId);
+          const base = cfg ?? { athleteId: p.athleteId, activeDietIds: [] };
+          const schedule: Partial<Record<WeekDay, string | null>> = { ...(base.weeklySchedule ?? {}) };
+          for (const [dia, nombre] of Object.entries(v.weeklyScheduleByName ?? {})) {
+            schedule[dia as WeekDay] = nombre ? idDe(nombre) : null;
+          }
+          await saveAthleteDietConfig({
+            ...base,
+            ...(v.activeDietNames ? { activeDietIds: v.activeDietNames.map(n => idDe(n)!) } : {}),
+            ...(v.weeklyScheduleByName ? { weeklySchedule: schedule } : {}),
+          });
+        }
+        if (v.questionnaire) {
+          await assignQuestionnaire({
+            questionnaireId: v.questionnaire.questionnaireId,
+            athleteId: p.athleteId,
+            schedule: v.questionnaire.schedule,
+            startDate: v.questionnaire.startDate,
+            active: true,
+            createdAt: new Date().toISOString(),
+          });
+        }
+        if (v.photos) {
+          await assignPhotoCheckIn({
+            athleteId: p.athleteId,
+            schedule: v.photos.schedule,
+            startDate: v.photos.startDate,
+            views: v.photos.views,
+            active: true,
+            createdAt: new Date().toISOString(),
+          });
+        }
+        if (v.liftExerciseNames?.length) {
+          const catalogo = await getExercises();
+          const ids = v.liftExerciseNames
+            .map(n => catalogo.find(e => e.name.trim().toLowerCase() === n.trim().toLowerCase())?.id)
+            .filter((x): x is string => !!x);
+          const actual = await getRoadmap(p.athleteId);
+          const base: Roadmap = actual ?? { athleteId: p.athleteId, items: [] };
+          await saveRoadmap({ ...base, challengeConfig: { ...(base.challengeConfig ?? {}), liftExerciseIds: ids } });
+        }
+        if (v.cardio) {
+          const program: CardioProgram = v.cardio.kind === 'vo2max'
+            ? { kind: 'vo2max', protocolId: v.cardio.protocolId ?? 'noruego4x4', startDate: v.cardio.startDate }
+            : { kind: 'zona2', protocolId: 'zona2', startDate: v.cardio.startDate, baseMinutes: v.cardio.baseMinutes ?? ZONA2_BASE_MIN_DEFECTO, targetZone: 'z2' };
+          const semana1 = prescripcionDeSemana(program, 1);
+          await createCardioAssignment({
+            athleteId: p.athleteId,
+            type: v.cardio.kind === 'vo2max' ? 'intervalos' : 'zona2',
+            targetDurationSec: semana1.intervals
+              ? semana1.intervals.reduce((sum, b) => sum + b.durationSec, 0)
+              : semana1.targetDurationSec,
+            ...(v.cardio.kind === 'zona2' ? { targetZone: 'z2' as const } : {}),
+            ...(semana1.intervals ? { intervals: semana1.intervals } : {}),
+            timesPerWeek: semana1.sesionesPorSemana,
+            active: true,
+            createdAt: new Date().toISOString(),
+            program,
+          });
+        }
+        await updateAiProposal(p.id, { status: 'approved', reviewedAt: new Date().toISOString(), resultEntityId: p.athleteId });
+      } else if (p.kind === 'publishBlock') {
+        // El paso que hace que el atleta VEA sus entrenos: una asignación por
+        // sesión y vuelta. Las fechas que ya tenga asignadas no se duplican, así
+        // que volver a aprobar después de un fallo termina el trabajo en vez de
+        // dejarle el calendario doble.
+        const { mesocycleId, mesocycleName } = p.payload as PublishBlockProposalPayload;
+        const perfil = (await getAllUserProfiles()).find(u => u.email === p.athleteId);
+        if (!perfil) throw new Error(`No se encuentra el perfil de ${p.athleteId}.`);
+        const [todas, mesos, yaAsignadas] = await Promise.all([
+          getWorkouts(), getMesocycles(p.athleteId),
+          getWorkoutAssignments({ uid: perfil.userId, email: perfil.email }),
+        ]);
+        const meso = mesos.find(m => m.id === mesocycleId);
+        if (!meso) throw new Error(`El mesociclo de «${mesocycleName}» ya no existe.`);
+        const sesiones = sesionesDeMesociclo(todas, mesocycleId);
+        if (sesiones.length === 0) {
+          setError(`«${mesocycleName}» todavía no tiene sesiones. Aprueba antes la propuesta de sesiones y vuelve a aprobar esta.`);
+          setReviewingId(null);
+          throw new AprobacionYaAvisada(new Error('bloque sin sesiones'));
+        }
+        const ocupadas = new Set(yaAsignadas.filter(a => a.mesocycleId === mesocycleId).map(a => `${a.workoutId}_${a.date}`));
+        const fechas = fechasDelMesociclo(meso, sesiones.length);
+        let creadas = 0;
+        for (const f of fechas) {
+          const workoutId = sesiones[f.dayIdx]?.id;
+          if (!workoutId || ocupadas.has(`${workoutId}_${f.date}`)) continue;
+          try {
+            await createWorkoutAssignmentStrict({
+              workoutId, athleteId: p.athleteId, mesocycleId, date: f.date, status: 'pending',
+            });
+            creadas++;
+          } catch (err) {
+            queryClient.invalidateQueries({ queryKey: ['workoutAssignments', p.athleteId] });
+            setError(`Falló al asignar el ${f.date}. Se habían creado ${creadas} entrenos: vuelve a aprobarla para terminar (no duplica los que ya están).`);
+            setReviewingId(null);
+            throw new AprobacionYaAvisada(err);
+          }
+        }
+        await updateAiProposal(p.id, { status: 'approved', reviewedAt: new Date().toISOString(), resultEntityId: mesocycleId });
+      } else if (p.kind === 'weeklyChallenge') {
+        const v = p.payload as WeeklyChallengeProposalPayload;
+        const { weekStart, weekEnd } = isoWeekBounds(v.today);
+        const isoWeek = isoWeekKey(v.today);
+        const reto: WeeklyChallenge = {
+          id: `${p.athleteId}_${isoWeek}`,
+          athleteId: p.athleteId,
+          isoWeek, weekStart, weekEnd,
+          kind: v.kind, title: v.title, description: v.description,
+          origin: 'coach', metric: v.metric,
+          status: 'activo',
+          createdAt: new Date().toISOString(),
+          ...(v.isMilestone ? { isMilestone: true } : {}),
+          ...(v.difficulty ? { difficulty: v.difficulty } : {}),
+        };
+        await saveWeeklyChallenge(reto);
+        await updateAiProposal(p.id, { status: 'approved', reviewedAt: new Date().toISOString(), resultEntityId: reto.id });
+      } else if (p.kind === 'workoutTemplate') {
+        // Rutina del coach SIN mesocycleId: es una plantilla suya, no el
+        // entreno de nadie. Aparece en Entrenamientos para reutilizarla.
+        const v = p.payload as WorkoutTemplateProposalPayload;
+        const created = await createWorkoutStrict({
+          ownerId: auth.currentUser?.uid ?? '',
+          name: v.name,
+          exercises: v.exercises.map((ex, i) => ({
+            exerciseId: ex.exerciseId, order: i, sets: ex.sets, reps: ex.reps,
+            rir: ex.rir, restSeconds: ex.restSeconds,
+            ...(ex.notes ? { notes: ex.notes } : {}),
+            ...(ex.muscleGroup ? { muscleGroup: ex.muscleGroup } : {}),
+          })),
+        });
+        await updateAiProposal(p.id, { status: 'approved', reviewedAt: new Date().toISOString(), resultEntityId: created.id });
+      } else if (p.kind === 'mesocycleTemplate') {
+        const v = p.payload as MesocycleTemplateProposalPayload;
+        const stages: TemplateStage[] = v.stages.map((st, i) => ({
+          id: `stage_${Date.now()}_${i}`,
+          name: st.name, weeks: st.weeks, daysPerWeek: st.daysPerWeek, groups: st.groups,
+          ...(st.deloadWeek !== undefined ? { deloadWeek: st.deloadWeek } : {}),
+          ...(st.reviewCadenceWeeks !== undefined ? { reviewCadenceWeeks: st.reviewCadenceWeeks, reviewType: st.reviewType ?? 'revision' } : {}),
+          ...(st.days ? {
+            days: st.days.map((d, k) => ({
+              id: `tday_${Date.now()}_${i}_${k}`,
+              name: d.name,
+              exercises: d.exercises.map((ex, j) => ({
+                exerciseId: ex.exerciseId, order: j, sets: ex.sets, reps: ex.reps,
+                rir: ex.rir, restSeconds: ex.restSeconds,
+                ...(ex.notes ? { notes: ex.notes } : {}),
+                ...(ex.muscleGroup ? { muscleGroup: ex.muscleGroup } : {}),
+              })),
+            })),
+          } : {}),
+        }));
+        const created = await createMesocycleTemplate({
+          ownerId: auth.currentUser?.uid ?? '',
+          name: v.name,
+          ...(v.description ? { description: v.description } : {}),
+          stages,
+        });
+        await updateAiProposal(p.id, { status: 'approved', reviewedAt: new Date().toISOString(), resultEntityId: created.id });
       } else if (p.kind === 'periodizationBlock') {
         // Bloque H2.1 — al aprobar se crea el mesociclo Y toda la cadencia de
         // revisiones de golpe; el carril "Revisiones" del cuadro de mando las
@@ -701,14 +940,43 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
         .catch(err => console.warn('No se pudo apuntar la aprobación en la ficha:', err));
       setEdits(prev => { const { [p.id]: _quitado, ...resto } = prev; return resto; });
       queryClient.setQueryData<AiProposal[]>(proposalsKey, prev => prev?.filter(x => x.id !== p.id));
+      return true;
     } catch (err) {
       // El error del guardado por días ya trae su propio mensaje, con qué se
       // llegó a guardar. Pisarlo con el genérico sería peor que no decir nada.
       if (!(err instanceof AprobacionYaAvisada)) {
         setError('No se pudo aprobar la propuesta — inténtalo de nuevo.');
       }
+      return false;
     } finally {
       setReviewingId(null);
+    }
+  };
+
+  /* Aprobar el plan entero de una vez, en el orden en el que se puede.
+     Un mes completo son siete u ocho propuestas encadenadas (el mesociclo
+     antes que las sesiones, las sesiones antes de publicarlas, las dietas
+     antes del calendario de comidas): pulsar ocho veces en el orden correcto
+     era trabajo manual que la app ya sabe hacer. Se para en la primera que
+     falle o que esté bloqueada, para no dejar el plan a medias sin avisar. */
+  const [aprobandoTodas, setAprobandoTodas] = useState(false);
+  const aprobarTodas = async () => {
+    if (aprobandoTodas) return;
+    setAprobandoTodas(true);
+    setError(null);
+    try {
+      for (const p of ordenarPropuestasPorPlan(proposals)) {
+        const payload = edits[p.id] ?? p.payload;
+        const bloqueo = motivoParaNoAprobar(p.kind, payload);
+        if (bloqueo) {
+          setError(`Parado en «${p.summary}»: ${bloqueo}`);
+          return;
+        }
+        const ok = await approveProposal(p);
+        if (!ok) return; // el error ya está puesto; las siguientes siguen pendientes
+      }
+    } finally {
+      setAprobandoTodas(false);
     }
   };
 
@@ -745,7 +1013,10 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
   // reanudar un turno que falló a mitad de camino (T9) — `chat.messages` ya
   // tiene el mensaje pendiente (ver el comentario de `runAgentTurn`), así que
   // pasar texto de nuevo aquí duplicaría el turno en vez de reanudarlo.
-  const runTurn = async (userText: string | null) => {
+  // `base`: el chat sobre el que corre el turno. Por defecto el abierto; los
+  // botones de tarea pasan uno recién creado porque `setChat` todavía no ha
+  // llegado a este cierre cuando se lanza el turno.
+  const runTurn = async (userText: string | null, base: AiChat = chat) => {
     setError(null);
     setBusy(true);
     setCostoTurnoUsd(0);
@@ -753,7 +1024,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
     // donde se repara un chat que se guardó a medias en su día (herramientas
     // pedidas y nunca respondidas). Sin esto, un chat roto una vez devuelve un
     // 400 en cada mensaje nuevo para siempre — ver ../ai/historial.ts.
-    const historial = sanearHistorial(chat.messages);
+    const historial = sanearHistorial(base.messages);
     liveMessages.current = historial;
     const controller = new AbortController();
     cancelarTurnoRef.current = controller;
@@ -763,7 +1034,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
       : undefined;
 
     try {
-      await runAgentTurn(historial, userText, { chatId: chat.id, activeAthlete, coachInstructions, doctrina, volumeLandmarks, signal: controller.signal }, {
+      await runAgentTurn(historial, userText, { chatId: base.id, activeAthlete, coachInstructions, doctrina, volumeLandmarks, perfilProgramacion, signal: controller.signal }, {
         onUpdate: msgs => {
           liveMessages.current = msgs;
           setChat(c => ({ ...c, messages: msgs }));
@@ -786,8 +1057,8 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
       // vaya a rechazar en el siguiente mensaje.
       const msgs = sanearHistorial(liveMessages.current);
       if (msgs.length > 0) {
-        const title = chat.title || (messageText(msgs.find(m => m.role === 'user') ?? msgs[0]) || 'Chat').slice(0, 60);
-        await persist({ ...chat, title, messages: msgs, updatedAt: new Date().toISOString() });
+        const title = base.title || (messageText(msgs.find(m => m.role === 'user') ?? msgs[0]) || 'Chat').slice(0, 60);
+        await persist({ ...base, title, messages: msgs, updatedAt: new Date().toISOString() });
       }
       refreshProposals();
     }
@@ -804,6 +1075,33 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
   const retry = async () => {
     if (busy) return;
     await runTurn(null);
+  };
+
+  // Un botón de tarea = un chat nuevo sobre el cliente activo, con el guion
+  // de la tarea mandado ya. Los chats de tarea se titulan por la tarea, no por
+  // las primeras palabras del guion.
+  const lanzarTarea = async (tarea: Tarea) => {
+    if (!activeAthleteEmail || busy) return;
+    const nombre = activeAthleteName || activeAthleteEmail;
+    const nuevo: AiChat = { ...newChat(activeAthleteEmail), title: `${tarea.label} · ${nombre}` };
+    setChat(nuevo);
+    setShowList(false);
+    setError(null);
+    setCostoTurnoUsd(null);
+    await runTurn(tarea.prompt(nombre, activeAthleteEmail), nuevo);
+  };
+  // Lo mismo desde fuera del panel (pestaña Setup): el evento trae el prompt
+  // y `enviar: true`. Un ref, porque el listener se registra una sola vez y
+  // `runTurn` cambia con cada render.
+  const enviarDesdeEvento = useRef<(prompt: string) => void>(() => {});
+  enviarDesdeEvento.current = (prompt: string) => {
+    if (busy) return;
+    const nuevo = newChat(activeAthleteEmail);
+    setChat(nuevo);
+    setShowList(false);
+    setError(null);
+    setCostoTurnoUsd(null);
+    void runTurn(prompt, nuevo);
   };
 
   const detenerTurno = () => cancelarTurnoRef.current?.abort();
@@ -903,7 +1201,31 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
           <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
             {chat.messages.length === 0 && (
               <div className="text-center py-10 px-4">
-                <p className="text-ink-2 text-body-s mb-3">Pregúntame por tus clientes:</p>
+                {activeAthleteEmail && (
+                  <div className="mb-6 text-left">
+                    <p className="text-caption font-mono uppercase tracking-wider text-ink-3 mb-2">
+                      Con {activeAthleteName || activeAthleteEmail}
+                    </p>
+                    <div className="flex flex-col gap-2">
+                      {TAREAS.map(t => (
+                        <button
+                          key={t.id}
+                          type="button"
+                          onClick={() => lanzarTarea(t)}
+                          disabled={busy}
+                          className="flex items-center gap-3 text-left bg-surface border border-accent/30 hover:border-accent rounded-control px-3 py-3 transition-colors disabled:opacity-50"
+                        >
+                          <Icon name={t.icon} size="m" className="text-accent flex-shrink-0" />
+                          <span className="min-w-0">
+                            <span className="block text-label text-white">{t.label}</span>
+                            <span className="block text-caption text-ink-2">{t.descripcion}</span>
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                <p className="text-ink-2 text-body-s mb-3">{activeAthleteEmail ? 'O pregúntame algo suelto:' : 'Pregúntame por tus clientes:'}</p>
                 <div className="flex flex-col gap-2 text-left">
                   {['¿Qué clientes necesitan atención?',
                     activeAthleteEmail ? 'Resume la situación de este cliente' : 'Resume la situación de un cliente',
@@ -942,7 +1264,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                       return (
                         <div key={j} className="flex items-center gap-2 text-caption font-mono text-data/80 px-1">
                           <Icon name="manufacturing" size="s" />
-                          {block.name}
+                          {toolStatusLabel(block.name, block.input ?? {}).replace(/…$/, '')}
                         </div>
                       );
                     }
@@ -993,17 +1315,47 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
               sesiones trae varios días con sus ejercicios dentro. */}
           {proposals.length > 0 && (
             <div className="border-t border-amber-500/20 bg-amber-500/5 p-3 flex flex-col gap-2 max-h-[55%] overflow-y-auto">
-              <p className="text-caption font-sans font-bold uppercase tracking-wider text-amber-300/80">
-                {proposals.length === 1 ? '1 propuesta por revisar' : `${proposals.length} propuestas por revisar`}
-              </p>
-              {proposals.map(p => {
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <p className="text-caption font-sans font-bold uppercase tracking-wider text-amber-300/80">
+                  {proposals.length === 1
+                    ? '1 propuesta por revisar'
+                    : `El plan de ${activeAthleteName || activeAthleteEmail || 'este cliente'} · ${proposals.length} pasos`}
+                </p>
+                {proposals.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={aprobarTodas}
+                    disabled={aprobandoTodas || !!reviewingId}
+                    className="flex items-center gap-1 text-caption font-bold uppercase tracking-wide text-success border border-success/40 bg-success/10 rounded-control px-2 py-1 disabled:opacity-40"
+                  >
+                    <Icon name={aprobandoTodas ? 'progress_activity' : 'check_circle'} size="s" className={aprobandoTodas ? 'animate-spin' : ''} />
+                    {aprobandoTodas ? 'Aprobando…' : 'Aprobar todo en orden'}
+                  </button>
+                )}
+              </div>
+              {ordenarPropuestasPorPlan(proposals).map((p, idx, todas) => {
                 const payload = edits[p.id] ?? p.payload;
                 const tocada = !!edits[p.id];
                 const bloqueo = motivoParaNoAprobar(p.kind, payload);
                 return (
                 <div key={p.id} className="bg-surface border border-amber-500/25 rounded-surface p-3 flex flex-col gap-2">
-                  <p className="text-label text-white whitespace-pre-wrap">{p.summary}</p>
+                  {/* Numeradas en el orden en que se aprueban (mesociclo antes
+                      que sesiones, sesiones antes que nutrición…), no en el
+                      orden en que la IA las fue creando. */}
+                  <p className="text-label text-white whitespace-pre-wrap">
+                    {todas.length > 1 && <span className="font-mono text-ink-3 mr-2">{idx + 1}/{todas.length}</span>}
+                    {p.summary}
+                  </p>
                   {p.rationale && <p className="text-caption text-ink-2 italic">{p.rationale}</p>}
+                  {/* Antes → después frente a lo que el atleta tiene hoy. Lo
+                      calcula la app al crear la propuesta; si no hay nada con
+                      qué comparar (primer mes) no aparece. */}
+                  {p.cambios && p.cambios.length > 0 && (
+                    <ul className="text-caption text-ink-2 bg-bg border border-hairline rounded-surface p-3 space-y-0.5">
+                      <li className="text-ink-4 uppercase tracking-wide font-mono">Qué cambia</li>
+                      {p.cambios.map((c, i) => <li key={i}>{c}</li>)}
+                    </ul>
+                  )}
                   {/* El expediente es lo que se perdía: en qué se apoyó, qué no
                       sabía y qué queda por preguntar. Se lee ANTES de aprobar. */}
                   {p.expediente && (p.expediente.huecos || p.expediente.esperado || p.expediente.preguntas.length > 0) && (
@@ -1023,12 +1375,23 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                   )}
                   {/* La propuesta se toca aquí mismo. Lo que se aprueba es esto,
                       no lo que propuso la IA — y la diferencia se le cuenta a la
-                      ficha para que la próxima venga ya corregida. */}
-                  <ProposalEditor
-                    proposal={p}
-                    payload={payload}
-                    onChange={nuevo => setEdits(prev => ({ ...prev, [p.id]: nuevo }))}
-                  />
+                      ficha para que la próxima venga ya corregida. Plegada por
+                      defecto: para decidir basta el titular y el «qué cambia». */}
+                  <button
+                    type="button"
+                    onClick={() => setAbiertas(prev => ({ ...prev, [p.id]: !prev[p.id] }))}
+                    className="flex items-center gap-1 self-start text-caption uppercase tracking-wide text-ink-3 hover:text-accent transition-colors"
+                  >
+                    <Icon name={abiertas[p.id] ? 'expand_less' : 'expand_more'} size="s" />
+                    {abiertas[p.id] ? 'Ocultar el detalle' : (tocada ? 'Seguir ajustando' : 'Ver y ajustar el detalle')}
+                  </button>
+                  {abiertas[p.id] && (
+                    <ProposalEditor
+                      proposal={p}
+                      payload={payload}
+                      onChange={nuevo => setEdits(prev => ({ ...prev, [p.id]: nuevo }))}
+                    />
+                  )}
                   {tocada && (
                     <div className="flex items-center gap-2">
                       <span className="text-caption text-accent">Editada por ti</span>
@@ -1041,12 +1404,14 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                       </button>
                     </div>
                   )}
-                  <input
-                    value={notaAprobacion[p.id] ?? ''}
-                    onChange={e => setNotaAprobacion(prev => ({ ...prev, [p.id]: e.target.value }))}
-                    placeholder="Por qué la apruebas así (opcional)"
-                    className="w-full bg-field border border-hairline rounded-control px-3 py-2 text-caption text-ink placeholder:text-ink-4 focus:border-accent-line focus:outline-none"
-                  />
+                  {abiertas[p.id] && (
+                    <input
+                      value={notaAprobacion[p.id] ?? ''}
+                      onChange={e => setNotaAprobacion(prev => ({ ...prev, [p.id]: e.target.value }))}
+                      placeholder="Por qué la apruebas así (opcional)"
+                      className="w-full bg-field border border-hairline rounded-control px-3 py-2 text-caption text-ink placeholder:text-ink-4 focus:border-accent-line focus:outline-none"
+                    />
+                  )}
                   {/* Las comidas se cuadran en el editor de dietas, no aquí:
                       allí están el buscador de alimentos, las recetas y el
                       balance de colocado vs presupuesto. Se lleva la propuesta

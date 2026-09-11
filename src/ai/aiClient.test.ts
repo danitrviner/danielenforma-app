@@ -20,7 +20,7 @@ vi.mock('./tools', () => ({
   executeTool: vi.fn(async (name: string) => ({ content: `resultado de ${name}`, isError: false })),
 }));
 
-import { runAgentTurn, TurnoCancelado } from './aiClient';
+import { runAgentTurn, TurnoCancelado, conMarcaDeCacheAlFinal } from './aiClient';
 import { executeTool } from './tools';
 import type { AiChatMessage } from '../types';
 
@@ -298,5 +298,43 @@ describe('runAgentTurn — el turno abortado no deja el historial roto', () => {
 
     const [, init] = (fetch as unknown as ReturnType<typeof vi.fn>).mock.calls[0];
     expect(JSON.parse((init as RequestInit).body as string).max_tokens).toBe(8192);
+  });
+});
+
+describe('runAgentTurn — caché de prompt', () => {
+  it('marca el último bloque del último mensaje user, en una copia, y cachea el sistema a 1h', async () => {
+    (fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValueOnce(respuestaSSE(eventosTextoSimple));
+    const historial: AiChatMessage[] = [
+      { role: 'user', content: [{ type: 'text', text: 'hola' }] },
+      { role: 'assistant', content: [{ type: 'text', text: 'qué tal' }] },
+    ];
+    const mensajes = await runAgentTurn(historial, 'sigue', { chatId: 'c', perfilProgramacion: '# CÓMO PROGRAMA DANI\nPecho: Press banca' });
+
+    const body = JSON.parse((fetch as unknown as ReturnType<typeof vi.fn>).mock.calls[0][1].body);
+    const ultimo = body.messages[body.messages.length - 1];
+    expect(ultimo.role).toBe('user');
+    expect(ultimo.content[0]).toMatchObject({ text: 'sigue', cache_control: { type: 'ephemeral' } });
+    // Solo el último lleva marca: la API admite cuatro como máximo.
+    expect(JSON.stringify(body.messages.slice(0, -1))).not.toContain('cache_control');
+    // Sistema: prompt + perfil a 1h; el sufijo volátil sin marca.
+    expect(body.system[0].cache_control).toEqual({ type: 'ephemeral', ttl: '1h' });
+    expect(body.system[1].text).toContain('CÓMO PROGRAMA DANI');
+    expect(body.system[1].cache_control).toEqual({ type: 'ephemeral', ttl: '1h' });
+    expect(body.system[2].cache_control).toBeUndefined();
+    // El historial que se devuelve (y se guarda) no lleva la marca.
+    expect(JSON.stringify(mensajes)).not.toContain('cache_control');
+  });
+
+  it('conMarcaDeCacheAlFinal marca el tool_result de la ronda anterior, no el texto del assistant', () => {
+    const marcados = conMarcaDeCacheAlFinal([
+      { role: 'user', content: [{ type: 'text', text: 'a' }] },
+      { role: 'assistant', content: [{ type: 'tool_use', id: 't1', name: 'x', input: {} }] },
+      { role: 'user', content: [{ type: 'tool_result', tool_use_id: 't1', content: 'r1' }, { type: 'tool_result', tool_use_id: 't2', content: 'r2' }] },
+    ]);
+    expect(marcados[2].content[0]).not.toHaveProperty('cache_control');
+    expect(marcados[2].content[1]).toMatchObject({ tool_use_id: 't2', cache_control: { type: 'ephemeral' } });
+    // Un historial que acaba en assistant se devuelve tal cual.
+    const sinCambios = [{ role: 'assistant', content: [{ type: 'text', text: 'x' }] }] as AiChatMessage[];
+    expect(conMarcaDeCacheAlFinal(sinCambios)).toBe(sinCambios);
   });
 });

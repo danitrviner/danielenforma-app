@@ -7,6 +7,8 @@
  * quien lo va a leer luego es el asistente, para no volver a proponer lo mismo.
  */
 import type {
+  SetupConfigProposalPayload, WeeklyChallengeProposalPayload,
+  WorkoutTemplateProposalPayload, MesocycleTemplateProposalPayload,
   AiProposal, AiProposalPayload, Diet, DossierPatch, LevelLadder, Mesocycle,
   MuscleGroup, NutritionProgramProposalPayload, PeriodizationBlockPayload, RoadmapProposalPayload,
   SpecialDayProposalPayload, WorkoutDaysProposalPayload,
@@ -216,6 +218,33 @@ export function motivoParaNoAprobar(kind: AiProposal['kind'], payload: AiProposa
     if (pasado) return `${MUSCLE_LABELS[pasado]} pasa de 25 series semanales.`;
     const total = (Object.keys(MUSCLE_LABELS) as MuscleGroup[]).reduce((s, g) => s + (meso.groups?.[g]?.series ?? 0), 0);
     if (total === 0) return 'El bloque se ha quedado sin series en ningún grupo.';
+  }
+
+  if (kind === 'weeklyChallenge') {
+    const v = payload as WeeklyChallengeProposalPayload;
+    if (!v.title.trim()) return 'El reto se ha quedado sin título.';
+    if (!v.description.trim()) return 'El reto se ha quedado sin lo que lee el atleta.';
+    if (!(Number(v.metric?.target) > 0)) return 'Un reto con objetivo 0 se cumple solo.';
+  }
+
+  if (kind === 'workoutTemplate') {
+    const v = payload as WorkoutTemplateProposalPayload;
+    if (!v.name.trim()) return 'La plantilla se ha quedado sin nombre.';
+    if (v.exercises.length === 0) return 'La plantilla se ha quedado sin ejercicios.';
+    const mal = v.exercises.find(e => !Number.isInteger(e.sets) || e.sets < 1 || e.sets > 10);
+    if (mal) return `${mal.exerciseName}: ${mal.sets} series no es una serie de trabajo (1 a 10).`;
+  }
+
+  if (kind === 'mesocycleTemplate') {
+    const v = payload as MesocycleTemplateProposalPayload;
+    if (!v.name.trim()) return 'La plantilla se ha quedado sin nombre.';
+    if (v.stages.length === 0) return 'La plantilla se ha quedado sin etapas.';
+  }
+
+  if (kind === 'setupConfig') {
+    const v = payload as SetupConfigProposalPayload;
+    const algo = Object.values(v).some(x => x !== undefined);
+    if (!algo) return 'No queda nada que configurar.';
   }
 
   if (kind === 'levelLadder') {

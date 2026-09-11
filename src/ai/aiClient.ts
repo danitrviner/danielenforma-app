@@ -355,6 +355,32 @@ export async function probarConexionProxy(): Promise<DiagnosticoConexion> {
   return resultado;
 }
 
+const CACHE_1H = { type: 'ephemeral', ttl: '1h' } as const;
+
+/** El historial con una marca de caché en el último bloque del último mensaje.
+ *
+ *  Sin esto solo se cacheaba el prompt de sistema, y cada ronda de tools
+ *  reenviaba TODO el historial (brief, resultados anteriores, propuestas) como
+ *  entrada normal: en un chat de 31 llamadas, 1,47 millones de tokens sin
+ *  caché frente a 0,74 leídos de ella. La marca va en el último mensaje `user`
+ *  (el texto de Dani o los tool_results de la ronda anterior) y avanza con
+ *  cada ronda, así que cada llamada solo paga de nuevo lo que ha cambiado desde
+ *  la anterior.
+ *
+ *  Se marca en una COPIA: el historial que se guarda en Firestore no lleva la
+ *  marca (la API admite cuatro como máximo por petición, y un chat de treinta
+ *  mensajes acumularía treinta). TTL de 5 minutos, que es el que hay entre dos
+ *  rondas de un mismo turno; las entradas de 1h (el sistema) van antes, como
+ *  exige la API. */
+export function conMarcaDeCacheAlFinal(messages: AiChatMessage[]): AiChatMessage[] {
+  const ultimo = messages[messages.length - 1];
+  if (!ultimo || ultimo.role !== 'user' || ultimo.content.length === 0) return messages;
+  const content = ultimo.content.map((bloque, i) =>
+    i === ultimo.content.length - 1 ? { ...bloque, cache_control: { type: 'ephemeral' } } : bloque,
+  );
+  return [...messages.slice(0, -1), { ...ultimo, content: content as AiChatMessage['content'] }];
+}
+
 export async function runAgentTurn(
   history: AiChatMessage[],
   // `null` reanuda un turno que falló a mitad de camino: `history` YA
@@ -370,6 +396,10 @@ export async function runAgentTurn(
     coachInstructions?: string;
     doctrina?: { entrenamiento: string; nutricion: string };
     volumeLandmarks?: Record<string, { mv: number; mev: number; mavMin: number; mavMax: number; mrv: number }>;
+    // «Cómo programa Dani»: sus ejercicios más usados con series/reps/RIR,
+    // ya renderizado (src/ai/perfilProgramacion.ts). Va como bloque de
+    // sistema cacheado para que el modelo no lo pida grupo a grupo.
+    perfilProgramacion?: string;
     // Botón «Detener» del panel — cancela la ronda en curso.
     signal?: AbortSignal;
   },
@@ -380,21 +410,30 @@ export async function runAgentTurn(
     : [...history, { role: 'user', content: [{ type: 'text', text: userText }] }];
   cb.onUpdate?.(messages);
 
-  // Tres bloques, de más estable a más volátil — el prefijo cacheado debe ser
+  // Cuatro bloques, de más estable a más volátil — el prefijo cacheado debe ser
   // byte-idéntico entre turnos:
   //   1. SYSTEM_PROMPT: modelo de dominio, solo cambia con un despliegue.
   //   2. Doctrina del coach: cambia cuando Dani edita su criterio (raro), así que
   //      también se cachea. Va DESPUÉS del prompt para no invalidar su caché
   //      cuando la edite.
-  //   3. Sufijo volátil (fecha, cliente activo, instrucciones fijas): fuera de caché.
+  //   3. Cómo programa Dani: cambia cuando edita una rutina. Después de la
+  //      doctrina por lo mismo.
+  //   4. Sufijo volátil (fecha, cliente activo, instrucciones fijas): fuera de caché.
+  //
+  // TTL de 1 hora en los tres bloques cacheados. Dani trabaja a ráfagas: lee
+  // una propuesta, la edita, vuelve a escribir veinte minutos después. Con el
+  // TTL de 5 minutos (el de antes) cada pausa reescribía los ~50k tokens del
+  // prefijo — la auditoría de aiAuditLog enseñaba chats con tres reescrituras.
+  // La escritura a 1h cuesta 2× en vez de 1,25×, pero se paga una vez por
+  // sesión de trabajo en lugar de una por pausa.
   const doctrinaBlock = opts.doctrina
     ? buildDoctrinaBlock(opts.doctrina.entrenamiento, opts.doctrina.nutricion, opts.volumeLandmarks)
     : '';
+  const perfilBlock = opts.perfilProgramacion?.trim() ?? '';
   const system = [
-    { type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } },
-    ...(doctrinaBlock
-      ? [{ type: 'text', text: doctrinaBlock, cache_control: { type: 'ephemeral' } }]
-      : []),
+    { type: 'text', text: SYSTEM_PROMPT, cache_control: CACHE_1H },
+    ...(doctrinaBlock ? [{ type: 'text', text: doctrinaBlock, cache_control: CACHE_1H }] : []),
+    ...(perfilBlock ? [{ type: 'text', text: perfilBlock, cache_control: CACHE_1H }] : []),
     { type: 'text', text: buildContextSuffix(opts.activeAthlete, opts.coachInstructions) },
   ];
 
@@ -412,7 +451,7 @@ export async function runAgentTurn(
         // que es el estado que rompía el historial (ver ./historial.ts).
         max_tokens: 8192,
         system,
-        messages,
+        messages: conMarcaDeCacheAlFinal(messages),
         tools: TOOL_DEFINITIONS,
         output_config: { effort: 'low' },
         chatId: opts.chatId,

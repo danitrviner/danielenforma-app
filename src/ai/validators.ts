@@ -13,7 +13,7 @@ const BUDGET_TOLERANCE = 0.26; // margen por redondeos de 0.25 en varias comidas
 
 export interface DietUpdatePayload {
   budget: Record<FoodCategory, number>;
-  meals: { name: string; items: { category: FoodCategory; foodLabel: string; quantity: number }[] }[];
+  meals?: { name: string; items: { category: FoodCategory; foodLabel: string; quantity: number }[] }[];
 }
 
 export function validateDietPayload(payload: DietUpdatePayload): ValidationIssue[] {
@@ -26,8 +26,11 @@ export function validateDietPayload(payload: DietUpdatePayload): ValidationIssue
     }
   }
 
-  if (!Array.isArray(payload.meals) || payload.meals.length === 0) {
-    issues.push({ field: 'meals', message: 'La dieta necesita al menos una comida' });
+  // Sin comidas vale: Dani solo quiere el PRESUPUESTO de intercambios de la
+  // IA; los alimentos los coloca él en el editor de dietas. Si vienen comidas,
+  // se validan como siempre.
+  if (payload.meals !== undefined && !Array.isArray(payload.meals)) {
+    issues.push({ field: 'meals', message: 'meals debe ser una lista (o no venir)' });
   }
 
   for (const meal of payload.meals ?? []) {
@@ -50,7 +53,7 @@ export function validateDietPayload(payload: DietUpdatePayload): ValidationIssue
   }
 
   // Coherencia: lo colocado en las comidas debe cuadrar con el presupuesto.
-  if (issues.length === 0) {
+  if (issues.length === 0 && (payload.meals?.length ?? 0) > 0) {
     const placed = computeDietPlaced(payload.meals as DietMeal[]);
     for (const cat of BUDGET_CATS) {
       const budget = payload.budget[cat] ?? 0;

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { validateMesocyclePayload, validateNutritionPhases, type MesocycleProposalPayload } from './validators';
+import { validateMesocyclePayload, validateNutritionPhases, validateDietPayload, type MesocycleProposalPayload } from './validators';
 
 /* El tope de volumen total era days × 12 y rechazaba repartos normales: con el
    criterio de Dani (8-12 series por músculo y sesión), un día de torso que toca
@@ -98,5 +98,25 @@ describe('validateNutritionPhases', () => {
     }], DIETAS);
     expect(issues.some(i => i.message.includes('no reconocido'))).toBe(true);
     expect(issues.every(i => i.message.startsWith('Fase "Déficit"'))).toBe(true);
+  });
+});
+
+describe('validateDietPayload — el presupuesto sí, las comidas no', () => {
+  it('una dieta solo con presupuesto es válida: los alimentos los pone Dani', () => {
+    expect(validateDietPayload({ budget: { HC: 8, PROT: 6, GRASA: 4, MIX_HC: 0, MIX_GRASA: 0 }, meals: [] })).toEqual([]);
+    expect(validateDietPayload({ budget: { HC: 8, PROT: 6, GRASA: 4, MIX_HC: 0, MIX_GRASA: 0 } })).toEqual([]);
+  });
+
+  it('si vienen comidas, se siguen validando contra el presupuesto', () => {
+    const issues = validateDietPayload({
+      budget: { HC: 8, PROT: 6, GRASA: 4, MIX_HC: 0, MIX_GRASA: 0 },
+      meals: [{ name: 'Comida', items: [{ category: 'HC', foodLabel: 'no existe este alimento', quantity: 1 }] }],
+    });
+    expect(issues.length).toBeGreaterThan(0);
+  });
+
+  it('un presupuesto inválido sigue fallando aunque no haya comidas', () => {
+    const issues = validateDietPayload({ budget: { HC: -1, PROT: 6, GRASA: 4, MIX_HC: 0, MIX_GRASA: 0 } });
+    expect(issues.some(i => i.field === 'budget.HC')).toBe(true);
   });
 });
