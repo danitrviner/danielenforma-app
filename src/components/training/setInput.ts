@@ -41,19 +41,30 @@ export function nuevaSerieVacia(): SetInput {
 }
 
 /**
- * Lo que el entrenador ha pautado para una serie, en una línea: «8-10 · RIR 2».
+ * Resumen del rango de repeticiones pautado por el entrenador para TODA la
+ * tabla, agrupando series consecutivas con el mismo rango — «8-12» si las
+ * cuatro series piden lo mismo, «3x6-7, 1x8-9» si la última serie cambia.
  *
- * Va debajo del campo de repeticiones, donde antes se repetía por tercera vez
- * lo de la última sesión. `ExpandedSet` ya trae la prescripción EFECTIVA de la
- * semana (`resolveExerciseForWeek` aplica la progresión antes de expandir), así
- * que en la semana 3 de una progresión dice el rango de la semana 3, no el que
- * el coach escribió el primer día.
+ * Va junto al botón «Historial», no por fila: meterlo debajo de cada input de
+ * reps rompía la alineación de la tabla con las demás columnas (Dani,
+ * 11-09-2026) — la fila con más contenido estiraba su celda y el input
+ * quedaba descentrado respecto al de peso/RIR de al lado.
+ *
+ * `ExpandedSet` ya trae la prescripción EFECTIVA de la semana
+ * (`resolveExerciseForWeek` aplica la progresión antes de expandir), así que
+ * en la semana 3 de una progresión sale el rango de la semana 3, no el que el
+ * coach escribió el primer día.
  */
-export function textoPautado(pautado: { reps: string; rir: number }): string {
-  const reps = pautado.reps?.trim();
-  // «8-10 reps» se lee solo; «AMRAP reps» no. Solo se añade la palabra cuando
-  // lo pautado es una cifra o un rango.
-  const esCifra = !!reps && /^\d+(\s*[-–/]\s*\d+)?$/.test(reps);
-  const partes = [reps ? (esCifra ? `${reps} reps` : reps) : null, `RIR ${pautado.rir}`].filter(Boolean);
-  return partes.join(' · ');
+export function resumenRangosPautados(sets: { reps: string }[]): string | null {
+  const grupos: { reps: string; count: number }[] = [];
+  for (const s of sets) {
+    const reps = s.reps?.trim();
+    if (!reps) continue;
+    const ultimo = grupos[grupos.length - 1];
+    if (ultimo && ultimo.reps === reps) ultimo.count++;
+    else grupos.push({ reps, count: 1 });
+  }
+  if (grupos.length === 0) return null;
+  if (grupos.length === 1) return grupos[0].reps;
+  return grupos.map(g => `${g.count}x${g.reps}`).join(', ');
 }

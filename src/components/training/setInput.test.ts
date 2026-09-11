@@ -1,22 +1,23 @@
 import { describe, expect, it } from 'vitest';
-import { textoPautado } from './setInput';
+import { resumenRangosPautados } from './setInput';
 
-describe('textoPautado', () => {
-  it('rango de repeticiones y RIR, que es lo que el atleta necesita ver', () => {
-    expect(textoPautado({ reps: '8-10', rir: 2 })).toBe('8-10 reps · RIR 2');
+describe('resumenRangosPautados', () => {
+  it('todas las series con el mismo rango: solo el rango, sin conteo', () => {
+    expect(resumenRangosPautados([{ reps: '8-12' }, { reps: '8-12' }, { reps: '8-12' }])).toBe('8-12');
   });
 
-  it('un número suelto de repeticiones también vale', () => {
-    expect(textoPautado({ reps: '12', rir: 1 })).toBe('12 reps · RIR 1');
+  it('rangos distintos: agrupa consecutivas iguales con conteo', () => {
+    expect(resumenRangosPautados([
+      { reps: '6-7' }, { reps: '6-7' }, { reps: '6-7' }, { reps: '8-9' },
+    ])).toBe('3x6-7, 1x8-9');
   });
 
-  it('AMRAP se enseña tal cual, sin la palabra «reps» detrás', () => {
-    expect(textoPautado({ reps: 'AMRAP', rir: 0 })).toBe('AMRAP · RIR 0');
-    expect(textoPautado({ reps: 'al fallo', rir: 0 })).toBe('al fallo · RIR 0');
+  it('un solo grupo repetido no lleva conteo aunque sean varias series', () => {
+    expect(resumenRangosPautados([{ reps: '12' }, { reps: '12' }])).toBe('12');
   });
 
-  it('sin repeticiones pautadas queda solo el RIR, sin un separador huérfano', () => {
-    expect(textoPautado({ reps: '', rir: 3 })).toBe('RIR 3');
-    expect(textoPautado({ reps: '   ', rir: 3 })).toBe('RIR 3');
+  it('sin series pautadas, null', () => {
+    expect(resumenRangosPautados([])).toBeNull();
+    expect(resumenRangosPautados([{ reps: '' }, { reps: '   ' }])).toBeNull();
   });
 });

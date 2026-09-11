@@ -6,7 +6,7 @@ import { expandSetGroups } from '../../utils/setGroups';
 import { generateWarmup } from '../../utils/warmup/WarmupGenerator';
 import { parseTargetReps } from '../../utils/warmup/WarmupEngine';
 import ExerciseVideoPlayer from '../ExerciseVideoPlayer';
-import { SetInput, RIR_OPCIONES, rirTexto, rirClaseColor, textoPautado } from './setInput';
+import { SetInput, RIR_OPCIONES, rirTexto, rirClaseColor, resumenRangosPautados } from './setInput';
 import RestRing from './RestRing';
 
 interface Props {
@@ -115,6 +115,11 @@ export default React.memo(function ExerciseCard({
               <Icon name="trending_up" size="s" />
               Historial
             </button>
+            {!esDropset && !esMyoreps && resumenRangosPautados(expanded) && (
+              <span className="text-caption font-mono px-2 rounded-control bg-white/5 text-ink-3">
+                {resumenRangosPautados(expanded)}
+              </span>
+            )}
             {warmup.readiness && (
               <span
                 title={warmup.readiness.message}
@@ -249,7 +254,6 @@ function NormalTable({
             <th className="px-2 sm:px-3 py-2 font-mono text-caption text-ink-2 uppercase">Peso</th>
             <th className="px-2 sm:px-3 py-2 font-mono text-caption text-ink-2 uppercase">Reps</th>
             <th className="px-2 sm:px-3 py-2 font-mono text-caption text-ink-2 uppercase">RIR</th>
-            <th className="hidden sm:table-cell px-3 py-2 font-mono text-caption text-ink-3 uppercase">Anterior</th>
             <th className="px-2 sm:px-4 py-2 font-mono text-caption text-ink-2 uppercase text-center">Hecha</th>
           </tr>
         </thead>
@@ -266,7 +270,6 @@ function NormalTable({
                 <span className="w-14 sm:w-16 inline-block text-center text-warning font-mono text-body-s">{w.reps}</span>
               </td>
               <td className="px-2 sm:px-3 py-2 text-center text-warning/50 font-mono text-body-s">—</td>
-              <td className="hidden sm:table-cell px-3 py-2 text-center text-warning/50 font-mono text-caption">Warm-up</td>
               <td className="px-2 sm:px-4 py-2 text-center text-warning/40 font-mono text-body-s">—</td>
             </tr>
           ))}
@@ -320,16 +323,6 @@ function NormalTable({
                     disabled={setInput.done}
                     className={`w-14 sm:w-16 rounded-control border bg-field px-1 sm:px-2 py-2 text-center font-mono text-title-s text-ink focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50 disabled:cursor-not-allowed ${esSiguiente ? 'border-accent/55' : 'border-hairline'}`}
                   />
-                  {/* Lo PAUTADO para esta serie: el rango de repeticiones y el
-                      RIR que ha puesto el entrenador. Hasta ahora el rango solo
-                      asomaba como placeholder mientras no hubiera histórico, así
-                      que desde la segunda sesión desaparecía para siempre y el
-                      atleta no tenía forma de saber contra qué iba. */}
-                  {expanded[sIdx] && (
-                    <span className="block text-center font-mono text-caption text-ink-3 mt-1 whitespace-nowrap">
-                      {textoPautado(expanded[sIdx])}
-                    </span>
-                  )}
                 </td>
                 <td className="px-2 sm:px-3 py-2">
                   <select
@@ -340,15 +333,6 @@ function NormalTable({
                   >
                     {RIR_OPCIONES.map(v => <option key={v} value={v}>{rirTexto(v)}</option>)}
                   </select>
-                </td>
-                <td className="hidden sm:table-cell px-3 py-2">
-                  {prev ? (
-                    <span className="font-mono text-caption text-ink-3 whitespace-nowrap">
-                      {prev.weight > 0 ? `${prev.weight}kg` : '—'} × {prev.repsDone > 0 ? `${prev.repsDone}r` : '—'}
-                    </span>
-                  ) : (
-                    <span className="font-mono text-caption text-ink-3">—</span>
-                  )}
                 </td>
                 <td className="px-2 sm:px-4 py-2 text-center">
                   <button
