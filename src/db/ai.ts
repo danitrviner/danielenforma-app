@@ -114,6 +114,40 @@ export async function getApprovedAiProposals(): Promise<AiProposal[]> {
   }
 }
 
+/**
+ * Todas las propuestas PENDIENTES, de todos los atletas.
+ *
+ * El panel las pedía por atleta, con el email que venía de la URL. Eso dejaba
+ * invisibles dos casos que pasan todos los días: una propuesta hecha para un
+ * cliente mientras Dani está mirando la ficha de OTRO (el chat puede hablar de
+ * quien quiera), y cualquier propuesta creada desde un chat abierto fuera de
+ * `/clients/...`, donde no hay email en la URL y la consulta ni se lanzaba.
+ * La IA decía «ya la tienes lista» y no aparecía en ninguna parte.
+ *
+ * Misma forma que getApprovedAiProposals: un `where` de igualdad sin
+ * `orderBy`, que se resuelve con el índice de campo simple que Firestore crea
+ * solo. Nada que desplegar.
+ */
+export async function getPendingAiProposals(): Promise<AiProposal[]> {
+  const ordenar = (list: AiProposal[]) =>
+    list.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  if (forceLocalOnly) return ordenar(getLocalAiProposals().filter(p => p.status === 'proposed'));
+  try {
+    const q = query(collection(db, 'aiProposals'), where('status', '==', 'proposed'));
+    const snap = await getDocs(q);
+    const list = snap.docs.map(d => ({ id: d.id, ...d.data() } as AiProposal));
+    // El espejo local se queda con estas y con las que no están pendientes
+    // (aprobadas/rechazadas de antes), para no perderlas al refrescar.
+    const otras = getLocalAiProposals().filter(p => p.status !== 'proposed');
+    saveLocalAiProposals([...otras, ...list]);
+    return ordenar(list);
+  } catch (err) {
+    console.warn('getPendingAiProposals Firestore failed, using local:', err);
+    setLocalBypassMode(true, err);
+    return ordenar(getLocalAiProposals().filter(p => p.status === 'proposed'));
+  }
+}
+
 export async function createAiProposal(data: Omit<AiProposal, 'id'>): Promise<AiProposal> {
   if (forceLocalOnly) {
     const proposal: AiProposal = { id: `aiprop_${Date.now()}`, ...data };

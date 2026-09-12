@@ -291,13 +291,16 @@ describe('runAgentTurn — el turno abortado no deja el historial roto', () => {
     ).rejects.toThrow(/se cortó antes de terminar/);
   });
 
-  it('pide al proxy el tope de tokens que el proxy permite (8192)', async () => {
+  /* Tiene que coincidir con MAX_TOKENS_CAP de api/ai-chat.ts: pedir menos deja
+     rondas cortadas (montar un mes entero no cabía en 8192 y el turno se
+     abortaba a medias), y pedir más lo recorta el proxy en silencio. */
+  it('pide al proxy el mismo tope de tokens que el proxy permite (16000)', async () => {
     (fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValueOnce(respuestaSSE(eventosTextoSimple));
 
     await runAgentTurn([], 'hola', { chatId: 'chat1' });
 
     const [, init] = (fetch as unknown as ReturnType<typeof vi.fn>).mock.calls[0];
-    expect(JSON.parse((init as RequestInit).body as string).max_tokens).toBe(8192);
+    expect(JSON.parse((init as RequestInit).body as string).max_tokens).toBe(16000);
   });
 });
 

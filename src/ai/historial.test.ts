@@ -167,3 +167,47 @@ describe('bloques de razonamiento a medias', () => {
     expect(salida[2].content[0]).toMatchObject({ type: 'tool_result', tool_use_id: 't1', is_error: true });
   });
 });
+
+describe('sanearHistorial — la API exige que los roles se alternen', () => {
+  it('fusiona el mensaje nuevo del coach con los resultados de un turno que falló', () => {
+    // Lo que pasa de verdad: el turno muere después de ejecutar la herramienta
+    // (la función se pasa de tiempo), el historial queda terminando en el
+    // `user` de los resultados, y el coach escribe otra cosa en vez de pulsar
+    // «Vuelve a intentarlo». Sin fusionar, la API responde 400 a ese chat para
+    // siempre.
+    const roto: AiChatMessage[] = [
+      { role: 'user', content: [{ type: 'text', text: 'monta el mes' }] },
+      { role: 'assistant', content: [{ type: 'tool_use', id: 't1', name: 'get_client_brief', input: {} }] },
+      { role: 'user', content: [{ type: 'tool_result', tool_use_id: 't1', content: 'el brief' }] },
+      { role: 'user', content: [{ type: 'text', text: 'hay que ajustar las propuestas de nuevo' }] },
+    ];
+    const sano = sanearHistorial(roto);
+    expect(sano.map(m => m.role)).toEqual(['user', 'assistant', 'user']);
+    // No se pierde nada de lo que el coach ve en pantalla.
+    expect(sano[2].content).toEqual([
+      { type: 'tool_result', tool_use_id: 't1', content: 'el brief' },
+      { type: 'text', text: 'hay que ajustar las propuestas de nuevo' },
+    ]);
+  });
+
+  it('fusiona también dos mensajes seguidos del assistant sin herramientas', () => {
+    const sano = sanearHistorial([
+      { role: 'user', content: [{ type: 'text', text: 'hola' }] },
+      { role: 'assistant', content: [{ type: 'text', text: 'primera' }] },
+      { role: 'assistant', content: [{ type: 'text', text: 'segunda' }] },
+    ]);
+    expect(sano.map(m => m.role)).toEqual(['user', 'assistant']);
+    expect(sano[1].content).toHaveLength(2);
+  });
+
+  it('sigue siendo idempotente', () => {
+    const roto: AiChatMessage[] = [
+      { role: 'user', content: [{ type: 'text', text: 'a' }] },
+      { role: 'assistant', content: [{ type: 'tool_use', id: 't1', name: 'x', input: {} }] },
+      { role: 'user', content: [{ type: 'tool_result', tool_use_id: 't1', content: 'r' }] },
+      { role: 'user', content: [{ type: 'text', text: 'b' }] },
+    ];
+    const una = sanearHistorial(roto);
+    expect(sanearHistorial(una)).toEqual(una);
+  });
+});

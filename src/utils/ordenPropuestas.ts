@@ -31,3 +31,24 @@ export function ordenarPropuestasPorPlan(propuestas: AiProposal[]): AiProposal[]
   return [...propuestas].sort((a, b) =>
     (ORDEN[a.kind] ?? 99) - (ORDEN[b.kind] ?? 99) || a.createdAt.localeCompare(b.createdAt));
 }
+
+/** Las pendientes agrupadas por atleta, con el cliente abierto primero.
+ *
+ *  El panel del asistente es global y el chat puede hablar de cualquier
+ *  cliente, así que la bandeja enseña TODAS las pendientes y cada grupo dice
+ *  de quién es. Antes se filtraban por el email de la URL y las de cualquier
+ *  otro atleta no se veían en ninguna parte. */
+export function agruparPropuestasPorAtleta(
+  propuestas: AiProposal[], athleteActivo?: string,
+): { email: string; lista: AiProposal[] }[] {
+  const porAtleta = new Map<string, AiProposal[]>();
+  for (const p of propuestas) {
+    if (!porAtleta.has(p.athleteId)) porAtleta.set(p.athleteId, []);
+    porAtleta.get(p.athleteId)!.push(p);
+  }
+  return [...porAtleta.entries()]
+    .map(([email, lista]) => ({ email, lista: ordenarPropuestasPorPlan(lista) }))
+    .sort((a, b) =>
+      (a.email === athleteActivo ? -1 : 0) - (b.email === athleteActivo ? -1 : 0)
+      || a.email.localeCompare(b.email));
+}

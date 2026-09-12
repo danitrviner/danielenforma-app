@@ -28,7 +28,14 @@ const MAX_DURACION_S = 300;
 const GUARDA_MS = (MAX_DURACION_S - 5) * 1000;
 
 const ALLOWED_MODELS = new Set(['claude-sonnet-5', 'claude-haiku-4-5']);
-const MAX_TOKENS_CAP = 8192;
+// 12-09. Con 8192 el asistente NO cabía montando un mes entero: la auditoría
+// del 12-09 tiene dos rondas seguidas cortadas con `stop_reason: max_tokens` y
+// 8192 de salida clavados, y el cliente trata ese corte como turno abortado —
+// así que el plan se quedaba a medias, con unas propuestas creadas y otras no,
+// y sin el resumen final. Sonnet 5 admite hasta 128k de salida; el techo real
+// aquí es el tiempo de la función (295 s de guarda): a los ~85 tokens/s
+// medidos, 16000 son unos 190 s, que sí caben.
+const MAX_TOKENS_CAP = 16000;
 const DAILY_CALL_LIMIT = 400;
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {

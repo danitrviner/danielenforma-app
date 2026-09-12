@@ -445,11 +445,13 @@ export async function runAgentTurn(
     try {
       ({ message, costoUsd } = await callProxy({
         model: DEFAULT_MODEL,
-        // 8192 es el tope que aplica el proxy (MAX_TOKENS_CAP en api/ai-chat.ts).
-        // Con 4096 una ronda con varias herramientas en paralelo se cortaba a
-        // media petición: `stop_reason: 'max_tokens'` con tool_use ya emitidos,
-        // que es el estado que rompía el historial (ver ./historial.ts).
-        max_tokens: 8192,
+        // El tope lo aplica el proxy (MAX_TOKENS_CAP en api/ai-chat.ts); aquí
+        // se pide el mismo número. Con 4096 una ronda con varias herramientas
+        // en paralelo se cortaba a media petición: `stop_reason: 'max_tokens'`
+        // con tool_use ya emitidos, que es el estado que rompía el historial
+        // (ver ./historial.ts). Y con 8192 seguía sin caber un mes entero: se
+        // cortaban las rondas en las que el asistente monta el plan completo.
+        max_tokens: 16000,
         system,
         messages: conMarcaDeCacheAlFinal(messages),
         tools: TOOL_DEFINITIONS,
@@ -492,7 +494,12 @@ export async function runAgentTurn(
       abortarTurno('El modelo ha rechazado esta petición por políticas de seguridad.');
     }
     if (message.stop_reason === 'max_tokens') {
-      abortarTurno('La respuesta se cortó por longitud — pide algo más acotado o continúa con otro mensaje.');
+      // Lo que ya se haya escrito y las propuestas ya creadas se conservan: el
+      // panel guarda el historial saneado y escribir «sigue» continúa desde
+      // aquí (los roles se fusionan si hace falta, ver ./historial.ts).
+      abortarTurno(
+        'La respuesta se cortó por longitud. Lo que ya había hecho está guardado: escribe «sigue» para que continúe desde donde se quedó.'
+      );
     }
     if (message.stop_reason !== 'tool_use') {
       cb.onToolStatus?.(null);

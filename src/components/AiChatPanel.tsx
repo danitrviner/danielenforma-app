@@ -7,7 +7,7 @@ import { AiChat, AiChatMessage, AiProposal, AiProposalPayload, Diet, DossierPatc
   WorkoutTemplateProposalPayload, MesocycleTemplateProposalPayload, WeeklyChallenge, CardioProgram,
   TemplateStage, WeekDay } from '../types';
 import {
-  getAiChats, saveAiChat, deleteAiChat, getAiProposalsForAthlete, updateAiProposal,
+  getAiChats, saveAiChat, deleteAiChat, getPendingAiProposals, updateAiProposal,
   submitCoachFeedback, createDiet, updateDiet, createMesocycle, bulkUpsertKnowledgeNotes,
   getCoachInstructions, saveCoachInstructions,
   getDoctrina, getDoctrinaParaEditar, saveDoctrina, resetDoctrina, createTask,
@@ -27,7 +27,7 @@ import { VOLUME_LANDMARKS_DEFAULT, type VolumeLandmark } from '../data/volumeLan
 import { runAgentTurn, messageText, probarConexionProxy, TurnoCancelado } from '../ai/aiClient';
 import { TAREAS, type Tarea } from '../ai/tareas';
 import { renderPerfilProgramacion } from '../ai/perfilProgramacion';
-import { ordenarPropuestasPorPlan } from '../utils/ordenPropuestas';
+import { ordenarPropuestasPorPlan, agruparPropuestasPorAtleta } from '../utils/ordenPropuestas';
 import { toolStatusLabel } from '../ai/tools';
 import { sanearHistorial } from '../ai/historial';
 import DossierPanel, { dossierKey } from './DossierPanel';
@@ -294,12 +294,25 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
   // empezar cada `runTurn`, se acumula ronda a ronda vía onCost.
   const [costoTurnoUsd, setCostoTurnoUsd] = useState<number | null>(null);
   const cancelarTurnoRef = useRef<AbortController | null>(null);
-  const proposalsKey = ['aiProposalsForAthlete', activeAthleteEmail ?? ''] as const;
+  /* TODAS las pendientes, no las del cliente que haya en la URL.
+     Antes la consulta se filtraba por `activeAthleteEmail` y ni siquiera se
+     lanzaba cuando no había cliente en la ruta. Resultado: la IA decía «ya
+     tienes la propuesta» y no salía por ninguna parte — ni si el chat hablaba
+     de otro atleta, ni si el panel se había abierto desde Inicio. */
+  const proposalsKey = ['aiProposalsPendientes'] as const;
   const { data: proposals = [] } = useQuery({
     queryKey: proposalsKey,
-    queryFn: () => getAiProposalsForAthlete(activeAthleteEmail!).then(list => list.filter(p => p.status === 'proposed')),
-    enabled: open && !!activeAthleteEmail,
+    queryFn: getPendingAiProposals,
+    // Sin `open`: el número de pendientes se pinta en el botón del asistente
+    // aunque el panel esté cerrado, que es lo que hace que te enteres.
   });
+  /* Las pendientes agrupadas por atleta, con el cliente abierto primero. El
+     chat es global y puede hablar de cualquiera, así que la tarjeta tiene que
+     decir de quién es la propuesta. */
+  const gruposDePropuestas = useMemo(
+    () => agruparPropuestasPorAtleta(proposals, activeAthleteEmail),
+    [proposals, activeAthleteEmail],
+  );
   const [reviewingId, setReviewingId] = useState<string | null>(null);
   // El porqué que Dani escribe al aprobar. Opcional a propósito: si fuese
   // obligatorio, la fricción se pagaría en cada propuesta y acabaría vacío.
@@ -514,8 +527,11 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
   // after send() since the agent's tool calls may have just created new ones
   // server-side that a plain cache read wouldn't know about.
   const refreshProposals = () => {
-    if (!activeAthleteEmail) return;
     queryClient.invalidateQueries({ queryKey: proposalsKey });
+    // La ficha del cliente tiene su propia consulta por atleta (el aviso de
+    // «propuestas por revisar» del ClientHub): se refresca también, o el chip
+    // se queda con el número viejo.
+    queryClient.invalidateQueries({ queryKey: ['aiProposalsForAthlete'] });
   };
 
   useEffect(() => {
@@ -959,13 +975,13 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
      antes del calendario de comidas): pulsar ocho veces en el orden correcto
      era trabajo manual que la app ya sabe hacer. Se para en la primera que
      falle o que esté bloqueada, para no dejar el plan a medias sin avisar. */
-  const [aprobandoTodas, setAprobandoTodas] = useState(false);
-  const aprobarTodas = async () => {
+  const [aprobandoTodas, setAprobandoTodas] = useState<string | null>(null);
+  const aprobarTodas = async (lista: AiProposal[]) => {
     if (aprobandoTodas) return;
-    setAprobandoTodas(true);
+    setAprobandoTodas(lista[0]?.athleteId ?? '');
     setError(null);
     try {
-      for (const p of ordenarPropuestasPorPlan(proposals)) {
+      for (const p of ordenarPropuestasPorPlan(lista)) {
         const payload = edits[p.id] ?? p.payload;
         const bloqueo = motivoParaNoAprobar(p.kind, payload);
         if (bloqueo) {
@@ -976,7 +992,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
         if (!ok) return; // el error ya está puesto; las siguientes siguen pendientes
       }
     } finally {
-      setAprobandoTodas(false);
+      setAprobandoTodas(null);
     }
   };
 
@@ -1120,7 +1136,9 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
     return (
       <button
         onClick={() => setOpen(true)}
-        title="Asistente"
+        title={proposals.length > 0
+          ? `Asistente · ${proposals.length} propuesta${proposals.length === 1 ? '' : 's'} por revisar`
+          : 'Asistente'}
         // Solo en escritorio. En móvil el disparador vive en la cabecera,
         // junto al avatar (App.tsx): ahí no tapa contenido, no compite con la
         // barra inferior y no hay que reservarle hueco al final de cada
@@ -1129,6 +1147,16 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
         className="hidden md:block fixed md:bottom-8 md:right-8 z-[60] w-13 h-13 p-4 rounded-full bg-accent text-black shadow-e1 hover:scale-105 transition-transform"
       >
         <Icon name="smart_toy" size="l" filled className="block" />
+        {/* Una propuesta que nadie ve es una propuesta que no existe: el
+            contador va en el botón, con el panel cerrado. */}
+        {proposals.length > 0 && (
+          <span
+            aria-label={`${proposals.length} propuestas por revisar`}
+            className="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-warning text-black font-mono text-caption font-bold flex items-center justify-center border-2 border-bg"
+          >
+            {proposals.length}
+          </span>
+        )}
       </button>
     );
   }
@@ -1309,31 +1337,35 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
             )}
           </div>
 
-          {/* Propuestas pendientes del cliente activo. La IA propone, Dani las
-              edita aquí mismo y aprueba. max-h al 55% (antes 40%) porque la
-              tarjeta ya no es un resumen: es el editor, y una propuesta de
-              sesiones trae varios días con sus ejercicios dentro. */}
+          {/* Propuestas pendientes, de TODOS los clientes y agrupadas por
+              atleta (el chat es global y puede hablar de cualquiera). El grupo
+              del cliente abierto va primero. max-h al 55%: la tarjeta ya no es
+              un resumen, es el editor. */}
           {proposals.length > 0 && (
             <div className="border-t border-amber-500/20 bg-amber-500/5 p-3 flex flex-col gap-2 max-h-[55%] overflow-y-auto">
+              {gruposDePropuestas.map(({ email, lista }) => (
+              <React.Fragment key={email}>
               <div className="flex items-center justify-between gap-2 flex-wrap">
                 <p className="text-caption font-sans font-bold uppercase tracking-wider text-amber-300/80">
-                  {proposals.length === 1
-                    ? '1 propuesta por revisar'
-                    : `El plan de ${activeAthleteName || activeAthleteEmail || 'este cliente'} · ${proposals.length} pasos`}
+                  {email === activeAthleteEmail
+                    ? (activeAthleteName || email)
+                    : <span className="text-warning">{email}</span>}
+                  {' · '}
+                  {lista.length === 1 ? '1 propuesta' : `${lista.length} pasos`}
                 </p>
-                {proposals.length > 1 && (
+                {lista.length > 1 && (
                   <button
                     type="button"
-                    onClick={aprobarTodas}
-                    disabled={aprobandoTodas || !!reviewingId}
+                    onClick={() => aprobarTodas(lista)}
+                    disabled={!!aprobandoTodas || !!reviewingId}
                     className="flex items-center gap-1 text-caption font-bold uppercase tracking-wide text-success border border-success/40 bg-success/10 rounded-control px-2 py-1 disabled:opacity-40"
                   >
-                    <Icon name={aprobandoTodas ? 'progress_activity' : 'check_circle'} size="s" className={aprobandoTodas ? 'animate-spin' : ''} />
-                    {aprobandoTodas ? 'Aprobando…' : 'Aprobar todo en orden'}
+                    <Icon name={aprobandoTodas === email ? 'progress_activity' : 'check_circle'} size="s" className={aprobandoTodas === email ? 'animate-spin' : ''} />
+                    {aprobandoTodas === email ? 'Aprobando…' : 'Aprobar todo en orden'}
                   </button>
                 )}
               </div>
-              {ordenarPropuestasPorPlan(proposals).map((p, idx, todas) => {
+              {lista.map((p, idx, todas) => {
                 const payload = edits[p.id] ?? p.payload;
                 const tocada = !!edits[p.id];
                 const bloqueo = motivoParaNoAprobar(p.kind, payload);
@@ -1445,6 +1477,8 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                 </div>
                 );
               })}
+              </React.Fragment>
+              ))}
             </div>
           )}
 

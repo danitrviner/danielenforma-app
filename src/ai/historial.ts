@@ -20,6 +20,15 @@
 // escrito en su chat, que es lo que perdería un recorte.
 
 //
+// Y lo mismo dos mensajes SEGUIDOS del mismo rol: la API responde «messages:
+// roles must alternate between "user" and "assistant"» y vuelve a matar el
+// chat entero. Ese estado lo produce el caso más normal que hay — un turno que
+// falla justo después de ejecutar una herramienta (la función de Vercel se pasa
+// de tiempo, se corta la red) deja el historial terminando en el mensaje `user`
+// con los resultados; si el coach, en vez de pulsar «Vuelve a intentarlo»,
+// escribe otra cosa, se añade un segundo `user` detrás y el chat queda
+// inservible. Aquí se fusionan en uno solo.
+//
 // El mismo problema lo tiene un bloque `thinking` que se quedó sin su
 // `signature` porque el stream se cortó a mitad: la API lo rechaza con un 400
 // («thinking.signature: Field required») y el chat vuelve a quedar inservible.
@@ -67,7 +76,9 @@ export function cierreDeToolUse(content: AiContentBlock[]): AiChatMessage | null
  *    igual que los que faltan),
  *  - los `tool_result` abren el mensaje, en el mismo orden en que el modelo
  *    pidió las herramientas,
- *  - no quedan mensajes con contenido vacío.
+ *  - no quedan mensajes con contenido vacío,
+ *  - no quedan dos mensajes seguidos del mismo rol (la API exige que se
+ *    alternen; se fusionan conservando el orden del contenido).
  *
  * Es idempotente: sanear un historial ya sano lo deja igual.
  */
@@ -117,5 +128,25 @@ export function sanearHistorial(messages: AiChatMessage[]): AiChatMessage[] {
   // justo el que sabe reanudar el botón «Reintentar» del panel.
   cerrarPendientes();
 
+  return fusionarRolesSeguidos(salida);
+}
+
+/** Fusiona mensajes consecutivos del mismo rol en uno solo.
+ *
+ *  La API exige alternancia estricta y rechaza el historial entero si no la
+ *  hay. Fusionar conserva TODO lo que el coach ve escrito en su chat, que es
+ *  lo que perdería descartar uno de los dos; y el orden se mantiene, así que
+ *  los `tool_result` siguen abriendo el mensaje (los pone delante el bucle de
+ *  arriba, y el mensaje que se fusiona detrás nunca los trae). */
+function fusionarRolesSeguidos(messages: AiChatMessage[]): AiChatMessage[] {
+  const salida: AiChatMessage[] = [];
+  for (const msg of messages) {
+    const anterior = salida[salida.length - 1];
+    if (anterior && anterior.role === msg.role) {
+      salida[salida.length - 1] = { ...anterior, content: [...anterior.content, ...msg.content] };
+      continue;
+    }
+    salida.push(msg);
+  }
   return salida;
 }
