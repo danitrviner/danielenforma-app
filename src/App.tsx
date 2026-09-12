@@ -7,7 +7,7 @@ import { onAuthStateChanged, signOut, auth, resumenLecturas, reiniciarContadorLe
 import { asegurarCacheDeEstaCuenta } from './cacheDeConsultas';
 import { identificarUsuario, migaDePan } from './monitorizacion';
 import { UserProfile, WeightCheckIn, NotificationType } from './types';
-import { getOrCreateUserProfile, getCheckIns, getOnboarding, getWorkoutAssignmentsForAthlete, getGimnasio, updateUserProfile } from './dbService';
+import { getOrCreateUserProfile, getCheckIns, getOnboarding, getWorkoutAssignmentsForAthlete, getGimnasio, updateUserProfile, getPendingAiProposals } from './dbService';
 import { useGimnasioPendiente } from './features/gimnasio/RecordatorioGimnasioCard';
 import { getPendingReviews } from './hooks/usePendingReviews';
 import NotificationBell from './components/NotificationBell';
@@ -507,6 +507,16 @@ function AppContent() {
   // Null-safe a propósito: se evalúa antes de la puerta de sesión.
   const isCoach = !!profile && (profile.role === 'coach' || profile.email.toLowerCase() === OWNER_EMAIL);
 
+  /* Cuántas propuestas del asistente están sin decidir. Solo para el
+     contador de la cabecera de móvil; comparte clave (y caché) con la bandeja
+     del asistente, la pantalla de Propuestas y el aviso de Inicio. */
+  const { data: propuestasPendientes = 0 } = useQuery({
+    queryKey: ['aiProposalsPendientes'],
+    queryFn: getPendingAiProposals,
+    select: (lista: unknown[]) => lista.length,
+    enabled: isCoach,
+  });
+
   // El login ya etiquetó al usuario (arriba, en onAuthStateChanged); esto solo
   // añade el rol en cuanto el perfil termina de cargar, para poder filtrar en
   // Sentry "solo fallos de atletas" o "solo del coach" sin tener que abrir cada
@@ -945,10 +955,20 @@ function AppContent() {
           {isCoach && (
             <button
               onClick={() => window.dispatchEvent(new CustomEvent(OPEN_AI_PANEL_EVENT))}
-              aria-label="Asistente"
-              className="flex h-8 w-8 items-center justify-center rounded-full text-accent transition-colors hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-line"
+              aria-label={propuestasPendientes > 0
+                ? `Asistente · ${propuestasPendientes} propuestas por revisar`
+                : 'Asistente'}
+              className="relative flex h-8 w-8 items-center justify-center rounded-full text-accent transition-colors hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-line"
             >
               <Icon name="smart_toy" size="m" filled />
+              {/* El contador de pendientes. En escritorio vive en el botón
+                  flotante del propio panel, que es `md:` — en el móvil no
+                  había nada que dijera que hay propuestas esperando. */}
+              {propuestasPendientes > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-warning text-black font-mono text-[10px] font-bold flex items-center justify-center">
+                  {propuestasPendientes}
+                </span>
+              )}
             </button>
           )}
           {/* Cardio, atajo del atleta. Su sitio en la barra inferior se lo

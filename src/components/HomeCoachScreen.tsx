@@ -2,8 +2,8 @@ import React, { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { UserProfile, WeightCheckIn, WorkoutAssignment } from '../types';
-import { getCrmSuscripciones } from '../dbService';
-import { ActionRow as ActionRowPrimitive, EmptyState } from './ui';
+import { getCrmSuscripciones, getPendingAiProposals } from '../dbService';
+import { ActionRow as ActionRowPrimitive, EmptyState, Icon } from './ui';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    HomeCoachScreen (F3.13a, "Home Coach" del handoff transversal)
@@ -65,6 +65,12 @@ export default function HomeCoachScreen({ athletes, checkins, assignmentsByEmail
   const { data: suscripciones = [] } = useQuery({
     queryKey: ['crmSuscripciones'],
     queryFn: getCrmSuscripciones,
+  });
+  // Misma clave que la bandeja del asistente y la pantalla de Propuestas:
+  // comparten caché y se refrescan juntas al aprobar o rechazar.
+  const { data: propuestasPendientes = [] } = useQuery({
+    queryKey: ['aiProposalsPendientes'],
+    queryFn: getPendingAiProposals,
   });
 
   const nameByEmail = new Map(athletes.map(a => [a.email, a.displayName]));
@@ -140,6 +146,33 @@ export default function HomeCoachScreen({ athletes, checkins, assignmentsByEmail
 
   return (
     <section className="space-y-4">
+      {/* Las propuestas del asistente, en la pantalla por la que se entra.
+          Su pantalla vive en /propuestas y en la barra lateral de PC, pero en
+          el móvil la barra de abajo está llena (cuatro destinos al límite de
+          ancho) y el botón del asistente con su contador es `md:` — o sea que
+          desde el móvil no había NADA que dijera que hay algo esperando.
+          Aquí sí, y en los dos sitios. */}
+      {propuestasPendientes.length > 0 && (
+        <button
+          type="button"
+          onClick={() => navigate('/propuestas')}
+          className="w-full flex items-center gap-3 rounded-field border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-left transition-colors hover:bg-amber-500/15"
+        >
+          <Icon name="smart_toy" size="m" filled className="text-amber-300 flex-shrink-0" />
+          <span className="min-w-0 flex-1">
+            <span className="block font-sans font-bold text-body-s text-white">
+              {propuestasPendientes.length === 1
+                ? '1 propuesta por revisar'
+                : `${propuestasPendientes.length} propuestas por revisar`}
+            </span>
+            <span className="block font-mono text-caption text-ink-2 truncate">
+              {[...new Set(propuestasPendientes.map(p => p.athleteId))].join(' · ')}
+            </span>
+          </span>
+          <Icon name="arrow_forward" size="s" className="text-ink-3 flex-shrink-0" />
+        </button>
+      )}
+
       <p className="font-mono text-label uppercase tracking-wider text-ink-3">
         {DIA_SEMANA[hoy.getDay()]} · {athletes.length} atleta{athletes.length === 1 ? '' : 's'} activo{athletes.length === 1 ? '' : 's'}
       </p>
