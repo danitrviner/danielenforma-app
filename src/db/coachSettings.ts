@@ -3,6 +3,7 @@ import { CoachInstructions, CoachQuickReplies, MuscleGroup } from '../types';
 import { DOCTRINA_DEFAULTS, type DoctrinaKind } from '../ai/doctrina';
 import { VOLUME_LANDMARKS_DEFAULT, isValidLandmarksTable, type VolumeLandmark } from '../data/volumeLandmarks';
 import { forceLocalOnly, setLocalBypassMode, esFalloDePermisos } from './core';
+import { escribirLocal } from '../utils/almacenLocal';
 
 // ─── INSTRUCCIONES FIJAS DEL COACH (para el asistente IA) ───────────────────────
 // Doc único (id determinista 'main'): reglas propias de Dani, con prioridad
@@ -16,7 +17,7 @@ export async function getCoachInstructions(): Promise<string> {
   try {
     const snap = await getDoc(doc(db, 'coachSettings', COACH_INSTRUCTIONS_DOC_ID));
     const text = snap.exists() ? ((snap.data() as CoachInstructions).text ?? '') : '';
-    localStorage.setItem(COACH_INSTRUCTIONS_LOCAL_KEY, text);
+    escribirLocal(COACH_INSTRUCTIONS_LOCAL_KEY, text);
     return text;
   } catch (err) {
     console.warn('getCoachInstructions Firestore failed, using local:', err);
@@ -49,7 +50,7 @@ async function getDoctrinaRaw(kind: DoctrinaKind): Promise<string | null> {
     const snap = await getDoc(doc(db, 'coachSettings', DOCTRINA_DOC_IDS[kind]));
     if (!snap.exists()) return null;
     const text = (snap.data() as CoachInstructions).text ?? '';
-    localStorage.setItem(doctrinaLocalKey(kind), text);
+    escribirLocal(doctrinaLocalKey(kind), text);
     return text;
   } catch (err) {
     console.warn(`getDoctrina(${kind}) Firestore failed, using local:`, err);
@@ -75,7 +76,7 @@ export async function getDoctrinaParaEditar(
 }
 
 export async function saveDoctrina(kind: DoctrinaKind, text: string): Promise<void> {
-  localStorage.setItem(doctrinaLocalKey(kind), text);
+  escribirLocal(doctrinaLocalKey(kind), text);
   if (forceLocalOnly) return;
   try {
     const data: CoachInstructions = { text, updatedAt: new Date().toISOString() };
@@ -122,7 +123,7 @@ async function getVolumeLandmarksRaw(): Promise<LandmarksTable | null> {
     const snap = await getDoc(doc(db, 'coachSettings', VOLUME_LANDMARKS_DOC_ID));
     if (!snap.exists()) return null;
     const table = (snap.data().table as LandmarksTable) ?? null;
-    if (table) localStorage.setItem(VOLUME_LANDMARKS_LOCAL_KEY, JSON.stringify(table));
+    if (table) escribirLocal(VOLUME_LANDMARKS_LOCAL_KEY, JSON.stringify(table));
     return table;
   } catch (err) {
     console.warn('getVolumeLandmarks Firestore failed, using local:', err);
@@ -149,7 +150,7 @@ export async function saveVolumeLandmarks(table: LandmarksTable): Promise<void> 
   if (!isValidLandmarksTable(table)) {
     throw new Error('Tabla de volumen inválida: revisa que mv ≤ mev ≤ mavMin ≤ mavMax ≤ mrv ≤ 25 en los 17 grupos.');
   }
-  localStorage.setItem(VOLUME_LANDMARKS_LOCAL_KEY, JSON.stringify(table));
+  escribirLocal(VOLUME_LANDMARKS_LOCAL_KEY, JSON.stringify(table));
   if (forceLocalOnly) return;
   try {
     await setDoc(doc(db, 'coachSettings', VOLUME_LANDMARKS_DOC_ID), { table, updatedAt: new Date().toISOString() });
@@ -198,7 +199,7 @@ export async function getAthleteStatusNote(email: string): Promise<string> {
 export async function saveAthleteStatusNote(email: string, note: string): Promise<void> {
   const all = getLocalStatusNotes();
   all[email] = note;
-  localStorage.setItem(ATHLETE_STATUS_LOCAL_KEY, JSON.stringify(all));
+  escribirLocal(ATHLETE_STATUS_LOCAL_KEY, JSON.stringify(all));
   if (forceLocalOnly) return;
   try {
     await setDoc(doc(db, 'athleteStatus', email), { note, updatedAt: new Date().toISOString() });
@@ -210,7 +211,7 @@ export async function saveAthleteStatusNote(email: string, note: string): Promis
 }
 
 export async function saveCoachInstructions(text: string): Promise<void> {
-  localStorage.setItem(COACH_INSTRUCTIONS_LOCAL_KEY, text);
+  escribirLocal(COACH_INSTRUCTIONS_LOCAL_KEY, text);
   if (forceLocalOnly) return;
   try {
     const data: CoachInstructions = { text, updatedAt: new Date().toISOString() };
@@ -237,7 +238,7 @@ export async function getQuickReplies(): Promise<string[]> {
   try {
     const snap = await getDoc(doc(db, 'coachSettings', QUICK_REPLIES_DOC_ID));
     const replies = snap.exists() ? ((snap.data() as CoachQuickReplies).replies ?? []) : [];
-    localStorage.setItem(QUICK_REPLIES_LOCAL_KEY, JSON.stringify(replies));
+    escribirLocal(QUICK_REPLIES_LOCAL_KEY, JSON.stringify(replies));
     return replies;
   } catch (err) {
     console.warn('getQuickReplies Firestore failed, using local:', err);
@@ -247,7 +248,7 @@ export async function getQuickReplies(): Promise<string[]> {
 }
 
 export async function saveQuickReplies(replies: string[]): Promise<void> {
-  localStorage.setItem(QUICK_REPLIES_LOCAL_KEY, JSON.stringify(replies));
+  escribirLocal(QUICK_REPLIES_LOCAL_KEY, JSON.stringify(replies));
   if (forceLocalOnly) return;
   try {
     const data: CoachQuickReplies = { replies, updatedAt: new Date().toISOString() };

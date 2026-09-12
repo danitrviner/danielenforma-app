@@ -3,6 +3,7 @@ import { subirArchivo, borrarArchivo } from '../almacenamiento';
 import { ProgressPhoto, PhotoView, PhotoAssignment } from '../types';
 import { forceLocalOnly, setLocalBypassMode, stripUndefined, esFalloDePermisos } from './core';
 import { compressImage } from '../utils/compressImage';
+import { escribirLocal } from '../utils/almacenLocal';
 
 // ─── PROGRESS PHOTOS ──────────────────────────────────────────────────────────
 
@@ -37,7 +38,7 @@ function getLocalProgressPhotos(athleteEmail: string): ProgressPhoto[] | null {
 
 function saveLocalProgressPhotos(athleteEmail: string, photos: ProgressPhoto[]): void {
   try {
-    localStorage.setItem(clavePorAtleta(athleteEmail), JSON.stringify(photos));
+    escribirLocal(clavePorAtleta(athleteEmail), JSON.stringify(photos));
   } catch {
     // best-effort
   }
@@ -137,7 +138,7 @@ export async function assignPhotoCheckIn(data: Omit<PhotoAssignment, 'id'>): Pro
   const safeData = { ...data, schedule: data.schedule ?? { type: 'once' as const } };
   if (forceLocalOnly) {
     const a: PhotoAssignment = { ...safeData, id: `local_pa_${Date.now()}` };
-    localStorage.setItem(LOCAL_PHOTO_ASSIGNMENTS, JSON.stringify([...getLocalPhotoAssignments(), a]));
+    escribirLocal(LOCAL_PHOTO_ASSIGNMENTS, JSON.stringify([...getLocalPhotoAssignments(), a]));
     return a;
   }
   try {
@@ -148,7 +149,7 @@ export async function assignPhotoCheckIn(data: Omit<PhotoAssignment, 'id'>): Pro
     setLocalBypassMode(true, err);
     if (esFalloDePermisos(err)) throw err;
     const a: PhotoAssignment = { ...safeData, id: `local_pa_${Date.now()}` };
-    localStorage.setItem(LOCAL_PHOTO_ASSIGNMENTS, JSON.stringify([...getLocalPhotoAssignments(), a]));
+    escribirLocal(LOCAL_PHOTO_ASSIGNMENTS, JSON.stringify([...getLocalPhotoAssignments(), a]));
     return a;
   }
 }
@@ -167,7 +168,7 @@ export async function getPhotoAssignmentsForAthlete(email: string): Promise<Phot
 
 export async function deactivatePhotoAssignment(id: string): Promise<void> {
   if (forceLocalOnly) {
-    localStorage.setItem(LOCAL_PHOTO_ASSIGNMENTS, JSON.stringify(getLocalPhotoAssignments().map(a => a.id === id ? { ...a, active: false } : a)));
+    escribirLocal(LOCAL_PHOTO_ASSIGNMENTS, JSON.stringify(getLocalPhotoAssignments().map(a => a.id === id ? { ...a, active: false } : a)));
     return;
   }
   try {
@@ -176,7 +177,7 @@ export async function deactivatePhotoAssignment(id: string): Promise<void> {
     console.warn('deactivatePhotoAssignment Firestore failed:', err);
     setLocalBypassMode(true, err);
     if (esFalloDePermisos(err)) throw err;
-    localStorage.setItem(LOCAL_PHOTO_ASSIGNMENTS, JSON.stringify(getLocalPhotoAssignments().map(a => a.id === id ? { ...a, active: false } : a)));
+    escribirLocal(LOCAL_PHOTO_ASSIGNMENTS, JSON.stringify(getLocalPhotoAssignments().map(a => a.id === id ? { ...a, active: false } : a)));
   }
 }
 

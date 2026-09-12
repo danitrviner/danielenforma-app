@@ -298,3 +298,46 @@ describe('invites · T8.b el atleta puede leer su propia invitación', () => {
     await assertSucceeds(getDoc(doc(coach, 'invites', ATLETA)));
   });
 });
+
+describe('cardio · leer un documento que todavía no existe', () => {
+  /* El fallo de Sentry (12-09): tres atletas distintos, iPhone, en `/cardio`,
+     `Missing or insufficient permissions`. No era un intruso: era que la regla
+     de `cardioWeeklyGoals` decide mirando `resource.data.athleteId`, y en un
+     `get` a un documento que NO existe `resource` es null. Firestore entonces
+     deniega, en vez de devolver «no hay nada».
+
+     O sea que al atleta le petaba su PRIMERA semana de cardio, justo antes de
+     que existiera su primer objetivo semanal. */
+
+  const SEMANA = '2026-W37';
+  const idObjetivo = `${ATLETA}_${SEMANA}`;
+
+  it('el atleta puede preguntar por su objetivo semanal aunque aún no exista', async () => {
+    const uid = 'uid-atleta-cardio-1';
+    await sembrar(async db => {
+      await setDoc(doc(db, 'user_profiles', uid), { userId: uid, email: ATLETA, role: 'client' });
+    });
+    const atleta = env.authenticatedContext(uid, { email: ATLETA, email_verified: true }).firestore();
+    await assertSucceeds(getDoc(doc(atleta, 'cardioWeeklyGoals', idObjetivo)));
+  });
+
+  it('sigue sin poder mirar el objetivo de OTRO atleta que no existe', async () => {
+    // La parte que no se puede aflojar: el id lleva el email dentro, así que
+    // permitir el documento inexistente no puede convertirse en «cualquiera
+    // puede preguntar por cualquiera».
+    const uid = 'uid-atleta-cardio-2';
+    const atleta = env.authenticatedContext(uid, { email: ATLETA, email_verified: true }).firestore();
+    await assertFails(getDoc(doc(atleta, 'cardioWeeklyGoals', `otro@enforma.com_${SEMANA}`)));
+  });
+
+  it('cuando el documento existe, las reglas de siempre siguen valiendo', async () => {
+    await sembrar(async db => {
+      await setDoc(doc(db, 'cardioWeeklyGoals', idObjetivo), { athleteId: ATLETA, minutos: 120 });
+      await setDoc(doc(db, 'cardioWeeklyGoals', `otro@enforma.com_${SEMANA}`), { athleteId: 'otro@enforma.com', minutos: 90 });
+    });
+    const uid = 'uid-atleta-cardio-3';
+    const atleta = env.authenticatedContext(uid, { email: ATLETA, email_verified: true }).firestore();
+    await assertSucceeds(getDoc(doc(atleta, 'cardioWeeklyGoals', idObjetivo)));
+    await assertFails(getDoc(doc(atleta, 'cardioWeeklyGoals', `otro@enforma.com_${SEMANA}`)));
+  });
+});

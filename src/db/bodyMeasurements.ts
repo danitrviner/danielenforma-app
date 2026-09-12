@@ -1,6 +1,7 @@
 import { db, collection, doc, setDoc, getDocs, deleteDoc, query, where } from '../firebase';
 import { BodyMeasurement } from '../types';
 import { forceLocalOnly, setLocalBypassMode, stripUndefined } from './core';
+import { escribirLocal } from '../utils/almacenLocal';
 
 // Collection: bodyMeasurements  (athleteId = email)
 // docId determinista `${athleteId}_${date}_${metricKey}` (mismo patrón que
@@ -15,7 +16,7 @@ function getLocalMeasurements(): BodyMeasurement[] {
   try { return JSON.parse(localStorage.getItem(LOCAL_MEASUREMENTS) || '[]'); } catch { return []; }
 }
 function saveLocalMeasurements(list: BodyMeasurement[]): void {
-  localStorage.setItem(LOCAL_MEASUREMENTS, JSON.stringify(list));
+  escribirLocal(LOCAL_MEASUREMENTS, JSON.stringify(list));
 }
 
 function docIdFor(athleteId: string, date: string, metricKey: string): string {

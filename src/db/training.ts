@@ -10,6 +10,7 @@ import { normalizeMuscleGroups } from '../utils/normalizeMuscleGroups';
 import { slugify } from '../utils/maquinaId';
 import { exigeEmail, clavesDelAtleta, type ClavesDeAtleta } from './clavesDeAtleta';
 import { leerCatalogo, marcarCatalogoCambiado } from './catalogoVersionado';
+import { escribirLocal } from '../utils/almacenLocal';
 
 // T14 (18-08): mismo patrón que idDeFoodItem — un ID determinista hace que
 // sembrar dos veces sobreescriba en vez de duplicar.
@@ -31,7 +32,7 @@ function getLocalExercises(): Exercise[] {
 
 function saveLocalExercises(exercises: Exercise[]) {
   try {
-    localStorage.setItem(EXERCISES_LOCAL_KEY, JSON.stringify(exercises));
+    escribirLocal(EXERCISES_LOCAL_KEY, JSON.stringify(exercises));
   } catch (e) {}
 }
 
@@ -131,7 +132,7 @@ function getLocalExerciseNotes(): ExercisePersonalNote[] {
   try { return JSON.parse(localStorage.getItem(LOCAL_EXERCISE_NOTES) || '[]'); } catch { return []; }
 }
 function saveLocalExerciseNotes(list: ExercisePersonalNote[]): void {
-  localStorage.setItem(LOCAL_EXERCISE_NOTES, JSON.stringify(list));
+  escribirLocal(LOCAL_EXERCISE_NOTES, JSON.stringify(list));
 }
 
 // Bulk-loads every personalized observation for an athlete (used by the athlete's
@@ -230,7 +231,7 @@ function getLocalWorkouts(): Workout[] {
 
 function saveLocalWorkouts(workouts: Workout[]) {
   try {
-    localStorage.setItem(WORKOUTS_LOCAL_KEY, JSON.stringify(workouts));
+    escribirLocal(WORKOUTS_LOCAL_KEY, JSON.stringify(workouts));
   } catch (e) {}
 }
 
@@ -377,7 +378,7 @@ function getLocalAssignments(): WorkoutAssignment[] {
 
 function saveLocalAssignments(assignments: WorkoutAssignment[]) {
   try {
-    localStorage.setItem(ASSIGNMENTS_LOCAL_KEY, JSON.stringify(assignments));
+    escribirLocal(ASSIGNMENTS_LOCAL_KEY, JSON.stringify(assignments));
   } catch (e) {}
 }
 
@@ -588,7 +589,7 @@ function getLocalWorkoutLogs(): WorkoutLog[] {
 
 function saveLocalWorkoutLogs(logs: WorkoutLog[]) {
   try {
-    localStorage.setItem(WORKOUT_LOGS_LOCAL_KEY, JSON.stringify(logs));
+    escribirLocal(WORKOUT_LOGS_LOCAL_KEY, JSON.stringify(logs));
   } catch (e) {}
 }
 
@@ -853,7 +854,7 @@ export async function migratePrimaryFocusToMuscleGroup(): Promise<{ updated: num
       return ex;
     });
     saveLocalExercises(next);
-    localStorage.setItem(FLAG, 'true');
+    escribirLocal(FLAG, 'true');
     return { updated, skipped };
   }
 
@@ -883,7 +884,7 @@ export async function migratePrimaryFocusToMuscleGroup(): Promise<{ updated: num
       localUpdates[ex.id] ? { ...ex, muscleGroup: localUpdates[ex.id] } : ex
     );
     saveLocalExercises(localList);
-    localStorage.setItem(FLAG, 'true');
+    escribirLocal(FLAG, 'true');
     if (updated > 0) {
       exercisesCache = null;
       void marcarCatalogoCambiado('exercises');
@@ -975,7 +976,7 @@ function getLocalMesocycles(): Mesocycle[] {
 }
 
 function setLocalMesocycles(m: Mesocycle[]): void {
-  try { localStorage.setItem(MESOCYCLES_LOCAL_KEY, JSON.stringify(m)); } catch {}
+  try { escribirLocal(MESOCYCLES_LOCAL_KEY, JSON.stringify(m)); } catch {}
 }
 
 // T10: nada sale de esta capa con huecos en `groups` — un mesociclo escrito
@@ -1052,6 +1053,25 @@ export async function createMesocycle(data: Omit<Mesocycle, 'id'>): Promise<Meso
   }
 }
 
+/**
+ * El payload que se le manda a `updateDoc` para un mesociclo, separado para
+ * poder probarlo: equivocarse aquí tiene dos formas malas y opuestas, y las dos
+ * han pasado ya en producción.
+ *
+ * · De menos (mandar el `undefined` tal cual): Firestore rechaza la escritura
+ *   ENTERA con «Unsupported field value: undefined» y el coach pierde el
+ *   cambio sin enterarse.
+ * · De más (`stripUndefined` a todo): los borrados se pierden, el campo se
+ *   queda con el valor viejo y volver a «Semanal» no surte efecto.
+ *
+ * La frontera es el nivel: fuera se borra, dentro se limpia.
+ */
+export function payloadDeMesociclo(updates: Partial<Omit<Mesocycle, 'id'>>): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(updates).map(([k, v]) => [k, v === undefined ? deleteField() : stripUndefined(v)]),
+  );
+}
+
 export async function updateMesocycle(id: string, updates: Partial<Omit<Mesocycle, 'id'>>): Promise<void> {
   // Solo normaliza si esta actualización TOCA `groups` — updates.groups ya
   // viene completo desde MesocycleManager (es el Mesocycle entero menos el
@@ -1069,10 +1089,15 @@ export async function updateMesocycle(id: string, updates: Partial<Omit<Mesocycl
     // `stripUndefined` esos borrados se perdían: el campo se quedaba con el
     // valor viejo en Firestore y «Semanal» no surtía efecto. `deleteField()`
     // lo quita de verdad; si no existía, es un no-op inofensivo.
-    const payload = Object.fromEntries(
-      Object.entries(normalizedUpdates).map(([k, v]) => [k, v === undefined ? deleteField() : v]),
-    );
-    await updateDoc(doc(db, 'mesocycles', id), payload as Record<string, unknown>);
+    //
+    // Pero `deleteField()` solo vale en el PRIMER nivel, y los `undefined` que
+    // van dentro de un objeto no: `distribution.snapshot.cycleDays` es
+    // undefined en todo meso semanal, y llegaba crudo a `updateDoc`, que
+    // rechazaba la escritura entera con «Unsupported field value: undefined»
+    // (Sentry, 11-09). Por eso cada valor que SÍ se escribe pasa por
+    // `stripUndefined`: quita los huecos de dentro sin tocar los borrados de
+    // fuera.
+    await updateDoc(doc(db, 'mesocycles', id), payloadDeMesociclo(normalizedUpdates));
     setLocalMesocycles(next);
   } catch (err) {
     console.warn('updateMesocycle Firestore failed, saving local:', err);
@@ -1108,7 +1133,7 @@ function getLocalMesoTemplates(): MesocycleTemplate[] {
 }
 
 function setLocalMesoTemplates(t: MesocycleTemplate[]): void {
-  try { localStorage.setItem(MESO_TEMPLATES_LOCAL_KEY, JSON.stringify(t)); } catch {}
+  try { escribirLocal(MESO_TEMPLATES_LOCAL_KEY, JSON.stringify(t)); } catch {}
 }
 
 function migrateTemplate(raw: Record<string, unknown>): MesocycleTemplate {

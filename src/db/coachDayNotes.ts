@@ -2,6 +2,7 @@ import { db, collection, doc, getDoc, setDoc, deleteDoc, getDocs, query, where }
 import { CoachDayNote } from '../types';
 import { forceLocalOnly, setLocalBypassMode, stripUndefined, esFalloDePermisos } from './core';
 import { reportarError } from '../monitorizacion';
+import { escribirLocal } from '../utils/almacenLocal';
 
 // ─── COACH DAY NOTES ────────────────────────────────────────────────────────
 // Nota del coach sobre un día concreto (Roadmap → Calendario, sheet de Día ·
@@ -15,7 +16,7 @@ function getLocalNotes(): CoachDayNote[] {
   try { return JSON.parse(localStorage.getItem(LOCAL_KEY) || '[]'); } catch { return []; }
 }
 function saveLocalNotes(list: CoachDayNote[]): void {
-  localStorage.setItem(LOCAL_KEY, JSON.stringify(list));
+  escribirLocal(LOCAL_KEY, JSON.stringify(list));
 }
 function upsertLocal(note: CoachDayNote): void {
   saveLocalNotes([...getLocalNotes().filter(n => n.id !== note.id), note]);

@@ -1,6 +1,7 @@
 import { db, collection, doc, getDocs, addDoc, updateDoc, query, where } from '../firebase';
 import { TaskItem } from '../types';
 import { forceLocalOnly, setLocalBypassMode, stripUndefined, esFalloDePermisos } from './core';
+import { escribirLocal } from '../utils/almacenLocal';
 
 // ─── TASKS (dashboard "Tareas pendientes") ─────────────────────────────────────
 
@@ -14,7 +15,7 @@ function getLocalTasks(): TaskItem[] {
 }
 
 function saveLocalTasks(tasks: TaskItem[]): void {
-  localStorage.setItem(TASKS_LOCAL_KEY, JSON.stringify(tasks));
+  escribirLocal(TASKS_LOCAL_KEY, JSON.stringify(tasks));
 }
 
 export async function getTasksForAthlete(athleteId: string): Promise<TaskItem[]> {

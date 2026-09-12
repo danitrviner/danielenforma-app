@@ -1,6 +1,7 @@
 import { db, collection, doc, setDoc, getDocs, deleteDoc, query, where, orderBy } from '../firebase';
 import { CoachReport } from '../types';
 import { forceLocalOnly, setLocalBypassMode, stripUndefined, esFalloDePermisos } from './core';
+import { escribirLocal } from '../utils/almacenLocal';
 
 // ─── COACH REPORTS (persistent coach→athlete performance/nutrition reports) ─────
 
@@ -14,7 +15,7 @@ function getLocalCoachReports(): CoachReport[] {
 }
 
 function saveLocalCoachReports(reports: CoachReport[]): void {
-  localStorage.setItem(COACH_REPORTS_LOCAL_KEY, JSON.stringify(reports));
+  escribirLocal(COACH_REPORTS_LOCAL_KEY, JSON.stringify(reports));
 }
 
 // Coach view — all reports (drafts + sent) for one athlete, newest first.

@@ -1,6 +1,7 @@
 import { db, collection, doc, getDocs, addDoc, updateDoc, deleteDoc, query, where, limit, orderBy } from '../firebase';
 import { BodyweightLog, StepLog } from '../types';
 import { forceLocalOnly, setLocalBypassMode, stripUndefined, esFalloDePermisos } from './core';
+import { escribirLocal } from '../utils/almacenLocal';
 
 
 const LOCAL_BW = 'enforma_bodyweight_v1';
@@ -9,7 +10,7 @@ function getLocalBw(): BodyweightLog[] {
   try { return JSON.parse(localStorage.getItem(LOCAL_BW) || '[]'); } catch { return []; }
 }
 function saveLocalBw(list: BodyweightLog[]): void {
-  localStorage.setItem(LOCAL_BW, JSON.stringify(list));
+  escribirLocal(LOCAL_BW, JSON.stringify(list));
 }
 
 export async function getBodyweightForAthlete(email: string, desde?: string): Promise<BodyweightLog[]> {
@@ -135,7 +136,7 @@ function getLocalSteps(): StepLog[] {
   try { return JSON.parse(localStorage.getItem(LOCAL_STEPS) || '[]'); } catch { return []; }
 }
 function saveLocalSteps(list: StepLog[]): void {
-  localStorage.setItem(LOCAL_STEPS, JSON.stringify(list));
+  escribirLocal(LOCAL_STEPS, JSON.stringify(list));
 }
 
 export async function getStepsForAthlete(email: string, desde?: string): Promise<StepLog[]> {

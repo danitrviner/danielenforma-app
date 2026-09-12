@@ -1,6 +1,7 @@
 import { db, collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc, query, where } from '../firebase';
 import { AthleteCardioProfile, CardioAssignment, CardioSession, HrTest, HrvReading, CardioZones, CardioWeeklyGoal } from '../types';
 import { forceLocalOnly, setLocalBypassMode, stripUndefined, esFalloDePermisos } from './core';
+import { escribirLocal } from '../utils/almacenLocal';
 
 // ─── PERFIL CARDIO (zonas, doc id = athleteId) ─────────────────────────────
 
@@ -10,7 +11,7 @@ function getLocalProfileMap(): Record<string, AthleteCardioProfile> {
   try { return JSON.parse(localStorage.getItem(PROFILE_LOCAL_KEY) || '{}'); } catch { return {}; }
 }
 function saveLocalProfileMap(map: Record<string, AthleteCardioProfile>): void {
-  localStorage.setItem(PROFILE_LOCAL_KEY, JSON.stringify(map));
+  escribirLocal(PROFILE_LOCAL_KEY, JSON.stringify(map));
 }
 
 // Karvonen (%FC de reserva) con Tanaka como FCmax de partida hasta que haya
@@ -79,7 +80,7 @@ function getLocalAssignments(): CardioAssignment[] {
   try { return JSON.parse(localStorage.getItem(ASSIGNMENTS_LOCAL_KEY) || '[]'); } catch { return []; }
 }
 function saveLocalAssignments(list: CardioAssignment[]): void {
-  localStorage.setItem(ASSIGNMENTS_LOCAL_KEY, JSON.stringify(list));
+  escribirLocal(ASSIGNMENTS_LOCAL_KEY, JSON.stringify(list));
 }
 
 export async function getCardioAssignmentsForAthlete(athleteId: string): Promise<CardioAssignment[]> {
@@ -154,7 +155,7 @@ function getLocalSessions(): CardioSession[] {
   try { return JSON.parse(localStorage.getItem(SESSIONS_LOCAL_KEY) || '[]'); } catch { return []; }
 }
 function saveLocalSessions(list: CardioSession[]): void {
-  localStorage.setItem(SESSIONS_LOCAL_KEY, JSON.stringify(list));
+  escribirLocal(SESSIONS_LOCAL_KEY, JSON.stringify(list));
 }
 
 export async function getCardioSessionsForAthlete(athleteId: string): Promise<CardioSession[]> {
@@ -239,7 +240,7 @@ function getLocalHrTests(): HrTest[] {
   try { return JSON.parse(localStorage.getItem(HRTESTS_LOCAL_KEY) || '[]'); } catch { return []; }
 }
 function saveLocalHrTests(list: HrTest[]): void {
-  localStorage.setItem(HRTESTS_LOCAL_KEY, JSON.stringify(list));
+  escribirLocal(HRTESTS_LOCAL_KEY, JSON.stringify(list));
 }
 
 export async function getHrTestsForAthlete(athleteId: string): Promise<HrTest[]> {
@@ -312,7 +313,7 @@ function getLocalWeeklyGoals(): Record<string, CardioWeeklyGoal> {
   try { return JSON.parse(localStorage.getItem(WEEKLY_GOAL_LOCAL_KEY) || '{}'); } catch { return {}; }
 }
 function saveLocalWeeklyGoals(map: Record<string, CardioWeeklyGoal>): void {
-  localStorage.setItem(WEEKLY_GOAL_LOCAL_KEY, JSON.stringify(map));
+  escribirLocal(WEEKLY_GOAL_LOCAL_KEY, JSON.stringify(map));
 }
 
 export async function getCardioWeeklyGoal(athleteId: string, isoWeek: string): Promise<CardioWeeklyGoal | null> {
@@ -355,7 +356,7 @@ function getLocalHrvReadings(): HrvReading[] {
   try { return JSON.parse(localStorage.getItem(HRV_LOCAL_KEY) || '[]'); } catch { return []; }
 }
 function saveLocalHrvReadings(list: HrvReading[]): void {
-  localStorage.setItem(HRV_LOCAL_KEY, JSON.stringify(list));
+  escribirLocal(HRV_LOCAL_KEY, JSON.stringify(list));
 }
 
 export async function getHrvReadingsForAthlete(athleteId: string): Promise<HrvReading[]> {

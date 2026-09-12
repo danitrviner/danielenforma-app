@@ -5,6 +5,7 @@ import { forceLocalOnly, setLocalBypassMode, stripUndefined, authReady, withAuth
 import { SYSTEM_FOODS } from '../nutricion_seed_en_forma';
 import { idDeFoodItem } from '../utils/foodItemId';
 import { leerCatalogo, marcarCatalogoCambiado } from './catalogoVersionado';
+import { escribirLocal } from '../utils/almacenLocal';
 
 // ─── FOOD ITEMS ───────────────────────────────────────────────────────────────
 
@@ -21,7 +22,7 @@ function getLocalFoodItems(): MealItem[] {
 
 function saveLocalFoodItems(items: MealItem[]) {
   try {
-    localStorage.setItem(FOOD_ITEMS_LOCAL_KEY, JSON.stringify(items));
+    escribirLocal(FOOD_ITEMS_LOCAL_KEY, JSON.stringify(items));
   } catch (e) {}
 }
 
@@ -171,7 +172,7 @@ export async function getAthleteNutritionConfig(athleteEmail: string): Promise<A
       const snap = await getDoc(docRef);
       if (snap.exists()) {
         const data = normalize(snap.data() as Partial<AthleteNutritionConfig>);
-        localStorage.setItem(localKey, JSON.stringify(data));
+        escribirLocal(localKey, JSON.stringify(data));
         return data;
       }
       try {
@@ -195,17 +196,17 @@ export async function saveAthleteNutritionConfig(config: AthleteNutritionConfig)
   const localKey = `enforma_nutri_config_${config.athleteId}`;
   const data = { ...config };
   if (forceLocalOnly) {
-    localStorage.setItem(localKey, JSON.stringify(data));
+    escribirLocal(localKey, JSON.stringify(data));
     return;
   }
   try {
     await setDoc(doc(db, 'athleteNutritionConfigs', config.athleteId), stripUndefined(data));
-    localStorage.setItem(localKey, JSON.stringify(data));
+    escribirLocal(localKey, JSON.stringify(data));
   } catch (err) {
     console.warn('saveAthleteNutritionConfig Firestore failed, saving local:', err);
     setLocalBypassMode(true, err);
     if (esFalloDePermisos(err)) throw err;
-    localStorage.setItem(localKey, JSON.stringify(data));
+    escribirLocal(localKey, JSON.stringify(data));
   }
 }
 
@@ -221,7 +222,7 @@ function getDietsFromLocal(): Diet[] {
 }
 
 function setDietsToLocal(diets: Diet[]): void {
-  localStorage.setItem(DIETS_LOCAL_KEY, JSON.stringify(diets));
+  escribirLocal(DIETS_LOCAL_KEY, JSON.stringify(diets));
 }
 
 export async function getDietsForAthlete(athleteEmail: string): Promise<Diet[]> {
@@ -307,7 +308,7 @@ function getWeeklyMenusFromLocal(): WeeklyMenu[] {
 }
 
 function setWeeklyMenusToLocal(menus: WeeklyMenu[]): void {
-  localStorage.setItem(WEEKLY_MENUS_LOCAL_KEY, JSON.stringify(menus));
+  escribirLocal(WEEKLY_MENUS_LOCAL_KEY, JSON.stringify(menus));
 }
 
 // Coach view: all menus (draft/published/archived) for a client. Coach-only —
@@ -431,7 +432,7 @@ function getLocalDietCompletionLogs(): DietCompletionLog[] {
   try { return JSON.parse(localStorage.getItem(LOCAL_DIET_COMPLETION_LOGS) || '[]'); } catch { return []; }
 }
 function saveLocalDietCompletionLogs(list: DietCompletionLog[]): void {
-  localStorage.setItem(LOCAL_DIET_COMPLETION_LOGS, JSON.stringify(list));
+  escribirLocal(LOCAL_DIET_COMPLETION_LOGS, JSON.stringify(list));
 }
 
 /** Sube otra vez un día que solo estaba en el móvil. Silencioso a propósito:
@@ -533,7 +534,7 @@ function getLocalMenuCompletionLogs(): MenuCompletionLog[] {
   try { return JSON.parse(localStorage.getItem(LOCAL_MENU_COMPLETION_LOGS) || '[]'); } catch { return []; }
 }
 function saveLocalMenuCompletionLogs(list: MenuCompletionLog[]): void {
-  localStorage.setItem(LOCAL_MENU_COMPLETION_LOGS, JSON.stringify(list));
+  escribirLocal(LOCAL_MENU_COMPLETION_LOGS, JSON.stringify(list));
 }
 
 export async function getMenuCompletionLog(athleteId: string, date: string): Promise<MenuCompletionLog | null> {
@@ -608,7 +609,7 @@ export async function getAthleteDietConfig(athleteEmail: string): Promise<Athlet
     const snap = await getDoc(doc(db, 'athleteDietConfigs', athleteEmail));
     if (snap.exists()) {
       const data = snap.data() as AthleteDietConfig;
-      localStorage.setItem(localKey, JSON.stringify(data));
+      escribirLocal(localKey, JSON.stringify(data));
       return data;
     }
     try {
@@ -628,15 +629,15 @@ export async function getAthleteDietConfig(athleteEmail: string): Promise<Athlet
 
 export async function saveAthleteDietConfig(config: AthleteDietConfig): Promise<void> {
   const localKey = `enforma_athlete_diet_config_${config.athleteId}`;
-  if (forceLocalOnly) { localStorage.setItem(localKey, JSON.stringify(config)); return; }
+  if (forceLocalOnly) { escribirLocal(localKey, JSON.stringify(config)); return; }
   try {
     await setDoc(doc(db, 'athleteDietConfigs', config.athleteId), stripUndefined(config));
-    localStorage.setItem(localKey, JSON.stringify(config));
+    escribirLocal(localKey, JSON.stringify(config));
   } catch (err) {
     console.warn('saveAthleteDietConfig Firestore failed, saving local:', err);
     setLocalBypassMode(true, err);
     if (esFalloDePermisos(err)) throw err;
-    localStorage.setItem(localKey, JSON.stringify(config));
+    escribirLocal(localKey, JSON.stringify(config));
   }
 }
 
@@ -648,7 +649,7 @@ function getLocalNutProgs(): NutritionProgram[] {
   try { return JSON.parse(localStorage.getItem(LOCAL_NUTPROG) || '[]'); } catch { return []; }
 }
 function saveLocalNutProgs(list: NutritionProgram[]): void {
-  localStorage.setItem(LOCAL_NUTPROG, JSON.stringify(list));
+  escribirLocal(LOCAL_NUTPROG, JSON.stringify(list));
 }
 
 export async function getNutritionProgram(athleteEmail: string): Promise<NutritionProgram | null> {

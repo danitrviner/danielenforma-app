@@ -729,10 +729,26 @@ service cloud.firestore {
     }
 
     // ── cardioWeeklyGoals (F3.9; doc id `${athleteId}_${isoWeek}`, athleteId = EMAIL) ──
+    //
+    // El `resource != null` de abajo no es cosmético. Esta colección es la única
+    // de cardio que se lee por id (`getCardioWeeklyGoal`), y en un `get` a un
+    // documento que NO EXISTE `resource` es null: mirar `resource.data.athleteId`
+    // reventaba la evaluación de la regla, y Firestore devolvía
+    // «Missing or insufficient permissions» en vez de «no hay nada». Le pasaba a
+    // todo atleta en su primera semana de cardio (Sentry, 12-09, 3 atletas).
+    //
+    // Para el documento inexistente se decide por el id, que lleva el email
+    // dentro: se compara el prefijo `email_` entero, no `startsWith(email)`, para
+    // que `ana@x.com` no abra la puerta a `ana@x.com.intruso@y.com_2026-W37`.
     match /cardioWeeklyGoals/{docId} {
       allow read: if isCoach()
-                  || (request.auth != null && request.auth.token.email == resource.data.athleteId
-                      && request.auth.token.email_verified == true);
+                  || (resource != null && request.auth != null
+                      && request.auth.token.email == resource.data.athleteId
+                      && request.auth.token.email_verified == true)
+                  || (resource == null && request.auth != null
+                      && request.auth.token.email_verified == true
+                      && docId.size() > request.auth.token.email.size()
+                      && docId[0:(request.auth.token.email.size() + 1)] == request.auth.token.email + '_');
       allow create, update: if isCoach()
                             || (request.auth != null && request.auth.token.email == request.resource.data.athleteId
                                 && request.auth.token.email_verified == true);

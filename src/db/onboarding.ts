@@ -4,6 +4,7 @@ import {
   forceLocalOnly, setLocalBypassMode, stripUndefined, esFalloDePermisos,
   conTimeout, EscrituraEncolada,
 } from './core';
+import { escribirLocal } from '../utils/almacenLocal';
 
 // ─── ONBOARDING ───────────────────────────────────────────────────────────────
 
@@ -13,7 +14,7 @@ function getLocalOnboardingAll(): OnboardingData[] {
   try { return JSON.parse(localStorage.getItem(ONBOARDING_LS) ?? '[]'); } catch { return []; }
 }
 function setLocalOnboardingAll(data: OnboardingData[]) {
-  localStorage.setItem(ONBOARDING_LS, JSON.stringify(data));
+  escribirLocal(ONBOARDING_LS, JSON.stringify(data));
 }
 
 export async function getOnboarding(email: string): Promise<OnboardingData | null> {
@@ -114,7 +115,7 @@ function setLocalOBT(coachEmail: string, tpl: OnboardingTemplate) {
   try {
     const all = JSON.parse(localStorage.getItem(OBT_LS) || '{}') as Record<string, OnboardingTemplate>;
     all[coachEmail] = tpl;
-    localStorage.setItem(OBT_LS, JSON.stringify(all));
+    escribirLocal(OBT_LS, JSON.stringify(all));
   } catch { /* ignore */ }
 }
 

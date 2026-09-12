@@ -9,6 +9,7 @@ import { compressImage } from '../utils/compressImage';
 import { maquinaId } from '../utils/maquinaId';
 import { CATALOGO_VERSION } from '../data/maquinas/version';
 import { leerCatalogo, marcarCatalogoCambiado } from './catalogoVersionado';
+import { escribirLocal } from '../utils/almacenLocal';
 
 // La semilla se carga con import() diferido, no estático: son 28 KB de JSON que
 // solo hacen falta cuando alguien abre el catálogo, y un import normal los
@@ -40,7 +41,7 @@ function getLocalOverrides(): MaquinaOverride[] {
 }
 
 function saveLocalOverrides(list: MaquinaOverride[]): void {
-  try { localStorage.setItem(OVERRIDES_LOCAL_KEY, JSON.stringify(list)); } catch { /* cuota llena */ }
+  try { escribirLocal(OVERRIDES_LOCAL_KEY, JSON.stringify(list)); } catch { /* cuota llena */ }
 }
 
 let overridesCache: MaquinaOverride[] | null = null;
@@ -216,7 +217,7 @@ function getLocalGimnasios(): Gimnasio[] {
 function setLocalGimnasio(gym: Gimnasio): void {
   try {
     const otros = getLocalGimnasios().filter(g => g.atletaId !== gym.atletaId);
-    localStorage.setItem(GIMNASIO_LOCAL_KEY, JSON.stringify([...otros, gym]));
+    escribirLocal(GIMNASIO_LOCAL_KEY, JSON.stringify([...otros, gym]));
   } catch { /* cuota llena */ }
 }
 

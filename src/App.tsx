@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useMemo, Suspense, lazy } from 'react';
+import React, { useState, useEffect, useMemo, Suspense } from 'react';
+import { pantallaDiferida } from './utils/pantallaDiferida';
 import { Routes, Route, Navigate, useNavigate, useLocation, useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { App as CapacitorApp } from '@capacitor/app';
@@ -33,33 +34,33 @@ import { Avatar } from './components/ui';
 // necesita el código de las pantallas de coach (ni viceversa) — son ~8800 y
 // ~4700 líneas respectivamente que antes iban todas en el bundle inicial.
 // lazy() las trocea en chunks aparte que el navegador solo pide al entrar.
-const ProfileScreen        = lazy(() => import('./components/ProfileScreen'));
+const ProfileScreen        = pantallaDiferida('ProfileScreen', () => import('./components/ProfileScreen'));
 
 // Athlete screens
-const HomeScreen           = lazy(() => import('./components/HomeScreen'));
-const TrainingScreen       = lazy(() => import('./components/TrainingScreen'));
-const NutritionHubScreen   = lazy(() => import('./components/NutritionHubScreen'));
-const AcademyScreen        = lazy(() => import('./components/AcademyScreen'));
-const CardioScreen         = lazy(() => import('./components/CardioScreen'));
+const HomeScreen           = pantallaDiferida('HomeScreen', () => import('./components/HomeScreen'));
+const TrainingScreen       = pantallaDiferida('TrainingScreen', () => import('./components/TrainingScreen'));
+const NutritionHubScreen   = pantallaDiferida('NutritionHubScreen', () => import('./components/NutritionHubScreen'));
+const AcademyScreen        = pantallaDiferida('AcademyScreen', () => import('./components/AcademyScreen'));
+const CardioScreen         = pantallaDiferida('CardioScreen', () => import('./components/CardioScreen'));
 
 // Coach screens
-const ClientsScreen        = lazy(() => import('./components/ClientsScreen'));
-const CoachWeekScreen      = lazy(() => import('./components/CoachWeekScreen'));
-const AiChatPanel          = lazy(() => import('./components/AiChatPanel'));
-const CoachProposalsScreen = lazy(() => import('./components/CoachProposalsScreen'));
-const CommandPalette       = lazy(() => import('./components/CommandPalette'));
-const AthleteOnboardingWizard = lazy(() => import('./components/AthleteOnboardingWizard'));
-const AceptacionLegalGate = lazy(() => import('./components/AceptacionLegalGate'));
-const PlanEnEsperaScreen     = lazy(() => import('./components/PlanEnEsperaScreen'));
-const ReviewsScreen        = lazy(() => import('./components/ReviewsScreen'));
-const TrainingCoachScreen  = lazy(() => import('./components/TrainingCoachScreen'));
-const NutritionCoachScreen = lazy(() => import('./components/NutritionCoachScreen'));
-const AcademyCoachScreen   = lazy(() => import('./components/AcademyCoachScreen'));
-const CardioCoachScreen    = lazy(() => import('./components/CardioCoachScreen'));
-const CoachLibraryScreen   = lazy(() => import('./components/CoachLibraryScreen'));
-const ResourcesPanel       = lazy(() => import('./components/ResourcesPanel'));
-const CrmShell             = lazy(() => import('./features/crm/routes/CrmShell'));
-const CatalogoSwipe        = lazy(() => import('./features/gimnasio/CatalogoSwipe'));
+const ClientsScreen        = pantallaDiferida('ClientsScreen', () => import('./components/ClientsScreen'));
+const CoachWeekScreen      = pantallaDiferida('CoachWeekScreen', () => import('./components/CoachWeekScreen'));
+const AiChatPanel          = pantallaDiferida('AiChatPanel', () => import('./components/AiChatPanel'));
+const CoachProposalsScreen = pantallaDiferida('CoachProposalsScreen', () => import('./components/CoachProposalsScreen'));
+const CommandPalette       = pantallaDiferida('CommandPalette', () => import('./components/CommandPalette'));
+const AthleteOnboardingWizard = pantallaDiferida('AthleteOnboardingWizard', () => import('./components/AthleteOnboardingWizard'));
+const AceptacionLegalGate = pantallaDiferida('AceptacionLegalGate', () => import('./components/AceptacionLegalGate'));
+const PlanEnEsperaScreen     = pantallaDiferida('PlanEnEsperaScreen', () => import('./components/PlanEnEsperaScreen'));
+const ReviewsScreen        = pantallaDiferida('ReviewsScreen', () => import('./components/ReviewsScreen'));
+const TrainingCoachScreen  = pantallaDiferida('TrainingCoachScreen', () => import('./components/TrainingCoachScreen'));
+const NutritionCoachScreen = pantallaDiferida('NutritionCoachScreen', () => import('./components/NutritionCoachScreen'));
+const AcademyCoachScreen   = pantallaDiferida('AcademyCoachScreen', () => import('./components/AcademyCoachScreen'));
+const CardioCoachScreen    = pantallaDiferida('CardioCoachScreen', () => import('./components/CardioCoachScreen'));
+const CoachLibraryScreen   = pantallaDiferida('CoachLibraryScreen', () => import('./components/CoachLibraryScreen'));
+const ResourcesPanel       = pantallaDiferida('ResourcesPanel', () => import('./components/ResourcesPanel'));
+const CrmShell             = pantallaDiferida('CrmShell', () => import('./features/crm/routes/CrmShell'));
+const CatalogoSwipe        = pantallaDiferida('CatalogoSwipe', () => import('./features/gimnasio/CatalogoSwipe'));
 
 // Escaparate de las primitivas de `ui/` (F7). El ternario NO es un lazy() con
 // una guarda alrededor: Vite sustituye `import.meta.env.DEV` por `false` al
@@ -67,20 +68,20 @@ const CatalogoSwipe        = lazy(() => import('./features/gimnasio/CatalogoSwip
 // desaparece del grafo — no se genera ni un chunk que nadie va a pedir. Con la
 // guarda solo en la ruta, el chunk se habría empaquetado igual.
 const UiShowcase = import.meta.env.DEV
-  ? lazy(() => import('./components/ui/Showcase'))
+  ? pantallaDiferida('Showcase', () => import('./components/ui/Showcase'))
   : null;
 
 // Banco de pruebas de la pantalla de cardio en vivo (F4 del plan de réplica
 // FITIV): ni login ni banda BLE real hacen falta para verla. Misma poda que
 // el resto de harnesses — ver components/cardio/live/CardioLiveDemo.tsx.
 const CardioLiveDemo = import.meta.env.DEV
-  ? lazy(() => import('./components/cardio/live/CardioLiveDemo'))
+  ? pantallaDiferida('CardioLiveDemo', () => import('./components/cardio/live/CardioLiveDemo'))
   : null;
 
 // Banco de pruebas del mini-reproductor persistente (F6): contexto simulado,
 // sin CardioSessionProvider real ni Firestore — ver CardioMiniPlayerDemo.tsx.
 const CardioMiniPlayerDemo = import.meta.env.DEV
-  ? lazy(() => import('./components/cardio/CardioMiniPlayerDemo'))
+  ? pantallaDiferida('CardioMiniPlayerDemo', () => import('./components/cardio/CardioMiniPlayerDemo'))
   : null;
 
 // Banco de pruebas del catálogo de máquinas, misma poda que el escaparate. El
@@ -88,7 +89,7 @@ const CardioMiniPlayerDemo = import.meta.env.DEV
 // propósito, así que sin esto el flujo no se puede recorrer hasta que un admin
 // publique. Ver features/gimnasio/DevHarness.
 const GimnasioHarness = import.meta.env.DEV
-  ? lazy(() => import('./features/gimnasio/DevHarness'))
+  ? pantallaDiferida('DevHarness', () => import('./features/gimnasio/DevHarness'))
   : null;
 
 // Banco de pruebas de Roadmap → Calendario (ruta /dev/calendario) — no hay
@@ -97,13 +98,13 @@ const GimnasioHarness = import.meta.env.DEV
 // ejemplo en memoria, ninguna escritura toca Firestore. Misma poda en
 // producción que UiShowcase/GimnasioHarness.
 const CalendarioHarness = import.meta.env.DEV
-  ? lazy(() => import('./components/roadmap/calendario/DevHarness'))
+  ? pantallaDiferida('DevHarness', () => import('./components/roadmap/calendario/DevHarness'))
   : null;
 
 // El mismo banco de pruebas, pero del calendario del ATLETA (ruta
 // /dev/calendario-atleta) — comparte fixture con el del coach a propósito.
 const CalendarioAtletaHarness = import.meta.env.DEV
-  ? lazy(() => import('./components/roadmap/calendario/atleta/DevHarnessAtleta'))
+  ? pantallaDiferida('DevHarnessAtleta', () => import('./components/roadmap/calendario/atleta/DevHarnessAtleta'))
   : null;
 
 // Banco de pruebas de Perfil › Revisión (ruta /dev/revision) — misma razón
@@ -111,7 +112,7 @@ const CalendarioAtletaHarness = import.meta.env.DEV
 // atleta. Caché de react-query sembrada a mano, ninguna lectura ni escritura
 // llega a Firestore.
 const RevisionHarness = import.meta.env.DEV
-  ? lazy(() => import('./components/RevisionDevHarness'))
+  ? pantallaDiferida('RevisionDevHarness', () => import('./components/RevisionDevHarness'))
   : null;
 
 /* La pantalla de espera de la app, con marca. Existe como componente y no como

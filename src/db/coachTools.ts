@@ -2,6 +2,7 @@ import { db, collection, doc, getDocs, setDoc, addDoc, updateDoc, deleteDoc, que
 import { CoachNote, CoachClientTask, Resource } from '../types';
 import { forceLocalOnly, setLocalBypassMode, stripUndefined, esFalloDePermisos } from './core';
 import { leerCatalogo, marcarCatalogoCambiado } from './catalogoVersionado';
+import { escribirLocal } from '../utils/almacenLocal';
 
 // ─── COACH NOTES (private to-do list, never visible to athletes) ──────────────
 
@@ -11,7 +12,7 @@ function getLocalCoachNotes(): CoachNote[] {
   try { return JSON.parse(localStorage.getItem(COACH_NOTES_LOCAL_KEY) || '[]'); } catch { return []; }
 }
 function saveLocalCoachNotes(list: CoachNote[]): void {
-  localStorage.setItem(COACH_NOTES_LOCAL_KEY, JSON.stringify(list));
+  escribirLocal(COACH_NOTES_LOCAL_KEY, JSON.stringify(list));
 }
 
 export async function getCoachNotes(): Promise<CoachNote[]> {
@@ -88,7 +89,7 @@ function getLocalCoachClientTasks(): CoachClientTask[] {
   try { return JSON.parse(localStorage.getItem(COACH_CLIENT_TASKS_LOCAL_KEY) || '[]'); } catch { return []; }
 }
 function saveLocalCoachClientTasks(list: CoachClientTask[]): void {
-  localStorage.setItem(COACH_CLIENT_TASKS_LOCAL_KEY, JSON.stringify(list));
+  escribirLocal(COACH_CLIENT_TASKS_LOCAL_KEY, JSON.stringify(list));
 }
 
 export async function getCoachClientTasks(athleteEmail: string): Promise<CoachClientTask[]> {
@@ -187,7 +188,7 @@ function getLocalResources(): Resource[] {
 }
 
 function saveLocalResources(resources: Resource[]): void {
-  localStorage.setItem(RESOURCES_LOCAL_KEY, JSON.stringify(resources));
+  escribirLocal(RESOURCES_LOCAL_KEY, JSON.stringify(resources));
 }
 
 // Single-coach app — resources aren't filtered per coach, same pattern as

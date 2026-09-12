@@ -20,6 +20,7 @@
 import { db, doc, getDoc, setDoc } from '../firebase';
 import { AthleteDossier, DossierFact, DossierPatch } from '../types';
 import { forceLocalOnly, setLocalBypassMode, esFalloDePermisos } from './core';
+import { escribirLocal } from '../utils/almacenLocal';
 
 const LOCAL_KEY = 'enforma_athlete_dossier_v1';
 const COLECCION = 'athleteStatus';
@@ -56,7 +57,7 @@ function leerLocal(): Record<string, AthleteDossier> {
 function guardarLocal(email: string, ficha: AthleteDossier): void {
   const todas = leerLocal();
   todas[email] = ficha;
-  localStorage.setItem(LOCAL_KEY, JSON.stringify(todas));
+  escribirLocal(LOCAL_KEY, JSON.stringify(todas));
 }
 
 export async function getDossier(email: string): Promise<AthleteDossier> {

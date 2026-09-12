@@ -3,6 +3,7 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts';
 import { BodyMetricKey, BODY_METRIC_LABELS, BODY_METRIC_UNITS } from '../types';
+import { agruparMedicionesPorMetrica, metricasOrdenadas } from '../utils/medicionesPorMetrica';
 import { useBodyMeasurements } from '../hooks/useBodyMeasurements';
 import { computeAnthropometricIndices, ANTHROPOMETRIC_INDEX_LABELS } from '../utils/anthropometricIndices';
 import { pctGrasaUSNavy, masaMagraEstimadaKg, computeIRC } from '../utils/bodyFatUSNavy';
@@ -58,24 +59,10 @@ export default function BodyMeasurementsPanel({ athleteEmail, sexo, pesoKg, audi
     return { pctGrasa, masaMagraKg, irc };
   }, [sexo, pesoKg, latest, indices.whtr]);
 
-  const byMetric = useMemo(() => {
-    const map = new Map<BodyMetricKey, { date: string; value: number }[]>();
-    for (const m of all) {
-      if (m.metricKey === 'bodyweight') continue; // vive en BodyweightPanel
-      // Altura no es un perímetro que se siga en el tiempo (no cambia en
-      // adultos, mdc.ts la excluye del umbral de cambio a propósito) — es un
-      // dato único de la anamnesis que solo alimenta %grasa US Navy y WHtR
-      // más abajo. Mostrarla aquí sería una tarjeta más diciendo "Estable"
-      // para siempre, sin aportar nada al coach.
-      if (m.metricKey === 'altura') continue;
-      if (!map.has(m.metricKey)) map.set(m.metricKey, []);
-      map.get(m.metricKey)!.push({ date: m.date, value: m.value });
-    }
-    for (const pts of map.values()) pts.sort((a, b) => a.date.localeCompare(b.date));
-    return map;
-  }, [all]);
-
-  const metricKeys = [...byMetric.keys()].sort((a, b) => BODY_METRIC_LABELS[a].localeCompare(BODY_METRIC_LABELS[b]));
+  // Agrupar y ordenar viven en utils/medicionesPorMetrica para poder probarlos:
+  // una metricKey sin etiqueta tumbaba la pantalla entera (Sentry, 29-08).
+  const byMetric = useMemo(() => agruparMedicionesPorMetrica(all), [all]);
+  const metricKeys = metricasOrdenadas(byMetric);
 
   if (loading) {
     return (

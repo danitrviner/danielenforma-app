@@ -2,6 +2,7 @@ import { db, collection, doc, getDoc, setDoc, getDocs, addDoc, updateDoc, delete
 import { Recipe, RecipeFavorites } from '../types';
 import { forceLocalOnly, setLocalBypassMode, stripUndefined, esFalloDePermisos } from './core';
 import { OWNER_RECETARIO, OWNER_RECETARIO_TODOS, hidratarEntradaIndice } from './recetasHidratacion';
+import { escribirLocal } from '../utils/almacenLocal';
 
 export { OWNER_RECETARIO, OWNER_RECETARIO_TODOS };
 
@@ -17,7 +18,7 @@ function getLocalRecipes(): Recipe[] {
 }
 
 function setLocalRecipes(recipes: Recipe[]): void {
-  localStorage.setItem(RECIPES_LOCAL_KEY, JSON.stringify(recipes));
+  escribirLocal(RECIPES_LOCAL_KEY, JSON.stringify(recipes));
 }
 
 /**
@@ -253,7 +254,7 @@ export async function getRecipeFavorites(athleteEmail: string): Promise<RecipeFa
     const snap = await getDoc(doc(db, 'recipeFavorites', athleteEmail));
     if (snap.exists()) {
       const data = snap.data() as RecipeFavorites;
-      localStorage.setItem(localKey, JSON.stringify(data));
+      escribirLocal(localKey, JSON.stringify(data));
       return data;
     }
     try {
@@ -273,15 +274,15 @@ export async function getRecipeFavorites(athleteEmail: string): Promise<RecipeFa
 
 export async function saveRecipeFavorites(favs: RecipeFavorites): Promise<void> {
   const localKey = `enforma_recipe_favorites_${favs.athleteId}`;
-  if (forceLocalOnly) { localStorage.setItem(localKey, JSON.stringify(favs)); return; }
+  if (forceLocalOnly) { escribirLocal(localKey, JSON.stringify(favs)); return; }
   try {
     await setDoc(doc(db, 'recipeFavorites', favs.athleteId), stripUndefined(favs));
-    localStorage.setItem(localKey, JSON.stringify(favs));
+    escribirLocal(localKey, JSON.stringify(favs));
   } catch (err) {
     console.warn('saveRecipeFavorites Firestore failed, saving local:', err);
     setLocalBypassMode(true, err);
     if (esFalloDePermisos(err)) throw err;
-    localStorage.setItem(localKey, JSON.stringify(favs));
+    escribirLocal(localKey, JSON.stringify(favs));
   }
 }
 

@@ -2,6 +2,7 @@ import { db, collection, doc, getDocs, setDoc, addDoc, updateDoc, deleteDoc, que
 import { AiChat, AiProposal, KnowledgeNote } from '../types';
 import { forceLocalOnly, setLocalBypassMode, stripUndefined, esFalloDePermisos } from './core';
 import { leerCatalogo, marcarCatalogoCambiado } from './catalogoVersionado';
+import { escribirLocal } from '../utils/almacenLocal';
 
 // ─── AI ASSISTANT (chats + propuestas, solo coach) ──────────────────────────────
 
@@ -15,8 +16,26 @@ function getLocalAiChats(): AiChat[] {
   } catch { return []; }
 }
 
+/**
+ * Cuántos chats se espejan en localStorage.
+ *
+ * El espejo existe para dos cosas: el modo local (`forceLocalOnly`) y poder
+ * seguir viendo algo cuando Firestore no contesta. Para eso llegan de sobra los
+ * últimos, y guardarlos TODOS es justo lo que llenó el almacén: desde que la IA
+ * monta el mes entero, un solo chat pesa cientos de kilobytes, y esto se
+ * reescribía completo en cada turno. Al llenarse, el SDK de Firestore tampoco
+ * podía escribir sus claves y se rompía entero (ver `almacenLocal`).
+ *
+ * Lo que se queda fuera no se pierde: la fuente de verdad es la colección
+ * `aiChats` y la siguiente lectura los trae.
+ */
+const MAX_CHATS_EN_ESPEJO = 10;
+
 function saveLocalAiChats(chats: AiChat[]): void {
-  localStorage.setItem(AI_CHATS_LOCAL_KEY, JSON.stringify(chats));
+  const recientes = [...chats]
+    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+    .slice(0, MAX_CHATS_EN_ESPEJO);
+  escribirLocal(AI_CHATS_LOCAL_KEY, JSON.stringify(recientes));
 }
 
 export async function getAiChats(): Promise<AiChat[]> {
@@ -70,7 +89,7 @@ function getLocalAiProposals(): AiProposal[] {
 }
 
 function saveLocalAiProposals(list: AiProposal[]): void {
-  localStorage.setItem(AI_PROPOSALS_LOCAL_KEY, JSON.stringify(list));
+  escribirLocal(AI_PROPOSALS_LOCAL_KEY, JSON.stringify(list));
 }
 
 export async function getAiProposalsForAthlete(athleteEmail: string): Promise<AiProposal[]> {
@@ -197,7 +216,7 @@ function getLocalKnowledge(): KnowledgeNote[] {
 }
 
 function saveLocalKnowledge(notes: KnowledgeNote[]): void {
-  try { localStorage.setItem(KNOWLEDGE_LOCAL_KEY, JSON.stringify(notes)); } catch { /* quota — la fuente de verdad es Firestore */ }
+  try { escribirLocal(KNOWLEDGE_LOCAL_KEY, JSON.stringify(notes)); } catch { /* quota — la fuente de verdad es Firestore */ }
 }
 
 export async function getKnowledgeNotes(): Promise<KnowledgeNote[]> {

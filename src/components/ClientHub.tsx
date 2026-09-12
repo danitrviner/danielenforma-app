@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useMemo, useRef, Suspense, lazy } from 'react';
+import React, { useState, useEffect, useMemo, useRef, Suspense } from 'react';
+import { pantallaDiferida } from '../utils/pantallaDiferida';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -43,17 +44,17 @@ import {
    Reportes/Nutrición-análisis/Correlaciones se importan aquí por separado
    (antes iban juntos dentro de ClientAnalysisPanel, retirado): abrir
    Reportes ya no descarga también CorrelationPanel. */
-const ClientRoadmapPanel = lazy(() => import('./ClientRoadmapPanel'));
-const ClientFichaPanel = lazy(() => import('./ClientFichaPanel'));
-const ClientBodyPanel = lazy(() => import('./ClientBodyPanel'));
-const ReportsPanel = lazy(() => import('./ReportsPanel'));
-const NutritionAnalysisPanel = lazy(() => import('./NutritionAnalysisPanel'));
-const CorrelationPanel = lazy(() => import('./CorrelationPanel'));
-const ClientDietsPanel = lazy(() => import('./ClientDietsPanel'));
-const ClientWorkoutsPanel = lazy(() => import('./ClientWorkoutsPanel'));
-const ClientCardioPanel = lazy(() => import('./ClientCardioPanel'));
-const ClientReviewsPanel = lazy(() => import('./ClientReviewsPanel'));
-const ClientSetupPanel = lazy(() => import('./ClientSetupPanel'));
+const ClientRoadmapPanel = pantallaDiferida('ClientRoadmapPanel', () => import('./ClientRoadmapPanel'));
+const ClientFichaPanel = pantallaDiferida('ClientFichaPanel', () => import('./ClientFichaPanel'));
+const ClientBodyPanel = pantallaDiferida('ClientBodyPanel', () => import('./ClientBodyPanel'));
+const ReportsPanel = pantallaDiferida('ReportsPanel', () => import('./ReportsPanel'));
+const NutritionAnalysisPanel = pantallaDiferida('NutritionAnalysisPanel', () => import('./NutritionAnalysisPanel'));
+const CorrelationPanel = pantallaDiferida('CorrelationPanel', () => import('./CorrelationPanel'));
+const ClientDietsPanel = pantallaDiferida('ClientDietsPanel', () => import('./ClientDietsPanel'));
+const ClientWorkoutsPanel = pantallaDiferida('ClientWorkoutsPanel', () => import('./ClientWorkoutsPanel'));
+const ClientCardioPanel = pantallaDiferida('ClientCardioPanel', () => import('./ClientCardioPanel'));
+const ClientReviewsPanel = pantallaDiferida('ClientReviewsPanel', () => import('./ClientReviewsPanel'));
+const ClientSetupPanel = pantallaDiferida('ClientSetupPanel', () => import('./ClientSetupPanel'));
 import PendingTray from './PendingTray';
 import ClientAlertsBar from './ClientAlertsBar';
 import { Avatar, Badge, Tabs, Skeleton, Sheet, SearchField, ListRow, Icon } from './ui';

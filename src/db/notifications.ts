@@ -1,6 +1,7 @@
 import { db, collection, doc, setDoc, getDocs, updateDoc, query, where } from '../firebase';
 import { AppNotification } from '../types';
 import { forceLocalOnly, setLocalBypassMode, stripUndefined, esFalloDePermisos } from './core';
+import { escribirLocal } from '../utils/almacenLocal';
 
 // ── Notifications ─────────────────────────────────────────────────────────────
 
@@ -17,7 +18,7 @@ function setLocalNotifs(recipientEmail: string, notifs: AppNotification[]) {
   try {
     const all = JSON.parse(localStorage.getItem(NOTIF_LS) || '{}') as Record<string, AppNotification[]>;
     all[recipientEmail] = notifs;
-    localStorage.setItem(NOTIF_LS, JSON.stringify(all));
+    escribirLocal(NOTIF_LS, JSON.stringify(all));
   } catch { /* ignore */ }
 }
 

@@ -2,6 +2,7 @@ import { db, collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc, delete
 import { AcademyCourse, AcademyLesson, AcademyProgress, AcademyAccess } from '../types';
 import { forceLocalOnly, setLocalBypassMode, stripUndefined, esFalloDePermisos } from './core';
 import { leerCatalogo, marcarCatalogoCambiado } from './catalogoVersionado';
+import { escribirLocal } from '../utils/almacenLocal';
 
 // ─── COURSES ────────────────────────────────────────────────────────────────
 
@@ -11,7 +12,7 @@ function getLocalCourses(): AcademyCourse[] {
   try { return JSON.parse(localStorage.getItem(COURSES_LOCAL_KEY) || '[]'); } catch { return []; }
 }
 function saveLocalCourses(list: AcademyCourse[]): void {
-  localStorage.setItem(COURSES_LOCAL_KEY, JSON.stringify(list));
+  escribirLocal(COURSES_LOCAL_KEY, JSON.stringify(list));
 }
 
 export async function getAllCourses(): Promise<AcademyCourse[]> {
@@ -87,7 +88,7 @@ function getLocalLessons(): AcademyLesson[] {
   try { return JSON.parse(localStorage.getItem(LESSONS_LOCAL_KEY) || '[]'); } catch { return []; }
 }
 function saveLocalLessons(list: AcademyLesson[]): void {
-  localStorage.setItem(LESSONS_LOCAL_KEY, JSON.stringify(list));
+  escribirLocal(LESSONS_LOCAL_KEY, JSON.stringify(list));
 }
 
 export async function getAllLessons(): Promise<AcademyLesson[]> {
@@ -163,7 +164,7 @@ function getLocalProgressMap(): Record<string, AcademyProgress> {
   try { return JSON.parse(localStorage.getItem(PROGRESS_LOCAL_KEY) || '{}'); } catch { return {}; }
 }
 function saveLocalProgressMap(map: Record<string, AcademyProgress>): void {
-  localStorage.setItem(PROGRESS_LOCAL_KEY, JSON.stringify(map));
+  escribirLocal(PROGRESS_LOCAL_KEY, JSON.stringify(map));
 }
 
 const emptyProgress = (athleteId: string): AcademyProgress => ({ athleteId, completed: {}, courseProgress: {} });
@@ -230,7 +231,7 @@ function getLocalAccessMap(): Record<string, AcademyAccess> {
   try { return JSON.parse(localStorage.getItem(ACCESS_LOCAL_KEY) || '{}'); } catch { return {}; }
 }
 function saveLocalAccessMap(map: Record<string, AcademyAccess>): void {
-  localStorage.setItem(ACCESS_LOCAL_KEY, JSON.stringify(map));
+  escribirLocal(ACCESS_LOCAL_KEY, JSON.stringify(map));
 }
 
 export async function getAllAcademyAccess(): Promise<AcademyAccess[]> {

@@ -2,6 +2,7 @@ import { db, auth, collection, doc, getDoc, setDoc, getDocs, addDoc, updateDoc, 
 import { UserProfile, WeightCheckIn } from '../types';
 import { forceLocalOnly, setLocalBypassMode, stripUndefined, authReady, esFalloDePermisos } from './core';
 import { markInviteJoined } from './invites';
+import { escribirLocal } from '../utils/almacenLocal';
 
 // ── Profile de-duplication helpers ────────────────────────────────────────────
 
@@ -73,7 +74,7 @@ function getLocalUserProfile(userId: string, email: string, displayName?: string
 
 function saveLocalUserProfile(userId: string, profile: UserProfile) {
   try {
-    localStorage.setItem(`enforma_profile_${userId}`, JSON.stringify(profile));
+    escribirLocal(`enforma_profile_${userId}`, JSON.stringify(profile));
   } catch (e) {}
 }
 
@@ -101,7 +102,7 @@ function getLocalCheckIns(): WeightCheckIn[] {
 
 function saveLocalCheckIns(entries: WeightCheckIn[]) {
   try {
-    localStorage.setItem('enforma_checkins', JSON.stringify(entries));
+    escribirLocal('enforma_checkins', JSON.stringify(entries));
   } catch (e) {}
 }
 
@@ -205,6 +206,24 @@ export async function getOrCreateUserProfile(userId: string, email: string, disp
   }
 }
 
+/**
+ * Los clientes del coach. Una lista vacía se devuelve vacía, y un fallo se
+ * devuelve como fallo.
+ *
+ * Aquí vivía «Alex Rivera» (`client_alex_default`), un cliente INVENTADO que se
+ * colaba en las tres salidas cuando no había perfiles o la lectura fallaba.
+ * Venía de los primeros días de la app, cuando servía para ver la pantalla con
+ * algo dentro, y hacía dos daños:
+ *
+ * · Con la red mala, al coach le aparecía un cliente que no existe, con su peso
+ *   y su racha, indistinguible de los de verdad.
+ * · Al abrir su ficha y tocar cualquier cosa, la escritura iba contra
+ *   `user_profiles/client_alex_default`, que no existe en Firestore:
+ *   «No document to update» (Sentry, 29-08).
+ *
+ * No lo repongas: una lista vacía es una respuesta legítima y la pantalla ya
+ * sabe pintarla.
+ */
 export async function getAllUserProfiles(): Promise<UserProfile[]> {
   if (forceLocalOnly) {
     const profiles: UserProfile[] = [];
@@ -224,21 +243,6 @@ export async function getAllUserProfiles(): Promise<UserProfile[]> {
     } catch (e) {}
 
     const deduped = deduplicateByEmail(profiles);
-    if (deduped.length === 0) {
-      deduped.push({
-        userId: 'client_alex_default',
-        email: 'atleta@enforma.com',
-        displayName: 'Alex Rivera',
-        role: 'client',
-        avatarUrl: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&q=80&w=200',
-        level: 5,
-        currentStreak: 12,
-        maxStreak: 24,
-        initialWeight: 82.0,
-        targetWeight: 75.0,
-        actualWeight: 76.5
-      });
-    }
     return deduped;
   }
 
@@ -270,39 +274,11 @@ export async function getAllUserProfiles(): Promise<UserProfile[]> {
       }
     }
 
-    if (deduped.length === 0) {
-      deduped.push({
-        userId: 'client_alex_default',
-        email: 'atleta@enforma.com',
-        displayName: 'Alex Rivera',
-        role: 'client',
-        avatarUrl: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&q=80&w=200',
-        level: 5,
-        currentStreak: 12,
-        maxStreak: 24,
-        initialWeight: 82.0,
-        targetWeight: 75.0,
-        actualWeight: 76.5
-      });
-    }
     return deduped;
   } catch (err) {
     console.warn('Failed to fetch user profiles from Firestore:', err);
-    return [
-      {
-        userId: 'client_alex_default',
-        email: 'atleta@enforma.com',
-        displayName: 'Alex Rivera',
-        role: 'client',
-        avatarUrl: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&q=80&w=200',
-        level: 5,
-        currentStreak: 12,
-        maxStreak: 24,
-        initialWeight: 82.0,
-        targetWeight: 75.0,
-        actualWeight: 76.5
-      }
-    ];
+    setLocalBypassMode(true, err);
+    return [];
   }
 }
 

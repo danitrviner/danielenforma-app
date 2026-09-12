@@ -2,6 +2,7 @@ import { db, auth, sendPasswordResetEmail, collection, doc, getDoc, getDocs, upd
 import { Invite } from '../types';
 import { forceLocalOnly, setLocalBypassMode } from './core';
 import { apiUrl } from './apiBase';
+import { escribirLocal } from '../utils/almacenLocal';
 
 // ─── CLIENT INVITES (coach-only, doc id = email) ──────────────────────────────
 
@@ -11,7 +12,7 @@ function getLocalInvites(): Invite[] {
   try { return JSON.parse(localStorage.getItem(LOCAL_INVITES) || '[]'); } catch { return []; }
 }
 function saveLocalInvites(list: Invite[]): void {
-  localStorage.setItem(LOCAL_INVITES, JSON.stringify(list));
+  escribirLocal(LOCAL_INVITES, JSON.stringify(list));
 }
 
 const ENDPOINT_ALTA: string = apiUrl('/api/create-athlete');

@@ -2,6 +2,7 @@ import { db, collection, doc, getDoc, setDoc, getDocs, deleteDoc, query, where }
 import { Roadmap, LevelLadder, WeeklyChallenge, ChallengeTemplate } from '../types';
 import { forceLocalOnly, setLocalBypassMode, stripUndefined, esFalloDePermisos } from './core';
 import { leerCatalogo, marcarCatalogoCambiado } from './catalogoVersionado';
+import { escribirLocal } from '../utils/almacenLocal';
 
 // ─── ROADMAPS ─────────────────────────────────────────────────────────────────
 
@@ -11,7 +12,7 @@ function getLocalRoadmaps(): Roadmap[] {
   try { return JSON.parse(localStorage.getItem(LOCAL_ROADMAP) || '[]'); } catch { return []; }
 }
 function saveLocalRoadmaps(list: Roadmap[]): void {
-  localStorage.setItem(LOCAL_ROADMAP, JSON.stringify(list));
+  escribirLocal(LOCAL_ROADMAP, JSON.stringify(list));
 }
 
 export async function getRoadmap(athleteEmail: string): Promise<Roadmap> {
@@ -80,7 +81,7 @@ function getLocalChallenges(): WeeklyChallenge[] {
   try { return JSON.parse(localStorage.getItem(LOCAL_CHALLENGES) || '[]'); } catch { return []; }
 }
 function saveLocalChallenges(list: WeeklyChallenge[]): void {
-  localStorage.setItem(LOCAL_CHALLENGES, JSON.stringify(list));
+  escribirLocal(LOCAL_CHALLENGES, JSON.stringify(list));
 }
 function upsertLocalChallenge(ch: WeeklyChallenge): void {
   saveLocalChallenges([...getLocalChallenges().filter(c => c.id !== ch.id), ch]);
@@ -156,7 +157,7 @@ function getLocalChallengeTemplates(): ChallengeTemplate[] {
   try { return JSON.parse(localStorage.getItem(LOCAL_CHALLENGE_TEMPLATES) || '[]'); } catch { return []; }
 }
 function saveLocalChallengeTemplates(list: ChallengeTemplate[]): void {
-  localStorage.setItem(LOCAL_CHALLENGE_TEMPLATES, JSON.stringify(list));
+  escribirLocal(LOCAL_CHALLENGE_TEMPLATES, JSON.stringify(list));
 }
 
 export async function getChallengeTemplates(): Promise<ChallengeTemplate[]> {

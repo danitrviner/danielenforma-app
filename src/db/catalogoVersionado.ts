@@ -1,5 +1,6 @@
 import type { DocumentData, QueryDocumentSnapshot } from 'firebase/firestore';
 import { db, collection, doc, getDoc, getDocs, getDocsFromCache, setDoc } from '../firebase';
+import { escribirLocal } from '../utils/almacenLocal';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Catálogos con sello de versión
@@ -105,7 +106,7 @@ export async function leerCatalogo<T>(
   const snap = await getDocs(colRef);
   if (versionRemota != null) {
     try {
-      localStorage.setItem(claveLocal, JSON.stringify({ version: versionRemota, n: snap.size }));
+      escribirLocal(claveLocal, JSON.stringify({ version: versionRemota, n: snap.size }));
     } catch {}
   }
   return snap.docs.map(mapear);
@@ -147,7 +148,7 @@ export async function marcarCatalogoCambiado(nombre: string): Promise<void> {
       // más (`size >= n` sigue cumpliéndose) y en una baja tendrá uno menos,
       // que falla la comprobación y provoca una relectura: una lectura de más
       // en la operación menos frecuente, y el sello se recompone solo.
-      localStorage.setItem(CLAVE_VERSION_LOCAL(nombre), JSON.stringify({ version, n: anterior.n }));
+      escribirLocal(CLAVE_VERSION_LOCAL(nombre), JSON.stringify({ version, n: anterior.n }));
     } catch {}
   }
 

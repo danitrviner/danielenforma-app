@@ -1,4 +1,5 @@
-import React, { Suspense, lazy, useMemo, useState } from 'react';
+import React, { Suspense, useMemo, useState } from 'react';
+import { pantallaDiferida } from '../../../utils/pantallaDiferida';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { getCrmServicios } from '../../../dbService';
@@ -29,7 +30,7 @@ import { coincideBusqueda } from '../../../utils/busqueda';
 // que el resto de la pantalla junta, y la mayoría de visitas a /crm/clientes
 // nunca pulsan «Importar». Igual que App.tsx separa las pantallas de coach de
 // las de atleta, esto separa el peso de la importación del resto del CRM.
-const ImportarClientes = lazy(() => import('../components/ImportarClientes'));
+const ImportarClientes = pantallaDiferida('ImportarClientes', () => import('../components/ImportarClientes'));
 
 // El filtro y la búsqueda viven en la URL (?estado=&q=), no en useState: así un
 // refresco o el botón atrás recuperan la vista exacta, y una lista filtrada se

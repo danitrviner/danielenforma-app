@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useMemo, Suspense, lazy } from 'react';
+import React, { useState, useEffect, useMemo, Suspense } from 'react';
+import { pantallaDiferida } from '../utils/pantallaDiferida';
 import { useQuery, useQueries, useQueryClient } from '@tanstack/react-query';
 import { UserProfile, WeightCheckIn, QuestionnaireAssignment, QuestionnaireResponse, Questionnaire, QuestionnaireQuestion, PhotoAssignment, ProgressPhoto, PhotoView } from '../types';
 import { createNotificationDeduped, getAssignmentsForAthlete, getResponsesForAthlete, getQuestionnaireById, getPesoExtremo, getPhotoAssignmentsForAthlete, getProgressPhotos, getMesocycles } from '../dbService';
@@ -12,9 +13,9 @@ import { Badge, EmptyState, Icon, Skeleton } from './ui';
 
 // Diferido: arrastran recharts (344 KB) — igual que hacía ProfileScreen antes
 // de que estos paneles se movieran aquí (ver comentario más abajo).
-const BodyweightPanel = lazy(() => import('./BodyweightPanel'));
-const BodyMeasurementsPanel = lazy(() => import('./BodyMeasurementsPanel'));
-const QuestionnaireChartsPanel = lazy(() => import('./QuestionnaireChartsPanel'));
+const BodyweightPanel = pantallaDiferida('BodyweightPanel', () => import('./BodyweightPanel'));
+const BodyMeasurementsPanel = pantallaDiferida('BodyMeasurementsPanel', () => import('./BodyMeasurementsPanel'));
+const QuestionnaireChartsPanel = pantallaDiferida('QuestionnaireChartsPanel', () => import('./QuestionnaireChartsPanel'));
 
 const PHOTO_VIEW_LABELS: Record<PhotoView, string> = { front: 'Frente', side: 'Lateral', back: 'Espalda' };
 
