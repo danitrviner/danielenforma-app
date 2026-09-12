@@ -593,7 +593,7 @@ export default function ClientHub({
         aiProposals={aiProposals}
         onGoToNotes={() => { setActiveZone('plan'); guardedTabChange('entrenamientos'); }}
         onGoToReports={() => { setActiveZone('analisis'); guardedTabChange('reportes'); }}
-        onGoToAiProposals={() => window.dispatchEvent(new CustomEvent(OPEN_AI_PANEL_EVENT))}
+        onGoToAiProposals={() => navigate('/propuestas')}
       />
 
       {/* Nav de zonas (nivel 1). z-subnav, no z-sticky: los paneles que se

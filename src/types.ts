@@ -2189,6 +2189,14 @@ export type AiProposalPayload =
   | WorkoutTemplateProposalPayload
   | MesocycleTemplateProposalPayload;
 
+/** Un comentario de Dani sobre una propuesta, escrito en la pantalla de
+ *  Propuestas. Ni la aprueba ni la rechaza: queda con ella para poder pedirle
+ *  a la IA que la rehaga atendiéndolos (los lee con get_proposal_feedback). */
+export interface ProposalComment {
+  at: string;    // ISO
+  text: string;
+}
+
 export interface AiProposal {
   id: string;
   athleteId: string;       // email
@@ -2204,6 +2212,8 @@ export interface AiProposal {
   // crear la propuesta (src/ai/cambiosPropuesta.ts); vacío o ausente cuando no
   // hay nada con qué comparar (primer mes).
   cambios?: string[];
+  /** Lo que Dani le ha dicho a esta propuesta sin aprobarla ni rechazarla. */
+  comentarios?: ProposalComment[];
   baseEntityId?: string;   // dietId/mesocycleId que modifica (vs. nuevo)
   resultEntityId?: string; // id de la entidad real creada al aprobar
   createdAt: string;       // ISO

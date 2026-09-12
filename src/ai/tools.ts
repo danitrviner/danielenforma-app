@@ -875,6 +875,16 @@ export const TOOL_DEFINITIONS = [
     },
   },
   {
+    name: 'get_proposal_feedback',
+    description:
+      'Tus propuestas de este atleta que siguen PENDIENTES, con los COMENTARIOS que Dani les ha escrito en la pantalla de Propuestas. Un comentario no es un rechazo: es «esto está casi, pero cámbiame esto». Llámala cuando te pida rehacer, ajustar o atender sus comentarios, y vuelve a proponer con la corrección DENTRO, diciendo en una línea qué has cambiado por cada comentario. Lo que no comentó, no lo toques.',
+    input_schema: {
+      type: 'object',
+      properties: { athlete_email: { type: 'string' } },
+      required: ['athlete_email'],
+    },
+  },
+  {
     name: 'get_progress_metrics',
     description:
       'El PROGRESO medido del atleta, lo mismo que Dani ve en Análisis › Correlaciones: perímetros corporales con su cambio desde la primera medición (y si ese cambio supera el error de medición o es ruido), % de grasa y masa magra estimados (US Navy), índices antropométricos, y el índice de readiness (sueño y estrés). El entrenamiento y las marcas van en get_training_history; esto es el CUERPO. Míralo en una revisión antes de decir si algo está funcionando: el peso solo no distingue perder grasa de perder músculo.',
@@ -937,6 +947,7 @@ export function toolStatusLabel(name: string, input: Record<string, unknown>): s
     case 'add_coach_task': return `Apuntándote una tarea${who}…`;
     case 'get_nutrition_analysis': return `Analizando la nutrición${who}…`;
     case 'get_progress_metrics': return `Mirando cómo cambia el cuerpo${who}…`;
+    case 'get_proposal_feedback': return `Leyendo tus comentarios${who}…`;
     default: return `Ejecutando ${name}…`;
   }
 }
@@ -2915,6 +2926,26 @@ async function addCoachTask(email: string, title: string, phase: string | undefi
    Se reutilizan las utilidades de esa pantalla (US Navy, índices, IRP,
    resumirSerie con el margen de error de cada perímetro) para que lo que lea
    la IA y lo que vea Dani no puedan contarse distinto. */
+/* Lo que Dani le ha dicho a una propuesta sin llegar a aprobarla. Es la
+   corrección más barata que existe —más que rechazar y volver a empezar— y
+   hasta ahora no había forma de dársela sin escribirla otra vez en el chat. */
+async function getProposalFeedback(email: string): Promise<string> {
+  const pendientes = (await getAiProposalsForAthlete(email)).filter(p => p.status === 'proposed');
+  if (pendientes.length === 0) {
+    return toResult({ pendientes: [], note: 'Este atleta no tiene ninguna propuesta tuya pendiente. Si te pide ajustar algo, proponlo de nuevo desde cero.' });
+  }
+  return toResult({
+    pendientes: pendientes.map(p => ({
+      proposalId: p.id,
+      tipo: p.kind,
+      resumen: p.summary,
+      creada: p.createdAt.slice(0, 10),
+      comentariosDeDani: (p.comentarios ?? []).map(c => `${c.at.slice(0, 10)}: ${c.text}`),
+    })),
+    note: 'Los comentarios son de Dani y mandan sobre lo que tú propusiste. Vuelve a proponer atendiéndolos (la propuesta nueva sustituye a la vieja cuando él la apruebe) y di qué has cambiado por cada uno. Una propuesta sin comentarios está esperando su decisión: no la rehagas si no te lo pide.',
+  });
+}
+
 async function getProgressMetrics(email: string): Promise<string> {
   const profile = await findProfile(email);
   if (!profile) return toResult({ error: `No existe ningún cliente con email ${email}` });
@@ -3301,6 +3332,9 @@ export async function executeTool(
       case 'get_progress_metrics':
         if (!email) return { content: 'Falta athlete_email', isError: true };
         return { content: await getProgressMetrics(email), isError: false };
+      case 'get_proposal_feedback':
+        if (!email) return { content: 'Falta athlete_email', isError: true };
+        return { content: await getProposalFeedback(email), isError: false };
       case 'propose_dossier_update': {
         if (!email) return { content: 'Falta athlete_email', isError: true };
         const patch: DossierPatch = {};

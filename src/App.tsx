@@ -46,6 +46,7 @@ const CardioScreen         = lazy(() => import('./components/CardioScreen'));
 const ClientsScreen        = lazy(() => import('./components/ClientsScreen'));
 const CoachWeekScreen      = lazy(() => import('./components/CoachWeekScreen'));
 const AiChatPanel          = lazy(() => import('./components/AiChatPanel'));
+const CoachProposalsScreen = lazy(() => import('./components/CoachProposalsScreen'));
 const CommandPalette       = lazy(() => import('./components/CommandPalette'));
 const AthleteOnboardingWizard = lazy(() => import('./components/AthleteOnboardingWizard'));
 const AceptacionLegalGate = lazy(() => import('./components/AceptacionLegalGate'));
@@ -154,7 +155,7 @@ function AnalisisSubTabRedirect() {
 
 const OWNER_EMAIL = 'danitrviner@gmail.com';
 
-export type NavTab = 'home' | 'training' | 'nutrition' | 'checkin' | 'roadmap' | 'academy' | 'cardio' | 'clients' | 'reviews' | 'crm' | 'library' | 'profile' | 'week';
+export type NavTab = 'home' | 'training' | 'nutrition' | 'checkin' | 'roadmap' | 'academy' | 'cardio' | 'clients' | 'reviews' | 'crm' | 'library' | 'profile' | 'week' | 'propuestas';
 
 type NavItem = { id: NavTab; label: string; shortLabel?: string; icon: string };
 type NavGroup = { title?: string; items: NavItem[] };
@@ -220,6 +221,10 @@ const COACH_BIBLIOTECA: NavItem[] = [
 // habría vuelto a romperlo.
 const COACH_ESTA_SEMANA: NavItem[] = [
   { id: 'week', label: 'Esta semana', icon: 'calendar_view_week' },
+  // Las propuestas del asistente, a pantalla completa. Tampoco entra en
+  // `COACH_DIA_A_DIA` por el ancho de la barra de móvil: allí se llega desde
+  // el aviso del cliente y desde la propia bandeja del asistente.
+  { id: 'propuestas', label: 'Propuestas', icon: 'smart_toy' },
 ];
 
 // Barra lateral de PC: agrupada con encabezados, nadie pierde un destino.
@@ -1071,6 +1076,7 @@ function AppContent() {
                 <Route path="/crm/*" element={<CrmShell coachEmail={profile.email} />} />
                 <Route path="/reviews" element={<ReviewsScreen checkins={checkins} onRefreshCheckIns={handleRefreshData} coachId={profile.userId} coachEmail={profile.email} />} />
                 <Route path="/week" element={<CoachWeekScreen coachId={profile.userId} />} />
+                <Route path="/propuestas" element={<CoachProposalsScreen />} />
 
                 {/* Biblioteca: los cuatro catálogos como rutas hijas, con la
                     sección en la URL para que un refresco la recupere. */}
