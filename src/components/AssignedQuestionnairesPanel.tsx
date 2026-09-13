@@ -6,17 +6,19 @@ import {
 } from '../types';
 import {
   assignQuestionnaire, deactivateAssignment, createQuestionnaire,
-  getQuestionnairePacksByCoach, createQuestionnairePack, deleteQuestionnairePack,
+  getQuestionnairePacksByCoach, createQuestionnairePack, updateQuestionnairePack, deleteQuestionnairePack,
 } from '../dbService';
 import {
   cadenciaEnCristiano, cadenciaParaTabla, proximaOcurrencia, etiquetaFechaCorta, hoyLocalStr,
 } from '../utils/scheduleEngine';
 import { suggestedScheduleForTitle } from '../data/questionnairePresets';
+import { resolveQuestions } from '../utils/questionnaireResolve';
 import { useToast } from '../hooks/useToast';
 import { mensajeDeErrorFirestore } from '../utils/erroresFirestore';
 import ScheduleFields from './ScheduleFields';
-import QuestionnaireEditor, { FormState as QFormState, blankForm as blankQForm, newQuestion, applyTypeChange } from './QuestionnaireEditor';
+import QuestionnaireEditor, { FormState as QFormState, blankForm as blankQForm, newQuestion, applyTypeChange, QUESTION_TYPE_LABELS } from './QuestionnaireEditor';
 import { Badge, Button, Card, EmptyState, Icon, Sheet } from './ui';
+import { pulsable } from '../utils/a11y';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    AssignedQuestionnairesPanel — «qué tiene puesto este atleta»
@@ -64,6 +66,11 @@ export default function AssignedQuestionnairesPanel({
     queryFn: () => getQuestionnairePacksByCoach(coachId),
     enabled: !!coachId,
   });
+  // Fila desplegada: qué preguntas le llegan de verdad a ESTE atleta. Una a la
+  // vez — es una consulta puntual («¿esto qué le pregunta?»), no una lista que
+  // se lea entera.
+  const [filaAbierta, setFilaAbierta] = useState<string | null>(null);
+
   const [aplicandoPack, setAplicandoPack] = useState<string | null>(null);
   const [guardandoPack, setGuardandoPack] = useState(false);
   const [nombrePack, setNombrePack] = useState('');
@@ -76,10 +83,18 @@ export default function AssignedQuestionnairesPanel({
   const [packNombre, setPackNombre] = useState('');
   const [packItems, setPackItems] = useState<{ key: string; questionnaireId: string; schedule: QSchedule }[]>([]);
   const [creandoPack, setCreandoPack] = useState(false);
+  // Con id = editar uno que ya existe; sin él = crear. El formulario es el
+  // mismo: montar un paquete y corregirlo son la misma tarea.
+  const [packEditando, setPackEditando] = useState<string | null>(null);
 
-  const abrirConstructorDePack = () => {
-    setPackNombre('');
-    setPackItems([]);
+  const abrirConstructorDePack = (pack?: QuestionnairePack) => {
+    setPackEditando(pack?.id ?? null);
+    setPackNombre(pack?.name ?? '');
+    setPackItems((pack?.items ?? []).map((it, i) => ({
+      key: `it_${i}_${Math.random().toString(36).slice(2, 6)}`,
+      questionnaireId: it.questionnaireId,
+      schedule: it.schedule,
+    })));
     setSheetPack(true);
   };
 
@@ -112,22 +127,31 @@ export default function AssignedQuestionnairesPanel({
     && packItems.every(it => it.questionnaireId
       && !(it.schedule.type === 'weekdays' && (it.schedule.weekdays ?? []).length === 0));
 
-  const crearPackDesdeCero = async () => {
+  const guardarPack = async () => {
     if (!packListo) return;
+    const nombre = packNombre.trim();
+    const items = packItems.map(({ questionnaireId, schedule }) => ({ questionnaireId, schedule }));
     setCreandoPack(true);
     try {
-      const creado = await createQuestionnairePack({
-        ownerId: coachId,
-        name: packNombre.trim(),
-        items: packItems.map(({ questionnaireId, schedule }) => ({ questionnaireId, schedule })),
-        createdAt: new Date().toISOString(),
-      });
-      queryClient.setQueryData<QuestionnairePack[]>(packsKey, prev => [...(prev ?? []), creado]);
+      if (packEditando) {
+        await updateQuestionnairePack(packEditando, { name: nombre, items });
+        queryClient.setQueryData<QuestionnairePack[]>(packsKey, prev =>
+          (prev ?? []).map(p => p.id === packEditando ? { ...p, name: nombre, items } : p));
+        showToast(`Paquete «${nombre}» guardado.`);
+      } else {
+        const creado = await createQuestionnairePack({
+          ownerId: coachId,
+          name: nombre,
+          items,
+          createdAt: new Date().toISOString(),
+        });
+        queryClient.setQueryData<QuestionnairePack[]>(packsKey, prev => [...(prev ?? []), creado]);
+        showToast(`Paquete «${nombre}» creado con ${items.length} cuestionarios.`);
+      }
       setSheetPack(false);
-      showToast(`Paquete «${creado.name}» creado con ${creado.items.length} cuestionarios.`);
     } catch (err) {
       console.error(err);
-      showToast(mensajeDeErrorFirestore(err, 'crear el paquete'));
+      showToast(mensajeDeErrorFirestore(err, packEditando ? 'guardar el paquete' : 'crear el paquete'));
     } finally {
       setCreandoPack(false);
     }
@@ -412,63 +436,116 @@ export default function AssignedQuestionnairesPanel({
                   + Object.keys(a.overrides?.relabeled ?? {}).length
                   + Object.keys(a.overrides?.required ?? {}).length
                   + (a.overrides?.extra?.length ?? 0);
-                // Preguntas que ve REALMENTE este atleta, no las de la plantilla:
-                // las ocultas no se le muestran y las exclusivas suyas sí.
-                const numPreguntas = tmpl
-                  ? tmpl.questions.length - (a.overrides?.hidden?.length ?? 0) + (a.overrides?.extra?.length ?? 0)
-                  : null;
+                // Las preguntas que ve REALMENTE este atleta, no las de la
+                // plantilla: `resolveQuestions` aplica sus overrides (quita las
+                // ocultas, reformula, añade las suyas). Es la misma función que
+                // usa el formulario que rellena él, así que lo que se lee aquí
+                // es exactamente lo que le llega.
+                const preguntas = tmpl ? resolveQuestions(tmpl, a) : null;
+                const abierta = filaAbierta === a.id;
                 const ultima = athleteQResponses
                   .filter(r => r.assignmentId === a.id || r.questionnaireId === a.questionnaireId)
                   .sort((x, y) => y.submittedAt.localeCompare(x.submittedAt))[0];
                 const proxima = etiquetaFechaCorta(proximaOcurrencia(a));
 
                 return (
-                  <li
-                    key={a.id}
-                    className="grid grid-cols-[1fr_2.5rem] sm:grid-cols-[1fr_12.5rem_7rem_2.5rem] gap-x-3 gap-y-2 items-center px-5 py-3"
-                  >
-                    <div className="flex items-start gap-3 min-w-0">
-                      <Icon name="quiz" size="m" className="text-accent mt-0.5 shrink-0" />
-                      <div className="min-w-0">
-                        <p className="font-sans font-bold text-ink text-label text-pretty flex items-center gap-2 flex-wrap">
-                          {/* Sin plantilla el nombre no puede ser el ID del documento:
-                              eso es ruido de base de datos delante del coach. */}
-                          {tmpl?.title ?? 'Cuestionario ya no disponible'}
-                          {overrideCount > 0 && <Badge tone="info">a medida · {overrideCount}</Badge>}
-                        </p>
-                        <p className="font-mono text-caption text-ink-2 tabular-nums">
-                          {numPreguntas !== null
-                            ? `${numPreguntas} pregunta${numPreguntas === 1 ? '' : 's'}`
-                            : 'plantilla borrada'}
-                          {' · '}
-                          {ultima
-                            ? `última: ${new Date(ultima.submittedAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}`
-                            : 'sin responder aún'}
-                        </p>
+                  <li key={a.id} className="px-5 py-3">
+                    <div className="grid grid-cols-[1fr_2.5rem] sm:grid-cols-[1fr_12.5rem_7rem_2.5rem] gap-x-3 gap-y-2 items-center">
+                      {/* El nombre abre las preguntas: el coach no se acuerda de
+                          memoria de qué le pregunta cada plantilla a cada uno,
+                          y menos cuando la tiene personalizada. */}
+                      <div
+                        {...pulsable(() => setFilaAbierta(abierta ? null : a.id))}
+                        aria-expanded={abierta}
+                        className="flex items-start gap-3 min-w-0 cursor-pointer rounded-control -mx-1 px-1 py-1 hover:bg-raised/60 transition-colors"
+                      >
+                        <Icon name="quiz" size="m" className="text-accent mt-0.5 shrink-0" />
+                        <div className="min-w-0 flex-1">
+                          <p className="font-sans font-bold text-ink text-label text-pretty flex items-center gap-2 flex-wrap">
+                            {/* Sin plantilla el nombre no puede ser el ID del documento:
+                                eso es ruido de base de datos delante del coach. */}
+                            {tmpl?.title ?? 'Cuestionario ya no disponible'}
+                            {overrideCount > 0 && <Badge tone="info">a medida · {overrideCount}</Badge>}
+                          </p>
+                          <p className="font-mono text-caption text-ink-2 tabular-nums">
+                            {preguntas
+                              ? `${preguntas.length} pregunta${preguntas.length === 1 ? '' : 's'}`
+                              : 'plantilla borrada'}
+                            {' · '}
+                            {ultima
+                              ? `última: ${new Date(ultima.submittedAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}`
+                              : 'sin responder aún'}
+                          </p>
+                        </div>
+                        <Icon
+                          name="expand_more"
+                          size="s"
+                          className={`text-ink-3 mt-1 shrink-0 transition-transform ${abierta ? 'rotate-180' : ''}`}
+                        />
                       </div>
+
+                      <div className="col-start-1 sm:col-start-2 flex items-center gap-2 min-w-0">
+                        <Badge tone="info" icon="schedule" className="whitespace-nowrap">{cadenciaParaTabla(a.schedule)}</Badge>
+                        {/* En móvil no hay columna propia para la próxima fecha: se
+                            pega a la cadencia en vez de partir la fila en tres. */}
+                        {proxima && (
+                          <span className="sm:hidden font-mono text-caption text-warning tabular-nums whitespace-nowrap">{proxima}</span>
+                        )}
+                      </div>
+
+                      <span className="hidden sm:block text-right font-mono text-caption text-warning tabular-nums">
+                        {proxima || '—'}
+                      </span>
+
+                      <button
+                        onClick={() => handleDeactivateQ(a)}
+                        title="Quitarle este cuestionario"
+                        aria-label={`Quitarle ${tmpl?.title ?? 'el cuestionario'} a este atleta`}
+                        className="row-start-1 col-start-2 sm:col-start-4 justify-self-end grid place-items-center h-10 w-10 rounded-control text-ink-3 hover:text-danger hover:bg-danger/10 transition-colors"
+                      >
+                        <Icon name="close" size="s" />
+                      </button>
                     </div>
 
-                    <div className="col-start-1 sm:col-start-2 flex items-center gap-2 min-w-0">
-                      <Badge tone="info" icon="schedule" className="whitespace-nowrap">{cadenciaParaTabla(a.schedule)}</Badge>
-                      {/* En móvil no hay columna propia para la próxima fecha: se
-                          pega a la cadencia en vez de partir la fila en tres. */}
-                      {proxima && (
-                        <span className="sm:hidden font-mono text-caption text-warning tabular-nums whitespace-nowrap">{proxima}</span>
-                      )}
-                    </div>
-
-                    <span className="hidden sm:block text-right font-mono text-caption text-warning tabular-nums">
-                      {proxima || '—'}
-                    </span>
-
-                    <button
-                      onClick={() => handleDeactivateQ(a)}
-                      title="Quitarle este cuestionario"
-                      aria-label={`Quitarle ${tmpl?.title ?? 'el cuestionario'} a este atleta`}
-                      className="row-start-1 col-start-2 sm:col-start-4 justify-self-end grid place-items-center h-10 w-10 rounded-control text-ink-3 hover:text-danger hover:bg-danger/10 transition-colors"
-                    >
-                      <Icon name="close" size="s" />
-                    </button>
+                    {abierta && (
+                      <div className="mt-2 ml-0 sm:ml-9 rounded-field border border-hairline bg-bg p-3">
+                        {!preguntas ? (
+                          <p className="font-sans text-body-s text-ink-2 text-pretty">
+                            La plantilla de este cuestionario ya no existe, así que no se puede
+                            saber qué le pregunta. Quítaselo y asígnale uno vivo.
+                          </p>
+                        ) : (
+                          <ol className="divide-y divide-hairline/40">
+                            {preguntas.map((q, idx) => {
+                              const esSuya = (a.overrides?.extra ?? []).some(x => x.id === q.id);
+                              const reformulada = !!a.overrides?.relabeled?.[q.id];
+                              return (
+                                <li key={q.id} className="py-2 flex items-start gap-3">
+                                  <span className="font-mono text-caption text-ink-3 tabular-nums w-5 shrink-0">{idx + 1}</span>
+                                  <span className="font-sans text-label text-ink flex-1 text-pretty">
+                                    {q.label}
+                                    {q.required && <span className="text-danger" title="Obligatoria"> *</span>}
+                                  </span>
+                                  <span className="font-mono text-caption text-ink-2 shrink-0 text-right">
+                                    {QUESTION_TYPE_LABELS[q.type]}
+                                    {q.type === 'scale' ? ` ${q.scaleMin ?? 1}-${q.scaleMax ?? 10}` : ''}
+                                    {q.unit ? ` · ${q.unit}` : ''}
+                                  </span>
+                                  {esSuya && <Badge tone="data">solo suya</Badge>}
+                                  {reformulada && !esSuya && <Badge tone="info">reescrita</Badge>}
+                                </li>
+                              );
+                            })}
+                          </ol>
+                        )}
+                        {(a.overrides?.hidden?.length ?? 0) > 0 && (
+                          <p className="mt-2 pt-2 border-t border-hairline font-mono text-caption text-ink-3">
+                            {a.overrides!.hidden!.length} pregunta{a.overrides!.hidden!.length === 1 ? '' : 's'} de la
+                            plantilla {a.overrides!.hidden!.length === 1 ? 'está oculta' : 'están ocultas'} para este atleta.
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </li>
                 );
               })}
@@ -510,7 +587,7 @@ export default function AssignedQuestionnairesPanel({
         title="Paquetes"
         subtitle="Conjuntos de cuestionarios con su cadencia, listos para aplicar de una vez"
         action={
-          <Button size="s" variant="secondary" icon="add" onClick={abrirConstructorDePack}>
+          <Button size="s" variant="secondary" icon="add" onClick={() => abrirConstructorDePack()}>
             Crear paquete
           </Button>
         }
@@ -552,6 +629,14 @@ export default function AssignedQuestionnairesPanel({
                     {pendientes === 0 ? 'Ya lo tiene' : `Aplicar (${pendientes})`}
                   </Button>
                   <button
+                    onClick={() => abrirConstructorDePack(pack)}
+                    aria-label={`Editar el paquete ${pack.name}`}
+                    title="Editar el paquete"
+                    className="grid place-items-center h-10 w-10 rounded-control text-ink-3 hover:text-ink hover:bg-raised transition-colors"
+                  >
+                    <Icon name="edit" size="s" />
+                  </button>
+                  <button
                     onClick={() => borrarPack(pack)}
                     aria-label={`Borrar el paquete ${pack.name}`}
                     title="Borrar el paquete"
@@ -571,17 +656,17 @@ export default function AssignedQuestionnairesPanel({
         <Sheet
           open
           onClose={() => setSheetPack(false)}
-          title="Nuevo paquete"
+          title={packEditando ? 'Editar paquete' : 'Nuevo paquete'}
           size="l"
           footer={
             <Button
               fullWidth
-              onClick={crearPackDesdeCero}
+              onClick={guardarPack}
               disabled={!packListo}
               loading={creandoPack}
-              loadingLabel="Creando"
+              loadingLabel="Guardando"
             >
-              Crear paquete
+              {packEditando ? 'Guardar cambios' : 'Crear paquete'}
             </Button>
           }
         >
@@ -598,6 +683,13 @@ export default function AssignedQuestionnairesPanel({
                 className="w-full bg-bg border border-hairline rounded-control px-3 py-3 text-title-s text-ink font-sans focus:outline-none focus:ring-1 focus:ring-accent"
               />
             </div>
+
+            {packEditando && (
+              <p className="font-sans text-body-s text-ink-2 text-pretty">
+                Editar el paquete no toca a quien ya lo tiene aplicado: cambia lo que se le
+                pondrá a partir de ahora.
+              </p>
+            )}
 
             {packItems.length === 0 && (
               <p className="font-sans text-body-s text-ink-2 text-pretty">

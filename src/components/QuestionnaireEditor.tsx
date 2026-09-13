@@ -45,7 +45,7 @@ export function applyTypeChange(patch: { type: QuestionType }): Partial<Question
   };
 }
 
-const QUESTION_TYPE_LABELS: Record<QuestionType, string> = {
+export const QUESTION_TYPE_LABELS: Record<QuestionType, string> = {
   numeric: 'Número',
   scale:   'Escala',
   choice:  'Opción múltiple',
