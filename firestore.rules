@@ -471,6 +471,14 @@ service cloud.firestore {
       allow write: if isCoach();
     }
 
+    // ── questionnairePacks (ownerId = UID del coach) ─────────────────────────
+    // Conjuntos de cuestionarios con su cadencia, para aplicarlos de una vez a
+    // un atleta nuevo. Material de trabajo del coach: el atleta nunca los lee,
+    // solo ve las asignaciones que salen de aplicarlos.
+    match /questionnairePacks/{docId} {
+      allow read, write: if isCoach();
+    }
+
     // ── questionnaireAssignments (athleteId = EMAIL) ─────────────────────────
     match /questionnaireAssignments/{docId} {
       allow read: if isCoach()

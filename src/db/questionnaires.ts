@@ -1,5 +1,5 @@
 import { db, collection, doc, getDoc, getDocs, addDoc, setDoc, updateDoc, deleteDoc, query, where } from '../firebase';
-import { Questionnaire, QuestionnaireAssignment, QuestionnaireResponse } from '../types';
+import { Questionnaire, QuestionnaireAssignment, QuestionnairePack, QuestionnaireResponse } from '../types';
 import {
   forceLocalOnly, setLocalBypassMode, stripUndefined, esFalloDePermisos,
   conTimeout, EscrituraEncolada,
@@ -73,6 +73,80 @@ export async function deleteQuestionnaire(id: string): Promise<void> {
     setLocalBypassMode(true, err);
     if (esFalloDePermisos(err)) throw err;
     escribirLocal(LOCAL_QUESTIONNAIRES, JSON.stringify(getLocalQuestionnaires().filter(q => q.id !== id)));
+  }
+}
+
+// ─── PAQUETES DE CUESTIONARIOS ───────────────────────────────────────────────
+// Collection: questionnairePacks  (owned by coach — ownerId == coachUid)
+//
+// Mismo patrón de degradación que el resto del fichero: si Firestore falla, se
+// escribe en local y la app sigue. Un paquete no es dato crítico del atleta —
+// es una plantilla de trabajo del coach.
+
+const LOCAL_Q_PACKS = 'questionnairePacks_v1';
+
+function getLocalPacks(): QuestionnairePack[] {
+  try { return JSON.parse(localStorage.getItem(LOCAL_Q_PACKS) || '[]'); } catch { return []; }
+}
+
+export async function getQuestionnairePacksByCoach(coachUid: string): Promise<QuestionnairePack[]> {
+  if (forceLocalOnly) return getLocalPacks().filter(p => p.ownerId === coachUid);
+  try {
+    const snap = await getDocs(query(collection(db, 'questionnairePacks'), where('ownerId', '==', coachUid)));
+    return snap.docs.map(d => ({ id: d.id, ...d.data() } as QuestionnairePack));
+  } catch (err) {
+    console.warn('getQuestionnairePacksByCoach Firestore failed, using local:', err);
+    setLocalBypassMode(true, err);
+    return getLocalPacks().filter(p => p.ownerId === coachUid);
+  }
+}
+
+export async function createQuestionnairePack(data: Omit<QuestionnairePack, 'id'>): Promise<QuestionnairePack> {
+  if (forceLocalOnly) {
+    const p: QuestionnairePack = { ...data, id: `local_qp_${Date.now()}` };
+    escribirLocal(LOCAL_Q_PACKS, JSON.stringify([...getLocalPacks(), p]));
+    return p;
+  }
+  try {
+    const ref = await addDoc(collection(db, 'questionnairePacks'), stripUndefined(data));
+    return { ...data, id: ref.id };
+  } catch (err) {
+    console.warn('createQuestionnairePack Firestore failed, saving local:', err);
+    setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
+    const p: QuestionnairePack = { ...data, id: `local_qp_${Date.now()}` };
+    escribirLocal(LOCAL_Q_PACKS, JSON.stringify([...getLocalPacks(), p]));
+    return p;
+  }
+}
+
+export async function updateQuestionnairePack(id: string, updates: Partial<Omit<QuestionnairePack, 'id'>>): Promise<void> {
+  if (forceLocalOnly) {
+    escribirLocal(LOCAL_Q_PACKS, JSON.stringify(getLocalPacks().map(p => p.id === id ? { ...p, ...updates } : p)));
+    return;
+  }
+  try {
+    await updateDoc(doc(db, 'questionnairePacks', id), stripUndefined(updates) as Record<string, unknown>);
+  } catch (err) {
+    console.warn('updateQuestionnairePack Firestore failed, updating local:', err);
+    setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
+    escribirLocal(LOCAL_Q_PACKS, JSON.stringify(getLocalPacks().map(p => p.id === id ? { ...p, ...updates } : p)));
+  }
+}
+
+export async function deleteQuestionnairePack(id: string): Promise<void> {
+  if (forceLocalOnly) {
+    escribirLocal(LOCAL_Q_PACKS, JSON.stringify(getLocalPacks().filter(p => p.id !== id)));
+    return;
+  }
+  try {
+    await deleteDoc(doc(db, 'questionnairePacks', id));
+  } catch (err) {
+    console.warn('deleteQuestionnairePack Firestore failed, deleting local:', err);
+    setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
+    escribirLocal(LOCAL_Q_PACKS, JSON.stringify(getLocalPacks().filter(p => p.id !== id)));
   }
 }
 

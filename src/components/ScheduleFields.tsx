@@ -22,6 +22,12 @@ interface Props {
   onDayOfMonthChange: (n: number) => void;
   startDate: string;
   onStartDateChange: (s: string) => void;
+  /**
+   * Oculta el campo "Desde". Un PAQUETE guarda la cadencia pero no la fecha de
+   * alta —esa es del día en que se aplica a un atleta—, así que ahí el campo
+   * no solo sobra: pedir una fecha que nadie va a usar es pedir una mentira.
+   */
+  sinFechaDeInicio?: boolean;
   planWeek?: number;
   onPlanWeekChange?: (n: number) => void;
   mesocycleOffsetDays?: number;
@@ -33,7 +39,7 @@ export default function ScheduleFields({
   weekdays, onWeekdaysChange,
   intervalDays, onIntervalDaysChange,
   dayOfMonth, onDayOfMonthChange,
-  startDate, onStartDateChange,
+  startDate, onStartDateChange, sinFechaDeInicio = false,
   planWeek = 3, onPlanWeekChange,
   mesocycleOffsetDays = 0, onMesocycleOffsetDaysChange,
 }: Props) {
@@ -115,7 +121,7 @@ export default function ScheduleFields({
             onChange={e => onPlanWeekChange(Math.max(1, Number(e.target.value)))}
             className="w-20 bg-bg border border-hairline rounded-control px-2 py-2 text-title-s text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent"
           />
-          <span className="font-mono text-xs text-[#c6c9ab]">desde el inicio del plan (fecha "Desde" de abajo)</span>
+          <span className="font-mono text-xs text-[#c6c9ab]">desde el alta del cuestionario</span>
         </div>
       )}
 
@@ -132,15 +138,17 @@ export default function ScheduleFields({
         </div>
       )}
 
-      <div className="flex items-center gap-2">
-        <span className="font-mono text-caption text-ink-2">Desde</span>
-        <input
-          type="date"
-          value={startDate}
-          onChange={e => onStartDateChange(e.target.value)}
-          className="bg-bg border border-hairline rounded-control px-2 py-2 text-title-s font-mono text-white focus:outline-none focus:ring-1 focus:ring-accent"
-        />
-      </div>
+      {!sinFechaDeInicio && (
+        <div className="flex items-center gap-2">
+          <span className="font-mono text-caption text-ink-2">Desde</span>
+          <input
+            type="date"
+            value={startDate}
+            onChange={e => onStartDateChange(e.target.value)}
+            className="bg-bg border border-hairline rounded-control px-2 py-2 text-title-s font-mono text-white focus:outline-none focus:ring-1 focus:ring-accent"
+          />
+        </div>
+      )}
     </div>
   );
 }

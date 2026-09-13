@@ -151,3 +151,140 @@ export function scheduleLabel(schedule: QSchedule): string {
     default:         return '—';
   }
 }
+
+/** Fecha local en formato YYYY-MM-DD (no UTC — `toISOString()` se adelanta o
+ *  se atrasa un día según la zona horaria). */
+function ymdLocal(d: Date): string {
+  const mes = String(d.getMonth() + 1).padStart(2, '0');
+  const dia = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${mes}-${dia}`;
+}
+
+/** Próxima fecha (hoy incluido) en la que toca responder, o `null` si la
+ *  ocurrencia ya pasó y no se repite ('once'/'plan_week' vencidos) o si no se
+ *  puede saber (un 'mesocycle_end' sin mesociclos en el contexto).
+ *
+ *  Es lo que el coach necesita leer de un vistazo en la lista de asignados:
+ *  `scheduleLabel` dice cada cuánto, esto dice CUÁNDO cae la siguiente. */
+export function proximaOcurrencia(a: Scheduled, ctx?: ScheduleContext): string | null {
+  if (!a.schedule) return null;
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
+  const inicio = startOfDay(a.startDate);
+  // Nunca antes del alta de la asignación: si empieza en el futuro, la primera
+  // ocurrencia se busca desde ese día, no desde hoy.
+  const desde = inicio > hoy ? inicio : hoy;
+
+  switch (a.schedule.type) {
+    case 'once':
+      return inicio >= hoy ? a.startDate : null;
+
+    case 'weekdays': {
+      const dias = a.schedule.weekdays ?? [];
+      if (dias.length === 0) return null;
+      for (let i = 0; i < 7; i++) {
+        const cand = new Date(desde);
+        cand.setDate(cand.getDate() + i);
+        if (dias.includes(cand.getDay())) return ymdLocal(cand);
+      }
+      return null;
+    }
+
+    case 'interval': {
+      const n = a.schedule.intervalDays ?? 7;
+      if (n <= 0) return null;
+      if (desde <= inicio) return ymdLocal(inicio);
+      const diff = Math.floor((desde.getTime() - inicio.getTime()) / 86400000);
+      const resto = diff % n;
+      const cand = new Date(desde);
+      if (resto !== 0) cand.setDate(cand.getDate() + (n - resto));
+      return ymdLocal(cand);
+    }
+
+    case 'monthly': {
+      const dia = a.schedule.dayOfMonth ?? 1;
+      // Dos intentos: este mes y el siguiente. El día se recorta al último del
+      // mes (un "día 31" en febrero cae el 28/29, no se salta el mes).
+      for (let salto = 0; salto < 2; salto++) {
+        const ref = new Date(desde.getFullYear(), desde.getMonth() + salto, 1);
+        const ultimo = new Date(ref.getFullYear(), ref.getMonth() + 1, 0).getDate();
+        const cand = new Date(ref.getFullYear(), ref.getMonth(), Math.min(dia, ultimo));
+        if (cand >= desde) return ymdLocal(cand);
+      }
+      return null;
+    }
+
+    case 'plan_week': {
+      const due = planWeekDueDate(a.schedule, inicio);
+      return due >= hoy ? ymdLocal(due) : null;
+    }
+
+    case 'mesocycle_end': {
+      const offset = a.schedule.mesocycleOffsetDays ?? 0;
+      const futuras = (ctx?.mesocycles ?? [])
+        .map(m => mesocycleEndDate(m, offset))
+        .filter(d => d >= hoy)
+        .sort((x, y) => x.getTime() - y.getTime());
+      return futuras.length > 0 ? ymdLocal(futuras[0]) : null;
+    }
+
+    default:
+      return null;
+  }
+}
+
+/** "Hoy" / "Mañana" / "sáb, 19 sep" — cómo se lee una fecha de vencimiento en
+ *  la lista de asignados. Devuelve '' si no hay fecha. */
+export function etiquetaFechaCorta(iso: string | null, hoyIso?: string): string {
+  if (!iso) return '';
+  const hoy = startOfDay(hoyIso ?? ymdLocal(new Date()));
+  const fecha = startOfDay(iso);
+  const dias = Math.round((fecha.getTime() - hoy.getTime()) / 86400000);
+  if (dias === 0) return 'Hoy';
+  if (dias === 1) return 'Mañana';
+  return fecha.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' });
+}
+
+/** Hoy en hora LOCAL. `todayStr()` usa `toISOString()` (UTC) y en España se
+ *  queda en el día anterior entre medianoche y las 2 de la mañana; para fechas
+ *  que el coach elige y lee (el alta de una asignación) eso es un día de menos. */
+export function hoyLocalStr(): string {
+  return ymdLocal(new Date());
+}
+
+/** La cadencia para la TABLA del coach: ni la abreviatura de máquina de
+ *  `scheduleLabel` ("Día 26/mes") ni la frase de atleta de
+ *  `cadenciaEnCristiano` ("El día 26 de cada mes", que en una columna se parte
+ *  en dos líneas). Una línea, en castellano, legible de un vistazo. */
+export function cadenciaParaTabla(schedule: QSchedule): string {
+  const CORTOS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+  const LARGOS = ['domingos', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábados'];
+  switch (schedule?.type) {
+    case 'once': return 'Una sola vez';
+    case 'weekdays': {
+      const dias = (schedule.weekdays ?? []).filter(d => d >= 0 && d <= 6);
+      if (dias.length === 0) return 'Sin fecha fija';
+      if (dias.length === 1) return `Los ${LARGOS[dias[0]]}`;
+      // A partir de cuatro días la lista es más larga que el dato que aporta.
+      if (dias.length > 3) return `${dias.length} días/semana`;
+      const nombres = dias.map(d => CORTOS[d]);
+      return `${nombres.slice(0, -1).join(', ')} y ${nombres[nombres.length - 1]}`;
+    }
+    case 'interval': {
+      const n = schedule.intervalDays ?? 1;
+      if (n === 1) return 'Cada día';
+      if (n === 7) return 'Cada semana';
+      if (n % 7 === 0) return `Cada ${n / 7} semanas`;
+      if (n === 30 || n === 31) return 'Cada mes';
+      return `Cada ${n} días`;
+    }
+    case 'monthly': return `Cada mes · día ${schedule.dayOfMonth ?? 1}`;
+    case 'plan_week': return `Semana ${schedule.planWeek ?? 1} del plan`;
+    case 'mesocycle_end': {
+      const off = schedule.mesocycleOffsetDays ?? 0;
+      if (off === 0) return 'Fin de bloque';
+      return off > 0 ? `${off} d antes del fin` : `${-off} d tras el fin`;
+    }
+    default: return 'Sin fecha fija';
+  }
+}

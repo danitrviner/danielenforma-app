@@ -130,6 +130,7 @@ export {
   assignQuestionnaire, getAssignmentsForAthlete, deactivateAssignment,
   submitResponse, getQuestionnaireById, getResponsesForAthlete, getResponsesByQuestionnaireIds,
   updateQuestionnaireResponse, deleteQuestionnaireResponse,
+  getQuestionnairePacksByCoach, createQuestionnairePack, updateQuestionnairePack, deleteQuestionnairePack,
 } from './db/questionnaires';
 
 // ─── PESO CORPORAL + PASOS ─────────────────────────────────────────────────────

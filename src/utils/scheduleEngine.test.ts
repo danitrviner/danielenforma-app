@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, afterEach } from 'vitest';
 import { Mesocycle, QSchedule } from '../types';
-import { isDueToday, isUpcoming, Scheduled, cadenciaEnCristiano, scheduleLabel } from './scheduleEngine';
+import { isDueToday, isUpcoming, Scheduled, cadenciaEnCristiano, scheduleLabel, proximaOcurrencia, etiquetaFechaCorta, cadenciaParaTabla } from './scheduleEngine';
 
 afterEach(() => { vi.useRealTimers(); });
 
@@ -136,5 +136,100 @@ describe('cadenciaEnCristiano', () => {
 
   it('no toca la etiqueta compacta del coach', () => {
     expect(scheduleLabel({ type: 'interval', intervalDays: 14 })).toBe('Cada 14d');
+  });
+});
+
+describe('proximaOcurrencia', () => {
+  it('devuelve hoy cuando la ocurrencia cae hoy', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-09-19T09:00:00')); // sábado
+    const a: Scheduled = { schedule: { type: 'weekdays', weekdays: [6] }, startDate: '2026-08-01' };
+    expect(proximaOcurrencia(a)).toBe('2026-09-19');
+  });
+
+  it("'weekdays' salta al siguiente día marcado de la semana", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-09-16T09:00:00')); // miércoles
+    const a: Scheduled = { schedule: { type: 'weekdays', weekdays: [6] }, startDate: '2026-08-01' };
+    expect(proximaOcurrencia(a)).toBe('2026-09-19');
+  });
+
+  it("'interval' cae en el múltiplo siguiente desde startDate, no desde hoy", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-09-13T09:00:00'));
+    // Lunes 2026-09-07 + 14d = 2026-09-21
+    const a: Scheduled = { schedule: { type: 'interval', intervalDays: 14 }, startDate: '2026-09-07' };
+    expect(proximaOcurrencia(a)).toBe('2026-09-21');
+  });
+
+  it("'monthly' recorta el día al último del mes en vez de saltárselo", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-02-15T09:00:00'));
+    const a: Scheduled = { schedule: { type: 'monthly', dayOfMonth: 31 }, startDate: '2026-01-01' };
+    expect(proximaOcurrencia(a)).toBe('2026-02-28');
+  });
+
+  it("'monthly' pasa al mes siguiente si el día ya pasó", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-09-27T09:00:00'));
+    const a: Scheduled = { schedule: { type: 'monthly', dayOfMonth: 26 }, startDate: '2026-01-01' };
+    expect(proximaOcurrencia(a)).toBe('2026-10-26');
+  });
+
+  it("'once' ya pasado no tiene próxima ocurrencia", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-09-13T09:00:00'));
+    expect(proximaOcurrencia({ schedule: { type: 'once' }, startDate: '2026-09-01' })).toBeNull();
+    expect(proximaOcurrencia({ schedule: { type: 'once' }, startDate: '2026-09-20' })).toBe('2026-09-20');
+  });
+
+  it('nunca devuelve una fecha anterior al alta de la asignación', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-09-13T09:00:00'));
+    const a: Scheduled = { schedule: { type: 'weekdays', weekdays: [1] }, startDate: '2026-10-01' };
+    expect(proximaOcurrencia(a)).toBe('2026-10-05'); // primer lunes desde el alta
+  });
+
+  it("'mesocycle_end' sin mesociclos en el contexto devuelve null, no una fecha inventada", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-09-13T09:00:00'));
+    const a: Scheduled = { schedule: { type: 'mesocycle_end' }, startDate: '2026-09-01' };
+    expect(proximaOcurrencia(a)).toBeNull();
+    const meso: Mesocycle = { id: 'm1', startDate: '2026-09-07', weeks: 4 } as Mesocycle;
+    expect(proximaOcurrencia(a, { mesocycles: [meso] })).toBe('2026-10-04');
+  });
+});
+
+describe('etiquetaFechaCorta', () => {
+  it('dice Hoy y Mañana en vez de una fecha que hay que calcular', () => {
+    expect(etiquetaFechaCorta('2026-09-13', '2026-09-13')).toBe('Hoy');
+    expect(etiquetaFechaCorta('2026-09-14', '2026-09-13')).toBe('Mañana');
+  });
+
+  it('para el resto da día y mes, y cadena vacía si no hay fecha', () => {
+    expect(etiquetaFechaCorta('2026-09-19', '2026-09-13')).toContain('19');
+    expect(etiquetaFechaCorta(null)).toBe('');
+  });
+});
+
+describe('cadenciaParaTabla', () => {
+  it('cabe en una línea donde cadenciaEnCristiano se parte en dos', () => {
+    expect(cadenciaParaTabla({ type: 'monthly', dayOfMonth: 26 })).toBe('Cada mes · día 26');
+    expect(cadenciaEnCristiano({ type: 'monthly', dayOfMonth: 26 })).toBe('El día 26 de cada mes');
+  });
+
+  it('un solo día se dice entero y varios se abrevian', () => {
+    expect(cadenciaParaTabla({ type: 'weekdays', weekdays: [6] })).toBe('Los sábados');
+    expect(cadenciaParaTabla({ type: 'weekdays', weekdays: [1, 4] })).toBe('Lun y Jue');
+    expect(cadenciaParaTabla({ type: 'weekdays', weekdays: [1, 3, 5] })).toBe('Lun, Mié y Vie');
+    expect(cadenciaParaTabla({ type: 'weekdays', weekdays: [1, 2, 3, 4, 5] })).toBe('5 días/semana');
+    expect(cadenciaParaTabla({ type: 'weekdays', weekdays: [] })).toBe('Sin fecha fija');
+  });
+
+  it('los intervalos se dicen en semanas cuando son múltiplos de 7', () => {
+    expect(cadenciaParaTabla({ type: 'interval', intervalDays: 1 })).toBe('Cada día');
+    expect(cadenciaParaTabla({ type: 'interval', intervalDays: 7 })).toBe('Cada semana');
+    expect(cadenciaParaTabla({ type: 'interval', intervalDays: 14 })).toBe('Cada 2 semanas');
+    expect(cadenciaParaTabla({ type: 'interval', intervalDays: 10 })).toBe('Cada 10 días');
   });
 });

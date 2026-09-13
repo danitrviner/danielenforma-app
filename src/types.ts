@@ -710,6 +710,26 @@ export interface QuestionnaireAssignment {
   overrides?: QuestionnaireOverrides;
 }
 
+// Un paquete es un CONJUNTO de cuestionarios con su cadencia ya decidida:
+// "Alta de cliente" = Revisión Semanal los sábados + Mediciones el día 26 +
+// DOM's cada dos lunes. El coach lo monta una vez y lo aplica entero a cada
+// atleta nuevo, en vez de repetir tres veces el mismo formulario de asignación.
+//
+// Guarda la CADENCIA, no los overrides: la personalización pregunta a pregunta
+// es de un atleta concreto y no tiene sentido arrastrarla a los demás.
+export interface QuestionnairePackItem {
+  questionnaireId: string;
+  schedule: QSchedule;
+}
+
+export interface QuestionnairePack {
+  id: string;
+  ownerId: string;   // coachUid
+  name: string;
+  items: QuestionnairePackItem[];
+  createdAt: string;
+}
+
 export interface QuestionnaireResponse {
   id: string;
   questionnaireId: string;

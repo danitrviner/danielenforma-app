@@ -35,6 +35,7 @@ const SIN_DATOS_DEL_ATLETA: Record<string, string> = {
   maquinas: 'catálogo global de máquinas de gimnasio',
   workouts: 'plantillas de entrenamiento del coach',
   questionnaires: 'plantillas de cuestionario del coach',
+  questionnairePacks: 'conjuntos de plantillas de cuestionario del coach: guardan ids de plantilla y cadencia, ningún atleta',
   mesocycleTemplates: 'plantillas de mesociclo',
   onboardingTemplates: 'plantillas del formulario de alta',
   challengeTemplates: 'plantillas de reto semanal',

@@ -115,6 +115,12 @@ const RevisionHarness = import.meta.env.DEV
   ? pantallaDiferida('RevisionDevHarness', () => import('./components/RevisionDevHarness'))
   : null;
 
+// Banco de pruebas de Cliente › Revisiones › Asignadas (ruta /dev/asignados),
+// lado COACH: tampoco hay sesión de coach en este repo.
+const AsignadosHarness = import.meta.env.DEV
+  ? pantallaDiferida('AsignadosDevHarness', () => import('./components/AsignadosDevHarness'))
+  : null;
+
 /* La pantalla de espera de la app, con marca. Existe como componente y no como
    un `<div className="min-h-screen bg-bg" />` suelto por un motivo concreto:
    ese div es NEGRO Y VACÍO, exactamente igual que una app colgada. Cuando un
@@ -737,6 +743,14 @@ function AppContent() {
     return (
       <Suspense fallback={<div className="min-h-screen bg-bg" />}>
         <RevisionHarness />
+      </Suspense>
+    );
+  }
+
+  if (AsignadosHarness && location.pathname === '/dev/asignados') {
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-bg" />}>
+        <AsignadosHarness />
       </Suspense>
     );
   }
