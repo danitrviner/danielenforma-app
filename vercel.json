@@ -1,6 +1,6 @@
 {
   "rewrites": [
-    { "source": "/((?!api/|privacidad|terminos|eliminar-cuenta|soporte|legal\\.css|test-video-153\\.html).*)", "destination": "/index.html" }
+    { "source": "/((?!api/|privacidad|terminos|eliminar-cuenta|soporte|legal\\.css).*)", "destination": "/index.html" }
   ],
   "headers": [
     {
