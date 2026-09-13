@@ -79,6 +79,7 @@ export default function LessonPlayer({ lesson, course, courseLessons, done, comp
           title={lesson.title}
           className="w-full h-full"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          referrerPolicy="strict-origin-when-cross-origin"
           allowFullScreen
         />
         <div className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-end p-3">

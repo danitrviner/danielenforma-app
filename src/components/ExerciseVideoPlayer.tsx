@@ -52,6 +52,7 @@ export default function ExerciseVideoPlayer({ videoUrl }: Props) {
             title="Vídeo demostrativo del ejercicio"
             className="w-full h-full"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            referrerPolicy="strict-origin-when-cross-origin"
             allowFullScreen
             // El postMessage de velocidad solo llega si el player ya está listo
             // — mandarlo antes de onLoad no hace nada. Con esto arranca en 2×
