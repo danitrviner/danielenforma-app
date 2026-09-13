@@ -20,6 +20,11 @@ interface Props {
    *  Firestore, y se oculta el botón «Guardar» — el wizard guarda todo junto
    *  al final, con su propio «Siguiente». */
   onSaveOverride?: (liked: string[], disliked: string[]) => void;
+  /** Modo controlado: el wizard de alta necesita saber en qué grupo va el
+   *  atleta para no dejarle salir del paso hasta haberlos recorrido todos.
+   *  `null` = rejilla de grupos. */
+  groupIndex?: number | null;
+  onGroupIndexChange?: (index: number | null, recorridoCompleto: boolean) => void;
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -31,6 +36,8 @@ export default function FoodPreferencesPanel({
   allergies = [],
   onSaved,
   onSaveOverride,
+  groupIndex,
+  onGroupIndexChange,
 }: Props) {
   const [prefs, setPrefs] = useState<Record<string, FoodPref>>(() => {
     const init: Record<string, FoodPref> = {};
@@ -38,7 +45,23 @@ export default function FoodPreferencesPanel({
     for (const f of initialDisliked) init[f] = 'dislike';
     return init;
   });
-  const [activeGroup, setActiveGroup] = useState<FoodGroup | null>(null);
+  // Índice, no el objeto: el panel encadena los grupos («Siguiente: Pescados»)
+  // y para eso hace falta saber en qué posición de FOOD_GROUPS estamos.
+  // Si el padre pasa `onGroupIndexChange`, manda él (wizard de alta).
+  const controlado = onGroupIndexChange !== undefined;
+  const [indiceInterno, setIndiceInterno] = useState<number | null>(null);
+  const activeIndex = controlado ? (groupIndex ?? null) : indiceInterno;
+  const activeGroup: FoodGroup | null =
+    activeIndex === null ? null : FOOD_GROUPS[activeIndex];
+
+  /** `recorrido`: solo lo marca llegar al ÚLTIMO grupo (o rematarlo con «Listo»).
+   *  Volver a la rejilla con la flecha NO cuenta — si contara, el «Siguiente»
+   *  del alta reaparecería a los dos toques y estaríamos como al principio. */
+  const irAGrupo = (i: number | null, recorrido = false) => {
+    setSearch('');
+    if (controlado) onGroupIndexChange!(i, recorrido || i === FOOD_GROUPS.length - 1);
+    else setIndiceInterno(i);
+  };
   const [search,      setSearch]      = useState('');
   const [saving,      setSaving]      = useState(false);
   const [saved,       setSaved]       = useState(false);
@@ -126,9 +149,14 @@ export default function FoodPreferencesPanel({
           </div>
         )}
 
+        <p className="font-mono text-caption text-ink-3">
+          Entra en cada grupo y marca lo que te gusta y lo que no. Al terminar uno,
+          el botón de abajo te lleva al siguiente.
+        </p>
+
         {/* Group tiles */}
         <div className="grid grid-cols-3 gap-3">
-          {FOOD_GROUPS.map(g => {
+          {FOOD_GROUPS.map((g, i) => {
             const gFav     = g.foods.filter(f => prefs[f] === 'favorite').length;
             const gDislike = g.foods.filter(f => prefs[f] === 'dislike').length;
             const hasAny   = gFav > 0 || gDislike > 0;
@@ -136,7 +164,7 @@ export default function FoodPreferencesPanel({
             return (
               <button
                 key={g.id}
-                onClick={() => { setActiveGroup(g); setSearch(''); }}
+                onClick={() => irAGrupo(i)}
                 className={`flex flex-col items-center gap-2 p-3 rounded-control border transition-all active:scale-95 ${
                   hasAny
                     ? 'bg-accent-bg border-accent/30 hover:border-accent/60'
@@ -173,20 +201,28 @@ export default function FoodPreferencesPanel({
 
   // ── RENDER: Screen B — Food list for a group ──────────────────────────────
 
+  const idx           = activeIndex ?? 0;
+  const esUltimoGrupo = idx === FOOD_GROUPS.length - 1;
+  const grupoSiguiente = FOOD_GROUPS[idx + 1];
+
   return (
     <div className="space-y-3">
       {/* Header */}
       <div className="flex items-center gap-3">
         <button
-          onClick={() => setActiveGroup(null)}
-          className="text-ink-2 hover:text-white transition-colors"
+          onClick={() => irAGrupo(null)}
+          className="flex items-center gap-1 text-ink-2 hover:text-white transition-colors flex-shrink-0"
         >
           <span className="material-symbols-outlined text-title-s">arrow_back</span>
+          <span className="font-mono text-caption uppercase">Grupos</span>
         </button>
         <div className="flex-1">
           <div className="flex items-center gap-2">
             <span className="material-symbols-outlined text-accent text-title-s">{activeGroup.icon}</span>
             <h3 className="font-sans font-bold text-title-s text-white">{activeGroup.name}</h3>
+            <span className="font-mono text-caption text-ink-3 flex-shrink-0">
+              {(activeIndex ?? 0) + 1}/{FOOD_GROUPS.length}
+            </span>
           </div>
           <div className="flex gap-3 font-mono text-caption ">
             <span className="text-amber-400">⭐ {totalFav}</span>
@@ -287,6 +323,40 @@ export default function FoodPreferencesPanel({
               </div>
             );
           })
+        )}
+      </div>
+
+      {/* Encadenado de grupos: sin esto la única salida era la flecha de atrás,
+          y el atleta marcaba solo el primer grupo creyendo que ya estaba. */}
+      <div className="flex items-center gap-2 pt-1">
+        <button
+          onClick={() => irAGrupo(Math.max(0, idx - 1))}
+          disabled={activeIndex === 0}
+          aria-label="Grupo anterior"
+          title="Grupo anterior"
+          className="w-12 h-12 flex-shrink-0 flex items-center justify-center rounded-control border border-hairline bg-raised text-ink-2 transition-all active:scale-95 disabled:opacity-30 disabled:active:scale-100"
+        >
+          <span className="material-symbols-outlined text-title-s">chevron_left</span>
+        </button>
+        {esUltimoGrupo ? (
+          <button
+            onClick={() => irAGrupo(null, true)}
+            className="flex-1 flex items-center justify-center gap-2 px-3 py-3 rounded-control bg-accent text-black font-sans font-bold text-caption uppercase transition-all active:scale-95"
+          >
+            <span className="material-symbols-outlined text-body-s">check</span>
+            Listo, he terminado
+          </button>
+        ) : (
+          <button
+            onClick={() => irAGrupo(Math.min(FOOD_GROUPS.length - 1, idx + 1))}
+            className="flex-1 min-w-0 flex items-center justify-center gap-2 px-3 py-2 rounded-control bg-accent text-black transition-all active:scale-95"
+          >
+            <span className="min-w-0 text-left">
+              <span className="block font-mono text-caption uppercase opacity-70 leading-tight">Siguiente grupo</span>
+              <span className="block font-sans font-bold text-label leading-tight">{grupoSiguiente?.name}</span>
+            </span>
+            <span className="material-symbols-outlined text-title-s flex-shrink-0">chevron_right</span>
+          </button>
         )}
       </div>
     </div>

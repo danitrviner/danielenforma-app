@@ -244,7 +244,6 @@ interface BorradorCampos {
   cookingMaxTime: number | null;
   prefLiked: string[];
   prefDisliked: string[];
-  sinPreferencias: boolean;
   lifestyleScope: string;
   lifestyleAreas: string[];
   availableDaysPerWeek: number | null;
@@ -288,6 +287,15 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
   const [borrador] = useState(() => cargarBorradorAlta<BorradorCampos>(profile.email));
 
   const [step, setStep] = useState(borrador?.step ?? 0);
+
+  /* 14-bis. Preferencias de alimentos: el atleta marcaba solo «Carnes» y se
+     iba, porque dentro de un grupo la única salida visible era el «Siguiente»
+     de este pie. Ahora el paso entra directo en el primer grupo, la navegación
+     la lleva el propio panel (Anterior / «Siguiente: Pescados y mariscos») y
+     este «Siguiente» no aparece hasta haber llegado al último grupo — o hasta
+     marcar «me da igual, como de todo». */
+  const [grupoAlim, setGrupoAlim] = useState<number | null>(0);
+  const [alimRecorrido, setAlimRecorrido] = useState(false);
   /** 14-08. El único contenedor con scroll de verdad (ver el `overflow-y-auto`
    *  de abajo). Sin resetearlo al cambiar de paso, si el atleta bajaba en un
    *  paso largo (p. ej. Alimentación) y pulsaba «Siguiente», aterrizaba a
@@ -341,7 +349,6 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
   const [prefDisliked, setPrefDisliked] = useState<string[]>(borrador?.prefDisliked ?? []);
   // Salida honrada para las dos pantallas de catálogo: ahora hay que contestarlas,
   // y sin esto quien de verdad no tenga preferencias se quedaría encerrado.
-  const [sinPreferencias, setSinPreferencias] = useState(borrador?.sinPreferencias ?? false);
   // 03-09. Bloques que hasta ahora solo existían en el cuestionario largo del
   // coach: el atleta no los veía nunca y llegaban a la ficha en blanco.
   const [availableDaysPerWeek, setAvailableDaysPerWeek] = useState<number | null>(borrador?.availableDaysPerWeek ?? null);
@@ -403,7 +410,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
       hadPastInjuries, pastInjuriesDetail, takesMedication, medicationDetail,
       recentSurgery, recentSurgeryDetail,
       dietType, mealCount, menuVariety, batchCookingPreferred, allergies, healthConditions,
-      meals, cookingMaxTime, prefLiked, prefDisliked, sinPreferencias,
+      meals, cookingMaxTime, prefLiked, prefDisliked,
       availableDaysPerWeek, sessionMaxMinutes,
       lifestyleScope, lifestyleAreas, muscleGroupsToImprove, sinPreferenciaMuscular, hatedExercises,
       appetitePeakTime, dietSince, hadOverweightHistory, foodRelationshipGood,
@@ -419,7 +426,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
       goalFreeText, goalTimelineMotivation, coachExpectations, experienceLevel, equipment, injuries, noInjuries,
       hadPastInjuries, pastInjuriesDetail, takesMedication, medicationDetail, recentSurgery, recentSurgeryDetail,
       dietType, mealCount, menuVariety, batchCookingPreferred, allergies, healthConditions,
-      meals, cookingMaxTime, prefLiked, prefDisliked, sinPreferencias,
+      meals, cookingMaxTime, prefLiked, prefDisliked,
       availableDaysPerWeek, sessionMaxMinutes,
       lifestyleScope, lifestyleAreas, muscleGroupsToImprove, sinPreferenciaMuscular, hatedExercises,
       appetitePeakTime, dietSince, hadOverweightHistory, foodRelationshipGood,
@@ -486,7 +493,9 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
         && textoRelleno(weightTendency)
         && contestadoConDetalle(tomaSuplementos, supplements.map(x => x.name).join(''));
       // 12 Gustos por grupos
-      case 14: return sinPreferencias || prefLiked.length > 0 || prefDisliked.length > 0;
+      // Sin el atajo «me da igual», lo que se exige es haber RECORRIDO los 12
+      // grupos; marcar o no marcar en ellos ya es una respuesta.
+      case 14: return alimRecorrido;
       // 13 Verduras
       case 15: return sinVerduras || vegTypes.length > 0;
       // 14 Menú — los tipos de plato son opcionales a propósito
@@ -1411,13 +1420,10 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
               initialLiked={prefLiked}
               initialDisliked={prefDisliked}
               allergies={allergies.split(',').map(s => s.trim()).filter(Boolean)}
-              onSaveOverride={(liked, disliked) => { setPrefLiked(liked); setPrefDisliked(disliked); setSinPreferencias(false); }}
+              onSaveOverride={(liked, disliked) => { setPrefLiked(liked); setPrefDisliked(disliked); }}
+              groupIndex={grupoAlim}
+              onGroupIndexChange={(i, completo) => { setGrupoAlim(i); if (completo) setAlimRecorrido(true); }}
             />
-            {/* «No tengo ninguna» también es una respuesta, y sin esta salida el
-                paso —ahora obligatorio— sería una trampa. */}
-            <Chip selected={sinPreferencias} onClick={() => setSinPreferencias(v => !v)}>
-              Me da igual, como de todo
-            </Chip>
           </StepShell>
         )}
 
@@ -1580,9 +1586,14 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
           <Button variant="ghost" size="l" onClick={() => setStep(s => s - 1)}>Atrás</Button>
         )}
         {step < TOTAL_STEPS - 1 ? (
-          <Button variant="primary" size="l" onClick={() => setStep(s => s + 1)} disabled={!stepValid()} className="flex-1">
-            {step === 0 ? 'Empezar' : 'Siguiente'}
-          </Button>
+          // En el paso de alimentos el «Siguiente» se esconde hasta terminar el
+          // recorrido por grupos: mientras estaba visible, era la salida que el
+          // atleta tomaba después de marcar solo las carnes.
+          (step !== 14 || alimRecorrido) && (
+            <Button variant="primary" size="l" onClick={() => setStep(s => s + 1)} disabled={!stepValid()} className="flex-1">
+              {step === 0 ? 'Empezar' : 'Siguiente'}
+            </Button>
+          )
         ) : (
           // `disabled`: el botón final era el único que no pasaba por
           // `stepValid`, así que «¿qué esperas de tu entrenador?» —la pregunta
