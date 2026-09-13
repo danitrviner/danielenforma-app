@@ -7,6 +7,7 @@ import {
   getAllUserProfiles, getAllAcademyAccess, setAcademyAccess, createNotificationDeduped,
 } from '../dbService';
 import { atletasActivos } from '../utils/atletas';
+import { parseVideoUrl } from '../utils/embedPlayerControl';
 import { Avatar, Skeleton } from './ui';
 import { Card, Tabs, Button } from './ui';
 
@@ -177,10 +178,13 @@ function LessonsTab() {
     if (!title.trim() || !videoId.trim() || !courseId) return;
     setSaving(true);
     try {
+      const parsed = parseVideoUrl(videoId);
+      const finalProvider = parsed?.provider ?? videoProvider;
+      const finalId = parsed?.id ?? videoId.trim();
       const lessonsInCourse = lessons.filter(l => l.courseId === courseId);
       const lesson = await createLesson({
         courseId, title: title.trim(), order: lessonsInCourse.length,
-        videoProvider, videoId: videoId.trim(),
+        videoProvider: finalProvider, videoId: finalId,
       });
       queryClient.setQueryData<AcademyLesson[]>(['academyLessons'], prev => [...(prev ?? []), lesson]);
       const course = courses.find(c => c.id === courseId);
@@ -226,7 +230,7 @@ function LessonsTab() {
               <option value="youtube">YouTube</option>
               <option value="vimeo">Vimeo</option>
             </select>
-            <input value={videoId} onChange={e => setVideoId(e.target.value)} placeholder="ID del vídeo" required
+            <input value={videoId} onChange={e => setVideoId(e.target.value)} placeholder="ID o URL del vídeo" required
               className="flex-1 bg-bg border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent" />
           </div>
           <Button type="submit" disabled={saving} fullWidth>{saving ? 'Guardando...' : 'Crear lección'}</Button>

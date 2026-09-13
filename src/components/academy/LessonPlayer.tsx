@@ -51,13 +51,17 @@ function minLabel(durationSec?: number): string | null {
   return durationSec ? `${Math.round(durationSec / 60)} min` : null;
 }
 
+const SPEED_OPTIONS = [{ value: '1', label: '1×' }, { value: '1.5', label: '1,5×' }, { value: '2', label: '2×' }];
+
 export default function LessonPlayer({ lesson, course, courseLessons, done, completedLessonIds, nextLesson, onBack, onComplete, onOpenLesson }: Props) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [speed, setSpeed] = useState('1');
+  const [showSpeedMenu, setShowSpeedMenu] = useState(false);
 
   function changeSpeed(value: string) {
     setSpeed(value);
-    setEmbedPlaybackRate(iframeRef.current, lesson.videoProvider, value === '0.5' ? 0.5 : 1);
+    setEmbedPlaybackRate(iframeRef.current, lesson.videoProvider, Number(value));
+    setShowSpeedMenu(false);
   }
 
   const lessonIndex = courseLessons.findIndex(l => l.id === lesson.id);
@@ -77,14 +81,26 @@ export default function LessonPlayer({ lesson, course, courseLessons, done, comp
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
           allowFullScreen
         />
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-end bg-gradient-to-t from-black/70 to-transparent p-3">
-          <div className="pointer-events-auto">
-            <SegmentedControl
-              options={[{ value: '0.5', label: '0,5×' }, { value: '1', label: '1×' }]}
-              value={speed}
-              onChange={changeSpeed}
-              label="Velocidad de reproducción"
-            />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-end p-3">
+          <div className="pointer-events-auto flex flex-col items-end gap-2">
+            {showSpeedMenu && (
+              <SegmentedControl
+                options={SPEED_OPTIONS}
+                value={speed}
+                onChange={changeSpeed}
+                label="Velocidad de reproducción"
+              />
+            )}
+            <button
+              type="button"
+              onClick={() => setShowSpeedMenu(v => !v)}
+              aria-label="Velocidad de reproducción"
+              aria-expanded={showSpeedMenu}
+              className="flex h-9 items-center gap-1 rounded-control bg-black/50 px-3 font-mono text-caption font-bold text-white backdrop-blur-sm transition-colors hover:bg-black/65"
+            >
+              <Icon name="speed" size="s" />
+              {SPEED_OPTIONS.find(o => o.value === speed)?.label}
+            </button>
           </div>
         </div>
       </div>
