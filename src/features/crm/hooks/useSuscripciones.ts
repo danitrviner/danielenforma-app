@@ -7,7 +7,7 @@ import {
 import { CobroYaRegistrado } from '../../../db/crm';
 import { useToast } from '../../../hooks/useToast';
 import { crmKeys } from '../lib/crmQueries';
-import type { Cliente, CrmSuscripcion, Periodicidad } from '../types';
+import type { Cliente, CrmSuscripcion, Periodicidad , TipoServicio } from '../types';
 
 export interface NuevaSuscripcion {
   concepto: string;
@@ -21,6 +21,8 @@ export interface NuevaSuscripcion {
    * ningún sitio hasta que alguien pulsara «Registrar cobro».
    */
   generarPrimerCobro?: boolean;
+  /** Qué clase de venta es contratarla: lo hereda su primer cobro. */
+  tipo?: TipoServicio;
 }
 
 export function useSuscripciones() {
@@ -62,6 +64,7 @@ export function useCrearSuscripcion() {
         periodicidad: datos.periodicidad,
         proximoCobro: datos.proximoCobro,
         estado: 'activa',
+        ...(datos.tipo ? { tipo: datos.tipo } : {}),
         createdBy: coachEmail,
       },
       { generarPrimerCobro: datos.generarPrimerCobro },

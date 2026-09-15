@@ -26,9 +26,9 @@ interface Props {
 // desincronizar.
 const UMBRAL_DIAS_AVISO = 7;
 
-// Tabla de pagos compartida entre PagosScreen (global) y PagosTab (por
-// cliente). "Borrar" solo se pinta para pagos pendientes — un pago ya cobrado
-// no se puede borrar y la regla de Firestore lo rechazaría; no tiene sentido
+// Tabla de pagos de la pantalla global de Pagos (salió de la ficha del cliente
+// en 09-2026, auditoría §1.2). "Borrar" solo se pinta para pagos pendientes —
+// un pago ya cobrado no se puede borrar y la regla de Firestore lo rechazaría; no tiene sentido
 // ofrecer un botón que va a fallar siempre. Confirmación con window.confirm,
 // el único patrón de confirmación que usa el resto del repo (no hay modal de
 // confirmación custom en ningún sitio, ver ServiciosTab.tsx).

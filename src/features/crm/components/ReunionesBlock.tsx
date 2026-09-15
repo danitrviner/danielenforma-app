@@ -25,8 +25,9 @@ const TIPO_LABEL: Record<CrmReunion['tipo'], string> = {
   graduacion: 'Graduación',
 };
 
-// Lista de reuniones compartida entre ReunionesScreen (global) y ReunionesTab
-// (por cliente). El enlace de WhatsApp necesita el teléfono del cliente, que
+// Lista de reuniones de la pantalla global de Reuniones (salió de la ficha del
+// cliente en 09-2026, auditoría §1.5). El enlace de WhatsApp necesita el
+// teléfono del cliente, que
 // CrmReunion no guarda (solo clientId/clientNombre denormalizado) — se resuelve
 // aquí contra `useClientes()`, la misma fuente unificada que ya usa el resto
 // del CRM.

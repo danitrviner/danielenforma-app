@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { getCrmPagos, getCrmPagosByCliente, createCrmPago, updateCrmPago, deleteCrmPago } from '../../../dbService';
 import { crmKeys } from '../lib/crmQueries';
 import { hoyISO } from '../lib/fechas';
-import type { Cliente, CrmPago, EstadoPago } from '../types';
+import type { Cliente, CrmPago, EstadoPago, TipoMovimiento } from '../types';
 
 export interface NuevoPago {
   concepto: string;
@@ -10,6 +10,9 @@ export interface NuevoPago {
   estado: EstadoPago;
   fechaEmision: string;
   fechaCobro?: string;
+  /** Alta, renovación o upsell. Sin esto el dinero entra en el total pero no se
+   *  reparte, y el desglose del panel sale en blanco (auditoría §1.4). */
+  tipo?: TipoMovimiento;
 }
 
 export function usePagos() {
@@ -44,6 +47,7 @@ export function useCrearPago() {
       importeCents: datos.importeCents,
       estado: datos.estado,
       fechaEmision: datos.fechaEmision,
+      ...(datos.tipo ? { tipo: datos.tipo } : {}),
       fechaCobro: datos.estado === 'pagado' ? (datos.fechaCobro || hoyISO()) : undefined,
       createdBy: coachEmail,
     }),

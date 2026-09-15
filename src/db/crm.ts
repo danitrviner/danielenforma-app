@@ -492,6 +492,9 @@ export async function createCrmSuscripcion(
     concepto: data.concepto,
     importeCents: data.importeCents,
     estado: 'pendiente' as const,
+    // Hereda la clase de venta de la suscripción. Sin esto nacía sin tipo y ese
+    // dinero no entraba en ningún desglose: ni altas ni renovaciones (§1.4).
+    ...(data.tipo ? { tipo: data.tipo } : {}),
     fechaEmision: data.proximoCobro,
     createdAt: ts,
     updatedAt: ts,
@@ -575,6 +578,11 @@ export async function registrarCobroSuscripcion(
       concepto: sub.concepto,
       importeCents: sub.importeCents,
       estado: 'pendiente' as const,
+      // Un cobro recurrente POSTERIOR al primero es una renovación por
+      // definición: el cliente sigue con nosotros un periodo más. Antes nacía
+      // sin tipo, así que las renovaciones cobradas por suscripción no contaban
+      // como renovaciones en ningún sitio (auditoría §1.4).
+      tipo: 'renovacion' as const,
       fechaEmision: sub.proximoCobro,
       createdAt: ts,
       updatedAt: ts,
