@@ -115,6 +115,13 @@ const RevisionHarness = import.meta.env.DEV
   ? pantallaDiferida('RevisionDevHarness', () => import('./components/RevisionDevHarness'))
   : null;
 
+// Banco de pruebas de Cliente › Revisión (ruta /dev/revision-coach), lado
+// COACH. Ojo: `/dev/revision` a secas es el del ATLETA — dos pantallas
+// distintas que en castellano se llaman igual.
+const RevisionCoachHarness = import.meta.env.DEV
+  ? pantallaDiferida('RevisionCoachDevHarness', () => import('./components/RevisionCoachDevHarness'))
+  : null;
+
 // Banco de pruebas de Cliente › Revisiones › Asignadas (ruta /dev/asignados),
 // lado COACH: tampoco hay sesión de coach en este repo.
 const AsignadosHarness = import.meta.env.DEV
@@ -743,6 +750,14 @@ function AppContent() {
     return (
       <Suspense fallback={<div className="min-h-screen bg-bg" />}>
         <RevisionHarness />
+      </Suspense>
+    );
+  }
+
+  if (RevisionCoachHarness && location.pathname === '/dev/revision-coach') {
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-bg" />}>
+        <RevisionCoachHarness />
       </Suspense>
     );
   }

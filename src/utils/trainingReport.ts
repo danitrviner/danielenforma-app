@@ -10,7 +10,17 @@ import { addDays } from './trainingWeek';
 
 export type ComparisonMode =
   | { mode: 'weeks'; n: number }                                   // vs same-length window, n weeks earlier
-  | { mode: 'mesocycle'; currentId: string; previousId: string | null };
+  | { mode: 'mesocycle'; currentId: string; previousId: string | null }
+  // vs la MISMA ventana desplazada `dias` hacia atrás, con etiqueta propia.
+  //
+  // Existe por un caso que los otros dos modos no saben contestar: comparar un
+  // mesociclo EN CURSO con el anterior. El modo 'mesocycle' coge los dos
+  // bloques enteros, así que a mitad del bloque nuevo mide 16 días contra 35 y
+  // canta un −45 % de tonelaje que solo dice que aún no ha terminado. Con este
+  // modo, la pestaña de Revisión desplaza la ventana exactamente la distancia
+  // entre los dos inicios y compara los primeros 16 días de uno con los
+  // primeros 16 días del otro.
+  | { mode: 'offset'; dias: number; label: string };
 
 const NONE_GROUP = 'none' as const;
 type GroupKey = MuscleGroup | typeof NONE_GROUP;
@@ -161,6 +171,14 @@ export function resolveWindows(
       curStart: periodStart, curEnd: periodEnd,
       prevStart: addDays(periodStart, -shift), prevEnd: addDays(periodEnd, -shift),
       comparisonLabel: comparison.n === 1 ? 'vs la semana anterior' : `vs ${comparison.n} semanas antes`,
+    };
+  }
+  if (comparison.mode === 'offset') {
+    return {
+      curStart: periodStart, curEnd: periodEnd,
+      prevStart: addDays(periodStart, -comparison.dias),
+      prevEnd: addDays(periodEnd, -comparison.dias),
+      comparisonLabel: comparison.label,
     };
   }
   // mesocycle mode

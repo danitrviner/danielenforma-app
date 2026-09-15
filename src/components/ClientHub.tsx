@@ -15,6 +15,8 @@ import { computeAdherenceScore, scoreStyle, SIN_DATOS_ADHERENCIA } from '../util
 import { atletasActivos } from '../utils/atletas';
 import { makeId } from './nutrition/dietHelpers';
 import { computeAverageRir } from '../utils/rirStats';
+import { avisosActivos } from '../utils/avisosDelCoach';
+import { hoyIsoLocal } from '../utils/trainingWeek';
 import { leerSexo } from '../utils/athleteProfileSignals';
 import { calcPlanExpiry } from '../hooks/usePlanExpiry';
 import { useToast } from '../hooks/useToast';
@@ -34,6 +36,7 @@ import {
   getNutritionProgram, saveNutritionProgram, computeActivePhase, computePhaseStartDate, deleteNutritionProgram,
   getOnboardingTemplate, getMesocycles, getCoachReportsForAthlete, getAiProposalsForAthlete,
   getWeeklyMenusForAthlete, getMenuCompletionLogsForAthlete, getAllUserProfiles,
+  getCoachClientTasks,
 } from '../dbService';
 /* 06-7. El Hub es la ruta más pesada del coach: ~1 MB, y buena parte es
    recharts entrando por Análisis y Entrenamientos. Los paneles se importaban
@@ -54,19 +57,20 @@ const ClientDietsPanel = pantallaDiferida('ClientDietsPanel', () => import('./Cl
 const ClientWorkoutsPanel = pantallaDiferida('ClientWorkoutsPanel', () => import('./ClientWorkoutsPanel'));
 const ClientCardioPanel = pantallaDiferida('ClientCardioPanel', () => import('./ClientCardioPanel'));
 const ClientReviewsPanel = pantallaDiferida('ClientReviewsPanel', () => import('./ClientReviewsPanel'));
-const ClientSetupPanel = pantallaDiferida('ClientSetupPanel', () => import('./ClientSetupPanel'));
+const ClientImplantacionPanel = pantallaDiferida('ClientImplantacionPanel', () => import('./implantacion/ClientImplantacionPanel'));
+const ClientRevisionPanel = pantallaDiferida('ClientRevisionPanel', () => import('./revision/ClientRevisionPanel'));
 import PendingTray from './PendingTray';
 import ClientAlertsBar from './ClientAlertsBar';
 import { Avatar, Badge, Tabs, Skeleton, Sheet, SearchField, ListRow, Icon } from './ui';
 import { coincideBusqueda } from '../utils/busqueda';
 
 export type HubTab =
-  | 'setup' | 'revisiones'
+  | 'revision' | 'setup' | 'revisiones'
   | 'ficha' | 'cuerpo'
   | 'entrenamientos' | 'cardio' | 'dietas' | 'roadmap'
   | 'reportes' | 'analisis-nutricion' | 'correlaciones';
 export const HUB_TABS: readonly HubTab[] = [
-  'setup', 'revisiones', 'ficha', 'cuerpo',
+  'revision', 'setup', 'revisiones', 'ficha', 'cuerpo',
   'entrenamientos', 'cardio', 'dietas', 'roadmap',
   'reportes', 'analisis-nutricion', 'correlaciones',
 ];
@@ -83,7 +87,7 @@ export const HUB_TABS: readonly HubTab[] = [
 // nivel menos para llegar a Reportes, y AnalisisTab desaparece del todo.
 type Zone = 'hoy' | 'atleta' | 'plan' | 'analisis';
 const ZONE_TABS: Record<Zone, HubTab[]> = {
-  hoy: ['revisiones', 'setup'],
+  hoy: ['revision', 'revisiones', 'setup'],
   atleta: ['ficha', 'cuerpo'],
   plan: ['entrenamientos', 'cardio', 'dietas', 'roadmap'],
   analisis: ['reportes', 'analisis-nutricion', 'correlaciones'],
@@ -95,6 +99,7 @@ const ZONE_META: Record<Zone, { label: string; icon: string }> = {
   analisis: { label: 'Análisis', icon: 'insights' },
 };
 const TAB_META: Record<HubTab, { label: string; icon: string }> = {
+  revision:             { label: 'Revisión',       icon: 'query_stats' },
   setup:                { label: 'Setup',          icon: 'checklist' },
   revisiones:           { label: 'Revisiones',     icon: 'rate_review' },
   ficha:                { label: 'Ficha',          icon: 'badge' },
@@ -210,7 +215,7 @@ export default function ClientHub({
   const { data: mesocycles = [] } = useQuery({
     queryKey: ['mesocycles', athlete.email],
     queryFn: () => getMesocycles(athlete.email),
-    enabled: tabIn('setup', 'ficha', 'entrenamientos'),
+    enabled: tabIn('setup', 'ficha', 'entrenamientos', 'revision'),
   });
 
   // Shared ['exercises'] cache key with MesocycleManager/CoachRoadmapView —
@@ -255,7 +260,7 @@ export default function ClientHub({
   });
 
   // ── Photos ─────────────────────────────────────────────────────────────────
-  const fotosActivas = tabIn('setup', 'cuerpo');
+  const fotosActivas = tabIn('setup', 'cuerpo', 'revision');
   const { data: athletePhotos = [], isPending: loadingPhotosQuery } = useQuery({
     queryKey: ['progressPhotos', athlete.email],
     queryFn: () => getProgressPhotos(athlete.email),
@@ -334,7 +339,7 @@ export default function ClientHub({
   const { data: coachQuestionnaires = [] } = useQuery({
     queryKey: coachQuestionnairesKey,
     queryFn: () => getQuestionnairesByCoach(coachId),
-    enabled: tabIn('revisiones', 'cuerpo', 'correlaciones'),
+    enabled: tabIn('revisiones', 'cuerpo', 'correlaciones', 'revision'),
   });
   const setCoachQuestionnaires = (updater: React.SetStateAction<Questionnaire[]>) =>
     queryClient.setQueryData<Questionnaire[]>(coachQuestionnairesKey, prev =>
@@ -354,7 +359,7 @@ export default function ClientHub({
   const { data: athleteQResponses = [] } = useQuery({
     queryKey: athleteQResponsesKey,
     queryFn: () => getResponsesForAthlete(athlete.email),
-    enabled: tabIn('revisiones', 'cuerpo', 'correlaciones'),
+    enabled: tabIn('revisiones', 'cuerpo', 'correlaciones', 'revision'),
   });
   const setAthleteQResponses = (updater: React.SetStateAction<QuestionnaireResponse[]>) =>
     queryClient.setQueryData<QuestionnaireResponse[]>(athleteQResponsesKey, prev =>
@@ -375,6 +380,15 @@ export default function ClientHub({
   // Shared query key/hook with BodyweightPanel (writer) and CoachRoadmapView
   // (reader) — see src/hooks/useAthleteWeight.ts.
   const { logs: bodyweightLogs } = useAthleteWeight(athlete.email);
+
+  // El sexo biológico sale de la anamnesis (una respuesta de cuestionario), y
+  // lo necesitan el %grasa US Navy de Revisión y el de Correlaciones. Antes se
+  // recalculaba dentro del render de Correlaciones; con dos consumidores, un
+  // solo cálculo memoizado.
+  const sexoDelAtleta = useMemo(
+    () => leerSexo(athleteQResponses, coachQuestionnaires),
+    [athleteQResponses, coachQuestionnaires],
+  );
 
   // Reportes del atleta — solo se usa aquí para el recordatorio en PendingTray
   // (ReportsPanel mantiene su propia copia con más detalle cuando esa pestaña está abierta).
@@ -541,7 +555,240 @@ export default function ClientHub({
     ? (daysLeft >= 0 ? `Vence en ${daysLeft}d` : `Vencido hace ${-daysLeft}d`)
     : null;
 
+  // El editor que Implantación abre a pantalla completa sin salir del
+  // recorrido. Es el MISMO componente que pinta la pestaña, montado en una
+  // hoja: por eso `panelDePestana` es una función y no JSX suelto.
+  const [editorEnHoja, setEditorEnHoja] = useState<HubTab | null>(null);
+
+  // Los recordatorios vencidos de ESTE cliente, para la cabecera. Comparte
+  // clave con Implantación, así que no añade lectura: si esa pestaña ya las
+  // trajo, esto las lee de la caché; si no, las trae una vez y las reutiliza.
+  const { data: tareasDelCliente = [] } = useQuery({
+    queryKey: ['coachClientTasks', athlete.email],
+    queryFn: () => getCoachClientTasks(athlete.email),
+    enabled: tabIn('setup'),
+  });
+  const avisosVencidos = useMemo(
+    () => avisosActivos(tareasDelCliente, hoyIsoLocal()).filter(a => a.estado !== 'proximo'),
+    [tareasDelCliente],
+  );
+
   // ── Render ─────────────────────────────────────────────────────────────────
+  const panelDePestana = (pestana: HubTab): React.ReactNode => {
+    switch (pestana) {
+
+      /* ── Tab: Revisión ───────────────────────────────────────────────────
+          La pantalla de un vistazo: lo que Dani mira (y graba por fuera) para
+          contarle al atleta cómo va. No sustituye a Revisiones ni a Reportes
+          —que siguen en su sitio—, junta en una sola pantalla lo que estaba
+          repartido en cinco. */
+      case 'revision':
+        return (
+        <ClientRevisionPanel
+          key={athlete.email}
+          athlete={athlete}
+          logs={athleteLogs}
+          exercises={exercises}
+          mesocycles={mesocycles}
+          adherenciaPct={adherence.hasData ? adherence.score : null}
+          photos={athletePhotos}
+          bodyweightLogs={bodyweightLogs}
+          sexo={sexoDelAtleta}
+          checkins={athleteCheckins}
+          questionnaires={coachQuestionnaires}
+          responses={athleteQResponses}
+          onGoToTab={guardedTabChange}
+        />
+      );
+
+      /* ── Tab: Setup ──────────────────────────────────────────────────────── */
+      case 'setup':
+        return (
+        <ClientImplantacionPanel
+          key={athlete.email}
+          onAbrirEditor={setEditorEnHoja}
+          athlete={athlete}
+          checkins={athleteCheckins}
+          onboarding={onboardingData}
+          mesocycles={mesocycles}
+          workoutAssignments={assignments}
+          diets={athleteDiets}
+          dietConfig={athleteDietConfig}
+          nutritionConfig={nutritionConfig}
+          qAssignments={athleteQAssignments}
+          photoAssignments={athletePhotoAssignments}
+          photos={athletePhotos}
+          workoutLogs={athleteLogs}
+          onGoToTab={guardedTabChange}
+        />
+      );
+
+      /* ── Tab: Revisiones ────────────────────────────────────────────────── */
+      case 'revisiones':
+        return (
+        <ClientReviewsPanel
+          key={athlete.email}
+          athlete={athlete}
+          coachId={coachId}
+          athleteCheckins={athleteCheckins}
+          onRefreshCheckIns={onRefreshCheckIns}
+          athleteQResponses={athleteQResponses}
+          setAthleteQResponses={setAthleteQResponses}
+          coachQuestionnaires={coachQuestionnaires}
+          setCoachQuestionnaires={setCoachQuestionnaires}
+          athleteQAssignments={athleteQAssignments}
+          setAthleteQAssignments={setAthleteQAssignments}
+        />
+      );
+
+      /* ── Tab: Ficha ───────────────────────────────────────────────────── */
+      /* Un solo componente. Antes se montaban DOS aquí (DossierPanel y
+          ClientFichaPanel), diseñados sin mirarse, con la nota del coach y la
+          lista de actividad duplicadas cada una en el suyo. ClientFichaPanel
+          es ahora el dueño de la ficha entera y monta la ficha viva por dentro
+          — ver la cabecera de ese archivo para el orden de los 4 bloques. */
+      case 'ficha':
+        return (
+        <ClientFichaPanel
+          key={athlete.email}
+          athlete={athlete}
+          onboardingData={onboardingData}
+          setOnboardingData={setOnboardingData}
+          onboardingTemplate={onboardingTemplate}
+          planStart={planStart}
+          onPlanStartChange={setPlanStart}
+          planMonths={planMonths}
+          onPlanMonthsChange={setPlanMonths}
+          savingPlan={savingPlan}
+          onSavePlan={handleSavePlan}
+          mesocycles={mesocycles}
+          checkins={athleteCheckins}
+          coachReports={coachReports}
+          athleteLogs={athleteLogs}
+          bodyweightLogs={bodyweightLogs}
+          adherenceScore={adherence.hasData ? adherence.score : null}
+          adherenceStyle={adh}
+          averageRir={avgRir}
+        />
+      );
+
+      /* ── Tab: Cuerpo ──────────────────────────────────────────────────── */
+      case 'cuerpo':
+        return (
+        <ClientBodyPanel
+          key={athlete.email}
+          athlete={athlete}
+          athletePhotos={athletePhotos}
+          loadingPhotos={loadingPhotos}
+          athletePhotoAssignments={athletePhotoAssignments}
+          setAthletePhotoAssignments={setAthletePhotoAssignments}
+          athleteQResponses={athleteQResponses}
+          coachQuestionnaires={coachQuestionnaires}
+        />
+      );
+
+      /* ── Tab: Entrenamientos ───────────────────────────────────────────── */
+      case 'entrenamientos':
+        return (
+        <ClientWorkoutsPanel
+          athlete={athlete}
+          coachId={coachId}
+          mesocycles={mesocycles}
+          athleteLogs={athleteLogs}
+          setAthleteLogs={setAthleteLogs}
+          exercises={exercises}
+          onboardingData={onboardingData}
+          assignments={assignments}
+          setAssignments={setAssignments}
+          workouts={workouts}
+          getWorkout={getWorkout}
+        />
+      );
+
+      /* ── Tab: Cardio ───────────────────────────────────────────────────── */
+      case 'cardio':
+      return <ClientCardioPanel athlete={athlete} />;
+
+      /* ── Tab: Dietas ───────────────────────────────────────────────────── */
+      case 'dietas':
+        return (
+        <ClientDietsPanel
+          athlete={athlete}
+          coachId={coachId}
+          onboardingData={onboardingData}
+          setOnboardingData={setOnboardingData}
+          athleteDiets={athleteDiets}
+          setAthleteDiets={setAthleteDiets}
+          athleteDietConfig={athleteDietConfig}
+          nutritionConfig={nutritionConfig}
+          weeklyMenus={weeklyMenus}
+          setWeeklyMenus={setWeeklyMenus}
+          menuCompletionLogs={menuCompletionLogs}
+          bodyweightLogs={bodyweightLogs}
+          onToggleDiet={handleToggleDiet}
+          onDeleteDiet={handleDeleteDiet}
+          onDuplicateDiet={handleDuplicateDiet}
+          onScheduleDay={handleScheduleDay}
+          onToggleDietMode={handleToggleDietMode}
+          onSaveStepConfig={handleSaveStepConfig}
+        />
+      );
+
+      /* ── Tab: Road map ─────────────────────────────────────────────────── */
+      case 'roadmap':
+        return (
+        <ClientRoadmapPanel
+          athleteEmail={athlete.email}
+          coachId={coachId}
+          onGoToTab={tab => { setActiveZone('plan'); guardedTabChange(tab); }}
+        />
+      );
+
+      /* ── Tab: Reportes ────────────────────────────────────────────────── */
+      case 'reportes':
+        return (
+        <ReportsPanel
+          athleteEmail={athlete.email}
+          athleteName={athlete.displayName}
+          coachId={coachId}
+          logs={athleteLogs}
+          exercises={exercises}
+          assignments={assignments}
+          bodyweightLogs={bodyweightLogs}
+          targetWeight={athlete.targetWeight}
+        />
+      );
+
+      /* ── Tab: Nutrición (análisis) ────────────────────────────────────── */
+      case 'analisis-nutricion':
+        return (
+        <NutritionAnalysisPanel
+          athleteEmail={athlete.email}
+          athleteName={athlete.displayName}
+          targetWeight={athlete.targetWeight}
+        />
+      );
+
+      /* ── Tab: Correlaciones ───────────────────────────────────────────── */
+      case 'correlaciones':
+        return (
+        <CorrelationPanel
+          athleteEmail={athlete.email}
+          logs={athleteLogs}
+          exercises={exercises}
+          responses={athleteQResponses}
+          questionnaires={coachQuestionnaires}
+          bodyweightLogs={bodyweightLogs}
+          assignments={assignments}
+          sexo={sexoDelAtleta}
+        />
+      );
+
+      default:
+        return null;
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -579,6 +826,8 @@ export default function ClientHub({
             descriptivo (KPIs, fase, objetivo, nota, últimos cambios) vive
             ahora en la pestaña Ficha — ver ClientFichaPanel. */}
         <ClientAlertsBar
+          avisosVencidos={avisosVencidos}
+          onGoToImplantacion={() => guardedTabChange('setup')}
           planUnpublished={assignments.length === 0}
           pendingReviewsCount={pendingCheckins.length}
           onGoToEntrenamientos={() => guardedTabChange('entrenamientos')}
@@ -628,178 +877,31 @@ export default function ClientHub({
           intercambios de nutrición) se peguen justo debajo, sin taparlo. */}
       <div style={{ ['--hub-sticky-top' as string]: `calc(var(--header-h) + ${subnavHeight}px)` } as React.CSSProperties}>
       <Suspense fallback={<Skeleton className="w-full h-64 rounded-surface" />}>
+      {/* Un solo sitio que decide qué componente pinta cada pestaña.
+          Antes era una cascada de `{activeTab === 'x' && <Panel .../>}` en el
+          JSX. Es una función porque el MISMO panel se monta ahora en dos
+          sitios: en la pestaña, y dentro de la hoja a pantalla completa que
+          abre Implantación para que el coach no tenga que salirse del
+          recorrido. Duplicar el JSX habría significado duplicar veinte props
+          por panel y que los dos se desincronizaran a la primera. */}
+      {panelDePestana(activeTab)}
 
-      {/* ── Tab: Setup ──────────────────────────────────────────────────────── */}
-      {activeTab === 'setup' && (
-        <ClientSetupPanel
-          key={athlete.email}
-          athlete={athlete}
-          checkins={athleteCheckins}
-          onboarding={onboardingData}
-          mesocycles={mesocycles}
-          workoutAssignments={assignments}
-          diets={athleteDiets}
-          dietConfig={athleteDietConfig}
-          nutritionConfig={nutritionConfig}
-          qAssignments={athleteQAssignments}
-          photoAssignments={athletePhotoAssignments}
-          photos={athletePhotos}
-          workoutLogs={athleteLogs}
-          onGoToTab={guardedTabChange}
-        />
-      )}
-
-      {/* ── Tab: Revisiones ────────────────────────────────────────────────── */}
-      {activeTab === 'revisiones' && (
-        <ClientReviewsPanel
-          key={athlete.email}
-          athlete={athlete}
-          coachId={coachId}
-          athleteCheckins={athleteCheckins}
-          onRefreshCheckIns={onRefreshCheckIns}
-          athleteQResponses={athleteQResponses}
-          setAthleteQResponses={setAthleteQResponses}
-          coachQuestionnaires={coachQuestionnaires}
-          setCoachQuestionnaires={setCoachQuestionnaires}
-          athleteQAssignments={athleteQAssignments}
-          setAthleteQAssignments={setAthleteQAssignments}
-        />
-      )}
-
-      {/* ── Tab: Ficha ───────────────────────────────────────────────────── */}
-      {/* Un solo componente. Antes se montaban DOS aquí (DossierPanel y
-          ClientFichaPanel), diseñados sin mirarse, con la nota del coach y la
-          lista de actividad duplicadas cada una en el suyo. ClientFichaPanel
-          es ahora el dueño de la ficha entera y monta la ficha viva por dentro
-          — ver la cabecera de ese archivo para el orden de los 4 bloques. */}
-      {activeTab === 'ficha' && (
-        <ClientFichaPanel
-          key={athlete.email}
-          athlete={athlete}
-          onboardingData={onboardingData}
-          setOnboardingData={setOnboardingData}
-          onboardingTemplate={onboardingTemplate}
-          planStart={planStart}
-          onPlanStartChange={setPlanStart}
-          planMonths={planMonths}
-          onPlanMonthsChange={setPlanMonths}
-          savingPlan={savingPlan}
-          onSavePlan={handleSavePlan}
-          mesocycles={mesocycles}
-          checkins={athleteCheckins}
-          coachReports={coachReports}
-          athleteLogs={athleteLogs}
-          bodyweightLogs={bodyweightLogs}
-          adherenceScore={adherence.hasData ? adherence.score : null}
-          adherenceStyle={adh}
-          averageRir={avgRir}
-        />
-      )}
-
-      {/* ── Tab: Cuerpo ──────────────────────────────────────────────────── */}
-      {activeTab === 'cuerpo' && (
-        <ClientBodyPanel
-          key={athlete.email}
-          athlete={athlete}
-          athletePhotos={athletePhotos}
-          loadingPhotos={loadingPhotos}
-          athletePhotoAssignments={athletePhotoAssignments}
-          setAthletePhotoAssignments={setAthletePhotoAssignments}
-          athleteQResponses={athleteQResponses}
-          coachQuestionnaires={coachQuestionnaires}
-        />
-      )}
-
-      {/* ── Tab: Entrenamientos ───────────────────────────────────────────── */}
-      {activeTab === 'entrenamientos' && (
-        <ClientWorkoutsPanel
-          athlete={athlete}
-          coachId={coachId}
-          mesocycles={mesocycles}
-          athleteLogs={athleteLogs}
-          setAthleteLogs={setAthleteLogs}
-          exercises={exercises}
-          onboardingData={onboardingData}
-          assignments={assignments}
-          setAssignments={setAssignments}
-          workouts={workouts}
-          getWorkout={getWorkout}
-        />
-      )}
-
-      {/* ── Tab: Cardio ───────────────────────────────────────────────────── */}
-      {activeTab === 'cardio' && <ClientCardioPanel athlete={athlete} />}
-
-      {/* ── Tab: Dietas ───────────────────────────────────────────────────── */}
-      {activeTab === 'dietas' && (
-        <ClientDietsPanel
-          athlete={athlete}
-          coachId={coachId}
-          onboardingData={onboardingData}
-          setOnboardingData={setOnboardingData}
-          athleteDiets={athleteDiets}
-          setAthleteDiets={setAthleteDiets}
-          athleteDietConfig={athleteDietConfig}
-          nutritionConfig={nutritionConfig}
-          weeklyMenus={weeklyMenus}
-          setWeeklyMenus={setWeeklyMenus}
-          menuCompletionLogs={menuCompletionLogs}
-          bodyweightLogs={bodyweightLogs}
-          onToggleDiet={handleToggleDiet}
-          onDeleteDiet={handleDeleteDiet}
-          onDuplicateDiet={handleDuplicateDiet}
-          onScheduleDay={handleScheduleDay}
-          onToggleDietMode={handleToggleDietMode}
-          onSaveStepConfig={handleSaveStepConfig}
-        />
-      )}
-
-      {/* ── Tab: Road map ─────────────────────────────────────────────────── */}
-      {activeTab === 'roadmap' && (
-        <ClientRoadmapPanel
-          athleteEmail={athlete.email}
-          coachId={coachId}
-          onGoToTab={tab => { setActiveZone('plan'); guardedTabChange(tab); }}
-        />
-      )}
-
-      {/* ── Tab: Reportes ────────────────────────────────────────────────── */}
-      {activeTab === 'reportes' && (
-        <ReportsPanel
-          athleteEmail={athlete.email}
-          athleteName={athlete.displayName}
-          coachId={coachId}
-          logs={athleteLogs}
-          exercises={exercises}
-          assignments={assignments}
-          bodyweightLogs={bodyweightLogs}
-          targetWeight={athlete.targetWeight}
-        />
-      )}
-
-      {/* ── Tab: Nutrición (análisis) ────────────────────────────────────── */}
-      {activeTab === 'analisis-nutricion' && (
-        <NutritionAnalysisPanel
-          athleteEmail={athlete.email}
-          athleteName={athlete.displayName}
-          targetWeight={athlete.targetWeight}
-        />
-      )}
-
-      {/* ── Tab: Correlaciones ───────────────────────────────────────────── */}
-      {activeTab === 'correlaciones' && (
-        <CorrelationPanel
-          athleteEmail={athlete.email}
-          logs={athleteLogs}
-          exercises={exercises}
-          responses={athleteQResponses}
-          questionnaires={coachQuestionnaires}
-          bodyweightLogs={bodyweightLogs}
-          assignments={assignments}
-          sexo={leerSexo(athleteQResponses, coachQuestionnaires)}
-        />
-      )}
-
+      {/* ── El editor a pantalla completa ──────────────────────────────────
+          Implantación abre aquí el editor de verdad del paso en el que está el
+          coach, y al cerrarlo vuelve al mismo sitio del recorrido. Es lo que
+          permite montar un mes entero sin salirse de la pestaña, que era la
+          queja de fondo: antes cada ítem te echaba a otra pantalla. */}
+      <Sheet
+        open={editorEnHoja !== null}
+        onClose={() => setEditorEnHoja(null)}
+        title={editorEnHoja ? TAB_META[editorEnHoja].label : ''}
+        size="xl"
+        alto="completo"
+      >
+        <Suspense fallback={<Skeleton className="w-full h-64 rounded-surface" />}>
+          {editorEnHoja && panelDePestana(editorEnHoja)}
+        </Suspense>
+      </Sheet>
       </Suspense>
       </div>
 

@@ -1,4 +1,4 @@
-import { db, collection, doc, getDocs, setDoc, addDoc, updateDoc, deleteDoc, query, where } from '../firebase';
+import { db, collection, doc, getDocs, setDoc, addDoc, updateDoc, deleteDoc, query, where, orderBy, deleteField } from '../firebase';
 import { CoachNote, CoachClientTask, Resource } from '../types';
 import { forceLocalOnly, setLocalBypassMode, stripUndefined, esFalloDePermisos } from './core';
 import { leerCatalogo, marcarCatalogoCambiado } from './catalogoVersionado';
@@ -107,23 +107,76 @@ export async function getCoachClientTasks(athleteEmail: string): Promise<CoachCl
   }
 }
 
-export async function setSeededTaskDone(athleteEmail: string, itemId: string, title: string, phase: string, done: boolean): Promise<void> {
+/**
+ * Marca (o desmarca) un ítem sembrado, y de paso deja ponerle fecha.
+ *
+ * `dueDate` viaja aquí y no en `updateCoachClientTask` porque el documento
+ * puede no existir todavía: estas tareas solo se escriben cuando el coach toca
+ * una, así que ponerle un recordatorio a un paso que nunca se ha marcado sería
+ * un `updateDoc` contra un documento inexistente. El `setDoc(..., {merge:true})`
+ * de aquí sirve para las dos cosas.
+ *
+ * `dueDate: null` BORRA la fecha; `undefined` la deja como esté. Son dos cosas
+ * distintas y `stripUndefined` se come la segunda, que es justo lo que hace
+ * falta para poder quitar un aviso sin tocar el resto del documento.
+ */
+export async function setSeededTaskDone(
+  athleteEmail: string, itemId: string, title: string, phase: string, done: boolean,
+  dueDate?: string | null,
+): Promise<void> {
   const id = `${athleteEmail}_${itemId}`;
   const task: CoachClientTask = {
     id, athleteId: athleteEmail, itemId, title, phase, done,
     doneAt: done ? new Date().toISOString() : undefined,
     createdBy: 'seed', createdAt: new Date().toISOString(),
+    ...(dueDate === undefined ? {} : { dueDate: dueDate ?? undefined }),
   };
   const updated = [...getLocalCoachClientTasks().filter(t => t.id !== id), task];
   if (forceLocalOnly) { saveLocalCoachClientTasks(updated); return; }
   try {
-    await setDoc(doc(db, 'coachClientTasks', id), stripUndefined(task), { merge: true });
+    // `stripUndefined` quita los campos ausentes, pero para BORRAR uno que ya
+    // está en Firestore hace falta `deleteField()`: con merge:true, omitirlo
+    // lo deja como estaba.
+    const payload = { ...stripUndefined(task) } as Record<string, unknown>;
+    if (dueDate === null) payload.dueDate = deleteField();
+    await setDoc(doc(db, 'coachClientTasks', id), payload, { merge: true });
     saveLocalCoachClientTasks(updated);
   } catch (err) {
     console.warn('setSeededTaskDone Firestore failed, saving local:', err);
     setLocalBypassMode(true, err);
     if (esFalloDePermisos(err)) throw err;
     saveLocalCoachClientTasks(updated);
+  }
+}
+
+/**
+ * Las tareas con fecha ya vencida, de TODOS los atletas, en UNA consulta.
+ *
+ * Existe por coste, no por comodidad: la campana del coach se calcula
+ * recorriendo la lista de atletas, y hacer un `getCoachClientTasks(email)` por
+ * cada uno serían N consultas para encontrar, casi siempre, cero tareas. Esta
+ * filtra en el servidor y devuelve solo lo que de verdad urge.
+ *
+ * Legal porque la regla de `coachClientTasks` es `isCoach()` sobre la colección
+ * entera; un atleta no puede ejecutarla. Necesita el índice compuesto
+ * (done, dueDate) que está en `firestore.indexes.json`.
+ */
+export async function getCoachTasksVencidas(hasta: string): Promise<CoachClientTask[]> {
+  if (forceLocalOnly) {
+    return getLocalCoachClientTasks().filter(t => !t.done && !!t.dueDate && t.dueDate <= hasta);
+  }
+  try {
+    const snap = await getDocs(query(
+      collection(db, 'coachClientTasks'),
+      where('done', '==', false),
+      where('dueDate', '<=', hasta),
+      orderBy('dueDate'),
+    ));
+    return snap.docs.map(d => ({ id: d.id, ...d.data() }) as CoachClientTask);
+  } catch (err) {
+    console.warn('getCoachTasksVencidas Firestore failed, using local:', err);
+    setLocalBypassMode(true, err);
+    return getLocalCoachClientTasks().filter(t => !t.done && !!t.dueDate && t.dueDate <= hasta);
   }
 }
 

@@ -1,0 +1,305 @@
+import { WorkoutLog, Exercise, Mesocycle, MuscleGroup } from '../types';
+import {
+  buildTrainingReport, TrainingReport, ExercisePerf, ComparisonMode, resolveWindows,
+} from './trainingReport';
+import {
+  buildMovementPatternReport, MovementPattern, PatternPerf, patronesDeGrupo, PATTERN_LABELS,
+} from './movementPatterns';
+import { buildAccumulatedStimulusReport, IEARow } from './accumulatedStimulusIndex';
+import { seriesRealizadasPorGrupo } from './programacion';
+import { construirMapaCalor, CeldaMapaCalor } from './mapaCalorCorporal';
+import { VolumeLandmark, VOLUME_LANDMARKS_DEFAULT } from '../data/volumeLandmarks';
+import { addDays, hoyIsoLocal } from './trainingWeek';
+import { nombreDeMeso } from './nombresMeso';
+import { mesocycleWeekNumber } from './progression';
+
+// ═══════════════════════════════════════════════════════════════════════════
+// REVISIÓN DEL COACH — el motor de la pantalla que Dani graba en vídeo para
+// contarle al atleta cómo va.
+//
+// No inventa ni una cuenta: encadena los motores que ya existían y estaban
+// repartidos por cinco pantallas distintas (trainingReport, movementPatterns,
+// accumulatedStimulusIndex, programacion, mapaCalorCorporal). Lo único propio
+// de aquí es QUÉ ventana se mira, CÓMO se agrupa para contarlo, y qué merece
+// salir en el vídeo.
+//
+// Determinista y sin IA, como el resto de motores de análisis del proyecto:
+// los mismos logs dan siempre los mismos números. Fecha inyectable (`hoy`)
+// para poder testear.
+// ═══════════════════════════════════════════════════════════════════════════
+
+export type PeriodoRevision =
+  | { tipo: '7d' }
+  | { tipo: '14d' }
+  | { tipo: 'meso'; mesoId: string };
+
+export interface VentanaRevision {
+  desde: string;
+  hasta: string;
+  comparison: ComparisonMode;
+  /** Lo que se lee en el selector: «Últimos 7 días», «Meso #4 · en curso». */
+  etiqueta: string;
+  /** Con qué se compara: «vs la semana anterior», «vs Macrociclo 3». */
+  etiquetaComparacion: string;
+  /**
+   * Semanas que abarca la ventana, con decimales. Es lo que normaliza el mapa
+   * de calor. Nunca baja de 1 — ver `semanasDeVentana`.
+   */
+  semanas: number;
+  /** Semana N del mesociclo activo, si la ventana es un mesociclo. */
+  semanaDelPlan: number | null;
+  /** De cuántas. */
+  semanasDelPlan: number | null;
+  /** El mesociclo de la ventana, si lo hay. */
+  meso: Mesocycle | null;
+}
+
+/**
+ * Cuántas semanas mide una ventana, con decimales, para poder pasar un total de
+ * series a series/semana.
+ *
+ * Dos detalles que parecen menores y no lo son:
+ *
+ *  · **Con decimales.** Un bloque de 5 semanas visto el octavo día lleva 8 días
+ *    corridos, no 2 semanas. Redondear a 2 repartiría entre dos semanas lo que
+ *    se hizo en una y pintaría al atleta haciendo la mitad de volumen del que
+ *    hace, justo el lunes, que es cuando Dani graba la revisión.
+ *  · **Suelo de 1.** El primer día de un bloque, 1/7 de semana convertiría tres
+ *    series en «21 a la semana» y mandaría el grupo a MRV. Extrapolar al alza
+ *    desde dos días de datos es inventar. Quedarse corto al principio del
+ *    bloque es el error seguro de los dos.
+ */
+/** Días naturales entre dos fechas ISO (exclusivo: del 1 al 8 son 7). */
+export function diasEntre(desde: string, hasta: string): number {
+  const ms = new Date(hasta + 'T12:00:00').getTime() - new Date(desde + 'T12:00:00').getTime();
+  return Math.round(ms / 86_400_000);
+}
+
+export function semanasDeVentana(desde: string, hasta: string): number {
+  const ms = new Date(hasta + 'T12:00:00').getTime() - new Date(desde + 'T12:00:00').getTime();
+  const dias = Math.floor(ms / 86_400_000) + 1; // inclusivo por los dos extremos
+  return Math.max(1, Math.round((dias / 7) * 100) / 100);
+}
+
+/**
+ * El mesociclo que toca por defecto: el que contiene a hoy; si ninguno, el
+ * último que empezó. `null` si el atleta no tiene bloques.
+ */
+export function mesoActivo(mesocycles: Mesocycle[], hoy: string): Mesocycle | null {
+  const empezados = [...mesocycles]
+    .filter(m => !!m.startDate)
+    .sort((a, b) => a.startDate.localeCompare(b.startDate));
+  if (empezados.length === 0) return null;
+  const enCurso = empezados.find(m => hoy >= m.startDate && hoy <= addDays(m.startDate, m.weeks * 7 - 1));
+  return enCurso ?? empezados[empezados.length - 1];
+}
+
+/**
+ * Traduce la elección del selector a fechas y modo de comparación.
+ *
+ * Los dos modos por días comparan contra la ventana equivalente inmediatamente
+ * anterior; el de mesociclo compara contra el bloque de número anterior, que es
+ * el mismo criterio que usa el cierre de mesociclo — si los dos comparasen
+ * distinto, los números de esta pantalla y los de aquella no cuadrarían y no
+ * habría forma de saber cuál está mal.
+ */
+export function resolverPeriodoRevision(
+  periodo: PeriodoRevision,
+  mesocycles: Mesocycle[],
+  hoy: string = hoyIsoLocal(),
+): VentanaRevision {
+  if (periodo.tipo === '7d' || periodo.tipo === '14d') {
+    const dias = periodo.tipo === '7d' ? 7 : 14;
+    const desde = addDays(hoy, -(dias - 1));
+    const comparison: ComparisonMode = { mode: 'weeks', n: dias / 7 };
+    const w = resolveWindows(desde, hoy, comparison, mesocycles);
+    return {
+      desde, hasta: hoy, comparison,
+      etiqueta: `Últimos ${dias} días`,
+      etiquetaComparacion: w.comparisonLabel,
+      semanas: semanasDeVentana(desde, hoy),
+      semanaDelPlan: null, semanasDelPlan: null, meso: null,
+    };
+  }
+
+  const meso = mesocycles.find(m => m.id === periodo.mesoId) ?? null;
+  if (!meso) {
+    // El mesociclo elegido ya no existe (lo borró el coach en otra pestaña).
+    // Caer a 7 días es preferible a pintar una ventana vacía sin explicación.
+    return resolverPeriodoRevision({ tipo: '7d' }, mesocycles, hoy);
+  }
+
+  const fin = addDays(meso.startDate, meso.weeks * 7 - 1);
+  const enCurso = hoy >= meso.startDate && hoy <= fin;
+  const anterior = [...mesocycles]
+    .filter(m => m.id !== meso.id && m.number < meso.number)
+    .sort((a, b) => b.number - a.number)[0] ?? null;
+
+  // Mientras el bloque está en curso, la ventana termina HOY: si llegase hasta
+  // el final programado, el mapa de calor dividiría lo hecho en dos semanas
+  // entre las cinco del bloque y todo parecería un tercio de lo que es.
+  const hasta = enCurso ? hoy : fin;
+
+  // Y la COMPARACIÓN tiene que medir lo mismo a los dos lados. El modo
+  // 'mesocycle' compara bloque entero contra bloque entero, que es lo correcto
+  // al cerrar uno y una trampa a mitad: 16 días contra 35 salen siempre en
+  // −45 % de tonelaje, un número que solo dice «aún no ha terminado» y que el
+  // coach leería en el vídeo como un bajón. Con el bloque en curso se compara
+  // contra los MISMOS días iniciales del bloque anterior, desplazando la
+  // ventana justo la distancia entre los dos inicios.
+  const comparison: ComparisonMode = enCurso && anterior
+    ? {
+        mode: 'offset',
+        dias: diasEntre(anterior.startDate, meso.startDate),
+        label: `vs el mismo tramo de ${nombreDeMeso(anterior)}`,
+      }
+    : { mode: 'mesocycle', currentId: meso.id, previousId: anterior?.id ?? null };
+
+  const w = resolveWindows(meso.startDate, hasta, comparison, mesocycles);
+  const semanaDelPlan = enCurso
+    ? Math.min(meso.weeks, mesocycleWeekNumber(meso.startDate, hoy))
+    : meso.weeks;
+
+  return {
+    desde: meso.startDate, hasta, comparison,
+    etiqueta: `${nombreDeMeso(meso)}${enCurso ? ' · en curso' : ''}`,
+    etiquetaComparacion: w.comparisonLabel,
+    semanas: semanasDeVentana(meso.startDate, hasta),
+    semanaDelPlan, semanasDelPlan: meso.weeks, meso,
+  };
+}
+
+export interface RevisionDelAtleta {
+  ventana: VentanaRevision;
+  informe: TrainingReport;
+  patrones: PatternPerf[];
+  /** Los ejercicios de cada patrón, ya ordenados por tonelaje (como vienen del informe). */
+  ejerciciosPorPatron: Record<MovementPattern, ExercisePerf[]>;
+  /** Ejercicios sin patrón asignado (core, gemelo, lumbares, rotadores y los que no tienen grupo). */
+  ejerciciosSinPatron: ExercisePerf[];
+  suben: ExercisePerf[];
+  bajan: ExercisePerf[];
+  mapa: CeldaMapaCalor[];
+  estimulo: IEARow[];
+}
+
+export interface RevisionParams {
+  logs: WorkoutLog[];
+  exercises: Exercise[];
+  mesocycles: Mesocycle[];
+  periodo: PeriodoRevision;
+  landmarks?: Record<MuscleGroup, VolumeLandmark>;
+  hoy?: string;
+}
+
+export function buildRevisionCoach(params: RevisionParams): RevisionDelAtleta {
+  const {
+    logs, exercises, mesocycles, periodo,
+    landmarks = VOLUME_LANDMARKS_DEFAULT,
+    hoy = hoyIsoLocal(),
+  } = params;
+
+  const ventana = resolverPeriodoRevision(periodo, mesocycles, hoy);
+  const comun = {
+    logs, exercises, mesocycles,
+    periodStart: ventana.desde, periodEnd: ventana.hasta,
+    comparison: ventana.comparison,
+  };
+
+  const informe = buildTrainingReport(comun);
+  const patrones = buildMovementPatternReport(comun).patterns;
+  const estimulo = buildAccumulatedStimulusReport(comun).rows;
+
+  // El mapa de calor cuenta SOLO el grupo principal, igual que el cierre de
+  // mesociclo: es la unidad con la que se programó `Mesocycle.groups`. Las
+  // series ponderadas de `informe.muscleGroups` responden a otra pregunta y
+  // viven en el bloque de tonelaje.
+  const logsVentana = logs.filter(l => l.date >= ventana.desde && l.date <= ventana.hasta);
+  const mapa = construirMapaCalor({
+    realizadas: seriesRealizadasPorGrupo(logsVentana, exercises),
+    groups: ventana.meso?.groups,
+    landmarks,
+    semanasDeLaVentana: ventana.semanas,
+  });
+
+  const { porPatron, sinPatron } = agruparEjerciciosPorPatron(informe.perExercise, exercises);
+  const { suben, bajan } = mejoresYPeores(informe.perExercise);
+
+  return {
+    ventana, informe, patrones,
+    ejerciciosPorPatron: porPatron,
+    ejerciciosSinPatron: sinPatron,
+    suben, bajan, mapa, estimulo,
+  };
+}
+
+/**
+ * Reparte los ejercicios entre los cinco patrones de movimiento.
+ *
+ * Un ejercicio puede caer en DOS (el press francés es empuje de torso y es
+ * brazo), igual que hace `patronesDeGrupo` para el agregado — aparece entero en
+ * los dos, no se reparte. Por eso la suma de las listas no es el total de
+ * ejercicios, y por eso `ejerciciosSinPatron` existe: core, gemelo, lumbares y
+ * rotadores no entran en ningún patrón del protocolo, y un ejercicio sin
+ * `muscleGroup` tampoco. Sin esa lista, esos ejercicios desaparecerían de la
+ * pantalla sin dejar rastro.
+ */
+export function agruparEjerciciosPorPatron(
+  perExercise: ExercisePerf[],
+  exercises: Exercise[],
+): { porPatron: Record<MovementPattern, ExercisePerf[]>; sinPatron: ExercisePerf[] } {
+  const porId = new Map(exercises.map(e => [e.id, e]));
+  const porPatron = {} as Record<MovementPattern, ExercisePerf[]>;
+  for (const p of Object.keys(PATTERN_LABELS) as MovementPattern[]) porPatron[p] = [];
+  const sinPatron: ExercisePerf[] = [];
+
+  for (const ex of perExercise) {
+    const grupo = porId.get(ex.exerciseId)?.muscleGroup;
+    const patrones = grupo ? patronesDeGrupo(grupo) : [];
+    if (patrones.length === 0) { sinPatron.push(ex); continue; }
+    for (const p of patrones) porPatron[p].push(ex);
+  }
+  return { porPatron, sinPatron };
+}
+
+export interface OpcionesMejoresYPeores {
+  /** Cuántos devolver de cada lado. */
+  n?: number;
+  /** Series mínimas en la ventana para entrar en la lista. */
+  minSeries?: number;
+  /** Variación mínima en % para considerarla movimiento y no ruido. */
+  umbralPct?: number;
+}
+
+/**
+ * Los ejercicios que más suben y los que más bajan en 1RM estimado.
+ *
+ * Tres filtros, y los tres existen por el mismo motivo: esto se lee en voz alta
+ * en un vídeo, así que un dato flojo cuesta la credibilidad de todo lo demás.
+ *
+ *  · `deltaOrmPct != null` — sin ventana de comparación no hay progresión que
+ *    contar. Un ejercicio que se estrena no «sube un 100 %».
+ *  · `minSeries` — dos series sueltas de un accesorio no son una tendencia.
+ *  · `umbralPct` — un ±1 % en un 1RM estimado por Epley es ruido de redondeo,
+ *    no una mejora.
+ */
+export function mejoresYPeores(
+  perExercise: ExercisePerf[],
+  opciones: OpcionesMejoresYPeores = {},
+): { suben: ExercisePerf[]; bajan: ExercisePerf[] } {
+  const { n = 5, minSeries = 3, umbralPct = 2 } = opciones;
+  const elegibles = perExercise.filter(e =>
+    e.deltaOrmPct != null && e.sets >= minSeries && e.bestOrm > 0);
+
+  const suben = elegibles
+    .filter(e => (e.deltaOrmPct as number) >= umbralPct)
+    .sort((a, b) => (b.deltaOrmPct as number) - (a.deltaOrmPct as number))
+    .slice(0, n);
+
+  const bajan = elegibles
+    .filter(e => (e.deltaOrmPct as number) <= -umbralPct)
+    .sort((a, b) => (a.deltaOrmPct as number) - (b.deltaOrmPct as number))
+    .slice(0, n);
+
+  return { suben, bajan };
+}

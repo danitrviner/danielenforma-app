@@ -1,6 +1,7 @@
 import React from 'react';
 import { Button, Banner } from './ui';
 import { OPEN_AI_PANEL_EVENT } from '../ai/events';
+import { AvisoDelCoach } from '../utils/avisosDelCoach';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    ClientAlertsBar
@@ -24,10 +25,18 @@ interface Props {
   pendingReviewsCount: number;
   onGoToEntrenamientos: () => void;
   onGoToRevisiones: () => void;
+  /**
+   * Recordatorios que el coach se puso sobre ESTE cliente y ya vencieron.
+   * Salen aquí, en la cabecera, y no solo dentro de Implantación: una fecha que
+   * se pasó no debería depender de que abras la pestaña correcta para verla.
+   */
+  avisosVencidos?: AvisoDelCoach[];
+  onGoToImplantacion?: () => void;
 }
 
 export default function ClientAlertsBar({
   planUnpublished, pendingReviewsCount, onGoToEntrenamientos, onGoToRevisiones,
+  avisosVencidos = [], onGoToImplantacion,
 }: Props) {
   const openAiSummary = () => {
     window.dispatchEvent(new CustomEvent(OPEN_AI_PANEL_EVENT, {
@@ -35,7 +44,7 @@ export default function ClientAlertsBar({
     }));
   };
 
-  if (!planUnpublished && pendingReviewsCount === 0) {
+  if (!planUnpublished && pendingReviewsCount === 0 && avisosVencidos.length === 0) {
     return (
       <Button variant="ghost" size="s" icon="smart_toy" onClick={openAiSummary}>
         Ver resumen
@@ -48,6 +57,18 @@ export default function ClientAlertsBar({
       <Button variant="ghost" size="s" icon="smart_toy" onClick={openAiSummary}>
         Ver resumen
       </Button>
+
+      {avisosVencidos.length > 0 && (
+        <Banner
+          tone="danger"
+          actionLabel={onGoToImplantacion ? 'Ir a Implantación' : undefined}
+          onAction={onGoToImplantacion}
+        >
+          {avisosVencidos.length === 1
+            ? `Te apuntaste «${avisosVencidos[0].tarea.title}». ${avisosVencidos[0].texto.toLowerCase()}.`
+            : `Tienes ${avisosVencidos.length} recordatorios vencidos con este cliente.`}
+        </Banner>
+      )}
 
       {planUnpublished && (
         <Banner tone="danger" actionLabel="Ir a Entrenamientos" onAction={onGoToEntrenamientos}>

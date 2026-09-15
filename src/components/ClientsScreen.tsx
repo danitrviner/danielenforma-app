@@ -2,7 +2,12 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useQueries, useQuery, useIsFetching, useIsMutating } from '@tanstack/react-query';
 import { useParams, useNavigate } from 'react-router-dom';
 import { UserProfile, WeightCheckIn, WorkoutAssignment, WorkoutLog } from '../types';
-import { getAllUserProfiles, createNotificationDeduped, getWorkoutAssignments, getWorkoutLogs } from '../dbService';
+import {
+  getAllUserProfiles, createNotificationDeduped, getWorkoutAssignments, getWorkoutLogs,
+  getCoachTasksVencidas,
+} from '../dbService';
+import { avisosActivos, claveDeAviso } from '../utils/avisosDelCoach';
+import { hoyIsoLocal } from '../utils/trainingWeek';
 import ClientHub, { HubTab, HUB_TABS } from './ClientHub';
 import HomeCoachScreen from './HomeCoachScreen';
 import AthletesBar from './AthletesBar';
@@ -316,6 +321,33 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
       }
     }
   }, [enrichedAthletes, coachEmail, todayMs]);
+
+  // ── Recordatorios que el coach se puso a sí mismo ────────────────────────
+  // Una sola consulta para todos los atletas: `getCoachTasksVencidas` filtra en
+  // el servidor. Recorrer la lista pidiendo las tareas de cada uno serían N
+  // lecturas para encontrar casi siempre cero.
+  const hoyIso = hoyIsoLocal();
+  const { data: tareasVencidas = [] } = useQuery({
+    queryKey: ['coachTasksVencidas', hoyIso],
+    queryFn: () => getCoachTasksVencidas(hoyIso),
+    enabled: !!coachEmail,
+  });
+
+  useEffect(() => {
+    for (const aviso of avisosActivos(tareasVencidas, hoyIso)) {
+      if (aviso.estado === 'proximo') continue; // solo lo que ya urge
+      const de = enrichedAthletes.find(a => a.email === aviso.tarea.athleteId);
+      createNotificationDeduped(claveDeAviso(aviso.tarea), {
+        recipientEmail: coachEmail,
+        type: 'coach_task_due',
+        title: `Te lo apuntaste: ${aviso.tarea.title}`,
+        body: de ? `${aviso.texto} · ${de.displayName}` : aviso.texto,
+        link: 'clients',
+        createdAt: new Date().toISOString(),
+        read: false,
+      }).catch(console.error);
+    }
+  }, [tareasVencidas, hoyIso, coachEmail, enrichedAthletes]);
 
   if (athleteId) {
     if (!selectedAthlete) return null; // still loading athletes, or about to redirect back to /clients

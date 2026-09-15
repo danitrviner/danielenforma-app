@@ -172,6 +172,7 @@ export { getTasksForAthlete, getTasksForAthletes, createTask, updateTask } from 
 export {
   getCoachNotes, createCoachNote, updateCoachNote, deleteCoachNote,
   getCoachClientTasks, setSeededTaskDone, createCoachClientTask, updateCoachClientTask, deleteCoachClientTask,
+  getCoachTasksVencidas,
   getAllResources, createResource, deleteResource,
 } from './db/coachTools';
 

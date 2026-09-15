@@ -1,5 +1,5 @@
 import {
-  MuscleGroup, MuscleGroupConfig, DayPlan, WorkoutExercise, Exercise, MUSCLE_ORDER,
+  MuscleGroup, MuscleGroupConfig, DayPlan, WorkoutExercise, Exercise, WorkoutLog, MUSCLE_ORDER,
 } from '../types';
 import { frecuenciaPorSemana } from './progression';
 import { rankMuscleGroups } from './muscleGroupRanking';
@@ -96,6 +96,41 @@ export function seriesPlanificadasDelMeso(
   for (const g of MUSCLE_ORDER) {
     const s = groups[g]?.series ?? 0;
     if (s > 0) acc.set(g, Math.round(s * semanasDelCiclo));
+  }
+  return acc;
+}
+
+/**
+ * Series REALIZADAS por grupo muscular dentro de una ventana de logs.
+ *
+ * Cuenta solo el grupo PRINCIPAL del ejercicio, a propósito: es la misma
+ * unidad con la que se programó el mesociclo (`Mesocycle.groups`), así que
+ * «12 programadas / 10 realizadas» compara dos cosas medidas igual. El reparto
+ * ponderado con secundarios a 0,5 (`weightedGroupsOf` en trainingReport.ts)
+ * responde a otra pregunta —cuánto estímulo ha recibido el grupo— y vive en el
+ * bloque de tonelaje. Mezclar las dos unidades infla lo realizado un 20-40 %
+ * frente a lo programado y hace que todo parezca cumplido de más.
+ *
+ * Vivía como función privada de `cierreMesociclo.ts`; se subió aquí, junto a
+ * `seriesPlanificadasDelMeso`, cuando la pestaña de Revisión del coach necesitó
+ * la misma cuenta. Las dos mitades de la comparación en el mismo archivo.
+ *
+ * Ojo con la unidad: esto devuelve el TOTAL de la ventana, no series por
+ * semana. Quien compare contra los landmarks (que son semanales) tiene que
+ * dividir por las semanas de la ventana.
+ */
+export function seriesRealizadasPorGrupo(
+  logs: WorkoutLog[],
+  exercises: Exercise[],
+): Map<MuscleGroup, number> {
+  const porId = new Map(exercises.map(e => [e.id, e]));
+  const acc = new Map<MuscleGroup, number>();
+  for (const log of logs) {
+    for (const entry of log.entries) {
+      const g = porId.get(entry.exerciseId)?.muscleGroup;
+      if (!g) continue;
+      acc.set(g, (acc.get(g) ?? 0) + entry.sets.length);
+    }
   }
   return acc;
 }

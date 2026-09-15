@@ -6,7 +6,8 @@ import { IEARow } from '../utils/accumulatedStimulusIndex';
 import { Sexo } from '../utils/athleteProfileSignals';
 import { e1rmAlometrico, pesoCorporalEn } from '../utils/allometricScore';
 import { useToast } from '../hooks/useToast';
-import { Icon, EmptyState, Badge, SegmentedControl } from './ui';
+import { Icon, EmptyState, Badge, SegmentedControl, Delta, BarraCumplimiento } from './ui';
+import TablaGruposPerf from './training/TablaGruposPerf';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Cierre del mesociclo — solo para el entrenador.
@@ -34,17 +35,6 @@ interface Props {
   pesoLogs?: BodyweightLog[];
 }
 
-function Delta({ pct, invertido = false }: { pct: number | null; invertido?: boolean }) {
-  if (pct == null) return <span className="font-mono text-caption text-ink-3">—</span>;
-  const bueno = invertido ? pct < 0 : pct > 0;
-  const color = pct === 0 ? 'var(--color-ink-3)' : bueno ? 'var(--color-success)' : 'var(--color-danger)';
-  return (
-    <span className="font-mono text-caption tabular-nums" style={{ color }}>
-      {pct > 0 ? '▲+' : pct < 0 ? '▼' : '='}{pct !== 0 ? `${pct}%` : ''}
-    </span>
-  );
-}
-
 function Tile({ label, value, sub, color = 'var(--color-ink)' }: {
   label: string; value: React.ReactNode; sub?: React.ReactNode; color?: string;
 }) {
@@ -53,18 +43,6 @@ function Tile({ label, value, sub, color = 'var(--color-ink)' }: {
       <span className="font-mono text-caption text-ink-2 uppercase tracking-[.1em] block">{label}</span>
       <span className="font-mono font-semibold text-title-l tabular-nums block leading-tight" style={{ color }}>{value}</span>
       {sub && <span className="font-mono text-caption text-ink-3 block">{sub}</span>}
-    </div>
-  );
-}
-
-/** Barra de cumplimiento: verde a partir del 90%, ámbar por encima del 70%, rojo por debajo. */
-function BarraCumplimiento({ pct }: { pct: number | null }) {
-  if (pct == null) return null;
-  const color = pct >= 90 ? 'var(--color-success)' : pct >= 70 ? 'var(--color-warning)' : 'var(--color-danger)';
-  return (
-    <div className="relative h-1 rounded-full bg-track w-full min-w-[48px]">
-      <div className="absolute inset-y-0 left-0 rounded-full" style={{ width: `${Math.min(100, pct)}%`, backgroundColor: color }} />
-      {pct > 100 && <div className="absolute inset-y-0 right-0 w-px bg-white/40" />}
     </div>
   );
 }
@@ -219,8 +197,8 @@ export default function MesocycleReviewPanel({
 
           {vista === 'volumen'  && <TablaVolumen filas={cierre.volumen.filas} comparacion={cierre.comparacion} />}
           {vista === 'fuerza'   && <TablaFuerza ejercicios={cierre.informe.perExercise} comparacion={cierre.comparacion} sexo={sexo} pesoKg={pesoEnCierre} />}
-          {vista === 'grupos'   && <TablaGrupos grupos={cierre.informe.muscleGroups} comparacion={cierre.comparacion} />}
-          {vista === 'patrones' && <TablaGrupos grupos={cierre.patrones} comparacion={cierre.comparacion} />}
+          {vista === 'grupos'   && <TablaGruposPerf grupos={cierre.informe.muscleGroups} comparacion={cierre.comparacion} />}
+          {vista === 'patrones' && <TablaGruposPerf grupos={cierre.patrones} comparacion={cierre.comparacion} />}
           {vista === 'estimulo' && <TablaEstimulo filas={cierre.estimuloAcumulado} />}
 
           {/* Borrador para el cliente */}
@@ -355,59 +333,6 @@ function TablaFuerza({ ejercicios, comparacion, sexo, pesoKg }: {
   );
 }
 
-// Forma común a MuscleGroupPerf y PatternPerf (movementPatterns.ts) — la tabla
-// no necesita saber si `group` es un grupo muscular o un patrón de movimiento.
-interface GroupPerfLike {
-  group: string;
-  label: string;
-  tonnage: number;
-  tonnageDeltaPct: number | null;
-  sets: number;
-  meanOrm: number | null;
-  ormDeltaPct: number | null;
-}
-
-function TablaGrupos({ grupos, comparacion }: { grupos: GroupPerfLike[]; comparacion: string }) {
-  if (grupos.length === 0) {
-    return <p className="font-sans text-caption text-ink-3">Sin series registradas por grupo muscular.</p>;
-  }
-  return (
-    <div className="space-y-2">
-      <div className="overflow-x-auto rounded-surface border border-hairline">
-        <table className="w-full border-collapse" style={{ minWidth: '520px' }}>
-          <thead>
-            <tr className="bg-bg">
-              <th className="text-left px-3 py-2.5 font-mono text-caption text-ink-2 uppercase tracking-wider border-b border-hairline">Grupo</th>
-              <th className="text-right px-3 py-2.5 font-mono text-caption text-ink-2 uppercase tracking-wider border-b border-hairline">Series</th>
-              <th className="text-right px-3 py-2.5 font-mono text-caption text-ink-2 uppercase tracking-wider border-b border-hairline">Tonelaje</th>
-              <th className="text-right px-3 py-2.5 font-mono text-caption text-ink-2 uppercase tracking-wider border-b border-hairline">vs {comparacion}</th>
-              <th className="text-right px-3 py-2.5 font-mono text-caption text-ink-2 uppercase tracking-wider border-b border-hairline">1RM medio</th>
-            </tr>
-          </thead>
-          <tbody>
-            {grupos.map(g => (
-              <tr key={g.group} className="border-b border-hairline last:border-b-0">
-                <td className="px-3 py-2.5 font-sans text-label text-ink whitespace-nowrap">{g.label}</td>
-                <td className="px-3 py-2.5 text-right font-mono text-label text-ink-2 tabular-nums">{g.sets}</td>
-                <td className="px-3 py-2.5 text-right font-mono text-label text-ink tabular-nums">
-                  {g.tonnage.toLocaleString('es-ES', { maximumFractionDigits: 0 })} kg
-                </td>
-                <td className="px-3 py-2.5 text-right"><Delta pct={g.tonnageDeltaPct} /></td>
-                <td className="px-3 py-2.5 text-right font-mono text-label text-ink-2 tabular-nums">
-                  {g.meanOrm != null ? `${g.meanOrm} kg` : '—'} <Delta pct={g.ormDeltaPct} />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <p className="font-mono text-caption text-ink-3">
-        Las series de esta tabla son efectivas ponderadas: el grupo principal del ejercicio cuenta 1 y cada
-        secundario 0,5. La tabla de «Volumen» cuenta solo el principal, que es la unidad con la que se programó.
-      </p>
-    </div>
-  );
-}
 
 function TablaEstimulo({ filas }: { filas: IEARow[] }) {
   if (filas.length === 0) {

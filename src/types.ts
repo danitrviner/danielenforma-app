@@ -22,7 +22,13 @@ export type NotificationType =
   // roadmap (ver `CoachDayNote`). Solo se manda si el coach marca "avisarle":
   // la nota se ve sola en el Inicio del atleta ese día, la notificación es
   // para cuando quiere que se entere ya.
-  | 'coach_day_note';
+  | 'coach_day_note'
+  // Recordatorio que el COACH se puso a sí mismo sobre un paso del montaje o
+  // una tarea suelta (`CoachClientTask.dueDate`). No hay servidor que lo
+  // dispare: se crea al abrir la consola de clientes y ver que la fecha ya
+  // pasó, con clave deduplicada por fecha de vencimiento para que no aparezca
+  // uno nuevo cada día que no se le haga caso.
+  | 'coach_task_due';
 
 export interface AppNotification {
   id: string;                   // deterministic dedup key

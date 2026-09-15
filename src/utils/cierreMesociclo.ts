@@ -7,6 +7,7 @@ import { buildMovementPatternReport, PatternPerf } from './movementPatterns';
 import { buildAccumulatedStimulusReport, IEARow } from './accumulatedStimulusIndex';
 import { addDays } from './trainingWeek';
 import { adherenciaDeMesociclo } from './adherence';
+import { seriesRealizadasPorGrupo } from './programacion';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // CIERRE DE MESOCICLO — qué pasó de verdad en el bloque que acaba de terminar.
@@ -84,28 +85,6 @@ function num(n: number): string {
 
 function conSigno(n: number): string {
   return n > 0 ? `+${num(n)}` : num(n);
-}
-
-/**
- * Series efectivas registradas por grupo muscular dentro de una ventana.
- *
- * Cuenta solo el grupo PRINCIPAL del ejercicio, a propósito: es la misma
- * unidad con la que se programó el mesociclo (`Mesocycle.groups`), así que
- * «12 programadas / 10 realizadas» compara dos cosas medidas igual. El reparto
- * ponderado con secundarios a 0.5 de `trainingReport` vive en el bloque de
- * tonelaje, que responde a otra pregunta.
- */
-function seriesRealizadasPorGrupo(logs: WorkoutLog[], exercises: Exercise[]): Map<MuscleGroup, number> {
-  const porId = new Map(exercises.map(e => [e.id, e]));
-  const acc = new Map<MuscleGroup, number>();
-  for (const log of logs) {
-    for (const entry of log.entries) {
-      const g = porId.get(entry.exerciseId)?.muscleGroup;
-      if (!g) continue;
-      acc.set(g, (acc.get(g) ?? 0) + entry.sets.length);
-    }
-  }
-  return acc;
 }
 
 export function buildCierreMesociclo(params: {

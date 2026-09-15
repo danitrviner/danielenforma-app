@@ -1,12 +1,13 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { Mesocycle, WorkoutAssignment, NutritionProgram } from '../types';
 import {
   getAllUserProfiles, getMesocyclesForAthletes, getTasksForAthletes, getWorkoutAssignmentsForAthletes,
-  getNutritionProgramsForAthletes, getWorkoutsByIds, getExercises,
+  getNutritionProgramsForAthletes, getWorkoutsByIds, getExercises, getCoachTasksVencidas,
 } from '../dbService';
 import { atletasActivos } from '../utils/atletas';
+import { avisosActivos } from '../utils/avisosDelCoach';
 import { getWeekRange, getWeekStart, addDays, esFechaIso } from '../utils/trainingWeek';
 import { deriveReviewEvents, deriveVolumeIncreaseEvents, deriveKcalChangeEvents, deriveDeloadEvents, weekAdherence } from '../utils/planEvents';
 import { Avatar, PageHeader, EmptyState, Skeleton, Icon, Badge, BadgeTone } from './ui';
@@ -62,6 +63,21 @@ export default function CoachWeekScreen({ coachId: _coachId }: Props) {
     queryFn: () => getTasksForAthletes(athleteEmails),
     enabled: hayAtletas,
   });
+  // Los recordatorios que el coach se puso y ya vencieron. Una sola consulta
+  // para todos los atletas — filtra en el servidor, ver `getCoachTasksVencidas`.
+  const { data: tareasVencidas = [] } = useQuery({
+    queryKey: ['coachTasksVencidas', today],
+    queryFn: () => getCoachTasksVencidas(today),
+  });
+  const avisosPorAtleta = useMemo(() => {
+    const m = new Map<string, ReturnType<typeof avisosActivos>>();
+    for (const a of avisosActivos(tareasVencidas, today)) {
+      if (a.estado === 'proximo') continue;
+      m.set(a.tarea.athleteId, [...(m.get(a.tarea.athleteId) ?? []), a]);
+    }
+    return m;
+  }, [tareasVencidas, today]);
+
   const { data: assignmentsFlat = [], isPending: loadingAssignmentsQuery } = useQuery({
     // Solo la semana que se pinta. Lo único que se hace con estas asignaciones
     // es `weekAdherence`, que ya filtra a [weekStart, weekEnd) — pedirlas
@@ -153,7 +169,7 @@ export default function CoachWeekScreen({ coachId: _coachId }: Props) {
 
     const adherence = weekAdherence(assignments, weekStart, weekEndExclusiveStr, today);
 
-    return { athlete: a, currentMeso, weekOfMeso, chips, adherence };
+    return { athlete: a, currentMeso, weekOfMeso, chips, adherence, avisos: avisosPorAtleta.get(a.email) ?? [] };
   });
 
   const withEvents = rows.filter(r => r.chips.length > 0);
@@ -169,13 +185,19 @@ export default function CoachWeekScreen({ coachId: _coachId }: Props) {
         <span>{withEvents.length} con eventos esta semana</span>
         <span>·</span>
         <span>{pendingOrOverdue.length} pendientes o con adherencia baja</span>
+        {avisosPorAtleta.size > 0 && <>
+          <span>·</span>
+          <span style={{ color: 'var(--color-danger)' }}>
+            {avisosPorAtleta.size} con recordatorio vencido
+          </span>
+        </>}
       </div>
 
       {rows.length === 0 ? (
         <EmptyState icon="group" title="Sin atletas activos." description="En cuanto tengas clientes activos, aparecerán aquí." />
       ) : (
         <div className="space-y-2">
-          {rows.map(({ athlete, currentMeso, weekOfMeso, chips, adherence }) => (
+          {rows.map(({ athlete, currentMeso, weekOfMeso, chips, adherence, avisos }) => (
             <button
               key={athlete.userId}
               onClick={() => navigate(`/clients/${encodeURIComponent(athlete.email)}/roadmap`)}
@@ -189,6 +211,16 @@ export default function CoachWeekScreen({ coachId: _coachId }: Props) {
                     <span className="font-mono text-caption text-ink-2">Semana {weekOfMeso} de {currentMeso.weeks}</span>
                   )}
                 </div>
+                {/* El recordatorio va ANTES que los eventos del plan: es lo
+                    único de esta fila que el coach se puso él mismo, y si se
+                    pierde entre las chips de calendario deja de servir. */}
+                {avisos.length > 0 && (
+                  <p className="font-sans text-caption mt-1" style={{ color: 'var(--color-danger)' }}>
+                    {avisos.length === 1
+                      ? `${avisos[0].texto}: ${avisos[0].tarea.title}`
+                      : `${avisos.length} recordatorios vencidos`}
+                  </p>
+                )}
                 <div className="flex items-center gap-1.5 flex-wrap mt-1.5">
                   {chips.length === 0 ? (
                     <span className="font-sans text-caption text-ink-3 italic">Sin eventos esta semana</span>

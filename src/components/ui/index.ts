@@ -82,6 +82,10 @@ export { default as CollapsingHeader } from './CollapsingHeader';
 
 export { default as Collapsible } from './Collapsible';
 
+export { default as Delta } from './Delta';
+
+export { default as BarraCumplimiento } from './BarraCumplimiento';
+
 export {
   ALTURA_GRAFICA, MARGEN_GRAFICA, ANCHO_EJE_Y, REJILLA_GRAFICA, TICK_GRAFICA,
   EJE_GRAFICA, TOOLTIP_GRAFICA, LEYENDA_GRAFICA, SERIES_GRAFICA, colorSerie,

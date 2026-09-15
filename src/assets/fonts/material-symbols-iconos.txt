@@ -1,10 +1,10 @@
-accessibility
 accessibility_new
 account_circle
 add
 add_circle
 add_comment
 admin_panel_settings
+alarm
 allergies
 allergy
 analytics
@@ -45,7 +45,6 @@ calendar_today
 calendar_view_month
 calendar_view_week
 campaign
-capture
 category
 celebration
 chat
@@ -60,7 +59,6 @@ circle
 close
 cloud_off
 cloud_sync
-code
 coffee
 contacts
 content_copy
@@ -77,7 +75,6 @@ dining
 dinner_dining
 directions_run
 directions_walk
-distance
 done
 download
 draft
@@ -134,9 +131,7 @@ info
 insights
 inventory_2
 ios
-iso
 kebab_dining
-key
 keyboard_arrow_down
 keyboard_arrow_up
 label
@@ -157,6 +152,7 @@ male
 manage_accounts
 manufacturing
 map
+mark_email_read
 medical_information
 menu
 menu_book
@@ -170,8 +166,10 @@ more_vert
 network_check
 notes
 notifications
+notifications_active
 notifications_off
 nutrition
+open_in_full
 open_in_new
 paid
 password
@@ -200,6 +198,7 @@ progress_activity
 psychiatry
 publish
 push_pin
+query_stats
 quiz
 radio
 radio_button_unchecked
@@ -224,7 +223,6 @@ scale
 schedule
 school
 science
-score
 search
 search_off
 self_improvement
@@ -237,7 +235,6 @@ shopping_cart
 show_chart
 shuffle
 signal_cellular_alt
-signature
 skillet
 skip_next
 smart_toy
@@ -268,7 +265,6 @@ title
 today
 token
 touch_app
-transform
 trending_down
 trending_flat
 trending_up
@@ -276,7 +272,8 @@ trophy
 tune
 unarchive
 undo
-upcoming
+unfold_less
+unfold_more
 update
 upload
 upload_file
@@ -291,6 +288,4 @@ water_drop
 waving_hand
 web
 weight
-window
-workspace_premium
 zoom_out_map

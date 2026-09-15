@@ -13,11 +13,15 @@
  * que exista el anterior (las sesiones necesitan el mesociclo, publicar
  * necesita las sesiones, el calendario de dietas necesita las dietas).
  *
- * La lista es la MISMA que la checklist de Setup del cliente
- * (`utils/clientSetup.ts`). Si allí se añade un item, aquí hay que añadir el
- * paso: un plan que la checklist da por incompleto es un plan incompleto,
- * aunque el chat haya dicho que había terminado.
+ * La lista de pasos vive en `utils/recorridoDelPlan.ts` y es la MISMA que
+ * recorre el coach a mano en la pestaña de Implantación. Cada paso declara qué
+ * ítems de la checklist de Setup (`utils/clientSetup.ts`) lo comprueban, así
+ * que un plan que la checklist da por incompleto es un plan incompleto aunque
+ * el chat haya dicho que había terminado — y ya no hay dos listas que alguien
+ * tenga que acordarse de sincronizar.
  */
+
+import { textoDelPlanCompleto } from '../utils/recorridoDelPlan';
 
 export type TareaId = 'mes_nuevo' | 'revision' | 'renovar_mes';
 
@@ -40,42 +44,18 @@ export type BriefSeccion =
   | 'cuerpo' | 'nutricion';
 
 /* ── El plan completo, plano por plano ──────────────────────────────────────
-   Esto es lo que significa «montar el mes». Numerado porque se aprueba en
-   este orden, y cada línea dice con qué tool se hace. */
-const PLAN_COMPLETO = `### El plan entero, en este orden (no pares a la mitad ni preguntes «¿sigo?»)
+   Ya NO se escribe aquí: se genera desde `utils/recorridoDelPlan.ts`, que es el
+   origen único de los 19 pasos y sus seis bloques.
 
-**A. Antes de proponer nada — el alta**
-0. Repasa el ALTA del brief entera. Todo lo que esté sin contestar, a medias o se contradiga con lo que ves en sus datos, déjalo como nota con add_coach_task (una nota por cosa, con el dato dentro: "En el alta puso 5 días pero solo registra 3 entrenos: confirmar días reales"). Bloquean de verdad: días que va a entrenar, minutos por sesión, material, lesiones activas. Lo que bloquea se pregunta; lo que no, se asume y se dice qué has asumido.
-0b. Si le falta la fecha de inicio, la duración del plan o el peso objetivo, van en el paso 8 (propose_setup_config), no en una nota.
+   Antes esta constante era un texto literal y la cabecera de este archivo
+   avisaba de que había que mantenerla a mano sincronizada con la checklist de
+   Setup. Esa sincronía manual era el problema: un paso que solo entrara en una
+   de las dos listas dejaba al asistente diciendo que había terminado un plan
+   que la checklist daba por incompleto, sin que nada avisara.
 
-**B. Entrenamiento**
-1. **Mesociclo** (propose_mesocycle): semanas, días por ciclo, objetivo y reparto de series por grupo. Sale del criterio de volumen de tu doctrina y de lo que el atleta puede de verdad.
-2. **Sesiones** (propose_workout_days): cada día con sus ejercicios, series, reps, RIR y descansos. Elige del bloque «CÓMO PROGRAMA DANI» del contexto — no pidas get_exercise_usage ni recorras el catálogo grupo a grupo; get_exercise_library solo si un grupo no tiene nada usable ahí o el material lo descarta.
-3. **Publicar el bloque** (propose_publish_block): vuelca las sesiones al calendario del atleta. Sin este paso tiene un plan que no ve. Va siempre después del 2.
-
-**C. Nutrición**
-4. **Periodización nutricional** (propose_nutrition_program): las fases encadenadas con sus semanas, kcal y recargas, y dentro de cada fase su dieta. Manda solo el PRESUPUESTO de intercambios de cada dieta (HC / PROT / GRASA): los alimentos los coloca Dani en el editor de dietas. NO rellenes comidas salvo que te lo pida.
-5. **Ajuste de dieta suelto** (propose_diet_update) solo si hace falta una dieta fuera de la periodización (día de descanso, día libre). Mismo criterio: presupuesto sí, comidas no.
-
-**D. Configuración del plan** (todo esto va en UNA propose_setup_config)
-6. Fecha de inicio, duración del plan y peso objetivo, si faltan.
-7. Objetivo diario de PASOS.
-8. Qué dietas quedan activas y el CALENDARIO semanal de dietas (qué come cada día de la semana). Ojo: se resuelven por nombre, así que esta propuesta se aprueba DESPUÉS de la periodización.
-9. CUESTIONARIO periódico con su cadencia, y FOTOS de seguimiento con sus vistas y cadencia.
-10. Ejercicios elegibles para RETOS de carga (sus básicos reales).
-11. CARDIO: programa de Zona 2 o de VO₂máx, si le toca.
-
-**E. Road map — lo que el atleta ve venir**
-12. **Escalera de niveles** (propose_level_ladder), solo si la de por defecto no le sirve. Si le sirve, dilo y no propongas por proponer.
-13. **Fases del plan e hitos** (propose_roadmap_items): las fases macro y los hitos con fecha.
-14. **Días señalados** (propose_special_day): toma de marcas, AMRAP, recarga. Uno o dos en el mes, no diez.
-15. **Reto de la semana** (get_challenge_options y luego propose_weekly_challenge): mira antes las opciones que calcula el motor con SUS datos.
-
-**F. Cierre**
-16. **Ficha viva** (propose_dossier_update): objetivos con sus palabras, dónde está hoy, qué esperamos ver en estas semanas, el foco de la próxima revisión y las preguntas abiertas.
-17. Termina con «El mes de un vistazo»: una línea por pieza, en el orden en que Dani debe aprobarlas, y las notas que le has dejado. Nada después de eso.
-
-Si te falta un dato que cambia una decisión, agrupa las preguntas (máximo 5, de más a menos bloqueante) y propón igualmente el 80% que sí puedes, diciendo qué has asumido y qué cambiaría si la respuesta fuese otra.`;
+   `recorridoDelPlan.test.ts` fija el texto resultante carácter a carácter, así
+   que tocar un paso enseña en el diff exactamente qué línea del prompt cambia. */
+const PLAN_COMPLETO = textoDelPlanCompleto();
 
 export const TAREAS: Tarea[] = [
   {

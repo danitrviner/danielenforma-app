@@ -150,14 +150,24 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
   const loading = loadingProgram || loadingDiets || loadingOnboarding
     || loadingCompletionLogs || loadingSteps || loadingNutConfig;
 
-  // This component owns its own copy of program/diets/etc; a parent (e.g. after
-  // saving the periodization form) bumps refreshToken to force a genuine
-  // refetch of all of it, bypassing the query cache's staleTime — matching the
-  // old effect's [athleteEmail, refreshToken] dependency. Skipped on first
-  // mount since the queries above already fetch then.
-  const isFirstRender = useRef(true);
+  // Este componente tiene su propia copia de programa/dietas/etc; un padre
+  // (p. ej. tras guardar la periodización) sube `refreshToken` para forzar un
+  // refetch de verdad, saltándose el staleTime de la caché.
+  //
+  // El guardia mira el VALOR anterior del token, no si es el primer render. La
+  // versión anterior usaba un `useRef(true)` que se bajaba en la primera
+  // ejecución del efecto, y eso se rompe con StrictMode: React monta, ejecuta
+  // el efecto (que baja la bandera), desmonta y REMONTA conservando el mismo
+  // ref — así que la segunda ejecución ya veía `false` e invalidaba las SEIS
+  // consultas sin que nadie lo hubiera pedido. Dos de ellas son colecciones con
+  // un documento por día leídas sin ventana (registros de dieta y pasos), o
+  // sea que cada montaje en desarrollo costaba el doble de lecturas de
+  // Firestore. Comparando el token no puede pasar: si no ha cambiado, no hay
+  // nada que refrescar, monte las veces que monte.
+  const tokenAnterior = useRef(refreshToken);
   useEffect(() => {
-    if (isFirstRender.current) { isFirstRender.current = false; return; }
+    if (tokenAnterior.current === refreshToken) return;
+    tokenAnterior.current = refreshToken;
     queryClient.invalidateQueries({ queryKey: ['nutritionProgram', athleteEmail] });
     queryClient.invalidateQueries({ queryKey: ['dietsForAthlete', athleteEmail] });
     queryClient.invalidateQueries({ queryKey: ['onboarding', athleteEmail] });
