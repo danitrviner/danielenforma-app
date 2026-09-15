@@ -14,12 +14,17 @@ import { escalarRecetaEntera, factorDeReceta } from './escalarRecetaEntera';
 
 const ARROZ_CON_HUEVO: Recipe = {
   id: 'r1',
+  ownerId: 'coach@enforma.app',
+  categories: [],
+  ingredients: [],
+  extras: [],
+  steps: [],
   name: 'Arroz con huevo',
   exchanges: { HC: 3, PROT: 2, GRASA: 1 },
   ingredientsText: [
-    { name: 'Arroz cocido', quantity: 150, unit: 'g' },
-    { name: 'Huevo', quantity: 100, unit: 'g' },
-    { name: 'Aceite de oliva', quantity: 10, unit: 'g' },
+    { name: 'Arroz cocido', quantity: 150 },
+    { name: 'Huevo', quantity: 100 },
+    { name: 'Aceite de oliva', quantity: 10 },
   ],
   macros: { carb: 75, prot: 50, fat: 11 },
   kcal: 600,
