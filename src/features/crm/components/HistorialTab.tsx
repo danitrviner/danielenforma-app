@@ -2,9 +2,11 @@ import React, { useMemo } from 'react';
 import { useServiciosDe } from '../hooks/useServicios';
 import { usePagosDe } from '../hooks/usePagos';
 import { useReunionesDe } from '../hooks/useReuniones';
+import { useSuscripcionesDe } from '../hooks/useSuscripciones';
 import { formatEuros, sumaCobrado, sumaPendiente, cobradoDe } from '../lib/dinero';
 import { formatDia, hoyISO } from '../lib/fechas';
 import { mesesContratados } from '../lib/metricas';
+import { eventosDelCliente, ventasDe, type TipoEvento } from '../lib/eventosDelCliente';
 import MetricCard from './MetricCard';
 import EmptyState from './EmptyState';
 import ErrorState from './ErrorState';
@@ -16,10 +18,28 @@ import type { Cliente } from '../types';
 // mismo caché de TanStack Query — entrar aquí no dispara peticiones nuevas si
 // ya se visitó Servicios/Pagos/Renovaciones antes). Así evitamos contadores
 // duplicados en Firestore que puedan desincronizarse del origen real.
+const ETIQUETA_EVENTO: Record<TipoEvento, string> = {
+  alta: 'Alta', servicio: 'Servicio', renovacion: 'Renovación',
+  suscripcion: 'Suscripción', cobro: 'Cobro', devolucion: 'Devolución', fin: 'Fin',
+};
+
+const ESTILO_EVENTO: Record<TipoEvento, string> = {
+  alta:        'bg-accent/12 text-accent border-accent/25',
+  renovacion:  'bg-success/12 text-success border-success/25',
+  servicio:    'bg-white/5 text-ink-2 border-hairline',
+  suscripcion: 'bg-white/5 text-ink-2 border-hairline',
+  cobro:       'bg-success/12 text-success border-success/25',
+  devolucion:  'bg-warning/12 text-warning border-warning/25',
+  fin:         'bg-white/5 text-ink-3 border-hairline',
+};
+
 export default function HistorialTab({ cliente }: { cliente: Cliente }) {
   const { data: servicios = [], isPending: cargandoServicios, isError: errorServicios } = useServiciosDe(cliente.id);
   const { data: pagos = [], isPending: cargandoPagos, isError: errorPagos } = usePagosDe(cliente.id);
   const { data: reuniones = [], isPending: cargandoReuniones, isError: errorReuniones } = useReunionesDe(cliente.id);
+  // Las suscripciones no salían por ningún lado del historial, aunque fueran
+  // dinero real del cliente (auditoría §1.6).
+  const { data: suscripciones = [] } = useSuscripcionesDe(cliente.id);
 
   const cargando = cargandoServicios || cargandoPagos || cargandoReuniones;
   const error = errorServicios || errorPagos || errorReuniones;
@@ -30,7 +50,6 @@ export default function HistorialTab({ cliente }: { cliente: Cliente }) {
   // lleva dinero dentro que el primero se deja fuera, y un `impagado` no es
   // `pendiente`, así que se caía de las dos cifras (Dani, 10-09-2026).
     const pagosPagados = pagos.filter(p => cobradoDe(p) > 0);
-    const reunionesRealizadas = reuniones.filter(r => r.realizada);
 
     const primerPrograma = servicios.length
       ? servicios.reduce((min, s) => (s.fechaInicio < min ? s.fechaInicio : min), servicios[0].fechaInicio)
@@ -40,11 +59,19 @@ export default function HistorialTab({ cliente }: { cliente: Cliente }) {
       return !max || s.fechaFin > max ? s.fechaFin : max;
     }, null);
 
-    const timeline = [...servicios].sort((a, b) => b.fechaInicio.localeCompare(a.fechaInicio));
+    // Registro de actividad de verdad —altas, renovaciones, cobros, fines—, no
+    // solo la lista de servicios. Ver lib/eventosDelCliente.ts.
+    const timeline = eventosDelCliente(servicios, pagos, suscripciones);
 
-    // Conversión a continuidad: solo cuenta entre las graduaciones que YA
-    // tienen resultado registrado. Sin graduaciones resueltas, no se puede
-    // calcular — mejor 'null' que un falso 0%.
+    /* Conversión a continuidad: solo cuenta entre las graduaciones que YA
+     * tienen resultado registrado. Sin graduaciones resueltas, no se puede
+     * calcular — mejor 'null' que un falso 0 %.
+     *
+     * Se queda aunque la pestaña de Reuniones haya salido de la ficha: es un
+     * dato de negocio sobre ESTE cliente (¿continuó al graduarse?), no una
+     * métrica de la agenda. El contador crudo de «reuniones realizadas» sí se
+     * ha quitado: ya no hay forma de verlas desde aquí, así que era una cifra
+     * sin ningún sitio al que llevar. */
     const graduacionesConResultado = reuniones.filter(r => r.tipo === 'graduacion' && r.resultadoGraduacion);
     const graduacionesQueContinuan = graduacionesConResultado.filter(r => r.resultadoGraduacion === 'continua');
     const conversionContinuidad = graduacionesConResultado.length > 0
@@ -61,15 +88,17 @@ export default function HistorialTab({ cliente }: { cliente: Cliente }) {
       // sus servicios, no la distancia entre el alta y hoy: si pausó, esos
       // meses no cuentan (docs/crm-modelo-v2.md).
       meses: mesesContratados(servicios, hoy),
+      // VENTAS, no documentos de cobro: un plan de 3×329 € son tres pagos y una
+      // sola venta, y el contador anterior decía «3 cobros».
+      ventas: ventasDe(servicios, suscripciones),
       pagosRealizados: pagosPagados.length,
-      reunionesRealizadas: reunionesRealizadas.length,
       primerPrograma,
       ultimoFin,
       pendienteCobro: sumaPendiente(pagos),
       timeline,
       conversionContinuidad,
     };
-  }, [servicios, pagos, reuniones, hoy]);
+  }, [servicios, pagos, reuniones, suscripciones, hoy]);
 
   if (error) return <ErrorState />;
 
@@ -94,9 +123,8 @@ export default function HistorialTab({ cliente }: { cliente: Cliente }) {
         <MetricCard
           icon="paid" label="Ha dejado"
           value={formatEuros(resumen.totalPagado)}
-          sub={`${resumen.pagosRealizados} ${resumen.pagosRealizados === 1 ? 'cobro' : 'cobros'}`}
+          sub={`${resumen.ventas} ${resumen.ventas === 1 ? 'venta' : 'ventas'}`}
         />
-        <MetricCard icon="event_available" label="Reuniones" value={resumen.reunionesRealizadas} sub="realizadas" />
         <MetricCard icon="schedule" label="Pendiente" value={formatEuros(resumen.pendienteCobro)} accent="var(--color-warning)" />
       </div>
 
@@ -124,29 +152,30 @@ export default function HistorialTab({ cliente }: { cliente: Cliente }) {
       <div className="space-y-2">
         <h2 className="font-mono text-caption uppercase tracking-widest text-ink-2">Línea de tiempo</h2>
         {resumen.timeline.length === 0 ? (
-          <EmptyState icon="history" titulo="Sin programas todavía" descripcion="La línea de tiempo aparecerá cuando el cliente tenga al menos un servicio." />
+          <EmptyState icon="history" titulo="Sin actividad todavía" descripcion="Aquí irán las altas, las renovaciones y los cobros de este cliente." />
         ) : (
           <div className="bg-surface/80 backdrop-blur-sm border border-hairline rounded-surface divide-y divide-white/7">
-            {resumen.timeline.map(s => {
-              const enCurso = !s.fechaFin || s.fechaFin >= hoy;
-              return (
-                <div key={s.id} className="flex items-center justify-between gap-2 p-3">
-                  <div className="min-w-0">
-                    <p className="font-sans text-caption text-ink truncate">{s.nombre}</p>
-                    <p className="font-mono text-caption text-ink-3 tabular-nums">
-                      {formatDia(s.fechaInicio)}{s.fechaFin ? ` → ${formatDia(s.fechaFin)}` : ''}
-                    </p>
-                  </div>
-                  <span className={`shrink-0 px-2 rounded-full font-mono text-caption uppercase tracking-widest border ${
-                    enCurso
-                      ? 'bg-success/12 text-success border-success/25'
-                      : 'bg-white/5 text-ink-2 border-hairline'
-                  }`}>
-                    {enCurso ? 'En curso' : 'Finalizado'}
+            {resumen.timeline.map(ev => (
+              <div key={ev.id} className="flex items-center justify-between gap-2 p-3">
+                <div className="min-w-0">
+                  <p className="font-sans text-caption text-ink truncate">
+                    {ev.titulo}
+                    {ev.esCuota && <span className="text-ink-3"> · cuota</span>}
+                  </p>
+                  <p className="font-mono text-caption text-ink-3 tabular-nums">
+                    {formatDia(ev.fecha)}{ev.detalle ? ` · ${ev.detalle}` : ''}
+                  </p>
+                </div>
+                <div className="shrink-0 flex items-center gap-2">
+                  {ev.importeCents != null && (
+                    <span className="font-mono text-caption text-ink-2 tabular-nums">{formatEuros(ev.importeCents)}</span>
+                  )}
+                  <span className={`px-2 rounded-full font-mono text-caption uppercase tracking-widest border ${ESTILO_EVENTO[ev.tipo]}`}>
+                    {ETIQUETA_EVENTO[ev.tipo]}
                   </span>
                 </div>
-              );
-            })}
+              </div>
+            ))}
           </div>
         )}
       </div>
