@@ -4,7 +4,8 @@ import {
   UserProfile, Mesocycle, WorkoutLog, Exercise, OnboardingData,
   WorkoutAssignment, Workout,
 } from '../types';
-import { createWorkoutAssignment, deleteWorkoutAssignment, updateWorkoutLog, updateUserProfile, deleteWorkoutAssignmentsByMesocycleIdStrict } from '../dbService';
+import { createWorkoutAssignment, deleteWorkoutAssignment, updateWorkoutLog, updateUserProfile, borrarAsignacionesReprogramables } from '../dbService';
+import { descartarDiasCerrados } from '../utils/estadoDeAsignacion';
 import { sesionesDeMesociclo, fechasDelMesociclo } from '../utils/asignacionMesociclo';
 import { addDays, hoyIsoLocal, esFechaIso } from '../utils/trainingWeek';
 import { nombreDeMeso } from '../utils/nombresMeso';
@@ -132,35 +133,50 @@ export default function ClientWorkoutsPanel({
   /**
    * Vuelca un mesociclo entero al calendario del atleta.
    *
-   * Borra antes las asignaciones de ESE bloque —no las de los demás— para que
-   * volver a asignar sea idempotente en vez de duplicar el calendario. Las
-   * fechas y el orden los decide `utils/asignacionMesociclo`, el mismo módulo
-   * que usa el botón de la pantalla de Ejercicios: dos puertas, un cálculo.
+   * Borra antes las asignaciones REPROGRAMABLES de ESE bloque —no las de los
+   * demás, y no las de días ya entrenados— para que volver a asignar sea
+   * idempotente en vez de duplicar el calendario o borrar el historial
+   * (auditoría §4.1). Las fechas y el orden los decide
+   * `utils/asignacionMesociclo`, el mismo módulo que usa el botón de la
+   * pantalla de Ejercicios: dos puertas, un cálculo.
    */
   const handleAssignMesociclo = async () => {
     if (!mesoAAsignar || sesionesDelMeso.length === 0) return;
     setIsAssigning(true);
     try {
-      await deleteWorkoutAssignmentsByMesocycleIdStrict(mesoAAsignar.id);
+      const hoyDelCoach = hoyIsoLocal();
+      const { conservadas } = await borrarAsignacionesReprogramables(mesoAAsignar.id, athlete.email, hoyDelCoach);
       const fechas = fechasDelMesociclo(mesoAAsignar, sesionesDelMeso.length);
-      const nuevas: WorkoutAssignment[] = [];
-      for (const { dayIdx, date } of fechas) {
-        nuevas.push(await createWorkoutAssignment({
+
+      const porCrear = descartarDiasCerrados(
+        fechas.map(({ dayIdx, date }) => ({
           workoutId:   sesionesDelMeso[dayIdx].id,
           athleteId:   athlete.email,
           mesocycleId: mesoAAsignar.id,
           date,
-          status:      'pending',
-        }));
+          status:      'pending' as const,
+        })),
+        conservadas,
+      );
+
+      const nuevas: WorkoutAssignment[] = [];
+      for (const asignacion of porCrear) {
+        nuevas.push(await createWorkoutAssignment(asignacion));
       }
       setAssignments(prev => [
         ...prev.filter(a => a.mesocycleId !== mesoAAsignar.id),
+        ...conservadas,
         ...nuevas,
       ].sort((a, b) => a.date.localeCompare(b.date)));
       setShowAssignModal(false);
       setAssignMesoId('');
       invalidateResource(`assignments:${athlete.userId}`);
-      showToast(`${nuevas.length} sesiones asignadas`, 'success');
+      showToast(
+        conservadas.length > 0
+          ? `${nuevas.length} sesiones asignadas · ${conservadas.length} ya entrenadas se conservan`
+          : `${nuevas.length} sesiones asignadas`,
+        'success',
+      );
     } catch (err) { console.error(err); showToast('No se pudo asignar el mesociclo.'); }
     finally { setIsAssigning(false); }
   };

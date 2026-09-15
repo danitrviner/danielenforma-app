@@ -41,7 +41,7 @@ import VolumeSuggestionSheet from './VolumeSuggestionSheet';
 import { useToast } from '../hooks/useToast';
 import { nombreDeMeso, nombreDeSesion } from '../utils/nombresMeso';
 import { fechasDelMesociclo, cicloDiasDeMeso } from '../utils/asignacionMesociclo';
-import { esFechaIso } from '../utils/trainingWeek';
+import { esFechaIso, hoyIsoLocal } from '../utils/trainingWeek';
 import { useAthleteProfileSignals } from '../hooks/useAthleteProfileSignals';
 import { useAthleteWeight } from '../hooks/useAthleteWeight';
 import { useConfirm } from '../hooks/useConfirm';
@@ -1643,8 +1643,7 @@ export default function MesocycleManager({
       // Fecha LOCAL, no UTC: entre medianoche y las dos de la mañana en España
       // `toISOString()` todavía devuelve el día anterior, y eso decide aquí qué
       // se conserva y qué se reprograma.
-      const hoyDelCoach = new Date(Date.now() - new Date().getTimezoneOffset() * 60000)
-        .toISOString().slice(0, 10);
+      const hoyDelCoach = hoyIsoLocal();
       const { conservadas } = await borrarAsignacionesReprogramables(editing.id, selectedEmail, hoyDelCoach);
       await deleteWorkoutsByMesocycleIdStrict(editing.id, conservadas.map(a => a.workoutId));
 
@@ -1752,22 +1751,34 @@ export default function MesocycleManager({
     setVolcado({ estado: 'trabajando', mensaje: '' });
 
     try {
-      await deleteWorkoutAssignmentsByMesocycleIdStrict(editing.id);
+      // Igual que en `handleAssign`: cambiar las fechas del bloque no puede
+      // borrar los días que el atleta ya entrenó (auditoría §4.1). Aquí las
+      // rutinas ni se tocan, así que basta con conservar las asignaciones.
+      const hoyDelCoach = hoyIsoLocal();
+      const { conservadas } = await borrarAsignacionesReprogramables(editing.id, selectedEmail, hoyDelCoach);
 
-      for (const { dayIdx, date } of fechas) {
-        await createWorkoutAssignmentStrict({
+      const porCrear = descartarDiasCerrados(
+        fechas.map(({ dayIdx, date }) => ({
           workoutId:   sesiones[dayIdx].workoutIds[0],
           athleteId:   selectedEmail,
           mesocycleId: editing.id,
           date,
-          status:      'pending',
-        });
+          status:      'pending' as const,
+        })),
+        conservadas,
+      );
+
+      for (const asignacion of porCrear) {
+        await createWorkoutAssignmentStrict(asignacion);
       }
 
       await queryClient.invalidateQueries({ queryKey: ['workoutAssignments'] });
+      const conservadasTxt = conservadas.length > 0
+        ? ` · ${conservadas.length} ${conservadas.length === 1 ? 'día ya entrenado se conserva' : 'días ya entrenados se conservan'}`
+        : '';
       setVolcado({
         estado: 'hecho',
-        mensaje: `${fechas.length} ${fechas.length === 1 ? 'sesión asignada' : 'sesiones asignadas'} · ${vueltas} ${vueltas === 1 ? 'vuelta' : 'vueltas'} × ${sesiones.length} desde el ${editing.startDate}.`,
+        mensaje: `${porCrear.length} ${porCrear.length === 1 ? 'sesión asignada' : 'sesiones asignadas'} · ${vueltas} ${vueltas === 1 ? 'vuelta' : 'vueltas'} × ${sesiones.length} desde el ${editing.startDate}${conservadasTxt}.`,
       });
       showToast('Mesociclo asignado al atleta', 'success');
     } catch (err: unknown) {

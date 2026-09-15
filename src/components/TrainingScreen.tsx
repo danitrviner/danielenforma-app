@@ -10,6 +10,7 @@ import {
 import { MONTHS_ES, formatDate, hoyIsoLocal } from '../utils/trainingWeek';
 import { bloquesDelCiclo, bloqueActual, BloqueDelCiclo, DiaDelCiclo, EstadoDeDia } from '../utils/cicloDelAtleta';
 import { prefillWorkoutSets } from '../utils/setPrefill';
+import { conEstadoReal } from '../utils/estadoDeAsignacion';
 import { mesocycleWeekNumber, resolveExerciseForWeek } from '../utils/progression';
 import { marcarRetoParaReevaluar } from '../hooks/useRetoDeLaSemana';
 import { cicloDiasDeMeso } from '../utils/asignacionMesociclo';
@@ -108,14 +109,14 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
 
   // Data
   const assignmentsKey = ['workoutAssignmentsForAthlete', profile.userId] as const;
-  const { data: assignments = [], isPending: loadingAssignments } = useQuery({
+  const { data: asignacionesCrudas = [], isPending: loadingAssignments } = useQuery({
     queryKey: assignmentsKey,
     queryFn: () => getWorkoutAssignmentsForAthlete({ uid: profile.userId, email: profile.email }),
   });
   // Solo las rutinas que las asignaciones de ESTE atleta referencian, no la
   // colección entera de todos los atletas — antes `getWorkouts()` se bajaba
   // las rutinas de todos los clientes al móvil de cada atleta.
-  const workoutIds = useMemo(() => Array.from(new Set(assignments.map(a => a.workoutId))), [assignments]);
+  const workoutIds = useMemo(() => Array.from(new Set(asignacionesCrudas.map(a => a.workoutId))), [asignacionesCrudas]);
   const { data: workouts = [], isPending: loadingWorkoutsQuery } = useQuery({
     queryKey: ['workoutsByIds', workoutIds],
     queryFn: () => getWorkoutsByIds(workoutIds),
@@ -139,6 +140,13 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
     queryKey: logsKey,
     queryFn: () => getWorkoutLogs(profile.email),
   });
+  /* Red de seguridad: si hay un entreno guardado para un día, ese día está
+   * hecho aunque la asignación diga «pendiente». Cubre los datos que quedaron
+   * mal antes del arreglo de la reprogramación (auditoría §4.1) y cualquier
+   * otra vía que deje los dos campos en desacuerdo. Los logs ya estaban
+   * cargados en esta pantalla: no cuesta ni una lectura más. */
+  const assignments = useMemo(() => conEstadoReal(asignacionesCrudas, logs), [asignacionesCrudas, logs]);
+
   const { data: personalNotes = [], isPending: loadingNotes } = useQuery({
     queryKey: ['exerciseNotesForAthlete', profile.email],
     queryFn: () => getExerciseNotesForAthlete(profile.email),
