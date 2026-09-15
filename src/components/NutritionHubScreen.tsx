@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { UserProfile, Recipe } from '../types';
+import { UserProfile, Recipe, RecetaPendiente } from '../types';
 import { getAthleteNutritionConfig } from '../dbService';
 import NutritionScreen from './NutritionScreen';
 import MyMenuScreen from './MyMenuScreen';
@@ -29,7 +29,7 @@ const TABS: { id: NutritionTab; label: string; icon: string }[] = [
 export default function NutritionHubScreen({ profile }: NutritionHubScreenProps) {
   const nutritionConfigKey = ['athleteNutritionConfig', profile.email] as const;
   const [activeSubTab, setActiveSubTab] = useState<NutritionTab>('mi-plan');
-  const [pendingRecipe, setPendingRecipe] = useState<Recipe | null>(null);
+  const [pendingRecipe, setPendingRecipe] = useState<RecetaPendiente | null>(null);
   // 1.4.1 de Apple: las citas de las recomendaciones de salud tienen que ser
   // fáciles de encontrar. Este es el sitio — la cabecera de Nutrición, visible
   // desde las cuatro pestañas, no escondido al fondo de Ajustes.
@@ -40,8 +40,12 @@ export default function NutritionHubScreen({ profile }: NutritionHubScreenProps)
     queryFn: () => getAthleteNutritionConfig(profile.email),
   });
 
-  const handleAddToIntercambios = (recipe: Recipe) => {
-    setPendingRecipe(recipe);
+  /* El objeto se crea UNA vez aquí, en el manejador, no en el render: el efecto
+   * que lo consume en NutritionScreen compara por identidad para no dispararse
+   * dos veces (el error 185 que costó arreglar). Un literal nuevo en cada render
+   * lo reabriría. */
+  const handleAddToIntercambios = (pendiente: RecetaPendiente) => {
+    setPendingRecipe(pendiente);
     setActiveSubTab('mi-plan');
   };
 

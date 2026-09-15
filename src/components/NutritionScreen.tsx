@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { minutosDeReceta } from '../utils/tiempoDeReceta';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { UserProfile, Diet, DietMeal, DietItem, FoodCategory, DietMode, MealItem, Recipe, RecipeFavorites, RefeedDay } from '../types';
+import { UserProfile, Diet, DietMeal, DietItem, FoodCategory, DietMode, MealItem, Recipe, RecipeFavorites, RefeedDay, RecetaPendiente } from '../types';
 import { getDietsForAthlete, getAthleteDietConfig, saveAthleteDietConfig, createDiet, updateDiet, deleteDiet, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig, saveAthleteNutritionConfig, getRecipes, getRecipeFavorites, getNutritionProgram, markNutritionPhaseSeen, computeActivePhase, createNotificationDeduped, getDietCompletionLog, saveDietCompletionLog, createRecipe, queryRecetas, queryRecetasForGenerator, cargarIndiceRecetas, getOnboarding, getRecipeById } from '../dbService';
 import type { RecetasCursor } from '../dbService';
 import { CATS, BUDGET_CATS, CAT_LABEL, CAT_COLOR, CAT_BG, MODE_LABEL, ALL_DIET_MODES, round2, fmtQty, foodNameWithoutGrams, addToPlaced, recipeToDietItems, computeDietPlaced } from '../utils/exchangeHelpers';
@@ -74,7 +74,7 @@ const RECETAS_CATS = [
 
 interface Props {
   profile: UserProfile;
-  pendingRecipe?: Recipe | null;
+  pendingRecipe?: RecetaPendiente | null;
   onConsumedPendingRecipe?: () => void;
 }
 
@@ -422,7 +422,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
 
   // "Añadir a Intercambios" desde Recetas — solo queda elegir la comida del día
   // (antes había un paso previo para elegir la dieta; ya no hay dietas).
-  const [chooseMealForRecipe, setChooseMealForRecipe] = useState<Recipe | null>(null);
+  const [chooseMealForRecipe, setChooseMealForRecipe] = useState<RecetaPendiente | null>(null);
 
 
   // Nutrition periodization
@@ -1561,10 +1561,16 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
   // Mirrors handleApplyRecipe, but takes an explicit mealId instead of reading it
   // from recipePickerMealId state — needed when the target meal is decided
   // programmatically (auto when there's a single meal, or via chooseMealForRecipe).
-  const addRecipeToMeal = (recipe: Recipe, mealId: string, currentDiet: Diet) => {
+  const addRecipeToMeal = (pendiente: RecetaPendiente, mealId: string, currentDiet: Diet) => {
     const meal = currentDiet.meals.find(m => m.id === mealId);
     if (!meal) return;
-    const newItems: DietItem[] = recipeToDietItems(recipe, enabledModes);
+    const { recipe } = pendiente;
+    /* Si quien manda la receta ya sabe qué se come exactamente —«Mi menú», que
+     * conoce la escala servida y los extras—, esos ítems mandan. Reconstruirlos
+     * aquí desde la receta cruda era el «20 intercambios salen 26»: entraba el
+     * plato base en vez de la ración y media con pan que el atleta se comió.
+     * Ver utils/paridadDeCaminos.test.ts. */
+    const newItems: DietItem[] = pendiente.items ?? recipeToDietItems(recipe, enabledModes);
     if (newItems.length === 0) {
       showToast(`No se pudo añadir "${recipe.name}": no tiene datos de intercambios.`, 'error');
       return;
@@ -1592,7 +1598,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
   // pintar — el patrón clásico del error 185. Un ref que recuerda la ÚLTIMA
   // receta ya procesada (mismo patrón que `initFor` más arriba) hace el
   // efecto idempotente sin importar cuántas veces se dispare de más.
-  const pendingRecipeProcesadaRef = useRef<Recipe | null>(null);
+  const pendingRecipeProcesadaRef = useRef<RecetaPendiente | null>(null);
   useEffect(() => {
     if (!pendingRecipe || loading) return;
     if (pendingRecipeProcesadaRef.current === pendingRecipe) return;
@@ -2888,7 +2894,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
         <Sheet
           open
           onClose={() => setChooseMealForRecipe(null)}
-          title={`¿A qué comida añadir "${chooseMealForRecipe.name}"?`}
+          title={`¿A qué comida añadir "${chooseMealForRecipe.recipe.name}"?`}
           size="m"
           footer={<Button variant="ghost" onClick={() => setChooseMealForRecipe(null)} fullWidth>Cancelar</Button>}
         >

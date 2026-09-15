@@ -4,8 +4,9 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   UserProfile, WeeklyMenu, RecipeFavorites, MenuCompletionLog,
-  WeekDay, MenuDay, MenuMeal, Recipe, FoodCategory, MenuComplement, MealItem, DietMode,
+  WeekDay, MenuDay, MenuMeal, Recipe, FoodCategory, MenuComplement, MealItem, DietMode, RecetaPendiente,
 } from '../types';
+import { itemsDeComidaDelMenu } from '../utils/conversionNutricional';
 import {
   getPublishedMenu, getOnboarding, getAthleteNutritionConfig,
   updateWeeklyMenu, getMenuCompletionLog, saveMenuCompletionLog,
@@ -76,7 +77,7 @@ interface Props {
      el plan —son dos registros distintos, ver `toggleDone`—, y sin este puente
      el atleta que veía su sándwich en el menú no tenía forma de meterlo en el
      plan sin buscarlo a mano ni de que le contara en los macros del día. */
-  onAddToPlan?: (recipe: Recipe) => void;
+  onAddToPlan?: (pendiente: RecetaPendiente) => void;
 }
 
 export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
@@ -285,7 +286,11 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
     try {
       const receta = await getRecipeById(meal.recipeId);
       if (!receta) { showToast('No se pudo cargar la receta.'); return; }
-      onAddToPlan(receta);
+      /* Con los ítems ya resueltos: la escala servida y los extras de ESTA
+       * comida. Antes se pasaba la receta cruda y el plan se quedaba con el
+       * plato base — una comida a ×1,5 con pan entraba como una ración pelada.
+       * Es el «20 intercambios salen 26» de la auditoría (§8.4). */
+      onAddToPlan({ recipe: receta, items: itemsDeComidaDelMenu(receta, meal) });
     } catch {
       // Sin esto, con la red a medias el botón no hacía nada y dejaba una
       // promesa rechazada suelta: al atleta le parece que la app se ha comido

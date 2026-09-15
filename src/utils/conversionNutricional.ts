@@ -1,4 +1,4 @@
-import type { DietItem, FoodCategory } from '../types';
+import type { DietItem, MenuMeal, Recipe } from '../types';
 import { GRAMS_PER_EXCHANGE } from './nutritionConstants';
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -141,4 +141,70 @@ export function etiquetaDePeso(item: ItemPesable): string {
 
 function redondearDecima(n: number): number {
   return Math.round(n * 10) / 10;
+}
+
+// ── Una comida del menú semanal → ítems del plan ────────────────────────────
+
+/**
+ * Convierte una comida del menú en los ítems que van al plan del atleta:
+ * el plato a la escala servida, más los acompañamientos, más las raciones
+ * extra de sus propios ingredientes.
+ *
+ * Existe porque había DOS formas de meter la misma comida y no coincidían
+ * (auditoría §8.4, «20 intercambios salen 26»):
+ *
+ *   · Marcarla hecha en «Mi menú» sumaba `meal.exch` —ya escalado— con todos
+ *     sus extras.
+ *   · El botón «Añadir a mi plan» pasaba la receta CRUDA: sin la escala y sin
+ *     un solo extra. Una comida a ×1,5 con pan entraba como el plato base.
+ *
+ * Ahora los dos caminos pasan por aquí. `paridadDeCaminos.test.ts` lo vigila.
+ *
+ * Se lee de `meal`, no de `recipe`, todo lo que el menú ya calculó: la escala
+ * está aplicada en `exch`, y los gramos de las raciones extra vienen resueltos
+ * contra el banco desde `menuEngine`. Recalcularlo aquí sería abrir otra vez la
+ * puerta a que las dos cuentas se separen.
+ */
+export function itemsDeComidaDelMenu(recipe: Recipe, meal: MenuMeal): DietItem[] {
+  const items: DietItem[] = [];
+
+  // El plato. Una fila por categoría, como el resto de recetas importadas: sin
+  // gramaje propio, porque la fila representa el plato entero y no un alimento.
+  for (const cat of ['HC', 'PROT', 'GRASA'] as const) {
+    const cantidad = meal.exch?.[cat] ?? 0;
+    if (cantidad > 0) {
+      items.push({
+        category: cat,
+        foodLabel: meal.recipeName || recipe.name,
+        quantity: cantidad,
+        originRecipeId: meal.recipeId || recipe.id,
+      });
+    }
+  }
+
+  // Los acompañamientos SÍ son alimentos del banco: llevan su gramaje.
+  for (const c of meal.complements ?? []) {
+    if (c.quantity <= 0) continue;
+    items.push({
+      category: c.category,
+      foodLabel: c.foodLabel,
+      quantity: c.quantity,
+      baseGrams: parseBaseGrams(c.foodLabel) ?? undefined,
+    });
+  }
+
+  // Más ración de un ingrediente del propio plato. `gramos` es el total que
+  // hay que añadir, ya calculado contra el banco en menuEngine; aquí se guarda
+  // por intercambio, que es como lo espera `pesoDeItem`.
+  for (const r of meal.racionesExtra ?? []) {
+    if (r.quantity <= 0) continue;
+    items.push({
+      category: r.category,
+      foodLabel: `${r.nombre} (ración extra)`,
+      quantity: r.quantity,
+      baseGrams: r.gramos > 0 ? r.gramos / r.quantity : undefined,
+    });
+  }
+
+  return items;
 }

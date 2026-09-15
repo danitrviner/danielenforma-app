@@ -1016,6 +1016,17 @@ export interface DietItem {
   origenMenu?: string;
 }
 
+/** Una receta camino de «Mi plan», con lo que se come de ella ya resuelto.
+ *
+ *  `items` lo rellena quien SÍ sabe la ración exacta: «Mi menú» conoce la
+ *  escala servida y los extras de esa comida. Sin `items`, se derivan de la
+ *  receta cruda, que es lo correcto cuando se añade desde el recetario.
+ *  Ver utils/conversionNutricional.ts e itemsDeComidaDelMenu. */
+export interface RecetaPendiente {
+  recipe: Recipe;
+  items?: DietItem[];
+}
+
 export interface DietMeal {
   id: string;
   name: string;
