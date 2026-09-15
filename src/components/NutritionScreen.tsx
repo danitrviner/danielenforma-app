@@ -13,7 +13,7 @@ import { dietTypeVigente } from '../utils/foodPrefs';
 import { coincideBusqueda, normalizarTexto } from '../utils/busqueda';
 import { dishType, dishTypeLabel, type DishType } from '../utils/dishTypes';
 import { filasDeComida, escalarReceta } from '../utils/filasDelPlan';
-import { escalarRecetaEntera, factorDeReceta } from '../utils/escalarRecetaEntera';
+import { escalarRecetaEntera, factorDeReceta , escalaDeReceta } from '../utils/escalarRecetaEntera';
 import { dietaPautadaDelDia } from '../utils/nutritionSummary';
 import { perfilDeHambreVigente } from '../utils/perfilDeHambre';
 import { distributeMealTargets } from '../utils/mealDistribution';
@@ -1333,7 +1333,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
    * enseñar los gramos escalados y no los originales (era el fallo: subías los
    * intercambios y la avena seguía diciendo 40 g).
    */
-  const abrirReceta = async (mealId: string, recipeId: string, intercambiosEnElPlato: number) => {
+  const abrirReceta = async (mealId: string, recipeId: string, intercambiosEnElPlato: number, escalaGuardada?: number) => {
     // Testigo de "esta es la petición que vale". Sin él, abrir una receta que
     // hay que ir a buscar y pasar deprisa a otra dejaba ganar a la que
     // respondiera la última: la ficha se cambiaba sola por la anterior, y si
@@ -1349,7 +1349,10 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     if (peticion !== peticionRecetaRef.current) return;
     if (completa) {
       const base = BUDGET_CATS.reduce((s, c) => s + recipeExchanges(completa)[c], 0);
-      setRecetaAbierta({ mealId, recipeId, factor: factorDeReceta(intercambiosEnElPlato, base) });
+      // La escala guardada manda: deducirla fallaba en los platos de 5,5-6
+      // intercambios, donde un toque del stepper queda por debajo del umbral
+      // de ruido. Ver escalaDeReceta.
+      setRecetaAbierta({ mealId, recipeId, factor: escalaDeReceta({ escala: escalaGuardada }, intercambiosEnElPlato, base) });
     }
     setRecetaDetalle(completa);
     setCargandoReceta(false);
@@ -2064,7 +2067,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                                         pasos, igual que desde el Recetario. */}
                                     <button
                                       type="button"
-                                      onClick={() => abrirReceta(meal.id, fila.recipeId, total)}
+                                      onClick={() => abrirReceta(meal.id, fila.recipeId, total, meal.items[fila.idxs[0]]?.escala)}
                                       className="flex-1 min-w-0 text-left rounded-control -m-1 p-1 transition-colors hover:bg-raised/60 active:bg-raised"
                                     >
                                       <span className="block font-sans text-body-s font-semibold leading-snug text-ink">

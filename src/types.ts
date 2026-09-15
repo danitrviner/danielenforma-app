@@ -1014,6 +1014,15 @@ export interface DietItem {
    *  marca y desmarca, y lo que permite quitar exactamente lo que se puso sin
    *  tocar lo que el atleta apuntó a mano. Ver utils/registroDesdeElMenu.ts. */
   origenMenu?: string;
+  /** Factor acumulado con el que se ha escalado la receta de la que sale este
+   *  ítem. 1 o ausente = ración tal cual.
+   *
+   *  Se guarda porque deducirlo de los intercambios no siempre funciona: un
+   *  toque del stepper son 0,25, y en un plato de 5,5-6 intercambios eso es un
+   *  4,2 % que `factorDeReceta` descarta como ruido de redondeo — y el ruido
+   *  llega también a 0,25, así que por tamaño son indistinguibles. Medido el
+   *  16-09-2026: le pasaba al 9,1 % del recetario. Ver `escalaDeReceta`. */
+  escala?: number;
 }
 
 /** Una receta camino de «Mi plan», con lo que se come de ella ya resuelto.

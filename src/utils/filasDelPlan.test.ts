@@ -127,3 +127,39 @@ describe('filas que vienen del menú semanal', () => {
     expect(fila.tipo === 'alimento' && fila.item.origenMenu).toBe('lun_m3');
   });
 });
+
+describe('el stepper guarda lo que hace', () => {
+  /* Sin esto, la ficha tenía que deducir el factor de los intercambios, y en
+   * un plato de 6 un toque del stepper (4,2 %) quedaba por debajo del umbral
+   * de ruido: el atleta daba al «+» y los gramos no se movían. */
+  const receta = (q: number, escala?: number): DietItem => ({
+    category: 'HC', foodLabel: 'Pizza', quantity: q, originRecipeId: 'r1',
+    ...(escala != null ? { escala } : {}),
+  });
+
+  it('un toque guarda su factor', () => {
+    const [item] = escalarReceta([receta(6)], [0], 0.25);
+    expect(item.quantity).toBe(6.25);
+    expect(item.escala).toBeCloseTo(6.25 / 6, 4);
+  });
+
+  it('dos toques acumulan sobre la receta ORIGINAL, no sobre lo ya escalado', () => {
+    const uno = escalarReceta([receta(6)], [0], 0.25);
+    const dos = escalarReceta(uno, [0], 0.25);
+    expect(dos[0].quantity).toBe(6.5);
+    // 6,5/6, no (6,25/6)×(6,5/6,25) mal compuesto.
+    expect(dos[0].escala).toBeCloseTo(6.5 / 6, 3);
+  });
+
+  it('bajar también se guarda', () => {
+    const [item] = escalarReceta([receta(6)], [0], -0.25);
+    expect(item.escala).toBeLessThan(1);
+  });
+
+  it('volver al punto de partida deja la escala en 1', () => {
+    const arriba = escalarReceta([receta(6)], [0], 0.25);
+    const vuelta = escalarReceta(arriba, [0], -0.25);
+    expect(vuelta[0].quantity).toBe(6);
+    expect(vuelta[0].escala).toBeCloseTo(1, 3);
+  });
+});
