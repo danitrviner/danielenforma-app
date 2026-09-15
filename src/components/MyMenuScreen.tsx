@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   UserProfile, WeeklyMenu, RecipeFavorites, MenuCompletionLog,
-  WeekDay, MenuDay, MenuMeal, Recipe, FoodCategory, MenuComplement, MealItem, DietMode, RecetaPendiente,
+  WeekDay, MenuDay, MenuMeal, Recipe, FoodCategory, MenuComplement, MealItem, DietMode, RecetaPendiente, DietItem,
 } from '../types';
 import { itemsDeComidaDelMenu } from '../utils/conversionNutricional';
 import {
@@ -250,6 +250,17 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
         doneItemIds: log?.doneItemIds ?? [],
       };
       const total = totalConExtras(meal.exch, meal.complements, meal.racionesExtra);
+      /* Los ítems se construyen con la MISMA función que usa el botón «Añadir a
+       * mi plan», para que marcar y añadir no puedan volver a separarse. La
+       * receta hace falta solo para el nombre cuando el menú no lo trae; si no
+       * carga (sin red), se sigue con `intercambios`, porque marcar una comida
+       * no puede fallar por no tener la ficha. */
+      let items: DietItem[] | undefined;
+      try {
+        const receta = meal.recipeId ? await getRecipeById(meal.recipeId) : null;
+        if (receta) items = itemsDeComidaDelMenu(receta, meal);
+      } catch { /* sin ficha: se registra por intercambios, como antes */ }
+
       const siguiente = marcando
         ? registrarComidaDelMenu(dia, {
             clave,
@@ -257,6 +268,7 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
             slot: meal.slot,
             intercambios: total,
             etiqueta: meal.recipeName,
+            items,
           })
         : quitarComidaDelMenu(dia, clave);
       if (siguiente === dia) return;   // nada que cambiar
@@ -280,8 +292,19 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
     }
   }
 
+  /* Guardia de doble clic con ref, no con estado.
+   *
+   * `anadiendoId` es estado de React: dos toques seguidos dentro del mismo
+   * ciclo leen los dos `null` —la closure todavía no se ha re-creado— y los dos
+   * pasan, metiendo la comida dos veces en el plan. Es la «receta duplicada»
+   * de la auditoría (§8.5). Un ref se actualiza en el acto, así que el segundo
+   * toque ya lo ve ocupado. El estado se conserva porque es lo que pinta el
+   * spinner del botón. */
+  const anadiendoRef = useRef(false);
+
   async function anadirAlPlan(meal: MenuMeal) {
-    if (!meal.recipeId || !onAddToPlan || anadiendoId) return;
+    if (!meal.recipeId || !onAddToPlan || anadiendoRef.current) return;
+    anadiendoRef.current = true;
     setAnadiendoId(meal.id);
     try {
       const receta = await getRecipeById(meal.recipeId);
@@ -297,6 +320,7 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
       // el toque.
       showToast('No se pudo cargar la receta.');
     } finally {
+      anadiendoRef.current = false;
       setAnadiendoId(null);
     }
   }

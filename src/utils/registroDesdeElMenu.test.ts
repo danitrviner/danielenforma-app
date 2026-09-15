@@ -89,3 +89,56 @@ describe('desmarcar', () => {
     expect(vuelta.meals.map(m => m.name)).toEqual(['Desayuno']);
   });
 });
+
+describe('cuando el menú manda los ítems ya resueltos', () => {
+  /* Antes esta función reconstruía los ítems desde un vector de intercambios, y
+   * el resultado eran alimentos sueltos con el nombre de la receta: sin
+   * `originRecipeId`, `filasDeComida` no los agrupaba y la misma comida salía
+   * como tres renglones repetidos. Ahora el menú manda los ítems ya hechos —los
+   * mismos que usa el botón «Añadir a mi plan»— y esta función solo los sella
+   * con su origen. Ver utils/paridadDeCaminos.test.ts. */
+  const items = [
+    { category: 'HC' as const, foodLabel: 'Arroz con pollo', quantity: 2, originRecipeId: 'r1' },
+    { category: 'PROT' as const, foodLabel: 'Arroz con pollo', quantity: 1, originRecipeId: 'r1' },
+    { category: 'HC' as const, foodLabel: '40g pan (de molde)', quantity: 1, baseGrams: 40 },
+  ];
+
+  const comidaConItems = {
+    clave: 'lun_m1', nombre: 'Comida', slot: 3,
+    intercambios: { HC: 3, PROT: 1 },
+    etiqueta: 'Arroz con pollo',
+    items,
+  };
+
+  it('usa esos ítems tal cual, no los reconstruye', () => {
+    const dia = diaVacio();
+    const puestos = registrarComidaDelMenu(dia, comidaConItems)
+      .meals.flatMap(m => m.items).filter(i => i.origenMenu === 'lun_m1');
+    expect(puestos).toHaveLength(3);
+    expect(puestos.map(i => i.quantity)).toEqual([2, 1, 1]);
+  });
+
+  it('conserva el origen de la receta, para que salga en UNA fila', () => {
+    const puestos = registrarComidaDelMenu(diaVacio(), comidaConItems)
+      .meals.flatMap(m => m.items).filter(i => i.originRecipeId === 'r1');
+    expect(puestos).toHaveLength(2);
+  });
+
+  it('conserva el gramaje del acompañamiento', () => {
+    const pan = registrarComidaDelMenu(diaVacio(), comidaConItems)
+      .meals.flatMap(m => m.items).find(i => i.foodLabel.includes('pan'));
+    expect(pan?.baseGrams).toBe(40);
+  });
+
+  it('marcar dos veces sigue sin contar dos veces', () => {
+    const una = registrarComidaDelMenu(diaVacio(), comidaConItems);
+    const dos = registrarComidaDelMenu(una, comidaConItems);
+    expect(dos).toBe(una);
+  });
+
+  it('desmarcar quita exactamente lo que puso', () => {
+    const puesta = registrarComidaDelMenu(diaVacio(), comidaConItems);
+    const quitada = quitarComidaDelMenu(puesta, 'lun_m1');
+    expect(quitada.meals.flatMap(m => m.items).filter(i => i.origenMenu === 'lun_m1')).toEqual([]);
+  });
+});
