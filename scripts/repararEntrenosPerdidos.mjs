@@ -80,8 +80,42 @@ for (const d of snapAsig.docs) {
   aReparar.push(d);
 }
 
+/* Entrenos guardados SIN ninguna asignación.
+ *
+ * Es el otro daño de reasignar a lo bruto, y no se arregla marcando nada: la
+ * asignación no existe, el día entero desapareció del calendario del atleta
+ * aunque su entreno siga guardado. Recrearla desde aquí sería adivinar a qué
+ * rutina pertenecía —al regenerar, los Workout se crean de cero—, así que se
+ * informa y lo decide una persona. */
+const diasSinAsignacion = new Map();
+for (const d of snapAsig.docs) diasSinAsignacion.set(clave(d.data()), true);
+const huerfanos = [];
+for (const d of snapLogs.docs) {
+  const l = d.data();
+  if (soloAtleta && l.athleteId !== soloAtleta) continue;
+  if (!diasSinAsignacion.has(clave(l))) huerfanos.push(l);
+}
+
+if (huerfanos.length > 0) {
+  console.log(`${huerfanos.length} ${huerfanos.length === 1 ? 'entreno guardado no tiene' : 'entrenos guardados no tienen'} asignación ninguna.`);
+  console.log(`Ese día desapareció del calendario al reasignar el mesociclo. El entreno NO se ha`);
+  console.log(`perdido, pero el atleta no lo ve en su calendario:`);
+  for (const l of huerfanos) console.log(`    ${l.athleteId}  ${l.date}`);
+  console.log('');
+}
+
 if (aReparar.length === 0) {
-  console.log('Nada que reparar: no hay ningún entreno guardado marcado como pendiente.');
+  console.log('Nada que marcar: no queda ningún entreno guardado cuyo día no esté ya completado.');
+  if (sobrantes.length > 0) {
+    console.log(`\n${sobrantes.length} asignaciones duplicadas del mismo día NO se tocan: hay más`);
+    console.log(`asignaciones que entrenos guardados, así que marcarlas inventaría entrenos que`);
+    console.log(`nadie hizo. Son restos de reasignar varias veces; revisar a mano:`);
+    for (const d of sobrantes.slice(0, 10)) {
+      const a = d.data();
+      console.log(`    ${a.athleteId}  ${a.date}  (${a.status})  id=${d.id}`);
+    }
+    if (sobrantes.length > 10) console.log(`    … y ${sobrantes.length - 10} más`);
+  }
   process.exit(0);
 }
 
