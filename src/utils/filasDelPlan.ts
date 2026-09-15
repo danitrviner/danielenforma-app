@@ -22,7 +22,18 @@ import { addToPlaced } from './exchangeHelpers';
  */
 export type FilaDelPlan =
   | { tipo: 'alimento'; idx: number; item: DietItem }
-  | { tipo: 'receta'; recipeId: string; nombre: string; idxs: number[]; intercambios: Record<FoodCategory, number> };
+  | {
+      tipo: 'receta';
+      recipeId: string;
+      nombre: string;
+      idxs: number[];
+      intercambios: Record<FoodCategory, number>;
+      /** `${día}_${idComida}` si esta receta vino de marcarla en «Mi menú».
+       *  La pantalla la pinta bloqueada: la comida es la que le tocaba en el
+       *  menú y reescalarla o moverla desde aquí descuadraría el menú por
+       *  detrás. Decisión de Dani, auditoría §8.6. */
+      origenMenu?: string;
+    };
 
 export function filasDeComida(items: DietItem[]): FilaDelPlan[] {
   const filas: FilaDelPlan[] = [];
@@ -51,6 +62,7 @@ export function filasDeComida(items: DietItem[]): FilaDelPlan[] {
       nombre: items[idxs[0]].foodLabel,
       idxs,
       intercambios,
+      ...(items[idxs[0]].origenMenu ? { origenMenu: items[idxs[0]].origenMenu } : {}),
     });
   }
   return filas;

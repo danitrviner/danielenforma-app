@@ -97,3 +97,33 @@ describe('escalarReceta', () => {
     expect(escalarReceta(items, [0], 0.25)).toEqual(items);
   });
 });
+
+describe('filas que vienen del menú semanal', () => {
+  /* Decisión de Dani: una receta marcada desde «Mi menú» cae en la comida que le
+   * tocaba y NO se puede mover ni reescalar desde el plan. La fila tiene que
+   * decir de dónde viene para que la pantalla lo enseñe en vez de ofrecer unos
+   * controles que descuadrarían el menú por detrás. */
+  const delMenu = (over: Partial<DietItem> = {}): DietItem => ({
+    category: 'HC', foodLabel: 'Arroz con pollo', quantity: 2,
+    originRecipeId: 'r1', origenMenu: 'lun_m3', ...over,
+  });
+
+  it('la fila de receta dice de qué comida del menú viene', () => {
+    const [fila] = filasDeComida([delMenu(), delMenu({ category: 'PROT', quantity: 1 })]);
+    expect(fila.tipo).toBe('receta');
+    expect(fila.tipo === 'receta' && fila.origenMenu).toBe('lun_m3');
+  });
+
+  it('una receta añadida a mano no lleva marca de menú', () => {
+    const [fila] = filasDeComida([delMenu({ origenMenu: undefined })]);
+    expect(fila.tipo === 'receta' && fila.origenMenu).toBeUndefined();
+  });
+
+  it('un alimento suelto del menú también se distingue', () => {
+    // El acompañamiento de una comida del menú: entra sin originRecipeId pero
+    // sí con origenMenu, y tampoco se puede tocar desde el plan.
+    const [fila] = filasDeComida([{ category: 'HC', foodLabel: '40g pan', quantity: 1, origenMenu: 'lun_m3' }]);
+    expect(fila.tipo).toBe('alimento');
+    expect(fila.tipo === 'alimento' && fila.item.origenMenu).toBe('lun_m3');
+  });
+});
