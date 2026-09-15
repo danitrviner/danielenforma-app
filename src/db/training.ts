@@ -11,6 +11,7 @@ import { slugify } from '../utils/maquinaId';
 import { exigeEmail, clavesDelAtleta, type ClavesDeAtleta } from './clavesDeAtleta';
 import { leerCatalogo, marcarCatalogoCambiado } from './catalogoVersionado';
 import { escribirLocal } from '../utils/almacenLocal';
+import { asignacionesABorrar } from '../utils/estadoDeAsignacion';
 
 // T14 (18-08): mismo patrón que idDeFoodItem — un ID determinista hace que
 // sembrar dos veces sobreescriba en vez de duplicar.
@@ -928,11 +929,22 @@ export async function deleteWorkoutAssignmentsByMesocycleId(mesocycleId: string)
 // These never fall back to localStorage — they throw on any Firestore failure
 // so the caller can surface the real error instead of silently writing local.
 
-export async function deleteWorkoutsByMesocycleIdStrict(mesocycleId: string): Promise<void> {
-  saveLocalWorkouts(getLocalWorkouts().filter(w => w.mesocycleId !== mesocycleId));
+/**
+ * `conservar` son rutinas que NO se borran aunque pertenezcan al mesociclo: las
+ * que todavía cuelgan de un día ya entrenado. Sin esto, reprogramar dejaba la
+ * asignación del lunes apuntando a una rutina inexistente, y el atleta abría su
+ * entreno del lunes y se encontraba una sesión vacía.
+ */
+export async function deleteWorkoutsByMesocycleIdStrict(
+  mesocycleId: string,
+  conservar: readonly string[] = [],
+): Promise<void> {
+  const protegidas = new Set(conservar);
+  saveLocalWorkouts(getLocalWorkouts().filter(w => w.mesocycleId !== mesocycleId || protegidas.has(w.id)));
   const q = query(collection(db, 'workouts'), where('mesocycleId', '==', mesocycleId));
   const snap = await getDocs(q);
-  if (snap.size > 0) await Promise.all(snap.docs.map(d => deleteDoc(d.ref)));
+  const aBorrar = snap.docs.filter(d => !protegidas.has(d.id));
+  if (aBorrar.length > 0) await Promise.all(aBorrar.map(d => deleteDoc(d.ref)));
 }
 
 export async function deleteWorkoutAssignmentsByMesocycleIdStrict(mesocycleId: string): Promise<void> {
@@ -940,6 +952,42 @@ export async function deleteWorkoutAssignmentsByMesocycleIdStrict(mesocycleId: s
   const q = query(collection(db, 'workoutAssignments'), where('mesocycleId', '==', mesocycleId));
   const snap = await getDocs(q);
   if (snap.size > 0) await Promise.all(snap.docs.map(d => deleteDoc(d.ref)));
+}
+
+/**
+ * Borra SOLO las asignaciones reprogramables de un mesociclo y devuelve las que
+ * se conservan.
+ *
+ * Reprogramar era «borra todo y vuelve a crearlo», y eso se llevaba por delante
+ * los días ya entrenados: volvían como `pending` y el atleta veía su lunes sin
+ * completar (auditoría §4.1). Ahora reprogramar solo toca lo que todavía no ha
+ * pasado. Quien llame a esto debe crear únicamente las asignaciones que
+ * `planDeReprogramacion` devuelva en `crear`, o duplicará los días conservados.
+ */
+export async function borrarAsignacionesReprogramables(
+  mesocycleId: string,
+  athleteEmail: string,
+  hoy: string,
+): Promise<{ conservadas: WorkoutAssignment[]; borradas: number }> {
+  const q = query(collection(db, 'workoutAssignments'), where('mesocycleId', '==', mesocycleId));
+  const snap = await getDocs(q);
+  const existentes = snap.docs.map(d => ({ id: d.id, ...d.data() } as WorkoutAssignment));
+
+  // Los logs del atleta desde el primer día del bloque: no hace falta más
+  // historia para decidir qué días de ESTE mesociclo están entrenados, y pedir
+  // menos es pagar menos lecturas.
+  const desde = existentes.reduce((min, a) => (a.date < min ? a.date : min), '9999-12-31');
+  const logs = await getWorkoutLogs(athleteEmail, desde === '9999-12-31' ? undefined : { desde });
+
+  const aBorrar = asignacionesABorrar(existentes, logs, hoy);
+  const idsABorrar = new Set(aBorrar.map(a => a.id));
+
+  saveLocalAssignments(getLocalAssignments().filter(a => !idsABorrar.has(a.id)));
+  if (aBorrar.length > 0) {
+    await Promise.all(snap.docs.filter(d => idsABorrar.has(d.id)).map(d => deleteDoc(d.ref)));
+  }
+
+  return { conservadas: existentes.filter(a => !idsABorrar.has(a.id)), borradas: aBorrar.length };
 }
 
 export async function createWorkoutStrict(data: Omit<Workout, 'id'>): Promise<Workout> {

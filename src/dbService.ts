@@ -57,6 +57,7 @@ export {
   migratePrimaryFocusToMuscleGroup,
   deleteWorkoutsByMesocycleId, deleteWorkoutAssignmentsByMesocycleId,
   deleteWorkoutsByMesocycleIdStrict, deleteWorkoutAssignmentsByMesocycleIdStrict,
+  borrarAsignacionesReprogramables,
   createWorkoutStrict, createWorkoutAssignmentStrict,
   getMesocycles, getMesocyclesForAthletes, createMesocycle, updateMesocycle, deleteMesocycle,
   getMesocycleTemplates, createMesocycleTemplate, updateMesocycleTemplate, deleteMesocycleTemplate,
