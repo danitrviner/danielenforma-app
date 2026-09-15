@@ -54,3 +54,53 @@ describe('TRAINING_SPLITS', () => {
     for (const s of semanales) expect(cicloDeSplit(s)).toBe(7);
   });
 });
+
+describe('los repartos semanales no amontonan las sesiones', () => {
+  /* El caso de la auditoría (§5): eliges «Torso - Pierna - Torso - Pierna» y la
+   * app lo coloca en lunes, martes, miércoles y jueves, con los tres días de
+   * descanso juntos al final. Nadie entrena así: lo normal es alternar.
+   *
+   * `semanal()` rellenaba hasta 7 con descansos AL FINAL, así que las sesiones
+   * caían siempre en los primeros días. Ahora se reparten por la semana, que es
+   * lo que ya hacía `uniforme()` para los ciclos rotativos.
+   *
+   * Sigue siendo una PROPUESTA: el coach puede mover los días a mano después. */
+  const diasDeEntreno = (id: string) => {
+    const split = TRAINING_SPLITS.find(s => s.id === id)!;
+    return split.dayTypes.map((t, i) => ({ t, i })).filter(x => x.t !== 'Descanso').map(x => x.i);
+  };
+
+  it('cuatro sesiones no caen en cuatro días seguidos', () => {
+    expect(diasDeEntreno('4-torso-pierna-x2')).not.toEqual([0, 1, 2, 3]);
+  });
+
+  it('con cuatro sesiones hay al menos un descanso intercalado', () => {
+    const dias = diasDeEntreno('4-torso-pierna-x2');
+    const huecos = dias.slice(1).map((d, i) => d - dias[i]);
+    expect(huecos.some(h => h > 1)).toBe(true);
+  });
+
+  it('tres sesiones quedan repartidas, no de lunes a miércoles', () => {
+    expect(diasDeEntreno('3-push-pull-legs')).not.toEqual([0, 1, 2]);
+  });
+
+  it('el reparto sigue durando una semana', () => {
+    for (const id of ['2-torso-pierna', '3-push-pull-legs', '4-torso-pierna-x2', '5-torso-pierna-x2-brazo']) {
+      expect(TRAINING_SPLITS.find(s => s.id === id)!.dayTypes).toHaveLength(7);
+    }
+  });
+
+  it('no se pierde ni se inventa ninguna sesión', () => {
+    const split = TRAINING_SPLITS.find(s => s.id === '4-torso-pierna-x2')!;
+    const sesiones = split.dayTypes.filter(t => t !== 'Descanso');
+    expect(sesiones).toEqual(['Torso', 'Pierna', 'Torso', 'Pierna']);
+  });
+
+  it('con seis sesiones solo cabe un descanso, y no pasa nada', () => {
+    expect(diasDeEntreno('6-ppl-x2')).toHaveLength(6);
+  });
+
+  it('siete sesiones ocupan la semana entera', () => {
+    expect(diasDeEntreno('7-ppl-x2-full')).toEqual([0, 1, 2, 3, 4, 5, 6]);
+  });
+});

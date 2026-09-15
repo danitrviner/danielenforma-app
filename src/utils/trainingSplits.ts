@@ -22,9 +22,26 @@ export interface TrainingSplit {
   dayTypes: string[];
 }
 
-/** Reparto semanal clásico: los días que sobran hasta 7 son de descanso. */
+/**
+ * Reparto semanal: las sesiones se distribuyen a lo largo de los 7 días, con
+ * los descansos INTERCALADOS.
+ *
+ * Antes se escribían las sesiones seguidas y los descansos se amontonaban al
+ * final: elegir «Torso - Pierna - Torso - Pierna» daba lunes, martes,
+ * miércoles y jueves, y después tres días libres de un tirón. Nadie entrena
+ * así, y era lo primero que el coach tenía que deshacer a mano (auditoría §5).
+ *
+ * Usa el mismo reparto que los ciclos rotativos (`offsetsDeSesiones`), así que
+ * las dos clases de reparto colocan los días con el mismo criterio.
+ *
+ * Sigue siendo una PROPUESTA INICIAL: el calendario del mesociclo deja mover
+ * cada sesión a mano, y al tocarlo manda `customOffsets`.
+ */
 function semanal(id: string, label: string, tipos: string[]): TrainingSplit {
-  return { id, label, dayTypes: [...tipos, ...Array(Math.max(0, 7 - tipos.length)).fill(DESCANSO)] };
+  const offsets = offsetsDeSesiones({ sesiones: tipos.length, cicloDias: 7, repartirEnElCiclo: true });
+  const dayTypes = Array<string>(7).fill(DESCANSO);
+  offsets.forEach((dia, i) => { dayTypes[dia] = tipos[i]; });
+  return { id, label, dayTypes };
 }
 
 /** Reparto rotativo: el ciclo dura lo que diga `dayTypes`, descansos incluidos. */
