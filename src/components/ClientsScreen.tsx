@@ -19,6 +19,7 @@ import { estimateSetupPct } from '../utils/clientSetup';
 import { atletasActivos, esBaja, esAnonimizado } from '../utils/atletas';
 import { Avatar, Skeleton } from './ui';
 import { EmptyState, Badge } from './ui';
+import { compararNombres } from '../utils/ordenAlfabetico';
 import { coincideBusqueda } from '../utils/busqueda';
 
 const DEFAULT_HUB_TAB: HubTab = 'revisiones';
@@ -63,11 +64,15 @@ const AthleteRow = React.memo(function AthleteRow({ athlete, onOpen }: {
       onClick={() => onOpen(athlete)}
       className="flex items-center gap-3 bg-raised border border-hairline rounded-control px-3 py-2.5 text-left hover:border-accent/40 transition-colors"
     >
-      <div className="w-8 h-8 rounded-full overflow-hidden border border-hairline flex-shrink-0">
+      {/* El nombre es lo que el coach viene a buscar, así que manda en la fila:
+          sube de 12 px a 15 px (`text-body`) y el avatar crece con él. Antes el
+          nombre pesaba lo mismo que su línea de datos y costaba localizar a
+          alguien de un vistazo (auditoría §3.1). */}
+      <div className="w-10 h-10 rounded-full overflow-hidden border border-hairline flex-shrink-0">
         <Avatar src={athlete.avatarUrl} name={athlete.displayName} className="w-full h-full object-cover" />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="font-sans font-bold text-white text-label truncate">{athlete.displayName}</p>
+        <p className="font-sans font-bold text-white text-body truncate">{athlete.displayName}</p>
         <p className="font-mono text-caption text-ink-3 truncate mt-0.5">{metaLine}</p>
       </div>
     </button>
@@ -270,7 +275,15 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
         sortScore,
         setupPct,
       };
-    }).sort((a, b) => a.sortScore - b.sortScore);
+    /* Orden ALFABÉTICO, pedido en la auditoría (§3.2). Antes se ordenaba por
+     * `sortScore`, que subía arriba a quien más atención necesitaba; eso se ha
+     * cambiado a propósito, porque una lista que se recoloca sola cada día hace
+     * imposible encontrar a alguien por su nombre. Las señales de urgencia no se
+     * pierden: siguen pintadas en cada fila (plan caducado, check-in tarde...).
+     * `sortScore` se conserva como desempate para que, a igualdad de nombre, el
+     * orden siga siendo estable. */
+    }).sort((a, b) =>
+      compararNombres(a.displayName, b.displayName) || a.sortScore - b.sortScore);
   }, [athletes, checkins, todayMs, allAssignments, allWorkoutLogs]);
 
   const filteredAthletes = useMemo(() => {
