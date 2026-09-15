@@ -14,7 +14,7 @@ import {
   getRecipeFavorites, saveRecipeFavorites, getFoodItems, seedFoodItemsIfEmpty,
   getDietCompletionLog, saveDietCompletionLog,
 } from '../dbService';
-import { findSwapAlternatives, recipeMatchesSlot, buildBatchPlan, totalConExtras, GeneratorPrefs, SwapCandidate } from '../utils/menuEngine';
+import { findSwapAlternatives, recipeMatchesSlot, buildBatchPlan, totalConExtras, topeDeExtra, GeneratorPrefs, SwapCandidate } from '../utils/menuEngine';
 import { normalizeStr } from '../utils/foodPrefs';
 import { athleteConditions } from '../utils/dietaryRestrictions';
 import { dietTypeVigente } from '../utils/foodPrefs';
@@ -846,7 +846,21 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
         const q = normalizeStr(extraQuery.trim());
         // `prefs.conditions` también aquí: el buscador de extras le abre al
         // atleta el banco entero, y ahí dentro hay pan, pasta y hasta seitán.
+        /* Cuánto cabe todavía en esta comida. El recorte de verdad lo hace la
+         * capa de escritura (`updateWeeklyMenu`), que es la que no se puede
+         * saltar; esto es para que el atleta VEA el tope en vez de escribir un
+         * número que luego le desaparece sin explicación. */
+        const comidaDelExtra = day?.meals.find(m => m.id === extrasFor?.mealId);
+        const topeActual = comidaDelExtra && actual
+          ? topeDeExtra(comidaDelExtra, actual.category, extrasFor?.idx ?? undefined)
+          : Infinity;
+        const cabeMas = actual ? actual.quantity + 0.25 <= topeActual : true;
+
+        /* Un alimento cuya categoría ya está cubierta no se ofrece: entrar con
+         * cantidad 1 y que la capa de escritura lo borre en el acto parecería
+         * que la app se lo ha comido. */
         const catalogo = complementosDisponibles(foodList, dietMode, actual?.category, prefs.conditions)
+          .filter(a => !comidaDelExtra || topeDeExtra(comidaDelExtra, a.category, extrasFor?.idx ?? undefined) >= 0.25)
           .filter(f => !q || normalizeStr(f.label).includes(q));
 
         function cambiarCantidad(delta: number) {
@@ -895,11 +909,19 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
                     <span className="font-mono text-body-s text-ink w-10 text-center">{actual.quantity}</span>
                     <button
                       onClick={() => cambiarCantidad(0.25)}
-                      className="w-11 h-11 rounded-control bg-raised text-ink-2 hover:text-ink text-body-s font-bold flex items-center justify-center"
-                      title="Más cantidad"
+                      disabled={!cabeMas}
+                      className="w-11 h-11 rounded-control bg-raised text-ink-2 hover:text-ink text-body-s font-bold flex items-center justify-center disabled:opacity-40 disabled:hover:text-ink-2"
+                      title={cabeMas ? 'Más cantidad' : 'Esta comida ya llega a su objetivo'}
                     >+</button>
                   </div>
                 </div>
+              )}
+
+              {actual && !cabeMas && (
+                <p className="font-sans text-caption text-ink-2 px-1">
+                  Esta comida ya llega a lo que te toca. Los extras están para
+                  completar lo que falta, no para sumar de más.
+                </p>
               )}
 
               {actual && (

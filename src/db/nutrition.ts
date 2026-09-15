@@ -6,6 +6,7 @@ import { SYSTEM_FOODS } from '../nutricion_seed_en_forma';
 import { idDeFoodItem } from '../utils/foodItemId';
 import { leerCatalogo, marcarCatalogoCambiado } from './catalogoVersionado';
 import { escribirLocal } from '../utils/almacenLocal';
+import { acotarExtrasDeComida } from '../utils/menuEngine';
 
 // ─── FOOD ITEMS ───────────────────────────────────────────────────────────────
 
@@ -375,7 +376,42 @@ export async function createWeeklyMenu(data: Omit<WeeklyMenu, 'id'>): Promise<We
   }
 }
 
+/**
+ * Recorta los extras de cada comida a lo que cabe en su objetivo, antes de
+ * guardar.
+ *
+ * Es el único paso obligatorio por el que pasan TODAS las ediciones del menú
+ * —la hoja de extras del atleta, el cambio de receta, el editor del coach—, así
+ * que es donde se hace cumplir la regla de los extras (auditoría §6): rellenan
+ * lo que falta, no añaden por encima.
+ *
+ * Dicho en claro: esto es un invariante de CLIENTE, no una validación de
+ * servidor. Las reglas de Firestore no pueden recorrer ni sumar arrays, y esta
+ * app no tiene backend propio, así que este es el sitio más cercano que hay.
+ * Vender lo contrario sería vender una seguridad que no existe.
+ *
+ * Puro e idempotente: un menú que ya cabe sale con la misma referencia y no
+ * provoca ni una escritura de más.
+ */
+function conExtrasAcotados(updates: Partial<WeeklyMenu>): Partial<WeeklyMenu> {
+  if (!updates.days) return updates;
+  let algoRecortado = false;
+  const days = updates.days.map(d => {
+    let cambiada = false;
+    const meals = d.meals.map(m => {
+      const { meal, recortado } = acotarExtrasDeComida(m);
+      if (recortado) cambiada = true;
+      return meal;
+    });
+    if (!cambiada) return d;
+    algoRecortado = true;
+    return { ...d, meals };
+  });
+  return algoRecortado ? { ...updates, days } : updates;
+}
+
 export async function updateWeeklyMenu(id: string, updates: Partial<WeeklyMenu>): Promise<void> {
+  updates = conExtrasAcotados(updates);
   const all = getWeeklyMenusFromLocal();
   const updated = all.map(m => m.id === id ? { ...m, ...updates } : m);
   if (forceLocalOnly) { setWeeklyMenusToLocal(updated); return; }

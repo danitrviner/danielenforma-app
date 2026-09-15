@@ -1465,6 +1465,18 @@ export interface MenuRacionExtra {
 
 export interface MenuMeal {
   id: string;
+  /** Lo que esta comida debería sumar, guardado al generar el día.
+   *
+   *  Se persiste porque el reparto del día entre comidas sale del perfil de
+   *  hambre del onboarding (`slotsPorConteo`), que no viaja con el menú: sin
+   *  esto, cualquier capa que quisiera saber cuánto cabe en una comida tendría
+   *  que ADIVINARLO, y un tope adivinado recorta extras legítimos.
+   *
+   *  Es lo que hace cumplir la regla de los extras: solo rellenan lo que falta
+   *  para llegar aquí (ver `topeDeExtra`). Ausente en los menús publicados
+   *  antes de 09-2026, y en ese caso NO se recorta nada.
+   */
+  objetivo?: BudgetVec;
   slot: number; // intakeType 1-5
   name: string; // "Desayuno", "Comida"...
   recipeId: string;

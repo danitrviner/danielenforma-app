@@ -725,6 +725,19 @@ function finalizeDay(
   }
 
   meals.forEach((meal, i) => {
+    /* Qué debería sumar esta comida: lo que ya pone el plato más lo que el
+     * reparto del día le asigna. Se guarda en el documento porque el reparto
+     * depende del perfil de hambre del onboarding, que no viaja con el menú:
+     * sin esto, nadie más puede saber cuánto cabe en una comida sin adivinarlo,
+     * y de ahí que la edición manual de extras no tuviera ningún tope.
+     * Ver `topeDeExtra`. */
+    const puestoPorElPlato = mealTotalExch(meal);
+    meal.objetivo = {
+      HC: round2(puestoPorElPlato.HC + reparto[i].HC),
+      PROT: round2(puestoPorElPlato.PROT + reparto[i].PROT),
+      GRASA: round2(puestoPorElPlato.GRASA + reparto[i].GRASA),
+    };
+
     // 1º más ración de lo que la receta ya lleva, 2º un acompañamiento para lo
     // que quede. Ese orden es el punto de todo esto: es más natural echar más
     // arroz al arroz con pollo que ponerle dos tostadas al lado.
@@ -1232,4 +1245,101 @@ export function isMenuStale(
     }
   }
   return false;
+}
+
+// ─── Tope de extras ──────────────────────────────────────────────────────────
+
+/* La regla, en palabras de Dani (auditoría §6): «los extras son solo alimentos
+ * que se añaden cuando la receta no cubre las necesidades de los macros o kcal,
+ * para que no se coma de menos según lo que tenemos calculado».
+ *
+ * O sea: el extra RELLENA lo que falta, no añade por encima. El generador ya
+ * respetaba sus propios límites, pero la edición manual del atleta no tenía
+ * ninguno: desde la hoja de extras se podía seguir sumando sin fin y salirse
+ * del plan sin que nada lo dijera.
+ *
+ * El tope sale de `meal.objetivo`, guardado al generar el día. Cuando falta
+ * (menús publicados antes de 09-2026) NO se recorta: clampar sobre una
+ * suposición se comería extras legítimos, y eso es peor que no tener tope. */
+
+/**
+ * Cuántos intercambios de `category` caben todavía como extra en esta comida.
+ * `Infinity` si la comida no trae objetivo guardado.
+ *
+ * `excluirComplemento` es el índice del extra que se está midiendo: sin él, un
+ * extra ya puesto contaría contra su propio hueco y sería imposible subirlo.
+ */
+export function topeDeExtra(
+  meal: MenuMeal,
+  category: FoodCategory,
+  excluirComplemento?: number,
+): number {
+  if (!meal.objetivo) return Infinity;
+
+  const sinEse: MenuMeal = excluirComplemento == null ? meal : {
+    ...meal,
+    complements: meal.complements.filter((_, i) => i !== excluirComplemento),
+  };
+  return cabenIntercambios(category, catDestino(category), huecoDeComida(sinEse, meal.objetivo));
+}
+
+/** A qué casilla del presupuesto se imputa un alimento de esta categoría. */
+function catDestino(category: FoodCategory): keyof BudgetVec {
+  if (category === 'MIX_HC') return 'HC';
+  if (category === 'MIX_GRASA') return 'GRASA';
+  return category;
+}
+
+/**
+ * Recorta los extras de una comida a lo que de verdad cabe. Pura e idempotente:
+ * una comida que ya cabe se devuelve TAL CUAL (misma referencia), para que
+ * llamarla de más no provoque escrituras ni renders inútiles.
+ *
+ * Se aplica en la capa de escritura (`updateWeeklyMenu`), que es el único paso
+ * obligatorio por el que pasan todas las ediciones del menú — las del atleta y
+ * las del coach. Las reglas de Firestore no pueden sumar arrays, así que este
+ * es el sitio más cercano a «backend» que tiene esta app, y conviene decirlo en
+ * claro en vez de fingir una validación de servidor que no existe.
+ */
+export function acotarExtrasDeComida(meal: MenuMeal): { meal: MenuMeal; recortado: boolean } {
+  if (!meal.objetivo) return { meal, recortado: false };
+
+  const objetivo = meal.objetivo;
+  let recortado = false;
+
+  // Base: el plato solo. Los extras se van recolocando encima uno a uno, así
+  // que cada uno se mide contra lo que queda después de los anteriores.
+  let acumulado: MenuMeal = { ...meal, complements: [], racionesExtra: [] };
+
+  const raciones: MenuRacionExtra[] = [];
+  for (const r of meal.racionesExtra ?? []) {
+    const cabe = Math.min(r.quantity, cabenIntercambios(r.category, catDestino(r.category), huecoDeComida(acumulado, objetivo)));
+    if (cabe < PASO_INTERCAMBIO) { recortado = true; continue; }
+    // Los gramos van con la cantidad: dejar los 180 g de seis intercambios en
+    // una ración de dos enseñaría un gramaje que no corresponde.
+    const ajustada = cabe === r.quantity ? r
+      : { ...r, quantity: round2(cabe), gramos: Math.round((r.gramos / r.quantity) * cabe) };
+    if (ajustada !== r) recortado = true;
+    raciones.push(ajustada);
+    acumulado = { ...acumulado, racionesExtra: raciones };
+  }
+
+  const complementos: MenuComplement[] = [];
+  for (const c of meal.complements) {
+    const cabe = Math.min(c.quantity, cabenIntercambios(c.category, catDestino(c.category), huecoDeComida(acumulado, objetivo)));
+    if (cabe < PASO_INTERCAMBIO) { recortado = true; continue; }
+    const ajustado = cabe === c.quantity ? c : { ...c, quantity: round2(cabe) };
+    if (ajustado !== c) recortado = true;
+    complementos.push(ajustado);
+    acumulado = { ...acumulado, complements: complementos };
+  }
+
+  if (!recortado) return { meal, recortado: false };
+
+  const recortada: MenuMeal = {
+    ...meal,
+    complements: complementos,
+    ...(meal.racionesExtra ? { racionesExtra: raciones } : {}),
+  };
+  return { meal: { ...recortada, kcal: mealKcal(recortada) }, recortado: true };
 }
