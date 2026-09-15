@@ -10,8 +10,9 @@ import {
   setSeededTaskDone, createCoachClientTask, updateCoachClientTask, deleteCoachClientTask,
   updateUserProfile,
 } from '../../dbService';
-import { computeSetupChecklist, SetupItem } from '../../utils/clientSetup';
+import { computeSetupChecklist } from '../../utils/clientSetup';
 import { construirRecorrido, PasoConEstado } from '../../utils/implantacion';
+import { clasificarAviso } from '../../utils/avisosDelCoach';
 import { idDePaso } from '../../utils/recorridoDelPlan';
 import { hoyIsoLocal } from '../../utils/trainingWeek';
 import { isoWeekKey } from '../../utils/challengeOptions';
@@ -20,8 +21,7 @@ import { useToast } from '../../hooks/useToast';
 import { HubTab } from '../ClientHub';
 import IndiceRecorrido, { tituloCorto } from './IndiceRecorrido';
 import DetallePaso from './DetallePaso';
-import CarrilSeguimiento from './CarrilSeguimiento';
-import { Skeleton, SegmentedControl, RingSeal, Button, Banner, ListRow, Icon } from '../ui';
+import { Card, Skeleton, RingSeal, Button, Banner, ListRow, Icon, Input } from '../ui';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    IMPLANTACIÓN — montar el programa de un atleta, de la A a la Z.
@@ -36,16 +36,19 @@ import { Skeleton, SegmentedControl, RingSeal, Button, Banner, ListRow, Icon } f
    la derecha y el editor de verdad se abre ENCIMA en una hoja, así que al
    cerrarlo sigues en el mismo punto del recorrido.
 
-   ── Dos carriles, porque no son lo mismo ───────────────────────────────────
-   · **Montaje**: los seis bloques A-F de `recorridoDelPlan.ts` — construir el
-     programa. Es lo que se hace de una sentada al dar de alta o al renovar.
-   · **Seguimiento**: contacto diario, primera revisión, reseña, referidos,
-     decisión de renovación. Eso es acompañar al cliente durante semanas y no
-     pinta nada en medio del montaje; antes estaban mezclados en el mismo
-     acordeón y ensuciaban el recorrido.
-   ═══════════════════════════════════════════════════════════════════════════ */
+   ── Solo el montaje ────────────────────────────────────────────────────────
+   Los seis bloques A-F de `recorridoDelPlan.ts`: construir el programa, que es
+   lo que se hace de una sentada al dar de alta o al renovar.
 
-type Carril = 'montaje' | 'seguimiento';
+   Los ítems de acompañamiento (contacto diario, reseña, referidos, decisión de
+   renovación) se siguen calculando en `clientSetup.ts` —alimentan el % de la
+   parrilla de clientes y las alertas— pero ya NO se pintan: eran una lista de
+   recordatorios genéricos que no decían nada que Dani no supiera, y metidos
+   aquí solo alargaban la pantalla.
+
+   Lo que sí se queda son las TAREAS SUELTAS con fecha, abajo: es la única
+   forma de dejarse un recordatorio propio sobre un cliente.
+   ═══════════════════════════════════════════════════════════════════════════ */
 
 interface Props {
   athlete: UserProfile;
@@ -90,8 +93,9 @@ export default function ClientImplantacionPanel({
   });
   const cargando = cargandoRoadmap || cargandoPrograma || cargandoReto || cargandoTareas;
 
-  const [carril, setCarril] = useState<Carril>('montaje');
   const [activo, setActivo] = useState<string | null>(null);
+  const [tituloExtra, setTituloExtra] = useState('');
+  const [fechaExtra, setFechaExtra] = useState('');
 
   const resultado = useMemo(() => computeSetupChecklist({
     profile: athlete, onboarding, checkins, mesocycles, workoutAssignments,
@@ -132,6 +136,7 @@ export default function ClientImplantacionPanel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cargando]);
 
+  const extras = manualTasks.filter(t => t.createdBy === 'coach');
   const pasos = recorrido.bloques.flatMap(b => b.pasos);
   const elegido = pasos.find(p => p.paso.numero === activo) ?? null;
 
@@ -174,29 +179,6 @@ export default function ClientImplantacionPanel({
 
   const ponerFecha = (paso: PasoConEstado, fecha: string | undefined) =>
     escribirTarea(paso, paso.estado === 'done', fecha ?? null, 'guardar el recordatorio');
-
-  // Los ítems de acompañamiento siguen usando su propio id, como siempre.
-  const marcarItem = async (item: SetupItem) => {
-    const hecho = item.status !== 'done';
-    const previo = queryClient.getQueryData<CoachClientTask[]>(tareasKey);
-    queryClient.setQueryData<CoachClientTask[]>(tareasKey, prev => {
-      const lista = prev ?? [];
-      const yaEsta = lista.find(t => t.itemId === item.id);
-      if (yaEsta) return lista.map(t => t.itemId === item.id ? { ...t, done: hecho } : t);
-      return [...lista, {
-        id: `${athlete.email}_${item.id}`, athleteId: athlete.email, itemId: item.id,
-        title: item.title, phase: item.phase, done: hecho,
-        createdBy: 'seed' as const, createdAt: new Date().toISOString(),
-      }];
-    });
-    try {
-      await setSeededTaskDone(athlete.email, item.id, item.title, item.phase, hecho);
-    } catch (err) {
-      console.error(err);
-      queryClient.setQueryData(tareasKey, previo);
-      showToast(mensajeDeErrorFirestore(err, 'marcar la tarea'));
-    }
-  };
 
   const crearExtra = async (titulo: string, fecha?: string) => {
     try {
@@ -248,10 +230,23 @@ export default function ClientImplantacionPanel({
   return (
     <div className="space-y-5">
       {/* ── Cabecera ──────────────────────────────────────────────────────── */}
-      <div className="flex flex-wrap items-center gap-4">
-        <RingSeal percent={recorrido.pct} size={84} label={`Montaje del plan al ${recorrido.pct}%`}>
-          <span className="font-mono font-semibold text-title-s tabular-nums">{recorrido.pct}%</span>
-          <span className="font-mono text-caption text-ink-3 uppercase tracking-[.1em]">Montaje</span>
+      <Card className="flex flex-wrap items-center gap-4">
+        {/* UN solo hijo: `RingSeal` centra lo que reciba en un flex horizontal,
+            así que dos elementos sueltos salen uno al lado del otro y la
+            etiqueta se desborda del anillo. La columna va dentro. */}
+        <RingSeal
+          percent={recorrido.pct}
+          size={104}
+          strokeWidth={9}
+          complete={recorrido.pct >= 100}
+          label={`Montaje del plan al ${recorrido.pct}%`}
+        >
+          <div className="flex flex-col items-center justify-center">
+            <span className="font-display font-black text-title-l text-ink leading-none tabular-nums">
+              {recorrido.pct}%
+            </span>
+            <span className="font-mono text-caption text-ink-2 uppercase tracking-widest mt-1">Montaje</span>
+          </div>
         </RingSeal>
         <div className="min-w-0 flex-1">
           {recorrido.siguiente ? (
@@ -273,11 +268,11 @@ export default function ClientImplantacionPanel({
           )}
         </div>
         {recorrido.siguiente && (
-          <Button onClick={() => { setCarril('montaje'); setActivo(recorrido.siguiente!.paso.numero); }}>
+          <Button onClick={() => setActivo(recorrido.siguiente!.paso.numero)}>
             Ir al siguiente
           </Button>
         )}
-      </div>
+      </Card>
 
       {avisosUrgentes.size > 0 && (
         <Banner tone="danger">
@@ -287,29 +282,18 @@ export default function ClientImplantacionPanel({
         </Banner>
       )}
 
-      <SegmentedControl
-        label="Carril"
-        options={[
-          { value: 'montaje', label: 'Montaje' },
-          { value: 'seguimiento', label: 'Seguimiento' },
-        ]}
-        value={carril}
-        onChange={v => setCarril(v as Carril)}
-      />
-
-      {carril === 'montaje' ? (
-        // Índice a la izquierda y paso a la derecha. En móvil se apila: el
-        // índice arriba, el paso debajo.
-        <div className="flex flex-col lg:flex-row gap-5 lg:items-start">
-          <div className="lg:w-[17rem] shrink-0">
+      {/* Índice a la izquierda y paso a la derecha. En móvil se apila: el
+          índice arriba, el paso debajo. */}
+      <div className="flex flex-col lg:flex-row gap-5 lg:items-start">
+          <Card className="lg:w-[17rem] shrink-0" padding="s">
             <IndiceRecorrido
               bloques={recorrido.bloques}
               activo={activo}
               onElegir={setActivo}
               avisosUrgentes={avisosUrgentes}
             />
-          </div>
-          <div className="flex-1 min-w-0 bg-surface border border-hairline rounded-surface p-4">
+          </Card>
+          <Card className="flex-1 min-w-0">
             {elegido ? (
               <DetallePaso
                 paso={elegido}
@@ -322,20 +306,86 @@ export default function ClientImplantacionPanel({
             ) : (
               <p className="font-sans text-label text-ink-3">Elige un paso del índice.</p>
             )}
+          </Card>
+      </div>
+
+      {/* ── Tus tareas con este cliente ────────────────────────────────────
+          Lo único que sobrevive del carril de seguimiento: los recordatorios
+          que el coach se pone él mismo. Van con fecha, y lo vencido sale
+          arriba en rojo y en la campana. */}
+      <Card title="Tus tareas con este cliente" className="space-y-3">
+        {extras.length > 0 && (
+          <ul className="space-y-1">
+            {extras.map(t => {
+              const aviso = clasificarAviso(t, hoy);
+              const urge = aviso?.estado === 'vencido' || aviso?.estado === 'hoy';
+              return (
+                // Fila NO interactiva con dos botones propios: `ListRow` con
+                // `onClick` renderiza un <button>, y meterle dentro el de
+                // borrar daba un <button> anidado — HTML inválido, y el de
+                // fuera se traga los clics del de dentro.
+                <li
+                  key={t.id}
+                  className="flex items-center gap-3 rounded-control px-3 py-2.5 bg-raised border border-hairline"
+                >
+                  <button
+                    type="button"
+                    onClick={() => cambiarExtra(t, {
+                      done: !t.done, doneAt: !t.done ? new Date().toISOString() : undefined,
+                    })}
+                    aria-pressed={t.done}
+                    className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                  >
+                    <Icon
+                      name={t.done ? 'check_circle' : 'radio_button_unchecked'}
+                      size="s"
+                      style={{ color: t.done ? 'var(--color-success)' : 'var(--color-ink-3)' }}
+                      className="shrink-0"
+                    />
+                    <span className={`font-sans text-label truncate ${t.done ? 'text-ink-3 line-through' : 'text-ink'}`}>
+                      {t.title}
+                    </span>
+                  </button>
+                  {aviso && (
+                    <span
+                      className="font-mono text-caption shrink-0"
+                      style={{ color: urge ? 'var(--color-danger)' : 'var(--color-ink-3)' }}
+                    >{aviso.texto}</span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => borrarExtra(t)}
+                    aria-label={`Eliminar «${t.title}»`}
+                    className="shrink-0 text-ink-3 hover:text-danger transition-colors"
+                  >
+                    <Icon name="delete" size="s" />
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+
+        <form
+          onSubmit={e => {
+            e.preventDefault();
+            if (!tituloExtra.trim()) return;
+            crearExtra(tituloExtra.trim(), fechaExtra || undefined);
+            setTituloExtra('');
+            setFechaExtra('');
+          }}
+          className="flex flex-wrap items-end gap-2"
+        >
+          <div className="flex-1 min-w-[200px]">
+            <Input label="Nueva tarea" value={tituloExtra} onChange={setTituloExtra}
+              placeholder="Llamarle para repasar la dieta" />
           </div>
-        </div>
-      ) : (
-        <CarrilSeguimiento
-          fases={resultado.phases.filter(f => f.id === 'primeras_semanas' || f.id === 'consolidacion')}
-          extras={manualTasks.filter(t => t.createdBy === 'coach')}
-          hoy={hoy}
-          onMarcarItem={marcarItem}
-          onIrA={onGoToTab}
-          onCrearExtra={crearExtra}
-          onCambiarExtra={cambiarExtra}
-          onBorrarExtra={borrarExtra}
-        />
-      )}
+          <div className="min-w-[160px]">
+            <Input label="Recordármelo el" type="date" value={fechaExtra} onChange={setFechaExtra} />
+          </div>
+          <Button type="submit" disabled={!tituloExtra.trim()}>Añadir</Button>
+        </form>
+      </Card>
 
       {/* Las alertas del motor siguen saliendo en los dos carriles: un check-in
           atrasado o un plan a punto de vencer no esperan a que el coach esté

@@ -22,7 +22,7 @@ function Columna({ titulo, icono, tono, filas, vacio }: {
   titulo: string; icono: string; tono: string; filas: ExercisePerf[]; vacio: string;
 }) {
   return (
-    <div className="flex-1 min-w-[260px] bg-surface border border-hairline rounded-surface overflow-hidden">
+    <div className="flex-1 min-w-[260px] bg-raised border border-hairline rounded-surface overflow-hidden">
       <div className="px-4 py-2.5 border-b border-hairline flex items-center gap-2">
         <Icon name={icono} size="s" style={{ color: tono }} />
         <span className="font-mono text-caption uppercase tracking-[.1em]" style={{ color: tono }}>{titulo}</span>

@@ -590,7 +590,6 @@ export default function ClientHub({
           logs={athleteLogs}
           exercises={exercises}
           mesocycles={mesocycles}
-          adherenciaPct={adherence.hasData ? adherence.score : null}
           photos={athletePhotos}
           bodyweightLogs={bodyweightLogs}
           sexo={sexoDelAtleta}

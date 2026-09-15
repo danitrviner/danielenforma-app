@@ -317,7 +317,6 @@ export default function RevisionCoachDevHarness() {
             logs={anatomia ? LOGS_ANATOMIA : LOGS}
             exercises={anatomia ? EJERCICIOS_ANATOMIA : EJERCICIOS}
             mesocycles={anatomia ? [] : [MESO_ANTERIOR, MESO_ACTUAL]}
-            adherenciaPct={82}
             photos={FOTOS}
             bodyweightLogs={PESOS}
             sexo="hombre"

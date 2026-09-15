@@ -65,7 +65,7 @@ export default function BloqueRecibido({
             : 'Todos sus check-ins están revisados.'}
         />
       ) : (
-        <div className="bg-surface border border-hairline rounded-surface overflow-hidden">
+        <div className="bg-raised border border-hairline rounded-surface overflow-hidden">
           <div className="px-4 py-2.5 border-b border-hairline flex items-center justify-between gap-3">
             <span className="font-mono text-caption text-ink-2 uppercase tracking-[.1em]">
               Sin contestar · {pendientes.length}

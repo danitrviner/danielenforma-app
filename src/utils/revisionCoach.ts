@@ -1,4 +1,4 @@
-import { WorkoutLog, Exercise, Mesocycle, MuscleGroup } from '../types';
+import { WorkoutLog, Exercise, Mesocycle, MuscleGroup, BodyweightLog } from '../types';
 import {
   buildTrainingReport, TrainingReport, ExercisePerf, ComparisonMode, resolveWindows,
 } from './trainingReport';
@@ -9,7 +9,7 @@ import { buildAccumulatedStimulusReport, IEARow } from './accumulatedStimulusInd
 import { seriesRealizadasPorGrupo } from './programacion';
 import { construirMapaCalor, CeldaMapaCalor } from './mapaCalorCorporal';
 import { VolumeLandmark, VOLUME_LANDMARKS_DEFAULT } from '../data/volumeLandmarks';
-import { addDays, hoyIsoLocal } from './trainingWeek';
+import { addDays, hoyIsoLocal, getWeekStart } from './trainingWeek';
 import { nombreDeMeso } from './nombresMeso';
 import { mesocycleWeekNumber } from './progression';
 
@@ -302,4 +302,54 @@ export function mejoresYPeores(
     .slice(0, n);
 
   return { suben, bajan };
+}
+
+// ── Peso: esta semana contra la pasada ──────────────────────────────────────
+
+export interface PesoVsSemanaPasada {
+  /** Media de los pesos registrados esta semana. */
+  estaSemana: number | null;
+  semanaAnterior: number | null;
+  /** estaSemana − semanaAnterior. Negativo = ha bajado. */
+  deltaKg: number | null;
+  registrosEstaSemana: number;
+}
+
+/**
+ * Cuánto ha movido el peso respecto a la semana pasada, comparando MEDIAS.
+ *
+ * Se comparan medias y no el último registro de cada semana a propósito: el
+ * peso diario oscila un kilo largo por hidratación y sal, así que coger un día
+ * suelto de cada semana mide sobre todo cuándo se pesó, no cómo va. Con dos
+ * medias, un día raro pesa lo que le toca.
+ *
+ * `null` si falta cualquiera de las dos semanas: sin las dos no hay diferencia
+ * que dar, y enseñar un cero sería decir «no ha cambiado» cuando lo que pasa es
+ * que no se sabe.
+ */
+export function pesoVsSemanaPasada(
+  logs: BodyweightLog[],
+  hoy: string = hoyIsoLocal(),
+): PesoVsSemanaPasada {
+  const inicioEsta = getWeekStart(hoy);
+  const inicioAnterior = addDays(inicioEsta, -7);
+
+  const media = (desde: string, hasta: string): { media: number | null; n: number } => {
+    const v = logs.filter(l => l.date >= desde && l.date < hasta).map(l => l.weight);
+    return v.length === 0
+      ? { media: null, n: 0 }
+      : { media: Math.round((v.reduce((a, b) => a + b, 0) / v.length) * 10) / 10, n: v.length };
+  };
+
+  const esta = media(inicioEsta, addDays(inicioEsta, 7));
+  const anterior = media(inicioAnterior, inicioEsta);
+
+  return {
+    estaSemana: esta.media,
+    semanaAnterior: anterior.media,
+    deltaKg: esta.media != null && anterior.media != null
+      ? Math.round((esta.media - anterior.media) * 10) / 10
+      : null,
+    registrosEstaSemana: esta.n,
+  };
 }

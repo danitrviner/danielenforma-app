@@ -13,8 +13,8 @@ import { Button, Badge, Icon, Input } from '../ui';
 
      1. **Abrir el editor** — el de verdad, a pantalla completa encima. El
         recorrido no se pierde: al cerrar sigues en el mismo paso.
-     2. **Dejárselo a la IA** — manda al asistente la instrucción LITERAL de
-        este paso, no la tarea entera. Antes solo se podía lanzar «monta el mes
+     2. **Pedírselo al asistente** — le manda la instrucción LITERAL de este
+        paso, no la tarea entera. Antes solo se podía lanzar «monta el mes
         completo»; ahora se puede pedir solo la pieza que falta.
      3. **Marcar hecho** — para los pasos que no dejan rastro comprobable.
      4. **Recordármelo el…** — una fecha para volver.
@@ -46,7 +46,7 @@ export default function DetallePaso({
   const { estado, items, manual } = paso;
   const et = ETIQUETA_ESTADO[estado];
 
-  const pedirALaIa = () => {
+  const pedirAlAsistente = () => {
     const nombre = athlete.displayName?.trim().split(/\s+/)[0] || 'el atleta';
     const detail: OpenAiPanelDetail = {
       prompt:
@@ -92,7 +92,7 @@ export default function DetallePaso({
         </ul>
       )}
 
-      {/* La instrucción del guion, tal cual. Es lo que se le manda a la IA y lo
+      {/* La instrucción del guion, tal cual. Es lo que se le manda al asistente y lo
           que explica qué hay que decidir en este paso; enseñarla evita que el
           coach y el asistente estén montando cosas distintas. */}
       <p className="font-sans text-label text-ink-2 leading-relaxed">
@@ -106,9 +106,9 @@ export default function DetallePaso({
             Abrir el editor
           </Button>
         )}
-        <Button variant="secondary" onClick={pedirALaIa}>
+        <Button variant="secondary" onClick={pedirAlAsistente}>
           <Icon name="auto_awesome" size="s" />
-          Dejárselo a la IA
+          Pedírselo al asistente
         </Button>
         {manual && (
           <Button variant="ghost" onClick={() => onMarcar(paso, estado !== 'done')}>

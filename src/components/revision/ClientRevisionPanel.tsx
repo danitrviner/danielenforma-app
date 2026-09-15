@@ -7,7 +7,7 @@ import {
 import { Sexo } from '../../utils/athleteProfileSignals';
 import { getVolumeLandmarks } from '../../db/coachSettings';
 import {
-  buildRevisionCoach, PeriodoRevision, mesoActivo,
+  buildRevisionCoach, PeriodoRevision, mesoActivo, pesoVsSemanaPasada,
 } from '../../utils/revisionCoach';
 import { hoyIsoLocal } from '../../utils/trainingWeek';
 import { HubTab } from '../ClientHub';
@@ -18,7 +18,7 @@ import BloqueMejoresEjercicios from './BloqueMejoresEjercicios';
 import BloqueSeriesPorGrupo from './BloqueSeriesPorGrupo';
 import BloqueCuerpo from './BloqueCuerpo';
 import BloqueRecibido from './BloqueRecibido';
-import { Button, Icon } from '../ui';
+import { Card, Button, Icon } from '../ui';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    REVISIÓN — la pantalla de un vistazo.
@@ -50,14 +50,6 @@ interface Props {
   logs: WorkoutLog[];
   exercises: Exercise[];
   mesocycles: Mesocycle[];
-  /**
-   * Adherencia combinada de 28 días, ya calculada por ClientHub. Llega hecha a
-   * propósito: `computeAdherenceScore` mezcla entrenos y check-ins al 50 %, así
-   * que recalcularla aquí sin los check-ins daría un número más bajo que el de
-   * la cabecera del Hub — dos cifras distintas para lo mismo, en la misma
-   * pantalla. `null` = no hay datos suficientes.
-   */
-  adherenciaPct: number | null;
   photos: ProgressPhoto[];
   bodyweightLogs: BodyweightLog[];
   /** Sexo biológico de la anamnesis — lo necesita el %grasa US Navy. */
@@ -68,25 +60,19 @@ interface Props {
   onGoToTab: (tab: HubTab) => void;
 }
 
+/** Cada bloque de la pantalla es una tarjeta del DS, no una sección suelta. */
 function Seccion({ n, titulo, children, accion }: {
   n: number; titulo: string; children: React.ReactNode; accion?: React.ReactNode;
 }) {
   return (
-    <section className="space-y-3">
-      <div className="flex items-center justify-between gap-3">
-        <h3 className="font-sans font-bold text-title-s text-ink flex items-baseline gap-2">
-          <span className="font-mono text-caption text-ink-3">{n}</span>
-          {titulo}
-        </h3>
-        {accion}
-      </div>
+    <Card title={`${n}. ${titulo}`} action={accion} className="space-y-3">
       {children}
-    </section>
+    </Card>
   );
 }
 
 export default function ClientRevisionPanel({
-  athlete, logs, exercises, mesocycles, adherenciaPct,
+  athlete, logs, exercises, mesocycles,
   photos, bodyweightLogs, sexo, checkins, questionnaires, responses, onGoToTab,
 }: Props) {
   const hoy = hoyIsoLocal();
@@ -102,7 +88,7 @@ export default function ClientRevisionPanel({
   // silueta en los dos sentidos (la silueta llega en T4).
   const [grupoActivo, setGrupoActivo] = useState<MuscleGroup | null>(null);
 
-  // Clave compartida con MesocycleManager y el panel de la IA: un documento, y
+  // Clave compartida con MesocycleManager y el panel del asistente: un documento, y
   // casi siempre ya en caché.
   const { data: landmarks } = useQuery({
     queryKey: ['coachVolumeLandmarks'],
@@ -115,6 +101,7 @@ export default function ClientRevisionPanel({
   );
 
   const { ventana, informe } = revision;
+  const peso = useMemo(() => pesoVsSemanaPasada(bodyweightLogs, hoy), [bodyweightLogs, hoy]);
 
   return (
     <div className="space-y-8">
@@ -141,7 +128,7 @@ export default function ClientRevisionPanel({
         athlete={athlete}
         ventana={ventana}
         informe={informe}
-        adherenciaPct={adherenciaPct}
+        peso={peso}
       />
 
       <Seccion n={1} titulo="Cómo va cada patrón">
