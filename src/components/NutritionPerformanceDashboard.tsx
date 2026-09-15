@@ -54,6 +54,9 @@ interface ChartRow {
   expected100: number | null;
   expectedAdherence: number | null;
   real: number | null;
+  /** Dónde debería estar el peso al ritmo pactado. Ausente en los programas
+   *  que no traen ritmo: una línea inventada sería peor que ninguna. */
+  segunRitmo?: number;
 }
 
 function fmtDate(iso: string): string {
@@ -90,9 +93,15 @@ function ProjectionTooltip({ active, payload }: any) {
   return (
     <div className="bg-raised border border-hairline rounded-surface px-3 py-3 text-label font-mono shadow-e1 min-w-[170px]">
       <p className="text-ink-2 mb-2 uppercase text-caption tracking-wider">{row.label} · {fmtDate(row.date)}</p>
+      {row.segunRitmo != null && (
+        <p className="flex items-center justify-between gap-3">
+          <span className="text-success">Planificado</span>
+          <span className="text-white font-bold">{fmtKg(row.segunRitmo)} kg</span>
+        </p>
+      )}
       {row.expected100 != null && (
         <p className="flex items-center justify-between gap-3">
-          <span className="text-data">Esperado 100%</span>
+          <span className="text-data">Estimado · fórmula</span>
           <span className="text-white font-bold">{fmtKg(row.expected100)} kg</span>
         </p>
       )}
@@ -252,12 +261,36 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
 
   const chartRows: ChartRow[] = useMemo(() => {
     if (!projection || !program) return [];
+    /* Trayectoria del RITMO objetivo: dónde debería estar el peso si el atleta
+     * fuera al ritmo pactado en cada fase. Es «lo planificado» del modelo nuevo
+     * (§21), y se lee de un vistazo frente a la curva real.
+     *
+     * Solo se dibuja si alguna fase trae ritmo: en los programas de antes no
+     * existe ese dato y una línea inventada sería peor que ninguna. */
+    const hayRitmos = program.phases.some(ph => ph.targetRateKgWeek != null);
+    const inicio = projection.points.find(p => p.real != null)?.real
+      ?? projection.points[0]?.expected100 ?? null;
+
+    let pesoPlanificado = inicio;
+    let semanasDeLaFase = 0;
+    let faseActual: string | null = null;
+
     return projection.points.map(p => {
       const phase = program.phases.find(ph => ph.id === p.phaseId);
+
+      if (hayRitmos && pesoPlanificado != null) {
+        if (phase && phase.id !== faseActual) { faseActual = phase.id; semanasDeLaFase = 0; }
+        if (semanasDeLaFase > 0) pesoPlanificado += phase?.targetRateKgWeek ?? 0;
+        semanasDeLaFase++;
+      }
+
       return {
         week: p.week, date: p.date, label: phase ? phase.name : `Semana ${p.week}`,
         expected100: p.expected100, expectedAdherence: p.expectedAdherence,
         real: p.real,
+        ...(hayRitmos && pesoPlanificado != null
+          ? { segunRitmo: Math.round(pesoPlanificado * 100) / 100 }
+          : {}),
       };
     });
   }, [projection, program]);
@@ -376,8 +409,8 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
             onChange={id => setCurveMode(id as CurveMode)}
             options={[
               { value: 'both', label: 'Ambas' },
-              { value: 'exp', label: 'Esperado 100%' },
-              { value: 'adh', label: 'Según adherencia' },
+              { value: 'exp', label: 'Solo fórmula' },
+              { value: 'adh', label: 'Solo adherencia' },
             ]}
           />
         </div>
@@ -408,14 +441,18 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
               {targetWeightKg != null && (
                 <ReferenceLine y={targetWeightKg} stroke="var(--color-success)" strokeDasharray="5 4" strokeOpacity={0.5} label={{ value: `Objetivo ${targetWeightKg}kg`, position: 'insideBottomRight', fill: 'var(--color-success)', fontSize: 11, fontFamily: 'monospace' }} />
               )}
+              {/* Lo PLANIFICADO: el ritmo que pactasteis, sin pasar por ninguna
+                  fórmula de gasto. Es la referencia honesta contra la que mirar
+                  la curva real (§21). */}
+              <Line type="monotone" dataKey="segunRitmo" stroke="var(--color-success)" strokeWidth={2} dot={false} name="Planificado · ritmo objetivo" connectNulls />
               {curveMode !== 'adh' && (
-                <Line type="monotone" dataKey="expected100" stroke="var(--color-data)" strokeWidth={2} dot={false} name="Esperado 100%" connectNulls />
+                <Line type="monotone" dataKey="expected100" stroke="var(--color-data)" strokeWidth={2} strokeOpacity={0.55} dot={false} name="Estimado · fórmula" connectNulls />
               )}
               {curveMode !== 'exp' && (
-                <Line type="monotone" dataKey="expectedAdherence" stroke="var(--color-chart-3)" strokeWidth={2} strokeDasharray="4 4" dot={false} name="Según adherencia" connectNulls />
+                <Line type="monotone" dataKey="expectedAdherence" stroke="var(--color-chart-3)" strokeWidth={2} strokeDasharray="4 4" dot={false} name="Estimado · según adherencia" connectNulls />
               )}
               <Line
-                type="monotone" dataKey="real" stroke="var(--color-accent)" strokeWidth={2.6} name="Real"
+                type="monotone" dataKey="real" stroke="var(--color-accent)" strokeWidth={2.6} name="Observado · peso real"
                 dot={{ fill: 'var(--color-accent)', stroke: 'var(--color-surface)', strokeWidth: 2, r: 3 }}
                 activeDot={{ fill: 'var(--color-accent)', stroke: 'var(--color-surface)', strokeWidth: 2, r: 5 }}
                 connectNulls

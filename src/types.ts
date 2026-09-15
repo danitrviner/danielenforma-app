@@ -2075,6 +2075,10 @@ export interface NutritionPhaseProposal {
   phaseType?: NutritionPhaseType;
   targetKcal?: number;
   targetWeight?: number;
+  /** Ritmo objetivo en kg/semana. Si viene, manda sobre `weeks` al aprobar:
+   *  la duración se recalcula desde el objetivo, igual que en el editor.
+   *  Ver NutritionPhase.targetRateKgWeek y utils/ritmoDePeso.ts. */
+  targetRateKgWeek?: number;
   /** Dieta existente del atleta. Excluyente con `diet`. */
   dietId?: string;
   /** Dieta nueva que se crea al aprobar y queda enlazada a esta fase. */
