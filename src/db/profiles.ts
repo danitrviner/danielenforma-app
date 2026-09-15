@@ -257,24 +257,16 @@ export async function getAllUserProfiles(): Promise<UserProfile[]> {
       }
     });
 
-    // De-duplicate by email: one canonical record per email
-    const deduped = deduplicateByEmail(profiles);
-
-    // Silently delete Firestore docs for "loser" duplicates.
+    // De-duplicate by email: one canonical record per email.
     //
-    // Solo duplicados: el descarte se limita a perfiles que TIENEN email y han
-    // perdido contra otro con el mismo email. Un documento incompleto (sin
-    // email) también queda fuera de `deduped`, pero borrarlo aquí destruiría
-    // en silencio los datos que sí guarda —pesos, fechas de plan— desde una
-    // simple lectura de pantalla. Esos se limpian a mano, no de refilón.
-    const keptIds = new Set(deduped.map(p => p.userId));
-    for (const p of profiles) {
-      if (esPerfilUtilizable(p) && !keptIds.has(p.userId)) {
-        deleteDoc(doc(db, 'user_profiles', p.userId)).catch(() => {});
-      }
-    }
-
-    return deduped;
+    // Aquí SOLO se descarta de la lista que se devuelve. Antes esta función
+    // borraba de Firestore los duplicados perdedores en cada lectura, y esta
+    // lectura la hacen dieciséis sitios —la parrilla de clientes, la paleta de
+    // comandos, casi todas las herramientas del asistente—, así que abrir una
+    // pantalla podía destruir un documento. Una lectura no escribe nunca: si
+    // hay duplicados de verdad que limpiar, se limpian a propósito y con la
+    // lista delante, con `scripts/limpiarPerfilesDuplicados.mjs --aplicar`.
+    return deduplicateByEmail(profiles);
   } catch (err) {
     console.warn('Failed to fetch user profiles from Firestore:', err);
     setLocalBypassMode(true, err);
