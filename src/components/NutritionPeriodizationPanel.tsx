@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Diet, NutritionPhase, NutritionProgram, NutritionPhaseType, OnboardingData } from '../types';
 import {
@@ -10,6 +10,7 @@ import {
   computePhaseStartDate,
 } from '../dbService';
 import { estimateMaintenanceKcal } from '../utils/energyCalc';
+import { duracionDeLasFases } from '../utils/ritmoDePeso';
 import { roundQuarter } from '../utils/exchangeHelpers';
 import {
   resolvePhaseTargetKcal,
@@ -208,6 +209,10 @@ function ProgramTimeline({ program, diets, today }: TimelineProps) {
 
 // ── Main component ─────────────────────────────────────────────────────────────
 
+/** «80» y no «80.0»: el peso se lee mejor sin decimal cuando no hace falta. */
+const fmtPeso = (kg?: number | null): string =>
+  kg == null ? '—' : String(Math.round(kg * 10) / 10).replace('.', ',');
+
 export default function NutritionPeriodizationPanel({
   athleteEmail, athleteName, targetWeightKg, diets, onboarding, currentWeightKg, stepGoal, kcalPerStep, onDietsChanged,
 }: Props) {
@@ -228,6 +233,19 @@ export default function NutritionPeriodizationPanel({
 
   const today = new Date().toISOString().split('T')[0];
   const maintenanceKcal = onboarding ? estimateMaintenanceKcal(onboarding, currentWeightKg ?? onboarding.weightKg) : null;
+
+  /* Duración derivada del objetivo y el ritmo, encadenando los pesos: cada fase
+   * arranca donde acabó la anterior. `null` en las fases sin ritmo, que siguen
+   * con sus semanas a mano. Ver utils/ritmoDePeso.ts. */
+  const pesoDePartida = currentWeightKg ?? onboarding?.weightKg ?? null;
+  const tramos = useMemo(
+    () => pesoDePartida == null || !form
+      ? []
+      : duracionDeLasFases(pesoDePartida, form.phases),
+    [pesoDePartida, form],
+  );
+  const semanasDerivadas = tramos.map(t => (t.calculada ? t.weeks : null));
+  const pesosDeEntrada = tramos.map(t => t.pesoInicial);
   const stepsKcal = Math.round(stepGoal * kcalPerStep);
 
   const handleCreate = () => {
@@ -261,10 +279,19 @@ export default function NutritionPeriodizationPanel({
     if (!form) return;
     setSaving(true);
     try {
+      /* Las semanas derivadas del ritmo se GUARDAN calculadas.
+       *
+       * El resto del motor —la proyección, el calendario, el roadmap— cuenta
+       * semanas, no ritmos. Si se guardara solo el ritmo, cada consumidor
+       * tendría que saber derivarlas y acabarían discrepando entre ellos. Se
+       * guarda el ritmo (para poder volver a editarlo) y también su resultado. */
+      const phases = form.phases.map((fase, i) =>
+        semanasDerivadas[i] != null ? { ...fase, weeks: semanasDerivadas[i]! } : fase);
+
       const newProgram: NutritionProgram = {
         athleteId: athleteEmail,
         startDate: form.startDate,
-        phases: form.phases,
+        phases,
         lastSeenPhaseId: program?.lastSeenPhaseId,
       };
       await saveNutritionProgram(newProgram);
@@ -532,7 +559,17 @@ export default function NutritionPeriodizationPanel({
               <div className="flex flex-wrap items-center gap-4">
                 <div className="flex items-center gap-2">
                   <span className="text-caption font-mono text-ink-2 uppercase tracking-wider">Semanas:</span>
-                  <Stepper value={phase.weeks} min={1} max={24} onChange={v => updatePhase(idx, { weeks: v })} />
+                  {/* Con ritmo puesto, la duración la calcula la app: es el sentido
+                      del rediseño (§12-§14). Teclearla a mano ahí contradiría al
+                      objetivo, así que se enseña el resultado, no un campo. */}
+                  {semanasDerivadas[idx] != null ? (
+                    <span className="font-mono text-title-s text-white px-2 py-2">
+                      {semanasDerivadas[idx]}
+                      <span className="text-caption text-ink-2 ml-1">calculadas</span>
+                    </span>
+                  ) : (
+                    <Stepper value={phase.weeks} min={1} max={24} onChange={v => updatePhase(idx, { weeks: v })} />
+                  )}
                 </div>
                 <div className="flex items-center gap-2 flex-1 min-w-0">
                   <span className="text-caption font-mono text-ink-2 uppercase tracking-wider flex-shrink-0">Dieta:</span>
@@ -573,7 +610,30 @@ export default function NutritionPeriodizationPanel({
                   className="w-20 bg-raised border border-hairline text-white text-title-s font-mono rounded-control px-2 py-2 focus:outline-none focus:border-chart-3/50 transition-colors"
                 />
                 <span className="text-caption font-mono text-ink-2">kg</span>
+
+                <span className="text-caption font-sans text-ink-2 uppercase tracking-wider flex-shrink-0 ml-2">Ritmo:</span>
+                <input
+                  type="number"
+                  step="0.05"
+                  min="-2"
+                  max="2"
+                  value={phase.targetRateKgWeek ?? ''}
+                  onChange={e => updatePhase(idx, { targetRateKgWeek: e.target.value ? Number(e.target.value) : undefined })}
+                  placeholder="—"
+                  className="w-20 bg-raised border border-hairline text-white text-title-s font-mono rounded-control px-2 py-2 focus:outline-none focus:border-chart-3/50 transition-colors"
+                />
+                <span className="text-caption font-mono text-ink-2">kg/sem</span>
               </div>
+
+              {/* Lo que el entrenador quiere leer de un vistazo: de dónde a dónde,
+                  a qué ritmo y cuánto va a durar. */}
+              {semanasDerivadas[idx] != null && (
+                <p className="font-sans text-caption text-ink-2">
+                  {fmtPeso(pesosDeEntrada[idx])} → {fmtPeso(phase.targetWeight)} kg
+                  {' · '}{phase.targetRateKgWeek! > 0 ? '+' : ''}{phase.targetRateKgWeek} kg/semana
+                  {' · '}<span className="text-ink">{semanasDerivadas[idx]} semanas</span>
+                </p>
+              )}
 
               {/* Energy objective */}
               <div className="flex flex-wrap items-center gap-2">
@@ -611,7 +671,9 @@ export default function NutritionPeriodizationPanel({
               {/* Resolved energy balance */}
               {resolved.kcal != null && maintenanceKcal != null && (
                 <div className="flex flex-wrap gap-x-4 gap-y-1 text-caption font-mono text-ink-2 bg-surface rounded-surface px-3 py-2">
-                  <span>Mantenimiento: <b className="text-white">{fmtKcal(maintenanceKcal)}</b></span>
+                  {/* De la fórmula, no de este atleta: ver el comentario del
+                      dashboard. */}
+                  <span>Mantenimiento estimado: <b className="text-white">{fmtKcal(maintenanceKcal)}</b></span>
                   <span>+ Pasos: <b className="text-white">{fmtKcal(stepsKcal)}</b></span>
                   <span>Gasto total: <b className="text-white">{fmtKcal(balance.totalExpenditure)}</b></span>
                   {balance.dailyDeficit != null && (

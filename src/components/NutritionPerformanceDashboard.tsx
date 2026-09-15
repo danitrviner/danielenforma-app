@@ -19,6 +19,8 @@ import {
 } from '../utils/nutritionPeriodization';
 import { NotaDeFuente } from './FuentesCientificasSheet';
 import { Skeleton, SegmentedControl } from './ui';
+import { ritmoReal } from '../utils/ritmoDePeso';
+import { proponerAjuste } from '../utils/ajusteDePeriodizacion';
 import {
   Icon, EmptyState,
   ALTURA_GRAFICA, MARGEN_GRAFICA, ANCHO_EJE_Y, REJILLA_GRAFICA, TICK_GRAFICA, EJE_GRAFICA,
@@ -214,6 +216,7 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
   const activeWeekNum = program && activePhase ? weekIndexInPhase(program, activePhase.id, today) : null;
   const totalWeeks = program?.phases.reduce((s, p) => s + p.weeks, 0) ?? 0;
   const activeDiet = activePhase ? diets.find(d => d.id === activePhase.dietId) : undefined;
+
   const activeResolved = activePhase ? resolvePhaseTargetKcal(activePhase, activeDiet) : null;
   const activeBalance = activeResolved
     ? computePhaseEnergyBalance({
@@ -222,6 +225,30 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
         stepGoal, kcalPerStep,
       })
     : null;
+
+  /* Ritmo real y propuesta de ajuste (auditoría §19, §23).
+   *
+   * La pantalla pasa de describir un desvío a decir qué hacer con él. La
+   * propuesta NO se aplica: se enseña y decide el entrenador. */
+  const pesosReales = useMemo(
+    () => projection.points.filter(p => p.real != null).map(p => p.real as number),
+    [projection],
+  );
+  const ritmoObservado = ritmoReal(pesosReales);
+  const propuesta = useMemo(() => {
+    const objetivo = activePhase?.targetRateKgWeek;
+    const kcal = activeBalance?.targetKcal;
+    if (objetivo == null || kcal == null) return null;
+    return proponerAjuste({
+      ritmoObjetivo: objetivo,
+      ritmoReal: ritmoObservado,
+      kcalActuales: kcal,
+      mantenimientoEstimado: performance?.realMaintenanceKcal ?? null,
+      // Con menos de cuatro pesos reales la señal es demasiado corta para
+      // proponer un cambio de calorías.
+      confianza: pesosReales.length >= 6 ? 'alta' : pesosReales.length >= 4 ? 'media' : 'baja',
+    });
+  }, [activePhase, activeBalance, ritmoObservado, performance, pesosReales.length]);
 
   const chartRows: ChartRow[] = useMemo(() => {
     if (!projection || !program) return [];
@@ -414,6 +441,29 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
         )}
       </div>
 
+      {/* Lo que pedía §23: no «según una fórmula deberías gastar X», sino qué
+          está pasando con ESTE atleta y cuál sería el siguiente paso. La
+          propuesta NO se aplica sola — es una recomendación para el entrenador,
+          que decide (§19). */}
+      {propuesta && (
+        <div className={`rounded-surface border p-4 ${
+          propuesta.hayPropuesta
+            ? 'bg-warning/8 border-warning/25'
+            : 'bg-surface border-hairline'
+        }`}>
+          <p className="flex items-center gap-1.5 font-mono text-caption uppercase tracking-widest text-ink-2">
+            <Icon name={propuesta.hayPropuesta ? 'lightbulb' : 'check_circle'} size="s" />
+            {propuesta.hayPropuesta ? 'Sugerencia' : 'Seguimiento'}
+          </p>
+          <p className="font-sans text-label text-ink leading-relaxed mt-2">{propuesta.explicacion}</p>
+          {propuesta.hayPropuesta && (
+            <p className="font-sans text-caption text-ink-2 mt-2">
+              Nada de esto se ha cambiado: ajusta la fase tú si lo ves bien.
+            </p>
+          )}
+        </div>
+      )}
+
       {/* Stat cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <StatCard
@@ -422,14 +472,17 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
           valueColor={performance?.deviationKg == null ? undefined : performance.deviationKg > 0 ? 'var(--color-warning)' : 'var(--color-success)'}
           sub={performance?.achievedPct != null ? `${performance.achievedPct}% del objetivo` : 'sin datos suficientes'}
         />
+        {/* «Observado», no «real»: la ingesta se aproxima por el % de ítems
+            marcados, no se mide. Llamarlo real prometía una exactitud que el
+            dato no tiene (auditoría §18). */}
         <StatCard
-          label="Mantenimiento real"
+          label="Mantenimiento observado"
           value={performance?.realMaintenanceKcal != null ? `${fmtKcal(performance.realMaintenanceKcal)}` : '—'}
           unit="kcal"
           valueColor="var(--color-data)"
           sub={performance?.maintenanceGapKcal != null
-            ? `${performance.maintenanceGapKcal >= 0 ? '+' : ''}${fmtKcal(performance.maintenanceGapKcal)} vs. estimado ${fmtKcal(performance.estimatedMaintenanceKcal)}`
-            : 'necesita más semanas de datos'}
+            ? `${performance.maintenanceGapKcal >= 0 ? '+' : ''}${fmtKcal(performance.maintenanceGapKcal)} vs. la fórmula (${fmtKcal(performance.estimatedMaintenanceKcal)})`
+            : 'faltan semanas para estimarlo'}
         />
         <StatCard
           label="Adherencia · dieta"
@@ -455,7 +508,11 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
           </p>
           <div className="flex flex-wrap gap-x-6 gap-y-2 font-mono text-label">
             <span className="text-ink-2">Objetivo: <b className="text-accent">{fmtKcal(activeBalance.targetKcal)} kcal</b></span>
-            <span className="text-ink-2">Mantenimiento: <b className="text-data">{fmtKcal(activeBalance.maintenanceKcal)} kcal</b></span>
+            {/* «Estimado» a la vista: este número sale de Mifflin-St Jeor, no de
+                lo que le pasa a este atleta. Sin el adjetivo, convivía a diez
+                líneas de otra tarjeta de mantenimiento y las dos se leían como
+                medidas (auditoría §11). */}
+            <span className="text-ink-2">Mantenimiento estimado: <b className="text-data">{fmtKcal(activeBalance.maintenanceKcal)} kcal</b></span>
             <span className="text-ink-2">+ Pasos: <b className="text-white">{fmtKcal(activeBalance.stepsKcal)} kcal</b></span>
             <span className="text-ink-2">Gasto total: <b className="text-white">{fmtKcal(activeBalance.totalExpenditure)} kcal</b></span>
             {activeBalance.dailyDeficit != null && (

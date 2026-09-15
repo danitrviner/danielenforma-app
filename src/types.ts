@@ -1086,6 +1086,19 @@ export interface NutritionPhase {
   weeks: number;
   dietId: string;
   targetWeight?: number; // kg at end of phase; undefined = not projected
+  /**
+   * Ritmo objetivo en kg/semana: +0,2 para ganar, −0,5 para perder.
+   *
+   * Cuando está puesto, `weeks` se DERIVA de él y del peso objetivo — que es
+   * como piensa un entrenador: «quiero que llegue a 82 kg subiendo 200 g por
+   * semana», no «esta fase dura 10 semanas» (auditoría §12-§14). Permite
+   * ritmos distintos por tramo: 87→79 rápido, 79→74 más despacio, 74→70 al
+   * mínimo.
+   *
+   * Sin él, manda `weeks` como siempre: los programas de antes no se tocan.
+   * Ver utils/ritmoDePeso.ts.
+   */
+  targetRateKgWeek?: number;
   targetKcal?: number;   // kcal/day objective driving the deficit/surplus calc; undefined = derive from the linked diet's exchange budget
   /**
    * Tipo de fase nutricional (Roadmap → Calendario, coach): decide el color
