@@ -4,7 +4,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { UserProfile, Diet, DietMeal, DietItem, FoodCategory, DietMode, MealItem, Recipe, RecipeFavorites, RefeedDay } from '../types';
 import { getDietsForAthlete, getAthleteDietConfig, saveAthleteDietConfig, createDiet, updateDiet, deleteDiet, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig, saveAthleteNutritionConfig, getRecipes, getRecipeFavorites, getNutritionProgram, markNutritionPhaseSeen, computeActivePhase, createNotificationDeduped, getDietCompletionLog, saveDietCompletionLog, createRecipe, queryRecetas, queryRecetasForGenerator, cargarIndiceRecetas, getOnboarding, getRecipeById } from '../dbService';
 import type { RecetasCursor } from '../dbService';
-import { CATS, BUDGET_CATS, CAT_LABEL, CAT_COLOR, CAT_BG, MODE_LABEL, ALL_DIET_MODES, round2, fmtQty, itemWeightLabel, foodNameWithoutGrams, addToPlaced, recipeToDietItems, computeDietPlaced } from '../utils/exchangeHelpers';
+import { CATS, BUDGET_CATS, CAT_LABEL, CAT_COLOR, CAT_BG, MODE_LABEL, ALL_DIET_MODES, round2, fmtQty, foodNameWithoutGrams, addToPlaced, recipeToDietItems, computeDietPlaced } from '../utils/exchangeHelpers';
+import { parseBaseGrams, etiquetaDePeso } from '../utils/conversionNutricional';
 import { findRecipeAlternatives, recipeExchanges, groupByDishType, ordenarPorCupo, type RecipeAlternative, type AlternativePrefs } from '../utils/recipeMatch';
 import { ingredientMatch, violatesDietType } from '../utils/foodPrefs';
 import { athleteConditions, violatesHealthConditions } from '../utils/dietaryRestrictions';
@@ -1009,7 +1010,12 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
       const meal = selectedDiet.meals.find(m => m.id === mealId);
       if (!meal) { setPickerItem(null); return; }
       const newIdx = meal.items.length;
-      const newItem: DietItem = { category: food.category, foodLabel: food.label, quantity: 1 };
+      // `baseGrams` es por intercambio: al subir la cantidad, los gramos suben
+      // solos, y no hay que acordarse de recalcularlos en ningún escalador.
+      const newItem: DietItem = {
+        category: food.category, foodLabel: food.label, quantity: 1,
+        baseGrams: parseBaseGrams(food.label) ?? undefined,
+      };
       setSelectedDiet(prev => {
         if (!prev) return prev;
         return { ...prev, meals: prev.meals.map(m => m.id !== mealId ? m : { ...m, items: [...m.items, newItem] }) };
@@ -1058,7 +1064,12 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
           ...prev,
           meals: prev.meals.map(m => m.id !== mealId ? m : {
             ...m,
-            items: m.items.map((it, i) => i !== itemIdx ? it : { ...it, category: food.category, foodLabel: food.label }),
+            // Cambiar de alimento RECALCULA el gramaje: mantener el del anterior
+            // enseñaría 40 g de pan sobre una fila que ya es arroz.
+            items: m.items.map((it, i) => i !== itemIdx ? it : {
+              ...it, category: food.category, foodLabel: food.label,
+              baseGrams: parseBaseGrams(food.label) ?? undefined,
+            }),
           }),
         };
       });
@@ -2078,7 +2089,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                                     className="flex-1 min-w-0 text-left rounded-control -m-1 p-1 transition-colors hover:bg-raised/60 active:bg-raised"
                                   >
                                     <span className="font-mono text-body-s font-bold text-accent whitespace-nowrap">
-                                      {itemWeightLabel(item.foodLabel, item.quantity)}
+                                      {etiquetaDePeso(item)}
                                     </span>
                                     {' '}
                                     <span className="font-sans text-body-s font-semibold leading-snug text-ink">

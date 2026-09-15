@@ -992,7 +992,22 @@ export interface DietItem {
   category: FoodCategory;
   foodLabel: string;
   quantity: number;   // multiples of 0.25 (e.g. 0.25, 0.5, 1, 1.25)
-  grams?: number;     // computed: parsed base weight × quantity
+  /** Gramos de ALIMENTO que pesa UN intercambio de este ítem.
+   *
+   *  Se pone al crearlo desde una receta o desde el banco, y es lo que hace que
+   *  60 g de pan sigan siendo 60 g al pasar a intercambios. Per-intercambio y
+   *  no absoluto a propósito: los gramos son `baseGrams × quantity`, así que
+   *  los escaladores que ya existen (handleUpdateQuantity, escalarReceta) mueven
+   *  `quantity` y los gramos les siguen solos, sin tener que acordarse de nada.
+   *
+   *  NO confundir con GRAMS_PER_EXCHANGE (utils/nutritionConstants.ts), que son
+   *  gramos de MACRO: mezclar las dos tablas es lo que convertía 60 g de pan en
+   *  40 o en 70 según la receta. Ver utils/conversionNutricional.ts y
+   *  docs/gramos-e-intercambios.md.
+   *
+   *  Ausente en todo lo guardado antes de 09-2026: entonces se deriva del banco,
+   *  igual que se hacía hasta ahora. */
+  baseGrams?: number;
   originRecipeId?: string; // set when the item was added via "Usar receta" — scopes "Cambiar comida"
   /** Puesto aquí automáticamente al marcar una comida del menú semanal como
    *  hecha: `${día}_${idComidaDelMenu}`. Es lo que evita contar dos veces si se
