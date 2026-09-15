@@ -36,7 +36,11 @@ La base `(default)` existe y está **vacía**. Un script que la abra por error d
 
 Se hace sola cada noche, vive fuera de tu Mac, guarda 7 días y se restaura con un comando. Es la red de verdad.
 
-**Coste:** ~0,50 $ al año a este tamaño. No lee documentos, así que no gasta cuota ni compite con los atletas.
+**Programada el 15-09-2026.** Id: `df5ed8e7-4d45-445a-b2b8-3616be6e44c0` · diaria · retención 7 días.
+
+**Coste:** céntimos al año a este tamaño (la base entera ocupa 26 MB). No lee documentos, así que no gasta cuota ni compite con los atletas.
+
+Requiere estar autenticado con tu cuenta, no con la de servicio: `gcloud auth login` como `danitrviner@gmail.com`. La cuenta de servicio `firebase-adminsdk-fbsvc@…` **no tiene permiso** sobre las copias y devuelve `PERMISSION_DENIED`.
 
 Comprobar que sigue programada:
 ```bash
@@ -128,3 +132,5 @@ El último simulacro está anotado al final de este documento.
 | 15-09-2026 | Crear documento → copiar → borrar → restaurar con `--doc` → comprobar | ✅ vuelve idéntico |
 | 15-09-2026 | Ida y vuelta del codec sobre un `checkin` real con `Timestamp` | ✅ exacta, tipos incluidos |
 | 15-09-2026 | El codec falla en voz alta ante un tipo desconocido | ✅ cubierto por test |
+| 15-09-2026 | Copia automática diaria programada en Google | ✅ activa |
+| — | **Pendiente**: restaurar una copia automática sobre base de pruebas (hay que esperar a que se haga la primera, esta noche) | ⏳ |
