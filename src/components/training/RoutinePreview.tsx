@@ -31,6 +31,15 @@ export interface PreviewExercise extends WorkoutExercise {
   name: string;
   muscleGroup: MuscleGroup;
   equipmentMismatch?: boolean;
+  /**
+   * Por qué el generador eligió ESTE ejercicio y con estos números.
+   *
+   * Sin esto el coach recibe una lista que no puede auditar y la reescribe a
+   * mano por desconfianza — que es el mismo final que tenía el generador viejo,
+   * por otro camino. Ausente en las rutinas que vienen de una plantilla: ahí no
+   * ha elegido nadie.
+   */
+  razones?: string[];
 }
 
 export interface PreviewDay {
@@ -199,6 +208,14 @@ export default function RoutinePreview({
                       <p className="text-label font-sans font-bold text-white">{pe.name}</p>
                       <div className="flex items-center gap-1.5 flex-wrap">
                         <span className="font-mono text-caption text-ink-2">{MUSCLE_LABELS_SHORT[pe.muscleGroup]}</span>
+                        {/* El esquema que ha puesto el motor. Antes era «8-12 ·
+                            RIR 2 · 90s» para todo el mundo y no había nada que
+                            leer; ahora sale de las rutinas de Dani y cambia por
+                            ejercicio, así que hay que poder verlo sin abrir la
+                            ficha. */}
+                        <span className="font-mono text-caption text-ink-3 tabular-nums">
+                          {pe.reps} · RIR {pe.rir} · {pe.restSeconds}s
+                        </span>
                         {pe.equipmentMismatch && (
                           <span
                             title="Material no disponible según el onboarding"
@@ -209,6 +226,13 @@ export default function RoutinePreview({
                           </span>
                         )}
                       </div>
+                      {/* Por qué salió este. Sin esto, una lista generada no se
+                          puede auditar y se acaba reescribiendo a mano. */}
+                      {(pe.razones?.length ?? 0) > 0 && (
+                        <p className="font-mono text-caption text-ink-3 leading-relaxed mt-0.5">
+                          {pe.razones!.join(' · ')}
+                        </p>
+                      )}
                     </div>
 
                     <SetsStepper value={pe.sets} onChange={v => onSets(dayIdx, exIdx, v)} />

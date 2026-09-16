@@ -16,6 +16,7 @@ import {
 } from '../dbService';
 import ExerciseConfigEditor from './ExerciseConfigEditor';
 import RoutinePreview, { PreviewDay, PreviewExercise } from './training/RoutinePreview';
+import { elegirEjercicios } from '../utils/seleccionEjercicios';
 import SeriesBalance from './training/SeriesBalance';
 import MesocycleReviewPanel from './MesocycleReviewPanel';
 import {
@@ -1231,6 +1232,10 @@ interface MesocycleManagerProps {
   athleteEmail?: string;      // when set: skip the athlete selector
   athleteEquipment?: string[]; // from onboarding; used to rank exercises in generator
   athleteLevel?: 'principiante' | 'intermedio' | 'avanzado'; // from onboarding; punto de partida del sugeridor de volumen
+  /** Del alta: ejercicios que ha dicho que no quiere hacer. El generador no los elige. */
+  athleteHatedExercises?: string[];
+  /** Del alta, texto libre: lesiones. El generador evita lo que se nombre ahí. */
+  athleteInjuries?: string;
   athleteName?: string;       // solo para el borrador de texto del cierre de mesociclo
   // Logs y asignaciones del atleta, si quien monta esta pantalla YA los tiene
   // cargados (ClientHub los pasa por props a todo el panel). Se aceptan para no
@@ -1242,6 +1247,7 @@ interface MesocycleManagerProps {
 
 export default function MesocycleManager({
   coachId, athleteEmail, athleteEquipment = [], athleteLevel, athleteName,
+  athleteHatedExercises = [], athleteInjuries = '',
   athleteLogs, athleteAssignments,
 }: MesocycleManagerProps) {
   const { showToast } = useToast();
@@ -1531,6 +1537,19 @@ export default function MesocycleManager({
       // una lectura completa de la colección por cada pulsación.
       const exercises = await queryClient.ensureQueryData({ queryKey: ['exercises'], queryFn: getExercises });
 
+      // El historial del atleta, solo para la ROTACIÓN: sirve para no repetir
+      // por cuarta vez seguida el mismo ejercicio. Se pide aquí y no arriba
+      // porque solo hace falta al pulsar «Generar», y `ensureQueryData` lo
+      // sirve de caché si otra pestaña ya lo cargó. Si falla, la rotación
+      // simplemente no se aplica: es una mejora de la elección, no un
+      // requisito.
+      const logsParaRotacion = selectedEmail
+        ? await queryClient.ensureQueryData({
+            queryKey: ['workoutLogs', selectedEmail],
+            queryFn: () => getWorkoutLogs(selectedEmail),
+          }).catch(() => [])
+        : [];
+
       // If mesocycle has predefined days from template, use them as base
       if (hasDays) {
         const days: PreviewDay[] = (editing!.days ?? []).map((td, dayIdx) => {
@@ -1556,56 +1575,56 @@ export default function MesocycleManager({
         return;
       }
 
-      // Equipment availability helper
-      const athEquip = athleteEquipment.map(e => e.toLowerCase());
-      function exIsCompatible(ex: Exercise): boolean {
-        const eq = ex.equipment ?? [];
-        if (eq.length === 0) return true; // untagged = always available
-        if (athEquip.length === 0) return true; // no athlete equipment info = don't filter
-        return eq.some(e => athEquip.includes(e.toLowerCase()));
-      }
-
-      // Index by muscleGroup — compatible exercises first, then incompatible
-      const byGroup: Partial<Record<MuscleGroup, Exercise[]>> = {};
-      for (const g of MUSCLE_GROUPS) {
-        const all = exercises.filter(e => e.muscleGroup === g);
-        const compatible   = all.filter(e =>  exIsCompatible(e));
-        const incompatible = all.filter(e => !exIsCompatible(e));
-        byGroup[g] = [...compatible, ...incompatible];
-      }
-
       // 3. Build preview — one PreviewDay per distribution day
+      //
+      // Quién elige: `utils/seleccionEjercicios`. Antes se elegía aquí mismo
+      // con `available[i % available.length]` —o sea, el que Firestore
+      // devolviera primero— y con `8-12 / RIR 2 / 90s` clavados para todos los
+      // grupos. El motor ordena por lo que Dani PROGRAMA DE VERDAD y saca las
+      // series, reps, RIR y descanso de las medianas de sus propias rutinas,
+      // corregido por el material del atleta, sus lesiones y la rotación.
+      // Lo que el atleta dijo que no hace, y lo que nombró en sus lesiones. El
+      // texto de lesiones va entero: el motor busca por palabras, así que
+      // «molestia en el hombro al hacer press militar» veta el press militar.
+      const vetados = [...athleteHatedExercises, ...(athleteInjuries ? [athleteInjuries] : [])];
       const days: PreviewDay[] = editing!.distribution!.days.map((day, dayIdx) => {
         const dayExs: PreviewExercise[] = [];
         const warnings: string[] = [];
         let order = 0;
 
         for (const { group, series } of day.assignments) {
-          const available = byGroup[group] ?? [];
-          if (available.length === 0) {
+          const delGrupo = exercises.filter(e => e.muscleGroup === group);
+          if (delGrupo.length === 0) {
             warnings.push(MUSCLE_LABELS[group]);
             continue;
           }
-          const compatibleCount = available.filter(e => exIsCompatible(e)).length;
           // Tope de series por ejercicio (ver utils/programacion): 9 series de
           // pecho salen como 3+3+3, no como un único ejercicio de 9 ni como 5+4.
-          const chunks  = repartoDeSeries(series, available.length);
-          for (let i = 0; i < chunks.length; i++) {
-            const ex = available[i % available.length];
-            const mismatch = !exIsCompatible(ex);
-            if (mismatch && compatibleCount === 0 && i === 0) {
+          const chunks = repartoDeSeries(series, delGrupo.length);
+          const elegidos = elegirEjercicios({
+            grupo: group,
+            trozos: chunks,
+            catalogo: exercises,
+            rutinasDelCoach: allWorkouts,
+            materialDelAtleta: athleteEquipment,
+            logsDelAtleta: logsParaRotacion,
+            vetados,
+          });
+          for (const el of elegidos) {
+            if (el.materialIncompatible && el === elegidos[0]) {
               warnings.push(`${MUSCLE_LABELS[group]} (sin material compatible)`);
             }
             dayExs.push({
-              exerciseId: ex.id,
-              name: ex.name,
+              exerciseId: el.exerciseId,
+              name: el.nombre,
               muscleGroup: group,
-              sets: chunks[i],
-              reps: '8-12',
-              rir: 2,
-              restSeconds: 90,
+              sets: el.sets,
+              reps: el.reps,
+              rir: el.rir,
+              restSeconds: el.restSeconds,
               order: order++,
-              equipmentMismatch: mismatch,
+              equipmentMismatch: el.materialIncompatible,
+              razones: el.razones,
             });
           }
         }

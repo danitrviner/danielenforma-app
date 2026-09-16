@@ -437,6 +437,8 @@ export default function ClientWorkoutsPanel({
         athleteEmail={athlete.email}
         athleteEquipment={onboardingData?.equipment ?? []}
         athleteLevel={onboardingData?.experienceLevel}
+        athleteHatedExercises={onboardingData?.hatedExercises ?? []}
+        athleteInjuries={onboardingData?.injuries ?? ''}
         athleteName={athlete.displayName}
         athleteLogs={athleteLogs}
         athleteAssignments={assignments}
