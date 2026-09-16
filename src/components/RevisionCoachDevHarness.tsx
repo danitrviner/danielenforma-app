@@ -3,10 +3,11 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {
   UserProfile, Exercise, Mesocycle, MuscleGroup, MuscleGroupConfig, WorkoutLog,
   ProgressPhoto, BodyweightLog, NutritionProgram, Diet, OnboardingData,
-  WeightCheckIn, Questionnaire, QuestionnaireResponse, StepLog, MUSCLE_ORDER,
+  WeightCheckIn, Questionnaire, QuestionnaireResponse, StepLog, WeeklyChallenge, MUSCLE_ORDER,
 } from '../types';
 import { bodyweightForAthleteKey, pesoPrimeroKey, pesoUltimoKey } from '../hooks/useAthleteWeight';
 import { VOLUME_LANDMARKS_DEFAULT } from '../data/volumeLandmarks';
+import { isoWeekKey, isoWeekBounds } from '../utils/challengeOptions';
 import ClientRevisionPanel from './revision/ClientRevisionPanel';
 import ClientImplantacionPanel from './implantacion/ClientImplantacionPanel';
 
@@ -303,6 +304,28 @@ const PASOS: StepLog[] = Array.from({ length: 17 }, (_, i) => {
   };
 });
 
+// Seis semanas de retos: cuatro cerrados (tres ganados y uno fallado, para que
+// la tasa de acierto no salga ni 0 % ni 100 %) y el de la semana en curso a
+// medias. Las claves ISO se calculan con la misma función que usa la app para
+// que el bloque encuentre «el de esta semana» por la vía normal.
+const RETOS: WeeklyChallenge[] = [5, 4, 3, 2, 1, 0].map((atras, i) => {
+  const dia = haceDias(atras * 7);
+  const { weekStart, weekEnd } = isoWeekBounds(dia);
+  const enCurso = atras === 0;
+  const fallado = atras === 3;
+  return {
+    id: `reto_${i}`, athleteId: EMAIL, isoWeek: isoWeekKey(dia), weekStart, weekEnd,
+    kind: 'pasos_media' as const,
+    title: `Media de ${8500 + atras * 100} pasos al día`,
+    description: 'Sin contar el día de descanso.',
+    origin: (atras === 0 ? 'coach' : 'auto') as 'coach' | 'auto',
+    metric: { unit: 'pasos', target: 8500 + atras * 100 },
+    status: (enCurso ? 'activo' : fallado ? 'fallido' : 'conseguido') as WeeklyChallenge['status'],
+    createdAt: `${weekStart}T08:00:00.000Z`,
+    ...(enCurso ? {} : { resolvedAt: `${weekEnd}T23:00:00.000Z` }),
+  };
+});
+
 // ── Lo que el atleta manda ──────────────────────────────────────────────────
 // Tres check-ins: uno contestado y aprobado, otro contestado sin aprobar y el
 // último sin tocar. Así se ve la lista de pendientes con sus dos estados.
@@ -397,6 +420,9 @@ export default function RevisionCoachDevHarness() {
     qc.setQueryData(['athleteNutritionConfig', EMAIL], { athleteId: EMAIL, enabledModes: ['OMNIVORO'], stepGoal: 9000 });
     qc.setQueryData(['athleteDietConfig', EMAIL], { athleteId: EMAIL, activeDietIds: ['d_deficit'] });
     qc.setQueryData(['stepsForAthlete', EMAIL], PASOS);
+    // Retos y nivel. El roadmap va a null a propósito: así el bloque cae a la
+    // escalera por defecto, que es lo que tiene la mayoría de los atletas.
+    qc.setQueryData(['weeklyChallengesForAthlete', EMAIL], RETOS);
     // Implantación.
     qc.setQueryData(['roadmap', EMAIL], null);
     // Dos recordatorios: uno vencido sobre un paso del montaje y una tarea

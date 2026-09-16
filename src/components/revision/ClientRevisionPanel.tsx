@@ -24,6 +24,7 @@ import BloqueBienestar from './BloqueBienestar';
 import BloqueQueHaComido from './BloqueQueHaComido';
 import BloqueNutricionHabitos from './BloqueNutricionHabitos';
 import BloqueRecibido from './BloqueRecibido';
+import BloqueRetosNivel from './BloqueRetosNivel';
 import BloqueCierre from './BloqueCierre';
 import { Card, Button, Icon } from '../ui';
 
@@ -334,9 +335,31 @@ export default function ClientRevisionPanel({
         />
       </Seccion>
 
-      {/* Va el último porque es la conclusión: los ocho bloques de arriba son
-          la prueba, y este es lo que se le dice. */}
-      <Seccion presentando={presentando} n={9} titulo="Qué le digo">
+      {/* Detrás de «lo que te ha mandado» porque también es algo que viene de
+          su lado: el reto es lo único de la app que le pide algo concreto cada
+          semana, y el peldaño es la promesa a medio plazo. */}
+      <Seccion
+        presentando={presentando}
+        n={9}
+        titulo="Retos y nivel"
+      >
+        <BloqueRetosNivel
+          athleteEmail={athlete.email}
+          initialWeight={athlete.initialWeight}
+          logs={logs}
+          exercises={exercises}
+          bodyweightLogs={bodyweightLogs}
+          registrosDeComida={registrosDeComida}
+          dietas={dietas}
+          assignments={assignments}
+          onGoToTab={onGoToTab}
+          todoAbierto={todoAbierto}
+        />
+      </Seccion>
+
+      {/* Va el último porque es la conclusión: los bloques de arriba son la
+          prueba, y este es lo que se le dice. */}
+      <Seccion presentando={presentando} n={10} titulo="Qué le digo">
         <BloqueCierre
           athleteEmail={athlete.email}
           athleteName={athlete.displayName}
