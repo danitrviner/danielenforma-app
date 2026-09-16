@@ -10,7 +10,7 @@ import {
   computePhaseStartDate,
 } from '../dbService';
 import { estimateMaintenanceKcal } from '../utils/energyCalc';
-import { roundQuarter } from '../utils/exchangeHelpers';
+import { ajustarCupoSinTocarProteina } from '../utils/ajusteDeCupo';
 import {
   resolvePhaseTargetKcal,
   suggestPhaseTargetKcal,
@@ -345,17 +345,31 @@ export default function NutritionPeriodizationPanel({
     const { kcal: targetKcal } = resolvePhaseTargetKcal(phase, diet);
     const currentKcal = resolvePhaseTargetKcal({ ...phase, targetKcal: undefined }, diet).kcal;
     if (targetKcal == null || currentKcal == null || currentKcal <= 0) return;
-    const scale = targetKcal / currentKcal;
+    // Antes esto escalaba las TRES categorías por el mismo factor, y en un
+    // déficit eso recorta la proteína — exactamente lo contrario de lo que hay
+    // que hacer: es lo que protege la masa magra cuando faltan calorías. El
+    // motor deja la proteína donde está y saca la diferencia de hidratos y
+    // grasa (ver utils/ajusteDeCupo.ts).
+    const ajuste = ajustarCupoSinTocarProteina(
+      {
+        HC: diet.budget?.HC ?? 0,
+        PROT: diet.budget?.PROT ?? 0,
+        GRASA: diet.budget?.GRASA ?? 0,
+      },
+      targetKcal,
+    );
+    if (!ajuste) return;
     setAdjustingDietFor(phase.id);
     try {
-      const scaledBudget = {
-        HC: roundQuarter((diet.budget?.HC ?? 0) * scale),
-        PROT: roundQuarter((diet.budget?.PROT ?? 0) * scale),
-        GRASA: roundQuarter((diet.budget?.GRASA ?? 0) * scale),
-      };
-      await updateDiet(diet.id, { budget: { ...diet.budget, ...scaledBudget } });
+      await updateDiet(diet.id, { budget: { ...diet.budget, ...ajuste.cupo } });
       onDietsChanged?.();
       setRefreshKey(k => k + 1);
+      showToast(
+        ajuste.kcalSinColocar > 0
+          ? `${diet.name}: ${ajuste.nota}`
+          : `${diet.name} ajustada a ${Math.round(ajuste.kcalDespues)} kcal. ${ajuste.nota}`,
+        ajuste.kcalSinColocar > 0 ? 'error' : 'success',
+      );
     } catch (err) {
       console.error('handleAdjustDietToPhase failed:', err);
       showToast(mensajeDeErrorFirestore(err, 'ajustar la dieta a la fase'));
