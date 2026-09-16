@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { WorkoutLog, WorkoutAssignment, ProgressPhoto, CoachDayNote } from '../../../types';
+import { WorkoutLog, WorkoutAssignment, ProgressPhoto, CoachDayNote, Mesocycle, TaskItem } from '../../../types';
 import { DiaCalendario, BandaEntreno, BandaNutricion } from '../../../utils/roadmapCalendar';
 import { PlanEvent } from '../../../utils/planEvents';
+import { moviblesDelDia, ordenDeMovimiento, Movible } from '../../../utils/moverEnCalendario';
 import { DestinoPlan } from './RoadmapCalendario';
 import { Sheet, Button, Icon, Input } from '../../ui';
 import { estiloDeEstado, mezcla } from './paleta';
@@ -45,6 +46,10 @@ interface Props {
   workoutLogs: WorkoutLog[];
   workoutAssignments: WorkoutAssignment[];
   volumeEvent: PlanEvent | null;
+  /** Para poder mover hitos y eventos de volumen, no solo el entreno. */
+  tasks: TaskItem[];
+  volumeEvents: PlanEvent[];
+  mesocycles: Mesocycle[];
   highlighted: boolean;
   onToggleDestacado: () => void;
   onSaveNote: (text: string) => void | Promise<void>;
@@ -52,17 +57,22 @@ interface Props {
   /** Abre el hub de acciones in situ (importar bloque, evento de kcal, aviso…). */
   onAbrirAcciones: () => void;
   onMoveWorkoutAssignment: (assignmentId: string, newDate: string) => void | Promise<void>;
+  onMoveTask: (taskId: string, newDate: string) => void | Promise<void>;
+  onMoveVolumeEvent: (workoutId: string, exerciseId: string, oldAtWeek: number, newAtWeek: number) => void | Promise<void>;
   onGoToTab: (tab: DestinoPlan) => void;
   onClose: () => void;
 }
 
 export default function SheetDia({
   fecha, dia, bandaEntreno, bandaNutricion, progressPhotos, coachDayNotes, workoutLogs, workoutAssignments, volumeEvent,
-  highlighted, onToggleDestacado, onSaveNote, onAbrirNuevoHito, onAbrirAcciones, onMoveWorkoutAssignment, onGoToTab, onClose,
+  tasks, volumeEvents, mesocycles,
+  highlighted, onToggleDestacado, onSaveNote, onAbrirNuevoHito, onAbrirAcciones,
+  onMoveWorkoutAssignment, onMoveTask, onMoveVolumeEvent, onGoToTab, onClose,
 }: Props) {
   const [editandoNota, setEditandoNota] = useState(false);
   const [moviendo, setMoviendo] = useState(false);
   const [nuevaFecha, setNuevaFecha] = useState(fecha);
+  const [queMuevo, setQueMuevo] = useState(0);
   const [borradorNota, setBorradorNota] = useState('');
   const [guardandoNota, setGuardandoNota] = useState(false);
 
@@ -77,17 +87,29 @@ export default function SheetDia({
   const notaCoach = (coachDayNotes ?? []).find(n => n.date === fecha);
   const logDelDia = (workoutLogs ?? []).find(l => l.date === fecha);
   const fotoDelDia = (progressPhotos ?? []).find(p => p.date === fecha);
-  const asignacionDelDia = (workoutAssignments ?? []).find(a => a.date === fecha);
 
-  /* Mover el entreno pedía la fecha con `window.prompt`, y eso está mal por
-     tres motivos a la vez: en el WebView de Capacitor puede no pintarse
-     siquiera, obliga a teclear «AAAA-MM-DD» a mano en un móvil, y cualquier
-     cosa que no case con ese formato se descartaba en silencio — el coach
-     escribía «mañana» y el botón parecía roto. Ahora es un selector de fecha
-     del sistema, que ni se puede escribir mal ni se puede descartar callando. */
+  /* Mover pedía la fecha con `window.prompt`, y eso está mal por tres motivos
+     a la vez: en el WebView de Capacitor puede no pintarse siquiera, obliga a
+     teclear «AAAA-MM-DD» a mano en un móvil, y cualquier cosa que no case con
+     ese formato se descartaba en silencio — el coach escribía «mañana» y el
+     botón parecía roto. Ahora es un selector de fecha del sistema, que ni se
+     puede escribir mal ni se puede descartar callando.
+
+     Y ya no es solo el entreno. En la rejilla del mes también se arrastran los
+     hitos y los cambios de volumen, pero arrastrar no existe en una pantalla
+     táctil: desde el móvil no había forma de mover ninguno de los dos. Este
+     selector es esa forma, y decide con el MISMO motor que el arrastre
+     (`utils/moverEnCalendario`), así que no puede desviarse de él. */
+  const movibles = moviblesDelDia({ fecha, workoutAssignments, tasks, volumeEvents });
+  const movible: Movible | undefined = movibles[queMuevo] ?? movibles[0];
+
   function confirmarMovimiento() {
-    if (!asignacionDelDia || !nuevaFecha || nuevaFecha === fecha) return;
-    onMoveWorkoutAssignment(asignacionDelDia.id, nuevaFecha);
+    if (!movible) return;
+    const orden = ordenDeMovimiento(movible, nuevaFecha, { fechaOrigen: fecha, volumeEvents, mesocycles });
+    if (!orden) return;
+    if (orden.tipo === 'entreno') onMoveWorkoutAssignment(orden.assignmentId, orden.fecha);
+    else if (orden.tipo === 'hito') onMoveTask(orden.taskId, orden.fecha);
+    else onMoveVolumeEvent(orden.workoutId, orden.exerciseId, orden.semanaVieja, orden.semanaNueva);
     setMoviendo(false);
   }
 
@@ -118,8 +140,25 @@ export default function SheetDia({
         <>
           <Button variant="secondary" onClick={onAbrirNuevoHito} icon="flag">Hito</Button>
           <Button variant={highlighted ? 'primary' : 'secondary'} onClick={onToggleDestacado} icon="star">Destacar día</Button>
-          {asignacionDelDia && (moviendo ? (
-            <span className="flex items-end gap-2 flex-1 min-w-[220px]">
+          {movibles.length > 0 && (moviendo ? (
+            <span className="flex flex-wrap items-end gap-2 flex-1 min-w-[220px]">
+              {movibles.length > 1 && (
+                <span className="flex items-center gap-1.5 flex-wrap">
+                  {movibles.map((m, i) => (
+                    <button
+                      key={`${m.tipo}_${m.id}`}
+                      type="button"
+                      onClick={() => setQueMuevo(i)}
+                      aria-pressed={i === queMuevo}
+                      className={`rounded-control border px-2.5 py-1.5 font-sans text-label transition-colors ${
+                        i === queMuevo ? 'border-accent-line text-accent' : 'border-hairline text-ink-2 hover:text-ink'
+                      }`}
+                    >
+                      {m.etiqueta}
+                    </button>
+                  ))}
+                </span>
+              )}
               <span className="min-w-[150px]">
                 <Input type="date" label="Mover a" value={nuevaFecha} onChange={setNuevaFecha} />
               </span>
@@ -129,8 +168,8 @@ export default function SheetDia({
               <Button variant="ghost" onClick={() => setMoviendo(false)}>Cancelar</Button>
             </span>
           ) : (
-            <Button variant="secondary" onClick={() => { setNuevaFecha(fecha); setMoviendo(true); }} icon="swap_horiz">
-              Mover entreno
+            <Button variant="secondary" onClick={() => { setNuevaFecha(fecha); setQueMuevo(0); setMoviendo(true); }} icon="swap_horiz">
+              {movibles.length > 1 ? 'Mover…' : `Mover ${movibles[0].tipo === 'entreno' ? 'entreno' : movibles[0].tipo === 'hito' ? 'hito' : 'el cambio de volumen'}`}
             </Button>
           ))}
           <Button variant="secondary" onClick={() => setEditandoNota(true)} icon="sticky_note_2">Nota</Button>

@@ -3,6 +3,7 @@ import { CoachDayNote, WorkoutAssignment } from '../../../types';
 import { DiaCalendario, BandaEntreno, BandaNutricion, bandaEnFecha } from '../../../utils/roadmapCalendar';
 import { ejerciciosDelDia, diasDeLaSemana, rotuloDeSemana, DatosSemana } from '../../../utils/semanaCalendario';
 import { PlanEvent } from '../../../utils/planEvents';
+import { ordenDeMovimiento, Movible } from '../../../utils/moverEnCalendario';
 import { estiloDeEstado, mezcla, COLOR_CAT_CARDIO } from './paleta';
 import { Icon } from '../../ui';
 
@@ -62,8 +63,11 @@ export default function NivelSemana({
     e.preventDefault();
     setDragOver(null);
     try {
-      const payload = JSON.parse(e.dataTransfer.getData('text/plain')) as { tipo: string; id: string };
-      if (payload.tipo === 'entreno') onMoveWorkoutAssignment(payload.id, destino);
+      // Mismo sobre y mismo motor que en NivelMes, para que las dos vistas no
+      // se separen. Aquí solo se arrastran entrenos, así que el resto se cae.
+      const payload = JSON.parse(e.dataTransfer.getData('text/plain')) as { movible: Movible; fechaOrigen: string };
+      const orden = ordenDeMovimiento(payload.movible, destino, { fechaOrigen: payload.fechaOrigen, volumeEvents, mesocycles: [] });
+      if (orden?.tipo === 'entreno') onMoveWorkoutAssignment(orden.assignmentId, orden.fecha);
     } catch { /* arrastre de otra cosa: se ignora */ }
   }
 
@@ -117,7 +121,7 @@ export default function NivelSemana({
                 onClick={() => onOpenDay(fecha)}
                 onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') onOpenDay(fecha); }}
                 draggable={!!asignacion}
-                onDragStart={e => { if (asignacion) e.dataTransfer.setData('text/plain', JSON.stringify({ tipo: 'entreno', id: asignacion.id })); }}
+                onDragStart={e => { if (asignacion) e.dataTransfer.setData('text/plain', JSON.stringify({ movible: { tipo: 'entreno', id: asignacion.id, etiqueta: 'Entreno' }, fechaOrigen: fecha })); }}
                 onDragOver={e => { e.preventDefault(); setDragOver(fecha); }}
                 onDragLeave={() => setDragOver(d => d === fecha ? null : d)}
                 onDrop={e => handleDrop(e, fecha)}

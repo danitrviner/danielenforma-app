@@ -5,8 +5,7 @@ import {
   hitosDelMes, objetivosSinFecha,
 } from '../../../utils/roadmapCalendar';
 import { PlanEvent, PlanConflict } from '../../../utils/planEvents';
-import { mesocycleWeekNumber } from '../../../utils/progression';
-import { cicloDiasDeMeso } from '../../../utils/asignacionMesociclo';
+import { ordenDeMovimiento, Movible } from '../../../utils/moverEnCalendario';
 import { addDays } from '../../../utils/trainingWeek';
 import { mezcla } from './paleta';
 import { Filtro } from './RoadmapCalendario';
@@ -130,20 +129,18 @@ export default function NivelMes({
     const raw = e.dataTransfer.getData('text/plain');
     if (!raw) return;
     try {
-      const data = JSON.parse(raw) as { tipo: 'entreno' | 'hito' | 'volumen'; id: string };
-      if (data.tipo === 'entreno') onMoveWorkoutAssignment(data.id, fechaDestino);
-      else if (data.tipo === 'hito') onMoveTask(data.id, fechaDestino);
-      else {
-        // 'volumen': `id` lleva el propio evento serializado — reprogramar
-        // reescribe el `atWeek` de la regla que lo originó, no una fecha suelta
-        // (mismo criterio que RoadmapTimeline.handleMoveVolumeRule).
-        const ev = volumeEvents.find(v => v.id === data.id);
-        if (!ev?.moveRef) return;
-        const meso = mesocycles.find(m => m.id === ev.moveRef!.mesocycleId);
-        if (!meso) return;
-        const nuevaSemana = mesocycleWeekNumber(meso.startDate, fechaDestino, cicloDiasDeMeso(meso));
-        if (nuevaSemana !== ev.moveRef.atWeek) onMoveVolumeEvent(ev.moveRef.workoutId, ev.moveRef.exerciseId, ev.moveRef.atWeek, nuevaSemana);
-      }
+      // La decisión (incluido que el volumen se mueve por SEMANAS de la regla,
+      // no por fecha) vive en `utils/moverEnCalendario`, compartida con el
+      // selector de fecha del sheet del día — que es la única puerta que
+      // existe en una pantalla táctil, donde esto de arrastrar no ocurre.
+      const data = JSON.parse(raw) as { movible: Movible; fechaOrigen: string };
+      const orden = ordenDeMovimiento(data.movible, fechaDestino, {
+        fechaOrigen: data.fechaOrigen, volumeEvents, mesocycles,
+      });
+      if (!orden) return;
+      if (orden.tipo === 'entreno') onMoveWorkoutAssignment(orden.assignmentId, orden.fecha);
+      else if (orden.tipo === 'hito') onMoveTask(orden.taskId, orden.fecha);
+      else onMoveVolumeEvent(orden.workoutId, orden.exerciseId, orden.semanaVieja, orden.semanaNueva);
     } catch { /* dataTransfer ajeno — ignorar */ }
   }
 
@@ -232,9 +229,11 @@ export default function NivelMes({
                 dragOver={dragOverFecha === fecha}
                 marcadorVolumen={volEvent ? { titulo: volEvent.title, cumplida: volEvent.status !== 'programado' } : null}
                 onDragStart={e => {
-                  if (asignacion) e.dataTransfer.setData('text/plain', JSON.stringify({ tipo: 'entreno', id: asignacion.id }));
-                  else if (tarea) e.dataTransfer.setData('text/plain', JSON.stringify({ tipo: 'hito', id: tarea.id }));
-                  else if (volEvent?.moveRef) e.dataTransfer.setData('text/plain', JSON.stringify({ tipo: 'volumen', id: volEvent.id }));
+                  const movible: Movible | null =
+                    asignacion ? { tipo: 'entreno', id: asignacion.id, etiqueta: 'Entreno' }
+                      : tarea ? { tipo: 'hito', id: tarea.id, etiqueta: tarea.title || 'Hito' }
+                        : volEvent?.moveRef ? { tipo: 'volumen', id: volEvent.id, etiqueta: volEvent.title } : null;
+                  if (movible) e.dataTransfer.setData('text/plain', JSON.stringify({ movible, fechaOrigen: fecha }));
                 }}
                 onDragOver={e => { e.preventDefault(); setDragOverFecha(fecha); }}
                 onDrop={e => handleDrop(e, fecha)}

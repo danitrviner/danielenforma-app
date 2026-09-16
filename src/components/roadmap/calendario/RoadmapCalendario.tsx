@@ -518,12 +518,15 @@ export default function RoadmapCalendario(props: Props) {
           progressPhotos={progressPhotos} coachDayNotes={coachDayNotes} workoutLogs={workoutLogs}
           workoutAssignments={workoutAssignments}
           volumeEvent={volumeEvents.find(e => e.date === sel) ?? null}
+          tasks={tasks} volumeEvents={volumeEvents} mesocycles={mesocycles}
           highlighted={(roadmap.highlightedDays ?? []).includes(sel)}
           onToggleDestacado={() => handleToggleDestacado(sel)}
           onSaveNote={text => onSaveDayNote(sel, text)}
           onAbrirNuevoHito={() => setNuevoHitoOpen(true)}
           onAbrirAcciones={() => { setAccionesRango(null); setAccionesFecha(sel); }}
           onMoveWorkoutAssignment={onMoveWorkoutAssignment}
+          onMoveTask={onMoveReview}
+          onMoveVolumeEvent={onMoveVolumeEvent}
           onGoToTab={onGoToTab}
           onClose={() => setSel(null)}
         />
