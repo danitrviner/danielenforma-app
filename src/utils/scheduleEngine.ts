@@ -1,4 +1,5 @@
 import { QSchedule, Mesocycle } from '../types';
+import { hoyIsoLocal } from './trainingWeek';
 
 // Generic recurring-schedule evaluation, extracted from questionnaireSchedule.ts
 // so it can be reused for anything scheduled with a QSchedule (currently
@@ -16,8 +17,15 @@ export interface ScheduleContext {
   mesocycles?: Mesocycle[];
 }
 
+/* Era `new Date().toISOString().slice(0, 10)`, o sea el día en UTC. El resto
+   de este motor trabaja con `new Date()` en hora LOCAL (`isDueToday` compara
+   con `setHours(0,0,0,0)`), así que entre medianoche y las 2:00 de España las
+   dos mitades hablaban de días distintos: la hora local decía «hoy es 15» y
+   esta función devolvía el 14. Un cuestionario que vencía el 15 aparecía como
+   pendiente y la foto subida esa madrugada no contaba para su ocurrencia.
+   `hoyIsoLocal()` es la única fuente de «hoy» de la app. */
 export function todayStr(): string {
-  return new Date().toISOString().slice(0, 10);
+  return hoyIsoLocal();
 }
 
 export function startOfDay(dateStr: string): Date {
