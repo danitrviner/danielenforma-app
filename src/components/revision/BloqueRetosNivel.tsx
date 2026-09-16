@@ -133,7 +133,12 @@ export default function BloqueRetosNivel({
             </Badge>
           </div>
           <div className="flex items-center gap-3">
-            <BarraCumplimiento pct={progreso.pct} />
+            {/* `BarraCumplimiento` es `w-full`, así que como hijo directo de un
+                flex reclama la fila entera y se come lo que tenga al lado.
+                Siempre va dentro de una caja que le fije el ancho. */}
+            <div className="flex-1 min-w-0">
+              <BarraCumplimiento pct={progreso.pct} />
+            </div>
             <span className="font-mono text-caption text-ink-2 tabular-nums shrink-0">
               {progreso.progressValue.toLocaleString('es-ES')} / {actual.metric.target.toLocaleString('es-ES')} {actual.metric.unit}
             </span>
@@ -198,8 +203,10 @@ export default function BloqueRetosNivel({
           <ul className="space-y-1.5 list-none">
             {nivel.nextLevelCriteria.map((c, i) => (
               <li key={i} className="flex items-center gap-3">
-                <span className="font-sans text-label text-ink-2 flex-1 min-w-0">{c.criterion.label}</span>
-                <BarraCumplimiento pct={c.pct} />
+                <span className="font-sans text-label text-ink-2 flex-1 min-w-0 truncate">{c.criterion.label}</span>
+                <div className="w-20 sm:w-28 shrink-0">
+                  <BarraCumplimiento pct={c.pct} />
+                </div>
                 <span className="font-mono text-caption text-ink-3 tabular-nums shrink-0 w-10 text-right">
                   {Math.round(c.pct)} %
                 </span>

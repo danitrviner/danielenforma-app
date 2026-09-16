@@ -7,6 +7,14 @@ import React from 'react';
    rojo por debajo) y el 100 % no es el máximo — pasarse está permitido y se
    marca con un tic en el borde derecho, porque hacer 14 series donde se
    programaron 12 no es «completado», es «se ha pasado».
+
+   ── Cómo colocarla ─────────────────────────────────────────────────────────
+   Ocupa el ancho de su contenedor (`w-full`), así que NO se pone como hijo
+   directo de un flex: ahí su base es la fila entera y se come lo que tenga al
+   lado —etiqueta y porcentaje se superponen, que es lo que pasó en el bloque
+   de retos y nivel—. Va siempre dentro de una caja que le fije el ancho:
+   `<div className="w-24 shrink-0">` cuando es una columna, o
+   `<div className="flex-1 min-w-0">` cuando debe estirarse con la fila.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 interface Props {
