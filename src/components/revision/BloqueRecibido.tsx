@@ -24,7 +24,18 @@ import { Button, Badge, Collapsible, EmptyState } from '../ui';
    Las agujetas SÍ se ven: son del coach, es con lo que ajusta el volumen
    (`utils/volumeSuggestion.ts`). El atleta no las ve, y eso lo decide
    `ocultarDoms` desde su propia pantalla.
+
+   ── Por qué hay una tabla además de la lista de pendientes ─────────────────
+   La lista de arriba contesta a «¿qué me queda por contestar?», que es una
+   tarea. La tabla contesta a otra cosa: «¿qué me ha ido diciendo?». Un check-in
+   suelto no dice nada —80,4 kg y un «Parcial» no significan nada sin los cuatro
+   anteriores—, y para verlos en fila había que abrir Revisiones y pinchar uno a
+   uno. Aquí van seguidos, con el cambio de peso respecto al anterior calculado,
+   que es la frase que se dice en voz alta en el vídeo.
    ═══════════════════════════════════════════════════════════════════════════ */
+
+/** Cuántos check-ins entran en la tabla: unos dos meses al ritmo semanal. */
+const CHECKINS_EN_LA_TABLA = 8;
 
 interface Props {
   checkins: WeightCheckIn[];
@@ -44,12 +55,33 @@ function fecha(c: WeightCheckIn): string {
     : d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' });
 }
 
+const TONO_ADHERENCIA = { 'Sí': 'success', Parcial: 'warning', No: 'danger' } as const;
+
+function ms(c: WeightCheckIn): number {
+  return Number(new Date(c.timestamp));
+}
+
 export default function BloqueRecibido({
   checkins, questionnaires, responses, onGoToTab, todoAbierto = false,
 }: Props) {
   const pendientes = getPendingReviews(checkins)
     .slice()
-    .sort((a, b) => Number(new Date(b.timestamp)) - Number(new Date(a.timestamp)));
+    .sort((a, b) => ms(b) - ms(a));
+
+  // Del más viejo al más nuevo para poder restar contra el anterior, y se le da
+  // la vuelta al pintar: la tabla se lee de arriba abajo empezando por el
+  // último, que es lo que se está comentando.
+  const serie = checkins.slice().sort((a, b) => ms(a) - ms(b));
+  const filas = serie
+    .map((c, i) => {
+      const previo = serie[i - 1];
+      const delta = previo && typeof c.weight === 'number' && typeof previo.weight === 'number'
+        ? Math.round((c.weight - previo.weight) * 10) / 10
+        : null;
+      return { c, delta };
+    })
+    .slice(-CHECKINS_EN_LA_TABLA)
+    .reverse();
 
   const hayGraficas = responses.length > 0 && questionnaires.length > 0;
 
@@ -97,6 +129,54 @@ export default function BloqueRecibido({
               Y {pendientes.length - 5} más en Revisiones.
             </p>
           )}
+        </div>
+      )}
+
+      {/* ── La serie: qué le ha ido diciendo ─────────────────────────────── */}
+      {filas.length > 1 && (
+        <div className="overflow-x-auto rounded-surface border border-hairline">
+          <table className="w-full border-collapse" style={{ minWidth: '420px' }}>
+            <caption className="sr-only">
+              Sus últimos {filas.length} check-ins, con el peso, el cambio respecto al anterior,
+              la adherencia que declaró y si ya está contestado.
+            </caption>
+            <thead>
+              <tr className="bg-bg">
+                <th scope="col" className="text-left px-3 py-2.5 font-mono text-caption text-ink-2 uppercase tracking-wider border-b border-hairline">Fecha</th>
+                <th scope="col" className="text-right px-3 py-2.5 font-mono text-caption text-ink-2 uppercase tracking-wider border-b border-hairline">Peso</th>
+                <th scope="col" className="text-right px-3 py-2.5 font-mono text-caption text-ink-2 uppercase tracking-wider border-b border-hairline">Cambio</th>
+                <th scope="col" className="text-left px-3 py-2.5 font-mono text-caption text-ink-2 uppercase tracking-wider border-b border-hairline">Adherencia</th>
+                <th scope="col" className="text-left px-3 py-2.5 font-mono text-caption text-ink-2 uppercase tracking-wider border-b border-hairline">Ánimo</th>
+                <th scope="col" className="text-left px-3 py-2.5 font-mono text-caption text-ink-2 uppercase tracking-wider border-b border-hairline">Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filas.map(({ c, delta }) => (
+                <tr key={c.id} className="border-b border-hairline last:border-b-0">
+                  <th scope="row" className="text-left px-3 py-2.5 font-mono font-normal text-caption text-ink-2 tabular-nums whitespace-nowrap">
+                    {fecha(c)}
+                  </th>
+                  <td className="px-3 py-2.5 text-right font-mono text-label text-ink tabular-nums">
+                    {typeof c.weight === 'number' ? `${c.weight} kg` : '—'}
+                  </td>
+                  <td className="px-3 py-2.5 text-right font-mono text-caption tabular-nums text-ink-2">
+                    {/* Sin color: que el peso baje es bueno o malo según el
+                        objetivo del bloque, y esta tabla no lo conoce. */}
+                    {delta == null ? '—' : delta === 0 ? '=' : `${delta > 0 ? '+' : '−'}${Math.abs(delta)}`}
+                  </td>
+                  <td className="px-3 py-2.5">
+                    <Badge tone={TONO_ADHERENCIA[c.adherence] ?? 'neutral'}>{c.adherence}</Badge>
+                  </td>
+                  <td className="px-3 py-2.5 text-label" aria-label={`Ánimo: ${c.mood ?? 'sin indicar'}`}>
+                    {c.mood ?? '—'}
+                  </td>
+                  <td className="px-3 py-2.5 font-mono text-caption text-ink-3">
+                    {c.approved ? 'aprobado' : c.coachFeedback ? 'contestado' : 'sin contestar'}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
 
