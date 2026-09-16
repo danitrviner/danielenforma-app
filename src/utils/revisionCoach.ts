@@ -16,6 +16,7 @@ import { addDays, hoyIsoLocal, getWeekStart } from './trainingWeek';
 import { nombreDeMeso } from './nombresMeso';
 import { mesocycleWeekNumber } from './progression';
 import { ewmaDeSeñal } from './wellnessTrend';
+import { ewmaDeSeriePorSesion } from './loadTrend';
 import { computeIRP, historialIRP, IRPResult } from './readinessIndex';
 import { domsCronicoDeGrupo, esDomsCronico } from './domsCronico';
 import { DataPoint } from './seriesCorrelation';
@@ -242,6 +243,19 @@ export interface RevisionDelAtleta {
   mapa: CeldaMapaCalor[];
   estimulo: IEARow[];
   bienestar: BienestarDeLaVentana;
+  /**
+   * Curva EWMA del 1RM estimado de cada ejercicio de la ventana, calculada
+   * sobre TODO su historial y no solo sobre la ventana.
+   *
+   * Es a propósito: el porcentaje de la columna de al lado compara dos ventanas
+   * y no distingue «lleva seis meses subiendo» de «rebotó después de tres meses
+   * cayendo». La curva sí, y es la diferencia entre felicitar y preocuparse.
+   * Recortarla a la ventana la dejaría en dos o tres puntos, que no dibujan
+   * nada.
+   */
+  curvaPorEjercicio: Record<string, number[]>;
+  /** Última fecha con una serie registrada de ese ejercicio, en todo su historial. */
+  ultimaSesionPorEjercicio: Record<string, string>;
 }
 
 /**
@@ -363,13 +377,41 @@ export function buildRevisionCoach(params: RevisionParams): RevisionDelAtleta {
   const { suben, bajan } = mejoresYPeores(informe.perExercise);
 
   const bienestar = construirBienestar({ responses, questionnaires, ventana });
+  const { curvaPorEjercicio, ultimaSesionPorEjercicio } = curvasDeLaVentana(informe.perExercise, logs);
 
   return {
     ventana, informe, patrones,
     ejerciciosPorPatron: porPatron,
     ejerciciosSinPatron: sinPatron,
     suben, bajan, mapa, estimulo, bienestar,
+    curvaPorEjercicio, ultimaSesionPorEjercicio,
   };
+}
+
+/** Cuántos puntos pinta la primitiva Sparkline. Más no caben. */
+const PUNTOS_DE_CURVA = 8;
+
+/**
+ * Curva y última sesión de cada ejercicio que aparece en la ventana, sacadas de
+ * su historial completo. Solo de los de la ventana: calcular la curva de los
+ * doscientos ejercicios del catálogo para pintar quince sería trabajo tirado.
+ */
+export function curvasDeLaVentana(
+  perExercise: ExercisePerf[],
+  logs: WorkoutLog[],
+): { curvaPorEjercicio: Record<string, number[]>; ultimaSesionPorEjercicio: Record<string, string> } {
+  const curvaPorEjercicio: Record<string, number[]> = {};
+  const ultimaSesionPorEjercicio: Record<string, string> = {};
+
+  for (const e of perExercise) {
+    const puntos = ewmaDeSeriePorSesion(logs, e.exerciseId);
+    if (puntos.length === 0) continue;
+    curvaPorEjercicio[e.exerciseId] = puntos
+      .slice(-PUNTOS_DE_CURVA)
+      .map(p => Math.round(p.value * 10) / 10);
+    ultimaSesionPorEjercicio[e.exerciseId] = puntos[puntos.length - 1].date;
+  }
+  return { curvaPorEjercicio, ultimaSesionPorEjercicio };
 }
 
 /**

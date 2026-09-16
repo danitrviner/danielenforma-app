@@ -203,6 +203,8 @@ export default function ClientRevisionPanel({
           ejerciciosPorPatron={revision.ejerciciosPorPatron}
           ejerciciosSinPatron={revision.ejerciciosSinPatron}
           comparacion={ventana.etiquetaComparacion.replace(/^vs /, '')}
+          curvas={revision.curvaPorEjercicio}
+          ultimaSesion={revision.ultimaSesionPorEjercicio}
           todoAbierto={todoAbierto}
         />
       </Seccion>

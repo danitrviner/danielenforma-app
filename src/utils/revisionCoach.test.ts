@@ -6,7 +6,7 @@ import {
 import {
   resolverPeriodoRevision, buildRevisionCoach, agruparEjerciciosPorPatron,
   mejoresYPeores, mesoActivo, semanasDeVentana, pesoVsSemanaPasada, construirBienestar,
-  fechaDeLaUltimaRevision,
+  fechaDeLaUltimaRevision, curvasDeLaVentana,
 } from './revisionCoach';
 
 const HOY = '2026-09-14'; // lunes
@@ -516,5 +516,52 @@ describe('resolverPeriodoRevision · desde la última revisión', () => {
     );
     expect(v.desde).toBe(HOY);
     expect(v.hasta).toBe(HOY);
+  });
+});
+
+// ── Curvas de tendencia ─────────────────────────────────────────────────────
+
+describe('curvasDeLaVentana', () => {
+  const EJ = 'press_banca';
+  const logsDe = (fechas: string[], cargas: number[]): WorkoutLog[] =>
+    fechas.map((date, i) => ({
+      id: `l_${date}`, athleteId: 'a', workoutId: 'w', assignmentId: 'as', date,
+      completedAt: `${date}T18:00:00.000Z`,
+      entries: [{ exerciseId: EJ, sets: [{ weight: cargas[i], repsDone: 8, rir: 2 }] }],
+    })) as WorkoutLog[];
+
+  it('la curva sale del historial entero, no de la ventana', () => {
+    const logs = logsDe(
+      ['2026-06-01', '2026-06-08', '2026-06-15', '2026-09-10'],
+      [60, 62, 64, 70],
+    );
+    const { curvaPorEjercicio } = curvasDeLaVentana(
+      [{ exerciseId: EJ, name: 'Press banca' } as never], logs,
+    );
+    // Cuatro sesiones, aunque tres caigan fuera de cualquier ventana reciente.
+    expect(curvaPorEjercicio[EJ]).toHaveLength(4);
+  });
+
+  it('se queda con los últimos 8 puntos, que es lo que cabe en la sparkline', () => {
+    const fechas = Array.from({ length: 12 }, (_, i) => `2026-07-${String(i + 1).padStart(2, '0')}`);
+    const { curvaPorEjercicio } = curvasDeLaVentana(
+      [{ exerciseId: EJ, name: 'Press banca' } as never],
+      logsDe(fechas, fechas.map((_, i) => 60 + i)),
+    );
+    expect(curvaPorEjercicio[EJ]).toHaveLength(8);
+  });
+
+  it('la última sesión es la fecha real del último registro', () => {
+    const { ultimaSesionPorEjercicio } = curvasDeLaVentana(
+      [{ exerciseId: EJ, name: 'Press banca' } as never],
+      logsDe(['2026-08-01', '2026-08-20'], [60, 65]),
+    );
+    expect(ultimaSesionPorEjercicio[EJ]).toBe('2026-08-20');
+  });
+
+  it('un ejercicio sin registros no aparece, en vez de salir con una curva vacía', () => {
+    const r = curvasDeLaVentana([{ exerciseId: 'nunca', name: 'Nada' } as never], []);
+    expect(r.curvaPorEjercicio.nunca).toBeUndefined();
+    expect(r.ultimaSesionPorEjercicio.nunca).toBeUndefined();
   });
 });

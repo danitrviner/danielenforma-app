@@ -23,10 +23,14 @@ interface Props {
   comparacion: string;
   /** Cuando está activo, todos los patrones nacen desplegados. */
   todoAbierto?: boolean;
+  /** Curvas EWMA del 1RM por ejercicio, del historial completo. */
+  curvas?: Record<string, number[]>;
+  ultimaSesion?: Record<string, string>;
 }
 
 export default function BloquePatrones({
   patrones, ejerciciosPorPatron, ejerciciosSinPatron, comparacion, todoAbierto = false,
+  curvas, ultimaSesion,
 }: Props) {
   const conDatos = patrones.filter(p => p.sets > 0);
 
@@ -67,6 +71,8 @@ export default function BloquePatrones({
             <TablaEjerciciosPatron
               ejercicios={ejercicios}
               comparacion={comparacion}
+              curvas={curvas}
+              ultimaSesion={ultimaSesion}
               vacio="Ningún ejercicio de este patrón en la ventana."
             />
           </Collapsible>
@@ -86,7 +92,12 @@ export default function BloquePatrones({
             </div>
           }
         >
-          <TablaEjerciciosPatron ejercicios={ejerciciosSinPatron} comparacion={comparacion} />
+          <TablaEjerciciosPatron
+            ejercicios={ejerciciosSinPatron}
+            comparacion={comparacion}
+            curvas={curvas}
+            ultimaSesion={ultimaSesion}
+          />
         </Collapsible>
       )}
 
