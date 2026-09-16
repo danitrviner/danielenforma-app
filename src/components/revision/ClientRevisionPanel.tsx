@@ -24,6 +24,7 @@ import BloqueBienestar from './BloqueBienestar';
 import BloqueQueHaComido from './BloqueQueHaComido';
 import BloqueNutricionHabitos from './BloqueNutricionHabitos';
 import BloqueRecibido from './BloqueRecibido';
+import BloqueCierre from './BloqueCierre';
 import { Card, Button, Icon } from '../ui';
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -167,7 +168,9 @@ export default function ClientRevisionPanel({
           hoy={hoy}
           ultimaRevision={ultimaRevision}
         />
-        <div className="flex items-center gap-2">
+        {/* `flex-wrap`: los dos botones juntos miden 394 px y el móvil tiene
+            375, así que sin esto la pantalla entera se desplazaba a lo ancho. */}
+        <div className="flex flex-wrap items-center gap-2">
           <Button
             variant="ghost"
             onClick={() => setTodoAbierto(v => !v)}
@@ -328,6 +331,20 @@ export default function ClientRevisionPanel({
           responses={responses}
           onGoToTab={onGoToTab}
           todoAbierto={todoAbierto}
+        />
+      </Seccion>
+
+      {/* Va el último porque es la conclusión: los ocho bloques de arriba son
+          la prueba, y este es lo que se le dice. */}
+      <Seccion presentando={presentando} n={9} titulo="Qué le digo">
+        <BloqueCierre
+          athleteEmail={athlete.email}
+          athleteName={athlete.displayName}
+          revision={revision}
+          comida={comida}
+          peso={peso}
+          onGoToTab={onGoToTab}
+          presentando={presentando}
         />
       </Seccion>
     </div>

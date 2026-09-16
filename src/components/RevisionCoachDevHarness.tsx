@@ -383,12 +383,16 @@ export default function RevisionCoachDevHarness() {
     qc.setQueryData(['dietsForAthlete', EMAIL], DIETAS);
     qc.setQueryData(['onboarding', EMAIL], ALTA);
     // El bloque «Qué ha comido» pide los registros ACOTADOS a la ventana, así
-    // que la clave lleva el `desde`. Se siembran las tres ventanas que ofrece
-    // el selector con los mismos datos (el motor ya recorta por fecha); sin
-    // esto, cambiar de periodo dispararía una consulta real a Firestore.
+    // que la clave lleva el `desde`. Se siembran TODOS los `desde` de los
+    // últimos noventa días con los mismos datos (el motor ya recorta por
+    // fecha) en vez de las cuatro ventanas concretas del selector: en cuanto se
+    // añadió «desde la última revisión», cuyo corte depende de los check-ins,
+    // la lista fija se quedó corta y el bloque salía vacío con una consulta
+    // real a Firestore por debajo. Noventa claves de caché no cuestan nada;
+    // que el banco de pruebas mienta, sí.
     qc.setQueryData(['dietCompletionLogsForAthlete', EMAIL], REGISTROS_DE_COMIDA);
-    for (const desde of [haceDias(6), haceDias(13), MESO_ACTUAL.startDate, MESO_ANTERIOR.startDate]) {
-      qc.setQueryData(['dietCompletionLogsForAthlete', EMAIL, desde], REGISTROS_DE_COMIDA);
+    for (let d = 0; d <= 90; d++) {
+      qc.setQueryData(['dietCompletionLogsForAthlete', EMAIL, haceDias(d)], REGISTROS_DE_COMIDA);
     }
     qc.setQueryData(['athleteNutritionConfig', EMAIL], { athleteId: EMAIL, enabledModes: ['OMNIVORO'], stepGoal: 9000 });
     qc.setQueryData(['athleteDietConfig', EMAIL], { athleteId: EMAIL, activeDietIds: ['d_deficit'] });
