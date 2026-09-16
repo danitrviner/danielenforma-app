@@ -79,6 +79,7 @@ import { buildTrainingReportDraft } from '../utils/reportBuilder';
 import { computeDietPlaced, parseBaseGrams } from '../utils/exchangeHelpers';
 import { exchangeToKcal } from '../utils/nutritionConstants';
 import { buildPhaseEnergyPlans } from '../utils/nutritionPeriodization';
+import { computeActivePhase } from '../utils/fasesNutricion';
 import { addDays, hoyIsoLocal } from '../utils/trainingWeek';
 import { weekKey } from '../utils/seriesCorrelation';
 import { resolveQuestions } from '../utils/questionnaireResolve';
@@ -3112,16 +3113,23 @@ async function getProgressMetrics(email: string): Promise<string> {
 async function getNutritionAnalysis(email: string): Promise<string> {
   const profile = await findProfile(email);
   if (!profile) return toResult({ error: `No existe ningún cliente con email ${email}` });
-  const [diets, dietConfig, completionLogs, stepLogs, bodyweightLogs, onboarding, nutriConfig] = await Promise.all([
+  const [diets, dietConfig, completionLogs, stepLogs, bodyweightLogs, onboarding, nutriConfig, programa] = await Promise.all([
     getDietsForAthlete(email), getAthleteDietConfig(email), getDietCompletionLogsForAthlete(email),
     getStepsForAthlete(email), getBodyweightForAthlete(email), getOnboarding(email), getAthleteNutritionConfig(email),
+    getNutritionProgram(email).catch(() => null),
   ]);
   const coachDiets = diets.filter(d => !d.selfManaged);
   const activeId = dietConfig?.activeDietIds?.[0] ?? null;
   const activeDiet = activeId ? coachDiets.find(d => d.id === activeId) ?? null : (coachDiets[0] ?? null);
+  // La fase que rige hoy: sin ella, los macros se comparaban contra el alta
+  // —calculada para mantener— y cualquier atleta en déficit salía con una
+  // alerta falsa que el modelo leía como un problema del plan.
+  const faseActiva = programa && programa.phases.length > 0
+    ? computeActivePhase(programa, hoyIsoLocal())
+    : null;
   const informe = buildNutritionReport({
     completionLogs, diets: coachDiets, activeDiet, stepLogs, stepGoal: nutriConfig.stepGoal ?? 8000,
-    bodyweightLogs, targetWeight: profile.targetWeight || undefined, onboarding,
+    bodyweightLogs, targetWeight: profile.targetWeight || undefined, onboarding, faseActiva,
   });
   return toResult({
     dietaActiva: activeDiet ? { id: activeDiet.id, nombre: activeDiet.name, kcalAprox: exchangeToKcal(activeDiet.budget), budget: activeDiet.budget } : null,
@@ -3129,6 +3137,7 @@ async function getNutritionAnalysis(email: string): Promise<string> {
     resumen: informe.summary,
     adherencia: informe.adherence,
     pasos: informe.steps,
+    faseDeNutricion: faseActiva ? { nombre: faseActiva.name, kcal: faseActiva.targetKcal ?? null } : null,
     desviacionMacros: informe.macroDeviation,
     tendenciaPeso: informe.weightTrend,
     alertas: informe.flags,

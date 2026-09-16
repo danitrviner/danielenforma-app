@@ -1,4 +1,7 @@
-import { Diet, DietCompletionLog, StepLog, BodyweightLog, OnboardingData, FoodCategory, MenuCompletionLog, WeeklyMenu, WeekDay } from '../types';
+import {
+  Diet, DietCompletionLog, StepLog, BodyweightLog, OnboardingData, FoodCategory,
+  MenuCompletionLog, WeeklyMenu, WeekDay, NutritionPhase,
+} from '../types';
 import { GRAMS_PER_EXCHANGE } from './nutritionConstants';
 import { adherenciaDelDia, adherenciaPorIntercambios } from './diaDeDieta';
 import { hoyIsoLocal, addDays } from './trainingWeek';
@@ -168,10 +171,28 @@ export interface MacroDeviationResult {
   deviationPct: number; // signed: positive = plan exceeds target
 }
 
-// Compares the athlete's active diet's exchange budget (converted to grams)
-// against the onboarding target grams — a "does the plan match the goal"
-// signal, independent of day-to-day adherence.
-export function computeMacroDeviation(diet: Diet | null, onboarding: OnboardingData | null): MacroDeviationResult[] {
+/**
+ * Compara el presupuesto de la dieta activa (pasado a gramos) con el objetivo
+ * del atleta.
+ *
+ * ── Contra QUÉ objetivo ────────────────────────────────────────────────────
+ * Hasta ahora, siempre contra los gramos del ALTA, que se calcularon para
+ * mantener. Eso convertía la señal en ruido justo para los clientes que están
+ * haciendo algo: un atleta en una fase de déficit de 2.050 kcal, con su dieta
+ * bien montada para esa fase, salía con «déficit de GRASA: 44 g vs 68 g
+ * (−35 %)» y una alerta en rojo. Y esa alerta la lee después el asistente, que
+ * propone «subir la grasa» de un plan que está exactamente donde debe estar.
+ *
+ * Con periodización, el objetivo es el de la FASE ACTIVA: sus kcal repartidas
+ * con el mismo `macroSplit` del alta. Sin periodización se sigue usando el
+ * alta, que es lo único que hay.
+ */
+export function computeMacroDeviation(
+  diet: Diet | null,
+  onboarding: OnboardingData | null,
+  /** La fase que rige hoy, si el atleta tiene periodización. */
+  faseActiva?: NutritionPhase | null,
+): MacroDeviationResult[] {
   // `macroGrams` figura como obligatorio en el tipo, pero el documento de
   // Firestore no siempre lo trae: las altas anteriores a que se calculara, y
   // las que se guardaron a medias, llegan sin él. Leerlo a ciegas reventaba el
@@ -183,9 +204,7 @@ export function computeMacroDeviation(diet: Diet | null, onboarding: OnboardingD
   // sección, no tumbando las otras cuatro.
   if (!diet || !onboarding?.macroGrams) return [];
   const cats: ('HC' | 'PROT' | 'GRASA')[] = ['HC', 'PROT', 'GRASA'];
-  const targetByCat: Record<'HC' | 'PROT' | 'GRASA', number> = {
-    HC: onboarding.macroGrams.hc, PROT: onboarding.macroGrams.prot, GRASA: onboarding.macroGrams.grasa,
-  };
+  const targetByCat = objetivoEnGramos(onboarding, faseActiva ?? null);
   return cats.flatMap(cat => {
     const targetGrams = targetByCat[cat];
     if (typeof targetGrams !== 'number' || !Number.isFinite(targetGrams)) return [];
@@ -193,6 +212,33 @@ export function computeMacroDeviation(diet: Diet | null, onboarding: OnboardingD
     const deviationPct = targetGrams > 0 ? round1(((planGrams - targetGrams) / targetGrams) * 100) : 0;
     return [{ category: cat, targetGrams, planGrams, deviationPct }];
   });
+}
+
+/**
+ * Los gramos objetivo de cada macro.
+ *
+ * Con fase activa y kcal declaradas, se reparten esas kcal con el `macroSplit`
+ * del alta —el reparto es criterio del coach y no cambia porque cambien las
+ * kcal— y se pasan a gramos con 4/4/9. Sin fase, los gramos del alta tal cual.
+ */
+export function objetivoEnGramos(
+  onboarding: OnboardingData,
+  faseActiva: NutritionPhase | null,
+): Record<'HC' | 'PROT' | 'GRASA', number> {
+  const delAlta = {
+    HC: onboarding.macroGrams.hc,
+    PROT: onboarding.macroGrams.prot,
+    GRASA: onboarding.macroGrams.grasa,
+  };
+  const kcalFase = faseActiva?.targetKcal;
+  const split = onboarding.macroSplit;
+  if (!kcalFase || kcalFase <= 0 || !split) return delAlta;
+
+  return {
+    HC: round1((kcalFase * (split.hc / 100)) / 4),
+    PROT: round1((kcalFase * (split.prot / 100)) / 4),
+    GRASA: round1((kcalFase * (split.grasa / 100)) / 9),
+  };
 }
 
 export interface WeightTrendResult {
@@ -258,12 +304,14 @@ export function buildNutritionReport(params: {
   bodyweightLogs: BodyweightLog[];
   targetWeight?: number;
   onboarding: OnboardingData | null;
+  /** La fase de nutrición que rige hoy, si la hay. */
+  faseActiva?: NutritionPhase | null;
   thresholds?: AnalysisThresholds;
 }): NutritionReport {
   const thresholds = params.thresholds ?? DEFAULT_THRESHOLDS;
   const adherence = computeAdherenceRate(params.completionLogs, params.diets, thresholds);
   const steps = computeStepCompletionRate(params.stepLogs, params.stepGoal, thresholds);
-  const macroDeviation = computeMacroDeviation(params.activeDiet, params.onboarding);
+  const macroDeviation = computeMacroDeviation(params.activeDiet, params.onboarding, params.faseActiva ?? null);
   const weightTrend = computeWeightTrend(params.bodyweightLogs, params.targetWeight, thresholds);
   const flags = detectDeficitsExcesses(adherence, macroDeviation, thresholds);
 

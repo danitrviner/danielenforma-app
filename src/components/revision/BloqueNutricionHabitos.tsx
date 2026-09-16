@@ -6,6 +6,8 @@ import {
   getAthleteNutritionConfig, saveAthleteNutritionConfig,
 } from '../../dbService';
 import { buildNutritionReport, DEFAULT_THRESHOLDS } from '../../utils/nutritionAnalysis';
+import { computeActivePhase } from '../../utils/fasesNutricion';
+import { getNutritionProgram } from '../../dbService';
 import { VentanaRevision } from '../../utils/revisionCoach';
 import { Button, Skeleton, Icon } from '../ui';
 
@@ -59,8 +61,20 @@ export default function BloqueNutricionHabitos({
     queryKey: nutritionConfigKey,
     queryFn: () => getAthleteNutritionConfig(athleteEmail).catch(() => null),
   });
+  // La fase que rige HOY decide contra qué objetivo se comparan los macros. Sin
+  // ella, la comparación se hacía siempre contra los gramos del alta —
+  // calculados para mantener— y cualquier atleta en déficit salía en rojo.
+  const { data: programa, isPending: cargandoPrograma } = useQuery({
+    queryKey: ['nutritionProgram', athleteEmail],
+    queryFn: () => getNutritionProgram(athleteEmail),
+  });
 
-  const cargando = cargandoConfig || cargandoPasos || cargandoAlta || cargandoNutricion;
+  const cargando = cargandoConfig || cargandoPasos || cargandoAlta || cargandoNutricion || cargandoPrograma;
+
+  const faseActiva = useMemo(
+    () => (programa && programa.phases.length > 0 ? computeActivePhase(programa, ventana.hasta) : null),
+    [programa, ventana.hasta],
+  );
 
   const nutritionConfig: AthleteNutritionConfig = nutritionConfigData
     ?? { athleteId: athleteEmail, enabledModes: ['OMNIVORO'] };
@@ -83,6 +97,7 @@ export default function BloqueNutricionHabitos({
         bodyweightLogs,
         targetWeight,
         onboarding: onboarding ?? null,
+        faseActiva,
         thresholds: { ...DEFAULT_THRESHOLDS, ventana: { desde: ventana.desde, hasta: ventana.hasta } },
       });
     } catch (err) {
@@ -90,7 +105,7 @@ export default function BloqueNutricionHabitos({
       return null;
     }
   }, [cargando, registros, coachDiets, activeDiet, stepLogs, nutritionConfigData?.stepGoal,
-      bodyweightLogs, targetWeight, onboarding, ventana.desde, ventana.hasta]);
+      bodyweightLogs, targetWeight, onboarding, faseActiva, ventana.desde, ventana.hasta]);
 
   const [compartiendo, setCompartiendo] = useState(false);
   const compartido = nutritionConfig.sharedReportSnapshot;
@@ -169,7 +184,7 @@ export default function BloqueNutricionHabitos({
       {macroDeviation.length > 0 && (
         <div>
           <span className="font-mono text-caption text-ink-3 uppercase tracking-[.08em] block mb-2">
-            Macros del plan vs objetivo
+            Macros del plan vs objetivo{faseActiva ? ` de «${faseActiva.name}»` : ' del alta'}
           </span>
           <div className="grid grid-cols-3 gap-3">
             {macroDeviation.map(m => (
