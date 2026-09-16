@@ -271,19 +271,43 @@ export async function getResponsesForAthlete(email: string): Promise<Questionnai
   }
 }
 
-export async function getResponsesByQuestionnaireIds(ids: string[]): Promise<QuestionnaireResponse[]> {
+/**
+ * Las respuestas de una lista de cuestionarios.
+ *
+ * `desde` (ISO completo) acota a lo reciente. Sin él se traen TODAS las
+ * respuestas de todos los atletas desde siempre, y eso es lo que pagaba la
+ * bandeja de Revisiones cada vez que se abría: una colección que solo crece,
+ * para enseñar las últimas semanas.
+ *
+ * Se filtra también en memoria además de en la consulta, para que el camino
+ * local y el de respaldo devuelvan lo mismo que el bueno.
+ */
+export async function getResponsesByQuestionnaireIds(
+  ids: string[],
+  desde?: string,
+): Promise<QuestionnaireResponse[]> {
   if (ids.length === 0) return [];
+  const recientes = (rs: QuestionnaireResponse[]) =>
+    desde ? rs.filter(r => r.submittedAt >= desde) : rs;
   if (forceLocalOnly) {
     const local = getLocalQResponses();
-    return local.filter(r => ids.includes(r.questionnaireId));
+    return recientes(local.filter(r => ids.includes(r.questionnaireId)));
   }
   try {
     const batches: Promise<QuestionnaireResponse[]>[] = [];
     for (let i = 0; i < ids.length; i += 10) {
       const batch = ids.slice(i, i + 10);
+      const base = [collection(db, 'questionnaireResponses'), where('questionnaireId', 'in', batch)] as const;
       batches.push(
-        getDocs(query(collection(db, 'questionnaireResponses'), where('questionnaireId', 'in', batch)))
-          .then(snap => snap.docs.map(d => ({ id: d.id, ...d.data() } as QuestionnaireResponse)))
+        // `in` + rango sobre otro campo necesita índice compuesto, y este
+        // código puede desplegarse antes que el índice. Si falla, se pide sin
+        // el rango y se recorta aquí: más caro, pero la bandeja nunca aparece
+        // vacía por un índice que falta.
+        getDocs(desde
+          ? query(...base, where('submittedAt', '>=', desde))
+          : query(...base))
+          .catch(() => getDocs(query(...base)))
+          .then(snap => recientes(snap.docs.map(d => ({ id: d.id, ...d.data() } as QuestionnaireResponse))))
       );
     }
     const results = await Promise.all(batches);
@@ -292,7 +316,7 @@ export async function getResponsesByQuestionnaireIds(ids: string[]): Promise<Que
     console.warn('getResponsesByQuestionnaireIds Firestore failed:', err);
     setLocalBypassMode(true, err);
     const local = getLocalQResponses();
-    return local.filter(r => ids.includes(r.questionnaireId));
+    return recientes(local.filter(r => ids.includes(r.questionnaireId)));
   }
 }
 

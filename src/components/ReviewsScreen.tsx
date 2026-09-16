@@ -21,6 +21,9 @@ type UnifiedItem =
   | { kind: 'checkin'; sortKey: number; data: WeightCheckIn }
   | { kind: 'response'; sortKey: number; data: QuestionnaireResponse; questionnaire?: Questionnaire };
 
+/** Cuántos días de respuestas entran en la bandeja. */
+const DIAS_DE_BANDEJA = 60;
+
 export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, coachEmail }: ReviewsScreenProps) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -45,9 +48,22 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
     enabled: !!coachId,
   });
   const questionnaireIds = useMemo(() => questionnaires.map(q => q.id), [questionnaires]);
+  /* Esta pantalla es la BANDEJA de trabajo, no un archivo. Los check-ins ya se
+     filtran a los no aprobados, pero las respuestas de cuestionario no tienen
+     ese concepto y se traían TODAS desde siempre: una colección que solo crece,
+     pagada entera cada vez que se abría la pantalla, para enseñar las últimas
+     semanas. El histórico completo de cada atleta sigue estando en su
+     Revisión, que es donde se mira. */
+  const desdeRespuestas = useMemo(
+    () => new Date(Date.now() - DIAS_DE_BANDEJA * 86_400_000).toISOString(),
+    [],
+  );
   const { data: allResponses = [], isPending: loadingResponsesQuery } = useQuery({
-    queryKey: ['responsesByQuestionnaireIds', questionnaireIds],
-    queryFn: () => getResponsesByQuestionnaireIds(questionnaireIds),
+    // El `desde` va en la clave: sin él, esta consulta acotada compartiría
+    // caché con cualquier otra pantalla que pida el historial entero y una de
+    // las dos vería la lista de la otra.
+    queryKey: ['responsesByQuestionnaireIds', questionnaireIds, desdeRespuestas],
+    queryFn: () => getResponsesByQuestionnaireIds(questionnaireIds, desdeRespuestas),
     enabled: !!coachId && questionnaireIds.length > 0,
   });
   // Mirrors the old effect's loading flag: true while questionnaires load, and

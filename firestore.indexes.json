@@ -327,6 +327,20 @@
           "order": "DESCENDING"
         }
       ]
+    },
+    {
+      "collectionGroup": "questionnaireResponses",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "questionnaireId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "submittedAt",
+          "order": "ASCENDING"
+        }
+      ]
     }
   ],
   "fieldOverrides": []
