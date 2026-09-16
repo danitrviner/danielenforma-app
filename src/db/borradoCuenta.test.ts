@@ -50,6 +50,14 @@ const SIN_DATOS_DEL_ATLETA: Record<string, string> = {
   // Cosas del coach, no del atleta.
   coachSettings: 'ajustes del propio coach',
   aiAuditLog: 'auditoría de uso de la API, sin datos del atleta y con retención propia',
+  // Un documento por día con el recuento de la pasada nocturna: cuántos
+  // atletas, cuántas acciones de cada tipo, cuántos fallaron. Sin correos ni
+  // ids a propósito (ver api/latido-diario.ts): guardar el detalle por atleta
+  // convertiría una bitácora de operación en 365 documentos al año con datos
+  // personales, imposibles de limpiar en una baja sin recorrer la colección
+  // entera. El detalle con nombres va en la respuesta HTTP y en los logs de la
+  // función, que caducan solos.
+  latidos: 'solo recuentos de la pasada diaria, sin correos ni ids de atleta',
   // Ruido del parseo: `match /databases/{database}/documents` es el bloque raíz.
   databases: 'no es una colección, es el nodo raíz de las reglas',
 };

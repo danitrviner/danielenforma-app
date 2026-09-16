@@ -600,6 +600,22 @@ service cloud.firestore {
                                 && request.auth.token.email_verified == true);
     }
 
+    // ── latidos (el resumen de la pasada nocturna) ───────────────────────────
+    // Un documento por día, id = YYYY-MM-DD. Lo ESCRIBE el SDK de
+    // administración desde `api/latido-diario.ts`, que se salta las reglas por
+    // definición: por eso aquí no hay ningún `allow write`. Prohibirlo
+    // explícitamente es lo correcto —nadie con sesión de usuario tiene por qué
+    // poder falsear el registro de lo que hizo el servidor— y no estorba al
+    // endpoint.
+    //
+    // Lectura solo del coach. El documento NO lleva correos —solo recuentos,
+    // a propósito: ver el comentario del endpoint— pero sigue siendo
+    // información de explotación que no tiene por qué ver un atleta.
+    match /latidos/{fecha} {
+      allow read: if isCoach();
+      allow write: if false;
+    }
+
     // ── tasks (athleteId = EMAIL) ────────────────────────────────────────────
     match /tasks/{docId} {
       allow read: if isCoach()
