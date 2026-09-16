@@ -138,6 +138,7 @@ label
 layers
 library_add
 library_books
+lightbulb
 link
 list
 local_cafe

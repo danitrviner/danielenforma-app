@@ -282,6 +282,16 @@ export default function ProposalEditor({ proposal: p, payload, onChange }: Props
             <Num etiqueta={`Kcal objetivo de ${f.name}`} value={f.targetKcal ?? 0} min={0} step={50} ancho="w-20"
               onChange={targetKcal => setFase(i, { ...f, targetKcal: targetKcal || undefined })} />
             <span className="text-caption text-ink-4">kcal</span>
+            {/* El ritmo, si la propuesta lo trae. Editable como todo lo demás:
+                es lo que define la fase junto al peso objetivo, y aprobar sin
+                poder retocarlo obligaría a rehacerlo después en el editor. */}
+            {f.targetRateKgWeek != null && (
+              <>
+                <Num etiqueta={`Ritmo de ${f.name} en kg por semana`} value={f.targetRateKgWeek} min={-2} max={2} step={0.05} ancho="w-16"
+                  onChange={targetRateKgWeek => setFase(i, { ...f, targetRateKgWeek: targetRateKgWeek || undefined })} />
+                <span className="text-caption text-ink-4">kg/sem</span>
+              </>
+            )}
             {/* Qué dieta lleva la fase no se toca aquí: o apunta a una que ya
                 existe o trae una que se crea al aprobar, y cambiarla a medias
                 deja la fase sin dieta. La dieta se retoca después, en su editor. */}
