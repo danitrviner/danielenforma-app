@@ -13,7 +13,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { esCoach, getAdminDb, setCors, tokenDeLaCabecera, verifyFirebaseIdToken } from './_lib/auth.js';
 import { sanearHistorial } from '../src/ai/historial.js';
 import type { AiChatMessage } from '../src/types.js';
-import { hoyIsoLocal } from '../src/utils/trainingWeek';
+import { hoyIsoLocal } from '../src/utils/trainingWeek.js';
 
 // Vercel mata la función al llegar aquí, y hasta ahora lo hacía en seco: el
 // coach veía las herramientas ejecutarse, el coste, y después NADA. Subimos el

@@ -18,9 +18,9 @@ import type {
   AppNotification, AthleteDietConfig, BodyweightLog, CardioSession, Diet,
   DietCompletionLog, Exercise, LevelLadder, NutritionProgram, Roadmap, StepLog,
   UserProfile, WeeklyChallenge, WorkoutAssignment, WorkoutLog,
-} from '../../src/types';
-import { atletasActivos } from '../../src/utils/atletas';
-import { getAdminDb } from './auth';
+} from '../../src/types.js';
+import { atletasActivos } from '../../src/utils/atletas.js';
+import { getAdminDb } from './auth.js';
 
 type Firestore = NonNullable<Awaited<ReturnType<typeof getAdminDb>>>;
 
