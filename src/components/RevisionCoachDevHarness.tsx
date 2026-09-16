@@ -3,7 +3,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {
   UserProfile, Exercise, Mesocycle, MuscleGroup, MuscleGroupConfig, WorkoutLog,
   ProgressPhoto, BodyweightLog, NutritionProgram, Diet, OnboardingData,
-  WeightCheckIn, Questionnaire, QuestionnaireResponse, StepLog, WeeklyChallenge, MUSCLE_ORDER,
+  WeightCheckIn, Questionnaire, QuestionnaireResponse, StepLog, WeeklyChallenge,
+  BodyMeasurement, BodyMetricKey, MUSCLE_ORDER,
 } from '../types';
 import { bodyweightForAthleteKey, pesoPrimeroKey, pesoUltimoKey } from '../hooks/useAthleteWeight';
 import { VOLUME_LANDMARKS_DEFAULT } from '../data/volumeLandmarks';
@@ -326,6 +327,33 @@ const RETOS: WeeklyChallenge[] = [5, 4, 3, 2, 1, 0].map((atras, i) => {
   };
 });
 
+// Cuatro tomas de perímetros, una al mes. Incluye cuello, cintura y altura —los
+// tres que pide el %grasa US Navy— para que la ficha enseñe también la
+// composición corporal y no solo la lista de centímetros. La cintura baja de
+// verdad (94 → 88) y el brazo sube poco: uno cruza el margen de error de
+// medición y el otro no, que son los dos casos que la ficha tiene que saber
+// distinguir.
+const MEDICIONES: BodyMeasurement[] = (() => {
+  const tomas: [number, Partial<Record<BodyMetricKey, number>>][] = [
+    [84, { cuello: 39.5, cintura: 94, altura: 178, biceps_der_relajado: 35.4, muslo_der_relajado: 58.5 }],
+    [56, { cuello: 39.2, cintura: 92, altura: 178, biceps_der_relajado: 35.6, muslo_der_relajado: 58.8 }],
+    [28, { cuello: 39.0, cintura: 90, altura: 178, biceps_der_relajado: 35.7, muslo_der_relajado: 59.0 }],
+    [3,  { cuello: 38.8, cintura: 88, altura: 178, biceps_der_relajado: 35.9, muslo_der_relajado: 59.2 }],
+  ];
+  const out: BodyMeasurement[] = [];
+  for (const [hace, valores] of tomas) {
+    const date = haceDias(hace);
+    for (const [metricKey, value] of Object.entries(valores)) {
+      out.push({
+        id: `med_${metricKey}_${hace}`, athleteId: EMAIL, date,
+        metricKey: metricKey as BodyMetricKey, value: value!, unit: 'cm',
+        source: 'questionnaire', createdAt: `${date}T19:00:00.000Z`,
+      });
+    }
+  }
+  return out;
+})();
+
 // ── Lo que el atleta manda ──────────────────────────────────────────────────
 // Tres check-ins: uno contestado y aprobado, otro contestado sin aprobar y el
 // último sin tocar. Así se ve la lista de pendientes con sus dos estados.
@@ -399,7 +427,7 @@ export default function RevisionCoachDevHarness() {
     qc.setQueryData(pesoPrimeroKey(EMAIL), PESOS[0]);
     qc.setQueryData(pesoUltimoKey(EMAIL), PESOS[PESOS.length - 1]);
     qc.setQueryData(['progressPhotos', EMAIL], FOTOS);
-    qc.setQueryData(['bodyMeasurementsForAthlete', EMAIL], []);
+    qc.setQueryData(['bodyMeasurementsForAthlete', EMAIL], MEDICIONES);
     // El dashboard de peso vive de estas seis; `anatomia` las deja vacías para
     // ver también el estado sin periodización.
     qc.setQueryData(['nutritionProgram', EMAIL], anatomia ? null : PROGRAMA);
