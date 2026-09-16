@@ -472,9 +472,17 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
             <b className={performance.deviationKg > 0 ? 'text-warning' : 'text-success'}>{fmtKg(Math.abs(performance.deviationKg))} kg {performance.deviationKg > 0 ? 'por encima' : 'por debajo'}</b>{' '}
             del plan (esperado {fmtKg(performance.expected100ToDate)} kg)
             {performance.achievedPct != null && <> · <b className="text-white">{performance.achievedPct}%</b> del objetivo conseguido</>}.
-            {performance.explainedByAdherenceKg != null && performance.explainedByMetabolicKg != null && (
+            {/* Sin un solo día registrado, la adherencia medida es 0% — no
+                porque el atleta no haya comido, sino porque no ha marcado
+                nada. Repartir el desvío entre «adherencia» y «respuesta
+                metabólica» con ese 0 de base era inventarse el reparto, y la
+                frase lo decía con la misma seguridad que cuando hay datos.
+                Así que se dice lo que pasa: que no se sabe. */}
+            {dietAdherence.daysLogged === 0 ? (
+              <> No se puede repartir el desvío entre adherencia y respuesta metabólica: no hay ningún día de dieta registrado en la ventana.</>
+            ) : performance.explainedByAdherenceKg != null && performance.explainedByMetabolicKg != null ? (
               <> La adherencia explica <b className="text-white">{fmtKg(Math.abs(performance.explainedByAdherenceKg))} kg</b> del desvío; el resto (<b className="text-white">{fmtKg(Math.abs(performance.explainedByMetabolicKg))} kg</b>) es respuesta metabólica.</>
-            )}
+            ) : null}
           </p>
         )}
       </div>
