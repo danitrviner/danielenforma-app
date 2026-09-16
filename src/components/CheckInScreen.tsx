@@ -27,10 +27,81 @@ const ESTADO_CUESTIONARIO = {
   programado: { tono: 'neutral' as const, icono: 'schedule',        texto: 'Programado' },
 };
 
+/**
+ * Fecha corta. El AÑO solo aparece cuando no es el de hoy.
+ *
+ * Esta pantalla es una lista larga de cosas casi todas recientes, y repetir
+ * «2026» en cada línea es ruido que además tapa lo único que ese año querría
+ * decir: que una respuesta es del año pasado. Escondiéndolo cuando es el
+ * actual, verlo significa algo.
+ */
+/* ═══════════════════════════════════════════════════════════════════════════
+   El índice de la Revisión del atleta.
+
+   Cinco cosas que antes vivían en pantallas distintas acabaron en un solo
+   scroll: peso, cuestionarios, fotos, medidas e historial. Está bien que estén
+   juntas —es todo lo que le cuenta a su coach— pero el que entra a subir una
+   foto no tiene por qué deslizar por sus cuestionarios y sus medidas para
+   llegar.
+
+   `scrollIntoView` y no un enlace `#ancla`: un hash cambia la URL, y esta
+   pantalla se abre dentro de Perfil además de en su propia ruta, así que
+   ensuciaría el historial del navegador y el botón Atrás.
+   ═══════════════════════════════════════════════════════════════════════════ */
+const SECCIONES_REVISION = [
+  { id: 'revision-cuestionarios', icono: 'quiz', label: 'Cuestionarios' },
+  { id: 'revision-fotos', icono: 'photo_camera', label: 'Fotos' },
+  { id: 'revision-mediciones', icono: 'straighten', label: 'Medidas' },
+  { id: 'revision-historial', icono: 'history', label: 'Historial' },
+] as const;
+
+function IndiceDeLaRevision({ pendientes }: { pendientes: number }) {
+  const irA = (id: string) => {
+    const destino = document.getElementById(id);
+    if (!destino) return;
+    // Con «reducir movimiento» activado —y en algunos WebView— el desplazamiento
+    // suave se ignora SIN error: el botón no hace nada y no hay forma de saber
+    // por qué. Se intenta suave y, si al cabo de un momento no se ha movido
+    // nada, se salta de golpe. Llegar de golpe es peor que llegar suave; no
+    // llegar es mucho peor que las dos.
+    const antes = document.scrollingElement?.scrollTop ?? 0;
+    const suave = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    destino.scrollIntoView({ behavior: suave ? 'smooth' : 'auto', block: 'start' });
+    if (!suave) return;
+    window.setTimeout(() => {
+      if ((document.scrollingElement?.scrollTop ?? 0) === antes) {
+        destino.scrollIntoView({ behavior: 'auto', block: 'start' });
+      }
+    }, 250);
+  };
+  return (
+    <nav aria-label="Secciones de la revisión" className="-mx-1 flex gap-2 overflow-x-auto hide-scrollbar px-1 pb-1">
+      {SECCIONES_REVISION.map(s => (
+        <button
+          key={s.id}
+          type="button"
+          onClick={() => irA(s.id)}
+          className="flex-none flex items-center gap-1.5 rounded-chip bg-white/5 px-3 py-2 font-mono text-caption uppercase text-ink-2 transition-colors hover:bg-white/10 hover:text-ink"
+        >
+          <Icon name={s.icono} size="s" />
+          {s.label}
+          {s.id === 'revision-cuestionarios' && pendientes > 0 && (
+            <span className="rounded-full bg-warning/20 px-1.5 font-bold text-warning">{pendientes}</span>
+          )}
+        </button>
+      ))}
+    </nav>
+  );
+}
+
 function fmtFechaCorta(iso: string): string {
   const d = new Date(iso);
   if (isNaN(d.getTime())) return iso.slice(0, 10);
-  return d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
+  const esteAnio = d.getFullYear() === new Date().getFullYear();
+  return d.toLocaleDateString('es-ES', {
+    day: 'numeric', month: 'short',
+    ...(esteAnio ? {} : { year: 'numeric' }),
+  });
 }
 
 /** Cómo se enseña el valor de una respuesta en el historial (mismo criterio
@@ -228,6 +299,13 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
         <p className="text-ink-2 text-body-s mt-1">Tu peso, tus cuestionarios, tus fotos y tus medidas: todo lo que le cuentas a tu coach, en un solo sitio.</p>
       </div>
 
+      {/* Índice. Esta pantalla juntó cinco cosas que antes vivían en sitios
+          distintos y quedó muy larga: el atleta que entra a subir una foto
+          tiene que deslizar por sus cuestionarios, su peso y sus medidas para
+          encontrarla. Con esto va directo. No se pliegan los bloques a
+          propósito: plegar esconde lo que sí venía a ver de paso. */}
+      <IndiceDeLaRevision pendientes={pendingAssignments.length} />
+
       {/* Questionnaire active form */}
       {activeAssignment && templates.get(activeAssignment.questionnaireId) && (
         <QuestionnaireWizard
@@ -245,7 +323,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
           lectura con los futuros: los ya respondidos y los programados no se
           podían ni ver ni abrir desde ninguna parte del perfil del atleta. */}
       {!activeAssignment && (
-        <section className="space-y-3">
+        <section id="revision-cuestionarios" className="space-y-3 scroll-mt-20">
           <div className="flex items-center gap-2">
             <Icon name="quiz" size="m" className="text-accent" />
             <h2 className="font-sans font-bold text-body-s text-ink flex-1">Cuestionarios</h2>
@@ -382,7 +460,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
       )}
 
       {/* ── Fotografías de progreso (centralizado aquí) ──────────────────────── */}
-      <section>
+      <section id="revision-fotos" className="scroll-mt-20">
         <h2 className="font-sans font-bold text-body-s text-white mb-3 flex items-center gap-2">
           <span className="material-symbols-outlined text-accent text-[18px]">photo_camera</span>
           Fotografías de progreso
@@ -395,7 +473,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
           pendientes de Inicio— enseñe lo mismo que Perfil › Revisión, y para
           que todo lo que el atleta apunta o consulta de su seguimiento esté
           en una sola pantalla. */}
-      <section className="space-y-3">
+      <section id="revision-mediciones" className="space-y-3 scroll-mt-20">
         <div className="flex items-center gap-2">
           <Icon name="straighten" size="m" className="text-accent" />
           <h2 className="font-sans font-bold text-body-s text-ink flex-1">Mediciones</h2>
@@ -419,7 +497,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
       )}
 
       {/* ── El hilo de revisiones (F3.13c) ───────────────────────────────────── */}
-      <section>
+      <section id="revision-historial" className="scroll-mt-20">
         <div className="flex items-center gap-2 mb-3.5">
           <span className="material-symbols-outlined text-accent text-[18px]">history</span>
           <h2 className="font-sans font-bold text-body-s text-ink flex-1">Revisiones</h2>
