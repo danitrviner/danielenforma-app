@@ -32,7 +32,7 @@ import TarjetaIdentidadAtleta from './TarjetaIdentidadAtleta';
 
 const PHASE_COLORS = ['var(--color-accent)', 'var(--color-data)', 'var(--color-warning)', 'var(--color-chart-3)'];
 const DEFAULT_STEP_GOAL = 8000;
-const COACH_EMAIL = 'danitrviner@gmail.com';
+import { COACH_EMAIL } from '../utils/coach';
 
 interface Props {
   profile: UserProfile;

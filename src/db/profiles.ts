@@ -3,6 +3,7 @@ import { UserProfile, WeightCheckIn } from '../types';
 import { forceLocalOnly, setLocalBypassMode, stripUndefined, authReady, esFalloDePermisos } from './core';
 import { markInviteJoined } from './invites';
 import { escribirLocal } from '../utils/almacenLocal';
+import { esElCoachPermanente } from '../utils/coach';
 
 // ── Profile de-duplication helpers ────────────────────────────────────────────
 
@@ -127,7 +128,7 @@ function submitLocalCoachFeedback(checkInId: string, feedback: string) {
 
 // Get or create User Profile (with automatic offline fallback)
 export async function getOrCreateUserProfile(userId: string, email: string, displayName?: string, _retrying = false): Promise<UserProfile> {
-  const isDanitrviner = email.toLowerCase() === 'danitrviner@gmail.com';
+  const isDanitrviner = esElCoachPermanente(email);
   
   if (forceLocalOnly) {
     return getLocalUserProfile(userId, email, displayName, isDanitrviner);

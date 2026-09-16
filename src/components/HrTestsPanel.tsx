@@ -6,7 +6,7 @@ import { HeartRateMonitor, isBleAvailable } from '../services/bleHeartRate';
 import { Skeleton } from './ui';
 import { Icon, Button } from './ui';
 
-const COACH_EMAIL = 'danitrviner@gmail.com';
+import { COACH_EMAIL } from '../utils/coach';
 
 interface Props {
   profile: UserProfile;

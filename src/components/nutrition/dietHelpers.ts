@@ -6,7 +6,7 @@ import { Diet, DietCompletionLog, DietMeal, FoodCategory, WeekDay } from '../../
 import { comidasDelDia, cupoDelDia } from '../../utils/diaDeDieta';
 import { BUDGET_CATS } from '../../utils/exchangeHelpers';
 
-export const COACH_EMAIL = 'danitrviner@gmail.com';
+export { COACH_EMAIL } from '../../utils/coach';
 export const makeId = () => `${Date.now()}_${Math.random().toString(36).slice(2, 5)}`;
 
 export function blankDiet(athleteId: string, name = 'Mi menú'): Diet {

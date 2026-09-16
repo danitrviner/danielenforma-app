@@ -19,7 +19,7 @@ const QuestionnaireChartsPanel = pantallaDiferida('QuestionnaireChartsPanel', ()
 
 const PHOTO_VIEW_LABELS: Record<PhotoView, string> = { front: 'Frente', side: 'Lateral', back: 'Espalda' };
 
-const COACH_EMAIL = 'danitrviner@gmail.com';
+import { COACH_EMAIL } from '../utils/coach';
 
 const ESTADO_CUESTIONARIO = {
   pendiente:  { tono: 'warning' as const, icono: 'assignment_late', texto: 'Pendiente' },

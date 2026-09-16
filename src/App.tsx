@@ -168,7 +168,7 @@ function AnalisisSubTabRedirect() {
   return <Navigate to={`/clients/${athleteId}/${target}`} replace />;
 }
 
-const OWNER_EMAIL = 'danitrviner@gmail.com';
+import { esCoach } from './utils/coach';
 
 export type NavTab = 'home' | 'training' | 'nutrition' | 'checkin' | 'roadmap' | 'academy' | 'cardio' | 'clients' | 'reviews' | 'crm' | 'library' | 'profile' | 'week' | 'propuestas';
 
@@ -377,8 +377,7 @@ function AppContent() {
   // Comprueba si el atleta ya hizo el onboarding guiado. El coach nunca se gatea.
   useEffect(() => {
     if (!profile) { setOnboardingGate('checking'); return; }
-    const coachRole = profile.role === 'coach' || profile.email.toLowerCase() === OWNER_EMAIL;
-    if (coachRole) { setOnboardingGate('done'); return; }
+    if (esCoach(profile)) { setOnboardingGate('done'); return; }
     let cancelled = false;
     getOnboarding(profile.email)
       .then(o => {
@@ -396,8 +395,7 @@ function AppContent() {
   // el catálogo delante en cada arranque.
   useEffect(() => {
     if (!profile || onboardingGate !== 'done') { setGimnasioGate('checking'); return; }
-    const coachRole = profile.role === 'coach' || profile.email.toLowerCase() === OWNER_EMAIL;
-    if (coachRole) { setGimnasioGate('done'); return; }
+    if (esCoach(profile)) { setGimnasioGate('done'); return; }
     let cancelled = false;
     getGimnasio(profile.email)
       .then(g => {
@@ -410,8 +408,7 @@ function AppContent() {
   }, [profile, onboardingGate]);
   const loadUserSession = async (user: any) => {
     const userProfile = await getOrCreateUserProfile(user.uid, user.email || 'atleta@enforma.com', user.displayName || '');
-    const isOwner = (user.email || '').toLowerCase() === OWNER_EMAIL;
-    const coachRole = userProfile.role === 'coach' || isOwner;
+    const coachRole = esCoach(userProfile);
     setProfile(userProfile);
     // Si ya hay una URL válida para este rol (ej. F5 en /training), se
     // respeta — es lo que hace que el refresh recupere la pantalla exacta.
@@ -519,7 +516,7 @@ function AppContent() {
      ═══════════════════════════════════════════════════════════════════════ */
 
   // Null-safe a propósito: se evalúa antes de la puerta de sesión.
-  const isCoach = !!profile && (profile.role === 'coach' || profile.email.toLowerCase() === OWNER_EMAIL);
+  const isCoach = esCoach(profile);
 
   /* Cuántas propuestas del asistente están sin decidir. Solo para el
      contador de la cabecera de móvil; comparte clave (y caché) con la bandeja
@@ -654,8 +651,7 @@ function AppContent() {
       try {
         const userProfile = await getOrCreateUserProfile(currentUser.uid, currentUser.email || 'atleta@enforma.com', currentUser.displayName || '');
         setProfile(userProfile);
-        const isOwner = (currentUser.email || '').toLowerCase() === OWNER_EMAIL;
-        const coachRole = userProfile.role === 'coach' || isOwner;
+        const coachRole = esCoach(userProfile);
         const checks = await getCheckIns(coachRole ? undefined : currentUser.uid);
         setCheckins(checks);
       } catch (err) {

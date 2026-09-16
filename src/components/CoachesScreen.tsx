@@ -12,7 +12,7 @@ import { Avatar, Skeleton } from './ui';
 import { Tabs } from './ui';
 import AdminMaquinasTab from '../features/gimnasio/AdminMaquinasTab';
 
-const OWNER_EMAIL = 'danitrviner@gmail.com';
+import { esElCoachPermanente } from '../utils/coach';
 
 type SettingsTab = 'roles' | 'cuestionarios' | 'ficha' | 'biblioteca' | 'maquinas';
 
@@ -580,7 +580,7 @@ interface Props {
 export default function CoachesScreen({ currentUserId, currentUserEmail }: Props) {
   const queryClient = useQueryClient();
   const [settingsTab, setSettingsTab] = useState<SettingsTab>('roles');
-  const isOwnerOrDev = currentUserEmail.toLowerCase() === OWNER_EMAIL || import.meta.env.DEV;
+  const isOwnerOrDev = esElCoachPermanente(currentUserEmail) || import.meta.env.DEV;
   const usersQueryKey = ['allUsersAdmin'] as const;
   const { data: users = [], isPending: loading } = useQuery({
     queryKey: usersQueryKey,
@@ -589,7 +589,7 @@ export default function CoachesScreen({ currentUserId, currentUserEmail }: Props
   const [updating, setUpdating] = useState<string | null>(null);
 
   const handleToggleRole = async (user: UserProfile) => {
-    if (user.email.toLowerCase() === OWNER_EMAIL) return;
+    if (esElCoachPermanente(user.email)) return;
     if (user.userId === currentUserId) return;
     const newRole: 'coach' | 'client' = user.role === 'coach' ? 'client' : 'coach';
     setUpdating(user.userId);
@@ -602,8 +602,8 @@ export default function CoachesScreen({ currentUserId, currentUserEmail }: Props
   };
 
   const sortedUsers = [...users].sort((a, b) => {
-    if (a.email.toLowerCase() === OWNER_EMAIL) return -1;
-    if (b.email.toLowerCase() === OWNER_EMAIL) return 1;
+    if (esElCoachPermanente(a.email)) return -1;
+    if (esElCoachPermanente(b.email)) return 1;
     if (a.role === 'coach' && b.role !== 'coach') return -1;
     if (b.role === 'coach' && a.role !== 'coach') return 1;
     return a.displayName.localeCompare(b.displayName);
@@ -656,7 +656,7 @@ export default function CoachesScreen({ currentUserId, currentUserEmail }: Props
         ) : (
           <div className="space-y-3">
             {sortedUsers.map(user => {
-              const isOwner   = user.email.toLowerCase() === OWNER_EMAIL;
+              const isOwner   = esElCoachPermanente(user.email);
               const isSelf    = user.userId === currentUserId;
               const isCoach   = user.role === 'coach';
               const canToggle = !isOwner && !isSelf;

@@ -14,7 +14,7 @@ import {
 
 export type { EnsureChallengeResult } from './motorRetoSemanal';
 
-const COACH_EMAIL = 'danitrviner@gmail.com';
+import { COACH_EMAIL } from './coach';
 
 const ALMACEN: AlmacenDeRetos = {
   getWeeklyChallenge,
