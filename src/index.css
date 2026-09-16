@@ -563,6 +563,23 @@ h1, h2, h3, h4, h5, h6 {
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+
+  /* Modo presentación de la Revisión (tecla P). Se usa `zoom` y no
+     `transform: scale()` porque el zoom reflúa de verdad —las columnas se
+     recolocan y nada se sale por la derecha— mientras que un scale deja el
+     hueco del tamaño original y parte las tablas. Las medidas de Tailwind van
+     en rem contra el <html>, así que subir el tamaño de letra del contenedor
+     no haría nada.
+
+     Solo a partir de 640 px: en móvil el zoom rompe la contención de los
+     `overflow-x-auto` de las tablas y la página entera se va a 651 px de
+     ancho. Ahí el modo sigue sirviendo —se caen los controles que el atleta no
+     puede pulsar— pero sin agrandar, que es lo que no cabe. */
+  @media (min-width: 640px) {
+    .revision-presentando {
+      zoom: 1.15;
+    }
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════

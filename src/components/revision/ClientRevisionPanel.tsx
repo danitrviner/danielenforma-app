@@ -12,6 +12,7 @@ import {
 } from '../../utils/revisionCoach';
 import { construirComidaDeLaSemana } from '../../utils/comidaDeLaSemana';
 import { hoyIsoLocal } from '../../utils/trainingWeek';
+import { useModoPresentacion } from '../../hooks/useModoPresentacion';
 import { HubTab } from '../ClientHub';
 import RevisionCabecera from './RevisionCabecera';
 import SelectorPeriodoRevision from './SelectorPeriodoRevision';
@@ -39,6 +40,9 @@ import { Card, Button, Icon } from '../ui';
      · Scroll continuo, sin hojas ni modales que tapen (el detalle de un patrón
        se despliega en línea).
      · «Desplegar todo» para poder hacer una pasada de arriba abajo sin clicar.
+     · Modo presentación (tecla P): fuera los controles que el atleta no puede
+       pulsar, y todo un punto más grande para que se lea en un vídeo
+       comprimido visto en un móvil.
      · Nada de ventanas que el coach tenga que configurar dos veces: el periodo
        se elige una vez arriba y manda sobre todos los bloques.
 
@@ -71,11 +75,13 @@ interface Props {
 }
 
 /** Cada bloque de la pantalla es una tarjeta del DS, no una sección suelta. */
-function Seccion({ n, titulo, children, accion }: {
+function Seccion({ n, titulo, children, accion, presentando = false }: {
   n: number; titulo: string; children: React.ReactNode; accion?: React.ReactNode;
+  /** En presentación se cae la acción: es un botón que el atleta no puede pulsar. */
+  presentando?: boolean;
 }) {
   return (
-    <Card title={`${n}. ${titulo}`} action={accion} className="space-y-3">
+    <Card title={`${n}. ${titulo}`} action={presentando ? undefined : accion} className="space-y-3">
       {children}
     </Card>
   );
@@ -94,6 +100,7 @@ export default function ClientRevisionPanel({
     return activo ? { tipo: 'meso', mesoId: activo.id } : { tipo: '7d' };
   });
   const [todoAbierto, setTodoAbierto] = useState(false);
+  const { presentando, alternar: alternarPresentacion } = useModoPresentacion();
   // Grupo bajo el cursor: sincroniza la fila de la tabla con la región de la
   // silueta en los dos sentidos (la silueta llega en T4).
   const [grupoActivo, setGrupoActivo] = useState<MuscleGroup | null>(null);
@@ -139,9 +146,18 @@ export default function ClientRevisionPanel({
   );
 
   return (
-    <div className="space-y-8">
+    // El agrandado vive en `.revision-presentando` (src/index.css), no aquí:
+    // necesita una media query —en móvil el zoom rompe la contención de las
+    // tablas— y eso no se puede escribir en un `style` en línea.
+    <div className={`space-y-8 ${presentando ? 'revision-presentando' : ''}`}>
+      {presentando && (
+        <p className="font-mono text-caption text-ink-3 text-right">
+          Modo presentación · P o Esc para salir
+        </p>
+      )}
+
       {/* ── Controles de la pantalla ─────────────────────────────────────── */}
-      <div className="flex flex-wrap items-end justify-between gap-3">
+      <div className={`flex flex-wrap items-end justify-between gap-3 ${presentando ? 'hidden' : ''}`}>
         <SelectorPeriodoRevision
           periodo={periodo}
           onChange={setPeriodo}
@@ -149,14 +165,23 @@ export default function ClientRevisionPanel({
           etiquetaComparacion={ventana.etiquetaComparacion}
           hoy={hoy}
         />
-        <Button
-          variant="ghost"
-          onClick={() => setTodoAbierto(v => !v)}
-          aria-pressed={todoAbierto}
-        >
-          <Icon name={todoAbierto ? 'unfold_less' : 'unfold_more'} size="s" />
-          {todoAbierto ? 'Plegar todo' : 'Desplegar todo'}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            onClick={() => setTodoAbierto(v => !v)}
+            aria-pressed={todoAbierto}
+          >
+            <Icon name={todoAbierto ? 'unfold_less' : 'unfold_more'} size="s" />
+            {todoAbierto ? 'Plegar todo' : 'Desplegar todo'}
+          </Button>
+          {/* El botón existe para que el modo sea descubrible; en cuanto se
+              enciende desaparece con el resto de los controles, que es justo
+              lo que se quiere de él en un vídeo. */}
+          <Button variant="ghost" onClick={alternarPresentacion} aria-pressed={presentando}>
+            <Icon name="slideshow" size="s" />
+            Presentar
+          </Button>
+        </div>
       </div>
 
       <RevisionCabecera
@@ -166,7 +191,7 @@ export default function ClientRevisionPanel({
         peso={peso}
       />
 
-      <Seccion n={1} titulo="Cómo va cada patrón">
+      <Seccion presentando={presentando} n={1} titulo="Cómo va cada patrón">
         <BloquePatrones
           patrones={revision.patrones}
           ejerciciosPorPatron={revision.ejerciciosPorPatron}
@@ -177,6 +202,7 @@ export default function ClientRevisionPanel({
       </Seccion>
 
       <Seccion
+        presentando={presentando}
         n={2}
         titulo="Lo que sube y lo que baja"
         accion={
@@ -193,6 +219,7 @@ export default function ClientRevisionPanel({
       </Seccion>
 
       <Seccion
+        presentando={presentando}
         n={3}
         titulo="Volumen por grupo"
         accion={
@@ -214,7 +241,7 @@ export default function ClientRevisionPanel({
           así no sube nada, la respuesta casi siempre está aquí —duerme poco,
           arrastra estrés, o hay un grupo con agujetas que no se van—. Es la
           explicación del bloque de arriba, no una sección independiente. */}
-      <Seccion n={4} titulo="Cómo ha llegado">
+      <Seccion presentando={presentando} n={4} titulo="Cómo ha llegado">
         <BloqueBienestar bienestar={revision.bienestar} todoAbierto={todoAbierto} />
       </Seccion>
 
@@ -222,6 +249,7 @@ export default function ClientRevisionPanel({
           hecho, luego qué ha comido, y solo entonces qué ha pasado con su
           cuerpo — que es la consecuencia de los dos anteriores. */}
       <Seccion
+        presentando={presentando}
         n={5}
         titulo="Qué ha comido"
         accion={
@@ -237,6 +265,7 @@ export default function ClientRevisionPanel({
           preguntas distintas y van seguidas: el coach cuenta primero la
           selección y luego el número. Los dos leen la misma ventana. */}
       <Seccion
+        presentando={presentando}
         n={6}
         titulo="Adherencia y hábitos"
         accion={
@@ -257,6 +286,7 @@ export default function ClientRevisionPanel({
       </Seccion>
 
       <Seccion
+        presentando={presentando}
         n={7}
         titulo="El cuerpo"
         accion={
@@ -281,6 +311,7 @@ export default function ClientRevisionPanel({
       </Seccion>
 
       <Seccion
+        presentando={presentando}
         n={8}
         titulo="Lo que te ha mandado"
         accion={
