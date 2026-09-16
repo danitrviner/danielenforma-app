@@ -44,7 +44,10 @@ export default function NotificationBell({ recipientEmail, onNavigate, mutedType
   const queryKey = ['notifications', recipientEmail];
   const { data: allNotifs = [], isPending: loading, refetch } = useQuery({
     queryKey,
-    queryFn: async () => (await getNotifications(recipientEmail)).slice(0, 40),
+    // El recorte lo hace ya Firestore (`getNotifications` pide `limit`), así
+    // que aquí no hace falta volver a cortar: antes se descargaban TODOS los
+    // avisos del atleta para tirar el 90 % en el navegador.
+    queryFn: () => getNotifications(recipientEmail),
   });
   const notifs = mutedTypes?.size ? allNotifs.filter(n => !mutedTypes.has(n.type)) : allNotifs;
   const [open, setOpen]       = useState(false);

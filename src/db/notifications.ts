@@ -1,4 +1,4 @@
-import { db, collection, doc, setDoc, getDocs, updateDoc, query, where } from '../firebase';
+import { db, collection, doc, setDoc, getDocs, updateDoc, query, where, orderBy, limit } from '../firebase';
 import { AppNotification } from '../types';
 import { forceLocalOnly, setLocalBypassMode, stripUndefined, esFalloDePermisos } from './core';
 import { escribirLocal } from '../utils/almacenLocal';
@@ -22,20 +22,69 @@ function setLocalNotifs(recipientEmail: string, notifs: AppNotification[]) {
   } catch { /* ignore */ }
 }
 
-export async function getNotifications(recipientEmail: string): Promise<AppNotification[]> {
+/**
+ * Cuántos avisos se traen como mucho.
+ *
+ * La campana ya enseñaba 40 —pero recortando en el NAVEGADOR, después de
+ * descargarlos todos—. Un atleta con dos años de app acumula cientos de
+ * documentos y los pagaba enteros cada vez que se abría la pantalla, para
+ * tirar el 90 %. Con `orderBy` + `limit` el recorte lo hace Firestore y solo
+ * viaja lo que se va a enseñar.
+ *
+ * 60 y no 40: quien llama sigue pudiendo recortar a su gusto, y un margen
+ * evita tener que tocar esto si mañana la campana enseña más.
+ */
+export const TOPE_DE_AVISOS = 60;
+
+export async function getNotifications(
+  recipientEmail: string,
+  tope: number = TOPE_DE_AVISOS,
+): Promise<AppNotification[]> {
   const local = getLocalNotifs(recipientEmail);
-  if (forceLocalOnly) return local.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  if (forceLocalOnly) {
+    return local.sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, tope);
+  }
   try {
-    const snap = await getDocs(
-      query(collection(db, 'notifications'), where('recipientEmail', '==', recipientEmail))
-    );
-    const notifs = snap.docs.map(d => d.data() as AppNotification);
+    let notifs: AppNotification[];
+    try {
+      const snap = await getDocs(query(
+        collection(db, 'notifications'),
+        where('recipientEmail', '==', recipientEmail),
+        orderBy('createdAt', 'desc'),
+        limit(tope),
+      ));
+      notifs = snap.docs.map(d => d.data() as AppNotification);
+    } catch (errIndice) {
+      // `orderBy` + `where` necesita un índice compuesto, y este código puede
+      // desplegarse antes que el índice. Sin esta red, la campana se quedaría
+      // VACÍA en cualquier dispositivo sin espejo local hasta que alguien se
+      // acordara de desplegarlo — un fallo silencioso que se descubre por un
+      // atleta preguntando por qué no le llega nada.
+      //
+      // La consulta de abajo es la de siempre: trae todo y recorta aquí. Es
+      // cara, y por eso esto es una red y no el camino normal; en cuanto el
+      // índice exista, no se vuelve a ejecutar.
+      console.warn('getNotifications: sin índice compuesto todavía, se recorta en el cliente:', errIndice);
+      const snap = await getDocs(
+        query(collection(db, 'notifications'), where('recipientEmail', '==', recipientEmail)),
+      );
+      notifs = snap.docs.map(d => d.data() as AppNotification);
+    }
+    // Ordenar y recortar SIEMPRE, también tras el camino bueno: cuesta nada
+    // sobre una lista ya ordenada y de 60, y así la red de seguridad de arriba
+    // devuelve exactamente lo mismo que la consulta indexada en vez de una
+    // lista sin orden y sin tope.
     notifs.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    notifs = notifs.slice(0, tope);
+    // El espejo local se REEMPLAZA por esta página, no se fusiona: es la más
+    // reciente y es lo único que la campana enseña. Fusionar dejaría creciendo
+    // en localStorage un histórico que ya nadie mira — y llenar localStorage
+    // fue lo que tumbó Firestore en septiembre (ver project_fixes_sentry).
     setLocalNotifs(recipientEmail, notifs);
     return notifs;
   } catch (err) {
     console.warn('getNotifications Firestore failed, using local:', err);
-    return local.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    return local.sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, tope);
   }
 }
 
