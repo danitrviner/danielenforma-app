@@ -6,9 +6,11 @@ import {
 } from '../../types';
 import { Sexo } from '../../utils/athleteProfileSignals';
 import { getVolumeLandmarks } from '../../db/coachSettings';
+import { getDietCompletionLogsForAthlete, getDietsForAthlete } from '../../dbService';
 import {
   buildRevisionCoach, PeriodoRevision, mesoActivo, pesoVsSemanaPasada,
 } from '../../utils/revisionCoach';
+import { construirComidaDeLaSemana } from '../../utils/comidaDeLaSemana';
 import { hoyIsoLocal } from '../../utils/trainingWeek';
 import { HubTab } from '../ClientHub';
 import RevisionCabecera from './RevisionCabecera';
@@ -17,6 +19,7 @@ import BloquePatrones from './BloquePatrones';
 import BloqueMejoresEjercicios from './BloqueMejoresEjercicios';
 import BloqueSeriesPorGrupo from './BloqueSeriesPorGrupo';
 import BloqueCuerpo from './BloqueCuerpo';
+import BloqueQueHaComido from './BloqueQueHaComido';
 import BloqueRecibido from './BloqueRecibido';
 import { Card, Button, Icon } from '../ui';
 
@@ -103,6 +106,29 @@ export default function ClientRevisionPanel({
   const { ventana, informe } = revision;
   const peso = useMemo(() => pesoVsSemanaPasada(bodyweightLogs, hoy), [bodyweightLogs, hoy]);
 
+  // ── Lo que ha comido ───────────────────────────────────────────────────────
+  // Acotado a la ventana desde la propia consulta (`desde`), no leído entero y
+  // filtrado aquí: los registros de dieta son un documento por día, así que un
+  // atleta de un año son 365 lecturas para enseñar siete. La clave lleva el
+  // `desde` para no pisar la caché de las pantallas que sí piden el historial
+  // completo (Análisis nutricional, la periodización).
+  const { data: registrosDeComida = [] } = useQuery({
+    queryKey: ['dietCompletionLogsForAthlete', athlete.email, ventana.desde],
+    queryFn: () => getDietCompletionLogsForAthlete(athlete.email, ventana.desde),
+  });
+  // Solo hacen falta para los días anteriores a 09-2026, que no congelaron sus
+  // comidas en el propio registro. Clave compartida con el resto del Hub.
+  const { data: dietas = [] } = useQuery({
+    queryKey: ['dietsForAthlete', athlete.email],
+    queryFn: () => getDietsForAthlete(athlete.email),
+  });
+  const comida = useMemo(
+    () => construirComidaDeLaSemana({
+      logs: registrosDeComida, diets: dietas, desde: ventana.desde, hasta: ventana.hasta,
+    }),
+    [registrosDeComida, dietas, ventana.desde, ventana.hasta],
+  );
+
   return (
     <div className="space-y-8">
       {/* ── Controles de la pantalla ─────────────────────────────────────── */}
@@ -174,8 +200,23 @@ export default function ClientRevisionPanel({
         />
       </Seccion>
 
+      {/* Va entre el entrenamiento y el cuerpo a propósito: primero qué ha
+          hecho, luego qué ha comido, y solo entonces qué ha pasado con su
+          cuerpo — que es la consecuencia de los dos anteriores. */}
       <Seccion
         n={4}
+        titulo="Qué ha comido"
+        accion={
+          <Button variant="ghost" onClick={() => onGoToTab('dietas')}>
+            Ver su plan de comidas
+          </Button>
+        }
+      >
+        <BloqueQueHaComido comida={comida} todoAbierto={todoAbierto} />
+      </Seccion>
+
+      <Seccion
+        n={5}
         titulo="El cuerpo"
         accion={
           <Button variant="ghost" onClick={() => onGoToTab('cuerpo')}>
@@ -194,7 +235,7 @@ export default function ClientRevisionPanel({
       </Seccion>
 
       <Seccion
-        n={5}
+        n={6}
         titulo="Lo que te ha mandado"
         accion={
           <Button variant="ghost" onClick={() => onGoToTab('revisiones')}>

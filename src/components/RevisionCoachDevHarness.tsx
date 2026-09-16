@@ -180,10 +180,95 @@ const FOTOS: ProgressPhoto[] = [0, 28, 56, 84].flatMap(d =>
   }),
 );
 
+/* Los cupos cuadran con las kcal de sus fases (2.050 y 2.500 más abajo): 21
+   intercambios ≈ 2.100 kcal y 25 ≈ 2.500. Antes eran 40 y 45 —unas 4.000
+   kcal— contra unas fases de 2.050: la dieta y su propia fase decían cosas
+   distintas, y en cuanto la pantalla enseñó lo comido frente al cupo, todos
+   los días salían sin excepción «por debajo». Un fixture incoherente hace que
+   la pantalla parezca rota cuando la que está mal es la fixture. */
 const DIETAS: Diet[] = [
-  { id: 'd_deficit', athleteId: EMAIL, name: 'Déficit', budget: { HC: 14, PROT: 18, GRASA: 8, MIX_HC: 0, MIX_GRASA: 0 }, meals: [] },
-  { id: 'd_mant', athleteId: EMAIL, name: 'Mantenimiento', budget: { HC: 18, PROT: 18, GRASA: 9, MIX_HC: 0, MIX_GRASA: 0 }, meals: [] },
+  { id: 'd_deficit', athleteId: EMAIL, name: 'Déficit', budget: { HC: 10, PROT: 7, GRASA: 4, MIX_HC: 0, MIX_GRASA: 0 }, meals: [] },
+  { id: 'd_mant', athleteId: EMAIL, name: 'Mantenimiento', budget: { HC: 12, PROT: 8, GRASA: 5, MIX_HC: 0, MIX_GRASA: 0 }, meals: [] },
 ];
+
+/* ── Lo que ha comido ───────────────────────────────────────────────────────
+   Diecisiete días de registro con los casos que el bloque tiene que resolver:
+   días clavados, un día pasado de hidratos, otro corto, dos sin registrar, y
+   alimentos que vienen de una receta y del menú semanal además de a mano.
+   El cupo es el de la dieta de déficit (14/18/8), congelado en cada día como
+   hace el registro de verdad desde 09-2026. */
+const CUPO_DEFICIT = { HC: 10, PROT: 7, GRASA: 4, MIX_HC: 0, MIX_GRASA: 0 };
+
+function comidaDelDia(
+  id: string, nombre: string, slot: number,
+  items: { cat: 'HC' | 'PROT' | 'GRASA' | 'MIX_HC'; label: string; q: number; receta?: boolean; menu?: boolean }[],
+) {
+  return {
+    id, name: nombre, slot,
+    items: items.map(i => ({
+      category: i.cat, foodLabel: i.label, quantity: i.q,
+      ...(i.receta ? { originRecipeId: 'r_dev' } : {}),
+      ...(i.menu ? { origenMenu: `dia_${id}` } : {}),
+    })),
+  };
+}
+
+/**
+ * Un día completo. El día base clava el cupo (10 HC / 7 PROT / 4 GRASA) y las
+ * variantes lo mueven a propósito para que se vean los tres estados: un día
+ * pasado de hidratos, uno corto de grasa y uno que se salta la merienda.
+ */
+function diaDeComida(hace: number, variante: number) {
+  const arroz = variante % 5 === 0 ? 5 : 3;      // un día se pasa de hidratos
+  const aceite = variante % 4 === 0 ? 1 : 2;     // y otro se queda corto de grasa
+  const saltaMerienda = variante % 7 === 2;
+  // Rota las tres piezas que en la vida real cambian de un día a otro: sin esto
+  // los quince días son idénticos y «lo que más come» sale entero a quince días,
+  // que no distingue nada. Con la rotación el pollo sale más que la ternera y el
+  // arroz más que la patata, que es justo lo que ese listado tiene que contar.
+  const proteinaComida = ['100g pechuga de pollo', '100g pechuga de pollo', '100g ternera magra', '120g salmón'][variante % 4];
+  const hidratoCena = ['150g patata (cruda o cocida)', '150g patata (cruda o cocida)', '120g boniato'][variante % 3];
+  const proteinaCena = ['120g merluza', '120g merluza', '120g gambas', '2 huevos'][variante % 4];
+  const fruta = ['230g paraguayo o melocotón', '150g plátano', '230g paraguayo o melocotón', '200g fresas'][variante % 4];
+  const meals = [
+    comidaDelDia('m1', 'Desayuno', 1, [
+      { cat: 'HC', label: '40g pan (de molde, tostado, con o sin semillas...)', q: 2 },
+      { cat: 'PROT', label: '2 claras y 1 huevo entero', q: 2 },
+      { cat: 'MIX_HC', label: '200g yogur natural', q: 1 },
+    ]),
+    comidaDelDia('m2', 'Comida', 3, [
+      { cat: 'HC', label: '30g arroz, pasta, couscous o quinoa', q: arroz },
+      { cat: 'PROT', label: proteinaComida, q: 2, receta: true },
+      { cat: 'GRASA', label: '11g aceite de oliva', q: aceite },
+    ]),
+    ...(saltaMerienda ? [] : [comidaDelDia('m3', 'Merienda', 4, [
+      { cat: 'HC', label: fruta, q: 1.5 },
+      { cat: 'PROT', label: '30g proteína en polvo', q: 1 },
+    ])]),
+    comidaDelDia('m4', 'Cena', 5, [
+      { cat: 'PROT', label: proteinaCena, q: 1.5, menu: true },
+      { cat: 'GRASA', label: '25g aguacate', q: 2, menu: true },
+      { cat: 'HC', label: hidratoCena, q: 3 },
+    ]),
+  ];
+  // Casi todo marcado, como en la vida real; un día deja la cena sin marcar
+  // para que se vea la diferencia entre lo puesto y lo comido.
+  const marcados: string[] = [];
+  for (const m of meals) {
+    if (variante % 6 === 3 && m.id === 'm4') continue;
+    m.items.forEach((_, i) => marcados.push(`${m.id}_${i}`));
+  }
+  return {
+    id: `log_${hace}`, athleteId: EMAIL, date: haceDias(hace), dietId: 'd_deficit',
+    doneItemIds: marcados, budget: CUPO_DEFICIT, meals,
+    updatedAt: `${haceDias(hace)}T21:30:00.000Z`,
+  };
+}
+
+// Dos huecos a propósito (hace 4 y hace 9 días): un hueco es información.
+const REGISTROS_DE_COMIDA = Array.from({ length: 17 }, (_, i) => i)
+  .filter(hace => hace !== 4 && hace !== 9)
+  .map((hace, idx) => diaDeComida(hace, idx));
 
 const PROGRAMA: NutritionProgram = {
   athleteId: EMAIL,
@@ -266,7 +351,14 @@ export default function RevisionCoachDevHarness() {
     qc.setQueryData(['nutritionProgram', EMAIL], anatomia ? null : PROGRAMA);
     qc.setQueryData(['dietsForAthlete', EMAIL], DIETAS);
     qc.setQueryData(['onboarding', EMAIL], ALTA);
-    qc.setQueryData(['dietCompletionLogsForAthlete', EMAIL], []);
+    // El bloque «Qué ha comido» pide los registros ACOTADOS a la ventana, así
+    // que la clave lleva el `desde`. Se siembran las tres ventanas que ofrece
+    // el selector con los mismos datos (el motor ya recorta por fecha); sin
+    // esto, cambiar de periodo dispararía una consulta real a Firestore.
+    qc.setQueryData(['dietCompletionLogsForAthlete', EMAIL], REGISTROS_DE_COMIDA);
+    for (const desde of [haceDias(6), haceDias(13), MESO_ACTUAL.startDate, MESO_ANTERIOR.startDate]) {
+      qc.setQueryData(['dietCompletionLogsForAthlete', EMAIL, desde], REGISTROS_DE_COMIDA);
+    }
     qc.setQueryData(['stepsForAthlete', EMAIL], []);
     qc.setQueryData(['athleteNutritionConfig', EMAIL], null);
     // Implantación.
