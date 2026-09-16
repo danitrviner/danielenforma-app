@@ -478,7 +478,12 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
             })),
           note: (exerciseNoteInputs[exIdx] || '').trim() || undefined,
         }))
-        .filter(e => e.sets.length > 0);
+        // Antes era `.filter(e => e.sets.length > 0)` a secas, y eso TIRABA la
+        // nota de un ejercicio que no se llegó a hacer: el atleta escribía «no
+        // pude, máquina ocupada» y al guardar desaparecía. Justo el caso en el
+        // que la nota es lo único que hay que contar. Ahora se conserva la
+        // entrada si tiene series O si tiene nota.
+        .filter(e => e.sets.length > 0 || !!e.note);
 
       // PRs: mejor 1RM estimado de esta sesión por ejercicio contra el mejor
       // histórico ANTES de esta fecha — mismo criterio que el motor de

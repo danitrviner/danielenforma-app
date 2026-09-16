@@ -8,6 +8,7 @@ import { parseTargetReps } from '../../utils/warmup/WarmupEngine';
 import ExerciseVideoPlayer from '../ExerciseVideoPlayer';
 import { SetInput, RIR_OPCIONES, rirTexto, rirClaseColor, resumenRangosPautados } from './setInput';
 import RestRing from './RestRing';
+import { MOTIVOS_SALTAR, conMotivo, motivoDeLaNota } from '../../utils/saltarEjercicio';
 
 interface Props {
   we: WorkoutExercise;
@@ -54,6 +55,7 @@ export default React.memo(function ExerciseCard({
   videoTargetRef, setEditorTargetRef, firstSetRowTargetRef,
 }: Props) {
   const idNota = React.useId();
+  const motivoMarcado = motivoDeLaNota(noteValue);
   const expanded = expandSetGroups(we);
   const totalSets = exSets.length;
   const doneSets = exSets.filter(s => s.done).length;
@@ -194,8 +196,39 @@ export default React.memo(function ExerciseCard({
         />
       )}
 
-      {/* Nota del atleta para este ejercicio */}
+      {/* Nota del atleta para este ejercicio.
+
+          Encima, el motivo de no haberlo hecho en un toque. Antes esto no
+          existía: si el atleta se saltaba un ejercicio, el registro solo decía
+          «4 de 6» y el coach no podía saber si se cansó, si le molestaba algo
+          o si la máquina estaba ocupada — tres decisiones distintas la semana
+          siguiente. Se guarda en la nota del ejercicio, que ya existía; lo que
+          hacía falta era que la nota de un ejercicio SIN series dejara de
+          tirarse al guardar (TrainingScreen.handleFinish). */}
       <div className="px-4 py-3 bg-bg border-t border-hairline">
+        {(doneSets === 0 || motivoMarcado) && (
+          <div className="mb-3">
+            <p className="font-mono text-caption text-ink-2 uppercase tracking-wider mb-2">¿No lo has hecho?</p>
+            <div className="flex flex-wrap gap-1.5">
+              {MOTIVOS_SALTAR.map(m => {
+                const puesto = motivoMarcado === m.clave;
+                return (
+                  <button
+                    key={m.clave}
+                    type="button"
+                    onClick={() => onNoteChange(conMotivo(noteValue, m.clave))}
+                    aria-pressed={puesto}
+                    className={`rounded-control border px-2.5 py-1.5 font-sans text-label transition-colors ${
+                      puesto ? 'border-accent-line text-accent' : 'border-hairline text-ink-2 hover:text-ink'
+                    }`}
+                  >
+                    {m.etiqueta}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
         <label htmlFor={idNota} className="font-mono text-caption text-ink-2 uppercase tracking-wider block mb-2">Tu nota (opcional)</label>
         <textarea
           id={idNota}
