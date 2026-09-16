@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { comidasDelDia, cupoDelDia, dietaDelDia, totalItemsDelDia, adherenciaDelDia } from './diaDeDieta';
+import {
+  comidasDelDia, cupoDelDia, dietaDelDia, totalItemsDelDia, adherenciaDelDia,
+  adherenciaPorIntercambios, enObjetivo,
+} from './diaDeDieta';
 import type { Diet, DietCompletionLog } from '../types';
 
 const CUPO = { HC: 10, PROT: 8, GRASA: 4, MIX_HC: 0, MIX_GRASA: 0 };
@@ -105,5 +108,75 @@ describe('dietaDelDia', () => {
 
   it('para un día viejo devuelve la dieta original tal cual', () => {
     expect(dietaDelDia(log(), [dieta])).toBe(dieta);
+  });
+});
+
+describe('adherenciaPorIntercambios', () => {
+  /** Un día con cupo 10/5/4 y comidas que suman exactamente eso. */
+  const diaTipo = (marcados: string[]): DietCompletionLog => ({
+    id: 'l', athleteId: 'a@x.com', date: '2026-09-16', dietId: 'd1',
+    doneItemIds: marcados,
+    budget: { HC: 10, PROT: 5, GRASA: 4, MIX_HC: 0, MIX_GRASA: 0 },
+    meals: [{
+      id: 'm1', name: 'Comida', items: [
+        { category: 'HC', foodLabel: '30g arroz', quantity: 10 },
+        { category: 'PROT', foodLabel: '100g pollo', quantity: 5 },
+        { category: 'GRASA', foodLabel: '11g aceite', quantity: 4 },
+      ],
+    }],
+  } as DietCompletionLog);
+
+  it('se lo come todo: 100 %', () => {
+    const a = adherenciaPorIntercambios(diaTipo(['m1_0', 'm1_1', 'm1_2']), [])!;
+    expect(a.pct).toBe(100);
+    expect(enObjetivo(a)).toBe(true);
+  });
+
+  it('mide COMIDA, no líneas: dejarse el aceite no es dejarse un tercio del día', () => {
+    // Por líneas sería 2/3 = 66,7 %. En intercambios, 15 de 19 = 78,9 %.
+    const a = adherenciaPorIntercambios(diaTipo(['m1_0', 'm1_1']), [])!;
+    expect(a.pct).toBe(78.9);
+    expect(adherenciaDelDia(diaTipo(['m1_0', 'm1_1']), [])).toBeCloseTo(66.7, 0);
+  });
+
+  it('pasarse NO se recorta a 100: comer de más es un dato', () => {
+    const pasado = {
+      ...diaTipo(['m1_0']),
+      budget: { HC: 5, PROT: 0, GRASA: 0, MIX_HC: 0, MIX_GRASA: 0 },
+    } as DietCompletionLog;
+    const a = adherenciaPorIntercambios(pasado, [])!;
+    expect(a.pct).toBe(200);
+    expect(enObjetivo(a)).toBe(false);
+  });
+
+  it('sin cupo no hay nada que cumplir: null', () => {
+    const sinCupo = {
+      ...diaTipo(['m1_0']),
+      budget: { HC: 0, PROT: 0, GRASA: 0, MIX_HC: 0, MIX_GRASA: 0 },
+    } as DietCompletionLog;
+    expect(adherenciaPorIntercambios(sinCupo, [])).toBeNull();
+  });
+
+  it('nada marcado es 0 %, no null: un día sin comer nada de lo pautado es un dato', () => {
+    expect(adherenciaPorIntercambios(diaTipo([]), [])!.pct).toBe(0);
+  });
+
+  it('los mixtos se reparten entre sus dos categorías, en el cupo y en lo comido', () => {
+    const conMix = {
+      id: 'l', athleteId: 'a@x.com', date: '2026-09-16', dietId: 'd1',
+      doneItemIds: ['m1_0'],
+      budget: { HC: 0, PROT: 0, GRASA: 0, MIX_HC: 2, MIX_GRASA: 0 },
+      meals: [{ id: 'm1', name: 'X', items: [{ category: 'MIX_HC', foodLabel: '200g yogur', quantity: 2 }] }],
+    } as DietCompletionLog;
+    const a = adherenciaPorIntercambios(conMix, [])!;
+    expect(a.cupo).toEqual({ HC: 1, PROT: 1, GRASA: 0 });
+    expect(a.comidos).toEqual({ HC: 1, PROT: 1, GRASA: 0 });
+    expect(a.pct).toBe(100);
+  });
+
+  it('la banda de «en objetivo» es simétrica', () => {
+    expect(enObjetivo({ pct: 90, comidos: { HC: 0, PROT: 0, GRASA: 0 }, cupo: { HC: 1, PROT: 0, GRASA: 0 } })).toBe(true);
+    expect(enObjetivo({ pct: 110, comidos: { HC: 0, PROT: 0, GRASA: 0 }, cupo: { HC: 1, PROT: 0, GRASA: 0 } })).toBe(true);
+    expect(enObjetivo({ pct: 89, comidos: { HC: 0, PROT: 0, GRASA: 0 }, cupo: { HC: 1, PROT: 0, GRASA: 0 } })).toBe(false);
   });
 });

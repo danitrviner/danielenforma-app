@@ -1,6 +1,6 @@
 import { Diet, DietCompletionLog, StepLog, BodyweightLog, OnboardingData, FoodCategory, MenuCompletionLog, WeeklyMenu, WeekDay } from '../types';
 import { GRAMS_PER_EXCHANGE } from './nutritionConstants';
-import { adherenciaDelDia } from './diaDeDieta';
+import { adherenciaDelDia, adherenciaPorIntercambios } from './diaDeDieta';
 import { hoyIsoLocal, addDays } from './trainingWeek';
 
 const WEEK_DAYS: WeekDay[] = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
@@ -56,7 +56,25 @@ function diasDeLaVentana(t: AnalysisThresholds): number {
 export interface AdherenceResult {
   daysLogged: number;
   windowDays: number;
-  avgPct: number; // 0-100, average % of the day's diet items marked done, across logged days
+  /**
+   * Adherencia media de la ventana, medida en INTERCAMBIOS: lo que comió
+   * dividido entre su cupo. Puede pasar de 100 — comer de más es un dato, y
+   * recortarlo haría que un atleta que se pasa se viera idéntico a uno que
+   * cumple.
+   *
+   * Antes esto era «líneas marcadas ÷ líneas puestas», que desde que en «Mi
+   * plan» todo lo que el atleta añade nace ya marcado daba 100 % comiera lo que
+   * comiera, y trataba igual media cucharada de aceite que 200 g de pollo.
+   */
+  avgPct: number;
+  /** Días de la ventana con cupo, que son los únicos que entran en `avgPct`. */
+  daysWithBudget: number;
+  /**
+   * La cuenta vieja, por líneas marcadas. Se conserva porque hay histórico
+   * calculado así y porque en un plan que dicta el coach de verdad todavía
+   * significa algo — pero no es la que se enseña.
+   */
+  avgPctPorLineas: number;
 }
 
 export function computeAdherenceRate(
@@ -67,11 +85,30 @@ export function computeAdherenceRate(
   const window = fechasDeLaVentana(thresholds);
   const dias = diasDeLaVentana(thresholds);
   const inWindow = logs.filter(l => window.has(l.date));
-  if (inWindow.length === 0) return { daysLogged: 0, windowDays: dias, avgPct: 0 };
+  if (inWindow.length === 0) {
+    return { daysLogged: 0, windowDays: dias, avgPct: 0, daysWithBudget: 0, avgPctPorLineas: 0 };
+  }
 
-  const pcts = inWindow.map(log => adherenciaDelDia(log, diets) ?? 0);
-  const avgPct = Math.round(pcts.reduce((s, p) => s + p, 0) / pcts.length);
-  return { daysLogged: inWindow.length, windowDays: dias, avgPct };
+  const porLineas = inWindow.map(log => adherenciaDelDia(log, diets) ?? 0);
+  const avgPctPorLineas = Math.round(porLineas.reduce((s, p) => s + p, 0) / porLineas.length);
+
+  // Solo los días CON cupo: sin objetivo no hay nada que cumplir, y meterlos
+  // como ceros hundiría la media de alguien que simplemente no tenía dieta
+  // puesta ese día.
+  const conCupo = inWindow
+    .map(log => adherenciaPorIntercambios(log, diets))
+    .filter((a): a is NonNullable<typeof a> => a !== null);
+  const avgPct = conCupo.length > 0
+    ? Math.round(conCupo.reduce((s, a) => s + a.pct, 0) / conCupo.length)
+    : 0;
+
+  return {
+    daysLogged: inWindow.length,
+    windowDays: dias,
+    avgPct,
+    daysWithBudget: conCupo.length,
+    avgPctPorLineas,
+  };
 }
 
 // Menu adherence: over the window, the average % of a day's menu meals the
@@ -86,7 +123,9 @@ export function computeMenuAdherenceRate(
 ): AdherenceResult {
   const window = fechasDeLaVentana(thresholds);
   const dias = diasDeLaVentana(thresholds);
-  if (!menu) return { daysLogged: 0, windowDays: dias, avgPct: 0 };
+  // El menú semanal no tiene cupo de intercambios: su adherencia es por
+  // comidas tildadas y punto. Los campos de intercambios van a cero.
+  if (!menu) return { daysLogged: 0, windowDays: dias, avgPct: 0, daysWithBudget: 0, avgPctPorLineas: 0 };
   const mealsByDay = new Map<WeekDay, number>(menu.days.map(d => [d.day, d.meals.length]));
 
   const inWindow = logs.filter(l => l.menuId === menu.id && window.has(l.date));
@@ -98,9 +137,9 @@ export function computeMenuAdherenceRate(
     if (total === 0) continue;
     pcts.push(Math.min(100, (log.doneMealKeys.length / total) * 100));
   }
-  if (pcts.length === 0) return { daysLogged: 0, windowDays: dias, avgPct: 0 };
+  if (pcts.length === 0) return { daysLogged: 0, windowDays: dias, avgPct: 0, daysWithBudget: 0, avgPctPorLineas: 0 };
   const avgPct = Math.round(pcts.reduce((s, p) => s + p, 0) / pcts.length);
-  return { daysLogged: pcts.length, windowDays: dias, avgPct };
+  return { daysLogged: pcts.length, windowDays: dias, avgPct, daysWithBudget: 0, avgPctPorLineas: avgPct };
 }
 
 export interface StepCompletionResult {
@@ -196,8 +235,10 @@ export function detectDeficitsExcesses(
   thresholds: AnalysisThresholds = DEFAULT_THRESHOLDS,
 ): string[] {
   const flags: string[] = [];
-  if (adherence.daysLogged > 0 && adherence.avgPct < thresholds.adherenceOkPct) {
-    flags.push(`Adherencia baja: ${adherence.avgPct}% de intercambios completados (últimos ${adherence.windowDays} días).`);
+  // Solo se avisa si de verdad hay días CON cupo: sin objetivo la media es 0 y
+  // saldría una alerta de adherencia baja para alguien que aún no tiene dieta.
+  if (adherence.daysWithBudget > 0 && adherence.avgPct < thresholds.adherenceOkPct) {
+    flags.push(`Adherencia baja: se ha comido el ${adherence.avgPct}% de su cupo de intercambios (últimos ${adherence.windowDays} días).`);
   }
   macroDeviation.forEach(m => {
     if (Math.abs(m.deviationPct) > thresholds.macroDeviationOkPct) {
@@ -227,7 +268,11 @@ export function buildNutritionReport(params: {
   const flags = detectDeficitsExcesses(adherence, macroDeviation, thresholds);
 
   const summaryParts = [
-    adherence.daysLogged > 0 ? `Adherencia media: ${adherence.avgPct}% (${adherence.daysLogged} días registrados).` : 'Sin registros de adherencia recientes.',
+    adherence.daysWithBudget > 0
+      ? `Adherencia media: ${adherence.avgPct}% de su cupo (${adherence.daysWithBudget} de ${adherence.daysLogged} días registrados tenían dieta puesta).`
+      : adherence.daysLogged > 0
+        ? `Registra la comida (${adherence.daysLogged} días) pero no tenía cupo puesto, así que no hay adherencia que medir.`
+        : 'Sin registros de adherencia recientes.',
     steps.daysLogged > 0 ? `Objetivo de pasos cumplido al ${steps.avgPct}% de media.` : 'Sin registros de pasos recientes.',
     weightTrend.latestWeight != null ? `Peso actual: ${weightTrend.latestWeight}kg (${weightTrend.deltaFromFirst! >= 0 ? '+' : ''}${weightTrend.deltaFromFirst}kg en la ventana).` : 'Sin registros de peso recientes.',
   ];

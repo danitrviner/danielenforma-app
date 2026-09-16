@@ -147,10 +147,10 @@ export default function BloqueNutricionHabitos({
       <div className="grid grid-cols-3 gap-3">
         <Tarjeta
           label="Adherencia"
-          value={adherence.daysLogged > 0 ? `${adherence.avgPct}%` : '—'}
-          sub={adherence.daysLogged > 0
-            ? `${adherence.daysLogged} de ${adherence.windowDays} días`
-            : 'sin registros'}
+          value={adherence.daysWithBudget > 0 ? `${adherence.avgPct}%` : '—'}
+          sub={adherence.daysWithBudget > 0
+            ? `de su cupo · ${adherence.daysWithBudget} días con dieta`
+            : adherence.daysLogged > 0 ? 'registra, pero sin cupo' : 'sin registros'}
         />
         <Tarjeta
           label="Pasos"
@@ -196,6 +196,15 @@ export default function BloqueNutricionHabitos({
             <p key={i} className="font-sans text-label text-ink leading-relaxed">{f}</p>
           ))}
         </div>
+      )}
+
+      {adherence.daysWithBudget > 0 && (
+        <p className="font-mono text-caption text-ink-3 leading-relaxed">
+          La adherencia mide COMIDA, no tics: intercambios comidos ÷ intercambios de cupo. Puede
+          pasar del 100 % —comer de más es un dato— y por eso no se recorta. Contando líneas
+          marcadas, como se hacía antes, saldría {adherence.avgPctPorLineas} %: desde que en «Mi
+          plan» todo lo que añade nace ya marcado, ese número da casi siempre 100.
+        </p>
       )}
 
       <div className="flex items-center justify-between gap-3 flex-wrap border-t border-hairline pt-3">
