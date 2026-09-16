@@ -406,19 +406,35 @@ export default function WorkoutSessionPlayer({
         {pages}
       </Pager>
 
-      {/* Player action bar — ya no fija ni pegajosa: en el flujo normal, solo
-          en la página del último ejercicio programado. En el resto de
-          páginas no hay forma de terminar la sesión desde aquí. */}
-      {pageIdx === orderedExercises.length - 1 && (
+      {/* Terminar la sesión, desde CUALQUIER página.
+          Antes el botón solo existía en la del último ejercicio programado —el
+          propio comentario lo admitía: «en el resto de páginas no hay forma de
+          terminar la sesión desde aquí»—. Pero una sesión se corta a mitad
+          constantemente: cierra el gimnasio, se ocupa la máquina, molesta un
+          hombro. Con el botón escondido al final, el atleta tenía que deslizar
+          por los ejercicios que NO va a hacer para poder guardar los que sí
+          hizo, o cerrar el player y perder el registro.
+
+          Solo aparece con algo marcado (`canFinish`): sin ni una serie hecha no
+          hay sesión que guardar, y el botón sería una trampa para salir. */}
+      {canFinish && (
         <div className="px-4 pt-4">
           <div className="flex justify-center gap-3">
             <Button
               variant="primary" size="l" icon="flag" loading={isFinishing} loadingLabel="Guardando"
-              disabled={!canFinish || !!celebration} onClick={handleFinish} className="flex-1 max-w-xs"
+              disabled={!!celebration} onClick={handleFinish} className="flex-1 max-w-xs"
             >
-              Terminar sesión
+              {/* El texto cambia si quedan ejercicios por delante: «terminar»
+                  en mitad de la sesión suena a que se pierde lo que falta, y lo
+                  que pasa es justo lo contrario — se guarda lo hecho. */}
+              {pageIdx < orderedExercises.length - 1 ? 'Guardar y terminar' : 'Terminar sesión'}
             </Button>
           </div>
+          {pageIdx < orderedExercises.length - 1 && (
+            <p className="mt-2 text-center font-mono text-caption text-ink-3">
+              Se guarda lo que has marcado. Lo que no hayas hecho, simplemente no cuenta.
+            </p>
+          )}
         </div>
       )}
 

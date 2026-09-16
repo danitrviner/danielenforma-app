@@ -8,6 +8,8 @@ import PhotoCompareCurtain from './progress/PhotoCompareCurtain';
 import { Skeleton } from './ui';
 import { Icon, Badge, EmptyState } from './ui';
 
+import { comprimirImagen } from '../utils/comprimirImagen';
+import { useConfirm } from '../hooks/useConfirm';
 const VIEWS: PhotoView[] = ['front', 'side', 'back'];
 
 const VIEW_LABELS: Record<PhotoView, string> = {
@@ -44,6 +46,7 @@ interface Props {
 }
 
 export default function PhotosScreen({ profile }: Props) {
+  const { confirm, ConfirmDialog } = useConfirm();
   const { showToast } = useToast();
   const queryClient = useQueryClient();
   const photosKey = ['progressPhotos', profile.email] as const;
@@ -83,7 +86,12 @@ export default function PhotosScreen({ profile }: Props) {
     setUploadingView(view);
     setUploadError('');
     try {
-      const photo = await uploadProgressPhoto(profile.email, todayStr(), view, file);
+      // Se comprime antes de subir: un móvil de hoy da 3-6 MB y 4000 px de
+      // lado para enseñarse en una columna de 300. Si la compresión falla,
+      // `comprimirImagen` devuelve el original — subir la grande es peor que
+      // subir una pequeña, pero muchísimo mejor que no subir ninguna.
+      const paraSubir = await comprimirImagen(file);
+      const photo = await uploadProgressPhoto(profile.email, todayStr(), view, paraSubir);
       queryClient.setQueryData<ProgressPhoto[]>(photosKey, prev => {
         const withoutOld = (prev ?? []).filter(p => !(p.date === photo.date && p.view === photo.view));
         return [...withoutOld, photo];
@@ -99,6 +107,11 @@ export default function PhotosScreen({ profile }: Props) {
   };
 
   const handleDelete = async (photo: ProgressPhoto) => {
+    // Borrar una foto de progreso NO se puede deshacer y es de las pocas cosas
+    // de la app que el atleta no puede volver a generar: la de hace tres meses
+    // ya no se puede hacer otra vez. Antes se borraba al primer toque, sin
+    // preguntar, con el botón pegado al de comparar.
+    if (!await confirm(`¿Borrar la foto del ${fmtDate(photo.date)}? No se puede deshacer.`)) return;
     setDeletingId(photo.id);
     try {
       await deleteProgressPhoto(photo);
@@ -159,6 +172,7 @@ export default function PhotosScreen({ profile }: Props) {
     .sort((a, b) => a.date.localeCompare(b.date));
 
   return (
+    <>
     <div className="space-y-3">
       <Coachmark
         id="photos_upload_hint"
@@ -341,5 +355,7 @@ export default function PhotosScreen({ profile }: Props) {
         </div>
       )}
     </div>
+    <ConfirmDialog />
+    </>
   );
 }

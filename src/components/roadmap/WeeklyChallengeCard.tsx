@@ -25,6 +25,19 @@ function fmtMetric(value: number, unit: string): string {
   return `${Math.round(value)} ${unit}`;
 }
 
+/**
+ * ¿El cero de este reto significa «cero» o «todavía no hay dato»?
+ *
+ * En un reto de pasos o de sesiones, cero es cero: no ha andado, no ha
+ * entrenado. En uno de CARGA o de PESO, cero no existe como marca — significa
+ * que aún no ha registrado ninguna sesión con ese ejercicio, o ningún pesaje.
+ * Enseñarlo como «0.0 kg» le dice al atleta que ha levantado cero kilos, que es
+ * un dato falso y además desmoralizante el lunes por la mañana.
+ */
+function esCeroSinDato(value: number, unit: string): boolean {
+  return value === 0 && unit.includes('kg');
+}
+
 function daysLeft(weekEnd: string): number {
   const today = new Date().toISOString().split('T')[0];
   const diff = Math.ceil((new Date(weekEnd + 'T00:00:00').getTime() - new Date(today + 'T00:00:00').getTime()) / 86400000);
@@ -83,7 +96,9 @@ export default function WeeklyChallengeCard({ challenge, progress, streak = 0, d
           <span className={destacado
             ? 'font-mono text-headline font-bold text-ink tracking-tight'
             : 'font-mono text-caption text-white font-bold'}>
-            {fmtMetric(progress.progressValue, challenge.metric.unit)}
+            {esCeroSinDato(progress.progressValue, challenge.metric.unit)
+              ? 'Sin marca todavía'
+              : fmtMetric(progress.progressValue, challenge.metric.unit)}
           </span>
           <span className="font-mono text-caption text-ink-2">
             objetivo {fmtMetric(challenge.metric.target, challenge.metric.unit)}
