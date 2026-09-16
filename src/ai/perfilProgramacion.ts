@@ -1,4 +1,4 @@
-/* Cómo programa Dani, en un bloque de texto que va DENTRO del prompt.
+/* El bloque «CÓMO PROGRAMA DANI» que va DENTRO del prompt.
  *
  * La IA ya podía preguntarlo con get_exercise_usage, y lo hacía: once veces
  * en un solo chat, una por grupo muscular, más otras once a get_exercise_library.
@@ -9,85 +9,16 @@
  * determinista — mismo orden, mismos redondeos — para que el prefijo cacheado
  * sea idéntico byte a byte entre turnos; solo cambia cuando Dani cambia una
  * rutina, y entonces se reescribe la caché una vez.
+ *
+ * El CÁLCULO vive en `utils/perfilProgramacion.ts`: lo comparte con el
+ * generador de rutinas del editor de mesociclos, que elige con el mismo
+ * criterio. Aquí solo queda el texto.
  */
 import { Exercise, MUSCLE_LABELS, MUSCLE_ORDER, MuscleGroup, Workout } from '../types';
+import { calcularPerfilProgramacion } from '../utils/perfilProgramacion';
 
-const POR_GRUPO = 8;
-
-interface Uso {
-  nombre: string;
-  material: string[];
-  veces: number;
-  series: number[];
-  reps: string[];
-  rir: number[];
-  descanso: number[];
-}
-
-function mediana(valores: number[]): number | null {
-  if (valores.length === 0) return null;
-  const orden = [...valores].sort((a, b) => a - b);
-  const mitad = Math.floor(orden.length / 2);
-  const m = orden.length % 2 ? orden[mitad] : (orden[mitad - 1] + orden[mitad]) / 2;
-  return Math.round(m * 10) / 10;
-}
-
-function masFrecuente(valores: string[]): string | null {
-  if (valores.length === 0) return null;
-  const cuenta = new Map<string, number>();
-  for (const v of valores) cuenta.set(v, (cuenta.get(v) ?? 0) + 1);
-  return [...cuenta.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0][0];
-}
-
-export interface PerfilEjercicio {
-  nombre: string;
-  grupo: MuscleGroup;
-  veces: number;
-  series: number | null;
-  reps: string | null;
-  rir: number | null;
-  descansoSeg: number | null;
-  material: string[];
-}
-
-/** Los ejercicios que Dani programa de verdad, por grupo, con sus números. */
-export function calcularPerfilProgramacion(workouts: Workout[], exercises: Exercise[]): Record<MuscleGroup, PerfilEjercicio[]> {
-  const porId = new Map(exercises.map(e => [e.id, e]));
-  const usos = new Map<string, Uso & { grupo: MuscleGroup }>();
-
-  for (const w of workouts) {
-    for (const ex of w.exercises) {
-      const cat = porId.get(ex.exerciseId);
-      const grupo = ex.muscleGroup ?? cat?.muscleGroup;
-      if (!grupo || !cat) continue;
-      const uso = usos.get(ex.exerciseId) ?? {
-        nombre: cat.name, grupo, material: cat.equipment ?? [],
-        veces: 0, series: [], reps: [], rir: [], descanso: [],
-      };
-      uso.veces += 1;
-      uso.series.push(ex.sets);
-      if (ex.reps) uso.reps.push(ex.reps);
-      if (typeof ex.rir === 'number') uso.rir.push(ex.rir);
-      if (ex.restSeconds) uso.descanso.push(ex.restSeconds);
-      usos.set(ex.exerciseId, uso);
-    }
-  }
-
-  const resultado = Object.fromEntries(MUSCLE_ORDER.map(g => [g, [] as PerfilEjercicio[]])) as Record<MuscleGroup, PerfilEjercicio[]>;
-  for (const uso of usos.values()) {
-    if (!resultado[uso.grupo]) continue;
-    resultado[uso.grupo].push({
-      nombre: uso.nombre, grupo: uso.grupo, veces: uso.veces,
-      series: mediana(uso.series), reps: masFrecuente(uso.reps), rir: mediana(uso.rir),
-      descansoSeg: mediana(uso.descanso), material: [...uso.material].sort(),
-    });
-  }
-  for (const g of MUSCLE_ORDER) {
-    resultado[g].sort((a, b) => b.veces - a.veces || a.nombre.localeCompare(b.nombre));
-    resultado[g] = resultado[g].slice(0, POR_GRUPO);
-  }
-  return resultado;
-}
+export { calcularPerfilProgramacion } from '../utils/perfilProgramacion';
+export type { PerfilEjercicio } from '../utils/perfilProgramacion';
 
 /** El bloque tal y como lo lee el modelo. Vacío si no hay rutinas todavía. */
 export function renderPerfilProgramacion(workouts: Workout[], exercises: Exercise[]): string {
