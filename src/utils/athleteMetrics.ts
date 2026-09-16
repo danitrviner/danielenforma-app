@@ -6,10 +6,10 @@
 import {
   BodyweightLog, StepLog, WorkoutLog, Exercise, DietCompletionLog, Diet,
   MuscleGroup, CardioSession,
-} from '../types';
-import { epley } from './oneRepMax';
-import { weightedGroupsOf } from './trainingReport';
-import { adherenciaDelDia } from './diaDeDieta';
+} from '../types.js';
+import { epley } from './oneRepMax.js';
+import { weightedGroupsOf } from './trainingReport.js';
+import { adherenciaDelDia } from './diaDeDieta.js';
 
 // Normaliza para comparar nombres de ejercicio: minúsculas y sin acentos.
 export function normalizeText(s: string): string {

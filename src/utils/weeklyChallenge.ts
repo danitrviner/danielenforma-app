@@ -8,21 +8,21 @@
 // módulo re-exporta lo que ya usaban sus consumidores y añade la evaluación de
 // progreso (que no depende del origen del reto).
 
-import { WeeklyChallenge } from '../types';
+import { WeeklyChallenge } from '../types.js';
 import {
   avgSteps, totalSteps, bestSet, dailyDietPcts, lastBodyweight,
   fractionalSetsByGroup, bestRepsAtWeight, zone2Minutes, loggedDays,
-} from './athleteMetrics';
-import { ChallengeData, AutoChallengeInput, generateChallengeOptions, genericStepsOption, buildChallengeFromOption } from './challengeOptions';
+} from './athleteMetrics.js';
+import { ChallengeData, AutoChallengeInput, generateChallengeOptions, genericStepsOption, buildChallengeFromOption } from './challengeOptions.js';
 
-export type { ChallengeData, AutoChallengeInput, ChallengeOption } from './challengeOptions';
+export type { ChallengeData, AutoChallengeInput, ChallengeOption } from './challengeOptions.js';
 export {
   isoWeekKey, isoWeekBounds, isCoachGraceDay, BASIC_LIFT_KEYWORDS, GENERIC_STEP_TARGET,
   MAX_MILESTONE_ATTEMPTS, eligibleLiftIds, nextRoundMilestone, generateChallengeOptions,
   buildChallengeFromOption, genericStepsOption,
-} from './challengeOptions';
-export type { ChallengeMemory } from './challengeMemory';
-export { buildChallengeMemory, difficultyFor } from './challengeMemory';
+} from './challengeOptions.js';
+export type { ChallengeMemory } from './challengeMemory.js';
+export { buildChallengeMemory, difficultyFor } from './challengeMemory.js';
 
 // Elige la opción de mayor score (o el fallback genérico de pasos si no hay
 // ninguna viable) y la materializa como WeeklyChallenge con origin 'auto'.

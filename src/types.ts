@@ -1,5 +1,5 @@
-import type { AceptacionesLegales } from './legal/aceptacion';
-import type { DietaryRestrictionCode } from './utils/dietaryRestrictions';
+import type { AceptacionesLegales } from './legal/aceptacion.js';
+import type { DietaryRestrictionCode } from './utils/dietaryRestrictions.js';
 
 // ─── NOTIFICATIONS ────────────────────────────────────────────────────────────
 

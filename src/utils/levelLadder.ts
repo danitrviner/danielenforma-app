@@ -6,9 +6,9 @@
 import {
   LevelLadder, LadderLevel, LevelCriterion,
   BodyweightLog, StepLog, WorkoutLog, Exercise,
-} from '../types';
-import { addDays } from './trainingWeek';
-import { lastBodyweight, firstBodyweight, bestSet, exerciseIdsMatching, avgSteps } from './athleteMetrics';
+} from '../types.js';
+import { addDays } from './trainingWeek.js';
+import { lastBodyweight, firstBodyweight, bestSet, exerciseIdsMatching, avgSteps } from './athleteMetrics.js';
 
 export interface LadderData {
   bodyweightLogs: BodyweightLog[];

@@ -1,4 +1,4 @@
-import { FoodCategory, DietMode, DietItem, DietMeal, Diet, Recipe } from '../types';
+import { FoodCategory, DietMode, DietItem, DietMeal, Diet, Recipe } from '../types.js';
 
 // Shared constants + helpers for the food-exchange (intercambios) system.
 // Extracted from NutritionScreen.tsx / NutritionPlansScreen.tsx, which duplicated

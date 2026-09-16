@@ -1,6 +1,6 @@
-import { WorkoutLog, Exercise, Mesocycle, MuscleGroup, MUSCLE_LABELS } from '../types';
-import { epley } from './oneRepMax';
-import { addDays } from './trainingWeek';
+import { WorkoutLog, Exercise, Mesocycle, MuscleGroup, MUSCLE_LABELS } from '../types.js';
+import { epley } from './oneRepMax.js';
+import { addDays } from './trainingWeek.js';
 
 // Deterministic training-performance report engine (no LLM/external API), same
 // style as src/utils/nutritionAnalysis.ts. Powers the weekly report the coach

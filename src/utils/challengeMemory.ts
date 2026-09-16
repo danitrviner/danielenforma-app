@@ -14,7 +14,7 @@
 // Módulo puro y sin dependencias de Firebase: challengeOptions lo consume y los
 // tests lo pueden alimentar con historiales sintéticos.
 
-import { ChallengeKind, ChallengeDifficulty, WeeklyChallenge } from '../types';
+import { ChallengeKind, ChallengeDifficulty, WeeklyChallenge } from '../types.js';
 
 // Semanas de historial que cuentan para la rotación de tipos.
 export const ROTATION_WINDOW = 4;

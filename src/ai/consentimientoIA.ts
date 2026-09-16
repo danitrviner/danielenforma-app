@@ -28,7 +28,7 @@
    el coach ve «lo ha rechazado» o «está pendiente».
    ═══════════════════════════════════════════════════════════════════════════ */
 
-import type { OnboardingData } from '../types';
+import type { OnboardingData } from '../types.js';
 
 /** Versión del texto que se le enseñó al atleta. Si el tratamiento cambia
  *  —otro proveedor, otra finalidad—, se sube el número y hay que volver a

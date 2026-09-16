@@ -23,19 +23,19 @@ import {
   WeeklyChallenge, ChallengeKind, ChallengeDifficulty, ChallengeStreakSource,
   StepLog, BodyweightLog, WorkoutLog, Exercise, DietCompletionLog, Diet,
   WorkoutAssignment, CardioSession, MuscleGroup, MUSCLE_LABELS,
-} from '../types';
-import { ProjectionResult } from './nutritionPeriodization';
-import { getWeekStart, addDays } from './trainingWeek';
-import { epley } from './oneRepMax';
+} from '../types.js';
+import { ProjectionResult } from './nutritionPeriodization.js';
+import { getWeekStart, addDays } from './trainingWeek.js';
+import { epley } from './oneRepMax.js';
 import {
   avgSteps, bestSet, dailyDietPcts, lastBodyweight, normalizeText, BestSet,
   fractionalSetsByGroup, zone2Minutes, loggedDays,
-} from './athleteMetrics';
+} from './athleteMetrics.js';
 import {
   ChallengeMemory, EMPTY_MEMORY, buildChallengeMemory, difficultyFor,
   rotationPenalty, frustrationPenalty, failedMilestoneAttempts,
   weekSeed, pickVariant,
-} from './challengeMemory';
+} from './challengeMemory.js';
 
 // Básicos por defecto para retos de carga (si el coach no configura elegibles).
 export const BASIC_LIFT_KEYWORDS = ['sentadilla', 'press banca', 'peso muerto', 'dominada', 'press militar', 'remo'];

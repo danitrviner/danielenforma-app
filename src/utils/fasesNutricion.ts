@@ -1,5 +1,5 @@
-import { NutritionProgram, NutritionPhase } from '../types';
-import { addDays, esFechaIso } from './trainingWeek';
+import { NutritionProgram, NutritionPhase } from '../types.js';
+import { addDays, esFechaIso } from './trainingWeek.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    LAS FASES DE LA PERIODIZACIÓN — dónde empieza cada tramo y cuál está activo.

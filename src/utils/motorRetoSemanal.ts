@@ -1,10 +1,10 @@
-import { WeeklyChallenge, AppNotification } from '../types';
+import { WeeklyChallenge, AppNotification } from '../types.js';
 import {
   isoWeekKey, generateAutoChallenge, evaluateChallengeProgress,
   ChallengeData, ChallengeProgress,
-} from './weeklyChallenge';
-import { getWeekStart, addDays } from './trainingWeek';
-import { isCoachGraceDay } from './challengeOptions';
+} from './weeklyChallenge.js';
+import { getWeekStart, addDays } from './trainingWeek.js';
+import { isCoachGraceDay } from './challengeOptions.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    MOTOR DEL RETO SEMANAL — la lógica, sin saber dónde se guarda.

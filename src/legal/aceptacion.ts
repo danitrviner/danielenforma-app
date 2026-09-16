@@ -30,8 +30,8 @@
    preguntado», y esa diferencia decide si se le vuelve a preguntar.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-import type { UserProfile } from '../types';
-import { VERSION_CONSENTIMIENTO_IA, type ConsentimientoIA } from '../ai/consentimientoIA';
+import type { UserProfile } from '../types.js';
+import { VERSION_CONSENTIMIENTO_IA, type ConsentimientoIA } from '../ai/consentimientoIA.js';
 
 /** Id de cada documento del muro. Es la clave con la que se guarda: no se
  *  renombra nunca sin migrar los registros ya escritos. */

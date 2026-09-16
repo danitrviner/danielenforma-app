@@ -1,4 +1,4 @@
-import { ActivityLevel, GoalBody } from '../types';
+import { ActivityLevel, GoalBody } from '../types.js';
 
 // Shared with OnboardingForm.tsx's auto-calc so the periodization engine's
 // "mantenimiento estimado" always matches the number the coach saw at onboarding.

@@ -1,5 +1,5 @@
-import type { Diet, DietCompletionLog, DietMeal, FoodCategory } from '../types';
-import { addToPlaced } from './exchangeHelpers';
+import type { Diet, DietCompletionLog, DietMeal, FoodCategory } from '../types.js';
+import { addToPlaced } from './exchangeHelpers.js';
 
 const CUPO_VACIO: Record<FoodCategory, number> = { HC: 0, PROT: 0, GRASA: 0, MIX_HC: 0, MIX_GRASA: 0 };
 

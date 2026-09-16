@@ -1,9 +1,9 @@
-import { Diet, NutritionProgram, NutritionPhase, OnboardingData, BodyweightLog, DietCompletionLog, StepLog } from '../types';
-import { computePhaseStartDate } from './fasesNutricion';
-import { estimateMaintenanceKcal, KCAL_PER_KG } from './energyCalc';
-import { exchangeToKcal } from './nutritionConstants';
-import { adherenciaDelDia } from './diaDeDieta';
-import { addDays } from './trainingWeek';
+import { Diet, NutritionProgram, NutritionPhase, OnboardingData, BodyweightLog, DietCompletionLog, StepLog } from '../types.js';
+import { computePhaseStartDate } from './fasesNutricion.js';
+import { estimateMaintenanceKcal, KCAL_PER_KG } from './energyCalc.js';
+import { exchangeToKcal } from './nutritionConstants.js';
+import { adherenciaDelDia } from './diaDeDieta.js';
+import { addDays } from './trainingWeek.js';
 
 // Deterministic engine that turns a NutritionProgram (phases with weeks +
 // linked diet) into a week-by-week weight projection, contrasts it with the

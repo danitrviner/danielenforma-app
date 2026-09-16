@@ -1,4 +1,4 @@
-import { UserProfile } from '../types';
+import { UserProfile } from '../types.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Filtro de atletas para las pantallas de coach. `api/delete-account.ts`

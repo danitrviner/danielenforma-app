@@ -35,7 +35,7 @@
 // Ese sí se descarta, porque un razonamiento a medias no le sirve a nadie y el
 // coach no lo ve en pantalla.
 
-import type { AiChatMessage, AiContentBlock, AiToolResultBlock } from '../types';
+import type { AiChatMessage, AiContentBlock, AiToolResultBlock } from '../types.js';
 
 export const RESULTADO_INTERRUMPIDO =
   'Interrumpido: el turno se cortó antes de ejecutar esta herramienta, así que no se ejecutó nada. Vuelve a pedirla si todavía hace falta.';

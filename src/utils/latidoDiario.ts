@@ -1,11 +1,11 @@
 import {
   AppNotification, AthleteDietConfig, BodyweightLog, Exercise, LevelLadder,
   NutritionProgram, Roadmap, StepLog, UserProfile, WorkoutAssignment, WorkoutLog,
-} from '../types';
-import { addDays } from './trainingWeek';
-import { computeActivePhase } from './fasesNutricion';
-import { computeLadderStatus } from './levelLadder';
-import { DEFAULT_LEVEL_LADDER } from '../data/defaultLevelLadder';
+} from '../types.js';
+import { addDays } from './trainingWeek.js';
+import { computeActivePhase } from './fasesNutricion.js';
+import { computeLadderStatus } from './levelLadder.js';
+import { DEFAULT_LEVEL_LADDER } from '../data/defaultLevelLadder.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    EL LATIDO DIARIO — qué hay que hacerle a cada atleta hoy.

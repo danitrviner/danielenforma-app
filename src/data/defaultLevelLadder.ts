@@ -3,7 +3,7 @@
 // roadmaps/{email} no tiene levelLadder propio; el coach puede personalizarla
 // por cliente desde su editor (la copia editada se guarda en el doc del atleta).
 
-import { LevelLadder } from '../types';
+import { LevelLadder } from '../types.js';
 
 export const DEFAULT_LEVEL_LADDER: LevelLadder = {
   levels: [
