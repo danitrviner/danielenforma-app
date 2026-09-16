@@ -16,6 +16,7 @@ import NutritionPeriodizationPanel from './NutritionPeriodizationPanel';
 import NutritionPlansScreen from './NutritionPlansScreen';
 import WeeklyMenuEditor from './WeeklyMenuEditor';
 import FoodPreferencesPanel from './FoodPreferencesPanel';
+import MicronutrientesPanel from './MicronutrientesPanel';
 import { EmptyState, SegmentedControl, Dialog, Button } from './ui';
 
 const GOAL_BODY_LABELS: Record<string, string> = {
@@ -595,6 +596,13 @@ export default function ClientDietsPanel({
           </p>
         </div>
       )}
+
+      {/* Micronutrientes estimados de la dieta activa, con los dos controles de
+          verdura. Venía de «Análisis › Nutrición», que se disolvió dentro de
+          Revisión; esta mitad no era revisión —no cuenta lo que el atleta hizo,
+          estima lo que aporta la dieta que le has puesto— así que vive donde se
+          decide esa dieta, con el resto de su configuración. */}
+      {subView === 'info' && <MicronutrientesPanel athleteEmail={athlete.email} />}
 
       {/* Confirmar el borrado de una dieta */}
       {dietPendingDelete && (

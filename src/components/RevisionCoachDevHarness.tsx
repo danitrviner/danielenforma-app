@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {
   UserProfile, Exercise, Mesocycle, MuscleGroup, MuscleGroupConfig, WorkoutLog,
   ProgressPhoto, BodyweightLog, NutritionProgram, Diet, OnboardingData,
-  WeightCheckIn, Questionnaire, QuestionnaireResponse, MUSCLE_ORDER,
+  WeightCheckIn, Questionnaire, QuestionnaireResponse, StepLog, MUSCLE_ORDER,
 } from '../types';
 import { bodyweightForAthleteKey, pesoPrimeroKey, pesoUltimoKey } from '../hooks/useAthleteWeight';
 import { VOLUME_LANDMARKS_DEFAULT } from '../data/volumeLandmarks';
@@ -283,7 +283,25 @@ const PROGRAMA: NutritionProgram = {
 const ALTA: Partial<OnboardingData> = {
   athleteId: EMAIL, sex: 'male', birthDate: '1994-05-02',
   weightKg: 84.2, heightCm: 178, activityLevel: 'activo', goalBody: 'reducir_grasa',
+  // El objetivo contra el que «Adherencia y hábitos» compara la dieta puesta.
+  // Está a propósito por encima del cupo de déficit (10/7/4 = 250/175/44 g):
+  // así la fila de macros sale con desviación y se ve el color, que es lo que
+  // hay que poder juzgar aquí.
+  targetCalories: 2450,
+  macroSplit: { hc: 45, prot: 30, grasa: 25 },
+  macroGrams: { hc: 276, prot: 184, grasa: 68 },
 };
+
+// Pasos de los últimos 17 días contra un objetivo de 9.000: unos días lo pasa y
+// otros se queda corto, para que el porcentaje medio no salga ni 0 ni 100.
+const PASOS: StepLog[] = Array.from({ length: 17 }, (_, i) => {
+  const date = haceDias(i + 1);
+  return {
+    id: `pasos_${i}`, athleteId: EMAIL, date,
+    steps: [11200, 8400, 9600, 6100, 10300, 9000, 4800][i % 7],
+    source: 'manual' as const, createdAt: `${date}T22:00:00.000Z`,
+  };
+});
 
 // ── Lo que el atleta manda ──────────────────────────────────────────────────
 // Tres check-ins: uno contestado y aprobado, otro contestado sin aprobar y el
@@ -359,8 +377,9 @@ export default function RevisionCoachDevHarness() {
     for (const desde of [haceDias(6), haceDias(13), MESO_ACTUAL.startDate, MESO_ANTERIOR.startDate]) {
       qc.setQueryData(['dietCompletionLogsForAthlete', EMAIL, desde], REGISTROS_DE_COMIDA);
     }
-    qc.setQueryData(['stepsForAthlete', EMAIL], []);
-    qc.setQueryData(['athleteNutritionConfig', EMAIL], null);
+    qc.setQueryData(['athleteNutritionConfig', EMAIL], { athleteId: EMAIL, enabledModes: ['OMNIVORO'], stepGoal: 9000 });
+    qc.setQueryData(['athleteDietConfig', EMAIL], { athleteId: EMAIL, activeDietIds: ['d_deficit'] });
+    qc.setQueryData(['stepsForAthlete', EMAIL], PASOS);
     // Implantación.
     qc.setQueryData(['roadmap', EMAIL], null);
     // Dos recordatorios: uno vencido sobre un paso del montaje y una tarea
@@ -415,6 +434,7 @@ export default function RevisionCoachDevHarness() {
             checkins={CHECKINS}
             questionnaires={[Q_SEMANAL]}
             responses={RESPUESTAS}
+            assignments={[]}
             onGoToTab={t => console.info('[harness] onGoToTab', t)}
           />
           )}

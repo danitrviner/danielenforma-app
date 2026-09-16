@@ -150,16 +150,17 @@ function ScreenFallback() {
   return <ScreenSkeleton />;
 }
 
-// Ruta retirada (reorganización del Hub, F1): Análisis dejó de tener
-// sub-pestañas propias — Reportes/Nutrición/Correlaciones son ahora pestañas
-// de zona directas del Hub (ver HubTab en ClientHub.tsx). Los enlaces y
+// Ruta retirada dos veces. Primero Análisis dejó de tener sub-pestañas propias
+// (F1: Reportes/Nutrición/Correlaciones pasaron a pestañas de zona del Hub), y
+// el 16-09 la zona entera desapareció: Nutrición y Correlaciones se disolvieron
+// dentro de Revisión y Reportes se mudó a la zona «Hoy». Los enlaces y
 // bookmarks antiguos a /clients/:id/analisis/:subTab siguen vivos, solo
-// redirigen a la pestaña equivalente — misma convención que las rutas legacy
-// de /training, /nutrition, /academy, /cardio más abajo.
+// redirigen a donde vive hoy su contenido — misma convención que las rutas
+// legacy de /training, /nutrition, /academy, /cardio más abajo.
 const ANALISIS_SUBTAB_TO_HUBTAB: Record<string, string> = {
   reportes: 'reportes',
-  nutricion: 'analisis-nutricion',
-  correlaciones: 'correlaciones',
+  nutricion: 'revision',
+  correlaciones: 'revision',
 };
 function AnalisisSubTabRedirect() {
   const { athleteId, subTab } = useParams<{ athleteId: string; subTab: string }>();

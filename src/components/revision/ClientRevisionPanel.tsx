@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   UserProfile, WorkoutLog, Exercise, Mesocycle, MuscleGroup, ProgressPhoto, BodyweightLog,
-  WeightCheckIn, Questionnaire, QuestionnaireResponse,
+  WeightCheckIn, Questionnaire, QuestionnaireResponse, WorkoutAssignment,
 } from '../../types';
 import { Sexo } from '../../utils/athleteProfileSignals';
 import { getVolumeLandmarks } from '../../db/coachSettings';
@@ -20,6 +20,7 @@ import BloqueMejoresEjercicios from './BloqueMejoresEjercicios';
 import BloqueSeriesPorGrupo from './BloqueSeriesPorGrupo';
 import BloqueCuerpo from './BloqueCuerpo';
 import BloqueQueHaComido from './BloqueQueHaComido';
+import BloqueNutricionHabitos from './BloqueNutricionHabitos';
 import BloqueRecibido from './BloqueRecibido';
 import { Card, Button, Icon } from '../ui';
 
@@ -40,8 +41,11 @@ import { Card, Button, Icon } from '../ui';
      · Nada de ventanas que el coach tenga que configurar dos veces: el periodo
        se elige una vez arriba y manda sobre todos los bloques.
 
-   NO sustituye a ninguna pestaña: Revisiones, Reportes y Correlaciones siguen
-   donde estaban. Esta se suma.
+   Desde el 16-09 ya no se suma: absorbe. La zona «Análisis» del Hub desaparece
+   y su contenido vive aquí — los titulares de progreso y el explorador de
+   series dentro del bloque del cuerpo, la adherencia/pasos/macros/alertas como
+   bloque propio. Solo Reportes sigue siendo pestaña, porque Revisión es MIRAR y
+   Reportes es ENVIAR.
 
    Sobre las consultas: el panel solo se monta cuando la pestaña está activa, así
    que montarse ES el `enabled` — el mismo patrón que ClientSetupPanel. Lo caro
@@ -60,6 +64,8 @@ interface Props {
   checkins: WeightCheckIn[];
   questionnaires: Questionnaire[];
   responses: QuestionnaireResponse[];
+  /** Asignaciones de entreno — las necesita la serie de adherencia semanal. */
+  assignments: WorkoutAssignment[];
   onGoToTab: (tab: HubTab) => void;
 }
 
@@ -76,7 +82,7 @@ function Seccion({ n, titulo, children, accion }: {
 
 export default function ClientRevisionPanel({
   athlete, logs, exercises, mesocycles,
-  photos, bodyweightLogs, sexo, checkins, questionnaires, responses, onGoToTab,
+  photos, bodyweightLogs, sexo, checkins, questionnaires, responses, assignments, onGoToTab,
 }: Props) {
   const hoy = hoyIsoLocal();
 
@@ -215,8 +221,31 @@ export default function ClientRevisionPanel({
         <BloqueQueHaComido comida={comida} todoAbierto={todoAbierto} />
       </Seccion>
 
+      {/* Qué eligió comer (bloque 4) y cuánto de lo pautado cumplió (este) son
+          preguntas distintas y van seguidas: el coach cuenta primero la
+          selección y luego el número. Los dos leen la misma ventana. */}
       <Seccion
         n={5}
+        titulo="Adherencia y hábitos"
+        accion={
+          <Button variant="ghost" onClick={() => onGoToTab('reportes')}>
+            Convertir en reporte
+          </Button>
+        }
+      >
+        <BloqueNutricionHabitos
+          athleteEmail={athlete.email}
+          athleteName={athlete.displayName}
+          targetWeight={athlete.targetWeight}
+          registros={registrosDeComida}
+          dietas={dietas}
+          bodyweightLogs={bodyweightLogs}
+          ventana={ventana}
+        />
+      </Seccion>
+
+      <Seccion
+        n={6}
         titulo="El cuerpo"
         accion={
           <Button variant="ghost" onClick={() => onGoToTab('cuerpo')}>
@@ -231,11 +260,16 @@ export default function ClientRevisionPanel({
           bodyweightLogs={bodyweightLogs}
           onGoToTab={onGoToTab}
           todoAbierto={todoAbierto}
+          logs={logs}
+          exercises={exercises}
+          responses={responses}
+          questionnaires={questionnaires}
+          assignments={assignments}
         />
       </Seccion>
 
       <Seccion
-        n={6}
+        n={7}
         titulo="Lo que te ha mandado"
         accion={
           <Button variant="ghost" onClick={() => onGoToTab('revisiones')}>

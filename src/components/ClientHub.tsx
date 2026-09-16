@@ -44,15 +44,15 @@ import {
    pestañas—, así que abrir la ficha de un cliente para mirar el setup
    descargaba también los gráficos de correlaciones que quizá no se abren nunca.
    En diferido, cada pestaña trae lo suyo la primera vez que se toca.
-   Reportes/Nutrición-análisis/Correlaciones se importan aquí por separado
-   (antes iban juntos dentro de ClientAnalysisPanel, retirado): abrir
-   Reportes ya no descarga también CorrelationPanel. */
+   Desde el 16-09, Correlaciones y Análisis nutricional ya no son pestañas: sus
+   paneles los monta Revisión (los titulares y el explorador dentro del bloque
+   del cuerpo, la adherencia como bloque propio) y los micronutrientes se
+   montan en Dietas, así que recharts entra con Revisión y con Entrenamientos,
+   no con una pestaña propia. */
 const ClientRoadmapPanel = pantallaDiferida('ClientRoadmapPanel', () => import('./ClientRoadmapPanel'));
 const ClientFichaPanel = pantallaDiferida('ClientFichaPanel', () => import('./ClientFichaPanel'));
 const ClientBodyPanel = pantallaDiferida('ClientBodyPanel', () => import('./ClientBodyPanel'));
 const ReportsPanel = pantallaDiferida('ReportsPanel', () => import('./ReportsPanel'));
-const NutritionAnalysisPanel = pantallaDiferida('NutritionAnalysisPanel', () => import('./NutritionAnalysisPanel'));
-const CorrelationPanel = pantallaDiferida('CorrelationPanel', () => import('./CorrelationPanel'));
 const ClientDietsPanel = pantallaDiferida('ClientDietsPanel', () => import('./ClientDietsPanel'));
 const ClientWorkoutsPanel = pantallaDiferida('ClientWorkoutsPanel', () => import('./ClientWorkoutsPanel'));
 const ClientCardioPanel = pantallaDiferida('ClientCardioPanel', () => import('./ClientCardioPanel'));
@@ -65,38 +65,52 @@ import { Avatar, Badge, Tabs, Skeleton, Sheet, SearchField, ListRow, Icon } from
 import { coincideBusqueda } from '../utils/busqueda';
 
 export type HubTab =
-  | 'revision' | 'setup' | 'revisiones'
+  | 'revision' | 'setup' | 'revisiones' | 'reportes'
   | 'ficha' | 'cuerpo'
-  | 'entrenamientos' | 'cardio' | 'dietas' | 'roadmap'
-  | 'reportes' | 'analisis-nutricion' | 'correlaciones';
+  | 'entrenamientos' | 'cardio' | 'dietas' | 'roadmap';
 export const HUB_TABS: readonly HubTab[] = [
-  'revision', 'setup', 'revisiones', 'ficha', 'cuerpo',
+  'revision', 'revisiones', 'reportes', 'setup', 'ficha', 'cuerpo',
   'entrenamientos', 'cardio', 'dietas', 'roadmap',
-  'reportes', 'analisis-nutricion', 'correlaciones',
 ];
 
-// Las 10 pestañas se agrupan en 4 zonas para responder a una pregunta distinta
-// cada una: qué reviso (Hoy), quién es y cómo está (Atleta), qué programo
-// (Plan), cómo va (Análisis). La URL sigue direccionando por HubTab — la zona
-// es puramente de navegación/UI, así que los deep links y
-// ClientSetupPanel.onGoToTab no cambian.
+/**
+ * Pestañas que existieron y ya no. La URL vieja no se rompe: se redirige a la
+ * pantalla que se quedó con su contenido. `analisis-nutricion` y
+ * `correlaciones` se disolvieron dentro de Revisión el 16-09 (ver
+ * ClientRevisionPanel); `analisis`, `analisis-entrenos` y `dashboard` son
+ * restos anteriores que apuntaban al mismo sitio.
+ */
+export const PESTANAS_RETIRADAS: Record<string, HubTab> = {
+  'analisis-nutricion': 'revision',
+  correlaciones: 'revision',
+  analisis: 'revision',
+};
+
+// Las 10 pestañas se agrupan en 3 zonas para responder a una pregunta distinta
+// cada una: qué reviso y qué le mando (Hoy), quién es y cómo está (Atleta), qué
+// programo (Plan). La URL sigue direccionando por HubTab — la zona es puramente
+// de navegación/UI, así que los deep links y ClientSetupPanel.onGoToTab no
+// cambian.
 //
-// Análisis perdió su tercer nivel: antes era zona → pestaña única "Análisis"
-// → 3 sub-pestañas (reportes/nutricion/correlaciones) con estado propio
-// (AnalisisTab). Ahora esas tres viven como pestañas de zona normales — un
-// nivel menos para llegar a Reportes, y AnalisisTab desaparece del todo.
-type Zone = 'hoy' | 'atleta' | 'plan' | 'analisis';
+// La zona «Análisis» ya no existe (16-09, decisión de Dani). Tenía tres
+// pestañas y ninguna contestaba a una pregunta entera: Correlaciones enseñaba
+// los titulares del progreso —justo lo que se cuenta en el vídeo, pero a dos
+// clics de la Revisión donde se cuenta—, y Análisis nutricional mezclaba
+// adherencia (revisión) con verduras y micronutrientes (configuración de la
+// dieta). Cada mitad se ha ido con su pregunta: los titulares y el explorador a
+// Revisión › El cuerpo, la adherencia a Revisión › Adherencia y hábitos, los
+// micronutrientes a Dietas. Reportes NO se absorbe y sube a «Hoy»: Revisión es
+// mirar, Reportes es enviar, y van seguidos en la misma sesión de trabajo.
+type Zone = 'hoy' | 'atleta' | 'plan';
 const ZONE_TABS: Record<Zone, HubTab[]> = {
-  hoy: ['revision', 'revisiones', 'setup'],
+  hoy: ['revision', 'revisiones', 'reportes', 'setup'],
   atleta: ['ficha', 'cuerpo'],
   plan: ['entrenamientos', 'cardio', 'dietas', 'roadmap'],
-  analisis: ['reportes', 'analisis-nutricion', 'correlaciones'],
 };
 const ZONE_META: Record<Zone, { label: string; icon: string }> = {
   hoy: { label: 'Hoy', icon: 'today' },
   atleta: { label: 'Atleta', icon: 'person' },
   plan: { label: 'Plan', icon: 'event_note' },
-  analisis: { label: 'Análisis', icon: 'insights' },
 };
 const TAB_META: Record<HubTab, { label: string; icon: string }> = {
   revision:             { label: 'Revisión',       icon: 'query_stats' },
@@ -109,8 +123,6 @@ const TAB_META: Record<HubTab, { label: string; icon: string }> = {
   dietas:               { label: 'Dietas',         icon: 'nutrition' },
   roadmap:              { label: 'Road map',       icon: 'map' },
   reportes:             { label: 'Reportes',       icon: 'analytics' },
-  'analisis-nutricion': { label: 'Nutrición',      icon: 'restaurant' },
-  correlaciones:        { label: 'Correlaciones',  icon: 'insights' },
 };
 function zoneOf(tab: HubTab): Zone {
   return (Object.keys(ZONE_TABS) as Zone[]).find(z => ZONE_TABS[z].includes(tab)) ?? 'hoy';
@@ -339,7 +351,7 @@ export default function ClientHub({
   const { data: coachQuestionnaires = [] } = useQuery({
     queryKey: coachQuestionnairesKey,
     queryFn: () => getQuestionnairesByCoach(coachId),
-    enabled: tabIn('revisiones', 'cuerpo', 'correlaciones', 'revision'),
+    enabled: tabIn('revisiones', 'cuerpo', 'revision'),
   });
   const setCoachQuestionnaires = (updater: React.SetStateAction<Questionnaire[]>) =>
     queryClient.setQueryData<Questionnaire[]>(coachQuestionnairesKey, prev =>
@@ -359,7 +371,7 @@ export default function ClientHub({
   const { data: athleteQResponses = [] } = useQuery({
     queryKey: athleteQResponsesKey,
     queryFn: () => getResponsesForAthlete(athlete.email),
-    enabled: tabIn('revisiones', 'cuerpo', 'correlaciones', 'revision'),
+    enabled: tabIn('revisiones', 'cuerpo', 'revision'),
   });
   const setAthleteQResponses = (updater: React.SetStateAction<QuestionnaireResponse[]>) =>
     queryClient.setQueryData<QuestionnaireResponse[]>(athleteQResponsesKey, prev =>
@@ -596,6 +608,7 @@ export default function ClientHub({
           checkins={athleteCheckins}
           questionnaires={coachQuestionnaires}
           responses={athleteQResponses}
+          assignments={assignments}
           onGoToTab={guardedTabChange}
         />
       );
@@ -758,31 +771,6 @@ export default function ClientHub({
         />
       );
 
-      /* ── Tab: Nutrición (análisis) ────────────────────────────────────── */
-      case 'analisis-nutricion':
-        return (
-        <NutritionAnalysisPanel
-          athleteEmail={athlete.email}
-          athleteName={athlete.displayName}
-          targetWeight={athlete.targetWeight}
-        />
-      );
-
-      /* ── Tab: Correlaciones ───────────────────────────────────────────── */
-      case 'correlaciones':
-        return (
-        <CorrelationPanel
-          athleteEmail={athlete.email}
-          logs={athleteLogs}
-          exercises={exercises}
-          responses={athleteQResponses}
-          questionnaires={coachQuestionnaires}
-          bodyweightLogs={bodyweightLogs}
-          assignments={assignments}
-          sexo={sexoDelAtleta}
-        />
-      );
-
       default:
         return null;
     }
@@ -841,7 +829,7 @@ export default function ClientHub({
         coachReports={coachReports}
         aiProposals={aiProposals}
         onGoToNotes={() => { setActiveZone('plan'); guardedTabChange('entrenamientos'); }}
-        onGoToReports={() => { setActiveZone('analisis'); guardedTabChange('reportes'); }}
+        onGoToReports={() => { setActiveZone('hoy'); guardedTabChange('reportes'); }}
         onGoToAiProposals={() => navigate('/propuestas')}
       />
 

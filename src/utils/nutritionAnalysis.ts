@@ -1,6 +1,7 @@
 import { Diet, DietCompletionLog, StepLog, BodyweightLog, OnboardingData, FoodCategory, MenuCompletionLog, WeeklyMenu, WeekDay } from '../types';
 import { GRAMS_PER_EXCHANGE } from './nutritionConstants';
 import { adherenciaDelDia } from './diaDeDieta';
+import { hoyIsoLocal, addDays } from './trainingWeek';
 
 const WEEK_DAYS: WeekDay[] = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 
@@ -13,6 +14,15 @@ export interface AnalysisThresholds {
   windowDays: number;        // how many recent days to consider
   adherenceOkPct: number;    // ≥ this % of exchanges done → "on track"
   macroDeviationOkPct: number; // ≤ this % deviation from target → "on track"
+  /**
+   * Ventana explícita `YYYY-MM-DD`, ambas inclusive. Sin ella se usan los
+   * últimos `windowDays` contando hacia atrás desde hoy, que es lo que quiere
+   * un panel que se abre solo; la Revisión, en cambio, tiene su propio periodo
+   * elegido arriba (7 días, 14, el bloque entero) y necesita que la adherencia
+   * y los pasos hablen de ESA ventana y no de otra distinta, o el coach lee en
+   * la misma pantalla dos números que no son comparables.
+   */
+  ventana?: { desde: string; hasta: string };
 }
 
 export const DEFAULT_THRESHOLDS: AnalysisThresholds = {
@@ -21,15 +31,26 @@ export const DEFAULT_THRESHOLDS: AnalysisThresholds = {
   macroDeviationOkPct: 15,
 };
 
-function recentDates(windowDays: number): Set<string> {
+/**
+ * Las fechas que entran en el análisis: la ventana explícita si la hay, y si no
+ * los últimos `windowDays` hasta hoy. En fecha LOCAL, no UTC: con
+ * `toISOString()` un registro guardado a las 00:30 de Madrid caía en el día
+ * anterior y la ventana se comía un día por un extremo y se dejaba otro fuera.
+ */
+function fechasDeLaVentana(t: AnalysisThresholds): Set<string> {
   const dates = new Set<string>();
-  const now = new Date();
-  for (let i = 0; i < windowDays; i++) {
-    const d = new Date(now);
-    d.setDate(d.getDate() - i);
-    dates.add(d.toISOString().split('T')[0]);
+  if (t.ventana) {
+    for (let d = t.ventana.desde; d <= t.ventana.hasta; d = addDays(d, 1)) dates.add(d);
+    return dates;
   }
+  const hoy = hoyIsoLocal();
+  for (let i = 0; i < t.windowDays; i++) dates.add(addDays(hoy, -i));
   return dates;
+}
+
+/** Cuántos días abarca el análisis — para los textos que dicen «últimos N días». */
+function diasDeLaVentana(t: AnalysisThresholds): number {
+  return t.ventana ? fechasDeLaVentana(t).size : t.windowDays;
 }
 
 export interface AdherenceResult {
@@ -43,13 +64,14 @@ export function computeAdherenceRate(
   diets: Diet[],
   thresholds: AnalysisThresholds = DEFAULT_THRESHOLDS,
 ): AdherenceResult {
-  const window = recentDates(thresholds.windowDays);
+  const window = fechasDeLaVentana(thresholds);
+  const dias = diasDeLaVentana(thresholds);
   const inWindow = logs.filter(l => window.has(l.date));
-  if (inWindow.length === 0) return { daysLogged: 0, windowDays: thresholds.windowDays, avgPct: 0 };
+  if (inWindow.length === 0) return { daysLogged: 0, windowDays: dias, avgPct: 0 };
 
   const pcts = inWindow.map(log => adherenciaDelDia(log, diets) ?? 0);
   const avgPct = Math.round(pcts.reduce((s, p) => s + p, 0) / pcts.length);
-  return { daysLogged: inWindow.length, windowDays: thresholds.windowDays, avgPct };
+  return { daysLogged: inWindow.length, windowDays: dias, avgPct };
 }
 
 // Menu adherence: over the window, the average % of a day's menu meals the
@@ -62,8 +84,9 @@ export function computeMenuAdherenceRate(
   menu: WeeklyMenu | null,
   thresholds: AnalysisThresholds = DEFAULT_THRESHOLDS,
 ): AdherenceResult {
-  const window = recentDates(thresholds.windowDays);
-  if (!menu) return { daysLogged: 0, windowDays: thresholds.windowDays, avgPct: 0 };
+  const window = fechasDeLaVentana(thresholds);
+  const dias = diasDeLaVentana(thresholds);
+  if (!menu) return { daysLogged: 0, windowDays: dias, avgPct: 0 };
   const mealsByDay = new Map<WeekDay, number>(menu.days.map(d => [d.day, d.meals.length]));
 
   const inWindow = logs.filter(l => l.menuId === menu.id && window.has(l.date));
@@ -75,9 +98,9 @@ export function computeMenuAdherenceRate(
     if (total === 0) continue;
     pcts.push(Math.min(100, (log.doneMealKeys.length / total) * 100));
   }
-  if (pcts.length === 0) return { daysLogged: 0, windowDays: thresholds.windowDays, avgPct: 0 };
+  if (pcts.length === 0) return { daysLogged: 0, windowDays: dias, avgPct: 0 };
   const avgPct = Math.round(pcts.reduce((s, p) => s + p, 0) / pcts.length);
-  return { daysLogged: pcts.length, windowDays: thresholds.windowDays, avgPct };
+  return { daysLogged: pcts.length, windowDays: dias, avgPct };
 }
 
 export interface StepCompletionResult {
@@ -91,11 +114,12 @@ export function computeStepCompletionRate(
   stepGoal: number,
   thresholds: AnalysisThresholds = DEFAULT_THRESHOLDS,
 ): StepCompletionResult {
-  const window = recentDates(thresholds.windowDays);
+  const window = fechasDeLaVentana(thresholds);
+  const dias = diasDeLaVentana(thresholds);
   const inWindow = logs.filter(l => window.has(l.date));
-  if (inWindow.length === 0 || stepGoal <= 0) return { daysLogged: inWindow.length, windowDays: thresholds.windowDays, avgPct: 0 };
+  if (inWindow.length === 0 || stepGoal <= 0) return { daysLogged: inWindow.length, windowDays: dias, avgPct: 0 };
   const avgPct = Math.round(inWindow.reduce((s, l) => s + Math.min(100, (l.steps / stepGoal) * 100), 0) / inWindow.length);
-  return { daysLogged: inWindow.length, windowDays: thresholds.windowDays, avgPct };
+  return { daysLogged: inWindow.length, windowDays: dias, avgPct };
 }
 
 export interface MacroDeviationResult {
@@ -109,16 +133,26 @@ export interface MacroDeviationResult {
 // against the onboarding target grams — a "does the plan match the goal"
 // signal, independent of day-to-day adherence.
 export function computeMacroDeviation(diet: Diet | null, onboarding: OnboardingData | null): MacroDeviationResult[] {
-  if (!diet || !onboarding) return [];
+  // `macroGrams` figura como obligatorio en el tipo, pero el documento de
+  // Firestore no siempre lo trae: las altas anteriores a que se calculara, y
+  // las que se guardaron a medias, llegan sin él. Leerlo a ciegas reventaba el
+  // panel entero con «Cannot read properties of undefined (reading 'hc')», y
+  // como quien llamaba lo envolvía en un try/catch, el coach no veía un error
+  // sino la pantalla vacía con un «sin datos suficientes» que era mentira: los
+  // datos estaban, lo que faltaba era el objetivo contra el que compararlos.
+  // Sin objetivo no hay desviación que calcular, y eso se dice callando esta
+  // sección, no tumbando las otras cuatro.
+  if (!diet || !onboarding?.macroGrams) return [];
   const cats: ('HC' | 'PROT' | 'GRASA')[] = ['HC', 'PROT', 'GRASA'];
   const targetByCat: Record<'HC' | 'PROT' | 'GRASA', number> = {
     HC: onboarding.macroGrams.hc, PROT: onboarding.macroGrams.prot, GRASA: onboarding.macroGrams.grasa,
   };
-  return cats.map(cat => {
-    const planGrams = round1(diet.budget[cat] * GRAMS_PER_EXCHANGE[cat]);
+  return cats.flatMap(cat => {
     const targetGrams = targetByCat[cat];
+    if (typeof targetGrams !== 'number' || !Number.isFinite(targetGrams)) return [];
+    const planGrams = round1(diet.budget[cat] * GRAMS_PER_EXCHANGE[cat]);
     const deviationPct = targetGrams > 0 ? round1(((planGrams - targetGrams) / targetGrams) * 100) : 0;
-    return { category: cat, targetGrams, planGrams, deviationPct };
+    return [{ category: cat, targetGrams, planGrams, deviationPct }];
   });
 }
 
@@ -133,7 +167,7 @@ export function computeWeightTrend(
   targetWeight: number | undefined,
   thresholds: AnalysisThresholds = DEFAULT_THRESHOLDS,
 ): WeightTrendResult {
-  const window = recentDates(thresholds.windowDays);
+  const window = fechasDeLaVentana(thresholds);
   const inWindow = logs.filter(l => window.has(l.date)).sort((a, b) => a.date.localeCompare(b.date));
   if (inWindow.length === 0) return { latestWeight: null, deltaFromFirst: null, towardsTarget: null };
   const first = inWindow[0].weight;

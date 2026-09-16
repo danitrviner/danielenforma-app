@@ -18,7 +18,7 @@ import { resumirSerie, ResumenMetrica } from '../utils/progressSummary';
 import { mdcDeMetrica } from '../utils/mdc';
 import { Sexo } from '../utils/athleteProfileSignals';
 import {
-  EmptyState, Icon, Select, Sparkline,
+  EmptyState, Select, Sparkline,
   ALTURA_GRAFICA, MARGEN_GRAFICA, REJILLA_GRAFICA, TICK_GRAFICA, EJE_GRAFICA,
   TOOLTIP_GRAFICA, LEYENDA_GRAFICA, colorSerie, SegmentedControl,
 } from './ui';
@@ -32,6 +32,17 @@ interface Props {
   bodyweightLogs: BodyweightLog[];
   assignments: WorkoutAssignment[];
   sexo: Sexo | null; // de la anamnesis — alimenta %grasa US Navy y el e1RM alométrico
+  /**
+   * Qué mitad del panel se pinta. Antes las dos convivían aquí detrás de un
+   * segmentado «Resumen / Explorar», en su propia pestaña del Hub; al absorber
+   * Análisis dentro de Revisión cada mitad se fue a su sitio:
+   *   · `resumen` → los titulares con su sparkline, dentro del bloque «El
+   *     cuerpo» de la Revisión, sin cabecera propia: es scroll de vídeo.
+   *   · `explorar` → el selector de series, el gráfico y el Pearson, en la hoja
+   *     «Explorar los datos», fuera de ese scroll porque pide clicar.
+   * El componente no decide: quien lo monta ya sabe cuál de las dos quiere.
+   */
+  modo: 'resumen' | 'explorar';
 }
 
 type Series = { id: string; label: string; points: DataPoint[]; unit?: string; agg: Aggregation };
@@ -109,9 +120,8 @@ function TarjetaTitular({ r }: { r: ResumenMetrica; key?: React.Key }) {
 }
 
 export default function CorrelationPanel({
-  athleteEmail, logs, exercises, responses, questionnaires, bodyweightLogs, assignments, sexo,
+  athleteEmail, logs, exercises, responses, questionnaires, bodyweightLogs, assignments, sexo, modo,
 }: Props) {
-  const [vista, setVista] = useState<'resumen' | 'explorar'>('resumen');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [selectorOpen, setSelectorOpen] = useState(false);
   // Variante elegida de cada familia (familiaId -> value). Se conserva al
@@ -400,7 +410,7 @@ export default function CorrelationPanel({
     return { id: f.id, label: `${f.label}: ${v.label}`, points: v.points, unit: f.unit, agg: f.agg };
   };
 
-  // ── Resumen (vista por defecto, cero clics) ──────────────────────────────
+  // ── Resumen (los titulares que se enseñan en la Revisión) ───────────────
   const titulares = useMemo<ResumenMetrica[]>(() => {
     const porId = new Map<string, Series>(allSeries.map(s => [s.id, s]));
     const out: ResumenMetrica[] = [];
@@ -546,30 +556,15 @@ export default function CorrelationPanel({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between gap-3 flex-wrap">
-        <div>
-          <h2 className="font-sans font-bold text-title-m tracking-tight text-white uppercase flex items-center gap-2">
-            <Icon name="insights" size="l" filled className="text-accent" />
-            Progreso y correlaciones
-          </h2>
-          <p className="font-sans text-label text-ink-2 mt-1">
-            {vista === 'resumen'
-              ? 'El avance del atleta de un vistazo — listo para enseñárselo.'
-              : 'Selecciona 1 o más series para visualizar. Con 2 series exactas se calcula Pearson r.'}
-          </p>
-        </div>
-        <div className="flex-shrink-0">
-          <SegmentedControl
-            options={[{ value: 'resumen', label: 'Resumen' }, { value: 'explorar', label: 'Explorar' }]}
-            value={vista}
-            onChange={v => setVista(v as 'resumen' | 'explorar')}
-            label="Vista"
-          />
-        </div>
-      </div>
+      {modo === 'explorar' && (
+        <p className="font-sans text-label text-ink-2">
+          Elige una serie o más para verlas juntas. Con dos exactas se calcula la correlación de
+          Pearson entre ellas.
+        </p>
+      )}
 
       {/* ── RESUMEN ─────────────────────────────────────────────────────── */}
-      {vista === 'resumen' && (
+      {modo === 'resumen' && (
         titulares.length === 0 ? (
           <div className="border border-dashed border-hairline rounded-surface">
             <EmptyState
@@ -592,7 +587,7 @@ export default function CorrelationPanel({
       )}
 
       {/* ── EXPLORAR ────────────────────────────────────────────────────── */}
-      {vista === 'explorar' && (
+      {modo === 'explorar' && (
         <>
           <div className="flex justify-end">
             {/* Granularidad — semanal por defecto para poder cruzar cuestionarios

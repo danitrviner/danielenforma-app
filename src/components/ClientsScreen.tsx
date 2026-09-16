@@ -8,7 +8,7 @@ import {
 } from '../dbService';
 import { avisosActivos, claveDeAviso } from '../utils/avisosDelCoach';
 import { hoyIsoLocal } from '../utils/trainingWeek';
-import ClientHub, { HubTab, HUB_TABS } from './ClientHub';
+import ClientHub, { HubTab, HUB_TABS, PESTANAS_RETIRADAS } from './ClientHub';
 import HomeCoachScreen from './HomeCoachScreen';
 import AthletesBar from './AthletesBar';
 import CoachNotesPanel from './CoachNotesPanel';
@@ -204,15 +204,15 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
   }, [athleteId, loadingAthletes, selectedAthlete, navigate]);
 
   // Alias de pestañas retiradas: los enlaces/bookmarks antiguos siguen vivos,
-  // solo redirigen. "periodizacion" vive ahora dentro de Entrenamientos.
-  // "analisis" (la pestaña única de antes, sin sub-pestaña en la URL) aterriza
-  // en Reportes, la primera de las tres pestañas en que se dividió — el caso
-  // CON sub-pestaña (/clients/:id/analisis/:subTab) lo resuelve un redirect
-  // propio en App.tsx antes de llegar aquí (ver AnalisisSubTabRedirect).
+  // solo redirigen. "periodizacion" vive ahora dentro de Entrenamientos; las de
+  // la zona Análisis (retirada el 16-09) aterrizan en Revisión, que es donde se
+  // fue su contenido — ver PESTANAS_RETIRADAS en ClientHub. El caso CON
+  // sub-pestaña (/clients/:id/analisis/:subTab) lo resuelve un redirect propio
+  // en App.tsx antes de llegar aquí (ver AnalisisSubTabRedirect).
   const activeHubTab: HubTab = hubTab === 'periodizacion'
     ? 'entrenamientos'
-    : hubTab === 'analisis'
-      ? 'reportes'
+    : (hubTab && PESTANAS_RETIRADAS[hubTab])
+      ? PESTANAS_RETIRADAS[hubTab]
       : (hubTab && (HUB_TABS as readonly string[]).includes(hubTab))
         ? (hubTab as HubTab)
         : DEFAULT_HUB_TAB;

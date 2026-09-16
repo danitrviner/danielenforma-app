@@ -1,13 +1,17 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { UserProfile, ProgressPhoto, BodyweightLog } from '../../types';
+import {
+  UserProfile, ProgressPhoto, BodyweightLog, WorkoutLog, Exercise,
+  QuestionnaireResponse, Questionnaire, WorkoutAssignment,
+} from '../../types';
 import { Sexo } from '../../utils/athleteProfileSignals';
 import { getNutritionProgram } from '../../dbService';
 import { HubTab } from '../ClientHub';
 import NutritionPerformanceDashboard from '../NutritionPerformanceDashboard';
 import BodyMeasurementsPanel from '../BodyMeasurementsPanel';
+import CorrelationPanel from '../CorrelationPanel';
 import ComparadorFotos from './ComparadorFotos';
-import { EmptyState, Skeleton, Collapsible } from '../ui';
+import { EmptyState, Skeleton, Collapsible, Button, Icon, Sheet } from '../ui';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Bloque 4 — El cuerpo: peso contra el plan, perímetros y fotos.
@@ -26,6 +30,15 @@ import { EmptyState, Skeleton, Collapsible } from '../ui';
    se lee `nutritionPrograms` —UN documento— y solo si existe se monta el
    dashboard. Es la diferencia entre +1 lectura y +6 colecciones por cada ficha
    que se abre.
+
+   ── Lo que se tragó de «Análisis › Correlaciones» ──────────────────────────
+   Los titulares (%grasa, masa magra, cintura, peso, IRC, adherencia, IRP y el
+   1RM del ejercicio más registrado, cada uno con su cambio y su sparkline) eran
+   la mitad «Resumen» de aquella pestaña, y son exactamente lo que se cuenta en
+   el vídeo: entran aquí, arriba del todo, sin cabecera propia. La otra mitad
+   —elegir series, cruzarlas, mirar el Pearson— pide clicar y comparar, así que
+   se queda a un botón de distancia en una hoja: no corta el scroll de la
+   grabación, pero sigue estando cuando el número raro obliga a bajar a mirar.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 interface Props {
@@ -36,11 +49,20 @@ interface Props {
   onGoToTab: (tab: HubTab) => void;
   /** Cuando está activo, perímetros y fotos nacen desplegados. */
   todoAbierto?: boolean;
+  // Lo que necesitan los titulares y el explorador de series. Llega por props
+  // porque ClientHub ya lo tiene cargado para el resto de la pantalla.
+  logs: WorkoutLog[];
+  exercises: Exercise[];
+  responses: QuestionnaireResponse[];
+  questionnaires: Questionnaire[];
+  assignments: WorkoutAssignment[];
 }
 
 export default function BloqueCuerpo({
   athlete, sexo, photos, bodyweightLogs, onGoToTab, todoAbierto = false,
+  logs, exercises, responses, questionnaires, assignments,
 }: Props) {
+  const [explorando, setExplorando] = useState(false);
   const { data: programa, isPending } = useQuery({
     queryKey: ['nutritionProgram', athlete.email],
     queryFn: () => getNutritionProgram(athlete.email),
@@ -48,6 +70,26 @@ export default function BloqueCuerpo({
 
   return (
     <div className="space-y-4">
+      {/* ── Titulares: el cambio de cada métrica desde la primera medición ── */}
+      <CorrelationPanel
+        modo="resumen"
+        athleteEmail={athlete.email}
+        logs={logs}
+        exercises={exercises}
+        responses={responses}
+        questionnaires={questionnaires}
+        bodyweightLogs={bodyweightLogs}
+        assignments={assignments}
+        sexo={sexo}
+      />
+
+      <div className="flex justify-end">
+        <Button variant="ghost" onClick={() => setExplorando(true)}>
+          <Icon name="insights" size="s" />
+          Explorar los datos
+        </Button>
+      </div>
+
       {/* ── Peso real vs lo que decía la periodización ───────────────────── */}
       {isPending ? (
         <Skeleton className="w-full h-64 rounded-surface" />
@@ -101,6 +143,20 @@ export default function BloqueCuerpo({
           bodyweightLogs={bodyweightLogs}
         />
       </Collapsible>
+
+      <Sheet open={explorando} onClose={() => setExplorando(false)} title="Explorar los datos" size="l">
+        <CorrelationPanel
+          modo="explorar"
+          athleteEmail={athlete.email}
+          logs={logs}
+          exercises={exercises}
+          responses={responses}
+          questionnaires={questionnaires}
+          bodyweightLogs={bodyweightLogs}
+          assignments={assignments}
+          sexo={sexo}
+        />
+      </Sheet>
     </div>
   );
 }
