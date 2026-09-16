@@ -129,7 +129,7 @@ export {
 // ningún import existente (`from '../dbService'`) tenga que cambiar.
 export {
   getQuestionnairesByCoach, createQuestionnaire, updateQuestionnaire, deleteQuestionnaire,
-  assignQuestionnaire, getAssignmentsForAthlete, deactivateAssignment,
+  assignQuestionnaire, assignQuestionnairesBatch, getAssignmentsForAthlete, deactivateAssignment,
   submitResponse, getQuestionnaireById, getResponsesForAthlete, getResponsesByQuestionnaireIds,
   updateQuestionnaireResponse, deleteQuestionnaireResponse, marcarRespuestaVista,
   getQuestionnairePacksByCoach, createQuestionnairePack, updateQuestionnairePack, deleteQuestionnairePack,

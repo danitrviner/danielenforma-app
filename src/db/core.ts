@@ -1,4 +1,5 @@
-import { db, auth, onAuthStateChanged, appCheckListo } from '../firebase';
+import { db, auth, onAuthStateChanged, appCheckListo, writeBatch } from '../firebase';
+import type { DocumentReference } from 'firebase/firestore';
 import { reportarError } from '../monitorizacion';
 
 // Recursively remove keys whose value is undefined before sending to Firestore.
@@ -305,4 +306,70 @@ export function descartarAvisoDePermisos(): void {
   const antes = estadoDeConexion();
   if (esFalloDePermisos(ultimoErrorFirestore)) ultimoErrorFirestore = null;
   notificarConexion(antes);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Escrituras en lote
+
+   Media app escribía N documentos con un `for` y un `await` dentro: asignar un
+   mesociclo son 24 `addDoc` seguidos, aplicar una plantilla de cuestionarios
+   una decena, publicar un menú semanal siete. Eso tiene tres problemas, y el
+   tercero es el que duele:
+
+   1 · Son N viajes de ida y vuelta en vez de uno.
+   2 · Cada uno puede fallar por su cuenta.
+   3 · **Si falla el número 14, los 13 primeros ya están escritos.** El coach ve
+       un error, vuelve a darle, y ahora hay 13 sesiones duplicadas — o peor,
+       un mesociclo a medias que el atleta ya está viendo.
+
+   Un `writeBatch` es atómico: entran todas o no entra ninguna. El límite duro
+   de Firestore son 500 operaciones por lote; por encima hay que trocear, y ahí
+   la atomicidad es por trozo, no del conjunto (lo mismo que hace el importador
+   del CRM, que es de donde sale este patrón).
+
+   El ORDEN importa: dentro de un lote las operaciones se aplican en el orden
+   en que se añaden, así que para «borrar lo viejo y escribir lo nuevo» hay que
+   poner los borrados primero. Si se hace al revés y una clave coincide, el
+   borrado se lleva por delante lo que se acaba de escribir.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/** Límite duro de Firestore. */
+export const OPS_POR_LOTE = 500;
+
+export type OperacionEnLote =
+  | { tipo: 'set'; ref: DocumentReference; datos: Record<string, unknown>; merge?: boolean }
+  | { tipo: 'update'; ref: DocumentReference; datos: Record<string, unknown> }
+  | { tipo: 'delete'; ref: DocumentReference };
+
+/**
+ * Aplica las operaciones en lotes de `OPS_POR_LOTE`, en orden.
+ *
+ * Devuelve cuántas se aplicaron. Si un lote falla, lanza — y lo que lanza dice
+ * cuántas habían entrado ya, porque «error al guardar» sin más deja al coach
+ * sin saber si tiene que reintentar entero o no.
+ */
+export async function escribirEnLotes(ops: OperacionEnLote[], queHace = 'Guardar'): Promise<number> {
+  if (ops.length === 0) return 0;
+  await authReady;
+  let hechas = 0;
+  for (let i = 0; i < ops.length; i += OPS_POR_LOTE) {
+    const trozo = ops.slice(i, i + OPS_POR_LOTE);
+    const batch = writeBatch(db);
+    for (const op of trozo) {
+      if (op.tipo === 'delete') batch.delete(op.ref);
+      else if (op.tipo === 'update') batch.update(op.ref, stripUndefined(op.datos));
+      else batch.set(op.ref, stripUndefined(op.datos), op.merge ? { merge: true } : {});
+    }
+    try {
+      await conTimeout(`${queHace} (${hechas + 1}–${hechas + trozo.length})`, batch.commit());
+    } catch (err) {
+      if (hechas === 0) throw err;   // no entró nada: el error original sirve tal cual
+      throw new Error(
+        `Se guardaron ${hechas} de ${ops.length} cambios antes de fallar.`,
+        { cause: err },
+      );
+    }
+    hechas += trozo.length;
+  }
+  return hechas;
 }

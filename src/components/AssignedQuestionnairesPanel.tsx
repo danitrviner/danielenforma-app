@@ -5,7 +5,7 @@ import {
   QuestionnaireQuestion, QuestionnaireResponse, QSchedule, QScheduleType,
 } from '../types';
 import {
-  assignQuestionnaire, deactivateAssignment, createQuestionnaire,
+  assignQuestionnaire, assignQuestionnairesBatch, deactivateAssignment, createQuestionnaire,
   getQuestionnairePacksByCoach, createQuestionnairePack, updateQuestionnairePack, deleteQuestionnairePack,
 } from '../dbService';
 import {
@@ -317,18 +317,20 @@ export default function AssignedQuestionnairesPanel({
       return;
     }
     setAplicandoPack(pack.id);
-    const nuevas: QuestionnaireAssignment[] = [];
+    /* Era un `for` con un `await` dentro, uno por cuestionario. Con diez
+       filas, un fallo en la sexta dejaba cinco puestas: el coach le daba otra
+       vez y el atleta acababa con cinco duplicadas, cada una con su propia
+       notificación los lunes. En lote entran todas o ninguna. */
+    let nuevas: QuestionnaireAssignment[] = [];
     try {
-      for (const item of pendientes) {
-        nuevas.push(await assignQuestionnaire({
-          questionnaireId: item.questionnaireId,
-          athleteId: athlete.email,
-          schedule: item.schedule,
-          startDate: hoyLocalStr(),
-          active: true,
-          createdAt: new Date().toISOString(),
-        }));
-      }
+      nuevas = await assignQuestionnairesBatch(pendientes.map(item => ({
+        questionnaireId: item.questionnaireId,
+        athleteId: athlete.email,
+        schedule: item.schedule,
+        startDate: hoyLocalStr(),
+        active: true,
+        createdAt: new Date().toISOString(),
+      })));
       const repetidos = pack.items.length - pendientes.length;
       showToast(
         `${nuevas.length} cuestionario${nuevas.length === 1 ? '' : 's'} asignado${nuevas.length === 1 ? '' : 's'}`
@@ -336,13 +338,9 @@ export default function AssignedQuestionnairesPanel({
       );
     } catch (err) {
       console.error(err);
-      // Parada a medias: se dice cuántos entraron de verdad en vez de dar el
-      // paquete por aplicado o por fallido entero.
-      showToast(
-        nuevas.length > 0
-          ? `Solo se asignaron ${nuevas.length} de ${pendientes.length}. ${mensajeDeErrorFirestore(err, 'aplicar el paquete')}`
-          : mensajeDeErrorFirestore(err, 'aplicar el paquete'),
-      );
+      // Con el lote ya no hay «a medias»: o entró el paquete entero o no
+      // entró nada, así que el mensaje puede decirlo sin rodeos.
+      showToast(mensajeDeErrorFirestore(err, 'aplicar el paquete'));
     } finally {
       if (nuevas.length > 0) setAthleteQAssignments(prev => [...prev, ...nuevas]);
       setAplicandoPack(null);

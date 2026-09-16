@@ -1,6 +1,6 @@
 import { db, collection, doc, setDoc, getDocs, updateDoc, query, where, orderBy, limit } from '../firebase';
 import { AppNotification } from '../types';
-import { forceLocalOnly, setLocalBypassMode, stripUndefined, esFalloDePermisos } from './core';
+import { forceLocalOnly, setLocalBypassMode, stripUndefined, esFalloDePermisos, escribirEnLotes } from './core';
 import { escribirLocal } from '../utils/almacenLocal';
 
 // ── Notifications ─────────────────────────────────────────────────────────────
@@ -135,7 +135,12 @@ export async function markAllNotificationsRead(recipientEmail: string): Promise<
         where('recipientEmail', '==', recipientEmail),
         where('read', '==', false))
     );
-    await Promise.all(snap.docs.map(d => updateDoc(d.ref, { read: true })));
+    // En lote: eran N escrituras sueltas, y si fallaba la número 30 de 50 la
+    // campana se quedaba con 20 sin leer y el coach ya había visto el 0.
+    await escribirEnLotes(
+      snap.docs.map(d => ({ tipo: 'update' as const, ref: d.ref, datos: { read: true } })),
+      'Marcar notificaciones como leídas',
+    );
   } catch (err) {
     console.warn('markAllNotificationsRead Firestore failed:', err);
     setLocalBypassMode(true, err);

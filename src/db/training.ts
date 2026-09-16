@@ -2,7 +2,7 @@ import { db, collection, doc, getDocs, setDoc, addDoc, updateDoc, deleteDoc, del
 import { Exercise, ExercisePersonalNote, Workout, WorkoutAssignment, WorkoutLog, MuscleGroup, Mesocycle, MesocycleTemplate, MuscleGroupConfig, TemplateDay } from '../types';
 import {
   forceLocalOnly, setLocalBypassMode, stripUndefined, esFalloDePermisos,
-  conTimeout, EscrituraEncolada,
+  conTimeout, EscrituraEncolada, escribirEnLotes,
 } from './core';
 import { SYSTEM_EXERCISES } from '../data';
 import { combinarLogs } from './combinarLogs';
@@ -907,7 +907,7 @@ export async function deleteWorkoutsByMesocycleId(mesocycleId: string): Promise<
   try {
     const q = query(collection(db, 'workouts'), where('mesocycleId', '==', mesocycleId));
     const snap = await getDocs(q);
-    await Promise.all(snap.docs.map(d => deleteDoc(d.ref).catch(() => {})));
+    await escribirEnLotes(snap.docs.map(d => ({ tipo: 'delete' as const, ref: d.ref })), 'Borrar sesiones del bloque');
   } catch (err) {
     console.warn('deleteWorkoutsByMesocycleId failed:', err);
   }
@@ -919,7 +919,7 @@ export async function deleteWorkoutAssignmentsByMesocycleId(mesocycleId: string)
   try {
     const q = query(collection(db, 'workoutAssignments'), where('mesocycleId', '==', mesocycleId));
     const snap = await getDocs(q);
-    await Promise.all(snap.docs.map(d => deleteDoc(d.ref).catch(() => {})));
+    await escribirEnLotes(snap.docs.map(d => ({ tipo: 'delete' as const, ref: d.ref })), 'Borrar asignaciones del bloque');
   } catch (err) {
     console.warn('deleteWorkoutAssignmentsByMesocycleId failed:', err);
   }
@@ -944,14 +944,16 @@ export async function deleteWorkoutsByMesocycleIdStrict(
   const q = query(collection(db, 'workouts'), where('mesocycleId', '==', mesocycleId));
   const snap = await getDocs(q);
   const aBorrar = snap.docs.filter(d => !protegidas.has(d.id));
-  if (aBorrar.length > 0) await Promise.all(aBorrar.map(d => deleteDoc(d.ref)));
+  // En lote: con 24 sesiones, un fallo a mitad dejaba el bloque medio borrado
+  // y el atleta viendo un mesociclo con huecos.
+  await escribirEnLotes(aBorrar.map(d => ({ tipo: 'delete' as const, ref: d.ref })), 'Borrar sesiones del bloque');
 }
 
 export async function deleteWorkoutAssignmentsByMesocycleIdStrict(mesocycleId: string): Promise<void> {
   saveLocalAssignments(getLocalAssignments().filter(a => a.mesocycleId !== mesocycleId));
   const q = query(collection(db, 'workoutAssignments'), where('mesocycleId', '==', mesocycleId));
   const snap = await getDocs(q);
-  if (snap.size > 0) await Promise.all(snap.docs.map(d => deleteDoc(d.ref)));
+  await escribirEnLotes(snap.docs.map(d => ({ tipo: 'delete' as const, ref: d.ref })), 'Borrar asignaciones del bloque');
 }
 
 /**

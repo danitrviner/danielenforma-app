@@ -41,7 +41,10 @@ const DIR = new URL('.', import.meta.url).pathname;
 // `marcar` estaba solo en su versión inglesa (`mark`): una función nueva
 // llamada `marcarRespuestaVista` se clasificaba como LECTURA y el escáner le
 // exigía justo lo contrario —no relanzar— de lo que debe hacer una escritura.
-const ESCRITURA = /^(create|update|delete|reset|save|add|mark|set|assign|deactivate|submit|invite|bulkUpsert|upsert|guardar|crear|actualizar|borrar|eliminar|publicar|ocultar|promover|subir|registrar|importar|archivar|desarchivar|marcar)/;
+// Lo mismo con `publish` frente a `publicar`, en `publishWeeklyMenu`. Cada vez
+// que pasa es el mismo error: la lista tiene el verbo en un idioma y no en el
+// otro, y una escritura se cuela como lectura sin que nadie lo note.
+const ESCRITURA = /^(create|update|delete|reset|save|add|mark|set|assign|deactivate|submit|invite|publish|archive|bulkUpsert|upsert|guardar|crear|actualizar|borrar|eliminar|publicar|ocultar|promover|subir|registrar|importar|archivar|desarchivar|marcar)/;
 
 // Excepciones deliberadas. Cada una lleva su comentario en el código explicando
 // por qué; si añades una aquí, añade también el porqué allí.

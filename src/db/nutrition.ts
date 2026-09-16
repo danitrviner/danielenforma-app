@@ -1,7 +1,7 @@
 import { db, collection, doc, getDoc, setDoc, getDocs, addDoc, updateDoc, deleteDoc, query, where, limit, documentId } from '../firebase';
 import { MealItem, AthleteNutritionConfig, Diet, AthleteDietConfig, DietCompletionLog, WeeklyMenu, MenuCompletionLog, NutritionProgram, NutritionPhase } from '../types';
 import { registroQueGana } from './registroDelDia';
-import { forceLocalOnly, setLocalBypassMode, stripUndefined, authReady, withAuthRetry, esFalloDePermisos } from './core';
+import { forceLocalOnly, setLocalBypassMode, stripUndefined, authReady, withAuthRetry, esFalloDePermisos, escribirEnLotes } from './core';
 import { SYSTEM_FOODS } from '../nutricion_seed_en_forma';
 import { idDeFoodItem } from '../utils/foodItemId';
 import { leerCatalogo, marcarCatalogoCambiado } from './catalogoVersionado';
@@ -443,21 +443,62 @@ export async function deleteWeeklyMenu(id: string): Promise<void> {
 // Publishing swaps the athlete-visible menu: the previous published menu (if any)
 // is archived rather than deleted, so its swapHistory stays available to the coach.
 // Archived menus older than 4 weeks are pruned to keep the collection small.
+/**
+ * Publicar cambia el menú que ve el atleta. Eran N escrituras sueltas en un
+ * bucle con `await` dentro, y el orden importaba: primero archivar el que
+ * estaba publicado, luego publicar el nuevo.
+ *
+ * Si fallaba en medio, el atleta se quedaba con DOS menús publicados (archivó
+ * el viejo pero no publicó el nuevo → ninguno; o publicó el nuevo sin archivar
+ * el viejo → dos). Las dos son pantallas rotas para el atleta, y ninguna daba
+ * un error que dijera eso.
+ *
+ * Ahora es un solo lote atómico: o queda exactamente un menú publicado, o no
+ * cambia nada. El espejo local se actualiza DESPUÉS de que el lote confirme,
+ * de una vez, para que no pueda quedar por delante de Firestore.
+ */
 export async function publishWeeklyMenu(menu: WeeklyMenu): Promise<void> {
   const all = await getWeeklyMenusForAthlete(menu.athleteId);
   const now = new Date();
   const fourWeeksAgo = new Date(now.getTime() - 28 * 24 * 60 * 60 * 1000);
 
+  const aArchivar: string[] = [];
+  const aBorrar: string[] = [];
   for (const other of all) {
     if (other.id === menu.id) continue;
-    if (other.status === 'published') {
-      await updateWeeklyMenu(other.id, { status: 'archived' });
-    } else if (other.status === 'archived' && new Date(other.createdAt) < fourWeeksAgo) {
-      await deleteWeeklyMenu(other.id);
-    }
+    if (other.status === 'published') aArchivar.push(other.id);
+    else if (other.status === 'archived' && new Date(other.createdAt) < fourWeeksAgo) aBorrar.push(other.id);
   }
+  const publicado = { status: 'published' as const, publishedAt: now.toISOString() };
 
-  await updateWeeklyMenu(menu.id, { status: 'published', publishedAt: now.toISOString() });
+  const aplicarEnLocal = () => {
+    const borrados = new Set(aBorrar);
+    const archivados = new Set(aArchivar);
+    setWeeklyMenusToLocal(getWeeklyMenusFromLocal()
+      .filter(m => !borrados.has(m.id))
+      .map(m => {
+        if (m.id === menu.id) return { ...m, ...publicado };
+        return archivados.has(m.id) ? { ...m, status: 'archived' as const } : m;
+      }));
+  };
+
+  if (forceLocalOnly) { aplicarEnLocal(); return; }
+
+  try {
+    await escribirEnLotes([
+      // Los borrados primero: dentro de un lote las operaciones se aplican en
+      // orden, y así no puede borrarse algo que se acaba de escribir.
+      ...aBorrar.map(id => ({ tipo: 'delete' as const, ref: doc(db, 'weeklyMenus', id) })),
+      ...aArchivar.map(id => ({ tipo: 'update' as const, ref: doc(db, 'weeklyMenus', id), datos: { status: 'archived' } })),
+      { tipo: 'update' as const, ref: doc(db, 'weeklyMenus', menu.id), datos: { ...publicado } },
+    ], 'Publicar el menú');
+    aplicarEnLocal();
+  } catch (err) {
+    console.warn('publishWeeklyMenu Firestore failed:', err);
+    setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
+    aplicarEnLocal();
+  }
 }
 
 // ─── DIET COMPLETION LOGS (per-athlete-per-day, doc id = `${athleteId}_${date}`) ──

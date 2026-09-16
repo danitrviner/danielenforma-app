@@ -2,7 +2,7 @@ import { db, collection, doc, getDoc, getDocs, addDoc, setDoc, updateDoc, delete
 import { Questionnaire, QuestionnaireAssignment, QuestionnairePack, QuestionnaireResponse } from '../types';
 import {
   forceLocalOnly, setLocalBypassMode, stripUndefined, esFalloDePermisos,
-  conTimeout, EscrituraEncolada,
+  conTimeout, EscrituraEncolada, escribirEnLotes,
 } from './core';
 import { escribirLocal } from '../utils/almacenLocal';
 
@@ -178,6 +178,48 @@ export async function assignQuestionnaire(data: Omit<QuestionnaireAssignment, 'i
     const a: QuestionnaireAssignment = { ...safeData, id: `local_qa_${Date.now()}` };
     escribirLocal(LOCAL_Q_ASSIGNMENTS, JSON.stringify([...getLocalQAssignments(), a]));
     return a;
+  }
+}
+
+/**
+ * Asigna VARIOS cuestionarios de una vez, en un solo lote.
+ *
+ * Lo pedían dos pantallas que hacían lo mismo mal: la plantilla de
+ * cuestionarios del mesociclo y los paquetes de la ficha del atleta, las dos
+ * con un `for` y un `await assignQuestionnaire` dentro. Con diez filas, un
+ * fallo en la sexta dejaba cinco asignaciones puestas y un error en pantalla:
+ * el coach le da otra vez y ahora el atleta tiene cinco duplicadas, cada una
+ * generando su propia notificación los lunes.
+ *
+ * Los ids se reservan ANTES de escribir (`doc(collection(...))` los genera en
+ * el cliente), así que las asignaciones se devuelven con su id definitivo sin
+ * tener que releer nada.
+ */
+export async function assignQuestionnairesBatch(
+  datos: Omit<QuestionnaireAssignment, 'id'>[],
+): Promise<QuestionnaireAssignment[]> {
+  const seguros = datos.map(d => ({ ...d, schedule: d.schedule ?? { type: 'once' as const } }));
+  if (seguros.length === 0) return [];
+
+  if (forceLocalOnly) {
+    const locales = seguros.map((d, i) => ({ ...d, id: `local_qa_${Date.now()}_${i}` }));
+    escribirLocal(LOCAL_Q_ASSIGNMENTS, JSON.stringify([...getLocalQAssignments(), ...locales]));
+    return locales;
+  }
+  try {
+    const conRef = seguros.map(d => ({ datos: d, ref: doc(collection(db, 'questionnaireAssignments')) }));
+    await escribirEnLotes(
+      conRef.map(({ datos: d, ref }) => ({ tipo: 'set' as const, ref, datos: d as unknown as Record<string, unknown> })),
+      'Asignar cuestionarios',
+    );
+    return conRef.map(({ datos: d, ref }) => ({ ...d, id: ref.id }));
+  } catch (err) {
+    console.warn('assignQuestionnairesBatch Firestore failed, saving local:', err);
+    setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
+    const locales = seguros.map((d, i) => ({ ...d, id: `local_qa_${Date.now()}_${i}` }));
+    escribirLocal(LOCAL_Q_ASSIGNMENTS, JSON.stringify([...getLocalQAssignments(), ...locales]));
+    return locales;
   }
 }
 

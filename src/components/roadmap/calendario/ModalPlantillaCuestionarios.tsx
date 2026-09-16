@@ -4,7 +4,7 @@ import {
   PLANTILLAS, PlantillaCuestionarios, expandirPlantilla, planificarAsignaciones, rangoDelBloque,
 } from '../../../utils/plantillasCuestionarios';
 import { QUESTIONNAIRE_PRESETS, buildQuestionnaireFromPreset } from '../../../data/questionnairePresets';
-import { createQuestionnaire, assignQuestionnaire } from '../../../dbService';
+import { createQuestionnaire, assignQuestionnairesBatch } from '../../../dbService';
 import { useToast } from '../../../hooks/useToast';
 import { mensajeDeErrorFirestore } from '../../../utils/erroresFirestore';
 import { Icon, Button, Dialog } from '../../ui';
@@ -50,10 +50,14 @@ export default function ModalPlantillaCuestionarios({ mesocycle, questionnaires,
       }
 
       // 2 · Crear las asignaciones reales (una por fila, recurrentes de verdad).
+      //     En UN lote: era un `for` con un `await` dentro, y un fallo a mitad
+      //     dejaba media plantilla puesta. El coach volvía a darle a «Aplicar
+      //     al bloque» y duplicaba la mitad que sí había entrado.
       const planificadas = planificarAsignaciones(tpl, inicio, titulosAIds);
-      for (const p of planificadas) {
-        await assignQuestionnaire({ questionnaireId: p.questionnaireId, athleteId: athleteEmail, schedule: p.schedule, startDate: p.startDate, active: true, createdAt: new Date().toISOString() });
-      }
+      await assignQuestionnairesBatch(planificadas.map(p => ({
+        questionnaireId: p.questionnaireId, athleteId: athleteEmail, schedule: p.schedule,
+        startDate: p.startDate, active: true, createdAt: new Date().toISOString(),
+      })));
 
       // 3 · Avisar al padre con la expansión COMPLETA (una entrada por fecha
       // real) para que cada ocurrencia aparezca como hito en la rejilla.
