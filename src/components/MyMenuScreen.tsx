@@ -782,12 +782,15 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
               <>
                 {/* La lista ya no son 5 sino todo lo que encaja (cientos en las
                     franjas grandes), así que hace falta poder buscar dentro. */}
+                {/* 16 px: por debajo de eso Safari en iOS hace zoom al
+                    enfocar el campo y NO lo deshace al salir — el atleta se
+                    queda con la pantalla ampliada y la arregla a mano. */}
                 <input
                   type="search"
                   value={swapQuery}
                   onChange={e => setSwapQuery(e.target.value)}
                   placeholder="Buscar entre las alternativas…"
-                  className="w-full px-3 py-2 bg-bg border border-hairline rounded-control font-sans text-body-s text-ink placeholder:text-ink-3 focus:border-accent/40 outline-none"
+                  className="w-full px-3 py-2 bg-bg border border-hairline rounded-control font-sans text-base text-ink placeholder:text-ink-3 focus:border-accent/40 outline-none"
                 />
                 <p className="font-mono text-caption text-ink-3">
                   {swapExactas.length} cuadran con tus puntos
@@ -947,7 +950,7 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
                   value={extraQuery}
                   onChange={e => setExtraQuery(e.target.value)}
                   placeholder="Buscar (pan, fruta, arroz…)"
-                  className="w-full px-3 py-2 bg-bg border border-hairline rounded-control font-sans text-body-s text-ink placeholder:text-ink-3 focus:border-accent/40 outline-none"
+                  className="w-full px-3 py-2 bg-bg border border-hairline rounded-control font-sans text-base text-ink placeholder:text-ink-3 focus:border-accent/40 outline-none"
                 />
               </div>
 

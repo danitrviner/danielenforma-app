@@ -2699,11 +2699,13 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                   </span>
                 </div>
               )}
+              {/* 16 px: por debajo, Safari en iOS hace zoom al enfocar y no
+                  lo deshace. Ver MyMenuScreen. */}
               <input
                 value={swapSearch}
                 onChange={e => setSwapSearch(e.target.value)}
                 placeholder="Buscar entre las alternativas…"
-                className="w-full px-3 py-2 bg-raised border border-hairline rounded-control font-sans text-label text-ink placeholder:text-ink-2 focus:border-accent/40 outline-none"
+                className="w-full px-3 py-2 bg-raised border border-hairline rounded-control font-sans text-base text-ink placeholder:text-ink-2 focus:border-accent/40 outline-none"
               />
               {/* Familias de plato disponibles. Es la respuesta directa a "no me
                   apetece otro batido": un toque y la lista cambia de familia. */}

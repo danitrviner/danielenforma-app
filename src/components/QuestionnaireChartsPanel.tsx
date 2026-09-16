@@ -267,10 +267,12 @@ export default function QuestionnaireChartsPanel({ questionnaires, responses, oc
       {/* Selector de serie */}
       <label className="block">
         <span className="sr-only">Elige qué medida ver</span>
+        {/* 16 px: por debajo, Safari en iOS hace zoom al desplegar el selector
+            y no lo deshace. Esta pantalla la abre el atleta desde el móvil. */}
         <select
           value={selected.question.id}
           onChange={e => setSelectedId(e.target.value)}
-          className="w-full bg-surface border border-hairline rounded-control px-3 min-h-[44px] font-sans text-body-s text-white focus:outline-none focus:border-accent"
+          className="w-full bg-surface border border-hairline rounded-control px-3 min-h-[44px] font-sans text-base text-ink focus:outline-none focus:border-accent"
         >
           {porCuestionario.map(([qTitle, preguntas]) => (
             <optgroup key={qTitle} label={qTitle}>
