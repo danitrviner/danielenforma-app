@@ -19,6 +19,7 @@ import BloquePatrones from './BloquePatrones';
 import BloqueMejoresEjercicios from './BloqueMejoresEjercicios';
 import BloqueSeriesPorGrupo from './BloqueSeriesPorGrupo';
 import BloqueCuerpo from './BloqueCuerpo';
+import BloqueBienestar from './BloqueBienestar';
 import BloqueQueHaComido from './BloqueQueHaComido';
 import BloqueNutricionHabitos from './BloqueNutricionHabitos';
 import BloqueRecibido from './BloqueRecibido';
@@ -105,8 +106,10 @@ export default function ClientRevisionPanel({
   });
 
   const revision = useMemo(
-    () => buildRevisionCoach({ logs, exercises, mesocycles, periodo, landmarks, hoy }),
-    [logs, exercises, mesocycles, periodo, landmarks, hoy],
+    () => buildRevisionCoach({
+      logs, exercises, mesocycles, periodo, landmarks, hoy, responses, questionnaires,
+    }),
+    [logs, exercises, mesocycles, periodo, landmarks, hoy, responses, questionnaires],
   );
 
   const { ventana, informe } = revision;
@@ -206,11 +209,19 @@ export default function ClientRevisionPanel({
         />
       </Seccion>
 
+      {/* Va pegado al volumen a propósito: cuando el volumen está puesto y aun
+          así no sube nada, la respuesta casi siempre está aquí —duerme poco,
+          arrastra estrés, o hay un grupo con agujetas que no se van—. Es la
+          explicación del bloque de arriba, no una sección independiente. */}
+      <Seccion n={4} titulo="Cómo ha llegado">
+        <BloqueBienestar bienestar={revision.bienestar} todoAbierto={todoAbierto} />
+      </Seccion>
+
       {/* Va entre el entrenamiento y el cuerpo a propósito: primero qué ha
           hecho, luego qué ha comido, y solo entonces qué ha pasado con su
           cuerpo — que es la consecuencia de los dos anteriores. */}
       <Seccion
-        n={4}
+        n={5}
         titulo="Qué ha comido"
         accion={
           <Button variant="ghost" onClick={() => onGoToTab('dietas')}>
@@ -225,7 +236,7 @@ export default function ClientRevisionPanel({
           preguntas distintas y van seguidas: el coach cuenta primero la
           selección y luego el número. Los dos leen la misma ventana. */}
       <Seccion
-        n={5}
+        n={6}
         titulo="Adherencia y hábitos"
         accion={
           <Button variant="ghost" onClick={() => onGoToTab('reportes')}>
@@ -245,7 +256,7 @@ export default function ClientRevisionPanel({
       </Seccion>
 
       <Seccion
-        n={6}
+        n={7}
         titulo="El cuerpo"
         accion={
           <Button variant="ghost" onClick={() => onGoToTab('cuerpo')}>
@@ -269,7 +280,7 @@ export default function ClientRevisionPanel({
       </Seccion>
 
       <Seccion
-        n={7}
+        n={8}
         titulo="Lo que te ha mandado"
         accion={
           <Button variant="ghost" onClick={() => onGoToTab('revisiones')}>

@@ -320,15 +320,25 @@ const CHECKINS: WeightCheckIn[] = [21, 14, 7].map((d, i) => ({
   approved: i === 0,
 }));
 
+// Las `signalKey` no son decorado: son lo único que conecta una pregunta con
+// los motores. Sin ellas, sueño/estrés/agujetas son texto suelto y el bloque
+// «Cómo ha llegado» sale vacío por mucho que el atleta conteste.
 const Q_SEMANAL: Questionnaire = {
   id: 'q_semanal', ownerId: 'coach', title: 'Revisión semanal',
   questions: [
-    { id: 'q1', label: '¿Cómo has dormido?', type: 'scale', required: true, scaleMin: 1, scaleMax: 10, scaleMinLabel: 'Fatal', scaleMaxLabel: 'De lujo' },
+    { id: 'q1', label: 'Horas de sueño al día', type: 'numeric', required: true, signalKey: 'wellness.sleep_hours_weekly' },
     { id: 'q2', label: 'Energía en los entrenos', type: 'scale', required: true, scaleMin: 1, scaleMax: 10 },
-    { id: 'q3', label: 'Estrés fuera del gimnasio', type: 'scale', required: false, scaleMin: 1, scaleMax: 10 },
+    { id: 'q3', label: 'Estrés fuera del gimnasio', type: 'scale', required: false, scaleMin: 1, scaleMax: 10, signalKey: 'wellness.stress_weekly' },
+    { id: 'q4', label: 'Agujetas · Pecho', type: 'scale', required: false, scaleMin: 0, scaleMax: 10, signalKey: 'doms.pecho' },
+    { id: 'q5', label: 'Agujetas · Dorsal', type: 'scale', required: false, scaleMin: 0, scaleMax: 10, signalKey: 'doms.dorsal' },
+    { id: 'q6', label: 'Agujetas · Cuádriceps', type: 'scale', required: false, scaleMin: 0, scaleMax: 10, signalKey: 'doms.cuadriceps' },
   ],
 };
 
+// Cinco semanas de respuestas. El cuádriceps se queda clavado por encima del
+// umbral de crónico (7-8/10) mientras pecho y dorsal bajan: es el caso que el
+// bloque tiene que cazar —un grupo al que se le está dando más de lo que
+// recupera— y el que explica por qué la sentadilla no sube.
 const RESPUESTAS: QuestionnaireResponse[] = [35, 28, 21, 14, 7].map((d, i) => ({
   id: `r_${i}`, questionnaireId: 'q_semanal', assignmentId: 'as_semanal', athleteId: EMAIL,
   submittedAt: `${haceDias(d)}T19:12:00.000Z`,
@@ -336,6 +346,9 @@ const RESPUESTAS: QuestionnaireResponse[] = [35, 28, 21, 14, 7].map((d, i) => ({
     { questionId: 'q1', value: [6, 7, 7, 8, 8][i] },
     { questionId: 'q2', value: [5, 6, 7, 7, 9][i] },
     { questionId: 'q3', value: [8, 7, 6, 5, 4][i] },
+    { questionId: 'q4', value: [7, 6, 5, 4, 3][i] },
+    { questionId: 'q5', value: [5, 4, 4, 3, 3][i] },
+    { questionId: 'q6', value: [7, 8, 8, 7, 8][i] },
   ],
 }));
 

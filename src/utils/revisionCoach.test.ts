@@ -1,10 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import {
   Exercise, Mesocycle, MuscleGroup, MuscleGroupConfig, WorkoutLog, BodyweightLog, MUSCLE_ORDER,
+  Questionnaire, QuestionnaireResponse,
 } from '../types';
 import {
   resolverPeriodoRevision, buildRevisionCoach, agruparEjerciciosPorPatron,
-  mejoresYPeores, mesoActivo, semanasDeVentana, pesoVsSemanaPasada,
+  mejoresYPeores, mesoActivo, semanasDeVentana, pesoVsSemanaPasada, construirBienestar,
 } from './revisionCoach';
 
 const HOY = '2026-09-14'; // lunes
@@ -368,5 +369,80 @@ describe('pesoVsSemanaPasada', () => {
     ], HOY);
     expect(r.semanaAnterior).toBe(80);
     expect(r.deltaKg).toBe(-0.5);
+  });
+});
+
+// ── Bienestar ───────────────────────────────────────────────────────────────
+
+const Q_BIENESTAR: Questionnaire = {
+  id: 'q_b', ownerId: 'coach', title: 'Semanal',
+  questions: [
+    { id: 'sueno', label: 'Horas de sueño', type: 'numeric', required: true, signalKey: 'wellness.sleep_hours_weekly' },
+    { id: 'estres', label: 'Estrés', type: 'scale', required: true, scaleMin: 1, scaleMax: 10, signalKey: 'wellness.stress_weekly' },
+    { id: 'doms_pecho', label: 'Agujetas pecho', type: 'scale', required: false, scaleMin: 0, scaleMax: 10, signalKey: 'doms.pecho' },
+    { id: 'doms_dorsal', label: 'Agujetas dorsal', type: 'scale', required: false, scaleMin: 0, scaleMax: 10, signalKey: 'doms.dorsal' },
+  ],
+};
+
+function respuesta(fecha: string, sueno: number, estres: number, pecho: number, dorsal: number): QuestionnaireResponse {
+  return {
+    id: `r_${fecha}`, questionnaireId: 'q_b', assignmentId: 'a', athleteId: 'ana@x.com',
+    submittedAt: `${fecha}T19:00:00.000Z`,
+    answers: [
+      { questionId: 'sueno', value: sueno },
+      { questionId: 'estres', value: estres },
+      { questionId: 'doms_pecho', value: pecho },
+      { questionId: 'doms_dorsal', value: dorsal },
+    ],
+  };
+}
+
+describe('construirBienestar', () => {
+  const RESPUESTAS = [
+    respuesta('2026-08-10', 7, 4, 8, 2),
+    respuesta('2026-08-17', 7, 5, 8, 3),
+    respuesta('2026-08-24', 6, 6, 7, 2),
+    respuesta('2026-09-07', 6, 7, 8, 3),
+  ];
+  const ventana = { desde: '2026-09-01', hasta: '2026-09-14' };
+
+  it('calcula el IRP actual y su serie', () => {
+    const b = construirBienestar({ responses: RESPUESTAS, questionnaires: [Q_BIENESTAR], ventana });
+    expect(b.irp.valor).not.toBeNull();
+    expect(b.irp.horasSueño).not.toBeNull();
+    expect(b.irp.estres).not.toBeNull();
+    expect(b.historial.length).toBeGreaterThan(0);
+  });
+
+  it('el IRP de referencia es el de ANTES de la ventana, no el de dentro', () => {
+    const b = construirBienestar({ responses: RESPUESTAS, questionnaires: [Q_BIENESTAR], ventana });
+    const ultimoAntes = b.historial.filter(p => p.date <= '2026-08-31').pop();
+    expect(b.irpAlInicio).toBe(ultimoAntes?.value ?? null);
+    // El punto del 07-09 cae DENTRO de la ventana: no puede ser la referencia.
+    const dentro = b.historial.find(p => p.date === '2026-09-07');
+    if (dentro) expect(b.irpAlInicio).not.toBe(dentro.value);
+  });
+
+  it('solo saca como crónicos los grupos que pasan el umbral, de más a menos', () => {
+    const b = construirBienestar({ responses: RESPUESTAS, questionnaires: [Q_BIENESTAR], ventana });
+    // Pecho ronda 7,7/10 sostenido; dorsal ronda 2,7 y no llega al umbral de 6.
+    expect(b.domsCronico.map(d => d.grupo)).toEqual(['pecho']);
+    expect(b.domsCronico[0].media).toBeGreaterThanOrEqual(6);
+  });
+
+  it('sin cuestionarios no inventa nada: IRP null y listas vacías', () => {
+    const b = construirBienestar({ responses: [], questionnaires: [], ventana });
+    expect(b.irp.valor).toBeNull();
+    expect(b.historial).toEqual([]);
+    expect(b.domsCronico).toEqual([]);
+    expect(b.irpAlInicio).toBeNull();
+  });
+
+  it('buildRevisionCoach lo expone sin que haya que pedirlo aparte', () => {
+    const r = buildRevisionCoach({
+      logs: [], exercises: [], mesocycles: [], periodo: { tipo: '7d' }, hoy: HOY,
+      responses: RESPUESTAS, questionnaires: [Q_BIENESTAR],
+    });
+    expect(r.bienestar.irp.valor).not.toBeNull();
   });
 });

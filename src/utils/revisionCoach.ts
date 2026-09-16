@@ -1,4 +1,7 @@
-import { WorkoutLog, Exercise, Mesocycle, MuscleGroup, BodyweightLog } from '../types';
+import {
+  WorkoutLog, Exercise, Mesocycle, MuscleGroup, BodyweightLog,
+  Questionnaire, QuestionnaireResponse, MUSCLE_ORDER,
+} from '../types';
 import {
   buildTrainingReport, TrainingReport, ExercisePerf, ComparisonMode, resolveWindows,
 } from './trainingReport';
@@ -12,6 +15,10 @@ import { VolumeLandmark, VOLUME_LANDMARKS_DEFAULT } from '../data/volumeLandmark
 import { addDays, hoyIsoLocal, getWeekStart } from './trainingWeek';
 import { nombreDeMeso } from './nombresMeso';
 import { mesocycleWeekNumber } from './progression';
+import { ewmaDeSeñal } from './wellnessTrend';
+import { computeIRP, historialIRP, IRPResult } from './readinessIndex';
+import { domsCronicoDeGrupo, esDomsCronico } from './domsCronico';
+import { DataPoint } from './seriesCorrelation';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // REVISIÓN DEL COACH — el motor de la pantalla que Dani graba en vídeo para
@@ -181,6 +188,65 @@ export interface RevisionDelAtleta {
   bajan: ExercisePerf[];
   mapa: CeldaMapaCalor[];
   estimulo: IEARow[];
+  bienestar: BienestarDeLaVentana;
+}
+
+/**
+ * Cómo ha dormido, cuánto estrés arrastra y qué grupos le siguen doliendo.
+ *
+ * Todo sale de los cuestionarios que el atleta ya contesta: nada nuevo que
+ * pedirle. El IRP (sueño × (10 − estrés − DOMS crónico) / 10) es el titular, y
+ * `historial` es su serie para poder decir «venía de 5,8 y está en 4,1» en vez
+ * de soltar un número suelto que no significa nada por sí solo.
+ *
+ * Un componente que falta NO se rellena con un 0 ni con una media: `irp.valor`
+ * sale `null` y la pantalla dice que falta, porque un IRP con un trozo
+ * inventado engaña más que no enseñar ninguno.
+ */
+export interface BienestarDeLaVentana {
+  irp: IRPResult;
+  /** IRP al empezar la ventana, para poder contar el cambio. null si no había. */
+  irpAlInicio: number | null;
+  historial: DataPoint[];
+  sueño: DataPoint[];
+  estres: DataPoint[];
+  /** Grupos con agujetas crónicas (media ≥ 6/10 sostenida), de más a menos. */
+  domsCronico: { grupo: MuscleGroup; media: number }[];
+}
+
+/** El último punto de una serie en o antes de `fecha`, o null si no hay ninguno. */
+function valorEn(puntos: DataPoint[], fecha: string): number | null {
+  let ultimo: number | null = null;
+  for (const p of puntos) {
+    if (p.date > fecha) break;
+    ultimo = p.value;
+  }
+  return ultimo;
+}
+
+export function construirBienestar(params: {
+  responses: QuestionnaireResponse[];
+  questionnaires: Questionnaire[];
+  ventana: Pick<VentanaRevision, 'desde' | 'hasta'>;
+}): BienestarDeLaVentana {
+  const { responses, questionnaires, ventana } = params;
+  const historial = historialIRP({ responses, questionnaires });
+  const domsCronico = MUSCLE_ORDER
+    .map(grupo => ({ grupo, media: domsCronicoDeGrupo(grupo, responses, questionnaires) }))
+    .filter((d): d is { grupo: MuscleGroup; media: number } => esDomsCronico(d.media))
+    .sort((a, b) => b.media - a.media);
+
+  return {
+    irp: computeIRP({ responses, questionnaires }),
+    // El valor de referencia es el del día ANTERIOR a la ventana: el del primer
+    // día ya es parte de lo que se está revisando, y compararlo consigo mismo
+    // daría siempre «sin cambios».
+    irpAlInicio: valorEn(historial, addDays(ventana.desde, -1)),
+    historial,
+    sueño: ewmaDeSeñal('wellness.sleep_hours_weekly', responses, questionnaires),
+    estres: ewmaDeSeñal('wellness.stress_weekly', responses, questionnaires),
+    domsCronico,
+  };
 }
 
 export interface RevisionParams {
@@ -190,6 +256,9 @@ export interface RevisionParams {
   periodo: PeriodoRevision;
   landmarks?: Record<MuscleGroup, VolumeLandmark>;
   hoy?: string;
+  /** Cuestionarios contestados — alimentan el bienestar. Sin ellos sale vacío. */
+  responses?: QuestionnaireResponse[];
+  questionnaires?: Questionnaire[];
 }
 
 export function buildRevisionCoach(params: RevisionParams): RevisionDelAtleta {
@@ -197,6 +266,7 @@ export function buildRevisionCoach(params: RevisionParams): RevisionDelAtleta {
     logs, exercises, mesocycles, periodo,
     landmarks = VOLUME_LANDMARKS_DEFAULT,
     hoy = hoyIsoLocal(),
+    responses = [], questionnaires = [],
   } = params;
 
   const ventana = resolverPeriodoRevision(periodo, mesocycles, hoy);
@@ -225,11 +295,13 @@ export function buildRevisionCoach(params: RevisionParams): RevisionDelAtleta {
   const { porPatron, sinPatron } = agruparEjerciciosPorPatron(informe.perExercise, exercises);
   const { suben, bajan } = mejoresYPeores(informe.perExercise);
 
+  const bienestar = construirBienestar({ responses, questionnaires, ventana });
+
   return {
     ventana, informe, patrones,
     ejerciciosPorPatron: porPatron,
     ejerciciosSinPatron: sinPatron,
-    suben, bajan, mapa, estimulo,
+    suben, bajan, mapa, estimulo, bienestar,
   };
 }
 
