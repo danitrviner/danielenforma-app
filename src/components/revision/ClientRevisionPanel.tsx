@@ -6,11 +6,14 @@ import {
 } from '../../types';
 import { Sexo } from '../../utils/athleteProfileSignals';
 import { getVolumeLandmarks } from '../../db/coachSettings';
-import { getDietCompletionLogsForAthlete, getDietsForAthlete } from '../../dbService';
+import {
+  getDietCompletionLogsForAthlete, getDietsForAthlete, getCardioSessionsForAthlete,
+} from '../../dbService';
 import {
   buildRevisionCoach, PeriodoRevision, mesoActivo, pesoVsSemanaPasada, fechaDeLaUltimaRevision,
 } from '../../utils/revisionCoach';
 import { construirComidaDeLaSemana } from '../../utils/comidaDeLaSemana';
+import { construirCardioDeLaVentana } from '../../utils/cardioDeLaVentana';
 import { hoyIsoLocal } from '../../utils/trainingWeek';
 import { useModoPresentacion } from '../../hooks/useModoPresentacion';
 import { HubTab } from '../ClientHub';
@@ -20,6 +23,7 @@ import BloquePatrones from './BloquePatrones';
 import BloqueMejoresEjercicios from './BloqueMejoresEjercicios';
 import BloqueSeriesPorGrupo from './BloqueSeriesPorGrupo';
 import BloqueCuerpo from './BloqueCuerpo';
+import BloqueCardio from './BloqueCardio';
 import BloqueBienestar from './BloqueBienestar';
 import BloqueQueHaComido from './BloqueQueHaComido';
 import BloqueNutricionHabitos from './BloqueNutricionHabitos';
@@ -76,16 +80,42 @@ interface Props {
   onGoToTab: (tab: HubTab) => void;
 }
 
-/** Cada bloque de la pantalla es una tarjeta del DS, no una sección suelta. */
+/**
+ * Cada bloque de la pantalla es una tarjeta del DS, no una sección suelta.
+ *
+ * El número NO se escribe: lo pone `<Secciones>` contando las que se han
+ * pintado de verdad. Escribirlo a mano obligaba a renumerar todo el fichero
+ * cada vez que se añadía un bloque en medio, y con bloques condicionales
+ * —el cardio solo sale si hay cardio— directamente no había número correcto
+ * que escribir.
+ */
 function Seccion({ n, titulo, children, accion, presentando = false }: {
-  n: number; titulo: string; children: React.ReactNode; accion?: React.ReactNode;
+  n?: number; titulo: string; children: React.ReactNode; accion?: React.ReactNode;
   /** En presentación se cae la acción: es un botón que el atleta no puede pulsar. */
   presentando?: boolean;
 }) {
   return (
-    <Card title={`${n}. ${titulo}`} action={presentando ? undefined : accion} className="space-y-3">
+    <Card
+      title={n != null ? `${n}. ${titulo}` : titulo}
+      action={presentando ? undefined : accion}
+      className="space-y-3"
+    >
       {children}
     </Card>
+  );
+}
+
+/** Numera en orden las `<Seccion>` que existan, saltándose las que no se pintan. */
+function Secciones({ children }: { children: React.ReactNode }) {
+  let n = 0;
+  return (
+    <>
+      {React.Children.map(children, hijo => {
+        if (!React.isValidElement(hijo)) return hijo;
+        n += 1;
+        return React.cloneElement(hijo as React.ReactElement<{ n?: number }>, { n });
+      })}
+    </>
   );
 }
 
@@ -148,6 +178,22 @@ export default function ClientRevisionPanel({
     [registrosDeComida, dietas, ventana.desde, ventana.hasta],
   );
 
+  // ── El cardio ──────────────────────────────────────────────────────────────
+  // Sin acotar a la ventana, y a propósito: el cociente de carga son dos medias
+  // móviles de 7 y 42 días, así que recortando la entrada el CTL arrancaría de
+  // cero y todo el mundo saldría en «overreaching». Clave compartida con la
+  // pestaña de Cardio del Hub.
+  const { data: sesionesCardio = [] } = useQuery({
+    queryKey: ['cardioSessions', athlete.email],
+    queryFn: () => getCardioSessionsForAthlete(athlete.email),
+  });
+  const cardio = useMemo(
+    () => construirCardioDeLaVentana({
+      sesiones: sesionesCardio, desde: ventana.desde, hasta: ventana.hasta,
+    }),
+    [sesionesCardio, ventana.desde, ventana.hasta],
+  );
+
   return (
     // El agrandado vive en `.revision-presentando` (src/index.css), no aquí:
     // necesita una media query —en móvil el zoom rompe la contención de las
@@ -197,181 +243,185 @@ export default function ClientRevisionPanel({
         peso={peso}
       />
 
-      <Seccion presentando={presentando} n={1} titulo="Cómo va cada patrón">
-        <BloquePatrones
-          patrones={revision.patrones}
-          ejerciciosPorPatron={revision.ejerciciosPorPatron}
-          ejerciciosSinPatron={revision.ejerciciosSinPatron}
-          comparacion={ventana.etiquetaComparacion.replace(/^vs /, '')}
-          curvas={revision.curvaPorEjercicio}
-          ultimaSesion={revision.ultimaSesionPorEjercicio}
-          todoAbierto={todoAbierto}
-        />
-      </Seccion>
+      <Secciones>
+        <Seccion presentando={presentando} titulo="Cómo va cada patrón">
+          <BloquePatrones
+            patrones={revision.patrones}
+            ejerciciosPorPatron={revision.ejerciciosPorPatron}
+            ejerciciosSinPatron={revision.ejerciciosSinPatron}
+            comparacion={ventana.etiquetaComparacion.replace(/^vs /, '')}
+            curvas={revision.curvaPorEjercicio}
+            ultimaSesion={revision.ultimaSesionPorEjercicio}
+            todoAbierto={todoAbierto}
+          />
+        </Seccion>
 
-      <Seccion
-        presentando={presentando}
-        n={2}
-        titulo="Lo que sube y lo que baja"
-        accion={
-          <Button variant="ghost" onClick={() => onGoToTab('entrenamientos')}>
-            Ver historial de cargas
-          </Button>
-        }
-      >
-        <BloqueMejoresEjercicios
-          suben={revision.suben}
-          bajan={revision.bajan}
-          comparacion={ventana.etiquetaComparacion}
-        />
-      </Seccion>
-
-      <Seccion
-        presentando={presentando}
-        n={3}
-        titulo="Volumen por grupo"
-        accion={
-          <Button variant="ghost" onClick={() => onGoToTab('entrenamientos')}>
-            Ajustar el bloque
-          </Button>
-        }
-      >
-        <BloqueSeriesPorGrupo
-          celdas={revision.mapa}
-          domsPorGrupo={revision.bienestar.domsPorGrupo}
-          grupoActivo={grupoActivo}
-          onGrupoActivo={setGrupoActivo}
-          todoAbierto={todoAbierto}
-        />
-      </Seccion>
-
-      {/* Va pegado al volumen a propósito: cuando el volumen está puesto y aun
-          así no sube nada, la respuesta casi siempre está aquí —duerme poco,
-          arrastra estrés, o hay un grupo con agujetas que no se van—. Es la
-          explicación del bloque de arriba, no una sección independiente. */}
-      <Seccion presentando={presentando} n={4} titulo="Cómo ha llegado">
-        <BloqueBienestar bienestar={revision.bienestar} todoAbierto={todoAbierto} />
-      </Seccion>
-
-      {/* Va entre el entrenamiento y el cuerpo a propósito: primero qué ha
-          hecho, luego qué ha comido, y solo entonces qué ha pasado con su
-          cuerpo — que es la consecuencia de los dos anteriores. */}
-      <Seccion
-        presentando={presentando}
-        n={5}
-        titulo="Qué ha comido"
-        accion={
-          <Button variant="ghost" onClick={() => onGoToTab('dietas')}>
-            Ver su plan de comidas
-          </Button>
-        }
-      >
-        <BloqueQueHaComido comida={comida} todoAbierto={todoAbierto} />
-      </Seccion>
-
-      {/* Qué eligió comer (bloque 4) y cuánto de lo pautado cumplió (este) son
-          preguntas distintas y van seguidas: el coach cuenta primero la
-          selección y luego el número. Los dos leen la misma ventana. */}
-      <Seccion
-        presentando={presentando}
-        n={6}
-        titulo="Adherencia y hábitos"
-        accion={
-          <Button variant="ghost" onClick={() => onGoToTab('reportes')}>
-            Convertir en reporte
-          </Button>
-        }
-      >
-        <BloqueNutricionHabitos
-          athleteEmail={athlete.email}
-          athleteName={athlete.displayName}
-          targetWeight={athlete.targetWeight}
-          registros={registrosDeComida}
-          dietas={dietas}
-          bodyweightLogs={bodyweightLogs}
-          ventana={ventana}
-        />
-      </Seccion>
-
-      <Seccion
-        presentando={presentando}
-        n={7}
-        titulo="El cuerpo"
-        accion={
-          <Button variant="ghost" onClick={() => onGoToTab('cuerpo')}>
-            Ver todo el seguimiento
-          </Button>
-        }
-      >
-        <BloqueCuerpo
-          athlete={athlete}
-          sexo={sexo}
-          photos={photos}
-          bodyweightLogs={bodyweightLogs}
-          onGoToTab={onGoToTab}
-          todoAbierto={todoAbierto}
-          logs={logs}
-          exercises={exercises}
-          responses={responses}
-          questionnaires={questionnaires}
-          assignments={assignments}
-        />
-      </Seccion>
-
-      <Seccion
-        presentando={presentando}
-        n={8}
-        titulo="Lo que te ha mandado"
-        accion={
-          <Button variant="ghost" onClick={() => onGoToTab('revisiones')}>
-            Ir a Revisiones
-          </Button>
-        }
-      >
-        <BloqueRecibido
-          checkins={checkins}
-          questionnaires={questionnaires}
-          responses={responses}
-          onGoToTab={onGoToTab}
-          todoAbierto={todoAbierto}
-        />
-      </Seccion>
-
-      {/* Detrás de «lo que te ha mandado» porque también es algo que viene de
-          su lado: el reto es lo único de la app que le pide algo concreto cada
-          semana, y el peldaño es la promesa a medio plazo. */}
-      <Seccion
-        presentando={presentando}
-        n={9}
-        titulo="Retos y nivel"
-      >
-        <BloqueRetosNivel
-          athleteEmail={athlete.email}
-          initialWeight={athlete.initialWeight}
-          logs={logs}
-          exercises={exercises}
-          bodyweightLogs={bodyweightLogs}
-          registrosDeComida={registrosDeComida}
-          dietas={dietas}
-          assignments={assignments}
-          onGoToTab={onGoToTab}
-          todoAbierto={todoAbierto}
-        />
-      </Seccion>
-
-      {/* Va el último porque es la conclusión: los bloques de arriba son la
-          prueba, y este es lo que se le dice. */}
-      <Seccion presentando={presentando} n={10} titulo="Qué le digo">
-        <BloqueCierre
-          athleteEmail={athlete.email}
-          athleteName={athlete.displayName}
-          revision={revision}
-          comida={comida}
-          peso={peso}
-          onGoToTab={onGoToTab}
+        <Seccion
           presentando={presentando}
-        />
-      </Seccion>
+          titulo="Lo que sube y lo que baja"
+          accion={
+            <Button variant="ghost" onClick={() => onGoToTab('entrenamientos')}>
+              Ver historial de cargas
+            </Button>
+          }
+        >
+          <BloqueMejoresEjercicios
+            suben={revision.suben}
+            bajan={revision.bajan}
+            comparacion={ventana.etiquetaComparacion}
+          />
+        </Seccion>
+
+        <Seccion
+          presentando={presentando}
+          titulo="Volumen por grupo"
+          accion={
+            <Button variant="ghost" onClick={() => onGoToTab('entrenamientos')}>
+              Ajustar el bloque
+            </Button>
+          }
+        >
+          <BloqueSeriesPorGrupo
+            celdas={revision.mapa}
+            domsPorGrupo={revision.bienestar.domsPorGrupo}
+            grupoActivo={grupoActivo}
+            onGrupoActivo={setGrupoActivo}
+            todoAbierto={todoAbierto}
+          />
+        </Seccion>
+
+        {/* Solo si hay cardio del que hablar. Un bloque vacío en un atleta que
+            solo hace pesas ocupa sitio en el vídeo y no dice nada; y en cuanto
+            registre una sesión, aparece solo. */}
+        {(cardio.sesiones > 0 || cardio.ultimaSesion) && (
+          <Seccion presentando={presentando} titulo="El cardio">
+            <BloqueCardio cardio={cardio} onGoToTab={onGoToTab} todoAbierto={todoAbierto} />
+          </Seccion>
+        )}
+
+        {/* Va pegado al volumen a propósito: cuando el volumen está puesto y aun
+            así no sube nada, la respuesta casi siempre está aquí —duerme poco,
+            arrastra estrés, o hay un grupo con agujetas que no se van—. Es la
+            explicación del bloque de arriba, no una sección independiente. */}
+        <Seccion presentando={presentando} titulo="Cómo ha llegado">
+          <BloqueBienestar bienestar={revision.bienestar} todoAbierto={todoAbierto} />
+        </Seccion>
+
+        {/* Va entre el entrenamiento y el cuerpo a propósito: primero qué ha
+            hecho, luego qué ha comido, y solo entonces qué ha pasado con su
+            cuerpo — que es la consecuencia de los dos anteriores. */}
+        <Seccion
+          presentando={presentando}
+          titulo="Qué ha comido"
+          accion={
+            <Button variant="ghost" onClick={() => onGoToTab('dietas')}>
+              Ver su plan de comidas
+            </Button>
+          }
+        >
+          <BloqueQueHaComido comida={comida} todoAbierto={todoAbierto} />
+        </Seccion>
+
+        {/* Qué eligió comer (bloque 4) y cuánto de lo pautado cumplió (este) son
+            preguntas distintas y van seguidas: el coach cuenta primero la
+            selección y luego el número. Los dos leen la misma ventana. */}
+        <Seccion
+          presentando={presentando}
+          titulo="Adherencia y hábitos"
+          accion={
+            <Button variant="ghost" onClick={() => onGoToTab('reportes')}>
+              Convertir en reporte
+            </Button>
+          }
+        >
+          <BloqueNutricionHabitos
+            athleteEmail={athlete.email}
+            athleteName={athlete.displayName}
+            targetWeight={athlete.targetWeight}
+            registros={registrosDeComida}
+            dietas={dietas}
+            bodyweightLogs={bodyweightLogs}
+            ventana={ventana}
+          />
+        </Seccion>
+
+        <Seccion
+          presentando={presentando}
+          titulo="El cuerpo"
+          accion={
+            <Button variant="ghost" onClick={() => onGoToTab('cuerpo')}>
+              Ver todo el seguimiento
+            </Button>
+          }
+        >
+          <BloqueCuerpo
+            athlete={athlete}
+            sexo={sexo}
+            photos={photos}
+            bodyweightLogs={bodyweightLogs}
+            onGoToTab={onGoToTab}
+            todoAbierto={todoAbierto}
+            logs={logs}
+            exercises={exercises}
+            responses={responses}
+            questionnaires={questionnaires}
+            assignments={assignments}
+          />
+        </Seccion>
+
+        <Seccion
+          presentando={presentando}
+          titulo="Lo que te ha mandado"
+          accion={
+            <Button variant="ghost" onClick={() => onGoToTab('revisiones')}>
+              Ir a Revisiones
+            </Button>
+          }
+        >
+          <BloqueRecibido
+            checkins={checkins}
+            questionnaires={questionnaires}
+            responses={responses}
+            onGoToTab={onGoToTab}
+            todoAbierto={todoAbierto}
+          />
+        </Seccion>
+
+        {/* Detrás de «lo que te ha mandado» porque también es algo que viene de
+            su lado: el reto es lo único de la app que le pide algo concreto cada
+            semana, y el peldaño es la promesa a medio plazo. */}
+        <Seccion
+          presentando={presentando}
+          titulo="Retos y nivel"
+        >
+          <BloqueRetosNivel
+            athleteEmail={athlete.email}
+            initialWeight={athlete.initialWeight}
+            logs={logs}
+            exercises={exercises}
+            bodyweightLogs={bodyweightLogs}
+            registrosDeComida={registrosDeComida}
+            dietas={dietas}
+            assignments={assignments}
+            onGoToTab={onGoToTab}
+            todoAbierto={todoAbierto}
+          />
+        </Seccion>
+
+        {/* Va el último porque es la conclusión: los bloques de arriba son la
+            prueba, y este es lo que se le dice. */}
+        <Seccion presentando={presentando} titulo="Qué le digo">
+          <BloqueCierre
+            athleteEmail={athlete.email}
+            athleteName={athlete.displayName}
+            revision={revision}
+            comida={comida}
+            peso={peso}
+            onGoToTab={onGoToTab}
+            presentando={presentando}
+          />
+        </Seccion>
+      </Secciones>
     </div>
   );
 }

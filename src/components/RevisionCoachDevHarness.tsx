@@ -4,7 +4,7 @@ import {
   UserProfile, Exercise, Mesocycle, MuscleGroup, MuscleGroupConfig, WorkoutLog,
   ProgressPhoto, BodyweightLog, NutritionProgram, Diet, OnboardingData,
   WeightCheckIn, Questionnaire, QuestionnaireResponse, StepLog, WeeklyChallenge,
-  BodyMeasurement, BodyMetricKey, MUSCLE_ORDER,
+  BodyMeasurement, BodyMetricKey, CardioSession, MUSCLE_ORDER,
 } from '../types';
 import { bodyweightForAthleteKey, pesoPrimeroKey, pesoUltimoKey } from '../hooks/useAthleteWeight';
 import { VOLUME_LANDMARKS_DEFAULT } from '../data/volumeLandmarks';
@@ -354,6 +354,38 @@ const MEDICIONES: BodyMeasurement[] = (() => {
   return out;
 })();
 
+// Ocho semanas de cardio: dos sesiones por semana de zona 2 y una de
+// intervalos, para que haya base crónica de verdad (el cociente de carga
+// necesita seis semanas para significar algo) y para que el reparto por
+// intensidad no salga todo en una sola zona.
+const CARDIO: CardioSession[] = (() => {
+  const out: CardioSession[] = [];
+  for (let semana = 0; semana < 8; semana++) {
+    for (const [dia, tipo] of [[1, 'zona2'], [4, 'zona2'], [6, 'intervalos']] as const) {
+      const hace = semana * 7 + dia;
+      const date = haceDias(hace);
+      const duros = tipo === 'intervalos';
+      out.push({
+        id: `cardio_${semana}_${dia}`, athleteId: EMAIL, type: tipo, date,
+        startedAt: `${date}T07:30:00.000Z`,
+        durationSec: duros ? 1500 : 2700,
+        avgHR: duros ? 158 : 132,
+        maxHR: duros ? 179 : 148,
+        timeInZoneSec: duros
+          ? { z1: 180, z2: 300, z3: 420, z4: 480, z5: 120 }
+          : { z1: 300, z2: 1800, z3: 600, z4: 0, z5: 0 },
+        samples: [], sampleIntervalSec: 5,
+        caloriesKcal: duros ? 320 : 430,
+        trimp: duros ? 62 : 45,
+        // El HRR solo se mide cuando el atleta graba la vuelta a la calma, así
+        // que va únicamente en la última: es el caso real.
+        ...(hace === 1 ? { hrr1Min: 27 } : {}),
+      } as CardioSession);
+    }
+  }
+  return out;
+})();
+
 // ── Lo que el atleta manda ──────────────────────────────────────────────────
 // Tres check-ins: uno contestado y aprobado, otro contestado sin aprobar y el
 // último sin tocar. Así se ve la lista de pendientes con sus dos estados.
@@ -451,6 +483,7 @@ export default function RevisionCoachDevHarness() {
     // Retos y nivel. El roadmap va a null a propósito: así el bloque cae a la
     // escalera por defecto, que es lo que tiene la mayoría de los atletas.
     qc.setQueryData(['weeklyChallengesForAthlete', EMAIL], RETOS);
+    qc.setQueryData(['cardioSessions', EMAIL], CARDIO);
     // Implantación.
     qc.setQueryData(['roadmap', EMAIL], null);
     // Dos recordatorios: uno vencido sobre un paso del montaje y una tarea
