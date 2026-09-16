@@ -10,6 +10,7 @@ import { todayStr } from '../utils/questionnaireSchedule';
 import { bodyweightForAthleteKey, invalidarExtremosDePeso } from '../hooks/useAthleteWeight';
 import { useBodyMeasurements, bodyMeasurementsForAthleteKey } from '../hooks/useBodyMeasurements';
 import { mensajeDeErrorFirestore } from '../utils/erroresFirestore';
+import { useToast } from '../hooks/useToast';
 import { Icon, Button, ProgressBar } from './ui';
 
 interface Props {
@@ -86,6 +87,7 @@ function clearDraft(assignmentId: string): void {
 
 export default function QuestionnaireWizard({ questionnaire, assignment, athleteEmail, currentWeight, onSubmitted, onCancel }: Props) {
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
   const { latest: latestMeasurements } = useBodyMeasurements(athleteEmail);
   // resolveQuestions aplica los overrides de personalización por cliente que el
   // coach configura en ClientReviewsPanel. Sin esto, el chip "personalizado · N"
@@ -157,33 +159,52 @@ export default function QuestionnaireWizard({ questionnaire, assignment, athlete
    * puedan graficar y correlacionar. Va EN PARALELO a la respuesta del
    * cuestionario, no en su lugar.
    */
-  const persistirMediciones = async (response: QuestionnaireResponse) => {
+  /**
+   * Devuelve cuántas mediciones no se pudieron guardar, en vez de lanzar.
+   *
+   * La respuesta al cuestionario ya está enviada cuando esto corre. Si una
+   * medición falla —una regla de Firestore mal escrita, por ejemplo— y el error
+   * subiera, el atleta vería «no se pudo enviar el cuestionario» sobre un
+   * cuestionario que SÍ se envió, y al reintentar crearía una respuesta
+   * duplicada (`submitResponse` hace un documento nuevo cada vez). Las
+   * mediciones van «en paralelo, no en su lugar»: que fallen se avisa aparte y
+   * no deshace el envío. Reintentar más tarde tampoco duplica medición: su id
+   * es determinista (`${atleta}_${fecha}_${metrica}`).
+   */
+  const persistirMediciones = async (response: QuestionnaireResponse): Promise<number> => {
     const hoy = todayStr();
+    let fallidas = 0;
     for (const q of questions) {
       if (q.type !== 'metric' || !q.metricKey) continue;
       const valor = Number(answers[q.id]);
       if (answers[q.id] === undefined || isNaN(valor)) continue;
 
-      if (q.metricKey === 'bodyweight') {
-        const entry = await addBodyweight({
-          athleteId: athleteEmail, date: hoy, weight: valor,
-          kind: 'daily', createdAt: new Date().toISOString(),
-        });
-        queryClient.setQueryData<BodyweightLog[]>(bodyweightForAthleteKey(athleteEmail), prev => [...(prev ?? []), entry]);
-        // El peso que se registra desde el cuestionario cuenta igual que el
-        // del panel: los extremos pueden haber cambiado.
-        invalidarExtremosDePeso(queryClient, athleteEmail);
-      } else {
-        const entry = await saveBodyMeasurement({
-          athleteId: athleteEmail, date: hoy, metricKey: q.metricKey, value: valor,
-          unit: BODY_METRIC_UNITS[q.metricKey],
-          source: 'questionnaire', responseId: response.id, createdAt: new Date().toISOString(),
-        });
-        queryClient.setQueryData<BodyMeasurement[]>(bodyMeasurementsForAthleteKey(athleteEmail), prev =>
-          [...(prev ?? []).filter(m => m.id !== entry.id), entry]
-        );
+      try {
+        if (q.metricKey === 'bodyweight') {
+          const entry = await addBodyweight({
+            athleteId: athleteEmail, date: hoy, weight: valor,
+            kind: 'daily', createdAt: new Date().toISOString(),
+          });
+          queryClient.setQueryData<BodyweightLog[]>(bodyweightForAthleteKey(athleteEmail), prev => [...(prev ?? []), entry]);
+          // El peso que se registra desde el cuestionario cuenta igual que el
+          // del panel: los extremos pueden haber cambiado.
+          invalidarExtremosDePeso(queryClient, athleteEmail);
+        } else {
+          const entry = await saveBodyMeasurement({
+            athleteId: athleteEmail, date: hoy, metricKey: q.metricKey, value: valor,
+            unit: BODY_METRIC_UNITS[q.metricKey],
+            source: 'questionnaire', responseId: response.id, createdAt: new Date().toISOString(),
+          });
+          queryClient.setQueryData<BodyMeasurement[]>(bodyMeasurementsForAthleteKey(athleteEmail), prev =>
+            [...(prev ?? []).filter(m => m.id !== entry.id), entry]
+          );
+        }
+      } catch (err) {
+        console.error(`No se pudo guardar la medición ${q.metricKey}:`, err);
+        fallidas++;
       }
     }
+    return fallidas;
   };
 
   const goBack = () => {
@@ -216,7 +237,12 @@ export default function QuestionnaireWizard({ questionnaire, assignment, athlete
       });
       // Después de la respuesta, no antes: si `submitResponse` falla no queremos
       // haber escrito ya una medición de un cuestionario que no existe.
-      await persistirMediciones(response);
+      const fallidas = await persistirMediciones(response);
+      if (fallidas > 0) {
+        showToast(fallidas === 1
+          ? 'Enviado, pero una de tus medidas no se ha podido guardar. Apúntala en Perfil › Revisión.'
+          : `Enviado, pero ${fallidas} de tus medidas no se han podido guardar. Apúntalas en Perfil › Revisión.`);
+      }
       clearDraft(assignment.id);
       onSubmitted(response);
     } catch (e) {
