@@ -38,6 +38,17 @@ const ALLOWED_MODELS = new Set(['claude-sonnet-5', 'claude-haiku-4-5']);
 const MAX_TOKENS_CAP = 16000;
 const DAILY_CALL_LIMIT = 400;
 
+/**
+ * Tope de GASTO diario, en dólares. Configurable con `AI_DAILY_USD_LIMIT`;
+ * sin la variable no hay tope de gasto y solo manda el de llamadas.
+ *
+ * Un tope de llamadas no acota el gasto: montar un mes entero con Sonnet
+ * cuesta dos órdenes de magnitud más que preguntar «¿qué clientes necesitan
+ * atención?», así que 400 llamadas pueden ser dos dólares o doscientos. Lo que
+ * se quiere acotar es lo segundo.
+ */
+const DAILY_USD_LIMIT = Number(process.env.AI_DAILY_USD_LIMIT) || 0;
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   setCors(req.headers.origin, (k, v) => res.setHeader(k, v));
   if (req.method === 'OPTIONS') { res.status(204).end(); return; }
@@ -104,20 +115,34 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // corta la petición (fail-closed) en vez de abrir la barra libre.
   const db = await getAdminDb();
   const today = new Date().toISOString().slice(0, 10);
+  // Lo gastado hoy ANTES de esta llamada. Se manda al panel junto al coste de
+  // la petición para que el coach vea el acumulado sin abrir Firestore.
+  let gastoDelDiaUsd = 0;
   if (db) {
     try {
       const counterRef = db.collection('aiUsage').doc(`daily_${today}`);
-      const withinLimit = await db.runTransaction(async tx => {
+      const veredicto = await db.runTransaction(async tx => {
         const snap = await tx.get(counterRef);
-        const count = (snap.exists ? (snap.data()?.count as number) : 0) || 0;
-        if (count >= DAILY_CALL_LIMIT) return false;
+        const datos = snap.exists ? snap.data() : undefined;
+        const count = (datos?.count as number) || 0;
+        const gastoUsd = (datos?.gastoUsd as number) || 0;
+        if (count >= DAILY_CALL_LIMIT) return { ok: false, motivo: `Límite diario de ${DAILY_CALL_LIMIT} llamadas alcanzado` };
+        // El gasto se comprueba ANTES y se suma DESPUÉS, porque hasta que no
+        // termina la llamada no se sabe lo que ha costado. Eso significa que la
+        // petición que cruza el tope se ejecuta entera: el tope es un freno,
+        // no un corte al céntimo, y con un tope razonable la diferencia es el
+        // coste de una llamada.
+        if (DAILY_USD_LIMIT > 0 && gastoUsd >= DAILY_USD_LIMIT) {
+          return { ok: false, motivo: `Tope diario de gasto alcanzado (${gastoUsd.toFixed(2)} $ de ${DAILY_USD_LIMIT} $)` };
+        }
         tx.set(counterRef, { count: count + 1, date: today }, { merge: true });
-        return true;
+        return { ok: true, gastoPrevioUsd: gastoUsd };
       });
-      if (!withinLimit) {
-        res.status(429).json({ error: `Límite diario de ${DAILY_CALL_LIMIT} llamadas alcanzado` });
+      if (!veredicto.ok) {
+        res.status(429).json({ error: veredicto.motivo });
         return;
       }
+      gastoDelDiaUsd = veredicto.gastoPrevioUsd ?? 0;
     } catch (err) {
       console.error('Contador diario no disponible, se rechaza la llamada:', err);
       res.status(503).json({ error: 'El control de gasto no está disponible. Inténtalo en un minuto.' });
@@ -233,9 +258,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }).catch(err => console.warn('aiAuditLog write failed:', err));
     }
 
-    // Último evento: el coste de ESTA llamada, para que el panel lo enseñe
-    // sin tener que recalcular precios en el navegador.
-    enviarEvento('costo', { usd: costoUsd, usage: message.usage });
+    // El acumulado del día, sumado en el mismo documento del contador. Va
+    // fuera del camino crítico: si falla, la respuesta ya se ha entregado.
+    if (db) {
+      const { FieldValue } = await import('firebase-admin/firestore');
+      db.collection('aiUsage').doc(`daily_${today}`).set({
+        date: today,
+        gastoUsd: FieldValue.increment(costoUsd),
+        inputTokens: FieldValue.increment(message.usage.input_tokens),
+        outputTokens: FieldValue.increment(message.usage.output_tokens),
+        cacheReadTokens: FieldValue.increment(message.usage.cache_read_input_tokens ?? 0),
+      }, { merge: true }).catch(err => console.warn('aiUsage acumulado falló:', err));
+    }
+
+    // Último evento: el coste de ESTA llamada y lo que llevamos hoy, para que
+    // el panel lo enseñe sin recalcular precios en el navegador.
+    enviarEvento('costo', {
+      usd: costoUsd,
+      usage: message.usage,
+      diaUsd: Math.round((gastoDelDiaUsd + costoUsd) * 10000) / 10000,
+      diaTopeUsd: DAILY_USD_LIMIT > 0 ? DAILY_USD_LIMIT : null,
+    });
   } catch (err) {
     const e = err as { status?: number; message?: string };
     if (cortadoPorTiempo) {

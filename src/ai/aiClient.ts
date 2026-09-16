@@ -50,6 +50,12 @@ export interface AgentCallbacks {
   // turno hasta ese momento — para que el panel enseñe lo que cuesta cada
   // petición sin recalcular precios en el navegador.
   onCost?: (rondaUsd: number, acumuladoUsd: number) => void;
+  /**
+   * Lo que llevamos gastado HOY entre todos los chats, y el tope si lo hay.
+   * Lo manda el proxy, que es el único que lo sabe: el navegador solo ve su
+   * propia conversación, y el gasto del día es de todas.
+   */
+  onGastoDelDia?: (usd: number, topeUsd: number | null) => void;
 }
 
 interface MensajeStreameado {
@@ -170,6 +176,9 @@ async function leerRespuestaEnStreaming(
 
       case 'costo':
         costoUsd = typeof datos?.usd === 'number' ? datos.usd : 0;
+        if (typeof datos?.diaUsd === 'number') {
+          cb.onGastoDelDia?.(datos.diaUsd, typeof datos.diaTopeUsd === 'number' ? datos.diaTopeUsd : null);
+        }
         cerradoPorElServidor = true;
         break;
 

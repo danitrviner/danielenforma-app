@@ -245,6 +245,11 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
   // Coste del turno en curso (o del último terminado) — se resetea al
   // empezar cada `runTurn`, se acumula ronda a ronda vía onCost.
   const [costoTurnoUsd, setCostoTurnoUsd] = useState<number | null>(null);
+  // Lo gastado HOY entre todos los chats, con su tope si lo hay. Lo manda el
+  // proxy: el navegador solo conoce su propia conversación, y el gasto del día
+  // es de todas. Sin eso, «esta respuesta: 0,04 $» no dice si hoy llevamos
+  // cuarenta céntimos o cuarenta euros.
+  const [gastoDelDia, setGastoDelDia] = useState<{ usd: number; topeUsd: number | null } | null>(null);
   const cancelarTurnoRef = useRef<AbortController | null>(null);
   /* TODAS las pendientes, no las del cliente que haya en la URL.
      Antes la consulta se filtraba por `activeAthleteEmail` y ni siquiera se
@@ -559,6 +564,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
         },
         onToolStatus: setToolStatus,
         onCost: (_rondaUsd, acumuladoUsd) => setCostoTurnoUsd(acumuladoUsd),
+        onGastoDelDia: (usd, topeUsd) => setGastoDelDia({ usd, topeUsd }),
       });
     } catch (err) {
       // Cancelado por el propio coach (botón «Detener») — no es un error que
@@ -823,6 +829,12 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
             {!busy && costoTurnoUsd !== null && costoTurnoUsd > 0 && (
               <p className="self-start text-caption font-mono text-ink-4 px-1">
                 Esta respuesta: ${costoTurnoUsd < 0.01 ? costoTurnoUsd.toFixed(4) : costoTurnoUsd.toFixed(3)}
+                {gastoDelDia && (
+                  <>
+                    {' · hoy '}${gastoDelDia.usd.toFixed(2)}
+                    {gastoDelDia.topeUsd !== null && ` de ${gastoDelDia.topeUsd}`}
+                  </>
+                )}
               </p>
             )}
             {error && (
