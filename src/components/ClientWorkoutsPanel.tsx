@@ -8,7 +8,6 @@ import { createWorkoutAssignment, deleteWorkoutAssignment, updateWorkoutLog, upd
 import { sesionesDeMesociclo, fechasDelMesociclo } from '../utils/asignacionMesociclo';
 import { addDays, hoyIsoLocal, esFechaIso } from '../utils/trainingWeek';
 import { nombreDeMeso } from '../utils/nombresMeso';
-import { invalidateResource } from '../hooks/useResourceCache';
 import { adherenciaDeMesociclo } from '../utils/adherence';
 import { useToast } from '../hooks/useToast';
 import MesocycleDashboard from './MesocycleDashboard';
@@ -126,7 +125,11 @@ export default function ClientWorkoutsPanel({
       setAssignments(prev => [...prev, newA].sort((a, b) => a.date.localeCompare(b.date)));
       setShowAssignModal(false);
       setAssignWorkoutId('');
-      invalidateResource(`assignments:${athlete.userId}`);
+      // Aquí había un `invalidateResource` de un caché propio que ya no existe:
+      // un no-op desde que se dejó de usar `useResourceCache`. Asignar no
+      // refrescaba el calendario del coach ni la lista de Clientes, que leen
+      // esta MISMA colección por `queryKey`.
+      queryClient.invalidateQueries({ queryKey: ['workoutAssignments', athlete.userId] });
     } catch (err) { console.error(err); showToast('No se pudo asignar el entrenamiento.'); }
     finally { setIsAssigning(false); }
   };
@@ -161,7 +164,7 @@ export default function ClientWorkoutsPanel({
       ].sort((a, b) => a.date.localeCompare(b.date)));
       setShowAssignModal(false);
       setAssignMesoId('');
-      invalidateResource(`assignments:${athlete.userId}`);
+      queryClient.invalidateQueries({ queryKey: ['workoutAssignments', athlete.userId] });
       showToast(`${nuevas.length} sesiones asignadas`, 'success');
     } catch (err) { console.error(err); showToast('No se pudo asignar el mesociclo.'); }
     finally { setIsAssigning(false); }
@@ -172,7 +175,7 @@ export default function ClientWorkoutsPanel({
     try {
       await deleteWorkoutAssignment(id);
       setAssignments(prev => prev.filter(a => a.id !== id));
-      invalidateResource(`assignments:${athlete.userId}`);
+      queryClient.invalidateQueries({ queryKey: ['workoutAssignments', athlete.userId] });
     } catch (err) { console.error(err); showToast('No se pudo eliminar el entrenamiento.'); }
   };
 
