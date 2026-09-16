@@ -207,10 +207,10 @@
      colores. `ink-4`/`ink-5` son nuevos —etiqueta mono y pie de página—, por
      debajo de `ink-3` no hay más pasos: seguir bajando el alfa deja de leerse. */
   --color-ink:       #F5F5F4;
-  --color-ink-2:     rgba(245, 245, 244, 0.6);   /* apoyo, etiquetas, descripciones */
-  --color-ink-3:     rgba(245, 245, 244, 0.45);  /* placeholders, ayudas, timestamps */
-  --color-ink-4:     rgba(245, 245, 244, 0.34);  /* etiqueta mono, dato terciario    */
-  --color-ink-5:     rgba(245, 245, 244, 0.26);  /* pie de página, texto deshabilitado */
+  --color-ink-2:     rgba(245, 245, 244, 0.7);   /* apoyo, etiquetas, descripciones */
+  --color-ink-3:     rgba(245, 245, 244, 0.56);  /* placeholders, ayudas, timestamps */
+  --color-ink-4:     rgba(245, 245, 244, 0.42);  /* etiqueta mono, dato terciario    */
+  --color-ink-5:     rgba(245, 245, 244, 0.32);  /* pie de página, texto deshabilitado */
   --color-on-accent: #121212;  /* único color admitido sobre el oro             */
 
   /* ── Líneas · 3 ─────────────────────────────────────────────────────────────
