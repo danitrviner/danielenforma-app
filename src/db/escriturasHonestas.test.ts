@@ -38,7 +38,10 @@ const DIR = new URL('.', import.meta.url).pathname;
 // relanzar — castigando código correcto.
 // `reset` está aquí por `resetDoctrina`: volver al criterio por defecto borra el
 // doc del coach, así que es una escritura aunque el verbo no lo parezca.
-const ESCRITURA = /^(create|update|delete|reset|save|add|mark|set|assign|deactivate|submit|invite|bulkUpsert|upsert|guardar|crear|actualizar|borrar|eliminar|publicar|ocultar|promover|subir|registrar|importar|archivar|desarchivar)/;
+// `marcar` estaba solo en su versión inglesa (`mark`): una función nueva
+// llamada `marcarRespuestaVista` se clasificaba como LECTURA y el escáner le
+// exigía justo lo contrario —no relanzar— de lo que debe hacer una escritura.
+const ESCRITURA = /^(create|update|delete|reset|save|add|mark|set|assign|deactivate|submit|invite|bulkUpsert|upsert|guardar|crear|actualizar|borrar|eliminar|publicar|ocultar|promover|subir|registrar|importar|archivar|desarchivar|marcar)/;
 
 // Excepciones deliberadas. Cada una lleva su comentario en el código explicando
 // por qué; si añades una aquí, añade también el porqué allí.

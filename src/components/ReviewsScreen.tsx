@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { WeightCheckIn, QuestionnaireResponse, Questionnaire } from '../types';
-import { getAllUserProfiles, submitCoachFeedback, getQuestionnairesByCoach, getResponsesByQuestionnaireIds, getQuickReplies, saveQuickReplies } from '../dbService';
+import { getAllUserProfiles, submitCoachFeedback, getQuestionnairesByCoach, getResponsesByQuestionnaireIds, getQuickReplies, saveQuickReplies, marcarRespuestaVista } from '../dbService';
 import { usePendingReviews } from '../hooks/usePendingReviews';
 import { useToast } from '../hooks/useToast';
 import { mensajeDeErrorFirestore } from '../utils/erroresFirestore';
@@ -66,6 +66,22 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
     queryFn: () => getResponsesByQuestionnaireIds(questionnaireIds, desdeRespuestas),
     enabled: !!coachId && questionnaireIds.length > 0,
   });
+
+  /* Marcar vista: se pinta al instante y se guarda de fondo. Si la escritura
+     falla, la lista se refresca desde Firestore y la respuesta reaparece — no
+     se queda escondida una cosa que sigue sin ver. */
+  const marcarVista = async (id: string) => {
+    queryClient.setQueryData<QuestionnaireResponse[]>(
+      ['responsesByQuestionnaireIds', questionnaireIds, desdeRespuestas],
+      prev => prev?.map(r => r.id === id ? { ...r, reviewedAt: new Date().toISOString() } : r),
+    );
+    try {
+      await marcarRespuestaVista(id, true);
+    } catch (err) {
+      console.error('No se pudo marcar la respuesta como vista:', err);
+      queryClient.invalidateQueries({ queryKey: ['responsesByQuestionnaireIds'] });
+    }
+  };
   // Mirrors the old effect's loading flag: true while questionnaires load, and
   // (only if there are any) while their responses load too.
   const loadingResponses = loadingQuestionnaires || (questionnaireIds.length > 0 && loadingResponsesQuery);
@@ -134,7 +150,10 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
           : (c.timestamp as any)?.toDate?.()?.getTime?.() ?? new Date(c.timestamp as any).getTime(),
         data: c,
       })),
-      ...allResponses.map(r => ({
+      // Las ya vistas salen de la bandeja, igual que los check-ins aprobados.
+      // Esto es lo que la convierte en bandeja: hasta ahora la lista solo
+      // crecía y acababa siendo un archivo que nadie mira.
+      ...allResponses.filter(r => !r.reviewedAt).map(r => ({
         kind: 'response' as const,
         sortKey: new Date(r.submittedAt).getTime(),
         data: r,
@@ -454,6 +473,14 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                         <p className="font-mono text-caption text-ink-2 truncate">{previewAnswers}</p>
                       )}
                     </div>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); void marcarVista(r.id); }}
+                      title="Marcar como vista y sacarla de la bandeja"
+                      aria-label="Marcar como vista"
+                      className="flex-shrink-0 p-2 rounded-control text-ink-2 hover:text-accent hover:bg-raised transition-colors"
+                    >
+                      <span className="material-symbols-outlined text-title-s">done_all</span>
+                    </button>
                     {athleteProfile && (
                       <button
                         onClick={(e) => { e.stopPropagation(); goToAthleteProfile(athleteProfile.email); }}

@@ -743,6 +743,16 @@ export interface QuestionnaireResponse {
   athleteId: string;           // email
   submittedAt: string;
   answers: { questionId: string; value: string | number | boolean }[];
+  /**
+   * Cuándo el coach la dio por vista (ISO). Ausente = sin ver.
+   *
+   * Un check-in se resuelve contestándolo (`approved` + `coachFeedback`), pero
+   * una respuesta de cuestionario no tiene respuesta que dar: se lee y ya. Sin
+   * este campo no había forma de sacarla de la bandeja, así que la lista solo
+   * crecía y acababa siendo un archivo que nadie mira en vez de una bandeja de
+   * trabajo.
+   */
+  reviewedAt?: string;
 }
 
 // ─── BODY MEASUREMENTS ─────────────────────────────────────────────────────────

@@ -341,6 +341,35 @@ export async function updateQuestionnaireResponse(
   }
 }
 
+/**
+ * Marca una respuesta como vista por el coach, o le quita la marca.
+ *
+ * Es lo que permite que la bandeja de Revisiones sea una bandeja y no un
+ * archivo: un check-in se saca contestándolo, pero una respuesta de
+ * cuestionario no tiene respuesta que dar — se lee y ya.
+ *
+ * Se escribe `null` para desmarcar y no `undefined`: Firestore ignora
+ * `undefined` en un `updateDoc`, así que «desmarcar» no habría hecho nada.
+ */
+export async function marcarRespuestaVista(id: string, vista: boolean): Promise<void> {
+  const reviewedAt = vista ? new Date().toISOString() : undefined;
+  const patch = (list: QuestionnaireResponse[]) =>
+    list.map(r => r.id === id ? { ...r, reviewedAt } : r);
+  if (forceLocalOnly) {
+    escribirLocal(LOCAL_Q_RESPONSES, JSON.stringify(patch(getLocalQResponses())));
+    return;
+  }
+  try {
+    await updateDoc(doc(db, 'questionnaireResponses', id), { reviewedAt: reviewedAt ?? null });
+    escribirLocal(LOCAL_Q_RESPONSES, JSON.stringify(patch(getLocalQResponses())));
+  } catch (err) {
+    console.warn('marcarRespuestaVista failed:', err);
+    setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
+    escribirLocal(LOCAL_Q_RESPONSES, JSON.stringify(patch(getLocalQResponses())));
+  }
+}
+
 export async function deleteQuestionnaireResponse(id: string): Promise<void> {
   const remove = (list: QuestionnaireResponse[]) => list.filter(r => r.id !== id);
   if (forceLocalOnly) {

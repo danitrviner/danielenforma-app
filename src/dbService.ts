@@ -129,7 +129,7 @@ export {
   getQuestionnairesByCoach, createQuestionnaire, updateQuestionnaire, deleteQuestionnaire,
   assignQuestionnaire, getAssignmentsForAthlete, deactivateAssignment,
   submitResponse, getQuestionnaireById, getResponsesForAthlete, getResponsesByQuestionnaireIds,
-  updateQuestionnaireResponse, deleteQuestionnaireResponse,
+  updateQuestionnaireResponse, deleteQuestionnaireResponse, marcarRespuestaVista,
   getQuestionnairePacksByCoach, createQuestionnairePack, updateQuestionnairePack, deleteQuestionnairePack,
 } from './db/questionnaires';
 
