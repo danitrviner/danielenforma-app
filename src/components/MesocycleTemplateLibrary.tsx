@@ -8,6 +8,7 @@ import {
 } from '../dbService';
 import { Skeleton } from './ui';
 import { Icon, Button, EmptyState, Dialog, Input } from './ui';
+import ExercisePickerSheet from './ExercisePickerSheet';
 
 import { heatmapBg, heatmapText } from '../utils/volumeZones';
 function mesocycleTemplatesKey(coachId: string) {
@@ -170,12 +171,17 @@ const DayBlock: React.FC<{
   onChange, onDelete,
 }) => {
   const [open, setOpen] = useState(true);
-  const [selectedExId, setSelectedExId] = useState('');
+  /* Aquí había un `<select>` con la biblioteca entera dentro: más de mil
+     ejercicios en una lista nativa, sin buscador ni filtro por grupo, ordenada
+     por como viniera el array. Encontrar «Press banca con mancuernas» era
+     bajar a rueda. Es el mismo hueco que ya se tapó en el generador y en los
+     ejercicios programados, así que se usa el mismo picker: buscador sin
+     tildes, chips por grupo muscular y aviso de material. */
+  const [pickerAbierto, setPickerAbierto] = useState(false);
 
-  const addExercise = () => {
-    if (!selectedExId) return;
+  const addExercise = (ejercicio: Exercise) => {
     const newEx: WorkoutExercise = {
-      exerciseId: selectedExId,
+      exerciseId: ejercicio.id,
       order: day.exercises.length,
       sets: 3,
       reps: '8-12',
@@ -183,7 +189,7 @@ const DayBlock: React.FC<{
       restSeconds: 90,
     };
     onChange({ ...day, exercises: [...day.exercises, newEx] });
-    setSelectedExId('');
+    setPickerAbierto(false);
   };
 
   const updateEx = (idx: number, updated: WorkoutExercise) => {
@@ -265,25 +271,24 @@ const DayBlock: React.FC<{
           )}
 
           {/* Add exercise */}
-          <div className="flex gap-2 pt-1">
-            <select
-              value={selectedExId}
-              onChange={e => setSelectedExId(e.target.value)}
-              className="flex-1 bg-bg border border-hairline rounded-control px-2 py-2 text-white font-sans text-title-s focus:outline-none focus:border-accent/50"
-            >
-              <option value="">— Elegir ejercicio —</option>
-              {exercises.map(ex => (
-                <option key={ex.id} value={ex.id}>{ex.name}</option>
-              ))}
-            </select>
+          <div className="pt-1">
             <button
-              onClick={addExercise}
-              disabled={!selectedExId}
-              className="px-3 py-2 bg-raised border border-hairline text-ink-2 font-sans text-label rounded-control hover:border-accent/40 hover:text-accent disabled:opacity-30 transition-all"
+              type="button"
+              onClick={() => setPickerAbierto(true)}
+              className="w-full flex items-center justify-center gap-1.5 px-3 py-2 bg-raised border border-hairline text-ink-2 font-sans text-label rounded-control hover:border-accent/40 hover:text-accent transition-all"
             >
-              Añadir
+              <Icon name="add" size="s" />
+              Añadir ejercicio
             </button>
           </div>
+
+          <ExercisePickerSheet
+            open={pickerAbierto}
+            onClose={() => setPickerAbierto(false)}
+            exercises={exercises}
+            onSelect={addExercise}
+            title={`Añadir a ${day.name || `Día ${dayIdx + 1}`}`}
+          />
         </div>
       )}
     </div>
