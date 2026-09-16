@@ -10,6 +10,7 @@ import { eventosDelCliente, ventasDe, type TipoEvento } from '../lib/eventosDelC
 import MetricCard from './MetricCard';
 import EmptyState from './EmptyState';
 import ErrorState from './ErrorState';
+import PagosTable from './PagosTable';
 import { Skeleton } from '../../../components/ui';
 import type { Cliente } from '../types';
 
@@ -33,7 +34,7 @@ const ESTILO_EVENTO: Record<TipoEvento, string> = {
   fin:         'bg-white/5 text-ink-3 border-hairline',
 };
 
-export default function HistorialTab({ cliente }: { cliente: Cliente }) {
+export default function HistorialTab({ cliente, coachEmail }: { cliente: Cliente; coachEmail: string }) {
   const { data: servicios = [], isPending: cargandoServicios, isError: errorServicios } = useServiciosDe(cliente.id);
   const { data: pagos = [], isPending: cargandoPagos, isError: errorPagos } = usePagosDe(cliente.id);
   const { data: reuniones = [], isPending: cargandoReuniones, isError: errorReuniones } = useReunionesDe(cliente.id);
@@ -100,6 +101,15 @@ export default function HistorialTab({ cliente }: { cliente: Cliente }) {
     };
   }, [servicios, pagos, reuniones, suscripciones, hoy]);
 
+  // Pendientes, impagados y parciales: los tres estados sobre los que hay algo
+  // que hacer. Ordenados por vencimiento, que es como se cobran.
+  const porCobrar = useMemo(
+    () => pagos
+      .filter(p => p.estado === 'pendiente' || p.estado === 'impagado' || p.estado === 'parcial')
+      .sort((a, b) => a.fechaEmision.localeCompare(b.fechaEmision)),
+    [pagos],
+  );
+
   if (error) return <ErrorState />;
 
   if (cargando) {
@@ -148,6 +158,21 @@ export default function HistorialTab({ cliente }: { cliente: Cliente }) {
           </div>
         )}
       </div>
+
+      {/* Lo que falta por cobrar, con sus botones. La línea de tiempo de abajo
+          solo lista lo que YA ha pasado (altas, cobros hechos, fines): una
+          cuota pendiente no aparecía en la ficha por ningún sitio salvo como
+          cifra en «Pendiente», y el único lugar con el botón de marcar cobrado
+          era la pantalla global de Pagos. La pestaña que sí lo tenía se borró
+          al unificar el historial (Dani, 16-09: «no lo puedo marcar de ninguna
+          de las maneras»). Misma tabla que la global, sin la columna de
+          cliente. */}
+      {porCobrar.length > 0 && (
+        <div className="space-y-2">
+          <h2 className="font-mono text-caption uppercase tracking-widest text-ink-2">Pendiente de cobro</h2>
+          <PagosTable pagos={porCobrar} mostrarCliente={false} coachEmail={coachEmail} />
+        </div>
+      )}
 
       <div className="space-y-2">
         <h2 className="font-mono text-caption uppercase tracking-widest text-ink-2">Línea de tiempo</h2>

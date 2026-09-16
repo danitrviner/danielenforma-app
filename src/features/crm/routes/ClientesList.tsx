@@ -324,6 +324,7 @@ export default function ClientesList({ coachEmail }: { coachEmail: string }) {
       {vistaPorSuscripcion && !error ? (
         <ClientesActionList
           clientes={filas}
+          servicios={servicios}
           suscripciones={suscripciones}
           coachEmail={coachEmail}
           cargando={isPending || cargandoSuscripciones}

@@ -250,7 +250,7 @@ export default function ClienteDetail({ coachEmail }: { coachEmail: string }) {
       {tab === 'datos' && <DatosPersonalesTab cliente={cliente} />}
       {tab === 'servicios' && <ServiciosTab cliente={cliente} coachEmail={coachEmail} />}
       {tab === 'renovaciones' && <RenovacionesTab cliente={cliente} coachEmail={coachEmail} />}
-      {tab === 'historial' && <HistorialTab cliente={cliente} />}
+      {tab === 'historial' && <HistorialTab cliente={cliente} coachEmail={coachEmail} />}
 
       {invitando && cliente.email && (
         <InvitarAtletaModal emailInicial={cliente.email} onCerrar={() => setInvitando(false)} />

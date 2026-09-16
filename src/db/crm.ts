@@ -419,12 +419,10 @@ export async function updateCrmPago(id: string, updates: Partial<CrmPago>): Prom
 }
 
 /**
- * Solo funciona mientras el pago siga `pendiente` — la regla de Firestore es
- * quien realmente lo impone (`allow delete: if ... resource.data.estado ==
- * 'pendiente'`); esta función no repite esa comprobación en el cliente, así
- * que un intento de borrar uno ya `pagado` llega a Firestore y vuelve como
- * `permission-denied` en vez de fallar en silencio antes de salir de aquí.
- * Un cobro ya cobrado no desaparece nunca: se corrige editándolo.
+ * Borra cualquier pago, cobrado o no. Hasta el 16-09 la regla de Firestore
+ * solo dejaba borrar `pendiente`; Dani lo quitó para poder deshacer servicios
+ * creados mal. La confirmación (y el aviso de que un cobrado sale de la
+ * facturación) está en PagosTable.
  */
 export async function deleteCrmPago(id: string): Promise<void> {
   await authReady;

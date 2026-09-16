@@ -135,19 +135,30 @@ export default function Pager({ children, value, onChange, label, dots = 'outsid
     }
   }, [value, scrollToIndex]);
 
-  // Trampa 3 (Dani, 26-08): con un gesto FUERTE el carrusel se quedaba a
-  // medio camino entre dos ejercicios. `snap-mandatory` promete anclar, pero
-  // el WKWebView de iOS abandona el anclado si el contenido del carrusel se
-  // re-maqueta mientras aún hay inercia — y aquí se re-maqueta siempre: cada
-  // `onChange` re-renderiza el player entero (barra de progreso, temporizador
-  // que salta de tarjeta, alto de la página activa). No se puede evitar el
-  // re-render, así que se corrige el destino: cuando el scroll se queda
-  // quieto, si no estamos clavados en un múltiplo del ancho, se ancla a mano.
-  // Se comprueba SIEMPRE al asentarse, no solo cuando cambia el índice: el
-  // caso roto es justo el de quedarse descuadrado dentro de la misma página.
+  // Trampa 3 (Dani, 26-08 y 16-09): con un gesto FUERTE el carrusel se quedaba
+  // a medio camino, o «pasaba de largo» hacia la página siguiente, volvía y se
+  // quedaba calado medio segundo. Dos causas, y las dos se atajan aquí:
+  //
+  //   a) El índice se comunicaba al padre EN CADA `onScroll`, a mitad de la
+  //      inercia. El padre (el player entero: barra de progreso, temporizador,
+  //      alto de la página) se re-maquetaba mientras el scroll seguía vivo, y
+  //      el WKWebView de iOS abandona el anclado en cuanto el contenido se
+  //      re-maqueta con inercia. Encima, ese `onChange` prematuro disparaba el
+  //      efecto de sincronización (`scrollToIndex` suave, 400 ms con el
+  //      `onScroll` sordo): el «calado». Ahora el índice se comunica UNA vez,
+  //      cuando el scroll lleva 120 ms quieto. Nada se re-renderiza con el
+  //      dedo o la inercia en marcha.
+  //   b) `snap-mandatory` ancla a un punto, pero no dice a cuál: una inercia
+  //      fuerte podía saltarse la página de al lado. `snap-always`
+  //      (`scroll-snap-stop: always`) obliga a parar en cada página, que es lo
+  //      que hace un paginador nativo. Lo impone el navegador, sin JS.
+  //
+  // El anclado correctivo se queda para el caso de que, aun así, el scroll se
+  // asiente descuadrado (escala fraccionaria, re-maquetación ajena). Va
+  // instantáneo (Dani, 03-09): con `smooth` parecía un fallo.
   const settleRef = useRef<number | null>(null);
 
-  const anclarAlAsentarse = useCallback(() => {
+  const alAsentarse = useCallback(() => {
     if (settleRef.current !== null) window.clearTimeout(settleRef.current);
     settleRef.current = window.setTimeout(() => {
       settleRef.current = null;
@@ -157,37 +168,24 @@ export default function Pager({ children, value, onChange, label, dots = 'outsid
       const target = index * el.clientWidth;
       // 1px de tolerancia: en pantallas con escala fraccionaria el propio
       // anclado nativo deja décimas de píxel, y corregir eso sería un bucle.
-      if (Math.abs(el.scrollLeft - target) <= 1) return;
-      // El anclado correctivo va SIEMPRE instantáneo (Dani, 03-09): con
-      // `smooth` se veía la tarjeta descuadrada y luego deslizándose sola
-      // hasta cuadrar — parecía un fallo. Instantáneo no se percibe como
-      // animación: el dedo ya se ha levantado y la inercia ha parado.
-      programmaticRef.current = true;
-      el.scrollTo({ left: target, behavior: 'auto' });
-      window.setTimeout(() => { programmaticRef.current = false; }, 50);
+      if (Math.abs(el.scrollLeft - target) > 1) {
+        programmaticRef.current = true;
+        el.scrollTo({ left: target, behavior: 'auto' });
+        window.setTimeout(() => { programmaticRef.current = false; }, 50);
+      }
+      if (index !== prevValueRef.current) {
+        prevValueRef.current = index;
+        onChange(index);
+      }
     }, 120);
-  }, [pageCount]);
+  }, [pageCount, onChange]);
 
-  const rafRef = useRef<number | null>(null);
   const handleScroll = useCallback(() => {
     if (programmaticRef.current) return;
-    anclarAlAsentarse();
-    if (rafRef.current !== null) return;
-    rafRef.current = requestAnimationFrame(() => {
-      rafRef.current = null;
-      const el = scrollRef.current;
-      if (!el || el.clientWidth === 0) return;
-      const index = Math.round(el.scrollLeft / el.clientWidth);
-      const clamped = Math.max(0, Math.min(index, pageCount - 1));
-      if (clamped !== prevValueRef.current) {
-        prevValueRef.current = clamped;
-        onChange(clamped);
-      }
-    });
-  }, [pageCount, onChange, anclarAlAsentarse]);
+    alAsentarse();
+  }, [alAsentarse]);
 
   useEffect(() => () => {
-    if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
     if (settleRef.current !== null) window.clearTimeout(settleRef.current);
   }, []);
 
@@ -244,7 +242,7 @@ export default function Pager({ children, value, onChange, label, dots = 'outsid
             key={i}
             ref={el => { pageRefs.current[i] = el; }}
             className={
-              'w-full shrink-0 snap-center'
+              'w-full shrink-0 snap-center snap-always'
               + (fill ? ' h-full overflow-y-auto overscroll-y-contain' : '')
               // Los puntos 'inside' flotan sobre el contenido: en modo 'fill'
               // una página que scrollea por dentro se les metería debajo.

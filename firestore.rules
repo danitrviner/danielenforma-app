@@ -834,7 +834,12 @@ service cloud.firestore {
     // (Cambiado 2026-08-01: antes `allow delete: if false` categórico.)
     match /crmPagos/{docId} {
       allow read, create, update: if isCoach();
-      allow delete: if isCoach() && resource.data.estado == 'pendiente';
+      // 16-09: antes solo se podía borrar un pago `pendiente` — «un cobro ya
+      // cobrado no desaparece nunca, se corrige editándolo». Dani lo quitó:
+      // para deshacer un servicio creado mal necesita borrar sus cuotas
+      // aunque estén cobradas. La confirmación del cliente avisa de que
+      // desaparece de la facturación.
+      allow delete: if isCoach();
     }
 
     // Reservadas para las fases siguientes (suscripciones y reuniones). Se

@@ -67,10 +67,8 @@ export function useActualizarPago() {
   });
 }
 
-// El botón que llama a esto solo se pinta si `pago.estado === 'pendiente'` —
-// la regla de Firestore es quien de verdad lo impide (ver src/db/crm.ts);
-// aquí no se repite esa comprobación, así que un intento sobre un pago ya
-// pagado (bug de UI, no debería ocurrir) vuelve como error de Firestore.
+// Desde el 16-09 se puede borrar cualquier pago, cobrado o no (regla
+// `crmPagos` en firestore.rules). La confirmación vive en PagosTable.
 export function useEliminarPago() {
   const qc = useQueryClient();
   return useMutation({

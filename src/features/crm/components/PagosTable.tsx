@@ -28,9 +28,8 @@ interface Props {
 const UMBRAL_DIAS_AVISO = 7;
 
 // Tabla de pagos de la pantalla global de Pagos (salió de la ficha del cliente
-// en 09-2026, auditoría §1.2). "Borrar" solo se pinta para pagos pendientes —
-// un pago ya cobrado no se puede borrar y la regla de Firestore lo rechazaría; no tiene sentido
-// ofrecer un botón que va a fallar siempre. Confirmación con window.confirm,
+// en 09-2026, auditoría §1.2). "Borrar" se pinta para todos los estados desde
+// el 16-09 (antes solo pendientes; ver `borrar`). Confirmación con window.confirm,
 // el único patrón de confirmación que usa el resto del repo (no hay modal de
 // confirmación custom en ningún sitio, ver ServiciosTab.tsx).
 //
@@ -85,8 +84,16 @@ export default function PagosTable({ pagos, cargando, error, mostrarCliente, coa
     }
   };
 
+  /* 16-09: también los cobrados. Antes «un cobro ya cobrado no desaparece
+     nunca, se corrige editándolo», pero para deshacer un servicio creado mal
+     hay que poder quitar sus cuotas aunque estén cobradas (Dani: «si quiero
+     hacer modificaciones no puedo»). La confirmación dice lo que se pierde. */
   const borrar = async (p: CrmPago) => {
-    if (!await confirm(`¿Borrar el pago «${p.concepto}» (${formatEuros(p.importeCents)})? Solo se puede borrar mientras está pendiente.`)) return;
+    const cobrado = p.estado === 'pagado' || (p.estado === 'parcial' && (p.importeCobradoCents ?? 0) > 0);
+    const aviso = cobrado
+      ? `Este pago está COBRADO. Borrarlo lo quita de la facturación y de lo que ha dejado el cliente. ¿Borrar «${p.concepto}» (${formatEuros(p.importeCents)})?`
+      : `¿Borrar el pago «${p.concepto}» (${formatEuros(p.importeCents)})?`;
+    if (!await confirm(aviso)) return;
     try {
       await eliminar.mutateAsync({ id: p.id, clientId: p.clientId });
       showToast('Pago borrado', 'success');
@@ -188,8 +195,7 @@ export default function PagosTable({ pagos, cargando, error, mostrarCliente, coa
           >
             <Icon name="edit" size="m" />
           </button>
-          {(p.estado === 'pendiente' || p.estado === 'impagado') && (
-            <button
+          <button
               type="button"
               onClick={() => borrar(p)}
               aria-label="Borrar"
@@ -198,7 +204,6 @@ export default function PagosTable({ pagos, cargando, error, mostrarCliente, coa
             >
               <Icon name="delete" size="m" />
             </button>
-          )}
         </div>
       ),
     },

@@ -2,17 +2,18 @@ import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../../../hooks/useToast';
 import { useRegistrarCobro } from '../hooks/useSuscripciones';
-import { estadoSuscripcionCliente } from '../lib/suscripcionEstado';
+import { estadoPlanCliente } from '../lib/suscripcionEstado';
 import { tiempoRelativo } from '../lib/fechas';
 import { Icon } from '../../../components/ui';
 import Skeleton from '../../../components/ui/Skeleton';
 import ClienteSwipeRow from './ClienteSwipeRow';
 import SuscripcionModal from './SuscripcionModal';
 import EmptyState from './EmptyState';
-import type { Cliente, CrmSuscripcion } from '../types';
+import type { Cliente, CrmSuscripcion, CrmServicio } from '../types';
 
 interface Props {
   clientes: Cliente[];
+  servicios: CrmServicio[];
   suscripciones: CrmSuscripcion[];
   coachEmail: string;
   cargando?: boolean;
@@ -29,7 +30,7 @@ function enlaceWhatsapp(c: Cliente): string | null {
 // coach↔atleta en la app (el paso de chat del tutorial se descartó a
 // propósito en F3.12), así que se apoya en contacto real ya guardado en
 // `Cliente.telefono`/`Cliente.email` en vez de inventar infra nueva.
-export default function ClientesActionList({ clientes, suscripciones, coachEmail, cargando }: Props) {
+export default function ClientesActionList({ clientes, servicios, suscripciones, coachEmail, cargando }: Props) {
   const navigate = useNavigate();
   const { showToast } = useToast();
   const registrar = useRegistrarCobro();
@@ -44,9 +45,21 @@ export default function ClientesActionList({ clientes, suscripciones, coachEmail
     return m;
   }, [suscripciones]);
 
+  const serviciosPorCliente = useMemo(() => {
+    const m = new Map<string, CrmServicio[]>();
+    for (const s of servicios) {
+      const lista = m.get(s.clientId);
+      if (lista) lista.push(s); else m.set(s.clientId, [s]);
+    }
+    return m;
+  }, [servicios]);
+
   const filas = useMemo(
-    () => clientes.map(c => ({ cliente: c, estado: estadoSuscripcionCliente(suscripcionesPorCliente.get(c.id) ?? []) })),
-    [clientes, suscripcionesPorCliente]
+    () => clientes.map(c => ({
+      cliente: c,
+      estado: estadoPlanCliente(serviciosPorCliente.get(c.id) ?? [], suscripcionesPorCliente.get(c.id) ?? []),
+    })),
+    [clientes, serviciosPorCliente, suscripcionesPorCliente]
   );
 
   const requiereAccion = filas.filter(f => f.estado.tipo !== 'al_dia');
@@ -104,7 +117,11 @@ export default function ClientesActionList({ clientes, suscripciones, coachEmail
                 principal={
                   estado.tipo === 'sin_plan'
                     ? { label: 'Asignar', icon: 'add_circle', onClick: () => setAsignando(c) }
-                    : { label: 'Renovar', icon: 'autorenew', onClick: () => renovar(estado.suscripcion) }
+                    : estado.suscripcion
+                      ? { label: 'Renovar', icon: 'autorenew', onClick: () => renovar(estado.suscripcion!) }
+                      // Un servicio se renueva desde su ficha (Renovaciones),
+                      // que es donde vive el flujo de verdad; aquí solo se lleva.
+                      : { label: 'Renovar', icon: 'autorenew', onClick: () => navigate(`/crm/clientes/${c.id}?tab=renovaciones`) }
                 }
               >
                 <button
@@ -115,7 +132,7 @@ export default function ClientesActionList({ clientes, suscripciones, coachEmail
                   <span className="min-w-0">
                     <span className="block font-sans text-caption font-bold text-ink truncate">{c.nombre}</span>
                     <span className="block font-sans text-caption text-warning">
-                      {estado.tipo === 'sin_plan' ? 'Sin plan asignado' : `Vence ${tiempoRelativo(estado.suscripcion.proximoCobro)}`}
+                      {estado.tipo === 'sin_plan' ? 'Sin plan asignado' : `Vence ${tiempoRelativo(estado.fecha)}`}
                     </span>
                   </span>
                   <Icon name="chevron_right" size="m" className="text-ink-3 shrink-0" />
