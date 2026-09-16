@@ -134,7 +134,9 @@ export default function HomeCoachScreen({ athletes, checkins, assignmentsByEmail
   }, [loadingAssignments, athletes, checkins, assignmentsByEmail, mesociclos, suscripciones, propuestasPendientes, hoyIso]);
 
   const visibles = filtro === 'todas' ? senales : senales.filter(s => s.categoria === filtro);
-  const porUrgencia = useMemo(() => contarPorUrgencia(senales), [senales]);
+  // Sobre `visibles`, no sobre `senales`: con un filtro de categoría activo, la
+  // cabecera decía «· 5» encima de una lista de 2.
+  const porUrgencia = useMemo(() => contarPorUrgencia(visibles), [visibles]);
 
   const chips = useMemo(() => {
     const cuenta = new Map<CategoriaSenal, number>();

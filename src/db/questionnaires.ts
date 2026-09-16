@@ -402,7 +402,7 @@ export async function marcarRespuestaVista(id: string, vista: boolean): Promise<
     return;
   }
   try {
-    await updateDoc(doc(db, 'questionnaireResponses', id), { reviewedAt: reviewedAt ?? null });
+    await updateDoc(doc(db, 'questionnaireResponses', id), stripUndefined({ reviewedAt: reviewedAt ?? null }));
     escribirLocal(LOCAL_Q_RESPONSES, JSON.stringify(patch(getLocalQResponses())));
   } catch (err) {
     console.warn('marcarRespuestaVista failed:', err);

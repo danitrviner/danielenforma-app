@@ -115,6 +115,20 @@ describe('elegirEjercicios · el atleta manda sobre el criterio', () => {
     expect(banca.razones.join(' ')).toContain('no debe hacer');
   });
 
+  it('una FRASE del alta que menciona el ejercicio también lo veta', () => {
+    // Las lesiones llegan como texto libre («molestia en el hombro, evitar
+    // press banca»), no como nombre exacto. Antes solo se miraba si el nombre
+    // contenía el veto, y un nombre nunca contiene una frase entera: las
+    // lesiones no vetaban NADA mientras el generador decía que sí.
+    const r = elegirEjercicios(entrada({
+      trozos: [3, 3, 3, 3],
+      rutinasDelCoach: rutinas([{ id: 'banca', veces: 30 }]),
+      vetados: ['Molestia en el hombro derecho, evitar press banca y fondos'],
+    }));
+    expect(r[0].nombre).not.toBe('Press banca');
+    expect(r.find(x => x.nombre === 'Press banca')!.razones.join(' ')).toContain('no debe hacer');
+  });
+
   it('un veto de menos de tres letras no filtra nada (evita vetar media biblioteca)', () => {
     const r = elegirEjercicios(entrada({
       rutinasDelCoach: rutinas([{ id: 'banca', veces: 30 }]),

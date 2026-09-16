@@ -60,9 +60,8 @@ export default function BloqueRetosNivel({
   registrosDeComida, dietas, assignments, onGoToTab, todoAbierto = false,
 }: Props) {
   const hoy = hoyIsoLocal();
-
-  // Las tres claves son las mismas que usan el Road map del atleta y Reportes,
-  // así que en una sesión de coach normal ya vienen servidas de caché.
+  // Clave sin ventana a propósito: la comparten Correlaciones y el Road map
+  // del coach dentro de esta misma pantalla, que necesitan la serie entera.
   const { data: retos = [], isPending: cargandoRetos } = useQuery({
     queryKey: ['weeklyChallengesForAthlete', athleteEmail],
     queryFn: () => getWeeklyChallengesForAthlete(athleteEmail),

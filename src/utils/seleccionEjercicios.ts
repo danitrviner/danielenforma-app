@@ -1,5 +1,6 @@
 import { Exercise, MuscleGroup, Workout, WorkoutLog } from '../types';
 import { calcularPerfilProgramacion, PerfilEjercicio } from './perfilProgramacion';
+import { normalizarTexto } from './busqueda';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    QUÉ EJERCICIO PONER — con el criterio de Dani, no por orden alfabético.
@@ -78,9 +79,9 @@ interface Candidato {
   bloquesSeguidos: number;
 }
 
-function normalizar(s: string): string {
-  return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
-}
+// La misma normalización que todos los buscadores de la app (sin tildes,
+// espacios plegados), no una copia más débil.
+const normalizar = normalizarTexto;
 
 /** ¿El material del atleta cubre este ejercicio? Sin etiquetas, sí. */
 function cubreElMaterial(ex: Exercise, material: string[]): boolean {
@@ -90,13 +91,29 @@ function cubreElMaterial(ex: Exercise, material: string[]): boolean {
   return eq.some(e => suyo.includes(normalizar(e)));
 }
 
-/** ¿Lo veta una lesión o una preferencia? Se compara por palabras, no exacto. */
+/**
+ * ¿Lo veta una lesión o una preferencia?
+ *
+ * Entran dos cosas distintas por la misma puerta: nombres de ejercicio exactos
+ * («press banca», de los que el atleta odia) y FRASES libres del alta
+ * («molestia en el hombro, evitar press militar»). Antes solo se comprobaba
+ * `nombre.includes(veto)`, que funciona para lo primero y NUNCA para lo
+ * segundo: el nombre de un ejercicio no contiene una frase entera, así que
+ * las lesiones no vetaban nada y el generador decía que sí.
+ *
+ * Ahora vale en los dos sentidos: el veto está dentro del nombre (nombre
+ * exacto) o el nombre está dentro del veto (la frase menciona el ejercicio).
+ * Sigue sin ser inteligente —«hombro» no veta el press militar por saber de
+ * anatomía—, pero lo que el coach escribe con el nombre del ejercicio dentro
+ * sí lo veta, que es lo que el comentario de MesocycleManager promete.
+ */
 function estaVetado(ex: Exercise, vetados: string[]): boolean {
   if (vetados.length === 0) return false;
-  const nombre = normalizar(ex.name);
+  const nombre = normalizar(ex.name).trim();
+  if (nombre.length < 3) return false;
   return vetados.some(v => {
     const t = normalizar(v).trim();
-    return t.length >= 3 && nombre.includes(t);
+    return t.length >= 3 && (nombre.includes(t) || t.includes(nombre));
   });
 }
 

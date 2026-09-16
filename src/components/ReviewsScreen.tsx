@@ -237,7 +237,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
     <div className="space-y-6">
       <PageHeader
         title="Revisiones"
-        subtitle="Check-ins pendientes de revisar y respuestas de cuestionarios, más antiguo primero."
+        subtitle={`Check-ins pendientes de revisar y respuestas de cuestionarios de los últimos ${DIAS_DE_BANDEJA} días, más antiguo primero. Las más antiguas están en la ficha de cada cliente.`}
         action={
           <div className="flex items-center gap-3">
             {pendingCount > 0 && (

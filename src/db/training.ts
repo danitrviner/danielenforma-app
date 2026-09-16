@@ -1003,6 +1003,15 @@ export async function createWorkoutStrict(data: Omit<Workout, 'id'>): Promise<Wo
   return workout;
 }
 
+/** Como `updateWorkout`, pero lanza si Firestore falla: el generador no puede
+ *  dar por regenerado un bloque que solo cambió en el espejo local. */
+export async function updateWorkoutStrict(id: string, updates: Partial<Workout>): Promise<void> {
+  workoutsCache = null;
+  await updateDoc(doc(db, 'workouts', id), stripUndefined(updates) as Record<string, unknown>);
+  void marcarCatalogoCambiado('workouts');
+  saveLocalWorkouts(getLocalWorkouts().map(w => (w.id === id ? { ...w, ...updates } : w)));
+}
+
 export async function createWorkoutAssignmentStrict(data: Omit<WorkoutAssignment, 'id'>): Promise<WorkoutAssignment> {
   exigeEmail(data.athleteId, 'createWorkoutAssignmentStrict');
   const ref = await addDoc(collection(db, 'workoutAssignments'), stripUndefined(data));

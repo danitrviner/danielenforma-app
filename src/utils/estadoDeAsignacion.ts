@@ -1,4 +1,4 @@
-import type { WorkoutAssignment, WorkoutLog } from '../types';
+import type { WorkoutAssignment, WorkoutLog } from '../types.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Qué días están entrenados de verdad

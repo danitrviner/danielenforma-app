@@ -274,6 +274,19 @@ describe('computeSetupChecklist · lo que aún no ha llegado', () => {
     expect(estado(computeSetupChecklist(makeInputs({ nutritionProgram: null })), 'prog_periodizacion')).toBe('pending');
   });
 
+  it('con el plan en consolidación (día ≥ 28) y sin tareas aún, NO peta', () => {
+    // Este era el fallo real: la rama de consolidación hacía `manualTasks.find`
+    // sin guardia. Con el panel pintando antes de que llegara la consulta,
+    // cualquier cliente con más de 28 días de plan tumbaba la pestaña entera.
+    const viejo = makeInputs({
+      profile: makeProfile({ planStartDate: '2026-06-01', planDurationMonths: 6 }),
+      manualTasks: undefined,
+    });
+    expect(() => computeSetupChecklist(viejo)).not.toThrow();
+    expect(estado(computeSetupChecklist(viejo), 'c_decision_renovacion')).toBe('na');
+    expect(estado(computeSetupChecklist(viejo), 'c_renovacion_anticipada')).toBe('na');
+  });
+
   it('las tareas manuales que no han llegado no ponen nada en rojo', () => {
     const conPlan = makeInputs({
       profile: makeProfile({ planStartDate: TODAY, planDurationMonths: 3 }),

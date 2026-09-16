@@ -13,8 +13,8 @@ import { ChallengeData, isoWeekKey } from '../utils/weeklyChallenge';
 import { buildChallengeMemory } from '../utils/challengeMemory';
 import { buildPhaseEnergyPlans, buildWeightProjection, ProjectionResult } from '../utils/nutritionPeriodization';
 import { DEFAULT_KCAL_PER_STEP } from '../utils/nutritionConstants';
-import { ventanaPasos } from '../utils/ventanaHistorial';
-import { hoyIsoLocal } from '../utils/trainingWeek';
+import { ventanaPasos, ventanaCardio } from '../utils/ventanaHistorial';
+import { hoyIsoLocal, addDays } from '../utils/trainingWeek';
 
 const DEFAULT_STEP_GOAL = 8000;
 
@@ -127,9 +127,13 @@ export function useRetoDeLaSemana(athleteEmail: string, assignments: WorkoutAssi
   });
   // Misma ventana que el Road map — el año en curso. El motor solo mira cuatro
   // semanas atrás, pero la clave tiene que coincidir para compartir caché.
-  const cardioSince = useMemo(() => `${new Date().getFullYear()}-01-01`, []);
+  // La MISMA clave y ventana que CardioScreen y useCardioSession. Antes esta
+  // pantalla y el calendario pedían el cardio bajo otra clave («desde el 1 de
+  // enero»): dos lecturas de la misma colección, y al terminar una sesión solo
+  // se parcheaba la otra caché — el reto seguía viendo el cardio de antes.
+  const cardioSince = ventanaCardio();
   const { data: cardioSessions = [], isPending: cargandoCardio } = useQuery({
-    queryKey: ['cardioSessionsSince', athleteEmail, cardioSince],
+    queryKey: ['cardioSessions', athleteEmail, cardioSince],
     queryFn: () => getCardioSessionsSince(athleteEmail, cardioSince),
     enabled: hazFalta,
   });
@@ -157,14 +161,12 @@ export function useRetoDeLaSemana(athleteEmail: string, assignments: WorkoutAssi
     if (cargando || arrancadoPara.current === athleteEmail) return;
     arrancadoPara.current = athleteEmail;
     const today = hoyIsoLocal();
-    // El generador razona sobre las últimas 4-5 semanas; la consulta de cardio
-    // trae el año entero para el calendario, así que la ventana se recorta aquí
-    // para no cambiarle la base de cálculo. El corte va en UTC a propósito: es
-    // lo que hacía la consulta anterior, y en 35 días un día no significa nada.
-    const desde = new Date();
-    desde.setDate(desde.getDate() - 35);
-    // eslint-disable-next-line no-restricted-syntax -- UTC a propósito, ver arriba
-    const cardioRecientes = cardioSessions.filter(s => s.date >= desde.toISOString().split('T')[0]);
+    // El generador razona sobre las últimas 4-5 semanas; la consulta trae 12
+    // meses, así que la ventana se recorta aquí. El mismo corte que usa el
+    // coach en ChallengeManager (`addDays(today, -35)`): antes esto era un
+    // Date local formateado en UTC, y entre las 00:00 y las 02:00 el atleta y
+    // el coach alimentaban al mismo motor con conjuntos de cardio distintos.
+    const cardioRecientes = cardioSessions.filter(s => s.date >= addDays(today, -35));
     const datos: ChallengeData = {
       stepLogs, bodyweightLogs, workoutLogs, exercises,
       completionLogs: dietCompletionLogs, coachDiets: diets.filter(d => !d.selfManaged),

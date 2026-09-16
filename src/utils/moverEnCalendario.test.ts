@@ -57,6 +57,13 @@ describe('ordenDeMovimiento', () => {
     expect(ordenDeMovimiento(volumen, '2026-09-14', CTX)).toBeNull();
   });
 
+  it('una fecha que no es de calendario real no mueve nada', () => {
+    // El campo de fecha de escritorio admite años de cinco cifras.
+    expect(ordenDeMovimiento(entreno, '20026-03-01', CTX)).toBeNull();
+    expect(ordenDeMovimiento(volumen, '20026-03-01', CTX)).toBeNull();
+    expect(ordenDeMovimiento(hito, '2026-02-30', CTX)).toBeNull();
+  });
+
   it('sin fecha de destino no hace nada', () => {
     expect(ordenDeMovimiento(entreno, '', CTX)).toBeNull();
   });

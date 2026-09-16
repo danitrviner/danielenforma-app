@@ -112,11 +112,18 @@ export async function ejecutarRetoSemanal(
     almacen.getWeeklyChallenge(athleteEmail, isoWeekKey(prevDay)),
   ]);
 
-  const cerrarAnterior = () => {
+  /* En el navegador NO se espera: cerrar la semana anterior son un getDoc y
+     dos o tres escrituras, y con una conexión floja eso dejaba la tarjeta del
+     reto en «cargando» hasta que terminaran. Un `await p.catch(...)` sigue
+     esperando a `p`; lo que no bloquea es no hacer el await. El resultado del
+     cierre no le hace falta a nadie aquí, solo tiene que ocurrir. En el
+     servidor (latido) sí se espera, porque allí no hay render que retrasar y
+     un fallo tiene que contarse. */
+  const cerrarAnterior = (): Promise<void> => {
     const p = resolvePreviousWeek(athleteEmail, data, today, almacen, coachEmail);
-    return esperarAlCierreAnterior
-      ? p
-      : p.catch(err => console.warn('resolvePreviousWeek failed:', err));
+    if (esperarAlCierreAnterior) return p;
+    void p.catch(err => console.warn('resolvePreviousWeek failed:', err));
+    return Promise.resolve();
   };
 
   let challenge = existing;

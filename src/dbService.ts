@@ -59,7 +59,7 @@ export {
   deleteWorkoutsByMesocycleId, deleteWorkoutAssignmentsByMesocycleId,
   deleteWorkoutsByMesocycleIdStrict, deleteWorkoutAssignmentsByMesocycleIdStrict,
   borrarAsignacionesReprogramables,
-  createWorkoutStrict, createWorkoutAssignmentStrict,
+  createWorkoutStrict, updateWorkoutStrict, createWorkoutAssignmentStrict,
   getMesocycles, getMesocyclesForAthletes, createMesocycle, updateMesocycle, deleteMesocycle,
   getMesocycleTemplates, createMesocycleTemplate, updateMesocycleTemplate, deleteMesocycleTemplate,
 } from './db/training';

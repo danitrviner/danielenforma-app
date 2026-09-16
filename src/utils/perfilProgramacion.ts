@@ -27,7 +27,7 @@ interface Uso {
   descanso: number[];
 }
 
-function mediana(valores: number[]): number | null {
+export function mediana(valores: number[]): number | null {
   if (valores.length === 0) return null;
   const orden = [...valores].sort((a, b) => a - b);
   const mitad = Math.floor(orden.length / 2);

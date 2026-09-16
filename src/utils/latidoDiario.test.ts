@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { planificarLatido, FotoDelAtleta, DIAS_PARA_DARSE_POR_PERDIDA } from './latidoDiario';
 import { addDays } from './trainingWeek';
 import type {
-  UserProfile, WorkoutAssignment, NutritionProgram, AthleteDietConfig,
+  UserProfile, WorkoutAssignment, WorkoutLog, NutritionProgram, AthleteDietConfig,
 } from '../types';
 
 const HOY = '2026-09-16';
@@ -54,6 +54,20 @@ describe('planificarLatido · sesiones perdidas', () => {
     const enElCorte = addDays(HOY, -DIAS_PARA_DARSE_POR_PERDIDA);
     const r = planificarLatido(foto({ assignments: [asignacion(enElCorte)] }), OPCIONES);
     expect(r.acciones).toHaveLength(0);
+  });
+
+  it('un día con entreno GUARDADO no se marca como perdido aunque el status diga pending', () => {
+    // Asignaciones que la reasignación vieja dejó en `pending` aunque el atleta
+    // las entrenó (auditoría §4.1). El log es la verdad; sin este test, la
+    // primera pasada nocturna las habría dado por falladas para siempre.
+    const vieja = addDays(HOY, -(DIAS_PARA_DARSE_POR_PERDIDA + 3));
+    const log = { id: 'l1', athleteId: 'ana@x.com', workoutId: 'w', date: vieja, exercises: [] } as unknown as WorkoutLog;
+    const r = planificarLatido(foto({
+      profile: PERFIL,
+      assignments: [{ ...asignacion(vieja), athleteId: 'ana@x.com' }],
+      workoutLogs: [log],
+    }), OPCIONES);
+    expect(tipos(r)).not.toContain('marcar_sesion_perdida');
   });
 
   it('no toca las que ya están hechas ni las que ya están perdidas', () => {

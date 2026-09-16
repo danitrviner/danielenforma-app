@@ -30,7 +30,7 @@ import { COACH_EMAIL, getAdminDb } from './_lib/auth.js';
 import {
   leerAtletasActivos, leerAsignaciones, leerLogsDeEntreno, leerPesajes, leerPasos,
   leerEjercicios, leerProgramaDeNutricion, leerConfigDeDieta, leerDietas,
-  leerRegistrosDeComida, leerRoadmap, leerRetos, leerSesionesDeCardio,
+  leerRegistrosDeComida, leerRoadmap, leerSesionesDeCardio,
   marcarSesionPerdida, guardarConfigDeDieta, marcarFaseVista, guardarNivelesConseguidos,
   actualizarPeldanos, guardarReto, leerReto, crearAvisoUnaVez,
 } from './_lib/db-admin.js';
@@ -131,21 +131,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   for (const perfil of atletas) {
     const email = perfil.email;
     try {
+      /* Se leía `leerRetos` (la colección entera de retos del atleta, sin
+         ventana) y no se usaba para nada: el motor lee las dos semanas que
+         necesita por id. Fuera. Los pesajes llevan la misma ventana que el
+         resto de colecciones diarias: quien necesita el peso INICIAL lo tiene
+         en el perfil (`initialWeight`), no en el primer documento. */
       const [
         assignments, workoutLogs, bodyweightLogs, stepLogs,
         nutritionProgram, dietConfig, dietas, registrosDeComida, roadmap,
-        retos, cardio,
+        cardio,
       ] = await Promise.all([
         leerAsignaciones(db, email, perfil.userId),
         leerLogsDeEntreno(db, email),
-        leerPesajes(db, email),
+        leerPesajes(db, email, desde),
         leerPasos(db, email, desde),
         leerProgramaDeNutricion(db, email),
         leerConfigDeDieta(db, email),
         leerDietas(db, email),
         leerRegistrosDeComida(db, email, desde),
         leerRoadmap(db, email),
-        leerRetos(db, email),
         leerSesionesDeCardio(db, email, desde),
       ]);
 
@@ -205,6 +209,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           completionLogs: registrosDeComida,
           coachDiets: dietas.filter(d => !d.selfManaged),
           assignments,
+          // El cardio se descargaba y NO se le pasaba al motor, así que el
+          // reto de Zona 2 veía `undefined` y no podía ni evaluarse.
+          cardioSessions: cardio,
           projection: null,
         },
         hoy,
@@ -216,8 +223,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (reto.pending) hecho.push('reto: pendiente del coach (lunes)');
       else if (reto.challenge) hecho.push(`reto: ${reto.challenge.status}`);
 
-      // Las sesiones de cardio no generan acciones todavía; se leen para que
-      // el resumen diga si el atleta sigue moviéndose fuera de la sala.
       if (cardio.length > 0) hecho.push(`${cardio.length} sesiones de cardio en ${DIAS_DE_HISTORIAL} días`);
 
       resumen.push({ email, hecho });

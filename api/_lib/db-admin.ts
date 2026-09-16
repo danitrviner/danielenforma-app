@@ -69,8 +69,10 @@ export async function leerLogsDeEntreno(db: Firestore, email: string): Promise<W
   return snap.docs.map(d => conId<WorkoutLog>(d));
 }
 
-export async function leerPesajes(db: Firestore, email: string): Promise<BodyweightLog[]> {
-  const snap = await db.collection('bodyweightLogs').where('athleteId', '==', email).get();
+export async function leerPesajes(db: Firestore, email: string, desde?: string): Promise<BodyweightLog[]> {
+  let q = db.collection('bodyweightLogs').where('athleteId', '==', email);
+  if (desde) q = q.where('date', '>=', desde);
+  const snap = await q.get();
   return snap.docs.map(d => conId<BodyweightLog>(d));
 }
 

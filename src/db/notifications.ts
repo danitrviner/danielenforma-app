@@ -1,6 +1,7 @@
 import { db, collection, doc, setDoc, getDocs, updateDoc, query, where, orderBy, limit } from '../firebase';
 import { AppNotification } from '../types';
 import { forceLocalOnly, setLocalBypassMode, stripUndefined, esFalloDePermisos, escribirEnLotes } from './core';
+import { reportarError } from '../monitorizacion';
 import { escribirLocal } from '../utils/almacenLocal';
 
 // ── Notifications ─────────────────────────────────────────────────────────────
@@ -64,6 +65,14 @@ export async function getNotifications(
       // La consulta de abajo es la de siempre: trae todo y recorta aquí. Es
       // cara, y por eso esto es una red y no el camino normal; en cuanto el
       // índice exista, no se vuelve a ejecutar.
+      //
+      // Solo para `failed-precondition` (= índice ausente). Antes atrapaba
+      // cualquier error, así que un fallo de red o de permisos también caía a
+      // la consulta cara, y el índice ausente no llegaba nunca a Sentry: se
+      // pagaba la lectura completa para siempre sin que nada lo dijera.
+      const code = (errIndice as { code?: string })?.code;
+      if (code !== 'failed-precondition') throw errIndice;
+      reportarError(errIndice, 'firestore', { operacion: 'getNotifications', motivo: 'índice compuesto ausente' });
       console.warn('getNotifications: sin índice compuesto todavía, se recorta en el cliente:', errIndice);
       const snap = await getDocs(
         query(collection(db, 'notifications'), where('recipientEmail', '==', recipientEmail)),

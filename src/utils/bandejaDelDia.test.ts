@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   construirBandejaDelDia, contarPorUrgencia, EntradaBandeja,
-  DIAS_SIN_ENTRAR, DIAS_SIN_CHECKIN, DIAS_AVISO_RENOVACION, DIAS_DE_GRACIA_SETUP,
+  DIAS_SIN_ENTRAR, DIAS_SIN_CHECKIN, DIAS_DE_GRACIA_SETUP,
 } from './bandejaDelDia';
 import { addDays } from './trainingWeek';
 import type { Mesocycle, UserProfile, WeightCheckIn, WorkoutAssignment } from '../types';
@@ -71,6 +71,21 @@ describe('lo que le tiene parado', () => {
 });
 
 describe('lo que hay que contestar hoy', () => {
+  it('un check-in de alguien que NO está en la lista de atletas sale igual', () => {
+    // Baja del CRM, cuenta anonimizada o correo sin perfil: antes la bandeja
+    // recorría atletas y estos se perdían, mientras la campana los contaba.
+    const r = construirBandejaDelDia(entrada({
+      atletas: [],
+      checkins: [checkin('2026-09-14', { approved: false, coachFeedback: '' })],
+      asignacionesPorEmail: new Map(),
+    }));
+    const huerfano = r.find(s => s.categoria === 'revision');
+    expect(huerfano).toBeTruthy();
+    expect(huerfano!.texto).toContain('no está en tu lista');
+    expect(huerfano!.destino).toBe('/reviews');
+  });
+
+
   it('cuenta los check-ins sin contestar', () => {
     const s = construirBandejaDelDia(entrada({
       checkins: [checkin('2026-09-14', { approved: false, coachFeedback: '' }), checkin('2026-09-15', { approved: false, coachFeedback: '' })],

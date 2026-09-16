@@ -1,4 +1,5 @@
 import type { CrmServicio, CrmPago, CrmSuscripcion } from '../types';
+import { hoyIsoLocal } from '../../../utils/trainingWeek';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    El historial del cliente, como registro de actividad
@@ -118,10 +119,8 @@ const PESO: Record<TipoEvento, number> = {
   alta: 0, renovacion: 1, servicio: 2, suscripcion: 3, cobro: 4, devolucion: 5, fin: 6,
 };
 
-function hoyISO(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
+// Tercera copia de «hoy en local» que había en el repo; ahora la compartida.
+const hoyISO = hoyIsoLocal;
 
 /**
  * Cuántas VENTAS ha habido, que no es lo mismo que cuántos cobros.

@@ -1,5 +1,6 @@
 import { Mesocycle, UserProfile, WeightCheckIn, WorkoutAssignment } from '../types';
-import { addDays, diasEntreFechas } from './trainingWeek';
+import { addDays, diasEntreFechas, isoLocal } from './trainingWeek';
+import { DIAS_AVISO_RENOVACION } from './calidadDelPlan';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    LA BANDEJA DEL DÍA — qué atleta necesita algo tuyo, y con cuánta prisa.
@@ -75,8 +76,6 @@ export interface EntradaBandeja {
 export const DIAS_SIN_ENTRAR = 7;
 /** Días sin mandar un check-in a partir de los cuales se avisa. */
 export const DIAS_SIN_CHECKIN = 10;
-/** Días antes del final del bloque en los que empieza a avisarse de la renovación. */
-export const DIAS_AVISO_RENOVACION = 7;
 /** Por debajo de este % de montaje, un plan con semanas de vida está a medias. */
 export const SETUP_INCOMPLETO_PCT = 80;
 /** Días desde el alta antes de los cuales no se avisa de un setup incompleto. */
@@ -87,7 +86,7 @@ const PESO_URGENCIA: Record<UrgenciaSenal, number> = { bloqueado: 0, hoy: 1, pro
 function aIso(fecha: Date | string): string | null {
   const d = fecha instanceof Date ? fecha : new Date(fecha);
   if (Number.isNaN(d.getTime())) return null;
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  return isoLocal(d);
 }
 
 export function construirBandejaDelDia(entrada: EntradaBandeja): SenalDelDia[] {
@@ -176,6 +175,26 @@ export function construirBandejaDelDia(entrada: EntradaBandeja): SenalDelDia[] {
         && resumen.pct < SETUP_INCOMPLETO_PCT) {
       añadir('setup', 'pronto', 'setup', `Montaje al ${resumen.pct} % desde hace semanas`, 'setup');
     }
+  }
+
+  /* Los check-ins de quien NO está en la lista de atletas: bajas del CRM,
+     cuentas anonimizadas, o un correo sin perfil. Antes la bandeja recorría
+     los check-ins directamente y salían todos; al pasar a recorrer atletas,
+     estos se perdían — mientras la campana de Revisiones los seguía contando.
+     Un cliente de baja que manda un check-in es precisamente de lo que hay
+     que enterarse. */
+  const conocidos = new Set(atletas.map(a => a.email.toLowerCase()));
+  for (const [emailMin, suyos] of checkinsPorEmail) {
+    if (conocidos.has(emailMin)) continue;
+    const pendientes = suyos.filter(c => !c.approved || !c.coachFeedback).length;
+    if (pendientes === 0) continue;
+    const email = suyos[0].email;
+    senales.push({
+      id: `revision_${email}_checkins_huerfano`,
+      athleteEmail: email, athleteName: email, urgencia: 'hoy', categoria: 'revision',
+      texto: `${pendientes} ${pendientes === 1 ? 'revisión pendiente' : 'revisiones pendientes'} · no está en tu lista de atletas`,
+      destino: '/reviews',
+    });
   }
 
   // Los cobros van aparte: no cuelgan de un atleta de la app (el CRM tiene

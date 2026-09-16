@@ -12,7 +12,7 @@ import {
 } from '../../dbService';
 import { getDossier } from '../../db/dossier';
 import { computeSetupChecklist } from '../../utils/clientSetup';
-import { revisarCalidadDelPlan, defectosQueBloquean, mesoEnCurso } from '../../utils/calidadDelPlan';
+import { revisarCalidadDelPlan, defectosQueBloquean, mesoEnCurso, DIAS_AVISO_RENOVACION } from '../../utils/calidadDelPlan';
 import { tareaPorId } from '../../ai/tareas';
 import { OPEN_AI_PANEL_EVENT, OpenAiPanelDetail } from '../../ai/events';
 import { diasEntreFechas, addDays } from '../../utils/trainingWeek';
@@ -56,7 +56,6 @@ import { Card, RingSeal, Button, Banner, ListRow, Icon, Input } from '../ui';
    ═══════════════════════════════════════════════════════════════════════════ */
 
 /** Con el bloque a una semana de acabarse, la pantalla cambia a modo renovación. */
-const DIAS_PARA_AVISAR_RENOVACION = 7;
 
 interface Props {
   athlete: UserProfile;
@@ -109,7 +108,9 @@ export default function ClientImplantacionPanel({
   // sesiones del bloque tienen ejercicios dentro—, así que NO entran en
   // `cargando`: el recorrido se pinta sin esperarlas y el repaso aparece
   // cuando llegan. Clave compartida con Entrenamientos.
-  const { data: workouts = [] } = useQuery({
+  // Sin `= []`: para la checklist, `[]` es «lo he mirado y no hay» y sale
+  // como pendiente; `undefined` es «todavía no sé» y sale como `na`.
+  const { data: workouts } = useQuery({
     queryKey: ['workouts'], queryFn: getWorkouts,
   });
   // Estas dos cierran dos pasos que hasta ahora había que marcar a mano
@@ -127,7 +128,8 @@ export default function ClientImplantacionPanel({
      GUARDAR el resumen y elegir el paso inicial. Las dos cosas necesitan el
      recorrido completo —un % calculado a medias se guardaría en el perfil y
      saldría en la parrilla de clientes— así que esas dos siguen esperando. */
-  const cargando = cargandoRoadmap || cargandoPrograma || cargandoReto || cargandoTareas;
+  const cargando = cargandoRoadmap || cargandoPrograma || cargandoReto || cargandoTareas
+    || workouts === undefined || cardioAssignments === undefined || dossier === undefined;
   const tareasManuales = useMemo(() => manualTasks ?? [], [manualTasks]);
 
   // ── Antes de publicar ──────────────────────────────────────────────────────
@@ -149,7 +151,7 @@ export default function ClientImplantacionPanel({
   const diasParaCerrar = enCurso
     ? diasEntreFechas(hoy, addDays(enCurso.startDate, enCurso.weeks * 7 - 1))
     : null;
-  const tocaRenovar = diasParaCerrar !== null && diasParaCerrar <= DIAS_PARA_AVISAR_RENOVACION;
+  const tocaRenovar = diasParaCerrar !== null && diasParaCerrar <= DIAS_AVISO_RENOVACION;
   const esClienteNuevo = mesocycles.length === 0;
 
   const lanzarTarea = (id: 'mes_nuevo' | 'renovar_mes') => {

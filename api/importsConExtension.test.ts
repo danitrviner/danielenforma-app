@@ -24,7 +24,11 @@ import { dirname, join, relative, resolve } from 'node:path';
    extensión en todo el camino.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-const IMPORT_RELATIVO = /\bfrom\s+'(\.\.?\/[^']*)'/g;
+/* Cuatro formas de traer un módulo, no una: `from './x'` (import y export),
+   `import './x'` de efecto, `import('./x')` dinámico, y cualquiera de ellas
+   con comillas dobles. La primera versión solo veía la primera con comillas
+   simples. */
+const IMPORT_RELATIVO = /(?:\bfrom\s+|\bimport\s+|\bimport\s*\(\s*)['"](\.\.?\/[^'"]*)['"]/g;
 
 /** A qué fichero nuestro apunta un especificador, o `null` si no es nuestro. */
 function resolverImport(desde: string, especificador: string): string | null {

@@ -33,7 +33,7 @@ import TarjetaIdentidadAtleta from './TarjetaIdentidadAtleta';
 const PHASE_COLORS = ['var(--color-accent)', 'var(--color-data)', 'var(--color-warning)', 'var(--color-chart-3)'];
 const DEFAULT_STEP_GOAL = 8000;
 import { COACH_EMAIL } from '../utils/coach';
-import { ventanaPasos } from '../utils/ventanaHistorial';
+import { ventanaPasos, ventanaCardio } from '../utils/ventanaHistorial';
 import { hoyIsoLocal } from '../utils/trainingWeek';
 
 interface Props {
@@ -119,9 +119,10 @@ export default function AthleteRoadmapScreen({ profile }: Props) {
   // paso da de sobra para el motor de retos, que solo mira 4 semanas atrás.
   // Una consulta con ventana en vez de dos —ni el histórico entero de la
   // banda, que son cientos de lecturas por cada visita al Road map.
-  const cardioSince = useMemo(() => `${new Date().getFullYear()}-01-01`, []);
+  // Misma clave y ventana que CardioScreen: una sola lectura de cardio por sesión.
+  const cardioSince = ventanaCardio();
   const { data: cardioSessions = [], isPending: loadingCardio } = useQuery({
-    queryKey: ['cardioSessionsSince', profile.email, cardioSince],
+    queryKey: ['cardioSessions', profile.email, cardioSince],
     queryFn: () => getCardioSessionsSince(profile.email, cardioSince),
   });
   // Solo para el calendario: la foto y la nota del entrenador de cada día.

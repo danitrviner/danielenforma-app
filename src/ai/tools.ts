@@ -15,7 +15,7 @@ import {
   getUserProfileByEmail,
   getCheckIns,
   getWorkoutAssignments,
-  getWorkouts,
+  getWorkouts, getCardioAssignmentsForAthlete,
   getWorkoutLogs,
   getExercises,
   getMesocycles,
@@ -88,6 +88,7 @@ import { validateDietPayload, DietUpdatePayload, validateMesocyclePayload, Mesoc
 import { UserProfile, WeightCheckIn, Diet, FoodCategory, Mesocycle, MuscleGroup, MuscleGroupConfig, MUSCLE_LABELS, MUSCLE_ORDER, ExperienceLevel, PeriodizationBlockPayload, ProposalExpediente, DossierFact, DossierPatch } from '../types';
 import { cambiosDeMesociclo, cambiosDeDieta, cambiosDePeriodizacion } from './cambiosPropuesta';
 import { tareaPorId, type BriefSeccion } from './tareas';
+import { mediana } from '../utils/perfilProgramacion';
 
 // Definiciones que se envían a la API en cada petición. Mantener el orden y el
 // contenido estables: forman parte del prefijo cacheado del prompt.
@@ -1319,6 +1320,7 @@ async function getSetupStatus(email: string): Promise<string> {
     onboarding, allCheckins, mesocycles, workoutAssignments, diets, dietConfig,
     nutritionConfig, qAssignments, photoAssignments, photos, workoutLogs,
     roadmap, nutritionProgram, weeklyChallenge, manualTasks,
+    workouts, cardioAssignments, dossier,
   ] = await Promise.all([
     getOnboarding(email),
     getCheckIns(),
@@ -1335,6 +1337,13 @@ async function getSetupStatus(email: string): Promise<string> {
     getNutritionProgram(email),
     getWeeklyChallenge(email, isoWeekKey(hoy)),
     getCoachClientTasks(email),
+    // Las tres que cierran «sesiones con ejercicios», «cardio» y «ficha viva».
+    // Sin ellas la checklist las da por «todavía no aplica» y el asistente
+    // le decía al modelo que NO las propusiera — para todos los clientes,
+    // siempre — mientras la pestaña de Implantación las enseñaba en rojo.
+    getWorkouts(),
+    getCardioAssignmentsForAthlete(email),
+    getDossier(email),
   ]);
 
   const resultado = computeSetupChecklist({
@@ -1342,6 +1351,7 @@ async function getSetupStatus(email: string): Promise<string> {
     workoutAssignments, diets, dietConfig, nutritionConfig, qAssignments,
     photoAssignments, photos, workoutLogs, roadmap, nutritionProgram,
     weeklyChallenge, manualTasks, today: hoy,
+    workouts, cardioAssignments, dossier,
   });
 
   const diasDePlan = profile.planStartDate
@@ -2178,13 +2188,6 @@ function masFrecuente(valores: string[]): string | null {
   return [...cuenta.entries()].sort((a, b) => b[1] - a[1])[0][0];
 }
 
-function mediana(valores: number[]): number | null {
-  if (valores.length === 0) return null;
-  const orden = [...valores].sort((a, b) => a - b);
-  const mitad = Math.floor(orden.length / 2);
-  const m = orden.length % 2 ? orden[mitad] : (orden[mitad - 1] + orden[mitad]) / 2;
-  return Math.round(m * 10) / 10;
-}
 
 async function getExerciseUsage(muscleGroup?: string, athleteEmail?: string): Promise<string> {
   const [workouts, exercises] = await Promise.all([getWorkouts(), getExercises()]);

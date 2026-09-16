@@ -1,6 +1,6 @@
 import type { BudgetVec, Diet, DietCompletionLog, FoodCategory } from '../types';
 import { comidasDelDia, cupoDelDia } from './diaDeDieta';
-import { addToPlaced, itemWeightLabel, foodNameShort } from './exchangeHelpers';
+import { addToPlaced, itemWeightLabel, foodNameShort, round2 } from './exchangeHelpers';
 import { exchangeToKcal } from './nutritionConstants';
 import { addDays, diasEntreFechas } from './trainingWeek';
 
@@ -96,7 +96,6 @@ export interface ComidaDeLaSemana {
 }
 
 const CERO: BudgetVec = { HC: 0, PROT: 0, GRASA: 0 };
-const round2 = (n: number) => Math.round(n * 100) / 100;
 
 /** Un día se da por «en objetivo» si no se pasa ni se queda corto por más de esto. */
 export const TOLERANCIA_DIA = 1;

@@ -105,15 +105,18 @@ function Seccion({ n, titulo, children, accion, presentando = false }: {
   );
 }
 
-/** Numera en orden las `<Seccion>` que existan, saltándose las que no se pintan. */
-function Secciones({ children }: { children: React.ReactNode }) {
+/** Numera en orden las `<Seccion>` que existan, saltándose las que no se
+ *  pintan, y les pasa `presentando`: antes iba a mano en las once, y cada
+ *  bloque nuevo tenía que acordarse o su botón se colaba en el modo
+ *  presentación. */
+function Secciones({ children, presentando }: { children: React.ReactNode; presentando: boolean }) {
   let n = 0;
   return (
     <>
       {React.Children.map(children, hijo => {
         if (!React.isValidElement(hijo)) return hijo;
         n += 1;
-        return React.cloneElement(hijo as React.ReactElement<{ n?: number }>, { n });
+        return React.cloneElement(hijo as React.ReactElement<{ n?: number; presentando?: boolean }>, { n, presentando });
       })}
     </>
   );
@@ -243,8 +246,8 @@ export default function ClientRevisionPanel({
         peso={peso}
       />
 
-      <Secciones>
-        <Seccion presentando={presentando} titulo="Cómo va cada patrón">
+      <Secciones presentando={presentando}>
+        <Seccion titulo="Cómo va cada patrón">
           <BloquePatrones
             patrones={revision.patrones}
             ejerciciosPorPatron={revision.ejerciciosPorPatron}
@@ -257,7 +260,6 @@ export default function ClientRevisionPanel({
         </Seccion>
 
         <Seccion
-          presentando={presentando}
           titulo="Lo que sube y lo que baja"
           accion={
             <Button variant="ghost" onClick={() => onGoToTab('entrenamientos')}>
@@ -273,7 +275,6 @@ export default function ClientRevisionPanel({
         </Seccion>
 
         <Seccion
-          presentando={presentando}
           titulo="Volumen por grupo"
           accion={
             <Button variant="ghost" onClick={() => onGoToTab('entrenamientos')}>
@@ -294,7 +295,7 @@ export default function ClientRevisionPanel({
             solo hace pesas ocupa sitio en el vídeo y no dice nada; y en cuanto
             registre una sesión, aparece solo. */}
         {(cardio.sesiones > 0 || cardio.ultimaSesion) && (
-          <Seccion presentando={presentando} titulo="El cardio">
+          <Seccion titulo="El cardio">
             <BloqueCardio cardio={cardio} onGoToTab={onGoToTab} todoAbierto={todoAbierto} />
           </Seccion>
         )}
@@ -303,7 +304,7 @@ export default function ClientRevisionPanel({
             así no sube nada, la respuesta casi siempre está aquí —duerme poco,
             arrastra estrés, o hay un grupo con agujetas que no se van—. Es la
             explicación del bloque de arriba, no una sección independiente. */}
-        <Seccion presentando={presentando} titulo="Cómo ha llegado">
+        <Seccion titulo="Cómo ha llegado">
           <BloqueBienestar bienestar={revision.bienestar} todoAbierto={todoAbierto} />
         </Seccion>
 
@@ -311,7 +312,6 @@ export default function ClientRevisionPanel({
             hecho, luego qué ha comido, y solo entonces qué ha pasado con su
             cuerpo — que es la consecuencia de los dos anteriores. */}
         <Seccion
-          presentando={presentando}
           titulo="Qué ha comido"
           accion={
             <Button variant="ghost" onClick={() => onGoToTab('dietas')}>
@@ -326,7 +326,6 @@ export default function ClientRevisionPanel({
             preguntas distintas y van seguidas: el coach cuenta primero la
             selección y luego el número. Los dos leen la misma ventana. */}
         <Seccion
-          presentando={presentando}
           titulo="Adherencia y hábitos"
           accion={
             <Button variant="ghost" onClick={() => onGoToTab('reportes')}>
@@ -346,7 +345,6 @@ export default function ClientRevisionPanel({
         </Seccion>
 
         <Seccion
-          presentando={presentando}
           titulo="El cuerpo"
           accion={
             <Button variant="ghost" onClick={() => onGoToTab('cuerpo')}>
@@ -370,7 +368,6 @@ export default function ClientRevisionPanel({
         </Seccion>
 
         <Seccion
-          presentando={presentando}
           titulo="Lo que te ha mandado"
           accion={
             <Button variant="ghost" onClick={() => onGoToTab('revisiones')}>
@@ -391,7 +388,6 @@ export default function ClientRevisionPanel({
             su lado: el reto es lo único de la app que le pide algo concreto cada
             semana, y el peldaño es la promesa a medio plazo. */}
         <Seccion
-          presentando={presentando}
           titulo="Retos y nivel"
         >
           <BloqueRetosNivel
@@ -410,7 +406,7 @@ export default function ClientRevisionPanel({
 
         {/* Va el último porque es la conclusión: los bloques de arriba son la
             prueba, y este es lo que se le dice. */}
-        <Seccion presentando={presentando} titulo="Qué le digo">
+        <Seccion titulo="Qué le digo">
           <BloqueCierre
             athleteEmail={athlete.email}
             athleteName={athlete.displayName}

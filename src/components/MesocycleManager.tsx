@@ -8,10 +8,9 @@ import {
 } from '../types';
 import {
   getMesocycles, createMesocycle, updateMesocycle, deleteMesocycle,
-  getAllUserProfiles, getExercises, getWorkouts, updateWorkout,
+  getAllUserProfiles, getExercises, getWorkouts, updateWorkout, updateWorkoutStrict,
   createWorkoutStrict, createWorkoutAssignmentStrict,
-  deleteWorkoutsByMesocycleIdStrict, deleteWorkoutAssignmentsByMesocycleIdStrict,
-  borrarAsignacionesReprogramables,
+  deleteWorkoutsByMesocycleIdStrict, borrarAsignacionesReprogramables,
   getUserProfileByEmail, migratePrimaryFocusToMuscleGroup,
   getMesocycleTemplates, createTask, getWorkoutLogs, getWorkoutAssignmentsByMesocycleIds,
 } from '../dbService';
@@ -109,16 +108,6 @@ function isStale(m: Mesocycle, dist: WeekDistribution): boolean {
 
 type GeneratorPhase = 'idle' | 'loading' | 'preview' | 'assigning' | 'done' | 'error';
 
-// OJO: la versión anterior hacía `new Date(str+'T00:00:00')` (medianoche LOCAL)
-// y luego `.toISOString()` (UTC). En España (UTC+1/+2) eso resta un día: con
-// `startDate` un domingo, la primera sesión del mesociclo se generaba el sábado
-// y el descanso caía en viernes en vez de en domingo. Mismo motivo por el que
-// existe `hoyIsoLocal` en trainingWeek.ts — aritmética de fecha en local de
-// principio a fin, sin pasar nunca por UTC.
-function pad2(n: number): string { return String(n).padStart(2, '0'); }
-// Había aquí una copia local de `addDays`, idéntica a la de `trainingWeek`.
-// Dos copias de la misma regla de fechas es como se acaba arreglando una y
-// dejando la otra mal: ahora se usa la compartida.
 
 const NOMBRE_DIA = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
 /** La misma lista en la abreviatura de una letra que se usa en los calendarios. */
@@ -1669,18 +1658,40 @@ export default function MesocycleManager({
       // WorkoutAssignment points back to the same doc. Editing a day's exercises later
       // (in "Ejercicios programados") edits that single doc, so it applies to every week
       // at once — there's nothing to keep in sync across duplicates anymore.
+      /* Los días conservados se quedan con su `Workout`, y ese doc tiene el
+         mismo `mesocycleId` y `dayIndex` que el nuevo que se iba a crear aquí.
+         Crear otro dejaba DOS sesiones para el mismo día del ciclo, y
+         `sesionesDeMesociclo` se queda con la primera que lea — que puede ser
+         la vieja. «Asignar bloque», las propuestas del asistente y el propio
+         asistente asignaban entonces la rutina que el coach acababa de
+         sustituir, sin ningún error.
+
+         Así que para esos días se ACTUALIZA el doc existente con los ejercicios
+         nuevos, en vez de crear otro. Es el modelo que ya tiene la app: una
+         sesión es un doc reutilizado en todas las vueltas, y editarlo lo
+         cambia para todas. El entreno pasado no se pierde: sus series están en
+         el `WorkoutLog`, no en la rutina. */
+      const conservadaPorDia = new Map<number, string>();
+      for (const a of conservadas) {
+        const w = allWorkouts.find(x => x.id === a.workoutId);
+        if (w?.dayIndex != null && !conservadaPorDia.has(w.dayIndex)) conservadaPorDia.set(w.dayIndex, w.id);
+      }
+
       const dayWorkoutIds: string[] = [];
       for (let dayIdx = 0; dayIdx < editing.daysPerWeek; dayIdx++) {
         const pd = previewDays[dayIdx] ?? { dayIndex: dayIdx, exercises: [], warnings: [] };
         const exercises: WorkoutExercise[] = pd.exercises.map(({ name: _name, equipmentMismatch: _mismatch, ...we }) => we);
+        const name = nombreDeSesion({ tipo: tiposCiclo[dayIdx], dayIdx, athleteName, meso: editing });
 
+        const existente = conservadaPorDia.get(dayIdx);
+        if (existente) {
+          await updateWorkoutStrict(existente, { name, exercises });
+          dayWorkoutIds.push(existente);
+          continue;
+        }
         // createWorkoutStrict throws on Firestore failure — no silent local fallback
         const workout = await createWorkoutStrict({
-          ownerId:     coachId,
-          name:        nombreDeSesion({ tipo: tiposCiclo[dayIdx], dayIdx, athleteName, meso: editing }),
-          mesocycleId: editing.id,
-          dayIndex:    dayIdx,
-          exercises,
+          ownerId: coachId, name, mesocycleId: editing.id, dayIndex: dayIdx, exercises,
         });
         dayWorkoutIds.push(workout.id);
       }

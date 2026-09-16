@@ -3,6 +3,7 @@ import {
   NutritionProgram, Roadmap, StepLog, UserProfile, WorkoutAssignment, WorkoutLog,
 } from '../types.js';
 import { addDays } from './trainingWeek.js';
+import { conEstadoReal } from './estadoDeAsignacion.js';
 import { computeActivePhase } from './fasesNutricion.js';
 import { computeLadderStatus } from './levelLadder.js';
 import { DEFAULT_LEVEL_LADDER } from '../data/defaultLevelLadder.js';
@@ -84,7 +85,14 @@ export function planificarLatido(
   // Mismo criterio que tenía TrainingScreen: una semana de margen. Antes de
   // eso una sesión pendiente puede recuperarse y no es un fallo.
   const corte = addDays(hoy, -DIAS_PARA_DARSE_POR_PERDIDA);
-  const perdidas = foto.assignments.filter(a => a.status === 'pending' && a.date < corte);
+  // Primero, la verdad: un día con entreno GUARDADO está hecho, diga lo que
+  // diga `status`. Hay asignaciones en producción que quedaron en `pending`
+  // por la reasignación vieja (auditoría §4.1) aunque el atleta las entrenó;
+  // sin esto, la primera pasada nocturna las habría marcado como perdidas —
+  // y las pantallas que no aplican `conEstadoReal` las habrían enseñado como
+  // falladas para siempre.
+  const asignaciones = conEstadoReal(foto.assignments, foto.workoutLogs);
+  const perdidas = asignaciones.filter(a => a.status === 'pending' && a.date < corte);
   for (const a of perdidas) {
     acciones.push({ tipo: 'marcar_sesion_perdida', assignmentId: a.id, fecha: a.date });
   }

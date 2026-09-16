@@ -324,8 +324,11 @@ export function computeSetupChecklist(inputs: SetupInputs): SetupResult {
     set('c_resena', manualStatus(manualTasks, 'c_resena', false));
     set('c_referidos', manualStatus(manualTasks, 'c_referidos', false));
 
-    const decisionTask = manualTasks.find(t => t.itemId === 'c_decision_renovacion');
-    if (decisionTask?.done) {
+    // `manualTasks` puede ser `undefined` (aún no ha llegado): entonces tampoco
+    // se sabe si la decisión está tomada, así que `na`, igual que las demás.
+    if (manualTasks === undefined) {
+      set('c_decision_renovacion', 'na');
+    } else if (manualTasks.find(t => t.itemId === 'c_decision_renovacion')?.done) {
       set('c_decision_renovacion', 'done');
     } else {
       const expiry = calcPlanExpirySimple(profile, today);

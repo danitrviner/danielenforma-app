@@ -1,6 +1,7 @@
 import { Mesocycle, TaskItem, WorkoutAssignment } from '../types';
 import { PlanEvent } from './planEvents';
 import { mesocycleWeekNumber } from './progression';
+import { esFechaIso } from './trainingWeek';
 import { cicloDiasDeMeso } from './asignacionMesociclo';
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -72,7 +73,11 @@ export function ordenDeMovimiento(
   fechaDestino: string,
   ctx: { fechaOrigen: string; volumeEvents: PlanEvent[]; mesocycles: Mesocycle[] },
 ): OrdenDeMovimiento | null {
-  if (!fechaDestino || fechaDestino === ctx.fechaOrigen) return null;
+  // `esFechaIso`, no solo «no vacía»: un `<input type="date">` de escritorio
+  // admite un año de cinco cifras, y '20026-03-01' habría llegado tal cual a
+  // Firestore — o, en un evento de volumen, a `mesocycleWeekNumber`, que lo
+  // convierte en la semana 940.000 y reescribe la regla con eso.
+  if (!esFechaIso(fechaDestino) || fechaDestino === ctx.fechaOrigen) return null;
 
   if (movible.tipo === 'entreno') return { tipo: 'entreno', assignmentId: movible.id, fecha: fechaDestino };
   if (movible.tipo === 'hito') return { tipo: 'hito', taskId: movible.id, fecha: fechaDestino };

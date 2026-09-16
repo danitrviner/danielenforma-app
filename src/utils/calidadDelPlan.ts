@@ -65,6 +65,11 @@ function listar(xs: string[]): string {
 }
 
 /** El bloque en curso a día de hoy, o null si no hay ninguno abierto. */
+/** Días antes del final del bloque en los que empieza a avisarse de la
+ *  renovación. Lo leen la bandeja del coach y la pestaña de Implantación:
+ *  con dos constantes, cambiar una dejaba a la otra avisando en otro día. */
+export const DIAS_AVISO_RENOVACION = 7;
+
 export function mesoEnCurso(mesocycles: Mesocycle[], today: string): Mesocycle | null {
   for (const m of mesocycles) {
     if (!m.startDate) continue;
