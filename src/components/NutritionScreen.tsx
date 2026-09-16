@@ -560,6 +560,23 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loadingPhase1, loadingDia, viewDate, diaLog, cupoPautado, dietaPautada, allDietsList, profile.email]);
 
+  /* ¿El coach ha cambiado el cupo DESPUÉS de que se sembrara el día?
+     El cupo se congela al sembrar el día a propósito: mover el objetivo con la
+     comida ya marcada haría que el atleta viera cómo «desaprueba» un día que
+     ya había cuadrado. Pero quedarse callado es peor: se queda comiendo contra
+     un número viejo sin saberlo. Solo para HOY — los días pasados se quedan
+     con el cupo que tuvieron, que es lo que de verdad pasó. */
+  const cupoCambiado = useMemo(() => {
+    if (!selectedDiet || !cupoPautado || viewDate !== hoyIsoLocal()) return false;
+    return BUDGET_CATS.some(c => round2(selectedDiet.budget[c] ?? 0) !== round2(cupoPautado[c] ?? 0));
+  }, [selectedDiet, cupoPautado, viewDate]);
+
+  /** Adopta el cupo nuevo sin tocar lo que el atleta ya tiene puesto ni marcado. */
+  const actualizarAlCupoNuevo = useCallback(() => {
+    if (!cupoPautado) return;
+    setSelectedDiet(prev => (prev ? { ...prev, budget: { ...cupoPautado } } : prev));
+  }, [cupoPautado]);
+
   // ── Derived ──────────────────────────────────────────────────────────────────
 
   const { doneByCat, mealDoneByCat, totalItems, doneItems } = useMemo(() => {
@@ -1903,6 +1920,39 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                 <Icon name="tune" size="s" />
                 Editar reparto por comida
               </button>
+
+              {/* El cupo del día se CONGELA al sembrarlo: si el coach cambia la
+                  dieta a media mañana, el atleta sigue con el de antes y no se
+                  entera. Congelarlo es lo correcto —no se le puede mover el
+                  objetivo con la comida ya marcada— pero callárselo no. */}
+              {cupoCambiado && (
+                <div className="bg-accent-bg border border-accent-line rounded-surface px-4 py-3.5 flex flex-wrap items-center gap-3">
+                  <Icon name="sync_problem" size="s" style={{ color: 'var(--color-accent)', flexShrink: 0 }} />
+                  <p className="font-sans text-label text-ink-2 leading-relaxed flex-1 min-w-[200px]">
+                    Tu entrenador ha cambiado el cupo de hoy. Estás viendo el de antes.
+                  </p>
+                  <Button size="s" onClick={actualizarAlCupoNuevo}>Actualizar</Button>
+                </div>
+              )}
+
+              {/* La dieta del coach puede tener cupo y ninguna comida con
+                  alimentos dentro: es lo que pasa cuando pauta los
+                  intercambios y deja que el atleta elija qué come. Hasta ahora
+                  eso se veía como una lista de comidas vacías sin ninguna
+                  explicación, y parecía que la app no había cargado el plan o
+                  que el coach no lo había terminado. */}
+              {!!dietaPautada
+                && selectedDiet.meals.length > 0
+                && selectedDiet.meals.every(m => m.items.length === 0) && (
+                <div className="bg-raised border border-hairline rounded-surface px-4 py-3.5 flex items-start gap-3">
+                  <Icon name="info" size="s" style={{ color: 'var(--color-accent)', marginTop: 2, flexShrink: 0 }} />
+                  <p className="font-sans text-label text-ink-2 leading-relaxed">
+                    Tu plan de hoy trae el <b className="text-ink">cupo de intercambios</b>, pero los
+                    alimentos los eliges tú. Añádelos a cada comida con el botón{' '}
+                    <b className="text-ink">Añadir</b>, o usa el recetario para que te cuadren solos.
+                  </p>
+                </div>
+              )}
 
               <div className="space-y-4">
                 {selectedDiet.meals.map((meal, mi) => {
