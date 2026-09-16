@@ -1,7 +1,7 @@
 import React from 'react';
 import { CardioDeLaVentana } from '../../utils/cardioDeLaVentana';
 import { TrainingLoadState } from '../../utils/cardioMetrics';
-import { MONTHS_ES } from '../../utils/trainingWeek';
+import { MONTHS_ES, fechaCorta } from '../../utils/trainingWeek';
 import { HubTab } from '../ClientHub';
 import { Sparkline, Badge, Button, Collapsible } from '../ui';
 
@@ -42,11 +42,6 @@ interface Props {
   cardio: CardioDeLaVentana;
   onGoToTab: (tab: HubTab) => void;
   todoAbierto?: boolean;
-}
-
-function fechaCorta(iso: string): string {
-  const [, m, d] = iso.split('-');
-  return `${parseInt(d, 10)} ${MONTHS_ES[parseInt(m, 10) - 1]}`;
 }
 
 export default function BloqueCardio({ cardio, onGoToTab, todoAbierto = false }: Props) {

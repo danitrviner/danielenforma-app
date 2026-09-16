@@ -9,7 +9,7 @@ import { DEFAULT_LEVEL_LADDER } from '../../data/defaultLevelLadder';
 import { computeLadderStatus } from '../../utils/levelLadder';
 import { buildChallengeMemory } from '../../utils/challengeMemory';
 import { evaluateChallengeProgress } from '../../utils/weeklyChallenge';
-import { hoyIsoLocal } from '../../utils/trainingWeek';
+import { hoyIsoLocal, fechaCorta } from '../../utils/trainingWeek';
 import { HubTab } from '../ClientHub';
 import { Badge, BarraCumplimiento, Skeleton, Button, Collapsible } from '../ui';
 
@@ -48,11 +48,6 @@ interface Props {
   assignments: WorkoutAssignment[];
   onGoToTab: (tab: HubTab) => void;
   todoAbierto?: boolean;
-}
-
-function fechaCorta(iso: string): string {
-  const [y, m, d] = iso.split('-').map(Number);
-  return new Date(y, m - 1, d).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' });
 }
 
 export default function BloqueRetosNivel({

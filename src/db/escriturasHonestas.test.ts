@@ -38,13 +38,6 @@ const DIR = new URL('.', import.meta.url).pathname;
 // relanzar — castigando código correcto.
 // `reset` está aquí por `resetDoctrina`: volver al criterio por defecto borra el
 // doc del coach, así que es una escritura aunque el verbo no lo parezca.
-// `marcar` estaba solo en su versión inglesa (`mark`): una función nueva
-// llamada `marcarRespuestaVista` se clasificaba como LECTURA y el escáner le
-// exigía justo lo contrario —no relanzar— de lo que debe hacer una escritura.
-// Lo mismo con `publish` frente a `publicar`, en `publishWeeklyMenu`. Cada vez
-// que pasa es el mismo error: la lista tiene el verbo en un idioma y no en el
-// otro, y una escritura se cuela como lectura sin que nadie lo note.
-const ESCRITURA = /^(create|update|delete|reset|save|add|mark|set|assign|deactivate|submit|invite|publish|archive|bulkUpsert|upsert|guardar|crear|actualizar|borrar|eliminar|publicar|ocultar|promover|subir|registrar|importar|archivar|desarchivar|marcar)/;
 
 // Excepciones deliberadas. Cada una lleva su comentario en el código explicando
 // por qué; si añades una aquí, añade también el porqué allí.
@@ -54,7 +47,13 @@ const EXCEPCIONES: Record<string, string> = {
   seedFoodItemsIfEmpty: 'catálogo del sistema, no dato del usuario',
 };
 
-interface Sitio { fichero: string; linea: number; fn: string; relanza: boolean }
+interface Sitio { fichero: string; linea: number; fn: string; relanza: boolean; escribe: boolean }
+
+/* Lo que convierte a una función en escritura es lo que HACE, no cómo se
+   llama. La lista de verbos por nombre se quedó corta dos veces seguidas
+   (`marcar…`, `publish…`), y cada vez una escritura se colaba como lectura y
+   el escáner le exigía justo lo contrario. */
+const ESCRIBE = /\b(setDoc|updateDoc|deleteDoc|addDoc|writeBatch|escribirEnLotes|runTransaction|batch\.(set|update|delete))\b/;
 
 function escanear(): Sitio[] {
   const sitios: Sitio[] = [];
@@ -62,14 +61,20 @@ function escanear(): Sitio[] {
     if (!nombre.endsWith('.ts') || nombre.endsWith('.test.ts') || nombre === 'core.ts') continue;
     const lineas = readFileSync(join(DIR, nombre), 'utf8').split('\n');
     let fn = '';
+    let escribe = false;
     lineas.forEach((l, i) => {
       const m = /^(?:export )?(?:async )?function (\w+)/.exec(l.trim());
-      if (m) fn = m[1];
+      if (m) {
+        fn = m[1];
+        const fin = lineas.slice(i + 1).findIndex(x => x === '}');
+        escribe = ESCRIBE.test(lineas.slice(i, fin === -1 ? undefined : i + 1 + fin).join('\n'));
+      }
       if (l.includes('setLocalBypassMode(true, err);')) {
         sitios.push({
           fichero: nombre,
           linea: i + 1,
           fn,
+          escribe,
           // La ventana se corta en el fin de la función (una línea `}` a
           // columna 0): sin ese tope se colaba en la función siguiente y daba
           // por "relanzadora" a la lectura de arriba.
@@ -103,14 +108,14 @@ describe('escrituras honestas ante permission-denied', () => {
 
   it('toda escritura relanza ante un fallo de permisos', () => {
     const incumplen = sitios
-      .filter(s => ESCRITURA.test(s.fn) && !(s.fn in EXCEPCIONES) && !s.relanza)
+      .filter(s => s.escribe && !(s.fn in EXCEPCIONES) && !s.relanza)
       .map(s => `${s.fichero}:${s.linea} ${s.fn}`);
     expect(incumplen).toEqual([]);
   });
 
   it('ninguna lectura relanza — su fallback local es correcto', () => {
     const incumplen = sitios
-      .filter(s => !ESCRITURA.test(s.fn) && s.relanza)
+      .filter(s => !s.escribe && s.relanza)
       .map(s => `${s.fichero}:${s.linea} ${s.fn}`);
     expect(incumplen).toEqual([]);
   });

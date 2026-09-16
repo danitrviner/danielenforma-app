@@ -2,7 +2,7 @@ import React from 'react';
 import { UserProfile } from '../../types';
 import { VentanaRevision, PesoVsSemanaPasada } from '../../utils/revisionCoach';
 import { TrainingReport } from '../../utils/trainingReport';
-import { MONTHS_ES } from '../../utils/trainingWeek';
+import { MONTHS_ES, fechaCorta } from '../../utils/trainingWeek';
 import { Card, Delta, Badge } from '../ui';
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -24,11 +24,6 @@ interface Props {
 }
 
 /** «29 ago» — sin año, que el rango siempre cae dentro del mismo o del anterior. */
-function fechaCorta(iso: string): string {
-  const [, m, d] = iso.split('-');
-  return `${parseInt(d, 10)} ${MONTHS_ES[parseInt(m, 10) - 1]}`;
-}
-
 function Cifra({ label, valor, sub, tono = 'ink' }: {
   label: string; valor: React.ReactNode; sub?: React.ReactNode; tono?: 'ink' | 'atenuado';
 }) {

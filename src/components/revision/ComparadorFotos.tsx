@@ -3,6 +3,7 @@ import { ProgressPhoto, PhotoView, BodyweightLog } from '../../types';
 import { fotosDeVista, parPorDefecto, pesoEnFecha, etiquetaComparativa } from '../../utils/paresDeFotos';
 import PhotoCompareCurtain from '../progress/PhotoCompareCurtain';
 import { SegmentedControl, Select, EmptyState } from '../ui';
+import { fechaCorta } from '../../utils/trainingWeek';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Comparador de fotos del coach — con los dos extremos ELEGIBLES.
@@ -29,12 +30,6 @@ interface Props {
   bodyweightLogs?: BodyweightLog[];
 }
 
-function fechaCorta(iso: string): string {
-  return new Date(iso + 'T12:00:00').toLocaleDateString('es-ES', {
-    day: '2-digit', month: 'short', year: '2-digit',
-  });
-}
-
 export default function ComparadorFotos({ photos, athleteEmail, bodyweightLogs = [] }: Props) {
   const [vista, setVista] = useState<PhotoView>('front');
   // Par elegido a mano. Se guarda por vista: cambiar de frente a espalda no
@@ -58,7 +53,7 @@ export default function ComparadorFotos({ photos, athleteEmail, bodyweightLogs =
     return parPorDefecto(fotos);
   }, [fotos, elegido, vista]);
 
-  const opciones = fotos.map(f => ({ value: f.date, label: fechaCorta(f.date) }));
+  const opciones = fotos.map(f => ({ value: f.date, label: fechaCorta(f.date, { anio: true }) }));
 
   const setPar = (antes: string, ahora: string) =>
     setElegido(prev => ({ ...prev, [vista]: [antes, ahora] }));
@@ -102,7 +97,7 @@ export default function ComparadorFotos({ photos, athleteEmail, bodyweightLogs =
             className="w-full rounded-surface border border-hairline object-cover"
           />
           <figcaption className="font-mono text-caption text-ink-3 mt-1">
-            {fechaCorta(fotos[0].date)} · única foto de esta vista
+            {fechaCorta(fotos[0].date, { anio: true })} · única foto de esta vista
           </figcaption>
         </figure>
       ) : (

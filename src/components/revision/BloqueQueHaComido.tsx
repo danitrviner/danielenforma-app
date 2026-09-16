@@ -3,7 +3,7 @@ import { BudgetVec } from '../../types';
 import {
   ComidaDeLaSemana, DiaComido, ItemComido, OrigenItem, totalesDeLaVentana,
 } from '../../utils/comidaDeLaSemana';
-import { MONTHS_ES } from '../../utils/trainingWeek';
+import { MONTHS_ES, fechaCorta } from '../../utils/trainingWeek';
 import { Badge, BarraCumplimiento, Collapsible, EmptyState, Icon } from '../ui';
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -26,7 +26,6 @@ import { Badge, BarraCumplimiento, Collapsible, EmptyState, Icon } from '../ui';
    nota al pie lo dice para que nadie lea el 100 % como una medalla.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-const DIAS_SEMANA = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
 
 const ORIGEN_META: Record<OrigenItem, { label: string; icon: string } | null> = {
   // Lo puesto a mano es el caso normal: no se rotula, para no llenar la tabla
@@ -35,12 +34,6 @@ const ORIGEN_META: Record<OrigenItem, { label: string; icon: string } | null> = 
   receta: { label: 'receta', icon: 'skillet' },
   menu: { label: 'menú', icon: 'menu_book' },
 };
-
-function fechaCorta(iso: string): string {
-  const [, m, d] = iso.split('-');
-  const dia = new Date(`${iso}T12:00:00`).getDay();
-  return `${DIAS_SEMANA[dia]} ${parseInt(d, 10)} ${MONTHS_ES[parseInt(m, 10) - 1]}`;
-}
 
 function totalDe(v: BudgetVec): number {
   return Math.round((v.HC + v.PROT + v.GRASA) * 10) / 10;
@@ -132,7 +125,7 @@ function FilaDia({ dia, abierto, onAbrir }: {
   if (!dia.registrado) {
     return (
       <li className="px-3 py-2.5 flex items-center gap-3 border-b border-hairline last:border-b-0">
-        <span className="font-mono text-caption text-ink-3 tabular-nums w-[84px] shrink-0">{fechaCorta(dia.fecha)}</span>
+        <span className="font-mono text-caption text-ink-3 tabular-nums w-[84px] shrink-0">{fechaCorta(dia.fecha, { dia: true })}</span>
         <span className="font-sans text-label text-ink-4">Sin registrar</span>
       </li>
     );
@@ -147,7 +140,7 @@ function FilaDia({ dia, abierto, onAbrir }: {
         aria-expanded={abierto}
         className="w-full px-3 py-2.5 flex items-center gap-3 text-left hover:bg-raised/50 transition-colors"
       >
-        <span className="font-mono text-caption text-ink-2 tabular-nums w-[84px] shrink-0">{fechaCorta(dia.fecha)}</span>
+        <span className="font-mono text-caption text-ink-2 tabular-nums w-[84px] shrink-0">{fechaCorta(dia.fecha, { dia: true })}</span>
         <span className="flex gap-3 flex-wrap flex-1 min-w-0">
           <CeldaMacro label="HC" comido={dia.comido.HC} cupo={dia.cupo.HC} />
           <CeldaMacro label="Prot" comido={dia.comido.PROT} cupo={dia.cupo.PROT} />

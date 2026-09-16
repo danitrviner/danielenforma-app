@@ -1,6 +1,6 @@
 import React from 'react';
 import { ExercisePerf } from '../../utils/trainingReport';
-import { MONTHS_ES } from '../../utils/trainingWeek';
+import { MONTHS_ES, fechaCorta } from '../../utils/trainingWeek';
 import { Delta, Badge, Sparkline } from '../ui';
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -27,12 +27,6 @@ interface Props {
   curvas?: Record<string, number[]>;
   /** Última fecha con serie registrada, de `revision.ultimaSesionPorEjercicio`. */
   ultimaSesion?: Record<string, string>;
-}
-
-function fechaCorta(iso: string | undefined): string {
-  if (!iso) return '—';
-  const [, m, d] = iso.split('-');
-  return `${parseInt(d, 10)} ${MONTHS_ES[parseInt(m, 10) - 1]}`;
 }
 
 export default function TablaEjerciciosPatron({

@@ -102,6 +102,22 @@ export function getWeekStart(dateStr: string): string {
 
 export const MONTHS_ES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
 
+export const DIAS_SEMANA_ES = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
+
+/**
+ * «5 sep», «vie 5 sep» o «5 sep 26». Sin ceros a la izquierda y siempre con
+ * el mes de `MONTHS_ES`, no con `toLocaleDateString`: la Revisión tenía SEIS
+ * copias de esto y tres formatos distintos («5 sep», «05 sept», «vie 5 sep»)
+ * en la misma pantalla — la que Dani graba en vídeo. `undefined` → «—».
+ */
+export function fechaCorta(iso: string | undefined, opts: { dia?: boolean; anio?: boolean } = {}): string {
+  if (!iso) return '—';
+  const [y, m, d] = iso.split('-');
+  const base = `${parseInt(d, 10)} ${MONTHS_ES[parseInt(m, 10) - 1]}`;
+  const conDia = opts.dia ? `${DIAS_SEMANA_ES[new Date(`${iso}T12:00:00`).getDay()]} ${base}` : base;
+  return opts.anio ? `${conDia} ${y.slice(2)}` : conDia;
+}
+
 export function formatDate(dateStr: string): string {
   if (!dateStr) return '';
   const [y, m, d] = dateStr.split('-');
