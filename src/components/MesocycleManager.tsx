@@ -11,6 +11,7 @@ import {
   getAllUserProfiles, getExercises, getWorkouts, updateWorkout,
   createWorkoutStrict, createWorkoutAssignmentStrict,
   deleteWorkoutsByMesocycleIdStrict, deleteWorkoutAssignmentsByMesocycleIdStrict,
+  borrarAsignacionesReprogramables,
   getUserProfileByEmail, migratePrimaryFocusToMuscleGroup,
   getMesocycleTemplates, createTask, getWorkoutLogs, getWorkoutAssignmentsByMesocycleIds,
 } from '../dbService';
@@ -35,12 +36,13 @@ import {
 } from '../utils/trainingSplits';
 import { zoneLabel, heatmapBg, heatmapText, VOLUME_ZONE_LEGEND, GENERIC_LANDMARK } from '../utils/volumeZones';
 import { VOLUME_LANDMARKS_DEFAULT, type VolumeLandmark } from '../data/volumeLandmarks';
+import { descartarDiasCerrados } from '../utils/estadoDeAsignacion';
 import { getVolumeLandmarks } from '../dbService';
 import VolumeSuggestionSheet from './VolumeSuggestionSheet';
 import { useToast } from '../hooks/useToast';
 import { nombreDeMeso, nombreDeSesion } from '../utils/nombresMeso';
 import { fechasDelMesociclo, cicloDiasDeMeso } from '../utils/asignacionMesociclo';
-import { esFechaIso } from '../utils/trainingWeek';
+import { esFechaIso, hoyIsoLocal } from '../utils/trainingWeek';
 import { useAthleteProfileSignals } from '../hooks/useAthleteProfileSignals';
 import { useAthleteWeight } from '../hooks/useAthleteWeight';
 import { useConfirm } from '../hooks/useConfirm';
@@ -1652,9 +1654,17 @@ export default function MesocycleManager({
     setGenError('');
 
     try {
-      // Dedup: remove previous workouts/assignments for this mesocycle from Firestore first
-      await deleteWorkoutsByMesocycleIdStrict(editing.id);
-      await deleteWorkoutAssignmentsByMesocycleIdStrict(editing.id);
+      // Se reprograma lo que todavía no ha pasado; los días ya entrenados se
+      // conservan tal cual. Antes esto borraba TODO y lo recreaba en `pending`,
+      // y el lunes que el atleta había completado volvía a aparecer sin hacer
+      // (auditoría §4.1). Las rutinas de los días conservados tampoco se borran,
+      // o esas asignaciones quedarían apuntando a una sesión inexistente.
+      // Fecha LOCAL, no UTC: entre medianoche y las dos de la mañana en España
+      // `toISOString()` todavía devuelve el día anterior, y eso decide aquí qué
+      // se conserva y qué se reprograma.
+      const hoyDelCoach = hoyIsoLocal();
+      const { conservadas } = await borrarAsignacionesReprogramables(editing.id, selectedEmail, hoyDelCoach);
+      await deleteWorkoutsByMesocycleIdStrict(editing.id, conservadas.map(a => a.workoutId));
 
       // One Workout doc per distinct training day — reused across every week instead of
       // duplicated. A 10-week × 4-day/week mesocycle used to create 40 near-identical
@@ -1697,24 +1707,30 @@ export default function MesocycleManager({
             offsetsDelSplit: splitAsignado ? offsetsDeSplit(splitAsignado) : undefined,
             repartirEnElCiclo: editing.cycleDays !== undefined,
           });
-      let done = 0;
+      // Migración 24-08: se escribe el EMAIL. Antes era el UID — esta era la
+      // única colección del proyecto con esa clave.
+      const programadas: Omit<WorkoutAssignment, 'id'>[] = [];
       for (let week = 1; week <= vueltas; week++) {
         for (let dayIdx = 0; dayIdx < editing.daysPerWeek; dayIdx++) {
-          const date = addDays(editing.startDate, (week - 1) * cicloDias + (offsets[dayIdx] ?? dayIdx));
-
-          // Migración 24-08: se escribe el EMAIL. Antes era el UID — esta era
-          // la única colección del proyecto con esa clave.
-          await createWorkoutAssignmentStrict({
+          programadas.push({
             workoutId:   dayWorkoutIds[dayIdx],
             athleteId:   selectedEmail,
             mesocycleId: editing.id,
-            date,
+            date:        addDays(editing.startDate, (week - 1) * cicloDias + (offsets[dayIdx] ?? dayIdx)),
             status:      'pending',
           });
-
-          done++;
-          setAssignProgress({ done, total });
         }
+      }
+
+      // Un día conservado ya está cubierto: volver a crearlo lo duplicaría en el
+      // calendario del atleta.
+      const porCrear = descartarDiasCerrados(programadas, conservadas);
+      setAssignProgress({ done: 0, total: porCrear.length });
+      let done = 0;
+      for (const asignacion of porCrear) {
+        await createWorkoutAssignmentStrict(asignacion);
+        done++;
+        setAssignProgress({ done, total: porCrear.length });
       }
 
       await queryClient.invalidateQueries({ queryKey: ['workouts'] });
@@ -1754,22 +1770,34 @@ export default function MesocycleManager({
     setVolcado({ estado: 'trabajando', mensaje: '' });
 
     try {
-      await deleteWorkoutAssignmentsByMesocycleIdStrict(editing.id);
+      // Igual que en `handleAssign`: cambiar las fechas del bloque no puede
+      // borrar los días que el atleta ya entrenó (auditoría §4.1). Aquí las
+      // rutinas ni se tocan, así que basta con conservar las asignaciones.
+      const hoyDelCoach = hoyIsoLocal();
+      const { conservadas } = await borrarAsignacionesReprogramables(editing.id, selectedEmail, hoyDelCoach);
 
-      for (const { dayIdx, date } of fechas) {
-        await createWorkoutAssignmentStrict({
+      const porCrear = descartarDiasCerrados(
+        fechas.map(({ dayIdx, date }) => ({
           workoutId:   sesiones[dayIdx].workoutIds[0],
           athleteId:   selectedEmail,
           mesocycleId: editing.id,
           date,
-          status:      'pending',
-        });
+          status:      'pending' as const,
+        })),
+        conservadas,
+      );
+
+      for (const asignacion of porCrear) {
+        await createWorkoutAssignmentStrict(asignacion);
       }
 
       await queryClient.invalidateQueries({ queryKey: ['workoutAssignments'] });
+      const conservadasTxt = conservadas.length > 0
+        ? ` · ${conservadas.length} ${conservadas.length === 1 ? 'día ya entrenado se conserva' : 'días ya entrenados se conservan'}`
+        : '';
       setVolcado({
         estado: 'hecho',
-        mensaje: `${fechas.length} ${fechas.length === 1 ? 'sesión asignada' : 'sesiones asignadas'} · ${vueltas} ${vueltas === 1 ? 'vuelta' : 'vueltas'} × ${sesiones.length} desde el ${editing.startDate}.`,
+        mensaje: `${porCrear.length} ${porCrear.length === 1 ? 'sesión asignada' : 'sesiones asignadas'} · ${vueltas} ${vueltas === 1 ? 'vuelta' : 'vueltas'} × ${sesiones.length} desde el ${editing.startDate}${conservadasTxt}.`,
       });
       showToast('Mesociclo asignado al atleta', 'success');
     } catch (err: unknown) {
