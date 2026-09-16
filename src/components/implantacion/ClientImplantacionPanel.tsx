@@ -8,9 +8,10 @@ import {
 import {
   getRoadmap, getNutritionProgram, getWeeklyChallenge, getCoachClientTasks,
   setSeededTaskDone, createCoachClientTask, updateCoachClientTask, deleteCoachClientTask,
-  updateUserProfile,
+  updateUserProfile, getWorkouts,
 } from '../../dbService';
 import { computeSetupChecklist } from '../../utils/clientSetup';
+import { revisarCalidadDelPlan, defectosQueBloquean } from '../../utils/calidadDelPlan';
 import { construirRecorrido, PasoConEstado } from '../../utils/implantacion';
 import { clasificarAviso } from '../../utils/avisosDelCoach';
 import { idDePaso } from '../../utils/recorridoDelPlan';
@@ -91,7 +92,24 @@ export default function ClientImplantacionPanel({
   const { data: manualTasks = [], isPending: cargandoTareas } = useQuery({
     queryKey: tareasKey, queryFn: () => getCoachClientTasks(athlete.email),
   });
+  // Las rutinas solo hacen falta para el repaso de calidad —mirar si las
+  // sesiones del bloque tienen ejercicios dentro—, así que NO entran en
+  // `cargando`: el recorrido se pinta sin esperarlas y el repaso aparece
+  // cuando llegan. Clave compartida con Entrenamientos.
+  const { data: workouts = [] } = useQuery({
+    queryKey: ['workouts'], queryFn: getWorkouts,
+  });
   const cargando = cargandoRoadmap || cargandoPrograma || cargandoReto || cargandoTareas;
+
+  // ── Antes de publicar ──────────────────────────────────────────────────────
+  // Lo que está puesto pero mal puesto. La checklist contesta a «¿está hecho?»;
+  // esto a «¿está bien?», que no es lo mismo: un grupo prioritario con cero
+  // series está hecho y está roto.
+  const defectos = useMemo(() => revisarCalidadDelPlan({
+    profile: athlete, mesocycles, workouts, diets, dietConfig,
+    qAssignments, photoAssignments, roadmap, today: hoy,
+  }), [athlete, mesocycles, workouts, diets, dietConfig, qAssignments, photoAssignments, roadmap, hoy]);
+  const bloqueantes = useMemo(() => defectosQueBloquean(defectos), [defectos]);
 
   const [activo, setActivo] = useState<string | null>(null);
   const [tituloExtra, setTituloExtra] = useState('');
@@ -273,6 +291,48 @@ export default function ClientImplantacionPanel({
           </Button>
         )}
       </Card>
+
+      {/* ── Antes de publicar ────────────────────────────────────────────── */}
+      {defectos.length > 0 && (
+        <Card
+          title="Antes de publicar"
+          action={
+            <span className="font-mono text-caption text-ink-3">
+              {bloqueantes.length > 0
+                ? `${bloqueantes.length} ${bloqueantes.length === 1 ? 'rompe' : 'rompen'} algo que ve el atleta`
+                : 'nada roto, solo cosas que mirar'}
+            </span>
+          }
+          className="space-y-2"
+        >
+          <ul className="space-y-2 list-none">
+            {defectos.map(d => (
+              <li key={d.id} className="flex items-start gap-2.5">
+                <Icon
+                  name={d.gravedad === 'bloquea' ? 'error' : 'info'}
+                  size="s"
+                  className={`mt-0.5 shrink-0 ${d.gravedad === 'bloquea' ? 'text-danger' : 'text-warning'}`}
+                />
+                <span className="min-w-0 flex-1">
+                  <span className="font-sans text-label text-ink block">{d.titulo}</span>
+                  <span className="font-mono text-caption text-ink-3 block leading-relaxed">
+                    {d.consecuencia}
+                  </span>
+                </span>
+                {d.tab && (
+                  <Button variant="ghost" onClick={() => onAbrirEditor(d.tab as HubTab)}>
+                    Arreglar
+                  </Button>
+                )}
+              </li>
+            ))}
+          </ul>
+          <p className="font-mono text-caption text-ink-3 leading-relaxed">
+            Esto no es la checklist: son cosas que están hechas pero mal hechas, y que ninguna
+            comprobación automática de las de arriba puede ver.
+          </p>
+        </Card>
+      )}
 
       {avisosUrgentes.size > 0 && (
         <Banner tone="danger">

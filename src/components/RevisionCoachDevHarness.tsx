@@ -4,7 +4,7 @@ import {
   UserProfile, Exercise, Mesocycle, MuscleGroup, MuscleGroupConfig, WorkoutLog,
   ProgressPhoto, BodyweightLog, NutritionProgram, Diet, OnboardingData,
   WeightCheckIn, Questionnaire, QuestionnaireResponse, StepLog, WeeklyChallenge,
-  BodyMeasurement, BodyMetricKey, CardioSession, MUSCLE_ORDER,
+  BodyMeasurement, BodyMetricKey, CardioSession, Workout, MUSCLE_ORDER,
 } from '../types';
 import { bodyweightForAthleteKey, pesoPrimeroKey, pesoUltimoKey } from '../hooks/useAthleteWeight';
 import { VOLUME_LANDMARKS_DEFAULT } from '../data/volumeLandmarks';
@@ -386,6 +386,21 @@ const CARDIO: CardioSession[] = (() => {
   return out;
 })();
 
+// Las cuatro sesiones del bloque en curso, una de ellas SIN ejercicios: es el
+// caso que el repaso de «Antes de publicar» tiene que cazar, porque está hecho
+// —la sesión existe y la checklist la da por buena— y el atleta se la encuentra
+// en blanco.
+const RUTINAS: Workout[] = [
+  { id: 'w_1', ownerId: 'coach', name: 'Día 1 · Torso', mesocycleId: 'meso_2', dayIndex: 0,
+    exercises: [{ exerciseId: 'press_banca', sets: 3 }, { exerciseId: 'remo_barra', sets: 3 }] },
+  { id: 'w_2', ownerId: 'coach', name: 'Día 2 · Pierna', mesocycleId: 'meso_2', dayIndex: 1,
+    exercises: [{ exerciseId: 'sentadilla', sets: 3 }, { exerciseId: 'peso_muerto_rumano', sets: 3 }] },
+  { id: 'w_3', ownerId: 'coach', name: 'Día 3 · Empuje', mesocycleId: 'meso_2', dayIndex: 2,
+    exercises: [{ exerciseId: 'press_inclinado', sets: 3 }] },
+  { id: 'w_4', ownerId: 'coach', name: 'Día 4 · Tirón', mesocycleId: 'meso_2', dayIndex: 3,
+    exercises: [] },
+] as unknown as Workout[];
+
 // ── Lo que el atleta manda ──────────────────────────────────────────────────
 // Tres check-ins: uno contestado y aprobado, otro contestado sin aprobar y el
 // último sin tocar. Así se ve la lista de pendientes con sus dos estados.
@@ -484,6 +499,7 @@ export default function RevisionCoachDevHarness() {
     // escalera por defecto, que es lo que tiene la mayoría de los atletas.
     qc.setQueryData(['weeklyChallengesForAthlete', EMAIL], RETOS);
     qc.setQueryData(['cardioSessions', EMAIL], CARDIO);
+    qc.setQueryData(['workouts'], RUTINAS);
     // Implantación.
     qc.setQueryData(['roadmap', EMAIL], null);
     // Dos recordatorios: uno vencido sobre un paso del montaje y una tarea
