@@ -233,11 +233,20 @@ export default function CoachRoadmapView({ athleteEmail, coachId, onGoToClientTa
     queryClient.invalidateQueries({ queryKey: questionnaireAssignmentsKey });
     queryClient.invalidateQueries({ queryKey: questionnairesKey });
     if (!roadmap) return;
-    const nuevos = ocurrencias.map((o, i) => ({
-      id: `qtpl_${Date.now()}_${i}_${Math.random().toString(36).slice(2, 5)}`,
-      title: o.titulo, type: 'hito' as const, lane: 'general' as const,
-      targetDate: o.fecha, status: 'pendiente' as const,
-    }));
+    // Se descartan las ocurrencias que ya están en el roadmap por título y
+    // fecha. Sin esto, volver a aplicar la plantilla al mismo bloque —algo que
+    // se hace sin pensar cuando se cambia una fila y se reaplica— dejaba el
+    // calendario con cada cuestionario repetido dos y tres veces, y solo se
+    // podían quitar uno a uno.
+    const yaEstan = new Set(roadmap.items.map(it => `${it.title}__${it.targetDate ?? ''}`));
+    const nuevos = ocurrencias
+      .filter(o => !yaEstan.has(`${o.titulo}__${o.fecha}`))
+      .map((o, i) => ({
+        id: `qtpl_${Date.now()}_${i}_${Math.random().toString(36).slice(2, 5)}`,
+        title: o.titulo, type: 'hito' as const, lane: 'general' as const,
+        targetDate: o.fecha, status: 'pendiente' as const,
+      }));
+    if (nuevos.length === 0) return;
     await handleSave({ ...roadmap, items: [...roadmap.items, ...nuevos] });
   }
 
