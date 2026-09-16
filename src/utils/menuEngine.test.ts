@@ -557,7 +557,13 @@ describe('reajustarDia', () => {
     const dia = {
       day: 'mon', dietId: 'd1', target: { HC: 10, PROT: 7, GRASA: 4 },
       meals: [
-        { ...comida('a', { HC: 3, PROT: 2, GRASA: 1 }), racionesExtra: [{ foodLabel: 'arroz de la receta vieja', gramos: 45 }] },
+        {
+          ...comida('a', { HC: 3, PROT: 2, GRASA: 1 }),
+          racionesExtra: [{
+            ingrediente: 'Arroz de la receta vieja', nombre: 'arroz de la receta vieja',
+            category: 'HC' as const, quantity: 1.5, gramos: 45,
+          }],
+        },
         comida('b', { HC: 3, PROT: 2, GRASA: 1 }),
       ],
     } as unknown as MenuDay;
@@ -565,7 +571,7 @@ describe('reajustarDia', () => {
     const r = reajustarDia({ dia, diet: DIETA, slots: SLOTS, foods: [], mode: 'OMNIVORO' });
     // Sin `foods` no hay con qué rellenar, pero lo VIEJO tiene que haber
     // desaparecido: era para un plato que ya no está.
-    const etiquetas = r.meals.flatMap(m => (m.racionesExtra ?? []).map(x => x.foodLabel));
+    const etiquetas = r.meals.flatMap(m => (m.racionesExtra ?? []).map(x => x.nombre));
     expect(etiquetas).not.toContain('arroz de la receta vieja');
   });
 
