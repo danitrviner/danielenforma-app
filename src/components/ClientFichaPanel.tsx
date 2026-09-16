@@ -15,6 +15,7 @@ import DossierPanel from './DossierPanel';
 import HistorialFichaPanel, { ActividadAtleta } from './HistorialFichaPanel';
 import EquipoClienteCard from '../features/gimnasio/EquipoClienteCard';
 import { Collapsible, Icon } from './ui';
+import { hoyIsoLocal } from '../utils/trainingWeek';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    ClientFichaPanel — LA ficha del atleta (Hub, pestaña "Ficha", zona "Atleta")
@@ -182,12 +183,12 @@ export default function ClientFichaPanel({
     [roadmap]
   );
   const nutriPhase = useMemo(
-    () => nutritionProgram ? computeActivePhase(nutritionProgram, new Date().toISOString().slice(0, 10)) : null,
+    () => nutritionProgram ? computeActivePhase(nutritionProgram, hoyIsoLocal()) : null,
     [nutritionProgram]
   );
 
   const activeMeso = useMemo(() => {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = hoyIsoLocal();
     const started = mesocycles.filter(m => m.startDate <= today);
     const current = started.sort((a, b) => b.startDate.localeCompare(a.startDate))[0] ?? null;
     if (!current) return null;

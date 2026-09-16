@@ -21,6 +21,7 @@ import { useTourTarget } from '../features/tutorial/TourTargetContext';
 import { Skeleton } from './ui';
 import { Icon, Button, PageHeader, ListRow } from './ui';
 import { dietaDelDia } from '../utils/diaDeDieta';
+import { addDays } from '../utils/trainingWeek';
 
 type NavTarget = 'checkin' | 'training' | 'nutrition' | 'roadmap' | 'academy' | 'cardio' | 'profile';
 
@@ -151,9 +152,7 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
      la clave no se comparte con Revisión ni con el Road map a propósito, que
      esos sí necesitan el histórico completo. */
   const desdePeso = useMemo(() => {
-    const d = new Date();
-    d.setDate(d.getDate() - 120);
-    return d.toISOString().split('T')[0];
+    return addDays(hoyIsoLocal(), -120);
   }, []);
   const { data: pesajes = [] } = useQuery({
     queryKey: ['bodyweightDesde', profile.email, desdePeso],

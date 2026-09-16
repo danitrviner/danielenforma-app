@@ -225,6 +225,10 @@ export function lunesDe(fechaIso: string): string {
   if (Number.isNaN(d.getTime())) return fechaIso;
   const dow = (d.getUTCDay() + 6) % 7; // 0 = lunes
   d.setUTCDate(d.getUTCDate() - dow);
+  // UTC de principio a fin, a propósito: la fecha se PARSEA con 'T00:00:00Z' y
+  // se mueve con `setUTCDate`, así que aquí `toISOString` es el par correcto.
+  // Mezclar un lado local con el otro en UTC es justo lo que da el día de menos.
+  // eslint-disable-next-line no-restricted-syntax -- coherente en UTC, ver arriba
   return d.toISOString().slice(0, 10);
 }
 

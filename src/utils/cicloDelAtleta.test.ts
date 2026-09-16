@@ -28,6 +28,7 @@ function asig(vuelta: number, dia: number, status: WorkoutAssignment['status'] =
     id: `v${vuelta}d${dia}`,
     workoutId: `w${dia}`,
     athleteId: 'atleta@enforma.com',
+    // eslint-disable-next-line no-restricted-syntax -- Date.UTC + setUTCDate
     date: d.toISOString().split('T')[0],
     status,
     mesocycleId: 'm1',

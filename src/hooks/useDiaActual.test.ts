@@ -12,7 +12,11 @@ describe('la fecha del día es LOCAL, no UTC', () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date(2026, 8, 2, 1, 30)); // 2 sep, 01:30 hora local
     expect(hoyIsoLocal()).toBe('2026-09-02');
-    expect(new Date().toISOString().split('T')[0]).not.toBe('2026-09-02');
+    // Y la versión mala, la que había antes, da el día de ayer. Se deja
+    // escrita aquí a propósito: es la única prueba de que el arreglo arregla
+    // algo. La regla de eslint la ignora en este fichero por lo mismo.
+    // eslint-disable-next-line no-restricted-syntax -- demuestra el fallo
+    expect(new Date().toISOString().slice(0, 10)).toBe('2026-09-01');
   });
 
   it('a las 23:30 sigue siendo el mismo día', () => {

@@ -7,7 +7,7 @@ import {
   getCoachTasksVencidas,
 } from '../dbService';
 import { avisosActivos, claveDeAviso } from '../utils/avisosDelCoach';
-import { hoyIsoLocal } from '../utils/trainingWeek';
+import { addDays, hoyIsoLocal } from '../utils/trainingWeek';
 import ClientHub, { HubTab, HUB_TABS, PESTANAS_RETIRADAS } from './ClientHub';
 import HomeCoachScreen from './HomeCoachScreen';
 import AthletesBar from './AthletesBar';
@@ -161,8 +161,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
   // Se calcula una vez por montaje, no por render: forma parte de la clave de
   // caché, y una clave que cambia en cada render vuelve a leer en cada render.
   const desdeVentana = useMemo(() => {
-    const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
-    return new Date(hoy.getTime() - 120 * 86_400_000).toISOString().slice(0, 10);
+    return addDays(hoyIsoLocal(), -120);
   }, []);
 
   const workoutLogsQueries = useQueries({
@@ -297,7 +296,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
   // Emit coach notifications for urgent clients (once per unique condition)
   useEffect(() => {
     if (enrichedAthletes.length === 0) return;
-    const now = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+    const now = hoyIsoLocal(); // YYYY-MM-DD
     for (const a of enrichedAthletes) {
       if (a.planExpired && a.planDaysLeft !== null) {
         createNotificationDeduped(`notif_pe_${a.email}_${now.slice(0, 7)}`, {

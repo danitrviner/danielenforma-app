@@ -152,6 +152,7 @@ describe('mesocycleWeekNumber · ciclos largos', () => {
       for (let dia = 0; dia < 9; dia++) {
         const d = new Date(Date.UTC(2026, 7, 1));
         d.setUTCDate(d.getUTCDate() + vuelta * 9 + dia);
+        // eslint-disable-next-line no-restricted-syntax -- Date.UTC + setUTCDate
         const iso = d.toISOString().slice(0, 10);
         expect(fechas.has(iso)).toBe(false);
         fechas.add(iso);

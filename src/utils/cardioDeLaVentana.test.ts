@@ -30,6 +30,7 @@ describe('construirCardioDeLaVentana', () => {
     // casi de cero y el cociente dispararía el estado. Se comprueba contra la
     // misma ventana alimentada solo con sus propios días.
     const base = Array.from({ length: 42 }, (_, i) => {
+      // eslint-disable-next-line no-restricted-syntax -- Date.UTC de los dos lados
       const d = new Date(Date.UTC(2026, 7, 1) + i * 86_400_000).toISOString().slice(0, 10);
       return sesion(d);
     });

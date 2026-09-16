@@ -14,7 +14,23 @@ function padDate(n: number): string { return String(n).padStart(2, '0'); }
  * comparar la fecha exacta de la asignación contra "hoy" (26-08).
  */
 export function hoyIsoLocal(): string {
-  const d = new Date();
+  return isoLocal(new Date());
+}
+
+/**
+ * Un `Date` como día de calendario `YYYY-MM-DD`, en hora LOCAL.
+ *
+ * La otra mitad del mismo problema que `hoyIsoLocal`. `d.toISOString()` da el
+ * día en UTC, así que una fecha construida en local —`new Date(2026, 8, 16)`,
+ * o un `Date` restado con `- N * 86_400_000`— se formatea como el día
+ * ANTERIOR durante las primeras horas del día en España. No lanza ningún
+ * error: solo devuelve un día menos, en un sitio del que nadie sospecha.
+ *
+ * Cuando la fecha se construye a propósito en UTC (`Date.UTC(...)`), esto NO
+ * es lo que quieres: ahí el par correcto es `Date.UTC` + `toISOString`, y hay
+ * que dejarlo con un comentario.
+ */
+export function isoLocal(d: Date): string {
   return `${d.getFullYear()}-${padDate(d.getMonth() + 1)}-${padDate(d.getDate())}`;
 }
 

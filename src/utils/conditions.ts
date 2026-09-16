@@ -23,6 +23,9 @@ function daysAgo(dateStr: string, days: number): string {
   const [y, m, d] = dateStr.split('-').map(Number);
   const date = new Date(Date.UTC(y, m - 1, d));
   date.setUTCDate(date.getUTCDate() - days);
+  // Construida con `Date.UTC` y movida con `setUTCDate`: coherente en UTC de
+  // los dos lados, que es la otra forma correcta de hacerlo.
+  // eslint-disable-next-line no-restricted-syntax -- coherente en UTC, ver arriba
   return date.toISOString().split('T')[0];
 }
 

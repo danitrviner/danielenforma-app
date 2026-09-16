@@ -1,4 +1,5 @@
 import { getRoadmap, saveRoadmap } from '../dbService';
+import { hoyIsoLocal } from './trainingWeek';
 
 // Añade un hito puntual al roadmap del atleta (carril 'general', ya
 // existente y sin rediseñar RoadmapTimeline) — deduplicado por id fijo, así
@@ -8,7 +9,7 @@ import { getRoadmap, saveRoadmap } from '../dbService';
 export async function addRoadmapMilestone(athleteId: string, id: string, title: string): Promise<void> {
   const roadmap = await getRoadmap(athleteId);
   if (roadmap.items.some(i => i.id === id)) return;
-  const today = new Date().toISOString().slice(0, 10);
+  const today = hoyIsoLocal();
   await saveRoadmap({
     ...roadmap,
     items: [...roadmap.items, {

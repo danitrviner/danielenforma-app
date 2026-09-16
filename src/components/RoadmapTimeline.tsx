@@ -7,6 +7,8 @@ import { Icon, Button, EmptyState, Sheet, Input, Select, Badge, BadgeTone } from
 import EventPlannerSheet from './roadmap/EventPlannerSheet';
 import ProposePlanSheet from './roadmap/ProposePlanSheet';
 import { pulsable } from '../utils/a11y';
+import { hoyIsoLocal } from '../utils/trainingWeek';
+import { isoLocal } from '../utils/trainingWeek';
 
 type PlannerLane = 'entrenamiento' | 'nutricion' | 'revisiones' | 'objetivos';
 
@@ -32,7 +34,9 @@ function diffDays(a: Date, b: Date): number {
   return Math.round((b.getTime() - a.getTime()) / 86400000);
 }
 function daysToPx(days: number): number { return Math.max(0, (days / 7) * WEEK_PX); }
-function isoDate(d: Date): string { return d.toISOString().split('T')[0]; }
+// Los `Date` de este fichero se construyen y se mueven en LOCAL (`setDate`),
+// así que formatearlos con `toISOString()` daba la víspera en España.
+function isoDate(d: Date): string { return isoLocal(d); }
 function fmtDate(s: string): string {
   const d = parseDate(s);
   return d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' });
@@ -428,7 +432,7 @@ export default function RoadmapTimeline({ mesocycles: mesocyclesProp, nutritionP
     : nutritionProgramProp;
 
   // ── Compute timeline bounds ──────────────────────────────────────────────────
-  const today = new Date().toISOString().split('T')[0];
+  const today = hoyIsoLocal();
   // `reviewEvents` es opcional (aún no conectado en la vista de solo lectura del
   // atleta) — su presencia decide si el carril "Revisiones" ocupa sitio o no.
   const showReviewLane = reviewEvents !== undefined;

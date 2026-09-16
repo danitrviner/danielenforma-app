@@ -95,7 +95,7 @@ export default function ClientWorkoutsPanel({
   // Assign modal
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [assignWorkoutId, setAssignWorkoutId] = useState('');
-  const [assignDate, setAssignDate] = useState(new Date().toISOString().split('T')[0]);
+  const [assignDate, setAssignDate] = useState(hoyIsoLocal());
   const [isAssigning, setIsAssigning] = useState(false);
   // Asignar un BLOQUE entero o una rutina suelta. Por defecto el bloque: es lo
   // que se hace el 95 % de las veces, y era justo lo que no se podía hacer
@@ -362,7 +362,7 @@ export default function ClientWorkoutsPanel({
             </span>
           </button>
           <button
-            onClick={() => { setAssignWorkoutId(workouts[0]?.id || ''); setAssignDate(new Date().toISOString().split('T')[0]); setShowAssignModal(true); }}
+            onClick={() => { setAssignWorkoutId(workouts[0]?.id || ''); setAssignDate(hoyIsoLocal()); setShowAssignModal(true); }}
             className="flex items-center gap-2 px-3 py-2 bg-accent/10 border border-accent/30 text-accent hover:bg-accent/20 font-mono text-caption uppercase rounded-control transition-all"
           >
             <span className="material-symbols-outlined text-body-s">add</span>

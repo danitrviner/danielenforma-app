@@ -20,6 +20,7 @@ import MicronutrientesPanel from './MicronutrientesPanel';
 import { EmptyState, SegmentedControl, Dialog, Button } from './ui';
 
 import { useConfirm } from '../hooks/useConfirm';
+import { hoyIsoLocal } from '../utils/trainingWeek';
 const GOAL_BODY_LABELS: Record<string, string> = {
   aumentar_musculo: 'Aumentar músculo',
   reducir_grasa:    'Reducir grasa',
@@ -124,7 +125,7 @@ export default function ClientDietsPanel({
     queryFn: () => getNutritionProgram(athlete.email),
   });
   const activePhase = useMemo(
-    () => nutritionProgram ? computeActivePhase(nutritionProgram, new Date().toISOString().split('T')[0]) : null,
+    () => nutritionProgram ? computeActivePhase(nutritionProgram, hoyIsoLocal()) : null,
     [nutritionProgram]
   );
 

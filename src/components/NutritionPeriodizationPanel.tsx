@@ -25,6 +25,8 @@ import { Skeleton } from './ui';
 import { Icon, Button, EmptyState, Input } from './ui';
 
 import { useConfirm } from '../hooks/useConfirm';
+import { hoyIsoLocal } from '../utils/trainingWeek';
+import { addDays } from '../utils/trainingWeek';
 // ── Types ──────────────────────────────────────────────────────────────────────
 
 interface Props {
@@ -73,10 +75,9 @@ function fmtDate(isoDate: string): string {
   return `${d}/${m}`;
 }
 
+// Era local por un lado y UTC por el otro: devolvía la víspera en España.
 function addWeeks(isoDate: string, weeks: number): string {
-  const d = new Date(isoDate + 'T00:00:00');
-  d.setDate(d.getDate() + weeks * 7);
-  return d.toISOString().split('T')[0];
+  return addDays(isoDate, weeks * 7);
 }
 
 
@@ -234,7 +235,7 @@ export default function NutritionPeriodizationPanel({
   // has no other way to learn this panel just changed them.
   const [refreshKey, setRefreshKey] = useState(0);
 
-  const today = new Date().toISOString().split('T')[0];
+  const today = hoyIsoLocal();
   const maintenanceKcal = onboarding ? estimateMaintenanceKcal(onboarding, currentWeightKg ?? onboarding.weightKg) : null;
 
   /* Duración derivada del objetivo y el ritmo, encadenando los pesos: cada fase

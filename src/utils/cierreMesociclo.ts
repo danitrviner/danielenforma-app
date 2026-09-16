@@ -5,7 +5,7 @@ import {
 import { buildTrainingReport, TrainingReport } from './trainingReport';
 import { buildMovementPatternReport, PatternPerf } from './movementPatterns';
 import { buildAccumulatedStimulusReport, IEARow } from './accumulatedStimulusIndex';
-import { addDays } from './trainingWeek';
+import { addDays, hoyIsoLocal} from './trainingWeek';
 import { adherenciaDeMesociclo } from './adherence';
 import { seriesRealizadasPorGrupo } from './programacion';
 
@@ -97,7 +97,7 @@ export function buildCierreMesociclo(params: {
   hoy?: string;
 }): CierreMesociclo {
   const { meso, mesocycles, logs, assignments, exercises } = params;
-  const hoy = params.hoy ?? new Date().toISOString().split('T')[0];
+  const hoy = params.hoy ?? hoyIsoLocal();
   const nombre = (params.athleteName ?? '').trim().split(/\s+/)[0] || 'Crack';
 
   const inicio = meso.startDate;

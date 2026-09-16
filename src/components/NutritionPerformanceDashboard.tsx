@@ -21,6 +21,7 @@ import { NotaDeFuente } from './FuentesCientificasSheet';
 import { Skeleton, SegmentedControl } from './ui';
 import { ritmoReal } from '../utils/ritmoDePeso';
 import { proponerAjuste } from '../utils/ajusteDePeriodizacion';
+import { hoyIsoLocal } from '../utils/trainingWeek';
 import {
   Icon, EmptyState,
   ALTURA_GRAFICA, MARGEN_GRAFICA, ANCHO_EJE_Y, REJILLA_GRAFICA, TICK_GRAFICA, EJE_GRAFICA,
@@ -190,7 +191,7 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
 
   const stepGoal = nutritionConfig?.stepGoal ?? DEFAULT_STEP_GOAL;
   const kcalPerStep = nutritionConfig?.kcalPerStep ?? DEFAULT_KCAL_PER_STEP;
-  const today = new Date().toISOString().split('T')[0];
+  const today = hoyIsoLocal();
 
   const plans: PhaseEnergyPlan[] = useMemo(
     () => program ? buildPhaseEnergyPlans(program, diets) : [],

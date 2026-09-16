@@ -34,6 +34,7 @@ const PHASE_COLORS = ['var(--color-accent)', 'var(--color-data)', 'var(--color-w
 const DEFAULT_STEP_GOAL = 8000;
 import { COACH_EMAIL } from '../utils/coach';
 import { ventanaPasos } from '../utils/ventanaHistorial';
+import { hoyIsoLocal } from '../utils/trainingWeek';
 
 interface Props {
   profile: UserProfile;
@@ -143,7 +144,7 @@ export default function AthleteRoadmapScreen({ profile }: Props) {
 
   const projection = useMemo<ProjectionResult | null>(() => {
     if (loading || !nutritionProgram) return null;
-    const today = new Date().toISOString().split('T')[0];
+    const today = hoyIsoLocal();
     return buildWeightProjection({
       program: nutritionProgram,
       plans: buildPhaseEnergyPlans(nutritionProgram, diets),
@@ -166,7 +167,7 @@ export default function AthleteRoadmapScreen({ profile }: Props) {
     return computeLadderStatus(ladder, {
       bodyweightLogs, stepLogs, workoutLogs,
       exercises, initialWeight: profile.initialWeight,
-      today: new Date().toISOString().split('T')[0],
+      today: hoyIsoLocal(),
     });
   }, [loading, roadmap, bodyweightLogs, stepLogs, workoutLogs, exercises, profile.initialWeight]);
 
@@ -175,7 +176,7 @@ export default function AthleteRoadmapScreen({ profile }: Props) {
   // podía revertir fases/items que el coach hubiera editado en paralelo.
   useEffect(() => {
     if (!roadmap || !ladderStatus || ladderStatus.newlyAchieved.length === 0) return;
-    const today = new Date().toISOString().split('T')[0];
+    const today = hoyIsoLocal();
     const achievedLevelIds = { ...(roadmap.levelLadder?.achievedLevelIds ?? {}) };
     for (const lvl of ladderStatus.newlyAchieved) achievedLevelIds[lvl.id] = today;
     const baseLadder = roadmap.levelLadder ?? DEFAULT_LEVEL_LADDER;
@@ -215,7 +216,7 @@ export default function AthleteRoadmapScreen({ profile }: Props) {
     const phaseData: PhaseData = {
       bodyweightLogs, stepLogs, workoutLogs,
       exercises, initialWeight: profile.initialWeight,
-      today: new Date().toISOString().split('T')[0],
+      today: hoyIsoLocal(),
       completionLogs: dietCompletionLogs, coachDiets: diets.filter(d => !d.selfManaged),
     };
     return computePhaseProgress(activePhase, phaseData);

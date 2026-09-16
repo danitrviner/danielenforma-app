@@ -1,4 +1,5 @@
 import { QuestionnaireAssignment, QuestionnaireResponse } from '../types';
+import { isoLocal } from './trainingWeek';
 import {
   todayStr, isDueToday, isUpcoming, ScheduleContext,
   startOfDay, planWeekDueDate, mesocycleEndDate,
@@ -41,7 +42,7 @@ export function hasAnsweredThisOccurrence(
     if (daysBack >= 7) return false; // no debería pasar con weekdays no vacío
     const pulse = new Date(now);
     pulse.setDate(pulse.getDate() - daysBack);
-    const pulseStr = pulse.toISOString().slice(0, 10);
+    const pulseStr = isoLocal(pulse);
     return mine.some(r => {
       const d = r.submittedAt.slice(0, 10);
       return d >= pulseStr && d <= today;
@@ -61,7 +62,7 @@ export function hasAnsweredThisOccurrence(
     const sinceLastPulse = ((diff % intervalDays) + intervalDays) % intervalDays;
     const pulse = new Date(now);
     pulse.setDate(pulse.getDate() - sinceLastPulse);
-    const pulseStr = pulse.toISOString().slice(0, 10);
+    const pulseStr = isoLocal(pulse);
     return mine.some(r => {
       const d = r.submittedAt.slice(0, 10);
       return d >= pulseStr && d <= today;
@@ -86,7 +87,7 @@ export function hasAnsweredThisOccurrence(
       .filter(d => d.getTime() <= now.getTime())
       .sort((x, y) => y.getTime() - x.getTime());
     if (pastEnds.length === 0) return false;
-    const lastEnd = pastEnds[0].toISOString().slice(0, 10);
+    const lastEnd = isoLocal(pastEnds[0]);
     return mine.some(r => r.submittedAt.slice(0, 10) >= lastEnd);
   }
 

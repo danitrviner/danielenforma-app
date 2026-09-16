@@ -13,6 +13,7 @@ import { DISH_TYPES } from '../utils/dishTypes';
 import { HEALTH_CONDITIONS, type DietaryRestrictionCode } from '../utils/dietaryRestrictions';
 import { roundQuarter } from '../utils/exchangeHelpers';
 import { Icon, Button } from './ui';
+import { hoyIsoLocal } from '../utils/trainingWeek';
 
 // ── Section metadata ──────────────────────────────────────────────────────────
 
@@ -826,7 +827,7 @@ export default function OnboardingForm({
           <input type="date" value={form.birthDate}
             onChange={e => set('birthDate', e.target.value)}
             className={FIELD}
-            max={new Date().toISOString().split('T')[0]}
+            max={hoyIsoLocal()}
           />
           {form.birthDate && (
             <p className="font-mono text-caption text-ink-3">

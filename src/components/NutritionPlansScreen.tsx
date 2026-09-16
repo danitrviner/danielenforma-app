@@ -17,6 +17,7 @@ import { coincideBusqueda } from '../utils/busqueda';
 import { haptics } from '../services/haptics';
 import { Skeleton } from './ui';
 import { Icon, Button, Chip, EmptyState, Sheet, Dialog, Input, Select } from './ui';
+import { hoyIsoLocal } from '../utils/trainingWeek';
 
 const SLOT_OPTIONS = [1, 2, 3, 4, 5].map(s => ({ value: String(s), label: SLOT_LABEL[s] }));
 
@@ -269,7 +270,7 @@ export default function NutritionPlansScreen({
   const phaseWeekInfo = useMemo(() => {
     if (!isActivePhaseDiet || !nutritionProgram || !linkedPhase || linkedPhaseIndex < 0) return null;
     const phaseStart = computePhaseStartDate(nutritionProgram, linkedPhaseIndex);
-    const today = new Date().toISOString().split('T')[0];
+    const today = hoyIsoLocal();
     const daysSince = Math.round(
       (new Date(today + 'T00:00:00').getTime() - new Date(phaseStart + 'T00:00:00').getTime()) / 86_400_000
     );

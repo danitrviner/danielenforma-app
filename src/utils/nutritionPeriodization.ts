@@ -3,6 +3,7 @@ import { computePhaseStartDate } from './fasesNutricion';
 import { estimateMaintenanceKcal, KCAL_PER_KG } from './energyCalc';
 import { exchangeToKcal } from './nutritionConstants';
 import { adherenciaDelDia } from './diaDeDieta';
+import { addDays } from './trainingWeek';
 
 // Deterministic engine that turns a NutritionProgram (phases with weeks +
 // linked diet) into a week-by-week weight projection, contrasts it with the
@@ -13,11 +14,11 @@ import { adherenciaDelDia } from './diaDeDieta';
 function round1(n: number): number { return Math.round(n * 10) / 10; }
 function round2(n: number): number { return Math.round(n * 100) / 100; }
 
-function addDays(iso: string, days: number): string {
-  const d = new Date(iso + 'T00:00:00');
-  d.setDate(d.getDate() + days);
-  return d.toISOString().split('T')[0];
-}
+/* Aquí había un `addDays` propio, local por un lado y UTC por el otro:
+   construía el día con `new Date(iso + 'T00:00:00')` (hora local) y lo
+   formateaba con `toISOString()` (UTC). En España eso devuelve SIEMPRE la
+   víspera — el mismo fallo que tenía `computePhaseStartDate`. Ahora usa el
+   `addDays` compartido, que hace las dos mitades en local. */
 
 function daysBetween(a: string, b: string): number {
   const da = new Date(a + 'T00:00:00').getTime();

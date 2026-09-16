@@ -80,7 +80,7 @@ import { computeDietPlaced, parseBaseGrams } from '../utils/exchangeHelpers';
 import { exchangeToKcal } from '../utils/nutritionConstants';
 import { buildPhaseEnergyPlans } from '../utils/nutritionPeriodization';
 import { computeActivePhase } from '../utils/fasesNutricion';
-import { addDays, hoyIsoLocal } from '../utils/trainingWeek';
+import { addDays, hoyIsoLocal, isoLocal } from '../utils/trainingWeek';
 import { weekKey } from '../utils/seriesCorrelation';
 import { resolveQuestions } from '../utils/questionnaireResolve';
 import { SYSTEM_FOODS } from '../nutricion_seed_en_forma';
@@ -1014,7 +1014,7 @@ function toResult(data: unknown): string {
 
 function isoDate(d: Date | string): string {
   const date = d instanceof Date ? d : new Date(d);
-  return isNaN(date.getTime()) ? String(d) : date.toISOString().slice(0, 10);
+  return isNaN(date.getTime()) ? String(d) : isoLocal(date);
 }
 
 // Texto libre escrito por el ATLETA (notas de check-in, respuestas de
@@ -1314,7 +1314,7 @@ async function getSetupStatus(email: string): Promise<string> {
   const profile = await findProfile(email);
   if (!profile) return toResult({ error: `No existe ningún cliente con email ${email}` });
 
-  const hoy = new Date().toISOString().slice(0, 10);
+  const hoy = hoyIsoLocal();
   const [
     onboarding, allCheckins, mesocycles, workoutAssignments, diets, dietConfig,
     nutritionConfig, qAssignments, photoAssignments, photos, workoutLogs,
@@ -1419,10 +1419,8 @@ async function getTrainingHistory(email: string, weeks: number): Promise<string>
   ]);
   if (logs.length === 0) return toResult({ error: 'Este cliente no tiene entrenamientos registrados' });
 
-  const today = new Date().toISOString().slice(0, 10);
-  const start = new Date();
-  start.setDate(start.getDate() - w * 7 + 1);
-  const periodStart = start.toISOString().slice(0, 10);
+  const today = hoyIsoLocal();
+  const periodStart = addDays(today, -(w * 7 - 1));
 
   const report = buildTrainingReport({
     logs, exercises, mesocycles: mesos,
@@ -1524,7 +1522,7 @@ async function getQuestionnaireTrends(email: string, questionIds: string[] | und
   ]);
   const qById = new Map(questionnaires.map(q => [q.id, q]));
   const aById = new Map(assignments.map(a => [a.id, a]));
-  const since = addDays(new Date().toISOString().slice(0, 10), -weeks * 7);
+  const since = addDays(hoyIsoLocal(), -weeks * 7);
 
   const acc = new Map<string, { label: string; qTitle: string; unit?: string; byWeek: Map<string, number[]> }>();
 
@@ -1590,7 +1588,7 @@ async function generateReportDraft(email: string, periodDaysInput: number, intro
   }
 
   const periodDays = periodDaysInput === 14 ? 14 : 7;
-  const periodEnd = new Date().toISOString().slice(0, 10);
+  const periodEnd = hoyIsoLocal();
   const periodStart = addDays(periodEnd, -(periodDays - 1));
   const comparisonWeeks = periodDays === 14 ? 2 : 1;
 
@@ -1636,7 +1634,7 @@ async function leerContextoDelPlan(email: string): Promise<string> {
     getNutritionProgram(email),
     getTasksForAthlete(email),
   ]);
-  const hoy = new Date().toISOString().slice(0, 10);
+  const hoy = hoyIsoLocal();
 
   const fases = (roadmap?.planPhases ?? []).map(f => ({
     nombre: f.name, estado: f.status, desde: f.startedAt,
@@ -1841,7 +1839,7 @@ async function proposeNutritionProgram(
   }
 
   const payload: NutritionProgramProposalPayload = {
-    startDate: startDate?.trim() || new Date().toISOString().slice(0, 10),
+    startDate: startDate?.trim() || hoyIsoLocal(),
     phases: fases,
     refeedDays: refeedsInput
       .filter(r => typeof r.date === 'string')
@@ -2348,7 +2346,7 @@ async function proposeMesocycle(
     athleteId: athleteEmail,
     number,
     weeks,
-    startDate: startDate?.trim() || new Date().toISOString().slice(0, 10),
+    startDate: startDate?.trim() || hoyIsoLocal(),
     objective,
     daysPerWeek,
     groups,
@@ -2532,7 +2530,7 @@ async function proposePeriodizationBlock(
     athleteId: athleteEmail,
     number,
     weeks,
-    startDate: startDate?.trim() || new Date().toISOString().slice(0, 10),
+    startDate: startDate?.trim() || hoyIsoLocal(),
     objective,
     daysPerWeek,
     groups,
@@ -2738,7 +2736,7 @@ async function proposeSetupConfig(
     if (!encontrado) problemas.push(`questionnaire.title "${titulo}" no existe. Disponibles: ${disponibles.map(x => x.title).join(' | ') || '(ninguno: Dani tiene que crear uno en Cuestionarios)'}`);
     else if (typeof schedule === 'string') problemas.push(`questionnaire: ${schedule}`);
     else {
-      const startDate = typeof q?.start_date === 'string' && iso.test(q.start_date) ? q.start_date : new Date().toISOString().slice(0, 10);
+      const startDate = typeof q?.start_date === 'string' && iso.test(q.start_date) ? q.start_date : hoyIsoLocal();
       payload.questionnaire = { questionnaireId: encontrado.id, questionnaireTitle: encontrado.title, schedule, startDate };
       partes.push(`cuestionario «${encontrado.title}» ${describirSchedule(schedule)}`);
     }
@@ -2750,7 +2748,7 @@ async function proposeSetupConfig(
     if (typeof schedule === 'string') problemas.push(`photos: ${schedule}`);
     else if (!views.length) problemas.push('photos.views necesita al menos una de front | side | back');
     else {
-      const startDate = typeof f?.start_date === 'string' && iso.test(f.start_date) ? f.start_date : new Date().toISOString().slice(0, 10);
+      const startDate = typeof f?.start_date === 'string' && iso.test(f.start_date) ? f.start_date : hoyIsoLocal();
       payload.photos = { schedule, startDate, views };
       partes.push(`fotos (${views.join('/')}) ${describirSchedule(schedule)}`);
     }
@@ -2767,7 +2765,7 @@ async function proposeSetupConfig(
   if (input.cardio !== undefined) {
     const c = input.cardio as Record<string, unknown> | null;
     const kind = c?.kind;
-    const startDate = typeof c?.start_date === 'string' && iso.test(c.start_date) ? c.start_date : new Date().toISOString().slice(0, 10);
+    const startDate = typeof c?.start_date === 'string' && iso.test(c.start_date) ? c.start_date : hoyIsoLocal();
     if (kind === 'zona2') {
       const base = c?.base_minutes === undefined ? undefined : Number(c.base_minutes);
       if (base !== undefined && (!Number.isFinite(base) || base < 10 || base > 120)) problemas.push('cardio.base_minutes va de 10 a 120');
@@ -2842,7 +2840,7 @@ async function cargarDatosDeRetos(email: string) {
 async function getChallengeOptions(email: string): Promise<string> {
   const datos = await cargarDatosDeRetos(email);
   if (!datos) return toResult({ error: `No existe ningún cliente con email ${email}` });
-  const today = new Date().toISOString().slice(0, 10);
+  const today = hoyIsoLocal();
   const actual = await getWeeklyChallenge(email, isoWeekKey(today));
   const opciones = generateChallengeOptions({ ...datos, athleteId: email, today });
   const memoria = buildChallengeMemory(datos.history, isoWeekKey(today));
@@ -2893,7 +2891,7 @@ async function proposeWeeklyChallenge(email: string, input: Record<string, unkno
   if (kind === 'series_grupo' && !metric.muscleGroup) problemas.push('series_grupo necesita metric.muscle_group');
   if (problemas.length) return toResult({ valid: false, issues: problemas, note: 'Corrige y vuelve a llamar a propose_weekly_challenge.' });
 
-  const today = typeof input.today === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(input.today) ? input.today : new Date().toISOString().slice(0, 10);
+  const today = typeof input.today === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(input.today) ? input.today : hoyIsoLocal();
   const semana = isoWeekKey(today);
   const actual = await getWeeklyChallenge(email, semana);
   const payload: WeeklyChallengeProposalPayload = {

@@ -10,6 +10,7 @@ import { Icon, Badge, EmptyState } from './ui';
 
 import { comprimirImagen } from '../utils/comprimirImagen';
 import { useConfirm } from '../hooks/useConfirm';
+import { hoyIsoLocal } from '../utils/trainingWeek';
 const VIEWS: PhotoView[] = ['front', 'side', 'back'];
 
 const VIEW_LABELS: Record<PhotoView, string> = {
@@ -30,7 +31,7 @@ const VIEW_ICONS: Record<PhotoView, string> = {
 };
 
 function todayStr(): string {
-  return new Date().toISOString().split('T')[0];
+  return hoyIsoLocal();
 }
 
 function fmtDate(d: string): string {

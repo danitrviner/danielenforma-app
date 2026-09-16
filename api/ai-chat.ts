@@ -13,6 +13,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { esCoach, getAdminDb, setCors, tokenDeLaCabecera, verifyFirebaseIdToken } from './_lib/auth.js';
 import { sanearHistorial } from '../src/ai/historial.js';
 import type { AiChatMessage } from '../src/types.js';
+import { hoyIsoLocal } from '../src/utils/trainingWeek';
 
 // Vercel mata la función al llegar aquí, y hasta ahora lo hacía en seco: el
 // coach veía las herramientas ejecutarse, el coste, y después NADA. Subimos el
@@ -114,7 +115,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Ahora la comprobación y el incremento van en una transacción, y un fallo
   // corta la petición (fail-closed) en vez de abrir la barra libre.
   const db = await getAdminDb();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = hoyIsoLocal();
   // Lo gastado hoy ANTES de esta llamada. Se manda al panel junto al coste de
   // la petición para que el coach vea el acumulado sin abrir Firestore.
   let gastoDelDiaUsd = 0;

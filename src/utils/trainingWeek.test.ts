@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { esFechaIso, addDays } from './trainingWeek';
+import { esFechaIso, addDays, isoLocal, hoyIsoLocal } from './trainingWeek';
 
 describe('esFechaIso', () => {
   it('acepta una fecha de calendario real', () => {
@@ -31,5 +31,23 @@ describe('addDays', () => {
     expect(addDays('2026-09-02', 7)).toBe('2026-09-09');
     expect(addDays('2026-12-31', 1)).toBe('2027-01-01');
     expect(addDays('2026-03-01', -1)).toBe('2026-02-28');
+  });
+});
+
+describe('isoLocal', () => {
+  it('a las 00:30 en España devuelve el mismo día, no la víspera', () => {
+    // Es el mismo fallo que `hoyIsoLocal` arregla para «hoy», pero para
+    // cualquier Date: la mitad de los sitios del código no formatean «hoy»,
+    // formatean una fecha que acaban de mover con `setDate`.
+    expect(isoLocal(new Date(2026, 8, 16, 0, 30))).toBe('2026-09-16');
+    expect(isoLocal(new Date(2026, 8, 16, 23, 30))).toBe('2026-09-16');
+  });
+
+  it('rellena mes y día a dos cifras', () => {
+    expect(isoLocal(new Date(2026, 0, 5, 12, 0))).toBe('2026-01-05');
+  });
+
+  it('hoyIsoLocal es isoLocal de ahora', () => {
+    expect(hoyIsoLocal()).toBe(isoLocal(new Date()));
   });
 });

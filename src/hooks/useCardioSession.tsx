@@ -823,7 +823,7 @@ function CardioSessionProviderInner({ profile, children }: { profile: UserProfil
       athleteId: profile.email,
       assignmentId: activeAssignmentIdRef.current,
       type: sessionType,
-      date: new Date().toISOString().slice(0, 10),
+      date: hoyIsoLocal(),
       startedAt: draft.startedAtIso,
       durationSec: draft.elapsedSec,
       avgHR, maxHR,

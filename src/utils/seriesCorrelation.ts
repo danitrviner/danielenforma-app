@@ -6,6 +6,8 @@
 // correlaciones era, en la práctica, inservible. La solución: agregar ambas
 // series a la misma granularidad (normalmente semanal) antes de correlacionar.
 
+import { isoLocal } from './trainingWeek';
+
 export interface DataPoint { date: string; value: number }
 export type Aggregation = 'sum' | 'avg';
 export type Granularity = 'day' | 'week';
@@ -18,7 +20,9 @@ export function weekKey(dateStr: string): string {
   const diff = day === 0 ? -6 : 1 - day;
   const mon = new Date(d);
   mon.setDate(d.getDate() + diff);
-  return mon.toISOString().split('T')[0];
+  // Los `Date` de aquí se construyen y mueven en LOCAL (`setDate`), así que
+  // `toISOString()` los formateaba en UTC: mezcla de las dos convenciones.
+  return isoLocal(mon);
 }
 
 export function toWeeklyBuckets(points: DataPoint[], agg: Aggregation): DataPoint[] {

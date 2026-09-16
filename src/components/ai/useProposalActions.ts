@@ -39,6 +39,7 @@ import { nombreDeSesion } from '../../utils/nombresMeso';
 import { describirEdicion, motivoParaNoAprobar } from '../../utils/edicionPropuesta';
 import { ordenarPropuestasPorPlan } from '../../utils/ordenPropuestas';
 import { auth } from '../../firebase';
+import { addDays } from '../../utils/trainingWeek';
 
 function clavesQueRefrescar(kind: AiProposal['kind'], athleteEmail: string): unknown[][] {
   switch (kind) {
@@ -468,12 +469,11 @@ export function useProposalActions(
         const reviewTitle = reviewType === 'revision' ? 'Revisión' : reviewType === 'cuestionario' ? 'Cuestionario' : 'Fotos de check-in';
         await Promise.all(Array.from({ length: reviewCount }, (_, i) => {
           const weekOffset = (i + 1) * reviewCadenceWeeks;
-          const date = new Date(mesocycle.startDate + 'T00:00:00');
-          date.setDate(date.getDate() + weekOffset * 7);
+          const dueDate = addDays(mesocycle.startDate, weekOffset * 7);
           return createTask({
             athleteId: p.athleteId, type: reviewType,
             title: `${reviewTitle} — bloque #${mesocycle.number}`,
-            dueDate: date.toISOString().split('T')[0],
+            dueDate,
             status: 'pending', createdBy: 'coach', createdAt: new Date().toISOString(),
           });
         }));

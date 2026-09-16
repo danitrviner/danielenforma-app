@@ -5,7 +5,7 @@ import {
   generateChallengeOptions, buildChallengeFromOption, eligibleLiftIds,
   ChallengeData, ChallengeOption,
 } from '../../utils/challengeOptions';
-import { addDays } from '../../utils/trainingWeek';
+import { addDays, hoyIsoLocal} from '../../utils/trainingWeek';
 
 // Cómo de exigente es el objetivo respecto a lo que el atleta YA hace — no la
 // dificultad absoluta del reto. "suave" en un atleta fuerte sigue siendo duro.
@@ -30,7 +30,7 @@ export default function ChallengeOptionsPanel({
   athleteEmail, challengeData, roadmap, onSaveRoadmap, previousKind,
   currentChallenge, nextChallenge, onAssigned,
 }: Props) {
-  const today = new Date().toISOString().split('T')[0];
+  const today = hoyIsoLocal();
   const nextWeekDay = addDays(today, 7);
   const [weekTarget, setWeekTarget] = useState<'esta' | 'siguiente'>('esta');
   const [assigning, setAssigning] = useState<string | null>(null);

@@ -42,6 +42,31 @@ export default tseslint.config(
       '@typescript-eslint/no-empty-object-type': 'off',
       'no-empty': ['error', { allowEmptyCatch: true }], // patrón deliberado: fallback silencioso a localStorage
 
+      /* ── Un solo «hoy» ──────────────────────────────────────────────────
+         `toISOString()` da la fecha en UTC. En España (UTC+1/+2) eso devuelve
+         el día ANTERIOR entre medianoche y las 2 de la mañana, y a un `Date`
+         construido o movido en local (`new Date(iso + 'T00:00:00')`,
+         `setDate`) le resta un día SIEMPRE, a cualquier hora.
+
+         No lanza ningún error: solo devuelve un día de menos, en un sitio del
+         que nadie sospecha. Ha causado ya, por lo menos: fases de nutrición
+         que empezaban la víspera en siete sitios a la vez, el registro del día
+         que «no se había guardado» al abrir la app de madrugada, y fechas de
+         mesociclo desplazadas.
+
+         En su lugar: `hoyIsoLocal()`, `isoLocal(d)` y `addDays()` de
+         `utils/trainingWeek`. Si la fecha se construye a propósito en UTC
+         (`Date.UTC`, `'T00:00:00Z'`, `getUTCDay`), entonces `toISOString` SÍ es
+         el par correcto — ahí va un `eslint-disable-next-line` con el motivo
+         escrito, que es lo que obliga a pararse a mirar de qué lado está. */
+      'no-restricted-syntax': ['error', {
+        selector: "CallExpression[callee.object.callee.property.name='toISOString'][callee.property.name='slice']",
+        message: 'Fecha en UTC: usa hoyIsoLocal() / isoLocal(d) / addDays() de utils/trainingWeek. Si el Date es UTC a propósito, deja un eslint-disable con el motivo.',
+      }, {
+        selector: "MemberExpression[object.callee.object.callee.property.name='toISOString'][object.callee.property.name='split']",
+        message: 'Fecha en UTC: usa hoyIsoLocal() / isoLocal(d) / addDays() de utils/trainingWeek. Si el Date es UTC a propósito, deja un eslint-disable con el motivo.',
+      }],
+
       // ── Accesibilidad ────────────────────────────────────────────────────
       // El preset `recommended` de jsx-a11y entero, pero como AVISO, no como
       // error. Motivo: se añade sobre un codebase ya escrito, y convertir de

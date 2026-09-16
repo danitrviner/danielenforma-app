@@ -14,6 +14,7 @@ import { buildChallengeMemory } from '../utils/challengeMemory';
 import { buildPhaseEnergyPlans, buildWeightProjection, ProjectionResult } from '../utils/nutritionPeriodization';
 import { DEFAULT_KCAL_PER_STEP } from '../utils/nutritionConstants';
 import { ventanaPasos } from '../utils/ventanaHistorial';
+import { hoyIsoLocal } from '../utils/trainingWeek';
 
 const DEFAULT_STEP_GOAL = 8000;
 
@@ -45,7 +46,7 @@ const DEFAULT_STEP_GOAL = 8000;
 export function useRetoDeLaSemana(athleteEmail: string, assignments: WorkoutAssignment[]) {
   const qc = useQueryClient();
   const [resultado, setResultado] = useState<EnsureChallengeResult | null>(null);
-  const hoy = useMemo(() => new Date().toISOString().split('T')[0], []);
+  const hoy = useMemo(() => hoyIsoLocal(), []);
   const semana = useMemo(() => isoWeekKey(hoy), [hoy]);
 
   /* El reto guardado de esta semana: UN documento. Es lo que decide si hay que
@@ -142,7 +143,7 @@ export function useRetoDeLaSemana(athleteEmail: string, assignments: WorkoutAssi
 
   const projection = useMemo<ProjectionResult | null>(() => {
     if (cargando || !nutritionProgram) return null;
-    const today = new Date().toISOString().split('T')[0];
+    const today = hoyIsoLocal();
     return buildWeightProjection({
       program: nutritionProgram,
       plans: buildPhaseEnergyPlans(nutritionProgram, diets),
@@ -155,13 +156,14 @@ export function useRetoDeLaSemana(athleteEmail: string, assignments: WorkoutAssi
   useEffect(() => {
     if (cargando || arrancadoPara.current === athleteEmail) return;
     arrancadoPara.current = athleteEmail;
-    const today = new Date().toISOString().split('T')[0];
+    const today = hoyIsoLocal();
     // El generador razona sobre las últimas 4-5 semanas; la consulta de cardio
     // trae el año entero para el calendario, así que la ventana se recorta aquí
     // para no cambiarle la base de cálculo. El corte va en UTC a propósito: es
     // lo que hacía la consulta anterior, y en 35 días un día no significa nada.
     const desde = new Date();
     desde.setDate(desde.getDate() - 35);
+    // eslint-disable-next-line no-restricted-syntax -- UTC a propósito, ver arriba
     const cardioRecientes = cardioSessions.filter(s => s.date >= desde.toISOString().split('T')[0]);
     const datos: ChallengeData = {
       stepLogs, bodyweightLogs, workoutLogs, exercises,
@@ -235,7 +237,7 @@ export function useRetoDeLaSemana(athleteEmail: string, assignments: WorkoutAssi
  * mismo sello de hoy, y seguiría saltándose el motor.
  */
 export function marcarRetoParaReevaluar(qc: QueryClient, athleteEmail: string): void {
-  const semana = isoWeekKey(new Date().toISOString().split('T')[0]);
+  const semana = isoWeekKey(hoyIsoLocal());
   qc.setQueryData<WeeklyChallenge | null>(
     ['weeklyChallenge', athleteEmail, semana],
     prev => (prev ? { ...prev, evaluadoEn: undefined } : prev),

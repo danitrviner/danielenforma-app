@@ -21,6 +21,7 @@ import { PhaseData } from '../utils/planPhase';
 import { LadderData } from '../utils/levelLadder';
 import { ChallengeData } from '../utils/weeklyChallenge';
 import { Icon, Tabs } from './ui';
+import { hoyIsoLocal } from '../utils/trainingWeek';
 
 interface Props {
   athleteEmail: string;
@@ -347,7 +348,7 @@ export default function CoachRoadmapView({ athleteEmail, coachId, onGoToClientTa
   }
 
   const rm = roadmap ?? { athleteId: athleteEmail, items: [] };
-  const today = new Date().toISOString().split('T')[0];
+  const today = hoyIsoLocal();
 
   const phaseData: PhaseData = {
     bodyweightLogs, stepLogs, workoutLogs, exercises, initialWeight, today,

@@ -4,6 +4,7 @@ import { HeartRateMonitor, isBleAvailable } from '../../services/bleHeartRate';
 import { createHrvReading } from '../../dbService';
 import { rmssd, hrvBaseline, readinessScoreFromHrv } from '../../utils/cardioMetrics';
 import { Icon } from '../ui';
+import { hoyIsoLocal } from '../../utils/trainingWeek';
 
 // HRV matinal (F8, §7/§8 del análisis): 3 min tumbado con la banda puesta,
 // quieto. Es una lectura puntual e independiente del entreno — su propia
@@ -58,7 +59,7 @@ export default function HrvTestScreen({ profile, pastReadings, onClose, onSaved 
 
     const reading = await createHrvReading({
       athleteId: profile.email,
-      date: new Date().toISOString().slice(0, 10),
+      date: hoyIsoLocal(),
       rmssd: Math.round(value * 10) / 10,
       restingHR,
       readinessScore,

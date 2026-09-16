@@ -4,6 +4,7 @@ import { UserProfile } from '../types';
 import { getProgressPhotos, getPesoExtremo } from '../dbService';
 import { pesoUltimoKey } from '../hooks/useAthleteWeight';
 import { Icon, ListRow } from './ui';
+import { hoyIsoLocal } from '../utils/trainingWeek';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Fase 3 (F3.5): "sala de espera" — re-skin sobre
@@ -37,7 +38,7 @@ function isRoadmapVisited(email: string): boolean {
  * existiera, y no se inventa una fecha. */
 function fraseDesde(createdAt: string | undefined): string {
   if (!createdAt) return 'EN REVISIÓN';
-  const dias = Math.floor((Date.parse(new Date().toISOString().slice(0, 10)) - Date.parse(createdAt.slice(0, 10))) / 86_400_000);
+  const dias = Math.floor((Date.parse(hoyIsoLocal()) - Date.parse(createdAt.slice(0, 10))) / 86_400_000);
   if (dias <= 0) return 'EN REVISIÓN DESDE HOY';
   if (dias === 1) return 'EN REVISIÓN DESDE AYER';
   return `EN REVISIÓN DESDE HACE ${dias} DÍAS`;

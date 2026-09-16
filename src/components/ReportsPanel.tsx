@@ -10,7 +10,7 @@ import {
   getResponsesForAthlete, getAssignmentsForAthlete, getQuestionnairesByCoach,
 } from '../dbService';
 import { buildTrainingReportDraft, buildReportText, fmtReportDate, ReportExtrasInput } from '../utils/reportBuilder';
-import { addDays } from '../utils/trainingWeek';
+import { addDays, hoyIsoLocal} from '../utils/trainingWeek';
 import ReportEditor from './ReportEditor';
 import { Skeleton } from './ui';
 import { EmptyState, Badge, Button, Select } from './ui';
@@ -31,7 +31,7 @@ type PeriodMode = '7d' | '14d' | 'meso';
 const PERIOD_DAYS: Record<'7d' | '14d', number> = { '7d': 7, '14d': 14 };
 const COMPARE_WEEK_OPTIONS = [1, 2, 4, 8];
 
-function today(): string { return new Date().toISOString().split('T')[0]; }
+function today(): string { return hoyIsoLocal(); }
 
 export default function ReportsPanel({ athleteEmail, athleteName, coachId, logs, exercises, assignments, bodyweightLogs, targetWeight }: Props) {
   const queryClient = useQueryClient();

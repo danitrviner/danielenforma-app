@@ -1,6 +1,7 @@
 import React from 'react';
 import { CardioSession } from '../../types';
 import { dailyLoadFromSessions, computeTrainingLoad, classifyTlr, TLR_LABEL, trainingFocus } from '../../utils/cardioMetrics';
+import { addDays, hoyIsoLocal } from '../../utils/trainingWeek';
 
 // "Resumen del entrenamiento (TRIMP)" de la pestaña Hoy de FITIV (§4bis.5):
 // slider Bajo·Óptimo·Alto·Riesgo con los cortes 0.8/1.1/1.3/1.5, más el
@@ -27,7 +28,7 @@ export default function TrainingLoadPanel({ sessions }: Props) {
   const today = loadPoints[loadPoints.length - 1];
   const tlrState = classifyTlr(today.tlr);
 
-  const cutoffDate = new Date(Date.now() - RECENT_DAYS * 86_400_000).toISOString().slice(0, 10);
+  const cutoffDate = addDays(hoyIsoLocal(), -RECENT_DAYS);
   const recentZoneTotals = sessions
     .filter(s => s.date >= cutoffDate)
     .reduce((acc, s) => {

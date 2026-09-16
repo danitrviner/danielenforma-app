@@ -42,7 +42,7 @@ import VolumeSuggestionSheet from './VolumeSuggestionSheet';
 import { useToast } from '../hooks/useToast';
 import { nombreDeMeso, nombreDeSesion } from '../utils/nombresMeso';
 import { fechasDelMesociclo, cicloDiasDeMeso } from '../utils/asignacionMesociclo';
-import { esFechaIso, hoyIsoLocal } from '../utils/trainingWeek';
+import { addDays, esFechaIso, hoyIsoLocal, isoLocal } from '../utils/trainingWeek';
 import { useAthleteProfileSignals } from '../hooks/useAthleteProfileSignals';
 import { useAthleteWeight } from '../hooks/useAthleteWeight';
 import { useConfirm } from '../hooks/useConfirm';
@@ -116,12 +116,9 @@ type GeneratorPhase = 'idle' | 'loading' | 'preview' | 'assigning' | 'done' | 'e
 // existe `hoyIsoLocal` en trainingWeek.ts — aritmética de fecha en local de
 // principio a fin, sin pasar nunca por UTC.
 function pad2(n: number): string { return String(n).padStart(2, '0'); }
-function addDays(dateStr: string, days: number): string {
-  const [y, m, d] = dateStr.split('-').map(Number);
-  const date = new Date(y, m - 1, d);
-  date.setDate(date.getDate() + days);
-  return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
-}
+// Había aquí una copia local de `addDays`, idéntica a la de `trainingWeek`.
+// Dos copias de la misma regla de fechas es como se acaba arreglando una y
+// dejando la otra mal: ahora se usa la compartida.
 
 const NOMBRE_DIA = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
 /** La misma lista en la abreviatura de una letra que se usa en los calendarios. */
@@ -2001,7 +1998,7 @@ export default function MesocycleManager({
       const programId = `prog_${Date.now()}`;
       const startNumber = mesocycles.length + 1;
       const created: Mesocycle[] = [];
-      let startDate = new Date().toISOString().split('T')[0];
+      let startDate = hoyIsoLocal();
 
       const reviewTasks: Promise<unknown>[] = [];
       for (let i = 0; i < tpl.stages.length; i++) {
@@ -2037,16 +2034,14 @@ export default function MesocycleManager({
             reviewTasks.push(createTask({
               athleteId: selectedEmail, type: reviewType,
               title: `${reviewTitle} — ${stage.name}`,
-              dueDate: d.toISOString().split('T')[0],
+              dueDate: isoLocal(d),
               status: 'pending', createdBy: 'coach', createdAt: new Date().toISOString(),
             }));
           }
         }
 
         // Advance start date
-        const d = new Date(startDate + 'T00:00:00');
-        d.setDate(d.getDate() + stage.weeks * 7);
-        startDate = d.toISOString().split('T')[0];
+        startDate = addDays(startDate, stage.weeks * 7);
       }
       await Promise.all(reviewTasks);
 
@@ -2074,7 +2069,7 @@ export default function MesocycleManager({
         athleteId:   selectedEmail,
         number:      mesocycles.length + 1,
         weeks:       4,
-        startDate:   new Date().toISOString().split('T')[0],
+        startDate:   hoyIsoLocal(),
         objective:   '',
         daysPerWeek: 4,
         groups:      DEFAULT_GROUPS(),
@@ -2304,7 +2299,7 @@ export default function MesocycleManager({
                   {/* Qué bloques están cerrados y cuál está en marcha. Se
                       deduce de las fechas, sin leer nada, y es lo que le dice
                       al coach que la pestaña «Cierre» ya tiene algo que contar. */}
-                  {addDays(m.startDate, m.weeks * 7 - 1) < new Date().toISOString().split('T')[0] && (
+                  {addDays(m.startDate, m.weeks * 7 - 1) < hoyIsoLocal() && (
                     <span className="inline-flex items-center gap-0.5 text-caption font-mono text-ink-3">
                       <span className="material-symbols-outlined text-caption">check_circle</span>Terminado
                     </span>

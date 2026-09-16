@@ -6,6 +6,8 @@ import { getBodyweightForAthlete, addBodyweight, updateBodyweight, deleteBodywei
 import { bodyweightForAthleteKey, invalidarExtremosDePeso } from '../hooks/useAthleteWeight';
 import { Skeleton } from './ui';
 import { Icon, EmptyState } from './ui';
+import { hoyIsoLocal } from '../utils/trainingWeek';
+import { addDays } from '../utils/trainingWeek';
 
 interface Props {
   athleteEmail: string;
@@ -18,9 +20,7 @@ interface ChartPoint { date: string; value: number; avg?: number }
 
 function toMovingAvg(pts: { date: string; value: number }[], windowDays = 7): ChartPoint[] {
   return pts.map(p => {
-    const cutoff = new Date(p.date + 'T12:00:00');
-    cutoff.setDate(cutoff.getDate() - (windowDays - 1));
-    const cutoffStr = cutoff.toISOString().slice(0, 10);
+    const cutoffStr = addDays(p.date, -(windowDays - 1));
     const window = pts.filter(q => q.date >= cutoffStr && q.date <= p.date);
     const avg = Math.round((window.reduce((s, q) => s + q.value, 0) / window.length) * 100) / 100;
     return { date: p.date, value: p.value, avg };
@@ -33,7 +33,7 @@ function fmtDate(dateStr: string): string {
 }
 
 function todayStr(): string {
-  return new Date().toISOString().slice(0, 10);
+  return hoyIsoLocal();
 }
 
 // ── Tooltip ───────────────────────────────────────────────────────────────────

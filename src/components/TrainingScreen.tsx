@@ -7,7 +7,7 @@ import {
   createWorkoutLog, updateWorkoutAssignment, getWorkoutLogs, getExerciseNotesForAthlete,
   getCardioAssignmentsForAthlete, getMesocycles,
 } from '../dbService';
-import { MONTHS_ES, formatDate, hoyIsoLocal } from '../utils/trainingWeek';
+import { MONTHS_ES, addDays, formatDate, hoyIsoLocal } from '../utils/trainingWeek';
 import { bloquesDelCiclo, bloqueActual, BloqueDelCiclo, DiaDelCiclo, EstadoDeDia } from '../utils/cicloDelAtleta';
 import { prefillWorkoutSets } from '../utils/setPrefill';
 import { conEstadoReal } from '../utils/estadoDeAsignacion';
@@ -184,9 +184,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
   useEffect(() => {
     if (loadingAssignments || markLostInitFor.current === profile.userId) return;
     markLostInitFor.current = profile.userId;
-    const cutoff = new Date();
-    cutoff.setDate(cutoff.getDate() - 7);
-    const cutoffStr = cutoff.toISOString().split('T')[0];
+    const cutoffStr = addDays(hoyIsoLocal(), -7);
     const toMarkLost = assignments.filter(a => a.status === 'pending' && a.date < cutoffStr);
     if (toMarkLost.length === 0) return;
     const lostIds = new Set(toMarkLost.map(a => a.id));
@@ -323,7 +321,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
     // y RIR medio son evaluables aquí (esta pantalla no carga dieta ni peso);
     // una condición que dependa de esas dos métricas simplemente no se aplica
     // desde la sesión del atleta — mismo comportamiento seguro que sin datos.
-    const conditionCtx = { today: new Date().toISOString().split('T')[0], workoutAssignments: assignments, workoutLogs: logs, bodyweightLogs: [] };
+    const conditionCtx = { today: hoyIsoLocal(), workoutAssignments: assignments, workoutLogs: logs, bodyweightLogs: [] };
     const wo: Workout = meso
       ? {
           ...baseWorkout,

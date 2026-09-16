@@ -164,6 +164,9 @@ export function computeTrainingLoad(dailyLoads: { date: string; load: number }[]
   let atl = 0;
   let ctl = 0;
   for (let t = start; t <= end; t += ONE_DAY_MS) {
+    // UTC de los dos lados: `start`/`end` se parsean con 'T00:00:00Z' y el
+    // bucle avanza en milisegundos, así que `toISOString` es el par correcto.
+    // eslint-disable-next-line no-restricted-syntax -- coherente en UTC, ver arriba
     const date = new Date(t).toISOString().slice(0, 10);
     const load = byDate.get(date) ?? 0;
     atl = atl + (load - atl) / ATL_DAYS;

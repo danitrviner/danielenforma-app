@@ -7,6 +7,7 @@ import { Skeleton } from './ui';
 import { Icon, Button } from './ui';
 
 import { COACH_EMAIL } from '../utils/coach';
+import { hoyIsoLocal } from '../utils/trainingWeek';
 
 interface Props {
   profile: UserProfile;
@@ -147,7 +148,7 @@ export default function HrTestsPanel({ profile, cardioProfile: _cardioProfile }:
     const result = activeTest.compute(samples);
     const test = await createHrTest({
       athleteId: profile.email, type: activeTest.type,
-      date: new Date().toISOString().slice(0, 10),
+      date: hoyIsoLocal(),
       durationSec: samples.length * SAMPLE_INTERVAL_SEC,
       result, samples, approvedByCoach: false,
     });

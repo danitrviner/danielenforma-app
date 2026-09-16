@@ -2,6 +2,7 @@ import React from 'react';
 import { WeeklyChallenge } from '../../types';
 import { ChallengeProgress } from '../../utils/weeklyChallenge';
 import { Icon } from '../ui';
+import { hoyIsoLocal } from '../../utils/trainingWeek';
 
 interface Props {
   challenge: WeeklyChallenge;
@@ -39,7 +40,7 @@ function esCeroSinDato(value: number, unit: string): boolean {
 }
 
 function daysLeft(weekEnd: string): number {
-  const today = new Date().toISOString().split('T')[0];
+  const today = hoyIsoLocal();
   const diff = Math.ceil((new Date(weekEnd + 'T00:00:00').getTime() - new Date(today + 'T00:00:00').getTime()) / 86400000);
   return Math.max(0, diff);
 }

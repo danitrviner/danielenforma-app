@@ -17,7 +17,7 @@ export interface ScheduleContext {
   mesocycles?: Mesocycle[];
 }
 
-/* Era `new Date().toISOString().slice(0, 10)`, o sea el día en UTC. El resto
+/* Era `hoyIsoLocal()`, o sea el día en UTC. El resto
    de este motor trabaja con `new Date()` en hora LOCAL (`isDueToday` compara
    con `setHours(0,0,0,0)`), así que entre medianoche y las 2:00 de España las
    dos mitades hablaban de días distintos: la hora local decía «hoy es 15» y

@@ -8,7 +8,7 @@ import {
 } from '../dbService';
 import { atletasActivos } from '../utils/atletas';
 import { avisosActivos } from '../utils/avisosDelCoach';
-import { getWeekRange, getWeekStart, addDays, esFechaIso } from '../utils/trainingWeek';
+import { getWeekRange, getWeekStart, addDays, esFechaIso, hoyIsoLocal} from '../utils/trainingWeek';
 import { deriveReviewEvents, deriveVolumeIncreaseEvents, deriveKcalChangeEvents, deriveDeloadEvents, weekAdherence } from '../utils/planEvents';
 import { Avatar, PageHeader, EmptyState, Skeleton, Icon, Badge, BadgeTone } from './ui';
 
@@ -31,10 +31,8 @@ interface Props {
 export default function CoachWeekScreen({ coachId: _coachId }: Props) {
   const navigate = useNavigate();
   const { start: weekStart, end: weekEnd } = getWeekRange();
-  const today = new Date().toISOString().split('T')[0];
-  const weekEndExclusive = new Date(weekEnd + 'T00:00:00');
-  weekEndExclusive.setDate(weekEndExclusive.getDate() + 1);
-  const weekEndExclusiveStr = weekEndExclusive.toISOString().split('T')[0];
+  const today = hoyIsoLocal();
+  const weekEndExclusiveStr = addDays(weekEnd, 1);
 
   const { data: allProfiles = [], isPending: loadingProfiles } = useQuery({
     queryKey: ['userProfiles'],

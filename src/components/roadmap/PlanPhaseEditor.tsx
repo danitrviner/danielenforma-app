@@ -9,6 +9,7 @@ import { Dialog, Button, Icon } from '../ui';
 
 import { useConfirm } from '../../hooks/useConfirm';
 import { useToast } from '../../hooks/useToast';
+import { hoyIsoLocal } from '../../utils/trainingWeek';
 const PHASE_COLORS = ['var(--color-accent)', 'var(--color-data)', 'var(--color-warning)', 'var(--color-chart-3)'];
 const PHASE_ICONS = ['route', 'local_fire_department', 'balance', 'fitness_center', 'star', 'flag', 'bolt', 'favorite'];
 
@@ -93,7 +94,7 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
   }
 
   function completeAndActivateNext(id: string) {
-    const today = new Date().toISOString().split('T')[0];
+    const today = hoyIsoLocal();
     const idx = sorted.findIndex(p => p.id === id);
     const next = sorted[idx + 1];
     commit(phases.map(p => {
@@ -104,7 +105,7 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
   }
 
   function activate(id: string) {
-    const today = new Date().toISOString().split('T')[0];
+    const today = hoyIsoLocal();
     updatePhase(id, { status: 'actual', startedAt: today });
   }
 
@@ -149,7 +150,7 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
 
   async function aplicarPresetEstandar() {
     if (phases.length > 0 && !await confirm('Esto reemplaza las fases actuales. ¿Continuar?')) return;
-    commit(buildPhasesFromPreset(new Date().toISOString().split('T')[0]));
+    commit(buildPhasesFromPreset(hoyIsoLocal()));
   }
 
   async function generateNutritionProgram(mode: 'full' | 'futuras') {
@@ -161,7 +162,7 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
     }
     setGeneratingNutrition(true);
     try {
-      const today = new Date().toISOString().split('T')[0];
+      const today = hoyIsoLocal();
       const activeStart = sorted.find(p => p.status === 'actual')?.startedAt ?? today;
       const { program, linkedPlanPhases } = buildNutritionProgramDraft({
         athleteId: roadmap.athleteId,

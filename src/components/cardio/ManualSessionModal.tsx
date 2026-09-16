@@ -3,6 +3,7 @@ import { CardioSession, CardioSessionType } from '../../types';
 import { createCardioSession } from '../../dbService';
 import { mensajeDeErrorFirestore } from '../../utils/erroresFirestore';
 import { Dialog, Button } from '../ui';
+import { hoyIsoLocal } from '../../utils/trainingWeek';
 
 // Alta manual (§6 del análisis): tipo, duración, FC media opcional, notas.
 // Sin banda real de por medio, así que NUNCA otorga XP ni Puntos FITIV —
@@ -17,7 +18,7 @@ interface Props {
 
 export default function ManualSessionModal({ athleteId, onClose, onSaved }: Props) {
   const [type, setType] = useState<CardioSessionType>('libre');
-  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+  const [date, setDate] = useState(hoyIsoLocal());
   const [durationMin, setDurationMin] = useState('30');
   const [avgHR, setAvgHR] = useState('');
   const [notes, setNotes] = useState('');

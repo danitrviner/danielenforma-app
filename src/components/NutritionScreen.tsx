@@ -37,7 +37,7 @@ import {
   mealLabel, BAR_LABEL, CHIP_LABEL, ItemState,
 } from './nutrition/dietHelpers';
 import { useDiaActual, diaSemanaDe } from '../hooks/useDiaActual';
-import { addDays } from '../utils/trainingWeek';
+import { addDays, hoyIsoLocal} from '../utils/trainingWeek';
 
 const HAMBRE_TEXTO: Record<'manana' | 'equilibrado' | 'noche', string> = {
   manana: 'por la mañana',
@@ -455,7 +455,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
       // Apply nutrition program phase if active
       const dietConfig = dietConfigRaw;
       if (program && program.phases.length > 0) {
-        const todayStr = new Date().toISOString().split('T')[0];
+        const todayStr = hoyIsoLocal();
         const activePhase = computeActivePhase(program, todayStr);
         if (activePhase && activePhase.dietId) {
           const currentActive = new Set(dietConfig?.activeDietIds ?? []);

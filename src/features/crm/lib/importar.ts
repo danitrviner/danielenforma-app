@@ -83,6 +83,9 @@ function celda(fila: unknown[], idx?: number): string {
   const v = fila[idx];
   if (v == null) return '';
   // read-excel-file devuelve Date para celdas con formato fecha de Excel.
+  // `read-excel-file` devuelve la celda como medianoche UTC, así que UTC es
+  // el par correcto: leerla en local movería la fecha un día al oeste.
+  // eslint-disable-next-line no-restricted-syntax -- la fecha llega en UTC
   if (v instanceof Date) return v.toISOString().slice(0, 10);
   return String(v).trim();
 }

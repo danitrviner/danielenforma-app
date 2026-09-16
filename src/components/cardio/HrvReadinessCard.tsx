@@ -1,6 +1,7 @@
 import React from 'react';
 import { HrvReading } from '../../types';
 import { classifyReadiness, READINESS_LABEL, ReadinessBand } from '../../utils/cardioMetrics';
+import { hoyIsoLocal } from '../../utils/trainingWeek';
 
 // "Preparación para el entrenamiento" de la pestaña Hoy de FITIV (§4bis.5),
 // recortada a lo que una banda de pecho puede medir de verdad: HRV matinal
@@ -19,7 +20,7 @@ interface Props {
 export default function HrvReadinessCard({ readings, onMeasure }: Props) {
   const latest = [...readings].sort((a, b) => b.date.localeCompare(a.date))[0];
   const band = latest?.readinessScore !== undefined ? classifyReadiness(latest.readinessScore) : undefined;
-  const today = new Date().toISOString().slice(0, 10);
+  const today = hoyIsoLocal();
   const measuredToday = latest?.date === today;
 
   return (

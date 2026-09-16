@@ -5,6 +5,7 @@
 import { Diet, DietCompletionLog, DietMeal, FoodCategory, WeekDay } from '../../types';
 import { comidasDelDia, cupoDelDia } from '../../utils/diaDeDieta';
 import { BUDGET_CATS } from '../../utils/exchangeHelpers';
+import { hoyIsoLocal } from '../../utils/trainingWeek';
 
 export { COACH_EMAIL } from '../../utils/coach';
 export const makeId = () => `${Date.now()}_${Math.random().toString(36).slice(2, 5)}`;
@@ -28,7 +29,7 @@ export function dietSnapshot(dt: Pick<Diet, 'name' | 'budget' | 'meals'>): strin
 
 export const JS_TO_WD: Record<number, WeekDay> = { 0: 'sun', 1: 'mon', 2: 'tue', 3: 'wed', 4: 'thu', 5: 'fri', 6: 'sat' };
 export const TODAY_WD: WeekDay = JS_TO_WD[new Date().getDay()];
-export const TODAY_DATE: string = new Date().toISOString().split('T')[0];
+export const TODAY_DATE: string = hoyIsoLocal();
 export const WD_ORDER: WeekDay[] = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 export const WD_SHORT: Record<WeekDay, string> = { mon: 'L', tue: 'M', wed: 'X', thu: 'J', fri: 'V', sat: 'S', sun: 'D' };
 export const WD_FULL: Record<WeekDay, string> = { mon: 'lunes', tue: 'martes', wed: 'miércoles', thu: 'jueves', fri: 'viernes', sat: 'sábado', sun: 'domingo' };

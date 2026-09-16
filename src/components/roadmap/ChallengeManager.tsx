@@ -7,7 +7,7 @@ import {
 } from '../../dbService';
 import { isoWeekKey, isoWeekBounds, evaluateChallengeProgress, ChallengeData } from '../../utils/weeklyChallenge';
 import { buildChallengeMemory } from '../../utils/challengeMemory';
-import { addDays, getWeekStart } from '../../utils/trainingWeek';
+import { addDays, getWeekStart, hoyIsoLocal} from '../../utils/trainingWeek';
 import ChallengeOptionsPanel from './ChallengeOptionsPanel';
 import { Icon } from '../ui';
 
@@ -42,7 +42,7 @@ function emptyForm(): AssignForm {
 }
 
 export default function ChallengeManager({ athleteEmail, challengeData, roadmap, onSaveRoadmap }: Props) {
-  const today = new Date().toISOString().split('T')[0];
+  const today = hoyIsoLocal();
   const [current, setCurrent] = useState<WeeklyChallenge | null>(null);
   const [next, setNext] = useState<WeeklyChallenge | null>(null);
   const [previous, setPrevious] = useState<WeeklyChallenge | null>(null);

@@ -3,6 +3,7 @@
 // todo lo volátil (fecha, cliente activo) va en el sufijo para no invalidar la caché.
 
 import { TAREAS_PROMPT } from './tareas';
+import { hoyIsoLocal } from '../utils/trainingWeek';
 
 export const SYSTEM_PROMPT = `Eres el asistente del coach de EN FORMA, la app de asesoramiento de entrenamiento y nutrición de Dani (danitrviner@gmail.com). Hablas SIEMPRE en español y solo con Dani, nunca con sus clientes.
 
@@ -122,7 +123,7 @@ Y para lo que lee el ATLETA, además: nómbralo, habla de SU semana y de SU núm
 
 // Sufijo volátil — va DESPUÉS del bloque cacheado para no romper el prefijo.
 export function buildContextSuffix(activeAthlete?: { email: string; name?: string }, coachInstructions?: string): string {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = hoyIsoLocal();
   const lines = [`Fecha de hoy: ${today}.`];
   if (activeAthlete) {
     lines.push(

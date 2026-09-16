@@ -4,6 +4,8 @@ import { getPesoExtremo, getWorkoutLogs, getRoadmap, getExercises } from '../dbS
 import { pesoPrimeroKey, pesoUltimoKey } from '../hooks/useAthleteWeight';
 import { Icon, Skeleton } from './ui';
 import StatTile from './StatTile';
+import { hoyIsoLocal } from '../utils/trainingWeek';
+import { addDays } from '../utils/trainingWeek';
 
 interface Props {
   athleteEmail: string;
@@ -29,16 +31,13 @@ function fmtDate(iso: string): string {
   return `${d}/${m}/${y.slice(2)}`;
 }
 
-function addDaysStr(dateStr: string, days: number): string {
-  const d = new Date(`${dateStr}T00:00:00`);
-  d.setDate(d.getDate() + days);
-  return d.toISOString().slice(0, 10);
-}
+// Era local por un lado y UTC por el otro: devolvía la víspera en España.
+const addDaysStr = addDays;
 
 function computeStreak(dates: string[]): number {
   if (dates.length === 0) return 0;
   const uniqueDesc = Array.from(new Set(dates)).sort().reverse();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = hoyIsoLocal();
   const yesterday = addDaysStr(today, -1);
   // La racha solo cuenta si el atleta entrenó hoy o ayer — si no, está rota.
   if (uniqueDesc[0] !== today && uniqueDesc[0] !== yesterday) return 0;
@@ -115,7 +114,7 @@ export default function AthleteHighlightsPanel({ athleteEmail }: Props) {
   }, [workoutLogs, exerciseNameById]);
 
   const biggestVolumeGain = useMemo<VolumeGain | null>(() => {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = hoyIsoLocal();
     const recentStart = addDaysStr(today, -14);
     const previousStart = addDaysStr(today, -28);
 

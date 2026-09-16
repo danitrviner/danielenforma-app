@@ -1,11 +1,14 @@
 import { describe, it, expect } from 'vitest';
 import { computeAuto, estimateMaintenanceKcal, mifflinBMR, calcAge } from './energyCalc';
+import { isoLocal } from './trainingWeek';
 
 // Fecha de nacimiento que da una edad estable independientemente del día en que
 // se ejecute el test: se calcula hacia atrás desde hoy.
 function birthDateForAge(age: number): string {
   const now = new Date();
-  return new Date(now.getFullYear() - age, now.getMonth(), now.getDate()).toISOString().slice(0, 10);
+  // `new Date(y, m, d)` es LOCAL: formatearla con `toISOString` restaba un
+  // día, y en un cumpleaños eso cambia la edad.
+  return isoLocal(new Date(now.getFullYear() - age, now.getMonth(), now.getDate()));
 }
 
 describe('mifflinBMR', () => {
