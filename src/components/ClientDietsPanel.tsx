@@ -19,6 +19,7 @@ import FoodPreferencesPanel from './FoodPreferencesPanel';
 import MicronutrientesPanel from './MicronutrientesPanel';
 import { EmptyState, SegmentedControl, Dialog, Button } from './ui';
 
+import { useConfirm } from '../hooks/useConfirm';
 const GOAL_BODY_LABELS: Record<string, string> = {
   aumentar_musculo: 'Aumentar músculo',
   reducir_grasa:    'Reducir grasa',
@@ -90,6 +91,7 @@ export default function ClientDietsPanel({
   /* Borrar y duplicar dietas desde esta lista. Hasta ahora el único botón era
      "Editar": una dieta creada aquí no se podía quitar ni copiar sin salir a la
      pantalla de Nutrición del coach, así que en la práctica se acumulaban. */
+  const { confirm, ConfirmDialog } = useConfirm();
   const [dietPendingDelete, setDietPendingDelete] = useState<Diet | null>(null);
   const [dietBusyId, setDietBusyId] = useState<string | null>(null);
 
@@ -455,7 +457,16 @@ export default function ClientDietsPanel({
                   {m.status === 'published' ? 'Revisar' : 'Editar'}
                 </button>
                 <button
-                  onClick={() => { if (window.confirm(`¿Eliminar "${m.name}"?`)) deleteWeeklyMenu(m.id).then(reloadWeeklyMenus).catch(console.error); }}
+                  onClick={async () => {
+                    // `useConfirm` y no `window.confirm`: el nativo no se pinta
+                    // en el WebView de Capacitor y devuelve `false` en
+                    // silencio, así que el botón «no hacía nada» en el móvil.
+                    if (!await confirm(`¿Eliminar el menú «${m.name}»?`)) return;
+                    try {
+                      await deleteWeeklyMenu(m.id);
+                      reloadWeeklyMenus();
+                    } catch (err) { console.error(err); }
+                  }}
                   className="flex-shrink-0 text-ink-2 hover:text-red-400 p-1 rounded-control transition-colors"
                   title="Eliminar"
                 >
@@ -628,6 +639,7 @@ export default function ClientDietsPanel({
           </p>
         </Dialog>
       )}
+      <ConfirmDialog />
     </div>
   );
 }

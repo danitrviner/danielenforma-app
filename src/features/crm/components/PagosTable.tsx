@@ -10,6 +10,7 @@ import PagoModal from './PagoModal';
 import type { CrmPago } from '../types';
 import { Icon } from '../../../components/ui';
 
+import { useConfirm } from '../../../hooks/useConfirm';
 interface Props {
   pagos: CrmPago[];
   cargando?: boolean;
@@ -29,11 +30,13 @@ const UMBRAL_DIAS_AVISO = 7;
 // Tabla de pagos compartida entre PagosScreen (global) y PagosTab (por
 // cliente). "Borrar" solo se pinta para pagos pendientes — un pago ya cobrado
 // no se puede borrar y la regla de Firestore lo rechazaría; no tiene sentido
-// ofrecer un botón que va a fallar siempre. Confirmación con window.confirm,
-// el único patrón de confirmación que usa el resto del repo (no hay modal de
-// confirmación custom en ningún sitio, ver ServiciosTab.tsx).
+// ofrecer un botón que va a fallar siempre. La confirmación va con `useConfirm`
+// (el Dialog del design system) y no con `window.confirm`: el nativo no se pinta
+// en el WebView de Capacitor y devuelve `false` en silencio, así que el botón
+// «no hacía nada» sin decir por qué.
 export default function PagosTable({ pagos, cargando, error, mostrarCliente, coachEmail, onNuevoPago }: Props) {
   const { showToast } = useToast();
+  const { confirm, ConfirmDialog } = useConfirm();
   const actualizar = useActualizarPago();
   const eliminar = useEliminarPago();
   const [editando, setEditando] = useState<CrmPago | null>(null);
@@ -79,7 +82,7 @@ export default function PagosTable({ pagos, cargando, error, mostrarCliente, coa
   };
 
   const borrar = async (p: CrmPago) => {
-    if (!window.confirm(`¿Borrar el pago «${p.concepto}» (${formatEuros(p.importeCents)})?\n\nSolo se puede borrar mientras está pendiente.`)) return;
+    if (!await confirm(`¿Borrar el pago «${p.concepto}» (${formatEuros(p.importeCents)})? Solo se puede borrar mientras está pendiente.`)) return;
     try {
       await eliminar.mutateAsync({ id: p.id, clientId: p.clientId });
       showToast('Pago borrado', 'success');
@@ -224,6 +227,7 @@ export default function PagosTable({ pagos, cargando, error, mostrarCliente, coa
           onCerrar={() => setEditando(null)}
         />
       )}
+      <ConfirmDialog />
     </>
   );
 }

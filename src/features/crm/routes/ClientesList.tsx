@@ -26,6 +26,7 @@ import type { Cliente, EstadoCrm, CrmServicio, CrmPago } from '../types';
 import { Button, Icon } from '../../../components/ui';
 import { coincideBusqueda } from '../../../utils/busqueda';
 
+import { useConfirm } from '../../../hooks/useConfirm';
 // Lazy: read-excel-file + papaparse (las dependencias de este modal) pesan más
 // que el resto de la pantalla junta, y la mayoría de visitas a /crm/clientes
 // nunca pulsan «Importar». Igual que App.tsx separa las pantallas de coach de
@@ -73,6 +74,7 @@ export default function ClientesList({ coachEmail }: { coachEmail: string }) {
   };
 
   const { showToast } = useToast();
+  const { confirm, ConfirmDialog } = useConfirm();
   const { clientes, archivados, isPending, error, contadores } = useClientes();
   const archivar = useArchivarCliente();
   const eliminar = useEliminarCliente();
@@ -89,11 +91,11 @@ export default function ClientesList({ coachEmail }: { coachEmail: string }) {
   const onEliminar = async (c: Cliente) => {
     const bloqueo = motivoNoBorrable(c);
     if (bloqueo) { showToast(bloqueo, 'info'); return; }
-    if (!window.confirm(
-      `¿Borrar «${c.nombre}» para siempre?\n\n` +
-      'Se borra también todo su rastro en el CRM: servicios, cobros pendientes, ' +
-      'suscripciones y reuniones. Esto no se puede deshacer.\n\n' +
-      'Si solo quieres quitarlo de en medio, archívalo.'
+    if (!await confirm(
+      `¿Borrar «${c.nombre}» para siempre? `
+      + 'Se borra también todo su rastro en el CRM: servicios, cobros pendientes, '
+      + 'suscripciones y reuniones. Esto no se puede deshacer. '
+      + 'Si solo quieres quitarlo de en medio, archívalo.'
     )) return;
     try {
       await eliminar.mutateAsync(c);
@@ -246,6 +248,7 @@ export default function ClientesList({ coachEmail }: { coachEmail: string }) {
   ];
 
   return (
+    <>
     <div className="space-y-3">
       <header className="flex flex-wrap items-center justify-between gap-2">
         <div>
@@ -369,5 +372,7 @@ export default function ClientesList({ coachEmail }: { coachEmail: string }) {
         </Suspense>
       )}
     </div>
+    <ConfirmDialog />
+    </>
   );
 }

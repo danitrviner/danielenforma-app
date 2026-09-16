@@ -17,6 +17,7 @@ import MesocycleManager from './MesocycleManager';
 import { Badge, BadgeTone, Sheet, Button, Icon, Input, Select, SegmentedControl } from './ui';
 import { pulsable } from '../utils/a11y';
 
+import { useConfirm } from '../hooks/useConfirm';
 type SubView = 'info' | 'programacion';
 const SUBVIEW_KEY = 'enforma_coach_workouts_subview';
 const readSubView = (): SubView => {
@@ -57,6 +58,7 @@ export default function ClientWorkoutsPanel({
   onboardingData, assignments, setAssignments, workouts, getWorkout,
 }: Props) {
   const { showToast } = useToast();
+  const { confirm, ConfirmDialog } = useConfirm();
   const queryClient = useQueryClient();
 
   const [subView, setSubView] = useState<SubView>(readSubView);
@@ -166,7 +168,7 @@ export default function ClientWorkoutsPanel({
   };
 
   const handleDeleteAssignment = async (id: string) => {
-    if (!window.confirm('¿Eliminar este entrenamiento asignado?')) return;
+    if (!await confirm('¿Eliminar este entrenamiento asignado?')) return;
     try {
       await deleteWorkoutAssignment(id);
       setAssignments(prev => prev.filter(a => a.id !== id));
@@ -571,6 +573,7 @@ export default function ClientWorkoutsPanel({
           </div>
         </Sheet>
       )}
+      <ConfirmDialog />
     </div>
   );
 }

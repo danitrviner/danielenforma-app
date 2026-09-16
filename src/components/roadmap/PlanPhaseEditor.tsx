@@ -7,6 +7,8 @@ import { buildNutritionProgramDraft } from '../../utils/planNutritionBridge';
 import IconPicker from './IconPicker';
 import { Dialog, Button, Icon } from '../ui';
 
+import { useConfirm } from '../../hooks/useConfirm';
+import { useToast } from '../../hooks/useToast';
 const PHASE_COLORS = ['var(--color-accent)', 'var(--color-data)', 'var(--color-warning)', 'var(--color-chart-3)'];
 const PHASE_ICONS = ['route', 'local_fire_department', 'balance', 'fitness_center', 'star', 'flag', 'bolt', 'favorite'];
 
@@ -51,6 +53,8 @@ interface Props {
 }
 
 export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionProgram, currentWeightKg, onProgramSaved }: Props) {
+  const { confirm, ConfirmDialog } = useConfirm();
+  const { showToast } = useToast();
   const [phases, setPhases] = useState<PlanPhase[]>(roadmap.planPhases ?? []);
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
@@ -143,14 +147,16 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
     }
   }
 
-  function useStandardPreset() {
-    if (phases.length > 0 && !window.confirm('Esto reemplaza las fases actuales. ¿Continuar?')) return;
+  async function aplicarPresetEstandar() {
+    if (phases.length > 0 && !await confirm('Esto reemplaza las fases actuales. ¿Continuar?')) return;
     commit(buildPhasesFromPreset(new Date().toISOString().split('T')[0]));
   }
 
   async function generateNutritionProgram(mode: 'full' | 'futuras') {
     if (currentWeightKg == null) {
-      window.alert('No se ha podido determinar el peso actual del atleta.');
+      // Aviso, no diálogo: no hay nada que confirmar, solo algo que contar. Y
+      // `window.alert` en el WebView de Capacitor puede no pintarse siquiera.
+      showToast('No se ha podido determinar el peso actual del atleta.', 'error');
       return;
     }
     setGeneratingNutrition(true);
@@ -179,7 +185,7 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
 
   function onGenerateClick() {
     if (dirty) {
-      window.alert('Guarda las fases primero.');
+      showToast('Guarda las fases primero.', 'error');
       return;
     }
     if (nutritionProgram) {
@@ -199,7 +205,7 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
             al max-content de los tres botones en fila, así que el wrap nunca
             se disparaba) y el contenedor desbordaba. */}
         <div className="flex gap-2 flex-wrap">
-          <Button variant="secondary" size="s" onClick={useStandardPreset}>
+          <Button variant="secondary" size="s" onClick={() => void aplicarPresetEstandar()}>
             Usar plan estándar (6 fases)
           </Button>
           <Button
@@ -434,6 +440,7 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
       >
         + Añadir fase
       </button>
+      <ConfirmDialog />
     </div>
   );
 }

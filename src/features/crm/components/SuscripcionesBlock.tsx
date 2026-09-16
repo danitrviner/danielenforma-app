@@ -10,6 +10,7 @@ import SuscripcionModal from './SuscripcionModal';
 import type { CrmSuscripcion } from '../types';
 import { Icon } from '../../../components/ui';
 
+import { useConfirm } from '../../../hooks/useConfirm';
 interface Props {
   suscripciones: CrmSuscripcion[];
   cargando?: boolean;
@@ -28,6 +29,7 @@ interface Props {
 // dos pestañas / reintentos de red vive en el backend).
 export default function SuscripcionesBlock({ suscripciones, cargando, error, mostrarCliente, coachEmail, onNuevaSuscripcion }: Props) {
   const { showToast } = useToast();
+  const { confirm, ConfirmDialog } = useConfirm();
   const actualizar = useActualizarSuscripcion();
   const registrar = useRegistrarCobro();
   const eliminar = useEliminarSuscripcion();
@@ -52,10 +54,10 @@ export default function SuscripcionesBlock({ suscripciones, cargando, error, mos
   };
 
   const onBorrar = async (s: CrmSuscripcion) => {
-    if (!window.confirm(
-      `¿Borrar la suscripción «${s.concepto}» (${formatEuros(s.importeCents)} / ${s.periodicidad})?\n\n` +
-      'Deja de renovarse y desaparece de la lista. Los cobros que ya generó se quedan ' +
-      'donde están: si sobra alguno pendiente, bórralo desde la tabla de pagos.'
+    if (!await confirm(
+      `¿Borrar la suscripción «${s.concepto}» (${formatEuros(s.importeCents)} / ${s.periodicidad})? `
+      + 'Deja de renovarse y desaparece de la lista. Los cobros que ya generó se quedan '
+      + 'donde están: si sobra alguno pendiente, bórralo desde la tabla de pagos.'
     )) return;
     try {
       await eliminar.mutateAsync({ id: s.id, clientId: s.clientId });
@@ -158,6 +160,7 @@ export default function SuscripcionesBlock({ suscripciones, cargando, error, mos
 
   return (
     <>
+    <>
       <div className="bg-surface/80 backdrop-blur-sm border border-hairline rounded-surface overflow-hidden">
         <DataTable
           columnas={columnas}
@@ -183,6 +186,8 @@ export default function SuscripcionesBlock({ suscripciones, cargando, error, mos
           onCerrar={() => setEditando(null)}
         />
       )}
+    </>
+    <ConfirmDialog />
     </>
   );
 }

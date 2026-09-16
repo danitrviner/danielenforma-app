@@ -6,6 +6,7 @@ import { LADDER_PRESETS } from '../../data/ladderPresets';
 import IconPicker from './IconPicker';
 import { Icon } from '../ui';
 
+import { useConfirm } from '../../hooks/useConfirm';
 const CRITERION_KIND_LABEL: Record<LevelCriterionKind, string> = {
   peso_perdido_kg: 'Kg perdidos desde el inicio',
   sentadilla_xbw: 'Sentadilla x veces peso corporal',
@@ -28,6 +29,7 @@ interface Props {
 }
 
 export default function LevelLadderEditor({ roadmap, onSave, ladderData }: Props) {
+  const { confirm, ConfirmDialog } = useConfirm();
   const [ladder, setLadder] = useState<LevelLadder>(roadmap.levelLadder ?? DEFAULT_LEVEL_LADDER);
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
@@ -80,10 +82,11 @@ export default function LevelLadderEditor({ roadmap, onSave, ladderData }: Props
     }
   }
 
-  function loadPreset(presetId: string) {
+  async function loadPreset(presetId: string) {
     const preset = LADDER_PRESETS.find(p => p.id === presetId);
     if (!preset) return;
-    if (ladder.levels.length > 0 && !window.confirm('Esto reemplaza los niveles y criterios actuales (se conservan los logros ya alcanzados). ¿Continuar?')) return;
+    if (ladder.levels.length > 0
+        && !await confirm('Esto reemplaza los niveles y criterios actuales (se conservan los logros ya alcanzados). ¿Continuar?')) return;
     // Los logros persistidos se conservan aunque los ids de nivel no coincidan
     // con la nueva plantilla — simplemente no se pintarán como logrados si no
     // hay match; no se pierden datos.
@@ -200,6 +203,7 @@ export default function LevelLadderEditor({ roadmap, onSave, ladderData }: Props
       >
         + Añadir nivel
       </button>
+      <ConfirmDialog />
     </div>
   );
 }

@@ -22,6 +22,7 @@ import { mensajeDeErrorFirestore } from '../utils/erroresFirestore';
 import { Skeleton } from './ui';
 import { Icon, Button, EmptyState, Input } from './ui';
 
+import { useConfirm } from '../hooks/useConfirm';
 // ── Types ──────────────────────────────────────────────────────────────────────
 
 interface Props {
@@ -213,6 +214,7 @@ export default function NutritionPeriodizationPanel({
 }: Props) {
   const queryClient = useQueryClient();
   const { showToast } = useToast();
+  const { confirm, ConfirmDialog } = useConfirm();
   const programQueryKey = ['nutritionProgram', athleteEmail] as const;
   const { data: program = null, isPending: loading } = useQuery({
     queryKey: programQueryKey,
@@ -242,7 +244,7 @@ export default function NutritionPeriodizationPanel({
   const handleCancel = () => setForm(null);
 
   const handleDelete = async () => {
-    if (!window.confirm('¿Eliminar la periodización? Esta acción no se puede deshacer.')) return;
+    if (!await confirm('¿Eliminar la periodización? Esta acción no se puede deshacer.')) return;
     setSaving(true);
     try {
       await deleteNutritionProgram(athleteEmail);
@@ -658,6 +660,7 @@ export default function NutritionPeriodizationPanel({
           <ProgramTimeline program={previewProgram} diets={diets} today={today} />
         </div>
       )}
+      <ConfirmDialog />
     </div>
   );
 }

@@ -19,6 +19,7 @@ import InvitarAtletaModal from '../components/InvitarAtletaModal';
 import { enlaceWhatsApp, formatTelefono } from '../lib/identidad';
 import { Button, Icon, Skeleton } from '../../../components/ui';
 
+import { useConfirm } from '../../../hooks/useConfirm';
 // La pestaña activa va en `?tab=`, como pediste — no en useState. Refrescar o
 // volver atrás recupera la pestaña exacta.
 //
@@ -46,6 +47,7 @@ export default function ClienteDetail({ coachEmail }: { coachEmail: string }) {
   const [invitando, setInvitando] = useState(false);
 
   const { showToast } = useToast();
+  const { confirm, ConfirmDialog } = useConfirm();
   const { cliente, isPending } = useCliente(id);
   const archivar = useArchivarCliente();
   const eliminar = useEliminarCliente();
@@ -95,11 +97,11 @@ export default function ClienteDetail({ coachEmail }: { coachEmail: string }) {
 
   const onEliminar = async () => {
     if (bloqueoBorrado) { showToast(bloqueoBorrado, 'info'); return; }
-    if (!window.confirm(
-      `¿Borrar «${cliente.nombre}» para siempre?\n\n` +
-      'Se borra también todo su rastro en el CRM: servicios, cobros pendientes, ' +
-      'suscripciones y reuniones. Esto no se puede deshacer.\n\n' +
-      'Si solo quieres quitarlo de en medio, archívalo.'
+    if (!await confirm(
+      `¿Borrar «${cliente.nombre}» para siempre? `
+      + 'Se borra también todo su rastro en el CRM: servicios, cobros pendientes, '
+      + 'suscripciones y reuniones. Esto no se puede deshacer. '
+      + 'Si solo quieres quitarlo de en medio, archívalo.'
     )) return;
     try {
       await eliminar.mutateAsync(cliente);
@@ -112,6 +114,7 @@ export default function ClienteDetail({ coachEmail }: { coachEmail: string }) {
   };
 
   return (
+    <>
     <div className="space-y-3">
       <button
         type="button"
@@ -255,5 +258,7 @@ export default function ClienteDetail({ coachEmail }: { coachEmail: string }) {
         <InvitarAtletaModal emailInicial={cliente.email} onCerrar={() => setInvitando(false)} />
       )}
     </div>
+    <ConfirmDialog />
+    </>
   );
 }

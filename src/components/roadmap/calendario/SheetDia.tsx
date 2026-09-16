@@ -3,7 +3,7 @@ import { WorkoutLog, WorkoutAssignment, ProgressPhoto, CoachDayNote } from '../.
 import { DiaCalendario, BandaEntreno, BandaNutricion } from '../../../utils/roadmapCalendar';
 import { PlanEvent } from '../../../utils/planEvents';
 import { DestinoPlan } from './RoadmapCalendario';
-import { Sheet, Button, Icon } from '../../ui';
+import { Sheet, Button, Icon, Input } from '../../ui';
 import { estiloDeEstado, mezcla } from './paleta';
 
 const DIAS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
@@ -61,6 +61,8 @@ export default function SheetDia({
   highlighted, onToggleDestacado, onSaveNote, onAbrirNuevoHito, onAbrirAcciones, onMoveWorkoutAssignment, onGoToTab, onClose,
 }: Props) {
   const [editandoNota, setEditandoNota] = useState(false);
+  const [moviendo, setMoviendo] = useState(false);
+  const [nuevaFecha, setNuevaFecha] = useState(fecha);
   const [borradorNota, setBorradorNota] = useState('');
   const [guardandoNota, setGuardandoNota] = useState(false);
 
@@ -77,10 +79,16 @@ export default function SheetDia({
   const fotoDelDia = (progressPhotos ?? []).find(p => p.date === fecha);
   const asignacionDelDia = (workoutAssignments ?? []).find(a => a.date === fecha);
 
-  function moverEntreno() {
-    if (!asignacionDelDia) return;
-    const nueva = window.prompt('Nueva fecha (AAAA-MM-DD)', fecha);
-    if (nueva && /^\d{4}-\d{2}-\d{2}$/.test(nueva) && nueva !== fecha) onMoveWorkoutAssignment(asignacionDelDia.id, nueva);
+  /* Mover el entreno pedía la fecha con `window.prompt`, y eso está mal por
+     tres motivos a la vez: en el WebView de Capacitor puede no pintarse
+     siquiera, obliga a teclear «AAAA-MM-DD» a mano en un móvil, y cualquier
+     cosa que no case con ese formato se descartaba en silencio — el coach
+     escribía «mañana» y el botón parecía roto. Ahora es un selector de fecha
+     del sistema, que ni se puede escribir mal ni se puede descartar callando. */
+  function confirmarMovimiento() {
+    if (!asignacionDelDia || !nuevaFecha || nuevaFecha === fecha) return;
+    onMoveWorkoutAssignment(asignacionDelDia.id, nuevaFecha);
+    setMoviendo(false);
   }
 
   /** Ir a editar cierra el sheet primero. Sin esto la navegación pasaba por
@@ -110,7 +118,21 @@ export default function SheetDia({
         <>
           <Button variant="secondary" onClick={onAbrirNuevoHito} icon="flag">Hito</Button>
           <Button variant={highlighted ? 'primary' : 'secondary'} onClick={onToggleDestacado} icon="star">Destacar día</Button>
-          {asignacionDelDia && <Button variant="secondary" onClick={moverEntreno} icon="swap_horiz">Mover entreno</Button>}
+          {asignacionDelDia && (moviendo ? (
+            <span className="flex items-end gap-2 flex-1 min-w-[220px]">
+              <span className="min-w-[150px]">
+                <Input type="date" label="Mover a" value={nuevaFecha} onChange={setNuevaFecha} />
+              </span>
+              <Button onClick={confirmarMovimiento} disabled={!nuevaFecha || nuevaFecha === fecha}>
+                Mover
+              </Button>
+              <Button variant="ghost" onClick={() => setMoviendo(false)}>Cancelar</Button>
+            </span>
+          ) : (
+            <Button variant="secondary" onClick={() => { setNuevaFecha(fecha); setMoviendo(true); }} icon="swap_horiz">
+              Mover entreno
+            </Button>
+          ))}
           <Button variant="secondary" onClick={() => setEditandoNota(true)} icon="sticky_note_2">Nota</Button>
           <Button onClick={onAbrirAcciones} icon="bolt" className="flex-1">Programar aquí</Button>
         </>

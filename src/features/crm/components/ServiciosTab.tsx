@@ -10,8 +10,10 @@ import NuevoServicioModal from './NuevoServicioModal';
 import type { Cliente, CrmServicio } from '../types';
 import { Button, Icon } from '../../../components/ui';
 
+import { useConfirm } from '../../../hooks/useConfirm';
 export default function ServiciosTab({ cliente, coachEmail }: { cliente: Cliente; coachEmail: string }) {
   const { showToast } = useToast();
+  const { confirm, ConfirmDialog } = useConfirm();
   const { data: servicios = [], isPending, isError } = useServiciosDe(cliente.id);
   const archivar = useArchivarServicio(cliente.id);
   const [modalAbierto, setModalAbierto] = useState(false);
@@ -31,7 +33,7 @@ export default function ServiciosTab({ cliente, coachEmail }: { cliente: Cliente
 
   const onArchivar = async (s: CrmServicio) => {
     const accion = s.archivado ? 'desarchivar' : 'archivar';
-    if (!s.archivado && !window.confirm(`¿Archivar «${s.nombre}»?\n\nNo se borra: seguirá contando en el historial y en lo facturado.`)) return;
+    if (!s.archivado && !await confirm(`¿Archivar «${s.nombre}»? No se borra: seguirá contando en el historial y en lo facturado.`)) return;
     try {
       await archivar.mutateAsync({ id: s.id, archivar: !s.archivado });
       showToast(s.archivado ? 'Servicio recuperado' : 'Servicio archivado', 'success');
@@ -98,6 +100,7 @@ export default function ServiciosTab({ cliente, coachEmail }: { cliente: Cliente
   ];
 
   return (
+    <>
     <div className="space-y-3">
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
         <MetricCard icon="sell" label="Servicio actual" value={actual ? formatEuros(actual.importeCents) : '—'} sub={actual?.nombre ?? 'ninguno vigente'} />
@@ -146,5 +149,7 @@ export default function ServiciosTab({ cliente, coachEmail }: { cliente: Cliente
         />
       )}
     </div>
+    <ConfirmDialog />
+    </>
   );
 }
