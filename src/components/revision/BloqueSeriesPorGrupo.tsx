@@ -28,10 +28,12 @@ interface Props {
   onGrupoActivo?: (g: MuscleGroup | null) => void;
   /** Cuando está activo, se enseñan también los grupos sin series ni plan. */
   todoAbierto?: boolean;
+  /** Agujetas crónicas por grupo — se cruzan con las series en la tabla. */
+  domsPorGrupo?: Partial<Record<MuscleGroup, number>>;
 }
 
 export default function BloqueSeriesPorGrupo({
-  celdas, grupoActivo, onGrupoActivo, todoAbierto = false,
+  celdas, grupoActivo, onGrupoActivo, todoAbierto = false, domsPorGrupo,
 }: Props) {
   const [mostrarTodosManual, setMostrarTodos] = useState(false);
   // «Desplegar todo» manda, pero sin pisar la elección hecha a mano: si el
@@ -87,6 +89,7 @@ export default function BloqueSeriesPorGrupo({
 
         <div className="flex-1 min-w-0">
           <TablaMapaCalor
+            domsPorGrupo={domsPorGrupo}
             celdas={celdas}
             hayPlan={hayPlan}
             grupoActivo={grupoActivo}

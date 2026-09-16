@@ -212,6 +212,13 @@ export interface BienestarDeLaVentana {
   estres: DataPoint[];
   /** Grupos con agujetas crónicas (media ≥ 6/10 sostenida), de más a menos. */
   domsCronico: { grupo: MuscleGroup; media: number }[];
+  /**
+   * La media crónica de CADA grupo que tenga lecturas suficientes, pase o no el
+   * umbral. `domsCronico` es la lista de alarma; esto es la columna que se pone
+   * al lado de las series en la tabla de volumen, donde un 4/10 tampoco es
+   * alarma pero sí cambia la lectura de un grupo que no sube.
+   */
+  domsPorGrupo: Partial<Record<MuscleGroup, number>>;
 }
 
 /** El último punto de una serie en o antes de `fecha`, o null si no hay ninguno. */
@@ -231,9 +238,14 @@ export function construirBienestar(params: {
 }): BienestarDeLaVentana {
   const { responses, questionnaires, ventana } = params;
   const historial = historialIRP({ responses, questionnaires });
-  const domsCronico = MUSCLE_ORDER
+
+  const medias = MUSCLE_ORDER
     .map(grupo => ({ grupo, media: domsCronicoDeGrupo(grupo, responses, questionnaires) }))
-    .filter((d): d is { grupo: MuscleGroup; media: number } => esDomsCronico(d.media))
+    .filter((d): d is { grupo: MuscleGroup; media: number } => d.media != null);
+  const domsPorGrupo: Partial<Record<MuscleGroup, number>> = {};
+  for (const d of medias) domsPorGrupo[d.grupo] = d.media;
+  const domsCronico = medias
+    .filter(d => esDomsCronico(d.media))
     .sort((a, b) => b.media - a.media);
 
   return {
@@ -245,7 +257,7 @@ export function construirBienestar(params: {
     historial,
     sueño: ewmaDeSeñal('wellness.sleep_hours_weekly', responses, questionnaires),
     estres: ewmaDeSeñal('wellness.stress_weekly', responses, questionnaires),
-    domsCronico,
+    domsCronico, domsPorGrupo,
   };
 }
 

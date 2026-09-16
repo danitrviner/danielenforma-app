@@ -203,6 +203,7 @@ export default function ClientRevisionPanel({
       >
         <BloqueSeriesPorGrupo
           celdas={revision.mapa}
+          domsPorGrupo={revision.bienestar.domsPorGrupo}
           grupoActivo={grupoActivo}
           onGrupoActivo={setGrupoActivo}
           todoAbierto={todoAbierto}

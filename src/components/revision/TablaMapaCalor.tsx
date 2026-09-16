@@ -2,6 +2,7 @@ import React from 'react';
 import { MuscleGroup } from '../../types';
 import { CeldaMapaCalor } from '../../utils/mapaCalorCorporal';
 import { VOLUME_ZONE_LEGEND } from '../../utils/volumeZones';
+import { DOMS_CRONICO_UMBRAL, esDomsCronico } from '../../utils/domsCronico';
 import { BarraCumplimiento, Badge } from '../ui';
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -24,11 +25,22 @@ interface Props {
   onGrupoActivo?: (g: MuscleGroup | null) => void;
   /** Por defecto oculta los grupos sin series ni plan: 17 filas con ceros no informan. */
   mostrarTodos?: boolean;
+  /**
+   * Media de agujetas crónicas por grupo (0-10), de `bienestar.domsPorGrupo`.
+   * Va en esta tabla y no solo en su bloque porque la pregunta se resuelve
+   * mirando las dos columnas A LA VEZ: doce series y un 8/10 de agujetas es un
+   * grupo pasado de vueltas; doce series y un 2/10, uno que aguanta más. Por
+   * separado, ninguna de las dos cifras dice qué hacer.
+   */
+  domsPorGrupo?: Partial<Record<MuscleGroup, number>>;
 }
 
 export default function TablaMapaCalor({
-  celdas, hayPlan, grupoActivo = null, onGrupoActivo, mostrarTodos = false,
+  celdas, hayPlan, grupoActivo = null, onGrupoActivo, mostrarTodos = false, domsPorGrupo,
 }: Props) {
+  // La columna solo aparece si hay alguna lectura: una columna entera de
+  // guiones ocupa sitio en el vídeo y no dice nada.
+  const hayDoms = domsPorGrupo != null && Object.keys(domsPorGrupo).length > 0;
   const filas = mostrarTodos
     ? celdas
     : celdas.filter(c => c.realizadasSemana > 0 || c.planificadasSemana != null);
@@ -40,10 +52,11 @@ export default function TablaMapaCalor({
   return (
     <div className="space-y-2">
       <div className="overflow-x-auto rounded-surface border border-hairline">
-        <table className="w-full border-collapse" style={{ minWidth: hayPlan ? '540px' : '360px' }}>
+        <table className="w-full border-collapse" style={{ minWidth: `${(hayPlan ? 540 : 360) + (hayDoms ? 90 : 0)}px` }}>
           <caption className="sr-only">
             Series por grupo muscular y semana, con la zona de volumen de cada grupo
-            {hayPlan ? ' y su comparación con lo programado' : ''}.
+            {hayPlan ? ' y su comparación con lo programado' : ''}
+            {hayDoms ? ' y las agujetas que arrastra cada uno' : ''}.
           </caption>
           <thead>
             <tr className="bg-bg">
@@ -55,6 +68,11 @@ export default function TablaMapaCalor({
                 <th scope="col" className="text-left px-3 py-2.5 font-mono text-caption text-ink-2 uppercase tracking-wider border-b border-hairline">Cumplido</th>
                 <th scope="col" className="text-left px-3 py-2.5 font-mono text-caption text-ink-2 uppercase tracking-wider border-b border-hairline">Prioridad</th>
               </>}
+              {hayDoms && (
+                <th scope="col" className="text-right px-3 py-2.5 font-mono text-caption text-ink-2 uppercase tracking-wider border-b border-hairline">
+                  Agujetas
+                </th>
+              )}
             </tr>
           </thead>
           <tbody>
@@ -99,12 +117,20 @@ export default function TablaMapaCalor({
                         : <span className="font-mono text-caption text-ink-3">—</span>}
                     </td>
                   </>}
+                  {hayDoms && <CeldaDoms media={domsPorGrupo?.[c.group]} />}
                 </tr>
               );
             })}
           </tbody>
         </table>
       </div>
+
+      {hayDoms && (
+        <p className="font-mono text-caption text-ink-3 leading-relaxed">
+          Agujetas: media de sus últimas tres respuestas para ese grupo. En rojo a partir de
+          {' '}{DOMS_CRONICO_UMBRAL}/10, que es dolor que llega a la siguiente sesión.
+        </p>
+      )}
 
       <ul className="flex flex-wrap gap-x-3 gap-y-1 list-none">
         {VOLUME_ZONE_LEGEND.map(z => (
@@ -119,5 +145,23 @@ export default function TablaMapaCalor({
         ))}
       </ul>
     </div>
+  );
+}
+
+function CeldaDoms({ media, key: _key }: { media?: number; key?: React.Key }) {
+  if (media == null) {
+    return (
+      <td className="px-3 py-2.5 text-right font-mono text-caption text-ink-3">
+        {/* Sin las tres lecturas que pide el crónico no hay media: un guion, no
+            un cero. Un cero diría «no le duele nada», que es otra cosa. */}
+        —
+      </td>
+    );
+  }
+  const cronico = esDomsCronico(media);
+  return (
+    <td className={`px-3 py-2.5 text-right font-mono text-label tabular-nums ${cronico ? 'text-danger font-bold' : 'text-ink-2'}`}>
+      {media.toFixed(1).replace('.', ',')}
+    </td>
   );
 }

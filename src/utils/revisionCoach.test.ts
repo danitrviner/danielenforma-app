@@ -430,11 +430,22 @@ describe('construirBienestar', () => {
     expect(b.domsCronico[0].media).toBeGreaterThanOrEqual(6);
   });
 
+  it('domsPorGrupo trae TODOS los grupos con lecturas, pasen o no el umbral', () => {
+    const b = construirBienestar({ responses: RESPUESTAS, questionnaires: [Q_BIENESTAR], ventana });
+    // El dorsal no es crónico, pero su media sí va en la columna de la tabla.
+    expect(Object.keys(b.domsPorGrupo).sort()).toEqual(['dorsal', 'pecho']);
+    expect(b.domsPorGrupo.dorsal).toBeLessThan(6);
+    expect(b.domsPorGrupo.pecho).toBeGreaterThanOrEqual(6);
+    // Un grupo sin preguntas no aparece: un 0 diría «no le duele», que es otra cosa.
+    expect(b.domsPorGrupo.cuadriceps).toBeUndefined();
+  });
+
   it('sin cuestionarios no inventa nada: IRP null y listas vacías', () => {
     const b = construirBienestar({ responses: [], questionnaires: [], ventana });
     expect(b.irp.valor).toBeNull();
     expect(b.historial).toEqual([]);
     expect(b.domsCronico).toEqual([]);
+    expect(b.domsPorGrupo).toEqual({});
     expect(b.irpAlInicio).toBeNull();
   });
 
