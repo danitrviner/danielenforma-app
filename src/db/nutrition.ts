@@ -752,24 +752,9 @@ export async function deleteNutritionProgram(athleteEmail: string): Promise<void
 }
 
 
-export function computeActivePhase(program: NutritionProgram, today: string): NutritionPhase | null {
-  if (!program.phases.length || !program.startDate) return null;
-  let cursor = new Date(program.startDate + 'T00:00:00');
-  for (const phase of program.phases) {
-    const phaseEnd = new Date(cursor);
-    phaseEnd.setDate(phaseEnd.getDate() + phase.weeks * 7);
-    const todayDate = new Date(today + 'T00:00:00');
-    if (todayDate >= cursor && todayDate < phaseEnd) return phase;
-    cursor = phaseEnd;
-  }
-  return null;
-}
-
-export function computePhaseStartDate(program: NutritionProgram, phaseIdx: number): string {
-  const cursor = new Date(program.startDate + 'T00:00:00');
-  for (let i = 0; i < phaseIdx; i++) {
-    cursor.setDate(cursor.getDate() + program.phases[i].weeks * 7);
-  }
-  return cursor.toISOString().split('T')[0];
-}
+// Las dos se han mudado a `utils/fasesNutricion.ts`: no tocan Firestore, y
+// tenerlas aquí obligaba a `utils/nutritionPeriodization.ts` a importar
+// `dbService` entero —SDK de Firebase incluido— solo para sumar semanas. Se
+// siguen exportando desde aquí para no cambiar los siete sitios que las usan.
+export { computeActivePhase, computePhaseStartDate } from '../utils/fasesNutricion';
 

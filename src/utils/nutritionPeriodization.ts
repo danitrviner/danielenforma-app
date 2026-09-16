@@ -1,5 +1,5 @@
 import { Diet, NutritionProgram, NutritionPhase, OnboardingData, BodyweightLog, DietCompletionLog, StepLog } from '../types';
-import { computePhaseStartDate } from '../dbService';
+import { computePhaseStartDate } from './fasesNutricion';
 import { estimateMaintenanceKcal, KCAL_PER_KG } from './energyCalc';
 import { exchangeToKcal } from './nutritionConstants';
 import { adherenciaDelDia } from './diaDeDieta';
