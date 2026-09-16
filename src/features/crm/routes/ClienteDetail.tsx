@@ -11,9 +11,7 @@ import { EstadoClientePill } from '../components/StatusPill';
 import EmptyState from '../components/EmptyState';
 import DatosPersonalesTab from '../components/DatosPersonalesTab';
 import ServiciosTab from '../components/ServiciosTab';
-import PagosTab from '../components/PagosTab';
 import RenovacionesTab from '../components/RenovacionesTab';
-import ReunionesTab from '../components/ReunionesTab';
 import HistorialTab from '../components/HistorialTab';
 import InvitarAtletaModal from '../components/InvitarAtletaModal';
 import { enlaceWhatsApp, formatTelefono } from '../lib/identidad';
@@ -29,14 +27,16 @@ import { useConfirm } from '../../../hooks/useConfirm';
 // Historial es puramente derivado — nunca escribe nada, solo lee lo que las
 // demás pestañas ya cargaron.
 
-type Tab = 'datos' | 'servicios' | 'pagos' | 'renovaciones' | 'reuniones' | 'historial';
+/* Pagos y Reuniones salen de la ficha individual por decisión de Dani
+ * (auditoría §1.2 y §1.5). Siguen enteros en sus pantallas globales —
+ * /crm/pagos y /crm/reuniones—, con sus mismos componentes y sus mismos datos:
+ * aquí solo se quitan de las pestañas del cliente. */
+type Tab = 'datos' | 'servicios' | 'renovaciones' | 'historial';
 
 const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: 'datos',        label: 'Datos',        icon: 'badge' },
   { id: 'servicios',    label: 'Servicios',    icon: 'sell' },
-  { id: 'pagos',        label: 'Pagos',        icon: 'euro' },
   { id: 'renovaciones', label: 'Renovaciones', icon: 'autorenew' },
-  { id: 'reuniones',    label: 'Reuniones',    icon: 'event' },
   { id: 'historial',    label: 'Historial',    icon: 'history' },
 ];
 
@@ -249,9 +249,7 @@ export default function ClienteDetail({ coachEmail }: { coachEmail: string }) {
 
       {tab === 'datos' && <DatosPersonalesTab cliente={cliente} />}
       {tab === 'servicios' && <ServiciosTab cliente={cliente} coachEmail={coachEmail} />}
-      {tab === 'pagos' && <PagosTab cliente={cliente} coachEmail={coachEmail} />}
       {tab === 'renovaciones' && <RenovacionesTab cliente={cliente} coachEmail={coachEmail} />}
-      {tab === 'reuniones' && <ReunionesTab cliente={cliente} coachEmail={coachEmail} />}
       {tab === 'historial' && <HistorialTab cliente={cliente} />}
 
       {invitando && cliente.email && (

@@ -236,6 +236,10 @@ export interface CrmSuscripcion {
   periodicidad: Periodicidad;
   proximoCobro: string;             // ISO 'YYYY-MM-DD'
   estado: EstadoSuscripcion;
+  /** Qué clase de venta fue CONTRATARLA. Lo hereda su primer cobro; los
+   *  siguientes son renovaciones por definición. Sin este dato, todo el dinero
+   *  de suscripciones se quedaba fuera del desglose (auditoría §1.4). */
+  tipo?: TipoServicio;
   ultimoCobroGeneradoEn?: string;   // ISO completo — idempotencia del botón «Registrar cobro»
   createdAt: string;
   updatedAt: string;

@@ -6,7 +6,17 @@ import { hoyISO } from '../lib/fechas';
 import { EscrituraEncolada } from '../../../db/crm';
 import Modal, { Campo, inputClass, BotonPrimario, BotonSecundario } from './Modal';
 import ClienteSelector from './ClienteSelector';
-import type { Cliente, CrmPago, EstadoPago } from '../types';
+import type { Cliente, CrmPago, EstadoPago, TipoMovimiento } from '../types';
+
+/* Sin esto, TODO pago registrado a mano nacía sin `tipo`, y el desglose de
+ * «altas» frente a «renovaciones» salía en blanco — tanto que el panel escondía
+ * la fila entera (auditoría §1.4). El cálculo siempre estuvo bien; lo que
+ * faltaba era el dato. */
+const TIPOS: { id: TipoMovimiento; label: string }[] = [
+  { id: 'alta',       label: 'Alta' },
+  { id: 'renovacion', label: 'Renovación' },
+  { id: 'upsell',     label: 'Upsell' },
+];
 
 interface Props {
   cliente?: Cliente;
@@ -30,6 +40,9 @@ export default function PagoModal({ cliente, pago, coachEmail, onCerrar }: Props
   const [importe, setImporte] = useState(pago ? centsAInputEuros(pago.importeCents) : '');
   const [fechaEmision, setFechaEmision] = useState(pago?.fechaEmision ?? hoyISO());
   const [estado, setEstado] = useState<EstadoPago>(pago?.estado ?? 'pendiente');
+  // Por defecto renovación: la mayoría de cobros sueltos son de clientes que ya
+  // estaban. El alta suele entrar por «Nuevo servicio», que ya lo pregunta.
+  const [tipo, setTipo] = useState<TipoMovimiento>(pago?.tipo ?? 'renovacion');
   const [fechaCobro, setFechaCobro] = useState(pago?.fechaCobro ?? hoyISO());
 
   const importeCents = parseEurosACents(importe);
@@ -55,6 +68,7 @@ export default function PagoModal({ cliente, pago, coachEmail, onCerrar }: Props
             importeCents: importeCents ?? 0,
             fechaEmision,
             estado,
+            tipo,
             fechaCobro: estado === 'pagado' ? fechaCobro : undefined,
           },
         });
@@ -67,6 +81,7 @@ export default function PagoModal({ cliente, pago, coachEmail, onCerrar }: Props
             concepto: concepto.trim(),
             importeCents: importeCents ?? 0,
             estado,
+            tipo,
             fechaEmision,
             fechaCobro: estado === 'pagado' ? fechaCobro : undefined,
           },
@@ -106,6 +121,24 @@ export default function PagoModal({ cliente, pago, coachEmail, onCerrar }: Props
 
         <Campo label="Concepto *">
           <input className={inputClass} value={concepto} onChange={e => setConcepto(e.target.value)} placeholder="Sesión suelta" />
+        </Campo>
+
+        <Campo label="Tipo" hint="Separa lo que entra por altas de lo que entra por renovaciones.">
+          <div className="flex gap-2">
+            {TIPOS.map(t => (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => setTipo(t.id)}
+                aria-pressed={tipo === t.id}
+                className={`flex-1 rounded-control border px-3 py-2 font-sans text-caption font-bold transition-colors ${
+                  tipo === t.id
+                    ? 'bg-accent text-black border-accent'
+                    : 'bg-raised text-ink-2 border-hairline hover:text-ink'
+                }`}
+              >{t.label}</button>
+            ))}
+          </div>
         </Campo>
 
         <div className="grid grid-cols-2 gap-3">

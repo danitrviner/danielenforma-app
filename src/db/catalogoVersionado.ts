@@ -34,6 +34,9 @@ import { escribirLocal } from '../utils/almacenLocal';
 
 const CLAVE_VERSION_LOCAL = (nombre: string) => `enforma_catalogo_version_${nombre}`;
 
+/** Solo para los tests del sello: la clave real, sin duplicarla en el test. */
+export const CLAVE_VERSION_LOCAL_PARA_TESTS = CLAVE_VERSION_LOCAL;
+
 /** Sello guardado en este dispositivo: qué versión se leyó y cuántos documentos traía. */
 interface SelloLocal { version: string; n: number; }
 
@@ -138,8 +141,36 @@ export async function leerCatalogo<T>(
  *  el sello local queda por delante del remoto — que es seguro: no coinciden,
  *  así que la siguiente lectura baja todo, se gasta una lectura de más y nunca
  *  se sirve un dato viejo. */
-export async function marcarCatalogoCambiado(nombre: string): Promise<void> {
+export async function marcarCatalogoCambiado(
+  nombre: string,
+  opciones: { invalidarLocal?: boolean } = {},
+): Promise<void> {
   const version = new Date().toISOString();
+
+  /* `invalidarLocal` es para quien escribió con `runTransaction`.
+   *
+   * Todo lo de arriba da por hecho que el dispositivo que escribe YA tiene el
+   * dato en su copia local, y con addDoc/setDoc/updateDoc/writeBatch es cierto:
+   * Firestore los aplica al instante (latency compensation). Una transacción NO:
+   * se ejecuta en el servidor, y sin un listener abierto sobre la colección el
+   * documento nuevo nunca entra en la copia del dispositivo.
+   *
+   * Adelantar el sello ahí era decir «mi copia está al día» sobre una copia a la
+   * que le falta justo lo que se acaba de escribir — y como el sello local y el
+   * remoto coincidían, se quedaba así para siempre en ese navegador. Es el
+   * servicio del CRM que se guardaba y no aparecía (auditoría §1.1).
+   *
+   * Borrando el sello, la siguiente lectura va al servidor: una lectura de más
+   * a cambio de ver lo que acabas de guardar. */
+  if (opciones.invalidarLocal) {
+    try { localStorage.removeItem(CLAVE_VERSION_LOCAL(nombre)); } catch {}
+    try {
+      await setDoc(doc(db, 'catalogos', nombre), { version }, { merge: true });
+    } catch (err) {
+      console.warn(`marcarCatalogoCambiado(${nombre}) falló (no bloqueante):`, err);
+    }
+    return;
+  }
 
   const anterior = leerSelloLocal(CLAVE_VERSION_LOCAL(nombre));
   if (anterior) {

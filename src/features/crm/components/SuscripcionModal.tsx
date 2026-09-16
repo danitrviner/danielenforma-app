@@ -6,7 +6,7 @@ import { hoyISO, formatDia } from '../lib/fechas';
 import { EscrituraEncolada } from '../../../db/crm';
 import Modal, { Campo, inputClass, BotonPrimario, BotonSecundario } from './Modal';
 import ClienteSelector from './ClienteSelector';
-import type { Cliente, CrmSuscripcion, Periodicidad } from '../types';
+import type { Cliente, CrmSuscripcion, Periodicidad, TipoServicio } from '../types';
 
 const PERIODICIDADES: { id: Periodicidad; label: string }[] = [
   { id: 'mensual',    label: 'Mensual' },
@@ -45,6 +45,11 @@ export default function SuscripcionModal({ cliente, suscripcion, coachEmail, onC
   );
   const [proximoCobro, setProximoCobro] = useState(suscripcion?.proximoCobro ?? hoyISO());
   const [generarPrimerCobro, setGenerarPrimerCobro] = useState(true);
+  /* De qué clase de venta viene la suscripción. Su primer cobro lo hereda; los
+   * siguientes son renovaciones por definición. Sin este dato, todo el dinero
+   * de suscripciones se quedaba fuera del desglose de altas y renovaciones
+   * (auditoría §1.4). */
+  const [tipo, setTipo] = useState<TipoServicio>(suscripcion?.tipo ?? 'alta');
 
   const importeCents = parseEurosACents(importe);
   const importeInvalido = importe.trim().length > 0 && importeCents === null;
@@ -83,6 +88,7 @@ export default function SuscripcionModal({ cliente, suscripcion, coachEmail, onC
             periodicidad,
             proximoCobro,
             generarPrimerCobro,
+            tipo,
           },
         });
         showToast(
@@ -122,6 +128,28 @@ export default function SuscripcionModal({ cliente, suscripcion, coachEmail, onC
             <ClienteSelector value={clienteSeleccionado} onChange={setClienteSeleccionado} />
           </Campo>
         )}
+
+        <Campo label="Tipo" hint="Separa lo que entra por altas de lo que entra por renovaciones.">
+          <div className="flex gap-2">
+            {([
+              { id: 'alta' as const,       label: 'Alta' },
+              { id: 'renovacion' as const, label: 'Renovación' },
+              { id: 'upsell' as const,     label: 'Upsell' },
+            ]).map(t => (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => setTipo(t.id)}
+                aria-pressed={tipo === t.id}
+                className={`flex-1 rounded-control border px-3 py-2 font-sans text-caption font-bold transition-colors ${
+                  tipo === t.id
+                    ? 'bg-accent text-black border-accent'
+                    : 'bg-raised text-ink-2 border-hairline hover:text-ink'
+                }`}
+              >{t.label}</button>
+            ))}
+          </div>
+        </Campo>
 
         <Campo label="Concepto *">
           <input className={inputClass} value={concepto} onChange={e => setConcepto(e.target.value)} placeholder="Suscripción mensual" />

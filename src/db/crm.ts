@@ -342,14 +342,27 @@ export async function createCrmServicioConPago(
     }
   }
 
-  await conTimeout('Crear servicio', runTransaction(db, async tx => {
-    const { id: _sid, ...servicioDoc } = servicio;
-    tx.set(servicioRef, stripUndefined(servicioDoc));
-    for (const pago of pagos) {
-      const { id: pagoId, ...pagoDoc } = pago;
-      tx.set(doc(db, COL_PAGOS, pagoId), stripUndefined(pagoDoc));
-    }
-  }));
+  /* writeBatch y no runTransaction, a propósito.
+   *
+   * Aquí no hay nada que leer antes de escribir: los documentos son nuevos y
+   * sus ids ya están reservados, así que un lote da la misma atomicidad (todo o
+   * nada) que una transacción. Y hay una diferencia que importa: el lote SÍ se
+   * aplica al instante a la copia local del dispositivo, y la transacción no.
+   *
+   * Con la transacción, el servicio recién creado no entraba en la caché local,
+   * `marcarCatalogoCambiado` daba esa caché por buena, y la ficha del cliente
+   * volvía a leerla sin el servicio — para siempre en ese navegador. Era el
+   * «lo guardo y no aparece en ningún sitio» de la auditoría (§1.1).
+   *
+   * Ver db/selloDeCatalogo.test.ts. */
+  const lote = writeBatch(db);
+  const { id: _sid, ...servicioDoc } = servicio;
+  lote.set(servicioRef, stripUndefined(servicioDoc));
+  for (const pago of pagos) {
+    const { id: pagoId, ...pagoDoc } = pago;
+    lote.set(doc(db, COL_PAGOS, pagoId), stripUndefined(pagoDoc));
+  }
+  await conTimeout('Crear servicio', lote.commit());
 
   void marcarCatalogoCambiado(COL_SERVICIOS);
   if (pagos.length > 0) void marcarCatalogoCambiado(COL_PAGOS);
@@ -479,6 +492,9 @@ export async function createCrmSuscripcion(
     concepto: data.concepto,
     importeCents: data.importeCents,
     estado: 'pendiente' as const,
+    // Hereda la clase de venta de la suscripción. Sin esto nacía sin tipo y ese
+    // dinero no entraba en ningún desglose: ni altas ni renovaciones (§1.4).
+    ...(data.tipo ? { tipo: data.tipo } : {}),
     fechaEmision: data.proximoCobro,
     createdAt: ts,
     updatedAt: ts,
@@ -562,6 +578,11 @@ export async function registrarCobroSuscripcion(
       concepto: sub.concepto,
       importeCents: sub.importeCents,
       estado: 'pendiente' as const,
+      // Un cobro recurrente POSTERIOR al primero es una renovación por
+      // definición: el cliente sigue con nosotros un periodo más. Antes nacía
+      // sin tipo, así que las renovaciones cobradas por suscripción no contaban
+      // como renovaciones en ningún sitio (auditoría §1.4).
+      tipo: 'renovacion' as const,
       fechaEmision: sub.proximoCobro,
       createdAt: ts,
       updatedAt: ts,
@@ -576,11 +597,18 @@ export async function registrarCobroSuscripcion(
     return { ...pagoDoc, id: pagoRef.id };
   }));
 
-  // Solo si la transacción confirmó: cuando pierde la carrera lanza
-  // `CobroYaRegistrado` desde dentro y no se llega aquí — que es lo correcto,
-  // porque en ese caso quien ganó ya marcó los dos sellos.
-  void marcarCatalogoCambiado(COL_PAGOS);
-  void marcarCatalogoCambiado(COL_SUSCRIPCIONES);
+  /* Solo si la transacción confirmó: cuando pierde la carrera lanza
+   * `CobroYaRegistrado` desde dentro y no se llega aquí — que es lo correcto,
+   * porque en ese caso quien ganó ya marcó los dos sellos.
+   *
+   * `invalidarLocal` porque esto SÍ necesita ser una transacción: lee la
+   * suscripción antes de escribir, que es lo que impide cobrar dos veces el
+   * mismo ciclo. Y una transacción no se aplica a la copia local del
+   * dispositivo, así que adelantar el sello daría por buena una caché a la que
+   * le falta el cobro que se acaba de generar — el mismo fallo que hacía
+   * invisibles los servicios. Se borra el sello y se paga una relectura. */
+  void marcarCatalogoCambiado(COL_PAGOS, { invalidarLocal: true });
+  void marcarCatalogoCambiado(COL_SUSCRIPCIONES, { invalidarLocal: true });
   return pago;
 }
 
