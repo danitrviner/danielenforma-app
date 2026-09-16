@@ -100,7 +100,12 @@ export default function RoadmapCalendario(props: Props) {
   } = props;
 
   const hoy = hoyIsoLocal();
-  const anio = new Date().getFullYear();
+  /* El año era `new Date().getFullYear()` fijo: el calendario SOLO podía
+     enseñar el año en curso. Un plan que cruza enero desaparecía a mitad, y un
+     bloque terminado en diciembre no se podía volver a mirar — con el detalle
+     de que en enero eso es todo el trabajo del año anterior. Ahora es estado,
+     con sus flechas. */
+  const [anio, setAnio] = useState<number>(() => new Date().getFullYear());
 
   const [level, setLevel] = useState<Nivel>('year');
   const [month, setMonth] = useState<number>(new Date().getMonth());
@@ -257,7 +262,12 @@ export default function RoadmapCalendario(props: Props) {
     setLevel('week');
   }
   function irAHoy() {
-    setMonth(new Date().getMonth());
+    // También el AÑO: desde que se puede navegar a otros, «Día» tiene que
+    // traerte de vuelta a hoy de verdad, no al mismo día del año que estés
+    // mirando.
+    const ahora = new Date();
+    setAnio(ahora.getFullYear());
+    setMonth(ahora.getMonth());
     setLevel('month');
     setSel(hoy);
   }
@@ -301,6 +311,28 @@ export default function RoadmapCalendario(props: Props) {
             <p className="font-sans font-extrabold text-title-m text-white truncate" style={{ letterSpacing: '-0.02em' }}>{athleteName}</p>
             <p className="font-mono text-caption text-ink-4 uppercase tracking-wider">Plan · Roadmap · Calendario</p>
           </div>
+        </div>
+        {/* Navegación de año. Al cambiarlo se vuelve a la vista de año: quedarse
+            en «semana» al saltar de 2026 a 2025 dejaría una semana que no es la
+            que el coach estaba mirando y sin forma de saber cuál es. */}
+        <div className="flex items-center gap-1 flex-shrink-0">
+          <button
+            type="button"
+            onClick={() => { setAnio(a => a - 1); setLevel('year'); setSel(null); }}
+            aria-label={`Ir a ${anio - 1}`}
+            className="rounded-control px-2 py-1.5 text-ink-3 transition-colors hover:bg-raised hover:text-ink"
+          >
+            <Icon name="chevron_left" size="s" />
+          </button>
+          <span className="font-mono text-label tabular-nums text-ink w-12 text-center">{anio}</span>
+          <button
+            type="button"
+            onClick={() => { setAnio(a => a + 1); setLevel('year'); setSel(null); }}
+            aria-label={`Ir a ${anio + 1}`}
+            className="rounded-control px-2 py-1.5 text-ink-3 transition-colors hover:bg-raised hover:text-ink"
+          >
+            <Icon name="chevron_right" size="s" />
+          </button>
         </div>
         <div className="flex items-center gap-0.5 bg-raised rounded-control p-[3px] flex-shrink-0">
           {([
