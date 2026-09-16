@@ -2,7 +2,11 @@ import React, { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { UserProfile, WeightCheckIn, WorkoutAssignment } from '../types';
-import { getCrmSuscripciones, getPendingAiProposals } from '../dbService';
+import { getCrmSuscripciones, getPendingAiProposals, getMesocyclesForAthletes } from '../dbService';
+import {
+  construirBandejaDelDia, contarPorUrgencia, SenalDelDia, UrgenciaSenal, CategoriaSenal,
+} from '../utils/bandejaDelDia';
+import { hoyIsoLocal } from '../utils/trainingWeek';
 import { ActionRow as ActionRowPrimitive, EmptyState, Icon } from './ui';
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -31,22 +35,41 @@ import { ActionRow as ActionRowPrimitive, EmptyState, Icon } from './ui';
    parrilla SÍ se retira de ClientsScreen: esta pantalla la sustituye 1:1.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-type Categoria = 'revision' | 'pago' | 'plan';
-
-interface ActionRow {
-  key: string;
-  categoria: Categoria;
-  label: string;
-  detail: string;
-  onClick: () => void;
-}
-
 function iniciales(nombre: string): string {
   const partes = nombre.trim().split(/\s+/);
   return ((partes[0]?.[0] ?? '') + (partes[1]?.[0] ?? '')).toUpperCase() || '·';
 }
 
 const DIA_SEMANA = ['DOMINGO', 'LUNES', 'MARTES', 'MIÉRCOLES', 'JUEVES', 'VIERNES', 'SÁBADO'];
+
+/* Los tres niveles de prisa, con su nombre y su color. No es decorado: es lo
+   que separa «este atleta no puede entrenar» de «avísale de que su bloque se
+   acaba el viernes». Mezclarlos en una sola lista roja es lo que hace que se
+   dejen de mirar. */
+const META_URGENCIA: Record<UrgenciaSenal, { titulo: string; nota: string; punto: string }> = {
+  bloqueado: {
+    titulo: 'Está parado',
+    nota: 'No puede entrenar hasta que lo toques',
+    punto: 'bg-danger',
+  },
+  hoy: {
+    titulo: 'Para hoy',
+    nota: 'Está esperando algo tuyo',
+    punto: 'bg-accent',
+  },
+  pronto: {
+    titulo: 'Antes de que se te pase',
+    nota: 'Nada urgente, pero nadie más te va a avisar',
+    punto: 'bg-ink-3',
+  },
+};
+
+const ORDEN_URGENCIA: UrgenciaSenal[] = ['bloqueado', 'hoy', 'pronto'];
+
+const LABEL_CATEGORIA: Record<CategoriaSenal, string> = {
+  plan: 'Planes', revision: 'Revisiones', pago: 'Pagos', propuesta: 'Asistente',
+  ausencia: 'Ausencias', renovacion: 'Renovaciones', setup: 'Montaje',
+};
 
 interface Props {
   athletes: UserProfile[];
@@ -55,13 +78,9 @@ interface Props {
   loadingAssignments: boolean;
 }
 
-function todayIso(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
 export default function HomeCoachScreen({ athletes, checkins, assignmentsByEmail, loadingAssignments }: Props) {
   const navigate = useNavigate();
-  const [filtro, setFiltro] = useState<'todas' | Categoria>('todas');
+  const [filtro, setFiltro] = useState<'todas' | CategoriaSenal>('todas');
   const { data: suscripciones = [] } = useQuery({
     queryKey: ['crmSuscripciones'],
     queryFn: getCrmSuscripciones,
@@ -73,65 +92,64 @@ export default function HomeCoachScreen({ athletes, checkins, assignmentsByEmail
     queryFn: getPendingAiProposals,
   });
 
-  const nameByEmail = new Map(athletes.map(a => [a.email, a.displayName]));
+  // Los bloques de TODOS los atletas en una sola consulta por lotes (de 30 en
+  // 30, ver getMesocyclesForAthletes): es lo que permite avisar de las
+  // renovaciones sin pagar una lectura por cliente cada vez que se abre la app.
+  const emails = useMemo(() => athletes.map(a => a.email), [athletes]);
+  const { data: mesociclos = [] } = useQuery({
+    queryKey: ['mesocyclesForAthletes', emails],
+    queryFn: () => getMesocyclesForAthletes(emails),
+    enabled: emails.length > 0,
+  });
 
-  const revisionRows: ActionRow[] = [];
-  const seenReviewEmail = new Set<string>();
-  for (const c of checkins) {
-    if (c.approved && c.coachFeedback) continue;
-    if (seenReviewEmail.has(c.email)) continue;
-    seenReviewEmail.add(c.email);
-    const pendingForAthlete = checkins.filter(x => x.email === c.email && (!x.approved || !x.coachFeedback)).length;
-    revisionRows.push({
-      key: `revision-${c.email}`,
-      categoria: 'revision',
-      label: nameByEmail.get(c.email) ?? c.email,
-      detail: `${pendingForAthlete} revisión${pendingForAthlete === 1 ? '' : 'es'} pendiente${pendingForAthlete === 1 ? '' : 's'}`,
-      onClick: () => navigate(`/clients/${encodeURIComponent(c.email)}/revisiones`),
+  const hoyIso = hoyIsoLocal();
+
+  /* Quién necesita algo tuyo, y con cuánta prisa. La decisión vive en
+     `utils/bandejaDelDia.ts`, con sus tests: aquí solo se pinta. Antes estaba
+     escrita a mano en este componente y solo miraba tres cosas — lo que de
+     verdad se escapa (el que lleva nueve días sin entrar, el bloque que se
+     acaba, el montaje que se quedó al 55 %) no avisaba por su cuenta. */
+  const senales = useMemo(() => {
+    if (loadingAssignments) return [];
+    const pagosVencidos = suscripciones
+      .filter(s => s.estado === 'activa' && s.proximoCobro <= hoyIso)
+      .map(s => ({
+        nombre: s.clientNombre,
+        texto: `Pago vencido · ${s.concepto}`,
+        destino: `/crm/clientes/${s.clientId}`,
+      }));
+    const propuestasPorEmail = new Map<string, number>();
+    for (const p of propuestasPendientes) {
+      propuestasPorEmail.set(p.athleteId, (propuestasPorEmail.get(p.athleteId) ?? 0) + 1);
+    }
+    return construirBandejaDelDia({
+      atletas: athletes,
+      checkins,
+      asignacionesPorEmail: assignmentsByEmail,
+      mesociclos,
+      pagosVencidos,
+      propuestasPorEmail,
+      hoy: hoyIso,
     });
-  }
+  }, [loadingAssignments, athletes, checkins, assignmentsByEmail, mesociclos, suscripciones, propuestasPendientes, hoyIso]);
 
-  const today = todayIso();
-  const overdueSubs = suscripciones.filter(s => s.estado === 'activa' && s.proximoCobro <= today);
-  const pagoRows: ActionRow[] = overdueSubs.map(s => ({
-    key: `pago-${s.id}`,
-    categoria: 'pago',
-    label: s.clientNombre,
-    detail: `Pago vencido · ${s.concepto}`,
-    onClick: () => navigate(`/crm/clientes/${s.clientId}`),
-  }));
+  const visibles = filtro === 'todas' ? senales : senales.filter(s => s.categoria === filtro);
+  const porUrgencia = useMemo(() => contarPorUrgencia(senales), [senales]);
 
-  // Dos estados distintos, no uno. Antes esto solo miraba si había
-  // asignaciones, así que un atleta con el plan montado pero SIN publicar
-  // desaparecía de «Requiere acción» — y mientras el panel decía «todo al día»
-  // él seguía atascado en la pantalla de espera, que es bloqueo total. Justo el
-  // caso que más se escapa: el trabajo está hecho y solo falta pulsar el botón.
-  const planRows: ActionRow[] = loadingAssignments ? [] : athletes
-    .flatMap(a => {
-      const sinEntrenos = (assignmentsByEmail.get(a.email) ?? []).length === 0;
-      if (!sinEntrenos && a.planPublishedAt) return [];
-      return [{
-        key: `plan-${a.email}`,
-        categoria: 'plan' as const,
-        label: a.displayName,
-        detail: sinEntrenos ? 'Sin entrenamientos asignados' : 'Plan sin publicar · el atleta no lo ve',
-        onClick: () => navigate(`/clients/${encodeURIComponent(a.email)}/entrenamientos`),
-      }];
-    });
+  const chips = useMemo(() => {
+    const cuenta = new Map<CategoriaSenal, number>();
+    for (const s of senales) cuenta.set(s.categoria, (cuenta.get(s.categoria) ?? 0) + 1);
+    return [
+      { id: 'todas' as const, label: 'Todas', count: senales.length },
+      ...[...cuenta.entries()].map(([id, count]) => ({ id, label: LABEL_CATEGORIA[id], count })),
+    ];
+  }, [senales]);
 
-  const requiereAccion = [...revisionRows, ...pagoRows, ...planRows];
-  const visibles = filtro === 'todas' ? requiereAccion : requiereAccion.filter(r => r.categoria === filtro);
-
-  const chips = useMemo(() => ([
-    { id: 'todas' as const, label: 'Todas', count: requiereAccion.length },
-    { id: 'revision' as const, label: 'Revisiones', count: revisionRows.length },
-    { id: 'pago' as const, label: 'Pagos', count: pagoRows.length },
-    { id: 'plan' as const, label: 'Planes', count: planRows.length },
-  ].filter(c => c.id === 'todas' || c.count > 0)), [requiereAccion.length, revisionRows.length, pagoRows.length, planRows.length]);
+  const irA = (s: SenalDelDia) => navigate(s.destino);
 
   const hoy = new Date();
 
-  if (requiereAccion.length === 0) {
+  if (senales.length === 0) {
     return (
       <section>
         <EmptyState
@@ -195,22 +213,32 @@ export default function HomeCoachScreen({ athletes, checkins, assignmentsByEmail
         </div>
       )}
 
-      <div className="flex items-center gap-2">
-        <span className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse" />
-        <span className="font-mono text-caption uppercase tracking-widest text-ink-3">Requiere acción</span>
-      </div>
-      <div className="divide-y divide-hairline overflow-hidden rounded-field border border-hairline bg-surface">
-        {visibles.map(row => (
-          <ActionRowPrimitive
-            key={row.key}
-            initials={iniciales(row.label)}
-            title={row.label}
-            meta={row.detail}
-            urgent
-            onClick={row.onClick}
-          />
-        ))}
-      </div>
+      {/* Un grupo por nivel de prisa. Una sola lista roja con todo mezclado es
+          lo que hace que se deje de mirar: si «no puede entrenar» y «avísale de
+          que su bloque acaba el viernes» pesan igual, deja de pesar ninguno. */}
+      {ORDEN_URGENCIA.filter(u => visibles.some(s => s.urgencia === u)).map(u => (
+        <div key={u} className="space-y-2">
+          <div className="flex items-baseline gap-2">
+            <span className={`h-1.5 w-1.5 rounded-full ${META_URGENCIA[u].punto} ${u === 'bloqueado' ? 'animate-pulse' : ''}`} />
+            <span className="font-mono text-caption uppercase tracking-widest text-ink-3">
+              {META_URGENCIA[u].titulo} · {porUrgencia[u]}
+            </span>
+            <span className="font-mono text-caption text-ink-3 truncate">{META_URGENCIA[u].nota}</span>
+          </div>
+          <div className="divide-y divide-hairline overflow-hidden rounded-field border border-hairline bg-surface">
+            {visibles.filter(s => s.urgencia === u).map(s => (
+              <ActionRowPrimitive
+                key={s.id}
+                initials={iniciales(s.athleteName)}
+                title={s.athleteName}
+                meta={s.texto}
+                urgent={u !== 'pronto'}
+                onClick={() => irA(s)}
+              />
+            ))}
+          </div>
+        </div>
+      ))}
     </section>
   );
 }
