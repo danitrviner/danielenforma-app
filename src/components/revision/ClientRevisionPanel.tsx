@@ -8,7 +8,7 @@ import { Sexo } from '../../utils/athleteProfileSignals';
 import { getVolumeLandmarks } from '../../db/coachSettings';
 import { getDietCompletionLogsForAthlete, getDietsForAthlete } from '../../dbService';
 import {
-  buildRevisionCoach, PeriodoRevision, mesoActivo, pesoVsSemanaPasada,
+  buildRevisionCoach, PeriodoRevision, mesoActivo, pesoVsSemanaPasada, fechaDeLaUltimaRevision,
 } from '../../utils/revisionCoach';
 import { construirComidaDeLaSemana } from '../../utils/comidaDeLaSemana';
 import { hoyIsoLocal } from '../../utils/trainingWeek';
@@ -114,10 +114,11 @@ export default function ClientRevisionPanel({
 
   const revision = useMemo(
     () => buildRevisionCoach({
-      logs, exercises, mesocycles, periodo, landmarks, hoy, responses, questionnaires,
+      logs, exercises, mesocycles, periodo, landmarks, hoy, responses, questionnaires, checkins,
     }),
-    [logs, exercises, mesocycles, periodo, landmarks, hoy, responses, questionnaires],
+    [logs, exercises, mesocycles, periodo, landmarks, hoy, responses, questionnaires, checkins],
   );
+  const ultimaRevision = useMemo(() => fechaDeLaUltimaRevision(checkins), [checkins]);
 
   const { ventana, informe } = revision;
   const peso = useMemo(() => pesoVsSemanaPasada(bodyweightLogs, hoy), [bodyweightLogs, hoy]);
@@ -164,6 +165,7 @@ export default function ClientRevisionPanel({
           mesocycles={mesocycles}
           etiquetaComparacion={ventana.etiquetaComparacion}
           hoy={hoy}
+          ultimaRevision={ultimaRevision}
         />
         <div className="flex items-center gap-2">
           <Button

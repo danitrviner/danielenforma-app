@@ -1,6 +1,6 @@
 import {
   WorkoutLog, Exercise, Mesocycle, MuscleGroup, BodyweightLog,
-  Questionnaire, QuestionnaireResponse, MUSCLE_ORDER,
+  Questionnaire, QuestionnaireResponse, WeightCheckIn, MUSCLE_ORDER,
 } from '../types';
 import {
   buildTrainingReport, TrainingReport, ExercisePerf, ComparisonMode, resolveWindows,
@@ -38,7 +38,31 @@ import { DataPoint } from './seriesCorrelation';
 export type PeriodoRevision =
   | { tipo: '7d' }
   | { tipo: '14d' }
+  | { tipo: 'ultima_revision' }
   | { tipo: 'meso'; mesoId: string };
+
+/**
+ * Fecha del último check-in que Dani ya contestó o aprobó — el corte real de
+ * «desde la última vez que hablamos».
+ *
+ * Un check-in recibido y sin tocar NO vale: ese es justo el que se está a punto
+ * de contestar, y tomarlo como corte dejaría la ventana en cero días. El
+ * criterio es que haya feedback escrito o esté aprobado, que es lo que
+ * significa que esa conversación ya ocurrió.
+ */
+export function fechaDeLaUltimaRevision(checkins: WeightCheckIn[]): string | null {
+  const fechas = checkins
+    .filter(c => c.approved || (c.coachFeedback ?? '').trim().length > 0)
+    .map(c => {
+      const d = c.timestamp instanceof Date ? c.timestamp : new Date(c.timestamp);
+      return Number.isNaN(d.getTime())
+        ? null
+        : `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    })
+    .filter((f): f is string => f !== null)
+    .sort();
+  return fechas.length > 0 ? fechas[fechas.length - 1] : null;
+}
 
 export interface VentanaRevision {
   desde: string;
@@ -114,7 +138,36 @@ export function resolverPeriodoRevision(
   periodo: PeriodoRevision,
   mesocycles: Mesocycle[],
   hoy: string = hoyIsoLocal(),
+  checkins: WeightCheckIn[] = [],
 ): VentanaRevision {
+  if (periodo.tipo === 'ultima_revision') {
+    const corte = fechaDeLaUltimaRevision(checkins);
+    // Sin ninguna revisión contestada no hay «desde la última»: se cae a la
+    // semana, que es la ventana por defecto de la pantalla. El selector solo
+    // ofrece esta opción cuando hay corte, así que aquí llegar es raro
+    // (borraron el feedback en otra pestaña) y vale más caer a algo con
+    // sentido que pintar una ventana vacía.
+    if (corte === null) return resolverPeriodoRevision({ tipo: '7d' }, mesocycles, hoy, checkins);
+    // Desde el día SIGUIENTE al del check-in contestado: ese día ya se comentó.
+    const desde = addDays(corte, 1) > hoy ? hoy : addDays(corte, 1);
+    const dias = diasEntre(desde, hoy) + 1;
+    // La ventana equivalente justo antes. Se usa 'offset' y no 'weeks' porque
+    // «desde la última revisión» mide días sueltos (once, diecisiete), no
+    // semanas enteras: con 'weeks' habría que redondear y los dos lados de la
+    // comparación dejarían de medir lo mismo.
+    const comparison: ComparisonMode = {
+      mode: 'offset', dias, label: `vs los ${dias} días anteriores`,
+    };
+    const w = resolveWindows(desde, hoy, comparison, mesocycles);
+    return {
+      desde, hasta: hoy, comparison,
+      etiqueta: `Desde la última revisión · ${dias} ${dias === 1 ? 'día' : 'días'}`,
+      etiquetaComparacion: w.comparisonLabel,
+      semanas: semanasDeVentana(desde, hoy),
+      semanaDelPlan: null, semanasDelPlan: null, meso: null,
+    };
+  }
+
   if (periodo.tipo === '7d' || periodo.tipo === '14d') {
     const dias = periodo.tipo === '7d' ? 7 : 14;
     const desde = addDays(hoy, -(dias - 1));
@@ -271,6 +324,8 @@ export interface RevisionParams {
   /** Cuestionarios contestados — alimentan el bienestar. Sin ellos sale vacío. */
   responses?: QuestionnaireResponse[];
   questionnaires?: Questionnaire[];
+  /** Check-ins — solo para resolver el periodo «desde la última revisión». */
+  checkins?: WeightCheckIn[];
 }
 
 export function buildRevisionCoach(params: RevisionParams): RevisionDelAtleta {
@@ -278,10 +333,10 @@ export function buildRevisionCoach(params: RevisionParams): RevisionDelAtleta {
     logs, exercises, mesocycles, periodo,
     landmarks = VOLUME_LANDMARKS_DEFAULT,
     hoy = hoyIsoLocal(),
-    responses = [], questionnaires = [],
+    responses = [], questionnaires = [], checkins = [],
   } = params;
 
-  const ventana = resolverPeriodoRevision(periodo, mesocycles, hoy);
+  const ventana = resolverPeriodoRevision(periodo, mesocycles, hoy, checkins);
   const comun = {
     logs, exercises, mesocycles,
     periodStart: ventana.desde, periodEnd: ventana.hasta,

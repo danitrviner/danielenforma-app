@@ -1,11 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import {
   Exercise, Mesocycle, MuscleGroup, MuscleGroupConfig, WorkoutLog, BodyweightLog, MUSCLE_ORDER,
-  Questionnaire, QuestionnaireResponse,
+  Questionnaire, QuestionnaireResponse, WeightCheckIn,
 } from '../types';
 import {
   resolverPeriodoRevision, buildRevisionCoach, agruparEjerciciosPorPatron,
   mejoresYPeores, mesoActivo, semanasDeVentana, pesoVsSemanaPasada, construirBienestar,
+  fechaDeLaUltimaRevision,
 } from './revisionCoach';
 
 const HOY = '2026-09-14'; // lunes
@@ -455,5 +456,65 @@ describe('construirBienestar', () => {
       responses: RESPUESTAS, questionnaires: [Q_BIENESTAR],
     });
     expect(r.bienestar.irp.valor).not.toBeNull();
+  });
+});
+
+// ── Periodo «desde la última revisión» ──────────────────────────────────────
+
+function checkin(fecha: string, extra: Partial<WeightCheckIn> = {}): WeightCheckIn {
+  return {
+    id: `c_${fecha}`, userId: 'u', email: 'ana@x.com',
+    timestamp: new Date(`${fecha}T18:00:00`), dateStr: fecha,
+    weight: 80, mood: '😊', adherence: 'Sí', notes: '',
+    ...extra,
+  };
+}
+
+describe('fechaDeLaUltimaRevision', () => {
+  it('solo cuenta los check-ins ya contestados o aprobados', () => {
+    const cs = [
+      checkin('2026-09-01', { approved: true }),
+      checkin('2026-09-08', { coachFeedback: 'Buen trabajo' }),
+      // Recibido y sin tocar: es el que se va a contestar ahora, no un corte.
+      checkin('2026-09-13'),
+    ];
+    expect(fechaDeLaUltimaRevision(cs)).toBe('2026-09-08');
+  });
+
+  it('un feedback en blanco no cuenta como contestado', () => {
+    expect(fechaDeLaUltimaRevision([checkin('2026-09-08', { coachFeedback: '   ' })])).toBeNull();
+  });
+
+  it('sin check-ins devuelve null', () => {
+    expect(fechaDeLaUltimaRevision([])).toBeNull();
+  });
+});
+
+describe('resolverPeriodoRevision · desde la última revisión', () => {
+  const CS = [checkin('2026-09-08', { approved: true })];
+
+  it('abre el día siguiente al check-in contestado y llega hasta hoy', () => {
+    const v = resolverPeriodoRevision({ tipo: 'ultima_revision' }, [], HOY, CS);
+    expect(v.desde).toBe('2026-09-09');
+    expect(v.hasta).toBe(HOY);          // 2026-09-14
+    expect(v.etiqueta).toBe('Desde la última revisión · 6 días');
+  });
+
+  it('se compara contra los mismos días de antes, no contra semanas redondeadas', () => {
+    const v = resolverPeriodoRevision({ tipo: 'ultima_revision' }, [], HOY, CS);
+    expect(v.comparison).toEqual({ mode: 'offset', dias: 6, label: 'vs los 6 días anteriores' });
+  });
+
+  it('sin ninguna revisión contestada cae a los últimos 7 días', () => {
+    const v = resolverPeriodoRevision({ tipo: 'ultima_revision' }, [], HOY, []);
+    expect(v.etiqueta).toBe('Últimos 7 días');
+  });
+
+  it('un check-in contestado hoy mismo no deja la ventana en el futuro', () => {
+    const v = resolverPeriodoRevision(
+      { tipo: 'ultima_revision' }, [], HOY, [checkin(HOY, { approved: true })],
+    );
+    expect(v.desde).toBe(HOY);
+    expect(v.hasta).toBe(HOY);
   });
 });
