@@ -57,3 +57,21 @@ describe('las descripciones no mandan a pantallas que ya no existen', () => {
     }
   });
 });
+
+describe('get_volume_suggestion', () => {
+  it('está declarada y solo exige el email', () => {
+    const t = tool('get_volume_suggestion')!;
+    expect(t).toBeDefined();
+    expect(t.input_schema.required).toEqual(['athlete_email']);
+  });
+
+  it('el guion manda llamarla ANTES de proponer el mesociclo', () => {
+    const guion = tareaPorId('mes_nuevo')!.prompt('Ana', 'a@x.com');
+    const iMotor = guion.indexOf('get_volume_suggestion');
+    const iPropuesta = guion.indexOf('propose_mesocycle');
+    expect(iMotor).toBeGreaterThan(-1);
+    // Van en la misma línea: el motor se cita dentro del paso del mesociclo.
+    expect(Math.abs(iMotor - iPropuesta)).toBeLessThan(400);
+    expect(guion).toMatch(/di por qué/);
+  });
+});

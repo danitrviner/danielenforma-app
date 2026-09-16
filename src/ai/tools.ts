@@ -21,6 +21,7 @@ import {
   getMesocycles,
   getDietsForAthlete,
   getFoodItems,
+  getWorkoutAssignmentsByMesocycleIds,
   getDietCompletionLogsForAthlete,
   getAthleteNutritionConfig,
   getAthleteDietConfig,
@@ -68,6 +69,9 @@ import { computeWeightTrend } from '../utils/nutritionAnalysis';
 import { estimateMaintenanceKcal } from '../utils/energyCalc';
 import { buildTrainingReport } from '../utils/trainingReport';
 import { buildRevisionCoach, PeriodoRevision, mesoActivo, pesoVsSemanaPasada } from '../utils/revisionCoach';
+import { suggestVolume, VolumeIntent } from '../utils/volumeSuggestion';
+import { buildVolumeHistoryFrom } from '../utils/volumeHistory';
+import { VOLUME_LANDMARKS_DEFAULT } from '../data/volumeLandmarks';
 import { construirTitulares } from '../utils/titularesRevision';
 import { construirComidaDeLaSemana } from '../utils/comidaDeLaSemana';
 import { getVolumeLandmarks } from '../db/coachSettings';
@@ -80,7 +84,7 @@ import { weekKey } from '../utils/seriesCorrelation';
 import { resolveQuestions } from '../utils/questionnaireResolve';
 import { SYSTEM_FOODS } from '../nutricion_seed_en_forma';
 import { validateDietPayload, DietUpdatePayload, validateMesocyclePayload, MesocycleProposalPayload, validateNutritionPhases, validateWorkoutDays, claveDeEjercicio, WorkoutDayInput, WorkoutExerciseInput, validateLevelLadder, LadderLevelInput, LadderCriterionInput } from './validators';
-import { UserProfile, WeightCheckIn, Diet, FoodCategory, Mesocycle, MuscleGroup, MuscleGroupConfig, MUSCLE_LABELS, PeriodizationBlockPayload, ProposalExpediente, DossierFact, DossierPatch } from '../types';
+import { UserProfile, WeightCheckIn, Diet, FoodCategory, Mesocycle, MuscleGroup, MuscleGroupConfig, MUSCLE_LABELS, MUSCLE_ORDER, ExperienceLevel, PeriodizationBlockPayload, ProposalExpediente, DossierFact, DossierPatch } from '../types';
 import { cambiosDeMesociclo, cambiosDeDieta, cambiosDePeriodizacion } from './cambiosPropuesta';
 import { tareaPorId, type BriefSeccion } from './tareas';
 
@@ -159,6 +163,29 @@ export const TOOL_DEFINITIONS = [
           type: 'string',
           enum: ['7d', '14d', 'bloque'],
           description: 'Ventana a revisar. Por defecto el bloque en curso si lo hay, y si no 7 días.',
+        },
+      },
+      required: ['athlete_email'],
+    },
+  },
+  {
+    name: 'get_volume_suggestion',
+    description:
+      'El reparto de series por grupo que propone el MOTOR de Dani, con el porqué de cada número. Es el mismo que sale al pulsar «Sugerir volumen» en el editor de mesociclos: parte de los umbrales por grupo de su doctrina, de los días que entrena, del reparto elegido y de lo que pasó en el bloque anterior (series hechas, progresión, y lo que el atleta pidió priorizar al cerrarlo). Llámala ANTES de propose_mesocycle y usa sus números como punto de partida en vez de inventarlos: si te desvías de uno, di por qué.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        athlete_email: { type: 'string' },
+        dias_por_semana: { type: 'number', description: 'Sesiones del microciclo. Por defecto las del bloque en curso, o 4.' },
+        nivel: { type: 'string', enum: ['principiante', 'intermedio', 'avanzado'], description: 'Por defecto, el del alta.' },
+        intencion: {
+          type: 'string',
+          enum: ['conservador', 'estandar', 'agresivo'],
+          description: 'Cuánto apretar. Por defecto "estandar". Una recuperación mala lo fuerza a conservador solo.',
+        },
+        prioridades: {
+          type: 'object',
+          description: 'Grupos a subir o bajar: { "pecho": "alta", "gemelo": "baja" }. Lo que no se diga queda en "media".',
         },
       },
       required: ['athlete_email'],
@@ -3218,6 +3245,98 @@ async function etiquetasDelBancoDelCoach(): Promise<string[]> {
   }
 }
 
+/**
+ * El sugeridor de volumen, para el asistente.
+ *
+ * Mismo motor que el botón «Sugerir volumen» del editor de mesociclos:
+ * `suggestVolume` sobre `buildVolumeHistoryFrom`. El modelo proponía repartos
+ * de series a ojo, y eso tiene dos problemas — no conoce los umbrales por grupo
+ * de la doctrina de Dani (el MAV del pecho no es el del antebrazo) y no mira lo
+ * que pasó en el bloque anterior. El motor sí hace las dos cosas, y además
+ * devuelve `razones`, así que la propuesta se puede auditar en vez de tener que
+ * creérsela.
+ */
+async function getVolumeSuggestion(
+  email: string,
+  input: Record<string, unknown>,
+): Promise<string> {
+  const coachUid = auth.currentUser?.uid;
+  const mesos = await getMesocycles(email);
+  // Las asignaciones se piden por los ids de los bloques, no por atleta: es la
+  // misma consulta acotada que usa «Sugerir volumen» en el editor, y evita
+  // traerse el calendario entero de alguien que lleva un año.
+  const mesoIds = mesos.map(m => m.id);
+  const [logs, exercises, assignments, responses, questionnaires, landmarks, onboarding] =
+    await Promise.all([
+      getWorkoutLogs(email),
+      getExercises(),
+      mesoIds.length > 0 ? getWorkoutAssignmentsByMesocycleIds(mesoIds) : Promise.resolve([]),
+      getResponsesForAthlete(email),
+      coachUid ? getQuestionnairesByCoach(coachUid) : Promise.resolve([]),
+      getVolumeLandmarks().catch(() => VOLUME_LANDMARKS_DEFAULT),
+      getOnboarding(email).catch(() => null),
+    ]);
+
+  const hoy = hoyIsoLocal();
+  const actual = mesoActivo(mesos, hoy) ?? [...mesos].sort((a, b) => b.number - a.number)[0] ?? null;
+
+  const history = buildVolumeHistoryFrom({
+    mesocycles: mesos,
+    currentId: actual?.id ?? '',
+    logs, exercises, assignments, responses, questionnaires,
+  });
+
+  const diasPorSemana = Number(input.dias_por_semana) > 0
+    ? Math.round(Number(input.dias_por_semana))
+    : (actual?.daysPerWeek ?? 4);
+
+  const nivel = ['principiante', 'intermedio', 'avanzado'].includes(String(input.nivel))
+    ? (input.nivel as ExperienceLevel)
+    : ((onboarding?.experienceLevel as ExperienceLevel) ?? 'intermedio');
+
+  const intent: VolumeIntent = ['conservador', 'estandar', 'agresivo'].includes(String(input.intencion))
+    ? (input.intencion as VolumeIntent)
+    : 'estandar';
+
+  // Lo que no venga se queda en 'media'. Nunca se hereda del bloque anterior a
+  // ciegas: si el coach quiere repetir prioridades, las dice.
+  const pedidas = (input.prioridades ?? {}) as Record<string, string>;
+  const priorities = {} as Record<MuscleGroup, 'alta' | 'media' | 'baja'>;
+  for (const g of MUSCLE_ORDER) {
+    const v = pedidas[g];
+    priorities[g] = v === 'alta' || v === 'baja' ? v : 'media';
+  }
+
+  const r = suggestVolume({
+    landmarks: landmarks ?? VOLUME_LANDMARKS_DEFAULT,
+    daysPerWeek: diasPorSemana,
+    splitId: actual?.splitId,
+    level: nivel,
+    intent,
+    priorities,
+    history,
+  });
+
+  return toResult({
+    partiendoDe: {
+      bloqueAnterior: actual ? { id: actual.id, numero: actual.number, nombre: actual.name } : null,
+      diasPorSemana, nivel, intencionPedida: intent, intencionAplicada: r.intentAplicado,
+    },
+    totalSeries: r.totalSeries,
+    grupos: MUSCLE_ORDER.map(g => ({
+      grupo: MUSCLE_LABELS[g],
+      clave: g,
+      series: r.groups[g].series,
+      prioridad: r.groups[g].priority,
+      porQue: r.reasons[g],
+    })).filter(x => x.series > 0 || x.prioridad === 'alta'),
+    avisos: r.warnings,
+    note: r.intentAplicado !== intent
+      ? `El motor ha bajado la intención a "${r.intentAplicado}" por la recuperación del bloque anterior. Respétalo.`
+      : 'Son los mismos números que salen en «Sugerir volumen» del editor de mesociclos. Si te desvías de alguno en propose_mesocycle, di por qué.',
+  });
+}
+
 export async function executeTool(
   name: string, input: Record<string, unknown>, chatId: string,
 ): Promise<{ content: string; isError: boolean }> {
@@ -3253,6 +3372,9 @@ export async function executeTool(
           content: await getRevisionEngine(email, typeof input.periodo === 'string' ? input.periodo : 'bloque'),
           isError: false,
         };
+      case 'get_volume_suggestion':
+        if (!email) return { content: 'Falta athlete_email', isError: true };
+        return { content: await getVolumeSuggestion(email, input), isError: false };
       case 'get_diet':
         if (!email) return { content: 'Falta athlete_email', isError: true };
         return { content: await getDietInfo(email), isError: false };

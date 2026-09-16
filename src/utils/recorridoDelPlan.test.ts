@@ -20,7 +20,7 @@ const GUION_ORIGINAL = `### El plan entero, en este orden (no pares a la mitad n
 0b. Si le falta la fecha de inicio, la duración del plan o el peso objetivo, van en el paso 8 (propose_setup_config), no en una nota.
 
 **B. Entrenamiento**
-1. **Mesociclo** (propose_mesocycle): semanas, días por ciclo, objetivo y reparto de series por grupo. Sale del criterio de volumen de tu doctrina y de lo que el atleta puede de verdad.
+1. **Mesociclo** (propose_mesocycle): semanas, días por ciclo, objetivo y reparto de series por grupo. Llama antes a get_volume_suggestion con los días y las prioridades que hayas decidido: ese motor conoce los umbrales por grupo de tu doctrina y lo que pasó en el bloque anterior. Usa sus números y, si te desvías de alguno, di por qué.
 2. **Sesiones** (propose_workout_days): cada día con sus ejercicios, series, reps, RIR y descansos. Elige del bloque «CÓMO PROGRAMA DANI» del contexto — no pidas get_exercise_usage ni recorras el catálogo grupo a grupo; get_exercise_library solo si un grupo no tiene nada usable ahí o el material lo descarta.
 3. **Publicar el bloque** (propose_publish_block): vuelca las sesiones al calendario del atleta. Sin este paso tiene un plan que no ve. Va siempre después del 2.
 

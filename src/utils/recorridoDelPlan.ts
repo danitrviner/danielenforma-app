@@ -123,7 +123,7 @@ export const PASOS_DEL_RECORRIDO: PasoDelRecorrido[] = [
     queDecidir:
       'Cuántas semanas dura el bloque, cuántos días entrena y a qué grupos les das prioridad. La prioridad no es un adorno: decide dónde van las series que sobran.',
     instruccionIA:
-      '**Mesociclo** (propose_mesocycle): semanas, días por ciclo, objetivo y reparto de series por grupo. Sale del criterio de volumen de tu doctrina y de lo que el atleta puede de verdad.',
+      '**Mesociclo** (propose_mesocycle): semanas, días por ciclo, objetivo y reparto de series por grupo. Llama antes a get_volume_suggestion con los días y las prioridades que hayas decidido: ese motor conoce los umbrales por grupo de tu doctrina y lo que pasó en el bloque anterior. Usa sus números y, si te desvías de alguno, di por qué.',
   },
   {
     numero: '2',
