@@ -20,6 +20,7 @@ import {
   getExercises,
   getMesocycles,
   getDietsForAthlete,
+  getFoodItems,
   getDietCompletionLogsForAthlete,
   getAthleteNutritionConfig,
   getAthleteDietConfig,
@@ -1738,7 +1739,10 @@ async function proposeNutritionProgram(
 ): Promise<string> {
   if (fasesInput.length === 0) return toResult({ error: 'La periodización necesita al menos una fase' });
 
-  const dietasDelAtleta = await getDietsForAthlete(athleteEmail);
+  const [dietasDelAtleta, etiquetasDelCoach] = await Promise.all([
+    getDietsForAthlete(athleteEmail),
+    etiquetasDelBancoDelCoach(),
+  ]);
 
   // La validación vive en validators.ts, con sus tests: aquí solo se construye.
   const issues = validateNutritionPhases(fasesInput, dietasDelAtleta.map(d => d.id));
@@ -1777,7 +1781,7 @@ async function proposeNutritionProgram(
         return;
       }
       const comidas = Array.isArray(bruta.meals) ? bruta.meals : [];
-      const issues = validateDietPayload({ budget: bruta.budget, meals: comidas });
+      const issues = validateDietPayload({ budget: bruta.budget, meals: comidas }, etiquetasDelCoach);
       if (issues.length) {
         problemas.push(`Fase "${nombre}": ${issues.map(x => x.message).join(' · ')}`);
         return;
@@ -2024,7 +2028,7 @@ async function proposeDietUpdate(
   expediente?: ProposalExpediente,
 ): Promise<string> {
   const payload: DietUpdatePayload = { budget, meals };
-  const issues = validateDietPayload(payload);
+  const issues = validateDietPayload(payload, await etiquetasDelBancoDelCoach());
   if (issues.length > 0) {
     return toResult({ valid: false, issues, note: 'Corrige estos problemas y vuelve a llamar a propose_diet_update.' });
   }
@@ -3193,6 +3197,25 @@ async function getRevisionEngine(email: string, periodoPedido: string): Promise<
     peso: { estaSemana: peso.estaSemana, deltaKg: peso.deltaKg },
     note: 'Son los mismos números que Dani tiene delante en Cliente › Revisión. Los `titulares` ya están ordenados por lo que cambia una decisión, y `paraCliente` es la única versión que se le puede decir al atleta: lo que salga a null es criterio de coach y NO se le cuenta.',
   });
+}
+
+/**
+ * Las etiquetas de alimento que Dani tiene creadas en su banco, además de las
+ * del sistema. El validador es puro y no sabe leer Firestore; esto es lo que
+ * se le pasa para que no rechace un alimento que existe de verdad.
+ *
+ * Si la lectura falla se devuelve vacío: el validador se queda con el catálogo
+ * del sistema, que es exactamente el comportamiento que había antes. Un fallo
+ * de red no debe convertir una propuesta válida en una inválida por sorpresa.
+ */
+async function etiquetasDelBancoDelCoach(): Promise<string[]> {
+  try {
+    const items = await getFoodItems();
+    return items.map(f => f.label).filter(Boolean);
+  } catch (err) {
+    console.warn('No se pudo leer el banco de alimentos del coach:', err);
+    return [];
+  }
 }
 
 export async function executeTool(

@@ -8,7 +8,18 @@ import { SYSTEM_FOODS } from '../nutricion_seed_en_forma';
 
 export interface ValidationIssue { field: string; message: string }
 
-const KNOWN_FOOD_LABELS = new Set(SYSTEM_FOODS.map(f => f.label));
+/**
+ * Los alimentos del catálogo del sistema. NO son todos los que valen: Dani
+ * añade los suyos al banco (`foodItems`), y esos están en Firestore, adonde
+ * este módulo no puede ir ni debe.
+ *
+ * Por eso `validateDietPayload` acepta etiquetas extra: quien la llama sabe
+ * leer el banco del coach y le pasa la unión. Sin eso, el asistente proponía
+ * un alimento que Dani tiene creado, el validador lo rechazaba por
+ * «no reconocido» y el modelo se quedaba dando vueltas buscando un sinónimo
+ * del sistema para algo que ya existía.
+ */
+const SYSTEM_FOOD_LABELS = new Set(SYSTEM_FOODS.map(f => f.label));
 const BUDGET_TOLERANCE = 0.26; // margen por redondeos de 0.25 en varias comidas
 
 export interface DietUpdatePayload {
@@ -16,8 +27,15 @@ export interface DietUpdatePayload {
   meals?: { name: string; items: { category: FoodCategory; foodLabel: string; quantity: number }[] }[];
 }
 
-export function validateDietPayload(payload: DietUpdatePayload): ValidationIssue[] {
+export function validateDietPayload(
+  payload: DietUpdatePayload,
+  /** Etiquetas del banco del coach, además de las del sistema. */
+  etiquetasDelCoach?: Iterable<string>,
+): ValidationIssue[] {
   const issues: ValidationIssue[] = [];
+  const conocidas = etiquetasDelCoach
+    ? new Set([...SYSTEM_FOOD_LABELS, ...etiquetasDelCoach])
+    : SYSTEM_FOOD_LABELS;
 
   for (const cat of BUDGET_CATS) {
     const v = payload.budget?.[cat];
@@ -43,7 +61,7 @@ export function validateDietPayload(payload: DietUpdatePayload): ValidationIssue
       if (typeof q !== 'number' || !Number.isFinite(q) || q <= 0 || Math.abs(Math.round(q * 4) - q * 4) > 1e-6) {
         issues.push({ field: 'item.quantity', message: `Cantidad inválida en "${item.foodLabel}" (${q}) — debe ser múltiplo positivo de 0.25` });
       }
-      if (!KNOWN_FOOD_LABELS.has(item.foodLabel)) {
+      if (!conocidas.has(item.foodLabel)) {
         issues.push({
           field: 'item.foodLabel',
           message: `Alimento no reconocido: "${item.foodLabel}" — usa get_food_library para ver las etiquetas exactas válidas`,

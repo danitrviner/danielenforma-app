@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { validateMesocyclePayload, validateNutritionPhases, validateDietPayload, type MesocycleProposalPayload } from './validators';
+import { SYSTEM_FOODS } from '../nutricion_seed_en_forma';
 
 /* El tope de volumen total era days × 12 y rechazaba repartos normales: con el
    criterio de Dani (8-12 series por músculo y sesión), un día de torso que toca
@@ -118,5 +119,36 @@ describe('validateDietPayload — el presupuesto sí, las comidas no', () => {
   it('un presupuesto inválido sigue fallando aunque no haya comidas', () => {
     const issues = validateDietPayload({ budget: { HC: -1, PROT: 6, GRASA: 4, MIX_HC: 0, MIX_GRASA: 0 } });
     expect(issues.some(i => i.field === 'budget.HC')).toBe(true);
+  });
+});
+
+describe('validateDietPayload · el banco de alimentos del coach', () => {
+  const base = {
+    budget: { HC: 2, PROT: 0, GRASA: 0, MIX_HC: 0, MIX_GRASA: 0 },
+    meals: [{ name: 'Comida', items: [{ category: 'HC' as const, foodLabel: '90g tortitas de arroz de Dani', quantity: 2 }] }],
+  };
+
+  it('sin pasarle el banco, un alimento del coach se rechaza (comportamiento de siempre)', () => {
+    const issues = validateDietPayload(base);
+    expect(issues.some(i => i.field === 'item.foodLabel')).toBe(true);
+  });
+
+  it('pasándoselo, deja de ser un alimento desconocido', () => {
+    const issues = validateDietPayload(base, ['90g tortitas de arroz de Dani']);
+    expect(issues.some(i => i.field === 'item.foodLabel')).toBe(false);
+  });
+
+  it('el banco del coach SUMA al catálogo del sistema, no lo sustituye', () => {
+    // Una etiqueta del sistema tiene que seguir valiendo aunque se pase un
+    // banco que no la contenga.
+    const delSistema = SYSTEM_FOODS[0].label;
+    const issues = validateDietPayload(
+      {
+        budget: { HC: 0, PROT: 0, GRASA: 0, MIX_HC: 0, MIX_GRASA: 0 },
+        meals: [{ name: 'X', items: [{ category: SYSTEM_FOODS[0].category, foodLabel: delSistema, quantity: 1 }] }],
+      },
+      ['otra cosa que no es esa'],
+    );
+    expect(issues.some(i => i.field === 'item.foodLabel')).toBe(false);
   });
 });
