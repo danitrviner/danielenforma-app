@@ -163,8 +163,19 @@ export default function ProposalEditor({ proposal: p, payload, onChange }: Props
                 <span className="text-caption text-ink-4">RIR</span>
                 <Num etiqueta={`RIR de ${ex.exerciseName}`} value={ex.rir} min={0} max={5} ancho="w-11"
                   onChange={rir => setDia(i, { ...dia, exercises: dia.exercises.map((e, k) => k === j ? { ...e, rir } : e) })} />
+                <span className="text-caption text-ink-4">desc.</span>
+                <Num etiqueta={`Descanso en segundos de ${ex.exerciseName}`} value={ex.restSeconds} min={0} max={600} step={15} ancho="w-14"
+                  onChange={restSeconds => setDia(i, { ...dia, exercises: dia.exercises.map((e, k) => k === j ? { ...e, restSeconds } : e) })} />
                 <BotonQuitar titulo={`Quitar ${ex.exerciseName}`}
                   onClick={() => setDia(i, { ...dia, exercises: dia.exercises.filter((_, k) => k !== j) })} />
+                {/* `restSeconds` y `notes` viajaban en la propuesta y se
+                    aprobaban tal cual, sin forma de tocarlos: el descanso y la
+                    nota técnica son justo lo que Dani cambia, y tenía que
+                    aprobar y luego ir al editor de mesociclos a arreglarlo. */}
+                <div className="w-full">
+                  <Texto etiqueta={`Nota de ${ex.exerciseName}`} value={ex.notes ?? ''} placeholder="Nota para el atleta (opcional)"
+                    onChange={notes => setDia(i, { ...dia, exercises: dia.exercises.map((e, k) => k === j ? { ...e, notes } : e) })} />
+                </div>
               </div>
             ))}
             {dia.exercises.length === 0 && (

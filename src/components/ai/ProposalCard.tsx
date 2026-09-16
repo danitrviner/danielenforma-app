@@ -43,6 +43,14 @@ export default function ProposalCard({
   const [abierta, setAbierta] = useState(false);
   const [nota, setNota] = useState('');
   const [comentario, setComentario] = useState('');
+  const [rechazando, setRechazando] = useState(false);
+  const [motivo, setMotivo] = useState('');
+
+  const confirmarRechazo = async () => {
+    await acciones.rechazar(p, motivo);
+    setRechazando(false);
+    setMotivo('');
+  };
   const bloqueo = motivoParaNoAprobar(p.kind, payload);
   const ocupada = acciones.reviewingId === p.id || !!acciones.aprobandoTodas;
   const comentarios = p.comentarios ?? [];
@@ -146,13 +154,41 @@ export default function ProposalCard({
           Aprobar
         </button>
         <button
-          onClick={() => acciones.rechazar(p)}
+          onClick={() => setRechazando(true)}
           disabled={ocupada}
           className="flex-1 py-2 rounded-control bg-danger/10 border border-danger/30 text-danger text-caption font-bold uppercase tracking-wide disabled:opacity-40"
         >
           Rechazar
         </button>
       </div>
+
+      {/* Rechazar no preguntaba nada, y el motivo se perdía. Es opcional a
+          propósito: obligar a escribirlo en cada rechazo acabaría en «no» a
+          secas repetido. Lo que se escriba se guarda como comentario, que es
+          lo que el asistente ya lee para rehacer la propuesta. */}
+      {rechazando && (
+        <div className="flex flex-col gap-2 rounded-control border border-danger/30 bg-danger/5 p-3">
+          <label htmlFor={`motivo_${p.id}`} className="font-mono text-caption uppercase tracking-wider text-ink-3">
+            ¿Por qué no? (opcional — el asistente lo lee)
+          </label>
+          <input
+            id={`motivo_${p.id}`}
+            value={motivo}
+            onChange={e => setMotivo(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') void confirmarRechazo(); }}
+            placeholder="Demasiado volumen para su semana de descarga…"
+            className="bg-field border border-hairline rounded-control px-3 py-2 text-caption text-ink placeholder:text-ink-4 focus:border-accent-line focus:outline-none"
+          />
+          <div className="flex gap-2">
+            <Button variant="danger" size="s" disabled={ocupada} onClick={() => void confirmarRechazo()}>
+              Rechazar
+            </Button>
+            <Button variant="ghost" size="s" onClick={() => { setRechazando(false); setMotivo(''); }}>
+              Cancelar
+            </Button>
+          </div>
+        </div>
+      )}
 
       {conComentarios && (
         <div className="flex gap-2 items-center">

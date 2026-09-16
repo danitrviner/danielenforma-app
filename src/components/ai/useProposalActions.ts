@@ -90,7 +90,7 @@ export interface ProposalActions {
   aprobandoTodas: string | null;
   aprobar: (original: AiProposal, editado?: AiProposalPayload, nota?: string) => Promise<boolean>;
   aprobarTodas: (lista: AiProposal[], editsPorId?: Record<string, AiProposalPayload>) => Promise<void>;
-  rechazar: (p: AiProposal) => Promise<void>;
+  rechazar: (p: AiProposal, motivo?: string) => Promise<void>;
   comentar: (p: AiProposal, texto: string) => Promise<void>;
 }
 
@@ -552,10 +552,24 @@ export function useProposalActions(
     }
   };
 
-  const rejectProposal = async (p: AiProposal) => {
+  /* Rechazar guardaba solo el estado. El motivo se perdía, y con él las dos
+     cosas para las que sirve: que el asistente pueda leerlo con
+     `get_proposal_feedback` y rehacer la propuesta atendiéndolo, y que dentro
+     de tres semanas Dani sepa por qué dijo que no a esa. Se guarda como
+     comentario, que es el canal que ya lee el asistente — no un campo nuevo
+     que nadie mira. */
+  const rejectProposal = async (p: AiProposal, motivo?: string) => {
     setReviewingId(p.id);
+    const limpio = (motivo ?? '').trim();
+    const comentarios = limpio
+      ? [...(p.comentarios ?? []), { at: new Date().toISOString(), text: `Rechazada: ${limpio}` }]
+      : undefined;
     try {
-      await updateAiProposal(p.id, { status: 'rejected', reviewedAt: new Date().toISOString() });
+      await updateAiProposal(p.id, {
+        status: 'rejected',
+        reviewedAt: new Date().toISOString(),
+        ...(comentarios ? { comentarios } : {}),
+      });
       onAprobada?.(p.id);
       refrescarListas();
     } catch {
