@@ -75,12 +75,19 @@ export const TAREAS: Tarea[] = [
     label: 'Preparar la revisión',
     icon: 'fact_check',
     descripcion: 'A mitad de mes: qué va bien, qué tocar.',
-    brief: ['estado', 'ficha', 'resumen', 'plan', 'dieta', 'nutricion', 'entrenos', 'cuerpo', 'revisiones', 'cuestionarios'],
+    // Sin 'entrenos': esa sección volcaba los logs de cuatro semanas, y desde
+    // que existe `get_revision_engine` los mismos datos llegan ya masticados
+    // por el motor que ve Dani. Mandar los dos es pagar dos veces por lo mismo
+    // y arriesgarse a que el modelo saque sus propios porcentajes de los logs
+    // crudos, que no coincidirían con los de la pantalla.
+    brief: ['estado', 'ficha', 'resumen', 'plan', 'dieta', 'nutricion', 'cuerpo', 'revisiones', 'cuestionarios'],
     prompt: (nombre, email) =>
       `TAREA: preparar la revisión de ${nombre} (${email}).\n` +
-      `Empieza por get_client_brief con tarea "revision" — trae la ficha, el plan en marcha, los entrenos de las últimas 4 semanas, los check-ins y los cuestionarios en una sola llamada. El brief ya trae el análisis de nutrición (adherencia, pasos, macros) y el del cuerpo (perímetros, % de grasa estimado, readiness): mira los dos antes de tocar la dieta. Ajustar kcal sin mirar la adherencia es cambiar un plan que quizá no se está siguiendo, y el peso solo no distingue perder grasa de perder músculo.\n\n` +
+      `Empieza por get_client_brief con tarea "revision" y, justo después, get_revision_engine: eso te da la Revisión tal y como Dani la tiene delante —titulares, patrones, series por grupo, sueño y agujetas, lo que ha comido— con los mismos números que él ve en pantalla. No pidas get_training_history ni get_checkins por separado: ya los tienes ahí, pasados por el motor.\n` +
+      `Los \`titulares\` vienen ordenados por lo que cambia una decisión, y cada uno trae \`paraCliente\`: esa es la ÚNICA versión que se le puede decir al atleta. Lo que venga a null es criterio de coach y no se le cuenta.\n` +
+      `El brief trae además el análisis de nutrición (adherencia, pasos, macros) y el del cuerpo (perímetros, % de grasa estimado, readiness): mira los dos antes de tocar la dieta. Ajustar kcal sin mirar la adherencia es cambiar un plan que quizá no se está siguiendo, y el peso solo no distingue perder grasa de perder músculo.\n\n` +
       `Entrega, en este orden:\n` +
-      `1. **Veredicto** en tres frases: ¿está pasando lo que la ficha decía que esperábamos? Cita el dato (peso, adherencia, un PR, lo que dijo en el check-in).\n` +
+      `1. **Veredicto** en tres frases: ¿está pasando lo que la ficha decía que esperábamos? Cita el dato (peso, adherencia, un PR, lo que dijo en el check-in), y usa los números del motor, no unos tuyos.\n` +
       `2. **Repaso plano por plano**, una línea cada uno, diciendo si se toca o no y por qué: entrenamiento (¿progresa, se estanca, se salta sesiones?), nutrición (¿adherencia, peso, macros?), pasos y cardio, road map e hitos (¿llega a lo que le pusimos?), retos (¿los está consiguiendo o el listón está mal?), cuestionarios y fotos (¿los está contestando?). Lo que va bien se dice en cuatro palabras y se sigue.\n` +
       `3. **Los cambios**, solo los que cambien algo: ajuste de dieta (propose_diet_update sobre la dieta activa — presupuesto de intercambios, no comidas), retoque de sesiones (propose_workout_days), reparto de series (propose_mesocycle solo si está mal, no por retocar), pasos/cardio/calendario (propose_setup_config), hitos o días señalados, y el reto de la semana (get_challenge_options → propose_weekly_challenge). Si no hay que tocar nada, dilo en una frase y no propongas por proponer.\n` +
       `4. **Feedback del check-in** (draft_checkin_feedback) si hay alguno sin contestar.\n` +

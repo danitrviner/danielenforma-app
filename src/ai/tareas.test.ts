@@ -78,7 +78,13 @@ describe('las tres tareas', () => {
     const enumTareas = (tool!.input_schema as { properties: { tarea: { enum: string[] } } }).properties.tarea.enum;
     expect(enumTareas).toEqual(TAREAS.map(t => t.id));
     expect(tareaPorId('mes_nuevo')!.brief).toContain('alta');
-    expect(tareaPorId('revision')!.brief).toContain('entrenos');
+    // La revisión NO pide 'entrenos': esa sección volcaba los logs de cuatro
+    // semanas y desde que existe `get_revision_engine` llegan masticados por el
+    // mismo motor que ve el coach. Pedir los dos es pagar dos veces y arriesgar
+    // que el modelo saque porcentajes propios que no cuadren con la pantalla.
+    expect(tareaPorId('revision')!.brief).not.toContain('entrenos');
+    expect(tareaPorId('revision')!.prompt('Ana', 'a@x.com')).toContain('get_revision_engine');
+    expect(tareaPorId('renovar_mes')!.brief).toContain('entrenos');
     expect(tareaPorId('renovar_mes')!.brief).toContain('ajustes');
   });
 

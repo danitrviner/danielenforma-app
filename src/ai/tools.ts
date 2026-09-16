@@ -66,11 +66,15 @@ import { isoWeekKey } from '../utils/challengeOptions';
 import { computeWeightTrend } from '../utils/nutritionAnalysis';
 import { estimateMaintenanceKcal } from '../utils/energyCalc';
 import { buildTrainingReport } from '../utils/trainingReport';
+import { buildRevisionCoach, PeriodoRevision, mesoActivo, pesoVsSemanaPasada } from '../utils/revisionCoach';
+import { construirTitulares } from '../utils/titularesRevision';
+import { construirComidaDeLaSemana } from '../utils/comidaDeLaSemana';
+import { getVolumeLandmarks } from '../db/coachSettings';
 import { buildTrainingReportDraft } from '../utils/reportBuilder';
 import { computeDietPlaced, parseBaseGrams } from '../utils/exchangeHelpers';
 import { exchangeToKcal } from '../utils/nutritionConstants';
 import { buildPhaseEnergyPlans } from '../utils/nutritionPeriodization';
-import { addDays } from '../utils/trainingWeek';
+import { addDays, hoyIsoLocal } from '../utils/trainingWeek';
 import { weekKey } from '../utils/seriesCorrelation';
 import { resolveQuestions } from '../utils/questionnaireResolve';
 import { SYSTEM_FOODS } from '../nutricion_seed_en_forma';
@@ -138,6 +142,23 @@ export const TOOL_DEFINITIONS = [
       properties: {
         athlete_email: { type: 'string' },
         weeks: { type: 'number', description: 'Semanas hacia atrás (por defecto 4, máx 16)' },
+      },
+      required: ['athlete_email'],
+    },
+  },
+  {
+    name: 'get_revision_engine',
+    description:
+      'La Revisión del atleta tal y como la ve Dani en su pantalla: patrones de movimiento, qué ejercicio sube y cuál baja, series por grupo contra lo programado, sueño/estrés/agujetas crónicas, lo que ha comido frente a su cupo y los TITULARES ya ordenados por lo que cambia una decisión. Es la PRIMERA llamada de la tarea "revision", después de get_client_brief. Usa esto en vez de get_training_history + get_checkins por separado: son los mismos datos pasados por el mismo motor que ve Dani, así que lo que le digas al cliente coincide con lo que él tiene delante en el vídeo.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        athlete_email: { type: 'string' },
+        periodo: {
+          type: 'string',
+          enum: ['7d', '14d', 'bloque'],
+          description: 'Ventana a revisar. Por defecto el bloque en curso si lo hay, y si no 7 días.',
+        },
       },
       required: ['athlete_email'],
     },
@@ -888,7 +909,7 @@ export const TOOL_DEFINITIONS = [
   {
     name: 'get_progress_metrics',
     description:
-      'El PROGRESO medido del atleta, lo mismo que Dani ve en Análisis › Correlaciones: perímetros corporales con su cambio desde la primera medición (y si ese cambio supera el error de medición o es ruido), % de grasa y masa magra estimados (US Navy), índices antropométricos, y el índice de readiness (sueño y estrés). El entrenamiento y las marcas van en get_training_history; esto es el CUERPO. Míralo en una revisión antes de decir si algo está funcionando: el peso solo no distingue perder grasa de perder músculo.',
+      'El PROGRESO medido del atleta, lo mismo que Dani ve en Cliente › Revisión › El cuerpo: perímetros corporales con su cambio desde la primera medición (y si ese cambio supera el error de medición o es ruido), % de grasa y masa magra estimados (US Navy), índices antropométricos, y el índice de readiness (sueño y estrés). El entrenamiento y las marcas van en get_training_history; esto es el CUERPO. Míralo en una revisión antes de decir si algo está funcionando: el peso solo no distingue perder grasa de perder músculo.',
     input_schema: {
       type: 'object',
       properties: { athlete_email: { type: 'string' } },
@@ -898,7 +919,7 @@ export const TOOL_DEFINITIONS = [
   {
     name: 'get_nutrition_analysis',
     description:
-      'El análisis nutricional del atleta tal y como lo ve Dani en Análisis › Nutrición: adherencia a la dieta, cumplimiento de pasos, desviación de macros del plan frente a su objetivo, tendencia de peso y alertas. Úsalo en las revisiones antes de tocar la dieta: ajustar kcal sin mirar la adherencia es cambiar un plan que quizá no se está siguiendo.',
+      'El análisis nutricional del atleta tal y como lo ve Dani en Cliente › Revisión › Adherencia y hábitos: adherencia a la dieta, cumplimiento de pasos, desviación de macros del plan frente a su objetivo, tendencia de peso y alertas. Úsalo en las revisiones antes de tocar la dieta: ajustar kcal sin mirar la adherencia es cambiar un plan que quizá no se está siguiendo.',
     input_schema: {
       type: 'object',
       properties: { athlete_email: { type: 'string' } },
@@ -2940,7 +2961,7 @@ async function addCoachTask(email: string, title: string, phase: string | undefi
   return toResult({ creada: true, taskId: tarea.id, note: 'Queda en la pestaña Setup del cliente como tarea pendiente de Dani. No la ve el atleta.' });
 }
 
-/* El mismo progreso que pinta Análisis › Correlaciones, en texto.
+/* El mismo progreso que pintan los titulares de Revisión › El cuerpo, en texto.
    Se reutilizan las utilidades de esa pantalla (US Navy, índices, IRP,
    resumirSerie con el margen de error de cada perímetro) para que lo que lea
    la IA y lo que vea Dani no puedan contarse distinto. */
@@ -3080,7 +3101,97 @@ async function getNutritionAnalysis(email: string): Promise<string> {
     desviacionMacros: informe.macroDeviation,
     tendenciaPeso: informe.weightTrend,
     alertas: informe.flags,
-    note: 'Es el mismo análisis que Dani ve en Análisis › Nutrición. Ventana: la de la app (últimas semanas con registro).',
+    note: 'Es el mismo análisis que Dani ve en Cliente › Revisión › Adherencia y hábitos. Ventana: la de la app (últimas semanas con registro).',
+  });
+}
+
+/**
+ * La Revisión del coach, para el asistente.
+ *
+ * Todo lo que devuelve sale de `buildRevisionCoach` y `construirTitulares`, que
+ * son los MISMOS motores que pintan la pantalla que Dani graba en vídeo. No hay
+ * un segundo cálculo aquí: si el asistente redactara el feedback a partir de los
+ * logs crudos, diría porcentajes que no coinciden con los que el coach tiene
+ * delante, y el cliente vería dos versiones del mismo mes.
+ *
+ * Se manda MASTICADO, no en crudo: los titulares ya ordenados, los patrones y
+ * los grupos con su zona, el bienestar y el resumen de comida. Volcar los logs
+ * de cuatro semanas era lo que hacía `get_training_history` y se lleva miles de
+ * tokens en decirle al modelo lo que el motor ya resolvió.
+ */
+async function getRevisionEngine(email: string, periodoPedido: string): Promise<string> {
+  const coachUid = auth.currentUser?.uid;
+  const [logs, exercises, mesos, responses, questionnaires, landmarks, registros, dietas, bwLogs] =
+    await Promise.all([
+      getWorkoutLogs(email),
+      getExercises(),
+      getMesocycles(email),
+      getResponsesForAthlete(email),
+      coachUid ? getQuestionnairesByCoach(coachUid) : Promise.resolve([]),
+      getVolumeLandmarks().catch(() => undefined),
+      getDietCompletionLogsForAthlete(email),
+      getDietsForAthlete(email),
+      getBodyweightForAthlete(email),
+    ]);
+
+  const hoy = hoyIsoLocal();
+  const activo = mesoActivo(mesos, hoy);
+  const periodo: PeriodoRevision =
+    periodoPedido === '7d' ? { tipo: '7d' }
+    : periodoPedido === '14d' ? { tipo: '14d' }
+    : activo ? { tipo: 'meso', mesoId: activo.id }
+    : { tipo: '7d' };
+
+  const revision = buildRevisionCoach({
+    logs, exercises, mesocycles: mesos, periodo, landmarks, hoy, responses, questionnaires,
+  });
+  const { ventana, informe, bienestar } = revision;
+
+  const comida = construirComidaDeLaSemana({
+    logs: registros, diets: dietas, desde: ventana.desde, hasta: ventana.hasta,
+  });
+  const peso = pesoVsSemanaPasada(bwLogs, hoy);
+  const { titulares, resumenParaCliente } = construirTitulares({ revision, comida, peso });
+
+  return toResult({
+    ventana: {
+      desde: ventana.desde, hasta: ventana.hasta,
+      etiqueta: ventana.etiqueta, comparacion: ventana.etiquetaComparacion,
+    },
+    titulares: titulares.map(t => ({ tono: t.tono, texto: t.texto, paraCliente: t.paraCliente ?? null })),
+    borradorParaElCliente: resumenParaCliente,
+    entreno: {
+      sesiones: informe.sessions,
+      tonelaje: informe.tonnage,
+      records: informe.perExercise.filter(e => e.isPR).map(e => e.name),
+      suben: revision.suben.map(e => ({ ejercicio: e.name, deltaPct: e.deltaOrmPct })),
+      bajan: revision.bajan.map(e => ({ ejercicio: e.name, deltaPct: e.deltaOrmPct })),
+      patrones: revision.patrones.map(p => ({ patron: p.label, series: p.sets, deltaOrmPct: p.ormDeltaPct })),
+    },
+    volumenPorGrupo: revision.mapa
+      .filter(c => c.realizadasSemana > 0 || c.planificadasSemana != null)
+      .map(c => ({
+        grupo: c.label, seriesSemana: c.realizadasSemana, programadas: c.planificadasSemana,
+        zona: c.zonaLabel, prioridad: c.prioridad, cumplimientoPct: c.cumplimientoPct,
+        agujetasCronicas: bienestar.domsPorGrupo[c.group] ?? null,
+      })),
+    comoHaLlegado: {
+      disposicion: bienestar.irp.valor,
+      sueñoHoras: bienestar.irp.horasSueño,
+      estres: bienestar.irp.estres,
+      agujetasCronicas: bienestar.domsCronico.map(d => ({ grupo: d.grupo, media: d.media })),
+    },
+    comida: {
+      diasRegistrados: comida.patrones.diasRegistrados,
+      diasSinRegistrar: comida.patrones.diasSinRegistrar,
+      diasPorEncima: comida.patrones.diasPorEncima,
+      diasPorDebajo: comida.patrones.diasPorDebajo,
+      kcalMediaComido: comida.patrones.kcalMediaComido,
+      kcalMediaCupo: comida.patrones.kcalMediaCupo,
+      alimentosFrecuentes: comida.patrones.alimentosFrecuentes.slice(0, 8),
+    },
+    peso: { estaSemana: peso.estaSemana, deltaKg: peso.deltaKg },
+    note: 'Son los mismos números que Dani tiene delante en Cliente › Revisión. Los `titulares` ya están ordenados por lo que cambia una decisión, y `paraCliente` es la única versión que se le puede decir al atleta: lo que salga a null es criterio de coach y NO se le cuenta.',
   });
 }
 
@@ -3113,6 +3224,12 @@ export async function executeTool(
       case 'get_training_history':
         if (!email) return { content: 'Falta athlete_email', isError: true };
         return { content: await getTrainingHistory(email, Number(input.weeks)), isError: false };
+      case 'get_revision_engine':
+        if (!email) return { content: 'Falta athlete_email', isError: true };
+        return {
+          content: await getRevisionEngine(email, typeof input.periodo === 'string' ? input.periodo : 'bloque'),
+          isError: false,
+        };
       case 'get_diet':
         if (!email) return { content: 'Falta athlete_email', isError: true };
         return { content: await getDietInfo(email), isError: false };
