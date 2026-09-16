@@ -39,6 +39,16 @@ export interface ComidaDelMenu {
   intercambios: Partial<Record<FoodCategory, number>>;
   /** Con qué nombre aparece en el plan. */
   etiqueta: string;
+  /** Los ítems ya resueltos, tal y como los construye
+   *  `itemsDeComidaDelMenu`. Cuando vienen, mandan sobre `intercambios`.
+   *
+   *  Por qué: reconstruirlos aquí desde el vector de intercambios los dejaba
+   *  sin `originRecipeId` y sin gramaje, así que la misma comida salía en el
+   *  plan como tres alimentos sueltos con el nombre de la receta repetido —
+   *  justo lo que `filasDeComida` existe para evitar— y sin gramos que enseñar.
+   *  Pasándolos ya hechos, marcar la comida y añadirla con el botón producen
+   *  exactamente lo mismo (utils/paridadDeCaminos.test.ts). */
+  items?: DietItem[];
 }
 
 function comidaDestino(meals: DietMeal[], comida: ComidaDelMenu): DietMeal | null {
@@ -55,14 +65,18 @@ export function yaRegistrada(dia: DiaDelPlan, clave: string): boolean {
 export function registrarComidaDelMenu(dia: DiaDelPlan, comida: ComidaDelMenu): DiaDelPlan {
   if (yaRegistrada(dia, comida.clave)) return dia;
 
-  const nuevos: DietItem[] = (Object.entries(comida.intercambios) as [FoodCategory, number][])
-    .filter(([, q]) => q > 0)
-    .map(([category, quantity]) => ({
-      category,
-      foodLabel: comida.etiqueta,
-      quantity,
-      origenMenu: comida.clave,
-    }));
+  // Los ítems ya resueltos mandan; el vector de intercambios es el camino
+  // antiguo, que se conserva para los llamantes que todavía no los construyen.
+  const nuevos: DietItem[] = comida.items?.length
+    ? comida.items.map(i => ({ ...i, origenMenu: comida.clave }))
+    : (Object.entries(comida.intercambios) as [FoodCategory, number][])
+        .filter(([, q]) => q > 0)
+        .map(([category, quantity]) => ({
+          category,
+          foodLabel: comida.etiqueta,
+          quantity,
+          origenMenu: comida.clave,
+        }));
   if (nuevos.length === 0) return dia;
 
   const destino = comidaDestino(dia.meals, comida);

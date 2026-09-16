@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { minutosDeReceta } from '../utils/tiempoDeReceta';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { UserProfile, Diet, DietMeal, DietItem, FoodCategory, DietMode, MealItem, Recipe, RecipeFavorites, RefeedDay } from '../types';
-import { getDietsForAthlete, getAthleteDietConfig, saveAthleteDietConfig, createDiet, updateDiet, deleteDiet, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig, saveAthleteNutritionConfig, getRecipes, getRecipeFavorites, getNutritionProgram, markNutritionPhaseSeen, computeActivePhase, createNotificationDeduped, getDietCompletionLog, saveDietCompletionLog, createRecipe, queryRecetas, queryRecetasForGenerator, cargarIndiceRecetas, getOnboarding, getRecipeById } from '../dbService';
+import { UserProfile, Diet, DietMeal, DietItem, FoodCategory, DietMode, MealItem, Recipe, RecipeFavorites, RefeedDay, RecetaPendiente, MenuCompletionLog } from '../types';
+import { getDietsForAthlete, getAthleteDietConfig, saveAthleteDietConfig, createDiet, updateDiet, deleteDiet, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig, saveAthleteNutritionConfig, getRecipes, getRecipeFavorites, getNutritionProgram, markNutritionPhaseSeen, computeActivePhase, createNotificationDeduped, getDietCompletionLog, saveDietCompletionLog, createRecipe, queryRecetas, queryRecetasForGenerator, cargarIndiceRecetas, getOnboarding, getRecipeById, getMenuCompletionLog, saveMenuCompletionLog } from '../dbService';
 import type { RecetasCursor } from '../dbService';
-import { CATS, BUDGET_CATS, CAT_LABEL, CAT_COLOR, CAT_BG, MODE_LABEL, ALL_DIET_MODES, round2, fmtQty, itemWeightLabel, foodNameWithoutGrams, addToPlaced, recipeToDietItems, computeDietPlaced } from '../utils/exchangeHelpers';
+import { CATS, BUDGET_CATS, CAT_LABEL, CAT_COLOR, CAT_BG, MODE_LABEL, ALL_DIET_MODES, round2, fmtQty, foodNameWithoutGrams, addToPlaced, recipeToDietItems, computeDietPlaced } from '../utils/exchangeHelpers';
+import { parseBaseGrams, etiquetaDePeso } from '../utils/conversionNutricional';
 import { findRecipeAlternatives, recipeExchanges, groupByDishType, ordenarPorCupo, type RecipeAlternative, type AlternativePrefs } from '../utils/recipeMatch';
 import { ingredientMatch, violatesDietType } from '../utils/foodPrefs';
 import { athleteConditions, violatesHealthConditions } from '../utils/dietaryRestrictions';
@@ -12,7 +13,7 @@ import { dietTypeVigente } from '../utils/foodPrefs';
 import { coincideBusqueda, normalizarTexto } from '../utils/busqueda';
 import { dishType, dishTypeLabel, type DishType } from '../utils/dishTypes';
 import { filasDeComida, escalarReceta } from '../utils/filasDelPlan';
-import { escalarRecetaEntera, factorDeReceta } from '../utils/escalarRecetaEntera';
+import { escalarRecetaEntera, factorDeReceta , escalaDeReceta } from '../utils/escalarRecetaEntera';
 import { dietaPautadaDelDia } from '../utils/nutritionSummary';
 import { perfilDeHambreVigente } from '../utils/perfilDeHambre';
 import { distributeMealTargets } from '../utils/mealDistribution';
@@ -73,7 +74,7 @@ const RECETAS_CATS = [
 
 interface Props {
   profile: UserProfile;
-  pendingRecipe?: Recipe | null;
+  pendingRecipe?: RecetaPendiente | null;
   onConsumedPendingRecipe?: () => void;
 }
 
@@ -421,7 +422,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
 
   // "Añadir a Intercambios" desde Recetas — solo queda elegir la comida del día
   // (antes había un paso previo para elegir la dieta; ya no hay dietas).
-  const [chooseMealForRecipe, setChooseMealForRecipe] = useState<Recipe | null>(null);
+  const [chooseMealForRecipe, setChooseMealForRecipe] = useState<RecetaPendiente | null>(null);
 
 
   // Nutrition periodization
@@ -1009,7 +1010,12 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
       const meal = selectedDiet.meals.find(m => m.id === mealId);
       if (!meal) { setPickerItem(null); return; }
       const newIdx = meal.items.length;
-      const newItem: DietItem = { category: food.category, foodLabel: food.label, quantity: 1 };
+      // `baseGrams` es por intercambio: al subir la cantidad, los gramos suben
+      // solos, y no hay que acordarse de recalcularlos en ningún escalador.
+      const newItem: DietItem = {
+        category: food.category, foodLabel: food.label, quantity: 1,
+        baseGrams: parseBaseGrams(food.label) ?? undefined,
+      };
       setSelectedDiet(prev => {
         if (!prev) return prev;
         return { ...prev, meals: prev.meals.map(m => m.id !== mealId ? m : { ...m, items: [...m.items, newItem] }) };
@@ -1058,7 +1064,12 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
           ...prev,
           meals: prev.meals.map(m => m.id !== mealId ? m : {
             ...m,
-            items: m.items.map((it, i) => i !== itemIdx ? it : { ...it, category: food.category, foodLabel: food.label }),
+            // Cambiar de alimento RECALCULA el gramaje: mantener el del anterior
+            // enseñaría 40 g de pan sobre una fila que ya es arroz.
+            items: m.items.map((it, i) => i !== itemIdx ? it : {
+              ...it, category: food.category, foodLabel: food.label,
+              baseGrams: parseBaseGrams(food.label) ?? undefined,
+            }),
           }),
         };
       });
@@ -1190,11 +1201,40 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     setRecipePickerMealId(null);
   };
 
+  /**
+   * Desmarca en «Mi menú» una comida que se acaba de quitar del plan.
+   *
+   * Sin esto, las dos pantallas se contradicen: el plato ya no está en el plan
+   * pero el menú lo sigue enseñando con el tick puesto, y al volver a marcarlo
+   * `registrarComidaDelMenu` lo daría por ya registrado y no haría nada — el
+   * atleta se quedaría sin poder devolverlo. La clave del menú (`${día}_${id}`)
+   * es exactamente la misma que `origenMenu`, así que basta con quitarla.
+   */
+  const desmarcarEnElMenu = async (origenMenu: string) => {
+    try {
+      const log = await getMenuCompletionLog(profile.email, viewDate);
+      if (!log?.doneMealKeys?.includes(origenMenu)) return;
+      const doneMealKeys = log.doneMealKeys.filter(k => k !== origenMenu);
+      await saveMenuCompletionLog({
+        athleteId: profile.email, date: viewDate, menuId: log.menuId, doneMealKeys,
+      });
+      queryClient.setQueryData<MenuCompletionLog | null>(
+        ['menuCompletionLog', profile.email, viewDate],
+        prev => prev ? { ...prev, doneMealKeys } : prev,
+      );
+    } catch {
+      // Que no se pueda desmarcar en el menú no debe impedir quitarlo del plan:
+      // el registro del día es lo que cuenta para los macros.
+    }
+  };
+
   /** Quitar una receta entera: se van todos sus ítems de golpe, no uno a uno. */
   const handleRemoveReceta = (mealId: string, idxs: number[]) => {
     if (!selectedDiet) return;
     const meal = selectedDiet.meals.find(m => m.id === mealId);
     if (!meal) return;
+    const origenMenu = meal.items[idxs[0]]?.origenMenu;
+    if (origenMenu) void desmarcarEnElMenu(origenMenu);
     const fuera = new Set(idxs);
     const quedan = meal.items.filter((_, i) => !fuera.has(i));
     const conservados = meal.items.map((_, i) => i).filter(i => !fuera.has(i));
@@ -1229,6 +1269,10 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     if (!selectedDiet) return;
     const meal = selectedDiet.meals.find(m => m.id === mealId);
     if (!meal) return;
+    // Un acompañamiento que vino del menú: al quitarlo del plan hay que
+    // desmarcar su comida, o el menú se queda con el tick puesto.
+    const origenSuelto = meal.items[itemIdx]?.origenMenu;
+    if (origenSuelto) void desmarcarEnElMenu(origenSuelto);
     const oldLen = meal.items.length;
 
     setSelectedDiet(prev => {
@@ -1289,7 +1333,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
    * enseñar los gramos escalados y no los originales (era el fallo: subías los
    * intercambios y la avena seguía diciendo 40 g).
    */
-  const abrirReceta = async (mealId: string, recipeId: string, intercambiosEnElPlato: number) => {
+  const abrirReceta = async (mealId: string, recipeId: string, intercambiosEnElPlato: number, escalaGuardada?: number) => {
     // Testigo de "esta es la petición que vale". Sin él, abrir una receta que
     // hay que ir a buscar y pasar deprisa a otra dejaba ganar a la que
     // respondiera la última: la ficha se cambiaba sola por la anterior, y si
@@ -1305,7 +1349,10 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     if (peticion !== peticionRecetaRef.current) return;
     if (completa) {
       const base = BUDGET_CATS.reduce((s, c) => s + recipeExchanges(completa)[c], 0);
-      setRecetaAbierta({ mealId, recipeId, factor: factorDeReceta(intercambiosEnElPlato, base) });
+      // La escala guardada manda: deducirla fallaba en los platos de 5,5-6
+      // intercambios, donde un toque del stepper queda por debajo del umbral
+      // de ruido. Ver escalaDeReceta.
+      setRecetaAbierta({ mealId, recipeId, factor: escalaDeReceta({ escala: escalaGuardada }, intercambiosEnElPlato, base) });
     }
     setRecetaDetalle(completa);
     setCargandoReceta(false);
@@ -1550,10 +1597,16 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
   // Mirrors handleApplyRecipe, but takes an explicit mealId instead of reading it
   // from recipePickerMealId state — needed when the target meal is decided
   // programmatically (auto when there's a single meal, or via chooseMealForRecipe).
-  const addRecipeToMeal = (recipe: Recipe, mealId: string, currentDiet: Diet) => {
+  const addRecipeToMeal = (pendiente: RecetaPendiente, mealId: string, currentDiet: Diet) => {
     const meal = currentDiet.meals.find(m => m.id === mealId);
     if (!meal) return;
-    const newItems: DietItem[] = recipeToDietItems(recipe, enabledModes);
+    const { recipe } = pendiente;
+    /* Si quien manda la receta ya sabe qué se come exactamente —«Mi menú», que
+     * conoce la escala servida y los extras—, esos ítems mandan. Reconstruirlos
+     * aquí desde la receta cruda era el «20 intercambios salen 26»: entraba el
+     * plato base en vez de la ración y media con pan que el atleta se comió.
+     * Ver utils/paridadDeCaminos.test.ts. */
+    const newItems: DietItem[] = pendiente.items ?? recipeToDietItems(recipe, enabledModes);
     if (newItems.length === 0) {
       showToast(`No se pudo añadir "${recipe.name}": no tiene datos de intercambios.`, 'error');
       return;
@@ -1581,7 +1634,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
   // pintar — el patrón clásico del error 185. Un ref que recuerda la ÚLTIMA
   // receta ya procesada (mismo patrón que `initFor` más arriba) hace el
   // efecto idempotente sin importar cuántas veces se dispare de más.
-  const pendingRecipeProcesadaRef = useRef<Recipe | null>(null);
+  const pendingRecipeProcesadaRef = useRef<RecetaPendiente | null>(null);
   useEffect(() => {
     if (!pendingRecipe || loading) return;
     if (pendingRecipeProcesadaRef.current === pendingRecipe) return;
@@ -2014,7 +2067,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                                         pasos, igual que desde el Recetario. */}
                                     <button
                                       type="button"
-                                      onClick={() => abrirReceta(meal.id, fila.recipeId, total)}
+                                      onClick={() => abrirReceta(meal.id, fila.recipeId, total, meal.items[fila.idxs[0]]?.escala)}
                                       className="flex-1 min-w-0 text-left rounded-control -m-1 p-1 transition-colors hover:bg-raised/60 active:bg-raised"
                                     >
                                       <span className="block font-sans text-body-s font-semibold leading-snug text-ink">
@@ -2023,9 +2076,20 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                                       <span className="block font-mono text-caption text-ink-2">
                                         {fmtQty(total)} int. · {BUDGET_CATS.filter(c => fila.intercambios[c] > 0).map(c => `${CHIP_LABEL[c]} ${fmtQty(fila.intercambios[c])}`).join(' · ') || 'sin intercambios'}
                                       </span>
+                                      {fila.origenMenu && (
+                                        <span className="mt-0.5 flex items-center gap-1 font-sans text-caption text-ink-2">
+                                          <Icon name="lock" size="s" />
+                                          De tu menú de hoy
+                                        </span>
+                                      )}
                                     </button>
 
-                                    {/* El stepper mueve el plato entero, no un ingrediente. */}
+                                    {/* El stepper mueve el plato entero, no un ingrediente.
+                                        Una comida que viene del menú NO lo lleva: la ración
+                                        la decide el menú, y reescalarla aquí dejaría las dos
+                                        pantallas diciendo cosas distintas del mismo plato.
+                                        Se cambia desmarcándola en «Mi menú». */}
+                                    {!fila.origenMenu && (
                                     <div className="flex items-center gap-1 bg-inset rounded-control border border-hairline flex-shrink-0">
                                       <button
                                         type="button"
@@ -2041,6 +2105,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                                         className="w-7 h-7 flex items-center justify-center text-ink-2 hover:text-white font-bold text-body-s active:scale-90"
                                       >+</button>
                                     </div>
+                                    )}
                                   </div>
                                 </MealItemSwipeRow>
                               </React.Fragment>
@@ -2072,21 +2137,33 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                                   {/* Cantidad (en oro) + nombre, seguidos: "250g harina de
                                       avena". Los gramos SOLO viven aquí; el nombre nunca se
                                       trunca. Tocar abre el intercambiador. */}
+                                  {/* Un acompañamiento que viene del menú no se cambia
+                                      por otro alimento ni se reescala desde aquí: la
+                                      ración la decide el menú. Se toca desmarcando la
+                                      comida en «Mi menú». */}
                                   <button
                                     type="button"
-                                    onClick={() => handleOpenPicker(meal.id, idx, item.category)}
-                                    className="flex-1 min-w-0 text-left rounded-control -m-1 p-1 transition-colors hover:bg-raised/60 active:bg-raised"
+                                    onClick={item.origenMenu ? undefined : () => handleOpenPicker(meal.id, idx, item.category)}
+                                    disabled={Boolean(item.origenMenu)}
+                                    className={`flex-1 min-w-0 text-left rounded-control -m-1 p-1 transition-colors ${item.origenMenu ? 'cursor-default' : 'hover:bg-raised/60 active:bg-raised'}`}
                                   >
                                     <span className="font-mono text-body-s font-bold text-accent whitespace-nowrap">
-                                      {itemWeightLabel(item.foodLabel, item.quantity)}
+                                      {etiquetaDePeso(item)}
                                     </span>
                                     {' '}
                                     <span className="font-sans text-body-s font-semibold leading-snug text-ink">
                                       {foodNameWithoutGrams(st.foodLabel)}
                                     </span>
+                                    {item.origenMenu && (
+                                      <span className="mt-0.5 flex items-center gap-1 font-sans text-caption text-ink-2">
+                                        <Icon name="lock" size="s" />
+                                        De tu menú de hoy
+                                      </span>
+                                    )}
                                   </button>
 
                                   {/* Stepper de cantidad — pasos de 0.25 intercambio. */}
+                                  {!item.origenMenu && (
                                   <div className="flex items-center gap-1 bg-inset rounded-control border border-hairline flex-shrink-0">
                                     <button
                                       type="button"
@@ -2102,6 +2179,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                                       className="w-7 h-7 flex items-center justify-center text-ink-2 hover:text-white font-bold text-body-s active:scale-90"
                                     >+</button>
                                   </div>
+                                  )}
                                 </div>
                               </MealItemSwipeRow>
                             </React.Fragment>
@@ -2877,7 +2955,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
         <Sheet
           open
           onClose={() => setChooseMealForRecipe(null)}
-          title={`¿A qué comida añadir "${chooseMealForRecipe.name}"?`}
+          title={`¿A qué comida añadir "${chooseMealForRecipe.recipe.name}"?`}
           size="m"
           footer={<Button variant="ghost" onClick={() => setChooseMealForRecipe(null)} fullWidth>Cancelar</Button>}
         >

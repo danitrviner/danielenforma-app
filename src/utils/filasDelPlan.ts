@@ -22,7 +22,18 @@ import { addToPlaced } from './exchangeHelpers';
  */
 export type FilaDelPlan =
   | { tipo: 'alimento'; idx: number; item: DietItem }
-  | { tipo: 'receta'; recipeId: string; nombre: string; idxs: number[]; intercambios: Record<FoodCategory, number> };
+  | {
+      tipo: 'receta';
+      recipeId: string;
+      nombre: string;
+      idxs: number[];
+      intercambios: Record<FoodCategory, number>;
+      /** `${día}_${idComida}` si esta receta vino de marcarla en «Mi menú».
+       *  La pantalla la pinta bloqueada: la comida es la que le tocaba en el
+       *  menú y reescalarla o moverla desde aquí descuadraría el menú por
+       *  detrás. Decisión de Dani, auditoría §8.6. */
+      origenMenu?: string;
+    };
 
 export function filasDeComida(items: DietItem[]): FilaDelPlan[] {
   const filas: FilaDelPlan[] = [];
@@ -51,6 +62,7 @@ export function filasDeComida(items: DietItem[]): FilaDelPlan[] {
       nombre: items[idxs[0]].foodLabel,
       idxs,
       intercambios,
+      ...(items[idxs[0]].origenMenu ? { origenMenu: items[idxs[0]].origenMenu } : {}),
     });
   }
   return filas;
@@ -70,7 +82,15 @@ export function escalarReceta(items: DietItem[], idxs: number[], delta: number):
   const copia = [...items];
   for (const i of idxs) {
     const escalada = Math.round((items[i].quantity * factor) / 0.25) * 0.25;
-    copia[i] = { ...items[i], quantity: Math.max(0.25, Math.round(escalada * 100) / 100) };
+    copia[i] = {
+      ...items[i],
+      quantity: Math.max(0.25, Math.round(escalada * 100) / 100),
+      // Acumulado, no el de este toque: dos toques seguidos son ×1,25 sobre la
+      // receta original, no ×1,08 sobre lo que ya estaba escalado. Guardarlo es
+      // lo que permite a la ficha enseñar los gramos exactos aunque el cambio
+      // sea pequeño — ver `escalaDeReceta`.
+      escala: Math.round((items[i].escala ?? 1) * factor * 10000) / 10000,
+    };
   }
   return copia;
 }

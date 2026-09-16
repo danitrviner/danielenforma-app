@@ -3,7 +3,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Diet, DietItem, DietMeal, FoodCategory, DietMode, MealItem, OnboardingData, UserProfile, NutritionProgram, NutritionPhase } from '../types';
 import { getDietsForAthlete, createDiet, updateDiet, deleteDiet, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig, getAllUserProfiles } from '../dbService';
 import { DietNumerosView } from './DietMealsView';
-import { CATS, BUDGET_CATS, CAT_LABEL, CAT_COLOR, MODE_LABEL, round2, fmtQty, parseBaseGrams, addToPlaced } from '../utils/exchangeHelpers';
+import { CATS, BUDGET_CATS, CAT_LABEL, CAT_COLOR, MODE_LABEL, round2, fmtQty, addToPlaced } from '../utils/exchangeHelpers';
+import { parseBaseGrams, etiquetaDePeso } from '../utils/conversionNutricional';
 import { distributeMealTargets, inferSlot, DistributeResult, SLOT_LABEL, HUNGER_PROFILE_LABEL } from '../utils/mealDistribution';
 import { perfilDeHambreVigente } from '../utils/perfilDeHambre';
 import { resolvePhaseTargetKcal } from '../utils/nutritionPeriodization';
@@ -34,18 +35,6 @@ const CAT_BG: Record<FoodCategory, string> = {
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
 const makeId = () => `${Date.now()}_${Math.random().toString(36).slice(2, 5)}`;
-
-function computeGrams(label: string, qty: number): number | undefined {
-  const base = parseBaseGrams(label);
-  return base != null ? Math.round(base * qty * 10) / 10 : undefined;
-}
-
-function itemWeightLabel(foodLabel: string, qty: number): string {
-  const g = computeGrams(foodLabel, qty);
-  if (g == null) return `×${fmtQty(qty)}`;
-  if (g >= 1000) return `${(g / 1000).toFixed(1)}kg`;
-  return `${g}g`;
-}
 
 function computePlaced(meals: DietMeal[]): Record<FoodCategory, number> {
   const p: Record<FoodCategory, number> = { HC: 0, PROT: 0, GRASA: 0, MIX_HC: 0, MIX_GRASA: 0 };
@@ -456,8 +445,9 @@ export default function NutritionPlansScreen({
           ...m,
           items: m.items.map((item, i) => {
             if (i !== idx) return item;
-            const newQty = round2(Math.max(0.25, item.quantity + delta));
-            return { ...item, quantity: newQty, grams: computeGrams(item.foodLabel, newQty) };
+            // Los gramos no se recalculan aquí: `baseGrams` es por intercambio,
+            // así que al mover la cantidad le siguen solos.
+            return { ...item, quantity: round2(Math.max(0.25, item.quantity + delta)) };
           }),
         };
       }),
@@ -552,7 +542,8 @@ export default function NutritionPlansScreen({
       category: food.category,
       foodLabel: food.label,
       quantity: 1,
-      grams: computeGrams(food.label, 1),
+      // Per-intercambio: al subir la cantidad, los gramos suben solos.
+      baseGrams: parseBaseGrams(food.label) ?? undefined,
     };
     setForm(f => ({
       ...f,
@@ -1088,7 +1079,7 @@ export default function NutritionPlansScreen({
                   </div>
                   {/* Weight */}
                   <span className="text-caption font-mono text-ink-2 flex-shrink-0 w-12 text-right">
-                    {itemWeightLabel(item.foodLabel, item.quantity)}
+                    {etiquetaDePeso(item)}
                   </span>
                   {/* Remove */}
                   <button onClick={() => removeItem(meal.id, idx)} className="text-ink-2 hover:text-danger transition-colors flex-shrink-0">

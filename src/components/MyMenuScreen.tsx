@@ -4,8 +4,9 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   UserProfile, WeeklyMenu, RecipeFavorites, MenuCompletionLog,
-  WeekDay, MenuDay, MenuMeal, Recipe, FoodCategory, MenuComplement, MealItem, DietMode,
+  WeekDay, MenuDay, MenuMeal, Recipe, FoodCategory, MenuComplement, MealItem, DietMode, RecetaPendiente, DietItem,
 } from '../types';
+import { itemsDeComidaDelMenu } from '../utils/conversionNutricional';
 import {
   getPublishedMenu, getOnboarding, getAthleteNutritionConfig,
   updateWeeklyMenu, getMenuCompletionLog, saveMenuCompletionLog,
@@ -13,7 +14,7 @@ import {
   getRecipeFavorites, saveRecipeFavorites, getFoodItems, seedFoodItemsIfEmpty,
   getDietCompletionLog, saveDietCompletionLog,
 } from '../dbService';
-import { findSwapAlternatives, recipeMatchesSlot, buildBatchPlan, totalConExtras, GeneratorPrefs, SwapCandidate } from '../utils/menuEngine';
+import { findSwapAlternatives, recipeMatchesSlot, buildBatchPlan, totalConExtras, topeDeExtra, GeneratorPrefs, SwapCandidate } from '../utils/menuEngine';
 import { normalizeStr } from '../utils/foodPrefs';
 import { athleteConditions } from '../utils/dietaryRestrictions';
 import { dietTypeVigente } from '../utils/foodPrefs';
@@ -76,7 +77,7 @@ interface Props {
      el plan —son dos registros distintos, ver `toggleDone`—, y sin este puente
      el atleta que veía su sándwich en el menú no tenía forma de meterlo en el
      plan sin buscarlo a mano ni de que le contara en los macros del día. */
-  onAddToPlan?: (recipe: Recipe) => void;
+  onAddToPlan?: (pendiente: RecetaPendiente) => void;
 }
 
 export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
@@ -249,6 +250,17 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
         doneItemIds: log?.doneItemIds ?? [],
       };
       const total = totalConExtras(meal.exch, meal.complements, meal.racionesExtra);
+      /* Los ítems se construyen con la MISMA función que usa el botón «Añadir a
+       * mi plan», para que marcar y añadir no puedan volver a separarse. La
+       * receta hace falta solo para el nombre cuando el menú no lo trae; si no
+       * carga (sin red), se sigue con `intercambios`, porque marcar una comida
+       * no puede fallar por no tener la ficha. */
+      let items: DietItem[] | undefined;
+      try {
+        const receta = meal.recipeId ? await getRecipeById(meal.recipeId) : null;
+        if (receta) items = itemsDeComidaDelMenu(receta, meal);
+      } catch { /* sin ficha: se registra por intercambios, como antes */ }
+
       const siguiente = marcando
         ? registrarComidaDelMenu(dia, {
             clave,
@@ -256,6 +268,7 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
             slot: meal.slot,
             intercambios: total,
             etiqueta: meal.recipeName,
+            items,
           })
         : quitarComidaDelMenu(dia, clave);
       if (siguiente === dia) return;   // nada que cambiar
@@ -279,19 +292,35 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
     }
   }
 
+  /* Guardia de doble clic con ref, no con estado.
+   *
+   * `anadiendoId` es estado de React: dos toques seguidos dentro del mismo
+   * ciclo leen los dos `null` —la closure todavía no se ha re-creado— y los dos
+   * pasan, metiendo la comida dos veces en el plan. Es la «receta duplicada»
+   * de la auditoría (§8.5). Un ref se actualiza en el acto, así que el segundo
+   * toque ya lo ve ocupado. El estado se conserva porque es lo que pinta el
+   * spinner del botón. */
+  const anadiendoRef = useRef(false);
+
   async function anadirAlPlan(meal: MenuMeal) {
-    if (!meal.recipeId || !onAddToPlan || anadiendoId) return;
+    if (!meal.recipeId || !onAddToPlan || anadiendoRef.current) return;
+    anadiendoRef.current = true;
     setAnadiendoId(meal.id);
     try {
       const receta = await getRecipeById(meal.recipeId);
       if (!receta) { showToast('No se pudo cargar la receta.'); return; }
-      onAddToPlan(receta);
+      /* Con los ítems ya resueltos: la escala servida y los extras de ESTA
+       * comida. Antes se pasaba la receta cruda y el plan se quedaba con el
+       * plato base — una comida a ×1,5 con pan entraba como una ración pelada.
+       * Es el «20 intercambios salen 26» de la auditoría (§8.4). */
+      onAddToPlan({ recipe: receta, items: itemsDeComidaDelMenu(receta, meal) });
     } catch {
       // Sin esto, con la red a medias el botón no hacía nada y dejaba una
       // promesa rechazada suelta: al atleta le parece que la app se ha comido
       // el toque.
       showToast('No se pudo cargar la receta.');
     } finally {
+      anadiendoRef.current = false;
       setAnadiendoId(null);
     }
   }
@@ -817,7 +846,21 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
         const q = normalizeStr(extraQuery.trim());
         // `prefs.conditions` también aquí: el buscador de extras le abre al
         // atleta el banco entero, y ahí dentro hay pan, pasta y hasta seitán.
+        /* Cuánto cabe todavía en esta comida. El recorte de verdad lo hace la
+         * capa de escritura (`updateWeeklyMenu`), que es la que no se puede
+         * saltar; esto es para que el atleta VEA el tope en vez de escribir un
+         * número que luego le desaparece sin explicación. */
+        const comidaDelExtra = day?.meals.find(m => m.id === extrasFor?.mealId);
+        const topeActual = comidaDelExtra && actual
+          ? topeDeExtra(comidaDelExtra, actual.category, extrasFor?.idx ?? undefined)
+          : Infinity;
+        const cabeMas = actual ? actual.quantity + 0.25 <= topeActual : true;
+
+        /* Un alimento cuya categoría ya está cubierta no se ofrece: entrar con
+         * cantidad 1 y que la capa de escritura lo borre en el acto parecería
+         * que la app se lo ha comido. */
         const catalogo = complementosDisponibles(foodList, dietMode, actual?.category, prefs.conditions)
+          .filter(a => !comidaDelExtra || topeDeExtra(comidaDelExtra, a.category, extrasFor?.idx ?? undefined) >= 0.25)
           .filter(f => !q || normalizeStr(f.label).includes(q));
 
         function cambiarCantidad(delta: number) {
@@ -866,11 +909,19 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
                     <span className="font-mono text-body-s text-ink w-10 text-center">{actual.quantity}</span>
                     <button
                       onClick={() => cambiarCantidad(0.25)}
-                      className="w-11 h-11 rounded-control bg-raised text-ink-2 hover:text-ink text-body-s font-bold flex items-center justify-center"
-                      title="Más cantidad"
+                      disabled={!cabeMas}
+                      className="w-11 h-11 rounded-control bg-raised text-ink-2 hover:text-ink text-body-s font-bold flex items-center justify-center disabled:opacity-40 disabled:hover:text-ink-2"
+                      title={cabeMas ? 'Más cantidad' : 'Esta comida ya llega a su objetivo'}
                     >+</button>
                   </div>
                 </div>
+              )}
+
+              {actual && !cabeMas && (
+                <p className="font-sans text-caption text-ink-2 px-1">
+                  Esta comida ya llega a lo que te toca. Los extras están para
+                  completar lo que falta, no para sumar de más.
+                </p>
               )}
 
               {actual && (

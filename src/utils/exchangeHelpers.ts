@@ -125,10 +125,26 @@ export function recipeToDietItems(recipe: Recipe, enabledModes: DietMode[]): Die
   // it's not just empty, it's absent — so don't assume the array exists.
   const structured: DietItem[] = (recipe.ingredients ?? [])
     .filter(ing => enabledModes.includes(ing.mode))
-    .map(ing => ({ category: ing.category, foodLabel: ing.foodLabel, quantity: ing.quantity, originRecipeId: recipe.id }));
+    // Cada ingrediente es un alimento identificable del banco, así que SÍ lleva
+    // gramaje propio y se le pueden pintar los gramos.
+    .map(ing => ({
+      category: ing.category, foodLabel: ing.foodLabel, quantity: ing.quantity,
+      originRecipeId: recipe.id,
+      baseGrams: parseBaseGrams(ing.foodLabel) ?? undefined,
+    }));
   if (structured.length > 0) return structured;
 
   if (recipe.exchanges) {
+    /* Las ~8.500 recetas importadas no traen ingredientes estructurados: solo
+     * los intercambios del PLATO ENTERO. Esta fila representa el plato, no un
+     * alimento, y por eso NO lleva `baseGrams`.
+     *
+     * Es deliberado: antes se le derivaban gramos del banco como si toda la
+     * categoría fuese un solo ingrediente, y de ahí salían los 60 g de pan
+     * convertidos en 40 o en 70 (docs/gramos-e-intercambios.md). Sin gramaje
+     * propio y con `originRecipeId`, `pesoDeItem` devuelve null y la pantalla
+     * enseña intercambios en vez de una cifra inventada; los gramos de verdad
+     * están en la ficha de la receta. */
     return BUDGET_CATS
       .filter(cat => (recipe.exchanges![cat] ?? 0) > 0)
       .map(cat => ({ category: cat, foodLabel: recipe.name, quantity: recipe.exchanges![cat], originRecipeId: recipe.id }));

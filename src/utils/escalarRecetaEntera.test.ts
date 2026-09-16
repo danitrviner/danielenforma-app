@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Recipe } from '../types';
-import { escalarRecetaEntera, factorDeReceta } from './escalarRecetaEntera';
+import { escalarRecetaEntera, factorDeReceta , escalaDeReceta } from './escalarRecetaEntera';
 
 function receta(extra: Partial<Recipe> = {}): Recipe {
   return {
@@ -83,5 +83,41 @@ describe('factorDeReceta', () => {
     expect(factorDeReceta(1.5, 3)).toBe(0.5);
     expect(factorDeReceta(6, 3)).toBe(2);
     expect(factorDeReceta(3.75, 3)).toBeCloseTo(1.25);
+  });
+});
+
+describe('la escala guardada manda sobre la deducida', () => {
+  /* Por qué hace falta guardarla (medido sobre 3.000 recetas reales el
+   * 16-09-2026): `factorDeReceta` ignora los cambios de menos del 5 % para no
+   * sacar un «×0,98» por ruido de redondeo. Pero un toque del stepper son 0,25
+   * intercambios, y en un plato de 5,5 a 6 —pizza, pad thai, raviolis— eso es
+   * un 4,2 %: por debajo del umbral. El atleta daba al «+» y la ficha seguía
+   * diciendo los mismos gramos. Le pasaba al 9,1 % del recetario.
+   *
+   * No se puede arreglar bajando el umbral: el ruido de redondeo llega también
+   * a 0,25 (MAX_TOTAL_DRIFT en exchangeRounding.ts), así que por tamaño son
+   * indistinguibles. La única salida es que quien escala GUARDE lo que hizo. */
+
+  it('usa la escala guardada aunque el cambio sea pequeño', () => {
+    // 6 → 6,25 int. es un 4,2 %: `factorDeReceta` lo descartaría.
+    expect(escalaDeReceta({ escala: 6.25 / 6 }, 6.25, 6)).toBeCloseTo(1.0417, 3);
+  });
+
+  it('sin escala guardada sigue deduciéndola, como hasta ahora', () => {
+    expect(escalaDeReceta({}, 12, 6)).toBe(2);
+  });
+
+  it('sin escala guardada sigue ignorando el ruido de redondeo', () => {
+    expect(escalaDeReceta({}, 5.88, 6)).toBe(1);
+  });
+
+  it('una escala guardada de 1 no escala', () => {
+    expect(escalaDeReceta({ escala: 1 }, 6, 6)).toBe(1);
+  });
+
+  it('ignora una escala guardada absurda en vez de reventar la receta', () => {
+    expect(escalaDeReceta({ escala: 0 }, 12, 6)).toBe(2);
+    expect(escalaDeReceta({ escala: -1 }, 12, 6)).toBe(2);
+    expect(escalaDeReceta({ escala: NaN }, 12, 6)).toBe(2);
   });
 });

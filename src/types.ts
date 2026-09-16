@@ -1002,13 +1002,48 @@ export interface DietItem {
   category: FoodCategory;
   foodLabel: string;
   quantity: number;   // multiples of 0.25 (e.g. 0.25, 0.5, 1, 1.25)
-  grams?: number;     // computed: parsed base weight × quantity
+  /** Gramos de ALIMENTO que pesa UN intercambio de este ítem.
+   *
+   *  Se pone al crearlo desde una receta o desde el banco, y es lo que hace que
+   *  60 g de pan sigan siendo 60 g al pasar a intercambios. Per-intercambio y
+   *  no absoluto a propósito: los gramos son `baseGrams × quantity`, así que
+   *  los escaladores que ya existen (handleUpdateQuantity, escalarReceta) mueven
+   *  `quantity` y los gramos les siguen solos, sin tener que acordarse de nada.
+   *
+   *  NO confundir con GRAMS_PER_EXCHANGE (utils/nutritionConstants.ts), que son
+   *  gramos de MACRO: mezclar las dos tablas es lo que convertía 60 g de pan en
+   *  40 o en 70 según la receta. Ver utils/conversionNutricional.ts y
+   *  docs/gramos-e-intercambios.md.
+   *
+   *  Ausente en todo lo guardado antes de 09-2026: entonces se deriva del banco,
+   *  igual que se hacía hasta ahora. */
+  baseGrams?: number;
   originRecipeId?: string; // set when the item was added via "Usar receta" — scopes "Cambiar comida"
   /** Puesto aquí automáticamente al marcar una comida del menú semanal como
    *  hecha: `${día}_${idComidaDelMenu}`. Es lo que evita contar dos veces si se
    *  marca y desmarca, y lo que permite quitar exactamente lo que se puso sin
    *  tocar lo que el atleta apuntó a mano. Ver utils/registroDesdeElMenu.ts. */
   origenMenu?: string;
+  /** Factor acumulado con el que se ha escalado la receta de la que sale este
+   *  ítem. 1 o ausente = ración tal cual.
+   *
+   *  Se guarda porque deducirlo de los intercambios no siempre funciona: un
+   *  toque del stepper son 0,25, y en un plato de 5,5-6 intercambios eso es un
+   *  4,2 % que `factorDeReceta` descarta como ruido de redondeo — y el ruido
+   *  llega también a 0,25, así que por tamaño son indistinguibles. Medido el
+   *  16-09-2026: le pasaba al 9,1 % del recetario. Ver `escalaDeReceta`. */
+  escala?: number;
+}
+
+/** Una receta camino de «Mi plan», con lo que se come de ella ya resuelto.
+ *
+ *  `items` lo rellena quien SÍ sabe la ración exacta: «Mi menú» conoce la
+ *  escala servida y los extras de esa comida. Sin `items`, se derivan de la
+ *  receta cruda, que es lo correcto cuando se añade desde el recetario.
+ *  Ver utils/conversionNutricional.ts e itemsDeComidaDelMenu. */
+export interface RecetaPendiente {
+  recipe: Recipe;
+  items?: DietItem[];
 }
 
 export interface DietMeal {
@@ -1449,6 +1484,18 @@ export interface MenuRacionExtra {
 
 export interface MenuMeal {
   id: string;
+  /** Lo que esta comida debería sumar, guardado al generar el día.
+   *
+   *  Se persiste porque el reparto del día entre comidas sale del perfil de
+   *  hambre del onboarding (`slotsPorConteo`), que no viaja con el menú: sin
+   *  esto, cualquier capa que quisiera saber cuánto cabe en una comida tendría
+   *  que ADIVINARLO, y un tope adivinado recorta extras legítimos.
+   *
+   *  Es lo que hace cumplir la regla de los extras: solo rellenan lo que falta
+   *  para llegar aquí (ver `topeDeExtra`). Ausente en los menús publicados
+   *  antes de 09-2026, y en ese caso NO se recorta nada.
+   */
+  objetivo?: BudgetVec;
   slot: number; // intakeType 1-5
   name: string; // "Desayuno", "Comida"...
   recipeId: string;

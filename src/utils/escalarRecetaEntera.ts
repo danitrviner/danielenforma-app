@@ -69,3 +69,30 @@ export function factorDeReceta(actuales: number, base: number): number {
   // «Cantidades para ×0,98». Por debajo de un 5 % se considera sin escalar.
   return Math.abs(factor - 1) < 0.05 ? 1 : factor;
 }
+
+/**
+ * Qué factor aplicar a una receta del plan: el que se guardó al escalarla, y si
+ * no hay ninguno, el que se pueda deducir de sus intercambios.
+ *
+ * Por qué no basta con deducirlo (medido sobre 3.000 recetas reales el
+ * 16-09-2026): `factorDeReceta` descarta los cambios de menos del 5 % para no
+ * sacar un «×0,98» por ruido de redondeo. Pero un toque del stepper son 0,25
+ * intercambios, y en un plato de 5,5 a 6 —pizza, pad thai, raviolis— eso es un
+ * 4,2 %, justo por debajo del umbral: el atleta daba al «+» y la ficha seguía
+ * diciendo los mismos gramos. Le pasaba al 9,1 % del recetario.
+ *
+ * Bajar el umbral no vale: el ruido de redondeo llega también a 0,25
+ * (`MAX_TOTAL_DRIFT` en exchangeRounding.ts), así que por tamaño son
+ * indistinguibles. La única salida es que quien escala guarde lo que hizo, y
+ * dejar la deducción como respaldo para lo guardado antes de este cambio.
+ */
+export function escalaDeReceta(
+  item: { escala?: number },
+  intercambiosEnElPlato: number,
+  base: number,
+): number {
+  // Una escala guardada absurda (0, negativa, NaN) no puede reventar la ficha:
+  // se ignora y se cae a la deducción de siempre.
+  if (item.escala != null && Number.isFinite(item.escala) && item.escala > 0) return item.escala;
+  return factorDeReceta(intercambiosEnElPlato, base);
+}

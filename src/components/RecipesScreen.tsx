@@ -2,8 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { superaElTiempo, minutosDeReceta } from '../utils/tiempoDeReceta';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  UserProfile, Recipe, RecipeFavorites, FoodCategory, DietMode,
-} from '../types';
+  UserProfile, Recipe, RecipeFavorites, FoodCategory, DietMode, RecetaPendiente } from '../types';
 import {
   getRecipes, getRecipeFavorites, saveRecipeFavorites, deleteRecipe,
   getAthleteNutritionConfig, queryRecetas, cargarIndiceRecetas, getOnboarding,
@@ -301,7 +300,7 @@ interface DetailProps {
   onToggleFav: (id: string) => void;
   onToggleDislike: (id: string) => void;
   onDelete: (id: string) => void;
-  onAddToIntercambios?: (recipe: Recipe) => void;
+  onAddToIntercambios?: (pendiente: RecetaPendiente) => void;
 }
 
 const SCALE_STEPS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3];
@@ -522,7 +521,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, isOwn, enabledModes, savingFa
             )}
 
             {onAddToIntercambios && (
-              <Button variant="primary" size="l" fullWidth onClick={() => onAddToIntercambios(scaledRecipe)} className="mt-3">
+              <Button variant="primary" size="l" fullWidth onClick={() => onAddToIntercambios({ recipe: scaledRecipe })} className="mt-3">
                 Añadir a la comida
               </Button>
             )}
@@ -665,7 +664,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, isOwn, enabledModes, savingFa
 
 interface Props {
   profile: UserProfile;
-  onAddToIntercambios?: (recipe: Recipe) => void;
+  onAddToIntercambios?: (pendiente: RecetaPendiente) => void;
 }
 
 export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
