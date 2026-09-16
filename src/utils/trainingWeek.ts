@@ -44,6 +44,23 @@ export function addDays(dateStr: string, days: number): string {
   return `${date.getFullYear()}-${padDate(date.getMonth() + 1)}-${padDate(date.getDate())}`;
 }
 
+/**
+ * Días naturales entre dos fechas ISO. Exclusivo: del 1 al 8 son 7.
+ *
+ * Se ancla a mediodía a propósito. Con `T00:00:00`, el cambio de hora de marzo
+ * y octubre deja diferencias de 23 o 25 horas que `Math.round` convierte en un
+ * día de más o de menos justo esas dos semanas del año.
+ *
+ * Esto mismo estaba copiado en `revisionCoach`, `caminoDelPlan`,
+ * `accionesCalendario` y `tendenciaPeso`, cada una con su propio matiz. Las
+ * cuatro deberían pasar a usar esta (queda para la fase 8 del plan); mientras,
+ * lo nuevo se escribe contra esta.
+ */
+export function diasEntreFechas(desde: string, hasta: string): number {
+  const ms = new Date(`${hasta}T12:00:00`).getTime() - new Date(`${desde}T12:00:00`).getTime();
+  return Math.round(ms / 86_400_000);
+}
+
 export function getWeekRange(): { start: string; end: string } {
   const today = new Date();
   const day = today.getDay();
