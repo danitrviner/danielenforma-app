@@ -9,6 +9,7 @@ import {
 import { Skeleton } from './ui';
 import { Icon, Button, EmptyState, Dialog, Input } from './ui';
 
+import { heatmapBg, heatmapText } from '../utils/volumeZones';
 function mesocycleTemplatesKey(coachId: string) {
   return ['mesocycleTemplates', coachId] as const;
 }
@@ -22,23 +23,17 @@ const DEFAULT_GROUPS = (): Record<MuscleGroup, MuscleGroupConfig> =>
     MUSCLE_GROUPS.map(g => [g, { series: 0, priority: 'media' as const }])
   ) as Record<MuscleGroup, MuscleGroupConfig>;
 
-// ── Heatmap helpers ────────────────────────────────────────────────────────────
-
-function heatmapBg(series: number): string {
-  if (series === 0) return 'var(--color-surface)';
-  if (series <= 4)  return `rgb(59 130 246 / ${Math.round(18 + ((series - 1) / 3) * 32)}%)`;
-  if (series <= 9)  return `rgb(34 197 94 / ${Math.round(20 + ((series - 5) / 4) * 40)}%)`;
-  if (series <= 14) return `rgb(249 115 22 / ${Math.round(28 + ((series - 10) / 4) * 42)}%)`;
-  return `rgb(239 68 68 / ${Math.round(48 + Math.min((series - 15) / 5, 1) * 42)}%)`;
-}
-
-function heatmapText(series: number): string {
-  if (series === 0) return 'var(--color-ink-3)';
-  if (series <= 4)  return 'var(--color-info)';
-  if (series <= 9)  return 'var(--color-success)';
-  if (series <= 14) return 'var(--color-warning)';
-  return 'var(--color-danger)';
-}
+// ── Heatmap ───────────────────────────────────────────────────────────────────
+//
+// Esta pantalla llevaba su propia copia de los colores de volumen, con los
+// umbrales viejos escritos a mano (≤4, ≤9, ≤14, 15+). `utils/volumeZones.ts`
+// existe justo para eso y su `GENERIC_LANDMARK` reproduce esos mismos
+// umbrales, así que se usa el de verdad: si mañana se toca la escala, esta
+// pantalla ya no se queda atrás pintando otra cosa que el resto de la app.
+//
+// Única diferencia práctica: en 15 series exactas el rojo sale un punto más
+// cargado, porque la rampa canónica empieza a contar desde el máximo de MAV y
+// la copia lo hacía desde 15. Es un tono, no un cambio de zona.
 
 // ── Sub-components ─────────────────────────────────────────────────────────────
 
