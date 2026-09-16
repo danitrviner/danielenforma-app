@@ -113,13 +113,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return;
   }
 
+  // El catálogo de ejercicios es el MISMO para todos: se lee una vez, fuera del
+  // bucle. Leerlo por atleta multiplicaba la colección entera por el número de
+  // clientes en cada pasada, que con veinte atletas son veinte veces el
+  // catálogo todas las noches para nada.
+  let exercises;
+  try {
+    exercises = await leerEjercicios(db);
+  } catch (err) {
+    console.error('latido-diario: no se pudo leer el catálogo de ejercicios', err);
+    res.status(500).json({ error: 'No se pudo leer el catálogo de ejercicios' });
+    return;
+  }
+
   const resumen: ResumenDeAtleta[] = [];
 
   for (const perfil of atletas) {
     const email = perfil.email;
     try {
       const [
-        assignments, workoutLogs, bodyweightLogs, stepLogs, exercises,
+        assignments, workoutLogs, bodyweightLogs, stepLogs,
         nutritionProgram, dietConfig, dietas, registrosDeComida, roadmap,
         retos, cardio,
       ] = await Promise.all([
@@ -127,7 +140,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         leerLogsDeEntreno(db, email),
         leerPesajes(db, email),
         leerPasos(db, email, desde),
-        leerEjercicios(db),
         leerProgramaDeNutricion(db, email),
         leerConfigDeDieta(db, email),
         leerDietas(db, email),

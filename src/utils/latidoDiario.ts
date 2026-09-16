@@ -89,7 +89,9 @@ export function planificarLatido(
     acciones.push({ tipo: 'marcar_sesion_perdida', assignmentId: a.id, fecha: a.date });
   }
   if (perdidas.length > 0) {
-    resumen.push(`${perdidas.length} ${perdidas.length === 1 ? 'sesión marcada' : 'sesiones marcadas'} como perdidas`);
+    resumen.push(perdidas.length === 1
+      ? '1 sesión marcada como perdida'
+      : `${perdidas.length} sesiones marcadas como perdidas`);
   }
 
   // ── 2. El cambio de fase de la nutrición ─────────────────────────────────

@@ -37,6 +37,19 @@ describe('planificarLatido · sesiones perdidas', () => {
     ]);
   });
 
+  it('la línea del resumen concuerda en singular y en plural', () => {
+    const una = planificarLatido(
+      foto({ assignments: [asignacion(addDays(HOY, -20))] }), OPCIONES,
+    );
+    expect(una.resumen).toEqual(['1 sesión marcada como perdida']);
+
+    const dos = planificarLatido(
+      foto({ assignments: [asignacion(addDays(HOY, -20)), asignacion(addDays(HOY, -25))] }),
+      OPCIONES,
+    );
+    expect(dos.resumen).toEqual(['2 sesiones marcadas como perdidas']);
+  });
+
   it('respeta el margen: justo en el corte todavía se puede recuperar', () => {
     const enElCorte = addDays(HOY, -DIAS_PARA_DARSE_POR_PERDIDA);
     const r = planificarLatido(foto({ assignments: [asignacion(enElCorte)] }), OPCIONES);
