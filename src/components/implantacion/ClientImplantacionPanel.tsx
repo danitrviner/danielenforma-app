@@ -26,7 +26,7 @@ import { useToast } from '../../hooks/useToast';
 import { HubTab } from '../ClientHub';
 import IndiceRecorrido, { tituloCorto } from './IndiceRecorrido';
 import DetallePaso from './DetallePaso';
-import { Card, Skeleton, RingSeal, Button, Banner, ListRow, Icon, Input } from '../ui';
+import { Card, RingSeal, Button, Banner, ListRow, Icon, Input } from '../ui';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    IMPLANTACIÓN — montar el programa de un atleta, de la A a la Z.
@@ -86,17 +86,23 @@ export default function ClientImplantacionPanel({
   const hoy = hoyIsoLocal();
   const tareasKey = ['coachClientTasks', athlete.email] as const;
 
-  const { data: roadmap = null, isPending: cargandoRoadmap } = useQuery({
+  /* Estas cuatro ya NO llevan valor por defecto y ya no forman un `cargando`
+     que tape la pantalla entera. Mientras no llegan valen `undefined`, que
+     para la checklist es «todavía no se sabe» —no «no hay»—, así que el
+     recorrido se pinta de inmediato con lo que ya se sabe y esos pasos van
+     apareciendo. Antes el coach miraba un esqueleto hasta que respondía la
+     más lenta de las cuatro. */
+  const { data: roadmap, isPending: cargandoRoadmap } = useQuery({
     queryKey: ['roadmap', athlete.email], queryFn: () => getRoadmap(athlete.email),
   });
-  const { data: nutritionProgram = null, isPending: cargandoPrograma } = useQuery({
+  const { data: nutritionProgram, isPending: cargandoPrograma } = useQuery({
     queryKey: ['nutritionProgram', athlete.email], queryFn: () => getNutritionProgram(athlete.email),
   });
-  const { data: weeklyChallenge = null, isPending: cargandoReto } = useQuery({
+  const { data: weeklyChallenge, isPending: cargandoReto } = useQuery({
     queryKey: ['weeklyChallenge', athlete.email, isoWeekKey(hoy)],
     queryFn: () => getWeeklyChallenge(athlete.email, isoWeekKey(hoy)),
   });
-  const { data: manualTasks = [], isPending: cargandoTareas } = useQuery({
+  const { data: manualTasks, isPending: cargandoTareas } = useQuery({
     queryKey: tareasKey, queryFn: () => getCoachClientTasks(athlete.email),
   });
   // Las rutinas solo hacen falta para el repaso de calidad —mirar si las
@@ -117,7 +123,12 @@ export default function ClientImplantacionPanel({
   const { data: dossier } = useQuery({
     queryKey: ['dossier', athlete.email], queryFn: () => getDossier(athlete.email),
   });
+  /* `cargando` ya no decide si se pinta la pantalla: decide si se puede
+     GUARDAR el resumen y elegir el paso inicial. Las dos cosas necesitan el
+     recorrido completo —un % calculado a medias se guardaría en el perfil y
+     saldría en la parrilla de clientes— así que esas dos siguen esperando. */
   const cargando = cargandoRoadmap || cargandoPrograma || cargandoReto || cargandoTareas;
+  const tareasManuales = useMemo(() => manualTasks ?? [], [manualTasks]);
 
   // ── Antes de publicar ──────────────────────────────────────────────────────
   // Lo que está puesto pero mal puesto. La checklist contesta a «¿está hecho?»;
@@ -165,8 +176,8 @@ export default function ClientImplantacionPanel({
     workouts, cardioAssignments, dossier]);
 
   const recorrido = useMemo(
-    () => construirRecorrido(resultado, manualTasks),
-    [resultado, manualTasks],
+    () => construirRecorrido(resultado, tareasManuales),
+    [resultado, tareasManuales],
   );
 
   // El % que ve la parrilla de clientes, para que no tenga que recalcular la
@@ -195,7 +206,7 @@ export default function ClientImplantacionPanel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cargando]);
 
-  const extras = manualTasks.filter(t => t.createdBy === 'coach');
+  const extras = tareasManuales.filter(t => t.createdBy === 'coach');
   const pasos = recorrido.bloques.flatMap(b => b.pasos);
   const elegido = pasos.find(p => p.paso.numero === activo) ?? null;
 
@@ -276,15 +287,6 @@ export default function ClientImplantacionPanel({
       showToast(mensajeDeErrorFirestore(err, 'eliminar la tarea'));
     }
   };
-
-  if (cargando) {
-    return (
-      <div className="space-y-4">
-        <Skeleton className="w-full h-20 rounded-surface" />
-        <Skeleton className="w-full h-64 rounded-surface" />
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-5">

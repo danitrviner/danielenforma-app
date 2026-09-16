@@ -70,10 +70,18 @@ export interface SetupInputs {
   photoAssignments: PhotoAssignment[];
   photos: ProgressPhoto[];
   workoutLogs: WorkoutLog[];
-  roadmap: Roadmap | null;
-  nutritionProgram: NutritionProgram | null;
-  weeklyChallenge: WeeklyChallenge | null;
-  manualTasks: CoachClientTask[];
+  /**
+   * Estas cuatro admiten `undefined` = «todavía no se sabe», igual que las de
+   * abajo. `null`/`[]` significan «lo he mirado y no hay»; son cosas
+   * distintas, y confundirlas es lo que obligaba a la pantalla de Implantación
+   * a no pintar NADA hasta que llegaran las cuatro: con el valor por defecto,
+   * un roadmap que aún no ha llegado es indistinguible de uno sin fases, y el
+   * recorrido habría enseñado en rojo pasos que sí están hechos.
+   */
+  roadmap?: Roadmap | null;
+  nutritionProgram?: NutritionProgram | null;
+  weeklyChallenge?: WeeklyChallenge | null;
+  manualTasks?: CoachClientTask[];
   /**
    * Las cuatro entradas de abajo son OPCIONALES a propósito.
    *
@@ -156,7 +164,8 @@ function daysSincePlanStart(planStartDate: string, today: string): number {
   return Math.floor((t.getTime() - start.getTime()) / 86_400_000);
 }
 
-function manualStatus(manualTasks: CoachClientTask[], itemId: string, inWindow: boolean): SetupStatus {
+function manualStatus(manualTasks: CoachClientTask[] | undefined, itemId: string, inWindow: boolean): SetupStatus {
+  if (manualTasks === undefined) return 'na';   // aún no ha llegado la consulta
   const task = manualTasks.find(t => t.itemId === itemId);
   if (task?.done) return 'done';
   return inWindow ? 'attention' : 'pending';
@@ -202,14 +211,19 @@ export function computeSetupChecklist(inputs: SetupInputs): SetupResult {
     set('prog_calendario_dietas', scheduledDays > 0 ? 'done' : 'pending', `${scheduledDays}/7 días`);
   }
   set('prog_pasos', (nutritionConfig?.stepGoal ?? 0) > 0 ? 'done' : 'pending');
-  set('prog_fases_plan', (roadmap?.planPhases?.length ?? 0) > 0 ? 'done' : 'pending');
-  {
+  if (roadmap === undefined) set('prog_fases_plan', 'na');
+  else set('prog_fases_plan', (roadmap?.planPhases?.length ?? 0) > 0 ? 'done' : 'pending');
+  if (nutritionProgram === undefined) set('prog_periodizacion', 'na');
+  else {
     const phases = nutritionProgram?.phases ?? [];
     if (phases.length === 0) set('prog_periodizacion', 'pending');
     else set('prog_periodizacion', phases.some(p => p.dietId === '') ? 'attention' : 'done');
   }
-  set('prog_escalera', roadmap?.levelLadder ? 'done' : 'pending', roadmap?.levelLadder ? undefined : 'usa la default');
-  set('prog_retos_config', (roadmap?.challengeConfig?.liftExerciseIds?.length ?? 0) > 0 ? 'done' : 'pending');
+  if (roadmap === undefined) { set('prog_escalera', 'na'); set('prog_retos_config', 'na'); }
+  else {
+    set('prog_escalera', roadmap?.levelLadder ? 'done' : 'pending', roadmap?.levelLadder ? undefined : 'usa la default');
+    set('prog_retos_config', (roadmap?.challengeConfig?.liftExerciseIds?.length ?? 0) > 0 ? 'done' : 'pending');
+  }
 
   // ── Los cuatro que antes se marcaban a mano ──────────────────────────────
   // `undefined` (quien llama no cargó esa colección) ≠ lista vacía (la cargó y
@@ -239,7 +253,7 @@ export function computeSetupChecklist(inputs: SetupInputs): SetupResult {
       if (!m.startDate) return false;
       return today >= m.startDate && today <= addDays(m.startDate, m.weeks * 7 - 1);
     }) ?? null;
-    if (!meso) set('prog_dias_senalados', 'na');
+    if (!meso || roadmap === undefined) set('prog_dias_senalados', 'na');
     else {
       const fin = addDays(meso.startDate, meso.weeks * 7 - 1);
       const dentro = (roadmap?.highlightedDays ?? []).filter(d => d >= meso.startDate && d <= fin);
@@ -289,7 +303,8 @@ export function computeSetupChecklist(inputs: SetupInputs): SetupResult {
       set('w1_primera_revision', 'pending');
     }
 
-    if (weeklyChallenge === null) set('w1_reto_semana', 'attention');
+    if (weeklyChallenge === undefined) set('w1_reto_semana', 'na');
+    else if (weeklyChallenge === null) set('w1_reto_semana', 'attention');
     else if (weeklyChallenge.origin === 'coach') set('w1_reto_semana', 'done');
     else set('w1_reto_semana', 'pending', 'puedes personalizarlo');
 

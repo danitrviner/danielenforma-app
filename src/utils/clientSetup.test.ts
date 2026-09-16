@@ -246,3 +246,47 @@ describe('computeSetupChecklist · sesiones, cardio, días señalados y ficha vi
     expect(item(r, 'prog_cardio').status).toBe('pending');
   });
 });
+
+describe('computeSetupChecklist · lo que aún no ha llegado', () => {
+  /* La pantalla de Implantación ya no espera a que respondan las cuatro
+     consultas lentas antes de pintar nada: mientras no llegan valen
+     `undefined`, y eso tiene que salir como «todavía no se sabe» (`na`), nunca
+     como pendiente. Un paso hecho que aparece en rojo durante dos segundos es
+     peor que no verlo todavía: el coach va y lo rehace. */
+  const estado = (r: ReturnType<typeof computeSetupChecklist>, id: string) =>
+    r.phases.flatMap(g => g.items).find(i => i.id === id)?.status;
+
+  it('sin roadmap todavía, sus cuatro pasos son «na», no «pending»', () => {
+    const r = computeSetupChecklist(makeInputs({ roadmap: undefined }));
+    expect(estado(r, 'prog_fases_plan')).toBe('na');
+    expect(estado(r, 'prog_escalera')).toBe('na');
+    expect(estado(r, 'prog_retos_config')).toBe('na');
+  });
+
+  it('un roadmap que SÍ llegó y está vacío sigue siendo «pending»', () => {
+    const r = computeSetupChecklist(makeInputs({ roadmap: null }));
+    expect(estado(r, 'prog_fases_plan')).toBe('pending');
+    expect(estado(r, 'prog_escalera')).toBe('pending');
+  });
+
+  it('distingue el programa de nutrición que no ha llegado del que no existe', () => {
+    expect(estado(computeSetupChecklist(makeInputs({ nutritionProgram: undefined })), 'prog_periodizacion')).toBe('na');
+    expect(estado(computeSetupChecklist(makeInputs({ nutritionProgram: null })), 'prog_periodizacion')).toBe('pending');
+  });
+
+  it('las tareas manuales que no han llegado no ponen nada en rojo', () => {
+    const conPlan = makeInputs({
+      profile: makeProfile({ planStartDate: TODAY, planDurationMonths: 3 }),
+      manualTasks: undefined,
+    });
+    expect(estado(computeSetupChecklist(conPlan), 'w1_contacto_diario')).toBe('na');
+    // Con la lista vacía de verdad sí reclama, que es lo que tiene que hacer.
+    expect(estado(computeSetupChecklist({ ...conPlan, manualTasks: [] }), 'w1_contacto_diario')).toBe('attention');
+  });
+
+  it('el reto de la semana distingue «aún no sé» de «no hay»', () => {
+    const conPlan = makeInputs({ profile: makeProfile({ planStartDate: TODAY, planDurationMonths: 3 }) });
+    expect(estado(computeSetupChecklist({ ...conPlan, weeklyChallenge: undefined }), 'w1_reto_semana')).toBe('na');
+    expect(estado(computeSetupChecklist({ ...conPlan, weeklyChallenge: null }), 'w1_reto_semana')).toBe('attention');
+  });
+});
