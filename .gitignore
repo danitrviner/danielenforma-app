@@ -1,4 +1,10 @@
-node_modules/
+# Sin la barra final, para que ignore también un ENLACE SIMBÓLICO llamado
+# node_modules. Con `node_modules/` git solo ignora el directorio, así que en
+# un worktree donde node_modules es un enlace a otro sitio, `git add -A` se lo
+# llevaba dentro del commit: es como las cinco ramas `fase-*` acabaron con un
+# enlace simbólico committeado que impedía mergearlas (git se niega a sustituir
+# un directorio lleno por un enlace, y el merge abortaba a medias).
+node_modules
 build/
 dist/
 coverage/
