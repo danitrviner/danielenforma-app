@@ -1,14 +1,14 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { AiChat, AiChatMessage, AiProposal, AiProposalPayload, Diet, DossierPatch, LevelLadder, Mesocycle, MuscleGroup, MUSCLE_LABELS, MUSCLE_ORDER, KnowledgeNote, PeriodizationBlockPayload,
+import { AiChat, AiChatMessage, AiProposal, AiProposalPayload, Diet, DossierPatch, LevelLadder, Mesocycle, MuscleGroup, MUSCLE_LABELS, MUSCLE_ORDER, PeriodizationBlockPayload,
   RoadmapProposalPayload, NutritionProgramProposalPayload, SpecialDayProposalPayload, WorkoutDaysProposalPayload, WorkoutExercise, NutritionPhase, Roadmap,
   SetupConfigProposalPayload, PublishBlockProposalPayload, WeeklyChallengeProposalPayload,
   WorkoutTemplateProposalPayload, MesocycleTemplateProposalPayload, WeeklyChallenge, CardioProgram,
   TemplateStage, WeekDay } from '../types';
 import {
   getAiChats, saveAiChat, deleteAiChat, getPendingAiProposals, updateAiProposal,
-  submitCoachFeedback, createDiet, updateDiet, createMesocycle, bulkUpsertKnowledgeNotes,
+  submitCoachFeedback, createDiet, updateDiet, createMesocycle,
   getCoachInstructions, saveCoachInstructions,
   getDoctrina, getDoctrinaParaEditar, saveDoctrina, resetDoctrina, createTask,
   getVolumeLandmarks, getVolumeLandmarksParaEditar, saveVolumeLandmarks, resetVolumeLandmarks,
@@ -24,7 +24,7 @@ import { sesionesDeMesociclo, fechasDelMesociclo } from '../utils/asignacionMeso
 import { prescripcionDeSemana, ZONA2_BASE_MIN_DEFECTO } from '../utils/cardioProgression';
 import { isoWeekKey, isoWeekBounds } from '../utils/challengeOptions';
 import { VOLUME_LANDMARKS_DEFAULT, type VolumeLandmark } from '../data/volumeLandmarks';
-import { runAgentTurn, messageText, probarConexionProxy, TurnoCancelado } from '../ai/aiClient';
+import { runAgentTurn, messageText, TurnoCancelado } from '../ai/aiClient';
 import { TAREAS, type Tarea } from '../ai/tareas';
 import { renderPerfilProgramacion } from '../ai/perfilProgramacion';
 import { ordenarPropuestasPorPlan, agruparPropuestasPorAtleta } from '../utils/ordenPropuestas';
@@ -291,9 +291,6 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
     onAprobada: id => setEdits(prev => { const { [id]: _quitado, ...resto } = prev; return resto; }),
   });
   const [fichaAbierta, setFichaAbierta] = useState(false);
-  const [syncMsg, setSyncMsg] = useState<string | null>(null);
-  const [diagMsg, setDiagMsg] = useState<string | null>(null);
-  const [diagnosticando, setDiagnosticando] = useState(false);
   const [listening, setListening] = useState(false);
   const { data: coachInstructions = '' } = useQuery({
     queryKey: coachInstructionsKey,
@@ -347,7 +344,6 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
   const [landmarksError, setLandmarksError] = useState<string | null>(null);
   const liveMessages = useRef<AiChatMessage[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const vaultInputRef = useRef<HTMLInputElement>(null);
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
   const speechSupported = getSpeechRecognitionCtor() !== null;
 
@@ -370,43 +366,6 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
     recognitionRef.current = rec;
     setListening(true);
     rec.start();
-  };
-
-  const importVault = async (file: File) => {
-    setSyncMsg('Importando…');
-    try {
-      const parsed = JSON.parse(await file.text()) as { notes?: KnowledgeNote[] };
-      const notes = parsed.notes ?? [];
-      if (!Array.isArray(notes) || notes.length === 0) { setSyncMsg('El archivo no tiene notas válidas.'); return; }
-      const n = await bulkUpsertKnowledgeNotes(notes);
-      setSyncMsg(`✓ Bóveda sincronizada: ${n} notas.`);
-    } catch {
-      setSyncMsg('No se pudo leer el archivo (¿es el JSON de la bóveda?).');
-    } finally {
-      setTimeout(() => setSyncMsg(null), 5000);
-    }
-  };
-
-  // T9. El único diagnóstico posible sin acceso a los logs de Vercel: un
-  // OPTIONS y un POST mínimo a PROXY_URL, con URL, código HTTP y cuerpo de
-  // error EN CLARO. No cierra la duda con un "parece que ya va" — enseña el
-  // resultado real, sea cual sea.
-  const probarConexion = async () => {
-    setDiagnosticando(true);
-    setDiagMsg(null);
-    try {
-      const d = await probarConexionProxy();
-      const lineas = [
-        `URL: ${d.url}`,
-        `OPTIONS: ${d.optionsOk ? 'OK' : `falló — ${d.optionsError}`}`,
-        d.postStatus !== undefined
-          ? `POST: HTTP ${d.postStatus} — ${d.postBody}`
-          : `POST: falló — ${d.postError}`,
-      ];
-      setDiagMsg(lineas.join('\n'));
-    } finally {
-      setDiagnosticando(false);
-    }
   };
 
   const openInstructionsEditor = async () => {
@@ -686,29 +645,17 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
           <Button variant="ghost" size="s" onClick={() => setFichaAbierta(true)} icon="badge" label={`Ficha de ${activeAthleteName || activeAthleteEmail}`} />
         )}
         <Button variant="ghost" size="s" onClick={openInstructionsEditor} icon="tune" label="Instrucciones fijas del asistente" />
-        <Button variant="ghost" size="s" onClick={probarConexion} loading={diagnosticando} icon="network_check" label="Probar conexión con el asistente" />
-        <Button variant="ghost" size="s" onClick={() => vaultInputRef.current?.click()} icon="menu_book" label="Sincronizar bóveda de conocimiento" />
-        <input ref={vaultInputRef} type="file" accept="application/json,.json" className="hidden"
-          onChange={e => { const f = e.target.files?.[0]; if (f) importVault(f); e.target.value = ''; }} />
+        {/* «Probar conexión» y «Sincronizar bóveda» se han ido a Ajustes ›
+            Asistente. No son cosas que se hagan mientras hablas con él —una
+            cuando algo falla, la otra cuando cambia Obsidian— y ocupaban sitio
+            permanente en una fila que ya tenía ocho iconos sin etiqueta.
+            La doctrina SÍ se queda aquí: se edita en respuesta a lo que el
+            asistente acaba de decir, y mandarla a Ajustes obligaría a salir del
+            chat, cambiar de pantalla y volver a acordarse de qué había pasado. */}
         <Button variant="ghost" size="s" onClick={() => setShowList(s => !s)} icon="history" label="Historial de chats" />
         <Button variant="ghost" size="s" onClick={startNew} icon="add_comment" label="Chat nuevo" />
         <Button variant="ghost" size="s" onClick={() => setOpen(false)} icon="close" label="Cerrar" />
       </div>
-
-      {syncMsg && (
-        <div className="px-4 py-2 text-caption font-mono text-data border-b border-hairline bg-data/5">
-          {syncMsg}
-        </div>
-      )}
-
-      {diagMsg && (
-        <div className="px-4 py-2 text-caption font-mono text-ink-2 border-b border-hairline bg-surface whitespace-pre-wrap flex items-start justify-between gap-3">
-          <span>{diagMsg}</span>
-          <button onClick={() => setDiagMsg(null)} className="text-ink-3 hover:text-white shrink-0">
-            <Icon name="close" size="s" />
-          </button>
-        </div>
-      )}
 
       {/* Lista de chats */}
       {showList ? (

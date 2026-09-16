@@ -13,8 +13,9 @@ import { Tabs } from './ui';
 import AdminMaquinasTab from '../features/gimnasio/AdminMaquinasTab';
 
 import { esElCoachPermanente } from '../utils/coach';
+import HerramientasAsistente from './HerramientasAsistente';
 
-type SettingsTab = 'roles' | 'cuestionarios' | 'ficha' | 'biblioteca' | 'maquinas';
+type SettingsTab = 'roles' | 'cuestionarios' | 'ficha' | 'asistente' | 'biblioteca' | 'maquinas';
 
 // ── Default template questions ────────────────────────────────────────────────
 
@@ -617,6 +618,7 @@ export default function CoachesScreen({ currentUserId, currentUserEmail }: Props
           { id: 'roles',         label: 'Entrenadores',  icon: 'manage_accounts' },
           { id: 'cuestionarios', label: 'Cuestionarios', icon: 'quiz'            },
           { id: 'ficha',         label: 'Ficha',         icon: 'assignment'      },
+          { id: 'asistente',     label: 'Asistente',     icon: 'smart_toy'       },
           ...(isOwnerOrDev ? [{ id: 'biblioteca' as SettingsTab, label: 'Biblioteca', icon: 'library_books' }] : []),
           ...(isOwnerOrDev ? [{ id: 'maquinas' as SettingsTab, label: 'Máquinas', icon: 'fitness_center' }] : []),
         ]}
@@ -631,6 +633,10 @@ export default function CoachesScreen({ currentUserId, currentUserEmail }: Props
 
       {settingsTab === 'ficha' && (
         <OnboardingTemplateEditor coachEmail={currentUserEmail} />
+      )}
+
+      {settingsTab === 'asistente' && (
+        <HerramientasAsistente />
       )}
 
       {settingsTab === 'maquinas' && isOwnerOrDev && (
