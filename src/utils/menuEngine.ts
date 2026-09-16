@@ -739,6 +739,52 @@ function finalizeDay(
   return { day, dietId: diet.id, dietName: diet.name, target, meals };
 }
 
+export interface ReajustarDiaArgs {
+  dia: MenuDay;
+  diet: Diet;
+  slots: MealSlotSpec[];
+  foods: MealItem[];
+  mode?: DietMode;
+  /** Las recetas de las comidas del día, para poder subirles la ración. */
+  recetasPorId?: Map<string, Recipe>;
+  conditions?: readonly number[];
+}
+
+/**
+ * Vuelve a cuadrar un día cuyos platos han cambiado.
+ *
+ * El caso: el coach pulsa «otra receta» en la comida y el día entero se
+ * descuadra. Las raciones extra y los acompañamientos que tenía eran para
+ * COMPLETAR los platos anteriores; con un plato distinto sobran o faltan, y
+ * hasta ahora se quedaban como estaban. Un menú de 2.100 kcal se iba a 1.850 o
+ * a 2.400 y nadie lo decía: el coach lo publicaba pensando que seguía cuadrado.
+ *
+ * Esto no vuelve a elegir recetas —las que hay son las que el coach quiere— y
+ * solo rehace lo derivado: tira las raciones extra y los acompañamientos de
+ * todas las comidas y deja que `finalizeDay` los reparta otra vez contra el
+ * objetivo del día. Es el MISMO cierre que usa la generación, así que un día
+ * reajustado y uno generado cuadran con el mismo criterio.
+ *
+ * `balanceSemana` no se pasa a propósito: el reajuste es de UN día suelto que
+ * el coach está tocando a mano, y aplicarle la corrección de la semana entera
+ * le quitaría los acompañamientos por algo que él no ha hecho en este día.
+ */
+export function reajustarDia(args: ReajustarDiaArgs): MenuDay {
+  const { dia, diet, slots, foods, recetasPorId, conditions } = args;
+  const mode = args.mode ?? 'OMNIVORO';
+  const target = dietBudgetVec(diet);
+  const targets = slotTargets(target, slots);
+
+  // Copia limpia: fuera lo derivado, que es lo único que este reajuste rehace.
+  const meals: MenuMeal[] = dia.meals.map(m => ({
+    ...m,
+    racionesExtra: undefined,
+    complements: [],
+  }));
+
+  return finalizeDay(dia.day, diet, target, targets, meals, foods, mode, recetasPorId, conditions);
+}
+
 export interface GenerateDayArgs {
   day: WeekDay;
   diet: Diet | null; // null = free/unassigned day, no meals generated

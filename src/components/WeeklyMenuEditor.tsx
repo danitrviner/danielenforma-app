@@ -8,7 +8,7 @@ import { queryRecetasForGenerator, getRecipes, getRecipeById, getFoodItems, crea
 import {
   slotsFromOnboarding, generateWeek, generateDay, isDayWithinTolerance,
   dayGlobalDeviation, rankCandidates, slotTargets, recipeMatchesSlot,
-  buildBatchPlan, MealSlotSpec, GeneratorPrefs, MenuCandidate,
+  buildBatchPlan, reajustarDia, MealSlotSpec, GeneratorPrefs, MenuCandidate,
 } from '../utils/menuEngine';
 import { athleteConditions } from '../utils/dietaryRestrictions';
 import { dietTypeVigente } from '../utils/foodPrefs';
@@ -282,7 +282,27 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
       racionesExtra: undefined,
       kcal: Math.round(exchangeToKcal(pick.exch)),
     };
-    updateDay(day, { ...menuDay, meals: nextMeals });
+
+    // Y el DÍA entero se vuelve a cuadrar. Cambiar un plato descuadra el día:
+    // las raciones extra y los acompañamientos del resto de comidas estaban
+    // calculados para completar el plato viejo. Sin esto, un menú de 2.100 kcal
+    // se iba a 1.850 o a 2.400 y nadie lo decía — el coach lo publicaba
+    // pensando que seguía cuadrado. Las recetas NO se vuelven a elegir: solo se
+    // rehace lo derivado.
+    const dietDelDia = menuDay.dietId ? diets.find(d => d.id === menuDay.dietId) : null;
+    if (!dietDelDia) { updateDay(day, { ...menuDay, meals: nextMeals }); return; }
+    const foodList = await ensureFoods();
+    const recetas = new Map<string, Recipe>(recipesById);
+    recetas.set(pick.recipe.id, pick.recipe);
+    updateDay(day, reajustarDia({
+      dia: { ...menuDay, meals: nextMeals },
+      diet: dietDelDia,
+      slots,
+      foods: foodList,
+      mode: dietMode,
+      recetasPorId: recetas,
+      conditions: prefs.conditions,
+    }));
   };
 
   const openPicker = async (day: WeekDay, mealId: string, mealIdx: number) => {

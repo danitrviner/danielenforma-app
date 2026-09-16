@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { Recipe, Diet, MenuDay, BudgetVec, WeeklyMenu } from '../types';
+import { Recipe, Diet, MenuDay, MenuMeal, BudgetVec, WeeklyMenu } from '../types';
 import {
   bestScaleFit, rankCandidates, generateDay, generateWeek,
   isDayWithinTolerance, findSwapAlternatives, GeneratorPrefs,
-  buildBatchPlan, isMenuStale, fillComplements,
+  buildBatchPlan, isMenuStale, fillComplements, reajustarDia, MealSlotSpec,
 } from './menuEngine';
 import { buildShoppingList } from './menuShoppingList';
 import { computeMenuAdherenceRate } from './nutritionAnalysis';
@@ -533,5 +533,58 @@ describe('findSwapAlternatives diversity', () => {
     // Two picks should not both be batidos — the tostada must make the cut.
     expect(alts.map(a => a.recipe.id)).toContain('tost');
     expect(alts).toHaveLength(2);
+  });
+});
+
+describe('reajustarDia', () => {
+  const DIETA: Diet = {
+    id: 'd1', athleteId: 'a@x.com', name: 'Día tipo',
+    budget: { HC: 10, PROT: 7, GRASA: 4, MIX_HC: 0, MIX_GRASA: 0 },
+    meals: [],
+  } as unknown as Diet;
+
+  const SLOTS: MealSlotSpec[] = [
+    { slot: 1, name: 'Desayuno', pesoHC: 1, pesoPROT: 1, pesoGRASA: 1 },
+    { slot: 3, name: 'Comida', pesoHC: 1, pesoPROT: 1, pesoGRASA: 1 },
+  ] as unknown as MealSlotSpec[];
+
+  const comida = (id: string, exch: { HC: number; PROT: number; GRASA: number }): MenuMeal => ({
+    mealId: id, slot: 1, name: id, recipeId: `r_${id}`, recipeName: id,
+    scale: 1, exch, complements: [], kcal: 0,
+  } as unknown as MenuMeal);
+
+  it('tira las raciones y los acompañamientos viejos antes de recalcular', () => {
+    const dia = {
+      day: 'mon', dietId: 'd1', target: { HC: 10, PROT: 7, GRASA: 4 },
+      meals: [
+        { ...comida('a', { HC: 3, PROT: 2, GRASA: 1 }), racionesExtra: [{ foodLabel: 'arroz de la receta vieja', gramos: 45 }] },
+        comida('b', { HC: 3, PROT: 2, GRASA: 1 }),
+      ],
+    } as unknown as MenuDay;
+
+    const r = reajustarDia({ dia, diet: DIETA, slots: SLOTS, foods: [], mode: 'OMNIVORO' });
+    // Sin `foods` no hay con qué rellenar, pero lo VIEJO tiene que haber
+    // desaparecido: era para un plato que ya no está.
+    const etiquetas = r.meals.flatMap(m => (m.racionesExtra ?? []).map(x => x.foodLabel));
+    expect(etiquetas).not.toContain('arroz de la receta vieja');
+  });
+
+  it('no vuelve a elegir recetas: las que puso el coach se quedan', () => {
+    const dia = {
+      day: 'mon', dietId: 'd1', target: { HC: 10, PROT: 7, GRASA: 4 },
+      meals: [comida('elegida_a_mano', { HC: 4, PROT: 3, GRASA: 2 }), comida('b', { HC: 3, PROT: 2, GRASA: 1 })],
+    } as unknown as MenuDay;
+
+    const r = reajustarDia({ dia, diet: DIETA, slots: SLOTS, foods: [], mode: 'OMNIVORO' });
+    expect(r.meals.map(m => m.recipeId)).toEqual(['r_elegida_a_mano', 'r_b']);
+  });
+
+  it('el objetivo del día sale de la dieta, no de lo que trajera el día', () => {
+    const dia = {
+      day: 'mon', dietId: 'd1', target: { HC: 99, PROT: 99, GRASA: 99 },
+      meals: [comida('a', { HC: 3, PROT: 2, GRASA: 1 })],
+    } as unknown as MenuDay;
+    const r = reajustarDia({ dia, diet: DIETA, slots: SLOTS, foods: [], mode: 'OMNIVORO' });
+    expect(r.target).toEqual({ HC: 10, PROT: 7, GRASA: 4 });
   });
 });
