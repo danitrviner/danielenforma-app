@@ -458,6 +458,13 @@ export default function RevisionCoachDevHarness() {
   const anatomia = new URLSearchParams(window.location.search).has('anatomia');
   // `?pantalla=implantacion` monta la otra pestaña con el mismo fixture.
   const pantalla = new URLSearchParams(window.location.search).get('pantalla');
+  // `?renovar=1` adelanta el bloque para que termine dentro de tres días: es la
+  // única forma de ver el modo renovación de Implantación sin esperar tres
+  // semanas o falsear el reloj del sistema.
+  const renovar = new URLSearchParams(window.location.search).has('renovar');
+  const mesoDeLaPantalla: Mesocycle = renovar
+    ? { ...MESO_ACTUAL, startDate: haceDias(MESO_ACTUAL.weeks * 7 - 4) }
+    : MESO_ACTUAL;
 
   const client = useMemo(() => {
     const qc = new QueryClient({
@@ -530,7 +537,7 @@ export default function RevisionCoachDevHarness() {
               athlete={PERFIL}
               checkins={CHECKINS}
               onboarding={ALTA as never}
-              mesocycles={[MESO_ANTERIOR, MESO_ACTUAL]}
+              mesocycles={[MESO_ANTERIOR, mesoDeLaPantalla]}
               workoutAssignments={[]}
               diets={DIETAS}
               dietConfig={null}

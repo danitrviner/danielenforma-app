@@ -11,7 +11,10 @@ import {
   updateUserProfile, getWorkouts,
 } from '../../dbService';
 import { computeSetupChecklist } from '../../utils/clientSetup';
-import { revisarCalidadDelPlan, defectosQueBloquean } from '../../utils/calidadDelPlan';
+import { revisarCalidadDelPlan, defectosQueBloquean, mesoEnCurso } from '../../utils/calidadDelPlan';
+import { tareaPorId } from '../../ai/tareas';
+import { OPEN_AI_PANEL_EVENT, OpenAiPanelDetail } from '../../ai/events';
+import { diasEntreFechas, addDays } from '../../utils/trainingWeek';
 import { construirRecorrido, PasoConEstado } from '../../utils/implantacion';
 import { clasificarAviso } from '../../utils/avisosDelCoach';
 import { idDePaso } from '../../utils/recorridoDelPlan';
@@ -50,6 +53,9 @@ import { Card, Skeleton, RingSeal, Button, Banner, ListRow, Icon, Input } from '
    Lo que sí se queda son las TAREAS SUELTAS con fecha, abajo: es la única
    forma de dejarse un recordatorio propio sobre un cliente.
    ═══════════════════════════════════════════════════════════════════════════ */
+
+/** Con el bloque a una semana de acabarse, la pantalla cambia a modo renovación. */
+const DIAS_PARA_AVISAR_RENOVACION = 7;
 
 interface Props {
   athlete: UserProfile;
@@ -110,6 +116,27 @@ export default function ClientImplantacionPanel({
     qAssignments, photoAssignments, roadmap, today: hoy,
   }), [athlete, mesocycles, workouts, diets, dietConfig, qAssignments, photoAssignments, roadmap, hoy]);
   const bloqueantes = useMemo(() => defectosQueBloquean(defectos), [defectos]);
+
+  // ── ¿Montar o renovar? ─────────────────────────────────────────────────────
+  // Un cliente sin ningún bloque se monta desde cero; uno cuyo bloque se acaba
+  // esta semana se RENUEVA, que no es lo mismo: la propuesta tiene que partir
+  // de lo que pasó, no del alta. La pantalla no puede ofrecer lo mismo en los
+  // dos casos y esperar que el coach se acuerde de cuál le toca.
+  const enCurso = useMemo(() => mesoEnCurso(mesocycles, hoy), [mesocycles, hoy]);
+  const diasParaCerrar = enCurso
+    ? diasEntreFechas(hoy, addDays(enCurso.startDate, enCurso.weeks * 7 - 1))
+    : null;
+  const tocaRenovar = diasParaCerrar !== null && diasParaCerrar <= DIAS_PARA_AVISAR_RENOVACION;
+  const esClienteNuevo = mesocycles.length === 0;
+
+  const lanzarTarea = (id: 'mes_nuevo' | 'renovar_mes') => {
+    const tarea = tareaPorId(id);
+    if (!tarea) return;
+    const nombre = athlete.displayName?.trim() || athlete.email;
+    window.dispatchEvent(new CustomEvent<OpenAiPanelDetail>(OPEN_AI_PANEL_EVENT, {
+      detail: { prompt: tarea.prompt(nombre, athlete.email), enviar: true },
+    }));
+  };
 
   const [activo, setActivo] = useState<string | null>(null);
   const [tituloExtra, setTituloExtra] = useState('');
@@ -285,12 +312,50 @@ export default function ClientImplantacionPanel({
             </span>
           )}
         </div>
-        {recorrido.siguiente && (
-          <Button onClick={() => setActivo(recorrido.siguiente!.paso.numero)}>
-            Ir al siguiente
+        <div className="flex flex-wrap items-center gap-2">
+          {recorrido.siguiente && (
+            <Button onClick={() => setActivo(recorrido.siguiente!.paso.numero)}>
+              Ir al siguiente
+            </Button>
+          )}
+          {/* El mes entero de una vez. El paso a paso sigue estando en cada
+              paso; esto es para cuando se monta de una sentada. */}
+          <Button variant="secondary" onClick={() => lanzarTarea(esClienteNuevo ? 'mes_nuevo' : 'renovar_mes')}>
+            <Icon name="auto_awesome" size="s" />
+            {esClienteNuevo ? 'Montar el mes con el asistente' : 'Montar el mes siguiente'}
           </Button>
-        )}
+        </div>
       </Card>
+
+      {/* ── Se acaba el bloque ────────────────────────────────────────────── */}
+      {tocaRenovar && enCurso && (
+        <Card
+          title={diasParaCerrar === 0
+            ? 'El bloque termina hoy'
+            : diasParaCerrar === 1
+              ? 'El bloque termina mañana'
+              : `El bloque termina en ${diasParaCerrar} días`}
+          className="space-y-3"
+        >
+          <p className="font-sans text-label text-ink-2 leading-relaxed">
+            «{enCurso.name}» llega a su última semana. Renovar no es montar otra vez desde cero:
+            lo que decidas ahora sale de lo que ha pasado estas semanas, no del alta.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="primary" onClick={() => onGoToTab('revision')}>
+              <Icon name="query_stats" size="s" />
+              Ver cómo ha ido
+            </Button>
+            <Button variant="secondary" onClick={() => lanzarTarea('renovar_mes')}>
+              <Icon name="auto_awesome" size="s" />
+              Preparar el mes siguiente
+            </Button>
+            <Button variant="ghost" onClick={() => onAbrirEditor('entrenamientos')}>
+              Crear el bloque nuevo
+            </Button>
+          </div>
+        </Card>
+      )}
 
       {/* ── Antes de publicar ────────────────────────────────────────────── */}
       {defectos.length > 0 && (
