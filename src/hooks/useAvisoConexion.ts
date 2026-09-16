@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
+import { useSyncExternalStore } from 'react';
 import {
-  isLocalBypassActive, hayFalloDePermisos,
   escriturasPendientes, suscribirEscriturasPendientes,
+  estadoDeConexion, suscribirEstadoDeConexion,
 } from '../dbService';
 import { decidirAviso, Aviso } from '../utils/avisoConexion';
 
@@ -11,25 +11,19 @@ import { decidirAviso, Aviso } from '../utils/avisoConexion';
    Island: LocalModeBanner ya lo reserva en su propio `pt` cuando se pinta, así
    que la cabecera solo debe reservarlo cuando el aviso NO está. Sacar esto a
    un hook compartido evita que las dos vistas puedan desincronizarse (una
-   pensando que hay aviso y la otra que no) y evita duplicar el `setInterval`
-   de sondeo si algún día hace falta un tercer consumidor.
+   pensando que hay aviso y la otra que no).
 
-   `refrescar` es para cuando una acción del propio banner (p. ej. "Descartar")
-   cambia la bandera de verdad y no se quiere esperar hasta 3 s al siguiente
-   sondeo para que desaparezca. */
-export function useAvisoConexion(): { aviso: Aviso; pendientes: number; refrescar: () => void } {
-  const [estado, setEstado] = useState<'ok' | 'red' | 'permisos'>(
-    () => (isLocalBypassActive() ? 'red' : hayFalloDePermisos() ? 'permisos' : 'ok')
-  );
+   Ya no hay sondeo. `dbService` avisa cuando el estado cambia de verdad, así
+   que las tres señales llegan por `useSyncExternalStore`: el aviso aparece y
+   desaparece en el instante en que cambia la causa, no hasta 3 s después, y
+   las dos vistas no pueden discrepar porque leen la misma instantánea en el
+   mismo render.
 
-  const refrescar = useCallback(() => {
-    setEstado(isLocalBypassActive() ? 'red' : hayFalloDePermisos() ? 'permisos' : 'ok');
-  }, []);
-
-  useEffect(() => {
-    const id = setInterval(refrescar, 3000);
-    return () => clearInterval(id);
-  }, [refrescar]);
+   Ya no devuelve `refrescar`: existía solo para que el banner no esperase al
+   siguiente sondeo tras "Descartar", y ahora `descartarAvisoDePermisos`
+   notifica ella sola. */
+export function useAvisoConexion(): { aviso: Aviso; pendientes: number } {
+  const estado = useSyncExternalStore(suscribirEstadoDeConexion, estadoDeConexion, () => 'ok' as const);
 
   const pendientes = useSyncExternalStore(suscribirEscriturasPendientes, escriturasPendientes, () => 0);
 
@@ -39,17 +33,20 @@ export function useAvisoConexion(): { aviso: Aviso; pendientes: number; refresca
   // parte), y precisamente por eso no se usa solo: el aviso también se enciende
   // con escrituras encoladas, que es la señal que sí viene de haber intentado
   // hablar con el servidor de verdad.
-  const [sinRed, setSinRed] = useState(() => typeof navigator !== 'undefined' && navigator.onLine === false);
-  useEffect(() => {
-    const desconectado = () => setSinRed(true);
-    const conectado = () => setSinRed(false);
-    window.addEventListener('offline', desconectado);
-    window.addEventListener('online', conectado);
-    return () => {
-      window.removeEventListener('offline', desconectado);
-      window.removeEventListener('online', conectado);
-    };
-  }, []);
+  const sinRed = useSyncExternalStore(suscribirRed, estaSinRed, () => false);
 
-  return { aviso: decidirAviso({ estado, pendientes, sinRed }), pendientes, refrescar };
+  return { aviso: decidirAviso({ estado, pendientes, sinRed }), pendientes };
+}
+
+function suscribirRed(oyente: () => void): () => void {
+  window.addEventListener('offline', oyente);
+  window.addEventListener('online', oyente);
+  return () => {
+    window.removeEventListener('offline', oyente);
+    window.removeEventListener('online', oyente);
+  };
+}
+
+function estaSinRed(): boolean {
+  return typeof navigator !== 'undefined' && navigator.onLine === false;
 }

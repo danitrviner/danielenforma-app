@@ -214,10 +214,40 @@ export function esFalloDeDatos(err: unknown): boolean {
  * falla sigue cayendo a su copia local (eso lo hace cada `catch` por su cuenta,
  * y está bien); lo que ya no hace es envenenar el resto de la sesión.
  */
+/* El estado de conexión se lee desde React con `useSyncExternalStore`, así que
+   necesita avisar cuando cambia. Antes no avisaba nadie y `useAvisoConexion`
+   lo sondeaba con un `setInterval` de 3 s por cada consumidor: el aviso podía
+   tardar hasta tres segundos en aparecer o en irse, y las dos vistas que lo
+   miran —la cabecera y el banner— podían discrepar durante ese rato, que es
+   justo lo que el hook compartido quería evitar. Todo cambio de
+   `forceLocalOnly` / `ultimoErrorFirestore` pasa por las dos funciones de
+   abajo, así que aquí se cubre entero. */
+const oyentesConexion = new Set<() => void>();
+
+/** Suscripción para React (`useSyncExternalStore`). Devuelve la baja. */
+export function suscribirEstadoDeConexion(oyente: () => void): () => void {
+  oyentesConexion.add(oyente);
+  return () => { oyentesConexion.delete(oyente); };
+}
+
+/** Instantánea estable: devolver el MISMO string mientras nada cambie es lo
+ *  que evita que `useSyncExternalStore` entre en bucle de renders. */
+export function estadoDeConexion(): 'ok' | 'red' | 'permisos' {
+  if (forceLocalOnly) return 'red';
+  return esFalloDePermisos(ultimoErrorFirestore) ? 'permisos' : 'ok';
+}
+
+function notificarConexion(anterior: 'ok' | 'red' | 'permisos'): void {
+  if (estadoDeConexion() === anterior) return;
+  for (const f of oyentesConexion) f();
+}
+
 export function setLocalBypassMode(enabled: boolean, err?: unknown) {
+  const antes = estadoDeConexion();
   if (!enabled) {
     forceLocalOnly = false;
     ultimoErrorFirestore = null;
+    notificarConexion(antes);
     return;
   }
   ultimoErrorFirestore = err ?? ultimoErrorFirestore;
@@ -238,8 +268,9 @@ export function setLocalBypassMode(enabled: boolean, err?: unknown) {
     conSesion: Boolean(auth.currentUser),
   });
 
-  if (err !== undefined && (fallo || dato)) return;
+  if (err !== undefined && (fallo || dato)) { notificarConexion(antes); return; }
   forceLocalOnly = true;
+  notificarConexion(antes);
 }
 
 export function isLocalBypassActive(): boolean {
@@ -271,5 +302,7 @@ export function hayFalloDePermisos(): boolean {
  * falle vuelve a ponerlo y el aviso reaparece — que es justo lo que debe pasar.
  */
 export function descartarAvisoDePermisos(): void {
+  const antes = estadoDeConexion();
   if (esFalloDePermisos(ultimoErrorFirestore)) ultimoErrorFirestore = null;
+  notificarConexion(antes);
 }

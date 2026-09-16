@@ -31,7 +31,7 @@ import { Icon } from './ui';
 // la última escritura sincroniza.
 export default function LocalModeBanner() {
   // La prioridad y los textos viven en utils/avisoConexion.ts, con pruebas.
-  const { aviso, pendientes, refrescar } = useAvisoConexion();
+  const { aviso, pendientes } = useAvisoConexion();
   if (aviso === 'ok') return null;
 
   const retry = () => {
@@ -47,7 +47,6 @@ export default function LocalModeBanner() {
   // sigue vivo, la siguiente operación denegada lo devuelve a los 3 s.
   const descartar = () => {
     descartarAvisoDePermisos();
-    refrescar();
   };
 
   return (
