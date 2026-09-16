@@ -6,7 +6,7 @@ import type {
   UserProfile, OnboardingData, WeightCheckIn, Mesocycle, WorkoutAssignment,
   Diet, AthleteDietConfig, AthleteNutritionConfig, QuestionnaireAssignment,
   PhotoAssignment, ProgressPhoto, WorkoutLog, Roadmap, NutritionProgram,
-  WeeklyChallenge, CoachClientTask,
+  WeeklyChallenge, CoachClientTask, Workout, CardioAssignment, AthleteDossier,
 } from '../types';
 import type { HubTab } from '../components/ClientHub';
 import { getWeekStart, addDays } from './trainingWeek';
@@ -74,6 +74,19 @@ export interface SetupInputs {
   nutritionProgram: NutritionProgram | null;
   weeklyChallenge: WeeklyChallenge | null;
   manualTasks: CoachClientTask[];
+  /**
+   * Las cuatro entradas de abajo son OPCIONALES a propósito.
+   *
+   * Cierran cuatro pasos del recorrido que hasta ahora no se comprobaban con
+   * nada —las sesiones del bloque, el cardio, los días señalados y la ficha
+   * viva— y el coach tenía que marcarlos a mano aunque el dato estuviese en
+   * Firestore. Pero la checklist la calculan tres pantallas distintas y no
+   * todas cargan estas colecciones: donde no llegan, el paso se queda como
+   * estaba (manual) en vez de salir en rojo por un dato que nadie pidió.
+   */
+  workouts?: Workout[];
+  cardioAssignments?: CardioAssignment[];
+  dossier?: AthleteDossier | null;
   today: string; // YYYY-MM-DD, injectable for tests
 }
 
@@ -83,6 +96,7 @@ const CUERPO: SetupItemLink = { tab: 'cuerpo' };
 const ENTRENAMIENTOS: SetupItemLink = { tab: 'entrenamientos' };
 const DIETAS: SetupItemLink = { tab: 'dietas' };
 const ROADMAP: SetupItemLink = { tab: 'roadmap' };
+const CARDIO: SetupItemLink = { tab: 'cardio' };
 
 export const SEEDED_ITEMS: SetupItemDef[] = [
   // ── Alta (semana 0) ──
@@ -104,6 +118,10 @@ export const SEEDED_ITEMS: SetupItemDef[] = [
   { id: 'prog_periodizacion', phase: 'programacion', title: 'Periodización nutricional configurada', link: DIETAS },
   { id: 'prog_escalera', phase: 'programacion', title: 'Escalera de niveles configurada', link: ROADMAP },
   { id: 'prog_retos_config', phase: 'programacion', title: 'Ejercicios elegibles para retos configurados', link: ROADMAP },
+  { id: 'prog_sesiones', phase: 'programacion', title: 'Sesiones del bloque con ejercicios', link: ENTRENAMIENTOS },
+  { id: 'prog_cardio', phase: 'programacion', title: 'Cardio asignado', link: CARDIO },
+  { id: 'prog_dias_senalados', phase: 'programacion', title: 'Días señalados del mes', link: ROADMAP },
+  { id: 'prog_ficha_viva', phase: 'programacion', title: 'Ficha viva rellenada', link: FICHA },
 
   // ── Primeras semanas (días 0-28) ──
   { id: 'w1_contacto_diario', phase: 'primeras_semanas', title: 'Contacto diario semana 1', manual: true },
@@ -149,6 +167,7 @@ export function computeSetupChecklist(inputs: SetupInputs): SetupResult {
     profile, onboarding, checkins, mesocycles, workoutAssignments, diets, dietConfig,
     nutritionConfig, qAssignments, photoAssignments, photos, workoutLogs, roadmap,
     nutritionProgram, weeklyChallenge, manualTasks, today,
+    workouts, cardioAssignments, dossier,
   } = inputs;
 
   const hasDatedPlan = !!profile.planStartDate && !!profile.planDurationMonths;
@@ -191,6 +210,53 @@ export function computeSetupChecklist(inputs: SetupInputs): SetupResult {
   }
   set('prog_escalera', roadmap?.levelLadder ? 'done' : 'pending', roadmap?.levelLadder ? undefined : 'usa la default');
   set('prog_retos_config', (roadmap?.challengeConfig?.liftExerciseIds?.length ?? 0) > 0 ? 'done' : 'pending');
+
+  // ── Los cuatro que antes se marcaban a mano ──────────────────────────────
+  // `undefined` (quien llama no cargó esa colección) ≠ lista vacía (la cargó y
+  // no hay nada). Lo primero sale como 'na' —no se sabe, y fingir que falta
+  // sería mentir—; lo segundo sí es un pendiente de verdad.
+  {
+    const meso = mesocycles.find(m => {
+      if (!m.startDate) return false;
+      return today >= m.startDate && today <= addDays(m.startDate, m.weeks * 7 - 1);
+    }) ?? null;
+    if (!workouts) set('prog_sesiones', 'na');
+    else if (!meso) set('prog_sesiones', mesocycles.length === 0 ? 'pending' : 'na');
+    else {
+      const suyas = workouts.filter(w => w.mesocycleId === meso.id);
+      const vacias = suyas.filter(w => (w.exercises?.length ?? 0) === 0).length;
+      if (suyas.length === 0) set('prog_sesiones', 'pending');
+      else if (vacias > 0) set('prog_sesiones', 'attention', `${vacias} sin ejercicios`);
+      else set('prog_sesiones', 'done', `${suyas.length} sesiones`);
+    }
+  }
+  if (!cardioAssignments) set('prog_cardio', 'na');
+  else set('prog_cardio', cardioAssignments.some(a => a.active) ? 'done' : 'pending');
+  {
+    // Un día señalado cuenta si cae DENTRO del bloque en curso: uno de hace tres
+    // meses no le dice nada al atleta de este mes.
+    const meso = mesocycles.find(m => {
+      if (!m.startDate) return false;
+      return today >= m.startDate && today <= addDays(m.startDate, m.weeks * 7 - 1);
+    }) ?? null;
+    if (!meso) set('prog_dias_senalados', 'na');
+    else {
+      const fin = addDays(meso.startDate, meso.weeks * 7 - 1);
+      const dentro = (roadmap?.highlightedDays ?? []).filter(d => d >= meso.startDate && d <= fin);
+      set('prog_dias_senalados', dentro.length > 0 ? 'done' : 'pending',
+        dentro.length > 0 ? `${dentro.length} en el bloque` : undefined);
+    }
+  }
+  if (dossier === undefined) set('prog_ficha_viva', 'na');
+  else {
+    // Los dos campos que de verdad se usan después: los objetivos con SUS
+    // palabras y qué esperamos ver. Los otros tres son opcionales.
+    const objetivos = (dossier?.objetivos ?? '').trim().length > 0;
+    const esperado = (dossier?.esperado ?? '').trim().length > 0;
+    if (objetivos && esperado) set('prog_ficha_viva', 'done');
+    else if (objetivos || esperado) set('prog_ficha_viva', 'attention', 'a medias');
+    else set('prog_ficha_viva', 'pending');
+  }
 
   // ── Primeras semanas (na sin plan fechado) ──
   const primerasNa = !hasDatedPlan;

@@ -130,6 +130,7 @@ export const PASOS_DEL_RECORRIDO: PasoDelRecorrido[] = [
     titulo: 'Sesiones',
     bloque: 'entrenamiento',
     tab: 'entrenamientos',
+    comprueba: ['prog_sesiones'],
     queDecidir:
       'Qué ejercicios de los que YA programas le pones a cada día, y con qué series, reps y RIR. Si un grupo no tiene nada usable con su material, ahí sí se busca fuera.',
     instruccionIA:
@@ -228,6 +229,7 @@ export const PASOS_DEL_RECORRIDO: PasoDelRecorrido[] = [
     titulo: 'Cardio',
     bloque: 'configuracion',
     tab: 'cardio',
+    comprueba: ['prog_cardio'],
     queDecidir:
       'Si le toca cardio y de qué tipo — Zona 2 para base, VO₂máx si ya la tiene.',
     instruccionIA:
@@ -260,6 +262,7 @@ export const PASOS_DEL_RECORRIDO: PasoDelRecorrido[] = [
     titulo: 'Días señalados',
     bloque: 'roadmap',
     tab: 'roadmap',
+    comprueba: ['prog_dias_senalados'],
     queDecidir:
       'Si el mes lleva algún día señalado: toma de marcas, AMRAP, recarga. Uno o dos, no diez.',
     instruccionIA:
@@ -281,6 +284,7 @@ export const PASOS_DEL_RECORRIDO: PasoDelRecorrido[] = [
     titulo: 'Ficha viva',
     bloque: 'cierre',
     tab: 'ficha',
+    comprueba: ['prog_ficha_viva'],
     queDecidir:
       'Sus objetivos con sus palabras, dónde está hoy, qué esperas ver en estas semanas y qué vas a mirar en la próxima revisión.',
     instruccionIA:

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { computeSetupChecklist, estimateSetupPct, SetupInputs } from './clientSetup';
-import { UserProfile, WeightCheckIn, WorkoutAssignment, CoachClientTask, WeeklyChallenge } from '../types';
+import { UserProfile, WeightCheckIn, WorkoutAssignment, CoachClientTask, WeeklyChallenge, Mesocycle, Workout, Roadmap } from '../types';
 import { addDays } from './trainingWeek';
 
 // 2026-07-06 es lunes (ver weeklyChallenge.test.ts) — útil para probar isCoachGraceDay.
@@ -168,5 +168,81 @@ describe('estimateSetupPct', () => {
     const profile = makeProfile({ planStartDate: TODAY, planDurationMonths: 6, initialWeight: 70, targetWeight: 65 });
     const assignments: WorkoutAssignment[] = [{ id: 'wa1', workoutId: 'w1', athleteId: 'a@x.com', date: TODAY, status: 'pending' }];
     expect(estimateSetupPct(profile, [checkin()], assignments)).toBe(100);
+  });
+});
+
+// ── Los cuatro pasos que antes se marcaban a mano ───────────────────────────
+
+describe('computeSetupChecklist · sesiones, cardio, días señalados y ficha viva', () => {
+  const HOY_T = '2026-09-16';
+  const MESO_T = {
+    id: 'm1', athleteId: 'a@x.com', number: 1, name: 'B1', weeks: 5,
+    startDate: '2026-09-07', objective: '', daysPerWeek: 4,
+  } as unknown as Mesocycle;
+
+  function conMeso(extra: Partial<SetupInputs> = {}): SetupInputs {
+    return { ...makeInputs(), mesocycles: [MESO_T], today: HOY_T, ...extra };
+  }
+  const item = (r: ReturnType<typeof computeSetupChecklist>, id: string) =>
+    r.phases.flatMap(p => p.items).find(i => i.id === id)!;
+
+  it('sin la colección cargada el paso no se inventa: sale «todavía no aplica»', () => {
+    const r = computeSetupChecklist(conMeso());
+    expect(item(r, 'prog_sesiones').status).toBe('na');
+    expect(item(r, 'prog_cardio').status).toBe('na');
+    expect(item(r, 'prog_ficha_viva').status).toBe('na');
+  });
+
+  it('cargada y vacía sí es un pendiente de verdad', () => {
+    const r = computeSetupChecklist(conMeso({
+      workouts: [], cardioAssignments: [], dossier: null,
+    }));
+    expect(item(r, 'prog_sesiones').status).toBe('pending');
+    expect(item(r, 'prog_cardio').status).toBe('pending');
+    expect(item(r, 'prog_ficha_viva').status).toBe('pending');
+  });
+
+  it('una sesión del bloque sin ejercicios pide revisión, no se da por hecha', () => {
+    const rutina = (id: string, n: number) =>
+      ({ id, ownerId: 'c', name: id, mesocycleId: 'm1', exercises: Array(n).fill({}) } as unknown as Workout);
+    const ok = computeSetupChecklist(conMeso({ workouts: [rutina('w1', 4), rutina('w2', 5)] }));
+    expect(item(ok, 'prog_sesiones').status).toBe('done');
+    expect(item(ok, 'prog_sesiones').detail).toBe('2 sesiones');
+
+    const mal = computeSetupChecklist(conMeso({ workouts: [rutina('w1', 4), rutina('w2', 0)] }));
+    expect(item(mal, 'prog_sesiones').status).toBe('attention');
+    expect(item(mal, 'prog_sesiones').detail).toBe('1 sin ejercicios');
+  });
+
+  it('un día señalado fuera del bloque no cuenta como día del bloque', () => {
+    const dentro = computeSetupChecklist(conMeso({
+      roadmap: { athleteId: 'a@x.com', items: [], highlightedDays: ['2026-09-20'] } as Roadmap,
+    }));
+    expect(item(dentro, 'prog_dias_senalados').status).toBe('done');
+
+    const fuera = computeSetupChecklist(conMeso({
+      roadmap: { athleteId: 'a@x.com', items: [], highlightedDays: ['2026-05-01'] } as Roadmap,
+    }));
+    expect(item(fuera, 'prog_dias_senalados').status).toBe('pending');
+  });
+
+  it('la ficha viva a medias no se da por hecha', () => {
+    const media = computeSetupChecklist(conMeso({
+      dossier: { objetivos: 'Bajar grasa', esperado: '' } as never,
+    }));
+    expect(item(media, 'prog_ficha_viva').status).toBe('attention');
+    expect(item(media, 'prog_ficha_viva').detail).toBe('a medias');
+
+    const entera = computeSetupChecklist(conMeso({
+      dossier: { objetivos: 'Bajar grasa', esperado: '-3 kg en 8 semanas' } as never,
+    }));
+    expect(item(entera, 'prog_ficha_viva').status).toBe('done');
+  });
+
+  it('un cardio asignado pero inactivo no cuenta', () => {
+    const r = computeSetupChecklist(conMeso({
+      cardioAssignments: [{ id: 'c1', active: false } as never],
+    }));
+    expect(item(r, 'prog_cardio').status).toBe('pending');
   });
 });

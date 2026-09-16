@@ -8,8 +8,9 @@ import {
 import {
   getRoadmap, getNutritionProgram, getWeeklyChallenge, getCoachClientTasks,
   setSeededTaskDone, createCoachClientTask, updateCoachClientTask, deleteCoachClientTask,
-  updateUserProfile, getWorkouts,
+  updateUserProfile, getWorkouts, getCardioAssignmentsForAthlete,
 } from '../../dbService';
+import { getDossier } from '../../db/dossier';
 import { computeSetupChecklist } from '../../utils/clientSetup';
 import { revisarCalidadDelPlan, defectosQueBloquean, mesoEnCurso } from '../../utils/calidadDelPlan';
 import { tareaPorId } from '../../ai/tareas';
@@ -105,6 +106,17 @@ export default function ClientImplantacionPanel({
   const { data: workouts = [] } = useQuery({
     queryKey: ['workouts'], queryFn: getWorkouts,
   });
+  // Estas dos cierran dos pasos que hasta ahora había que marcar a mano
+  // aunque el dato estuviera en Firestore. Tampoco entran en `cargando`:
+  // mientras no llegan, esos pasos salen como «todavía no se sabe» en vez de
+  // como pendientes, que sería mentir.
+  const { data: cardioAssignments } = useQuery({
+    queryKey: ['cardioAssignments', athlete.email],
+    queryFn: () => getCardioAssignmentsForAthlete(athlete.email),
+  });
+  const { data: dossier } = useQuery({
+    queryKey: ['dossier', athlete.email], queryFn: () => getDossier(athlete.email),
+  });
   const cargando = cargandoRoadmap || cargandoPrograma || cargandoReto || cargandoTareas;
 
   // ── Antes de publicar ──────────────────────────────────────────────────────
@@ -146,9 +158,11 @@ export default function ClientImplantacionPanel({
     profile: athlete, onboarding, checkins, mesocycles, workoutAssignments,
     diets, dietConfig, nutritionConfig, qAssignments, photoAssignments, photos,
     workoutLogs, roadmap, nutritionProgram, weeklyChallenge, manualTasks, today: hoy,
+    workouts, cardioAssignments, dossier,
   }), [athlete, onboarding, checkins, mesocycles, workoutAssignments, diets, dietConfig,
     nutritionConfig, qAssignments, photoAssignments, photos, workoutLogs, roadmap,
-    nutritionProgram, weeklyChallenge, manualTasks, hoy]);
+    nutritionProgram, weeklyChallenge, manualTasks, hoy,
+    workouts, cardioAssignments, dossier]);
 
   const recorrido = useMemo(
     () => construirRecorrido(resultado, manualTasks),
