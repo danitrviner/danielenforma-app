@@ -287,6 +287,20 @@
       ]
     },
     {
+      "collectionGroup": "hrvReadings",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "athleteId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "date",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
       "collectionGroup": "coachDayNotes",
       "queryScope": "COLLECTION",
       "fields": [

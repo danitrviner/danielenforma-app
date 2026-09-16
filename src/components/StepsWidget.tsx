@@ -85,7 +85,13 @@ export default function StepsWidget({ athleteEmail, compacto = false }: Props) {
       // La lista completa la comparten otras pantallas. Si ya está en caché se
       // parchea para que no enseñen un dato viejo; si no lo está, no se crea
       // —inventar una lista de un elemento sería peor que no tener ninguna—.
-      queryClient.setQueryData<StepLog[]>(stepsKey, prev => {
+      //
+      // `setQueriesData` y no `setQueryData`: desde que las pantallas del
+      // atleta piden los pasos CON VENTANA, la clave lleva un tercer elemento
+      // con la fecha de inicio. Un `setQueryData` con la clave corta no habría
+      // encontrado ninguna de ellas y el calendario habría seguido enseñando
+      // los pasos de antes de guardar, sin error que lo delatara.
+      queryClient.setQueriesData<StepLog[]>({ queryKey: stepsKey }, prev => {
         if (!prev) return prev;
         const idx = prev.findIndex(l => l.id === result.id);
         if (idx >= 0) {

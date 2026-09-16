@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { UserProfile, CardioSessionType } from '../types';
-import { getCardioProfile, getCardioSessionsForAthlete, getCardioAssignmentsForAthlete, getHrvReadingsForAthlete, getCardioWeeklyGoal, getStepsForAthlete, getAthleteNutritionConfig } from '../dbService';
+import { getCardioProfile, getCardioSessionsSince, getCardioAssignmentsForAthlete, getHrvReadingsForAthlete, getCardioWeeklyGoal, getStepsForDate, getAthleteNutritionConfig } from '../dbService';
+import { ventanaCardio, ventanaHrv } from '../utils/ventanaHistorial';
 import { getZoneForBpm, ZONE_LABEL, ZONE_COLOR, ZONE_ORDER } from '../utils/cardioZones';
 import {
   summarizeSamples, pickActiveZona2Assignment, pickActiveIntervalAssignment,
@@ -54,17 +55,24 @@ export default function CardioScreen({ profile }: Props) {
     queryKey: ['cardioProfile', profile.email],
     queryFn: () => getCardioProfile(profile.email),
   });
+  /* Estas dos consultas traían el historial ENTERO desde el alta, y las mira
+     el atleta cada vez que abre Cardio. Con dos años de banda son cientos de
+     documentos por apertura, creciendo para siempre. La ventana va en la CLAVE
+     de caché, no solo en la consulta: si no, la misma clave serviría a veces
+     el historial completo y a veces un trozo, según quién llegara primero. */
+  const desdeCardio = ventanaCardio();
+  const desdeHrv = ventanaHrv();
   const { data: sessions = [], isPending: loadingSessions } = useQuery({
-    queryKey: ['cardioSessions', profile.email],
-    queryFn: () => getCardioSessionsForAthlete(profile.email),
+    queryKey: ['cardioSessions', profile.email, desdeCardio],
+    queryFn: () => getCardioSessionsSince(profile.email, desdeCardio),
   });
   const { data: assignments = [] } = useQuery({
     queryKey: ['cardioAssignments', profile.email],
     queryFn: () => getCardioAssignmentsForAthlete(profile.email),
   });
   const { data: hrvReadings = [] } = useQuery({
-    queryKey: ['hrvReadings', profile.email],
-    queryFn: () => getHrvReadingsForAthlete(profile.email),
+    queryKey: ['hrvReadings', profile.email, desdeHrv],
+    queryFn: () => getHrvReadingsForAthlete(profile.email, desdeHrv),
   });
 
   const todayIso = hoyIsoLocal();
@@ -73,9 +81,12 @@ export default function CardioScreen({ profile }: Props) {
     queryKey: ['cardioWeeklyGoal', profile.email, currentIsoWeek],
     queryFn: () => getCardioWeeklyGoal(profile.email, currentIsoWeek),
   });
-  const { data: todaysSteps = [] } = useQuery({
-    queryKey: ['stepsForAthlete', profile.email],
-    queryFn: () => getStepsForAthlete(profile.email),
+  /* Esta pantalla solo enseña los pasos de HOY, y los estaba consiguiendo
+     descargando el historial entero y buscando dentro: a los dos años, 728
+     documentos para quedarse con uno. `getStepsForDate` lee ese uno. */
+  const { data: todaysStepsEntry = null } = useQuery({
+    queryKey: ['stepsForDate', profile.email, todayIso],
+    queryFn: () => getStepsForDate(profile.email, todayIso),
   });
   const { data: nutritionConfig } = useQuery({
     queryKey: ['athleteNutritionConfig', profile.email],
@@ -131,7 +142,7 @@ export default function CardioScreen({ profile }: Props) {
         zones={cardioProfile?.zones}
         onClose={() => setSelectedSessionId(null)}
         onSaved={(updated) => {
-          queryClient.setQueryData(['cardioSessions', profile.email], (prev: any[] = []) => prev.map(s => s.id === updated.id ? updated : s));
+          queryClient.setQueryData(['cardioSessions', profile.email, desdeCardio], (prev: any[] = []) => prev.map(s => s.id === updated.id ? updated : s));
           setSelectedSessionId(null);
         }}
       />
@@ -145,7 +156,7 @@ export default function CardioScreen({ profile }: Props) {
         pastReadings={hrvReadings}
         onClose={() => setShowHrvTest(false)}
         onSaved={(reading) => {
-          queryClient.setQueryData(['hrvReadings', profile.email], (prev: any[] = []) => [...prev, reading]);
+          queryClient.setQueryData(['hrvReadings', profile.email, desdeHrv], (prev: any[] = []) => [...prev, reading]);
           setShowHrvTest(false);
         }}
       />
@@ -235,7 +246,6 @@ export default function CardioScreen({ profile }: Props) {
         const minutesGoal = weeklyGoal?.minutesGoal ?? goalDefaults.minutesGoal;
         const sessionsGoal = weeklyGoal?.sessionsGoal ?? goalDefaults.sessionsGoal;
         const sessionsDone = sessions.filter(s => isoWeekKey(s.date) === currentIsoWeek).length;
-        const todaysStepsEntry = todaysSteps.find(s => s.date === todayIso);
         return (
           <CardioToday
             connState={state}
@@ -354,7 +364,7 @@ export default function CardioScreen({ profile }: Props) {
           athleteId={profile.email}
           onClose={() => setShowManualAdd(false)}
           onSaved={(session) => {
-            queryClient.setQueryData(['cardioSessions', profile.email], (prev: any[] = []) => [...prev, session]);
+            queryClient.setQueryData(['cardioSessions', profile.email, desdeCardio], (prev: any[] = []) => [...prev, session]);
             setShowManualAdd(false);
           }}
         />

@@ -13,6 +13,7 @@ import { ChallengeData, isoWeekKey } from '../utils/weeklyChallenge';
 import { buildChallengeMemory } from '../utils/challengeMemory';
 import { buildPhaseEnergyPlans, buildWeightProjection, ProjectionResult } from '../utils/nutritionPeriodization';
 import { DEFAULT_KCAL_PER_STEP } from '../utils/nutritionConstants';
+import { ventanaPasos } from '../utils/ventanaHistorial';
 
 const DEFAULT_STEP_GOAL = 8000;
 
@@ -80,9 +81,12 @@ export function useRetoDeLaSemana(athleteEmail: string, assignments: WorkoutAssi
     queryFn: () => getBodyweightForAthlete(athleteEmail),
     enabled: hazFalta,
   });
+  // La MISMA ventana que AthleteRoadmapScreen: comparten la clave, y con dos
+  // ventanas distintas serían dos lecturas en vez de una.
+  const desdePasos = ventanaPasos();
   const { data: stepLogs = [], isPending: cargandoPasos } = useQuery({
-    queryKey: ['stepsForAthlete', athleteEmail],
-    queryFn: () => getStepsForAthlete(athleteEmail),
+    queryKey: ['stepsForAthlete', athleteEmail, desdePasos],
+    queryFn: () => getStepsForAthlete(athleteEmail, desdePasos),
     enabled: hazFalta,
   });
   const { data: workoutLogs = [], isPending: cargandoLogs } = useQuery({

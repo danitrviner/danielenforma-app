@@ -33,6 +33,7 @@ import TarjetaIdentidadAtleta from './TarjetaIdentidadAtleta';
 const PHASE_COLORS = ['var(--color-accent)', 'var(--color-data)', 'var(--color-warning)', 'var(--color-chart-3)'];
 const DEFAULT_STEP_GOAL = 8000;
 import { COACH_EMAIL } from '../utils/coach';
+import { ventanaPasos } from '../utils/ventanaHistorial';
 
 interface Props {
   profile: UserProfile;
@@ -60,9 +61,14 @@ export default function AthleteRoadmapScreen({ profile }: Props) {
     queryKey: bodyweightForAthleteKey(profile.email),
     queryFn: () => getBodyweightForAthlete(profile.email),
   });
+  /* Los pasos son un documento por día desde el alta y esta pantalla los pedía
+     TODOS en cada apertura. La ventana va en la clave de caché para que las dos
+     pantallas que comparten estos datos —el calendario y el reto de la semana—
+     sigan compartiendo UNA sola lectura. */
+  const desdePasos = ventanaPasos();
   const { data: stepLogs = [], isPending: loadingSteps } = useQuery({
-    queryKey: ['stepsForAthlete', profile.email],
-    queryFn: () => getStepsForAthlete(profile.email),
+    queryKey: ['stepsForAthlete', profile.email, desdePasos],
+    queryFn: () => getStepsForAthlete(profile.email, desdePasos),
   });
   const { data: workoutLogs = [], isPending: loadingWorkoutLogs } = useQuery({
     queryKey: ['workoutLogs', profile.email],

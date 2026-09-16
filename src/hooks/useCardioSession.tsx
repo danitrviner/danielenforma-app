@@ -2,7 +2,8 @@ import React, { createContext, useContext, useEffect, useMemo, useRef, useState 
 import { useLocation } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { UserProfile, CardioZones, CardioSessionType, CardioIntervalBlock, CardioSession, CardioWeeklyGoal } from '../types';
-import { getCardioProfile, getCardioSessionsForAthlete, getCardioAssignmentsForAthlete, createCardioSession, getOnboarding, getCardioWeeklyGoal, saveCardioWeeklyGoal } from '../dbService';
+import { getCardioProfile, getCardioSessionsSince, getCardioAssignmentsForAthlete, createCardioSession, getOnboarding, getCardioWeeklyGoal, saveCardioWeeklyGoal } from '../dbService';
+import { ventanaCardio } from '../utils/ventanaHistorial';
 import { HeartRateMonitor, HeartRateStatus, isBleAvailable } from '../services/bleHeartRate';
 import { getZoneForBpm, getZoneAlertDirection, ZONE_LABEL, ZONE_COLOR, BELOW_ZONE_LABEL, BELOW_ZONE_COLOR } from '../utils/cardioZones';
 import { startCardioActivity, updateCardioActivity, stopCardioActivity } from '../services/cardioLiveActivity';
@@ -177,9 +178,13 @@ function CardioSessionProviderInner({ profile, children }: { profile: UserProfil
     queryFn: () => getCardioProfile(profile.email),
     enabled: cardioEnUso,
   });
+  // La MISMA clave y la MISMA ventana que CardioScreen, a propósito: dos
+  // ventanas distintas de la misma colección son dos entradas de caché y dos
+  // lecturas en vez de una compartida.
+  const desdeCardio = ventanaCardio();
   const { data: sessions = [] } = useQuery({
-    queryKey: ['cardioSessions', profile.email],
-    queryFn: () => getCardioSessionsForAthlete(profile.email),
+    queryKey: ['cardioSessions', profile.email, desdeCardio],
+    queryFn: () => getCardioSessionsSince(profile.email, desdeCardio),
     enabled: cardioEnUso,
   });
   const { data: assignments = [] } = useQuery({
@@ -829,7 +834,7 @@ function CardioSessionProviderInner({ profile, children }: { profile: UserProfil
       perceivedEffort: pe, effortMinutes: effortMinutes(pe, durationMin),
       hrr1Min: draft.hrr1Min, hrr2Min: draft.hrr2Min,
     });
-    queryClient.setQueryData(['cardioSessions', profile.email], (prev: any[] = []) => [...prev, session]);
+    queryClient.setQueryData(['cardioSessions', profile.email, desdeCardio], (prev: any[] = []) => [...prev, session]);
 
     // Semana de cardio (§F3.9, contrato "objetivosCardio"): los minutos
     // hechos siempre se derivan de las sesiones reales, nunca se guardan.

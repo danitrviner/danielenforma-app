@@ -359,18 +359,35 @@ function saveLocalHrvReadings(list: HrvReading[]): void {
   escribirLocal(HRV_LOCAL_KEY, JSON.stringify(list));
 }
 
-export async function getHrvReadingsForAthlete(athleteId: string): Promise<HrvReading[]> {
-  if (forceLocalOnly) return getLocalHrvReadings().filter(r => r.athleteId === athleteId);
+/**
+ * Lecturas de HRV del atleta. Con `desde`, solo las de esa fecha en adelante.
+ *
+ * La ventana aquí no es solo coste: la línea base (`hrvBaseline`) es la media y
+ * la desviación de las lecturas ANTERIORES, y calcularla sobre el historial
+ * entero hace que no se mueva nunca. Un atleta que mejora de verdad su
+ * variabilidad seguiría puntuando «en tu línea base», porque la línea base
+ * arrastra lecturas de hace dos años. Una línea base de HRV es rodante.
+ *
+ * Con ventana NO se toca el espejo local, mismo criterio que el resto: guardar
+ * un trozo encima del espejo completo lo convertiría en el trozo.
+ * Requiere el índice hrvReadings (athleteId ASC, date ASC).
+ */
+export async function getHrvReadingsForAthlete(athleteId: string, desde?: string): Promise<HrvReading[]> {
+  const enLocal = () => getLocalHrvReadings()
+    .filter(r => r.athleteId === athleteId && (!desde || r.date >= desde));
+  if (forceLocalOnly) return enLocal();
   try {
-    const snap = await getDocs(query(collection(db, 'hrvReadings'), where('athleteId', '==', athleteId)));
+    const base = query(collection(db, 'hrvReadings'), where('athleteId', '==', athleteId));
+    const snap = await getDocs(desde ? query(base, where('date', '>=', desde)) : base);
     const list = snap.docs.map(d => ({ id: d.id, ...d.data() } as HrvReading));
-    const merged = [...getLocalHrvReadings().filter(r => r.athleteId !== athleteId), ...list];
-    saveLocalHrvReadings(merged);
+    if (!desde) {
+      saveLocalHrvReadings([...getLocalHrvReadings().filter(r => r.athleteId !== athleteId), ...list]);
+    }
     return list;
   } catch (err) {
     console.warn('getHrvReadingsForAthlete Firestore failed, using local:', err);
     setLocalBypassMode(true, err);
-    return getLocalHrvReadings().filter(r => r.athleteId === athleteId);
+    return enLocal();
   }
 }
 
