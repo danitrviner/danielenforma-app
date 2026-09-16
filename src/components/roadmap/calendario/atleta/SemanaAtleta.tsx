@@ -110,10 +110,10 @@ export default function SemanaAtleta({
                 style={{
                   padding: '11px 13px 12px',
                   borderRadius: 16,
-                  background: sel === fecha ? 'rgba(255,199,44,0.09)' : (esFuturo ? 'transparent' : 'var(--color-cell)'),
+                  background: sel === fecha ? 'color-mix(in oklab, var(--color-accent) 9%, transparent)' : (esFuturo ? 'transparent' : 'var(--color-cell)'),
                   border: `1px ${esFuturo && !esHoy && sel !== fecha ? 'dashed' : 'solid'} ${
                     sel === fecha ? 'var(--color-accent)'
-                      : esHoy ? 'rgba(255,199,44,0.55)'
+                      : esHoy ? 'color-mix(in oklab, var(--color-accent) 55%, transparent)'
                         : esFuturo ? 'rgba(245,245,244,0.13)' : 'rgba(255,255,255,0.06)'}`,
                   transitionDuration: '160ms',
                 }}
@@ -129,7 +129,7 @@ export default function SemanaAtleta({
                       {DIAS[i]}
                     </span>
                     <span className="font-mono text-label" style={{ color: 'var(--color-ink-4)' }}>{Number(fecha.slice(8, 10))}</span>
-                    {esHoy && <span className="font-mono text-[9px] tracking-wider text-accent px-1.5 py-0.5 rounded-[8px]" style={{ background: 'rgba(255,199,44,0.12)' }}>HOY</span>}
+                    {esHoy && <span className="font-mono text-[9px] tracking-wider text-accent px-1.5 py-0.5 rounded-[8px]" style={{ background: 'color-mix(in oklab, var(--color-accent) 12%, transparent)' }}>HOY</span>}
                   </button>
                   <span
                     className="flex items-center gap-1.5 flex-shrink-0 px-2 py-1 rounded-control"

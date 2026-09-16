@@ -262,7 +262,7 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
         <section className="rounded-canvas p-4 border border-accent-line bg-accent/8 flex gap-3">
           <div
             className="flex h-8 w-8 shrink-0 items-center justify-center rounded-control font-mono text-caption font-bold text-accent"
-            style={{ background: 'rgba(255,199,44,0.16)' }}
+            style={{ background: 'color-mix(in oklab, var(--color-accent) 16%, transparent)' }}
           >
             <Icon name="sticky_note_2" size="s" />
           </div>

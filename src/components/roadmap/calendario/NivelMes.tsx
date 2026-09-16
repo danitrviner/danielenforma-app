@@ -315,7 +315,7 @@ export default function NivelMes({
           <div className="flex flex-col gap-3">
             {monthMils.map(({ fecha, hito }) => (
               <button key={hito.id} type="button" onClick={() => onOpenDay(fecha)} className="flex items-center gap-2.5 text-left">
-                <span className="flex items-center justify-center flex-shrink-0" style={{ width: 30, height: 30, borderRadius: 12, background: 'rgba(255,199,44,0.12)' }}>
+                <span className="flex items-center justify-center flex-shrink-0" style={{ width: 30, height: 30, borderRadius: 12, background: 'color-mix(in oklab, var(--color-accent) 12%, transparent)' }}>
                   <Icon name={hito.icono} size="s" style={{ color: 'var(--color-accent)' }} />
                 </span>
                 <span className="flex flex-col gap-0.5 min-w-0">

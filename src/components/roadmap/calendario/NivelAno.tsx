@@ -99,7 +99,7 @@ export default function NivelAno({ anio, hoy, bandasEntreno, indice, onOpenMonth
               title="Hoy"
               style={{
                 position: 'absolute', top: -6, bottom: -6, width: 2, left: `${hoyPct}%`,
-                background: 'var(--color-accent)', boxShadow: '0 0 12px 1px rgba(255,199,44,0.6)', borderRadius: 1,
+                background: 'var(--color-accent)', boxShadow: '0 0 12px 1px color-mix(in oklab, var(--color-accent) 60%, transparent)', borderRadius: 1,
               }}
             />
           )}
@@ -134,13 +134,13 @@ export default function NivelAno({ anio, hoy, bandasEntreno, indice, onOpenMonth
               data-mes={mi}
               onClick={() => onOpenMonth(mi)}
               className="text-left bg-surface border rounded-surface px-[18px] pt-4 pb-3.5 transition-colors hover:border-accent-line"
-              style={{ borderColor: esAhora ? 'rgba(255,199,44,0.35)' : 'var(--color-hairline)', transitionDuration: '160ms' }}
+              style={{ borderColor: esAhora ? 'color-mix(in oklab, var(--color-accent) 35%, transparent)' : 'var(--color-hairline)', transitionDuration: '160ms' }}
             >
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <span className="font-sans font-bold text-title-s text-white" style={{ letterSpacing: '-0.01em' }}>{nombre}</span>
                   {esAhora && (
-                    <span className="font-mono text-[9px] tracking-wider text-accent px-1.5 py-0.5 rounded-[8px]" style={{ background: 'rgba(255,199,44,0.12)' }}>AHORA</span>
+                    <span className="font-mono text-[9px] tracking-wider text-accent px-1.5 py-0.5 rounded-[8px]" style={{ background: 'color-mix(in oklab, var(--color-accent) 12%, transparent)' }}>AHORA</span>
                   )}
                 </div>
                 <span className="font-mono text-label" style={{ color: adh === null ? 'var(--color-ink-5)' : adh >= 80 ? 'var(--color-success)' : 'var(--color-warning)' }}>
@@ -166,7 +166,7 @@ export default function NivelAno({ anio, hoy, bandasEntreno, indice, onOpenMonth
                       <div
                         style={{
                           width: 7, height: 7, borderRadius: 2, background: bg,
-                          boxShadow: esHoy ? '0 0 0 2.5px var(--color-accent)' : (dia && dia.hitos.length > 0 ? '0 0 0 2px rgba(255,199,44,0.55)' : undefined),
+                          boxShadow: esHoy ? '0 0 0 2.5px var(--color-accent)' : (dia && dia.hitos.length > 0 ? '0 0 0 2px color-mix(in oklab, var(--color-accent) 55%, transparent)' : undefined),
                         }}
                       />
                     </div>

@@ -224,7 +224,7 @@ export default function SheetDiaAtleta({
                 </span>
                 <span
                   className="text-label px-3 py-1.5 rounded-control font-sans"
-                  style={{ color: fotoDelDia ? 'var(--color-accent)' : 'var(--color-ink-4)', background: fotoDelDia ? 'rgba(255,199,44,0.10)' : 'var(--color-cell)' }}
+                  style={{ color: fotoDelDia ? 'var(--color-accent)' : 'var(--color-ink-4)', background: fotoDelDia ? 'color-mix(in oklab, var(--color-accent) 10%, transparent)' : 'var(--color-cell)' }}
                 >
                   {fotoDelDia ? 'Foto de progreso' : 'Sin foto'}
                 </span>
@@ -251,7 +251,7 @@ export default function SheetDiaAtleta({
               <Tarjeta icono="sticky_note_2" color="var(--color-accent)" titulo="Notas">
                 {notaCoach && (
                   <div className="flex gap-3 items-start mb-3">
-                    <span className="flex items-center justify-center flex-shrink-0 font-mono text-caption text-accent rounded-field" style={{ width: 30, height: 30, background: 'rgba(255,199,44,0.14)' }}>C</span>
+                    <span className="flex items-center justify-center flex-shrink-0 font-mono text-caption text-accent rounded-field" style={{ width: 30, height: 30, background: 'color-mix(in oklab, var(--color-accent) 14%, transparent)' }}>C</span>
                     <span className="flex flex-col gap-0.5">
                       <span className="text-label font-semibold text-ink-2 font-sans">Tu entrenador</span>
                       <span className="text-body-s text-white font-sans leading-relaxed" style={{ textWrap: 'pretty' }}>{notaCoach.text}</span>

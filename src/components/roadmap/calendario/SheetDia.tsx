@@ -320,7 +320,7 @@ export default function SheetDia({
               <div className="flex-1" />
               <span
                 className="text-[12.5px] px-3 py-1.5 rounded-control"
-                style={{ color: fotoDelDia ? 'var(--color-accent)' : 'var(--color-ink-4)', background: fotoDelDia ? 'rgba(255,199,44,0.10)' : 'var(--color-cell)' }}
+                style={{ color: fotoDelDia ? 'var(--color-accent)' : 'var(--color-ink-4)', background: fotoDelDia ? 'color-mix(in oklab, var(--color-accent) 10%, transparent)' : 'var(--color-cell)' }}
               >
                 {fotoDelDia ? 'Foto de progreso subida' : (esFuturo ? 'Sin foto prevista' : 'Sin foto este día')}
               </span>
@@ -340,7 +340,7 @@ export default function SheetDia({
               )}
               {notaCoach && !editandoNota && (
                 <div className="flex gap-3 items-start">
-                  <div className="flex items-center justify-center flex-shrink-0 font-mono text-caption text-accent rounded-field" style={{ width: 30, height: 30, background: 'rgba(255,199,44,0.14)' }}>C</div>
+                  <div className="flex items-center justify-center flex-shrink-0 font-mono text-caption text-accent rounded-field" style={{ width: 30, height: 30, background: 'color-mix(in oklab, var(--color-accent) 14%, transparent)' }}>C</div>
                   <div className="flex flex-col gap-0.5">
                     <span className="text-label font-semibold text-ink-2 font-sans">Coach</span>
                     <span className="text-body text-white font-sans leading-relaxed" style={{ textWrap: 'pretty' }}>{notaCoach.text}</span>

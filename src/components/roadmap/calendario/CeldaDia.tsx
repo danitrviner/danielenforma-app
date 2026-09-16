@@ -45,8 +45,8 @@ export default function CeldaDia({ fecha, dia, filter, hoy, selected, onOpen, dr
   let bordeStyle: 'solid' | 'dashed' = 'dashed';
   if (!esFuturo) { fondo = 'var(--color-cell)'; borde = 'rgba(255,255,255,0.06)'; bordeStyle = 'solid'; }
   if (dia?.destacado) { fondo = mezcla(dia.destacado.color, 6); borde = mezcla(dia.destacado.color, 40); bordeStyle = 'solid'; }
-  if (esHoy) { borde = 'rgba(255,199,44,0.55)'; bordeStyle = 'solid'; }
-  if (selected) { fondo = 'rgba(255,199,44,0.09)'; borde = 'var(--color-accent)'; bordeStyle = 'solid'; }
+  if (esHoy) { borde = 'color-mix(in oklab, var(--color-accent) 55%, transparent)'; bordeStyle = 'solid'; }
+  if (selected) { fondo = 'color-mix(in oklab, var(--color-accent) 9%, transparent)'; borde = 'var(--color-accent)'; bordeStyle = 'solid'; }
   if (dragOver) { borde = 'var(--color-accent)'; bordeStyle = 'solid'; }
 
   return (

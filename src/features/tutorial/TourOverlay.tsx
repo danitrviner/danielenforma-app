@@ -106,7 +106,7 @@ export default function TourOverlay({
       width: rect.width + pad * 2,
       height: rect.height + pad * 2,
       borderRadius: 14,
-      border: '1px solid rgba(255,199,44,.55)',
+      border: '1px solid color-mix(in oklab, var(--color-accent) 55%, transparent)',
       boxShadow: '0 0 0 9999px rgba(0,0,0,.62)',
       transition: 'top 300ms, left 300ms, width 300ms, height 300ms',
       pointerEvents: 'none',

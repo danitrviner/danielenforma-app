@@ -112,10 +112,10 @@ export default function ModalPlantillaCuestionarios({ mesocycle, questionnaires,
               className="rounded-control text-[12.5px] font-sans"
               style={{
                 padding: '7px 13px',
-                background: tpl.clave === p.clave ? 'rgba(255,199,44,0.12)' : 'transparent',
+                background: tpl.clave === p.clave ? 'color-mix(in oklab, var(--color-accent) 12%, transparent)' : 'transparent',
                 color: tpl.clave === p.clave ? 'var(--color-accent)' : 'var(--color-ink-2)',
                 fontWeight: tpl.clave === p.clave ? 600 : 400,
-                border: `1px solid ${tpl.clave === p.clave ? 'rgba(255,199,44,0.35)' : 'var(--color-hairline)'}`,
+                border: `1px solid ${tpl.clave === p.clave ? 'color-mix(in oklab, var(--color-accent) 35%, transparent)' : 'var(--color-hairline)'}`,
               }}
             >
               {p.clave}
@@ -143,7 +143,7 @@ export default function ModalPlantillaCuestionarios({ mesocycle, questionnaires,
                   <div className="text-[12.5px] text-ink-3 font-sans">{f.canal}</div>
                   <span
                     className="font-mono text-caption uppercase tracking-wider px-2.5 py-1 rounded-control justify-self-start"
-                    style={{ color: f.tipo === 'Obligatorio' ? 'var(--color-accent)' : 'var(--color-ink-3)', background: f.tipo === 'Obligatorio' ? 'rgba(255,199,44,0.10)' : 'var(--color-cell)' }}
+                    style={{ color: f.tipo === 'Obligatorio' ? 'var(--color-accent)' : 'var(--color-ink-3)', background: f.tipo === 'Obligatorio' ? 'color-mix(in oklab, var(--color-accent) 10%, transparent)' : 'var(--color-cell)' }}
                   >
                     {f.tipo}
                   </span>

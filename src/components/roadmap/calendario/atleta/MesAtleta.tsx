@@ -94,8 +94,8 @@ function CeldaDiaAtleta({ fecha, dia, hoy, sel, onAbrir }: {
   let bordeStyle: 'solid' | 'dashed' = 'dashed';
   if (!esFuturo) { fondo = 'var(--color-cell)'; borde = 'rgba(255,255,255,0.06)'; bordeStyle = 'solid'; }
   if (dia?.destacado) { fondo = mezcla(dia.destacado.color, 6); borde = mezcla(dia.destacado.color, 40); bordeStyle = 'solid'; }
-  if (esHoy) { borde = 'rgba(255,199,44,0.55)'; bordeStyle = 'solid'; }
-  if (seleccionado) { fondo = 'rgba(255,199,44,0.09)'; borde = 'var(--color-accent)'; bordeStyle = 'solid'; }
+  if (esHoy) { borde = 'color-mix(in oklab, var(--color-accent) 55%, transparent)'; bordeStyle = 'solid'; }
+  if (seleccionado) { fondo = 'color-mix(in oklab, var(--color-accent) 9%, transparent)'; borde = 'var(--color-accent)'; bordeStyle = 'solid'; }
 
   // Los puntitos de categoría son color puro: quien no los ve necesita
   // oírlos. El nombre accesible del botón los dice, junto con el hito, para
@@ -251,7 +251,7 @@ export default function MesAtleta({
           <div className="flex flex-col gap-2.5">
             {hitos.map(({ fecha, hito }) => (
               <button key={hito.id} type="button" onClick={() => onAbrirDia(fecha)} className="flex items-center gap-2.5 text-left">
-                <span className="flex items-center justify-center flex-shrink-0" style={{ width: 30, height: 30, borderRadius: 12, background: 'rgba(255,199,44,0.12)' }}>
+                <span className="flex items-center justify-center flex-shrink-0" style={{ width: 30, height: 30, borderRadius: 12, background: 'color-mix(in oklab, var(--color-accent) 12%, transparent)' }}>
                   <Icon name={hito.icono} size="s" style={{ color: 'var(--color-accent)' }} />
                 </span>
                 <span className="flex flex-col gap-0.5 min-w-0">

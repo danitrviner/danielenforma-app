@@ -130,10 +130,10 @@ export default function NivelSemana({
                   minHeight: 300,
                   padding: '11px 12px 12px',
                   borderRadius: 16,
-                  background: sel === fecha ? 'rgba(255,199,44,0.09)' : (esFuturo ? 'transparent' : 'var(--color-cell)'),
+                  background: sel === fecha ? 'color-mix(in oklab, var(--color-accent) 9%, transparent)' : (esFuturo ? 'transparent' : 'var(--color-cell)'),
                   border: `1px ${esFuturo && !esHoy && sel !== fecha && dragOver !== fecha ? 'dashed' : 'solid'} ${
                     dragOver === fecha || sel === fecha ? 'var(--color-accent)'
-                      : esHoy ? 'rgba(255,199,44,0.55)'
+                      : esHoy ? 'color-mix(in oklab, var(--color-accent) 55%, transparent)'
                       : esFuturo ? 'rgba(245,245,244,0.13)' : 'rgba(255,255,255,0.06)'}`,
                   transitionDuration: '160ms',
                 }}

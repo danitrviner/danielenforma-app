@@ -180,6 +180,11 @@
   --text-icon-xl: 32px;
 
   /* ── Superficies · 6 (Fase 3) ───────────────────────────────────────────────
+     16-09: la escalera sube entera de casi-negro (#050505…#1a1a1a) a gris
+     oscuro (#121212…#2E2E2E). El negro puro con el oro saturado cansaba la
+     vista: el contraste texto/fondo se disparaba y el amarillo vibraba. Los
+     seis escalones conservan la misma distancia entre sí, así que lo que era
+     legible como tarjeta-sobre-tarjeta lo sigue siendo.
      El handoff distingue seis niveles donde antes había cuatro: el fondo casi
      negro (`bg`) obliga a más pasos intermedios para que una tarjeta sobre
      otra tarjeta siga siendo legible. `field` pasa a compartir valor con
@@ -188,12 +193,12 @@
      (miniaturas, botón "menos" del stepper, fondo del toast, botón
      deshabilitado); `track` es solo para pistas de barra de progreso y
      segmentos pendientes. */
-  --color-bg:      #050505;
-  --color-surface: #0B0B0B;
-  --color-raised:  #0F0F0F;
-  --color-field:   #0B0B0B;
-  --color-inset:   #141414;
-  --color-track:   #1a1a1a;
+  --color-bg:      #121212;
+  --color-surface: #1A1A1A;
+  --color-raised:  #202020;
+  --color-field:   #1A1A1A;
+  --color-inset:   #262626;
+  --color-track:   #2E2E2E;
 
   /* ── Texto · 5 + inverso (Fase 3) ───────────────────────────────────────────
      El handoff expresa el texto secundario como alfa sobre `ink`, no como un
@@ -206,7 +211,7 @@
   --color-ink-3:     rgba(245, 245, 244, 0.45);  /* placeholders, ayudas, timestamps */
   --color-ink-4:     rgba(245, 245, 244, 0.34);  /* etiqueta mono, dato terciario    */
   --color-ink-5:     rgba(245, 245, 244, 0.26);  /* pie de página, texto deshabilitado */
-  --color-on-accent: #050505;  /* único color admitido sobre el oro             */
+  --color-on-accent: #121212;  /* único color admitido sobre el oro             */
 
   /* ── Líneas · 3 ─────────────────────────────────────────────────────────────
      Todos los bordes son de 1 px. El borde —no la sombra— define una superficie.
@@ -220,14 +225,19 @@
      mismo mecanismo que ya usan 200+ sitios con `border-white/N`. */
   --color-hairline:    rgba(255, 255, 255, 0.07);
   --color-strong:      rgba(255, 255, 255, 0.12);
-  --color-accent-line: rgba(255, 199, 44, 0.45);
+  --color-accent-line: rgba(227, 179, 65, 0.45);
 
   /* ── Marca · 2 ──────────────────────────────────────────────────────────────
      El oro significa exactamente una cosa: lo siguiente que tienes que hacer.
-     Máximo un elemento amarillo relleno por pantalla visible. */
-  --color-accent:       #FFC72C;
-  --color-accent-press: #D9A925;  /* solo pulsado y hover del primario        */
-  --color-accent-bg:    rgba(255, 199, 44, 0.14);
+     Máximo un elemento amarillo relleno por pantalla visible.
+     16-09: de #FFC72C (oro saturado, casi neón sobre negro) a #E3B341, un
+     ámbar menos chillón que sigue leyéndose como oro sobre el gris nuevo.
+     Todo lo que es «oro con alfa» en las pantallas pasa por
+     `color-mix(... var(--color-accent) N%, transparent)`, no por un rgba
+     literal: así el cambio de aquí llega a todas partes. */
+  --color-accent:       #E3B341;
+  --color-accent-press: #C79B32;  /* solo pulsado y hover del primario        */
+  --color-accent-bg:    rgba(227, 179, 65, 0.14);
 
   /* ── Dato · 1 ───────────────────────────────────────────────────────────────
      El cian nunca es una acción. Serie principal de gráfica, métricas de cuerpo.
@@ -272,7 +282,7 @@
      separado el día de mañana. `cell` es el fondo de una celda de día PASADA
      en el nivel Mes — distinto de `--color-surface`/`--color-inset` porque el
      handoff pide un tono intermedio entre ambos, propio de esta pantalla. */
-  --color-cell:           #101010;
+  --color-cell:           #1D1D1D;
   --color-phase-fuerza:   #7DA7FF;
   --color-phase-hiper:    #B08CFF;
   --color-phase-defi:     #3ECF8E;
@@ -327,7 +337,7 @@
               en todas partes deja de indicar «esto es lo importante».        */
   --shadow-e1:   0 2px 8px rgba(0, 0, 0, 0.4);
   --shadow-e2:   0 12px 32px rgba(0, 0, 0, 0.55);
-  --shadow-glow: 0 0 24px -6px rgba(255, 199, 44, 0.35);
+  --shadow-glow: 0 0 24px -6px color-mix(in oklab, var(--color-accent) 35%, transparent);
 
   /* ── Motion (F3.2) ──────────────────────────────────────────────────────────
      Un solo easing para todo el sistema — el handoff es explícito: mezclar
