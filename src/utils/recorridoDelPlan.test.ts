@@ -136,3 +136,29 @@ describe('el puente con la checklist', () => {
     expect(huerfanos).toEqual(['alta_perfil', 'alta_peso_inicial']);
   });
 });
+
+describe('queDecidir', () => {
+  it('lo llevan todos los pasos que tienen algo que elegir', () => {
+    // Los dos únicos sin decisión: repasar el alta (es leer, no elegir) y
+    // cerrar con el resumen (es contar lo hecho).
+    const sinDecision = PASOS_DEL_RECORRIDO.filter(p => !p.queDecidir).map(p => p.numero);
+    expect(sinDecision).toEqual(['0b', '17']);
+  });
+
+  it('no es el título ni la instrucción con otras palabras', () => {
+    for (const p of PASOS_DEL_RECORRIDO) {
+      if (!p.queDecidir) continue;
+      expect(p.queDecidir).not.toBe(p.titulo);
+      expect(p.queDecidir).not.toBe(p.instruccionIA);
+      // Texto de coach, no de prompt: sin markdown ni nombres de herramienta.
+      expect(p.queDecidir).not.toMatch(/\*\*|propose_|get_/);
+    }
+  });
+
+  it('no entra en el guion del asistente: el prompt no cambia', () => {
+    const guion = textoDelPlanCompleto();
+    for (const p of PASOS_DEL_RECORRIDO) {
+      if (p.queDecidir) expect(guion).not.toContain(p.queDecidir);
+    }
+  });
+});

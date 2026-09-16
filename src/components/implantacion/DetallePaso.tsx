@@ -4,7 +4,7 @@ import { PasoConEstado } from '../../utils/implantacion';
 import { SetupStatus } from '../../utils/clientSetup';
 import { OPEN_AI_PANEL_EVENT, OpenAiPanelDetail } from '../../ai/events';
 import { HubTab } from '../ClientHub';
-import { Button, Badge, Icon, Input } from '../ui';
+import { Button, Badge, Icon, Input, Collapsible } from '../ui';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    El paso elegido — la columna derecha.
@@ -22,6 +22,14 @@ import { Button, Badge, Icon, Input } from '../ui';
    El estado NO se marca a mano cuando los datos lo pueden decir: si el
    mesociclo existe, el paso está hecho. Una casilla que hay que marcar aparte
    de hacer la cosa es una casilla que acaba mintiendo.
+
+   ── Qué se lee primero ─────────────────────────────────────────────────────
+   Lo primero es QUÉ HAY QUE DECIDIR aquí, no la instrucción del asistente. La
+   instrucción está escrita para el modelo —le dice qué herramienta llamar y
+   con qué criterio— y leerla para acordarse de la elección que uno tiene
+   delante es leer el manual de otro. La decisión se lee de un vistazo; la
+   instrucción se despliega solo cuando hace falta comprobar que el asistente y
+   el coach están montando lo mismo.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 const ETIQUETA_ESTADO: Record<SetupStatus, { texto: string; tono: 'success' | 'warning' | 'neutral' }> = {
@@ -72,6 +80,16 @@ export default function DetallePaso({
         <h3 className="font-sans font-bold text-title-s text-ink">{titulo}</h3>
       </header>
 
+      {/* Lo primero: la elección que hay delante. */}
+      {paso.paso.queDecidir && (
+        <div className="bg-raised border border-hairline rounded-surface p-3.5 space-y-1">
+          <span className="font-mono text-caption text-ink-3 uppercase tracking-[.08em] block">
+            Qué hay que decidir
+          </span>
+          <p className="font-sans text-body-s text-ink leading-relaxed">{paso.paso.queDecidir}</p>
+        </div>
+      )}
+
       {/* Qué hay puesto ahora mismo. */}
       {items.length > 0 && (
         <ul className="space-y-1">
@@ -92,12 +110,20 @@ export default function DetallePaso({
         </ul>
       )}
 
-      {/* La instrucción del guion, tal cual. Es lo que se le manda al asistente y lo
-          que explica qué hay que decidir en este paso; enseñarla evita que el
-          coach y el asistente estén montando cosas distintas. */}
-      <p className="font-sans text-label text-ink-2 leading-relaxed">
-        {paso.paso.instruccionIA.replace(/\*\*/g, '')}
-      </p>
+      {/* La instrucción del guion, tal cual, plegada. Enseñarla evita que el
+          coach y el asistente estén montando cosas distintas, pero es texto de
+          prompt: no debe ser lo primero que se lee. */}
+      <Collapsible
+        trigger={
+          <span className="font-mono text-caption text-ink-3 uppercase tracking-[.08em]">
+            Lo que le digo al asistente
+          </span>
+        }
+      >
+        <p className="font-sans text-label text-ink-2 leading-relaxed">
+          {paso.paso.instruccionIA.replace(/\*\*/g, '')}
+        </p>
+      </Collapsible>
 
       <div className="flex flex-wrap gap-2">
         {paso.paso.tab && (
