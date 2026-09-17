@@ -27,6 +27,7 @@ import {
   verifyFirebaseIdToken,
 } from './_lib/auth.js';
 import { marcarCatalogosCambiados } from './_lib/catalogos.js';
+import { QUESTIONNAIRE_PRESETS, buildQuestionnaireFromPreset } from '../src/data/questionnairePresets.js';
 
 export const config = { maxDuration: 30 };
 
@@ -167,6 +168,50 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // Best-effort: el alta ya está hecha y es lo que de verdad no puede
       // fallar. Un contacto sin enlazar se corrige reinvitando desde el CRM.
       console.warn('create-athlete: no se pudo enlazar crmContactos:', err);
+    }
+
+    // ── 4. Asignar «Mediciones» de fábrica ──────────────────────────────────
+    // Sin esto, el apartado de mediciones de Revisión se queda vacío para
+    // siempre salvo que el coach se acuerde de asignarlo a mano — nadie lo
+    // hacía. Se asigna aquí, en el alta, para que todo atleta nuevo lo tenga
+    // desde el primer día. Best-effort: el alta ya está hecha y es lo que de
+    // verdad no puede fallar.
+    try {
+      const presetMediciones = QUESTIONNAIRE_PRESETS.find(p => p.title === 'Mediciones');
+      if (presetMediciones) {
+        const existentes = await adminDb
+          .collection('questionnaires')
+          .where('ownerId', '==', decoded.uid)
+          .where('title', '==', 'Mediciones')
+          .limit(1)
+          .get();
+        let questionnaireId: string;
+        if (!existentes.empty) {
+          questionnaireId = existentes.docs[0].id;
+        } else {
+          const nuevo = buildQuestionnaireFromPreset(presetMediciones, decoded.uid);
+          const ref = await adminDb.collection('questionnaires').add(nuevo);
+          questionnaireId = ref.id;
+        }
+        const yaAsignado = await adminDb
+          .collection('questionnaireAssignments')
+          .where('athleteId', '==', email)
+          .where('questionnaireId', '==', questionnaireId)
+          .limit(1)
+          .get();
+        if (yaAsignado.empty) {
+          await adminDb.collection('questionnaireAssignments').add({
+            questionnaireId,
+            athleteId: email,
+            schedule: presetMediciones.suggestedSchedule,
+            startDate: new Date().toISOString().slice(0, 10),
+            active: true,
+            createdAt: new Date().toISOString(),
+          });
+        }
+      }
+    } catch (err) {
+      console.warn('create-athlete: no se pudo asignar Mediciones:', err);
     }
 
     res.status(200).json({ ok: true, uid, creada });
