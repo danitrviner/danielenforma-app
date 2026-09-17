@@ -4,7 +4,7 @@ import { UserProfile, Workout, WorkoutAssignment, Exercise, WorkoutLog, WorkoutE
 import LoadHistoryPanel from './LoadHistoryPanel';
 import {
   getWorkoutAssignmentsForAthlete, getWorkoutsByIds, getExercises,
-  createWorkoutLog, updateWorkoutAssignment, getWorkoutLogs, getExerciseNotesForAthlete,
+  createWorkoutLog, updateWorkoutLog, updateWorkoutAssignment, getWorkoutLogs, getExerciseNotesForAthlete,
   getCardioAssignmentsForAthlete, getMesocycles,
 } from '../dbService';
 import { MONTHS_ES, addDays, formatDate, hoyIsoLocal } from '../utils/trainingWeek';
@@ -207,6 +207,10 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
   const [celebration, setCelebration] = useState<SessionCelebration | null>(null);
   const [exerciseNoteInputs, setExerciseNoteInputs] = useState<string[]>([]);
   const [workoutNoteInput, setWorkoutNoteInput] = useState('');
+  // Id del WorkoutLog que se está editando (asignación YA completada,
+  // reabierta desde su tarjeta) — si tiene valor, `handleFinish` actualiza
+  // ese registro en vez de crear uno nuevo. `null` = sesión normal.
+  const [editingLogId, setEditingLogId] = useState<string | null>(null);
   // No necesita re-render propio: solo lo lee el autoguardado, y cambia junto
   // con activeWorkout (mismo ciclo de vida que el resto del estado del player).
   const formaPrescritaRef = useRef<number[]>([]);
@@ -375,6 +379,73 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
     }
   };
 
+  /** Reabre una asignación YA completada para corregir algo (peso/reps mal
+   * apuntados, por ejemplo). A diferencia de `openPlayer`, la tabla no se
+   * prerrellena con la sesión anterior sino con lo que de verdad se guardó
+   * en ESTE `WorkoutLog` — y todas las series llegan marcadas como hechas,
+   * así que cada ejercicio se ve "cerrado" hasta que se pulse "Editar" (ver
+   * ExerciseCloseCard/WorkoutSessionPlayer). No toca el borrador local: una
+   * sesión completada no tiene nada a medias que recuperar. */
+  const reopenCompletedPlayer = (assignment: WorkoutAssignment) => {
+    const baseWorkout = getWorkout(assignment.workoutId);
+    if (!baseWorkout) return;
+    const existingLog = logs.find(l => l.assignmentId === assignment.id);
+    if (!existingLog) {
+      showToast('No se encontró el registro de esta sesión.');
+      return;
+    }
+
+    const meso = assignment.mesocycleId ? mesocycles.find(m => m.id === assignment.mesocycleId) : undefined;
+    const conditionCtx = { today: hoyIsoLocal(), workoutAssignments: assignments, workoutLogs: logs, bodyweightLogs: [] };
+    const wo: Workout = meso
+      ? {
+          ...baseWorkout,
+          exercises: baseWorkout.exercises.map(we =>
+            resolveExerciseForWeek(we, mesocycleWeekNumber(meso.startDate, assignment.date, cicloDiasDeMeso(meso)), conditionCtx)
+          ),
+        }
+      : baseWorkout;
+    const orderedExercises = wo.exercises.slice().sort((a, b) => a.order - b.order);
+
+    const playerSetsFromLog: SetInput[][] = orderedExercises.map(we => {
+      const entry = existingLog.entries.find(e => e.exerciseId === we.exerciseId);
+      if (!entry) return [];
+      return entry.sets.map(s => ({
+        weight: String(s.weight),
+        repsDone: String(s.repsDone),
+        rir: s.alFallo ? 'fallo' : String(s.rir),
+        done: true,
+      }));
+    });
+    const exerciseNoteInputsFromLog = orderedExercises.map(we =>
+      existingLog.entries.find(e => e.exerciseId === we.exerciseId)?.note ?? '');
+
+    // "Última vez" para la referencia en pantalla: la sesión anterior a
+    // ESTA, no la propia sesión que se está editando.
+    const sortedPrev = logs
+      .filter(l => l.id !== existingLog.id && l.date < assignment.date)
+      .sort((a, b) => b.date.localeCompare(a.date));
+    const seenExercises = new Set<string>();
+    const prevEntriesForEdit: WorkoutEntryLog[] = [];
+    for (const log of sortedPrev) {
+      for (const entry of log.entries) {
+        if (!seenExercises.has(entry.exerciseId)) {
+          seenExercises.add(entry.exerciseId);
+          prevEntriesForEdit.push(entry);
+        }
+      }
+    }
+
+    setActiveAssignment(assignment);
+    setActiveWorkout(wo);
+    setPlayerSets(playerSetsFromLog);
+    setExerciseNoteInputs(exerciseNoteInputsFromLog);
+    setWorkoutNoteInput(existingLog.note ?? '');
+    setCelebration(null);
+    setPrevEntries(prevEntriesForEdit);
+    setEditingLogId(existingLog.id);
+  };
+
   /** Cierra el player y deja el estado como estaba antes de abrirlo. **No borra
    *  el borrador a propósito**: salir a la lista a mitad de sesión es algo que
    *  se hace para mirar otra cosa, no para tirar 20 minutos de trabajo, así que
@@ -387,6 +458,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
     setPrevEntries([]);
     setExerciseNoteInputs([]);
     setWorkoutNoteInput('');
+    setEditingLogId(null);
   };
 
   // Solo se copia el array del ejercicio TOCADO, no los de todos — antes
@@ -491,6 +563,26 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
         // entrada si tiene series O si tiene nota.
         .filter(e => e.sets.length > 0 || !!e.note);
 
+      const now = new Date().toISOString();
+
+      // Editando una sesión YA completada: se actualiza el mismo `WorkoutLog`
+      // (nada de PRs/celebración — es una corrección, no un entreno nuevo; y
+      // comparar la sesión contra sí misma daría un "récord" falso).
+      if (editingLogId) {
+        await updateWorkoutLog(editingLogId, {
+          entries,
+          note: workoutNoteInput.trim() || undefined,
+          completedAt: now,
+        });
+        queryClient.setQueryData<WorkoutLog[]>(logsKey, prev => prev?.map(l =>
+          l.id === editingLogId ? { ...l, entries, note: workoutNoteInput.trim() || undefined, completedAt: now } : l
+        ));
+        void haptics.success();
+        showToast('Cambios guardados.');
+        cerrarPlayer();
+        return;
+      }
+
       // PRs: mejor 1RM estimado de esta sesión por ejercicio contra el mejor
       // histórico ANTES de esta fecha — mismo criterio que el motor de
       // reportes (exige historial previo; un primer registro nunca es récord).
@@ -507,7 +599,6 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
       const totalSets = entries.reduce((sum, e) => sum + e.sets.length, 0);
       const isFirstEver = logs.length === 0;
 
-      const now = new Date().toISOString();
       const newLog = await createWorkoutLog({
         athleteId:   profile.email,
         workoutId:   activeWorkout.id,
@@ -642,7 +733,17 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
               {seriesAMedias > 0 ? 'Continuar' : estado === 'perdido' ? 'Recuperar' : 'Empezar'}
             </Button>
           )}
-          {a.status === 'completed' && <Icon name="task_alt" size="l" filled className="text-success" />}
+          {a.status === 'completed' && wo && (
+            <button
+              type="button"
+              onClick={() => reopenCompletedPlayer(a)}
+              className="flex items-center gap-1.5 text-success"
+            >
+              <Icon name="task_alt" size="l" filled />
+              <span className="font-mono text-caption font-bold uppercase tracking-wide text-ink-2">Editar</span>
+            </button>
+          )}
+          {a.status === 'completed' && !wo && <Icon name="task_alt" size="l" filled className="text-success" />}
         </div>
       </div>
     );

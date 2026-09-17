@@ -17,6 +17,10 @@ interface Props {
   isLast: boolean;
   nextExerciseName: string | undefined;
   onNext: () => void;
+  /** Reabre este ejercicio como tarjeta editable (vuelve a `ExerciseCard`)
+   * sin desmarcar ninguna serie — para corregir un peso/reps al volver a un
+   * ejercicio ya cerrado, dentro de la misma sesión. */
+  onReopen: () => void;
   /** Solo si hay una `CardioAssignment` puntual (con `date`) para el mismo
    * día — las recurrentes por `timesPerWeek` no se pueden atribuir a un día
    * exacto, así que se dejan fuera (ver el plan). Es un aviso, no lleva a
@@ -44,7 +48,7 @@ function rpeDeSerie(s: SetInput): number | null {
  */
 export default function ExerciseCloseCard({
   we, ex, exSets, priorBestOrm, noteValue, onNoteChange, isLast, nextExerciseName,
-  onNext, sameDayCardio,
+  onNext, onReopen, sameDayCardio,
 }: Props) {
   const idNota = React.useId();
   const doneSets = exSets.filter(s => s.done);
@@ -71,10 +75,18 @@ export default function ExerciseCloseCard({
         <span className="flex h-8 w-8 items-center justify-center rounded-full bg-success/14 text-success flex-shrink-0">
           <Icon name="check" size="s" filled />
         </span>
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <p className="font-sans font-bold text-title-s text-ink truncate">{ex?.name || we.exerciseId} cerrado</p>
           <p className="font-mono text-caption text-ink-2">{doneSets.length} series</p>
         </div>
+        <button
+          type="button"
+          onClick={onReopen}
+          className="font-mono text-caption font-bold text-ink-2 uppercase tracking-wide flex items-center gap-1 shrink-0 hover:text-accent"
+        >
+          <Icon name="edit" size="s" />
+          Editar
+        </button>
       </div>
 
       {esRecord && bestSet && (

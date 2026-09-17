@@ -72,6 +72,24 @@ export default function WorkoutSessionPlayer({
   const [pageIdx, setPageIdx] = useState(0);
   const [openVideoIdx, setOpenVideoIdx] = useState<number | null>(null);
   const [historyExId, setHistoryExId] = useState<string | null>(null);
+  // Ejercicios que el atleta ha reabierto explícitamente tras cerrarlos (ver
+  // ExerciseCloseCard → "Editar"). Solo UI: no toca `playerSets`, así que no
+  // afecta a `canFinish` ni desmarca ninguna serie. Vive fuera de `playerSets`
+  // a propósito — reabrir es "déjame ver el editor otra vez", no "deshaz lo
+  // marcado".
+  const [reopenedExercises, setReopenedExercises] = useState<Set<number>>(new Set());
+  useEffect(() => {
+    setReopenedExercises(new Set());
+  }, [activeAssignment.id]);
+  const onReopenExercise = useEstable((exIdx: number) => {
+    setReopenedExercises(prev => {
+      const next = new Set(prev);
+      next.add(exIdx);
+      return next;
+    });
+  });
+  const isLastPage = pageIdx === orderedExercises.length - 1;
+  const isEditingCompleted = activeAssignment.status === 'completed';
 
   // Cronómetro de descanso — vive aquí (antes en TrainingScreen) porque solo
   // el player lo usa; se arranca al marcar una serie como hecha con el
@@ -313,7 +331,11 @@ export default function WorkoutSessionPlayer({
     const isLast = exIdx === orderedExercises.length - 1;
     const cb = exerciseCallbacksByIdx[exIdx];
 
-    if (cerrado) {
+    // Reabierto manualmente (botón "Editar" en la tarjeta de cierre): se
+    // queda editable el resto de la sesión, aunque se vuelvan a marcar todas
+    // las series como hechas — no lo colapsamos solo, para no sacar al
+    // atleta de en medio de una edición.
+    if (cerrado && !reopenedExercises.has(exIdx)) {
       return (
         <ExerciseCloseCard
           key={`${we.exerciseId}-${exIdx}`}
@@ -326,6 +348,7 @@ export default function WorkoutSessionPlayer({
           isLast={isLast}
           nextExerciseName={!isLast ? (getExercise(orderedExercises[exIdx + 1]?.exerciseId)?.name) : undefined}
           onNext={() => setPageIdx(i => Math.min(i + 1, orderedExercises.length - 1))}
+          onReopen={() => onReopenExercise(exIdx)}
           sameDayCardio={sameDayCardio}
         />
       );
@@ -406,35 +429,24 @@ export default function WorkoutSessionPlayer({
         {pages}
       </Pager>
 
-      {/* Terminar la sesión, desde CUALQUIER página.
-          Antes el botón solo existía en la del último ejercicio programado —el
-          propio comentario lo admitía: «en el resto de páginas no hay forma de
-          terminar la sesión desde aquí»—. Pero una sesión se corta a mitad
-          constantemente: cierra el gimnasio, se ocupa la máquina, molesta un
-          hombro. Con el botón escondido al final, el atleta tenía que deslizar
-          por los ejercicios que NO va a hacer para poder guardar los que sí
-          hizo, o cerrar el player y perder el registro.
-
-          Solo aparece con algo marcado (`canFinish`): sin ni una serie hecha no
-          hay sesión que guardar, y el botón sería una trampa para salir. */}
-      {canFinish && (
+      {/* Terminar la sesión: SOLO en la página del último ejercicio.
+          Antes aparecía en cuanto se marcaba una sola serie en cualquier
+          página (`canFinish`), lo que convertía el primer toque de la
+          sesión en una salida — un roce accidental cerraba el entreno
+          entero sin poder recuperarlo. Ahora el botón vive únicamente aquí,
+          sin ninguna otra condición: para corregir algo a mitad de sesión
+          está el "Editar" de la tarjeta de cierre de cada ejercicio, no
+          hace falta terminar antes de tiempo. */}
+      {isLastPage && (
         <div className="px-4 pt-4">
           <div className="flex justify-center gap-3">
             <Button
               variant="primary" size="l" icon="flag" loading={isFinishing} loadingLabel="Guardando"
               disabled={!!celebration} onClick={handleFinish} className="flex-1 max-w-xs"
             >
-              {/* El texto cambia si quedan ejercicios por delante: «terminar»
-                  en mitad de la sesión suena a que se pierde lo que falta, y lo
-                  que pasa es justo lo contrario — se guarda lo hecho. */}
-              {pageIdx < orderedExercises.length - 1 ? 'Guardar y terminar' : 'Terminar sesión'}
+              {isEditingCompleted ? 'Guardar cambios' : 'Terminar sesión'}
             </Button>
           </div>
-          {pageIdx < orderedExercises.length - 1 && (
-            <p className="mt-2 text-center font-mono text-caption text-ink-3">
-              Se guarda lo que has marcado. Lo que no hayas hecho, simplemente no cuenta.
-            </p>
-          )}
         </div>
       )}
 
