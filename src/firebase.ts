@@ -96,6 +96,21 @@ try {
 const auth = Capacitor.isNativePlatform()
   ? initializeAuth(app, { persistence: indexedDBLocalPersistence })
   : getAuth(app);
+// Safari en iOS suspende la pestaña en segundo plano y le cierra la conexión
+// de IndexedDB para ahorrar memoria; el token de Auth puede caducar mientras
+// tanto. Sin esto, al volver, la primera escritura salía con el token viejo y
+// Firestore la rechazaba con "Missing or insufficient permissions" — un
+// fallo transitorio (dos atletas, un evento cada uno, siempre Safari/iOS en
+// /training) que parecía una regla mal escrita y no lo era. Forzar el
+// refresco al recuperar visibilidad evita esa ventana.
+if (typeof document !== 'undefined') {
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && auth.currentUser) {
+      auth.currentUser.getIdToken(true).catch(() => {});
+    }
+  });
+}
+
 // Storage NO se inicializa aquí a propósito: su SDK se carga bajo demanda
 // desde src/almacenamiento.ts, que es el único sitio de la app que lo toca.
 // Ver el comentario de cabecera de ese fichero.

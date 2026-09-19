@@ -241,7 +241,7 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
    * La pantalla pasa de describir un desvío a decir qué hacer con él. La
    * propuesta NO se aplica: se enseña y decide el entrenador. */
   const pesosReales = useMemo(
-    () => projection.points.filter(p => p.real != null).map(p => p.real as number),
+    () => projection ? projection.points.filter(p => p.real != null).map(p => p.real as number) : [],
     [projection],
   );
   const ritmoObservado = ritmoReal(pesosReales);
