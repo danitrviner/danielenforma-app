@@ -4,7 +4,7 @@ import { useQuery, useQueries, useQueryClient } from '@tanstack/react-query';
 import { UserProfile, WeightCheckIn, QuestionnaireAssignment, QuestionnaireResponse, Questionnaire, QuestionnaireQuestion, PhotoAssignment, ProgressPhoto, PhotoView } from '../types';
 import { createNotificationDeduped, getAssignmentsForAthlete, getResponsesForAthlete, getQuestionnaireById, getPesoExtremo, getPhotoAssignmentsForAthlete, getProgressPhotos, getMesocycles } from '../dbService';
 import { todayStr, hasAnsweredThisOccurrence, isUpcoming, isOverdue, ScheduleContext } from '../utils/questionnaireSchedule';
-import { cadenciaEnCristiano } from '../utils/scheduleEngine';
+import { cadenciaEnCristiano, proximaOcurrencia, finDeEstaSemana, startOfDay } from '../utils/scheduleEngine';
 import { pesoUltimoKey } from '../hooks/useAthleteWeight';
 import { leerSexo } from '../utils/athleteProfileSignals';
 import PhotosScreen from './PhotosScreen';
@@ -206,6 +206,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
       const prev = ultimaPorAsignacion.get(r.assignmentId);
       if (!prev || r.submittedAt > prev.submittedAt) ultimaPorAsignacion.set(r.assignmentId, r);
     }
+    const finSemana = finDeEstaSemana();
     return assignments
       .map(a => {
         const vencido = isOverdue(a, scheduleCtx);
@@ -213,6 +214,15 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
         const estado: 'pendiente' | 'aldia' | 'programado' =
           vencido && !respondido ? 'pendiente' : respondido ? 'aldia' : 'programado';
         return { a, estado, ultima: ultimaPorAsignacion.get(a.id) ?? null };
+      })
+      // Un "programado" solo interesa al atleta si le toca esta semana — uno
+      // que cae dentro de tres meses (p.ej. una revisión de semana 10 del
+      // plan) no aporta nada en su lista de hoy, solo la alarga. Vencidos y
+      // ya respondidos se quedan siempre: no dependen de una fecha futura.
+      .filter(({ a, estado }) => {
+        if (estado !== 'programado') return true;
+        const proxima = proximaOcurrencia(a, scheduleCtx);
+        return proxima !== null && startOfDay(proxima).getTime() <= finSemana.getTime();
       })
       .sort((x, y) => {
         const peso = { pendiente: 0, programado: 1, aldia: 2 } as const;

@@ -102,6 +102,18 @@ export function isUpcoming(a: Scheduled, ctx?: ScheduleContext): boolean {
   return today <= start || type !== 'once';
 }
 
+/** Fin (domingo, inclusive) de la semana natural de hoy, en hora LOCAL —
+ *  coherente con el resto del motor (startOfDay/isDueToday), no con la
+ *  `lunesDe` de cardioProgression, que trabaja en UTC para otro contexto. */
+export function finDeEstaSemana(): Date {
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
+  const dow = (hoy.getDay() + 6) % 7; // 0 = lunes
+  const fin = new Date(hoy);
+  fin.setDate(fin.getDate() + (6 - dow));
+  return fin;
+}
+
 // Short human label for an "active assignments" list row — shared by the
 // questionnaire and photo check-in assignment UIs in ClientHub.
 /** La misma cadencia, pero para el ATLETA. `scheduleLabel` es una etiqueta
