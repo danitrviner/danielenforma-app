@@ -8,10 +8,12 @@ import { Sexo } from '../../utils/athleteProfileSignals';
 import { getVolumeLandmarks } from '../../db/coachSettings';
 import {
   getDietCompletionLogsForAthlete, getDietsForAthlete, getCardioSessionsForAthlete,
+  getNutritionProgram,
 } from '../../dbService';
 import {
   buildRevisionCoach, PeriodoRevision, mesoActivo, pesoVsSemanaPasada, fechaDeLaUltimaRevision,
 } from '../../utils/revisionCoach';
+import { computeActivePhase } from '../../utils/fasesNutricion';
 import { construirComidaDeLaSemana } from '../../utils/comidaDeLaSemana';
 import { construirCardioDeLaVentana } from '../../utils/cardioDeLaVentana';
 import { hoyIsoLocal } from '../../utils/trainingWeek';
@@ -156,7 +158,24 @@ export default function ClientRevisionPanel({
   const ultimaRevision = useMemo(() => fechaDeLaUltimaRevision(checkins), [checkins]);
 
   const { ventana, informe } = revision;
-  const peso = useMemo(() => pesoVsSemanaPasada(bodyweightLogs, hoy), [bodyweightLogs, hoy]);
+  const peso = useMemo(
+    () => pesoVsSemanaPasada(bodyweightLogs, ventana.desde, ventana.hasta),
+    [bodyweightLogs, ventana.desde, ventana.hasta],
+  );
+
+  // Fase de nutrición vigente — mismo motor que BloqueNutricionHabitos, aparte
+  // porque la cabecera se pinta antes de llegar a ese bloque y necesita saber
+  // ya si el atleta está en volumen o en definición para dar contexto al vídeo.
+  const { data: programaNutricion } = useQuery({
+    queryKey: ['nutritionProgram', athlete.email],
+    queryFn: () => getNutritionProgram(athlete.email),
+  });
+  const faseActiva = useMemo(
+    () => (programaNutricion && programaNutricion.phases.length > 0
+      ? computeActivePhase(programaNutricion, ventana.hasta)
+      : null),
+    [programaNutricion, ventana.hasta],
+  );
 
   // ── Lo que ha comido ───────────────────────────────────────────────────────
   // Acotado a la ventana desde la propia consulta (`desde`), no leído entero y
@@ -244,6 +263,8 @@ export default function ClientRevisionPanel({
         ventana={ventana}
         informe={informe}
         peso={peso}
+        faseNutricional={faseActiva?.name ?? null}
+        pesoObjetivo={athlete.targetWeight}
       />
 
       <Secciones presentando={presentando}>

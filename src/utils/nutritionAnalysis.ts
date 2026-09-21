@@ -149,6 +149,7 @@ export interface StepCompletionResult {
   daysLogged: number;
   windowDays: number;
   avgPct: number; // 0-100, average % of daily step goal reached
+  avgSteps: number; // average steps/day actually walked, sin tope en el objetivo
 }
 
 export function computeStepCompletionRate(
@@ -159,9 +160,10 @@ export function computeStepCompletionRate(
   const window = fechasDeLaVentana(thresholds);
   const dias = diasDeLaVentana(thresholds);
   const inWindow = logs.filter(l => window.has(l.date));
-  if (inWindow.length === 0 || stepGoal <= 0) return { daysLogged: inWindow.length, windowDays: dias, avgPct: 0 };
+  if (inWindow.length === 0 || stepGoal <= 0) return { daysLogged: inWindow.length, windowDays: dias, avgPct: 0, avgSteps: 0 };
   const avgPct = Math.round(inWindow.reduce((s, l) => s + Math.min(100, (l.steps / stepGoal) * 100), 0) / inWindow.length);
-  return { daysLogged: inWindow.length, windowDays: dias, avgPct };
+  const avgSteps = Math.round(inWindow.reduce((s, l) => s + l.steps, 0) / inWindow.length);
+  return { daysLogged: inWindow.length, windowDays: dias, avgPct, avgSteps };
 }
 
 export interface MacroDeviationResult {

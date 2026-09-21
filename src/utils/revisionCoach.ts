@@ -12,7 +12,7 @@ import { buildAccumulatedStimulusReport, IEARow } from './accumulatedStimulusInd
 import { seriesRealizadasPorGrupo } from './programacion';
 import { construirMapaCalor, CeldaMapaCalor } from './mapaCalorCorporal';
 import { VolumeLandmark, VOLUME_LANDMARKS_DEFAULT } from '../data/volumeLandmarks';
-import { addDays, hoyIsoLocal, getWeekStart } from './trainingWeek';
+import { addDays, hoyIsoLocal } from './trainingWeek';
 import { nombreDeMeso } from './nombresMeso';
 import { mesocycleWeekNumber } from './progression';
 import { ewmaDeSeñal } from './wellnessTrend';
@@ -497,33 +497,43 @@ export interface PesoVsSemanaPasada {
 }
 
 /**
- * Cuánto ha movido el peso respecto a la semana pasada, comparando MEDIAS.
+ * Cuánto ha movido el peso en la ventana de la revisión contra la ventana
+ * equivalente justo antes, comparando MEDIAS.
  *
- * Se comparan medias y no el último registro de cada semana a propósito: el
+ * Se comparan medias y no el último registro de cada ventana a propósito: el
  * peso diario oscila un kilo largo por hidratación y sal, así que coger un día
- * suelto de cada semana mide sobre todo cuándo se pesó, no cómo va. Con dos
+ * suelto de cada ventana mide sobre todo cuándo se pesó, no cómo va. Con dos
  * medias, un día raro pesa lo que le toca.
  *
- * `null` si falta cualquiera de las dos semanas: sin las dos no hay diferencia
- * que dar, y enseñar un cero sería decir «no ha cambiado» cuando lo que pasa es
- * que no se sabe.
+ * Las fechas son las de `VentanaRevision` (`desde`/`hasta`), NO la semana de
+ * calendario (lunes-domingo) de hoy: antes se comparaba contra el calendario y
+ * la mayoría de atletas se pesan una vez por semana en un día que no cae en
+ * ese tramo exacto, así que la burbuja salía casi siempre vacía aunque hubiera
+ * un peso reciente a un par de días de la ventana real que se está mirando.
+ * La ventana anterior es la misma duración, desplazada hacia atrás.
+ *
+ * `null` si falta cualquiera de las dos ventanas: sin las dos no hay
+ * diferencia que dar, y enseñar un cero sería decir «no ha cambiado» cuando lo
+ * que pasa es que no se sabe.
  */
 export function pesoVsSemanaPasada(
   logs: BodyweightLog[],
-  hoy: string = hoyIsoLocal(),
+  desde: string,
+  hasta: string,
 ): PesoVsSemanaPasada {
-  const inicioEsta = getWeekStart(hoy);
-  const inicioAnterior = addDays(inicioEsta, -7);
+  const dias = diasEntre(desde, hasta) + 1;
+  const inicioAnterior = addDays(desde, -dias);
+  const finAnterior = addDays(desde, -1);
 
   const media = (desde: string, hasta: string): { media: number | null; n: number } => {
-    const v = logs.filter(l => l.date >= desde && l.date < hasta).map(l => l.weight);
+    const v = logs.filter(l => l.date >= desde && l.date <= hasta).map(l => l.weight);
     return v.length === 0
       ? { media: null, n: 0 }
       : { media: Math.round((v.reduce((a, b) => a + b, 0) / v.length) * 10) / 10, n: v.length };
   };
 
-  const esta = media(inicioEsta, addDays(inicioEsta, 7));
-  const anterior = media(inicioAnterior, inicioEsta);
+  const esta = media(desde, hasta);
+  const anterior = media(inicioAnterior, finAnterior);
 
   return {
     estaSemana: esta.media,

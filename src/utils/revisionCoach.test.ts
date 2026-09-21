@@ -327,10 +327,13 @@ describe('buildRevisionCoach', () => {
 });
 
 // ── pesoVsSemanaPasada ──────────────────────────────────────────────────────
-// HOY = lunes 2026-09-14, así que la semana en curso empieza ese mismo día y la
-// anterior va del 7 al 13.
+// Ventana de revisión del 14 al 20 de septiembre de 2026 (lunes a domingo),
+// así que la anterior va del 7 al 13 — mismos límites que antes usaba la
+// semana de calendario, pero ahora vienen de la ventana, no del reloj.
 
 describe('pesoVsSemanaPasada', () => {
+  const DESDE = '2026-09-14';
+  const HASTA = '2026-09-20';
   const peso = (date: string, weight: number): BodyweightLog =>
     ({ id: date, athleteId: 'a@b.com', date, weight, createdAt: `${date}T08:00:00.000Z` });
 
@@ -340,7 +343,7 @@ describe('pesoVsSemanaPasada', () => {
     const r = pesoVsSemanaPasada([
       peso('2026-09-07', 81.0), peso('2026-09-10', 80.0), peso('2026-09-13', 80.6),
       peso('2026-09-14', 80.2), peso('2026-09-15', 79.6),
-    ], HOY);
+    ], DESDE, HASTA);
     expect(r.semanaAnterior).toBe(80.5);
     expect(r.estaSemana).toBe(79.9);
     expect(r.deltaKg).toBe(-0.6);
@@ -348,26 +351,26 @@ describe('pesoVsSemanaPasada', () => {
   });
 
   it('con un solo registro por semana, la media es ese registro', () => {
-    const r = pesoVsSemanaPasada([peso('2026-09-09', 82), peso('2026-09-16', 81.2)], HOY);
+    const r = pesoVsSemanaPasada([peso('2026-09-09', 82), peso('2026-09-16', 81.2)], DESDE, HASTA);
     expect(r.deltaKg).toBe(-0.8);
     expect(r.registrosEstaSemana).toBe(1);
   });
 
   it('marca la subida en positivo', () => {
-    const r = pesoVsSemanaPasada([peso('2026-09-09', 80), peso('2026-09-16', 80.9)], HOY);
+    const r = pesoVsSemanaPasada([peso('2026-09-09', 80), peso('2026-09-16', 80.9)], DESDE, HASTA);
     expect(r.deltaKg).toBe(0.9);
   });
 
   it('sin una de las dos semanas NO inventa un cero', () => {
-    expect(pesoVsSemanaPasada([peso('2026-09-16', 80)], HOY).deltaKg).toBeNull();
-    expect(pesoVsSemanaPasada([peso('2026-09-09', 80)], HOY).deltaKg).toBeNull();
-    expect(pesoVsSemanaPasada([], HOY)).toMatchObject({ estaSemana: null, deltaKg: null });
+    expect(pesoVsSemanaPasada([peso('2026-09-16', 80)], DESDE, HASTA).deltaKg).toBeNull();
+    expect(pesoVsSemanaPasada([peso('2026-09-09', 80)], DESDE, HASTA).deltaKg).toBeNull();
+    expect(pesoVsSemanaPasada([], DESDE, HASTA)).toMatchObject({ estaSemana: null, deltaKg: null });
   });
 
   it('ignora los pesos de hace más de dos semanas', () => {
     const r = pesoVsSemanaPasada([
       peso('2026-08-01', 90), peso('2026-09-09', 80), peso('2026-09-16', 79.5),
-    ], HOY);
+    ], DESDE, HASTA);
     expect(r.semanaAnterior).toBe(80);
     expect(r.deltaKg).toBe(-0.5);
   });

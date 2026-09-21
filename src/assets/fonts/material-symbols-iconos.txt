@@ -76,6 +76,7 @@ dinner_dining
 directions_run
 directions_walk
 done
+done_all
 download
 draft
 drag_indicator
@@ -128,6 +129,7 @@ hourglass_top
 icecream
 image
 info
+input
 insights
 inventory_2
 ios
@@ -226,6 +228,7 @@ school
 science
 search
 search_off
+select
 self_improvement
 sell
 send
@@ -238,6 +241,7 @@ shuffle
 signal_cellular_alt
 skillet
 skip_next
+slideshow
 smart_toy
 soup_kitchen
 source

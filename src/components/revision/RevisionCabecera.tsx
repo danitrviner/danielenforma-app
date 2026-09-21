@@ -21,6 +21,8 @@ interface Props {
   peso: PesoVsSemanaPasada;
   /** Fase nutricional activa, si el atleta tiene periodización. */
   faseNutricional?: string | null;
+  /** Peso objetivo del atleta — el de la ficha, no el de la fase. */
+  pesoObjetivo?: number | null;
 }
 
 /** «29 ago» — sin año, que el rango siempre cae dentro del mismo o del anterior. */
@@ -40,7 +42,7 @@ function Cifra({ label, valor, sub, tono = 'ink' }: {
 }
 
 export default function RevisionCabecera({
-  athlete, ventana, informe, peso, faseNutricional = null,
+  athlete, ventana, informe, peso, faseNutricional = null, pesoObjetivo = null,
 }: Props) {
   const sinEntrenos = informe.sessions === 0;
 
@@ -53,6 +55,7 @@ export default function RevisionCabecera({
           <Badge tone="neutral">Semana {ventana.semanaDelPlan}/{ventana.semanasDelPlan}</Badge>
         )}
         {faseNutricional && <Badge tone="neutral">{faseNutricional}</Badge>}
+        {pesoObjetivo != null && <Badge tone="neutral">Objetivo {pesoObjetivo} kg</Badge>}
       </div>
 
       <div className="flex flex-wrap gap-2">

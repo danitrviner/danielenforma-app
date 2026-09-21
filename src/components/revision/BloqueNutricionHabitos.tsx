@@ -85,6 +85,8 @@ export default function BloqueNutricionHabitos({
     return activeId ? coachDiets.find(d => d.id === activeId) ?? null : (coachDiets[0] ?? null);
   }, [coachDiets, dietConfig]);
 
+  const stepGoal = nutritionConfigData?.stepGoal ?? DEFAULT_STEP_GOAL;
+
   const informe = useMemo(() => {
     if (cargando) return null;
     try {
@@ -93,7 +95,7 @@ export default function BloqueNutricionHabitos({
         diets: coachDiets,
         activeDiet,
         stepLogs: stepLogs ?? [],
-        stepGoal: nutritionConfigData?.stepGoal ?? DEFAULT_STEP_GOAL,
+        stepGoal,
         bodyweightLogs,
         targetWeight,
         onboarding: onboarding ?? null,
@@ -104,7 +106,7 @@ export default function BloqueNutricionHabitos({
       console.error('BloqueNutricionHabitos: no se pudo construir el informe', err);
       return null;
     }
-  }, [cargando, registros, coachDiets, activeDiet, stepLogs, nutritionConfigData?.stepGoal,
+  }, [cargando, registros, coachDiets, activeDiet, stepLogs, stepGoal,
       bodyweightLogs, targetWeight, onboarding, faseActiva, ventana.desde, ventana.hasta]);
 
   const [compartiendo, setCompartiendo] = useState(false);
@@ -169,8 +171,10 @@ export default function BloqueNutricionHabitos({
         />
         <Tarjeta
           label="Pasos"
-          value={steps.daysLogged > 0 ? `${steps.avgPct}%` : '—'}
-          sub={steps.daysLogged > 0 ? `${steps.daysLogged} días` : 'sin registros'}
+          value={steps.daysLogged > 0 ? steps.avgSteps.toLocaleString('es-ES') : '—'}
+          sub={steps.daysLogged > 0
+            ? `de ${stepGoal.toLocaleString('es-ES')} · ${steps.daysLogged} días`
+            : 'sin registros'}
         />
         <Tarjeta
           label="Peso"
