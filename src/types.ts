@@ -245,6 +245,40 @@ export interface MealItem {
   mode: DietMode;
   category: FoodCategory;
   label: string; // texto completo "1 intercambio = ..."
+  /** Lo que ponía la etiqueta del producto, por 100 g.
+   *
+   *  Solo lo traen los alimentos creados con la calculadora
+   *  (`utils/alimentoDesdeMacros.ts`); los 310 del sistema no, porque sus
+   *  porciones vienen del criterio de Dani y no de una cuenta. Se guarda para
+   *  poder reabrir el alimento y corregir un dato sin volver a teclearlo todo. */
+  porCien?: MacrosDeEtiqueta;
+  /** Gramos de producto que son un intercambio. Redundante con el número que
+   *  va dentro de `label` —que es de donde lo lee toda la app— y guardado
+   *  aparte solo para la ficha de edición. */
+  gramosPorIntercambio?: number;
+  /** Alimento del banco PERSONAL de un atleta, no del banco común. Lo pone
+   *  `getAlimentosPersonales` al mezclarlos; no se guarda en Firestore. */
+  personal?: boolean;
+}
+
+/** Información nutricional de una etiqueta, por 100 g o 100 ml de producto. */
+export interface MacrosDeEtiqueta {
+  kcal: number;
+  hc: number;
+  prot: number;
+  grasa: number;
+}
+
+/** El banco propio de un atleta: los alimentos que se ha añadido él.
+ *
+ *  Un documento por atleta (docId = su email) con la lista dentro, en vez de
+ *  un documento por alimento: son pocos, se leen SIEMPRE todos juntos al abrir
+ *  el buscador, y así es una lectura en vez de N. Los ve el propio atleta y el
+ *  coach; nunca entran en el banco común (`foodItems`), que es de todos. */
+export interface BancoPersonal {
+  ownerEmail: string;
+  foods: MealItem[];
+  actualizadoEn?: string;
 }
 
 export interface AthleteNutritionConfig {

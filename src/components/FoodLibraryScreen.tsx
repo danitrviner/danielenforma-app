@@ -8,6 +8,8 @@ import { useToast } from '../hooks/useToast';
 import { Skeleton } from './ui';
 import { EmptyState, Dialog, Button, Select } from './ui';
 import { coincideBusqueda } from '../utils/busqueda';
+import { coincidePorEquivalencia } from '../utils/equivalenciasDeAlimentos';
+import CrearAlimentoSheet from './nutrition/CrearAlimentoSheet';
 
 const SYSTEM_LABELS = new Set(SYSTEM_FOODS.map(f => f.label));
 
@@ -64,13 +66,14 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
   const [form, setForm] = useState<Omit<MealItem, 'id'>>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [calculadoraAbierta, setCalculadoraAbierta] = useState(false);
 
   const isSystem = (item: MealItem) => SYSTEM_LABELS.has(item.label);
 
   const filtered = items.filter(f => {
     if (f.mode !== filterMode) return false;
     if (filterCat !== 'all' && f.category !== filterCat) return false;
-    if (!coincideBusqueda(f.label, searchDebounced)) return false;
+    if (!coincideBusqueda(f.label, searchDebounced) && !coincidePorEquivalencia(f.label, searchDebounced)) return false;
     return true;
   });
 
@@ -172,12 +175,24 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
               className="bg-transparent text-white text-title-s focus:outline-none w-full placeholder-ink-2/40"
             />
           </div>
+          {/* Dos formas de añadir, y la de la etiqueta va primero porque es la
+              que no exige saberse nada: con las kcal y los macros del envase,
+              la app saca los gramos del intercambio y el grupo. "A mano" sigue
+              existiendo para los alimentos cuya porción es criterio de Dani y
+              no una cuenta ("1 manzana o 1 pera"). */}
           <button
-            onClick={openCreate}
+            onClick={() => setCalculadoraAbierta(true)}
             className="flex items-center gap-2 px-4 py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all whitespace-nowrap"
           >
+            <span className="material-symbols-outlined text-body-s">calculate</span>
+            Desde etiqueta
+          </button>
+          <button
+            onClick={openCreate}
+            className="flex items-center gap-2 px-4 py-3 bg-raised text-ink border border-hairline font-sans font-bold text-label uppercase rounded-control hover:border-accent/40 active:scale-95 transition-all whitespace-nowrap"
+          >
             <span className="material-symbols-outlined text-body-s">add</span>
-            Añadir
+            A mano
           </button>
         </div>
       </div>
@@ -298,6 +313,22 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
           </p>
         </Dialog>
       )}
+      {/* La misma calculadora que usa el atleta. Aquí guarda en el banco COMÚN
+          (`foodItems`), que es lo que el coach está editando en esta pantalla. */}
+      {calculadoraAbierta && (
+        <CrearAlimentoSheet
+          mode={filterMode}
+          destino="banco"
+          onClose={() => setCalculadoraAbierta(false)}
+          onGuardar={async (data) => {
+            const nuevo = await createFoodItem(data);
+            queryClient.setQueryData<MealItem[]>(foodItemsQueryKey, prev => [...(prev ?? []), nuevo]);
+            setFilterCat(nuevo.category);
+            showToast(`«${nuevo.label}» añadido al banco`, 'success');
+          }}
+        />
+      )}
+
     </div>
   );
 }

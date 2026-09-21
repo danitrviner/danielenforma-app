@@ -55,7 +55,7 @@ const MAX_ANTIGUEDAD_LOGIN_MS = 10 * 60 * 1000;
 export const POR_ID_EMAIL = [
   'onboarding', 'gimnasios', 'roadmaps', 'nutritionPrograms', 'athleteDietConfigs',
   'athleteNutritionConfigs', 'recipeFavorites', 'academyAccess', 'academyProgress',
-  'athleteCardioProfile', 'invites',
+  'athleteCardioProfile', 'invites', 'alimentosPersonales',
 ];
 
 // Colecciones con un campo que apunta al atleta. Se prueban los tres nombres

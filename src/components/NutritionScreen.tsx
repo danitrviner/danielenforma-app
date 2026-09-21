@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { minutosDeReceta } from '../utils/tiempoDeReceta';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { UserProfile, Diet, DietMeal, DietItem, FoodCategory, DietMode, MealItem, Recipe, RecipeFavorites, RefeedDay, RecetaPendiente, MenuCompletionLog } from '../types';
-import { getDietsForAthlete, getAthleteDietConfig, saveAthleteDietConfig, createDiet, updateDiet, deleteDiet, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig, saveAthleteNutritionConfig, getRecipes, getRecipeFavorites, getNutritionProgram, markNutritionPhaseSeen, computeActivePhase, createNotificationDeduped, getDietCompletionLog, saveDietCompletionLog, createRecipe, queryRecetas, queryRecetasForGenerator, cargarIndiceRecetas, getOnboarding, getRecipeById, getMenuCompletionLog, saveMenuCompletionLog } from '../dbService';
+import { getDietsForAthlete, getAthleteDietConfig, saveAthleteDietConfig, createDiet, updateDiet, deleteDiet, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig, saveAthleteNutritionConfig, getRecipes, getRecipeFavorites, getNutritionProgram, markNutritionPhaseSeen, computeActivePhase, createNotificationDeduped, getDietCompletionLog, saveDietCompletionLog, createRecipe, queryRecetas, queryRecetasForGenerator, cargarIndiceRecetas, getOnboarding, getRecipeById, getMenuCompletionLog, saveMenuCompletionLog, getAlimentosPersonales, crearAlimentoPersonal, borrarAlimentoPersonal } from '../dbService';
 import type { RecetasCursor } from '../dbService';
 import { CATS, BUDGET_CATS, CAT_LABEL, CAT_COLOR, CAT_BG, MODE_LABEL, ALL_DIET_MODES, round2, fmtQty, foodNameWithoutGrams, addToPlaced, recipeToDietItems, computeDietPlaced } from '../utils/exchangeHelpers';
 import { parseBaseGrams, etiquetaDePeso } from '../utils/conversionNutricional';
@@ -11,6 +11,7 @@ import { ingredientMatch, violatesDietType } from '../utils/foodPrefs';
 import { athleteConditions, violatesHealthConditions } from '../utils/dietaryRestrictions';
 import { dietTypeVigente } from '../utils/foodPrefs';
 import { coincideBusqueda, normalizarTexto } from '../utils/busqueda';
+import { coincidePorEquivalencia, explicacionesPara, esAlimentoLibre } from '../utils/equivalenciasDeAlimentos';
 import { dishType, dishTypeLabel, type DishType } from '../utils/dishTypes';
 import { filasDeComida, escalarReceta } from '../utils/filasDelPlan';
 import { escalarRecetaEntera, factorDeReceta , escalaDeReceta } from '../utils/escalarRecetaEntera';
@@ -29,6 +30,7 @@ import FotoDeReceta from './FotoDeReceta';
 import { Skeleton } from './ui';
 import { EmptyState, Sheet, Icon, Button, ProgressBar, RingSeal, Stepper, Dialog, ListRow, Input } from './ui';
 import MealItemSwipeRow from './nutrition/MealItemSwipeRow';
+import CrearAlimentoSheet from './nutrition/CrearAlimentoSheet';
 import { NotaDeFuente } from './FuentesCientificasSheet';
 
 import {
@@ -245,11 +247,28 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
   // global "local bypass" flag on Firestore failure, which would poison ANY
   // dbService call still in flight. Phase 1's diet/config reads must be fully
   // secured first.
-  const { data: foodItems = [], isPending: loadingFoodItems } = useQuery({
+  const { data: foodItemsComunes = [], isPending: loadingFoodItems } = useQuery({
     queryKey: ['foodItems'],
     queryFn: () => seedFoodItemsIfEmpty().catch(() => {}).then(getFoodItems),
     enabled: !loadingPhase1,
   });
+
+  /* El banco PROPIO del atleta: lo que se ha añadido él con la calculadora.
+     Vive en su propio documento (`alimentosPersonales/{email}`) y no en
+     `foodItems`, que es de todos — ver db/nutrition.ts. Se mezcla aquí, y solo
+     aquí, para que el resto de la pantalla siga viendo una única lista. */
+  const { data: alimentosPropios = [] } = useQuery({
+    queryKey: ['alimentosPersonales', profile.email],
+    queryFn: () => getAlimentosPersonales(profile.email).catch(() => [] as MealItem[]),
+    enabled: !loadingPhase1,
+  });
+
+  // Los propios van DELANTE: quien se ha molestado en crear un alimento lo
+  // busca para usarlo, y enterrado bajo 310 del sistema no lo encuentra.
+  const foodItems = useMemo(
+    () => [...alimentosPropios, ...foodItemsComunes],
+    [alimentosPropios, foodItemsComunes],
+  );
   const { data: recipes = [], isPending: loadingRecipesQ } = useQuery({
     queryKey: ['recipes', profile.userId],
     queryFn: () => getRecipes({ ownerId: profile.userId }).catch(() => [] as Recipe[]),
@@ -342,6 +361,8 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
   // Food picker — itemIdx null means "add a new item", a number means "swap that item"
   const [pickerItem, setPickerItem] = useState<{ mealId: string; itemIdx: number | null; category: FoodCategory } | null>(null);
   const [pickerCategory, setPickerCategory] = useState<FoodCategory>('HC');
+  const [crearAlimentoAbierto, setCrearAlimentoAbierto] = useState(false);
+  const [alimentoABorrar, setAlimentoABorrar] = useState<MealItem | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   // T13 (18-08): mismo tick + ×N que el selector del coach, para la rama de
   // "añadir" (itemIdx === null) — "cambiar" sigue siendo una sustitución
@@ -662,9 +683,23 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     const term = searchTerm.trim();
     return foodItems.filter(f =>
       f.mode === activeDietMode &&
-      (term ? coincideBusqueda(f.label, term) : f.category === pickerCategory)
+      (term
+        // El banco está escrito en categorías ("legumbre cocida") y el atleta
+        // escribe alimentos ("lentejas"): sin el diccionario de equivalencias,
+        // media despensa daba cero resultados. Ver equivalenciasDeAlimentos.ts.
+        ? coincideBusqueda(f.label, term) || coincidePorEquivalencia(f.label, term)
+        : f.category === pickerCategory)
     );
   }, [foodItems, activeDietMode, pickerCategory, searchTerm]);
+
+  /* Por qué sale lo que sale. Encontrar "legumbre cocida" al escribir
+     "lentejas" sin decir nada deja al atleta sin saber si eso le vale o si el
+     buscador se ha equivocado — la frase es la mitad del arreglo. */
+  const explicacionesDeBusqueda = useMemo(
+    () => explicacionesPara(searchTerm),
+    [searchTerm],
+  );
+  const buscaAlgoLibre = useMemo(() => esAlimentoLibre(searchTerm), [searchTerm]);
 
   const availableRecipeCats = useMemo(() => {
     const s = new Set<string>();
@@ -2071,7 +2106,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                                 return (
                                   <div key={cat} className="flex items-center gap-1">
                                     <span className={`font-mono text-caption font-bold ${CAT_COLOR[cat]}`}>
-                                      {cat.replace('_', ' ')}
+                                      {CAT_LABEL[cat]}
                                     </span>
                                     <span className={`font-mono text-caption ${isOver ? 'text-red-400' : isOk ? 'text-green-400' : 'text-ink-2'}`}>
                                       {fmtQty(d)}/{fmtQty(tgt)}{isOk ? ' ✓' : ''}
@@ -2816,7 +2851,11 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
               {CATS.map(cat => (
                 <button key={cat} onClick={() => { setPickerCategory(cat); setSearchTerm(''); }}
                   className={`px-3 py-2 rounded-full font-sans text-caption font-bold uppercase tracking-wider transition-all ${pickerCategory === cat && !isSearchingFoods ? 'bg-accent text-black' : 'bg-raised text-ink-2 border border-transparent hover:border-hairline'}`}
-                >{cat.replace('_', ' ')}</button>
+                  /* `CAT_LABEL`, no `cat.replace('_',' ')`: "MIX GRASA" no le
+                     dice nada a nadie, y es justo la categoría que hay que
+                     explicar — "½P+½Grasa" sí dice que un huevo cuenta media
+                     proteína y media grasa. */
+                >{CAT_LABEL[cat]}</button>
               ))}
             </div>
 
@@ -2831,44 +2870,184 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
           )}
         >
             <div className="pt-4 space-y-2">
+              {/* La equivalencia, escrita. Va ARRIBA de la lista y no pegada a
+                  cada fila: lo que hay que explicar es el salto de "lentejas" a
+                  "legumbre", que es uno solo aunque devuelva seis alimentos. */}
+              {explicacionesDeBusqueda.map(frase => (
+                <div key={frase} className="flex items-start gap-2 rounded-control bg-accent-bg border border-accent/20 p-3">
+                  <Icon name="lightbulb" size="s" className="mt-0.5 flex-shrink-0 text-accent" />
+                  <p className="font-sans text-body-s text-ink-2">{frase}</p>
+                </div>
+              ))}
+
               {filteredFoods.length === 0 ? (
+                /* El momento natural de crear un alimento es justo este: has
+                   buscado el tuyo, no está, y hasta hoy el camino se acababa
+                   aquí. Por eso la acción principal del vacío pasa a ser
+                   "Crearlo" y no "Quitar búsqueda". */
+                /* Tres vacíos distintos, y confundirlos es lo que hacía
+                   antes esta pantalla:
+                     · lo buscado es LIBRE → no falta nada, es que no cuenta.
+                       Ofrecer "créalo" aquí sería invitarle a apuntar
+                       intercambios de una lechuga.
+                     · lo buscado no existe → créalo.
+                     · no ha buscado nada → la categoría está vacía. */
+                buscaAlgoLibre ? (
+                  <EmptyState
+                    icon="check_circle"
+                    title="Eso es libre"
+                    description="No cuenta intercambios ni hace falta apuntarlo."
+                    actionLabel="Seguir buscando"
+                    onAction={() => setSearchTerm('')}
+                  />
+                ) : (
                 <EmptyState
-                  icon="search_off"
+                  icon={searchTerm ? 'add_circle' : 'search_off'}
                   title={searchTerm ? `Nada para «${searchTerm}»` : 'Sin alimentos en esta categoría.'}
-                  description={searchTerm ? 'Prueba con otra palabra o cambia de categoría.' : undefined}
-                  actionLabel={searchTerm ? 'Quitar búsqueda' : undefined}
-                  onAction={searchTerm ? () => setSearchTerm('') : undefined}
+                  description={searchTerm
+                    ? 'Puedes crearlo con los datos de su etiqueta y la app calcula el intercambio.'
+                    : undefined}
+                  actionLabel={searchTerm ? 'Crear este alimento' : undefined}
+                  onAction={searchTerm ? () => setCrearAlimentoAbierto(true) : undefined}
                 />
+                )
               ) : filteredFoods.map(food => {
                 const veces = pickerAddedCounts[food.id] ?? 0;
                 const reciente = pickerRecentlyAdded === food.id;
                 return (
-                  <button key={food.id} onClick={() => handleSelectFood(food)}
-                    className={`w-full flex items-center gap-3 p-4 rounded-control border text-left transition-all active:scale-[0.98] group ${
+                  /* La fila es un `div` y no un `button` porque los alimentos
+                     propios llevan su papelera dentro, y un botón dentro de un
+                     botón no es HTML válido: el navegador lo desanida y el
+                     borrado deja de recibir el clic. */
+                  <div key={food.id}
+                    className={`w-full flex items-center gap-3 rounded-control border transition-all group ${
                       reciente ? 'bg-success/10 border-success/40' : 'bg-surface hover:bg-raised border-hairline hover:border-accent/40'
                     }`}
                   >
-                    {isSearchingFoods && (
-                      <span className={`text-caption font-mono font-bold px-2 rounded-control border flex-shrink-0 ${CAT_BG[food.category]} ${CAT_COLOR[food.category]}`}>
-                        {food.category.replace('_', ' ')}
+                    <button
+                      type="button"
+                      onClick={() => handleSelectFood(food)}
+                      className="flex-1 min-w-0 flex items-center gap-3 p-4 text-left transition-transform active:scale-[0.98]"
+                    >
+                      {isSearchingFoods && (
+                        <span className={`text-caption font-mono font-bold px-2 rounded-control border flex-shrink-0 ${CAT_BG[food.category]} ${CAT_COLOR[food.category]}`}>
+                          {CAT_LABEL[food.category]}
+                        </span>
+                      )}
+                      <span className="flex-1 min-w-0 font-sans text-label text-ink group-hover:text-accent transition-colors leading-snug">
+                        {food.label}
+                        {/* Distingue lo tuyo de los 310 del sistema. Sin esto,
+                            un alimento creado por ti y uno de Dani se leen
+                            igual y no se sabe cuál se puede borrar. */}
+                        {food.personal && (
+                          <span className="ml-2 align-middle text-caption font-mono font-bold uppercase text-accent">tuyo</span>
+                        )}
                       </span>
+                      {reciente ? (
+                        <span className="flex items-center gap-1 flex-shrink-0 text-success">
+                          <Icon name="check_circle" size="m" />
+                          {veces > 1 && <span className="font-mono text-caption font-bold">×{veces}</span>}
+                        </span>
+                      ) : (
+                        <span className="material-symbols-outlined text-ink-2 group-hover:text-accent transition-colors select-none text-title-s flex-shrink-0">add_circle</span>
+                      )}
+                    </button>
+                    {food.personal && (
+                      <button
+                        type="button"
+                        aria-label={`Borrar ${food.label} de mis alimentos`}
+                        onClick={() => setAlimentoABorrar(food)}
+                        className="flex-shrink-0 p-4 text-ink-3 hover:text-danger transition-colors"
+                      >
+                        <Icon name="delete" size="s" />
+                      </button>
                     )}
-                    <span className="flex-1 block font-sans text-label text-ink group-hover:text-accent transition-colors leading-snug">{food.label}</span>
-                    {reciente ? (
-                      <span className="flex items-center gap-1 flex-shrink-0 text-success">
-                        <Icon name="check_circle" size="m" />
-                        {veces > 1 && <span className="font-mono text-caption font-bold">×{veces}</span>}
-                      </span>
-                    ) : (
-                      <span className="material-symbols-outlined text-ink-2 group-hover:text-accent transition-colors select-none text-title-s flex-shrink-0">add_circle</span>
-                    )}
-                  </button>
+                  </div>
                 );
               })}
+
+              {/* Siempre al final de la lista, no en la barra de arriba: la
+                  barra ya lleva modos, categorías y buscador, y una cuarta
+                  fila fija dejaba la lista en un palmo de pantalla. */}
+              {filteredFoods.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setCrearAlimentoAbierto(true)}
+                  className="w-full flex items-center gap-3 p-4 rounded-control border border-dashed border-hairline text-left transition-all active:scale-[0.98] hover:border-accent/40 group"
+                >
+                  <Icon name="add_circle" size="m" className="text-ink-2 group-hover:text-accent transition-colors" />
+                  <span className="flex-1 font-sans text-label text-ink-2 group-hover:text-accent transition-colors">
+                    ¿No está? Crear alimento desde su etiqueta
+                  </span>
+                </button>
+              )}
             </div>
         </Sheet>
         );
       })()}
+
+      {/* Borrar un alimento propio. Solo quita la entrada del banco personal:
+          lo que ya esté colocado en un plan se queda donde está, porque ahí
+          vive copiado como `DietItem` con su nombre y sus gramos dentro. */}
+      {alimentoABorrar && (
+        <Dialog
+          open
+          onClose={() => setAlimentoABorrar(null)}
+          title="¿Borrar este alimento?"
+          size="s"
+          footer={(
+            <>
+              <Button onClick={() => setAlimentoABorrar(null)} variant="secondary">Cancelar</Button>
+              <Button
+                variant="danger"
+                onClick={async () => {
+                  const id = alimentoABorrar.id;
+                  setAlimentoABorrar(null);
+                  await borrarAlimentoPersonal(profile.email, id);
+                  queryClient.setQueryData<MealItem[]>(
+                    ['alimentosPersonales', profile.email],
+                    prev => (prev ?? []).filter(f => f.id !== id),
+                  );
+                }}
+              >
+                Borrar
+              </Button>
+            </>
+          )}
+        >
+          <p className="font-sans text-body-s text-ink-2">
+            «{alimentoABorrar.label}» dejará de aparecer en tu buscador. Lo que ya tengas
+            puesto en tus comidas no se toca.
+          </p>
+        </Dialog>
+      )}
+
+      {/* Crear alimento — la calculadora de intercambios. Se abre desde el
+          buscador de alimentos y guarda en el banco PROPIO del atleta: lo ven
+          él y su coach, y nunca llega al banco común. */}
+      {crearAlimentoAbierto && (
+        <CrearAlimentoSheet
+          mode={activeDietMode}
+          destino="personal"
+          onClose={() => setCrearAlimentoAbierto(false)}
+          onGuardar={async (data) => {
+            const creado = await crearAlimentoPersonal(profile.email, data);
+            queryClient.setQueryData<MealItem[]>(
+              ['alimentosPersonales', profile.email],
+              prev => [...(prev ?? []), creado],
+            );
+            // Se coloca en su comida en el acto. Crear un alimento y que el
+            // buscador te devuelva a la lista para tener que buscarlo otra vez
+            // sería dar un paso de más justo cuando ya has hecho el trabajo.
+            handleSelectFood(creado);
+            // Y se deja la lista en su categoría, sin el término de búsqueda
+            // que no lo encontraba, para que se vea dónde ha caído.
+            setSearchTerm('');
+            setPickerCategory(creado.category);
+            showToast(`«${creado.label}» añadido a tus alimentos`, 'success');
+          }}
+        />
+      )}
 
       {/* Hoja de ajuste (F3.8, panel 02) — steppers por macro, píldora de encaje en vivo */}
       {/* Pantalla de reparto — cuánto del cupo diario fijo (`selectedDiet.budget`,

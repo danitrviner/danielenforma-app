@@ -21,6 +21,7 @@ import {
   getMesocycles,
   getDietsForAthlete,
   getFoodItems,
+  getAlimentosPersonales,
   getWorkoutAssignmentsByMesocycleIds,
   getDietCompletionLogsForAthlete,
   getAthleteNutritionConfig,
@@ -1777,7 +1778,7 @@ async function proposeNutritionProgram(
 
   const [dietasDelAtleta, etiquetasDelCoach] = await Promise.all([
     getDietsForAthlete(athleteEmail),
-    etiquetasDelBancoDelCoach(),
+    etiquetasDelBancoDelCoach(athleteEmail),
   ]);
 
   // La validación vive en validators.ts, con sus tests: aquí solo se construye.
@@ -2064,7 +2065,7 @@ async function proposeDietUpdate(
   expediente?: ProposalExpediente,
 ): Promise<string> {
   const payload: DietUpdatePayload = { budget, meals };
-  const issues = validateDietPayload(payload, await etiquetasDelBancoDelCoach());
+  const issues = validateDietPayload(payload, await etiquetasDelBancoDelCoach(athleteEmail));
   if (issues.length > 0) {
     return toResult({ valid: false, issues, note: 'Corrige estos problemas y vuelve a llamar a propose_diet_update.' });
   }
@@ -3191,7 +3192,7 @@ async function getRevisionEngine(email: string, periodoPedido: string): Promise<
   const comida = construirComidaDeLaSemana({
     logs: registros, diets: dietas, desde: ventana.desde, hasta: ventana.hasta,
   });
-  const peso = pesoVsSemanaPasada(bwLogs, hoy);
+  const peso = pesoVsSemanaPasada(bwLogs, ventana.desde, ventana.hasta);
   const { titulares, resumenParaCliente } = construirTitulares({ revision, comida, peso });
 
   return toResult({
@@ -3245,14 +3246,31 @@ async function getRevisionEngine(email: string, periodoPedido: string): Promise<
  * del sistema, que es exactamente el comportamiento que había antes. Un fallo
  * de red no debe convertir una propuesta válida en una inválida por sorpresa.
  */
-async function etiquetasDelBancoDelCoach(): Promise<string[]> {
-  try {
-    const items = await getFoodItems();
-    return items.map(f => f.label).filter(Boolean);
-  } catch (err) {
-    console.warn('No se pudo leer el banco de alimentos del coach:', err);
-    return [];
-  }
+/**
+ * Las etiquetas que el validador debe dar por buenas: el banco común más, si
+ * se le dice de quién, los alimentos que ese atleta se ha creado él.
+ *
+ * Los propios hacen falta aquí por lo mismo que hacían falta los del coach: el
+ * asistente ve la dieta del atleta, en ella hay un alimento suyo, lo repite en
+ * su propuesta y el validador lo rechazaba por «no reconocido» — dejando al
+ * modelo buscando un sinónimo de algo que existe.
+ */
+async function etiquetasDelBancoDelCoach(athleteEmail?: string): Promise<string[]> {
+  const leer = async <T,>(fn: () => Promise<T[]>, queja: string): Promise<T[]> => {
+    try {
+      return await fn();
+    } catch (err) {
+      console.warn(queja, err);
+      return [];
+    }
+  };
+  const [comunes, propios] = await Promise.all([
+    leer(() => getFoodItems(), 'No se pudo leer el banco de alimentos del coach:'),
+    athleteEmail
+      ? leer(() => getAlimentosPersonales(athleteEmail), 'No se pudo leer el banco personal del atleta:')
+      : Promise.resolve([]),
+  ]);
+  return [...comunes, ...propios].map(f => f.label).filter(Boolean);
 }
 
 /**

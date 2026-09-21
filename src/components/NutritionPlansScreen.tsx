@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Diet, DietItem, DietMeal, FoodCategory, DietMode, MealItem, OnboardingData, UserProfile, NutritionProgram, NutritionPhase } from '../types';
-import { getDietsForAthlete, createDiet, updateDiet, deleteDiet, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig, getAllUserProfiles } from '../dbService';
+import { getDietsForAthlete, createDiet, updateDiet, deleteDiet, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig, getAllUserProfiles, getAlimentosPersonales } from '../dbService';
 import { DietNumerosView } from './DietMealsView';
 import { CATS, BUDGET_CATS, CAT_LABEL, CAT_COLOR, MODE_LABEL, round2, fmtQty, addToPlaced } from '../utils/exchangeHelpers';
 import { parseBaseGrams, etiquetaDePeso } from '../utils/conversionNutricional';
@@ -14,6 +14,7 @@ import { useToast } from '../hooks/useToast';
 import { atletasActivos } from '../utils/atletas';
 import { athleteConditions, restrictionLabel } from '../utils/dietaryRestrictions';
 import { coincideBusqueda } from '../utils/busqueda';
+import { coincidePorEquivalencia, explicacionesPara } from '../utils/equivalenciasDeAlimentos';
 import { haptics } from '../services/haptics';
 import { Skeleton } from './ui';
 import { Icon, Button, Chip, EmptyState, Sheet, Dialog, Input, Select } from './ui';
@@ -175,10 +176,25 @@ export default function NutritionPlansScreen({
 
   // Food picker — foodItems is a global library (shared ['foodItems'] key with
   // the rest of the app), independent of which athlete is selected.
-  const { data: foodItems = [] } = useQuery({
+  const { data: foodItemsComunes = [] } = useQuery({
     queryKey: ['foodItems'],
     queryFn: () => seedFoodItemsIfEmpty().then(getFoodItems),
   });
+
+  /* Los alimentos que el atleta seleccionado se ha creado él. Este sí depende
+     de qué atleta hay elegido, al revés que el banco común. Sin esto, el coach
+     abría la dieta de alguien y no podía colocarle un alimento que esa persona
+     usa todos los días, porque para el selector no existía. */
+  const { data: alimentosDelAtleta = [] } = useQuery({
+    queryKey: ['alimentosPersonales', selectedEmail],
+    queryFn: () => getAlimentosPersonales(selectedEmail).catch(() => [] as MealItem[]),
+    enabled: !!selectedEmail,
+  });
+
+  const foodItems = useMemo(
+    () => [...alimentosDelAtleta, ...foodItemsComunes],
+    [alimentosDelAtleta, foodItemsComunes],
+  );
   const [enabledModes, setEnabledModes] = useState<DietMode[]>(['OMNIVORO']);
   const [activeDietMode, setActiveDietMode] = useState<DietMode>('OMNIVORO');
   const [pickerMealId, setPickerMealId] = useState<string | null>(null);
@@ -580,9 +596,15 @@ export default function NutritionPlansScreen({
     const term = searchTerm.trim();
     return foodItems.filter(f =>
       f.mode === activeDietMode &&
-      (term ? coincideBusqueda(f.label, term) : f.category === pickerCategory)
+      // Mismo diccionario que el buscador del atleta: el banco habla en
+      // categorías y aquí se busca por alimento igual que en el móvil.
+      (term
+        ? coincideBusqueda(f.label, term) || coincidePorEquivalencia(f.label, term)
+        : f.category === pickerCategory)
     );
   })();
+
+  const explicacionesDeBusqueda = explicacionesPara(searchTerm);
 
   // T13: estado del presupuesto de la comida abierta, para la cabecera del
   // picker — es justo lo que el coach está intentando cuadrar, y antes
@@ -1238,6 +1260,16 @@ export default function NutritionPlansScreen({
           )}
         >
             <div className="pt-4 space-y-2">
+              {/* La misma frase que ve el atleta en su móvil. Aquí sirve para
+                  otra cosa: enseña con qué palabras va a encontrar él lo que
+                  el coach le está poniendo en el plan. */}
+              {explicacionesDeBusqueda.map(frase => (
+                <div key={frase} className="flex items-start gap-2 rounded-control bg-accent-bg border border-accent/20 p-3">
+                  <Icon name="lightbulb" size="s" className="mt-0.5 flex-shrink-0 text-accent" />
+                  <p className="font-sans text-body-s text-ink-2">{frase}</p>
+                </div>
+              ))}
+
               {filteredFoods.length === 0 ? (
                 <EmptyState icon="search_off" title="Ningún alimento coincide." />
               ) : filteredFoods.map(food => {

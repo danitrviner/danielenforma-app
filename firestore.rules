@@ -290,6 +290,14 @@ service cloud.firestore {
       allow write: if isCoach();
     }
 
+    // ── alimentosPersonales (docId = EMAIL del atleta) ───────────────────────
+    // El banco propio de cada atleta: los alimentos que se añade él con la
+    // calculadora de intercambios. Lo ve él y lo ve el coach, nadie más — por
+    // eso NO va en `foodItems`, que es de lectura para toda la app.
+    match /alimentosPersonales/{email} {
+      allow read, write: if isOwnerEmail(email) || isCoach();
+    }
+
     // ── diets (athleteId = EMAIL) ────────────────────────────────────────────
     match /diets/{docId} {
       allow read: if isCoach()

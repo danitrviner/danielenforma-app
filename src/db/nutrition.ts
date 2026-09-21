@@ -1,5 +1,5 @@
 import { db, collection, doc, getDoc, setDoc, getDocs, addDoc, updateDoc, deleteDoc, query, where, limit, documentId } from '../firebase';
-import { MealItem, AthleteNutritionConfig, Diet, AthleteDietConfig, DietCompletionLog, WeeklyMenu, MenuCompletionLog, NutritionProgram, NutritionPhase } from '../types';
+import { MealItem, BancoPersonal, AthleteNutritionConfig, Diet, AthleteDietConfig, DietCompletionLog, WeeklyMenu, MenuCompletionLog, NutritionProgram, NutritionPhase } from '../types';
 import { registroQueGana } from './registroDelDia';
 import { forceLocalOnly, setLocalBypassMode, stripUndefined, authReady, withAuthRetry, esFalloDePermisos, escribirEnLotes } from './core';
 import { SYSTEM_FOODS } from '../nutricion_seed_en_forma';
@@ -149,6 +149,141 @@ export async function seedFoodItemsIfEmpty(): Promise<void> {
       saveLocalFoodItems(seeded);
     }
   }
+}
+
+// ─── BANCO PERSONAL DEL ATLETA ───────────────────────────────────────────────
+/* Los alimentos que se añade un atleta por su cuenta con la calculadora.
+ *
+ * NO van a `foodItems`. Ese es el banco común: lo ven los 310 alimentos del
+ * sistema, lo ve todo el mundo, está cacheado por versión de catálogo en cada
+ * dispositivo y escribir en él sube esa versión para TODOS. Un atleta
+ * añadiéndose "su" pan sin gluten no tiene por qué aparecerle al resto ni
+ * invalidarles el catálogo.
+ *
+ * Un documento por atleta, con la lista entera dentro (docId = email, igual
+ * que `athleteNutritionConfigs` y `diets`). Se leen siempre todos juntos —el
+ * buscador de alimentos los necesita de golpe—, así que son pocos documentos y
+ * una sola lectura, no una por alimento.
+ */
+
+const bancoPersonalLocalKey = (email: string) => `enforma_banco_personal_${email}`;
+
+function leerBancoLocal(email: string): MealItem[] {
+  try {
+    const raw = localStorage.getItem(bancoPersonalLocalKey(email));
+    return raw ? (JSON.parse(raw) as MealItem[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function guardarBancoLocal(email: string, foods: MealItem[]): void {
+  try {
+    escribirLocal(bancoPersonalLocalKey(email), JSON.stringify(foods));
+  } catch {}
+}
+
+/** Marca `personal: true` en todo lo que salga de aquí. Es lo que permite a la
+ *  interfaz distinguirlos del banco común sin comparar contra los 310 labels
+ *  del sistema, y lo que impide que un borrado desde el banco del coach
+ *  intente ir a `foodItems`, donde este alimento no está. */
+const comoPersonal = (f: MealItem): MealItem => ({ ...f, personal: true });
+
+/** Lee de Firestore y RELANZA si no puede. Lo usan las escrituras. */
+async function leerBancoRemoto(athleteEmail: string): Promise<MealItem[]> {
+  await authReady;
+  return withAuthRetry(async () => {
+    const snap = await getDoc(doc(db, 'alimentosPersonales', athleteEmail));
+    const foods = snap.exists() ? ((snap.data() as BancoPersonal).foods ?? []) : [];
+    guardarBancoLocal(athleteEmail, foods);
+    return foods;
+  });
+}
+
+export async function getAlimentosPersonales(athleteEmail: string): Promise<MealItem[]> {
+  if (!athleteEmail) return [];
+  if (forceLocalOnly) return leerBancoLocal(athleteEmail).map(comoPersonal);
+  try {
+    return (await leerBancoRemoto(athleteEmail)).map(comoPersonal);
+  } catch (err) {
+    // Para LEER sí vale la copia local: enseñar los alimentos de la última vez
+    // es mejor que una lista vacía. Igual que `getAthleteNutritionConfig`, NO
+    // se activa el bypass local global: que el banco propio de un atleta falle
+    // no puede tumbar las escrituras del resto de colecciones.
+    console.warn('getAlimentosPersonales Firestore failed, using local:', err);
+    return leerBancoLocal(athleteEmail).map(comoPersonal);
+  }
+}
+
+async function escribirBancoPersonal(athleteEmail: string, foods: MealItem[]): Promise<void> {
+  // `personal` es una marca de la interfaz, no un dato: se quita antes de
+  // guardar para que el documento no arrastre un campo que ya se deduce de
+  // dónde está guardado.
+  const limpios = foods.map(({ personal: _personal, ...resto }) => resto as MealItem);
+  if (forceLocalOnly) {
+    guardarBancoLocal(athleteEmail, limpios);
+    return;
+  }
+  const payload: BancoPersonal = {
+    ownerEmail: athleteEmail,
+    foods: limpios,
+    actualizadoEn: new Date().toISOString(),
+  };
+  try {
+    await setDoc(doc(db, 'alimentosPersonales', athleteEmail), stripUndefined(payload));
+  } catch (err) {
+    /* Se relanza SIEMPRE, no solo en fallos de permisos.
+     *
+     * Aquí no sirve el patrón habitual de "guarda local y sigue" que usan las
+     * otras colecciones: la siguiente lectura pisa la copia local con lo que
+     * haya en Firestore, así que un alimento que solo esté en el móvil no
+     * sobrevive a recargar la pantalla. Guardarlo local y devolver éxito sería
+     * enseñarle al atleta un alimento que va a desaparecer solo. */
+    console.warn('escribirBancoPersonal Firestore failed:', err);
+    throw err;
+  }
+  // El local se actualiza DESPUÉS de que Firestore haya dicho que sí, para que
+  // nunca enseñe algo que en realidad no se guardó.
+  guardarBancoLocal(athleteEmail, limpios);
+}
+
+/* Las dos escrituras reescriben el documento ENTERO, así que la lista de
+ * partida tiene que venir de Firestore y la lectura tiene que haber IDO BIEN.
+ *
+ * Aquí no vale el `catch` que devuelve la copia local, y esa es la diferencia
+ * con `getAlimentosPersonales`: si la lectura falla y seguimos adelante con lo
+ * que hubiera en el móvil, la escritura pisa el documento entero y se lleva por
+ * delante todo lo que ese atleta hubiera añadido desde otro dispositivo. En un
+ * móvil recién estrenado el caché está vacío: guardar un alimento dejaría el
+ * banco con ese y nada más. Mejor fallar y que la hoja lo diga. */
+async function bancoVigente(athleteEmail: string): Promise<MealItem[]> {
+  if (forceLocalOnly) return leerBancoLocal(athleteEmail);
+  return leerBancoRemoto(athleteEmail);
+}
+
+export async function crearAlimentoPersonal(
+  athleteEmail: string,
+  data: Omit<MealItem, 'id'>,
+): Promise<MealItem> {
+  const actuales = await bancoVigente(athleteEmail);
+
+  /* Crear dos veces el mismo alimento es más fácil de lo que parece: no lo
+   * encuentras buscando, lo creas, y a la semana siguiente vuelves a no
+   * encontrarlo porque lo buscaste con otra palabra. Devolver el que ya existe
+   * —en vez de añadir un gemelo— deja el banco limpio y no le cambia nada a
+   * quien lo está creando: igualmente acaba colocado en su comida. */
+  const yaEsta = actuales.find(f =>
+    f.mode === data.mode && f.label.trim().toLowerCase() === data.label.trim().toLowerCase());
+  if (yaEsta) return comoPersonal(yaEsta);
+
+  const nuevo: MealItem = { ...data, id: `pers_${Date.now()}_${Math.random().toString(36).slice(2, 8)}` };
+  await escribirBancoPersonal(athleteEmail, [...actuales, nuevo]);
+  return comoPersonal(nuevo);
+}
+
+export async function borrarAlimentoPersonal(athleteEmail: string, id: string): Promise<void> {
+  const actuales = await bancoVigente(athleteEmail);
+  await escribirBancoPersonal(athleteEmail, actuales.filter(f => f.id !== id));
 }
 
 // ─── ATHLETE NUTRITION CONFIG ─────────────────────────────────────────────────
