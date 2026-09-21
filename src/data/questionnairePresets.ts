@@ -12,8 +12,8 @@
 // original — como texto libre no se pueden graficar ni correlacionar, que es
 // justo el objetivo de este proyecto.
 
-import { QuestionnaireQuestion, QSchedule, BodyMetricKey, Questionnaire, MuscleGroup } from '../types';
-import { OPCIONES_GRUPOS, VolumeSignalKey, SignalKey } from './questionnaireSignals';
+import { QuestionnaireQuestion, QSchedule, BodyMetricKey, Questionnaire, MuscleGroup } from '../types.js';
+import { OPCIONES_GRUPOS, VolumeSignalKey, SignalKey } from './questionnaireSignals.js';
 
 export interface QuestionnairePresetDef {
   title: string;

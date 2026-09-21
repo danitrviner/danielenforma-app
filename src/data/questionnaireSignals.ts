@@ -1,4 +1,4 @@
-import { MuscleGroup, MUSCLE_LABELS, MUSCLE_ORDER, QuestionnaireQuestion } from '../types';
+import { MuscleGroup, MUSCLE_LABELS, MUSCLE_ORDER, QuestionnaireQuestion } from '../types.js';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // SEÑALES DE CUESTIONARIO — las pocas respuestas que un motor lee de verdad.
