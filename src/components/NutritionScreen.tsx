@@ -730,7 +730,13 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
   }, [ambitoCupo, recipePickerMealId, selectedDiet, mealDoneByCat, leftByCat]);
 
   const sortedPickerRecipes = useMemo(() => {
+    // Una receta guardada del recetario no trae `ingredients` (ver
+    // hidratarEntradaIndice), así que el `.some()` la descartaba siempre y el
+    // atleta no encontraba aquí un plato que sí ve en Mis recetas. Sin
+    // ingredientes no hay modo que comprobar; el tipo de dieta lo sigue
+    // filtrando isSafeForAthlete.
     const withIngredients = recipes.filter(r =>
+      (r.ingredients ?? []).length === 0 ||
       r.ingredients.some(ing => enabledModes.includes(ing.mode))
     );
     const filtered = withIngredients.filter(r => {
