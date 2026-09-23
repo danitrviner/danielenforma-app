@@ -12,6 +12,10 @@ import {
 import { estimateMaintenanceKcal } from '../utils/energyCalc';
 import { ajustarCupoSinTocarProteina } from '../utils/ajusteDeCupo';
 import { duracionDeLasFases } from '../utils/ritmoDePeso';
+import {
+  ObjetivoCorporalTipo, OBJETIVO_LABEL, OBJETIVOS_ORDEN, RANGO_PCT_SEMANA,
+} from '../utils/verificacionObjetivo';
+import { phaseTypeDeObjetivo, ritmoSugeridoKg } from '../utils/objetivoDeFase';
 import { roundQuarter } from '../utils/exchangeHelpers';
 import {
   resolvePhaseTargetKcal,
@@ -52,16 +56,18 @@ interface FormState {
 
 const PHASE_COLORS = ['var(--color-accent)', 'var(--color-data)', 'var(--color-warning)', 'var(--color-chart-3)'];
 
-// Tipo de fase de nutrición (Roadmap → Calendario, coach) — decide el color
-// del bloque en el calendario. Opcional: sin marcar, `clasificarFaseNutricion`
-// (utils/roadmapCalendar.ts) lo deduce del delta de `targetKcal` contra la
-// fase anterior.
-const NUTRI_PHASE_TYPE_OPTIONS: { value: '' | NutritionPhaseType; label: string }[] = [
+// Objetivo de la fase — decide el rango con el que Revisión › Cuerpo verifica
+// el peso, y a través de `phaseType` el color en el calendario. Opcional: sin
+// marcar, se deduce del salto de kcal con la fase anterior.
+const OBJETIVO_OPCIONES: { value: '' | ObjetivoCorporalTipo; label: string }[] = [
   { value: '', label: 'Auto (según kcal)' },
-  { value: 'deficit', label: 'Déficit' },
-  { value: 'mantenimiento', label: 'Mantenimiento' },
-  { value: 'superavit', label: 'Superávit' },
+  ...OBJETIVOS_ORDEN.map(t => ({ value: t, label: OBJETIVO_LABEL[t] })),
 ];
+
+// Fases de antes del objetivo: se enseña el equivalente de su tipo.
+const OBJETIVO_DE_TIPO_VIEJO: Record<NutritionPhaseType, ObjetivoCorporalTipo> = {
+  deficit: 'deficit', mantenimiento: 'mantenimiento', superavit: 'volumen',
+};
 
 function phaseTextColor(bgColor: string): string {
   // accent y data son claros, el resto son oscuros
@@ -297,6 +303,8 @@ export default function NutritionPeriodizationPanel({
         startDate: form.startDate,
         phases,
         lastSeenPhaseId: program?.lastSeenPhaseId,
+        // Los refeeds se crean desde el calendario; sin esto, guardar aquí los borraba.
+        ...(program?.refeedDays ? { refeedDays: program.refeedDays } : {}),
       };
       await saveNutritionProgram(newProgram);
       queryClient.setQueryData(programQueryKey, newProgram);
@@ -603,13 +611,28 @@ export default function NutritionPeriodizationPanel({
                   </select>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-caption font-mono text-ink-2 uppercase tracking-wider flex-shrink-0">Tipo:</span>
+                  <span className="text-caption font-mono text-ink-2 uppercase tracking-wider flex-shrink-0">Objetivo:</span>
                   <select
-                    value={phase.phaseType ?? ''}
-                    onChange={e => updatePhase(idx, { phaseType: e.target.value === '' ? undefined : e.target.value as NutritionPhaseType })}
+                    value={phase.objetivo ?? (phase.phaseType ? OBJETIVO_DE_TIPO_VIEJO[phase.phaseType] : '')}
+                    onChange={e => {
+                      const tipo = e.target.value as '' | ObjetivoCorporalTipo;
+                      if (tipo === '') {
+                        updatePhase(idx, { objetivo: undefined, phaseType: undefined });
+                        return;
+                      }
+                      // Ritmo: se respeta el del coach si va en la dirección
+                      // del objetivo; si no, el centro del rango.
+                      const rango = RANGO_PCT_SEMANA[tipo];
+                      const dir = rango ? (rango.min + rango.max >= 0 ? 1 : -1) : 0;
+                      const previo = phase.targetRateKgWeek;
+                      const ritmo = !rango ? undefined
+                        : previo != null && previo * dir > 0 ? previo
+                        : ritmoSugeridoKg(tipo, pesosDeEntrada[idx] ?? pesoDePartida);
+                      updatePhase(idx, { objetivo: tipo, phaseType: phaseTypeDeObjetivo(tipo), targetRateKgWeek: ritmo });
+                    }}
                     className="bg-raised border border-hairline text-white text-title-s font-mono rounded-control px-2 py-2 focus:outline-none focus:border-chart-3/50 transition-colors"
                   >
-                    {NUTRI_PHASE_TYPE_OPTIONS.map(o => (
+                    {OBJETIVO_OPCIONES.map(o => (
                       <option key={o.value} value={o.value}>{o.label}</option>
                     ))}
                   </select>

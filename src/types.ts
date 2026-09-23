@@ -1,6 +1,6 @@
 import type { AceptacionesLegales } from './legal/aceptacion.js';
 import type { DietaryRestrictionCode } from './utils/dietaryRestrictions.js';
-import type { ObjetivoCorporal } from './utils/verificacionObjetivo.js';
+import type { ObjetivoCorporalTipo } from './utils/verificacionObjetivo.js';
 
 // ─── NOTIFICATIONS ────────────────────────────────────────────────────────────
 
@@ -311,10 +311,6 @@ export interface AthleteNutritionConfig {
   dietType?: DietType;
   cookingMaxTime?: number;    // minutos
   mealCount?: number;         // 3 | 4 | 5 | 6 (ver CONTEOS_COMIDAS)
-  /** Objetivo corporal que marca el coach (Volumen, Déficit…) y desde cuándo.
-   *  Alimenta la verificación de Revisión › Cuerpo sin necesidad de montar
-   *  periodización — ver utils/verificacionObjetivo.ts. */
-  objetivoCorporal?: ObjetivoCorporal;
 }
 
 export type HungerProfile = 'manana' | 'equilibrado' | 'noche';
@@ -1191,6 +1187,14 @@ export interface NutritionPhase {
    * fase anterior; sin fase anterior con la que comparar, color neutro.
    */
   phaseType?: NutritionPhaseType;
+  /**
+   * Objetivo corporal de la fase (Volumen, Déficit, Pérdida acelerada, Salida
+   * de déficit, Mantenimiento, Recomposición). Decide el rango de ritmo con el
+   * que se verifica el peso en Revisión › Cuerpo. Al marcarlo se rellena
+   * también `phaseType` (el color), así que quien solo lee `phaseType` sigue
+   * funcionando. Sin él, se deduce — ver utils/objetivoDeFase.ts.
+   */
+  objetivo?: ObjetivoCorporalTipo;
 }
 
 // Mismos 3 tipos que usa el color de fase de nutrición del Roadmap → Calendario.

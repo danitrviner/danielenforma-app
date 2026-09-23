@@ -3,8 +3,11 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   ComposedChart, Area, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts';
-import { AthleteNutritionConfig, WorkoutLog } from '../../types';
-import { getAthleteNutritionConfig, saveAthleteNutritionConfig } from '../../dbService';
+import { WorkoutLog } from '../../types';
+import { getNutritionProgram, saveNutritionProgram } from '../../dbService';
+import {
+  faseEnCurso, cambiarObjetivo, corregirObjetivoDeFase, SEMANAS_FASE_NUEVA,
+} from '../../utils/objetivoDeFase';
 import { useAthleteWeight } from '../../hooks/useAthleteWeight';
 import { useBodyMeasurements } from '../../hooks/useBodyMeasurements';
 import { hoyIsoLocal } from '../../utils/trainingWeek';
@@ -138,83 +141,119 @@ interface Props {
 export default function VerificacionObjetivo({ athleteEmail, logs }: Props) {
   const queryClient = useQueryClient();
   const hoy = hoyIsoLocal();
-  const configKey = ['athleteNutritionConfig', athleteEmail];
-  const { data: config, isPending } = useQuery({
-    queryKey: configKey,
-    queryFn: () => getAthleteNutritionConfig(athleteEmail).catch(() => null),
+  const programKey = ['nutritionProgram', athleteEmail];
+  const { data: program = null, isPending } = useQuery({
+    queryKey: programKey,
+    queryFn: () => getNutritionProgram(athleteEmail),
   });
   const { logs: pesos } = useAthleteWeight(athleteEmail);
   const { all: medidas } = useBodyMeasurements(athleteEmail);
+  const pesoKg = pesos.length ? pesos[pesos.length - 1].weight : null;
 
-  const objetivo = config?.objetivoCorporal ?? null;
+  const enCurso = faseEnCurso(program, hoy);
+  const objetivo: ObjetivoCorporal | null = enCurso?.objetivo
+    ? { tipo: enCurso.objetivo.tipo, desde: enCurso.desde }
+    : null;
+
   const [editando, setEditando] = useState(false);
-  const [borrador, setBorrador] = useState<ObjetivoCorporal | null>(null);
+  const [tipoElegido, setTipoElegido] = useState<ObjetivoCorporalTipo>('deficit');
+  const [desdeElegido, setDesdeElegido] = useState(hoy);
 
   const guardar = useMutation({
-    mutationFn: async (nuevo: ObjetivoCorporal) => {
-      // Se relee el documento para no pisar lo que otra pantalla haya guardado
-      // (pasos, variedad de menú…) desde que se cargó este.
-      const actual = await getAthleteNutritionConfig(athleteEmail);
-      const siguiente: AthleteNutritionConfig = { ...actual, objetivoCorporal: nuevo };
-      await saveAthleteNutritionConfig(siguiente);
+    mutationFn: async (modo: 'nuevo' | 'corregir') => {
+      // Se relee el programa: el panel de periodización o la IA pueden haberlo
+      // cambiado desde que se pintó esta tarjeta, y se guarda el documento entero.
+      const actual = await getNutritionProgram(athleteEmail);
+      const siguiente = modo === 'corregir' && actual && enCurso
+        ? corregirObjetivoDeFase(actual, enCurso.idx, tipoElegido, pesoKg)
+        : cambiarObjetivo({
+            program: actual, athleteEmail, tipo: tipoElegido, pesoKg,
+            // Sin programa, el coach puede fechar el inicio hacia atrás para
+            // que cuenten los pesos que ya hay.
+            hoy: actual ? hoy : desdeElegido,
+          });
+      await saveNutritionProgram(siguiente);
       return siguiente;
     },
     onSuccess: (siguiente) => {
-      queryClient.setQueryData(configKey, siguiente);
+      queryClient.setQueryData(programKey, siguiente);
       setEditando(false);
-      setBorrador(null);
     },
   });
 
   const verificacion = useMemo(
     () => objetivo ? verificarObjetivo({ objetivo, pesos, hoy, medidas, entrenos: logs }) : null,
-    [objetivo, pesos, hoy, medidas, logs],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [objetivo?.tipo, objetivo?.desde, pesos, hoy, medidas, logs],
   );
 
   if (isPending) return <Skeleton className="w-full h-40 rounded-surface" />;
 
   const abrirEditor = () => {
-    setBorrador(objetivo ?? { tipo: 'deficit', desde: hoy });
+    setTipoElegido(objetivo?.tipo ?? 'deficit');
+    setDesdeElegido(hoy);
     setEditando(true);
   };
 
   if (!objetivo || editando) {
-    const b = borrador ?? { tipo: 'deficit' as ObjetivoCorporalTipo, desde: hoy };
+    const vividas = enCurso ? Math.floor((Date.parse(hoy) - Date.parse(enCurso.desde)) / (7 * 86400000)) : 0;
+    const titulo = !program ? 'Objetivo corporal' : enCurso ? 'Cambiar objetivo' : 'Nuevo objetivo';
     return (
-      <Card title="Objetivo corporal" subtitle="Elige uno y la verificación sale sola con los pesos del atleta.">
+      <Card
+        title={titulo}
+        subtitle={!program
+          ? 'Elige uno y la verificación sale sola con los pesos del atleta.'
+          : enCurso && !enCurso.objetivo
+            ? `La fase «${enCurso.fase.name}» no tiene objetivo marcado.`
+            : !enCurso ? 'La periodización ha terminado o aún no ha empezado.' : undefined}
+      >
         <div className="space-y-4">
           <div className="flex flex-wrap gap-2">
             {OBJETIVOS_ORDEN.map(t => (
-              <Chip key={t} selected={b.tipo === t} onClick={() => setBorrador({ ...b, tipo: t })}>
+              <Chip key={t} selected={tipoElegido === t} onClick={() => setTipoElegido(t)}>
                 {OBJETIVO_LABEL[t]}
               </Chip>
             ))}
           </div>
           <p className="font-sans text-label text-ink-2">
-            {DESCRIPCION[b.tipo]}{' '}
-            <span className="font-mono text-ink">{textoRango(b.tipo, null)}</span>
+            {DESCRIPCION[tipoElegido]}{' '}
+            <span className="font-mono text-ink">{textoRango(tipoElegido, pesoKg)}</span>
           </p>
-          <Input
-            label="Desde"
-            type="date"
-            value={b.desde}
-            onChange={desde => setBorrador({ ...b, desde })}
-            hint="Si empezó antes, pon esa fecha y los pesos ya registrados cuentan."
-          />
-          <div className="flex gap-2 justify-end">
+          {!program && (
+            <Input
+              label="Desde"
+              type="date"
+              value={desdeElegido}
+              onChange={setDesdeElegido}
+              hint="Si empezó antes, pon esa fecha y los pesos ya registrados cuentan."
+            />
+          )}
+          {program && enCurso && vividas > 0 && (
+            <p className="font-sans text-label text-ink-2">
+              «Empezar nuevo» cierra «{enCurso.fase.name}» con {vividas} {vividas === 1 ? 'semana' : 'semanas'} y
+              abre una fase nueva de {SEMANAS_FASE_NUEVA} semanas (la duración se ajusta en Dietas).
+              Las fases planificadas después se conservan y se desplazan.
+              «Corregir» solo cambia la etiqueta de la fase actual.
+            </p>
+          )}
+          <div className="flex flex-wrap gap-2 justify-end">
             {objetivo && (
-              <Button variant="ghost" onClick={() => { setEditando(false); setBorrador(null); }}>
-                Cancelar
+              <Button variant="ghost" onClick={() => setEditando(false)}>Cancelar</Button>
+            )}
+            {program && enCurso && vividas > 0 && (
+              <Button variant="secondary" loading={guardar.isPending && guardar.variables === 'corregir'}
+                loadingLabel="Guardando" onClick={() => guardar.mutate('corregir')}>
+                Corregir esta fase
               </Button>
             )}
             <Button
               variant="primary"
-              loading={guardar.isPending}
+              loading={guardar.isPending && guardar.variables !== 'corregir'}
               loadingLabel="Guardando"
-              disabled={!b.desde || b.desde > hoy}
-              onClick={() => guardar.mutate(b)}
+              disabled={!program && (!desdeElegido || desdeElegido > hoy)}
+              onClick={() => guardar.mutate(program && enCurso && vividas === 0 ? 'corregir' : 'nuevo')}
             >
-              Guardar objetivo
+              {program && enCurso && vividas > 0 ? 'Empezar nuevo objetivo' : 'Guardar objetivo'}
             </Button>
           </div>
           {guardar.isError && (
@@ -236,11 +275,18 @@ export default function VerificacionObjetivo({ athleteEmail, logs }: Props) {
   return (
     <Card
       title={`Objetivo: ${OBJETIVO_LABEL[objetivo.tipo]}`}
-      subtitle={`Desde ${fmtFecha(objetivo.desde)} · ${textoRango(objetivo.tipo, v.pesoReferencia)}`}
+      subtitle={`«${enCurso!.fase.name}» · ${fmtFecha(objetivo.desde)} → ${fmtFecha(enCurso!.hasta)} · ${textoRango(objetivo.tipo, v.pesoReferencia)}`}
       action={<Button variant="ghost" size="s" onClick={abrirEditor}>Cambiar</Button>}
     >
       <div className="space-y-4">
-        <Badge tone={estado.tono} dot>{estado.texto}</Badge>
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge tone={estado.tono} dot>{estado.texto}</Badge>
+          {enCurso!.objetivo!.deducido && (
+            <button type="button" onClick={abrirEditor} className="font-sans text-caption text-ink-3 underline">
+              Objetivo deducido de las kcal · confirmar
+            </button>
+          )}
+        </div>
 
         {v.pesoReferencia != null && datos.length > 1 && (
           <div style={{ height: ALTURA_GRAFICA.m }}>

@@ -1660,7 +1660,7 @@ async function leerContextoDelPlan(email: string): Promise<string> {
 
   const nutricion = programa ? {
     empieza: programa.startDate,
-    fases: programa.phases.map(f => ({ nombre: f.name, semanas: f.weeks, tipo: f.phaseType, kcal: f.targetKcal, dietId: f.dietId })),
+    fases: programa.phases.map(f => ({ nombre: f.name, semanas: f.weeks, tipo: f.phaseType, objetivo: f.objetivo, kcal: f.targetKcal, dietId: f.dietId })),
     recargas: (programa.refeedDays ?? []).map(r => ({ dia: r.date, nota: r.note })),
   } : null;
 

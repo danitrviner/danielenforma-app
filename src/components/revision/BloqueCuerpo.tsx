@@ -94,16 +94,26 @@ export default function BloqueCuerpo({
       {/* ── ¿Va donde queríamos? Solo necesita el objetivo y los pesos ────── */}
       <VerificacionObjetivo athleteEmail={athlete.email} logs={logs} />
 
-      {/* ── Peso real vs lo que decía la periodización (si hay) ──────────── */}
+      {/* ── Detalle técnico: la proyección por kcal de la periodización ───── */}
+      {/* Plegado: la tarjeta de objetivo ya da el veredicto. Esto es el «por
+          qué» (curva según fórmula, según adherencia, gasto estimado) para
+          cuando el veredicto sorprende. Montado solo al abrir: son seis
+          consultas, dos de ellas colecciones de un documento por día. */}
       {isPending ? (
-        <Skeleton className="w-full h-64 rounded-surface" />
+        <Skeleton className="w-full h-12 rounded-surface" />
       ) : programa ? (
-        <NutritionPerformanceDashboard
-          athleteEmail={athlete.email}
-          athleteName={athlete.displayName}
-          targetWeightKg={athlete.targetWeight}
-          onEdit={() => onGoToTab('dietas')}
-        />
+        <Collapsible
+          key={`detalle-${todoAbierto}`}
+          defaultOpen={todoAbierto}
+          trigger={<span className="font-sans font-bold text-label text-ink">Detalle técnico · proyección por kcal</span>}
+        >
+          <NutritionPerformanceDashboard
+            athleteEmail={athlete.email}
+            athleteName={athlete.displayName}
+            targetWeightKg={athlete.targetWeight}
+            onEdit={() => onGoToTab('dietas')}
+          />
+        </Collapsible>
       ) : null}
 
       {/* Perímetros y fotos van plegados: son el detalle al que se baja cuando
