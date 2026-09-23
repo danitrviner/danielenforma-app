@@ -1,5 +1,6 @@
 import type { AceptacionesLegales } from './legal/aceptacion.js';
 import type { DietaryRestrictionCode } from './utils/dietaryRestrictions.js';
+import type { ObjetivoCorporal } from './utils/verificacionObjetivo.js';
 
 // ─── NOTIFICATIONS ────────────────────────────────────────────────────────────
 
@@ -310,6 +311,10 @@ export interface AthleteNutritionConfig {
   dietType?: DietType;
   cookingMaxTime?: number;    // minutos
   mealCount?: number;         // 3 | 4 | 5 | 6 (ver CONTEOS_COMIDAS)
+  /** Objetivo corporal que marca el coach (Volumen, Déficit…) y desde cuándo.
+   *  Alimenta la verificación de Revisión › Cuerpo sin necesidad de montar
+   *  periodización — ver utils/verificacionObjetivo.ts. */
+  objetivoCorporal?: ObjetivoCorporal;
 }
 
 export type HungerProfile = 'manana' | 'equilibrado' | 'noche';

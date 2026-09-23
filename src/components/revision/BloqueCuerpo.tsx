@@ -11,7 +11,8 @@ import NutritionPerformanceDashboard from '../NutritionPerformanceDashboard';
 import BodyMeasurementsPanel from '../BodyMeasurementsPanel';
 import CorrelationPanel from '../CorrelationPanel';
 import ComparadorFotos from './ComparadorFotos';
-import { EmptyState, Skeleton, Collapsible, Button, Icon, Sheet } from '../ui';
+import VerificacionObjetivo from './VerificacionObjetivo';
+import { Skeleton, Collapsible, Button, Icon, Sheet } from '../ui';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Bloque 4 — El cuerpo: peso contra el plan, perímetros y fotos.
@@ -90,7 +91,10 @@ export default function BloqueCuerpo({
         </Button>
       </div>
 
-      {/* ── Peso real vs lo que decía la periodización ───────────────────── */}
+      {/* ── ¿Va donde queríamos? Solo necesita el objetivo y los pesos ────── */}
+      <VerificacionObjetivo athleteEmail={athlete.email} logs={logs} />
+
+      {/* ── Peso real vs lo que decía la periodización (si hay) ──────────── */}
       {isPending ? (
         <Skeleton className="w-full h-64 rounded-surface" />
       ) : programa ? (
@@ -100,15 +104,7 @@ export default function BloqueCuerpo({
           targetWeightKg={athlete.targetWeight}
           onEdit={() => onGoToTab('dietas')}
         />
-      ) : (
-        <EmptyState
-          icon="monitor_weight"
-          title="Sin periodización nutricional"
-          description="Sin fases con sus kcal no hay peso esperado con el que comparar el real. Móntala en Dietas y esta gráfica aparece sola."
-          actionLabel="Ir a Dietas"
-          onAction={() => onGoToTab('dietas')}
-        />
-      )}
+      ) : null}
 
       {/* Perímetros y fotos van plegados: son el detalle al que se baja cuando
           el peso dice algo raro, no lo primero que se mira. */}
