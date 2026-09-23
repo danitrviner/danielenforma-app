@@ -200,6 +200,35 @@ interface OnboardingData {
 
 ---
 
+## Sesión 2026-09-23 — Objetivo corporal, verificación por tendencia y gasto real (rama `objetivo-corporal`, SIN mergear)
+
+**Objetivo = fase.** `NutritionPhase.objetivo` (6 tipos: volumen, deficit, deficit_acelerado,
+salida_deficit, mantenimiento, recomposicion). `phaseType` (3 colores) se sigue rellenando
+desde él para que calendario/Roadmap/IA/latido no cambien. Fases viejas: objetivo DEDUCIDO
+(`phaseType` → nombre de la fase → salto de kcal), marcado como deducido. Utils:
+`verificacionObjetivo.ts` (rangos en %/sem, decisión de Dani: volumen +0,25–0,4, déficit
+−0,4–0,6, acelerado −0,6–1, salida 0–0,2, mant/recomp ±1 kg), `objetivoDeFase.ts`
+(`cambiarObjetivo` recorta la fase en curso e inserta la nueva sin borrar historia; la
+recortada pierde `targetRateKgWeek` para que el panel no le recalcule la duración),
+`historialObjetivos.ts` (todas las fases en una gráfica), `gastoReal.ts`.
+
+**Tendencia:** cada semana = últimos 7 días (MEDIANA con 3+ pesajes, media con 1-2); el
+veredicto y la franja miran las últimas 4 semanas (la franja se ancla en la tendencia de
+hace 4 semanas: así el que va lento siempre acaba fuera). **Gasto real** = kcal
+registradas − Δpeso×7700, ventana 4 semanas hasta AYER, solo semanas con ≥5 días
+registrados; sin datos → «Estimado · fórmula»; >25 % bajo Mifflin → aviso de infra-registro.
+Verduras libres no cuentan (aviso, decisión de Dani: no se estiman).
+
+**UI:** Revisión › Cuerpo (`VerificacionObjetivo`, `GastoReal`, gráfica vieja plegada en
+«Detalle técnico»). Atleta: `MiObjetivo.tsx` en Revisión (CheckInScreen), solo si el
+objetivo está CONFIRMADO, sin sugerencias de kcal. IA: `propose_nutrition_program` acepta
+`objetivo`. Bancos: `/dev/revision-coach?objetivo=deficit|…|ninguno`, `/dev/revision`.
+Arreglado de paso: guardar la periodización borraba `refeedDays`.
+
+**Sin probar:** guardado real contra Firestore (el banco no escribe).
+
+---
+
 ## Sesión 2026-07-04 — Reportes de desempeño coach→atleta + micronutrientes estimados
 
 Objetivo de Dani: unificar el feedback del entrenador (hoy fragmentado — dashboard nutricional

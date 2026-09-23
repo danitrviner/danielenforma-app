@@ -128,6 +128,15 @@ export default function RevisionDevHarness() {
     qc.setQueryData(pesoUltimoKey(EMAIL), PESOS[PESOS.length - 1]);
     qc.setQueryData(pesoPrimeroKey(EMAIL), PESOS[0]);
     qc.setQueryData(bodyweightForAthleteKey(EMAIL), PESOS);
+    // «Mi objetivo»: una fase de mantenimiento cerrada y un déficit en curso,
+    // los dos confirmados por el coach (si no, la tarjeta no sale).
+    qc.setQueryData(['nutritionProgram', EMAIL], {
+      athleteId: EMAIL, startDate: haceDias(84),
+      phases: [
+        { id: 'm', name: 'Mantenimiento', weeks: 4, dietId: '', objetivo: 'mantenimiento', phaseType: 'mantenimiento' },
+        { id: 'd', name: 'Déficit', weeks: 10, dietId: '', objetivo: 'deficit', phaseType: 'deficit' },
+      ],
+    });
     qc.setQueryData(bodyMeasurementsForAthleteKey(EMAIL), MEDIDAS);
     qc.setQueryData(['assignmentsForAthlete', EMAIL], ASIGNACIONES);
     qc.setQueryData(['responsesForAthlete', EMAIL], RESPUESTAS);

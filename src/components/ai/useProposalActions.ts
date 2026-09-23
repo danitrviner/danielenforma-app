@@ -163,6 +163,7 @@ export function useProposalActions(
             ...(fase.targetKcal != null ? { targetKcal: fase.targetKcal } : {}),
             ...(fase.targetWeight != null ? { targetWeight: fase.targetWeight } : {}),
             ...(fase.phaseType ? { phaseType: fase.phaseType } : {}),
+            ...(fase.objetivo ? { objetivo: fase.objetivo } : {}),
             // Sin esto, el ritmo que propone el asistente se perdía al aprobar
             // y la fase volvía a definirse solo por semanas.
             ...(fase.targetRateKgWeek != null ? { targetRateKgWeek: fase.targetRateKgWeek } : {}),

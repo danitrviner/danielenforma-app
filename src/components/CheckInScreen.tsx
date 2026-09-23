@@ -14,6 +14,7 @@ import { Badge, EmptyState, Icon, Skeleton } from './ui';
 // Diferido: arrastran recharts (344 KB) — igual que hacía ProfileScreen antes
 // de que estos paneles se movieran aquí (ver comentario más abajo).
 const BodyweightPanel = pantallaDiferida('BodyweightPanel', () => import('./BodyweightPanel'));
+const MiObjetivo = pantallaDiferida('MiObjetivo', () => import('./MiObjetivo'));
 const BodyMeasurementsPanel = pantallaDiferida('BodyMeasurementsPanel', () => import('./BodyMeasurementsPanel'));
 const QuestionnaireChartsPanel = pantallaDiferida('QuestionnaireChartsPanel', () => import('./QuestionnaireChartsPanel'));
 
@@ -302,6 +303,12 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
           añadirlo al entrar a responder un cuestionario desde ahí. */}
       <Suspense fallback={<Skeleton className="w-full h-48 rounded-surface" />}>
         <BodyweightPanel athleteEmail={profile.email} />
+      </Suspense>
+
+      {/* Su objetivo y cómo va, justo debajo del peso que lo alimenta. Solo
+          aparece si el coach ha confirmado el objetivo de la fase. */}
+      <Suspense fallback={null}>
+        <MiObjetivo athleteEmail={profile.email} />
       </Suspense>
 
       <div>

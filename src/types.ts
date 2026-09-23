@@ -2173,6 +2173,8 @@ export interface NutritionPhaseProposal {
   name: string;
   weeks: number;
   phaseType?: NutritionPhaseType;
+  /** Ver NutritionPhase.objetivo. */
+  objetivo?: ObjetivoCorporalTipo;
   targetKcal?: number;
   targetWeight?: number;
   /** Ritmo objetivo en kg/semana. Si viene, manda sobre `weeks` al aprobar:

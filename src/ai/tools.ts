@@ -72,6 +72,8 @@ import { buildTrainingReport } from '../utils/trainingReport';
 import { buildRevisionCoach, PeriodoRevision, mesoActivo, pesoVsSemanaPasada } from '../utils/revisionCoach';
 import { suggestVolume, VolumeIntent } from '../utils/volumeSuggestion';
 import { buildVolumeHistoryFrom } from '../utils/volumeHistory';
+import { OBJETIVOS_ORDEN, ObjetivoCorporalTipo } from '../utils/verificacionObjetivo';
+import { phaseTypeDeObjetivo } from '../utils/objetivoDeFase';
 import { VOLUME_LANDMARKS_DEFAULT } from '../data/volumeLandmarks';
 import { construirTitulares } from '../utils/titularesRevision';
 import { construirComidaDeLaSemana } from '../utils/comidaDeLaSemana';
@@ -619,6 +621,11 @@ export const TOOL_DEFINITIONS = [
               name: { type: 'string' },
               weeks: { type: 'number' },
               phase_type: { type: 'string', enum: ['deficit', 'mantenimiento', 'superavit'] },
+              objetivo: {
+                type: 'string',
+                enum: ['volumen', 'deficit', 'deficit_acelerado', 'salida_deficit', 'mantenimiento', 'recomposicion'],
+                description: 'Objetivo corporal de la fase. Decide el rango con el que se verifica el peso: volumen +0,25–0,4 %/sem, déficit −0,4–0,6, déficit acelerado −0,6–1, salida de déficit 0–0,2, mantenimiento y recomposición ±1 kg. Mándalo siempre; phase_type se deduce de él.',
+              },
               target_kcal: { type: 'number' },
               target_weight: { type: 'number', description: 'kg al final de la fase' },
               diet_id: { type: 'string', description: 'Dieta existente del atleta' },
@@ -1797,10 +1804,14 @@ async function proposeNutritionProgram(
       problemas.push(`Fase ${i + 1}: falta name o weeks`);
       return;
     }
+    const objetivoValido = typeof f.objetivo === 'string' && (OBJETIVOS_ORDEN as string[]).includes(f.objetivo)
+      ? f.objetivo as ObjetivoCorporalTipo : undefined;
     const fase: NutritionPhaseProposal = {
       name: nombre,
       weeks: Math.round(semanas),
-      phaseType: typeof f.phase_type === 'string' ? f.phase_type as NutritionPhaseProposal['phaseType'] : undefined,
+      phaseType: typeof f.phase_type === 'string' ? f.phase_type as NutritionPhaseProposal['phaseType']
+        : objetivoValido ? phaseTypeDeObjetivo(objetivoValido) : undefined,
+      objetivo: objetivoValido,
       targetKcal: Number.isFinite(Number(f.target_kcal)) ? Number(f.target_kcal) : undefined,
       targetWeight: Number.isFinite(Number(f.target_weight)) ? Number(f.target_weight) : undefined,
     };
