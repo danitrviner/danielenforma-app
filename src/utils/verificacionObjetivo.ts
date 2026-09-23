@@ -252,26 +252,34 @@ export function verificarObjetivo(entrada: {
     : Math.round((kgSemana / pesoReferencia) * 10000) / 100;
 
   const ultimaSemana = Math.max(0, Math.floor(diasEntre(desde, hoy) / 7));
+  const r2 = (v: number) => Math.round(v * 100) / 100;
   const puntos: PuntoSemanal[] = [];
-  for (let s = 0; s <= ultimaSemana; s++) {
+  let ancla: { semana: number; peso: number } | null = null;
+  // Una semana más allá de hoy: la franja de la próxima semana es lo que el
+  // atleta tiene que buscar, y ya se puede pintar con el último peso.
+  for (let s = 0; s <= ultimaSemana + 1; s++) {
     let franja: [number, number] | null = null;
-    if (pesoReferencia != null) {
-      if (rango) {
-        const a = pesoReferencia * (1 + (rango.min / 100) * s);
-        const b = pesoReferencia * (1 + (rango.max / 100) * s);
-        franja = [Math.round(a * 100) / 100, Math.round(b * 100) / 100];
-      } else {
-        franja = [pesoReferencia - FRANJA_MANTENIMIENTO_KG, pesoReferencia + FRANJA_MANTENIMIENTO_KG]
-          .map(v => Math.round(v * 100) / 100) as [number, number];
+    if (rango) {
+      /* La franja se re-ancla con cada peso nuevo: parte de la última media
+       * real, no del peso del día 1. Así dice «desde donde estás ahora, aquí
+       * deberías estar», en vez de un abanico fijo que un atleta que se
+       * retrasó una vez ya no puede alcanzar nunca. El veredicto global sigue
+       * saliendo de la regresión de todo el periodo. */
+      if (ancla) {
+        const k = s - ancla.semana;
+        franja = [r2(ancla.peso * (1 + (rango.min / 100) * k)), r2(ancla.peso * (1 + (rango.max / 100) * k))];
       }
+    } else if (pesoReferencia != null) {
+      franja = [r2(pesoReferencia - FRANJA_MANTENIMIENTO_KG), r2(pesoReferencia + FRANJA_MANTENIMIENTO_KG)];
     }
-    const real = medias.get(s);
+    const real = s <= ultimaSemana ? medias.get(s) : undefined;
     puntos.push({
       semana: s,
       fecha: sumarDias(desde, s * 7),
-      real: real == null ? null : Math.round(real * 100) / 100,
+      real: real == null ? null : r2(real),
       franja,
     });
+    if (real != null) ancla = { semana: s, peso: real };
   }
 
   const base: Verificacion = {

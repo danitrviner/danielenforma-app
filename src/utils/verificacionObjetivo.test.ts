@@ -86,13 +86,19 @@ describe('verificarObjetivo — rangos en %', () => {
     });
     expect(v.estado).toBe('sin-datos');
   });
-  it('la franja del gráfico se abre con las semanas', () => {
+  it('la franja se re-ancla en la última media real y enseña la semana que viene', () => {
     const v = verificarObjetivo({
       objetivo: { tipo: 'deficit', desde: '2026-08-01' },
       pesos: serie('2026-08-01', 80, -0.4, 28), hoy: '2026-08-29',
     });
-    const [lo, hi] = v.puntos[4].franja!;
-    expect(hi - lo).toBeGreaterThan(v.puntos[1].franja![1] - v.puntos[1].franja![0]);
+    expect(v.puntos[0].franja).toBeNull();
+    const [lo, hi] = v.puntos[3].franja!;
+    const previa = v.puntos[2].real!;
+    expect(lo).toBeCloseTo(previa * (1 - 0.006), 1);
+    expect(hi).toBeCloseTo(previa * (1 - 0.004), 1);
+    const siguiente = v.puntos[v.puntos.length - 1];
+    expect(siguiente.real).toBeNull();
+    expect(siguiente.franja).not.toBeNull();
   });
 });
 
