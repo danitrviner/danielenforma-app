@@ -17,7 +17,8 @@ import { calcPlanExpiry } from '../hooks/usePlanExpiry';
 import { getPendingReviews } from '../hooks/usePendingReviews';
 import { estimateSetupPct } from '../utils/clientSetup';
 import { atletasActivos, esBaja, esAnonimizado } from '../utils/atletas';
-import { Avatar, Skeleton } from './ui';
+import { Avatar, Skeleton, Button, Icon } from './ui';
+import ConfirmarObjetivosSheet from './ConfirmarObjetivosSheet';
 import { EmptyState, Badge } from './ui';
 import { compararNombres } from '../utils/ordenAlfabetico';
 import { coincideBusqueda } from '../utils/busqueda';
@@ -179,6 +180,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
 
   // Buscador de la lista de atletas.
   const [search, setSearch] = useState('');
+  const [objetivosAbierto, setObjetivosAbierto] = useState(false);
 
   // "Todos los atletas" — desplegable 1:1 con `OFICIAL - Home Coach.dc.html`:
   // abierto por defecto, igual que el mockup (`allAthletesOpen: true`).
@@ -392,8 +394,14 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
         )}
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <h1 className="font-sans font-extrabold text-display tracking-tight text-white uppercase">Clientes</h1>
+          <Button variant="secondary" size="s" onClick={() => setObjetivosAbierto(true)}>
+            <Icon name="flag" size="s" />
+            Objetivos
+          </Button>
         </div>
       </header>
+
+      <ConfirmarObjetivosSheet open={objetivosAbierto} onClose={() => setObjetivosAbierto(false)} athletes={athletes} />
 
       {/* Buscador — 1:1 con `OFICIAL - Home Coach.dc.html`. */}
       <AthletesBar search={search} onSearchChange={setSearch} />

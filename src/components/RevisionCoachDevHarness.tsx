@@ -10,6 +10,7 @@ import { bodyweightForAthleteKey, pesoPrimeroKey, pesoUltimoKey } from '../hooks
 import { VOLUME_LANDMARKS_DEFAULT } from '../data/volumeLandmarks';
 import { isoWeekKey, isoWeekBounds } from '../utils/challengeOptions';
 import ClientRevisionPanel from './revision/ClientRevisionPanel';
+import ConfirmarObjetivosSheet from './ConfirmarObjetivosSheet';
 import ClientImplantacionPanel from './implantacion/ClientImplantacionPanel';
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -488,6 +489,8 @@ export default function RevisionCoachDevHarness() {
     qc.setQueryData(['bodyMeasurementsForAthlete', EMAIL], MEDICIONES);
     // El dashboard de peso vive de estas seis; `anatomia` las deja vacías para
     // ver también el estado sin periodización.
+    // «Objetivos de los clientes» (?pantalla=objetivos): el simulacro sobre este programa.
+    qc.setQueryData(['nutritionProgramsForAthletes', [EMAIL]], [PROGRAMA]);
     qc.setQueryData(['nutritionProgram', EMAIL], anatomia || objetivoParam === 'ninguno' ? null
       : objetivoParam ? { ...PROGRAMA, phases: PROGRAMA.phases.map((f, i) =>
           i === PROGRAMA.phases.length - 1 ? { ...f, objetivo: objetivoParam as NonNullable<typeof f.objetivo> } : f) }
@@ -543,7 +546,9 @@ export default function RevisionCoachDevHarness() {
           <p className="font-mono text-caption text-ink-3 uppercase tracking-widest mb-3">
             /dev/revision-coach — datos de mentira{anatomia ? ' · modo anatomía' : ''}
           </p>
-          {pantalla === 'implantacion' ? (
+          {pantalla === 'objetivos' ? (
+            <ConfirmarObjetivosSheet open onClose={() => {}} athletes={[PERFIL]} />
+          ) : pantalla === 'implantacion' ? (
             <ClientImplantacionPanel
               athlete={PERFIL}
               checkins={CHECKINS}
