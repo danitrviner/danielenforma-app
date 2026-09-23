@@ -262,7 +262,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
   if (view === 'list') {
     return (
       <div className="space-y-6">
-        <header className="flex flex-col md:flex-row md:items-end justify-between pb-4 border-b border-hairline gap-4">
+        <header className="flex flex-col md:flex-row md:items-end justify-between pb-4 gap-4">
           <div>
             <h1 className="font-sans font-extrabold text-display tracking-tight text-white uppercase">Rutinas</h1>
             <p className="text-ink-2 text-body-s mt-1">
@@ -401,7 +401,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
   return (
     <div className="space-y-6">
       {/* Editor header */}
-      <header className="flex items-center gap-4 pb-4 border-b border-hairline">
+      <header className="flex items-center gap-4 pb-4">
         <Button onClick={() => setView('list')} variant="secondary" size="s" icon="arrow_back">
           Volver
         </Button>

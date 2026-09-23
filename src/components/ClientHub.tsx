@@ -779,7 +779,7 @@ export default function ClientHub({
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="pb-4 border-b border-hairline space-y-4">
+      <div className="pb-4 space-y-4">
         <div className="flex items-center gap-3 flex-wrap">
           <button
             onClick={guardedBack}

@@ -57,7 +57,7 @@ type Props = {
 
 export default function PageHeader({ title, eyebrow, subtitle, onBack, action, actionInline = false, className = '' }: Props) {
   return (
-    <header className={`flex flex-col gap-3 border-b border-hairline ${actionInline ? 'pb-3' : 'pb-4'} ${className}`}>
+    <header className={`flex flex-col gap-3 ${actionInline ? 'pb-3' : 'pb-4'} ${className}`}>
       {eyebrow && (
         <span className="inline-flex w-fit items-center rounded-control border border-accent-line bg-raised px-2 py-1 font-sans text-caption font-bold uppercase tracking-widest text-accent">
           {eyebrow}

@@ -785,7 +785,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <header className="flex flex-col md:flex-row md:items-end justify-between pb-4 border-b border-hairline gap-3">
+      <header className="flex flex-col md:flex-row md:items-end justify-between pb-4 gap-3">
         <div>
           <h1 className="font-display text-hero font-black tracking-tight text-ink uppercase">Rutinas</h1>
           <p className="text-ink-2 text-body-s mt-1">
