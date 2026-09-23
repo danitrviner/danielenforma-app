@@ -4,10 +4,11 @@ import { LineChart, Line, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { BodyweightLog } from '../types';
 import { getBodyweightForAthlete, addBodyweight, updateBodyweight, deleteBodyweight } from '../dbService';
 import { bodyweightForAthleteKey, invalidarExtremosDePeso } from '../hooks/useAthleteWeight';
-import { Skeleton } from './ui';
+import { Skeleton, SegmentedControl } from './ui';
 import { Icon, EmptyState } from './ui';
 import { hoyIsoLocal } from '../utils/trainingWeek';
 import { addDays } from '../utils/trainingWeek';
+import { RangoTemporal, RANGO_TEMPORAL_OPTIONS, recortarPorRango } from '../utils/rangoTemporal';
 
 interface Props {
   athleteEmail: string;
@@ -67,6 +68,7 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
     queryFn: () => getBodyweightForAthlete(athleteEmail),
   });
   const [showAll, setShowAll] = useState(false);
+  const [rango, setRango] = useState<RangoTemporal>('todo');
 
   // Add form — colapsado detrás del chip "Añadir" (F3.2 handoff "Perfil"), no
   // siempre visible: el mockup solo lo abre al pulsar el chip.
@@ -92,10 +94,14 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
     [logs]
   );
 
-  const chartData = useMemo<ChartPoint[]>(
+  // La media móvil de 7d se calcula sobre TODO el historial antes de recortar
+  // por rango — si no, los primeros puntos visibles de una ventana corta
+  // tendrían una media calculada con menos días de los que tocan.
+  const chartDataAll = useMemo<ChartPoint[]>(
     () => toMovingAvg(asc.map(b => ({ date: b.date, value: b.weight }))),
     [asc]
   );
+  const chartData = useMemo(() => recortarPorRango(chartDataAll, rango), [chartDataAll, rango]);
 
   // Dominio con margen — sin esto Recharts arranca la escala en 0 y una
   // franja de 79-82 kg se aplasta contra el borde superior del gráfico.
@@ -221,6 +227,17 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
               )}
             </div>
 
+            {logs.length >= 2 && (
+              <div className="mb-3">
+                <SegmentedControl
+                  label="Rango de la gráfica"
+                  value={rango}
+                  onChange={v => setRango(v as RangoTemporal)}
+                  options={RANGO_TEMPORAL_OPTIONS}
+                />
+              </div>
+            )}
+
             {/* Con 1 solo registro, un LineChart dibuja un punto suelto sin línea
                 — no es falso, pero tampoco dice nada útil (F3.13f, "nunca una
                 gráfica que finja saber una tendencia que no tiene"). Se pide
@@ -231,9 +248,15 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
                 <p className="font-sans text-caption text-ink-2">Con un registro más dibujamos tu tendencia.</p>
               </div>
             )}
+            {logs.length > 1 && chartData.length < 2 && (
+              <div className="flex items-center gap-3 bg-raised border border-hairline rounded-surface px-4 py-3">
+                <Icon name="show_chart" size="m" className="text-accent shrink-0" />
+                <p className="font-sans text-caption text-ink-2">Sin registros en este rango.</p>
+              </div>
+            )}
             {/* Gráfica minimal — sin ejes ni rejilla (handoff §1: "SVG 300×100"),
                 el tooltip al pasar el dedo/ratón se conserva por accesibilidad. */}
-            {logs.length > 1 && (
+            {logs.length > 1 && chartData.length >= 2 && (
               <ResponsiveContainer width="100%" height={110}>
                 <LineChart data={chartData} margin={{ top: 4, right: 4, bottom: 0, left: 4 }}>
                   <YAxis domain={yDomain} hide />

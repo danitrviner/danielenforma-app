@@ -22,6 +22,7 @@ import { Skeleton, SegmentedControl } from './ui';
 import { ritmoReal } from '../utils/ritmoDePeso';
 import { proponerAjuste } from '../utils/ajusteDePeriodizacion';
 import { hoyIsoLocal } from '../utils/trainingWeek';
+import { RangoTemporal, RANGO_TEMPORAL_OPTIONS, inicioDeRango } from '../utils/rangoTemporal';
 import {
   Icon, EmptyState,
   ALTURA_GRAFICA, MARGEN_GRAFICA, ANCHO_EJE_Y, REJILLA_GRAFICA, TICK_GRAFICA, EJE_GRAFICA,
@@ -131,6 +132,7 @@ function ProjectionTooltip({ active, payload }: any) {
 export default function NutritionPerformanceDashboard({ athleteEmail, athleteName, targetWeightKg, onEdit, refreshToken }: Props) {
   const queryClient = useQueryClient();
   const [curveMode, setCurveMode] = useState<CurveMode>('both');
+  const [rango, setRango] = useState<RangoTemporal>('todo');
   const { logs: bodyweightLogs } = useAthleteWeight(athleteEmail);
 
   const { data: program = null, isPending: loadingProgram } = useQuery({
@@ -296,6 +298,15 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
     });
   }, [projection, program]);
 
+  // El rango recorta el histórico hacia atrás desde hoy, pero las semanas
+  // futuras (la proyección que aún no ha pasado) se conservan siempre — de
+  // lo contrario "últimos 7 días" tapiaría el propio plan que se quiere ver.
+  const chartRowsVisibles = useMemo(() => {
+    const desde = inicioDeRango(rango, today);
+    if (desde == null) return chartRows;
+    return chartRows.filter(r => r.date >= desde || r.date > today);
+  }, [chartRows, rango, today]);
+
   const phaseBands = useMemo(() => {
     if (!program) return [];
     let cum = 0;
@@ -415,10 +426,18 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
             ]}
           />
         </div>
+        <div className="flex justify-end">
+          <SegmentedControl
+            label="Rango de la gráfica"
+            value={rango}
+            onChange={v => setRango(v as RangoTemporal)}
+            options={RANGO_TEMPORAL_OPTIONS}
+          />
+        </div>
 
-        {chartRows.length > 0 && projection && (
+        {chartRowsVisibles.length > 0 && projection && (
           <ResponsiveContainer width="100%" height={ALTURA_GRAFICA.l}>
-            <ComposedChart data={chartRows} margin={MARGEN_GRAFICA}>
+            <ComposedChart data={chartRowsVisibles} margin={MARGEN_GRAFICA}>
               <CartesianGrid {...REJILLA_GRAFICA} />
               {phaseBands.map((band, i) => (
                 <ReferenceAreaAny key={i} x1={band.from} x2={band.to} strokeOpacity={0} fill={band.color} fillOpacity={0.05} />
