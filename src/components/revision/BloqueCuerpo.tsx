@@ -12,6 +12,7 @@ import BodyMeasurementsPanel from '../BodyMeasurementsPanel';
 import CorrelationPanel from '../CorrelationPanel';
 import ComparadorFotos from './ComparadorFotos';
 import VerificacionObjetivo from './VerificacionObjetivo';
+import GastoReal from './GastoReal';
 import { Skeleton, Collapsible, Button, Icon, Sheet } from '../ui';
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -93,6 +94,7 @@ export default function BloqueCuerpo({
 
       {/* ── ¿Va donde queríamos? Solo necesita el objetivo y los pesos ────── */}
       <VerificacionObjetivo athleteEmail={athlete.email} logs={logs} />
+      <GastoReal athleteEmail={athlete.email} />
 
       {/* ── Detalle técnico: la proyección por kcal de la periodización ───── */}
       {/* Plegado: la tarjeta de objetivo ya da el veredicto. Esto es el «por

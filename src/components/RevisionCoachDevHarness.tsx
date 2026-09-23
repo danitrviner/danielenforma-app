@@ -506,6 +506,10 @@ export default function RevisionCoachDevHarness() {
     for (let d = 0; d <= 90; d++) {
       qc.setQueryData(['dietCompletionLogsForAthlete', EMAIL, haceDias(d)], REGISTROS_DE_COMIDA);
     }
+    // Gasto real: lee 16 semanas hasta ayer. Aquí sí hace falta historia larga
+    // (6 de cada 7 días registrados) para que salga un gasto REAL y su evolución.
+    qc.setQueryData(['dietCompletionLogsForAthlete', EMAIL, haceDias(1 + 11 * 7 + 28)],
+      Array.from({ length: 112 }, (_, i) => i + 1).filter(h => h % 7 !== 3).map((h, idx) => diaDeComida(h, idx)));
     qc.setQueryData(['athleteNutritionConfig', EMAIL], { athleteId: EMAIL, enabledModes: ['OMNIVORO'], stepGoal: 9000 });
     qc.setQueryData(['athleteDietConfig', EMAIL], { athleteId: EMAIL, activeDietIds: ['d_deficit'] });
     qc.setQueryData(['stepsForAthlete', EMAIL], PASOS);
