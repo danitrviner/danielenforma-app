@@ -82,8 +82,8 @@ export type Senal = 'ok' | 'mal' | 'sin-datos';
 
 export interface PuntoSemanal {
   semana: number;          // 0 = la semana en que empieza el objetivo
-  fecha: string;           // `desde` + 7·semana
-  real: number | null;     // media de los pesos de esa semana
+  fecha: string;           // día en que se lee la semana (su último día, u hoy)
+  real: number | null;     // media de los 7 días hasta `fecha`
   /** Peso de tendencia: la recta de las últimas semanas evaluada aquí. */
   tendencia: number | null;
   franja: [number, number] | null;
@@ -124,23 +124,74 @@ function sumarDias(iso: string, dias: number): string {
 
 // ── Piezas puras ─────────────────────────────────────────────────────────────
 
-/** Medias de peso por semana contadas desde `desde`. Ignora lo anterior y lo futuro. */
+/**
+ * El peso que representa una ventana de 7 días: la MEDIANA con 3 pesajes o
+ * más, la media con 1-2. Con la media, un 83 suelto entre cinco 81 sube la
+ * semana 330 g y con eso ya se tuerce un ritmo que se mide en 300-500 g; con la
+ * mediana ese día raro no cuenta. Con dos pesajes no hay forma de saber cuál
+ * es el raro, así que se hace la media.
+ */
+export function pesoRepresentativo(pesos: readonly number[]): number {
+  if (pesos.length < 3) return pesos.reduce((a, b) => a + b, 0) / pesos.length;
+  const o = [...pesos].sort((a, b) => a - b);
+  const m = Math.floor(o.length / 2);
+  return o.length % 2 ? o[m] : (o[m - 1] + o[m]) / 2;
+}
+
+/** Día en que se lee la semana `s`: su último día, o hoy si aún no ha acabado. */
+export function diaDeLectura(desde: string, semana: number, hoy: string): string {
+  const fin = sumarDias(desde, semana * 7 + 6);
+  return fin < hoy ? fin : hoy;
+}
+
+/**
+ * Peso de cada semana = los ÚLTIMOS 7 DÍAS hasta el día en que se lee (ver
+ * `pesoRepresentativo`: mediana si hay 3+ pesajes).
+ *
+ * No la semana del calendario: a mitad de semana eso dejaba un solo pesaje
+ * decidiendo, y un 83 suelto tras un 81 movía la tendencia entera (Dani,
+ * 09-2026). Con la ventana móvil, la semana en curso se lee con los 7 días
+ * previos a hoy, y un pesaje raro pesa lo que le toca: 1 de los que haya.
+ * Funciona igual con quien se pesa a diario que con quien se pesa dos veces
+ * por semana.
+ *
+ * No mira antes de `desde`: el peso de otra fase no es de este objetivo.
+ */
 export function mediasSemanales(
   logs: readonly Pick<BodyweightLog, 'date' | 'weight'>[],
   desde: string,
   hoy: string,
 ): Map<number, number> {
-  const cubos = new Map<number, number[]>();
-  for (const l of logs) {
-    if (!(l.weight > 0) || l.date < desde || l.date > hoy) continue;
-    const semana = Math.floor(diasEntre(desde, l.date) / 7);
-    const cubo = cubos.get(semana) ?? [];
-    cubo.push(l.weight);
-    cubos.set(semana, cubo);
+  return new Map([...lecturasSemanales(logs, desde, hoy)].map(([s, l]) => [s, l.peso]));
+}
+
+/**
+ * Lo mismo, con DÓNDE cae cada lectura en el eje del tiempo (en semanas desde
+ * `desde`): la fecha media de los pesajes que entran. La semana en curso se
+ * lee con una ventana que se solapa con la anterior, y si la regresión la
+ * pusiera en «semana 5» a secas, dos medias casi iguales a una semana de
+ * distancia aplanarían el ritmo.
+ */
+export function lecturasSemanales(
+  logs: readonly Pick<BodyweightLog, 'date' | 'weight'>[],
+  desde: string,
+  hoy: string,
+): Map<number, { peso: number; x: number }> {
+  const validos = logs.filter(l => l.weight > 0 && l.date >= desde && l.date <= hoy);
+  const lecturas = new Map<number, { peso: number; x: number }>();
+  if (validos.length === 0 || hoy < desde) return lecturas;
+  const ultima = Math.floor(diasEntre(desde, hoy) / 7);
+  for (let s = 0; s <= ultima; s++) {
+    const dia = diaDeLectura(desde, s, hoy);
+    const inicio = sumarDias(dia, -6);
+    const dentro = validos.filter(l => l.date >= inicio && l.date <= dia);
+    if (!dentro.length) continue;
+    lecturas.set(s, {
+      peso: pesoRepresentativo(dentro.map(l => l.weight)),
+      x: dentro.reduce((a, l) => a + diasEntre(desde, l.date), 0) / dentro.length / 7,
+    });
   }
-  const medias = new Map<number, number>();
-  for (const [s, pesos] of cubos) medias.set(s, pesos.reduce((a, b) => a + b, 0) / pesos.length);
-  return medias;
+  return lecturas;
 }
 
 /**
@@ -252,10 +303,15 @@ export function verificarObjetivo(entrada: {
   const { tipo, desde } = objetivo;
   const rango = RANGO_PCT_SEMANA[tipo];
 
-  const medias = mediasSemanales(pesos, desde, hoy);
-  const semanas = [...medias.keys()].sort((a, b) => a - b);
-  const pesoReferencia = semanas.length ? medias.get(semanas[0])! : null;
-  const pesoActual = semanas.length ? medias.get(semanas[semanas.length - 1])! : null;
+  const lecturas = lecturasSemanales(pesos, desde, hoy);
+  const semanas = [...lecturas.keys()].sort((a, b) => a - b);
+  const punto = (w: number) => [lecturas.get(w)!.x, lecturas.get(w)!.peso] as [number, number];
+  const pesoReferencia = semanas.length ? lecturas.get(semanas[0])!.peso : null;
+  const pesoActual = semanas.length ? lecturas.get(semanas[semanas.length - 1])!.peso : null;
+  /** Centro de la ventana de lectura de la semana s, en semanas. */
+  // Sin pesajes esa semana (o la que viene): el centro de su ventana de 7 días.
+  const xDe = (w: number) => lecturas.get(w)?.x
+    ?? ((w <= ultimaSemana ? diasEntre(desde, diaDeLectura(desde, w, hoy)) : w * 7 + 6) - 3) / 7;
 
   const r2 = (v: number) => Math.round(v * 100) / 100;
   const pct = (kg: number | null) => kg == null || pesoReferencia == null
@@ -264,13 +320,13 @@ export function verificarObjetivo(entrada: {
   /** Recta de las semanas con datos en [s − ventana + 1, s], evaluada en s. */
   const tendenciaEn = (s: number): number | null => {
     const tramo = semanas.filter(w => w <= s && w > s - VENTANA_TENDENCIA_SEMANAS)
-      .map(w => [w, medias.get(w)!] as [number, number]);
+      .map(punto);
     if (tramo.length === 0) return null;
     const m = pendiente(tramo);
     if (m == null) return tramo[tramo.length - 1][1];
     const mx = tramo.reduce((t, [x]) => t + x, 0) / tramo.length;
     const my = tramo.reduce((t, [, y]) => t + y, 0) / tramo.length;
-    return my + m * (s - mx);
+    return my + m * (xDe(s) - mx);
   };
 
   const ultimaSemana = Math.max(0, Math.floor(diasEntre(desde, hoy) / 7));
@@ -278,10 +334,10 @@ export function verificarObjetivo(entrada: {
   // tres semanas, el veredicto tiene que hablar de lo de ahora, no arrastrar
   // la fase entera.
   const recientes = semanas.filter(w => w > ultimaSemana - VENTANA_TENDENCIA_SEMANAS);
-  const kgSemana = pendiente(recientes.map(w => [w, medias.get(w)!] as [number, number]));
+  const kgSemana = pendiente(recientes.map(punto));
   const ritmoKg = kgSemana == null ? null : Math.round(kgSemana * 1000) / 1000;
   const ritmoPct = pct(kgSemana);
-  const ritmoMedioPct = pct(pendiente(semanas.map(w => [w, medias.get(w)!] as [number, number])));
+  const ritmoMedioPct = pct(pendiente(semanas.map(punto)));
 
   const primera = semanas[0];
   const puntos: PuntoSemanal[] = [];
@@ -297,18 +353,18 @@ export function verificarObjetivo(entrada: {
         const a = Math.max(primera, s - VENTANA_TENDENCIA_SEMANAS);
         const base = tendenciaEn(a);
         if (base != null) {
-          const k = s - a;
+          const k = xDe(s) - xDe(a);
           franja = [r2(base * (1 + (rango.min / 100) * k)), r2(base * (1 + (rango.max / 100) * k))];
         }
       }
     } else if (pesoReferencia != null) {
       franja = [r2(pesoReferencia - FRANJA_MANTENIMIENTO_KG), r2(pesoReferencia + FRANJA_MANTENIMIENTO_KG)];
     }
-    const real = s <= ultimaSemana ? medias.get(s) : undefined;
+    const real = s <= ultimaSemana ? lecturas.get(s)?.peso : undefined;
     const t = s <= ultimaSemana && primera != null && s >= primera ? tendenciaEn(s) : null;
     puntos.push({
       semana: s,
-      fecha: sumarDias(desde, s * 7),
+      fecha: s <= ultimaSemana ? diaDeLectura(desde, s, hoy) : sumarDias(desde, s * 7 + 6),
       real: real == null ? null : r2(real),
       tendencia: t == null ? null : r2(t),
       franja,

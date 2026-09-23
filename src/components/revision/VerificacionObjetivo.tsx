@@ -102,8 +102,8 @@ function Explicacion({ v }: { v: Verificacion }) {
       )}
       {v.pesoReferencia != null && v.pesoActual != null && (
         <p className="font-sans text-label text-ink-2">
-          Media inicial <span className="font-mono text-ink">{fmt(v.pesoReferencia, 1)} kg</span>
-          {' → '}última semana <span className="font-mono text-ink">{fmt(v.pesoActual, 1)} kg</span>
+          Primera semana <span className="font-mono text-ink">{fmt(v.pesoReferencia, 1)} kg</span>
+          {' → '}últimos 7 días <span className="font-mono text-ink">{fmt(v.pesoActual, 1)} kg</span>
         </p>
       )}
       {v.tipo === 'recomposicion' && (
@@ -313,7 +313,7 @@ export default function VerificacionObjetivo({ athleteEmail, logs }: Props) {
                   stroke="var(--color-accent)" strokeWidth={2.5} dot={false}
                 />
                 <Line
-                  dataKey="real" name="Media semanal" isAnimationActive={false}
+                  dataKey="real" name="Últimos 7 días" isAnimationActive={false}
                   stroke="none" dot={{ r: 3, fill: 'var(--color-ink-3)', stroke: 'none' }} activeDot={false}
                 />
               </ComposedChart>

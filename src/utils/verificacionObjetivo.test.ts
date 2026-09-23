@@ -38,14 +38,23 @@ describe('clasificarRitmo', () => {
 });
 
 describe('mediasSemanales y pendiente', () => {
-  it('agrupa por semanas desde el inicio e ignora lo anterior', () => {
+  it('media de los últimos 7 días, sin mirar antes del inicio', () => {
     const m = mediasSemanales(
       [{ date: '2026-08-31', weight: 90 }, { date: '2026-09-01', weight: 80 },
-       { date: '2026-09-03', weight: 82 }, { date: '2026-09-08', weight: 79 }],
+       { date: '2026-09-03', weight: 82 }, { date: '2026-09-10', weight: 79 }],
       '2026-09-01', '2026-09-20');
-    expect(m.get(0)).toBe(81);
-    expect(m.get(1)).toBe(79);
-    expect(m.size).toBe(2);
+    expect(m.get(0)).toBe(81);          // 1–7 sep
+    expect(m.get(1)).toBe(79);          // 8–14 sep
+    expect(m.has(2)).toBe(false);       // 15–20 sep: nadie se pesó
+  });
+  it('un pesaje raro a mitad de semana no manda: la semana en curso lee los 7 días previos', () => {
+    // Semana 1 en curso (hoy = miércoles 9): 81 el martes 8, 83 el miércoles 9,
+    // y los días anteriores de la otra semana siguen contando.
+    const m = mediasSemanales(
+      [{ date: '2026-09-04', weight: 81 }, { date: '2026-09-06', weight: 81 },
+       { date: '2026-09-08', weight: 81 }, { date: '2026-09-09', weight: 83 }],
+      '2026-09-01', '2026-09-09');
+    expect(m.get(1)).toBe(81); // mediana de 81,81,81,83: el 83 no manda
   });
   it('la pendiente no la tuerce una semana con retención', () => {
     const p = pendiente([[0, 80], [1, 79.5], [2, 79], [3, 79.6], [4, 78]]);
@@ -78,6 +87,12 @@ describe('verificarObjetivo — rangos en %', () => {
     expect(v.estado).toBe('lento');
     expect(v.ajusteKcal!).toBeGreaterThan(0);
     expect(v.ajusteKcal!).toBeLessThanOrEqual(400);
+  });
+  it('un pico de +2 kg el último día no cambia el veredicto', () => {
+    const pesos = serie('2026-08-01', 80, -0.4, 35);
+    pesos[pesos.length - 1] = { ...pesos[pesos.length - 1], weight: pesos[pesos.length - 1].weight + 2 };
+    const v = verificarObjetivo({ objetivo: { tipo: 'deficit', desde: '2026-08-01' }, pesos, hoy: '2026-09-04' });
+    expect(v.estado).toBe('en-rango');
   });
   it('sin dos semanas con pesos no hay veredicto', () => {
     const v = verificarObjetivo({
