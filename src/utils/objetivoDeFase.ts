@@ -53,10 +53,35 @@ export interface ObjetivoResuelto {
   deducido: boolean;
 }
 
+/**
+ * Palabras del NOMBRE de la fase que delatan su objetivo. Van antes que las
+ * kcal: «Mantenimiento» tras un déficit sube kcal y, por kcal, saldría
+ * «Volumen»; el nombre que puso el coach dice mucho más. El orden importa:
+ * «déficit acelerado» antes que «déficit», «salida de déficit» antes también.
+ */
+const PALABRAS_OBJETIVO: [RegExp, ObjetivoCorporalTipo][] = [
+  [/salida|invers|reverse/i, 'salida_deficit'],
+  [/acelerad|agresiv|r[aá]pid/i, 'deficit_acelerado'],
+  [/recomp/i, 'recomposicion'],
+  [/mantenim|manten|diet ?break|mant\b/i, 'mantenimiento'],
+  [/d[eé]ficit|definici|p[eé]rdida|cut/i, 'deficit'],
+  [/volumen|super[aá]vit|bulk|ganancia/i, 'volumen'],
+];
+
+function objetivoPorNombre(nombre: string | undefined): ObjetivoCorporalTipo | null {
+  if (!nombre) return null;
+  for (const [re, tipo] of PALABRAS_OBJETIVO) if (re.test(nombre)) return tipo;
+  return null;
+}
+
 export function objetivoDeFase(program: NutritionProgram, idx: number): ObjetivoResuelto | null {
   const fase = program.phases[idx];
   if (!fase) return null;
   if (fase.objetivo) return { tipo: fase.objetivo, deducido: false };
+  // El tipo que marcó el coach a mano manda sobre el nombre.
+  if (fase.phaseType) return { tipo: OBJETIVO_DE_TIPO[fase.phaseType], deducido: true };
+  const porNombre = objetivoPorNombre(fase.name);
+  if (porNombre) return { tipo: porNombre, deducido: true };
   const tipo = clasificarFaseNutricion(fase, program.phases[idx - 1]);
   return tipo ? { tipo: OBJETIVO_DE_TIPO[tipo], deducido: true } : null;
 }

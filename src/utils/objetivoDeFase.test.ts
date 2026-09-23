@@ -17,8 +17,18 @@ const programa = (): NutritionProgram => ({
 describe('objetivoDeFase', () => {
   it('lo marcado manda; lo viejo se deduce de las kcal y se avisa', () => {
     const p = programa();
-    expect(objetivoDeFase(p, 1)).toEqual({ tipo: 'volumen', deducido: true }); // 2100 → 2500 = superávit
-    expect(objetivoDeFase(p, 0)).toBeNull();                                  // sin anterior ni tipo
+    // «Mant» por nombre gana a las kcal (2100 → 2500 diría volumen).
+    expect(objetivoDeFase(p, 1)).toEqual({ tipo: 'mantenimiento', deducido: true });
+    // «Déficit» por nombre, aunque no tenga fase anterior con la que comparar kcal.
+    expect(objetivoDeFase(p, 0)).toEqual({ tipo: 'deficit', deducido: true });
+    // Sin nombre reconocible: las kcal.
+    p.phases[1].name = 'Bloque 2';
+    expect(objetivoDeFase(p, 1)).toEqual({ tipo: 'volumen', deducido: true });
+    p.phases[1].name = 'Salida de déficit';
+    expect(objetivoDeFase(p, 1)!.tipo).toBe('salida_deficit');
+    p.phases[1].name = 'Bloque 2';
+    p.phases[0].name = 'Fase 1';
+    expect(objetivoDeFase(p, 0)).toBeNull();
     p.phases[0].objetivo = 'deficit_acelerado';
     expect(objetivoDeFase(p, 0)).toEqual({ tipo: 'deficit_acelerado', deducido: false });
   });

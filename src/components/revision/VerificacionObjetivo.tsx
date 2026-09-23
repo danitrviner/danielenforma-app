@@ -1,13 +1,12 @@
 import React, { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import {
-  ComposedChart, Area, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-} from 'recharts';
 import { WorkoutLog } from '../../types';
 import { getNutritionProgram, saveNutritionProgram } from '../../dbService';
 import {
   faseEnCurso, cambiarObjetivo, corregirObjetivoDeFase, SEMANAS_FASE_NUEVA,
 } from '../../utils/objetivoDeFase';
+import { historialDeObjetivos } from '../../utils/historialObjetivos';
+import GraficaObjetivos from './GraficaObjetivos';
 import { useAthleteWeight } from '../../hooks/useAthleteWeight';
 import { useBodyMeasurements } from '../../hooks/useBodyMeasurements';
 import { hoyIsoLocal } from '../../utils/trainingWeek';
@@ -16,11 +15,7 @@ import {
   OBJETIVO_LABEL, OBJETIVOS_ORDEN, RANGO_PCT_SEMANA, FRANJA_MANTENIMIENTO_KG, VENTANA_TENDENCIA_SEMANAS,
   verificarObjetivo,
 } from '../../utils/verificacionObjetivo';
-import {
-  Card, Chip, Badge, BadgeTone, Button, Input, Skeleton,
-  ALTURA_GRAFICA, MARGEN_GRAFICA, ANCHO_EJE_Y, REJILLA_GRAFICA, TICK_GRAFICA, EJE_GRAFICA,
-  TOOLTIP_GRAFICA,
-} from '../ui';
+import { Card, Chip, Badge, BadgeTone, Button, Input, Skeleton } from '../ui';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    ¿Va donde queríamos? — el objetivo corporal en una palabra
@@ -187,6 +182,11 @@ export default function VerificacionObjetivo({ athleteEmail, logs }: Props) {
     [objetivo?.tipo, objetivo?.desde, pesos, hoy, medidas, logs],
   );
 
+  const historial = useMemo(
+    () => program ? historialDeObjetivos({ program, pesos, hoy, medidas, entrenos: logs }) : null,
+    [program, pesos, hoy, medidas, logs],
+  );
+
   if (isPending) return <Skeleton className="w-full h-40 rounded-surface" />;
 
   const abrirEditor = () => {
@@ -266,11 +266,6 @@ export default function VerificacionObjetivo({ athleteEmail, logs }: Props) {
 
   const v = verificacion!;
   const estado = ESTADO[v.estado];
-  const datos = v.puntos.map(p => ({ ...p, etiqueta: fmtFecha(p.fecha) }));
-  const valores = v.puntos.flatMap(p => [p.real, ...(p.franja ?? [])]).filter((n): n is number => n != null);
-  const dominio: [number, number] | undefined = valores.length
-    ? [Math.floor(Math.min(...valores) - 0.5), Math.ceil(Math.max(...valores) + 0.5)]
-    : undefined;
 
   return (
     <Card
@@ -283,43 +278,12 @@ export default function VerificacionObjetivo({ athleteEmail, logs }: Props) {
           <Badge tone={estado.tono} dot>{estado.texto}</Badge>
           {enCurso!.objetivo!.deducido && (
             <button type="button" onClick={abrirEditor} className="font-sans text-caption text-ink-3 underline">
-              Objetivo deducido de las kcal · confirmar
+              Objetivo deducido · confirmar
             </button>
           )}
         </div>
 
-        {v.pesoReferencia != null && datos.length > 1 && (
-          <div style={{ height: ALTURA_GRAFICA.m }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={datos} margin={MARGEN_GRAFICA}>
-                <CartesianGrid {...REJILLA_GRAFICA} />
-                <XAxis dataKey="etiqueta" tick={TICK_GRAFICA} {...EJE_GRAFICA} />
-                <YAxis domain={dominio} width={ANCHO_EJE_Y} tick={TICK_GRAFICA} {...EJE_GRAFICA} />
-                <Tooltip
-                  {...TOOLTIP_GRAFICA}
-                  formatter={(valor: unknown, nombre: unknown) => {
-                    if (Array.isArray(valor)) return [`${fmt(valor[0], 1)}–${fmt(valor[1], 1)} kg`, 'Rango'];
-                    return [typeof valor === 'number' ? `${fmt(valor, 1)} kg` : '—', String(nombre)];
-                  }}
-                />
-                <Area
-                  dataKey="franja" name="Rango" isAnimationActive={false}
-                  stroke="none" fill="var(--color-success)" fillOpacity={0.15}
-                />
-                {/* La tendencia manda; las medias semanales van como puntos sueltos
-                    para que se vea el ruido sin que decida nada. */}
-                <Line
-                  dataKey="tendencia" name="Tendencia" type="monotone" connectNulls isAnimationActive={false}
-                  stroke="var(--color-accent)" strokeWidth={2.5} dot={false}
-                />
-                <Line
-                  dataKey="real" name="Últimos 7 días" isAnimationActive={false}
-                  stroke="none" dot={{ r: 3, fill: 'var(--color-ink-3)', stroke: 'none' }} activeDot={false}
-                />
-              </ComposedChart>
-            </ResponsiveContainer>
-          </div>
-        )}
+        {historial && <GraficaObjetivos puntos={historial.puntos} tramos={historial.tramos} />}
 
         <Explicacion v={v} />
       </div>
