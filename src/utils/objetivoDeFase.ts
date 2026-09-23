@@ -51,6 +51,8 @@ export interface ObjetivoResuelto {
   tipo: ObjetivoCorporalTipo;
   /** true si la fase no lo trae marcado y se ha deducido de su tipo o sus kcal. */
   deducido: boolean;
+  /** De dónde sale: marcado por el coach, su `phaseType`, su nombre o el salto de kcal. */
+  por: 'marcado' | 'tipo' | 'nombre' | 'kcal';
 }
 
 /**
@@ -77,13 +79,13 @@ function objetivoPorNombre(nombre: string | undefined): ObjetivoCorporalTipo | n
 export function objetivoDeFase(program: NutritionProgram, idx: number): ObjetivoResuelto | null {
   const fase = program.phases[idx];
   if (!fase) return null;
-  if (fase.objetivo) return { tipo: fase.objetivo, deducido: false };
+  if (fase.objetivo) return { tipo: fase.objetivo, deducido: false, por: 'marcado' };
   // El tipo que marcó el coach a mano manda sobre el nombre.
-  if (fase.phaseType) return { tipo: OBJETIVO_DE_TIPO[fase.phaseType], deducido: true };
+  if (fase.phaseType) return { tipo: OBJETIVO_DE_TIPO[fase.phaseType], deducido: true, por: 'tipo' };
   const porNombre = objetivoPorNombre(fase.name);
-  if (porNombre) return { tipo: porNombre, deducido: true };
+  if (porNombre) return { tipo: porNombre, deducido: true, por: 'nombre' };
   const tipo = clasificarFaseNutricion(fase, program.phases[idx - 1]);
-  return tipo ? { tipo: OBJETIVO_DE_TIPO[tipo], deducido: true } : null;
+  return tipo ? { tipo: OBJETIVO_DE_TIPO[tipo], deducido: true, por: 'kcal' } : null;
 }
 
 export interface FaseEnCurso {
@@ -213,4 +215,36 @@ export function corregirObjetivoDeFase(
   const phases = [...program.phases];
   phases[idx] = conObjetivo(phases[idx], tipo, pesoKg);
   return { ...program, phases };
+}
+
+export interface ObjetivoAsignado {
+  idx: number;
+  faseId: string;
+  nombre: string;
+  tipo: ObjetivoCorporalTipo;
+  por: ObjetivoResuelto['por'];
+}
+
+/**
+ * Marca como CONFIRMADO el objetivo deducido de cada fase que aún no lo tiene
+ * (el backfill de una vez: scripts/asignar-objetivos.ts). Solo pone
+ * `objetivo` —y `phaseType` si faltaba—: no toca ritmo, semanas ni kcal, para
+ * que ninguna duración ni proyección cambie por el camino. Las fases que no se
+ * pueden deducir se quedan como están y se devuelven aparte.
+ */
+export function confirmarObjetivosDeducidos(program: NutritionProgram): {
+  program: NutritionProgram;
+  asignados: ObjetivoAsignado[];
+  sinDeducir: { idx: number; nombre: string }[];
+} {
+  const asignados: ObjetivoAsignado[] = [];
+  const sinDeducir: { idx: number; nombre: string }[] = [];
+  const phases = program.phases.map((fase, idx) => {
+    if (fase.objetivo) return fase;
+    const r = objetivoDeFase(program, idx);
+    if (!r) { sinDeducir.push({ idx, nombre: fase.name }); return fase; }
+    asignados.push({ idx, faseId: fase.id, nombre: fase.name, tipo: r.tipo, por: r.por });
+    return { ...fase, objetivo: r.tipo, ...(fase.phaseType ? {} : { phaseType: phaseTypeDeObjetivo(r.tipo) }) };
+  });
+  return { program: { ...program, phases }, asignados, sinDeducir };
 }

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { NutritionProgram } from '../types';
 import {
-  cambiarObjetivo, corregirObjetivoDeFase, faseEnCurso, objetivoDeFase, ritmoSugeridoKg,
+  confirmarObjetivosDeducidos, cambiarObjetivo, corregirObjetivoDeFase, faseEnCurso, objetivoDeFase, ritmoSugeridoKg,
 } from './objetivoDeFase';
 import { computePhaseStartDate } from './fasesNutricion';
 
@@ -18,19 +18,19 @@ describe('objetivoDeFase', () => {
   it('lo marcado manda; lo viejo se deduce de las kcal y se avisa', () => {
     const p = programa();
     // «Mant» por nombre gana a las kcal (2100 → 2500 diría volumen).
-    expect(objetivoDeFase(p, 1)).toEqual({ tipo: 'mantenimiento', deducido: true });
+    expect(objetivoDeFase(p, 1)).toEqual({ tipo: 'mantenimiento', deducido: true, por: 'nombre' });
     // «Déficit» por nombre, aunque no tenga fase anterior con la que comparar kcal.
-    expect(objetivoDeFase(p, 0)).toEqual({ tipo: 'deficit', deducido: true });
+    expect(objetivoDeFase(p, 0)).toEqual({ tipo: 'deficit', deducido: true, por: 'nombre' });
     // Sin nombre reconocible: las kcal.
     p.phases[1].name = 'Bloque 2';
-    expect(objetivoDeFase(p, 1)).toEqual({ tipo: 'volumen', deducido: true });
+    expect(objetivoDeFase(p, 1)).toEqual({ tipo: 'volumen', deducido: true, por: 'kcal' });
     p.phases[1].name = 'Salida de déficit';
     expect(objetivoDeFase(p, 1)!.tipo).toBe('salida_deficit');
     p.phases[1].name = 'Bloque 2';
     p.phases[0].name = 'Fase 1';
     expect(objetivoDeFase(p, 0)).toBeNull();
     p.phases[0].objetivo = 'deficit_acelerado';
-    expect(objetivoDeFase(p, 0)).toEqual({ tipo: 'deficit_acelerado', deducido: false });
+    expect(objetivoDeFase(p, 0)).toEqual({ tipo: 'deficit_acelerado', deducido: false, por: 'marcado' });
   });
 });
 
@@ -88,5 +88,18 @@ describe('corregirObjetivoDeFase', () => {
   it('ritmos sugeridos', () => {
     expect(ritmoSugeridoKg('deficit', 80)).toBeCloseTo(-0.4, 2);
     expect(ritmoSugeridoKg('mantenimiento', 80)).toBeUndefined();
+  });
+});
+
+describe('confirmarObjetivosDeducidos', () => {
+  it('confirma lo deducido sin tocar semanas, kcal ni ritmo; deja fuera lo que no se puede deducir', () => {
+    const p = programa();
+    p.phases.push({ id: 'f3', name: 'Bloque raro', weeks: 2, dietId: '' });
+    p.phases[1].objetivo = 'recomposicion';
+    const r = confirmarObjetivosDeducidos(p);
+    expect(r.asignados.map(a => [a.faseId, a.tipo, a.por])).toEqual([['f1', 'deficit', 'nombre']]);
+    expect(r.sinDeducir).toEqual([{ idx: 2, nombre: 'Bloque raro' }]);
+    expect(r.program.phases[0]).toEqual({ ...p.phases[0], objetivo: 'deficit', phaseType: 'deficit' });
+    expect(r.program.phases[1]).toBe(p.phases[1]); // ya marcada: intacta
   });
 });

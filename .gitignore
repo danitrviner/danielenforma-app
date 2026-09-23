@@ -51,3 +51,6 @@ public/recetas-indice.json
 .superdesign/
 copia-perfil-huerfano-*.json
 copia-cuentas-demo.json
+
+# Copias que dejan los scripts antes de escribir en producción (datos de clientes)
+scripts/backups/
