@@ -10,7 +10,8 @@ import { useBodyMeasurements } from '../../hooks/useBodyMeasurements';
 import { hoyIsoLocal } from '../../utils/trainingWeek';
 import {
   ObjetivoCorporal, ObjetivoCorporalTipo, EstadoVerificacion, Senal, Verificacion,
-  OBJETIVO_LABEL, OBJETIVOS_ORDEN, RANGO_PCT_SEMANA, FRANJA_MANTENIMIENTO_KG, verificarObjetivo,
+  OBJETIVO_LABEL, OBJETIVOS_ORDEN, RANGO_PCT_SEMANA, FRANJA_MANTENIMIENTO_KG, VENTANA_TENDENCIA_SEMANAS,
+  verificarObjetivo,
 } from '../../utils/verificacionObjetivo';
 import {
   Card, Chip, Badge, BadgeTone, Button, Input, Skeleton,
@@ -88,10 +89,12 @@ function Explicacion({ v }: { v: Verificacion }) {
     <div className="space-y-2">
       {v.ritmoPct != null && v.ritmoKg != null && (
         <p className="font-sans text-label text-ink-2">
-          Ritmo real:{' '}
+          Ritmo actual (últimas {VENTANA_TENDENCIA_SEMANAS} semanas):{' '}
           <span className="font-mono text-ink">{fmt(v.ritmoPct, 2, true)} %/sem</span>{' '}
           <span className="font-mono text-ink-3">({fmt(v.ritmoKg * 1000, 0, true)} g/sem)</span>
-          {' · '}{v.semanasConDatos} semanas con pesos
+          {v.ritmoMedioPct != null && (
+            <>{' · '}media del objetivo <span className="font-mono text-ink">{fmt(v.ritmoMedioPct, 2, true)} %/sem</span></>
+          )}
         </p>
       )}
       {v.pesoReferencia != null && v.pesoActual != null && (
@@ -257,9 +260,15 @@ export default function VerificacionObjetivo({ athleteEmail, logs }: Props) {
                   dataKey="franja" name="Rango" isAnimationActive={false}
                   stroke="none" fill="var(--color-success)" fillOpacity={0.15}
                 />
+                {/* La tendencia manda; las medias semanales van como puntos sueltos
+                    para que se vea el ruido sin que decida nada. */}
                 <Line
-                  dataKey="real" name="Media semanal" type="monotone" connectNulls isAnimationActive={false}
-                  stroke="var(--color-accent)" strokeWidth={2} dot={{ r: 3, fill: 'var(--color-accent)' }}
+                  dataKey="tendencia" name="Tendencia" type="monotone" connectNulls isAnimationActive={false}
+                  stroke="var(--color-accent)" strokeWidth={2.5} dot={false}
+                />
+                <Line
+                  dataKey="real" name="Media semanal" isAnimationActive={false}
+                  stroke="none" dot={{ r: 3, fill: 'var(--color-ink-3)', stroke: 'none' }} activeDot={false}
                 />
               </ComposedChart>
             </ResponsiveContainer>

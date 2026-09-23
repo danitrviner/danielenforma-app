@@ -86,19 +86,36 @@ describe('verificarObjetivo — rangos en %', () => {
     });
     expect(v.estado).toBe('sin-datos');
   });
-  it('la franja se re-ancla en la última media real y enseña la semana que viene', () => {
-    const v = verificarObjetivo({
-      objetivo: { tipo: 'deficit', desde: '2026-08-01' },
-      pesos: serie('2026-08-01', 80, -0.4, 28), hoy: '2026-08-29',
+  it('quien va lento TODAS las semanas acaba fuera de la franja (acumula 4 semanas)', () => {
+    // −0,28 %/sem con 84 kg: en cada semana suelta el retraso es de ~100 g.
+    const lento = verificarObjetivo({
+      objetivo: { tipo: 'deficit', desde: '2026-06-01' },
+      pesos: serie('2026-06-01', 84, -0.24, 84), hoy: '2026-08-24',
     });
-    expect(v.puntos[0].franja).toBeNull();
-    const [lo, hi] = v.puntos[3].franja!;
-    const previa = v.puntos[2].real!;
-    expect(lo).toBeCloseTo(previa * (1 - 0.006), 1);
-    expect(hi).toBeCloseTo(previa * (1 - 0.004), 1);
-    const siguiente = v.puntos[v.puntos.length - 1];
+    const hoyPunto = lento.puntos[lento.puntos.length - 2];
+    expect(hoyPunto.tendencia!).toBeGreaterThan(hoyPunto.franja![1]);
+    // El que cumple, dentro.
+    const bien = verificarObjetivo({
+      objetivo: { tipo: 'deficit', desde: '2026-06-01' },
+      pesos: serie('2026-06-01', 84, -0.42, 84), hoy: '2026-08-24',
+    });
+    const p = bien.puntos[bien.puntos.length - 2];
+    expect(p.tendencia!).toBeGreaterThanOrEqual(p.franja![0]);
+    expect(p.tendencia!).toBeLessThanOrEqual(p.franja![1]);
+    // Y se pinta la franja de la semana que viene, sin peso real todavía.
+    const siguiente = bien.puntos[bien.puntos.length - 1];
     expect(siguiente.real).toBeNull();
     expect(siguiente.franja).not.toBeNull();
+  });
+  it('el veredicto habla de las últimas semanas: tras corregir, deja de decir «lento»', () => {
+    const antes = serie('2026-06-01', 84, 0, 56);           // 8 semanas parado
+    const despues = serie('2026-07-27', 84, -0.42, 35);      // corrige y baja a ritmo
+    const v = verificarObjetivo({
+      objetivo: { tipo: 'deficit', desde: '2026-06-01' },
+      pesos: [...antes, ...despues], hoy: '2026-08-30',
+    });
+    expect(v.estado).toBe('en-rango');
+    expect(v.ritmoMedioPct!).toBeGreaterThan(-0.4);       // la media de la fase sigue siendo lenta
   });
 });
 

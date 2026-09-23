@@ -58,6 +58,14 @@ const UMBRAL_CINTURA_CM = 0.5;
 /** Cambio mediano del 1RM estimado que cuenta como «sube». */
 const UMBRAL_FUERZA_PCT = 1;
 const KCAL_POR_KG = 7700;
+/**
+ * Semanas que mira la tendencia. Con una sola semana la franja se re-anclaba
+ * en cada peso y un atleta que va un poco lento TODAS las semanas nunca se
+ * salía (Dani, 09-2026): el retraso de cada semana es pequeño, el acumulado
+ * no. Cuatro semanas acumulan lo bastante para que se vea, y aun así el dato
+ * de hace dos meses no manda sobre lo que pasa ahora.
+ */
+export const VENTANA_TENDENCIA_SEMANAS = 4;
 const MAX_AJUSTE_KCAL = 400;
 
 export type EstadoVerificacion =
@@ -76,6 +84,8 @@ export interface PuntoSemanal {
   semana: number;          // 0 = la semana en que empieza el objetivo
   fecha: string;           // `desde` + 7·semana
   real: number | null;     // media de los pesos de esa semana
+  /** Peso de tendencia: la recta de las últimas semanas evaluada aquí. */
+  tendencia: number | null;
   franja: [number, number] | null;
 }
 
@@ -83,10 +93,12 @@ export interface Verificacion {
   tipo: ObjetivoCorporalTipo;
   estado: EstadoVerificacion;
   pesoReferencia: number | null;
-  /** Ritmo real, % del peso por semana (con signo). */
+  /** Ritmo ACTUAL (últimas `VENTANA_TENDENCIA_SEMANAS`), % del peso por semana, con signo. Decide el veredicto. */
   ritmoPct: number | null;
-  /** Ritmo real, kg por semana (con signo). */
+  /** Ritmo actual en kg por semana (con signo). */
   ritmoKg: number | null;
+  /** Ritmo medio de todo el objetivo, %/sem — contexto, no veredicto. */
+  ritmoMedioPct: number | null;
   pesoActual: number | null;
   semanasConDatos: number;
   puntos: PuntoSemanal[];
@@ -245,45 +257,66 @@ export function verificarObjetivo(entrada: {
   const pesoReferencia = semanas.length ? medias.get(semanas[0])! : null;
   const pesoActual = semanas.length ? medias.get(semanas[semanas.length - 1])! : null;
 
-  const kgSemana = pendiente(semanas.map(s => [s, medias.get(s)!] as [number, number]));
-  const ritmoKg = kgSemana == null ? null : Math.round(kgSemana * 1000) / 1000;
-  const ritmoPct = kgSemana == null || pesoReferencia == null
-    ? null
-    : Math.round((kgSemana / pesoReferencia) * 10000) / 100;
+  const r2 = (v: number) => Math.round(v * 100) / 100;
+  const pct = (kg: number | null) => kg == null || pesoReferencia == null
+    ? null : Math.round((kg / pesoReferencia) * 10000) / 100;
+
+  /** Recta de las semanas con datos en [s − ventana + 1, s], evaluada en s. */
+  const tendenciaEn = (s: number): number | null => {
+    const tramo = semanas.filter(w => w <= s && w > s - VENTANA_TENDENCIA_SEMANAS)
+      .map(w => [w, medias.get(w)!] as [number, number]);
+    if (tramo.length === 0) return null;
+    const m = pendiente(tramo);
+    if (m == null) return tramo[tramo.length - 1][1];
+    const mx = tramo.reduce((t, [x]) => t + x, 0) / tramo.length;
+    const my = tramo.reduce((t, [, y]) => t + y, 0) / tramo.length;
+    return my + m * (s - mx);
+  };
 
   const ultimaSemana = Math.max(0, Math.floor(diasEntre(desde, hoy) / 7));
-  const r2 = (v: number) => Math.round(v * 100) / 100;
+  // Ritmo actual: solo la ventana reciente. Si el coach corrigió las kcal hace
+  // tres semanas, el veredicto tiene que hablar de lo de ahora, no arrastrar
+  // la fase entera.
+  const recientes = semanas.filter(w => w > ultimaSemana - VENTANA_TENDENCIA_SEMANAS);
+  const kgSemana = pendiente(recientes.map(w => [w, medias.get(w)!] as [number, number]));
+  const ritmoKg = kgSemana == null ? null : Math.round(kgSemana * 1000) / 1000;
+  const ritmoPct = pct(kgSemana);
+  const ritmoMedioPct = pct(pendiente(semanas.map(w => [w, medias.get(w)!] as [number, number])));
+
+  const primera = semanas[0];
   const puntos: PuntoSemanal[] = [];
-  let ancla: { semana: number; peso: number } | null = null;
   // Una semana más allá de hoy: la franja de la próxima semana es lo que el
-  // atleta tiene que buscar, y ya se puede pintar con el último peso.
+  // atleta tiene que buscar.
   for (let s = 0; s <= ultimaSemana + 1; s++) {
     let franja: [number, number] | null = null;
     if (rango) {
-      /* La franja se re-ancla con cada peso nuevo: parte de la última media
-       * real, no del peso del día 1. Así dice «desde donde estás ahora, aquí
-       * deberías estar», en vez de un abanico fijo que un atleta que se
-       * retrasó una vez ya no puede alcanzar nunca. El veredicto global sigue
-       * saliendo de la regresión de todo el periodo. */
-      if (ancla) {
-        const k = s - ancla.semana;
-        franja = [r2(ancla.peso * (1 + (rango.min / 100) * k)), r2(ancla.peso * (1 + (rango.max / 100) * k))];
+      /* Se ancla en la TENDENCIA de hace `ventana` semanas (o al inicio) y se
+       * proyecta hasta aquí. Se mueve con cada peso nuevo, pero acumula el
+       * retraso de cuatro semanas: quien va lento de forma sostenida se sale. */
+      if (primera != null && s > primera) {
+        const a = Math.max(primera, s - VENTANA_TENDENCIA_SEMANAS);
+        const base = tendenciaEn(a);
+        if (base != null) {
+          const k = s - a;
+          franja = [r2(base * (1 + (rango.min / 100) * k)), r2(base * (1 + (rango.max / 100) * k))];
+        }
       }
     } else if (pesoReferencia != null) {
       franja = [r2(pesoReferencia - FRANJA_MANTENIMIENTO_KG), r2(pesoReferencia + FRANJA_MANTENIMIENTO_KG)];
     }
     const real = s <= ultimaSemana ? medias.get(s) : undefined;
+    const t = s <= ultimaSemana && primera != null && s >= primera ? tendenciaEn(s) : null;
     puntos.push({
       semana: s,
       fecha: sumarDias(desde, s * 7),
       real: real == null ? null : r2(real),
+      tendencia: t == null ? null : r2(t),
       franja,
     });
-    if (real != null) ancla = { semana: s, peso: real };
   }
 
   const base: Verificacion = {
-    tipo, estado: 'sin-datos', pesoReferencia, ritmoPct, ritmoKg, pesoActual,
+    tipo, estado: 'sin-datos', pesoReferencia, ritmoPct, ritmoKg, ritmoMedioPct, pesoActual,
     semanasConDatos: semanas.length, puntos, ajusteKcal: null,
   };
 
@@ -302,8 +335,11 @@ export function verificarObjetivo(entrada: {
 
   // Mantenimiento y recomposición: franja alrededor de la media inicial.
   let estadoPeso: EstadoVerificacion = 'sin-datos';
-  if (pesoReferencia != null && pesoActual != null && semanas.length >= 2) {
-    const d = Math.round((pesoActual - pesoReferencia) * 100) / 100;
+  const tendenciaActual = tendenciaEn(ultimaSemana);
+  if (pesoReferencia != null && tendenciaActual != null && semanas.length >= 2) {
+    // Contra la tendencia, no contra la última media: un fin de semana con
+    // sal no saca a nadie de mantenimiento.
+    const d = Math.round((tendenciaActual - pesoReferencia) * 100) / 100;
     estadoPeso = d > FRANJA_MANTENIMIENTO_KG ? 'por-encima'
       : d < -FRANJA_MANTENIMIENTO_KG ? 'por-debajo' : 'en-rango';
   }
