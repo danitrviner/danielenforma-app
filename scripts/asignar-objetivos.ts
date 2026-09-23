@@ -12,6 +12,8 @@
 //   npx tsx scripts/asignar-objetivos.ts             # solo informa
 //   npx tsx scripts/asignar-objetivos.ts --aplicar   # escribe (y guarda copia antes)
 //
+// Credencial: serviceAccount.json en la raíz, o FIREBASE_SERVICE_ACCOUNT con el JSON.
+//
 // Lee la colección nutritionPrograms entera: un documento por atleta con plan,
 // decenas, no miles. Es un script de una vez, no una pantalla.
 
@@ -21,7 +23,11 @@ import { confirmarObjetivosDeducidos, faseEnCurso } from '../src/utils/objetivoD
 import { OBJETIVO_LABEL } from '../src/utils/verificacionObjetivo';
 import type { NutritionProgram } from '../src/types';
 
-const db = abrirDb(JSON.parse(readFileSync(new URL('../serviceAccount.json', import.meta.url), 'utf8')));
+// La credencial sale de serviceAccount.json (en local) o de la variable
+// FIREBASE_SERVICE_ACCOUNT con el mismo JSON (entornos en la nube, sin archivo).
+const credencial = process.env.FIREBASE_SERVICE_ACCOUNT
+  ?? readFileSync(new URL('../serviceAccount.json', import.meta.url), 'utf8');
+const db = abrirDb(JSON.parse(credencial));
 const APLICAR = process.argv.includes('--aplicar');
 
 const pad = (n: number) => String(n).padStart(2, '0');
