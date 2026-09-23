@@ -6,7 +6,7 @@ import { usePagos } from '../hooks/usePagos';
 import { formatEuros, sumaCobrado, pendienteDe, ingresosPorMes } from '../lib/dinero';
 import {
   facturacionDelMes, mesDe, mrr, permanenciaMedia, ltvMedio, ticketMedio, agrupaCobrado,
-  churnDelMes, porCobrar,
+  churnDelMes, porCobrar, porCobrarDelMes,
 } from '../lib/metricas';
 import { cobradoDe } from '../lib/dinero';
 import type { CrmPago } from '../types';
@@ -55,6 +55,9 @@ export default function DashboardScreen() {
   // `pendiente`, así que se caía de las dos cifras (Dani, 10-09-2026).
   const facturado = sumaCobrado(pagos);
   const { pendienteCents: totalPendiente, impagadoCents: impagado } = porCobrar(pagos);
+  const { pendienteCents: pendienteMes } = useMemo(
+    () => porCobrarDelMes(pagos, mesDe(hoy)), [pagos, hoy],
+  );
 
   /* Las métricas de valor razonan POR CLIENTE, así que hacen falta los
      movimientos y los servicios agrupados por su id. Se hace una vez aquí y
@@ -140,7 +143,9 @@ export default function DashboardScreen() {
         <MetricCard
           icon="schedule" label="Pagos pendientes"
           value={pagosSinDato ? '—' : formatEuros(totalPendiente)}
-          sub={!pagosSinDato && impagado > 0 ? `${formatEuros(impagado)} impagado` : undefined}
+          sub={pagosSinDato ? undefined
+            : impagado > 0 ? `${formatEuros(impagado)} impagado`
+            : `${formatEuros(pendienteMes)} de este mes`}
           accent={impagado > 0 ? 'var(--color-danger)' : 'var(--color-warning)'}
           onClick={() => navigate('/crm/pagos?estado=pendiente')}
         />

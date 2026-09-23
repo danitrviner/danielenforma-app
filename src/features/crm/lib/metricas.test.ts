@@ -4,7 +4,7 @@ import {
   cobradoDe, pendienteDe, facturacionDelMes, porCobrar, mrr,
   fechaAltaDe, mesesContratados, permanenciaMedia, churnDelMes,
   ltvMedio, ticketMedio, agrupaCobrado,
-  renovacionesDelMes, tasaDeRenovacion, estadoFinancieroDe,
+  renovacionesDelMes, tasaDeRenovacion, estadoFinancieroDe, resumenPeriodo,
 } from './metricas';
 
 function mov(p: Partial<CrmPago>): CrmPago {
@@ -356,5 +356,65 @@ describe('fechaAltaDe', () => {
 
   it('un lead sin servicios no tiene fecha de alta', () => {
     expect(fechaAltaDe([])).toBeNull();
+  });
+});
+
+describe('resumenPeriodo', () => {
+  /* El caso que Dani puso sobre la mesa el 22-09-2026: 300 € a tres cuotas de
+     100, contratado en septiembre, la primera ya cobrada. Recaudado y
+     contratado no pueden solaparse — sumados tienen que dar 300 exactos, no
+     600, y cada cuota pendiente tiene que caer en SU mes. */
+  const trescientosATresMeses = [
+    mov({ id: '1', importeCents: 10000, estado: 'pagado',    fechaEmision: '2026-09-10', fechaCobro: '2026-09-10' }),
+    mov({ id: '2', importeCents: 10000, estado: 'pendiente', fechaEmision: '2026-10-10' }),
+    mov({ id: '3', importeCents: 10000, estado: 'pendiente', fechaEmision: '2026-11-10' }),
+  ];
+
+  it('una cuota cobrada sale de contratado y entra en recaudado', () => {
+    const sept = resumenPeriodo(trescientosATresMeses, '2026-09-01', '2026-09-30');
+    expect(sept.recaudadoCents).toBe(10000);
+    expect(sept.contratadoCents).toBe(0);
+  });
+
+  it('cada cuota pendiente cuenta en el mes en que vence', () => {
+    expect(resumenPeriodo(trescientosATresMeses, '2026-10-01', '2026-10-31').contratadoCents).toBe(10000);
+    expect(resumenPeriodo(trescientosATresMeses, '2026-11-01', '2026-11-30').contratadoCents).toBe(10000);
+  });
+
+  /* El fallo de verdad: con el rango cortado en «hoy», las cuotas futuras se
+     quedaban fuera y el año salía corto. En un rango que cubre el año entero
+     tienen que estar las tres. */
+  it('en el año entero suman las cuotas futuras, y el total no duplica nada', () => {
+    const anio = resumenPeriodo(trescientosATresMeses, '2026-01-01', '2026-12-31');
+    expect(anio.recaudadoCents).toBe(10000);
+    expect(anio.contratadoCents).toBe(20000);
+    expect(anio.recaudadoCents + anio.contratadoCents).toBe(30000);
+  });
+
+  it('un impagado sigue siendo dinero por cobrar, no recaudado', () => {
+    const r = resumenPeriodo([mov({ importeCents: 30000, estado: 'impagado', fechaEmision: '2026-09-05' })],
+      '2026-09-01', '2026-09-30');
+    expect(r.recaudadoCents).toBe(0);
+    expect(r.contratadoCents).toBe(30000);
+  });
+
+  it('de un parcial, lo cobrado va a recaudado y el resto sigue contratado', () => {
+    const r = resumenPeriodo(
+      [mov({ importeCents: 30000, importeCobradoCents: 10000, estado: 'parcial', fechaEmision: '2026-09-05', fechaCobro: '2026-09-05' })],
+      '2026-09-01', '2026-09-30');
+    expect(r.recaudadoCents).toBe(10000);
+    expect(r.contratadoCents).toBe(20000);
+  });
+
+  it('las renovaciones se desglosan aparte sin salirse del total', () => {
+    const r = resumenPeriodo([
+      mov({ id: 'a', tipo: 'alta',       importeCents: 50000, estado: 'pagado',    fechaEmision: '2026-09-01', fechaCobro: '2026-09-01' }),
+      mov({ id: 'b', tipo: 'renovacion', importeCents: 20000, estado: 'pagado',    fechaEmision: '2026-09-02', fechaCobro: '2026-09-02' }),
+      mov({ id: 'c', tipo: 'renovacion', importeCents: 30000, estado: 'pendiente', fechaEmision: '2026-09-20' }),
+    ], '2026-09-01', '2026-09-30');
+    expect(r.recaudadoCents).toBe(70000);
+    expect(r.recaudadoRenovacionesCents).toBe(20000);
+    expect(r.contratadoCents).toBe(30000);
+    expect(r.contratadoRenovacionesCents).toBe(30000);
   });
 });

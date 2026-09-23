@@ -74,6 +74,43 @@ export function facturacionDelMes(movimientos: CrmPago[], mes: ClaveMes): Factur
   return acc;
 }
 
+export interface ResumenPeriodo {
+  recaudadoCents: number;
+  contratadoCents: number;
+  recaudadoRenovacionesCents: number;
+  contratadoRenovacionesCents: number;
+}
+
+/**
+ * El cash de un rango de fechas cualquiera (no solo un mes), separando dos
+ * preguntas distintas y SIN que se solapen (Dani, 22-09-2026): cuánto entró
+ * de verdad (recaudado, por fecha de COBRO) y cuánto de lo vendido en el
+ * rango (por fecha de EMISIÓN) sigue SIN cobrar todavía — no el importe total
+ * del contrato. Una cuota cuenta en «contratado» mientras está pendiente o
+ * impagada, y en cuanto se cobra desaparece de ahí y pasa a «recaudado» del
+ * mes en que se cobre — nunca en los dos a la vez, sea cual sea el mes.
+ *
+ * `desde`/`hasta` son ISO 'YYYY-MM-DD' inclusive por ambos lados.
+ */
+export function resumenPeriodo(pagos: CrmPago[], desde: string, hasta: string): ResumenPeriodo {
+  const r: ResumenPeriodo = {
+    recaudadoCents: 0, contratadoCents: 0, recaudadoRenovacionesCents: 0, contratadoRenovacionesCents: 0,
+  };
+  for (const p of pagos) {
+    if (p.fechaCobro && p.fechaCobro >= desde && p.fechaCobro <= hasta) {
+      const cents = cobradoDe(p);
+      r.recaudadoCents += cents;
+      if (p.tipo === 'renovacion') r.recaudadoRenovacionesCents += cents;
+    }
+    if (p.fechaEmision >= desde && p.fechaEmision <= hasta) {
+      const cents = pendienteDe(p);
+      r.contratadoCents += cents;
+      if (p.tipo === 'renovacion') r.contratadoRenovacionesCents += cents;
+    }
+  }
+  return r;
+}
+
 /** Lo que está por cobrar, separando lo que aún no toca de lo que ya falla. */
 export function porCobrar(movimientos: CrmPago[]): { pendienteCents: number; impagadoCents: number } {
   let pendienteCents = 0;
@@ -89,6 +126,17 @@ export function porCobrar(movimientos: CrmPago[]): { pendienteCents: number; imp
     else pendienteCents += cents;
   }
   return { pendienteCents, impagadoCents };
+}
+
+/**
+ * Lo mismo que `porCobrar`, pero acotado a un mes — por fecha de EMISIÓN, que
+ * es la única fecha que tiene un pago sin cobrar (no hay `fechaVencimiento`).
+ * Es lo que hace que la tarjeta «Pagos pendientes» del Resumen deje de sumar
+ * TODA la vida de la cuenta y pase a contestar «cuánto queda por cobrar de lo
+ * emitido este mes», igual que «Facturado este mes» ya hace con lo cobrado.
+ */
+export function porCobrarDelMes(movimientos: CrmPago[], mes: ClaveMes): { pendienteCents: number; impagadoCents: number } {
+  return porCobrar(movimientos.filter(m => mesDe(m.fechaEmision) === mes));
 }
 
 /**
