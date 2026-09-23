@@ -63,10 +63,12 @@ function textoRango(tipo: ObjetivoCorporalTipo, pesoRef: number | null): string 
       ? `±${FRANJA_MANTENIMIENTO_KG} kg sobre la media de la 1ª semana`
       : `${fmt(pesoRef - FRANJA_MANTENIMIENTO_KG, 1)}–${fmt(pesoRef + FRANJA_MANTENIMIENTO_KG, 1)} kg`;
   }
-  const pct = `${fmt(r.min, 2, true)} a ${fmt(r.max, 2, true)} %/sem`;
+  // Se lee del ritmo suave al fuerte: «−0,40 a −0,60», no al revés.
+  const [suave, fuerte] = Math.abs(r.min) <= Math.abs(r.max) ? [r.min, r.max] : [r.max, r.min];
+  const pct = `${fmt(suave, 2, true)} a ${fmt(fuerte, 2, true)} %/sem`;
   if (pesoRef == null) return pct;
-  const g = (p: number) => Math.round((p / 100) * pesoRef * 1000);
-  return `${pct} · ${g(r.min) > 0 ? '+' : ''}${g(r.min)} a ${g(r.max) > 0 ? '+' : ''}${g(r.max)} g/sem`;
+  const g = (p: number) => fmt(Math.round((p / 100) * pesoRef * 1000), 0, true);
+  return `${pct} · ${g(suave)} a ${g(fuerte)} g/sem`;
 }
 
 function lecturaSenal(s: Senal): string {
@@ -110,7 +112,7 @@ function Explicacion({ v }: { v: Verificacion }) {
             {lecturaSenal(v.fuerza!.senal)} Fuerza (1RM est., mediana){' '}
             {v.fuerza!.cambioPct != null
               ? <span className="font-mono text-ink">{fmt(v.fuerza!.cambioPct, 1, true)} % · {v.fuerza!.ejercicios} ejercicios</span>
-              : <span className="text-ink-3">hacen falta 2 semanas de entrenos</span>}
+              : <span className="text-ink-3">sin el mismo ejercicio registrado al principio y al final del periodo</span>}
           </li>
         </ul>
       )}

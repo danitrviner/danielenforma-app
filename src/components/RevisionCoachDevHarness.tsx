@@ -462,6 +462,8 @@ export default function RevisionCoachDevHarness() {
   // única forma de ver el modo renovación de Implantación sin esperar tres
   // semanas o falsear el reloj del sistema.
   const renovar = new URLSearchParams(window.location.search).has('renovar');
+  // `?objetivo=volumen|deficit|…|ninguno` — ninguno enseña el selector vacío.
+  const objetivoParam = new URLSearchParams(window.location.search).get('objetivo') ?? 'deficit';
   const mesoDeLaPantalla: Mesocycle = renovar
     ? { ...MESO_ACTUAL, startDate: haceDias(MESO_ACTUAL.weeks * 7 - 4) }
     : MESO_ACTUAL;
@@ -499,7 +501,12 @@ export default function RevisionCoachDevHarness() {
     for (let d = 0; d <= 90; d++) {
       qc.setQueryData(['dietCompletionLogsForAthlete', EMAIL, haceDias(d)], REGISTROS_DE_COMIDA);
     }
-    qc.setQueryData(['athleteNutritionConfig', EMAIL], { athleteId: EMAIL, enabledModes: ['OMNIVORO'], stepGoal: 9000 });
+    qc.setQueryData(['athleteNutritionConfig', EMAIL], {
+      athleteId: EMAIL, enabledModes: ['OMNIVORO'], stepGoal: 9000,
+      ...(objetivoParam === 'ninguno' ? {} : {
+        objetivoCorporal: { tipo: objetivoParam, desde: PESOS[0].date },
+      }),
+    });
     qc.setQueryData(['athleteDietConfig', EMAIL], { athleteId: EMAIL, activeDietIds: ['d_deficit'] });
     qc.setQueryData(['stepsForAthlete', EMAIL], PASOS);
     // Retos y nivel. El roadmap va a null a propósito: así el bloque cae a la
