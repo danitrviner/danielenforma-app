@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { minutosDeReceta } from '../utils/tiempoDeReceta';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { UserProfile, Diet, DietMeal, DietItem, FoodCategory, DietMode, MealItem, Recipe, RecipeFavorites, RefeedDay, RecetaPendiente, MenuCompletionLog } from '../types';
-import { getDietsForAthlete, getAthleteDietConfig, saveAthleteDietConfig, createDiet, updateDiet, deleteDiet, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig, saveAthleteNutritionConfig, getRecipes, getRecipeFavorites, getNutritionProgram, markNutritionPhaseSeen, computeActivePhase, createNotificationDeduped, getDietCompletionLog, saveDietCompletionLog, createRecipe, queryRecetas, queryRecetasForGenerator, cargarIndiceRecetas, getOnboarding, getRecipeById, getMenuCompletionLog, saveMenuCompletionLog, getAlimentosPersonales, crearAlimentoPersonal, borrarAlimentoPersonal } from '../dbService';
+import { getDietsForAthlete, getAthleteDietConfig, saveAthleteDietConfig, createDiet, updateDiet, deleteDiet, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig, saveAthleteNutritionConfig, getRecipes, getRecipeFavorites, getNutritionProgram, markNutritionPhaseSeen, computeActivePhase, createNotificationDeduped, getDietCompletionLog, saveDietCompletionLog, createRecipe, queryRecetas, queryRecetasForGenerator, cargarIndiceRecetas, getOnboarding, getRecipeById, getMenuCompletionLog, saveMenuCompletionLog, getAlimentosPersonales, crearAlimentoPersonal, actualizarAlimentoPersonal, borrarAlimentoPersonal } from '../dbService';
 import type { RecetasCursor } from '../dbService';
 import { CATS, BUDGET_CATS, CAT_LABEL, CAT_COLOR, CAT_BG, MODE_LABEL, ALL_DIET_MODES, round2, fmtQty, foodNameWithoutGrams, addToPlaced, recipeToDietItems, computeDietPlaced } from '../utils/exchangeHelpers';
 import { parseBaseGrams, etiquetaDePeso } from '../utils/conversionNutricional';
@@ -31,6 +31,7 @@ import { Skeleton } from './ui';
 import { EmptyState, Sheet, Icon, Button, ProgressBar, RingSeal, Stepper, Dialog, ListRow, Input } from './ui';
 import MealItemSwipeRow from './nutrition/MealItemSwipeRow';
 import CrearAlimentoSheet from './nutrition/CrearAlimentoSheet';
+import GuiaDeIntercambios from './nutrition/GuiaDeIntercambios';
 import { NotaDeFuente } from './FuentesCientificasSheet';
 
 import {
@@ -363,6 +364,28 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
   const [pickerCategory, setPickerCategory] = useState<FoodCategory>('HC');
   const [crearAlimentoAbierto, setCrearAlimentoAbierto] = useState(false);
   const [alimentoABorrar, setAlimentoABorrar] = useState<MealItem | null>(null);
+  const [alimentoAEditar, setAlimentoAEditar] = useState<MealItem | null>(null);
+  /* La guía se abre sola la PRIMERA vez que este atleta llega al buscador, y
+     después solo si la pide desde «Cómo funciona». Es explicación, no un aviso:
+     reaparecer cada dos por tres la convierte en algo que se cierra sin leer.
+     Por atleta, no por dispositivo, y en try/catch porque en navegación privada
+     `localStorage` lanza: si no se puede recordar, se prefiere no volver a
+     abrirla —molestar es peor que no explicar dos veces—. */
+  const [guiaAbierta, setGuiaAbierta] = useState(false);
+  const claveGuiaVista = `enforma_guia_intercambios_${profile.email}`;
+  const marcarGuiaVista = useCallback(() => {
+    try { localStorage.setItem(claveGuiaVista, '1'); } catch { /* noop */ }
+  }, [claveGuiaVista]);
+
+  useEffect(() => {
+    if (!pickerItem) return;
+    let vista = true;
+    try { vista = localStorage.getItem(claveGuiaVista) !== null; } catch { /* noop */ }
+    if (!vista) {
+      setGuiaAbierta(true);
+      marcarGuiaVista();
+    }
+  }, [pickerItem, claveGuiaVista, marcarGuiaVista]);
   const [searchTerm, setSearchTerm] = useState('');
   // T13 (18-08): mismo tick + ×N que el selector del coach, para la rama de
   // "añadir" (itemIdx === null) — "cambiar" sigue siendo una sustitución
@@ -2054,7 +2077,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                             <button
                               onClick={() => removeMeal(meal.id)}
                               title="Quitar comida"
-                              className="text-ink-2 hover:text-red-400 transition-colors p-1"
+                              className="text-ink-2 hover:text-danger transition-colors p-1"
                             >
                               <span className="material-symbols-outlined text-body-s select-none">delete</span>
                             </button>
@@ -2075,7 +2098,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                           <button
                             onClick={() => confirmSaveMealAsRecipe(meal)}
                             disabled={savingRecipe || !recipeNameDraft.trim()}
-                            className="px-3 py-2 bg-info text-black font-mono text-caption font-bold uppercase rounded-control disabled:opacity-40 transition-all"
+                            className="px-3 py-2 bg-info text-on-accent font-mono text-caption font-bold uppercase rounded-control disabled:opacity-40 transition-all"
                           >
                             {savingRecipe ? 'Guardando…' : 'Guardar'}
                           </button>
@@ -2108,7 +2131,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                                     <span className={`font-mono text-caption font-bold ${CAT_COLOR[cat]}`}>
                                       {CAT_LABEL[cat]}
                                     </span>
-                                    <span className={`font-mono text-caption ${isOver ? 'text-red-400' : isOk ? 'text-green-400' : 'text-ink-2'}`}>
+                                    <span className={`font-mono text-caption ${isOver ? 'text-danger' : isOk ? 'text-success' : 'text-ink-2'}`}>
                                       {fmtQty(d)}/{fmtQty(tgt)}{isOk ? ' ✓' : ''}
                                     </span>
                                     <ProgressBar
@@ -2186,14 +2209,14 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                                         type="button"
                                         onClick={() => handleEscalarReceta(meal.id, fila.idxs, -0.25)}
                                         aria-label={`Reducir ${nombreReceta}`}
-                                        className="w-7 h-7 flex items-center justify-center text-ink-2 hover:text-white font-bold text-body-s active:scale-90"
+                                        className="w-7 h-7 flex items-center justify-center text-ink-2 hover:text-ink font-bold text-body-s active:scale-90"
                                       >−</button>
-                                      <span className="w-9 text-center font-mono text-caption text-white">{fmtQty(total)}</span>
+                                      <span className="w-9 text-center font-mono text-caption text-ink">{fmtQty(total)}</span>
                                       <button
                                         type="button"
                                         onClick={() => handleEscalarReceta(meal.id, fila.idxs, 0.25)}
                                         aria-label={`Aumentar ${nombreReceta}`}
-                                        className="w-7 h-7 flex items-center justify-center text-ink-2 hover:text-white font-bold text-body-s active:scale-90"
+                                        className="w-7 h-7 flex items-center justify-center text-ink-2 hover:text-ink font-bold text-body-s active:scale-90"
                                       >+</button>
                                     </div>
                                     )}
@@ -2260,14 +2283,14 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                                       type="button"
                                       onClick={() => handleUpdateQuantity(meal.id, idx, -0.25)}
                                       aria-label="Restar 0.25 intercambios"
-                                      className="w-7 h-7 flex items-center justify-center text-ink-2 hover:text-white font-bold text-body-s active:scale-90"
+                                      className="w-7 h-7 flex items-center justify-center text-ink-2 hover:text-ink font-bold text-body-s active:scale-90"
                                     >−</button>
-                                    <span className="w-9 text-center font-mono text-caption text-white">{fmtQty(item.quantity)}</span>
+                                    <span className="w-9 text-center font-mono text-caption text-ink">{fmtQty(item.quantity)}</span>
                                     <button
                                       type="button"
                                       onClick={() => handleUpdateQuantity(meal.id, idx, 0.25)}
                                       aria-label="Sumar 0.25 intercambios"
-                                      className="w-7 h-7 flex items-center justify-center text-ink-2 hover:text-white font-bold text-body-s active:scale-90"
+                                      className="w-7 h-7 flex items-center justify-center text-ink-2 hover:text-ink font-bold text-body-s active:scale-90"
                                     >+</button>
                                   </div>
                                   )}
@@ -2319,7 +2342,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                       onClick={handleSaveAsMenu}
                       disabled={savingMenu}
                       title="Guardar el día entero para repetirlo más adelante"
-                      className="flex-none px-3 py-2 bg-white/8 text-ink font-sans font-bold text-label uppercase rounded-control hover:bg-white/12 active:scale-95 transition-all disabled:opacity-40 whitespace-nowrap"
+                      className="flex-none px-3 py-2 bg-strong text-ink font-sans font-bold text-label uppercase rounded-control hover:bg-strong active:scale-95 transition-all disabled:opacity-40 whitespace-nowrap"
                     >
                       {savingMenu ? 'Guardando...' : 'Guardar como menú'}
                     </button>
@@ -2433,7 +2456,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                           onClick={() => setDietPendingDelete(dt)}
                           title="Eliminar"
                           aria-label={`Eliminar ${dt.name}`}
-                          className="text-ink-2 hover:text-red-400 transition-colors p-2"
+                          className="text-ink-2 hover:text-danger transition-colors p-2"
                         >
                           <Icon name="delete" size="s" />
                         </button>
@@ -2561,7 +2584,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                         onClick={() => setRecipeCatFilter(cat.id)}
                         className={`px-3 py-2 rounded-full font-sans text-caption font-bold uppercase tracking-wider whitespace-nowrap transition-all flex-shrink-0 ${
                           recipeCatFilter === cat.id
-                            ? 'bg-accent text-black'
+                            ? 'bg-accent text-on-accent'
                             : 'bg-raised text-ink-2 border border-transparent hover:border-hairline'
                         }`}
                       >{cat.label}</button>
@@ -2576,7 +2599,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                       onClick={() => setRecetarioCat(cat)}
                       className={`px-3 py-2 rounded-full font-sans text-caption font-bold uppercase tracking-wider whitespace-nowrap transition-all flex-shrink-0 ${
                         recetarioCat === cat
-                          ? 'bg-accent text-black'
+                          ? 'bg-accent text-on-accent'
                           : 'bg-raised text-ink-2 border border-transparent hover:border-hairline'
                       }`}
                     >{cat}</button>
@@ -2825,8 +2848,21 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
           }
           toolbar={(
             <>
-              <div className="px-4 pb-2 font-sans text-caption text-ink-2 uppercase">
-                {isSearchingFoods ? `Todas las categorías · ${MODE_LABEL[activeDietMode]}` : `${CAT_LABEL[pickerCategory]} · ${MODE_LABEL[activeDietMode]}`}
+              {/* La guía, siempre a mano. Comparte fila con el contexto para
+                  no añadir un cuarto piso a una barra que ya lleva modos,
+                  categorías y buscador. */}
+              <div className="px-4 pb-2 flex items-center justify-between gap-3">
+                <span className="font-sans text-caption text-ink-2 uppercase">
+                  {isSearchingFoods ? `Todas las categorías · ${MODE_LABEL[activeDietMode]}` : `${CAT_LABEL[pickerCategory]} · ${MODE_LABEL[activeDietMode]}`}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => { setGuiaAbierta(true); marcarGuiaVista(); }}
+                  className="flex items-center gap-1.5 flex-shrink-0 rounded-full border border-accent/25 bg-accent-bg px-3 py-1 font-sans text-caption font-bold text-accent transition-colors hover:bg-accent/20"
+                >
+                  <Icon name="help" size="s" />
+                  Cómo funciona
+                </button>
               </div>
 
             {/* Único sitio donde se elige el modo. La misma fila vivía además
@@ -2842,7 +2878,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
             <div className="px-4 py-2 bg-bg border-b border-hairline flex gap-2 flex-wrap">
               {ALL_DIET_MODES.map(mode => (
                 <button key={mode} onClick={() => selectDietMode(mode)}
-                  className={`px-3 py-1 rounded-full font-sans text-caption font-bold uppercase tracking-wider transition-all ${activeDietMode === mode ? 'bg-accent text-black' : 'bg-raised text-ink-2 border border-hairline'}`}
+                  className={`px-3 py-1 rounded-full font-sans text-caption font-bold uppercase tracking-wider transition-all ${activeDietMode === mode ? 'bg-accent text-on-accent' : 'bg-raised text-ink-2 border border-hairline'}`}
                 >{MODE_LABEL[mode]}</button>
               ))}
             </div>
@@ -2850,7 +2886,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
             <div className={`p-3 bg-surface border-b border-hairline flex gap-2 flex-wrap transition-opacity ${isSearchingFoods ? 'opacity-40' : ''}`}>
               {CATS.map(cat => (
                 <button key={cat} onClick={() => { setPickerCategory(cat); setSearchTerm(''); }}
-                  className={`px-3 py-2 rounded-full font-sans text-caption font-bold uppercase tracking-wider transition-all ${pickerCategory === cat && !isSearchingFoods ? 'bg-accent text-black' : 'bg-raised text-ink-2 border border-transparent hover:border-hairline'}`}
+                  className={`px-3 py-2 rounded-full font-sans text-caption font-bold uppercase tracking-wider transition-all ${pickerCategory === cat && !isSearchingFoods ? 'bg-accent text-on-accent' : 'bg-raised text-ink-2 border border-transparent hover:border-hairline'}`}
                   /* `CAT_LABEL`, no `cat.replace('_',' ')`: "MIX GRASA" no le
                      dice nada a nadie, y es justo la categoría que hay que
                      explicar — "½P+½Grasa" sí dice que un huevo cuenta media
@@ -2914,11 +2950,12 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
               ) : filteredFoods.map(food => {
                 const veces = pickerAddedCounts[food.id] ?? 0;
                 const reciente = pickerRecentlyAdded === food.id;
+                const puedeEditarse = !!food.personal && !!food.porCien;
                 return (
                   /* La fila es un `div` y no un `button` porque los alimentos
-                     propios llevan su papelera dentro, y un botón dentro de un
+                     propios llevan su lápiz dentro, y un botón dentro de un
                      botón no es HTML válido: el navegador lo desanida y el
-                     borrado deja de recibir el clic. */
+                     segundo deja de recibir el clic. */
                   <div key={food.id}
                     className={`w-full flex items-center gap-3 rounded-control border transition-all group ${
                       reciente ? 'bg-success/10 border-success/40' : 'bg-surface hover:bg-raised border-hairline hover:border-accent/40'
@@ -2927,7 +2964,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                     <button
                       type="button"
                       onClick={() => handleSelectFood(food)}
-                      className="flex-1 min-w-0 flex items-center gap-3 p-4 text-left transition-transform active:scale-[0.98]"
+                      className={`flex-1 min-w-0 flex items-center gap-3 py-4 pl-4 text-left transition-transform active:scale-[0.98] ${puedeEditarse ? 'pr-1' : 'pr-4'}`}
                     >
                       {isSearchingFoods && (
                         <span className={`text-caption font-mono font-bold px-2 rounded-control border flex-shrink-0 ${CAT_BG[food.category]} ${CAT_COLOR[food.category]}`}>
@@ -2943,24 +2980,56 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                           <span className="ml-2 align-middle text-caption font-mono font-bold uppercase text-accent">tuyo</span>
                         )}
                       </span>
-                      {reciente ? (
+                      {/* El "+" solo va aquí dentro cuando NO hay lápiz: con
+                          lápiz, el extremo derecho tiene que seguir siendo el
+                          "+", así que sale de este botón y se pinta al final de
+                          la fila. */}
+                      {!puedeEditarse && (reciente ? (
                         <span className="flex items-center gap-1 flex-shrink-0 text-success">
                           <Icon name="check_circle" size="m" />
                           {veces > 1 && <span className="font-mono text-caption font-bold">×{veces}</span>}
                         </span>
                       ) : (
                         <span className="material-symbols-outlined text-ink-2 group-hover:text-accent transition-colors select-none text-title-s flex-shrink-0">add_circle</span>
-                      )}
+                      ))}
                     </button>
-                    {food.personal && (
-                      <button
-                        type="button"
-                        aria-label={`Borrar ${food.label} de mis alimentos`}
-                        onClick={() => setAlimentoABorrar(food)}
-                        className="flex-shrink-0 p-4 text-ink-3 hover:text-danger transition-colors"
-                      >
-                        <Icon name="delete" size="s" />
-                      </button>
+
+                    {/* Solo se puede reabrir la calculadora si el alimento trae
+                        los macros con los que se creó. Los de antes de que
+                        existiera `porCien` no los tienen: se borran y se vuelven
+                        a crear, que es más honesto que abrir un formulario vacío
+                        que pisaría lo que ya hay. */}
+                    {puedeEditarse && (
+                      <>
+                        <button
+                          type="button"
+                          aria-label={`Editar ${food.label}`}
+                          onClick={() => setAlimentoAEditar(food)}
+                          className="flex-shrink-0 p-2 text-ink-3 hover:text-accent transition-colors"
+                        >
+                          <Icon name="edit" size="s" />
+                        </button>
+                        {/* El "+" se queda SIEMPRE en el extremo derecho, que es
+                            donde está en los otros 310 alimentos. Ahí había una
+                            papelera, y el dedo que va a añadir borraba (Dani,
+                            24-09). Borrar se ha mudado dentro de la hoja de
+                            editar, donde hay que entrar a propósito. */}
+                        <button
+                          type="button"
+                          aria-label={`Añadir ${food.label} a esta comida`}
+                          onClick={() => handleSelectFood(food)}
+                          className="flex-shrink-0 py-4 pr-4 pl-1 transition-transform active:scale-90"
+                        >
+                          {reciente ? (
+                            <span className="flex items-center gap-1 text-success">
+                              <Icon name="check_circle" size="m" />
+                              {veces > 1 && <span className="font-mono text-caption font-bold">×{veces}</span>}
+                            </span>
+                          ) : (
+                            <span className="material-symbols-outlined text-ink-2 group-hover:text-accent transition-colors select-none text-title-s">add_circle</span>
+                          )}
+                        </button>
+                      </>
                     )}
                   </div>
                 );
@@ -2985,6 +3054,35 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
         </Sheet>
         );
       })()}
+
+      {/* Editar un alimento propio. Misma hoja que crearlo: se rellena con los
+          macros guardados y el grupo y los gramos se recalculan al vuelo. */}
+      {alimentoAEditar && (
+        <CrearAlimentoSheet
+          mode={alimentoAEditar.mode}
+          destino="personal"
+          editando={alimentoAEditar}
+          onClose={() => setAlimentoAEditar(null)}
+          /* Cierra la hoja y abre la confirmación de siempre. Borrar descarta
+             lo que se estuviera editando igualmente, así que no se pierde
+             nada por cerrarla. */
+          onEliminar={() => { setAlimentoABorrar(alimentoAEditar); setAlimentoAEditar(null); }}
+          onGuardar={async (data) => {
+            const actualizado = await actualizarAlimentoPersonal(profile.email, alimentoAEditar.id, data);
+            queryClient.setQueryData<MealItem[]>(
+              ['alimentosPersonales', profile.email],
+              prev => (prev ?? []).map(f => (f.id === actualizado.id ? actualizado : f)),
+            );
+            /* Lo ya colocado en las comidas NO se toca: ahí el alimento vive
+               copiado con su nombre y sus gramos de entonces. Cambiar el banco
+               y reescribir de paso los platos de semanas pasadas falsearía lo
+               que el atleta comió de verdad. */
+            showToast(`«${actualizado.label}» actualizado`, 'success');
+          }}
+        />
+      )}
+
+      {guiaAbierta && <GuiaDeIntercambios onClose={() => setGuiaAbierta(false)} />}
 
       {/* Borrar un alimento propio. Solo quita la entrada del banco personal:
           lo que ya esté colocado en un plan se queda donde está, porque ahí
@@ -3094,7 +3192,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                 return (
                   <div key={cat} className="flex items-center gap-1.5">
                     <span className={`font-mono text-caption font-bold ${CAT_COLOR[cat]}`}>{cat}</span>
-                    <span className={`font-mono text-caption ${left < 0 ? 'text-red-400' : left === 0 ? 'text-green-400' : 'text-ink-2'}`}>
+                    <span className={`font-mono text-caption ${left < 0 ? 'text-danger' : left === 0 ? 'text-success' : 'text-ink-2'}`}>
                       {left === 0 ? 'repartido' : left > 0 ? `quedan ${fmtQty(left)}` : `te pasas ${fmtQty(-left)}`}
                     </span>
                   </div>

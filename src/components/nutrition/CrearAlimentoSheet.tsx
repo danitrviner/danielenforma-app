@@ -1,13 +1,14 @@
 import React, { useMemo, useState } from 'react';
 import type { DietMode, MealItem } from '../../types';
 import { Sheet, Button, Input, Banner, Icon, SegmentedControl } from '../ui';
+import GuiaDeEtiquetas from './GuiaDeEtiquetas';
 import {
   calcularAlimento,
   etiquetaDeBanco,
   TEXTO_DE_AVISO,
   type MacrosPorCien,
 } from '../../utils/alimentoDesdeMacros';
-import { CAT_LABEL, CAT_BG, CAT_COLOR, fmtQty } from '../../utils/exchangeHelpers';
+import { CAT_LABEL, CAT_BG, CAT_COLOR, fmtQty, foodNameWithoutGrams } from '../../utils/exchangeHelpers';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Crear un alimento a partir de su etiqueta
@@ -32,6 +33,28 @@ function aNumero(texto: string): number {
   return Number.isFinite(n) && n >= 0 ? n : 0;
 }
 
+/** Rellena el formulario con un alimento que ya existe, para editarlo.
+ *
+ *  Los macros salen de `porCien`, que es lo que se tecleó al crearlo: así se
+ *  corrige un dígito mal puesto sin volver a copiar la etiqueta entera. El
+ *  nombre se saca quitándole los gramos del principio —van dentro de `label`
+ *  porque es de ahí de donde los lee la app— para que el campo enseñe el
+ *  nombre a secas y los gramos se recalculen solos. */
+function desdeAlimento(item: MealItem | undefined): { form: typeof VACIO; unidad: 'g' | 'ml' } {
+  if (!item) return { form: VACIO, unidad: 'g' };
+  const n = (v: number | undefined) => (v == null ? '' : String(v));
+  return {
+    form: {
+      nombre: foodNameWithoutGrams(item.label),
+      kcal: n(item.porCien?.kcal),
+      hc: n(item.porCien?.hc),
+      prot: n(item.porCien?.prot),
+      grasa: n(item.porCien?.grasa),
+    },
+    unidad: /\d\s*ml\b/i.test(item.label) ? 'ml' : 'g',
+  };
+}
+
 interface Props {
   /** Modo de dieta al que se añade — el que el atleta tenga activo. */
   mode: DietMode;
@@ -39,12 +62,18 @@ interface Props {
   onGuardar: (data: Omit<MealItem, 'id'>) => Promise<void>;
   /** Dónde va a acabar el alimento, para decirlo en la hoja sin ambigüedad. */
   destino: 'personal' | 'banco';
+  /** Alimento que se está editando. Sin esto, la hoja crea uno nuevo. */
+  editando?: MealItem;
+  /** Borrar el alimento que se está editando. Solo se pinta si se pasa. */
+  onEliminar?: () => void;
 }
 
-export default function CrearAlimentoSheet({ mode, onClose, onGuardar, destino }: Props) {
-  const [form, setForm] = useState(VACIO);
-  const [unidad, setUnidad] = useState<'g' | 'ml'>('g');
+export default function CrearAlimentoSheet({ mode, onClose, onGuardar, destino, editando, onEliminar }: Props) {
+  const inicial = useMemo(() => desdeAlimento(editando), [editando]);
+  const [form, setForm] = useState(inicial.form);
+  const [unidad, setUnidad] = useState<'g' | 'ml'>(inicial.unidad);
   const [guardando, setGuardando] = useState(false);
+  const [guiaAbierta, setGuiaAbierta] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const macros: MacrosPorCien = useMemo(() => ({
@@ -91,19 +120,29 @@ export default function CrearAlimentoSheet({ mode, onClose, onGuardar, destino }
     <Sheet
       open
       onClose={onClose}
-      title="Crear alimento"
+      title={editando ? 'Editar alimento' : 'Crear alimento'}
       alto="completo"
       footer={
         <Button onClick={guardar} disabled={!puedeGuardar} fullWidth>
-          {guardando ? 'Guardando…' : 'Guardar alimento'}
+          {guardando ? 'Guardando…' : editando ? 'Guardar cambios' : 'Guardar alimento'}
         </Button>
       }
     >
       <div className="space-y-5 pt-2">
         <p className="font-sans text-body-s text-ink-2">
-          Copia lo que pone la etiqueta por 100 {unidad}. Los gramos que son un intercambio
-          y el grupo al que pertenece se calculan solos.
+          {editando
+            ? `Corrige lo que haga falta. Los gramos del intercambio y el grupo se vuelven a calcular solos.`
+            : `Copia lo que pone la etiqueta por 100 ${unidad}. Los gramos que son un intercambio y el grupo al que pertenece se calculan solos.`}
         </p>
+
+        {/* Al editar, el grupo puede cambiar: si tocas los macros lo bastante,
+            un alimento deja de ser proteína y pasa a mixto. Vale avisar de que
+            eso va a pasar, porque el atleta lo tiene ya colocado en comidas. */}
+        {editando && editando.category !== calculo.category && !sinDatos && (
+          <Banner tone="info">
+            Con estos datos cambia de grupo: de {CAT_LABEL[editando.category]} a {CAT_LABEL[calculo.category]}.
+          </Banner>
+        )}
 
         <Input
           label="Nombre del alimento"
@@ -217,7 +256,45 @@ export default function CrearAlimentoSheet({ mode, onClose, onGuardar, destino }
             ? 'Este alimento lo veréis solo tú y tu coach.'
             : 'Este alimento entra en el banco común: lo verán todos los atletas.'}
         </p>
+
+        {/* La guía de etiquetas, justo donde se está tecleando. Los fallos que
+            de verdad se cometen no son de cálculo —coger la columna «por
+            ración», apuntar «de los cuales azúcares», pesar un líquido— y
+            ninguno chirría en pantalla: dan un alimento que parece bien puesto.
+            Por eso está pegada al formulario y no en un apartado de ayuda. */}
+        <button
+          type="button"
+          onClick={() => setGuiaAbierta(true)}
+          className="flex w-full items-center gap-3 rounded-control border border-accent/25 bg-accent-bg p-3 text-left transition-colors hover:bg-accent/20"
+        >
+          <Icon name="menu_book" size="s" className="flex-shrink-0 text-accent" />
+          <span className="min-w-0 flex-1">
+            <span className="block font-sans text-body-s font-semibold text-ink">Ver guía</span>
+            <span className="block font-sans text-caption text-ink-2">
+              Qué columna mirar, sólidos y líquidos, y dónde está el truco de cada macro.
+            </span>
+          </span>
+          <Icon name="chevron_right" size="s" className="flex-shrink-0 text-ink-3" />
+        </button>
+
+        {/* Borrar vive AQUÍ dentro y no en la fila de la lista, que es donde
+            estaba: en la lista ocupaba el sitio que en todos los demás
+            alimentos tiene el «+», así que el gesto de añadir borraba (Dani,
+            24-09). Aquí hay que haber entrado a propósito, va al final, en
+            contorno y sin relleno rojo — la acción de esta hoja es guardar. */}
+        {editando && onEliminar && (
+          <div className="border-t border-hairline pt-5">
+            <Button variant="secondary" onClick={onEliminar} fullWidth>
+              <span className="text-danger">Eliminar este alimento</span>
+            </Button>
+            <p className="pt-2 text-center font-sans text-caption text-ink-3">
+              Se te preguntará antes de borrarlo.
+            </p>
+          </div>
+        )}
       </div>
+
+      {guiaAbierta && <GuiaDeEtiquetas onClose={() => setGuiaAbierta(false)} />}
     </Sheet>
   );
 }

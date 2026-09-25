@@ -28,16 +28,16 @@ const CATEGORIES: { id: FoodCategory; label: string }[] = [
 ];
 
 const CAT_COLOR: Record<FoodCategory, string> = {
-  HC:        'bg-amber-500/10 text-amber-300 border border-amber-500/20',
-  PROT:      'bg-blue-500/10 text-blue-300 border border-blue-500/20',
-  GRASA:     'bg-orange-500/10 text-orange-300 border border-orange-500/20',
-  MIX_HC:    'bg-violet-500/10 text-violet-300 border border-violet-500/20',
-  MIX_GRASA: 'bg-pink-500/10 text-pink-300 border border-pink-500/20',
+  HC:        'bg-macro-hc/10 text-macro-hc border border-macro-hc/20',
+  PROT:      'bg-macro-prot/10 text-macro-prot border border-macro-prot/20',
+  GRASA:     'bg-macro-grasa/10 text-macro-grasa border border-macro-grasa/20',
+  MIX_HC:    'bg-macro-mix-hc/10 text-macro-mix-hc border border-macro-mix-hc/20',
+  MIX_GRASA: 'bg-macro-mix-grasa/10 text-macro-mix-grasa border border-macro-mix-grasa/20',
 };
 
 const MODE_COLOR: Record<DietMode, string> = {
   OMNIVORO:  'bg-accent/10 text-accent border border-accent/20',
-  VEGANO:    'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20',
+  VEGANO:    'bg-success/10 text-success border border-success/20',
   SIN_PESAR: 'bg-data/10 text-data border border-data/20',
 };
 
@@ -67,6 +67,7 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
   const [saving, setSaving] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [calculadoraAbierta, setCalculadoraAbierta] = useState(false);
+  const [alimentoAEditar, setAlimentoAEditar] = useState<MealItem | null>(null);
 
   const isSystem = (item: MealItem) => SYSTEM_LABELS.has(item.label);
 
@@ -128,8 +129,8 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
             onClick={() => setFilterMode(m.id)}
             className={`px-4 py-2 rounded-control font-mono text-label font-bold uppercase tracking-wider transition-all ${
               filterMode === m.id
-                ? 'bg-accent text-black'
-                : 'bg-raised text-ink-2 border border-hairline hover:border-accent/40 hover:text-white'
+                ? 'bg-accent text-on-accent'
+                : 'bg-raised text-ink-2 border border-hairline hover:border-accent/40 hover:text-ink'
             }`}
           >
             {m.label}
@@ -146,7 +147,7 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
           <button
             onClick={() => setFilterCat('all')}
             className={`px-3 py-1 rounded-full font-mono text-caption font-bold uppercase transition-all tracking-wider ${
-              filterCat === 'all' ? 'bg-raised text-white' : 'text-ink-2 hover:text-white'
+              filterCat === 'all' ? 'bg-raised text-ink' : 'text-ink-2 hover:text-ink'
             }`}
           >
             Todos
@@ -156,7 +157,7 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
               key={cat.id}
               onClick={() => setFilterCat(cat.id)}
               className={`px-3 py-1 rounded-full font-mono text-caption font-bold uppercase transition-all tracking-wider ${
-                filterCat === cat.id ? CAT_COLOR[cat.id] + '' : 'text-ink-2 hover:text-white'
+                filterCat === cat.id ? CAT_COLOR[cat.id] + '' : 'text-ink-2 hover:text-ink'
               }`}
             >
               {cat.label}
@@ -172,7 +173,7 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Buscar alimento..."
-              className="bg-transparent text-white text-title-s focus:outline-none w-full placeholder-ink-2/40"
+              className="bg-transparent text-ink text-title-s focus:outline-none w-full placeholder-ink-2/40"
             />
           </div>
           {/* Dos formas de añadir, y la de la etiqueta va primero porque es la
@@ -182,7 +183,7 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
               no una cuenta ("1 manzana o 1 pera"). */}
           <button
             onClick={() => setCalculadoraAbierta(true)}
-            className="flex items-center gap-2 px-4 py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all whitespace-nowrap"
+            className="flex items-center gap-2 px-4 py-3 bg-accent text-on-accent font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all whitespace-nowrap"
           >
             <span className="material-symbols-outlined text-body-s">calculate</span>
             Desde etiqueta
@@ -218,14 +219,18 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
                 <span className={`text-caption font-mono font-bold uppercase px-2 rounded-control flex-shrink-0 ${CAT_COLOR[item.category]}`}>
                   {item.category.replace('_', ' ')}
                 </span>
-                <p className="text-body-s text-white font-sans truncate">{item.label}</p>
+                <p className="text-body-s text-ink font-sans truncate">{item.label}</p>
               </div>
               {!isSystem(item) && (
                 <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-                  <button onClick={() => openEdit(item)} className="p-2 rounded-control hover:bg-data/10 text-ink-2 hover:text-data transition-colors">
+                  {/* Si el alimento se creó desde una etiqueta, se edita con
+                      la misma calculadora: cambiar ahí un macro recalcula los
+                      gramos y el grupo. El formulario a mano solo tiene
+                      sentido para los que nunca tuvieron macros detrás. */}
+                  <button onClick={() => (item.porCien ? setAlimentoAEditar(item) : openEdit(item))} className="p-2 rounded-control hover:bg-data/10 text-ink-2 hover:text-data transition-colors">
                     <span className="material-symbols-outlined text-body-s">edit</span>
                   </button>
-                  <button onClick={() => setDeleteId(item.id)} className="p-2 rounded-control hover:bg-red-500/10 text-ink-2 hover:text-red-400 transition-colors">
+                  <button onClick={() => setDeleteId(item.id)} className="p-2 rounded-control hover:bg-danger/10 text-ink-2 hover:text-danger transition-colors">
                     <span className="material-symbols-outlined text-body-s">delete</span>
                   </button>
                 </div>
@@ -287,7 +292,7 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
                   onChange={e => setForm(f => ({ ...f, label: e.target.value }))}
                   placeholder="Ej: 100g pechuga de pollo sin piel"
                   rows={3}
-                  className="w-full bg-surface border border-hairline rounded-control px-3 py-3 text-title-s text-white focus:outline-none focus:ring-1 focus:ring-accent resize-none"
+                  className="w-full bg-surface border border-hairline rounded-control px-3 py-3 text-title-s text-ink focus:outline-none focus:ring-1 focus:ring-accent resize-none"
                 />
               </div>
             </div>
@@ -315,6 +320,22 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
       )}
       {/* La misma calculadora que usa el atleta. Aquí guarda en el banco COMÚN
           (`foodItems`), que es lo que el coach está editando en esta pantalla. */}
+      {alimentoAEditar && (
+        <CrearAlimentoSheet
+          mode={alimentoAEditar.mode}
+          destino="banco"
+          editando={alimentoAEditar}
+          onClose={() => setAlimentoAEditar(null)}
+          onEliminar={() => { setDeleteId(alimentoAEditar.id); setAlimentoAEditar(null); }}
+          onGuardar={async (data) => {
+            await updateFoodItem(alimentoAEditar.id, data);
+            queryClient.setQueryData<MealItem[]>(foodItemsQueryKey, prev =>
+              prev?.map(f => (f.id === alimentoAEditar.id ? { ...f, ...data } : f)));
+            showToast(`«${data.label}» actualizado`, 'success');
+          }}
+        />
+      )}
+
       {calculadoraAbierta && (
         <CrearAlimentoSheet
           mode={filterMode}

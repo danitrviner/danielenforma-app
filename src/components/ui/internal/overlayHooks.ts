@@ -43,14 +43,70 @@ export function useScrollLock(activo: boolean) {
   }, [activo]);
 }
 
+/* Pila de overlays abiertos, del más antiguo al más reciente. Escape cierra
+ * SOLO el de arriba.
+ *
+ * Antes cada overlay montaba su propio listener y se disparaban todos a la
+ * vez: con una hoja dentro de otra —la de crear alimento sobre el buscador, o
+ * la guía sobre esa— una sola pulsación cerraba las tres y te devolvía al
+ * plan. `useBotonAtras` ya lo resolvía así para el botón Atrás de Android
+ * (`apilarCerrador` en services/botonAtras.ts); esto es lo mismo para el
+ * teclado.
+ *
+ * Un único listener a nivel de módulo, no uno por overlay: con uno por overlay
+ * todos siguen ejecutándose y todos acaban llamando al cierre del de arriba,
+ * que es inofensivo pero es tener tres cosas haciendo el trabajo de una. */
+export const pilaDeEscape: { cerrar: () => void }[] = [];
+
+/* La pila y el listener van separados a propósito: `apilarCierre` y
+ * `cerrarElDeArriba` no tocan el DOM, así que se pueden probar en el entorno
+ * de Node en el que corren los 2.300 tests de este repo, sin meter jsdom solo
+ * para esto. `apilarEscape` es la capa fina que las engancha al teclado. */
+
+/** Mete un cierre en la cima. Devuelve cómo sacarlo. */
+export function apilarCierre(cerrar: () => void): () => void {
+  const entrada = { cerrar };
+  pilaDeEscape.push(entrada);
+  return () => {
+    const i = pilaDeEscape.indexOf(entrada);
+    if (i !== -1) pilaDeEscape.splice(i, 1);
+  };
+}
+
+/** Cierra el overlay de arriba. `false` si no había ninguno abierto. */
+export function cerrarElDeArriba(): boolean {
+  const arriba = pilaDeEscape[pilaDeEscape.length - 1];
+  if (!arriba) return false;
+  arriba.cerrar();
+  return true;
+}
+
+function alPulsarTecla(e: KeyboardEvent): void {
+  if (e.key === 'Escape') cerrarElDeArriba();
+}
+
+function apilarEscape(cerrar: () => void): () => void {
+  if (pilaDeEscape.length === 0) document.addEventListener('keydown', alPulsarTecla);
+  const quitar = apilarCierre(cerrar);
+  return () => {
+    quitar();
+    if (pilaDeEscape.length === 0) document.removeEventListener('keydown', alPulsarTecla);
+  };
+}
+
 export function useEscape(onEscape: () => void, activo: boolean) {
+  // El cierre va en una ref para que la entrada de la pila no se recree en
+  // cada render: desapilar y volver a apilar cambiaría el orden, y el de
+  // arriba dejaría de ser el de arriba.
+  const ref = React.useRef(onEscape);
+  ref.current = onEscape;
+
   React.useEffect(() => {
     if (!activo) return;
-    const alTeclear = (e: KeyboardEvent) => { if (e.key === 'Escape') onEscape(); };
-    document.addEventListener('keydown', alTeclear);
-    return () => document.removeEventListener('keydown', alTeclear);
-  }, [activo, onEscape]);
+    return apilarEscape(() => ref.current());
+  }, [activo]);
 }
+
 
 const SELECTOR_ENFOCABLE =
   'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), '

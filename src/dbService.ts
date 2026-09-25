@@ -81,7 +81,7 @@ export {
 // import existente (`from '../dbService'`) tenga que cambiar.
 export {
   getFoodItems, createFoodItem, updateFoodItem, deleteFoodItem, seedFoodItemsIfEmpty,
-  getAlimentosPersonales, crearAlimentoPersonal, borrarAlimentoPersonal,
+  getAlimentosPersonales, crearAlimentoPersonal, actualizarAlimentoPersonal, borrarAlimentoPersonal,
   getAthleteNutritionConfig, saveAthleteNutritionConfig,
   getDietsForAthlete, createDiet, updateDiet, deleteDiet,
   getWeeklyMenusForAthlete, getPublishedMenu, createWeeklyMenu, updateWeeklyMenu, deleteWeeklyMenu, publishWeeklyMenu,

@@ -281,6 +281,21 @@ export async function crearAlimentoPersonal(
   return comoPersonal(nuevo);
 }
 
+export async function actualizarAlimentoPersonal(
+  athleteEmail: string,
+  id: string,
+  cambios: Omit<MealItem, 'id'>,
+): Promise<MealItem> {
+  const actuales = await bancoVigente(athleteEmail);
+  const actualizado: MealItem = { ...cambios, id };
+  /* Si el id ya no está —se borró desde otro dispositivo mientras se editaba—
+   * se añade en vez de perder la edición en silencio. */
+  const existe = actuales.some(f => f.id === id);
+  const lista = existe ? actuales.map(f => (f.id === id ? actualizado : f)) : [...actuales, actualizado];
+  await escribirBancoPersonal(athleteEmail, lista);
+  return comoPersonal(actualizado);
+}
+
 export async function borrarAlimentoPersonal(athleteEmail: string, id: string): Promise<void> {
   const actuales = await bancoVigente(athleteEmail);
   await escribirBancoPersonal(athleteEmail, actuales.filter(f => f.id !== id));
