@@ -446,7 +446,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                         {ex.isCustom ? (
                           <Badge tone="info">Personalizado</Badge>
                         ) : (
-                          <span className="text-caption font-mono text-ink-2/60 uppercase">Sistema</span>
+                          <span className="text-caption font-mono text-ink-4 uppercase">Sistema</span>
                         )}
                       </td>
                       <td className="p-4 pr-6 text-right">
@@ -525,7 +525,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                     </button>
                   </div>
                 ) : (
-                  <Icon name="chevron_right" size="m" className="text-ink-2/30 flex-shrink-0" />
+                  <Icon name="chevron_right" size="m" className="text-ink-4 flex-shrink-0" />
                 )}
               </div>
             ))}

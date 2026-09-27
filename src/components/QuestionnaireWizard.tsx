@@ -281,7 +281,7 @@ export default function QuestionnaireWizard({ questionnaire, assignment, athlete
           {question.label}{question.required && ' *'}{question.unit && ` (${question.unit})`}
           {question.type === 'metric' && question.metricKey && ` (${question.metricKey === 'bodyweight' ? 'kg' : 'cm'})`}
         </label>
-        {question.helpText && <p className="text-caption text-ink-2/70">{question.helpText}</p>}
+        {question.helpText && <p className="text-caption text-ink-4">{question.helpText}</p>}
 
         {question.type === 'text' && (
           <textarea

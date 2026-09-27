@@ -270,7 +270,7 @@ export default function ClientFichaPanel({
                 {planPhase.name}
               </p>
             ) : (
-              <p className="text-label text-ink-2/60 italic">Sin fase de plan definida</p>
+              <p className="text-label text-ink-4 italic">Sin fase de plan definida</p>
             )}
             {activeMeso && (
               <p className="font-mono text-caption text-ink-2">

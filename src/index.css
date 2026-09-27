@@ -211,6 +211,26 @@
   --color-ink-3: var(--p-ink-3);  /* placeholders, ayudas, timestamps */
   --color-ink-4: var(--p-ink-4);  /* etiqueta mono, dato terciario    */
   --color-ink-5: var(--p-ink-5);  /* pie de página, texto deshabilitado */
+
+  /* DÓNDE ESTÁ LA FRONTERA. De `ink` a `ink-4` todo es texto que se lee, y
+     todo pasa 4,5:1 en los dos temas. `ink-5` es el ÚNICO escalón por debajo
+     del mínimo, y por eso vale solo para lo que la norma exime: control
+     deshabilitado y pie de página. Si dudas entre ink-4 e ink-5, la pregunta
+     no es «cuánto quiero que resalte» sino «¿hace falta leerlo?».
+
+     27-09: `ink-4` estaba a 3,8:1 en AMBOS temas. No era un matiz, era texto
+     que no se leía —las iniciales de los avatares de Clientes, entre otras 122
+     apariciones repartidas por 45 archivos—. Sube a .62 en claro y .50 en
+     oscuro: 4,9:1 sobre tarjeta y 4,56:1 sobre `inset`, que es el fondo más
+     exigente que de verdad lleva texto de 13 px (`track` es una pista de barra
+     de progreso, ahí no va texto, y calibrar contra él dejaba ink-4 pegado a
+     ink-3). El precio es que ink-3 y ink-4 quedan más cerca que antes —5,8
+     frente a 4,9—, y se acepta a propósito: dos escalones parecidos molestan
+     menos que uno ilegible.
+
+     Corolario: NO se apila opacidad sobre estos tokens. `text-ink-2/60` no es
+     «un poco más flojo que ink-2», es 0,46 de alfa efectiva — cae por debajo
+     de ink-4 y se salta la escala entera sin que se note al escribirlo. */
   --color-on-accent: var(--p-on-accent);  /* único color admitido sobre el oro             */
 
   /* ── Líneas · 3 ─────────────────────────────────────────────────────────────
@@ -559,7 +579,7 @@
      Medido sobre blanco, que es el caso peor de este tema. */
   --p-ink-2:     rgba(27, 25, 22, 0.77);
   --p-ink-3:     rgba(27, 25, 22, 0.67);
-  --p-ink-4:     rgba(27, 25, 22, 0.55);
+  --p-ink-4:     rgba(27, 25, 22, 0.62);
   --p-ink-5:     rgba(27, 25, 22, 0.44);
   --p-on-accent: #1B1916;   /* el oro de relleno sigue pidiendo tinta encima */
 
@@ -661,7 +681,7 @@
   --p-ink:       #F5F5F4;
   --p-ink-2:     rgba(245, 245, 244, 0.7);
   --p-ink-3:     rgba(245, 245, 244, 0.56);
-  --p-ink-4:     rgba(245, 245, 244, 0.42);
+  --p-ink-4:     rgba(245, 245, 244, 0.5);
   --p-ink-5:     rgba(245, 245, 244, 0.32);
   --p-on-accent: #121212;
 

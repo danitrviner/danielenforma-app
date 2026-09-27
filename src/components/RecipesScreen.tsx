@@ -94,7 +94,7 @@ const MAX_PAGINAS_POR_CLIC = 3;
 function RecipePlaceholder() {
   return (
     <div className="w-full h-full bg-gradient-to-br from-accent/10 to-transparent flex items-center justify-center">
-      <span className="material-symbols-outlined text-display text-ink-2/30">skillet</span>
+      <span className="material-symbols-outlined text-display text-ink-5">skillet</span>
     </div>
   );
 }
@@ -631,7 +631,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, isOwn, enabledModes, savingFa
                       </div>
                     </div>
                     <div className="pt-1 pb-3 min-w-0">
-                      <p className={`text-label font-sans leading-relaxed transition-colors ${done ? 'text-ink-2/50 line-through' : 'text-ink-2'}`}>
+                      <p className={`text-label font-sans leading-relaxed transition-colors ${done ? 'text-ink-5 line-through' : 'text-ink-2'}`}>
                         {text}
                       </p>
                       {/* Lo que cuelga del paso. Casi todos los pasos del
@@ -639,7 +639,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, isOwn, enabledModes, savingFa
                           lista, y sin esto la preparación se quedaba en la
                           frase acabada en dos puntos. */}
                       {items.length > 0 && (
-                        <ul className={`mt-1 space-y-0.5 transition-colors ${done ? 'text-ink-2/50 line-through' : 'text-ink-2'}`}>
+                        <ul className={`mt-1 space-y-0.5 transition-colors ${done ? 'text-ink-5 line-through' : 'text-ink-2'}`}>
                           {items.map(sub => (
                             <li key={sub.position} className="text-label font-sans leading-relaxed flex gap-2">
                               <span aria-hidden="true" className="text-ink-3">·</span>

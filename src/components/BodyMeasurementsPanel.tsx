@@ -114,7 +114,7 @@ export default function BodyMeasurementsPanel({ athleteEmail, sexo, pesoKg, audi
             <button
               key={key}
               onClick={() => setExpanded(isOpen ? null : key)}
-              className={`text-left bg-raised border rounded-surface p-3 space-y-1 transition-all ${isOpen ? 'border-accent/50' : 'border-hairline hover:border-ink-2/40'}`}
+              className={`text-left bg-raised border rounded-surface p-3 space-y-1 transition-all ${isOpen ? 'border-accent/50' : 'border-hairline hover:border-strong'}`}
             >
               <p className="font-mono text-caption uppercase tracking-[.08em] text-ink-3 truncate">{BODY_METRIC_LABELS[key]}</p>
               <p className="font-sans font-bold text-title-s text-ink leading-none tabular-nums">

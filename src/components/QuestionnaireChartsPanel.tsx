@@ -285,7 +285,7 @@ export default function QuestionnaireChartsPanel({ questionnaires, responses, oc
       </label>
 
       <div>
-        <p className="font-sans text-caption text-ink-2/60 uppercase tracking-wider mb-2 px-1">
+        <p className="font-sans text-caption text-ink-4 uppercase tracking-wider mb-2 px-1">
           {selected.qTitle}
         </p>
         <QuestionChart question={selected.question} responses={responses} weekly={agregado} />

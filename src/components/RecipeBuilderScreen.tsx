@@ -402,7 +402,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
                 className={`px-4 py-2 rounded-full font-mono text-caption font-bold whitespace-nowrap transition-all ${
                   recetasCat === cat
                     ? 'bg-data text-on-accent'
-                    : 'bg-raised border border-hairline text-ink-2 hover:border-ink-2/40 hover:text-ink'
+                    : 'bg-raised border border-hairline text-ink-2 hover:border-strong hover:text-ink'
                 }`}
               >{cat}</button>
             ))}

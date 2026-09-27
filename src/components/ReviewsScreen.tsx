@@ -404,7 +404,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                             type="button"
                             onClick={openQuickReplyManager}
                             title="Gestionar plantillas de feedback"
-                            className="text-ink-2/60 hover:text-ink p-1"
+                            className="text-ink-4 hover:text-ink p-1"
                           >
                             <span className="material-symbols-outlined text-body-s">tune</span>
                           </button>

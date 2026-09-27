@@ -1031,7 +1031,7 @@ function AppContent() {
           {navGroups.map((group, gi) => (
             <div key={group.title ?? gi} className="flex flex-col gap-1">
               {group.title && (
-                <h2 className="px-4 pb-2 font-sans text-caption font-bold uppercase tracking-widest text-ink-2/60">
+                <h2 className="px-4 pb-2 font-sans text-caption font-bold uppercase tracking-widest text-ink-4">
                   {group.title}
                 </h2>
               )}
