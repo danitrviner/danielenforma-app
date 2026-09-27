@@ -1,6 +1,10 @@
+/* El blanco con alfa que había aquí —cuatro niveles— venía de
+   cuando la app era oscura por decreto: sobre la pantalla en claro daba 1,03:1
+   y la leyenda de zonas y los tiempos de intervalo desaparecían. Son tokens de
+   tinta, que es lo que ya se adapta al tema. */
 import React from 'react';
 import { CardioZones } from '../../../../types';
-import { ZONE_ORDER, ZONE_LABEL, ZONE_COLOR, BELOW_ZONE_LABEL, BELOW_ZONE_COLOR, getZoneForBpm } from '../../../../utils/cardioZones';
+import { ZONE_ORDER, ZONE_LABEL, ZONE_COLOR, ZONE_INK, BELOW_ZONE_LABEL, BELOW_ZONE_COLOR, BELOW_ZONE_INK, getZoneForBpm } from '../../../../utils/cardioZones';
 
 /* Página del carrusel — calco 1:1 del panel 05 "Zonas de Frecuencia" de
    Graficas - Experiencia.dc.html (a petición de Dani, 2026-08-20): bandas de
@@ -90,14 +94,14 @@ export default function PageGrafica({ chartData, zones, timeInZone, belowZoneSec
   const pathD = points.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
   const last = points[points.length - 1];
   const lastBpm = windowed[windowed.length - 1].bpm;
-  const lastColor = currentZone ? ZONE_COLOR[currentZone] : BELOW_ZONE_COLOR;
+  const lastColor = currentZone ? ZONE_INK[currentZone] : BELOW_ZONE_INK;
 
   const total = Math.max(elapsedSec, 1);
 
   return (
     <div className="flex h-full flex-col gap-4 px-3 pb-3 overflow-y-auto hide-scrollbar">
       {/* Bandas de zona + línea en vivo */}
-      <div className="relative rounded-2xl overflow-hidden shrink-0" style={{ height: CHART_H, background: 'rgba(0,0,0,.35)' }}>
+      <div className="relative rounded-2xl overflow-hidden shrink-0" style={{ height: CHART_H, background: 'color-mix(in oklab, var(--color-veil) 35%, transparent)' }}>
         <div className="absolute inset-0 flex flex-col">
           {[...ZONE_ORDER].reverse().map(z => {
             const isNow = z === currentZone;
@@ -110,11 +114,16 @@ export default function PageGrafica({ chartData, zones, timeInZone, belowZoneSec
                 // el resto del panel, solo con un dígito más alto (`44`
                 // frente al `22` de las demás) para que se note sin llegar
                 // a teñir toda la fila como hace el acento de arriba.
-                style={{ background: `${ZONE_COLOR[z]}${isNow ? '44' : '22'}` }}
+                /* La BANDA es relleno: va en ZONE_COLOR (el tono saturado), que sobre
+                    el fondo claro da un tinte pálido de la zona y sobre el oscuro un
+                    velo sutil. La etiqueta que va encima usa ZONE_INK, el tono
+                    profundo. Ponerlas las dos en ZONE_INK teñía la banda de marrón y
+                    dejaba la etiqueta a 2,1:1 sobre su propio fondo. */
+                style={{ background: `color-mix(in oklab, ${ZONE_COLOR[z]} ${isNow ? 27 : 13}%, transparent)` }}
               >
                 <span
                   className="font-mono text-[9.5px] transition-colors duration-700"
-                  style={{ color: isNow ? ZONE_COLOR[z] : `${ZONE_COLOR[z]}c0` }}
+                  style={{ color: ZONE_INK[z], opacity: isNow ? 1 : 0.85 }}
                 >
                   {z.toUpperCase()}
                 </span>
@@ -132,9 +141,9 @@ export default function PageGrafica({ chartData, zones, timeInZone, belowZoneSec
             viewBox), que es la única coordenada que de verdad cambia de
             escala según el ancho real de la pantalla. */}
         <svg width="100%" height="100%" viewBox={`0 0 ${CHART_W} ${CHART_H}`} className="absolute left-0 top-0" preserveAspectRatio="none">
-          <path d={pathD} fill="none" stroke="rgba(255,255,255,.9)" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+          <path d={pathD} fill="none" stroke="var(--color-ink)" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
           <circle cx={last.x} cy={last.y} r={7} fill="none" stroke={lastColor} strokeWidth={2} vectorEffect="non-scaling-stroke" className="animate-ghost-tap" style={{ transformOrigin: `${last.x}px ${last.y}px` }} />
-          <circle cx={last.x} cy={last.y} r={4.5} fill={lastColor} stroke="rgba(0,0,0,.35)" strokeWidth={2} vectorEffect="non-scaling-stroke" />
+          <circle cx={last.x} cy={last.y} r={4.5} fill={lastColor} stroke="color-mix(in oklab, var(--color-veil) 35%, transparent)" strokeWidth={2} vectorEffect="non-scaling-stroke" />
         </svg>
         <span
           className="absolute font-mono font-bold text-[15px]"
@@ -142,7 +151,7 @@ export default function PageGrafica({ chartData, zones, timeInZone, belowZoneSec
         >
           {lastBpm}
         </span>
-        <div className="absolute left-3.5 bottom-2.5 font-mono text-[9.5px] text-ink-5">ÚLTIMOS {WINDOW_SEC} S</div>
+        <div className="absolute left-3.5 bottom-2.5 font-mono text-[9.5px] text-ink-3">ÚLTIMOS {WINDOW_SEC} S</div>
       </div>
 
       {/* Lista de zonas, Z1 → Z5 ascendente, fila actual resaltada */}
@@ -153,18 +162,18 @@ export default function PageGrafica({ chartData, zones, timeInZone, belowZoneSec
             <div
               key={z}
               className="h-[50px] flex items-center justify-between border-t border-hairline"
-              style={isNow ? { borderTopColor: `${ZONE_COLOR[z]}4d`, background: `${ZONE_COLOR[z]}0f`, margin: '0 -10px', padding: '0 10px', borderRadius: 8 } : undefined}
+              style={isNow ? { borderTopColor: `color-mix(in oklab, ${ZONE_INK[z]} 30%, transparent)`, background: `color-mix(in oklab, ${ZONE_INK[z]} 6%, transparent)`, margin: '0 -10px', padding: '0 10px', borderRadius: 8 } : undefined}
             >
               <div className="flex items-center gap-3">
                 <span className="h-2.5 w-2.5 rounded-[3px] shrink-0" style={{ background: ZONE_COLOR[z] }} />
                 <div className="flex flex-col gap-0.5">
-                  <span className="text-[13.5px]" style={{ color: isNow ? ZONE_COLOR[z] : 'rgba(255,255,255,.8)' }}>{ZONE_LABEL[z]}</span>
-                  <span className="font-mono text-[10.5px]" style={{ color: isNow ? ZONE_COLOR[z] : 'rgba(255,255,255,.3)' }}>
+                  <span className="text-[13.5px]" style={{ color: isNow ? ZONE_INK[z] : 'var(--color-ink-2)' }}>{ZONE_LABEL[z]}</span>
+                  <span className="font-mono text-[10.5px]" style={{ color: isNow ? ZONE_INK[z] : 'var(--color-ink-4)' }}>
                     {zones[z].min}-{zones[z].max} PPM{isNow ? ' · AHORA' : ''}
                   </span>
                 </div>
               </div>
-              <span className="font-mono text-[13px]" style={{ color: isNow ? ZONE_COLOR[z] : 'rgba(255,255,255,.5)', fontWeight: isNow ? 700 : 600 }}>
+              <span className="font-mono text-[13px]" style={{ color: isNow ? ZONE_INK[z] : 'var(--color-ink-3)', fontWeight: isNow ? 700 : 600 }}>
                 {fmt(timeInZone[z])}
               </span>
             </div>

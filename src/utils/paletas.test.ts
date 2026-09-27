@@ -172,3 +172,59 @@ it('ningún componente apila opacidad sobre un token de tinta', () => {
   }
   expect(culpables, `usa el escalón que toca en vez de multiplicar alfas:\n${culpables.join('\n')}`).toEqual([]);
 });
+
+/* ── El oro de relleno no se usa como color de glifo ──────────────────────
+   `--color-accent` es el oro RELLENO: fondo de botón, chip activo, barra. En
+   claro vale #C68F14, que sobre papel da 2,9:1 — invisible como texto o icono.
+   Para eso está `accent-ink`, que en oscuro vale exactamente lo mismo que
+   `accent` y en claro baja al ámbar tostado.
+
+   La primera migración solo cambió las CLASES (`text-accent`), y se dejó 24
+   estilos en línea `style={{ color: 'var(--color-accent)' }}` en los iconos
+   del calendario del atleta, de Nutrición y del roadmap. Se vieron al auditar
+   el calendario del atleta el 27-09: banderas y cámaras a 2,4:1.
+   ───────────────────────────────────────────────────────────────────────── */
+
+it('el oro de relleno no se usa como color de texto, icono ni marca', () => {
+  const raiz = resolve(__dirname, '..');
+  const culpables: string[] = [];
+  for (const f of fuentes(raiz)) {
+    if (f.endsWith('paletas.test.ts')) continue;
+    const texto = readFileSync(f, 'utf8');
+    const corto = f.slice(raiz.length + 1);
+    // clase `text-accent` sin el sufijo -ink
+    for (const m of texto.matchAll(/\btext-accent\b(?!-)/g)) culpables.push(`${corto}: ${m[0]}`);
+    // el oro como color/relleno/trazo en un estilo en línea o un atributo SVG
+    for (const m of texto.matchAll(/(?:color|fill|stroke)\s*[:=]\s*["']?var\(--color-accent\)/g)) {
+      culpables.push(`${corto}: ${m[0].replace(/\s+/g, ' ')}`);
+    }
+  }
+  expect(culpables, `usa --color-accent-ink para glifos; --color-accent es solo relleno:\n${culpables.join('\n')}`).toEqual([]);
+});
+
+/* ── Nada de colores literales en los componentes ─────────────────────────
+   Un `rgba(255,255,255,.3)` escrito a mano viene de cuando la app era oscura
+   por decreto. Sobre la pantalla en claro da 1,03:1 y el texto desaparece —
+   fue exactamente lo que pasó con la leyenda de zonas y los tiempos de
+   intervalo de Cardio en vivo, que la auditoría del 27-09 encontró a 51,9 %.
+
+   También caza el alfa hex pegado a una variable (`var(--color-accent)55`):
+   eso no es un color, el navegador descarta la declaración entera y el borde
+   desaparece sin un aviso en consola.
+   ───────────────────────────────────────────────────────────────────────── */
+
+it('ningún componente escribe un color literal ni pega alfa hex a una variable', () => {
+  const raiz = resolve(__dirname, '..');
+  const culpables: string[] = [];
+  for (const f of fuentes(raiz)) {
+    if (f.endsWith('paletas.test.ts') || f.endsWith('coloresPersistidos.ts')) continue;
+    const corto = f.slice(raiz.length + 1);
+    for (const linea of readFileSync(f, 'utf8').split('\n')) {
+      if (linea.trimStart().startsWith('*') || linea.trimStart().startsWith('//')) continue;
+      for (const m of linea.matchAll(/rgba?\(\s*\d{1,3}\s*,/g)) culpables.push(`${corto}: ${linea.trim().slice(0, 70)}`);
+      for (const m of linea.matchAll(/var\(--color-[a-z0-9-]+\)[0-9a-f]{2}\b/g)) culpables.push(`${corto}: ${m[0]}`);
+    }
+  }
+  const unicos = [...new Set(culpables)];
+  expect(unicos, `usa tokens (o color-mix para la opacidad):\n${unicos.join('\n')}`).toEqual([]);
+});

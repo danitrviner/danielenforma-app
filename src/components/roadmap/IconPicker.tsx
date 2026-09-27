@@ -45,7 +45,7 @@ export default function IconPicker({ value, onChange, accent = 'var(--color-acce
             title={opt.label}
             className="flex flex-col items-center rounded-control p-2 border transition-colors"
             style={{
-              borderColor: selected ? accent : 'rgba(255,255,255,0.07)',
+              borderColor: selected ? accent : 'var(--color-hairline)',
               backgroundColor: selected ? `${accent}1a` : 'var(--color-bg)',
             }}
           >

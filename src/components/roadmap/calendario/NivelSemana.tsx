@@ -134,14 +134,14 @@ export default function NivelSemana({
                   border: `1px ${esFuturo && !esHoy && sel !== fecha && dragOver !== fecha ? 'dashed' : 'solid'} ${
                     dragOver === fecha || sel === fecha ? 'var(--color-accent)'
                       : esHoy ? 'color-mix(in oklab, var(--color-accent) 55%, transparent)'
-                      : esFuturo ? 'rgba(245,245,244,0.13)' : 'rgba(255,255,255,0.06)'}`,
+                      : esFuturo ? 'var(--color-strong)' : 'var(--color-hairline)'}`,
                   transitionDuration: '160ms',
                 }}
               >
                 <div className="flex items-center justify-between gap-1.5 pb-2.5 border-b border-hairline">
                   <div className="flex items-baseline gap-1.5 min-w-0">
-                    <span className="font-mono text-caption tracking-wider" style={{ color: esHoy ? 'var(--color-accent)' : 'var(--color-ink-4)' }}>{DIAS[i]}</span>
-                    <span className="font-mono text-title-s" style={{ color: esHoy ? 'var(--color-accent)' : 'var(--color-ink-2)', fontWeight: esHoy ? 600 : 400 }}>
+                    <span className="font-mono text-caption tracking-wider" style={{ color: esHoy ? 'var(--color-accent-ink)' : 'var(--color-ink-4)' }}>{DIAS[i]}</span>
+                    <span className="font-mono text-title-s" style={{ color: esHoy ? 'var(--color-accent-ink)' : 'var(--color-ink-2)', fontWeight: esHoy ? 600 : 400 }}>
                       {Number(fecha.slice(8, 10))}
                     </span>
                   </div>
@@ -217,7 +217,7 @@ export default function NivelSemana({
 
                   {/* Hitos */}
                   {dia && dia.hitos.length > 0 && (
-                    <Bloque icono="flag" color="var(--color-accent)" titulo="Hitos">
+                    <Bloque icono="flag" color="var(--color-accent-ink)" titulo="Hitos">
                       <div className="flex flex-col gap-1">
                         {dia.hitos.map(h => (
                           <p key={h.id} className="font-sans text-[11px] text-ink-2 leading-snug">{h.titulo}</p>
@@ -228,7 +228,7 @@ export default function NivelSemana({
 
                   {/* Nota del coach */}
                   {nota && (
-                    <Bloque icono="sticky_note_2" color="var(--color-accent)" titulo="Tu nota">
+                    <Bloque icono="sticky_note_2" color="var(--color-accent-ink)" titulo="Tu nota">
                       <p className="font-sans text-[11px] text-ink-2 leading-snug">{nota.text}</p>
                     </Bloque>
                   )}

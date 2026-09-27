@@ -90,9 +90,9 @@ function CeldaDiaAtleta({ fecha, dia, hoy, sel, onAbrir }: {
   const estilo = dia ? estiloDeEstado(dia.estado) : estiloDeEstado('sin-datos');
 
   let fondo = 'transparent';
-  let borde = 'rgba(245,245,244,0.13)';
+  let borde = 'var(--color-strong)';
   let bordeStyle: 'solid' | 'dashed' = 'dashed';
-  if (!esFuturo) { fondo = 'var(--color-cell)'; borde = 'rgba(255,255,255,0.06)'; bordeStyle = 'solid'; }
+  if (!esFuturo) { fondo = 'var(--color-cell)'; borde = 'var(--color-hairline)'; bordeStyle = 'solid'; }
   if (dia?.destacado) { fondo = mezcla(dia.destacado.color, 6); borde = mezcla(dia.destacado.color, 40); bordeStyle = 'solid'; }
   if (esHoy) { borde = 'color-mix(in oklab, var(--color-accent) 55%, transparent)'; bordeStyle = 'solid'; }
   if (seleccionado) { fondo = 'color-mix(in oklab, var(--color-accent) 9%, transparent)'; borde = 'var(--color-accent)'; bordeStyle = 'solid'; }
@@ -128,12 +128,12 @@ function CeldaDiaAtleta({ fecha, dia, hoy, sel, onAbrir }: {
       <span className="flex items-center gap-0.5 self-stretch justify-center relative">
         <span
           className="font-mono text-[11px] sm:text-label"
-          style={{ color: esHoy ? 'var(--color-accent)' : 'var(--color-ink-3)', fontWeight: esHoy ? 600 : 400 }}
+          style={{ color: esHoy ? 'var(--color-accent-ink)' : 'var(--color-ink-3)', fontWeight: esHoy ? 600 : 400 }}
         >
           {Number(fecha.slice(8, 10))}
         </span>
         {dia && dia.hitos.length > 0 && (
-          <Icon name={dia.hitos[0].icono} style={{ fontSize: 12, color: 'var(--color-accent)', position: 'absolute', right: 0, top: 0 }} />
+          <Icon name={dia.hitos[0].icono} style={{ fontSize: 12, color: 'var(--color-accent-ink)', position: 'absolute', right: 0, top: 0 }} />
         )}
       </span>
 
@@ -252,7 +252,7 @@ export default function MesAtleta({
             {hitos.map(({ fecha, hito }) => (
               <button key={hito.id} type="button" onClick={() => onAbrirDia(fecha)} className="flex items-center gap-2.5 text-left">
                 <span className="flex items-center justify-center flex-shrink-0" style={{ width: 30, height: 30, borderRadius: 12, background: 'color-mix(in oklab, var(--color-accent) 12%, transparent)' }}>
-                  <Icon name={hito.icono} size="s" style={{ color: 'var(--color-accent)' }} />
+                  <Icon name={hito.icono} size="s" style={{ color: 'var(--color-accent-ink)' }} />
                 </span>
                 <span className="flex flex-col gap-0.5 min-w-0">
                   <span className="text-label font-semibold font-sans text-ink truncate">{hito.titulo}</span>
@@ -267,9 +267,9 @@ export default function MesAtleta({
           <p className="font-mono text-caption uppercase tracking-wider text-ink-3 mb-3">Cómo leer el calendario</p>
           <div className="grid grid-cols-2 gap-x-3 gap-y-2.5">
             {[
-              { c: 'var(--color-success)', bg: 'rgba(62,207,142,0.18)', icon: 'check', l: 'Entreno hecho' },
-              { c: 'var(--color-warning)', bg: 'rgba(253,186,116,0.15)', icon: 'remove', l: 'A medias' },
-              { c: 'var(--color-danger)', bg: 'rgba(255,90,78,0.14)', icon: 'close', l: 'Saltado' },
+              { c: 'var(--color-success)', bg: 'color-mix(in oklab, var(--color-success) 18%, transparent)', icon: 'check', l: 'Entreno hecho' },
+              { c: 'var(--color-warning)', bg: 'color-mix(in oklab, var(--color-warning) 15%, transparent)', icon: 'remove', l: 'A medias' },
+              { c: 'var(--color-danger)', bg: 'color-mix(in oklab, var(--color-danger) 14%, transparent)', icon: 'close', l: 'Saltado' },
               { c: 'var(--color-ink-3)', bg: 'transparent', icon: 'bedtime', l: 'Descanso' },
               { c: 'var(--color-ink-4)', bg: 'transparent', icon: 'schedule', l: 'Por venir' },
             ].map(s => (

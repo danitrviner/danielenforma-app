@@ -472,9 +472,9 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
                 <Line type="monotone" dataKey="expectedAdherence" stroke="var(--color-chart-3)" strokeWidth={2} strokeDasharray="4 4" dot={false} name="Estimado · según adherencia" connectNulls />
               )}
               <Line
-                type="monotone" dataKey="real" stroke="var(--color-accent)" strokeWidth={2.6} name="Observado · peso real"
-                dot={{ fill: 'var(--color-accent)', stroke: 'var(--color-surface)', strokeWidth: 2, r: 3 }}
-                activeDot={{ fill: 'var(--color-accent)', stroke: 'var(--color-surface)', strokeWidth: 2, r: 5 }}
+                type="monotone" dataKey="real" stroke="var(--color-accent-ink)" strokeWidth={2.6} name="Observado · peso real"
+                dot={{ fill: 'var(--color-accent-ink)', stroke: 'var(--color-surface)', strokeWidth: 2, r: 3 }}
+                activeDot={{ fill: 'var(--color-accent-ink)', stroke: 'var(--color-surface)', strokeWidth: 2, r: 5 }}
                 connectNulls
               />
               <Legend

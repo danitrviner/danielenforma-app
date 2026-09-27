@@ -27,7 +27,7 @@ export default function RestRing({ totalSeconds, secondsLeft, onSkip, onAddSecon
         <svg width="48" height="48" viewBox="0 0 48 48" className="-rotate-90">
           <circle cx="24" cy="24" r={r} fill="none" stroke="var(--color-hairline)" strokeWidth="4" />
           <circle
-            cx="24" cy="24" r={r} fill="none" stroke="var(--color-accent)" strokeWidth="4"
+            cx="24" cy="24" r={r} fill="none" stroke="var(--color-accent-ink)" strokeWidth="4"
             strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={circ * (1 - pct)}
             style={{ transition: listo ? undefined : 'stroke-dashoffset 1s linear' }}
           />

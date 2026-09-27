@@ -119,7 +119,7 @@ export default function GuiaDeIntercambios({ onClose }: Props) {
           </div>
           <div className="rounded-control border border-accent/25 bg-accent-bg p-3">
             <p className="font-sans text-body-s text-ink-2">
-              <span className="font-semibold text-accent">Con cuatro excepciones.</span>{' '}
+              <span className="font-semibold text-accent-ink">Con cuatro excepciones.</span>{' '}
               La judía verde, la alcachofa, la menestra y los espárragos sí cuentan, a
               400 g por intercambio. Y la verdura deja de ser libre en cuanto lleva
               aceite o viene concentrada: el tomate frito y los pimientos en bote
@@ -141,7 +141,7 @@ export default function GuiaDeIntercambios({ onClose }: Props) {
           </p>
           <p className="font-sans text-body-s text-ink-2">
             Tus alimentos salen los primeros en la lista y llevan la marca{' '}
-            <span className="font-mono text-caption font-bold uppercase text-accent">tuyo</span>.
+            <span className="font-mono text-caption font-bold uppercase text-accent-ink">tuyo</span>.
             Para cambiar uno, toca el lápiz de su fila: puedes corregir cualquier dato
             y, si ya no lo quieres, borrarlo desde ahí dentro. Solo los veis tú y tu coach.
           </p>

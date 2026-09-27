@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { CardioZones, CardioIntervalBlock } from '../../../types';
 import { HeartRateStatus } from '../../../services/bleHeartRate';
-import { ZONE_COLOR, BELOW_ZONE_COLOR } from '../../../utils/cardioZones';
+import { ZONE_COLOR, ZONE_INK, BELOW_ZONE_COLOR, BELOW_ZONE_INK } from '../../../utils/cardioZones';
 import { CardioLivePrefs } from '../../../utils/cardioLivePrefs';
 import { useScrollLock } from '../../ui/internal/overlayHooks';
 import { Icon, Pager } from '../../ui';
@@ -103,7 +103,13 @@ export default function LiveSession({
   const [settingsOpen, setSettingsOpen] = useState(false);
   useScrollLock(true);
 
-  const zoneColor = currentZone ? ZONE_COLOR[currentZone] : BELOW_ZONE_COLOR;
+  /* Dos papeles distintos del mismo color de zona, y en claro NO valen lo mismo:
+     `zoneFill` es la barra de 3 px de arriba —un relleno, se queda saturado—, y
+     `zoneColor` es todo lo que se LEE (la cifra de pulsaciones, el corazón, las
+     etiquetas), que sobre el fondo claro necesita el tono profundo. En oscuro
+     los dos resuelven al mismo valor, así que esta pantalla no cambia nada. */
+  const zoneFill = currentZone ? ZONE_COLOR[currentZone] : BELOW_ZONE_COLOR;
+  const zoneColor = currentZone ? ZONE_INK[currentZone] : BELOW_ZONE_INK;
   const targetProgressSec = targetZone ? timeInZone[targetZone] : 0;
 
   return createPortal(
@@ -114,7 +120,7 @@ export default function LiveSession({
             gradiente de fondo teñía TODO este bloque (BPM, métricas, las 5
             páginas del carrusel); decisión de estilo explícita: solo esta
             franja de 3px y el corazón llevan el color de zona. */}
-        <div className="h-[3px] flex-shrink-0 transition-colors duration-700" style={{ background: zoneColor }} />
+        <div className="h-[3px] flex-shrink-0 transition-colors duration-700" style={{ background: zoneFill }} />
 
         <TopBar deviceStatus={deviceStatus} onHide={onHide} />
 

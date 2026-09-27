@@ -712,7 +712,7 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
                             onClick={() => toggleFavorite(meal.recipeId)}
                             title={isFav(meal.recipeId) ? 'Quitar de favoritas' : 'Me encanta — quiero que salga más'}
                             className="flex items-center transition-colors"
-                            style={{ color: isFav(meal.recipeId) ? 'var(--color-accent)' : 'var(--color-ink-3)' }}
+                            style={{ color: isFav(meal.recipeId) ? 'var(--color-accent-ink)' : 'var(--color-ink-3)' }}
                           >
                             <Icon name="favorite" size="m" filled={isFav(meal.recipeId)} />
                           </button>

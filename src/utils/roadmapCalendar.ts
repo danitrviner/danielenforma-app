@@ -596,7 +596,7 @@ export function construirIndiceDeDias(datos: DatosCalendario, hoy: string): Map<
     let destacado: Destacado | null = null;
     const refeed = refeedsPorFecha.get(fecha);
     if (destacadosManual.has(fecha)) {
-      destacado = { etiqueta: 'Día destacado', icono: 'star', color: 'var(--color-accent)' };
+      destacado = { etiqueta: 'Día destacado', icono: 'star', color: 'var(--color-accent-ink)' };
     } else if (refeed) {
       // Va antes que el inicio de fase a propósito: el refeed es lo que cambia
       // lo que el atleta come ESE día, y es lo que hay que ver de un vistazo.
@@ -607,7 +607,7 @@ export function construirIndiceDeDias(datos: DatosCalendario, hoy: string): Map<
       destacado = { etiqueta: 'Nueva fase nutri', icono: 'restaurant', color: bandaNutri.color };
     } else {
       const hitoCompeticion = (hitosPorFecha.get(fecha) ?? []).find(h => h.tipo === 'objetivo');
-      if (hitoCompeticion) destacado = { etiqueta: hitoCompeticion.titulo, icono: 'emoji_events', color: 'var(--color-accent)' };
+      if (hitoCompeticion) destacado = { etiqueta: hitoCompeticion.titulo, icono: 'emoji_events', color: 'var(--color-accent-ink)' };
     }
 
     indice.set(fecha, {

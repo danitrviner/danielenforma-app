@@ -233,7 +233,7 @@ export default function AthleteRoadmapScreen({ profile }: Props) {
     const list: Achievement[] = [];
     for (const ch of challengeHistory) {
       if (ch.status === 'conseguido' && ch.resolvedAt) {
-        list.push({ id: `ch-${ch.id}`, icon: 'emoji_events', color: 'var(--color-accent)', title: ch.title, date: ch.resolvedAt.split('T')[0] });
+        list.push({ id: `ch-${ch.id}`, icon: 'emoji_events', color: 'var(--color-accent-ink)', title: ch.title, date: ch.resolvedAt.split('T')[0] });
       }
     }
     const achievedIds: Record<string, string> = roadmap?.levelLadder?.achievedLevelIds ?? {};

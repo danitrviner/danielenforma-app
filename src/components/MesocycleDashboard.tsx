@@ -210,7 +210,7 @@ export default function MesocycleDashboard({ mesocycles, athleteEmail }: Props) 
               <XAxis dataKey="label" tick={TICK_GRAFICA} {...EJE_GRAFICA} />
               <YAxis tick={TICK_GRAFICA} {...EJE_GRAFICA} width={ANCHO_EJE_Y} />
               <Tooltip {...TOOLTIP_GRAFICA} formatter={(v: number) => [`${v} series`, 'Total']} />
-              <Bar dataKey="series" fill="var(--color-accent)" radius={[3, 3, 0, 0]} maxBarSize={40} />
+              <Bar dataKey="series" fill="var(--color-accent-ink)" radius={[3, 3, 0, 0]} maxBarSize={40} />
             </BarChart>
           </ResponsiveContainer>
         )}

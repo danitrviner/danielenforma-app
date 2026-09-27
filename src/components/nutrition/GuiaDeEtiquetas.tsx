@@ -32,7 +32,7 @@ function Punto({ icono, titulo, children, alerta = false }: {
     <div className={`flex items-start gap-3 rounded-control border p-3 ${
       alerta ? 'border-accent/25 bg-accent-bg' : 'border-hairline bg-surface'
     }`}>
-      <Icon name={icono} size="s" className={`mt-0.5 flex-shrink-0 ${alerta ? 'text-accent' : 'text-ink-3'}`} />
+      <Icon name={icono} size="s" className={`mt-0.5 flex-shrink-0 ${alerta ? 'text-accent-ink' : 'text-ink-3'}`} />
       <div className="min-w-0 space-y-1">
         <p className="font-sans text-body-s font-semibold text-ink">{titulo}</p>
         <p className="font-sans text-body-s text-ink-2">{children}</p>

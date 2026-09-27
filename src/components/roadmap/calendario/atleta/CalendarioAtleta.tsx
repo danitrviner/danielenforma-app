@@ -101,7 +101,7 @@ function CaminoDelPlan({ camino, hoy }: { camino: ReturnType<typeof construirCam
 
       <div className="flex items-center gap-x-4 gap-y-1.5 flex-wrap font-sans text-label text-ink-3">
         <span className="flex items-center gap-1.5">
-          <Icon name="flag" size="s" style={{ color: 'var(--color-accent)' }} />
+          <Icon name="flag" size="s" style={{ color: 'var(--color-accent-ink)' }} />
           {diasRestantes > 0 ? `Quedan ${diasRestantes} días de plan` : 'El plan llega hasta hoy'}
         </span>
         {siguiente && (

@@ -228,7 +228,7 @@ export default function PanelPeso({ bodyweightLogs, initialWeight, nutritionProg
           <circle key={`m${i}`} cx={x(p.date)} cy={y(p.weight)} r={3.5} fill="var(--color-chart-3)"><title>Meta: {p.weight} kg</title></circle>
         ))}
         {logsRango.map((l, i) => (
-          <circle key={i} cx={x(l.date)} cy={y(l.weight)} r={3} fill="var(--color-accent)" opacity={0.9}><title>{l.date}: {l.weight} kg</title></circle>
+          <circle key={i} cx={x(l.date)} cy={y(l.weight)} r={3} fill="var(--color-accent-ink)" opacity={0.9}><title>{l.date}: {l.weight} kg</title></circle>
         ))}
       </svg>
 

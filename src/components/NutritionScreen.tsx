@@ -1991,7 +1991,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                   objetivo con la comida ya marcada— pero callárselo no. */}
               {cupoCambiado && (
                 <div className="bg-accent-bg border border-accent-line rounded-surface px-4 py-3.5 flex flex-wrap items-center gap-3">
-                  <Icon name="sync_problem" size="s" style={{ color: 'var(--color-accent)', flexShrink: 0 }} />
+                  <Icon name="sync_problem" size="s" style={{ color: 'var(--color-accent-ink)', flexShrink: 0 }} />
                   <p className="font-sans text-label text-ink-2 leading-relaxed flex-1 min-w-[200px]">
                     Tu entrenador ha cambiado el cupo de hoy. Estás viendo el de antes.
                   </p>
@@ -2009,7 +2009,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                 && selectedDiet.meals.length > 0
                 && selectedDiet.meals.every(m => m.items.length === 0) && (
                 <div className="bg-raised border border-hairline rounded-surface px-4 py-3.5 flex items-start gap-3">
-                  <Icon name="info" size="s" style={{ color: 'var(--color-accent)', marginTop: 2, flexShrink: 0 }} />
+                  <Icon name="info" size="s" style={{ color: 'var(--color-accent-ink)', marginTop: 2, flexShrink: 0 }} />
                   <p className="font-sans text-label text-ink-2 leading-relaxed">
                     Tu plan de hoy trae el <b className="text-ink">cupo de intercambios</b>, pero los
                     alimentos los eliges tú. Añádelos a cada comida con el botón{' '}
@@ -2858,7 +2858,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                 <button
                   type="button"
                   onClick={() => { setGuiaAbierta(true); marcarGuiaVista(); }}
-                  className="flex items-center gap-1.5 flex-shrink-0 rounded-full border border-accent/25 bg-accent-bg px-3 py-1 font-sans text-caption font-bold text-accent transition-colors hover:bg-accent/20"
+                  className="flex items-center gap-1.5 flex-shrink-0 rounded-full border border-accent/25 bg-accent-bg px-3 py-1 font-sans text-caption font-bold text-accent-ink transition-colors hover:bg-accent/20"
                 >
                   <Icon name="help" size="s" />
                   Cómo funciona
@@ -3005,7 +3005,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                           type="button"
                           aria-label={`Editar ${food.label}`}
                           onClick={() => setAlimentoAEditar(food)}
-                          className="flex-shrink-0 p-2 text-ink-3 hover:text-accent transition-colors"
+                          className="flex-shrink-0 p-2 text-ink-3 hover:text-accent-ink transition-colors"
                         >
                           <Icon name="edit" size="s" />
                         </button>

@@ -635,7 +635,7 @@ export default function CorrelationPanel({
                           }`}
                           style={active ? { backgroundColor: color, borderColor: color } : {}}
                         >
-                          <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: active ? 'rgba(0,0,0,0.4)' : color }} />
+                          <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: active ? 'color-mix(in oklab, var(--color-veil) 40%, transparent)' : color }} />
                           {f.label}
                           {f.unit && <span className="opacity-60">({f.unit})</span>}
                         </button>
@@ -669,7 +669,7 @@ export default function CorrelationPanel({
                       }`}
                       style={active ? { backgroundColor: color, borderColor: color } : {}}
                     >
-                      <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: active ? 'rgba(0,0,0,0.4)' : color }} />
+                      <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: active ? 'color-mix(in oklab, var(--color-veil) 40%, transparent)' : color }} />
                       {s.label}
                       {s.unit && <span className="opacity-60">({s.unit})</span>}
                     </button>

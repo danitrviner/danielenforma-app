@@ -217,7 +217,7 @@ export default function SheetDia({
                     <Metrica label="Tonelaje" valor={dia.entreno.tonelaje !== undefined ? `${dia.entreno.tonelaje} kg` : '—'} />
                   </div>
                   {volumeEvent && (
-                    <div className="flex items-center gap-1.5 mt-3.5 text-caption font-sans" style={{ color: volumeEvent.conditional ? (volumeEvent.conditional.met ? 'var(--color-accent)' : 'var(--color-ink-3)') : 'var(--color-phase-fuerza)' }}>
+                    <div className="flex items-center gap-1.5 mt-3.5 text-caption font-sans" style={{ color: volumeEvent.conditional ? (volumeEvent.conditional.met ? 'var(--color-accent-ink)' : 'var(--color-ink-3)') : 'var(--color-phase-fuerza)' }}>
                       <Icon name="trending_up" size="s" />{volumeEvent.title}
                     </div>
                   )}
@@ -238,7 +238,7 @@ export default function SheetDia({
                 {dia.nutricion.adherenciaPct !== undefined && (
                   <span
                     className="font-mono text-caption px-2.5 py-1 rounded-control"
-                    style={{ color: dia.nutricion.adherenciaPct >= 85 ? 'var(--color-success)' : 'var(--color-warning)', background: dia.nutricion.adherenciaPct >= 85 ? 'rgba(62,207,142,0.14)' : 'rgba(253,186,116,0.14)' }}
+                    style={{ color: dia.nutricion.adherenciaPct >= 85 ? 'var(--color-success)' : 'var(--color-warning)', background: dia.nutricion.adherenciaPct >= 85 ? 'color-mix(in oklab, var(--color-success) 14%, transparent)' : 'color-mix(in oklab, var(--color-warning) 14%, transparent)' }}
                   >
                     {dia.nutricion.adherenciaPct}%
                   </span>
@@ -320,7 +320,7 @@ export default function SheetDia({
               <div className="flex-1" />
               <span
                 className="text-[12.5px] px-3 py-1.5 rounded-control"
-                style={{ color: fotoDelDia ? 'var(--color-accent)' : 'var(--color-ink-4)', background: fotoDelDia ? 'color-mix(in oklab, var(--color-accent) 10%, transparent)' : 'var(--color-cell)' }}
+                style={{ color: fotoDelDia ? 'var(--color-accent-ink)' : 'var(--color-ink-4)', background: fotoDelDia ? 'color-mix(in oklab, var(--color-accent) 10%, transparent)' : 'var(--color-cell)' }}
               >
                 {fotoDelDia ? 'Foto de progreso subida' : (esFuturo ? 'Sin foto prevista' : 'Sin foto este día')}
               </span>

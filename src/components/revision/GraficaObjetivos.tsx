@@ -65,7 +65,7 @@ export default function GraficaObjetivos({ puntos, tramos }: { puntos: PuntoHist
             ))}
             <Line
               dataKey="tendencia" name="Tendencia" type="monotone" connectNulls isAnimationActive={false}
-              stroke="var(--color-accent)" strokeWidth={2.5} dot={false}
+              stroke="var(--color-accent-ink)" strokeWidth={2.5} dot={false}
             />
             <Line
               dataKey="real" name="Últimos 7 días" isAnimationActive={false}

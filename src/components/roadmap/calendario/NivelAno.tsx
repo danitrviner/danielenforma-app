@@ -154,11 +154,11 @@ export default function NivelAno({ anio, hoy, bandasEntreno, indice, onOpenMonth
                   const fecha = `${anio}-${String(mi + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
                   const dia = indice.get(fecha);
                   const estado = dia?.estado;
-                  let bg = 'rgba(245,245,244,0.10)';
+                  let bg = 'var(--color-hairline)';
                   if (estado === 'done') bg = 'var(--color-success)';
                   else if (estado === 'partial') bg = 'var(--color-warning)';
                   else if (estado === 'skipped') bg = 'var(--color-danger)';
-                  else if (estado === 'rest') bg = 'rgba(245,245,244,0.14)';
+                  else if (estado === 'rest') bg = 'var(--color-strong)';
                   else if (dia?.faseEntreno) bg = mezcla(dia.faseEntreno.color, 24);
                   const esHoy = fecha === hoy;
                   return (
@@ -186,7 +186,7 @@ export default function NivelAno({ anio, hoy, bandasEntreno, indice, onOpenMonth
                 <div className="flex items-center gap-2.5 mt-2.5 flex-wrap" style={{ minHeight: 18 }}>
                   {hitos.map(({ fecha, hito }) => (
                     <div key={hito.id} className="flex items-center gap-1 font-mono text-caption text-ink-3">
-                      <Icon name={hito.icono} size="s" style={{ color: 'var(--color-accent)', fontSize: 14 }} />
+                      <Icon name={hito.icono} size="s" style={{ color: 'var(--color-accent-ink)', fontSize: 14 }} />
                       {Number(fecha.slice(8, 10))} {MESES_CORTO[mi]}
                     </div>
                   ))}

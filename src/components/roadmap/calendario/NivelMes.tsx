@@ -250,9 +250,9 @@ export default function NivelMes({
           <p className="font-mono text-caption uppercase tracking-wider text-ink-3 mb-3.5">Cumplimiento</p>
           <div className="flex flex-col gap-2.5">
             {[
-              { c: 'var(--color-success)', bg: 'rgba(62,207,142,0.18)', icon: 'check', l: 'Entreno hecho' },
-              { c: 'var(--color-warning)', bg: 'rgba(253,186,116,0.15)', icon: 'remove', l: 'Parcial' },
-              { c: 'var(--color-danger)', bg: 'rgba(255,90,78,0.14)', icon: 'close', l: 'Saltado' },
+              { c: 'var(--color-success)', bg: 'color-mix(in oklab, var(--color-success) 18%, transparent)', icon: 'check', l: 'Entreno hecho' },
+              { c: 'var(--color-warning)', bg: 'color-mix(in oklab, var(--color-warning) 15%, transparent)', icon: 'remove', l: 'Parcial' },
+              { c: 'var(--color-danger)', bg: 'color-mix(in oklab, var(--color-danger) 14%, transparent)', icon: 'close', l: 'Saltado' },
               { c: 'var(--color-ink-3)', bg: 'transparent', icon: 'bedtime', l: 'Descanso planificado' },
             ].map(s => (
               <div key={s.l} className="flex items-center gap-2.5 text-label font-sans">
@@ -263,7 +263,7 @@ export default function NivelMes({
               </div>
             ))}
             <div className="flex items-center gap-2.5 text-label font-sans">
-              <span style={{ width: 22, height: 22, borderRadius: 11, border: '1.5px dashed rgba(245,245,244,0.24)', flexShrink: 0 }} />
+              <span style={{ width: 22, height: 22, borderRadius: 11, border: '1.5px dashed var(--color-strong)', flexShrink: 0 }} />
               Planificado (futuro)
             </div>
           </div>
@@ -289,7 +289,7 @@ export default function NivelMes({
               Fase del día: entreno · nutrición
             </div>
             <div className="flex items-center gap-2.5 text-label font-sans">
-              <Icon name="flag" size="s" style={{ color: 'var(--color-accent)', width: 22, textAlign: 'center', flexShrink: 0 }} />
+              <Icon name="flag" size="s" style={{ color: 'var(--color-accent-ink)', width: 22, textAlign: 'center', flexShrink: 0 }} />
               Día destacado (cambio de fase o fecha clave)
             </div>
           </div>
@@ -316,7 +316,7 @@ export default function NivelMes({
             {monthMils.map(({ fecha, hito }) => (
               <button key={hito.id} type="button" onClick={() => onOpenDay(fecha)} className="flex items-center gap-2.5 text-left">
                 <span className="flex items-center justify-center flex-shrink-0" style={{ width: 30, height: 30, borderRadius: 12, background: 'color-mix(in oklab, var(--color-accent) 12%, transparent)' }}>
-                  <Icon name={hito.icono} size="s" style={{ color: 'var(--color-accent)' }} />
+                  <Icon name={hito.icono} size="s" style={{ color: 'var(--color-accent-ink)' }} />
                 </span>
                 <span className="flex flex-col gap-0.5 min-w-0">
                   <span className="text-label font-semibold font-sans text-ink truncate">{hito.titulo}</span>
@@ -343,11 +343,11 @@ export default function NivelMes({
             onClick={() => mesocycleDelMes && onOpenTemplateModal(mesocycleDelMes.id)}
             className="w-full flex items-center justify-center gap-1.5 bg-inset border border-hairline rounded-field py-2.5 text-label font-sans font-semibold hover:border-accent-line transition-colors disabled:opacity-40"
           >
-            <Icon name="assignment" size="s" style={{ color: 'var(--color-accent)' }} />Plantilla de cuestionarios
+            <Icon name="assignment" size="s" style={{ color: 'var(--color-accent-ink)' }} />Plantilla de cuestionarios
           </button>
         </div>
 
-        <div className="bg-surface rounded-surface px-5 py-4 flex items-center gap-2.5 text-ink-3" style={{ border: '1px dashed rgba(255,255,255,0.12)' }}>
+        <div className="bg-surface rounded-surface px-5 py-4 flex items-center gap-2.5 text-ink-3" style={{ border: '1px dashed var(--color-hairline)' }}>
           <Icon name="drag_indicator" size="m" />
           <span className="text-[12.5px] font-sans leading-relaxed">Arrastra un entreno o un hito a otro día para reprogramarlo</span>
         </div>

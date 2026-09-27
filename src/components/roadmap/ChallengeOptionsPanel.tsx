@@ -122,7 +122,7 @@ export default function ChallengeOptionsPanel({
             <div
               key={opt.kind}
               className="bg-surface border rounded-surface p-3 space-y-2"
-              style={{ borderColor: opt.isMilestone ? 'var(--color-accent)55' : 'rgba(255,255,255,0.07)' }}
+              style={{ borderColor: opt.isMilestone ? 'color-mix(in oklab, var(--color-accent) 33%, transparent)' : 'var(--color-hairline)' }}
             >
               <div className="flex items-start justify-between gap-2">
                 <p className="font-sans font-bold text-ink text-body-s">{opt.title}</p>

@@ -76,7 +76,11 @@ export default function SlideAction({ label, icon, color, onConfirm, disabled }:
           touchAction: 'pan-y',
         }}
       >
-        <Icon name={icon} size="l" className="text-on-accent" />
+        {/* `on-fill`, no `on-accent`: el fondo del pomo es el `color` que le pasan
+            —`danger` para guardar, `ink` para descartar—, y esos se invierten con
+            el tema. Con `on-accent` el icono de descartar quedaba en tinta oscura
+            sobre un pomo oscuro: 1:1, invisible en claro. */}
+        <Icon name={icon} size="l" className="text-on-fill" />
       </div>
     </div>
   );

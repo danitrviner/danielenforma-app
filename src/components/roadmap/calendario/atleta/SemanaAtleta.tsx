@@ -114,7 +114,7 @@ export default function SemanaAtleta({
                   border: `1px ${esFuturo && !esHoy && sel !== fecha ? 'dashed' : 'solid'} ${
                     sel === fecha ? 'var(--color-accent)'
                       : esHoy ? 'color-mix(in oklab, var(--color-accent) 55%, transparent)'
-                        : esFuturo ? 'rgba(245,245,244,0.13)' : 'rgba(255,255,255,0.06)'}`,
+                        : esFuturo ? 'var(--color-strong)' : 'var(--color-hairline)'}`,
                   transitionDuration: '160ms',
                 }}
               >
@@ -125,7 +125,7 @@ export default function SemanaAtleta({
                     aria-label={`Ver el detalle del ${DIAS[i].toLowerCase()} ${Number(fecha.slice(8, 10))}`}
                     className="flex items-baseline gap-2 min-w-0 text-left after:absolute after:content-[''] after:inset-0 after:rounded-[16px] after:z-[1]"
                   >
-                    <span className="font-sans font-bold text-body-s" style={{ color: esHoy ? 'var(--color-accent)' : 'var(--color-ink)' }}>
+                    <span className="font-sans font-bold text-body-s" style={{ color: esHoy ? 'var(--color-accent-ink)' : 'var(--color-ink)' }}>
                       {DIAS[i]}
                     </span>
                     <span className="font-mono text-label" style={{ color: 'var(--color-ink-4)' }}>{Number(fecha.slice(8, 10))}</span>
@@ -200,7 +200,7 @@ export default function SemanaAtleta({
                   )}
 
                   {dia && dia.hitos.length > 0 && (
-                    <Bloque icono="flag" color="var(--color-accent)" titulo="Fechas clave">
+                    <Bloque icono="flag" color="var(--color-accent-ink)" titulo="Fechas clave">
                       <div className="flex flex-col gap-1">
                         {dia.hitos.map(h => (
                           <p key={h.id} className="font-sans text-label text-ink-2 leading-snug">{h.titulo}</p>
@@ -210,7 +210,7 @@ export default function SemanaAtleta({
                   )}
 
                   {nota && (
-                    <Bloque icono="sticky_note_2" color="var(--color-accent)" titulo="Nota de tu entrenador">
+                    <Bloque icono="sticky_note_2" color="var(--color-accent-ink)" titulo="Nota de tu entrenador">
                       <p className="font-sans text-label text-ink-2 leading-snug" style={{ textWrap: 'pretty' }}>{nota.text}</p>
                     </Bloque>
                   )}

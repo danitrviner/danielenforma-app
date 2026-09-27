@@ -97,7 +97,7 @@ export default function TourOverlay({
   const anchorTop = rect ? rect.top > window.innerHeight / 2 : false;
 
   const clipStyle = useMemo((): React.CSSProperties => {
-    if (!rect) return { boxShadow: '0 0 0 9999px rgba(0,0,0,.62)' };
+    if (!rect) return { boxShadow: '0 0 0 9999px color-mix(in oklab, var(--color-veil) 62%, transparent)' };
     const pad = 6;
     return {
       position: 'fixed',
@@ -107,7 +107,7 @@ export default function TourOverlay({
       height: rect.height + pad * 2,
       borderRadius: 14,
       border: '1px solid color-mix(in oklab, var(--color-accent) 55%, transparent)',
-      boxShadow: '0 0 0 9999px rgba(0,0,0,.62)',
+      boxShadow: '0 0 0 9999px color-mix(in oklab, var(--color-veil) 62%, transparent)',
       transition: 'top 300ms, left 300ms, width 300ms, height 300ms',
       pointerEvents: 'none',
       zIndex: 1,
@@ -127,7 +127,7 @@ export default function TourOverlay({
   return createPortal(
     <div className="fixed inset-0 z-[var(--z-modal)]" role="dialog" aria-modal="true" aria-label={`Tutorial, paso ${stepIndex + 1} de ${totalSteps}: ${step.title}`}>
       {/* Recorte del objetivo, o telón plano si no hay ninguno / se está enseñando la pantalla */}
-      {rect && !showBanner ? <div style={clipStyle} /> : <div className="fixed inset-0" style={{ boxShadow: '0 0 0 9999px rgba(0,0,0,.62)' }} />}
+      {rect && !showBanner ? <div style={clipStyle} /> : <div className="fixed inset-0" style={{ boxShadow: '0 0 0 9999px color-mix(in oklab, var(--color-veil) 62%, transparent)' }} />}
 
       {/* Cartel de pantalla — "la pantalla entera antes que el detalle" */}
       {showBanner && (

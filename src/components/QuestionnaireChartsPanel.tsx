@@ -162,10 +162,10 @@ function QuestionChart({
           <Line
             type="monotone"
             dataKey="value"
-            stroke="var(--color-accent)"
+            stroke="var(--color-accent-ink)"
             strokeWidth={2}
-            dot={{ fill: 'var(--color-accent)', stroke: 'var(--color-bg)', strokeWidth: 2, r: 3 }}
-            activeDot={{ fill: 'var(--color-accent)', stroke: 'var(--color-bg)', strokeWidth: 2, r: 5 }}
+            dot={{ fill: 'var(--color-accent-ink)', stroke: 'var(--color-bg)', strokeWidth: 2, r: 3 }}
+            activeDot={{ fill: 'var(--color-accent-ink)', stroke: 'var(--color-bg)', strokeWidth: 2, r: 5 }}
           />
         </LineChart>
       </ResponsiveContainer>

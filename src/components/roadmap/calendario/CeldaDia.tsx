@@ -41,9 +41,9 @@ export default function CeldaDia({ fecha, dia, filter, hoy, selected, onOpen, dr
   const detallado = filter !== 'Todo';
 
   let fondo = 'transparent';
-  let borde = 'rgba(245,245,244,0.13)';
+  let borde = 'var(--color-strong)';
   let bordeStyle: 'solid' | 'dashed' = 'dashed';
-  if (!esFuturo) { fondo = 'var(--color-cell)'; borde = 'rgba(255,255,255,0.06)'; bordeStyle = 'solid'; }
+  if (!esFuturo) { fondo = 'var(--color-cell)'; borde = 'var(--color-hairline)'; bordeStyle = 'solid'; }
   if (dia?.destacado) { fondo = mezcla(dia.destacado.color, 6); borde = mezcla(dia.destacado.color, 40); bordeStyle = 'solid'; }
   if (esHoy) { borde = 'color-mix(in oklab, var(--color-accent) 55%, transparent)'; bordeStyle = 'solid'; }
   if (selected) { fondo = 'color-mix(in oklab, var(--color-accent) 9%, transparent)'; borde = 'var(--color-accent)'; bordeStyle = 'solid'; }
@@ -71,7 +71,7 @@ export default function CeldaDia({ fecha, dia, filter, hoy, selected, onOpen, dr
     >
       <div className="flex items-start justify-between gap-1.5">
         <div className="flex items-center gap-1.5">
-          <span className="font-mono text-label" style={{ color: esHoy ? 'var(--color-accent)' : 'var(--color-ink-3)', fontWeight: esHoy ? 600 : 400 }}>{numero}</span>
+          <span className="font-mono text-label" style={{ color: esHoy ? 'var(--color-accent-ink)' : 'var(--color-ink-3)', fontWeight: esHoy ? 600 : 400 }}>{numero}</span>
           {detallado && dia && (
             <span
               className="flex items-center justify-center"
@@ -89,7 +89,7 @@ export default function CeldaDia({ fecha, dia, filter, hoy, selected, onOpen, dr
               label={marcadorVolumen.titulo}
             />
           )}
-          {dia && dia.hitos.length > 0 && <Icon name={dia.hitos[0].icono} style={{ fontSize: 15, color: 'var(--color-accent)' }} />}
+          {dia && dia.hitos.length > 0 && <Icon name={dia.hitos[0].icono} style={{ fontSize: 15, color: 'var(--color-accent-ink)' }} />}
         </div>
       </div>
 
@@ -122,7 +122,7 @@ export default function CeldaDia({ fecha, dia, filter, hoy, selected, onOpen, dr
           )}
           {filter === 'Hitos' && (
             dia && dia.hitos.length > 0
-              ? <><Linea texto={dia.hitos[0].titulo} color="var(--color-accent)" />
+              ? <><Linea texto={dia.hitos[0].titulo} color="var(--color-accent-ink)" />
                   <Linea texto={dia.hitos[0].completado ? 'Completado' : 'Programado'} color="var(--color-ink-3)" mono /></>
               : <Linea texto="—" color="var(--color-ink-5)" mono />
           )}

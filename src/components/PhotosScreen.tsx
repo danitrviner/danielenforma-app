@@ -197,7 +197,7 @@ export default function PhotosScreen({ profile }: Props) {
                 onClick={() => photo && openHistory(view)}
                 disabled={!photo}
                 className="w-[50px] h-[66px] rounded-control shrink-0 flex items-center justify-center overflow-hidden disabled:cursor-default"
-                style={{ backgroundImage: 'repeating-linear-gradient(45deg, rgba(255,255,255,.05) 0 6px, rgba(255,255,255,.015) 6px 12px)' }}
+                style={{ backgroundImage: 'repeating-linear-gradient(45deg, var(--color-hairline) 0 6px, var(--color-hairline) 6px 12px)' }}
                 aria-label={photo ? `Ver histórico de ${VIEW_LABELS[view]}` : undefined}
               >
                 {photo && !brokenPhotoIds.has(photo.id) ? (

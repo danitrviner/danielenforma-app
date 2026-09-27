@@ -13,9 +13,9 @@ export interface EstiloEstado {
 
 // hecho/parcial/saltado/descanso — colores de estado, iguales en Año/Mes/Día.
 export const ESTADO_STYLE: Record<Exclude<EstadoDia, 'plan' | 'sin-datos'>, EstiloEstado> = {
-  done: { color: 'var(--color-success)', fondo: 'rgba(62,207,142,0.18)', icono: 'check', label: 'Entreno hecho' },
-  partial: { color: 'var(--color-warning)', fondo: 'rgba(253,186,116,0.15)', icono: 'remove', label: 'Parcial' },
-  skipped: { color: 'var(--color-danger)', fondo: 'rgba(255,90,78,0.14)', icono: 'close', label: 'Saltado' },
+  done: { color: 'var(--color-success)', fondo: 'color-mix(in oklab, var(--color-success) 18%, transparent)', icono: 'check', label: 'Entreno hecho' },
+  partial: { color: 'var(--color-warning)', fondo: 'color-mix(in oklab, var(--color-warning) 15%, transparent)', icono: 'remove', label: 'Parcial' },
+  skipped: { color: 'var(--color-danger)', fondo: 'color-mix(in oklab, var(--color-danger) 14%, transparent)', icono: 'close', label: 'Saltado' },
   rest: { color: 'var(--color-ink-3)', fondo: 'transparent', icono: 'bedtime', label: 'Descanso planificado' },
 };
 // Futuro ('plan') y sin dato ('sin-datos') no tienen relleno — contorno

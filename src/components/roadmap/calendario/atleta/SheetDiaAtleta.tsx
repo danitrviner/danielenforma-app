@@ -152,7 +152,7 @@ export default function SheetDiaAtleta({
                   className="font-mono text-caption px-2.5 py-1 rounded-control flex-shrink-0"
                   style={{
                     color: dia.nutricion.adherenciaPct >= 85 ? 'var(--color-success)' : 'var(--color-warning)',
-                    background: dia.nutricion.adherenciaPct >= 85 ? 'rgba(62,207,142,0.14)' : 'rgba(253,186,116,0.14)',
+                    background: dia.nutricion.adherenciaPct >= 85 ? 'color-mix(in oklab, var(--color-success) 14%, transparent)' : 'color-mix(in oklab, var(--color-warning) 14%, transparent)',
                   }}
                 >
                   {dia.nutricion.adherenciaPct}%
@@ -224,7 +224,7 @@ export default function SheetDiaAtleta({
                 </span>
                 <span
                   className="text-label px-3 py-1.5 rounded-control font-sans"
-                  style={{ color: fotoDelDia ? 'var(--color-accent)' : 'var(--color-ink-4)', background: fotoDelDia ? 'color-mix(in oklab, var(--color-accent) 10%, transparent)' : 'var(--color-cell)' }}
+                  style={{ color: fotoDelDia ? 'var(--color-accent-ink)' : 'var(--color-ink-4)', background: fotoDelDia ? 'color-mix(in oklab, var(--color-accent) 10%, transparent)' : 'var(--color-cell)' }}
                 >
                   {fotoDelDia ? 'Foto de progreso' : 'Sin foto'}
                 </span>
@@ -233,11 +233,11 @@ export default function SheetDiaAtleta({
 
             {dia.hitos.length > 0 && (
               <div className="sm:col-span-2">
-                <Tarjeta icono="flag" color="var(--color-accent)" titulo="Fechas clave">
+                <Tarjeta icono="flag" color="var(--color-accent-ink)" titulo="Fechas clave">
                   <div className="flex flex-col gap-2">
                     {dia.hitos.map(h => (
                       <div key={h.id} className="flex items-center gap-2.5">
-                        <Icon name={h.icono} size="s" style={{ color: 'var(--color-accent)', flexShrink: 0 }} />
+                        <Icon name={h.icono} size="s" style={{ color: 'var(--color-accent-ink)', flexShrink: 0 }} />
                         <span className="font-sans text-label text-ink-2">{h.titulo}</span>
                         {h.completado && <span className="font-mono text-caption text-success">hecho</span>}
                       </div>
@@ -248,7 +248,7 @@ export default function SheetDiaAtleta({
             )}
 
             <div className="sm:col-span-2">
-              <Tarjeta icono="sticky_note_2" color="var(--color-accent)" titulo="Notas">
+              <Tarjeta icono="sticky_note_2" color="var(--color-accent-ink)" titulo="Notas">
                 {notaCoach && (
                   <div className="flex gap-3 items-start mb-3">
                     <span className="flex items-center justify-center flex-shrink-0 font-mono text-caption text-accent-ink rounded-field" style={{ width: 30, height: 30, background: 'color-mix(in oklab, var(--color-accent) 14%, transparent)' }}>C</span>

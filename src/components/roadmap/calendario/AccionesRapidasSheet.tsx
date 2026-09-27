@@ -23,7 +23,7 @@ const ACCIONES: { id: Accion; icono: string; titulo: string; pie: string; color:
   { id: 'kcal', icono: 'swap_vert', titulo: 'Subida o bajada de calorías', pie: 'Mete una fase nueva en la periodización desde aquí', color: 'var(--color-phase-hiper)' },
   { id: 'recarga', icono: 'local_fire_department', titulo: 'Día de recarga', pie: 'Un refeed suelto, sin tocar la fase que hay', color: 'var(--color-refeed)' },
   { id: 'cuestionario', icono: 'assignment', titulo: 'Cuestionario suelto', pie: 'Uno solo, este día — sin plantilla de bloque', color: 'var(--color-cat-cardio)' },
-  { id: 'aviso', icono: 'campaign', titulo: 'Nota y aviso al atleta', pie: 'Le sale en su Inicio ese día; puedes avisarle además', color: 'var(--color-accent)' },
+  { id: 'aviso', icono: 'campaign', titulo: 'Nota y aviso al atleta', pie: 'Le sale en su Inicio ese día; puedes avisarle además', color: 'var(--color-accent-ink)' },
 ];
 
 export interface AccionesRapidasHandlers {

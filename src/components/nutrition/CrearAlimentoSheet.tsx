@@ -267,7 +267,7 @@ export default function CrearAlimentoSheet({ mode, onClose, onGuardar, destino, 
           onClick={() => setGuiaAbierta(true)}
           className="flex w-full items-center gap-3 rounded-control border border-accent/25 bg-accent-bg p-3 text-left transition-colors hover:bg-accent/20"
         >
-          <Icon name="menu_book" size="s" className="flex-shrink-0 text-accent" />
+          <Icon name="menu_book" size="s" className="flex-shrink-0 text-accent-ink" />
           <span className="min-w-0 flex-1">
             <span className="block font-sans text-body-s font-semibold text-ink">Ver guía</span>
             <span className="block font-sans text-caption text-ink-2">

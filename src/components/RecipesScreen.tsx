@@ -134,7 +134,7 @@ const RecetaFilaCompacta = React.memo(function RecetaFilaCompacta({ recipe, isFa
       >
         <span
           className="material-symbols-outlined text-title-s"
-          style={{ fontVariationSettings: isFav ? "'FILL' 1" : "'FILL' 0", color: isFav ? 'var(--color-accent)' : 'var(--color-ink-2)' }}
+          style={{ fontVariationSettings: isFav ? "'FILL' 1" : "'FILL' 0", color: isFav ? 'var(--color-accent-ink)' : 'var(--color-ink-2)' }}
         >favorite</span>
       </button>
     </div>
@@ -186,7 +186,7 @@ const RecipeCard = React.memo(function RecipeCard({ recipe, isFav, large = false
       >
         <span
           className="material-symbols-outlined text-title-s"
-          style={{ fontVariationSettings: isFav ? "'FILL' 1" : "'FILL' 0", color: isFav ? 'var(--color-accent)' : 'var(--color-ink-2)' }}
+          style={{ fontVariationSettings: isFav ? "'FILL' 1" : "'FILL' 0", color: isFav ? 'var(--color-accent-ink)' : 'var(--color-ink-2)' }}
         >favorite</span>
       </button>
 
@@ -240,7 +240,7 @@ const RecetaCard = React.memo(function RecetaCard({ recipe, isFav, isFeatured, e
         className="absolute top-2 right-2 w-7 h-7 rounded-full bg-veil/50 flex items-center justify-center z-10"
       >
         <span className="material-symbols-outlined text-body-s"
-          style={{ fontVariationSettings: isFav ? "'FILL' 1" : "'FILL' 0", color: isFav ? 'var(--color-accent)' : 'var(--color-ink-2)' }}
+          style={{ fontVariationSettings: isFav ? "'FILL' 1" : "'FILL' 0", color: isFav ? 'var(--color-accent-ink)' : 'var(--color-ink-2)' }}
         >favorite</span>
       </button>
 
@@ -339,11 +339,11 @@ function RecipeDetail({ recipe, isFav, isDisliked, isOwn, enabledModes, savingFa
             onClick={() => onToggleFav(recipe.id)}
             disabled={savingFav}
             className="flex items-center gap-2 text-label font-mono font-bold uppercase tracking-wider transition-transform duration-(--duration-state) ease-brand active:scale-90 disabled:opacity-50"
-            style={{ color: isFav ? 'var(--color-accent)' : 'var(--color-ink-2)' }}
+            style={{ color: isFav ? 'var(--color-accent-ink)' : 'var(--color-ink-2)' }}
           >
             <span
               className="material-symbols-outlined text-title-m transition-colors duration-(--duration-state)"
-              style={{ fontVariationSettings: isFav ? "'FILL' 1" : "'FILL' 0", color: isFav ? 'var(--color-accent)' : 'var(--color-ink-2)' }}
+              style={{ fontVariationSettings: isFav ? "'FILL' 1" : "'FILL' 0", color: isFav ? 'var(--color-accent-ink)' : 'var(--color-ink-2)' }}
             >favorite</span>
             {isFav ? 'Favorita' : 'Guardar'}
           </button>

@@ -436,7 +436,7 @@ export default function RoadmapCalendario(props: Props) {
             <>
               <div className="w-px h-8 bg-hairline hidden sm:block" />
               <div className="flex items-center gap-2 min-w-0">
-                <Icon name="flag" size="s" style={{ color: 'var(--color-accent)' }} />
+                <Icon name="flag" size="s" style={{ color: 'var(--color-accent-ink)' }} />
                 <span className="text-label text-ink-2 font-sans truncate">Próximo hito: <b className="text-ink font-semibold">{proximoHito.titulo}</b></span>
               </div>
             </>

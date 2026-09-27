@@ -326,7 +326,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                       </div>
                       <span
                         className="material-symbols-outlined flex-shrink-0 text-title-m"
-                        style={{ color: c.approved ? 'var(--color-accent)' : 'var(--color-warning)', fontVariationSettings: "'FILL' 1" }}
+                        style={{ color: c.approved ? 'var(--color-accent-ink)' : 'var(--color-warning)', fontVariationSettings: "'FILL' 1" }}
                       >rate_review</span>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">

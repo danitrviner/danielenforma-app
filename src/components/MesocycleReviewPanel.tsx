@@ -154,7 +154,7 @@ export default function MesocycleReviewPanel({
               label="Récords"
               value={cierre.informe.perExercise.filter(e => e.isPR).length}
               sub={`${cierre.informe.sessions} sesiones registradas`}
-              color="var(--color-accent)"
+              color="var(--color-accent-ink)"
             />
           </div>
 

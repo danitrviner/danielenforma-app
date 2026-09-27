@@ -274,17 +274,17 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
                   <Line
                     type="monotone"
                     dataKey="value"
-                    stroke="var(--color-accent)"
+                    stroke="var(--color-accent-ink)"
                     strokeWidth={2.5}
                     dot={(props) => {
                       const { cx, cy, index, key } = props;
                       const isLast = index === chartData.length - 1;
                       return (
                         <circle key={key} cx={cx} cy={cy} r={isLast ? 4 : 2.2}
-                          fill={isLast ? 'var(--color-accent)' : 'color-mix(in srgb, var(--color-accent) 75%, transparent)'} />
+                          fill={isLast ? 'var(--color-accent-ink)' : 'color-mix(in srgb, var(--color-accent-ink) 75%, transparent)'} />
                       );
                     }}
-                    activeDot={{ fill: 'var(--color-accent)', stroke: 'var(--color-bg)', strokeWidth: 2, r: 5 }}
+                    activeDot={{ fill: 'var(--color-accent-ink)', stroke: 'var(--color-bg)', strokeWidth: 2, r: 5 }}
                     isAnimationActive={false}
                   />
                 </LineChart>

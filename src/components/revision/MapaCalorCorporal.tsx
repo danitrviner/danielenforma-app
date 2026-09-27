@@ -128,7 +128,7 @@ export default function MapaCalorCorporal({ celdas, vista, grupoActivo, onGrupoA
                 <path
                   d={d}
                   fill={celda.fill}
-                  stroke={activo ? 'var(--color-accent)' : 'var(--color-hairline)'}
+                  stroke={activo ? 'var(--color-accent-ink)' : 'var(--color-hairline)'}
                   strokeWidth={activo ? 1.8 : 0.7}
                   strokeDasharray={region.profundo ? '3 2' : undefined}
                   strokeLinejoin="round"

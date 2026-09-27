@@ -959,7 +959,7 @@ export default function RoadmapTimeline({ mesocycles: mesocyclesProp, nutritionP
           const cx = xOf(log.date);
           const cy = weightToLocalY(log.weight);
           return (
-            <circle key={i} cx={cx} cy={cy} r={3.5} fill="var(--color-accent)" opacity={0.85}>
+            <circle key={i} cx={cx} cy={cy} r={3.5} fill="var(--color-accent-ink)" opacity={0.85}>
               <title>{log.date}: {log.weight} kg</title>
             </circle>
           );
