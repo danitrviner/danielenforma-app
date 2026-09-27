@@ -138,7 +138,7 @@ export default function PanelPeso({ bodyweightLogs, initialWeight, nutritionProg
   );
 
   const cerrar = (
-    <button type="button" onClick={onClose} className="text-ink-3 hover:text-white transition-colors" aria-label="Cerrar panel de peso">
+    <button type="button" onClick={onClose} className="text-ink-3 hover:text-ink transition-colors" aria-label="Cerrar panel de peso">
       <Icon name="close" size="m" />
     </button>
   );
@@ -184,7 +184,7 @@ export default function PanelPeso({ bodyweightLogs, initialWeight, nutritionProg
 
       <div className="flex flex-col gap-0.5">
         <span className="font-mono text-caption uppercase tracking-wider text-ink-4">Peso</span>
-        <span className="font-mono text-title-m font-semibold text-white">{actual ? `${actual.weight} kg` : '—'}</span>
+        <span className="font-mono text-title-m font-semibold text-ink">{actual ? `${actual.weight} kg` : '—'}</span>
       </div>
 
       <div className="flex flex-col gap-0.5">

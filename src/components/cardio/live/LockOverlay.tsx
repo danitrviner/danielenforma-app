@@ -14,9 +14,9 @@ interface Props {
 
 export default function LockOverlay({ onUnlock }: Props) {
   return (
-    <div className="fixed inset-0 z-10 flex flex-col items-center justify-center gap-6 bg-black/55 backdrop-blur-sm px-8">
-      <Icon name="lock" size="xl" className="text-white/70" />
-      <p className="text-label font-sans uppercase text-white/70 text-center">Controles bloqueados</p>
+    <div className="fixed inset-0 z-10 flex flex-col items-center justify-center gap-6 bg-veil/55 backdrop-blur-sm px-8">
+      <Icon name="lock" size="xl" className="text-ink-2" />
+      <p className="text-label font-sans uppercase text-ink-2 text-center">Controles bloqueados</p>
       <div className="w-full max-w-sm">
         <SlideAction label="Desliza para desbloquear" icon="lock" color="var(--color-ink)" onConfirm={onUnlock} />
       </div>

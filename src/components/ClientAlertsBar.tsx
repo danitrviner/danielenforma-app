@@ -78,7 +78,7 @@ export default function ClientAlertsBar({
 
       {pendingReviewsCount > 0 && (
         <div className="rounded-field border border-accent-line bg-accent-bg p-4 space-y-3">
-          <p className="font-mono text-caption font-semibold text-accent uppercase tracking-wider">Próxima revisión</p>
+          <p className="font-mono text-caption font-semibold text-accent-ink uppercase tracking-wider">Próxima revisión</p>
           <p className="font-sans text-body-s font-semibold text-ink">
             {pendingReviewsCount === 1 ? '1 check-in por revisar' : `${pendingReviewsCount} check-ins por revisar`}
           </p>

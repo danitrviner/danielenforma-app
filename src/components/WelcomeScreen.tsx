@@ -115,7 +115,7 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
         {/* En Forma Header */}
         <div className="flex flex-col items-center mb-6 gap-2">
           <img src="/atlas-logo.png" alt="" className="w-16 h-16 object-contain" />
-          <span className="font-display text-feature font-black tracking-tight uppercase text-accent">EN FORMA</span>
+          <span className="font-display text-feature font-black tracking-tight uppercase text-accent-ink">EN FORMA</span>
           <p className="text-ink-2 text-label font-mono tracking-widest uppercase">De invisible a imparable</p>
         </div>
 
@@ -126,7 +126,7 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
         )}
 
         {resetMessage && (
-          <div role="status" className="bg-accent/7 border border-accent/22 text-accent p-3 rounded-surface text-body-s mb-6 text-center">
+          <div role="status" className="bg-accent/7 border border-accent/22 text-accent-ink p-3 rounded-surface text-body-s mb-6 text-center">
             {resetMessage}
           </div>
         )}
@@ -149,7 +149,7 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
                 type="button"
                 onClick={handleForgotPassword}
                 disabled={resetting}
-                className="font-mono text-caption text-accent hover:underline disabled:opacity-50"
+                className="font-mono text-caption text-accent-ink hover:underline disabled:opacity-50"
               >
                 {resetting ? 'Enviando…' : '¿Olvidaste tu contraseña?'}
               </button>

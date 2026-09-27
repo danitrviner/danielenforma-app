@@ -80,7 +80,7 @@ export interface ScoreStyle {
 // que devuelve `scoreStyle`, para que el llamante no tenga que ramificar el
 // className, solo qué función/constante usar.
 export const SIN_DATOS_ADHERENCIA: ScoreStyle = {
-  text: 'text-ink-3', bg: 'bg-white/4 border-hairline', label: 'Sin datos aún',
+  text: 'text-ink-3', bg: 'bg-hairline border-hairline', label: 'Sin datos aún',
 };
 
 export function scoreStyle(score: number): ScoreStyle {

@@ -49,7 +49,7 @@ function BwTooltip({ active, payload }: any) {
     <div className="bg-raised border border-hairline rounded-surface px-3 py-2 text-label font-mono shadow-e1">
       <p className="text-ink-2 mb-1">{fmtDate(date)}</p>
       {rawEntry?.value != null && (
-        <p className="text-accent font-bold text-body-s">{rawEntry.value} kg</p>
+        <p className="text-accent-ink font-bold text-body-s">{rawEntry.value} kg</p>
       )}
       {avgEntry?.value != null && rawEntry?.value !== avgEntry?.value && (
         <p className="text-data text-caption ">Media 7d: {avgEntry.value} kg</p>
@@ -182,14 +182,14 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
 
   // ── Render ──────────────────────────────────────────────────────────────────
 
-  const INPUT_CLS = 'bg-inset border border-hairline rounded-control px-2 py-2 text-body-s text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent min-h-[44px]';
+  const INPUT_CLS = 'bg-inset border border-hairline rounded-control px-2 py-2 text-body-s text-ink font-mono focus:outline-none focus:ring-1 focus:ring-accent min-h-[44px]';
 
   return (
     <div className="space-y-3">
       {/* Header — icono + título + último registro a la derecha (handoff §1) */}
       <div className="flex items-center gap-2">
-        <Icon name="monitor_weight" size="m" className="text-accent shrink-0" />
-        <h3 className="font-sans font-bold text-body-s text-white flex-1">Peso corporal</h3>
+        <Icon name="monitor_weight" size="m" className="text-accent-ink shrink-0" />
+        <h3 className="font-sans font-bold text-body-s text-ink flex-1">Peso corporal</h3>
         {logs.length > 0 && (
           <span className="font-mono text-label text-ink-2">
             {asc.at(-1)?.weight} kg · {fmtDate(asc.at(-1)!.date)}
@@ -219,7 +219,7 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
               {!readOnly && (
                 <button
                   onClick={() => setAddOpen(v => !v)}
-                  className="ml-auto flex items-center gap-1 px-2.5 py-1.5 rounded-control bg-inset border border-hairline font-sans text-label font-bold text-accent"
+                  className="ml-auto flex items-center gap-1 px-2.5 py-1.5 rounded-control bg-inset border border-hairline font-sans text-label font-bold text-accent-ink"
                 >
                   <Icon name="add" size="s" />
                   Añadir
@@ -244,13 +244,13 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
                 explícitamente el segundo dato en vez de fingir el gráfico. */}
             {logs.length === 1 && (
               <div className="flex items-center gap-3 bg-raised border border-hairline rounded-surface px-4 py-3">
-                <Icon name="show_chart" size="m" className="text-accent shrink-0" />
+                <Icon name="show_chart" size="m" className="text-accent-ink shrink-0" />
                 <p className="font-sans text-caption text-ink-2">Con un registro más dibujamos tu tendencia.</p>
               </div>
             )}
             {logs.length > 1 && chartData.length < 2 && (
               <div className="flex items-center gap-3 bg-raised border border-hairline rounded-surface px-4 py-3">
-                <Icon name="show_chart" size="m" className="text-accent shrink-0" />
+                <Icon name="show_chart" size="m" className="text-accent-ink shrink-0" />
                 <p className="font-sans text-caption text-ink-2">Sin registros en este rango.</p>
               </div>
             )}
@@ -373,7 +373,7 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
                             </button>
                             <button
                               onClick={cancelEdit}
-                              className="px-2 py-1 border border-hairline text-ink-2 font-sans text-caption uppercase rounded-control transition-all hover:text-white"
+                              className="px-2 py-1 border border-hairline text-ink-2 font-sans text-caption uppercase rounded-control transition-all hover:text-ink"
                             >
                               ✕
                             </button>
@@ -383,7 +383,7 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
                         // ── Read row ─────────────────────────────────────────
                         <>
                           <span className="font-sans text-body-s text-ink-2 flex-1">{fmtDate(b.date)}</span>
-                          <span className="font-mono font-bold text-white text-body-s mr-1.5">{b.weight} kg</span>
+                          <span className="font-mono font-bold text-ink text-body-s mr-1.5">{b.weight} kg</span>
                           {!readOnly && (
                             <div className="flex gap-2 flex-shrink-0">
                               <button
@@ -411,7 +411,7 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
                 {hasMoreHistory && (
                   <button
                     onClick={() => setShowAll(v => !v)}
-                    className="w-full text-center py-2.5 border-t border-hairline text-label font-sans font-bold text-accent transition-colors"
+                    className="w-full text-center py-2.5 border-t border-hairline text-label font-sans font-bold text-accent-ink transition-colors"
                   >
                     {showAll ? 'Ver menos' : `Ver los ${logs.length - HISTORY_COLLAPSED_COUNT} restantes`}
                   </button>

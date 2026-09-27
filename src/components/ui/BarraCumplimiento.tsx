@@ -28,7 +28,7 @@ export default function BarraCumplimiento({ pct }: Props) {
   return (
     <div className="relative h-1 rounded-full bg-track w-full min-w-[48px]">
       <div className="absolute inset-y-0 left-0 rounded-full" style={{ width: `${Math.min(100, pct)}%`, backgroundColor: color }} />
-      {pct > 100 && <div className="absolute inset-y-0 right-0 w-px bg-white/40" />}
+      {pct > 100 && <div className="absolute inset-y-0 right-0 w-px bg-ink-3" />}
     </div>
   );
 }

@@ -41,7 +41,7 @@ export default function ClienteSelector({ value, onChange }: Props) {
         <button
           type="button"
           onClick={() => onChange(null as unknown as Cliente)}
-          className="font-mono text-caption uppercase tracking-widest text-accent hover:underline shrink-0"
+          className="font-mono text-caption uppercase tracking-widest text-accent-ink hover:underline shrink-0"
         >
           Cambiar
         </button>
@@ -77,7 +77,7 @@ export default function ClienteSelector({ value, onChange }: Props) {
               // input, que si no cierra la lista un instante antes de que el
               // clic llegue a registrarse.
               onMouseDown={() => onChange(c)}
-              className="w-full text-left px-3 py-2 hover:bg-white/6 transition-colors"
+              className="w-full text-left px-3 py-2 hover:bg-hairline transition-colors"
             >
               <p className="font-sans text-caption text-ink truncate">{c.nombre}</p>
               <p className="font-mono text-caption text-ink-3 truncate">{c.email ?? c.dni ?? ''}</p>

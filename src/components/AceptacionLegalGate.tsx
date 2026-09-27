@@ -209,7 +209,7 @@ export default function AceptacionLegalGate({
 
   return (
     <div className="fixed inset-0 z-[var(--z-modal)] flex items-center justify-center p-4 pt-[calc(1rem+var(--safe-top))] pb-[calc(1rem+env(safe-area-inset-bottom,0px))]">
-      <div className="fixed inset-0 z-[var(--z-overlay)] bg-black/80 backdrop-blur-sm" aria-hidden />
+      <div className="fixed inset-0 z-[var(--z-overlay)] bg-veil/80 backdrop-blur-sm" aria-hidden />
 
       <div
         role="dialog"

@@ -57,8 +57,8 @@ export const QUESTION_TYPE_LABELS: Record<QuestionType, string> = {
 
 const BODY_METRIC_KEYS = Object.keys(BODY_METRIC_LABELS) as BodyMetricKey[];
 
-const INPUT_CLS      = 'bg-bg border border-hairline rounded-surface px-3 py-2 text-body-s text-white focus:outline-none focus:ring-1 focus:ring-accent';
-const MINI_INPUT_CLS = 'bg-bg border border-hairline rounded-control px-2 py-2 text-label font-mono text-white focus:outline-none focus:ring-1 focus:ring-accent';
+const INPUT_CLS      = 'bg-bg border border-hairline rounded-surface px-3 py-2 text-body-s text-ink focus:outline-none focus:ring-1 focus:ring-accent';
+const MINI_INPUT_CLS = 'bg-bg border border-hairline rounded-control px-2 py-2 text-label font-mono text-ink focus:outline-none focus:ring-1 focus:ring-accent';
 
 // ── Component ──────────────────────────────────────────────────────────────────
 
@@ -106,7 +106,7 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
       {/* Header */}
       <div className="flex items-center gap-3">
         <Button variant="secondary" size="s" onClick={onCancel} icon="arrow_back">Volver</Button>
-        <h2 className="font-sans font-bold text-title-m text-white">
+        <h2 className="font-sans font-bold text-title-m text-ink">
           {isNew ? 'Nuevo cuestionario' : 'Editar cuestionario'}
         </h2>
       </div>
@@ -137,7 +137,7 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
           </h3>
           <button
             onClick={addQ}
-            className="flex items-center gap-2 px-3 py-2 bg-raised border border-accent/40 text-accent font-sans text-caption uppercase rounded-control hover:border-accent/70 transition-all"
+            className="flex items-center gap-2 px-3 py-2 bg-raised border border-accent/40 text-accent-ink font-sans text-caption uppercase rounded-control hover:border-accent/70 transition-all"
           >
             <span className="material-symbols-outlined text-body-s">add</span>Añadir pregunta
           </button>
@@ -150,11 +150,11 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
             <div className="flex items-start gap-2">
               <div className="flex flex-col flex-shrink-0 mt-1">
                 <button onClick={() => moveQ(idx, -1)} disabled={idx === 0}
-                  className="text-ink-2 hover:text-white disabled:opacity-20 transition-colors" title="Subir">
+                  className="text-ink-2 hover:text-ink disabled:opacity-20 transition-colors" title="Subir">
                   <Icon name="keyboard_arrow_up" size="s" />
                 </button>
                 <button onClick={() => moveQ(idx, 1)} disabled={idx === form.questions.length - 1}
-                  className="text-ink-2 hover:text-white disabled:opacity-20 transition-colors" title="Bajar">
+                  className="text-ink-2 hover:text-ink disabled:opacity-20 transition-colors" title="Bajar">
                   <Icon name="keyboard_arrow_down" size="s" />
                 </button>
               </div>
@@ -168,7 +168,7 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
               <select
                 value={q.type}
                 onChange={e => setQ(idx, applyTypeChange({ type: e.target.value as QuestionType }))}
-                className="bg-raised border border-hairline rounded-control px-2 py-2 text-title-s font-mono text-white focus:outline-none focus:ring-1 focus:ring-accent flex-shrink-0"
+                className="bg-raised border border-hairline rounded-control px-2 py-2 text-title-s font-mono text-ink focus:outline-none focus:ring-1 focus:ring-accent flex-shrink-0"
               >
                 {(Object.keys(QUESTION_TYPE_LABELS) as QuestionType[]).map(t => (
                   <option key={t} value={t}>{QUESTION_TYPE_LABELS[t]}</option>
@@ -176,7 +176,7 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
               </select>
               {(q.type === 'numeric' || q.type === 'scale' || q.type === 'metric') && (
                 <span title="Graficable" className="flex-shrink-0 mt-2">
-                  <Icon name="show_chart" size="s" className="text-accent" />
+                  <Icon name="show_chart" size="s" className="text-accent-ink" />
                 </span>
               )}
               <label className="flex items-center gap-1 cursor-pointer flex-shrink-0 mt-2" title="Obligatoria">
@@ -190,7 +190,7 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
                   aria-hidden
                   className={`w-4 h-4 rounded-control border-2 flex items-center justify-center transition-colors peer-focus-visible:ring-1 peer-focus-visible:ring-accent ${q.required ? 'bg-accent border-accent' : 'border-hairline'}`}
                 >
-                  {q.required && <Icon name="check" size="s" className="text-black" />}
+                  {q.required && <Icon name="check" size="s" className="text-on-accent" />}
                 </span>
                 <span className="font-mono text-caption text-ink-2 hidden sm:inline">Oblig.</span>
               </label>
@@ -227,7 +227,7 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
                     .map(sig => <option key={sig.key} value={sig.key}>{sig.label}</option>)}
                 </select>
                 {q.signalKey && (
-                  <span className="inline-flex items-center gap-1 font-mono text-caption text-accent">
+                  <span className="inline-flex items-center gap-1 font-mono text-caption text-accent-ink">
                     <Icon name="bolt" size="s" />
                     la lee un motor de la app
                   </span>
@@ -309,7 +309,7 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
                       aria-hidden
                       className={`w-4 h-4 rounded-control border-2 flex items-center justify-center transition-colors peer-focus-visible:ring-1 peer-focus-visible:ring-accent ${q.multiSelect ? 'bg-accent border-accent' : 'border-hairline'}`}
                     >
-                      {q.multiSelect && <Icon name="check" size="s" className="text-black" />}
+                      {q.multiSelect && <Icon name="check" size="s" className="text-on-accent" />}
                     </span>
                     <span className="font-mono text-caption text-ink-2">Selección múltiple</span>
                   </label>
@@ -351,7 +351,7 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
               )}
               {q.type === 'metric' && (
                 <div className="w-56">
-                  <label htmlFor={`q-${q.id}-que-mide`} className="block font-mono text-[9px] text-[#c6c9ab] uppercase mb-1">Qué mide</label>
+                  <label htmlFor={`q-${q.id}-que-mide`} className="block font-mono text-[9px] text-ink-3 uppercase mb-1">Qué mide</label>
                   <select id={`q-${q.id}-que-mide`}
                     value={q.metricKey ?? ''}
                     onChange={e => setQ(idx, { metricKey: (e.target.value || undefined) as BodyMetricKey | undefined })}
@@ -367,7 +367,7 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
               {q.type === 'media' && (
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label htmlFor={`q-${q.id}-tipo`} className="block font-mono text-[9px] text-[#c6c9ab] uppercase mb-1">Tipo</label>
+                    <label htmlFor={`q-${q.id}-tipo`} className="block font-mono text-[9px] text-ink-3 uppercase mb-1">Tipo</label>
                     <select id={`q-${q.id}-tipo`}
                       value={q.mediaKind ?? ''}
                       onChange={e => setQ(idx, { mediaKind: (e.target.value || undefined) as 'video' | 'image' | undefined })}
@@ -379,7 +379,7 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
                     </select>
                   </div>
                   <div>
-                    <label htmlFor={`q-${q.id}-tamano-max-mb`} className="block font-mono text-[9px] text-[#c6c9ab] uppercase mb-1">Tamaño máx. (MB)</label>
+                    <label htmlFor={`q-${q.id}-tamano-max-mb`} className="block font-mono text-[9px] text-ink-3 uppercase mb-1">Tamaño máx. (MB)</label>
                     <input id={`q-${q.id}-tamano-max-mb`} type="number" value={q.maxSizeMb ?? ''} min={1} max={50}
                       onChange={e => setQ(idx, { maxSizeMb: e.target.value === '' ? undefined : Number(e.target.value) })}
                       placeholder="50" className={`w-full ${MINI_INPUT_CLS}`} />

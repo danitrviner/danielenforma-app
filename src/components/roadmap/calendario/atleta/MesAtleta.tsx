@@ -181,7 +181,7 @@ export default function MesAtleta({
     <div className="space-y-3.5" style={{ animation: 'fade-up 260ms cubic-bezier(0.2,0.8,0.2,1) both' }}>
       <div className="bg-surface border border-hairline rounded-surface px-3 sm:px-5 pt-4 pb-5">
         <div className="flex items-center justify-between gap-2 mb-3.5">
-          <button type="button" onClick={onVolverAlAno} className="flex items-center gap-1 text-label text-ink-3 hover:text-white transition-colors flex-shrink-0">
+          <button type="button" onClick={onVolverAlAno} className="flex items-center gap-1 text-label text-ink-3 hover:text-ink transition-colors flex-shrink-0">
             <Icon name="grid_view" size="s" />Año
           </button>
           <div className="flex items-center gap-1.5 min-w-0">
@@ -191,7 +191,7 @@ export default function MesAtleta({
             <button type="button" onClick={onPrevMes} disabled={mes === 0} aria-label="Mes anterior" className="relative w-8 h-8 rounded-control bg-inset flex items-center justify-center text-ink-2 disabled:opacity-30 after:absolute after:content-[''] after:-inset-[6px]">
               <Icon name="chevron_left" size="s" />
             </button>
-            <span className="font-sans font-extrabold text-title-s sm:text-title-l text-white text-center truncate" style={{ letterSpacing: '-0.02em', minWidth: 110 }}>
+            <span className="font-sans font-extrabold text-title-s sm:text-title-l text-ink text-center truncate" style={{ letterSpacing: '-0.02em', minWidth: 110 }}>
               {MESES[mes]}
             </span>
             <button type="button" onClick={onNextMes} disabled={mes === 11} aria-label="Mes siguiente" className="relative w-8 h-8 rounded-control bg-inset flex items-center justify-center text-ink-2 disabled:opacity-30 after:absolute after:content-[''] after:-inset-[6px]">
@@ -231,7 +231,7 @@ export default function MesAtleta({
                 onClick={() => onAbrirSemana(semana.inicio)}
                 title={`Ver la semana del ${semana.etiqueta}`}
                 aria-label={`Ver la semana del ${semana.etiqueta}`}
-                className="hidden sm:flex relative w-9 self-center h-10 rounded-control bg-inset border border-hairline items-center justify-center text-ink-3 hover:text-accent hover:border-accent-line transition-colors active:scale-[.96] after:absolute after:content-[''] after:-inset-x-[4px]"
+                className="hidden sm:flex relative w-9 self-center h-10 rounded-control bg-inset border border-hairline items-center justify-center text-ink-3 hover:text-accent-ink hover:border-accent-line transition-colors active:scale-[.96] after:absolute after:content-[''] after:-inset-x-[4px]"
               >
                 <Icon name="chevron_right" size="s" />
               </button>
@@ -255,7 +255,7 @@ export default function MesAtleta({
                   <Icon name={hito.icono} size="s" style={{ color: 'var(--color-accent)' }} />
                 </span>
                 <span className="flex flex-col gap-0.5 min-w-0">
-                  <span className="text-label font-semibold font-sans text-white truncate">{hito.titulo}</span>
+                  <span className="text-label font-semibold font-sans text-ink truncate">{hito.titulo}</span>
                   <span className="font-mono text-caption text-ink-4">{fmtCorta(fecha)}{hito.completado ? ' · hecho' : ''}</span>
                 </span>
               </button>

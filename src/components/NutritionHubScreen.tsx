@@ -54,14 +54,14 @@ export default function NutritionHubScreen({ profile }: NutritionHubScreenProps)
       {nutritionConfig?.sharedReportSnapshot && (
         <div className="bg-surface border border-hairline rounded-surface p-4">
           <div className="flex items-center gap-2 mb-2">
-            <Icon name="insights" size="s" className="text-accent" />
+            <Icon name="insights" size="s" className="text-accent-ink" />
             <p className="font-sans font-bold text-body-s text-ink">Análisis de tu entrenador</p>
           </div>
           <p className="text-label text-ink-2 font-sans leading-relaxed">{nutritionConfig.sharedReportSnapshot.summary}</p>
           {nutritionConfig.sharedReportSnapshot.flags.length > 0 && (
             <ul className="mt-2 space-y-1">
               {nutritionConfig.sharedReportSnapshot.flags.map((f, i) => (
-                <li key={i} className="text-caption text-amber-300 font-mono">• {f}</li>
+                <li key={i} className="text-caption text-warning font-mono">• {f}</li>
               ))}
             </ul>
           )}

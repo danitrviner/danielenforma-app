@@ -5,6 +5,7 @@ import { PhaseWeightStatus } from '../../utils/planNutritionBridge';
 import ProgressRing from '../ProgressRing';
 import StatTile from '../StatTile';
 import { Icon } from '../ui';
+import { colorDeTema, conAlfa } from '../../utils/coloresPersistidos';
 
 interface Props {
   phase: PlanPhase;
@@ -18,18 +19,18 @@ export default function PhaseHeroCard({ phase, progress, weightStatus }: Props) 
   return (
     <div
       className="rounded-canvas border p-5 flex flex-col gap-4"
-      style={{ backgroundColor: 'var(--color-bg)', borderColor: `${phase.color}33` }}
+      style={{ backgroundColor: 'var(--color-bg)', borderColor: conAlfa(phase.color, 20) }}
     >
       <div className="flex items-center gap-4">
         <div
           className="w-12 h-12 rounded-surface flex items-center justify-center flex-shrink-0"
-          style={{ backgroundColor: `${phase.color}1a`, color: phase.color }}
+          style={{ backgroundColor: conAlfa(phase.color, 10), color: colorDeTema(phase.color) }}
         >
           <Icon name={phase.icon || 'route'} size="l" />
         </div>
         <div className="flex-1 min-w-0">
           <p className="font-mono text-caption uppercase tracking-widest text-ink-2">Fase actual</p>
-          <h2 className="font-sans font-bold text-title-m text-white uppercase tracking-tight truncate">{phase.name}</h2>
+          <h2 className="font-sans font-bold text-title-m text-ink uppercase tracking-tight truncate">{phase.name}</h2>
           {phase.motto && <p className="text-ink-2 text-label font-mono ">{phase.motto}</p>}
         </div>
         <ProgressRing pct={progress.overallPct} color={phase.color} label="Fase" />
@@ -78,7 +79,7 @@ export default function PhaseHeroCard({ phase, progress, weightStatus }: Props) 
         <div className="flex items-start gap-2 pt-2 border-t border-hairline">
           <Icon name="flag" size="s" className="text-ink-2" />
           <p className="text-ink-2 text-label font-sans leading-relaxed">
-            <span className="text-white">Para pasar a la siguiente fase:</span> {phase.exitCriteria}
+            <span className="text-ink">Para pasar a la siguiente fase:</span> {phase.exitCriteria}
           </p>
         </div>
       )}

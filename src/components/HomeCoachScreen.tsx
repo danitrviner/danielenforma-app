@@ -176,11 +176,11 @@ export default function HomeCoachScreen({ athletes, checkins, assignmentsByEmail
         <button
           type="button"
           onClick={() => navigate('/propuestas')}
-          className="w-full flex items-center gap-3 rounded-field border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-left transition-colors hover:bg-amber-500/15"
+          className="w-full flex items-center gap-3 rounded-field border border-warning/30 bg-warning/10 px-4 py-3 text-left transition-colors hover:bg-warning/15"
         >
-          <Icon name="smart_toy" size="m" filled className="text-amber-300 flex-shrink-0" />
+          <Icon name="smart_toy" size="m" filled className="text-warning flex-shrink-0" />
           <span className="min-w-0 flex-1">
-            <span className="block font-sans font-bold text-body-s text-white">
+            <span className="block font-sans font-bold text-body-s text-ink">
               {propuestasPendientes.length === 1
                 ? '1 propuesta por revisar'
                 : `${propuestasPendientes.length} propuestas por revisar`}
@@ -206,7 +206,7 @@ export default function HomeCoachScreen({ athletes, checkins, assignmentsByEmail
               onClick={() => setFiltro(c.id)}
               className={
                 'flex-none rounded-chip px-3 py-2 font-mono text-caption font-bold uppercase transition-colors duration-(--duration-state) '
-                + (filtro === c.id ? 'bg-accent text-on-accent' : 'bg-white/5 text-ink-2 hover:bg-white/8')
+                + (filtro === c.id ? 'bg-accent text-on-accent' : 'bg-hairline text-ink-2 hover:bg-strong')
               }
             >
               {c.label} · {c.count}

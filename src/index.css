@@ -193,12 +193,12 @@
      (miniaturas, botón "menos" del stepper, fondo del toast, botón
      deshabilitado); `track` es solo para pistas de barra de progreso y
      segmentos pendientes. */
-  --color-bg:      #121212;
-  --color-surface: #1A1A1A;
-  --color-raised:  #202020;
-  --color-field:   #1A1A1A;
-  --color-inset:   #262626;
-  --color-track:   #2E2E2E;
+  --color-bg: var(--p-bg);
+  --color-surface: var(--p-surface);
+  --color-raised: var(--p-raised);
+  --color-field: var(--p-field);
+  --color-inset: var(--p-inset);
+  --color-track: var(--p-track);
 
   /* ── Texto · 5 + inverso (Fase 3) ───────────────────────────────────────────
      El handoff expresa el texto secundario como alfa sobre `ink`, no como un
@@ -206,12 +206,12 @@
      superficie (surface/raised/inset) sin recalcular contraste por par de
      colores. `ink-4`/`ink-5` son nuevos —etiqueta mono y pie de página—, por
      debajo de `ink-3` no hay más pasos: seguir bajando el alfa deja de leerse. */
-  --color-ink:       #F5F5F4;
-  --color-ink-2:     rgba(245, 245, 244, 0.7);   /* apoyo, etiquetas, descripciones */
-  --color-ink-3:     rgba(245, 245, 244, 0.56);  /* placeholders, ayudas, timestamps */
-  --color-ink-4:     rgba(245, 245, 244, 0.42);  /* etiqueta mono, dato terciario    */
-  --color-ink-5:     rgba(245, 245, 244, 0.32);  /* pie de página, texto deshabilitado */
-  --color-on-accent: #121212;  /* único color admitido sobre el oro             */
+  --color-ink: var(--p-ink);
+  --color-ink-2: var(--p-ink-2);   /* apoyo, etiquetas, descripciones */
+  --color-ink-3: var(--p-ink-3);  /* placeholders, ayudas, timestamps */
+  --color-ink-4: var(--p-ink-4);  /* etiqueta mono, dato terciario    */
+  --color-ink-5: var(--p-ink-5);  /* pie de página, texto deshabilitado */
+  --color-on-accent: var(--p-on-accent);  /* único color admitido sobre el oro             */
 
   /* ── Líneas · 3 ─────────────────────────────────────────────────────────────
      Todos los bordes son de 1 px. El borde —no la sombra— define una superficie.
@@ -223,9 +223,9 @@
      matices no son tokens nuevos, son el modificador de opacidad de Tailwind
      v4 sobre `--color-accent` (`border-accent/42`, `border-accent/55`) — el
      mismo mecanismo que ya usan 200+ sitios con `border-white/N`. */
-  --color-hairline:    rgba(255, 255, 255, 0.07);
-  --color-strong:      rgba(255, 255, 255, 0.12);
-  --color-accent-line: rgba(227, 179, 65, 0.45);
+  --color-hairline: var(--p-hairline);
+  --color-strong: var(--p-strong);
+  --color-accent-line: var(--p-accent-line);
 
   /* ── Marca · 2 ──────────────────────────────────────────────────────────────
      El oro significa exactamente una cosa: lo siguiente que tienes que hacer.
@@ -235,15 +235,52 @@
      Todo lo que es «oro con alfa» en las pantallas pasa por
      `color-mix(... var(--color-accent) N%, transparent)`, no por un rgba
      literal: así el cambio de aquí llega a todas partes. */
-  --color-accent:       #E3B341;
-  --color-accent-press: #C79B32;  /* solo pulsado y hover del primario        */
-  --color-accent-bg:    rgba(227, 179, 65, 0.14);
+  --color-accent: var(--p-accent);
+  --color-accent-press: var(--p-accent-press);  /* solo pulsado y hover del primario        */
+  --color-accent-bg: var(--p-accent-bg);
+
+  /* `accent-ink` es el oro cuando hace de TEXTO o de icono, no de relleno.
+     En oscuro vale exactamente lo mismo que `accent` —los 504 `text-accent`
+     de la app no cambian ni un pixel al migrar— pero en claro tiene que ser
+     un ámbar bastante más profundo: el oro de marca sobre papel da 2,6:1 y no
+     se lee. Separarlos es lo que permite que el BOTÓN siga siendo oro de
+     verdad mientras la CIFRA en oro sigue siendo legible.
+     Regla: relleno → `accent`; texto, icono o cifra → `accent-ink`. */
+  --color-accent-ink: var(--p-accent-ink);
+
+  /* ── Velos ──────────────────────────────────────────────────────────────────
+     El fondo oscurecido de un modal, el degradado que funde una imagen con la
+     página, la capa que apaga lo que hay detrás de un Sheet. Eran 45 sitios
+     con `bg-black/25…70` a pelo, que en claro pintarían un velo negro sobre
+     una interfaz de papel. Aquí el velo tiene el color del tema: casi negro
+     en oscuro, gris de tinta en claro. La intensidad la sigue poniendo el
+     modificador de opacidad en cada consumidor (`bg-veil/70`). */
+  /* `on-fill` es lo que va encima de un relleno SÓLIDO de estado (verde de
+     «hecho», rojo de «borrar», azul informativo). No es lo mismo que
+     `on-accent` y la diferencia es justo lo que rompe al cambiar de tema:
+       · el oro y los colores de zona de FC son claros en LOS DOS temas, así
+         que encima siempre va tinta oscura → `on-accent`.
+       · los colores de estado se invierten: en oscuro son pasteles claros
+         (tinta oscura encima), en claro son sólidos profundos (tinta blanca
+         encima) → `on-fill`.
+     Usar `on-accent` sobre un `bg-danger` funcionaba en oscuro y daba 3,3:1
+     en claro. Por eso son dos tokens y no uno. */
+  --color-on-fill: var(--p-on-fill);
+
+  /* El lienzo detrás de una foto recortada (máquinas del gimnasio, fotos de
+     producto). Es blanco en LOS DOS temas a propósito: esas fotos vienen del
+     catálogo con fondo blanco quemado, así que cualquier otro color dibuja un
+     rectángulo alrededor del objeto. No es una superficie de la interfaz —no
+     se le pone texto encima— y por eso no entra en la escalera de `surface`. */
+  --color-photo: var(--p-photo);
+
+  --color-veil: var(--p-veil);
 
   /* ── Dato · 1 ───────────────────────────────────────────────────────────────
      El cian nunca es una acción. Serie principal de gráfica, métricas de cuerpo.
      En retirada: el handoff no lo usa fuera de zonas de FC (excepción propia,
      ver --color-chart-*); se borra cuando su contador llegue a 0 (F15). */
-  --color-data: #00eefc;
+  --color-data: var(--p-data);
 
   /* ── Estado · 4 ─────────────────────────────────────────────────────────────
      Un tono por estado: texto al 100 %, fondo a un alfa bajo, borde a uno medio
@@ -254,10 +291,10 @@
      de correlación, carga de entrenamiento, dashboards con más de dos estados)
      los necesitan como una tercera y cuarta categoría real, no decorativa.
      Se mantienen sin cambio de valor: no forman parte del re-skin. */
-  --color-success: #3ECF8E;  /* completado, al día, dentro de objetivo        */
-  --color-warning: #fdba74;  /* atención sin urgencia (fuera del handoff)     */
-  --color-danger:  #FF5A4E;  /* error, atrasado, acción destructiva           */
-  --color-info:    #93c5fd;  /* neutro informativo (fuera del handoff)        */
+  --color-success: var(--p-success);  /* completado, al día, dentro de objetivo        */
+  --color-warning: var(--p-warning);  /* atención sin urgencia (fuera del handoff)     */
+  --color-danger: var(--p-danger);  /* error, atrasado, acción destructiva           */
+  --color-info: var(--p-info);  /* neutro informativo (fuera del handoff)        */
 
   /* ── Series de gráfica · 5 ──────────────────────────────────────────────────
      Orden de asignación fijo; la primera serie siempre es `data`. Se declaran
@@ -266,11 +303,11 @@
      token que dicen representar. Una sexta serie significa que la gráfica está
      mal planteada. Excepción propia y ya documentada: las 5 zonas de FC de
      Cardio/Gráficas usan sus propios colores (Z1-Z5), no esta escala. */
-  --color-chart-1: #00eefc;  /* = data    */
-  --color-chart-2: #FFC72C;  /* = accent  */
-  --color-chart-3: #a78bfa;
-  --color-chart-4: #3ECF8E;  /* = success */
-  --color-chart-5: #fdba74;  /* = warning */
+  --color-chart-1: var(--p-chart-1);  /* = data    */
+  --color-chart-2: var(--p-chart-2);  /* = accent  */
+  --color-chart-3: var(--p-chart-3);
+  --color-chart-4: var(--p-chart-4);  /* = success */
+  --color-chart-5: var(--p-chart-5);  /* = warning */
 
   /* ── Roadmap → Calendario (coach) · fase y celda de día ─────────────────────
      Colores de fase del handoff de diseño (docs/design/roadmap-calendario si
@@ -282,16 +319,53 @@
      separado el día de mañana. `cell` es el fondo de una celda de día PASADA
      en el nivel Mes — distinto de `--color-surface`/`--color-inset` porque el
      handoff pide un tono intermedio entre ambos, propio de esta pantalla. */
-  --color-cell:           #1D1D1D;
-  --color-phase-fuerza:   #7DA7FF;
-  --color-phase-hiper:    #B08CFF;
-  --color-phase-defi:     #3ECF8E;
-  --color-phase-mant:     #D8CFC0;
-  --color-phase-descarga: #8A8F98;
-  --color-cat-cardio:     #E8B04B;
+  --color-cell: var(--p-cell);
+  --color-phase-fuerza: var(--p-phase-fuerza);
+  --color-phase-hiper: var(--p-phase-hiper);
+  --color-phase-defi: var(--p-phase-defi);
+  --color-phase-mant: var(--p-phase-mant);
+  --color-phase-descarga: var(--p-phase-descarga);
+  --color-cat-cardio: var(--p-cat-cardio);
   /* Día de recarga (RefeedDay) — naranja cálido, distinto del oro (que es solo
      acción y selección) y del ámbar del cardio. */
-  --color-refeed:         #FF9F6B;
+  --color-refeed: var(--p-refeed);
+
+  /* ── Macros · 5 ─────────────────────────────────────────────────────────────
+     El color de una categoría de alimento (hidratos, proteína, grasa y las dos
+     mezclas) en la tabla de intercambios, el recetario, el editor de menús y
+     la vista de comidas. Es un eje PROPIO, no una escala de estado: un alimento
+     rico en grasa no es una advertencia.
+     Vivían como `text-amber-300`/`bg-violet-500/10` copiados a mano en cinco
+     archivos, que es lo que hacía imposible cambiarlos a la vez.
+     Que `macro-grasa` valga lo mismo que `warning`, y `macro-prot` lo mismo que
+     `info`, NO es un descuido: es la relación que ya tenían en oscuro
+     (`orange-300` era literalmente el valor de warning). Son tokens con
+     significados distintos que coinciden, como `phase-defi` y `success`, y no
+     deben desincronizarse si uno cambia por su cuenta. */
+  --color-macro-hc:        var(--p-macro-hc);
+  --color-macro-prot:      var(--p-macro-prot);
+  --color-macro-grasa:     var(--p-macro-grasa);
+  --color-macro-mix-hc:    var(--p-macro-mix-hc);
+  --color-macro-mix-grasa: var(--p-macro-mix-grasa);
+
+  /* ── Zonas de FC · 5 + fuera ────────────────────────────────────────────────
+     Las zonas tienen el mismo desdoble que el oro, y por el mismo motivo. El
+     RELLENO (`ZONE_COLOR` en utils/cardioZones.ts) es un color de señal, como
+     un semáforo: se queda saturado y brillante en los dos temas, con tinta
+     oscura encima (`on-accent`), porque la pantalla de cardio en vivo se
+     inunda entera del color de la zona y eso funciona igual de día que de
+     noche.
+     Estos tokens son la zona cuando hace de TEXTO sobre una superficie normal
+     —la leyenda «Tus zonas de FC», el minireproductor, la etiqueta de la
+     gráfica—. Ahí sí tienen que invertirse: el cian #00eefc sobre papel da
+     1,5:1. En oscuro valen lo mismo que el relleno; en claro bajan hasta
+     pasar 4,5:1 sobre su propio tinte al 10 %. */
+  --color-zone-1-ink: var(--p-zone-1-ink);
+  --color-zone-2-ink: var(--p-zone-2-ink);
+  --color-zone-3-ink: var(--p-zone-3-ink);
+  --color-zone-4-ink: var(--p-zone-4-ink);
+  --color-zone-5-ink: var(--p-zone-5-ink);
+  --color-zone-out-ink: var(--p-zone-out-ink);
 
   /* ── Radios · 6 + full (Fase 3) ─────────────────────────────────────────────
      El handoff pide más granularidad que los tres pasos originales — nueve
@@ -335,8 +409,8 @@
        glow   uno por pantalla como máximo, y solo señalando la acción
               siguiente. Es información, no decoración: cuando el brillo está
               en todas partes deja de indicar «esto es lo importante».        */
-  --shadow-e1:   0 2px 8px rgba(0, 0, 0, 0.4);
-  --shadow-e2:   0 12px 32px rgba(0, 0, 0, 0.55);
+  --shadow-e1: var(--p-shadow-e1);
+  --shadow-e2: var(--p-shadow-e2);
   --shadow-glow: 0 0 24px -6px color-mix(in oklab, var(--color-accent) 35%, transparent);
 
   /* ── Motion (F3.2) ──────────────────────────────────────────────────────────
@@ -428,6 +502,221 @@
     from { transform: translateY(22px) scale(0.97); opacity: 0; }
     to   { transform: none; opacity: 1; }
   }
+}
+/* ═══════════════════════════════════════════════════════════════════════════
+   LAS DOS PIELES · oscuro y claro
+   Aquí viven los VALORES; arriba, en `@theme`, viven los NOMBRES. Esa
+   separación es todo el mecanismo: `--color-surface` apunta a `--p-surface`
+   para siempre, y lo único que cambia entre temas es a qué hex resuelve
+   `--p-surface`. Los 7.032 usos de token de la app (`bg-surface`,
+   `text-ink`, `border-hairline`…) cambian de piel sin tocar un componente,
+   y el modificador de opacidad de Tailwind (`bg-accent/14`) sigue
+   funcionando porque `color-mix()` resuelve la variable en tiempo de uso, no
+   de compilación.
+
+   Cómo se elige el tema lo decide `src/utils/tema.ts`, que pone o quita la
+   clase `dark` en el <html>. Por defecto sigue al sistema; el atleta o el
+   coach pueden forzar uno desde Perfil.
+
+   Regla dura al añadir un color: se declara en LAS DOS paletas o no se
+   declara. Un `--p-*` que solo existe en una resuelve a vacío en la otra —la
+   propiedad se cae entera y el elemento hereda, sin error de compilación y
+   sin aviso en consola. Es el mismo fallo silencioso que persigue el resto
+   de este archivo.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Claro ─────────────────────────────────────────────────────────────────
+   No es «el oscuro invertido». En oscuro la elevación sube de negro hacia
+   gris; en claro el papel NO puede subir por encima del blanco, así que la
+   escalera se reordena: la página es un hueso cálido, la tarjeta es blanca, y
+   lo hundido baja. `raised` y `surface` comparten valor a propósito —una
+   tarjeta sobre otra tarjeta se separa con el borde `hairline`, igual que en
+   oscuro— y lo que en oscuro era «más claro que su padre» aquí es «más
+   blanco»: la dirección cambia, la distancia no.
+
+   El neutro es cálido (base piedra, no gris azulado) porque la marca es oro:
+   sobre un gris frío el ámbar se ensucia y tira a mostaza. */
+:root {
+  color-scheme: light;
+
+  /* Superficies */
+  --p-bg:      #F4F2ED;
+  --p-surface: #FFFFFF;
+  --p-raised:  #FFFFFF;
+  --p-field:   #FFFFFF;
+  --p-inset:   #EBE8E1;
+  --p-track:   #DFDBD2;
+
+  /* Texto — mismas cinco alfas que en oscuro, sobre tinta cálida en vez de
+     sobre hueso. 15,9:1 el principal sobre la página: de sobra. */
+  --p-ink:       #1B1916;
+  /* Las alfas NO son las de oscuro. Copiarlas fue el primer error medido de
+     esta paleta: tinta oscura sobre papel pierde contraste mucho más rápido
+     que tinta clara sobre negro, así que el mismo 0,34 que en oscuro da
+     2,8:1 aquí daba 2,1:1 y «Guardando» no se leía. Lo que se iguala entre
+     temas es el RATIO de cada escalón, no el número de alfa:
+       ink-2  8,3:1   ink-3  5,8:1   ink-4  3,9:1   ink-5  2,8:1
+     Medido sobre blanco, que es el caso peor de este tema. */
+  --p-ink-2:     rgba(27, 25, 22, 0.77);
+  --p-ink-3:     rgba(27, 25, 22, 0.67);
+  --p-ink-4:     rgba(27, 25, 22, 0.55);
+  --p-ink-5:     rgba(27, 25, 22, 0.44);
+  --p-on-accent: #1B1916;   /* el oro de relleno sigue pidiendo tinta encima */
+
+  /* Líneas — negro con alfa, no blanco. Un poco más marcadas que en oscuro:
+     sobre papel una línea al 7 % desaparece, y aquí el borde es lo único que
+     define una tarjeta blanca sobre una página casi blanca. */
+  --p-hairline:    rgba(27, 25, 22, 0.10);
+  --p-strong:      rgba(27, 25, 22, 0.18);
+  --p-accent-line: rgba(154, 110, 12, 0.55);
+
+  /* Marca. `accent` se oscurece lo justo para que el relleno siga leyéndose
+     como ORO (6,2:1 con la tinta encima) y `accent-ink` baja hasta el ámbar
+     tostado que sí se lee como texto sobre papel (5,4:1). */
+  --p-accent:       #C68F14;
+  --p-accent-press: #A87510;
+  --p-accent-bg:    rgba(198, 143, 20, 0.14);
+  /* #875C05 y no #8F6206: el oro de texto no solo aparece sobre la página,
+     también sobre su PROPIO tinte (`accent-bg`, el chip seleccionado y el
+     banner de aviso). Ahí el fondo ya va cargado de oro y el margen se come:
+     medido, 4,17:1 — por debajo del mínimo para 11-13 px, que es donde vive
+     casi todo el texto en oro de la app. Un escalón más abajo y pasa en los
+     dos fondos (4,58:1 sobre el tinte, 5,89:1 sobre blanco). */
+  --p-accent-ink:   #875C05;
+
+  /* Velo de modal — tinta, no negro puro: sobre papel el negro puro corta. */
+  --p-on-fill: #FFFFFF;
+  --p-photo:   #FFFFFF;
+  --p-veil: #1B1916;
+
+  /* Dato y estados — todos por encima de 4,5:1 sobre la página. Los valores
+     de oscuro (cian neón, verde menta, melocotón) sobre blanco no se ven:
+     cada uno baja a su versión de papel conservando el TONO. */
+  --p-data:    #0A6375;
+  --p-success: #0B6B47;
+  --p-warning: #8F4208;
+  --p-danger:  #A82A20;
+  --p-info:    #1D4FD8;
+
+  /* Series de gráfica — mismo orden y mismo significado que en oscuro:
+     1 = data, 2 = accent, 4 = success, 5 = warning. */
+  --p-chart-1: #0A6375;
+  --p-chart-2: #C68F14;
+  --p-chart-3: #6A3BC4;
+  --p-chart-4: #0B6B47;
+  --p-chart-5: #8F4208;
+
+  /* Calendario del coach — las fases mantienen su identidad de tono (azul =
+     fuerza, violeta = hipertrofia…) pero saturadas y oscurecidas para vivir
+     sobre papel. `cell` es el día pasado: un peldaño por debajo de la página,
+     igual que en oscuro estaba un peldaño por encima. */
+  --p-cell:           #EDEAE3;
+  --p-phase-fuerza:   #2F6BD4;
+  --p-phase-hiper:    #7345C9;
+  --p-phase-defi:     #12855A;
+  --p-phase-mant:     #8A7A60;
+  --p-phase-descarga: #6B7280;
+  --p-cat-cardio:     #A8720F;
+  --p-refeed:         #C2521B;
+
+  /* Macros. Cada uno conserva el TONO de su versión oscura (hidratos amarillo,
+     proteína azul, grasa naranja, mezclas violeta y rosa) y baja hasta pasar
+     4,5:1 sobre su propio tinte al 10 %, que es como se pintan las pastillas
+     de categoría. Medido: 5,8 / 5,7 / 6,0 / 5,9 / 5,2. */
+  --p-macro-hc:        #7D5300;
+  --p-macro-prot:      #1D4FD8;
+  --p-macro-grasa:     #8F4208;
+  --p-macro-mix-hc:    #6A3BC4;
+  --p-macro-mix-grasa: #B32573;
+
+  /* Zonas como texto. Medido sobre su tinte/10: 5,6 / 5,9 / 5,8 / 5,2 / 5,8. */
+  --p-zone-1-ink:   #1F5FA8;
+  --p-zone-2-ink:   #0A6375;
+  --p-zone-3-ink:   #7D5300;
+  --p-zone-4-ink:   #A8420A;
+  --p-zone-5-ink:   #B02219;
+  --p-zone-out-ink: #4B5563;
+
+  /* Elevación — en claro la sombra SÍ trabaja: sobre papel es lo que despega
+     un modal de la página, donde en oscuro bastaba cambiar de superficie.
+     Aun así queda corta a propósito; el borde sigue siendo el protagonista. */
+  --p-shadow-e1: 0 1px 2px rgba(27, 25, 22, 0.06), 0 2px 8px rgba(27, 25, 22, 0.08);
+  --p-shadow-e2: 0 4px 12px rgba(27, 25, 22, 0.10), 0 16px 40px rgba(27, 25, 22, 0.16);
+}
+
+/* ── Oscuro ───────────────────────────────────────────────────────────────
+   Valores idénticos a los que la app lleva desde el re-skin del 16-09. Este
+   bloque no rediseña nada: solo traslada lo que ya estaba escrito dentro de
+   `@theme` para que el tema pueda alternarse. */
+.dark {
+  color-scheme: dark;
+
+  --p-bg:      #121212;
+  --p-surface: #1A1A1A;
+  --p-raised:  #202020;
+  --p-field:   #1A1A1A;
+  --p-inset:   #262626;
+  --p-track:   #2E2E2E;
+
+  --p-ink:       #F5F5F4;
+  --p-ink-2:     rgba(245, 245, 244, 0.7);
+  --p-ink-3:     rgba(245, 245, 244, 0.56);
+  --p-ink-4:     rgba(245, 245, 244, 0.42);
+  --p-ink-5:     rgba(245, 245, 244, 0.32);
+  --p-on-accent: #121212;
+
+  --p-hairline:    rgba(255, 255, 255, 0.07);
+  --p-strong:      rgba(255, 255, 255, 0.12);
+  --p-accent-line: rgba(227, 179, 65, 0.45);
+
+  --p-accent:       #E3B341;
+  --p-accent-press: #C79B32;
+  --p-accent-bg:    rgba(227, 179, 65, 0.14);
+  --p-accent-ink:   #E3B341;   /* = accent: en oscuro el oro ya se lee */
+
+  --p-on-fill: #121212;
+  --p-photo:   #FFFFFF;
+  --p-veil: #000000;
+
+  --p-data:    #00eefc;
+  --p-success: #3ECF8E;
+  --p-warning: #fdba74;
+  --p-danger:  #FF5A4E;
+  --p-info:    #93c5fd;
+
+  --p-chart-1: #00eefc;
+  --p-chart-2: #FFC72C;
+  --p-chart-3: #a78bfa;
+  --p-chart-4: #3ECF8E;
+  --p-chart-5: #fdba74;
+
+  --p-cell:           #1D1D1D;
+  --p-phase-fuerza:   #7DA7FF;
+  --p-phase-hiper:    #B08CFF;
+  --p-phase-defi:     #3ECF8E;
+  --p-phase-mant:     #D8CFC0;
+  --p-phase-descarga: #8A8F98;
+  --p-cat-cardio:     #E8B04B;
+  --p-refeed:         #FF9F6B;
+
+  /* Los mismos hex que estaban copiados en los cinco archivos: amber-300,
+     blue-300, orange-300, violet-300 y pink-300 de la paleta de Tailwind. */
+  --p-macro-hc:        #fcd34d;
+  --p-macro-prot:      #93c5fd;
+  --p-macro-grasa:     #fdba74;
+  --p-macro-mix-hc:    #c4b5fd;
+  --p-macro-mix-grasa: #f9a8d4;
+
+  /* En oscuro, idénticos al relleno: el color de señal ya se lee sobre negro. */
+  --p-zone-1-ink:   #4a90d9;
+  --p-zone-2-ink:   #00eefc;
+  --p-zone-3-ink:   #fbcb1a;
+  --p-zone-4-ink:   #ff8c42;
+  --p-zone-5-ink:   #ff4d4d;
+  --p-zone-out-ink: #6b7280;
+
+  --p-shadow-e1: 0 2px 8px rgba(0, 0, 0, 0.4);
+  --p-shadow-e2: 0 12px 32px rgba(0, 0, 0, 0.55);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════

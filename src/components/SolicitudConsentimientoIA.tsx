@@ -112,7 +112,7 @@ export default function SolicitudConsentimientoIA({ onboarding, onRespondido, on
 
         <div className="rounded-surface border border-hairline bg-raised p-4 space-y-3">
           <p className="font-bold text-ink flex items-center gap-2">
-            <Icon name="database" size="s" className="text-accent" />
+            <Icon name="database" size="s" className="text-accent-ink" />
             Qué se enviaría
           </p>
           <ul className="space-y-1 list-disc pl-5">
@@ -122,7 +122,7 @@ export default function SolicitudConsentimientoIA({ onboarding, onRespondido, on
             <li>Tus series de sueño, estrés y dolor.</li>
           </ul>
           <p className="font-bold text-ink flex items-center gap-2 pt-1">
-            <Icon name="send" size="s" className="text-accent" />
+            <Icon name="send" size="s" className="text-accent-ink" />
             A dónde
           </p>
           <p>

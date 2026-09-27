@@ -37,7 +37,7 @@ function clasesSeleccionado(valor: RirValue): string {
   if (valor === 'fallo') return 'bg-danger/16 border-danger text-danger';
   if (valor <= 1) return 'bg-accent border-accent text-on-accent';
   if (valor <= 3) return 'bg-accent/45 border-accent text-on-accent';
-  return 'bg-accent/25 border-accent-line text-accent';
+  return 'bg-accent/25 border-accent-line text-accent-ink';
 }
 
 type Props = {

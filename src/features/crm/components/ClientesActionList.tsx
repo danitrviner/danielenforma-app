@@ -100,7 +100,7 @@ export default function ClientesActionList({ clientes, servicios, suscripciones,
         <div className="flex items-center justify-between px-1">
           <h2 className="font-sans text-caption uppercase tracking-widest text-ink-2">Requiere acción</h2>
           {requiereAccion.length > 0 && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-accent/15 px-2 py-1 font-sans text-caption font-bold text-accent">
+            <span className="inline-flex items-center gap-1 rounded-full bg-accent/15 px-2 py-1 font-sans text-caption font-bold text-accent-ink">
               <span className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse-dot" />
               {requiereAccion.length}
             </span>
@@ -109,7 +109,7 @@ export default function ClientesActionList({ clientes, servicios, suscripciones,
         {requiereAccion.length === 0 ? (
           <p className="font-sans text-caption text-ink-3 px-1">Nada pendiente — todas las suscripciones están al día.</p>
         ) : (
-          <div className="bg-surface/80 backdrop-blur-sm border border-hairline rounded-surface divide-y divide-white/7 overflow-hidden">
+          <div className="bg-surface/80 backdrop-blur-sm border border-hairline rounded-surface divide-y divide-hairline overflow-hidden">
             {requiereAccion.map(({ cliente: c, estado }) => (
               <ClienteSwipeRow
                 key={c.id}
@@ -146,13 +146,13 @@ export default function ClientesActionList({ clientes, servicios, suscripciones,
       {alDia.length > 0 && (
         <section className="space-y-2">
           <h2 className="font-sans text-caption uppercase tracking-widest text-ink-2 px-1">Al día ({alDia.length})</h2>
-          <div className="bg-surface/80 backdrop-blur-sm border border-hairline rounded-surface divide-y divide-white/7 overflow-hidden">
+          <div className="bg-surface/80 backdrop-blur-sm border border-hairline rounded-surface divide-y divide-hairline overflow-hidden">
             {alDia.map(({ cliente: c }) => (
               <button
                 key={c.id}
                 type="button"
                 onClick={() => navigate(`/crm/clientes/${c.id}`)}
-                className="w-full flex items-center justify-between gap-2 p-3 text-left hover:bg-white/4 transition-colors"
+                className="w-full flex items-center justify-between gap-2 p-3 text-left hover:bg-hairline transition-colors"
               >
                 <span className="min-w-0">
                   <span className="block font-sans text-caption text-ink truncate">{c.nombre}</span>

@@ -50,9 +50,15 @@ function fmtMonth(d: Date): string {
 const MESO_COLORS = ['var(--color-accent)', 'var(--color-accent-press)', 'var(--color-accent)'];
 const NUTRI_COLORS = ['var(--color-data)', 'var(--color-data)', 'var(--color-data)'];
 
+/* El color de RELLENO del bloque de un hito. Encima siempre va `text-on-fill`,
+   así que los cuatro valores tienen que admitirlo en los dos temas.
+   `en_progreso` usa `accent-ink` y no `accent` por eso mismo: el oro de marca
+   en claro es #C68F14, y texto blanco encima da 2,9:1. El oro de texto es un
+   escalón más profundo y aguanta los dos sentidos — 5,9:1 con blanco en claro,
+   9,1:1 con tinta oscura en oscuro, donde vale lo mismo que `accent`. */
 function statusColor(status?: RoadmapItem['status']): string {
   if (status === 'logrado') return 'var(--color-success)';
-  if (status === 'en_progreso') return 'var(--color-accent)';
+  if (status === 'en_progreso') return 'var(--color-accent-ink)';
   if (status === 'pendiente') return 'var(--color-warning)';
   return 'var(--color-ink-2)';
 }
@@ -86,11 +92,11 @@ const REVIEW_STATUS_TONE: Record<PlanEvent['status'], BadgeTone> = {
 // cumple (nunca se sabe si "se aplicó" hasta llegar a su semana, así que no
 // se pinta ni como hecho ni como vencido).
 function conditionalMarkerClasses(met: boolean): string {
-  return met ? 'border-dashed bg-transparent border-accent text-accent' : 'border-dashed bg-transparent border-ink-4 text-ink-3 opacity-60';
+  return met ? 'border-dashed bg-transparent border-accent text-accent-ink' : 'border-dashed bg-transparent border-ink-4 text-ink-3 opacity-60';
 }
 
 function reviewMarkerClasses(status: PlanEvent['status']): string {
-  if (status === 'hecho') return 'bg-success border-success text-bg';
+  if (status === 'hecho') return 'bg-success border-success text-on-fill';
   if (status === 'vencido') return 'bg-danger/15 border-danger text-danger';
   return 'bg-transparent border-ink-3 text-ink-2';
 }
@@ -222,7 +228,7 @@ function ItemEditor({ item, onChange, onConfirm, onDelete, onCancel, saving, isN
             onChange={e => onChange({ ...item, description: e.target.value || undefined })}
             rows={2}
             placeholder="Detalle opcional..."
-            className="w-full bg-surface border border-hairline rounded-control px-3 py-3 text-title-s text-white focus:outline-none focus:ring-1 focus:ring-accent resize-none"
+            className="w-full bg-surface border border-hairline rounded-control px-3 py-3 text-title-s text-ink focus:outline-none focus:ring-1 focus:ring-accent resize-none"
           />
         </div>
 
@@ -654,7 +660,7 @@ export default function RoadmapTimeline({ mesocycles: mesocyclesProp, nutritionP
           type="button"
           onClick={() => { setPlannerDate(wStart); setPlannerLane('entrenamiento'); setPlannerOpen(true); }}
           style={{ position: 'absolute', left: i * WEEK_PX, top: topBase, width: WEEK_PX, height: LANE_H, zIndex: 1 }}
-          className="group flex items-center justify-center hover:bg-white/[0.03] transition-colors"
+          className="group flex items-center justify-center hover:bg-hairline transition-colors"
           title="Programar en Entrenamiento aquí"
         >
           <Icon name="add" size="s" className="text-ink-5 opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -728,10 +734,10 @@ export default function RoadmapTimeline({ mesocycles: mesocyclesProp, nutritionP
         title={`${m.objective || `Mes. ${m.number}`} · ${m.weeks} semanas · ${fmtDate(m.startDate)} – ${fmtDate(mEnd)}`}
       >
         <div style={{ background: color }} className="h-full px-3 flex flex-col justify-center">
-          <p className="font-sans font-bold text-black text-caption uppercase truncate leading-tight">
+          <p className="font-sans font-bold text-on-accent text-caption uppercase truncate leading-tight">
             {m.objective || `Mes. ${m.number}`}
           </p>
-          <p className="font-mono text-caption text-black/60 leading-tight">{m.weeks} sem · {fmtDate(m.startDate)}</p>
+          <p className="font-mono text-caption text-on-accent/60 leading-tight">{m.weeks} sem · {fmtDate(m.startDate)}</p>
         </div>
         {onResizeMesocycle && (
           <div
@@ -766,7 +772,7 @@ export default function RoadmapTimeline({ mesocycles: mesocyclesProp, nutritionP
           type="button"
           onClick={() => { setPlannerDate(wStart); setPlannerLane('nutricion'); setPlannerOpen(true); }}
           style={{ position: 'absolute', left: i * WEEK_PX, top: topBase, width: WEEK_PX, height: LANE_H, zIndex: 1 }}
-          className="group flex items-center justify-center hover:bg-white/[0.03] transition-colors"
+          className="group flex items-center justify-center hover:bg-hairline transition-colors"
           title="Programar en Nutrición aquí"
         >
           <Icon name="add" size="s" className="text-ink-5 opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -803,8 +809,8 @@ export default function RoadmapTimeline({ mesocycles: mesocyclesProp, nutritionP
         title={`${b.label} · ${fmtDate(b.start)} – ${fmtDate(b.end)}`}
       >
         <div style={{ background: b.color }} className="h-full px-3 flex flex-col justify-center">
-          <p className="font-sans font-bold text-black text-caption uppercase truncate leading-tight">{b.label}</p>
-          <p className="font-mono text-caption text-black/60 leading-tight">
+          <p className="font-sans font-bold text-on-fill text-caption uppercase truncate leading-tight">{b.label}</p>
+          <p className="font-mono text-caption text-on-fill/60 leading-tight">
             {fmtDate(b.start)} – {fmtDate(b.end)}
           </p>
         </div>
@@ -849,12 +855,12 @@ export default function RoadmapTimeline({ mesocycles: mesocyclesProp, nutritionP
       >
         <div style={{ background: color }} className="h-full px-3 flex items-center gap-2">
           <span
-            className="material-symbols-outlined text-black/70 shrink-0"
+            className="material-symbols-outlined text-on-fill/70 shrink-0"
             style={{ fontSize: 12, fontVariationSettings: "'FILL' 1" }}
           >
             {typeIcon(item.type)}
           </span>
-          <p className="font-sans font-bold text-black text-caption uppercase truncate leading-tight">{item.title}</p>
+          <p className="font-sans font-bold text-on-fill text-caption uppercase truncate leading-tight">{item.title}</p>
         </div>
       </div>
     );
@@ -875,7 +881,7 @@ export default function RoadmapTimeline({ mesocycles: mesocyclesProp, nutritionP
           type="button"
           onClick={() => { setQuickCreateDate(wStart); setQuickCreateTitle(''); setQuickCreateType('revision'); }}
           style={{ position: 'absolute', left: i * WEEK_PX, top: topBase, width: WEEK_PX, height: LANE_H, zIndex: 2 }}
-          className="group flex items-center justify-center hover:bg-white/[0.03] transition-colors"
+          className="group flex items-center justify-center hover:bg-hairline transition-colors"
           title="Programar revisión aquí"
         >
           <Icon name="add" size="s" className="text-ink-5 opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -1144,14 +1150,14 @@ export default function RoadmapTimeline({ mesocycles: mesocyclesProp, nutritionP
               {readonly ? (
                 <span
                   style={{ position: 'absolute', top: -8, left: '50%', transform: 'translateX(-50%)' }}
-                  className="bg-accent text-black text-caption font-bold px-2 py-1 rounded-full tracking-tighter border-2 border-hairline whitespace-nowrap uppercase animate-pulse"
+                  className="bg-accent text-on-accent text-caption font-bold px-2 py-1 rounded-full tracking-tighter border-2 border-hairline whitespace-nowrap uppercase animate-pulse"
                 >
                   Estás aquí
                 </span>
               ) : (
                 <span
                   style={{ position: 'absolute', top: 2, left: 4 }}
-                  className="font-mono text-caption text-accent uppercase whitespace-nowrap"
+                  className="font-mono text-caption text-accent-ink uppercase whitespace-nowrap"
                 >
                   Hoy
                 </span>
@@ -1278,7 +1284,7 @@ export default function RoadmapTimeline({ mesocycles: mesocyclesProp, nutritionP
           <div className="space-y-4">
             <div>
               <span className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-1">Cuándo</span>
-              <p className="text-title-s text-white font-sans">{fmtDate(viewingEvent.date)}</p>
+              <p className="text-title-s text-ink font-sans">{fmtDate(viewingEvent.date)}</p>
             </div>
             <div>
               <span className="block font-mono text-caption text-ink-2 uppercase tracking-wider mb-1">Estado</span>
@@ -1317,7 +1323,7 @@ export default function RoadmapTimeline({ mesocycles: mesocyclesProp, nutritionP
             </Button>
           }
         >
-          <p className="text-title-s text-white font-sans leading-relaxed">{viewingConflict.message}</p>
+          <p className="text-title-s text-ink font-sans leading-relaxed">{viewingConflict.message}</p>
         </Sheet>
       )}
 

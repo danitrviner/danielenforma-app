@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import ErrorState from './ErrorState';
-import { Skeleton } from '../../../components/ui';
+import { Icon, Skeleton } from '../../../components/ui';
 import { useScrollEdgeMask } from '../../../components/ui/internal/useScrollEdgeMask';
+import { ordenarFilas, Direccion, ValorOrdenable } from '../lib/orden';
 
 export interface Columna<T> {
   id: string;
@@ -10,7 +11,22 @@ export interface Columna<T> {
   width?: string;
   align?: 'left' | 'right';
   render: (fila: T) => React.ReactNode;
+  /**
+   * Con esto, la cabecera de la columna se vuelve un botón que ordena la
+   * tabla por lo que devuelva. Sin esto, la cabecera es texto y la columna no
+   * se ordena — así cada tabla decide por cuáles tiene sentido, en vez de
+   * ofrecer ordenar por la columna de botones.
+   *
+   * Devuelve lo que se COMPARA, no lo que se pinta: para fechas, el ISO
+   * 'YYYY-MM-DD' (que ordena bien como texto); para dinero, los céntimos.
+   * `null`/`undefined` es «esta fila no tiene ese dato» y cae siempre al
+   * final, suba o baje el orden: un pago sin fecha de cobro no es el más
+   * antiguo del mundo.
+   */
+  sortValue?: (fila: T) => ValorOrdenable;
 }
+
+interface Orden { id: string; dir: Direccion }
 
 interface Props<T> {
   columnas: Columna<T>[];
@@ -39,6 +55,25 @@ interface Props<T> {
 export default function DataTable<T>({
   columnas, filas, keyOf, onRowClick, vacio, cargando, error,
 }: Props<T>) {
+  // Sin orden elegido, las filas salen COMO LLEGAN: la pantalla que las trae
+  // ya las ordena con criterio (lo pendiente primero, lo reciente arriba...)
+  // y estrenar aquí un orden por defecto se lo pisaría.
+  const [orden, setOrden] = useState<Orden | null>(null);
+
+  const ordenada = useMemo(() => {
+    if (!orden) return filas;
+    const col = columnas.find(c => c.id === orden.id);
+    if (!col?.sortValue) return filas;
+    return ordenarFilas(filas, col.sortValue, orden.dir);
+  }, [filas, columnas, orden]);
+
+  // Primer clic: de mayor a menor. Una tabla de pagos o de reuniones se mira
+  // por lo último, no por lo primero de 2024.
+  const ordenarPor = (id: string) =>
+    setOrden(prev => (prev?.id === id
+      ? { id, dir: prev.dir === 'desc' ? 'asc' : 'desc' }
+      : { id, dir: 'desc' }));
+
   if (error) return <ErrorState />;
 
   if (cargando) {
@@ -53,10 +88,24 @@ export default function DataTable<T>({
 
   if (filas.length === 0) return <>{vacio}</>;
 
-  return <ScrollBody columnas={columnas} filas={filas} keyOf={keyOf} onRowClick={onRowClick} />;
+  return (
+    <ScrollBody
+      columnas={columnas}
+      filas={ordenada}
+      keyOf={keyOf}
+      onRowClick={onRowClick}
+      orden={orden}
+      onOrdenar={ordenarPor}
+    />
+  );
 }
 
-function ScrollBody<T>({ columnas, filas, keyOf, onRowClick }: Pick<Props<T>, 'columnas' | 'filas' | 'keyOf' | 'onRowClick'>) {
+interface ScrollBodyProps<T> extends Pick<Props<T>, 'columnas' | 'filas' | 'keyOf' | 'onRowClick'> {
+  orden: Orden | null;
+  onOrdenar: (id: string) => void;
+}
+
+function ScrollBody<T>({ columnas, filas, keyOf, onRowClick, orden, onOrdenar }: ScrollBodyProps<T>) {
   const { ref: scrollRef, maskImage } = useScrollEdgeMask<HTMLDivElement>([filas, columnas]);
 
   return (
@@ -67,19 +116,41 @@ function ScrollBody<T>({ columnas, filas, keyOf, onRowClick }: Pick<Props<T>, 'c
     >
       <table className="w-full border-collapse min-w-[640px]">
         <thead>
-          <tr className="border-b border-hairline">
-            {columnas.map(c => (
-              <th
-                key={c.id}
-                scope="col"
-                style={c.width ? { width: c.width } : undefined}
-                className={`px-3 py-2 font-mono text-caption uppercase tracking-widest text-ink-3 font-normal ${
-                  c.align === 'right' ? 'text-right' : 'text-left'
-                }`}
-              >
-                {c.header}
-              </th>
-            ))}
+          <tr className="group border-b border-hairline">
+            {columnas.map(c => {
+              const ordenable = Boolean(c.sortValue);
+              const activa = orden?.id === c.id;
+              return (
+                <th
+                  key={c.id}
+                  scope="col"
+                  style={c.width ? { width: c.width } : undefined}
+                  aria-sort={activa ? (orden!.dir === 'asc' ? 'ascending' : 'descending') : undefined}
+                  className={`px-3 py-2 font-mono text-caption uppercase tracking-widest font-normal ${
+                    activa ? 'text-ink' : 'text-ink-3'
+                  } ${c.align === 'right' ? 'text-right' : 'text-left'}`}
+                >
+                  {ordenable ? (
+                    <button
+                      type="button"
+                      onClick={() => onOrdenar(c.id)}
+                      className={`inline-flex items-center gap-0.5 uppercase tracking-widest hover:text-ink transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-accent/40 rounded-control ${
+                        c.align === 'right' ? 'flex-row-reverse' : ''
+                      }`}
+                    >
+                      {c.header}
+                      <Icon
+                        name={activa && orden!.dir === 'asc' ? 'arrow_upward' : 'arrow_downward'}
+                        size="s"
+                        className={activa ? 'text-accent-ink' : 'text-ink-4 opacity-0 group-hover:opacity-100'}
+                      />
+                    </button>
+                  ) : (
+                    c.header
+                  )}
+                </th>
+              );
+            })}
           </tr>
         </thead>
         <tbody>
@@ -103,7 +174,7 @@ function ScrollBody<T>({ columnas, filas, keyOf, onRowClick }: Pick<Props<T>, 'c
                   : {})}
                 className={`border-b border-hairline ${
                   clicable
-                    ? 'cursor-pointer hover:bg-white/4 focus:bg-white/6 focus:outline-none focus:ring-1 focus:ring-inset focus:ring-accent/40'
+                    ? 'cursor-pointer hover:bg-hairline focus:bg-hairline focus:outline-none focus:ring-1 focus:ring-inset focus:ring-accent/40'
                     : ''
                 }`}
               >

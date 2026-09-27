@@ -14,16 +14,16 @@ export const CAT_LABEL: Record<FoodCategory, string> = {
 };
 
 export const CAT_COLOR: Record<FoodCategory, string> = {
-  HC: 'text-amber-300', PROT: 'text-blue-300', GRASA: 'text-orange-300',
-  MIX_HC: 'text-violet-300', MIX_GRASA: 'text-pink-300',
+  HC: 'text-macro-hc', PROT: 'text-macro-prot', GRASA: 'text-macro-grasa',
+  MIX_HC: 'text-macro-mix-hc', MIX_GRASA: 'text-macro-mix-grasa',
 };
 
 export const CAT_BG: Record<FoodCategory, string> = {
-  HC: 'bg-amber-500/10 border-amber-500/20',
-  PROT: 'bg-blue-500/10 border-blue-500/20',
-  GRASA: 'bg-orange-500/10 border-orange-500/20',
-  MIX_HC: 'bg-violet-500/10 border-violet-500/20',
-  MIX_GRASA: 'bg-pink-500/10 border-pink-500/20',
+  HC: 'bg-macro-hc/10 border-macro-hc/20',
+  PROT: 'bg-macro-prot/10 border-macro-prot/20',
+  GRASA: 'bg-macro-grasa/10 border-macro-grasa/20',
+  MIX_HC: 'bg-macro-mix-hc/10 border-macro-mix-hc/20',
+  MIX_GRASA: 'bg-macro-mix-grasa/10 border-macro-mix-grasa/20',
 };
 
 export const MODE_LABEL: Record<DietMode, string> = {

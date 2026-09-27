@@ -88,7 +88,7 @@ export default function WeeklyChallengeCard({ challenge, progress, streak = 0, d
       {destacado ? (
         <h3 className="font-display font-black text-feature uppercase text-ink leading-tight text-balance">{challenge.title}</h3>
       ) : (
-        <h3 className="font-sans font-bold text-title-m text-white leading-tight">{challenge.title}</h3>
+        <h3 className="font-sans font-bold text-title-m text-ink leading-tight">{challenge.title}</h3>
       )}
       <p className="text-ink-2 text-label font-sans leading-relaxed">{challenge.description}</p>
 
@@ -96,7 +96,7 @@ export default function WeeklyChallengeCard({ challenge, progress, streak = 0, d
         <div className="flex items-center justify-between mb-2">
           <span className={destacado
             ? 'font-mono text-headline font-bold text-ink tracking-tight'
-            : 'font-mono text-caption text-white font-bold'}>
+            : 'font-mono text-caption text-ink font-bold'}>
             {esCeroSinDato(progress.progressValue, challenge.metric.unit)
               ? 'Sin marca todavía'
               : fmtMetric(progress.progressValue, challenge.metric.unit)}
@@ -135,7 +135,7 @@ export function ChallengePendingCard() {
         <Icon name="hourglass_top" size="l" className="animate-pulse" />
         <p className="font-sans text-caption uppercase tracking-widest text-ink-2">Reto de la semana</p>
       </div>
-      <h3 className="font-sans font-bold text-title-m text-white leading-tight">Preparando tu reto de la semana</h3>
+      <h3 className="font-sans font-bold text-title-m text-ink leading-tight">Preparando tu reto de la semana</h3>
       <p className="text-ink-2 text-label font-sans leading-relaxed">
         Mientras tanto: entrena, camina y registra. El reto llega en breve.
       </p>

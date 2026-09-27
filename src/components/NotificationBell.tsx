@@ -89,12 +89,12 @@ export default function NotificationBell({ recipientEmail, onNavigate, mutedType
       <button
         type="button"
         onClick={() => { setOpen(o => !o); if (!open) refetch(); }}
-        className="relative p-1 text-accent hover:opacity-80 transition-opacity"
+        className="relative p-1 text-accent-ink hover:opacity-80 transition-opacity"
         title="Notificaciones"
       >
         <Icon name="notifications" size="l" />
         {unread > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 bg-red-500 text-white text-caption font-mono font-bold rounded-full flex items-center justify-center leading-none">
+          <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 bg-danger text-on-fill text-caption font-mono font-bold rounded-full flex items-center justify-center leading-none">
             {unread > 99 ? '99+' : unread}
           </span>
         )}
@@ -105,11 +105,11 @@ export default function NotificationBell({ recipientEmail, onNavigate, mutedType
         <div className="absolute right-0 top-[calc(100%+8px)] w-[min(320px,calc(100vw-1rem))] bg-bg border border-hairline rounded-surface shadow-e2 z-50 overflow-hidden">
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-hairline">
-            <h3 className="font-sans font-bold text-white text-title-s flex items-center gap-2">
-              <Icon name="notifications" size="m" className="text-accent" />
+            <h3 className="font-sans font-bold text-ink text-title-s flex items-center gap-2">
+              <Icon name="notifications" size="m" className="text-accent-ink" />
               Notificaciones
               {unread > 0 && (
-                <span className="text-caption bg-red-500/20 text-red-400 border border-red-500/30 px-2 rounded-control font-mono font-bold">
+                <span className="text-caption bg-danger/20 text-danger border border-danger/30 px-2 rounded-control font-mono font-bold">
                   {unread} nueva{unread !== 1 ? 's' : ''}
                 </span>
               )}
@@ -117,7 +117,7 @@ export default function NotificationBell({ recipientEmail, onNavigate, mutedType
             <div className="flex items-center gap-2">
               {unread > 0 && (
                 <button type="button" onClick={handleMarkAll}
-                  className="text-caption font-sans text-ink-2 hover:text-accent transition-colors uppercase">
+                  className="text-caption font-sans text-ink-2 hover:text-accent-ink transition-colors uppercase">
                   Leer todas
                 </button>
               )}
@@ -149,12 +149,12 @@ export default function NotificationBell({ recipientEmail, onNavigate, mutedType
                     name={TYPE_ICON[n.type] ?? 'info'}
                     size="m"
                     filled={!n.read}
-                    className={`flex-shrink-0 ${!n.read ? 'text-accent' : 'text-ink-3'}`}
+                    className={`flex-shrink-0 ${!n.read ? 'text-accent-ink' : 'text-ink-3'}`}
                   />
 
                   {/* Text */}
                   <div className="flex-1 min-w-0">
-                    <p className={`text-label font-sans leading-snug ${!n.read ? 'font-bold text-white' : 'font-medium text-ink-2'}`}>
+                    <p className={`text-label font-sans leading-snug ${!n.read ? 'font-bold text-ink' : 'font-medium text-ink-2'}`}>
                       {n.title}
                     </p>
                     <p className="text-caption font-mono text-ink-3 truncate">{n.body}</p>

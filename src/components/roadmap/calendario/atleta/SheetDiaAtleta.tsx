@@ -18,7 +18,7 @@ function Metrica({ label, valor }: { label: string; valor: string }) {
   return (
     <div className="bg-cell rounded-field px-3 py-2.5 flex flex-col gap-1">
       <span className="font-mono text-caption uppercase tracking-wider text-ink-4">{label}</span>
-      <span className="font-mono text-title-s sm:text-title-m font-semibold text-white">{valor}</span>
+      <span className="font-mono text-title-s sm:text-title-m font-semibold text-ink">{valor}</span>
     </div>
   );
 }
@@ -43,7 +43,7 @@ function Tarjeta({ icono, color, titulo, extra, children }: {
       <div className="flex items-center justify-between gap-2 mb-3">
         <div className="flex items-center gap-2 min-w-0">
           <Icon name={icono} size="m" style={{ color }} />
-          <span className="font-sans font-bold text-body-s sm:text-title-s text-white truncate">{titulo}</span>
+          <span className="font-sans font-bold text-body-s sm:text-title-s text-ink truncate">{titulo}</span>
         </div>
         {extra}
       </div>
@@ -93,7 +93,7 @@ export default function SheetDiaAtleta({
     <Sheet open onClose={onClose} label={fechaLarga(fecha)} size="xl">
       <div className="space-y-4">
         <div className="flex flex-col gap-2 pb-3.5 border-b border-hairline">
-          <p className="font-sans font-extrabold text-title-m sm:text-title-l text-white" style={{ letterSpacing: '-0.02em' }}>{fechaLarga(fecha)}</p>
+          <p className="font-sans font-extrabold text-title-m sm:text-title-l text-ink" style={{ letterSpacing: '-0.02em' }}>{fechaLarga(fecha)}</p>
           <div className="flex items-center gap-2 flex-wrap">
             <span
               className="font-mono text-caption uppercase tracking-wider px-2.5 py-1 rounded-control"
@@ -160,7 +160,7 @@ export default function SheetDiaAtleta({
               ) : undefined}
             >
               <div className="flex items-baseline gap-2 mb-3">
-                <span className="font-mono text-title-m sm:text-title-l font-semibold text-white">
+                <span className="font-mono text-title-m sm:text-title-l font-semibold text-ink">
                   {esFuturo ? (dia.nutricion.kcalObjetivo ?? '—') : (dia.nutricion.kcal ?? '—')}
                 </span>
                 <span className="text-label text-ink-3 font-sans">/ {dia.nutricion.kcalObjetivo ?? '—'} kcal{esFuturo ? ' de objetivo' : ''}</span>
@@ -200,15 +200,15 @@ export default function SheetDiaAtleta({
                 <div className="flex items-center gap-6 flex-wrap">
                   <div className="flex flex-col gap-1">
                     <span className="font-mono text-caption uppercase tracking-wider text-ink-4">Tipo</span>
-                    <span className="font-sans text-body-s text-white">{dia.entreno.cardio.tipo === 'zona2' ? 'Zona 2' : 'VO₂ máx'}</span>
+                    <span className="font-sans text-body-s text-ink">{dia.entreno.cardio.tipo === 'zona2' ? 'Zona 2' : 'VO₂ máx'}</span>
                   </div>
                   <div className="flex flex-col gap-1">
                     <span className="font-mono text-caption uppercase tracking-wider text-ink-4">Tiempo</span>
-                    <span className="font-mono text-title-s font-semibold text-white">{dia.entreno.cardio.minutos} min</span>
+                    <span className="font-mono text-title-s font-semibold text-ink">{dia.entreno.cardio.minutos} min</span>
                   </div>
                   <div className="flex flex-col gap-1">
                     <span className="font-mono text-caption uppercase tracking-wider text-ink-4">FC media</span>
-                    <span className="font-mono text-title-s font-semibold text-white">{dia.entreno.cardio.fcMedia ?? '—'}</span>
+                    <span className="font-mono text-title-s font-semibold text-ink">{dia.entreno.cardio.fcMedia ?? '—'}</span>
                   </div>
                 </div>
               )}
@@ -251,10 +251,10 @@ export default function SheetDiaAtleta({
               <Tarjeta icono="sticky_note_2" color="var(--color-accent)" titulo="Notas">
                 {notaCoach && (
                   <div className="flex gap-3 items-start mb-3">
-                    <span className="flex items-center justify-center flex-shrink-0 font-mono text-caption text-accent rounded-field" style={{ width: 30, height: 30, background: 'color-mix(in oklab, var(--color-accent) 14%, transparent)' }}>C</span>
+                    <span className="flex items-center justify-center flex-shrink-0 font-mono text-caption text-accent-ink rounded-field" style={{ width: 30, height: 30, background: 'color-mix(in oklab, var(--color-accent) 14%, transparent)' }}>C</span>
                     <span className="flex flex-col gap-0.5">
                       <span className="text-label font-semibold text-ink-2 font-sans">Tu entrenador</span>
-                      <span className="text-body-s text-white font-sans leading-relaxed" style={{ textWrap: 'pretty' }}>{notaCoach.text}</span>
+                      <span className="text-body-s text-ink font-sans leading-relaxed" style={{ textWrap: 'pretty' }}>{notaCoach.text}</span>
                     </span>
                   </div>
                 )}
@@ -263,7 +263,7 @@ export default function SheetDiaAtleta({
                     <span className="flex items-center justify-center flex-shrink-0 font-mono text-caption text-ink-2 rounded-field" style={{ width: 30, height: 30, background: 'var(--color-track)' }}>TÚ</span>
                     <span className="flex flex-col gap-0.5">
                       <span className="text-label font-semibold text-ink-2 font-sans">Lo que anotaste</span>
-                      <span className="text-body-s text-white font-sans leading-relaxed" style={{ textWrap: 'pretty' }}>{logDelDia.note}</span>
+                      <span className="text-body-s text-ink font-sans leading-relaxed" style={{ textWrap: 'pretty' }}>{logDelDia.note}</span>
                     </span>
                   </div>
                 )}

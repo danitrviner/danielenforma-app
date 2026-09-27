@@ -102,7 +102,7 @@ export default function PlanInPreparationCard({ profile, onNavigate }: Props) {
     <section className="rounded-canvas border border-dashed border-accent/45 bg-surface p-5 space-y-4">
       <div className="flex items-start gap-3">
         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-surface border border-accent/30 bg-accent/13">
-          <Icon name="schedule" size="l" filled className="text-accent" />
+          <Icon name="schedule" size="l" filled className="text-accent-ink" />
         </div>
         <div className="min-w-0 flex-1 space-y-2">
           <h2 className="font-display text-title-l font-black uppercase tracking-tight text-ink">
@@ -113,14 +113,14 @@ export default function PlanInPreparationCard({ profile, onNavigate }: Props) {
             avisamos en cuanto esté listo.
           </p>
           <div className="flex flex-wrap items-center gap-3 pt-1">
-            <span className="inline-flex items-center gap-2 rounded-full border border-accent-line bg-accent/13 px-3 py-1 font-mono text-caption font-bold uppercase tracking-widest text-accent">
+            <span className="inline-flex items-center gap-2 rounded-full border border-accent-line bg-accent/13 px-3 py-1 font-mono text-caption font-bold uppercase tracking-widest text-accent-ink">
               <span className="h-1.5 w-1.5 animate-pulse-dot rounded-full bg-accent" aria-hidden />
               {fraseDesde(profile.createdAt)}
             </span>
             <button
               type="button"
               onClick={() => onNavigate('profile')}
-              className="font-sans text-body-s font-bold text-accent hover:underline"
+              className="font-sans text-body-s font-bold text-accent-ink hover:underline"
             >
               Ver mi anamnesis
             </button>

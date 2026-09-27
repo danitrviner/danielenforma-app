@@ -72,14 +72,14 @@ export default function ResourcesPanel({ coachId, isCoach }: Props) {
   return (
     <section className="bg-surface border border-hairline rounded-surface p-4 sm:p-5">
       <div className="flex items-center justify-between mb-3 pb-2 border-b border-hairline">
-        <h2 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
+        <h2 className="font-sans font-bold text-title-s text-ink flex items-center gap-2">
           <span className="material-symbols-outlined text-data">folder_open</span>
           Recursos
         </h2>
         {isCoach && (
           <button
             onClick={() => setShowForm(v => !v)}
-            className="flex items-center gap-1 text-caption font-mono font-bold uppercase text-accent hover:text-accent-press transition-colors"
+            className="flex items-center gap-1 text-caption font-mono font-bold uppercase text-accent-ink hover:text-accent-press transition-colors"
           >
             <span className="material-symbols-outlined text-body-s">{showForm ? 'close' : 'add'}</span>
             {showForm ? 'Cancelar' : 'Nuevo'}
@@ -94,14 +94,14 @@ export default function ResourcesPanel({ coachId, isCoach }: Props) {
             value={title}
             onChange={e => setTitle(e.target.value)}
             placeholder="Título del recurso"
-            className="w-full bg-bg border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent"
+            className="w-full bg-bg border border-hairline rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent"
             required
           />
           <div className="flex gap-2">
             <select
               value={kind}
               onChange={e => setKind(e.target.value as ResourceKind)}
-              className="bg-bg border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent"
+              className="bg-bg border border-hairline rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent"
             >
               {(Object.keys(KIND_LABEL) as ResourceKind[]).map(k => (
                 <option key={k} value={k}>{KIND_LABEL[k]}</option>
@@ -112,7 +112,7 @@ export default function ResourcesPanel({ coachId, isCoach }: Props) {
               value={url}
               onChange={e => setUrl(e.target.value)}
               placeholder="https://..."
-              className="flex-1 bg-bg border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent"
+              className="flex-1 bg-bg border border-hairline rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent"
               required
             />
           </div>
@@ -137,11 +137,11 @@ export default function ResourcesPanel({ coachId, isCoach }: Props) {
             <div key={r.id} className="flex items-center gap-3 bg-raised border border-hairline rounded-surface p-3">
               <span className="material-symbols-outlined text-data flex-shrink-0">{KIND_ICON[r.kind]}</span>
               <a href={r.url} target="_blank" rel="noopener noreferrer" className="flex-1 min-w-0">
-                <p className="font-sans font-bold text-body-s text-white hover:text-accent transition-colors truncate">{r.title}</p>
+                <p className="font-sans font-bold text-body-s text-ink hover:text-accent-ink transition-colors truncate">{r.title}</p>
                 <p className="font-sans text-caption text-ink-2">{KIND_LABEL[r.kind]}</p>
               </a>
               {isCoach && (
-                <button onClick={() => handleDelete(r.id)} className="text-ink-2 hover:text-red-400 transition-colors flex-shrink-0">
+                <button onClick={() => handleDelete(r.id)} className="text-ink-2 hover:text-danger transition-colors flex-shrink-0">
                   <span className="material-symbols-outlined text-title-s">delete</span>
                 </button>
               )}

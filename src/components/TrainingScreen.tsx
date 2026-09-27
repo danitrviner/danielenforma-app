@@ -83,7 +83,7 @@ const ESTADO_ICONO: Record<EstadoDeDia, string> = {
 const ESTADO_CIRCULO: Record<EstadoDeDia, string> = {
   completado: 'bg-success/15 text-success',
   saltado:    'bg-raised text-ink-2',
-  hoy:        'bg-accent/15 text-accent',
+  hoy:        'bg-accent/15 text-accent-ink',
   perdido:    'bg-danger/10 text-danger',
   pendiente:  'bg-raised text-ink-2',
 };
@@ -690,7 +690,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
       >
         <div className="flex items-center gap-4">
           <div className={`w-10 h-10 rounded-surface flex items-center justify-center flex-shrink-0 ${
-            isNext && estado === 'pendiente' ? 'bg-accent/15 text-accent' : ESTADO_CIRCULO[estado]
+            isNext && estado === 'pendiente' ? 'bg-accent/15 text-accent-ink' : ESTADO_CIRCULO[estado]
           }`}>
             <Icon
               name={isNext && estado === 'pendiente' ? 'bolt' : ESTADO_ICONO[estado]}
@@ -716,7 +716,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                 que se vea ANTES de empezar, que es cuando cambia lo que hace. */}
             {a.note && (
               <div className="flex gap-2 items-start mt-1 bg-accent-bg border border-accent-line rounded-surface p-2">
-                <Icon name="push_pin" size="s" filled className="text-accent mt-0.5 shrink-0" />
+                <Icon name="push_pin" size="s" filled className="text-accent-ink mt-0.5 shrink-0" />
                 <p className="text-caption text-ink">{a.note}</p>
               </div>
             )}
@@ -796,7 +796,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
         </div>
         {/* Week summary chip */}
         <div className="flex items-center gap-2 bg-surface border border-hairline px-4 py-2 rounded-surface">
-          <Icon name="calendar_today" size="s" className="text-accent" />
+          <Icon name="calendar_today" size="s" className="text-accent-ink" />
           <span className="font-sans text-label text-ink-2">Esta semana:</span>
           <span className="font-mono text-body-s font-bold text-ink">{bloqueCompletados}/{diasDelBloque.length}</span>
           <span className="font-mono text-label text-ink-2">completados</span>
@@ -846,7 +846,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                  «Atrasados» al final: el que se pasó sale en su sitio, en rojo. */
               <div className="space-y-3">
                 <div className="flex items-center gap-3">
-                  <span className="font-mono text-caption uppercase font-bold tracking-widest text-accent">
+                  <span className="font-mono text-caption uppercase font-bold tracking-widest text-accent-ink">
                     {bloqueHoy ? etiquetaBloque(bloqueHoy, true) : 'Esta semana'}
                   </span>
                   <div className="flex-1 h-px bg-raised" />
@@ -876,7 +876,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                     return (
                       <div key={b.clave} className="space-y-3">
                         <div className="flex items-center gap-3">
-                          <span className={`font-mono text-caption uppercase font-bold tracking-widest ${esActual ? 'text-accent' : 'text-ink-2'}`}>
+                          <span className={`font-mono text-caption uppercase font-bold tracking-widest ${esActual ? 'text-accent-ink' : 'text-ink-2'}`}>
                             {etiquetaBloque(b, esActual)}
                           </span>
                           <div className="flex-1 h-px bg-raised" />

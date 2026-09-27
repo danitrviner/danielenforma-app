@@ -150,15 +150,15 @@ export default function NivelMes({
       <div className="flex-1 min-w-0 bg-surface border border-hairline rounded-surface px-5 pt-[18px] pb-[22px] w-full">
         <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
           <div className="flex items-center gap-3.5 flex-wrap">
-            <button type="button" onClick={onBackToYear} className="flex items-center gap-1.5 text-label text-ink-3 hover:text-white transition-colors">
+            <button type="button" onClick={onBackToYear} className="flex items-center gap-1.5 text-label text-ink-3 hover:text-ink transition-colors">
               <Icon name="grid_view" size="s" />Año
             </button>
             <div className="w-px h-[18px] bg-hairline" />
-            <button type="button" onClick={onPrevMonth} disabled={mes === 0} className="w-8 h-8 rounded-control bg-inset flex items-center justify-center text-ink-2 hover:text-white disabled:opacity-30 transition-colors">
+            <button type="button" onClick={onPrevMonth} disabled={mes === 0} className="w-8 h-8 rounded-control bg-inset flex items-center justify-center text-ink-2 hover:text-ink disabled:opacity-30 transition-colors">
               <Icon name="chevron_left" size="s" />
             </button>
-            <span className="font-sans font-extrabold text-title-l text-white" style={{ letterSpacing: '-0.02em', minWidth: 150 }}>{MESES[mes]} {anio}</span>
-            <button type="button" onClick={onNextMonth} disabled={mes === 11} className="w-8 h-8 rounded-control bg-inset flex items-center justify-center text-ink-2 hover:text-white disabled:opacity-30 transition-colors">
+            <span className="font-sans font-extrabold text-title-l text-ink" style={{ letterSpacing: '-0.02em', minWidth: 150 }}>{MESES[mes]} {anio}</span>
+            <button type="button" onClick={onNextMonth} disabled={mes === 11} className="w-8 h-8 rounded-control bg-inset flex items-center justify-center text-ink-2 hover:text-ink disabled:opacity-30 transition-colors">
               <Icon name="chevron_right" size="s" />
             </button>
           </div>
@@ -209,7 +209,7 @@ export default function NivelMes({
             onClick={() => onOpenWeek(semana)}
             title={`Programar la semana del ${semana.etiqueta}`}
             aria-label={`Programar la semana del ${semana.etiqueta}`}
-            className="w-8 h-8 self-center rounded-control bg-inset border border-hairline flex items-center justify-center text-ink-2 hover:text-accent hover:border-accent-line transition-colors"
+            className="w-8 h-8 self-center rounded-control bg-inset border border-hairline flex items-center justify-center text-ink-2 hover:text-accent-ink hover:border-accent-line transition-colors"
           >
             <Icon name="bolt" size="s" />
           </button>
@@ -319,7 +319,7 @@ export default function NivelMes({
                   <Icon name={hito.icono} size="s" style={{ color: 'var(--color-accent)' }} />
                 </span>
                 <span className="flex flex-col gap-0.5 min-w-0">
-                  <span className="text-label font-semibold font-sans text-white truncate">{hito.titulo}</span>
+                  <span className="text-label font-semibold font-sans text-ink truncate">{hito.titulo}</span>
                   <span className="font-mono text-caption text-ink-4">{fmtSeg(fecha)}</span>
                 </span>
               </button>

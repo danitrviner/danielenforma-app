@@ -63,8 +63,8 @@ export default function ClientBodyPanel({
       {/* ── Fotos de progreso ─────────────────────────────────────────── */}
       <div className="bg-surface border border-hairline rounded-surface overflow-hidden">
         <div className="p-4 border-b border-hairline flex items-center justify-between bg-raised">
-          <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
-            <span className="material-symbols-outlined text-accent text-body-s">photo_camera</span>
+          <h3 className="font-sans font-bold text-title-s text-ink flex items-center gap-2">
+            <span className="material-symbols-outlined text-accent-ink text-body-s">photo_camera</span>
             Historial Fotográfico
             {athletePhotos.length > 0 && (
               <span className="font-mono text-caption text-ink-2">({athletePhotos.length} fotos)</span>
@@ -79,7 +79,7 @@ export default function ClientBodyPanel({
               <button
                 key={v.id}
                 onClick={() => setSelectedView(v.id)}
-                className={`px-3 py-1 rounded-control font-sans text-caption font-bold uppercase transition-all tracking-wider ${selectedView === v.id ? 'bg-accent text-black' : 'text-ink-2 hover:text-white'}`}
+                className={`px-3 py-1 rounded-control font-sans text-caption font-bold uppercase transition-all tracking-wider ${selectedView === v.id ? 'bg-accent text-on-accent' : 'text-ink-2 hover:text-ink'}`}
               >{v.label}</button>
             ))}
           </div>
@@ -108,7 +108,7 @@ export default function ClientBodyPanel({
                     móvil 17-08: por eso tapaba las pestañas Ficha/Cuerpo al
                     hacer scroll. z-index:auto ya pinta por encima de la
                     <img> hermana sin necesidad de competir con nada global. */}
-                <div className="absolute top-2 left-2 bg-accent text-black px-3 rounded-control font-sans text-caption font-bold">
+                <div className="absolute top-2 left-2 bg-accent text-on-accent px-3 rounded-control font-sans text-caption font-bold">
                   Actual · {fmtDate(latest.date)}
                 </div>
                 <img className="w-full h-[280px] object-cover object-top group-hover:scale-105 transition-all duration-500" src={latest.url} alt="Actual" />
@@ -142,12 +142,12 @@ export default function ClientBodyPanel({
               const viewsLabel = a.views.map(v => v === 'front' ? 'Frente' : v === 'side' ? 'Lateral' : 'Espalda').join(', ');
               return (
                 <div key={a.id} className="flex items-center gap-3 bg-raised border border-hairline rounded-surface px-3 py-2">
-                  <span className="material-symbols-outlined text-accent text-body-s">photo_camera</span>
+                  <span className="material-symbols-outlined text-accent-ink text-body-s">photo_camera</span>
                   <div className="flex-1 min-w-0">
-                    <p className="font-sans font-bold text-white text-label truncate">{viewsLabel}</p>
+                    <p className="font-sans font-bold text-ink text-label truncate">{viewsLabel}</p>
                     <p className="font-mono text-caption text-ink-2">{schedLabel} · desde {a.startDate}</p>
                   </div>
-                  <button onClick={() => handleDeactivatePhoto(a.id)} className="text-ink-2 hover:text-red-400 transition-colors" title="Desactivar">
+                  <button onClick={() => handleDeactivatePhoto(a.id)} className="text-ink-2 hover:text-danger transition-colors" title="Desactivar">
                     <span className="material-symbols-outlined text-body-s">close</span>
                   </button>
                 </div>
@@ -164,8 +164,8 @@ export default function ClientBodyPanel({
 
       {/* ── Mediciones (perímetros) ──────────────────────────────────── */}
       <div className="bg-surface border border-hairline rounded-surface p-5 space-y-3">
-        <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
-          <span className="material-symbols-outlined text-accent text-body-s">straighten</span>
+        <h3 className="font-sans font-bold text-title-s text-ink flex items-center gap-2">
+          <span className="material-symbols-outlined text-accent-ink text-body-s">straighten</span>
           Mediciones
         </h3>
         <BodyMeasurementsPanel
@@ -178,11 +178,11 @@ export default function ClientBodyPanel({
       {/* ── Readiness (IRP) ──────────────────────────────────────────── */}
       {irp.valor != null && (
         <div className="bg-surface border border-hairline rounded-surface p-5 space-y-2">
-          <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
-            <span className="material-symbols-outlined text-accent text-body-s">battery_charging_full</span>
+          <h3 className="font-sans font-bold text-title-s text-ink flex items-center gap-2">
+            <span className="material-symbols-outlined text-accent-ink text-body-s">battery_charging_full</span>
             Readiness (IRP)
           </h3>
-          <p className={`font-mono font-black text-3xl leading-none ${irp.valor < 0 ? 'text-red-400' : irp.valor < 3 ? 'text-orange-400' : 'text-white'}`}>
+          <p className={`font-mono font-black text-3xl leading-none ${irp.valor < 0 ? 'text-danger' : irp.valor < 3 ? 'text-warning' : 'text-ink'}`}>
             {irp.valor}
           </p>
           <p className="font-mono text-caption text-ink-2">

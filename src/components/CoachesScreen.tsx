@@ -98,7 +98,7 @@ const TYPE_LABEL: Record<OnboardingTemplateQuestion['type'], string> = {
   numeric: 'Numérico', scale: 'Escala', choice: 'Opción', text: 'Texto libre',
 };
 
-const MINI = 'bg-bg border border-hairline rounded-control px-2 py-2 text-label text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent/70 w-full';
+const MINI = 'bg-bg border border-hairline rounded-control px-2 py-2 text-label text-ink font-mono focus:outline-none focus:ring-1 focus:ring-accent/70 w-full';
 
 // ── Template editor component ─────────────────────────────────────────────────
 
@@ -211,11 +211,11 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
         </div>
         <div className="flex gap-2">
           <button type="button" onClick={handleReset}
-            className="px-3 py-2 font-sans text-caption uppercase border border-hairline text-ink-2 hover:text-white rounded-control transition-all">
+            className="px-3 py-2 font-sans text-caption uppercase border border-hairline text-ink-2 hover:text-ink rounded-control transition-all">
             Restaurar por defecto
           </button>
           <button type="button" onClick={handleSave} disabled={saving || !dirty}
-            className="px-3 py-2 font-sans text-caption uppercase bg-accent text-black font-bold rounded-control hover:bg-accent-press disabled:opacity-50 transition-all">
+            className="px-3 py-2 font-sans text-caption uppercase bg-accent text-on-accent font-bold rounded-control hover:bg-accent-press disabled:opacity-50 transition-all">
             {saving ? 'Guardando…' : 'Guardar plantilla'}
           </button>
         </div>
@@ -225,8 +225,8 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
           arregla las plantillas nuevas; la que ya está guardada en Firestore
           sigue con las suyas, y nadie va a ir borrándolas una a una. */}
       {repetidas.length > 0 && (
-        <div className="bg-surface border border-amber-400/30 rounded-surface p-4 space-y-3">
-          <p className="font-sans text-caption text-amber-300">
+        <div className="bg-surface border border-warning/30 rounded-surface p-4 space-y-3">
+          <p className="font-sans text-caption text-warning">
             {repetidas.length} de estas preguntas ya las contesta el atleta en su alta, así que las
             estás rellenando dos veces — y si las dos respuestas no coinciden, no hay forma de saber cuál vale.
           </p>
@@ -234,7 +234,7 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
             {repetidas.map(q => q.label).join(' · ')}
           </p>
           <button type="button" onClick={quitarRepetidas}
-            className="px-3 py-2 font-sans text-caption uppercase border border-amber-400/40 text-amber-300 hover:bg-amber-400/10 rounded-control transition-all">
+            className="px-3 py-2 font-sans text-caption uppercase border border-warning/40 text-warning hover:bg-warning/10 rounded-control transition-all">
             Quitarlas de la plantilla
           </button>
         </div>
@@ -246,7 +246,7 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
         const qs   = questions.filter(q => q.section === section);
         return (
           <div key={section} className="bg-bg border border-hairline rounded-surface p-5 space-y-4">
-            <h4 className="font-mono text-label font-bold uppercase tracking-wider text-accent flex items-center gap-2">
+            <h4 className="font-mono text-label font-bold uppercase tracking-wider text-accent-ink flex items-center gap-2">
               <span className="material-symbols-outlined text-body-s">{meta.icon}</span>
               {meta.label}
               <span className="ml-auto font-mono text-caption text-ink-3 normal-case font-normal">{qs.length} pregunta{qs.length !== 1 ? 's' : ''}</span>
@@ -270,7 +270,7 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
                           <button key={t} type="button"
                             onClick={() => updateQ(q.id, { type: t })}
                             className={`px-3 py-1 rounded-control font-sans text-caption font-bold uppercase border transition-all ${
-                              q.type === t ? 'bg-accent text-black border-transparent' : 'text-ink-2 border-hairline hover:text-white'
+                              q.type === t ? 'bg-accent text-on-accent border-transparent' : 'text-ink-2 border-hairline hover:text-ink'
                             }`}>
                             {TYPE_LABEL[t]}
                           </button>
@@ -285,21 +285,21 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
                         <div className="flex gap-2">
                           <input type="number" value={q.scaleMin ?? 1} placeholder="Min"
                             onChange={e => updateQ(q.id, { scaleMin: Number(e.target.value) })}
-                            className="w-20 bg-bg border border-hairline rounded-control px-2 py-1 text-title-s text-white font-mono focus:outline-none" />
+                            className="w-20 bg-bg border border-hairline rounded-control px-2 py-1 text-title-s text-ink font-mono focus:outline-none" />
                           <input type="number" value={q.scaleMax ?? 10} placeholder="Max"
                             onChange={e => updateQ(q.id, { scaleMax: Number(e.target.value) })}
-                            className="w-20 bg-bg border border-hairline rounded-control px-2 py-1 text-title-s text-white font-mono focus:outline-none" />
+                            className="w-20 bg-bg border border-hairline rounded-control px-2 py-1 text-title-s text-ink font-mono focus:outline-none" />
                         </div>
                       )}
                       {q.type === 'choice' && (
                         <div className="space-y-2">
                           <div className="flex flex-wrap gap-1">
                             {(q.options ?? []).map(opt => (
-                              <span key={opt} className="flex items-center gap-1 bg-raised text-white px-2 rounded-full text-caption font-mono">
+                              <span key={opt} className="flex items-center gap-1 bg-raised text-ink px-2 rounded-full text-caption font-mono">
                                 {opt}
                                 <button type="button"
                                   onClick={() => updateQ(q.id, { options: (q.options ?? []).filter(o => o !== opt) })}
-                                  className="text-ink-2 hover:text-red-400">
+                                  className="text-ink-2 hover:text-danger">
                                   <span className="material-symbols-outlined" style={{ fontSize: '9px' }}>close</span>
                                 </button>
                               </span>
@@ -319,11 +319,11 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
                       )}
                       <div className="flex gap-2">
                         <button type="button" onClick={() => setEditingId(null)}
-                          className="px-3 py-1 bg-accent text-black font-sans text-caption font-bold uppercase rounded-control hover:bg-accent-press">
+                          className="px-3 py-1 bg-accent text-on-accent font-sans text-caption font-bold uppercase rounded-control hover:bg-accent-press">
                           ✓ Listo
                         </button>
                         <button type="button" onClick={() => deleteQ(q.id)}
-                          className="px-3 py-1 font-mono text-caption uppercase text-red-400 border border-red-500/30 rounded-control hover:bg-red-500/10">
+                          className="px-3 py-1 font-mono text-caption uppercase text-danger border border-danger/30 rounded-control hover:bg-danger/10">
                           Eliminar
                         </button>
                       </div>
@@ -334,10 +334,10 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
                       <span className={`text-caption font-sans uppercase px-2 rounded-control border flex-shrink-0 ${
                         q.type === 'numeric' ? 'text-warning border-warning/20 bg-warning/5' :
                         q.type === 'scale'   ? 'text-data border-data/20 bg-data/5' :
-                        q.type === 'choice'  ? 'text-accent border-accent/20 bg-accent/5' :
+                        q.type === 'choice'  ? 'text-accent-ink border-accent/20 bg-accent/5' :
                                                'text-ink-2 border-hairline bg-raised'
                       }`}>{TYPE_LABEL[q.type]}</span>
-                      <span className="flex-1 text-body-s text-white font-mono truncate min-w-0">
+                      <span className="flex-1 text-body-s text-ink font-mono truncate min-w-0">
                         {q.label || <em className="text-ink-3">sin etiqueta</em>}
                       </span>
                       {q.unit && <span className="text-caption text-ink-3 font-mono flex-shrink-0">{q.unit}</span>}
@@ -346,7 +346,7 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
                         <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>edit</span>
                       </button>
                       <button type="button" onClick={() => deleteQ(q.id)}
-                        className="p-1 text-ink-3 hover:text-red-400 transition-colors flex-shrink-0">
+                        className="p-1 text-ink-3 hover:text-danger transition-colors flex-shrink-0">
                         <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>delete</span>
                       </button>
                     </div>
@@ -356,7 +356,7 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
             </div>
 
             <button type="button" onClick={() => addQ(section)}
-              className="flex items-center gap-2 font-mono text-caption uppercase text-ink-2 hover:text-accent border border-dashed border-hairline hover:border-accent/30 px-3 py-2 rounded-control w-full justify-center transition-all">
+              className="flex items-center gap-2 font-mono text-caption uppercase text-ink-2 hover:text-accent-ink border border-dashed border-hairline hover:border-accent/30 px-3 py-2 rounded-control w-full justify-center transition-all">
               <span className="material-symbols-outlined text-body-s">add</span>
               Añadir pregunta
             </button>
@@ -367,7 +367,7 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
       {dirty && (
         <div className="flex justify-end">
           <button type="button" onClick={handleSave} disabled={saving}
-            className="px-4 py-2 font-sans text-label uppercase bg-accent text-black font-bold rounded-control hover:bg-accent-press disabled:opacity-50 transition-all">
+            className="px-4 py-2 font-sans text-label uppercase bg-accent text-on-accent font-bold rounded-control hover:bg-accent-press disabled:opacity-50 transition-all">
             {saving ? 'Guardando…' : 'Guardar plantilla'}
           </button>
         </div>
@@ -541,13 +541,13 @@ function RecetasImportPanel() {
 
       {status === 'done' && (
         <div className="space-y-3">
-          <div className="flex items-center gap-2 text-accent font-mono text-label font-bold">
+          <div className="flex items-center gap-2 text-accent-ink font-mono text-label font-bold">
             <span className="material-symbols-outlined text-title-s" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
             {done.toLocaleString('es')} recetas importadas en {elapsed}s
           </div>
           <button
             onClick={startImport}
-            className="px-3 py-2 border border-hairline text-ink-2 hover:text-white font-sans text-caption uppercase rounded-control transition-all"
+            className="px-3 py-2 border border-hairline text-ink-2 hover:text-ink font-sans text-caption uppercase rounded-control transition-all"
           >
             Reimportar
           </button>
@@ -556,7 +556,7 @@ function RecetasImportPanel() {
 
       {status === 'error' && (
         <div className="space-y-3">
-          <p className="font-sans text-caption text-red-400 bg-red-500/5 border border-red-500/20 rounded-control p-3 break-all">
+          <p className="font-sans text-caption text-danger bg-danger/5 border border-danger/20 rounded-control p-3 break-all">
             {error}
           </p>
           <button
@@ -673,20 +673,20 @@ export default function CoachesScreen({ currentUserId, currentUserEmail }: Props
                     className="w-10 h-10 rounded-full object-cover border border-hairline flex-shrink-0" />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-sans font-bold text-white text-body-s truncate">{user.displayName}</span>
-                      {isOwner && <span className="text-caption font-mono px-2 rounded-control bg-accent/15 text-accent uppercase font-bold border border-accent/25">PROPIETARIO</span>}
+                      <span className="font-sans font-bold text-ink text-body-s truncate">{user.displayName}</span>
+                      {isOwner && <span className="text-caption font-mono px-2 rounded-control bg-accent/15 text-accent-ink uppercase font-bold border border-accent/25">PROPIETARIO</span>}
                       {isSelf && !isOwner && <span className="text-caption font-mono px-2 rounded-control bg-data/10 text-data uppercase border border-data/20">TÚ</span>}
                     </div>
                     <span className="font-mono text-label text-ink-2 truncate block">{user.email}</span>
                   </div>
                   <div className="flex items-center gap-3 flex-shrink-0">
                     <span className={`text-caption font-mono px-2 rounded-control uppercase font-bold border ${
-                      isCoach ? 'bg-accent/10 text-accent border-accent/20' : 'bg-raised text-ink-2 border-hairline'
+                      isCoach ? 'bg-accent/10 text-accent-ink border-accent/20' : 'bg-raised text-ink-2 border-hairline'
                     }`}>{isCoach ? 'Coach' : 'Atleta'}</span>
                     {canToggle && (
                       <button onClick={() => handleToggleRole(user)} disabled={updating === user.userId}
                         className={`px-3 py-2 rounded-control font-sans text-label font-bold uppercase tracking-wider transition-all active:scale-95 disabled:opacity-50 border ${
-                          isCoach ? 'border-red-500/40 text-red-400 hover:bg-red-500/10' : 'border-data/40 text-data hover:bg-data/10'
+                          isCoach ? 'border-danger/40 text-danger hover:bg-danger/10' : 'border-data/40 text-data hover:bg-data/10'
                         }`}>
                         {updating === user.userId
                           ? <span className="material-symbols-outlined text-label animate-spin">progress_activity</span>
@@ -703,12 +703,12 @@ export default function CoachesScreen({ currentUserId, currentUserEmail }: Props
         )}
         <div className="bg-surface border border-hairline rounded-surface p-4 space-y-1">
           <p className="font-sans text-label text-ink-2">
-            <span className="text-accent font-bold">Colección Firestore:</span>{' '}
-            <code className="text-white">user_profiles</code> · Doc ID: UID de Firebase Auth · Campo:{' '}
-            <code className="text-white">role: 'coach' | 'client'</code>
+            <span className="text-accent-ink font-bold">Colección Firestore:</span>{' '}
+            <code className="text-ink">user_profiles</code> · Doc ID: UID de Firebase Auth · Campo:{' '}
+            <code className="text-ink">role: 'coach' | 'client'</code>
           </p>
           <p className="font-sans text-label text-ink-2">
-            Las reglas del servidor deben impedir que un cliente se auto-asigne <code className="text-white">coach</code>{' '}
+            Las reglas del servidor deben impedir que un cliente se auto-asigne <code className="text-ink">coach</code>{' '}
             y que nadie modifique la cuenta propietaria.
           </p>
         </div>

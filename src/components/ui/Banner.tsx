@@ -36,7 +36,7 @@ export default function Banner({ tone = 'info', children, actionLabel, onAction,
       role={tone === 'danger' ? 'alert' : 'status'}
       className={`flex items-start gap-3 rounded-surface border p-4 ${t.clases} ${className}`}
     >
-      <Icon name={t.icono} size="m" className={tone === 'danger' ? 'text-danger' : 'text-accent'} />
+      <Icon name={t.icono} size="m" className={tone === 'danger' ? 'text-danger' : 'text-accent-ink'} />
       <p className="min-w-0 flex-1 font-sans text-body-s text-ink-2">{children}</p>
       {actionLabel && onAction && (
         <Button variant="secondary" size="s" onClick={onAction} className="shrink-0">

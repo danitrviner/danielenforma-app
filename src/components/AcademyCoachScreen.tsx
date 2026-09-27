@@ -7,6 +7,9 @@ import {
   getAllUserProfiles, getAllAcademyAccess, setAcademyAccess, createNotificationDeduped,
 } from '../dbService';
 import { atletasActivos } from '../utils/atletas';
+import { subirArchivo } from '../almacenamiento';
+import { compressImage } from '../utils/compressImage';
+import PortadaCurso from './academy/PortadaCurso';
 import { parseVideoUrl } from '../utils/embedPlayerControl';
 import { Avatar, Skeleton } from './ui';
 import { Card, Tabs, Button } from './ui';
@@ -100,7 +103,7 @@ function CoursesTab() {
     <Card
       title="Cursos"
       action={
-        <button onClick={() => setShowForm(v => !v)} className="flex items-center gap-1 text-caption font-mono font-bold uppercase text-accent hover:text-accent-press">
+        <button onClick={() => setShowForm(v => !v)} className="flex items-center gap-1 text-caption font-mono font-bold uppercase text-accent-ink hover:text-accent-press">
           <span className="material-symbols-outlined text-body-s">{showForm ? 'close' : 'add'}</span>
           {showForm ? 'Cancelar' : 'Nuevo curso'}
         </button>
@@ -110,16 +113,16 @@ function CoursesTab() {
       {showForm && (
         <form onSubmit={handleCreate} className="bg-raised border border-hairline rounded-surface p-3 space-y-2">
           <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Título del curso" required
-            className="w-full bg-bg border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent" />
+            className="w-full bg-bg border border-hairline rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent" />
           <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="Descripción" rows={2}
-            className="w-full bg-bg border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent" />
+            className="w-full bg-bg border border-hairline rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent" />
           <div className="flex gap-2 flex-wrap">
             <select value={category} onChange={e => setCategory(e.target.value as AcademyCategory)}
-              className="bg-bg border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent">
+              className="bg-bg border border-hairline rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent">
               {CATEGORIES.map(c => <option key={c} value={c}>{CATEGORY_LABEL[c]}</option>)}
             </select>
             <select value={unlockType} onChange={e => setUnlockType(e.target.value as UnlockRule['type'])}
-              className="bg-bg border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent">
+              className="bg-bg border border-hairline rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent">
               <option value="immediate">Desbloqueo inmediato</option>
               <option value="daysSinceJoin">Días desde el alta</option>
               <option value="level">Nivel mínimo de su escalera</option>
@@ -127,7 +130,7 @@ function CoursesTab() {
             </select>
             {unlockType !== 'immediate' && (
               <input value={unlockValue} onChange={e => setUnlockValue(e.target.value)} placeholder={unlockType === 'prerequisite' ? 'ID de curso' : 'Número'}
-                className="flex-1 min-w-[100px] bg-bg border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent" />
+                className="flex-1 min-w-[100px] bg-bg border border-hairline rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent" />
             )}
           </div>
           <Button type="submit" disabled={saving} fullWidth>{saving ? 'Guardando...' : 'Crear curso'}</Button>
@@ -142,14 +145,15 @@ function CoursesTab() {
         <div className="space-y-2">
           {courses.map(c => (
             <div key={c.id} className="flex items-center gap-3 bg-raised border border-hairline rounded-surface p-3">
+              <PortadaPicker curso={c} />
               <div className="flex-1 min-w-0">
-                <p className="font-sans font-bold text-body-s text-white truncate">{c.title}</p>
+                <p className="font-sans font-bold text-body-s text-ink truncate">{c.title}</p>
                 <p className="text-caption text-ink-2 font-mono">{CATEGORY_LABEL[c.category]} · {c.lessonCount} lecciones · {UNLOCK_LABEL(c.unlockRule)}</p>
               </div>
-              <button onClick={() => togglePublished(c)} className={`text-caption font-mono font-bold uppercase px-2 py-1 rounded-control ${c.published ? 'bg-data/10 text-data' : 'bg-white/7 text-ink-3'}`}>
+              <button onClick={() => togglePublished(c)} className={`text-caption font-mono font-bold uppercase px-2 py-1 rounded-control ${c.published ? 'bg-data/10 text-data' : 'bg-hairline text-ink-3'}`}>
                 {c.published ? 'Publicado' : 'Borrador'}
               </button>
-              <button onClick={() => handleDelete(c.id)} className="text-ink-2 hover:text-red-400 flex-shrink-0">
+              <button onClick={() => handleDelete(c.id)} className="text-ink-2 hover:text-danger flex-shrink-0">
                 <span className="material-symbols-outlined text-title-s">delete</span>
               </button>
             </div>
@@ -157,6 +161,66 @@ function CoursesTab() {
         </div>
       )}
     </Card>
+  );
+}
+
+/* Portada del curso. La miniatura ES el botón: pulsarla abre el selector de
+   archivo, y lo que se ve ahí es exactamente lo que verá el atleta —incluida
+   la portada generada por categoría cuando todavía no hay foto, que no es un
+   hueco vacío sino una portada válida.
+
+   La imagen se comprime antes de subir (mismo criterio que fotos de progreso
+   y recetas): una portada a 1600 px de ancho sobra para una tarjeta 16:9, y
+   subir el original de 6 MB del móvil se lo tragaría el atleta en datos cada
+   vez que abre Training Lab. */
+function PortadaPicker({ curso }: { curso: AcademyCourse }) {
+  const queryClient = useQueryClient();
+  const [subiendo, setSubiendo] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const elegir = async (file: File | undefined) => {
+    if (!file) return;
+    setSubiendo(true);
+    setError(null);
+    try {
+      const comprimida = await compressImage(file, 1600, 0.82);
+      // Sufijo de tiempo: sin él, reemplazar la portada deja la misma URL y el
+      // atleta sigue viendo la vieja hasta que caduque su caché.
+      const url = await subirArchivo(`academyCovers/${curso.id}_${Date.now()}.jpg`, comprimida);
+      await updateCourse(curso.id, { coverImageUrl: url });
+      queryClient.setQueryData<AcademyCourse[]>(['academyCourses'], prev =>
+        prev?.map(x => (x.id === curso.id ? { ...x, coverImageUrl: url } : x)));
+    } catch (err) {
+      // En voz alta y en su sitio: una subida que falla en silencio deja al
+      // coach creyendo que la portada está puesta.
+      setError(err instanceof Error ? err.message : 'No se ha podido subir');
+    } finally {
+      setSubiendo(false);
+    }
+  };
+
+  return (
+    <label
+      className="relative w-24 shrink-0 cursor-pointer overflow-hidden rounded-control border border-hairline hover:border-accent-line transition-colors"
+      title={curso.coverImageUrl ? 'Cambiar portada' : 'Subir portada'}
+    >
+      <PortadaCurso category={curso.category} coverImageUrl={curso.coverImageUrl} title={curso.title} />
+      <span className="absolute inset-0 flex items-center justify-center bg-veil/55 opacity-0 hover:opacity-100 transition-opacity">
+        <span className="material-symbols-outlined text-title-s text-ink">
+          {subiendo ? 'hourglass_top' : 'photo_camera'}
+        </span>
+      </span>
+      {subiendo && <span className="absolute inset-0 bg-veil/60" aria-hidden="true" />}
+      {error && <span className="absolute inset-x-0 bottom-0 bg-danger/90 px-1 text-caption font-mono text-on-fill truncate">{error}</span>}
+      <input
+        type="file"
+        accept="image/*"
+        className="sr-only"
+        disabled={subiendo}
+        aria-label={`Portada de ${curso.title}`}
+        onChange={e => { void elegir(e.target.files?.[0]); e.target.value = ''; }}
+      />
+    </label>
   );
 }
 
@@ -208,7 +272,7 @@ function LessonsTab() {
     <Card
       title="Lecciones"
       action={
-        <button onClick={() => setShowForm(v => !v)} className="flex items-center gap-1 text-caption font-mono font-bold uppercase text-accent hover:text-accent-press">
+        <button onClick={() => setShowForm(v => !v)} className="flex items-center gap-1 text-caption font-mono font-bold uppercase text-accent-ink hover:text-accent-press">
           <span className="material-symbols-outlined text-body-s">{showForm ? 'close' : 'add'}</span>
           {showForm ? 'Cancelar' : 'Nueva lección'}
         </button>
@@ -218,20 +282,20 @@ function LessonsTab() {
       {showForm && (
         <form onSubmit={handleCreate} className="bg-raised border border-hairline rounded-surface p-3 space-y-2">
           <select value={courseId} onChange={e => setCourseId(e.target.value)} required
-            className="w-full bg-bg border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent">
+            className="w-full bg-bg border border-hairline rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent">
             <option value="">Selecciona curso...</option>
             {courses.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
           </select>
           <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Título de la lección" required
-            className="w-full bg-bg border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent" />
+            className="w-full bg-bg border border-hairline rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent" />
           <div className="flex gap-2">
             <select value={videoProvider} onChange={e => setVideoProvider(e.target.value as 'youtube' | 'vimeo')}
-              className="bg-bg border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent">
+              className="bg-bg border border-hairline rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent">
               <option value="youtube">YouTube</option>
               <option value="vimeo">Vimeo</option>
             </select>
             <input value={videoId} onChange={e => setVideoId(e.target.value)} placeholder="ID o URL del vídeo" required
-              className="flex-1 bg-bg border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent" />
+              className="flex-1 bg-bg border border-hairline rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent" />
           </div>
           <Button type="submit" disabled={saving} fullWidth>{saving ? 'Guardando...' : 'Crear lección'}</Button>
         </form>
@@ -247,10 +311,10 @@ function LessonsTab() {
             <div key={l.id} className="flex items-center gap-3 bg-raised border border-hairline rounded-surface p-3">
               <span className="material-symbols-outlined text-data">play_circle</span>
               <div className="flex-1 min-w-0">
-                <p className="font-sans font-bold text-body-s text-white truncate">{l.title}</p>
+                <p className="font-sans font-bold text-body-s text-ink truncate">{l.title}</p>
                 <p className="text-caption text-ink-2 font-sans">{courses.find(c => c.id === l.courseId)?.title ?? '—'}</p>
               </div>
-              <button onClick={() => handleDelete(l)} className="text-ink-2 hover:text-red-400 flex-shrink-0">
+              <button onClick={() => handleDelete(l)} className="text-ink-2 hover:text-danger flex-shrink-0">
                 <span className="material-symbols-outlined text-title-s">delete</span>
               </button>
             </div>
@@ -306,7 +370,7 @@ function AccessTab({ coachEmail }: { coachEmail: string }) {
     <Card
       title="Acceso por atleta"
       action={selected.size > 0 && (
-        <button onClick={grantSelected} className="text-caption font-sans font-bold uppercase text-accent hover:text-accent-press">
+        <button onClick={grantSelected} className="text-caption font-sans font-bold uppercase text-accent-ink hover:text-accent-press">
           Conceder a {selected.size} seleccionado{selected.size === 1 ? '' : 's'}
         </button>
       )}
@@ -318,10 +382,10 @@ function AccessTab({ coachEmail }: { coachEmail: string }) {
             <div key={a.email} className="flex items-center gap-3 bg-raised border border-hairline rounded-surface p-3">
               <input type="checkbox" checked={selected.has(a.email)} onChange={() => toggleSelected(a.email)} className="w-4 h-4 accent-accent" />
               <Avatar src={a.avatarUrl} name={a.displayName} className="w-7 h-7 rounded-full object-cover flex-shrink-0" />
-              <p className="flex-1 min-w-0 font-sans font-bold text-body-s text-white truncate">{a.displayName}</p>
+              <p className="flex-1 min-w-0 font-sans font-bold text-body-s text-ink truncate">{a.displayName}</p>
               <button
                 onClick={() => toggle(a.email, !enabled)}
-                className={`text-caption font-mono font-bold uppercase px-3 py-2 rounded-full transition-colors ${enabled ? 'bg-data/10 text-data' : 'bg-white/7 text-ink-3'}`}
+                className={`text-caption font-mono font-bold uppercase px-3 py-2 rounded-full transition-colors ${enabled ? 'bg-data/10 text-data' : 'bg-hairline text-ink-3'}`}
               >
                 {enabled ? 'Acceso activo' : 'Sin acceso'}
               </button>

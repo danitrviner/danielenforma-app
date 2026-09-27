@@ -185,7 +185,7 @@ export default function StepsWidget({ athleteEmail, compacto = false }: Props) {
           linked ? '' : ' hover:border-strong'
         }`}
       >
-        <p className="font-mono text-caption uppercase tracking-wider text-accent flex items-center gap-1.5">
+        <p className="font-mono text-caption uppercase tracking-wider text-accent-ink flex items-center gap-1.5">
           Pasos
           {linked && <Icon name="check_circle" size="s" className="text-success" label="Vinculado con Salud" />}
         </p>
@@ -211,8 +211,8 @@ export default function StepsWidget({ athleteEmail, compacto = false }: Props) {
   return (
     <div className="bg-surface border border-hairline rounded-surface p-4 sm:p-5">
       <div className="flex items-center justify-between mb-3">
-        <h2 className="font-sans font-bold text-body-s text-white flex items-center gap-2">
-          <Icon name="directions_walk" size="m" className="text-accent" />
+        <h2 className="font-sans font-bold text-body-s text-ink flex items-center gap-2">
+          <Icon name="directions_walk" size="m" className="text-accent-ink" />
           Pasos de hoy
         </h2>
         {linked ? (
@@ -238,7 +238,7 @@ export default function StepsWidget({ athleteEmail, compacto = false }: Props) {
             onKeyDown={e => { if (e.key === 'Enter') handleSave(); }}
             placeholder="0"
             autoFocus
-            className="flex-1 bg-raised border border-hairline rounded-control px-3 py-2 text-white font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-accent"
+            className="flex-1 bg-raised border border-hairline rounded-control px-3 py-2 text-ink font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-accent"
           />
           <Button size="s" onClick={handleSave} loading={saving} icon="check" label="Guardar" />
         </div>
@@ -251,12 +251,12 @@ export default function StepsWidget({ athleteEmail, compacto = false }: Props) {
               texto pasan a una. */}
           <div className="mb-2 flex items-baseline justify-between gap-3 font-mono">
             <p className="whitespace-nowrap">
-              <span className="text-title-s font-bold text-white">{steps.toLocaleString('es-ES')}</span>
+              <span className="text-title-s font-bold text-ink">{steps.toLocaleString('es-ES')}</span>
               <span className="text-caption text-ink-2"> / {goal.toLocaleString('es-ES')}</span>
             </p>
             <p className="truncate text-caption text-ink-2">
               {remaining > 0
-                ? <>Faltan <span className="font-bold text-accent">{remaining.toLocaleString('es-ES')}</span></>
+                ? <>Faltan <span className="font-bold text-accent-ink">{remaining.toLocaleString('es-ES')}</span></>
                 : <span className="font-bold text-success">Objetivo cumplido</span>}
               <span className="text-ink-3"> · +{kcalEarned.toLocaleString('es-ES')} kcal</span>
             </p>

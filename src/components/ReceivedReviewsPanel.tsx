@@ -217,7 +217,7 @@ export default function ReceivedReviewsPanel({
       {/* ── Columna izquierda: el hilo ──────────────────────────────────── */}
       <div className="bg-surface border border-hairline rounded-surface overflow-hidden lg:sticky lg:top-4">
         <div className="px-4 py-3 border-b border-hairline bg-raised flex items-center gap-2">
-          <Icon name="history_edu" size="s" className="text-accent" />
+          <Icon name="history_edu" size="s" className="text-accent-ink" />
           <h3 className="font-sans font-bold text-title-s text-ink uppercase tracking-wide">Recibidas</h3>
           <span className="font-mono text-caption text-ink-2 ml-auto tabular-nums">{items.length}</span>
         </div>
@@ -240,7 +240,7 @@ export default function ReceivedReviewsPanel({
                   <Icon
                     name={esCheckin ? 'rate_review' : 'quiz'}
                     size="m"
-                    className={esCheckin ? (item.data.approved ? 'text-accent' : 'text-warning') : 'text-data'}
+                    className={esCheckin ? (item.data.approved ? 'text-accent-ink' : 'text-warning') : 'text-data'}
                   />
                   <div className="flex-1 min-w-0">
                     <p className="font-sans font-bold text-ink text-label truncate">{titulo}</p>
@@ -333,7 +333,7 @@ export default function ReceivedReviewsPanel({
                   <div className="grid grid-cols-3 gap-3 font-mono text-label">
                     {[
                       { label: 'Peso', value: `${c.weight} kg`, color: 'text-ink' },
-                      { label: 'Adherencia', value: c.adherence, color: 'text-accent' },
+                      { label: 'Adherencia', value: c.adherence, color: 'text-accent-ink' },
                       { label: 'Humor', value: c.mood || '😊', color: 'text-ink' },
                     ].map(cell => (
                       <div key={cell.label} className="bg-raised p-3 rounded-surface border border-hairline">
@@ -352,7 +352,7 @@ export default function ReceivedReviewsPanel({
 
                   {feedbackOk && (
                     <div className="bg-accent/15 border border-accent/30 text-ink p-3 rounded-surface text-label flex items-center gap-2">
-                      <Icon name="check_circle" size="s" className="text-accent" />
+                      <Icon name="check_circle" size="s" className="text-accent-ink" />
                       {feedbackOk}
                     </div>
                   )}

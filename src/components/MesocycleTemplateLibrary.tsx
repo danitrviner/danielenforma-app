@@ -75,7 +75,7 @@ function PrioritySelector({ value, onChange }: {
         <button
           key={o.v} onClick={() => onChange(o.v)} title={o.label}
           className={`px-2 rounded-control text-label font-mono transition-all ${
-            value === o.v ? 'bg-accent text-black font-bold' : 'bg-raised text-ink-2 hover:bg-raised'
+            value === o.v ? 'bg-accent text-on-accent font-bold' : 'bg-raised text-ink-2 hover:bg-raised'
           }`}
         >{o.icon}</button>
       ))}
@@ -108,7 +108,7 @@ const ExerciseRow: React.FC<{
         <input
           type="number" min={1} max={20} value={ex.sets}
           onChange={e => onChange({ ...ex, sets: Math.max(1, Number(e.target.value)) })}
-          className="w-10 bg-bg border border-hairline rounded-control px-1 text-center font-mono text-title-s text-white focus:outline-none focus:border-accent/50"
+          className="w-10 bg-bg border border-hairline rounded-control px-1 text-center font-mono text-title-s text-ink focus:outline-none focus:border-accent/50"
         />
       </div>
       {/* Reps */}
@@ -117,7 +117,7 @@ const ExerciseRow: React.FC<{
         <input
           type="text" value={ex.reps}
           onChange={e => onChange({ ...ex, reps: e.target.value })}
-          className="w-14 bg-bg border border-hairline rounded-control px-1 text-center font-mono text-title-s text-white focus:outline-none focus:border-accent/50"
+          className="w-14 bg-bg border border-hairline rounded-control px-1 text-center font-mono text-title-s text-ink focus:outline-none focus:border-accent/50"
           placeholder="8-12"
         />
       </div>
@@ -127,7 +127,7 @@ const ExerciseRow: React.FC<{
         <input
           type="number" min={0} max={5} value={ex.rir}
           onChange={e => onChange({ ...ex, rir: Math.min(5, Math.max(0, Number(e.target.value))) })}
-          className="w-10 bg-bg border border-hairline rounded-control px-1 text-center font-mono text-title-s text-white focus:outline-none focus:border-accent/50"
+          className="w-10 bg-bg border border-hairline rounded-control px-1 text-center font-mono text-title-s text-ink focus:outline-none focus:border-accent/50"
         />
       </div>
       {/* Rest */}
@@ -136,21 +136,21 @@ const ExerciseRow: React.FC<{
         <input
           type="number" min={0} max={600} step={15} value={ex.restSeconds}
           onChange={e => onChange({ ...ex, restSeconds: Math.max(0, Number(e.target.value)) })}
-          className="w-14 bg-bg border border-hairline rounded-control px-1 text-center font-mono text-title-s text-white focus:outline-none focus:border-accent/50"
+          className="w-14 bg-bg border border-hairline rounded-control px-1 text-center font-mono text-title-s text-ink focus:outline-none focus:border-accent/50"
         />
       </div>
       {/* Reorder + delete */}
       <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
         <button onClick={onMoveUp} disabled={isFirst} title="Subir"
-          className="w-5 h-5 flex items-center justify-center rounded-control text-ink-2 hover:text-white disabled:opacity-20">
+          className="w-5 h-5 flex items-center justify-center rounded-control text-ink-2 hover:text-ink disabled:opacity-20">
           <Icon name="arrow_upward" size="s" />
         </button>
         <button onClick={onMoveDown} disabled={isLast} title="Bajar"
-          className="w-5 h-5 flex items-center justify-center rounded-control text-ink-2 hover:text-white disabled:opacity-20">
+          className="w-5 h-5 flex items-center justify-center rounded-control text-ink-2 hover:text-ink disabled:opacity-20">
           <Icon name="arrow_downward" size="s" />
         </button>
         <button onClick={onDelete} title="Eliminar ejercicio"
-          className="w-5 h-5 flex items-center justify-center rounded-control text-ink-2 hover:text-red-400">
+          className="w-5 h-5 flex items-center justify-center rounded-control text-ink-2 hover:text-danger">
           <Icon name="close" size="s" />
         </button>
       </div>
@@ -232,13 +232,13 @@ const DayBlock: React.FC<{
           value={day.name}
           onClick={e => e.stopPropagation()}
           onChange={e => onChange({ ...day, name: e.target.value })}
-          className="flex-1 bg-transparent font-mono text-title-s text-white focus:outline-none"
+          className="flex-1 bg-transparent font-mono text-title-s text-ink focus:outline-none"
           placeholder="Nombre del día"
         />
         <span className="font-mono text-caption text-ink-3">{day.exercises.length} ejerc.</span>
         <button
           onClick={e => { e.stopPropagation(); onDelete(); }}
-          className="opacity-0 group-hover:opacity-100 w-5 h-5 flex items-center justify-center rounded-control text-ink-2 hover:text-red-400 transition-all"
+          className="opacity-0 group-hover:opacity-100 w-5 h-5 flex items-center justify-center rounded-control text-ink-2 hover:text-danger transition-all"
           title="Eliminar día"
         >
           <Icon name="delete" size="s" />
@@ -275,7 +275,7 @@ const DayBlock: React.FC<{
             <button
               type="button"
               onClick={() => setPickerAbierto(true)}
-              className="w-full flex items-center justify-center gap-1.5 px-3 py-2 bg-raised border border-hairline text-ink-2 font-sans text-label rounded-control hover:border-accent/40 hover:text-accent transition-all"
+              className="w-full flex items-center justify-center gap-1.5 px-3 py-2 bg-raised border border-hairline text-ink-2 font-sans text-label rounded-control hover:border-accent/40 hover:text-accent-ink transition-all"
             >
               <Icon name="add" size="s" />
               Añadir ejercicio
@@ -378,7 +378,7 @@ const StageAccordion: React.FC<StageFormProps> = ({
           value={stage.name}
           onClick={e => e.stopPropagation()}
           onChange={e => onChange({ ...stage, name: e.target.value })}
-          className="flex-1 bg-transparent font-sans font-bold text-title-s text-white focus:outline-none"
+          className="flex-1 bg-transparent font-sans font-bold text-title-s text-ink focus:outline-none"
           placeholder="Nombre del mesociclo"
         />
         {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- solo corta la propagación del clic de la cabecera; los controles de verdad son los steppers de dentro */}
@@ -394,7 +394,7 @@ const StageAccordion: React.FC<StageFormProps> = ({
           {!isOnly && (
             <button
               onClick={onDelete}
-              className="w-6 h-6 flex items-center justify-center rounded-control text-ink-2 hover:text-red-400 transition-colors"
+              className="w-6 h-6 flex items-center justify-center rounded-control text-ink-2 hover:text-danger transition-colors"
               title="Eliminar mesociclo"
             >
               <Icon name="delete" size="s" />
@@ -413,7 +413,7 @@ const StageAccordion: React.FC<StageFormProps> = ({
                 key={t}
                 onClick={() => setTab(t)}
                 className={`px-4 py-2 font-mono text-label uppercase tracking-wider transition-colors ${
-                  tab === t ? 'text-accent border-b-2 border-accent' : 'text-ink-3 hover:text-ink-2'
+                  tab === t ? 'text-accent-ink border-b-2 border-accent' : 'text-ink-3 hover:text-ink-2'
                 }`}
               >
                 {t === 'volume' ? 'Volumen' : 'Entrenamiento'}
@@ -426,7 +426,7 @@ const StageAccordion: React.FC<StageFormProps> = ({
             <div className="p-4">
               <div className="flex items-center justify-between mb-2">
                 <span className="font-sans text-caption text-ink-2 uppercase tracking-wider">Volumen y prioridad por grupo</span>
-                <span className="font-mono text-caption text-accent font-bold">{totalSeries} series/sem</span>
+                <span className="font-mono text-caption text-accent-ink font-bold">{totalSeries} series/sem</span>
               </div>
               <div className="border border-hairline rounded-surface overflow-hidden">
                 <table className="w-full">
@@ -484,7 +484,7 @@ const StageAccordion: React.FC<StageFormProps> = ({
                     style={{ padding: 3 }}
                     aria-pressed={stage.deloadWeek !== undefined}
                   >
-                    <span className="block w-4 h-4 rounded-full bg-white transition-transform duration-200" style={{ transform: stage.deloadWeek !== undefined ? 'translateX(18px)' : 'translateX(0)' }} />
+                    <span className="block w-4 h-4 rounded-full bg-ink transition-transform duration-200" style={{ transform: stage.deloadWeek !== undefined ? 'translateX(18px)' : 'translateX(0)' }} />
                   </button>
                   <span className="font-mono text-caption text-ink-2 uppercase tracking-wider">Incluye semana de descarga</span>
                   {stage.deloadWeek !== undefined && (
@@ -494,7 +494,7 @@ const StageAccordion: React.FC<StageFormProps> = ({
                         type="number" min={1} max={stage.weeks}
                         value={stage.deloadWeek}
                         onChange={e => onChange({ ...stage, deloadWeek: Math.min(stage.weeks, Math.max(1, parseInt(e.target.value) || 1)) })}
-                        className="w-14 bg-raised border border-hairline rounded-control px-2 py-1 text-center text-caption text-white font-mono focus:outline-none focus:border-accent"
+                        className="w-14 bg-raised border border-hairline rounded-control px-2 py-1 text-center text-caption text-ink font-mono focus:outline-none focus:border-accent"
                       />
                     </div>
                   )}
@@ -509,7 +509,7 @@ const StageAccordion: React.FC<StageFormProps> = ({
                     style={{ padding: 3 }}
                     aria-pressed={stage.reviewCadenceWeeks !== undefined}
                   >
-                    <span className="block w-4 h-4 rounded-full bg-white transition-transform duration-200" style={{ transform: stage.reviewCadenceWeeks !== undefined ? 'translateX(18px)' : 'translateX(0)' }} />
+                    <span className="block w-4 h-4 rounded-full bg-ink transition-transform duration-200" style={{ transform: stage.reviewCadenceWeeks !== undefined ? 'translateX(18px)' : 'translateX(0)' }} />
                   </button>
                   <span className="font-mono text-caption text-ink-2 uppercase tracking-wider">Programar revisiones cada</span>
                   {stage.reviewCadenceWeeks !== undefined && (
@@ -518,13 +518,13 @@ const StageAccordion: React.FC<StageFormProps> = ({
                         type="number" min={1} max={stage.weeks}
                         value={stage.reviewCadenceWeeks}
                         onChange={e => onChange({ ...stage, reviewCadenceWeeks: Math.max(1, parseInt(e.target.value) || 1) })}
-                        className="w-14 bg-raised border border-hairline rounded-control px-2 py-1 text-center text-caption text-white font-mono focus:outline-none focus:border-accent"
+                        className="w-14 bg-raised border border-hairline rounded-control px-2 py-1 text-center text-caption text-ink font-mono focus:outline-none focus:border-accent"
                       />
                       <span className="font-sans text-caption text-ink-3">semanas ·</span>
                       <select
                         value={stage.reviewType ?? 'revision'}
                         onChange={e => onChange({ ...stage, reviewType: e.target.value as TaskType })}
-                        className="bg-raised border border-hairline rounded-control px-2 py-1 text-caption text-white font-sans focus:outline-none focus:border-accent cursor-pointer"
+                        className="bg-raised border border-hairline rounded-control px-2 py-1 text-caption text-ink font-sans focus:outline-none focus:border-accent cursor-pointer"
                       >
                         <option value="revision">Check-in</option>
                         <option value="cuestionario">Cuestionario</option>
@@ -547,7 +547,7 @@ const StageAccordion: React.FC<StageFormProps> = ({
                 <button
                   onClick={addDay}
                   disabled={stage.days.length >= stage.daysPerWeek}
-                  className="flex items-center gap-1 px-2 py-1 bg-raised border border-hairline text-ink-2 font-mono text-caption rounded-control hover:border-accent/40 hover:text-accent disabled:opacity-30 transition-all"
+                  className="flex items-center gap-1 px-2 py-1 bg-raised border border-hairline text-ink-2 font-mono text-caption rounded-control hover:border-accent/40 hover:text-accent-ink disabled:opacity-30 transition-all"
                 >
                   <Icon name="add" size="s" />
                   Añadir día
@@ -670,11 +670,11 @@ function TemplateEditor({
     <div className="bg-surface border border-hairline rounded-surface overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-4 border-b border-hairline">
-        <h3 className="font-sans font-bold text-white text-title-s flex items-center gap-2">
-          <Icon name="edit_note" size="m" className="text-accent" />
+        <h3 className="font-sans font-bold text-ink text-title-s flex items-center gap-2">
+          <Icon name="edit_note" size="m" className="text-accent-ink" />
           {initial.name ? `Editar "${initial.name}"` : 'Nueva plantilla de mesociclo'}
         </h3>
-        <button onClick={onCancel} className="text-ink-2 hover:text-white transition-colors">
+        <button onClick={onCancel} className="text-ink-2 hover:text-ink transition-colors">
           <Icon name="close" size="m" />
         </button>
       </div>
@@ -709,7 +709,7 @@ function TemplateEditor({
             </div>
             <button
               onClick={addStage}
-              className="flex items-center gap-1 px-3 py-2 bg-raised border border-hairline text-ink-2 font-sans text-caption rounded-control hover:border-accent/40 hover:text-accent transition-all"
+              className="flex items-center gap-1 px-3 py-2 bg-raised border border-hairline text-ink-2 font-sans text-caption rounded-control hover:border-accent/40 hover:text-accent-ink transition-all"
             >
               <Icon name="add" size="s" />
               Añadir mesociclo
@@ -784,13 +784,13 @@ function TemplateCard({
     <div className="bg-surface border border-hairline rounded-canvas p-4 hover:border-accent/30 transition-all">
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="min-w-0">
-          <p className="font-sans font-bold text-white text-body-s truncate">{tpl.name}</p>
+          <p className="font-sans font-bold text-ink text-body-s truncate">{tpl.name}</p>
           {tpl.description && (
             <p className="font-sans text-caption text-ink-2 truncate">{tpl.description}</p>
           )}
           <div className="flex gap-3 mt-1 flex-wrap">
             <span className="font-mono text-caption text-ink-2">{tpl.stages.length} meso{tpl.stages.length !== 1 ? 's' : ''}</span>
-            <span className="font-mono text-caption text-accent font-bold">{totalWeeks} semanas</span>
+            <span className="font-mono text-caption text-accent-ink font-bold">{totalWeeks} semanas</span>
             {totalExercises > 0 && (
               <span className="font-mono text-caption text-data">{totalExercises} ejercicios</span>
             )}
@@ -806,7 +806,7 @@ function TemplateCard({
           </button>
           <button
             onClick={onDelete}
-            className="p-2 rounded-control bg-raised border border-hairline text-ink-2 hover:text-red-400 hover:border-red-500/30 transition-all"
+            className="p-2 rounded-control bg-raised border border-hairline text-ink-2 hover:text-danger hover:border-danger/30 transition-all"
             title="Eliminar plantilla"
           >
             <Icon name="delete" size="s" />
@@ -820,7 +820,7 @@ function TemplateCard({
           {topGroups.map(g => (
             <span
               key={g}
-              className="font-sans text-caption px-2 rounded-control bg-accent/10 border border-accent/25 text-accent uppercase font-bold"
+              className="font-sans text-caption px-2 rounded-control bg-accent/10 border border-accent/25 text-accent-ink uppercase font-bold"
             >
               {MUSCLE_LABELS[g]}
             </span>
@@ -937,7 +937,7 @@ export default function MesocycleTemplateLibrary({ coachId }: Props) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="font-sans font-bold text-title-m text-white">Plantillas de mesociclo</h2>
+          <h2 className="font-sans font-bold text-title-m text-ink">Plantillas de mesociclo</h2>
           <p className="font-sans text-caption text-ink-2 ">
             Mesociclos periodizados de múltiples etapas — aplícalos a cualquier cliente.
           </p>

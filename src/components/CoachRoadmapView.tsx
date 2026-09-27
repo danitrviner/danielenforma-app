@@ -342,7 +342,7 @@ export default function CoachRoadmapView({ athleteEmail, coachId, onGoToClientTa
   if (loading) {
     return (
       <div className="flex items-center justify-center py-10">
-        <Icon name="refresh" size="xl" className="text-accent animate-spin" />
+        <Icon name="refresh" size="xl" className="text-accent-ink animate-spin" />
       </div>
     );
   }
@@ -365,7 +365,7 @@ export default function CoachRoadmapView({ athleteEmail, coachId, onGoToClientTa
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="font-sans font-bold text-title-m text-white uppercase tracking-tight">Road map del atleta</h2>
+        <h2 className="font-sans font-bold text-title-m text-ink uppercase tracking-tight">Road map del atleta</h2>
         <p className="text-ink-2 text-label font-sans mt-1">Fases, retos semanales, niveles y calendario — editable por el coach</p>
       </div>
 

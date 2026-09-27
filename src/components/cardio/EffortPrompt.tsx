@@ -36,7 +36,7 @@ export default function EffortPrompt({ suggested, onConfirm, saving }: Props) {
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center">
           <p className="text-caption font-mono uppercase text-ink-2 tracking-wider">Esfuerzo</p>
-          <p className="font-display text-hero font-black text-accent tabular-nums mt-1">{pe}</p>
+          <p className="font-display text-hero font-black text-accent-ink tabular-nums mt-1">{pe}</p>
         </div>
 
         <EffortScale value={pe} onChange={setPe} label="Esfuerzo percibido, de 1 a 10" />

@@ -34,7 +34,7 @@ export type BadgeTone = 'neutral' | 'accent' | 'success' | 'warning' | 'danger' 
 /** Clases literales, una por tono. Tailwind no compone cadenas. */
 const TONO: Record<BadgeTone, string> = {
   neutral: 'bg-raised text-ink-2 border-hairline',
-  accent:  'bg-accent/14 text-accent border-accent-line',
+  accent:  'bg-accent/14 text-accent-ink border-accent-line',
   success: 'bg-success/14 text-success border-success/25',
   warning: 'bg-warning/14 text-warning border-warning/25',
   danger:  'bg-danger/14 text-danger border-danger/25',

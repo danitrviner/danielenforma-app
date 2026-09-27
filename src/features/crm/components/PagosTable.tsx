@@ -130,6 +130,10 @@ export default function PagosTable({ pagos, cargando, error, mostrarCliente, coa
       id: 'fecha',
       header: 'Fecha',
       width: '110px',
+      // Se ordena por la MISMA fecha que se pinta: la de cobro si el dinero
+      // entró, la de emisión si no. Ordenar por `fechaEmision` a secas pondría
+      // un cobro de julio donde el coach ve «06 jul» pero la fila dice otra.
+      sortValue: p => (p.estado === 'pagado' ? p.fechaCobro : p.fechaEmision),
       render: p => {
         const retraso = (p.estado === 'pendiente' || p.estado === 'impagado') ? diasDeRetraso(p.fechaEmision) : 0;
         const atrasado = retraso > UMBRAL_DIAS_AVISO;
@@ -168,7 +172,7 @@ export default function PagosTable({ pagos, cargando, error, mostrarCliente, coa
               onClick={() => marcarPagado(p)}
               aria-label="Marcar como pagado"
               title="Marcar como pagado"
-              className="w-7 h-7 rounded-control inline-flex items-center justify-center text-success hover:bg-white/6 transition-colors"
+              className="w-7 h-7 rounded-control inline-flex items-center justify-center text-success hover:bg-hairline transition-colors"
             >
               <Icon name="check_circle" size="m" />
             </button>
@@ -179,7 +183,7 @@ export default function PagosTable({ pagos, cargando, error, mostrarCliente, coa
               onClick={() => marcarImpagado(p, p.estado !== 'impagado')}
               aria-label={p.estado === 'impagado' ? 'Volver a pendiente' : 'Marcar como impagado'}
               title={p.estado === 'impagado' ? 'Volver a pendiente' : 'Marcar como impagado'}
-              className={`w-7 h-7 rounded-control inline-flex items-center justify-center hover:bg-white/6 transition-colors ${
+              className={`w-7 h-7 rounded-control inline-flex items-center justify-center hover:bg-hairline transition-colors ${
                 p.estado === 'impagado' ? 'text-warning' : 'text-ink-2'
               }`}
             >
@@ -191,7 +195,7 @@ export default function PagosTable({ pagos, cargando, error, mostrarCliente, coa
             onClick={() => setEditando(p)}
             aria-label="Editar"
             title="Editar"
-            className="w-7 h-7 rounded-control inline-flex items-center justify-center text-ink-2 hover:bg-white/6 transition-colors"
+            className="w-7 h-7 rounded-control inline-flex items-center justify-center text-ink-2 hover:bg-hairline transition-colors"
           >
             <Icon name="edit" size="m" />
           </button>
@@ -200,7 +204,7 @@ export default function PagosTable({ pagos, cargando, error, mostrarCliente, coa
               onClick={() => borrar(p)}
               aria-label="Borrar"
               title="Borrar"
-              className="w-7 h-7 rounded-control inline-flex items-center justify-center text-danger hover:bg-white/6 transition-colors"
+              className="w-7 h-7 rounded-control inline-flex items-center justify-center text-danger hover:bg-hairline transition-colors"
             >
               <Icon name="delete" size="m" />
             </button>

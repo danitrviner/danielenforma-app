@@ -56,8 +56,8 @@ export default function ProposalCard({
   const comentarios = p.comentarios ?? [];
 
   return (
-    <div className="bg-surface border border-amber-500/25 rounded-surface p-3 flex flex-col gap-2">
-      <p className="text-label text-white whitespace-pre-wrap">
+    <div className="bg-surface border border-warning/25 rounded-surface p-3 flex flex-col gap-2">
+      <p className="text-label text-ink whitespace-pre-wrap">
         {posicion && posicion.total > 1 && (
           <span className="font-mono text-ink-3 mr-2">{posicion.idx + 1}/{posicion.total}</span>
         )}
@@ -109,7 +109,7 @@ export default function ProposalCard({
       <button
         type="button"
         onClick={() => setAbierta(v => !v)}
-        className="flex items-center gap-1 self-start text-caption uppercase tracking-wide text-ink-3 hover:text-accent transition-colors"
+        className="flex items-center gap-1 self-start text-caption uppercase tracking-wide text-ink-3 hover:text-accent-ink transition-colors"
       >
         <Icon name={abierta ? 'expand_less' : 'expand_more'} size="s" />
         {abierta ? 'Ocultar el detalle' : (editada ? 'Seguir ajustando' : 'Ver y ajustar el detalle')}
@@ -118,7 +118,7 @@ export default function ProposalCard({
 
       {editada && (
         <div className="flex items-center gap-2">
-          <span className="text-caption text-accent">Editada por ti</span>
+          <span className="text-caption text-accent-ink">Editada por ti</span>
           <button type="button" onClick={onDescartarEdicion} className="text-caption text-ink-4 underline">
             volver a la propuesta original
           </button>

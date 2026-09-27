@@ -106,7 +106,7 @@ export default function RenovacionesTab({ cliente, coachEmail }: { cliente: Clie
                   key={v}
                   type="button"
                   onClick={e => { e.stopPropagation(); void marcar(s, v); }}
-                  className="font-mono text-caption text-ink-3 hover:text-accent underline underline-offset-2 transition-colors"
+                  className="font-mono text-caption text-ink-3 hover:text-accent-ink underline underline-offset-2 transition-colors"
                 >{RESULTADO[v].label.toLowerCase()}</button>
               ))}
           </div>

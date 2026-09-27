@@ -101,7 +101,7 @@ export default function ChallengeOptionsPanel({
         <select
           value={weekTarget}
           onChange={e => setWeekTarget(e.target.value as 'esta' | 'siguiente')}
-          className="bg-bg border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent"
+          className="bg-bg border border-hairline rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent"
         >
           <option value="esta">Esta semana</option>
           <option value="siguiente">Semana que viene</option>
@@ -109,7 +109,7 @@ export default function ChallengeOptionsPanel({
       </div>
 
       {overwriting && (
-        <p className="font-sans text-caption text-orange-400">
+        <p className="font-sans text-caption text-warning">
           Ya hay un reto automático en curso con progreso — enviar una opción lo sobrescribirá.
         </p>
       )}
@@ -125,10 +125,10 @@ export default function ChallengeOptionsPanel({
               style={{ borderColor: opt.isMilestone ? 'var(--color-accent)55' : 'rgba(255,255,255,0.07)' }}
             >
               <div className="flex items-start justify-between gap-2">
-                <p className="font-sans font-bold text-white text-body-s">{opt.title}</p>
+                <p className="font-sans font-bold text-ink text-body-s">{opt.title}</p>
                 <div className="flex items-center gap-2 flex-shrink-0">
                   {opt.isMilestone && (
-                    <span className="font-mono text-caption uppercase px-2 rounded-full bg-accent/15 text-accent">HITO</span>
+                    <span className="font-mono text-caption uppercase px-2 rounded-full bg-accent/15 text-accent-ink">HITO</span>
                   )}
                   <span
                     className="font-mono text-caption uppercase px-2 rounded-full"
@@ -142,7 +142,7 @@ export default function ChallengeOptionsPanel({
               <button
                 onClick={() => assignOption(opt)}
                 disabled={assigning !== null}
-                className="w-full py-2 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50"
+                className="w-full py-2 bg-accent text-on-accent font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50"
               >
                 {assigning === opt.kind ? 'Enviando...' : 'Enviar'}
               </button>
@@ -176,7 +176,7 @@ export default function ChallengeOptionsPanel({
             <button
               onClick={saveEligible}
               disabled={savingEligible}
-              className="py-2 px-3 bg-surface border border-hairline text-ink-2 font-mono text-title-s rounded-control hover:text-white disabled:opacity-50"
+              className="py-2 px-3 bg-surface border border-hairline text-ink-2 font-mono text-title-s rounded-control hover:text-ink disabled:opacity-50"
             >
               {savingEligible ? 'Guardando...' : 'Guardar elegibles'}
             </button>

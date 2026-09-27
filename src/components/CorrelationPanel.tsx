@@ -102,7 +102,7 @@ function TarjetaTitular({ r }: { r: ResumenMetrica; key?: React.Key }) {
     <div className="bg-surface border border-hairline rounded-canvas p-4 flex flex-col gap-3">
       <p className="font-sans text-caption text-ink-2 uppercase tracking-wider truncate">{r.label}</p>
       <div className="flex items-baseline gap-2">
-        <span className="font-mono font-extrabold text-display text-white leading-none">{r.ultimo}</span>
+        <span className="font-mono font-extrabold text-display text-ink leading-none">{r.ultimo}</span>
         {r.unit && <span className="font-sans text-label text-ink-2">{r.unit}</span>}
       </div>
       <div className="flex items-center justify-between gap-3">
@@ -611,7 +611,7 @@ export default function CorrelationPanel({
               <span className="font-sans text-label text-ink-2 uppercase tracking-wider">
                 Series disponibles
                 {selectedIds.length > 0 && (
-                  <span className="ml-2 text-accent font-bold">{selectedIds.length} seleccionada{selectedIds.length !== 1 ? 's' : ''}</span>
+                  <span className="ml-2 text-accent-ink font-bold">{selectedIds.length} seleccionada{selectedIds.length !== 1 ? 's' : ''}</span>
                 )}
               </span>
               <span className="material-symbols-outlined text-ink-2 text-body-s transition-transform" style={{ transform: selectorOpen ? 'rotate(180deg)' : 'none' }}>
@@ -631,7 +631,7 @@ export default function CorrelationPanel({
                         <button
                           onClick={() => toggleSeries(f.id)}
                           className={`flex items-center gap-2 px-3 py-2 min-h-[44px] sm:min-h-0 rounded-full font-mono text-label font-bold border transition-all ${
-                            active ? 'text-black' : 'bg-transparent text-ink-2 border-hairline hover:border-hairline hover:text-white'
+                            active ? 'text-on-fill' : 'bg-transparent text-ink-2 border-hairline hover:border-hairline hover:text-ink'
                           }`}
                           style={active ? { backgroundColor: color, borderColor: color } : {}}
                         >
@@ -665,7 +665,7 @@ export default function CorrelationPanel({
                       key={s.id}
                       onClick={() => toggleSeries(s.id)}
                       className={`flex items-center gap-2 px-3 py-2 min-h-[44px] sm:min-h-0 rounded-full font-mono text-label font-bold border transition-all ${
-                        active ? 'text-black' : 'bg-transparent text-ink-2 border-hairline hover:border-hairline hover:text-white'
+                        active ? 'text-on-fill' : 'bg-transparent text-ink-2 border-hairline hover:border-hairline hover:text-ink'
                       }`}
                       style={active ? { backgroundColor: color, borderColor: color } : {}}
                     >
@@ -761,8 +761,8 @@ export default function CorrelationPanel({
                         : 'border-hairline'
                 }`}>
                   <div className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-accent text-body-s">functions</span>
-                    <p className="font-sans font-bold text-body-s text-white">Correlación de Pearson</p>
+                    <span className="material-symbols-outlined text-accent-ink text-body-s">functions</span>
+                    <p className="font-sans font-bold text-body-s text-ink">Correlación de Pearson</p>
                   </div>
                   {correlationResult.r === null ? (
                     <p className="font-sans text-label text-ink-2">{correlationResult.label}</p>

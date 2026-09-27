@@ -74,7 +74,7 @@ export default function PageGrafica({ chartData, zones, timeInZone, belowZoneSec
   if (chartData.length < 2) {
     return (
       <div className="flex h-full items-center justify-center px-8">
-        <p className="text-caption font-sans uppercase text-white/50 text-center">Reuniendo datos de la sesión…</p>
+        <p className="text-caption font-sans uppercase text-ink-3 text-center">Reuniendo datos de la sesión…</p>
       </div>
     );
   }
@@ -104,7 +104,7 @@ export default function PageGrafica({ chartData, zones, timeInZone, belowZoneSec
             return (
               <div
                 key={z}
-                className="flex-1 flex items-center justify-end pr-2.5 border-b border-white/5 last:border-b-0 transition-colors duration-700"
+                className="flex-1 flex items-center justify-end pr-2.5 border-b border-hairline last:border-b-0 transition-colors duration-700"
                 // La banda de la zona actual se ilumina un poco (petición de
                 // Dani, 21-08) — mismo truco de opacidad-en-hex que ya usa
                 // el resto del panel, solo con un dígito más alto (`44`
@@ -142,7 +142,7 @@ export default function PageGrafica({ chartData, zones, timeInZone, belowZoneSec
         >
           {lastBpm}
         </span>
-        <div className="absolute left-3.5 bottom-2.5 font-mono text-[9.5px] text-white/25">ÚLTIMOS {WINDOW_SEC} S</div>
+        <div className="absolute left-3.5 bottom-2.5 font-mono text-[9.5px] text-ink-5">ÚLTIMOS {WINDOW_SEC} S</div>
       </div>
 
       {/* Lista de zonas, Z1 → Z5 ascendente, fila actual resaltada */}
@@ -152,7 +152,7 @@ export default function PageGrafica({ chartData, zones, timeInZone, belowZoneSec
           return (
             <div
               key={z}
-              className="h-[50px] flex items-center justify-between border-t border-white/5"
+              className="h-[50px] flex items-center justify-between border-t border-hairline"
               style={isNow ? { borderTopColor: `${ZONE_COLOR[z]}4d`, background: `${ZONE_COLOR[z]}0f`, margin: '0 -10px', padding: '0 10px', borderRadius: 8 } : undefined}
             >
               <div className="flex items-center gap-3">
@@ -170,27 +170,27 @@ export default function PageGrafica({ chartData, zones, timeInZone, belowZoneSec
             </div>
           );
         })}
-        <div className="h-[50px] flex items-center justify-between border-t border-white/5 opacity-60">
+        <div className="h-[50px] flex items-center justify-between border-t border-hairline opacity-60">
           <div className="flex items-center gap-3">
             <span className="h-2.5 w-2.5 rounded-[3px] shrink-0" style={{ background: BELOW_ZONE_COLOR }} />
-            <span className="text-[13.5px] text-white/80">{BELOW_ZONE_LABEL}</span>
+            <span className="text-[13.5px] text-ink-2">{BELOW_ZONE_LABEL}</span>
           </div>
-          <span className="font-mono text-[13px] font-semibold text-white/50">{fmt(belowZoneSec)}</span>
+          <span className="font-mono text-[13px] font-semibold text-ink-3">{fmt(belowZoneSec)}</span>
         </div>
       </div>
 
       {/* Reparto de la sesión */}
-      <div className="bg-black/25 rounded-2xl p-4 flex flex-col gap-3">
+      <div className="bg-veil/25 rounded-2xl p-4 flex flex-col gap-3">
         <div className="flex items-center justify-between">
-          <span className="font-mono text-[10.5px] tracking-wide text-white/40 uppercase">Reparto de la sesión</span>
-          <span className="font-mono text-[10.5px] text-white/35">{fmt(elapsedSec)}</span>
+          <span className="font-mono text-[10.5px] tracking-wide text-ink-4 uppercase">Reparto de la sesión</span>
+          <span className="font-mono text-[10.5px] text-ink-4">{fmt(elapsedSec)}</span>
         </div>
         <div className="h-3.5 rounded-md overflow-hidden flex gap-0.5">
           {ZONE_ORDER.map(z => (
             <div key={z} style={{ width: `${Math.max((timeInZone[z] / total) * 100, 0)}%`, background: ZONE_COLOR[z] }} />
           ))}
         </div>
-        <span className="text-[12.5px] leading-relaxed text-white/50">
+        <span className="text-[12.5px] leading-relaxed text-ink-3">
           {currentZone
             ? `Llevas ${fmt(timeInZone[currentZone])} en ${ZONE_LABEL[currentZone].toLowerCase()}.`
             : 'Aún no has entrado en zona.'}

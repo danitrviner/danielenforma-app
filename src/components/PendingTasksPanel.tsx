@@ -25,9 +25,9 @@ const TYPE_ICON: Record<TaskType, string> = {
 
 const TYPE_COLOR: Record<TaskType, string> = {
   revision: 'text-data',
-  cuestionario: 'text-accent',
-  foto: 'text-violet-300',
-  manual: 'text-amber-300',
+  cuestionario: 'text-accent-ink',
+  foto: 'text-chart-3',
+  manual: 'text-warning',
   otro: 'text-ink-2',
 };
 
@@ -188,11 +188,11 @@ export default function PendingTasksPanel({ profile, checkins, onNavigate }: Pro
 
   return (
     <section className="bg-surface border border-hairline rounded-surface p-4 sm:p-5">
-      <h2 className="font-sans font-bold text-title-s text-white mb-3 pb-2 border-b border-hairline flex items-center gap-2">
-        <span className="material-symbols-outlined text-accent">checklist</span>
+      <h2 className="font-sans font-bold text-title-s text-ink mb-3 pb-2 border-b border-hairline flex items-center gap-2">
+        <span className="material-symbols-outlined text-accent-ink">checklist</span>
         Tareas pendientes
         {rows.length > 0 && (
-          <span className="ml-auto bg-accent text-black text-caption font-bold px-2 rounded-full">{rows.length}</span>
+          <span className="ml-auto bg-accent text-on-accent text-caption font-bold px-2 rounded-full">{rows.length}</span>
         )}
       </h2>
 

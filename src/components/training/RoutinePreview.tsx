@@ -80,7 +80,7 @@ function SetsStepper({ value, onChange }: { value: number; onChange: (v: number)
         onClick={() => onChange(Math.max(1, value - 1))}
         disabled={value <= 1}
         aria-label="Quitar una serie"
-        className="w-8 h-8 sm:w-6 sm:h-6 rounded-control text-ink-2 hover:bg-white/5 disabled:opacity-30 font-mono text-body-s sm:text-label font-bold flex items-center justify-center transition-colors"
+        className="w-8 h-8 sm:w-6 sm:h-6 rounded-control text-ink-2 hover:bg-hairline disabled:opacity-30 font-mono text-body-s sm:text-label font-bold flex items-center justify-center transition-colors"
       >−</button>
       <span className="w-9 text-center font-mono text-title-s font-bold text-ink tabular-nums">{value}</span>
       <button
@@ -88,7 +88,7 @@ function SetsStepper({ value, onChange }: { value: number; onChange: (v: number)
         onClick={() => onChange(Math.min(20, value + 1))}
         disabled={value >= 20}
         aria-label="Añadir una serie"
-        className="w-8 h-8 sm:w-6 sm:h-6 rounded-control bg-accent/14 text-accent hover:bg-accent/22 disabled:opacity-30 font-mono text-body-s sm:text-label font-bold flex items-center justify-center transition-colors"
+        className="w-8 h-8 sm:w-6 sm:h-6 rounded-control bg-accent/14 text-accent-ink hover:bg-accent/22 disabled:opacity-30 font-mono text-body-s sm:text-label font-bold flex items-center justify-center transition-colors"
       >+</button>
     </div>
   );
@@ -114,23 +114,23 @@ export default function RoutinePreview({
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <p className="font-sans font-bold text-white text-body-s">Vista previa de rutinas</p>
+          <p className="font-sans font-bold text-ink text-body-s">Vista previa de rutinas</p>
           <p className="font-mono text-caption text-ink-2">
             Meso #{mesoNumber} · {weeks} semanas · {vueltas} vueltas × {daysPerWeek} sesiones =&nbsp;
-            <span className="text-accent">{vueltas * daysPerWeek} sesiones</span>
+            <span className="text-accent-ink">{vueltas * daysPerWeek} sesiones</span>
           </p>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={onBack}
-            className="px-3 py-2 font-mono text-label text-ink-2 hover:text-white border border-hairline rounded-control transition-all flex items-center gap-1"
+            className="px-3 py-2 font-mono text-label text-ink-2 hover:text-ink border border-hairline rounded-control transition-all flex items-center gap-1"
           >
             <Icon name="arrow_back" size="s" />
             Volver
           </button>
           <button
             onClick={onAssign}
-            className="px-4 py-2 bg-accent text-black font-sans text-label font-bold uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all flex items-center gap-2"
+            className="px-4 py-2 bg-accent text-on-accent font-sans text-label font-bold uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all flex items-center gap-2"
           >
             <Icon name="assignment_turned_in" size="s" />
             Asignar al atleta
@@ -156,7 +156,7 @@ export default function RoutinePreview({
           return (
             <div key={dayIdx} className="bg-surface border border-hairline rounded-surface p-4 flex-1 min-w-[300px] max-w-[420px] space-y-3">
               <div className="flex items-center justify-between gap-2 pb-2 border-b border-hairline">
-                <span className="font-mono text-label font-bold text-accent uppercase truncate">
+                <span className="font-mono text-label font-bold text-accent-ink uppercase truncate">
                   Día {(offsets[dayIdx] ?? dayIdx) + 1}{dayPlan?.dayType ? ` · ${dayPlan.dayType}` : ''}
                 </span>
                 <span className="font-mono text-caption text-ink-2 flex-shrink-0 tabular-nums">
@@ -169,7 +169,7 @@ export default function RoutinePreview({
               {pd.warnings.length > 0 && (
                 <div className="space-y-0.5">
                   {pd.warnings.map((w, wi) => (
-                    <p key={wi} className="text-caption font-mono text-orange-400 flex items-center gap-1">
+                    <p key={wi} className="text-caption font-mono text-warning flex items-center gap-1">
                       <Icon name="warning" size="s" />
                       Sin ejercicios para {w}
                     </p>
@@ -191,21 +191,21 @@ export default function RoutinePreview({
                         onClick={() => onMove(dayIdx, exIdx, -1)}
                         disabled={exIdx === 0}
                         aria-label="Subir ejercicio"
-                        className="text-ink-3 hover:text-accent disabled:opacity-20 disabled:hover:text-ink-3 transition-colors"
+                        className="text-ink-3 hover:text-accent-ink disabled:opacity-20 disabled:hover:text-ink-3 transition-colors"
                       ><Icon name="keyboard_arrow_up" size="s" /></button>
                       <button
                         type="button"
                         onClick={() => onMove(dayIdx, exIdx, 1)}
                         disabled={exIdx === pd.exercises.length - 1}
                         aria-label="Bajar ejercicio"
-                        className="text-ink-3 hover:text-accent disabled:opacity-20 disabled:hover:text-ink-3 transition-colors"
+                        className="text-ink-3 hover:text-accent-ink disabled:opacity-20 disabled:hover:text-ink-3 transition-colors"
                       ><Icon name="keyboard_arrow_down" size="s" /></button>
                     </div>
 
                     <span className="font-mono text-caption text-ink-3 tabular-nums w-4 flex-shrink-0">{exIdx + 1}</span>
 
                     <div className="min-w-0 flex-1">
-                      <p className="text-label font-sans font-bold text-white">{pe.name}</p>
+                      <p className="text-label font-sans font-bold text-ink">{pe.name}</p>
                       <div className="flex items-center gap-1.5 flex-wrap">
                         <span className="font-mono text-caption text-ink-2">{MUSCLE_LABELS_SHORT[pe.muscleGroup]}</span>
                         {/* El esquema que ha puesto el motor. Antes era «8-12 ·
@@ -219,7 +219,7 @@ export default function RoutinePreview({
                         {pe.equipmentMismatch && (
                           <span
                             title="Material no disponible según el onboarding"
-                            className="inline-flex items-center gap-0.5 font-mono text-caption text-amber-400 bg-amber-500/10 border border-amber-500/20 px-1 rounded-control"
+                            className="inline-flex items-center gap-0.5 font-mono text-caption text-warning bg-warning/10 border border-warning/20 px-1 rounded-control"
                           >
                             <Icon name="warning" size="s" style={{ fontSize: '11px' }} />
                             sin material
@@ -242,13 +242,13 @@ export default function RoutinePreview({
                         onClick={() => onReplace(dayIdx, exIdx)}
                         title="Cambiar ejercicio"
                         aria-label="Cambiar ejercicio"
-                        className="text-ink-3 hover:text-accent transition-colors"
+                        className="text-ink-3 hover:text-accent-ink transition-colors"
                       ><Icon name="swap_horiz" size="s" /></button>
                       <button
                         onClick={() => onRemove(dayIdx, exIdx)}
                         title="Quitar ejercicio"
                         aria-label="Quitar ejercicio"
-                        className="text-ink-3 hover:text-red-400 transition-colors"
+                        className="text-ink-3 hover:text-danger transition-colors"
                       ><Icon name="close" size="s" /></button>
                     </div>
                   </div>
@@ -258,7 +258,7 @@ export default function RoutinePreview({
               <button
                 type="button"
                 onClick={() => onAdd(dayIdx)}
-                className="w-full flex items-center justify-center gap-2 bg-bg border border-dashed border-hairline rounded-control px-3 py-2 text-title-s font-sans text-ink-2 hover:text-accent hover:border-accent/40 transition-all"
+                className="w-full flex items-center justify-center gap-2 bg-bg border border-dashed border-hairline rounded-control px-3 py-2 text-title-s font-sans text-ink-2 hover:text-accent-ink hover:border-accent/40 transition-all"
               >
                 <Icon name="add" size="s" />
                 Añadir ejercicio

@@ -1,5 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { Icon } from '../ui';
+import { colorDeTema, conAlfa } from '../../utils/coloresPersistidos';
 
 // "Deslizar para guardar/descartar" en vez de un botón — el patrón exacto
 // observado en FITIV (§4bis.1 del análisis). Con las manos sudadas o en
@@ -57,7 +58,7 @@ export default function SlideAction({ label, icon, color, onConfirm, disabled }:
     <div
       ref={trackRef}
       className="relative h-14 rounded-full overflow-hidden select-none"
-      style={{ backgroundColor: `${color}1f`, border: `1px solid ${color}40`, opacity: disabled ? 0.4 : 1 }}
+      style={{ backgroundColor: conAlfa(color, 12), border: `1px solid ${conAlfa(color, 25)}`, opacity: disabled ? 0.4 : 1 }}
     >
       <p className="absolute inset-0 flex items-center justify-center text-label font-sans uppercase pointer-events-none" style={{ color }}>
         {label}
@@ -75,7 +76,7 @@ export default function SlideAction({ label, icon, color, onConfirm, disabled }:
           touchAction: 'pan-y',
         }}
       >
-        <Icon name={icon} size="l" className="text-black" />
+        <Icon name={icon} size="l" className="text-on-accent" />
       </div>
     </div>
   );

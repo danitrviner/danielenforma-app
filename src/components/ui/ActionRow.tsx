@@ -36,7 +36,7 @@ export default function ActionRow({ initials, title, meta, urgent = true, onClic
         <span
           className={
             'flex h-9 w-9 items-center justify-center rounded-full font-sans text-body-s font-bold '
-            + (urgent ? 'bg-accent/16 text-accent' : 'bg-white/6 text-ink-4')
+            + (urgent ? 'bg-accent/16 text-accent-ink' : 'bg-hairline text-ink-4')
           }
         >
           {initials}

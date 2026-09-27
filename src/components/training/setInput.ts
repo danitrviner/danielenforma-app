@@ -27,8 +27,8 @@ export function rirTexto(valor: string): string {
 export function rirClaseColor(valor: string): string {
   if (valor === 'fallo') return 'text-danger';
   const n = Number(valor);
-  if (n <= 1) return 'text-accent';
-  if (n <= 3) return 'text-accent/70';
+  if (n <= 1) return 'text-accent-ink';
+  if (n <= 3) return 'text-accent-ink/70';
   return 'text-ink-2';
 }
 

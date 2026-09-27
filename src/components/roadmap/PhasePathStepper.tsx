@@ -1,6 +1,7 @@
 import React from 'react';
 import { PlanPhase } from '../../types';
 import { Icon } from '../ui';
+import { colorDeTema, conAlfa } from '../../utils/coloresPersistidos';
 
 interface Props {
   phases: PlanPhase[];
@@ -30,9 +31,9 @@ export default function PhasePathStepper({ phases }: Props) {
                 <div
                   className="w-9 h-9 rounded-full flex items-center justify-center border-2"
                   style={{
-                    borderColor: isFuture ? 'var(--color-raised)' : phase.color,
-                    backgroundColor: isActive ? `${phase.color}22` : 'transparent',
-                    color: isDone ? phase.color : isActive ? phase.color : 'var(--color-ink-3)',
+                    borderColor: isFuture ? 'var(--color-raised)' : colorDeTema(phase.color),
+                    backgroundColor: isActive ? conAlfa(phase.color, 13) : 'transparent',
+                    color: isDone ? colorDeTema(phase.color) : isActive ? colorDeTema(phase.color) : 'var(--color-ink-3)',
                   }}
                 >
                   <Icon name={isDone ? 'check' : phase.icon || 'circle'} size="m" />
@@ -40,18 +41,18 @@ export default function PhasePathStepper({ phases }: Props) {
                 {!isLast && (
                   <div
                     className="w-0.5 flex-1 min-h-[24px] mt-1"
-                    style={{ backgroundColor: isDone ? phase.color : 'var(--color-raised)' }}
+                    style={{ backgroundColor: isDone ? colorDeTema(phase.color) : 'var(--color-raised)' }}
                   />
                 )}
               </div>
               <div className={`pb-3 ${isFuture ? 'opacity-70' : ''}`}>
                 <p
                   className="font-sans font-bold text-body-s"
-                  style={{ color: isActive ? phase.color : isDone ? 'var(--color-ink)' : 'var(--color-ink-2)' }}
+                  style={{ color: isActive ? colorDeTema(phase.color) : isDone ? 'var(--color-ink)' : 'var(--color-ink-2)' }}
                 >
                   {phase.name}
                   {isActive && (
-                    <span className="ml-2 font-mono text-caption uppercase tracking-widest align-middle" style={{ color: phase.color }}>
+                    <span className="ml-2 font-mono text-caption uppercase tracking-widest align-middle" style={{ color: colorDeTema(phase.color) }}>
                       ahora
                     </span>
                   )}

@@ -106,13 +106,13 @@ export default function MicronutrientesPanel({ athleteEmail }: Props) {
             <button
               onClick={() => setVegServings(vegServings - 1)}
               aria-label="Quitar una ración de verdura"
-              className="w-6 h-6 rounded-control bg-raised border border-hairline text-ink-2 hover:text-white flex items-center justify-center"
+              className="w-6 h-6 rounded-control bg-raised border border-hairline text-ink-2 hover:text-ink flex items-center justify-center"
             >−</button>
-            <span className="font-mono text-label text-white w-5 text-center">{vegServings}</span>
+            <span className="font-mono text-label text-ink w-5 text-center">{vegServings}</span>
             <button
               onClick={() => setVegServings(vegServings + 1)}
               aria-label="Añadir una ración de verdura"
-              className="w-6 h-6 rounded-control bg-raised border border-hairline text-ink-2 hover:text-white flex items-center justify-center"
+              className="w-6 h-6 rounded-control bg-raised border border-hairline text-ink-2 hover:text-ink flex items-center justify-center"
             >+</button>
           </div>
         </div>
@@ -132,7 +132,7 @@ export default function MicronutrientesPanel({ athleteEmail }: Props) {
                 {m.status === 'low' && <span className="ml-2 text-danger">déficit</span>}
                 {m.status === 'high' && <span className="ml-2 text-warning">{m.limit ? 'alto' : 'exceso'}</span>}
               </span>
-              <span className="font-mono text-caption font-bold text-white">
+              <span className="font-mono text-caption font-bold text-ink">
                 {m.intake}{m.unit} <span className="text-ink-3">· {m.rdaPct}%{m.limit ? ' ref.' : ' RDA'}</span>
               </span>
             </div>

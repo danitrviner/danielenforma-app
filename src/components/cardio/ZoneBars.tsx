@@ -1,6 +1,7 @@
 import React from 'react';
 import { CardioZones } from '../../types';
-import { ZONE_ORDER, ZONE_LABEL, ZONE_COLOR, BELOW_ZONE_LABEL, BELOW_ZONE_COLOR } from '../../utils/cardioZones';
+import { ZONE_ORDER, ZONE_LABEL, ZONE_INK, BELOW_ZONE_LABEL, BELOW_ZONE_INK } from '../../utils/cardioZones';
+import { conAlfa } from '../../utils/coloresPersistidos';
 
 /* Tiempo por zona en vivo — página 3 del carrusel de FITIV (§4bis.2bis del
    análisis): cada fila es una barra de progreso horizontal con un círculo
@@ -25,8 +26,8 @@ function fmt(sec: number): string {
 export default function ZoneBars({ timeInZone, belowZoneSec, elapsedSec, currentZone }: Props) {
   const total = Math.max(elapsedSec, 1);
   const rows = [
-    ...[...ZONE_ORDER].reverse().map(z => ({ key: z, label: ZONE_LABEL[z], color: ZONE_COLOR[z], sec: timeInZone[z] })),
-    { key: 'below', label: BELOW_ZONE_LABEL, color: BELOW_ZONE_COLOR, sec: belowZoneSec },
+    ...[...ZONE_ORDER].reverse().map(z => ({ key: z, label: ZONE_LABEL[z], color: ZONE_INK[z], sec: timeInZone[z] })),
+    { key: 'below', label: BELOW_ZONE_LABEL, color: BELOW_ZONE_INK, sec: belowZoneSec },
   ];
 
   return (
@@ -35,10 +36,10 @@ export default function ZoneBars({ timeInZone, belowZoneSec, elapsedSec, current
         const pct = Math.min(100, Math.round((row.sec / total) * 100));
         return (
           <div key={row.key} className="flex items-center gap-2">
-            <div className="relative flex-1 h-8 rounded-full overflow-hidden" style={{ backgroundColor: `${row.color}14` }}>
+            <div className="relative flex-1 h-8 rounded-full overflow-hidden" style={{ backgroundColor: conAlfa(row.color, 14) }}>
               <div
                 className="absolute inset-y-0 left-0 rounded-full transition-[width] duration-(--duration-state)"
-                style={{ width: `${Math.max(pct, 6)}%`, backgroundColor: `${row.color}55` }}
+                style={{ width: `${Math.max(pct, 6)}%`, backgroundColor: conAlfa(row.color, 55) }}
               />
               <div className="relative h-full flex items-center gap-2 px-3">
                 <span aria-hidden className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: row.color }} />

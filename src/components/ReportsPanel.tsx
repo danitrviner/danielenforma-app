@@ -172,8 +172,8 @@ export default function ReportsPanel({ athleteEmail, athleteName, coachId, logs,
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="font-sans font-bold text-title-m tracking-tight text-white uppercase flex items-center gap-2">
-          <span className="material-symbols-outlined text-accent" style={{ fontVariationSettings: "'FILL' 1" }}>analytics</span>
+        <h2 className="font-sans font-bold text-title-m tracking-tight text-ink uppercase flex items-center gap-2">
+          <span className="material-symbols-outlined text-accent-ink" style={{ fontVariationSettings: "'FILL' 1" }}>analytics</span>
           Reportes
         </h2>
         <p className="font-sans text-label text-ink-2 mt-1">Genera un reporte de desempeño, revísalo y envíalo a {athleteName}.</p>
@@ -233,7 +233,7 @@ export default function ReportsPanel({ athleteEmail, athleteName, coachId, logs,
             >
               <button onClick={() => setEditing(r)} className="flex-1 min-w-0 flex items-center gap-3 text-left">
                 <div className="min-w-0">
-                  <p className="text-body-s text-white font-sans font-bold truncate">{r.title}</p>
+                  <p className="text-body-s text-ink font-sans font-bold truncate">{r.title}</p>
                   <p className="font-mono text-caption text-ink-2 ">
                     {fmtReportDate(r.periodStart)}–{fmtReportDate(r.periodEnd)} · {r.sections.filter(s => s.included).length} secciones
                   </p>
@@ -252,7 +252,7 @@ export default function ReportsPanel({ athleteEmail, athleteName, coachId, logs,
               <button
                 onClick={() => handleSend(r)}
                 title={r.status === 'sent' ? 'Reenviar al atleta' : 'Enviar al atleta'}
-                className="flex-shrink-0 p-2 text-ink-2 hover:text-accent transition-colors"
+                className="flex-shrink-0 p-2 text-ink-2 hover:text-accent-ink transition-colors"
               >
                 <span className="material-symbols-outlined text-title-s">send</span>
               </button>

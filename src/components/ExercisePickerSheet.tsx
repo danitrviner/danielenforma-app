@@ -80,7 +80,7 @@ export default function ExercisePickerSheet({
               placeholder="Buscar ejercicio en todos los grupos..."
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="w-full bg-transparent border-none text-white text-title-s focus:ring-0 focus:outline-none p-2 placeholder-ink-2/45"
+              className="w-full bg-transparent border-none text-ink text-title-s focus:ring-0 focus:outline-none p-2 placeholder-ink-2/45"
             />
           </div>
         </>
@@ -98,18 +98,18 @@ export default function ExercisePickerSheet({
               className="w-full flex items-center justify-between gap-3 p-4 bg-surface hover:bg-raised rounded-control border border-hairline hover:border-accent/40 text-left transition-all group"
             >
               <div className="min-w-0">
-                <p className="font-sans text-label text-white group-hover:text-accent transition-colors leading-snug truncate">{ex.name}</p>
+                <p className="font-sans text-label text-ink group-hover:text-accent-ink transition-colors leading-snug truncate">{ex.name}</p>
                 <div className="flex items-center gap-2 flex-wrap mt-0.5">
                   {ex.muscleGroup && <span className="font-mono text-caption text-ink-2">{MUSCLE_LABELS[ex.muscleGroup]}</span>}
                   {mismatch && (
-                    <span className="inline-flex items-center gap-1 text-caption font-mono text-amber-400 bg-amber-500/10 border border-amber-500/20 px-1 rounded-control">
+                    <span className="inline-flex items-center gap-1 text-caption font-mono text-warning bg-warning/10 border border-warning/20 px-1 rounded-control">
                       <Icon name="warning" size="s" />
                       sin material
                     </span>
                   )}
                 </div>
               </div>
-              <Icon name="chevron_right" size="m" className="text-ink-2 group-hover:text-accent transition-colors select-none flex-shrink-0" />
+              <Icon name="chevron_right" size="m" className="text-ink-2 group-hover:text-accent-ink transition-colors select-none flex-shrink-0" />
             </button>
           );
         })}

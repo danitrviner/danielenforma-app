@@ -94,7 +94,7 @@ export default function CommandPalette({ onNavigateTab }: Props) {
        variante de la primitiva. */
     // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- fondo del diálogo: cerrar al pulsar fuera es comodidad de ratón; con teclado ya cierra Escape
     <div
-      className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[200] flex items-start justify-center pt-14 px-4"
+      className="fixed inset-0 bg-veil/70 backdrop-blur-sm z-[200] flex items-start justify-center pt-14 px-4"
       onClick={() => setOpen(false)}
     >
       {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- solo evita que un clic dentro del panel llegue al fondo y lo cierre */}
@@ -109,7 +109,7 @@ export default function CommandPalette({ onNavigateTab }: Props) {
             value={query}
             onChange={e => setQuery(e.target.value)}
             placeholder="Buscar atleta o acción..."
-            className="flex-1 bg-transparent text-white text-title-s focus:outline-none placeholder-ink-2/50"
+            className="flex-1 bg-transparent text-ink text-title-s focus:outline-none placeholder-ink-2/50"
           />
           <span className="font-mono text-caption text-ink-2/50 border border-hairline rounded-control px-2 flex-shrink-0">ESC</span>
         </div>

@@ -152,7 +152,7 @@ export default function ClientCardioPanel({ athlete }: Props) {
       {puntualesProximas.length > 0 && (
         <section className="space-y-3">
           <h3 className="font-sans font-bold text-title-s text-ink flex items-center gap-2">
-            <Icon name="event" size="m" className="text-accent" />
+            <Icon name="event" size="m" className="text-accent-ink" />
             Sesiones puntuales programadas
           </h3>
           {puntualesProximas.map(a => (
@@ -178,7 +178,7 @@ export default function ClientCardioPanel({ athlete }: Props) {
       {/* ── Qué tiene programado ─────────────────────────────────────────── */}
       <section className="space-y-3">
         <h3 className="font-sans font-bold text-title-s text-ink flex items-center gap-2">
-          <Icon name="assignment" size="m" className="text-accent" />
+          <Icon name="assignment" size="m" className="text-accent-ink" />
           Cardio recurrente
         </h3>
 
@@ -237,7 +237,7 @@ export default function ClientCardioPanel({ athlete }: Props) {
                     si el atleta llega a donde tenía que llegar. */}
                 {a.program && semana != null && (
                   <details className="group">
-                    <summary className="cursor-pointer font-sans text-caption text-accent list-none flex items-center gap-1">
+                    <summary className="cursor-pointer font-sans text-caption text-accent-ink list-none flex items-center gap-1">
                       <Icon name="expand_more" size="s" className="group-open:rotate-180 transition-transform" />
                       Ver las próximas semanas
                     </summary>
@@ -262,7 +262,7 @@ export default function ClientCardioPanel({ athlete }: Props) {
       {cardioProfile?.zones && (
         <section className="space-y-3">
           <h3 className="font-sans font-bold text-title-s text-ink flex items-center gap-2">
-            <Icon name="speed" size="m" className="text-accent" />
+            <Icon name="speed" size="m" className="text-accent-ink" />
             Sus zonas
           </h3>
           <Card className="space-y-2">
@@ -287,7 +287,7 @@ export default function ClientCardioPanel({ athlete }: Props) {
       {/* ── Qué está haciendo de verdad ──────────────────────────────────── */}
       <section className="space-y-3">
         <h3 className="font-sans font-bold text-title-s text-ink flex items-center gap-2">
-          <Icon name="history" size="m" className="text-accent" />
+          <Icon name="history" size="m" className="text-accent-ink" />
           Lo que va haciendo
         </h3>
 

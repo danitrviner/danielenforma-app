@@ -363,7 +363,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
   if (logs.length === 0) {
     return (
       <div className="bg-surface border border-hairline rounded-surface p-5">
-        <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2 mb-4">
+        <h3 className="font-sans font-bold text-title-s text-ink flex items-center gap-2 mb-4">
           <Icon name="monitoring" size="s" className="text-data" />
           Historial de carga
         </h3>
@@ -376,7 +376,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
 
   return (
     <div className="bg-surface border border-hairline rounded-surface p-5 space-y-5">
-      <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
+      <h3 className="font-sans font-bold text-title-s text-ink flex items-center gap-2">
         <Icon name="monitoring" size="s" className="text-data" />
         Historial de carga
       </h3>
@@ -395,7 +395,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
                 onClick={() => toggleMetric(m)}
                 className={`px-3 min-h-[44px] rounded-full font-sans text-label uppercase tracking-wider transition-all border ${
                   activeMetrics.has(m)
-                    ? 'text-black font-bold'
+                    ? 'text-on-accent font-bold'
                     : 'bg-transparent text-ink-2 border-hairline hover:border-hairline'
                 }`}
                 style={activeMetrics.has(m) ? { backgroundColor: METRIC_COLOR[m], borderColor: METRIC_COLOR[m] } : {}}
@@ -412,7 +412,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
                   key={s}
                   onClick={toggle}
                   className={`px-3 min-h-[44px] rounded-full font-mono text-label uppercase tracking-wider transition-all border ${
-                    active ? 'bg-white/10 border-hairline text-white' : 'border-hairline text-ink-3 hover:text-ink-2'
+                    active ? 'bg-strong border-hairline text-ink' : 'border-hairline text-ink-3 hover:text-ink-2'
                   }`}
                 >
                   {s === 'mean' ? 'Media' : 'Mediana'}
@@ -432,7 +432,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
           <select
             value={activeExId}
             onChange={e => setSelectedExId(e.target.value)}
-            className="min-w-0 flex-1 bg-raised border border-hairline text-white text-title-s font-mono rounded-control px-3 py-2 focus:outline-none focus:border-data/50 cursor-pointer"
+            className="min-w-0 flex-1 bg-raised border border-hairline text-ink text-title-s font-mono rounded-control px-3 py-2 focus:outline-none focus:border-data/50 cursor-pointer"
           >
             {loggedExercises.map(ex => (
               <option key={ex.id} value={ex.id}>{ex.name}</option>
@@ -470,7 +470,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
                 <select
                   value={mesocycleFilter}
                   onChange={e => setMesocycleFilter(e.target.value)}
-                  className="min-w-0 max-w-full truncate bg-raised border border-hairline text-white text-title-s font-mono rounded-control px-2 py-1 focus:outline-none focus:border-data/50 cursor-pointer"
+                  className="min-w-0 max-w-full truncate bg-raised border border-hairline text-ink text-title-s font-mono rounded-control px-2 py-1 focus:outline-none focus:border-data/50 cursor-pointer"
                 >
                   <option value="">Todo el historial</option>
                   {[...mesocycles].sort((a, b) => b.startDate.localeCompare(a.startDate)).map(m => (
@@ -506,10 +506,10 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
           {/* Progression summary */}
           {progression ? (
             <div className="flex items-center gap-2 text-label font-mono flex-wrap">
-              <span className="text-ink-2">{progression.first.label}: <strong className="text-white">{progression.first.filledOrm}kg</strong></span>
+              <span className="text-ink-2">{progression.first.label}: <strong className="text-ink">{progression.first.filledOrm}kg</strong></span>
               <span className="text-ink-3">→</span>
-              <span className="text-ink-2">{progression.last.label}: <strong className="text-white">{progression.last.filledOrm}kg</strong></span>
-              <span className={`font-bold ${progression.delta >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+              <span className="text-ink-2">{progression.last.label}: <strong className="text-ink">{progression.last.filledOrm}kg</strong></span>
+              <span className={`font-bold ${progression.delta >= 0 ? 'text-success' : 'text-danger'}`}>
                 ({progression.delta >= 0 ? '+' : ''}{progression.delta}kg · {progression.pct >= 0 ? '+' : ''}{progression.pct}%)
               </span>
             </div>
@@ -623,8 +623,8 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
             <div key={row.date} className="bg-bg border border-hairline rounded-surface px-3 py-3 flex items-center justify-between gap-2">
               <span className="font-sans text-caption text-ink-2 flex-shrink-0">{row.label}</span>
               <div className="flex items-center gap-3 flex-shrink-0 font-mono text-caption">
-                <span className="text-ink-2"><span className="text-white font-bold">{row.sets}</span>s</span>
-                <span className="text-ink-2"><span className="text-white">{row.reps}</span>r</span>
+                <span className="text-ink-2"><span className="text-ink font-bold">{row.sets}</span>s</span>
+                <span className="text-ink-2"><span className="text-ink">{row.reps}</span>r</span>
                 <span className="font-bold" style={{ color: METRIC_COLOR.tonnage }}>{row.tonnage.toLocaleString()}kg</span>
                 {ormActive && (
                   <span className="font-bold" style={{ color: row.orm ? METRIC_COLOR.orm : 'var(--color-ink-3)' }}>
@@ -653,8 +653,8 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
                   className={`border-b border-hairline ${i % 2 === 0 ? 'bg-bg' : 'bg-bg'} hover:bg-raised transition-colors`}
                 >
                   <td className="px-3 py-3 font-sans text-caption text-ink-2">{row.label}</td>
-                  <td className="px-3 py-3 font-mono text-caption text-white font-bold">{row.sets}</td>
-                  <td className="px-3 py-3 font-mono text-caption text-white">{row.reps}</td>
+                  <td className="px-3 py-3 font-mono text-caption text-ink font-bold">{row.sets}</td>
+                  <td className="px-3 py-3 font-mono text-caption text-ink">{row.reps}</td>
                   <td className="px-3 py-3 font-mono text-caption font-bold" style={{ color: METRIC_COLOR.tonnage }}>
                     {row.tonnage.toLocaleString()} kg
                   </td>

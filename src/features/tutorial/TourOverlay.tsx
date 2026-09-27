@@ -153,7 +153,7 @@ export default function TourOverlay({
         <div className={`mx-auto max-w-md rounded-sheet bg-raised border border-hairline p-5 space-y-4 ${anchorTop ? 'animate-fade-up' : 'animate-sheet-in'}`}>
           <div className="flex items-center gap-3">
             <div className="h-[34px] w-[34px] shrink-0 rounded-full bg-accent flex items-center justify-center font-display font-black text-body-s text-on-accent">D</div>
-            <span className="rounded-chip bg-accent/14 px-2 py-1 font-mono text-caption uppercase text-accent">{step.section}</span>
+            <span className="rounded-chip bg-accent/14 px-2 py-1 font-mono text-caption uppercase text-accent-ink">{step.section}</span>
             <span className="ml-auto font-mono text-caption text-ink-3 tabular-nums">{String(stepIndex + 1).padStart(2, '0')} / {totalSteps}</span>
           </div>
 

@@ -82,7 +82,7 @@ export default function ExerciseCloseCard({
         <button
           type="button"
           onClick={onReopen}
-          className="font-mono text-caption font-bold text-ink-2 uppercase tracking-wide flex items-center gap-1 shrink-0 hover:text-accent"
+          className="font-mono text-caption font-bold text-ink-2 uppercase tracking-wide flex items-center gap-1 shrink-0 hover:text-accent-ink"
         >
           <Icon name="edit" size="s" />
           Editar
@@ -92,7 +92,7 @@ export default function ExerciseCloseCard({
       {esRecord && bestSet && (
         <div className="mx-4 mt-4 rounded-surface border border-accent/40 bg-accent-bg p-4 space-y-1.5">
           <div className="flex items-center justify-between">
-            <span className="font-mono text-caption font-bold uppercase tracking-wide text-accent">Récord personal</span>
+            <span className="font-mono text-caption font-bold uppercase tracking-wide text-accent-ink">Récord personal</span>
             <span className="font-mono text-caption font-bold text-on-accent bg-accent px-2 py-0.5 rounded-control">Nuevo</span>
           </div>
           <p className="font-mono text-title-l font-bold text-ink">
@@ -129,7 +129,7 @@ export default function ExerciseCloseCard({
 
       {isLast && sameDayCardio && (
         <div className="mx-4 mt-4 flex items-center gap-3 rounded-surface border border-dashed border-accent-line p-3.5">
-          <Icon name="favorite" size="m" className="text-accent flex-shrink-0" />
+          <Icon name="favorite" size="m" className="text-accent-ink flex-shrink-0" />
           <div>
             <p className="font-sans text-body-s text-ink">Hoy toca cardio después</p>
             <p className="font-mono text-caption text-ink-2 uppercase tracking-wide">
@@ -147,7 +147,7 @@ export default function ExerciseCloseCard({
           // solo permite uno (ver Button.tsx). Este es el último ejercicio,
           // así que solo hace falta señalar que ya se puede cerrar.
           <p className="flex items-center gap-2 font-sans text-label text-ink-2">
-            <Icon name="arrow_downward" size="s" className="text-accent" />
+            <Icon name="arrow_downward" size="s" className="text-accent-ink" />
             Último ejercicio — termina la sesión con el botón de abajo.
           </p>
         ) : (

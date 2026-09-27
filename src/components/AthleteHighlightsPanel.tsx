@@ -195,7 +195,7 @@ export default function AthleteHighlightsPanel({ athleteEmail }: Props) {
       {biggestVolumeGain && (
         <div className="bg-surface border border-hairline rounded-surface p-4">
           <p className="font-sans text-caption uppercase text-ink-2 mb-1">Mayor progreso de volumen (últimas 2 semanas)</p>
-          <p className="font-sans font-bold text-body-s text-white">{biggestVolumeGain.exerciseName}</p>
+          <p className="font-sans font-bold text-body-s text-ink">{biggestVolumeGain.exerciseName}</p>
           <p className="font-mono text-caption text-ink-2">
             {Math.round(biggestVolumeGain.previousTonnage)} kg → {Math.round(biggestVolumeGain.recentTonnage)} kg de tonelaje
           </p>
@@ -205,7 +205,7 @@ export default function AthleteHighlightsPanel({ athleteEmail }: Props) {
       {personalRecords.length > 0 && (
         <div className="bg-surface border border-hairline rounded-surface p-4">
           <p className="font-sans text-caption uppercase text-ink-2 mb-3 flex items-center gap-2">
-            <Icon name="emoji_events" size="s" className="text-accent" />
+            <Icon name="emoji_events" size="s" className="text-accent-ink" />
             Récords personales
           </p>
           <div className="space-y-2">
@@ -213,10 +213,10 @@ export default function AthleteHighlightsPanel({ athleteEmail }: Props) {
               <div key={pr.exerciseId} className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2 min-w-0">
                   <span className="font-mono text-caption text-ink-3 w-4 shrink-0">{i + 1}</span>
-                  <span className="font-sans text-body-s text-white truncate">{pr.exerciseName}</span>
+                  <span className="font-sans text-body-s text-ink truncate">{pr.exerciseName}</span>
                 </div>
                 <div className="text-right shrink-0">
-                  <span className="font-mono font-bold text-body-s text-accent">{pr.weight} kg × {pr.reps}</span>
+                  <span className="font-mono font-bold text-body-s text-accent-ink">{pr.weight} kg × {pr.reps}</span>
                   <span className="block font-mono text-caption text-ink-3">{fmtDate(pr.date)}</span>
                 </div>
               </div>

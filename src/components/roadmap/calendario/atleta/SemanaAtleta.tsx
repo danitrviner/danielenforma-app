@@ -62,7 +62,7 @@ export default function SemanaAtleta({
     <div className="space-y-3.5" style={{ animation: 'fade-up 260ms cubic-bezier(0.2,0.8,0.2,1) both' }}>
       <div className="bg-surface border border-hairline rounded-surface px-3 sm:px-5 pt-4 pb-5">
         <div className="flex items-center justify-between gap-2 mb-3">
-          <button type="button" onClick={onVolverAlMes} className="flex items-center gap-1 text-label text-ink-3 hover:text-white transition-colors flex-shrink-0">
+          <button type="button" onClick={onVolverAlMes} className="flex items-center gap-1 text-label text-ink-3 hover:text-ink transition-colors flex-shrink-0">
             <Icon name="calendar_month" size="s" />Mes
           </button>
           <div className="flex items-center gap-1.5 min-w-0">
@@ -70,7 +70,7 @@ export default function SemanaAtleta({
             <button type="button" onClick={onPrev} aria-label="Semana anterior" className="relative w-8 h-8 rounded-control bg-inset flex items-center justify-center text-ink-2 after:absolute after:content-[''] after:-inset-[6px]">
               <Icon name="chevron_left" size="s" />
             </button>
-            <span className="font-sans font-extrabold text-title-s sm:text-title-l text-white text-center truncate" style={{ letterSpacing: '-0.02em', minWidth: 130 }}>
+            <span className="font-sans font-extrabold text-title-s sm:text-title-l text-ink text-center truncate" style={{ letterSpacing: '-0.02em', minWidth: 130 }}>
               {rotuloDeSemana(inicio)}
             </span>
             <button type="button" onClick={onNext} aria-label="Semana siguiente" className="relative w-8 h-8 rounded-control bg-inset flex items-center justify-center text-ink-2 after:absolute after:content-[''] after:-inset-[6px]">
@@ -129,7 +129,7 @@ export default function SemanaAtleta({
                       {DIAS[i]}
                     </span>
                     <span className="font-mono text-label" style={{ color: 'var(--color-ink-4)' }}>{Number(fecha.slice(8, 10))}</span>
-                    {esHoy && <span className="font-mono text-[9px] tracking-wider text-accent px-1.5 py-0.5 rounded-[8px]" style={{ background: 'color-mix(in oklab, var(--color-accent) 12%, transparent)' }}>HOY</span>}
+                    {esHoy && <span className="font-mono text-[9px] tracking-wider text-accent-ink px-1.5 py-0.5 rounded-[8px]" style={{ background: 'color-mix(in oklab, var(--color-accent) 12%, transparent)' }}>HOY</span>}
                   </button>
                   <span
                     className="flex items-center gap-1.5 flex-shrink-0 px-2 py-1 rounded-control"
@@ -150,7 +150,7 @@ export default function SemanaAtleta({
                     )}
                     {ejercicios.length > 0 && (
                       <>
-                        <p className="font-sans text-body-s font-semibold text-white mb-1.5">{dia?.entreno.nombreRutina}</p>
+                        <p className="font-sans text-body-s font-semibold text-ink mb-1.5">{dia?.entreno.nombreRutina}</p>
                         <div className="flex flex-col gap-1">
                           {ejercicios.map(ej => (
                             <div key={ej.exerciseId} className="flex items-baseline justify-between gap-2 min-w-0">

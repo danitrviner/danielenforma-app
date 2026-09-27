@@ -47,7 +47,7 @@ export default function Chip({
   onClick,
   className = '',
 }: Props) {
-  const tonoBorde = selected ? 'border-accent-line bg-accent/16 text-accent' : 'border-hairline bg-raised text-ink-2';
+  const tonoBorde = selected ? 'border-accent-line bg-accent/16 text-accent-ink' : 'border-hairline bg-raised text-ink-2';
   const contenido = (
     <>
       {icon && <Icon name={icon} size="s" filled={selected} />}
@@ -93,7 +93,7 @@ export default function Chip({
           className={
             'flex h-5 w-5 items-center justify-center rounded-full '
             + 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-line '
-            + (disabled ? 'pointer-events-none' : 'hover:bg-white/10')
+            + (disabled ? 'pointer-events-none' : 'hover:bg-strong')
           }
         >
           <Icon name="close" size="s" />

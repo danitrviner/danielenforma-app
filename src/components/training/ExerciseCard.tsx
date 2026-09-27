@@ -95,14 +95,14 @@ export default React.memo(function ExerciseCard({
           </p>
           <div className="flex items-center gap-2 flex-wrap mt-1">
             {ex?.equipment?.map(eq => (
-              <span key={eq} className="text-caption font-sans px-2 rounded-control bg-white/5 text-ink-3">{eq}</span>
+              <span key={eq} className="text-caption font-sans px-2 rounded-control bg-hairline text-ink-3">{eq}</span>
             ))}
             {ex?.videoUrl && (
               <button
                 type="button"
                 onClick={onToggleVideo}
                 className={`inline-flex items-center gap-1 text-caption font-sans font-bold uppercase px-2 rounded-control border transition-colors ${
-                  isVideoOpen ? 'bg-accent text-on-accent border-accent' : 'text-accent border-accent/30 hover:bg-accent/10'
+                  isVideoOpen ? 'bg-accent text-on-accent border-accent' : 'text-accent-ink border-accent/30 hover:bg-accent/10'
                 }`}
               >
                 <Icon name="play_circle" size="s" filled={isVideoOpen} />
@@ -112,13 +112,13 @@ export default React.memo(function ExerciseCard({
             <button
               type="button"
               onClick={onOpenHistory}
-              className="inline-flex items-center gap-1 text-caption font-sans font-bold uppercase px-2 rounded-control border text-accent border-accent/30 hover:bg-accent/10 transition-colors"
+              className="inline-flex items-center gap-1 text-caption font-sans font-bold uppercase px-2 rounded-control border text-accent-ink border-accent/30 hover:bg-accent/10 transition-colors"
             >
               <Icon name="trending_up" size="s" />
               Historial
             </button>
             {!esDropset && !esMyoreps && resumenRangosPautados(expanded) && (
-              <span className="text-caption font-mono px-2 rounded-control bg-white/5 text-ink-3">
+              <span className="text-caption font-mono px-2 rounded-control bg-hairline text-ink-3">
                 {resumenRangosPautados(expanded)}
               </span>
             )}
@@ -147,8 +147,8 @@ export default React.memo(function ExerciseCard({
 
       {we.recordVideoSet && (
         <div className="flex items-center gap-2 px-4 py-2 bg-accent/6 border-b border-accent-line">
-          <Icon name="videocam" size="s" className="text-accent" />
-          <p className="font-sans text-label font-bold text-accent">
+          <Icon name="videocam" size="s" className="text-accent-ink" />
+          <p className="font-sans text-label font-bold text-accent-ink">
             {we.recordVideoSet === 'all'
               ? 'Tu entrenador quiere que grabes todas las series con el móvil'
               : `Tu entrenador quiere que grabes la serie ${we.recordVideoSet} con el móvil`}
@@ -219,7 +219,7 @@ export default React.memo(function ExerciseCard({
                     onClick={() => onNoteChange(conMotivo(noteValue, m.clave))}
                     aria-pressed={puesto}
                     className={`rounded-control border px-2.5 py-1.5 font-sans text-label transition-colors ${
-                      puesto ? 'border-accent-line text-accent' : 'border-hairline text-ink-2 hover:text-ink'
+                      puesto ? 'border-accent-line text-accent-ink' : 'border-hairline text-ink-2 hover:text-ink'
                     }`}
                   >
                     {m.etiqueta}
@@ -255,8 +255,8 @@ export default React.memo(function ExerciseCard({
 
       {personalNote && (
         <div className="px-4 py-2 bg-accent-bg border-t border-accent/15">
-          <p className="font-sans text-caption text-accent/70 uppercase ">Nota de tu entrenador para ti</p>
-          <p className="text-label text-accent">{personalNote}</p>
+          <p className="font-sans text-caption text-accent-ink/70 uppercase ">Nota de tu entrenador para ti</p>
+          <p className="text-label text-accent-ink">{personalNote}</p>
         </div>
       )}
     </div>
@@ -323,12 +323,12 @@ function NormalTable({
                 }`}
               >
                 <td className="px-2 sm:px-4 py-3">
-                  <span className={`font-mono text-label font-bold flex items-center gap-1 ${setInput.done || esSiguiente ? 'text-accent' : 'text-ink-2'}`}>
+                  <span className={`font-mono text-label font-bold flex items-center gap-1 ${setInput.done || esSiguiente ? 'text-accent-ink' : 'text-ink-2'}`}>
                     {String(sIdx + 1).padStart(2, '0')}
-                    {shouldRecord && <Icon name="videocam" size="s" className="text-accent" label="Grabar con el móvil" />}
+                    {shouldRecord && <Icon name="videocam" size="s" className="text-accent-ink" label="Grabar con el móvil" />}
                   </span>
                   {(we.setGroups?.length ?? 0) > 1 && expanded[sIdx]?.label && (
-                    <span className="block font-sans text-caption text-accent/70 uppercase ">{expanded[sIdx].label}</span>
+                    <span className="block font-sans text-caption text-accent-ink/70 uppercase ">{expanded[sIdx].label}</span>
                   )}
                 </td>
                 <td className="px-2 sm:px-3 py-2" ref={sIdx === 0 ? setEditorTargetRef : undefined}>
@@ -372,7 +372,7 @@ function NormalTable({
                     ref={sIdx === 0 ? firstSetRowTargetRef : undefined}
                     onClick={() => onMarkDone(sIdx, !setInput.done)}
                     className={`mx-auto flex h-11 w-11 items-center justify-center rounded-control border transition-colors duration-(--duration-state) ${
-                      setInput.done ? 'bg-accent border-accent text-on-accent' : 'border-hairline text-ink-3 hover:border-accent-line hover:text-accent'
+                      setInput.done ? 'bg-accent border-accent text-on-accent' : 'border-hairline text-ink-3 hover:border-accent-line hover:text-accent-ink'
                     }`}
                   >
                     <Icon name={setInput.done ? 'check_circle' : 'radio_button_unchecked'} size="m" filled={setInput.done} />
@@ -416,7 +416,7 @@ function DropsetRows({ exSets, warmup, onUpdateSet, onMarkDone, onAddRow, firstS
                 key={sIdx}
                 className={`relative flex items-center gap-3 rounded-surface p-3 ${esBase ? 'bg-inset border border-accent-line' : 'bg-raised'}`}
               >
-                <span className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-control font-mono text-caption font-bold ${esBase ? 'bg-accent-bg text-accent' : 'bg-white/5 text-ink-2'}`}>
+                <span className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-control font-mono text-caption font-bold ${esBase ? 'bg-accent-bg text-accent-ink' : 'bg-hairline text-ink-2'}`}>
                   {esBase ? 'BASE' : `D${sIdx}`}
                 </span>
                 <div className="flex-1 min-w-0 flex items-center gap-2" ref={sIdx === 0 ? setEditorTargetRef : undefined}>
@@ -443,7 +443,7 @@ function DropsetRows({ exSets, warmup, onUpdateSet, onMarkDone, onAddRow, firstS
                   ref={sIdx === 0 ? firstSetRowTargetRef : undefined}
                   onClick={() => onMarkDone(sIdx, !s.done)}
                   className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-control border transition-colors duration-(--duration-state) ${
-                    s.done ? 'bg-accent border-accent text-on-accent' : 'border-hairline text-ink-3 hover:border-accent-line hover:text-accent'
+                    s.done ? 'bg-accent border-accent text-on-accent' : 'border-hairline text-ink-3 hover:border-accent-line hover:text-accent-ink'
                   }`}
                 >
                   <Icon name={s.done ? 'check_circle' : 'radio_button_unchecked'} size="s" filled={s.done} />
@@ -456,7 +456,7 @@ function DropsetRows({ exSets, warmup, onUpdateSet, onMarkDone, onAddRow, firstS
       <button
         type="button"
         onClick={onAddRow}
-        className="w-full rounded-surface border border-dashed border-accent-line py-3 font-sans font-bold text-body-s text-accent hover:bg-accent/6 transition-colors"
+        className="w-full rounded-surface border border-dashed border-accent-line py-3 font-sans font-bold text-body-s text-accent-ink hover:bg-accent/6 transition-colors"
       >
         + Añadir bajada
       </button>
@@ -515,7 +515,7 @@ function MyorepsRows({ exSets, warmup, onUpdateSet, onMarkDone, onAddRow, firstS
               ref={firstSetRowTargetRef}
               onClick={() => onMarkDone(0, !activacion.done)}
               className={`ml-auto flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-control border transition-colors duration-(--duration-state) ${
-                activacion.done ? 'bg-accent border-accent text-on-accent' : 'border-hairline text-ink-3 hover:border-accent-line hover:text-accent'
+                activacion.done ? 'bg-accent border-accent text-on-accent' : 'border-hairline text-ink-3 hover:border-accent-line hover:text-accent-ink'
               }`}
             >
               <Icon name={activacion.done ? 'check_circle' : 'radio_button_unchecked'} size="s" filled={activacion.done} />
@@ -560,7 +560,7 @@ function MyorepsRows({ exSets, warmup, onUpdateSet, onMarkDone, onAddRow, firstS
           <button
             type="button"
             onClick={onAddRow}
-            className="flex h-14 w-14 items-center justify-center rounded-full border border-dashed border-hairline text-ink-3 hover:text-accent hover:border-accent-line text-title-m"
+            className="flex h-14 w-14 items-center justify-center rounded-full border border-dashed border-hairline text-ink-3 hover:text-accent-ink hover:border-accent-line text-title-m"
           >
             +
           </button>
@@ -569,7 +569,7 @@ function MyorepsRows({ exSets, warmup, onUpdateSet, onMarkDone, onAddRow, firstS
 
       <div className="rounded-surface bg-bg p-3 flex items-center justify-between">
         <span className="font-mono text-caption text-ink-2 uppercase tracking-wide">Total efectivo</span>
-        <span className="font-mono text-body-s font-bold text-accent">{totalEfectivo} reps cerca del fallo</span>
+        <span className="font-mono text-body-s font-bold text-accent-ink">{totalEfectivo} reps cerca del fallo</span>
       </div>
     </div>
   );

@@ -63,8 +63,10 @@ coffee
 contacts
 content_copy
 content_cut
+contrast
 cottage
 create
+cyclone
 dashboard
 database
 delete
@@ -144,6 +146,7 @@ lightbulb
 link
 list
 local_cafe
+local_drink
 local_fire_department
 local_offer
 local_shipping

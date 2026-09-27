@@ -65,7 +65,7 @@ export default function Stepper({
         aria-label={`Restar ${step}`}
         className={
           `flex ${tamanoBoton} items-center justify-center rounded-field bg-inset text-ink-2 `
-          + 'transition-colors duration-(--duration-state) hover:bg-white/5 '
+          + 'transition-colors duration-(--duration-state) hover:bg-hairline '
           + 'disabled:opacity-30 disabled:pointer-events-none '
           + 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-line'
         }

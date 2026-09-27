@@ -151,7 +151,7 @@ export default function NuevoServicioModal({ cliente, coachEmail, onCerrar }: {
                 aria-pressed={tipoElegido === t.id}
                 className={`flex-1 rounded-control border px-3 py-2 font-sans text-caption font-bold transition-colors ${
                   tipoElegido === t.id
-                    ? 'bg-accent text-black border-accent'
+                    ? 'bg-accent text-on-accent border-accent'
                     : 'bg-raised text-ink-2 border-hairline hover:text-ink'
                 }`}
               >{t.label}</button>
@@ -195,7 +195,7 @@ export default function NuevoServicioModal({ cliente, coachEmail, onCerrar }: {
           <button
             type="button"
             onClick={sugerirFin}
-            className="font-sans text-caption uppercase tracking-widest text-accent hover:underline"
+            className="font-sans text-caption uppercase tracking-widest text-accent-ink hover:underline"
           >
             Calcular fin desde la periodicidad
           </button>

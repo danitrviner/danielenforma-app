@@ -204,7 +204,7 @@ export default function CoachWeekScreen({ coachId: _coachId }: Props) {
               <Avatar src={athlete.avatarUrl} name={athlete.displayName} className="w-10 h-10 rounded-full object-cover border border-hairline flex-shrink-0" />
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <p className="font-sans font-bold text-body-s text-white truncate">{athlete.displayName}</p>
+                  <p className="font-sans font-bold text-body-s text-ink truncate">{athlete.displayName}</p>
                   {currentMeso && weekOfMeso && (
                     <span className="font-mono text-caption text-ink-2">Semana {weekOfMeso} de {currentMeso.weeks}</span>
                   )}

@@ -39,7 +39,7 @@ export default function SearchField({ value, onChange, placeholder = 'Buscar…'
           + (enfocado ? 'h-[54px] border-accent' : 'h-12 border-hairline')
         }
       >
-        <span className={`ui-icon text-icon-m pointer-events-none absolute left-4 transition-colors duration-(--duration-state) ${enfocado ? 'text-accent' : 'text-ink-3'}`} aria-hidden>
+        <span className={`ui-icon text-icon-m pointer-events-none absolute left-4 transition-colors duration-(--duration-state) ${enfocado ? 'text-accent-ink' : 'text-ink-3'}`} aria-hidden>
           search
         </span>
         <input
@@ -59,7 +59,7 @@ export default function SearchField({ value, onChange, placeholder = 'Buscar…'
           type="button"
           onMouseDown={(e) => e.preventDefault()}
           onClick={cancelar}
-          className="shrink-0 font-sans text-body-s font-bold text-accent"
+          className="shrink-0 font-sans text-body-s font-bold text-accent-ink"
         >
           Cancelar
         </button>

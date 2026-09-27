@@ -47,8 +47,8 @@ export default function BottomBar({ elapsedSec, paused, onTogglePause, expanded,
       </button>
 
       <div className="text-center">
-        <p className="font-mono text-hero font-bold text-white tabular-nums leading-none">{fmtClock(elapsedSec)}</p>
-        <p className="text-label font-sans text-white/60 mt-1">{clockLabel}</p>
+        <p className="font-mono text-hero font-bold text-ink tabular-nums leading-none">{fmtClock(elapsedSec)}</p>
+        <p className="text-label font-sans text-ink-3 mt-1">{clockLabel}</p>
       </div>
 
       <button
@@ -56,7 +56,7 @@ export default function BottomBar({ elapsedSec, paused, onTogglePause, expanded,
         onClick={onToggleExpanded}
         aria-label={expanded ? 'Contraer' : 'Más opciones'}
         aria-expanded={expanded}
-        className="flex h-14 w-14 items-center justify-center rounded-full bg-black/25 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-line"
+        className="flex h-14 w-14 items-center justify-center rounded-full bg-veil/25 text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-line"
       >
         <Icon name={expanded ? 'expand_more' : 'expand_less'} size="l" />
       </button>

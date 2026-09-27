@@ -81,8 +81,8 @@ export default function CoachNotesPanel({ athletes, athletesWithPendingNotes = [
   return (
     <div className="bg-surface border border-hairline rounded-surface p-5">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
-          <span className="material-symbols-outlined text-amber-300 text-title-s">sticky_note_2</span>
+        <h3 className="font-sans font-bold text-title-s text-ink flex items-center gap-2">
+          <span className="material-symbols-outlined text-warning text-title-s">sticky_note_2</span>
           Pendientes
         </h3>
       </div>
@@ -92,11 +92,11 @@ export default function CoachNotesPanel({ athletes, athletesWithPendingNotes = [
         <div className="flex items-center justify-between mb-2">
           <span className="font-sans text-label uppercase tracking-wider font-bold text-ink-2">Del atleta</span>
           {totalPendingAthleteNotes > 0 ? (
-            <span className="text-caption bg-amber-500/10 text-amber-300 px-3 border border-amber-500/25 rounded-control font-sans uppercase font-bold">
+            <span className="text-caption bg-warning/10 text-warning px-3 border border-warning/25 rounded-control font-sans uppercase font-bold">
               {totalPendingAthleteNotes} por leer
             </span>
           ) : (
-            <span className="text-caption bg-accent/10 text-accent px-3 border border-accent/20 rounded-control font-sans uppercase font-bold">Al día</span>
+            <span className="text-caption bg-accent/10 text-accent-ink px-3 border border-accent/20 rounded-control font-sans uppercase font-bold">Al día</span>
           )}
         </div>
         {totalPendingAthleteNotes === 0 ? (
@@ -109,8 +109,8 @@ export default function CoachNotesPanel({ athletes, athletesWithPendingNotes = [
                 onClick={() => onOpenAthleteNotes?.(a.userId)}
                 className="w-full flex items-center justify-between bg-raised/50 hover:bg-raised px-3 py-2 rounded-control border border-hairline text-left transition-colors"
               >
-                <span className="text-label text-white font-sans truncate">{a.displayName}</span>
-                <span className="text-caption font-mono font-bold text-amber-300 flex-shrink-0 ml-2">{a.pendingNotesCount}</span>
+                <span className="text-label text-ink font-sans truncate">{a.displayName}</span>
+                <span className="text-caption font-mono font-bold text-warning flex-shrink-0 ml-2">{a.pendingNotesCount}</span>
               </button>
             ))}
           </div>
@@ -122,12 +122,12 @@ export default function CoachNotesPanel({ athletes, athletesWithPendingNotes = [
         <h4 className="font-sans font-bold text-label uppercase tracking-wider text-ink-2 flex items-center gap-2">
           Mías
           {pending.length > 0 && (
-            <span className="bg-accent text-black text-caption font-bold px-2 rounded-full">{pending.length}</span>
+            <span className="bg-accent text-on-accent text-caption font-bold px-2 rounded-full">{pending.length}</span>
           )}
         </h4>
         <button
           onClick={() => setShowForm(v => !v)}
-          className="flex items-center gap-1 font-mono text-caption text-ink-2 hover:text-accent transition-colors border border-hairline px-3 py-2 rounded-control"
+          className="flex items-center gap-1 font-mono text-caption text-ink-2 hover:text-accent-ink transition-colors border border-hairline px-3 py-2 rounded-control"
         >
           <span className="material-symbols-outlined text-body-s">{showForm ? 'close' : 'add'}</span>
           {showForm ? 'Cancelar' : 'Nueva nota'}
@@ -144,14 +144,14 @@ export default function CoachNotesPanel({ athletes, athletesWithPendingNotes = [
             value={text}
             onChange={e => setText(e.target.value)}
             placeholder="Escribe la nota..."
-            className="w-full bg-bg border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent"
+            className="w-full bg-bg border border-hairline rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent"
             required
             autoFocus
           />
           <select
             value={relatedEmail}
             onChange={e => setRelatedEmail(e.target.value)}
-            className="w-full bg-bg border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent"
+            className="w-full bg-bg border border-hairline rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent"
           >
             <option value="">— Sin cliente asociado —</option>
             {athletes.map(a => (
@@ -182,7 +182,7 @@ export default function CoachNotesPanel({ athletes, athletesWithPendingNotes = [
                   onClick={() => handleToggle(n)}
                   className={`w-5 h-5 rounded-control flex-shrink-0 border-2 flex items-center justify-center transition-colors ${n.done ? 'bg-accent border-accent' : 'border-hairline'}`}
                 >
-                  {n.done && <span className="material-symbols-outlined text-black" style={{ fontSize: '13px' }}>check</span>}
+                  {n.done && <span className="material-symbols-outlined text-on-accent" style={{ fontSize: '13px' }}>check</span>}
                 </button>
               }
               title={n.text}
@@ -190,7 +190,7 @@ export default function CoachNotesPanel({ athletes, athletesWithPendingNotes = [
               trailing={
                 <button
                   onClick={() => handleDelete(n.id)}
-                  className="text-ink-2 hover:text-red-400 transition-colors flex-shrink-0 p-1"
+                  className="text-ink-2 hover:text-danger transition-colors flex-shrink-0 p-1"
                 >
                   <span className="material-symbols-outlined text-body-s">delete</span>
                 </button>

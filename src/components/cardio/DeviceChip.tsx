@@ -27,11 +27,11 @@ export default function DeviceChip({ status, deviceName, bpm }: Props) {
     <div className="flex items-center gap-3 bg-bg border border-hairline rounded-full px-4 py-2">
       <Icon name={cfg.icon} size="l" style={{ color: cfg.color }} />
       <p className="flex-1 min-w-0 text-label font-sans truncate">
-        <span className="text-white">{deviceName ?? 'Banda BLE'}</span>
+        <span className="text-ink">{deviceName ?? 'Banda BLE'}</span>
         <span className="text-ink-2"> · {cfg.text}</span>
       </p>
       {status === 'ready' && (
-        <p className="flex items-center gap-1 text-body-s font-sans font-bold text-white tabular-nums">
+        <p className="flex items-center gap-1 text-body-s font-sans font-bold text-ink tabular-nums">
           <Icon name="favorite" size="m" className="text-danger" />
           {bpm ?? '--'}
         </p>

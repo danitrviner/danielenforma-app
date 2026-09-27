@@ -120,7 +120,7 @@ const RecetaFilaCompacta = React.memo(function RecetaFilaCompacta({ recipe, isFa
         subtitle={[exchStr, recipe.kcal != null ? `${recipe.kcal} kcal` : null].filter(Boolean).join(' · ')}
         leading={
           <span className="w-9 h-9 rounded-control bg-accent-bg border border-accent/20 flex items-center justify-center">
-            <span className="material-symbols-outlined text-body-s text-accent select-none">skillet</span>
+            <span className="material-symbols-outlined text-body-s text-accent-ink select-none">skillet</span>
           </span>
         }
         onClick={() => onOpen(recipe)}
@@ -130,7 +130,7 @@ const RecetaFilaCompacta = React.memo(function RecetaFilaCompacta({ recipe, isFa
         onClick={() => onToggleFav(recipe.id)}
         aria-pressed={isFav}
         aria-label={`${recipe.name}, favorita`}
-        className="w-11 h-11 shrink-0 rounded-full flex items-center justify-center hover:bg-black/30 transition-colors"
+        className="w-11 h-11 shrink-0 rounded-full flex items-center justify-center hover:bg-veil/30 transition-colors"
       >
         <span
           className="material-symbols-outlined text-title-s"
@@ -178,11 +178,11 @@ const RecipeCard = React.memo(function RecipeCard({ recipe, isFav, large = false
         className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-500"
         fallback={<div className="absolute inset-0"><RecipePlaceholder /></div>}
       />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-t from-veil/90 via-veil/40 to-transparent" />
 
       <button
         onClick={e => { e.stopPropagation(); onToggleFav(recipe.id); }}
-        className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center hover:bg-black/70 transition-colors z-10"
+        className="absolute top-3 right-3 w-8 h-8 rounded-full bg-veil/50 backdrop-blur-sm flex items-center justify-center hover:bg-veil/70 transition-colors z-10"
       >
         <span
           className="material-symbols-outlined text-title-s"
@@ -194,15 +194,15 @@ const RecipeCard = React.memo(function RecipeCard({ recipe, isFav, large = false
         {tags.length > 0 && (
           <div className="flex flex-wrap gap-1">
             {tags.map(c => (
-              <span key={c} className="px-2 rounded-full bg-black/60 backdrop-blur-sm text-ink-2 font-mono text-caption uppercase tracking-wider border border-hairline">{c}</span>
+              <span key={c} className="px-2 rounded-full bg-veil/60 backdrop-blur-sm text-ink-2 font-mono text-caption uppercase tracking-wider border border-hairline">{c}</span>
             ))}
           </div>
         )}
-        <h3 className={`font-sans font-bold text-ink group-hover:text-accent transition-colors leading-tight ${large ? 'text-title-l' : 'text-title-s'}`}>
+        <h3 className={`font-sans font-bold text-ink group-hover:text-accent-ink transition-colors leading-tight ${large ? 'text-title-l' : 'text-title-s'}`}>
           {recipe.name}
         </h3>
         {exchStr !== '—' && (
-          <p className="font-mono text-caption text-accent/80 font-bold">{exchStr}</p>
+          <p className="font-mono text-caption text-accent-ink/80 font-bold">{exchStr}</p>
         )}
       </div>
     </article>
@@ -233,11 +233,11 @@ const RecetaCard = React.memo(function RecetaCard({ recipe, isFav, isFeatured, e
           </div>
         }
       />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/50 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-t from-veil/95 via-veil/50 to-transparent" />
 
       <button
         onClick={e => { e.stopPropagation(); onToggleFav(recipe.id); }}
-        className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/50 flex items-center justify-center z-10"
+        className="absolute top-2 right-2 w-7 h-7 rounded-full bg-veil/50 flex items-center justify-center z-10"
       >
         <span className="material-symbols-outlined text-body-s"
           style={{ fontVariationSettings: isFav ? "'FILL' 1" : "'FILL' 0", color: isFav ? 'var(--color-accent)' : 'var(--color-ink-2)' }}
@@ -246,12 +246,12 @@ const RecetaCard = React.memo(function RecetaCard({ recipe, isFav, isFeatured, e
 
       {/* kcal or featured badge */}
       {isFeatured ? (
-        <div className="absolute top-2 left-2 bg-amber-400/90 rounded-control px-2 font-mono text-caption text-black font-bold z-10 flex items-center ">
+        <div className="absolute top-2 left-2 bg-warning/90 rounded-control px-2 font-mono text-caption text-on-accent font-bold z-10 flex items-center ">
           <span className="material-symbols-outlined" style={{ fontSize: '9px', fontVariationSettings: "'FILL' 1" }}>star</span>
           Para ti
         </div>
       ) : recipe.kcal ? (
-        <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-sm rounded-control px-2 font-mono text-caption text-ink-2 z-10">
+        <div className="absolute top-2 left-2 bg-veil/60 backdrop-blur-sm rounded-control px-2 font-mono text-caption text-ink-2 z-10">
           {recipe.kcal} kcal
         </div>
       ) : null}
@@ -259,7 +259,7 @@ const RecetaCard = React.memo(function RecetaCard({ recipe, isFav, isFeatured, e
       <div className="relative z-10 p-3 space-y-1">
         <p className="font-sans font-bold text-ink text-label leading-tight line-clamp-2">{recipe.name}</p>
         {exch && (exch.HC > 0 || exch.PROT > 0 || exch.GRASA > 0) && (
-          <p className="font-mono text-caption text-accent/75">
+          <p className="font-mono text-caption text-accent-ink/75">
             {[exch.HC > 0 && `${exch.HC}HC`, exch.PROT > 0 && `${exch.PROT}P`, exch.GRASA > 0 && `${exch.GRASA}G`]
               .filter(Boolean).join(' · ')}
           </p>
@@ -267,7 +267,7 @@ const RecetaCard = React.memo(function RecetaCard({ recipe, isFav, isFeatured, e
         <div className="flex flex-wrap gap-1 ">
           {recipe.cookingTime && (
             <span
-              className={`flex items-center font-mono text-caption ${excedeTiempo ? 'text-amber-400' : 'text-ink-2'}`}
+              className={`flex items-center font-mono text-caption ${excedeTiempo ? 'text-warning' : 'text-ink-2'}`}
               title={excedeTiempo ? 'Tarda más de lo que sueles tener para cocinar' : undefined}
             >
               <span className="material-symbols-outlined" style={{ fontSize: '10px' }}>schedule</span>
@@ -329,7 +329,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, isOwn, enabledModes, savingFa
       <div className="flex items-center justify-between bg-raised px-4 py-3 rounded-surface border border-hairline">
         <button
           onClick={onBack}
-          className="flex items-center gap-2 text-ink-2 hover:text-accent transition-colors font-sans text-label uppercase tracking-wider"
+          className="flex items-center gap-2 text-ink-2 hover:text-accent-ink transition-colors font-sans text-label uppercase tracking-wider"
         >
           <span className="material-symbols-outlined text-body-s">arrow_back</span>
           Recetas
@@ -416,7 +416,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, isOwn, enabledModes, savingFa
           <div className="flex flex-wrap gap-3 text-ink-2 font-mono text-caption">
             {recipe.kcal != null && (
               <span className="flex items-center gap-1">
-                <span className="material-symbols-outlined text-accent" style={{ fontSize: '12px' }}>local_fire_department</span>
+                <span className="material-symbols-outlined text-accent-ink" style={{ fontSize: '12px' }}>local_fire_department</span>
                 {recipe.kcal} kcal
               </span>
             )}
@@ -476,7 +476,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, isOwn, enabledModes, savingFa
             original. */}
         <div className="flex flex-wrap gap-2">
           {scaledRecipe.kcal != null && (
-            <span className="flex items-center gap-1 px-3 py-1 rounded-surface border font-mono text-label font-bold text-accent border-accent/30 bg-accent/10">
+            <span className="flex items-center gap-1 px-3 py-1 rounded-surface border font-mono text-label font-bold text-accent-ink border-accent/30 bg-accent/10">
               <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>local_fire_department</span>
               {scaledRecipe.kcal} kcal
             </span>
@@ -495,7 +495,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, isOwn, enabledModes, savingFa
           <div className="bg-surface border border-hairline rounded-surface p-4">
             <div className="flex items-baseline justify-between">
               <span className="font-mono text-caption font-semibold tracking-[.14em] text-ink-3">ESCALA</span>
-              <span className="font-mono text-title-s font-bold text-accent">×{String(scale).replace('.', ',')}</span>
+              <span className="font-mono text-title-s font-bold text-accent-ink">×{String(scale).replace('.', ',')}</span>
             </div>
             <input
               type="range"
@@ -512,7 +512,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, isOwn, enabledModes, savingFa
             </div>
 
             {dailyBudgetTotal != null && (
-              <div className={`flex items-center gap-2 mt-4 px-4 py-3 rounded-field border transition-colors duration-(--duration-state) ${fitsBudget ? 'bg-success/10 border-success/30 text-success' : 'bg-accent-bg border-accent-line text-accent'}`}>
+              <div className={`flex items-center gap-2 mt-4 px-4 py-3 rounded-field border transition-colors duration-(--duration-state) ${fitsBudget ? 'bg-success/10 border-success/30 text-success' : 'bg-accent-bg border-accent-line text-accent-ink'}`}>
                 <span className={`h-1.5 w-1.5 rounded-full flex-none ${fitsBudget ? 'bg-success' : 'bg-accent'}`} />
                 <span className="font-mono text-label font-semibold tracking-[.04em]">
                   {fitsBudget ? 'CABE EN TU PRESUPUESTO DE HOY' : 'SE SALE DE TU PRESUPUESTO DE HOY'}
@@ -556,7 +556,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, isOwn, enabledModes, savingFa
         {/* Ingredients */}
         <section className="bg-raised border border-hairline rounded-surface p-5 space-y-3">
           <h2 className="font-sans font-bold text-body-s text-ink uppercase tracking-wider flex items-center gap-2">
-            <span className="material-symbols-outlined text-accent text-title-s">grocery</span>
+            <span className="material-symbols-outlined text-accent-ink text-title-s">grocery</span>
             Ingredientes
           </h2>
 
@@ -609,7 +609,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, isOwn, enabledModes, savingFa
           (!isRecetas && recipe.steps.length > 0)) && (
           <section className="bg-raised border border-hairline rounded-surface p-5 space-y-4">
             <h2 className="font-sans font-bold text-body-s text-ink uppercase tracking-wider flex items-center gap-2">
-              <span className="material-symbols-outlined text-accent text-title-s">format_list_numbered</span>
+              <span className="material-symbols-outlined text-accent-ink text-title-s">format_list_numbered</span>
               Preparación
             </h2>
             <div className="space-y-4">
@@ -626,7 +626,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, isOwn, enabledModes, savingFa
                     className="flex gap-3 group cursor-pointer"
                   >
                     <div className="flex flex-col items-center shrink-0">
-                      <div className={`w-7 h-7 rounded-full border-2 flex items-center justify-center font-mono text-caption font-bold transition-all ${done ? 'bg-accent border-accent text-black' : 'border-hairline text-ink-2 group-hover:border-accent/50'}`}>
+                      <div className={`w-7 h-7 rounded-full border-2 flex items-center justify-center font-mono text-caption font-bold transition-all ${done ? 'bg-accent border-accent text-on-accent' : 'border-hairline text-ink-2 group-hover:border-accent/50'}`}>
                         {done ? <span className="material-symbols-outlined text-label font-bold">check</span> : idx + 1}
                       </div>
                     </div>
@@ -1065,7 +1065,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
           subtitle={`${recipes.length} ${recipes.length === 1 ? 'receta guardada' : 'recetas guardadas'}`}
           leading={
             <span className="w-9 h-9 rounded-control bg-accent-bg border border-accent/20 flex items-center justify-center">
-              <span className="material-symbols-outlined text-body-s text-accent select-none">restaurant_menu</span>
+              <span className="material-symbols-outlined text-body-s text-accent-ink select-none">restaurant_menu</span>
             </span>
           }
           chevron
@@ -1076,7 +1076,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
       {!loading && recipes.length > 0 && selectedCat !== 'all' && (
         <section className="space-y-4">
           <h2 className="font-sans font-bold text-body-s text-ink uppercase tracking-wider flex items-center gap-2">
-            <span className="material-symbols-outlined text-accent text-title-s">restaurant_menu</span>
+            <span className="material-symbols-outlined text-accent-ink text-title-s">restaurant_menu</span>
             Mis recetas
           </h2>
 
@@ -1174,7 +1174,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
           </div>
         ) : recetasTotalVisible === 0 && recetasError ? (
           <div className="flex flex-col items-center gap-3 py-10">
-            <p className="font-sans text-label text-red-300 uppercase tracking-widest text-center">{recetasError}</p>
+            <p className="font-sans text-label text-danger uppercase tracking-widest text-center">{recetasError}</p>
             <button
               onClick={handleLoadMore}
               disabled={recetasLoadingMore}
@@ -1220,8 +1220,8 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
             {recetasFeatured.length > 0 && (
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-amber-400 text-body-s" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
-                  <h3 className="font-sans text-caption text-amber-400 uppercase tracking-wider font-bold">
+                  <span className="material-symbols-outlined text-warning text-body-s" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
+                  <h3 className="font-sans text-caption text-warning uppercase tracking-wider font-bold">
                     Destacadas para ti ({recetasFeatured.length})
                   </h3>
                 </div>
@@ -1290,7 +1290,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
 
             {recetasError && (
               <div className="flex flex-col items-center gap-2 pt-2">
-                <p className="font-sans text-caption text-red-300 uppercase tracking-wide">{recetasError}</p>
+                <p className="font-sans text-caption text-danger uppercase tracking-wide">{recetasError}</p>
               </div>
             )}
 

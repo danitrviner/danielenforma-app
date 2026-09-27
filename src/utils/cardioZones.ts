@@ -6,8 +6,33 @@ export const ZONE_LABEL: Record<keyof CardioZones, string> = {
   z1: 'Z1 Recuperación', z2: 'Z2 Base aeróbica', z3: 'Z3 Tempo', z4: 'Z4 Umbral', z5: 'Z5 VO₂máx',
 };
 
+/**
+ * El RELLENO de una zona: fondo de la pantalla de cardio en vivo, segmento de
+ * la barra de reparto, banda de la gráfica, punto de la leyenda.
+ *
+ * Es un color de señal, como un semáforo: se queda saturado y brillante en los
+ * dos temas. Encima siempre va `text-on-accent`, que es tinta oscura tanto en
+ * claro como en oscuro. Por eso estos seis son literales y no tokens de tema.
+ */
 export const ZONE_COLOR: Record<keyof CardioZones, string> = {
   z1: '#4a90d9', z2: '#00eefc', z3: '#fbcb1a', z4: '#ff8c42', z5: '#ff4d4d',
+};
+
+/**
+ * La misma zona cuando hace de TEXTO sobre una superficie normal — la leyenda
+ * «Tus zonas de FC», el minireproductor, la etiqueta de la gráfica.
+ *
+ * Aquí sí cambia con el tema, y tiene que hacerlo: el cian de Z2 sobre papel da
+ * 1,5:1. Apunta a los tokens `--color-zone-N-ink` de src/index.css, que en
+ * oscuro valen exactamente lo mismo que el relleno de arriba.
+ *
+ * Al mezclarlo con alfa hay que usar `color-mix()`, NO concatenar dos dígitos
+ * hex al final (`${color}1a`): eso producía `var(--color-zone-2-ink)1a`, que el
+ * navegador descarta entero sin avisar.
+ */
+export const ZONE_INK: Record<keyof CardioZones, string> = {
+  z1: 'var(--color-zone-1-ink)', z2: 'var(--color-zone-2-ink)', z3: 'var(--color-zone-3-ink)',
+  z4: 'var(--color-zone-4-ink)', z5: 'var(--color-zone-5-ink)',
 };
 
 // "No en zona" (§4bis.4 del análisis FITIV) — por debajo del suelo de Z1.
@@ -15,6 +40,8 @@ export const ZONE_COLOR: Record<keyof CardioZones, string> = {
 // explícito en vez de dejar el badge de zona en blanco.
 export const BELOW_ZONE_LABEL = 'Fuera de zona';
 export const BELOW_ZONE_COLOR = '#6b7280';
+/** «Fuera de zona» como texto — ver ZONE_INK. */
+export const BELOW_ZONE_INK = 'var(--color-zone-out-ink)';
 
 export function getZoneForBpm(bpm: number, zones: CardioZones): keyof CardioZones | null {
   for (const z of ZONE_ORDER) {

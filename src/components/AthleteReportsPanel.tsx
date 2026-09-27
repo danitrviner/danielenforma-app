@@ -22,8 +22,8 @@ export default function AthleteReportsPanel({ athleteEmail }: { athleteEmail: st
 
   return (
     <section className="bg-surface border border-hairline rounded-surface p-4 sm:p-5">
-      <h2 className="font-sans font-bold text-title-s text-white mb-3 pb-2 border-b border-hairline flex items-center gap-2">
-        <Icon name="analytics" size="l" filled className="text-accent" />
+      <h2 className="font-sans font-bold text-title-s text-ink mb-3 pb-2 border-b border-hairline flex items-center gap-2">
+        <Icon name="analytics" size="l" filled className="text-accent-ink" />
         Reportes de tu entrenador
       </h2>
 

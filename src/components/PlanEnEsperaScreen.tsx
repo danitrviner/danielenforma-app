@@ -63,7 +63,7 @@ export default function PlanEnEsperaScreen({ profile, checkins, onLogOut }: Prop
           <button
             type="button"
             onClick={() => setVista('espera')}
-            className="flex items-center gap-2 font-sans text-label font-bold uppercase tracking-wider text-ink-2 hover:text-accent transition-colors"
+            className="flex items-center gap-2 font-sans text-label font-bold uppercase tracking-wider text-ink-2 hover:text-accent-ink transition-colors"
           >
             <Icon name="arrow_back" size="s" />
             Volver
@@ -95,7 +95,7 @@ export default function PlanEnEsperaScreen({ profile, checkins, onLogOut }: Prop
       <div className="flex-none w-full max-w-lg mx-auto px-6 pt-[calc(2rem+var(--safe-top))] pb-2">
         <div className="flex items-center gap-2">
           <img src="/atlas-logo.png" alt="En Forma" className="w-7 h-7 object-contain" />
-          <span className="font-sans font-bold text-title-m tracking-tighter uppercase text-accent">EN FORMA</span>
+          <span className="font-sans font-bold text-title-m tracking-tighter uppercase text-accent-ink">EN FORMA</span>
         </div>
       </div>
       <div className="flex-1 min-h-0 overflow-y-auto w-full max-w-lg mx-auto px-6 py-6">

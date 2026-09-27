@@ -154,7 +154,7 @@ export default function ClienteDetail({ coachEmail }: { coachEmail: string }) {
               href={whatsapp}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1 px-3 py-2 rounded-control bg-white/6 text-ink font-sans font-bold text-caption hover:bg-white/10 transition-colors"
+              className="flex items-center gap-1 px-3 py-2 rounded-control bg-hairline text-ink font-sans font-bold text-caption hover:bg-strong transition-colors"
             >
               <Icon name="chat" size="s" />
               WhatsApp
@@ -164,7 +164,7 @@ export default function ClienteDetail({ coachEmail }: { coachEmail: string }) {
             type="button"
             onClick={onArchivar}
             disabled={archivar.isPending}
-            className="flex items-center gap-1 px-3 py-2 rounded-control bg-white/6 text-ink font-sans font-bold text-caption hover:bg-white/10 disabled:opacity-40 transition-colors"
+            className="flex items-center gap-1 px-3 py-2 rounded-control bg-hairline text-ink font-sans font-bold text-caption hover:bg-strong disabled:opacity-40 transition-colors"
           >
             <Icon name={cliente.archivado ? 'unarchive' : 'archive'} size="s" />
             {cliente.archivado ? 'Desarchivar' : 'Archivar'}
@@ -188,7 +188,7 @@ export default function ClienteDetail({ coachEmail }: { coachEmail: string }) {
             <button
               type="button"
               onClick={() => navigate(`/clients/${cliente.userId}`)}
-              className="flex items-center gap-1 px-3 py-2 rounded-control bg-white/6 text-ink font-sans font-bold text-caption hover:bg-white/10 transition-colors"
+              className="flex items-center gap-1 px-3 py-2 rounded-control bg-hairline text-ink font-sans font-bold text-caption hover:bg-strong transition-colors"
             >
               <Icon name="fitness_center" size="s" />
               Ficha de entreno
@@ -200,7 +200,7 @@ export default function ClienteDetail({ coachEmail }: { coachEmail: string }) {
             <button
               type="button"
               onClick={() => setInvitando(true)}
-              className="flex items-center gap-1 px-3 py-2 rounded-control bg-accent/12 text-accent font-sans font-bold text-caption hover:bg-accent/20 transition-colors"
+              className="flex items-center gap-1 px-3 py-2 rounded-control bg-accent/12 text-accent-ink font-sans font-bold text-caption hover:bg-accent/20 transition-colors"
             >
               <Icon name="person_add" size="s" />
               Dar de alta en la app
@@ -237,7 +237,7 @@ export default function ClienteDetail({ coachEmail }: { coachEmail: string }) {
             onClick={() => irATab(t.id)}
             className={`flex shrink-0 items-center gap-1 px-3 py-2 rounded-control font-mono text-caption uppercase tracking-widest transition-colors ${
               tab === t.id
-                ? 'bg-accent/15 text-accent border border-accent/30'
+                ? 'bg-accent/15 text-accent-ink border border-accent/30'
                 : 'bg-field text-ink-2 border border-hairline hover:border-strong'
             }`}
           >

@@ -114,7 +114,7 @@ export default function AccionesRapidasSheet({
         {rango ? (
           <>
             <p className="text-label text-ink-2 font-sans">
-              Semana del <span className="text-white font-semibold">{fechaCorta(rango.inicio)}</span> al <span className="text-white font-semibold">{fechaCorta(rango.fin)}</span>.
+              Semana del <span className="text-ink font-semibold">{fechaCorta(rango.inicio)}</span> al <span className="text-ink font-semibold">{fechaCorta(rango.fin)}</span>.
               Importar un bloque y el evento de calorías empiezan el lunes; el resto va al día que elijas.
             </p>
             <div className="flex items-center gap-1.5 flex-wrap">
@@ -135,7 +135,7 @@ export default function AccionesRapidasSheet({
           </>
         ) : (
           <p className="text-label text-ink-2 font-sans">
-            Todo lo que elijas se aplica sobre el <span className="text-white font-semibold">{DIAS_LARGO[diaSemana]} {fechaCorta(fecha)}</span>.
+            Todo lo que elijas se aplica sobre el <span className="text-ink font-semibold">{DIAS_LARGO[diaSemana]} {fechaCorta(fecha)}</span>.
           </p>
         )}
 
@@ -160,7 +160,7 @@ export default function AccionesRapidasSheet({
                   <Icon name={a.icono} size="m" style={{ color: a.color }} />
                 </span>
                 <span className="flex-1 min-w-0">
-                  <span className="block font-sans font-bold text-body-s text-white">{a.titulo}</span>
+                  <span className="block font-sans font-bold text-body-s text-ink">{a.titulo}</span>
                   <span className="block text-caption text-ink-3 font-sans mt-0.5">{a.pie}</span>
                 </span>
                 <Icon name={activa ? 'expand_less' : 'expand_more'} size="m" style={{ color: 'var(--color-ink-4)' }} />
@@ -177,7 +177,7 @@ export default function AccionesRapidasSheet({
                         return (
                           <div key={tpl.id} className="flex items-center gap-3 flex-wrap">
                             <div className="flex-1 min-w-0">
-                              <p className="font-sans font-semibold text-body-s text-white truncate">{tpl.name}</p>
+                              <p className="font-sans font-semibold text-body-s text-ink truncate">{tpl.name}</p>
                               <p className="font-mono text-caption text-ink-3">
                                 {tpl.stages.length} meso{tpl.stages.length !== 1 ? 's' : ''} · {semanas} semanas · hasta el {fechaCorta(finDePlantilla(tpl, inicioBloque))}
                               </p>
@@ -206,7 +206,7 @@ export default function AccionesRapidasSheet({
                       {menus.length === 0 && <Vacio texto="No tienes menús guardados. Se crean con «Guardar como menú» en Nutrición." />}
                       {menus.map(m => (
                         <div key={m.id} className="flex items-center gap-3 flex-wrap">
-                          <p className="flex-1 min-w-0 font-sans font-semibold text-body-s text-white truncate">{m.name}</p>
+                          <p className="flex-1 min-w-0 font-sans font-semibold text-body-s text-ink truncate">{m.name}</p>
                           <Button
                             variant="secondary" size="s" loading={ocupado} icon="event_repeat"
                             onClick={() => ejecutar(async () => {
@@ -338,7 +338,7 @@ export default function AccionesRapidasSheet({
                       {questionnaires.length === 0 && <Vacio texto="No tienes cuestionarios en tu biblioteca todavía." />}
                       {questionnaires.map(q => (
                         <div key={q.id} className="flex items-center gap-3 flex-wrap">
-                          <p className="flex-1 min-w-0 font-sans font-semibold text-body-s text-white truncate">{q.title}</p>
+                          <p className="flex-1 min-w-0 font-sans font-semibold text-body-s text-ink truncate">{q.title}</p>
                           <Button
                             variant="secondary" size="s" loading={ocupado} icon="event_available"
                             onClick={() => ejecutar(async () => {

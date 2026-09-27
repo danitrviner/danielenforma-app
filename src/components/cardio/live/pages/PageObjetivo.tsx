@@ -45,8 +45,8 @@ function CaloriesRow({ caloriesKcal, caloriesActiveKcal, points }: { caloriesKca
 function CalorieStat({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex-1 text-center">
-      <p className="font-mono text-title font-bold text-white tabular-nums">{value}</p>
-      <p className="text-caption font-sans uppercase text-white/70 mt-1">{label}</p>
+      <p className="font-mono text-title font-bold text-ink tabular-nums">{value}</p>
+      <p className="text-caption font-sans uppercase text-ink-2 mt-1">{label}</p>
     </div>
   );
 }
@@ -62,14 +62,14 @@ function BlockObjective({ block, bpm, currentZone, blockProgressKcal, blockRemai
   switch (block.closeType) {
     case 'zone':
       return (
-        <p className="text-caption font-sans uppercase text-white/80 text-center">
+        <p className="text-caption font-sans uppercase text-ink-2 text-center">
           {block.targetZone ? `Hasta llegar a ${ZONE_LABEL[block.targetZone]}` : 'Objetivo de zona'}
           {currentZone && ` · ahora en ${ZONE_LABEL[currentZone]}`}
         </p>
       );
     case 'heartRate':
       return (
-        <p className="text-caption font-sans uppercase text-white/80 text-center">
+        <p className="text-caption font-sans uppercase text-ink-2 text-center">
           {block.hrDirection === 'below' ? `Baja de ${block.hrThresholdBpm} ppm` : `Sube hasta superar ${block.hrThresholdBpm} ppm`}
           {bpm !== null && bpm !== undefined && ` · ahora ${bpm}`}
         </p>
@@ -78,12 +78,12 @@ function BlockObjective({ block, bpm, currentZone, blockProgressKcal, blockRemai
       const fraction = block.targetKcal ? Math.min((blockProgressKcal ?? 0) / block.targetKcal, 1) : null;
       return (
         <div className="flex flex-col items-center gap-2 w-full">
-          <p className="text-caption font-sans uppercase text-white/80 text-center">
+          <p className="text-caption font-sans uppercase text-ink-2 text-center">
             Quema {block.targetKcal ?? '--'} kcal en este bloque · {Math.round(blockProgressKcal ?? 0)} kcal
           </p>
           {fraction !== null && (
-            <div className="h-2 w-full rounded-full bg-black/30 overflow-hidden">
-              <div className="h-full rounded-full bg-white transition-[width] duration-1000" style={{ width: `${fraction * 100}%` }} />
+            <div className="h-2 w-full rounded-full bg-veil/30 overflow-hidden">
+              <div className="h-full rounded-full bg-ink transition-[width] duration-1000" style={{ width: `${fraction * 100}%` }} />
             </div>
           )}
         </div>
@@ -94,14 +94,14 @@ function BlockObjective({ block, bpm, currentZone, blockProgressKcal, blockRemai
         <button
           type="button"
           onClick={onAdvanceBlock}
-          className="rounded-full bg-white/15 px-6 py-3 text-body-s font-sans font-bold text-white active:bg-white/25"
+          className="rounded-full bg-inset px-6 py-3 text-body-s font-sans font-bold text-ink active:bg-inset"
         >
           Toca para continuar
         </button>
       );
     case 'time':
     default:
-      return <p className="font-sans font-extrabold text-display text-white tabular-nums">{fmtClock(blockRemainingSec ?? 0)}</p>;
+      return <p className="font-sans font-extrabold text-display text-ink tabular-nums">{fmtClock(blockRemainingSec ?? 0)}</p>;
   }
 }
 
@@ -116,7 +116,7 @@ export default function PageObjetivo({
     return (
       <div className="flex h-full flex-col">
         <div className="flex flex-1 flex-col items-center justify-center gap-2 px-8 text-center">
-          <p className="text-caption font-mono uppercase text-white/80">
+          <p className="text-caption font-mono uppercase text-ink-2">
             Bloque {currentBlockIndex + 1}/{intervalBlocks.length} · {block.label}
           </p>
           <BlockObjective
@@ -127,7 +127,7 @@ export default function PageObjetivo({
             blockRemainingSec={blockRemainingSec}
             onAdvanceBlock={onAdvanceBlock}
           />
-          {next && <p className="text-caption font-sans text-white/60">Siguiente: {next.label}</p>}
+          {next && <p className="text-caption font-sans text-ink-3">Siguiente: {next.label}</p>}
         </div>
         <CaloriesRow caloriesKcal={caloriesKcal} caloriesActiveKcal={caloriesActiveKcal} points={points} />
       </div>
@@ -139,13 +139,13 @@ export default function PageObjetivo({
     return (
       <div className="flex h-full flex-col">
         <div className="flex flex-1 flex-col items-center justify-center gap-3 px-8">
-          <p className="text-caption font-sans uppercase text-white/80 text-center">
+          <p className="text-caption font-sans uppercase text-ink-2 text-center">
             Objetivo: {ZONE_LABEL[targetZone]}
             {targetDurationSec ? ` · ${fmtClock(targetProgressSec)} / ${fmtClock(targetDurationSec)}` : ` · ${fmtClock(targetProgressSec)}`}
           </p>
           {fraction !== null && (
-            <div className="h-2 w-full rounded-full bg-black/30 overflow-hidden">
-              <div className="h-full rounded-full bg-white transition-[width] duration-1000" style={{ width: `${fraction * 100}%` }} />
+            <div className="h-2 w-full rounded-full bg-veil/30 overflow-hidden">
+              <div className="h-full rounded-full bg-ink transition-[width] duration-1000" style={{ width: `${fraction * 100}%` }} />
             </div>
           )}
         </div>
@@ -157,8 +157,8 @@ export default function PageObjetivo({
   return (
     <div className="flex h-full flex-col">
       <div className="flex flex-1 flex-col items-center justify-center gap-1 px-8 text-center">
-        <p className="font-mono text-display text-white/50">--:--</p>
-        <p className="text-caption font-sans uppercase text-white/50">Sesión libre, sin objetivo</p>
+        <p className="font-mono text-display text-ink-3">--:--</p>
+        <p className="text-caption font-sans uppercase text-ink-3">Sesión libre, sin objetivo</p>
       </div>
       <CaloriesRow caloriesKcal={caloriesKcal} caloriesActiveKcal={caloriesActiveKcal} points={points} />
     </div>

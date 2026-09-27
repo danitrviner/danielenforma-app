@@ -95,7 +95,7 @@ export default function AddOwnMachineSheet({ open, onClose, email, onAnadida }: 
             come la hoja en un móvil y deja el campo del nombre bajo el pie. */}
         <div className="h-40 rounded-surface border border-hairline overflow-hidden bg-raised flex items-center justify-center">
           {previsualizacion ? (
-            <img src={previsualizacion} alt="Foto de la máquina" className="w-full h-full object-contain bg-white" />
+            <img src={previsualizacion} alt="Foto de la máquina" className="w-full h-full object-contain bg-photo" />
           ) : (
             <p className="font-sans text-body-s text-ink-4 text-center px-6">
               Foto de tu móvil o de una imagen de internet

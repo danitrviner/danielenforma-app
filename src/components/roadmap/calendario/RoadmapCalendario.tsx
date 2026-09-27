@@ -308,7 +308,7 @@ export default function RoadmapCalendario(props: Props) {
         <div className="flex items-center gap-3 min-w-0">
           <Avatar name={athleteName} className="w-9 h-9 rounded-control flex-shrink-0" />
           <div className="min-w-0">
-            <p className="font-sans font-extrabold text-title-m text-white truncate" style={{ letterSpacing: '-0.02em' }}>{athleteName}</p>
+            <p className="font-sans font-extrabold text-title-m text-ink truncate" style={{ letterSpacing: '-0.02em' }}>{athleteName}</p>
             <p className="font-mono text-caption text-ink-4 uppercase tracking-wider">Plan · Roadmap · Calendario</p>
           </div>
         </div>
@@ -362,7 +362,7 @@ export default function RoadmapCalendario(props: Props) {
             <button
               type="button"
               onClick={() => setPesoOpen(o => !o)}
-              className="flex items-center gap-1.5 border border-hairline rounded-control px-3 py-2 text-label font-sans font-semibold text-white hover:border-accent-line transition-colors"
+              className="flex items-center gap-1.5 border border-hairline rounded-control px-3 py-2 text-label font-sans font-semibold text-ink hover:border-accent-line transition-colors"
             >
               <Icon name="monitor_weight" size="s" />Peso
             </button>
@@ -370,21 +370,21 @@ export default function RoadmapCalendario(props: Props) {
           <button
             type="button"
             onClick={irAHoy}
-            className="flex items-center gap-1.5 border border-hairline rounded-control px-3 py-2 text-label font-sans font-semibold text-white hover:border-accent-line transition-colors"
+            className="flex items-center gap-1.5 border border-hairline rounded-control px-3 py-2 text-label font-sans font-semibold text-ink hover:border-accent-line transition-colors"
           >
             <Icon name="today" size="s" />Hoy
           </button>
           <button
             type="button"
             onClick={() => setNuevoHitoOpen(true)}
-            className="flex items-center gap-1.5 border border-hairline rounded-control px-3 py-2 text-label font-sans font-semibold text-white hover:border-accent-line transition-colors"
+            className="flex items-center gap-1.5 border border-hairline rounded-control px-3 py-2 text-label font-sans font-semibold text-ink hover:border-accent-line transition-colors"
           >
             <Icon name="flag" size="s" />Añadir hito
           </button>
           <button
             type="button"
             onClick={() => setProposeOpen(true)}
-            className="flex items-center gap-1.5 border border-hairline rounded-control px-3 py-2 text-label font-sans font-semibold text-white hover:border-accent-line transition-colors"
+            className="flex items-center gap-1.5 border border-hairline rounded-control px-3 py-2 text-label font-sans font-semibold text-ink hover:border-accent-line transition-colors"
           >
             <Icon name="auto_awesome" size="s" />Proponer plan
           </button>
@@ -416,13 +416,13 @@ export default function RoadmapCalendario(props: Props) {
               <Icon name={bandaActiva.icono} size="m" style={{ color: bandaActiva.color }} />
             </div>
             <div>
-              <p className="font-sans font-bold text-title-s text-white">{bandaActiva.nombre}</p>
+              <p className="font-sans font-bold text-title-s text-ink">{bandaActiva.nombre}</p>
               <p className="font-mono text-caption text-ink-3">{fmtRango(bandaActiva.inicio, bandaActiva.fin)}</p>
             </div>
           </div>
           <div className="w-px h-8 bg-hairline hidden sm:block" />
           <div className="flex flex-col gap-1.5 min-w-[160px]">
-            <p className="font-sans text-body-s font-semibold text-white">Semana {semanaDelBloque} de {bandaActiva.semanas}</p>
+            <p className="font-sans text-body-s font-semibold text-ink">Semana {semanaDelBloque} de {bandaActiva.semanas}</p>
             <div className="h-[5px] rounded-full bg-track overflow-hidden">
               <div className="h-full rounded-full" style={{ width: `${Math.min(100, ((semanaDelBloque ?? 0) / bandaActiva.semanas) * 100)}%`, background: bandaActiva.color }} />
             </div>
@@ -437,7 +437,7 @@ export default function RoadmapCalendario(props: Props) {
               <div className="w-px h-8 bg-hairline hidden sm:block" />
               <div className="flex items-center gap-2 min-w-0">
                 <Icon name="flag" size="s" style={{ color: 'var(--color-accent)' }} />
-                <span className="text-label text-ink-2 font-sans truncate">Próximo hito: <b className="text-white font-semibold">{proximoHito.titulo}</b></span>
+                <span className="text-label text-ink-2 font-sans truncate">Próximo hito: <b className="text-ink font-semibold">{proximoHito.titulo}</b></span>
               </div>
             </>
           )}

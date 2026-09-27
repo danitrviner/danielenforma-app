@@ -50,8 +50,8 @@ function EmptyChart({ message }: { message: string }) {
 function ChartCard({ title, icon, children }: { title: string; icon: string; children: React.ReactNode }) {
   return (
     <div className="bg-surface border border-hairline rounded-surface p-4 space-y-3">
-      <p className="font-sans font-bold text-white text-body-s flex items-center gap-2">
-        <Icon name={icon} size="s" className="text-accent" />
+      <p className="font-sans font-bold text-ink text-body-s flex items-center gap-2">
+        <Icon name={icon} size="s" className="text-accent-ink" />
         {title}
       </p>
       {children}
@@ -164,8 +164,8 @@ export default function MesocycleDashboard({ mesocycles, athleteEmail }: Props) 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="font-sans font-bold text-white text-title-s flex items-center gap-2">
-          <Icon name="dashboard" size="m" className="text-accent" />
+        <h3 className="font-sans font-bold text-ink text-title-s flex items-center gap-2">
+          <Icon name="dashboard" size="m" className="text-accent-ink" />
           Dashboard · {sorted.length} meso{sorted.length !== 1 ? 's' : ''}
         </h3>
         {loadState === 'loading' && (
@@ -182,7 +182,7 @@ export default function MesocycleDashboard({ mesocycles, athleteEmail }: Props) 
             <span className="font-mono font-semibold text-hero text-ink tabular-nums">{lastPoint.series}</span>
             {kpiDelta !== null && (
               <span className={`font-mono text-label font-bold rounded-full px-2 py-0.5 border ${
-                kpiDelta > 0 ? 'text-accent bg-accent/12 border-accent-line' :
+                kpiDelta > 0 ? 'text-accent-ink bg-accent/12 border-accent-line' :
                 kpiDelta < 0 ? 'text-danger bg-danger/12 border-danger/25' :
                 'text-ink-3 bg-transparent border-hairline'
               }`}>
@@ -258,7 +258,7 @@ export default function MesocycleDashboard({ mesocycles, athleteEmail }: Props) 
                       className={`px-2 rounded-control font-sans text-caption uppercase font-bold border transition-all ${
                         hidden
                           ? 'bg-transparent border-hairline text-ink-3'
-                          : 'border-transparent text-black'
+                          : 'border-transparent text-on-fill'
                       }`}
                       style={hidden ? {} : { backgroundColor: GROUP_COLOR[g] }}
                     >
@@ -269,7 +269,7 @@ export default function MesocycleDashboard({ mesocycles, athleteEmail }: Props) 
                 {hiddenGroups.size > 0 && (
                   <button
                     onClick={() => setHiddenGroups(new Set())}
-                    className="px-2 rounded-control font-mono text-caption text-ink-2 hover:text-white border border-hairline transition-colors"
+                    className="px-2 rounded-control font-mono text-caption text-ink-2 hover:text-ink border border-hairline transition-colors"
                   >
                     Mostrar todos
                   </button>

@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { UserProfile, CardioSessionType } from '../types';
 import { getCardioProfile, getCardioSessionsSince, getCardioAssignmentsForAthlete, getHrvReadingsForAthlete, getCardioWeeklyGoal, getStepsForDate, getAthleteNutritionConfig } from '../dbService';
 import { ventanaCardio, ventanaHrv } from '../utils/ventanaHistorial';
-import { getZoneForBpm, ZONE_LABEL, ZONE_COLOR, ZONE_ORDER } from '../utils/cardioZones';
+import { getZoneForBpm, ZONE_LABEL, ZONE_COLOR, ZONE_INK, ZONE_ORDER } from '../utils/cardioZones';
 import {
   summarizeSamples, pickActiveZona2Assignment, pickActiveIntervalAssignment,
   weeklyCardioMinutesDone, dailyCardioMinutesForWeek, defaultWeeklyCardioGoal, isoWeekKey,
@@ -29,6 +29,7 @@ import CardioSessionSummary from './cardio/CardioSessionSummary';
 import CardioToday from './cardio/CardioToday';
 import ManualSessionModal from './cardio/ManualSessionModal';
 import { Icon, Button, PageHeader, Chip } from './ui';
+import { conAlfa } from '../utils/coloresPersistidos';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    CardioScreen — la PANTALLA, ya no la dueña del motor.
@@ -273,14 +274,28 @@ export default function CardioScreen({ profile }: Props) {
         );
       })()}
 
+      {/* Sin zonas configuradas el bloque entero desaparecía y el atleta no
+          tenía forma de saber si es que no existen, si no le tocan o si la app
+          está rota. Se dice: el coach todavía no se las ha puesto. */}
+      {!cardioProfile && state === 'idle' && (
+        <div className="bg-surface border border-hairline rounded-surface p-4">
+          <p className="text-caption font-mono uppercase text-ink-2">Tus zonas de FC</p>
+          <p className="font-sans text-label text-ink-3 leading-relaxed mt-2">
+            Tu entrenador todavía no te ha configurado las zonas. Mientras tanto,
+            para la Zona 2 usa el test del habla: si puedes hablar con frases
+            completas pero no cantar, vas al ritmo correcto.
+          </p>
+        </div>
+      )}
+
       {cardioProfile && state === 'idle' && (
         <details className="bg-surface border border-hairline rounded-surface p-3">
           <summary className="text-caption font-mono uppercase text-ink-2 cursor-pointer select-none">Tus zonas de FC</summary>
           <div className="flex flex-wrap gap-2 mt-3">
             {ZONE_ORDER.map(z => (
-              <div key={z} className="flex-1 min-w-[100px] rounded-surface p-3 text-center" style={{ backgroundColor: `${ZONE_COLOR[z]}1a`, border: `1px solid ${ZONE_COLOR[z]}40` }}>
-                <p className="text-caption font-sans uppercase" style={{ color: ZONE_COLOR[z] }}>{ZONE_LABEL[z]}</p>
-                <p className="text-label font-bold text-white ">{cardioProfile.zones[z].min}-{cardioProfile.zones[z].max}</p>
+              <div key={z} className="flex-1 min-w-[100px] rounded-surface p-3 text-center" style={{ backgroundColor: conAlfa(ZONE_INK[z], 10), border: `1px solid ${conAlfa(ZONE_INK[z], 25)}` }}>
+                <p className="text-caption font-sans uppercase" style={{ color: ZONE_INK[z] }}>{ZONE_LABEL[z]}</p>
+                <p className="text-label font-bold text-ink ">{cardioProfile.zones[z].min}-{cardioProfile.zones[z].max}</p>
               </div>
             ))}
           </div>
@@ -334,13 +349,13 @@ export default function CardioScreen({ profile }: Props) {
                 className="w-full flex items-center gap-3 bg-surface border border-hairline rounded-control p-3 text-left hover:border-strong transition-colors">
                 <Icon name="favorite" size="l" className="text-ink-3" />
                 <div className="flex-1 min-w-0">
-                  <p className="font-sans font-bold text-body-s text-white">
+                  <p className="font-sans font-bold text-body-s text-ink">
                     {s.title || `${s.date} · ${Math.round(s.durationSec / 60)} min`}
                     {s.manual && <span className="ml-2 text-caption font-mono text-ink-2 uppercase">manual</span>}
                   </p>
                   <p className="text-caption text-ink-2 font-mono">Media {s.avgHR ?? '—'} bpm · Máx {s.maxHR ?? '—'} bpm</p>
                   {(s.caloriesActiveKcal || s.caloriesKcal || s.fitivPoints || s.trimp) && (
-                    <p className="text-caption text-accent font-mono ">
+                    <p className="text-caption text-accent-ink font-mono ">
                       {(s.caloriesActiveKcal ?? s.caloriesKcal) !== undefined && `${Math.round(s.caloriesActiveKcal ?? s.caloriesKcal!)} kcal · `}
                       {s.fitivPoints !== undefined && `${s.fitivPoints} pts · `}
                       {s.trimp !== undefined && `TRIMP ${Math.round(s.trimp)}`}

@@ -224,7 +224,7 @@ export default function VolumeSuggestionSheet({
               {MUSCLE_ORDER.map(g => {
                 const p = prioridadesEfectivas[g];
                 const tono = p === 'alta'
-                  ? 'border-accent bg-accent/14 text-accent'
+                  ? 'border-accent bg-accent/14 text-accent-ink'
                   : p === 'baja'
                     ? 'border-hairline bg-transparent text-ink-3'
                     : 'border-hairline bg-raised text-ink-2';
@@ -268,9 +268,9 @@ export default function VolumeSuggestionSheet({
           </div>
 
           {resultado.warnings.map((w, i) => (
-            <div key={i} className="flex items-start gap-2 bg-orange-500/10 border border-orange-500/30 rounded-surface px-3 py-2.5">
-              <Icon name="warning" size="s" className="text-orange-400 flex-shrink-0 mt-px" />
-              <p className="font-sans text-caption text-orange-300 leading-relaxed">{w}</p>
+            <div key={i} className="flex items-start gap-2 bg-warning/10 border border-warning/30 rounded-surface px-3 py-2.5">
+              <Icon name="warning" size="s" className="text-warning flex-shrink-0 mt-px" />
+              <p className="font-sans text-caption text-warning leading-relaxed">{w}</p>
             </div>
           ))}
 
@@ -295,7 +295,7 @@ export default function VolumeSuggestionSheet({
                     <React.Fragment key={g}>
                       <tr
                         onClick={() => setFilaAbierta(abierta ? null : g)}
-                        className="border-b border-hairline cursor-pointer hover:bg-white/[.02]"
+                        className="border-b border-hairline cursor-pointer hover:bg-hairline"
                       >
                         <td className="px-3 py-2 font-sans text-label text-ink whitespace-nowrap">
                           <span className="inline-flex items-center gap-1.5">
@@ -322,7 +322,7 @@ export default function VolumeSuggestionSheet({
                             <ul className="space-y-1">
                               {resultado.reasons[g].map((r, i) => (
                                 <li key={i} className="flex items-start gap-2">
-                                  <span className="text-accent font-mono text-caption mt-0.5 flex-shrink-0">·</span>
+                                  <span className="text-accent-ink font-mono text-caption mt-0.5 flex-shrink-0">·</span>
                                   <span className="font-sans text-caption text-ink-2 leading-relaxed">{r}</span>
                                 </li>
                               ))}

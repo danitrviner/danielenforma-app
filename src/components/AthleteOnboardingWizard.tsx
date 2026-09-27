@@ -184,7 +184,7 @@ function Chip({ selected, onClick, children, big = false, toggle = false }: Chip
       aria-pressed={toggle ? selected : undefined}
       className={`${big ? 'p-4 rounded-control text-left w-full' : 'px-4 py-3 rounded-control'} border font-sans text-body-s transition-all active:scale-95 ${
         selected
-          ? 'bg-accent/15 border-accent text-white'
+          ? 'bg-accent/15 border-accent text-ink'
           : 'bg-surface border-hairline text-ink-2 hover:border-strong'
       }`}
     >
@@ -197,7 +197,7 @@ function StepShell({ title, subtitle, children }: { title: string; subtitle?: st
   return (
     <div className="space-y-6 animate-[fadeSlideIn_.35s_ease]">
       <div>
-        <h2 className="font-sans font-bold text-title-l text-white tracking-tight">{title}</h2>
+        <h2 className="font-sans font-bold text-title-l text-ink tracking-tight">{title}</h2>
         {subtitle && <p className="text-body-s text-ink-2 mt-1">{subtitle}</p>}
       </div>
       {children}
@@ -208,7 +208,7 @@ function StepShell({ title, subtitle, children }: { title: string; subtitle?: st
 // text-title-s (16px), no text-body-s (13px): por debajo de 16px WKWebView
 // amplía la página sola al enfocar el campo y no la devuelve al desenfocar
 // (ver index.html y el suelo de 16px en src/index.css).
-const inputCls = 'w-full bg-surface border border-hairline focus:border-accent/60 rounded-surface px-4 py-3 text-title-s text-white placeholder-ink-2/40 outline-none transition-colors';
+const inputCls = 'w-full bg-surface border border-hairline focus:border-accent/60 rounded-surface px-4 py-3 text-title-s text-ink placeholder-ink-2/40 outline-none transition-colors';
 
 /** 05-4. Lo que se guarda entre sesión y sesión. Es exactamente el estado del
  *  wizard: si mañana se añade un paso, el campo nuevo entra aquí y en el efecto
@@ -704,7 +704,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
       <div className="flex-none w-full max-w-lg mx-auto px-6 pt-[calc(2rem+var(--safe-top))]">
         <div className="flex items-center gap-2 mb-2">
           <img src="/atlas-logo.png" alt="En Forma" className="w-7 h-7 object-contain" />
-          <span className="font-sans font-bold text-title-m tracking-tighter uppercase text-accent">EN FORMA</span>
+          <span className="font-sans font-bold text-title-m tracking-tighter uppercase text-accent-ink">EN FORMA</span>
           {step > 0 && (
             <span className="ml-auto font-mono text-caption uppercase tracking-widest text-ink-2">
               Paso {step} de {TOTAL_STEPS - 1}
@@ -751,7 +751,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
                 { icon: 'restaurant', text: 'Cómo comes, qué cocinas y qué no quieres ver' },
               ].map(i => (
                 <p key={i.icon} className="flex items-center gap-3 text-body-s text-ink">
-                  <Icon name={i.icon} size="m" className="text-accent" />
+                  <Icon name={i.icon} size="m" className="text-accent-ink" />
                   {i.text}
                 </p>
               ))}
@@ -801,10 +801,10 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
                 toman mal, el número no vale para nada y nadie se entera. */}
             <div className="bg-surface border border-hairline rounded-surface p-4">
               <div className="flex items-start gap-2 font-sans text-body-s text-ink-2">
-                <Icon name="straighten" size="m" className="text-accent shrink-0" />
+                <Icon name="straighten" size="m" className="text-accent-ink shrink-0" />
                 <span>
                   De pie, relajado y sin meter tripa. La cinta pegada a la piel pero{' '}
-                  <span className="text-white font-bold">sin apretar</span>, y bien horizontal.
+                  <span className="text-ink font-bold">sin apretar</span>, y bien horizontal.
                   Mide al soltar el aire. Mejor por la mañana y en ayunas.
                 </span>
               </div>
@@ -899,7 +899,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
                 {ALCANCE.map(a => (
                   <Chip key={a.id} big selected={lifestyleScope === a.id}
                     onClick={() => { setLifestyleScope(a.id); if (a.id === 'solo_fisico') setLifestyleAreas([]); }}>
-                    <span className="block font-bold text-white">{a.label}</span>
+                    <span className="block font-bold text-ink">{a.label}</span>
                     <span className="block text-label text-ink-2">{a.desc}</span>
                   </Chip>
                 ))}
@@ -916,7 +916,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
                   {LIFESTYLE_AREAS.map(a => (
                     <Chip key={a.id} big selected={lifestyleAreas.includes(a.id)}
                       onClick={() => setLifestyleAreas(prev => alternar(prev, a.id))}>
-                      <span className="block font-bold text-white">{a.label}</span>
+                      <span className="block font-bold text-ink">{a.label}</span>
                       <span className="block text-label text-ink-2">{a.desc}</span>
                     </Chip>
                   ))}
@@ -1014,7 +1014,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
               <div className="space-y-3">
                 {EXPERIENCE.map(x => (
                   <Chip key={x.id} big selected={experienceLevel === x.id} onClick={() => setExperienceLevel(x.id)}>
-                    <span className="block font-bold text-white">{x.label}</span>
+                    <span className="block font-bold text-ink">{x.label}</span>
                     <span className="block text-label text-ink-2">{x.desc}</span>
                   </Chip>
                 ))}
@@ -1100,7 +1100,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
               <div className="space-y-3">
                 {ACTIVITY.map(a => (
                   <Chip key={a.id} big selected={activityLevel === a.id} onClick={() => setActivityLevel(a.id)}>
-                    <span className="block font-bold text-white">{a.label}</span>
+                    <span className="block font-bold text-ink">{a.label}</span>
                     <span className="block text-label text-ink-2">{a.desc}</span>
                   </Chip>
                 ))}
@@ -1161,7 +1161,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
               <div className="space-y-3">
                 {RUTINA_PANTALLA.map(r => (
                   <Chip key={r.id} big selected={sleepRoutineOrScreen === r.id} onClick={() => setSleepRoutineOrScreen(r.id)}>
-                    <span className="block font-bold text-white">{r.label}</span>
+                    <span className="block font-bold text-ink">{r.label}</span>
                     <span className="block text-label text-ink-2">{r.desc}</span>
                   </Chip>
                 ))}
@@ -1206,7 +1206,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
               <div className="space-y-3">
                 {DIET_TYPES.map(d => (
                   <Chip key={d.id} big selected={dietType === d.id} onClick={() => setDietType(d.id)}>
-                    <span className="flex items-center gap-2 font-bold text-white">
+                    <span className="flex items-center gap-2 font-bold text-ink">
                       <Icon name={d.icon} size="m" />
                       {d.label}
                     </span>
@@ -1288,12 +1288,12 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
                 // Con seis comidas, Cena y Recena comparten `intakeType: 5`.
                 <div key={`${meal.intakeType}-${i}`} className="flex items-center gap-3 px-4 py-3 bg-surface">
                   <Icon name={INTAKE_ICONS[meal.intakeType]} size="m" className="text-ink-2" />
-                  <span className="flex-1 font-sans text-body-s text-white">{meal.name}</span>
+                  <span className="flex-1 font-sans text-body-s text-ink">{meal.name}</span>
                   <button type="button"
                     onClick={() => setMeals(prev => prev.map((m, idx) => idx === i ? { ...m, needsTupper: !m.needsTupper } : m))}
                     className={`flex items-center gap-2 px-3 py-2 rounded-control font-mono text-caption font-bold border transition-all active:scale-95 ${
                       meal.needsTupper
-                        ? 'bg-accent/15 border-accent/40 text-accent'
+                        ? 'bg-accent/15 border-accent/40 text-accent-ink'
                         : 'bg-raised border-hairline text-ink-3 hover:text-ink-2'
                     }`}
                   >
@@ -1538,7 +1538,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
                 const item = i as { icon: string; text: string };
                 return (
                   <p key={idx} className="flex items-center gap-3 text-body-s text-ink">
-                    <Icon name={item.icon} size="m" className="text-accent" />
+                    <Icon name={item.icon} size="m" className="text-accent-ink" />
                     {item.text}
                   </p>
                 );

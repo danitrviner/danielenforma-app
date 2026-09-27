@@ -144,7 +144,7 @@ export default function ConfirmarObjetivosSheet({ open, onClose, athletes }: Pro
               const dudoso = !fase.objetivo && (!deducido || deducido.por === 'kcal') && !elegido[clave];
               return (
                 <div key={fase.id} className="flex flex-wrap items-center gap-2">
-                  <span className={`font-mono text-caption w-4 ${enCurso?.idx === idx ? 'text-accent' : 'text-ink-3'}`}>
+                  <span className={`font-mono text-caption w-4 ${enCurso?.idx === idx ? 'text-accent-ink' : 'text-ink-3'}`}>
                     {enCurso?.idx === idx ? '▶' : idx + 1}
                   </span>
                   <span className="font-sans text-label text-ink flex-1 min-w-[8rem] truncate">

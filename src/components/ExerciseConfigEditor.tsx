@@ -42,7 +42,7 @@ function BlockStepper({ value, min = 0, max = 99, step = 1, format, onChange }: 
         type="button"
         onClick={() => onChange(Math.max(min, value - step))}
         disabled={value <= min}
-        className="w-7 h-7 sm:w-5 sm:h-5 rounded-control bg-inset text-ink-2 hover:bg-white/5 disabled:opacity-30 font-mono text-caption font-bold flex items-center justify-center flex-shrink-0 transition-colors"
+        className="w-7 h-7 sm:w-5 sm:h-5 rounded-control bg-inset text-ink-2 hover:bg-hairline disabled:opacity-30 font-mono text-caption font-bold flex items-center justify-center flex-shrink-0 transition-colors"
       >−</button>
       <span className="flex-1 text-center font-mono text-body-s font-bold text-ink tabular-nums">
         {format ? format(value) : value}
@@ -51,7 +51,7 @@ function BlockStepper({ value, min = 0, max = 99, step = 1, format, onChange }: 
         type="button"
         onClick={() => onChange(Math.min(max, value + step))}
         disabled={value >= max}
-        className="w-7 h-7 sm:w-5 sm:h-5 rounded-control bg-accent/14 text-accent hover:bg-accent/22 disabled:opacity-30 font-mono text-caption font-bold flex items-center justify-center flex-shrink-0 transition-colors"
+        className="w-7 h-7 sm:w-5 sm:h-5 rounded-control bg-accent/14 text-accent-ink hover:bg-accent/22 disabled:opacity-30 font-mono text-caption font-bold flex items-center justify-center flex-shrink-0 transition-colors"
       >+</button>
     </div>
   );
@@ -66,7 +66,7 @@ function BlockStepper({ value, min = 0, max = 99, step = 1, format, onChange }: 
 function RirRow({ value, onChange }: { value: number; onChange: (v: number) => void }) {
   const tono = (v: number) => v <= 1 ? 'bg-accent border-accent text-on-accent'
     : v <= 3 ? 'bg-accent/45 border-accent text-on-accent'
-    : 'bg-accent/25 border-accent-line text-accent';
+    : 'bg-accent/25 border-accent-line text-accent-ink';
   return (
     <div className="flex gap-1" role="radiogroup" aria-label="RIR">
       {[0, 1, 2, 3, 4, 5].map(v => {
@@ -106,7 +106,7 @@ function ConfigCells({ sets, reps, rest, onSets, onReps, onRest }: {
           value={reps}
           onChange={e => onReps(e.target.value)}
           placeholder="8-10"
-          className="w-full bg-transparent border-none p-0 text-center text-white font-mono text-body-s font-bold focus:outline-none focus:ring-0"
+          className="w-full bg-transparent border-none p-0 text-center text-ink font-mono text-body-s font-bold focus:outline-none focus:ring-0"
         />
       </div>
       <div className="flex-1 min-w-[62px] bg-inset rounded-control px-2 py-1.5 flex flex-col gap-0.5">
@@ -139,10 +139,10 @@ function ChipSeccion({ etiqueta, valor, activa, abierta, onClick }: {
   key?: React.Key;
 }) {
   const tono = abierta
-    ? 'bg-accent/16 border-accent text-accent'
+    ? 'bg-accent/16 border-accent text-accent-ink'
     : activa
-      ? 'bg-transparent border-accent-line text-accent'
-      : 'bg-transparent border-hairline text-ink-2 hover:text-white hover:border-strong';
+      ? 'bg-transparent border-accent-line text-accent-ink'
+      : 'bg-transparent border-hairline text-ink-2 hover:text-ink hover:border-strong';
   return (
     <button
       type="button"
@@ -283,7 +283,7 @@ export default function ExerciseConfigEditor({ we, onChange, mesoWeeks }: Props)
             <button
               type="button"
               onClick={disableGroups}
-              className="flex items-center gap-1 font-sans text-caption font-bold text-accent hover:text-white transition-colors"
+              className="flex items-center gap-1 font-sans text-caption font-bold text-accent-ink hover:text-ink transition-colors"
             >
               <Icon name="undo" size="s" />
               Volver a un solo rango
@@ -318,7 +318,7 @@ export default function ExerciseConfigEditor({ we, onChange, mesoWeeks }: Props)
                         value={g.label || ''}
                         onChange={e => updateGroup(gIdx, 'label', e.target.value)}
                         placeholder="Etiqueta del bloque"
-                        className="min-w-0 flex-1 bg-accent/12 border border-accent-line rounded-control px-2 py-1 text-accent font-mono text-caption font-bold uppercase tracking-wider focus:outline-none focus:ring-1 focus:ring-accent"
+                        className="min-w-0 flex-1 bg-accent/12 border border-accent-line rounded-control px-2 py-1 text-accent-ink font-mono text-caption font-bold uppercase tracking-wider focus:outline-none focus:ring-1 focus:ring-accent"
                       />
                     ) : (
                       <div className="relative flex-1 min-w-0">
@@ -331,18 +331,18 @@ export default function ExerciseConfigEditor({ we, onChange, mesoWeeks }: Props)
                             }
                             updateGroup(gIdx, 'label', e.target.value);
                           }}
-                          className="w-full appearance-none bg-accent/12 border border-accent-line rounded-control pl-2 pr-6 py-1 text-accent font-mono text-caption font-bold uppercase tracking-wider focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
+                          className="w-full appearance-none bg-accent/12 border border-accent-line rounded-control pl-2 pr-6 py-1 text-accent-ink font-mono text-caption font-bold uppercase tracking-wider focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
                         >
                           <option value="">Sin etiqueta</option>
                           {ETIQUETAS_SUGERIDAS.map(l => <option key={l} value={l}>{l}</option>)}
                           <option value="__libre__">Escribir...</option>
                         </select>
-                        <span className="ui-icon pointer-events-none absolute right-1 top-1/2 -translate-y-1/2 text-accent" style={{ fontSize: '14px' }} aria-hidden>expand_more</span>
+                        <span className="ui-icon pointer-events-none absolute right-1 top-1/2 -translate-y-1/2 text-accent-ink" style={{ fontSize: '14px' }} aria-hidden>expand_more</span>
                       </div>
                     )}
                     <button
                       onClick={() => removeGroup(gIdx)}
-                      className="font-mono text-caption font-bold text-ink-3 hover:text-red-400 uppercase tracking-wider transition-colors flex-shrink-0"
+                      className="font-mono text-caption font-bold text-ink-3 hover:text-danger uppercase tracking-wider transition-colors flex-shrink-0"
                     >
                       Quitar
                     </button>
@@ -365,7 +365,7 @@ export default function ExerciseConfigEditor({ we, onChange, mesoWeeks }: Props)
 
         <button
           onClick={hasGroups ? addGroup : enableGroups}
-          className="w-full flex items-center justify-center gap-2 bg-bg border border-dashed border-hairline rounded-control px-3 py-2 text-body-s font-sans text-ink-2 hover:text-accent hover:border-accent/40 transition-all"
+          className="w-full flex items-center justify-center gap-2 bg-bg border border-dashed border-hairline rounded-control px-3 py-2 text-body-s font-sans text-ink-2 hover:text-accent-ink hover:border-accent/40 transition-all"
         >
           <Icon name="add" size="s" />
           Añadir bloque con otra configuración
@@ -401,7 +401,7 @@ export default function ExerciseConfigEditor({ we, onChange, mesoWeeks }: Props)
               onChange={e => onChange({ notes: e.target.value })}
               placeholder="Técnica, variante, carga, progresión…"
               rows={2}
-              className="w-full bg-transparent border-none p-0 text-title-s text-white placeholder-ink-2/30 font-sans focus:outline-none focus:ring-0 resize-none"
+              className="w-full bg-transparent border-none p-0 text-title-s text-ink placeholder-ink-2/30 font-sans focus:outline-none focus:ring-0 resize-none"
             />
           </div>
         )}
@@ -414,8 +414,8 @@ export default function ExerciseConfigEditor({ we, onChange, mesoWeeks }: Props)
                 onClick={() => setTechnique(undefined)}
                 className={`px-3 py-1.5 rounded-chip font-mono text-caption font-bold uppercase tracking-wider border transition-all ${
                   !we.technique
-                    ? 'bg-white/10 border-hairline text-white'
-                    : 'border-hairline text-ink-2 hover:text-white hover:border-strong'
+                    ? 'bg-strong border-hairline text-ink'
+                    : 'border-hairline text-ink-2 hover:text-ink hover:border-strong'
                 }`}
               >Normal</button>
               {TECHNIQUES.map(t => (
@@ -427,7 +427,7 @@ export default function ExerciseConfigEditor({ we, onChange, mesoWeeks }: Props)
                   className={`flex items-center gap-1 px-3 py-1.5 rounded-chip font-mono text-caption font-bold uppercase tracking-wider border transition-all ${
                     we.technique === t
                       ? TECHNIQUE_COLOR[t]
-                      : 'border-hairline text-ink-2 hover:text-white hover:border-strong'
+                      : 'border-hairline text-ink-2 hover:text-ink hover:border-strong'
                   }`}
                 >{TECHNIQUE_EMOJI[t]} {TECHNIQUE_LABEL[t]}</button>
               ))}
@@ -461,13 +461,13 @@ export default function ExerciseConfigEditor({ we, onChange, mesoWeeks }: Props)
               <div className="bg-bg border border-hairline rounded-surface px-3 py-2.5 space-y-2">
                 {(we.manualWarmupSets || []).map((s, wIdx) => (
                   <div key={wIdx} className="flex items-center gap-2">
-                    <span className="font-mono text-caption text-accent w-8">W{wIdx + 1}</span>
+                    <span className="font-mono text-caption text-accent-ink w-8">W{wIdx + 1}</span>
                     <input
                       type="number" min={0} step={0.5}
                       value={s.weight}
                       onChange={e => updateManualWarmupSet(wIdx, 'weight', parseFloat(e.target.value) || 0)}
                       placeholder="kg"
-                      className="w-20 bg-inset border border-hairline rounded-control px-2 py-1 text-center text-white font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-accent"
+                      className="w-20 bg-inset border border-hairline rounded-control px-2 py-1 text-center text-ink font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-accent"
                     />
                     <span className="text-ink-2 text-label">×</span>
                     <input
@@ -475,11 +475,11 @@ export default function ExerciseConfigEditor({ we, onChange, mesoWeeks }: Props)
                       value={s.reps}
                       onChange={e => updateManualWarmupSet(wIdx, 'reps', parseInt(e.target.value) || 1)}
                       placeholder="reps"
-                      className="w-16 bg-inset border border-hairline rounded-control px-2 py-1 text-center text-white font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-accent"
+                      className="w-16 bg-inset border border-hairline rounded-control px-2 py-1 text-center text-ink font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-accent"
                     />
                     <button
                       onClick={() => removeManualWarmupSet(wIdx)}
-                      className="p-1 text-ink-2 hover:text-red-400 transition-colors"
+                      className="p-1 text-ink-2 hover:text-danger transition-colors"
                       title="Eliminar"
                     >
                       <Icon name="delete" size="s" />
@@ -488,7 +488,7 @@ export default function ExerciseConfigEditor({ we, onChange, mesoWeeks }: Props)
                 ))}
                 <button
                   onClick={addManualWarmupSet}
-                  className="flex items-center gap-1 text-caption font-sans text-accent hover:text-white transition-colors"
+                  className="flex items-center gap-1 text-caption font-sans text-accent-ink hover:text-ink transition-colors"
                 >
                   <Icon name="add" size="s" />
                   Añadir serie de aproximación
@@ -515,7 +515,7 @@ export default function ExerciseConfigEditor({ we, onChange, mesoWeeks }: Props)
                     max={mesoWeeks}
                     value={rule.atWeek}
                     onChange={e => updateProgressionRule(idx, { atWeek: Math.min(mesoWeeks, Math.max(1, parseInt(e.target.value) || 1)) })}
-                    className="w-14 bg-inset border border-hairline rounded-control px-2 py-1 text-center text-white font-mono text-title-s font-bold focus:outline-none focus:ring-1 focus:ring-accent"
+                    className="w-14 bg-inset border border-hairline rounded-control px-2 py-1 text-center text-ink font-mono text-title-s font-bold focus:outline-none focus:ring-1 focus:ring-accent"
                   />
                 </div>
                 <div className="flex items-center gap-1.5 flex-1 min-w-0">
@@ -526,13 +526,13 @@ export default function ExerciseConfigEditor({ we, onChange, mesoWeeks }: Props)
                     max={10}
                     value={rule.addSets ?? 0}
                     onChange={e => updateProgressionRule(idx, { addSets: parseInt(e.target.value) || 0 })}
-                    className="w-14 bg-inset border border-hairline rounded-control px-2 py-1 text-center text-white font-mono text-title-s font-bold focus:outline-none focus:ring-1 focus:ring-accent"
+                    className="w-14 bg-inset border border-hairline rounded-control px-2 py-1 text-center text-ink font-mono text-title-s font-bold focus:outline-none focus:ring-1 focus:ring-accent"
                   />
                   <span className="font-sans text-caption text-ink-2 flex-shrink-0">series</span>
                 </div>
                 <button
                   onClick={() => removeProgressionRule(idx)}
-                  className="p-1 text-ink-3 hover:text-red-400 transition-colors flex-shrink-0"
+                  className="p-1 text-ink-3 hover:text-danger transition-colors flex-shrink-0"
                   title="Eliminar"
                 >
                   <Icon name="delete" size="s" />
@@ -541,7 +541,7 @@ export default function ExerciseConfigEditor({ we, onChange, mesoWeeks }: Props)
             ))}
             <button
               onClick={addProgressionRule}
-              className="w-full flex items-center justify-center gap-2 bg-bg border border-dashed border-hairline rounded-control px-3 py-2 text-body-s font-sans text-ink-2 hover:text-accent hover:border-accent/40 transition-all"
+              className="w-full flex items-center justify-center gap-2 bg-bg border border-dashed border-hairline rounded-control px-3 py-2 text-body-s font-sans text-ink-2 hover:text-accent-ink hover:border-accent/40 transition-all"
             >
               <Icon name="add" size="s" />
               Añadir escalón de progresión
@@ -556,7 +556,7 @@ export default function ExerciseConfigEditor({ we, onChange, mesoWeeks }: Props)
               onClick={toggleRecordVideo}
               aria-pressed={!!we.recordVideoSet}
               className={`w-9 h-9 rounded-control flex items-center justify-center flex-shrink-0 transition-colors border ${
-                we.recordVideoSet ? 'bg-accent/14 border-accent text-accent' : 'bg-surface border-hairline text-ink-2 hover:text-white hover:border-strong'
+                we.recordVideoSet ? 'bg-accent/14 border-accent text-accent-ink' : 'bg-surface border-hairline text-ink-2 hover:text-ink hover:border-strong'
               }`}
             >
               <Icon name="videocam" size="s" />
@@ -568,7 +568,7 @@ export default function ExerciseConfigEditor({ we, onChange, mesoWeeks }: Props)
               <select
                 value={we.recordVideoSet}
                 onChange={e => onChange({ recordVideoSet: e.target.value === 'all' ? 'all' : parseInt(e.target.value) })}
-                className="ml-auto bg-surface border border-hairline rounded-control px-2 py-1.5 text-caption font-mono text-white focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
+                className="ml-auto bg-surface border border-hairline rounded-control px-2 py-1.5 text-caption font-mono text-ink focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
               >
                 <option value="all">Todas las series</option>
                 {Array.from({ length: we.sets }, (_, i) => i + 1).map(n => (

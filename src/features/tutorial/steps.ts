@@ -1,4 +1,11 @@
+import { Capacitor } from '@capacitor/core';
 import type { NavTab } from '../../App';
+
+/* El aviso de descanso con la pantalla bloqueada (notificación programada +
+   actividad en vivo) vive en `services/sesionEnVivo.ts` y sale de largo si
+   `Capacitor.isNativePlatform()` es falso. Los atletas entran hoy por la web,
+   así que prometérselo en el tour era prometer algo que no ocurre. */
+const ES_NATIVO = Capacitor.isNativePlatform();
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Los 16 pasos del tour (F3.12, módulo 7 del handoff)
@@ -72,7 +79,7 @@ export const TOUR_STEPS: TourStep[] = [
   {
     id: 'biblioteca', section: 'Ejercicios', tab: 'training', targetId: 'training-exercise-video',
     title: 'Cada ejercicio lleva su vídeo',
-    body: 'Si dudas de la técnica, aquí tienes el vídeo a 0,5× o a velocidad normal. Está siempre a mano dentro de la sesión, no hace falta salir a buscarlo.',
+    body: 'Arranca a 2× para que reconozcas el ejercicio de un vistazo; bájalo a 1× cuando quieras fijarte en la técnica. Está siempre dentro de la sesión, no hace falta salir a buscarlo.',
   },
   {
     id: 'intercambios', section: 'Nutrición', tab: 'nutrition', targetId: 'nutrition-tracker',
@@ -81,14 +88,14 @@ export const TOUR_STEPS: TourStep[] = [
   },
   {
     id: 'registrar-ingesta', section: 'Nutrición', tab: 'nutrition', targetId: 'nutrition-first-meal-row',
-    title: 'Toca la comida cuando te la termines',
-    body: 'Un toque y queda registrada. La barra se mueve un segundo después, para que veas primero que ha quedado marcada.',
-    requiresAction: true, actionLabel: 'Toca una ingesta',
+    title: 'El día ya viene puesto: tú lo corriges',
+    body: 'Lo que ves aquí ya cuenta como comido. Si comiste algo que no estaba, añádelo; si no te lo comiste, deslízalo a la izquierda y quítalo.',
+    requiresAction: true, actionLabel: 'Añade un alimento',
   },
   {
     id: 'intercambiar-alimento', section: 'Nutrición', tab: 'nutrition', targetId: 'nutrition-first-meal-row',
     title: 'Si no tienes un alimento, lo cambias',
-    body: 'Toca Cambiar junto a un alimento para sustituirlo por otro sin perder tus intercambios, o el icono de ajuste para repartir la ingesta por macro.',
+    body: 'Toca Cambiar junto a un alimento para sustituirlo por otro sin perder tus intercambios. Y con «Editar reparto por comida» decides cuántos intercambios va a cada ingesta.',
   },
   {
     id: 'recetas', section: 'Recetas', tab: 'nutrition', targetId: 'nav-tab-nutrition',
@@ -111,8 +118,10 @@ export const TOUR_STEPS: TourStep[] = [
     // atleta ese icono ya no existe — Ajustes es una pestaña más del selector
     // (Dani, 10-09-2026). El del coach sigue ahí, pero el tour es del atleta.
     id: 'isla-widgets', section: 'Perfil', tab: 'profile', targetId: 'profile-progress-row',
-    title: 'Fuera de la app también hay avisos',
-    body: 'Cuando actives las notificaciones, verás el descanso entre series y tu cardio incluso con el móvil bloqueado. Te lo pido ahora, en contexto.',
+    title: ES_NATIVO ? 'Fuera de la app también hay avisos' : 'El descanso corre con la app abierta',
+    body: ES_NATIVO
+      ? 'Cuando actives las notificaciones, verás el descanso entre series y tu cardio incluso con el móvil bloqueado. Te lo pido ahora, en contexto.'
+      : 'Entrando desde el navegador, el descanso entre series solo avisa con la app delante: si bloqueas el móvil, deja de sonar. Déjala abierta entre series y aprovecha para anotar la que acabas de hacer.',
     skippable: true,
   },
   {

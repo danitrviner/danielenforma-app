@@ -38,7 +38,7 @@ export default function CrmShell({ coachEmail }: { coachEmail: string }) {
                 onClick={() => navigate(s.path)}
                 className={`flex shrink-0 items-center gap-1 px-3 py-2 rounded-control font-mono text-caption uppercase tracking-widest transition-colors ${
                   activo
-                    ? 'bg-accent/15 text-accent border border-accent/30'
+                    ? 'bg-accent/15 text-accent-ink border border-accent/30'
                     : 'bg-field text-ink-2 border border-hairline hover:border-strong'
                 }`}
               >

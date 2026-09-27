@@ -40,8 +40,8 @@ export default function MiFichaCard({ profile }: Props) {
   return (
     <div className="bg-surface border border-hairline p-5 rounded-surface flex items-center justify-between gap-4">
       <div>
-        <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
-          <Icon name="assignment_ind" size="m" className="text-accent" />
+        <h3 className="font-sans font-bold text-title-s text-ink flex items-center gap-2">
+          <Icon name="assignment_ind" size="m" className="text-accent-ink" />
           {onboarding ? 'Mi ficha de iniciación' : 'Ficha de iniciación'}
         </h3>
         <p className="font-mono text-caption text-ink-3 mt-1">

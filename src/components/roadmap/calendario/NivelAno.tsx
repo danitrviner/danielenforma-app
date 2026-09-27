@@ -138,9 +138,9 @@ export default function NivelAno({ anio, hoy, bandasEntreno, indice, onOpenMonth
             >
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  <span className="font-sans font-bold text-title-s text-white" style={{ letterSpacing: '-0.01em' }}>{nombre}</span>
+                  <span className="font-sans font-bold text-title-s text-ink" style={{ letterSpacing: '-0.01em' }}>{nombre}</span>
                   {esAhora && (
-                    <span className="font-mono text-[9px] tracking-wider text-accent px-1.5 py-0.5 rounded-[8px]" style={{ background: 'color-mix(in oklab, var(--color-accent) 12%, transparent)' }}>AHORA</span>
+                    <span className="font-mono text-[9px] tracking-wider text-accent-ink px-1.5 py-0.5 rounded-[8px]" style={{ background: 'color-mix(in oklab, var(--color-accent) 12%, transparent)' }}>AHORA</span>
                   )}
                 </div>
                 <span className="font-mono text-label" style={{ color: adh === null ? 'var(--color-ink-5)' : adh >= 80 ? 'var(--color-success)' : 'var(--color-warning)' }}>

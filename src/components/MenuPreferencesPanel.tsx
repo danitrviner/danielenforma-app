@@ -152,8 +152,8 @@ export default function MenuPreferencesPanel({ athleteEmail }: Props) {
     <div className="space-y-4">
       {/* Hambre + comida de entreno — alimenta el reparto automático del coach */}
       <div className="bg-surface border border-hairline rounded-surface p-5 space-y-4">
-        <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
-          <Icon name="restaurant" size="m" className="text-accent" />
+        <h3 className="font-sans font-bold text-title-s text-ink flex items-center gap-2">
+          <Icon name="restaurant" size="m" className="text-accent-ink" />
           Cuándo comes
         </h3>
         <div>
@@ -177,21 +177,21 @@ export default function MenuPreferencesPanel({ athleteEmail }: Props) {
 
       {/* Tipos de comida */}
       <div className="bg-surface border border-hairline rounded-surface p-5 space-y-3">
-        <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
-          <Icon name="tune" size="m" className="text-accent" />
+        <h3 className="font-sans font-bold text-title-s text-ink flex items-center gap-2">
+          <Icon name="tune" size="m" className="text-accent-ink" />
           Tipos de comida que prefieres
         </h3>
         <p className="font-sans text-caption text-ink-3">
-          Toca una vez para que salga <span className="text-accent">más</span>, otra vez para <span className="text-red-400">evitarla</span>, otra para dejarla neutral.
+          Toca una vez para que salga <span className="text-accent-ink">más</span>, otra vez para <span className="text-danger">evitarla</span>, otra para dejarla neutral.
         </p>
         <div className="flex flex-wrap gap-2">
           {DISH_TYPES.filter(dt => dt.id !== 'otro').map(dt => {
             const st = dishState(dt.id);
             const cls = st === 'pref'
-              ? 'bg-accent border-accent text-black'
+              ? 'bg-accent border-accent text-on-accent'
               : st === 'excl'
-                ? 'bg-red-500/15 border-red-500/40 text-red-300 line-through'
-                : 'bg-raised border-hairline text-ink-2 hover:text-white';
+                ? 'bg-danger/15 border-danger/40 text-danger line-through'
+                : 'bg-raised border-hairline text-ink-2 hover:text-ink';
             return (
               <button
                 key={dt.id}
@@ -216,7 +216,7 @@ export default function MenuPreferencesPanel({ athleteEmail }: Props) {
               key={v}
               disabled={savingVariety}
               onClick={() => handleVarietyChange(v)}
-              className={`flex-1 py-2 rounded-control font-mono font-bold text-label transition-all disabled:opacity-50 ${variety === v ? 'bg-accent text-black' : 'bg-raised border border-hairline text-ink-2 hover:text-white'}`}
+              className={`flex-1 py-2 rounded-control font-mono font-bold text-label transition-all disabled:opacity-50 ${variety === v ? 'bg-accent text-on-accent' : 'bg-raised border border-hairline text-ink-2 hover:text-ink'}`}
             >
               {v}
             </button>
@@ -233,11 +233,11 @@ export default function MenuPreferencesPanel({ athleteEmail }: Props) {
           className="w-full flex items-center gap-3 pt-3 mt-1 border-t border-hairline text-left disabled:opacity-50"
         >
           <span className={`w-5 h-5 rounded-control flex-shrink-0 border-2 flex items-center justify-center transition-colors ${batchPreferred ? 'bg-accent border-accent' : 'border-hairline'}`}>
-            {batchPreferred && <span className="material-symbols-outlined text-black" style={{ fontSize: '13px' }}>check</span>}
+            {batchPreferred && <span className="material-symbols-outlined text-on-accent" style={{ fontSize: '13px' }}>check</span>}
           </span>
           <span className="flex-1">
-            <span className="flex items-center gap-2 font-sans font-bold text-label text-white">
-              <Icon name="inventory_2" size="s" className="text-accent" />
+            <span className="flex items-center gap-2 font-sans font-bold text-label text-ink">
+              <Icon name="inventory_2" size="s" className="text-accent-ink" />
               Prefiero batch cooking
             </span>
             <span className="block font-sans text-caption text-ink-2">Cocinar todo de una vez y repartirlo por días.</span>
@@ -250,8 +250,8 @@ export default function MenuPreferencesPanel({ athleteEmail }: Props) {
       {/* Respuestas de la ficha de iniciación, editables */}
       <div className="bg-surface border border-hairline rounded-surface p-5 space-y-3">
         <div>
-          <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
-            <Icon name="assignment" size="m" className="text-accent" />
+          <h3 className="font-sans font-bold text-title-s text-ink flex items-center gap-2">
+            <Icon name="assignment" size="m" className="text-accent-ink" />
             Tu ficha
           </h3>
           <p className="font-sans text-caption text-ink-2 mt-1">
@@ -283,8 +283,8 @@ export default function MenuPreferencesPanel({ athleteEmail }: Props) {
       {/* Verduras habituales */}
       <div className="bg-surface border border-hairline rounded-surface p-5 space-y-3">
         <div>
-          <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
-            <Icon name="eco" size="m" className="text-accent" />
+          <h3 className="font-sans font-bold text-title-s text-ink flex items-center gap-2">
+            <Icon name="eco" size="m" className="text-accent-ink" />
             Tus verduras habituales
           </h3>
           <p className="font-sans text-caption text-ink-2 mt-1">

@@ -783,7 +783,7 @@ export default function ClientHub({
         <div className="flex items-center gap-3 flex-wrap">
           <button
             onClick={guardedBack}
-            className="p-1 px-3 bg-raised hover:bg-raised text-accent border border-hairline text-label font-sans rounded-control flex items-center gap-1 active:scale-95 transition-all"
+            className="p-1 px-3 bg-raised hover:bg-raised text-accent-ink border border-hairline text-label font-sans rounded-control flex items-center gap-1 active:scale-95 transition-all"
           >
             <span className="material-symbols-outlined text-body-s">arrow_back</span>
             Clientes
@@ -792,7 +792,7 @@ export default function ClientHub({
             onClick={() => { if (confirmDiscardPlanChanges()) setSwitcherOpen(true); }}
             title="Cambiar de atleta"
             aria-label="Cambiar de atleta"
-            className="p-1 px-2 bg-raised hover:bg-raised text-ink-2 hover:text-accent border border-hairline rounded-control flex items-center active:scale-95 transition-all"
+            className="p-1 px-2 bg-raised hover:bg-raised text-ink-2 hover:text-accent-ink border border-hairline rounded-control flex items-center active:scale-95 transition-all"
           >
             <span className="material-symbols-outlined text-body-s">swap_horiz</span>
           </button>

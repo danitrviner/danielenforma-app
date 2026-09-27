@@ -132,7 +132,7 @@ export default function PagosScreen({ coachEmail }: { coachEmail: string }) {
                 aria-pressed={periodo === id}
                 className={`shrink-0 px-3 py-2 rounded-control font-mono text-caption uppercase tracking-widest transition-colors ${
                   periodo === id
-                    ? 'bg-accent/15 text-accent border border-accent/30'
+                    ? 'bg-accent/15 text-accent-ink border border-accent/30'
                     : 'bg-field text-ink-2 border border-hairline hover:border-strong'
                 }`}
               >
@@ -179,7 +179,7 @@ export default function PagosScreen({ coachEmail }: { coachEmail: string }) {
           <button
             type="button"
             onClick={() => setModalSuscripcion(true)}
-            className="flex items-center gap-1 px-3 py-2 rounded-control bg-white/6 text-ink font-sans font-bold text-caption hover:bg-white/10 transition-colors"
+            className="flex items-center gap-1 px-3 py-2 rounded-control bg-hairline text-ink font-sans font-bold text-caption hover:bg-strong transition-colors"
           >
             <Icon name="add" size="s" />
             Nueva suscripción
@@ -227,7 +227,7 @@ export default function PagosScreen({ coachEmail }: { coachEmail: string }) {
                 aria-pressed={filtro === id}
                 className={`shrink-0 px-3 py-2 rounded-control font-mono text-caption uppercase tracking-widest transition-colors ${
                   filtro === id
-                    ? 'bg-accent/15 text-accent border border-accent/30'
+                    ? 'bg-accent/15 text-accent-ink border border-accent/30'
                     : 'bg-field text-ink-2 border border-hairline hover:border-strong'
                 }`}
               >

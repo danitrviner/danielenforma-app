@@ -35,9 +35,9 @@ export default class ErrorBoundary extends React.Component<{ children: React.Rea
     if (this.state.error) {
       return (
         <div className="min-h-screen flex items-center justify-center bg-bg p-6">
-          <div className="max-w-lg w-full bg-surface border border-red-500/30 rounded-surface p-6 space-y-4">
-            <h1 className="font-sans font-bold text-title-m text-white flex items-center gap-2">
-              <Icon name="error" size="l" className="text-red-400" />
+          <div className="max-w-lg w-full bg-surface border border-danger/30 rounded-surface p-6 space-y-4">
+            <h1 className="font-sans font-bold text-title-m text-ink flex items-center gap-2">
+              <Icon name="error" size="l" className="text-danger" />
               Se ha producido un error
             </h1>
             <p className="font-sans text-label text-ink-2 break-words">{this.state.error.message}</p>

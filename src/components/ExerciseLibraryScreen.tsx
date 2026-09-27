@@ -279,7 +279,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
 
       {successMsg && (
         <div className="bg-accent/10 border border-accent/25 text-ink p-3 rounded-surface text-body-s flex items-center gap-2">
-          <Icon name="check_circle" size="m" className="text-accent" />
+          <Icon name="check_circle" size="m" className="text-accent-ink" />
           {successMsg}
         </div>
       )}
@@ -294,7 +294,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
           onClick={openFilterSheet}
           aria-label="Filtros"
           className={`relative flex h-12 w-12 shrink-0 items-center justify-center rounded-control border transition-colors ${
-            filterType || filterEndurance || filterEquipment.length > 0 ? 'bg-accent/14 border-accent-line text-accent' : 'bg-raised border-hairline text-ink-2'
+            filterType || filterEndurance || filterEquipment.length > 0 ? 'bg-accent/14 border-accent-line text-accent-ink' : 'bg-raised border-hairline text-ink-2'
           }`}
         >
           <Icon name="tune" size="m" />
@@ -400,7 +400,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                                 type="button"
                                 onClick={() => setVideoAbierto(prev => (prev === ex.id ? null : ex.id))}
                                 aria-expanded={videoAbierto === ex.id}
-                                className="text-caption font-sans text-ink-3 hover:text-accent flex items-center gap-1 transition-colors"
+                                className="text-caption font-sans text-ink-3 hover:text-accent-ink flex items-center gap-1 transition-colors"
                               >
                                 <Icon name={videoAbierto === ex.id ? 'expand_less' : 'play_circle'} size="s" />
                                 {videoAbierto === ex.id ? 'Ocultar vídeo' : 'Ver vídeo'}
@@ -454,7 +454,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                           <div className="flex items-center gap-2 justify-end">
                             <button
                               onClick={() => openEdit(ex)}
-                              className="text-ink-2 hover:text-accent p-2 rounded-control hover:bg-accent/10 transition-all"
+                              className="text-ink-2 hover:text-accent-ink p-2 rounded-control hover:bg-accent/10 transition-all"
                               title="Editar"
                             >
                               <Icon name="edit" size="s" />
@@ -503,21 +503,21 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                     <Icon name="fitness_center" size="l" className="text-ink-2" />
                   )}
                   {!ex.videoUrl && (
-                    <span className="absolute bottom-0 inset-x-0 bg-black/70 text-center text-caption font-mono uppercase tracking-wider text-ink-2 py-1">Sin vídeo</span>
+                    <span className="absolute bottom-0 inset-x-0 bg-veil/70 text-center text-caption font-mono uppercase tracking-wider text-ink-2 py-1">Sin vídeo</span>
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-sans font-bold text-body-s text-ink truncate">{ex.name}</p>
                   <div className="flex items-center gap-2 flex-wrap mt-1">
-                    <span className="font-mono text-caption text-accent bg-accent/13 px-2 py-1 rounded-chip">{muscleLabel(ex)}</span>
+                    <span className="font-mono text-caption text-accent-ink bg-accent/13 px-2 py-1 rounded-chip">{muscleLabel(ex)}</span>
                     {(ex.equipment ?? []).slice(0, 2).map(eq => (
-                      <span key={eq} className="font-mono text-caption text-ink-2 bg-white/5 px-2 py-1 rounded-chip capitalize">{eq}</span>
+                      <span key={eq} className="font-mono text-caption text-ink-2 bg-hairline px-2 py-1 rounded-chip capitalize">{eq}</span>
                     ))}
                   </div>
                 </div>
                 {canEdit(ex) ? (
                   <div className="flex items-center gap-1 flex-shrink-0">
-                    <button onClick={() => openEdit(ex)} aria-label="Editar" className="text-ink-2 hover:text-accent p-2 rounded-control transition-all">
+                    <button onClick={() => openEdit(ex)} aria-label="Editar" className="text-ink-2 hover:text-accent-ink p-2 rounded-control transition-all">
                       <Icon name="edit" size="s" />
                     </button>
                     <button onClick={() => setDeleteConfirm(ex.id)} aria-label="Eliminar" className="text-ink-2 hover:text-danger p-2 rounded-control transition-all">
@@ -545,7 +545,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
           <div className="flex items-center justify-between">
             <p className="text-caption font-mono uppercase text-ink-2">Grupo muscular</p>
             {(draftGroups.length > 0 || draftEquipment.length > 0) && (
-              <button onClick={() => { setDraftGroups([]); setDraftEquipment([]); }} className="text-caption font-mono uppercase text-accent">Limpiar</button>
+              <button onClick={() => { setDraftGroups([]); setDraftEquipment([]); }} className="text-caption font-mono uppercase text-accent-ink">Limpiar</button>
             )}
           </div>
           <div className="flex flex-wrap gap-2">

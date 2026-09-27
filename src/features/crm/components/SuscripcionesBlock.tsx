@@ -119,7 +119,7 @@ export default function SuscripcionesBlock({ suscripciones, cargando, error, mos
               type="button"
               onClick={() => registrar.mutate({ suscripcion: s, coachEmail })}
               disabled={filaMutandoRegistro(s.id)}
-              className="px-2 py-1 rounded-control bg-accent/15 text-accent border border-accent/30 font-mono text-caption uppercase tracking-widest hover:bg-accent/25 disabled:opacity-40 transition-colors"
+              className="px-2 py-1 rounded-control bg-accent/15 text-accent-ink border border-accent/30 font-mono text-caption uppercase tracking-widest hover:bg-accent/25 disabled:opacity-40 transition-colors"
             >
               {filaMutandoRegistro(s.id) ? 'Registrando…' : 'Registrar cobro'}
             </button>
@@ -130,7 +130,7 @@ export default function SuscripcionesBlock({ suscripciones, cargando, error, mos
             disabled={filaMutandoPausa(s.id)}
             aria-label={s.estado === 'activa' ? 'Pausar' : 'Reanudar'}
             title={s.estado === 'activa' ? 'Pausar' : 'Reanudar'}
-            className="w-7 h-7 rounded-control inline-flex items-center justify-center text-ink-2 hover:bg-white/6 disabled:opacity-40 transition-colors"
+            className="w-7 h-7 rounded-control inline-flex items-center justify-center text-ink-2 hover:bg-hairline disabled:opacity-40 transition-colors"
           >
             <Icon name={s.estado === 'activa' ? 'pause' : 'play_arrow'} size="m" />
           </button>
@@ -139,7 +139,7 @@ export default function SuscripcionesBlock({ suscripciones, cargando, error, mos
             onClick={() => setEditando(s)}
             aria-label="Editar"
             title="Editar"
-            className="w-7 h-7 rounded-control inline-flex items-center justify-center text-ink-2 hover:bg-white/6 transition-colors"
+            className="w-7 h-7 rounded-control inline-flex items-center justify-center text-ink-2 hover:bg-hairline transition-colors"
           >
             <Icon name="edit" size="m" />
           </button>
@@ -149,7 +149,7 @@ export default function SuscripcionesBlock({ suscripciones, cargando, error, mos
             disabled={eliminar.isPending}
             aria-label="Borrar suscripción"
             title="Borrar"
-            className="w-7 h-7 rounded-control inline-flex items-center justify-center text-danger hover:bg-white/6 disabled:opacity-40 transition-colors"
+            className="w-7 h-7 rounded-control inline-flex items-center justify-center text-danger hover:bg-hairline disabled:opacity-40 transition-colors"
           >
             <Icon name="delete" size="m" />
           </button>

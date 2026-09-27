@@ -149,8 +149,8 @@ export default function HistorialFichaPanel({ athleteEmail, actividad = [] }: Pr
               aria-pressed={filtro === f.id}
               className={`px-3 py-1 rounded-control font-mono text-caption uppercase tracking-wide transition-colors ${
                 filtro === f.id
-                  ? 'bg-accent text-black font-bold'
-                  : 'text-ink-2 border border-hairline hover:text-accent'
+                  ? 'bg-accent text-on-accent font-bold'
+                  : 'text-ink-2 border border-hairline hover:text-accent-ink'
               }`}
             >
               {f.label}
@@ -173,7 +173,7 @@ export default function HistorialFichaPanel({ athleteEmail, actividad = [] }: Pr
                 <Icon
                   name={e.icon}
                   size="s"
-                  className={`mt-0.5 shrink-0 ${e.origen === 'plan' ? 'text-accent' : 'text-ink-3'}`}
+                  className={`mt-0.5 shrink-0 ${e.origen === 'plan' ? 'text-accent-ink' : 'text-ink-3'}`}
                 />
                 <div className="flex flex-col min-w-0 flex-1">
                   <span className="text-label text-ink">{e.titulo}</span>
@@ -187,7 +187,7 @@ export default function HistorialFichaPanel({ athleteEmail, actividad = [] }: Pr
           {!verTodo && visibles.length > recortadas.length && (
             <button
               onClick={() => setVerTodo(true)}
-              className="mt-3 font-mono text-caption uppercase tracking-wide text-ink-2 hover:text-accent transition-colors"
+              className="mt-3 font-mono text-caption uppercase tracking-wide text-ink-2 hover:text-accent-ink transition-colors"
             >
               Ver los {visibles.length - recortadas.length} anteriores
             </button>

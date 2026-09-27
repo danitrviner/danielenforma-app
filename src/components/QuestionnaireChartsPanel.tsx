@@ -99,7 +99,7 @@ function ChartTooltip({ active, payload, unit, weekly }: any) {
       <p className="text-ink-2 ">
         {weekly ? `Semana del ${fmtDate(p.date)}` : fmtDate(p.date)}
       </p>
-      <p className="text-accent font-bold text-body-s">
+      <p className="text-accent-ink font-bold text-body-s">
         {p.value}{unit ? ` ${unit}` : ''}
       </p>
       {weekly && count > 1 && (
@@ -129,7 +129,7 @@ function QuestionChart({
   return (
     <div className="bg-surface border border-hairline rounded-canvas p-4 space-y-3">
       <div>
-        <p className="font-sans font-bold text-white text-body-s leading-tight">{question.label}</p>
+        <p className="font-sans font-bold text-ink text-body-s leading-tight">{question.label}</p>
         <div className="flex items-center gap-2 ">
           {question.unit && <Badge tone="neutral">{question.unit}</Badge>}
           <span className="font-mono text-caption text-ink-2">
@@ -240,8 +240,8 @@ export default function QuestionnaireChartsPanel({ questionnaires, responses, oc
     <div className="space-y-4">
       {/* Header + toggle */}
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
-          <Icon name="show_chart" size="m" className="text-accent" />
+        <h3 className="font-sans font-bold text-title-s text-ink flex items-center gap-2">
+          <Icon name="show_chart" size="m" className="text-accent-ink" />
           Evolución
           <span className="font-mono text-caption text-ink-2 font-normal">
             {graphable.length} serie{graphable.length !== 1 ? 's' : ''}
@@ -255,8 +255,8 @@ export default function QuestionnaireChartsPanel({ questionnaires, responses, oc
                 onClick={() => setWeekly(i === 1)}
                 className={`px-3 min-h-[44px] rounded-control font-sans text-caption uppercase font-bold transition-all ${
                   weekly === (i === 1)
-                    ? 'bg-accent text-black shadow'
-                    : 'text-ink-2 hover:text-white'
+                    ? 'bg-accent text-on-accent shadow'
+                    : 'text-ink-2 hover:text-ink'
                 }`}
               >{label}</button>
             ))}

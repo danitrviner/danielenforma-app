@@ -56,12 +56,12 @@ export default function Coachmark({ id, email, icon, text }: Props) {
 
   return (
     <div className="flex items-start gap-3 bg-accent/8 border border-accent/25 rounded-surface px-4 py-3">
-      <Icon name={icon} size="l" className="text-accent flex-shrink-0" />
-      <p className="flex-1 text-label text-accent leading-relaxed">{text}</p>
+      <Icon name={icon} size="l" className="text-accent-ink flex-shrink-0" />
+      <p className="flex-1 text-label text-accent-ink leading-relaxed">{text}</p>
       <button
         onClick={() => { guardar(id, email, 'x'); setDismissed(true); }}
         aria-label="Cerrar aviso"
-        className="text-accent/60 hover:text-accent flex-shrink-0 -m-1 p-1"
+        className="text-accent-ink/60 hover:text-accent-ink flex-shrink-0 -m-1 p-1"
       >
         <Icon name="close" size="m" />
       </button>

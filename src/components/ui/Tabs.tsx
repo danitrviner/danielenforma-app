@@ -108,7 +108,7 @@ export default function Tabs({ items, value, onChange, label, className = '' }: 
             {item.icon && <Icon name={item.icon} size="s" filled={activa} />}
             {item.label}
             {item.count != null && item.count > 0 && (
-              <span className="rounded-full bg-accent/15 px-2 font-sans text-caption font-bold text-accent">
+              <span className="rounded-full bg-accent/15 px-2 font-sans text-caption font-bold text-accent-ink">
                 {item.count}
               </span>
             )}

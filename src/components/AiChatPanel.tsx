@@ -611,7 +611,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
         // barra inferior y no hay que reservarle hueco al final de cada
         // pantalla. Abre por `OPEN_AI_PANEL_EVENT`, el mismo evento que ya
         // usaba ClientHub.
-        className="hidden md:block fixed md:bottom-8 md:right-8 z-[60] w-13 h-13 p-4 rounded-full bg-accent text-black shadow-e1 hover:scale-105 transition-transform"
+        className="hidden md:block fixed md:bottom-8 md:right-8 z-[60] w-13 h-13 p-4 rounded-full bg-accent text-on-accent shadow-e1 hover:scale-105 transition-transform"
       >
         <Icon name="smart_toy" size="l" filled className="block" />
         {/* Una propuesta que nadie ve es una propuesta que no existe: el
@@ -619,7 +619,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
         {proposals.length > 0 && (
           <span
             aria-label={`${proposals.length} propuestas por revisar`}
-            className="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-warning text-black font-mono text-caption font-bold flex items-center justify-center border-2 border-bg"
+            className="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-warning text-on-accent font-mono text-caption font-bold flex items-center justify-center border-2 border-bg"
           >
             {proposals.length}
           </span>
@@ -639,8 +639,8 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
           El resto de cabeceras de la app ya reservan `--safe-top`; esta se
           quedó fuera por ser un panel flotante y no una cabecera de pantalla. */}
       <div className="flex items-center gap-2 px-4 py-3 pt-[calc(0.75rem+var(--safe-top))] border-b border-hairline">
-        <Icon name="smart_toy" size="m" filled className="text-accent" />
-        <span className="font-sans font-bold text-body-s uppercase tracking-wider text-accent flex-1">Asistente</span>
+        <Icon name="smart_toy" size="m" filled className="text-accent-ink" />
+        <span className="font-sans font-bold text-body-s uppercase tracking-wider text-accent-ink flex-1">Asistente</span>
         {activeAthleteEmail && (
           <Button variant="ghost" size="s" onClick={() => setFichaAbierta(true)} icon="badge" label={`Ficha de ${activeAthleteName || activeAthleteEmail}`} />
         )}
@@ -698,9 +698,9 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                           disabled={busy}
                           className="flex items-center gap-3 text-left bg-surface border border-accent/30 hover:border-accent rounded-control px-3 py-3 transition-colors disabled:opacity-50"
                         >
-                          <Icon name={t.icon} size="m" className="text-accent flex-shrink-0" />
+                          <Icon name={t.icon} size="m" className="text-accent-ink flex-shrink-0" />
                           <span className="min-w-0">
-                            <span className="block text-label text-white">{t.label}</span>
+                            <span className="block text-label text-ink">{t.label}</span>
                             <span className="block text-caption text-ink-2">{t.descripcion}</span>
                           </span>
                         </button>
@@ -715,7 +715,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                     activeAthleteEmail ? '¿Cómo van los entrenamientos de este cliente este mes?' : '¿Quién lleva más días sin check-in?',
                   ].map(s => (
                     <button key={s} onClick={() => setInput(s)}
-                      className="text-left text-label text-ink-2 hover:text-white bg-surface border border-hairline hover:border-accent/40 rounded-control px-3 py-2 transition-colors">
+                      className="text-left text-label text-ink-2 hover:text-ink bg-surface border border-hairline hover:border-accent/40 rounded-control px-3 py-2 transition-colors">
                       {s}
                     </button>
                   ))}
@@ -803,11 +803,11 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
               del cliente abierto va primero. max-h al 55%: la tarjeta ya no es
               un resumen, es el editor. */}
           {proposals.length > 0 && (
-            <div className="border-t border-amber-500/20 bg-amber-500/5 p-3 flex flex-col gap-2 max-h-[55%] overflow-y-auto">
+            <div className="border-t border-warning/20 bg-warning/5 p-3 flex flex-col gap-2 max-h-[55%] overflow-y-auto">
               <button
                 type="button"
                 onClick={() => { setOpen(false); navigate('/propuestas'); }}
-                className="self-start flex items-center gap-1 text-caption uppercase tracking-wide text-ink-3 hover:text-accent transition-colors"
+                className="self-start flex items-center gap-1 text-caption uppercase tracking-wide text-ink-3 hover:text-accent-ink transition-colors"
               >
                 <Icon name="arrow_forward" size="s" />
                 Revisarlas en grande y comentarlas
@@ -815,7 +815,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
               {gruposDePropuestas.map(({ email, lista }) => (
               <React.Fragment key={email}>
               <div className="flex items-center justify-between gap-2 flex-wrap">
-                <p className="text-caption font-sans font-bold uppercase tracking-wider text-amber-300/80">
+                <p className="text-caption font-sans font-bold uppercase tracking-wider text-warning/80">
                   {email === activeAthleteEmail
                     ? (activeAthleteName || email)
                     : <span className="text-warning">{email}</span>}
@@ -858,7 +858,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
           <div className="p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] border-t border-hairline">
             {chatFull ? (
               <button onClick={startNew}
-                className="w-full py-3 rounded-control bg-accent/10 border border-accent/30 text-accent text-label font-bold uppercase tracking-wider">
+                className="w-full py-3 rounded-control bg-accent/10 border border-accent/30 text-accent-ink text-label font-bold uppercase tracking-wider">
                 Chat largo — empezar chat nuevo
               </button>
             ) : (
@@ -937,7 +937,7 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
                     onClick={() => setPromptTab(t.id)}
                     className={`px-3 py-2 text-label font-sans uppercase tracking-wider border-b-2 -mb-px transition-colors ${
                       promptTab === t.id
-                        ? 'border-accent text-accent'
+                        ? 'border-accent text-accent-ink'
                         : 'border-transparent text-ink-2 hover:text-ink'
                     }`}
                   >

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Icon } from '../ui';
+import { colorDeTema, conAlfa } from '../../utils/coloresPersistidos';
 
 export interface Achievement {
   id: string;
@@ -33,15 +34,15 @@ export default function RecentAchievements({ achievements }: Props) {
           <div
             key={a.id}
             className="flex-shrink-0 flex flex-col items-center gap-2 w-[84px] rounded-surface border p-3 text-center"
-            style={{ backgroundColor: 'var(--color-bg)', borderColor: `${a.color}33` }}
+            style={{ backgroundColor: 'var(--color-bg)', borderColor: conAlfa(a.color, 20) }}
           >
             <Icon
               name={a.icon}
               size="l"
               className="w-9 h-9 rounded-full flex items-center justify-center"
-              style={{ color: a.color, backgroundColor: `${a.color}1a` }}
+              style={{ color: colorDeTema(a.color), backgroundColor: conAlfa(a.color, 10) }}
             />
-            <p className="text-white text-caption font-sans font-bold leading-tight line-clamp-2">{a.title}</p>
+            <p className="text-ink text-caption font-sans font-bold leading-tight line-clamp-2">{a.title}</p>
             <p className="text-ink-2 text-caption font-mono">{fmtDate(a.date)}</p>
           </div>
         ))}

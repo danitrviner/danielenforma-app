@@ -86,7 +86,7 @@ export default function ProposePlanSheet({ open, onClose }: Props) {
             onChange={e => setNotes(e.target.value)}
             rows={3}
             placeholder="Lesiones, material disponible, preferencias…"
-            className="w-full bg-surface border border-hairline rounded-control px-3 py-3 text-title-s text-white placeholder-ink-2/30 font-sans focus:outline-none focus:ring-1 focus:ring-accent resize-none"
+            className="w-full bg-surface border border-hairline rounded-control px-3 py-3 text-title-s text-ink placeholder-ink-2/30 font-sans focus:outline-none focus:ring-1 focus:ring-accent resize-none"
           />
         </div>
       </div>

@@ -70,10 +70,10 @@ export default function LocalModeBanner() {
     <div
       role="status"
       aria-live="polite"
-      className={`relative z-[100] text-white px-4 py-3 pt-[calc(0.75rem+var(--safe-top))] flex items-center justify-center gap-3 shadow-e1 ${
+      className={`relative z-[100] text-ink px-4 py-3 pt-[calc(0.75rem+var(--safe-top))] flex items-center justify-center gap-3 shadow-e1 ${
         // Ámbar, no rojo: un dato encolado no se ha perdido, y pintar de rojo de
         // error algo que sí está guardado enseña a la persona a ignorar el rojo.
-        aviso === 'encolado' ? 'bg-amber-600' : 'bg-red-600'
+        aviso === 'encolado' ? 'bg-warning' : 'bg-danger'
       }`}
     >
       <Icon name={aviso === 'permisos' ? 'lock' : aviso === 'encolado' ? 'cloud_sync' : 'cloud_off'} size="m" />
@@ -86,7 +86,7 @@ export default function LocalModeBanner() {
       {aviso === 'red' && (
         <button
           onClick={retry}
-          className="font-sans text-caption font-bold uppercase bg-white/20 hover:bg-white/30 px-3 py-1 rounded-control transition-colors"
+          className="font-sans text-caption font-bold uppercase bg-inset hover:bg-strong px-3 py-1 rounded-control transition-colors"
         >
           Reintentar
         </button>
@@ -95,7 +95,7 @@ export default function LocalModeBanner() {
         <button
           onClick={descartar}
           aria-label="Descartar el aviso"
-          className="shrink-0 rounded-control p-1 transition-colors hover:bg-white/20"
+          className="shrink-0 rounded-control p-1 transition-colors hover:bg-inset"
         >
           <Icon name="close" size="s" />
         </button>

@@ -125,13 +125,13 @@ export default function HrvTestScreen({ profile, pastReadings, onClose, onSaved 
             <div>
               <p className="text-caption font-mono uppercase text-ink-2 tracking-wider">HRV matinal</p>
               <Icon name="bedtime" size="xl" className="text-data mt-3 block" />
-              <p className="text-body-s text-white mt-3">Túmbate con la banda puesta y quédate quieto 3 minutos. Mejor nada más despertar, antes de levantarte.</p>
+              <p className="text-body-s text-ink mt-3">Túmbate con la banda puesta y quédate quieto 3 minutos. Mejor nada más despertar, antes de levantarte.</p>
             </div>
-            {error && <p className="text-label text-red-400 font-sans">{error}</p>}
-            <button onClick={start} className="w-full py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all">
+            {error && <p className="text-label text-danger font-sans">{error}</p>}
+            <button onClick={start} className="w-full py-3 bg-accent text-on-accent font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all">
               Empezar
             </button>
-            <button onClick={onClose} className="w-full py-2 text-caption font-sans uppercase text-ink-2 hover:text-white transition-colors">
+            <button onClick={onClose} className="w-full py-2 text-caption font-sans uppercase text-ink-2 hover:text-ink transition-colors">
               Cancelar
             </button>
           </>
@@ -142,13 +142,13 @@ export default function HrvTestScreen({ profile, pastReadings, onClose, onSaved 
         {phase === 'measuring' && (
           <>
             <p className="text-caption font-mono uppercase text-ink-2 tracking-wider">Quédate quieto</p>
-            <p className="font-sans font-bold text-6xl text-white tabular-nums mt-2">{Math.floor(remaining / 60)}:{String(remaining % 60).padStart(2, '0')}</p>
+            <p className="font-sans font-bold text-6xl text-ink tabular-nums mt-2">{Math.floor(remaining / 60)}:{String(remaining % 60).padStart(2, '0')}</p>
             <div className="flex items-center justify-center gap-2">
               <Icon name="favorite" size="l" className="text-danger" />
-              <p className="font-sans font-bold text-title-l text-white tabular-nums">{bpm ?? '--'}</p>
+              <p className="font-sans font-bold text-title-l text-ink tabular-nums">{bpm ?? '--'}</p>
             </div>
-            {error && <p className="text-label text-red-400 font-sans">{error}</p>}
-            <button onClick={cancel} className="w-full py-2 text-caption font-sans uppercase text-ink-2 hover:text-white transition-colors">
+            {error && <p className="text-label text-danger font-sans">{error}</p>}
+            <button onClick={cancel} className="w-full py-2 text-caption font-sans uppercase text-ink-2 hover:text-ink transition-colors">
               Cancelar
             </button>
           </>

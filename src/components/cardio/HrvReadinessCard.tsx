@@ -2,6 +2,7 @@ import React from 'react';
 import { HrvReading } from '../../types';
 import { classifyReadiness, READINESS_LABEL, ReadinessBand } from '../../utils/cardioMetrics';
 import { hoyIsoLocal } from '../../utils/trainingWeek';
+import { isBleAvailable } from '../../services/bleHeartRate';
 
 // "Preparación para el entrenamiento" de la pestaña Hoy de FITIV (§4bis.5),
 // recortada a lo que una banda de pecho puede medir de verdad: HRV matinal
@@ -19,6 +20,10 @@ interface Props {
 
 export default function HrvReadinessCard({ readings, onMeasure }: Props) {
   const latest = [...readings].sort((a, b) => b.date.localeCompare(a.date))[0];
+  /* Sin banda y sin ninguna medición previa no hay nada que contar: la tarjeta
+     era un hueco con una promesa que en web no se puede cumplir. Con lecturas
+     antiguas sí se pinta — el histórico sigue siendo suyo. */
+  if (!isBleAvailable() && !latest) return null;
   const band = latest?.readinessScore !== undefined ? classifyReadiness(latest.readinessScore) : undefined;
   const today = hoyIsoLocal();
   const measuredToday = latest?.date === today;
@@ -31,7 +36,7 @@ export default function HrvReadinessCard({ readings, onMeasure }: Props) {
         <div className="flex items-center justify-between">
           <div>
             <p className="text-caption font-mono text-ink-2">{latest.date}{measuredToday ? ' · hoy' : ''}</p>
-            <p className="font-sans font-extrabold text-display text-white tabular-nums">{latest.rmssd.toFixed(1)} <span className="text-label font-mono text-ink-2">ms</span></p>
+            <p className="font-sans font-extrabold text-display text-ink tabular-nums">{latest.rmssd.toFixed(1)} <span className="text-label font-mono text-ink-2">ms</span></p>
           </div>
           {band && (
             <div className="text-center px-3 py-2 rounded-surface" style={{ backgroundColor: `${READINESS_COLOR[band]}1a`, border: `1px solid ${READINESS_COLOR[band]}40` }}>
@@ -44,9 +49,18 @@ export default function HrvReadinessCard({ readings, onMeasure }: Props) {
         <p className="text-label text-ink-2 font-sans">Mide 3 min al despertar para ver tu preparación diaria.</p>
       )}
 
-      <button onClick={onMeasure} className="w-full py-3 bg-bg border border-data/30 text-data font-sans font-bold text-label uppercase rounded-control hover:bg-data/10 active:scale-95 transition-all">
-        {measuredToday ? 'Medir de nuevo' : 'Medir ahora'}
-      </button>
+      {/* Medir HRV necesita banda BLE, que solo existe en la app nativa. En web
+          el botón llevaba directo al error de HrvTestScreen: mejor no ofrecerlo
+          y decir de qué depende. */}
+      {isBleAvailable() ? (
+        <button onClick={onMeasure} className="w-full py-3 bg-bg border border-data/30 text-data font-sans font-bold text-label uppercase rounded-control hover:bg-data/10 active:scale-95 transition-all">
+          {measuredToday ? 'Medir de nuevo' : 'Medir ahora'}
+        </button>
+      ) : (
+        <p className="font-sans text-caption text-ink-3 leading-relaxed">
+          Medir la HRV necesita una banda de pulso y la app instalada.
+        </p>
+      )}
     </section>
   );
 }

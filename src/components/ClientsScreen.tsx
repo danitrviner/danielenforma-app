@@ -73,7 +73,7 @@ const AthleteRow = React.memo(function AthleteRow({ athlete, onOpen }: {
         <Avatar src={athlete.avatarUrl} name={athlete.displayName} className="w-full h-full object-cover" />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="font-sans font-bold text-white text-body truncate">{athlete.displayName}</p>
+        <p className="font-sans font-bold text-ink text-body truncate">{athlete.displayName}</p>
         <p className="font-mono text-caption text-ink-3 truncate mt-0.5">{metaLine}</p>
       </div>
     </button>
@@ -393,7 +393,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
           </div>
         )}
         <div className="flex items-center justify-between gap-3 flex-wrap">
-          <h1 className="font-sans font-extrabold text-display tracking-tight text-white uppercase">Clientes</h1>
+          <h1 className="font-sans font-extrabold text-display tracking-tight text-ink uppercase">Clientes</h1>
           <Button variant="secondary" size="s" onClick={() => setObjetivosAbierto(true)}>
             <Icon name="flag" size="s" />
             Objetivos
@@ -436,7 +436,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
           <button
             type="button"
             onClick={() => setAllAthletesOpen(v => !v)}
-            className="flex items-center gap-2 font-sans font-bold text-title-s text-white uppercase whitespace-nowrap"
+            className="flex items-center gap-2 font-sans font-bold text-title-s text-ink uppercase whitespace-nowrap"
           >
             <span className="material-symbols-outlined text-data">group</span>
             Todos los atletas
@@ -446,7 +446,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
             <button
               type="button"
               onClick={() => setInviteOpen(true)}
-              className="flex items-center gap-1.5 font-mono text-caption font-bold uppercase text-accent border border-accent/35 rounded-control px-2.5 py-1.5 whitespace-nowrap"
+              className="flex items-center gap-1.5 font-mono text-caption font-bold uppercase text-accent-ink border border-accent/35 rounded-control px-2.5 py-1.5 whitespace-nowrap"
             >
               <span className="material-symbols-outlined text-body-s">person_add</span>
               Invitar atleta

@@ -60,7 +60,7 @@ import { hoyIsoLocal } from '../utils/trainingWeek';
 function ZonaTitulo({ icon, children }: { icon: string; children: React.ReactNode }) {
   return (
     <p className="font-mono text-caption text-ink-3 uppercase tracking-widest flex items-center gap-2 pt-2">
-      <Icon name={icon} size="s" className="text-accent" />
+      <Icon name={icon} size="s" className="text-accent-ink" />
       {children}
     </p>
   );
@@ -245,7 +245,7 @@ export default function ClientFichaPanel({
           </div>
           <div className="bg-field border border-hairline rounded-field p-3">
             <p className="font-mono text-caption text-ink-4 uppercase tracking-wider">RIR med.</p>
-            <p className="font-display font-black text-title-m text-accent mt-2">
+            <p className="font-display font-black text-title-m text-accent-ink mt-2">
               {averageRir != null ? esFormat(averageRir) : '—'}
             </p>
           </div>
@@ -253,7 +253,7 @@ export default function ClientFichaPanel({
 
         {latestWeight != null && athlete.targetWeight ? (
           <p className="font-mono text-caption text-ink-2">
-            {latestWeight} kg → <span className="text-accent font-bold">{athlete.targetWeight} kg</span>
+            {latestWeight} kg → <span className="text-accent-ink font-bold">{athlete.targetWeight} kg</span>
             {' '}({Math.round(Math.abs(latestWeight - athlete.targetWeight) * 10) / 10} kg restantes)
           </p>
         ) : null}
@@ -261,7 +261,7 @@ export default function ClientFichaPanel({
         <Collapsible
           className="pt-1 border-t border-hairline"
           defaultOpen
-          trigger={<p className="font-mono text-caption text-ink-2 uppercase tracking-wider flex items-center gap-1"><Icon name="flag" size="s" className="text-accent" /> Fase</p>}
+          trigger={<p className="font-mono text-caption text-ink-2 uppercase tracking-wider flex items-center gap-1"><Icon name="flag" size="s" className="text-accent-ink" /> Fase</p>}
         >
           <div className="space-y-2 pb-3">
             {planPhase ? (
@@ -312,8 +312,8 @@ export default function ClientFichaPanel({
 
       {/* ── Plan y metas ─────────────────────────────────────────────── */}
       <div className="bg-surface border border-hairline rounded-surface p-5 space-y-3">
-        <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
-          <span className="material-symbols-outlined text-accent text-title-s">event_note</span>
+        <h3 className="font-sans font-bold text-title-s text-ink flex items-center gap-2">
+          <span className="material-symbols-outlined text-accent-ink text-title-s">event_note</span>
           Plan y metas
         </h3>
         <div className="flex items-center gap-2 flex-wrap">
@@ -322,12 +322,12 @@ export default function ClientFichaPanel({
             type="date"
             value={planStart}
             onChange={e => onPlanStartChange(e.target.value)}
-            className="bg-raised border border-hairline rounded-control px-2 py-2 text-title-s font-mono text-white focus:outline-none focus:ring-1 focus:ring-accent min-h-[36px]"
+            className="bg-raised border border-hairline rounded-control px-2 py-2 text-title-s font-mono text-ink focus:outline-none focus:ring-1 focus:ring-accent min-h-[36px]"
           />
           <select
             value={planMonths}
             onChange={e => onPlanMonthsChange(Number(e.target.value) as 3 | 6 | 12)}
-            className="bg-raised border border-hairline rounded-control px-2 py-2 text-title-s font-mono text-white focus:outline-none focus:ring-1 focus:ring-accent min-h-[36px]"
+            className="bg-raised border border-hairline rounded-control px-2 py-2 text-title-s font-mono text-ink focus:outline-none focus:ring-1 focus:ring-accent min-h-[36px]"
           >
             <option value={3}>3 meses</option>
             <option value={6}>6 meses</option>
@@ -336,13 +336,13 @@ export default function ClientFichaPanel({
           <button
             onClick={onSavePlan}
             disabled={savingPlan}
-            className="px-3 py-2 min-h-[36px] bg-accent text-black font-sans text-caption font-bold uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50"
+            className="px-3 py-2 min-h-[36px] bg-accent text-on-accent font-sans text-caption font-bold uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50"
           >
             {savingPlan ? '...' : 'Guardar'}
           </button>
         </div>
         <div className="flex flex-wrap gap-x-6 gap-y-1 pt-2 border-t border-hairline font-mono text-label">
-          <span className="text-ink-2">Peso inicial: <span className="text-white font-bold">{athlete.initialWeight || '—'} kg</span></span>
+          <span className="text-ink-2">Peso inicial: <span className="text-ink font-bold">{athlete.initialWeight || '—'} kg</span></span>
           <span className="text-ink-2">Meta: <span className="text-success font-bold">{athlete.targetWeight || '—'} kg</span></span>
         </div>
       </div>
@@ -360,8 +360,8 @@ export default function ClientFichaPanel({
         ) : onboardingData ? (
           <div className="space-y-1">
             <div className="flex items-center justify-between gap-3 pb-3">
-              <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2 min-w-0">
-                <span className="material-symbols-outlined text-accent text-title-s flex-shrink-0">person_check</span>
+              <h3 className="font-sans font-bold text-title-s text-ink flex items-center gap-2 min-w-0">
+                <span className="material-symbols-outlined text-accent-ink text-title-s flex-shrink-0">person_check</span>
                 <span className="truncate">Ficha de iniciación</span>
                 <span className="font-mono text-caption text-ink-3 font-normal normal-case truncate">
                   {[
@@ -373,7 +373,7 @@ export default function ClientFichaPanel({
               </h3>
               <button
                 onClick={() => setEditingOnboarding(true)}
-                className="flex-shrink-0 flex items-center gap-1 font-mono text-caption text-ink-2 hover:text-accent transition-colors border border-hairline px-3 py-2 rounded-control"
+                className="flex-shrink-0 flex items-center gap-1 font-mono text-caption text-ink-2 hover:text-accent-ink transition-colors border border-hairline px-3 py-2 rounded-control"
               >
                 <span className="material-symbols-outlined text-body-s">edit</span>Editar
               </button>
@@ -387,22 +387,22 @@ export default function ClientFichaPanel({
               >
                 <div className="flex flex-wrap gap-x-4 gap-y-1 text-label font-mono pb-3">
                   {onboardingData.sex && (
-                    <span className="text-ink-2">Sexo: <span className="text-white font-bold">{onboardingData.sex === 'male' ? 'Hombre' : 'Mujer'}</span></span>
+                    <span className="text-ink-2">Sexo: <span className="text-ink font-bold">{onboardingData.sex === 'male' ? 'Hombre' : 'Mujer'}</span></span>
                   )}
                   {onboardingData.birthDate && (
-                    <span className="text-ink-2">Edad: <span className="text-white font-bold">{displayAge(onboardingData.birthDate)} años</span></span>
+                    <span className="text-ink-2">Edad: <span className="text-ink font-bold">{displayAge(onboardingData.birthDate)} años</span></span>
                   )}
                   {onboardingData.weightKg && (
-                    <span className="text-ink-2">Peso: <span className="text-white font-bold">{onboardingData.weightKg} kg</span></span>
+                    <span className="text-ink-2">Peso: <span className="text-ink font-bold">{onboardingData.weightKg} kg</span></span>
                   )}
                   {onboardingData.heightCm && (
-                    <span className="text-ink-2">Altura: <span className="text-white font-bold">{onboardingData.heightCm} cm</span></span>
+                    <span className="text-ink-2">Altura: <span className="text-ink font-bold">{onboardingData.heightCm} cm</span></span>
                   )}
                   {onboardingData.bodyFatPct && (
-                    <span className="text-ink-2">%Grasa: <span className="text-white font-bold">{onboardingData.bodyFatPct}%</span></span>
+                    <span className="text-ink-2">%Grasa: <span className="text-ink font-bold">{onboardingData.bodyFatPct}%</span></span>
                   )}
                   {onboardingData.musclePct && (
-                    <span className="text-ink-2">%Músculo: <span className="text-white font-bold">{onboardingData.musclePct}%</span></span>
+                    <span className="text-ink-2">%Músculo: <span className="text-ink font-bold">{onboardingData.musclePct}%</span></span>
                   )}
                 </div>
               </Collapsible>
@@ -415,13 +415,13 @@ export default function ClientFichaPanel({
               >
                 <div className="flex flex-wrap gap-x-4 gap-y-1 text-label font-sans pb-3">
                   {onboardingData.activityLevel && (
-                    <span className="text-ink-2">Actividad: <span className="text-white font-bold">{ACTIVITY_LABELS[onboardingData.activityLevel]}</span></span>
+                    <span className="text-ink-2">Actividad: <span className="text-ink font-bold">{ACTIVITY_LABELS[onboardingData.activityLevel]}</span></span>
                   )}
                   {onboardingData.goalBody && (
-                    <span className="text-ink-2">Objetivo: <span className="text-accent font-bold">{GOAL_BODY_LABELS[onboardingData.goalBody]}</span></span>
+                    <span className="text-ink-2">Objetivo: <span className="text-accent-ink font-bold">{GOAL_BODY_LABELS[onboardingData.goalBody]}</span></span>
                   )}
                   {onboardingData.goalCapacity && (
-                    <span className="text-ink-2">Capacidad: <span className="text-white font-bold">{GOAL_CAP_LABELS[onboardingData.goalCapacity]}</span></span>
+                    <span className="text-ink-2">Capacidad: <span className="text-ink font-bold">{GOAL_CAP_LABELS[onboardingData.goalCapacity]}</span></span>
                   )}
                 </div>
               </Collapsible>
@@ -433,10 +433,10 @@ export default function ClientFichaPanel({
             >
               <div className="space-y-2 pb-3">
                 <div className="flex flex-wrap gap-x-4 gap-y-1 text-label font-sans">
-                  <span className="text-ink-2">Dieta: <span className="text-white font-bold">{DIET_LABELS[onboardingData.dietType]}</span>
+                  <span className="text-ink-2">Dieta: <span className="text-ink font-bold">{DIET_LABELS[onboardingData.dietType]}</span>
                     {onboardingData.dietSince && <span className="text-ink-3"> · desde {onboardingData.dietSince}</span>}
                   </span>
-                  <span className="text-ink-2">Calorías: <span className="text-accent font-bold">{onboardingData.targetCalories} kcal/día</span></span>
+                  <span className="text-ink-2">Calorías: <span className="text-accent-ink font-bold">{onboardingData.targetCalories} kcal/día</span></span>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {([
@@ -446,7 +446,7 @@ export default function ClientFichaPanel({
                   ]).map(m => (
                     <div key={m.label} className="bg-raised border border-hairline rounded-surface px-3 py-2 text-center">
                       <p className="font-sans text-caption uppercase" style={{ color: m.color }}>{m.label}</p>
-                      <p className="font-mono font-bold text-white text-body-s">{m.g}g</p>
+                      <p className="font-mono font-bold text-ink text-body-s">{m.g}g</p>
                       <p className="font-mono text-caption text-ink-3">{m.pct}% · {fmtExch(m.g, m.ef)} int</p>
                     </div>
                   ))}
@@ -459,14 +459,14 @@ export default function ClientFichaPanel({
                 {(() => {
                   const condiciones = athleteConditions(onboardingData);
                   return condiciones.length > 0 && (
-                    <p className="font-mono text-caption text-amber-400 pt-1">
+                    <p className="font-mono text-caption text-warning pt-1">
                       <span className="material-symbols-outlined text-label align-middle mr-1">warning</span>
                       Condiciones: {condiciones.map(restrictionLabel).join(', ')}
                     </p>
                   );
                 })()}
                 {onboardingData.allergies.length > 0 && (
-                  <p className="font-mono text-caption text-amber-400 pt-1">
+                  <p className="font-mono text-caption text-warning pt-1">
                     <span className="material-symbols-outlined text-label align-middle mr-1">warning</span>
                     Alergias: {onboardingData.allergies.join(', ')}
                   </p>
@@ -483,7 +483,7 @@ export default function ClientFichaPanel({
                       </p>
                     )}
                     {onboardingData.dislikedFoods?.length > 0 && (
-                      <p className="font-sans text-caption text-amber-300">
+                      <p className="font-sans text-caption text-warning">
                         <span className="text-ink-3 mr-1">No quiere ver:</span>{onboardingData.dislikedFoods.join(', ')}
                       </p>
                     )}
@@ -511,16 +511,16 @@ export default function ClientFichaPanel({
                   <div className="space-y-1 pt-2 border-t border-hairline">
                     <div className="flex flex-wrap gap-x-4 gap-y-1 text-label font-mono">
                       {onboardingData.appetitePeakTime && (
-                        <span className="text-ink-2">Más apetito: <span className="text-white font-bold">{onboardingData.appetitePeakTime}</span></span>
+                        <span className="text-ink-2">Más apetito: <span className="text-ink font-bold">{onboardingData.appetitePeakTime}</span></span>
                       )}
-                      {onboardingData.hadOverweightHistory && <span className="text-amber-300">Historial de sobrepeso</span>}
+                      {onboardingData.hadOverweightHistory && <span className="text-warning">Historial de sobrepeso</span>}
                       {!onboardingData.foodRelationshipGood && (
-                        <span className="text-amber-300">Relación con la comida: mala{onboardingData.foodRelationshipReason ? ` (${onboardingData.foodRelationshipReason})` : ''}</span>
+                        <span className="text-warning">Relación con la comida: mala{onboardingData.foodRelationshipReason ? ` (${onboardingData.foodRelationshipReason})` : ''}</span>
                       )}
                       {onboardingData.eatsTooFast && <span className="text-ink-2">Come deprisa</span>}
-                      {onboardingData.neckCm && <span className="text-ink-2">Cuello: <span className="text-white font-bold">{onboardingData.neckCm}cm</span></span>}
-                      {onboardingData.waistCm && <span className="text-ink-2">Cintura: <span className="text-white font-bold">{onboardingData.waistCm}cm</span></span>}
-                      {onboardingData.hipCm && <span className="text-ink-2">Cadera: <span className="text-white font-bold">{onboardingData.hipCm}cm</span></span>}
+                      {onboardingData.neckCm && <span className="text-ink-2">Cuello: <span className="text-ink font-bold">{onboardingData.neckCm}cm</span></span>}
+                      {onboardingData.waistCm && <span className="text-ink-2">Cintura: <span className="text-ink font-bold">{onboardingData.waistCm}cm</span></span>}
+                      {onboardingData.hipCm && <span className="text-ink-2">Cadera: <span className="text-ink font-bold">{onboardingData.hipCm}cm</span></span>}
                     </div>
                     {onboardingData.weightTendency && (
                       <p className="font-sans text-caption text-ink-2"><span className="text-ink-3 mr-1">Tendencia de peso:</span>{onboardingData.weightTendency}</p>
@@ -564,10 +564,10 @@ export default function ClientFichaPanel({
               >
                 <div className="flex flex-wrap gap-x-4 gap-y-1 text-label font-mono pb-3">
                   {onboardingData.cookingMaxTime && (
-                    <span className="text-ink-2">Tiempo máx: <span className="text-white font-bold">{onboardingData.cookingMaxTime} min</span></span>
+                    <span className="text-ink-2">Tiempo máx: <span className="text-ink font-bold">{onboardingData.cookingMaxTime} min</span></span>
                   )}
                   {onboardingData.menuVariety && (
-                    <span className="text-ink-2">Variedad del menú: <span className="text-white font-bold">{onboardingData.menuVariety}/5</span></span>
+                    <span className="text-ink-2">Variedad del menú: <span className="text-ink font-bold">{onboardingData.menuVariety}/5</span></span>
                   )}
                   {onboardingData.batchCookingPreferred && <span className="text-ink-2">Cocina de golpe (batch cooking)</span>}
                 </div>
@@ -580,7 +580,7 @@ export default function ClientFichaPanel({
             >
               <div className="space-y-2 pb-3">
                 <div className="flex flex-wrap gap-x-4 gap-y-1 text-label font-sans">
-                  <span className="text-ink-2">Nivel: <span className="text-white font-bold">{EXP_LABELS[onboardingData.experienceLevel]}</span></span>
+                  <span className="text-ink-2">Nivel: <span className="text-ink font-bold">{EXP_LABELS[onboardingData.experienceLevel]}</span></span>
                 </div>
                 {onboardingData.equipment.length > 0 && (
                   <div className="flex flex-wrap gap-1">
@@ -600,7 +600,7 @@ export default function ClientFichaPanel({
                   </p>
                 )}
                 {onboardingData.injuries && (
-                  <p className="font-mono text-caption text-amber-300">
+                  <p className="font-mono text-caption text-warning">
                     <span className="material-symbols-outlined text-label align-middle mr-1">personal_injury</span>
                     {onboardingData.injuries}
                   </p>
@@ -612,25 +612,25 @@ export default function ClientFichaPanel({
                   <div className="space-y-1 pt-2 border-t border-hairline">
                     <div className="flex flex-wrap gap-x-4 gap-y-1 text-label font-mono">
                       {onboardingData.availableDaysPerWeek && (
-                        <span className="text-ink-2">Puede entrenar: <span className="text-white font-bold">{onboardingData.availableDaysPerWeek} días/sem</span></span>
+                        <span className="text-ink-2">Puede entrenar: <span className="text-ink font-bold">{onboardingData.availableDaysPerWeek} días/sem</span></span>
                       )}
                       {onboardingData.sessionMaxMinutes && (
-                        <span className="text-ink-2">Por sesión: <span className="text-white font-bold">{onboardingData.sessionMaxMinutes} min</span></span>
+                        <span className="text-ink-2">Por sesión: <span className="text-ink font-bold">{onboardingData.sessionMaxMinutes} min</span></span>
                       )}
                       {onboardingData.oneRepMaxTotal && (
-                        <span className="text-ink-2">Total 1RM: <span className="text-white font-bold">{onboardingData.oneRepMaxTotal}kg</span></span>
+                        <span className="text-ink-2">Total 1RM: <span className="text-ink font-bold">{onboardingData.oneRepMaxTotal}kg</span></span>
                       )}
                       {onboardingData.progressFrequency && (
-                        <span className="text-ink-2">Progresa: <span className="text-white font-bold">{PROGRESS_FREQ_LABELS[onboardingData.progressFrequency]}</span></span>
+                        <span className="text-ink-2">Progresa: <span className="text-ink font-bold">{PROGRESS_FREQ_LABELS[onboardingData.progressFrequency]}</span></span>
                       )}
                       {onboardingData.techniqueLevel && (
-                        <span className="text-ink-2">Técnica: <span className="text-white font-bold">{TECHNIQUE_LABELS[onboardingData.techniqueLevel]}</span></span>
+                        <span className="text-ink-2">Técnica: <span className="text-ink font-bold">{TECHNIQUE_LABELS[onboardingData.techniqueLevel]}</span></span>
                       )}
                       {onboardingData.currentMotivation && (
-                        <span className="text-ink-2">Motivación: <span className="text-white font-bold">{onboardingData.currentMotivation}/10</span></span>
+                        <span className="text-ink-2">Motivación: <span className="text-ink font-bold">{onboardingData.currentMotivation}/10</span></span>
                       )}
                       {onboardingData.sittingHoursPerDay && (
-                        <span className="text-ink-2">Horas sentado/día: <span className="text-white font-bold">{onboardingData.sittingHoursPerDay}h</span></span>
+                        <span className="text-ink-2">Horas sentado/día: <span className="text-ink font-bold">{onboardingData.sittingHoursPerDay}h</span></span>
                       )}
                       {onboardingData.restDayActive && <span className="text-ink-2">Activo en descanso{onboardingData.restDayActiveDetail ? ` (${onboardingData.restDayActiveDetail})` : ''}</span>}
                     </div>
@@ -653,10 +653,10 @@ export default function ClientFichaPanel({
                 <div className="space-y-1 pb-3">
                   <div className="flex flex-wrap gap-x-4 gap-y-1 text-label font-mono">
                     {onboardingData.occupation && (
-                      <span className="text-ink-2">Ocupación: <span className="text-white font-bold">{onboardingData.occupation}</span></span>
+                      <span className="text-ink-2">Ocupación: <span className="text-ink font-bold">{onboardingData.occupation}</span></span>
                     )}
                     {onboardingData.referralSource && (
-                      <span className="text-ink-2">Nos conoció por: <span className="text-white font-bold">{onboardingData.referralSource}</span></span>
+                      <span className="text-ink-2">Nos conoció por: <span className="text-ink font-bold">{onboardingData.referralSource}</span></span>
                     )}
                   </div>
                 </div>
@@ -675,7 +675,7 @@ export default function ClientFichaPanel({
               >
                 <div className="space-y-2 pb-3">
                   {onboardingData.lifestyleScope && (
-                    <p className={`font-sans text-caption ${onboardingData.lifestyleScope === 'solo_fisico' ? 'text-amber-300' : 'text-white font-bold'}`}>
+                    <p className={`font-sans text-caption ${onboardingData.lifestyleScope === 'solo_fisico' ? 'text-warning' : 'text-ink font-bold'}`}>
                       {ALCANCE_LABELS[onboardingData.lifestyleScope] ?? onboardingData.lifestyleScope}
                     </p>
                   )}
@@ -738,7 +738,7 @@ export default function ClientFichaPanel({
               >
                 <div className="space-y-1 pb-3">
                   {onboardingData.hasCurrentInjury && (
-                    <p className="font-mono text-caption text-amber-300">
+                    <p className="font-mono text-caption text-warning">
                       <span className="material-symbols-outlined text-label align-middle mr-1">personal_injury</span>
                       Lesión actual en {onboardingData.currentInjuryLocation || '—'} (intensidad {onboardingData.currentInjuryIntensity ?? '—'}/10)
                       {onboardingData.currentInjuryMovements && ` — duele al: ${onboardingData.currentInjuryMovements}`}
@@ -784,10 +784,10 @@ export default function ClientFichaPanel({
                   )}
                   <div className="flex flex-wrap gap-x-4 gap-y-1 text-label font-mono">
                     {onboardingData.sleepRoutineOrScreen && (
-                      <span className="text-ink-2">Antes de dormir: <span className="text-white font-bold">{onboardingData.sleepRoutineOrScreen === 'rutina' ? 'Rutina' : 'Pantalla'}</span></span>
+                      <span className="text-ink-2">Antes de dormir: <span className="text-ink font-bold">{onboardingData.sleepRoutineOrScreen === 'rutina' ? 'Rutina' : 'Pantalla'}</span></span>
                     )}
                     {onboardingData.sleepMedication && (
-                      <span className="text-amber-300">Medicación para dormir{onboardingData.sleepMedicationDetail ? `: ${onboardingData.sleepMedicationDetail}` : ''}</span>
+                      <span className="text-warning">Medicación para dormir{onboardingData.sleepMedicationDetail ? `: ${onboardingData.sleepMedicationDetail}` : ''}</span>
                     )}
                   </div>
                 </div>
@@ -818,7 +818,7 @@ export default function ClientFichaPanel({
                           return (
                             <p key={q.id} className="font-sans text-caption text-ink-2">
                               <span className="text-ink-3 mr-1">{q.label}:</span>
-                              <span className="text-white font-bold">{display}</span>
+                              <span className="text-ink font-bold">{display}</span>
                             </p>
                           );
                         })}
@@ -832,7 +832,7 @@ export default function ClientFichaPanel({
         ) : (
           <div className="flex items-center justify-between gap-4">
             <div>
-              <p className="font-sans font-bold text-body-s text-white flex items-center gap-2">
+              <p className="font-sans font-bold text-body-s text-ink flex items-center gap-2">
                 <span className="material-symbols-outlined text-ink-3 text-title-s">person_check</span>
                 Ficha de iniciación
               </p>
@@ -840,7 +840,7 @@ export default function ClientFichaPanel({
             </div>
             <button
               onClick={() => setEditingOnboarding(true)}
-              className="shrink-0 flex items-center gap-2 px-4 py-3 bg-accent text-black font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all"
+              className="shrink-0 flex items-center gap-2 px-4 py-3 bg-accent text-on-accent font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all"
             >
               <span className="material-symbols-outlined text-body-s">add</span>Crear ficha
             </button>

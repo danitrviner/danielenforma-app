@@ -225,7 +225,7 @@ export default function ClientesList({ coachEmail }: { coachEmail: string }) {
               onClick={e => { e.stopPropagation(); onArchivar(c); }}
               aria-label={c.archivado ? `Desarchivar a ${c.nombre}` : `Archivar a ${c.nombre}`}
               title={c.archivado ? 'Desarchivar' : 'Archivar — desaparece de tus listas'}
-              className="w-7 h-7 rounded-control inline-flex items-center justify-center text-ink-2 hover:bg-white/6 transition-colors"
+              className="w-7 h-7 rounded-control inline-flex items-center justify-center text-ink-2 hover:bg-hairline transition-colors"
             >
               <Icon name={c.archivado ? 'unarchive' : 'archive'} size="m" />
             </button>
@@ -235,7 +235,7 @@ export default function ClientesList({ coachEmail }: { coachEmail: string }) {
                 onClick={e => { e.stopPropagation(); onEliminar(c); }}
                 aria-label={`Borrar a ${c.nombre}`}
                 title="Borrar para siempre"
-                className="w-7 h-7 rounded-control inline-flex items-center justify-center text-danger hover:bg-white/6 transition-colors"
+                className="w-7 h-7 rounded-control inline-flex items-center justify-center text-danger hover:bg-hairline transition-colors"
               >
                 <Icon name="delete" size="m" />
               </button>
@@ -262,7 +262,7 @@ export default function ClientesList({ coachEmail }: { coachEmail: string }) {
           <button
             type="button"
             onClick={() => setImportarAbierto(true)}
-            className="flex items-center gap-1 px-3 py-2 rounded-control bg-white/6 text-ink font-sans font-bold text-caption hover:bg-white/10 transition-colors"
+            className="flex items-center gap-1 px-3 py-2 rounded-control bg-hairline text-ink font-sans font-bold text-caption hover:bg-strong transition-colors"
           >
             <Icon name="upload_file" size="s" />
             Importar
@@ -274,7 +274,7 @@ export default function ClientesList({ coachEmail }: { coachEmail: string }) {
           <button
             type="button"
             onClick={() => setInvitarAbierto(true)}
-            className="flex items-center gap-1 px-3 py-2 rounded-control bg-white/6 text-ink font-sans font-bold text-caption hover:bg-white/10 transition-colors"
+            className="flex items-center gap-1 px-3 py-2 rounded-control bg-hairline text-ink font-sans font-bold text-caption hover:bg-strong transition-colors"
           >
             <Icon name="person_add" size="s" />
             Invitar atleta
@@ -311,7 +311,7 @@ export default function ClientesList({ coachEmail }: { coachEmail: string }) {
               aria-pressed={filtro === f.id}
               className={`shrink-0 px-3 py-2 rounded-control font-sans text-caption uppercase tracking-widest transition-colors ${
                 filtro === f.id
-                  ? 'bg-accent/15 text-accent border border-accent/30'
+                  ? 'bg-accent/15 text-accent-ink border border-accent/30'
                   : 'bg-field text-ink-2 border border-hairline hover:border-strong'
               }`}
             >

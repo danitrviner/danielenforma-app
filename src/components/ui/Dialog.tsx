@@ -55,7 +55,7 @@ export default function Dialog({ open, onClose, title, children, footer, size = 
     // borde FÍSICO de la pantalla, isla incluida.
     <div className="fixed inset-0 z-[var(--z-modal)] flex items-center justify-center p-4 pt-[calc(1rem+var(--safe-top))] pb-[calc(1rem+env(safe-area-inset-bottom,0px))]">
       <div
-        className="fixed inset-0 z-[var(--z-overlay)] bg-black/70 backdrop-blur-sm"
+        className="fixed inset-0 z-[var(--z-overlay)] bg-veil/70 backdrop-blur-sm"
         onClick={onClose}
         aria-hidden
       />

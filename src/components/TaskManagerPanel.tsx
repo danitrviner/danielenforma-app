@@ -72,8 +72,8 @@ export default function TaskManagerPanel({ athleteEmail }: Props) {
   return (
     <div className="bg-surface border border-hairline rounded-surface p-5">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
-          <span className="material-symbols-outlined text-accent text-title-s">checklist</span>
+        <h3 className="font-sans font-bold text-title-s text-ink flex items-center gap-2">
+          <span className="material-symbols-outlined text-accent-ink text-title-s">checklist</span>
           Tareas del atleta
         </h3>
         <Button variant="secondary" size="s" onClick={() => setShowForm(v => !v)} icon={showForm ? 'close' : 'add'}>
@@ -88,14 +88,14 @@ export default function TaskManagerPanel({ athleteEmail }: Props) {
             value={title}
             onChange={e => setTitle(e.target.value)}
             placeholder="Título de la tarea"
-            className="w-full bg-bg border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent"
+            className="w-full bg-bg border border-hairline rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent"
             required
           />
           <div className="flex gap-2">
             <select
               value={type}
               onChange={e => setType(e.target.value as TaskType)}
-              className="bg-bg border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent"
+              className="bg-bg border border-hairline rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent"
             >
               {(Object.keys(TYPE_LABEL) as (keyof typeof TYPE_LABEL)[]).map(k => (
                 <option key={k} value={k}>{TYPE_LABEL[k]}</option>
@@ -105,7 +105,7 @@ export default function TaskManagerPanel({ athleteEmail }: Props) {
               type="date"
               value={dueDate}
               onChange={e => setDueDate(e.target.value)}
-              className="flex-1 bg-bg border border-hairline rounded-control p-2 text-title-s text-white focus:outline-none focus:border-accent"
+              className="flex-1 bg-bg border border-hairline rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent"
             />
           </div>
           <Button type="submit" disabled={createMutation.isPending} fullWidth>
@@ -131,7 +131,7 @@ export default function TaskManagerPanel({ athleteEmail }: Props) {
                 t.status === 'done' ? 'bg-surface border-hairline opacity-60' : 'bg-raised border-hairline'
               }`}
               leading={
-                <span className={`material-symbols-outlined flex-shrink-0 ${t.status === 'done' ? 'text-emerald-400' : 'text-ink-2'}`}>
+                <span className={`material-symbols-outlined flex-shrink-0 ${t.status === 'done' ? 'text-success' : 'text-ink-2'}`}>
                   {t.status === 'done' ? 'check_circle' : 'radio_button_unchecked'}
                 </span>
               }

@@ -50,10 +50,10 @@ export function Campo({ id, label, hint, error, required, children, className = 
       {label && (
         <label
           htmlFor={id}
-          className="font-mono text-caption font-semibold uppercase tracking-[.16em] text-ink-3 transition-colors duration-(--duration-state) group-focus-within:text-accent"
+          className="font-mono text-caption font-semibold uppercase tracking-[.16em] text-ink-3 transition-colors duration-(--duration-state) group-focus-within:text-accent-ink"
         >
           {label}
-          {required && <span className="text-accent"> *</span>}
+          {required && <span className="text-accent-ink"> *</span>}
         </label>
       )}
       {children}

@@ -1,6 +1,6 @@
 import React from 'react';
 import { useCardioSession } from '../../hooks/useCardioSession';
-import { ZONE_LABEL, ZONE_COLOR, BELOW_ZONE_LABEL } from '../../utils/cardioZones';
+import { ZONE_LABEL, ZONE_INK, BELOW_ZONE_LABEL } from '../../utils/cardioZones';
 import { Icon } from '../ui';
 import { pulsable } from '../../utils/a11y';
 
@@ -55,7 +55,7 @@ export default function CardioMiniPlayer({ currentPath, onOpen }: Props) {
 
   const zone = cardio.sessionTargetZoneRef.current;
   const zoneLabel = zone ? ZONE_LABEL[zone] : BELOW_ZONE_LABEL;
-  const zoneColor = zone ? ZONE_COLOR[zone] : 'var(--color-ink-2)';
+  const zoneColor = zone ? ZONE_INK[zone] : 'var(--color-ink-2)';
 
   return (
     <div
@@ -63,7 +63,7 @@ export default function CardioMiniPlayer({ currentPath, onOpen }: Props) {
       className="fixed inset-x-0 bottom-[var(--nav-h)] md:bottom-0 md:left-[var(--sidebar-w)] z-[var(--z-nav)] flex items-center gap-3 bg-bg/92 backdrop-blur-md border-t border-hairline px-4 py-3 cursor-pointer select-none"
       aria-live="off"
     >
-      <Icon name={SESSION_ICON[cardio.sessionType] ?? 'monitor_heart'} size="l" className="text-accent" filled />
+      <Icon name={SESSION_ICON[cardio.sessionType] ?? 'monitor_heart'} size="l" className="text-accent-ink" filled />
       <div className="flex-1 min-w-0">
         <p className="text-body-s font-sans font-bold text-ink truncate">{zoneLabel}</p>
         <p className="text-caption font-mono text-ink-2 tabular-nums">

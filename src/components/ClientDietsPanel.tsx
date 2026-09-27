@@ -212,23 +212,23 @@ export default function ClientDietsPanel({
 
       {(activePhase || onboardingData?.goalBody) && (
         <p className="font-mono text-caption text-ink-2">
-          {activePhase && <>Fase actual: <span className="text-white font-bold">{activePhase.name}</span></>}
+          {activePhase && <>Fase actual: <span className="text-ink font-bold">{activePhase.name}</span></>}
           {activePhase && onboardingData?.goalBody && ' · '}
-          {onboardingData?.goalBody && <>Objetivo: <span className="text-accent font-bold">{GOAL_BODY_LABELS[onboardingData.goalBody] ?? onboardingData.goalBody}</span></>}
+          {onboardingData?.goalBody && <>Objetivo: <span className="text-accent-ink font-bold">{GOAL_BODY_LABELS[onboardingData.goalBody] ?? onboardingData.goalBody}</span></>}
         </p>
       )}
 
       {subView === 'programacion' && (
       <div className="bg-surface border border-hairline rounded-surface p-5 space-y-4">
         <div className="flex items-center justify-between gap-2 flex-wrap">
-          <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
-            <span className="material-symbols-outlined text-accent text-body-s">nutrition</span>
+          <h3 className="font-sans font-bold text-title-s text-ink flex items-center gap-2">
+            <span className="material-symbols-outlined text-accent-ink text-body-s">nutrition</span>
             Dietas disponibles
           </h3>
           <div className="flex gap-2">
             <button
               onClick={() => setDietEditorDiet(null)}
-              className="flex items-center gap-2 px-3 py-2 bg-accent text-black font-sans text-caption font-bold uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all"
+              className="flex items-center gap-2 px-3 py-2 bg-accent text-on-accent font-sans text-caption font-bold uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all"
             >
               <span className="material-symbols-outlined text-body-s">add</span>
               Nueva dieta
@@ -257,14 +257,14 @@ export default function ClientDietsPanel({
                     title={active ? 'Desactivar dieta' : 'Activar dieta'}
                   >
                     <span className={`w-4 h-4 rounded-control border-2 flex items-center justify-center transition-colors ${active ? 'bg-accent border-accent' : 'border-hairline hover:border-ink-2'}`}>
-                      {active && <span className="material-symbols-outlined text-black" style={{ fontSize: '11px' }}>check</span>}
+                      {active && <span className="material-symbols-outlined text-on-accent" style={{ fontSize: '11px' }}>check</span>}
                     </span>
                   </button>
 
                   {/* Diet info */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 min-w-0">
-                      <p className={`font-sans font-bold text-body-s truncate ${active ? 'text-white' : 'text-ink-2'}`}>{dt.name}</p>
+                      <p className={`font-sans font-bold text-body-s truncate ${active ? 'text-ink' : 'text-ink-2'}`}>{dt.name}</p>
                       {dt.isDraft === true && (
                         <span className="flex-shrink-0 text-caption font-mono font-bold uppercase text-warning bg-warning/10 px-2 rounded-control border border-warning/20">
                           BORRADOR
@@ -277,7 +277,7 @@ export default function ClientDietsPanel({
                   </div>
 
                   {active && (
-                    <span className="text-caption font-sans font-bold uppercase text-accent bg-accent/10 px-2 rounded-surface border border-accent/20 flex-shrink-0">
+                    <span className="text-caption font-sans font-bold uppercase text-accent-ink bg-accent/10 px-2 rounded-surface border border-accent/20 flex-shrink-0">
                       Activa
                     </span>
                   )}
@@ -295,7 +295,7 @@ export default function ClientDietsPanel({
                     <button
                       onClick={() => void handleDuplicate(dt)}
                       disabled={dietBusyId === dt.id}
-                      className="p-2 text-ink-2 hover:text-accent disabled:opacity-40 transition-colors"
+                      className="p-2 text-ink-2 hover:text-accent-ink disabled:opacity-40 transition-colors"
                       title="Duplicar dieta"
                       aria-label={`Duplicar ${dt.name}`}
                     >
@@ -322,8 +322,8 @@ export default function ClientDietsPanel({
       {/* Preferencias alimentarias */}
       {subView === 'info' && onboardingData && (
         <div className="bg-surface border border-hairline rounded-surface p-5">
-          <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2 mb-4">
-            <span className="material-symbols-outlined text-accent text-title-s">restaurant</span>
+          <h3 className="font-sans font-bold text-title-s text-ink flex items-center gap-2 mb-4">
+            <span className="material-symbols-outlined text-accent-ink text-title-s">restaurant</span>
             Preferencias alimentarias
           </h3>
           <FoodPreferencesPanel
@@ -342,8 +342,8 @@ export default function ClientDietsPanel({
       {subView === 'programacion' && (
       <div className="bg-surface border border-hairline rounded-surface p-5 space-y-4">
         <div className="flex items-center justify-between flex-wrap gap-2">
-          <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
-            <span className="material-symbols-outlined text-accent text-body-s">calendar_month</span>
+          <h3 className="font-sans font-bold text-title-s text-ink flex items-center gap-2">
+            <span className="material-symbols-outlined text-accent-ink text-body-s">calendar_month</span>
             Programación semanal
           </h3>
           {pendingScheduledDiets.length > 0 && (
@@ -381,7 +381,7 @@ export default function ClientDietsPanel({
                   ))}
                 </select>
                 {totalExch !== null && (
-                  <span className="text-caption font-mono text-accent text-center">
+                  <span className="text-caption font-mono text-accent-ink text-center">
                     {totalExch} int.
                   </span>
                 )}
@@ -398,13 +398,13 @@ export default function ClientDietsPanel({
       {subView === 'programacion' && (
       <div className="bg-surface border border-hairline rounded-surface p-5 space-y-4">
         <div className="flex items-center justify-between gap-2 flex-wrap">
-          <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
-            <span className="material-symbols-outlined text-accent text-body-s">restaurant_menu</span>
+          <h3 className="font-sans font-bold text-title-s text-ink flex items-center gap-2">
+            <span className="material-symbols-outlined text-accent-ink text-body-s">restaurant_menu</span>
             Menú semanal
           </h3>
           <button
             onClick={() => setMenuEditor('new')}
-            className="flex items-center gap-2 px-3 py-2 bg-accent text-black font-sans text-caption font-bold uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all"
+            className="flex items-center gap-2 px-3 py-2 bg-accent text-on-accent font-sans text-caption font-bold uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all"
           >
             <span className="material-symbols-outlined text-body-s">auto_awesome</span>
             Generar menú
@@ -418,7 +418,7 @@ export default function ClientDietsPanel({
           <div className="flex items-center gap-2 bg-bg border border-hairline rounded-surface px-3 py-2">
             <span className="material-symbols-outlined text-data text-body-s">task_alt</span>
             <span className="font-mono text-caption text-ink-2">
-              Adherencia al menú (últimas 2 semanas): <span className="text-white font-bold">{menuAdherence.avgPct}%</span> · {menuAdherence.daysLogged} {menuAdherence.daysLogged === 1 ? 'día' : 'días'} registrados
+              Adherencia al menú (últimas 2 semanas): <span className="text-ink font-bold">{menuAdherence.avgPct}%</span> · {menuAdherence.daysLogged} {menuAdherence.daysLogged === 1 ? 'día' : 'días'} registrados
             </span>
           </div>
         )}
@@ -431,12 +431,12 @@ export default function ClientDietsPanel({
               <div key={m.id} className="flex items-center gap-3 px-4 py-3 rounded-surface border bg-surface border-hairline">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 min-w-0 flex-wrap">
-                    <p className="font-sans font-bold text-body-s text-white truncate">{m.name}</p>
+                    <p className="font-sans font-bold text-body-s text-ink truncate">{m.name}</p>
                     <span className={`flex-shrink-0 text-caption font-mono font-bold uppercase px-2 rounded-control border ${m.status === 'published' ? 'text-success bg-success/10 border-success/20' : 'text-warning bg-warning/10 border-warning/20'}`}>
                       {m.status === 'published' ? 'PUBLICADO' : 'BORRADOR'}
                     </span>
                     {m.batchCooking && (
-                      <span className="flex-shrink-0 flex items-center text-caption font-mono font-bold uppercase text-accent bg-accent/10 border border-accent/25 px-2 rounded-control">
+                      <span className="flex-shrink-0 flex items-center text-caption font-mono font-bold uppercase text-accent-ink bg-accent/10 border border-accent/25 px-2 rounded-control">
                         <span className="material-symbols-outlined" style={{ fontSize: '10px' }}>inventory_2</span>batch
                       </span>
                     )}
@@ -468,7 +468,7 @@ export default function ClientDietsPanel({
                       reloadWeeklyMenus();
                     } catch (err) { console.error(err); }
                   }}
-                  className="flex-shrink-0 text-ink-2 hover:text-red-400 p-1 rounded-control transition-colors"
+                  className="flex-shrink-0 text-ink-2 hover:text-danger p-1 rounded-control transition-colors"
                   title="Eliminar"
                 >
                   <span className="material-symbols-outlined text-body-s">delete</span>
@@ -482,7 +482,7 @@ export default function ClientDietsPanel({
           <div>
             <button
               onClick={() => setShowSwapHistory(v => !v)}
-              className="flex items-center gap-2 text-caption font-mono text-ink-2 hover:text-white transition-colors"
+              className="flex items-center gap-2 text-caption font-mono text-ink-2 hover:text-ink transition-colors"
             >
               <span className="material-symbols-outlined text-body-s">{showSwapHistory ? 'expand_less' : 'history'}</span>
               Historial de cambios del atleta
@@ -492,7 +492,7 @@ export default function ClientDietsPanel({
                 {weeklyMenus.find(m => m.status === 'published')?.swapHistory
                   .slice().reverse().map((s, i) => (
                     <div key={i} className="font-mono text-caption text-ink-2 bg-bg border border-hairline rounded-surface px-3 py-2">
-                      <span className="text-ink-3">{new Date(s.at).toLocaleString('es-ES')}</span> — {WEEK_DAY_FULL[s.day]}: cambió <span className="text-white">{s.fromRecipeName}</span> por <span className="text-accent">{s.toRecipeName}</span>
+                      <span className="text-ink-3">{new Date(s.at).toLocaleString('es-ES')}</span> — {WEEK_DAY_FULL[s.day]}: cambió <span className="text-ink">{s.fromRecipeName}</span> por <span className="text-accent-ink">{s.toRecipeName}</span>
                     </div>
                   ))}
               </div>
@@ -539,7 +539,7 @@ export default function ClientDietsPanel({
       {/* Nutrition mode config */}
       {subView === 'info' && nutritionConfig && (
         <div className="bg-surface border border-hairline rounded-surface p-5 space-y-4">
-          <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
+          <h3 className="font-sans font-bold text-title-s text-ink flex items-center gap-2">
             <span className="material-symbols-outlined text-data text-body-s">tune</span>
             Modos de alimentación habilitados
           </h3>
@@ -553,10 +553,10 @@ export default function ClientDietsPanel({
                 <button
                   key={mode}
                   onClick={() => onToggleDietMode(mode)}
-                  className={`flex items-center gap-2 px-4 py-3 rounded-control font-mono text-label font-bold uppercase tracking-wider border transition-all ${active ? 'bg-accent/10 border-accent/40 text-accent' : 'bg-raised border-hairline text-ink-2 hover:border-ink-2/30 hover:text-white'}`}
+                  className={`flex items-center gap-2 px-4 py-3 rounded-control font-mono text-label font-bold uppercase tracking-wider border transition-all ${active ? 'bg-accent/10 border-accent/40 text-accent-ink' : 'bg-raised border-hairline text-ink-2 hover:border-ink-2/30 hover:text-ink'}`}
                 >
                   <span className={`w-3.5 h-3.5 rounded-control flex-shrink-0 border-2 flex items-center justify-center transition-colors ${active ? 'bg-accent border-accent' : 'border-hairline'}`}>
-                    {active && <span className="material-symbols-outlined text-black" style={{ fontSize: '10px' }}>check</span>}
+                    {active && <span className="material-symbols-outlined text-on-accent" style={{ fontSize: '10px' }}>check</span>}
                   </span>
                   {DIET_MODE_LABELS[mode]}
                 </button>
@@ -569,7 +569,7 @@ export default function ClientDietsPanel({
       {/* Step goal config */}
       {subView === 'info' && nutritionConfig && (
         <div className="bg-surface border border-hairline rounded-surface p-5 space-y-4">
-          <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
+          <h3 className="font-sans font-bold text-title-s text-ink flex items-center gap-2">
             <span className="material-symbols-outlined text-data text-body-s">directions_walk</span>
             Objetivo de pasos
           </h3>
@@ -585,7 +585,7 @@ export default function ClientDietsPanel({
                   const val = parseInt(e.target.value, 10);
                   onSaveStepConfig({ stepGoal: isNaN(val) ? undefined : val });
                 }}
-                className="w-full bg-raised border border-hairline rounded-control px-3 py-2 text-white font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-accent"
+                className="w-full bg-raised border border-hairline rounded-control px-3 py-2 text-ink font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-accent"
               />
             </div>
             <div>
@@ -599,7 +599,7 @@ export default function ClientDietsPanel({
                   const val = parseFloat(e.target.value);
                   onSaveStepConfig({ kcalPerStep: isNaN(val) ? undefined : val });
                 }}
-                className="w-full bg-raised border border-hairline rounded-control px-3 py-2 text-white font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-accent"
+                className="w-full bg-raised border border-hairline rounded-control px-3 py-2 text-ink font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-accent"
               />
             </div>
           </div>

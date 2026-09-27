@@ -50,7 +50,7 @@ export default function ScheduleFields({
       <select
         value={schedType}
         onChange={e => { onSchedTypeChange(e.target.value as QScheduleType); onWeekdaysChange([]); }}
-        className="bg-bg border border-hairline rounded-control px-3 py-3 text-title-s text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent"
+        className="bg-bg border border-hairline rounded-control px-3 py-3 text-title-s text-ink font-mono focus:outline-none focus:ring-1 focus:ring-accent"
       >
         <option value="once">Una vez</option>
         <option value="weekdays">Días de la semana</option>
@@ -73,7 +73,7 @@ export default function ScheduleFields({
                   onClick={() => onWeekdaysChange(active ? weekdays.filter(d => d !== dayNum) : [...weekdays, dayNum])}
                   className={`w-9 h-9 rounded-control font-sans text-label font-bold border transition-all ${
                     active
-                      ? 'bg-accent border-accent text-black'
+                      ? 'bg-accent border-accent text-on-accent'
                       : 'bg-raised border-hairline text-ink-2 hover:border-hairline'
                   }`}
                 >{label}</button>
@@ -91,7 +91,7 @@ export default function ScheduleFields({
             value={intervalDays}
             min={1}
             onChange={e => onIntervalDaysChange(Math.max(1, Number(e.target.value)))}
-            className="w-20 bg-bg border border-hairline rounded-control px-2 py-2 text-title-s text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent"
+            className="w-20 bg-bg border border-hairline rounded-control px-2 py-2 text-title-s text-ink font-mono focus:outline-none focus:ring-1 focus:ring-accent"
           />
           <span className="font-mono text-label text-ink-2">días</span>
         </div>
@@ -105,7 +105,7 @@ export default function ScheduleFields({
             value={dayOfMonth}
             min={1} max={28}
             onChange={e => onDayOfMonthChange(Math.min(28, Math.max(1, Number(e.target.value))))}
-            className="w-20 bg-bg border border-hairline rounded-control px-2 py-2 text-title-s text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent"
+            className="w-20 bg-bg border border-hairline rounded-control px-2 py-2 text-title-s text-ink font-mono focus:outline-none focus:ring-1 focus:ring-accent"
           />
           <span className="font-mono text-label text-ink-2">de cada mes</span>
         </div>
@@ -113,28 +113,28 @@ export default function ScheduleFields({
 
       {schedType === 'plan_week' && onPlanWeekChange && (
         <div className="flex items-center gap-2">
-          <span className="font-mono text-xs text-[#c6c9ab]">Semana</span>
+          <span className="font-mono text-xs text-ink-3">Semana</span>
           <input
             type="number"
             value={planWeek}
             min={1} max={52}
             onChange={e => onPlanWeekChange(Math.max(1, Number(e.target.value)))}
-            className="w-20 bg-bg border border-hairline rounded-control px-2 py-2 text-title-s text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent"
+            className="w-20 bg-bg border border-hairline rounded-control px-2 py-2 text-title-s text-ink font-mono focus:outline-none focus:ring-1 focus:ring-accent"
           />
-          <span className="font-mono text-xs text-[#c6c9ab]">desde el alta del cuestionario</span>
+          <span className="font-mono text-xs text-ink-3">desde el alta del cuestionario</span>
         </div>
       )}
 
       {schedType === 'mesocycle_end' && onMesocycleOffsetDaysChange && (
         <div className="flex items-center gap-2">
-          <span className="font-mono text-xs text-[#c6c9ab]">Días antes del cierre</span>
+          <span className="font-mono text-xs text-ink-3">Días antes del cierre</span>
           <input
             type="number"
             value={mesocycleOffsetDays}
             onChange={e => onMesocycleOffsetDaysChange(Number(e.target.value))}
-            className="w-20 bg-bg border border-hairline rounded-control px-2 py-2 text-title-s text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent"
+            className="w-20 bg-bg border border-hairline rounded-control px-2 py-2 text-title-s text-ink font-mono focus:outline-none focus:ring-1 focus:ring-accent"
           />
-          <span className="font-mono text-xs text-[#c6c9ab]">(0 = el último día del mesociclo)</span>
+          <span className="font-mono text-xs text-ink-3">(0 = el último día del mesociclo)</span>
         </div>
       )}
 
@@ -145,7 +145,7 @@ export default function ScheduleFields({
             type="date"
             value={startDate}
             onChange={e => onStartDateChange(e.target.value)}
-            className="bg-bg border border-hairline rounded-control px-2 py-2 text-title-s font-mono text-white focus:outline-none focus:ring-1 focus:ring-accent"
+            className="bg-bg border border-hairline rounded-control px-2 py-2 text-title-s font-mono text-ink focus:outline-none focus:ring-1 focus:ring-accent"
           />
         </div>
       )}

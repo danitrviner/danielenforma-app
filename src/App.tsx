@@ -137,9 +137,9 @@ const AsignadosHarness = import.meta.env.DEV
 function Splash({ texto = 'Cargando...' }: { texto?: string }) {
   return (
     <div className="min-h-screen bg-bg flex items-center justify-center flex-col gap-4">
-      <div className="flex items-center gap-2 text-accent animate-pulse">
+      <div className="flex items-center gap-2 text-accent-ink animate-pulse">
         <img src="/atlas-logo.png" alt="En Forma" className="w-9 h-9 object-contain" />
-        <span className="font-sans font-extrabold text-display tracking-tighter uppercase text-accent">EN FORMA</span>
+        <span className="font-sans font-extrabold text-display tracking-tighter uppercase text-accent-ink">EN FORMA</span>
       </div>
       <p className="font-sans text-label text-ink-2 uppercase tracking-widest animate-pulse">{texto}</p>
     </div>
@@ -943,7 +943,7 @@ function AppContent() {
 
       {/* TOP DESKTOP HEADER */}
       <header className="hidden md:flex justify-between items-center w-full px-8 h-[var(--header-h)] pt-[var(--safe-top)] bg-bg fixed top-0 left-0 border-b border-hairline z-[var(--z-header)]">
-        <div className="flex items-center gap-2 text-accent">
+        <div className="flex items-center gap-2 text-accent-ink">
           <img src="/atlas-logo.png" alt="En Forma" className="w-6 h-6 object-contain" />
           <span className="font-sans font-bold text-title-m tracking-tighter uppercase select-none">EN FORMA</span>
           <span className="text-caption bg-surface border border-hairline text-ink-2 px-2 rounded-control font-mono uppercase ml-2 select-none">
@@ -953,10 +953,10 @@ function AppContent() {
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-3">
             <NotificationBell recipientEmail={profile.email} onNavigate={goToTab} mutedTypes={mutedNotifTypes} />
-            <span className="w-px h-6 bg-white/7"></span>
+            <span className="w-px h-6 bg-hairline"></span>
             <div {...pulsable(() => goToTab('profile'), 'Ir a mi perfil')} className="flex items-center gap-2 cursor-pointer">
               <Avatar src={profile.avatarUrl} name={profile.displayName} alt="Avatar" className="w-7 h-7 rounded-full object-cover border border-accent/40" />
-              <span className="text-label font-sans font-medium text-white">{profile.displayName}</span>
+              <span className="text-label font-sans font-medium text-ink">{profile.displayName}</span>
             </div>
           </div>
         </div>
@@ -964,10 +964,10 @@ function AppContent() {
 
       {/* MOBILE HEADER */}
       <header className={`md:hidden flex justify-between items-center w-full px-4 h-[var(--header-h)] bg-bg border-b border-hairline sticky top-0 z-[var(--z-header)] ${avisoConexion === 'ok' ? 'pt-[var(--safe-top)]' : ''}`}>
-        <div className="flex items-center gap-2 text-accent">
+        <div className="flex items-center gap-2 text-accent-ink">
           <img src="/atlas-logo.png" alt="En Forma" className="w-6 h-6 object-contain" />
           <span className="font-sans font-bold text-title-m tracking-tighter uppercase">EN FORMA</span>
-          <span className="text-caption bg-white/7 text-ink-2 px-2 rounded-control font-bold uppercase select-none">
+          <span className="text-caption bg-hairline text-ink-2 px-2 rounded-control font-bold uppercase select-none">
             {isCoach ? 'C' : 'A'}
           </span>
         </div>
@@ -984,14 +984,14 @@ function AppContent() {
               aria-label={propuestasPendientes > 0
                 ? `Asistente · ${propuestasPendientes} propuestas por revisar`
                 : 'Asistente'}
-              className="relative flex h-8 w-8 items-center justify-center rounded-full text-accent transition-colors hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-line"
+              className="relative flex h-8 w-8 items-center justify-center rounded-full text-accent-ink transition-colors hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-line"
             >
               <Icon name="smart_toy" size="m" filled />
               {/* El contador de pendientes. En escritorio vive en el botón
                   flotante del propio panel, que es `md:` — en el móvil no
                   había nada que dijera que hay propuestas esperando. */}
               {propuestasPendientes > 0 && (
-                <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-warning text-black font-mono text-[10px] font-bold flex items-center justify-center">
+                <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-warning text-on-accent font-mono text-[10px] font-bold flex items-center justify-center">
                   {propuestasPendientes}
                 </span>
               )}
@@ -1009,7 +1009,7 @@ function AppContent() {
             <button
               onClick={() => goToTab('cardio')}
               aria-label="Cardio"
-              className="flex h-8 w-8 items-center justify-center rounded-full text-accent transition-colors hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-line"
+              className="flex h-8 w-8 items-center justify-center rounded-full text-accent-ink transition-colors hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-line"
             >
               <Icon name="monitor_heart" size="m" filled />
             </button>
@@ -1042,7 +1042,7 @@ function AppContent() {
                     key={tab.id}
                     onClick={() => goToNav(tab.id)}
                     aria-current={activa ? 'page' : undefined}
-                    className={`flex items-center gap-4 p-3 rounded-control transition-all text-left group ${activa ? 'bg-accent text-black font-bold' : 'text-ink-2 hover:bg-raised hover:text-white'}`}
+                    className={`flex items-center gap-4 p-3 rounded-control transition-all text-left group ${activa ? 'bg-accent text-on-accent font-bold' : 'text-ink-2 hover:bg-raised hover:text-ink'}`}
                   >
                     <Icon name={tab.icon} size="l" filled={activa} className="group-hover:scale-110 transition-transform" />
                     <span className="font-sans text-label uppercase tracking-wider font-bold flex-1">{tab.label}</span>
@@ -1061,7 +1061,7 @@ function AppContent() {
         {isCoach && (
           <button
             onClick={() => goToTab('profile')}
-            className={`flex items-center gap-4 p-3 rounded-control text-left ${pathTab === 'profile' ? 'text-accent' : 'text-ink-2 hover:text-white'}`}
+            className={`flex items-center gap-4 p-3 rounded-control text-left ${pathTab === 'profile' ? 'text-accent-ink' : 'text-ink-2 hover:text-ink'}`}
           >
             <Icon name="person" size="l" />
             <span className="font-sans text-label font-bold uppercase tracking-wider">Mi Perfil</span>
@@ -1227,7 +1227,7 @@ function AppContent() {
               <span
                 className={
                   'relative flex transition-transform duration-(--duration-state) ease-brand '
-                  + (activa ? '-translate-y-px text-accent' : 'text-ink-2')
+                  + (activa ? '-translate-y-px text-accent-ink' : 'text-ink-2')
                 }
               >
                 <Icon name={tab.icon} size="l" filled={activa} />
@@ -1247,7 +1247,7 @@ function AppContent() {
                   5 destinos del atleta y ahora también con los 4 del coach —
                   la excepción de los 10 px que hubo aquí era consecuencia de
                   los 7 destinos, no del componente. */}
-              <span className={`font-sans text-caption uppercase font-bold leading-none truncate w-full text-center ${activa ? 'text-accent' : 'text-ink-2'}`}>
+              <span className={`font-sans text-caption uppercase font-bold leading-none truncate w-full text-center ${activa ? 'text-accent-ink' : 'text-ink-2'}`}>
                 {tab.shortLabel ?? tab.label}
               </span>
               <span

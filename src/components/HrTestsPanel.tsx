@@ -167,8 +167,8 @@ export default function HrTestsPanel({ profile, cardioProfile: _cardioProfile }:
     if (activeTest.highEffort && !parqPassed) {
       return (
         <section className="bg-surface border border-hairline rounded-surface p-4 sm:p-5 space-y-3">
-          <h2 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
-            <Icon name="warning" size="m" className="text-red-400" /> Cuestionario PAR-Q
+          <h2 className="font-sans font-bold text-title-s text-ink flex items-center gap-2">
+            <Icon name="warning" size="m" className="text-danger" /> Cuestionario PAR-Q
           </h2>
           <p className="text-label text-ink-2 font-sans">Este test es de esfuerzo alto. Si respondes SÍ a cualquiera, no continúes y consulta con un médico antes de hacerlo.</p>
           <ul className="text-label text-ink-2 font-mono space-y-2 list-disc pl-4">
@@ -186,7 +186,7 @@ export default function HrTestsPanel({ profile, cardioProfile: _cardioProfile }:
       return (
         <section className="bg-surface border border-hairline rounded-surface p-4 sm:p-5 space-y-3 text-center">
           <Icon name="check_circle" size="xl" className="text-data" />
-          <p className="font-sans font-bold text-white">Test completado</p>
+          <p className="font-sans font-bold text-ink">Test completado</p>
           <p className="text-label text-ink-2 font-sans">Tu entrenador revisará el resultado y aprobará tus zonas.</p>
           <Button onClick={() => setActiveTest(null)} fullWidth>Volver</Button>
         </section>
@@ -196,16 +196,16 @@ export default function HrTestsPanel({ profile, cardioProfile: _cardioProfile }:
     return (
       <section className="bg-surface border border-hairline rounded-surface p-4 sm:p-5 space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="font-sans font-bold text-title-s text-white">{activeTest.title}</h2>
+          <h2 className="font-sans font-bold text-title-s text-ink">{activeTest.title}</h2>
           <Button variant="ghost" size="s" onClick={() => { cleanup(); setActiveTest(null); }} icon="close" label="Cerrar" />
         </div>
-        {error && <p className="text-label text-red-400 font-sans">{error}</p>}
+        {error && <p className="text-label text-danger font-sans">{error}</p>}
         {!monitorRef.current ? (
           <Button onClick={startRecording} fullWidth>Conectar banda y empezar</Button>
         ) : (
           <div className="space-y-3 text-center">
             <p className="text-caption font-mono uppercase text-data">{phase === 'warmup' ? 'Calentando...' : 'Grabando'}</p>
-            <p className="font-sans font-extrabold text-display text-white tabular-nums">{bpm ?? '--'}</p>
+            <p className="font-sans font-extrabold text-display text-ink tabular-nums">{bpm ?? '--'}</p>
             <p className="text-label font-mono text-ink-2">{Math.floor(elapsedSec / 60)}:{String(elapsedSec % 60).padStart(2, '0')} / {Math.floor((phase === 'warmup' ? activeTest.warmupSec : activeTest.durationSec) / 60)}:{String((phase === 'warmup' ? activeTest.warmupSec : activeTest.durationSec) % 60).padStart(2, '0')}</p>
             {phase === 'testing' && (
               <Button onClick={finishTest} fullWidth>Terminar y calcular</Button>
@@ -225,8 +225,8 @@ export default function HrTestsPanel({ profile, cardioProfile: _cardioProfile }:
           return (
             <button key={t.type} onClick={() => openTest(t)} className="w-full text-left bg-surface border border-hairline rounded-control p-3 hover:border-accent/40 transition-colors">
               <div className="flex items-start justify-between gap-2">
-                <p className="font-sans font-bold text-body-s text-white">{t.title}</p>
-                {t.highEffort && <span className="text-caption font-mono uppercase text-red-400 flex-shrink-0">Esfuerzo alto</span>}
+                <p className="font-sans font-bold text-body-s text-ink">{t.title}</p>
+                {t.highEffort && <span className="text-caption font-mono uppercase text-danger flex-shrink-0">Esfuerzo alto</span>}
               </div>
               <p className="text-caption text-ink-2 font-mono mt-1">{t.desc}</p>
               {lastResult && (

@@ -45,7 +45,7 @@ export default function EmptyState({ icon, titulo, descripcion, cta, ctaSecundar
           <button
             type="button"
             onClick={ctaSecundario.onClick}
-            className="font-sans text-caption uppercase tracking-widest text-accent hover:underline"
+            className="font-sans text-caption uppercase tracking-widest text-accent-ink hover:underline"
           >
             {ctaSecundario.label}
           </button>

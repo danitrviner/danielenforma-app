@@ -52,6 +52,18 @@ service firebase.storage {
       allow write, delete: if isCoach();
     }
 
+    // ── academyCovers/{fileName} — portadas de los cursos de Training Lab ────
+    // Mismo patrón que `maquinas/`: las sube el coach, las ve cualquier atleta
+    // autenticado. No son dato sensible —son la cubierta del curso, lo primero
+    // que se ve al abrir Training Lab—, así que no se acotan por email.
+    match /academyCovers/{fileName} {
+      allow read: if request.auth != null;
+      allow write: if isCoach()
+                   && request.resource.size < 8 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*');
+      allow delete: if isCoach();
+    }
+
     // ── questionnaireMedia/{email}/{fileName} — fotos/vídeos de respuestas de
     // cuestionario (preguntas tipo 'media', ej. corrección de ejercicios en
     // vídeo). Mismo patrón de ownership que progressPhotos. Tope duro de 50MB

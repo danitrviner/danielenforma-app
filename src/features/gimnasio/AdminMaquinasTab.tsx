@@ -121,7 +121,7 @@ export default function AdminMaquinasTab() {
               key={m.id}
               as="li"
               onClick={() => setEditando(m)}
-              leading={<img src={m.fotoUrl} alt="" className="w-12 h-12 rounded-control object-contain bg-white flex-shrink-0" loading="lazy" />}
+              leading={<img src={m.fotoUrl} alt="" className="w-12 h-12 rounded-control object-contain bg-photo flex-shrink-0" loading="lazy" />}
               title={m.nombreMostrado}
               subtitle={`${MARCA_LABELS[m.marca] ?? m.marca} · ${m.nombreOriginal}`}
               trailing={
@@ -258,7 +258,7 @@ function EditorMaquina({ maquina, nueva, marcasConocidas = [], onClose, onGuarda
     >
       <div className="space-y-5">
         {fotoUrl && (
-          <img src={fotoUrl} alt="" className="w-full h-40 rounded-surface object-contain bg-white" />
+          <img src={fotoUrl} alt="" className="w-full h-40 rounded-surface object-contain bg-photo" />
         )}
 
         {!nueva && (

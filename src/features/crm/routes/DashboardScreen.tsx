@@ -273,7 +273,7 @@ export default function DashboardScreen() {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <section className="space-y-2">
           <h2 className="font-mono text-caption uppercase tracking-widest text-ink-2">Próximas reuniones</h2>
-          <div className="bg-surface/80 backdrop-blur-sm border border-hairline rounded-surface divide-y divide-white/7">
+          <div className="bg-surface/80 backdrop-blur-sm border border-hairline rounded-surface divide-y divide-hairline">
             {errorReuniones ? (
               <ErrorState />
             ) : proximasReuniones.length === 0 ? (
@@ -291,7 +291,7 @@ export default function DashboardScreen() {
 
         <section className="space-y-2">
           <h2 className="font-mono text-caption uppercase tracking-widest text-ink-2">Pagos pendientes</h2>
-          <div className="bg-surface/80 backdrop-blur-sm border border-hairline rounded-surface divide-y divide-white/7">
+          <div className="bg-surface/80 backdrop-blur-sm border border-hairline rounded-surface divide-y divide-hairline">
             {errorPagos ? (
               <ErrorState />
             ) : pagosPendientes.length === 0 ? (

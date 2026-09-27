@@ -120,7 +120,7 @@ export default function MiGimnasioPanel({ email }: Props) {
           <ListRow
             key={m.id}
             as="li"
-            leading={<img src={m.fotoUrl} alt="" className="w-12 h-12 rounded-control object-contain bg-white flex-shrink-0" loading="lazy" />}
+            leading={<img src={m.fotoUrl} alt="" className="w-12 h-12 rounded-control object-contain bg-photo flex-shrink-0" loading="lazy" />}
             title={m.nombreMostrado}
             subtitle={`${MARCA_LABELS[m.marca] ?? m.marca} · ${MUSCLE_LABELS[m.categoria]}`}
             trailing={

@@ -86,7 +86,7 @@ export default function MesocycleReviewPanel({
       {/* Cabecera */}
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
-          <p className="font-sans font-bold text-white text-body-s">
+          <p className="font-sans font-bold text-ink text-body-s">
             Cierre del mesociclo #{cierre.numero}{cierre.objetivo ? ` · ${cierre.objetivo}` : ''}
           </p>
           <p className="font-mono text-caption text-ink-2">
@@ -102,9 +102,9 @@ export default function MesocycleReviewPanel({
       </div>
 
       {cierre.enCurso && (
-        <div className="flex items-start gap-2 bg-orange-500/10 border border-orange-500/30 rounded-surface px-3 py-2.5">
-          <Icon name="warning" size="s" className="text-orange-400 flex-shrink-0 mt-px" />
-          <p className="font-sans text-caption text-orange-300 leading-relaxed">
+        <div className="flex items-start gap-2 bg-warning/10 border border-warning/30 rounded-surface px-3 py-2.5">
+          <Icon name="warning" size="s" className="text-warning flex-shrink-0 mt-px" />
+          <p className="font-sans text-caption text-warning leading-relaxed">
             El mesociclo todavía no ha terminado ({cierre.fin}). Los números son de lo que va registrado hasta hoy,
             así que el volumen realizado saldrá corto por definición.
           </p>
@@ -165,7 +165,7 @@ export default function MesocycleReviewPanel({
                 <span className="font-mono text-caption text-ink-2 uppercase tracking-wider">Lo que hay que contarle</span>
                 <button
                   onClick={() => copiar(cierre.titulares.map(t => `· ${t}`).join('\n'), 'Resumen')}
-                  className="flex items-center gap-1 font-sans text-caption font-bold text-accent hover:text-white transition-colors"
+                  className="flex items-center gap-1 font-sans text-caption font-bold text-accent-ink hover:text-ink transition-colors"
                 >
                   <Icon name="content_copy" size="s" />
                   Copiar
@@ -174,7 +174,7 @@ export default function MesocycleReviewPanel({
               <ul className="space-y-1.5">
                 {cierre.titulares.map((t, i) => (
                   <li key={i} className="flex items-start gap-2">
-                    <span className="text-accent font-mono text-caption mt-0.5 flex-shrink-0">·</span>
+                    <span className="text-accent-ink font-mono text-caption mt-0.5 flex-shrink-0">·</span>
                     <span className="font-sans text-label text-ink leading-relaxed">{t}</span>
                   </li>
                 ))}
@@ -207,7 +207,7 @@ export default function MesocycleReviewPanel({
               <span className="font-mono text-caption text-ink-2 uppercase tracking-wider">Borrador para el cliente</span>
               <button
                 onClick={() => copiar(cierre.resumenParaCliente, 'Borrador')}
-                className="flex items-center gap-1 font-sans text-caption font-bold text-accent hover:text-white transition-colors"
+                className="flex items-center gap-1 font-sans text-caption font-bold text-accent-ink hover:text-ink transition-colors"
               >
                 <Icon name="content_copy" size="s" />
                 Copiar

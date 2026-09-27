@@ -39,7 +39,7 @@ export default function RecurringRevenueCard({ serie, onClick }: Props) {
         {variacion !== null && (
           <span
             className={`font-sans text-caption tabular-nums px-2 py-1 rounded-full shrink-0 ${
-              variacion >= 0 ? 'bg-accent/15 text-accent' : 'bg-danger/15 text-danger'
+              variacion >= 0 ? 'bg-accent/15 text-accent-ink' : 'bg-danger/15 text-danger'
             }`}
           >
             {variacion >= 0 ? '+' : ''}{variacion}%

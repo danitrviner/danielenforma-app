@@ -256,13 +256,13 @@ export default function QuestionnaireWizard({ questionnaire, assignment, athlete
   return (
     <div className="bg-surface border border-hairline rounded-surface p-4 sm:p-6 space-y-5">
       <div className="flex items-center gap-3">
-        <button type="button" onClick={onCancel} className="text-ink-2 hover:text-white transition-colors p-1" aria-label="Cerrar">
+        <button type="button" onClick={onCancel} className="text-ink-2 hover:text-ink transition-colors p-1" aria-label="Cerrar">
           <Icon name="close" size="m" />
         </button>
         <span className="font-sans text-caption text-ink-2 uppercase tracking-widest">
           Paso {stepIdx + 1} de {questions.length}
         </span>
-        <span className={`ml-auto font-sans text-caption font-bold uppercase text-accent transition-opacity duration-(--duration-base) ${savedFlash ? 'opacity-100' : 'opacity-0'}`}>
+        <span className={`ml-auto font-sans text-caption font-bold uppercase text-accent-ink transition-opacity duration-(--duration-base) ${savedFlash ? 'opacity-100' : 'opacity-0'}`}>
           Guardado
         </span>
       </div>
@@ -271,7 +271,7 @@ export default function QuestionnaireWizard({ questionnaire, assignment, athlete
 
       {isFirst && (
         <div>
-          <h2 className="font-sans font-bold text-title-m text-white">{questionnaire.title}</h2>
+          <h2 className="font-sans font-bold text-title-m text-ink">{questionnaire.title}</h2>
           {questionnaire.description && <p className="text-label text-ink-2 font-sans mt-1">{questionnaire.description}</p>}
         </div>
       )}
@@ -301,7 +301,7 @@ export default function QuestionnaireWizard({ questionnaire, assignment, athlete
             max={question.max}
             value={(answers[question.id] as string) ?? ''}
             onChange={e => setAnswer(parseFloat(e.target.value))}
-            className="w-full bg-raised border-0 border-b border-hairline text-white font-mono text-title-m p-3 focus:ring-0 focus:border-accent transition-colors"
+            className="w-full bg-raised border-0 border-b border-hairline text-ink font-mono text-title-m p-3 focus:ring-0 focus:border-accent transition-colors"
           />
         )}
 
@@ -316,7 +316,7 @@ export default function QuestionnaireWizard({ questionnaire, assignment, athlete
             value={(answers[question.id] as string) ?? ''}
             onChange={e => setAnswer(parseFloat(e.target.value))}
             placeholder={prefillFor(question) !== undefined ? String(prefillFor(question)) : undefined}
-            className="w-full bg-raised border-0 border-b border-hairline text-white font-mono text-title-m p-3 focus:ring-0 focus:border-accent transition-colors"
+            className="w-full bg-raised border-0 border-b border-hairline text-ink font-mono text-title-m p-3 focus:ring-0 focus:border-accent transition-colors"
           />
         )}
 
@@ -350,7 +350,7 @@ export default function QuestionnaireWizard({ questionnaire, assignment, athlete
                   onClick={() => setAnswer(v)}
                   className={`flex-1 min-w-[38px] h-11 rounded-control font-mono text-label font-bold transition-all ${
                     answers[question.id] === v
-                      ? 'bg-accent text-black'
+                      ? 'bg-accent text-on-accent'
                       : 'bg-raised text-ink-2 border border-hairline hover:border-accent/50'
                   }`}
                 >{v}</button>
@@ -374,7 +374,7 @@ export default function QuestionnaireWizard({ questionnaire, assignment, athlete
                 onClick={() => setAnswer(v)}
                 className={`flex-1 py-3 font-sans text-label rounded-control border transition-all min-h-[44px] ${
                   answers[question.id] === v
-                    ? 'bg-accent text-black font-bold border-transparent'
+                    ? 'bg-accent text-on-accent font-bold border-transparent'
                     : 'bg-raised text-ink border-hairline'
                 }`}
               >{v ? (question.labelTrue ?? 'Sí') : (question.labelFalse ?? 'No')}</button>
@@ -403,7 +403,7 @@ export default function QuestionnaireWizard({ questionnaire, assignment, athlete
                   }}
                   className={`w-full py-3 px-3 text-label font-mono rounded-control border text-left transition-all min-h-[44px] ${
                     isSelected
-                      ? 'bg-accent text-black border-transparent font-bold'
+                      ? 'bg-accent text-on-accent border-transparent font-bold'
                       : 'bg-raised text-ink border-hairline'
                   }`}
                 >{opt}</button>

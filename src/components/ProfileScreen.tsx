@@ -18,7 +18,8 @@ import AthleteRoadmapScreen from './AthleteRoadmapScreen';
 import MiGimnasioPanel from '../features/gimnasio/MiGimnasioPanel';
 import { useTourTarget } from '../features/tutorial/TourTargetContext';
 import FuentesCientificasSheet from './FuentesCientificasSheet';
-import { Avatar, Icon, Button, PageHeader, ListRow, Input, Sheet, Tabs } from './ui';
+import { Avatar, Icon, Button, PageHeader, ListRow, Input, Sheet, SegmentedControl, Tabs } from './ui';
+import { leerPreferencia, guardarPreferencia, type PreferenciaDeTema } from '../utils/tema';
 
 interface ProfileScreenProps {
   profile: UserProfile;
@@ -67,7 +68,7 @@ function Switch({ on, onToggle }: { on: boolean; onToggle: () => void }) {
       aria-checked={on}
       onClick={onToggle}
       style={{ padding: '2px' }}
-      className={`w-11 h-6 rounded-full shrink-0 transition-colors ${on ? 'bg-accent' : 'bg-white/12'}`}
+      className={`w-11 h-6 rounded-full shrink-0 transition-colors ${on ? 'bg-accent' : 'bg-strong'}`}
     >
       <span
         className={`block w-5 h-5 rounded-full bg-bg transition-transform ${on ? 'translate-x-5' : 'translate-x-0'}`}
@@ -178,6 +179,16 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
     }
   };
 
+  /* El tema no se guarda con el resto del perfil: vive en localStorage porque
+     hace falta ANTES de que haya sesión, en el primer frame y sin red (ver
+     utils/tema.ts). Por eso tiene su propio estado y no pasa por `handleUpdate`. */
+  const [tema, setTema] = useState<PreferenciaDeTema>(() => leerPreferencia());
+  const cambiarTema = (v: string) => {
+    const pref = v as PreferenciaDeTema;
+    setTema(pref);
+    guardarPreferencia(pref);   // aplica el cambio en el acto, sin recargar
+  };
+
   /* El cuerpo de Ajustes, en una variable porque se pinta desde dos sitios:
      una pestaña más del selector (atleta) y la hoja del icono de la cabecera
      (coach, que no tiene selector de pestañas). Es el mismo árbol, no dos
@@ -195,28 +206,50 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
                 step="0.1"
                 value={targetWeight}
                 onChange={(e) => setTargetWeight(e.target.value)}
-                className="w-full bg-raised border border-hairline rounded-control p-3 text-title-s text-white focus:outline-none focus:border-accent"
+                className="w-full bg-raised border border-hairline rounded-control p-3 text-title-s text-ink focus:outline-none focus:border-accent"
               />
             </div>
           )}
           <Input label="Avatar (URL de imagen)" type="url" value={avatarUrl} onChange={setAvatarUrl} />
           <Button type="submit" disabled={loading} loading={loading} loadingLabel="Guardando" fullWidth>Guardar cambios</Button>
-          {success && <p className="text-label font-sans font-bold text-accent text-center">{success}</p>}
+          {success && <p className="text-label font-sans font-bold text-accent-ink text-center">{success}</p>}
         </form>
+
+        <p className="font-mono text-caption text-ink-3 uppercase tracking-widest">Apariencia</p>
+        <div className="space-y-2">
+          <h3 className="font-sans font-bold text-title-s text-ink flex items-center gap-2">
+            <Icon name="contrast" size="m" className="text-accent-ink" />
+            Tema
+          </h3>
+          <SegmentedControl
+            label="Tema de la aplicación"
+            options={[
+              { value: 'sistema', label: 'Sistema' },
+              { value: 'claro', label: 'Claro' },
+              { value: 'oscuro', label: 'Oscuro' },
+            ]}
+            value={tema}
+            onChange={cambiarTema}
+          />
+          <p className="font-sans text-caption text-ink-3">
+            Con «Sistema» la app sigue el ajuste de tu móvil u ordenador y cambia sola al anochecer.
+            Se recuerda en este dispositivo.
+          </p>
+        </div>
 
         {isCoach && (
           <>
           <p className="font-mono text-caption text-ink-3 uppercase tracking-widest">Preferencias</p>
           <div className="space-y-2">
-            <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
-              <Icon name="notifications" size="m" className="text-accent" />
+            <h3 className="font-sans font-bold text-title-s text-ink flex items-center gap-2">
+              <Icon name="notifications" size="m" className="text-accent-ink" />
               Notificaciones
             </h3>
             <div className="bg-surface border border-hairline rounded-surface divide-y divide-hairline">
               {COACH_NOTIF_TYPES.map(n => (
                 <div key={n.type} className="flex items-center justify-between gap-3 p-3">
                   <div className="min-w-0">
-                    <p className="font-sans text-caption font-bold text-white">{n.label}</p>
+                    <p className="font-sans text-caption font-bold text-ink">{n.label}</p>
                     <p className="font-sans text-caption text-ink-3">{n.sub}</p>
                   </div>
                   <Switch on={notifPrefs[n.type] !== false} onToggle={() => toggleNotifPref(n.type)} />
@@ -233,8 +266,8 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
           showCoaches ? (
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
-                  <Icon name="groups" size="m" className="text-accent" />
+                <h3 className="font-sans font-bold text-title-s text-ink flex items-center gap-2">
+                  <Icon name="groups" size="m" className="text-accent-ink" />
                   Entrenadores
                 </h3>
                 <Button variant="ghost" size="s" onClick={() => setShowCoaches(false)} icon="close" label="Cerrar" />
@@ -245,7 +278,7 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
             <ListRow
               onClick={() => setShowCoaches(true)}
               className="rounded-control border bg-surface border-hairline"
-              leading={<Icon name="groups" size="m" className="text-accent" />}
+              leading={<Icon name="groups" size="m" className="text-accent-ink" />}
               title="Entrenadores"
               chevron
             />
@@ -275,7 +308,7 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
                "encontrable" es requisito literal de las dos tiendas. */
             <ListRow
               onClick={() => { setShowSettings(false); setShowPermisos(true); }}
-              leading={<Icon name="gavel" size="m" className="text-accent" />}
+              leading={<Icon name="gavel" size="m" className="text-accent-ink" />}
               title="Términos y condiciones"
               chevron
             />
@@ -285,21 +318,21 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
               encontrar» también significa «donde la gente busca los avisos». */}
           <ListRow
             onClick={() => { setShowSettings(false); setShowFuentes(true); }}
-            leading={<Icon name="menu_book" size="m" className="text-accent" />}
+            leading={<Icon name="menu_book" size="m" className="text-accent-ink" />}
             title="Fuentes científicas y aviso médico"
             chevron
           />
           <ListRow
             href="/privacidad"
             target="_blank"
-            leading={<Icon name="shield" size="m" className="text-accent" />}
+            leading={<Icon name="shield" size="m" className="text-accent-ink" />}
             title="Política de privacidad"
             chevron
           />
           <ListRow
             href="/terminos"
             target="_blank"
-            leading={<Icon name="gavel" size="m" className="text-accent" />}
+            leading={<Icon name="gavel" size="m" className="text-accent-ink" />}
             title="Términos de uso"
             chevron
           />
@@ -367,8 +400,8 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
           <div className="space-y-4">
             {onboarding && (
               <div className="bg-surface border border-hairline p-5 rounded-surface">
-                <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2 mb-4">
-                  <Icon name="restaurant" size="m" className="text-accent" />
+                <h3 className="font-sans font-bold text-title-s text-ink flex items-center gap-2 mb-4">
+                  <Icon name="restaurant" size="m" className="text-accent-ink" />
                   Preferencias alimentarias
                 </h3>
                 <FoodPreferencesPanel
@@ -426,9 +459,9 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
         <div className="bg-surface border border-hairline rounded-canvas p-5 flex items-center gap-4">
           <Avatar src={profile.avatarUrl} name={profile.displayName} alt="Avatar" className="w-14 h-14 rounded-full object-cover border border-accent/40 shrink-0" />
           <div className="min-w-0">
-            <h3 className="font-sans font-bold text-title-m text-white truncate">{profile.displayName}</h3>
+            <h3 className="font-sans font-bold text-title-m text-ink truncate">{profile.displayName}</h3>
             <p className="font-sans text-caption text-ink-2 truncate">{profile.email}</p>
-            <p className="font-sans text-caption text-accent uppercase tracking-widest mt-1">Coach</p>
+            <p className="font-sans text-caption text-accent-ink uppercase tracking-widest mt-1">Coach</p>
           </div>
         </div>
       )}

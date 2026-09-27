@@ -27,11 +27,11 @@ const SLOT_OPTIONS = [1, 2, 3, 4, 5].map(s => ({ value: String(s), label: SLOT_L
 // Local CAT_BG bakes in the text color class (unlike the shared exchangeHelpers
 // version) because every usage site in this file renders it standalone.
 const CAT_BG: Record<FoodCategory, string> = {
-  HC: 'bg-amber-500/10 text-amber-300 border-amber-500/20',
-  PROT: 'bg-blue-500/10 text-blue-300 border-blue-500/20',
-  GRASA: 'bg-orange-500/10 text-orange-300 border-orange-500/20',
-  MIX_HC: 'bg-violet-500/10 text-violet-300 border-violet-500/20',
-  MIX_GRASA: 'bg-pink-500/10 text-pink-300 border-pink-500/20',
+  HC: 'bg-macro-hc/10 text-macro-hc border-macro-hc/20',
+  PROT: 'bg-macro-prot/10 text-macro-prot border-macro-prot/20',
+  GRASA: 'bg-macro-grasa/10 text-macro-grasa border-macro-grasa/20',
+  MIX_HC: 'bg-macro-mix-hc/10 text-macro-mix-hc border-macro-mix-hc/20',
+  MIX_GRASA: 'bg-macro-mix-grasa/10 text-macro-mix-grasa border-macro-mix-grasa/20',
 };
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -667,7 +667,7 @@ export default function NutritionPlansScreen({
                 <div key={dt.id} className="bg-surface border border-hairline rounded-surface p-5 hover:border-hairline transition-colors flex flex-col gap-4">
                   <div>
                     <div className="flex items-start justify-between gap-2 mb-1">
-                      <h3 className="font-sans font-bold text-white text-title-m leading-tight">{dt.name}</h3>
+                      <h3 className="font-sans font-bold text-ink text-title-m leading-tight">{dt.name}</h3>
                     </div>
                     {dt.coachNote && (
                       <p className="text-caption text-data italic font-sans mb-2">{dt.coachNote}</p>
@@ -736,7 +736,7 @@ export default function NutritionPlansScreen({
           Volver
         </Button>
         <div>
-          <h2 className="font-sans font-bold text-title-m text-white">
+          <h2 className="font-sans font-bold text-title-m text-ink">
             {editingId ? 'Editar dieta' : 'Nueva dieta'}
           </h2>
           {!isEmbedded && selectedAthlete && (
@@ -769,7 +769,7 @@ export default function NutritionPlansScreen({
                   <span className={`text-caption font-mono font-bold ${CAT_COLOR[cat]}`}>
                     {cat.replace('_', ' ')}
                   </span>
-                  <span className={`text-caption font-mono font-bold ${isOver ? 'text-danger' : isOk ? 'text-success' : 'text-white'}`}>
+                  <span className={`text-caption font-mono font-bold ${isOver ? 'text-danger' : isOk ? 'text-success' : 'text-ink'}`}>
                     {fmtQty(p)}{b > 0 ? `/${fmtQty(b)}` : ''}{isOk ? ' ✓' : isOver ? ' !' : ''}
                   </span>
                 </div>
@@ -814,7 +814,7 @@ export default function NutritionPlansScreen({
             onChange={e => setForm(f => ({ ...f, coachNote: e.target.value }))}
             rows={3}
             placeholder="Indicaciones para el atleta: objetivos, recomendaciones, contexto…"
-            className="w-full bg-bg border border-hairline rounded-control px-3 py-3 text-title-s text-white placeholder:text-ink-3 focus:outline-none focus:ring-1 focus:ring-accent resize-none"
+            className="w-full bg-bg border border-hairline rounded-control px-3 py-3 text-title-s text-ink placeholder:text-ink-3 focus:outline-none focus:ring-1 focus:ring-accent resize-none"
           />
         </div>
       </div>
@@ -826,10 +826,10 @@ export default function NutritionPlansScreen({
           alimentos (donde se necesitan de verdad, ver más abajo). */}
       {linkedPhase && (
         <div className="bg-bg border border-accent/15 rounded-surface p-4 flex items-center gap-2 flex-wrap font-mono text-label">
-          <Icon name="timeline" size="s" className="text-accent" />
-          <span className="text-accent font-bold">Fase {linkedPhaseIndex + 1}</span>
+          <Icon name="timeline" size="s" className="text-accent-ink" />
+          <span className="text-accent-ink font-bold">Fase {linkedPhaseIndex + 1}</span>
           <span className="text-ink-3">·</span>
-          <span className="text-white">{linkedPhase.name}</span>
+          <span className="text-ink">{linkedPhase.name}</span>
           {phaseWeekInfo && (
             <>
               <span className="text-ink-3">·</span>
@@ -840,7 +840,7 @@ export default function NutritionPlansScreen({
             <>
               <span className="text-ink-3">·</span>
               <span className="text-ink-2">
-                objetivo <span className="text-white font-bold">{Math.round(phaseTargetKcal)} kcal</span>
+                objetivo <span className="text-ink font-bold">{Math.round(phaseTargetKcal)} kcal</span>
                 {' '}(≈{fmtQty(roundHalf(phaseTargetKcal / 100))} intercambios)
               </span>
             </>
@@ -861,7 +861,7 @@ export default function NutritionPlansScreen({
           {phaseTargetKcal != null && onboardingData ? (
             <button
               onClick={ajustarAlObjetivoDeLaFase}
-              className="flex items-center gap-2 px-3 py-2 bg-accent/10 border border-accent/30 text-accent hover:bg-accent/20 font-mono text-caption uppercase tracking-wide rounded-control transition-all"
+              className="flex items-center gap-2 px-3 py-2 bg-accent/10 border border-accent/30 text-accent-ink hover:bg-accent/20 font-mono text-caption uppercase tracking-wide rounded-control transition-all"
             >
               <Icon name="timeline" size="s" />
               Ajustar al objetivo de la fase
@@ -873,7 +873,7 @@ export default function NutritionPlansScreen({
                 setBudget('PROT',  roundHalf(onboardingData.macroGrams.prot  / G_PER_EXCH.PROT));
                 setBudget('GRASA', roundHalf(onboardingData.macroGrams.grasa / G_PER_EXCH.GRASA));
               }}
-              className="flex items-center gap-2 px-3 py-2 bg-accent/10 border border-accent/30 text-accent hover:bg-accent/20 font-mono text-caption uppercase tracking-wide rounded-control transition-all"
+              className="flex items-center gap-2 px-3 py-2 bg-accent/10 border border-accent/30 text-accent-ink hover:bg-accent/20 font-mono text-caption uppercase tracking-wide rounded-control transition-all"
             >
               <Icon name="auto_fix_high" size="s" />
               Prefijar desde macros
@@ -909,12 +909,12 @@ export default function NutritionPlansScreen({
               <div className="flex items-center bg-bg border border-hairline rounded-surface overflow-hidden">
                 <button
                   onClick={() => setBudget(cat, form.budget[cat] - 0.5)}
-                  className="px-3 py-2 text-ink-2 hover:text-white hover:bg-raised transition-colors text-body-s font-bold"
+                  className="px-3 py-2 text-ink-2 hover:text-ink hover:bg-raised transition-colors text-body-s font-bold"
                 >−</button>
-                <span className="flex-1 text-center font-mono text-body-s text-white">{fmtQty(form.budget[cat])}</span>
+                <span className="flex-1 text-center font-mono text-body-s text-ink">{fmtQty(form.budget[cat])}</span>
                 <button
                   onClick={() => setBudget(cat, form.budget[cat] + 0.5)}
-                  className="px-3 py-2 text-ink-2 hover:text-white hover:bg-raised transition-colors text-body-s font-bold"
+                  className="px-3 py-2 text-ink-2 hover:text-ink hover:bg-raised transition-colors text-body-s font-bold"
                 >+</button>
               </div>
             </div>
@@ -967,7 +967,7 @@ export default function NutritionPlansScreen({
             )}
             <button
               onClick={addMeal}
-              className="flex items-center gap-2 px-3 py-2 bg-raised border border-hairline text-accent hover:border-accent/40 font-sans text-caption uppercase rounded-control transition-all"
+              className="flex items-center gap-2 px-3 py-2 bg-raised border border-hairline text-accent-ink hover:border-accent/40 font-sans text-caption uppercase rounded-control transition-all"
             >
               <Icon name="add" size="s" />Añadir comida
             </button>
@@ -1002,14 +1002,14 @@ export default function NutritionPlansScreen({
           <div key={meal.id} className="bg-surface border border-hairline rounded-surface overflow-hidden">
             {/* Meal header */}
             <div className="flex items-center gap-3 px-4 py-3 bg-raised/60 border-b border-hairline">
-              <span className="w-6 h-6 rounded-full bg-accent text-black font-sans text-label font-bold flex items-center justify-center flex-shrink-0">
+              <span className="w-6 h-6 rounded-full bg-accent text-on-accent font-sans text-label font-bold flex items-center justify-center flex-shrink-0">
                 {mi + 1}
               </span>
               <input
                 value={meal.name}
                 onChange={e => setMealName(meal.id, e.target.value)}
                 placeholder="Nombre libre: Desayuno, Pre-entreno…"
-                className="flex-1 min-w-0 bg-transparent text-title-s text-white focus:outline-none placeholder:text-ink-2/40"
+                className="flex-1 min-w-0 bg-transparent text-title-s text-ink focus:outline-none placeholder:text-ink-2/40"
               />
               {/* Franja horaria — alimenta "Repartir objetivos". Atenuada +
                   título cuando viene de inferir el nombre, para que una
@@ -1021,7 +1021,7 @@ export default function NutritionPlansScreen({
                 className={`flex-shrink-0 bg-bg border rounded-control px-2 py-1 text-caption font-mono focus:outline-none focus:border-accent/50 ${
                   meal.slot != null && !manualSlotMealIds.has(meal.id)
                     ? 'border-hairline text-ink-3'
-                    : 'border-hairline text-white'
+                    : 'border-hairline text-ink'
                 }`}
               >
                 <option value="">— sin franja —</option>
@@ -1055,12 +1055,12 @@ export default function NutritionPlansScreen({
                           <div className="flex items-center bg-raised rounded-control border border-hairline">
                             <button
                               onClick={() => setMealTarget(meal.id, cat, -0.25)}
-                              className="w-5 h-5 flex items-center justify-center text-ink-2 hover:text-white text-label font-bold"
+                              className="w-5 h-5 flex items-center justify-center text-ink-2 hover:text-ink text-label font-bold"
                             >−</button>
-                            <span className="w-7 text-center font-mono text-caption text-white">{fmtQty(tgt)}</span>
+                            <span className="w-7 text-center font-mono text-caption text-ink">{fmtQty(tgt)}</span>
                             <button
                               onClick={() => setMealTarget(meal.id, cat, 0.25)}
-                              className="w-5 h-5 flex items-center justify-center text-ink-2 hover:text-white text-label font-bold"
+                              className="w-5 h-5 flex items-center justify-center text-ink-2 hover:text-ink text-label font-bold"
                             >+</button>
                           </div>
                           {tgt > 0 && (
@@ -1085,19 +1085,19 @@ export default function NutritionPlansScreen({
                     {item.category.replace('_', ' ')}
                   </span>
                   {/* Label */}
-                  <span className="flex-1 text-label text-white font-sans truncate min-w-0">
+                  <span className="flex-1 text-label text-ink font-sans truncate min-w-0">
                     {item.foodLabel}
                   </span>
                   {/* Qty stepper */}
                   <div className="flex items-center gap-1 bg-raised rounded-control border border-hairline flex-shrink-0">
                     <button
                       onClick={() => updateQuantity(meal.id, idx, -0.25)}
-                      className="w-6 h-6 flex items-center justify-center text-ink-2 hover:text-white font-bold text-body-s"
+                      className="w-6 h-6 flex items-center justify-center text-ink-2 hover:text-ink font-bold text-body-s"
                     >−</button>
-                    <span className="w-8 text-center font-mono text-label text-white">{fmtQty(item.quantity)}</span>
+                    <span className="w-8 text-center font-mono text-label text-ink">{fmtQty(item.quantity)}</span>
                     <button
                       onClick={() => updateQuantity(meal.id, idx, 0.25)}
-                      className="w-6 h-6 flex items-center justify-center text-ink-2 hover:text-white font-bold text-body-s"
+                      className="w-6 h-6 flex items-center justify-center text-ink-2 hover:text-ink font-bold text-body-s"
                     >+</button>
                   </div>
                   {/* Weight */}
@@ -1114,7 +1114,7 @@ export default function NutritionPlansScreen({
               {/* Add food button */}
               <button
                 onClick={() => openPicker(meal.id)}
-                className="w-full flex items-center justify-center gap-2 border border-dashed border-hairline hover:border-accent/40 py-3 rounded-control text-caption font-mono text-ink-2 hover:text-accent transition-colors"
+                className="w-full flex items-center justify-center gap-2 border border-dashed border-hairline hover:border-accent/40 py-3 rounded-control text-caption font-mono text-ink-2 hover:text-accent-ink transition-colors"
               >
                 <Icon name="add_circle" size="s" />
                 Añadir alimento
@@ -1141,7 +1141,7 @@ export default function NutritionPlansScreen({
             <div className="space-y-2">
               {form.meals.map((meal, mi) => (
                 <div key={meal.id} className="bg-surface border border-hairline rounded-surface px-4 py-3">
-                  <p className="font-sans font-bold text-white text-body-s mb-2">{meal.name || `Comida ${mi + 1}`}</p>
+                  <p className="font-sans font-bold text-ink text-body-s mb-2">{meal.name || `Comida ${mi + 1}`}</p>
                   {meal.items.length === 0 ? (
                     <p className="font-mono text-caption text-ink-3 italic">Sin alimentos</p>
                   ) : (
@@ -1149,9 +1149,9 @@ export default function NutritionPlansScreen({
                       {meal.items.map((it, idx) => (
                         <div key={idx} className="flex items-center gap-2 font-mono text-caption text-ink-2">
                           <span className={`text-caption font-bold px-2 rounded-control border ${
-                            it.category === 'HC' ? 'bg-amber-500/10 border-amber-500/20 text-amber-300' :
-                            it.category === 'PROT' ? 'bg-blue-500/10 border-blue-500/20 text-blue-300' :
-                            'bg-orange-500/10 border-orange-500/20 text-orange-300'
+                            it.category === 'HC' ? 'bg-macro-hc/10 border-macro-hc/20 text-macro-hc' :
+                            it.category === 'PROT' ? 'bg-macro-prot/10 border-macro-prot/20 text-macro-prot' :
+                            'bg-warning/10 border-warning/20 text-warning'
                           }`}>{it.category.replace('_', ' ')}</span>
                           <span>{it.foodLabel}</span>
                           <span className="text-ink-3">×{it.quantity}</span>
@@ -1253,7 +1253,7 @@ export default function NutritionPlansScreen({
               <Icon name="search" size="s" className="text-ink-2 select-none" />
               <input type="text" placeholder="Buscar alimento..." value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
-                className="w-full bg-transparent border-none text-white text-title-s focus:ring-0 focus:outline-none p-2 placeholder-ink-2/45"
+                className="w-full bg-transparent border-none text-ink text-title-s focus:ring-0 focus:outline-none p-2 placeholder-ink-2/45"
               />
             </div>
             </>
@@ -1265,7 +1265,7 @@ export default function NutritionPlansScreen({
                   el coach le está poniendo en el plan. */}
               {explicacionesDeBusqueda.map(frase => (
                 <div key={frase} className="flex items-start gap-2 rounded-control bg-accent-bg border border-accent/20 p-3">
-                  <Icon name="lightbulb" size="s" className="mt-0.5 flex-shrink-0 text-accent" />
+                  <Icon name="lightbulb" size="s" className="mt-0.5 flex-shrink-0 text-accent-ink" />
                   <p className="font-sans text-body-s text-ink-2">{frase}</p>
                 </div>
               ))}
@@ -1281,14 +1281,14 @@ export default function NutritionPlansScreen({
                       reciente ? 'bg-success/10 border-success/40' : 'bg-surface hover:bg-raised border-hairline hover:border-accent/40'
                     }`}
                   >
-                    <span className="block font-sans text-label text-white group-hover:text-accent transition-colors leading-snug">{food.label}</span>
+                    <span className="block font-sans text-label text-ink group-hover:text-accent-ink transition-colors leading-snug">{food.label}</span>
                     {reciente ? (
                       <span className="flex items-center gap-1 flex-shrink-0 ml-3 text-success">
                         <Icon name="check_circle" size="m" />
                         {veces > 1 && <span className="font-mono text-caption font-bold">×{veces}</span>}
                       </span>
                     ) : (
-                      <Icon name="add_circle" size="m" className="text-ink-2 group-hover:text-accent transition-colors select-none flex-shrink-0 ml-3" />
+                      <Icon name="add_circle" size="m" className="text-ink-2 group-hover:text-accent-ink transition-colors select-none flex-shrink-0 ml-3" />
                     )}
                   </button>
                 );

@@ -118,11 +118,11 @@ export default function FoodPreferencesPanel({
         {/* Global counter */}
         <div className="flex items-center justify-between">
           <div className="flex gap-3 font-mono text-label">
-            <span className="flex items-center gap-1 text-amber-400">
+            <span className="flex items-center gap-1 text-warning">
               <span className="material-symbols-outlined text-body-s" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
               Favoritos ({totalFav})
             </span>
-            <span className="flex items-center gap-1 text-red-400">
+            <span className="flex items-center gap-1 text-danger">
               <span className="material-symbols-outlined text-body-s">thumb_down</span>
               No quiero ({totalDislike})
             </span>
@@ -131,7 +131,7 @@ export default function FoodPreferencesPanel({
             <button
               onClick={handleSave}
               disabled={saving}
-              className="flex items-center gap-2 px-3 py-2 bg-accent text-black font-sans font-bold text-caption uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50"
+              className="flex items-center gap-2 px-3 py-2 bg-accent text-on-accent font-sans font-bold text-caption uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50"
             >
               <span className="material-symbols-outlined text-body-s">{saving ? 'progress_activity' : saved ? 'check' : 'save'}</span>
               {saving ? 'Guardando…' : saved ? 'Guardado' : 'Guardar'}
@@ -141,9 +141,9 @@ export default function FoodPreferencesPanel({
 
         {/* Allergies reminder */}
         {allergies.length > 0 && (
-          <div className="flex items-center gap-2 px-3 py-2 bg-amber-400/10 border border-amber-400/30 rounded-surface">
-            <span className="material-symbols-outlined text-body-s text-amber-400">warning</span>
-            <p className="font-mono text-caption text-amber-300">
+          <div className="flex items-center gap-2 px-3 py-2 bg-warning/10 border border-warning/30 rounded-surface">
+            <span className="material-symbols-outlined text-body-s text-warning">warning</span>
+            <p className="font-mono text-caption text-warning">
               Alergias/intolerancias: {allergies.join(', ')} — gestionadas en la ficha.
             </p>
           </div>
@@ -171,20 +171,20 @@ export default function FoodPreferencesPanel({
                     : 'bg-surface border-hairline hover:border-hairline'
                 }`}
               >
-                <span className={`material-symbols-outlined text-title-l ${hasAny ? 'text-accent' : 'text-ink-3'}`}>
+                <span className={`material-symbols-outlined text-title-l ${hasAny ? 'text-accent-ink' : 'text-ink-3'}`}>
                   {g.icon}
                 </span>
                 <span className="font-sans text-caption text-ink-2 text-center leading-tight">{g.name}</span>
                 {hasAny && (
                   <div className="flex gap-2">
                     {gFav > 0 && (
-                      <span className="font-mono text-caption text-amber-400 flex items-center ">
+                      <span className="font-mono text-caption text-warning flex items-center ">
                         <span className="material-symbols-outlined" style={{ fontSize: '9px', fontVariationSettings: "'FILL' 1" }}>star</span>
                         {gFav}
                       </span>
                     )}
                     {gDislike > 0 && (
-                      <span className="font-mono text-caption text-red-400 flex items-center ">
+                      <span className="font-mono text-caption text-danger flex items-center ">
                         <span className="material-symbols-outlined" style={{ fontSize: '9px' }}>thumb_down</span>
                         {gDislike}
                       </span>
@@ -211,29 +211,29 @@ export default function FoodPreferencesPanel({
       <div className="flex items-center gap-3">
         <button
           onClick={() => irAGrupo(null)}
-          className="flex items-center gap-1 text-ink-2 hover:text-white transition-colors flex-shrink-0"
+          className="flex items-center gap-1 text-ink-2 hover:text-ink transition-colors flex-shrink-0"
         >
           <span className="material-symbols-outlined text-title-s">arrow_back</span>
           <span className="font-mono text-caption uppercase">Grupos</span>
         </button>
         <div className="flex-1">
           <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-accent text-title-s">{activeGroup.icon}</span>
-            <h3 className="font-sans font-bold text-title-s text-white">{activeGroup.name}</h3>
+            <span className="material-symbols-outlined text-accent-ink text-title-s">{activeGroup.icon}</span>
+            <h3 className="font-sans font-bold text-title-s text-ink">{activeGroup.name}</h3>
             <span className="font-mono text-caption text-ink-3 flex-shrink-0">
               {(activeIndex ?? 0) + 1}/{FOOD_GROUPS.length}
             </span>
           </div>
           <div className="flex gap-3 font-mono text-caption ">
-            <span className="text-amber-400">⭐ {totalFav}</span>
-            <span className="text-red-400">➖ {totalDislike}</span>
+            <span className="text-warning">⭐ {totalFav}</span>
+            <span className="text-danger">➖ {totalDislike}</span>
           </div>
         </div>
         {!onSaveOverride && (
           <button
             onClick={handleSave}
             disabled={saving}
-            className="flex items-center gap-2 px-3 py-2 bg-accent text-black font-sans font-bold text-caption uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50 flex-shrink-0"
+            className="flex items-center gap-2 px-3 py-2 bg-accent text-on-accent font-sans font-bold text-caption uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50 flex-shrink-0"
           >
             <span className="material-symbols-outlined text-body-s">{saving ? 'progress_activity' : saved ? 'check' : 'save'}</span>
             {saving ? '…' : saved ? 'OK' : 'Guardar'}
@@ -249,12 +249,12 @@ export default function FoodPreferencesPanel({
           value={search}
           onChange={e => setSearch(e.target.value)}
           placeholder="Buscar alimento…"
-          className="w-full bg-raised border border-hairline rounded-control pl-10 pr-4 py-2 text-title-s text-white placeholder-ink-3 focus:outline-none focus:border-accent/50 font-mono"
+          className="w-full bg-raised border border-hairline rounded-control pl-10 pr-4 py-2 text-title-s text-ink placeholder-ink-3 focus:outline-none focus:border-accent/50 font-mono"
         />
         {search && (
           <button
             onClick={() => setSearch('')}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-3 hover:text-white"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-3 hover:text-ink"
           >
             <span className="material-symbols-outlined text-body-s">close</span>
           </button>
@@ -276,18 +276,18 @@ export default function FoodPreferencesPanel({
               <div
                 key={food}
                 className={`flex items-center gap-3 px-4 py-3 transition-colors ${
-                  pref === 'favorite' ? 'bg-amber-400/5' :
-                  pref === 'dislike'  ? 'bg-red-500/5' : 'bg-surface'
+                  pref === 'favorite' ? 'bg-warning/5' :
+                  pref === 'dislike'  ? 'bg-danger/5' : 'bg-surface'
                 }`}
               >
                 <span className={`flex-1 font-mono text-label ${
-                  isAllergen ? 'text-amber-400 line-through' :
-                  pref === 'favorite' ? 'text-white' :
+                  isAllergen ? 'text-warning line-through' :
+                  pref === 'favorite' ? 'text-ink' :
                   pref === 'dislike'  ? 'text-ink-3' : 'text-ink-2'
                 }`}>
                   {food}
                   {isAllergen && (
-                    <span className="ml-2 font-mono text-caption text-amber-400 no-underline not-italic">⚠ alergia</span>
+                    <span className="ml-2 font-mono text-caption text-warning no-underline not-italic">⚠ alergia</span>
                   )}
                 </span>
 
@@ -297,8 +297,8 @@ export default function FoodPreferencesPanel({
                       onClick={() => toggle(food, 'dislike')}
                       className={`w-11 h-11 rounded-control flex items-center justify-center transition-all active:scale-90 ${
                         pref === 'dislike'
-                          ? 'bg-red-500/20 border border-red-500/50 text-red-400'
-                          : 'bg-raised border border-hairline text-ink-3 hover:text-red-400 hover:border-red-500/30'
+                          ? 'bg-danger/20 border border-danger/50 text-danger'
+                          : 'bg-raised border border-hairline text-ink-3 hover:text-danger hover:border-danger/30'
                       }`}
                       title="No me gusta"
                     >
@@ -308,8 +308,8 @@ export default function FoodPreferencesPanel({
                       onClick={() => toggle(food, 'favorite')}
                       className={`w-11 h-11 rounded-control flex items-center justify-center transition-all active:scale-90 ${
                         pref === 'favorite'
-                          ? 'bg-amber-400/20 border border-amber-400/50 text-amber-400'
-                          : 'bg-raised border border-hairline text-ink-3 hover:text-amber-400 hover:border-amber-400/30'
+                          ? 'bg-warning/20 border border-warning/50 text-warning'
+                          : 'bg-raised border border-hairline text-ink-3 hover:text-warning hover:border-warning/30'
                       }`}
                       title="Favorito"
                     >
@@ -341,7 +341,7 @@ export default function FoodPreferencesPanel({
         {esUltimoGrupo ? (
           <button
             onClick={() => irAGrupo(null, true)}
-            className="flex-1 flex items-center justify-center gap-2 px-3 py-3 rounded-control bg-accent text-black font-sans font-bold text-caption uppercase transition-all active:scale-95"
+            className="flex-1 flex items-center justify-center gap-2 px-3 py-3 rounded-control bg-accent text-on-accent font-sans font-bold text-caption uppercase transition-all active:scale-95"
           >
             <span className="material-symbols-outlined text-body-s">check</span>
             Listo, he terminado
@@ -349,7 +349,7 @@ export default function FoodPreferencesPanel({
         ) : (
           <button
             onClick={() => irAGrupo(Math.min(FOOD_GROUPS.length - 1, idx + 1))}
-            className="flex-1 min-w-0 flex items-center justify-center gap-2 px-3 py-2 rounded-control bg-accent text-black transition-all active:scale-95"
+            className="flex-1 min-w-0 flex items-center justify-center gap-2 px-3 py-2 rounded-control bg-accent text-on-accent transition-all active:scale-95"
           >
             <span className="min-w-0 text-left">
               <span className="block font-mono text-caption uppercase opacity-70 leading-tight">Siguiente grupo</span>

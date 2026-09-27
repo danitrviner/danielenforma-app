@@ -8,12 +8,20 @@ import {CLAVE_CACHE_CONSULTAS, registrarClienteDeConsultas} from './cacheDeConsu
 import App from './App.tsx';
 import ErrorBoundary from './components/ErrorBoundary.tsx';
 import {iniciarMonitorizacion} from './monitorizacion.ts';
+import {escucharAlSistema} from './utils/tema.ts';
 import './index.css';
 
 // Lo primero de todo, antes de montar React: un fallo durante el arranque —el
 // peor de los fallos, porque deja al usuario sin app— tiene que llegar igual.
 // Sin `VITE_SENTRY_DSN` esto no hace nada (ver src/monitorizacion.ts).
 iniciarMonitorizacion();
+
+// El tema ya está puesto: lo resolvió el script en línea de index.html antes
+// del primer pintado. Esto solo deja la app atenta a que el SISTEMA cambie de
+// claro a oscuro mientras está abierta —y solo surte efecto si la preferencia
+// es «sistema», que es la de fábrica. No se desuscribe nunca a propósito:
+// vive lo que vive la pestaña.
+escucharAlSistema();
 
 // Firestore reads are the app's real cost/latency driver, so default to a
 // stale time instead of react-query's refetch-on-mount-by-default — most of

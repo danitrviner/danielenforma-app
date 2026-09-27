@@ -62,7 +62,7 @@ export default function ClienteSwipeRow({ children, mensaje, principal, classNam
           onClick={() => { cerrar(); mensaje.onClick(); }}
           aria-label={mensaje.label}
           style={{ width: ANCHO_BOTON_PX }}
-          className="flex h-full flex-col items-center justify-center gap-1 bg-white/10 font-sans text-caption font-bold text-ink"
+          className="flex h-full flex-col items-center justify-center gap-1 bg-strong font-sans text-caption font-bold text-ink"
         >
           <Icon name={mensaje.icon} size="m" />
           {mensaje.label}
@@ -72,7 +72,7 @@ export default function ClienteSwipeRow({ children, mensaje, principal, classNam
           onClick={() => { cerrar(); principal.onClick(); }}
           aria-label={principal.label}
           style={{ width: ANCHO_BOTON_PX }}
-          className="flex h-full flex-col items-center justify-center gap-1 bg-accent font-sans text-caption font-bold text-black"
+          className="flex h-full flex-col items-center justify-center gap-1 bg-accent font-sans text-caption font-bold text-on-accent"
         >
           <Icon name={principal.icon} size="m" />
           {principal.label}

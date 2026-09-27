@@ -128,7 +128,7 @@ export default function ImportarClientes({ onCerrar }: { onCerrar: () => void })
 
       {paso === 'analizando' && (
         <div className="flex flex-col items-center gap-2 py-10">
-          <Icon name="progress_activity" size="l" className="text-accent animate-spin" />
+          <Icon name="progress_activity" size="l" className="text-accent-ink animate-spin" />
           <p className="font-sans text-caption text-ink-2">Leyendo {nombreArchivo}…</p>
         </div>
       )}
@@ -145,7 +145,7 @@ export default function ImportarClientes({ onCerrar }: { onCerrar: () => void })
 
       {paso === 'importando' && (
         <div className="flex flex-col items-center gap-2 py-10">
-          <Icon name="progress_activity" size="l" className="text-accent animate-spin" />
+          <Icon name="progress_activity" size="l" className="text-accent-ink animate-spin" />
           <p className="font-sans text-caption text-ink-2">Importando {aImportar.length} clientes…</p>
         </div>
       )}
@@ -194,7 +194,7 @@ function PrevisualizacionImportacion({ nombreArchivo, resultado, duplicados, fil
         </p>
       )}
 
-      <div className="max-h-[280px] overflow-y-auto custom-scrollbar border border-hairline rounded-surface divide-y divide-white/4">
+      <div className="max-h-[280px] overflow-y-auto custom-scrollbar border border-hairline rounded-surface divide-y divide-hairline">
         {resultado.filas.map(fila => (
           <FilaPreview
             key={fila.fila}
@@ -211,7 +211,7 @@ function PrevisualizacionImportacion({ nombreArchivo, resultado, duplicados, fil
 
 function Resumen({ icono, color, numero, label }: { icono: string; color: string; numero: number; label: string }) {
   return (
-    <div className="flex flex-col items-center gap-1 py-2 rounded-surface bg-white/4">
+    <div className="flex flex-col items-center gap-1 py-2 rounded-surface bg-hairline">
       <Icon name={icono} size="m" style={{ color }} />
       <span className="font-sans font-bold text-title-s text-ink tabular-nums">{numero}</span>
       <span className="font-sans text-caption uppercase tracking-widest text-ink-3">{label}</span>

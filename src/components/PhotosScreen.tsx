@@ -216,7 +216,7 @@ export default function PhotosScreen({ profile }: Props) {
 
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1.5">
-                  <span className="font-sans font-bold text-body-s text-white">{VIEW_LABELS[view]}</span>
+                  <span className="font-sans font-bold text-body-s text-ink">{VIEW_LABELS[view]}</span>
                   {photo && <Badge tone="success">ACTUAL</Badge>}
                 </div>
                 <p className="font-mono text-caption text-ink-2 mt-1">
@@ -226,7 +226,7 @@ export default function PhotosScreen({ profile }: Props) {
                   <button
                     type="button"
                     onClick={() => openHistory(view)}
-                    className="mt-1 inline-flex items-center gap-1 font-sans text-caption text-accent"
+                    className="mt-1 inline-flex items-center gap-1 font-sans text-caption text-accent-ink"
                   >
                     <Icon name="history" size="s" />
                     Ver {all.length} fotos
@@ -237,7 +237,7 @@ export default function PhotosScreen({ profile }: Props) {
               <button
                 onClick={() => fileInputRefs.current[view]?.click()}
                 disabled={isUploading}
-                className="w-[34px] h-[34px] rounded-control bg-inset border border-hairline flex items-center justify-center text-accent shrink-0 disabled:opacity-50"
+                className="w-[34px] h-[34px] rounded-control bg-inset border border-hairline flex items-center justify-center text-accent-ink shrink-0 disabled:opacity-50"
                 title="Subir foto"
               >
                 <Icon name={isUploading ? 'progress_activity' : 'upload'} size="s" className={isUploading ? 'animate-spin' : ''} />
@@ -271,7 +271,7 @@ export default function PhotosScreen({ profile }: Props) {
           >
             <div className="flex items-center justify-between px-4 py-3 border-b border-hairline">
               <div>
-                <p className="font-sans font-bold text-body-s text-white">{VIEW_LABELS[historyView]}</p>
+                <p className="font-sans font-bold text-body-s text-ink">{VIEW_LABELS[historyView]}</p>
                 <p className="font-mono text-caption text-ink-2 mt-0.5">
                   {historyPhotos.length} {historyPhotos.length === 1 ? 'foto guardada' : 'fotos guardadas'}
                 </p>
@@ -279,7 +279,7 @@ export default function PhotosScreen({ profile }: Props) {
               <button
                 onClick={() => setHistoryView(null)}
                 aria-label="Cerrar"
-                className="text-ink-3 hover:text-white -m-1 p-1"
+                className="text-ink-3 hover:text-ink -m-1 p-1"
               >
                 <Icon name="close" size="m" />
               </button>
@@ -334,7 +334,7 @@ export default function PhotosScreen({ profile }: Props) {
                       onClick={() => toggleCompare(p.id)}
                       className="min-w-0 flex-1 text-left"
                     >
-                      <p className="font-sans text-body-s text-white capitalize">{fmtDateLong(p.date)}</p>
+                      <p className="font-sans text-body-s text-ink capitalize">{fmtDateLong(p.date)}</p>
                       <p className="font-mono text-caption text-ink-2 mt-0.5">
                         {selected ? 'Seleccionada para comparar' : 'Toca para comparar'}
                       </p>

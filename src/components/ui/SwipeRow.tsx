@@ -61,7 +61,7 @@ export default function SwipeRow({ children, actionLabel, actionIcon = 'delete',
           type="button"
           onClick={() => { cerrar(); onAction(); }}
           aria-label={actionLabel}
-          className="flex h-full w-full flex-col items-center justify-center gap-1 font-sans text-caption font-bold text-on-accent"
+          className="flex h-full w-full flex-col items-center justify-center gap-1 font-sans text-caption font-bold text-on-fill"
         >
           <Icon name={actionIcon} size="m" />
           {actionLabel}

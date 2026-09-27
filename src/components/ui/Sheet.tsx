@@ -130,7 +130,7 @@ export default function Sheet({ open, onClose, title, children, footer, toolbar,
     // debajo de la Dynamic Island y su asa de arrastre quedaba fuera de alcance.
     <div className="fixed inset-0 z-[var(--z-modal)] flex items-end justify-center pt-[var(--safe-top)]">
       <div
-        className="fixed inset-0 z-[var(--z-overlay)] bg-black/70 backdrop-blur-sm"
+        className="fixed inset-0 z-[var(--z-overlay)] bg-veil/70 backdrop-blur-sm"
         onClick={onClose}
         aria-hidden
       />
@@ -160,7 +160,7 @@ export default function Sheet({ open, onClose, title, children, footer, toolbar,
           onPointerCancel={alSoltarPuntero}
           aria-hidden
         >
-          <span className="h-1 w-10 rounded-full bg-white/15" />
+          <span className="h-1 w-10 rounded-full bg-strong" />
         </div>
 
         {title && (

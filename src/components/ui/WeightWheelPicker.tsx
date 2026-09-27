@@ -99,13 +99,13 @@ function WheelColumn({ options, value, onChange, label }: ColumnProps) {
         onClick={() => step(1)}
         disabled={options.indexOf(value) >= options.length - 1}
         aria-label={`Subir ${label}`}
-        className="p-1 text-ink-3 hover:text-white disabled:opacity-30 transition-colors"
+        className="p-1 text-ink-3 hover:text-ink disabled:opacity-30 transition-colors"
       >
         <Icon name="expand_less" size="s" />
       </button>
 
       <div className="relative">
-        <div className="pointer-events-none absolute inset-x-0 top-1/2 -translate-y-1/2 h-11 rounded-control bg-white/5 border-y border-accent/30 z-0" />
+        <div className="pointer-events-none absolute inset-x-0 top-1/2 -translate-y-1/2 h-11 rounded-control bg-hairline border-y border-accent/30 z-0" />
         <div
           ref={containerRef}
           onScroll={handleScroll}
@@ -120,7 +120,7 @@ function WheelColumn({ options, value, onChange, label }: ColumnProps) {
               role="option"
               aria-selected={opt === value}
               className={`h-11 flex items-center justify-center snap-center font-mono tabular-nums transition-colors ${
-                opt === value ? 'text-white text-title-s font-bold' : 'text-ink-3 text-body-s'
+                opt === value ? 'text-ink text-title-s font-bold' : 'text-ink-3 text-body-s'
               }`}
             >
               {opt.toString().padStart(label === 'décima' ? 1 : 2, '0')}
@@ -135,7 +135,7 @@ function WheelColumn({ options, value, onChange, label }: ColumnProps) {
         onClick={() => step(-1)}
         disabled={options.indexOf(value) <= 0}
         aria-label={`Bajar ${label}`}
-        className="p-1 text-ink-3 hover:text-white disabled:opacity-30 transition-colors"
+        className="p-1 text-ink-3 hover:text-ink disabled:opacity-30 transition-colors"
       >
         <Icon name="expand_more" size="s" />
       </button>

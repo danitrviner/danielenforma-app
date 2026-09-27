@@ -71,7 +71,7 @@ export default function RecordatorioGimnasioCard({ email }: Props) {
                  p-4 flex gap-3 items-start transition-colors hover:bg-accent-bg/40"
     >
       <span className="w-9 h-9 rounded-control bg-accent-bg flex items-center justify-center flex-shrink-0">
-        <Icon name="fitness_center" size="m" className="text-accent" />
+        <Icon name="fitness_center" size="m" className="text-accent-ink" />
       </span>
       <span className="flex-1 min-w-0 space-y-2">
         <span className="block font-sans font-bold text-title-s text-ink">Termina de configurar tu gimnasio</span>
@@ -82,7 +82,7 @@ export default function RecordatorioGimnasioCard({ email }: Props) {
           value={total ? (revisadas / total) * 100 : 0}
           label={`Catálogo de máquinas, ${revisadas} de ${total} revisadas`}
         />
-        <span className="block font-sans text-body-s font-bold text-accent">Continuar →</span>
+        <span className="block font-sans text-body-s font-bold text-accent-ink">Continuar →</span>
       </span>
     </button>
   );

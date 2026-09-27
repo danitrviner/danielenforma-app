@@ -76,15 +76,15 @@ export default function NivelSemana({
       <div className="bg-surface border border-hairline rounded-surface px-5 pt-[18px] pb-[22px]">
         <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
           <div className="flex items-center gap-3.5 flex-wrap">
-            <button type="button" onClick={onBackToMonth} className="flex items-center gap-1.5 text-label text-ink-3 hover:text-white transition-colors">
+            <button type="button" onClick={onBackToMonth} className="flex items-center gap-1.5 text-label text-ink-3 hover:text-ink transition-colors">
               <Icon name="calendar_month" size="s" />Mes
             </button>
             <div className="w-px h-[18px] bg-hairline" />
-            <button type="button" onClick={onPrev} className="w-8 h-8 rounded-control bg-inset flex items-center justify-center text-ink-2 hover:text-white transition-colors" aria-label="Semana anterior">
+            <button type="button" onClick={onPrev} className="w-8 h-8 rounded-control bg-inset flex items-center justify-center text-ink-2 hover:text-ink transition-colors" aria-label="Semana anterior">
               <Icon name="chevron_left" size="s" />
             </button>
-            <span className="font-sans font-extrabold text-title-l text-white" style={{ letterSpacing: '-0.02em', minWidth: 175 }}>{rotuloDeSemana(inicio)}</span>
-            <button type="button" onClick={onNext} className="w-8 h-8 rounded-control bg-inset flex items-center justify-center text-ink-2 hover:text-white transition-colors" aria-label="Semana siguiente">
+            <span className="font-sans font-extrabold text-title-l text-ink" style={{ letterSpacing: '-0.02em', minWidth: 175 }}>{rotuloDeSemana(inicio)}</span>
+            <button type="button" onClick={onNext} className="w-8 h-8 rounded-control bg-inset flex items-center justify-center text-ink-2 hover:text-ink transition-colors" aria-label="Semana siguiente">
               <Icon name="chevron_right" size="s" />
             </button>
           </div>
@@ -163,7 +163,7 @@ export default function NivelSemana({
                     )}
                     {ejercicios.length > 0 && (
                       <>
-                        <p className="font-sans text-[11.5px] font-semibold text-white truncate mb-1.5">{dia?.entreno.nombreRutina}</p>
+                        <p className="font-sans text-[11.5px] font-semibold text-ink truncate mb-1.5">{dia?.entreno.nombreRutina}</p>
                         <div className="flex flex-col gap-1">
                           {ejercicios.map(ej => (
                             <div key={ej.exerciseId} className="min-w-0">

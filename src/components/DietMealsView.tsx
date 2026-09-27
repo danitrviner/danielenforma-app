@@ -18,8 +18,8 @@ const KCAL_INT: Record<FoodCategory, number> = {
 const DISPLAY_CATS: FoodCategory[] = ['HC', 'PROT', 'GRASA'];
 
 const CAT_COLOR: Record<FoodCategory, string> = {
-  HC: 'text-amber-300', PROT: 'text-blue-300', GRASA: 'text-orange-300',
-  MIX_HC: 'text-violet-300', MIX_GRASA: 'text-pink-300',
+  HC: 'text-macro-hc', PROT: 'text-macro-prot', GRASA: 'text-macro-grasa',
+  MIX_HC: 'text-macro-mix-hc', MIX_GRASA: 'text-macro-mix-grasa',
 };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -79,8 +79,8 @@ export function DietNumerosView({ meals, budget }: NumerosProps) {
           <div key={meal.id} className="bg-surface border border-hairline rounded-surface overflow-hidden">
             {/* Meal header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-hairline">
-              <span className="font-sans font-bold text-white text-body-s">{labelForMeal(meal.name, mi + 1)}</span>
-              <span className="font-mono text-accent font-bold text-body-s">{kcal > 0 ? `${kcal} kcal` : '—'}</span>
+              <span className="font-sans font-bold text-ink text-body-s">{labelForMeal(meal.name, mi + 1)}</span>
+              <span className="font-mono text-accent-ink font-bold text-body-s">{kcal > 0 ? `${kcal} kcal` : '—'}</span>
             </div>
             {/* Category grid */}
             <div className="grid grid-cols-3 divide-x divide-hairline">
@@ -92,10 +92,10 @@ export function DietNumerosView({ meals, budget }: NumerosProps) {
                 return (
                   <div key={cat} className="py-3 px-2 text-center">
                     <span className={`block font-mono text-caption font-bold uppercase ${CAT_COLOR[cat]}`}>{cat}</span>
-                    <span className={`block font-mono font-bold text-body-s ${isOver ? 'text-red-400' : isOk ? 'text-green-400' : 'text-white'}`}>
+                    <span className={`block font-mono font-bold text-body-s ${isOver ? 'text-danger' : isOk ? 'text-success' : 'text-ink'}`}>
                       {fmtQ(v)}{tgt > 0 ? `/${fmtQ(tgt)}` : ''}
                     </span>
-                    <span className={`block font-mono text-caption ${isOk ? 'text-green-400' : isOver ? 'text-red-400' : 'text-ink-3'}`}>
+                    <span className={`block font-mono text-caption ${isOk ? 'text-success' : isOver ? 'text-danger' : 'text-ink-3'}`}>
                       {isOk ? '✓ ok' : isOver ? `+${fmtQ(round2(v - tgt))}` : 'int'}
                     </span>
                   </div>
@@ -109,11 +109,11 @@ export function DietNumerosView({ meals, budget }: NumerosProps) {
       {/* Day totals */}
       <div className="bg-bg border border-accent/20 rounded-surface overflow-hidden">
         <div className="flex items-center justify-between px-4 py-3 border-b border-hairline">
-          <span className="font-mono text-caption text-accent uppercase font-bold tracking-wide">Total del día</span>
+          <span className="font-mono text-caption text-accent-ink uppercase font-bold tracking-wide">Total del día</span>
           <div className="text-right">
-            <span className="font-mono font-bold text-accent">{totalKcal} kcal</span>
+            <span className="font-mono font-bold text-accent-ink">{totalKcal} kcal</span>
             {budgetKcal > 0 && (
-              <span className={`block font-mono text-caption ${kcalDelta > 0 ? 'text-red-400' : kcalDelta < 0 ? 'text-ink-3' : 'text-green-400'}`}>
+              <span className={`block font-mono text-caption ${kcalDelta > 0 ? 'text-danger' : kcalDelta < 0 ? 'text-ink-3' : 'text-success'}`}>
                 {kcalDelta === 0 ? '✓ en presupuesto' : `${kcalDelta > 0 ? '+' : ''}${kcalDelta} vs ${budgetKcal}`}
               </span>
             )}
@@ -129,10 +129,10 @@ export function DietNumerosView({ meals, budget }: NumerosProps) {
             return (
               <div key={cat} className="py-3 px-2 text-center">
                 <span className={`block font-mono text-caption font-bold uppercase ${CAT_COLOR[cat]}`}>{cat}</span>
-                <span className={`block font-mono font-bold text-title-s ${isOver ? 'text-red-400' : isOk ? 'text-green-400' : 'text-white'}`}>
+                <span className={`block font-mono font-bold text-title-s ${isOver ? 'text-danger' : isOk ? 'text-success' : 'text-ink'}`}>
                   {fmtQ(v)}{b > 0 ? `/${fmtQ(b)}` : ''}
                 </span>
-                <span className={`block font-mono text-caption ${isOk ? 'text-green-400' : isOver ? 'text-red-400' : 'text-ink-3'}`}>
+                <span className={`block font-mono text-caption ${isOk ? 'text-success' : isOver ? 'text-danger' : 'text-ink-3'}`}>
                   {isOk ? '✓' : isOver ? `+${fmtQ(delta)}` : b > 0 ? `${fmtQ(delta)}` : 'int'}
                 </span>
               </div>

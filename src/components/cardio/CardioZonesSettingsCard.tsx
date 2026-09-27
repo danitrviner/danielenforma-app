@@ -6,6 +6,7 @@ import { defaultZonesFromAge } from '../../db/cardio';
 import { maxHREstimada } from '../../utils/cardioZones';
 import { useToast } from '../../hooks/useToast';
 import HrTestsPanel from '../HrTestsPanel';
+import { isBleAvailable } from '../../services/bleHeartRate';
 import { Icon, Button, Collapsible } from '../ui';
 
 interface Props {
@@ -89,8 +90,8 @@ export default function CardioZonesSettingsCard({ profile }: Props) {
 
   return (
     <div className="bg-surface border border-hairline rounded-surface p-5 space-y-4">
-      <h3 className="font-sans font-bold text-title-s text-white flex items-center gap-2">
-        <Icon name="monitor_heart" size="m" className="text-accent" />
+      <h3 className="font-sans font-bold text-title-s text-ink flex items-center gap-2">
+        <Icon name="monitor_heart" size="m" className="text-accent-ink" />
         Mis zonas de FC
       </h3>
 
@@ -103,7 +104,7 @@ export default function CardioZonesSettingsCard({ profile }: Props) {
             max={230}
             value={mostrando}
             onChange={e => setDraft(e.target.value)}
-            className="w-28 bg-raised border border-hairline rounded-control px-3 py-2 text-white text-title-s font-mono focus:outline-none focus:border-accent/50"
+            className="w-28 bg-raised border border-hairline rounded-control px-3 py-2 text-ink text-title-s font-mono focus:outline-none focus:border-accent/50"
           />
           <Button variant="secondary" size="s" onClick={handleSave} loading={saving} disabled={!mostrando}>
             Guardar
@@ -116,18 +117,27 @@ export default function CardioZonesSettingsCard({ profile }: Props) {
         </p>
       </div>
 
-      <Collapsible
-        trigger={
-          <span className="flex items-center gap-2 font-sans text-body-s text-accent">
-            <Icon name="speed" size="s" />
-            Calibrar con un test
-          </span>
-        }
-      >
-        <div className="pt-3">
-          <HrTestsPanel profile={profile} cardioProfile={cardioProfile} />
-        </div>
-      </Collapsible>
+      {/* Los tests de campo graban con la banda: sin BLE el desplegable solo
+          llevaba al error de HrTestsPanel. Se sustituye por la explicación. */}
+      {isBleAvailable() ? (
+        <Collapsible
+          trigger={
+            <span className="flex items-center gap-2 font-sans text-body-s text-accent-ink">
+              <Icon name="speed" size="s" />
+              Calibrar con un test
+            </span>
+          }
+        >
+          <div className="pt-3">
+            <HrTestsPanel profile={profile} cardioProfile={cardioProfile} />
+          </div>
+        </Collapsible>
+      ) : (
+        <p className="font-sans text-caption text-ink-3 leading-relaxed">
+          Calibrar tus zonas con un test de campo necesita una banda de pulso y la app
+          instalada. Mientras tanto, tus zonas salen de tu FC máxima.
+        </p>
+      )}
     </div>
   );
 }

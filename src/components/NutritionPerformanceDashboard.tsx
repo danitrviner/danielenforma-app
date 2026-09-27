@@ -98,25 +98,25 @@ function ProjectionTooltip({ active, payload }: any) {
       {row.segunRitmo != null && (
         <p className="flex items-center justify-between gap-3">
           <span className="text-success">Planificado</span>
-          <span className="text-white font-bold">{fmtKg(row.segunRitmo)} kg</span>
+          <span className="text-ink font-bold">{fmtKg(row.segunRitmo)} kg</span>
         </p>
       )}
       {row.expected100 != null && (
         <p className="flex items-center justify-between gap-3">
           <span className="text-data">Estimado · fórmula</span>
-          <span className="text-white font-bold">{fmtKg(row.expected100)} kg</span>
+          <span className="text-ink font-bold">{fmtKg(row.expected100)} kg</span>
         </p>
       )}
       {row.expectedAdherence != null && (
         <p className="flex items-center justify-between gap-3">
           <span className="text-chart-3">S/ adherencia</span>
-          <span className="text-white font-bold">{fmtKg(row.expectedAdherence)} kg</span>
+          <span className="text-ink font-bold">{fmtKg(row.expectedAdherence)} kg</span>
         </p>
       )}
       {row.real != null && (
         <p className="flex items-center justify-between gap-3">
-          <span className="text-accent">Real</span>
-          <span className="text-white font-bold">{fmtKg(row.real)} kg</span>
+          <span className="text-accent-ink">Real</span>
+          <span className="text-ink font-bold">{fmtKg(row.real)} kg</span>
         </p>
       )}
       {dev != null && (
@@ -352,7 +352,7 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
               <span className="font-sans text-caption uppercase tracking-widest" style={{ color: activePhaseColor }}>
                 Fase actual{activeWeekNum != null ? ` · Semana ${activeWeekNum}/${activePhase.weeks}` : ''}
               </span>
-              <h2 className="font-sans font-bold text-title-l text-white tracking-tight ">{activePhase.name}</h2>
+              <h2 className="font-sans font-bold text-title-l text-ink tracking-tight ">{activePhase.name}</h2>
               {activeDiet && (
                 <p className="font-sans text-caption text-ink-2 mt-1">Dieta: {activeDiet.name}</p>
               )}
@@ -360,7 +360,7 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
             {onEdit && (
               <button
                 onClick={onEdit}
-                className="flex-shrink-0 text-caption font-sans font-bold text-ink-2 hover:text-white transition-colors uppercase tracking-wider border border-hairline hover:border-strong px-3 py-2 rounded-control"
+                className="flex-shrink-0 text-caption font-sans font-bold text-ink-2 hover:text-ink transition-colors uppercase tracking-wider border border-hairline hover:border-strong px-3 py-2 rounded-control"
               >Editar</button>
             )}
           </div>
@@ -368,7 +368,7 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
           {(activeResolved?.kcal != null || activeBalance?.dailyDeficit != null) && (
             <div className="flex flex-wrap gap-x-5 gap-y-2 mt-4 font-mono text-label">
               {activeResolved?.kcal != null && (
-                <span className="text-ink-2">Objetivo: <b className="text-white">{fmtKcal(activeResolved.kcal)} kcal</b></span>
+                <span className="text-ink-2">Objetivo: <b className="text-ink">{fmtKcal(activeResolved.kcal)} kcal</b></span>
               )}
               {activeBalance?.dailyDeficit != null && (
                 <span className="text-ink-2">
@@ -379,31 +379,31 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
                 </span>
               )}
               {activeBalance?.weeklyDeltaKg != null && (
-                <span className="text-ink-2">Δ esperado: <b className="text-white">{fmtKg(activeBalance.weeklyDeltaKg, true)} kg/sem</b></span>
+                <span className="text-ink-2">Δ esperado: <b className="text-ink">{fmtKg(activeBalance.weeklyDeltaKg, true)} kg/sem</b></span>
               )}
             </div>
           )}
 
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 font-mono text-caption text-ink-2 mt-4 pt-3 border-t border-hairline">
-            <span>Inicio <b className="text-white font-bold">{fmtDate(program.startDate)}</b></span>
+            <span>Inicio <b className="text-ink font-bold">{fmtDate(program.startDate)}</b></span>
             <span className="text-ink-3">·</span>
-            <span><b className="text-white font-bold">{program.phases.length}</b> fase{program.phases.length !== 1 ? 's' : ''}</span>
+            <span><b className="text-ink font-bold">{program.phases.length}</b> fase{program.phases.length !== 1 ? 's' : ''}</span>
             <span className="text-ink-3">·</span>
-            <span><b className="text-white font-bold">{totalWeeks}</b> semanas totales</span>
+            <span><b className="text-ink font-bold">{totalWeeks}</b> semanas totales</span>
           </div>
         </div>
       ) : onEdit && (
         <div className="flex items-center justify-end">
           <button
             onClick={onEdit}
-            className="text-caption font-sans font-bold text-accent hover:text-white transition-colors uppercase tracking-wider"
+            className="text-caption font-sans font-bold text-accent-ink hover:text-ink transition-colors uppercase tracking-wider"
           >Editar periodización</button>
         </div>
       )}
 
       <div>
-        <h2 className="font-sans font-bold text-title-m tracking-tight text-white uppercase flex items-center gap-2">
-          <Icon name="monitoring" size="l" filled className="text-accent" />
+        <h2 className="font-sans font-bold text-title-m tracking-tight text-ink uppercase flex items-center gap-2">
+          <Icon name="monitoring" size="l" filled className="text-accent-ink" />
           Rendimiento de la periodización
         </h2>
         <p className="font-sans text-label text-ink-2 mt-1">
@@ -487,10 +487,10 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
 
         {performance?.deviationKg != null && (
           <p className="font-sans text-label text-ink-2 leading-relaxed pt-1 border-t border-hairline">
-            A semana {performance.currentWeek}, el peso real (<b className="text-white">{fmtKg(performance.realToDate)} kg</b>) va{' '}
+            A semana {performance.currentWeek}, el peso real (<b className="text-ink">{fmtKg(performance.realToDate)} kg</b>) va{' '}
             <b className={performance.deviationKg > 0 ? 'text-warning' : 'text-success'}>{fmtKg(Math.abs(performance.deviationKg))} kg {performance.deviationKg > 0 ? 'por encima' : 'por debajo'}</b>{' '}
             del plan (esperado {fmtKg(performance.expected100ToDate)} kg)
-            {performance.achievedPct != null && <> · <b className="text-white">{performance.achievedPct}%</b> del objetivo conseguido</>}.
+            {performance.achievedPct != null && <> · <b className="text-ink">{performance.achievedPct}%</b> del objetivo conseguido</>}.
             {/* Sin un solo día registrado, la adherencia medida es 0% — no
                 porque el atleta no haya comido, sino porque no ha marcado
                 nada. Repartir el desvío entre «adherencia» y «respuesta
@@ -500,7 +500,7 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
             {dietAdherence.daysLogged === 0 ? (
               <> No se puede repartir el desvío entre adherencia y respuesta metabólica: no hay ningún día de dieta registrado en la ventana.</>
             ) : performance.explainedByAdherenceKg != null && performance.explainedByMetabolicKg != null ? (
-              <> La adherencia explica <b className="text-white">{fmtKg(Math.abs(performance.explainedByAdherenceKg))} kg</b> del desvío; el resto (<b className="text-white">{fmtKg(Math.abs(performance.explainedByMetabolicKg))} kg</b>) es respuesta metabólica.</>
+              <> La adherencia explica <b className="text-ink">{fmtKg(Math.abs(performance.explainedByAdherenceKg))} kg</b> del desvío; el resto (<b className="text-ink">{fmtKg(Math.abs(performance.explainedByMetabolicKg))} kg</b>) es respuesta metabólica.</>
             ) : null}
           </p>
         )}
@@ -572,21 +572,21 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
             Balance energético · tramo activo «{activePhase.name}»
           </p>
           <div className="flex flex-wrap gap-x-6 gap-y-2 font-mono text-label">
-            <span className="text-ink-2">Objetivo: <b className="text-accent">{fmtKcal(activeBalance.targetKcal)} kcal</b></span>
+            <span className="text-ink-2">Objetivo: <b className="text-accent-ink">{fmtKcal(activeBalance.targetKcal)} kcal</b></span>
             {/* «Estimado» a la vista: este número sale de Mifflin-St Jeor, no de
                 lo que le pasa a este atleta. Sin el adjetivo, convivía a diez
                 líneas de otra tarjeta de mantenimiento y las dos se leían como
                 medidas (auditoría §11). */}
             <span className="text-ink-2">Mantenimiento estimado: <b className="text-data">{fmtKcal(activeBalance.maintenanceKcal)} kcal</b></span>
-            <span className="text-ink-2">+ Pasos: <b className="text-white">{fmtKcal(activeBalance.stepsKcal)} kcal</b></span>
-            <span className="text-ink-2">Gasto total: <b className="text-white">{fmtKcal(activeBalance.totalExpenditure)} kcal</b></span>
+            <span className="text-ink-2">+ Pasos: <b className="text-ink">{fmtKcal(activeBalance.stepsKcal)} kcal</b></span>
+            <span className="text-ink-2">Gasto total: <b className="text-ink">{fmtKcal(activeBalance.totalExpenditure)} kcal</b></span>
             {activeBalance.dailyDeficit != null && (
               <span className="text-ink-2">
                 {activeBalance.dailyDeficit >= 0 ? 'Déficit' : 'Superávit'}: <b className={activeBalance.dailyDeficit >= 0 ? 'text-warning' : 'text-success'}>{fmtKcal(Math.abs(activeBalance.dailyDeficit))} kcal/día</b>
               </span>
             )}
             {activeBalance.weeklyDeltaKg != null && (
-              <span className="text-ink-2">Δ esperado: <b className="text-white">{fmtKg(activeBalance.weeklyDeltaKg, true)} kg/sem</b></span>
+              <span className="text-ink-2">Δ esperado: <b className="text-ink">{fmtKg(activeBalance.weeklyDeltaKg, true)} kg/sem</b></span>
             )}
           </div>
         </div>
@@ -612,7 +612,7 @@ function StatCard({
   return (
     <div className="bg-surface border border-hairline rounded-surface p-4 flex flex-col gap-2">
       <span className="font-sans text-caption text-ink-2 uppercase tracking-wider">{label}</span>
-      <span className={`font-mono font-bold text-title-m ${valueColor ? '' : 'text-white'}`} style={valueColor ? { color: valueColor } : undefined}>
+      <span className={`font-mono font-bold text-title-m ${valueColor ? '' : 'text-ink'}`} style={valueColor ? { color: valueColor } : undefined}>
         {value}{unit && <span className="text-label text-ink-2 font-medium ml-1">{unit}</span>}
       </span>
       {progressPct != null && (

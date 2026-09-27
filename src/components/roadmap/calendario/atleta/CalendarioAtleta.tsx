@@ -68,7 +68,7 @@ function CaminoDelPlan({ camino, hoy }: { camino: ReturnType<typeof construirCam
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div className="min-w-0">
           <p className="font-mono text-caption uppercase tracking-wider text-ink-3">Tu camino</p>
-          <p className="font-sans font-bold text-title-s text-white mt-1 truncate">
+          <p className="font-sans font-bold text-title-s text-ink mt-1 truncate">
             {aunNoEmpieza
               ? `Empiezas el ${fmtCorta(camino.inicio)}`
               : actual
@@ -77,7 +77,7 @@ function CaminoDelPlan({ camino, hoy }: { camino: ReturnType<typeof construirCam
           </p>
         </div>
         <div className="text-right flex-shrink-0">
-          <p className="font-mono text-title-l font-semibold text-accent leading-none">{progresoPct}%</p>
+          <p className="font-mono text-title-l font-semibold text-accent-ink leading-none">{progresoPct}%</p>
           <p className="font-mono text-caption text-ink-4 mt-1">semana {semanasRecorridas} de {semanasTotales}</p>
         </div>
       </div>
@@ -214,7 +214,7 @@ export default function CalendarioAtleta(props: Props) {
         <button
           type="button"
           onClick={irAHoy}
-          className="flex items-center gap-1.5 border border-hairline rounded-control px-3 py-2 text-label font-sans font-semibold text-white hover:border-accent-line transition-colors flex-shrink-0"
+          className="flex items-center gap-1.5 border border-hairline rounded-control px-3 py-2 text-label font-sans font-semibold text-ink hover:border-accent-line transition-colors flex-shrink-0"
         >
           <Icon name="today" size="s" />Hoy
         </button>

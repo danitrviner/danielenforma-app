@@ -36,7 +36,7 @@ const CAT_COLOR: Record<FoodCategory, string> = {
 };
 
 const MODE_COLOR: Record<DietMode, string> = {
-  OMNIVORO:  'bg-accent/10 text-accent border border-accent/20',
+  OMNIVORO:  'bg-accent/10 text-accent-ink border border-accent/20',
   VEGANO:    'bg-success/10 text-success border border-success/20',
   SIN_PESAR: 'bg-data/10 text-data border border-data/20',
 };

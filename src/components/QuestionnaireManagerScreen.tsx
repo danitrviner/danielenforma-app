@@ -103,7 +103,7 @@ export default function QuestionnaireManagerScreen({ coachId }: Props) {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <h2 className="font-sans font-bold text-title-m text-white">Cuestionarios</h2>
+        <h2 className="font-sans font-bold text-title-m text-ink">Cuestionarios</h2>
         <div className="flex items-center gap-2">
           {missingPresets.length > 0 && (
             <Button
@@ -144,7 +144,7 @@ export default function QuestionnaireManagerScreen({ coachId }: Props) {
               className="rounded-surface border border-hairline bg-surface"
               leading={
                 <div className="w-9 h-9 bg-accent/10 rounded-surface flex items-center justify-center flex-shrink-0">
-                  <Icon name="quiz" size="m" className="text-accent" />
+                  <Icon name="quiz" size="m" className="text-accent-ink" />
                 </div>
               }
               title={q.title}
@@ -164,7 +164,7 @@ export default function QuestionnaireManagerScreen({ coachId }: Props) {
                   <button
                     onClick={() => handleDelete(q.id)}
                     disabled={deleting === q.id}
-                    className="p-2 bg-raised border border-hairline text-ink-2 hover:text-red-400 hover:border-red-500/30 rounded-control transition-all"
+                    className="p-2 bg-raised border border-hairline text-ink-2 hover:text-danger hover:border-danger/30 rounded-control transition-all"
                     title="Eliminar"
                   >
                     <Icon name={deleting === q.id ? 'progress_activity' : 'delete'} size="s" className={deleting === q.id ? 'animate-spin' : ''} />

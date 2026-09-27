@@ -44,7 +44,7 @@ export default function ExerciseVideoPlayer({ videoUrl }: Props) {
 
   return (
     <div className="p-4 bg-bg border-t border-hairline space-y-3">
-      <div className="aspect-video w-full rounded-surface overflow-hidden bg-black">
+      <div className="aspect-video w-full rounded-surface overflow-hidden bg-veil">
         {parsed ? (
           <iframe
             ref={iframeRef}

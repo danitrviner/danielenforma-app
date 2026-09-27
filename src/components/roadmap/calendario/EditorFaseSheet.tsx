@@ -55,7 +55,7 @@ export default function EditorFaseSheet({ banda, kind, onResize, onClose }: Prop
           <Stepper value={semanas} min={1} max={24} onChange={setSemanas} label="Semanas" unit="sem" />
         </div>
         <p className="text-label text-ink-3 font-sans leading-relaxed">
-          Inicio: <b className="text-white">{banda.inicio}</b>. Cambiar la duración mueve el fin de{' '}
+          Inicio: <b className="text-ink">{banda.inicio}</b>. Cambiar la duración mueve el fin de{' '}
           {kind === 'meso' ? 'este mesociclo' : 'esta fase'} y recalcula el resto del calendario a partir de él.
         </p>
       </div>

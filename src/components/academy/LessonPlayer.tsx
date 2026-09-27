@@ -72,7 +72,7 @@ export default function LessonPlayer({ lesson, course, courseLessons, done, comp
     <div className="space-y-6">
       <Button variant="ghost" size="s" onClick={onBack} icon="arrow_back">{course.title}</Button>
 
-      <div className="relative aspect-video w-full rounded-surface overflow-hidden bg-black">
+      <div className="relative aspect-video w-full rounded-surface overflow-hidden bg-veil">
         <iframe
           ref={iframeRef}
           src={embedSrcWithApi(lesson.videoProvider, lesson.videoId)}
@@ -97,7 +97,7 @@ export default function LessonPlayer({ lesson, course, courseLessons, done, comp
               onClick={() => setShowSpeedMenu(v => !v)}
               aria-label="Velocidad de reproducción"
               aria-expanded={showSpeedMenu}
-              className="flex h-9 items-center gap-1 rounded-control bg-black/50 px-3 font-mono text-caption font-bold text-white backdrop-blur-sm transition-colors hover:bg-black/65"
+              className="flex h-9 items-center gap-1 rounded-control bg-veil/50 px-3 font-mono text-caption font-bold text-ink backdrop-blur-sm transition-colors hover:bg-veil/65"
             >
               <Icon name="speed" size="s" />
               {SPEED_OPTIONS.find(o => o.value === speed)?.label}
@@ -108,7 +108,7 @@ export default function LessonPlayer({ lesson, course, courseLessons, done, comp
 
       <div>
         {lessonIndex >= 0 && (
-          <span className="inline-block rounded-control bg-accent/14 px-2.5 py-1 font-mono text-caption font-bold uppercase tracking-wider text-accent">
+          <span className="inline-block rounded-control bg-accent/14 px-2.5 py-1 font-mono text-caption font-bold uppercase tracking-wider text-accent-ink">
             Módulo {course.order + 1} · {course.title}
           </span>
         )}
@@ -132,14 +132,14 @@ export default function LessonPlayer({ lesson, course, courseLessons, done, comp
               rel="noopener noreferrer"
               className="flex items-center gap-3 rounded-field border border-hairline bg-raised p-3.5 transition-colors hover:border-strong"
             >
-              <span className="flex h-9 w-9 flex-none items-center justify-center rounded-control bg-white/6">
+              <span className="flex h-9 w-9 flex-none items-center justify-center rounded-control bg-hairline">
                 <Icon name={r.kind === 'pdf' ? 'picture_as_pdf' : 'link'} size="m" className="text-ink" />
               </span>
               <span className="min-w-0 flex-1">
                 <span className="block truncate font-sans text-body-s font-bold text-ink">{r.title}</span>
                 <span className="font-mono text-caption text-ink-2 uppercase">{r.kind === 'pdf' ? 'PDF' : 'Enlace'}</span>
               </span>
-              <Icon name="download" size="m" className="text-accent shrink-0" />
+              <Icon name="download" size="m" className="text-accent-ink shrink-0" />
             </a>
           ))}
         </div>
@@ -162,10 +162,10 @@ export default function LessonPlayer({ lesson, course, courseLessons, done, comp
               <Icon
                 name={isCurrent ? 'play_circle' : isDone ? 'check_circle' : 'circle'}
                 size="s"
-                className={isCurrent || isDone ? 'text-accent' : 'text-ink-3'}
+                className={isCurrent || isDone ? 'text-accent-ink' : 'text-ink-3'}
               />
               <span className="flex-1 min-w-0 truncate font-sans text-body-s text-ink">{i + 1}. {l.title}</span>
-              <span className={`font-mono text-caption shrink-0 ${isCurrent ? 'text-accent' : 'text-ink-3'}`}>
+              <span className={`font-mono text-caption shrink-0 ${isCurrent ? 'text-accent-ink' : 'text-ink-3'}`}>
                 {isCurrent ? 'Ahora' : minLabel(l.durationSec)}
               </span>
             </button>
@@ -177,7 +177,7 @@ export default function LessonPlayer({ lesson, course, courseLessons, done, comp
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <span className="font-mono text-caption uppercase tracking-wider text-ink-2">Progreso del módulo</span>
-            <span className="font-mono text-caption font-bold text-accent">{doneCount}/{courseLessons.length}</span>
+            <span className="font-mono text-caption font-bold text-accent-ink">{doneCount}/{courseLessons.length}</span>
           </div>
           <div className="h-[5px] rounded-full bg-track overflow-hidden">
             <div className="h-full rounded-full bg-accent" style={{ width: `${coursePct}%` }} />
@@ -188,7 +188,7 @@ export default function LessonPlayer({ lesson, course, courseLessons, done, comp
               className="w-full flex items-center gap-3 rounded-field border border-hairline bg-surface p-4 text-left transition-colors hover:border-accent-line"
             >
               <span className="flex h-11 w-11 flex-none items-center justify-center rounded-control bg-raised">
-                <Icon name="play_arrow" size="l" className="text-accent" />
+                <Icon name="play_arrow" size="l" className="text-accent-ink" />
               </span>
               <span className="min-w-0 flex-1">
                 <span className="block font-mono text-caption uppercase tracking-wider text-ink-2">Siguiente lección</span>

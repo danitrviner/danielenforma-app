@@ -103,7 +103,7 @@ export default function MachineCard({ maquina, profundidad, onDecidir, salidaFor
       }}
       aria-hidden={!esArriba}
     >
-      <div className="relative h-[72%] rounded-control overflow-hidden bg-white">
+      <div className="relative h-[72%] rounded-control overflow-hidden bg-photo">
         <img
           src={maquina.fotoUrl}
           alt={maquina.nombreMostrado}
@@ -130,7 +130,7 @@ export default function MachineCard({ maquina, profundidad, onDecidir, salidaFor
       <div className="pt-4">
         <h2 className="font-display font-black text-feature uppercase text-ink">{maquina.nombreMostrado}</h2>
         <div className="flex gap-2 mt-2">
-          <span className="px-2 py-1 rounded-control bg-accent-bg font-mono text-caption font-semibold uppercase tracking-wider text-accent">
+          <span className="px-2 py-1 rounded-control bg-accent-bg font-mono text-caption font-semibold uppercase tracking-wider text-accent-ink">
             {MARCA_LABELS[maquina.marca] ?? maquina.marca}
           </span>
           <span className="px-2 py-1 rounded-control bg-raised font-mono text-caption font-semibold uppercase tracking-wider text-ink-3">

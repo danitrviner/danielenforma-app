@@ -73,6 +73,14 @@ describe('revisarCalidadDelPlan · entrenamiento', () => {
     expect(fallo.consecuencia).toContain('Al abrirla ');
   });
 
+  // Las rutinas llegan por su cuenta, después de pintar la pantalla. Si
+  // mientras tanto se tratan como «ninguna», el coach ve «el bloque no tiene
+  // ni una sesión» de un plan que sí las tiene —y antes ni eso: reventaba.
+  it('sin rutinas cargadas todavía, el bloque no se juzga', () => {
+    expect(ids(entrada({ workouts: undefined }))).not.toContain('bloque_sin_sesiones');
+    expect(ids(entrada({ workouts: undefined }))).not.toContain('sesiones_vacias');
+  });
+
   it('con varias vacías concuerda en plural y las lista', () => {
     const d = revisarCalidadDelPlan(entrada({
       workouts: [sesion('w1', 'Día 1', 0), sesion('w2', 'Día 2', 0)],

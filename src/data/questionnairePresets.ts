@@ -390,7 +390,7 @@ const REVISION_EXPRESS: QuestionnairePresetDef = {
     text('¿En qué crees que has podido fallar desde la última revisión?'),
     text('¿De qué estás contento de haber logrado?'),
     text('¿De qué estás frustrado de no haber logrado?'),
-    text('Inserta cualquier tipo de comentario libre que te gustaría que tenga en cuenta a la hora de pasar tu revisión (rellenar con un "." si no tienes nada que añadir)... [TEXTO CORTADO EN LA CAPTURA — completar: seguía "Por cierto aprovecho para recordarte que me envíes vídeos..."]'),
+    text('Inserta cualquier tipo de comentario libre que te gustaría que tenga en cuenta a la hora de pasar tu revisión (rellena con un "." si no tienes nada que añadir). Y aprovecho para recordarte que me envíes vídeos de tus ejercicios: es la forma más rápida de que te corrija la técnica.'),
   ],
 };
 

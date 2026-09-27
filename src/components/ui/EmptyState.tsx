@@ -60,7 +60,7 @@ export default function EmptyState({
     <div className={`flex flex-col items-center gap-3 px-6 py-10 text-center ${className}`}>
       {iconTone === 'accent' ? (
         <span className="flex h-[52px] w-[52px] items-center justify-center rounded-field bg-accent/14">
-          <Icon name={icon} size="l" className="text-accent" />
+          <Icon name={icon} size="l" className="text-accent-ink" />
         </span>
       ) : (
         <Icon name={icon} size="xl" className="text-ink-3" />

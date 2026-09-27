@@ -258,7 +258,7 @@ export default function AthleteRoadmapScreen({ profile }: Props) {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-10">
-        <Icon name="refresh" size="xl" className="text-accent animate-spin" />
+        <Icon name="refresh" size="xl" className="text-accent-ink animate-spin" />
       </div>
     );
   }

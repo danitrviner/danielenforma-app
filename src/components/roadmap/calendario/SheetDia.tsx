@@ -19,7 +19,7 @@ function Metrica({ label, valor }: { label: string; valor: string }) {
   return (
     <div className="bg-cell rounded-field px-3.5 py-3 flex flex-col gap-1">
       <span className="font-mono text-caption uppercase tracking-wider text-ink-4">{label}</span>
-      <span className="font-mono text-title-m font-semibold text-white">{valor}</span>
+      <span className="font-mono text-title-m font-semibold text-ink">{valor}</span>
     </div>
   );
 }
@@ -151,7 +151,7 @@ export default function SheetDia({
                       onClick={() => setQueMuevo(i)}
                       aria-pressed={i === queMuevo}
                       className={`rounded-control border px-2.5 py-1.5 font-sans text-label transition-colors ${
-                        i === queMuevo ? 'border-accent-line text-accent' : 'border-hairline text-ink-2 hover:text-ink'
+                        i === queMuevo ? 'border-accent-line text-accent-ink' : 'border-hairline text-ink-2 hover:text-ink'
                       }`}
                     >
                       {m.etiqueta}
@@ -180,7 +180,7 @@ export default function SheetDia({
       <div className="space-y-5">
         <div className="flex flex-wrap items-start justify-between gap-3 pb-4 border-b border-hairline">
           <div className="flex flex-col gap-1.5">
-            <p className="font-sans font-extrabold text-title-l text-white" style={{ letterSpacing: '-0.02em' }}>{fechaLarga(fecha)}</p>
+            <p className="font-sans font-extrabold text-title-l text-ink" style={{ letterSpacing: '-0.02em' }}>{fechaLarga(fecha)}</p>
             <div className="flex items-center gap-2.5 flex-wrap">
               <span
                 className="font-mono text-caption uppercase tracking-wider px-2.5 py-1 rounded-control"
@@ -206,7 +206,7 @@ export default function SheetDia({
               <div className="flex items-center justify-between mb-3.5">
                 <div className="flex items-center gap-2.5">
                   <Icon name="fitness_center" size="m" style={{ color: 'var(--color-phase-fuerza)' }} />
-                  <span className="font-sans font-bold text-title-s text-white">{dia.entreno.esDescanso ? 'Descanso' : (dia.entreno.nombreRutina ?? 'Sin entreno')}</span>
+                  <span className="font-sans font-bold text-title-s text-ink">{dia.entreno.esDescanso ? 'Descanso' : (dia.entreno.nombreRutina ?? 'Sin entreno')}</span>
                 </div>
               </div>
               {!dia.entreno.esDescanso && dia.entreno.nombreRutina && (
@@ -221,7 +221,7 @@ export default function SheetDia({
                       <Icon name="trending_up" size="s" />{volumeEvent.title}
                     </div>
                   )}
-                  <button type="button" onClick={() => irAEditar('entrenamientos')} className="flex items-center gap-1.5 mt-4 text-label font-semibold font-sans text-accent">
+                  <button type="button" onClick={() => irAEditar('entrenamientos')} className="flex items-center gap-1.5 mt-4 text-label font-semibold font-sans text-accent-ink">
                     {logDelDia ? 'Ver sesión completa' : 'Editar series y ejercicios'}<Icon name="arrow_forward" size="s" />
                   </button>
                 </>
@@ -233,7 +233,7 @@ export default function SheetDia({
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2.5">
                   <Icon name="restaurant" size="m" style={{ color: 'var(--color-success)' }} />
-                  <span className="font-sans font-bold text-title-s text-white">Nutrición</span>
+                  <span className="font-sans font-bold text-title-s text-ink">Nutrición</span>
                 </div>
                 {dia.nutricion.adherenciaPct !== undefined && (
                   <span
@@ -245,7 +245,7 @@ export default function SheetDia({
                 )}
               </div>
               <div className="flex items-baseline gap-2 mb-3.5">
-                <span className="font-mono text-title-l font-semibold text-white">{esFuturo ? (dia.nutricion.kcalObjetivo ?? '—') : (dia.nutricion.kcal ?? '—')}</span>
+                <span className="font-mono text-title-l font-semibold text-ink">{esFuturo ? (dia.nutricion.kcalObjetivo ?? '—') : (dia.nutricion.kcal ?? '—')}</span>
                 <span className="text-label text-ink-3 font-sans">/ {dia.nutricion.kcalObjetivo ?? '—'} kcal{esFuturo ? ' objetivo' : ''}</span>
               </div>
               {!bandaNutricion && <p className="text-caption text-ink-4 font-sans">Sin fase de nutrición activa este día.</p>}
@@ -275,7 +275,7 @@ export default function SheetDia({
                   </div>
                 </div>
               )}
-              <button type="button" onClick={() => irAEditar('dietas')} className="flex items-center gap-1.5 mt-4 text-label font-semibold font-sans text-accent">
+              <button type="button" onClick={() => irAEditar('dietas')} className="flex items-center gap-1.5 mt-4 text-label font-semibold font-sans text-accent-ink">
                 Editar intercambios y macros<Icon name="arrow_forward" size="s" />
               </button>
             </div>
@@ -285,7 +285,7 @@ export default function SheetDia({
               <div className="flex items-center gap-2.5" style={{ minWidth: 150 }}>
                 <Icon name="directions_run" size="m" style={{ color: 'var(--color-cat-cardio)' }} />
                 <div className="flex flex-col gap-0.5">
-                  <span className="font-sans font-bold text-body-s text-white">Cardio</span>
+                  <span className="font-sans font-bold text-body-s text-ink">Cardio</span>
                   <span className="text-[12.5px] text-ink-3 font-sans">{dia.entreno.cardio ? (dia.entreno.cardio.tipo === 'zona2' ? 'Zona 2 · cinta' : 'VO₂ · intervalos') : 'Sin cardio este día'}</span>
                 </div>
               </div>
@@ -293,16 +293,16 @@ export default function SheetDia({
                 <>
                   <div className="flex flex-col gap-1">
                     <span className="font-mono text-caption uppercase tracking-wider text-ink-4">Tiempo</span>
-                    <span className="font-mono text-title-s font-semibold text-white">{dia.entreno.cardio.minutos} min</span>
+                    <span className="font-mono text-title-s font-semibold text-ink">{dia.entreno.cardio.minutos} min</span>
                   </div>
                   <div className="flex flex-col gap-1">
                     <span className="font-mono text-caption uppercase tracking-wider text-ink-4">FC media</span>
-                    <span className="font-mono text-title-s font-semibold text-white">{dia.entreno.cardio.fcMedia ?? '—'}</span>
+                    <span className="font-mono text-title-s font-semibold text-ink">{dia.entreno.cardio.fcMedia ?? '—'}</span>
                   </div>
                 </>
               )}
               <div className="flex-1" />
-              <button type="button" onClick={() => irAEditar('cardio')} className="flex items-center gap-1.5 text-label font-semibold font-sans text-accent">
+              <button type="button" onClick={() => irAEditar('cardio')} className="flex items-center gap-1.5 text-label font-semibold font-sans text-accent-ink">
                 Editar cardio<Icon name="arrow_forward" size="s" />
               </button>
             </div>
@@ -311,11 +311,11 @@ export default function SheetDia({
             <div className="bg-inset border border-hairline rounded-field p-5 flex items-center gap-6 flex-wrap">
               <div className="flex items-center gap-2.5" style={{ minWidth: 150 }}>
                 <Icon name="monitor_weight" size="m" style={{ color: 'var(--color-ink-2)' }} />
-                <span className="font-sans font-bold text-body-s text-white">Métricas</span>
+                <span className="font-sans font-bold text-body-s text-ink">Métricas</span>
               </div>
               <div className="flex flex-col gap-1">
                 <span className="font-mono text-caption uppercase tracking-wider text-ink-4">Peso</span>
-                <span className="font-mono text-title-s font-semibold text-white">{dia.puntos.peso ? '✓ registrado' : '—'}</span>
+                <span className="font-mono text-title-s font-semibold text-ink">{dia.puntos.peso ? '✓ registrado' : '—'}</span>
               </div>
               <div className="flex-1" />
               <span
@@ -334,16 +334,16 @@ export default function SheetDia({
                   <div className="flex items-center justify-center flex-shrink-0 font-mono text-caption text-ink-2 rounded-field" style={{ width: 30, height: 30, background: 'var(--color-track)' }}>AT</div>
                   <div className="flex flex-col gap-0.5">
                     <span className="text-label font-semibold text-ink-2 font-sans">Atleta</span>
-                    <span className="text-body text-white font-sans leading-relaxed" style={{ textWrap: 'pretty' }}>{logDelDia.note}</span>
+                    <span className="text-body text-ink font-sans leading-relaxed" style={{ textWrap: 'pretty' }}>{logDelDia.note}</span>
                   </div>
                 </div>
               )}
               {notaCoach && !editandoNota && (
                 <div className="flex gap-3 items-start">
-                  <div className="flex items-center justify-center flex-shrink-0 font-mono text-caption text-accent rounded-field" style={{ width: 30, height: 30, background: 'color-mix(in oklab, var(--color-accent) 14%, transparent)' }}>C</div>
+                  <div className="flex items-center justify-center flex-shrink-0 font-mono text-caption text-accent-ink rounded-field" style={{ width: 30, height: 30, background: 'color-mix(in oklab, var(--color-accent) 14%, transparent)' }}>C</div>
                   <div className="flex flex-col gap-0.5">
                     <span className="text-label font-semibold text-ink-2 font-sans">Coach</span>
-                    <span className="text-body text-white font-sans leading-relaxed" style={{ textWrap: 'pretty' }}>{notaCoach.text}</span>
+                    <span className="text-body text-ink font-sans leading-relaxed" style={{ textWrap: 'pretty' }}>{notaCoach.text}</span>
                   </div>
                 </div>
               )}
@@ -358,7 +358,7 @@ export default function SheetDia({
                     onChange={e => setBorradorNota(e.target.value)}
                     rows={3}
                     placeholder="Escribe algo que quieras que el atleta vea hoy en Inicio…"
-                    className="w-full bg-cell border border-hairline rounded-control px-3 py-3 text-body-s text-white focus:outline-none focus:ring-1 focus:ring-accent resize-none"
+                    className="w-full bg-cell border border-hairline rounded-control px-3 py-3 text-body-s text-ink focus:outline-none focus:ring-1 focus:ring-accent resize-none"
                   />
                   <div className="flex gap-2 justify-end">
                     <Button variant="secondary" size="s" onClick={() => setEditandoNota(false)}>Cancelar</Button>

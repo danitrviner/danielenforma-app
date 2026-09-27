@@ -25,13 +25,13 @@ const ETIQUETA_EVENTO: Record<TipoEvento, string> = {
 };
 
 const ESTILO_EVENTO: Record<TipoEvento, string> = {
-  alta:        'bg-accent/12 text-accent border-accent/25',
+  alta:        'bg-accent/12 text-accent-ink border-accent/25',
   renovacion:  'bg-success/12 text-success border-success/25',
-  servicio:    'bg-white/5 text-ink-2 border-hairline',
-  suscripcion: 'bg-white/5 text-ink-2 border-hairline',
+  servicio:    'bg-hairline text-ink-2 border-hairline',
+  suscripcion: 'bg-hairline text-ink-2 border-hairline',
   cobro:       'bg-success/12 text-success border-success/25',
   devolucion:  'bg-warning/12 text-warning border-warning/25',
-  fin:         'bg-white/5 text-ink-3 border-hairline',
+  fin:         'bg-hairline text-ink-3 border-hairline',
 };
 
 export default function HistorialTab({ cliente, coachEmail }: { cliente: Cliente; coachEmail: string }) {
@@ -179,7 +179,7 @@ export default function HistorialTab({ cliente, coachEmail }: { cliente: Cliente
         {resumen.timeline.length === 0 ? (
           <EmptyState icon="history" titulo="Sin actividad todavía" descripcion="Aquí irán las altas, las renovaciones y los cobros de este cliente." />
         ) : (
-          <div className="bg-surface/80 backdrop-blur-sm border border-hairline rounded-surface divide-y divide-white/7">
+          <div className="bg-surface/80 backdrop-blur-sm border border-hairline rounded-surface divide-y divide-hairline">
             {resumen.timeline.map(ev => (
               <div key={ev.id} className="flex items-center justify-between gap-2 p-3">
                 <div className="min-w-0">

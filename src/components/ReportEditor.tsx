@@ -45,20 +45,20 @@ export default function ReportEditor({ initial, onSaveDraft, onSend, onDelete, o
        atleta. Decisión de Dani el 4 ago 2026: esto no es un modal más sino una
        pantalla de trabajo que casualmente flota, y le toca a la fase de diseño
        decidir si debe ser modal, ruta propia o panel. */
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 overflow-y-auto">
+    <div className="fixed inset-0 bg-veil/70 backdrop-blur-sm z-50 overflow-y-auto">
       <div className="min-h-full flex items-start justify-center sm:p-4">
         <div className="bg-bg border border-hairline sm:rounded-surface w-full sm:max-w-4xl shadow-e2">
           {/* Header */}
           <div className="sticky top-0 z-10 bg-bg border-b border-hairline px-4 sm:px-6 py-4 flex items-center justify-between gap-3">
             <div>
-              <h2 className="font-sans font-bold text-title-m text-white uppercase tracking-tight">
+              <h2 className="font-sans font-bold text-title-m text-ink uppercase tracking-tight">
                 {alreadySent ? 'Editar reporte enviado' : 'Reporte de la semana'}
               </h2>
               <p className="font-mono text-caption text-ink-2 ">
                 {draft.status === 'sent' ? 'Enviado' : 'Borrador'}
               </p>
             </div>
-            <button onClick={onClose} className="text-white bg-raised hover:bg-raised p-2 h-9 w-9 rounded-full flex items-center justify-center transition-colors flex-shrink-0">
+            <button onClick={onClose} className="text-ink bg-raised hover:bg-raised p-2 h-9 w-9 rounded-full flex items-center justify-center transition-colors flex-shrink-0">
               <Icon name="close" size="m" />
             </button>
           </div>
@@ -79,7 +79,7 @@ export default function ReportEditor({ initial, onSaveDraft, onSend, onDelete, o
                   onChange={e => setDraft(d => ({ ...d, intro: e.target.value }))}
                   rows={4}
                   placeholder="Escribe tu valoración de la semana, contexto, próximos pasos..."
-                  className="w-full bg-surface border border-hairline rounded-control px-3 py-3 text-title-s text-white focus:outline-none focus:border-accent/50 resize-y placeholder-ink-3"
+                  className="w-full bg-surface border border-hairline rounded-control px-3 py-3 text-title-s text-ink focus:outline-none focus:border-accent/50 resize-y placeholder-ink-3"
                 />
               </div>
 
@@ -91,15 +91,15 @@ export default function ReportEditor({ initial, onSaveDraft, onSend, onDelete, o
                       onClick={() => setSection(s.id, { included: !s.included })}
                       className="w-full flex items-center gap-3 text-left"
                     >
-                      <Icon name={s.included ? 'check_box' : 'check_box_outline_blank'} size="l" filled={s.included} className={`flex-shrink-0 ${s.included ? 'text-accent' : 'text-ink-3'}`} />
-                      <span className={`text-body-s font-sans font-bold ${s.included ? 'text-white' : 'text-ink-3'}`}>{s.title}</span>
+                      <Icon name={s.included ? 'check_box' : 'check_box_outline_blank'} size="l" filled={s.included} className={`flex-shrink-0 ${s.included ? 'text-accent-ink' : 'text-ink-3'}`} />
+                      <span className={`text-body-s font-sans font-bold ${s.included ? 'text-ink' : 'text-ink-3'}`}>{s.title}</span>
                     </button>
                     {s.included && (
                       <input id="reporteditor-secciones-marca-que-se-cuenta"
                         value={s.coachNote ?? ''}
                         onChange={e => setSection(s.id, { coachNote: e.target.value })}
                         placeholder="Nota opcional para esta sección..."
-                        className="w-full bg-raised border border-hairline rounded-control px-3 py-2 text-title-s text-white focus:outline-none focus:border-accent/50 placeholder-ink-3"
+                        className="w-full bg-raised border border-hairline rounded-control px-3 py-2 text-title-s text-ink focus:outline-none focus:border-accent/50 placeholder-ink-3"
                       />
                     )}
                   </div>
@@ -119,7 +119,7 @@ export default function ReportEditor({ initial, onSaveDraft, onSend, onDelete, o
             <button
               onClick={() => run('delete', () => onDelete(draft))}
               disabled={busy !== null}
-              className="px-4 py-3 border border-hairline text-ink-2 hover:border-red-400/40 hover:text-red-400 font-mono text-caption font-bold uppercase rounded-control transition-all disabled:opacity-40"
+              className="px-4 py-3 border border-hairline text-ink-2 hover:border-danger/40 hover:text-danger font-mono text-caption font-bold uppercase rounded-control transition-all disabled:opacity-40"
             >
               {busy === 'delete' ? 'Eliminando…' : 'Eliminar'}
             </button>

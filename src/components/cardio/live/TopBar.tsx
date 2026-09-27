@@ -24,13 +24,13 @@ export default function TopBar({ deviceStatus, onHide }: Props) {
       <Icon
         name={STATUS_ICON[deviceStatus]}
         size="l"
-        className="text-white/80"
+        className="text-ink-2"
         label={deviceStatus === 'connected' ? 'Banda conectada' : deviceStatus === 'reconnecting' ? 'Reconectando con la banda' : 'Banda desconectada'}
       />
       <button
         type="button"
         onClick={onHide}
-        className="rounded-full bg-black/25 px-4 py-2 text-label font-sans text-white/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-line"
+        className="rounded-full bg-veil/25 px-4 py-2 text-label font-sans text-ink-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-line"
       >
         Ocultar
       </button>

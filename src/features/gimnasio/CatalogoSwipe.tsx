@@ -104,7 +104,7 @@ export default function CatalogoSwipe({ email, onCompletado, onOmitir }: Props) 
       <div className="h-[100dvh] overflow-hidden bg-bg flex flex-col px-6 gap-8">
         <div className="flex-1 min-h-0 overflow-y-auto flex flex-col justify-center gap-6 pt-[calc(2.5rem+var(--safe-top))]">
           <div className="w-14 h-14 rounded-control bg-accent-bg flex items-center justify-center">
-            <Icon name="fitness_center" size="l" className="text-accent" />
+            <Icon name="fitness_center" size="l" className="text-accent-ink" />
           </div>
           <h1 className="font-display font-black text-headline uppercase text-ink">Configura tu gimnasio</h1>
           <p className="font-sans text-body text-ink-2">
@@ -114,7 +114,7 @@ export default function CatalogoSwipe({ email, onCompletado, onOmitir }: Props) 
 
           <div className="flex items-center gap-5 rounded-surface bg-surface border border-hairline p-5">
             <div>
-              <div className="font-display font-black text-feature text-accent">{total}</div>
+              <div className="font-display font-black text-feature text-accent-ink">{total}</div>
               <div className="font-mono text-caption text-ink-4 uppercase tracking-widest">Máquinas</div>
             </div>
             <div className="w-px self-stretch bg-hairline" />
@@ -236,7 +236,7 @@ export default function CatalogoSwipe({ email, onCompletado, onOmitir }: Props) 
         </button>
 
         <div className="flex-1">
-          <div className="font-mono text-caption font-semibold uppercase tracking-widest text-accent">
+          <div className="font-mono text-caption font-semibold uppercase tracking-widest text-accent-ink">
             {categoriaActual ? MUSCLE_LABELS[categoriaActual] : ''}
           </div>
           <div className="mt-2">

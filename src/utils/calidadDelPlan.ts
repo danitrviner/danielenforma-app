@@ -42,8 +42,10 @@ export interface DefectoDelPlan {
 export interface EntradaCalidadDelPlan {
   profile: UserProfile;
   mesocycles: Mesocycle[];
-  /** Rutinas del atleta, para mirar dentro del bloque activo. */
-  workouts: Workout[];
+  /** Rutinas del atleta, para mirar dentro del bloque activo.
+   *  `undefined` es «todavía no han llegado», no «no hay»: mientras falten,
+   *  el repaso del bloque se calla en vez de inventarse que está vacío. */
+  workouts?: Workout[];
   diets: Diet[];
   dietConfig: AthleteDietConfig | null;
   qAssignments: QuestionnaireAssignment[];
@@ -101,7 +103,7 @@ export function revisarCalidadDelPlan(entrada: EntradaCalidadDelPlan): DefectoDe
   }
 
   // ── 2. Sesiones del bloque vacías ────────────────────────────────────────
-  if (meso) {
+  if (meso && workouts) {
     const delBloque = workouts.filter(w => w.mesocycleId === meso.id);
     if (delBloque.length === 0) {
       defectos.push({

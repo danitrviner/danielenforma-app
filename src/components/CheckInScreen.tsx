@@ -82,7 +82,7 @@ function IndiceDeLaRevision({ pendientes }: { pendientes: number }) {
           key={s.id}
           type="button"
           onClick={() => irA(s.id)}
-          className="flex-none flex items-center gap-1.5 rounded-chip bg-white/5 px-3 py-2 font-mono text-caption uppercase text-ink-2 transition-colors hover:bg-white/10 hover:text-ink"
+          className="flex-none flex items-center gap-1.5 rounded-chip bg-hairline px-3 py-2 font-mono text-caption uppercase text-ink-2 transition-colors hover:bg-strong hover:text-ink"
         >
           <Icon name={s.icono} size="s" />
           {s.label}
@@ -312,7 +312,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
       </Suspense>
 
       <div>
-        <h1 className="font-display font-black text-title-l uppercase tracking-tight text-white">Revisión</h1>
+        <h1 className="font-display font-black text-title-l uppercase tracking-tight text-ink">Revisión</h1>
         <p className="text-ink-2 text-body-s mt-1">Tu peso, tus cuestionarios, tus fotos y tus medidas: todo lo que le cuentas a tu coach, en un solo sitio.</p>
       </div>
 
@@ -342,7 +342,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
       {!activeAssignment && (
         <section id="revision-cuestionarios" className="space-y-3 scroll-mt-20">
           <div className="flex items-center gap-2">
-            <Icon name="quiz" size="m" className="text-accent" />
+            <Icon name="quiz" size="m" className="text-accent-ink" />
             <h2 className="font-sans font-bold text-body-s text-ink flex-1">Cuestionarios</h2>
             {pendingAssignments.length > 0 && (
               <Badge tone="warning">{pendingAssignments.length} pendiente{pendingAssignments.length === 1 ? '' : 's'}</Badge>
@@ -378,7 +378,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
                         móvil una insignia de ~110 px dejaba el título en
                         «DOM's o "ag…» y la periodicidad en un guion. */}
                     <div className="min-w-0 flex-1 space-y-1">
-                      <p className="font-sans font-semibold text-body-s text-white">{q.title}</p>
+                      <p className="font-sans font-semibold text-body-s text-ink">{q.title}</p>
                       <div className="flex items-center gap-2 flex-wrap">
                         <Badge tone={info.tono}>{info.texto}</Badge>
                         <span className="font-mono text-caption text-ink-2">
@@ -390,7 +390,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
                         <p className="font-mono text-caption text-ink-3">Última: {fmtFechaCorta(ultima.submittedAt)}</p>
                       )}
                     </div>
-                    <span className="material-symbols-outlined text-ink-3 group-hover:text-accent transition-colors shrink-0 self-center">chevron_right</span>
+                    <span className="material-symbols-outlined text-ink-3 group-hover:text-accent-ink transition-colors shrink-0 self-center">chevron_right</span>
                   </button>
                 );
               })}
@@ -402,7 +402,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
           {historialRespuestas.length > 0 && (
             <details className="group bg-surface border border-hairline rounded-field p-4">
               <summary className="cursor-pointer list-none flex items-center justify-between">
-                <span className="font-sans font-bold text-body-s text-white">
+                <span className="font-sans font-bold text-body-s text-ink">
                   Respuestas enviadas <span className="font-mono text-caption text-ink-2 font-normal">({historialRespuestas.length})</span>
                 </span>
                 <span className="material-symbols-outlined text-ink-2 text-body-s group-open:rotate-180 transition-transform">expand_more</span>
@@ -413,7 +413,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
                     <summary className="flex items-center gap-3 px-4 py-3 cursor-pointer list-none">
                       <span className="material-symbols-outlined text-ink-2 text-body-s">expand_more</span>
                       <div className="flex-1 min-w-0">
-                        <p className="font-sans font-bold text-white text-label truncate">
+                        <p className="font-sans font-bold text-ink text-label truncate">
                           {templates.get(r.questionnaireId)?.title ?? 'Cuestionario'}
                         </p>
                         <p className="font-mono text-caption text-ink-2">
@@ -432,14 +432,14 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
                           return (
                             <div key={ans.questionId}>
                               <p className="font-sans text-caption text-ink-2">{pregunta?.label ?? ans.questionId}</p>
-                              <p className="font-sans text-label text-white leading-relaxed">{textoRespuesta(pregunta, ans.value)}</p>
+                              <p className="font-sans text-label text-ink leading-relaxed">{textoRespuesta(pregunta, ans.value)}</p>
                             </div>
                           );
                         }
                         return (
                           <div key={ans.questionId} className="flex items-start gap-3">
                             <span className="font-sans text-caption text-ink-2 flex-1">{pregunta?.label ?? ans.questionId}</span>
-                            <span className="font-mono text-label text-white font-bold text-right shrink-0">
+                            <span className="font-mono text-label text-ink font-bold text-right shrink-0">
                               {textoRespuesta(pregunta, ans.value)}
                             </span>
                           </div>
@@ -458,7 +458,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
       {!loadingPhotoAssignments && upcomingPhotoAssignments.length > 0 && (
         <details className="group bg-surface border border-hairline rounded-field p-4">
           <summary className="cursor-pointer list-none flex items-center justify-between">
-            <span className="font-sans font-bold text-body-s text-white">
+            <span className="font-sans font-bold text-body-s text-ink">
               Fotos futuras <span className="font-mono text-caption text-ink-2 font-normal">({upcomingPhotoAssignments.length})</span>
             </span>
             <span className="material-symbols-outlined text-ink-2 text-body-s group-open:rotate-180 transition-transform">expand_more</span>
@@ -478,8 +478,8 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
 
       {/* ── Fotografías de progreso (centralizado aquí) ──────────────────────── */}
       <section id="revision-fotos" className="scroll-mt-20">
-        <h2 className="font-sans font-bold text-body-s text-white mb-3 flex items-center gap-2">
-          <span className="material-symbols-outlined text-accent text-[18px]">photo_camera</span>
+        <h2 className="font-sans font-bold text-body-s text-ink mb-3 flex items-center gap-2">
+          <span className="material-symbols-outlined text-accent-ink text-[18px]">photo_camera</span>
           Fotografías de progreso
         </h2>
         <PhotosScreen profile={profile} />
@@ -492,7 +492,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
           en una sola pantalla. */}
       <section id="revision-mediciones" className="space-y-3 scroll-mt-20">
         <div className="flex items-center gap-2">
-          <Icon name="straighten" size="m" className="text-accent" />
+          <Icon name="straighten" size="m" className="text-accent-ink" />
           <h2 className="font-sans font-bold text-body-s text-ink flex-1">Mediciones</h2>
         </div>
         <Suspense fallback={<Skeleton className="w-full h-48 rounded-surface" />}>
@@ -516,7 +516,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
       {/* ── El hilo de revisiones (F3.13c) ───────────────────────────────────── */}
       <section id="revision-historial" className="scroll-mt-20">
         <div className="flex items-center gap-2 mb-3.5">
-          <span className="material-symbols-outlined text-accent text-[18px]">history</span>
+          <span className="material-symbols-outlined text-accent-ink text-[18px]">history</span>
           <h2 className="font-sans font-bold text-body-s text-ink flex-1">Revisiones</h2>
           {checkins.length > 0 && (
             <span className="font-mono text-label text-ink-2">
@@ -572,7 +572,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
                         <p className="font-sans text-body-s text-ink leading-relaxed">{item.coachFeedback}</p>
                       ) : (
                         <p className="flex items-center gap-1 font-mono text-caption italic text-ink-3">
-                          <span className="material-symbols-outlined animate-spin text-accent text-label">sync</span>
+                          <span className="material-symbols-outlined animate-spin text-accent-ink text-label">sync</span>
                           Pendiente de revisión
                         </p>
                       )}

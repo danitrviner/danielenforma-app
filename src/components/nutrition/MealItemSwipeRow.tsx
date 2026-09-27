@@ -1,6 +1,5 @@
 import React from 'react';
 import Icon from '../ui/Icon';
-import { pulsable } from '../../utils/a11y';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    MealItemSwipeRow
@@ -21,6 +20,11 @@ import { pulsable } from '../../utils/a11y';
 
 const RECORRIDO_PX = 96;
 
+/* Píxeles que hay que mover para que deje de ser un clic y pase a ser un
+   arrastre. Con ratón, un clic normal mueve el puntero 1-2 px entre pulsar y
+   soltar; por debajo de esto no se toca nada. */
+const UMBRAL_ARRASTRE_PX = 5;
+
 type Props = {
   children: React.ReactNode;
   onDelete?: () => void;
@@ -33,6 +37,13 @@ export default function MealItemSwipeRow({ children, onDelete, className = '' }:
   const arrastrando = React.useRef(false);
   const origenX = React.useRef(0);
   const origenDx = React.useRef(0);
+  /* Si el puntero se ha movido de verdad, el `click` que el navegador dispara
+     al soltar NO es un clic: es el final del deslizamiento. Sin esto, deslizar
+     con el ratón abría el buscador de alimentos —el botón que hay debajo— y el
+     panel de «Quitar» se quedaba detrás, inalcanzable (Dani, 24-09-2026). En
+     táctil no se notaba porque el navegador ya se traga ese clic cuando ha
+     habido gesto. */
+  const huboArrastre = React.useRef(false);
   const puedeBorrar = !!onDelete;
 
   const alBajarPuntero = (e: React.PointerEvent) => {
@@ -40,11 +51,14 @@ export default function MealItemSwipeRow({ children, onDelete, className = '' }:
     arrastrando.current = true;
     origenX.current = e.clientX;
     origenDx.current = dx;
+    huboArrastre.current = false;
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
   };
   const alMoverPuntero = (e: React.PointerEvent) => {
     if (!arrastrando.current) return;
-    const next = origenDx.current + (e.clientX - origenX.current);
+    const recorrido = e.clientX - origenX.current;
+    if (Math.abs(recorrido) > UMBRAL_ARRASTRE_PX) huboArrastre.current = true;
+    const next = origenDx.current + recorrido;
     setDx(Math.max(-RECORRIDO_PX, Math.min(0, next)));
   };
   const alSoltarPuntero = () => {
@@ -55,6 +69,24 @@ export default function MealItemSwipeRow({ children, onDelete, className = '' }:
     setDx(quedaAbierto ? -RECORRIDO_PX : 0);
   };
   const cerrar = () => { setBorrarAbierto(false); setDx(0); };
+
+  /* En CAPTURA, no en burbuja: hay que interceptar el clic ANTES de que llegue
+     al botón del alimento. En burbuja el hijo ya habría abierto el buscador. */
+  const alClicarEnCaptura = (e: React.MouseEvent) => {
+    if (huboArrastre.current) {
+      huboArrastre.current = false;
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+    // Con el panel abierto, el primer toque en la fila solo lo cierra. Abrir el
+    // buscador con «Quitar» asomando dejaría el panel colgando bajo un diálogo.
+    if (borrarAbierto) {
+      e.preventDefault();
+      e.stopPropagation();
+      cerrar();
+    }
+  };
 
   return (
     <div className={`relative overflow-hidden ${className}`}>
@@ -79,7 +111,7 @@ export default function MealItemSwipeRow({ children, onDelete, className = '' }:
         onPointerMove={alMoverPuntero}
         onPointerUp={alSoltarPuntero}
         onPointerCancel={alSoltarPuntero}
-        onClick={() => { if (borrarAbierto) cerrar(); }}
+        onClickCapture={alClicarEnCaptura}
         style={{ transform: `translateX(${dx}px)` }}
         className={
           'relative touch-pan-y bg-bg '

@@ -91,7 +91,7 @@ export default function ServiciosTab({ cliente, coachEmail }: { cliente: Cliente
           onClick={() => onArchivar(s)}
           aria-label={s.archivado ? 'Recuperar servicio' : 'Archivar servicio'}
           title={s.archivado ? 'Recuperar' : 'Archivar'}
-          className="w-7 h-7 rounded-control inline-flex items-center justify-center text-ink-2 hover:bg-white/6 transition-colors"
+          className="w-7 h-7 rounded-control inline-flex items-center justify-center text-ink-2 hover:bg-hairline transition-colors"
         >
           <Icon name={s.archivado ? 'unarchive' : 'archive'} size="m" />
         </button>

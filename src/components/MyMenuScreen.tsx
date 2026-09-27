@@ -516,10 +516,10 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
             <button
               key={d}
               onClick={() => setSelectedDay(d)}
-              className={`flex flex-col items-center py-2 rounded-control border transition-all ${active ? 'bg-accent border-accent text-black' : 'bg-surface border-hairline text-ink-2 hover:border-strong'}`}
+              className={`flex flex-col items-center py-2 rounded-control border transition-all ${active ? 'bg-accent border-accent text-on-accent' : 'bg-surface border-hairline text-ink-2 hover:border-strong'}`}
             >
               <span className="font-mono text-caption font-bold uppercase">{WEEK_DAY_SHORT[d]}</span>
-              {isToday && <span className={`w-1 h-1 rounded-full ${active ? 'bg-black' : 'bg-accent'}`} />}
+              {isToday && <span className={`w-1 h-1 rounded-full ${active ? 'bg-veil' : 'bg-accent'}`} />}
               {!hasMeals && <span className="material-symbols-outlined" style={{ fontSize: '10px' }}>remove</span>}
             </button>
           );
@@ -530,7 +530,7 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
       {menu.batchCooking && batchPlan.length > 0 && (
         <div className="bg-accent/5 border border-accent/25 rounded-surface p-4 space-y-3">
           <div className="flex items-center gap-2">
-            <Icon name="inventory_2" size="m" className="text-accent" />
+            <Icon name="inventory_2" size="m" className="text-accent-ink" />
             <div>
               <p className="font-sans font-bold text-body-s text-ink">Cocina de la semana</p>
               <p className="font-sans text-caption text-ink-2">Prepáralo todo de una vez y repártelo por días.</p>
@@ -547,7 +547,7 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
                   </div>
                 }
                 title={e.recipeName}
-                trailing={<span className="font-mono text-caption text-accent flex-shrink-0">≈{e.servings} {e.servings === 1 ? 'ración' : 'raciones'}</span>}
+                trailing={<span className="font-mono text-caption text-accent-ink flex-shrink-0">≈{e.servings} {e.servings === 1 ? 'ración' : 'raciones'}</span>}
               />
             ))}
           </div>
@@ -558,7 +558,7 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
       <div className="bg-surface border border-hairline rounded-surface overflow-hidden">
         <button onClick={openShoppingList} className="w-full flex items-center justify-between px-4 py-3 hover:bg-field transition-colors">
           <span className="flex items-center gap-2 font-sans font-bold text-body-s text-ink">
-            <Icon name="shopping_cart" size="m" className="text-accent" />
+            <Icon name="shopping_cart" size="m" className="text-accent-ink" />
             Lista de la compra de la semana
           </span>
           <Icon name={shoppingOpen ? 'expand_less' : 'expand_more'} size="m" className="text-ink-2" />
@@ -566,7 +566,7 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
         {shoppingOpen && (
           <div className="px-4 pb-4">
             {shoppingLoading ? (
-              <div className="flex justify-center py-4"><Icon name="progress_activity" size="l" className="text-accent animate-spin" /></div>
+              <div className="flex justify-center py-4"><Icon name="progress_activity" size="l" className="text-accent-ink animate-spin" /></div>
             ) : !shoppingItems || shoppingItems.length === 0 ? (
               <p className="font-sans text-caption text-ink-3 py-2">No hay ingredientes que listar en este menú.</p>
             ) : (
@@ -612,7 +612,7 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
                     className="absolute inset-0 w-full h-full object-cover"
                     fallback={<div className="absolute inset-0 flex items-center justify-center"><Icon name="skillet" size="xl" className="text-ink-3" /></div>}
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/15 to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-veil/85 via-veil/15 to-transparent" />
                   <div className="absolute bottom-0 left-0 right-0 p-3 text-left">
                     <span className="font-sans text-caption text-ink-2 uppercase tracking-wider">
                       {meal.name}{meal.scale !== 1 ? ` · ×${meal.scale}` : ''}
@@ -623,7 +623,7 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
                   </div>
                   {done && (
                     <span className="absolute top-2 right-2 w-8 h-8 rounded-full bg-success flex items-center justify-center">
-                      <Icon name="check" size="m" className="text-black" />
+                      <Icon name="check" size="m" className="text-on-accent" />
                     </span>
                   )}
                 </button>
@@ -634,7 +634,7 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
                     className={`flex-shrink-0 w-8 h-8 rounded-full border-2 flex items-center justify-center transition-colors self-start ${done ? 'bg-success border-success' : 'border-hairline hover:border-ink-2'}`}
                     title={done ? 'Marcar como no hecha' : 'Marcar como hecha'}
                   >
-                    {done && <Icon name="check" size="m" className="text-black" />}
+                    {done && <Icon name="check" size="m" className="text-on-accent" />}
                   </button>
 
                   <div className="flex-1 min-w-0">
@@ -649,8 +649,8 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
                             key={ri}
                             className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-accent/10 border border-accent/25"
                           >
-                            <Icon name="add" size="s" className="text-accent" />
-                            <span className="font-mono text-caption text-accent">
+                            <Icon name="add" size="s" className="text-accent-ink" />
+                            <span className="font-mono text-caption text-accent-ink">
                               {r.gramos}g de {r.nombre}
                             </span>
                           </span>
@@ -700,7 +700,7 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
                           onClick={() => anadirAlPlan(meal)}
                           disabled={anadiendoId === meal.id}
                           title="Registrar esta comida en tu plan del día"
-                          className="flex items-center gap-1 text-caption font-mono text-accent hover:text-ink transition-colors disabled:opacity-50"
+                          className="flex items-center gap-1 text-caption font-mono text-accent-ink hover:text-ink transition-colors disabled:opacity-50"
                         >
                           <Icon name="restaurant" size="s" />
                           {anadiendoId === meal.id ? 'Añadiendo…' : 'Añadir a mi plan'}
@@ -758,7 +758,7 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
         <button
           type="button"
           onClick={() => navigate('/profile?tab=preferencias')}
-          className="flex-shrink-0 flex items-center gap-1 text-caption font-mono text-accent hover:text-ink transition-colors"
+          className="flex-shrink-0 flex items-center gap-1 text-caption font-mono text-accent-ink hover:text-ink transition-colors"
         >
           <Icon name="tune" size="s" />
           Ajustar mis preferencias
@@ -831,7 +831,7 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
                 {(swapExactas.length > swapVisible || swapAproximadas.length > swapVisible) && (
                   <button
                     onClick={() => setSwapVisible(v => v + SWAP_PAGE)}
-                    className="w-full py-3 font-sans text-body-s text-accent hover:text-accent/80 transition-colors"
+                    className="w-full py-3 font-sans text-body-s text-accent-ink hover:text-accent-ink/80 transition-colors"
                   >
                     Ver más alternativas
                   </button>
@@ -984,7 +984,7 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
           <div className="space-y-3">
             {detailLoading ? (
               <div className="flex items-center justify-center py-10">
-                <Icon name="progress_activity" size="l" className="text-accent animate-spin" />
+                <Icon name="progress_activity" size="l" className="text-accent-ink animate-spin" />
               </div>
             ) : detailRecipe ? (
               <>
@@ -994,7 +994,7 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
                   </div>
                 )}
                 {(detailMeal?.scale ?? 1) !== 1 && (
-                  <p className="font-mono text-caption text-accent">
+                  <p className="font-mono text-caption text-accent-ink">
                     Cantidades para ×{detailMeal!.scale} de la receta
                   </p>
                 )}
@@ -1019,7 +1019,7 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
                                 {swappedTo ? (
                                   <>
                                     <span className="text-ink-2 line-through">{ing.label}</span>{' '}
-                                    <span className="text-accent">→ {swappedTo}</span>
+                                    <span className="text-accent-ink">→ {swappedTo}</span>
                                   </>
                                 ) : (
                                   <span className="text-ink">{ing.label}</span>
@@ -1048,7 +1048,7 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
                                   <button
                                     key={s}
                                     onClick={() => applySubstitution(ing.label, s)}
-                                    className="px-2 rounded-control bg-raised border border-hairline text-ink font-mono text-caption hover:border-accent/50 hover:text-accent"
+                                    className="px-2 rounded-control bg-raised border border-hairline text-ink font-mono text-caption hover:border-accent/50 hover:text-accent-ink"
                                   >{s}</button>
                                 ))}
                               </div>

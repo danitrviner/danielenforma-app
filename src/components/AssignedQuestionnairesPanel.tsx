@@ -457,7 +457,7 @@ export default function AssignedQuestionnairesPanel({
                         aria-expanded={abierta}
                         className="flex items-start gap-3 min-w-0 cursor-pointer rounded-control -mx-1 px-1 py-1 hover:bg-raised/60 transition-colors"
                       >
-                        <Icon name="quiz" size="m" className="text-accent mt-0.5 shrink-0" />
+                        <Icon name="quiz" size="m" className="text-accent-ink mt-0.5 shrink-0" />
                         <div className="min-w-0 flex-1">
                           <p className="font-sans font-bold text-ink text-label text-pretty flex items-center gap-2 flex-wrap">
                             {/* Sin plantilla el nombre no puede ser el ID del documento:

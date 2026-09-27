@@ -15,7 +15,7 @@ function DeltaBadge({ pct }: { pct: number | null }) {
   if (pct == null) return <span className="font-mono text-caption text-ink-3">—</span>;
   const up = pct >= 0;
   return (
-    <span className={`font-mono text-caption font-bold ${up ? 'text-green-400' : 'text-red-400'}`}>
+    <span className={`font-mono text-caption font-bold ${up ? 'text-success' : 'text-danger'}`}>
       {up ? '+' : ''}{pct}%
     </span>
   );
@@ -27,7 +27,7 @@ function SectionShell({ section, children }: { section: CoachReportSection; chil
       {children}
       {section.coachNote && (
         <div className="bg-raised border-l-2 border-accent rounded-r-surface px-3 py-2">
-          <p className="font-mono text-caption text-accent uppercase tracking-wider ">Nota del entrenador</p>
+          <p className="font-mono text-caption text-accent-ink uppercase tracking-wider ">Nota del entrenador</p>
           <p className="text-label text-ink-2 font-sans leading-relaxed">{section.coachNote}</p>
         </div>
       )}
@@ -43,8 +43,8 @@ function HighlightsSection({ section }: { section: CoachReportSection }) {
       <ul className="space-y-2">
         {d.items.map((it, i) => (
           <li key={i} className="flex items-start gap-2">
-            <Icon name="trophy" size="m" filled className="text-accent flex-shrink-0" />
-            <span className="text-label text-white font-sans leading-snug">{it}</span>
+            <Icon name="trophy" size="m" filled className="text-accent-ink flex-shrink-0" />
+            <span className="text-label text-ink font-sans leading-snug">{it}</span>
           </li>
         ))}
       </ul>
@@ -57,7 +57,7 @@ function TonnageSection({ section }: { section: CoachReportSection }) {
   return (
     <SectionShell section={section}>
       <div className="flex items-end gap-3 flex-wrap">
-        <span className="font-mono font-extrabold text-display text-white">{d.current.toLocaleString('es-ES')}<span className="text-title-s text-ink-2 font-bold"> kg</span></span>
+        <span className="font-mono font-extrabold text-display text-ink">{d.current.toLocaleString('es-ES')}<span className="text-title-s text-ink-2 font-bold"> kg</span></span>
         <div className="flex items-center gap-2 pb-1">
           <DeltaBadge pct={d.deltaPct} />
           {d.previous != null && <span className="font-mono text-caption text-ink-3">{d.comparisonLabel} ({d.previous.toLocaleString('es-ES')} kg)</span>}
@@ -86,14 +86,14 @@ function PerExerciseSection({ section }: { section: CoachReportSection }) {
             {d.rows.map(r => (
               <tr key={r.exerciseId} className="border-b border-hairline last:border-0">
                 <td className="py-2 px-2">
-                  <span className="text-label text-white font-sans flex items-center gap-2">
+                  <span className="text-label text-ink font-sans flex items-center gap-2">
                     {r.name}
                     {r.isPR && <Badge tone="success">PR</Badge>}
                   </span>
                 </td>
                 <td className="py-2 px-2 font-mono text-label text-ink-2">{r.sets}</td>
                 <td className="py-2 px-2 font-mono text-label text-ink-2">{r.reps}</td>
-                <td className="py-2 px-2 font-mono text-label text-accent">{r.tonnage.toLocaleString('es-ES')} kg</td>
+                <td className="py-2 px-2 font-mono text-label text-accent-ink">{r.tonnage.toLocaleString('es-ES')} kg</td>
                 <td className="py-2 px-2 whitespace-nowrap">
                   <span className="font-mono text-label text-data">{r.bestOrm} kg</span>
                   {r.deltaOrmPct != null && <span className="ml-2"><DeltaBadge pct={r.deltaOrmPct} /></span>}
@@ -124,8 +124,8 @@ function MuscleSection({ section }: { section: CoachReportSection }) {
           <tbody>
             {d.rows.map(r => (
               <tr key={r.group} className="border-b border-hairline last:border-0">
-                <td className="py-2 px-2 text-label text-white font-sans whitespace-nowrap">{r.label}</td>
-                <td className="py-2 px-2 font-mono text-label text-accent">{r.tonnage.toLocaleString('es-ES')} kg</td>
+                <td className="py-2 px-2 text-label text-ink font-sans whitespace-nowrap">{r.label}</td>
+                <td className="py-2 px-2 font-mono text-label text-accent-ink">{r.tonnage.toLocaleString('es-ES')} kg</td>
                 <td className="py-2 px-2"><DeltaBadge pct={r.tonnageDeltaPct} /></td>
                 <td className="py-2 px-2 font-mono text-label text-data">{r.meanOrm != null ? `${r.meanOrm} kg` : '—'}</td>
                 <td className="py-2 px-2"><DeltaBadge pct={r.ormDeltaPct} /></td>
@@ -146,10 +146,10 @@ function BodyweightSection({ section }: { section: CoachReportSection }) {
   return (
     <SectionShell section={section}>
       <div className="flex items-end gap-3 flex-wrap">
-        <span className="font-mono font-extrabold text-display text-white">{d.endWeight.toLocaleString('es-ES')}<span className="text-title-s text-ink-2 font-bold"> kg</span></span>
+        <span className="font-mono font-extrabold text-display text-ink">{d.endWeight.toLocaleString('es-ES')}<span className="text-title-s text-ink-2 font-bold"> kg</span></span>
         {d.deltaKg != null && (
           <span className={`font-mono text-caption font-bold pb-2 flex items-center gap-1 ${
-            good === true ? 'text-green-400' : good === false ? 'text-amber-300' : 'text-ink-2'
+            good === true ? 'text-success' : good === false ? 'text-warning' : 'text-ink-2'
           }`}>
             <Icon name={dir === 'up' ? 'trending_up' : dir === 'down' ? 'trending_down' : 'trending_flat'} size="s" />
             {d.deltaKg > 0 ? '+' : ''}{d.deltaKg} kg en el periodo
@@ -174,10 +174,10 @@ function AdherenceSection({ section }: { section: CoachReportSection }) {
   return (
     <SectionShell section={section}>
       <div className="flex items-center gap-3">
-        <span className="font-mono font-extrabold text-display text-white">{d.completed}<span className="text-title-s text-ink-2 font-bold">/{d.planned}</span></span>
+        <span className="font-mono font-extrabold text-display text-ink">{d.completed}<span className="text-title-s text-ink-2 font-bold">/{d.planned}</span></span>
         <div className="flex-1">
           <div className="h-2 bg-raised rounded-full overflow-hidden">
-            <div className={`h-full rounded-full ${pct >= 100 ? 'bg-green-400' : pct >= 60 ? 'bg-accent' : 'bg-amber-500'}`} style={{ width: `${Math.min(100, pct)}%` }} />
+            <div className={`h-full rounded-full ${pct >= 100 ? 'bg-success' : pct >= 60 ? 'bg-accent' : 'bg-warning'}`} style={{ width: `${Math.min(100, pct)}%` }} />
           </div>
           <p className="font-mono text-caption text-ink-2 mt-1">
             {pct}% de sesiones programadas completadas{d.prevPct != null ? ` · periodo anterior: ${d.prevPct}%` : ''}
@@ -195,10 +195,10 @@ function NutritionSection({ section }: { section: CoachReportSection }) {
   return (
     <SectionShell section={section}>
       <div className="flex items-center gap-3">
-        <span className="font-mono font-extrabold text-display text-white">{pct}<span className="text-title-s text-ink-2 font-bold">%</span></span>
+        <span className="font-mono font-extrabold text-display text-ink">{pct}<span className="text-title-s text-ink-2 font-bold">%</span></span>
         <div className="flex-1">
           <div className="h-2 bg-raised rounded-full overflow-hidden">
-            <div className={`h-full rounded-full ${pct >= 85 ? 'bg-green-400' : pct >= 60 ? 'bg-accent' : 'bg-amber-500'}`} style={{ width: `${Math.min(100, pct)}%` }} />
+            <div className={`h-full rounded-full ${pct >= 85 ? 'bg-success' : pct >= 60 ? 'bg-accent' : 'bg-warning'}`} style={{ width: `${Math.min(100, pct)}%` }} />
           </div>
           <p className="font-mono text-caption text-ink-2 mt-1">
             Cumplimiento medio de la dieta · {d.daysLogged} de {d.periodDays} días registrados
@@ -211,8 +211,8 @@ function NutritionSection({ section }: { section: CoachReportSection }) {
 }
 
 const CHALLENGE_STYLE: Record<string, { icon: string; cls: string; label: string }> = {
-  conseguido: { icon: 'emoji_events', cls: 'text-green-400', label: 'Conseguido' },
-  fallido:    { icon: 'close',        cls: 'text-amber-300', label: 'No salió' },
+  conseguido: { icon: 'emoji_events', cls: 'text-success', label: 'Conseguido' },
+  fallido:    { icon: 'close',        cls: 'text-warning', label: 'No salió' },
   activo:     { icon: 'timelapse',    cls: 'text-data', label: 'En marcha' },
 };
 
@@ -227,7 +227,7 @@ function ChallengesSection({ section }: { section: CoachReportSection }) {
           return (
             <li key={i} className="flex items-center gap-3">
               <Icon name={st.icon} size="m" filled className={`flex-shrink-0 ${st.cls}`} />
-              <span className="text-label text-white font-sans flex-1 min-w-0">{c.title}</span>
+              <span className="text-label text-ink font-sans flex-1 min-w-0">{c.title}</span>
               <span className={`font-mono text-caption font-bold flex-shrink-0 ${st.cls}`}>
                 {st.label}{c.progressValue != null ? ` · ${c.progressValue}/${c.target} ${c.unit}` : ''}
               </span>
@@ -249,12 +249,12 @@ function WellnessSection({ section }: { section: CoachReportSection }) {
           const delta = q.prevAvg != null ? Math.round((q.avg - q.prevAvg) * 10) / 10 : null;
           return (
             <li key={q.questionId} className="flex items-center gap-2.5">
-              <span className="material-symbols-outlined text-[#00eefc] text-base flex-shrink-0">self_improvement</span>
-              <span className="text-xs text-white font-sans flex-1 min-w-0">{q.questionLabel}</span>
-              <span className="font-mono text-xs text-[#fbcb1a] font-bold flex-shrink-0">
+              <span className="material-symbols-outlined text-data text-base flex-shrink-0">self_improvement</span>
+              <span className="text-xs text-ink font-sans flex-1 min-w-0">{q.questionLabel}</span>
+              <span className="font-mono text-xs text-accent-ink font-bold flex-shrink-0">
                 {q.avg}{q.unit ? ` ${q.unit}` : ''}
                 {delta != null && delta !== 0 && (
-                  <span className={`ml-1.5 text-[10px] ${delta > 0 ? 'text-green-400' : 'text-amber-300'}`}>
+                  <span className={`ml-1.5 text-[10px] ${delta > 0 ? 'text-success' : 'text-warning'}`}>
                     ({delta > 0 ? '+' : ''}{delta})
                   </span>
                 )}
@@ -287,7 +287,7 @@ export default function ReportView({ report }: { report: CoachReport }) {
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="font-sans font-bold text-title-m text-white">{report.title}</h3>
+        <h3 className="font-sans font-bold text-title-m text-ink">{report.title}</h3>
         <p className="font-mono text-caption text-ink-2 ">
           {fmtReportDate(report.periodStart)} – {fmtReportDate(report.periodEnd)}
           {report.sentAt && ` · enviado el ${new Date(report.sentAt).toLocaleDateString('es-ES')}`}

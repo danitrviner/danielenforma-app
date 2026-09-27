@@ -256,26 +256,26 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
       />
 
       {successMsg && (
-        <div className="bg-accent/15 border border-accent/30 text-white p-4 rounded-surface text-body-s flex items-center gap-2">
-          <span className="material-symbols-outlined text-accent">check_circle</span>
+        <div className="bg-accent/15 border border-accent/30 text-ink p-4 rounded-surface text-body-s flex items-center gap-2">
+          <span className="material-symbols-outlined text-accent-ink">check_circle</span>
           <p>{successMsg}</p>
         </div>
       )}
       {errorMsg && (
-        <div className="bg-red-500/10 border border-red-500/30 text-red-200 p-4 rounded-surface text-label font-sans">{errorMsg}</div>
+        <div className="bg-danger/10 border border-danger/30 text-danger p-4 rounded-surface text-label font-sans">{errorMsg}</div>
       )}
 
       {unifiedItems.length === 0 && !loadingResponses ? (
         <div className="bg-bg border border-dashed border-hairline rounded-surface p-10 text-center text-ink-2">
-          <span className="material-symbols-outlined text-display text-accent mb-2 block">verified_user</span>
-          <p className="text-body-s font-bold text-white">¡Sin revisiones todavía!</p>
+          <span className="material-symbols-outlined text-display text-accent-ink mb-2 block">verified_user</span>
+          <p className="text-body-s font-bold text-ink">¡Sin revisiones todavía!</p>
           <p className="text-label mt-1">Los check-ins y respuestas de tus atletas aparecerán aquí en cuanto los envíen desde su app.</p>
         </div>
       ) : (
         <div className="bg-surface border border-hairline rounded-surface overflow-hidden">
           <div className="p-4 border-b border-hairline bg-raised flex items-center gap-2">
-            <span className="material-symbols-outlined text-accent text-body-s">history_edu</span>
-            <h3 className="font-sans font-bold text-title-s text-white uppercase tracking-wide">Bandeja unificada</h3>
+            <span className="material-symbols-outlined text-accent-ink text-body-s">history_edu</span>
+            <h3 className="font-sans font-bold text-title-s text-ink uppercase tracking-wide">Bandeja unificada</h3>
             <span className="font-mono text-caption text-ink-2 ml-1">({unifiedItems.length} entradas, más antiguo primero)</span>
           </div>
           <div className="divide-y divide-hairline/40">
@@ -330,7 +330,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                       >rate_review</span>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-sans font-bold text-white text-label">{athleteName}</span>
+                          <span className="font-sans font-bold text-ink text-label">{athleteName}</span>
                           <span className="font-mono text-caption text-ink-2">Check-in · {c.dateStr}</span>
                           <Badge tone={c.approved ? 'success' : 'warning'}>
                             {c.approved ? 'Revisado' : 'Pendiente'}
@@ -344,7 +344,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                         <button
                           onClick={(e) => { e.stopPropagation(); goToAthleteProfile(athleteProfile.email); }}
                           title="Ver perfil completo"
-                          className="flex-shrink-0 p-2 rounded-control text-ink-2 hover:text-accent hover:bg-raised transition-colors"
+                          className="flex-shrink-0 p-2 rounded-control text-ink-2 hover:text-accent-ink hover:bg-raised transition-colors"
                         >
                           <span className="material-symbols-outlined text-title-s">account_circle</span>
                         </button>
@@ -358,9 +358,9 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                       <div className="px-4 pb-4 pt-2 bg-bg border-t border-hairline space-y-3">
                         <div className="grid grid-cols-3 gap-2 font-mono text-label">
                           {[
-                            { label: 'Peso', value: `${c.weight} kg`, color: 'text-white' },
-                            { label: 'Adherencia', value: c.adherence, color: 'text-accent' },
-                            { label: 'Humor', value: c.mood || '😊', color: 'text-white' },
+                            { label: 'Peso', value: `${c.weight} kg`, color: 'text-ink' },
+                            { label: 'Adherencia', value: c.adherence, color: 'text-accent-ink' },
+                            { label: 'Humor', value: c.mood || '😊', color: 'text-ink' },
                           ].map(cell => (
                             <div key={cell.label} className="bg-raised p-3 rounded-surface border border-hairline">
                               <span className="block text-ink-2 text-caption uppercase">{cell.label}</span>
@@ -371,17 +371,17 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                         {c.notes && (
                           <div className="bg-surface p-3 rounded-surface border border-hairline">
                             <span className="block font-mono text-caption text-ink-2 uppercase mb-1">Notas del atleta</span>
-                            <p className="text-label text-slate-300 font-sans italic">"{c.notes}"</p>
+                            <p className="text-label text-ink-2 font-sans italic">"{c.notes}"</p>
                           </div>
                         )}
                         {successMsg && expandedId === key && (
-                          <div className="bg-accent/15 border border-accent/30 text-white p-3 rounded-surface text-label flex items-center gap-2">
-                            <span className="material-symbols-outlined text-accent text-body-s">check_circle</span>
+                          <div className="bg-accent/15 border border-accent/30 text-ink p-3 rounded-surface text-label flex items-center gap-2">
+                            <span className="material-symbols-outlined text-accent-ink text-body-s">check_circle</span>
                             {successMsg}
                           </div>
                         )}
                         {errorMsg && expandedId === key && (
-                          <div className="bg-red-500/10 border border-red-500/30 text-red-200 p-3 rounded-surface text-label font-sans">{errorMsg}</div>
+                          <div className="bg-danger/10 border border-danger/30 text-danger p-3 rounded-surface text-label font-sans">{errorMsg}</div>
                         )}
                         {pendingIdx >= 0 && pendingCheckinItems.length > 1 && (
                           <p className="font-mono text-caption text-ink-2 uppercase tracking-wider">
@@ -395,7 +395,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                               type="button"
                               onClick={() => insertQuickReply(r)}
                               title={r}
-                              className="max-w-[180px] truncate text-caption font-mono text-ink-2 hover:text-accent hover:border-accent/40 border border-hairline px-2 py-1 rounded-control transition-all"
+                              className="max-w-[180px] truncate text-caption font-mono text-ink-2 hover:text-accent-ink hover:border-accent/40 border border-hairline px-2 py-1 rounded-control transition-all"
                             >
                               {r}
                             </button>
@@ -404,7 +404,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                             type="button"
                             onClick={openQuickReplyManager}
                             title="Gestionar plantillas de feedback"
-                            className="text-ink-2/60 hover:text-white p-1"
+                            className="text-ink-2/60 hover:text-ink p-1"
                           >
                             <span className="material-symbols-outlined text-body-s">tune</span>
                           </button>
@@ -414,12 +414,12 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                             value={expandedId === key ? feedbackText : (c.coachFeedback || '')}
                             onChange={e => setFeedbackText(e.target.value)}
                             placeholder="Escribe tu feedback para el atleta..."
-                            className="w-full bg-raised border border-hairline rounded-control p-3 text-title-s text-white focus:ring-1 focus:ring-accent focus:outline-none min-h-[80px] resize-none font-sans"
+                            className="w-full bg-raised border border-hairline rounded-control p-3 text-title-s text-ink focus:ring-1 focus:ring-accent focus:outline-none min-h-[80px] resize-none font-sans"
                           />
                           <button
                             type="submit"
                             disabled={isSubmitting}
-                            className="h-[36px] px-5 bg-accent text-black font-sans font-bold text-label uppercase rounded-control flex items-center gap-2 hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50"
+                            className="h-[36px] px-5 bg-accent text-on-accent font-sans font-bold text-label uppercase rounded-control flex items-center gap-2 hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50"
                           >
                             {isSubmitting ? 'Guardando...' : hasNextPending ? 'Enviar y siguiente' : 'Enviar y Aprobar'}
                             <span className="material-symbols-outlined text-body-s">{hasNextPending ? 'skip_next' : 'send'}</span>
@@ -466,7 +466,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                     >quiz</span>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-sans font-bold text-white text-label">{athleteName}</span>
+                        <span className="font-sans font-bold text-ink text-label">{athleteName}</span>
                         <span className="font-mono text-caption text-ink-2">{q?.title ?? 'Cuestionario'} · {submittedDate}</span>
                       </div>
                       {previewAnswers && (
@@ -477,7 +477,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                       onClick={(e) => { e.stopPropagation(); void marcarVista(r.id); }}
                       title="Marcar como vista y sacarla de la bandeja"
                       aria-label="Marcar como vista"
-                      className="flex-shrink-0 p-2 rounded-control text-ink-2 hover:text-accent hover:bg-raised transition-colors"
+                      className="flex-shrink-0 p-2 rounded-control text-ink-2 hover:text-accent-ink hover:bg-raised transition-colors"
                     >
                       <span className="material-symbols-outlined text-title-s">done_all</span>
                     </button>
@@ -485,7 +485,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                       <button
                         onClick={(e) => { e.stopPropagation(); goToAthleteProfile(athleteProfile.email); }}
                         title="Ver perfil completo"
-                        className="flex-shrink-0 p-2 rounded-control text-ink-2 hover:text-accent hover:bg-raised transition-colors"
+                        className="flex-shrink-0 p-2 rounded-control text-ink-2 hover:text-accent-ink hover:bg-raised transition-colors"
                       >
                         <span className="material-symbols-outlined text-title-s">account_circle</span>
                       </button>
@@ -504,7 +504,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                             <span className="font-sans text-caption text-ink-2 flex-1 ">
                               {question?.label ?? ans.questionId}
                             </span>
-                            <span className="font-mono text-label text-white font-bold text-right">
+                            <span className="font-mono text-label text-ink font-bold text-right">
                               {String(ans.value)}{question?.unit ? ` ${question.unit}` : ''}
                             </span>
                           </div>
@@ -537,7 +537,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                   value={r}
                   onChange={e => setQuickReplyDraft(prev => prev.map((x, xi) => xi === i ? e.target.value : x))}
                   placeholder="ej. Buen trabajo esta semana, sigue así."
-                  className="flex-1 bg-raised border border-hairline rounded-control px-3 py-2 text-title-s text-white focus:outline-none focus:ring-1 focus:ring-accent"
+                  className="flex-1 bg-raised border border-hairline rounded-control px-3 py-2 text-title-s text-ink focus:outline-none focus:ring-1 focus:ring-accent"
                 />
                 <Button
                   variant="ghost"
@@ -550,7 +550,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
             ))}
             <button
               onClick={() => setQuickReplyDraft(prev => [...prev, ''])}
-              className="flex items-center gap-2 text-label font-mono text-accent hover:text-white"
+              className="flex items-center gap-2 text-label font-mono text-accent-ink hover:text-ink"
             >
               <Icon name="add" size="s" />
               Añadir plantilla

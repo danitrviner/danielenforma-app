@@ -199,7 +199,7 @@ export default function EventPlannerSheet({
               <button
                 key={l} type="button" onClick={() => selectLane(l)}
                 className={`px-3 py-1.5 rounded-chip font-mono text-caption font-bold uppercase tracking-wider border transition-all ${
-                  lane === l ? 'bg-white/10 border-hairline text-white' : 'border-hairline text-ink-2 hover:text-white hover:border-strong'
+                  lane === l ? 'bg-strong border-hairline text-ink' : 'border-hairline text-ink-2 hover:text-ink hover:border-strong'
                 }`}
               >{LANE_LABEL[l]}</button>
             ))}
@@ -268,7 +268,7 @@ export default function EventPlannerSheet({
         {lane !== 'objetivos' && (
           <div className="bg-raised border border-hairline rounded-surface p-3 space-y-3">
             <button type="button" onClick={() => setConditionOn(v => !v)} className="w-full flex items-center justify-between">
-              <span className="flex items-center gap-1.5 font-mono text-caption text-accent uppercase tracking-wider">
+              <span className="flex items-center gap-1.5 font-mono text-caption text-accent-ink uppercase tracking-wider">
                 <span className="material-symbols-outlined" style={{ fontSize: 14 }}>auto_awesome</span>
                 Aplicar solo si se cumple una condición
               </span>
@@ -276,7 +276,7 @@ export default function EventPlannerSheet({
                 className={`relative w-10 h-5.5 rounded-full flex-shrink-0 transition-colors ${conditionOn ? 'bg-accent' : 'bg-inset'}`}
                 style={{ padding: 3 }}
               >
-                <span className="block w-4 h-4 rounded-full bg-white transition-transform duration-200" style={{ transform: conditionOn ? 'translateX(18px)' : 'translateX(0)' }} />
+                <span className="block w-4 h-4 rounded-full bg-ink transition-transform duration-200" style={{ transform: conditionOn ? 'translateX(18px)' : 'translateX(0)' }} />
               </span>
             </button>
             {conditionOn && (
@@ -287,24 +287,24 @@ export default function EventPlannerSheet({
                     <select
                       value={row.metric}
                       onChange={e => setConditionRows(rows => rows.map((r, i) => i === idx ? { ...r, metric: e.target.value } : r))}
-                      className="min-w-0 flex-1 bg-inset border border-hairline rounded-control px-2 py-1.5 text-caption text-white font-sans focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
+                      className="min-w-0 flex-1 bg-inset border border-hairline rounded-control px-2 py-1.5 text-caption text-ink font-sans focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
                     >
                       {CONDITION_METRICS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
                     </select>
                     <select
                       value={row.operator}
                       onChange={e => setConditionRows(rows => rows.map((r, i) => i === idx ? { ...r, operator: e.target.value } : r))}
-                      className="bg-inset border border-hairline rounded-control px-2 py-1.5 text-caption text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer flex-shrink-0"
+                      className="bg-inset border border-hairline rounded-control px-2 py-1.5 text-caption text-ink font-mono focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer flex-shrink-0"
                     >
                       {CONDITION_OPERATORS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                     </select>
                     <input
                       type="text" value={row.value}
                       onChange={e => setConditionRows(rows => rows.map((r, i) => i === idx ? { ...r, value: e.target.value } : r))}
-                      className="w-16 bg-inset border border-hairline rounded-control px-2 py-1.5 text-center text-caption text-white font-mono focus:outline-none focus:ring-1 focus:ring-accent flex-shrink-0"
+                      className="w-16 bg-inset border border-hairline rounded-control px-2 py-1.5 text-center text-caption text-ink font-mono focus:outline-none focus:ring-1 focus:ring-accent flex-shrink-0"
                     />
                     {conditionRows.length > 1 && (
-                      <button onClick={() => setConditionRows(rows => rows.filter((_, i) => i !== idx))} className="text-ink-3 hover:text-red-400 flex-shrink-0">
+                      <button onClick={() => setConditionRows(rows => rows.filter((_, i) => i !== idx))} className="text-ink-3 hover:text-danger flex-shrink-0">
                         <span className="material-symbols-outlined" style={{ fontSize: 16 }}>close</span>
                       </button>
                     )}
@@ -313,7 +313,7 @@ export default function EventPlannerSheet({
                 <button
                   type="button"
                   onClick={() => setConditionRows(rows => [...rows, { metric: 'adherenciaEntreno', operator: '>=', value: '80' }])}
-                  className="flex items-center gap-1 text-caption font-sans text-accent hover:text-white transition-colors"
+                  className="flex items-center gap-1 text-caption font-sans text-accent-ink hover:text-ink transition-colors"
                 >
                   <span className="material-symbols-outlined" style={{ fontSize: 14 }}>add</span>
                   Añadir condición

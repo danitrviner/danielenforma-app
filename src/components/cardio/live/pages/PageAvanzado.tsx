@@ -56,7 +56,7 @@ export default function PageAvanzado({ ctx, layout, onChangeLayout }: Props) {
               className="flex w-full items-center justify-between py-3 text-left"
             >
               <span className="text-body-s font-sans text-ink">{m.label}</span>
-              {editingSlot !== null && slots[editingSlot] === m.key && <Icon name="check" size="s" className="text-accent" />}
+              {editingSlot !== null && slots[editingSlot] === m.key && <Icon name="check" size="s" className="text-accent-ink" />}
             </button>
           ))}
         </div>
@@ -79,10 +79,10 @@ function Slot({ metricKey, ctx, onTap, big }: SlotProps) {
     <button
       type="button"
       onClick={onTap}
-      className={`flex flex-col items-center justify-center rounded-surface bg-black/25 ${big ? 'py-4' : 'py-3'}`}
+      className={`flex flex-col items-center justify-center rounded-surface bg-veil/25 ${big ? 'py-4' : 'py-3'}`}
     >
-      <p className={`font-mono font-bold text-white tabular-nums ${big ? 'text-display' : 'text-title-m'}`}>{metric.format(ctx)}</p>
-      <p className="text-caption font-sans uppercase text-white/70 mt-1">{metric.label}</p>
+      <p className={`font-mono font-bold text-ink tabular-nums ${big ? 'text-display' : 'text-title-m'}`}>{metric.format(ctx)}</p>
+      <p className="text-caption font-sans uppercase text-ink-2 mt-1">{metric.label}</p>
     </button>
   );
 }

@@ -143,7 +143,7 @@ export default function SuscripcionModal({ cliente, suscripcion, coachEmail, onC
                 aria-pressed={tipo === t.id}
                 className={`flex-1 rounded-control border px-3 py-2 font-sans text-caption font-bold transition-colors ${
                   tipo === t.id
-                    ? 'bg-accent text-black border-accent'
+                    ? 'bg-accent text-on-accent border-accent'
                     : 'bg-raised text-ink-2 border-hairline hover:text-ink'
                 }`}
               >{t.label}</button>

@@ -395,7 +395,7 @@ export default function WorkoutSessionPlayer({
             </p>
           </div>
           <div className="flex-shrink-0 text-right">
-            <span className="font-mono text-label text-accent font-bold">{doneSetsTotal}/{totalSetsAll}</span>
+            <span className="font-mono text-label text-accent-ink font-bold">{doneSetsTotal}/{totalSetsAll}</span>
             <span className="block font-mono text-caption text-ink-2 uppercase">series hechas</span>
           </div>
         </div>
@@ -460,7 +460,7 @@ export default function WorkoutSessionPlayer({
         >
           <div className="space-y-5 text-center">
             <div className="w-16 h-16 mx-auto rounded-surface bg-accent/10 border border-accent/30 flex items-center justify-center">
-              <Icon name={celebration.isFirstEver ? 'celebration' : 'bolt'} size="xl" filled className="text-accent" />
+              <Icon name={celebration.isFirstEver ? 'celebration' : 'bolt'} size="xl" filled className="text-accent-ink" />
             </div>
             <div>
               <h2 className="font-sans font-bold text-title-m text-ink">
@@ -483,7 +483,7 @@ export default function WorkoutSessionPlayer({
             {celebration.prs.length > 0 && (
               <div className="bg-accent/10 border border-accent/30 rounded-surface p-3 space-y-2 text-left">
                 {celebration.prs.map(pr => (
-                  <p key={pr.exerciseId} className="text-label text-accent flex items-center gap-2">
+                  <p key={pr.exerciseId} className="text-label text-accent-ink flex items-center gap-2">
                     <Icon name="military_tech" size="s" />
                     Récord en {pr.name} — {pr.newBest} kg est.
                   </p>

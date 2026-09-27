@@ -114,7 +114,7 @@ export default function EliminarCuentaDialog({ open, onClose, email }: Props) {
         </ul>
 
         <div className="flex gap-3 rounded-control bg-raised p-3">
-          <Icon name="receipt_long" size="s" className="text-accent shrink-0 mt-0.5" />
+          <Icon name="receipt_long" size="s" className="text-accent-ink shrink-0 mt-0.5" />
           <p className="font-sans text-caption text-ink-3">
             Los registros de facturación se conservan <strong className="text-ink-2">sin tus datos
             personales</strong>: la ley obliga a guardar la documentación de los pagos ya cobrados.
@@ -124,7 +124,7 @@ export default function EliminarCuentaDialog({ open, onClose, email }: Props) {
               href="/privacidad"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-accent underline"
+              className="text-accent-ink underline"
             >
               Más detalle
             </a>

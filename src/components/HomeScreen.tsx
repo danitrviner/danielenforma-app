@@ -77,7 +77,7 @@ const MARCO_DEL_DIA: Record<EstadoDeDia, string> = {
 const TEXTO_DEL_DIA: Record<EstadoDeDia, string> = {
   completado: 'text-success',
   saltado:    'text-ink-3',
-  hoy:        'text-accent',
+  hoy:        'text-accent-ink',
   perdido:    'text-danger',
   pendiente:  'text-ink-2',
 };
@@ -221,7 +221,7 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
         actionInline
         action={profile.currentStreak > 0 ? (
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-control border border-accent-line bg-accent/13">
-            <span className="font-mono text-body-s font-bold text-accent">{profile.currentStreak}</span>
+            <span className="font-mono text-body-s font-bold text-accent-ink">{profile.currentStreak}</span>
           </span>
         ) : undefined}
       />
@@ -261,13 +261,13 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
       {coachDayNote && (
         <section className="rounded-canvas p-4 border border-accent-line bg-accent/8 flex gap-3">
           <div
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-control font-mono text-caption font-bold text-accent"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-control font-mono text-caption font-bold text-accent-ink"
             style={{ background: 'color-mix(in oklab, var(--color-accent) 16%, transparent)' }}
           >
             <Icon name="sticky_note_2" size="s" />
           </div>
           <div className="min-w-0">
-            <p className="text-caption font-mono uppercase tracking-wider text-accent">Nota de tu entrenador</p>
+            <p className="text-caption font-mono uppercase tracking-wider text-accent-ink">Nota de tu entrenador</p>
             <p className="text-body-s font-sans text-ink mt-1 leading-relaxed" style={{ textWrap: 'pretty' }}>{coachDayNote.text}</p>
           </div>
         </section>
@@ -312,7 +312,7 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
             const proximoWorkout = proxima ? getWorkout(proxima.workoutId) : undefined;
             return (
               <section className="rounded-canvas border border-dashed border-strong p-6 text-center">
-                <span className="mx-auto flex h-11 w-11 items-center justify-center rounded-field bg-white/5">
+                <span className="mx-auto flex h-11 w-11 items-center justify-center rounded-field bg-hairline">
                   <Icon name="bedtime" size="m" className="text-ink-3" />
                 </span>
                 <p className="font-sans text-body-s font-bold text-ink mt-3.5">Hoy toca descanso</p>
@@ -331,7 +331,7 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
             <ListRow
               onClick={() => onNavigate('cardio')}
               className="rounded-control border bg-surface border-hairline"
-              leading={<Icon name="favorite" size="m" className="text-accent" />}
+              leading={<Icon name="favorite" size="m" className="text-accent-ink" />}
               title="Cardio"
               subtitle={cardioRx.type === 'zona2' ? 'Zona 2' : 'Intervalos'}
               chevron
@@ -372,12 +372,12 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
       {/* ── La vuelta del microciclo en curso, del Día 1 al Día N ────────────── */}
       {(loadingTraining || assignments.length > 0) && (
       <section className="bg-surface border border-hairline rounded-surface p-4 sm:p-5">
-        <h2 className="font-sans font-bold uppercase tracking-tight text-title-s text-white mb-3 pb-2 border-b border-hairline flex items-center gap-2">
-          <Icon name="fitness_center" size="l" className="text-accent" />
+        <h2 className="font-sans font-bold uppercase tracking-tight text-title-s text-ink mb-3 pb-2 border-b border-hairline flex items-center gap-2">
+          <Icon name="fitness_center" size="l" className="text-accent-ink" />
           Esta semana
           <button
             onClick={() => onNavigate('training')}
-            className="ml-auto text-caption font-mono font-bold uppercase text-ink-2 hover:text-accent transition-colors"
+            className="ml-auto text-caption font-mono font-bold uppercase text-ink-2 hover:text-accent-ink transition-colors"
           >
             Ver todo
           </button>

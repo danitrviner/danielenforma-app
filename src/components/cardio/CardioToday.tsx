@@ -1,6 +1,6 @@
 import React from 'react';
 import { CardioAssignment, CardioSessionType } from '../../types';
-import { HeartRateStatus } from '../../services/bleHeartRate';
+import { HeartRateStatus, isBleAvailable } from '../../services/bleHeartRate';
 import { ZONE_LABEL } from '../../utils/cardioZones';
 import DeviceChip from './DeviceChip';
 import { Button, Chip, ProgressBar, Sparkline, Banner } from '../ui';
@@ -18,6 +18,10 @@ import { Button, Chip, ProgressBar, Sparkline, Banner } from '../ui';
    atleta (eso lo decide HomeScreen en F3.11) y "Mover a mañana" es una
    salida legítima, no un fallo — por eso está al mismo nivel que "Empezar".
    ═══════════════════════════════════════════════════════════════════════════ */
+
+/* La sesión en vivo (conectar banda → ver FC → grabar) existe solo donde hay
+   BLE: la app nativa. En web no se ofrece en vez de ofrecerla y fallar. */
+const HAY_BANDA = isBleAvailable();
 
 type ConnState = 'idle' | 'connecting' | 'ready';
 
@@ -93,7 +97,23 @@ export default function CardioToday({
         {skippedToday && <Banner tone="info">Movido a mañana. Puedes empezarlo igualmente si cambias de idea.</Banner>}
         {error && <Banner tone="danger">{error}</Banner>}
 
-        {connState === 'idle' && (
+        {/* Sin BLE (o sea, entrando por el navegador) "Empezar cardio" solo
+            podía acabar en el error de `connect()`: era el botón primario y
+            grande de la tarjeta llevando a un callejón sin salida. Ahí la
+            acción de verdad es registrarlo, así que "Ya lo hice" sube a
+            primario y se dice por qué no está la sesión en vivo. */}
+        {connState === 'idle' && !HAY_BANDA && (
+          <div className="space-y-2">
+            <Button onClick={onManualAdd} fullWidth size="l">Ya lo hice</Button>
+            {!skippedToday && <Button variant="secondary" size="m" onClick={onSkipToday} fullWidth>Mover a mañana</Button>}
+            <p className="font-sans text-caption text-ink-3 leading-relaxed">
+              Seguir el cardio en vivo con banda de pulso necesita la app instalada. Desde el
+              navegador haz tu sesión y regístrala aquí al terminar.
+            </p>
+          </div>
+        )}
+
+        {connState === 'idle' && HAY_BANDA && (
           <div className="space-y-2">
             <Button onClick={onConnect} fullWidth size="l">Empezar cardio</Button>
             <div className="flex gap-2">
@@ -112,18 +132,18 @@ export default function CardioToday({
               <div className="flex gap-2">
                 {zona2Assignment && (
                   <button onClick={() => onChangeSessionType('zona2')}
-                    className={`flex-1 rounded-control border py-2 text-body-s font-sans font-bold transition-colors ${sessionType === 'zona2' ? 'border-accent-line bg-accent/16 text-accent' : 'border-hairline text-ink-2'}`}>
+                    className={`flex-1 rounded-control border py-2 text-body-s font-sans font-bold transition-colors ${sessionType === 'zona2' ? 'border-accent-line bg-accent/16 text-accent-ink' : 'border-hairline text-ink-2'}`}>
                     Zona 2
                   </button>
                 )}
                 {intervalAssignment && (
                   <button onClick={() => onChangeSessionType('intervalos')}
-                    className={`flex-1 rounded-control border py-2 text-body-s font-sans font-bold transition-colors ${sessionType === 'intervalos' ? 'border-accent-line bg-accent/16 text-accent' : 'border-hairline text-ink-2'}`}>
+                    className={`flex-1 rounded-control border py-2 text-body-s font-sans font-bold transition-colors ${sessionType === 'intervalos' ? 'border-accent-line bg-accent/16 text-accent-ink' : 'border-hairline text-ink-2'}`}>
                     Intervalos
                   </button>
                 )}
                 <button onClick={() => onChangeSessionType('libre')}
-                  className={`flex-1 rounded-control border py-2 text-body-s font-sans font-bold transition-colors ${sessionType === 'libre' ? 'border-accent-line bg-accent/16 text-accent' : 'border-hairline text-ink-2'}`}>
+                  className={`flex-1 rounded-control border py-2 text-body-s font-sans font-bold transition-colors ${sessionType === 'libre' ? 'border-accent-line bg-accent/16 text-accent-ink' : 'border-hairline text-ink-2'}`}>
                   Libre
                 </button>
               </div>

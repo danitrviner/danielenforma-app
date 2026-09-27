@@ -5,6 +5,9 @@ import { getAllCourses, getAllLessons, getAcademyProgress, markLessonComplete, g
 import { evaluateUnlockRule } from '../utils/academyUnlock';
 import { addRoadmapMilestone } from '../utils/roadmapMilestones';
 import LessonPlayer from './academy/LessonPlayer';
+import PortadaCurso from './academy/PortadaCurso';
+import TarjetaCurso from './academy/TarjetaCurso';
+import { siguienteLeccion } from '../utils/academyContinuar';
 import { Skeleton } from './ui';
 import { Icon, Button, EmptyState, PageHeader, ListRow, ProgressBar } from './ui';
 
@@ -107,11 +110,35 @@ export default function AcademyScreen({ profile }: Props) {
     return (
       <div className="space-y-6">
         <Button variant="ghost" size="s" onClick={() => setOpenCourseId(null)} icon="arrow_back">Training Lab</Button>
-        <div>
-          <span className="text-caption font-sans uppercase text-accent">{CATEGORY_LABEL[openCourse.category]}</span>
-          <h2 className="font-sans font-bold text-title-l text-ink">{openCourse.title}</h2>
-          <p className="text-label text-ink-2 font-sans mt-1">{openCourse.description}</p>
+        {/* La misma portada que en la rejilla: al abrir un curso sigues viendo
+            dónde estás, como en la ficha de cualquier plataforma de formación.
+            Antes la ficha era un título sobre fondo vacío. */}
+        <div className="relative overflow-hidden rounded-surface border border-hairline">
+          <PortadaCurso
+            category={openCourse.category}
+            coverImageUrl={openCourse.coverImageUrl}
+            title={openCourse.title}
+            grande
+            alto="h-48 sm:h-56"
+          />
+          <div className="absolute inset-0 flex flex-col justify-end p-4 sm:p-5">
+            <span className="font-mono text-caption uppercase tracking-widest text-ink-3">{CATEGORY_LABEL[openCourse.category]}</span>
+            <h2 className="font-sans font-bold text-title-l text-ink">{openCourse.title}</h2>
+            <p className="text-label text-ink-2 font-sans mt-1 line-clamp-2">{openCourse.description}</p>
+          </div>
         </div>
+        {(() => {
+          const hechas = courseLessons.filter(l => progressSafe.completed[l.id]).length;
+          const pct = progressSafe.courseProgress[openCourse.id] ?? 0;
+          return courseLessons.length > 0 ? (
+            <div className="space-y-1.5">
+              <ProgressBar value={pct} label={`Progreso de ${openCourse.title}, ${pct}%`} />
+              <p className="font-mono text-caption text-ink-4">
+                {hechas} de {courseLessons.length} lecciones · {pct} %
+              </p>
+            </div>
+          ) : null;
+        })()}
         <div className="space-y-2">
           {courseLessons.map((l, i) => {
             const done = !!progressSafe.completed[l.id];
@@ -123,7 +150,7 @@ export default function AcademyScreen({ profile }: Props) {
                 onClick={() => unlocked && setOpenLessonId(l.id)}
                 disabled={!unlocked}
                 className="rounded-control border bg-surface border-hairline"
-                leading={<Icon name={!unlocked ? 'lock' : done ? 'check_circle' : 'play_circle'} size="l" className={done ? 'text-accent' : 'text-ink-2'} />}
+                leading={<Icon name={!unlocked ? 'lock' : done ? 'check_circle' : 'play_circle'} size="l" className={done ? 'text-accent-ink' : 'text-ink-2'} />}
                 title={`${i + 1}. ${l.title}`}
                 subtitle={!unlocked ? reason : undefined}
               />
@@ -140,6 +167,22 @@ export default function AcademyScreen({ profile }: Props) {
     return acc;
   }, {});
 
+  const desbloqueado = (c: AcademyCourse) =>
+    evaluateUnlockRule(c.unlockRule, { profile, progress: progressSafe }, courseTitleById);
+
+  // Por dónde iba. Solo entre los cursos que puede abrir de verdad: empujar a
+  // uno con candado sería ofrecerle una puerta cerrada.
+  const continuar = siguienteLeccion(
+    progressSafe,
+    publishedCourses.filter(c => desbloqueado(c).unlocked),
+    lessons,
+  );
+
+  const abrirLeccion = (courseId: string, lessonId: string) => {
+    setOpenCourseId(courseId);
+    setOpenLessonId(lessonId);
+  };
+
   return (
     <div className="space-y-6">
       <PageHeader title="Training Lab" subtitle="Formación — entrenamiento, nutrición y más" />
@@ -148,35 +191,68 @@ export default function AcademyScreen({ profile }: Props) {
         <p className="text-label text-ink-3 font-sans py-6 text-center">Todavía no hay cursos publicados.</p>
       )}
 
+      {/* ── Seguir donde lo dejaste ──────────────────────────────────────────
+          Lo primero que hace una plataforma de formación cuando vuelves: no te
+          enseña el catálogo, te devuelve al vídeo. Es el ÚNICO oro relleno de
+          la pantalla (regla del design system: uno por pantalla visible). */}
+      {continuar && (
+        <button
+          type="button"
+          onClick={() => abrirLeccion(continuar.course.id, continuar.lesson.id)}
+          className="group relative block w-full text-left overflow-hidden rounded-surface border border-hairline hover:border-accent-line transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-accent/40"
+        >
+          <PortadaCurso
+            category={continuar.course.category}
+            coverImageUrl={continuar.course.coverImageUrl}
+            title={continuar.course.title}
+            grande
+            alto="h-44 sm:h-52"
+          />
+          <div className="absolute inset-0 flex flex-col justify-end p-4 sm:p-5">
+            <span className="font-mono text-caption uppercase tracking-widest text-accent-ink">
+              {continuar.empezando ? 'Empieza por aquí' : 'Sigue donde lo dejaste'}
+            </span>
+            <p className="font-sans font-bold text-title-m text-ink mt-0.5 line-clamp-1">
+              {continuar.lesson.title}
+            </p>
+            <p className="font-sans text-label text-ink-2 line-clamp-1">
+              {continuar.course.title} · Lección {continuar.numero} de {continuar.total}
+            </p>
+            <span className="mt-3 inline-flex items-center gap-1.5 self-start rounded-control bg-accent px-3 py-2 font-sans font-bold text-caption text-on-accent">
+              <Icon name="play_arrow" size="s" />
+              {continuar.empezando ? 'Empezar' : 'Continuar'}
+            </span>
+          </div>
+        </button>
+      )}
+
       {(Object.keys(byCategory) as AcademyCategory[]).map(cat => (
-        <div key={cat} className="space-y-2">
-          <h3 className="text-caption font-sans uppercase text-accent tracking-wider">{CATEGORY_LABEL[cat]}</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <section key={cat} className="space-y-3">
+          <div className="flex items-baseline justify-between gap-2">
+            <h3 className="font-mono text-caption uppercase tracking-widest text-ink-2">{CATEGORY_LABEL[cat]}</h3>
+            <span className="font-mono text-caption text-ink-4">
+              {byCategory[cat].length} {byCategory[cat].length === 1 ? 'curso' : 'cursos'}
+            </span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
             {byCategory[cat].map(c => {
-              const { unlocked, reason } = evaluateUnlockRule(c.unlockRule, { profile, progress: progressSafe }, courseTitleById);
-              const pct = progressSafe.courseProgress[c.id] ?? 0;
+              const { unlocked, reason } = desbloqueado(c);
+              const delCurso = lessons.filter(l => l.courseId === c.id);
               return (
-                <button
+                <TarjetaCurso
                   key={c.id}
-                  onClick={() => unlocked && setOpenCourseId(c.id)}
-                  disabled={!unlocked}
-                  className={`text-left bg-surface border border-hairline rounded-control p-4 transition-all ${unlocked ? 'hover:border-accent/40' : 'opacity-50'}`}
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <p className="font-sans font-bold text-body-s text-ink">{c.title}</p>
-                    {!unlocked && <Icon name="lock" size="m" className="text-ink-3 flex-shrink-0" />}
-                  </div>
-                  <p className="text-label text-ink-2 font-sans mt-1 line-clamp-2">{c.description}</p>
-                  {unlocked ? (
-                    <ProgressBar value={pct} label={`Progreso de ${c.title}, ${pct}%`} className="mt-3" />
-                  ) : (
-                    <p className="text-caption text-ink-3 font-mono mt-3">{reason}</p>
-                  )}
-                </button>
+                  curso={c}
+                  pct={progressSafe.courseProgress[c.id] ?? 0}
+                  total={delCurso.length || c.lessonCount}
+                  hechas={delCurso.filter(l => progressSafe.completed[l.id]).length}
+                  unlocked={unlocked}
+                  reason={reason}
+                  onClick={() => setOpenCourseId(c.id)}
+                />
               );
             })}
           </div>
-        </div>
+        </section>
       ))}
     </div>
   );

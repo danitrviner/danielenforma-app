@@ -71,7 +71,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
               <button
                 type="button"
                 onClick={t.onAction}
-                className="shrink-0 font-sans text-body-s font-bold text-accent"
+                className="shrink-0 font-sans text-body-s font-bold text-accent-ink"
               >
                 {t.actionLabel}
               </button>

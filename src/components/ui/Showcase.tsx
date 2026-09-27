@@ -167,7 +167,7 @@ export default function Showcase() {
   return (
     <div className="flex flex-col gap-10">
       <header className="flex flex-col gap-2">
-        <span className="font-sans text-caption uppercase tracking-widest text-accent">
+        <span className="font-sans text-caption uppercase tracking-widest text-accent-ink">
           Design System · Fase 3
         </span>
         <h1 className="font-sans text-display font-bold text-ink">Primitivas</h1>
@@ -199,7 +199,7 @@ export default function Showcase() {
             <Icon name="favorite" size="l" filled />
           </Muestra>
           <Muestra pie="hereda color">
-            <span className="text-accent">
+            <span className="text-accent-ink">
               <Icon name="bolt" size="l" filled />
             </span>
           </Muestra>
@@ -419,8 +419,8 @@ export default function Showcase() {
           <Pager value={paginaOscura} onChange={setPaginaOscura} label="Ejemplo con puntos dentro, fondo de color" dots="inside">
             {['FC', 'Calorías', 'Zonas'].map((n) => (
               <div key={n} className="flex h-40 flex-col items-center justify-center gap-1 pb-6">
-                <span className="font-mono text-caption uppercase text-bg/70">{n}</span>
-                <span className="font-sans text-hero font-bold text-bg">142</span>
+                <span className="font-mono text-caption uppercase text-on-accent/70">{n}</span>
+                <span className="font-sans text-hero font-bold text-on-accent">142</span>
               </div>
             ))}
           </Pager>
