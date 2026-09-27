@@ -36,7 +36,13 @@ export default function ActionRow({ initials, title, meta, urgent = true, onClic
         <span
           className={
             'flex h-9 w-9 items-center justify-center rounded-full font-sans text-body-s font-bold '
-            + (urgent ? 'bg-accent/16 text-accent-ink' : 'bg-hairline text-ink-4')
+            /* Las iniciales van en `ink-2`, no en `ink-4`: identifican a una
+               persona, no son dato terciario — y es lo que ya hacía la
+               primitiva `Avatar`, que resuelve exactamente lo mismo. Con
+               `ink-4` daban 4,46:1 sobre este círculo en oscuro; el arreglo no
+               es aflojar el token hasta que quepan, es que estaban en el
+               escalón equivocado. */
+            + (urgent ? 'bg-accent/16 text-accent-ink' : 'bg-hairline text-ink-2')
           }
         >
           {initials}
