@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, afterEach } from 'vitest';
 import { QuestionnaireAssignment, QuestionnaireResponse } from '../types';
-import { hasAnsweredThisOccurrence, isOverdue } from './questionnaireSchedule';
+import { hasAnsweredThisOccurrence, isOverdue, fijarAlViernes, fijarAlViernesAlCrear } from './questionnaireSchedule';
 
 afterEach(() => { vi.useRealTimers(); });
 
@@ -186,5 +186,43 @@ describe('pending expires on the Tuesday after the scheduled day', () => {
     expect(isOverdue(lunes)).toBe(true);
     vi.setSystemTime(new Date('2026-09-29T12:00:00'));
     expect(isOverdue(lunes)).toBe(false);
+  });
+});
+
+// Regla de Dani (28-09-2026): semanales y quincenales se piden siempre el
+// viernes, pendientes de viernes a lunes, y el martes caducan.
+describe('cuestionarios fijados al viernes', () => {
+  const base = { id: 'v1', questionnaireId: 'q1', athleteId: 'x@x.com', active: true, createdAt: '2026-09-01T00:00:00Z' };
+
+  it('al leer, un lunes o un domingo pasan al viernes ANTERIOR (misma revisión)', () => {
+    expect(fijarAlViernes({ ...base, schedule: { type: 'interval', intervalDays: 14 }, startDate: '2026-09-14' }).startDate).toBe('2026-09-11');
+    expect(fijarAlViernes({ ...base, schedule: { type: 'interval', intervalDays: 7 }, startDate: '2026-09-13' }).startDate).toBe('2026-09-11');
+    expect(fijarAlViernes({ ...base, schedule: { type: 'interval', intervalDays: 7 }, startDate: '2026-09-15' }).startDate).toBe('2026-09-18');
+    expect(fijarAlViernes({ ...base, schedule: { type: 'weekdays', weekdays: [1] }, startDate: '2026-09-14' }).schedule.weekdays).toEqual([5]);
+  });
+
+  it('al crear, arranca el primer viernes desde el día elegido', () => {
+    expect(fijarAlViernesAlCrear({ schedule: { type: 'interval', intervalDays: 7 }, startDate: '2026-09-28' }).startDate).toBe('2026-10-02');
+    expect(fijarAlViernesAlCrear({ schedule: { type: 'interval', intervalDays: 7 }, startDate: '2026-10-02' }).startDate).toBe('2026-10-02');
+  });
+
+  it('no toca mensuales, cada-N-días ni semanas de plan', () => {
+    const mensual = { ...base, schedule: { type: 'monthly' as const, dayOfMonth: 3 }, startDate: '2026-09-14' };
+    expect(fijarAlViernes(mensual)).toBe(mensual);
+    const diez = { ...base, schedule: { type: 'interval' as const, intervalDays: 10 }, startDate: '2026-09-14' };
+    expect(fijarAlViernes(diez)).toBe(diez);
+  });
+
+  it('pendiente de viernes a lunes y caduca el martes', () => {
+    const a: QuestionnaireAssignment = fijarAlViernes({ ...base, schedule: { type: 'interval', intervalDays: 7 }, startDate: '2026-09-14' });
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-09-24T12:00:00')); // jueves
+    expect(isOverdue(a)).toBe(false);
+    for (const dia of ['2026-09-25', '2026-09-26', '2026-09-27', '2026-09-28']) {
+      vi.setSystemTime(new Date(`${dia}T12:00:00`));
+      expect(isOverdue(a)).toBe(true);
+    }
+    vi.setSystemTime(new Date('2026-09-29T12:00:00')); // martes
+    expect(isOverdue(a)).toBe(false);
   });
 });

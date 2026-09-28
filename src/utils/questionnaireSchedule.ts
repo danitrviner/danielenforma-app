@@ -19,6 +19,56 @@ export type { ScheduleContext };
  *  responde, vuelve a «programado» hasta su siguiente día. */
 export const DIA_CADUCIDAD_PENDIENTE = 2;
 
+/** Los cuestionarios semanales o quincenales se piden SIEMPRE el viernes
+ *  (decisión de Dani, 28-09): el atleta tiene viernes, sábado, domingo y lunes
+ *  para responder, y el martes caduca. Da igual el día configurado. */
+export const DIA_CUESTIONARIO = 5;
+
+/** El viernes del ciclo martes→lunes al que pertenece `iso`: un lunes o un
+ *  domingo apuntan al viernes anterior (misma revisión), un martes o miércoles
+ *  al siguiente. */
+function viernesDelCiclo(iso: string): string {
+  const d = startOfDay(iso);
+  const posicion = (d.getDay() - DIA_CADUCIDAD_PENDIENTE + 7) % 7; // martes = 0 … lunes = 6
+  d.setDate(d.getDate() + (DIA_CUESTIONARIO - DIA_CADUCIDAD_PENDIENTE) - posicion);
+  return isoLocal(d);
+}
+
+/** Primer viernes igual o posterior a `iso`. */
+function viernesDesde(iso: string): string {
+  const d = startOfDay(iso);
+  d.setDate(d.getDate() + ((DIA_CUESTIONARIO - d.getDay() + 7) % 7));
+  return isoLocal(d);
+}
+
+function fijarAlViernesCon<T extends Pick<QuestionnaireAssignment, 'schedule' | 'startDate'>>(
+  a: T, anclar: (iso: string) => string,
+): T {
+  const s = a.schedule;
+  if (!s) return a;
+  if (s.type === 'weekdays') {
+    if ((s.weekdays ?? []).length === 0) return a;
+    return { ...a, schedule: { ...s, weekdays: [DIA_CUESTIONARIO] } };
+  }
+  // Solo cadencias de semanas enteras: un «cada 10 días» no puede caer siempre en viernes.
+  if (s.type === 'interval' && (s.intervalDays ?? 7) % 7 === 0 && a.startDate) {
+    return { ...a, startDate: anclar(a.startDate) };
+  }
+  return a;
+}
+
+/** Al LEER: lo ya asignado (lunes, domingo, mal configurado…) pasa al viernes
+ *  de su misma semana de revisión, sin mover qué semanas le tocan. */
+export function fijarAlViernes<T extends Pick<QuestionnaireAssignment, 'schedule' | 'startDate'>>(a: T): T {
+  return fijarAlViernesCon(a, viernesDelCiclo);
+}
+
+/** Al CREAR: arranca el primer viernes desde el día elegido, para que asignar
+ *  un lunes no deje pendiente el viernes que ya pasó. */
+export function fijarAlViernesAlCrear<T extends Pick<QuestionnaireAssignment, 'schedule' | 'startDate'>>(a: T): T {
+  return fijarAlViernesCon(a, viernesDesde);
+}
+
 /** Último día programado (hoy incluido) de un 'weekdays' o 'interval'. */
 function ultimoPulso(a: QuestionnaireAssignment, today: string): Date | null {
   const s = a.schedule;

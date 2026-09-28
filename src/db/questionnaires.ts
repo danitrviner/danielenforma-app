@@ -5,6 +5,7 @@ import {
   conTimeout, EscrituraEncolada, escribirEnLotes,
 } from './core';
 import { escribirLocal } from '../utils/almacenLocal';
+import { fijarAlViernes, fijarAlViernesAlCrear } from '../utils/questionnaireSchedule';
 
 // ─── QUESTIONNAIRES ──────────────────────────────────────────────────────────
 // Collection: questionnaires  (owned by coach — ownerId == coachUid)
@@ -162,7 +163,7 @@ function getLocalQAssignments(): QuestionnaireAssignment[] {
 export async function assignQuestionnaire(data: Omit<QuestionnaireAssignment, 'id'>): Promise<QuestionnaireAssignment> {
   // Guarantee schedule is always present — stripUndefined would remove it if undefined,
   // producing a Firestore document that crashes isDueToday on read.
-  const safeData = { ...data, schedule: data.schedule ?? { type: 'once' as const } };
+  const safeData = fijarAlViernesAlCrear({ ...data, schedule: data.schedule ?? { type: 'once' as const } });
   if (forceLocalOnly) {
     const a: QuestionnaireAssignment = { ...safeData, id: `local_qa_${Date.now()}` };
     escribirLocal(LOCAL_Q_ASSIGNMENTS, JSON.stringify([...getLocalQAssignments(), a]));
@@ -198,7 +199,7 @@ export async function assignQuestionnaire(data: Omit<QuestionnaireAssignment, 'i
 export async function assignQuestionnairesBatch(
   datos: Omit<QuestionnaireAssignment, 'id'>[],
 ): Promise<QuestionnaireAssignment[]> {
-  const seguros = datos.map(d => ({ ...d, schedule: d.schedule ?? { type: 'once' as const } }));
+  const seguros = datos.map(d => fijarAlViernesAlCrear({ ...d, schedule: d.schedule ?? { type: 'once' as const } }));
   if (seguros.length === 0) return [];
 
   if (forceLocalOnly) {
@@ -223,15 +224,17 @@ export async function assignQuestionnairesBatch(
   }
 }
 
+// Todo lo que se lee pasa por `fijarAlViernes`: lo asignado antes de la regla
+// del viernes (o configurado a otro día) se ve y se calcula como viernes.
 export async function getAssignmentsForAthlete(email: string): Promise<QuestionnaireAssignment[]> {
-  if (forceLocalOnly) return getLocalQAssignments().filter(a => a.athleteId === email);
+  if (forceLocalOnly) return getLocalQAssignments().filter(a => a.athleteId === email).map(fijarAlViernes);
   try {
     const snap = await getDocs(query(collection(db, 'questionnaireAssignments'), where('athleteId', '==', email)));
-    return snap.docs.map(d => ({ id: d.id, ...d.data() } as QuestionnaireAssignment));
+    return snap.docs.map(d => fijarAlViernes({ id: d.id, ...d.data() } as QuestionnaireAssignment));
   } catch (err) {
     console.warn('getAssignmentsForAthlete Firestore failed, using local:', err);
     setLocalBypassMode(true, err);
-    return getLocalQAssignments().filter(a => a.athleteId === email);
+    return getLocalQAssignments().filter(a => a.athleteId === email).map(fijarAlViernes);
   }
 }
 

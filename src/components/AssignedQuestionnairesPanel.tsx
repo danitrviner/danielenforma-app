@@ -8,6 +8,7 @@ import {
   assignQuestionnaire, assignQuestionnairesBatch, deactivateAssignment, createQuestionnaire,
   getQuestionnairePacksByCoach, createQuestionnairePack, updateQuestionnairePack, deleteQuestionnairePack,
 } from '../dbService';
+import { fijarAlViernesAlCrear } from '../utils/questionnaireSchedule';
 import {
   cadenciaEnCristiano, cadenciaParaTabla, proximaOcurrencia, etiquetaFechaCorta, hoyLocalStr,
 } from '../utils/scheduleEngine';
@@ -848,10 +849,14 @@ export default function AssignedQuestionnairesPanel({
                     la misma frase que va a leer luego en la tabla. */}
                 {assignQId && (
                   <p className="font-sans text-body-s text-ink-2 text-pretty">
-                    Se le pedirá <strong className="text-ink">{cadenciaEnCristiano(cedulaDeCadencia()).toLowerCase()}</strong>
                     {(() => {
-                      const p = etiquetaFechaCorta(proximaOcurrencia({ schedule: cedulaDeCadencia(), startDate: assignStartDate }));
-                      return p ? <> · primera vez: <strong className="text-ink">{p}</strong></> : null;
+                      // Lo que de verdad se guardará: semanal o quincenal, siempre en viernes.
+                      const real = fijarAlViernesAlCrear({ schedule: cedulaDeCadencia(), startDate: assignStartDate });
+                      const p = etiquetaFechaCorta(proximaOcurrencia(real));
+                      return <>
+                        Se le pedirá <strong className="text-ink">{cadenciaEnCristiano(real.schedule).toLowerCase()}</strong>
+                        {p ? <> · primera vez: <strong className="text-ink">{p}</strong></> : null}
+                      </>;
                     })()}
                   </p>
                 )}
