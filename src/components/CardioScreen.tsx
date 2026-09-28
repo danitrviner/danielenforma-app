@@ -2,7 +2,9 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { UserProfile, CardioSessionType } from '../types';
-import { getCardioProfile, getCardioSessionsSince, getCardioAssignmentsForAthlete, getHrvReadingsForAthlete, getCardioWeeklyGoal, getStepsForDate, getAthleteNutritionConfig } from '../dbService';
+import { getCardioProfile, getCardioSessionsSince, getCardioAssignmentsForAthlete, getHrvReadingsForAthlete, getCardioWeeklyGoal, getStepsForDate, getAthleteNutritionConfig, getNutritionProgram } from '../dbService';
+import { objetivoDePasos } from '../utils/semanasNutricion';
+import { hoyIsoLocal as hoyPasos } from '../utils/trainingWeek';
 import { ventanaCardio, ventanaHrv } from '../utils/ventanaHistorial';
 import { getZoneForBpm, ZONE_LABEL, ZONE_COLOR, ZONE_INK, ZONE_ORDER } from '../utils/cardioZones';
 import {
@@ -48,6 +50,10 @@ interface Props {
 }
 
 export default function CardioScreen({ profile }: Props) {
+  const { data: programaNutri = null } = useQuery({
+    queryKey: ['nutritionProgram', profile.email],
+    queryFn: () => getNutritionProgram(profile.email).catch(() => null),
+  });
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const cardio = useCardioSession();
@@ -269,7 +275,7 @@ export default function CardioScreen({ profile }: Props) {
             sessionsDone={sessionsDone}
             dailyMinutes={dailyCardioMinutesForWeek(sessions, todayIso)}
             todaysSteps={todaysStepsEntry?.steps ?? null}
-            stepGoal={nutritionConfig?.stepGoal}
+            stepGoal={objetivoDePasos(programaNutri, hoyPasos(), nutritionConfig?.stepGoal)}
           />
         );
       })()}

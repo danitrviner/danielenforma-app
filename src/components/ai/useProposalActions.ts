@@ -18,7 +18,7 @@ import {
   SpecialDayProposalPayload, WorkoutDaysProposalPayload, WorkoutExercise, NutritionPhase, Roadmap,
   SetupConfigProposalPayload, PublishBlockProposalPayload, WeeklyChallengeProposalPayload,
   WorkoutTemplateProposalPayload, MesocycleTemplateProposalPayload, WeeklyChallenge, CardioProgram,
-  TemplateStage, WeekDay, ProposalComment,
+  TemplateStage, WeekDay, ProposalComment, WeekPlanProposalPayload,
 } from '../../types';
 import {
   updateAiProposal, submitCoachFeedback, createDiet, updateDiet, createMesocycle,
@@ -28,9 +28,12 @@ import {
   updateUserProfile, getAthleteNutritionConfig, saveAthleteNutritionConfig,
   getAthleteDietConfig, saveAthleteDietConfig, assignQuestionnaire, assignPhotoCheckIn,
   createCardioAssignment, saveWeeklyChallenge, createMesocycleTemplate,
-  createWorkoutAssignmentStrict, getDietsForAthlete,
+  createWorkoutAssignmentStrict, getDietsForAthlete, getNutritionProgram, updateMesocycle,
 } from '../../dbService';
-import { sesionesDeMesociclo, fechasDelMesociclo } from '../../utils/asignacionMesociclo';
+import { rirDescendente, subirSeries, programarEnSemanas } from '../../utils/semanasDelBloque';
+import { programarAjuste } from '../../utils/semanasNutricion';
+import { vueltasDelCiclo } from '../../utils/progression';
+import { sesionesDeMesociclo, fechasDelMesociclo, cicloDiasDeMeso } from '../../utils/asignacionMesociclo';
 import { prescripcionDeSemana, ZONA2_BASE_MIN_DEFECTO } from '../../utils/cardioProgression';
 import { isoWeekKey, isoWeekBounds } from '../../utils/challengeOptions';
 import { saveDossierJudgement, appendDossierFacts } from '../../db/dossier';
@@ -53,6 +56,8 @@ function clavesQueRefrescar(kind: AiProposal['kind'], athleteEmail: string): unk
       return [['roadmap', athleteEmail]];
     case 'specialDay':
       return [['roadmap', athleteEmail], ['tasksForAthlete', athleteEmail]];
+    case 'weekPlan':
+      return [['mesocycles', athleteEmail], ['workouts'], ['nutritionProgram', athleteEmail]];
     case 'nutritionProgram':
       return [['nutritionProgram', athleteEmail], ['dietsForAthlete', athleteEmail]];
     case 'diet':
@@ -169,13 +174,77 @@ export function useProposalActions(
             ...(fase.targetRateKgWeek != null ? { targetRateKgWeek: fase.targetRateKgWeek } : {}),
           });
         }
+        // Lo programado semana a semana (suplementos, pasos, ajustes…) no viene
+        // en la propuesta: se conserva del programa que hubiera.
+        const previo = await getNutritionProgram(p.athleteId);
         await saveNutritionProgram({
           athleteId: p.athleteId,
           startDate,
           phases: fases,
           ...(refeedDays?.length ? { refeedDays } : {}),
+          ...(previo?.cambiosSemana ? { cambiosSemana: previo.cambiosSemana } : {}),
+          ...(previo?.semanasMantenimiento ? { semanasMantenimiento: previo.semanasMantenimiento } : {}),
+          ...(previo?.comidasLibres ? { comidasLibres: previo.comidasLibres } : {}),
+          ...(previo?.suplementos ? { suplementos: previo.suplementos } : {}),
+          ...(previo?.ciclado ? { ciclado: previo.ciclado } : {}),
+          ...(previo?.pasosPorSemana ? { pasosPorSemana: previo.pasosPorSemana } : {}),
         });
         await updateAiProposal(p.id, { status: 'approved', reviewedAt: new Date().toISOString(), resultEntityId: p.athleteId });
+      } else if (p.kind === 'weekPlan') {
+        const plan = p.payload as WeekPlanProposalPayload;
+        if (plan.mesocycleId) {
+          const meso = (await getMesocycles(p.athleteId)).find(m => m.id === plan.mesocycleId);
+          if (!meso) throw new Error('El mesociclo de esta propuesta ya no existe.');
+          const ciclo = cicloDiasDeMeso(meso);
+          const vueltas = vueltasDelCiclo(meso.weeks, ciclo);
+          const descargas = Array.from(new Set<number>([...(meso.semanasDescarga ?? []), ...(plan.semanasDescarga ?? [])])).sort((a, b) => a - b);
+          const tests = Array.from(new Set<number>([...(meso.semanasTest ?? []), ...(plan.semanasTest ?? [])])).sort((a, b) => a - b);
+          const workouts = (await getWorkouts()).filter(w => w.mesocycleId === meso.id);
+          for (const w of workouts) {
+            const exercises = w.exercises.map(we0 => {
+              let we = we0;
+              if (plan.rir) we = { ...we, weeklyProgression: rirDescendente(we, vueltas, plan.rir.desde, plan.rir.hasta, descargas) };
+              if (plan.series) we = { ...we, weeklyProgression: subirSeries(we, plan.series.cada, plan.series.hasta) };
+              for (const c of (plan.cambios ?? []).filter(c => c.workoutId === w.id && c.exerciseId === we.exerciseId)) {
+                we = { ...we, weeklyProgression: programarEnSemanas(we, [c.semana], !!c.solo, r => ({
+                  ...r,
+                  ...(c.sets !== undefined ? { sets: c.sets } : {}),
+                  ...(c.reps !== undefined ? { reps: c.reps } : {}),
+                  ...(c.rir !== undefined ? { rir: c.rir } : {}),
+                  ...(c.restSeconds !== undefined ? { restSeconds: c.restSeconds } : {}),
+                  ...(c.bloques ? { setGroups: c.bloques } : {}),
+                })) };
+              }
+              return we;
+            });
+            if (JSON.stringify(exercises) !== JSON.stringify(w.exercises)) await updateWorkout(w.id, { exercises });
+          }
+          await updateMesocycle(meso.id, {
+            ...(plan.semanasDescarga?.length ? { semanasDescarga: descargas, deloadWeek: Math.floor(((descargas[0] - 1) * ciclo) / 7) + 1 } : {}),
+            ...(plan.semanasTest?.length ? { semanasTest: tests } : {}),
+          });
+        }
+        if (plan.nutricion) {
+          const programa = await getNutritionProgram(p.athleteId);
+          if (!programa) throw new Error('El atleta ya no tiene periodización nutricional.');
+          let nuevo = { ...programa };
+          for (const a of plan.nutricion.ajustes ?? []) {
+            nuevo = { ...nuevo, cambiosSemana: programarAjuste(nuevo, a.semana, !!a.solo, { cat: a.cat, delta: a.delta, ...(a.slot !== undefined ? { slot: a.slot } : {}) }) };
+          }
+          if (plan.nutricion.semanasMantenimiento?.length) {
+            nuevo.semanasMantenimiento = Array.from(new Set<number>([...(nuevo.semanasMantenimiento ?? []), ...plan.nutricion.semanasMantenimiento])).sort((a, b) => a - b);
+          }
+          if (plan.nutricion.suplementos?.length) {
+            nuevo.suplementos = [...(nuevo.suplementos ?? []), ...plan.nutricion.suplementos.map((x, i) => ({ ...x, id: `sup_${Date.now()}_${i}` }))];
+          }
+          if (plan.nutricion.pasosPorSemana?.length) {
+            const porSemana = new Map((nuevo.pasosPorSemana ?? []).map(x => [x.semana, x]));
+            for (const x of plan.nutricion.pasosPorSemana) porSemana.set(x.semana, x);
+            nuevo.pasosPorSemana = [...porSemana.values()].sort((a, b) => a.semana - b.semana);
+          }
+          await saveNutritionProgram(nuevo);
+        }
+        await updateAiProposal(p.id, { status: 'approved', reviewedAt: new Date().toISOString(), resultEntityId: plan.mesocycleId ?? p.athleteId });
       } else if (p.kind === 'specialDay') {
         // Las tres cosas a la vez: por separado ninguna se nota. El hito lo ve
         // venir, la tarea le salta ese día, y la nota la lee encima de la sesión.

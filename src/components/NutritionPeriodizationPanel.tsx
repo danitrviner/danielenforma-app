@@ -337,6 +337,8 @@ export default function NutritionPeriodizationPanel({
         ...(program?.semanasMantenimiento ? { semanasMantenimiento: program.semanasMantenimiento } : {}),
         ...(program?.comidasLibres ? { comidasLibres: program.comidasLibres } : {}),
         ...(program?.suplementos ? { suplementos: program.suplementos } : {}),
+        ...(program?.ciclado ? { ciclado: program.ciclado } : {}),
+        ...(program?.pasosPorSemana ? { pasosPorSemana: program.pasosPorSemana } : {}),
       };
       await saveNutritionProgram(newProgram);
       queryClient.setQueryData(programQueryKey, newProgram);

@@ -4,7 +4,7 @@ import {
   MuscleGroup, MUSCLE_LABELS, PeriodizationBlockPayload, RoadmapProposalPayload,
   NutritionProgramProposalPayload, SpecialDayProposalPayload, WorkoutDaysProposalPayload,
   SetupConfigProposalPayload, PublishBlockProposalPayload, WeeklyChallengeProposalPayload,
-  WorkoutTemplateProposalPayload, MesocycleTemplateProposalPayload,
+  WorkoutTemplateProposalPayload, MesocycleTemplateProposalPayload, WeekPlanProposalPayload,
 } from '../../types';
 import { exchangeToKcal } from '../../utils/nutritionConstants';
 import { Badge, Icon } from '../ui';
@@ -474,6 +474,37 @@ export default function ProposalEditor({ proposal: p, payload, onChange }: Props
       </div>
     );
   }
+
+  if (p.kind === 'weekPlan') {
+    // Se lee, no se edita aquí: se aprueba entera y después se retoca semana a
+    // semana en la barra del mesociclo o de la periodización (con deshacer).
+    const v = payload as WeekPlanProposalPayload;
+    const lineas: string[] = [
+      ...(v.mesocycleName ? [`Mesociclo: ${v.mesocycleName}`] : []),
+      ...(v.semanasDescarga?.length ? [`Descarga (series a la mitad): ${v.semanasDescarga.map(s => `S${s}`).join(', ')}`] : []),
+      ...(v.semanasTest?.length ? [`Semana de test (AMRAP): ${v.semanasTest.map(s => `S${s}`).join(', ')}`] : []),
+      ...(v.rir ? [`RIR de ${v.rir.desde} a ${v.rir.hasta} a lo largo del bloque`] : []),
+      ...(v.series ? [`+1 serie cada ${v.series.cada} semanas hasta la S${v.series.hasta}`] : []),
+      ...(v.cambios ?? []).map(c => `${c.solo ? 'Solo' : 'Desde'} S${c.semana} · ${c.ejercicio}: ${[
+        c.bloques?.length ? c.bloques.map(b => `${b.label ? b.label + ' ' : ''}${b.sets}×${b.reps}`).join(' + ') : null,
+        c.sets !== undefined ? `${c.sets} series` : null, c.reps ? `reps ${c.reps}` : null,
+        c.rir !== undefined ? `RIR ${c.rir}` : null, c.restSeconds !== undefined ? `descanso ${c.restSeconds} s` : null,
+      ].filter(Boolean).join(' · ')}`),
+      ...(v.nutricion?.ajustes ?? []).map(a => `${a.solo ? 'Solo' : 'Desde'} S${a.semana} · ${a.slot ? ['', 'Desayuno', 'Media mañana', 'Comida', 'Merienda', 'Cena'][a.slot] : 'Comida con más'} ${a.delta > 0 ? '+' : ''}${a.delta} ${a.cat}`),
+      ...(v.nutricion?.semanasMantenimiento?.length ? [`Mantenimiento: ${v.nutricion.semanasMantenimiento.map(s => `S${s}`).join(', ')}`] : []),
+      ...(v.nutricion?.suplementos ?? []).map(x => `Suplemento: ${[x.nombre, x.dosis, x.momento].filter(Boolean).join(' · ')}${x.desde ? ` desde S${x.desde}` : ''}`),
+      ...(v.nutricion?.pasosPorSemana ?? []).map(x => `Desde S${x.semana} · ${x.pasos.toLocaleString('es-ES')} pasos al día`),
+    ];
+    return (
+      <div className={caja}>
+        <ul className="flex flex-col gap-1">
+          {lineas.map((l, i) => <li key={i} className="font-sans text-label text-ink-2">{l}</li>)}
+        </ul>
+        <span className="text-caption text-ink-3">Al aprobar se programa todo; luego lo retocas semana a semana en la barra del mesociclo o de la periodización.</span>
+      </div>
+    );
+  }
+
 
   return null;
 }

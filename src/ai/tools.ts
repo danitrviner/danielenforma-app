@@ -7,9 +7,12 @@ import { auth } from '../firebase';
 import { estadoConsentimiento, motivoParaElCoach, aliasDeAtleta } from './consentimientoIA';
 import { getDossier, appendDossierFacts, renderDossier } from '../db/dossier';
 import { calcularDerivas, resumirPatrones } from '../utils/derivaPropuestas';
-import { sesionesDeMesociclo, fechasDelMesociclo } from '../utils/asignacionMesociclo';
+import { sesionesDeMesociclo, fechasDelMesociclo, cicloDiasDeMeso } from '../utils/asignacionMesociclo';
+import { vueltasDelCiclo } from '../utils/progression';
+import { totalSemanas as totalSemanasNutri } from '../utils/semanasNutricion';
+import { normalizarTexto as normTexto } from '../utils/busqueda';
 import { nombreDeMeso } from '../utils/nombresMeso';
-import type { LevelLadder, LadderLevel, LevelCriterionKind, WorkoutDayProposal, WorkoutDaysProposalPayload, RoadmapItem, NutritionPhaseProposal, NutritionProgramProposalPayload, RoadmapProposalPayload, SpecialDayProposalPayload, SpecialDayKind } from '../types';
+import type { LevelLadder, LadderLevel, LevelCriterionKind, WorkoutDayProposal, WorkoutDaysProposalPayload, RoadmapItem, NutritionPhaseProposal, NutritionProgramProposalPayload, RoadmapProposalPayload, SpecialDayProposalPayload, SpecialDayKind, WeekPlanProposalPayload, MacroAjustable } from '../types';
 import {
   getAllUserProfiles,
   getUserProfileByEmail,
@@ -704,6 +707,54 @@ export const TOOL_DEFINITIONS = [
     },
   },
   {
+    name: 'propose_week_plan',
+    description:
+      'PROPONE la programación SEMANA A SEMANA de un mesociclo ya creado (con sus sesiones) y/o de la periodización nutricional: semanas de descarga (series a la mitad), semanas de test (AMRAP), RIR que baja a lo largo del bloque, +1 serie cada N semanas, cambios de un ejercicio desde una semana (p. ej. pasar a top set + back-off), y en nutrición ± intercambios por comida desde una semana, semanas de mantenimiento, suplementación y pasos por semana. Las semanas del mesociclo son semanas DE CICLO (vueltas del microciclo); las de nutrición, semanas del programa desde su inicio. Úsala después de propose_mesocycle/propose_workout_days y propose_nutrition_program, no en su lugar.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        athlete_email: { type: 'string' },
+        mesocycle_id: { type: 'string', description: 'Opcional: por defecto el mesociclo en curso (o el último).' },
+        semanas_descarga: { type: 'array', items: { type: 'number' } },
+        semanas_test: { type: 'array', items: { type: 'number' } },
+        rir: { type: 'object', properties: { desde: { type: 'number' }, hasta: { type: 'number' } }, description: 'RIR de la primera y la última semana; se reparte entre las que no son descarga' },
+        series: { type: 'object', properties: { cada: { type: 'number' }, hasta: { type: 'number' } }, description: '+1 serie cada `cada` semanas hasta la semana `hasta`' },
+        cambios: {
+          type: 'array',
+          description: 'Cambios de un ejercicio concreto desde una semana (o solo esa, con solo=true)',
+          items: {
+            type: 'object',
+            properties: {
+              ejercicio: { type: 'string', description: 'Nombre del ejercicio tal y como está en las rutinas del mesociclo' },
+              semana: { type: 'number' },
+              solo: { type: 'boolean' },
+              series: { type: 'number' }, reps: { type: 'string' }, rir: { type: 'number' }, descanso_seg: { type: 'number' },
+              bloques: { type: 'array', items: { type: 'object', properties: { etiqueta: { type: 'string' }, series: { type: 'number' }, reps: { type: 'string' }, rir: { type: 'number' } }, required: ['series', 'reps', 'rir'] } },
+            },
+            required: ['ejercicio', 'semana'],
+          },
+        },
+        nutricion: {
+          type: 'object',
+          properties: {
+            ajustes: { type: 'array', items: { type: 'object', properties: {
+              semana: { type: 'number' }, solo: { type: 'boolean' },
+              franja: { type: 'number', description: '1=Desayuno 2=Media mañana 3=Comida 4=Merienda 5=Cena; sin ella, la comida con más de ese macro' },
+              macro: { type: 'string', enum: ['HC', 'PROT', 'GRASA'] }, delta: { type: 'number', description: 'Intercambios (≈100 kcal cada uno), negativo para quitar' },
+            }, required: ['semana', 'macro', 'delta'] } },
+            semanas_mantenimiento: { type: 'array', items: { type: 'number' } },
+            suplementos: { type: 'array', items: { type: 'object', properties: {
+              nombre: { type: 'string' }, dosis: { type: 'string' }, momento: { type: 'string' }, desde: { type: 'number' }, hasta: { type: 'number' },
+            }, required: ['nombre'] } },
+            pasos_por_semana: { type: 'array', items: { type: 'object', properties: { semana: { type: 'number' }, pasos: { type: 'number' } }, required: ['semana', 'pasos'] } },
+          },
+        },
+        rationale: { type: 'string' },
+      },
+      required: ['athlete_email'],
+    },
+  },
+  {
     name: 'propose_dossier_update',
     description:
       'PROPONE cambiar los campos de juicio de la ficha viva (objetivos, evaluación, qué esperamos, foco de la siguiente revisión, preguntas abiertas). No se aplica solo: Dani lo aprueba desde el panel, igual que una dieta. Manda solo los campos que cambian, con el texto COMPLETO que debe quedar (sustituye, no se acumula). Úsala al cerrar un análisis o tras aprobar un bloque, no en cada mensaje.',
@@ -995,6 +1046,7 @@ export function toolStatusLabel(name: string, input: Record<string, unknown>): s
     case 'propose_roadmap_items': return `Preparando hitos${who}…`;
     case 'propose_nutrition_program': return `Preparando la periodización nutricional${who}…`;
     case 'propose_special_day': return `Preparando un día señalado${who}…`;
+    case 'propose_week_plan': return `Programando las semanas del bloque${who}…`;
     case 'get_athlete_dossier': return `Leyendo la ficha${who}…`;
     case 'log_dossier_fact': return `Apuntando en la ficha${who}…`;
     case 'propose_dossier_update': return `Preparando cambios de la ficha${who}…`;
@@ -1887,6 +1939,132 @@ async function proposeNutritionProgram(
     proposalCreated: true, proposalId: proposal.id,
     note: 'Al aprobar se crean las dietas nuevas y se reemplaza la periodización anterior.',
   });
+}
+
+const numeros = (v: unknown): number[] => Array.isArray(v) ? v.filter((x): x is number => typeof x === 'number' && Number.isFinite(x)).map(Math.round) : [];
+
+async function proposeWeekPlan(
+  athleteEmail: string, input: Record<string, unknown>, rationale: string, chatId: string, expediente?: ProposalExpediente,
+): Promise<string> {
+  const payload: WeekPlanProposalPayload = {};
+  const partes: string[] = [];
+  const errores: string[] = [];
+  const hoy = hoyIsoLocal();
+
+  const quiereEntreno = ['semanas_descarga', 'semanas_test', 'rir', 'series', 'cambios'].some(k => input[k] !== undefined);
+  if (quiereEntreno) {
+    const mesos = await getMesocycles(athleteEmail);
+    const meso = typeof input.mesocycle_id === 'string'
+      ? mesos.find(m => m.id === input.mesocycle_id)
+      : [...mesos].sort((a, b) => b.startDate.localeCompare(a.startDate)).find(m => m.startDate <= hoy) ?? mesos[mesos.length - 1];
+    if (!meso) return toResult({ error: 'El atleta no tiene mesociclos: crea el mesociclo antes de programar sus semanas.' });
+    const vueltas = vueltasDelCiclo(meso.weeks, cicloDiasDeMeso(meso));
+    const fuera = (s: number) => s < 1 || s > vueltas;
+    payload.mesocycleId = meso.id;
+    payload.mesocycleName = nombreDeMeso(meso);
+    const desc = numeros(input.semanas_descarga);
+    const test = numeros(input.semanas_test);
+    if ([...desc, ...test].some(fuera)) errores.push(`Las semanas del mesociclo van de 1 a ${vueltas}.`);
+    if (desc.length) { payload.semanasDescarga = desc; partes.push(`descarga en ${desc.map(s => `S${s}`).join(', ')}`); }
+    if (test.length) { payload.semanasTest = test; partes.push(`test en ${test.map(s => `S${s}`).join(', ')}`); }
+    const rir = input.rir as { desde?: number; hasta?: number } | undefined;
+    if (rir && typeof rir.desde === 'number' && typeof rir.hasta === 'number') {
+      payload.rir = { desde: Math.round(rir.desde), hasta: Math.round(rir.hasta) };
+      partes.push(`RIR ${payload.rir.desde} → ${payload.rir.hasta}`);
+    }
+    const series = input.series as { cada?: number; hasta?: number } | undefined;
+    if (series && typeof series.cada === 'number' && typeof series.hasta === 'number') {
+      payload.series = { cada: Math.max(1, Math.round(series.cada)), hasta: Math.min(vueltas, Math.round(series.hasta)) };
+      partes.push(`+1 serie cada ${payload.series.cada} semanas hasta la S${payload.series.hasta}`);
+    }
+    if (Array.isArray(input.cambios) && input.cambios.length > 0) {
+      const [workouts, catalogo] = await Promise.all([getWorkouts(), getExercises()]);
+      const delMeso = workouts.filter(w => w.mesocycleId === meso.id);
+      const nombre = (id: string) => catalogo.find(e => e.id === id)?.name ?? id;
+      payload.cambios = [];
+      for (const c of input.cambios as Record<string, unknown>[]) {
+        const buscado = typeof c.ejercicio === 'string' ? normTexto(c.ejercicio) : '';
+        const semana = typeof c.semana === 'number' ? Math.round(c.semana) : NaN;
+        if (!buscado || !Number.isFinite(semana) || fuera(semana)) { errores.push(`Cambio mal formado o fuera del mesociclo: ${JSON.stringify(c)}`); continue; }
+        let encontrado: { workoutId: string; exerciseId: string } | null = null;
+        for (const w of delMeso) {
+          const we = w.exercises.find(e => normTexto(nombre(e.exerciseId)).includes(buscado) || buscado.includes(normTexto(nombre(e.exerciseId))));
+          if (we) { encontrado = { workoutId: w.id, exerciseId: we.exerciseId }; break; }
+        }
+        if (!encontrado) { errores.push(`«${c.ejercicio}» no está en las rutinas de ${nombreDeMeso(meso)}.`); continue; }
+        const bloques = Array.isArray(c.bloques)
+          ? (c.bloques as Record<string, unknown>[]).map(b => ({
+              ...(typeof b.etiqueta === 'string' ? { label: b.etiqueta } : {}),
+              sets: Number(b.series) || 1, reps: String(b.reps ?? ''), rir: Number(b.rir) || 0,
+            }))
+          : undefined;
+        payload.cambios.push({
+          ...encontrado, ejercicio: nombre(encontrado.exerciseId), semana,
+          ...(c.solo === true ? { solo: true } : {}),
+          ...(typeof c.series === 'number' ? { sets: Math.round(c.series) } : {}),
+          ...(typeof c.reps === 'string' ? { reps: c.reps } : {}),
+          ...(typeof c.rir === 'number' ? { rir: Math.round(c.rir) } : {}),
+          ...(typeof c.descanso_seg === 'number' ? { restSeconds: Math.round(c.descanso_seg) } : {}),
+          ...(bloques?.length ? { bloques } : {}),
+        });
+      }
+      if (payload.cambios.length) partes.push(`${payload.cambios.length} cambio${payload.cambios.length === 1 ? '' : 's'} de ejercicio`);
+    }
+  }
+
+  const nut = input.nutricion as Record<string, unknown> | undefined;
+  if (nut && typeof nut === 'object') {
+    const programa = await getNutritionProgram(athleteEmail);
+    if (!programa) return toResult({ error: 'El atleta no tiene periodización nutricional: propón primero propose_nutrition_program.' });
+    const n = totalSemanasNutri(programa);
+    const fuera = (s: number) => s < 1 || s > n;
+    payload.nutricion = {};
+    if (Array.isArray(nut.ajustes)) {
+      payload.nutricion.ajustes = (nut.ajustes as Record<string, unknown>[])
+        .filter(a => typeof a.semana === 'number' && ['HC', 'PROT', 'GRASA'].includes(String(a.macro)) && typeof a.delta === 'number' && a.delta !== 0)
+        .map(a => ({
+          semana: Math.round(a.semana as number), cat: a.macro as MacroAjustable, delta: Math.round((a.delta as number) * 4) / 4,
+          ...(a.solo === true ? { solo: true } : {}),
+          ...(typeof a.franja === 'number' ? { slot: Math.round(a.franja) } : {}),
+        }));
+      if (payload.nutricion.ajustes.some(a => fuera(a.semana))) errores.push(`Las semanas de la periodización van de 1 a ${n}.`);
+      if (payload.nutricion.ajustes.length) partes.push(`${payload.nutricion.ajustes.length} ajuste${payload.nutricion.ajustes.length === 1 ? '' : 's'} de dieta`);
+    }
+    const mant = numeros(nut.semanas_mantenimiento);
+    if (mant.length) { payload.nutricion.semanasMantenimiento = mant; partes.push(`mantenimiento en ${mant.map(s => `S${s}`).join(', ')}`); }
+    if (Array.isArray(nut.suplementos)) {
+      payload.nutricion.suplementos = (nut.suplementos as Record<string, unknown>[])
+        .filter(x => typeof x.nombre === 'string' && x.nombre.trim())
+        .map(x => ({
+          nombre: String(x.nombre).trim(),
+          ...(typeof x.dosis === 'string' ? { dosis: x.dosis } : {}),
+          ...(typeof x.momento === 'string' ? { momento: x.momento } : {}),
+          ...(typeof x.desde === 'number' ? { desde: Math.round(x.desde) } : {}),
+          ...(typeof x.hasta === 'number' ? { hasta: Math.round(x.hasta) } : {}),
+        }));
+      if (payload.nutricion.suplementos.length) partes.push(`suplementación: ${payload.nutricion.suplementos.map(x => x.nombre).join(', ')}`);
+    }
+    if (Array.isArray(nut.pasos_por_semana)) {
+      payload.nutricion.pasosPorSemana = (nut.pasos_por_semana as Record<string, unknown>[])
+        .filter(x => typeof x.semana === 'number' && typeof x.pasos === 'number')
+        .map(x => ({ semana: Math.round(x.semana as number), pasos: Math.round(x.pasos as number) }));
+      if (payload.nutricion.pasosPorSemana.length) partes.push('pasos por semana');
+    }
+  }
+
+  if (errores.length) return toResult({ error: errores.join(' ') });
+  if (partes.length === 0) return toResult({ error: 'No hay nada que programar: manda al menos una descarga, RIR, series, cambio o ajuste de nutrición.' });
+
+  const summary = `Semanas del bloque: ${partes.join(' · ')}`;
+  const proposal = await createAiProposal({
+    athleteId: athleteEmail, kind: 'weekPlan', status: 'proposed', chatId,
+    summary, rationale: rationale || '', payload,
+    ...(payload.mesocycleId ? { baseEntityId: payload.mesocycleId } : {}),
+    ...(expediente ? { expediente } : {}),
+    createdAt: new Date().toISOString(),
+  });
+  await registrarPropuesta(athleteEmail, proposal.id, chatId, summary);
+  return toResult({ proposalCreated: true, proposalId: proposal.id, summary });
 }
 
 async function proposeSpecialDay(
@@ -3572,6 +3750,12 @@ export async function executeTool(
           ),
           isError: false,
         };
+      }
+      case 'propose_week_plan': {
+        if (!email) return { content: 'Falta athlete_email', isError: true };
+        const content = await proposeWeekPlan(email, input, typeof input.rationale === 'string' ? input.rationale : '', chatId, leerExpediente(input));
+        const parsed = JSON.parse(content) as { error?: string };
+        return { content, isError: !!parsed.error };
       }
       case 'propose_special_day': {
         if (!email || typeof input.date !== 'string' || typeof input.title !== 'string' || typeof input.athlete_note !== 'string') {

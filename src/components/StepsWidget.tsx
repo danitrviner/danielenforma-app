@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { StepLog } from '../types';
-import { getAthleteNutritionConfig, getStepsForDate, addSteps, updateSteps } from '../dbService';
+import { getAthleteNutritionConfig, getStepsForDate, addSteps, updateSteps, getNutritionProgram } from '../dbService';
+import { objetivoDePasos } from '../utils/semanasNutricion';
 import { todayStr } from '../utils/questionnaireSchedule';
 import { DEFAULT_KCAL_PER_STEP } from '../utils/nutritionConstants';
 import { isHealthStepsSupported, isHealthStepsLinked, linkHealthSteps, getTodaySteps } from '../services/healthSteps';
@@ -48,7 +49,12 @@ export default function StepsWidget({ athleteEmail, compacto = false }: Props) {
   });
   const loading = loadingConfig || loadingSteps;
 
-  const goal = config?.stepGoal || DEFAULT_STEP_GOAL;
+  // La periodización puede subir los pasos por semanas; manda sobre el fijo.
+  const { data: programa = null } = useQuery({
+    queryKey: ['nutritionProgram', athleteEmail],
+    queryFn: () => getNutritionProgram(athleteEmail).catch(() => null),
+  });
+  const goal = objetivoDePasos(programa, todayStr(), config?.stepGoal) || DEFAULT_STEP_GOAL;
   const kcalPerStep = config?.kcalPerStep || DEFAULT_KCAL_PER_STEP;
   const todayId = todayLog?.id ?? null;
   const steps = todayLog?.steps ?? 0;

@@ -43,6 +43,8 @@ interface Props {
   onProgresiones: () => void;
   onGuardarPlantilla?: () => void;
   avisos: Record<number, AvisoDeSemana[]>;
+  /** Cuestionarios puntuales que caen en cada semana (revisión de semana N, mediciones…). */
+  revisiones?: Record<number, string[]>;
   nota: string;
   onNota: (texto: string) => void;
   onDescarga: (semanas: number[], activar: boolean) => void;
@@ -121,6 +123,7 @@ export default function BarraDeSemanas(p: Props) {
               real !== null ? `${real} hechas` : null,
               esDescarga(s) ? 'Descarga' : null,
               esTest(s) ? 'Semana de test' : null,
+              ...(p.revisiones?.[s] ?? []).map(r => `Revisión: ${r}`),
               p.eventos[String(s)] ? `${EVENTOS.find(e => e.value === p.eventos[String(s)].tipo)?.label}${p.eventos[String(s)].nota ? `: ${p.eventos[String(s)].nota}` : ''}` : null,
               ...avisos.map(a => a.texto),
             ].filter(Boolean).join(' · ');
@@ -157,10 +160,11 @@ export default function BarraDeSemanas(p: Props) {
                 <span className="font-mono text-[10px] leading-none text-ink-3 tabular-nums">
                   {real !== null ? `${real}/${p.totales[s] ?? 0}` : p.totales[s] ?? 0}
                 </span>
-                {(esDescarga(s) || esTest(s) || p.eventos[String(s)]) && (
+                {(esDescarga(s) || esTest(s) || p.eventos[String(s)] || p.revisiones?.[s]?.length) && (
                   <span className="flex gap-0.5">
                     {esDescarga(s) && <span className="font-mono text-[9px] leading-[11px] font-bold text-info border border-info rounded-[5px] px-0.5">D</span>}
                     {esTest(s) && <span className="font-mono text-[9px] leading-[11px] font-bold text-warning border border-warning rounded-[5px] px-0.5">T</span>}
+                    {!!p.revisiones?.[s]?.length && <span className="font-mono text-[9px] leading-[11px] font-bold text-success border border-success rounded-[5px] px-0.5">R</span>}
                     {p.eventos[String(s)] && (
                       <span className="font-mono text-[9px] leading-[11px] font-bold text-accent-ink border border-accent-line rounded-[5px] px-0.5">
                         {EVENTOS.find(e => e.value === p.eventos[String(s)].tipo)?.corto}
@@ -284,6 +288,11 @@ export default function BarraDeSemanas(p: Props) {
               rows={2}
               className="w-full bg-surface border border-hairline rounded-control px-3 py-2 font-sans text-label text-ink placeholder-ink-3 focus:outline-none focus:ring-1 focus:ring-accent resize-y"
             />
+          )}
+          {(p.revisiones?.[p.semana] ?? []).length > 0 && (
+            <p className="flex items-center gap-1.5 font-sans text-caption text-success">
+              <Icon name="checklist" size="s" />Esta semana le toca: {(p.revisiones?.[p.semana] ?? []).join(', ')}
+            </p>
           )}
           {(p.avisos[p.semana] ?? []).map((a, i) => (
             <p key={i} className={`flex items-center gap-1.5 font-sans text-caption ${a.tono === 'peligro' ? 'text-danger' : 'text-warning'}`}>

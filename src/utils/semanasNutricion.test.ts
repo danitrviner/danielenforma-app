@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { Diet, NutritionProgram } from '../types';
 import {
   semanaDelPrograma, faseDeLaSemana, aplicarAjustes, dietaDeLaSemana, programarAjuste, kcalPorSemana,
-  novedadesNutricion, suplementosDeLaSemana, quitarCambiosNutricion,
+  novedadesNutricion, suplementosDeLaSemana, quitarCambiosNutricion, objetivoDePasos,
 } from './semanasNutricion';
 
 const dieta: Diet = {
@@ -93,5 +93,27 @@ describe('comidas con alimentos mixtos', () => {
     const conMixto: Diet = { ...dieta, meals: [{ id: 'c', name: 'Comida', slot: 3, items: [{ category: 'MIX_HC', foodLabel: 'Lentejas', quantity: 4 }] }] };
     const d = aplicarAjustes(conMixto, [{ slot: 3, cat: 'HC', delta: -1 }]);
     expect(d.meals[0].items[0].quantity).toBe(2);
+  });
+});
+
+describe('días altos/bajos y pasos por semana', () => {
+  const p: NutritionProgram = {
+    ...programa,
+    ciclado: { desde: 2, entreno: 2, descanso: -1 },
+    pasosPorSemana: [{ semana: 3, pasos: 10000 }, { semana: 6, pasos: 12000 }],
+  };
+  const conEntreno: Diet = { ...dieta, meals: dieta.meals.map(m => m.slot === 1 ? { ...m, aroundTraining: true } : m) };
+  it('día de entreno: +2 HC en la comida del entreno; descanso: −1', () => {
+    expect(dietaDeLaSemana(conEntreno, p, '2026-09-15', true).meals[0].items[0].quantity).toBe(5);
+    expect(dietaDeLaSemana(conEntreno, p, '2026-09-15', false).budget.HC).toBe(10);
+  });
+  it('antes de empezar el ciclado, o sin saber si entrena, no cambia nada', () => {
+    expect(dietaDeLaSemana(conEntreno, p, '2026-09-08', true).budget.HC).toBe(11);
+    expect(dietaDeLaSemana(conEntreno, p, '2026-09-15').budget.HC).toBe(11);
+  });
+  it('pasos: manda el último objetivo que haya empezado', () => {
+    expect(objetivoDePasos(p, '2026-09-14', 8000)).toBe(8000);   // S2
+    expect(objetivoDePasos(p, '2026-09-21', 8000)).toBe(10000);  // S3
+    expect(objetivoDePasos(p, '2026-10-19', 8000)).toBe(12000);  // S7
   });
 });

@@ -3,7 +3,7 @@ import { WorkoutExercise } from '../types';
 import { resolveExerciseForWeek, resolverEjercicioDelMeso } from './progression';
 import {
   programarCambio, quitarCambiosDeSemana, novedadesDeSemana, compararSemanas, seriesDeLaSemana, origenDeCambios,
-  programarEnSemanas, semanasAlternas, rirDescendente, subirSeries,
+  programarEnSemanas, semanasAlternas, rirDescendente, subirSeries, revisionesPorSemana,
 } from './semanasDelBloque';
 
 const curl: WorkoutExercise = { exerciseId: 'curl', order: 0, sets: 4, reps: '10', rir: 1, restSeconds: 75 };
@@ -135,5 +135,20 @@ describe('progresiones en un clic y rotación A/B', () => {
     expect(n.test).toBe(true);
     expect(n.evento).toEqual({ tipo: 'vacaciones', nota: 'Hotel' });
     expect(resolverEjercicioDelMeso(curl, { semanasTest: [4] }, 4).technique).toBe('amrap');
+  });
+});
+
+describe('revisiones en su semana', () => {
+  it('coloca los cuestionarios puntuales en su semana de ciclo, no los semanales', () => {
+    const base = { questionnaireId: 'q', athleteId: 'x', active: true, createdAt: '' };
+    const r = revisionesPorSemana([
+      { ...base, id: 'a', schedule: { type: 'plan_week', planWeek: 3 }, startDate: '2026-09-07' },
+      { ...base, id: 'b', schedule: { type: 'monthly', dayOfMonth: 26 }, startDate: '2026-01-01', questionnaireId: 'med' },
+      { ...base, id: 'c', schedule: { type: 'interval', intervalDays: 7 }, startDate: '2026-09-07', questionnaireId: 'sem' },
+    ], id => ({ q: 'Revisión semana 3', med: 'Mediciones', sem: 'Semanal' }[id] ?? id),
+    { id: 'm', startDate: '2026-09-07', weeks: 6 }, 7, 6);
+    // S3 = 21-27 sep: la revisión de la semana 3 y las mediciones del día 26.
+    expect(r[3]).toEqual(['Revisión semana 3', 'Mediciones']);
+    expect(Object.values(r).flat()).not.toContain('Semanal');
   });
 });

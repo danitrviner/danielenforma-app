@@ -20,6 +20,7 @@ const ORDEN: Record<AiProposalKind, number> = {
   levelLadder: 7,
   roadmap: 8,
   specialDay: 9,
+  weekPlan: 9,            // necesita el mesociclo con sus sesiones y la periodización
   weeklyChallenge: 10,
   checkinFeedback: 11,
   dossier: 12,            // la ficha se cierra al final, con todo ya decidido

@@ -1,5 +1,6 @@
-import { WorkoutExercise, WeeklyProgressionRule, CambiosDeSemana, WorkoutSetGroup, EventoDeSemana } from '../types';
-import { resolveExerciseForWeek, resolverEjercicioDelMeso } from './progression';
+import { WorkoutExercise, WeeklyProgressionRule, CambiosDeSemana, WorkoutSetGroup, EventoDeSemana, Mesocycle, QuestionnaireAssignment } from '../types';
+import { resolveExerciseForWeek, resolverEjercicioDelMeso, mesocycleWeekNumber } from './progression';
+import { startOfDay, planWeekDueDate, mesocycleEndDate } from './scheduleEngine';
 import { TECHNIQUE_LABEL } from './workoutTechniques';
 
 /* Programar un mesociclo semana a semana (barra de semanas de Mesociclo ›
@@ -234,4 +235,50 @@ export function hayNovedades(n: NovedadesDeSemana): boolean {
 /** Series totales de la semana (lo que se hace de verdad, descarga incluida). */
 export function seriesDeLaSemana(ejercicios: EjercicioDelDia[], meso: { semanasDescarga?: number[]; semanasTest?: number[] }, semana: number): number {
   return ejercicios.reduce((s, { we }) => s + seriesDe(semana === 0 ? we : resolverEjercicioDelMeso(we, meso, semana)), 0);
+}
+
+// ── Revisiones en su semana ─────────────────────────────────────────────────
+
+const isoDia = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+/**
+ * Qué cuestionarios «puntuales» caen en cada semana de ciclo del mesociclo:
+ * una sola vez, semana N del plan, fin de bloque y los mensuales (mediciones).
+ * Los semanales y quincenales no: saldrían en todas las semanas y no dirían nada.
+ */
+export function revisionesPorSemana(
+  asignaciones: QuestionnaireAssignment[],
+  tituloDe: (questionnaireId: string) => string,
+  meso: Pick<Mesocycle, 'startDate' | 'weeks'> & Partial<Mesocycle>,
+  cicloDias: number,
+  vueltas: number,
+): Record<number, string[]> {
+  const inicio = meso.startDate;
+  const fin = isoDia(new Date(startOfDay(inicio).getTime() + (meso.weeks * 7 - 1) * 86400000));
+  const out: Record<number, string[]> = {};
+  const apuntar = (fecha: string, titulo: string) => {
+    if (fecha < inicio || fecha > fin) return;
+    const v = mesocycleWeekNumber(inicio, fecha, cicloDias);
+    if (v < 1 || v > vueltas) return;
+    const lista = (out[v] ??= []);
+    if (!lista.includes(titulo)) lista.push(titulo);
+  };
+  for (const a of asignaciones) {
+    if (!a.active || !a.schedule) continue;
+    const titulo = tituloDe(a.questionnaireId);
+    const { type } = a.schedule;
+    if (type === 'once') apuntar(a.startDate, titulo);
+    else if (type === 'plan_week') apuntar(isoDia(planWeekDueDate(a.schedule, startOfDay(a.startDate))), titulo);
+    else if (type === 'mesocycle_end' && meso.id) apuntar(isoDia(mesocycleEndDate(meso as Mesocycle, a.schedule.mesocycleOffsetDays ?? 0)), titulo);
+    else if (type === 'monthly') {
+      const dia = a.schedule.dayOfMonth ?? 1;
+      const d = startOfDay(inicio);
+      for (let k = 0; k < Math.ceil(meso.weeks / 4) + 2; k++) {
+        const ultimo = new Date(d.getFullYear(), d.getMonth() + k + 1, 0).getDate();
+        const f = isoDia(new Date(d.getFullYear(), d.getMonth() + k, Math.min(dia, ultimo)));
+        if (f >= a.startDate) apuntar(f, titulo);
+      }
+    }
+  }
+  return out;
 }

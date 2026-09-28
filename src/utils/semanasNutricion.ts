@@ -87,13 +87,17 @@ function ajustarComida(meal: DietMeal, cat: MacroAjustable, deltaMacro: number):
 
 /** La dieta con los ajustes aplicados: comidas y cupo diario. */
 export function aplicarAjustes(
-  diet: Diet, ajustes: AjusteDeComida[], opciones: { mantenimiento?: boolean; libres?: number[] } = {},
+  diet: Diet, ajustes: AjusteDeComida[], opciones: { mantenimiento?: boolean; libres?: number[]; hcDelDia?: number } = {},
 ): Diet {
   let meals = diet.meals.map(m => ({ ...m, items: m.items.map(it => ({ ...it })) }));
   const slots = resolveSlots(meals);
+  // Día alto/bajo: a la comida pegada al entreno si la dieta la marca; si no,
+  // a la que más hidratos lleva.
+  const iEntreno = meals.findIndex(m => m.aroundTraining);
   const todos: AjusteDeComida[] = [
     ...ajustes,
     ...(opciones.mantenimiento ? meals.map((_, i) => ({ slot: slots[i], cat: 'HC' as const, delta: 1 })) : []),
+    ...(opciones.hcDelDia ? [{ ...(iEntreno >= 0 ? { slot: slots[iEntreno] } : {}), cat: 'HC' as const, delta: opciones.hcDelDia }] : []),
   ];
   const budget = { ...diet.budget };
   for (const a of todos) {
@@ -123,15 +127,33 @@ export function diaDeLaSemana(fecha: string): WeekDay {
   return DIA_SEMANA[new Date(Date.UTC(y, m - 1, d)).getUTCDay()];
 }
 
-/** La dieta que toca `fecha` con todo lo programado para esa semana. */
-export function dietaDeLaSemana(diet: Diet, program: NutritionProgram | null | undefined, fecha: string): Diet {
+/** Intercambios de HC que el ciclado suma (o resta) ese día, o 0. `entrena`
+ *  undefined = no se sabe (no se aplica nada). */
+export function hcDelCiclado(program: Pick<NutritionProgram, 'ciclado'>, semana: number, entrena: boolean | undefined): number {
+  const c = program.ciclado;
+  if (!c || entrena === undefined || semana < c.desde || (c.hasta !== undefined && semana > c.hasta)) return 0;
+  return entrena ? c.entreno : c.descanso;
+}
+
+/** La dieta que toca `fecha` con todo lo programado para esa semana.
+ *  `entrena`: si ese día tiene sesión asignada (para el ciclado de hidratos). */
+export function dietaDeLaSemana(diet: Diet, program: NutritionProgram | null | undefined, fecha: string, entrena?: boolean): Diet {
   if (!program) return diet;
   const s = semanaDelPrograma(program, fecha);
   const ajustes = ajustesDeLaSemana(program, s);
   const mantenimiento = (program.semanasMantenimiento ?? []).includes(s);
   const libres = libresDelDia(program, s, diaDeLaSemana(fecha));
-  if (ajustes.length === 0 && !mantenimiento && libres.length === 0) return diet;
-  return aplicarAjustes(diet, ajustes, { mantenimiento, libres });
+  const hcDelDia = hcDelCiclado(program, s, entrena);
+  if (ajustes.length === 0 && !mantenimiento && libres.length === 0 && hcDelDia === 0) return diet;
+  return aplicarAjustes(diet, ajustes, { mantenimiento, libres, hcDelDia });
+}
+
+/** Objetivo de pasos que rige `fecha`: el último que haya empezado, o `base`. */
+export function objetivoDePasos(program: Pick<NutritionProgram, 'startDate' | 'pasosPorSemana'> | null | undefined, fecha: string, base: number | undefined): number | undefined {
+  if (!program?.pasosPorSemana?.length) return base;
+  const s = semanaDelPrograma(program, fecha);
+  const vigente = [...program.pasosPorSemana].filter(p => p.semana <= s).sort((a, b) => b.semana - a.semana)[0];
+  return vigente?.pasos ?? base;
 }
 
 const VACIO = (): Record<FoodCategory, number> => ({ HC: 0, PROT: 0, GRASA: 0, MIX_HC: 0, MIX_GRASA: 0 });
@@ -232,6 +254,13 @@ export function novedadesNutricion(program: NutritionProgram, s: number): Noveda
   // Lo que valía solo la semana pasada y ya no.
   const terminan = (program.cambiosSemana ?? []).filter(c => c.solo && c.semana === s - 1);
   if (terminan.length > 0) ajustes.push('Termina el ajuste puntual de la semana pasada');
+  if (program.ciclado && program.ciclado.desde === s) {
+    const { entreno, descanso } = program.ciclado;
+    const t = (n: number) => `${n > 0 ? '+' : n < 0 ? '−' : ''}${Math.abs(n)} ${Math.abs(n) === 1 ? 'intercambio' : 'intercambios'} de hidratos`;
+    ajustes.push(`Días de entreno: ${t(entreno)}; días de descanso: ${t(descanso)}`);
+  }
+  const pasos = (program.pasosPorSemana ?? []).find(p => p.semana === s);
+  if (pasos) ajustes.push(`Objetivo de pasos: ${pasos.pasos.toLocaleString('es-ES')} al día`);
   return {
     mantenimiento: mant.includes(s),
     vuelveDeMantenimiento: s > 1 && mant.includes(s - 1) && !mant.includes(s),

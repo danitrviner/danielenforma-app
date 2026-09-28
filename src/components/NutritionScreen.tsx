@@ -42,6 +42,7 @@ import {
 import { useDiaActual, diaSemanaDe } from '../hooks/useDiaActual';
 import { addDays, hoyIsoLocal} from '../utils/trainingWeek';
 import SemanaNutricionAtleta from './nutrition/SemanaNutricionAtleta';
+import { getWorkoutAssignmentsForAthlete } from '../dbService';
 import { dietaDeLaSemana } from '../utils/semanasNutricion';
 
 const HAMBRE_TEXTO: Record<'manana' | 'equilibrado' | 'noche', string> = {
@@ -327,10 +328,20 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
   // porque es la misma que usa el resumen de Hoy y tiene tests.
   // La dieta del día con lo que la periodización programa para ESA semana
   // (ajustes de intercambios, mantenimiento, comida libre). Ver semanasNutricion.ts.
+  // Solo se piden si la periodización cicla hidratos por entreno. Misma clave
+  // que la pantalla de Entrenamiento: si ya se abrió, no se lee nada más.
+  const { data: asignacionesEntreno } = useQuery({
+    queryKey: ['workoutAssignmentsForAthlete', profile.userId],
+    queryFn: () => getWorkoutAssignmentsForAthlete({ uid: profile.userId, email: profile.email }),
+    enabled: !!program?.ciclado,
+  });
+  const entrenaEseDia = program?.ciclado && asignacionesEntreno
+    ? asignacionesEntreno.some(a => a.date === viewDate && a.status !== 'skipped')
+    : undefined;
   const dietaPautada = useMemo(() => {
     const base = dietaPautadaDelDia(allDietsList, dietConfigRaw ?? null, diaSemanaDe(viewDate));
-    return base ? dietaDeLaSemana(base, program, viewDate) : base;
-  }, [allDietsList, dietConfigRaw, viewDate, program]);
+    return base ? dietaDeLaSemana(base, program, viewDate, entrenaEseDia) : base;
+  }, [allDietsList, dietConfigRaw, viewDate, program, entrenaEseDia]);
   const cupoPautado = dietaPautada?.budget ?? null;
 
   /* Las dietas del coach que el atleta puede cargarse en un día. Solo las

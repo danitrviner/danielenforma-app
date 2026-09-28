@@ -13,6 +13,7 @@ import {
   deleteWorkoutsByMesocycleIdStrict, borrarAsignacionesReprogramables,
   getUserProfileByEmail, migratePrimaryFocusToMuscleGroup,
   getMesocycleTemplates, createTask, getWorkoutLogs, getWorkoutAssignmentsByMesocycleIds, createMesocycleTemplate,
+  getAssignmentsForAthlete, getQuestionnairesByCoach,
 } from '../dbService';
 import ExerciseConfigEditor, { COLUMNAS_FILA } from './ExerciseConfigEditor';
 import RoutinePreview, { PreviewDay, PreviewExercise } from './training/RoutinePreview';
@@ -29,7 +30,7 @@ import { MesocycleTemplate } from '../types';
 import { offsetsDeSesiones, formateaFrecuencia, vueltasDelCiclo, resolveExerciseForWeek, resolverEjercicioDelMeso, mesocycleWeekNumber } from '../utils/progression';
 import {
   quitarCambiosDeSemana, semanasConCambios, origenDeCambios, diferencias, compararSemanas,
-  seriesDeLaSemana, seriesDe, programarEnSemanas, semanasAlternas, rirDescendente, subirSeries, type EjercicioDelDia,
+  seriesDeLaSemana, seriesDe, programarEnSemanas, semanasAlternas, rirDescendente, subirSeries, revisionesPorSemana, type EjercicioDelDia,
 } from '../utils/semanasDelBloque';
 import BarraDeSemanas, { type Alcance, type AvisoDeSemana, type ElementoProgramado } from './mesociclo/BarraDeSemanas';
 import { atletasActivos } from '../utils/atletas';
@@ -418,9 +419,10 @@ function Delta({ delta, showEqual = false }: { delta: number | null; showEqual?:
 function MesoExercisesView({
   groups, loading, weeks, allExercises, onUpdateExercise, onReplaceExercise, onAddExercise, onRemoveExercise,
   onMoveExercise, onGoToDistribution, libraryWorkouts, onUseLibraryWorkout, distribution, mesoGroups, semanasDelCiclo,
-  onRenameDay, meso, onUpdateMeso, vueltas, cicloDias, logs, onWriteDay, onGuardarPlantilla,
+  onRenameDay, meso, onUpdateMeso, vueltas, cicloDias, logs, onWriteDay, onGuardarPlantilla, revisiones,
 }: {
   onGuardarPlantilla?: () => void;
+  revisiones?: Record<number, string[]>;
   groups: MesoWorkoutGroup[];
   loading: boolean;
   weeks: number;
@@ -467,7 +469,7 @@ function MesoExercisesView({
     );
   }
 
-  return <MesoExercisesTabs {...{ groups, weeks, allExercises, onUpdateExercise, onReplaceExercise, onAddExercise, onRemoveExercise, onMoveExercise, libraryWorkouts, onUseLibraryWorkout, distribution, mesoGroups, semanasDelCiclo, onRenameDay, meso, onUpdateMeso, vueltas, cicloDias, logs, onWriteDay, onGuardarPlantilla }} />;
+  return <MesoExercisesTabs {...{ groups, weeks, allExercises, onUpdateExercise, onReplaceExercise, onAddExercise, onRemoveExercise, onMoveExercise, libraryWorkouts, onUseLibraryWorkout, distribution, mesoGroups, semanasDelCiclo, onRenameDay, meso, onUpdateMeso, vueltas, cicloDias, logs, onWriteDay, onGuardarPlantilla, revisiones }} />;
 }
 
 const PREFIJO_DIA = /^(Día\s*\d+\s*–\s*)(.*)$/i;
@@ -537,9 +539,10 @@ function MesoExercisesTabs({
   groups: gruposBase, weeks, allExercises, onUpdateExercise: guardarEjercicio, onReplaceExercise: elegirOtroEjercicio,
   onAddExercise, onRemoveExercise,
   onMoveExercise, libraryWorkouts, onUseLibraryWorkout, distribution, mesoGroups, semanasDelCiclo,
-  onRenameDay, meso, onUpdateMeso, vueltas, cicloDias, logs, onWriteDay, onGuardarPlantilla,
+  onRenameDay, meso, onUpdateMeso, vueltas, cicloDias, logs, onWriteDay, onGuardarPlantilla, revisiones,
 }: {
   onGuardarPlantilla?: () => void;
+  revisiones?: Record<number, string[]>;
   groups: MesoWorkoutGroup[];
   weeks: number;
   allExercises: Exercise[];
@@ -1143,6 +1146,7 @@ function MesoExercisesTabs({
         onEvento={onEvento}
         onProgresiones={() => setProgresiones(true)}
         onGuardarPlantilla={onGuardarPlantilla}
+        revisiones={revisiones}
         avisos={avisos}
         nota={notas[String(semana)] ?? ''}
         onNota={onNota}
@@ -1756,6 +1760,28 @@ export default function MesocycleManager({
     enabled: necesitaLogs,
   });
   const mesoIds = useMemo(() => mesocycles.map(m => m.id), [mesocycles]);
+
+  // Cuestionarios del atleta, para marcar en la barra de semanas cuándo le
+  // toca cada revisión puntual. Mismas claves que ClientHub (caché compartida).
+  const { data: qAsignaciones = [] } = useQuery({
+    queryKey: ['assignmentsForAthlete', selectedEmail],
+    queryFn: () => getAssignmentsForAthlete(selectedEmail),
+    enabled: editorTab === 'exercises' && !!selectedEmail,
+  });
+  const { data: qPlantillas = [] } = useQuery({
+    queryKey: ['questionnairesByCoach', coachId],
+    queryFn: () => getQuestionnairesByCoach(coachId),
+    enabled: editorTab === 'exercises' && !!coachId,
+  });
+  const revisionesDelMeso = useMemo(() => {
+    if (!editing) return undefined;
+    const ciclo = cicloDiasDeMeso(editing);
+    return revisionesPorSemana(
+      qAsignaciones,
+      id => qPlantillas.find(q => q.id === id)?.title ?? 'Cuestionario',
+      editing, ciclo, vueltasDelCiclo(editing.weeks, ciclo),
+    );
+  }, [qAsignaciones, qPlantillas, editing]);
   const necesitaAsignaciones = editorTab === 'cierre' && !athleteAssignments && mesoIds.length > 0;
   const { data: asignacionesQuery = [], isPending: asignacionesPending } = useQuery({
     queryKey: ['workoutAssignmentsByMesocycleIds', mesoIds],
@@ -3383,6 +3409,7 @@ export default function MesocycleManager({
                   logs={athleteLogs ?? (logsPending ? undefined : logsQuery)}
                   onWriteDay={(g, exs) => { void writeMesoWorkoutExercises(g, exs); }}
                   onGuardarPlantilla={() => { void guardarComoPlantilla(); }}
+                  revisiones={revisionesDelMeso}
                   onGoToDistribution={() => setEditorTab('distribution')}
                   libraryWorkouts={allWorkouts.filter(w => !w.mesocycleId)}
                   onUseLibraryWorkout={handleUseLibraryWorkout}

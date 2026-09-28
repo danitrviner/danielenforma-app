@@ -1264,6 +1264,19 @@ export interface NutritionProgram {
   semanasMantenimiento?: number[];
   comidasLibres?: ComidaLibre[];
   suplementos?: Suplemento[];
+  /** Hidratos distintos según si ese día entrena o descansa (días altos/bajos). */
+  ciclado?: CicladoPorEntreno;
+  /** Objetivo de pasos desde una semana del programa (manda el último que haya empezado). */
+  pasosPorSemana?: { semana: number; pasos: number }[];
+}
+
+export interface CicladoPorEntreno {
+  desde: number;
+  hasta?: number;
+  /** Intercambios de HC a sumar (o restar) el día que tiene sesión asignada; van a la comida pegada al entreno si la hay. */
+  entreno: number;
+  /** Ídem los días sin sesión. */
+  descanso: number;
 }
 
 export type MacroAjustable = 'HC' | 'PROT' | 'GRASA';
@@ -2330,7 +2343,29 @@ export interface WorkoutDaysProposalPayload {
 
 export type AiProposalKind = 'diet' | 'mesocycle' | 'checkinFeedback' | 'periodizationBlock' | 'dossier'
   | 'roadmap' | 'nutritionProgram' | 'specialDay' | 'workoutDays' | 'levelLadder'
-  | 'setupConfig' | 'publishBlock' | 'weeklyChallenge' | 'workoutTemplate' | 'mesocycleTemplate';
+  | 'setupConfig' | 'publishBlock' | 'weeklyChallenge' | 'workoutTemplate' | 'mesocycleTemplate' | 'weekPlan';
+
+/** Programación semana a semana de un mesociclo y/o de la periodización
+ *  nutricional, propuesta por el asistente. Los ejercicios ya vienen resueltos
+ *  a id (la herramienta los busca por nombre en las rutinas del mesociclo). */
+export interface WeekPlanProposalPayload {
+  mesocycleId?: string;
+  mesocycleName?: string;
+  semanasDescarga?: number[];
+  semanasTest?: number[];
+  rir?: { desde: number; hasta: number };
+  series?: { cada: number; hasta: number };
+  cambios?: {
+    workoutId: string; exerciseId: string; ejercicio: string; semana: number; solo?: boolean;
+    sets?: number; reps?: string; rir?: number; restSeconds?: number; bloques?: WorkoutSetGroup[];
+  }[];
+  nutricion?: {
+    ajustes?: { semana: number; solo?: boolean; slot?: number; cat: MacroAjustable; delta: number }[];
+    semanasMantenimiento?: number[];
+    suplementos?: Omit<Suplemento, 'id'>[];
+    pasosPorSemana?: { semana: number; pasos: number }[];
+  };
+}
 
 // ── Lo demás que se programa al atleta ──────────────────────────────────────
 // Todo lo que la checklist de Setup pide y que hasta ahora la IA no podía
@@ -2411,6 +2446,7 @@ export interface PeriodizationBlockPayload {
 }
 
 export type AiProposalPayload =
+  | WeekPlanProposalPayload
   | Omit<Diet, 'id'>
   | Omit<Mesocycle, 'id'>
   | { checkInId: string; feedback: string }

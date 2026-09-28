@@ -31,6 +31,8 @@ export default function SemanasNutricionCoach({ program, diets, onGuardar }: {
   const [pila, setPila] = useState<NutritionProgram[]>([]);
   const [libre, setLibre] = useState<{ dia: WeekDay; slot: string; hasta: string }>({ dia: 'sat', slot: '5', hasta: '' });
   const [sup, setSup] = useState<{ nombre: string; dosis: string; momento: string; hasta: string }>({ nombre: '', dosis: '', momento: '', hasta: '' });
+  const [ciclo, setCiclo] = useState(() => ({ entreno: String(program.ciclado?.entreno ?? 2), descanso: String(program.ciclado?.descanso ?? -1) }));
+  const [pasos, setPasos] = useState('');
 
   const kcal = useMemo(() => kcalPorSemana(program, diets), [program, diets]);
   const max = Math.max(1, ...kcal.map(k => k ?? 0));
@@ -88,6 +90,19 @@ export default function SemanasNutricionCoach({ program, diets, onGuardar }: {
       texto: `${x.desde ? `Desde S${x.desde}` : 'Todo el programa'}${x.hasta ? ` hasta S${x.hasta}` : ''} · ${[x.nombre, x.dosis, x.momento].filter(Boolean).join(' · ')}`,
       quitar: () => guardar({ ...program, suplementos: (program.suplementos ?? []).filter(y => y.id !== x.id) }),
     })),
+    ...(program.pasosPorSemana ?? []).map(x => ({
+      semana: x.semana, tono: 'cambio' as const,
+      texto: `Desde S${x.semana} · ${x.pasos.toLocaleString('es-ES')} pasos al día`,
+      quitar: () => {
+        const lista = (program.pasosPorSemana ?? []).filter(y => y.semana !== x.semana);
+        guardar({ ...program, pasosPorSemana: lista.length > 0 ? lista : undefined });
+      },
+    })),
+    ...(program.ciclado ? [{
+      semana: program.ciclado.desde, tono: 'cambio' as const,
+      texto: `Desde S${program.ciclado.desde} · Entreno ${program.ciclado.entreno > 0 ? '+' : ''}${program.ciclado.entreno} HC, descanso ${program.ciclado.descanso > 0 ? '+' : ''}${program.ciclado.descanso} HC`,
+      quitar: () => { const { ciclado: _c, ...resto } = program; guardar(resto as NutritionProgram); },
+    }] : []),
   ].sort((a, b) => a.semana - b.semana);
 
   return (
@@ -258,6 +273,45 @@ export default function SemanasNutricionCoach({ program, diets, onGuardar }: {
           )}
 
           <div className="grid gap-3 md:grid-cols-2">
+            <div className="rounded-control border border-hairline bg-surface p-3 space-y-2">
+              <p className="font-sans font-bold text-label text-ink">Días de entreno y descanso</p>
+              <p className="font-sans text-caption text-ink-3">
+                Hidratos según si ese día tiene sesión asignada. Van a la comida pegada al entreno si la dieta la marca.
+                {program.ciclado && ` Ahora: desde S${program.ciclado.desde}, entreno ${program.ciclado.entreno > 0 ? '+' : ''}${program.ciclado.entreno}, descanso ${program.ciclado.descanso > 0 ? '+' : ''}${program.ciclado.descanso}.`}
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                <Select label="Día de entreno" value={ciclo.entreno} onChange={v => setCiclo({ ...ciclo, entreno: v })}
+                  options={[-3, -2, -1, 0, 1, 2, 3, 4].map(k => ({ value: String(k), label: `${k > 0 ? '+' : ''}${k} HC` }))} />
+                <Select label="Día de descanso" value={ciclo.descanso} onChange={v => setCiclo({ ...ciclo, descanso: v })}
+                  options={[-4, -3, -2, -1, 0, 1, 2].map(k => ({ value: String(k), label: `${k > 0 ? '+' : ''}${k} HC` }))} />
+              </div>
+              <div className="flex gap-2 flex-wrap">
+                <Button size="s" icon="fitness_center" onClick={() => guardar({ ...program, ciclado: { desde: semana, entreno: Number(ciclo.entreno), descanso: Number(ciclo.descanso) } })}>
+                  Aplicar desde S{semana}
+                </Button>
+                {program.ciclado && (
+                  <Button size="s" variant="ghost" onClick={() => { const { ciclado: _c, ...resto } = program; guardar(resto as NutritionProgram); }}>Quitar</Button>
+                )}
+              </div>
+            </div>
+            <div className="rounded-control border border-hairline bg-surface p-3 space-y-2">
+              <p className="font-sans font-bold text-label text-ink">Pasos</p>
+              <p className="font-sans text-caption text-ink-3">
+                {(program.pasosPorSemana ?? []).length > 0
+                  ? (program.pasosPorSemana ?? []).map(x => `S${x.semana}: ${x.pasos.toLocaleString('es-ES')}`).join(' · ')
+                  : 'Sin cambios por semana: manda el objetivo fijo de su configuración.'}
+              </p>
+              <div className="flex gap-2 items-end flex-wrap">
+                <input id="pasos-semana" aria-label="Pasos al día" inputMode="numeric" placeholder="10000" value={pasos}
+                  onChange={e => setPasos(e.target.value.replace(/\D/g, ''))}
+                  className="h-9 w-28 bg-inset border border-hairline rounded-control px-2 font-mono text-label text-ink focus:outline-none focus:ring-1 focus:ring-accent" />
+                <Button size="s" icon="add" disabled={!pasos} onClick={() => {
+                  const lista = [...(program.pasosPorSemana ?? []).filter(x => x.semana !== semana), { semana, pasos: Number(pasos) }].sort((a, b) => a.semana - b.semana);
+                  guardar({ ...program, pasosPorSemana: lista });
+                  setPasos('');
+                }}>Desde S{semana}</Button>
+              </div>
+            </div>
             <div className="rounded-control border border-hairline bg-surface p-3 space-y-2">
               <p className="font-sans font-bold text-label text-ink">Comida libre</p>
               <div className="grid grid-cols-3 gap-2">
