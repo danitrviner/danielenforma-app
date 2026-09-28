@@ -11,7 +11,7 @@
 import {
   WorkoutAssignment, WorkoutLog, Workout, Exercise, Mesocycle,
 } from '../types';
-import { mesocycleWeekNumber, resolveExerciseForWeek } from './progression';
+import { mesocycleWeekNumber, resolverEjercicioDelMeso } from './progression';
 import { cicloDiasDeMeso } from './asignacionMesociclo';
 import { addDays } from './trainingWeek';
 
@@ -58,8 +58,8 @@ export function ejerciciosDelDia(fecha: string, datos: DatosSemana): EjercicioDe
     .slice()
     .sort((a, b) => a.order - b.order)
     .map(we => {
-      const resuelto = resolveExerciseForWeek(we, semanaDelMeso);
-      const entrada = log?.entries.find(e => e.exerciseId === we.exerciseId);
+      const resuelto = resolverEjercicioDelMeso(we, meso, semanaDelMeso);
+      const entrada = log?.entries.find(e => e.exerciseId === resuelto.exerciseId);
       const seriesHechas = entrada?.sets.length;
       // Media de la carga movida, no el máximo: el máximo de una serie suelta
       // no dice cómo fue la sesión, y es lo que un coach mira de un vistazo.
@@ -67,8 +67,8 @@ export function ejerciciosDelDia(fecha: string, datos: DatosSemana): EjercicioDe
         ? Math.round((entrada.sets.reduce((s, x) => s + x.weight, 0) / entrada.sets.length) * 10) / 10
         : undefined;
       return {
-        exerciseId: we.exerciseId,
-        nombre: datos.exercises.find(e => e.id === we.exerciseId)?.name ?? 'Ejercicio',
+        exerciseId: resuelto.exerciseId,
+        nombre: datos.exercises.find(e => e.id === resuelto.exerciseId)?.name ?? 'Ejercicio',
         series: resuelto.sets,
         reps: resuelto.reps,
         rir: resuelto.rir,

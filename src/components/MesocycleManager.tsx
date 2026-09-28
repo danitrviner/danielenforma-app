@@ -26,7 +26,12 @@ import {
 import ExercisePickerSheet from './ExercisePickerSheet';
 import ExerciseVideoPlayer from './ExerciseVideoPlayer';
 import { MesocycleTemplate } from '../types';
-import { offsetsDeSesiones, formateaFrecuencia, vueltasDelCiclo } from '../utils/progression';
+import { offsetsDeSesiones, formateaFrecuencia, vueltasDelCiclo, resolveExerciseForWeek, resolverEjercicioDelMeso, mesocycleWeekNumber } from '../utils/progression';
+import {
+  programarCambio, quitarCambiosDeSemana, semanasConCambios, origenDeCambios, diferencias, compararSemanas,
+  seriesDeLaSemana, seriesDe, type EjercicioDelDia,
+} from '../utils/semanasDelBloque';
+import BarraDeSemanas, { type Alcance, type AvisoDeSemana, type ElementoProgramado } from './mesociclo/BarraDeSemanas';
 import { atletasActivos } from '../utils/atletas';
 import {
   TRAINING_SPLITS, DAY_TYPE_MUSCLES, getSplitsForDays, recommendSplit,
@@ -413,14 +418,20 @@ function Delta({ delta, showEqual = false }: { delta: number | null; showEqual?:
 function MesoExercisesView({
   groups, loading, weeks, allExercises, onUpdateExercise, onReplaceExercise, onAddExercise, onRemoveExercise,
   onMoveExercise, onGoToDistribution, libraryWorkouts, onUseLibraryWorkout, distribution, mesoGroups, semanasDelCiclo,
-  onRenameDay,
+  onRenameDay, meso, onUpdateMeso, vueltas, cicloDias, logs, onWriteDay,
 }: {
   groups: MesoWorkoutGroup[];
   loading: boolean;
   weeks: number;
   allExercises: Exercise[];
   onUpdateExercise: (group: MesoWorkoutGroup, exIdx: number, patch: Partial<WorkoutExercise>) => void;
-  onReplaceExercise: (group: MesoWorkoutGroup, exIdx: number) => void;
+  onReplaceExercise: (group: MesoWorkoutGroup, exIdx: number, semana?: { semana: number; solo: boolean }) => void;
+  meso: Mesocycle;
+  onUpdateMeso: (patch: Partial<Mesocycle>) => void;
+  vueltas: number;
+  cicloDias: number;
+  logs?: WorkoutLog[];
+  onWriteDay: (group: MesoWorkoutGroup, exercises: WorkoutExercise[]) => void;
   onAddExercise: (group: MesoWorkoutGroup) => void;
   onRemoveExercise: (group: MesoWorkoutGroup, exIdx: number) => void;
   onMoveExercise: (group: MesoWorkoutGroup, exIdx: number, delta: -1 | 1) => void;
@@ -455,7 +466,7 @@ function MesoExercisesView({
     );
   }
 
-  return <MesoExercisesTabs {...{ groups, weeks, allExercises, onUpdateExercise, onReplaceExercise, onAddExercise, onRemoveExercise, onMoveExercise, libraryWorkouts, onUseLibraryWorkout, distribution, mesoGroups, semanasDelCiclo, onRenameDay }} />;
+  return <MesoExercisesTabs {...{ groups, weeks, allExercises, onUpdateExercise, onReplaceExercise, onAddExercise, onRemoveExercise, onMoveExercise, libraryWorkouts, onUseLibraryWorkout, distribution, mesoGroups, semanasDelCiclo, onRenameDay, meso, onUpdateMeso, vueltas, cicloDias, logs, onWriteDay }} />;
 }
 
 const PREFIJO_DIA = /^(Día\s*\d+\s*–\s*)(.*)$/i;
@@ -463,8 +474,10 @@ const PREFIJO_DIA = /^(Día\s*\d+\s*–\s*)(.*)$/i;
 // Título del día, editable. Si el nombre trae el viejo prefijo «Día N – » se
 // respeta (esas rutinas todavía se ordenan por él); los nombres nuevos
 // —«Torso · Ander · Meso 2»— se editan enteros, que es lo que pide el coach.
-function DayTitle({ name, editing, value, onStartEdit, onChangeValue, onCommit, onCancel, destacado }: {
+function DayTitle({ name, editing, value, onStartEdit, onChangeValue, onCommit, onCancel, destacado, bloqueado }: {
   name: string;
+  /** Viendo una semana concreta: el nombre del día es de la base, no se edita aquí. */
+  bloqueado?: boolean;
   /** En la vista en filas el día abre un bloque largo: va en oro para que se vea dónde empieza. */
   destacado?: boolean;
   editing: boolean;
@@ -499,6 +512,10 @@ function DayTitle({ name, editing, value, onStartEdit, onChangeValue, onCommit, 
     );
   }
 
+  if (bloqueado) {
+    return <p className={`font-sans truncate ${destacado ? 'font-extrabold text-title-s text-accent-ink' : 'font-bold text-body-s text-ink'}`}>{name}</p>;
+  }
+
   return (
     <button
       type="button"
@@ -516,15 +533,22 @@ function DayTitle({ name, editing, value, onStartEdit, onChangeValue, onCommit, 
 // con 5-6 días el grid antiguo obligaba a hacer scroll constante para comparar
 // ejercicios de días distintos. Aquí solo se ve un día a la vez, con su vídeo.
 function MesoExercisesTabs({
-  groups, weeks, allExercises, onUpdateExercise, onReplaceExercise, onAddExercise, onRemoveExercise,
+  groups: gruposBase, weeks, allExercises, onUpdateExercise: guardarEjercicio, onReplaceExercise: elegirOtroEjercicio,
+  onAddExercise, onRemoveExercise,
   onMoveExercise, libraryWorkouts, onUseLibraryWorkout, distribution, mesoGroups, semanasDelCiclo,
-  onRenameDay,
+  onRenameDay, meso, onUpdateMeso, vueltas, cicloDias, logs, onWriteDay,
 }: {
   groups: MesoWorkoutGroup[];
   weeks: number;
   allExercises: Exercise[];
   onUpdateExercise: (group: MesoWorkoutGroup, exIdx: number, patch: Partial<WorkoutExercise>) => void;
-  onReplaceExercise: (group: MesoWorkoutGroup, exIdx: number) => void;
+  onReplaceExercise: (group: MesoWorkoutGroup, exIdx: number, semana?: { semana: number; solo: boolean }) => void;
+  meso: Mesocycle;
+  onUpdateMeso: (patch: Partial<Mesocycle>) => void;
+  vueltas: number;
+  cicloDias: number;
+  logs?: WorkoutLog[];
+  onWriteDay: (group: MesoWorkoutGroup, exercises: WorkoutExercise[]) => void;
   onAddExercise: (group: MesoWorkoutGroup) => void;
   onRemoveExercise: (group: MesoWorkoutGroup, exIdx: number) => void;
   onMoveExercise: (group: MesoWorkoutGroup, exIdx: number, delta: -1 | 1) => void;
@@ -535,6 +559,175 @@ function MesoExercisesTabs({
   mesoGroups: Record<MuscleGroup, MuscleGroupConfig>;
   semanasDelCiclo: number;
 }) {
+
+  // ── Semanas del bloque ────────────────────────────────────────────────────
+  // 0 = Base (lo que se repite todo el bloque). En una semana concreta la
+  // pantalla enseña los ejercicios tal y como tocan esa semana, y lo que se
+  // toque se guarda como cambio desde esa semana (o solo esa).
+  const [semana, setSemana] = useState(0);
+  const [alcance, setAlcance] = useState<Alcance>('desde');
+  const [comparar, setComparar] = useState<{ a: number; b: number } | null>(null);
+  type Deshacer = { tipo: 'dia'; clave: string; prev: WorkoutExercise[] } | { tipo: 'meso'; prev: Partial<Mesocycle> };
+  const [pila, setPila] = useState<Deshacer[]>([]);
+  const claveGrupo = (g: MesoWorkoutGroup) => g.workoutIds.join('|');
+  const baseDe = (g: MesoWorkoutGroup) => gruposBase.find(b => claveGrupo(b) === claveGrupo(g)) ?? g;
+  const apuntar = (d: Deshacer) => setPila(prev => [...prev.slice(-19), d]);
+
+  const nombreDe = useCallback((id: string) => allExercises.find(e => e.id === id)?.name ?? 'Ejercicio', [allExercises]);
+  const ejerciciosDelBloque: EjercicioDelDia[] = useMemo(
+    () => gruposBase.flatMap(g => g.exercises.map(we => ({ we, dia: g.name }))),
+    [gruposBase],
+  );
+
+  const groups: MesoWorkoutGroup[] = useMemo(() => semana === 0 ? gruposBase : gruposBase.map(g => ({
+    ...g, exercises: g.exercises.map(we => resolveExerciseForWeek(we, semana)),
+  })), [gruposBase, semana]);
+
+  const onUpdateExercise = (g: MesoWorkoutGroup, exIdx: number, patch: Partial<WorkoutExercise>) => {
+    const base = baseDe(g);
+    const we = base.exercises[exIdx];
+    if (!we) return;
+    apuntar({ tipo: 'dia', clave: claveGrupo(base), prev: base.exercises });
+    if (semana === 0) { guardarEjercicio(base, exIdx, patch); return; }
+    const editado = { ...resolveExerciseForWeek(we, semana), ...patch };
+    guardarEjercicio(base, exIdx, { weeklyProgression: programarCambio(we, semana, alcance === 'solo', editado) });
+  };
+  const onReplaceExercise = (g: MesoWorkoutGroup, exIdx: number) => {
+    const base = baseDe(g);
+    apuntar({ tipo: 'dia', clave: claveGrupo(base), prev: base.exercises });
+    elegirOtroEjercicio(base, exIdx, semana > 0 ? { semana, solo: alcance === 'solo' } : undefined);
+  };
+
+  const escribirDias = (transformar: (we: WorkoutExercise) => WorkoutExercise) => {
+    for (const g of gruposBase) {
+      const nuevos = g.exercises.map(transformar);
+      if (JSON.stringify(nuevos) === JSON.stringify(g.exercises)) continue;
+      apuntar({ tipo: 'dia', clave: claveGrupo(g), prev: g.exercises });
+      onWriteDay(g, nuevos);
+    }
+  };
+  const quitarCambios = (semanas: number[]) => escribirDias(we => {
+    let reglas = we.weeklyProgression;
+    for (const s of semanas) reglas = quitarCambiosDeSemana({ ...we, weeklyProgression: reglas }, s);
+    const { weeklyProgression: _v, ...resto } = we;
+    return reglas ? { ...resto, weeklyProgression: reglas } : resto;
+  });
+
+  const descargas = useMemo<number[]>(() => meso.semanasDescarga ?? [], [meso.semanasDescarga]);
+  const cambiarMeso = (patch: Partial<Mesocycle>) => {
+    const prev = Object.fromEntries(Object.keys(patch).map(k => [k, meso[k as keyof Mesocycle]])) as Partial<Mesocycle>;
+    apuntar({ tipo: 'meso', prev });
+    onUpdateMeso(patch);
+  };
+  const semanaDeCalendario = (vuelta: number) => Math.floor(((vuelta - 1) * cicloDias) / 7) + 1;
+  const onDescarga = (semanas: number[], activar: boolean) => {
+    const lista = Array.from(new Set<number>(activar ? [...descargas, ...semanas] : descargas.filter(s => !semanas.includes(s)))).sort((a, b) => a - b);
+    cambiarMeso({
+      semanasDescarga: lista.length > 0 ? lista : undefined,
+      // El calendario sigue leyendo `deloadWeek`: se sincroniza con la primera.
+      deloadWeek: lista.length > 0 ? semanaDeCalendario(lista[0]) : undefined,
+    });
+  };
+  const notas = meso.notasSemana ?? {};
+  const onNota = (texto: string) => {
+    const siguientes = { ...notas };
+    if (texto) siguientes[String(semana)] = texto; else delete siguientes[String(semana)];
+    onUpdateMeso({ notasSemana: Object.keys(siguientes).length > 0 ? siguientes : undefined });
+  };
+
+  const deshacer = () => {
+    const ultimo = pila[pila.length - 1];
+    if (!ultimo) return;
+    setPila(prev => prev.slice(0, -1));
+    if (ultimo.tipo === 'meso') { onUpdateMeso(ultimo.prev); return; }
+    const g = gruposBase.find(b => claveGrupo(b) === ultimo.clave);
+    if (g) onWriteDay(g, ultimo.prev);
+  };
+
+  const totales = useMemo(
+    () => Array.from({ length: vueltas + 1 }, (_, s) => seriesDeLaSemana(ejerciciosDelBloque, meso, s)),
+    [ejerciciosDelBloque, meso, vueltas],
+  );
+  // Series hechas de verdad en cada semana ya empezada (relleno de la barra).
+  const reales = useMemo(() => {
+    if (!logs) return undefined;
+    const hoy = hoyIsoLocal();
+    const delMeso = logs.filter(l => l.mesocycleId === meso.id);
+    return Array.from({ length: vueltas + 1 }, (_, s) => {
+      if (s === 0 || addDays(meso.startDate, (s - 1) * cicloDias) > hoy) return null;
+      return delMeso
+        .filter(l => mesocycleWeekNumber(meso.startDate, l.date, cicloDias) === s)
+        .reduce((n, l) => n + l.entries.reduce((m, e) => m + e.sets.length, 0), 0);
+    });
+  }, [logs, meso.id, meso.startDate, vueltas, cicloDias]);
+
+  // Semanas que se salen del volumen útil: por encima de MRV en algún grupo,
+  // o por debajo de MEV en un grupo que el bloque sí entrena (salvo descarga,
+  // donde bajar es justo lo que se busca). Por SEMANA de 7 días, como los
+  // landmarks, aunque el ciclo dure otra cosa.
+  const avisos = useMemo(() => {
+    const out: Record<number, AvisoDeSemana[]> = {};
+    for (let s = 1; s <= vueltas; s++) {
+      const porGrupo = new Map<MuscleGroup, number>();
+      for (const { we } of ejerciciosDelBloque) {
+        const r = resolverEjercicioDelMeso(we, meso, s);
+        const grupo = r.muscleGroup ?? allExercises.find(e => e.id === r.exerciseId)?.muscleGroup;
+        if (grupo) porGrupo.set(grupo, (porGrupo.get(grupo) ?? 0) + seriesDe(r));
+      }
+      const lista: AvisoDeSemana[] = [];
+      for (const [grupo, serie] of porGrupo) {
+        const lm = VOLUME_LANDMARKS_DEFAULT[grupo];
+        if (!lm) continue;
+        const semanal = Math.round(serie / Math.max(semanasDelCiclo, 1 / 7));
+        if (semanal > lm.mrv) lista.push({ tono: 'peligro', texto: `${MUSCLE_LABELS[grupo]}: ${semanal} series, por encima de su máximo recuperable (${lm.mrv})` });
+        else if (!descargas.includes(s) && (mesoGroups[grupo]?.series ?? 0) > 0 && semanal < lm.mev) {
+          lista.push({ tono: 'aviso', texto: `${MUSCLE_LABELS[grupo]}: ${semanal} series, por debajo del mínimo efectivo (${lm.mev})` });
+        }
+      }
+      if (lista.length > 0) out[s] = lista;
+    }
+    return out;
+  }, [ejerciciosDelBloque, meso, vueltas, allExercises, semanasDelCiclo, descargas, mesoGroups]);
+
+  const semanasMarcadas = useMemo(
+    () => new Set(ejerciciosDelBloque.flatMap(({ we }) => semanasConCambios(we))),
+    [ejerciciosDelBloque],
+  );
+
+  const programado: ElementoProgramado[] = useMemo(() => {
+    const out: ElementoProgramado[] = [];
+    for (const g of gruposBase) {
+      g.exercises.forEach((we, exIdx) => {
+        for (const r of we.weeklyProgression ?? []) {
+          if (!r.cambios) continue;
+          const otras = (we.weeklyProgression ?? []).filter(x => x !== r);
+          const sin = resolveExerciseForWeek({ ...we, weeklyProgression: otras }, r.atWeek);
+          const con = resolveExerciseForWeek(we, r.atWeek);
+          const que = diferencias(sin, con, nombreDe);
+          if (que.length === 0) continue;
+          out.push({
+            semana: r.atWeek, solo: !!r.soloEstaSemana, tipo: 'cambio',
+            texto: `${nombreDe(we.exerciseId)} (${g.name}): ${que.join(' · ')}`,
+            clave: `${claveGrupo(g)}#${exIdx}`,
+          });
+        }
+      });
+    }
+    for (const s of descargas) out.push({ semana: s, solo: true, tipo: 'descarga', texto: 'Semana de descarga: la mitad de series en todos los ejercicios' });
+    return out.sort((a, b) => a.semana - b.semana);
+  }, [gruposBase, descargas, nombreDe]);
+
+  const quitarProgramado = (e: ElementoProgramado) => {
+    if (e.tipo === 'descarga') { onDescarga([e.semana], false); return; }
+    const [clave, idx] = (e.clave ?? '').split('#');
+    const g = gruposBase.find(b => claveGrupo(b) === clave);
+    const we = g?.exercises[Number(idx)];
+    if (!g || !we) return;
+    const reglas = (we.weeklyProgression ?? []).filter(r => !(r.cambios && r.atWeek === e.semana && !!r.soloEstaSemana === e.solo));
+    apuntar({ tipo: 'dia', clave, prev: g.exercises });
+    guardarEjercicio(g, Number(idx), { weeklyProgression: reglas.length > 0 ? reglas : undefined });
+  };
+
   const [activeIdx, setActiveIdx] = useState(0);
   const [videoModal, setVideoModal] = useState<{ key: string; url: string; name: string } | null>(null);
   /* Cuántas columnas de día caben. Se mide el CONTENEDOR, no la ventana: esta
@@ -681,6 +874,7 @@ function MesoExercisesTabs({
               <div className="flex items-center justify-between gap-2 flex-wrap">
                 <DayTitle
                   destacado={enFilas}
+                  bloqueado={semana > 0}
                   name={g.name}
                   editing={renamingDay?.clave === claveDia(g, gIdx)}
                   value={renamingDay?.clave === claveDia(g, gIdx) ? renamingDay.value : ''}
@@ -735,7 +929,8 @@ function MesoExercisesTabs({
                   // decisión de programación (básicos primero, aislamiento
                   // después), y hasta ahora la única forma de cambiarlo era
                   // borrar y volver a añadir.
-                  const flechas = (
+                  const marcas = semana > 0 && gruposBase[gIdx]?.exercises[exIdx] ? origenDeCambios(gruposBase[gIdx].exercises[exIdx], semana) : {};
+                  const flechas = semana > 0 ? <span /> : (
                     <div className={`flex flex-col flex-shrink-0 ${enFilas ? 'items-center fila-oculta' : ''}`}>
                       <button
                         type="button"
@@ -772,6 +967,9 @@ function MesoExercisesTabs({
                         onPointerCancel={clearLongPress}
                       >
                         {ex?.name || we.exerciseId}
+                        {marcas.exerciseId && (
+                          <span className="ml-2 align-middle inline-block font-mono text-caption font-bold text-accent-ink border border-accent-line rounded-[6px] px-1">{marcas.exerciseId}</span>
+                        )}
                         {!enFilas && we.muscleGroup && <span className="text-caption font-sans text-ink-2 ml-2">{MUSCLE_LABELS[we.muscleGroup]}</span>}
                       </p>
                       {enFilas && (we.muscleGroup || (we.setGroups?.length ?? 0) > 0) && (
@@ -811,14 +1009,16 @@ function MesoExercisesTabs({
                       >
                         <Icon name="swap_horiz" size="s" />
                       </button>
-                      <button
-                        onClick={() => onRemoveExercise(g, exIdx)}
-                        title="Quitar ejercicio"
-                        aria-label="Quitar ejercicio"
-                        className={`text-ink-3 hover:text-danger transition-colors${oculta}`}
-                      >
-                        <Icon name="close" size="s" />
-                      </button>
+                      {semana === 0 && (
+                        <button
+                          onClick={() => onRemoveExercise(g, exIdx)}
+                          title="Quitar ejercicio"
+                          aria-label="Quitar ejercicio"
+                          className={`text-ink-3 hover:text-danger transition-colors${oculta}`}
+                        >
+                          <Icon name="close" size="s" />
+                        </button>
+                      )}
                     </>
                   );
 
@@ -836,7 +1036,8 @@ function MesoExercisesTabs({
                           disposicion="fila"
                           we={we}
                           onChange={patch => onUpdateExercise(g, exIdx, patch)}
-                          mesoWeeks={weeks}
+                          mesoWeeks={semana === 0 ? weeks : undefined}
+                          marcas={marcas}
                           inicio={<>{flechas}{numero}{nombre}</>}
                           acciones={botones}
                         />
@@ -857,7 +1058,7 @@ function MesoExercisesTabs({
                           {nombre}
                           <div className="flex items-center gap-1 flex-shrink-0">{botones}</div>
                         </div>
-                        <ExerciseConfigEditor we={we} onChange={patch => onUpdateExercise(g, exIdx, patch)} mesoWeeks={weeks} />
+                        <ExerciseConfigEditor we={we} onChange={patch => onUpdateExercise(g, exIdx, patch)} mesoWeeks={semana === 0 ? weeks : undefined} />
                       </div>
                     </div>
                   );
@@ -865,6 +1066,7 @@ function MesoExercisesTabs({
                 </div>
               )}
               <div className={enFilas ? 'px-4 pt-1 space-y-1.5' : 'space-y-1.5'}>
+              {semana === 0 ? (
               <div className="flex gap-2">
                 <button
                   onClick={() => onAddExercise(g)}
@@ -884,8 +1086,11 @@ function MesoExercisesTabs({
                   </button>
                 )}
               </div>
+              ) : null}
               <p className="font-mono text-caption text-ink-3">
-                Se aplica a todas las semanas de este mesociclo — las sesiones ya completadas no se tocan.
+                {semana === 0
+                  ? 'Se aplica a todas las semanas de este mesociclo salvo donde hayas programado otra cosa — las sesiones ya completadas no se tocan.'
+                  : 'Para añadir, quitar o reordenar ejercicios vuelve a Base. Aquí cambias cómo se hacen desde esta semana.'}
               </p>
               </div>
             </div>
@@ -894,9 +1099,60 @@ function MesoExercisesTabs({
 
   return (
     <div className="space-y-4">
-      <p className="font-mono text-caption text-ink-2">
-        Cada sesión se repite igual en todas las vueltas del mesociclo — edita aquí y se aplica a todas a la vez.
-      </p>
+      <BarraDeSemanas
+        vueltas={vueltas}
+        semana={semana}
+        onSemana={setSemana}
+        alcance={alcance}
+        onAlcance={setAlcance}
+        totales={totales}
+        reales={reales}
+        semanasConCambio={semanasMarcadas}
+        descargas={descargas}
+        avisos={avisos}
+        nota={notas[String(semana)] ?? ''}
+        onNota={onNota}
+        onDescarga={onDescarga}
+        onQuitarCambios={quitarCambios}
+        onComparar={() => setComparar({ a: Math.max(1, semana - 1), b: Math.max(2, semana || vueltas) })}
+        puedeDeshacer={pila.length > 0}
+        onDeshacer={deshacer}
+        programado={programado}
+        onQuitarProgramado={quitarProgramado}
+        descargaSoloCalendario={meso.deloadWeek !== undefined && meso.semanasDescarga === undefined && cicloDias === 7 ? meso.deloadWeek : undefined}
+      />
+
+      <Sheet open={comparar !== null} onClose={() => setComparar(null)} title="Comparar semanas">
+        {comparar && (() => {
+          const opciones = Array.from({ length: vueltas }, (_, i) => ({ value: String(i + 1), label: `Semana ${i + 1}` }));
+          const difs = compararSemanas(ejerciciosDelBloque, comparar.a, comparar.b, nombreDe);
+          const avisoDescarga = [comparar.a, comparar.b].filter(x => descargas.includes(x));
+          return (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <Select label="De" value={String(comparar.a)} options={opciones} onChange={v => setComparar({ ...comparar, a: Number(v) })} />
+                <Select label="A" value={String(comparar.b)} options={opciones} onChange={v => setComparar({ ...comparar, b: Number(v) })} />
+              </div>
+              <p className="font-mono text-caption text-ink-2">
+                {totales[comparar.a]} → {totales[comparar.b]} series en la semana
+                {avisoDescarga.length > 0 && ` · descarga en ${avisoDescarga.map(x => `S${x}`).join(' y ')}`}
+              </p>
+              {difs.length === 0 ? (
+                <p className="font-sans text-label text-ink-3">Los ejercicios son iguales en las dos semanas.</p>
+              ) : (
+                <ul className="space-y-2">
+                  {difs.map((d, i) => (
+                    <li key={i} className="bg-raised border border-hairline rounded-control px-3 py-2">
+                      <p className="font-sans font-bold text-label text-ink">{d.ejercicio} <span className="font-normal text-ink-3">· {d.dia}</span></p>
+                      <p className="font-sans text-label text-ink-2">{d.cambios.join(' · ')}</p>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          );
+        })()}
+      </Sheet>
 
       <div className="bg-surface border border-hairline rounded-surface px-4 py-3">
         <SeriesBalance balance={balanceSemana} referencia={referenciaCiclo} ocultarSiVacio={false} onGroupClick={jumpToGroup} />
@@ -1336,7 +1592,7 @@ export default function MesocycleManager({
   // "cambiar ese índice".
   const [exercisePicker, setExercisePicker] = useState<
     | { context: 'preview'; dayIdx: number; exIdx: number | null; group?: MuscleGroup }
-    | { context: 'programado'; group: MesoWorkoutGroup; exIdx: number | null; muscleGroup?: MuscleGroup }
+    | { context: 'programado'; group: MesoWorkoutGroup; exIdx: number | null; muscleGroup?: MuscleGroup; semana?: { semana: number; solo: boolean } }
     | null
   >(null);
 
@@ -1416,7 +1672,7 @@ export default function MesocycleManager({
   // no hay motivo para pagar dos queries cada vez que se entra a programar.
   // Mismas queryKeys que ClientHub/MesocycleDashboard: si ya están en caché,
   // esto no lee nada de Firestore.
-  const necesitaLogs = editorTab === 'cierre' && !athleteLogs && !!selectedEmail;
+  const necesitaLogs = (editorTab === 'cierre' || editorTab === 'exercises') && !athleteLogs && !!selectedEmail;
   const { data: logsQuery = [], isPending: logsPending } = useQuery({
     queryKey: ['workoutLogs', selectedEmail],
     queryFn: () => getWorkoutLogs(selectedEmail),
@@ -1464,6 +1720,13 @@ export default function MesocycleManager({
       }
     }, 800);
   }, [queryClient, selectedEmail]);
+
+  const actualizarMeso = (patch: Partial<Mesocycle>) => {
+    if (!editing) return;
+    const updated = { ...editing, ...patch };
+    setEditing(updated);
+    scheduleAutoSave(updated);
+  };
 
   const updateField = <K extends keyof Omit<Mesocycle, 'id' | 'groups' | 'distribution'>>(
     field: K, value: Mesocycle[K]
@@ -1995,8 +2258,8 @@ export default function MesocycleManager({
     await Promise.all(group.workoutIds.map(id => updateWorkout(id, { name: nuevoNombre })));
   }
 
-  function handleReplaceMesoExercise(group: MesoWorkoutGroup, exIdx: number) {
-    setExercisePicker({ context: 'programado', group, exIdx, muscleGroup: group.exercises[exIdx]?.muscleGroup });
+  function handleReplaceMesoExercise(group: MesoWorkoutGroup, exIdx: number, semana?: { semana: number; solo: boolean }) {
+    setExercisePicker({ context: 'programado', group, exIdx, muscleGroup: group.exercises[exIdx]?.muscleGroup, semana });
   }
 
   function handleAddMesoExercise(group: MesoWorkoutGroup) {
@@ -2041,7 +2304,15 @@ export default function MesocycleManager({
       setExercisePicker(null);
       return;
     }
-    const { group, exIdx } = exercisePicker;
+    const { group, exIdx, semana } = exercisePicker;
+    if (exIdx !== null && semana) {
+      // Cambio de ejercicio a partir de una semana: se programa, la base no se toca.
+      const we = group.exercises[exIdx];
+      const editado = { ...resolveExerciseForWeek(we, semana.semana), exerciseId: ex.id, muscleGroup: ex.muscleGroup ?? we.muscleGroup };
+      void updateMesoWorkoutExercise(group, exIdx, { weeklyProgression: programarCambio(we, semana.semana, semana.solo, editado) });
+      setExercisePicker(null);
+      return;
+    }
     if (exIdx === null) {
       const newEx: WorkoutExercise = {
         exerciseId: ex.id, order: group.exercises.length, sets: 3, reps: '8-12', rir: 2, restSeconds: 90,
@@ -2999,6 +3270,12 @@ export default function MesocycleManager({
                   distribution={editing.distribution}
                   mesoGroups={editing.groups}
                   semanasDelCiclo={cicloDias / 7}
+                  meso={editing}
+                  onUpdateMeso={actualizarMeso}
+                  vueltas={vueltasDelCiclo(editing.weeks, cicloDias)}
+                  cicloDias={cicloDias}
+                  logs={athleteLogs ?? (logsPending ? undefined : logsQuery)}
+                  onWriteDay={(g, exs) => { void writeMesoWorkoutExercises(g, exs); }}
                   onGoToDistribution={() => setEditorTab('distribution')}
                   libraryWorkouts={allWorkouts.filter(w => !w.mesocycleId)}
                   onUseLibraryWorkout={handleUseLibraryWorkout}

@@ -538,6 +538,30 @@ export interface WeeklyProgressionRule {
   // cumple. Aditivo y opcional: sin esto, la regla se comporta exactamente
   // igual que antes (siempre activa desde `atWeek`). Ver `src/utils/conditions.ts`.
   condition?: RuleCondition;
+  /** Cambio de prescripción programado desde la barra de semanas del
+   *  mesociclo: sustituye esos campos desde `atWeek` y se ACUMULA con los
+   *  cambios anteriores (a diferencia de addSets/addReps/setRir, donde manda
+   *  solo el último escalón). `null` = quitar el campo (p. ej. volver a un
+   *  solo rango quitando `setGroups`). */
+  cambios?: CambiosDeSemana;
+  /** Solo vale en la semana `atWeek`; la siguiente vuelve a lo anterior. */
+  soloEstaSemana?: boolean;
+}
+
+/** Lo que se puede cambiar de un ejercicio a partir de una semana. */
+export interface CambiosDeSemana {
+  exerciseId?: string;
+  muscleGroup?: MuscleGroup;
+  sets?: number;
+  reps?: string;
+  rir?: number;
+  restSeconds?: number;
+  setGroups?: WorkoutSetGroup[] | null;
+  technique?: WorkoutTechnique | null;
+  notes?: string;
+  warmupMode?: WarmupMode | null;
+  manualWarmupSets?: WarmupSet[] | null;
+  recordVideoSet?: number | 'all' | null;
 }
 
 export type ConditionMetric = 'adherenciaEntreno' | 'adherenciaDieta' | 'rirMedio' | 'peso';
@@ -1759,6 +1783,16 @@ export interface Mesocycle {
   programOrder?: number;   // position in the sequence (0-based)
   splitId?: string;        // id del reparto de días elegido (ver utils/trainingSplits.ts)
   deloadWeek?: number;     // semana (1-indexada) de descarga dentro del meso; undefined = sin descarga marcada
+  /**
+   * Semanas DE CICLO (vueltas, 1-indexadas) en las que el volumen baja de
+   * verdad: cada ejercicio hace la mitad de series (redondeando hacia arriba).
+   * `deloadWeek` solo pinta el calendario; esto cambia el entrenamiento. Al
+   * marcarlas desde la barra de semanas se rellena también `deloadWeek` para
+   * que el calendario siga viéndolas.
+   */
+  semanasDescarga?: number[];
+  /** Nota privada del coach por semana de ciclo ("3" → "subo a top set porque..."). */
+  notasSemana?: Record<string, string>;
   /**
    * Tipo de fase de entreno (Roadmap → Calendario, coach): decide el color/
    * icono del bloque en los 3 niveles del calendario. `undefined` = el coach

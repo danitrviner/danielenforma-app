@@ -11,7 +11,7 @@ import { MONTHS_ES, addDays, formatDate, hoyIsoLocal } from '../utils/trainingWe
 import { bloquesDelCiclo, bloqueActual, BloqueDelCiclo, DiaDelCiclo, EstadoDeDia } from '../utils/cicloDelAtleta';
 import { prefillWorkoutSets } from '../utils/setPrefill';
 import { conEstadoReal } from '../utils/estadoDeAsignacion';
-import { mesocycleWeekNumber, resolveExerciseForWeek } from '../utils/progression';
+import { mesocycleWeekNumber, resolverEjercicioDelMeso } from '../utils/progression';
 import { marcarRetoParaReevaluar } from '../hooks/useRetoDeLaSemana';
 import { cicloDiasDeMeso } from '../utils/asignacionMesociclo';
 import { useToast } from '../hooks/useToast';
@@ -29,6 +29,8 @@ import {
 import { haptics } from '../services/haptics';
 import { Badge, BadgeTone, Button, Icon, SegmentedControl, Chip, EmptyState } from './ui';
 import WorkoutSessionPlayer, { SessionCelebration } from './training/WorkoutSessionPlayer';
+import NovedadesDeSemana from './training/NovedadesDeSemana';
+import { novedadesDeSemana, hayNovedades } from '../utils/semanasDelBloque';
 import { SetInput, nuevaSerieVacia } from './training/setInput';
 
 interface TrainingScreenProps {
@@ -295,6 +297,20 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
   const bloqueHoy = useMemo(() => bloqueActual(bloques, today), [bloques, today]);
   const diasDelBloque = bloqueHoy?.dias ?? [];
 
+  // Lo que el coach ha programado que cambie ESTA semana de ciclo respecto a
+  // la anterior (un top set nuevo, otro ejercicio, la descarga).
+  const novedades = useMemo(() => {
+    const primera = bloqueHoy?.dias[0]?.assignment;
+    const meso = primera?.mesocycleId ? mesocycles.find(m => m.id === primera.mesocycleId) : undefined;
+    if (!primera || !meso) return null;
+    const semana = mesocycleWeekNumber(meso.startDate, primera.date, cicloDiasDeMeso(meso));
+    const ejercicios = workouts
+      .filter(w => w.mesocycleId === meso.id)
+      .flatMap(w => w.exercises.map(we => ({ we, dia: w.name })));
+    const n = novedadesDeSemana(ejercicios, meso, semana, id => exercises.find(e => e.id === id)?.name ?? 'Ejercicio');
+    return hayNovedades(n) ? { n, clave: `${meso.id}_${semana}`, semana } : null;
+  }, [bloqueHoy, mesocycles, workouts, exercises]);
+
   // El destacado es el de HOY; si hoy es descanso (o ya está hecho), el
   // siguiente que quede por hacer — nunca uno del pasado, que ya sale en rojo.
   const destacadoId =
@@ -330,7 +346,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
       ? {
           ...baseWorkout,
           exercises: baseWorkout.exercises.map(we =>
-            resolveExerciseForWeek(we, mesocycleWeekNumber(meso.startDate, assignment.date, cicloDiasDeMeso(meso)), conditionCtx)
+            resolverEjercicioDelMeso(we, meso, mesocycleWeekNumber(meso.startDate, assignment.date, cicloDiasDeMeso(meso)), conditionCtx)
           ),
         }
       : baseWorkout;
@@ -401,7 +417,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
       ? {
           ...baseWorkout,
           exercises: baseWorkout.exercises.map(we =>
-            resolveExerciseForWeek(we, mesocycleWeekNumber(meso.startDate, assignment.date, cicloDiasDeMeso(meso)), conditionCtx)
+            resolverEjercicioDelMeso(we, meso, mesocycleWeekNumber(meso.startDate, assignment.date, cicloDiasDeMeso(meso)), conditionCtx)
           ),
         }
       : baseWorkout;
@@ -845,6 +861,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
               /* La vuelta en curso, del Día 1 al Día N y en ese orden. Sin bloque
                  «Atrasados» al final: el que se pasó sale en su sitio, en rojo. */
               <div className="space-y-3">
+                {novedades && <NovedadesDeSemana novedades={novedades.n} clave={novedades.clave} semana={novedades.semana} />}
                 <div className="flex items-center gap-3">
                   <span className="font-mono text-caption uppercase font-bold tracking-widest text-accent-ink">
                     {bloqueHoy ? etiquetaBloque(bloqueHoy, true) : 'Esta semana'}

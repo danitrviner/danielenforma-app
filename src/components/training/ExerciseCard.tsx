@@ -9,6 +9,7 @@ import ExerciseVideoPlayer from '../ExerciseVideoPlayer';
 import { SetInput, RIR_OPCIONES, rirTexto, rirClaseColor, resumenRangosPautados } from './setInput';
 import RestRing from './RestRing';
 import { MOTIVOS_SALTAR, conMotivo, motivoDeLaNota } from '../../utils/saltarEjercicio';
+import { sugerirCarga } from '../../utils/cargaSugerida';
 
 interface Props {
   we: WorkoutExercise;
@@ -68,6 +69,7 @@ export default React.memo(function ExerciseCard({
     previousSets: prevEntry?.sets,
   });
 
+  const sugerencia = React.useMemo(() => sugerirCarga(we, prevEntry), [we, prevEntry]);
   const esDropset = we.technique === 'dropset';
   const esMyoreps = we.technique === 'myoreps';
 
@@ -174,6 +176,15 @@ export default React.memo(function ExerciseCard({
             onSkip={onSkipRest}
             onAddSeconds={onAddRestSeconds}
           />
+        </div>
+      )}
+
+      {/* Carga sugerida (doble progresión): solo cuando toca subir. La tabla
+          ya viene con ese peso; esto dice por qué, para que no parezca un error. */}
+      {sugerencia.resumen && doneSets === 0 && (
+        <div className="mx-4 mt-2 flex items-start gap-2 rounded-control border border-success/40 bg-success/10 px-3 py-2">
+          <Icon name="trending_up" size="s" className="text-success mt-0.5" />
+          <p className="font-sans text-caption text-ink">{sugerencia.resumen}</p>
         </div>
       )}
 

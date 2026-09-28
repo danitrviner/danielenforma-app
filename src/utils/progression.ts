@@ -1,4 +1,4 @@
-import { WorkoutExercise, WeeklyProgressionRule } from '../types';
+import { WorkoutExercise, WeeklyProgressionRule, CambiosDeSemana } from '../types';
 import { syncAggregateFromGroups } from './setGroups';
 import { evaluateCondition, ConditionContext } from './conditions';
 
@@ -151,7 +151,8 @@ function activeRuleForWeek(
 ): ResolvedRule | undefined {
   if (!rules || rules.length === 0) return undefined;
   const resolved: ResolvedRule[] = rules
-    .filter(r => r.atWeek <= weekNumber)
+    .filter(esEscalonClasico)
+    .filter(r => r.atWeek <= weekNumber && (!r.soloEstaSemana || r.atWeek === weekNumber))
     .map(r => {
       if (!r.condition) return { rule: r, halved: false };
       const met = !!(conditionCtx && exerciseId && evaluateCondition(r.condition, { ...conditionCtx, exerciseId }));
@@ -176,7 +177,57 @@ function activeRuleForWeek(
 // exactamente el de antes de este bloque — toda regla se aplica sin más desde
 // su `atWeek`. Se pasa solo desde los sitios que ya tienen los datos del
 // atleta a mano (sesión del propio atleta, cuadro de mando del coach).
-export function resolveExerciseForWeek(we: WorkoutExercise, weekNumber: number, conditionCtx?: ProgressionConditionCtx): WorkoutExercise {
+/** Un escalón de los de siempre (series/reps/RIR). Una regla que solo trae
+ *  `cambios` no compite por ser «el último escalón». */
+function esEscalonClasico(r: WeeklyProgressionRule): boolean {
+  return r.addSets !== undefined || r.addReps !== undefined || r.setRir !== undefined;
+}
+
+/** Aplica los `cambios` de la barra de semanas, en orden, que tocan a
+ *  `weekNumber`. Se acumulan: un cambio de la S3 sigue en la S7 salvo que
+ *  otro posterior pise ese mismo campo. Dentro de una misma semana, el de
+ *  «solo esta semana» va después, así que manda sobre el permanente. */
+export function aplicarCambiosDeSemanas(we: WorkoutExercise, weekNumber: number): WorkoutExercise {
+  const reglas = (we.weeklyProgression ?? [])
+    .filter(r => r.cambios && r.atWeek <= weekNumber && (!r.soloEstaSemana || r.atWeek === weekNumber))
+    .sort((a, b) => a.atWeek - b.atWeek || Number(!!a.soloEstaSemana) - Number(!!b.soloEstaSemana));
+  if (reglas.length === 0) return we;
+  const r: Record<string, unknown> = { ...we };
+  for (const regla of reglas) {
+    for (const [k, v] of Object.entries(regla.cambios as CambiosDeSemana)) {
+      if (v === undefined) continue;
+      if (v === null) delete r[k]; else r[k] = v;
+    }
+  }
+  const out = r as unknown as WorkoutExercise;
+  return out.setGroups && out.setGroups.length > 0 ? syncAggregateFromGroups(out) : out;
+}
+
+/** Semana de descarga: la mitad de series en cada bloque (redondeando hacia
+ *  arriba, nunca menos de 1). Reps, RIR y descanso no se tocan. */
+export function aplicarDescarga(we: WorkoutExercise): WorkoutExercise {
+  const mitad = (n: number) => Math.max(1, Math.ceil(n / 2));
+  if (we.setGroups && we.setGroups.length > 0) {
+    return syncAggregateFromGroups({ ...we, setGroups: we.setGroups.map(g => ({ ...g, sets: mitad(g.sets) })) });
+  }
+  return { ...we, sets: mitad(we.sets) };
+}
+
+/** Lo que el atleta hace de verdad en la semana de ciclo `semana` de este
+ *  mesociclo: cambios por semana + escalones + descarga. Es la función a usar
+ *  en cualquier sitio que pinte o cuente una sesión de un mesociclo. */
+export function resolverEjercicioDelMeso(
+  we: WorkoutExercise,
+  meso: { semanasDescarga?: number[] } | undefined,
+  semana: number,
+  conditionCtx?: ProgressionConditionCtx,
+): WorkoutExercise {
+  const r = resolveExerciseForWeek(we, semana, conditionCtx);
+  return meso?.semanasDescarga?.includes(semana) ? aplicarDescarga(r) : r;
+}
+
+export function resolveExerciseForWeek(weBase: WorkoutExercise, weekNumber: number, conditionCtx?: ProgressionConditionCtx): WorkoutExercise {
+  const we = aplicarCambiosDeSemanas(weBase, weekNumber);
   const resolved = activeRuleForWeek(we.weeklyProgression, weekNumber, we.exerciseId, conditionCtx);
   if (!resolved) return we;
   const { rule, halved } = resolved;

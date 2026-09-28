@@ -13,7 +13,7 @@ import {
   NutritionPhaseType, WorkoutAssignment, Workout, Exercise, MuscleGroup, RefeedDay,
 } from '../types';
 import { addDays } from './trainingWeek';
-import { mesocycleWeekNumber, resolveExerciseForWeek } from './progression';
+import { mesocycleWeekNumber, resolverEjercicioDelMeso } from './progression';
 import { cicloDiasDeMeso } from './asignacionMesociclo';
 
 function diasEntre(a: string, b: string): number {
@@ -264,8 +264,8 @@ export function construirCarrilVolumen({ semanas, workoutAssignments, workouts, 
         ? mesocycleWeekNumber(meso.startDate, asignacion.date, cicloDiasDeMeso(meso))
         : 1;
       for (const we of workout.exercises) {
-        const resuelto = resolveExerciseForWeek(we, semanaDelMeso);
-        const grupo = we.muscleGroup ?? grupoDeEjercicio.get(we.exerciseId);
+        const resuelto = resolverEjercicioDelMeso(we, meso, semanaDelMeso);
+        const grupo = resuelto.muscleGroup ?? grupoDeEjercicio.get(resuelto.exerciseId);
         if (!grupo) continue;
         const fila = porGrupoMap.get(grupo) ?? new Array(semanas.length).fill(0);
         fila[si] += resuelto.sets;

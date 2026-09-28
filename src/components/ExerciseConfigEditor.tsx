@@ -17,6 +17,9 @@ interface Props {
   disposicion?: 'tarjeta' | 'fila';
   inicio?: React.ReactNode;
   acciones?: React.ReactNode;
+  /** Campos que esta semana difieren de la base, con desde cuándo ("S3",
+   *  "solo S5"): la fila los marca en oro. Solo en disposición 'fila'. */
+  marcas?: Partial<Record<string, string>>;
 }
 
 /** Columnas de la vista en filas: mover · nº · ejercicio · series · reps ·
@@ -183,7 +186,7 @@ function ChipSeccion({ etiqueta, valor, activa, abierta, onClick, discreto }: {
 // video reminder and warm-up mode. Used identically from WorkoutsScreen (shared routine
 // library) and from MesocycleManager's generator preview + "Ejercicios programados" tab,
 // so a coach configures an exercise the same way no matter which screen they're on.
-export default function ExerciseConfigEditor({ we, onChange, mesoWeeks, disposicion = 'tarjeta', inicio, acciones }: Props) {
+export default function ExerciseConfigEditor({ we, onChange, mesoWeeks, disposicion = 'tarjeta', inicio, acciones, marcas = {} }: Props) {
   const enFila = disposicion === 'fila';
   const hasGroups = (we.setGroups?.length ?? 0) > 0;
 
@@ -548,7 +551,15 @@ export default function ExerciseConfigEditor({ we, onChange, mesoWeeks, disposic
   if (enFila) {
     // Una línea por ejercicio. Las celdas no llevan rótulo: la cabecera de
     // columnas va una vez por día (la pinta quien llama, con COLUMNAS_FILA).
-    const celda = 'fila-celda bg-inset rounded-control h-8 px-1 flex items-center';
+    const celdaBase = 'fila-celda relative bg-inset rounded-control h-8 px-1 flex items-center';
+    // Marca en oro lo que difiere de la base esta semana, con la semana de la
+    // que viene. Anillo (no fondo): el fondo lo gobierna el hover de la fila.
+    const marca = (campo: string) => marcas[campo];
+    const conMarca = (campo: string, clases: string) => marca(campo) ? `${clases} ring-1 ring-accent-line` : clases;
+    const etiqueta = (campo: string) => marca(campo) ? (
+      <span className="absolute -top-2 right-1 px-1 rounded-[5px] bg-accent text-on-accent font-mono text-[9px] leading-[12px] font-bold pointer-events-none">{marca(campo)}</span>
+    ) : null;
+    const celda = celdaBase;
     const inputReps = (valor: string, cambiar: (v: string) => void) => (
       <input
         type="text"
@@ -567,12 +578,14 @@ export default function ExerciseConfigEditor({ we, onChange, mesoWeeks, disposic
             <><span /><span /></>
           ) : (
             <>
-              <div className={celda}><BlockStepper fila value={we.sets} min={1} max={20} onChange={v => onChange({ sets: v })} /></div>
-              <div className={celda}>{inputReps(we.reps, v => onChange({ reps: v }))}</div>
+              <div className={conMarca('sets', celda)}>{etiqueta('sets')}<BlockStepper fila value={we.sets} min={1} max={20} onChange={v => onChange({ sets: v })} /></div>
+              <div className={conMarca('reps', celda)}>{etiqueta('reps')}{inputReps(we.reps, v => onChange({ reps: v }))}</div>
             </>
           )}
-          <div className={celda}><BlockStepper fila value={we.restSeconds} min={0} max={600} step={15} format={formatRest} onChange={v => onChange({ restSeconds: v })} /></div>
-          {hasGroups ? <span /> : <RirRow fila value={we.rir} onChange={v => onChange({ rir: v })} />}
+          <div className={conMarca('restSeconds', celda)}>{etiqueta('restSeconds')}<BlockStepper fila value={we.restSeconds} min={0} max={600} step={15} format={formatRest} onChange={v => onChange({ restSeconds: v })} /></div>
+          {hasGroups ? <span /> : (
+            <div className={marca('rir') ? 'relative rounded-control ring-1 ring-accent-line' : 'relative'}>{etiqueta('rir')}<RirRow fila value={we.rir} onChange={v => onChange({ rir: v })} /></div>
+          )}
           <div className="flex items-center justify-end gap-1">{acciones}</div>
         </div>
         {hasGroups && (we.setGroups || []).map((g, gIdx) => (
@@ -580,8 +593,8 @@ export default function ExerciseConfigEditor({ we, onChange, mesoWeeks, disposic
             <span />
             <span />
             <div className="flex max-w-[12rem]">{etiquetaBloque(g, gIdx)}</div>
-            <div className={celda}><BlockStepper fila value={g.sets} min={1} max={20} onChange={v => updateGroup(gIdx, 'sets', v)} /></div>
-            <div className={celda}>{inputReps(g.reps, v => updateGroup(gIdx, 'reps', v))}</div>
+            <div className={conMarca('setGroups', celda)}>{gIdx === 0 && etiqueta('setGroups')}<BlockStepper fila value={g.sets} min={1} max={20} onChange={v => updateGroup(gIdx, 'sets', v)} /></div>
+            <div className={conMarca('setGroups', celda)}>{inputReps(g.reps, v => updateGroup(gIdx, 'reps', v))}</div>
             <span />
             <RirRow fila value={g.rir} onChange={v => updateGroup(gIdx, 'rir', v)} />
             <div className="flex justify-end">

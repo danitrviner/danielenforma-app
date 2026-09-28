@@ -1,5 +1,6 @@
 import { Workout, WorkoutEntryLog } from '../types';
 import { expandSetGroups } from './setGroups';
+import { sugerirCarga } from './cargaSugerida';
 
 /** Fila de entrada del editor de series — mismo shape que `SetInput` en
  * TrainingScreen.tsx, extraído aquí para poder testear el prerelleno sin
@@ -35,8 +36,13 @@ export function prefillWorkoutSets(workout: Workout, prevEntries: WorkoutEntryLo
     .sort((a, b) => a.order - b.order)
     .map(we => {
       const prevEntry = prevEntries.find(e => e.exerciseId === we.exerciseId);
+      // Donde toca subir (doble progresión, ver cargaSugerida.ts) la fila llega
+      // ya con la carga nueva y el mínimo del rango, no con lo de la última vez.
+      const sugerida = sugerirCarga(we, prevEntry).series;
       return expandSetGroups(we).map((row, sIdx) => {
         const prev = prevEntry?.sets[sIdx];
+        const sube = sugerida[sIdx];
+        if (sube) return { weight: String(sube.peso), repsDone: String(sube.reps), rir: String(row.rir), done: false };
         return {
           weight: prev && prev.weight > 0 ? String(prev.weight) : '',
           repsDone: prev && prev.repsDone > 0 ? String(prev.repsDone) : '',
