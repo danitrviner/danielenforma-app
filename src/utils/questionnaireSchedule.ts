@@ -14,6 +14,37 @@ import {
 export { todayStr, isDueToday, isUpcoming };
 export type { ScheduleContext };
 
+/** Un cuestionario vencido y sin responder deja de salir como pendiente el
+ *  primer martes después de su día (0=dom…6=sáb). Decisión de Dani: si no lo
+ *  responde, vuelve a «programado» hasta su siguiente día. */
+export const DIA_CADUCIDAD_PENDIENTE = 2;
+
+/** Último día programado (hoy incluido) de un 'weekdays' o 'interval'. */
+function ultimoPulso(a: QuestionnaireAssignment, today: string): Date | null {
+  const s = a.schedule;
+  const now = startOfDay(today);
+  if (s.type === 'weekdays') {
+    const weekdays = s.weekdays ?? [];
+    if (weekdays.length === 0) return null;
+    let daysBack = 0;
+    while (daysBack < 7 && !weekdays.includes((now.getDay() - daysBack + 7) % 7)) daysBack++;
+    if (daysBack >= 7) return null;
+    const pulse = new Date(now);
+    pulse.setDate(pulse.getDate() - daysBack);
+    return pulse;
+  }
+  if (s.type === 'interval') {
+    const intervalDays = s.intervalDays ?? 7;
+    const start = startOfDay(a.startDate);
+    const diff = Math.floor((now.getTime() - start.getTime()) / 86400000);
+    const sinceLastPulse = ((diff % intervalDays) + intervalDays) % intervalDays;
+    const pulse = new Date(now);
+    pulse.setDate(pulse.getDate() - sinceLastPulse);
+    return pulse;
+  }
+  return null;
+}
+
 export function hasAnsweredThisOccurrence(
   a: QuestionnaireAssignment,
   responses: QuestionnaireResponse[],
@@ -29,39 +60,12 @@ export function hasAnsweredThisOccurrence(
 
   const today = todayStr();
 
-  if (type === 'weekdays') {
-    // Ventana de la ocurrencia actual: desde el último día programado de la
-    // semana (no forzosamente hoy) hasta hoy inclusive. Antes se comparaba
-    // solo contra "hoy exacto", así que responder un día tarde (p.ej. sábado
-    // a una revisión de viernes) no cerraba la ocurrencia.
-    const weekdays = a.schedule.weekdays ?? [];
-    if (weekdays.length === 0) return false;
-    const now = startOfDay(today);
-    let daysBack = 0;
-    while (daysBack < 7 && !weekdays.includes((now.getDay() - daysBack + 7) % 7)) daysBack++;
-    if (daysBack >= 7) return false; // no debería pasar con weekdays no vacío
-    const pulse = new Date(now);
-    pulse.setDate(pulse.getDate() - daysBack);
-    const pulseStr = isoLocal(pulse);
-    return mine.some(r => {
-      const d = r.submittedAt.slice(0, 10);
-      return d >= pulseStr && d <= today;
-    });
-  }
-
-  if (type === 'interval') {
-    // Ventana de la ocurrencia actual: desde el último pulso (múltiplo de
-    // intervalDays desde startDate, no forzosamente hoy) hasta hoy inclusive.
-    // Antes se comparaba solo contra el día exacto del pulso, así que
-    // responder con un día de retraso dejaba la ocurrencia sin cerrar para
-    // siempre — con la ventana, una respuesta tardía la cierra igual.
-    const intervalDays = a.schedule.intervalDays ?? 7;
-    const start = startOfDay(a.startDate);
-    const now = startOfDay(today);
-    const diff = Math.floor((now.getTime() - start.getTime()) / 86400000);
-    const sinceLastPulse = ((diff % intervalDays) + intervalDays) % intervalDays;
-    const pulse = new Date(now);
-    pulse.setDate(pulse.getDate() - sinceLastPulse);
+  if (type === 'weekdays' || type === 'interval') {
+    // Ventana de la ocurrencia actual: desde el último día programado (no
+    // forzosamente hoy) hasta hoy. Responder tarde la cierra igual, y lo
+    // respondido cuenta hasta que llega el siguiente día programado.
+    const pulse = ultimoPulso(a, today);
+    if (!pulse) return false;
     const pulseStr = isoLocal(pulse);
     return mine.some(r => {
       const d = r.submittedAt.slice(0, 10);
@@ -94,13 +98,10 @@ export function hasAnsweredThisOccurrence(
   return false;
 }
 
-// "Vencido y sin responder": para todos los tipos recurrentes se queda
-// vencido desde su fecha/ventana objetivo hasta que se responde (no solo el
-// día exacto), igual que hasAnsweredThisOccurrence considera la ventana
-// completa — de lo contrario un cuestionario sin responder desaparecería de
-// "pendientes" en cuanto pasara el día exacto, sin que el atleta pudiera
-// responderlo tarde ni el coach lo viera como pendiente. Solo 'once' equivale
-// a isDueToday — una ocurrencia única sin fecha límite recurrente.
+// "Vencido y sin responder": no solo el día exacto, para que se pueda
+// responder tarde. 'weekdays'/'interval' caducan el martes siguiente a su día;
+// 'monthly' a fin de mes; 'plan_week'/'mesocycle_end' siguen hasta responder.
+// Solo 'once' equivale a isDueToday.
 export function isOverdue(a: QuestionnaireAssignment, ctx?: ScheduleContext): boolean {
   if (!a.schedule) return false;
   const { type } = a.schedule;
@@ -108,14 +109,18 @@ export function isOverdue(a: QuestionnaireAssignment, ctx?: ScheduleContext): bo
   const today = startOfDay(todayStr());
   const start = startOfDay(a.startDate);
   if (today.getTime() < start.getTime()) return false;
-  if (type === 'interval') return true;
+  if (type === 'interval' || type === 'weekdays') {
+    // Pendiente desde su día hasta el martes siguiente (exclusive). Un día
+    // anterior al alta no cuenta: asignar un domingo una revisión de viernes
+    // no la deja pendiente por el viernes de antes.
+    const pulse = ultimoPulso(a, todayStr());
+    if (!pulse || pulse.getTime() < start.getTime()) return false;
+    const caduca = new Date(pulse);
+    caduca.setDate(caduca.getDate() + ((DIA_CADUCIDAD_PENDIENTE - pulse.getDay() + 7) % 7 || 7));
+    return today.getTime() < caduca.getTime();
+  }
   if (type === 'plan_week') return planWeekDueDate(a.schedule, start).getTime() <= today.getTime();
   if (type === 'monthly') return today.getDate() >= (a.schedule.dayOfMonth ?? 1);
-  // weekdays: dentro de cualquier semana siempre hay un día programado en los
-  // últimos 7 días (la misma ventana que usa hasAnsweredThisOccurrence más
-  // arriba), así que se queda vencido de forma continua hasta que responda —
-  // igual que 'interval'.
-  if (type === 'weekdays') return (a.schedule.weekdays ?? []).length > 0;
   // mesocycle_end
   const offset = a.schedule.mesocycleOffsetDays ?? 0;
   return (ctx?.mesocycles ?? []).some(m => mesocycleEndDate(m, offset).getTime() <= today.getTime());

@@ -140,3 +140,51 @@ describe("'weekdays' schedules: stay overdue past the exact day until answered",
     expect(isOverdue(revisionSemanal)).toBe(true);
   });
 });
+
+// Regla de Dani (28-09-2026): pendiente desde su día hasta el martes; si no lo
+// responde, vuelve a programado hasta su siguiente día; si lo responde, cuenta
+// como hecho hasta su siguiente día.
+describe('pending expires on the Tuesday after the scheduled day', () => {
+  const viernes: QuestionnaireAssignment = {
+    id: 'as5', questionnaireId: 'q1', athleteId: 'x@x.com',
+    schedule: { type: 'weekdays', weekdays: [5] }, startDate: '2026-08-31',
+    active: true, createdAt: '2026-08-31T00:00:00Z',
+  };
+  const sabado: QuestionnaireResponse = {
+    id: 'r5', questionnaireId: 'q1', assignmentId: 'as5', athleteId: 'x@x.com',
+    submittedAt: '2026-09-26T10:00:00.000Z', answers: [],
+  };
+
+  it('unanswered: pending through Monday, back to scheduled on Tuesday', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-09-28T12:00:00')); // lunes
+    expect(isOverdue(viernes)).toBe(true);
+    vi.setSystemTime(new Date('2026-09-29T12:00:00')); // martes
+    expect(isOverdue(viernes)).toBe(false);
+    vi.setSystemTime(new Date('2026-10-02T12:00:00')); // viernes siguiente
+    expect(isOverdue(viernes)).toBe(true);
+  });
+
+  it('answered on Saturday: done until the next Friday, then pending again', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-10-01T12:00:00')); // jueves
+    expect(hasAnsweredThisOccurrence(viernes, [sabado])).toBe(true);
+    vi.setSystemTime(new Date('2026-10-02T12:00:00')); // viernes
+    expect(hasAnsweredThisOccurrence(viernes, [sabado])).toBe(false);
+  });
+
+  it('a scheduled day before the assignment does not count as pending', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-09-27T12:00:00')); // domingo
+    expect(isOverdue({ ...viernes, startDate: '2026-09-27' })).toBe(false);
+  });
+
+  it('interval: a Monday pulse is pending only that Monday', () => {
+    const lunes = { ...viernes, schedule: { type: 'interval' as const, intervalDays: 7 }, startDate: '2026-09-14' };
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-09-28T12:00:00'));
+    expect(isOverdue(lunes)).toBe(true);
+    vi.setSystemTime(new Date('2026-09-29T12:00:00'));
+    expect(isOverdue(lunes)).toBe(false);
+  });
+});
