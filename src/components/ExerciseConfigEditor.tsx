@@ -11,7 +11,17 @@ interface Props {
   // semana de "Progresión por semanas". Opcional: en contextos sin mesociclo (la
   // biblioteca de rutinas de WorkoutsScreen) la sección de progresión no se muestra.
   mesoWeeks?: number;
+  /** 'fila': una línea por ejercicio (vista ancha del mesociclo), con los
+   *  ajustes finos debajo. `inicio` son las tres primeras celdas de la rejilla
+   *  (mover, número, nombre) y `acciones` la última; las pone quien llama. */
+  disposicion?: 'tarjeta' | 'fila';
+  inicio?: React.ReactNode;
+  acciones?: React.ReactNode;
 }
+
+/** Columnas de la vista en filas: mover · nº · ejercicio · series · reps ·
+ *  descanso · RIR · acciones. La cabecera de cada día usa la misma. */
+export const COLUMNAS_FILA = 'grid-cols-[20px_24px_minmax(160px,1fr)_88px_64px_92px_136px_112px]';
 
 // T11.b (18-08). "Top set / back-off" no es un concepto del modelo de datos
 // —WorkoutSetGroup ya hacía exactamente lo que Dani pedía: rangos de reps
@@ -33,16 +43,19 @@ function formatRest(seconds: number): string {
 // compacto en escritorio" que ya usa el stepper de reparto de series en
 // `MesocycleManager` (ProgressionView), pero con los tokens de color del DS
 // en vez de los del heatmap de volumen.
-function BlockStepper({ value, min = 0, max = 99, step = 1, format, onChange }: {
+function BlockStepper({ value, min = 0, max = 99, step = 1, format, onChange, fila }: {
   value: number; min?: number; max?: number; step?: number; format?: (v: number) => string; onChange: (v: number) => void;
+  fila?: boolean;
 }) {
+  const oculta = fila ? ' fila-oculta' : '';
   return (
     <div className="flex items-center justify-between gap-1">
       <button
         type="button"
         onClick={() => onChange(Math.max(min, value - step))}
         disabled={value <= min}
-        className="w-7 h-7 sm:w-5 sm:h-5 rounded-control bg-inset text-ink-2 hover:bg-hairline disabled:opacity-30 font-mono text-caption font-bold flex items-center justify-center flex-shrink-0 transition-colors"
+        aria-label="Menos"
+        className={`w-7 h-7 sm:w-5 sm:h-5 rounded-control ${fila ? 'bg-surface' : 'bg-inset'} text-ink-2 hover:bg-hairline disabled:opacity-30 font-mono text-caption font-bold flex items-center justify-center flex-shrink-0 transition-colors${oculta}`}
       >−</button>
       <span className="flex-1 text-center font-mono text-body-s font-bold text-ink tabular-nums">
         {format ? format(value) : value}
@@ -51,7 +64,8 @@ function BlockStepper({ value, min = 0, max = 99, step = 1, format, onChange }: 
         type="button"
         onClick={() => onChange(Math.min(max, value + step))}
         disabled={value >= max}
-        className="w-7 h-7 sm:w-5 sm:h-5 rounded-control bg-accent/14 text-accent-ink hover:bg-accent/22 disabled:opacity-30 font-mono text-caption font-bold flex items-center justify-center flex-shrink-0 transition-colors"
+        aria-label="Más"
+        className={`w-7 h-7 sm:w-5 sm:h-5 rounded-control bg-accent/14 text-accent-ink hover:bg-accent/22 disabled:opacity-30 font-mono text-caption font-bold flex items-center justify-center flex-shrink-0 transition-colors${oculta}`}
       >+</button>
     </div>
   );
@@ -63,7 +77,7 @@ function BlockStepper({ value, min = 0, max = 99, step = 1, format, onChange }: 
 // `WorkoutSetGroup.rir: number`), no la unión con 'fallo' que sí existe en
 // el LOG real de una serie (`WorkoutSetLog`). No es el mismo dato, así que
 // no reutiliza el componente compartido.
-function RirRow({ value, onChange }: { value: number; onChange: (v: number) => void }) {
+function RirRow({ value, onChange, fila }: { value: number; onChange: (v: number) => void; fila?: boolean }) {
   const tono = (v: number) => v <= 1 ? 'bg-accent border-accent text-on-accent'
     : v <= 3 ? 'bg-accent/45 border-accent text-on-accent'
     : 'bg-accent/25 border-accent-line text-accent-ink';
@@ -75,7 +89,7 @@ function RirRow({ value, onChange }: { value: number; onChange: (v: number) => v
           <button
             key={v} type="button" role="radio" aria-checked={activo}
             onClick={() => onChange(v)}
-            className={`flex-1 h-6 rounded-control border font-mono text-caption font-bold transition-colors ${
+            className={`flex-1 ${fila ? 'h-7 fila-rir' : 'h-6'} rounded-control border font-mono text-caption font-bold transition-colors ${
               activo ? tono(v) : 'border-hairline bg-inset text-ink-3 hover:border-strong'
             }`}
           >{v}</button>
@@ -133,8 +147,10 @@ const ETIQUETA_SECCION: Record<Seccion, string> = {
   video:         'Vídeo',
 };
 
-function ChipSeccion({ etiqueta, valor, activa, abierta, onClick }: {
+function ChipSeccion({ etiqueta, valor, activa, abierta, onClick, discreto }: {
   etiqueta: string; valor?: string; activa: boolean; abierta: boolean; onClick: () => void;
+  /** En filas: lo no configurado se queda en gris y sin borde. */
+  discreto?: boolean;
   /** Sin `@types/react` en el repo, TS no excluye `key` por su cuenta (ver ui/Chip). */
   key?: React.Key;
 }) {
@@ -142,7 +158,9 @@ function ChipSeccion({ etiqueta, valor, activa, abierta, onClick }: {
     ? 'bg-accent/16 border-accent text-accent-ink'
     : activa
       ? 'bg-transparent border-accent-line text-accent-ink'
-      : 'bg-transparent border-hairline text-ink-2 hover:text-ink hover:border-strong';
+      : discreto
+        ? 'bg-transparent border-transparent text-ink-3 hover:text-ink hover:border-hairline'
+        : 'bg-transparent border-hairline text-ink-2 hover:text-ink hover:border-strong';
   return (
     <button
       type="button"
@@ -153,7 +171,9 @@ function ChipSeccion({ etiqueta, valor, activa, abierta, onClick }: {
       {activa && !abierta && <span className="w-1.5 h-1.5 rounded-full bg-accent flex-shrink-0" />}
       {etiqueta}
       {valor && <span className="normal-case font-normal opacity-80">· {valor}</span>}
-      <Icon name="expand_more" size="s" className={`transition-transform duration-(--duration-base) ${abierta ? 'rotate-180' : ''}`} />
+      {(!discreto || abierta) && (
+        <Icon name="expand_more" size="s" className={`transition-transform duration-(--duration-base) ${abierta ? 'rotate-180' : ''}`} />
+      )}
     </button>
   );
 }
@@ -163,7 +183,8 @@ function ChipSeccion({ etiqueta, valor, activa, abierta, onClick }: {
 // video reminder and warm-up mode. Used identically from WorkoutsScreen (shared routine
 // library) and from MesocycleManager's generator preview + "Ejercicios programados" tab,
 // so a coach configures an exercise the same way no matter which screen they're on.
-export default function ExerciseConfigEditor({ we, onChange, mesoWeeks }: Props) {
+export default function ExerciseConfigEditor({ we, onChange, mesoWeeks, disposicion = 'tarjeta', inicio, acciones }: Props) {
+  const enFila = disposicion === 'fila';
   const hasGroups = (we.setGroups?.length ?? 0) > 0;
 
   const progresion = we.weeklyProgression ?? [];
@@ -271,6 +292,316 @@ export default function ExerciseConfigEditor({ we, onChange, mesoWeeks }: Props)
 
   const totalSets = hasGroups ? (we.setGroups || []).reduce((s, g) => s + Math.max(1, g.sets || 1), 0) : we.sets;
 
+  // Selector de etiqueta de un bloque (sugerencias o texto libre). Lo usan la
+  // tarjeta y la fila.
+  const etiquetaBloque = (g: WorkoutSetGroup, gIdx: number) => {
+    const esSugerida = !g.label || ETIQUETAS_SUGERIDAS.includes(g.label);
+    const mostrarLibre = etiquetaLibre.has(gIdx) || !esSugerida;
+    return mostrarLibre ? (
+      <input
+        type="text"
+        autoFocus={etiquetaLibre.has(gIdx)}
+        value={g.label || ''}
+        onChange={e => updateGroup(gIdx, 'label', e.target.value)}
+        placeholder="Etiqueta del bloque"
+        className="min-w-0 flex-1 bg-accent/12 border border-accent-line rounded-control px-2 py-1 text-accent-ink font-mono text-caption font-bold uppercase tracking-wider focus:outline-none focus:ring-1 focus:ring-accent"
+      />
+    ) : (
+      <div className="relative flex-1 min-w-0">
+        <select
+          value={g.label || ''}
+          onChange={e => {
+            if (e.target.value === '__libre__') {
+              setEtiquetaLibre(prev => new Set(prev).add(gIdx));
+              return;
+            }
+            updateGroup(gIdx, 'label', e.target.value);
+          }}
+          className="w-full appearance-none bg-accent/12 border border-accent-line rounded-control pl-2 pr-6 py-1 text-accent-ink font-mono text-caption font-bold uppercase tracking-wider focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
+        >
+          <option value="">Sin etiqueta</option>
+          {ETIQUETAS_SUGERIDAS.map(l => <option key={l} value={l}>{l}</option>)}
+          <option value="__libre__">Escribir...</option>
+        </select>
+        <span className="ui-icon pointer-events-none absolute right-1 top-1/2 -translate-y-1/2 text-accent-ink" style={{ fontSize: '14px' }} aria-hidden>expand_more</span>
+      </div>
+    );
+  };
+
+  /* ── Ajustes finos: chips que se despliegan ──────────────────────────
+     Antes eran cuatro desplegables apilados (nota, técnica, calentamiento,
+     progresión) más una fila para el vídeo, y se abrían solos si tenían
+     contenido: cinco bloques a ancho completo por ejercicio, y un día de
+     seis ejercicios era una pared de controles. Ahora es una sola fila de
+     chips, SIEMPRE recogida, con uno abierto como mucho. Lo configurado no
+     queda escondido: el chip se pinta en oro y lleva el valor al lado. */
+  const ajustes = (
+    <div className={enFila ? 'space-y-1.5 ml-[60px]' : 'space-y-1.5 border-t border-hairline pt-2'}>
+      <div className="flex flex-wrap gap-1.5">
+        {SECCIONES.filter(sec => sec !== 'progresion' || mesoWeeks !== undefined).map(sec => (
+          <ChipSeccion
+            key={sec}
+            etiqueta={ETIQUETA_SECCION[sec]}
+            valor={resumen[sec].valor}
+            activa={resumen[sec].activa}
+            abierta={abierta === sec}
+            onClick={() => setAbierta(a => a === sec ? null : sec)}
+            discreto={enFila}
+          />
+        ))}
+        {enFila && (
+          <ChipSeccion etiqueta="+ Bloque" activa={false} abierta={false} discreto onClick={hasGroups ? addGroup : enableGroups} />
+        )}
+        {enFila && hasGroups && (
+          <ChipSeccion etiqueta="Un solo rango" activa={false} abierta={false} discreto onClick={disableGroups} />
+        )}
+      </div>
+
+      {abierta === 'nota' && (
+        <div className="bg-bg border border-hairline border-l-2 border-l-accent rounded-surface px-3 py-2.5 animate-fade-up">
+          <textarea
+            autoFocus
+            value={we.notes || ''}
+            onChange={e => onChange({ notes: e.target.value })}
+            placeholder="Técnica, variante, carga, progresión…"
+            rows={2}
+            className="w-full bg-transparent border-none p-0 text-title-s text-ink placeholder-ink-2/30 font-sans focus:outline-none focus:ring-0 resize-none"
+          />
+        </div>
+      )}
+
+      {abierta === 'tecnica' && (
+        <div className="space-y-2 animate-fade-up">
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              type="button"
+              onClick={() => setTechnique(undefined)}
+              className={`px-3 py-1.5 rounded-chip font-mono text-caption font-bold uppercase tracking-wider border transition-all ${
+                !we.technique
+                  ? 'bg-strong border-hairline text-ink'
+                  : 'border-hairline text-ink-2 hover:text-ink hover:border-strong'
+              }`}
+            >Normal</button>
+            {TECHNIQUES.map(t => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => setTechnique(we.technique === t ? undefined : t)}
+                title={TECHNIQUE_DESCRIPTION[t]}
+                className={`flex items-center gap-1 px-3 py-1.5 rounded-chip font-mono text-caption font-bold uppercase tracking-wider border transition-all ${
+                  we.technique === t
+                    ? TECHNIQUE_COLOR[t]
+                    : 'border-hairline text-ink-2 hover:text-ink hover:border-strong'
+                }`}
+              >{TECHNIQUE_EMOJI[t]} {TECHNIQUE_LABEL[t]}</button>
+            ))}
+          </div>
+          {we.technique && (
+            <p className="font-sans text-caption text-ink-2 leading-relaxed">{TECHNIQUE_DESCRIPTION[we.technique]}</p>
+          )}
+        </div>
+      )}
+
+      {abierta === 'calentamiento' && (
+        <div className="space-y-2 animate-fade-up">
+          <SegmentedControl
+            label="Calentamiento"
+            value={we.warmupMode || 'none'}
+            onChange={v => setWarmupMode(v as WarmupMode)}
+            options={[
+              { value: 'none', label: 'Ninguna' },
+              { value: 'auto', label: 'Automático' },
+              { value: 'manual', label: 'Manual' },
+            ]}
+          />
+          {we.warmupMode === 'auto' && (
+            <div className="bg-bg border border-hairline rounded-surface px-3 py-2.5">
+              <p className="font-sans text-caption text-ink-2 leading-relaxed">
+                🔥 El atleta verá series de aproximación calculadas automáticamente a partir del peso que escriba en la primera serie efectiva y su historial en este ejercicio.
+              </p>
+            </div>
+          )}
+          {we.warmupMode === 'manual' && (
+            <div className="bg-bg border border-hairline rounded-surface px-3 py-2.5 space-y-2">
+              {(we.manualWarmupSets || []).map((s, wIdx) => (
+                <div key={wIdx} className="flex items-center gap-2">
+                  <span className="font-mono text-caption text-accent-ink w-8">W{wIdx + 1}</span>
+                  <input
+                    type="number" min={0} step={0.5}
+                    value={s.weight}
+                    onChange={e => updateManualWarmupSet(wIdx, 'weight', parseFloat(e.target.value) || 0)}
+                    placeholder="kg"
+                    className="w-20 bg-inset border border-hairline rounded-control px-2 py-1 text-center text-ink font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-accent"
+                  />
+                  <span className="text-ink-2 text-label">×</span>
+                  <input
+                    type="number" min={1}
+                    value={s.reps}
+                    onChange={e => updateManualWarmupSet(wIdx, 'reps', parseInt(e.target.value) || 1)}
+                    placeholder="reps"
+                    className="w-16 bg-inset border border-hairline rounded-control px-2 py-1 text-center text-ink font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-accent"
+                  />
+                  <button
+                    onClick={() => removeManualWarmupSet(wIdx)}
+                    className="p-1 text-ink-2 hover:text-danger transition-colors"
+                    title="Eliminar"
+                  >
+                    <Icon name="delete" size="s" />
+                  </button>
+                </div>
+              ))}
+              <button
+                onClick={addManualWarmupSet}
+                className="flex items-center gap-1 text-caption font-sans text-accent-ink hover:text-ink transition-colors"
+              >
+                <Icon name="add" size="s" />
+                Añadir serie de aproximación
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {abierta === 'progresion' && mesoWeeks !== undefined && (
+        <div className="space-y-2 animate-fade-up">
+          {progresion.length === 0 && (
+            <p className="font-sans text-caption text-ink-3 leading-relaxed">
+              Añade series automáticamente en semanas concretas del mesociclo — por ejemplo, +1 serie en la semana 4 y otra en la 6.
+            </p>
+          )}
+          {progresion.map((rule, idx) => (
+            <div key={idx} className="bg-raised border border-hairline rounded-surface p-3 flex items-center gap-2">
+              <div className="flex items-center gap-1.5 flex-shrink-0">
+                <span className="font-mono text-caption text-ink-2 uppercase tracking-wider">Semana</span>
+                <input
+                  type="number"
+                  min={1}
+                  max={mesoWeeks}
+                  value={rule.atWeek}
+                  onChange={e => updateProgressionRule(idx, { atWeek: Math.min(mesoWeeks, Math.max(1, parseInt(e.target.value) || 1)) })}
+                  className="w-14 bg-inset border border-hairline rounded-control px-2 py-1 text-center text-ink font-mono text-title-s font-bold focus:outline-none focus:ring-1 focus:ring-accent"
+                />
+              </div>
+              <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                <span className="font-mono text-caption text-ink-2 uppercase tracking-wider flex-shrink-0">+</span>
+                <input
+                  type="number"
+                  min={-10}
+                  max={10}
+                  value={rule.addSets ?? 0}
+                  onChange={e => updateProgressionRule(idx, { addSets: parseInt(e.target.value) || 0 })}
+                  className="w-14 bg-inset border border-hairline rounded-control px-2 py-1 text-center text-ink font-mono text-title-s font-bold focus:outline-none focus:ring-1 focus:ring-accent"
+                />
+                <span className="font-sans text-caption text-ink-2 flex-shrink-0">series</span>
+              </div>
+              <button
+                onClick={() => removeProgressionRule(idx)}
+                className="p-1 text-ink-3 hover:text-danger transition-colors flex-shrink-0"
+                title="Eliminar"
+              >
+                <Icon name="delete" size="s" />
+              </button>
+            </div>
+          ))}
+          <button
+            onClick={addProgressionRule}
+            className="w-full flex items-center justify-center gap-2 bg-bg border border-dashed border-hairline rounded-control px-3 py-2 text-body-s font-sans text-ink-2 hover:text-accent-ink hover:border-accent/40 transition-all"
+          >
+            <Icon name="add" size="s" />
+            Añadir escalón de progresión
+          </button>
+        </div>
+      )}
+
+      {abierta === 'video' && (
+        <div className="bg-bg border border-hairline rounded-surface px-3 py-2.5 flex items-center gap-2 flex-wrap animate-fade-up">
+          <button
+            type="button"
+            onClick={toggleRecordVideo}
+            aria-pressed={!!we.recordVideoSet}
+            className={`w-9 h-9 rounded-control flex items-center justify-center flex-shrink-0 transition-colors border ${
+              we.recordVideoSet ? 'bg-accent/14 border-accent text-accent-ink' : 'bg-surface border-hairline text-ink-2 hover:text-ink hover:border-strong'
+            }`}
+          >
+            <Icon name="videocam" size="s" />
+          </button>
+          <span className="font-mono text-caption text-ink-2 uppercase tracking-wider">
+            {we.recordVideoSet ? 'Pide vídeo al atleta' : 'Vídeo desactivado'}
+          </span>
+          {we.recordVideoSet && (
+            <select
+              value={we.recordVideoSet}
+              onChange={e => onChange({ recordVideoSet: e.target.value === 'all' ? 'all' : parseInt(e.target.value) })}
+              className="ml-auto bg-surface border border-hairline rounded-control px-2 py-1.5 text-caption font-mono text-ink focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
+            >
+              <option value="all">Todas las series</option>
+              {Array.from({ length: we.sets }, (_, i) => i + 1).map(n => (
+                <option key={n} value={n}>Solo serie {n}</option>
+              ))}
+            </select>
+          )}
+        </div>
+      )}
+    </div>
+  );
+
+  if (enFila) {
+    // Una línea por ejercicio. Las celdas no llevan rótulo: la cabecera de
+    // columnas va una vez por día (la pinta quien llama, con COLUMNAS_FILA).
+    const celda = 'fila-celda bg-inset rounded-control h-8 px-1 flex items-center';
+    const inputReps = (valor: string, cambiar: (v: string) => void) => (
+      <input
+        type="text"
+        value={valor}
+        onChange={e => cambiar(e.target.value)}
+        placeholder="8-10"
+        aria-label="Repeticiones"
+        className="w-full bg-transparent border-none p-0 text-center text-ink font-mono text-body-s font-bold focus:outline-none focus:ring-0"
+      />
+    );
+    return (
+      <div className="space-y-2">
+        <div className={`grid ${COLUMNAS_FILA} gap-x-2 items-center`}>
+          {inicio}
+          {hasGroups ? (
+            <><span /><span /></>
+          ) : (
+            <>
+              <div className={celda}><BlockStepper fila value={we.sets} min={1} max={20} onChange={v => onChange({ sets: v })} /></div>
+              <div className={celda}>{inputReps(we.reps, v => onChange({ reps: v }))}</div>
+            </>
+          )}
+          <div className={celda}><BlockStepper fila value={we.restSeconds} min={0} max={600} step={15} format={formatRest} onChange={v => onChange({ restSeconds: v })} /></div>
+          {hasGroups ? <span /> : <RirRow fila value={we.rir} onChange={v => onChange({ rir: v })} />}
+          <div className="flex items-center justify-end gap-1">{acciones}</div>
+        </div>
+        {hasGroups && (we.setGroups || []).map((g, gIdx) => (
+          <div key={gIdx} className={`grid ${COLUMNAS_FILA} gap-x-2 items-center`}>
+            <span />
+            <span />
+            <div className="flex max-w-[12rem]">{etiquetaBloque(g, gIdx)}</div>
+            <div className={celda}><BlockStepper fila value={g.sets} min={1} max={20} onChange={v => updateGroup(gIdx, 'sets', v)} /></div>
+            <div className={celda}>{inputReps(g.reps, v => updateGroup(gIdx, 'reps', v))}</div>
+            <span />
+            <RirRow fila value={g.rir} onChange={v => updateGroup(gIdx, 'rir', v)} />
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => removeGroup(gIdx)}
+                title="Quitar bloque"
+                aria-label="Quitar bloque"
+                className="fila-oculta p-1 text-ink-3 hover:text-danger transition-colors"
+              >
+                <Icon name="close" size="s" />
+              </button>
+            </div>
+          </div>
+        ))}
+        {ajustes}
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-2.5">
       {/* Series / Reps / Descanso / RIR — uniforme o por bloques */}
@@ -306,40 +637,10 @@ export default function ExerciseConfigEditor({ we, onChange, mesoWeeks }: Props)
         ) : (
           <div className="space-y-2">
             {(we.setGroups || []).map((g, gIdx) => {
-              const esSugerida = !g.label || ETIQUETAS_SUGERIDAS.includes(g.label);
-              const mostrarLibre = etiquetaLibre.has(gIdx) || !esSugerida;
               return (
                 <div key={gIdx} className="bg-raised border border-hairline rounded-surface p-2 space-y-1.5">
                   <div className="flex items-center gap-2">
-                    {mostrarLibre ? (
-                      <input
-                        type="text"
-                        autoFocus={etiquetaLibre.has(gIdx)}
-                        value={g.label || ''}
-                        onChange={e => updateGroup(gIdx, 'label', e.target.value)}
-                        placeholder="Etiqueta del bloque"
-                        className="min-w-0 flex-1 bg-accent/12 border border-accent-line rounded-control px-2 py-1 text-accent-ink font-mono text-caption font-bold uppercase tracking-wider focus:outline-none focus:ring-1 focus:ring-accent"
-                      />
-                    ) : (
-                      <div className="relative flex-1 min-w-0">
-                        <select
-                          value={g.label || ''}
-                          onChange={e => {
-                            if (e.target.value === '__libre__') {
-                              setEtiquetaLibre(prev => new Set(prev).add(gIdx));
-                              return;
-                            }
-                            updateGroup(gIdx, 'label', e.target.value);
-                          }}
-                          className="w-full appearance-none bg-accent/12 border border-accent-line rounded-control pl-2 pr-6 py-1 text-accent-ink font-mono text-caption font-bold uppercase tracking-wider focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
-                        >
-                          <option value="">Sin etiqueta</option>
-                          {ETIQUETAS_SUGERIDAS.map(l => <option key={l} value={l}>{l}</option>)}
-                          <option value="__libre__">Escribir...</option>
-                        </select>
-                        <span className="ui-icon pointer-events-none absolute right-1 top-1/2 -translate-y-1/2 text-accent-ink" style={{ fontSize: '14px' }} aria-hidden>expand_more</span>
-                      </div>
-                    )}
+                    {etiquetaBloque(g, gIdx)}
                     <button
                       onClick={() => removeGroup(gIdx)}
                       className="font-mono text-caption font-bold text-ink-3 hover:text-danger uppercase tracking-wider transition-colors flex-shrink-0"
@@ -372,213 +673,7 @@ export default function ExerciseConfigEditor({ we, onChange, mesoWeeks }: Props)
         </button>
       </div>
 
-      {/* ── Ajustes finos: chips que se despliegan ──────────────────────────
-          Antes eran cuatro desplegables apilados (nota, técnica, calentamiento,
-          progresión) más una fila para el vídeo, y se abrían solos si tenían
-          contenido: cinco bloques a ancho completo por ejercicio, y un día de
-          seis ejercicios era una pared de controles. Ahora es una sola fila de
-          chips, SIEMPRE recogida, con uno abierto como mucho. Lo configurado no
-          queda escondido: el chip se pinta en oro y lleva el valor al lado. */}
-      <div className="space-y-1.5 border-t border-hairline pt-2">
-        <div className="flex flex-wrap gap-1.5">
-          {SECCIONES.filter(sec => sec !== 'progresion' || mesoWeeks !== undefined).map(sec => (
-            <ChipSeccion
-              key={sec}
-              etiqueta={ETIQUETA_SECCION[sec]}
-              valor={resumen[sec].valor}
-              activa={resumen[sec].activa}
-              abierta={abierta === sec}
-              onClick={() => setAbierta(a => a === sec ? null : sec)}
-            />
-          ))}
-        </div>
-
-        {abierta === 'nota' && (
-          <div className="bg-bg border border-hairline border-l-2 border-l-accent rounded-surface px-3 py-2.5 animate-fade-up">
-            <textarea
-              autoFocus
-              value={we.notes || ''}
-              onChange={e => onChange({ notes: e.target.value })}
-              placeholder="Técnica, variante, carga, progresión…"
-              rows={2}
-              className="w-full bg-transparent border-none p-0 text-title-s text-ink placeholder-ink-2/30 font-sans focus:outline-none focus:ring-0 resize-none"
-            />
-          </div>
-        )}
-
-        {abierta === 'tecnica' && (
-          <div className="space-y-2 animate-fade-up">
-            <div className="flex items-center gap-2 flex-wrap">
-              <button
-                type="button"
-                onClick={() => setTechnique(undefined)}
-                className={`px-3 py-1.5 rounded-chip font-mono text-caption font-bold uppercase tracking-wider border transition-all ${
-                  !we.technique
-                    ? 'bg-strong border-hairline text-ink'
-                    : 'border-hairline text-ink-2 hover:text-ink hover:border-strong'
-                }`}
-              >Normal</button>
-              {TECHNIQUES.map(t => (
-                <button
-                  key={t}
-                  type="button"
-                  onClick={() => setTechnique(we.technique === t ? undefined : t)}
-                  title={TECHNIQUE_DESCRIPTION[t]}
-                  className={`flex items-center gap-1 px-3 py-1.5 rounded-chip font-mono text-caption font-bold uppercase tracking-wider border transition-all ${
-                    we.technique === t
-                      ? TECHNIQUE_COLOR[t]
-                      : 'border-hairline text-ink-2 hover:text-ink hover:border-strong'
-                  }`}
-                >{TECHNIQUE_EMOJI[t]} {TECHNIQUE_LABEL[t]}</button>
-              ))}
-            </div>
-            {we.technique && (
-              <p className="font-sans text-caption text-ink-2 leading-relaxed">{TECHNIQUE_DESCRIPTION[we.technique]}</p>
-            )}
-          </div>
-        )}
-
-        {abierta === 'calentamiento' && (
-          <div className="space-y-2 animate-fade-up">
-            <SegmentedControl
-              label="Calentamiento"
-              value={we.warmupMode || 'none'}
-              onChange={v => setWarmupMode(v as WarmupMode)}
-              options={[
-                { value: 'none', label: 'Ninguna' },
-                { value: 'auto', label: 'Automático' },
-                { value: 'manual', label: 'Manual' },
-              ]}
-            />
-            {we.warmupMode === 'auto' && (
-              <div className="bg-bg border border-hairline rounded-surface px-3 py-2.5">
-                <p className="font-sans text-caption text-ink-2 leading-relaxed">
-                  🔥 El atleta verá series de aproximación calculadas automáticamente a partir del peso que escriba en la primera serie efectiva y su historial en este ejercicio.
-                </p>
-              </div>
-            )}
-            {we.warmupMode === 'manual' && (
-              <div className="bg-bg border border-hairline rounded-surface px-3 py-2.5 space-y-2">
-                {(we.manualWarmupSets || []).map((s, wIdx) => (
-                  <div key={wIdx} className="flex items-center gap-2">
-                    <span className="font-mono text-caption text-accent-ink w-8">W{wIdx + 1}</span>
-                    <input
-                      type="number" min={0} step={0.5}
-                      value={s.weight}
-                      onChange={e => updateManualWarmupSet(wIdx, 'weight', parseFloat(e.target.value) || 0)}
-                      placeholder="kg"
-                      className="w-20 bg-inset border border-hairline rounded-control px-2 py-1 text-center text-ink font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-accent"
-                    />
-                    <span className="text-ink-2 text-label">×</span>
-                    <input
-                      type="number" min={1}
-                      value={s.reps}
-                      onChange={e => updateManualWarmupSet(wIdx, 'reps', parseInt(e.target.value) || 1)}
-                      placeholder="reps"
-                      className="w-16 bg-inset border border-hairline rounded-control px-2 py-1 text-center text-ink font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-accent"
-                    />
-                    <button
-                      onClick={() => removeManualWarmupSet(wIdx)}
-                      className="p-1 text-ink-2 hover:text-danger transition-colors"
-                      title="Eliminar"
-                    >
-                      <Icon name="delete" size="s" />
-                    </button>
-                  </div>
-                ))}
-                <button
-                  onClick={addManualWarmupSet}
-                  className="flex items-center gap-1 text-caption font-sans text-accent-ink hover:text-ink transition-colors"
-                >
-                  <Icon name="add" size="s" />
-                  Añadir serie de aproximación
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-
-        {abierta === 'progresion' && mesoWeeks !== undefined && (
-          <div className="space-y-2 animate-fade-up">
-            {progresion.length === 0 && (
-              <p className="font-sans text-caption text-ink-3 leading-relaxed">
-                Añade series automáticamente en semanas concretas del mesociclo — por ejemplo, +1 serie en la semana 4 y otra en la 6.
-              </p>
-            )}
-            {progresion.map((rule, idx) => (
-              <div key={idx} className="bg-raised border border-hairline rounded-surface p-3 flex items-center gap-2">
-                <div className="flex items-center gap-1.5 flex-shrink-0">
-                  <span className="font-mono text-caption text-ink-2 uppercase tracking-wider">Semana</span>
-                  <input
-                    type="number"
-                    min={1}
-                    max={mesoWeeks}
-                    value={rule.atWeek}
-                    onChange={e => updateProgressionRule(idx, { atWeek: Math.min(mesoWeeks, Math.max(1, parseInt(e.target.value) || 1)) })}
-                    className="w-14 bg-inset border border-hairline rounded-control px-2 py-1 text-center text-ink font-mono text-title-s font-bold focus:outline-none focus:ring-1 focus:ring-accent"
-                  />
-                </div>
-                <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                  <span className="font-mono text-caption text-ink-2 uppercase tracking-wider flex-shrink-0">+</span>
-                  <input
-                    type="number"
-                    min={-10}
-                    max={10}
-                    value={rule.addSets ?? 0}
-                    onChange={e => updateProgressionRule(idx, { addSets: parseInt(e.target.value) || 0 })}
-                    className="w-14 bg-inset border border-hairline rounded-control px-2 py-1 text-center text-ink font-mono text-title-s font-bold focus:outline-none focus:ring-1 focus:ring-accent"
-                  />
-                  <span className="font-sans text-caption text-ink-2 flex-shrink-0">series</span>
-                </div>
-                <button
-                  onClick={() => removeProgressionRule(idx)}
-                  className="p-1 text-ink-3 hover:text-danger transition-colors flex-shrink-0"
-                  title="Eliminar"
-                >
-                  <Icon name="delete" size="s" />
-                </button>
-              </div>
-            ))}
-            <button
-              onClick={addProgressionRule}
-              className="w-full flex items-center justify-center gap-2 bg-bg border border-dashed border-hairline rounded-control px-3 py-2 text-body-s font-sans text-ink-2 hover:text-accent-ink hover:border-accent/40 transition-all"
-            >
-              <Icon name="add" size="s" />
-              Añadir escalón de progresión
-            </button>
-          </div>
-        )}
-
-        {abierta === 'video' && (
-          <div className="bg-bg border border-hairline rounded-surface px-3 py-2.5 flex items-center gap-2 flex-wrap animate-fade-up">
-            <button
-              type="button"
-              onClick={toggleRecordVideo}
-              aria-pressed={!!we.recordVideoSet}
-              className={`w-9 h-9 rounded-control flex items-center justify-center flex-shrink-0 transition-colors border ${
-                we.recordVideoSet ? 'bg-accent/14 border-accent text-accent-ink' : 'bg-surface border-hairline text-ink-2 hover:text-ink hover:border-strong'
-              }`}
-            >
-              <Icon name="videocam" size="s" />
-            </button>
-            <span className="font-mono text-caption text-ink-2 uppercase tracking-wider">
-              {we.recordVideoSet ? 'Pide vídeo al atleta' : 'Vídeo desactivado'}
-            </span>
-            {we.recordVideoSet && (
-              <select
-                value={we.recordVideoSet}
-                onChange={e => onChange({ recordVideoSet: e.target.value === 'all' ? 'all' : parseInt(e.target.value) })}
-                className="ml-auto bg-surface border border-hairline rounded-control px-2 py-1.5 text-caption font-mono text-ink focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
-              >
-                <option value="all">Todas las series</option>
-                {Array.from({ length: we.sets }, (_, i) => i + 1).map(n => (
-                  <option key={n} value={n}>Solo serie {n}</option>
-                ))}
-              </select>
-            )}
-          </div>
-        )}
-      </div>
+      {ajustes}
     </div>
   );
 }

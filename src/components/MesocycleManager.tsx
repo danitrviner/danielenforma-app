@@ -14,7 +14,7 @@ import {
   getUserProfileByEmail, migratePrimaryFocusToMuscleGroup,
   getMesocycleTemplates, createTask, getWorkoutLogs, getWorkoutAssignmentsByMesocycleIds,
 } from '../dbService';
-import ExerciseConfigEditor from './ExerciseConfigEditor';
+import ExerciseConfigEditor, { COLUMNAS_FILA } from './ExerciseConfigEditor';
 import RoutinePreview, { PreviewDay, PreviewExercise } from './training/RoutinePreview';
 import { elegirEjercicios } from '../utils/seleccionEjercicios';
 import SeriesBalance from './training/SeriesBalance';
@@ -463,8 +463,10 @@ const PREFIJO_DIA = /^(Día\s*\d+\s*–\s*)(.*)$/i;
 // Título del día, editable. Si el nombre trae el viejo prefijo «Día N – » se
 // respeta (esas rutinas todavía se ordenan por él); los nombres nuevos
 // —«Torso · Ander · Meso 2»— se editan enteros, que es lo que pide el coach.
-function DayTitle({ name, editing, value, onStartEdit, onChangeValue, onCommit, onCancel }: {
+function DayTitle({ name, editing, value, onStartEdit, onChangeValue, onCommit, onCancel, destacado }: {
   name: string;
+  /** En la vista en filas el día abre un bloque largo: va en oro para que se vea dónde empieza. */
+  destacado?: boolean;
   editing: boolean;
   value: string;
   onStartEdit: (prefijo: string, sufijoActual: string) => void;
@@ -504,7 +506,7 @@ function DayTitle({ name, editing, value, onStartEdit, onChangeValue, onCommit, 
       title="Renombrar día"
       className="flex items-center gap-1.5 min-w-0 group text-left"
     >
-      <p className="font-sans font-bold text-body-s text-ink truncate">{name}</p>
+      <p className={`font-sans truncate ${destacado ? 'font-extrabold text-title-s text-accent-ink' : 'font-bold text-body-s text-ink'}`}>{name}</p>
       <Icon name="edit" size="s" className="text-ink-3 opacity-0 group-hover:opacity-100 flex-shrink-0 transition-opacity" />
     </button>
   );
@@ -552,6 +554,10 @@ function MesoExercisesTabs({
   }, []);
   const columnas = Math.min(3, Math.max(1, Math.floor(anchoZona / 380)));
   const enRejilla = columnas > 1 && groups.length > 1;
+  /* Con sitio para la fila entera, cada ejercicio es una línea y los días van
+     uno debajo de otro a ancho completo (Dani, 28-09-2026). Por debajo, las
+     tarjetas de siempre. */
+  const enFilas = anchoZona >= 790;
   const [libraryPickerFor, setLibraryPickerFor] = useState<MesoWorkoutGroup | null>(null);
   const longPressTimer = useRef<number | null>(null);
   const group = groups[Math.min(activeIdx, groups.length - 1)];
@@ -674,6 +680,7 @@ function MesoExercisesTabs({
             <div className="px-3 py-2 bg-bg border-b border-hairline space-y-1.5">
               <div className="flex items-center justify-between gap-2 flex-wrap">
                 <DayTitle
+                  destacado={enFilas}
                   name={g.name}
                   editing={renamingDay?.clave === claveDia(g, gIdx)}
                   value={renamingDay?.clave === claveDia(g, gIdx) ? renamingDay.value : ''}
@@ -700,101 +707,164 @@ function MesoExercisesTabs({
                 onGroupClick={g => jumpToGroup(g, gIdx)}
               />
             </div>
-            <div className="p-2 space-y-1.5">
+            <div className={enFilas ? 'space-y-1.5 pb-2' : 'p-2 space-y-1.5'}>
               {g.exercises.length === 0 ? (
-                <p className="text-label text-ink-3 font-sans px-1 py-2">Sin ejercicios en este día.</p>
+                <p className={`text-label text-ink-3 font-sans py-2 ${enFilas ? 'px-4' : 'px-1'}`}>Sin ejercicios en este día.</p>
               ) : (
-                g.exercises.map((we, exIdx) => {
+                <div className={enFilas ? 'overflow-x-auto' : 'space-y-1.5'}>
+                {enFilas && (
+                  <div className={`grid ${COLUMNAS_FILA} gap-x-2 items-center px-4 py-2 border-b border-hairline min-w-[784px] font-mono text-caption text-ink-3 uppercase tracking-wider`}>
+                    <span />
+                    <span className="text-center">#</span>
+                    <span>Ejercicio</span>
+                    <span className="text-center">Series</span>
+                    <span className="text-center">Reps</span>
+                    <span className="text-center">Descanso</span>
+                    <span className="text-center">RIR</span>
+                    <span />
+                  </div>
+                )}
+                {g.exercises.map((we, exIdx) => {
                   const ex = allExercises.find(e => e.id === we.exerciseId);
                   const videoKey = `${claveDia(g, gIdx)}-${exIdx}`;
                   const isDuplicate = duplicateExerciseIds.has(we.exerciseId);
                   const jumpKey = `${claveDia(g, gIdx)}-${exIdx}`;
+                  const refFila = (el: HTMLDivElement | null) => { if (el) exerciseRefs.current.set(jumpKey, el); else exerciseRefs.current.delete(jumpKey); };
+
+                  // Reordenar — el orden en que se hacen los ejercicios es una
+                  // decisión de programación (básicos primero, aislamiento
+                  // después), y hasta ahora la única forma de cambiarlo era
+                  // borrar y volver a añadir.
+                  const flechas = (
+                    <div className={`flex flex-col flex-shrink-0 ${enFilas ? 'items-center fila-oculta' : ''}`}>
+                      <button
+                        type="button"
+                        onClick={() => onMoveExercise(g, exIdx, -1)}
+                        disabled={exIdx === 0}
+                        aria-label="Subir ejercicio"
+                        className="text-ink-3 hover:text-accent-ink disabled:opacity-20 disabled:hover:text-ink-3 transition-colors"
+                      ><Icon name="keyboard_arrow_up" size="s" /></button>
+                      <button
+                        type="button"
+                        onClick={() => onMoveExercise(g, exIdx, 1)}
+                        disabled={exIdx === g.exercises.length - 1}
+                        aria-label="Bajar ejercicio"
+                        className="text-ink-3 hover:text-accent-ink disabled:opacity-20 disabled:hover:text-ink-3 transition-colors"
+                      ><Icon name="keyboard_arrow_down" size="s" /></button>
+                    </div>
+                  );
+                  const numero = (
+                    <span className={`font-mono tabular-nums flex-shrink-0 ${enFilas ? 'text-label font-bold text-ink-3 text-center' : 'text-caption text-ink-3 w-4 pt-1'}`}>{exIdx + 1}</span>
+                  );
+                  const nombre = (
+                    <div className="min-w-0 flex-1">
+                      <p
+                        className={`text-label font-sans font-bold ${enFilas ? 'text-pretty' : 'truncate'} ${isDuplicate ? 'text-danger' : 'text-ink'} ${ex?.videoUrl ? 'cursor-pointer select-none' : ''}`}
+                        title={ex?.videoUrl ? 'Mantén pulsado o clic derecho para ver el vídeo' : undefined}
+                        onContextMenu={e => { if (ex?.videoUrl) { e.preventDefault(); openVideoModal(videoKey, ex); } }}
+                        onPointerDown={() => {
+                          if (!ex?.videoUrl) return;
+                          clearLongPress();
+                          longPressTimer.current = window.setTimeout(() => openVideoModal(videoKey, ex), 500);
+                        }}
+                        onPointerUp={clearLongPress}
+                        onPointerLeave={clearLongPress}
+                        onPointerCancel={clearLongPress}
+                      >
+                        {ex?.name || we.exerciseId}
+                        {!enFilas && we.muscleGroup && <span className="text-caption font-sans text-ink-2 ml-2">{MUSCLE_LABELS[we.muscleGroup]}</span>}
+                      </p>
+                      {enFilas && (we.muscleGroup || (we.setGroups?.length ?? 0) > 0) && (
+                        <p className="font-sans text-caption text-ink-3 mt-0.5">
+                          {[
+                            we.muscleGroup ? MUSCLE_LABELS[we.muscleGroup] : null,
+                            (we.setGroups?.length ?? 0) > 0 ? `${we.sets} series en ${we.setGroups!.length} bloques` : null,
+                          ].filter(Boolean).join(' · ')}
+                        </p>
+                      )}
+                      {isDuplicate && (
+                        <span className="inline-flex items-center gap-1 mt-1 font-mono text-caption font-bold text-danger">
+                          <Icon name="warning" size="s" />
+                          También programado otro día
+                        </span>
+                      )}
+                    </div>
+                  );
+                  const oculta = enFilas ? ' fila-oculta' : '';
+                  const botones = (
+                    <>
+                      {ex?.videoUrl && (
+                        <button
+                          onClick={() => openVideoModal(videoKey, ex)}
+                          title="Ver vídeo"
+                          className={`flex items-center gap-1 px-2 py-1 rounded-control text-ink-3 hover:text-accent-ink transition-colors${oculta}`}
+                        >
+                          <Icon name="videocam" size="s" />
+                          <span className="font-mono text-caption">Vídeo</span>
+                        </button>
+                      )}
+                      <button
+                        onClick={() => onReplaceExercise(g, exIdx)}
+                        title="Cambiar ejercicio"
+                        aria-label="Cambiar ejercicio"
+                        className={`text-ink-3 hover:text-accent-ink transition-colors${oculta}`}
+                      >
+                        <Icon name="swap_horiz" size="s" />
+                      </button>
+                      <button
+                        onClick={() => onRemoveExercise(g, exIdx)}
+                        title="Quitar ejercicio"
+                        aria-label="Quitar ejercicio"
+                        className={`text-ink-3 hover:text-danger transition-colors${oculta}`}
+                      >
+                        <Icon name="close" size="s" />
+                      </button>
+                    </>
+                  );
+
+                  if (enFilas) {
+                    // Fondo alterno entre ejercicios para seguir la línea de un
+                    // vistazo en una lista larga.
+                    return (
+                      <div
+                        key={`${we.exerciseId}-${exIdx}`}
+                        ref={refFila}
+                        className={`fila-ejercicio min-w-[784px] px-4 py-2.5 transition-shadow ${exIdx % 2 === 0 ? 'bg-inset/40' : ''} ${
+                          highlightedKey === jumpKey ? 'ring-2 ring-inset ring-accent' : isDuplicate ? 'ring-1 ring-inset ring-danger/50' : ''}`}
+                      >
+                        <ExerciseConfigEditor
+                          disposicion="fila"
+                          we={we}
+                          onChange={patch => onUpdateExercise(g, exIdx, patch)}
+                          mesoWeeks={weeks}
+                          inicio={<>{flechas}{numero}{nombre}</>}
+                          acciones={botones}
+                        />
+                      </div>
+                    );
+                  }
+
                   return (
                     <div
                       key={`${we.exerciseId}-${exIdx}`}
-                      ref={el => { if (el) exerciseRefs.current.set(jumpKey, el); else exerciseRefs.current.delete(jumpKey); }}
+                      ref={refFila}
                       className={`bg-raised rounded-surface overflow-hidden transition-shadow ${isDuplicate ? 'border border-danger/50' : ''} ${highlightedKey === jumpKey ? 'ring-2 ring-accent' : ''}`}
                     >
                       <div className="p-2 space-y-1.5">
                         <div className="flex items-start gap-2">
-                          {/* Reordenar — el orden en que se hacen los ejercicios
-                              es una decisión de programación (básicos primero,
-                              aislamiento después), y hasta ahora la única forma
-                              de cambiarlo era borrar y volver a añadir. */}
-                          <div className="flex flex-col flex-shrink-0">
-                            <button
-                              type="button"
-                              onClick={() => onMoveExercise(g, exIdx, -1)}
-                              disabled={exIdx === 0}
-                              aria-label="Subir ejercicio"
-                              className="text-ink-3 hover:text-accent-ink disabled:opacity-20 disabled:hover:text-ink-3 transition-colors"
-                            ><Icon name="keyboard_arrow_up" size="s" /></button>
-                            <button
-                              type="button"
-                              onClick={() => onMoveExercise(g, exIdx, 1)}
-                              disabled={exIdx === g.exercises.length - 1}
-                              aria-label="Bajar ejercicio"
-                              className="text-ink-3 hover:text-accent-ink disabled:opacity-20 disabled:hover:text-ink-3 transition-colors"
-                            ><Icon name="keyboard_arrow_down" size="s" /></button>
-                          </div>
-                          <span className="font-mono text-caption text-ink-3 tabular-nums w-4 flex-shrink-0 pt-1">{exIdx + 1}</span>
-                          <div className="min-w-0 flex-1">
-                            <p
-                              className={`text-label font-sans font-bold truncate ${isDuplicate ? 'text-danger' : 'text-ink'} ${ex?.videoUrl ? 'cursor-pointer select-none' : ''}`}
-                              title={ex?.videoUrl ? 'Mantén pulsado o clic derecho para ver el vídeo' : undefined}
-                              onContextMenu={e => { if (ex?.videoUrl) { e.preventDefault(); openVideoModal(videoKey, ex); } }}
-                              onPointerDown={() => {
-                                if (!ex?.videoUrl) return;
-                                clearLongPress();
-                                longPressTimer.current = window.setTimeout(() => openVideoModal(videoKey, ex), 500);
-                              }}
-                              onPointerUp={clearLongPress}
-                              onPointerLeave={clearLongPress}
-                              onPointerCancel={clearLongPress}
-                            >
-                              {ex?.name || we.exerciseId}
-                              {we.muscleGroup && <span className="text-caption font-sans text-ink-2 ml-2">{MUSCLE_LABELS[we.muscleGroup]}</span>}
-                            </p>
-                            {isDuplicate && (
-                              <span className="inline-flex items-center gap-1 mt-1 font-mono text-caption font-bold text-danger">
-                                <Icon name="warning" size="s" />
-                                También programado otro día
-                              </span>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-1 flex-shrink-0">
-                            {ex?.videoUrl && (
-                              <button
-                                onClick={() => openVideoModal(videoKey, ex)}
-                                title="Ver vídeo"
-                                className="flex items-center gap-1 px-2 py-1 rounded-control text-ink-3 hover:text-accent-ink transition-colors"
-                              >
-                                <Icon name="videocam" size="s" />
-                                <span className="font-mono text-caption">Vídeo</span>
-                              </button>
-                            )}
-                            <button
-                              onClick={() => onReplaceExercise(g, exIdx)}
-                              title="Cambiar ejercicio"
-                              className="text-ink-3 hover:text-accent-ink transition-colors"
-                            >
-                              <Icon name="swap_horiz" size="s" />
-                            </button>
-                            <button
-                              onClick={() => onRemoveExercise(g, exIdx)}
-                              title="Quitar ejercicio"
-                              className="text-ink-3 hover:text-danger transition-colors"
-                            >
-                              <Icon name="close" size="s" />
-                            </button>
-                          </div>
+                          {flechas}
+                          {numero}
+                          {nombre}
+                          <div className="flex items-center gap-1 flex-shrink-0">{botones}</div>
                         </div>
                         <ExerciseConfigEditor we={we} onChange={patch => onUpdateExercise(g, exIdx, patch)} mesoWeeks={weeks} />
                       </div>
                     </div>
                   );
-                })
+                })}
+                </div>
               )}
+              <div className={enFilas ? 'px-4 pt-1 space-y-1.5' : 'space-y-1.5'}>
               <div className="flex gap-2">
                 <button
                   onClick={() => onAddExercise(g)}
@@ -817,6 +887,7 @@ function MesoExercisesTabs({
               <p className="font-mono text-caption text-ink-3">
                 Se aplica a todas las semanas de este mesociclo — las sesiones ya completadas no se tocan.
               </p>
+              </div>
             </div>
           </div>
   );
@@ -835,7 +906,7 @@ function MesoExercisesTabs({
       {/* Carrusel de días — solo el día activo muestra su contenido debajo. Con
           sitio para varias columnas las pestañas sobran: los días ya se ven
           todos. */}
-      {!enRejilla && (
+      {!enRejilla && !enFilas && (
         <Tabs
           label="Días del mesociclo"
           value={group?.name ?? ''}
@@ -853,7 +924,11 @@ function MesoExercisesTabs({
           panel del cliente, que a su vez cambia de ancho según la pantalla del
           coach (Dani, 10-09-2026). */}
       {groups.length > 0 && (
-        enRejilla ? (
+        enFilas ? (
+          <div className="space-y-5">
+            {groups.map((g, gIdx) => panelDelDia(g, gIdx))}
+          </div>
+        ) : enRejilla ? (
           <div className={`grid gap-3 ${columnas >= 3 ? 'grid-cols-3' : 'grid-cols-2'}`}>
             {groups.map((g, gIdx) => panelDelDia(g, gIdx))}
           </div>

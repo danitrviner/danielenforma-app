@@ -899,6 +899,38 @@ h1, h2, h3, h4, h5, h6 {
       zoom: 1.15;
     }
   }
+
+  /* Fila de ejercicio del mesociclo (vista ancha). En reposo solo se leen los
+     datos; −/+, mover, vídeo, cambiar y quitar aparecen al pasar el ratón o al
+     enfocar la fila. Solo con ratón: en táctil no hay «pasar por encima» y los
+     controles se quedarían escondidos para siempre. */
+  @media (hover: hover) {
+    .fila-ejercicio .fila-oculta {
+      opacity: 0;
+      transition: opacity var(--duration-base) ease;
+    }
+    .fila-ejercicio .fila-celda {
+      background-color: transparent;
+      transition: background-color var(--duration-base) ease;
+    }
+    .fila-ejercicio .fila-rir:not([aria-checked="true"]) {
+      background-color: transparent;
+      border-color: transparent;
+    }
+    .fila-ejercicio:hover .fila-oculta,
+    .fila-ejercicio:focus-within .fila-oculta {
+      opacity: 1;
+    }
+    .fila-ejercicio:hover .fila-celda,
+    .fila-ejercicio:focus-within .fila-celda {
+      background-color: var(--color-inset);
+    }
+    .fila-ejercicio:hover .fila-rir:not([aria-checked="true"]),
+    .fila-ejercicio:focus-within .fila-rir:not([aria-checked="true"]) {
+      background-color: var(--color-inset);
+      border-color: var(--color-hairline);
+    }
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
