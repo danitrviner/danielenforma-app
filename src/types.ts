@@ -593,6 +593,9 @@ export interface TemplateStage {
   groups: Record<MuscleGroup, MuscleGroupConfig>;
   days?: TemplateDay[];
   deloadWeek?: number;          // semana (1-indexada) de descarga dentro de esta etapa
+  /** Ver Mesocycle.semanasDescarga / semanasTest: viajan con la plantilla. */
+  semanasDescarga?: number[];
+  semanasTest?: number[];
   reviewCadenceWeeks?: number;  // cada cuántas semanas se programa una revisión durante esta etapa
   reviewType?: TaskType;
 }
@@ -1793,6 +1796,12 @@ export interface Mesocycle {
   semanasDescarga?: number[];
   /** Nota privada del coach por semana de ciclo ("3" → "subo a top set porque..."). */
   notasSemana?: Record<string, string>;
+  /** Semanas de ciclo de test: los ejercicios sin técnica pasan a AMRAP esa
+   *  semana, y el atleta lo ve en sus novedades. */
+  semanasTest?: number[];
+  /** Algo del cliente que cae esa semana de ciclo (vacaciones, viaje,
+   *  competición). El atleta ve la nota en sus novedades. */
+  eventosSemana?: Record<string, EventoDeSemana>;
   /**
    * Tipo de fase de entreno (Roadmap → Calendario, coach): decide el color/
    * icono del bloque en los 3 niveles del calendario. `undefined` = el coach
@@ -1808,6 +1817,13 @@ export interface Mesocycle {
 // mantenimiento/descarga) — no una taxonomía nueva, solo la etiqueta que
 // falta para no tener que adivinar el color a partir de texto libre.
 export type PhaseType = 'fuerza' | 'hipertrofia' | 'definicion' | 'mantenimiento' | 'descarga';
+
+export type TipoEventoSemana = 'vacaciones' | 'viaje' | 'competicion' | 'otro';
+export interface EventoDeSemana {
+  tipo: TipoEventoSemana;
+  /** Lo que lee el atleta ("Entrena en el hotel: 3 días, lo que tengas"). */
+  nota?: string;
+}
 
 export interface MesocycleTemplate {
   id: string;

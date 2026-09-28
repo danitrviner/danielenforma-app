@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   MuscleGroup, MuscleGroupConfig, Mesocycle, UserProfile, Workout,
   DayPlan, DayAssignment, WeekDistribution, Exercise, WorkoutExercise, TemplateDay,
-  WorkoutLog, WorkoutAssignment, PhaseType,
+  WorkoutLog, WorkoutAssignment, PhaseType, EventoDeSemana,
   MUSCLE_LABELS, MUSCLE_LABELS_SHORT, MUSCLE_ORDER,
 } from '../types';
 import {
@@ -12,7 +12,7 @@ import {
   createWorkoutStrict, createWorkoutAssignmentStrict,
   deleteWorkoutsByMesocycleIdStrict, borrarAsignacionesReprogramables,
   getUserProfileByEmail, migratePrimaryFocusToMuscleGroup,
-  getMesocycleTemplates, createTask, getWorkoutLogs, getWorkoutAssignmentsByMesocycleIds,
+  getMesocycleTemplates, createTask, getWorkoutLogs, getWorkoutAssignmentsByMesocycleIds, createMesocycleTemplate,
 } from '../dbService';
 import ExerciseConfigEditor, { COLUMNAS_FILA } from './ExerciseConfigEditor';
 import RoutinePreview, { PreviewDay, PreviewExercise } from './training/RoutinePreview';
@@ -28,8 +28,8 @@ import ExerciseVideoPlayer from './ExerciseVideoPlayer';
 import { MesocycleTemplate } from '../types';
 import { offsetsDeSesiones, formateaFrecuencia, vueltasDelCiclo, resolveExerciseForWeek, resolverEjercicioDelMeso, mesocycleWeekNumber } from '../utils/progression';
 import {
-  programarCambio, quitarCambiosDeSemana, semanasConCambios, origenDeCambios, diferencias, compararSemanas,
-  seriesDeLaSemana, seriesDe, type EjercicioDelDia,
+  quitarCambiosDeSemana, semanasConCambios, origenDeCambios, diferencias, compararSemanas,
+  seriesDeLaSemana, seriesDe, programarEnSemanas, semanasAlternas, rirDescendente, subirSeries, type EjercicioDelDia,
 } from '../utils/semanasDelBloque';
 import BarraDeSemanas, { type Alcance, type AvisoDeSemana, type ElementoProgramado } from './mesociclo/BarraDeSemanas';
 import { atletasActivos } from '../utils/atletas';
@@ -418,14 +418,15 @@ function Delta({ delta, showEqual = false }: { delta: number | null; showEqual?:
 function MesoExercisesView({
   groups, loading, weeks, allExercises, onUpdateExercise, onReplaceExercise, onAddExercise, onRemoveExercise,
   onMoveExercise, onGoToDistribution, libraryWorkouts, onUseLibraryWorkout, distribution, mesoGroups, semanasDelCiclo,
-  onRenameDay, meso, onUpdateMeso, vueltas, cicloDias, logs, onWriteDay,
+  onRenameDay, meso, onUpdateMeso, vueltas, cicloDias, logs, onWriteDay, onGuardarPlantilla,
 }: {
+  onGuardarPlantilla?: () => void;
   groups: MesoWorkoutGroup[];
   loading: boolean;
   weeks: number;
   allExercises: Exercise[];
   onUpdateExercise: (group: MesoWorkoutGroup, exIdx: number, patch: Partial<WorkoutExercise>) => void;
-  onReplaceExercise: (group: MesoWorkoutGroup, exIdx: number, semana?: { semana: number; solo: boolean }) => void;
+  onReplaceExercise: (group: MesoWorkoutGroup, exIdx: number, semana?: { semana: number; solo: boolean; semanas?: number[] }) => void;
   meso: Mesocycle;
   onUpdateMeso: (patch: Partial<Mesocycle>) => void;
   vueltas: number;
@@ -466,7 +467,7 @@ function MesoExercisesView({
     );
   }
 
-  return <MesoExercisesTabs {...{ groups, weeks, allExercises, onUpdateExercise, onReplaceExercise, onAddExercise, onRemoveExercise, onMoveExercise, libraryWorkouts, onUseLibraryWorkout, distribution, mesoGroups, semanasDelCiclo, onRenameDay, meso, onUpdateMeso, vueltas, cicloDias, logs, onWriteDay }} />;
+  return <MesoExercisesTabs {...{ groups, weeks, allExercises, onUpdateExercise, onReplaceExercise, onAddExercise, onRemoveExercise, onMoveExercise, libraryWorkouts, onUseLibraryWorkout, distribution, mesoGroups, semanasDelCiclo, onRenameDay, meso, onUpdateMeso, vueltas, cicloDias, logs, onWriteDay, onGuardarPlantilla }} />;
 }
 
 const PREFIJO_DIA = /^(Día\s*\d+\s*–\s*)(.*)$/i;
@@ -536,13 +537,14 @@ function MesoExercisesTabs({
   groups: gruposBase, weeks, allExercises, onUpdateExercise: guardarEjercicio, onReplaceExercise: elegirOtroEjercicio,
   onAddExercise, onRemoveExercise,
   onMoveExercise, libraryWorkouts, onUseLibraryWorkout, distribution, mesoGroups, semanasDelCiclo,
-  onRenameDay, meso, onUpdateMeso, vueltas, cicloDias, logs, onWriteDay,
+  onRenameDay, meso, onUpdateMeso, vueltas, cicloDias, logs, onWriteDay, onGuardarPlantilla,
 }: {
+  onGuardarPlantilla?: () => void;
   groups: MesoWorkoutGroup[];
   weeks: number;
   allExercises: Exercise[];
   onUpdateExercise: (group: MesoWorkoutGroup, exIdx: number, patch: Partial<WorkoutExercise>) => void;
-  onReplaceExercise: (group: MesoWorkoutGroup, exIdx: number, semana?: { semana: number; solo: boolean }) => void;
+  onReplaceExercise: (group: MesoWorkoutGroup, exIdx: number, semana?: { semana: number; solo: boolean; semanas?: number[] }) => void;
   meso: Mesocycle;
   onUpdateMeso: (patch: Partial<Mesocycle>) => void;
   vueltas: number;
@@ -589,13 +591,19 @@ function MesoExercisesTabs({
     if (!we) return;
     apuntar({ tipo: 'dia', clave: claveGrupo(base), prev: base.exercises });
     if (semana === 0) { guardarEjercicio(base, exIdx, patch); return; }
-    const editado = { ...resolveExerciseForWeek(we, semana), ...patch };
-    guardarEjercicio(base, exIdx, { weeklyProgression: programarCambio(we, semana, alcance === 'solo', editado) });
+    // Solo lo que de verdad cambia respecto a esta semana: el editor a veces
+    // manda el ejercicio entero (al tocar bloques).
+    const r0 = resolveExerciseForWeek(we, semana) as unknown as Record<string, unknown>;
+    const delta = Object.fromEntries(Object.entries(patch).filter(([k, v]) => JSON.stringify(v) !== JSON.stringify(r0[k])));
+    guardarEjercicio(base, exIdx, {
+      weeklyProgression: programarEnSemanas(we, semanasObjetivo(), alcance !== 'desde', r => ({ ...r, ...delta })),
+    });
   };
+  const semanasObjetivo = () => alcance === 'alternar' ? semanasAlternas(semana, vueltas) : [semana];
   const onReplaceExercise = (g: MesoWorkoutGroup, exIdx: number) => {
     const base = baseDe(g);
     apuntar({ tipo: 'dia', clave: claveGrupo(base), prev: base.exercises });
-    elegirOtroEjercicio(base, exIdx, semana > 0 ? { semana, solo: alcance === 'solo' } : undefined);
+    elegirOtroEjercicio(base, exIdx, semana > 0 ? { semana, solo: alcance !== 'desde', semanas: semanasObjetivo() } : undefined);
   };
 
   const escribirDias = (transformar: (we: WorkoutExercise) => WorkoutExercise) => {
@@ -634,6 +642,26 @@ function MesoExercisesTabs({
     if (texto) siguientes[String(semana)] = texto; else delete siguientes[String(semana)];
     onUpdateMeso({ notasSemana: Object.keys(siguientes).length > 0 ? siguientes : undefined });
   };
+
+  const tests = useMemo<number[]>(() => meso.semanasTest ?? [], [meso.semanasTest]);
+  const onTest = (semanas: number[], activar: boolean) => {
+    const lista = Array.from(new Set<number>(activar ? [...tests, ...semanas] : tests.filter(s => !semanas.includes(s)))).sort((a, b) => a - b);
+    cambiarMeso({ semanasTest: lista.length > 0 ? lista : undefined });
+  };
+  const eventos = meso.eventosSemana ?? {};
+  const onEvento = (s: number, ev: EventoDeSemana | undefined) => {
+    const siguientes = { ...eventos };
+    if (ev) siguientes[String(s)] = ev; else delete siguientes[String(s)];
+    onUpdateMeso({ eventosSemana: Object.keys(siguientes).length > 0 ? siguientes : undefined });
+  };
+
+  // Progresiones en un clic (se aplican a todos los ejercicios del bloque).
+  const [progresiones, setProgresiones] = useState(false);
+  const [rirDesde, setRirDesde] = useState('3');
+  const [rirHasta, setRirHasta] = useState('0');
+  const [seriesCada, setSeriesCada] = useState('2');
+  const [seriesHasta, setSeriesHasta] = useState(String(Math.max(2, vueltas - 1)));
+  const { showToast: avisar } = useToast();
 
   const deshacer = () => {
     const ultimo = pila[pila.length - 1];
@@ -1109,6 +1137,12 @@ function MesoExercisesTabs({
         reales={reales}
         semanasConCambio={semanasMarcadas}
         descargas={descargas}
+        tests={tests}
+        onTest={onTest}
+        eventos={eventos}
+        onEvento={onEvento}
+        onProgresiones={() => setProgresiones(true)}
+        onGuardarPlantilla={onGuardarPlantilla}
         avisos={avisos}
         nota={notas[String(semana)] ?? ''}
         onNota={onNota}
@@ -1121,6 +1155,49 @@ function MesoExercisesTabs({
         onQuitarProgramado={quitarProgramado}
         descargaSoloCalendario={meso.deloadWeek !== undefined && meso.semanasDescarga === undefined && cicloDias === 7 ? meso.deloadWeek : undefined}
       />
+
+      <Sheet open={progresiones} onClose={() => setProgresiones(false)} title="Progresiones en un clic">
+        <div className="space-y-5">
+          <p className="font-sans text-label text-ink-2">
+            Se aplican a todos los ejercicios del bloque como cambios por semana. Después puedes retocar lo que quieras semana a semana, o deshacerlo.
+          </p>
+          <section className="space-y-2">
+            <p className="font-sans font-bold text-body-s text-ink">RIR que baja a lo largo del bloque</p>
+            <div className="grid grid-cols-2 gap-3">
+              <Select label="Primera semana" value={rirDesde} onChange={setRirDesde} options={[0, 1, 2, 3, 4, 5].map(n => ({ value: String(n), label: `RIR ${n}` }))} />
+              <Select label="Última semana" value={rirHasta} onChange={setRirHasta} options={[0, 1, 2, 3, 4, 5].map(n => ({ value: String(n), label: `RIR ${n}` }))} />
+            </div>
+            <p className="font-sans text-caption text-ink-3">Se reparte entre las semanas que no son de descarga.</p>
+            <Button size="s" icon="trending_down" onClick={() => {
+              escribirDias(we => ({ ...we, weeklyProgression: rirDescendente(we, vueltas, Number(rirDesde), Number(rirHasta), descargas) }));
+              setProgresiones(false);
+              avisar(`RIR ${rirDesde} → ${rirHasta} programado en el bloque`, 'success');
+            }}>Aplicar RIR</Button>
+          </section>
+          <section className="space-y-2">
+            <p className="font-sans font-bold text-body-s text-ink">Subir series</p>
+            <div className="grid grid-cols-2 gap-3">
+              <Select label="+1 serie cada" value={seriesCada} onChange={setSeriesCada} options={[1, 2, 3, 4].map(n => ({ value: String(n), label: n === 1 ? 'semana' : `${n} semanas` }))} />
+              <Select label="Hasta la semana" value={seriesHasta} onChange={setSeriesHasta}
+                options={Array.from({ length: Math.max(1, vueltas - 1) }, (_, i) => ({ value: String(i + 2), label: `S${i + 2}` }))} />
+            </div>
+            <p className="font-sans text-caption text-ink-3">Con bloques (top set + back-off), la serie va al último bloque.</p>
+            <Button size="s" icon="add" onClick={() => {
+              escribirDias(we => ({ ...we, weeklyProgression: subirSeries(we, Number(seriesCada), Number(seriesHasta)) }));
+              setProgresiones(false);
+              avisar('Subida de series programada', 'success');
+            }}>Aplicar series</Button>
+          </section>
+          <section className="space-y-2">
+            <p className="font-sans font-bold text-body-s text-ink">Descarga</p>
+            <Button size="s" icon="trending_down" disabled={descargas.includes(vueltas)} onClick={() => {
+              onDescarga([vueltas], true);
+              setProgresiones(false);
+              avisar(`Descarga en la semana ${vueltas}`, 'success');
+            }}>Descarga en la última semana (S{vueltas})</Button>
+          </section>
+        </div>
+      </Sheet>
 
       <Sheet open={comparar !== null} onClose={() => setComparar(null)} title="Comparar semanas">
         {comparar && (() => {
@@ -1592,7 +1669,7 @@ export default function MesocycleManager({
   // "cambiar ese índice".
   const [exercisePicker, setExercisePicker] = useState<
     | { context: 'preview'; dayIdx: number; exIdx: number | null; group?: MuscleGroup }
-    | { context: 'programado'; group: MesoWorkoutGroup; exIdx: number | null; muscleGroup?: MuscleGroup; semana?: { semana: number; solo: boolean } }
+    | { context: 'programado'; group: MesoWorkoutGroup; exIdx: number | null; muscleGroup?: MuscleGroup; semana?: { semana: number; solo: boolean; semanas?: number[] } }
     | null
   >(null);
 
@@ -1720,6 +1797,34 @@ export default function MesocycleManager({
       }
     }, 800);
   }, [queryClient, selectedEmail]);
+
+  // El bloque tal cual, con sus cambios por semana, descargas y test, como
+  // plantilla reutilizable con otros clientes.
+  const guardarComoPlantilla = async () => {
+    if (!editing || mesoGroupsForTabs.length === 0) return;
+    try {
+      await createMesocycleTemplate({
+        ownerId: coachId,
+        name: `${editing.objective?.trim() || nombreDeMeso(editing)} · ${editing.weeks} semanas`,
+        description: 'Guardada desde un mesociclo, con sus cambios semana a semana.',
+        stages: [{
+          id: `st_${Date.now()}`,
+          name: editing.objective?.trim() || nombreDeMeso(editing),
+          weeks: editing.weeks,
+          daysPerWeek: editing.daysPerWeek,
+          groups: { ...editing.groups },
+          days: mesoGroupsForTabs.map((g, i) => ({ id: `d${i + 1}`, name: g.name, exercises: g.exercises })),
+          ...(editing.deloadWeek !== undefined ? { deloadWeek: editing.deloadWeek } : {}),
+          ...(editing.semanasDescarga ? { semanasDescarga: editing.semanasDescarga } : {}),
+          ...(editing.semanasTest ? { semanasTest: editing.semanasTest } : {}),
+        }],
+      });
+      setTemplates([]);
+      showToast('Plantilla guardada en tu biblioteca de mesociclos', 'success');
+    } catch {
+      showToast('No se pudo guardar la plantilla.', 'error');
+    }
+  };
 
   const actualizarMeso = (patch: Partial<Mesocycle>) => {
     if (!editing) return;
@@ -1883,15 +1988,12 @@ export default function MesocycleManager({
             .sort((a, b) => a.order - b.order)
             .map(we => {
               const ex = exercises.find(e => e.id === we.exerciseId);
+              // Todo el ejercicio, no solo series/reps/RIR/descanso: bloques,
+              // técnica, notas y los cambios por semana vienen en la plantilla.
               return {
-                exerciseId: we.exerciseId,
+                ...we,
                 name: ex?.name ?? `(${we.exerciseId.slice(-6)})`,
-                muscleGroup: (ex?.muscleGroup ?? 'core') as MuscleGroup,
-                sets: we.sets,
-                reps: we.reps,
-                rir: we.rir,
-                restSeconds: we.restSeconds,
-                order: we.order,
+                muscleGroup: (we.muscleGroup ?? ex?.muscleGroup ?? 'core') as MuscleGroup,
               };
             });
           return { dayIndex: dayIdx, exercises: dayExs, warnings: [] };
@@ -2258,7 +2360,7 @@ export default function MesocycleManager({
     await Promise.all(group.workoutIds.map(id => updateWorkout(id, { name: nuevoNombre })));
   }
 
-  function handleReplaceMesoExercise(group: MesoWorkoutGroup, exIdx: number, semana?: { semana: number; solo: boolean }) {
+  function handleReplaceMesoExercise(group: MesoWorkoutGroup, exIdx: number, semana?: { semana: number; solo: boolean; semanas?: number[] }) {
     setExercisePicker({ context: 'programado', group, exIdx, muscleGroup: group.exercises[exIdx]?.muscleGroup, semana });
   }
 
@@ -2308,8 +2410,10 @@ export default function MesocycleManager({
     if (exIdx !== null && semana) {
       // Cambio de ejercicio a partir de una semana: se programa, la base no se toca.
       const we = group.exercises[exIdx];
-      const editado = { ...resolveExerciseForWeek(we, semana.semana), exerciseId: ex.id, muscleGroup: ex.muscleGroup ?? we.muscleGroup };
-      void updateMesoWorkoutExercise(group, exIdx, { weeklyProgression: programarCambio(we, semana.semana, semana.solo, editado) });
+      void updateMesoWorkoutExercise(group, exIdx, {
+        weeklyProgression: programarEnSemanas(we, semana.semanas ?? [semana.semana], semana.solo,
+          r => ({ ...r, exerciseId: ex.id, muscleGroup: ex.muscleGroup ?? we.muscleGroup })),
+      });
       setExercisePicker(null);
       return;
     }
@@ -2375,6 +2479,8 @@ export default function MesocycleManager({
           programId,
           programOrder: i,
           ...(stage.deloadWeek !== undefined ? { deloadWeek: stage.deloadWeek } : {}),
+          ...(stage.semanasDescarga ? { semanasDescarga: stage.semanasDescarga } : {}),
+          ...(stage.semanasTest ? { semanasTest: stage.semanasTest } : {}),
         });
         created.push(meso);
 
@@ -3276,6 +3382,7 @@ export default function MesocycleManager({
                   cicloDias={cicloDias}
                   logs={athleteLogs ?? (logsPending ? undefined : logsQuery)}
                   onWriteDay={(g, exs) => { void writeMesoWorkoutExercises(g, exs); }}
+                  onGuardarPlantilla={() => { void guardarComoPlantilla(); }}
                   onGoToDistribution={() => setEditorTab('distribution')}
                   libraryWorkouts={allWorkouts.filter(w => !w.mesocycleId)}
                   onUseLibraryWorkout={handleUseLibraryWorkout}

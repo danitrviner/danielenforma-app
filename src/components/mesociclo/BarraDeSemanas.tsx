@@ -1,7 +1,16 @@
 import React, { useState } from 'react';
-import { Icon, SegmentedControl, Button } from '../ui';
+import { Icon, SegmentedControl, Button, Select } from '../ui';
+import type { EventoDeSemana, TipoEventoSemana } from '../../types';
 
-export type Alcance = 'desde' | 'solo';
+export type Alcance = 'desde' | 'solo' | 'alternar';
+
+const EVENTOS: { value: '' | TipoEventoSemana; label: string; corto: string }[] = [
+  { value: '', label: 'Sin evento', corto: '' },
+  { value: 'vacaciones', label: 'Vacaciones', corto: 'V' },
+  { value: 'viaje', label: 'Viaje', corto: 'Vj' },
+  { value: 'competicion', label: 'Competición', corto: 'C' },
+  { value: 'otro', label: 'Otro', corto: 'E' },
+];
 
 export interface AvisoDeSemana { tono: 'peligro' | 'aviso'; texto: string }
 
@@ -27,6 +36,12 @@ interface Props {
   reales?: (number | null)[];
   semanasConCambio: Set<number>;
   descargas: number[];
+  tests: number[];
+  onTest: (semanas: number[], activar: boolean) => void;
+  eventos: Record<string, EventoDeSemana>;
+  onEvento: (semana: number, evento: EventoDeSemana | undefined) => void;
+  onProgresiones: () => void;
+  onGuardarPlantilla?: () => void;
   avisos: Record<number, AvisoDeSemana[]>;
   nota: string;
   onNota: (texto: string) => void;
@@ -55,6 +70,8 @@ export default function BarraDeSemanas(p: Props) {
   const semanas = Array.from({ length: p.vueltas + 1 }, (_, i) => i);
   const selOrdenada = [...sel].sort((a, b) => a - b);
   const esDescarga = (s: number) => p.descargas.includes(s);
+  const esTest = (s: number) => p.tests.includes(s);
+  const evento = p.eventos[String(p.semana)];
 
   const pulsar = (s: number) => {
     if (!varias) { p.onSemana(s); return; }
@@ -74,7 +91,11 @@ export default function BarraDeSemanas(p: Props) {
             {p.puedeDeshacer && (
               <Button size="s" variant="ghost" icon="undo" onClick={p.onDeshacer}>Deshacer</Button>
             )}
+            <Button size="s" variant="ghost" icon="trending_up" onClick={p.onProgresiones}>Progresiones</Button>
             <Button size="s" variant="ghost" icon="swap_horiz" onClick={p.onComparar}>Comparar</Button>
+            {p.onGuardarPlantilla && (
+              <Button size="s" variant="ghost" icon="library_books" onClick={p.onGuardarPlantilla}>Guardar como plantilla</Button>
+            )}
             <button
               type="button"
               aria-pressed={varias}
@@ -99,6 +120,8 @@ export default function BarraDeSemanas(p: Props) {
               `${p.totales[s] ?? 0} series planificadas`,
               real !== null ? `${real} hechas` : null,
               esDescarga(s) ? 'Descarga' : null,
+              esTest(s) ? 'Semana de test' : null,
+              p.eventos[String(s)] ? `${EVENTOS.find(e => e.value === p.eventos[String(s)].tipo)?.label}${p.eventos[String(s)].nota ? `: ${p.eventos[String(s)].nota}` : ''}` : null,
               ...avisos.map(a => a.texto),
             ].filter(Boolean).join(' · ');
             return (
@@ -134,8 +157,16 @@ export default function BarraDeSemanas(p: Props) {
                 <span className="font-mono text-[10px] leading-none text-ink-3 tabular-nums">
                   {real !== null ? `${real}/${p.totales[s] ?? 0}` : p.totales[s] ?? 0}
                 </span>
-                {esDescarga(s) && (
-                  <span className="font-mono text-[9px] leading-[11px] font-bold text-info border border-info rounded-[5px] px-0.5">D</span>
+                {(esDescarga(s) || esTest(s) || p.eventos[String(s)]) && (
+                  <span className="flex gap-0.5">
+                    {esDescarga(s) && <span className="font-mono text-[9px] leading-[11px] font-bold text-info border border-info rounded-[5px] px-0.5">D</span>}
+                    {esTest(s) && <span className="font-mono text-[9px] leading-[11px] font-bold text-warning border border-warning rounded-[5px] px-0.5">T</span>}
+                    {p.eventos[String(s)] && (
+                      <span className="font-mono text-[9px] leading-[11px] font-bold text-accent-ink border border-accent-line rounded-[5px] px-0.5">
+                        {EVENTOS.find(e => e.value === p.eventos[String(s)].tipo)?.corto}
+                      </span>
+                    )}
+                  </span>
                 )}
               </button>
             );
@@ -161,6 +192,9 @@ export default function BarraDeSemanas(p: Props) {
           <div className="ml-auto flex gap-2 flex-wrap">
             <Button size="s" icon="trending_down" disabled={sel.size === 0} onClick={() => p.onDescarga(selOrdenada, true)}>Marcar descarga</Button>
             <Button size="s" variant="ghost" disabled={sel.size === 0} onClick={() => p.onDescarga(selOrdenada, false)}>Quitar descarga</Button>
+            <Button size="s" variant="ghost" icon="flag" disabled={sel.size === 0} onClick={() => p.onTest(selOrdenada, !selOrdenada.every(esTest))}>
+              {sel.size > 0 && selOrdenada.every(esTest) ? 'Quitar test' : 'Marcar test'}
+            </Button>
             <Button size="s" variant="ghost" icon="refresh" disabled={sel.size === 0} onClick={() => p.onQuitarCambios(selOrdenada)}>Quitar cambios</Button>
           </div>
         </div>
@@ -176,12 +210,14 @@ export default function BarraDeSemanas(p: Props) {
           <div className="flex items-center gap-3 flex-wrap">
             <p className="font-sans font-extrabold text-title-s text-accent-ink">Semana {p.semana}</p>
             <SegmentedControl
+              className="shrink-0 min-w-[15rem]"
               label="Alcance del cambio"
               value={p.alcance}
               onChange={v => p.onAlcance(v as Alcance)}
               options={[
                 { value: 'desde', label: `Desde S${p.semana}` },
                 { value: 'solo', label: `Solo S${p.semana}` },
+                ...(p.semana + 2 <= p.vueltas ? [{ value: 'alternar', label: `S${p.semana}, S${p.semana + 2}…` }] : []),
               ]}
             />
             <div className="ml-auto flex gap-2 flex-wrap">
@@ -195,6 +231,16 @@ export default function BarraDeSemanas(p: Props) {
                 <Icon name="trending_down" size="s" />
                 {esDescarga(p.semana) ? 'Descarga activada' : 'Semana de descarga'}
               </button>
+              <button
+                type="button"
+                aria-pressed={esTest(p.semana)}
+                onClick={() => p.onTest([p.semana], !esTest(p.semana))}
+                className={`inline-flex items-center gap-1.5 rounded-control border px-3 py-1.5 font-sans text-label font-bold transition-colors ${
+                  esTest(p.semana) ? 'border-warning text-warning bg-warning/10' : 'border-hairline text-ink-2 hover:text-ink hover:border-strong'}`}
+              >
+                <Icon name="flag" size="s" />
+                {esTest(p.semana) ? 'Test activado' : 'Semana de test'}
+              </button>
               <Button size="s" variant="ghost" icon="sticky_note_2" onClick={() => setNotaAbierta(o => !o)}>
                 {p.nota ? 'Nota ·' : 'Nota'}
               </Button>
@@ -204,9 +250,31 @@ export default function BarraDeSemanas(p: Props) {
           <p className="font-sans text-caption text-ink-2">
             {p.alcance === 'desde'
               ? `Lo que toques se queda así desde la semana ${p.semana} hasta que programes otro cambio.`
-              : `Lo que toques vale solo para la semana ${p.semana}; la ${p.semana + 1} vuelve a lo anterior.`}
+              : p.alcance === 'solo'
+                ? `Lo que toques vale solo para la semana ${p.semana}; la ${p.semana + 1} vuelve a lo anterior.`
+                : `Lo que toques se aplica en semanas alternas (S${p.semana}, S${p.semana + 2}…): rotación A/B, por ejemplo otra variante del ejercicio.`}
             {esDescarga(p.semana) && ' Es semana de descarga: el atleta hace la mitad de series de lo que ves aquí.'}
+            {esTest(p.semana) && ' Semana de test: los ejercicios sin técnica van a AMRAP.'}
           </p>
+          <div className="flex items-end gap-2 flex-wrap">
+            <Select
+              label="Evento de la semana"
+              value={evento?.tipo ?? ''}
+              options={EVENTOS.map(e => ({ value: e.value, label: e.label }))}
+              onChange={v => p.onEvento(p.semana, v ? { tipo: v as TipoEventoSemana, ...(evento?.nota ? { nota: evento.nota } : {}) } : undefined)}
+              className="w-44"
+            />
+            {evento && (
+              <input
+                id={`evento-semana-${p.semana}`}
+                value={evento.nota ?? ''}
+                onChange={e => p.onEvento(p.semana, { tipo: evento.tipo, ...(e.target.value ? { nota: e.target.value } : {}) })}
+                placeholder="Lo que leerá el atleta (p. ej. «entrena en el hotel lo que puedas»)"
+                aria-label="Nota del evento para el atleta"
+                className="flex-1 min-w-[14rem] h-10 bg-surface border border-hairline rounded-control px-3 font-sans text-label text-ink placeholder-ink-3 focus:outline-none focus:ring-1 focus:ring-accent"
+              />
+            )}
+          </div>
           {(notaAbierta || p.nota) && (
             <textarea
               id={`nota-semana-${p.semana}`}

@@ -218,12 +218,15 @@ export function aplicarDescarga(we: WorkoutExercise): WorkoutExercise {
  *  en cualquier sitio que pinte o cuente una sesión de un mesociclo. */
 export function resolverEjercicioDelMeso(
   we: WorkoutExercise,
-  meso: { semanasDescarga?: number[] } | undefined,
+  meso: { semanasDescarga?: number[]; semanasTest?: number[] } | undefined,
   semana: number,
   conditionCtx?: ProgressionConditionCtx,
 ): WorkoutExercise {
-  const r = resolveExerciseForWeek(we, semana, conditionCtx);
-  return meso?.semanasDescarga?.includes(semana) ? aplicarDescarga(r) : r;
+  let r = resolveExerciseForWeek(we, semana, conditionCtx);
+  if (meso?.semanasDescarga?.includes(semana)) r = aplicarDescarga(r);
+  // Semana de test: lo que no tenga ya una técnica va a AMRAP.
+  if (meso?.semanasTest?.includes(semana) && !r.technique) r = { ...r, technique: 'amrap' };
+  return r;
 }
 
 export function resolveExerciseForWeek(weBase: WorkoutExercise, weekNumber: number, conditionCtx?: ProgressionConditionCtx): WorkoutExercise {

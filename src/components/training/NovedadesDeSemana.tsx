@@ -4,6 +4,8 @@ import type { NovedadesDeSemana as Novedades } from '../../utils/semanasDelBloqu
 
 const CLAVE = 'enforma_novedades_vistas_v1';
 
+const TITULO_EVENTO = { vacaciones: 'Semana de vacaciones', viaje: 'Semana de viaje', competicion: 'Semana de competición', otro: 'Esta semana' } as const;
+
 function leerVistas(): string[] {
   try { return JSON.parse(localStorage.getItem(CLAVE) ?? '[]'); } catch { return []; }
 }
@@ -31,6 +33,16 @@ export default function NovedadesDeSemana({ novedades, clave, semana }: { noveda
         {novedades.descarga && (
           <li className="font-sans text-label text-ink-2">
             <span className="font-bold text-info">Semana de descarga.</span> Haces la mitad de series para recuperar. Cada serie, igual de bien hecha.
+          </li>
+        )}
+        {novedades.test && (
+          <li className="font-sans text-label text-ink-2">
+            <span className="font-bold text-warning">Semana de test.</span> En los ejercicios marcados AMRAP, la última serie va a todas las repeticiones que puedas con buena técnica. Con eso ajustamos tus cargas.
+          </li>
+        )}
+        {novedades.evento && (
+          <li className="font-sans text-label text-ink-2">
+            <span className="font-bold text-ink">{TITULO_EVENTO[novedades.evento.tipo]}.</span>{novedades.evento.nota ? ` ${novedades.evento.nota}` : ''}
           </li>
         )}
         {novedades.vuelveElVolumen && (

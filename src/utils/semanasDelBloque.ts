@@ -1,4 +1,4 @@
-import { WorkoutExercise, WeeklyProgressionRule, CambiosDeSemana, WorkoutSetGroup } from '../types';
+import { WorkoutExercise, WeeklyProgressionRule, CambiosDeSemana, WorkoutSetGroup, EventoDeSemana } from '../types';
 import { resolveExerciseForWeek, resolverEjercicioDelMeso } from './progression';
 import { TECHNIQUE_LABEL } from './workoutTechniques';
 
@@ -53,6 +53,63 @@ export function programarCambio(
     : resto;
   reglas.sort((a, b) => a.atWeek - b.atWeek);
   return reglas.length > 0 ? reglas : undefined;
+}
+
+/** Aplica la misma edición en varias semanas, de la primera a la última, para
+ *  que cada una parta de lo que ya dejó la anterior. Devuelve las reglas. */
+export function programarEnSemanas(
+  we: WorkoutExercise, semanas: number[], solo: boolean, editar: (r: WorkoutExercise, semana: number) => WorkoutExercise,
+): WeeklyProgressionRule[] | undefined {
+  let actual = we;
+  for (const s of [...semanas].sort((a, b) => a - b)) {
+    const reglas = programarCambio(actual, s, solo, editar(resolveExerciseForWeek(actual, s), s));
+    actual = { ...actual, weeklyProgression: reglas };
+  }
+  return actual.weeklyProgression;
+}
+
+/** S3, S5, S7… hasta el final del bloque: la rotación A/B. */
+export function semanasAlternas(desde: number, vueltas: number): number[] {
+  const out: number[] = [];
+  for (let s = desde; s <= vueltas; s += 2) out.push(s);
+  return out;
+}
+
+// ── Progresiones en un clic ─────────────────────────────────────────────────
+
+const clampRir = (n: number) => Math.max(0, Math.min(5, Math.round(n)));
+
+/** RIR que baja de `desde` a `hasta` repartido por las semanas del bloque que
+ *  no son de descarga (en la descarga no se aprieta). Absoluto: el mismo RIR
+ *  para todos los ejercicios esa semana. Con bloques, todos los bloques se
+ *  mueven lo mismo que el primero, así se conserva la diferencia entre ellos. */
+export function rirDescendente(we: WorkoutExercise, vueltas: number, desde: number, hasta: number, excluir: number[] = []): WeeklyProgressionRule[] | undefined {
+  const semanas = Array.from({ length: vueltas }, (_, i) => i + 1).filter(s => !excluir.includes(s));
+  if (semanas.length === 0) return we.weeklyProgression;
+  const objetivo = (i: number) => semanas.length === 1 ? hasta : clampRir(desde + ((hasta - desde) * i) / (semanas.length - 1));
+  return programarEnSemanas(we, semanas, false, (r, s) => {
+    const rir = objetivo(semanas.indexOf(s));
+    if (r.setGroups && r.setGroups.length > 0) {
+      const delta = rir - r.setGroups[0].rir;
+      return { ...r, setGroups: r.setGroups.map(g => ({ ...g, rir: clampRir(g.rir + delta) })) };
+    }
+    return { ...r, rir };
+  });
+}
+
+/** +1 serie cada `cada` semanas, desde la 1+cada hasta `hasta` (incluida).
+ *  Con bloques, la serie va al último (el de volumen, no el top set). */
+export function subirSeries(we: WorkoutExercise, cada: number, hasta: number): WeeklyProgressionRule[] | undefined {
+  const semanas: number[] = [];
+  for (let s = 1 + cada; s <= hasta; s += cada) semanas.push(s);
+  if (semanas.length === 0) return we.weeklyProgression;
+  return programarEnSemanas(we, semanas, false, r => {
+    if (r.setGroups && r.setGroups.length > 0) {
+      const ult = r.setGroups.length - 1;
+      return { ...r, setGroups: r.setGroups.map((g, i) => i === ult ? { ...g, sets: g.sets + 1 } : g) };
+    }
+    return { ...r, sets: r.sets + 1 };
+  });
 }
 
 /** Quita lo programado desde la barra en `semana` (los escalones clásicos
@@ -147,6 +204,8 @@ export function compararSemanas(
 
 export interface NovedadesDeSemana {
   descarga: boolean;
+  test: boolean;
+  evento?: EventoDeSemana;
   /** true si la semana anterior era de descarga y esta no. */
   vuelveElVolumen: boolean;
   cambios: Novedad[];
@@ -154,21 +213,25 @@ export interface NovedadesDeSemana {
 
 /** Novedades para el atleta al empezar la semana de ciclo `semana`. */
 export function novedadesDeSemana(
-  ejercicios: EjercicioDelDia[], meso: { semanasDescarga?: number[] }, semana: number, nombreDe: (id: string) => string,
+  ejercicios: EjercicioDelDia[],
+  meso: { semanasDescarga?: number[]; semanasTest?: number[]; eventosSemana?: Record<string, EventoDeSemana> },
+  semana: number, nombreDe: (id: string) => string,
 ): NovedadesDeSemana {
   const descargas = meso.semanasDescarga ?? [];
   return {
     descarga: descargas.includes(semana),
+    test: (meso.semanasTest ?? []).includes(semana),
+    evento: meso.eventosSemana?.[String(semana)],
     vuelveElVolumen: semana > 1 && descargas.includes(semana - 1) && !descargas.includes(semana),
     cambios: semana > 1 ? compararSemanas(ejercicios, semana - 1, semana, nombreDe) : [],
   };
 }
 
 export function hayNovedades(n: NovedadesDeSemana): boolean {
-  return n.descarga || n.vuelveElVolumen || n.cambios.length > 0;
+  return n.descarga || n.test || !!n.evento || n.vuelveElVolumen || n.cambios.length > 0;
 }
 
 /** Series totales de la semana (lo que se hace de verdad, descarga incluida). */
-export function seriesDeLaSemana(ejercicios: EjercicioDelDia[], meso: { semanasDescarga?: number[] }, semana: number): number {
+export function seriesDeLaSemana(ejercicios: EjercicioDelDia[], meso: { semanasDescarga?: number[]; semanasTest?: number[] }, semana: number): number {
   return ejercicios.reduce((s, { we }) => s + seriesDe(semana === 0 ? we : resolverEjercicioDelMeso(we, meso, semana)), 0);
 }

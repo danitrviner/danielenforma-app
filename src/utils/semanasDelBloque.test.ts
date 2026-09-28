@@ -3,6 +3,7 @@ import { WorkoutExercise } from '../types';
 import { resolveExerciseForWeek, resolverEjercicioDelMeso } from './progression';
 import {
   programarCambio, quitarCambiosDeSemana, novedadesDeSemana, compararSemanas, seriesDeLaSemana, origenDeCambios,
+  programarEnSemanas, semanasAlternas, rirDescendente, subirSeries,
 } from './semanasDelBloque';
 
 const curl: WorkoutExercise = { exerciseId: 'curl', order: 0, sets: 4, reps: '10', rir: 1, restSeconds: 75 };
@@ -106,5 +107,33 @@ describe('novedades y comparar', () => {
   it('compara dos semanas cualesquiera', () => {
     expect(compararSemanas(ej, 1, 8, nombreDe)[0].cambios).toHaveLength(1);
     expect(compararSemanas(ej, 4, 8, nombreDe)).toEqual([]);
+  });
+});
+
+describe('progresiones en un clic y rotación A/B', () => {
+  it('RIR 3 → 0 repartido por el bloque, saltando la descarga', () => {
+    const we = { ...curl, weeklyProgression: rirDescendente(curl, 5, 3, 0, [5]) };
+    expect([1, 2, 3, 4].map(s => resolveExerciseForWeek(we, s).rir)).toEqual([3, 2, 1, 0]);
+  });
+  it('con bloques, todos se mueven igual que el primero', () => {
+    const conBloques = { ...curl, setGroups: topBackoff };
+    const we = { ...conBloques, weeklyProgression: rirDescendente(conBloques, 2, 3, 1) };
+    expect(resolveExerciseForWeek(we, 1).setGroups!.map(g => g.rir)).toEqual([3, 4]);
+    expect(resolveExerciseForWeek(we, 2).setGroups!.map(g => g.rir)).toEqual([1, 2]);
+  });
+  it('+1 serie cada 2 semanas hasta la S6', () => {
+    const we = { ...curl, weeklyProgression: subirSeries(curl, 2, 6) };
+    expect([1, 2, 3, 4, 5, 6, 7].map(s => resolveExerciseForWeek(we, s).sets)).toEqual([4, 4, 5, 5, 6, 6, 6]);
+  });
+  it('rotación A/B: otro ejercicio en S2, S4, S6', () => {
+    const we = { ...curl, weeklyProgression: programarEnSemanas(curl, semanasAlternas(2, 6), true, r => ({ ...r, exerciseId: 'inclinado' })) };
+    expect([1, 2, 3, 4, 5, 6].map(s => resolveExerciseForWeek(we, s).exerciseId))
+      .toEqual(['curl', 'inclinado', 'curl', 'inclinado', 'curl', 'inclinado']);
+  });
+  it('semana de test y evento salen en las novedades', () => {
+    const n = novedadesDeSemana([{ we: curl, dia: 'D1' }], { semanasTest: [4], eventosSemana: { '4': { tipo: 'vacaciones', nota: 'Hotel' } } }, 4, nombreDe);
+    expect(n.test).toBe(true);
+    expect(n.evento).toEqual({ tipo: 'vacaciones', nota: 'Hotel' });
+    expect(resolverEjercicioDelMeso(curl, { semanasTest: [4] }, 4).technique).toBe('amrap');
   });
 });
