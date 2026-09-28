@@ -41,6 +41,8 @@ import {
 } from './nutrition/dietHelpers';
 import { useDiaActual, diaSemanaDe } from '../hooks/useDiaActual';
 import { addDays, hoyIsoLocal} from '../utils/trainingWeek';
+import SemanaNutricionAtleta from './nutrition/SemanaNutricionAtleta';
+import { dietaDeLaSemana } from '../utils/semanasNutricion';
 
 const HAMBRE_TEXTO: Record<'manana' | 'equilibrado' | 'noche', string> = {
   manana: 'por la mañana',
@@ -323,10 +325,12 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
   // semanal, que sigue usando el generador de menús): se respeta el del día que
   // se está mirando, no el de hoy. La regla vive en utils/nutritionSummary
   // porque es la misma que usa el resumen de Hoy y tiene tests.
-  const dietaPautada = useMemo(
-    () => dietaPautadaDelDia(allDietsList, dietConfigRaw ?? null, diaSemanaDe(viewDate)),
-    [allDietsList, dietConfigRaw, viewDate],
-  );
+  // La dieta del día con lo que la periodización programa para ESA semana
+  // (ajustes de intercambios, mantenimiento, comida libre). Ver semanasNutricion.ts.
+  const dietaPautada = useMemo(() => {
+    const base = dietaPautadaDelDia(allDietsList, dietConfigRaw ?? null, diaSemanaDe(viewDate));
+    return base ? dietaDeLaSemana(base, program, viewDate) : base;
+  }, [allDietsList, dietConfigRaw, viewDate, program]);
   const cupoPautado = dietaPautada?.budget ?? null;
 
   /* Las dietas del coach que el atleta puede cargarse en un día. Solo las
@@ -1751,6 +1755,8 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
         </div>
       )}
 
+      {program && <SemanaNutricionAtleta program={program} fecha={viewDate} />}
+
       {/* Phase change banner */}
       {phaseBanner && (
         <div className="flex items-center justify-between gap-3 bg-accent/10 border border-accent/30 rounded-surface px-4 py-3">
@@ -2043,6 +2049,11 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                             placeholder={`Comida ${mi + 1}`}
                             className="min-w-0 flex-1 bg-transparent border-none font-sans font-bold text-ink text-title-s focus:outline-none focus:ring-0 p-0"
                           />
+                          {meal.libre && (
+                            <span className="flex-shrink-0 font-mono text-caption font-bold uppercase tracking-wider text-success border border-success/40 bg-success/10 rounded-chip px-2 py-0.5">
+                              Libre
+                            </span>
+                          )}
                         </div>
                         <div className="flex items-center gap-2 flex-shrink-0">
                           <span className="font-mono text-caption text-ink-2 hidden sm:block">

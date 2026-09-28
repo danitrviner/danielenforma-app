@@ -1120,6 +1120,8 @@ export interface DietMeal {
   /** Ingesta pegada al entreno (pre/post) — como mucho una por dieta. El
    *  reparto automático (utils/mealDistribution.ts) sesga hidratos hacia ella. */
   aroundTraining?: boolean;
+  /** Comida libre programada por el coach para ese día (ver NutritionProgram.comidasLibres). */
+  libre?: boolean;
 }
 
 export interface Diet {
@@ -1253,6 +1255,47 @@ export interface NutritionProgram {
   phases: NutritionPhase[];
   lastSeenPhaseId?: string;   // tracks when athlete saw the phase change banner
   refeedDays?: RefeedDay[];   // recargas sueltas — ver RefeedDay
+  /** Ajustes de intercambios programados por semana del programa (barra de
+   *  semanas de la periodización). Se acumulan desde su semana, o valen solo
+   *  esa si `solo`. Se aplican sobre la dieta que toque cada día, sea de la
+   *  fase que sea. Ver utils/semanasNutricion.ts. */
+  cambiosSemana?: CambioNutricionSemana[];
+  /** Semanas del programa de mantenimiento (diet break): +1 HC en cada comida. */
+  semanasMantenimiento?: number[];
+  comidasLibres?: ComidaLibre[];
+  suplementos?: Suplemento[];
+}
+
+export type MacroAjustable = 'HC' | 'PROT' | 'GRASA';
+
+/** +/− intercambios de un macro en una comida. Sin `slot`, en la comida que
+ *  más tenga de ese macro. */
+export interface AjusteDeComida {
+  slot?: number;   // 1=Desayuno … 5=Cena, misma escala que DietMeal.slot
+  cat: MacroAjustable;
+  delta: number;
+}
+
+export interface CambioNutricionSemana {
+  semana: number;  // semana del programa, 1-indexada desde startDate
+  solo?: boolean;
+  ajustes: AjusteDeComida[];
+}
+
+export interface ComidaLibre {
+  dia: WeekDay;
+  slot: number;
+  desde: number;
+  hasta?: number;
+}
+
+export interface Suplemento {
+  id: string;
+  nombre: string;
+  dosis?: string;
+  momento?: string;
+  desde?: number;
+  hasta?: number;
 }
 
 export interface RoadmapItem {

@@ -23,6 +23,8 @@ import {
   computePhaseEnergyBalance,
 } from '../utils/nutritionPeriodization';
 import NutritionPerformanceDashboard from './NutritionPerformanceDashboard';
+import SemanasNutricionCoach from './nutrition/SemanasNutricionCoach';
+import { programarAjuste, semanaDelPrograma } from '../utils/semanasNutricion';
 import { useToast } from '../hooks/useToast';
 import { mensajeDeErrorFirestore } from '../utils/erroresFirestore';
 import { Skeleton } from './ui';
@@ -258,6 +260,30 @@ export default function NutritionPeriodizationPanel({
   const pesosDeEntrada = tramos.map(t => t.pesoInicial);
   const stepsKcal = Math.round(stepGoal * kcalPerStep);
 
+  // Guardado de lo programado semana a semana (no pasa por el formulario de fases).
+  const guardarPrograma = async (p: NutritionProgram) => {
+    queryClient.setQueryData(programQueryKey, p);
+    try {
+      await saveNutritionProgram(p);
+      setRefreshKey(k => k + 1);
+    } catch (err) {
+      console.error('saveNutritionProgram failed:', err);
+      queryClient.setQueryData(programQueryKey, program);
+      showToast(mensajeDeErrorFirestore(err, 'guardar la semana'));
+    }
+  };
+
+  // La sugerencia por ritmo de peso (Δ kcal) se programa como intercambios de
+  // hidratos desde la semana que viene, en la comida que más lleva.
+  const programarAjusteKcal = (deltaKcal: number) => {
+    if (!program) return;
+    const delta = Math.round(deltaKcal / 100);
+    if (delta === 0) { showToast('El ajuste es de menos de un intercambio: no hay nada que programar.'); return; }
+    const siguiente = semanaDelPrograma(program, hoyIsoLocal()) + 1;
+    void guardarPrograma({ ...program, cambiosSemana: programarAjuste(program, siguiente, false, { cat: 'HC', delta }) });
+    showToast(`Programado desde la semana ${siguiente}: ${delta > 0 ? '+' : '−'}${Math.abs(delta)} ${Math.abs(delta) === 1 ? 'intercambio' : 'intercambios'} de hidratos`, 'success');
+  };
+
   const handleCreate = () => {
     setForm({ startDate: today, phases: [] });
   };
@@ -305,6 +331,12 @@ export default function NutritionPeriodizationPanel({
         lastSeenPhaseId: program?.lastSeenPhaseId,
         // Los refeeds se crean desde el calendario; sin esto, guardar aquí los borraba.
         ...(program?.refeedDays ? { refeedDays: program.refeedDays } : {}),
+        // Igual con lo programado semana a semana (barra de semanas): el
+        // documento se reescribe entero al guardar las fases.
+        ...(program?.cambiosSemana ? { cambiosSemana: program.cambiosSemana } : {}),
+        ...(program?.semanasMantenimiento ? { semanasMantenimiento: program.semanasMantenimiento } : {}),
+        ...(program?.comidasLibres ? { comidasLibres: program.comidasLibres } : {}),
+        ...(program?.suplementos ? { suplementos: program.suplementos } : {}),
       };
       await saveNutritionProgram(newProgram);
       queryClient.setQueryData(programQueryKey, newProgram);
@@ -450,13 +482,17 @@ export default function NutritionPeriodizationPanel({
     }
 
     return (
-      <NutritionPerformanceDashboard
-        refreshToken={refreshKey}
-        athleteEmail={athleteEmail}
-        athleteName={athleteName}
-        targetWeightKg={targetWeightKg}
-        onEdit={handleEdit}
-      />
+      <div className="space-y-4">
+        <SemanasNutricionCoach program={program} diets={diets} onGuardar={guardarPrograma} />
+        <NutritionPerformanceDashboard
+          refreshToken={refreshKey}
+          athleteEmail={athleteEmail}
+          athleteName={athleteName}
+          targetWeightKg={targetWeightKg}
+          onEdit={handleEdit}
+          onProgramarAjusteKcal={programarAjusteKcal}
+        />
+      </div>
     );
   }
 

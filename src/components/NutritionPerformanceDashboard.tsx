@@ -24,7 +24,7 @@ import { proponerAjuste } from '../utils/ajusteDePeriodizacion';
 import { hoyIsoLocal } from '../utils/trainingWeek';
 import { RangoTemporal, RANGO_TEMPORAL_OPTIONS, inicioDeRango } from '../utils/rangoTemporal';
 import {
-  Icon, EmptyState,
+  Icon, EmptyState, Button,
   ALTURA_GRAFICA, MARGEN_GRAFICA, ANCHO_EJE_Y, REJILLA_GRAFICA, TICK_GRAFICA, EJE_GRAFICA,
   LEYENDA_GRAFICA,
 } from './ui';
@@ -41,6 +41,8 @@ interface Props {
   athleteName?: string;
   targetWeightKg?: number;
   onEdit?: () => void;
+  /** Programa la sugerencia por ritmo de peso (Δ kcal/día) como cambio por semana. */
+  onProgramarAjusteKcal?: (deltaKcal: number) => void;
   // Bump this from a parent (e.g. after saving the periodization form) to force
   // a refetch — this component owns its own copy of program/diets/etc. fetched
   // once per mount, so it has no other way to learn they just changed elsewhere.
@@ -129,7 +131,7 @@ function ProjectionTooltip({ active, payload }: any) {
   );
 }
 
-export default function NutritionPerformanceDashboard({ athleteEmail, athleteName, targetWeightKg, onEdit, refreshToken }: Props) {
+export default function NutritionPerformanceDashboard({ athleteEmail, athleteName, targetWeightKg, onEdit, refreshToken, onProgramarAjusteKcal }: Props) {
   const queryClient = useQueryClient();
   const [curveMode, setCurveMode] = useState<CurveMode>('both');
   const [rango, setRango] = useState<RangoTemporal>('todo');
@@ -522,9 +524,16 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
           </p>
           <p className="font-sans text-label text-ink leading-relaxed mt-2">{propuesta.explicacion}</p>
           {propuesta.hayPropuesta && (
-            <p className="font-sans text-caption text-ink-2 mt-2">
-              Nada de esto se ha cambiado: ajusta la fase tú si lo ves bien.
-            </p>
+            <div className="mt-2 flex items-center gap-3 flex-wrap">
+              <p className="font-sans text-caption text-ink-2">
+                Nada de esto se ha cambiado: ajusta la fase tú si lo ves bien.
+              </p>
+              {onProgramarAjusteKcal && propuesta.kcalPropuestas != null && activeBalance?.targetKcal != null && (
+                <Button size="s" icon="event_note" onClick={() => onProgramarAjusteKcal(propuesta.kcalPropuestas! - activeBalance.targetKcal!)}>
+                  Programar desde la semana que viene
+                </Button>
+              )}
+            </div>
           )}
         </div>
       )}
