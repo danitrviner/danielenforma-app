@@ -340,12 +340,6 @@ function NormalTable({
                     disabled={setInput.done}
                     className={`w-16 sm:w-20 rounded-control border bg-field px-1 sm:px-2 py-2 text-center font-mono text-title-s text-ink focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50 disabled:cursor-not-allowed ${esSiguiente ? 'border-accent/55' : 'border-hairline'}`}
                   />
-                  {/* El peso de la última sesión ya está DENTRO del campo (el
-                      prerrelleno lo mete como valor) y además en la columna
-                      «Anterior»: repetirlo aquí abajo era la tercera vez. Este
-                      renglón pasa a decir lo que el entrenador ha pautado, que
-                      no se veía en ninguna parte a partir del segundo día
-                      (Dani, 10-09-2026). */}
                 </td>
                 <td className="px-2 sm:px-3 py-2">
                   <input
@@ -356,6 +350,11 @@ function NormalTable({
                     disabled={setInput.done}
                     className={`w-14 sm:w-16 rounded-control border bg-field px-1 sm:px-2 py-2 text-center font-mono text-title-s text-ink focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50 disabled:cursor-not-allowed ${esSiguiente ? 'border-accent/55' : 'border-hairline'}`}
                   />
+                  {expanded[sIdx]?.reps?.trim() && (
+                    <span className="block w-14 sm:w-16 text-center font-mono text-caption text-ink-3 mt-0.5">
+                      {expanded[sIdx].reps}
+                    </span>
+                  )}
                 </td>
                 <td className="px-2 sm:px-3 py-2">
                   <select
