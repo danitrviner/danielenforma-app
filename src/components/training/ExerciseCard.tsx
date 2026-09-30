@@ -118,7 +118,7 @@ export default React.memo(function ExerciseCard({
               Historial
             </button>
             {!esDropset && !esMyoreps && resumenRangosPautados(expanded) && (
-              <span className="text-caption font-mono px-2 rounded-control bg-hairline text-ink-3">
+              <span title="Repeticiones pautadas por tu entrenador" className="text-caption font-mono px-2 rounded-control bg-hairline text-ink-3 whitespace-nowrap">
                 {resumenRangosPautados(expanded)}
               </span>
             )}
@@ -350,11 +350,6 @@ function NormalTable({
                     disabled={setInput.done}
                     className={`w-14 sm:w-16 rounded-control border bg-field px-1 sm:px-2 py-2 text-center font-mono text-title-s text-ink focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50 disabled:cursor-not-allowed ${esSiguiente ? 'border-accent/55' : 'border-hairline'}`}
                   />
-                  {expanded[sIdx]?.reps?.trim() && (
-                    <span className="block w-14 sm:w-16 text-center font-mono text-caption text-ink-3 mt-0.5">
-                      {expanded[sIdx].reps}
-                    </span>
-                  )}
                 </td>
                 <td className="px-2 sm:px-3 py-2">
                   <select
