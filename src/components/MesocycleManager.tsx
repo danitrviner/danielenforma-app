@@ -1519,7 +1519,7 @@ function ProgressionView({ editing, mesocycles, onUpdateGroup, onApplySuggestion
             })}
           </tbody>
           <tfoot>
-            <tr><td colSpan={columns.length + 1} className="h-px bg-raised p-0" /></tr>
+            <tr><td colSpan={columns.length + 1} className="h-px bg-hairline p-0" /></tr>
             <tr className="bg-bg">
               <td className="sticky left-0 z-[var(--z-sticky)] bg-bg px-4 py-3 border-r border-t border-hairline font-mono text-caption text-ink-2 uppercase tracking-wider whitespace-nowrap">Total series</td>
               {columns.map((m, mIdx) => {
@@ -3348,7 +3348,7 @@ export default function MesocycleManager({
                       <span className="material-symbols-outlined text-display text-accent-ink animate-spin block">refresh</span>
                       <p className="font-sans font-bold text-ink text-body-s">Creando sesiones en Firestore…</p>
                       <div className="max-w-xs mx-auto">
-                        <div className="bg-raised rounded-full h-2 overflow-hidden">
+                        <div className="bg-track rounded-full h-2 overflow-hidden">
                           <div
                             className="bg-accent h-2 rounded-full transition-all duration-300"
                             style={{ width: `${assignProgress.total ? (assignProgress.done / assignProgress.total) * 100 : 0}%` }}

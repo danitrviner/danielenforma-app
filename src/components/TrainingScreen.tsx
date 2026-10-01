@@ -914,7 +914,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                   <span className="font-mono text-caption uppercase font-bold tracking-widest text-accent-ink">
                     {bloqueHoy ? etiquetaBloque(bloqueHoy, true) : 'Esta semana'}
                   </span>
-                  <div className="flex-1 h-px bg-raised" />
+                  <div className="flex-1 h-px bg-hairline" />
                   <span className="font-mono text-caption text-ink-2">
                     {bloqueCompletados}/{diasDelBloque.length}
                   </span>
@@ -944,7 +944,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
                           <span className={`font-mono text-caption uppercase font-bold tracking-widest ${esActual ? 'text-accent-ink' : 'text-ink-2'}`}>
                             {etiquetaBloque(b, esActual)}
                           </span>
-                          <div className="flex-1 h-px bg-raised" />
+                          <div className="flex-1 h-px bg-hairline" />
                           <span className="font-mono text-caption text-ink-2">
                             {b.dias.filter(d => d.estado === 'completado').length}/{b.dias.length}
                           </span>

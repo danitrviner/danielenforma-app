@@ -930,7 +930,7 @@ export default function RoadmapTimeline({ mesocycles: mesocyclesProp, nutritionP
       />
       <svg style={{ position: 'absolute', left: 0, top: topBase, width: containerWidth, height: WEIGHT_LANE_H }}>
         {[wDomainMin, (wDomainMin + wDomainMax) / 2, wDomainMax].map(w => (
-          <line key={w} x1={0} y1={weightToLocalY(w)} x2={containerWidth} y2={weightToLocalY(w)} stroke="var(--color-raised)" strokeWidth={1} />
+          <line key={w} x1={0} y1={weightToLocalY(w)} x2={containerWidth} y2={weightToLocalY(w)} stroke="var(--color-hairline)" strokeWidth={1} />
         ))}
         {projectedWaypoints.length >= 2 && (
           <polyline

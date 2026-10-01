@@ -524,7 +524,7 @@ function RecetasImportPanel() {
           <p className="font-mono text-caption text-ink-2 animate-pulse">{phase}</p>
           {total > 0 && (
             <>
-              <div className="w-full h-2.5 bg-raised rounded-full overflow-hidden">
+              <div className="w-full h-2.5 bg-track rounded-full overflow-hidden">
                 <div
                   className="h-full bg-data transition-all duration-300 rounded-full"
                   style={{ width: `${pct}%` }}

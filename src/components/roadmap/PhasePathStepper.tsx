@@ -31,7 +31,7 @@ export default function PhasePathStepper({ phases }: Props) {
                 <div
                   className="w-9 h-9 rounded-full flex items-center justify-center border-2"
                   style={{
-                    borderColor: isFuture ? 'var(--color-raised)' : colorDeTema(phase.color),
+                    borderColor: isFuture ? 'var(--color-track)' : colorDeTema(phase.color),
                     backgroundColor: isActive ? conAlfa(phase.color, 13) : 'transparent',
                     color: isDone ? colorDeTema(phase.color) : isActive ? colorDeTema(phase.color) : 'var(--color-ink-3)',
                   }}
@@ -41,7 +41,7 @@ export default function PhasePathStepper({ phases }: Props) {
                 {!isLast && (
                   <div
                     className="w-0.5 flex-1 min-h-[24px] mt-1"
-                    style={{ backgroundColor: isDone ? colorDeTema(phase.color) : 'var(--color-raised)' }}
+                    style={{ backgroundColor: isDone ? colorDeTema(phase.color) : 'var(--color-track)' }}
                   />
                 )}
               </div>

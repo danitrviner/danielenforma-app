@@ -412,7 +412,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
                 {METRIC_LABEL[m]}
               </button>
             ))}
-            <div className="w-px h-4 bg-raised mx-1" />
+            <div className="w-px h-4 bg-hairline mx-1" />
             {(['mean', 'median'] as const).map(s => {
               const active = s === 'mean' ? showMean : showMedian;
               const toggle = s === 'mean' ? () => setShowMean(v => !v) : () => setShowMedian(v => !v);
@@ -562,7 +562,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
               />
               <Tooltip
                 content={<ChartTooltip activeMetrics={activeMetrics} />}
-                cursor={{ stroke: 'var(--color-raised)', strokeWidth: 1 }}
+                cursor={{ stroke: 'var(--color-strong)', strokeWidth: 1 }}
               />
 
               {METRICS.filter(m => activeMetrics.has(m)).map(m => (

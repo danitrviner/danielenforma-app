@@ -62,7 +62,7 @@ export default function PhaseHeroCard({ phase, progress, weightStatus }: Props) 
               <span className="font-mono text-caption text-ink-2">objetivo {weightStatus.targetKg} kg</span>
             )}
           </div>
-          <div className="h-2 rounded-full bg-raised overflow-hidden">
+          <div className="h-2 rounded-full bg-track overflow-hidden">
             <div
               className="h-full rounded-full transition-all duration-500"
               style={{ width: `${Math.max(4, weightStatus.pct)}%`, backgroundColor: phase.color }}

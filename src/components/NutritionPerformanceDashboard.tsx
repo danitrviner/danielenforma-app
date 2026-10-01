@@ -625,7 +625,7 @@ function StatCard({
         {value}{unit && <span className="text-label text-ink-2 font-medium ml-1">{unit}</span>}
       </span>
       {progressPct != null && (
-        <div className="h-1.5 rounded-full bg-raised overflow-hidden">
+        <div className="h-1.5 rounded-full bg-track overflow-hidden">
           <div className="h-full rounded-full" style={{ width: `${Math.min(100, progressPct)}%`, backgroundColor: progressColor ?? 'var(--color-accent)' }} />
         </div>
       )}

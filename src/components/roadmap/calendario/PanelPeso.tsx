@@ -212,7 +212,7 @@ export default function PanelPeso({ bodyweightLogs, initialWeight, nutritionProg
 
       <svg width={W} height={H} style={{ flexShrink: 0 }} role="img" aria-label={`Peso en ${titulo}`}>
         {[dMin, (dMin + dMax) / 2, dMax].map(w => (
-          <line key={w} x1={0} y1={y(w)} x2={W} y2={y(w)} stroke="var(--color-raised)" strokeWidth={1} />
+          <line key={w} x1={0} y1={y(w)} x2={W} y2={y(w)} stroke="var(--color-hairline)" strokeWidth={1} />
         ))}
         {lineaPlan.length >= 2 && (
           <polyline points={lineaPlan.map(p => `${x(p.date)},${y(p.weight)}`).join(' ')} fill="none" stroke="var(--color-chart-3)" strokeWidth={2} strokeDasharray="6 3" />

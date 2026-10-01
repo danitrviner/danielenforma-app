@@ -338,7 +338,7 @@ export default function ClientCardioPanel({ athlete }: Props) {
                       sesión de Zona 2 se le fue a Z3, que es el error más
                       común y el que anula el estímulo que se buscaba. */}
                   {totalZonas > 0 && (
-                    <div className="flex h-2 rounded-full overflow-hidden bg-raised">
+                    <div className="flex h-2 rounded-full overflow-hidden bg-track">
                       {ZONE_ORDER.map(z => {
                         const pct = (s.timeInZoneSec[z] / totalZonas) * 100;
                         return pct > 0 ? <span key={z} style={{ width: `${pct}%`, background: ZONE_COLOR[z] }} /> : null;

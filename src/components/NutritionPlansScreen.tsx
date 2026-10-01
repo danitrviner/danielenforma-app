@@ -773,7 +773,7 @@ export default function NutritionPlansScreen({
                     {fmtQty(p)}{b > 0 ? `/${fmtQty(b)}` : ''}{isOk ? ' ✓' : isOver ? ' !' : ''}
                   </span>
                 </div>
-                <div className="h-1 w-full bg-raised rounded-full overflow-hidden">
+                <div className="h-1 w-full bg-track rounded-full overflow-hidden">
                   <div className={`h-full rounded-full transition-all duration-300 ${barColor}`} style={{ width: `${pct}%` }} />
                 </div>
               </div>

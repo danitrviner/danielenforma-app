@@ -176,7 +176,7 @@ function AdherenceSection({ section }: { section: CoachReportSection }) {
       <div className="flex items-center gap-3">
         <span className="font-mono font-extrabold text-display text-ink">{d.completed}<span className="text-title-s text-ink-2 font-bold">/{d.planned}</span></span>
         <div className="flex-1">
-          <div className="h-2 bg-raised rounded-full overflow-hidden">
+          <div className="h-2 bg-track rounded-full overflow-hidden">
             <div className={`h-full rounded-full ${pct >= 100 ? 'bg-success' : pct >= 60 ? 'bg-accent' : 'bg-warning'}`} style={{ width: `${Math.min(100, pct)}%` }} />
           </div>
           <p className="font-mono text-caption text-ink-2 mt-1">
@@ -197,7 +197,7 @@ function NutritionSection({ section }: { section: CoachReportSection }) {
       <div className="flex items-center gap-3">
         <span className="font-mono font-extrabold text-display text-ink">{pct}<span className="text-title-s text-ink-2 font-bold">%</span></span>
         <div className="flex-1">
-          <div className="h-2 bg-raised rounded-full overflow-hidden">
+          <div className="h-2 bg-track rounded-full overflow-hidden">
             <div className={`h-full rounded-full ${pct >= 85 ? 'bg-success' : pct >= 60 ? 'bg-accent' : 'bg-warning'}`} style={{ width: `${Math.min(100, pct)}%` }} />
           </div>
           <p className="font-mono text-caption text-ink-2 mt-1">

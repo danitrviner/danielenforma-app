@@ -17,7 +17,7 @@ export default function ProgressRing({ pct, color = 'var(--color-accent-ink)', l
   return (
     <div className="relative flex-shrink-0" style={{ width: size, height: size }}>
       <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
-        <circle cx="50" cy="50" r={r} fill="none" stroke="var(--color-raised)" strokeWidth="9" />
+        <circle cx="50" cy="50" r={r} fill="none" stroke="var(--color-track)" strokeWidth="9" />
         <circle
           cx="50" cy="50" r={r} fill="none" stroke={color} strokeWidth="9"
           strokeLinecap="round"

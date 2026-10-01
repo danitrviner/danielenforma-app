@@ -136,7 +136,7 @@ export default function MicronutrientesPanel({ athleteEmail }: Props) {
                 {m.intake}{m.unit} <span className="text-ink-3">· {m.rdaPct}%{m.limit ? ' ref.' : ' RDA'}</span>
               </span>
             </div>
-            <div className="h-1.5 rounded-full bg-raised overflow-hidden">
+            <div className="h-1.5 rounded-full bg-track overflow-hidden">
               <div className={`h-full rounded-full transition-all ${STATUS_BAR_COLOR[m.status]}`} style={{ width: `${Math.min(100, m.rdaPct)}%` }} />
             </div>
           </div>

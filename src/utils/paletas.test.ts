@@ -119,6 +119,17 @@ const CUERPO = {
   oscuro: bloque('\n.dark {'),
 };
 
+describe.each(['claro', 'oscuro'] as const)('superficies · %s', (tema) => {
+  const cuerpo = CUERPO[tema];
+
+  // Con `raised` == `surface` (el caso del claro hasta el 01-10) chips, filas
+  // y el hover del botón fantasma desaparecen dentro de una tarjeta.
+  it('raised se distingue de surface', () => {
+    expect(valor(cuerpo, '--p-raised').toLowerCase())
+      .not.toBe(valor(cuerpo, '--p-surface').toLowerCase());
+  });
+});
+
 describe.each(['claro', 'oscuro'] as const)('escala de tinta · %s', (tema) => {
   const cuerpo = CUERPO[tema];
   const inset = valor(cuerpo, '--p-inset');

@@ -838,7 +838,7 @@ export default function ClientHub({
           usan sticky con z-sticky, y a igualdad de z-index gana el que va
           después en el DOM — las pestañas quedaban tapadas por su propio
           contenido. */}
-      <div ref={subnavRef} className="sticky top-[var(--header-h)] z-[var(--z-subnav)] bg-field/95 backdrop-blur-sm space-y-2 ">
+      <div ref={subnavRef} className="sticky top-[var(--header-h)] z-[var(--z-subnav)] bg-bg/95 backdrop-blur-sm space-y-2 ">
         <Tabs
           items={(Object.keys(ZONE_TABS) as Zone[]).map(zone => ({ id: zone, label: ZONE_META[zone].label, icon: ZONE_META[zone].icon }))}
           value={activeZone}

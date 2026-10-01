@@ -105,7 +105,7 @@ export default function WeeklyChallengeCard({ challenge, progress, streak = 0, d
             objetivo {fmtMetric(challenge.metric.target, challenge.metric.unit)}
           </span>
         </div>
-        <div className="h-2.5 rounded-full bg-raised overflow-hidden">
+        <div className="h-2.5 rounded-full bg-track overflow-hidden">
           <div
             className="h-full rounded-full transition-all duration-500"
             style={{ width: `${Math.max(4, progress.pct)}%`, backgroundColor: accent }}

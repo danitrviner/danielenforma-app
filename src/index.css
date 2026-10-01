@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+/* `dark:` sigue la CLASE `.dark` (el ajuste de Perfil y el script de
+   index.html), no `prefers-color-scheme`. Sin esto, un `dark:` en un
+   componente seguiría al sistema operativo e ignoraría el ajuste. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* ── Fuentes · self-host (Fase 3) ─────────────────────────────────────────────
    Capacitor empaqueta este build para iOS/Android: un atleta en un gimnasio
    con mala cobertura abre la app y las fuentes tienen que estar YA en el
@@ -562,7 +567,11 @@
   /* Superficies */
   --p-bg:      #F4F2ED;
   --p-surface: #FFFFFF;
-  --p-raised:  #FFFFFF;
+  /* `raised` vive DENTRO de tarjetas blancas (chips, filas, hover del botón
+     fantasma, Badge neutral): con #FFF idéntico a `surface` desaparecía.
+     Blanco roto, entre `surface` (#FFF) y `bg` (#F4F2ED): 1,09:1 contra la
+     tarjeta, lo justo para leerse como «un escalón» sin ensuciarla. */
+  --p-raised:  #F8F6F2;
   --p-field:   #FFFFFF;
   --p-inset:   #EBE8E1;
   --p-track:   #DFDBD2;
@@ -586,7 +595,7 @@
   /* Líneas — negro con alfa, no blanco. Un poco más marcadas que en oscuro:
      sobre papel una línea al 7 % desaparece, y aquí el borde es lo único que
      define una tarjeta blanca sobre una página casi blanca. */
-  --p-hairline:    rgba(27, 25, 22, 0.10);
+  --p-hairline:    rgba(27, 25, 22, 0.12);
   --p-strong:      rgba(27, 25, 22, 0.18);
   --p-accent-line: rgba(154, 110, 12, 0.55);
 
@@ -660,7 +669,7 @@
   /* Elevación — en claro la sombra SÍ trabaja: sobre papel es lo que despega
      un modal de la página, donde en oscuro bastaba cambiar de superficie.
      Aun así queda corta a propósito; el borde sigue siendo el protagonista. */
-  --p-shadow-e1: 0 1px 2px rgba(27, 25, 22, 0.06), 0 2px 8px rgba(27, 25, 22, 0.08);
+  --p-shadow-e1: 0 1px 2px rgba(27, 25, 22, 0.08), 0 2px 8px rgba(27, 25, 22, 0.10);
   --p-shadow-e2: 0 4px 12px rgba(27, 25, 22, 0.10), 0 16px 40px rgba(27, 25, 22, 0.16);
 }
 

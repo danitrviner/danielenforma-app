@@ -53,7 +53,7 @@ export const ANCHO_EJE_Y = 34;
  */
 export const REJILLA_GRAFICA = {
   strokeDasharray: '3 3',
-  stroke: 'var(--color-raised)',
+  stroke: 'var(--color-hairline)',
   vertical: false,
 } as const;
 
