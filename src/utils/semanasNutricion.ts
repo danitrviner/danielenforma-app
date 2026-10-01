@@ -1,4 +1,5 @@
 import type {
+  ReglaDePeso, DietCompletionLog,
   Diet, DietMeal, NutritionProgram, AjusteDeComida, CambioNutricionSemana, MacroAjustable, WeekDay, Suplemento, NutritionPhase,
 } from '../types';
 import { resolveSlots, SLOT_LABEL } from './mealDistribution';
@@ -274,4 +275,122 @@ export function novedadesNutricion(program: NutritionProgram, s: number): Noveda
 
 export function hayNovedadesNutricion(n: NovedadesNutricion): boolean {
   return n.mantenimiento || n.vuelveDeMantenimiento || n.ajustes.length > 0 || n.libres.length > 0 || n.suplementos.length > 0;
+}
+
+// ── Progresiones en un clic ─────────────────────────────────────────────────
+
+/** Salida de déficit: +1 intercambio de hidratos cada semana desde `desde`
+ *  hasta rozar `objetivoKcal` (sin pasarse más de medio intercambio). */
+export function salidaDeDeficit(program: NutritionProgram, diets: Diet[], desde: number, objetivoKcal: number): NutritionProgram {
+  let p = program;
+  const n = totalSemanas(program);
+  for (let s = desde; s <= n; s++) {
+    const k = kcalPorSemana(p, diets)[s];
+    if (k == null || k + 100 > objetivoKcal + 50) break;
+    p = { ...p, cambiosSemana: programarAjuste(p, s, false, { cat: 'HC', delta: 1 }) };
+  }
+  return p;
+}
+
+/** Una semana de mantenimiento cada `cada` semanas entre `desde` y `hasta`
+ *  (la última de cada tramo: 6 → S6, S12…). */
+export function descansosDeDieta(program: NutritionProgram, cada: number, desde: number, hasta: number): NutritionProgram {
+  const nuevas: number[] = [];
+  for (let s = desde + cada - 1; s <= hasta; s += cada) nuevas.push(s);
+  const lista = Array.from(new Set<number>([...(program.semanasMantenimiento ?? []), ...nuevas])).sort((a, b) => a - b);
+  return { ...program, semanasMantenimiento: lista.length > 0 ? lista : undefined };
+}
+
+/** Bajada progresiva: −1 intercambio de `cat` cada `cada` semanas desde
+ *  `desde`, sin bajar de `sueloKcal`. */
+export function bajadaProgresiva(program: NutritionProgram, diets: Diet[], desde: number, cada: number, cat: MacroAjustable, sueloKcal: number): NutritionProgram {
+  let p = program;
+  const n = totalSemanas(program);
+  for (let s = desde; s <= n; s += Math.max(1, cada)) {
+    const k = kcalPorSemana(p, diets)[s];
+    if (k == null || k - 100 < sueloKcal) break;
+    p = { ...p, cambiosSemana: programarAjuste(p, s, false, { cat, delta: -1 }) };
+  }
+  return p;
+}
+
+// ── Reglas por peso ─────────────────────────────────────────────────────────
+
+export interface PropuestaDeRegla {
+  regla: ReglaDePeso;
+  semana: number;           // desde qué semana se propone el ajuste
+  ajuste: AjusteDeComida;
+  texto: string;
+}
+
+const kg = (n: number) => `${n.toLocaleString('es-ES', { maximumFractionDigits: 2 })} kg`;
+
+/**
+ * Reglas que se cumplen con el peso de las últimas semanas COMPLETAS antes de
+ * `semanaActual`. `pesos[i]` = media de la semana i+1 (weeklyRealWeightKg).
+ * No propone nada si esa semana ya tiene un cambio programado.
+ */
+export function evaluarReglasDePeso(program: NutritionProgram, pesos: (number | null)[], semanaActual: number): PropuestaDeRegla[] {
+  const out: PropuestaDeRegla[] = [];
+  const destino = semanaActual + 1;
+  if (destino > totalSemanas(program)) return out;
+  if ((program.cambiosSemana ?? []).some(c => c.semana === destino)) return out;
+  for (const regla of program.reglasPeso ?? []) {
+    const ritmos: number[] = [];
+    // Semanas completas: de semanaActual-1 hacia atrás.
+    for (let s = semanaActual - 1; s >= 2 && ritmos.length < regla.semanas; s--) {
+      const a = pesos[s - 2], b = pesos[s - 1];
+      if (a == null || b == null) break;
+      ritmos.push(b - a);
+    }
+    if (ritmos.length < regla.semanas) continue;
+    const insuficiente = regla.tipo === 'bajar'
+      ? ritmos.every(r => -r < regla.ritmoMinimo)
+      : ritmos.every(r => r < regla.ritmoMinimo);
+    if (!insuficiente) continue;
+    const delta = regla.tipo === 'bajar' ? -regla.cantidad : regla.cantidad;
+    const media = ritmos.reduce((x, y) => x + y, 0) / ritmos.length;
+    out.push({
+      regla, semana: destino, ajuste: { cat: regla.cat, delta },
+      texto: `${regla.semanas} semanas ${regla.tipo === 'bajar' ? 'bajando' : 'subiendo'} ${kg(Math.abs(media))}/semana de media (menos de ${kg(regla.ritmoMinimo)}): ${delta > 0 ? '+' : '−'}${Math.abs(delta)} ${NOMBRE_MACRO[regla.cat]} desde la semana ${destino}.`,
+    });
+  }
+  return out;
+}
+
+// ── Proteína ────────────────────────────────────────────────────────────────
+
+/** g de proteína por kg de peso que da el cupo de cada semana (25 g por
+ *  intercambio de proteína, mixtos a medias). Índice 1..N; null sin dato. */
+export function proteinaGKgPorSemana(program: NutritionProgram, diets: Diet[], pesoKg: number | null): (number | null)[] {
+  const n = totalSemanas(program);
+  return Array.from({ length: n + 1 }, (_, s) => {
+    if (s === 0 || !pesoKg) return null;
+    const f = faseDeLaSemana(program, s);
+    const diet = f && diets.find(d => d.id === f.fase.dietId);
+    if (!diet) return null;
+    const d = aplicarAjustes(diet, ajustesDeLaSemana(program, s), { mantenimiento: (program.semanasMantenimiento ?? []).includes(s) });
+    return Math.round((macrosDeCupo(d.budget).PROT * 25 / pesoKg) * 10) / 10;
+  });
+}
+
+// ── Hábitos (agua y verdura/fruta) ──────────────────────────────────────────
+
+export interface HabitosDeSemana { aguaL: number | null; raciones: number | null; dias: number }
+
+/** Media diaria de agua (L) y raciones por semana del programa, solo con los
+ *  días en que el atleta apuntó algo. Índice 1..N. */
+export function habitosPorSemana(program: NutritionProgram, logs: DietCompletionLog[]): (HabitosDeSemana | null)[] {
+  const n = totalSemanas(program);
+  const acc = Array.from({ length: n + 1 }, () => ({ agua: [] as number[], rac: [] as number[] }));
+  for (const l of logs) {
+    const s = semanaDelPrograma(program, l.date);
+    if (s < 1 || s > n || l.date < program.startDate) continue;
+    if (typeof l.aguaMl === 'number') acc[s].agua.push(l.aguaMl / 1000);
+    if (typeof l.racionesVegetales === 'number') acc[s].rac.push(l.racionesVegetales);
+  }
+  const media = (xs: number[]) => xs.length ? Math.round((xs.reduce((a, b) => a + b, 0) / xs.length) * 10) / 10 : null;
+  return acc.map((a, s) => s === 0 || (a.agua.length === 0 && a.rac.length === 0)
+    ? null
+    : { aguaL: media(a.agua), raciones: media(a.rac), dias: Math.max(a.agua.length, a.rac.length) });
 }

@@ -188,6 +188,9 @@ export function useProposalActions(
           ...(previo?.suplementos ? { suplementos: previo.suplementos } : {}),
           ...(previo?.ciclado ? { ciclado: previo.ciclado } : {}),
           ...(previo?.pasosPorSemana ? { pasosPorSemana: previo.pasosPorSemana } : {}),
+          ...(previo?.reglasPeso ? { reglasPeso: previo.reglasPeso } : {}),
+          ...(previo?.proteinaMinGKg ? { proteinaMinGKg: previo.proteinaMinGKg } : {}),
+          ...(previo?.minimos ? { minimos: previo.minimos } : {}),
         });
         await updateAiProposal(p.id, { status: 'approved', reviewedAt: new Date().toISOString(), resultEntityId: p.athleteId });
       } else if (p.kind === 'weekPlan') {

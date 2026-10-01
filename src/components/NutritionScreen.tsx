@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { minutosDeReceta } from '../utils/tiempoDeReceta';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { UserProfile, Diet, DietMeal, DietItem, FoodCategory, DietMode, MealItem, Recipe, RecipeFavorites, RefeedDay, RecetaPendiente, MenuCompletionLog } from '../types';
+import { UserProfile, Diet, DietMeal, DietItem, FoodCategory, DietMode, MealItem, Recipe, RecipeFavorites, RefeedDay, RecetaPendiente, MenuCompletionLog, DietCompletionLog } from '../types';
 import { getDietsForAthlete, getAthleteDietConfig, saveAthleteDietConfig, createDiet, updateDiet, deleteDiet, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig, saveAthleteNutritionConfig, getRecipes, getRecipeFavorites, getNutritionProgram, markNutritionPhaseSeen, computeActivePhase, createNotificationDeduped, getDietCompletionLog, saveDietCompletionLog, createRecipe, queryRecetas, queryRecetasForGenerator, cargarIndiceRecetas, getOnboarding, getRecipeById, getMenuCompletionLog, saveMenuCompletionLog, getAlimentosPersonales, crearAlimentoPersonal, actualizarAlimentoPersonal, borrarAlimentoPersonal } from '../dbService';
 import type { RecetasCursor } from '../dbService';
 import { CATS, BUDGET_CATS, CAT_LABEL, CAT_COLOR, CAT_BG, MODE_LABEL, ALL_DIET_MODES, round2, fmtQty, foodNameWithoutGrams, addToPlaced, recipeToDietItems, computeDietPlaced } from '../utils/exchangeHelpers';
@@ -42,6 +42,7 @@ import {
 import { useDiaActual, diaSemanaDe } from '../hooks/useDiaActual';
 import { addDays, hoyIsoLocal} from '../utils/trainingWeek';
 import SemanaNutricionAtleta from './nutrition/SemanaNutricionAtleta';
+import HabitosDelDia from './nutrition/HabitosDelDia';
 import { getWorkoutAssignmentsForAthlete } from '../dbService';
 import { dietaDeLaSemana } from '../utils/semanasNutricion';
 
@@ -802,6 +803,29 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     };
   }, [ambitoCupo, recipePickerMealId, selectedDiet, mealDoneByCat, leftByCat]);
 
+  /* 2-3 recetas guardadas que encajan en lo que le falta a cada comida (con
+     los intercambios de ESTA semana de la periodización), para no tener que
+     abrir el buscador. Mismo orden que el selector: lo que mejor aprovecha el
+     hueco y, a igualdad, sus favoritas. */
+  const sugerenciasPorComida = useMemo(() => {
+    const out: Record<string, Recipe[]> = {};
+    const seguras = recipes.filter(r => ((r.ingredients ?? []).length === 0 || r.ingredients.some(ing => enabledModes.includes(ing.mode))) && isSafeForAthlete(r));
+    if (seguras.length === 0 || !selectedDiet) return out;
+    for (const meal of selectedDiet.meals) {
+      const t = meal.target;
+      if (!t || meal.libre) continue;
+      const puesto = mealDoneByCat[meal.id] ?? { HC: 0, PROT: 0, GRASA: 0, MIX_HC: 0, MIX_GRASA: 0 };
+      const hueco = {
+        HC: Math.max(0, round2((t.HC ?? 0) - puesto.HC)),
+        PROT: Math.max(0, round2((t.PROT ?? 0) - puesto.PROT)),
+        GRASA: Math.max(0, round2((t.GRASA ?? 0) - puesto.GRASA)),
+      };
+      if (hueco.HC + hueco.PROT + hueco.GRASA < 1) continue;
+      out[meal.id] = ordenarPorPreferencia(ordenarPorCupo(seguras, hueco, 0.5, true)).slice(0, 3);
+    }
+    return out;
+  }, [recipes, enabledModes, isSafeForAthlete, selectedDiet, mealDoneByCat, ordenarPorPreferencia]);
+
   const sortedPickerRecipes = useMemo(() => {
     // Una receta guardada del recetario no trae `ingredients` (ver
     // hidratarEntradaIndice), así que el `.some()` la descartaba siempre y el
@@ -1061,13 +1085,28 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
    * El fallo se dice. Antes esto era un `.catch(() => {})`: el atleta marcaba
    * la cena, no había red, y no se enteraba nunca de que no se había guardado.
    */
-  const guardarDia = useCallback((meals: DietMeal[], doneItemIds: string[], budget: Record<FoodCategory, number>) => {
+  const guardarDia = useCallback((meals: DietMeal[], doneItemIds: string[], budget: Record<FoodCategory, number>, habitos?: { aguaMl?: number; racionesVegetales?: number }) => {
     const dietId = allDietsList.find(d => !d.selfManaged)?.id ?? '';
-    const log = { athleteId: profile.email, date: viewDate, dietId, doneItemIds, meals, budget };
+    // El día se reescribe entero: el agua y la verdura apuntadas van con él.
+    const previo = queryClient.getQueryData<DietCompletionLog | null>(diaKey);
+    const aguaMl = habitos?.aguaMl ?? previo?.aguaMl;
+    const racionesVegetales = habitos?.racionesVegetales ?? previo?.racionesVegetales;
+    const log = {
+      athleteId: profile.email, date: viewDate, dietId, doneItemIds, meals, budget,
+      ...(aguaMl !== undefined ? { aguaMl } : {}),
+      ...(racionesVegetales !== undefined ? { racionesVegetales } : {}),
+    };
     queryClient.setQueryData(['dietCompletionLog', profile.email, viewDate], { ...log, id: `${profile.email}_${viewDate}` });
     return saveDietCompletionLog(log)
       .catch(() => showToast('No se pudo guardar el registro del día. Se reintentará al recargar.', 'error'));
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- diaKey se deriva de profile.email y viewDate
   }, [profile.email, viewDate, allDietsList, queryClient, showToast]);
+
+  const guardarHabitos = (patch: { aguaMl?: number; racionesVegetales?: number }) => {
+    if (!selectedDiet) return;
+    const hechos = (Object.entries(itemStates) as [string, ItemState][]).filter(([, st]) => st.done).map(([k]) => k);
+    void guardarDia(selectedDiet.meals, hechos, selectedDiet.budget, patch);
+  };
 
   /** Atajo para los sitios que solo cambian marcas, sin tocar las comidas. */
   const persistCompletion = (_dietId: string, doneItemIds: string[]) => {
@@ -1262,9 +1301,10 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     }
   };
 
-  const handleApplyRecipe = (recipe: Recipe) => {
-    if (!recipePickerMealId || !selectedDiet) return;
-    const meal = selectedDiet.meals.find(m => m.id === recipePickerMealId);
+  const handleApplyRecipe = (recipe: Recipe, mealIdDirecta?: string) => {
+    const mealIdObjetivo = mealIdDirecta ?? recipePickerMealId;
+    if (!mealIdObjetivo || !selectedDiet) return;
+    const meal = selectedDiet.meals.find(m => m.id === mealIdObjetivo);
     if (!meal) return;
 
     // Las recetas del recetario importado (pestaña «Recetario») no traen
@@ -1285,13 +1325,13 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
       return {
         ...prev,
         meals: prev.meals.map(m =>
-          m.id !== recipePickerMealId ? m : { ...m, items: [...m.items, ...newItems] }
+          m.id !== mealIdObjetivo ? m : { ...m, items: [...m.items, ...newItems] }
         ),
       };
     });
     const newStates: Record<string, ItemState> = {};
     newItems.forEach((item, i) => {
-      newStates[`${recipePickerMealId}_${startIdx + i}`] = { foodLabel: item.foodLabel, done: true };
+      newStates[`${mealIdObjetivo}_${startIdx + i}`] = { foodLabel: item.foodLabel, done: true };
     });
     setItemStates(prev => ({ ...prev, ...newStates }));
     setRecipePickerMealId(null);
@@ -1767,6 +1807,14 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
       )}
 
       {program && <SemanaNutricionAtleta program={program} fecha={viewDate} />}
+      {program?.minimos && (program.minimos.aguaL || program.minimos.raciones) && selectedDiet && (
+        <HabitosDelDia
+          minimos={program.minimos}
+          aguaMl={diaLog?.aguaMl ?? 0}
+          raciones={diaLog?.racionesVegetales ?? 0}
+          onCambiar={guardarHabitos}
+        />
+      )}
 
       {/* Phase change banner */}
       {phaseBanner && (
@@ -2106,6 +2154,23 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                           )}
                         </div>
                       </div>
+
+                      {(sugerenciasPorComida[meal.id]?.length ?? 0) > 0 && (
+                        <div className="px-4 py-2 border-b border-hairline flex items-center gap-2 flex-wrap">
+                          <span className="font-mono text-caption uppercase tracking-wider text-ink-3">Encajan</span>
+                          {sugerenciasPorComida[meal.id].map(r => (
+                            <button
+                              key={r.id}
+                              type="button"
+                              onClick={() => handleApplyRecipe(r, meal.id)}
+                              title={`Añadir «${r.name}» a ${meal.name}`}
+                              className="max-w-[14rem] truncate rounded-chip border border-hairline px-2.5 py-1 font-sans text-caption text-ink-2 hover:text-accent-ink hover:border-accent-line transition-colors"
+                            >
+                              + {r.name}
+                            </button>
+                          ))}
+                        </div>
+                      )}
 
                       {savingMealAsRecipeId === meal.id && (
                         <div className="px-4 py-3 bg-bg/60 border-b border-hairline flex items-center gap-2">

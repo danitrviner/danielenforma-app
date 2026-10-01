@@ -3,6 +3,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Diet, NutritionPhase, NutritionProgram, NutritionPhaseType, OnboardingData } from '../types';
 import {
   getNutritionProgram,
+  getDietCompletionLogsForAthlete,
+  getPublishedMenu,
   saveNutritionProgram,
   deleteNutritionProgram,
   updateDiet,
@@ -24,6 +26,7 @@ import {
 } from '../utils/nutritionPeriodization';
 import NutritionPerformanceDashboard from './NutritionPerformanceDashboard';
 import SemanasNutricionCoach from './nutrition/SemanasNutricionCoach';
+import { useAthleteWeight } from '../hooks/useAthleteWeight';
 import { programarAjuste, semanaDelPrograma } from '../utils/semanasNutricion';
 import { useToast } from '../hooks/useToast';
 import { mensajeDeErrorFirestore } from '../utils/erroresFirestore';
@@ -244,6 +247,20 @@ export default function NutritionPeriodizationPanel({
   const [refreshKey, setRefreshKey] = useState(0);
 
   const today = hoyIsoLocal();
+  const { logs: pesosAtleta } = useAthleteWeight(athleteEmail);
+  // Días registrados desde el inicio de la periodización: la media de agua y
+  // verdura por semana frente a los mínimos.
+  // El menú publicado y de qué semana es: si la dieta ha cambiado desde
+  // entonces, el panel avisa de que toca regenerarlo.
+  const { data: menuPublicado = null } = useQuery({
+    queryKey: ['publishedMenu', athleteEmail],
+    queryFn: () => getPublishedMenu(athleteEmail),
+  });
+  const { data: registrosDia = [] } = useQuery({
+    queryKey: ['dietCompletionLogsDesde', athleteEmail, program?.startDate],
+    queryFn: () => getDietCompletionLogsForAthlete(athleteEmail, program!.startDate),
+    enabled: !!program?.minimos,
+  });
   const maintenanceKcal = onboarding ? estimateMaintenanceKcal(onboarding, currentWeightKg ?? onboarding.weightKg) : null;
 
   /* Duración derivada del objetivo y el ritmo, encadenando los pesos: cada fase
@@ -339,6 +356,9 @@ export default function NutritionPeriodizationPanel({
         ...(program?.suplementos ? { suplementos: program.suplementos } : {}),
         ...(program?.ciclado ? { ciclado: program.ciclado } : {}),
         ...(program?.pasosPorSemana ? { pasosPorSemana: program.pasosPorSemana } : {}),
+        ...(program?.reglasPeso ? { reglasPeso: program.reglasPeso } : {}),
+        ...(program?.proteinaMinGKg ? { proteinaMinGKg: program.proteinaMinGKg } : {}),
+        ...(program?.minimos ? { minimos: program.minimos } : {}),
       };
       await saveNutritionProgram(newProgram);
       queryClient.setQueryData(programQueryKey, newProgram);
@@ -485,7 +505,7 @@ export default function NutritionPeriodizationPanel({
 
     return (
       <div className="space-y-4">
-        <SemanasNutricionCoach program={program} diets={diets} onGuardar={guardarPrograma} />
+        <SemanasNutricionCoach program={program} diets={diets} onGuardar={guardarPrograma} pesos={pesosAtleta} mantenimientoKcal={maintenanceKcal} registros={registrosDia} semanaDelMenu={menuPublicado?.semanaPrograma ?? (menuPublicado ? 0 : undefined)} />
         <NutritionPerformanceDashboard
           refreshToken={refreshKey}
           athleteEmail={athleteEmail}

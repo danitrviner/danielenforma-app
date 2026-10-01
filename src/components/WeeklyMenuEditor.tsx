@@ -4,7 +4,9 @@ import {
   OnboardingData, Diet, AthleteDietConfig, AthleteNutritionConfig, Recipe, RecipeFavorites,
   MealItem, WeeklyMenu, MenuDay, WeekDay, FoodCategory, DietMode,
 } from '../types';
-import { queryRecetasForGenerator, getRecipes, getRecipeById, getFoodItems, createWeeklyMenu, updateWeeklyMenu, publishWeeklyMenu, getRecipeFavorites } from '../dbService';
+import { queryRecetasForGenerator, getRecipes, getRecipeById, getFoodItems, createWeeklyMenu, updateWeeklyMenu, publishWeeklyMenu, getRecipeFavorites, getNutritionProgram } from '../dbService';
+import { semanaDelPrograma, totalSemanas, ajustesDeLaSemana, aplicarAjustes, kcalDeDieta } from '../utils/semanasNutricion';
+import { hoyIsoLocal } from '../utils/trainingWeek';
 import {
   slotsFromOnboarding, generateWeek, generateDay, isDayWithinTolerance,
   dayGlobalDeviation, rankCandidates, slotTargets, recipeMatchesSlot,
@@ -15,7 +17,7 @@ import { dietTypeVigente } from '../utils/foodPrefs';
 import { exchangeToKcal } from '../utils/nutritionConstants';
 import { buildShoppingList } from '../utils/menuShoppingList';
 import { DISH_TYPES, DishType } from '../utils/dishTypes';
-import { Icon, Button, Input, ProgressBar } from './ui';
+import { Icon, Button, Input, ProgressBar, Select } from './ui';
 import { fotoDeReceta } from '../utils/fotoDeReceta';
 import FotoDeReceta from './FotoDeReceta';
 
@@ -130,6 +132,25 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
   const [builderRecipes, setBuilderRecipes] = useState<Recipe[] | null>(null);
   const [foods, setFoods] = useState<MealItem[] | null>(null);
 
+  // Periodización: el menú se genera con las dietas tal y como quedan en la
+  // semana elegida (−1 hidrato en la cena desde la S5, mantenimiento…).
+  const { data: programa = null } = useQuery({
+    queryKey: ['nutritionProgram', athleteEmail],
+    queryFn: () => getNutritionProgram(athleteEmail).catch(() => null),
+  });
+  const totalSem = programa ? totalSemanas(programa) : 0;
+  const [semanaMenu, setSemanaMenu] = useState<number | null>(initialMenu?.semanaPrograma ?? null);
+  const semanaElegida = programa && totalSem > 0
+    ? Math.min(totalSem, semanaMenu ?? semanaDelPrograma(programa, hoyIsoLocal()))
+    : null;
+  const dietasDeLaSemana = useMemo(() => {
+    if (!programa || semanaElegida == null) return diets;
+    const ajustes = ajustesDeLaSemana(programa, semanaElegida);
+    const mantenimiento = (programa.semanasMantenimiento ?? []).includes(semanaElegida);
+    if (ajustes.length === 0 && !mantenimiento) return diets;
+    return diets.map(d => aplicarAjustes(d, ajustes, { mantenimiento }));
+  }, [diets, programa, semanaElegida]);
+
   const schedule = dietConfig?.weeklySchedule ?? {};
   const scheduledCount = WEEK_DAYS.filter(d => schedule[d]).length;
   const pctSum = slots.reduce((s, sl) => s + sl.pct, 0);
@@ -224,7 +245,7 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
     }
     const foodList = await ensureFoods();
     setGenPhase('Generando el menú de la semana…');
-    const days = generateWeek({ schedule, diets, slots, pools: nextPools, foods: foodList, prefs, batch, mode: dietMode });
+    const days = generateWeek({ schedule, diets: dietasDeLaSemana, slots, pools: nextPools, foods: foodList, prefs, batch, mode: dietMode });
     const draft: Omit<WeeklyMenu, 'id'> = {
       athleteId: athleteEmail,
       status: 'draft',
@@ -234,6 +255,7 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
       batchCooking: batch,
       days,
       swapHistory: [],
+      ...(semanaElegida != null ? { semanaPrograma: semanaElegida } : {}),
     };
     const saved = await createWeeklyMenu(draft);
     setMenu(saved);
@@ -406,6 +428,23 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
           value={name}
           onChange={setName}
         />
+
+        {programa && semanaElegida != null && (
+          <div className="space-y-1">
+            <Select
+              label="Semana de la periodización"
+              value={String(semanaElegida)}
+              onChange={v => setSemanaMenu(Number(v))}
+              options={Array.from({ length: totalSem }, (_, i) => ({ value: String(i + 1), label: `Semana ${i + 1}` }))}
+            />
+            <p className="font-sans text-caption text-ink-3">
+              Se genera con las dietas como quedan esa semana
+              {dietasDeLaSemana !== diets
+                ? ` (con sus ajustes: ${dietasDeLaSemana.map(d => `${d.name} ${kcalDeDieta(d).toLocaleString('es-ES')} kcal`).join(' · ')})`
+                : ' (esa semana no tiene ajustes)'}.
+            </p>
+          </div>
+        )}
 
         <div>
           <div className="flex items-center justify-between mb-2">

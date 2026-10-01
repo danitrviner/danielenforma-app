@@ -1,12 +1,15 @@
 import React, { useMemo, useState } from 'react';
 import { Icon, Button, SegmentedControl, Select } from '../ui';
-import type { Diet, NutritionProgram, MacroAjustable, WeekDay, Suplemento } from '../../types';
+import type { Diet, NutritionProgram, MacroAjustable, WeekDay, Suplemento, BodyweightLog, ReglaDePeso, DietCompletionLog } from '../../types';
 import { SLOT_LABEL, resolveSlots } from '../../utils/mealDistribution';
 import {
   totalSemanas, faseDeLaSemana, ajustesDeLaSemana, aplicarAjustes, kcalDeDieta, kcalDeComida, macrosDeComida, macrosDeCupo, kcalPorSemana, programarAjuste,
   quitarCambiosNutricion, describirAjuste, semanaDelPrograma, NOMBRE_DIA, suplementosDeLaSemana,
+  salidaDeDeficit, descansosDeDieta, bajadaProgresiva, evaluarReglasDePeso, proteinaGKgPorSemana, habitosPorSemana,
 } from '../../utils/semanasNutricion';
 import { hoyIsoLocal } from '../../utils/trainingWeek';
+import { weeklyRealWeightKg } from '../../utils/nutritionPeriodization';
+import Sheet from '../ui/Sheet';
 
 const MACROS: { cat: MacroAjustable; label: string }[] = [
   { cat: 'HC', label: 'Hidratos' }, { cat: 'PROT', label: 'Proteína' }, { cat: 'GRASA', label: 'Grasa' },
@@ -17,10 +20,18 @@ const DIAS: WeekDay[] = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
  *  sus kcal/día, y en la semana elegida la dieta de su fase con los ajustes
  *  que se programen (desde esa semana o solo esa), mantenimiento, comidas
  *  libres y suplementación. Todo se guarda en el NutritionProgram. */
-export default function SemanasNutricionCoach({ program, diets, onGuardar }: {
+export default function SemanasNutricionCoach({ program, diets, onGuardar, pesos = [], mantenimientoKcal = null, registros = [], semanaDelMenu }: {
+  /** Días registrados del atleta (para la media de agua y verdura). */
+  registros?: DietCompletionLog[];
+  /** Semana con la que se generó el menú publicado (0 = antes de esto; undefined = sin menú). */
+  semanaDelMenu?: number;
   program: NutritionProgram;
   diets: Diet[];
   onGuardar: (p: NutritionProgram) => void;
+  /** Pesos del atleta, para las reglas por peso y la proteína por kilo. */
+  pesos?: BodyweightLog[];
+  /** Mantenimiento estimado, objetivo por defecto de la salida de déficit. */
+  mantenimientoKcal?: number | null;
 }) {
   const n = totalSemanas(program);
   const hoy = semanaDelPrograma(program, hoyIsoLocal());
@@ -33,11 +44,33 @@ export default function SemanasNutricionCoach({ program, diets, onGuardar }: {
   const [sup, setSup] = useState<{ nombre: string; dosis: string; momento: string; hasta: string }>({ nombre: '', dosis: '', momento: '', hasta: '' });
   const [ciclo, setCiclo] = useState(() => ({ entreno: String(program.ciclado?.entreno ?? 2), descanso: String(program.ciclado?.descanso ?? -1) }));
   const [pasos, setPasos] = useState('');
+  const [progAbierto, setProgAbierto] = useState(false);
+  const [salida, setSalida] = useState(() => String(Math.round((mantenimientoKcal ?? 2500) / 50) * 50));
+  const [descanso, setDescanso] = useState({ cada: '6', hasta: '' });
+  const [bajada, setBajada] = useState({ cada: '2', cat: 'HC', suelo: '1600' });
+  const [regla, setRegla] = useState({ tipo: 'bajar', ritmo: '0.3', semanas: '2', cat: 'HC', cantidad: '1' });
+  const [ignoradas, setIgnoradas] = useState<Set<string>>(new Set());
+  const [minimos, setMinimos] = useState({ agua: String(program.minimos?.aguaL ?? ''), raciones: String(program.minimos?.raciones ?? '') });
 
   const kcal = useMemo(() => kcalPorSemana(program, diets), [program, diets]);
   const max = Math.max(1, ...kcal.map(k => k ?? 0));
   const min = Math.min(...kcal.filter((k): k is number => k != null), max) * 0.85;
   const mant = program.semanasMantenimiento ?? [];
+  const pesoActual = pesos.length > 0 ? pesos[pesos.length - 1].weight : null;
+  const protMin = program.proteinaMinGKg ?? 1.6;
+  const habitos = useMemo(() => habitosPorSemana(program, registros), [program, registros]);
+  const minA = program.minimos?.aguaL;
+  const minR = program.minimos?.raciones;
+  const noLlega = (s: number) => {
+    const h = habitos[s];
+    return !!h && ((minA != null && h.aguaL != null && h.aguaL < minA) || (minR != null && h.raciones != null && h.raciones < minR));
+  };
+  const protPorSemana = useMemo(() => proteinaGKgPorSemana(program, diets, pesoActual), [program, diets, pesoActual]);
+  const propuestasPeso = useMemo(
+    () => evaluarReglasDePeso(program, weeklyRealWeightKg(pesos, program.startDate, n), hoy)
+      .filter(x => !ignoradas.has(`${x.regla.id}_${x.semana}`)),
+    [program, pesos, n, hoy, ignoradas],
+  );
 
   const guardar = (p: NutritionProgram) => { setPila(prev => [...prev.slice(-19), program]); onGuardar(p); };
   const deshacer = () => {
@@ -115,6 +148,7 @@ export default function SemanasNutricionCoach({ program, diets, onGuardar }: {
         <p className="font-mono text-caption text-ink-3">{n} semanas · barras = kcal/día</p>
         <div className="ml-auto flex items-center gap-2">
           {pila.length > 0 && <Button size="s" variant="ghost" icon="undo" onClick={deshacer}>Deshacer</Button>}
+          <Button size="s" variant="ghost" icon="trending_up" onClick={() => setProgAbierto(true)}>Progresiones</Button>
           <button
             type="button"
             aria-pressed={varias}
@@ -148,7 +182,7 @@ export default function SemanasNutricionCoach({ program, diets, onGuardar }: {
                   key={s}
                   type="button"
                   aria-pressed={activa}
-                  title={`Semana ${s}${k ? ` · ${k.toLocaleString('es-ES')} kcal/día` : ''}${mant.includes(s) ? ' · Mantenimiento' : ''}${s === hoy ? ' · esta semana' : ''}`}
+                  title={`Semana ${s}${k ? ` · ${k.toLocaleString('es-ES')} kcal/día` : ''}${protPorSemana[s] != null ? ` · ${protPorSemana[s]!.toLocaleString('es-ES')} g/kg de proteína${protPorSemana[s]! < protMin ? ' (por debajo del mínimo)' : ''}` : ''}${mant.includes(s) ? ' · Mantenimiento' : ''}${s === hoy ? ' · esta semana' : ''}`}
                   onClick={() => {
                     if (!varias) { setSemana(s); return; }
                     setSel(prev => { const x = new Set(prev); if (x.has(s)) x.delete(s); else x.add(s); return x; });
@@ -156,7 +190,11 @@ export default function SemanasNutricionCoach({ program, diets, onGuardar }: {
                   className={`relative w-14 flex flex-col items-center gap-1 rounded-control border px-1 pt-1.5 pb-1 transition-colors ${
                     activa ? `bg-accent/12 border-accent ${varias ? 'border-dashed' : ''}` : 'bg-bg border-hairline hover:border-strong'}`}
                 >
-                  {empiezan.has(s) && <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-accent" aria-hidden />}
+                  <span className="absolute top-1 right-1 flex gap-0.5" aria-hidden>
+                    {empiezan.has(s) && <span className="w-1.5 h-1.5 rounded-full bg-accent" />}
+                    {protPorSemana[s] != null && protPorSemana[s]! < protMin && <span className="w-1.5 h-1.5 rounded-full bg-danger" />}
+                    {noLlega(s) && <span className="w-1.5 h-1.5 rounded-full bg-warning" />}
+                  </span>
                   <span className={`font-mono text-caption font-bold ${s === hoy ? 'text-accent-ink underline' : 'text-ink'}`}>S{s}</span>
                   <span className="relative w-5 h-[30px] flex items-end justify-center" aria-hidden>
                     <span className={`absolute bottom-0 w-full rounded-t-[4px] ${mant.includes(s) ? 'bg-info/60' : activa ? 'bg-accent' : 'bg-strong'}`}
@@ -170,6 +208,31 @@ export default function SemanasNutricionCoach({ program, diets, onGuardar }: {
           </div>
         </div>
       </div>
+
+      {semanaDelMenu !== undefined && kcal[hoy] != null && (semanaDelMenu === 0
+        ? (ajustesDeLaSemana(program, hoy).length > 0 || mant.includes(hoy))
+        : kcal[semanaDelMenu] !== kcal[hoy]) && (
+        <div className="flex items-start gap-2 rounded-surface border border-info/40 bg-info/8 px-4 py-3">
+          <Icon name="restaurant" size="s" className="text-info mt-0.5" />
+          <p className="font-sans text-label text-ink">
+            {semanaDelMenu === 0
+              ? 'El menú semanal publicado no tiene en cuenta los ajustes por semana.'
+              : `El menú semanal publicado es de la semana ${semanaDelMenu} y esta semana la dieta cambia (${kcal[semanaDelMenu]?.toLocaleString('es-ES')} → ${kcal[hoy]?.toLocaleString('es-ES')} kcal).`}
+            {' '}Regenéralo desde «Menú semanal» eligiendo la semana {hoy}.
+          </p>
+        </div>
+      )}
+
+      {propuestasPeso.map(x => (
+        <div key={`${x.regla.id}_${x.semana}`} className="flex items-start gap-3 flex-wrap rounded-surface border border-warning/40 bg-warning/8 px-4 py-3">
+          <Icon name="lightbulb" size="s" className="text-warning mt-0.5" />
+          <p className="flex-1 min-w-[14rem] font-sans text-label text-ink"><span className="font-bold">Regla por peso:</span> {x.texto}</p>
+          <div className="flex gap-2">
+            <Button size="s" icon="done_all" onClick={() => guardar({ ...program, cambiosSemana: programarAjuste(program, x.semana, false, x.ajuste) })}>Aplicar</Button>
+            <Button size="s" variant="ghost" onClick={() => setIgnoradas(prev => new Set(prev).add(`${x.regla.id}_${x.semana}`))}>Ahora no</Button>
+          </div>
+        </div>
+      ))}
 
       {varias ? (
         <div className="flex items-center gap-3 flex-wrap rounded-surface border border-accent-line bg-accent/8 px-4 py-3">
@@ -190,6 +253,7 @@ export default function SemanasNutricionCoach({ program, diets, onGuardar }: {
               <p className="font-mono text-caption text-ink-2">
                 {fase.fase.name} · semana {fase.semanaEnFase} de {fase.fase.weeks}
                 {dietaSemana ? ` · ${kcalDeDieta(dietaSemana).toLocaleString('es-ES')} kcal/día` : ''}
+                {protPorSemana[semana] != null ? ` · ${protPorSemana[semana]!.toLocaleString('es-ES')} g/kg de proteína` : ''}
               </p>
             )}
             <SegmentedControl
@@ -213,6 +277,19 @@ export default function SemanasNutricionCoach({ program, diets, onGuardar }: {
             </div>
           </div>
 
+          {habitos[semana] && (minA != null || minR != null) && (
+            <p className={`font-sans text-caption ${noLlega(semana) ? 'text-warning' : 'text-ink-2'}`}>
+              Apuntado ({habitos[semana]!.dias} {habitos[semana]!.dias === 1 ? 'día' : 'días'}):
+              {minA != null && habitos[semana]!.aguaL != null ? ` agua ${habitos[semana]!.aguaL!.toLocaleString('es-ES')} L/día de ${minA.toLocaleString('es-ES')}` : ''}
+              {minR != null && habitos[semana]!.raciones != null ? ` · verdura y fruta ${habitos[semana]!.raciones!.toLocaleString('es-ES')} de ${minR}` : ''}
+            </p>
+          )}
+          {protPorSemana[semana] != null && protPorSemana[semana]! < protMin && (
+            <p className="flex items-center gap-1.5 font-sans text-caption text-danger">
+              <Icon name="warning" size="s" />
+              Proteína por debajo de {protMin.toLocaleString('es-ES')} g/kg con su peso actual ({pesoActual?.toLocaleString('es-ES')} kg): súbela antes de recortar más.
+            </p>
+          )}
           {!dietaSemana ? (
             <p className="font-sans text-label text-ink-3">Esta fase no tiene dieta enlazada: enlázale una al editar la periodización.</p>
           ) : (
@@ -313,6 +390,61 @@ export default function SemanasNutricionCoach({ program, diets, onGuardar }: {
               </div>
             </div>
             <div className="rounded-control border border-hairline bg-surface p-3 space-y-2">
+              <p className="font-sans font-bold text-label text-ink">Reglas por peso</p>
+              <p className="font-sans text-caption text-ink-3">Cuando se cumplen te lo propone aquí arriba; nunca se aplican solas.</p>
+              {(program.reglasPeso ?? []).map(r => (
+                <div key={r.id} className="flex items-center gap-2 font-sans text-caption text-ink-2">
+                  <span className="flex-1">
+                    Si {r.semanas} semanas {r.tipo === 'bajar' ? 'baja' : 'sube'} menos de {r.ritmoMinimo.toLocaleString('es-ES')} kg/sem → {r.tipo === 'bajar' ? '−' : '+'}{r.cantidad} {r.cat}
+                  </span>
+                  <button type="button" aria-label="Quitar regla" onClick={() => {
+                    const resto = (program.reglasPeso ?? []).filter(x => x.id !== r.id);
+                    guardar({ ...program, reglasPeso: resto.length > 0 ? resto : undefined });
+                  }} className="p-1 text-ink-3 hover:text-danger"><Icon name="close" size="s" /></button>
+                </div>
+              ))}
+              <div className="grid grid-cols-3 gap-2">
+                <Select label="Fase" value={regla.tipo} onChange={v => setRegla({ ...regla, tipo: v })}
+                  options={[{ value: 'bajar', label: 'Bajar peso' }, { value: 'subir', label: 'Subir peso' }]} />
+                <Select label="Menos de" value={regla.ritmo} onChange={v => setRegla({ ...regla, ritmo: v })}
+                  options={['0.1', '0.2', '0.3', '0.4', '0.5', '0.7'].map(v => ({ value: v, label: `${v.replace('.', ',')} kg/sem` }))} />
+                <Select label="Durante" value={regla.semanas} onChange={v => setRegla({ ...regla, semanas: v })}
+                  options={['1', '2', '3'].map(v => ({ value: v, label: `${v} semana${v === '1' ? '' : 's'}` }))} />
+                <Select label="Ajustar" value={regla.cat} onChange={v => setRegla({ ...regla, cat: v })}
+                  options={MACROS.map(m => ({ value: m.cat, label: m.label }))} />
+                <Select label="Intercambios" value={regla.cantidad} onChange={v => setRegla({ ...regla, cantidad: v })}
+                  options={['1', '2', '3'].map(v => ({ value: v, label: v }))} />
+              </div>
+              <Button size="s" icon="add" onClick={() => {
+                const nueva: ReglaDePeso = {
+                  id: `rp_${Date.now()}`, tipo: regla.tipo as 'bajar' | 'subir', ritmoMinimo: Number(regla.ritmo),
+                  semanas: Number(regla.semanas), cat: regla.cat as MacroAjustable, cantidad: Number(regla.cantidad),
+                };
+                guardar({ ...program, reglasPeso: [...(program.reglasPeso ?? []), nueva] });
+              }}>Añadir regla</Button>
+            </div>
+            <div className="rounded-control border border-hairline bg-surface p-3 space-y-2">
+              <p className="font-sans font-bold text-label text-ink">Mínimos del día</p>
+              <p className="font-sans text-caption text-ink-3">El atleta los apunta en su día; aquí ves si llega. Proteína mínima: {protMin.toLocaleString('es-ES')} g/kg.</p>
+              <div className="grid grid-cols-3 gap-2 items-end">
+                <label className="flex flex-col gap-1 font-mono text-caption text-ink-2 uppercase tracking-wider">Agua (L)
+                  <input id="min-agua" inputMode="decimal" value={minimos.agua} onChange={e => setMinimos({ ...minimos, agua: e.target.value.replace(',', '.') })}
+                    className="h-9 bg-inset border border-hairline rounded-control px-2 font-mono text-label text-ink normal-case focus:outline-none focus:ring-1 focus:ring-accent" />
+                </label>
+                <label className="flex flex-col gap-1 font-mono text-caption text-ink-2 uppercase tracking-wider">Verdura y fruta
+                  <input id="min-raciones" inputMode="numeric" value={minimos.raciones} onChange={e => setMinimos({ ...minimos, raciones: e.target.value.replace(/\D/g, '') })}
+                    className="h-9 bg-inset border border-hairline rounded-control px-2 font-mono text-label text-ink normal-case focus:outline-none focus:ring-1 focus:ring-accent" />
+                </label>
+                <Select label="Proteína mín." value={String(protMin)} onChange={v => guardar({ ...program, proteinaMinGKg: Number(v) })}
+                  options={['1.4', '1.6', '1.8', '2', '2.2'].map(v => ({ value: v, label: `${v.replace('.', ',')} g/kg` }))} />
+              </div>
+              <Button size="s" icon="done_all" onClick={() => {
+                const aguaL = Number(minimos.agua) || undefined;
+                const raciones = Number(minimos.raciones) || undefined;
+                guardar({ ...program, minimos: aguaL || raciones ? { ...(aguaL ? { aguaL } : {}), ...(raciones ? { raciones } : {}) } : undefined });
+              }}>Guardar mínimos</Button>
+            </div>
+            <div className="rounded-control border border-hairline bg-surface p-3 space-y-2">
               <p className="font-sans font-bold text-label text-ink">Comida libre</p>
               <div className="grid grid-cols-3 gap-2">
                 <Select label="Día" value={libre.dia} onChange={v => setLibre({ ...libre, dia: v as WeekDay })}
@@ -377,6 +509,53 @@ export default function SemanasNutricionCoach({ program, diets, onGuardar }: {
           </ul>
         </details>
       )}
+      <Sheet open={progAbierto} onClose={() => setProgAbierto(false)} title="Progresiones de nutrición">
+        <div className="space-y-5">
+          <p className="font-sans text-label text-ink-2">Se programan como cambios por semana desde la semana {semana}. Después puedes retocarlas semana a semana o deshacerlas.</p>
+          <section className="space-y-2">
+            <p className="font-sans font-bold text-body-s text-ink">Salida de déficit</p>
+            <p className="font-sans text-caption text-ink-3">+1 intercambio de hidratos cada semana hasta llegar al objetivo{mantenimientoKcal ? ` (su mantenimiento estimado ronda las ${mantenimientoKcal.toLocaleString('es-ES')} kcal)` : ''}.</p>
+            <div className="flex gap-2 items-end flex-wrap">
+              <label className="flex flex-col gap-1 font-mono text-caption text-ink-2 uppercase tracking-wider">Objetivo kcal
+                <input id="salida-kcal" inputMode="numeric" value={salida} onChange={e => setSalida(e.target.value.replace(/\D/g, ''))}
+                  className="h-9 w-28 bg-inset border border-hairline rounded-control px-2 font-mono text-label text-ink normal-case focus:outline-none focus:ring-1 focus:ring-accent" />
+              </label>
+              <Button size="s" icon="trending_up" disabled={!salida} onClick={() => { guardar(salidaDeDeficit(program, diets, semana, Number(salida))); setProgAbierto(false); }}>
+                Programar desde S{semana}
+              </Button>
+            </div>
+          </section>
+          <section className="space-y-2">
+            <p className="font-sans font-bold text-body-s text-ink">Descanso de dieta</p>
+            <div className="grid grid-cols-2 gap-3">
+              <Select label="Una semana de mantenimiento cada" value={descanso.cada} onChange={v => setDescanso({ ...descanso, cada: v })}
+                options={['4', '5', '6', '8', '10', '12'].map(v => ({ value: v, label: `${v} semanas` }))} />
+              <Select label="Hasta" value={descanso.hasta || String(n)} onChange={v => setDescanso({ ...descanso, hasta: v })}
+                options={Array.from({ length: n - semana + 1 }, (_, k) => ({ value: String(semana + k), label: `S${semana + k}` }))} />
+            </div>
+            <Button size="s" icon="balance" onClick={() => { guardar(descansosDeDieta(program, Number(descanso.cada), semana, Number(descanso.hasta || n))); setProgAbierto(false); }}>
+              Programar descansos
+            </Button>
+          </section>
+          <section className="space-y-2">
+            <p className="font-sans font-bold text-body-s text-ink">Bajada progresiva</p>
+            <div className="grid grid-cols-3 gap-3">
+              <Select label="−1 intercambio de" value={bajada.cat} onChange={v => setBajada({ ...bajada, cat: v })}
+                options={MACROS.filter(m => m.cat !== 'PROT').map(m => ({ value: m.cat, label: m.label }))} />
+              <Select label="Cada" value={bajada.cada} onChange={v => setBajada({ ...bajada, cada: v })}
+                options={['1', '2', '3', '4'].map(v => ({ value: v, label: v === '1' ? 'semana' : `${v} semanas` }))} />
+              <label className="flex flex-col gap-1 font-mono text-caption text-ink-2 uppercase tracking-wider">Sin bajar de (kcal)
+                <input id="bajada-suelo" inputMode="numeric" value={bajada.suelo} onChange={e => setBajada({ ...bajada, suelo: e.target.value.replace(/\D/g, '') })}
+                  className="h-9 bg-inset border border-hairline rounded-control px-2 font-mono text-label text-ink normal-case focus:outline-none focus:ring-1 focus:ring-accent" />
+              </label>
+            </div>
+            <Button size="s" icon="trending_down" disabled={!bajada.suelo} onClick={() => {
+              guardar(bajadaProgresiva(program, diets, semana, Number(bajada.cada), bajada.cat as MacroAjustable, Number(bajada.suelo)));
+              setProgAbierto(false);
+            }}>Programar desde S{semana}</Button>
+          </section>
+        </div>
+      </Sheet>
     </div>
   );
 }

@@ -3,6 +3,7 @@ import type { Diet, NutritionProgram } from '../types';
 import {
   semanaDelPrograma, faseDeLaSemana, aplicarAjustes, dietaDeLaSemana, programarAjuste, kcalPorSemana,
   novedadesNutricion, suplementosDeLaSemana, quitarCambiosNutricion, objetivoDePasos,
+  salidaDeDeficit, descansosDeDieta, bajadaProgresiva, evaluarReglasDePeso, proteinaGKgPorSemana, habitosPorSemana,
 } from './semanasNutricion';
 
 const dieta: Diet = {
@@ -115,5 +116,46 @@ describe('días altos/bajos y pasos por semana', () => {
     expect(objetivoDePasos(p, '2026-09-14', 8000)).toBe(8000);   // S2
     expect(objetivoDePasos(p, '2026-09-21', 8000)).toBe(10000);  // S3
     expect(objetivoDePasos(p, '2026-10-19', 8000)).toBe(12000);  // S7
+  });
+});
+
+describe('progresiones de nutrición, reglas por peso y proteína', () => {
+  it('salida de déficit: +1 HC por semana hasta rozar el objetivo', () => {
+    const p = salidaDeDeficit(programa, [dieta], 3, 2700);  // parte de 2.395
+    const kcal = kcalPorSemana(p, [dieta]);
+    expect([kcal[2], kcal[3], kcal[4], kcal[5], kcal[6]]).toEqual([2395, 2495, 2595, 2695, 2695]);
+  });
+  it('descanso de dieta cada 6 semanas', () => {
+    expect(descansosDeDieta(programa, 6, 1, 12).semanasMantenimiento).toEqual([6, 12]);
+  });
+  it('bajada progresiva de grasa cada 2 semanas con suelo', () => {
+    const p = bajadaProgresiva(programa, [dieta], 2, 2, 'GRASA', 2150);
+    expect(p.cambiosSemana?.map(c => c.semana)).toEqual([2, 4]);
+  });
+  it('regla: 2 semanas bajando menos de 0,3 kg → propone −1 HC la semana siguiente', () => {
+    const p: NutritionProgram = { ...programa, reglasPeso: [{ id: 'r', tipo: 'bajar', ritmoMinimo: 0.3, semanas: 2, cat: 'HC', cantidad: 1 }] };
+    const lento = evaluarReglasDePeso(p, [80, 79.8, 79.7, 79.6], 5);
+    expect(lento).toHaveLength(1);
+    expect(lento[0].semana).toBe(6);
+    expect(lento[0].ajuste).toEqual({ cat: 'HC', delta: -1 });
+    expect(evaluarReglasDePeso(p, [80, 79.5, 79, 78.4], 5)).toEqual([]);
+    const yaProgramado = { ...p, cambiosSemana: [{ semana: 6, ajustes: [{ cat: 'HC' as const, delta: -1 }] }] };
+    expect(evaluarReglasDePeso(yaProgramado, [80, 79.8, 79.7, 79.6], 5)).toEqual([]);
+  });
+  it('proteína en g/kg por semana', () => {
+    expect(proteinaGKgPorSemana(programa, [dieta], 100)[1]).toBe(2);  // 8 × 25 / 100
+  });
+});
+
+describe('hábitos por semana', () => {
+  it('media de agua y raciones solo con los días apuntados', () => {
+    const base = { athleteId: 'x', dietId: 'd', doneItemIds: [] };
+    const h = habitosPorSemana(programa, [
+      { ...base, id: '1', date: '2026-09-07', aguaMl: 2000, racionesVegetales: 4 },
+      { ...base, id: '2', date: '2026-09-08', aguaMl: 1000 },
+      { ...base, id: '3', date: '2026-09-15' },
+    ]);
+    expect(h[1]).toEqual({ aguaL: 1.5, raciones: 4, dias: 2 });
+    expect(h[2]).toBeNull();
   });
 });

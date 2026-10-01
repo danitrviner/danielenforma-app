@@ -1157,6 +1157,9 @@ export interface DietCompletionLog {
   date: string;        // YYYY-MM-DD
   dietId: string;
   doneItemIds: string[];
+  /** Agua bebida ese día (ml) y raciones de verdura/fruta, si las apunta. */
+  aguaMl?: number;
+  racionesVegetales?: number;
   /**
    * Lo que el atleta comió ESE día, congelado en el propio día (09-2026).
    *
@@ -1268,6 +1271,25 @@ export interface NutritionProgram {
   ciclado?: CicladoPorEntreno;
   /** Objetivo de pasos desde una semana del programa (manda el último que haya empezado). */
   pasosPorSemana?: { semana: number; pasos: number }[];
+  /** Reglas que PROPONEN un ajuste cuando el peso no va al ritmo (nunca se aplican solas). */
+  reglasPeso?: ReglaDePeso[];
+  /** Proteína mínima en g por kg de peso; por debajo, la barra avisa. Por defecto 1,6. */
+  proteinaMinGKg?: number;
+  /** Mínimos diarios de hábitos que el atleta apunta en su día. */
+  minimos?: { aguaL?: number; raciones?: number };
+}
+
+/** «Si en N semanas seguidas baja menos de X kg/semana, propón −1 hidrato». */
+export interface ReglaDePeso {
+  id: string;
+  /** 'bajar' = fase de pérdida (vigila que baje lo suficiente); 'subir' = volumen. */
+  tipo: 'bajar' | 'subir';
+  /** kg/semana mínimos (en positivo). */
+  ritmoMinimo: number;
+  semanas: number;
+  cat: MacroAjustable;
+  /** Intercambios (en positivo); el signo lo pone el tipo. */
+  cantidad: number;
 }
 
 export interface CicladoPorEntreno {
@@ -1686,6 +1708,8 @@ export interface WeeklyMenu {
   days: MenuDay[];
   coachNote?: string;
   swapHistory: MenuSwapEntry[];
+  /** Semana de la periodización con cuyos ajustes se generó (si había periodización). */
+  semanaPrograma?: number;
 }
 
 // Athlete's tick-off of a published menu's meals. Kept in its own collection
