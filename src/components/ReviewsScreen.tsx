@@ -488,11 +488,11 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                       {r.answers.map(ans => {
                         const question = q?.questions.find(qq => qq.id === ans.questionId);
                         return (
-                          <div key={ans.questionId} className="flex items-start gap-3">
-                            <span className="font-sans text-caption text-ink-2 flex-1 ">
+                          <div key={ans.questionId} className="flex flex-col gap-0.5 lg:flex-row lg:items-start lg:gap-3">
+                            <span className="font-sans text-caption text-ink-2 lg:w-2/5 lg:shrink-0">
                               {question?.label ?? ans.questionId}
                             </span>
-                            <span className="font-mono text-label text-ink font-bold text-right">
+                            <span className={`font-mono text-label text-ink lg:flex-1 lg:text-right ${String(ans.value).length > 16 ? 'font-normal' : 'font-bold'}`}>
                               {String(ans.value)}{question?.unit ? ` ${question.unit}` : ''}
                             </span>
                           </div>

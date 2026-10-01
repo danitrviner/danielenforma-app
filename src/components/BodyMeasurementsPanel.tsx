@@ -78,7 +78,7 @@ export default function BodyMeasurementsPanel({ athleteEmail, sexo, pesoKg, audi
 
   if (loading) {
     return (
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-2">
         <Skeleton className="h-20 rounded-surface" />
         <Skeleton className="h-20 rounded-surface" />
         <Skeleton className="h-20 rounded-surface" />
@@ -102,7 +102,7 @@ export default function BodyMeasurementsPanel({ athleteEmail, sexo, pesoKg, audi
 
   return (
     <div className="space-y-3">
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-2">
         {metricKeys.map(key => {
           const pts = byMetric.get(key)!;
           const first = pts[0];
@@ -161,7 +161,7 @@ export default function BodyMeasurementsPanel({ athleteEmail, sexo, pesoKg, audi
       {composicion && (
         <div className="bg-surface border border-hairline rounded-surface p-4 space-y-2">
           <p className="font-sans font-bold text-label text-ink">Composición corporal (US Navy)</p>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-2">
             <div className="bg-raised border border-hairline rounded-surface p-3">
               <p className="font-mono text-caption uppercase tracking-[.08em] text-ink-3 truncate">% Grasa estimado</p>
               <p className="font-sans font-bold text-title-s text-ink leading-none tabular-nums">{composicion.pctGrasa}%</p>
