@@ -146,6 +146,11 @@ export default function SemanasNutricionCoach({ program, diets, onGuardar, pesos
           Semanas de la periodización
         </p>
         <p className="font-mono text-caption text-ink-3">{n} semanas · barras = kcal/día</p>
+        {hoy >= 1 && hoy <= n && (
+          <span className="inline-flex items-center rounded-chip bg-accent px-2 py-0.5 font-mono text-caption font-bold uppercase tracking-wider text-on-accent">
+            Esta semana: S{hoy}
+          </span>
+        )}
         <div className="ml-auto flex items-center gap-2">
           {pila.length > 0 && <Button size="s" variant="ghost" icon="undo" onClick={deshacer}>Deshacer</Button>}
           <Button size="s" variant="ghost" icon="trending_up" onClick={() => setProgAbierto(true)}>Progresiones</Button>
@@ -182,20 +187,21 @@ export default function SemanasNutricionCoach({ program, diets, onGuardar, pesos
                   key={s}
                   type="button"
                   aria-pressed={activa}
+                  aria-current={s === hoy ? 'date' : undefined}
                   title={`Semana ${s}${k ? ` · ${k.toLocaleString('es-ES')} kcal/día` : ''}${protPorSemana[s] != null ? ` · ${protPorSemana[s]!.toLocaleString('es-ES')} g/kg de proteína${protPorSemana[s]! < protMin ? ' (por debajo del mínimo)' : ''}` : ''}${mant.includes(s) ? ' · Mantenimiento' : ''}${s === hoy ? ' · esta semana' : ''}`}
                   onClick={() => {
                     if (!varias) { setSemana(s); return; }
                     setSel(prev => { const x = new Set(prev); if (x.has(s)) x.delete(s); else x.add(s); return x; });
                   }}
                   className={`relative w-14 flex flex-col items-center gap-1 rounded-control border px-1 pt-1.5 pb-1 transition-colors ${
-                    activa ? `bg-accent/12 border-accent ${varias ? 'border-dashed' : ''}` : 'bg-bg border-hairline hover:border-strong'}`}
+                    activa ? `bg-accent/12 border-accent ${varias ? 'border-dashed' : ''}` : s === hoy ? 'bg-bg border-accent-line hover:border-accent' : 'bg-bg border-hairline hover:border-strong'}`}
                 >
                   <span className="absolute top-1 right-1 flex gap-0.5" aria-hidden>
                     {empiezan.has(s) && <span className="w-1.5 h-1.5 rounded-full bg-accent" />}
                     {protPorSemana[s] != null && protPorSemana[s]! < protMin && <span className="w-1.5 h-1.5 rounded-full bg-danger" />}
                     {noLlega(s) && <span className="w-1.5 h-1.5 rounded-full bg-warning" />}
                   </span>
-                  <span className={`font-mono text-caption font-bold ${s === hoy ? 'text-accent-ink underline' : 'text-ink'}`}>S{s}</span>
+                  <span className={`font-mono text-caption font-bold ${s === hoy ? 'rounded-[5px] bg-accent px-1 text-on-accent' : 'text-ink'}`}>S{s}</span>
                   <span className="relative w-5 h-[30px] flex items-end justify-center" aria-hidden>
                     <span className={`absolute bottom-0 w-full rounded-t-[4px] ${mant.includes(s) ? 'bg-info/60' : activa ? 'bg-accent' : 'bg-strong'}`}
                       style={{ height: k ? Math.max(4, Math.round(30 * (k - min) / Math.max(1, max - min))) : 3 }} />

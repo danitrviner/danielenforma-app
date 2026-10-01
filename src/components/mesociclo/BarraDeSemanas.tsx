@@ -27,6 +27,8 @@ export interface ElementoProgramado {
 interface Props {
   vueltas: number;
   semana: number;
+  /** Semana de ciclo en la que está hoy el atleta (ausente antes o después del bloque). */
+  actual?: number;
   onSemana: (s: number) => void;
   alcance: Alcance;
   onAlcance: (a: Alcance) => void;
@@ -89,6 +91,11 @@ export default function BarraDeSemanas(p: Props) {
           <p className="font-mono text-caption text-ink-3">
             {p.vueltas} semanas de ciclo · barras = series de la semana{p.reales ? ' · relleno = hechas' : ''}
           </p>
+          {p.actual !== undefined && (
+            <span className="inline-flex items-center rounded-chip bg-accent px-2 py-0.5 font-mono text-caption font-bold uppercase tracking-wider text-on-accent">
+              Esta semana: S{p.actual}
+            </span>
+          )}
           <div className="ml-auto flex items-center gap-2">
             {p.puedeDeshacer && (
               <Button size="s" variant="ghost" icon="undo" onClick={p.onDeshacer}>Deshacer</Button>
@@ -119,6 +126,7 @@ export default function BarraDeSemanas(p: Props) {
             const peor = avisos.some(a => a.tono === 'peligro') ? 'peligro' : avisos.length ? 'aviso' : null;
             const titulo = [
               s === 0 ? 'Base del bloque' : `Semana ${s}`,
+              s === p.actual ? 'esta semana' : null,
               `${p.totales[s] ?? 0} series planificadas`,
               real !== null ? `${real} hechas` : null,
               esDescarga(s) ? 'Descarga' : null,
@@ -132,19 +140,20 @@ export default function BarraDeSemanas(p: Props) {
                 key={s}
                 type="button"
                 aria-pressed={activa}
+                aria-current={s === p.actual ? 'date' : undefined}
                 title={titulo}
                 onClick={() => pulsar(s)}
                 disabled={varias && s === 0}
                 className={`relative flex-1 min-w-[3.25rem] max-w-[5rem] flex flex-col items-center gap-1 rounded-control border px-1 pt-1.5 pb-1 transition-colors disabled:opacity-40 ${
                   activa
                     ? `bg-accent/12 border-accent ${varias ? 'border-dashed' : ''}`
-                    : 'bg-bg border-hairline hover:border-strong'}`}
+                    : s === p.actual ? 'bg-bg border-accent-line hover:border-accent' : 'bg-bg border-hairline hover:border-strong'}`}
               >
                 <span className="absolute top-1 right-1 flex gap-0.5">
                   {p.semanasConCambio.has(s) && <span className="w-1.5 h-1.5 rounded-full bg-accent" aria-hidden />}
                   {peor && <span className={`w-1.5 h-1.5 rounded-full ${peor === 'peligro' ? 'bg-danger' : 'bg-warning'}`} aria-hidden />}
                 </span>
-                <span className="font-mono text-caption font-bold text-ink">{s === 0 ? 'Base' : `S${s}`}</span>
+                <span className={`font-mono text-caption font-bold ${s === p.actual ? 'rounded-[5px] bg-accent px-1 text-on-accent' : 'text-ink'}`}>{s === 0 ? 'Base' : `S${s}`}</span>
                 <span className="relative w-5 h-[30px] flex items-end justify-center" aria-hidden>
                   <span
                     className={`absolute bottom-0 w-full rounded-t-[4px] ${real !== null ? 'border border-strong bg-transparent' : esDescarga(s) ? 'bg-info/60' : activa ? 'bg-accent' : 'bg-strong'}`}

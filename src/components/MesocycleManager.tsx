@@ -679,6 +679,14 @@ function MesoExercisesTabs({
     () => Array.from({ length: vueltas + 1 }, (_, s) => seriesDeLaSemana(ejerciciosDelBloque, meso, s)),
     [ejerciciosDelBloque, meso, vueltas],
   );
+  // Semana de ciclo en la que está hoy el atleta, para marcarla en la barra.
+  const semanaActual = useMemo(() => {
+    const hoy = hoyIsoLocal();
+    if (!esFechaIso(meso.startDate) || hoy < meso.startDate) return undefined;
+    const s = mesocycleWeekNumber(meso.startDate, hoy, cicloDias);
+    return s <= vueltas ? s : undefined;
+  }, [meso.startDate, cicloDias, vueltas]);
+
   // Series hechas de verdad en cada semana ya empezada (relleno de la barra).
   const reales = useMemo(() => {
     if (!logs) return undefined;
@@ -1133,6 +1141,7 @@ function MesoExercisesTabs({
       <BarraDeSemanas
         vueltas={vueltas}
         semana={semana}
+        actual={semanaActual}
         onSemana={setSemana}
         alcance={alcance}
         onAlcance={setAlcance}
