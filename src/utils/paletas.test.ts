@@ -270,3 +270,19 @@ it('on-veil es el mismo en las dos paletas (tinta clara sobre velo oscuro)', () 
     expect(valor(CUERPO[tema], '--p-on-veil').toLowerCase()).toBe('#f5f5f4');
   }
 });
+
+it('nadie concatena dos dígitos hex de alfa a una interpolación de color', () => {
+  // `${accent}1a` con accent = 'var(--color-accent)' da `var(--color-accent)1a`:
+  // el navegador descarta la declaración entera sin aviso. Se usa `conAlfa()`.
+  const raiz = resolve(__dirname, '..');
+  const culpables: string[] = [];
+  for (const f of fuentes(raiz)) {
+    if (f.endsWith('paletas.test.ts') || f.endsWith('coloresPersistidos.ts')) continue;
+    const corto = f.slice(raiz.length + 1);
+    for (const linea of readFileSync(f, 'utf8').split('\n')) {
+      if (linea.trimStart().startsWith('*') || linea.trimStart().startsWith('//')) continue;
+      for (const m of linea.matchAll(/\$\{[A-Za-z_][\w.[\]()]*\}[0-9a-fA-F]{2}(?![0-9A-Za-z])/g)) culpables.push(`${corto}: ${m[0]}`);
+    }
+  }
+  expect(culpables, `usa conAlfa(color, %):\n${culpables.join('\n')}`).toEqual([]);
+});

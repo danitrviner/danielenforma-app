@@ -1,4 +1,5 @@
 import React from 'react';
+import { conAlfa, tintaDeTexto } from '../../utils/coloresPersistidos';
 import { WeeklyChallenge } from '../../types';
 import { ChallengeProgress } from '../../utils/weeklyChallenge';
 import { Icon } from '../ui';
@@ -57,11 +58,11 @@ export default function WeeklyChallengeCard({ challenge, progress, streak = 0, d
   return (
     <div
       className="rounded-canvas border p-5 flex flex-col gap-3"
-      style={{ backgroundColor: 'var(--color-bg)', borderColor: `${accent}33` }}
+      style={{ backgroundColor: 'var(--color-bg)', borderColor: conAlfa(accent, 20) }}
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Icon name={achieved ? 'emoji_events' : 'flag'} size="l" style={{ color: accent }} />
+          <Icon name={achieved ? 'emoji_events' : 'flag'} size="l" style={{ color: tintaDeTexto(accent) }} />
           {/* «Reto de la semana» a secas, sin «de tu entrenador»: la mayoría
               se generan solos cuando el coach no asigna ninguno, así que esa
               coletilla era mentira casi siempre — y desde 09-2026 esta tarjeta
@@ -73,7 +74,7 @@ export default function WeeklyChallengeCard({ challenge, progress, streak = 0, d
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
           {liveStreak >= 2 && (
-            <span className="font-mono text-caption px-2 rounded-full" style={{ backgroundColor: `${accent}1F`, color: accent }}>
+            <span className="font-mono text-caption px-2 rounded-full" style={{ backgroundColor: conAlfa(accent, 12), color: tintaDeTexto(accent) }}>
               🔥 {liveStreak} seguidos
             </span>
           )}
@@ -114,7 +115,7 @@ export default function WeeklyChallengeCard({ challenge, progress, streak = 0, d
       </div>
 
       {achieved && (
-        <p className="text-body-s font-sans font-bold" style={{ color: accent }}>
+        <p className="text-body-s font-sans font-bold" style={{ color: tintaDeTexto(accent) }}>
           ¡Reto conseguido! 🏆
         </p>
       )}

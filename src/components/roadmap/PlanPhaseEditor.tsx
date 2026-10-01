@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { colorDeTema } from '../../utils/coloresPersistidos';
 import { Roadmap, PlanPhase, PhaseMetricTarget, PhaseMetricKind, WeightDirection, NutritionProgram } from '../../types';
 import { PhaseData, computePhaseProgress } from '../../utils/planPhase';
 import { createNotificationDeduped, saveNutritionProgram } from '../../dbService';
@@ -264,7 +265,7 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
       {sorted.map((phase, idx) => {
         const progress = computePhaseProgress(phase, phaseData);
         return (
-          <div key={phase.id} className="bg-surface border border-hairline rounded-surface p-4 space-y-3" style={{ borderLeftColor: phase.color, borderLeftWidth: 3 }}>
+          <div key={phase.id} className="bg-surface border border-hairline rounded-surface p-4 space-y-3" style={{ borderLeftColor: colorDeTema(phase.color), borderLeftWidth: 3 }}>
             <div className="flex items-start gap-2">
               <div className="flex flex-col gap-1 flex-shrink-0 pt-1">
                 <button onClick={() => move(phase.id, -1)} disabled={idx === 0} className="w-6 h-6 flex items-center justify-center rounded-control bg-raised text-ink text-label disabled:opacity-30">↑</button>
@@ -315,11 +316,11 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
                         key={c}
                         onClick={() => updatePhase(phase.id, { color: c })}
                         className="w-6 h-6 rounded-full border-2"
-                        style={{ backgroundColor: c, borderColor: phase.color === c ? '#fff' : 'transparent' }}
+                        style={{ backgroundColor: c, borderColor: phase.color === c ? 'var(--color-ink)' : 'transparent' }}
                       />
                     ))}
                   </div>
-                  <IconPicker value={phase.icon} onChange={icon => updatePhase(phase.id, { icon })} accent={phase.color} />
+                  <IconPicker value={phase.icon} onChange={icon => updatePhase(phase.id, { icon })} accent={colorDeTema(phase.color)} />
                 </div>
 
                 <div className="flex flex-wrap gap-2">

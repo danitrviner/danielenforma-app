@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { tintaSobre } from '../utils/coloresPersistidos';
+import { tintaDeTexto, tintaSobre } from '../utils/coloresPersistidos';
 import { useQuery } from '@tanstack/react-query';
 import {
   LineChart, Line,
@@ -126,7 +126,7 @@ function ChartTooltip({ active, payload, activeMetrics }: any) {
         const raw = m === 'tonnage' ? point.tonnage : m === 'reps' ? point.reps : m === 'sets' ? point.sets : point.orm;
         if (raw == null) return null;
         return (
-          <p key={m} className="font-mono text-label font-bold" style={{ color: METRIC_COLOR[m] }}>
+          <p key={m} className="font-mono text-label font-bold" style={{ color: tintaDeTexto(METRIC_COLOR[m]) }}>
             {METRIC_LABEL[m]}: {m === 'tonnage' ? raw.toLocaleString() : raw}{METRIC_UNIT[m]}
           </p>
         );
@@ -436,7 +436,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
       {/* ── Exercise selector (only when 1RM metric is active) ── */}
       {ormActive && loggedExercises.length > 0 && (
         <div className="flex items-center gap-3">
-          <span className="font-sans text-caption uppercase tracking-wider flex-shrink-0" style={{ color: METRIC_COLOR.orm }}>
+          <span className="font-sans text-caption uppercase tracking-wider flex-shrink-0" style={{ color: tintaDeTexto(METRIC_COLOR.orm) }}>
             Ejercicio (1RM):
           </span>
           <select
@@ -455,7 +455,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
       {ormActive && progressBuckets.length > 0 && (
         <div className="bg-bg border border-hairline rounded-surface p-4 space-y-3">
           <div className="flex items-center justify-between gap-2 flex-wrap">
-            <p className="font-mono text-caption uppercase tracking-wider" style={{ color: METRIC_COLOR.orm }}>
+            <p className="font-mono text-caption uppercase tracking-wider" style={{ color: tintaDeTexto(METRIC_COLOR.orm) }}>
               Progresión {granularity === 'week' ? 'semanal' : 'diaria'} (1RM)
             </p>
             {/* min-w-0: el <select> de abajo toma como ancho intrínseco su
@@ -638,7 +638,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
                 )}
                 <span className="text-ink-2"><span className="text-ink font-bold">{row.sets}</span>s</span>
                 <span className="text-ink-2"><span className="text-ink">{row.reps}</span>r</span>
-                <span className="font-bold" style={{ color: METRIC_COLOR.tonnage }}>{row.tonnage.toLocaleString()}kg</span>
+                <span className="font-bold" style={{ color: tintaDeTexto(METRIC_COLOR.tonnage) }}>{row.tonnage.toLocaleString()}kg</span>
                 {ormActive && (
                   <span className="font-bold" style={{ color: row.orm ? METRIC_COLOR.orm : 'var(--color-ink-3)' }}>
                     {row.orm ? `${row.orm}kg` : '—'}
@@ -673,7 +673,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
                   )}
                   <td className="px-3 py-3 font-mono text-caption text-ink font-bold">{row.sets}</td>
                   <td className="px-3 py-3 font-mono text-caption text-ink">{row.reps}</td>
-                  <td className="px-3 py-3 font-mono text-caption font-bold" style={{ color: METRIC_COLOR.tonnage }}>
+                  <td className="px-3 py-3 font-mono text-caption font-bold" style={{ color: tintaDeTexto(METRIC_COLOR.tonnage) }}>
                     {row.tonnage.toLocaleString()} kg
                   </td>
                   {ormActive && (

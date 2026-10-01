@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo } from 'react';
+import { colorDeTema } from '../utils/coloresPersistidos';
 import { useQuery } from '@tanstack/react-query';
 import {
   UserProfile,
@@ -244,7 +245,7 @@ export default function AthleteRoadmapScreen({ profile }: Props) {
     }
     for (const phase of roadmap?.planPhases ?? []) {
       if (phase.status === 'completada' && phase.completedAt) {
-        list.push({ id: `ph-${phase.id}`, icon: 'route', color: phase.color, title: `Fase completada: ${phase.name}`, date: phase.completedAt });
+        list.push({ id: `ph-${phase.id}`, icon: 'route', color: colorDeTema(phase.color), title: `Fase completada: ${phase.name}`, date: phase.completedAt });
       }
     }
     for (const item of roadmap?.items ?? []) {

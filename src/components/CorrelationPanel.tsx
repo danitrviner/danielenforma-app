@@ -772,7 +772,7 @@ export default function CorrelationPanel({
                       <div className="flex items-baseline gap-3">
                         <span className="font-mono font-extrabold text-display" style={{
                           color: Math.abs(correlationResult.r) > 0.7
-                            ? 'var(--color-accent)'
+                            ? 'var(--color-accent-ink)'
                             : Math.abs(correlationResult.r) >= 0.4
                               ? 'var(--color-warning)'
                               : 'var(--color-ink-2)',

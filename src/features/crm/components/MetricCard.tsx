@@ -1,4 +1,5 @@
 import React from 'react';
+import { conAlfa, tintaDeTexto } from '../../../utils/coloresPersistidos';
 import { Icon } from '../../../components/ui';
 
 interface Props {
@@ -33,7 +34,7 @@ export default function MetricCard({ icon, label, value, sub, accent = 'var(--co
           name={icon}
           size="m"
           className="w-7 h-7 rounded-full flex items-center justify-center shrink-0"
-          style={{ color: accent, backgroundColor: `${accent}1a` }}
+          style={{ color: tintaDeTexto(accent), backgroundColor: conAlfa(accent, 10) }}
         />
         {/* `min-w-0` porque un hijo de flex no baja de su ancho de contenido sin
             él: «Conversión continuidad» se salía de su tarjeta y se leía

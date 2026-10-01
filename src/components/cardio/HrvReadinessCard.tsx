@@ -1,4 +1,5 @@
 import React from 'react';
+import { conAlfa, tintaDeTexto } from '../../utils/coloresPersistidos';
 import { HrvReading } from '../../types';
 import { classifyReadiness, READINESS_LABEL, ReadinessBand } from '../../utils/cardioMetrics';
 import { hoyIsoLocal } from '../../utils/trainingWeek';
@@ -39,9 +40,9 @@ export default function HrvReadinessCard({ readings, onMeasure }: Props) {
             <p className="font-sans font-extrabold text-display text-ink tabular-nums">{latest.rmssd.toFixed(1)} <span className="text-label font-mono text-ink-2">ms</span></p>
           </div>
           {band && (
-            <div className="text-center px-3 py-2 rounded-surface" style={{ backgroundColor: `${READINESS_COLOR[band]}1a`, border: `1px solid ${READINESS_COLOR[band]}40` }}>
-              <p className="text-caption font-mono uppercase" style={{ color: READINESS_COLOR[band] }}>Preparación</p>
-              <p className="font-sans font-bold text-body-s" style={{ color: READINESS_COLOR[band] }}>{READINESS_LABEL[band]}</p>
+            <div className="text-center px-3 py-2 rounded-surface" style={{ backgroundColor: conAlfa(READINESS_COLOR[band], 10), border: `1px solid ${conAlfa(READINESS_COLOR[band], 25)}` }}>
+              <p className="text-caption font-mono uppercase" style={{ color: tintaDeTexto(READINESS_COLOR[band]) }}>Preparación</p>
+              <p className="font-sans font-bold text-body-s" style={{ color: tintaDeTexto(READINESS_COLOR[band]) }}>{READINESS_LABEL[band]}</p>
             </div>
           )}
         </div>

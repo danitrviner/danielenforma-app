@@ -8,6 +8,7 @@ import {
   type SegmentedOption, type SelectOption, type TabItem,
 } from './index';
 import { ZONE_COLOR } from '../../utils/cardioZones';
+import { conAlfa } from '../../utils/coloresPersistidos';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Escaparate de primitivas — ruta `/ui`, solo en desarrollo
@@ -415,7 +416,7 @@ export default function Showcase() {
           Página activa: <span className="font-bold text-ink">{pagina + 1} de 4</span>
         </p>
 
-        <div className="rounded-surface overflow-hidden" style={{ background: `linear-gradient(180deg, ${ZONE_COLOR.z2}f2, ${ZONE_COLOR.z2}cc)` }}>
+        <div className="rounded-surface overflow-hidden" style={{ background: `linear-gradient(180deg, ${conAlfa(ZONE_COLOR.z2, 95)}, ${conAlfa(ZONE_COLOR.z2, 80)})` }}>
           <Pager value={paginaOscura} onChange={setPaginaOscura} label="Ejemplo con puntos dentro, fondo de color" dots="inside">
             {['FC', 'Calorías', 'Zonas'].map((n) => (
               <div key={n} className="flex h-40 flex-col items-center justify-center gap-1 pb-6">

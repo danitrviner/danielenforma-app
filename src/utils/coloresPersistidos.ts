@@ -64,3 +64,14 @@ export function tintaSobre(relleno: string): string {
     ? 'var(--color-on-accent)'
     : 'var(--color-on-fill)';
 }
+
+/**
+ * El mismo color, pero para pintar TEXTO o un icono sobre papel. El oro de
+ * relleno (`accent`, `chart-2`) da 2,4:1 en claro → su versión de tinta
+ * (`accent-ink`, que en oscuro vale lo mismo). Los demás colores de la paleta
+ * ya son profundos en claro y pasan tal cual; un color a pelo se respeta.
+ */
+export function tintaDeTexto(color: string): string {
+  const c = colorDeTema(color);
+  return /^var\(--color-(accent|chart-2)\)$/.test(c.trim()) ? 'var(--color-accent-ink)' : c;
+}

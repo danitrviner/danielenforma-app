@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { tintaDeTexto } from '../utils/coloresPersistidos';
 import { useQuery } from '@tanstack/react-query';
 import {
   UserProfile, OnboardingData, OnboardingTemplateQuestion,
@@ -266,7 +267,7 @@ export default function ClientFichaPanel({
           <div className="space-y-2 pb-3">
             {planPhase ? (
               <p className="text-body-s font-bold text-ink flex items-center gap-2">
-                <Icon name={planPhase.icon} size="m" style={{ color: planPhase.color }} />
+                <Icon name={planPhase.icon} size="m" style={{ color: tintaDeTexto(planPhase.color) }} />
                 {planPhase.name}
               </p>
             ) : (

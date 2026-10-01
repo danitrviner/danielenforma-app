@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { conAlfa, tintaDeTexto } from '../utils/coloresPersistidos';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   ComposedChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
@@ -347,11 +348,11 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
     <div className="space-y-5">
       {/* Hero: current phase */}
       {activePhase ? (
-        <div className="relative bg-surface border border-hairline rounded-surface overflow-hidden p-5 pb-4" style={{ background: `linear-gradient(135deg, ${activePhaseColor}14, transparent 65%), var(--color-surface)` }}>
+        <div className="relative bg-surface border border-hairline rounded-surface overflow-hidden p-5 pb-4" style={{ background: `linear-gradient(135deg, ${conAlfa(activePhaseColor, 8)}, transparent 65%), var(--color-surface)` }}>
           <div className="absolute top-0 left-0 bottom-0 w-1" style={{ background: activePhaseColor }} />
           <div className="flex items-start justify-between gap-3 flex-wrap">
             <div>
-              <span className="font-sans text-caption uppercase tracking-widest" style={{ color: activePhaseColor }}>
+              <span className="font-sans text-caption uppercase tracking-widest" style={{ color: tintaDeTexto(activePhaseColor) }}>
                 Fase actual{activeWeekNum != null ? ` · Semana ${activeWeekNum}/${activePhase.weeks}` : ''}
               </span>
               <h2 className="font-sans font-bold text-title-l text-ink tracking-tight ">{activePhase.name}</h2>

@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { conAlfa, tintaDeTexto } from '../../utils/coloresPersistidos';
 import { Roadmap, WeeklyChallenge, ChallengeKind, ChallengeDifficulty } from '../../types';
 import { saveWeeklyChallenge } from '../../dbService';
 import {
@@ -132,7 +133,7 @@ export default function ChallengeOptionsPanel({
                   )}
                   <span
                     className="font-mono text-caption uppercase px-2 rounded-full"
-                    style={{ backgroundColor: `${DIFFICULTY_COLOR[opt.difficulty]}22`, color: DIFFICULTY_COLOR[opt.difficulty] }}
+                    style={{ backgroundColor: conAlfa(DIFFICULTY_COLOR[opt.difficulty], 13), color: tintaDeTexto(DIFFICULTY_COLOR[opt.difficulty]) }}
                   >{opt.difficulty}</span>
                   <span className="font-mono text-caption text-ink-2">{opt.score}</span>
                 </div>

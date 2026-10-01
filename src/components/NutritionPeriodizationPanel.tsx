@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { tintaSobre } from '../utils/coloresPersistidos';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Diet, NutritionPhase, NutritionProgram, NutritionPhaseType, OnboardingData } from '../types';
 import {
@@ -75,10 +76,7 @@ const OBJETIVO_DE_TIPO_VIEJO: Record<NutritionPhaseType, ObjetivoCorporalTipo> =
 };
 
 function phaseTextColor(bgColor: string): string {
-  // accent y data son claros, el resto son oscuros
-  if (bgColor === 'var(--color-accent)') return 'black';
-  if (bgColor === 'var(--color-data)') return 'black';
-  return 'white';
+  return tintaSobre(bgColor);
 }
 
 function fmtDate(isoDate: string): string {
@@ -145,7 +143,7 @@ function ProgramTimeline({ program, diets, today }: TimelineProps) {
           return (
             <div
               key={phase.id}
-              style={{ backgroundColor: bg, color: fg, outline: isActive ? '2px solid white' : 'none', outlineOffset: '-2px' }}
+              style={{ backgroundColor: bg, color: fg, outline: isActive ? '2px solid var(--color-ink)' : 'none', outlineOffset: '-2px' }}
               className="flex items-center justify-between px-3 py-3 rounded-surface relative"
             >
               <div className="flex-1 min-w-0">
@@ -181,7 +179,7 @@ function ProgramTimeline({ program, diets, today }: TimelineProps) {
                   width: `${widthPct}%`,
                   backgroundColor: bg,
                   color: fg,
-                  outline: isActive ? `2px solid white` : 'none',
+                  outline: isActive ? '2px solid var(--color-ink)' : 'none',
                   outlineOffset: '-2px',
                 }}
                 className="flex flex-col items-center justify-center px-1 py-2 transition-all relative"

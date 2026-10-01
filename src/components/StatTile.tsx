@@ -1,4 +1,5 @@
 import React from 'react';
+import { conAlfa, tintaDeTexto } from '../utils/coloresPersistidos';
 import { Icon } from './ui';
 
 interface StatTileProps {
@@ -17,7 +18,7 @@ export default function StatTile({ icon, label, value, accent = 'var(--color-acc
         name={icon}
         size="l"
         className="w-8 h-8 rounded-full flex items-center justify-center"
-        style={{ color: accent, backgroundColor: `${accent}1a` }}
+        style={{ color: tintaDeTexto(accent), backgroundColor: conAlfa(accent, 10) }}
       />
       <span className="font-sans text-caption uppercase tracking-widest text-ink-2">{label}</span>
       <span className="font-sans font-bold text-title-m text-ink leading-none">{value}</span>

@@ -1,4 +1,5 @@
 import React from 'react';
+import { conAlfa, tintaDeTexto } from '../../utils/coloresPersistidos';
 import { Icon } from '../ui';
 
 // Grid de iconos DIBUJADOS con etiqueta en español — sustituye los <select> de
@@ -46,10 +47,10 @@ export default function IconPicker({ value, onChange, accent = 'var(--color-acce
             className="flex flex-col items-center rounded-control p-2 border transition-colors"
             style={{
               borderColor: selected ? accent : 'var(--color-hairline)',
-              backgroundColor: selected ? `${accent}1a` : 'var(--color-bg)',
+              backgroundColor: selected ? conAlfa(accent, 10) : 'var(--color-bg)',
             }}
           >
-            <Icon name={opt.icon} size="l" style={{ color: selected ? accent : 'var(--color-ink-2)' }} />
+            <Icon name={opt.icon} size="l" style={{ color: selected ? tintaDeTexto(accent) : 'var(--color-ink-2)' }} />
             <span className="font-sans text-caption text-ink-2 leading-none text-center">{opt.label}</span>
           </button>
         );

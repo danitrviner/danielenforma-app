@@ -3198,8 +3198,8 @@ export default function MesocycleManager({
                       {editing.distribution ? (
                         <div className="space-y-3">
                           <div className="flex flex-wrap gap-3 text-caption font-mono">
-                            <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-control inline-block bg-[color-mix(in oklab, var(--color-success) 40%, transparent)]"></span><span className="text-ink-2">9–12 series</span></span>
-                            <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-control inline-block bg-[color-mix(in oklab, var(--color-warning) 40%, transparent)]"></span><span className="text-ink-2">&gt;12 series</span></span>
+                            <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-control inline-block bg-[color-mix(in_oklab,var(--color-success)_40%,transparent)]"></span><span className="text-ink-2">9–12 series</span></span>
+                            <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-control inline-block bg-[color-mix(in_oklab,var(--color-warning)_40%,transparent)]"></span><span className="text-ink-2">&gt;12 series</span></span>
                             <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-control inline-block bg-raised"></span><span className="text-ink-2">&lt;9 series</span></span>
                           </div>
 

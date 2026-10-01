@@ -33,7 +33,7 @@ export default function PhaseHeroCard({ phase, progress, weightStatus }: Props) 
           <h2 className="font-sans font-bold text-title-m text-ink uppercase tracking-tight truncate">{phase.name}</h2>
           {phase.motto && <p className="text-ink-2 text-label font-mono ">{phase.motto}</p>}
         </div>
-        <ProgressRing pct={progress.overallPct} color={phase.color} label="Fase" />
+        <ProgressRing pct={progress.overallPct} color={colorDeTema(phase.color)} label="Fase" />
       </div>
 
       {phase.description && (
@@ -48,7 +48,7 @@ export default function PhaseHeroCard({ phase, progress, weightStatus }: Props) 
               icon={m.done ? 'check_circle' : 'trending_up'}
               label={m.metric.label}
               value={m.metric.kind === 'manual' ? (m.done ? 'Hecho' : 'Pendiente') : `${Math.round(m.pct)}%`}
-              accent={m.done ? 'var(--color-success)' : phase.color}
+              accent={m.done ? 'var(--color-success)' : colorDeTema(phase.color)}
             />
           ))}
         </div>
@@ -65,7 +65,7 @@ export default function PhaseHeroCard({ phase, progress, weightStatus }: Props) 
           <div className="h-2 rounded-full bg-track overflow-hidden">
             <div
               className="h-full rounded-full transition-all duration-500"
-              style={{ width: `${Math.max(4, weightStatus.pct)}%`, backgroundColor: phase.color }}
+              style={{ width: `${Math.max(4, weightStatus.pct)}%`, backgroundColor: colorDeTema(phase.color) }}
             />
           </div>
           <p className="font-mono text-caption text-ink-2 mt-1">
