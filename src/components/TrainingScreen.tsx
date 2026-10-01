@@ -24,8 +24,9 @@ import { Skeleton } from './ui';
 import { useBotonAtras } from '../services/botonAtras';
 import {
   guardarSesion, cargarSesion, borrarSesion, borrarDescanso, formaDeSesion, tieneSeriesHechas,
-  limpiarSesionesCaducadas, seriesHechasEnBorrador,
+  limpiarSesionesCaducadas, seriesHechasEnBorrador, cargarInicioSesion, guardarInicioSesion,
 } from '../utils/sesionEnCurso';
+import { segundosTranscurridos } from '../utils/duracionSesion';
 import { haptics } from '../services/haptics';
 import { Badge, BadgeTone, Button, Icon, SegmentedControl, Chip, EmptyState } from './ui';
 import WorkoutSessionPlayer, { SessionCelebration } from './training/WorkoutSessionPlayer';
@@ -213,6 +214,13 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
   // reabierta desde su tarjeta) — si tiene valor, `handleFinish` actualiza
   // ese registro en vez de crear uno nuevo. `null` = sesión normal.
   const [editingLogId, setEditingLogId] = useState<string | null>(null);
+  // Cronómetro general de la sesión (cabecera del player): epoch ms de
+  // cuando se abrió la sesión por primera vez. `null` al editar una sesión ya
+  // completada, donde no hay cronómetro corriendo — ver `openPlayer` y
+  // `reopenCompletedPlayer`. Vive en React para que el player lo pueda leer
+  // en cada render; lo que sobrevive a que iOS mate la app es la copia en
+  // `sesionEnCurso.ts` (`guardarInicioSesion`/`cargarInicioSesion`).
+  const [sessionStartedAt, setSessionStartedAt] = useState<number | null>(null);
   // No necesita re-render propio: solo lo lee el autoguardado, y cambia junto
   // con activeWorkout (mismo ciclo de vida que el resto del estado del player).
   const formaPrescritaRef = useRef<number[]>([]);
@@ -380,6 +388,26 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
     // perder el borrador antes que colocar los kilos en el ejercicio de al lado.
     const borrador = cargarSesion(profile.email, assignment.id, wo.id, formaDeSesion(prerrellenadas));
 
+    // Cronómetro general: empieza a contar AL ABRIR, no al marcar la primera
+    // serie. Si ya había un inicio guardado de esta misma sesión (se salió y
+    // se volvió a entrar, o la app murió en segundo plano) se recupera tal
+    // cual; si no, arranca aquí y se persiste de inmediato — no se espera a
+    // que `guardarSesion` decida que hay trabajo que proteger, porque para
+    // entonces ya habrían pasado minutos reales de sesión sin contar.
+    //
+    // Pero sin ninguna serie marcada el inicio guardado no vale (Dani,
+    // 01-10): abrir la sesión por la mañana solo para mirarla y entrenar por
+    // la tarde sumaba las horas de en medio. Mientras no haya trabajo hecho,
+    // cada apertura vuelve a empezar de cero.
+    let iniciadaEn = borrador && tieneSeriesHechas(borrador)
+      ? cargarInicioSesion(profile.email, assignment.id)
+      : null;
+    if (iniciadaEn == null) {
+      iniciadaEn = Date.now();
+      guardarInicioSesion(profile.email, assignment.id, iniciadaEn);
+    }
+    setSessionStartedAt(iniciadaEn);
+
     setActiveAssignment(assignment);
     setActiveWorkout(wo);
     setPlayerSets(borrador?.playerSets ?? prerrellenadas);
@@ -460,6 +488,10 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
     setCelebration(null);
     setPrevEntries(prevEntriesForEdit);
     setEditingLogId(existingLog.id);
+    // Editar no tiene cronómetro en marcha: el player enseña la duración que
+    // ya se guardó con el log (`completedDurationSeg`, prop aparte), no una
+    // que siga corriendo.
+    setSessionStartedAt(null);
   };
 
   /** Cierra el player y deja el estado como estaba antes de abrirlo. **No borra
@@ -475,6 +507,10 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
     setExerciseNoteInputs([]);
     setWorkoutNoteInput('');
     setEditingLogId(null);
+    // Solo se limpia el estado de React, no el inicio guardado en
+    // `sesionEnCurso.ts`: salir a la lista a mitad de sesión no debe
+    // reiniciar el cronómetro, igual que no borra el borrador de series.
+    setSessionStartedAt(null);
   };
 
   // Solo se copia el array del ejercicio TOCADO, no los de todos — antes
@@ -615,6 +651,14 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
       const totalSets = entries.reduce((sum, e) => sum + e.sets.length, 0);
       const isFirstEver = logs.length === 0;
 
+      // Duración real de la sesión: de `sessionStartedAt` (instante en que se
+      // ABRIÓ el player) a ahora. Si falta el inicio — borrador viejo de
+      // antes de que existiera este cronómetro, o caducado a las 36h — se
+      // omiten los dos campos en vez de inventar una duración; `undefined`
+      // llega a Firestore vía `stripUndefined` igual que `note` más abajo.
+      const duracionSeg = sessionStartedAt != null ? segundosTranscurridos(sessionStartedAt, Date.now()) : undefined;
+      const startedAtIso = sessionStartedAt != null ? new Date(sessionStartedAt).toISOString() : undefined;
+
       const newLog = await createWorkoutLog({
         athleteId:   profile.email,
         workoutId:   activeWorkout.id,
@@ -624,6 +668,8 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
         completedAt:  now,
         entries,
         note: workoutNoteInput.trim() || undefined,
+        startedAt: startedAtIso,
+        duracionSeg,
       });
 
       // El entrenamiento ya está a salvo en `workoutLogs` en este punto. Marcar
@@ -665,7 +711,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
       }
       // El modal de celebración se muestra ANTES de cerrar el player — el
       // atleta lo despide él mismo (dismissCelebration) y ahí se limpia todo.
-      setCelebration({ isFirstEver, totalSets, tonnage, prs });
+      setCelebration({ isFirstEver, totalSets, tonnage, prs, durationSeg: duracionSeg });
     } catch (err) {
       console.error(err);
       showToast('No se pudo guardar el entrenamiento.');
@@ -785,6 +831,8 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
         handleFinish={handleFinish}
         isFinishing={isFinishing}
         canFinish={canFinish}
+        sessionStartedAt={sessionStartedAt}
+        completedDurationSeg={editingLogId ? logs.find(l => l.id === editingLogId)?.duracionSeg : undefined}
         celebration={celebration}
         dismissCelebration={dismissCelebration}
         cerrarPlayer={cerrarPlayer}

@@ -7,6 +7,7 @@ import { idDeFoodItem } from '../utils/foodItemId';
 import { leerCatalogo, marcarCatalogoCambiado } from './catalogoVersionado';
 import { escribirLocal } from '../utils/almacenLocal';
 import { acotarExtrasDeComida } from '../utils/menuEngine';
+import { hoyIsoLocal } from '../utils/trainingWeek';
 
 // ─── FOOD ITEMS ───────────────────────────────────────────────────────────────
 
@@ -697,10 +698,22 @@ export async function getDietCompletionLog(athleteId: string, date: string): Pro
 }
 
 // Bulk range read for the AI nutrition dashboard's adherence computation.
+//
+// Ninguno de sus consumidores (adherencia, rachas, informes, calendario del
+// coach) quiere ver el futuro: desde que NutritionScreen deja planificar hasta
+// 7 días por delante (sembrando comidas que nacen YA marcadas como comidas,
+// ver `addToPlaced`/`ItemState`), un día que el atleta solo ha PLANIFICADO
+// podía colarse en estas cuentas como si ya lo hubiera comido. Se filtra aquí,
+// en el único sitio por el que pasan todos, en vez de en cada consumidor —y
+// SOLO en lo que se devuelve: el espejo local de abajo guarda la lista
+// completa, futuro incluido, porque es la única copia que tiene un día que
+// todavía no ha subido a Firestore.
 export async function getDietCompletionLogsForAthlete(athleteId: string, desde?: string): Promise<DietCompletionLog[]> {
+  const hoy = hoyIsoLocal();
+  const sinFuturo = (lista: DietCompletionLog[]) => lista.filter(l => l.date <= hoy);
   if (forceLocalOnly) {
     const propios = getLocalDietCompletionLogs().filter(l => l.athleteId === athleteId);
-    return (desde ? propios.filter(l => l.date >= desde) : propios).sort((a, b) => a.date.localeCompare(b.date));
+    return sinFuturo(desde ? propios.filter(l => l.date >= desde) : propios).sort((a, b) => a.date.localeCompare(b.date));
   }
   try {
     let q = query(collection(db, 'dietCompletionLogs'), where('athleteId', '==', athleteId));
@@ -717,12 +730,12 @@ export async function getDietCompletionLogsForAthlete(athleteId: string, desde?:
     const completa = [...list, ...soloLocales].sort((a, b) => a.date.localeCompare(b.date));
     // Con ventana NO se toca el espejo local (ver getBodyweightForAthlete).
     if (!desde) saveLocalDietCompletionLogs([...getLocalDietCompletionLogs().filter(l => l.athleteId !== athleteId), ...completa]);
-    return completa;
+    return sinFuturo(completa);
   } catch (err) {
     console.warn('getDietCompletionLogsForAthlete Firestore failed, using local:', err);
     setLocalBypassMode(true, err);
     const propios = getLocalDietCompletionLogs().filter(l => l.athleteId === athleteId);
-    return (desde ? propios.filter(l => l.date >= desde) : propios).sort((a, b) => a.date.localeCompare(b.date));
+    return sinFuturo(desde ? propios.filter(l => l.date >= desde) : propios).sort((a, b) => a.date.localeCompare(b.date));
   }
 }
 

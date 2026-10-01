@@ -60,6 +60,14 @@ const BODY_METRIC_KEYS = Object.keys(BODY_METRIC_LABELS) as BodyMetricKey[];
 const INPUT_CLS      = 'bg-bg border border-hairline rounded-surface px-3 py-2 text-body-s text-ink focus:outline-none focus:ring-1 focus:ring-accent';
 const MINI_INPUT_CLS = 'bg-bg border border-hairline rounded-control px-2 py-2 text-label font-mono text-ink focus:outline-none focus:ring-1 focus:ring-accent';
 
+/** El textarea de la pregunta crece con lo escrito: una pregunta larga se lee
+ *  entera sin barra de scroll dentro de un hueco de una línea. */
+function ajustarAlto(el: HTMLTextAreaElement | null) {
+  if (!el) return;
+  el.style.height = 'auto';
+  el.style.height = `${el.scrollHeight}px`;
+}
+
 // ── Component ──────────────────────────────────────────────────────────────────
 
 interface Props {
@@ -146,7 +154,10 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
         {form.questions.map((q, idx) => (
           <div key={q.id} className="bg-surface border border-hairline rounded-surface p-4 space-y-3">
 
-            {/* Main row */}
+            {/* Fila 1: el texto de la pregunta, a lo ancho y creciendo con lo
+                escrito. Antes compartía fila con flechas, tipo, «Oblig.» y dos
+                botones: en el móvil se quedaba en un hueco de una letra y no se
+                podía leer la pregunta que se estaba escribiendo (Dani, 01-10). */}
             <div className="flex items-start gap-2">
               <div className="flex flex-col flex-shrink-0 mt-1">
                 <button onClick={() => moveQ(idx, -1)} disabled={idx === 0}
@@ -159,27 +170,36 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
                 </button>
               </div>
               <span className="font-mono text-caption text-ink-5 font-bold w-5 text-center mt-2 flex-shrink-0">{idx + 1}</span>
-              <input
+              <textarea
                 value={q.label}
-                onChange={e => setQ(idx, { label: e.target.value })}
+                onChange={e => { setQ(idx, { label: e.target.value }); ajustarAlto(e.target); }}
+                ref={ajustarAlto}
+                rows={1}
                 placeholder="Texto de la pregunta"
-                className={`flex-1 min-w-0 ${INPUT_CLS}`}
+                aria-label={`Texto de la pregunta ${idx + 1}`}
+                className={`flex-1 min-w-0 resize-none overflow-hidden leading-snug ${INPUT_CLS}`}
               />
+            </div>
+
+            {/* Fila 2: tipo, obligatoria y acciones. Se parte en dos líneas si
+                no cabe, en vez de robarle ancho al texto. */}
+            <div className="pl-0 sm:pl-10 flex items-center gap-2 flex-wrap">
               <select
                 value={q.type}
                 onChange={e => setQ(idx, applyTypeChange({ type: e.target.value as QuestionType }))}
-                className="bg-raised border border-hairline rounded-control px-2 py-2 text-title-s font-mono text-ink focus:outline-none focus:ring-1 focus:ring-accent flex-shrink-0"
+                aria-label={`Tipo de la pregunta ${idx + 1}`}
+                className="bg-raised border border-hairline rounded-control px-2 py-2 text-label font-mono text-ink focus:outline-none focus:ring-1 focus:ring-accent"
               >
                 {(Object.keys(QUESTION_TYPE_LABELS) as QuestionType[]).map(t => (
                   <option key={t} value={t}>{QUESTION_TYPE_LABELS[t]}</option>
                 ))}
               </select>
               {(q.type === 'numeric' || q.type === 'scale' || q.type === 'metric') && (
-                <span title="Graficable" className="flex-shrink-0 mt-2">
+                <span title="Graficable" className="flex-shrink-0">
                   <Icon name="show_chart" size="s" className="text-accent-ink" />
                 </span>
               )}
-              <label className="flex items-center gap-1 cursor-pointer flex-shrink-0 mt-2" title="Obligatoria">
+              <label className="flex items-center gap-1 cursor-pointer flex-shrink-0" title="Obligatoria">
                 <input
                   type="checkbox"
                   className="sr-only peer"
@@ -192,14 +212,16 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
                 >
                   {q.required && <Icon name="check" size="s" className="text-on-accent" />}
                 </span>
-                <span className="font-mono text-caption text-ink-2 hidden sm:inline">Oblig.</span>
+                <span className="font-mono text-caption text-ink-2">Obligatoria</span>
               </label>
-              <Button variant="ghost" size="s" onClick={() => duplicateQ(idx)} icon="content_copy" label="Duplicar" />
-              <Button variant="ghost" size="s" onClick={() => removeQ(idx)} disabled={form.questions.length === 1} icon="delete" label="Eliminar" />
+              <div className="ml-auto flex items-center">
+                <Button variant="ghost" size="s" onClick={() => duplicateQ(idx)} icon="content_copy" label="Duplicar" />
+                <Button variant="ghost" size="s" onClick={() => removeQ(idx)} disabled={form.questions.length === 1} icon="delete" label="Eliminar" />
+              </div>
             </div>
 
             {/* Help text */}
-            <div className="pl-10">
+            <div className="pl-0 sm:pl-10">
               <input
                 value={q.helpText ?? ''}
                 onChange={e => setQ(idx, { helpText: e.target.value || undefined })}
@@ -214,7 +236,7 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
                 que recrearlos desde cero para que el sugeridor de volumen
                 pudiera leer el cierre de mesociclo. */}
             {(q.type === 'scale' || q.type === 'numeric' || q.type === 'choice') && (
-              <div className="pl-10 flex items-center gap-2 flex-wrap">
+              <div className="pl-0 sm:pl-10 flex items-center gap-2 flex-wrap">
                 <span className="font-mono text-caption text-ink-3 uppercase tracking-wider">Señal</span>
                 <select
                   value={q.signalKey ?? ''}
@@ -236,7 +258,7 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
             )}
 
             {/* Type-specific config */}
-            <div className="pl-10 space-y-2">
+            <div className="pl-0 sm:pl-10 space-y-2">
               {q.type === 'numeric' && (
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   <div>

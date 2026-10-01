@@ -655,6 +655,15 @@ export interface WorkoutLog {
   entries: WorkoutEntryLog[];
   note?: string;         // athlete's note on the workout as a whole
   noteCoachSeen?: boolean;
+  /** Instante en que se ABRIÓ el player por primera vez (ISO), no en que se
+   *  guardó. Ausente en logs antiguos y en los que perdieron el borrador de
+   *  inicio (`utils/sesionEnCurso.ts`) antes de terminar la sesión. */
+  startedAt?: string;
+  /** Duración real de la sesión, de `startedAt` a "Terminar sesión" — reloj
+   *  de pared, no suma de descansos. Solo existe junto a `startedAt`: sin
+   *  inicio no hay nada que restar, y se prefiere omitir el dato a
+   *  inventarlo. Al EDITAR una sesión ya completada no se recalcula. */
+  duracionSeg?: number;
 }
 
 export interface WorkoutAssignment {
@@ -1098,6 +1107,11 @@ export interface DietItem {
    *  llega también a 0,25, así que por tamaño son indistinguibles. Medido el
    *  16-09-2026: le pasaba al 9,1 % del recetario. Ver `escalaDeReceta`. */
   escala?: number;
+  /** Hora "HH:mm" a la que se apuntó, en «Día flexible» (utils/diaFlexible.ts):
+   *  ahí no hay comidas con las que ordenar, así que la lista de "Lo que voy
+   *  comiendo" se ordena por esto. Ausente en un día "por comidas" normal —
+   *  ahí el orden lo da la comida en la que vive el ítem, no la hora. */
+  hora?: string;
 }
 
 /** Una receta camino de «Mi plan», con lo que se come de ella ya resuelto.
@@ -1188,6 +1202,16 @@ export interface DietCompletionLog {
   /** Cupo de intercambios pautado ese día. Igual que `meals`: se congela para
    *  que el histórico no se mueva si luego le cambias el cupo al atleta. */
   budget?: Record<FoodCategory, number>;
+  /**
+   * «Día flexible» (10-2026): el atleta no reparte por comidas, apunta lo que
+   * va comiendo contra el cupo del día entero. `meals` sigue teniendo la misma
+   * forma —UNA sola comida sintética con todo lo apuntado— para no abrir un
+   * segundo formato de almacenamiento; esta marca es lo único que le dice a la
+   * pantalla que pinte "Lo que voy comiendo" en vez de las tarjetas por comida.
+   * Por día, no por atleta: activarlo un día no toca los demás. Ver
+   * utils/diaFlexible.ts para la conversión ida y vuelta con el modo normal.
+   */
+  modoFlexible?: boolean;
   /** Cuándo se guardó por última vez (ISO). Lo pone `saveDietCompletionLog` y
    *  sirve para decidir, al reabrir la app, si manda el día que hay en el móvil
    *  o el del servidor — ver `db/registroDelDia.ts`. Los días anteriores a

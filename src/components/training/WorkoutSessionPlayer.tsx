@@ -10,6 +10,7 @@ import { exerciseSessionHistory, ExerciseBestProgress } from '../../utils/athlet
 import { allTimeBestBefore } from '../../utils/trainingReport';
 import { publicarEstado, cerrarSesionEnVivo, leerToquesDelBloqueo, EstadoEnVivo } from '../../services/sesionEnVivo';
 import { cargarDescanso, guardarDescanso, borrarDescanso, DescansoEnCurso } from '../../utils/sesionEnCurso';
+import { segundosTranscurridos, formatearDuracion } from '../../utils/duracionSesion';
 import { haptics } from '../../services/haptics';
 import { formatDate } from '../../utils/trainingWeek';
 import { useEstable } from '../../hooks/useEstable';
@@ -22,6 +23,9 @@ export interface SessionCelebration {
   totalSets: number;
   tonnage: number;
   prs: { exerciseId: string; name: string; newBest: number }[];
+  /** Ausente si la sesión no tenía instante de inicio guardado (borrador
+   *  viejo): se omite la tarjeta de duración en vez de inventar un número. */
+  durationSeg?: number;
 }
 
 interface Props {
@@ -41,6 +45,13 @@ interface Props {
   handleFinish: () => void | Promise<void>;
   isFinishing: boolean;
   canFinish: boolean;
+  /** Epoch ms del inicio de la sesión en curso — `null` al editar una sesión
+   *  YA completada, donde no hay cronómetro corriendo (ver `completedDurationSeg`). */
+  sessionStartedAt: number | null;
+  /** Duración ya guardada de la sesión que se está EDITANDO (rama
+   *  `editingLogId` en TrainingScreen) — se enseña estática, sin cronómetro
+   *  en marcha. `undefined` si el log es anterior a este campo. */
+  completedDurationSeg?: number;
   celebration: SessionCelebration | null;
   dismissCelebration: () => void;
   cerrarPlayer: () => void;
@@ -62,6 +73,7 @@ export default function WorkoutSessionPlayer({
   profile, activeAssignment, activeWorkout, playerSets, updateSet, addSetRow, prevEntries,
   exerciseNoteInputs, updateExerciseNote,
   getExercise, getPersonalNote, logs, exerciseProgressById, handleFinish, isFinishing, canFinish,
+  sessionStartedAt, completedDurationSeg,
   celebration, dismissCelebration, cerrarPlayer, sameDayCardio,
   videoTargetRef, setEditorTargetRef, firstSetRowTargetRef, onMarkActionDone,
 }: Props) {
@@ -113,8 +125,13 @@ export default function WorkoutSessionPlayer({
   );
   const [nowMs, setNowMs] = useState(() => Date.now());
 
+  // Antes este intervalo solo corría con un descanso activo — el cronómetro
+  // GENERAL de la sesión (debajo) necesita el mismo "ahora" recalculado
+  // contra `Date.now()` durante TODA la sesión, no solo entre series. Se
+  // apaga al editar una sesión ya completada: ahí no hay nada corriendo en
+  // vivo, ni descanso ni cronómetro — la duración se enseña fija.
   useEffect(() => {
-    if (!restTimer) return;
+    if (isEditingCompleted) return;
     const marcarAhora = () => setNowMs(Date.now());
     marcarAhora();
     // 500 ms para que el segundo cambie a tiempo sin depender de que el tick
@@ -131,9 +148,19 @@ export default function WorkoutSessionPlayer({
       document.removeEventListener('visibilitychange', alVolver);
       window.removeEventListener('focus', marcarAhora);
     };
-  }, [restTimer]);
+  }, [isEditingCompleted]);
 
   const restSecondsLeft = restTimer ? Math.max(0, Math.ceil((restTimer.restEndsAt - nowMs) / 1000)) : null;
+
+  // Cronómetro general de la sesión — cabecera, junto a «series hechas».
+  // Editando una sesión ya completada se enseña la duración GUARDADA, fija
+  // (no hay cronómetro que correr: esto es una corrección, no un entreno en
+  // marcha). `null` cuando no hay nada que mostrar — borrador viejo sin
+  // inicio guardado, o log viejo sin `duracionSeg` — en vez de inventar un
+  // número o dejar un "0:00" que parezca real.
+  const cronometroSeg = isEditingCompleted
+    ? completedDurationSeg ?? null
+    : (sessionStartedAt != null ? segundosTranscurridos(sessionStartedAt, nowMs) : null);
 
   // Al llegar a 0: haptic de AVISO (doble golpe corto — categoría propia del
   // handoff maestro, no es selección ni éxito).
@@ -394,6 +421,20 @@ export default function WorkoutSessionPlayer({
               {formatDate(activeAssignment.date)} · EJERCICIO {String(pageIdx + 1).padStart(2, '0')}/{orderedExercises.length}
             </p>
           </div>
+          {/* Cronómetro general — empieza al abrir la sesión (no al marcar la
+              primera serie) y sigue corriendo aunque se salga y se vuelva a
+              entrar. Editando una sesión completada enseña la duración
+              GUARDADA y fija, sin cronómetro en marcha. Sin icono: "timer" no
+              existe en la lista cerrada de material-symbols-iconos.txt. */}
+          {cronometroSeg != null && (
+            <>
+              <div className="w-px h-8 bg-hairline hidden sm:block" />
+              <div className="flex-shrink-0 text-right">
+                <span className="font-mono text-label text-ink font-bold tabular-nums">{formatearDuracion(cronometroSeg)}</span>
+                <span className="block font-mono text-caption text-ink-2 uppercase">{isEditingCompleted ? 'duración' : 'tiempo'}</span>
+              </div>
+            </>
+          )}
           <div className="flex-shrink-0 text-right">
             <span className="font-mono text-label text-accent-ink font-bold">{doneSetsTotal}/{totalSetsAll}</span>
             <span className="block font-mono text-caption text-ink-2 uppercase">series hechas</span>
@@ -470,7 +511,10 @@ export default function WorkoutSessionPlayer({
                 {celebration.isFirstEver ? 'Así se empieza — a partir de aquí, todo suma.' : 'Buen trabajo. Sigue así.'}
               </p>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            {/* Tercera tarjeta de duración solo si hay dato — una sesión sin
+                instante de inicio guardado (borrador viejo) no inventa un
+                número, se queda en la cuadrícula de 2 columnas de siempre. */}
+            <div className={`grid gap-3 ${celebration.durationSeg != null ? 'grid-cols-3' : 'grid-cols-2'}`}>
               <div className="bg-raised rounded-surface p-3">
                 <p className="font-mono text-title-l font-bold text-ink tabular-nums">{celebration.totalSets}</p>
                 <p className="font-mono text-caption text-ink-2 uppercase tracking-wide">Series</p>
@@ -479,6 +523,12 @@ export default function WorkoutSessionPlayer({
                 <p className="font-mono text-title-l font-bold text-ink tabular-nums">{Math.round(celebration.tonnage).toLocaleString('es-ES')}</p>
                 <p className="font-mono text-caption text-ink-2 uppercase tracking-wide">kg movidos</p>
               </div>
+              {celebration.durationSeg != null && (
+                <div className="bg-raised rounded-surface p-3">
+                  <p className="font-mono text-title-l font-bold text-ink tabular-nums">{formatearDuracion(celebration.durationSeg)}</p>
+                  <p className="font-mono text-caption text-ink-2 uppercase tracking-wide">Duración</p>
+                </div>
+              )}
             </div>
             {celebration.prs.length > 0 && (
               <div className="bg-accent/10 border border-accent/30 rounded-surface p-3 space-y-2 text-left">

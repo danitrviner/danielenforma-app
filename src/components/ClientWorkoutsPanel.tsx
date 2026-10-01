@@ -10,6 +10,7 @@ import { sesionesDeMesociclo, fechasDelMesociclo } from '../utils/asignacionMeso
 import { addDays, hoyIsoLocal, esFechaIso } from '../utils/trainingWeek';
 import { nombreDeMeso } from '../utils/nombresMeso';
 import { adherenciaDeMesociclo } from '../utils/adherence';
+import { formatearDuracion } from '../utils/duracionSesion';
 import { useToast } from '../hooks/useToast';
 import MesocycleDashboard from './MesocycleDashboard';
 import LoadHistoryPanel from './LoadHistoryPanel';
@@ -429,6 +430,12 @@ export default function ClientWorkoutsPanel({
           <div className="space-y-2">
             {[...assignments].sort((a, b) => a.date.localeCompare(b.date)).map(a => {
               const wo = workouts.find(w => w.id === a.workoutId);
+              // Duración real de la sesión (cronómetro general, cabecera del
+              // player del atleta) — solo existe si el log ya la trae; los
+              // anteriores a ese cronómetro se quedan sin este dato.
+              const duracionSeg = a.status === 'completed'
+                ? athleteLogs.find(l => l.assignmentId === a.id)?.duracionSeg
+                : undefined;
               return (
                 <div key={a.id} className="flex items-center justify-between gap-3 p-3 bg-surface border border-hairline rounded-surface">
                   <div className="flex items-center gap-3 min-w-0">
@@ -440,7 +447,9 @@ export default function ClientWorkoutsPanel({
                           <span className="material-symbols-outlined text-accent-ink text-body-s flex-shrink-0" title="Esta rutina pide grabar vídeo">videocam</span>
                         )}
                       </p>
-                      <p className="font-mono text-caption text-ink-2">{a.date}{wo ? ` · ${wo.exercises.length} ejercicios` : ''}</p>
+                      <p className="font-mono text-caption text-ink-2">
+                        {a.date}{wo ? ` · ${wo.exercises.length} ejercicios` : ''}{duracionSeg != null ? ` · ${formatearDuracion(duracionSeg)}` : ''}
+                      </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">

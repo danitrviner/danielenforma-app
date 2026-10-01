@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { minutosDeReceta } from '../utils/tiempoDeReceta';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { UserProfile, Diet, DietMeal, DietItem, FoodCategory, DietMode, MealItem, Recipe, RecipeFavorites, RefeedDay, RecetaPendiente, MenuCompletionLog, DietCompletionLog } from '../types';
+import { UserProfile, Diet, DietMeal, DietItem, FoodCategory, DietMode, MealItem, Recipe, RecipeFavorites, RecetaPendiente, MenuCompletionLog, DietCompletionLog } from '../types';
 import { getDietsForAthlete, getAthleteDietConfig, saveAthleteDietConfig, createDiet, updateDiet, deleteDiet, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig, saveAthleteNutritionConfig, getRecipes, getRecipeFavorites, getNutritionProgram, markNutritionPhaseSeen, computeActivePhase, createNotificationDeduped, getDietCompletionLog, saveDietCompletionLog, createRecipe, queryRecetas, queryRecetasForGenerator, cargarIndiceRecetas, getOnboarding, getRecipeById, getMenuCompletionLog, saveMenuCompletionLog, getAlimentosPersonales, crearAlimentoPersonal, actualizarAlimentoPersonal, borrarAlimentoPersonal } from '../dbService';
 import type { RecetasCursor } from '../dbService';
 import { CATS, BUDGET_CATS, CAT_LABEL, CAT_COLOR, CAT_BG, MODE_LABEL, ALL_DIET_MODES, round2, fmtQty, foodNameWithoutGrams, addToPlaced, recipeToDietItems, computeDietPlaced } from '../utils/exchangeHelpers';
@@ -28,11 +28,13 @@ import { useTutorialEngine } from '../features/tutorial/TutorialEngine';
 import { fotoDeReceta } from '../utils/fotoDeReceta';
 import FotoDeReceta from './FotoDeReceta';
 import { Skeleton } from './ui';
-import { EmptyState, Sheet, Icon, Button, ProgressBar, RingSeal, Stepper, Dialog, ListRow, Input } from './ui';
+import { EmptyState, Sheet, Icon, Button, ProgressBar, RingSeal, Stepper, Dialog, ListRow, Input, SegmentedControl } from './ui';
 import MealItemSwipeRow from './nutrition/MealItemSwipeRow';
 import CrearAlimentoSheet from './nutrition/CrearAlimentoSheet';
 import GuiaDeIntercambios from './nutrition/GuiaDeIntercambios';
 import { NotaDeFuente } from './FuentesCientificasSheet';
+import { calcularArrastreEntreComidas, type ComidaParaArrastre, type ObjetivoEfectivoComida } from '../utils/arrastreEntreComidas';
+import { aDiaFlexible, aPorComidas, filasEnOrdenCronologico, horaActualHHMM, ID_COMIDA_FLEXIBLE } from '../utils/diaFlexible';
 
 import {
   COACH_EMAIL, makeId, dietSnapshot, estructuraDeDia, sembrarDiaDelPlan, fechaLarga,
@@ -209,6 +211,12 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
   const { fecha: hoyFecha } = useDiaActual();
   const [viewDate, setViewDate] = useState(hoyFecha);
   const viendoHoy = viewDate === hoyFecha;
+  /* Hacia delante se puede planificar, no solo mirar: hasta 7 días, para que
+     el atleta que sabe que el sábado come fuera pueda dejarlo apuntado antes
+     de que llegue. Pasado ese tope no hay "plan" que valga —ni el coach pauta
+     tan lejos ni tiene sentido dejar el selector crecer sin límite. */
+  const maxFechaFutura = addDays(hoyFecha, 7);
+  const viendoFuturo = viewDate > hoyFecha;
   // Si la app cruza la medianoche con la pantalla abierta en "hoy", "hoy" pasa
   // a ser el día nuevo — sin esto se quedaría escribiendo en el día anterior.
   const hoyPrevioRef = useRef(hoyFecha);
@@ -365,9 +373,18 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
   // read-only view, so it can't just be the query data directly) ───────────
   const [selectedDiet, setSelectedDiet] = useState<Diet | null>(null);
   const [savedDietSnapshot, setSavedDietSnapshot] = useState('');
+  /** Último `modoFlexible` ya guardado — `dietSnapshot` no lo incluye (es un
+   *  campo del registro, no de la dieta), así que `isDirty` lo compara aparte;
+   *  sin esto, activar el modo en un día cuya estructura colapsa a una sola
+   *  comida que ya tenía un único hueco podía no detectarse como cambio. */
+  const [savedModoFlexible, setSavedModoFlexible] = useState(false);
   // "Mis dietas" — gestión de las dietas del atleta (crear/duplicar/borrar),
   // absorbida aquí en la fusión de Intercambios + Mis Dietas ("Mi plan").
   const [misDietasOpen, setMisDietasOpen] = useState(false);
+  /** «Día flexible» (utils/diaFlexible.ts) — por día, seedeado del propio
+   *  registro en el mismo efecto que siembra `selectedDiet`. Activarlo aquí no
+   *  toca otros días: cada uno trae su propia marca. */
+  const [modoFlexible, setModoFlexible] = useState(false);
 
   // Per-item state (ephemeral, day-only)
   const [itemStates, setItemStates] = useState<Record<string, ItemState>>({});
@@ -487,8 +504,14 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
 
   // Nutrition periodization
   const [phaseBanner, setPhaseBanner] = useState<string | null>(null);
-  /** Recarga que el coach ha marcado para HOY (NutritionProgram.refeedDays). */
-  const [refeedHoy, setRefeedHoy] = useState<RefeedDay | null>(null);
+  /** Recarga que el coach ha marcado para el día que se está viendo
+   *  (NutritionProgram.refeedDays) — sigue a `viewDate`, no solo a hoy: si el
+   *  atleta navega a un día futuro con recarga programada, tiene que verla
+   *  antes de llegar, no solo el día de. */
+  const refeedDelDia = useMemo(
+    () => (program?.refeedDays ?? []).find(r => r.date === viewDate) ?? null,
+    [program, viewDate],
+  );
 
   // Pantalla de reparto (a petición de Dani) — un único botón "Editar reparto
   // por comida" abre esta pantalla con el reparto de TODAS las comidas a la
@@ -556,8 +579,6 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
         }
       }
 
-      // Día de recarga marcado por el coach para hoy — es solo un aviso.
-      setRefeedHoy((program?.refeedDays ?? []).find(r => r.date === hoyFecha) ?? null);
     })().catch(err => console.error('NutritionScreen init error:', err));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loadingPhase1, profile.email]);
@@ -617,6 +638,8 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     setSavedDietSnapshot(dietSnapshot(plan));
     setItemStates(estados);
     setOrigItemCounts(counts);
+    setModoFlexible(diaLog?.modoFlexible ?? false);
+    setSavedModoFlexible(diaLog?.modoFlexible ?? false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loadingPhase1, loadingDia, viewDate, diaLog, cupoPautado, dietaPautada, allDietsList, profile.email]);
 
@@ -624,10 +647,12 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
      El cupo se congela al sembrar el día a propósito: mover el objetivo con la
      comida ya marcada haría que el atleta viera cómo «desaprueba» un día que
      ya había cuadrado. Pero quedarse callado es peor: se queda comiendo contra
-     un número viejo sin saberlo. Solo para HOY — los días pasados se quedan
-     con el cupo que tuvieron, que es lo que de verdad pasó. */
+     un número viejo sin saberlo. Para hoy y para cualquier día futuro que esté
+     planificando (el coach puede cambiar el cupo de un día que el atleta ya
+     había dejado montado) — los días PASADOS se quedan con el cupo que
+     tuvieron, que es lo que de verdad pasó. */
   const cupoCambiado = useMemo(() => {
-    if (!selectedDiet || !cupoPautado || viewDate !== hoyIsoLocal()) return false;
+    if (!selectedDiet || !cupoPautado || viewDate < hoyIsoLocal()) return false;
     return BUDGET_CATS.some(c => round2(selectedDiet.budget[c] ?? 0) !== round2(cupoPautado[c] ?? 0));
   }, [selectedDiet, cupoPautado, viewDate]);
 
@@ -661,6 +686,53 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     }
     return { doneByCat, mealDoneByCat, totalItems: total, doneItems: done };
   }, [selectedDiet, itemStates]);
+
+  /* Arrastre entre comidas (decisión de Dani, 10-2026): si en una comida te
+     pasas, lo que sobra se resta del objetivo de las siguientes; si te quedas
+     corto, se les suma. `calcularArrastreEntreComidas` es pura y no toca
+     `meal.target` —el reparto que guarda la dieta sigue siendo el original—,
+     así que esto se recalcula solo en cada render con lo que hay colocado
+     ahora mismo: quitar el alimento que sobraba deshace el arrastre solo. */
+  /* Lo que hay PUESTO en cada comida, marcado como comido o no. El arrastre
+     compara contra esto y no contra `mealDoneByCat`: un día sembrado con la
+     dieta del coach trae los alimentos colocados pero sin marcar, y es justo
+     ahí donde tiene que poder decir «tienes 2: quita medio». */
+  const puestoPorComida = useMemo(() => {
+    const out: Record<string, Record<FoodCategory, number>> = {};
+    for (const meal of selectedDiet?.meals ?? []) {
+      const p: Record<FoodCategory, number> = { HC: 0, PROT: 0, GRASA: 0, MIX_HC: 0, MIX_GRASA: 0 };
+      for (const item of meal.items) addToPlaced(p, item.category, item.quantity);
+      out[meal.id] = p;
+    }
+    return out;
+  }, [selectedDiet]);
+
+  const objetivoEfectivoPorComida = useMemo(() => {
+    const vacio = new Map<string, ObjetivoEfectivoComida>();
+    if (!selectedDiet) return vacio;
+    const comidas: ComidaParaArrastre[] = selectedDiet.meals.map((meal, mi) => ({
+      id: meal.id,
+      nombre: mealLabel(meal.name, mi + 1),
+      target: meal.target,
+      libre: meal.libre,
+      colocado: {
+        HC: puestoPorComida[meal.id]?.HC ?? 0,
+        PROT: puestoPorComida[meal.id]?.PROT ?? 0,
+        GRASA: puestoPorComida[meal.id]?.GRASA ?? 0,
+      },
+    }));
+    const resultado = calcularArrastreEntreComidas(comidas);
+    return new Map(resultado.map(r => [r.mealId, r]));
+  }, [selectedDiet, puestoPorComida]);
+
+  /** El objetivo EFECTIVO de una comida en una categoría de cupo (HC/PROT/
+   *  GRASA) — el que ve el atleta y contra el que cuadran el selector de
+   *  recetas y "Encajan". Para MIX_HC/MIX_GRASA (fuera del arrastre) cae al
+   *  reparto original de la comida, sin ajustar. */
+  const objetivoEfectivo = useCallback((mealId: string, cat: FoodCategory, original: number): number => {
+    if (cat !== 'HC' && cat !== 'PROT' && cat !== 'GRASA') return original;
+    return objetivoEfectivoPorComida.get(mealId)?.objetivo[cat] ?? original;
+  }, [objetivoEfectivoPorComida]);
 
   // Suma del reparto por comida (`meal.target`) frente al cupo diario total
   // (`selectedDiet.budget`) — mismo cálculo que `targetMismatches` del lado
@@ -796,12 +868,15 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     const target = meal?.target;
     if (!target) return delDia;
     const puesto = mealDoneByCat[recipePickerMealId] ?? { HC: 0, PROT: 0, GRASA: 0, MIX_HC: 0, MIX_GRASA: 0 };
+    // El objetivo EFECTIVO (con el arrastre entre comidas ya aplicado), no el
+    // reparto original — si esta comida ha recibido lo que sobró en la
+    // anterior, el hueco real contra el que cuadrar las recetas es ese.
     return {
-      HC: Math.max(0, round2(target.HC - puesto.HC)),
-      PROT: Math.max(0, round2(target.PROT - puesto.PROT)),
-      GRASA: Math.max(0, round2(target.GRASA - puesto.GRASA)),
+      HC: Math.max(0, round2(objetivoEfectivo(meal.id, 'HC', target.HC) - puesto.HC)),
+      PROT: Math.max(0, round2(objetivoEfectivo(meal.id, 'PROT', target.PROT) - puesto.PROT)),
+      GRASA: Math.max(0, round2(objetivoEfectivo(meal.id, 'GRASA', target.GRASA) - puesto.GRASA)),
     };
-  }, [ambitoCupo, recipePickerMealId, selectedDiet, mealDoneByCat, leftByCat]);
+  }, [ambitoCupo, recipePickerMealId, selectedDiet, mealDoneByCat, leftByCat, objetivoEfectivo]);
 
   /* 2-3 recetas guardadas que encajan en lo que le falta a cada comida (con
      los intercambios de ESTA semana de la periodización), para no tener que
@@ -811,20 +886,25 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     const out: Record<string, Recipe[]> = {};
     const seguras = recipes.filter(r => ((r.ingredients ?? []).length === 0 || r.ingredients.some(ing => enabledModes.includes(ing.mode))) && isSafeForAthlete(r));
     if (seguras.length === 0 || !selectedDiet) return out;
+    const delDia = { HC: Math.max(0, leftByCat.HC), PROT: Math.max(0, leftByCat.PROT), GRASA: Math.max(0, leftByCat.GRASA) };
     for (const meal of selectedDiet.meals) {
       const t = meal.target;
-      if (!t || meal.libre) continue;
+      if (meal.libre) continue;
+      // Sin reparto propio y FUERA de "Día flexible", esta comida no tiene
+      // hueco que mirar (como siempre). En flexible —una sola comida sin
+      // target— se mira contra lo que queda del DÍA, que es lo único que hay.
+      if (!t && !modoFlexible) continue;
       const puesto = mealDoneByCat[meal.id] ?? { HC: 0, PROT: 0, GRASA: 0, MIX_HC: 0, MIX_GRASA: 0 };
-      const hueco = {
-        HC: Math.max(0, round2((t.HC ?? 0) - puesto.HC)),
-        PROT: Math.max(0, round2((t.PROT ?? 0) - puesto.PROT)),
-        GRASA: Math.max(0, round2((t.GRASA ?? 0) - puesto.GRASA)),
-      };
+      const hueco = t ? {
+        HC: Math.max(0, round2(objetivoEfectivo(meal.id, 'HC', t.HC ?? 0) - puesto.HC)),
+        PROT: Math.max(0, round2(objetivoEfectivo(meal.id, 'PROT', t.PROT ?? 0) - puesto.PROT)),
+        GRASA: Math.max(0, round2(objetivoEfectivo(meal.id, 'GRASA', t.GRASA ?? 0) - puesto.GRASA)),
+      } : delDia;
       if (hueco.HC + hueco.PROT + hueco.GRASA < 1) continue;
       out[meal.id] = ordenarPorPreferencia(ordenarPorCupo(seguras, hueco, 0.5, true)).slice(0, 3);
     }
     return out;
-  }, [recipes, enabledModes, isSafeForAthlete, selectedDiet, mealDoneByCat, ordenarPorPreferencia]);
+  }, [recipes, enabledModes, isSafeForAthlete, selectedDiet, mealDoneByCat, ordenarPorPreferencia, leftByCat, modoFlexible, objetivoEfectivo]);
 
   const sortedPickerRecipes = useMemo(() => {
     // Una receta guardada del recetario no trae `ingredients` (ver
@@ -923,7 +1003,9 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
 
   // ── Handlers ─────────────────────────────────────────────────────────────────
 
-  const isDirty = selectedDiet ? dietSnapshot(selectedDiet) !== savedDietSnapshot : false;
+  const isDirty = selectedDiet
+    ? dietSnapshot(selectedDiet) !== savedDietSnapshot || modoFlexible !== savedModoFlexible
+    : false;
 
   /**
    * Vuelca un menú guardado sobre el día que se está viendo.
@@ -1093,6 +1175,10 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     const racionesVegetales = habitos?.racionesVegetales ?? previo?.racionesVegetales;
     const log = {
       athleteId: profile.email, date: viewDate, dietId, doneItemIds, meals, budget,
+      // Por día, no por atleta: el estado de React ya es la fuente de verdad
+      // de ESTE día (se seedea del registro al cambiar de fecha), así que se
+      // escribe directo y no como un patch condicional igual que agua/verdura.
+      modoFlexible,
       ...(aguaMl !== undefined ? { aguaMl } : {}),
       ...(racionesVegetales !== undefined ? { racionesVegetales } : {}),
     };
@@ -1100,7 +1186,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     return saveDietCompletionLog(log)
       .catch(() => showToast('No se pudo guardar el registro del día. Se reintentará al recargar.', 'error'));
   // eslint-disable-next-line react-hooks/exhaustive-deps -- diaKey se deriva de profile.email y viewDate
-  }, [profile.email, viewDate, allDietsList, queryClient, showToast]);
+  }, [profile.email, viewDate, allDietsList, queryClient, showToast, modoFlexible]);
 
   const guardarHabitos = (patch: { aguaMl?: number; racionesVegetales?: number }) => {
     if (!selectedDiet) return;
@@ -1150,6 +1236,9 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
       const newItem: DietItem = {
         category: food.category, foodLabel: food.label, quantity: 1,
         baseGrams: parseBaseGrams(food.label) ?? undefined,
+        // En "Día flexible" no hay comida con la que ordenar: se guarda la
+        // hora de verdad para poder enseñar "Lo que voy comiendo" en orden.
+        ...(modoFlexible ? { hora: horaActualHHMM() } : {}),
       };
       setSelectedDiet(prev => {
         if (!prev) return prev;
@@ -1218,6 +1307,9 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
 
   /** Abrir el recetario desde una comida: primero la pregunta del cupo. */
   const handleOpenRecipePicker = (mealId: string) => {
+    // En "Día flexible" no hay "esta comida" que preguntar —es una sola
+    // comida sin reparto propio—: se va derecho a cuadrar contra el día.
+    if (modoFlexible) { abrirRecetarioConAmbito(mealId, 'dia'); return; }
     setPreguntaAmbito(mealId);
   };
 
@@ -1311,7 +1403,10 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     // `ingredients` estructurados —nunca—, solo `exchanges`. `recipeToDietItems`
     // cae a esos intercambios; el `.map` a pelo de antes devolvía [] y el sheet
     // se cerraba sin añadir nada.
-    const newItems: DietItem[] = recipeToDietItems(recipe, enabledModes);
+    const newItemsSinHora: DietItem[] = recipeToDietItems(recipe, enabledModes);
+    // En "Día flexible" todos los ítems de la receta (son varios: uno por
+    // categoría) llevan la MISMA hora — es un solo plato, no varias ingestas.
+    const newItems = modoFlexible ? newItemsSinHora.map(it => ({ ...it, hora: horaActualHHMM() })) : newItemsSinHora;
 
     if (newItems.length === 0) {
       showToast(`No se pudo añadir "${recipe.name}": no tiene datos de intercambios.`, 'error');
@@ -1656,6 +1751,37 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     });
   };
 
+  /**
+   * Alterna entre "Por comidas" y "Día flexible" (selector del sheet de
+   * reparto). La conversión en sí es pura —utils/diaFlexible.ts—; aquí solo
+   * se aplica al editor en memoria y se deja que el autoguardado de más abajo
+   * la persista, igual que cualquier otro cambio del día.
+   */
+  const cambiarModoDia = (flexible: boolean) => {
+    if (!selectedDiet || flexible === modoFlexible) return;
+    if (flexible) {
+      const { meals, estados } = aDiaFlexible(selectedDiet.meals, itemStates);
+      setSelectedDiet(prev => (prev ? { ...prev, meals } : prev));
+      setItemStates(estados);
+      setOrigItemCounts({ [ID_COMIDA_FLEXIBLE]: meals[0].items.length });
+    } else {
+      // Se recupera la estructura del plan —la misma que siembra un día
+      // nuevo, con sus repartos—; todo lo apuntado va a la primera comida
+      // (decisión de Dani) y el arrastre entre comidas se encarga de mover a
+      // las demás lo que esa primera se pase o le falte.
+      const { meals: estructura } = sembrarDiaDelPlan(
+        null, allDietsList,
+        (onboarding?.meals ?? []).map(m => ({ name: m.name, slot: m.intakeType })),
+        cupoPautado, dietaPautada,
+      );
+      const { meals, estados } = aPorComidas(selectedDiet.meals, itemStates, estructura);
+      setSelectedDiet(prev => (prev ? { ...prev, meals } : prev));
+      setItemStates(estados);
+      setOrigItemCounts(Object.fromEntries(meals.map(m => [m.id, m.items.length])));
+    }
+    setModoFlexible(flexible);
+  };
+
   const addMeal = () => {
     if (!selectedDiet) return;
     const newMeal: DietMeal = { id: makeId(), name: `Comida ${selectedDiet.meals.length + 1}`, items: [] };
@@ -1696,12 +1822,13 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
       pendiente.current = null;
       const doneItemIds = (Object.entries(itemStates) as [string, ItemState][]).filter(([, v]) => v.done).map(([k]) => k);
       setSavedDietSnapshot(dietSnapshot(plan));
+      setSavedModoFlexible(modoFlexible);
       void guardarDia(plan.meals, doneItemIds, plan.budget);
     };
     pendiente.current = { guardar: escribir };
     const t = setTimeout(escribir, 1200);
     return () => clearTimeout(t);
-  }, [isDirty, selectedDiet, itemStates, guardarDia]);
+  }, [isDirty, selectedDiet, itemStates, guardarDia, modoFlexible]);
 
   /** Suelta lo pendiente ya. Se llama antes de cambiar de día y al salir. */
   const guardarYa = useCallback(() => { pendiente.current?.guardar(); }, []);
@@ -1742,11 +1869,12 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
      * aquí desde la receta cruda era el «20 intercambios salen 26»: entraba el
      * plato base en vez de la ración y media con pan que el atleta se comió.
      * Ver utils/paridadDeCaminos.test.ts. */
-    const newItems: DietItem[] = pendiente.items ?? recipeToDietItems(recipe, enabledModes);
-    if (newItems.length === 0) {
+    const newItemsSinHora: DietItem[] = pendiente.items ?? recipeToDietItems(recipe, enabledModes);
+    if (newItemsSinHora.length === 0) {
       showToast(`No se pudo añadir "${recipe.name}": no tiene datos de intercambios.`, 'error');
       return;
     }
+    const newItems = modoFlexible ? newItemsSinHora.map(it => ({ ...it, hora: horaActualHHMM() })) : newItemsSinHora;
     const startIdx = meal.items.length;
     setSelectedDiet(prev => {
       if (!prev) return prev;
@@ -1791,17 +1919,20 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
           pantalla estás, y repetirlo debajo con letra de titular se comía la
           primera pantalla entera del móvil (Dani, 10-09-2026). */}
 
-      {/* Día de recarga marcado por el coach — va antes que el cambio de fase
-          porque es lo que cambia lo que come HOY. */}
-      {refeedHoy && (
+      {/* Día de recarga marcado por el coach para el día que se está viendo —
+          va antes que el cambio de fase porque es lo que cambia lo que come
+          ESE día. */}
+      {refeedDelDia && (
         <div
           className="flex items-start gap-2.5 rounded-surface px-4 py-3"
           style={{ background: 'color-mix(in srgb, var(--color-refeed) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--color-refeed) 30%, transparent)' }}
         >
           <Icon name="local_fire_department" size="m" style={{ color: 'var(--color-refeed)', flexShrink: 0 }} />
           <div className="min-w-0">
-            <p className="font-sans font-bold text-body-s" style={{ color: 'var(--color-refeed)' }}>Hoy toca recarga</p>
-            {refeedHoy.note && <p className="font-sans text-label text-ink-2 mt-0.5">{refeedHoy.note}</p>}
+            <p className="font-sans font-bold text-body-s" style={{ color: 'var(--color-refeed)' }}>
+              {viendoHoy ? 'Hoy toca recarga' : viendoFuturo ? 'Ese día toca recarga' : 'Ese día tocó recarga'}
+            </p>
+            {refeedDelDia.note && <p className="font-sans text-label text-ink-2 mt-0.5">{refeedDelDia.note}</p>}
           </div>
         </div>
       )}
@@ -1834,9 +1965,10 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
 
       {/* Navegación por días. Antes era una fila de siete letras (L M X J V S D)
           que enseñaba QUÉ DIETA te había programado el coach cada día y no
-          dejaba tocar nada fuera de hoy. Ahora son días de verdad, hacia atrás,
-          y cualquiera de ellos se edita igual que hoy: si ayer se te olvidó
-          apuntar la cena, la apuntas. */}
+          dejaba tocar nada fuera de hoy. Ahora son días de verdad, hacia atrás
+          sin tope y hacia delante hasta 7 días — cualquiera de ellos se edita
+          igual que hoy: si ayer se te olvidó apuntar la cena, la apuntas, y si
+          sabes que el sábado comes fuera, lo dejas planificado ya. */}
       {!loading && (
         <div className="flex items-center gap-2">
           <button
@@ -1850,7 +1982,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
 
           <div className="flex-1 min-w-0 text-center">
             <span className="block font-mono text-caption uppercase tracking-widest font-bold text-accent-ink">
-              {viendoHoy ? 'Hoy' : WD_FULL[diaSemanaDe(viewDate)]}
+              {viendoHoy ? 'Hoy' : viendoFuturo ? 'Planificando' : WD_FULL[diaSemanaDe(viewDate)]}
             </span>
             <span className="block font-sans text-label text-ink-2 truncate">{fechaLarga(viewDate)}</span>
           </div>
@@ -1858,7 +1990,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
           <button
             type="button"
             onClick={() => irAlDia(addDays(viewDate, 1))}
-            disabled={viendoHoy}
+            disabled={viewDate >= maxFechaFutura}
             aria-label="Día siguiente"
             className="flex h-10 w-10 flex-none items-center justify-center rounded-control border border-hairline bg-raised text-ink-2 transition-colors hover:border-accent/40 hover:text-accent-ink disabled:opacity-30 disabled:hover:border-hairline disabled:hover:text-ink-2"
           >
@@ -1942,7 +2074,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                     TU PLAN DEL DÍA
                   </span>
                   <span className="font-mono text-caption text-accent-ink uppercase tracking-widest font-bold">
-                    {viendoHoy ? `Hoy, ${WD_FULL[diaSemanaDe(viewDate)]}` : fechaLarga(viewDate)}
+                    {viendoHoy ? `Hoy, ${WD_FULL[diaSemanaDe(viewDate)]}` : viendoFuturo ? `Planificando ${WD_FULL[diaSemanaDe(viewDate)]}` : fechaLarga(viewDate)}
                   </span>
                 </div>
                 <div className="flex items-center gap-2 mt-1">
@@ -1970,7 +2102,9 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                       Día cerrado<br />en presupuesto
                     </p>
                     <p className="text-body-s text-ink-2 mt-2 max-w-[300px]">
-                      Registraste tus {totalItems} ingesta{totalItems !== 1 ? 's' : ''} de hoy dentro de tu presupuesto de intercambios.
+                      {viendoFuturo
+                        ? `Dejaste planificadas tus ${totalItems} ingesta${totalItems !== 1 ? 's' : ''} dentro de tu presupuesto de intercambios.`
+                        : `Registraste tus ${totalItems} ingesta${totalItems !== 1 ? 's' : ''} ${viendoHoy ? 'de hoy' : 'de ese día'} dentro de tu presupuesto de intercambios.`}
                     </p>
                   </div>
                 ) : (
@@ -2058,7 +2192,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                 <div className="bg-accent-bg border border-accent-line rounded-surface px-4 py-3.5 flex flex-wrap items-center gap-3">
                   <Icon name="sync_problem" size="s" style={{ color: 'var(--color-accent-ink)', flexShrink: 0 }} />
                   <p className="font-sans text-label text-ink-2 leading-relaxed flex-1 min-w-[200px]">
-                    Tu entrenador ha cambiado el cupo de hoy. Estás viendo el de antes.
+                    Tu entrenador ha cambiado {viendoHoy ? 'el cupo de hoy' : 'el cupo de este día'}. Estás viendo el de antes.
                   </p>
                   <Button size="s" onClick={actualizarAlCupoNuevo}>Actualizar</Button>
                 </div>
@@ -2076,7 +2210,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                 <div className="bg-raised border border-hairline rounded-surface px-4 py-3.5 flex items-start gap-3">
                   <Icon name="info" size="s" style={{ color: 'var(--color-accent-ink)', marginTop: 2, flexShrink: 0 }} />
                   <p className="font-sans text-label text-ink-2 leading-relaxed">
-                    Tu plan de hoy trae el <b className="text-ink">cupo de intercambios</b>, pero los
+                    {viendoHoy ? 'Tu plan de hoy trae' : 'Este plan trae'} el <b className="text-ink">cupo de intercambios</b>, pero los
                     alimentos los eliges tú. Añádelos a cada comida con el botón{' '}
                     <b className="text-ink">Añadir</b>, o usa el recetario para que te cuadren solos.
                   </p>
@@ -2199,33 +2333,64 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                       )}
 
                       {/* Objetivo por comida — solo lectura aquí; se edita en la
-                          pantalla dedicada ("Editar reparto por comida" arriba). */}
+                          pantalla dedicada ("Editar reparto por comida" arriba).
+                          El número ya es el EFECTIVO (arrastre entre comidas,
+                          utils/arrastreEntreComidas.ts): si esta comida ha
+                          recibido lo que sobró o faltó en una anterior, se nota
+                          con una línea discreta debajo. */}
                       {CATS.some(c => (meal.target?.[c] ?? 0) > 0) && (() => {
                         const mDone = mealDoneByCat[meal.id] ?? {} as Record<FoodCategory, number>;
                         const targetCats = CATS.filter(c => (meal.target?.[c] ?? 0) > 0);
                         return (
                           <div className="px-4 py-2 bg-bg/60 border-b border-hairline">
                             <p className="font-mono text-caption text-ink-3 uppercase tracking-wider mb-2">Objetivo comida</p>
-                            <div className="flex flex-wrap gap-x-3 gap-y-2 items-center">
+                            <div className="flex flex-wrap gap-x-4 gap-y-2 items-start">
                               {targetCats.map(cat => {
-                                const tgt = meal.target![cat]!;
+                                const original = meal.target![cat]!;
+                                const tgt = objetivoEfectivo(meal.id, cat, original);
+                                const ajustes = objetivoEfectivoPorComida.get(meal.id)?.ajustes[cat as 'HC' | 'PROT' | 'GRASA'];
                                 const d = mDone[cat] ?? 0;
                                 const isOk = round2(d) >= round2(tgt);
                                 const isOver = d > tgt;
                                 const pct = tgt > 0 ? (d / tgt) * 100 : 0;
                                 return (
-                                  <div key={cat} className="flex items-center gap-1">
-                                    <span className={`font-mono text-caption font-bold ${CAT_COLOR[cat]}`}>
-                                      {CAT_LABEL[cat]}
-                                    </span>
-                                    <span className={`font-mono text-caption ${isOver ? 'text-danger' : isOk ? 'text-success' : 'text-ink-2'}`}>
-                                      {fmtQty(d)}/{fmtQty(tgt)}{isOk ? ' ✓' : ''}
-                                    </span>
-                                    <ProgressBar
-                                      value={pct}
-                                      label={`${CAT_LABEL[cat]} de esta comida, ${fmtQty(d)} de ${fmtQty(tgt)} intercambios`}
-                                      widthClassName="w-10 flex-shrink-0"
-                                    />
+                                  <div key={cat} className="flex flex-col gap-1">
+                                    <div className="flex items-center gap-1">
+                                      <span className={`font-mono text-caption font-bold ${CAT_COLOR[cat]}`}>
+                                        {CAT_LABEL[cat]}
+                                      </span>
+                                      <span className={`font-mono text-caption ${isOver ? 'text-danger' : isOk ? 'text-success' : 'text-ink-2'}`}>
+                                        {fmtQty(d)}/{fmtQty(tgt)}{isOk ? ' ✓' : ''}
+                                      </span>
+                                      <ProgressBar
+                                        value={pct}
+                                        label={`${CAT_LABEL[cat]} de esta comida, ${fmtQty(d)} de ${fmtQty(tgt)} intercambios`}
+                                        widthClassName="w-10 flex-shrink-0"
+                                      />
+                                    </div>
+                                    {ajustes && ajustes.length > 0 && round2(tgt) !== round2(original) && (
+                                      <span className="font-mono text-[10px] leading-tight text-ink-3">
+                                        era {fmtQty(original)} ·{' '}
+                                        {ajustes.map((a, i) => (
+                                          <React.Fragment key={a.mealId}>
+                                            {i > 0 && ', '}
+                                            {a.delta > 0 ? `+${fmtQty(a.delta)} de ${a.nombre}` : `−${fmtQty(-a.delta)} por ${a.nombre}`}
+                                          </React.Fragment>
+                                        ))}
+                                      </span>
+                                    )}
+                                    {/* Con alimentos ya puestos (p. ej. la dieta del
+                                        coach), decir qué tocar: «tienes 2: quita ½». */}
+                                    {ajustes && ajustes.length > 0 && (() => {
+                                      const puesto = round2(puestoPorComida[meal.id]?.[cat] ?? 0);
+                                      const dif = round2(puesto - tgt);
+                                      if (puesto === 0 || dif === 0) return null;
+                                      return (
+                                        <span className={`font-mono text-[10px] leading-tight font-bold ${dif > 0 ? 'text-danger' : 'text-ink-2'}`}>
+                                          tienes {fmtQty(puesto)}: {dif > 0 ? `quita ${fmtQty(dif)}` : `añade ${fmtQty(-dif)}`}
+                                        </span>
+                                      );
+                                    })()}
                                   </div>
                                 );
                               })}
@@ -2246,7 +2411,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                             </span>
                             <span className="font-sans text-body-s font-semibold">Añadir alimento del banco</span>
                           </button>
-                        ) : filasDeComida(meal.items).map(fila => {
+                        ) : (modoFlexible ? filasEnOrdenCronologico(meal.items) : filasDeComida(meal.items)).map(fila => {
                           /* Una receta ocupa UN renglón, con la suma de sus
                              intercambios; un alimento suelto, el suyo. Ver
                              utils/filasDelPlan.ts para por qué. */
@@ -2275,12 +2440,13 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                                         {nombreReceta}
                                       </span>
                                       <span className="block font-mono text-caption text-ink-2">
+                                        {modoFlexible && meal.items[fila.idxs[0]]?.hora && `${meal.items[fila.idxs[0]].hora} · `}
                                         {fmtQty(total)} int. · {BUDGET_CATS.filter(c => fila.intercambios[c] > 0).map(c => `${CHIP_LABEL[c]} ${fmtQty(fila.intercambios[c])}`).join(' · ') || 'sin intercambios'}
                                       </span>
                                       {fila.origenMenu && (
                                         <span className="mt-0.5 flex items-center gap-1 font-sans text-caption text-ink-2">
                                           <Icon name="lock" size="s" />
-                                          De tu menú de hoy
+                                          {viendoHoy ? 'De tu menú de hoy' : 'De tu menú de ese día'}
                                         </span>
                                       )}
                                     </button>
@@ -2355,10 +2521,13 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                                     <span className="font-sans text-body-s font-semibold leading-snug text-ink">
                                       {foodNameWithoutGrams(st.foodLabel)}
                                     </span>
+                                    {modoFlexible && item.hora && (
+                                      <span className="ml-1.5 font-mono text-caption text-ink-3 whitespace-nowrap">{item.hora}</span>
+                                    )}
                                     {item.origenMenu && (
                                       <span className="mt-0.5 flex items-center gap-1 font-sans text-caption text-ink-2">
                                         <Icon name="lock" size="s" />
-                                        De tu menú de hoy
+                                        {viendoHoy ? 'De tu menú de hoy' : 'De tu menú de ese día'}
                                       </span>
                                     )}
                                   </button>
@@ -2407,12 +2576,16 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                     Cambiar un alimento no toca tu presupuesto: la app ajusta los gramos para que valga los mismos intercambios.
                   </span>
                 </p>
-                <button
-                  onClick={addMeal}
-                  className="w-full py-3 rounded-control border border-dashed border-hairline text-ink-2 font-sans text-label font-bold uppercase tracking-wider hover:border-accent/40 hover:text-accent-ink transition-all"
-                >
-                  + Añadir comida
-                </button>
+                {/* En "Día flexible" no hay comidas que añadir: todo va a la
+                    única lista de "Lo que voy comiendo". */}
+                {!modoFlexible && (
+                  <button
+                    onClick={addMeal}
+                    className="w-full py-3 rounded-control border border-dashed border-hairline text-ink-2 font-sans text-label font-bold uppercase tracking-wider hover:border-accent/40 hover:text-accent-ink transition-all"
+                  >
+                    + Añadir comida
+                  </button>
+                )}
               </div>
 
               {/* Autoguardado — sin botón "Guardar". Ya no avisa de que se vaya a
@@ -3247,67 +3420,86 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
           footer={<Button variant="primary" size="l" fullWidth onClick={() => setRepartoSheetOpen(false)}>Guardar</Button>}
         >
           <div className="pt-2 space-y-3">
-            <p className="font-sans text-body-s text-ink-2">
-              El total del día lo fija tu coach. Reparte cuánto de ese cupo va a cada comida.
-            </p>
+            {/* «Día flexible» (Dani, 10-2026): para los días en los que el
+                atleta no sabe cuántas veces va a comer — se apunta contra el
+                cupo del día entero, sin repartir por comidas. */}
+            <SegmentedControl
+              label="Cómo repartir el cupo de hoy"
+              options={[{ value: 'comidas', label: 'Por comidas' }, { value: 'flexible', label: 'Día flexible' }]}
+              value={modoFlexible ? 'flexible' : 'comidas'}
+              onChange={v => cambiarModoDia(v === 'flexible')}
+            />
 
-            {/* Repartir solo: la misma máquina que usa el coach
-                (utils/mealDistribution), con el perfil de hambre del atleta.
-                Aquí antes solo había steppers manuales: repartir 12
-                intercambios entre 5 comidas a mano, categoría a categoría, son
-                sesenta pulsaciones (Dani, 10-09-2026). */}
-            <button
-              type="button"
-              onClick={repartirObjetivoSolo}
-              className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-control bg-accent-bg border border-accent/20 text-accent-ink font-sans font-bold text-body-s transition-colors hover:bg-accent/15 active:scale-[.99]"
-            >
-              <Icon name="auto_fix_high" size="s" />
-              Repartir el cupo por mí
-            </button>
-            {perfilDeHambreAtleta && (
-              <p className="font-mono text-caption text-ink-3 -mt-1">
-                Se reparte teniendo en cuenta que tienes más hambre {HAMBRE_TEXTO[perfilDeHambreAtleta]}.
+            {modoFlexible ? (
+              <p className="font-sans text-body-s text-ink-2 bg-raised border border-hairline rounded-field p-3">
+                Apunta lo que vayas comiendo a lo largo del día: no hay comidas que repartir,
+                solo el cupo del día entero en «Lo que voy comiendo».
               </p>
-            )}
+            ) : (
+              <>
+                <p className="font-sans text-body-s text-ink-2">
+                  El total del día lo fija tu coach. Reparte cuánto de ese cupo va a cada comida.
+                </p>
 
-            {/* Restantes por repartir — siempre visible, no solo cuando no
-                cuadra, para que se vea en vivo mientras se mueven los
-                steppers de abajo. */}
-            <div className="bg-raised border border-hairline rounded-field p-3 flex flex-wrap gap-x-4 gap-y-1">
-              {BUDGET_CATS.map(cat => {
-                const left = round2((selectedDiet.budget[cat] ?? 0) - mealTargetSumByCat[cat]);
-                return (
-                  <div key={cat} className="flex items-center gap-1.5">
-                    <span className={`font-mono text-caption font-bold ${CAT_COLOR[cat]}`}>{cat}</span>
-                    <span className={`font-mono text-caption ${left < 0 ? 'text-danger' : left === 0 ? 'text-success' : 'text-ink-2'}`}>
-                      {left === 0 ? 'repartido' : left > 0 ? `quedan ${fmtQty(left)}` : `te pasas ${fmtQty(-left)}`}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
+                {/* Repartir solo: la misma máquina que usa el coach
+                    (utils/mealDistribution), con el perfil de hambre del atleta.
+                    Aquí antes solo había steppers manuales: repartir 12
+                    intercambios entre 5 comidas a mano, categoría a categoría, son
+                    sesenta pulsaciones (Dani, 10-09-2026). */}
+                <button
+                  type="button"
+                  onClick={repartirObjetivoSolo}
+                  className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-control bg-accent-bg border border-accent/20 text-accent-ink font-sans font-bold text-body-s transition-colors hover:bg-accent/15 active:scale-[.99]"
+                >
+                  <Icon name="auto_fix_high" size="s" />
+                  Repartir el cupo por mí
+                </button>
+                {perfilDeHambreAtleta && (
+                  <p className="font-mono text-caption text-ink-3 -mt-1">
+                    Se reparte teniendo en cuenta que tienes más hambre {HAMBRE_TEXTO[perfilDeHambreAtleta]}.
+                  </p>
+                )}
 
-            {selectedDiet.meals.map((meal, mi) => (
-              <div key={meal.id} className="bg-field border border-hairline rounded-field p-3">
-                <p className="font-sans font-bold text-body-s text-ink mb-3">{mealLabel(meal.name, mi + 1)}</p>
-                <div className="flex flex-col gap-2">
-                  {BUDGET_CATS.map(cat => (
-                    <div key={cat} className="flex items-center justify-between gap-3">
-                      <span className={`font-mono text-caption font-bold tracking-[.08em] ${CAT_COLOR[cat]}`}>{BAR_LABEL[cat]}</span>
-                      <Stepper
-                        label={`${BAR_LABEL[cat]} de ${mealLabel(meal.name, mi + 1)}`}
-                        value={meal.target?.[cat] ?? 0}
-                        onChange={v => updateMealTargetCat(meal.id, cat, round2(v - (meal.target?.[cat] ?? 0)))}
-                        step={0.25}
-                        min={0}
-                        max={12}
-                        dense
-                      />
-                    </div>
-                  ))}
+                {/* Restantes por repartir — siempre visible, no solo cuando no
+                    cuadra, para que se vea en vivo mientras se mueven los
+                    steppers de abajo. */}
+                <div className="bg-raised border border-hairline rounded-field p-3 flex flex-wrap gap-x-4 gap-y-1">
+                  {BUDGET_CATS.map(cat => {
+                    const left = round2((selectedDiet.budget[cat] ?? 0) - mealTargetSumByCat[cat]);
+                    return (
+                      <div key={cat} className="flex items-center gap-1.5">
+                        <span className={`font-mono text-caption font-bold ${CAT_COLOR[cat]}`}>{cat}</span>
+                        <span className={`font-mono text-caption ${left < 0 ? 'text-danger' : left === 0 ? 'text-success' : 'text-ink-2'}`}>
+                          {left === 0 ? 'repartido' : left > 0 ? `quedan ${fmtQty(left)}` : `te pasas ${fmtQty(-left)}`}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
-              </div>
-            ))}
+
+                {selectedDiet.meals.map((meal, mi) => (
+                  <div key={meal.id} className="bg-field border border-hairline rounded-field p-3">
+                    <p className="font-sans font-bold text-body-s text-ink mb-3">{mealLabel(meal.name, mi + 1)}</p>
+                    <div className="flex flex-col gap-2">
+                      {BUDGET_CATS.map(cat => (
+                        <div key={cat} className="flex items-center justify-between gap-3">
+                          <span className={`font-mono text-caption font-bold tracking-[.08em] ${CAT_COLOR[cat]}`}>{BAR_LABEL[cat]}</span>
+                          <Stepper
+                            label={`${BAR_LABEL[cat]} de ${mealLabel(meal.name, mi + 1)}`}
+                            value={meal.target?.[cat] ?? 0}
+                            onChange={v => updateMealTargetCat(meal.id, cat, round2(v - (meal.target?.[cat] ?? 0)))}
+                            step={0.25}
+                            min={0}
+                            max={12}
+                            dense
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </>
+            )}
           </div>
         </Sheet>
       )}

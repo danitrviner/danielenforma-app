@@ -10,6 +10,7 @@ import { getMesocycles } from '../dbService';
 import { epley } from '../utils/oneRepMax';
 import { addDays } from '../utils/trainingWeek';
 import { ewmaDeSeriePorSesion } from '../utils/loadTrend';
+import { formatearDuracion } from '../utils/duracionSesion';
 import {
   Icon, EmptyState,
   ALTURA_GRAFICA, MARGEN_GRAFICA, ANCHO_EJE_Y, REJILLA_GRAFICA, TICK_GRAFICA, EJE_GRAFICA,
@@ -77,6 +78,10 @@ interface SessionRow {
   reps: number;
   tonnage: number;
   orm: number | null;
+  /** Suma de `duracionSeg` de los logs de esta fecha. `null` si ninguno la
+   *  trae (sesión antigua, de antes del cronómetro general) — se omite en
+   *  vez de pintar un "0:00" que no es un dato real. */
+  duracionSeg: number | null;
 }
 
 interface ChartPoint extends SessionRow {
@@ -175,9 +180,10 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
     for (const log of logs) {
       let row = byDate.get(log.date);
       if (!row) {
-        row = { date: log.date, label: fmtDate(log.date), sets: 0, reps: 0, tonnage: 0, orm: null };
+        row = { date: log.date, label: fmtDate(log.date), sets: 0, reps: 0, tonnage: 0, orm: null, duracionSeg: null };
         byDate.set(log.date, row);
       }
+      if (log.duracionSeg != null) row.duracionSeg = (row.duracionSeg ?? 0) + log.duracionSeg;
       for (const entry of log.entries) {
         for (const s of entry.sets) {
           row.sets++;
@@ -347,6 +353,9 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
 
   const isMulti   = activeMetrics.size > 1;
   const ormActive = activeMetrics.has('orm');
+  // Columna de duración solo si AL MENOS una sesión la trae — si todo el
+  // historial es de antes del cronómetro general, la columna entera sobra.
+  const hayDuracion = sessionRows.some(r => r.duracionSeg != null);
 
   const lineKey = (m: Metric): string =>
     isMulti
@@ -623,6 +632,9 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
             <div key={row.date} className="bg-bg border border-hairline rounded-surface px-3 py-3 flex items-center justify-between gap-2">
               <span className="font-sans text-caption text-ink-2 flex-shrink-0">{row.label}</span>
               <div className="flex items-center gap-3 flex-shrink-0 font-mono text-caption">
+                {row.duracionSeg != null && (
+                  <span className="text-ink-2">{formatearDuracion(row.duracionSeg)}</span>
+                )}
                 <span className="text-ink-2"><span className="text-ink font-bold">{row.sets}</span>s</span>
                 <span className="text-ink-2"><span className="text-ink">{row.reps}</span>r</span>
                 <span className="font-bold" style={{ color: METRIC_COLOR.tonnage }}>{row.tonnage.toLocaleString()}kg</span>
@@ -641,7 +653,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
           <table className="w-full text-left" style={{ minWidth: ormActive ? 460 : 360 }}>
             <thead>
               <tr className="bg-bg border-b border-hairline">
-                {['Fecha', 'Series', 'Reps', 'Tonelaje', ...(ormActive ? ['1RM est.'] : [])].map(h => (
+                {['Fecha', ...(hayDuracion ? ['Duración'] : []), 'Series', 'Reps', 'Tonelaje', ...(ormActive ? ['1RM est.'] : [])].map(h => (
                   <th key={h} className="px-3 py-2 font-mono text-caption text-ink-2 uppercase tracking-wider">{h}</th>
                 ))}
               </tr>
@@ -653,6 +665,11 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
                   className={`border-b border-hairline ${i % 2 === 0 ? 'bg-bg' : 'bg-bg'} hover:bg-raised transition-colors`}
                 >
                   <td className="px-3 py-3 font-sans text-caption text-ink-2">{row.label}</td>
+                  {hayDuracion && (
+                    <td className="px-3 py-3 font-mono text-caption text-ink-2">
+                      {row.duracionSeg != null ? formatearDuracion(row.duracionSeg) : '—'}
+                    </td>
+                  )}
                   <td className="px-3 py-3 font-mono text-caption text-ink font-bold">{row.sets}</td>
                   <td className="px-3 py-3 font-mono text-caption text-ink">{row.reps}</td>
                   <td className="px-3 py-3 font-mono text-caption font-bold" style={{ color: METRIC_COLOR.tonnage }}>

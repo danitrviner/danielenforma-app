@@ -135,6 +135,11 @@ export function borrarSesion(athleteEmail: string, assignmentId: string): void {
   } catch {
     // best-effort
   }
+  // El inicio de la sesión vive en su propia clave (ver más abajo) y caduca
+  // con las mismas reglas que el borrador — si el borrador se tira, el
+  // instante de inicio no debe sobrevivirlo: la próxima apertura es, a todos
+  // los efectos, una sesión nueva.
+  borrarInicioSesion(athleteEmail, assignmentId);
 }
 
 /** ¿Tiene el borrador alguna serie marcada? Un borrador sin nada hecho no
@@ -175,6 +180,7 @@ export function limpiarSesionesCaducadas(athleteEmail: string): void {
   try {
     const prefijo = `${PREFIJO}_${athleteEmail}_`;
     const prefijoDescanso = `${PREFIJO_DESCANSO}_${athleteEmail}_`;
+    const prefijoInicio = `${PREFIJO_INICIO}_${athleteEmail}_`;
     for (let i = localStorage.length - 1; i >= 0; i--) {
       const k = localStorage.key(i);
       // El descanso caduca por su cuenta y mucho antes (20 min): se barre
@@ -183,6 +189,20 @@ export function limpiarSesionesCaducadas(athleteEmail: string): void {
         try {
           const d = JSON.parse(localStorage.getItem(k) || '') as DescansoEnCurso;
           if (typeof d?.restEndsAt !== 'number' || Date.now() - d.restEndsAt > CADUCIDAD_DESCANSO_MS) {
+            localStorage.removeItem(k);
+          }
+        } catch {
+          localStorage.removeItem(k);
+        }
+        continue;
+      }
+      // El inicio de sesión caduca con la misma regla de 36 h que el
+      // borrador (mismo `CADUCIDAD_MS`): sin este barrido, una sesión abierta
+      // y nunca terminada dejaría también ESTA clave para siempre.
+      if (k?.startsWith(prefijoInicio)) {
+        try {
+          const ini = JSON.parse(localStorage.getItem(k) || '') as InicioSesionEnCurso;
+          if (typeof ini?.iniciadaEn !== 'number' || Date.now() - ini.iniciadaEn > CADUCIDAD_MS) {
             localStorage.removeItem(k);
           }
         } catch {
@@ -270,4 +290,64 @@ export function cargarDescanso(athleteEmail: string, assignmentId: string): Desc
 
 export function borrarDescanso(athleteEmail: string, assignmentId: string): void {
   try { localStorage.removeItem(claveDescanso(athleteEmail, assignmentId)); } catch { /* best-effort */ }
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+   Inicio de sesión en curso · su propia clave
+
+   Cronómetro general de la sesión (cabecera del player, junto al contador de
+   series): empieza a contar al ABRIR el player por primera vez y no se
+   reinicia al salir y volver a entrar en la misma sesión. El instante de
+   inicio tiene que sobrevivir a que iOS mate la app igual que el descanso, así
+   que se persiste en cuanto se abre el player — NO cuando hay trabajo que
+   guardar, que es la condición que gobierna `guardarSesion` (el autoguardado
+   de arriba no escribe nada hasta que hay una serie marcada o una nota
+   escrita, y para entonces ya habrían pasado minutos reales de sesión).
+
+   Va en una clave HERMANA, igual que `DescansoEnCurso`, y no dentro de
+   `SesionEnCurso`: así puede escribirse desde el primer render del player sin
+   esperar a que exista nada que valga la pena guardar en el borrador de
+   series.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+export interface InicioSesionEnCurso {
+  /** Epoch ms del instante en que se abrió esta sesión por primera vez. */
+  iniciadaEn: number;
+}
+
+const PREFIJO_INICIO = 'enforma_sesion_inicio_v1';
+
+function claveInicio(athleteEmail: string, assignmentId: string): string {
+  return `${PREFIJO_INICIO}_${athleteEmail}_${assignmentId}`;
+}
+
+export function guardarInicioSesion(athleteEmail: string, assignmentId: string, iniciadaEn: number): void {
+  try {
+    localStorage.setItem(claveInicio(athleteEmail, assignmentId), JSON.stringify({ iniciadaEn }));
+  } catch { /* best-effort, igual que el resto de este fichero */ }
+}
+
+/** Devuelve el instante de inicio guardado, o `null` si no hay ninguno o ya
+ *  caducó (misma ventana de 36 h que el borrador: `CADUCIDAD_MS`). Quien
+ *  llama a esto y recibe `null` debe tratarlo como "sesión nueva" y guardar
+ *  un inicio fresco con `guardarInicioSesion`. */
+export function cargarInicioSesion(athleteEmail: string, assignmentId: string): number | null {
+  try {
+    const raw = localStorage.getItem(claveInicio(athleteEmail, assignmentId));
+    if (!raw) return null;
+    const ini = JSON.parse(raw) as InicioSesionEnCurso;
+    if (typeof ini?.iniciadaEn !== 'number') return null;
+    if (Date.now() - ini.iniciadaEn > CADUCIDAD_MS) {
+      borrarInicioSesion(athleteEmail, assignmentId);
+      return null;
+    }
+    return ini.iniciadaEn;
+  } catch {
+    borrarInicioSesion(athleteEmail, assignmentId);
+    return null;
+  }
+}
+
+export function borrarInicioSesion(athleteEmail: string, assignmentId: string): void {
+  try { localStorage.removeItem(claveInicio(athleteEmail, assignmentId)); } catch { /* best-effort */ }
 }
