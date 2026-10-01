@@ -12,7 +12,7 @@ import { mensajeDeErrorFirestore } from '../utils/erroresFirestore';
 import { saveOnboarding, getAthleteNutritionConfig, saveAthleteNutritionConfig } from '../dbService';
 import { consentimientoIADesdeLegal } from '../legal/aceptacion';
 import { guardarBorradorAlta, cargarBorradorAlta, borrarBorradorAlta } from '../utils/borradorAlta';
-import { Icon, Button, Input } from './ui';
+import { Icon, Button, Input, AtlasLogo } from './ui';
 import FoodPreferencesPanel from './FoodPreferencesPanel';
 import VegetableSelector from './VegetableSelector';
 
@@ -703,7 +703,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
           (07-3). El calc mantiene los 2rem de aire original por debajo. */}
       <div className="flex-none w-full max-w-lg mx-auto px-6 pt-[calc(2rem+var(--safe-top))]">
         <div className="flex items-center gap-2 mb-2">
-          <img src="/atlas-logo.png" alt="En Forma" className="w-7 h-7 object-contain" />
+          <AtlasLogo alt="En Forma" className="w-7 h-7 object-contain" />
           <span className="font-sans font-bold text-title-m tracking-tighter uppercase text-accent-ink">EN FORMA</span>
           {step > 0 && (
             <span className="ml-auto font-mono text-caption uppercase tracking-widest text-ink-2">

@@ -179,3 +179,25 @@ footer a { margin-right: 1rem; }
   .envoltorio { padding: 1.5rem 1rem 3rem; }
   h1 { font-size: 1.5rem; }
 }
+
+/* Modo claro — sigue al sistema, como la app cuando el ajuste es «Sistema».
+   Estas páginas son estáticas y no leen el ajuste de Perfil. Valores de
+   src/index.css (:root). */
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #F4F2ED;
+    --surface: #FFFFFF;
+    --ink: #1B1916;
+    --ink-2: rgba(27, 25, 22, 0.77);
+    --ink-3: rgba(27, 25, 22, 0.67);
+    --accent: #875C05;
+    --hairline: rgba(27, 25, 22, 0.12);
+    --danger: #A82A20;
+  }
+  .caja.destacada { border-color: rgba(154, 110, 12, 0.55); }
+  .caja.aviso { border-color: rgba(168, 42, 32, 0.45); }
+  .pendiente { background: rgba(168, 42, 32, 0.10); }
+  .pasos li::before { color: #FFFFFF; }
+  /* El Atlas es oro claro: sobre papel desaparece. */
+  header.marca img { filter: brightness(0.6); }
+}

@@ -8,6 +8,14 @@ interface Props {
   alt?: string;
 }
 
+/**
+ * La foto de stock oscura que `ensureProfile` ponía a todo perfil nuevo hasta
+ * octubre de 2026. No es una foto del atleta: es un retrato negro que en modo
+ * claro se leía como un agujero. Se trata como «sin foto» y salen las iniciales.
+ */
+const FOTO_DE_STOCK = 'lh3.googleusercontent.com/aida-public/';
+export const esFotoDeStock = (src?: string) => !!src && src.includes(FOTO_DE_STOCK);
+
 function iniciales(name: string): string {
   return name.trim().split(/\s+/).slice(0, 2).map(p => p[0] ?? '').join('').toUpperCase();
 }
@@ -26,7 +34,7 @@ export default function Avatar({ src, name = '', className = '', alt }: Props) {
   const [fallo, setFallo] = useState(false);
   useEffect(() => { setFallo(false); }, [src]);
 
-  if (!src || fallo) {
+  if (!src || esFotoDeStock(src) || fallo) {
     return (
       <svg viewBox="0 0 40 40" role="img" aria-label={alt || name || 'Avatar'}
            className={`${className} bg-raised text-ink-2`}>

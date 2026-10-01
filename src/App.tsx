@@ -21,7 +21,7 @@ import { useAvisoConexion } from './hooks/useAvisoConexion';
 import { ToastProvider, useToast } from './hooks/useToast';
 import { CardioSessionProvider } from './hooks/useCardioSession';
 import CardioMiniPlayer from './components/cardio/CardioMiniPlayer';
-import { ScreenSkeleton } from './components/ui';
+import { ScreenSkeleton, AtlasLogo } from './components/ui';
 import { Icon } from './components/ui';
 import { OPEN_AI_PANEL_EVENT } from './ai/events';
 import { limpiarDatosDeSesion } from './utils/cierreDeSesion';
@@ -138,7 +138,7 @@ function Splash({ texto = 'Cargando...' }: { texto?: string }) {
   return (
     <div className="min-h-screen bg-bg flex items-center justify-center flex-col gap-4">
       <div className="flex items-center gap-2 text-accent-ink animate-pulse">
-        <img src="/atlas-logo.png" alt="En Forma" className="w-9 h-9 object-contain" />
+        <AtlasLogo alt="En Forma" className="w-9 h-9 object-contain" />
         <span className="font-sans font-extrabold text-display tracking-tighter uppercase text-accent-ink">EN FORMA</span>
       </div>
       <p className="font-sans text-label text-ink-2 uppercase tracking-widest animate-pulse">{texto}</p>
@@ -944,7 +944,7 @@ function AppContent() {
       {/* TOP DESKTOP HEADER */}
       <header className="hidden md:flex justify-between items-center w-full px-8 h-[var(--header-h)] pt-[var(--safe-top)] bg-bg fixed top-0 left-0 border-b border-hairline z-[var(--z-header)]">
         <div className="flex items-center gap-2 text-accent-ink">
-          <img src="/atlas-logo.png" alt="En Forma" className="w-6 h-6 object-contain" />
+          <AtlasLogo alt="En Forma" className="w-6 h-6 object-contain" />
           <span className="font-sans font-bold text-title-m tracking-tighter uppercase select-none">EN FORMA</span>
           <span className="text-caption bg-surface border border-hairline text-ink-2 px-2 rounded-control font-mono uppercase ml-2 select-none">
             {isCoach ? 'Modo entrenador' : 'Modo atleta'}
@@ -965,7 +965,7 @@ function AppContent() {
       {/* MOBILE HEADER */}
       <header className={`md:hidden flex justify-between items-center w-full px-4 h-[var(--header-h)] bg-bg border-b border-hairline sticky top-0 z-[var(--z-header)] ${avisoConexion === 'ok' ? 'pt-[var(--safe-top)]' : ''}`}>
         <div className="flex items-center gap-2 text-accent-ink">
-          <img src="/atlas-logo.png" alt="En Forma" className="w-6 h-6 object-contain" />
+          <AtlasLogo alt="En Forma" className="w-6 h-6 object-contain" />
           <span className="font-sans font-bold text-title-m tracking-tighter uppercase">EN FORMA</span>
           <span className="text-caption bg-hairline text-ink-2 px-2 rounded-control font-bold uppercase select-none">
             {isCoach ? 'C' : 'A'}

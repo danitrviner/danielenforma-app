@@ -7,7 +7,7 @@ import { usePendingReviews } from '../hooks/usePendingReviews';
 import { useToast } from '../hooks/useToast';
 import { mensajeDeErrorFirestore } from '../utils/erroresFirestore';
 import { atletasActivos } from '../utils/atletas';
-import { Badge, PageHeader, Button, Dialog, Icon } from './ui';
+import { Avatar, Badge, PageHeader, Button, Dialog, Icon } from './ui';
 import { pulsable } from '../utils/a11y';
 
 interface ReviewsScreenProps {
@@ -316,13 +316,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                       className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-all hover:bg-raised ${isExpanded ? 'bg-raised' : ''}`}
                     >
                       <div className="w-7 h-7 rounded-full overflow-hidden border border-hairline flex-shrink-0">
-                        <img
-                          src={athleteProfile?.avatarUrl || 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&q=80&w=200'}
-                          alt=""
-                          loading="lazy"
-                          decoding="async"
-                          className="w-full h-full object-cover"
-                        />
+                        <Avatar src={athleteProfile?.avatarUrl} name={athleteName} alt="" className="w-full h-full object-cover" />
                       </div>
                       <span
                         className="material-symbols-outlined flex-shrink-0 text-title-m"
@@ -452,13 +446,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
                     className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-all hover:bg-raised ${isExpanded ? 'bg-raised' : ''}`}
                   >
                     <div className="w-7 h-7 rounded-full overflow-hidden border border-hairline flex-shrink-0">
-                      <img
-                        src={athleteProfile?.avatarUrl || 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&q=80&w=200'}
-                        alt=""
-                        loading="lazy"
-                        decoding="async"
-                        className="w-full h-full object-cover"
-                      />
+                      <Avatar src={athleteProfile?.avatarUrl} name={athleteName} alt="" className="w-full h-full object-cover" />
                     </div>
                     <span
                       className="material-symbols-outlined flex-shrink-0 text-title-m"

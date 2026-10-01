@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { auth, signInWithEmailAndPassword, sendPasswordResetEmail } from '../firebase';
 import { setLocalBypassMode } from '../dbService';
 import { mensajeDeErrorAuth } from '../utils/erroresAuth';
-import { Button, Input } from './ui';
+import { Button, Input, AtlasLogo } from './ui';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Fase 3 (F3.5): re-skin sobre docs/design/fase3/Login y Espera - Experiencia.dc.html.
@@ -114,7 +114,7 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
       <div className="w-full max-w-md bg-surface border border-hairline p-8 rounded-canvas shadow-e2 z-10">
         {/* En Forma Header */}
         <div className="flex flex-col items-center mb-6 gap-2">
-          <img src="/atlas-logo.png" alt="" className="w-16 h-16 object-contain" />
+          <AtlasLogo alt="" className="w-16 h-16 object-contain" />
           <span className="font-display text-feature font-black tracking-tight uppercase text-accent-ink">EN FORMA</span>
           <p className="text-ink-2 text-label font-mono tracking-widest uppercase">De invisible a imparable</p>
         </div>
