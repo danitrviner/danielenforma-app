@@ -239,3 +239,34 @@ it('ningún componente escribe un color literal ni pega alfa hex a una variable'
   const unicos = [...new Set(culpables)];
   expect(unicos, `usa tokens (o color-mix para la opacidad):\n${unicos.join('\n')}`).toEqual([]);
 });
+
+/* ── Texto sobre velo ─────────────────────────────────────────────────────
+   `veil` es oscuro en LOS DOS temas; `ink` se invierte con el tema. Con
+   `text-ink*` encima de `bg-veil`/`from-veil` el modo claro daba tinta oscura
+   sobre oscuro (recetas, Mi menú, Training Lab). Encima de un velo va
+   `on-veil`, `on-veil-2` u `on-veil-accent`.
+   ───────────────────────────────────────────────────────────────────────── */
+
+it('ningún elemento mezcla un velo con tinta que cambia de tema', () => {
+  const raiz = resolve(__dirname, '..');
+  const culpables: string[] = [];
+  for (const f of fuentes(raiz)) {
+    if (f.endsWith('paletas.test.ts')) continue;
+    const corto = f.slice(raiz.length + 1);
+    for (const linea of readFileSync(f, 'utf8').split('\n')) {
+      // un velo suave (< 40 %) sobre papel sigue siendo claro: ahí la tinta es la correcta.
+      const veil = [...linea.matchAll(/\b(?:bg|from|via|to)-veil(?:\/(\d+))?\b/g)].some((m) => m[1] === undefined || Number(m[1]) >= 40);
+      if (!veil) continue;
+      // el velo es del contenedor y el texto es de un hijo: aquí solo se miran
+      // los elementos que llevan las dos cosas a la vez (el caso del chip).
+      if (/\b(?:text-ink(?:-[2-5])?|text-accent-ink)\b/.test(linea)) culpables.push(`${corto}: ${linea.trim().slice(0, 90)}`);
+    }
+  }
+  expect(culpables, `sobre un velo usa text-on-veil*:\n${culpables.join('\n')}`).toEqual([]);
+});
+
+it('on-veil es el mismo en las dos paletas (tinta clara sobre velo oscuro)', () => {
+  for (const tema of ['claro', 'oscuro'] as const) {
+    expect(valor(CUERPO[tema], '--p-on-veil').toLowerCase()).toBe('#f5f5f4');
+  }
+});

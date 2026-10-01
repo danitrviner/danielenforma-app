@@ -50,11 +50,11 @@ function RecetaCard({ recipe, onOpen }: { recipe: Recipe; onOpen: (r: Recipe) =>
       }
       <div className="absolute inset-0 bg-gradient-to-t from-veil/95 via-veil/50 to-transparent" />
       {recipe.kcal ? (
-        <div className="absolute top-2 left-2 bg-veil/60 backdrop-blur-sm rounded-control px-2 font-mono text-caption text-ink-2 z-10">
+        <div className="absolute top-2 left-2 bg-veil/60 backdrop-blur-sm rounded-control px-2 font-mono text-caption text-on-veil-2 z-10">
           {recipe.kcal} kcal
         </div>
       ) : null}
-      <p className="relative z-10 p-3 text-label text-ink font-sans font-bold leading-tight">{recipe.name}</p>
+      <p className="relative z-10 p-3 text-label text-on-veil font-sans font-bold leading-tight">{recipe.name}</p>
     </button>
   );
 }
@@ -401,7 +401,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
                 onClick={() => setRecetasCat(cat)}
                 className={`px-4 py-2 rounded-full font-mono text-caption font-bold whitespace-nowrap transition-all ${
                   recetasCat === cat
-                    ? 'bg-data text-on-accent'
+                    ? 'bg-data text-on-fill'
                     : 'bg-raised border border-hairline text-ink-2 hover:border-strong hover:text-ink'
                 }`}
               >{cat}</button>

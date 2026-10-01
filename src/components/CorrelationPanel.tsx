@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { tintaSobre } from '../utils/coloresPersistidos';
 import { useQuery } from '@tanstack/react-query';
 import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend,
@@ -631,9 +632,9 @@ export default function CorrelationPanel({
                         <button
                           onClick={() => toggleSeries(f.id)}
                           className={`flex items-center gap-2 px-3 py-2 min-h-[44px] sm:min-h-0 rounded-full font-mono text-label font-bold border transition-all ${
-                            active ? 'text-on-fill' : 'bg-transparent text-ink-2 border-hairline hover:border-hairline hover:text-ink'
+                            active ? '' : 'bg-transparent text-ink-2 border-hairline hover:border-hairline hover:text-ink'
                           }`}
-                          style={active ? { backgroundColor: color, borderColor: color } : {}}
+                          style={active ? { backgroundColor: color, borderColor: color, color: tintaSobre(color) } : {}}
                         >
                           <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: active ? 'color-mix(in oklab, var(--color-veil) 40%, transparent)' : color }} />
                           {f.label}
@@ -665,9 +666,9 @@ export default function CorrelationPanel({
                       key={s.id}
                       onClick={() => toggleSeries(s.id)}
                       className={`flex items-center gap-2 px-3 py-2 min-h-[44px] sm:min-h-0 rounded-full font-mono text-label font-bold border transition-all ${
-                        active ? 'text-on-fill' : 'bg-transparent text-ink-2 border-hairline hover:border-hairline hover:text-ink'
+                        active ? '' : 'bg-transparent text-ink-2 border-hairline hover:border-hairline hover:text-ink'
                       }`}
-                      style={active ? { backgroundColor: color, borderColor: color } : {}}
+                      style={active ? { backgroundColor: color, borderColor: color, color: tintaSobre(color) } : {}}
                     >
                       <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: active ? 'color-mix(in oklab, var(--color-veil) 40%, transparent)' : color }} />
                       {s.label}

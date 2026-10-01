@@ -94,7 +94,7 @@ export default function PortadaCurso({ category, coverImageUrl, title, grande = 
           <Icon
             name={icono}
             size="xl"
-            className={`relative text-ink-5 ${grande ? 'scale-[2.6]' : 'scale-[1.6]'}`}
+            className={`relative text-on-veil/35 ${grande ? 'scale-[2.6]' : 'scale-[1.6]'}`}
           />
         </div>
       )}

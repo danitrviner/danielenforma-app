@@ -2319,7 +2319,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                           <button
                             onClick={() => confirmSaveMealAsRecipe(meal)}
                             disabled={savingRecipe || !recipeNameDraft.trim()}
-                            className="px-3 py-2 bg-info text-on-accent font-mono text-caption font-bold uppercase rounded-control disabled:opacity-40 transition-all"
+                            className="px-3 py-2 bg-info text-on-fill font-mono text-caption font-bold uppercase rounded-control disabled:opacity-40 transition-all"
                           >
                             {savingRecipe ? 'Guardando…' : 'Guardar'}
                           </button>

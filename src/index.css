@@ -300,6 +300,14 @@
   --color-photo: var(--p-photo);
 
   --color-veil: var(--p-veil);
+  /* Texto sobre un velo o sobre una foto oscurecida. Tinta CLARA en LOS DOS
+     temas: `veil` es oscuro siempre, y `ink` se invierte con el tema, así que
+     `text-ink` encima de `bg-veil`/`from-veil` daba tinta oscura sobre oscuro
+     en claro. `on-veil-2` es el escalón de apoyo. */
+  --color-on-veil: var(--p-on-veil);
+  --color-on-veil-2: var(--p-on-veil-2);
+  /* El oro como texto sobre un velo: el del tema oscuro, fijo en los dos. */
+  --color-on-veil-accent: var(--p-on-veil-accent);
 
   /* ── Dato · 1 ───────────────────────────────────────────────────────────────
      El cian nunca es una acción. Serie principal de gráfica, métricas de cuerpo.
@@ -617,6 +625,9 @@
   --p-on-fill: #FFFFFF;
   --p-photo:   #FFFFFF;
   --p-veil: #1B1916;
+  --p-on-veil:   #F5F5F4;
+  --p-on-veil-2: rgba(245, 245, 244, 0.78);
+  --p-on-veil-accent: #E3B341;
 
   /* Dato y estados — todos por encima de 4,5:1 sobre la página. Los valores
      de oscuro (cian neón, verde menta, melocotón) sobre blanco no se ven:
@@ -706,6 +717,9 @@
   --p-on-fill: #121212;
   --p-photo:   #FFFFFF;
   --p-veil: #000000;
+  --p-on-veil:   #F5F5F4;
+  --p-on-veil-2: rgba(245, 245, 244, 0.78);
+  --p-on-veil-accent: #E3B341;
 
   --p-data:    #00eefc;
   --p-success: #3ECF8E;

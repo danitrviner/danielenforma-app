@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { tintaSobre } from '../utils/coloresPersistidos';
 import { useQuery } from '@tanstack/react-query';
 import {
   BarChart, Bar, LineChart, Line,
@@ -258,9 +259,9 @@ export default function MesocycleDashboard({ mesocycles, athleteEmail }: Props) 
                       className={`px-2 rounded-control font-sans text-caption uppercase font-bold border transition-all ${
                         hidden
                           ? 'bg-transparent border-hairline text-ink-3'
-                          : 'border-transparent text-on-fill'
+                          : 'border-transparent'
                       }`}
-                      style={hidden ? {} : { backgroundColor: GROUP_COLOR[g] }}
+                      style={hidden ? {} : { backgroundColor: GROUP_COLOR[g], color: tintaSobre(GROUP_COLOR[g]) }}
                     >
                       {MUSCLE_LABELS[g]}
                     </button>

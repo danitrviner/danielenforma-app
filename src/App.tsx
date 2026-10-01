@@ -991,7 +991,7 @@ function AppContent() {
                   flotante del propio panel, que es `md:` — en el móvil no
                   había nada que dijera que hay propuestas esperando. */}
               {propuestasPendientes > 0 && (
-                <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-warning text-on-accent font-mono text-[10px] font-bold flex items-center justify-center">
+                <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-warning text-on-fill font-mono text-[10px] font-bold flex items-center justify-center">
                   {propuestasPendientes}
                 </span>
               )}
@@ -1238,7 +1238,7 @@ function AppContent() {
                   />
                 )}
                 {insignia > 0 && (
-                  <span className="absolute -top-1 -right-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 font-mono text-caption font-bold leading-none text-on-accent">
+                  <span className="absolute -top-1 -right-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 font-mono text-caption font-bold leading-none text-on-fill">
                     {insignia}
                   </span>
                 )}

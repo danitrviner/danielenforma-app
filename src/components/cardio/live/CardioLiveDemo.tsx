@@ -42,14 +42,14 @@ export default function CardioLiveDemo() {
     <div className="min-h-screen bg-bg">
       <div className="fixed top-2 left-2 z-[999] flex flex-wrap gap-2 max-w-[90vw]">
         {ZONE_ORDER.map((z, i) => (
-          <button key={z} onClick={() => setZoneIndex(i)} className="rounded-full bg-veil/70 px-3 py-1 text-caption font-mono text-ink">
+          <button key={z} onClick={() => setZoneIndex(i)} className="rounded-full bg-veil/70 px-3 py-1 text-caption font-mono text-on-veil">
             {z}
           </button>
         ))}
-        <button onClick={() => setMode('libre')} className="rounded-full bg-veil/70 px-3 py-1 text-caption font-mono text-ink">libre</button>
-        <button onClick={() => setMode('zona2')} className="rounded-full bg-veil/70 px-3 py-1 text-caption font-mono text-ink">zona2</button>
-        <button onClick={() => setMode('intervalos')} className="rounded-full bg-veil/70 px-3 py-1 text-caption font-mono text-ink">intervalos</button>
-        <button onClick={() => setLocked(l => !l)} className="rounded-full bg-veil/70 px-3 py-1 text-caption font-mono text-ink">
+        <button onClick={() => setMode('libre')} className="rounded-full bg-veil/70 px-3 py-1 text-caption font-mono text-on-veil">libre</button>
+        <button onClick={() => setMode('zona2')} className="rounded-full bg-veil/70 px-3 py-1 text-caption font-mono text-on-veil">zona2</button>
+        <button onClick={() => setMode('intervalos')} className="rounded-full bg-veil/70 px-3 py-1 text-caption font-mono text-on-veil">intervalos</button>
+        <button onClick={() => setLocked(l => !l)} className="rounded-full bg-veil/70 px-3 py-1 text-caption font-mono text-on-veil">
           {locked ? 'desbloquear (debug)' : 'bloquear (debug)'}
         </button>
       </div>

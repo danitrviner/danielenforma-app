@@ -614,16 +614,16 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-veil/85 via-veil/15 to-transparent" />
                   <div className="absolute bottom-0 left-0 right-0 p-3 text-left">
-                    <span className="font-sans text-caption text-ink-2 uppercase tracking-wider">
+                    <span className="font-sans text-caption text-on-veil-2 uppercase tracking-wider">
                       {meal.name}{meal.scale !== 1 ? ` · ×${meal.scale}` : ''}
                     </span>
-                    <p className={`font-sans font-bold text-title-s leading-tight ${done ? 'text-ink-2 line-through' : 'text-ink'}`}>
+                    <p className={`font-sans font-bold text-title-s leading-tight ${done ? 'text-on-veil-2 line-through' : 'text-on-veil'}`}>
                       {meal.recipeName}
                     </p>
                   </div>
                   {done && (
                     <span className="absolute top-2 right-2 w-8 h-8 rounded-full bg-success flex items-center justify-center">
-                      <Icon name="check" size="m" className="text-on-accent" />
+                      <Icon name="check" size="m" className="text-on-fill" />
                     </span>
                   )}
                 </button>
@@ -634,7 +634,7 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
                     className={`flex-shrink-0 w-8 h-8 rounded-full border-2 flex items-center justify-center transition-colors self-start ${done ? 'bg-success border-success' : 'border-hairline hover:border-ink-2'}`}
                     title={done ? 'Marcar como no hecha' : 'Marcar como hecha'}
                   >
-                    {done && <Icon name="check" size="m" className="text-on-accent" />}
+                    {done && <Icon name="check" size="m" className="text-on-fill" />}
                   </button>
 
                   <div className="flex-1 min-w-0">

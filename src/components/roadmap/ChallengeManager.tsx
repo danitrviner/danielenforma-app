@@ -386,7 +386,7 @@ export default function ChallengeManager({ athleteEmail, challengeData, roadmap,
             <button
               onClick={saveTemplate}
               disabled={saving || !tplForm.title.trim()}
-              className="w-full py-2 bg-data text-on-accent font-sans font-bold text-label uppercase rounded-control hover:opacity-90 active:scale-95 transition-all disabled:opacity-50"
+              className="w-full py-2 bg-data text-on-fill font-sans font-bold text-label uppercase rounded-control hover:opacity-90 active:scale-95 transition-all disabled:opacity-50"
             >
               Guardar plantilla
             </button>

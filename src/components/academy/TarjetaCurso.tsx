@@ -46,7 +46,7 @@ export default function TarjetaCurso({ curso, pct, total, hechas, unlocked, reas
             ve sin leer nada. */}
         <div className="absolute top-2 right-2 flex items-center gap-1">
           {!unlocked && (
-            <span className="inline-flex items-center gap-1 rounded-control bg-veil/70 px-2 py-1 font-mono text-caption uppercase tracking-widest text-ink-2 backdrop-blur-sm">
+            <span className="inline-flex items-center gap-1 rounded-control bg-veil/70 px-2 py-1 font-mono text-caption uppercase tracking-widest text-on-veil-2 backdrop-blur-sm">
               <Icon name="lock" size="s" />
               Bloqueado
             </span>
@@ -59,7 +59,7 @@ export default function TarjetaCurso({ curso, pct, total, hechas, unlocked, reas
           )}
         </div>
         {unlocked && total > 0 && (
-          <span className="absolute bottom-2 left-3 font-mono text-caption text-ink-2">
+          <span className="absolute bottom-2 left-3 font-mono text-caption text-on-veil-2">
             {hechas > 0 && !completado
               ? `${hechas} de ${total} lecciones`
               : `${total} ${total === 1 ? 'lección' : 'lecciones'}`}

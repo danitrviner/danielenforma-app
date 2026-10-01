@@ -122,9 +122,9 @@ export default function AcademyScreen({ profile }: Props) {
             alto="h-48 sm:h-56"
           />
           <div className="absolute inset-0 flex flex-col justify-end p-4 sm:p-5">
-            <span className="font-mono text-caption uppercase tracking-widest text-ink-3">{CATEGORY_LABEL[openCourse.category]}</span>
-            <h2 className="font-sans font-bold text-title-l text-ink">{openCourse.title}</h2>
-            <p className="text-label text-ink-2 font-sans mt-1 line-clamp-2">{openCourse.description}</p>
+            <span className="font-mono text-caption uppercase tracking-widest text-on-veil-2">{CATEGORY_LABEL[openCourse.category]}</span>
+            <h2 className="font-sans font-bold text-title-l text-on-veil">{openCourse.title}</h2>
+            <p className="text-label text-on-veil-2 font-sans mt-1 line-clamp-2">{openCourse.description}</p>
           </div>
         </div>
         {(() => {
@@ -209,13 +209,13 @@ export default function AcademyScreen({ profile }: Props) {
             alto="h-44 sm:h-52"
           />
           <div className="absolute inset-0 flex flex-col justify-end p-4 sm:p-5">
-            <span className="font-mono text-caption uppercase tracking-widest text-accent-ink">
+            <span className="font-mono text-caption uppercase tracking-widest text-on-veil-accent">
               {continuar.empezando ? 'Empieza por aquí' : 'Sigue donde lo dejaste'}
             </span>
-            <p className="font-sans font-bold text-title-m text-ink mt-0.5 line-clamp-1">
+            <p className="font-sans font-bold text-title-m text-on-veil mt-0.5 line-clamp-1">
               {continuar.lesson.title}
             </p>
-            <p className="font-sans text-label text-ink-2 line-clamp-1">
+            <p className="font-sans text-label text-on-veil-2 line-clamp-1">
               {continuar.course.title} · Lección {continuar.numero} de {continuar.total}
             </p>
             <span className="mt-3 inline-flex items-center gap-1.5 self-start rounded-control bg-accent px-3 py-2 font-sans font-bold text-caption text-on-accent">

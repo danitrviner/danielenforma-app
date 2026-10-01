@@ -97,7 +97,7 @@ export default function MealItemSwipeRow({ children, onDelete, className = '' }:
             type="button"
             onClick={() => { cerrar(); onDelete!(); }}
             aria-label="Quitar"
-            className="flex h-full w-full flex-col items-center justify-center gap-1 font-sans text-caption font-bold text-on-accent"
+            className="flex h-full w-full flex-col items-center justify-center gap-1 font-sans text-caption font-bold text-on-fill"
           >
             <Icon name="close" size="m" />
             Quitar

@@ -134,7 +134,7 @@ const RecetaFilaCompacta = React.memo(function RecetaFilaCompacta({ recipe, isFa
       >
         <span
           className="material-symbols-outlined text-title-s"
-          style={{ fontVariationSettings: isFav ? "'FILL' 1" : "'FILL' 0", color: isFav ? 'var(--color-accent-ink)' : 'var(--color-ink-2)' }}
+          style={{ fontVariationSettings: isFav ? "'FILL' 1" : "'FILL' 0", color: isFav ? 'var(--color-on-veil-accent)' : 'var(--color-on-veil-2)' }}
         >favorite</span>
       </button>
     </div>
@@ -186,7 +186,7 @@ const RecipeCard = React.memo(function RecipeCard({ recipe, isFav, large = false
       >
         <span
           className="material-symbols-outlined text-title-s"
-          style={{ fontVariationSettings: isFav ? "'FILL' 1" : "'FILL' 0", color: isFav ? 'var(--color-accent-ink)' : 'var(--color-ink-2)' }}
+          style={{ fontVariationSettings: isFav ? "'FILL' 1" : "'FILL' 0", color: isFav ? 'var(--color-on-veil-accent)' : 'var(--color-on-veil-2)' }}
         >favorite</span>
       </button>
 
@@ -194,15 +194,15 @@ const RecipeCard = React.memo(function RecipeCard({ recipe, isFav, large = false
         {tags.length > 0 && (
           <div className="flex flex-wrap gap-1">
             {tags.map(c => (
-              <span key={c} className="px-2 rounded-full bg-veil/60 backdrop-blur-sm text-ink-2 font-mono text-caption uppercase tracking-wider border border-hairline">{c}</span>
+              <span key={c} className="px-2 rounded-full bg-veil/60 backdrop-blur-sm text-on-veil-2 font-mono text-caption uppercase tracking-wider border border-hairline">{c}</span>
             ))}
           </div>
         )}
-        <h3 className={`font-sans font-bold text-ink group-hover:text-accent-ink transition-colors leading-tight ${large ? 'text-title-l' : 'text-title-s'}`}>
+        <h3 className={`font-sans font-bold text-on-veil group-hover:text-on-veil-accent transition-colors leading-tight ${large ? 'text-title-l' : 'text-title-s'}`}>
           {recipe.name}
         </h3>
         {exchStr !== '—' && (
-          <p className="font-mono text-caption text-accent-ink/80 font-bold">{exchStr}</p>
+          <p className="font-mono text-caption text-on-veil-accent/80 font-bold">{exchStr}</p>
         )}
       </div>
     </article>
@@ -240,26 +240,26 @@ const RecetaCard = React.memo(function RecetaCard({ recipe, isFav, isFeatured, e
         className="absolute top-2 right-2 w-7 h-7 rounded-full bg-veil/50 flex items-center justify-center z-10"
       >
         <span className="material-symbols-outlined text-body-s"
-          style={{ fontVariationSettings: isFav ? "'FILL' 1" : "'FILL' 0", color: isFav ? 'var(--color-accent-ink)' : 'var(--color-ink-2)' }}
+          style={{ fontVariationSettings: isFav ? "'FILL' 1" : "'FILL' 0", color: isFav ? 'var(--color-on-veil-accent)' : 'var(--color-on-veil-2)' }}
         >favorite</span>
       </button>
 
       {/* kcal or featured badge */}
       {isFeatured ? (
-        <div className="absolute top-2 left-2 bg-warning/90 rounded-control px-2 font-mono text-caption text-on-accent font-bold z-10 flex items-center ">
+        <div className="absolute top-2 left-2 bg-warning/90 rounded-control px-2 font-mono text-caption text-on-fill font-bold z-10 flex items-center ">
           <span className="material-symbols-outlined" style={{ fontSize: '9px', fontVariationSettings: "'FILL' 1" }}>star</span>
           Para ti
         </div>
       ) : recipe.kcal ? (
-        <div className="absolute top-2 left-2 bg-veil/60 backdrop-blur-sm rounded-control px-2 font-mono text-caption text-ink-2 z-10">
+        <div className="absolute top-2 left-2 bg-veil/60 backdrop-blur-sm rounded-control px-2 font-mono text-caption text-on-veil-2 z-10">
           {recipe.kcal} kcal
         </div>
       ) : null}
 
       <div className="relative z-10 p-3 space-y-1">
-        <p className="font-sans font-bold text-ink text-label leading-tight line-clamp-2">{recipe.name}</p>
+        <p className="font-sans font-bold text-on-veil text-label leading-tight line-clamp-2">{recipe.name}</p>
         {exch && (exch.HC > 0 || exch.PROT > 0 || exch.GRASA > 0) && (
-          <p className="font-mono text-caption text-accent-ink/75">
+          <p className="font-mono text-caption text-on-veil-accent/75">
             {[exch.HC > 0 && `${exch.HC}HC`, exch.PROT > 0 && `${exch.PROT}P`, exch.GRASA > 0 && `${exch.GRASA}G`]
               .filter(Boolean).join(' · ')}
           </p>
@@ -339,11 +339,11 @@ function RecipeDetail({ recipe, isFav, isDisliked, isOwn, enabledModes, savingFa
             onClick={() => onToggleFav(recipe.id)}
             disabled={savingFav}
             className="flex items-center gap-2 text-label font-mono font-bold uppercase tracking-wider transition-transform duration-(--duration-state) ease-brand active:scale-90 disabled:opacity-50"
-            style={{ color: isFav ? 'var(--color-accent-ink)' : 'var(--color-ink-2)' }}
+            style={{ color: isFav ? 'var(--color-on-veil-accent)' : 'var(--color-on-veil-2)' }}
           >
             <span
               className="material-symbols-outlined text-title-m transition-colors duration-(--duration-state)"
-              style={{ fontVariationSettings: isFav ? "'FILL' 1" : "'FILL' 0", color: isFav ? 'var(--color-accent-ink)' : 'var(--color-ink-2)' }}
+              style={{ fontVariationSettings: isFav ? "'FILL' 1" : "'FILL' 0", color: isFav ? 'var(--color-on-veil-accent)' : 'var(--color-on-veil-2)' }}
             >favorite</span>
             {isFav ? 'Favorita' : 'Guardar'}
           </button>

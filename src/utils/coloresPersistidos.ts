@@ -51,3 +51,16 @@ export function colorDeTema(valor: string | undefined | null): string {
 export function conAlfa(color: string, porcentaje: number): string {
   return `color-mix(in oklab, ${colorDeTema(color)} ${porcentaje}%, transparent)`;
 }
+
+/**
+ * La tinta que se lee sobre un relleno sólido de color de la paleta.
+ * El oro (`accent`, `chart-2`) es claro en LOS DOS temas → `on-accent`.
+ * Los estados y las series se invierten (pasteles en oscuro, sólidos profundos
+ * en claro) → `on-fill`. Poner `on-accent` sobre `bg-data` daba tinta oscura
+ * sobre verde-azulado oscuro en claro; `on-fill` sobre oro daba 2,9:1.
+ */
+export function tintaSobre(relleno: string): string {
+  return /var\(--color-(accent|chart-2)\)/.test(relleno)
+    ? 'var(--color-on-accent)'
+    : 'var(--color-on-fill)';
+}

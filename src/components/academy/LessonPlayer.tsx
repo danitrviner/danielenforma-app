@@ -97,7 +97,7 @@ export default function LessonPlayer({ lesson, course, courseLessons, done, comp
               onClick={() => setShowSpeedMenu(v => !v)}
               aria-label="Velocidad de reproducción"
               aria-expanded={showSpeedMenu}
-              className="flex h-9 items-center gap-1 rounded-control bg-veil/50 px-3 font-mono text-caption font-bold text-ink backdrop-blur-sm transition-colors hover:bg-veil/65"
+              className="flex h-9 items-center gap-1 rounded-control bg-veil/50 px-3 font-mono text-caption font-bold text-on-veil backdrop-blur-sm transition-colors hover:bg-veil/65"
             >
               <Icon name="speed" size="s" />
               {SPEED_OPTIONS.find(o => o.value === speed)?.label}

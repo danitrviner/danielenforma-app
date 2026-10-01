@@ -76,13 +76,13 @@ export default function CardioMiniPlayerDemo() {
   return (
     <CardioSessionContext.Provider value={value}>
       <div className="fixed top-2 left-2 z-[999] flex gap-2">
-        <button onClick={() => setCurrentPath('/home')} className="rounded-full bg-veil/70 px-3 py-1 text-caption font-mono text-ink">
+        <button onClick={() => setCurrentPath('/home')} className="rounded-full bg-veil/70 px-3 py-1 text-caption font-mono text-on-veil">
           Ir a Home
         </button>
-        <button onClick={() => setCurrentPath('/cardio')} className="rounded-full bg-veil/70 px-3 py-1 text-caption font-mono text-ink">
+        <button onClick={() => setCurrentPath('/cardio')} className="rounded-full bg-veil/70 px-3 py-1 text-caption font-mono text-on-veil">
           Ir a Cardio
         </button>
-        <span className="rounded-full bg-veil/70 px-3 py-1 text-caption font-mono text-ink">
+        <span className="rounded-full bg-veil/70 px-3 py-1 text-caption font-mono text-on-veil">
           Ruta simulada: {currentPath}
         </span>
       </div>

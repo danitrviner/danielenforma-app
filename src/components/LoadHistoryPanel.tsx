@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { tintaSobre } from '../utils/coloresPersistidos';
 import { useQuery } from '@tanstack/react-query';
 import {
   LineChart, Line,
@@ -404,10 +405,10 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
                 onClick={() => toggleMetric(m)}
                 className={`px-3 min-h-[44px] rounded-full font-sans text-label uppercase tracking-wider transition-all border ${
                   activeMetrics.has(m)
-                    ? 'text-on-accent font-bold'
+                    ? 'font-bold'
                     : 'bg-transparent text-ink-2 border-hairline hover:border-hairline'
                 }`}
-                style={activeMetrics.has(m) ? { backgroundColor: METRIC_COLOR[m], borderColor: METRIC_COLOR[m] } : {}}
+                style={activeMetrics.has(m) ? { backgroundColor: METRIC_COLOR[m], borderColor: METRIC_COLOR[m], color: tintaSobre(METRIC_COLOR[m]) } : {}}
               >
                 {METRIC_LABEL[m]}
               </button>

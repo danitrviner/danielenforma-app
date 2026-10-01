@@ -503,7 +503,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                     <Icon name="fitness_center" size="l" className="text-ink-2" />
                   )}
                   {!ex.videoUrl && (
-                    <span className="absolute bottom-0 inset-x-0 bg-veil/70 text-center text-caption font-mono uppercase tracking-wider text-ink-2 py-1">Sin vídeo</span>
+                    <span className="absolute bottom-0 inset-x-0 bg-veil/70 text-center text-caption font-mono uppercase tracking-wider text-on-veil-2 py-1">Sin vídeo</span>
                   )}
                 </div>
                 <div className="flex-1 min-w-0">

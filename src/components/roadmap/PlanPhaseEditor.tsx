@@ -244,7 +244,7 @@ export default function PlanPhaseEditor({ roadmap, onSave, phaseData, nutritionP
               <button
                 onClick={() => generateNutritionProgram('futuras')}
                 disabled={generatingNutrition}
-                className="py-2 bg-data text-on-accent font-sans font-bold text-label uppercase rounded-control hover:opacity-90 disabled:opacity-50"
+                className="py-2 bg-data text-on-fill font-sans font-bold text-label uppercase rounded-control hover:opacity-90 disabled:opacity-50"
               >
                 Regenerar solo fases futuras
               </button>
