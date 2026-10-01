@@ -96,7 +96,7 @@ export default function BarraDeSemanas(p: Props) {
               Esta semana: S{p.actual}
             </span>
           )}
-          <div className="ml-auto flex items-center gap-2">
+          <div className="ml-auto flex flex-wrap items-center justify-end gap-2 [&_button]:whitespace-nowrap">
             {p.puedeDeshacer && (
               <Button size="s" variant="ghost" icon="undo" onClick={p.onDeshacer}>Deshacer</Button>
             )}

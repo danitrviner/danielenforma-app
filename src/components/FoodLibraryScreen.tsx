@@ -142,7 +142,7 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
       </div>
 
       {/* Category + search + add button */}
-      <div className="flex flex-col md:flex-row gap-3 items-start md:items-center justify-between">
+      <div className="flex flex-col xl:flex-row gap-3 items-start xl:items-center justify-between">
         <div className="flex items-center gap-2 flex-wrap">
           <button
             onClick={() => setFilterCat('all')}
@@ -166,8 +166,8 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
           ))}
         </div>
 
-        <div className="flex gap-2 items-center w-full md:w-auto">
-          <div className="flex items-center gap-2 bg-raised border border-hairline rounded-surface px-3 py-2 flex-1 md:w-52">
+        <div className="flex flex-wrap gap-2 items-center w-full xl:w-auto">
+          <div className="flex items-center gap-2 bg-raised border border-hairline rounded-surface px-3 py-2 flex-1 min-w-[12rem] xl:flex-none xl:w-52">
             <span className="material-symbols-outlined text-ink-2 text-body-s">search</span>
             <input
               value={search}

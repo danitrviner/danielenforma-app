@@ -2838,7 +2838,7 @@ export default function MesocycleManager({
                   />
                 </div>
 
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                   <div>
                     <label htmlFor="mesocyclemanager-no-meso" className="block font-mono text-caption text-ink-2 uppercase mb-1">Nº Meso</label>
                     <input id="mesocyclemanager-no-meso" type="number" min={1}
@@ -2881,7 +2881,7 @@ export default function MesocycleManager({
                       </p>
                     )}
                   </div>
-                  <div className="col-span-2 md:col-span-4">
+                  <div className="col-span-2 lg:col-span-4">
                     <span className="block font-mono text-caption text-ink-2 uppercase mb-1">Sesiones por ciclo</span>
                     <div className="flex gap-1 overflow-x-auto hide-scrollbar pb-1">
                       {[2,3,4,5,6,7,8,9,10].map(d => (

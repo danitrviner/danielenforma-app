@@ -540,7 +540,7 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
       )}
 
       {/* Stat cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <StatCard
           label="Desvío vs. plan"
           value={performance?.deviationKg != null ? `${fmtKg(performance.deviationKg, true)} kg` : '—'}

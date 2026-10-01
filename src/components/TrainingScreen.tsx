@@ -742,7 +742,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
     return (
       <div
         key={a.id}
-        className={`border p-4 transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 ${
+        className={`border p-4 transition-all flex flex-col lg:flex-row lg:items-center justify-between gap-4 ${
           isNext
             ? 'rounded-canvas bg-accent-bg border-accent/50 shadow-glow'
             : estado === 'perdido'
@@ -849,7 +849,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <header className="flex flex-col md:flex-row md:items-end justify-between pb-4 gap-3">
+      <header className="flex flex-col lg:flex-row lg:items-end justify-between pb-4 gap-3">
         <div>
           <h1 className="font-display text-hero font-black tracking-tight text-ink uppercase">Rutinas</h1>
           <p className="text-ink-2 text-body-s mt-1">

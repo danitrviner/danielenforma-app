@@ -355,7 +355,7 @@ export default function SemanasNutricionCoach({ program, diets, onGuardar, pesos
             </div>
           )}
 
-          <div className="grid gap-3 md:grid-cols-2">
+          <div className="grid gap-3 lg:grid-cols-2">
             <div className="rounded-control border border-hairline bg-surface p-3 space-y-2">
               <p className="font-sans font-bold text-label text-ink">Días de entreno y descanso</p>
               <p className="font-sans text-caption text-ink-3">

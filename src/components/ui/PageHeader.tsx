@@ -63,8 +63,13 @@ export default function PageHeader({ title, eyebrow, subtitle, onBack, action, a
           {eyebrow}
         </span>
       )}
-      <div className={actionInline ? 'flex items-center gap-3' : 'flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'}>
-        <div className="flex min-w-0 items-center gap-2 sm:flex-1">
+      {/* Con `flex-wrap` y un ancho MÍNIMO para el título (no `min-w-0`): si título
+          y acción no caben en la misma fila, la acción baja entera en vez de
+          dejar el título en una columna de dos letras («BI… DE EJ…» entre 640 y
+          ~1000 px de ventana, donde el ancho útil es el de la ventana menos la
+          barra lateral y `sm:` ya los ponía en fila). */}
+      <div className={actionInline ? 'flex items-center gap-3' : 'flex flex-wrap items-center justify-between gap-3'}>
+        <div className={`flex items-center gap-2 ${actionInline ? 'min-w-0' : 'min-w-[min(100%,22rem)] flex-1'}`}>
           {onBack && (
             // 36 px — el retroceso de cabecera del handoff, más pequeño que
             // el botón de icono estándar (48, Button `m`) porque comparte
@@ -90,7 +95,7 @@ export default function PageHeader({ title, eyebrow, subtitle, onBack, action, a
             actionInline: ml-auto shrink-0, comparte fila con el título en vez
             de apilarse — pensado para una acción de solo icono. */}
         {action && (
-          <div className={actionInline ? 'flex flex-wrap items-center gap-3 ml-auto shrink-0' : 'flex flex-wrap items-center gap-3 sm:shrink-0'}>
+          <div className={actionInline ? 'flex flex-wrap items-center gap-3 ml-auto shrink-0' : 'flex flex-wrap items-center gap-3 shrink-0'}>
             {action}
           </div>
         )}

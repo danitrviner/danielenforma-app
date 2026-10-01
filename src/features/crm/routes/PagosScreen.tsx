@@ -165,7 +165,7 @@ export default function PagosScreen({ coachEmail }: { coachEmail: string }) {
           </div>
         )}
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
           <MetricCard icon="paid" label="Cash recaudado" value={formatEuros(cashPeriodo.recaudadoCents)} sub="cobrado en el periodo" />
           <MetricCard icon="sell" label="Cash contratado" value={formatEuros(cashPeriodo.contratadoCents)} sub="vendido, aún sin cobrar" />
           <MetricCard icon="autorenew" label="Recaudado renovaciones" value={formatEuros(cashPeriodo.recaudadoRenovacionesCents)} sub="cobrado en el periodo" />

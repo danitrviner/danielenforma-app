@@ -660,7 +660,7 @@ export default function NutritionPlansScreen({
             <EmptyState icon="nutrition" title="Sin dietas" description="Crea la primera para este atleta." />
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {diets.map(dt => {
               const dtPlaced = computePlaced(dt.meals);
               return (

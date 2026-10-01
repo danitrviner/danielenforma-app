@@ -34,10 +34,10 @@ export function zoneLabel(series: number, landmark?: VolumeLandmark): string {
 
 const ZONE_COLOR_TEXT: Record<VolumeZone, string> = {
   sin_volumen: 'var(--color-ink-3)',
-  mev: 'var(--color-info)',
-  productivo: 'var(--color-success)',
-  mav: 'var(--color-warning)',
-  mrv: 'var(--color-danger)',
+  mev: 'color-mix(in oklab, var(--color-info) 55%, var(--color-ink))',
+  productivo: 'color-mix(in oklab, var(--color-success) 55%, var(--color-ink))',
+  mav: 'color-mix(in oklab, var(--color-warning) 55%, var(--color-ink))',
+  mrv: 'color-mix(in oklab, var(--color-danger) 55%, var(--color-ink))',
 };
 
 export function heatmapText(series: number, landmark?: VolumeLandmark): string {
@@ -73,8 +73,8 @@ export function heatmapBg(series: number, landmark: VolumeLandmark = GENERIC_LAN
 
 export const VOLUME_ZONE_LEGEND = [
   { label: 'Sin volumen', bg: 'var(--color-surface)',      text: 'var(--color-ink-3)'     },
-  { label: 'MEV',         bg: 'rgb(59 130 246 / 35%)',     text: 'var(--color-info)'      },
-  { label: 'Productivo',  bg: 'rgb(34 197 94 / 45%)',      text: 'var(--color-success)'   },
-  { label: 'MAV',         bg: 'rgb(249 115 22 / 55%)',     text: 'var(--color-warning)'   },
-  { label: 'MRV',         bg: 'rgb(239 68 68 / 65%)',      text: 'var(--color-danger)'    },
+  { label: 'MEV',         bg: 'rgb(59 130 246 / 35%)',     text: 'color-mix(in oklab, var(--color-info) 55%, var(--color-ink))'      },
+  { label: 'Productivo',  bg: 'rgb(34 197 94 / 45%)',      text: 'color-mix(in oklab, var(--color-success) 55%, var(--color-ink))'   },
+  { label: 'MAV',         bg: 'rgb(249 115 22 / 55%)',     text: 'color-mix(in oklab, var(--color-warning) 55%, var(--color-ink))'   },
+  { label: 'MRV',         bg: 'rgb(239 68 68 / 65%)',      text: 'color-mix(in oklab, var(--color-danger) 55%, var(--color-ink))'    },
 ];

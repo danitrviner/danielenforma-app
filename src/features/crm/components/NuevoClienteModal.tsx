@@ -132,7 +132,7 @@ export default function NuevoClienteModal({ onCerrar }: { onCerrar: () => void }
         <Campo label="Teléfono">
           <div className="flex gap-2">
             <select
-              className={`${inputClass} w-[104px] shrink-0`}
+              className={`${inputClass} w-[104px]! shrink-0`}
               value={prefijo}
               onChange={e => setPrefijo(e.target.value)}
               aria-label="Prefijo telefónico"

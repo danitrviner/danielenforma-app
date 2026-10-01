@@ -39,7 +39,7 @@ export function Campo({ label, children, hint, error }: {
   label: string; children: React.ReactNode; hint?: string; error?: string;
 }) {
   return (
-    <label className="block space-y-1">
+    <label className="block min-w-0 space-y-1">
       <span className="font-sans text-caption uppercase tracking-widest text-ink-2">{label}</span>
       {children}
       {error

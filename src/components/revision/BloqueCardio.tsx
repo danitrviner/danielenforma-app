@@ -55,7 +55,7 @@ export default function BloqueCardio({ cardio, onGoToTab, todoAbierto = false }:
           {ultimaSesion ? `. La última fue el ${fechaCorta(ultimaSesion)}.` : '.'}
         </p>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <Dato label="Sesiones" valor={`${sesiones}`} sub="en la ventana" />
           <Dato label="Tiempo" valor={`${minutos} min`} sub={`≈ ${Math.round(minutos / sesiones)} por sesión`} />
           <Dato label="FC media" valor={fcMedia != null ? `${fcMedia} ppm` : '—'} sub={fcMedia != null ? '' : 'sin banda'} />

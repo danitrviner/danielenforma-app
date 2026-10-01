@@ -112,7 +112,7 @@ describe('construirMapaCalor · forma de la salida', () => {
     expect(c.label).toBe('Cuádriceps');
     expect(c.labelCorto).toBe('Cuáds');
     expect(c.zonaLabel).toBe('MAV');
-    expect(c.colorTexto.startsWith('var(--')).toBe(true);
+    expect(c.colorTexto).toMatch(/var\(--/);
     expect(c.fill).not.toMatch(/#[0-9a-f]{3,6}/i);
   });
 

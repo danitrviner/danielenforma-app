@@ -117,7 +117,7 @@ export default function RenovacionesTab({ cliente, coachEmail }: { cliente: Clie
 
   return (
     <div className="space-y-3">
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
         <MetricCard icon="calendar_month" label="Previsto" value={formatEuros(resumen.previstoCents)} sub="vence este mes" />
         <MetricCard icon="check_circle" label="Renovado" value={formatEuros(resumen.renovadoCents)} accent="var(--color-success)" />
         <MetricCard icon="schedule" label="Pendiente" value={formatEuros(resumen.pendienteCents)} accent="var(--color-warning)" />

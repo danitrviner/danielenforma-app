@@ -114,7 +114,7 @@ export default function HistorialTab({ cliente, coachEmail }: { cliente: Cliente
 
   if (cargando) {
     return (
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
         {Array.from({ length: 4 }).map((_, i) => (
           <React.Fragment key={i}><Skeleton className="h-24 w-full" /></React.Fragment>
         ))}
@@ -124,7 +124,7 @@ export default function HistorialTab({ cliente, coachEmail }: { cliente: Cliente
 
   return (
     <div className="space-y-3">
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
         <MetricCard
           icon="layers" label="Contratado"
           value={resumen.numProgramas}

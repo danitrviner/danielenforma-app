@@ -260,7 +260,7 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
             {/* Type-specific config */}
             <div className="pl-0 sm:pl-10 space-y-2">
               {q.type === 'numeric' && (
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
                   <div>
                     <label htmlFor={`q-${q.id}-unidad`} className="block font-mono text-caption text-ink-2 uppercase mb-1">Unidad</label>
                     <input id={`q-${q.id}-unidad`} value={q.unit ?? ''} onChange={e => setQ(idx, { unit: e.target.value || undefined })}

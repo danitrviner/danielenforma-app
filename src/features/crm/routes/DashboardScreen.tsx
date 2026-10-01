@@ -128,7 +128,7 @@ export default function DashboardScreen() {
         <h1 className="font-sans font-bold text-title-m text-ink">Resumen</h1>
       </header>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
         <MetricCard
           icon="group" label="Clientes activos"
           value={clientesSinDato ? '—' : contadores.activo}
@@ -190,7 +190,7 @@ export default function DashboardScreen() {
           responder, en vez de enseñar un cero que se lee como un dato malo. */}
       <section className="space-y-2">
         <h2 className="font-mono text-caption uppercase tracking-widest text-ink-3">Cómo es tu negocio</h2>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
           <MetricCard
             icon="autorenew" label="Recurrente / mes"
             value={recurrente > 0 ? formatEuros(recurrente) : '—'}

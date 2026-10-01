@@ -102,7 +102,7 @@ export default function ServiciosTab({ cliente, coachEmail }: { cliente: Cliente
   return (
     <>
     <div className="space-y-3">
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-2">
         <MetricCard icon="sell" label="Servicio actual" value={actual ? formatEuros(actual.importeCents) : '—'} sub={actual?.nombre ?? 'ninguno vigente'} />
         <MetricCard icon="layers" label="Activos" value={activos.length} sub={`${servicios.length} en total`} />
         <MetricCard icon="euro" label="Contratado" value={formatEuros(sumaCents(servicios))} sub="suma histórica" />
