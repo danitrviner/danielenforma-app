@@ -29,7 +29,10 @@ export type NotificationType =
   // dispare: se crea al abrir la consola de clientes y ver que la fecha ya
   // pasó, con clave deduplicada por fecha de vencimiento para que no aparezca
   // uno nuevo cada día que no se le haga caso.
-  | 'coach_task_due';
+  | 'coach_task_due'
+  // Menú semanal generado solo al empezar una semana en la que la dieta del
+  // atleta cambia (periodización). Llega como borrador: el coach lo publica.
+  | 'menu_draft_ready';
 
 export interface AppNotification {
   id: string;                   // deterministic dedup key

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { UserProfile, WeightCheckIn, WorkoutAssignment } from '../types';
@@ -7,6 +7,8 @@ import {
   construirBandejaDelDia, contarPorUrgencia, SenalDelDia, UrgenciaSenal, CategoriaSenal,
 } from '../utils/bandejaDelDia';
 import { hoyIsoLocal } from '../utils/trainingWeek';
+import { revisarMenusAutomaticos } from '../services/menuSemanalAutomatico';
+import { auth } from '../firebase';
 import { ActionRow as ActionRowPrimitive, EmptyState, Icon } from './ui';
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -79,6 +81,14 @@ interface Props {
 }
 
 export default function HomeCoachScreen({ athletes, checkins, assignmentsByEmail, loadingAssignments }: Props) {
+  // Menús semanales que se generan solos al cambiar la dieta de la semana
+  // (ver services/menuSemanalAutomatico.ts). Una vez al día, en segundo plano.
+  useEffect(() => {
+    const yo = auth.currentUser;
+    if (!yo?.email || athletes.length === 0) return;
+    void revisarMenusAutomaticos(athletes, yo.uid, yo.email);
+  }, [athletes]);
+
   const navigate = useNavigate();
   const [filtro, setFiltro] = useState<'todas' | CategoriaSenal>('todas');
   const { data: suscripciones = [] } = useQuery({

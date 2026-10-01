@@ -394,3 +394,37 @@ export function habitosPorSemana(program: NutritionProgram, logs: DietCompletion
     ? null
     : { aguaL: media(a.agua), raciones: media(a.rac), dias: Math.max(a.agua.length, a.rac.length) });
 }
+
+// ── Menú semanal automático ─────────────────────────────────────────────────
+
+/** Lo que define la dieta de una semana (ajustes acumulados + mantenimiento):
+ *  dos semanas con la misma firma comen igual. */
+export function firmaDeSemana(program: NutritionProgram, s: number): string {
+  const ajustes = ajustesDeLaSemana(program, s)
+    .map(a => `${a.slot ?? '*'}:${a.cat}:${a.delta}`).sort();
+  return JSON.stringify({ a: ajustes, m: (program.semanasMantenimiento ?? []).includes(s) });
+}
+
+/**
+ * Semana para la que hay que generar un menú nuevo, o null si no toca.
+ * Toca cuando el atleta tiene un menú publicado, la semana en curso es otra
+ * que la del menú y su dieta ha cambiado respecto a la de ese menú, y no hay
+ * ya un borrador para esa semana.
+ */
+export function semanaQueNecesitaMenu(
+  program: NutritionProgram | null,
+  publicado: { semanaPrograma?: number } | null,
+  borradores: { semanaPrograma?: number }[],
+  hoy: string,
+): number | null {
+  if (!program || !publicado) return null;
+  const n = totalSemanas(program);
+  const s = semanaDelPrograma(program, hoy);
+  if (hoy < program.startDate || s > n) return null;
+  if (publicado.semanaPrograma === s) return null;
+  if (borradores.some(b => b.semanaPrograma === s)) return null;
+  const firmaMenu = publicado.semanaPrograma !== undefined
+    ? firmaDeSemana(program, publicado.semanaPrograma)
+    : JSON.stringify({ a: [], m: false });
+  return firmaDeSemana(program, s) === firmaMenu ? null : s;
+}

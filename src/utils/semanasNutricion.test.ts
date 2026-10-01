@@ -4,6 +4,7 @@ import {
   semanaDelPrograma, faseDeLaSemana, aplicarAjustes, dietaDeLaSemana, programarAjuste, kcalPorSemana,
   novedadesNutricion, suplementosDeLaSemana, quitarCambiosNutricion, objetivoDePasos,
   salidaDeDeficit, descansosDeDieta, bajadaProgresiva, evaluarReglasDePeso, proteinaGKgPorSemana, habitosPorSemana,
+  semanaQueNecesitaMenu,
 } from './semanasNutricion';
 
 const dieta: Diet = {
@@ -157,5 +158,24 @@ describe('hábitos por semana', () => {
     ]);
     expect(h[1]).toEqual({ aguaL: 1.5, raciones: 4, dias: 2 });
     expect(h[2]).toBeNull();
+  });
+});
+
+describe('menú semanal automático', () => {
+  const p: NutritionProgram = { ...programa, cambiosSemana: [{ semana: 5, ajustes: [{ slot: 5, cat: 'HC', delta: -1 }] }] };
+  it('toca al empezar una semana en la que la dieta cambia', () => {
+    expect(semanaQueNecesitaMenu(p, { semanaPrograma: 4 }, [], '2026-10-05')).toBe(5);  // S5
+  });
+  it('no toca si la dieta es la misma que la del menú publicado', () => {
+    expect(semanaQueNecesitaMenu(p, { semanaPrograma: 5 }, [], '2026-10-12')).toBeNull(); // S6 = S5
+    expect(semanaQueNecesitaMenu(p, { semanaPrograma: 2 }, [], '2026-09-28')).toBeNull(); // S4 = S2
+  });
+  it('no repite si ya hay borrador de esa semana, ni sin menú publicado', () => {
+    expect(semanaQueNecesitaMenu(p, { semanaPrograma: 4 }, [{ semanaPrograma: 5 }], '2026-10-05')).toBeNull();
+    expect(semanaQueNecesitaMenu(p, null, [], '2026-10-05')).toBeNull();
+  });
+  it('un menú de antes de esto cuenta como semana sin ajustes', () => {
+    expect(semanaQueNecesitaMenu(p, {}, [], '2026-10-05')).toBe(5);
+    expect(semanaQueNecesitaMenu(p, {}, [], '2026-09-28')).toBeNull();
   });
 });

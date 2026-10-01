@@ -218,7 +218,7 @@ export default function SemanasNutricionCoach({ program, diets, onGuardar, pesos
             {semanaDelMenu === 0
               ? 'El menú semanal publicado no tiene en cuenta los ajustes por semana.'
               : `El menú semanal publicado es de la semana ${semanaDelMenu} y esta semana la dieta cambia (${kcal[semanaDelMenu]?.toLocaleString('es-ES')} → ${kcal[hoy]?.toLocaleString('es-ES')} kcal).`}
-            {' '}Regenéralo desde «Menú semanal» eligiendo la semana {hoy}.
+            {' '}Al abrir Inicio se genera solo el menú de la semana {hoy} como borrador (te llega un aviso); revísalo y publícalo desde «Menú semanal».
           </p>
         </div>
       )}
