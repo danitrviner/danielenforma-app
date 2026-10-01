@@ -278,7 +278,7 @@ export default function SheetDiaAtleta({
               ].map(({ clave, fase, vacio }) => (
                 <span key={clave} className="flex items-center gap-2 min-w-0">
                   <span className="rounded-full flex-shrink-0" style={{ width: 16, height: 6, background: fase?.color ?? 'var(--color-ink-5)' }} />
-                  <span className="font-sans text-label truncate" style={{ color: fase ? mezcla(fase.color, 78) : 'var(--color-ink-5)' }}>
+                  <span className="font-sans text-label truncate" style={{ color: fase ? mezcla(fase.color, 78) : 'var(--color-ink-4)' }}>
                     {fase?.nombre ?? vacio}
                   </span>
                 </span>

@@ -55,7 +55,7 @@ function CarrilFase({ icono, label, segmentos }: {
       </span>
       <div className="flex-1 relative" style={{ height: 30 }}>
         {segmentos.length === 0 && (
-          <span className="absolute inset-0 flex items-center font-sans text-caption text-ink-5">Sin {label.toLowerCase()} este mes</span>
+          <span className="absolute inset-0 flex items-center font-sans text-caption text-ink-4">Sin {label.toLowerCase()} este mes</span>
         )}
         {segmentos.map(s => (
           <div
@@ -198,7 +198,7 @@ export default function MesAtleta({
               <Icon name="chevron_right" size="s" />
             </button>
           </div>
-          <span className="font-mono text-label flex-shrink-0" style={{ color: adherencia === null ? 'var(--color-ink-5)' : adherencia >= 80 ? 'var(--color-success)' : 'var(--color-warning)' }}>
+          <span className="font-mono text-label flex-shrink-0" style={{ color: adherencia === null ? 'var(--color-ink-4)' : adherencia >= 80 ? 'var(--color-success)' : 'var(--color-warning)' }}>
             {adherencia === null ? 'plan' : `${adherencia}%`}
           </span>
         </div>

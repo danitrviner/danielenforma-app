@@ -146,7 +146,7 @@ export default function SemanaAtleta({
                   <Bloque icono="fitness_center" color="var(--color-phase-fuerza)" titulo="Entreno">
                     {dia?.entreno.esDescanso && <p className="text-label text-ink-4 font-sans">Descanso</p>}
                     {!dia?.entreno.esDescanso && ejercicios.length === 0 && (
-                      <p className="text-label text-ink-5 font-sans">{dia?.entreno.nombreRutina ?? 'Sin entreno'}</p>
+                      <p className="text-label text-ink-4 font-sans">{dia?.entreno.nombreRutina ?? 'Sin entreno'}</p>
                     )}
                     {ejercicios.length > 0 && (
                       <>
@@ -224,7 +224,7 @@ export default function SemanaAtleta({
                     ].map(({ clave, fase, vacio }) => (
                       <span key={clave} className="flex items-center gap-1.5 min-w-0">
                         <span className="rounded-full flex-shrink-0" style={{ width: 14, height: 6, background: fase?.color ?? 'var(--color-ink-5)', opacity: esFuturo ? 0.65 : 1 }} />
-                        <span className="font-sans text-caption truncate" style={{ color: fase ? mezcla(fase.color, 78) : 'var(--color-ink-5)' }}>
+                        <span className="font-sans text-caption truncate" style={{ color: fase ? mezcla(fase.color, 78) : 'var(--color-ink-4)' }}>
                           {fase?.nombre ?? vacio}
                         </span>
                       </span>

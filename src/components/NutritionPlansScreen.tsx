@@ -1009,7 +1009,7 @@ export default function NutritionPlansScreen({
                 value={meal.name}
                 onChange={e => setMealName(meal.id, e.target.value)}
                 placeholder="Nombre libre: Desayuno, Pre-entreno…"
-                className="flex-1 min-w-0 bg-transparent text-title-s text-ink focus:outline-none placeholder:text-ink-5"
+                className="flex-1 min-w-0 bg-transparent text-title-s text-ink focus:outline-none placeholder:text-ink-4"
               />
               {/* Franja horaria — alimenta "Repartir objetivos". Atenuada +
                   título cuando viene de inferir el nombre, para que una

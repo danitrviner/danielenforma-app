@@ -176,7 +176,7 @@ export default function MiGimnasioPanel({ email }: Props) {
         onAnadida={refrescar}
       />
 
-      <p className="flex items-start gap-2 font-sans text-caption text-ink-5">
+      <p className="flex items-start gap-2 font-sans text-caption text-ink-4">
         <Icon name="info" size="s" className="mt-1" />
         Dani usa esto para montarte el plan con lo que de verdad tienes a mano.
       </p>

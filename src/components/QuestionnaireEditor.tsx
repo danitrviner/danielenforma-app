@@ -169,7 +169,7 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
                   <Icon name="keyboard_arrow_down" size="s" />
                 </button>
               </div>
-              <span className="font-mono text-caption text-ink-5 font-bold w-5 text-center mt-2 flex-shrink-0">{idx + 1}</span>
+              <span className="font-mono text-caption text-ink-4 font-bold w-5 text-center mt-2 flex-shrink-0">{idx + 1}</span>
               <textarea
                 value={q.label}
                 onChange={e => { setQ(idx, { label: e.target.value }); ajustarAlto(e.target); }}

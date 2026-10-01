@@ -506,7 +506,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
                       onChange={() => toggleSelected(idx)}
                       className="w-4 h-4 flex-shrink-0 accent-accent"
                     />
-                    <span className="font-mono text-caption text-ink-5 w-5 text-center flex-shrink-0 font-bold">{idx + 1}</span>
+                    <span className="font-mono text-caption text-ink-4 w-5 text-center flex-shrink-0 font-bold">{idx + 1}</span>
                     {ex?.imageUrl ? (
                       <img src={ex.imageUrl} alt={ex.name} className="w-8 h-8 rounded-control object-cover border border-hairline flex-shrink-0" />
                     ) : (

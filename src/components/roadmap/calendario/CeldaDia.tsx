@@ -106,7 +106,7 @@ export default function CeldaDia({ fecha, dia, filter, hoy, selected, onOpen, dr
                 />
                 {dia.entreno.cardio
                   ? <Linea texto={`${dia.entreno.cardio.tipo === 'zona2' ? 'Z2' : 'VO₂'} ${dia.entreno.cardio.minutos} min${dia.entreno.cardio.fcMedia ? ` · ${dia.entreno.cardio.fcMedia} bpm` : ''}`} color="var(--color-cat-cardio)" mono />
-                  : <Linea texto="Sin cardio" color="var(--color-ink-5)" mono />}
+                  : <Linea texto="Sin cardio" color="var(--color-ink-4)" mono />}
               </>
             )
           )}
@@ -116,7 +116,7 @@ export default function CeldaDia({ fecha, dia, filter, hoy, selected, onOpen, dr
               <Linea texto={esFuturo ? `${dia.nutricion.comidasTotal ?? '—'} comidas plan` : `de ${dia.nutricion.kcalObjetivo ?? '—'} kcal`} color="var(--color-ink-4)" mono />
               <Linea
                 texto={esFuturo ? '—' : (dia.nutricion.adherenciaPct !== undefined ? `Adherencia ${dia.nutricion.adherenciaPct}%` : '—')}
-                color={esFuturo ? 'var(--color-ink-5)' : (dia.nutricion.adherenciaPct !== undefined && dia.nutricion.adherenciaPct >= 85 ? 'var(--color-success)' : 'var(--color-warning)')} mono
+                color={esFuturo ? 'var(--color-ink-4)' : (dia.nutricion.adherenciaPct !== undefined && dia.nutricion.adherenciaPct >= 85 ? 'var(--color-success)' : 'var(--color-warning)')} mono
               />
             </>
           )}
@@ -124,7 +124,7 @@ export default function CeldaDia({ fecha, dia, filter, hoy, selected, onOpen, dr
             dia && dia.hitos.length > 0
               ? <><Linea texto={dia.hitos[0].titulo} color="var(--color-accent-ink)" />
                   <Linea texto={dia.hitos[0].completado ? 'Completado' : 'Programado'} color="var(--color-ink-3)" mono /></>
-              : <Linea texto="—" color="var(--color-ink-5)" mono />
+              : <Linea texto="—" color="var(--color-ink-4)" mono />
           )}
         </div>
       ) : (

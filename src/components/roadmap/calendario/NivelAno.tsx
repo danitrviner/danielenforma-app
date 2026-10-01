@@ -107,7 +107,7 @@ export default function NivelAno({ anio, hoy, bandasEntreno, indice, onOpenMonth
 
         <div className="grid mt-2" style={{ gridTemplateColumns: 'repeat(12,1fr)' }}>
           {MESES_CORTO.map(m => (
-            <div key={m} className="font-mono text-caption tracking-wider text-ink-5 text-center">{m}</div>
+            <div key={m} className="font-mono text-caption tracking-wider text-ink-4 text-center">{m}</div>
           ))}
         </div>
         </>
@@ -143,7 +143,7 @@ export default function NivelAno({ anio, hoy, bandasEntreno, indice, onOpenMonth
                     <span className="font-mono text-[9px] tracking-wider text-accent-ink px-1.5 py-0.5 rounded-[8px]" style={{ background: 'color-mix(in oklab, var(--color-accent) 12%, transparent)' }}>AHORA</span>
                   )}
                 </div>
-                <span className="font-mono text-label" style={{ color: adh === null ? 'var(--color-ink-5)' : adh >= 80 ? 'var(--color-success)' : 'var(--color-warning)' }}>
+                <span className="font-mono text-label" style={{ color: adh === null ? 'var(--color-ink-4)' : adh >= 80 ? 'var(--color-success)' : 'var(--color-warning)' }}>
                   {adh === null ? (esFuturo ? 'plan' : '—') : `${adh}%`}
                 </span>
               </div>

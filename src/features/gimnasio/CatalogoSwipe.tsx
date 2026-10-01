@@ -248,7 +248,7 @@ export default function CatalogoSwipe({ email, onCompletado, onOmitir }: Props) 
       </div>
 
       {enCategoria && (
-        <p className="flex-none mt-2 font-mono text-caption text-ink-5 uppercase tracking-wider">
+        <p className="flex-none mt-2 font-mono text-caption text-ink-4 uppercase tracking-wider">
           {enCategoria.decididas}/{enCategoria.total} en esta categoría
         </p>
       )}

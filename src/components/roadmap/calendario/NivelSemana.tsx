@@ -159,7 +159,7 @@ export default function NivelSemana({
                   <Bloque icono="fitness_center" color="var(--color-phase-fuerza)" titulo="Entreno">
                     {dia?.entreno.esDescanso && <p className="text-label text-ink-4 font-sans">Descanso</p>}
                     {!dia?.entreno.esDescanso && ejercicios.length === 0 && (
-                      <p className="text-label text-ink-5 font-sans">{dia?.entreno.nombreRutina ?? 'Sin entreno'}</p>
+                      <p className="text-label text-ink-4 font-sans">{dia?.entreno.nombreRutina ?? 'Sin entreno'}</p>
                     )}
                     {ejercicios.length > 0 && (
                       <>
@@ -250,7 +250,7 @@ export default function NivelSemana({
                         />
                         <span
                           className="font-sans text-[10.5px] truncate"
-                          style={{ color: fase ? mezcla(fase.color, 78) : 'var(--color-ink-5)' }}
+                          style={{ color: fase ? mezcla(fase.color, 78) : 'var(--color-ink-4)' }}
                           title={fase?.nombre ?? vacio}
                         >
                           {fase?.nombre ?? vacio}
