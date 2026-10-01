@@ -82,7 +82,7 @@ function BlockObjective({ block, bpm, currentZone, blockProgressKcal, blockRemai
             Quema {block.targetKcal ?? '--'} kcal en este bloque · {Math.round(blockProgressKcal ?? 0)} kcal
           </p>
           {fraction !== null && (
-            <div className="h-2 w-full rounded-full bg-veil/30 overflow-hidden">
+            <div className="h-2 w-full rounded-full bg-track dark:bg-veil/30 overflow-hidden">
               <div className="h-full rounded-full bg-ink transition-[width] duration-1000" style={{ width: `${fraction * 100}%` }} />
             </div>
           )}
@@ -144,7 +144,7 @@ export default function PageObjetivo({
             {targetDurationSec ? ` · ${fmtClock(targetProgressSec)} / ${fmtClock(targetDurationSec)}` : ` · ${fmtClock(targetProgressSec)}`}
           </p>
           {fraction !== null && (
-            <div className="h-2 w-full rounded-full bg-veil/30 overflow-hidden">
+            <div className="h-2 w-full rounded-full bg-track dark:bg-veil/30 overflow-hidden">
               <div className="h-full rounded-full bg-ink transition-[width] duration-1000" style={{ width: `${fraction * 100}%` }} />
             </div>
           )}

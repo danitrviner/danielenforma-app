@@ -79,7 +79,7 @@ function Slot({ metricKey, ctx, onTap, big }: SlotProps) {
     <button
       type="button"
       onClick={onTap}
-      className={`flex flex-col items-center justify-center rounded-surface bg-veil/25 ${big ? 'py-4' : 'py-3'}`}
+      className={`flex flex-col items-center justify-center rounded-surface bg-surface border border-hairline dark:border-transparent dark:bg-veil/25 ${big ? 'py-4' : 'py-3'}`}
     >
       <p className={`font-mono font-bold text-ink tabular-nums ${big ? 'text-display' : 'text-title-m'}`}>{metric.format(ctx)}</p>
       <p className="text-caption font-sans uppercase text-ink-2 mt-1">{metric.label}</p>

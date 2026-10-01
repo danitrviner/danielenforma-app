@@ -56,7 +56,7 @@ export default function BottomBar({ elapsedSec, paused, onTogglePause, expanded,
         onClick={onToggleExpanded}
         aria-label={expanded ? 'Contraer' : 'Más opciones'}
         aria-expanded={expanded}
-        className="flex h-14 w-14 items-center justify-center rounded-full bg-veil/25 text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-line"
+        className="flex h-14 w-14 items-center justify-center rounded-full bg-inset text-ink dark:bg-veil/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-line"
       >
         <Icon name={expanded ? 'expand_more' : 'expand_less'} size="l" />
       </button>

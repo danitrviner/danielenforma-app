@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { CardioZones, CardioIntervalBlock } from '../../../types';
 import { HeartRateStatus } from '../../../services/bleHeartRate';
 import { ZONE_COLOR, ZONE_INK, BELOW_ZONE_COLOR, BELOW_ZONE_INK } from '../../../utils/cardioZones';
+import { conAlfa } from '../../../utils/coloresPersistidos';
 import { CardioLivePrefs } from '../../../utils/cardioLivePrefs';
 import { useScrollLock } from '../../ui/internal/overlayHooks';
 import { Icon, Pager } from '../../ui';
@@ -114,7 +115,15 @@ export default function LiveSession({
 
   return createPortal(
     <div className="fixed inset-0 z-[90] flex flex-col bg-bg" onPointerDown={onRegisterActivity}>
-      <div className="flex flex-1 min-h-0 flex-col bg-bg">
+      {/* Solo en claro: un baño suave del color de zona a pantalla completa.
+          Sobre papel un acento de 3 px no dice «estás en Z3» a un metro de
+          distancia; en oscuro el contraste ya lo hace y se deja como estaba. */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 transition-colors duration-700 dark:hidden"
+        style={{ background: conAlfa(zoneFill, 10) }}
+      />
+      <div className="relative flex flex-1 min-h-0 flex-col">
         {/* El color de zona es un acento puntual (franja superior, texto,
             borde) — no un baño de color de toda la pantalla. Antes el
             gradiente de fondo teñía TODO este bloque (BPM, métricas, las 5

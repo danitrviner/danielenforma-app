@@ -17,7 +17,7 @@ interface Props {
 
 function Metric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex-1 bg-veil/25 rounded-surface p-3 text-center">
+    <div className="flex-1 bg-surface border border-hairline rounded-surface p-3 text-center dark:bg-veil/25 dark:border-transparent">
       <p className="text-caption font-sans uppercase text-ink-2">{label}</p>
       <p className="text-title-m font-mono font-bold text-ink tabular-nums">{value}</p>
     </div>

@@ -101,7 +101,7 @@ export default function PageGrafica({ chartData, zones, timeInZone, belowZoneSec
   return (
     <div className="flex h-full flex-col gap-4 px-3 pb-3 overflow-y-auto hide-scrollbar">
       {/* Bandas de zona + línea en vivo */}
-      <div className="relative rounded-2xl overflow-hidden shrink-0" style={{ height: CHART_H, background: 'color-mix(in oklab, var(--color-veil) 35%, transparent)' }}>
+      <div className="relative rounded-2xl overflow-hidden shrink-0 bg-surface border border-hairline dark:border-transparent dark:bg-[color-mix(in_oklab,var(--color-veil)_35%,transparent)]" style={{ height: CHART_H }}>
         <div className="absolute inset-0 flex flex-col">
           {[...ZONE_ORDER].reverse().map(z => {
             const isNow = z === currentZone;
@@ -122,8 +122,8 @@ export default function PageGrafica({ chartData, zones, timeInZone, belowZoneSec
                 style={{ background: `color-mix(in oklab, ${ZONE_COLOR[z]} ${isNow ? 27 : 13}%, transparent)` }}
               >
                 <span
-                  className="font-mono text-[9.5px] transition-colors duration-700"
-                  style={{ color: ZONE_INK[z], opacity: isNow ? 1 : 0.85 }}
+                  className={`font-mono text-[11px] transition-colors duration-700 ${isNow ? '' : 'dark:opacity-85'}`}
+                  style={{ color: ZONE_INK[z] }}
                 >
                   {z.toUpperCase()}
                 </span>
@@ -151,7 +151,7 @@ export default function PageGrafica({ chartData, zones, timeInZone, belowZoneSec
         >
           {lastBpm}
         </span>
-        <div className="absolute left-3.5 bottom-2.5 font-mono text-[9.5px] text-ink-3">ÚLTIMOS {WINDOW_SEC} S</div>
+        <div className="absolute left-3.5 bottom-2.5 font-mono text-[11px] text-ink-3">ÚLTIMOS {WINDOW_SEC} S</div>
       </div>
 
       {/* Lista de zonas, Z1 → Z5 ascendente, fila actual resaltada */}
@@ -168,7 +168,7 @@ export default function PageGrafica({ chartData, zones, timeInZone, belowZoneSec
                 <span className="h-2.5 w-2.5 rounded-[3px] shrink-0" style={{ background: ZONE_COLOR[z] }} />
                 <div className="flex flex-col gap-0.5">
                   <span className="text-[13.5px]" style={{ color: isNow ? ZONE_INK[z] : 'var(--color-ink-2)' }}>{ZONE_LABEL[z]}</span>
-                  <span className="font-mono text-[10.5px]" style={{ color: isNow ? ZONE_INK[z] : 'var(--color-ink-4)' }}>
+                  <span className="font-mono text-[11px]" style={{ color: isNow ? ZONE_INK[z] : 'var(--color-ink-4)' }}>
                     {zones[z].min}-{zones[z].max} PPM{isNow ? ' · AHORA' : ''}
                   </span>
                 </div>
@@ -179,7 +179,7 @@ export default function PageGrafica({ chartData, zones, timeInZone, belowZoneSec
             </div>
           );
         })}
-        <div className="h-[50px] flex items-center justify-between border-t border-hairline opacity-60">
+        <div className="h-[50px] flex items-center justify-between border-t border-hairline dark:opacity-60">
           <div className="flex items-center gap-3">
             <span className="h-2.5 w-2.5 rounded-[3px] shrink-0" style={{ background: BELOW_ZONE_COLOR }} />
             <span className="text-[13.5px] text-ink-2">{BELOW_ZONE_LABEL}</span>
@@ -189,10 +189,10 @@ export default function PageGrafica({ chartData, zones, timeInZone, belowZoneSec
       </div>
 
       {/* Reparto de la sesión */}
-      <div className="bg-veil/25 rounded-2xl p-4 flex flex-col gap-3">
+      <div className="bg-surface border border-hairline dark:border-transparent dark:bg-veil/25 rounded-2xl p-4 flex flex-col gap-3">
         <div className="flex items-center justify-between">
-          <span className="font-mono text-[10.5px] tracking-wide text-ink-4 uppercase">Reparto de la sesión</span>
-          <span className="font-mono text-[10.5px] text-ink-4">{fmt(elapsedSec)}</span>
+          <span className="font-mono text-[11px] tracking-wide text-ink-3 uppercase">Reparto de la sesión</span>
+          <span className="font-mono text-[11px] text-ink-3">{fmt(elapsedSec)}</span>
         </div>
         <div className="h-3.5 rounded-md overflow-hidden flex gap-0.5">
           {ZONE_ORDER.map(z => (
