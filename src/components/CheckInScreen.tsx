@@ -9,7 +9,7 @@ import { pesoUltimoKey } from '../hooks/useAthleteWeight';
 import { leerSexo } from '../utils/athleteProfileSignals';
 import PhotosScreen from './PhotosScreen';
 import QuestionnaireWizard from './QuestionnaireWizard';
-import { Badge, EmptyState, Icon, Skeleton } from './ui';
+import { Badge, Button, EmptyState, Icon, Skeleton } from './ui';
 
 // Diferido: arrastran recharts (344 KB) — igual que hacía ProfileScreen antes
 // de que estos paneles se movieran aquí (ver comentario más abajo).
@@ -231,6 +231,19 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
         return (templates.get(x.a.questionnaireId)?.title ?? '').localeCompare(templates.get(y.a.questionnaireId)?.title ?? '');
       });
   }, [assignments, responses, scheduleCtx, templates]);
+
+  // El cuestionario que alimenta la ficha de Mediciones: el que lleva alguna
+  // pregunta 'metric' que no sea el peso (ese vive en su propio panel). Se
+  // busca entre las asignaciones, NO en `listaCuestionarios`: esa lista esconde
+  // los programados que no caen esta semana, y uno mensual (día 26) queda
+  // fuera del 1 al 25 de cada mes — justo cuando el atleta mira su ficha y la
+  // ve vacía sin ningún botón para rellenarla.
+  const cuestionarioMediciones = useMemo(() => {
+    const a = assignments.find(x =>
+      templates.get(x.questionnaireId)?.questions.some(q => q.type === 'metric' && q.metricKey && q.metricKey !== 'bodyweight')
+    );
+    return a ? { a, pendiente: pendingAssignments.some(p => p.id === a.id) } : null;
+  }, [assignments, templates, pendingAssignments]);
 
   // Historial de respuestas enviadas, de la más reciente a la más antigua.
   const historialRespuestas = useMemo(
@@ -494,7 +507,21 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
         <div className="flex items-center gap-2">
           <Icon name="straighten" size="m" className="text-accent-ink" />
           <h2 className="font-sans font-bold text-body-s text-ink flex-1">Mediciones</h2>
+          {cuestionarioMediciones?.pendiente && <Badge tone="warning">Pendiente</Badge>}
         </div>
+        {cuestionarioMediciones && (
+          <Button
+            variant="secondary"
+            icon="straighten"
+            fullWidth
+            onClick={() => {
+              setActiveAssignment(cuestionarioMediciones.a);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+          >
+            {cuestionarioMediciones.pendiente ? 'Responder cuestionario de mediciones' : 'Registrar mis medidas'}
+          </Button>
+        )}
         <Suspense fallback={<Skeleton className="w-full h-48 rounded-surface" />}>
           <BodyMeasurementsPanel
             athleteEmail={profile.email}
