@@ -1,0 +1,136 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <title>Mesociclos · Sugerir volumen</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block">
+  <style>
+:root{--bg:#050505;--surface:#0B0B0B;--raised:#0F0F0F;--field:#1A1A1A;--cell:#1D1D1D;--inset:#262626;--track:#2E2E2E;
+--ink:#F5F5F4;--ink2:rgba(245,245,244,.6);--ink3:rgba(245,245,244,.45);--ink4:rgba(245,245,244,.42);--ink5:rgba(245,245,244,.32);
+--hair:rgba(255,255,255,.07);--strong:rgba(255,255,255,.12);--accent:#FFC72C;--on-accent:#121212;--accent-press:#C79B32;
+--accent-bg:rgba(227,179,65,.14);--accent-line:rgba(227,179,65,.45);--success:#3ECF8E;--warning:#fdba74;--danger:#FF5A4E;--info:#93c5fd;--data:#00eefc;
+--r-chip:11px;--r-control:14px;--r-field:16px;--r-surface:20px;--r-canvas:24px;--r-sheet:26px;
+--sans:"Plus Jakarta Sans",system-ui,sans-serif;--mono:"IBM Plex Mono",ui-monospace,monospace;--display:Archivo,system-ui,sans-serif}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+a{color:var(--accent)}a:hover{color:var(--accent-press)}
+.ic{font-family:"Material Symbols Outlined";font-weight:400;font-style:normal;line-height:1;display:inline-block;font-variation-settings:"FILL" 0,"wght" 400,"GRAD" 0,"opsz" 24;user-select:none}
+.ic.s{font-size:16px}.ic.m{font-size:20px}.ic.l{font-size:24px}.ic.xl{font-size:32px}
+.t-display{font-size:32px;line-height:1.05;letter-spacing:-.02em;font-weight:800}
+.t-title-l{font-size:24px;line-height:1.15;letter-spacing:-.02em;font-weight:700}
+.t-title-m{font-size:19px;line-height:1.25;letter-spacing:-.015em;font-weight:700}
+.t-title-s{font-size:16px;line-height:1.3;letter-spacing:-.01em;font-weight:700}
+.t-body{font-size:15px;line-height:1.55}.t-body-s{font-size:13px;line-height:1.5}
+.t-label{font-size:12px;line-height:1.2}.t-caption{font-size:11px;line-height:1.35;letter-spacing:.02em}
+.t-feature{font-family:var(--display);font-weight:900;font-size:38px;line-height:1;letter-spacing:-.02em}
+.mono{font-family:var(--mono)}.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink3);font-weight:600}
+.lbl{font-family:var(--mono);font-size:11px;letter-spacing:.11em;text-transform:uppercase;color:var(--ink2);font-weight:600}
+.ink2{color:var(--ink2)}.ink3{color:var(--ink3)}.acc{color:var(--accent)}.ok{color:var(--success)}.warn{color:var(--warning)}.bad{color:var(--danger)}
+.card{background:var(--surface);border:1px solid var(--hair);border-radius:var(--r-surface);padding:16px;display:flex;flex-direction:column;gap:12px}
+.card.raised{background:var(--raised)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:52px;padding:0 16px;border-radius:var(--r-control);font-family:var(--sans);font-weight:700;font-size:13px;border:1px solid transparent;white-space:nowrap;cursor:default}
+.btn.s{height:36px;padding:0 12px}.btn.l{height:56px;padding:0 20px;font-size:16px}.btn.sq{width:52px;padding:0}.btn.sq.s{width:36px}
+.btn.primary{background:var(--accent);color:var(--on-accent)}
+.btn.secondary{background:transparent;color:var(--ink);border-color:var(--accent-line)}
+.btn.ghost{background:transparent;color:var(--ink2)}.btn.danger{background:transparent;color:var(--danger)}
+.btn.full{width:100%}.btn[disabled]{opacity:.4}
+.chip{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 12px;border-radius:var(--r-chip);border:1px solid var(--hair);background:var(--raised);font-size:13px;font-weight:500;color:var(--ink2);white-space:nowrap}
+.chip.on{background:var(--accent-bg);border-color:var(--accent-line);color:var(--ink)}
+.chip.sq{width:44px;height:44px;padding:0;justify-content:center;font-family:var(--mono);font-weight:700;font-size:12px}
+.chip.sq.on{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.badge{display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 8px;border-radius:999px;font-family:var(--mono);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.11em;border:1px solid}
+.badge.ok{color:var(--success);background:rgba(62,207,142,.1);border-color:rgba(62,207,142,.25)}
+.badge.warn{color:var(--warning);background:rgba(253,186,116,.1);border-color:rgba(253,186,116,.25)}
+.badge.bad{color:var(--danger);background:rgba(255,90,78,.1);border-color:rgba(255,90,78,.25)}
+.badge.neutral{color:var(--ink2);background:var(--raised);border-color:var(--hair)}
+.badge.acc{color:var(--accent);background:var(--accent-bg);border-color:var(--accent-line)}
+.field{display:flex;flex-direction:column;gap:8px}
+.field .lab{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink3);font-weight:600}
+.field .in{height:52px;display:flex;align-items:center;gap:8px;padding:0 14px;background:var(--field);border:1px solid var(--hair);border-radius:var(--r-field);font-size:16px;color:var(--ink)}
+.field .in.mono{font-family:var(--mono);font-weight:600}
+.field .in .ph{color:var(--ink3)}
+.tabs{display:flex;gap:20px;border-bottom:1px solid var(--hair);overflow:hidden}
+.tab{display:flex;align-items:center;gap:6px;padding:12px 0 12px;font-size:13px;font-weight:500;color:var(--ink2);opacity:.4;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap}
+.tab.on{font-weight:700;color:var(--ink);opacity:1;border-bottom-color:var(--accent)}
+.tab .dot{width:6px;height:6px;border-radius:50%;background:var(--success)}
+.seg{display:flex;height:46px;padding:4px;gap:4px;background:var(--surface);border-radius:var(--r-control)}
+.seg>div{flex:1;display:flex;align-items:center;justify-content:center;border-radius:var(--r-control);font-size:13px;font-weight:600;color:var(--ink2)}
+.seg>div.on{background:var(--accent);color:var(--on-accent);font-weight:700}
+.banner{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:18px;border:1px solid}
+.banner.warn{background:rgba(253,186,116,.07);border-color:rgba(253,186,116,.24);color:var(--warning)}
+.banner.bad{background:rgba(255,90,78,.07);border-color:rgba(255,90,78,.24);color:var(--danger)}
+.banner.info{background:rgba(0,238,252,.06);border-color:rgba(0,238,252,.22);color:var(--data)}
+.banner.acc{background:var(--accent-bg);border-color:var(--accent-line);color:var(--accent)}
+.banner p{margin:0;font-size:13px;line-height:1.5}.banner .act{font-weight:700;text-decoration:underline;text-underline-offset:2px}
+.stepper{display:inline-flex;align-items:center;gap:6px}
+.stepper .k{width:44px;height:44px;border-radius:var(--r-control);background:var(--raised);border:1px solid var(--hair);display:flex;align-items:center;justify-content:center;color:var(--ink2);font-family:var(--mono);font-weight:700;font-size:18px}
+.stepper .v{min-width:36px;text-align:center;font-family:var(--mono);font-weight:700;font-size:19px;font-variant-numeric:tabular-nums}
+.prio{display:inline-flex;gap:4px}.prio .p{width:44px;height:44px;border-radius:var(--r-control);background:var(--raised);border:1px solid var(--hair);display:flex;align-items:center;justify-content:center;color:var(--ink3)}
+.prio .p.on{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.bar{position:relative;height:4px;border-radius:999px;background:var(--track)}.bar i{position:absolute;inset:0 auto 0 0;border-radius:999px}
+.bar .mk{position:absolute;top:-3px;bottom:-3px;width:1px;background:rgba(255,255,255,.28)}.bar .mk.mrv{background:rgba(255,90,78,.7)}
+.row{display:flex;align-items:center;gap:8px}.col{display:flex;flex-direction:column;gap:8px}.between{justify-content:space-between}
+.hr{height:1px;background:var(--hair)}
+.day{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;flex:1;min-width:44px;height:52px;border-radius:var(--r-control);border:1px solid var(--hair);background:var(--inset)}
+.day.on{background:var(--accent-bg);border-color:var(--accent-line)}.day.hand{background:rgba(253,186,116,.1);border-color:rgba(253,186,116,.4)}
+.day .d{font-family:var(--mono);font-size:11px;color:var(--ink3)}.day.on .d{color:var(--accent)}.day.hand .d{color:var(--warning)}
+.day .t{font-size:11px;color:var(--ink3)}.day.on .t,.day.hand .t{color:var(--ink)}
+.exrow{background:var(--raised);border-radius:var(--r-surface);padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.exrow.dup{border:1px solid rgba(255,90,78,.5)}
+.pill{display:inline-flex;align-items:center;gap:4px;height:26px;padding:0 10px;border-radius:var(--r-chip);border:1px solid var(--hair);background:var(--raised);font-family:var(--mono);font-size:11px;color:var(--ink2)}
+.pill b{color:var(--ink);font-weight:600}
+.kpi{background:var(--surface);border:1px solid var(--hair);border-radius:var(--r-surface);padding:14px 16px;display:flex;flex-direction:column;gap:4px}
+.kpi .n{font-family:var(--mono);font-weight:600;font-size:24px;letter-spacing:-.02em;line-height:1.1;font-variant-numeric:tabular-nums}
+.sheet-bg{position:absolute;inset:0;background:rgba(0,0,0,.6)}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:var(--surface);border:1px solid var(--strong);border-bottom:0;border-radius:var(--r-sheet) var(--r-sheet) 0 0;display:flex;flex-direction:column;box-shadow:0 12px 32px rgba(0,0,0,.55)}
+.sheet .hd{display:flex;align-items:center;justify-content:space-between;padding:18px 20px 12px}
+.sheet .bd{padding:0 20px 16px;display:flex;flex-direction:column;gap:14px;overflow:hidden}
+.sheet .ft{display:flex;gap:10px;padding:12px 20px 24px;border-top:1px solid var(--hair)}
+.meso{min-width:200px;flex:none;padding:12px 14px;border-radius:var(--r-control);border:1px solid var(--hair);background:var(--surface);display:flex;flex-direction:column;gap:4px}
+.meso.on{border-color:var(--accent-line);background:var(--accent-bg)}
+.list{display:flex;flex-direction:column;gap:8px}
+.listrow{display:flex;align-items:center;gap:12px;min-height:56px;padding:10px 14px;border-radius:var(--r-control);background:var(--raised);border:1px solid var(--hair)}
+body>x-dc>div{position:relative;overflow:hidden;height:844px}</style>
+</helmet>
+<div style="width:390px;min-height:100%;background:#050505;padding:20px 16px 40px;display:flex;flex-direction:column;gap:20px">
+
+<div class="row between">
+  <div class="row" style="gap:10px">
+    <div style="width:36px;height:36px;border-radius:50%;background:var(--inset);border:1px solid var(--hair);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px">AN</div>
+    <div class="col" style="gap:0"><span class="t-title-s">Ander</span><span class="t-caption ink3 mono">Entrenos · Mesociclos</span></div>
+  </div>
+  <span class="btn ghost s sq"><span class="ic m" style="">more_vert</span></span>
+</div><div class="col" style="gap:10px"><div class="row between"><span class="lbl">Mesociclos</span><span class="row" style="gap:6px"><span class="btn ghost s"><span class="ic s" style="">library_books</span>Plantilla</span><span class="btn secondary s"><span class="ic s" style="">add</span>Nuevo</span></span></div><div class="row" style="gap:8px;overflow:hidden;margin:0 -16px;padding:0 16px"><div class="meso"><div class="row between"><span class="eyebrow" style="color:var(--ink3)">Meso #1</span><span class="badge neutral">Terminado</span></div><span class="t-body-s" style="font-weight:700">Puesta en forma</span><span class="t-caption mono ink3">4 sem · 3 ses. · 01-06-2026</span></div><div class="meso"><div class="row between"><span class="eyebrow" style="color:var(--ink3)">Meso #2</span><span class="badge neutral">Terminado</span></div><span class="t-body-s" style="font-weight:700">Fuerza base</span><span class="t-caption mono ink3">5 sem · 4 ses. · 29-06-2026</span></div><div class="meso on"><div class="row between"><span class="eyebrow" style="color:var(--accent)">Meso #3</span><span class="badge acc">En curso</span></div><span class="t-body-s" style="font-weight:700">Hipertrofia tren superior</span><span class="t-caption mono ink3">5 sem · 4 ses. · 03-08-2026</span></div></div></div>
+<div class="card" style="gap:14px">
+  <div class="row between">
+    <div class="col" style="gap:2px"><span class="t-title-m">Hipertrofia tren superior</span><span class="t-caption mono ink3">Meso #3 · 5 semanas · 4 sesiones · desde el lunes 3 ago</span></div>
+    <span class="t-caption mono ok" style="letter-spacing:.11em;text-transform:uppercase;white-space:nowrap">✓ Guardado</span>
+  </div>
+  <div class="row" style="gap:8px;flex-wrap:wrap">
+    <span class="pill"><span class="ic s" style="">event</span><b>03-08-2026</b></span>
+    <span class="pill"><span class="ic s" style="">repeat</span><b>Semanal</b> · 7 días</span>
+    <span class="pill"><span class="ic s" style="">label</span><b>Hipertrofia</b></span>
+    <span class="pill"><span class="ic s" style="">south</span>descarga <b>sem 5</b></span>
+    <span class="btn ghost s" style="height:26px;padding:0 6px;font-size:12px"><span class="ic s" style="">edit</span>Editar bloque</span>
+  </div>
+</div><div class="tabs"><div class="tab on"><span class="ic s" style="">trending_up</span>Volumen</div><div class="tab"><span class="ic s" style="">grid_view</span>Distribución<span class="dot"></span></div><div class="tab"><span class="ic s" style="">fitness_center</span>Ejercicios</div><div class="tab"><span class="ic s" style="">monitoring</span>Cierre</div></div>
+<div class="sheet-bg"></div>
+<div class="sheet" style="max-height:760px">
+  <div class="hd"><span class="t-title-m">Sugerir volumen</span><span class="btn ghost s sq"><span class="ic m" style="">close</span></span></div>
+  <div class="bd">
+    <div class="row between"><span class="eyebrow">Paso 2 de 2 · Propuesta</span><span class="t-caption mono ink3">Intermedio · Ganar músculo</span></div>
+    <span class="t-body-s ink2">Sube donde estás por debajo del MAV de tu propio historial y respeta tus prioridades. Toca una fila para ver el porqué.</span>
+    <div class="col" style="gap:0"><div class="row between" style="padding:10px 0;border-bottom:1px solid var(--hair)"><span class="row" style="gap:8px"><span class="t-body-s" style="font-weight:600">Pecho</span><span class="t-caption mono ink3">MAV 10-16</span></span><span class="row" style="gap:10px"><span class="mono t-body-s ink3">12</span><span class="ic s" style="color:var(--ink3)">arrow_forward</span><span class="mono t-title-s" style="color:var(--success)">14</span><span class="ic s" style="color:var(--ink3)">expand_more</span></span></div><div class="row between" style="padding:10px 0;border-bottom:1px solid var(--hair)"><span class="row" style="gap:8px"><span class="t-body-s" style="font-weight:600">Espalda</span><span class="t-caption mono ink3">MAV 12-18</span></span><span class="row" style="gap:10px"><span class="mono t-body-s ink3">14</span><span class="ic s" style="color:var(--ink3)">arrow_forward</span><span class="mono t-title-s" style="color:var(--success)">16</span><span class="ic s" style="color:var(--ink3)">expand_more</span></span></div><div class="row between" style="padding:10px 0;border-bottom:1px solid var(--hair)"><span class="row" style="gap:8px"><span class="t-body-s" style="font-weight:600">Hombro</span><span class="t-caption mono ink3">MAV 8-14</span></span><span class="row" style="gap:10px"><span class="mono t-body-s ink3">9</span><span class="ic s" style="color:var(--ink3)">arrow_forward</span><span class="mono t-title-s" style="color:var(--success)">10</span><span class="ic s" style="color:var(--ink3)">expand_more</span></span></div><div class="row between" style="padding:10px 0;border-bottom:1px solid var(--hair)"><span class="row" style="gap:8px"><span class="t-body-s" style="font-weight:600">Bíceps</span><span class="t-caption mono ink3">MEV 6-10</span></span><span class="row" style="gap:10px"><span class="mono t-body-s ink3">6</span><span class="ic s" style="color:var(--ink3)">arrow_forward</span><span class="mono t-title-s" style="color:var(--success)">8</span><span class="ic s" style="color:var(--ink3)">expand_more</span></span></div><div class="row between" style="padding:10px 0;border-bottom:1px solid var(--hair)"><span class="row" style="gap:8px"><span class="t-body-s" style="font-weight:600">Cuádriceps</span><span class="t-caption mono ink3">MAV 8-14</span></span><span class="row" style="gap:10px"><span class="mono t-body-s ink3">10</span><span class="ic s" style="color:var(--ink3)">arrow_forward</span><span class="mono t-title-s" style="color:var(--success)">12</span><span class="ic s" style="color:var(--ink3)">expand_more</span></span></div><span class="t-caption mono ink3" style="padding:8px 0">+ 12 grupos más</span></div>
+    <div class="col" style="gap:6px"><span class="lbl">Cómo aplicarlo</span><div class="seg"><div class="on">Reemplazar todo</div><div>Solo rellenar los que están a 0</div></div></div>
+  </div>
+  <div class="ft"><span class="btn secondary" style="flex:1"><span class="ic s" style="">arrow_back</span>Ajustar</span><span class="btn primary" style="flex:1"><span class="ic s" style="">check</span>Aplicar</span></div>
+</div>
+</div>
+</x-dc>
+</body>
+</html>

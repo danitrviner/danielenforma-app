@@ -1,0 +1,263 @@
+[
+  {
+    "name": "Tokens",
+    "path": "tokens/index.html",
+    "subtitle": "Color, tipografía, radios y elevación del @theme",
+    "group": "Fundamentos",
+    "viewport": {
+      "width": 420
+    }
+  },
+  {
+    "name": "Icon",
+    "path": "components/icon/index.html",
+    "subtitle": "Material Symbols con escala propia, de 4 pasos. No es la escala tipográfica: un icono se elige por peso óptico, no por e",
+    "group": "Primitivas",
+    "viewport": {
+      "width": 420
+    }
+  },
+  {
+    "name": "Button",
+    "path": "components/button/index.html",
+    "subtitle": "Cuatro variantes y tres tamaños. El dorado es la acción siguiente y va uno por pantalla; el tamaño por defecto mide 44 p",
+    "group": "Primitivas",
+    "viewport": {
+      "width": 420
+    }
+  },
+  {
+    "name": "Input",
+    "path": "components/input/index.html",
+    "subtitle": "16 px siempre, porque por debajo iOS hace zoom al enfocar y no lo deshace. La etiqueta apunta a su campo: hoy hay 116 qu",
+    "group": "Primitivas",
+    "viewport": {
+      "width": 420
+    }
+  },
+  {
+    "name": "Select",
+    "path": "components/select/index.html",
+    "subtitle": "Sigue siendo un desplegable nativo —en móvil la rueda del sistema gana a cualquier lista que dibujemos— pero con la piel",
+    "group": "Primitivas",
+    "viewport": {
+      "width": 420
+    }
+  },
+  {
+    "name": "Card",
+    "path": "components/card/index.html",
+    "subtitle": "Sin sombra: sobre un fondo casi negro la elevación se comunica cambiando de superficie, y el borde ya define el contorno",
+    "group": "Primitivas",
+    "viewport": {
+      "width": 420
+    }
+  },
+  {
+    "name": "Badge",
+    "path": "components/badge/index.html",
+    "subtitle": "Estado, no acción: no se pulsa. El color sale de la fórmula del DS —texto al 100 %, fondo al 10 %, borde al 25 %— y no d",
+    "group": "Primitivas",
+    "viewport": {
+      "width": 420
+    }
+  },
+  {
+    "name": "Pager",
+    "path": "components/pager/index.html",
+    "subtitle": "Carrusel de páginas con puntos (F3 del plan de réplica FITIV), sin ninguna librería nueva: scroll-snap del core de Tailw",
+    "group": "Primitivas",
+    "viewport": {
+      "width": 420
+    }
+  },
+  {
+    "name": "Tabs",
+    "path": "components/tabs/index.html",
+    "subtitle": "La píldora segmentada que la app repite en el hub de cliente, Nutrición, Entrenamiento, Academia, Cardio y el CRM. Escri",
+    "group": "Primitivas",
+    "viewport": {
+      "width": 420
+    }
+  },
+  {
+    "name": "Chip",
+    "path": "components/chip/index.html",
+    "subtitle": "Lo que Badge deja fuera a propósito: se pulsa. Filtros que se activan y desactivan, alimentos seleccionables, tags que s",
+    "group": "Primitivas",
+    "viewport": {
+      "width": 420
+    }
+  },
+  {
+    "name": "ListRow",
+    "path": "components/listrow/index.html",
+    "subtitle": "El patrón «icono a la izquierda, título y subtítulo en medio, algo a la derecha» que se repite en más de una docena de p",
+    "group": "Primitivas",
+    "viewport": {
+      "width": 420
+    }
+  },
+  {
+    "name": "PageHeader",
+    "path": "components/pageheader/index.html",
+    "subtitle": "Título grande, ceja opcional, acción a la derecha. TrainingCoachScreen, ClientsScreen y ReviewsScreen la reescriben cada",
+    "group": "Primitivas",
+    "viewport": {
+      "width": 420
+    }
+  },
+  {
+    "name": "Sheet",
+    "path": "components/sheet/index.html",
+    "subtitle": "El panel que sube desde abajo. Plantilla de lo que a los 39 overlays artesanales de la app les falta hoy: foco atrapado,",
+    "group": "Primitivas",
+    "viewport": {
+      "width": 420
+    }
+  },
+  {
+    "name": "Dialog",
+    "path": "components/dialog/index.html",
+    "subtitle": "La caja centrada: confirmar una acción, un formulario corto. Comparte toda la infraestructura de Sheet — mismo foco atra",
+    "group": "Primitivas",
+    "viewport": {
+      "width": 420
+    }
+  },
+  {
+    "name": "EmptyState",
+    "path": "components/emptystate/index.html",
+    "subtitle": "La última primitiva de F7. El relleno vertical es 40 px, no un valor nuevo: F6 ya decidió que los py-12/16/20/24 que con",
+    "group": "Primitivas",
+    "viewport": {
+      "width": 420
+    }
+  },
+  {
+    "name": "Avatar",
+    "path": "components/avatar/index.html",
+    "subtitle": "Foto de perfil con iniciales de reserva. Los perfiles nacen con avatarUrl vacío, y un <img src=\"\"> pinta el icono de ima",
+    "group": "Primitivas",
+    "viewport": {
+      "width": 420
+    }
+  },
+  {
+    "name": "Skeleton",
+    "path": "components/skeleton/index.html",
+    "subtitle": "Barrido de luz de 1,4 s, no un parpadeo de opacidad. Nunca un spinner a pantalla completa.",
+    "group": "Primitivas",
+    "viewport": {
+      "width": 420
+    }
+  },
+  {
+    "name": "ProgressBar",
+    "path": "components/progressbar/index.html",
+    "subtitle": "6 px, radio 4, relleno oro. Pasarse de 100 pinta la barra roja sin recortar el valor — el +N de más se muestra aparte.",
+    "group": "Primitivas",
+    "viewport": {
+      "width": 420
+    }
+  },
+  {
+    "name": "Banner",
+    "path": "components/banner/index.html",
+    "subtitle": "Radio 18, color al 7 % de fondo y 22-24 % de borde. Solo dos tonos: oro informativo, rojo error con Reintentar en contor",
+    "group": "Primitivas",
+    "viewport": {
+      "width": 420
+    }
+  },
+  {
+    "name": "Stepper",
+    "path": "components/stepper/index.html",
+    "subtitle": "Dos botones de 52 px —menos neutro, más oro— y una cifra mono central. Haptic light por toque, nunca medium: es un ajust",
+    "group": "Primitivas",
+    "viewport": {
+      "width": 420
+    }
+  },
+  {
+    "name": "SegmentedControl",
+    "path": "components/segmentedcontrol/index.html",
+    "subtitle": "El «Segmentado» del handoff: 46 px, fondo surface, pastilla de oro que se desliza entre opciones — distinto de Tabs, pen",
+    "group": "Primitivas",
+    "viewport": {
+      "width": 420
+    }
+  },
+  {
+    "name": "RirScale",
+    "path": "components/rirscale/index.html",
+    "subtitle": "7 segmentos: FALLO · 0 · 1 · 2 · 3 · 4 · 5. FALLO no es RIR 0 —decisión de Dani, 7 ago 2026— y el color se invierte resp",
+    "group": "Primitivas",
+    "viewport": {
+      "width": 420
+    }
+  },
+  {
+    "name": "EffortScale",
+    "path": "components/effortscale/index.html",
+    "subtitle": "La única escala 1-10 que sobrevive al cambio a RIR, y solo en cardio sin pulsómetro. Campo ESFUERZO, no RPE. Una frase t",
+    "group": "Primitivas",
+    "viewport": {
+      "width": 420
+    }
+  },
+  {
+    "name": "Sparkline",
+    "path": "components/sparkline/index.html",
+    "subtitle": "8 barras, scaleY escalonado 40 ms, la última siempre en oro — es el dato de hoy.",
+    "group": "Primitivas",
+    "viewport": {
+      "width": 420
+    }
+  },
+  {
+    "name": "RingSeal",
+    "path": "components/ringseal/index.html",
+    "subtitle": "Se cierra en 1,1 s. Con complete, un sello de check aparece a los ~550 ms. Sin confeti — el handoff lo repite en tres mó",
+    "group": "Primitivas",
+    "viewport": {
+      "width": 420
+    }
+  },
+  {
+    "name": "SwipeRow",
+    "path": "components/swiperow/index.html",
+    "subtitle": "96 px de recorrido, fondo rojo con icono y etiqueta en negro. Solo revela el botón: ejecutar la acción es una pulsación ",
+    "group": "Primitivas",
+    "viewport": {
+      "width": 420
+    }
+  },
+  {
+    "name": "SearchField",
+    "path": "components/searchfield/index.html",
+    "subtitle": "48 px en reposo, crece a 54 con el foco; borde e icono pasan a oro en 200 ms y aparece Cancelar. Distinto de Input: no l",
+    "group": "Primitivas",
+    "viewport": {
+      "width": 420
+    }
+  },
+  {
+    "name": "CollapsingHeader",
+    "path": "components/collapsingheader/index.html",
+    "subtitle": "Título de 46 px en reposo; al pasar 30 px de scroll sube y se desvanece mientras entra el compacto de 15,5 px con su lín",
+    "group": "Primitivas",
+    "viewport": {
+      "width": 420
+    }
+  },
+  {
+    "name": "Escaparate completo",
+    "path": "showcase/index.html",
+    "subtitle": "Las 27 primitivas seguidas, a 420 px",
+    "group": "Primitivas",
+    "viewport": {
+      "width": 420
+    }
+  }
+]

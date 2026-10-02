@@ -1,0 +1,103 @@
+{
+  "artboards": [
+    {
+      "file": "Main.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 390,
+      "h": 1820,
+      "title": "Móvil · Volumen"
+    },
+    {
+      "file": "Distribucion.dc.html",
+      "x": 480,
+      "y": 0,
+      "w": 390,
+      "h": 2140,
+      "title": "Móvil · Distribución"
+    },
+    {
+      "file": "VistaPrevia.dc.html",
+      "x": 960,
+      "y": 0,
+      "w": 390,
+      "h": 1960,
+      "title": "Móvil · Vista previa de rutinas"
+    },
+    {
+      "file": "Ejercicios.dc.html",
+      "x": 1440,
+      "y": 0,
+      "w": 390,
+      "h": 2160,
+      "title": "Móvil · Ejercicios"
+    },
+    {
+      "file": "Cierre.dc.html",
+      "x": 1920,
+      "y": 0,
+      "w": 390,
+      "h": 1860,
+      "title": "Móvil · Cierre"
+    },
+    {
+      "file": "SugerirVolumen.dc.html",
+      "x": 2400,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "Overlay · Sugerir volumen"
+    },
+    {
+      "file": "ElegirEjercicio.dc.html",
+      "x": 2880,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "Overlay · Cambiar ejercicio"
+    },
+    {
+      "file": "Vacios.dc.html",
+      "x": 3360,
+      "y": 0,
+      "w": 390,
+      "h": 1480,
+      "title": "Estados vacíos y error"
+    },
+    {
+      "file": "VolumenEscritorio.dc.html",
+      "x": 0,
+      "y": 2200,
+      "w": 1440,
+      "h": 1240,
+      "title": "Escritorio · Volumen"
+    },
+    {
+      "file": "EjerciciosEscritorio.dc.html",
+      "x": 1560,
+      "y": 2200,
+      "w": 1440,
+      "h": 1500,
+      "title": "Escritorio · Ejercicios"
+    }
+  ],
+  "annotations": [
+    {
+      "id": "leeme",
+      "x": 0,
+      "y": -200,
+      "w": 520,
+      "text": "Mesociclos · rediseño sobre el DS real (tokens de src/index.css, primitivas de components/ui).\nContrato de funciones: docs/design/fase4/Inventario-funcional-MesocycleManager.md.\nDatos de ejemplo: Ander, Meso #3 «Hipertrofia tren superior», 5 sem × 4 ses.\nMockups estáticos: los controles no responden."
+    },
+    {
+      "id": "decisiones",
+      "x": 560,
+      "y": -200,
+      "w": 520,
+      "text": "Decisiones a validar:\n1. Selector de mesociclos como carrusel arriba (móvil) en vez de columna.\n2. Datos del bloque plegados en píldoras + «Editar bloque» (la cabecera de 9 campos se abre bajo demanda).\n3. Pestañas con punto verde en las fases ya completadas.\n4. Avisos de estado con los tokens warning/danger (adiós a red-400/orange-300)."
+    }
+  ],
+  "launch": {
+    "view": "canvas"
+  }
+}
