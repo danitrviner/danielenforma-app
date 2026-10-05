@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { escribirLocal, _reiniciarAvisoDeCuota } from './almacenLocal';
+import { escribirLocal, asegurarHolgura, _reiniciarAvisoDeCuota } from './almacenLocal';
 
 /* El fallo que esto previene no es «no se guardó una preferencia»: es que un
    localStorage lleno rompía el SDK de Firestore y dejaba la app sin base de
@@ -98,5 +98,38 @@ describe('escribirLocal', () => {
     almacen.setItem = () => { throw new Error('SecurityError'); };
     expect(escribirLocal('enforma_algo', 'hola')).toBe(false);
     expect(almacen.getItem('enforma_diets_v1')).not.toBeNull();
+  });
+});
+
+describe('asegurarHolgura', () => {
+  it('purga espejos de mayor a menor hasta quedar bajo el presupuesto', () => {
+    montar(10_000, {
+      enforma_knowledge_v1: 'k'.repeat(3000),
+      enforma_exercises: 'e'.repeat(2000),
+      enforma_diets_v1: 'd'.repeat(500),
+    });
+    asegurarHolgura(3000);
+    expect(almacen._datos.has('enforma_knowledge_v1')).toBe(false);
+    expect(almacen._datos.has('enforma_exercises')).toBe(true);
+    expect(almacen._datos.has('enforma_diets_v1')).toBe(true);
+  });
+
+  it('no toca lo intocable ni las claves del SDK de Firestore', () => {
+    montar(10_000, {
+      enforma_sesion_en_curso_v1: 's'.repeat(3000),
+      'firestore_targets_x': 'f'.repeat(3000),
+      enforma_exercises: 'e'.repeat(100),
+    });
+    asegurarHolgura(1000);
+    expect(almacen._datos.has('enforma_sesion_en_curso_v1')).toBe(true);
+    expect(almacen._datos.has('firestore_targets_x')).toBe(true);
+    expect(almacen._datos.has('enforma_exercises')).toBe(false);
+  });
+
+  it('escribirLocal deja margen tras una escritura gorda, sin borrar lo recién escrito', () => {
+    montar(5_000_000, { enforma_ai_chats_v1: 'c'.repeat(2_000_000) });
+    expect(escribirLocal('enforma_knowledge_v1', 'k'.repeat(1_500_000))).toBe(true);
+    expect(almacen._datos.has('enforma_knowledge_v1')).toBe(true);
+    expect(almacen._datos.has('enforma_ai_chats_v1')).toBe(false);
   });
 });

@@ -9,6 +9,7 @@ import App from './App.tsx';
 import ErrorBoundary from './components/ErrorBoundary.tsx';
 import {iniciarMonitorizacion} from './monitorizacion.ts';
 import {escucharAlSistema} from './utils/tema.ts';
+import {asegurarHolgura, escribirLocal} from './utils/almacenLocal.ts';
 import './index.css';
 
 // Lo primero de todo, antes de montar React: un fallo durante el arranque —el
@@ -80,10 +81,21 @@ const queryClient = new QueryClient({
    la forma de un dato cambia entre versiones, no hay riesgo de arrancar con
    una versión vieja del JSON pegada en el localStorage de alguien.
    ═══════════════════════════════════════════════════════════════════════════ */
+// Escribe por `escribirLocal`: la caché de consultas es de lo más gordo que
+// hay en localStorage y, escrita a pelo, no respetaba el techo que deja sitio
+// al SDK de Firestore (ver src/utils/almacenLocal.ts).
 const persister = createSyncStoragePersister({
-  storage: window.localStorage,
+  storage: {
+    getItem: k => window.localStorage.getItem(k),
+    setItem: (k, v) => { escribirLocal(k, v); },
+    removeItem: k => window.localStorage.removeItem(k),
+  },
   key: CLAVE_CACHE_CONSULTAS,
 });
+
+// Un almacén que ya llega lleno de una versión anterior se recorta antes de
+// que Firestore arranque y necesite escribir.
+asegurarHolgura();
 
 registrarClienteDeConsultas(queryClient);
 

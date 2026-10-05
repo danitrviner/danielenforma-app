@@ -79,6 +79,63 @@ function purgablesPorTamaño(exceptuando: string): string[] {
 /** Para no llenar Sentry con el mismo aviso en cada tecla. */
 let yaAvisadoDeCuota = false;
 
+/* ── Holgura para el SDK de Firestore (05-10) ─────────────────────────────────
+   Hacer sitio cuando NUESTRA escritura falla no basta, y Sentry lo demostró:
+   925 eventos `b815` hasta el 05-10, con el `setItem` que revienta siendo el
+   de Firestore (`firestore_targets_*`), no el nuestro. Los espejos crecen
+   hasta dejar el almacén al borde —en el Chrome del coach había 3,5 M de
+   caracteres de unos 5 M—, cada `setItem` nuestro todavía cabe, y el primero
+   que no cabe es el del SDK, que no pasa por aquí. Firestore se cae en esa
+   pestaña y todas las lecturas devuelven vacío: la lista de clientes salió
+   a 0 atletas.
+
+   Así que lo nuestro tiene techo: por encima de `PRESUPUESTO` se purgan
+   espejos (los mismos y en el mismo orden que arriba) hasta volver a bajar,
+   y lo que queda libre es del SDK. */
+
+/** Caracteres (clave + valor) que la app se permite ocupar. Los navegadores
+ *  dan ~5 M por origen; el resto queda de margen para Firestore. */
+export const PRESUPUESTO_LOCAL = 3_000_000;
+
+/** Medir recorre todo el almacén: solo tras una escritura gorda o, si son
+ *  pequeñas, como mucho una vez cada pocos segundos. */
+const ESCRITURA_GORDA = 10_000;
+const CADA_MS = 5_000;
+let ultimaMedicion = 0;
+
+function ocupado(): number {
+  let total = 0;
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (k) total += k.length + (localStorage.getItem(k) ?? '').length;
+  }
+  return total;
+}
+
+/**
+ * Si la app ocupa más de `presupuesto`, purga espejos de mayor a menor hasta
+ * quedar por debajo. `exceptuando` es la clave recién escrita, que no se toca.
+ * No lanza nunca. Se llama al arrancar y tras las escrituras de `escribirLocal`.
+ */
+export function asegurarHolgura(presupuesto = PRESUPUESTO_LOCAL, exceptuando = ''): void {
+  try {
+    ultimaMedicion = Date.now();
+    let total = ocupado();
+    if (total <= presupuesto) return;
+    for (const k of purgablesPorTamaño(exceptuando)) {
+      total -= k.length + (localStorage.getItem(k) ?? '').length;
+      localStorage.removeItem(k);
+      if (total <= presupuesto) return;
+    }
+  } catch { /* localStorage inaccesible: no hay nada que hacer */ }
+}
+
+function quizaAsegurarHolgura(clave: string, valor: string): void {
+  if (valor.length >= ESCRITURA_GORDA || Date.now() - ultimaMedicion >= CADA_MS) {
+    asegurarHolgura(PRESUPUESTO_LOCAL, clave);
+  }
+}
+
 /**
  * Guarda en localStorage. Si no cabe, hace sitio borrando espejos y reintenta.
  *
@@ -89,6 +146,7 @@ let yaAvisadoDeCuota = false;
 export function escribirLocal(clave: string, valor: string): boolean {
   try {
     localStorage.setItem(clave, valor);
+    quizaAsegurarHolgura(clave, valor);
     return true;
   } catch (err) {
     if (!esCuotaLlena(err)) {
@@ -102,6 +160,7 @@ export function escribirLocal(clave: string, valor: string): boolean {
     try {
       localStorage.removeItem(purgable);
       localStorage.setItem(clave, valor);
+      quizaAsegurarHolgura(clave, valor);
       return true;
     } catch (err) {
       if (!esCuotaLlena(err)) return false;
@@ -126,4 +185,5 @@ export function escribirLocal(clave: string, valor: string): boolean {
 /** Sólo para los tests: olvida que ya se avisó de la cuota. */
 export function _reiniciarAvisoDeCuota(): void {
   yaAvisadoDeCuota = false;
+  ultimaMedicion = 0;
 }
