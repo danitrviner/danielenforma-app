@@ -48,6 +48,7 @@ import VolumeSuggestionSheet from './VolumeSuggestionSheet';
 import { useToast } from '../hooks/useToast';
 import { nombreDeMeso, nombreDeSesion } from '../utils/nombresMeso';
 import { fechasDelMesociclo, cicloDiasDeMeso } from '../utils/asignacionMesociclo';
+import { buildSnapshot, isStale } from '../utils/repartoDesactualizado';
 import { addDays, esFechaIso, hoyIsoLocal, isoLocal } from '../utils/trainingWeek';
 import { useAthleteProfileSignals } from '../hooks/useAthleteProfileSignals';
 import { useAthleteWeight } from '../hooks/useAthleteWeight';
@@ -82,34 +83,6 @@ const DEFAULT_GROUPS = (): Record<MuscleGroup, MuscleGroupConfig> =>
 // grupos musculares (antes duplicados aquí y en MesocycleTemplateLibrary.tsx).
 
 // ─── Distribution engine ──────────────────────────────────────────────────────
-
-function buildSnapshot(m: Mesocycle) {
-  const groupSeries: Partial<Record<MuscleGroup, number>> = {};
-  MUSCLE_GROUPS.forEach(g => { if (m.groups[g].series > 0) groupSeries[g] = m.groups[g].series; });
-  return {
-    daysPerWeek: m.daysPerWeek,
-    cycleDays: m.cycleDays,
-    splitId: m.splitId,
-    // Serializado a texto: es el único campo del snapshot que es un array, y
-    // la comparación de abajo es toda por igualdad simple.
-    customOffsets: m.customOffsets ? m.customOffsets.join(',') : undefined,
-    groupSeries,
-  };
-}
-
-function isStale(m: Mesocycle, dist: WeekDistribution): boolean {
-  const cur  = buildSnapshot(m);
-  const snap = dist.snapshot;
-  if (cur.daysPerWeek !== snap.daysPerWeek) return true;
-  if (cur.cycleDays !== snap.cycleDays) return true;
-  if (cur.splitId !== snap.splitId) return true;
-  if (cur.customOffsets !== snap.customOffsets) return true;
-  const keys = new Set([...Object.keys(cur.groupSeries), ...Object.keys(snap.groupSeries)]) as Set<MuscleGroup>;
-  for (const k of keys) {
-    if (cur.groupSeries[k] !== snap.groupSeries[k]) return true;
-  }
-  return false;
-}
 
 // ─── Generator types & helpers ────────────────────────────────────────────────
 
@@ -1739,6 +1712,10 @@ export default function MesocycleManager({
   // compartir estado hacía que asignar desde Ejercicios repintara la vista
   // previa de Distribución.
   const [volcado, setVolcado] = useState<{ estado: 'idle' | 'trabajando' | 'hecho' | 'error'; mensaje: string }>({ estado: 'idle', mensaje: '' });
+  // Estado de la reescritura automática de fechas al tocar el calendario del
+  // ciclo (aparte de `volcado`: aquel es el botón manual de la pestaña Ejercicios).
+  const [calAtleta, setCalAtleta] = useState<{ estado: 'idle' | 'trabajando' | 'hecho' | 'aviso' | 'error'; mensaje: string }>({ estado: 'idle', mensaje: '' });
+  const syncTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Only load the full athlete list in standalone mode (no athleteEmail prop)
   const { data: allProfiles = [] } = useQuery({
@@ -2332,6 +2309,65 @@ export default function MesocycleManager({
     }
   };
 
+  /**
+   * Al tocar el calendario del ciclo, el calendario del atleta sigue a los días
+   * marcados: reescribe SOLO las fechas de lo que aún no ha pasado, apuntando a
+   * las mismas rutinas. No regenera ejercicios ni recalcula el reparto, y los
+   * días ya entrenados se conservan (misma regla que «Asignar mesociclo»).
+   *
+   * Solo actúa si el bloque YA está asignado al atleta —un bloque en diseño no
+   * debe aparecerle en el calendario por tocar un día— y si las rutinas
+   * generadas cuadran con las sesiones marcadas; si no, dice por qué en vez de
+   * dejar el calendario del atleta a medias. Con espera, porque marcar tres días
+   * seguidos son tres clics y no tres reescrituras.
+   */
+  const sincronizarFechasDelAtleta = (meso: Mesocycle) => {
+    if (syncTimer.current) clearTimeout(syncTimer.current);
+    if (!selectedEmail) return;
+    const sesiones = mesoGroupsForTabs;
+    syncTimer.current = setTimeout(async () => {
+      try {
+        const existentes = await getWorkoutAssignmentsByMesocycleIds([meso.id]);
+        if (!existentes.some(a => a.athleteId === selectedEmail)) {
+          setCalAtleta({ estado: 'idle', mensaje: '' });
+          return;
+        }
+        if (sesiones.length !== meso.daysPerWeek) {
+          setCalAtleta({
+            estado: 'aviso',
+            mensaje: `El atleta tiene ${sesiones.length} ${sesiones.length === 1 ? 'sesión' : 'sesiones'} generadas y el calendario marca ${meso.daysPerWeek}. `
+              + 'Sus fechas no se han tocado: genera las rutinas de nuevo para que cuadren.',
+          });
+          return;
+        }
+        setCalAtleta({ estado: 'trabajando', mensaje: 'Actualizando el calendario del atleta…' });
+        const fechas = fechasDelMesociclo(meso, sesiones.length);
+        const { conservadas } = await borrarAsignacionesReprogramables(meso.id, selectedEmail, hoyIsoLocal());
+        const porCrear = descartarDiasCerrados(
+          fechas.map(({ dayIdx, date }) => ({
+            workoutId:   sesiones[dayIdx].workoutIds[0],
+            athleteId:   selectedEmail,
+            mesocycleId: meso.id,
+            date,
+            status:      'pending' as const,
+          })),
+          conservadas,
+        );
+        for (const asignacion of porCrear) await createWorkoutAssignmentStrict(asignacion);
+        await queryClient.invalidateQueries({ queryKey: ['workoutAssignments'] });
+        await queryClient.invalidateQueries({ queryKey: ['workoutAssignmentsForAthlete'] });
+        await queryClient.invalidateQueries({ queryKey: ['workoutAssignmentsByMesocycleIds'] });
+        setCalAtleta({ estado: 'hecho', mensaje: 'Calendario del atleta actualizado con estos días.' });
+      } catch (err: unknown) {
+        console.error('[sincronizarFechasDelAtleta]', err);
+        setCalAtleta({
+          estado: 'error',
+          mensaje: `No se pudo actualizar el calendario del atleta: ${err instanceof Error ? err.message : String(err)}`,
+        });
+      }
+    }, 1500);
+  };
+
   // ── Preview edit helpers ───────────────────────────────────────────────────
 
   function updatePExPatch(dayIdx: number, exIdx: number, patch: Partial<WorkoutExercise>) {
@@ -2729,6 +2765,7 @@ export default function MesocycleManager({
     }
     setEditing(updated);
     scheduleAutoSave(updated);
+    sincronizarFechasDelAtleta(updated);
   };
 
   const restablecerCalendario = () => {
@@ -2738,6 +2775,7 @@ export default function MesocycleManager({
     const resto: Mesocycle = { ...editing, customOffsets: undefined };
     setEditing(resto);
     scheduleAutoSave(resto);
+    sincronizarFechasDelAtleta(resto);
   };
 
   const selectedAthlete = athletes.find(a => a.email === selectedEmail);
@@ -2817,7 +2855,7 @@ export default function MesocycleManager({
             {mesocycles.map(m => (
               <button
                 key={m.id}
-                onClick={() => { setEditing(m); setEditorTab('progression'); setConfirmDelete(false); setGenPhase('idle'); setVolcado({ estado: 'idle', mensaje: '' }); }}
+                onClick={() => { setEditing(m); setEditorTab('progression'); setConfirmDelete(false); setGenPhase('idle'); setVolcado({ estado: 'idle', mensaje: '' }); setCalAtleta({ estado: 'idle', mensaje: '' }); }}
                 className={`w-full text-left p-3 rounded-control border transition-all ${
                   editing?.id === m.id
                     ? 'border-accent/60 bg-accent/5'
@@ -3205,6 +3243,19 @@ export default function MesocycleManager({
                         onRestablecer={customCrudo ? restablecerCalendario : undefined}
                         fechaInicio={editing.startDate}
                       />
+                      {calAtleta.estado !== 'idle' && (
+                        <p
+                          role="status"
+                          className={`font-mono text-caption ${
+                            calAtleta.estado === 'error' ? 'text-danger'
+                            : calAtleta.estado === 'aviso' ? 'text-warning'
+                            : calAtleta.estado === 'hecho' ? 'text-success'
+                            : 'text-ink-2'
+                          }`}
+                        >
+                          {calAtleta.estado === 'hecho' ? '✓ ' : ''}{calAtleta.mensaje}
+                        </p>
+                      )}
 
                       {/* Distribution controls */}
                       <div className="flex flex-wrap items-center gap-3">
