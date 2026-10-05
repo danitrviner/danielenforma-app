@@ -66,7 +66,7 @@ const META_URGENCIA: Record<UrgenciaSenal, { titulo: string; nota: string; punto
   },
 };
 
-const ORDEN_URGENCIA: UrgenciaSenal[] = ['bloqueado', 'hoy', 'pronto'];
+const ORDEN_URGENCIA: UrgenciaSenal[] = ['bloqueado', 'hoy'];
 
 const LABEL_CATEGORIA: Record<CategoriaSenal, string> = {
   plan: 'Planes', revision: 'Revisiones', pago: 'Pagos', propuesta: 'Asistente',
@@ -140,7 +140,10 @@ export default function HomeCoachScreen({ athletes, checkins, assignmentsByEmail
       pagosVencidos,
       propuestasPorEmail,
       hoy: hoyIso,
-    });
+    // «Antes de que se te pase» (urgencia `pronto`) se retiró de la pantalla:
+    // el coach no la usa. Se filtra aquí para que tampoco cuente en los chips
+    // ni dispare el estado vacío con señales que no se pintan.
+    }).filter(s => s.urgencia !== 'pronto');
   }, [loadingAssignments, athletes, checkins, assignmentsByEmail, mesociclos, suscripciones, propuestasPendientes, hoyIso]);
 
   const visibles = filtro === 'todas' ? senales : senales.filter(s => s.categoria === filtro);
@@ -244,7 +247,7 @@ export default function HomeCoachScreen({ athletes, checkins, assignmentsByEmail
                 initials={iniciales(s.athleteName)}
                 title={s.athleteName}
                 meta={s.texto}
-                urgent={u !== 'pronto'}
+                urgent
                 onClick={() => irA(s)}
               />
             ))}
