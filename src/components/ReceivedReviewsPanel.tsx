@@ -450,11 +450,13 @@ export default function ReceivedReviewsPanel({
                     return (
                       <li key={ans.questionId} className="py-2.5 flex items-start gap-3">
                         <span className="font-mono text-caption text-ink-3 tabular-nums w-5 shrink-0">{idx + 1}</span>
-                        <span className="font-sans text-label text-ink-2 flex-1 text-pretty">{question?.label ?? ans.questionId}</span>
-                        <span className="font-mono text-label text-ink font-bold text-right tabular-nums">
-                          {String(ans.value)}{question?.unit ? ` ${question.unit}` : ''}
-                          {question?.type === 'boolean' ? (ans.value ? ' ✓' : ' ✗') : ''}
-                        </span>
+                        <div className="flex-1 min-w-0 space-y-1">
+                          <p className="font-sans text-label text-ink-2 text-pretty">{question?.label ?? ans.questionId}</p>
+                          <p className="font-mono text-label text-ink font-bold whitespace-pre-wrap break-words">
+                            {String(ans.value)}{question?.unit ? ` ${question.unit}` : ''}
+                            {question?.type === 'boolean' ? (ans.value ? ' ✓' : ' ✗') : ''}
+                          </p>
+                        </div>
                       </li>
                     );
                   })}
