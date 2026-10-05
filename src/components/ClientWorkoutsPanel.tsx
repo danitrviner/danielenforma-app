@@ -72,6 +72,9 @@ export default function ClientWorkoutsPanel({
 
   // Lista de entrenamientos asignados plegada por defecto (puede ser muy larga)
   const [assignmentsExpanded, setAssignmentsExpanded] = useState(false);
+  // Las notas del atleta pueden ser muchas: se pueden esconder. Abiertas por
+  // defecto, que es donde se ve lo que está sin leer.
+  const [notasExpandidas, setNotasExpandidas] = useState(true);
 
   // T7.b (18-08): antes la sala de espera se abría sola en cuanto existía
   // UNA asignación (App.tsx, hasPlan) — Dani no controlaba el momento. Ahora
@@ -274,17 +277,30 @@ export default function ClientWorkoutsPanel({
 
         return (
           <div className="bg-surface border border-hairline rounded-surface p-5 space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="font-sans font-bold text-title-s text-ink flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setNotasExpandidas(e => !e)}
+              aria-expanded={notasExpandidas}
+              className="w-full flex items-center justify-between gap-2 text-left group"
+            >
+              <h3 className="font-sans font-bold text-title-s text-ink group-hover:text-accent-ink transition-colors flex items-center gap-2">
                 <span className="material-symbols-outlined text-warning text-title-s">sticky_note_2</span>
                 Notas del atleta
               </h3>
-              {totalUnread > 0 && (
-                <Badge tone="accent">{totalUnread} sin leer</Badge>
-              )}
-            </div>
+              <span className="flex items-center gap-2">
+                {totalUnread > 0 && (
+                  <Badge tone="accent">{totalUnread} sin leer</Badge>
+                )}
+                <span
+                  className="material-symbols-outlined text-ink-2 text-title-s transition-transform"
+                  style={{ transform: notasExpandidas ? 'rotate(180deg)' : 'none' }}
+                >
+                  expand_more
+                </span>
+              </span>
+            </button>
 
-            <div className="space-y-5">
+            {notasExpandidas && <div className="space-y-5">
               {logsWithNotes.map(log => {
                 const wo = getWorkout(log.workoutId);
                 const notes: { key: string; ctx: string; unread: boolean; text: string; onSeen: () => void }[] = [];
@@ -333,7 +349,7 @@ export default function ClientWorkoutsPanel({
                   </div>
                 );
               })}
-            </div>
+            </div>}
           </div>
         );
       })()}
