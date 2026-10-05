@@ -17,7 +17,7 @@ import NutritionPlansScreen from './NutritionPlansScreen';
 import WeeklyMenuEditor from './WeeklyMenuEditor';
 import FoodPreferencesPanel from './FoodPreferencesPanel';
 import MicronutrientesPanel from './MicronutrientesPanel';
-import { EmptyState, SegmentedControl, Dialog, Button } from './ui';
+import { EmptyState, SegmentedControl, Dialog, Button, Collapsible } from './ui';
 
 import { useConfirm } from '../hooks/useConfirm';
 import { hoyIsoLocal } from '../utils/trainingWeek';
@@ -393,6 +393,35 @@ export default function ClientDietsPanel({
       </div>
       )}
 
+      {/* Semanas de la periodización nutricional: antes vivía en Info, pero es
+          programar el calendario, así que va aquí, plegada (rara vez se toca). */}
+      {subView === 'programacion' && nutritionProgram && (
+      <div className="bg-surface border border-hairline rounded-surface px-5 py-2">
+        <Collapsible
+          trigger={
+            <span className="flex items-center gap-2 font-sans font-bold text-title-s text-ink">
+              <span className="material-symbols-outlined text-accent-ink text-body-s">calendar_month</span>
+              Semanas de la periodización
+            </span>
+          }
+        >
+          <div className="pt-2 pb-3">
+            <NutritionPeriodizationPanel
+              parte="semanas"
+              athleteEmail={athlete.email}
+              athleteName={athlete.displayName}
+              targetWeightKg={athlete.targetWeight}
+              diets={athleteDiets}
+              onboarding={onboardingData}
+              currentWeightKg={bodyweightLogs.length > 0 ? bodyweightLogs[bodyweightLogs.length - 1].weight : onboardingData?.weightKg}
+              stepGoal={nutritionConfig?.stepGoal ?? 8000}
+              kcalPerStep={nutritionConfig?.kcalPerStep ?? DEFAULT_KCAL_PER_STEP}
+            />
+          </div>
+        </Collapsible>
+      </div>
+      )}
+
       {/* Menú semanal — generador automático basado en recetas. Lee sus
           puntos de las dietas de tipo de día programadas arriba. */}
       {subView === 'programacion' && (
@@ -507,6 +536,7 @@ export default function ClientDietsPanel({
           stats) como su propia vista de lectura; son una sola sección. */}
       {subView === 'info' && (
       <NutritionPeriodizationPanel
+        parte="resto"
         athleteEmail={athlete.email}
         athleteName={athlete.displayName}
         targetWeightKg={athlete.targetWeight}

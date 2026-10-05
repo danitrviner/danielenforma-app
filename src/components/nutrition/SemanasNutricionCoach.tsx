@@ -20,7 +20,9 @@ const DIAS: WeekDay[] = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
  *  sus kcal/día, y en la semana elegida la dieta de su fase con los ajustes
  *  que se programen (desde esa semana o solo esa), mantenimiento, comidas
  *  libres y suplementación. Todo se guarda en el NutritionProgram. */
-export default function SemanasNutricionCoach({ program, diets, onGuardar, pesos = [], mantenimientoKcal = null, registros = [], semanaDelMenu }: {
+export default function SemanasNutricionCoach({ program, diets, onGuardar, pesos = [], mantenimientoKcal = null, registros = [], semanaDelMenu, sinTitulo = false }: {
+  /** Oculta el título: cuando ya lo pone el desplegable que la envuelve. */
+  sinTitulo?: boolean;
   /** Días registrados del atleta (para la media de agua y verdura). */
   registros?: DietCompletionLog[];
   /** Semana con la que se generó el menú publicado (0 = antes de esto; undefined = sin menú). */
@@ -141,10 +143,12 @@ export default function SemanasNutricionCoach({ program, diets, onGuardar, pesos
   return (
     <div className="bg-surface border border-hairline rounded-surface p-4 space-y-3">
       <div className="flex items-center gap-x-3 gap-y-1 flex-wrap">
-        <p className="font-sans font-bold text-body-s text-ink flex items-center gap-2">
-          <Icon name="calendar_month" size="s" className="text-accent-ink" />
-          Semanas de la periodización
-        </p>
+        {!sinTitulo && (
+          <p className="font-sans font-bold text-body-s text-ink flex items-center gap-2">
+            <Icon name="calendar_month" size="s" className="text-accent-ink" />
+            Semanas de la periodización
+          </p>
+        )}
         <p className="font-mono text-caption text-ink-3">{n} semanas · barras = kcal/día</p>
         {hoy >= 1 && hoy <= n && (
           <span className="inline-flex items-center rounded-chip bg-accent px-2 py-0.5 font-mono text-caption font-bold uppercase tracking-wider text-on-accent">

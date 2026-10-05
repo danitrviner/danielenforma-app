@@ -49,6 +49,10 @@ interface Props {
   stepGoal: number;
   kcalPerStep: number;
   onDietsChanged?: () => void;
+  /** Qué se pinta. `semanas` = solo la barra de semanas (vive en Programación,
+   *  plegada); `resto` = todo lo demás (gráfico, fases, edición). Por defecto,
+   *  todo junto como antes. Nunca están las dos a la vez en pantalla. */
+  parte?: 'todo' | 'semanas' | 'resto';
 }
 
 type NutritionPhaseForm = NutritionPhase;
@@ -226,7 +230,7 @@ const fmtPeso = (kg?: number | null): string =>
   kg == null ? '—' : String(Math.round(kg * 10) / 10).replace('.', ',');
 
 export default function NutritionPeriodizationPanel({
-  athleteEmail, athleteName, targetWeightKg, diets, onboarding, currentWeightKg, stepGoal, kcalPerStep, onDietsChanged,
+  athleteEmail, athleteName, targetWeightKg, diets, onboarding, currentWeightKg, stepGoal, kcalPerStep, onDietsChanged, parte = 'todo',
 }: Props) {
   const queryClient = useQueryClient();
   const { showToast } = useToast();
@@ -469,6 +473,13 @@ export default function NutritionPeriodizationPanel({
     }
   };
 
+  if (parte === 'semanas') {
+    if (loading || program === null) return null;
+    return (
+      <SemanasNutricionCoach sinTitulo program={program} diets={diets} onGuardar={guardarPrograma} pesos={pesosAtleta} mantenimientoKcal={maintenanceKcal} registros={registrosDia} semanaDelMenu={menuPublicado?.semanaPrograma ?? (menuPublicado ? 0 : undefined)} />
+    );
+  }
+
   if (loading) {
     return (
       <div className="bg-surface border border-hairline rounded-surface p-5">
@@ -503,7 +514,9 @@ export default function NutritionPeriodizationPanel({
 
     return (
       <div className="space-y-4">
-        <SemanasNutricionCoach program={program} diets={diets} onGuardar={guardarPrograma} pesos={pesosAtleta} mantenimientoKcal={maintenanceKcal} registros={registrosDia} semanaDelMenu={menuPublicado?.semanaPrograma ?? (menuPublicado ? 0 : undefined)} />
+        {parte === 'todo' && (
+          <SemanasNutricionCoach program={program} diets={diets} onGuardar={guardarPrograma} pesos={pesosAtleta} mantenimientoKcal={maintenanceKcal} registros={registrosDia} semanaDelMenu={menuPublicado?.semanaPrograma ?? (menuPublicado ? 0 : undefined)} />
+        )}
         <NutritionPerformanceDashboard
           refreshToken={refreshKey}
           athleteEmail={athleteEmail}
