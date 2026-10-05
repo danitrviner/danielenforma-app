@@ -32,6 +32,8 @@ import { Badge, BadgeTone, Button, Icon, SegmentedControl, Chip, EmptyState } fr
 import WorkoutSessionPlayer, { SessionCelebration } from './training/WorkoutSessionPlayer';
 import NovedadesDeSemana from './training/NovedadesDeSemana';
 import { novedadesDeSemana, hayNovedades } from '../utils/semanasDelBloque';
+import { novedadesDeLaSesion, type NovedadesDeLaSesion } from '../utils/planificadorProgresion';
+import { cargarAvisoSesion, guardarAvisoSesion, borrarAvisoSesion } from '../utils/avisoDeSesion';
 import { SetInput, nuevaSerieVacia } from './training/setInput';
 
 interface TrainingScreenProps {
@@ -210,6 +212,10 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
   const [celebration, setCelebration] = useState<SessionCelebration | null>(null);
   const [exerciseNoteInputs, setExerciseNoteInputs] = useState<string[]>([]);
   const [workoutNoteInput, setWorkoutNoteInput] = useState('');
+  // Cambios que el coach ha programado para ESTA sesión respecto a la misma
+  // sesión la semana anterior, y qué contestó el atleta al aviso (null = aún
+  // no lo ha visto). Ver utils/avisoDeSesion.ts.
+  const [avisoSesion, setAvisoSesion] = useState<{ datos: NovedadesDeLaSesion; semana: number; leido: boolean | null } | null>(null);
   // Id del WorkoutLog que se está editando (asignación YA completada,
   // reabierta desde su tarjeta) — si tiene valor, `handleFinish` actualiza
   // ese registro en vez de crear uno nuevo. `null` = sesión normal.
@@ -376,6 +382,17 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
     }
 
     const prerrellenadas = prefillWorkoutSets(wo, entries);
+
+    if (meso) {
+      const semana = mesocycleWeekNumber(meso.startDate, assignment.date, cicloDiasDeMeso(meso));
+      const base = baseWorkout.exercises.slice().sort((a, b) => a.order - b.order);
+      const datos = novedadesDeLaSesion(base, meso, semana, baseWorkout.name, id => exercises.find(e => e.id === id)?.name ?? 'Ejercicio');
+      setAvisoSesion(hayNovedades(datos.novedades)
+        ? { datos, semana, leido: cargarAvisoSesion(profile.email, assignment.id) }
+        : null);
+    } else {
+      setAvisoSesion(null);
+    }
     // La forma PRESCRITA (sin las filas de dropset/myoreps que el atleta
     // pueda añadir después) — se guarda con cada autoguardado para poder
     // distinguir "el coach cambió la rutina" de "yo añadí una bajada".
@@ -488,6 +505,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
     setCelebration(null);
     setPrevEntries(prevEntriesForEdit);
     setEditingLogId(existingLog.id);
+    setAvisoSesion(null);
     // Editar no tiene cronómetro en marcha: el player enseña la duración que
     // ya se guardó con el log (`completedDurationSeg`, prop aparte), no una
     // que siga corriendo.
@@ -670,6 +688,8 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
         note: workoutNoteInput.trim() || undefined,
         startedAt: startedAtIso,
         duracionSeg,
+        // Para el coach: si la sesión traía cambios, si el atleta leyó el aviso.
+        novedadesVistas: avisoSesion ? avisoSesion.leido === true : undefined,
       });
 
       // El entrenamiento ya está a salvo en `workoutLogs` en este punto. Marcar
@@ -705,6 +725,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
       // Y el descanso con él: si no, reabrir la rutina resucitaría el
       // cronómetro de la serie que se acaba de guardar.
       borrarDescanso(profile.email, activeAssignment.id);
+      borrarAvisoSesion(profile.email, activeAssignment.id);
       void haptics.success();
       if (assignmentUpdateFailed) {
         showToast('Entreno guardado, pero no se pudo marcar como completado.');
@@ -841,6 +862,11 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
         setEditorTargetRef={setEditorTargetRef}
         firstSetRowTargetRef={firstSetRowTargetRef}
         onMarkActionDone={() => tutorial.markActionDone('marcar-serie')}
+        avisoSesion={avisoSesion}
+        onAvisoSesion={leido => {
+          guardarAvisoSesion(profile.email, activeAssignment.id, leido);
+          setAvisoSesion(a => a ? { ...a, leido } : a);
+        }}
       />
     );
   }

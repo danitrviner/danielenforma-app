@@ -33,6 +33,7 @@ import {
   seriesDeLaSemana, seriesDe, programarEnSemanas, semanasAlternas, rirDescendente, subirSeries, revisionesPorSemana, type EjercicioDelDia,
 } from '../utils/semanasDelBloque';
 import BarraDeSemanas, { type Alcance, type AvisoDeSemana, type ElementoProgramado } from './mesociclo/BarraDeSemanas';
+import PlanificadorProgresion from './mesociclo/PlanificadorProgresion';
 import { atletasActivos } from '../utils/atletas';
 import {
   TRAINING_SPLITS, DAY_TYPE_MUSCLES, getSplitsForDays, recommendSplit,
@@ -704,11 +705,11 @@ function MesoExercisesTabs({
   // o por debajo de MEV en un grupo que el bloque sí entrena (salvo descarga,
   // donde bajar es justo lo que se busca). Por SEMANA de 7 días, como los
   // landmarks, aunque el ciclo dure otra cosa.
-  const avisos = useMemo(() => {
+  const avisosDe = useCallback((ejercicios: EjercicioDelDia[]) => {
     const out: Record<number, AvisoDeSemana[]> = {};
     for (let s = 1; s <= vueltas; s++) {
       const porGrupo = new Map<MuscleGroup, number>();
-      for (const { we } of ejerciciosDelBloque) {
+      for (const { we } of ejercicios) {
         const r = resolverEjercicioDelMeso(we, meso, s);
         const grupo = r.muscleGroup ?? allExercises.find(e => e.id === r.exerciseId)?.muscleGroup;
         if (grupo) porGrupo.set(grupo, (porGrupo.get(grupo) ?? 0) + seriesDe(r));
@@ -726,7 +727,29 @@ function MesoExercisesTabs({
       if (lista.length > 0) out[s] = lista;
     }
     return out;
-  }, [ejerciciosDelBloque, meso, vueltas, allExercises, semanasDelCiclo, descargas, mesoGroups]);
+  }, [meso, vueltas, allExercises, semanasDelCiclo, descargas, mesoGroups]);
+  const avisos = useMemo(() => avisosDe(ejerciciosDelBloque), [avisosDe, ejerciciosDelBloque]);
+
+  // «Planificar progresión»: unos pocos ejercicios de todo el bloque, semana a
+  // semana en una tabla. Mientras está abierto sustituye a esta pantalla.
+  const [planificando, setPlanificando] = useState(false);
+  const grupoDe = useCallback(
+    (we: WorkoutExercise) => we.muscleGroup ?? allExercises.find(e => e.id === we.exerciseId)?.muscleGroup,
+    [allExercises],
+  );
+  const aceptarPlanificacion = (dias: { clave: string; exercises: WorkoutExercise[] }[], seleccion: string[]) => {
+    for (const d of dias) {
+      const g = gruposBase.find(b => claveGrupo(b) === d.clave);
+      if (!g) continue;
+      apuntar({ tipo: 'dia', clave: d.clave, prev: g.exercises });
+      onWriteDay(g, d.exercises);
+    }
+    if (JSON.stringify([...seleccion].sort()) !== JSON.stringify([...(meso.ejerciciosClave ?? [])].sort())) {
+      onUpdateMeso({ ejerciciosClave: seleccion });
+    }
+    setPlanificando(false);
+    avisar(dias.length > 0 ? 'Progresión guardada' : 'Sin cambios en la progresión', 'success');
+  };
 
   const semanasMarcadas = useMemo(
     () => new Set(ejerciciosDelBloque.flatMap(({ we }) => semanasConCambios(we))),
@@ -1136,6 +1159,24 @@ function MesoExercisesTabs({
           </div>
   );
 
+  if (planificando) {
+    return (
+      <PlanificadorProgresion
+        dias={gruposBase.map(g => ({ clave: claveGrupo(g), name: g.name, dayIndex: g.dayIndex, workoutIds: g.workoutIds, exercises: g.exercises }))}
+        vueltas={vueltas}
+        meso={meso}
+        cicloDias={cicloDias}
+        logs={logs}
+        semanaActual={semanaActual}
+        nombreDe={nombreDe}
+        grupoDe={grupoDe}
+        avisosDe={avisosDe}
+        onCancelar={() => setPlanificando(false)}
+        onAceptar={aceptarPlanificacion}
+      />
+    );
+  }
+
   return (
     <div className="space-y-4">
       <BarraDeSemanas
@@ -1154,6 +1195,7 @@ function MesoExercisesTabs({
         eventos={eventos}
         onEvento={onEvento}
         onProgresiones={() => setProgresiones(true)}
+        onPlanificar={() => setPlanificando(true)}
         onGuardarPlantilla={onGuardarPlantilla}
         revisiones={revisiones}
         avisos={avisos}

@@ -17,6 +17,8 @@ import { useEstable } from '../../hooks/useEstable';
 import { SetInput } from './setInput';
 import ExerciseCard from './ExerciseCard';
 import ExerciseCloseCard from './ExerciseCloseCard';
+import { ListaDeNovedades } from './NovedadesDeSemana';
+import type { NovedadesDeLaSesion } from '../../utils/planificadorProgresion';
 
 export interface SessionCelebration {
   isFirstEver: boolean;
@@ -60,6 +62,10 @@ interface Props {
   setEditorTargetRef?: (el: HTMLElement | null) => void;
   firstSetRowTargetRef?: (el: HTMLElement | null) => void;
   onMarkActionDone: () => void;
+  /** Cambios que trae esta sesión respecto a la semana anterior. `leido`
+   *  null = aún no ha visto el aviso (se abre al entrar). */
+  avisoSesion?: { datos: NovedadesDeLaSesion; semana: number; leido: boolean | null } | null;
+  onAvisoSesion?: (leido: boolean) => void;
 }
 
 /**
@@ -76,6 +82,7 @@ export default function WorkoutSessionPlayer({
   sessionStartedAt, completedDurationSeg,
   celebration, dismissCelebration, cerrarPlayer, sameDayCardio,
   videoTargetRef, setEditorTargetRef, firstSetRowTargetRef, onMarkActionDone,
+  avisoSesion, onAvisoSesion,
 }: Props) {
   const orderedExercises = activeWorkout.exercises.slice().sort((a, b) => a.order - b.order);
   const doneSetsTotal = playerSets.flat().filter(s => s.done).length;
@@ -406,6 +413,7 @@ export default function WorkoutSessionPlayer({
         videoTargetRef={exIdx === 0 ? videoTargetRef : undefined}
         setEditorTargetRef={exIdx === 0 ? setEditorTargetRef : undefined}
         firstSetRowTargetRef={exIdx === 0 ? firstSetRowTargetRef : undefined}
+        cambios={avisoSesion?.datos.porEjercicio[exIdx]}
       />
     );
   });
@@ -465,6 +473,26 @@ export default function WorkoutSessionPlayer({
         icon="touch_app"
         text="Marca el círculo al terminar cada serie — es lo que usa tu coach para progresarte."
       />
+
+      {avisoSesion && onAvisoSesion && !isEditingCompleted && (
+        <Dialog
+          open={avisoSesion.leido === null}
+          onClose={() => onAvisoSesion(false)}
+          size="s"
+          title="Cambios en esta sesión"
+          footer={<Button icon="done_all" fullWidth onClick={() => onAvisoSesion(true)}>Entendido</Button>}
+        >
+          <div className="space-y-3">
+            <p className="font-sans text-label text-ink-2">
+              Semana {avisoSesion.semana}. Tu entrenador ha cambiado esto respecto a la semana pasada:
+            </p>
+            <ListaDeNovedades novedades={avisoSesion.datos.novedades} sinDia />
+            {avisoSesion.datos.porEjercicio.some(c => c.length > 0) && (
+              <p className="font-sans text-caption text-ink-3">Los ejercicios que cambian llevan la marca «Nuevo».</p>
+            )}
+          </div>
+        </Dialog>
+      )}
 
       <Pager value={pageIdx} onChange={setPageIdx} label="Ejercicios de la sesión" dots="none">
         {pages}

@@ -43,6 +43,8 @@ interface Props {
   eventos: Record<string, EventoDeSemana>;
   onEvento: (semana: number, evento: EventoDeSemana | undefined) => void;
   onProgresiones: () => void;
+  /** Abre «Planificar progresión» (unos pocos ejercicios, semana a semana). */
+  onPlanificar?: () => void;
   onGuardarPlantilla?: () => void;
   avisos: Record<number, AvisoDeSemana[]>;
   /** Cuestionarios puntuales que caen en cada semana (revisión de semana N, mediciones…). */
@@ -99,6 +101,9 @@ export default function BarraDeSemanas(p: Props) {
           <div className="ml-auto flex flex-wrap items-center justify-end gap-2 [&_button]:whitespace-nowrap">
             {p.puedeDeshacer && (
               <Button size="s" variant="ghost" icon="undo" onClick={p.onDeshacer}>Deshacer</Button>
+            )}
+            {p.onPlanificar && (
+              <Button size="s" variant="secondary" icon="tune" onClick={p.onPlanificar}>Planificar progresión</Button>
             )}
             <Button size="s" variant="ghost" icon="trending_up" onClick={p.onProgresiones}>Progresiones</Button>
             <Button size="s" variant="ghost" icon="swap_horiz" onClick={p.onComparar}>Comparar</Button>

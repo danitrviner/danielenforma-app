@@ -32,6 +32,9 @@ interface Props {
   videoTargetRef?: (el: HTMLElement | null) => void;
   setEditorTargetRef?: (el: HTMLElement | null) => void;
   firstSetRowTargetRef?: (el: HTMLElement | null) => void;
+  /** Qué ha cambiado el coach en este ejercicio respecto a la semana pasada
+   *  ("3 → 4 series", "RIR 2 → 1"). Vacío o ausente = nada nuevo. */
+  cambios?: string[];
   /** Sin `@types/react` en el repo, TS no excluye `key` por su cuenta (ver Chip.tsx). */
   key?: React.Key;
 }
@@ -53,7 +56,7 @@ export default React.memo(function ExerciseCard({
   we, exIdx, ex, exSets, prevEntry, personalNote, isVideoOpen, onToggleVideo, onOpenHistory,
   onUpdateSet, onMarkDone, onAddRow, noteValue, onNoteChange,
   restTimer, onSkipRest, onAddRestSeconds,
-  videoTargetRef, setEditorTargetRef, firstSetRowTargetRef,
+  videoTargetRef, setEditorTargetRef, firstSetRowTargetRef, cambios,
 }: Props) {
   const idNota = React.useId();
   const motivoMarcado = motivoDeLaNota(noteValue);
@@ -89,6 +92,11 @@ export default React.memo(function ExerciseCard({
         <div className="flex-1 min-w-0">
           <p className={`font-display ${nombreSizeClass} font-black uppercase tracking-tight text-ink flex items-center gap-2 flex-wrap`}>
             {nombreEjercicio}
+            {cambios && cambios.length > 0 && (
+              <span className="inline-flex items-center text-caption font-mono font-bold uppercase px-2 rounded-control bg-accent text-on-accent flex-shrink-0">
+                Nuevo
+              </span>
+            )}
             {we.technique && (
               <span className={`inline-flex items-center gap-1 text-caption font-mono font-bold uppercase px-2 rounded-control border flex-shrink-0 ${TECHNIQUE_COLOR[we.technique]}`}>
                 {TECHNIQUE_EMOJI[we.technique]} {TECHNIQUE_LABEL[we.technique]}
@@ -144,6 +152,15 @@ export default React.memo(function ExerciseCard({
           </span>
         </div>
       </div>
+
+      {cambios && cambios.length > 0 && (
+        <div className="flex items-start gap-2 px-4 py-2 bg-accent/6 border-b border-accent-line">
+          <Icon name="event_note" size="s" className="text-accent-ink mt-0.5" />
+          <p className="font-sans text-label text-ink">
+            <span className="font-bold text-accent-ink">Cambia esta semana: </span>{cambios.join(' · ')}
+          </p>
+        </div>
+      )}
 
       {isVideoOpen && ex?.videoUrl && <ExerciseVideoPlayer videoUrl={ex.videoUrl} />}
 

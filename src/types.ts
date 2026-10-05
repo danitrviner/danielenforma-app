@@ -664,6 +664,10 @@ export interface WorkoutLog {
    *  inicio no hay nada que restar, y se prefiere omitir el dato a
    *  inventarlo. Al EDITAR una sesión ya completada no se recalcula. */
   duracionSeg?: number;
+  /** Si la sesión traía cambios programados por el coach (otra serie, otro
+   *  RIR, la descarga…): true = el atleta pulsó «Entendido» en el aviso al
+   *  empezar; false = lo cerró sin leerlo. Ausente = no había nada que avisar. */
+  novedadesVistas?: boolean;
 }
 
 export interface WorkoutAssignment {
@@ -1909,6 +1913,11 @@ export interface Mesocycle {
   /** Algo del cliente que cae esa semana de ciclo (vacaciones, viaje,
    *  competición). El atleta ve la nota en sus novedades. */
   eventosSemana?: Record<string, EventoDeSemana>;
+  /** Ejercicios que el coach eligió para planificar su progresión semana a
+   *  semana («Planificar progresión»): `d<dayIndex>::<exerciseId>` (o
+   *  `n:<nombre del día>::<exerciseId>` en rutinas sin `dayIndex`). Se
+   *  recuerdan para que la próxima vez ya salgan marcados. */
+  ejerciciosClave?: string[];
   /**
    * Tipo de fase de entreno (Roadmap → Calendario, coach): decide el color/
    * icono del bloque en los 3 niveles del calendario. `undefined` = el coach

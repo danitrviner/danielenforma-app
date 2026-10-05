@@ -29,35 +29,44 @@ export default function NovedadesDeSemana({ novedades, clave, semana }: { noveda
         <p className="font-sans font-bold text-body-s text-ink">Novedades de esta semana</p>
         <span className="font-mono text-caption text-ink-3">Semana {semana}</span>
       </div>
-      <ul className="space-y-1.5">
-        {novedades.descarga && (
-          <li className="font-sans text-label text-ink-2">
-            <span className="font-bold text-info">Semana de descarga.</span> Haces la mitad de series para recuperar. Cada serie, igual de bien hecha.
-          </li>
-        )}
-        {novedades.test && (
-          <li className="font-sans text-label text-ink-2">
-            <span className="font-bold text-warning">Semana de test.</span> En los ejercicios marcados AMRAP, la última serie va a todas las repeticiones que puedas con buena técnica. Con eso ajustamos tus cargas.
-          </li>
-        )}
-        {novedades.evento && (
-          <li className="font-sans text-label text-ink-2">
-            <span className="font-bold text-ink">{TITULO_EVENTO[novedades.evento.tipo]}.</span>{novedades.evento.nota ? ` ${novedades.evento.nota}` : ''}
-          </li>
-        )}
-        {novedades.vuelveElVolumen && (
-          <li className="font-sans text-label text-ink-2">
-            <span className="font-bold text-ink">Vuelves al volumen normal</span> después de la descarga.
-          </li>
-        )}
-        {novedades.cambios.map((c, i) => (
-          <li key={i} className="font-sans text-label text-ink-2">
-            <span className="font-bold text-ink">{c.ejercicio}</span>
-            <span className="text-ink-3"> · {c.dia}</span>: {c.cambios.join(' · ')}
-          </li>
-        ))}
-      </ul>
+      <ListaDeNovedades novedades={novedades} />
       <Button size="s" variant="ghost" icon="done_all" onClick={cerrar}>Entendido</Button>
     </section>
+  );
+}
+
+/** Las líneas de novedades (descarga, test, evento, cambios por ejercicio):
+ *  las usa el aviso de la semana y el de la sesión. `sinDia` quita el «· Día»
+ *  cuando todos los ejercicios son de la misma sesión. */
+export function ListaDeNovedades({ novedades, sinDia = false }: { novedades: Novedades; sinDia?: boolean }) {
+  return (
+    <ul className="space-y-1.5">
+      {novedades.descarga && (
+        <li className="font-sans text-label text-ink-2">
+          <span className="font-bold text-info">Semana de descarga.</span> Haces la mitad de series para recuperar. Cada serie, igual de bien hecha.
+        </li>
+      )}
+      {novedades.test && (
+        <li className="font-sans text-label text-ink-2">
+          <span className="font-bold text-warning">Semana de test.</span> En los ejercicios marcados AMRAP, la última serie va a todas las repeticiones que puedas con buena técnica. Con eso ajustamos tus cargas.
+        </li>
+      )}
+      {novedades.evento && (
+        <li className="font-sans text-label text-ink-2">
+          <span className="font-bold text-ink">{TITULO_EVENTO[novedades.evento.tipo]}.</span>{novedades.evento.nota ? ` ${novedades.evento.nota}` : ''}
+        </li>
+      )}
+      {novedades.vuelveElVolumen && (
+        <li className="font-sans text-label text-ink-2">
+          <span className="font-bold text-ink">Vuelves al volumen normal</span> después de la descarga.
+        </li>
+      )}
+      {novedades.cambios.map((c, i) => (
+        <li key={i} className="font-sans text-label text-ink-2">
+          <span className="font-bold text-ink">{c.ejercicio}</span>
+          {!sinDia && <span className="text-ink-3"> · {c.dia}</span>}: {c.cambios.join(' · ')}
+        </li>
+      ))}
+    </ul>
   );
 }

@@ -128,6 +128,12 @@ const AsignadosHarness = import.meta.env.DEV
   ? pantallaDiferida('AsignadosDevHarness', () => import('./components/AsignadosDevHarness'))
   : null;
 
+// Banco de pruebas de «Planificar progresión» (Mesociclo › Ejercicios) y del
+// aviso de cambios al empezar la sesión (ruta /dev/progresion).
+const ProgresionHarness = import.meta.env.DEV
+  ? pantallaDiferida('ProgresionDevHarness', () => import('./components/mesociclo/ProgresionDevHarness'))
+  : null;
+
 /* La pantalla de espera de la app, con marca. Existe como componente y no como
    un `<div className="min-h-screen bg-bg" />` suelto por un motivo concreto:
    ese div es NEGRO Y VACÍO, exactamente igual que una app colgada. Cuando un
@@ -416,7 +422,9 @@ function AppContent() {
     // aterriza en la pantalla por defecto del rol.
     const seg = location.pathname.split('/')[1];
     const validSegments = coachRole ? COACH_PATH_SEGMENTS : ATHLETE_PATH_SEGMENTS;
-    if (!validSegments.includes(seg)) {
+    // Los bancos de pruebas (/dev/*) se respetan en desarrollo aunque haya
+    // sesión abierta: si no, solo se podían ver con la sesión cerrada.
+    if (!validSegments.includes(seg) && !(import.meta.env.DEV && seg === 'dev')) {
       navigate(coachRole ? '/clients' : '/home', { replace: true });
     }
     // Check-ins ya no bloquean el splash de carga — antes el coach esperaba
@@ -755,6 +763,14 @@ function AppContent() {
     return (
       <Suspense fallback={<div className="min-h-screen bg-bg" />}>
         <RevisionCoachHarness />
+      </Suspense>
+    );
+  }
+
+  if (ProgresionHarness && location.pathname === '/dev/progresion') {
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-bg" />}>
+        <ProgresionHarness />
       </Suspense>
     );
   }
