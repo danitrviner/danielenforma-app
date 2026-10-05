@@ -109,7 +109,6 @@ export default function ComparadorFotos({ photos, athleteEmail, bodyweightLogs =
             pesoEnFecha(bodyweightLogs, par.antes.date),
             pesoEnFecha(bodyweightLogs, par.ahora.date),
           )}
-          height={340}
         />
       )}
     </div>

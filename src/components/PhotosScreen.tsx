@@ -290,7 +290,6 @@ export default function PhotosScreen({ profile }: Props) {
                 <PhotoCompareCurtain
                   antes={{ url: comparePair[0].url, date: comparePair[0].date }}
                   ahora={{ url: comparePair[1].url, date: comparePair[1].date }}
-                  height={320}
                 />
                 <p className="font-sans text-caption text-ink-2 mt-2 text-center">
                   Arrastra para comparar · toca una foto para cambiar la selección

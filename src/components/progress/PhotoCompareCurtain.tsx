@@ -19,7 +19,6 @@ type Props = {
   /** Pastilla superior izquierda: "11 SEMANAS · −3,8 KG". Opcional — se omite
    * si no hay suficientes datos para calcularla. */
   badge?: string;
-  height?: number;
   className?: string;
 };
 
@@ -27,7 +26,7 @@ function fmtDate(d: string): string {
   return new Date(d + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }).toUpperCase();
 }
 
-export default function PhotoCompareCurtain({ antes, ahora, badge, height = 420, className = '' }: Props) {
+export default function PhotoCompareCurtain({ antes, ahora, badge, className = '' }: Props) {
   const [pos, setPos] = React.useState(50);
   const arrastrando = React.useRef(false);
   const marcoRef = React.useRef<HTMLDivElement>(null);
@@ -62,18 +61,19 @@ export default function PhotoCompareCurtain({ antes, ahora, badge, height = 420,
       aria-valuenow={Math.round(pos)}
       aria-valuemin={0}
       aria-valuemax={100}
-      className={`relative touch-pan-y select-none overflow-hidden rounded-surface bg-field cursor-ew-resize ${className}`}
-      style={{ height }}
+      className={`relative touch-pan-y select-none overflow-hidden rounded-surface bg-field cursor-ew-resize min-h-40 ${className}`}
     >
-      {/* Línea base: fondo a pantalla completa */}
-      <img src={antes.url} alt="Foto de antes" draggable={false} className="absolute inset-0 h-full w-full object-cover object-top" />
+      {/* Línea base: fondo y, al ir en flujo, la que da la altura al marco
+          (la proporción de la propia foto, tope 75vh). Con alto fijo y
+          `object-cover` se recortaban cabeza y pies. */}
+      <img src={antes.url} alt="Foto de antes" draggable={false} className="block h-auto max-h-[75vh] w-full object-contain" />
       <span className="absolute bottom-3 right-3 rounded-full bg-bg/70 px-3 py-1 font-mono text-caption text-ink-2">
         {fmtDate(antes.date)}
       </span>
 
       {/* Más reciente: recortada al ancho de la manija */}
       <div className="absolute inset-0 overflow-hidden" style={{ clipPath: `inset(0 ${100 - pos}% 0 0)` }}>
-        <img src={ahora.url} alt="Foto de ahora" draggable={false} className="h-full w-full object-cover object-top" />
+        <img src={ahora.url} alt="Foto de ahora" draggable={false} className="h-full w-full object-contain" />
         <span className="absolute bottom-3 left-3 rounded-full bg-bg/70 px-3 py-1 font-mono text-caption text-ink">
           {fmtDate(ahora.date)}
         </span>

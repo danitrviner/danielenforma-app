@@ -118,7 +118,6 @@ export default function ClientBodyPanel({
                 antes={baseline}
                 ahora={latest}
                 badge={`${Math.max(1, Math.round((new Date(latest.date).getTime() - new Date(baseline.date).getTime()) / (7 * 86_400_000)))} SEMANAS`}
-                height={280}
               />
             )}
             {viewPhotos.length > 2 && (
