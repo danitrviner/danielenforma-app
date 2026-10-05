@@ -754,7 +754,16 @@ export default function NutritionPlansScreen({
           por debajo de la cabecera pero por encima de las pestañas del hub.
           El fallback 0px conserva el comportamiento cuando se usa suelto. */}
       <div className="bg-bg border-b border-hairline p-4 sticky top-[var(--hub-sticky-top,0px)] z-[var(--z-sticky)]">
-        <p className="font-mono text-caption text-ink-2 uppercase tracking-wider mb-3">Distribución en vivo</p>
+        <div className="flex items-baseline justify-between mb-3">
+          <p className="font-mono text-caption text-ink-2 uppercase tracking-wider">Distribución en vivo</p>
+          <p className="font-mono text-caption text-ink-2 uppercase tracking-wider">
+            Total{' '}
+            <span className="font-bold text-ink">
+              {fmtQty(BUDGET_CATS.reduce((s, c) => s + placed[c], 0))}/{fmtQty(BUDGET_CATS.reduce((s, c) => s + form.budget[c], 0))}
+            </span>
+            {' '}intercambios
+          </p>
+        </div>
         <div className="grid grid-cols-3 gap-x-2 gap-y-3">
           {BUDGET_CATS.map(cat => {
             const b = form.budget[cat];

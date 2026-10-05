@@ -272,7 +272,7 @@ export default function ClientDietsPanel({
                       )}
                     </div>
                     <p className="font-mono text-caption text-ink-2">
-                      {dt.meals.length} comida{dt.meals.length !== 1 ? 's' : ''} · {dt.meals.reduce((s, m) => s + m.items.reduce((si, it) => si + it.quantity, 0), 0)} intercambios
+                      {dt.meals.length} comida{dt.meals.length !== 1 ? 's' : ''} · {Object.values(dt.budget ?? {}).reduce((s, n) => s + (Number(n) || 0), 0)} intercambios
                     </p>
                   </div>
 
