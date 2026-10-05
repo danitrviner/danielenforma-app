@@ -20,6 +20,7 @@ import { hoyIsoLocal } from '../../utils/trainingWeek';
 import { useModoPresentacion } from '../../hooks/useModoPresentacion';
 import { HubTab } from '../ClientHub';
 import RevisionCabecera from './RevisionCabecera';
+import BodyweightPanel from '../BodyweightPanel';
 import SelectorPeriodoRevision from './SelectorPeriodoRevision';
 import BloquePatrones from './BloquePatrones';
 import BloqueMejoresEjercicios from './BloqueMejoresEjercicios';
@@ -266,6 +267,12 @@ export default function ClientRevisionPanel({
         faseNutricional={faseActiva?.name ?? null}
         pesoObjetivo={athlete.targetWeight}
       />
+
+      {/* Peso corporal arriba del todo, justo bajo la cabecera: la misma
+          gráfica y registro que en Atleta › Cuerpo. */}
+      <div className="bg-surface border border-hairline rounded-surface p-5">
+        <BodyweightPanel athleteEmail={athlete.email} readOnly />
+      </div>
 
       <Secciones presentando={presentando}>
         <Seccion titulo="Cómo va cada patrón">
