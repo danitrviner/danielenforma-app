@@ -40,7 +40,7 @@ export { estadoDeConexion, suscribirEstadoDeConexion };
 // Movido a src/db/profiles.ts (2026-07-18) — reexportado aquí para que ningún
 // import existente (`from '../dbService'`) tenga que cambiar.
 export {
-  getOrCreateUserProfile, getAllUserProfiles, getAllUsersAdmin, updateUserProfile,
+  getOrCreateUserProfile, getAllUserProfiles, getAllUserProfilesOrThrow, getAllUsersAdmin, updateUserProfile,
   getCheckIns, addWeightCheckIn, submitCoachFeedback,
   updateCheckIn, deleteCheckIn, getUserProfileByEmail,
 } from './db/profiles';

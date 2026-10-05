@@ -13,7 +13,7 @@
 
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { getAllUserProfiles, getCrmContactos } from '../../../dbService';
+import { getAllUserProfilesOrThrow, getCrmContactos } from '../../../dbService';
 import type { UserProfile } from '../../../types';
 import { partirPorArchivado } from '../lib/archivado';
 import type { Cliente, CrmContacto, EstadoCrm } from '../types';
@@ -80,7 +80,7 @@ export interface UseClientesResult {
 export function useClientes(): UseClientesResult {
   const perfilesQ = useQuery({
     queryKey: ['userProfiles'],
-    queryFn: getAllUserProfiles,
+    queryFn: getAllUserProfilesOrThrow,
   });
   const contactosQ = useQuery({
     queryKey: ['crmContactos'],

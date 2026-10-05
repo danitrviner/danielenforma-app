@@ -16,7 +16,7 @@ import React, { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { AiProposal, AiProposalPayload } from '../types';
-import { getPendingAiProposals, getAllUserProfiles } from '../dbService';
+import { getPendingAiProposals, getAllUserProfilesOrThrow } from '../dbService';
 import { agruparPropuestasPorAtleta } from '../utils/ordenPropuestas';
 import { OPEN_AI_PANEL_EVENT, OpenAiPanelDetail } from '../ai/events';
 import ProposalCard from './ai/ProposalCard';
@@ -34,7 +34,7 @@ export default function CoachProposalsScreen() {
   });
   const { data: perfiles = [] } = useQuery({
     queryKey: ['userProfiles'],
-    queryFn: getAllUserProfiles,
+    queryFn: getAllUserProfilesOrThrow,
   });
 
   const acciones = useProposalActions({

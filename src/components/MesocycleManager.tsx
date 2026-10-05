@@ -8,7 +8,7 @@ import {
 } from '../types';
 import {
   getMesocycles, createMesocycle, updateMesocycle, deleteMesocycle,
-  getAllUserProfiles, getExercises, getWorkouts, updateWorkout, updateWorkoutStrict,
+  getAllUserProfilesOrThrow, getExercises, getWorkouts, updateWorkout, updateWorkoutStrict,
   createWorkoutStrict, createWorkoutAssignmentStrict,
   deleteWorkoutsByMesocycleIdStrict, borrarAsignacionesReprogramables,
   getUserProfileByEmail, migratePrimaryFocusToMuscleGroup,
@@ -1911,7 +1911,7 @@ export default function MesocycleManager({
   // Only load the full athlete list in standalone mode (no athleteEmail prop)
   const { data: allProfiles = [] } = useQuery({
     queryKey: ['userProfiles'],
-    queryFn: getAllUserProfiles,
+    queryFn: getAllUserProfilesOrThrow,
     enabled: !athleteEmail,
   });
   const athletes = useMemo(() => atletasActivos(allProfiles), [allProfiles]);

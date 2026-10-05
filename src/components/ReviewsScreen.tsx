@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { WeightCheckIn, QuestionnaireResponse, Questionnaire } from '../types';
-import { getAllUserProfiles, submitCoachFeedback, getQuestionnairesByCoach, getResponsesByQuestionnaireIds, getQuickReplies, saveQuickReplies, marcarRespuestaVista } from '../dbService';
+import { getAllUserProfilesOrThrow, submitCoachFeedback, getQuestionnairesByCoach, getResponsesByQuestionnaireIds, getQuickReplies, saveQuickReplies, marcarRespuestaVista } from '../dbService';
 import { usePendingReviews } from '../hooks/usePendingReviews';
 import { useToast } from '../hooks/useToast';
 import { mensajeDeErrorFirestore } from '../utils/erroresFirestore';
@@ -32,7 +32,7 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, co
   // Shared 'userProfiles' cache key (same as CommandPalette/MesocycleManager).
   const { data: allProfiles = [] } = useQuery({
     queryKey: ['userProfiles'],
-    queryFn: getAllUserProfiles,
+    queryFn: getAllUserProfilesOrThrow,
   });
   const athletes = useMemo(() => atletasActivos(allProfiles), [allProfiles]);
 

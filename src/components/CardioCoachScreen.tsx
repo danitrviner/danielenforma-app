@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { AthleteCardioProfile, CardioZones, HrTest } from '../types';
 import {
-  getAllUserProfiles, getCardioProfile, saveCardioProfile, defaultZonesFromAge,
+  getAllUserProfilesOrThrow, getCardioProfile, saveCardioProfile, defaultZonesFromAge,
   getAllPendingHrTests, updateHrTest, createNotificationDeduped,
 } from '../dbService';
 import { ZONE_ORDER, ZONE_LABEL } from '../utils/cardioZones';
@@ -43,7 +43,7 @@ export default function CardioCoachScreen({ coachEmail }: Props) {
 // ─── ZONAS POR ATLETA ───────────────────────────────────────────────────────
 
 function ZonesTab({ coachEmail }: { coachEmail: string }) {
-  const { data: profiles = [], isPending } = useQuery({ queryKey: ['userProfiles'], queryFn: getAllUserProfiles });
+  const { data: profiles = [], isPending } = useQuery({ queryKey: ['userProfiles'], queryFn: getAllUserProfilesOrThrow });
   const [selected, setSelected] = useState<string | null>(null);
   const athletes = atletasActivos(profiles).filter(p => p.role === 'client');
 
@@ -131,7 +131,7 @@ function AthleteZonesEditor({ athleteEmail, coachEmail, onBack }: { athleteEmail
 function PendingTestsTab({ coachEmail }: { coachEmail: string }) {
   const queryClient = useQueryClient();
   const { data: tests = [], isPending } = useQuery({ queryKey: ['pendingHrTests'], queryFn: getAllPendingHrTests });
-  const { data: profiles = [] } = useQuery({ queryKey: ['userProfiles'], queryFn: getAllUserProfiles });
+  const { data: profiles = [] } = useQuery({ queryKey: ['userProfiles'], queryFn: getAllUserProfilesOrThrow });
 
   const approve = async (t: HrTest) => {
     await updateHrTest(t.id, { approvedByCoach: true });
@@ -200,7 +200,7 @@ function PendingTestsTab({ coachEmail }: { coachEmail: string }) {
 // dentro de su ficha.
 
 function PrescriptionTab() {
-  const { data: profiles = [], isPending } = useQuery({ queryKey: ['userProfiles'], queryFn: getAllUserProfiles });
+  const { data: profiles = [], isPending } = useQuery({ queryKey: ['userProfiles'], queryFn: getAllUserProfilesOrThrow });
   const athletes = atletasActivos(profiles).filter(p => p.role === 'client');
   const [athleteEmail, setAthleteEmail] = useState('');
 

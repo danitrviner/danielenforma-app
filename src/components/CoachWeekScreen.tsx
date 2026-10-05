@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { Mesocycle, WorkoutAssignment, NutritionProgram } from '../types';
 import {
-  getAllUserProfiles, getMesocyclesForAthletes, getTasksForAthletes, getWorkoutAssignmentsForAthletes,
+  getAllUserProfilesOrThrow, getMesocyclesForAthletes, getTasksForAthletes, getWorkoutAssignmentsForAthletes,
   getNutritionProgramsForAthletes, getWorkoutsByIds, getExercises, getCoachTasksVencidas,
 } from '../dbService';
 import { atletasActivos } from '../utils/atletas';
@@ -36,7 +36,7 @@ export default function CoachWeekScreen({ coachId: _coachId }: Props) {
 
   const { data: allProfiles = [], isPending: loadingProfiles } = useQuery({
     queryKey: ['userProfiles'],
-    queryFn: getAllUserProfiles,
+    queryFn: getAllUserProfilesOrThrow,
   });
   const athletes = React.useMemo(() => atletasActivos(allProfiles).filter(p => p.role !== 'coach'), [allProfiles]);
   const athleteEmails = React.useMemo(() => athletes.map(a => a.email), [athletes]);

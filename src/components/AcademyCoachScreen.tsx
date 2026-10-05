@@ -4,7 +4,7 @@ import { AcademyCourse, AcademyLesson, AcademyCategory, AcademyAccess, UnlockRul
 import {
   getAllCourses, createCourse, updateCourse, deleteCourse,
   getAllLessons, createLesson, updateLesson, deleteLesson,
-  getAllUserProfiles, getAllAcademyAccess, setAcademyAccess, createNotificationDeduped,
+  getAllUserProfilesOrThrow, getAllAcademyAccess, setAcademyAccess, createNotificationDeduped,
 } from '../dbService';
 import { atletasActivos } from '../utils/atletas';
 import { subirArchivo } from '../almacenamiento';
@@ -329,7 +329,7 @@ function LessonsTab() {
 
 function AccessTab({ coachEmail }: { coachEmail: string }) {
   const queryClient = useQueryClient();
-  const { data: profiles = [], isPending: loadingProfiles } = useQuery({ queryKey: ['userProfiles'], queryFn: getAllUserProfiles });
+  const { data: profiles = [], isPending: loadingProfiles } = useQuery({ queryKey: ['userProfiles'], queryFn: getAllUserProfilesOrThrow });
   const { data: accessList = [], isPending: loadingAccess } = useQuery({ queryKey: ['academyAccessAll'], queryFn: getAllAcademyAccess });
   const [selected, setSelected] = useState<Set<string>>(new Set());
 

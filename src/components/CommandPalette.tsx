@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { UserProfile } from '../types';
-import { getAllUserProfiles } from '../dbService';
+import { getAllUserProfilesOrThrow } from '../dbService';
 import { atletasActivos } from '../utils/atletas';
 import type { NavTab } from '../App';
 import { Avatar, Icon, ListRow, EmptyState } from './ui';
@@ -41,7 +41,7 @@ export default function CommandPalette({ onNavigateTab }: Props) {
   // dedup app-wide, plus shares the fetch with ClientsScreen/ReviewsScreen.
   const { data: allProfiles = [], isPending: loadingAthletes } = useQuery({
     queryKey: ['userProfiles'],
-    queryFn: getAllUserProfiles,
+    queryFn: getAllUserProfilesOrThrow,
     enabled: open,
   });
   const athletes = useMemo(() => atletasActivos(allProfiles), [allProfiles]);

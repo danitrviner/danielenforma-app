@@ -226,6 +226,34 @@ export async function getOrCreateUserProfile(userId: string, email: string, disp
  * sabe pintarla.
  */
 export async function getAllUserProfiles(): Promise<UserProfile[]> {
+  return leerPerfiles(false);
+}
+
+/**
+ * Lo mismo que `getAllUserProfiles`, pero un fallo de Firestore LANZA en vez de
+ * devolver `[]`. Es la que va de `queryFn` en la consulta `['userProfiles']`.
+ *
+ * Por qué (05-10): la lectura falló una vez, devolvió `[]` como si fuera una
+ * respuesta buena, React Query la guardó como éxito y la persistencia la dejó
+ * en localStorage. El coach abría la app y veía «0 atletas · No hay atletas
+ * registrados todavía» con los 19 perfiles intactos en Firestore, y recargar
+ * no lo arreglaba porque volvía a arrancar de esa caché. Lanzando, la consulta
+ * queda en error: no se persiste, se reintenta, y si ya había una lista buena
+ * React Query la conserva en vez de pisarla con un cero.
+ *
+ * Las llamadas directas (herramientas del asistente, propuestas) siguen con
+ * `getAllUserProfiles`, que no lanza.
+ */
+export async function getAllUserProfilesOrThrow(): Promise<UserProfile[]> {
+  return leerPerfiles(true);
+}
+
+async function leerPerfiles(estricto: boolean): Promise<UserProfile[]> {
+  // En modo local la lista sale de localStorage, donde el coach solo tiene su
+  // propio perfil: un `[]` que no dice nada de cuántos atletas hay.
+  if (forceLocalOnly && estricto) {
+    throw new Error('Sin conexión con Firestore: no se pudo leer la lista de atletas');
+  }
   if (forceLocalOnly) {
     const profiles: UserProfile[] = [];
     try {
@@ -271,6 +299,7 @@ export async function getAllUserProfiles(): Promise<UserProfile[]> {
   } catch (err) {
     console.warn('Failed to fetch user profiles from Firestore:', err);
     setLocalBypassMode(true, err);
+    if (estricto) throw err;
     return [];
   }
 }

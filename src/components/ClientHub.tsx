@@ -35,7 +35,7 @@ import {
   getOnboarding,
   getNutritionProgram, saveNutritionProgram, computeActivePhase, computePhaseStartDate, deleteNutritionProgram,
   getOnboardingTemplate, getMesocycles, getCoachReportsForAthlete, getAiProposalsForAthlete,
-  getWeeklyMenusForAthlete, getMenuCompletionLogsForAthlete, getAllUserProfiles,
+  getWeeklyMenusForAthlete, getMenuCompletionLogsForAthlete, getAllUserProfilesOrThrow,
   getCoachClientTasks,
 } from '../dbService';
 /* 06-7. El Hub es la ruta más pesada del coach: ~1 MB, y buena parte es
@@ -157,7 +157,7 @@ export default function ClientHub({
   const [switcherSearch, setSwitcherSearch] = useState('');
   const { data: allProfiles = [] } = useQuery({
     queryKey: ['userProfiles'],
-    queryFn: getAllUserProfiles,
+    queryFn: getAllUserProfilesOrThrow,
     enabled: switcherOpen,
   });
   const switcherAthletes = useMemo(() => {

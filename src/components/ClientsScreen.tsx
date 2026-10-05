@@ -3,7 +3,7 @@ import { useQueries, useQuery, useIsFetching, useIsMutating } from '@tanstack/re
 import { useParams, useNavigate } from 'react-router-dom';
 import { UserProfile, WeightCheckIn, WorkoutAssignment, WorkoutLog } from '../types';
 import {
-  getAllUserProfiles, createNotificationDeduped, getWorkoutAssignments, getWorkoutLogs,
+  getAllUserProfilesOrThrow, createNotificationDeduped, getWorkoutAssignments, getWorkoutLogs,
   getCoachTasksVencidas,
 } from '../dbService';
 import { avisosActivos, claveDeAviso } from '../utils/avisosDelCoach';
@@ -103,9 +103,11 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
   // las bajas y los anonimizados. `athletes` (abajo) es la vista filtrada
   // que usa el resto de esta pantalla — el coach entrena hoy a esos, no a
   // los de baja ni a los perfiles borrados (ver src/utils/atletas.ts).
-  const { data: allProfiles = [], isPending: loadingAthletes } = useQuery({
+  const {
+    data: allProfiles = [], isPending: loadingAthletes, isError: errorAthletes, refetch: refetchAthletes,
+  } = useQuery({
     queryKey: ['userProfiles'],
-    queryFn: getAllUserProfiles,
+    queryFn: getAllUserProfilesOrThrow,
   });
   const athletes: UserProfile[] = useMemo(() => atletasActivos(allProfiles), [allProfiles]);
   const archivedAthletes = useMemo(
@@ -468,6 +470,14 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
               <Skeleton className="h-11 w-full rounded-control" />
               <Skeleton className="h-11 w-full rounded-control" />
             </div>
+          ) : errorAthletes && allProfiles.length === 0 ? (
+            // Un fallo de lectura no es «no tienes atletas» (05-10).
+            <EmptyState
+              icon="cloud_off"
+              title="No se pudo cargar la lista de atletas."
+              actionLabel="Reintentar"
+              onAction={() => { void refetchAthletes(); }}
+            />
           ) : athletes.length === 0 ? (
             <EmptyState
               icon="group"

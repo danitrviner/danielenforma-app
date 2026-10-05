@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { getPendingInvites, inviteClient, cancelInvite, markInviteJoined, getAllUserProfiles } from '../../../dbService';
+import { getPendingInvites, inviteClient, cancelInvite, markInviteJoined, getAllUserProfilesOrThrow } from '../../../dbService';
 import { mensajeDeErrorFirestore } from '../../../utils/erroresFirestore';
 import { useToast } from '../../../hooks/useToast';
 import { Icon } from '../../../components/ui';
@@ -20,7 +20,7 @@ export default function InvitacionesPendientesPanel() {
     queryFn: getPendingInvites,
   });
   // Comparte caché con ClientsScreen/CommandPalette/etc.
-  const { data: profiles = [] } = useQuery({ queryKey: ['userProfiles'], queryFn: getAllUserProfiles });
+  const { data: profiles = [] } = useQuery({ queryKey: ['userProfiles'], queryFn: getAllUserProfilesOrThrow });
   const joinedEmails = useMemo(
     () => new Set(profiles.map(p => p.email.toLowerCase())),
     [profiles]
