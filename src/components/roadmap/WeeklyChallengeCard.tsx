@@ -58,7 +58,7 @@ export default function WeeklyChallengeCard({ challenge, progress, streak = 0, d
   return (
     <div
       className="rounded-canvas border p-5 flex flex-col gap-3"
-      style={{ backgroundColor: 'var(--color-bg)', borderColor: conAlfa(accent, 20) }}
+      style={{ backgroundColor: 'var(--color-surface)', borderColor: conAlfa(accent, 20) }}
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -130,7 +130,7 @@ export function ChallengePendingCard() {
   return (
     <div
       className="rounded-canvas border p-5 flex flex-col gap-2"
-      style={{ backgroundColor: 'var(--color-bg)', borderColor: 'color-mix(in oklab, var(--color-accent) 20%, transparent)' }}
+      style={{ backgroundColor: 'var(--color-surface)', borderColor: 'color-mix(in oklab, var(--color-accent) 20%, transparent)' }}
     >
       <div className="flex items-center gap-2">
         <Icon name="hourglass_top" size="l" className="animate-pulse" />

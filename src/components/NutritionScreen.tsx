@@ -1975,7 +1975,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
             type="button"
             onClick={() => irAlDia(addDays(viewDate, -1))}
             aria-label="Día anterior"
-            className="flex h-10 w-10 flex-none items-center justify-center rounded-control border border-hairline bg-raised text-ink-2 transition-colors hover:border-accent/40 hover:text-accent-ink"
+            className="flex h-10 w-10 flex-none items-center justify-center rounded-control border border-hairline bg-surface text-ink-2 transition-colors hover:border-accent/40 hover:text-accent-ink"
           >
             <Icon name="chevron_left" size="m" />
           </button>
@@ -1992,7 +1992,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
             onClick={() => irAlDia(addDays(viewDate, 1))}
             disabled={viewDate >= maxFechaFutura}
             aria-label="Día siguiente"
-            className="flex h-10 w-10 flex-none items-center justify-center rounded-control border border-hairline bg-raised text-ink-2 transition-colors hover:border-accent/40 hover:text-accent-ink disabled:opacity-30 disabled:hover:border-hairline disabled:hover:text-ink-2"
+            className="flex h-10 w-10 flex-none items-center justify-center rounded-control border border-hairline bg-surface text-ink-2 transition-colors hover:border-accent/40 hover:text-accent-ink disabled:opacity-30 disabled:hover:border-hairline disabled:hover:text-ink-2"
           >
             <Icon name="chevron_right" size="m" />
           </button>
@@ -2012,7 +2012,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
       {loading ? (
         // 05 · Carga — esqueletos con barrido 1,4 s y stagger 150 ms, nunca
         // spinner ni cifras falsas (handoff).
-        <div className="bg-raised border border-hairline rounded-canvas p-4 space-y-5">
+        <div className="bg-surface border border-hairline rounded-canvas p-4 space-y-5">
           <div className="flex items-end justify-between gap-3">
             <Skeleton className="stagger-child h-9 w-28" style={{ '--i': 0 } as React.CSSProperties} />
             <Skeleton className="stagger-child h-5 w-16" style={{ '--i': 1 } as React.CSSProperties} />
@@ -2039,7 +2039,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
             <button
               type="button"
               onClick={() => setMisDietasOpen(true)}
-              className="w-full flex items-center gap-3 p-3 rounded-control bg-raised border border-hairline hover:border-accent/40 transition-all text-left"
+              className="w-full flex items-center gap-3 p-3 rounded-control bg-surface border border-hairline hover:border-accent/40 transition-all text-left"
             >
               <span className="w-9 h-9 rounded-control bg-accent-bg flex items-center justify-center flex-shrink-0">
                 <Icon name="bookmark" size="s" className="text-accent-ink" />
@@ -2064,7 +2064,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
           {selectedDiet && (
             <React.Fragment key={selectedDiet.id}>
               {/* ── 01 · Tracker del día (F3.8) ─────────────────────────────────── */}
-              <div ref={trackerTargetRef} className="bg-raised border border-hairline rounded-canvas p-4">
+              <div ref={trackerTargetRef} className="bg-surface border border-hairline rounded-canvas p-4">
                 {/* Cabecera de la dieta — antes vivía en una tarjeta aparte junto al
                     cupo diario fijado por el coach; ese cupo se ha quitado del todo
                     (las barras de abajo ya muestran lo mismo) y Dani pidió juntar
@@ -2178,7 +2178,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
               <button
                 type="button"
                 onClick={() => setRepartoSheetOpen(true)}
-                className="self-start flex items-center gap-2 px-3 py-2 rounded-control border bg-raised border-hairline text-ink-2 font-sans text-label font-bold hover:text-accent-ink hover:border-accent/50 transition-colors"
+                className="self-start flex items-center gap-2 px-3 py-2 rounded-control border bg-surface border-hairline text-ink-2 font-sans text-label font-bold hover:text-accent-ink hover:border-accent/50 transition-colors"
               >
                 <Icon name="tune" size="s" />
                 Editar reparto por comida
@@ -2207,7 +2207,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
               {!!dietaPautada
                 && selectedDiet.meals.length > 0
                 && selectedDiet.meals.every(m => m.items.length === 0) && (
-                <div className="bg-raised border border-hairline rounded-surface px-4 py-3.5 flex items-start gap-3">
+                <div className="bg-surface border border-hairline rounded-surface px-4 py-3.5 flex items-start gap-3">
                   <Icon name="info" size="s" style={{ color: 'var(--color-accent-ink)', marginTop: 2, flexShrink: 0 }} />
                   <p className="font-sans text-label text-ink-2 leading-relaxed">
                     {viendoHoy ? 'Tu plan de hoy trae' : 'Este plan trae'} el <b className="text-ink">cupo de intercambios</b>, pero los
@@ -2223,7 +2223,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                   return (
                     <div key={meal.id}
                       ref={mi === 0 ? firstMealRowTargetRef : undefined}
-                      className={`bg-raised rounded-surface overflow-hidden border transition-all ${mealDone ? 'border-accent/40' : 'border-hairline'}`}
+                      className={`bg-surface rounded-surface overflow-hidden border transition-all ${mealDone ? 'border-accent/40' : 'border-hairline'}`}
                     >
                       {/* Meal header */}
                       <div className="px-4 py-3 bg-raised/80 flex items-center justify-between gap-2">
@@ -2594,7 +2594,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
               {(() => {
                 const statusLabel = isDirty ? 'Guardando el día...' : 'Día guardado';
                 return (
-                  <div className="sticky bottom-20 md:bottom-4 flex items-center justify-between gap-3 bg-raised border border-hairline rounded-surface p-3 shadow-e1">
+                  <div className="sticky bottom-20 md:bottom-4 flex items-center justify-between gap-3 bg-surface border border-hairline rounded-surface p-3 shadow-e1">
                     <span className="font-mono text-caption text-ink-2 uppercase tracking-wider pl-1">
                       {statusLabel}
                     </span>

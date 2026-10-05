@@ -34,7 +34,7 @@ export default function RecentAchievements({ achievements }: Props) {
           <div
             key={a.id}
             className="flex-shrink-0 flex flex-col items-center gap-2 w-[84px] rounded-surface border p-3 text-center"
-            style={{ backgroundColor: 'var(--color-bg)', borderColor: conAlfa(a.color, 20) }}
+            style={{ backgroundColor: 'var(--color-surface)', borderColor: conAlfa(a.color, 20) }}
           >
             <Icon
               name={a.icon}

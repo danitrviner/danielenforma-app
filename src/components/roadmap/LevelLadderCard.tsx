@@ -21,7 +21,7 @@ export default function LevelLadderCard({ status }: Props) {
   const { currentLevel, nextLevel, nextLevelCriteria } = status;
 
   return (
-    <div className="rounded-canvas border border-hairline bg-bg p-5 flex flex-col gap-4">
+    <div className="rounded-canvas border border-hairline bg-surface p-5 flex flex-col gap-4">
       <p className="font-mono text-caption uppercase tracking-widest text-ink-2">Tu nivel</p>
 
       <div className="flex items-center gap-3">
