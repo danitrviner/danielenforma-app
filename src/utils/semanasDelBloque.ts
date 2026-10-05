@@ -1,4 +1,4 @@
-import { WorkoutExercise, WeeklyProgressionRule, CambiosDeSemana, WorkoutSetGroup, EventoDeSemana, Mesocycle, QuestionnaireAssignment } from '../types';
+import { WorkoutExercise, WeeklyProgressionRule, CambiosDeSemana, WorkoutSetGroup, WorkoutTechnique, EventoDeSemana, Mesocycle, QuestionnaireAssignment } from '../types';
 import { resolveExerciseForWeek, resolverEjercicioDelMeso, mesocycleWeekNumber } from './progression';
 import { startOfDay, planWeekDueDate, mesocycleEndDate } from './scheduleEngine';
 import { TECHNIQUE_LABEL } from './workoutTechniques';
@@ -80,16 +80,26 @@ export function semanasAlternas(desde: number, vueltas: number): number[] {
 
 const clampRir = (n: number) => Math.max(0, Math.min(5, Math.round(n)));
 
-/** RIR que baja de `desde` a `hasta` repartido por las semanas del bloque que
- *  no son de descarga (en la descarga no se aprieta). Absoluto: el mismo RIR
- *  para todos los ejercicios esa semana. Con bloques, todos los bloques se
- *  mueven lo mismo que el primero, así se conserva la diferencia entre ellos. */
-export function rirDescendente(we: WorkoutExercise, vueltas: number, desde: number, hasta: number, excluir: number[] = []): WeeklyProgressionRule[] | undefined {
+/** El RIR de cada semana cuando baja linealmente de `desde` a `hasta`, repartido
+ *  por las semanas que no están en `excluir` (la descarga no se aprieta). */
+export function rirLineal(vueltas: number, desde: number, hasta: number, excluir: number[] = []): Record<number, number> {
   const semanas = Array.from({ length: vueltas }, (_, i) => i + 1).filter(s => !excluir.includes(s));
+  const out: Record<number, number> = {};
+  semanas.forEach((s, i) => {
+    out[s] = semanas.length === 1 ? hasta : clampRir(desde + ((hasta - desde) * i) / (semanas.length - 1));
+  });
+  return out;
+}
+
+/** RIR concreto en las semanas que se indiquen (`porSemana[semana] = rir`); las
+ *  demás no se tocan. Absoluto: el mismo RIR para todos los ejercicios esa
+ *  semana. Con bloques, todos los bloques se mueven lo mismo que el primero, así
+ *  se conserva la diferencia entre ellos. */
+export function rirPorSemana(we: WorkoutExercise, porSemana: Record<number, number>): WeeklyProgressionRule[] | undefined {
+  const semanas = Object.keys(porSemana).map(Number).sort((a, b) => a - b);
   if (semanas.length === 0) return we.weeklyProgression;
-  const objetivo = (i: number) => semanas.length === 1 ? hasta : clampRir(desde + ((hasta - desde) * i) / (semanas.length - 1));
   return programarEnSemanas(we, semanas, false, (r, s) => {
-    const rir = objetivo(semanas.indexOf(s));
+    const rir = clampRir(porSemana[s]);
     if (r.setGroups && r.setGroups.length > 0) {
       const delta = rir - r.setGroups[0].rir;
       return { ...r, setGroups: r.setGroups.map(g => ({ ...g, rir: clampRir(g.rir + delta) })) };
@@ -98,19 +108,63 @@ export function rirDescendente(we: WorkoutExercise, vueltas: number, desde: numb
   });
 }
 
-/** +1 serie cada `cada` semanas, desde la 1+cada hasta `hasta` (incluida).
- *  Con bloques, la serie va al último (el de volumen, no el top set). */
-export function subirSeries(we: WorkoutExercise, cada: number, hasta: number): WeeklyProgressionRule[] | undefined {
-  const semanas: number[] = [];
-  for (let s = 1 + cada; s <= hasta; s += cada) semanas.push(s);
+/** RIR que baja de `desde` a `hasta` repartido por las semanas del bloque que
+ *  no son de descarga. */
+export function rirDescendente(we: WorkoutExercise, vueltas: number, desde: number, hasta: number, excluir: number[] = []): WeeklyProgressionRule[] | undefined {
+  return rirPorSemana(we, rirLineal(vueltas, desde, hasta, excluir));
+}
+
+/** Series que se SUMAN en las semanas indicadas (`extra[semana] = n`), y se
+ *  acumulan con las anteriores: +1 en la S3, +1 en la S4 y +1 en la S7 deja
+ *  base+1 en la S3, base+2 en la S4 y base+3 desde la S7. Con bloques, las series
+ *  van al último (el de volumen, no el top set). Las semanas sin número no se
+ *  tocan. */
+export function seriesPorSemana(we: WorkoutExercise, extra: Record<number, number>): WeeklyProgressionRule[] | undefined {
+  const semanas = Object.keys(extra).map(Number).filter(s => (extra[s] ?? 0) !== 0).sort((a, b) => a - b);
   if (semanas.length === 0) return we.weeklyProgression;
-  return programarEnSemanas(we, semanas, false, r => {
+  return programarEnSemanas(we, semanas, false, (r, s) => {
+    const n = extra[s];
     if (r.setGroups && r.setGroups.length > 0) {
       const ult = r.setGroups.length - 1;
-      return { ...r, setGroups: r.setGroups.map((g, i) => i === ult ? { ...g, sets: g.sets + 1 } : g) };
+      return { ...r, setGroups: r.setGroups.map((g, i) => i === ult ? { ...g, sets: Math.max(1, g.sets + n) } : g) };
     }
-    return { ...r, sets: r.sets + 1 };
+    return { ...r, sets: Math.max(1, r.sets + n) };
   });
+}
+
+/** +1 serie cada `cada` semanas, desde la 1+cada hasta `hasta` (incluida). */
+export function subirSeries(we: WorkoutExercise, cada: number, hasta: number): WeeklyProgressionRule[] | undefined {
+  const extra: Record<number, number> = {};
+  for (let s = 1 + cada; s <= hasta; s += cada) extra[s] = 1;
+  return seriesPorSemana(we, extra);
+}
+
+/** Rango de repeticiones concreto desde cada semana indicada (`porSemana[semana]
+ *  = "6-8"`); se mantiene hasta el siguiente cambio. Los ejercicios con bloques
+ *  (top set + back-off) no se tocan: cada bloque tiene sus propias repeticiones y
+ *  pisarlas todas con un mismo rango estropearía la diferencia entre ellos. */
+export function repsPorSemana(we: WorkoutExercise, porSemana: Record<number, string>): WeeklyProgressionRule[] | undefined {
+  if (we.setGroups && we.setGroups.length > 0) return we.weeklyProgression;
+  const semanas = Object.keys(porSemana).map(Number).filter(s => porSemana[s]?.trim()).sort((a, b) => a - b);
+  if (semanas.length === 0) return we.weeklyProgression;
+  return programarEnSemanas(we, semanas, false, (r, s) => ({ ...r, reps: porSemana[s].trim() }));
+}
+
+/** Descanso entre series (segundos) desde cada semana indicada. */
+export function descansoPorSemana(we: WorkoutExercise, porSemana: Record<number, number>): WeeklyProgressionRule[] | undefined {
+  const semanas = Object.keys(porSemana).map(Number).filter(s => porSemana[s] > 0).sort((a, b) => a - b);
+  if (semanas.length === 0) return we.weeklyProgression;
+  return programarEnSemanas(we, semanas, false, (r, s) => ({ ...r, restSeconds: Math.round(porSemana[s]) }));
+}
+
+/** Técnica de alta intensidad (drop-set, myo-reps, rest-pause, AMRAP, al fallo)
+ *  desde las semanas indicadas. `solo` la limita a esa semana; con `null` se
+ *  quita la técnica desde esa semana. */
+export function tecnicaPorSemana(
+  we: WorkoutExercise, semanas: number[], tecnica: WorkoutTechnique | null, solo: boolean,
+): WeeklyProgressionRule[] | undefined {
+  if (semanas.length === 0) return we.weeklyProgression;
+  return programarEnSemanas(we, semanas, solo, r => ({ ...r, technique: tecnica ?? undefined }));
 }
 
 /** Quita lo programado desde la barra en `semana` (los escalones clásicos

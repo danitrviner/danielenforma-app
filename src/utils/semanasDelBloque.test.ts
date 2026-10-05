@@ -4,6 +4,7 @@ import { resolveExerciseForWeek, resolverEjercicioDelMeso } from './progression'
 import {
   programarCambio, quitarCambiosDeSemana, novedadesDeSemana, compararSemanas, seriesDeLaSemana, origenDeCambios,
   programarEnSemanas, semanasAlternas, rirDescendente, subirSeries, revisionesPorSemana,
+  rirLineal, rirPorSemana, seriesPorSemana, tecnicaPorSemana, repsPorSemana, descansoPorSemana,
 } from './semanasDelBloque';
 
 const curl: WorkoutExercise = { exerciseId: 'curl', order: 0, sets: 4, reps: '10', rir: 1, restSeconds: 75 };
@@ -150,5 +151,58 @@ describe('revisiones en su semana', () => {
     // S3 = 21-27 sep: la revisión de la semana 3 y las mediciones del día 26.
     expect(r[3]).toEqual(['Revisión semana 3', 'Mediciones']);
     expect(Object.values(r).flat()).not.toContain('Semanal');
+  });
+});
+
+describe('progresiones semana a semana, sin «cada X semanas»', () => {
+  it('+1 serie en la S3, +1 en la S4 y +1 en la S7 se acumulan', () => {
+    const we = { ...curl, weeklyProgression: seriesPorSemana(curl, { 3: 1, 4: 1, 7: 1 }) };
+    expect([1, 2, 3, 4, 5, 6, 7, 8].map(s => resolveExerciseForWeek(we, s).sets)).toEqual([4, 4, 5, 6, 6, 6, 7, 7]);
+  });
+  it('una semana puede subir más de una serie, y las que no se marcan no se tocan', () => {
+    const we = { ...curl, weeklyProgression: seriesPorSemana(curl, { 2: 2, 5: 0 }) };
+    expect([1, 2, 3, 5].map(s => resolveExerciseForWeek(we, s).sets)).toEqual([4, 6, 6, 6]);
+  });
+  it('con bloques, las series suben en el último', () => {
+    const conBloques = { ...curl, setGroups: topBackoff };
+    const we = { ...conBloques, weeklyProgression: seriesPorSemana(conBloques, { 3: 1 }) };
+    expect(resolveExerciseForWeek(we, 3).setGroups!.map(g => g.sets)).toEqual([1, 4]);
+  });
+  it('RIR concreto en las semanas elegidas; el resto sigue como estaba', () => {
+    const we = { ...curl, weeklyProgression: rirPorSemana(curl, { 3: 2, 6: 0 }) };
+    expect([1, 2, 3, 4, 5, 6, 7].map(s => resolveExerciseForWeek(we, s).rir)).toEqual([1, 1, 2, 2, 2, 0, 0]);
+  });
+  it('rirLineal reparte de RIR 3 a 0 saltando la descarga y rirDescendente usa lo mismo', () => {
+    expect(rirLineal(5, 3, 0, [5])).toEqual({ 1: 3, 2: 2, 3: 1, 4: 0 });
+  });
+  it('técnica de alta intensidad desde una semana, o solo esa semana', () => {
+    const desde = { ...curl, weeklyProgression: tecnicaPorSemana(curl, [4], 'dropset', false) };
+    expect([3, 4, 5].map(s => resolveExerciseForWeek(desde, s).technique)).toEqual([undefined, 'dropset', 'dropset']);
+    const solo = { ...curl, weeklyProgression: tecnicaPorSemana(curl, [4], 'myoreps', true) };
+    expect([3, 4, 5].map(s => resolveExerciseForWeek(solo, s).technique)).toEqual([undefined, 'myoreps', undefined]);
+  });
+  it('quitar la técnica desde una semana', () => {
+    const conTecnica = { ...curl, technique: 'amrap' as const };
+    const we = { ...conTecnica, weeklyProgression: tecnicaPorSemana(conTecnica, [3], null, false) };
+    expect([2, 3].map(s => resolveExerciseForWeek(we, s).technique)).toEqual(['amrap', undefined]);
+  });
+});
+
+describe('repeticiones y descanso semana a semana', () => {
+  it('reps distintas desde cada semana, y se mantienen hasta el siguiente cambio', () => {
+    const we = { ...curl, weeklyProgression: repsPorSemana(curl, { 1: '12-15', 4: '8-10', 7: '6-8' }) };
+    expect([1, 3, 4, 6, 7, 9].map(s => resolveExerciseForWeek(we, s).reps)).toEqual(['12-15', '12-15', '8-10', '8-10', '6-8', '6-8']);
+  });
+  it('las semanas en blanco no cambian nada', () => {
+    expect(repsPorSemana(curl, { 3: '  ' })).toBeUndefined();
+  });
+  it('con bloques no se tocan las reps de cada bloque', () => {
+    const conBloques = { ...curl, setGroups: topBackoff };
+    const we = { ...conBloques, weeklyProgression: repsPorSemana(conBloques, { 3: '5' }) };
+    expect(resolveExerciseForWeek(we, 3).setGroups!.map(g => g.reps)).toEqual(['6-8', '12-15']);
+  });
+  it('descanso más largo desde la S5', () => {
+    const we = { ...curl, weeklyProgression: descansoPorSemana(curl, { 5: 120 }) };
+    expect([4, 5, 8].map(s => resolveExerciseForWeek(we, s).restSeconds)).toEqual([75, 120, 120]);
   });
 });
