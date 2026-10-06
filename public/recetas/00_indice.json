@@ -2,7 +2,7 @@
   "metadata": {
     "fuente": "recetario importado",
     "exportadoOriginal": "2026-06-13T13:20:51.294Z",
-    "totalRecetas": 8850,
+    "totalRecetas": 8929,
     "schemaVersion": 1,
     "descripcion": "Recetas limpiadas y troceadas por categoria para integrar en la app."
   },
@@ -29,6 +29,12 @@
       "clave": "suplementos_deportivos",
       "nombre": "Suplementos deportivos",
       "totalRecetas": 386,
+      "partes": 1
+    },
+    {
+      "clave": "basicas",
+      "nombre": "Rápidas",
+      "totalRecetas": 79,
       "partes": 1
     }
   ],
@@ -98,6 +104,12 @@
       "categoria": "Suplementos deportivos",
       "recetas": 386,
       "MB": 0.43
+    },
+    {
+      "archivo": "recetas_05_basicas_p01.json",
+      "categoria": "Básicas",
+      "recetas": 79,
+      "MB": 0.1
     }
   ]
 }

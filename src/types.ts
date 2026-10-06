@@ -1638,6 +1638,9 @@ export interface Recipe {
    *  `forbiddenFor` del recetario original. Ver utils/dietaryRestrictions.ts.
    *  Ausente en las recetas importadas antes de que se recuperara este campo. */
   restrictions?: number[];
+  /** Plato de «supervivencia»: rápido, pocos ingredientes y de supermercado.
+   *  Pestaña «Básicas» del recetario. */
+  basica?: boolean;
 }
 
 export interface RecipeFavorites {

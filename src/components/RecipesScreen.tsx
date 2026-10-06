@@ -9,6 +9,7 @@ import {
   getDietsForAthlete, getAthleteDietConfig, OWNER_RECETARIO_TODOS, getRecipeById,
 } from '../dbService';
 import type { RecetasCursor } from '../dbService';
+import { CAT_BASICAS, encajaCategoria, FILTROS_RAPIDAS, type FiltroRapidas } from '../db/recetasHidratacion';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { classifyRecipe, violatesDietType } from '../utils/foodPrefs';
 import { athleteConditions } from '../utils/dietaryRestrictions';
@@ -69,6 +70,7 @@ function formatExchanges(exch: Partial<Record<FoodCategory, number>>): string {
 
 const RECETAS_CATS = [
   'Todas',
+  CAT_BASICAS,
   'Platos salados / principales',
   'Desayuno y dulces',
   'Bebidas',
@@ -757,6 +759,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
 
   // Recetas browser
   const [recetasCat, setRecetasCat]         = useState<string>('Todas');
+  const [recetasRapidas, setRecetasRapidas] = useState<FiltroRapidas>('');
   const [recetasIntake, setRecetasIntake]   = useState<number | null>(null);
   const [recetasSearch, setRecetasSearch]   = useState('');
   const recetasSearchDebounced = useDebouncedValue(recetasSearch, 200);
@@ -804,6 +807,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
   const loadRecetas = useCallback(async (
     cat: string,
     intake: number | null,
+    rapidas: FiltroRapidas,
     cursor: RecetasCursor | null,
     append: boolean,
   ) => {
@@ -811,6 +815,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
     const filters = {
       categoria: cat === 'Todas' ? undefined : cat,
       intakeType: intake ?? undefined,
+      rapidas,
     };
     try {
       const result = await queryRecetas(filters, cursor);
@@ -838,8 +843,8 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
   useEffect(() => {
     setRecetasLoading(true);
     setRecetasSearch('');
-    loadRecetas(recetasCat, recetasIntake, null, false).finally(() => setRecetasLoading(false));
-  }, [recetasCat, recetasIntake, loadRecetas]);
+    loadRecetas(recetasCat, recetasIntake, recetasRapidas, null, false).finally(() => setRecetasLoading(false));
+  }, [recetasCat, recetasIntake, recetasRapidas, loadRecetas]);
 
   // Lo que de verdad acaba en pantalla. El filtrado por alergias, tipo de dieta
   // y presupuesto ocurre DESPUÉS de paginar, así que sin esto una página entera
@@ -862,14 +867,14 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
     let cursor = recetasCursor;
     let visibles = 0;
     for (let intento = 0; intento < MAX_PAGINAS_POR_CLIC && visibles < RECETAS_VISIBLES_POR_CLIC; intento++) {
-      const result = await loadRecetas(recetasCat, recetasIntake, cursor, true);
+      const result = await loadRecetas(recetasCat, recetasIntake, recetasRapidas, cursor, true);
       if (!result) break;                       // error: el aviso ya está puesto
       visibles += result.recipes.filter(esVisible).length;
       cursor = result.cursor;
       if (!result.hasMore) break;
     }
     setRecetasLoadingMore(false);
-  }, [loadRecetas, recetasCat, recetasIntake, recetasCursor, esVisible]);
+  }, [loadRecetas, recetasCat, recetasIntake, recetasRapidas, recetasCursor, esVisible]);
 
   // ── Derived data ────────────────────────────────────────────────────────────
 
@@ -908,7 +913,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
     // caído en alguna de las páginas ya cargadas.
     const bySearch = termino
       ? indiceRecetas.filter(r =>
-          (recetasCat === 'Todas' || r.categoria === recetasCat) &&
+          encajaCategoria(r, recetasCat, recetasRapidas) &&
           (recetasIntake == null || (r.intakeTypes ?? []).includes(recetasIntake)) &&
           coincideBusqueda(r.name, termino))
       : recetasRecipes;
@@ -950,7 +955,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
       recetasDisliked: disliked,
       recetasTotalVisible: featured.length + normal.length + disliked.length,
     };
-  }, [recetasRecipes, indiceRecetas, recetasSearchDebounced, recetasCat, recetasIntake, prefs, onlyFitsBudget, fitsBudget, esVisible, favoritosSet]);
+  }, [recetasRecipes, indiceRecetas, recetasSearchDebounced, recetasCat, recetasIntake, recetasRapidas, prefs, onlyFitsBudget, fitsBudget, esVisible, favoritosSet]);
 
   // ── Favorites ───────────────────────────────────────────────────────────────
 
@@ -1138,13 +1143,21 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
             `Select` la lista la dibuja iOS como rueda a pantalla completa, que
             para elegir una de seis opciones va mejor que una fila que hay que
             arrastrar. */}
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className={`grid grid-cols-1 gap-3 ${recetasCat === CAT_BASICAS ? 'sm:grid-cols-3' : 'sm:grid-cols-2'}`}>
           <Select
             label="Categoría"
             value={recetasCat}
             onChange={setRecetasCat}
             options={RECETAS_CATS.map(cat => ({ value: cat, label: cat }))}
           />
+          {recetasCat === CAT_BASICAS && (
+            <Select
+              label="Tiempo"
+              value={recetasRapidas}
+              onChange={v => setRecetasRapidas(v as FiltroRapidas)}
+              options={FILTROS_RAPIDAS}
+            />
+          )}
           <Select
             label="Momento del día"
             value={recetasIntake === null ? '' : String(recetasIntake)}

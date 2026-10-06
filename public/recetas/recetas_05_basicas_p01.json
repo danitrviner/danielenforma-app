@@ -1,0 +1,6249 @@
+{
+ "metadata": {
+  "fuente": "recetas básicas En Forma",
+  "categoria": "Básicas",
+  "claveCategoria": "basicas",
+  "parte": 1,
+  "totalPartesCategoria": 1,
+  "recetasEnArchivo": 79,
+  "totalEnCategoria": 79,
+  "schemaVersion": 1
+ },
+ "recipes": [
+  {
+   "id": "eb9cefd0-6e27-5a13-9cae-a94584c74bc0",
+   "name": "Arroz con pollo y tomate frito",
+   "image": "https://images.unsplash.com/photo-1775039983749-aa6003c8ecf9?w=900&h=675&fit=crop&q=80&fm=jpg",
+   "ingredients": [
+    {
+     "id": "25db4ffb-f1d3-5920-830a-58a5ea87c1ba",
+     "name": "Arroz (en crudo)",
+     "quantity": 90
+    },
+    {
+     "id": "1a73f0c6-5e8e-5b3a-8358-120eab14e8e7",
+     "name": "Pechuga de pollo",
+     "quantity": 150
+    },
+    {
+     "id": "43b9a4bb-1be9-5f59-aca9-6d842ce18aa7",
+     "name": "Tomate frito",
+     "quantity": 80
+    }
+   ],
+   "steps": [
+    {
+     "position": 1,
+     "description": "Cuece el arroz 12-15 min en agua con sal y escúrrelo (o usa arroz ya cocido).",
+     "items": []
+    },
+    {
+     "position": 2,
+     "description": "Haz el pollo en tiras a la plancha con sal, 6-8 min.",
+     "items": []
+    },
+    {
+     "position": 3,
+     "description": "Mézclalo todo con el tomate frito y caliéntalo 1 min.",
+     "items": []
+    }
+   ],
+   "nutritionalWhy": null,
+   "difficulty": 1,
+   "cookingTime": 15,
+   "tupper": true,
+   "concepts": [],
+   "conceptGroups": [],
+   "intakeTypes": [
+    3,
+    5
+   ],
+   "mealTypes": [],
+   "forbiddenFor": [
+    55,
+    56,
+    59,
+    67,
+    68,
+    86,
+    89,
+    112,
+    114
+   ],
+   "macros": {
+    "carbohydrate": {
+     "grams": 77,
+     "percentage": 57
+    },
+    "protein": {
+     "grams": 42,
+     "percentage": 31
+    },
+    "fat": {
+     "grams": 7,
+     "percentage": 12
+    }
+   },
+   "kcal": 544,
+   "weight": 320,
+   "categoria": "Platos salados / principales",
+   "basica": true
+  },
+  {
+   "id": "83f0d8a9-be05-5066-a47e-c0a9ae425be6",
+   "name": "Arroz con pavo y tomate frito",
+   "image": "https://images.unsplash.com/photo-1759216282765-04bcbaf08738?w=900&h=675&fit=crop&q=80&fm=jpg",
+   "ingredients": [
+    {
+     "id": "0781125b-4bd4-51f7-97f9-2b7c2b24f555",
+     "name": "Arroz (en crudo)",
+     "quantity": 90
+    },
+    {
+     "id": "a74bc69b-6d29-582f-9597-f0b431a30281",
+     "name": "Pechuga de pavo",
+     "quantity": 150
+    },
+    {
+     "id": "a8a2fb6e-670f-5623-8400-f4d989a2248e",
+     "name": "Tomate frito",
+     "quantity": 80
+    }
+   ],
+   "steps": [
+    {
+     "position": 1,
+     "description": "Cuece el arroz 12-15 min en agua con sal y escúrrelo (o usa arroz ya cocido).",
+     "items": []
+    },
+    {
+     "position": 2,
+     "description": "Haz el pavo en tiras a la plancha con sal, 6-8 min.",
+     "items": []
+    },
+    {
+     "position": 3,
+     "description": "Mézclalo todo con el tomate frito y caliéntalo 1 min.",
+     "items": []
+    }
+   ],
+   "nutritionalWhy": null,
+   "difficulty": 1,
+   "cookingTime": 15,
+   "tupper": true,
+   "concepts": [],
+   "conceptGroups": [],
+   "intakeTypes": [
+    3,
+    5
+   ],
+   "mealTypes": [],
+   "forbiddenFor": [
+    55,
+    56,
+    59,
+    67,
+    68,
+    86,
+    89,
+    112,
+    114
+   ],
+   "macros": {
+    "carbohydrate": {
+     "grams": 77,
+     "percentage": 58
+    },
+    "protein": {
+     "grams": 44,
+     "percentage": 33
+    },
+    "fat": {
+     "grams": 5,
+     "percentage": 9
+    }
+   },
+   "kcal": 536,
+   "weight": 320,
+   "categoria": "Platos salados / principales",
+   "basica": true
+  },
+  {
+   "id": "f7952c7a-03bd-5367-8c47-5944696500b0",
+   "name": "Arroz con ternera y tomate frito",
+   "image": "https://images.unsplash.com/photo-1788462613018-40916ff6415c?w=900&h=675&fit=crop&q=80&fm=jpg",
+   "ingredients": [
+    {
+     "id": "f6f30250-6ec6-5339-b570-709e218a50d6",
+     "name": "Arroz (en crudo)",
+     "quantity": 90
+    },
+    {
+     "id": "bc16166f-3e5e-5166-a028-a7f54e22f05f",
+     "name": "Filete de ternera magra",
+     "quantity": 130
+    },
+    {
+     "id": "d3f100ec-2d0e-5ad0-9679-783ba51b0fa4",
+     "name": "Tomate frito",
+     "quantity": 80
+    }
+   ],
+   "steps": [
+    {
+     "position": 1,
+     "description": "Cuece el arroz 12-15 min en agua con sal y escúrrelo (o usa arroz ya cocido).",
+     "items": []
+    },
+    {
+     "position": 2,
+     "description": "Corta la ternera en tiras y hazla a la plancha fuerte con sal, 2-3 min.",
+     "items": []
+    },
+    {
+     "position": 3,
+     "description": "Mézclalo todo con el tomate frito.",
+     "items": []
+    }
+   ],
+   "nutritionalWhy": null,
+   "difficulty": 1,
+   "cookingTime": 15,
+   "tupper": true,
+   "concepts": [],
+   "conceptGroups": [],
+   "intakeTypes": [
+    3,
+    5
+   ],
+   "mealTypes": [],
+   "forbiddenFor": [
+    55,
+    56,
+    59,
+    67,
+    68,
+    86,
+    89,
+    92,
+    112,
+    114
+   ],
+   "macros": {
+    "carbohydrate": {
+     "grams": 77,
+     "percentage": 59
+    },
+    "protein": {
+     "grams": 36,
+     "percentage": 27
+    },
+    "fat": {
+     "grams": 8,
+     "percentage": 14
+    }
+   },
+   "kcal": 535,
+   "weight": 300,
+   "categoria": "Platos salados / principales",
+   "basica": true
+  },
+  {
+   "id": "415d571e-f486-5419-ab2e-1d5071086bfe",
+   "name": "Arroz con huevo, pollo y tomate frito",
+   "image": "https://images.unsplash.com/photo-1600688654899-379ec76aca42?w=900&h=675&fit=crop&q=80&fm=jpg",
+   "ingredients": [
+    {
+     "id": "29b40b73-7216-520f-9d72-8681632f6b2f",
+     "name": "Arroz (en crudo)",
+     "quantity": 80
+    },
+    {
+     "id": "8ce82840-9a2d-5235-bc7b-b6cf5ced2ef9",
+     "name": "Huevo",
+     "quantity": 60
+    },
+    {
+     "id": "5e38261a-0beb-51e0-ae7b-67a74fa40023",
+     "name": "Pechuga de pollo",
+     "quantity": 120
+    },
+    {
+     "id": "7fa59300-629d-52ab-bb49-2671df838178",
+     "name": "Tomate frito",
+     "quantity": 80
+    }
+   ],
+   "steps": [
+    {
+     "position": 1,
+     "description": "Cuece el arroz 12-15 min en agua con sal y escúrrelo (o usa arroz ya cocido).",
+     "items": []
+    },
+    {
+     "position": 2,
+     "description": "Haz el pollo en tiras a la plancha y, en la misma sartén, el huevo revuelto.",
+     "items": []
+    },
+    {
+     "position": 3,
+     "description": "Mézclalo todo con el tomate frito.",
+     "items": []
+    }
+   ],
+   "nutritionalWhy": null,
+   "difficulty": 1,
+   "cookingTime": 15,
+   "tupper": true,
+   "concepts": [],
+   "conceptGroups": [],
+   "intakeTypes": [
+    3,
+    5
+   ],
+   "mealTypes": [],
+   "forbiddenFor": [
+    55,
+    56,
+    59,
+    67,
+    68,
+    86,
+    89,
+    112,
+    114
+   ],
+   "macros": {
+    "carbohydrate": {
+     "grams": 70,
+     "percentage": 50
+    },
+    "protein": {
+     "grams": 42,
+     "percentage": 30
+    },
+    "fat": {
+     "grams": 12,
+     "percentage": 19
+    }
+   },
+   "kcal": 562,
+   "weight": 340,
+   "categoria": "Platos salados / principales",
+   "basica": true
+  },
+  {
+   "id": "afbb44e3-a1a1-53a4-a74a-d219935744b2",
+   "name": "Arroz con atún y tomate frito",
+   "image": "https://images.unsplash.com/photo-1671048116414-67585c932b8f?w=900&h=675&fit=crop&q=80&fm=jpg",
+   "ingredients": [
+    {
+     "id": "bdd80ca5-6394-503f-94b5-5a39907d98e0",
+     "name": "Arroz (en crudo)",
+     "quantity": 90
+    },
+    {
+     "id": "44a95a81-46e4-597b-a803-6da7f624018b",
+     "name": "Atún al natural escurrido",
+     "quantity": 110
+    },
+    {
+     "id": "60d9c104-3944-5417-b3a5-0d8253e088b2",
+     "name": "Tomate frito",
+     "quantity": 80
+    }
+   ],
+   "steps": [
+    {
+     "position": 1,
+     "description": "Cuece el arroz 12-15 min en agua con sal y escúrrelo (o usa arroz ya cocido).",
+     "items": []
+    },
+    {
+     "position": 2,
+     "description": "Escurre el atún (2 latas).",
+     "items": []
+    },
+    {
+     "position": 3,
+     "description": "Mézclalo todo con el tomate frito. Vale frío o caliente: va bien de tupper.",
+     "items": []
+    }
+   ],
+   "nutritionalWhy": null,
+   "difficulty": 1,
+   "cookingTime": 12,
+   "tupper": true,
+   "concepts": [],
+   "conceptGroups": [],
+   "intakeTypes": [
+    3,
+    5
+   ],
+   "mealTypes": [],
+   "forbiddenFor": [
+    55,
+    56,
+    59,
+    67,
+    68,
+    86,
+    89,
+    109,
+    110,
+    114
+   ],
+   "macros": {
+    "carbohydrate": {
+     "grams": 77,
+     "percentage": 63
+    },
+    "protein": {
+     "grams": 34,
+     "percentage": 28
+    },
+    "fat": {
+     "grams": 5,
+     "percentage": 9
+    }
+   },
+   "kcal": 494,
+   "weight": 280,
+   "categoria": "Platos salados / principales",
+   "basica": true
+  },
+  {
+   "id": "d4442c2e-ada3-5bd0-9b48-d1b18c3bdf94",
+   "name": "Arroz salteado con pollo y verduras",
+   "image": "https://s3.eu-west-3.amazonaws.com/storage.getindya.com/recipes/images/recipe_stHOcQiBiK9i35iFbpDK.jpg",
+   "ingredients": [
+    {
+     "id": "86b8373c-a636-56c5-89bb-836671f19f44",
+     "name": "Arroz (en crudo)",
+     "quantity": 90
+    },
+    {
+     "id": "8e280cc6-9279-5456-9e5d-6755b52df7fe",
+     "name": "Pechuga de pollo",
+     "quantity": 150
+    },
+    {
+     "id": "cada6e76-c75a-5078-bdfa-eb05579c363a",
+     "name": "Verduras para saltear congeladas",
+     "quantity": 150
+    },
+    {
+     "id": "a3b41d7a-b229-55c9-848f-610e71af0de4",
+     "name": "Aceite de oliva",
+     "quantity": 5
+    }
+   ],
+   "steps": [
+    {
+     "position": 1,
+     "description": "Cuece el arroz 12-15 min en agua con sal y escúrrelo (o usa arroz ya cocido).",
+     "items": []
+    },
+    {
+     "position": 2,
+     "description": "Saltea el pollo en tiras con el aceite 5 min y añade las verduras congeladas 5 min más.",
+     "items": []
+    },
+    {
+     "position": 3,
+     "description": "Añade el arroz, mezcla 1 min y, si quieres, un chorrito de salsa de soja.",
+     "items": []
+    }
+   ],
+   "nutritionalWhy": null,
+   "difficulty": 1,
+   "cookingTime": 15,
+   "tupper": true,
+   "concepts": [],
+   "conceptGroups": [],
+   "intakeTypes": [
+    3,
+    5
+   ],
+   "mealTypes": [],
+   "forbiddenFor": [
+    55,
+    56,
+    67,
+    68,
+    86,
+    112
+   ],
+   "macros": {
+    "carbohydrate": {
+     "grams": 79,
+     "percentage": 54
+    },
+    "protein": {
+     "grams": 44,
+     "percentage": 30
+    },
+    "fat": {
+     "grams": 10,
+     "percentage": 15
+    }
+   },
+   "kcal": 589,
+   "weight": 395,
+   "categoria": "Platos salados / principales",
+   "basica": true
+  },
+  {
+   "id": "6b2edbb3-effd-5fcb-a8d8-633c473e9c28",
+   "name": "Pasta con tomate y pollo",
+   "image": "https://images.unsplash.com/photo-1673971372358-769a28fa4c81?w=900&h=675&fit=crop&q=80&fm=jpg",
+   "ingredients": [
+    {
+     "id": "78b3cc91-3218-515d-9dbf-c474525538ae",
+     "name": "Pasta (en crudo)",
+     "quantity": 90
+    },
+    {
+     "id": "971785a6-28fc-5b13-a23f-ff51208d0e67",
+     "name": "Pechuga de pollo",
+     "quantity": 150
+    },
+    {
+     "id": "9b6f8c1a-d434-59a1-a3cd-134e403b10ba",
+     "name": "Tomate frito",
+     "quantity": 80
+    }
+   ],
+   "steps": [
+    {
+     "position": 1,
+     "description": "Cuece la pasta en agua con sal el tiempo del paquete (9-11 min) y escúrrela.",
+     "items": []
+    },
+    {
+     "position": 2,
+     "description": "Haz el pollo en tiras a la plancha con sal, 6-8 min.",
+     "items": []
+    },
+    {
+     "position": 3,
+     "description": "Mézclalo todo con el tomate frito.",
+     "items": []
+    }
+   ],
+   "nutritionalWhy": null,
+   "difficulty": 1,
+   "cookingTime": 15,
+   "tupper": true,
+   "concepts": [],
+   "conceptGroups": [],
+   "intakeTypes": [
+    3,
+    5
+   ],
+   "mealTypes": [],
+   "forbiddenFor": [
+    55,
+    56,
+    59,
+    66,
+    67,
+    68,
+    86,
+    89,
+    112,
+    114
+   ],
+   "macros": {
+    "carbohydrate": {
+     "grams": 71,
+     "percentage": 53
+    },
+    "protein": {
+     "grams": 47,
+     "percentage": 35
+    },
+    "fat": {
+     "grams": 7,
+     "percentage": 12
+    }
+   },
+   "kcal": 546,
+   "weight": 320,
+   "categoria": "Platos salados / principales",
+   "basica": true
+  },
+  {
+   "id": "3b460d32-31a7-5205-b588-31a1bd6944ec",
+   "name": "Pasta boloñesa rápida",
+   "image": "https://images.unsplash.com/photo-1572441713132-c542fc4fe282?w=900&h=675&fit=crop&q=80&fm=jpg",
+   "ingredients": [
+    {
+     "id": "abb49ebd-4674-5971-afcd-8fa8678b1c63",
+     "name": "Pasta (en crudo)",
+     "quantity": 90
+    },
+    {
+     "id": "6fd28c6e-b800-5ac8-86ad-43929f7f6d6f",
+     "name": "Carne picada de ternera",
+     "quantity": 130
+    },
+    {
+     "id": "c0994ed3-dd20-583e-a93e-e7fc44ce3816",
+     "name": "Tomate frito",
+     "quantity": 100
+    }
+   ],
+   "steps": [
+    {
+     "position": 1,
+     "description": "Cuece la pasta en agua con sal el tiempo del paquete (9-11 min) y escúrrela.",
+     "items": []
+    },
+    {
+     "position": 2,
+     "description": "Dora la carne picada en la sartén, desmenuzándola, 6-8 min. Sal y orégano.",
+     "items": []
+    },
+    {
+     "position": 3,
+     "description": "Añade el tomate frito, 2 min, y mézclalo con la pasta.",
+     "items": []
+    }
+   ],
+   "nutritionalWhy": null,
+   "difficulty": 1,
+   "cookingTime": 15,
+   "tupper": true,
+   "concepts": [],
+   "conceptGroups": [],
+   "intakeTypes": [
+    3,
+    5
+   ],
+   "mealTypes": [],
+   "forbiddenFor": [
+    55,
+    56,
+    59,
+    66,
+    67,
+    68,
+    86,
+    89,
+    92,
+    112,
+    114
+   ],
+   "macros": {
+    "carbohydrate": {
+     "grams": 73,
+     "percentage": 53
+    },
+    "protein": {
+     "grams": 39,
+     "percentage": 29
+    },
+    "fat": {
+     "grams": 11,
+     "percentage": 18
+    }
+   },
+   "kcal": 559,
+   "weight": 320,
+   "categoria": "Platos salados / principales",
+   "basica": true
+  },
+  {
+   "id": "f83bae9e-ee56-5061-b530-e2c49a2d7fd5",
+   "name": "Pasta boloñesa de pavo",
+   "image": "https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?w=900&h=675&fit=crop&q=80&fm=jpg",
+   "ingredients": [
+    {
+     "id": "5a89b3d0-317e-52f2-938f-f473ab241baf",
+     "name": "Pasta (en crudo)",
+     "quantity": 90
+    },
+    {
+     "id": "6551606d-ac3d-5fd7-a361-d49805a5f613",
+     "name": "Carne picada de pavo",
+     "quantity": 150
+    },
+    {
+     "id": "29d1abc1-1892-57b4-a0d2-64b447e488b7",
+     "name": "Tomate frito",
+     "quantity": 100
+    }
+   ],
+   "steps": [
+    {
+     "position": 1,
+     "description": "Cuece la pasta en agua con sal el tiempo del paquete (9-11 min) y escúrrela.",
+     "items": []
+    },
+    {
+     "position": 2,
+     "description": "Dora la carne picada de pavo en la sartén, desmenuzándola, 6-8 min.",
+     "items": []
+    },
+    {
+     "position": 3,
+     "description": "Añade el tomate frito, 2 min, y mézclalo con la pasta.",
+     "items": []
+    }
+   ],
+   "nutritionalWhy": null,
+   "difficulty": 1,
+   "cookingTime": 15,
+   "tupper": true,
+   "concepts": [],
+   "conceptGroups": [],
+   "intakeTypes": [
+    3,
+    5
+   ],
+   "mealTypes": [],
+   "forbiddenFor": [
+    55,
+    56,
+    59,
+    66,
+    67,
+    68,
+    86,
+    89,
+    112,
+    114
+   ],
+   "macros": {
+    "carbohydrate": {
+     "grams": 73,
+     "percentage": 51
+    },
+    "protein": {
+     "grams": 44,
+     "percentage": 31
+    },
+    "fat": {
+     "grams": 11,
+     "percentage": 17
+    }
+   },
+   "kcal": 576,
+   "weight": 340,
+   "categoria": "Platos salados / principales",
+   "basica": true
+  },
+  {
+   "id": "1ac2a3c7-aae4-547f-8d24-cde9da092955",
+   "name": "Pasta con atún y tomate",
+   "image": "https://images.unsplash.com/photo-1608897013039-887f21d8c804?w=900&h=675&fit=crop&q=80&fm=jpg",
+   "ingredients": [
+    {
+     "id": "969049be-354c-58db-96fa-24edfa6e736a",
+     "name": "Pasta (en crudo)",
+     "quantity": 90
+    },
+    {
+     "id": "3e9b6e5e-38ed-5a2f-9e66-96ce23cb2436",
+     "name": "Atún al natural escurrido",
+     "quantity": 110
+    },
+    {
+     "id": "b98974be-9bff-575a-a7ab-923807e9569b",
+     "name": "Tomate frito",
+     "quantity": 80
+    }
+   ],
+   "steps": [
+    {
+     "position": 1,
+     "description": "Cuece la pasta en agua con sal el tiempo del paquete (9-11 min) y escúrrela.",
+     "items": []
+    },
+    {
+     "position": 2,
+     "description": "Escurre el atún (2 latas).",
+     "items": []
+    },
+    {
+     "position": 3,
+     "description": "Mézclalo todo con el tomate frito.",
+     "items": []
+    }
+   ],
+   "nutritionalWhy": null,
+   "difficulty": 1,
+   "cookingTime": 12,
+   "tupper": true,
+   "concepts": [],
+   "conceptGroups": [],
+   "intakeTypes": [
+    3,
+    5
+   ],
+   "mealTypes": [],
+   "forbiddenFor": [
+    55,
+    56,
+    59,
+    66,
+    67,
+    68,
+    86,
+    89,
+    109,
+    110,
+    114
+   ],
+   "macros": {
+    "carbohydrate": {
+     "grams": 71,
+     "percentage": 59
+    },
+    "protein": {
+     "grams": 39,
+     "percentage": 32
+    },
+    "fat": {
+     "grams": 5,
+     "percentage": 9
+    }
+   },
+   "kcal": 497,
+   "weight": 280,
+   "categoria": "Platos salados / principales",
+   "basica": true
+  },
+  {
+   "id": "961f9f83-c0f8-5c8f-bcb8-0aeb314b63fa",
+   "name": "Espaguetis con gambas al ajillo",
+   "image": "https://s3.eu-west-3.amazonaws.com/storage.getindya.com/recipes/images/recipe_0B6pgQpHMnTAGJaXpcmq.jpg",
+   "ingredients": [
+    {
+     "id": "2bfee81c-5882-53c9-8d9e-75b7a2bdc6c2",
+     "name": "Pasta (en crudo)",
+     "quantity": 90
+    },
+    {
+     "id": "cbf8d6f3-f8be-54df-a06b-98974d43e5b9",
+     "name": "Gambas peladas congeladas",
+     "quantity": 150
+    },
+    {
+     "id": "bf28d1c7-3db8-5179-b20e-cef05a5e18fe",
+     "name": "Aceite de oliva",
+     "quantity": 10
+    }
+   ],
+   "steps": [
+    {
+     "position": 1,
+     "description": "Cuece la pasta en agua con sal el tiempo del paquete (9-11 min) y escúrrela.",
+     "items": []
+    },
+    {
+     "position": 2,
+     "description": "Dora 2 ajos laminados en el aceite y añade las gambas, 3-4 min. Sal y guindilla si te gusta.",
+     "items": []
+    },
+    {
+     "position": 3,
+     "description": "Mézclalo con la pasta en la misma sartén.",
+     "items": []
+    }
+   ],
+   "nutritionalWhy": null,
+   "difficulty": 1,
+   "cookingTime": 15,
+   "tupper": true,
+   "concepts": [],
+   "conceptGroups": [],
+   "intakeTypes": [
+    3,
+    5
+   ],
+   "mealTypes": [],
+   "forbiddenFor": [
+    55,
+    56,
+    66,
+    67,
+    68,
+    89
+   ],
+   "macros": {
+    "carbohydrate": {
+     "grams": 64,
+     "percentage": 49
+    },
+    "protein": {
+     "grams": 38,
+     "percentage": 29
+    },
+    "fat": {
+     "grams": 13,
+     "percentage": 22
+    }
+   },
+   "kcal": 531,
+   "weight": 250,
+   "categoria": "Platos salados / principales",
+   "basica": true
+  },
+  {
+   "id": "9e0b70d1-1b86-51e7-b20b-a312ecaf27a5",
+   "name": "Pasta carbonara rápida",
+   "image": "https://images.unsplash.com/photo-1588013273468-315fd88ea34c?w=900&h=675&fit=crop&q=80&fm=jpg",
+   "ingredients": [
+    {
+     "id": "dba69e68-aec3-5e68-ba81-fa103776d102",
+     "name": "Pasta (en crudo)",
+     "quantity": 90
+    },
+    {
+     "id": "3f870494-874c-529b-9db1-815500607c8d",
+     "name": "Huevo",
+     "quantity": 60
+    },
+    {
+     "id": "21997fa5-4d95-556c-a2fa-34ef8a319432",
+     "name": "Claras de huevo",
+     "quantity": 60
+    },
+    {
+     "id": "5f79591c-77ba-509a-aa83-69b1fcb433f9",
+     "name": "Fiambre de pavo",
+     "quantity": 60
+    },
+    {
+     "id": "e3e8811e-3106-5926-a782-b4abd8e5841b",
+     "name": "Queso rallado",
+     "quantity": 10
+    }
+   ],
+   "steps": [
+    {
+     "position": 1,
+     "description": "Cuece la pasta en agua con sal el tiempo del paquete (9-11 min) y escúrrela.",
+     "items": []
+    },
+    {
+     "position": 2,
+     "description": "Bate el huevo con las claras y el queso. Dora el pavo en tiras en la sartén.",
+     "items": []
+    },
+    {
+     "position": 3,
+     "description": "Fuera del fuego, mezcla la pasta caliente con el pavo y el huevo batido hasta que espese.",
+     "items": []
+    }
+   ],
+   "nutritionalWhy": null,
+   "difficulty": 1,
+   "cookingTime": 15,
+   "tupper": true,
+   "concepts": [],
+   "conceptGroups": [],
+   "intakeTypes": [
+    3,
+    5
+   ],
+   "mealTypes": [],
+   "forbiddenFor": [
+    55,
+    56,
+    66,
+    67,
+    68,
+    87,
+    89,
+    92,
+    112
+   ],
+   "macros": {
+    "carbohydrate": {
+     "grams": 66,
+     "percentage": 50
+    },
+    "protein": {
+     "grams": 40,
+     "percentage": 31
+    },
+    "fat": {
+     "grams": 11,
+     "percentage": 19
+    }
+   },
+   "kcal": 536,
+   "weight": 280,
+   "categoria": "Platos salados / principales",
+   "basica": true
+  },
+  {
+   "id": "5f235f9a-c117-558d-96cd-5563ace4cc1c",
+   "name": "Ñoquis con tomate y pollo",
+   "image": "https://s3.eu-west-3.amazonaws.com/storage.getindya.com/recipes/images/recipe_FU3v7fJgaUO3bNvJ5IB1.jpg",
+   "ingredients": [
+    {
+     "id": "9a036801-1f9f-5556-a407-f47037c10fc7",
+     "name": "Ñoquis",
+     "quantity": 250
+    },
+    {
+     "id": "95b88f22-1019-586d-99b8-9909646af561",
+     "name": "Pechuga de pollo",
+     "quantity": 120
+    },
+    {
+     "id": "57f6c7d2-87f3-58a9-9ea4-7cc577e06df7",
+     "name": "Tomate frito",
+     "quantity": 80
+    }
+   ],
+   "steps": [
+    {
+     "position": 1,
+     "description": "Cuece los ñoquis 2-3 min, hasta que floten, o dóralos en la sartén.",
+     "items": []
+    },
+    {
+     "position": 2,
+     "description": "Haz el pollo en tiras a la plancha.",
+     "items": []
+    },
+    {
+     "position": 3,
+     "description": "Mézclalo todo con el tomate frito.",
+     "items": []
+    }
+   ],
+   "nutritionalWhy": null,
+   "difficulty": 1,
+   "cookingTime": 12,
+   "tupper": true,
+   "concepts": [],
+   "conceptGroups": [],
+   "intakeTypes": [
+    3,
+    5
+   ],
+   "mealTypes": [],
+   "forbiddenFor": [
+    55,
+    56,
+    59,
+    66,
+    67,
+    68,
+    86,
+    89,
+    112,
+    114
+   ],
+   "macros": {
+    "carbohydrate": {
+     "grams": 92,
+     "percentage": 64
+    },
+    "protein": {
+     "grams": 39,
+     "percentage": 27
+    },
+    "fat": {
+     "grams": 6,
+     "percentage": 9
+    }
+   },
+   "kcal": 592,
+   "weight": 450,
+   "categoria": "Platos salados / principales",
+   "basica": true
+  },
+  {
+   "id": "4918a78d-d2fa-5433-b534-13db68bb1425",
+   "name": "Patata asada al microondas con pollo",
+   "image": "https://images.unsplash.com/photo-1599161146640-8d60bd2888e3?w=900&h=675&fit=crop&q=80&fm=jpg",
+   "ingredients": [
+    {
+     "id": "c7876521-1b44-5a54-9565-13be0781aec3",
+     "name": "Patata",
+     "quantity": 350
+    },
+    {
+     "id": "f3f2f80d-b099-5e84-87dd-76a8ca096f82",
+     "name": "Pechuga de pollo",
+     "quantity": 150
+    },
+    {
+     "id": "2d64cefe-3428-5637-8eee-6f6bb22bc419",
+     "name": "Aceite de oliva",
+     "quantity": 5
+    }
+   ],
+   "steps": [
+    {
+     "position": 1,
+     "description": "Lava la patata, pínchala con un tenedor y métela al microondas a máxima potencia 8-10 min.",
+     "items": []
+    },
+    {
+     "position": 2,
+     "description": "Mientras, haz el pollo a la plancha con sal.",
+     "items": []
+    },
+    {
+     "position": 3,
+     "description": "Abre la patata, aliña con el aceite y sal, y sirve con el pollo.",
+     "items": []
+    }
+   ],
+   "nutritionalWhy": null,
+   "difficulty": 1,
+   "cookingTime": 15,
+   "tupper": true,
+   "concepts": [],
+   "conceptGroups": [],
+   "intakeTypes": [
+    3,
+    5
+   ],
+   "mealTypes": [],
+   "forbiddenFor": [
+    55,
+    56,
+    67,
+    68,
+    112
+   ],
+   "macros": {
+    "carbohydrate": {
+     "grams": 60,
+     "percentage": 50
+    },
+    "protein": {
+     "grams": 42,
+     "percentage": 35
+    },
+    "fat": {
+     "grams": 8,
+     "percentage": 15
+    }
+   },
+   "kcal": 490,
+   "weight": 505,
+   "categoria": "Platos salados / principales",
+   "basica": true
+  },
+  {
+   "id": "bcbb02ca-3fed-5c8f-84e9-b60dcf80cf3c",
+   "name": "Patatas en freidora de aire con huevos",
+   "image": "https://images.unsplash.com/photo-1710533788728-800be38530a8?w=900&h=675&fit=crop&q=80&fm=jpg",
+   "ingredients": [
+    {
+     "id": "3e67e2a1-fd66-5126-8ef1-59b596d80e77",
+     "name": "Patata",
+     "quantity": 300
+    },
+    {
+     "id": "49e7c0e5-1304-51dc-a512-14e0b7f7e524",
+     "name": "Huevo",
+     "quantity": 120
+    },
+    {
+     "id": "4a61cd44-5549-570e-83c8-8425b0b7b5db",
+     "name": "Aceite de oliva",
+     "quantity": 5
+    }
+   ],
+   "steps": [
+    {
+     "position": 1,
+     "description": "Corta la patata en gajos, mézclala con el aceite y sal y hazla en la freidora a 200 °C, 18-20 min, removiendo a mitad.",
+     "items": []
+    },
+    {
+     "position": 2,
+     "description": "Haz los huevos a la plancha y rómpelos encima de las patatas.",
+     "items": []
+    }
+   ],
+   "nutritionalWhy": null,
+   "difficulty": 1,
+   "cookingTime": 22,
+   "tupper": false,
+   "concepts": [],
+   "conceptGroups": [],
+   "intakeTypes": [
+    3,
+    5
+   ],
+   "mealTypes": [],
+   "forbiddenFor": [
+    55,
+    68
+   ],
+   "macros": {
+    "carbohydrate": {
+     "grams": 52,
+     "percentage": 47
+    },
+    "protein": {
+     "grams": 21,
+     "percentage": 19
+    },
+    "fat": {
+     "grams": 17,
+     "percentage": 34
+    }
+   },
+   "kcal": 459,
+   "weight": 425,
+   "categoria": "Platos salados / principales",
+   "basica": true
+  },
+  {
+   "id": "304619ad-caa5-5046-bcdb-865e600d8c6f",
+   "name": "Patatas en freidora de aire con pollo",
+   "image": "https://images.unsplash.com/photo-1623238913973-21e45cced554?w=900&h=675&fit=crop&q=80&fm=jpg",
+   "ingredients": [
+    {
+     "id": "e3e2ef37-d26a-53a3-9fc6-793da1dae8ee",
+     "name": "Patata",
+     "quantity": 300
+    },
+    {
+     "id": "197c5052-a925-5ef8-a746-8f5f8bc8e9f6",
+     "name": "Pechuga de pollo",
+     "quantity": 150
+    },
+    {
+     "id": "ca633f54-9915-5975-805c-c344f77176f4",
+     "name": "Aceite de oliva",
+     "quantity": 5
+    }
+   ],
+   "steps": [
+    {
+     "position": 1,
+     "description": "Corta la patata en gajos, mézclala con el aceite y sal y hazla en la freidora a 200 °C, 18-20 min.",
+     "items": []
+    },
+    {
+     "position": 2,
+     "description": "Haz el pollo a la plancha o mételo en la freidora los últimos 10 min.",
+     "items": []
+    }
+   ],
+   "nutritionalWhy": null,
+   "difficulty": 1,
+   "cookingTime": 22,
+   "tupper": true,
+   "concepts": [],
+   "conceptGroups": [],
+   "intakeTypes": [
+    3,
+    5
+   ],
+   "mealTypes": [],
+   "forbiddenFor": [
+    55,
+    56,
+    67,
+    68,
+    112
+   ],
+   "macros": {
+    "carbohydrate": {
+     "grams": 51,
+     "percentage": 47
+    },
+    "protein": {
+     "grams": 40,
+     "percentage": 37
+    },
+    "fat": {
+     "grams": 8,
+     "percentage": 17
+    }
+   },
+   "kcal": 450,
+   "weight": 455,
+   "categoria": "Platos salados / principales",
+   "basica": true
+  },
+  {
+   "id": "57f2f0f5-2fee-5e85-b10f-89ee905b9b2a",
+   "name": "Filete de ternera con patatas en freidora",
+   "image": "https://s3.eu-west-3.amazonaws.com/storage.getindya.com/recipes/images/recipe_ns5Hk1HFBpdeMwihVuoI.jpg",
+   "ingredients": [
+    {
+     "id": "e9e58d13-8288-53f1-bf82-9944c0ac64ab",
+     "name": "Patata",
+     "quantity": 300
+    },
+    {
+     "id": "c6e24f28-c39e-5b9f-958c-3015ea2fed09",
+     "name": "Filete de ternera magra",
+     "quantity": 150
+    },
+    {
+     "id": "3eb67793-0be9-556d-b771-b5afc86cb8bc",
+     "name": "Aceite de oliva",
+     "quantity": 5
+    }
+   ],
+   "steps": [
+    {
+     "position": 1,
+     "description": "Corta la patata en gajos, mézclala con el aceite y sal y hazla en la freidora a 200 °C, 18-20 min.",
+     "items": []
+    },
+    {
+     "position": 2,
+     "description": "Haz el filete a la plancha fuerte, 2 min por lado.",
+     "items": []
+    }
+   ],
+   "nutritionalWhy": null,
+   "difficulty": 1,
+   "cookingTime": 22,
+   "tupper": true,
+   "concepts": [],
+   "conceptGroups": [],
+   "intakeTypes": [
+    3,
+    5
+   ],
+   "mealTypes": [],
+   "forbiddenFor": [
+    55,
+    56,
+    67,
+    68,
+    92,
+    112
+   ],
+   "macros": {
+    "carbohydrate": {
+     "grams": 51,
+     "percentage": 44
+    },
+    "protein": {
+     "grams": 39,
+     "percentage": 34
+    },
+    "fat": {
+     "grams": 11,
+     "percentage": 22
+    }
+   },
+   "kcal": 465,
+   "weight": 455,
+   "categoria": "Platos salados / principales",
+   "basica": true
+  },
+  {
+   "id": "85fb9043-428d-53fe-a1f1-515c592f7e55",
+   "name": "Merluza con patatas al microondas",
+   "image": "https://s3.eu-west-3.amazonaws.com/storage.getindya.com/recipes/images/recipe_JMZq8k5YPrnqu4emo21g.jpg",
+   "ingredients": [
+    {
+     "id": "8e56dab9-dbd6-5bd8-a570-4bae71ea17c8",
+     "name": "Patata",
+     "quantity": 300
+    },
+    {
+     "id": "1f5ceeee-686d-54b1-b43c-747296216df9",
+     "name": "Merluza congelada",
+     "quantity": 200
+    },
+    {
+     "id": "356e1100-85a2-52ad-a6ce-68e29c2ee1a1",
+     "name": "Aceite de oliva",
+     "quantity": 5
+    }
+   ],
+   "steps": [
+    {
+     "position": 1,
+     "description": "Patata en rodajas finas con sal y un chorrito de agua, tapada, al microondas 7-8 min.",
+     "items": []
+    },
+    {
+     "position": 2,
+     "description": "Pon la merluza encima con sal y ajo en polvo, tapa y 4-5 min más.",
+     "items": []
+    },
+    {
+     "position": 3,
+     "description": "Aliña con el aceite.",
+     "items": []
+    }
+   ],
+   "nutritionalWhy": null,
+   "difficulty": 1,
+   "cookingTime": 15,
+   "tupper": true,
+   "concepts": [],
+   "conceptGroups": [],
+   "intakeTypes": [
+    3,
+    5
+   ],
+   "mealTypes": [],
+   "forbiddenFor": [
+    55,
+    56,
+    67,
+    68
+   ],
+   "macros": {
+    "carbohydrate": {
+     "grams": 51,
+     "percentage": 48
+    },
+    "protein": {
+     "grams": 40,
+     "percentage": 37
+    },
+    "fat": {
+     "grams": 7,
+     "percentage": 15
+    }
+   },
+   "kcal": 435,
+   "weight": 505,
+   "categoria": "Platos salados / principales",
+   "basica": true
+  },
+  {
+   "id": "178c4e62-2e7b-5f78-a5c8-5010e4f9ce26",
+   "name": "Boniato asado con pollo",
+   "image": "https://s3.eu-west-3.amazonaws.com/storage.getindya.com/recipes/images/recipe_nEpbMmKgUAoVodXFzMQd.jpg",
+   "ingredients": [
+    {
+     "id": "fdfd3fc5-c51b-5670-99ee-40da09ea0471",
+     "name": "Boniato",
+     "quantity": 250
+    },
+    {
+     "id": "761e513b-d4d7-5682-9a78-26104291f0a6",
+     "name": "Pechuga de pollo",
+     "quantity": 150
+    },
+    {
+     "id": "e9119d0a-2575-5d4e-b21b-8827f9baa647",
+     "name": "Aceite de oliva",
+     "quantity": 5
+    }
+   ],
+   "steps": [
+    {
+     "position": 1,
+     "description": "Pincha el boniato y métetelo al microondas 8-10 min (o en la freidora a 190 °C, 20 min, en gajos).",
+     "items": []
+    },
+    {
+     "position": 2,
+     "description": "Haz el pollo a la plancha y sirve con el aceite por encima.",
+     "items": []
+    }
+   ],
+   "nutritionalWhy": null,
+   "difficulty": 1,
+   "cookingTime": 15,
+   "tupper": true,
+   "concepts": [],
+   "conceptGroups": [],
+   "intakeTypes": [
+    3,
+    5
+   ],
+   "mealTypes": [],
+   "forbiddenFor": [
+    55,
+    56,
+    67,
+    68,
+    86,
+    112
+   ],
+   "macros": {
+    "carbohydrate": {
+     "grams": 50,
+     "percentage": 47
+    },
+    "protein": {
+     "grams": 38,
+     "percentage": 36
+    },
+    "fat": {
+     "grams": 8,
+     "percentage": 17
+    }
+   },
+   "kcal": 425,
+   "weight": 405,
+   "categoria": "Platos salados / principales",
+   "basica": true
+  },
+  {
+   "id": "c855a1c6-4233-5c5b-b520-830f1069dd73",
+   "name": "Ensalada de patata, atún y huevo",
+   "image": "https://images.unsplash.com/photo-1587471088253-421884425efb?w=900&h=675&fit=crop&q=80&fm=jpg",
+   "ingredients": [
+    {
+     "id": "461cc4cd-2f6f-5dc0-8bfa-ae4f6dc6c96f",
+     "name": "Patata",
+     "quantity": 300
+    },
+    {
+     "id": "c74dd1af-033e-50dd-9d00-3dec52871df5",
+     "name": "Atún al natural escurrido",
+     "quantity": 110
+    },
+    {
+     "id": "30813aa7-debe-5d67-a97b-219cbcb51297",
+     "name": "Huevo",
+     "quantity": 60
+    },
+    {
+     "id": "9a74a911-b9e3-5e7e-ba44-5c1031059d7f",
+     "name": "Tomate natural",
+     "quantity": 100
+    },
+    {
+     "id": "183c618c-9f29-5d35-b886-0798337cd64e",
+     "name": "Aceite de oliva",
+     "quantity": 5
+    }
+   ],
+   "steps": [
+    {
+     "position": 1,
+     "description": "Patata en dados con un chorrito de agua, tapada, al microondas 7-8 min. Cuece el huevo 10 min.",
+     "items": []
+    },
+    {
+     "position": 2,
+     "description": "Mézclalo todo con el tomate en dados, el atún, sal y el aceite. Va bien de tupper.",
+     "items": []
+    }
+   ],
+   "nutritionalWhy": null,
+   "difficulty": 1,
+   "cookingTime": 15,
+   "tupper": true,
+   "concepts": [],
+   "conceptGroups": [],
+   "intakeTypes": [
+    3,
+    5
+   ],
+   "mealTypes": [],
+   "forbiddenFor": [
+    55,
+    56,
+    67,
+    68,
+    86,
+    89,
+    109,
+    110
+   ],
+   "macros": {
+    "carbohydrate": {
+     "grams": 55,
+     "percentage": 44
+    },
+    "protein": {
+     "grams": 41,
+     "percentage": 33
+    },
+    "fat": {
+     "grams": 13,
+     "percentage": 23
+    }
+   },
+   "kcal": 507,
+   "weight": 575,
+   "categoria": "Platos salados / principales",
+   "basica": true
+  },
+  {
+   "id": "e432b59b-43df-5d0e-ab44-f554d581fb5e",
+   "name": "Garbanzos con arroz y ternera",
+   "image": "https://images.unsplash.com/photo-1543338861-24992308962f?w=900&h=675&fit=crop&q=80&fm=jpg",
+   "ingredients": [
+    {
+     "id": "d0aa1e0f-6861-50fe-abfe-e3d326995061",
+     "name": "Garbanzos cocidos de bote",
+     "quantity": 150
+    },
+    {
+     "id": "84c8db15-d712-541d-8786-5cc67a71e72e",
+     "name": "Arroz (en crudo)",
+     "quantity": 50
+    },
+    {
+     "id": "28008b8e-a066-5994-8c1a-9ad5aba5e170",
+     "name": "Filete de ternera magra",
+     "quantity": 120
+    },
+    {
+     "id": "0b0d80e6-1f66-5f0e-87bd-7d719cab1e85",
+     "name": "Tomate frito",
+     "quantity": 60
+    }
+   ],
+   "steps": [
+    {
+     "position": 1,
+     "description": "Cuece el arroz 12-15 min en agua con sal y escúrrelo (o usa arroz ya cocido).",
+     "items": []
+    },
+    {
+     "position": 2,
+     "description": "Haz la ternera en tiras (o picada) a la plancha.",
+     "items": []
+    },
+    {
+     "position": 3,
+     "description": "Añade los garbanzos escurridos y el tomate frito, 2 min, y mezcla con el arroz.",
+     "items": []
+    }
+   ],
+   "nutritionalWhy": null,
+   "difficulty": 1,
+   "cookingTime": 15,
+   "tupper": true,
+   "concepts": [],
+   "conceptGroups": [],
+   "intakeTypes": [
+    3,
+    5
+   ],
+   "mealTypes": [],
+   "forbiddenFor": [
+    55,
+    56,
+    59,
+    67,
+    68,
+    86,
+    89,
+    92,
+    112,
+    114
+   ],
+   "macros": {
+    "carbohydrate": {
+     "grams": 65,
+     "percentage": 50
+    },
+    "protein": {
+     "grams": 41,
+     "percentage": 31
+    },
+    "fat": {
+     "grams": 11,
+     "percentage": 19
+    }
+   },
+   "kcal": 546,
+   "weight": 380,
+   "categoria": "Platos salados / principales",
+   "basica": true
+  },
+  {
+   "id": "4227bd3e-09ef-531c-9b1e-b6d169a9aa6f",
+   "name": "Lentejas con arroz y pollo",
+   "image": "https://s3.eu-west-3.amazonaws.com/storage.getindya.com/recipes/images/recipe_hx090lPRlFU7e99tGNAv.jpg",
+   "ingredients": [
+    {
+     "id": "95e083a8-9889-5d68-ad92-733525bf2587",
+     "name": "Lentejas cocidas de bote",
+     "quantity": 200
+    },
+    {
+     "id": "2e63a645-4f34-54cf-a06f-213053a955e9",
+     "name": "Arroz (en crudo)",
+     "quantity": 50
+    },
+    {
+     "id": "d1355703-8c68-5237-9dab-bf4140941bbd",
+     "name": "Pechuga de pollo",
+     "quantity": 120
+    },
+    {
+     "id": "b11a0636-ee50-5540-b887-256a2f2f7753",
+     "name": "Aceite de oliva",
+     "quantity": 5
+    }
+   ],
+   "steps": [
+    {
+     "position": 1,
+     "description": "Cuece el arroz 12-15 min en agua con sal y escúrrelo (o usa arroz ya cocido).",
+     "items": []
+    },
+    {
+     "position": 2,
+     "description": "Haz el pollo en dados a la plancha con el aceite y pimentón.",
+     "items": []
+    },
+    {
+     "position": 3,
+     "description": "Añade las lentejas escurridas, 2 min, y mezcla con el arroz.",
+     "items": []
+    }
+   ],
+   "nutritionalWhy": null,
+   "difficulty": 1,
+   "cookingTime": 15,
+   "tupper": true,
+   "concepts": [],
+   "conceptGroups": [],
+   "intakeTypes": [
+    3,
+    5
+   ],
+   "mealTypes": [],
+   "forbiddenFor": [
+    55,
+    56,
+    67,
+    68,
+    86,
+    112
+   ],
+   "macros": {
+    "carbohydrate": {
+     "grams": 63,
+     "percentage": 49
+    },
+    "protein": {
+     "grams": 45,
+     "percentage": 35
+    },
+    "fat": {
+     "grams": 9,
+     "percentage": 16
+    }
+   },
+   "kcal": 534,
+   "weight": 375,
+   "categoria": "Platos salados / principales",
+   "basica": true
+  },
+  {
+   "id": "c7c39f51-1cf5-5e62-a16a-48dee990c2c8",
+   "name": "Garbanzos salteados con pollo y tomate",
+   "image": "https://images.unsplash.com/photo-1773871614358-41ab249dbd2f?w=900&h=675&fit=crop&q=80&fm=jpg",
+   "ingredients": [
+    {
+     "id": "0ed5fbe1-d40e-5e63-ac1b-84af1d8b826d",
+     "name": "Garbanzos cocidos de bote",
+     "quantity": 200
+    },
+    {
+     "id": "34f37358-9677-5bdf-9ed9-5c99aeea6876",
+     "name": "Pechuga de pollo",
+     "quantity": 120
+    },
+    {
+     "id": "903ba9fd-5258-5a83-9562-b2808d75e6b6",
+     "name": "Tomate frito",
+     "quantity": 60
+    }
+   ],
+   "steps": [
+    {
+     "position": 1,
+     "description": "Haz el pollo en dados a la plancha con sal y pimentón.",
+     "items": []
+    },
+    {
+     "position": 2,
+     "description": "Añade los garbanzos escurridos y el tomate frito y saltea 3 min.",
+     "items": []
+    }
+   ],
+   "nutritionalWhy": null,
+   "difficulty": 1,
+   "cookingTime": 10,
+   "tupper": true,
+   "concepts": [],
+   "conceptGroups": [],
+   "intakeTypes": [
+    3,
+    5
+   ],
+   "mealTypes": [],
+   "forbiddenFor": [
+    55,
+    56,
+    59,
+    67,
+    68,
+    86,
+    89,
+    112,
+    114
+   ],
+   "macros": {
+    "carbohydrate": {
+     "grams": 33,
+     "percentage": 34
+    },
+    "protein": {
+     "grams": 42,
+     "percentage": 43
+    },
+    "fat": {
+     "grams": 10,
+     "percentage": 23
+    }
+   },
+   "kcal": 417,
+   "weight": 380,
+   "categoria": "Platos salados / principales",
+   "basica": true
+  },
+  {
+   "id": "4d81993e-5714-5dd2-8c5a-779b3754f137",
+   "name": "Garbanzos con espinacas y huevo",
+   "image": "https://s3.eu-west-3.amazonaws.com/storage.getindya.com/recipes/images/recipe_08j7W4g31MjSYovGfw6a.jpg",
+   "ingredients": [
+    {
+     "id": "b0922349-bc8b-5f43-a328-d12eab032421",
+     "name": "Garbanzos cocidos de bote",
+     "quantity": 200
+    },
+    {
+     "id": "afb266f7-cb1a-52a1-9ff1-7b1a3d544d69",
+     "name": "Espinacas congeladas",
+     "quantity": 150
+    },
+    {
+     "id": "219d47fb-42bc-58a7-a5d0-5e924d192425",
+     "name": "Huevo",
+     "quantity": 120
+    },
+    {
+     "id": "0b097e15-596b-5011-b380-85c29ae3975a",
+     "name": "Aceite de oliva",
+     "quantity": 5
+    }
+   ],
+   "steps": [
+    {
+     "position": 1,
+     "description": "Saltea las espinacas con el aceite y un ajo 5 min.",
+     "items": []
+    },
+    {
+     "position": 2,
+     "description": "Añade los garbanzos escurridos, comino y pimentón, 2 min.",
+     "items": []
+    },
+    {
+     "position": 3,
+     "description": "Haz los huevos revueltos encima o sírvelos cocidos.",
+     "items": []
+    }
+   ],
+   "nutritionalWhy": null,
+   "difficulty": 1,
+   "cookingTime": 12,
+   "tupper": true,
+   "concepts": [],
+   "conceptGroups": [],
+   "intakeTypes": [
+    3,
+    5
+   ],
+   "mealTypes": [],
+   "forbiddenFor": [
+    55,
+    68,
+    86,
+    89
+   ],
+   "macros": {
+    "carbohydrate": {
+     "grams": 31,
+     "percentage": 27
+    },
+    "protein": {
+     "grams": 34,
+     "percentage": 29
+    },
+    "fat": {
+     "grams": 23,
+     "percentage": 44
+    }
+   },
+   "kcal": 496,
+   "weight": 475,
+   "categoria": "Platos salados / principales",
+   "basica": true
+  },
+  {
+   "id": "5cf112df-c11f-5ab2-b5ae-2c91525c88f7",
+   "name": "Ensalada de alubias con atún",
+   "image": "https://images.unsplash.com/photo-1604909052743-94e838986d24?w=900&h=675&fit=crop&q=80&fm=jpg",
+   "ingredients": [
+    {
+     "id": "b91b8551-8e0a-5336-83bb-d78cfa4258c9",
+     "name": "Alubias blancas cocidas de bote",
+     "quantity": 200
+    },
+    {
+     "id": "211eceb5-3285-556e-b78b-a328bed5ea45",
+     "name": "Atún al natural escurrido",
+     "quantity": 110
+    },
+    {
+     "id": "a752bcf4-af0d-595d-ae92-4fc0e91605ad",
+     "name": "Tomate natural",
+     "quantity": 100
+    },
+    {
+     "id": "05ab6659-188d-5b77-9feb-af34e79b339e",
+     "name": "Aceite de oliva",
+     "quantity": 5
+    }
+   ],
+   "steps": [
+    {
+     "position": 1,
+     "description": "Enjuaga y escurre las alubias y el atún.",
+     "items": []
+    },
+    {
+     "position": 2,
+     "description": "Mézclalo con el tomate en dados, cebolla si te gusta, sal, vinagre y el aceite.",
+     "items": []
+    }
+   ],
+   "nutritionalWhy": null,
+   "difficulty": 1,
+   "cookingTime": 5,
+   "tupper": true,
+   "concepts": [],
+   "conceptGroups": [],
+   "intakeTypes": [
+    3,
+    5
+   ],
+   "mealTypes": [],
+   "forbiddenFor": [
+    55,
+    56,
+    67,
+    68,
+    86,
+    89,
+    109,
+    110
+   ],
+   "macros": {
+    "carbohydrate": {
+     "grams": 30,
+     "percentage": 35
+    },
+    "protein": {
+     "grams": 40,
+     "percentage": 47
+    },
+    "fat": {
+     "grams": 7,
+     "percentage": 18
+    }
+   },
+   "kcal": 370,
+   "weight": 415,
+   "categoria": "Platos salados / principales",
+   "basica": true
+  },
+  {
+   "id": "694c5387-4ac6-5554-88a2-6e004e68e10c",
+   "name": "Bocadillo de tortilla con queso crema",
+   "image": "https://s3.eu-west-3.amazonaws.com/storage.getindya.com/recipes/images/recipe_VUAVDZvlitl8Eda41ZLi.jpg",
+   "ingredients": [
+    {
+     "id": "4bfd784f-16a9-5568-a86b-3c09a15bcce8",
+     "name": "Pan de barra",
+     "quantity": 120
+    },
+    {
+     "id": "5a6146dc-41fb-53ea-9551-1854f1c6678d",
+     "name": "Huevo",
+     "quantity": 60
+    },
+    {
+     "id": "0ad4def7-4593-59ab-9a55-d0648f80d941",
+     "name": "Claras de huevo",
+     "quantity": 100
+    },
+    {
+     "id": "551fb5e9-9ea3-5970-82a7-c140b1124896",
+     "name": "Queso crema light (tipo Philadelphia)",
+     "quantity": 30
+    }
+   ],
+   "steps": [
+    {
+     "position": 1,
+     "description": "Bate el huevo con las claras y sal y haz una tortilla francesa.",
+     "items": []
+    },
+    {
+     "position": 2,
+     "description": "Unta el pan con el queso crema y mete la tortilla.",
+     "items": []
+    }
+   ],
+   "nutritionalWhy": null,
+   "difficulty": 1,
+   "cookingTime": 8,
+   "tupper": true,
+   "concepts": [],
+   "conceptGroups": [],
+   "intakeTypes": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "mealTypes": [],
+   "forbiddenFor": [
+    55,
+    56,
+    66,
+    68,
+    87,
+    89
+   ],
+   "macros": {
+    "carbohydrate": {
+     "grams": 65,
+     "percentage": 53
+    },
+    "protein": {
+     "grams": 32,
+     "percentage": 26
+    },
+    "fat": {
+     "grams": 11,
+     "percentage": 20
+    }
+   },
+   "kcal": 496,
+   "weight": 310,
+   "categoria": "Platos salados / principales",
+   "basica": true
+  },
+  {
+   "id": "7fe9f7d6-05ff-55e1-abae-95d305f95ea1",
+   "name": "Bocadillo de tortilla con pavo y mozzarella",
+   "image": "https://images.unsplash.com/photo-1509722747041-616f39b57569?w=900&h=675&fit=crop&q=80&fm=jpg",
+   "ingredients": [
+    {
+     "id": "fbeea26a-2e7a-5bec-8ffe-3c9080bc9f3d",
+     "name": "Pan de barra",
+     "quantity": 120
+    },
+    {
+     "id": "02dc2b5d-80de-5cc6-b836-8b803f50acc2",
+     "name": "Huevo",
+     "quantity": 120
+    },
+    {
+     "id": "9e1c5491-39eb-52bb-8fd5-288a3830cbf9",
+     "name": "Fiambre de pavo",
+     "quantity": 50
+    },
+    {
+     "id": "3ea655f9-71af-528a-8fbb-8d033244f5be",
+     "name": "Mozzarella light",
+     "quantity": 50
+    }
+   ],
+   "steps": [
+    {
+     "position": 1,
+     "description": "Haz una tortilla francesa con los huevos.",
+     "items": []
+    },
+    {
+     "position": 2,
+     "description": "Monta el bocadillo con la tortilla, el pavo y la mozzarella. 1 min al microondas o sandwichera si lo quieres fundido.",
+     "items": []
+    }
+   ],
+   "nutritionalWhy": null,
+   "difficulty": 1,
+   "cookingTime": 8,
+   "tupper": true,
+   "concepts": [],
+   "conceptGroups": [],
+   "intakeTypes": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "mealTypes": [],
+   "forbiddenFor": [
+    55,
+    56,
+    66,
+    67,
+    68,
+    87,
+    92,
+    112
+   ],
+   "macros": {
+    "carbohydrate": {
+     "grams": 65,
+     "percentage": 42
+    },
+    "protein": {
+     "grams": 44,
+     "percentage": 29
+    },
+    "fat": {
+     "grams": 20,
+     "percentage": 29
+    }
+   },
+   "kcal": 624,
+   "weight": 340,
+   "categoria": "Platos salados / principales",
+   "basica": true
+  },
+  {
+   "id": "60709190-85ee-525d-a20f-a809154fe59f",
+   "name": "Bocadillo de hamburguesa de pollo con cheddar",
+   "image": "https://s3.eu-west-3.amazonaws.com/storage.getindya.com/recipes/images/recipe_1hPXlGqWXRs5pStTiMd5.jpg",
+   "ingredients": [
+    {
+     "id": "7c5b89a8-9aac-5586-a731-14363783ffbe",
+     "name": "Pan de barra",
+     "quantity": 120
+    },
+    {
+     "id": "9f6f1ed3-8cc7-52f4-87bb-14ebc4e2f0e7",
+     "name": "Hamburguesa de pollo (súper)",
+     "quantity": 120
+    },
+    {
+     "id": "fef42b53-8b9e-50f1-8312-50008cfc70b2",
+     "name": "Queso cheddar en lonchas",
+     "quantity": 20
+    },
+    {
+     "id": "25ee7690-fea8-588f-90b1-259482c2ff67",
+     "name": "Ketchup",
+     "quantity": 20
+    },
+    {
+     "id": "3fdb4bec-ca9f-5c0b-ab94-ef5fd5e625d6",
+     "name": "Lechuga y tomate",
+     "quantity": 50
+    }
+   ],
+   "steps": [
+    {
+     "position": 1,
+     "description": "Haz la hamburguesa a la plancha 4-5 min por lado; al final pon la loncha de cheddar encima para que se funda.",
+     "items": []
+    },
+    {
+     "position": 2,
+     "description": "Monta el bocadillo con lechuga, tomate y ketchup.",
+     "items": []
+    }
+   ],
+   "nutritionalWhy": null,
+   "difficulty": 1,
+   "cookingTime": 10,
+   "tupper": true,
+   "concepts": [],
+   "conceptGroups": [],
+   "intakeTypes": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "mealTypes": [],
+   "forbiddenFor": [
+    55,
+    56,
+    59,
+    66,
+    67,
+    68,
+    86,
+    87,
+    89,
+    92,
+    112,
+    114
+   ],
+   "macros": {
+    "carbohydrate": {
+     "grams": 72,
+     "percentage": 48
+    },
+    "protein": {
+     "grams": 38,
+     "percentage": 25
+    },
+    "fat": {
+     "grams": 18,
+     "percentage": 27
+    }
+   },
+   "kcal": 609,
+   "weight": 330,
+   "categoria": "Platos salados / principales",
+   "basica": true
+  },
+  {
+   "id": "a583f81d-ba9c-51be-999c-e9339e3bf089",
+   "name": "Bocadillo de lomo con tomate",
+   "image": "https://s3.eu-west-3.amazonaws.com/storage.getindya.com/recipes/images/recipe_cken23Dnsi8dfHv1tuFU.jpg",
+   "ingredients": [
+    {
+     "id": "d160f0a9-b3a4-582a-aa2f-6bc0a89c930b",
+     "name": "Pan de barra",
+     "quantity": 120
+    },
+    {
+     "id": "19fa2663-75e3-554b-8d14-8b1b030dadd7",
+     "name": "Lomo embuchado",
+     "quantity": 50
+    },
+    {
+     "id": "cd1c3fc1-478d-51d6-8af4-06eafa2e3d35",
+     "name": "Tomate natural",
+     "quantity": 50
+    },
+    {
+     "id": "b4eabfa6-9adb-5714-ad0b-b7cf28663f47",
+     "name": "Aceite de oliva",
+     "quantity": 5
+    }
+   ],
+   "steps": [
+    {
+     "position": 1,
+     "description": "Restriega o ralla el tomate en el pan y echa el aceite y sal.",
+     "items": []
+    },
+    {
+     "position": 2,
+     "description": "Pon el lomo.",
+     "items": []
+    }
+   ],
+   "nutritionalWhy": null,
+   "difficulty": 1,
+   "cookingTime": 5,
+   "tupper": true,
+   "concepts": [],
+   "conceptGroups": [],
+   "intakeTypes": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "mealTypes": [],
+   "forbiddenFor": [
+    55,
+    56,
+    60,
+    66,
+    67,
+    68,
+    86,
+    89,
+    92,
+    109,
+    112
+   ],
+   "macros": {
+    "carbohydrate": {
+     "grams": 65,
+     "percentage": 53
+    },
+    "protein": {
+     "grams": 30,
+     "percentage": 25
+    },
+    "fat": {
+     "grams": 12,
+     "percentage": 22
+    }
+   },
+   "kcal": 498,
+   "weight": 225,
+   "categoria": "Platos salados / principales",
+   "basica": true
+  },
+  {
+   "id": "56bcad1a-36a3-5a09-be31-64eae8586f45",
+   "name": "Sándwich de atún",
+   "image": "https://s3.eu-west-3.amazonaws.com/storage.getindya.com/recipes/images/recipe_o0WCGfmmLiFrNV20R9vo.jpg",
+   "ingredients": [
+    {
+     "id": "f901580e-db93-54e9-ad0a-ec7741e79618",
+     "name": "Pan de molde integral",
+     "quantity": 90
+    },
+    {
+     "id": "e09c2c59-c65d-57b3-913a-cd90a85c31ec",
+     "name": "Atún al natural escurrido",
+     "quantity": 110
+    },
+    {
+     "id": "a2cc6cbf-bc89-5504-b355-61e295b203df",
+     "name": "Queso fresco batido 0%",
+     "quantity": 40
+    },
+    {
+     "id": "2b9b2359-7381-5c0b-84d1-77746522cad4",
+     "name": "Lechuga y tomate",
+     "quantity": 50
+    }
+   ],
+   "steps": [
+    {
+     "position": 1,
+     "description": "Mezcla el atún escurrido con el queso batido, sal y pimienta.",
+     "items": []
+    },
+    {
+     "position": 2,
+     "description": "Rellena el pan con la mezcla, lechuga y tomate.",
+     "items": []
+    }
+   ],
+   "nutritionalWhy": null,
+   "difficulty": 1,
+   "cookingTime": 5,
+   "tupper": true,
+   "concepts": [],
+   "conceptGroups": [],
+   "intakeTypes": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "mealTypes": [],
+   "forbiddenFor": [
+    55,
+    56,
+    59,
+    66,
+    67,
+    68,
+    86,
+    87,
+    89,
+    109,
+    110
+   ],
+   "macros": {
+    "carbohydrate": {
+     "grams": 40,
+     "percentage": 45
+    },
+    "protein": {
+     "grams": 39,
+     "percentage": 44
+    },
+    "fat": {
+     "grams": 4,
+     "percentage": 10
+    }
+   },
+   "kcal": 368,
+   "weight": 290,
+   "categoria": "Platos salados / principales",
+   "basica": true
+  },
+  {
+   "id": "6dee15a1-181a-5002-ad83-64f9465c6750",
+   "name": "Wrap de pollo",
+   "image": "https://s3.eu-west-3.amazonaws.com/storage.getindya.com/recipes/images/recipe_ca46uyrpd2Trn6pdG9ii.jpg",
+   "ingredients": [
+    {
+     "id": "2397d11e-7bb4-51aa-9315-4a7c017da0a3",
+     "name": "Tortilla de trigo (wrap)",
+     "quantity": 80
+    },
+    {
+     "id": "14d7e6e8-d161-5854-b354-9eb15b7b367a",
+     "name": "Pechuga de pollo",
+     "quantity": 150
+    },
+    {
+     "id": "824cba65-9497-5409-9703-3bef4ecbb377",
+     "name": "Queso fresco batido 0%",
+     "quantity": 50
+    },
+    {
+     "id": "cfe9989e-1979-548e-8514-45c6d6424b08",
+     "name": "Lechuga y tomate",
+     "quantity": 60
+    }
+   ],
+   "steps": [
+    {
+     "position": 1,
+     "description": "Haz el pollo en tiras a la plancha con especias (pimentón, ajo en polvo).",
+     "items": []
+    },
+    {
+     "position": 2,
+     "description": "Unta las 2 tortillas con el queso batido, rellena con pollo, lechuga y tomate, y enrolla.",
+     "items": []
+    }
+   ],
+   "nutritionalWhy": null,
+   "difficulty": 1,
+   "cookingTime": 12,
+   "tupper": true,
+   "concepts": [],
+   "conceptGroups": [],
+   "intakeTypes": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "mealTypes": [],
+   "forbiddenFor": [
+    55,
+    56,
+    59,
+    66,
+    67,
+    68,
+    86,
+    87,
+    89,
+    112
+   ],
+   "macros": {
+    "carbohydrate": {
+     "grams": 44,
+     "percentage": 40
+    },
+    "protein": {
+     "grams": 46,
+     "percentage": 42
+    },
+    "fat": {
+     "grams": 9,
+     "percentage": 18
+    }
+   },
+   "kcal": 439,
+   "weight": 340,
+   "categoria": "Platos salados / principales",
+   "basica": true
+  },
+  {
+   "id": "9c477431-c86a-599f-b693-68aa96add933",
+   "name": "Hamburguesa de ternera con queso",
+   "image": "https://s3.eu-west-3.amazonaws.com/storage.getindya.com/recipes/images/recipe_foWPBbXd7JuYTAJC9rUS.jpg",
+   "ingredients": [
+    {
+     "id": "43d0ef05-6651-519f-97bc-effc66216422",
+     "name": "Pan de hamburguesa",
+     "quantity": 70
+    },
+    {
+     "id": "6bac5e88-b9df-570c-9ea7-a94e51fca508",
+     "name": "Carne picada de ternera",
+     "quantity": 150
+    },
+    {
+     "id": "068f315d-feca-5d6f-b5f9-25e9a2556782",
+     "name": "Queso cheddar en lonchas",
+     "quantity": 20
+    },
+    {
+     "id": "c9fb949d-8eec-566a-a860-808536677e14",
+     "name": "Ketchup",
+     "quantity": 15
+    },
+    {
+     "id": "aa27f05d-fffe-59de-b43d-d2d8901af7cc",
+     "name": "Lechuga y tomate",
+     "quantity": 50
+    }
+   ],
+   "steps": [
+    {
+     "position": 1,
+     "description": "Forma la hamburguesa con la carne y sal y hazla a la plancha 3-4 min por lado; pon el queso al final.",
+     "items": []
+    },
+    {
+     "position": 2,
+     "description": "Monta con el pan, lechuga, tomate y ketchup.",
+     "items": []
+    }
+   ],
+   "nutritionalWhy": null,
+   "difficulty": 1,
+   "cookingTime": 12,
+   "tupper": true,
+   "concepts": [],
+   "conceptGroups": [],
+   "intakeTypes": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "mealTypes": [],
+   "forbiddenFor": [
+    55,
+    56,
+    59,
+    66,
+    67,
+    68,
+    86,
+    87,
+    89,
+    92,
+    112,
+    114
+   ],
+   "macros": {
+    "carbohydrate": {
+     "grams": 39,
+     "percentage": 33
+    },
+    "protein": {
+     "grams": 42,
+     "percentage": 35
+    },
+    "fat": {
+     "grams": 17,
+     "percentage": 32
+    }
+   },
+   "kcal": 482,
+   "weight": 305,
+   "categoria": "Platos salados / principales",
+   "basica": true
+  },
+  {
+   "id": "9b7fb680-3cd5-5390-9dde-a758ca81ab3d",
+   "name": "Tostadas con lomo y leche con cereales",
+   "image": "https://s3.eu-west-3.amazonaws.com/storage.getindya.com/recipes/images/recipe_XCurmcE8JJt0EPcr3hkl.jpg",
+   "ingredients": [
+    {
+     "id": "b243c361-362b-5e6f-b936-e0e663d09e9e",
+     "name": "Pan de molde integral",
+     "quantity": 90
+    },
+    {
+     "id": "b0d5bb2b-93a0-5e8f-994b-1d2769b80601",
+     "name": "Lomo embuchado",
+     "quantity": 40
+    },
+    {
+     "id": "d2ee8c34-bd6c-5eca-bc00-0b6fa3237b2c",
+     "name": "Leche semidesnatada",
+     "quantity": 300
+    },
+    {
+     "id": "45b988fb-da0d-5de0-9503-2bc14456f07c",
+     "name": "Cereales integrales",
+     "quantity": 30
+    }
+   ],
+   "steps": [
+    {
+     "position": 1,
+     "description": "Tuesta el pan y pon el lomo.",
+     "items": []
+    },
+    {
+     "position": 2,
+     "description": "Leche con los cereales.",
+     "items": []
+    }
+   ],
+   "nutritionalWhy": null,
+   "difficulty": 1,
+   "cookingTime": 5,
+   "tupper": false,
+   "concepts": [],
+   "conceptGroups": [],
+   "intakeTypes": [
+    1,
+    2,
+    4
+   ],
+   "mealTypes": [],
+   "forbiddenFor": [
+    55,
+    56,
+    59,
+    60,
+    66,
+    67,
+    68,
+    86,
+    87,
+    89,
+    92,
+    109,
+    112,
+    113
+   ],
+   "macros": {
+    "carbohydrate": {
+     "grams": 74,
+     "percentage": 53
+    },
+    "protein": {
+     "grams": 36,
+     "percentage": 26
+    },
+    "fat": {
+     "grams": 13,
+     "percentage": 21
+    }
+   },
+   "kcal": 576,
+   "weight": 460,
+   "categoria": "Desayuno y dulces",
+   "basica": true
+  },
+  {
+   "id": "73849c77-bf00-54dc-8d73-1797f9847547",
+   "name": "Leche con proteína, cereales, chocolate y fruta",
+   "image": "https://images.unsplash.com/photo-1640458348210-6c46cc136f18?w=900&h=675&fit=crop&q=80&fm=jpg",
+   "ingredients": [
+    {
+     "id": "23319c59-a636-507c-9103-37acacac02c1",
+     "name": "Leche semidesnatada",
+     "quantity": 300
+    },
+    {
+     "id": "5a4f2f13-5d79-529c-b6ae-f8d423774b9a",
+     "name": "Proteína whey",
+     "quantity": 25
+    },
+    {
+     "id": "3669463d-43ac-5165-b661-b23741e1de98",
+     "name": "Cereales integrales",
+     "quantity": 50
+    },
+    {
+     "id": "a4d9f801-19ac-5e18-843c-3324f40f8436",
+     "name": "Chocolate negro 70%",
+     "quantity": 10
+    },
+    {
+     "id": "a0d7726d-fe78-51a0-b207-d7e0af508716",
+     "name": "Plátano",
+     "quantity": 120
+    }
+   ],
+   "steps": [
+    {
+     "position": 1,
+     "description": "Mezcla la proteína con la leche (batidor o agitando).",
+     "items": []
+    },
+    {
+     "position": 2,
+     "description": "Añade los cereales, el chocolate troceado y la fruta.",
+     "items": []
+    }
+   ],
+   "nutritionalWhy": null,
+   "difficulty": 1,
+   "cookingTime": 5,
+   "tupper": false,
+   "concepts": [],
+   "conceptGroups": [],
+   "intakeTypes": [
+    1,
+    2,
+    4
+   ],
+   "mealTypes": [],
+   "forbiddenFor": [
+    55,
+    56,
+    66,
+    86,
+    87,
+    89,
+    113,
+    114
+   ],
+   "macros": {
+    "carbohydrate": {
+     "grams": 82,
+     "percentage": 57
+    },
+    "protein": {
+     "grams": 35,
+     "percentage": 24
+    },
+    "fat": {
+     "grams": 12,
+     "percentage": 19
+    }
+   },
+   "kcal": 586,
+   "weight": 505,
+   "categoria": "Desayuno y dulces",
+   "basica": true
+  },
+  {
+   "id": "dd7048f1-586f-5db6-b9ce-5bc75d12d3c6",
+   "name": "Bol de avena con proteína y fruta",
+   "image": "https://images.unsplash.com/photo-1684403731883-67a71a793d2d?w=900&h=675&fit=crop&q=80&fm=jpg",
+   "ingredients": [
+    {
+     "id": "bb2e3903-ca6a-58f0-924e-a57f29fbb889",
+     "name": "Leche semidesnatada",
+     "quantity": 250
+    },
+    {
+     "id": "305f89f5-c36a-52f5-8d87-9048afd2196a",
+     "name": "Proteína whey",
+     "quantity": 25
+    },
+    {
+     "id": "42f642c7-d830-5292-bb52-0631f72836b5",
+     "name": "Copos de avena",
+     "quantity": 60
+    },
+    {
+     "id": "4ec5cd71-4bdf-5904-8767-c21b7f716318",
+     "name": "Chocolate negro 70%",
+     "quantity": 10
+    },
+    {
+     "id": "4b01897c-2f5a-57ff-b5f2-a4cd20a13321",
+     "name": "Plátano",
+     "quantity": 120
+    }
+   ],
+   "steps": [
+    {
+     "position": 1,
+     "description": "Mezcla la proteína con la leche.",
+     "items": []
+    },
+    {
+     "position": 2,
+     "description": "Añade la avena, el chocolate troceado y la fruta. Frío o 1-2 min al microondas.",
+     "items": []
+    }
+   ],
+   "nutritionalWhy": null,
+   "difficulty": 1,
+   "cookingTime": 5,
+   "tupper": false,
+   "concepts": [],
+   "conceptGroups": [],
+   "intakeTypes": [
+    1,
+    2,
+    4
+   ],
+   "mealTypes": [],
+   "forbiddenFor": [
+    55,
+    56,
+    86,
+    87,
+    89,
+    113,
+    114
+   ],
+   "macros": {
+    "carbohydrate": {
+     "grams": 78,
+     "percentage": 53
+    },
+    "protein": {
+     "grams": 37,
+     "percentage": 25
+    },
+    "fat": {
+     "grams": 14,
+     "percentage": 22
+    }
+   },
+   "kcal": 601,
+   "weight": 465,
+   "categoria": "Desayuno y dulces",
+   "basica": true
+  },
+  {
+   "id": "3ca80fe0-dbd2-5d52-9c9d-454cab2a289a",
+   "name": "Tortitas de avena con crema de cacahuete y miel",
+   "image": "https://images.unsplash.com/photo-1607209093245-52c2256f5e51?w=900&h=675&fit=crop&q=80&fm=jpg",
+   "ingredients": [
+    {
+     "id": "48d6e6a9-3f5b-5e53-889a-c40241ce056a",
+     "name": "Claras de huevo",
+     "quantity": 200
+    },
+    {
+     "id": "61b41392-4b93-5a70-b681-1c2403fdcabc",
+     "name": "Copos de avena",
+     "quantity": 60
+    },
+    {
+     "id": "d5dc1af3-64f5-519b-b15b-bdbc5fac607d",
+     "name": "Crema de cacahuete",
+     "quantity": 10
+    },
+    {
+     "id": "731cfa43-cde5-5077-a360-34e6e46dd6f3",
+     "name": "Miel",
+     "quantity": 15
+    }
+   ],
+   "steps": [
+    {
+     "position": 1,
+     "description": "Bate las claras con la avena (con batidora o tal cual) y una pizca de canela.",
+     "items": []
+    },
+    {
+     "position": 2,
+     "description": "Haz las tortitas en sartén antiadherente, 2 min por lado.",
+     "items": []
+    },
+    {
+     "position": 3,
+     "description": "Cubre con la crema de cacahuete y la miel.",
+     "items": []
+    }
+   ],
+   "nutritionalWhy": null,
+   "difficulty": 1,
+   "cookingTime": 10,
+   "tupper": false,
+   "concepts": [],
+   "conceptGroups": [],
+   "intakeTypes": [
+    1,
+    2,
+    4
+   ],
+   "mealTypes": [],
+   "forbiddenFor": [
+    55,
+    68,
+    86,
+    114
+   ],
+   "macros": {
+    "carbohydrate": {
+     "grams": 51,
+     "percentage": 48
+    },
+    "protein": {
+     "grams": 32,
+     "percentage": 30
+    },
+    "fat": {
+     "grams": 10,
+     "percentage": 21
+    }
+   },
+   "kcal": 427,
+   "weight": 285,
+   "categoria": "Desayuno y dulces",
+   "basica": true
+  },
+  {
+   "id": "d9f40d8f-e20a-5ca3-b8cf-f48ec5975e27",
+   "name": "Tostadas con tomate y jamón",
+   "image": "https://s3.eu-west-3.amazonaws.com/storage.getindya.com/recipes/images/recipe_8oNrJsAp4yQozoyzsSJh.jpg",
+   "ingredients": [
+    {
+     "id": "52e1ea2f-b04a-5f1a-918e-a2529311b47f",
+     "name": "Pan de molde integral",
+     "quantity": 80
+    },
+    {
+     "id": "928010db-dfa7-516c-a920-a11270700b1d",
+     "name": "Tomate natural",
+     "quantity": 80
+    },
+    {
+     "id": "652d4f83-c95f-5cd3-aae1-7ee900dd2c1e",
+     "name": "Jamón serrano",
+     "quantity": 40
+    },
+    {
+     "id": "6f0d5636-1deb-5778-add8-4f0485cd2bf4",
+     "name": "Aceite de oliva",
+     "quantity": 5
+    }
+   ],
+   "steps": [
+    {
+     "position": 1,
+     "description": "Tuesta el pan y pon el tomate rallado, el aceite y sal.",
+     "items": []
+    },
+    {
+     "position": 2,
+     "description": "Pon el jamón encima.",
+     "items": []
+    }
+   ],
+   "nutritionalWhy": null,
+   "difficulty": 1,
+   "cookingTime": 5,
+   "tupper": false,
+   "concepts": [],
+   "conceptGroups": [],
+   "intakeTypes": [
+    1,
+    2,
+    4
+   ],
+   "mealTypes": [],
+   "forbiddenFor": [
+    55,
+    56,
+    59,
+    60,
+    66,
+    67,
+    68,
+    86,
+    89,
+    92,
+    109,
+    112
+   ],
+   "macros": {
+    "carbohydrate": {
+     "grams": 36,
+     "percentage": 42
+    },
+    "protein": {
+     "grams": 21,
+     "percentage": 24
+    },
+    "fat": {
+     "grams": 13,
+     "percentage": 34
+    }
+   },
+   "kcal": 357,
+   "weight": 205,
+   "categoria": "Desayuno y dulces",
+   "basica": true
+  },
+  {
+   "id": "e4e593d3-9e36-56ab-8e63-d2e0778d899a",
+   "name": "Tostadas con huevos revueltos",
+   "image": "https://images.unsplash.com/photo-1563690449029-d6e1b8d6003d?w=900&h=675&fit=crop&q=80&fm=jpg",
+   "ingredients": [
+    {
+     "id": "b3c1b634-decd-5675-b7d7-0e83d66d1ee1",
+     "name": "Pan de molde integral",
+     "quantity": 80
+    },
+    {
+     "id": "f5434ff6-daaf-5ff8-bf7f-3a9704e1ae87",
+     "name": "Huevo",
+     "quantity": 120
+    },
+    {
+     "id": "333932b2-b65e-55a8-a849-b79764cda027",
+     "name": "Claras de huevo",
+     "quantity": 100
+    }
+   ],
+   "steps": [
+    {
+     "position": 1,
+     "description": "Bate los huevos con las claras y sal y hazlos revueltos en sartén antiadherente.",
+     "items": []
+    },
+    {
+     "position": 2,
+     "description": "Sírvelos encima de las tostadas.",
+     "items": []
+    }
+   ],
+   "nutritionalWhy": null,
+   "difficulty": 1,
+   "cookingTime": 8,
+   "tupper": false,
+   "concepts": [],
+   "conceptGroups": [],
+   "intakeTypes": [
+    1,
+    2,
+    4
+   ],
+   "mealTypes": [],
+   "forbiddenFor": [
+    55,
+    59,
+    66,
+    68,
+    86
+   ],
+   "macros": {
+    "carbohydrate": {
+     "grams": 34,
+     "percentage": 33
+    },
+    "protein": {
+     "grams": 34,
+     "percentage": 33
+    },
+    "fat": {
+     "grams": 15,
+     "percentage": 33
+    }
+   },
+   "kcal": 422,
+   "weight": 300,
+   "categoria": "Desayuno y dulces",
+   "basica": true
+  },
+  {
+   "id": "5b7b056f-3f29-5b40-966a-f09f70be0c39",
+   "name": "Queso batido con avena, cacao y plátano",
+   "image": "https://images.unsplash.com/photo-1598259298632-e785684cfa90?w=900&h=675&fit=crop&q=80&fm=jpg",
+   "ingredients": [
+    {
+     "id": "9fc871ce-d93a-58fe-9c53-8bc7fe46f4df",
+     "name": "Queso fresco batido 0%",
+     "quantity": 250
+    },
+    {
+     "id": "bd424a94-6c76-5dfc-a834-3070cdbd8e35",
+     "name": "Copos de avena",
+     "quantity": 40
+    },
+    {
+     "id": "2633d705-7315-53f4-bfa4-42d64cb37488",
+     "name": "Cacao puro en polvo",
+     "quantity": 5
+    },
+    {
+     "id": "90286c69-e86d-573e-8ba0-056a2e8882da",
+     "name": "Plátano",
+     "quantity": 100
+    }
+   ],
+   "steps": [
+    {
+     "position": 1,
+     "description": "Mezcla el queso batido con el cacao (y edulcorante si quieres).",
+     "items": []
+    },
+    {
+     "position": 2,
+     "description": "Añade la avena y el plátano en rodajas.",
+     "items": []
+    }
+   ],
+   "nutritionalWhy": null,
+   "difficulty": 1,
+   "cookingTime": 5,
+   "tupper": false,
+   "concepts": [],
+   "conceptGroups": [],
+   "intakeTypes": [
+    1,
+    2,
+    4
+   ],
+   "mealTypes": [],
+   "forbiddenFor": [
+    55,
+    56,
+    86,
+    87,
+    89,
+    114
+   ],
+   "macros": {
+    "carbohydrate": {
+     "grams": 54,
+     "percentage": 59
+    },
+    "protein": {
+     "grams": 28,
+     "percentage": 31
+    },
+    "fat": {
+     "grams": 4,
+     "percentage": 10
+    }
+   },
+   "kcal": 372,
+   "weight": 395,
+   "categoria": "Desayuno y dulces",
+   "basica": true
+  },
+  {
+   "id": "634cb080-b81a-54f9-84d4-cfb88d1278fc",
+   "name": "Quesadilla de pollo y queso",
+   "image": "https://images.unsplash.com/photo-1673990349292-ed2dfa7988c9?w=900&h=675&fit=crop&q=80&fm=jpg",
+   "ingredients": [
+    {
+     "id": "1324bee4-0a51-50c0-abb8-e9789efe7cc4",
+     "name": "Tortilla de trigo (wrap)",
+     "quantity": 80
+    },
+    {
+     "id": "2cc84f2c-897f-5742-a548-20f8f6c6ea1b",
+     "name": "Pechuga de pollo",
+     "quantity": 120
+    },
+    {
+     "id": "ea37247f-b4e9-587f-a82f-7a0e149f0958",
+     "name": "Mozzarella light",
+     "quantity": 50
+    }
+   ],
+   "steps": [
+    {
+     "position": 1,
+     "description": "Haz el pollo en tiras a la plancha.",
+     "items": []
+    },
+    {
+     "position": 2,
+     "description": "Rellena una tortilla con pollo y mozzarella, tapa con la otra y dórala en la sartén 2 min por lado.",
+     "items": []
+    }
+   ],
+   "nutritionalWhy": null,
+   "difficulty": 1,
+   "cookingTime": 10,
+   "tupper": false,
+   "concepts": [],
+   "conceptGroups": [],
+   "intakeTypes": [
+    3,
+    5
+   ],
+   "mealTypes": [],
+   "forbiddenFor": [
+    55,
+    56,
+    59,
+    66,
+    67,
+    68,
+    87,
+    92,
+    112
+   ],
+   "macros": {
+    "carbohydrate": {
+     "grams": 40,
+     "percentage": 36
+    },
+    "protein": {
+     "grams": 43,
+     "percentage": 38
+    },
+    "fat": {
+     "grams": 13,
+     "percentage": 26
+    }
+   },
+   "kcal": 454,
+   "weight": 250,
+   "categoria": "Platos salados / principales",
+   "basica": true
+  },
+  {
+   "id": "c5747a87-d3b4-5203-92d3-9c54c2c6a836",
+   "name": "Pizza rápida de wrap",
+   "image": "https://s3.eu-west-3.amazonaws.com/storage.getindya.com/recipes/images/recipe_LNswt9EyEi4Fwg1qSXQc.jpg",
+   "ingredients": [
+    {
+     "id": "649b141a-4734-5a88-8b5b-af3acbdd3cd7",
+     "name": "Tortilla de trigo (wrap)",
+     "quantity": 80
+    },
+    {
+     "id": "a7ae88fd-7e45-5b93-95e2-349c889bf064",
+     "name": "Tomate frito",
+     "quantity": 50
+    },
+    {
+     "id": "5626a6c4-86fd-539d-bdaa-3250561cdcc8",
+     "name": "Mozzarella light",
+     "quantity": 60
+    },
+    {
+     "id": "3c4e59ff-106c-5434-a532-1d372d51d7c2",
+     "name": "Fiambre de pavo",
+     "quantity": 60
+    }
+   ],
+   "steps": [
+    {
+     "position": 1,
+     "description": "Unta las 2 tortillas con el tomate frito y pon el pavo y la mozzarella. Orégano.",
+     "items": []
+    },
+    {
+     "position": 2,
+     "description": "Freidora de aire a 190 °C 5-6 min, horno a 220 °C 8 min o sartén tapada 5 min.",
+     "items": []
+    }
+   ],
+   "nutritionalWhy": null,
+   "difficulty": 1,
+   "cookingTime": 10,
+   "tupper": false,
+   "concepts": [],
+   "conceptGroups": [],
+   "intakeTypes": [
+    3,
+    5
+   ],
+   "mealTypes": [],
+   "forbiddenFor": [
+    55,
+    56,
+    59,
+    66,
+    67,
+    68,
+    86,
+    87,
+    89,
+    92,
+    112,
+    114
+   ],
+   "macros": {
+    "carbohydrate": {
+     "grams": 46,
+     "percentage": 43
+    },
+    "protein": {
+     "grams": 29,
+     "percentage": 27
+    },
+    "fat": {
+     "grams": 14,
+     "percentage": 30
+    }
+   },
+   "kcal": 436,
+   "weight": 250,
+   "categoria": "Platos salados / principales",
+   "basica": true
+  },
+  {
+   "id": "5049b6f8-8542-5975-b910-f2c38883cfd9",
+   "name": "Revuelto de huevos con pavo y pan",
+   "image": "https://s3.eu-west-3.amazonaws.com/storage.getindya.com/recipes/images/recipe_t8pOVlX5radyMP2myfsW.jpg",
+   "ingredients": [
+    {
+     "id": "f0165a30-0a70-5ce4-8539-104d51bff367",
+     "name": "Huevo",
+     "quantity": 120
+    },
+    {
+     "id": "803b0abb-19ed-528d-8c11-e64c41fefbee",
+     "name": "Claras de huevo",
+     "quantity": 100
+    },
+    {
+     "id": "e7c1d0a0-c478-566c-9f70-162ad42466e8",
+     "name": "Fiambre de pavo",
+     "quantity": 60
+    },
+    {
+     "id": "b34c81b1-0e19-5240-99f1-2c4aa9069de6",
+     "name": "Pan de barra",
+     "quantity": 60
+    }
+   ],
+   "steps": [
+    {
+     "position": 1,
+     "description": "Dora el pavo en tiras en la sartén.",
+     "items": []
+    },
+    {
+     "position": 2,
+     "description": "Añade los huevos batidos con las claras y remueve hasta que cuajen. Con el pan.",
+     "items": []
+    }
+   ],
+   "nutritionalWhy": null,
+   "difficulty": 1,
+   "cookingTime": 8,
+   "tupper": false,
+   "concepts": [],
+   "conceptGroups": [],
+   "intakeTypes": [
+    3,
+    5
+   ],
+   "mealTypes": [],
+   "forbiddenFor": [
+    55,
+    56,
+    66,
+    67,
+    68,
+    112
+   ],
+   "macros": {
+    "carbohydrate": {
+     "grams": 34,
+     "percentage": 31
+    },
+    "protein": {
+     "grams": 43,
+     "percentage": 40
+    },
+    "fat": {
+     "grams": 14,
+     "percentage": 29
+    }
+   },
+   "kcal": 441,
+   "weight": 340,
+   "categoria": "Platos salados / principales",
+   "basica": true
+  },
+  {
+   "id": "3262d3ca-033c-59c9-9ef9-91e06d59f0d5",
+   "name": "Arroz con salmón y aguacate (poke rápido)",
+   "image": "https://s3.eu-west-3.amazonaws.com/storage.getindya.com/recipes/images/recipe_CsGOCEggLk4AWXbw9LEE.jpg",
+   "ingredients": [
+    {
+     "id": "e22d3738-906b-532c-a43e-4ef8c0659c0b",
+     "name": "Arroz (en crudo)",
+     "quantity": 80
+    },
+    {
+     "id": "f545ab9d-9b0b-5519-8181-abf5f42b313a",
+     "name": "Salmón",
+     "quantity": 120
+    },
+    {
+     "id": "0e500319-64b2-5779-a44e-47648cdf25aa",
+     "name": "Aguacate",
+     "quantity": 50
+    },
+    {
+     "id": "d01968d0-f629-5095-bec0-f433e2d14711",
+     "name": "Salsa de soja",
+     "quantity": 10
+    }
+   ],
+   "steps": [
+    {
+     "position": 1,
+     "description": "Cuece el arroz 12-15 min en agua con sal y escúrrelo (o usa arroz ya cocido).",
+     "items": []
+    },
+    {
+     "position": 2,
+     "description": "Haz el salmón a la plancha 3 min por lado y desmígalo.",
+     "items": []
+    },
+    {
+     "position": 3,
+     "description": "Monta el bol con el arroz, el salmón, el aguacate en dados y la soja.",
+     "items": []
+    }
+   ],
+   "nutritionalWhy": null,
+   "difficulty": 1,
+   "cookingTime": 15,
+   "tupper": true,
+   "concepts": [],
+   "conceptGroups": [],
+   "intakeTypes": [
+    3,
+    5
+   ],
+   "mealTypes": [],
+   "forbiddenFor": [
+    55,
+    56,
+    67,
+    68,
+    89
+   ],
+   "macros": {
+    "carbohydrate": {
+     "grams": 64,
+     "percentage": 43
+    },
+    "protein": {
+     "grams": 31,
+     "percentage": 21
+    },
+    "fat": {
+     "grams": 24,
+     "percentage": 36
+    }
+   },
+   "kcal": 609,
+   "weight": 260,
+   "categoria": "Platos salados / principales",
+   "basica": true
+  },
+  {
+   "id": "04bc1c90-468f-5782-bc49-7678dc9d9f21",
+   "name": "Arroz con pollo al curry",
+   "image": "https://s3.eu-west-3.amazonaws.com/storage.getindya.com/recipes/images/recipe_SUoKs0Uz1R4gUwVtwJW9.jpg",
+   "ingredients": [
+    {
+     "id": "3cc2bacc-b310-5a64-91e7-3161bce6d79c",
+     "name": "Arroz (en crudo)",
+     "quantity": 90
+    },
+    {
+     "id": "c8dbc4df-dddb-56b5-8925-602de0e695b1",
+     "name": "Pechuga de pollo",
+     "quantity": 150
+    },
+    {
+     "id": "4ae92342-33c7-5284-b575-04ca3c672da5",
+     "name": "Yogur natural desnatado",
+     "quantity": 80
+    }
+   ],
+   "steps": [
+    {
+     "position": 1,
+     "description": "Cuece el arroz 12-15 min en agua con sal y escúrrelo (o usa arroz ya cocido).",
+     "items": []
+    },
+    {
+     "position": 2,
+     "description": "Haz el pollo en dados a la plancha con 1 cucharadita de curry y sal.",
+     "items": []
+    },
+    {
+     "position": 3,
+     "description": "Fuera del fuego, añade el yogur, mezcla y sirve con el arroz.",
+     "items": []
+    }
+   ],
+   "nutritionalWhy": null,
+   "difficulty": 1,
+   "cookingTime": 15,
+   "tupper": true,
+   "concepts": [],
+   "conceptGroups": [],
+   "intakeTypes": [
+    3,
+    5
+   ],
+   "mealTypes": [],
+   "forbiddenFor": [
+    55,
+    56,
+    67,
+    68,
+    87,
+    89,
+    112
+   ],
+   "macros": {
+    "carbohydrate": {
+     "grams": 75,
+     "percentage": 59
+    },
+    "protein": {
+     "grams": 44,
+     "percentage": 34
+    },
+    "fat": {
+     "grams": 4,
+     "percentage": 7
+    }
+   },
+   "kcal": 516,
+   "weight": 320,
+   "categoria": "Platos salados / principales",
+   "basica": true
+  },
+  {
+   "id": "209356fa-d4c5-526a-b9c9-5b853c82055a",
+   "name": "Arroz con salchichas de pavo y tomate",
+   "image": "https://images.unsplash.com/photo-1648421714382-70d47442b354?w=900&h=675&fit=crop&q=80&fm=jpg",
+   "ingredients": [
+    {
+     "id": "6ef642c0-12e8-5ea1-b3f3-93ec1f24401c",
+     "name": "Arroz (en crudo)",
+     "quantity": 80
+    },
+    {
+     "id": "a2eb4a45-734a-5154-8fcb-8d472555a381",
+     "name": "Salchichas de pavo",
+     "quantity": 120
+    },
+    {
+     "id": "e75c639c-23f0-5ee1-ba6a-5c00d7933863",
+     "name": "Tomate frito",
+     "quantity": 80
+    }
+   ],
+   "steps": [
+    {
+     "position": 1,
+     "description": "Cuece el arroz 12-15 min en agua con sal y escúrrelo (o usa arroz ya cocido).",
+     "items": []
+    },
+    {
+     "position": 2,
+     "description": "Haz las salchichas en rodajas a la plancha, 4-5 min.",
+     "items": []
+    },
+    {
+     "position": 3,
+     "description": "Mézclalo todo con el tomate frito.",
+     "items": []
+    }
+   ],
+   "nutritionalWhy": null,
+   "difficulty": 1,
+   "cookingTime": 12,
+   "tupper": true,
+   "concepts": [],
+   "conceptGroups": [],
+   "intakeTypes": [
+    3,
+    5
+   ],
+   "mealTypes": [],
+   "forbiddenFor": [
+    55,
+    56,
+    59,
+    67,
+    68,
+    86,
+    89,
+    112,
+    114
+   ],
+   "macros": {
+    "carbohydrate": {
+     "grams": 72,
+     "percentage": 55
+    },
+    "protein": {
+     "grams": 22,
+     "percentage": 17
+    },
+    "fat": {
+     "grams": 16,
+     "percentage": 28
+    }
+   },
+   "kcal": 523,
+   "weight": 280,
+   "categoria": "Platos salados / principales",
+   "basica": true
+  },
+  {
+   "id": "a23ef782-5c38-5702-a625-2667cf4b4720",
+   "name": "Arroz con gambas y guisantes",
+   "image": "https://images.unsplash.com/photo-1601579112759-761ccbaa8bde?w=900&h=675&fit=crop&q=80&fm=jpg",
+   "ingredients": [
+    {
+     "id": "e046691e-e6c5-58e1-89f7-8b4ac718d6a4",
+     "name": "Arroz (en crudo)",
+     "quantity": 90
+    },
+    {
+     "id": "cc9d9775-f36d-5334-9017-58aee17b510c",
+     "name": "Gambas peladas congeladas",
+     "quantity": 150
+    },
+    {
+     "id": "0d4a0627-092f-5b9d-aa30-83b236ff6f86",
+     "name": "Guisantes congelados",
+     "quantity": 80
+    },
+    {
+     "id": "efb97afb-83ad-5c55-88f4-ea3af83b1c0e",
+     "name": "Aceite de oliva",
+     "quantity": 5
+    }
+   ],
+   "steps": [
+    {
+     "position": 1,
+     "description": "Cuece el arroz 12-15 min en agua con sal y escúrrelo (o usa arroz ya cocido).",
+     "items": []
+    },
+    {
+     "position": 2,
+     "description": "Saltea las gambas y los guisantes con el aceite y un ajo, 4-5 min.",
+     "items": []
+    },
+    {
+     "position": 3,
+     "description": "Añade el arroz, un chorrito de soja si quieres, y mezcla 1 min.",
+     "items": []
+    }
+   ],
+   "nutritionalWhy": null,
+   "difficulty": 1,
+   "cookingTime": 15,
+   "tupper": true,
+   "concepts": [],
+   "conceptGroups": [],
+   "intakeTypes": [
+    3,
+    5
+   ],
+   "mealTypes": [],
+   "forbiddenFor": [
+    55,
+    56,
+    67,
+    68,
+    86,
+    89
+   ],
+   "macros": {
+    "carbohydrate": {
+     "grams": 78,
+     "percentage": 58
+    },
+    "protein": {
+     "grams": 38,
+     "percentage": 28
+    },
+    "fat": {
+     "grams": 8,
+     "percentage": 13
+    }
+   },
+   "kcal": 548,
+   "weight": 325,
+   "categoria": "Platos salados / principales",
+   "basica": true
+  },
+  {
+   "id": "6cfa72e5-1723-5a5b-916c-fa3fccb3fe92",
+   "name": "Cuscús con pollo y verduras",
+   "image": "https://images.unsplash.com/photo-1772693471187-6e7d364f99ee?w=900&h=675&fit=crop&q=80&fm=jpg",
+   "ingredients": [
+    {
+     "id": "d635fe8d-fefa-5af7-804e-b483251c29d9",
+     "name": "Cuscús (en seco)",
+     "quantity": 80
+    },
+    {
+     "id": "7c81f0be-fbcc-5881-a527-f72dd2588927",
+     "name": "Pechuga de pollo",
+     "quantity": 150
+    },
+    {
+     "id": "c3d0fe65-ba47-5675-b86f-3baaf1b513d7",
+     "name": "Verduras para saltear congeladas",
+     "quantity": 150
+    },
+    {
+     "id": "bd160dfa-911b-50b8-89fd-769a65c7a0e5",
+     "name": "Aceite de oliva",
+     "quantity": 5
+    }
+   ],
+   "steps": [
+    {
+     "position": 1,
+     "description": "Cubre el cuscús con el mismo volumen de agua hirviendo con sal, tapa 5 min y suéltalo con un tenedor.",
+     "items": []
+    },
+    {
+     "position": 2,
+     "description": "Saltea el pollo en dados con el aceite y las verduras, 8 min.",
+     "items": []
+    },
+    {
+     "position": 3,
+     "description": "Mézclalo todo.",
+     "items": []
+    }
+   ],
+   "nutritionalWhy": null,
+   "difficulty": 1,
+   "cookingTime": 10,
+   "tupper": true,
+   "concepts": [],
+   "conceptGroups": [],
+   "intakeTypes": [
+    3,
+    5
+   ],
+   "mealTypes": [],
+   "forbiddenFor": [
+    55,
+    56,
+    66,
+    67,
+    68,
+    86,
+    112
+   ],
+   "macros": {
+    "carbohydrate": {
+     "grams": 67,
+     "percentage": 49
+    },
+    "protein": {
+     "grams": 48,
+     "percentage": 35
+    },
+    "fat": {
+     "grams": 10,
+     "percentage": 16
+    }
+   },
+   "kcal": 558,
+   "weight": 385,
+   "categoria": "Platos salados / principales",
+   "basica": true
+  },
+  {
+   "id": "85001974-2b32-512e-ae45-da098314a5fd",
+   "name": "Macarrones con tomate y salchichas de pavo",
+   "image": "https://s3.eu-west-3.amazonaws.com/storage.getindya.com/recipes/images/recipe_6171G14p0aoSqZRrpUNj.jpg",
+   "ingredients": [
+    {
+     "id": "0843beae-90fe-5cea-b50c-915a6d24663e",
+     "name": "Pasta (en crudo)",
+     "quantity": 90
+    },
+    {
+     "id": "d602d6d7-44b3-50c9-8d97-195748f0ce69",
+     "name": "Salchichas de pavo",
+     "quantity": 120
+    },
+    {
+     "id": "287d9b3d-641f-5c51-a60c-40b644143c1b",
+     "name": "Tomate frito",
+     "quantity": 80
+    }
+   ],
+   "steps": [
+    {
+     "position": 1,
+     "description": "Cuece la pasta en agua con sal el tiempo del paquete (9-11 min) y escúrrela.",
+     "items": []
+    },
+    {
+     "position": 2,
+     "description": "Haz las salchichas en rodajas a la plancha, 4-5 min.",
+     "items": []
+    },
+    {
+     "position": 3,
+     "description": "Mézclalo todo con el tomate frito.",
+     "items": []
+    }
+   ],
+   "nutritionalWhy": null,
+   "difficulty": 1,
+   "cookingTime": 15,
+   "tupper": true,
+   "concepts": [],
+   "conceptGroups": [],
+   "intakeTypes": [
+    3,
+    5
+   ],
+   "mealTypes": [],
+   "forbiddenFor": [
+    55,
+    56,
+    59,
+    66,
+    67,
+    68,
+    86,
+    89,
+    112,
+    114
+   ],
+   "macros": {
+    "carbohydrate": {
+     "grams": 74,
+     "percentage": 54
+    },
+    "protein": {
+     "grams": 28,
+     "percentage": 20
+    },
+    "fat": {
+     "grams": 16,
+     "percentage": 26
+    }
+   },
+   "kcal": 561,
+   "weight": 290,
+   "categoria": "Platos salados / principales",
+   "basica": true
+  },
+  {
+   "id": "1b2cd812-26e8-5d81-9e13-f96431389892",
+   "name": "Pasta con pesto y pollo",
+   "image": "https://s3.eu-west-3.amazonaws.com/storage.getindya.com/recipes/images/recipe_ifVwKRFMRK0hVtgwIIyB.jpeg",
+   "ingredients": [
+    {
+     "id": "55788c3d-1cc1-5b1e-81f0-9a568ae67ba6",
+     "name": "Pasta (en crudo)",
+     "quantity": 90
+    },
+    {
+     "id": "70def432-aa02-5132-a1ba-aab164800e12",
+     "name": "Pechuga de pollo",
+     "quantity": 150
+    },
+    {
+     "id": "aaee41e0-1757-5bc5-b3bc-10d0bddfc1dc",
+     "name": "Pesto",
+     "quantity": 20
+    }
+   ],
+   "steps": [
+    {
+     "position": 1,
+     "description": "Cuece la pasta en agua con sal el tiempo del paquete (9-11 min) y escúrrela.",
+     "items": []
+    },
+    {
+     "position": 2,
+     "description": "Haz el pollo en tiras a la plancha con sal.",
+     "items": []
+    },
+    {
+     "position": 3,
+     "description": "Mézclalo todo con el pesto y un chorrito del agua de cocer la pasta.",
+     "items": []
+    }
+   ],
+   "nutritionalWhy": null,
+   "difficulty": 1,
+   "cookingTime": 15,
+   "tupper": true,
+   "concepts": [],
+   "conceptGroups": [],
+   "intakeTypes": [
+    3,
+    5
+   ],
+   "mealTypes": [],
+   "forbiddenFor": [
+    55,
+    56,
+    66,
+    67,
+    68,
+    87,
+    89,
+    112
+   ],
+   "macros": {
+    "carbohydrate": {
+     "grams": 65,
+     "percentage": 46
+    },
+    "protein": {
+     "grams": 47,
+     "percentage": 33
+    },
+    "fat": {
+     "grams": 13,
+     "percentage": 21
+    }
+   },
+   "kcal": 576,
+   "weight": 260,
+   "categoria": "Platos salados / principales",
+   "basica": true
+  },
+  {
+   "id": "cd7295c2-1c2f-5c51-878b-4c392e16773e",
+   "name": "Pasta con salmón ahumado y queso crema",
+   "image": "https://images.unsplash.com/photo-1578413079255-7b8a64409ced?w=900&h=675&fit=crop&q=80&fm=jpg",
+   "ingredients": [
+    {
+     "id": "4b444690-458b-5a46-b15d-f89247459bd0",
+     "name": "Pasta (en crudo)",
+     "quantity": 90
+    },
+    {
+     "id": "f9d06cf6-f202-5320-b9e7-82fe0ca5bf5d",
+     "name": "Salmón ahumado",
+     "quantity": 80
+    },
+    {
+     "id": "8b799f39-260f-5a5d-94e5-9909548588ca",
+     "name": "Queso crema light (tipo Philadelphia)",
+     "quantity": 40
+    }
+   ],
+   "steps": [
+    {
+     "position": 1,
+     "description": "Cuece la pasta en agua con sal el tiempo del paquete (9-11 min) y escúrrela.",
+     "items": []
+    },
+    {
+     "position": 2,
+     "description": "Deshaz el queso crema en la sartén con un chorrito del agua de cocer la pasta.",
+     "items": []
+    },
+    {
+     "position": 3,
+     "description": "Añade la pasta y el salmón en tiras, mezcla 1 min fuera del fuego. Pimienta y eneldo si te gusta.",
+     "items": []
+    }
+   ],
+   "nutritionalWhy": null,
+   "difficulty": 1,
+   "cookingTime": 12,
+   "tupper": true,
+   "concepts": [],
+   "conceptGroups": [],
+   "intakeTypes": [
+    3,
+    5
+   ],
+   "mealTypes": [],
+   "forbiddenFor": [
+    55,
+    56,
+    66,
+    67,
+    68,
+    87,
+    89,
+    109
+   ],
+   "macros": {
+    "carbohydrate": {
+     "grams": 66,
+     "percentage": 51
+    },
+    "protein": {
+     "grams": 33,
+     "percentage": 25
+    },
+    "fat": {
+     "grams": 14,
+     "percentage": 24
+    }
+   },
+   "kcal": 523,
+   "weight": 210,
+   "categoria": "Platos salados / principales",
+   "basica": true
+  },
+  {
+   "id": "dbe38b48-2808-55ae-a79a-3b49383a73e8",
+   "name": "Ensalada de pasta con atún, maíz y huevo",
+   "image": "https://s3.eu-west-3.amazonaws.com/storage.getindya.com/recipes/images/recipe_89EIhWNTGwDcj7XkcG7z.jpg",
+   "ingredients": [
+    {
+     "id": "2fa27ba7-5f1a-5ae3-ba65-b7ddab45d964",
+     "name": "Pasta (en crudo)",
+     "quantity": 80
+    },
+    {
+     "id": "885443ae-8006-5b6d-8668-3984f53067cf",
+     "name": "Atún al natural escurrido",
+     "quantity": 110
+    },
+    {
+     "id": "2e385545-8b08-507d-bf7d-d32cb098ce2b",
+     "name": "Maíz dulce de lata",
+     "quantity": 50
+    },
+    {
+     "id": "2a5783bf-42f6-565b-a158-28d8c884acc8",
+     "name": "Huevo",
+     "quantity": 60
+    },
+    {
+     "id": "2887ae7e-0018-5014-8654-70bf53c82411",
+     "name": "Aceite de oliva",
+     "quantity": 5
+    }
+   ],
+   "steps": [
+    {
+     "position": 1,
+     "description": "Cuece la pasta en agua con sal el tiempo del paquete (9-11 min) y escúrrela. Enfríala con agua. Cuece el huevo 10 min.",
+     "items": []
+    },
+    {
+     "position": 2,
+     "description": "Mézclalo todo con tomate, sal, vinagre y el aceite. Va perfecta de tupper.",
+     "items": []
+    }
+   ],
+   "nutritionalWhy": null,
+   "difficulty": 1,
+   "cookingTime": 15,
+   "tupper": true,
+   "concepts": [],
+   "conceptGroups": [],
+   "intakeTypes": [
+    3,
+    5
+   ],
+   "mealTypes": [],
+   "forbiddenFor": [
+    55,
+    56,
+    66,
+    67,
+    68,
+    86,
+    89,
+    109,
+    110
+   ],
+   "macros": {
+    "carbohydrate": {
+     "grams": 65,
+     "percentage": 46
+    },
+    "protein": {
+     "grams": 45,
+     "percentage": 32
+    },
+    "fat": {
+     "grams": 14,
+     "percentage": 22
+    }
+   },
+   "kcal": 576,
+   "weight": 305,
+   "categoria": "Platos salados / principales",
+   "basica": true
+  },
+  {
+   "id": "b88358eb-6292-54d4-8cdb-3bf3874ab9d1",
+   "name": "Pasta con pollo y champiñones a la crema",
+   "image": "https://s3.eu-west-3.amazonaws.com/storage.getindya.com/recipes/images/recipe_Ej6y240TnNRYpi3aTrr0.jpg",
+   "ingredients": [
+    {
+     "id": "062f7a94-990f-5c86-9d64-93e6deaa3c93",
+     "name": "Pasta (en crudo)",
+     "quantity": 90
+    },
+    {
+     "id": "1837ae48-61ca-5ac0-841a-f51cfd9f40c6",
+     "name": "Pechuga de pollo",
+     "quantity": 150
+    },
+    {
+     "id": "9e6cff66-99b8-55bf-a4b4-7751ec581a14",
+     "name": "Champiñones",
+     "quantity": 100
+    },
+    {
+     "id": "ac656587-1e28-5534-bd1b-50d9acf83c30",
+     "name": "Queso crema light (tipo Philadelphia)",
+     "quantity": 30
+    }
+   ],
+   "steps": [
+    {
+     "position": 1,
+     "description": "Cuece la pasta en agua con sal el tiempo del paquete (9-11 min) y escúrrela.",
+     "items": []
+    },
+    {
+     "position": 2,
+     "description": "Saltea el pollo en tiras y los champiñones laminados, 6-8 min.",
+     "items": []
+    },
+    {
+     "position": 3,
+     "description": "Añade el queso crema con un chorrito del agua de la pasta, mezcla con la pasta y pimienta.",
+     "items": []
+    }
+   ],
+   "nutritionalWhy": null,
+   "difficulty": 1,
+   "cookingTime": 15,
+   "tupper": true,
+   "concepts": [],
+   "conceptGroups": [],
+   "intakeTypes": [
+    3,
+    5
+   ],
+   "mealTypes": [],
+   "forbiddenFor": [
+    55,
+    56,
+    66,
+    67,
+    68,
+    87,
+    89,
+    112
+   ],
+   "macros": {
+    "carbohydrate": {
+     "grams": 66,
+     "percentage": 49
+    },
+    "protein": {
+     "grams": 51,
+     "percentage": 38
+    },
+    "fat": {
+     "grams": 8,
+     "percentage": 13
+    }
+   },
+   "kcal": 552,
+   "weight": 370,
+   "categoria": "Platos salados / principales",
+   "basica": true
+  },
+  {
+   "id": "b107a749-7abb-5343-ac9d-9a13ef77045d",
+   "name": "Tortilla de patatas al microondas",
+   "image": "https://images.unsplash.com/photo-1788462613199-779ba2bf4b70?w=900&h=675&fit=crop&q=80&fm=jpg",
+   "ingredients": [
+    {
+     "id": "086e2c2b-92d8-5c97-98b6-973519ca805c",
+     "name": "Patata",
+     "quantity": 250
+    },
+    {
+     "id": "1847b380-6370-5365-a579-0c6ecf753474",
+     "name": "Huevo",
+     "quantity": 120
+    },
+    {
+     "id": "622492b3-3d70-5552-8164-78fcce91e6c9",
+     "name": "Claras de huevo",
+     "quantity": 100
+    },
+    {
+     "id": "b35481ab-accc-5a48-aa41-eefbadf1994b",
+     "name": "Aceite de oliva",
+     "quantity": 5
+    }
+   ],
+   "steps": [
+    {
+     "position": 1,
+     "description": "Patata en láminas finas con sal y el aceite, tapada, al microondas 7-8 min hasta que esté blanda.",
+     "items": []
+    },
+    {
+     "position": 2,
+     "description": "Mézclala con los huevos y las claras batidos.",
+     "items": []
+    },
+    {
+     "position": 3,
+     "description": "Cuájala en sartén antiadherente 3 min por lado (o en el mismo recipiente, 3-4 min más de microondas).",
+     "items": []
+    }
+   ],
+   "nutritionalWhy": null,
+   "difficulty": 1,
+   "cookingTime": 15,
+   "tupper": true,
+   "concepts": [],
+   "conceptGroups": [],
+   "intakeTypes": [
+    3,
+    5
+   ],
+   "mealTypes": [],
+   "forbiddenFor": [
+    55,
+    68
+   ],
+   "macros": {
+    "carbohydrate": {
+     "grams": 44,
+     "percentage": 39
+    },
+    "protein": {
+     "grams": 31,
+     "percentage": 27
+    },
+    "fat": {
+     "grams": 17,
+     "percentage": 34
+    }
+   },
+   "kcal": 467,
+   "weight": 475,
+   "categoria": "Platos salados / principales",
+   "basica": true
+  },
+  {
+   "id": "25508f9f-9839-5c7c-831e-009ec8ee45fd",
+   "name": "Patata rellena de atún y queso",
+   "image": "https://images.unsplash.com/photo-1595955538897-d3c8ec58efe2?w=900&h=675&fit=crop&q=80&fm=jpg",
+   "ingredients": [
+    {
+     "id": "6222f045-50d5-5110-98e3-a065e73038f4",
+     "name": "Patata",
+     "quantity": 300
+    },
+    {
+     "id": "0d556287-495a-5e8c-8ed5-754cd55fd5df",
+     "name": "Atún al natural escurrido",
+     "quantity": 110
+    },
+    {
+     "id": "2bec9d8a-758f-5764-a507-0c8d44c17e05",
+     "name": "Mozzarella light",
+     "quantity": 30
+    }
+   ],
+   "steps": [
+    {
+     "position": 1,
+     "description": "Pincha la patata y métela al microondas a máxima potencia 8-10 min.",
+     "items": []
+    },
+    {
+     "position": 2,
+     "description": "Ábrela, mézclale el atún y pon la mozzarella encima.",
+     "items": []
+    },
+    {
+     "position": 3,
+     "description": "1 min más de microondas para fundir.",
+     "items": []
+    }
+   ],
+   "nutritionalWhy": null,
+   "difficulty": 1,
+   "cookingTime": 12,
+   "tupper": true,
+   "concepts": [],
+   "conceptGroups": [],
+   "intakeTypes": [
+    3,
+    5
+   ],
+   "mealTypes": [],
+   "forbiddenFor": [
+    55,
+    56,
+    67,
+    68,
+    87,
+    89,
+    92,
+    109,
+    110
+   ],
+   "macros": {
+    "carbohydrate": {
+     "grams": 51,
+     "percentage": 52
+    },
+    "protein": {
+     "grams": 38,
+     "percentage": 39
+    },
+    "fat": {
+     "grams": 4,
+     "percentage": 9
+    }
+   },
+   "kcal": 405,
+   "weight": 440,
+   "categoria": "Platos salados / principales",
+   "basica": true
+  },
+  {
+   "id": "df05687b-645e-5115-83fb-a6c12f70758d",
+   "name": "Patatas con carne picada y tomate",
+   "image": "https://images.unsplash.com/photo-1680529669043-9a7777b798bc?w=900&h=675&fit=crop&q=80&fm=jpg",
+   "ingredients": [
+    {
+     "id": "4a56a9bb-c0a5-5732-a7a0-c5bc817070b9",
+     "name": "Patata",
+     "quantity": 300
+    },
+    {
+     "id": "b24740cc-2ef8-5edf-a78f-f294cfffd112",
+     "name": "Carne picada de ternera",
+     "quantity": 130
+    },
+    {
+     "id": "0a295601-575f-50ef-a082-b989d9150185",
+     "name": "Tomate frito",
+     "quantity": 60
+    }
+   ],
+   "steps": [
+    {
+     "position": 1,
+     "description": "Patata en dados con un chorrito de agua, tapada, al microondas 7-8 min.",
+     "items": []
+    },
+    {
+     "position": 2,
+     "description": "Dora la carne picada desmenuzándola, 6 min, y añade el tomate frito.",
+     "items": []
+    },
+    {
+     "position": 3,
+     "description": "Añade la patata y mezcla 2 min.",
+     "items": []
+    }
+   ],
+   "nutritionalWhy": null,
+   "difficulty": 1,
+   "cookingTime": 15,
+   "tupper": true,
+   "concepts": [],
+   "conceptGroups": [],
+   "intakeTypes": [
+    3,
+    5
+   ],
+   "mealTypes": [],
+   "forbiddenFor": [
+    55,
+    56,
+    59,
+    67,
+    68,
+    86,
+    89,
+    92,
+    112,
+    114
+   ],
+   "macros": {
+    "carbohydrate": {
+     "grams": 56,
+     "percentage": 51
+    },
+    "protein": {
+     "grams": 33,
+     "percentage": 30
+    },
+    "fat": {
+     "grams": 9,
+     "percentage": 19
+    }
+   },
+   "kcal": 448,
+   "weight": 490,
+   "categoria": "Platos salados / principales",
+   "basica": true
+  },
+  {
+   "id": "6122b213-01b4-52c9-945a-924ab0139673",
+   "name": "Boniato en freidora con huevos",
+   "image": "https://images.unsplash.com/photo-1543353071-087092ec393a?w=900&h=675&fit=crop&q=80&fm=jpg",
+   "ingredients": [
+    {
+     "id": "897406a3-6bc7-54b1-99c7-03f6477fa9bd",
+     "name": "Boniato",
+     "quantity": 250
+    },
+    {
+     "id": "5a9b80d9-1591-56a0-add7-6b1fe1d74b7f",
+     "name": "Huevo",
+     "quantity": 120
+    },
+    {
+     "id": "bd0d403d-4078-5915-bcab-049275fdd13d",
+     "name": "Aceite de oliva",
+     "quantity": 5
+    }
+   ],
+   "steps": [
+    {
+     "position": 1,
+     "description": "Corta el boniato en gajos, mézclalo con el aceite, sal y pimentón y hazlo en la freidora a 190 °C, 18-20 min.",
+     "items": []
+    },
+    {
+     "position": 2,
+     "description": "Haz los huevos a la plancha y sírvelos encima.",
+     "items": []
+    }
+   ],
+   "nutritionalWhy": null,
+   "difficulty": 1,
+   "cookingTime": 22,
+   "tupper": false,
+   "concepts": [],
+   "conceptGroups": [],
+   "intakeTypes": [
+    3,
+    5
+   ],
+   "mealTypes": [],
+   "forbiddenFor": [
+    55,
+    68,
+    86
+   ],
+   "macros": {
+    "carbohydrate": {
+     "grams": 51,
+     "percentage": 47
+    },
+    "protein": {
+     "grams": 19,
+     "percentage": 18
+    },
+    "fat": {
+     "grams": 17,
+     "percentage": 35
+    }
+   },
+   "kcal": 434,
+   "weight": 375,
+   "categoria": "Platos salados / principales",
+   "basica": true
+  },
+  {
+   "id": "07a4f511-93fc-530e-b962-558c171444c2",
+   "name": "Salmón con patatas en freidora",
+   "image": "https://s3.eu-west-3.amazonaws.com/storage.getindya.com/recipes/images/recipe_9oool0ykDBrBYjsqQP7H.jpg",
+   "ingredients": [
+    {
+     "id": "a1c5f5ce-005f-53af-ac4f-7e6afc6016e3",
+     "name": "Patata",
+     "quantity": 250
+    },
+    {
+     "id": "c71f1369-d52b-5be2-ae8a-d292c85c2bc2",
+     "name": "Salmón",
+     "quantity": 130
+    },
+    {
+     "id": "a92b1bd9-a27a-578a-99c7-b1f3c5dc0bfa",
+     "name": "Aceite de oliva",
+     "quantity": 5
+    }
+   ],
+   "steps": [
+    {
+     "position": 1,
+     "description": "Corta la patata en gajos, mézclala con el aceite y sal y hazla en la freidora a 200 °C, 18-20 min, removiendo a mitad.",
+     "items": []
+    },
+    {
+     "position": 2,
+     "description": "Los últimos 10 min, pon el salmón con sal al lado de las patatas.",
+     "items": []
+    }
+   ],
+   "nutritionalWhy": null,
+   "difficulty": 1,
+   "cookingTime": 22,
+   "tupper": true,
+   "concepts": [],
+   "conceptGroups": [],
+   "intakeTypes": [
+    3,
+    5
+   ],
+   "mealTypes": [],
+   "forbiddenFor": [
+    55,
+    56,
+    67,
+    68
+   ],
+   "macros": {
+    "carbohydrate": {
+     "grams": 42,
+     "percentage": 34
+    },
+    "protein": {
+     "grams": 31,
+     "percentage": 25
+    },
+    "fat": {
+     "grams": 22,
+     "percentage": 40
+    }
+   },
+   "kcal": 505,
+   "weight": 385,
+   "categoria": "Platos salados / principales",
+   "basica": true
+  },
+  {
+   "id": "fafd362f-72a8-5a01-85a2-08f33ab6d852",
+   "name": "Lomo de cerdo con patatas en freidora",
+   "image": "https://s3.eu-west-3.amazonaws.com/storage.getindya.com/recipes/images/recipe_lfSKGx1UqsZl9mqOV8TV.jpg",
+   "ingredients": [
+    {
+     "id": "9ce54919-5d64-5687-a22e-5af2409232a4",
+     "name": "Patata",
+     "quantity": 300
+    },
+    {
+     "id": "48ae00ff-9ded-53f3-ac78-5ddd1979afbc",
+     "name": "Lomo de cerdo fresco",
+     "quantity": 150
+    },
+    {
+     "id": "d5c15e68-b282-5f79-9eda-a8d6a3547dea",
+     "name": "Aceite de oliva",
+     "quantity": 5
+    }
+   ],
+   "steps": [
+    {
+     "position": 1,
+     "description": "Corta la patata en gajos, mézclala con el aceite y sal y hazla en la freidora a 200 °C, 18-20 min, removiendo a mitad.",
+     "items": []
+    },
+    {
+     "position": 2,
+     "description": "Haz los filetes de lomo a la plancha con sal y ajo en polvo, 2-3 min por lado.",
+     "items": []
+    }
+   ],
+   "nutritionalWhy": null,
+   "difficulty": 1,
+   "cookingTime": 22,
+   "tupper": true,
+   "concepts": [],
+   "conceptGroups": [],
+   "intakeTypes": [
+    3,
+    5
+   ],
+   "mealTypes": [],
+   "forbiddenFor": [
+    55,
+    56,
+    60,
+    67,
+    68,
+    112
+   ],
+   "macros": {
+    "carbohydrate": {
+     "grams": 51,
+     "percentage": 44
+    },
+    "protein": {
+     "grams": 39,
+     "percentage": 33
+    },
+    "fat": {
+     "grams": 12,
+     "percentage": 23
+    }
+   },
+   "kcal": 480,
+   "weight": 455,
+   "categoria": "Platos salados / principales",
+   "basica": true
+  },
+  {
+   "id": "9785e829-352e-560e-805d-17f8d21d575e",
+   "name": "Contramuslos de pollo con patatas en freidora",
+   "image": "https://images.unsplash.com/photo-1599161146640-8d60bd2888e3?w=900&h=675&fit=crop&q=80&fm=jpg",
+   "ingredients": [
+    {
+     "id": "533e2dc8-8045-51b0-8731-f5772c459391",
+     "name": "Patata",
+     "quantity": 300
+    },
+    {
+     "id": "1c828aaa-457f-5aca-8d64-adeb0110e81c",
+     "name": "Contramuslo de pollo sin piel",
+     "quantity": 150
+    },
+    {
+     "id": "f07f7cdf-b2ce-56f4-a48e-a9f324fbdedc",
+     "name": "Aceite de oliva",
+     "quantity": 5
+    }
+   ],
+   "steps": [
+    {
+     "position": 1,
+     "description": "Corta la patata en gajos, mézclala con el aceite y sal y hazla en la freidora a 200 °C, 18-20 min, removiendo a mitad.",
+     "items": []
+    },
+    {
+     "position": 2,
+     "description": "Mete los contramuslos con sal y pimentón en la freidora a la vez, 18-20 min (o a la plancha, 5 min por lado).",
+     "items": []
+    }
+   ],
+   "nutritionalWhy": null,
+   "difficulty": 1,
+   "cookingTime": 25,
+   "tupper": true,
+   "concepts": [],
+   "conceptGroups": [],
+   "intakeTypes": [
+    3,
+    5
+   ],
+   "mealTypes": [],
+   "forbiddenFor": [
+    55,
+    56,
+    67,
+    68,
+    112
+   ],
+   "macros": {
+    "carbohydrate": {
+     "grams": 51,
+     "percentage": 44
+    },
+    "protein": {
+     "grams": 34,
+     "percentage": 29
+    },
+    "fat": {
+     "grams": 14,
+     "percentage": 27
+    }
+   },
+   "kcal": 480,
+   "weight": 455,
+   "categoria": "Platos salados / principales",
+   "basica": true
+  },
+  {
+   "id": "78580748-9785-54f9-aecc-d4366cc219a8",
+   "name": "Hamburguesa de pollo con patatas en freidora",
+   "image": "https://s3.eu-west-3.amazonaws.com/storage.getindya.com/recipes/images/recipe_LYv2lgHU1ESrNHc2GL5B.jpg",
+   "ingredients": [
+    {
+     "id": "1b65df7c-6d33-59d6-b3cc-2a18b4bd053e",
+     "name": "Pan de hamburguesa",
+     "quantity": 70
+    },
+    {
+     "id": "f9d0aab1-190b-5ad7-ab62-cc038bf33fa5",
+     "name": "Hamburguesa de pollo (súper)",
+     "quantity": 120
+    },
+    {
+     "id": "90be5991-e3e4-56a4-9207-bd7a93fb53e7",
+     "name": "Patata",
+     "quantity": 200
+    },
+    {
+     "id": "d8123d2a-d35f-5cf8-ab2a-59ad3c618711",
+     "name": "Aceite de oliva",
+     "quantity": 5
+    },
+    {
+     "id": "564b25a7-d67f-5f8b-8718-1fa6aee2bd01",
+     "name": "Ketchup",
+     "quantity": 15
+    }
+   ],
+   "steps": [
+    {
+     "position": 1,
+     "description": "Corta la patata en gajos, mézclala con el aceite y sal y hazla en la freidora a 200 °C, 18-20 min, removiendo a mitad.",
+     "items": []
+    },
+    {
+     "position": 2,
+     "description": "Haz la hamburguesa a la plancha 4-5 min por lado (o en la freidora los últimos 10 min).",
+     "items": []
+    },
+    {
+     "position": 3,
+     "description": "Móntala en el pan con ketchup, lechuga y tomate, y sírvela con las patatas.",
+     "items": []
+    }
+   ],
+   "nutritionalWhy": null,
+   "difficulty": 1,
+   "cookingTime": 22,
+   "tupper": true,
+   "concepts": [],
+   "conceptGroups": [],
+   "intakeTypes": [
+    3,
+    5
+   ],
+   "mealTypes": [],
+   "forbiddenFor": [
+    55,
+    56,
+    59,
+    66,
+    67,
+    68,
+    86,
+    89,
+    112,
+    114
+   ],
+   "macros": {
+    "carbohydrate": {
+     "grams": 74,
+     "percentage": 51
+    },
+    "protein": {
+     "grams": 32,
+     "percentage": 22
+    },
+    "fat": {
+     "grams": 18,
+     "percentage": 28
+    }
+   },
+   "kcal": 590,
+   "weight": 410,
+   "categoria": "Platos salados / principales",
+   "basica": true
+  },
+  {
+   "id": "0894959f-43e3-5eb5-989d-68ac112d3b14",
+   "name": "Lentejas con tomate y huevo",
+   "image": "https://s3.eu-west-3.amazonaws.com/storage.getindya.com/recipes/images/recipe_Bm11YMjwTg7Sv4b8kdmM.jpg",
+   "ingredients": [
+    {
+     "id": "f1ecd8d1-8bc9-5ccd-834e-7fb33f758f6a",
+     "name": "Lentejas cocidas de bote",
+     "quantity": 250
+    },
+    {
+     "id": "b4885ba3-267d-5577-ae4e-c388ff142a31",
+     "name": "Tomate frito",
+     "quantity": 60
+    },
+    {
+     "id": "46061dba-7f25-5bce-aaf0-b087b53c5f38",
+     "name": "Huevo",
+     "quantity": 120
+    }
+   ],
+   "steps": [
+    {
+     "position": 1,
+     "description": "Calienta las lentejas escurridas con el tomate frito, pimentón y comino, 3 min.",
+     "items": []
+    },
+    {
+     "position": 2,
+     "description": "Cuaja los huevos encima tapando la sartén, 3-4 min (o sírvelos cocidos).",
+     "items": []
+    }
+   ],
+   "nutritionalWhy": null,
+   "difficulty": 1,
+   "cookingTime": 10,
+   "tupper": true,
+   "concepts": [],
+   "conceptGroups": [],
+   "intakeTypes": [
+    3,
+    5
+   ],
+   "mealTypes": [],
+   "forbiddenFor": [
+    55,
+    59,
+    68,
+    86,
+    89,
+    114
+   ],
+   "macros": {
+    "carbohydrate": {
+     "grams": 36,
+     "percentage": 34
+    },
+    "protein": {
+     "grams": 33,
+     "percentage": 31
+    },
+    "fat": {
+     "grams": 16,
+     "percentage": 34
+    }
+   },
+   "kcal": 444,
+   "weight": 430,
+   "categoria": "Platos salados / principales",
+   "basica": true
+  },
+  {
+   "id": "e3751c49-7eef-5ed8-ac6c-c06400c73e48",
+   "name": "Alubias con pollo y tomate",
+   "image": "https://s3.eu-west-3.amazonaws.com/storage.getindya.com/recipes/images/recipe_hDrKQrOXuQb7fbF6FXHr.jpg",
+   "ingredients": [
+    {
+     "id": "60e98ce3-3351-59fa-b39d-64cbb6a8c3eb",
+     "name": "Alubias blancas cocidas de bote",
+     "quantity": 200
+    },
+    {
+     "id": "764f0252-7c39-529f-aba6-5dea9bd4c297",
+     "name": "Pechuga de pollo",
+     "quantity": 120
+    },
+    {
+     "id": "7e9097f0-8eaa-599e-bcf7-695ec137efd2",
+     "name": "Tomate frito",
+     "quantity": 60
+    }
+   ],
+   "steps": [
+    {
+     "position": 1,
+     "description": "Haz el pollo en dados a la plancha con sal y pimentón.",
+     "items": []
+    },
+    {
+     "position": 2,
+     "description": "Añade las alubias escurridas y el tomate frito y calienta 3 min.",
+     "items": []
+    }
+   ],
+   "nutritionalWhy": null,
+   "difficulty": 1,
+   "cookingTime": 10,
+   "tupper": true,
+   "concepts": [],
+   "conceptGroups": [],
+   "intakeTypes": [
+    3,
+    5
+   ],
+   "mealTypes": [],
+   "forbiddenFor": [
+    55,
+    56,
+    59,
+    67,
+    68,
+    86,
+    89,
+    112,
+    114
+   ],
+   "macros": {
+    "carbohydrate": {
+     "grams": 31,
+     "percentage": 36
+    },
+    "protein": {
+     "grams": 42,
+     "percentage": 49
+    },
+    "fat": {
+     "grams": 6,
+     "percentage": 16
+    }
+   },
+   "kcal": 367,
+   "weight": 380,
+   "categoria": "Platos salados / principales",
+   "basica": true
+  },
+  {
+   "id": "81d96831-30a9-5e6a-8faa-407679e79b0f",
+   "name": "Ensalada de garbanzos con atún y huevo",
+   "image": "https://images.unsplash.com/photo-1688807450144-9d10de5eb913?w=900&h=675&fit=crop&q=80&fm=jpg",
+   "ingredients": [
+    {
+     "id": "7f7c1fcf-a424-5da9-9f0b-8e812aa1918f",
+     "name": "Garbanzos cocidos de bote",
+     "quantity": 200
+    },
+    {
+     "id": "fbc53197-3921-5e0b-b561-5ab08761f3d6",
+     "name": "Atún al natural escurrido",
+     "quantity": 110
+    },
+    {
+     "id": "de1a3cab-206e-595b-9ad4-1ced8905e421",
+     "name": "Huevo",
+     "quantity": 60
+    },
+    {
+     "id": "7a539f8c-a349-595c-9e56-e63c779e27e2",
+     "name": "Aceite de oliva",
+     "quantity": 5
+    }
+   ],
+   "steps": [
+    {
+     "position": 1,
+     "description": "Enjuaga y escurre los garbanzos. Cuece el huevo 10 min.",
+     "items": []
+    },
+    {
+     "position": 2,
+     "description": "Mézclalo todo con tomate, cebolla si te gusta, sal, vinagre y el aceite.",
+     "items": []
+    }
+   ],
+   "nutritionalWhy": null,
+   "difficulty": 1,
+   "cookingTime": 10,
+   "tupper": true,
+   "concepts": [],
+   "conceptGroups": [],
+   "intakeTypes": [
+    3,
+    5
+   ],
+   "mealTypes": [],
+   "forbiddenFor": [
+    55,
+    56,
+    67,
+    68,
+    86,
+    89,
+    109,
+    110
+   ],
+   "macros": {
+    "carbohydrate": {
+     "grams": 28,
+     "percentage": 25
+    },
+    "protein": {
+     "grams": 48,
+     "percentage": 42
+    },
+    "fat": {
+     "grams": 17,
+     "percentage": 33
+    }
+   },
+   "kcal": 487,
+   "weight": 375,
+   "categoria": "Platos salados / principales",
+   "basica": true
+  },
+  {
+   "id": "17203936-2af2-57ce-9936-d95b9e53c13c",
+   "name": "Garbanzos salteados con gambas y espinacas",
+   "image": "https://s3.eu-west-3.amazonaws.com/storage.getindya.com/recipes/images/recipe_DUarUXrFyylScxLhuF75.jpg",
+   "ingredients": [
+    {
+     "id": "0dcd8245-70c0-5156-99b0-2825975a9481",
+     "name": "Garbanzos cocidos de bote",
+     "quantity": 200
+    },
+    {
+     "id": "ba9c726d-fa34-55b2-8f27-56729b2df88c",
+     "name": "Gambas peladas congeladas",
+     "quantity": 150
+    },
+    {
+     "id": "40f896ff-afc9-5d48-951a-ddc0d962c080",
+     "name": "Espinacas congeladas",
+     "quantity": 100
+    },
+    {
+     "id": "72edea82-6a46-5271-9d72-2ef364927328",
+     "name": "Aceite de oliva",
+     "quantity": 5
+    }
+   ],
+   "steps": [
+    {
+     "position": 1,
+     "description": "Saltea las espinacas con el aceite y un ajo 4 min.",
+     "items": []
+    },
+    {
+     "position": 2,
+     "description": "Añade las gambas y los garbanzos escurridos con pimentón, 4 min.",
+     "items": []
+    }
+   ],
+   "nutritionalWhy": null,
+   "difficulty": 1,
+   "cookingTime": 10,
+   "tupper": true,
+   "concepts": [],
+   "conceptGroups": [],
+   "intakeTypes": [
+    3,
+    5
+   ],
+   "mealTypes": [],
+   "forbiddenFor": [
+    55,
+    56,
+    67,
+    68,
+    86,
+    89
+   ],
+   "macros": {
+    "carbohydrate": {
+     "grams": 30,
+     "percentage": 30
+    },
+    "protein": {
+     "grams": 44,
+     "percentage": 44
+    },
+    "fat": {
+     "grams": 12,
+     "percentage": 27
+    }
+   },
+   "kcal": 430,
+   "weight": 455,
+   "categoria": "Platos salados / principales",
+   "basica": true
+  },
+  {
+   "id": "3310f698-9eaa-56d7-ac2e-cfc4fb0f6135",
+   "name": "Bocadillo de pollo con queso",
+   "image": "https://images.unsplash.com/photo-1676300187140-00828e014d2a?w=900&h=675&fit=crop&q=80&fm=jpg",
+   "ingredients": [
+    {
+     "id": "07a1844c-bfdc-576c-84de-1ea9de2cfd6b",
+     "name": "Pan de barra",
+     "quantity": 120
+    },
+    {
+     "id": "f7698b5f-3442-53ab-a4e1-e8b9c40545b1",
+     "name": "Pechuga de pollo",
+     "quantity": 120
+    },
+    {
+     "id": "06d8ebdf-0088-5e13-95a2-46401fe3667e",
+     "name": "Queso en lonchas light",
+     "quantity": 20
+    },
+    {
+     "id": "51ab84a7-4f0b-5f19-92e1-034c64cbaba1",
+     "name": "Lechuga y tomate",
+     "quantity": 50
+    }
+   ],
+   "steps": [
+    {
+     "position": 1,
+     "description": "Haz el pollo en filetes finos a la plancha con sal.",
+     "items": []
+    },
+    {
+     "position": 2,
+     "description": "Monta el bocadillo con el queso, lechuga y tomate.",
+     "items": []
+    }
+   ],
+   "nutritionalWhy": null,
+   "difficulty": 1,
+   "cookingTime": 10,
+   "tupper": true,
+   "concepts": [],
+   "conceptGroups": [],
+   "intakeTypes": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "mealTypes": [],
+   "forbiddenFor": [
+    55,
+    56,
+    66,
+    67,
+    68,
+    86,
+    87,
+    89,
+    112
+   ],
+   "macros": {
+    "carbohydrate": {
+     "grams": 64,
+     "percentage": 50
+    },
+    "protein": {
+     "grams": 45,
+     "percentage": 35
+    },
+    "fat": {
+     "grams": 8,
+     "percentage": 14
+    }
+   },
+   "kcal": 511,
+   "weight": 310,
+   "categoria": "Platos salados / principales",
+   "basica": true
+  },
+  {
+   "id": "8186e7a6-c1cb-5583-a6e3-4c198f86d8c1",
+   "name": "Bocadillo de atún, tomate y huevo",
+   "image": "https://s3.eu-west-3.amazonaws.com/storage.getindya.com/recipes/images/recipe_kV3KkOzizAEOnciIG9nf.jpg",
+   "ingredients": [
+    {
+     "id": "6bbeaa51-242d-59a4-9e96-9c11ff0a88f5",
+     "name": "Pan de barra",
+     "quantity": 120
+    },
+    {
+     "id": "9b91bb74-6c15-5c30-9193-7c0501fee3fd",
+     "name": "Atún al natural escurrido",
+     "quantity": 110
+    },
+    {
+     "id": "91efa684-c12e-508c-9618-5b504b2164ca",
+     "name": "Huevo",
+     "quantity": 60
+    },
+    {
+     "id": "fd7c9b74-79a4-5841-8fa1-d07d46716595",
+     "name": "Tomate natural",
+     "quantity": 60
+    }
+   ],
+   "steps": [
+    {
+     "position": 1,
+     "description": "Cuece el huevo 10 min (o hazlo a la plancha).",
+     "items": []
+    },
+    {
+     "position": 2,
+     "description": "Rellena el pan con tomate en rodajas, el atún y el huevo en láminas.",
+     "items": []
+    }
+   ],
+   "nutritionalWhy": null,
+   "difficulty": 1,
+   "cookingTime": 12,
+   "tupper": true,
+   "concepts": [],
+   "conceptGroups": [],
+   "intakeTypes": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "mealTypes": [],
+   "forbiddenFor": [
+    55,
+    56,
+    66,
+    67,
+    68,
+    86,
+    89,
+    109,
+    110
+   ],
+   "macros": {
+    "carbohydrate": {
+     "grams": 65,
+     "percentage": 50
+    },
+    "protein": {
+     "grams": 45,
+     "percentage": 35
+    },
+    "fat": {
+     "grams": 9,
+     "percentage": 16
+    }
+   },
+   "kcal": 532,
+   "weight": 350,
+   "categoria": "Platos salados / principales",
+   "basica": true
+  },
+  {
+   "id": "79f1b3d3-bb3f-5021-a8c8-152c2d21c2ab",
+   "name": "Sándwich mixto con huevo",
+   "image": "https://s3.eu-west-3.amazonaws.com/storage.getindya.com/recipes/images/recipe_0d3SO3jsO4QAbbZLbJmJ.jpg",
+   "ingredients": [
+    {
+     "id": "f4981a69-1226-5c98-8e3d-85cd2b01ddfc",
+     "name": "Pan de molde integral",
+     "quantity": 60
+    },
+    {
+     "id": "b880aa21-8527-5cc5-8e8e-2c08b0b9ac31",
+     "name": "Jamón cocido extra",
+     "quantity": 50
+    },
+    {
+     "id": "0f79d3c5-05fc-5359-b232-06e14e212040",
+     "name": "Queso en lonchas light",
+     "quantity": 20
+    },
+    {
+     "id": "d57f07c7-188c-57f1-8747-72689f229d6b",
+     "name": "Huevo",
+     "quantity": 60
+    }
+   ],
+   "steps": [
+    {
+     "position": 1,
+     "description": "Monta el sándwich con el jamón y el queso y tuéstalo en sandwichera o sartén, 2 min por lado.",
+     "items": []
+    },
+    {
+     "position": 2,
+     "description": "Haz el huevo a la plancha y ponlo encima o dentro.",
+     "items": []
+    }
+   ],
+   "nutritionalWhy": null,
+   "difficulty": 1,
+   "cookingTime": 8,
+   "tupper": true,
+   "concepts": [],
+   "conceptGroups": [],
+   "intakeTypes": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "mealTypes": [],
+   "forbiddenFor": [
+    55,
+    56,
+    59,
+    60,
+    66,
+    67,
+    68,
+    86,
+    87,
+    112
+   ],
+   "macros": {
+    "carbohydrate": {
+     "grams": 26,
+     "percentage": 31
+    },
+    "protein": {
+     "grams": 29,
+     "percentage": 34
+    },
+    "fat": {
+     "grams": 13,
+     "percentage": 35
+    }
+   },
+   "kcal": 344,
+   "weight": 190,
+   "categoria": "Platos salados / principales",
+   "basica": true
+  },
+  {
+   "id": "50637ebe-bd5a-540a-8fcb-d310c9833f33",
+   "name": "Burrito de ternera y alubias",
+   "image": "https://images.unsplash.com/photo-1731090389603-d63060ee08a6?w=900&h=675&fit=crop&q=80&fm=jpg",
+   "ingredients": [
+    {
+     "id": "fdb6043b-2404-520a-aafa-4092f1593be2",
+     "name": "Tortilla de trigo (wrap)",
+     "quantity": 80
+    },
+    {
+     "id": "aa59ffa2-b0a1-5088-84f5-65b0b7a7e85b",
+     "name": "Carne picada de ternera",
+     "quantity": 120
+    },
+    {
+     "id": "5137ad5a-3d5c-5e73-9612-fe7d66758eee",
+     "name": "Alubias rojas cocidas de bote",
+     "quantity": 80
+    },
+    {
+     "id": "dc0ccb29-bf41-5e85-a360-f3a412418f59",
+     "name": "Tomate frito",
+     "quantity": 40
+    }
+   ],
+   "steps": [
+    {
+     "position": 1,
+     "description": "Dora la carne picada con comino y pimentón, 6 min.",
+     "items": []
+    },
+    {
+     "position": 2,
+     "description": "Añade las alubias escurridas y el tomate frito, 2 min.",
+     "items": []
+    },
+    {
+     "position": 3,
+     "description": "Rellena las 2 tortillas y enróllalas.",
+     "items": []
+    }
+   ],
+   "nutritionalWhy": null,
+   "difficulty": 1,
+   "cookingTime": 12,
+   "tupper": true,
+   "concepts": [],
+   "conceptGroups": [],
+   "intakeTypes": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "mealTypes": [],
+   "forbiddenFor": [
+    55,
+    56,
+    59,
+    66,
+    67,
+    68,
+    86,
+    89,
+    92,
+    112,
+    114
+   ],
+   "macros": {
+    "carbohydrate": {
+     "grams": 55,
+     "percentage": 45
+    },
+    "protein": {
+     "grams": 37,
+     "percentage": 31
+    },
+    "fat": {
+     "grams": 13,
+     "percentage": 24
+    }
+   },
+   "kcal": 500,
+   "weight": 320,
+   "categoria": "Platos salados / principales",
+   "basica": true
+  },
+  {
+   "id": "f7c7c5b7-a2e9-5dd7-9ad8-1611e415137d",
+   "name": "Wrap de atún",
+   "image": "https://images.unsplash.com/photo-1563282397-db1ac3a6bf86?w=900&h=675&fit=crop&q=80&fm=jpg",
+   "ingredients": [
+    {
+     "id": "95be38b6-129a-5c0e-bd29-461f900d826e",
+     "name": "Tortilla de trigo (wrap)",
+     "quantity": 80
+    },
+    {
+     "id": "615b8464-2e3f-52b9-9708-067012da708b",
+     "name": "Atún al natural escurrido",
+     "quantity": 110
+    },
+    {
+     "id": "d2c8e179-a726-5821-883b-f7d43be10a83",
+     "name": "Queso fresco batido 0%",
+     "quantity": 40
+    },
+    {
+     "id": "ddd9ce45-d875-50d8-b672-2aa23f96fc2d",
+     "name": "Lechuga y tomate",
+     "quantity": 60
+    }
+   ],
+   "steps": [
+    {
+     "position": 1,
+     "description": "Mezcla el atún con el queso batido, sal y pimienta.",
+     "items": []
+    },
+    {
+     "position": 2,
+     "description": "Rellena las 2 tortillas con la mezcla, lechuga y tomate, y enrolla.",
+     "items": []
+    }
+   ],
+   "nutritionalWhy": null,
+   "difficulty": 1,
+   "cookingTime": 5,
+   "tupper": true,
+   "concepts": [],
+   "conceptGroups": [],
+   "intakeTypes": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "mealTypes": [],
+   "forbiddenFor": [
+    55,
+    56,
+    59,
+    66,
+    67,
+    68,
+    86,
+    87,
+    89,
+    109,
+    110
+   ],
+   "macros": {
+    "carbohydrate": {
+     "grams": 43,
+     "percentage": 45
+    },
+    "protein": {
+     "grams": 37,
+     "percentage": 39
+    },
+    "fat": {
+     "grams": 7,
+     "percentage": 16
+    }
+   },
+   "kcal": 385,
+   "weight": 290,
+   "categoria": "Platos salados / principales",
+   "basica": true
+  },
+  {
+   "id": "8f693ef2-def6-599c-99ce-591761117ab6",
+   "name": "Perritos de salchicha de pavo",
+   "image": "https://images.unsplash.com/photo-1599599810694-b5b37304c041?w=900&h=675&fit=crop&q=80&fm=jpg",
+   "ingredients": [
+    {
+     "id": "494c4f8e-9fda-555f-94ea-276fc01b1743",
+     "name": "Pan de perrito",
+     "quantity": 110
+    },
+    {
+     "id": "1a02df5b-9259-558c-a70c-d24f217a26c4",
+     "name": "Salchichas de pavo",
+     "quantity": 120
+    },
+    {
+     "id": "779a8cc6-22bf-5c83-a648-9425aa480cfc",
+     "name": "Ketchup",
+     "quantity": 15
+    }
+   ],
+   "steps": [
+    {
+     "position": 1,
+     "description": "Haz las salchichas a la plancha o 1 min en agua hirviendo.",
+     "items": []
+    },
+    {
+     "position": 2,
+     "description": "Mételas en los panes con ketchup y mostaza.",
+     "items": []
+    }
+   ],
+   "nutritionalWhy": null,
+   "difficulty": 1,
+   "cookingTime": 8,
+   "tupper": true,
+   "concepts": [],
+   "conceptGroups": [],
+   "intakeTypes": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "mealTypes": [],
+   "forbiddenFor": [
+    55,
+    56,
+    59,
+    66,
+    67,
+    68,
+    86,
+    89,
+    112,
+    114
+   ],
+   "macros": {
+    "carbohydrate": {
+     "grams": 59,
+     "percentage": 48
+    },
+    "protein": {
+     "grams": 26,
+     "percentage": 21
+    },
+    "fat": {
+     "grams": 17,
+     "percentage": 31
+    }
+   },
+   "kcal": 494,
+   "weight": 245,
+   "categoria": "Platos salados / principales",
+   "basica": true
+  },
+  {
+   "id": "667a3a6c-5a55-505a-9bd4-20f55d41d5d9",
+   "name": "Pita de pollo con salsa de yogur",
+   "image": "https://images.unsplash.com/photo-1676300187347-6f60002fd83e?w=900&h=675&fit=crop&q=80&fm=jpg",
+   "ingredients": [
+    {
+     "id": "a7a56e85-82d4-5d5d-87eb-37dcf2c6da68",
+     "name": "Pan de pita",
+     "quantity": 80
+    },
+    {
+     "id": "3a7d40ed-dd8a-5b70-a202-7707cfa128c6",
+     "name": "Pechuga de pollo",
+     "quantity": 150
+    },
+    {
+     "id": "d32b7a5a-9239-5a9b-90c8-043a3ba5f835",
+     "name": "Yogur natural desnatado",
+     "quantity": 60
+    },
+    {
+     "id": "6ca95379-ebfc-59dc-a86c-91a9d4922537",
+     "name": "Lechuga y tomate",
+     "quantity": 60
+    }
+   ],
+   "steps": [
+    {
+     "position": 1,
+     "description": "Haz el pollo en tiras a la plancha con comino, pimentón y ajo en polvo.",
+     "items": []
+    },
+    {
+     "position": 2,
+     "description": "Mezcla el yogur con sal, ajo en polvo y perejil.",
+     "items": []
+    },
+    {
+     "position": 3,
+     "description": "Rellena la pita con pollo, lechuga, tomate y la salsa.",
+     "items": []
+    }
+   ],
+   "nutritionalWhy": null,
+   "difficulty": 1,
+   "cookingTime": 12,
+   "tupper": true,
+   "concepts": [],
+   "conceptGroups": [],
+   "intakeTypes": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "mealTypes": [],
+   "forbiddenFor": [
+    55,
+    56,
+    59,
+    66,
+    67,
+    68,
+    86,
+    87,
+    89,
+    112
+   ],
+   "macros": {
+    "carbohydrate": {
+     "grams": 49,
+     "percentage": 48
+    },
+    "protein": {
+     "grams": 45,
+     "percentage": 44
+    },
+    "fat": {
+     "grams": 4,
+     "percentage": 9
+    }
+   },
+   "kcal": 420,
+   "weight": 350,
+   "categoria": "Platos salados / principales",
+   "basica": true
+  },
+  {
+   "id": "06330830-3b59-53b5-99c6-22b9dd59bcef",
+   "name": "Tostadas con aguacate y huevo",
+   "image": "https://images.unsplash.com/photo-1687276287139-88f7333c8ca4?w=900&h=675&fit=crop&q=80&fm=jpg",
+   "ingredients": [
+    {
+     "id": "5362dc00-4670-5739-bbb3-52d83a979f95",
+     "name": "Pan de molde integral",
+     "quantity": 80
+    },
+    {
+     "id": "4d74015f-375d-535d-8670-e10f164963c8",
+     "name": "Aguacate",
+     "quantity": 50
+    },
+    {
+     "id": "f1cb5160-1afc-5adb-a680-224c9eb89257",
+     "name": "Huevo",
+     "quantity": 120
+    }
+   ],
+   "steps": [
+    {
+     "position": 1,
+     "description": "Tuesta el pan y aplasta el aguacate encima con sal.",
+     "items": []
+    },
+    {
+     "position": 2,
+     "description": "Haz los huevos a la plancha o revueltos y ponlos encima.",
+     "items": []
+    }
+   ],
+   "nutritionalWhy": null,
+   "difficulty": 1,
+   "cookingTime": 8,
+   "tupper": false,
+   "concepts": [],
+   "conceptGroups": [],
+   "intakeTypes": [
+    1,
+    2,
+    4
+   ],
+   "mealTypes": [],
+   "forbiddenFor": [
+    55,
+    59,
+    66,
+    68,
+    86,
+    89
+   ],
+   "macros": {
+    "carbohydrate": {
+     "grams": 35,
+     "percentage": 32
+    },
+    "protein": {
+     "grams": 24,
+     "percentage": 22
+    },
+    "fat": {
+     "grams": 22,
+     "percentage": 46
+    }
+   },
+   "kcal": 454,
+   "weight": 250,
+   "categoria": "Desayuno y dulces",
+   "basica": true
+  },
+  {
+   "id": "e14e828d-8053-5640-be9c-4ecd6013eeeb",
+   "name": "Tostadas con pavo y queso fresco",
+   "image": "https://s3.eu-west-3.amazonaws.com/storage.getindya.com/recipes/images/recipe_wgYW3nGaW5CJqmfwtzfo.jpg",
+   "ingredients": [
+    {
+     "id": "588b5ee4-b5e8-5fea-8f52-d0b189af7aa4",
+     "name": "Pan de molde integral",
+     "quantity": 80
+    },
+    {
+     "id": "c230e246-f5ac-5c4a-a7d0-b94a4593cbdf",
+     "name": "Queso fresco batido 0%",
+     "quantity": 60
+    },
+    {
+     "id": "4fb821da-24c9-5f1c-a943-26a450b1c158",
+     "name": "Fiambre de pavo",
+     "quantity": 60
+    }
+   ],
+   "steps": [
+    {
+     "position": 1,
+     "description": "Tuesta el pan y úntalo con el queso batido.",
+     "items": []
+    },
+    {
+     "position": 2,
+     "description": "Pon el pavo encima. Orégano o tomate si quieres.",
+     "items": []
+    }
+   ],
+   "nutritionalWhy": null,
+   "difficulty": 1,
+   "cookingTime": 5,
+   "tupper": false,
+   "concepts": [],
+   "conceptGroups": [],
+   "intakeTypes": [
+    1,
+    2,
+    4
+   ],
+   "mealTypes": [],
+   "forbiddenFor": [
+    55,
+    56,
+    59,
+    66,
+    67,
+    68,
+    86,
+    87,
+    112
+   ],
+   "macros": {
+    "carbohydrate": {
+     "grams": 36,
+     "percentage": 52
+    },
+    "protein": {
+     "grams": 24,
+     "percentage": 35
+    },
+    "fat": {
+     "grams": 4,
+     "percentage": 13
+    }
+   },
+   "kcal": 288,
+   "weight": 200,
+   "categoria": "Desayuno y dulces",
+   "basica": true
+  },
+  {
+   "id": "dd8a4b66-fd81-5f28-b5c3-b0d8a78715d5",
+   "name": "Yogur proteico con cereales y fruta",
+   "image": "https://s3.eu-west-3.amazonaws.com/storage.getindya.com/recipes/images/recipe_IwWH0TBdSwaaER8H6l9T.jpg",
+   "ingredients": [
+    {
+     "id": "8e3ac7df-e18e-51f6-84f5-bea81ac96f6d",
+     "name": "Yogur proteico natural",
+     "quantity": 240
+    },
+    {
+     "id": "dbd2991b-ff7d-52fe-a145-5e17ddf7c528",
+     "name": "Cereales integrales",
+     "quantity": 40
+    },
+    {
+     "id": "e6ce091e-06f7-50d9-8457-d83fd5fbf69b",
+     "name": "Fruta (pieza)",
+     "quantity": 150
+    }
+   ],
+   "steps": [
+    {
+     "position": 1,
+     "description": "Pon los 2 yogures en un bol con los cereales y la fruta troceada.",
+     "items": []
+    }
+   ],
+   "nutritionalWhy": null,
+   "difficulty": 1,
+   "cookingTime": 5,
+   "tupper": false,
+   "concepts": [],
+   "conceptGroups": [],
+   "intakeTypes": [
+    1,
+    2,
+    4
+   ],
+   "mealTypes": [],
+   "forbiddenFor": [
+    55,
+    56,
+    66,
+    86,
+    87,
+    89,
+    114
+   ],
+   "macros": {
+    "carbohydrate": {
+     "grams": 58,
+     "percentage": 64
+    },
+    "protein": {
+     "grams": 28,
+     "percentage": 31
+    },
+    "fat": {
+     "grams": 2,
+     "percentage": 5
+    }
+   },
+   "kcal": 376,
+   "weight": 430,
+   "categoria": "Desayuno y dulces",
+   "basica": true
+  },
+  {
+   "id": "37d365fa-f86e-59b6-8921-a6bc83c3bce0",
+   "name": "Batido de plátano, avena y proteína",
+   "image": "https://images.unsplash.com/photo-1685967836529-b0e8d6938227?w=900&h=675&fit=crop&q=80&fm=jpg",
+   "ingredients": [
+    {
+     "id": "9d9d0b3e-13ca-5adb-92cf-33a57c6d1db8",
+     "name": "Leche semidesnatada",
+     "quantity": 300
+    },
+    {
+     "id": "d47e63f5-1339-5047-b44a-db2d9c52be24",
+     "name": "Proteína whey",
+     "quantity": 25
+    },
+    {
+     "id": "805790ca-b3e3-5a74-a4e0-0869287f9133",
+     "name": "Copos de avena",
+     "quantity": 40
+    },
+    {
+     "id": "910be10f-995f-5830-bacf-43fe61904977",
+     "name": "Plátano",
+     "quantity": 120
+    }
+   ],
+   "steps": [
+    {
+     "position": 1,
+     "description": "Bátelo todo con la batidora 30 s. Hielo si lo quieres frío.",
+     "items": []
+    }
+   ],
+   "nutritionalWhy": null,
+   "difficulty": 1,
+   "cookingTime": 5,
+   "tupper": false,
+   "concepts": [],
+   "conceptGroups": [],
+   "intakeTypes": [
+    1,
+    2,
+    4
+   ],
+   "mealTypes": [],
+   "forbiddenFor": [
+    55,
+    56,
+    86,
+    87,
+    89,
+    113,
+    114
+   ],
+   "macros": {
+    "carbohydrate": {
+     "grams": 65,
+     "percentage": 54
+    },
+    "protein": {
+     "grams": 35,
+     "percentage": 29
+    },
+    "fat": {
+     "grams": 9,
+     "percentage": 17
+    }
+   },
+   "kcal": 491,
+   "weight": 485,
+   "categoria": "Desayuno y dulces",
+   "basica": true
+  },
+  {
+   "id": "309e2057-d14a-5091-be6c-794c0920807a",
+   "name": "Bizcocho de taza proteico",
+   "image": "https://s3.eu-west-3.amazonaws.com/storage.getindya.com/recipes/images/recipe_cszzOLSTFBXUafL6O0ao.jpg",
+   "ingredients": [
+    {
+     "id": "57aaaa5b-658a-56c3-9fd0-2a0853ec0eca",
+     "name": "Copos de avena",
+     "quantity": 40
+    },
+    {
+     "id": "99d8f13d-7861-5209-9d86-26915cebc0ad",
+     "name": "Proteína whey",
+     "quantity": 25
+    },
+    {
+     "id": "052c6a37-e980-51e3-971a-8e82cbbb192c",
+     "name": "Huevo",
+     "quantity": 60
+    },
+    {
+     "id": "233104ee-0e0f-5aea-9602-7479f88f3fc7",
+     "name": "Leche semidesnatada",
+     "quantity": 60
+    },
+    {
+     "id": "db0596d3-dde6-5124-87ca-8a0f8334f1ab",
+     "name": "Cacao puro en polvo",
+     "quantity": 5
+    }
+   ],
+   "steps": [
+    {
+     "position": 1,
+     "description": "Mezcla todo en una taza grande con una pizca de levadura (o bicarbonato).",
+     "items": []
+    },
+    {
+     "position": 2,
+     "description": "Microondas 90 s a máxima potencia.",
+     "items": []
+    }
+   ],
+   "nutritionalWhy": null,
+   "difficulty": 1,
+   "cookingTime": 5,
+   "tupper": false,
+   "concepts": [],
+   "conceptGroups": [],
+   "intakeTypes": [
+    1,
+    2,
+    4
+   ],
+   "mealTypes": [],
+   "forbiddenFor": [
+    55,
+    56,
+    68,
+    87,
+    89,
+    113
+   ],
+   "macros": {
+    "carbohydrate": {
+     "grams": 30,
+     "percentage": 33
+    },
+    "protein": {
+     "grams": 34,
+     "percentage": 37
+    },
+    "fat": {
+     "grams": 12,
+     "percentage": 30
+    }
+   },
+   "kcal": 377,
+   "weight": 190,
+   "categoria": "Desayuno y dulces",
+   "basica": true
+  },
+  {
+   "id": "5678f4d5-e1ea-5d62-ad86-dabffb9bfcb9",
+   "name": "Tostadas con crema de cacahuete y plátano + batido",
+   "image": "https://s3.eu-west-3.amazonaws.com/storage.getindya.com/recipes/images/recipe_OGAP1lkcRXU2B5DnOceY.jpg",
+   "ingredients": [
+    {
+     "id": "6bd538ff-5b49-5f00-834a-f0e643edead4",
+     "name": "Pan de molde integral",
+     "quantity": 80
+    },
+    {
+     "id": "4a6aaad5-fadc-53a1-af1d-cb00047b3bb1",
+     "name": "Crema de cacahuete",
+     "quantity": 15
+    },
+    {
+     "id": "6955b9be-2f77-5ffc-8bd7-2a66cbe50ef8",
+     "name": "Plátano",
+     "quantity": 100
+    },
+    {
+     "id": "8bafbe9b-6ccf-560e-8636-67239f16f899",
+     "name": "Leche semidesnatada",
+     "quantity": 250
+    },
+    {
+     "id": "4bc01c35-38b0-556f-8d0a-71d296625675",
+     "name": "Proteína whey",
+     "quantity": 25
+    }
+   ],
+   "steps": [
+    {
+     "position": 1,
+     "description": "Tuesta el pan, unta la crema de cacahuete y pon el plátano en rodajas.",
+     "items": []
+    },
+    {
+     "position": 2,
+     "description": "Bate la proteína con la leche.",
+     "items": []
+    }
+   ],
+   "nutritionalWhy": null,
+   "difficulty": 1,
+   "cookingTime": 5,
+   "tupper": false,
+   "concepts": [],
+   "conceptGroups": [],
+   "intakeTypes": [
+    1,
+    2,
+    4
+   ],
+   "mealTypes": [],
+   "forbiddenFor": [
+    55,
+    56,
+    59,
+    66,
+    86,
+    87,
+    89,
+    113,
+    114
+   ],
+   "macros": {
+    "carbohydrate": {
+     "grams": 70,
+     "percentage": 48
+    },
+    "protein": {
+     "grams": 40,
+     "percentage": 27
+    },
+    "fat": {
+     "grams": 16,
+     "percentage": 25
+    }
+   },
+   "kcal": 590,
+   "weight": 470,
+   "categoria": "Desayuno y dulces",
+   "basica": true
+  },
+  {
+   "id": "c47f2b11-852b-5b1b-a20b-9787cc35b106",
+   "name": "Tortitas de arroz con pavo y queso fresco",
+   "image": "https://s3.eu-west-3.amazonaws.com/storage.getindya.com/recipes/images/recipe_SmjXIuJlYCLHH3pl8JwN.jpg",
+   "ingredients": [
+    {
+     "id": "ae78cae0-285e-576a-8140-f6cd1ba64433",
+     "name": "Tortitas de arroz",
+     "quantity": 30
+    },
+    {
+     "id": "cbf551f8-b219-5ea2-8121-8ecf830959cb",
+     "name": "Fiambre de pavo",
+     "quantity": 60
+    },
+    {
+     "id": "4d2ba1d1-72da-5871-8e40-a55f9be22d53",
+     "name": "Queso fresco batido 0%",
+     "quantity": 60
+    }
+   ],
+   "steps": [
+    {
+     "position": 1,
+     "description": "Unta las 3 tortitas con el queso batido y pon el pavo encima.",
+     "items": []
+    }
+   ],
+   "nutritionalWhy": null,
+   "difficulty": 1,
+   "cookingTime": 5,
+   "tupper": false,
+   "concepts": [],
+   "conceptGroups": [],
+   "intakeTypes": [
+    1,
+    2,
+    4
+   ],
+   "mealTypes": [],
+   "forbiddenFor": [
+    55,
+    56,
+    67,
+    68,
+    87,
+    112
+   ],
+   "macros": {
+    "carbohydrate": {
+     "grams": 27,
+     "percentage": 53
+    },
+    "protein": {
+     "grams": 19,
+     "percentage": 38
+    },
+    "fat": {
+     "grams": 2,
+     "percentage": 9
+    }
+   },
+   "kcal": 203,
+   "weight": 150,
+   "categoria": "Desayuno y dulces",
+   "basica": true
+  },
+  {
+   "id": "e2b00bb0-1d50-52c9-912e-21a149767862",
+   "name": "Tortilla francesa de atún con pan",
+   "image": "https://s3.eu-west-3.amazonaws.com/storage.getindya.com/recipes/images/recipe_8auLYeqyGDIPYU1Pza7s.jpg",
+   "ingredients": [
+    {
+     "id": "be0b7618-d2e6-5341-a350-57b09ae8ee00",
+     "name": "Huevo",
+     "quantity": 120
+    },
+    {
+     "id": "9ea16eb6-fe5b-589a-8187-88b736fe4fc6",
+     "name": "Claras de huevo",
+     "quantity": 60
+    },
+    {
+     "id": "fda7a618-4147-51f3-9686-189489ff36c4",
+     "name": "Atún al natural escurrido",
+     "quantity": 55
+    },
+    {
+     "id": "1ec25110-219a-535a-bcdb-eca0067c538e",
+     "name": "Pan de barra",
+     "quantity": 60
+    }
+   ],
+   "steps": [
+    {
+     "position": 1,
+     "description": "Bate los huevos con las claras y el atún.",
+     "items": []
+    },
+    {
+     "position": 2,
+     "description": "Cuájala en sartén antiadherente 2 min por lado. Con el pan.",
+     "items": []
+    }
+   ],
+   "nutritionalWhy": null,
+   "difficulty": 1,
+   "cookingTime": 8,
+   "tupper": false,
+   "concepts": [],
+   "conceptGroups": [],
+   "intakeTypes": [
+    3,
+    5
+   ],
+   "mealTypes": [],
+   "forbiddenFor": [
+    55,
+    56,
+    66,
+    67,
+    68,
+    89,
+    109,
+    110
+   ],
+   "macros": {
+    "carbohydrate": {
+     "grams": 32,
+     "percentage": 31
+    },
+    "protein": {
+     "grams": 40,
+     "percentage": 39
+    },
+    "fat": {
+     "grams": 14,
+     "percentage": 30
+    }
+   },
+   "kcal": 420,
+   "weight": 295,
+   "categoria": "Platos salados / principales",
+   "basica": true
+  }
+ ]
+}

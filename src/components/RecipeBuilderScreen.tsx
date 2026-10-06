@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Recipe, RecipeIngredient, MealItem, FoodCategory } from '../types';
 import { getRecipes, createRecipe, updateRecipe, deleteRecipe, getFoodItems, queryRecetas, cargarIndiceRecetas, getRecipeById } from '../dbService';
 import type { RecetasCursor } from '../dbService';
+import { CAT_BASICAS, encajaCategoria, FILTROS_RAPIDAS, type FiltroRapidas } from '../db/recetasHidratacion';
 import { roundQuarter } from '../utils/exchangeHelpers';
 import { Skeleton, Icon } from './ui';
 import { EmptyState, Badge, Chip, Dialog, Button, Input } from './ui';
@@ -21,6 +22,7 @@ const TOPE_RESULTADOS_BUSQUEDA = 200;
 // mirrors the athlete-facing browser in RecipesScreen.tsx.
 const RECETAS_CATS = [
   'Todas',
+  CAT_BASICAS,
   'Platos salados / principales',
   'Desayuno y dulces',
   'Bebidas',
@@ -132,6 +134,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
   // getRecipes(), which deliberately excludes the 8.850 imported imported recipes to
   // avoid downloading the full collection; browse those separately, paginated.
   const [recetasCat, setRecetasCat]             = useState<string>('Todas');
+  const [recetasRapidas, setRecetasRapidas]     = useState<FiltroRapidas>('');
   const [recetasIntake, setRecetasIntake]       = useState<number | null>(null);
   const [recetasSearch, setRecetasSearch]       = useState('');
   const recetasSearchDebounced = useDebouncedValue(recetasSearch, 200);
@@ -160,9 +163,9 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
   const [recetasLoadingMore, setRecetasLoadingMore] = useState(false);
 
   const loadRecetas = useCallback(async (
-    cat: string, intake: number | null, cursor: RecetasCursor | null, append: boolean,
+    cat: string, intake: number | null, rapidas: FiltroRapidas, cursor: RecetasCursor | null, append: boolean,
   ) => {
-    const filters = { categoria: cat === 'Todas' ? undefined : cat, intakeType: intake ?? undefined };
+    const filters = { categoria: cat === 'Todas' ? undefined : cat, intakeType: intake ?? undefined, rapidas };
     const result = await queryRecetas(filters, cursor);
     setRecetasRecipes(prev => append ? [...prev, ...result.recipes] : result.recipes);
     setRecetasCursor(result.cursor);
@@ -171,12 +174,12 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
 
   useEffect(() => {
     setRecetasLoading(true);
-    loadRecetas(recetasCat, recetasIntake, null, false).finally(() => setRecetasLoading(false));
-  }, [recetasCat, recetasIntake, loadRecetas]);
+    loadRecetas(recetasCat, recetasIntake, recetasRapidas, null, false).finally(() => setRecetasLoading(false));
+  }, [recetasCat, recetasIntake, recetasRapidas, loadRecetas]);
 
   const handleRecetasLoadMore = async () => {
     setRecetasLoadingMore(true);
-    await loadRecetas(recetasCat, recetasIntake, recetasCursor, true);
+    await loadRecetas(recetasCat, recetasIntake, recetasRapidas, recetasCursor, true);
     setRecetasLoadingMore(false);
   };
 
@@ -194,14 +197,14 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
     // pintar miles de tarjetas si el término es de una letra.
     const encontradas: Recipe[] = [];
     for (const { receta, nombre } of indiceBuscable) {
-      if (recetasCat !== 'Todas' && receta.categoria !== recetasCat) continue;
+      if (!encajaCategoria(receta, recetasCat, recetasRapidas)) continue;
       if (recetasIntake != null && !(receta.intakeTypes ?? []).includes(recetasIntake)) continue;
       if (!coincideBusqueda(nombre, termino)) continue;
       encontradas.push(receta);
       if (encontradas.length >= TOPE_RESULTADOS_BUSQUEDA) break;
     }
     return encontradas;
-  }, [recetasRecipes, indiceBuscable, recetasCat, recetasIntake, recetasSearchDebounced]);
+  }, [recetasRecipes, indiceBuscable, recetasCat, recetasRapidas, recetasIntake, recetasSearchDebounced]);
 
   const liveExchanges = useMemo(() => calcExchanges(form.ingredients), [form.ingredients]);
 
@@ -408,6 +411,14 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
             ))}
           </div>
         </div>
+
+        {recetasCat === CAT_BASICAS && (
+          <div className="flex flex-wrap gap-2">
+            {FILTROS_RAPIDAS.map(f => (
+              <Chip key={f.value} selected={recetasRapidas === f.value} onClick={() => setRecetasRapidas(f.value)}>{f.label}</Chip>
+            ))}
+          </div>
+        )}
 
         <div className="flex flex-wrap gap-2">
           <Chip selected={recetasIntake === null} onClick={() => setRecetasIntake(null)}>Todos los momentos</Chip>

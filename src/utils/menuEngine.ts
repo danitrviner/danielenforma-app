@@ -427,6 +427,10 @@ export function rankCandidates(
     if (prefs.disliked.some(f => ingredientMatch(recipe, f))) score += 2;
     if (prefs.liked.some(f => ingredientMatch(recipe, f))) score -= 0.5;
     if (opts.needsTupper && recipe.tupper) score -= 0.5;
+    // Quien dijo tener ≤15 min recibe antes las Rápidas (minutos reales). El
+    // resto del recetario sigue entrando: un filtro duro dejaría el menú en 79
+    // platos y se repetiría.
+    if (prefs.cookingMaxTime != null && prefs.cookingMaxTime <= 15 && recipe.basica) score -= 1.5;
     // Penalización fuerte, no exclusión: si el recetario disponible para esa
     // franja tuviera pocos platos de tupper, excluirlos dejaría la comida vacía,
     // que es peor que proponer algo que aguanta regular. Con +4 solo sale un no-

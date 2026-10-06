@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { UserProfile, Diet, DietMeal, DietItem, FoodCategory, DietMode, MealItem, Recipe, RecipeFavorites, RecetaPendiente, MenuCompletionLog, DietCompletionLog } from '../types';
 import { getDietsForAthlete, getAthleteDietConfig, saveAthleteDietConfig, createDiet, updateDiet, deleteDiet, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig, saveAthleteNutritionConfig, getRecipes, getRecipeFavorites, getNutritionProgram, markNutritionPhaseSeen, computeActivePhase, createNotificationDeduped, getDietCompletionLog, saveDietCompletionLog, createRecipe, queryRecetas, queryRecetasForGenerator, cargarIndiceRecetas, getOnboarding, getRecipeById, getMenuCompletionLog, saveMenuCompletionLog, getAlimentosPersonales, crearAlimentoPersonal, actualizarAlimentoPersonal, borrarAlimentoPersonal } from '../dbService';
 import type { RecetasCursor } from '../dbService';
+import { CAT_BASICAS, encajaCategoria, FILTROS_RAPIDAS, type FiltroRapidas } from '../db/recetasHidratacion';
 import { CATS, BUDGET_CATS, CAT_LABEL, CAT_COLOR, CAT_BG, MODE_LABEL, ALL_DIET_MODES, round2, fmtQty, foodNameWithoutGrams, addToPlaced, recipeToDietItems, computeDietPlaced } from '../utils/exchangeHelpers';
 import { parseBaseGrams, etiquetaDePeso } from '../utils/conversionNutricional';
 import { findRecipeAlternatives, recipeExchanges, groupByDishType, ordenarPorCupo, type RecipeAlternative, type AlternativePrefs } from '../utils/recipeMatch';
@@ -74,6 +75,7 @@ const MAX_CANDIDATOS_BUSQUEDA = 500;
 // navega el recetario mantiene su propia copia de esta lista corta.
 const RECETAS_CATS = [
   'Todas',
+  CAT_BASICAS,
   'Platos salados / principales',
   'Desayuno y dulces',
   'Bebidas',
@@ -450,6 +452,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
   // Recetas, no accesible desde aquí al elegir qué comer en una comida).
   const [recipeSource, setRecipeSource]             = useState<'mias' | 'recetario'>('mias');
   const [recetarioCat, setRecetarioCat]             = useState<string>('Todas');
+  const [recetarioRapidas, setRecetarioRapidas]     = useState<FiltroRapidas>('');
   const [recetarioResults, setRecetarioResults]     = useState<Recipe[]>([]);
   const [recetarioCursor, setRecetarioCursor]       = useState<RecetasCursor | null>(null);
   const [recetarioHasMore, setRecetarioHasMore]     = useState(false);
@@ -959,7 +962,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
       // recetas para tirar todas menos 200.
       const encontradas: Recipe[] = [];
       for (const { receta, nombre } of indiceBuscable) {
-        if (recetarioCat !== 'Todas' && receta.categoria !== recetarioCat) continue;
+        if (!encajaCategoria(receta, recetarioCat, recetarioRapidas)) continue;
         if (!nombre.includes(termino)) continue;
         encontradas.push(receta);
         if (encontradas.length >= MAX_CANDIDATOS_BUSQUEDA) break;
@@ -974,7 +977,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     // tener más no se adelantaban. Y buscando no se esconde lo que no cabe en
     // el cupo del día: quien escribe un nombre quiere ESA receta.
     return ordenarPorPreferencia(ordenarPorCupo(safe, cupoDisponible, 0.5, !buscando)).slice(0, LIMITE_RESULTADOS_BUSQUEDA);
-  }, [recetarioResults, indiceBuscable, recetarioCat, recipeSearchDebounced, isSafeForAthlete, ordenarPorPreferencia, cupoDisponible]);
+  }, [recetarioResults, indiceBuscable, recetarioCat, recetarioRapidas, recipeSearchDebounced, isSafeForAthlete, ordenarPorPreferencia, cupoDisponible]);
 
   const swapCandidates = useMemo(() => {
     if (!swapSourceRecipe || swapPool.length === 0) return [];
@@ -1321,13 +1324,14 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     setRecipeCatFilter('all');
     setRecipeSource('mias');
     setRecetarioCat('Todas');
+    setRecetarioRapidas('');
     setRecetarioResults([]);
     setRecetarioCursor(null);
     setRecetarioHasMore(false);
   };
 
-  const loadRecetario = async (cat: string, cursor: RecetasCursor | null, append: boolean) => {
-    const result = await queryRecetas({ categoria: cat === 'Todas' ? undefined : cat }, cursor);
+  const loadRecetario = async (cat: string, rapidas: FiltroRapidas, cursor: RecetasCursor | null, append: boolean) => {
+    const result = await queryRecetas({ categoria: cat === 'Todas' ? undefined : cat, rapidas }, cursor);
     setRecetarioResults(prev => append ? [...prev, ...result.recipes] : result.recipes);
     setRecetarioCursor(result.cursor);
     setRecetarioHasMore(result.hasMore);
@@ -1340,16 +1344,16 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     if (!recipePickerMealId || recipeSource !== 'recetario') return;
     if (indiceRecetario.length === 0) cargarIndiceRecetas().then(setIndiceRecetario).catch(() => {});
     setRecetarioLoading(true);
-    loadRecetario(recetarioCat, null, false)
+    loadRecetario(recetarioCat, recetarioRapidas, null, false)
       .catch(() => showToast('No se pudo cargar el recetario.'))
       .finally(() => setRecetarioLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [recipePickerMealId, recipeSource, recetarioCat]);
+  }, [recipePickerMealId, recipeSource, recetarioCat, recetarioRapidas]);
 
   const handleRecetarioLoadMore = async () => {
     setRecetarioLoadingMore(true);
     try {
-      await loadRecetario(recetarioCat, recetarioCursor, true);
+      await loadRecetario(recetarioCat, recetarioRapidas, recetarioCursor, true);
     } catch {
       showToast('No se pudo cargar más recetas.');
     } finally {
@@ -2852,19 +2856,36 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                   </div>
                 )
               ) : (
-                <div className="px-4 py-2 bg-surface border-b border-hairline flex gap-2 overflow-x-auto hide-scrollbar">
-                  {RECETAS_CATS.map(cat => (
-                    <button
-                      key={cat}
-                      onClick={() => setRecetarioCat(cat)}
-                      className={`px-3 py-2 rounded-full font-sans text-caption font-bold uppercase tracking-wider whitespace-nowrap transition-all flex-shrink-0 ${
-                        recetarioCat === cat
-                          ? 'bg-accent text-on-accent'
-                          : 'bg-raised text-ink-2 border border-transparent hover:border-hairline'
-                      }`}
-                    >{cat}</button>
-                  ))}
-                </div>
+                <>
+                  <div className="px-4 py-2 bg-surface border-b border-hairline flex gap-2 overflow-x-auto hide-scrollbar">
+                    {RECETAS_CATS.map(cat => (
+                      <button
+                        key={cat}
+                        onClick={() => setRecetarioCat(cat)}
+                        className={`px-3 py-2 rounded-full font-sans text-caption font-bold uppercase tracking-wider whitespace-nowrap transition-all flex-shrink-0 ${
+                          recetarioCat === cat
+                            ? 'bg-accent text-on-accent'
+                            : 'bg-raised text-ink-2 border border-transparent hover:border-hairline'
+                        }`}
+                      >{cat}</button>
+                    ))}
+                  </div>
+                  {recetarioCat === CAT_BASICAS && (
+                    <div className="px-4 py-2 bg-surface border-b border-hairline flex gap-2 overflow-x-auto hide-scrollbar">
+                      {FILTROS_RAPIDAS.map(f => (
+                        <button
+                          key={f.value}
+                          onClick={() => setRecetarioRapidas(f.value)}
+                          className={`px-3 py-1.5 rounded-full font-sans text-caption font-bold whitespace-nowrap transition-all flex-shrink-0 ${
+                            recetarioRapidas === f.value
+                              ? 'bg-accent/15 text-accent-ink border border-accent/40'
+                              : 'bg-raised text-ink-2 border border-transparent hover:border-hairline'
+                          }`}
+                        >{f.label}</button>
+                      ))}
+                    </div>
+                  )}
+                </>
               )}
               </>
             )}

@@ -33,6 +33,12 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const RECETAS_DIR = resolve(process.env.RECETAS_DIR ?? resolve(__dirname, '../public/recetas'));
 const SALIDA      = resolve(__dirname, '../public/recetas-indice.json');
 
+// Recetas del recetario original que también cuentan como básicas. Las nuevas
+// ya traen `basica: true` en su propio JSON (recetas_05_basicas_p01.json).
+const BASICAS_EXISTENTES = new Set(
+  JSON.parse(readFileSync(resolve(RECETAS_DIR, 'basicas_existentes.json'), 'utf8')).ids,
+);
+
 function computeExchanges(macros) {
   return exchangesFromMacros(macros ? {
     carb: macros.carbohydrate?.grams ?? 0,
@@ -73,6 +79,8 @@ function mapEntradaIndice(r) {
   // tuppers el fin de semana (src/utils/menuEngine.ts).
   if (r.cookingTime) entrada.cookingTime = r.cookingTime;
   if (r.tupper)      entrada.tupper      = r.tupper;
+  // Pestaña «Básicas» del recetario.
+  if (r.basica === true || BASICAS_EXISTENTES.has(r.id)) entrada.basica = true;
   return entrada;
 }
 

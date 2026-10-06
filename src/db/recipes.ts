@@ -1,10 +1,12 @@
 import { db, collection, doc, getDoc, setDoc, getDocs, addDoc, updateDoc, deleteDoc, query, where } from '../firebase';
 import { Recipe, RecipeFavorites } from '../types';
 import { forceLocalOnly, setLocalBypassMode, stripUndefined, esFalloDePermisos } from './core';
-import { OWNER_RECETARIO, OWNER_RECETARIO_TODOS, hidratarEntradaIndice } from './recetasHidratacion';
+import { OWNER_RECETARIO, OWNER_RECETARIO_TODOS, hidratarEntradaIndice, encajaCategoria, type FiltroRapidas } from './recetasHidratacion';
 import { escribirLocal } from '../utils/almacenLocal';
 
 export { OWNER_RECETARIO, OWNER_RECETARIO_TODOS };
+export { CAT_BASICAS, encajaCategoria, FILTROS_RAPIDAS } from './recetasHidratacion';
+export type { FiltroRapidas } from './recetasHidratacion';
 
 // ─── RECIPES ─────────────────────────────────────────────────────────────────
 
@@ -89,6 +91,8 @@ export type RecetasCursor = { offset: number };
 export interface RecetasFilters {
   categoria?: string;
   intakeType?: number;
+  /** Subfiltro de la pestaña Rápidas (minutos o tupper). */
+  rapidas?: FiltroRapidas;
 }
 
 /**
@@ -174,7 +178,7 @@ export async function queryRecetas(
   // que daba `orderBy('name')`—, así que filtrar conserva el orden y no hay que
   // reordenar 8.850 entradas en el móvil.
   const coincidencias = indice.filter(r =>
-    (!filters.categoria || r.categoria === filters.categoria) &&
+    encajaCategoria(r, filters.categoria, filters.rapidas) &&
     (filters.intakeType == null || (r.intakeTypes ?? []).includes(filters.intakeType)),
   );
 

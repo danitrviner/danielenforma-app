@@ -88,6 +88,22 @@ describe('rankCandidates', () => {
   });
 });
 
+describe('rankCandidates · Rápidas', () => {
+  const target: BudgetVec = { HC: 2, PROT: 2, GRASA: 1 };
+  const normal = recipe({ id: 'normal', name: 'A normal', exchanges: { HC: 2, PROT: 2, GRASA: 1 } });
+  const rapida = recipe({ id: 'rapida', name: 'B rápida', basica: true, cookingTime: 10, exchanges: { HC: 2, PROT: 2, GRASA: 1 } });
+
+  it('adelanta las Rápidas a quien dijo tener ≤15 min', () => {
+    const ranked = rankCandidates([normal, rapida], target, { ...basePrefs, cookingMaxTime: 15 }, new Set());
+    expect(ranked[0].recipe.id).toBe('rapida');
+  });
+
+  it('con más tiempo no las adelanta', () => {
+    const ranked = rankCandidates([normal, rapida], target, { ...basePrefs, cookingMaxTime: 45 }, new Set());
+    expect(ranked[0].score).toBe(ranked[1].score);
+  });
+});
+
 describe('generateDay', () => {
   it('produces a day within ±1 global exchange tolerance', () => {
     // Recipes crafted to exactly equal each slot's rounded target, so the

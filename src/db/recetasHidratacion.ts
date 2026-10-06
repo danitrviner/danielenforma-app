@@ -1,4 +1,5 @@
 import { Recipe } from '../types';
+import { minutosDeReceta } from '../utils/tiempoDeReceta';
 
 /**
  * `ownerId` del recetario importado (8.850 recetas). Es un centinela, no un UID
@@ -80,6 +81,45 @@ export function esSuplementoPuroPorNombre(nombre: string | undefined | null): bo
  */
 export function noEsUnPlato(r: Pick<Recipe, 'intakeTypes' | 'ingredientsText'>): boolean {
   return (r.intakeTypes ?? []).length === 0 && (r.ingredientsText ?? []).length <= 1;
+}
+
+/** Pestaña del recetario que no es una `categoria`: agrupa los platos de
+ *  «supervivencia» (rápidos de verdad, pocos ingredientes, de supermercado) de
+ *  cualquier categoría. Ver `Recipe.basica`. Solo entran las que hicimos con
+ *  minutos reales: el resto del recetario guarda un índice 1-4, y los atletas
+ *  ya se quejaban de que sus «~10 min» no lo eran (06-10). */
+export const CAT_BASICAS = 'Rápidas';
+
+/** Subfiltro de la pestaña Rápidas: tope de minutos ('5', '10', '15'),
+ *  'tupper', o '' para todas. */
+export type FiltroRapidas = '' | '5' | '10' | '15' | 'tupper';
+
+export const FILTROS_RAPIDAS: { value: FiltroRapidas; label: string }[] = [
+  { value: '',       label: 'Cualquier tiempo' },
+  { value: '5',      label: 'Inmediatas (≤5 min)' },
+  { value: '10',     label: 'Hasta 10 min' },
+  { value: '15',     label: 'Hasta 15 min' },
+  { value: 'tupper', label: 'Para tupper' },
+];
+
+/** `true` si la receta pasa el subfiltro de Rápidas. Sin minutos no pasa un
+ *  tope: en esta pestaña prometer «inmediata» sin dato sería mentir. */
+export function encajaRapidas(r: Pick<Recipe, 'cookingTime' | 'tupper'>, filtro?: FiltroRapidas | null): boolean {
+  if (!filtro) return true;
+  if (filtro === 'tupper') return r.tupper === true;
+  const min = minutosDeReceta(r);
+  return min != null && min <= Number(filtro);
+}
+
+/** `true` si la receta va en la pestaña `cat` del recetario ('Todas' o vacío =
+ *  todas). `rapidas` solo cuenta dentro de la pestaña Rápidas. */
+export function encajaCategoria(
+  r: Pick<Recipe, 'categoria' | 'basica' | 'cookingTime' | 'tupper'>,
+  cat?: string | null,
+  rapidas?: FiltroRapidas | null,
+): boolean {
+  if (!cat || cat === 'Todas') return true;
+  return cat === CAT_BASICAS ? r.basica === true && encajaRapidas(r, rapidas) : r.categoria === cat;
 }
 
 export function hidratarEntradaIndice(r: Recipe): Recipe {
