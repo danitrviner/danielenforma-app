@@ -8,7 +8,9 @@ import { parseBaseGrams, etiquetaDePeso } from '../utils/conversionNutricional';
 import { distributeMealTargets, inferSlot, DistributeResult, SLOT_LABEL, HUNGER_PROFILE_LABEL } from '../utils/mealDistribution';
 import { perfilDeHambreVigente } from '../utils/perfilDeHambre';
 import { resolvePhaseTargetKcal } from '../utils/nutritionPeriodization';
-import { exchangeToKcal } from '../utils/nutritionConstants';
+import { exchangeToKcal, GRAMS_PER_EXCHANGE } from '../utils/nutritionConstants';
+import { macrosDeCupo } from '../utils/semanasNutricion';
+import { useAthleteWeight } from '../hooks/useAthleteWeight';
 import { computePhaseStartDate } from '../dbService';
 import { useToast } from '../hooks/useToast';
 import { atletasActivos } from '../utils/atletas';
@@ -125,6 +127,10 @@ export default function NutritionPlansScreen({
 
   // Athlete selector
   const [selectedEmail, setSelectedEmail] = useState(athleteEmail ?? '');
+  // Peso con el que se calcula la proteína por kg: el último registrado, o el
+  // de la anamnesis si aún no hay pesajes.
+  const { current: pesoRegistrado } = useAthleteWeight(selectedEmail || undefined);
+  const pesoParaProteina = pesoRegistrado ?? onboardingData?.weightKg ?? null;
   // Unfiltered — same ['userProfiles'] key as ClientsScreen/CommandPalette/
   // MesocycleManager/ReviewsScreen, filtered locally so the shared cache entry
   // stays the raw list every one of those expects.
@@ -926,6 +932,17 @@ export default function NutritionPlansScreen({
                   className="px-3 py-2 text-ink-2 hover:text-ink hover:bg-raised transition-colors text-body-s font-bold"
                 >+</button>
               </div>
+              {cat === 'PROT' && (() => {
+                const gProt = Math.round(macrosDeCupo(form.budget).PROT * GRAMS_PER_EXCHANGE.PROT);
+                const gKg = pesoParaProteina ? Math.round((gProt / pesoParaProteina) * 10) / 10 : null;
+                return (
+                  <p className="mt-1.5 font-mono text-caption text-ink-2">
+                    {gProt} g{gKg != null ? (
+                      <> · <span className="font-bold text-ink">{String(gKg).replace('.', ',')} g/kg</span> · peso {String(Math.round(pesoParaProteina! * 10) / 10).replace('.', ',')} kg</>
+                    ) : ' · sin peso registrado'}
+                  </p>
+                );
+              })()}
             </div>
           ))}
         </div>
