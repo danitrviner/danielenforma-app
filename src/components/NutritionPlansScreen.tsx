@@ -932,13 +932,13 @@ export default function NutritionPlansScreen({
                   className="px-3 py-2 text-ink-2 hover:text-ink hover:bg-raised transition-colors text-body-s font-bold"
                 >+</button>
               </div>
-              {cat === 'PROT' && (() => {
-                const gProt = Math.round(macrosDeCupo(form.budget).PROT * GRAMS_PER_EXCHANGE.PROT);
-                const gKg = pesoParaProteina ? Math.round((gProt / pesoParaProteina) * 10) / 10 : null;
+              {(cat === 'PROT' || cat === 'GRASA') && (() => {
+                const gMacro = Math.round(macrosDeCupo(form.budget)[cat] * GRAMS_PER_EXCHANGE[cat]);
+                const gKg = pesoParaProteina ? Math.round((gMacro / pesoParaProteina) * 10) / 10 : null;
                 return (
                   <p className="mt-1.5 font-mono text-caption text-ink-2">
-                    {gProt} g{gKg != null ? (
-                      <> · <span className="font-bold text-ink">{String(gKg).replace('.', ',')} g/kg</span> · peso {String(Math.round(pesoParaProteina! * 10) / 10).replace('.', ',')} kg</>
+                    {gMacro} g{gKg != null ? (
+                      <> · <span className="font-bold text-ink">{String(gKg).replace('.', ',')} g/kg</span>{cat === 'PROT' && <> · peso {String(Math.round(pesoParaProteina! * 10) / 10).replace('.', ',')} kg</>}</>
                     ) : ' · sin peso registrado'}
                   </p>
                 );
