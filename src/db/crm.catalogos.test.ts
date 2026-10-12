@@ -34,7 +34,11 @@ vi.mock('../firebase', () => ({
       update: () => {},
     }),
   ),
-  writeBatch: () => ({ set: () => {}, commit: async () => {} }),
+  writeBatch: () => ({
+    set: () => {},
+    update: (ref: { __doc: string }, datos: unknown) => { estado.updatesEnLote.push({ ref: ref.__doc, datos }); },
+    commit: async () => {},
+  }),
 }));
 
 vi.mock('./core', () => ({
@@ -49,6 +53,7 @@ vi.mock('./core', () => ({
 const estado = {
   documentos: [] as Array<Record<string, unknown>>,
   suscripcionEnServidor: {} as Record<string, unknown>,
+  updatesEnLote: [] as Array<{ ref: string; datos: unknown }>,
 };
 
 vi.mock('./catalogoVersionado', () => ({
@@ -67,6 +72,7 @@ function sellosMarcados(): string[] {
 beforeEach(() => {
   estado.documentos = [];
   estado.suscripcionEnServidor = {};
+  estado.updatesEnLote = [];
   vi.mocked(marcarCatalogoCambiado).mockClear();
   vi.mocked(leerCatalogo).mockClear();
 });
@@ -127,6 +133,21 @@ describe('escrituras del CRM — todas marcan su sello', () => {
       { generarPago: true, cuotas: 3 },
     );
     expect(pagos).toHaveLength(3);
+    expect(sellosMarcados()).toEqual(['crmPagos', 'crmServicios']);
+  });
+
+  it('createCrmServicioConPago con renuevaA marca el viejo como renovado en el MISMO lote', async () => {
+    // «Renovado» sin cobro dejaba el cash a cero (Gonzalo, 12-10-2026): la
+    // etiqueta y el dinero tienen que entrar juntos o no entrar.
+    const { pagos } = await crm.createCrmServicioConPago(
+      { ...base, nombre: 'Asesoría 3 meses', tipo: 'renovacion', importeCents: 24000, fechaContratacion: '2026-10-05', fechaInicio: '2026-10-16' } as never,
+      { generarPago: true, primerCobro: '2026-10-05', yaCobrado: true, renuevaA: 'viejo' },
+    );
+    expect(pagos).toHaveLength(1);
+    expect(pagos[0]).toMatchObject({ estado: 'pagado', fechaCobro: '2026-10-05', tipo: 'renovacion' });
+    expect(estado.updatesEnLote).toEqual([
+      { ref: 'crmServicios/viejo', datos: expect.objectContaining({ resultadoRenovacion: 'renovado' }) },
+    ]);
     expect(sellosMarcados()).toEqual(['crmPagos', 'crmServicios']);
   });
 

@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { useToast } from '../../../hooks/useToast';
-import { useCrearServicio, useServiciosDe } from '../hooks/useServicios';
-import { parseEurosACents, formatEuros, repartirEnCuotas } from '../lib/dinero';
+import { useCrearServicio, useServiciosDe, useActualizarServicio } from '../hooks/useServicios';
+import { parseEurosACents, formatEuros, repartirEnCuotas, centsAInputEuros } from '../lib/dinero';
 import { hoyISO, sumarMeses, mesesDePeriodicidad, formatDia } from '../lib/fechas';
 import { EscrituraEncolada } from '../../../db/crm';
 import Modal, { Campo, inputClass, BotonPrimario, BotonSecundario } from './Modal';
-import { CATALOGO_SERVICIOS, entradaDelCatalogo } from '../lib/catalogoServicios';
-import type { Cliente, Periodicidad, TipoDeServicio, TipoServicio } from '../types';
+import { CATALOGO_SERVICIOS, clasificarNombre, entradaDelCatalogo } from '../lib/catalogoServicios';
+import type { Cliente, CrmServicio, Periodicidad, TipoDeServicio, TipoServicio } from '../types';
 
 // Qué clase de venta es un servicio. Es lo que permite separar «facturación de
 // altas» de «facturación de renovaciones», y de ahí salen el LTV por servicio y
@@ -25,39 +25,63 @@ const PERIODICIDADES: { id: Periodicidad; label: string }[] = [
   { id: 'unico',       label: 'Pago único' },
 ];
 
-export default function NuevoServicioModal({ cliente, coachEmail, onCerrar }: {
-  cliente: Cliente; coachEmail: string; onCerrar: () => void;
+/* Con `renovacionDe` el modal sirve para RENOVAR ese servicio: viene relleno
+   con el mismo contrato empezando donde acaba el viejo, cobrado hoy, y al
+   guardar marca el viejo como renovado en el mismo lote. Antes «renovado» solo
+   ponía la etiqueta y el cash no se enteraba (Gonzalo, 12-10-2026). */
+function inicioDeRenovacion(s: CrmServicio | undefined): string {
+  return s?.fechaFin ?? hoyISO();
+}
+
+function tipoServicioDe(s: CrmServicio | undefined): TipoDeServicio | null {
+  if (!s) return null;
+  if (s.tipoServicio) return s.tipoServicio;
+  const c = clasificarNombre(s.nombre);
+  return c.confianza === 'segura' ? c.tipo : null;
+}
+
+function finDeRenovacion(s: CrmServicio | undefined): string {
+  if (!s) return '';
+  const meses = mesesDePeriodicidad(s.periodicidad);
+  return meses == null ? '' : sumarMeses(inicioDeRenovacion(s), meses);
+}
+
+export default function NuevoServicioModal({ cliente, coachEmail, onCerrar, renovacionDe }: {
+  cliente: Cliente; coachEmail: string; onCerrar: () => void; renovacionDe?: CrmServicio;
 }) {
   const { showToast } = useToast();
   const crear = useCrearServicio();
+  const actualizar = useActualizarServicio(cliente.id);
 
   const { data: yaTiene = [] } = useServiciosDe(cliente.id);
 
   // Qué servicio es (R-01): catálogo cerrado. El nombre sale del tipo; solo en
-  // «Otro» lo escribe el coach.
-  const [tipoServicio, setTipoServicio] = useState<TipoDeServicio | null>(null);
-  const [nombrePropio, setNombrePropio] = useState('');
+  // «Otro» lo escribe el coach. Al renovar se hereda del servicio viejo.
+  const [tipoServicio, setTipoServicio] = useState<TipoDeServicio | null>(tipoServicioDe(renovacionDe));
+  const [nombrePropio, setNombrePropio] = useState(renovacionDe?.nombre ?? '');
   const entrada = tipoServicio ? entradaDelCatalogo(tipoServicio) : null;
   const nombre = entrada?.nombre ?? nombrePropio;
-  const [importe, setImporte] = useState('');
-  const [periodicidad, setPeriodicidad] = useState<Periodicidad>('mensual');
-  const [fechaInicio, setFechaInicio] = useState(hoyISO());
-  const [fechaFin, setFechaFin] = useState('');
+  const [importe, setImporte] = useState(renovacionDe ? centsAInputEuros(renovacionDe.importeCents) : '');
+  const [periodicidad, setPeriodicidad] = useState<Periodicidad>(renovacionDe?.periodicidad ?? 'mensual');
+  const [fechaInicio, setFechaInicio] = useState(renovacionDe ? inicioDeRenovacion(renovacionDe) : hoyISO());
+  const [fechaFin, setFechaFin] = useState(finDeRenovacion(renovacionDe));
   // Mientras el coach no toque el fin, sigue al tipo y al inicio.
   const [finTocado, setFinTocado] = useState(false);
   const [descripcion, setDescripcion] = useState('');
   const [generarPago, setGenerarPago] = useState(true);
   const [cuotas, setCuotas] = useState(1);
   // Cadena vacía = «sigue al inicio». Así, mover el inicio arrastra el primer
-  // cobro con él mientras el coach no lo fije a mano a otra fecha.
-  const [primerCobro, setPrimerCobro] = useState('');
-  const [yaCobrado, setYaCobrado] = useState(false);
+  // cobro con él mientras el coach no lo fije a mano a otra fecha. Una
+  // renovación se suele cobrar ANTES de que empiece el contrato nuevo, así que
+  // ahí arranca en hoy y cobrada.
+  const [primerCobro, setPrimerCobro] = useState(renovacionDe ? hoyISO() : '');
+  const [yaCobrado, setYaCobrado] = useState(Boolean(renovacionDe));
   /* Qué clase de venta es. Se sugiere —el primer servicio de un cliente es su
      alta— pero se pregunta igual: distinguir una renovación de un upsell es
      una decisión de negocio, no algo que la app pueda deducir, y de esto
      dependen el LTV por servicio y la tasa de renovación. */
   const sugerido: TipoServicio = yaTiene.filter(s => !s.archivado).length === 0 ? 'alta' : 'renovacion';
-  const [tipo, setTipo] = useState<TipoServicio | null>(null);
+  const [tipo, setTipo] = useState<TipoServicio | null>(renovacionDe ? 'renovacion' : null);
   const tipoElegido = tipo ?? sugerido;
   const fechaPrimerCobro = primerCobro || fechaInicio;
   // Cuántas cuotas quedarían cobradas al marcar «ya cobrado»: las que ya han
@@ -115,10 +139,15 @@ export default function NuevoServicioModal({ cliente, coachEmail, onCerrar }: {
           cuotas,
           primerCobro: fechaPrimerCobro,
           yaCobrado,
+          renuevaA: renovacionDe?.id,
         },
       });
       showToast(
-        generarPago && (importeCents ?? 0) > 0
+        renovacionDe
+          ? generarPago && (importeCents ?? 0) > 0
+            ? yaCobrado && cuotasVencidas > 0 ? 'Renovado y cobro registrado' : 'Renovado con cobro pendiente'
+            : 'Renovado'
+          : generarPago && (importeCents ?? 0) > 0
           ? cuotas > 1
             ? `Servicio creado y ${cuotas} cobros pendientes generados`
             : 'Servicio creado y cobro pendiente generado'
@@ -136,20 +165,45 @@ export default function NuevoServicioModal({ cliente, coachEmail, onCerrar }: {
     }
   };
 
+  // Para cuando el servicio de la renovación ya se creó a mano por otro lado:
+  // solo la etiqueta, sin duplicar el cobro.
+  const soloMarcar = async () => {
+    if (!renovacionDe) return;
+    try {
+      await actualizar.mutateAsync({ id: renovacionDe.id, updates: { resultadoRenovacion: 'renovado' } });
+      showToast('Marcado como renovado', 'success');
+      onCerrar();
+    } catch (err) {
+      if (err instanceof EscrituraEncolada) {
+        showToast('Guardado sin conexión. Se sincronizará solo.', 'info');
+        onCerrar();
+        return;
+      }
+      showToast(err instanceof Error ? err.message : 'No se ha podido guardar', 'error');
+    }
+  };
+
   return (
     <Modal
-      titulo={`Nuevo servicio · ${cliente.nombre}`}
+      titulo={`${renovacionDe ? 'Renovar' : 'Nuevo servicio'} · ${cliente.nombre}`}
       onCerrar={onCerrar}
       footer={
         <>
           <BotonSecundario onClick={onCerrar}>Cancelar</BotonSecundario>
           <BotonPrimario onClick={guardar} disabled={!puedeGuardar}>
-            {crear.isPending ? 'Guardando…' : 'Crear servicio'}
+            {crear.isPending ? 'Guardando…' : renovacionDe ? 'Renovar' : 'Crear servicio'}
           </BotonPrimario>
         </>
       }
     >
       <div className="space-y-3">
+        {renovacionDe && (
+          <p className="font-sans text-caption text-ink-2 leading-relaxed">
+            Crea el contrato nuevo y su cobro, que es lo que suma al cash. El de
+            ahora ({formatDia(renovacionDe.fechaFin)}) queda marcado como renovado.
+          </p>
+        )}
+
         <Campo
           label="Servicio *"
           hint={entrada?.nombre ? `Se guardará como «${entrada.nombre}».` : tipoServicio === 'otro' ? 'Escribe cómo se llama.' : 'Elige de qué servicio se trata.'}
@@ -336,6 +390,17 @@ export default function NuevoServicioModal({ cliente, coachEmail, onCerrar }: {
               </span>
             </span>
           </label>
+        )}
+
+        {renovacionDe && (
+          <button
+            type="button"
+            onClick={() => void soloMarcar()}
+            disabled={actualizar.isPending}
+            className="font-sans text-caption text-ink-3 hover:text-accent-ink underline underline-offset-2 transition-colors"
+          >
+            Ya tengo creado el servicio nuevo: solo marcar como renovado
+          </button>
         )}
       </div>
     </Modal>
