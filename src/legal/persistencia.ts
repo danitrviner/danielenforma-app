@@ -1,5 +1,6 @@
 import type { UserProfile } from '../types';
 import { updateUserProfile, fusionarConsentimientoIA } from '../dbService';
+import { conTimeout, EscrituraEncolada } from '../db/core';
 import {
   consentimientoIADesdeLegal,
   type AceptacionesLegales,
@@ -28,12 +29,23 @@ export async function guardarAceptaciones(
   nuevas: AceptacionesLegales,
 ): Promise<AceptacionesLegales> {
   const legal: AceptacionesLegales = { ...(profile.legal ?? {}), ...nuevas };
-  await updateUserProfile(profile.userId, { legal });
+  /* Sin plazo, con mala cobertura este `await` no resolvía nunca (Firestore
+     no confirma hasta que el servidor responde, y sin red tampoco lanza): el
+     botón del muro se quedaba girando para siempre y la única salida era
+     cerrar la app y volver a marcarlo todo. Pasado el plazo se da por
+     guardado: la escritura ya está en la cola de este dispositivo y Firestore
+     la manda sola al recuperar conexión. */
+  try {
+    await conTimeout('Tu aceptación', updateUserProfile(profile.userId, { legal }));
+  } catch (err) {
+    if (!(err instanceof EscrituraEncolada)) throw err;
+    console.warn(err.message);
+  }
 
   const consentimiento = consentimientoIADesdeLegal(legal);
   if (consentimiento) {
     try {
-      await fusionarConsentimientoIA(profile.email, consentimiento);
+      await conTimeout('El consentimiento del asistente', fusionarConsentimientoIA(profile.email, consentimiento));
     } catch (err) {
       // No se le vuelve a plantar el muro por esto: su decisión ya está
       // guardada donde se demuestra. Lo que queda es que el asistente no

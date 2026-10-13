@@ -3,11 +3,13 @@ import type { UserProfile } from '../types';
 import type { AceptacionesLegales } from './aceptacion';
 
 const escrituras: { userId: string; datos: { legal: AceptacionesLegales } }[] = [];
+let sinRed = false;
 
 vi.mock('../dbService', () => ({
   updateUserProfile: (userId: string, datos: { legal: AceptacionesLegales }) => {
     escrituras.push({ userId, datos });
-    return Promise.resolve();
+    // Sin red, Firestore ni confirma ni lanza: la promesa se queda colgada.
+    return sinRed ? new Promise<void>(() => {}) : Promise.resolve();
   },
   fusionarConsentimientoIA: () => Promise.resolve(),
 }));
@@ -20,7 +22,7 @@ const meta = (id: string) => DOCUMENTOS_LEGALES.find(d => d.id === id)!;
 const perfil = (legal?: AceptacionesLegales) =>
   ({ userId: 'u1', email: 'atleta@ejemplo.com', role: 'client', legal } as UserProfile);
 
-beforeEach(() => { escrituras.length = 0; });
+beforeEach(() => { escrituras.length = 0; sinRed = false; });
 
 /* El muro legal se recorre documento a documento y guarda al terminar CADA
    uno. `guardarAceptaciones` fusiona contra el `legal` del perfil que se le
@@ -57,5 +59,26 @@ describe('guardarAceptaciones a lo largo del muro', () => {
 
     expect(Object.keys(tras2)).toEqual(['privacidad']);
     expect(documentosPendientes(tras2).map(d => d.id)).toEqual(['terminos']);
+  });
+});
+
+/* El atasco del alta (13-10): sin cobertura el `await` no resolvía nunca y el
+   botón del muro se quedaba girando. La escritura queda en la cola del
+   dispositivo, así que pasado el plazo se da por guardada y se sigue. */
+describe('guardarAceptaciones sin red', () => {
+  it('no se queda colgado: pasado el plazo devuelve lo aceptado', async () => {
+    vi.useFakeTimers();
+    try {
+      sinRed = true;
+      const promesa = guardarAceptaciones(
+        perfil(),
+        { terminos: registrarAceptacion(meta('terminos'), AHORA) },
+      );
+      await vi.advanceTimersByTimeAsync(10_000);
+      const legal = await promesa;
+      expect(Object.keys(legal)).toEqual(['terminos']);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

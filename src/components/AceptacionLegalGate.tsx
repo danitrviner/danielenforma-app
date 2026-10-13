@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import type { UserProfile } from '../types';
 import {
   documentosPendientes, registrarAceptacion, DOCUMENTOS_LEGALES,
@@ -114,6 +114,7 @@ export default function AceptacionLegalGate({
   const [marcas, setMarcas] = useState<Record<string, boolean>>({});
   const [alFinal, setAlFinal] = useState(false);
   const cuerpoRef = useRef<HTMLDivElement>(null);
+  const contenidoRef = useRef<HTMLDivElement>(null);
   const opcionesPrevias = meta ? guardado[meta.id]?.opciones : undefined;
 
   // El botón Atrás de Android no puede saltarse el muro: mientras quede algo
@@ -123,6 +124,14 @@ export default function AceptacionLegalGate({
   const bloqueado = pasos.slice(indice).some(p => p.obligatorio);
   useBotonAtras(() => { /* el muro no se cierra con Atrás */ }, bloqueado);
 
+  /* ¿Se ve ya el final del texto? Con el scroll arriba del todo es lo mismo
+     que preguntar si el texto cabe entero. Solo enciende, nunca apaga: lo
+     leído, leído queda. */
+  const comprobarFinal = useCallback(() => {
+    const el = cuerpoRef.current;
+    if (el && el.scrollTop + el.clientHeight >= el.scrollHeight - 8) setAlFinal(true);
+  }, []);
+
   // Cada paso arranca de cero: sus marcas, su scroll y su comprobación de si
   // el texto cabe entero (en cuyo caso ya está "leído" y no hay nada que bajar).
   useEffect(() => {
@@ -130,11 +139,32 @@ export default function AceptacionLegalGate({
     setMarcas(marcasIniciales(doc.casillas, opcionesPrevias, !!revision));
     setError(null);
     const el = cuerpoRef.current;
-    if (el) {
-      el.scrollTop = 0;
-      setAlFinal(!!revision || el.scrollHeight - el.clientHeight <= 8);
-    }
-  }, [doc, opcionesPrevias, revision]);
+    if (el) el.scrollTop = 0;
+    setAlFinal(!!revision);
+    comprobarFinal();
+  }, [doc, opcionesPrevias, revision, comprobarFinal]);
+
+  /* El atasco del alta (13-10). Lo de arriba medía UNA sola vez, al abrir el
+     paso. Si en ese instante el texto no cabía —la fuente de texto aún no
+     había cargado y la de reserva ocupa más, o la ventana todavía se estaba
+     asentando— el botón quedaba apagado esperando un scroll; y cuando la
+     fuente llegaba y el texto pasaba a caber entero, ya no había nada que
+     desplazar, así que no llegaba nunca ningún `onScroll`. Botón apagado para
+     siempre. Al salir y volver la fuente ya estaba en caché, la medida salía
+     bien y «a veces te deja pasar». Ahora se vuelve a medir cada vez que
+     cambia el tamaño del recuadro o del texto. */
+  useEffect(() => {
+    const el = cuerpoRef.current;
+    const contenido = contenidoRef.current;
+    if (!el || !contenido) return;
+    let cancelado = false;
+    document.fonts?.ready.then(() => { if (!cancelado) comprobarFinal(); });
+    if (typeof ResizeObserver === 'undefined') return () => { cancelado = true; };
+    const observador = new ResizeObserver(() => comprobarFinal());
+    observador.observe(el);
+    observador.observe(contenido);
+    return () => { cancelado = true; observador.disconnect(); };
+  }, [comprobarFinal, meta]);
 
   /* Red de seguridad. Si no queda ningún paso que enseñar, este componente
      antes devolvía `null` — y como quien lo monta lo hace dentro de un
@@ -162,11 +192,6 @@ export default function AceptacionLegalGate({
   const puedeContinuar = !faltanMarcas && alFinal && !guardando;
   const esUltimo = indice === pasos.length - 1;
   const quedaObligatorio = bloqueado;
-
-  const alDesplazar = (e: React.UIEvent<HTMLDivElement>) => {
-    const el = e.currentTarget;
-    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 8) setAlFinal(true);
-  };
 
   const continuar = async () => {
     setGuardando(true);
@@ -207,6 +232,30 @@ export default function AceptacionLegalGate({
     }
   };
 
+  const casillas = (
+    <div className={`space-y-2.5 border-hairline ${revision ? 'border-b pb-3' : 'border-t pt-3'}`}>
+      {doc.casillas.map(casilla => (
+        <label key={casilla.id} className="flex cursor-pointer items-start gap-2.5">
+          <input
+            type="checkbox"
+            checked={!!marcas[casilla.id]}
+            disabled={guardando}
+            onChange={e => setMarcas(m => ({ ...m, [casilla.id]: e.target.checked }))}
+            className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--color-accent)]"
+          />
+          <span className="text-body-s font-sans text-ink-2 leading-snug">
+            {casilla.etiqueta}
+            {casilla.detalle && (
+              <span className="mt-0.5 block text-caption text-ink-3 leading-relaxed">
+                {casilla.detalle}
+              </span>
+            )}
+          </span>
+        </label>
+      ))}
+    </div>
+  );
+
   return (
     <div className="fixed inset-0 z-[var(--z-modal)] flex items-center justify-center p-4 pt-[calc(1rem+var(--safe-top))] pb-[calc(1rem+env(safe-area-inset-bottom,0px))]">
       <div className="fixed inset-0 z-[var(--z-overlay)] bg-veil/80 backdrop-blur-sm" aria-hidden />
@@ -238,30 +287,48 @@ export default function AceptacionLegalGate({
           <h2 className="mt-1 font-sans text-title-s font-bold text-ink">{doc.titulo}</h2>
         </div>
 
-        {/* El documento. Contenedor propio (no el de `Dialog`) porque hace falta
-            escuchar su scroll para saber si se ha llegado al final. */}
+        {/* El documento y, al final, sus casillas. Contenedor propio (no el de
+            `Dialog`) porque hace falta escuchar su scroll para saber si se ha
+            llegado al final.
+
+            Las casillas vivían fuera del scroll, fijas abajo junto al botón,
+            para tener la decisión siempre a mano. En un móvil de 360×640 eso
+            dejaba el texto en una rendija de UNA línea —la casilla del
+            asistente, con su explicación, se comía la pantalla— y bajar 800 px
+            de texto por ahí era casi imposible: el botón no se encendía nunca y
+            el alta se quedaba atascada (13-10). Ahora van al final del texto,
+            que es donde se llega al leerlo, y fuera solo queda el botón. En la
+            revisión desde Perfil van arriba: ahí no hay nada que leer, solo
+            una casilla que cambiar. */}
         <div
           ref={cuerpoRef}
-          onScroll={alDesplazar}
-          className="flex-1 overflow-y-auto px-4 py-3 space-y-2"
+          onScroll={comprobarFinal}
+          className="min-h-0 flex-1 overflow-y-auto px-4 py-3"
         >
-          {doc.cuerpo}
+          {/* Envoltorio propio para que el ResizeObserver vea crecer o
+              encoger el texto aunque el recuadro no cambie de tamaño. */}
+          <div ref={contenidoRef} className="space-y-2">
+            {revision && casillas}
 
-          {doc.url && (
-            <a
-              href={doc.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 pt-2 text-caption font-sans text-ink-3 underline underline-offset-2 hover:text-ink-2"
-            >
-              <Icon name="description" size="s" />
-              Leer el documento completo
-            </a>
-          )}
+            {doc.cuerpo}
+
+            {doc.url && (
+              <a
+                href={doc.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 pt-2 text-caption font-sans text-ink-3 underline underline-offset-2 hover:text-ink-2"
+              >
+                <Icon name="description" size="s" />
+                Leer el documento completo
+              </a>
+            )}
+
+            {!revision && casillas}
+          </div>
         </div>
 
-        {/* Casillas y acción. Fuera del scroll: la decisión tiene que estar
-            siempre a mano, no al fondo de un texto largo. */}
+        {/* La acción, fuera del scroll: el botón siempre a la vista. */}
         <div className="shrink-0 border-t border-hairline px-4 py-3 space-y-3">
           {!alFinal && (
             <p className="flex items-center gap-1.5 text-caption font-sans text-ink-3">
@@ -269,28 +336,6 @@ export default function AceptacionLegalGate({
               Desplázate hasta el final del texto para continuar.
             </p>
           )}
-
-          <div className="space-y-2.5">
-            {doc.casillas.map(casilla => (
-              <label key={casilla.id} className="flex cursor-pointer items-start gap-2.5">
-                <input
-                  type="checkbox"
-                  checked={!!marcas[casilla.id]}
-                  disabled={guardando}
-                  onChange={e => setMarcas(m => ({ ...m, [casilla.id]: e.target.checked }))}
-                  className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--color-accent)]"
-                />
-                <span className="text-body-s font-sans text-ink-2 leading-snug">
-                  {casilla.etiqueta}
-                  {casilla.detalle && (
-                    <span className="mt-0.5 block text-caption text-ink-3 leading-relaxed">
-                      {casilla.detalle}
-                    </span>
-                  )}
-                </span>
-              </label>
-            ))}
-          </div>
 
           {error && <p className="text-caption font-sans text-danger">{error}</p>}
 
