@@ -11,7 +11,7 @@ import { slugify } from '../utils/maquinaId';
 import { exigeEmail, clavesDelAtleta, type ClavesDeAtleta } from './clavesDeAtleta';
 import { leerCatalogo, marcarCatalogoCambiado } from './catalogoVersionado';
 import { escribirLocal } from '../utils/almacenLocal';
-import { asignacionesABorrar } from '../utils/estadoDeAsignacion';
+import { planDeReprogramacionEnSitio, type AsignacionNueva } from '../utils/estadoDeAsignacion';
 
 // T14 (18-08): mismo patrón que idDeFoodItem — un ID determinista hace que
 // sembrar dos veces sobreescriba en vez de duplicar.
@@ -957,39 +957,63 @@ export async function deleteWorkoutAssignmentsByMesocycleIdStrict(mesocycleId: s
 }
 
 /**
- * Borra SOLO las asignaciones reprogramables de un mesociclo y devuelve las que
- * se conservan.
+ * Reprograma las asignaciones de un mesociclo para un atleta sin perder nada
+ * de lo hecho: conserva los días pasados y los ya entrenados, ACTUALIZA en su
+ * sitio las asignaciones de los días que siguen en el plan (mismo id, para que
+ * una sesión a medias del atleta no se quede huérfana), borra solo las que se
+ * quedan sin día y crea solo las que faltan. Ver `planDeReprogramacionEnSitio`.
  *
- * Reprogramar era «borra todo y vuelve a crearlo», y eso se llevaba por delante
- * los días ya entrenados: volvían como `pending` y el atleta veía su lunes sin
- * completar (auditoría §4.1). Ahora reprogramar solo toca lo que todavía no ha
- * pasado. Quien llame a esto debe crear únicamente las asignaciones que
- * `planDeReprogramacion` devuelva en `crear`, o duplicará los días conservados.
+ * Sustituye al «borrar las reprogramables y crear todas de nuevo» que
+ * repetían las cuatro puertas desde las que se asigna un bloque.
  */
-export async function borrarAsignacionesReprogramables(
+export async function reprogramarAsignacionesDelMeso(
   mesocycleId: string,
   athleteEmail: string,
   hoy: string,
-): Promise<{ conservadas: WorkoutAssignment[]; borradas: number }> {
+  nuevas: readonly AsignacionNueva[],
+): Promise<{ conservadas: WorkoutAssignment[]; asignadas: WorkoutAssignment[] }> {
+  exigeEmail(athleteEmail, 'reprogramarAsignacionesDelMeso');
   const q = query(collection(db, 'workoutAssignments'), where('mesocycleId', '==', mesocycleId));
   const snap = await getDocs(q);
   const existentes = snap.docs.map(d => ({ id: d.id, ...d.data() } as WorkoutAssignment));
 
-  // Los logs del atleta desde el primer día del bloque: no hace falta más
-  // historia para decidir qué días de ESTE mesociclo están entrenados, y pedir
-  // menos es pagar menos lecturas.
   const desde = existentes.reduce((min, a) => (a.date < min ? a.date : min), '9999-12-31');
   const logs = await getWorkoutLogs(athleteEmail, desde === '9999-12-31' ? undefined : { desde });
 
-  const aBorrar = asignacionesABorrar(existentes, logs, hoy);
-  const idsABorrar = new Set(aBorrar.map(a => a.id));
+  const plan = planDeReprogramacionEnSitio(existentes, logs, nuevas, hoy);
 
-  saveLocalAssignments(getLocalAssignments().filter(a => !idsABorrar.has(a.id)));
-  if (aBorrar.length > 0) {
-    await Promise.all(snap.docs.filter(d => idsABorrar.has(d.id)).map(d => deleteDoc(d.ref)));
+  // Primero lo que no destruye nada (actualizar y crear) y lo último, borrar:
+  // si algo falla a mitad, al atleta le sobra un día en vez de faltarle.
+  const actualizadas: WorkoutAssignment[] = [];
+  if (plan.actualizar.length > 0) {
+    await escribirEnLotes(
+      plan.actualizar.map(u => ({ tipo: 'update' as const, ref: doc(db, 'workoutAssignments', u.id), datos: { ...u.cambios } })),
+      'Reprogramar sesiones del bloque',
+    );
+    for (const u of plan.actualizar) {
+      const previa = existentes.find(a => a.id === u.id)!;
+      actualizadas.push({ ...previa, ...u.cambios });
+    }
+  }
+  const creadas: WorkoutAssignment[] = [];
+  for (const n of plan.crear) creadas.push(await createWorkoutAssignmentStrict(n));
+  if (plan.borrar.length > 0) {
+    await escribirEnLotes(
+      plan.borrar.map(a => ({ tipo: 'delete' as const, ref: doc(db, 'workoutAssignments', a.id) })),
+      'Quitar sesiones sobrantes del bloque',
+    );
   }
 
-  return { conservadas: existentes.filter(a => !idsABorrar.has(a.id)), borradas: aBorrar.length };
+  const idsBorrados = new Set(plan.borrar.map(a => a.id));
+  const porId = new Map(actualizadas.map(a => [a.id, a]));
+  saveLocalAssignments([
+    ...getLocalAssignments().filter(a => !idsBorrados.has(a.id)).map(a => porId.get(a.id) ?? a),
+  ]);
+
+  return {
+    conservadas: plan.conservadas,
+    asignadas: [...plan.sinCambios, ...actualizadas, ...creadas],
+  };
 }
 
 export async function createWorkoutStrict(data: Omit<Workout, 'id'>): Promise<Workout> {

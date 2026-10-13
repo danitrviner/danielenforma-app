@@ -117,6 +117,9 @@ export function asignacionesABorrar(
   return asignaciones.filter(a => {
     if (a.date < hoy) return false;
     if (porDia.has(claveDeSesion(a))) return false;
+    // Marcada como hecha aunque su registro no se encuentre (otra fecha, otra
+    // clave de atleta en un log antiguo): ante la duda, es historia.
+    if (a.status === 'completed') return false;
     return true;
   });
 }
@@ -164,4 +167,65 @@ export function descartarDiasCerrados(
   if (conservadas.length === 0) return nuevas as AsignacionNueva[];
   const cerrados = new Set(conservadas.map(claveDeSesion));
   return nuevas.filter(n => !cerrados.has(claveDeSesion(n)));
+}
+
+/**
+ * Reprogramar SIN borrar y recrear: lo que se puede, se actualiza en su sitio.
+ *
+ * `planDeReprogramacion` borraba todas las asignaciones reprogramables y creaba
+ * otras con id nuevo. Para los días ya entrenados daba igual —se conservan—,
+ * pero no para HOY: si el atleta estaba a mitad de la sesión, su borrador va
+ * atado al id de la asignación (`utils/sesionEnCurso.ts`), así que al
+ * recrearla la sesión a medias desaparecía, y al terminarla se marcaba como
+ * hecha una asignación que ya no existía. Ahora, si la programación nueva
+ * tiene sesión el mismo día que una reprogramable, se reutiliza ese documento
+ * (mismo id, nueva rutina). Solo se borra lo que se queda sin día y solo se
+ * crea lo que no tenía documento. De paso, son muchas menos escrituras.
+ */
+export function planDeReprogramacionEnSitio(
+  existentes: readonly WorkoutAssignment[],
+  logs: readonly WorkoutLog[],
+  nuevas: readonly AsignacionNueva[],
+  hoy: string,
+): {
+  conservadas: WorkoutAssignment[];
+  actualizar: { id: string; cambios: Pick<WorkoutAssignment, 'workoutId' | 'status' | 'mesocycleId'> }[];
+  sinCambios: WorkoutAssignment[];
+  crear: AsignacionNueva[];
+  borrar: WorkoutAssignment[];
+} {
+  const reprogramables = asignacionesABorrar(existentes, logs, hoy);
+  const idsReprogramables = new Set(reprogramables.map(a => a.id));
+  const conservadas = existentes.filter(a => !idsReprogramables.has(a.id));
+  const candidatas = descartarDiasCerrados(nuevas, conservadas);
+
+  const libres = new Map<string, WorkoutAssignment[]>();
+  for (const a of reprogramables) {
+    const clave = claveDeSesion(a);
+    const lista = libres.get(clave);
+    if (lista) lista.push(a); else libres.set(clave, [a]);
+  }
+
+  const actualizar: { id: string; cambios: Pick<WorkoutAssignment, 'workoutId' | 'status' | 'mesocycleId'> }[] = [];
+  const sinCambios: WorkoutAssignment[] = [];
+  const crear: AsignacionNueva[] = [];
+  for (const n of candidatas) {
+    const delDia = libres.get(claveDeSesion(n));
+    // Primero la que ya apunta a la misma rutina: así no se toca nada.
+    const i = delDia ? Math.max(0, delDia.findIndex(a => a.workoutId === n.workoutId)) : -1;
+    const reutilizada = delDia && delDia.length > 0 ? delDia.splice(i, 1)[0] : undefined;
+    if (!reutilizada) { crear.push(n); continue; }
+    if (reutilizada.workoutId === n.workoutId && reutilizada.status === n.status
+        && reutilizada.mesocycleId === n.mesocycleId) {
+      sinCambios.push(reutilizada);
+      continue;
+    }
+    actualizar.push({
+      id: reutilizada.id,
+      cambios: { workoutId: n.workoutId, status: n.status, mesocycleId: n.mesocycleId },
+    });
+  }
+
+  const borrar = [...libres.values()].flat();
+  return { conservadas, actualizar, sinCambios, crear, borrar };
 }

@@ -4,7 +4,7 @@ import {
   UserProfile, Mesocycle, WorkoutLog, Exercise, OnboardingData,
   WorkoutAssignment, Workout,
 } from '../types';
-import { createWorkoutAssignment, deleteWorkoutAssignment, updateWorkoutLog, updateUserProfile, borrarAsignacionesReprogramables } from '../dbService';
+import { createWorkoutAssignment, deleteWorkoutAssignment, updateWorkoutLog, updateUserProfile, reprogramarAsignacionesDelMeso } from '../dbService';
 import { descartarDiasCerrados } from '../utils/estadoDeAsignacion';
 import { sesionesDeMesociclo, fechasDelMesociclo } from '../utils/asignacionMesociclo';
 import { addDays, hoyIsoLocal, esFechaIso } from '../utils/trainingWeek';
@@ -153,11 +153,14 @@ export default function ClientWorkoutsPanel({
     if (!mesoAAsignar || sesionesDelMeso.length === 0) return;
     setIsAssigning(true);
     try {
-      const hoyDelCoach = hoyIsoLocal();
-      const { conservadas } = await borrarAsignacionesReprogramables(mesoAAsignar.id, athlete.email, hoyDelCoach);
+      // Reprogramar en su sitio: los días ya entrenados (y los pasados) no se
+      // tocan, y los que siguen en el plan conservan su documento —con él, la
+      // sesión que el atleta pueda tener a medias hoy—.
       const fechas = fechasDelMesociclo(mesoAAsignar, sesionesDelMeso.length);
-
-      const porCrear = descartarDiasCerrados(
+      const { conservadas, asignadas: nuevas } = await reprogramarAsignacionesDelMeso(
+        mesoAAsignar.id,
+        athlete.email,
+        hoyIsoLocal(),
         fechas.map(({ dayIdx, date }) => ({
           workoutId:   sesionesDelMeso[dayIdx].id,
           athleteId:   athlete.email,
@@ -165,13 +168,8 @@ export default function ClientWorkoutsPanel({
           date,
           status:      'pending' as const,
         })),
-        conservadas,
       );
 
-      const nuevas: WorkoutAssignment[] = [];
-      for (const asignacion of porCrear) {
-        nuevas.push(await createWorkoutAssignment(asignacion));
-      }
       setAssignments(prev => [
         ...prev.filter(a => a.mesocycleId !== mesoAAsignar.id),
         ...conservadas,

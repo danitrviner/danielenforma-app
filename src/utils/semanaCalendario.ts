@@ -8,6 +8,7 @@
  * los 7 días a la vez no es gratis: si esto entrara en `construirIndiceDeDias`
  * se pagaría en el Año y el Mes, donde no se enseña.
  */
+import { ejerciciosDeSesionHecha, logDeAsignacion } from './sesionHecha';
 import {
   WorkoutAssignment, WorkoutLog, Workout, Exercise, Mesocycle,
 } from '../types';
@@ -44,21 +45,22 @@ export function ejerciciosDelDia(fecha: string, datos: DatosSemana): EjercicioDe
   const asignacion = datos.workoutAssignments.find(a => a.date === fecha);
   if (!asignacion) return [];
   const workout = datos.workouts.find(w => w.id === asignacion.workoutId);
-  if (!workout) return [];
+  const log = logDeAsignacion(datos.workoutLogs, asignacion);
+  // Sin rutina solo hay algo que enseñar si el día se entrenó: entonces sale
+  // del registro (ver `utils/sesionHecha.ts`).
+  if (!workout && !log) return [];
 
-  const meso = datos.mesocycles.find(m => m.id === (workout.mesocycleId ?? asignacion.mesocycleId));
+  const meso = datos.mesocycles.find(m => m.id === (workout?.mesocycleId ?? asignacion.mesocycleId));
   const semanaDelMeso = meso
     ? mesocycleWeekNumber(meso.startDate, fecha, cicloDiasDeMeso(meso))
     : 1;
 
-  const log = datos.workoutLogs.find(l => l.assignmentId === asignacion.id)
-    ?? datos.workoutLogs.find(l => l.date === fecha);
+  const resueltos = (workout?.exercises ?? []).map(we => resolverEjercicioDelMeso(we, meso, semanaDelMeso));
+  // Un día entrenado se enseña como se hizo, aunque la rutina haya cambiado.
+  const ejercicios = log ? ejerciciosDeSesionHecha(resueltos, log) : resueltos.slice().sort((a, b) => a.order - b.order);
 
-  return workout.exercises
-    .slice()
-    .sort((a, b) => a.order - b.order)
-    .map(we => {
-      const resuelto = resolverEjercicioDelMeso(we, meso, semanaDelMeso);
+  return ejercicios
+    .map(resuelto => {
       const entrada = log?.entries.find(e => e.exerciseId === resuelto.exerciseId);
       const seriesHechas = entrada?.sets.length;
       // Media de la carga movida, no el máximo: el máximo de una serie suelta

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { WorkoutAssignment, WorkoutLog } from '../types';
-import { conEstadoReal, asignacionesABorrar, claveDeSesion, planDeReprogramacion } from './estadoDeAsignacion';
+import { conEstadoReal, asignacionesABorrar, claveDeSesion, planDeReprogramacion, planDeReprogramacionEnSitio } from './estadoDeAsignacion';
 
 /* El fallo que estos tests fijan (auditoría §4.1, Dani 15-09-2026):
  *
@@ -201,5 +201,58 @@ describe('planDeReprogramacion', () => {
     );
     expect(plan.borrar.map(a => a.id)).toEqual(['f1', 'f2']);
     expect(plan.crear).toHaveLength(2);
+  });
+});
+
+/* 13-10 (Dani): «es miércoles, ha entrenado lunes y martes; al reasignar el
+   mesociclo no puede perder nada». Lunes y martes ya se conservaban; lo que se
+   perdía era HOY: la asignación se borraba y se recreaba con id nuevo, y la
+   sesión a medias del atleta —atada a ese id— desaparecía. */
+describe('planDeReprogramacionEnSitio', () => {
+  const HOY_X = '2026-10-14'; // miércoles
+  const nueva = (date: string, workoutId = 'w-nuevo') =>
+    ({ workoutId, athleteId: 'ana@correo.com', mesocycleId: 'm1', date, status: 'pending' as const });
+
+  const lunes = asignacion({ id: 'lun', date: '2026-10-12', status: 'completed' });
+  const martes = asignacion({ id: 'mar', date: '2026-10-13' });
+  const hoy = asignacion({ id: 'mie', date: HOY_X });
+  const jueves = asignacion({ id: 'jue', date: '2026-10-15' });
+  const logs = [log({ id: 'l-lun', date: '2026-10-12', assignmentId: 'lun' }), log({ id: 'l-mar', date: '2026-10-13', assignmentId: 'mar' })];
+
+  it('conserva lunes y martes y no les crea nada encima', () => {
+    const plan = planDeReprogramacionEnSitio(
+      [lunes, martes, hoy, jueves], logs,
+      [nueva('2026-10-12'), nueva('2026-10-13'), nueva(HOY_X), nueva('2026-10-15')], HOY_X,
+    );
+    expect(plan.conservadas.map(a => a.id).sort()).toEqual(['lun', 'mar']);
+    expect(plan.crear).toEqual([]);
+    expect(plan.borrar).toEqual([]);
+  });
+
+  it('reutiliza la asignación de hoy (mismo id) en vez de borrarla y crear otra', () => {
+    const plan = planDeReprogramacionEnSitio([lunes, martes, hoy, jueves], logs, [nueva(HOY_X), nueva('2026-10-15')], HOY_X);
+    expect(plan.actualizar.map(u => u.id).sort()).toEqual(['jue', 'mie']);
+    expect(plan.actualizar[0].cambios.workoutId).toBe('w-nuevo');
+  });
+
+  it('si nada cambia, no escribe nada', () => {
+    const plan = planDeReprogramacionEnSitio([hoy], [], [nueva(HOY_X, 'w1')], HOY_X);
+    expect(plan.sinCambios.map(a => a.id)).toEqual(['mie']);
+    expect(plan.actualizar).toEqual([]);
+    expect(plan.crear).toEqual([]);
+  });
+
+  it('borra solo los días que se quedan fuera del plan y crea los que faltan', () => {
+    const plan = planDeReprogramacionEnSitio([hoy, jueves], [], [nueva(HOY_X), nueva('2026-10-16')], HOY_X);
+    expect(plan.borrar.map(a => a.id)).toEqual(['jue']);
+    expect(plan.crear.map(n => n.date)).toEqual(['2026-10-16']);
+  });
+
+  it('una sesión de hoy marcada como hecha es historia aunque no aparezca su registro', () => {
+    const hecha = asignacion({ id: 'mie', date: HOY_X, status: 'completed' });
+    const plan = planDeReprogramacionEnSitio([hecha], [], [nueva(HOY_X)], HOY_X);
+    expect(plan.conservadas.map(a => a.id)).toEqual(['mie']);
+    expect(plan.actualizar).toEqual([]);
+    expect(plan.crear).toEqual([]);
   });
 });

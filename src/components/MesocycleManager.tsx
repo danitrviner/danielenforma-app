@@ -9,8 +9,8 @@ import {
 import {
   getMesocycles, createMesocycle, updateMesocycle, deleteMesocycle,
   getAllUserProfilesOrThrow, getExercises, getWorkouts, updateWorkout, updateWorkoutStrict,
-  createWorkoutStrict, createWorkoutAssignmentStrict,
-  deleteWorkoutsByMesocycleIdStrict, borrarAsignacionesReprogramables,
+  createWorkoutStrict,
+  deleteWorkoutsByMesocycleIdStrict, reprogramarAsignacionesDelMeso,
   getUserProfileByEmail, migratePrimaryFocusToMuscleGroup,
   getMesocycleTemplates, createTask, getWorkoutLogs, getWorkoutAssignmentsByMesocycleIds, createMesocycleTemplate,
   getAssignmentsForAthlete, getQuestionnairesByCoach,
@@ -43,12 +43,11 @@ import {
 } from '../utils/trainingSplits';
 import { zoneLabel, heatmapBg, heatmapText, VOLUME_ZONE_LEGEND, GENERIC_LANDMARK } from '../utils/volumeZones';
 import { VOLUME_LANDMARKS_DEFAULT, type VolumeLandmark } from '../data/volumeLandmarks';
-import { descartarDiasCerrados } from '../utils/estadoDeAsignacion';
 import { getVolumeLandmarks } from '../dbService';
 import VolumeSuggestionSheet from './VolumeSuggestionSheet';
 import { useToast } from '../hooks/useToast';
 import { nombreDeMeso, nombreDeSesion } from '../utils/nombresMeso';
-import { fechasDelMesociclo, cicloDiasDeMeso } from '../utils/asignacionMesociclo';
+import { fechasDelMesociclo, cicloDiasDeMeso, sesionesDeMesociclo } from '../utils/asignacionMesociclo';
 import { buildSnapshot, isStale } from '../utils/repartoDesactualizado';
 import { addDays, esFechaIso, hoyIsoLocal, isoLocal } from '../utils/trainingWeek';
 import { useAthleteProfileSignals } from '../hooks/useAthleteProfileSignals';
@@ -2326,40 +2325,26 @@ export default function MesocycleManager({
 
     try {
       // Se reprograma lo que todavía no ha pasado; los días ya entrenados se
-      // conservan tal cual. Antes esto borraba TODO y lo recreaba en `pending`,
-      // y el lunes que el atleta había completado volvía a aparecer sin hacer
-      // (auditoría §4.1). Las rutinas de los días conservados tampoco se borran,
-      // o esas asignaciones quedarían apuntando a una sesión inexistente.
-      // Fecha LOCAL, no UTC: entre medianoche y las dos de la mañana en España
-      // `toISOString()` todavía devuelve el día anterior, y eso decide aquí qué
-      // se conserva y qué se reprograma.
+      // conservan tal cual (auditoría §4.1). Fecha LOCAL, no UTC: entre
+      // medianoche y las dos de la mañana en España `toISOString()` todavía
+      // devuelve el día anterior, y eso decide qué se conserva.
       const hoyDelCoach = hoyIsoLocal();
-      const { conservadas } = await borrarAsignacionesReprogramables(editing.id, selectedEmail, hoyDelCoach);
-      await deleteWorkoutsByMesocycleIdStrict(editing.id, conservadas.map(a => a.workoutId));
 
-      // One Workout doc per distinct training day — reused across every week instead of
-      // duplicated. A 10-week × 4-day/week mesocycle used to create 40 near-identical
-      // Workout docs (one per calendar date); it now creates 4, and every week's
-      // WorkoutAssignment points back to the same doc. Editing a day's exercises later
-      // (in "Ejercicios programados") edits that single doc, so it applies to every week
-      // at once — there's nothing to keep in sync across duplicates anymore.
-      /* Los días conservados se quedan con su `Workout`, y ese doc tiene el
-         mismo `mesocycleId` y `dayIndex` que el nuevo que se iba a crear aquí.
-         Crear otro dejaba DOS sesiones para el mismo día del ciclo, y
-         `sesionesDeMesociclo` se queda con la primera que lea — que puede ser
-         la vieja. «Asignar bloque», las propuestas del asistente y el propio
-         asistente asignaban entonces la rutina que el coach acababa de
-         sustituir, sin ningún error.
-
-         Así que para esos días se ACTUALIZA el doc existente con los ejercicios
-         nuevos, en vez de crear otro. Es el modelo que ya tiene la app: una
-         sesión es un doc reutilizado en todas las vueltas, y editarlo lo
-         cambia para todas. El entreno pasado no se pierde: sus series están en
-         el `WorkoutLog`, no en la rutina. */
-      const conservadaPorDia = new Map<number, string>();
-      for (const a of conservadas) {
-        const w = allWorkouts.find(x => x.id === a.workoutId);
-        if (w?.dayIndex != null && !conservadaPorDia.has(w.dayIndex)) conservadaPorDia.set(w.dayIndex, w.id);
+      /* Una sesión = un doc `Workout` por día del ciclo, reutilizado en todas
+         las vueltas. Regenerar ACTUALIZA el doc de cada día en vez de borrarlo
+         y crear otro (13-10). Borrar y recrear cambiaba el id de la rutina de
+         todos los días que no estaban entrenados todavía, y con él:
+         · la sesión que el atleta tuviera a medias hoy perdía su borrador
+           (va atado a la rutina, `utils/sesionEnCurso.ts`);
+         · un entreno guardado contra una rutina borrada se quedaba sin rutina.
+         Los entrenos ya hechos no dependen de esto para verse bien: se pintan
+         desde su registro (`utils/sesionHecha.ts`). Solo se borran las rutinas
+         que sobran —días que ya no existen en el ciclo, o copias del mismo
+         día— y nunca una que tenga un entreno o una asignación pasada detrás. */
+      const delBloque = allWorkouts.filter(w => w.mesocycleId === editing.id);
+      const rutinaPorDia = new Map<number, string>();
+      for (const w of sesionesDeMesociclo(delBloque, editing.id)) {
+        if (w.dayIndex != null && w.dayIndex < editing.daysPerWeek) rutinaPorDia.set(w.dayIndex, w.id);
       }
 
       const dayWorkoutIds: string[] = [];
@@ -2368,7 +2353,7 @@ export default function MesocycleManager({
         const exercises: WorkoutExercise[] = pd.exercises.map(({ name: _name, equipmentMismatch: _mismatch, ...we }) => we);
         const name = nombreDeSesion({ tipo: tiposCiclo[dayIdx], dayIdx, athleteName, meso: editing });
 
-        const existente = conservadaPorDia.get(dayIdx);
+        const existente = rutinaPorDia.get(dayIdx);
         if (existente) {
           await updateWorkoutStrict(existente, { name, exercises });
           dayWorkoutIds.push(existente);
@@ -2415,16 +2400,22 @@ export default function MesocycleManager({
         }
       }
 
-      // Un día conservado ya está cubierto: volver a crearlo lo duplicaría en el
-      // calendario del atleta.
-      const porCrear = descartarDiasCerrados(programadas, conservadas);
-      setAssignProgress({ done: 0, total: porCrear.length });
-      let done = 0;
-      for (const asignacion of porCrear) {
-        await createWorkoutAssignmentStrict(asignacion);
-        done++;
-        setAssignProgress({ done, total: porCrear.length });
-      }
+      setAssignProgress({ done: 0, total: programadas.length });
+      const { conservadas, asignadas } = await reprogramarAsignacionesDelMeso(
+        editing.id, selectedEmail, hoyDelCoach, programadas,
+      );
+      setAssignProgress({ done: asignadas.length, total: asignadas.length });
+
+      // Rutinas sobrantes: las del bloque que ya no son la sesión de ningún
+      // día y de las que no cuelga nada que conservar.
+      const enUso = new Set([
+        ...dayWorkoutIds,
+        ...conservadas.map(x => x.workoutId),
+        // Todo entreno guardado protege su rutina (el borrado solo mira las
+        // de este bloque, así que basta con no filtrar).
+        ...(await getWorkoutLogs(selectedEmail, { desde: editing.startDate })).map(l => l.workoutId),
+      ]);
+      await deleteWorkoutsByMesocycleIdStrict(editing.id, [...enUso]);
 
       await queryClient.invalidateQueries({ queryKey: ['workouts'] });
       setGenPhase('done');
@@ -2441,11 +2432,11 @@ export default function MesocycleManager({
    * generar los ejercicios.
    *
    * Es lo que faltaba: `handleAssign` (el botón del final de la vista previa)
-   * borra las rutinas del bloque y las vuelve a crear desde `previewDays`, así
+   * reescribe los ejercicios de las rutinas del bloque desde `previewDays`, así
    * que llamarlo después de haber retocado la pantalla de Ejercicios se
    * llevaría por delante justo lo que el coach acaba de ajustar. Esto toca
-   * solo las FECHAS: borra las asignaciones del bloque y las rehace apuntando
-   * a las mismas rutinas, con el calendario que haya ahora mismo.
+   * solo las FECHAS: reprograma las asignaciones del bloque apuntando a las
+   * mismas rutinas, con el calendario que haya ahora mismo.
    *
    * El día de cada sesión sale de `dayIndex`, no del orden de lectura ni del
    * nombre — ver `groupMesoWorkouts`.
@@ -2464,12 +2455,12 @@ export default function MesocycleManager({
 
     try {
       // Igual que en `handleAssign`: cambiar las fechas del bloque no puede
-      // borrar los días que el atleta ya entrenó (auditoría §4.1). Aquí las
-      // rutinas ni se tocan, así que basta con conservar las asignaciones.
-      const hoyDelCoach = hoyIsoLocal();
-      const { conservadas } = await borrarAsignacionesReprogramables(editing.id, selectedEmail, hoyDelCoach);
-
-      const porCrear = descartarDiasCerrados(
+      // borrar los días que el atleta ya entrenó (auditoría §4.1), y los días
+      // que siguen en el plan conservan su documento. Las rutinas ni se tocan.
+      const { conservadas, asignadas: porCrear } = await reprogramarAsignacionesDelMeso(
+        editing.id,
+        selectedEmail,
+        hoyIsoLocal(),
         fechas.map(({ dayIdx, date }) => ({
           workoutId:   sesiones[dayIdx].workoutIds[0],
           athleteId:   selectedEmail,
@@ -2477,12 +2468,7 @@ export default function MesocycleManager({
           date,
           status:      'pending' as const,
         })),
-        conservadas,
       );
-
-      for (const asignacion of porCrear) {
-        await createWorkoutAssignmentStrict(asignacion);
-      }
 
       await queryClient.invalidateQueries({ queryKey: ['workoutAssignments'] });
       const conservadasTxt = conservadas.length > 0
@@ -2533,8 +2519,10 @@ export default function MesocycleManager({
         }
         setCalAtleta({ estado: 'trabajando', mensaje: 'Actualizando el calendario del atleta…' });
         const fechas = fechasDelMesociclo(meso, sesiones.length);
-        const { conservadas } = await borrarAsignacionesReprogramables(meso.id, selectedEmail, hoyIsoLocal());
-        const porCrear = descartarDiasCerrados(
+        await reprogramarAsignacionesDelMeso(
+          meso.id,
+          selectedEmail,
+          hoyIsoLocal(),
           fechas.map(({ dayIdx, date }) => ({
             workoutId:   sesiones[dayIdx].workoutIds[0],
             athleteId:   selectedEmail,
@@ -2542,9 +2530,7 @@ export default function MesocycleManager({
             date,
             status:      'pending' as const,
           })),
-          conservadas,
         );
-        for (const asignacion of porCrear) await createWorkoutAssignmentStrict(asignacion);
         await queryClient.invalidateQueries({ queryKey: ['workoutAssignments'] });
         await queryClient.invalidateQueries({ queryKey: ['workoutAssignmentsForAthlete'] });
         await queryClient.invalidateQueries({ queryKey: ['workoutAssignmentsByMesocycleIds'] });

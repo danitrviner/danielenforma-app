@@ -13,6 +13,7 @@ import { prefillWorkoutSets } from '../utils/setPrefill';
 import { conEstadoReal } from '../utils/estadoDeAsignacion';
 import { mesocycleWeekNumber, resolverEjercicioDelMeso } from '../utils/progression';
 import { marcarRetoParaReevaluar } from '../hooks/useRetoDeLaSemana';
+import { ejerciciosDeSesionHecha, logDeAsignacion } from '../utils/sesionHecha';
 import { cicloDiasDeMeso } from '../utils/asignacionMesociclo';
 import { useToast } from '../hooks/useToast';
 import { useTourTarget } from '../features/tutorial/TourTargetContext';
@@ -448,24 +449,29 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
    * ExerciseCloseCard/WorkoutSessionPlayer). No toca el borrador local: una
    * sesión completada no tiene nada a medias que recuperar. */
   const reopenCompletedPlayer = (assignment: WorkoutAssignment) => {
-    const baseWorkout = getWorkout(assignment.workoutId);
-    if (!baseWorkout) return;
-    const existingLog = logs.find(l => l.assignmentId === assignment.id);
+    // Por id y, si no, por fecha: una asignación recreada al reprogramar el
+    // mesociclo tiene id nuevo, pero el entreno de ese día sigue siendo suyo.
+    const existingLog = logDeAsignacion(logs, assignment);
     if (!existingLog) {
       showToast('No se encontró el registro de esta sesión.');
       return;
     }
+    // Sin rutina (se borró al rehacer el bloque) la sesión se reconstruye
+    // entera desde el registro, en vez de no abrir nada.
+    const baseWorkout: Workout = getWorkout(assignment.workoutId)
+      ?? { id: assignment.workoutId, ownerId: '', name: 'Sesión registrada', exercises: [] };
 
     const meso = assignment.mesocycleId ? mesocycles.find(m => m.id === assignment.mesocycleId) : undefined;
     const conditionCtx = { today: hoyIsoLocal(), workoutAssignments: assignments, workoutLogs: logs, bodyweightLogs: [] };
-    const wo: Workout = meso
-      ? {
-          ...baseWorkout,
-          exercises: baseWorkout.exercises.map(we =>
-            resolverEjercicioDelMeso(we, meso, mesocycleWeekNumber(meso.startDate, assignment.date, cicloDiasDeMeso(meso)), conditionCtx)
-          ),
-        }
-      : baseWorkout;
+    const resueltos = meso
+      ? baseWorkout.exercises.map(we =>
+          resolverEjercicioDelMeso(we, meso, mesocycleWeekNumber(meso.startDate, assignment.date, cicloDiasDeMeso(meso)), conditionCtx)
+        )
+      : baseWorkout.exercises;
+    // La sesión como se HIZO, no como está la rutina hoy: si el coach cambió
+    // el mesociclo después, los ejercicios apuntados que ya no están en la
+    // rutina se perdían de la pantalla —y al guardar, del registro—.
+    const wo: Workout = { ...baseWorkout, exercises: ejerciciosDeSesionHecha(resueltos, existingLog) };
     const orderedExercises = wo.exercises.slice().sort((a, b) => a.order - b.order);
 
     const playerSetsFromLog: SetInput[][] = orderedExercises.map(we => {
