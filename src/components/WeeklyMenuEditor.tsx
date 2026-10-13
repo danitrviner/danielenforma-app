@@ -164,6 +164,7 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
     // `batch` arriba; la ficha de iniciación es el valor de partida.
     dietType: dietTypeVigente(nutritionConfig?.dietType, onboarding?.dietType),
     cookingMaxTime: nutritionConfig?.cookingMaxTime ?? onboarding?.cookingMaxTime,
+    quiereRapidas: nutritionConfig?.quiereRapidas ?? onboarding?.quiereRapidas,
     variety,
     favoriteRecipeIds: favorites.recipeIds,
     dislikedRecipeIds: favorites.dislikedIds ?? [],

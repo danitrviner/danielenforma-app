@@ -37,7 +37,15 @@ describe('superaElTiempo', () => {
     expect(superaElTiempo({ cookingTime: 1 }, 15)).toBe(true);   // 60 min
     expect(superaElTiempo({ cookingTime: 2 }, 15)).toBe(true);   // 35 min
     expect(superaElTiempo({ cookingTime: 3 }, 15)).toBe(true);   // 20 min
-    expect(superaElTiempo({ cookingTime: 4 }, 15)).toBe(false);  // 10 min
+    expect(superaElTiempo({ cookingTime: 4 }, 15)).toBe(true);   // ~10 min estimado
+  });
+
+  it('con ≤15 min solo valen minutos reales (las Rápidas)', () => {
+    expect(superaElTiempo({ cookingTime: 4 }, 10)).toBe(true);   // índice: estimado
+    expect(superaElTiempo({ cookingTime: 8 }, 10)).toBe(false);  // Rápida de 8 min
+    expect(superaElTiempo({ cookingTime: 12 }, 10)).toBe(true);
+    expect(superaElTiempo({ cookingTime: 5 }, 5)).toBe(false);
+    expect(superaElTiempo({ cookingTime: 4 }, 20)).toBe(false);  // con 20 vuelve la estimación
   });
 
   it('con una hora entra todo el recetario', () => {

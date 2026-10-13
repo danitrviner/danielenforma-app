@@ -242,6 +242,7 @@ interface BorradorCampos {
   healthConditions: DietaryRestrictionCode[];
   meals: OnboardingMeal[];
   cookingMaxTime: number | null;
+  quiereRapidas: boolean | null;
   prefLiked: string[];
   prefDisliked: string[];
   lifestyleScope: string;
@@ -345,6 +346,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
   const [healthConditions, setHealthConditions] = useState<DietaryRestrictionCode[]>(borrador?.healthConditions ?? []);
   const [meals, setMeals] = useState<OnboardingMeal[]>(borrador?.meals ?? []);
   const [cookingMaxTime, setCookingMaxTime] = useState<number | null>(borrador?.cookingMaxTime ?? null);
+  const [quiereRapidas, setQuiereRapidas] = useState<boolean | null>(borrador?.quiereRapidas ?? null);
   const [prefLiked, setPrefLiked] = useState<string[]>(borrador?.prefLiked ?? []);
   const [prefDisliked, setPrefDisliked] = useState<string[]>(borrador?.prefDisliked ?? []);
   // Salida honrada para las dos pantallas de catálogo: ahora hay que contestarlas,
@@ -410,7 +412,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
       hadPastInjuries, pastInjuriesDetail, takesMedication, medicationDetail,
       recentSurgery, recentSurgeryDetail,
       dietType, mealCount, menuVariety, batchCookingPreferred, allergies, healthConditions,
-      meals, cookingMaxTime, prefLiked, prefDisliked,
+      meals, cookingMaxTime, quiereRapidas, prefLiked, prefDisliked,
       availableDaysPerWeek, sessionMaxMinutes,
       lifestyleScope, lifestyleAreas, muscleGroupsToImprove, sinPreferenciaMuscular, hatedExercises,
       appetitePeakTime, dietSince, hadOverweightHistory, foodRelationshipGood,
@@ -426,7 +428,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
       goalFreeText, goalTimelineMotivation, coachExpectations, experienceLevel, equipment, injuries, noInjuries,
       hadPastInjuries, pastInjuriesDetail, takesMedication, medicationDetail, recentSurgery, recentSurgeryDetail,
       dietType, mealCount, menuVariety, batchCookingPreferred, allergies, healthConditions,
-      meals, cookingMaxTime, prefLiked, prefDisliked,
+      meals, cookingMaxTime, quiereRapidas, prefLiked, prefDisliked,
       availableDaysPerWeek, sessionMaxMinutes,
       lifestyleScope, lifestyleAreas, muscleGroupsToImprove, sinPreferenciaMuscular, hatedExercises,
       appetitePeakTime, dietSince, hadOverweightHistory, foodRelationshipGood,
@@ -501,7 +503,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
       // 14 Menú — los tipos de plato son opcionales a propósito
       case 16: return menuVariety != null;
       // 15 Cocina
-      case 17: return cookingMaxTime != null && batchCookingPreferred != null;
+      case 17: return cookingMaxTime != null && quiereRapidas != null && batchCookingPreferred != null;
       // 17 Qué espera de su coach
       case 19: return textoRelleno(coachExpectations);
       // 0 bienvenida, 10 tupper y 16 resumen no piden nada.
@@ -623,6 +625,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
         waistCm: Number(waistCm) > 0 ? Number(waistCm) : undefined,
         hipCm: Number(hipCm) > 0 ? Number(hipCm) : undefined,
         cookingMaxTime: cookingMaxTime ?? 45,
+        quiereRapidas: quiereRapidas === true,
         menuVariety: menuVariety ?? 3,
         batchCookingPreferred: batchCookingPreferred === true,
         equipment,
@@ -1505,9 +1508,20 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
                 Piensa en un día entre semana, con prisa. No en el domingo.
               </p>
               <div className="flex flex-wrap gap-2">
-                {[15, 30, 45, 60, 90].map(n => (
+                {[5, 10, 15, 30, 45, 60, 90].map(n => (
                   <Chip key={n} selected={cookingMaxTime === n} onClick={() => setCookingMaxTime(n)}>{n} min</Chip>
                 ))}
+              </div>
+            </div>
+
+            <div>
+              <p className="font-sans text-caption text-ink-2 uppercase tracking-wider mb-1">¿Quieres recetas rápidas de supervivencia en tu menú?</p>
+              <p className="text-body-s text-ink-2 mb-2">
+                Platos de 5 a 15 minutos con lo que hay en cualquier cocina.
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                <Chip selected={quiereRapidas === true} onClick={() => setQuiereRapidas(true)}>Sí</Chip>
+                <Chip selected={quiereRapidas === false} onClick={() => setQuiereRapidas(false)}>No</Chip>
               </div>
             </div>
 

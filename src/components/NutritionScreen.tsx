@@ -833,6 +833,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     // Igual que los tipos de plato de abajo: manda lo corregido en el perfil.
     dietType:          dietTypeVigente(nutConfig?.dietType, onboarding?.dietType),
     cookingMaxTime:    nutConfig?.cookingMaxTime ?? onboarding?.cookingMaxTime,
+    quiereRapidas:     nutConfig?.quiereRapidas ?? onboarding?.quiereRapidas,
     favoriteRecipeIds: recipeFavorites.recipeIds,
     dislikedRecipeIds: recipeFavorites.dislikedIds ?? [],
     preferredDishTypes: (nutConfig?.preferredDishTypes ?? onboarding?.preferredDishTypes ?? []) as DishType[],

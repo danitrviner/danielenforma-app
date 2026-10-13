@@ -133,6 +133,7 @@ interface FormState {
   mealCount:        ConteoComidas;
   meals:            OnboardingMeal[];
   cookingMaxTime:   number;
+  quiereRapidas:    boolean;
   menuVariety:      number;
   preferredDishTypes: string[];
   excludedDishTypes:  string[];
@@ -208,6 +209,7 @@ function fromOnboarding(d: OnboardingData): FormState {
     mealCount:        count,
     meals:            d.meals ?? MEAL_PRESETS[count].map(m => ({ ...m })),
     cookingMaxTime:   d.cookingMaxTime ?? 45,
+    quiereRapidas:    d.quiereRapidas ?? false,
     menuVariety:      d.menuVariety ?? 3,
     preferredDishTypes: d.preferredDishTypes ?? [],
     excludedDishTypes:  d.excludedDishTypes ?? [],
@@ -282,6 +284,7 @@ const DEFAULTS: FormState = {
   mealCount:        4,
   meals:            MEAL_PRESETS[4].map(m => ({ ...m })),
   cookingMaxTime:   45,
+  quiereRapidas:    false,
   menuVariety:      3,
   batchCookingPreferred: false,
   preferredDishTypes: [],
@@ -673,6 +676,7 @@ export default function OnboardingForm({
       mealCount:          form.mealCount,
       meals:              form.meals,
       cookingMaxTime:     form.cookingMaxTime,
+      quiereRapidas:      form.quiereRapidas,
       menuVariety:        form.menuVariety,
       batchCookingPreferred: form.batchCookingPreferred,
       preferredDishTypes: form.preferredDishTypes,
@@ -1205,10 +1209,10 @@ export default function OnboardingForm({
             OnboardingData (types.ts). Retiradas el 2026-09-05. */}
         <SliderField
           label="Tiempo máximo por receta"
-          min={15} max={90} step={5} value={form.cookingMaxTime}
+          min={5} max={90} step={5} value={form.cookingMaxTime}
           onChange={v => set('cookingMaxTime', v)}
           unit=" min"
-          minLabel="15 min"
+          minLabel="5 min"
           maxLabel="90 min"
         />
         <SliderField
@@ -1218,6 +1222,7 @@ export default function OnboardingForm({
           minLabel="Prefiero repetir, más sencillo"
           maxLabel="Prefiero mucha variedad"
         />
+        <YesNo label="¿Quieres recetas rápidas de supervivencia en tu menú?" value={form.quiereRapidas} onChange={v => set('quiereRapidas', v)} />
         <YesNo label="¿Prefieres cocinar todo de una vez para la semana (batch cooking)?" value={form.batchCookingPreferred} onChange={v => set('batchCookingPreferred', v)} />
 
         <div>

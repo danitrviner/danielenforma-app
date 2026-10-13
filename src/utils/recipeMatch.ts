@@ -79,6 +79,8 @@ export interface AlternativePrefs {
   favoriteRecipeIds?: string[];
   /** Señal blanda: prima los tipos de plato que prefiere. */
   preferredDishTypes?: DishType[];
+  /** Señal blanda: prima las Rápidas (pidió recetas de supervivencia). */
+  quiereRapidas?: boolean;
 }
 
 export interface AlternativeOptions {
@@ -199,6 +201,7 @@ export function findRecipeAlternatives(
     let score = totalDrift * 4 + fitScore(sourceExch as unknown as Record<string, number>, exch as unknown as Record<string, number>);
     if (favorites.has(r.id)) score -= 3;
     if (preferredDish.has(dt)) score -= 1.5;
+    if (prefs.quiereRapidas && r.basica) score -= 1.5;
     if ((prefs.likedFoods ?? []).some(f => ingredientMatch(r, f))) score -= 0.5;
     if ((prefs.dislikedFoods ?? []).some(f => ingredientMatch(r, f))) score += 2;
 

@@ -159,6 +159,7 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
     // tipos de plato, justo debajo).
     dietType: dietTypeVigente(nutritionConfig?.dietType, onboarding?.dietType),
     cookingMaxTime: nutritionConfig?.cookingMaxTime ?? onboarding?.cookingMaxTime,
+    quiereRapidas: nutritionConfig?.quiereRapidas ?? onboarding?.quiereRapidas,
     variety: nutritionConfig?.menuVariety ?? onboarding?.menuVariety ?? 3,
     favoriteRecipeIds: favorites.recipeIds,
     dislikedRecipeIds: favorites.dislikedIds ?? [],

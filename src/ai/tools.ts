@@ -1344,6 +1344,7 @@ async function getOnboardingCompleto(email: string): Promise<string> {
       minutosMaximos: ob.cookingMaxTime ?? null,
       variedadDelMenu1a5: ob.menuVariety ?? null,
       cocinaEnTandas: ob.batchCookingPreferred ?? null,
+      quiereRecetasRapidas: ob.quiereRapidas ?? null,
       tiposDePlatoQueQuiere: ob.preferredDishTypes ?? [],
       tiposDePlatoQueEvita: ob.excludedDishTypes ?? [],
     },

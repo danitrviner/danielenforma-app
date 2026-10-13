@@ -54,9 +54,18 @@ export function minutosDeReceta(recipe: Pick<Recipe, 'cookingTime'>): number | n
   return MINUTOS_POR_INDICE[Math.round(v)] ?? null;
 }
 
+/** Hasta aquí, solo valen recetas con minutos DE VERDAD (las Rápidas). El
+ *  «~10 min» del índice 4 es un p75 estimado, y los atletas se quejaron de que
+ *  esas recetas no eran tan rápidas (Dani, 06-10): a quien dice tener 5, 10 o
+ *  15 minutos no se le puede ofrecer una estimación. */
+export const MAX_MIN_SOLO_RAPIDAS = 15;
+
 /** `true` si la receta se pasa del tiempo que el atleta dijo tener. */
 export function superaElTiempo(recipe: Pick<Recipe, 'cookingTime'>, maxMinutos?: number): boolean {
   if (maxMinutos == null) return false;
   const minutos = minutosDeReceta(recipe);
-  return minutos != null && minutos > maxMinutos;
+  if (minutos == null) return false;
+  const estimado = (recipe.cookingTime ?? 0) <= MAX_INDICE;
+  if (estimado && maxMinutos <= MAX_MIN_SOLO_RAPIDAS) return true;
+  return minutos > maxMinutos;
 }

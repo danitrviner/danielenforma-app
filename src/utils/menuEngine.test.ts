@@ -93,12 +93,18 @@ describe('rankCandidates · Rápidas', () => {
   const normal = recipe({ id: 'normal', name: 'A normal', exchanges: { HC: 2, PROT: 2, GRASA: 1 } });
   const rapida = recipe({ id: 'rapida', name: 'B rápida', basica: true, cookingTime: 10, exchanges: { HC: 2, PROT: 2, GRASA: 1 } });
 
-  it('adelanta las Rápidas a quien dijo tener ≤15 min', () => {
-    const ranked = rankCandidates([normal, rapida], target, { ...basePrefs, cookingMaxTime: 15 }, new Set());
+  it('con ≤15 min solo entran las Rápidas (minutos reales)', () => {
+    const estimada = recipe({ id: 'estimada', name: 'C bocadillo', cookingTime: 4, exchanges: { HC: 2, PROT: 2, GRASA: 1 } });
+    const ranked = rankCandidates([estimada, rapida], target, { ...basePrefs, cookingMaxTime: 15 }, new Set());
+    expect(ranked.map(c => c.recipe.id)).toEqual(['rapida']);
+  });
+
+  it('con más tiempo y «Sí» a las Rápidas, las adelanta', () => {
+    const ranked = rankCandidates([normal, rapida], target, { ...basePrefs, cookingMaxTime: 45, quiereRapidas: true }, new Set());
     expect(ranked[0].recipe.id).toBe('rapida');
   });
 
-  it('con más tiempo no las adelanta', () => {
+  it('con más tiempo y sin pedirlas, no las adelanta', () => {
     const ranked = rankCandidates([normal, rapida], target, { ...basePrefs, cookingMaxTime: 45 }, new Set());
     expect(ranked[0].score).toBe(ranked[1].score);
   });

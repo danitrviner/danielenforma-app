@@ -558,7 +558,8 @@ export default function ClientFichaPanel({
             )}
 
             {(onboardingData.cookingMaxTime
-              || onboardingData.menuVariety || onboardingData.batchCookingPreferred) && (
+              || onboardingData.menuVariety || onboardingData.batchCookingPreferred
+              || onboardingData.quiereRapidas) && (
               <Collapsible
                 className="border-t border-hairline"
                 trigger={<p className="font-mono text-caption text-ink-2 uppercase tracking-wide">Cocina</p>}
@@ -571,6 +572,7 @@ export default function ClientFichaPanel({
                     <span className="text-ink-2">Variedad del menú: <span className="text-ink font-bold">{onboardingData.menuVariety}/5</span></span>
                   )}
                   {onboardingData.batchCookingPreferred && <span className="text-ink-2">Cocina de golpe (batch cooking)</span>}
+                  {onboardingData.quiereRapidas && <span className="text-ink-2">Quiere recetas rápidas</span>}
                 </div>
               </Collapsible>
             )}

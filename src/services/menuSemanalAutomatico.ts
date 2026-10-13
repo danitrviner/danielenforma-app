@@ -50,6 +50,7 @@ export async function generarMenuSiToca(athleteEmail: string, coachId: string, c
     liked: onboarding?.likedFoods ?? [],
     dietType: dietTypeVigente(nutritionConfig?.dietType, onboarding?.dietType),
     cookingMaxTime: nutritionConfig?.cookingMaxTime ?? onboarding?.cookingMaxTime,
+    quiereRapidas: nutritionConfig?.quiereRapidas ?? onboarding?.quiereRapidas,
     variety: publicado.varietyLevel,
     favoriteRecipeIds: favoritos.recipeIds,
     dislikedRecipeIds: favoritos.dislikedIds ?? [],

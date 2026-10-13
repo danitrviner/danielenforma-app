@@ -38,7 +38,7 @@ const FICHA_CAMPOS = {
   },
   cookingMaxTime: {
     label: 'Tiempo para cocinar',
-    options: [10, 15, 20, 30, 45, 60, 90].map(m => ({ value: String(m), label: `${m} min` })),
+    options: [5, 10, 15, 20, 30, 45, 60, 90].map(m => ({ value: String(m), label: `${m} min` })),
   },
   mealCount: {
     label: 'Comidas al día',
@@ -68,6 +68,7 @@ export default function MenuPreferencesPanel({ athleteEmail }: Props) {
 
   const [savingVariety, setSavingVariety] = useState(false);
   const [savingBatchPref, setSavingBatchPref] = useState(false);
+  const [savingRapidas, setSavingRapidas] = useState(false);
   const [savingHunger, setSavingHunger] = useState(false);
   const [savingTrainingSlot, setSavingTrainingSlot] = useState(false);
 
@@ -104,6 +105,12 @@ export default function MenuPreferencesPanel({ athleteEmail }: Props) {
   async function handleBatchPrefChange(value: boolean) {
     setSavingBatchPref(true);
     try { await patch({ batchCookingPreferred: value }); } finally { setSavingBatchPref(false); }
+  }
+
+  const quiereRapidas = nutritionConfig?.quiereRapidas ?? onboarding?.quiereRapidas ?? false;
+  async function handleRapidasChange(value: boolean) {
+    setSavingRapidas(true);
+    try { await patch({ quiereRapidas: value }); } finally { setSavingRapidas(false); }
   }
 
   const inferredHunger = perfilDeHambreDelTexto(onboarding?.appetitePeakTime);
@@ -241,6 +248,23 @@ export default function MenuPreferencesPanel({ athleteEmail }: Props) {
               Prefiero batch cooking
             </span>
             <span className="block font-sans text-caption text-ink-2">Cocinar todo de una vez y repartirlo por días.</span>
+          </span>
+        </button>
+
+        <button
+          onClick={() => handleRapidasChange(!quiereRapidas)}
+          disabled={savingRapidas}
+          className="w-full flex items-center gap-3 pt-3 mt-1 border-t border-hairline text-left disabled:opacity-50"
+        >
+          <span className={`w-5 h-5 rounded-control flex-shrink-0 border-2 flex items-center justify-center transition-colors ${quiereRapidas ? 'bg-accent border-accent' : 'border-hairline'}`}>
+            {quiereRapidas && <span className="material-symbols-outlined text-on-accent" style={{ fontSize: '13px' }}>check</span>}
+          </span>
+          <span className="flex-1">
+            <span className="flex items-center gap-2 font-sans font-bold text-label text-ink">
+              <Icon name="bolt" size="s" className="text-accent-ink" />
+              Quiero recetas rápidas
+            </span>
+            <span className="block font-sans text-caption text-ink-2">Platos de supervivencia de 5 a 15 minutos.</span>
           </span>
         </button>
 

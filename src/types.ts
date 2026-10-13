@@ -313,6 +313,7 @@ export interface AthleteNutritionConfig {
      `OnboardingData` es el valor de partida cuando esto no tiene nada. */
   dietType?: DietType;
   cookingMaxTime?: number;    // minutos
+  quiereRapidas?: boolean;    // ver OnboardingData.quiereRapidas
   mealCount?: number;         // 3 | 4 | 5 | 6 (ver CONTEOS_COMIDAS)
 }
 
@@ -1011,6 +1012,10 @@ export interface OnboardingData {
      quitar la pregunta que fingir que hace algo). Los documentos antiguos de
      Firestore conservan los campos; simplemente se ignoran. */
   cookingMaxTime?:    number;         // minutes
+  /** «¿Quieres recetas rápidas de supervivencia en tu menú?». Con más de 15
+   *  min el generador adelanta las Rápidas; con ≤15 ya son las únicas que
+   *  entran (ver `superaElTiempo`), así que la respuesta no cambia nada ahí. */
+  quiereRapidas?:     boolean;
   menuVariety?:       number;         // 1–5, preference for the auto-generated weekly menu (1=repetitive, 5=max variety)
   batchCookingPreferred?: boolean;    // prefers cooking the whole week's meals in one session
   preferredDishTypes?: string[];      // dish types the athlete wants more of (see utils/dishTypes)
