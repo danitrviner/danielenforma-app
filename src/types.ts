@@ -145,6 +145,10 @@ export interface UserProfile {
     ejemplosVistos: string[]; // ids de paso cuyo aviso "EJEMPLO" ya no debe repetirse
     completadoEn?: string;    // ISO
   };
+  /** Id de la última novedad («Qué hay de nuevo», data/novedades.ts) que el
+   *  atleta ha cerrado. Dato suyo, como `tutorial`: tampoco está en la lista
+   *  bloqueada de user_profiles. */
+  novedadesVistas?: string;
   checklistInicial?: {
     primeraSesion: boolean;
     cincoIngestas: boolean;

@@ -1,13 +1,16 @@
 import React, { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { UserProfile, WeightCheckIn, WeekDay } from '../types';
-import { getWorkoutAssignmentsForAthlete, getWorkoutsByIds, getCardioAssignmentsForAthlete, getDietsForAthlete, getAthleteDietConfig, getDietCompletionLog, getOnboarding, getCoachDayNote, getMesocycles, getBodyweightForAthlete } from '../dbService';
+import { getWorkoutAssignmentsForAthlete, getWorkoutsByIds, getCardioAssignmentsForAthlete, getDietsForAthlete, getAthleteDietConfig, getDietCompletionLog, getOnboarding, getCoachDayNote, getMesocycles, getBodyweightForAthlete, updateUserProfile } from '../dbService';
 import { formatDate, hoyIsoLocal } from '../utils/trainingWeek';
 import { bloquesDelCiclo, bloqueActual, EstadoDeDia } from '../utils/cicloDelAtleta';
 import { pickActiveZona2Assignment, pickActiveIntervalAssignment } from '../utils/cardioSession';
 import { pickTodaysDiet, countMealsDone } from '../utils/nutritionSummary';
 import PendingTasksPanel from './PendingTasksPanel';
 import SolicitudConsentimientoIA from './SolicitudConsentimientoIA';
+import NovedadesSheet from './NovedadesSheet';
+import { NOVEDADES } from '../data/novedades';
+import { idMasReciente, novedadesPendientes } from '../utils/novedades';
 import { debePedirseConsentimiento, haSidoAplazado, marcarAplazado } from '../ai/consentimientoIA';
 import StepsWidget from './StepsWidget';
 import TarjetaPeso from './home/TarjetaPeso';
@@ -29,6 +32,8 @@ interface HomeScreenProps {
   profile: UserProfile;
   checkins: WeightCheckIn[];
   onNavigate: (tab: NavTarget) => void;
+  /** Para reflejar enseguida un dato del perfil que acaba de escribir (novedades vistas). */
+  onProfileChanged?: (updates: Partial<UserProfile>) => void;
 }
 
 const JS_TO_WD: Record<number, WeekDay> = { 0: 'sun', 1: 'mon', 2: 'tue', 3: 'wed', 4: 'thu', 5: 'fri', 6: 'sat' };
@@ -82,7 +87,7 @@ const TEXTO_DEL_DIA: Record<EstadoDeDia, string> = {
   pendiente:  'text-ink-2',
 };
 
-export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreenProps) {
+export default function HomeScreen({ profile, checkins, onNavigate, onProfileChanged }: HomeScreenProps) {
   // Dentro del componente, no a nivel de módulo: una constante de módulo se
   // calcula una sola vez y se queda anclada al día en que se cargó la app —
   // en una sesión de Capacitor que sigue viva en segundo plano toda la noche,
@@ -205,6 +210,27 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
   };
   const pedirConsentimiento = !aplazado && !!onboarding && debePedirseConsentimiento(onboarding);
 
+  /* «Qué hay de nuevo»: solo si hay algo sin ver, con el tutorial ya hecho (o
+     sin tutorial: cuentas antiguas) y sin otra petición delante. Una sola
+     ventana a la vez: si ahora está la del consentimiento, esta espera a la
+     siguiente vez que abra Inicio. */
+  const [novedadesCerradas, setNovedadesCerradas] = useState(false);
+  const novedadesSinVer = useMemo(
+    () => novedadesPendientes(NOVEDADES, { vistas: profile.novedadesVistas, creadaEn: profile.createdAt }),
+    [profile.novedadesVistas, profile.createdAt],
+  );
+  const tutorialEnCurso = profile.tutorial?.completado === false;
+  const mostrarNovedades = !novedadesCerradas && novedadesSinVer.length > 0 && !tutorialEnCurso
+    && !pedirConsentimiento && !!onboarding;
+  const cerrarNovedades = () => {
+    setNovedadesCerradas(true);
+    const id = idMasReciente(NOVEDADES);
+    if (!id) return;
+    onProfileChanged?.({ novedadesVistas: id });
+    updateUserProfile(profile.userId, { novedadesVistas: id })
+      .catch(err => console.warn('updateUserProfile (novedades vistas) failed:', err));
+  };
+
   const cardioIsPrimary = isRestDay && !!cardioRx;
   const primaryCardRef = useTourTarget('home-primary-card');
   const cardioRowRef = useTourTarget('home-cardio-row');
@@ -214,6 +240,8 @@ export default function HomeScreen({ profile, checkins, onNavigate }: HomeScreen
       {pedirConsentimiento && onboarding && (
         <SolicitudConsentimientoIA onboarding={onboarding} onAhoraNo={aplazar} />
       )}
+
+      <NovedadesSheet open={mostrarNovedades} onClose={cerrarNovedades} novedades={novedadesSinVer} />
 
       <PageHeader
         title={`Hola, ${profile.displayName?.split(' ')[0] || 'de nuevo'}`}

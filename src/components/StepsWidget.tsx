@@ -208,7 +208,7 @@ export default function StepsWidget({ athleteEmail, compacto = false }: Props) {
           onClose={() => setEditing(false)}
           title="Pasos de hoy"
           size="s"
-          footer={<Button onClick={handleSave} loading={saving} icon="check" label="Guardar" />}
+          footer={<Button onClick={handleSave} loading={saving} className="w-full">Guardar</Button>}
         >
           <input
             type="number"
