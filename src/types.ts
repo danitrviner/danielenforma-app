@@ -1898,6 +1898,27 @@ export interface Mesocycle {
    * reparto de la lista.
    */
   customOffsets?: number[];
+  /**
+   * Nombre de cada sesión del ciclo puesto por el coach, por posición
+   * (0 = primera sesión). Vive aquí y no en `DayPlan` porque repartir de nuevo
+   * recrea los `DayPlan` y se llevaría los nombres por delante. Una posición
+   * vacía o ausente = «el del reparto» («Torso», «Pierna»…). Ver
+   * `nombreDeSesion` en utils/nombresMeso.ts.
+   */
+  nombresSesion?: string[];
+  /**
+   * Draft de ejercicios: la lista corta que el coach elige POR GRUPO antes de
+   * repartir series. Son ids de `Exercise`, en el orden en que los quiere.
+   * Sin entrada para un grupo = el generador elige del catálogo entero, como
+   * siempre. Ver utils/draftEjercicios.ts.
+   */
+  draft?: Partial<Record<MuscleGroup, string[]>>;
+  /**
+   * Máquina del gimnasio del atleta con la que el coach ha relacionado cada
+   * ejercicio del draft (`exerciseId` → `Maquina.id`). Es solo una ayuda para
+   * que el atleta, si duda, sepa qué aparato es.
+   */
+  draftMaquinas?: Record<string, string>;
   groups: Record<MuscleGroup, MuscleGroupConfig>;
   distribution?: WeekDistribution;
   days?: TemplateDay[];

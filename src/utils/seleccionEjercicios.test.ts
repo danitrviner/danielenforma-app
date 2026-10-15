@@ -209,3 +209,20 @@ describe('robustez', () => {
     expect(a).toEqual(b);
   });
 });
+
+describe('inicio (reparto de un draft entre días)', () => {
+  it('arranca en el candidato indicado y da la vuelta al llegar al final', () => {
+    const base = elegirEjercicios(entrada({ trozos: [3, 3] })).map(r => r.exerciseId);
+    const sig = elegirEjercicios(entrada({ trozos: [3, 3], inicio: 2 })).map(r => r.exerciseId);
+    const orden = ordenarCandidatos(entrada()).map(c => c.ejercicio.id);
+    expect(base).toEqual([orden[0], orden[1]]);
+    expect(sig).toEqual([orden[2], orden[3]]);
+    const vuelta = elegirEjercicios(entrada({ trozos: [3, 3], inicio: 3 })).map(r => r.exerciseId);
+    expect(vuelta).toEqual([orden[3], orden[0]]);
+  });
+
+  it('sin `inicio` se comporta como siempre', () => {
+    expect(elegirEjercicios(entrada({ trozos: [3, 3] })))
+      .toEqual(elegirEjercicios(entrada({ trozos: [3, 3], inicio: 0 })));
+  });
+});
