@@ -858,7 +858,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
     if (violatesDietType(r, prefs.dietType)) return false;
     // El coach la ha escondido a este atleta (en el recetario, que no tiene día,
     // solo cuentan las reglas de todos los días).
-    if (!recetaPermitida(r.id, recetasOcultas)) return false;
+    if (!recetaPermitida(r.id, recetasOcultas, 'recetario')) return false;
     // Un tipo de plato excluido es una decisión explícita del atleta, igual de
     // firme que una alergia a efectos de no enseñárselo.
     if (prefs.tiposExcluidos.size > 0 && prefs.tiposExcluidos.has(dishType(r))) return false;

@@ -1,4 +1,4 @@
-import { recetasOcultas, type ReglaDeReceta } from './reglasDeReceta';
+import { recetasOcultas, type AmbitoDeRegla, type ReglaDeReceta } from './reglasDeReceta';
 import {
   Recipe, MealItem, Diet, WeekDay, DietType, DietMode, FoodCategory,
   BudgetVec, MenuDay, MenuMeal, MenuComplement, MenuRacionExtra, HungerProfile,
@@ -339,6 +339,8 @@ function pesosPorCategoria(target: BudgetVec): BudgetVec {
 export interface RankOptions {
   /** Días a los que sirve la elección: una receta escondida en cualquiera de ellos no sale. */
   dias?: WeekDay[];
+  /** Para qué se elige: por defecto el menú generado; los cambios de comida pasan `cambios`. */
+  ambito?: AmbitoDeRegla;
   needsTupper?: boolean;
   /** Se está eligiendo para cocinar una vez y comer durante la semana. Distinto
    *  de `needsTupper`, que solo dice que ESA comida se la lleva de casa: aquí
@@ -372,7 +374,7 @@ export function rankCandidates(
   const excludedDish = new Set(prefs.excludedDishTypes ?? []);
   const preferredDish = new Set(prefs.preferredDishTypes ?? []);
 
-  const ocultasPorElCoach = recetasOcultas(prefs.recetasOcultas, opts.dias);
+  const ocultasPorElCoach = recetasOcultas(prefs.recetasOcultas, opts.ambito ?? 'menu', opts.dias);
   const permitidas = pool.filter(r =>
     !disliked.has(r.id) &&
     !ocultasPorElCoach.has(r.id) &&
@@ -1177,7 +1179,7 @@ export function findSwapAlternatives(
   // en su mismo sentido.
 
   const graded: SwapCandidate[] = [];
-  for (const c of rankCandidates(pool, mealTarget, prefs, usedIds, { mode, dias: [day.day] })) {
+  for (const c of rankCandidates(pool, mealTarget, prefs, usedIds, { mode, dias: [day.day], ambito: 'cambios' })) {
     // La receta nueva recibe sus propias raciones extra para cubrir lo que le
     // falte a la comida, igual que hizo el generador con la original.
     const hueco: BudgetVec = {

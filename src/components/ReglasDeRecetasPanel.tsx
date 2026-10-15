@@ -13,7 +13,7 @@ import {
 import { etiquetaDeTiempo } from '../utils/tiempoDeReceta';
 import { useConfirm } from '../hooks/useConfirm';
 import {
-  DIAS_SEMANA, conRegla, etiquetaDeDias, type ReglaDeReceta,
+  DIAS_SEMANA, AMBITOS, conRegla, etiquetaDeDias, etiquetaDeAmbitos, type AmbitoDeRegla, type ReglaDeReceta,
 } from '../utils/reglasDeReceta';
 import { useToast } from '../hooks/useToast';
 import { Icon, Skeleton, Select } from './ui';
@@ -82,16 +82,27 @@ const Fila: React.FC<{
   receta: Recipe;
   regla: ReglaDeReceta | undefined;
   guardando: boolean;
-  onCambiar: (dias: WeekDay[] | null | undefined) => void;
-}> = ({ receta, regla, guardando, onCambiar }) => {
+  /** Ámbitos con los que se esconde al pulsar el ojo (los de «Al esconder, aplicar en»). */
+  ambitosNuevos: AmbitoDeRegla[];
+  /** `null` la quita; un objeto la crea o la modifica sin perder lo que no se toca. */
+  onCambiar: (cambio: null | { dias?: WeekDay[]; ambitos?: AmbitoDeRegla[] }) => void;
+}> = ({ receta, regla, guardando, ambitosNuevos, onCambiar }) => {
   const escondida = !!regla;
   const dias = regla?.dias?.length ? regla.dias : TODOS;
+  const ambitos = regla?.ambitos?.length ? regla.ambitos : AMBITOS.map(a => a.ambito);
+
+  const alternarAmbito = (a: AmbitoDeRegla) => {
+    const siguiente = ambitos.includes(a) ? ambitos.filter(x => x !== a) : [...ambitos, a];
+    // Sin ningún ámbito la regla no escondería nada: para eso está el interruptor.
+    if (siguiente.length === 0) return;
+    onCambiar({ ambitos: siguiente });
+  };
 
   const alternarDia = (d: WeekDay) => {
     const siguiente = dias.includes(d) ? dias.filter(x => x !== d) : [...dias, d];
     // Quitar el último día equivale a mostrarla: para eso está el interruptor.
     if (siguiente.length === 0) return;
-    onCambiar(siguiente);
+    onCambiar({ dias: siguiente });
   };
 
   return (
@@ -107,7 +118,7 @@ const Fila: React.FC<{
         </div>
         <button
           type="button"
-          onClick={() => onCambiar(escondida ? null : undefined)}
+          onClick={() => onCambiar(escondida ? null : { ambitos: ambitosNuevos })}
           disabled={guardando}
           aria-pressed={escondida}
           aria-label={`${escondida ? 'Volver a permitir' : 'Esconder'}: ${receta.name}`}
@@ -122,7 +133,9 @@ const Fila: React.FC<{
 
       {escondida && (
         <div className="mt-2 flex flex-wrap items-center gap-1.5">
-          <span className="font-mono text-caption text-ink-3 mr-1">No sale: {etiquetaDeDias(regla?.dias)}</span>
+          <span className="font-mono text-caption text-ink-3 mr-1">
+            No sale: {etiquetaDeDias(regla?.dias)} · {etiquetaDeAmbitos(regla?.ambitos)}
+          </span>
           {DIAS_SEMANA.map(d => {
             const on = dias.includes(d.dia);
             return (
@@ -137,6 +150,27 @@ const Fila: React.FC<{
                   on ? 'bg-warning/15 border-warning text-warning' : 'border-hairline text-ink-3 hover:text-ink'
                 }`}
               >{d.corto}</button>
+            );
+          })}
+        </div>
+      )}
+      {escondida && (
+        <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+          <span className="font-mono text-caption text-ink-3 mr-1">Afecta a</span>
+          {AMBITOS.map(a => {
+            const on = ambitos.includes(a.ambito);
+            return (
+              <button
+                key={a.ambito}
+                type="button"
+                onClick={() => alternarAmbito(a.ambito)}
+                disabled={guardando}
+                aria-pressed={on}
+                title={a.ayuda}
+                className={`min-h-[28px] px-2.5 rounded-chip border font-sans text-caption transition-colors ${
+                  on ? 'bg-warning/15 border-warning text-warning' : 'border-hairline text-ink-3 hover:text-ink'
+                }`}
+              >{a.etiqueta}</button>
             );
           })}
         </div>
@@ -189,6 +223,13 @@ export default function ReglasDeRecetasPanel({ athleteEmail, onboarding, nutriti
   const alergias = onboarding?.allergies ?? [];
   const condicionesDelAtleta = useMemo(() => athleteConditions(onboarding), [onboarding]);
   const [verAlimentos, setVerAlimentos] = useState(false);
+  // Dónde se aplica lo que escondes a partir de ahora (cada receta se puede ajustar luego).
+  const [ambitosNuevos, setAmbitosNuevos] = useState<AmbitoDeRegla[]>(AMBITOS.map(a => a.ambito));
+  const alternarAmbitoNuevo = (a: AmbitoDeRegla) =>
+    setAmbitosNuevos(prev => {
+      const siguiente = prev.includes(a) ? prev.filter(x => x !== a) : [...prev, a];
+      return siguiente.length === 0 ? prev : siguiente;
+    });
 
   const guardar = useMutation({
     mutationFn: (siguientes: ReglaDeReceta[]) => saveReglasDeReceta({ athleteId: athleteEmail, reglas: siguientes }),
@@ -220,7 +261,7 @@ export default function ReglasDeRecetasPanel({ athleteEmail, onboarding, nutriti
     const verbo = esconder ? 'Esconder' : 'Volver a permitir';
     if (!await confirm(`¿${verbo} las ${ids.size.toLocaleString('es-ES')} recetas que se ven ahora?`)) return;
     const siguientes = esconder
-      ? [...reglas.filter(r => !ids.has(r.recipeId)), ...[...ids].map(recipeId => ({ recipeId }))]
+      ? [...reglas.filter(r => !ids.has(r.recipeId)), ...[...ids].map(recipeId => conRegla([], recipeId, { ambitos: ambitosNuevos })[0])]
       : reglas.filter(r => !ids.has(r.recipeId));
     guardar.mutate(siguientes);
   };
@@ -238,8 +279,8 @@ export default function ReglasDeRecetasPanel({ athleteEmail, onboarding, nutriti
           Recetas de este atleta
         </h3>
         <p className="font-sans text-label text-ink-2 mt-1">
-          Lo que puede recibir hoy según sus alergias, dieta y preferencias. Escondida, una receta no sale en su
-          menú, en los cambios de comida ni en su recetario.
+          Lo que puede recibir hoy según sus alergias, dieta y preferencias. Tú decides dónde afecta: el menú que genera la app,
+          los cambios de comida o el recetario general.
         </p>
       </div>
 
@@ -379,6 +420,30 @@ export default function ReglasDeRecetasPanel({ athleteEmail, onboarding, nutriti
             </div>
           </div>
 
+          <div>
+            <p className="font-mono text-caption text-ink-3 mb-1.5">Al esconder una receta, aplicar en</p>
+            <div className="flex flex-wrap gap-1.5">
+              {AMBITOS.map(a => {
+                const on = ambitosNuevos.includes(a.ambito);
+                return (
+                  <button
+                    key={a.ambito}
+                    type="button"
+                    onClick={() => alternarAmbitoNuevo(a.ambito)}
+                    aria-pressed={on}
+                    title={a.ayuda}
+                    className={`min-h-[32px] px-2.5 rounded-chip border font-sans text-caption transition-colors ${
+                      on ? 'border-accent bg-accent/15 text-ink' : 'border-hairline text-ink-2 hover:text-ink'
+                    }`}
+                  >{a.etiqueta}</button>
+                );
+              })}
+            </div>
+            <p className="font-mono text-caption text-ink-3 mt-1.5">
+              {AMBITOS.filter(a => ambitosNuevos.includes(a.ambito)).map(a => a.ayuda).join(' ')}
+            </p>
+          </div>
+
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
@@ -441,7 +506,8 @@ export default function ReglasDeRecetasPanel({ athleteEmail, onboarding, nutriti
                   receta={r}
                   regla={porId.get(r.id)}
                   guardando={guardar.isPending}
-                  onCambiar={dias => guardar.mutate(conRegla(reglas, r.id, dias))}
+                  ambitosNuevos={ambitosNuevos}
+                  onCambiar={cambio => guardar.mutate(conRegla(reglas, r.id, cambio))}
                 />
               ))}
             </ul>

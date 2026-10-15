@@ -1,5 +1,5 @@
 import type { Recipe, BudgetVec, DietType, FoodCategory, WeekDay } from '../types';
-import { recetasOcultas, type ReglaDeReceta } from './reglasDeReceta';
+import { recetasOcultas, type AmbitoDeRegla, type ReglaDeReceta } from './reglasDeReceta';
 import { superaElTiempo } from './tiempoDeReceta';
 import { ingredientMatch, violatesDietType } from './foodPrefs';
 import { violatesHealthConditions } from './dietaryRestrictions';
@@ -102,6 +102,8 @@ export interface AlternativeOptions {
   diversify?: boolean;
   /** Día(s) al que sirve la alternativa; sin él, solo cuentan las reglas de «todos los días». */
   dias?: WeekDay[];
+  /** Dónde se ofrecen: por defecto «cambios» (cambiar comida); el recetario pasa `recetario`. */
+  ambito?: AmbitoDeRegla;
   /** Texto de búsqueda libre sobre el nombre. */
   search?: string;
   /** Solo recetas aptas para tupper. */
@@ -158,6 +160,7 @@ export function findRecipeAlternatives(
     search,
     onlyTupper,
     dias,
+    ambito = 'cambios',
   } = options;
 
   const sourceExch = recipeExchanges(source);
@@ -169,7 +172,7 @@ export function findRecipeAlternatives(
   const excludedDish = new Set(prefs.excludedDishTypes ?? []);
   const preferredDish = new Set(prefs.preferredDishTypes ?? []);
   const allergies = prefs.allergies ?? [];
-  const ocultasPorElCoach = recetasOcultas(prefs.recetasOcultas, dias);
+  const ocultasPorElCoach = recetasOcultas(prefs.recetasOcultas, ambito, dias);
   const nSearch = search ? norm(search) : null;
 
   const scored: RecipeAlternative[] = [];

@@ -1,5 +1,5 @@
 import { useReglasDeReceta } from '../hooks/useReglasDeReceta';
-import { recetaPermitida } from '../utils/reglasDeReceta';
+import { recetaPermitida, type AmbitoDeRegla } from '../utils/reglasDeReceta';
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { minutosDeReceta } from '../utils/tiempoDeReceta';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -848,12 +848,12 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
   // preferencias, igual de firme que una alergia: faltaba aquí, así que los
   // buscadores de esta pantalla seguían ofreciéndole justo lo que había
   // marcado que no quería ver.
-  const isSafeForAthlete = useCallback((r: Recipe) =>
+  const isSafeForAthlete = useCallback((r: Recipe, ambito: AmbitoDeRegla = 'cambios') =>
     !swapPrefs.allergies!.some(f => ingredientMatch(r, f)) &&
     !violatesHealthConditions(r, swapPrefs.conditions) &&
     !swapPrefs.dislikedRecipeIds!.includes(r.id) &&
     // Escondida por el coach: para hoy, que es el día que el atleta está planificando.
-    recetaPermitida(r.id, swapPrefs.recetasOcultas, [diaSemanaDe(hoyFecha)]) &&
+    recetaPermitida(r.id, swapPrefs.recetasOcultas, ambito, ambito === 'recetario' ? undefined : [diaSemanaDe(hoyFecha)]) &&
     !(swapPrefs.excludedDishTypes ?? []).includes(dishType(r)) &&
     !violatesDietType(r, swapPrefs.dietType), [swapPrefs, hoyFecha]);
 
@@ -978,7 +978,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     } else {
       base = recetarioResults;
     }
-    const safe = base.filter(isSafeForAthlete);
+    const safe = base.filter(r => isSafeForAthlete(r, 'recetario'));
     // Antes salía en el orden del catálogo (alfabético): las favoritas del
     // atleta quedaban donde cayeran, y los tipos de plato que había pedido
     // tener más no se adelantaban. Y buscando no se esconde lo que no cabe en
@@ -991,6 +991,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     return findRecipeAlternatives(swapSourceRecipe, swapPool, {
       prefs: swapPrefs,
       dias: [diaSemanaDe(viewDate)],
+      ambito: 'cambios',
       intakeType: swapContext?.slot,
       search: swapSearch.trim() || undefined,
       limit: 40,
