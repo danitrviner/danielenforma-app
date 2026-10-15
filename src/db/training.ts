@@ -11,6 +11,9 @@ import { slugify } from '../utils/maquinaId';
 import { exigeEmail, clavesDelAtleta, type ClavesDeAtleta } from './clavesDeAtleta';
 import { leerCatalogo, marcarCatalogoCambiado } from './catalogoVersionado';
 import { escribirLocal } from '../utils/almacenLocal';
+import { registrarCambio } from './cambios';
+import { resumirMeso } from '../utils/cambiosAtleta';
+import { nombreDeMeso } from '../utils/nombresMeso';
 import { planDeReprogramacionEnSitio, type AsignacionNueva } from '../utils/estadoDeAsignacion';
 
 // T14 (18-08): mismo patrón que idDeFoodItem — un ID determinista hace que
@@ -1164,6 +1167,7 @@ export async function updateMesocycle(id: string, updates: Partial<Omit<Mesocycl
     ? { ...updates, groups: normalizeMuscleGroups(updates.groups) }
     : updates;
   const all = getLocalMesocycles();
+  const antesMeso = all.find(m => m.id === id);
   const next = all.map(m => m.id === id ? { ...m, ...normalizedUpdates } : m);
   if (forceLocalOnly) { setLocalMesocycles(next); return; }
   try {
@@ -1182,6 +1186,14 @@ export async function updateMesocycle(id: string, updates: Partial<Omit<Mesocycl
     // fuera.
     await updateDoc(doc(db, 'mesocycles', id), payloadDeMesociclo(normalizedUpdates));
     setLocalMesocycles(next);
+    const despuesMeso = next.find(m => m.id === id);
+    if (antesMeso && despuesMeso) {
+      void registrarCambio<Mesocycle>({
+        athleteId: despuesMeso.athleteId, area: 'entreno', objeto: `meso:${id}`,
+        titulo: `Mesociclo ${nombreDeMeso(despuesMeso)}`,
+        antes: antesMeso, despues: despuesMeso, resumir: resumirMeso,
+      });
+    }
   } catch (err) {
     console.warn('updateMesocycle Firestore failed, saving local:', err);
     setLocalBypassMode(true, err);

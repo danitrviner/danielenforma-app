@@ -396,6 +396,13 @@ service cloud.firestore {
       allow read, write: if isCoach() || isOwnerEmail(email);
     }
 
+    // ── cambiosAtleta (athleteId = EMAIL) ────────────────────────────────────
+    // Historial de lo que el coach ha cambiado a un atleta. Solo el coach: el
+    // atleta no lo lee ni lo escribe (db/cambios.ts, widgets de Revisión).
+    match /cambiosAtleta/{docId} {
+      allow read, create, update, delete: if isCoach();
+    }
+
     // ── progressPhotos (athleteId = EMAIL) ───────────────────────────────────
     match /progressPhotos/{docId} {
       allow read: if isCoach()

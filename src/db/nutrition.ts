@@ -6,6 +6,8 @@ import { SYSTEM_FOODS } from '../nutricion_seed_en_forma';
 import { idDeFoodItem } from '../utils/foodItemId';
 import { leerCatalogo, marcarCatalogoCambiado } from './catalogoVersionado';
 import { escribirLocal } from '../utils/almacenLocal';
+import { registrarCambio } from './cambios';
+import { resumirCalendarioDietas, resumirConfigNutricion, resumirDieta, resumirPrograma } from '../utils/cambiosAtleta';
 import { acotarExtrasDeComida } from '../utils/menuEngine';
 import { hoyIsoLocal } from '../utils/trainingWeek';
 
@@ -347,6 +349,8 @@ export async function getAthleteNutritionConfig(athleteEmail: string): Promise<A
 export async function saveAthleteNutritionConfig(config: AthleteNutritionConfig): Promise<void> {
   const localKey = `enforma_nutri_config_${config.athleteId}`;
   const data = { ...config };
+  let antes: AthleteNutritionConfig | undefined;
+  try { const raw = localStorage.getItem(localKey); antes = raw ? JSON.parse(raw) as AthleteNutritionConfig : undefined; } catch { /* sin copia local */ }
   if (forceLocalOnly) {
     escribirLocal(localKey, JSON.stringify(data));
     return;
@@ -354,6 +358,10 @@ export async function saveAthleteNutritionConfig(config: AthleteNutritionConfig)
   try {
     await setDoc(doc(db, 'athleteNutritionConfigs', config.athleteId), stripUndefined(data));
     escribirLocal(localKey, JSON.stringify(data));
+    void registrarCambio<AthleteNutritionConfig>({
+      athleteId: config.athleteId, area: 'nutricion', objeto: 'config', titulo: 'Pasos y gasto',
+      antes, despues: data, resumir: resumirConfigNutricion,
+    });
   } catch (err) {
     console.warn('saveAthleteNutritionConfig Firestore failed, saving local:', err);
     setLocalBypassMode(true, err);
@@ -405,6 +413,12 @@ export async function createDiet(data: Omit<Diet, 'id'>): Promise<Diet> {
     const ref = await addDoc(collection(db, 'diets'), stripUndefined(data));
     const diet: Diet = { id: ref.id, ...data };
     setDietsToLocal([...getDietsFromLocal(), diet]);
+    if (!diet.selfManaged && !diet.menuTemplate) {
+      void registrarCambio<Diet>({
+        athleteId: diet.athleteId, area: 'nutricion', objeto: `dieta:${diet.id}`,
+        titulo: `Dieta «${diet.name}»`, antes: undefined, despues: diet, resumir: resumirDieta,
+      });
+    }
     return diet;
   } catch (err) {
     console.warn('createDiet Firestore failed, saving local:', err);
@@ -418,11 +432,19 @@ export async function createDiet(data: Omit<Diet, 'id'>): Promise<Diet> {
 
 export async function updateDiet(id: string, updates: Partial<Diet>): Promise<void> {
   const all = getDietsFromLocal();
+  const antes = all.find(d => d.id === id);
   const updated = all.map(d => d.id === id ? { ...d, ...updates } : d);
   if (forceLocalOnly) { setDietsToLocal(updated); return; }
   try {
     await updateDoc(doc(db, 'diets', id), stripUndefined(updates) as Record<string, unknown>);
     setDietsToLocal(updated);
+    const despues = updated.find(d => d.id === id);
+    if (antes && despues && !despues.selfManaged && !despues.menuTemplate) {
+      void registrarCambio<Diet>({
+        athleteId: despues.athleteId, area: 'nutricion', objeto: `dieta:${id}`,
+        titulo: `Dieta «${despues.name}»`, antes, despues, resumir: resumirDieta,
+      });
+    }
   } catch (err) {
     console.warn('updateDiet Firestore failed, saving local:', err);
     setLocalBypassMode(true, err);
@@ -432,11 +454,19 @@ export async function updateDiet(id: string, updates: Partial<Diet>): Promise<vo
 }
 
 export async function deleteDiet(id: string): Promise<void> {
+  const eliminada = getDietsFromLocal().find(d => d.id === id);
   const filtered = getDietsFromLocal().filter(d => d.id !== id);
   if (forceLocalOnly) { setDietsToLocal(filtered); return; }
   try {
     await deleteDoc(doc(db, 'diets', id));
     setDietsToLocal(filtered);
+    if (eliminada && !eliminada.selfManaged && !eliminada.menuTemplate) {
+      void registrarCambio<Diet>({
+        athleteId: eliminada.athleteId, area: 'nutricion', objeto: `dieta-borrada:${id}`,
+        titulo: `Dieta «${eliminada.name}»`, antes: eliminada, despues: eliminada,
+        resumir: () => ['Dieta eliminada'],
+      });
+    }
   } catch (err) {
     console.warn('deleteDiet Firestore failed, deleting local:', err);
     setLocalBypassMode(true, err);
@@ -869,10 +899,17 @@ export async function getAthleteDietConfig(athleteEmail: string): Promise<Athlet
 
 export async function saveAthleteDietConfig(config: AthleteDietConfig): Promise<void> {
   const localKey = `enforma_athlete_diet_config_${config.athleteId}`;
+  let antes: AthleteDietConfig | undefined;
+  try { const raw = localStorage.getItem(localKey); antes = raw ? JSON.parse(raw) as AthleteDietConfig : undefined; } catch { /* sin copia local */ }
   if (forceLocalOnly) { escribirLocal(localKey, JSON.stringify(config)); return; }
   try {
     await setDoc(doc(db, 'athleteDietConfigs', config.athleteId), stripUndefined(config));
     escribirLocal(localKey, JSON.stringify(config));
+    const nombres = Object.fromEntries(getDietsFromLocal().map(d => [d.id, d.name]));
+    void registrarCambio<AthleteDietConfig>({
+      athleteId: config.athleteId, area: 'nutricion', objeto: 'calendario', titulo: 'Calendario de dietas',
+      antes, despues: config, resumir: (a, d) => resumirCalendarioDietas(a, d, nombres),
+    });
   } catch (err) {
     console.warn('saveAthleteDietConfig Firestore failed, saving local:', err);
     setLocalBypassMode(true, err);
@@ -937,6 +974,7 @@ export async function getNutritionProgramsForAthletes(emails: string[]): Promise
 export async function saveNutritionProgram(program: NutritionProgram): Promise<void> {
   const { athleteId, ...rest } = program;
   const data = stripUndefined(rest);
+  const antes = getLocalNutProgs().find(p => p.athleteId === athleteId);
   if (forceLocalOnly) {
     const list = getLocalNutProgs().filter(p => p.athleteId !== athleteId);
     saveLocalNutProgs([...list, program]);
@@ -946,6 +984,10 @@ export async function saveNutritionProgram(program: NutritionProgram): Promise<v
     await setDoc(doc(db, 'nutritionPrograms', athleteId), data);
     const list = getLocalNutProgs().filter(p => p.athleteId !== athleteId);
     saveLocalNutProgs([...list, program]);
+    void registrarCambio<NutritionProgram>({
+      athleteId, area: 'nutricion', objeto: 'programa', titulo: 'Periodización de nutrición',
+      antes, despues: program, resumir: resumirPrograma,
+    });
   } catch (err) {
     console.warn('saveNutritionProgram Firestore failed:', err);
     setLocalBypassMode(true, err);

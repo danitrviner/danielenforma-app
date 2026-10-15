@@ -33,6 +33,7 @@ import BloqueNutricionHabitos from './BloqueNutricionHabitos';
 import BloqueRecibido from './BloqueRecibido';
 import BloqueRetosNivel from './BloqueRetosNivel';
 import BloqueCierre from './BloqueCierre';
+import BloqueCambios from './BloqueCambios';
 import { Card, Button, Icon } from '../ui';
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -428,6 +429,15 @@ export default function ClientRevisionPanel({
             dietas={dietas}
             assignments={assignments}
             onGoToTab={onGoToTab}
+            todoAbierto={todoAbierto}
+          />
+        </Seccion>
+
+        <Seccion titulo="Lo que he cambiado">
+          <BloqueCambios
+            athleteEmail={athlete.email}
+            desde={ventana.desde}
+            hasta={ventana.hasta}
             todoAbierto={todoAbierto}
           />
         </Seccion>
