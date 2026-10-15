@@ -55,7 +55,7 @@ const MAX_ANTIGUEDAD_LOGIN_MS = 10 * 60 * 1000;
 export const POR_ID_EMAIL = [
   'onboarding', 'gimnasios', 'roadmaps', 'nutritionPrograms', 'athleteDietConfigs',
   'athleteNutritionConfigs', 'recipeFavorites', 'academyAccess', 'academyProgress',
-  'athleteCardioProfile', 'invites', 'alimentosPersonales',
+  'athleteCardioProfile', 'invites', 'alimentosPersonales', 'athleteRecipeRules',
 ];
 
 // Colecciones con un campo que apunta al atleta. Se prueban los tres nombres
@@ -68,7 +68,7 @@ export const POR_CAMPO = [
   'questionnaireResponses', 'exerciseNotes', 'mesocycles', 'weeklyChallenges',
   'notifications', 'tasks', 'coachNotes', 'coachClientTasks', 'athleteStatus',
   'coachReports', 'cardioAssignments', 'cardioSessions', 'cardioWeeklyGoals',
-  'hrTests', 'hrvReadings', 'aiChats', 'aiProposals', 'coachDayNotes',
+  'hrTests', 'hrvReadings', 'aiChats', 'aiProposals', 'coachDayNotes', 'cambiosAtleta',
 ];
 
 const CAMPOS_PROPIETARIO = ['userId', 'athleteId', 'email'];

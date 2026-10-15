@@ -18,6 +18,8 @@ import AthleteRoadmapScreen from './AthleteRoadmapScreen';
 import MiGimnasioPanel from '../features/gimnasio/MiGimnasioPanel';
 import { useTourTarget } from '../features/tutorial/TourTargetContext';
 import FuentesCientificasSheet from './FuentesCientificasSheet';
+import NovedadesSheet from './NovedadesSheet';
+import { NOVEDADES } from '../data/novedades';
 import { Avatar, Icon, Button, PageHeader, ListRow, Input, Sheet, SegmentedControl, Tabs } from './ui';
 import { leerPreferencia, guardarPreferencia, type PreferenciaDeTema } from '../utils/tema';
 
@@ -93,6 +95,7 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
      posee App.tsx y no se refresca solo al guardar desde aquí. */
   const [showPermisos, setShowPermisos] = useState(false);
   const [showFuentes, setShowFuentes] = useState(false);
+  const [showNovedades, setShowNovedades] = useState(false);
   const [legalLocal, setLegalLocal] = useState<AceptacionesLegales | undefined>(profile.legal);
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedTab = searchParams.get('tab');
@@ -317,6 +320,12 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
               arriba del todo; esta segunda entrada existe porque «fácil de
               encontrar» también significa «donde la gente busca los avisos». */}
           <ListRow
+            onClick={() => { setShowSettings(false); setShowNovedades(true); }}
+            leading={<Icon name="campaign" size="m" className="text-accent-ink" />}
+            title="Qué hay de nuevo"
+            chevron
+          />
+          <ListRow
             onClick={() => { setShowSettings(false); setShowFuentes(true); }}
             leading={<Icon name="menu_book" size="m" className="text-accent-ink" />}
             title="Fuentes científicas y aviso médico"
@@ -504,6 +513,7 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
       )}
 
       <FuentesCientificasSheet open={showFuentes} onClose={() => setShowFuentes(false)} />
+      <NovedadesSheet open={showNovedades} onClose={() => setShowNovedades(false)} novedades={NOVEDADES} />
 
       <EliminarCuentaDialog
         open={showEliminarCuenta}

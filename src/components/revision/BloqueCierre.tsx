@@ -12,7 +12,7 @@ import { HubTab } from '../ClientHub';
 import { Button, Icon } from '../ui';
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   Bloque final — Qué le digo.
+   Bloque final — Cierre de la revisión.
 
    Los ocho bloques de arriba son la prueba; este es la conclusión. Sale de un
    motor puro (`utils/titularesRevision.ts`) que ordena lo que hay que contar

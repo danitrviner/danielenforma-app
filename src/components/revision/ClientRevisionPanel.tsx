@@ -33,6 +33,7 @@ import BloqueNutricionHabitos from './BloqueNutricionHabitos';
 import BloqueRecibido from './BloqueRecibido';
 import BloqueRetosNivel from './BloqueRetosNivel';
 import BloqueCierre from './BloqueCierre';
+import BloqueCambios from './BloqueCambios';
 import { Card, Button, Icon } from '../ui';
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -432,9 +433,18 @@ export default function ClientRevisionPanel({
           />
         </Seccion>
 
+        <Seccion titulo="Lo que he cambiado">
+          <BloqueCambios
+            athleteEmail={athlete.email}
+            desde={ventana.desde}
+            hasta={ventana.hasta}
+            todoAbierto={todoAbierto}
+          />
+        </Seccion>
+
         {/* Va el último porque es la conclusión: los bloques de arriba son la
             prueba, y este es lo que se le dice. */}
-        <Seccion titulo="Qué le digo">
+        <Seccion titulo="Cierre de la revisión">
           <BloqueCierre
             athleteEmail={athlete.email}
             athleteName={athlete.displayName}

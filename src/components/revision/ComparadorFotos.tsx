@@ -58,6 +58,18 @@ export default function ComparadorFotos({ photos, athleteEmail, bodyweightLogs =
   const setPar = (antes: string, ahora: string) =>
     setElegido(prev => ({ ...prev, [vista]: [antes, ahora] }));
 
+  // Elegir tocando la tira: la primera foto que tocas espera a la segunda, y
+  // el par se ordena solo por fecha (Antes siempre es la más antigua).
+  const [pendiente, setPendiente] = useState<string | null>(null);
+  const tocarMiniatura = (fecha: string) => {
+    if (pendiente == null) { setPendiente(fecha); return; }
+    if (pendiente === fecha) { setPendiente(null); return; }
+    const [a, b] = [pendiente, fecha].sort();
+    setPar(a, b);
+    setPendiente(null);
+  };
+  const cambiarVista = (v: PhotoView) => { setVista(v); setPendiente(null); };
+
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-end gap-3">
@@ -65,7 +77,7 @@ export default function ComparadorFotos({ photos, athleteEmail, bodyweightLogs =
           label="Vista de la foto"
           options={VISTAS}
           value={vista}
-          onChange={v => setVista(v as PhotoView)}
+          onChange={v => cambiarVista(v as PhotoView)}
         />
         {par && fotos.length > 2 && (
           <div className="flex items-end gap-2">
@@ -110,6 +122,40 @@ export default function ComparadorFotos({ photos, athleteEmail, bodyweightLogs =
             pesoEnFecha(bodyweightLogs, par.ahora.date),
           )}
         />
+      )}
+
+      {fotos.length > 2 && (
+        <div>
+          <p className="font-mono text-caption text-ink-3 mb-1.5">
+            {pendiente
+              ? `Toca la segunda foto para comparar con la del ${fechaCorta(pendiente, { anio: true })}`
+              : 'Toca dos fotos para compararlas'}
+          </p>
+          <ul className="m-0 p-0 list-none flex gap-2 overflow-x-auto pb-1" aria-label="Historial de fotos">
+            {fotos.map(f => {
+              const esPar = par != null && (f.date === par.antes.date || f.date === par.ahora.date);
+              const esPendiente = f.date === pendiente;
+              return (
+                <li key={f.date} className="flex-shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => tocarMiniatura(f.date)}
+                    aria-pressed={esPar || esPendiente}
+                    aria-label={`Foto del ${fechaCorta(f.date, { anio: true })}`}
+                    className={`block w-16 text-left rounded-control border-2 overflow-hidden transition-colors ${
+                      esPendiente ? 'border-warning' : esPar ? 'border-accent' : 'border-hairline hover:border-strong'
+                    }`}
+                  >
+                    <img src={f.url} alt="" loading="lazy" className="w-16 h-20 object-cover object-top" />
+                    <span className="block px-1 py-0.5 font-mono text-caption text-ink-2 bg-raised truncate">
+                      {fechaCorta(f.date, { anio: true })}
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
       )}
     </div>
   );

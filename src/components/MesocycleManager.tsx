@@ -53,6 +53,9 @@ import { addDays, esFechaIso, hoyIsoLocal, isoLocal } from '../utils/trainingWee
 import { useAthleteProfileSignals } from '../hooks/useAthleteProfileSignals';
 import { useAthleteWeight } from '../hooks/useAthleteWeight';
 import { useConfirm } from '../hooks/useConfirm';
+import { getMaquinasDisponibles } from '../db/machines';
+import { catalogoParaGrupo, conNombreDeSesion, idsDelDraft, nombrePropioDeSesion } from '../utils/draftEjercicios';
+import DraftEjercicios from './mesociclo/DraftEjercicios';
 import { Avatar, Skeleton } from './ui';
 import { EmptyState, Dialog, Input, Icon, Tabs, TabItem, Sheet, Pager, Select, Button } from './ui';
 
@@ -176,7 +179,19 @@ const DayCard: React.FC<{
   onRemove: (aIdx: number) => void;
   onMove: (aIdx: number, targetDayIdx: number) => void;
   onAddGroup: (group: MuscleGroup) => void;
-}> = ({ day, dayIdx, daysPerWeek, offsets, onSeriesChange, onRemove, onMove, onAddGroup }) => {
+  /** Nombre puesto por el coach, si lo hay; manda sobre el del reparto. */
+  nombrePropio?: string;
+  onRename: (nombre: string) => void;
+}> = ({ day, dayIdx, daysPerWeek, offsets, onSeriesChange, onRemove, onMove, onAddGroup, nombrePropio, onRename }) => {
+  const [renombrando, setRenombrando] = useState(false);
+  const [borrador, setBorrador] = useState('');
+  const etiquetaDelReparto = day.dayType ?? '';
+  const confirmarNombre = () => {
+    const limpio = borrador.trim();
+    // Escribir lo mismo que ya pone el reparto equivale a no tener nombre propio.
+    onRename(limpio === etiquetaDelReparto ? '' : limpio);
+    setRenombrando(false);
+  };
   const [moveOpenIdx, setMoveOpenIdx] = useState<number | null>(null);
   const total   = day.totalSeries;
   const optimal = total >= 9 && total <= 12;
@@ -190,9 +205,37 @@ const DayCard: React.FC<{
   return (
     <div className="bg-surface border border-hairline rounded-surface p-4 flex-1 min-w-[220px] max-w-[300px] flex flex-col gap-3">
       <div className="flex items-center gap-2">
-        <span className="font-mono text-caption text-ink-2 uppercase tracking-wider flex-1 min-w-0 truncate">
-Día {diaCalendario(dayIdx)}{day.dayType ? ` · ${day.dayType}` : ''}
+        <span className="font-mono text-caption text-ink-2 uppercase tracking-wider flex-shrink-0">
+          Día {diaCalendario(dayIdx)}
         </span>
+        {renombrando ? (
+          <input
+            autoFocus
+            value={borrador}
+            maxLength={40}
+            onChange={e => setBorrador(e.target.value)}
+            onBlur={confirmarNombre}
+            onKeyDown={e => {
+              if (e.key === 'Enter') confirmarNombre();
+              if (e.key === 'Escape') setRenombrando(false);
+            }}
+            aria-label={`Nombre de la sesión del día ${diaCalendario(dayIdx)}`}
+            placeholder={etiquetaDelReparto || 'Nombre de la sesión'}
+            className="flex-1 min-w-0 bg-bg border border-accent rounded-control px-2 py-0.5 font-sans text-label font-bold text-ink focus:outline-none"
+          />
+        ) : (
+          <button
+            type="button"
+            onClick={() => { setBorrador(nombrePropio ?? etiquetaDelReparto); setRenombrando(true); }}
+            title="Cambiar el nombre de la sesión"
+            className="group flex-1 min-w-0 flex items-center gap-1 text-left"
+          >
+            <span className="font-sans text-label font-bold text-ink truncate">
+              {nombrePropio ?? (etiquetaDelReparto || 'Sin nombre')}
+            </span>
+            <Icon name="edit" size="s" className="flex-shrink-0 text-ink-3 group-hover:text-accent-ink" />
+          </button>
+        )}
         <span className="font-mono text-title-m font-bold tabular-nums" style={{ color: totalColor }}>{total}</span>
         <span className="font-mono text-caption text-ink-3">series</span>
       </div>
@@ -1795,7 +1838,7 @@ function ProgressionView({ editing, mesocycles, onUpdateGroup, onApplySuggestion
 // ─── Main component ───────────────────────────────────────────────────────────
 
 type SaveState  = 'idle' | 'pending' | 'saving' | 'saved' | 'error';
-type EditorTab  = 'distribution' | 'exercises' | 'progression' | 'cierre';
+type EditorTab  = 'distribution' | 'exercises' | 'progression' | 'draft' | 'cierre';
 
 // One row per distinct day pattern (name) generated for this mesocycle — every week
 // repeats the same exercises per day (see handleAssign), so grouping by name collapses
@@ -1971,7 +2014,7 @@ export default function MesocycleManager({
   // no hay motivo para pagar dos queries cada vez que se entra a programar.
   // Mismas queryKeys que ClientHub/MesocycleDashboard: si ya están en caché,
   // esto no lee nada de Firestore.
-  const necesitaLogs = (editorTab === 'cierre' || editorTab === 'exercises') && !athleteLogs && !!selectedEmail;
+  const necesitaLogs = (editorTab === 'cierre' || editorTab === 'exercises' || editorTab === 'draft') && !athleteLogs && !!selectedEmail;
   const { data: logsQuery = [], isPending: logsPending } = useQuery({
     queryKey: ['workoutLogs', selectedEmail],
     queryFn: () => getWorkoutLogs(selectedEmail),
@@ -2007,6 +2050,15 @@ export default function MesocycleManager({
     enabled: necesitaAsignaciones,
   });
   const cierreLogs = athleteLogs ?? logsQuery;
+
+  // Máquinas que el atleta marcó en el alta: el Draft las enseña por grupo para
+  // relacionarlas con los ejercicios. Solo se piden al abrir esa pestaña.
+  const { data: maquinasDelAtleta } = useQuery({
+    queryKey: ['maquinasDisponibles', selectedEmail],
+    queryFn: () => getMaquinasDisponibles(selectedEmail),
+    enabled: editorTab === 'draft' && !!selectedEmail,
+    staleTime: 5 * 60_000,
+  });
   const cierreAsignaciones = athleteAssignments ?? asignacionesQuery;
   const cierreCargando = (necesitaLogs && logsPending) || (necesitaAsignaciones && asignacionesPending);
 
@@ -2259,13 +2311,22 @@ export default function MesocycleManager({
       // texto de lesiones va entero: el motor busca por palabras, así que
       // «molestia en el hombro al hacer press militar» veta el press militar.
       const vetados = [...athleteHatedExercises, ...(athleteInjuries ? [athleteInjuries] : [])];
+      // Con draft, cada grupo elige SOLO entre los ejercicios que el coach
+      // dejó en él (ver utils/draftEjercicios); un grupo sin draft usa la
+      // biblioteca entera, como siempre. `usados` reparte el draft entre los
+      // días: con cuatro ejercicios y dos por sesión, la segunda sesión
+      // arranca en el tercero en vez de repetir los mismos dos.
+      const draft = editing!.draft;
+      const usados: Partial<Record<MuscleGroup, number>> = {};
       const days: PreviewDay[] = editing!.distribution!.days.map((day, dayIdx) => {
         const dayExs: PreviewExercise[] = [];
         const warnings: string[] = [];
         let order = 0;
 
         for (const { group, series } of day.assignments) {
-          const delGrupo = exercises.filter(e => e.muscleGroup === group);
+          const conDraft = idsDelDraft(draft, group).length > 0;
+          const catalogoDelGrupo = catalogoParaGrupo(exercises, draft, group);
+          const delGrupo = catalogoDelGrupo.filter(e => e.muscleGroup === group);
           if (delGrupo.length === 0) {
             warnings.push(MUSCLE_LABELS[group]);
             continue;
@@ -2276,12 +2337,14 @@ export default function MesocycleManager({
           const elegidos = elegirEjercicios({
             grupo: group,
             trozos: chunks,
-            catalogo: exercises,
+            catalogo: catalogoDelGrupo,
             rutinasDelCoach: allWorkouts,
             materialDelAtleta: athleteEquipment,
             logsDelAtleta: logsParaRotacion,
             vetados,
+            inicio: conDraft ? (usados[group] ?? 0) : 0,
           });
+          if (conDraft) usados[group] = (usados[group] ?? 0) + chunks.length;
           for (const el of elegidos) {
             if (el.materialIncompatible && el === elegidos[0]) {
               warnings.push(`${MUSCLE_LABELS[group]} (sin material compatible)`);
@@ -2351,7 +2414,10 @@ export default function MesocycleManager({
       for (let dayIdx = 0; dayIdx < editing.daysPerWeek; dayIdx++) {
         const pd = previewDays[dayIdx] ?? { dayIndex: dayIdx, exercises: [], warnings: [] };
         const exercises: WorkoutExercise[] = pd.exercises.map(({ name: _name, equipmentMismatch: _mismatch, ...we }) => we);
-        const name = nombreDeSesion({ tipo: tiposCiclo[dayIdx], dayIdx, athleteName, meso: editing });
+        const name = nombreDeSesion({
+          tipo: nombrePropioDeSesion(editing.nombresSesion, dayIdx) ?? tiposCiclo[dayIdx],
+          dayIdx, athleteName, meso: editing,
+        });
 
         const existente = rutinaPorDia.get(dayIdx);
         if (existente) {
@@ -3298,6 +3364,7 @@ export default function MesocycleManager({
                 onChange={id => { setEditorTab(id as EditorTab); if (id !== 'distribution') setGenPhase('idle'); setVolcado({ estado: 'idle', mensaje: '' }); }}
                 items={[
                   { id: 'progression',  label: 'Volumen',      icon: 'trending_up' },
+                  { id: 'draft',        label: 'Draft',        icon: 'checklist' },
                   { id: 'distribution', label: 'Distribución', icon: 'grid_view' },
                   { id: 'exercises',    label: 'Ejercicios',   icon: 'fitness_center' },
                   { id: 'cierre',       label: 'Cierre',       icon: 'monitoring' },
@@ -3315,6 +3382,23 @@ export default function MesocycleManager({
                   athleteLevel={athleteLevel}
                   athleteEmail={selectedEmail}
                   coachId={coachId}
+                />
+              )}
+
+              {/* ── Draft de ejercicios ── */}
+              {editorTab === 'draft' && (
+                <DraftEjercicios
+                  groups={editing.groups}
+                  draft={editing.draft}
+                  draftMaquinas={editing.draftMaquinas}
+                  exercises={allExercises}
+                  logs={cierreLogs}
+                  rutinasDelCoach={allWorkouts}
+                  material={athleteEquipment}
+                  vetados={[...athleteHatedExercises, ...(athleteInjuries ? [athleteInjuries] : [])]}
+                  maquinas={maquinasDelAtleta?.catalogo ?? []}
+                  maquinasPropias={maquinasDelAtleta?.propias ?? []}
+                  onChange={(draft, draftMaquinas) => actualizarMeso({ draft, draftMaquinas })}
                 />
               )}
 
@@ -3485,6 +3569,10 @@ export default function MesocycleManager({
                                 onRemove={aIdx => removeAssignment(i, aIdx)}
                                 onMove={(aIdx, targetDayIdx) => moveAssignment(i, aIdx, targetDayIdx)}
                                 onAddGroup={group => addGroupToDay(i, group)}
+                                nombrePropio={nombrePropioDeSesion(editing.nombresSesion, i)}
+                                onRename={nombre => actualizarMeso({
+                                  nombresSesion: conNombreDeSesion(editing.nombresSesion, i, nombre, editing.daysPerWeek),
+                                })}
                               />
                             ))}
                           </div>

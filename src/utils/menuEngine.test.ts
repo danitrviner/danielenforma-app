@@ -42,6 +42,29 @@ describe('bestScaleFit', () => {
 });
 
 describe('rankCandidates', () => {
+  // Reglas del coach (Fase 3, 10-2026): esconde recetas a UN atleta, todos los
+  // días o solo algunos.
+  describe('recetas escondidas por el coach', () => {
+    const a = recipe({ id: 'a', exchanges: { HC: 2, PROT: 2, GRASA: 1 } });
+    const b = recipe({ id: 'b', exchanges: { HC: 2, PROT: 2, GRASA: 1 } });
+    const target: BudgetVec = { HC: 2, PROT: 2, GRASA: 1 };
+    const prefs = (recetasOcultas: GeneratorPrefs['recetasOcultas']): GeneratorPrefs => ({ ...basePrefs, recetasOcultas });
+    const ids = (r: ReturnType<typeof rankCandidates>) => r.map(c => c.recipe.id).sort();
+
+    it('una regla de todos los días la quita siempre', () => {
+      expect(ids(rankCandidates([a, b], target, prefs([{ recipeId: 'a' }]), new Set()))).toEqual(['b']);
+      expect(ids(rankCandidates([a, b], target, prefs([{ recipeId: 'a' }]), new Set(), { dias: ['wed'] }))).toEqual(['b']);
+    });
+
+    it('una regla de martes solo la quita ese día', () => {
+      const p = prefs([{ recipeId: 'a', dias: ['tue'] }]);
+      expect(ids(rankCandidates([a, b], target, p, new Set(), { dias: ['tue'] }))).toEqual(['b']);
+      expect(ids(rankCandidates([a, b], target, p, new Set(), { dias: ['wed'] }))).toEqual(['a', 'b']);
+      // Sin día (buscador del recetario) no se esconde: puede servir otro día.
+      expect(ids(rankCandidates([a, b], target, p, new Set()))).toEqual(['a', 'b']);
+    });
+  });
+
   it('never returns a recipe matching an allergy, even when it fits well', () => {
     const safe = recipe({ id: 'safe', exchanges: { HC: 2, PROT: 2, GRASA: 1 }, ingredientsText: [{ name: 'Pollo', quantity: 100 }] });
     const allergen = recipe({ id: 'allergen', exchanges: { HC: 2, PROT: 2, GRASA: 1 }, ingredientsText: [{ name: 'Cacahuete', quantity: 20 }] });

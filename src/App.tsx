@@ -1102,7 +1102,7 @@ function AppContent() {
           <Route path="/" element={<Navigate to={isCoach ? '/clients' : '/home'} replace />} />
 
           {/* ATHLETE */}
-          {!isCoach && <Route path="/home" element={<HomeScreen profile={profile} checkins={checkins} onNavigate={goToTab} />} />}
+          {!isCoach && <Route path="/home" element={<HomeScreen profile={profile} checkins={checkins} onNavigate={goToTab} onProfileChanged={updates => setProfile(p => p ? { ...p, ...updates } as UserProfile : p)} />} />}
           {/* Sin `bloquearSinPlan` aquí (16-08): el gate de la sala de espera,
               más arriba, ya sustituye TODO este árbol de rutas por
               PlanEnEsperaScreen mientras no haya plan — un atleta nunca llega

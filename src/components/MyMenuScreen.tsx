@@ -1,3 +1,4 @@
+import { useReglasDeReceta } from '../hooks/useReglasDeReceta';
 import React, { useMemo, useState, useRef } from 'react';
 import { minutosDeReceta } from '../utils/tiempoDeReceta';
 import { useNavigate } from 'react-router-dom';
@@ -149,6 +150,7 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
   const [shoppingLoading, setShoppingLoading] = useState(false);
   const [shoppingItems, setShoppingItems] = useState<ShoppingListItem[] | null>(null);
 
+  const recetasOcultas = useReglasDeReceta(profile.email);
   const prefs: GeneratorPrefs = useMemo(() => ({
     allergies: onboarding?.allergies ?? [],
     conditions: athleteConditions(onboarding),
@@ -165,7 +167,8 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
     dislikedRecipeIds: favorites.dislikedIds ?? [],
     preferredDishTypes: (nutritionConfig?.preferredDishTypes ?? onboarding?.preferredDishTypes ?? []) as DishType[],
     excludedDishTypes: (nutritionConfig?.excludedDishTypes ?? onboarding?.excludedDishTypes ?? []) as DishType[],
-  }), [onboarding, nutritionConfig, favorites]);
+    recetasOcultas,
+  }), [onboarding, nutritionConfig, favorites, recetasOcultas]);
 
   const swapFiltradas = useMemo(() => {
     const q = normalizeStr(swapQuery.trim());

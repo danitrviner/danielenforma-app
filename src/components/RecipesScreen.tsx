@@ -1,3 +1,5 @@
+import { useReglasDeReceta } from '../hooks/useReglasDeReceta';
+import { recetaPermitida } from '../utils/reglasDeReceta';
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { superaElTiempo, minutosDeReceta } from '../utils/tiempoDeReceta';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -728,6 +730,7 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
   // de iniciación y el motor de menús ya los respetaba, pero el recetario que
   // navega el atleta los ignoraba: le seguía ofreciendo justo lo que había
   // marcado como excluido y no le adelantaba lo que había pedido tener más.
+  const recetasOcultas = useReglasDeReceta(profile.email);
   const prefs = useMemo(() => ({
     liked:     onboardingData?.likedFoods     ?? [],
     disliked:  onboardingData?.dislikedFoods  ?? [],
@@ -853,11 +856,14 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
   const esVisible = useCallback((r: Recipe) => {
     if (onlyFitsBudget && !fitsBudget(r)) return false;
     if (violatesDietType(r, prefs.dietType)) return false;
+    // El coach la ha escondido a este atleta (en el recetario, que no tiene día,
+    // solo cuentan las reglas de todos los días).
+    if (!recetaPermitida(r.id, recetasOcultas, 'recetario')) return false;
     // Un tipo de plato excluido es una decisión explícita del atleta, igual de
     // firme que una alergia a efectos de no enseñárselo.
     if (prefs.tiposExcluidos.size > 0 && prefs.tiposExcluidos.has(dishType(r))) return false;
     return classifyRecipe(r, prefs.liked, prefs.disliked, prefs.allergies, prefs.conditions) !== 'allergy';
-  }, [onlyFitsBudget, fitsBudget, prefs]);
+  }, [onlyFitsBudget, fitsBudget, prefs, recetasOcultas]);
 
   const handleLoadMore = useCallback(async () => {
     setRecetasLoadingMore(true);

@@ -69,6 +69,12 @@ export interface EntradaSeleccion {
   logsDelAtleta?: WorkoutLog[];
   /** Nombres o palabras que hay que evitar (lesiones, preferencias del alta). */
   vetados?: string[];
+  /**
+   * Por qué candidato empezar. Con un draft de cuatro ejercicios y dos por
+   * día, el segundo día de pecho tiene que arrancar en el tercero, no volver
+   * a elegir los mismos dos. Por defecto 0 (el comportamiento de siempre).
+   */
+  inicio?: number;
 }
 
 interface Candidato {
@@ -191,7 +197,7 @@ export function elegirEjercicios(entrada: EntradaSeleccion): EjercicioElegido[] 
   const hayCompatibles = candidatos.some(c => c.compatible && !c.vetado);
 
   return entrada.trozos.map((sets, i) => {
-    const c = candidatos[i % candidatos.length];
+    const c = candidatos[((entrada.inicio ?? 0) + i) % candidatos.length];
     const p = c.perfil;
     const razones: string[] = [];
 

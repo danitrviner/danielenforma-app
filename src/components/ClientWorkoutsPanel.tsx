@@ -75,6 +75,8 @@ export default function ClientWorkoutsPanel({
   // Las notas del atleta pueden ser muchas: se pueden esconder. Abiertas por
   // defecto, que es donde se ve lo que está sin leer.
   const [notasExpandidas, setNotasExpandidas] = useState(true);
+  // Las de hace más de una semana que ya están vistas quedan recogidas.
+  const [notasAntiguasAbiertas, setNotasAntiguasAbiertas] = useState(false);
 
   // T7.b (18-08): antes la sala de espera se abría sola en cuanto existía
   // UNA asignación (App.tsx, hasPlan) — Dani no controlaba el momento. Ahora
@@ -264,6 +266,17 @@ export default function ClientWorkoutsPanel({
           updateWorkoutLog(logId, { noteCoachSeen: true }).catch(console.error);
           setAthleteLogs(prev => prev.map(l => l.id === logId ? { ...l, noteCoachSeen: true } : l));
         };
+        // Todas de golpe: tras leerlas en la revisión, una a una es un castigo.
+        const markAllSeen = () => {
+          setAthleteLogs(prev => prev.map(l => {
+            const tieneSinVer = (l.note && !l.noteCoachSeen) || l.entries.some(e => e.note && !e.noteCoachSeen);
+            if (!tieneSinVer) return l;
+            const entries = l.entries.map(e => (e.note ? { ...e, noteCoachSeen: true } : e));
+            const cambio = l.note ? { noteCoachSeen: true, entries } : { entries };
+            updateWorkoutLog(l.id, cambio).catch(console.error);
+            return { ...l, ...cambio };
+          }));
+        };
         const markEntrySeen = (logId: string, exerciseId: string) => {
           setAthleteLogs(prev => prev.map(l => {
             if (l.id !== logId) return l;
@@ -271,6 +284,64 @@ export default function ClientWorkoutsPanel({
             updateWorkoutLog(logId, { entries }).catch(console.error);
             return { ...l, entries };
           }));
+        };
+
+        // Recientes (última semana) o con algo sin ver; el resto, recogido.
+        const haceUnaSemana = new Date();
+        haceUnaSemana.setDate(haceUnaSemana.getDate() - 7);
+        const limite = `${haceUnaSemana.getFullYear()}-${String(haceUnaSemana.getMonth() + 1).padStart(2, '0')}-${String(haceUnaSemana.getDate()).padStart(2, '0')}`;
+        const sinVer = (l: typeof logsWithNotes[number]) =>
+          (!!l.note && !l.noteCoachSeen) || l.entries.some(e => e.note && !e.noteCoachSeen);
+        const recientes = logsWithNotes.filter(l => l.date >= limite || sinVer(l));
+        const antiguas = logsWithNotes.filter(l => !(l.date >= limite || sinVer(l)));
+
+        const renderSesion = (log: typeof logsWithNotes[number]) => {
+          const wo = getWorkout(log.workoutId);
+          const notes: { key: string; ctx: string; unread: boolean; text: string; onSeen: () => void }[] = [];
+          if (log.note) {
+            notes.push({
+              key: `${log.id}-w`, ctx: 'ENTRENO COMPLETO',
+              unread: !log.noteCoachSeen, text: log.note,
+              onSeen: () => markLogSeen(log.id),
+            });
+          }
+          log.entries.filter(e => e.note).forEach(e => {
+            notes.push({
+              key: `${log.id}-${e.exerciseId}`,
+              ctx: getExercise(e.exerciseId)?.name || e.exerciseId,
+              unread: !e.noteCoachSeen, text: e.note!,
+              onSeen: () => markEntrySeen(log.id, e.exerciseId),
+            });
+          });
+          return (
+            <div key={log.id} className="space-y-2">
+              <div className="flex items-center gap-3">
+                <span className="font-mono text-caption text-ink-2 uppercase tracking-[.09em]">
+                  {wo?.name || 'Rutina'} · {log.date}
+                </span>
+                <div className="flex-1 h-px bg-hairline" />
+              </div>
+              <div className="space-y-2">
+                {notes.map(n => (
+                  <div
+                    key={n.key}
+                    {...(n.unread ? pulsable(n.onSeen, 'Marcar la nota como vista') : {})}
+                    className={`rounded-surface border p-3.5 transition-colors ${
+                      n.unread ? 'bg-accent-bg border-accent-line cursor-pointer' : 'bg-raised border-hairline'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      {n.unread && <span className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse-dot flex-shrink-0" />}
+                      <span className={`font-mono text-caption uppercase tracking-[.07em] flex-1 truncate ${n.unread ? 'text-accent-ink' : 'text-ink-3'}`}>
+                        {n.ctx}
+                      </span>
+                    </div>
+                    <p className="mt-2 text-body-s text-ink leading-relaxed">{n.text}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
         };
 
         return (
@@ -299,54 +370,34 @@ export default function ClientWorkoutsPanel({
             </button>
 
             {notasExpandidas && <div className="space-y-5">
-              {logsWithNotes.map(log => {
-                const wo = getWorkout(log.workoutId);
-                const notes: { key: string; ctx: string; unread: boolean; text: string; onSeen: () => void }[] = [];
-                if (log.note) {
-                  notes.push({
-                    key: `${log.id}-w`, ctx: 'ENTRENO COMPLETO',
-                    unread: !log.noteCoachSeen, text: log.note,
-                    onSeen: () => markLogSeen(log.id),
-                  });
-                }
-                log.entries.filter(e => e.note).forEach(e => {
-                  notes.push({
-                    key: `${log.id}-${e.exerciseId}`,
-                    ctx: getExercise(e.exerciseId)?.name || e.exerciseId,
-                    unread: !e.noteCoachSeen, text: e.note!,
-                    onSeen: () => markEntrySeen(log.id, e.exerciseId),
-                  });
-                });
-                return (
-                  <div key={log.id} className="space-y-2">
-                    <div className="flex items-center gap-3">
-                      <span className="font-mono text-caption text-ink-2 uppercase tracking-[.09em]">
-                        {wo?.name || 'Rutina'} · {log.date}
-                      </span>
-                      <div className="flex-1 h-px bg-hairline" />
-                    </div>
-                    <div className="space-y-2">
-                      {notes.map(n => (
-                        <div
-                          key={n.key}
-                          {...(n.unread ? pulsable(n.onSeen, 'Marcar la nota como vista') : {})}
-                          className={`rounded-surface border p-3.5 transition-colors ${
-                            n.unread ? 'bg-accent-bg border-accent-line cursor-pointer' : 'bg-raised border-hairline'
-                          }`}
-                        >
-                          <div className="flex items-center gap-2">
-                            {n.unread && <span className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse-dot flex-shrink-0" />}
-                            <span className={`font-mono text-caption uppercase tracking-[.07em] flex-1 truncate ${n.unread ? 'text-accent-ink' : 'text-ink-3'}`}>
-                              {n.ctx}
-                            </span>
-                          </div>
-                          <p className="mt-2 text-body-s text-ink leading-relaxed">{n.text}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
+              {totalUnread > 0 && (
+                <div className="flex justify-end">
+                  <Button variant="ghost" size="s" onClick={markAllSeen} icon="done_all" label="Marcar todas como vistas" />
+                </div>
+              )}
+              {recientes.map(renderSesion)}
+              {antiguas.length > 0 && (
+                <div className="space-y-5">
+                  <button
+                    type="button"
+                    onClick={() => setNotasAntiguasAbiertas(a => !a)}
+                    aria-expanded={notasAntiguasAbiertas}
+                    className="w-full flex items-center gap-3 text-left group"
+                  >
+                    <span className="font-mono text-caption text-ink-2 uppercase tracking-[.09em] group-hover:text-accent-ink transition-colors">
+                      Notas anteriores · {antiguas.length} {antiguas.length === 1 ? 'sesión' : 'sesiones'}
+                    </span>
+                    <div className="flex-1 h-px bg-hairline" />
+                    <span
+                      className="material-symbols-outlined text-ink-2 text-title-s transition-transform"
+                      style={{ transform: notasAntiguasAbiertas ? 'rotate(180deg)' : 'none' }}
+                    >
+                      expand_more
+                    </span>
+                  </button>
+                  {notasAntiguasAbiertas && antiguas.map(renderSesion)}
+                </div>
+              )}
             </div>}
           </div>
         );

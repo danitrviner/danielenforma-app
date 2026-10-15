@@ -1,7 +1,7 @@
 import type { Recipe, WeeklyMenu, UserProfile } from '../types';
 import {
   getNutritionProgram, getPublishedMenu, getWeeklyMenusForAthlete, createWeeklyMenu, getDietsForAthlete,
-  getAthleteDietConfig, getAthleteNutritionConfig, getOnboarding, getRecipeFavorites, getRecipes,
+  getAthleteDietConfig, getAthleteNutritionConfig, getOnboarding, getRecipeFavorites, getReglasDeReceta, getRecipes,
   queryRecetasForGenerator, getFoodItems, createNotificationDeduped,
 } from '../dbService';
 import { generateWeek, slotsFromOnboarding, recipeMatchesSlot, type GeneratorPrefs } from '../utils/menuEngine';
@@ -34,6 +34,9 @@ export async function generarMenuSiToca(athleteEmail: string, coachId: string, c
     getDietsForAthlete(athleteEmail), getAthleteDietConfig(athleteEmail), getAthleteNutritionConfig(athleteEmail),
     getOnboarding(athleteEmail), getRecipeFavorites(athleteEmail), getRecipes({ ownerId: coachId }), getFoodItems(),
   ]);
+  // Lo que el coach ha escondido a este atleta. Sin lectura posible (red, permisos)
+  // se genera sin reglas: un menú sin ellas es mejor que ninguno.
+  const reglas = await getReglasDeReceta(athleteEmail);
   const schedule = dietConfig?.weeklySchedule ?? {};
   if (!Object.values(schedule).some(Boolean)) return null;
 
@@ -56,6 +59,7 @@ export async function generarMenuSiToca(athleteEmail: string, coachId: string, c
     dislikedRecipeIds: favoritos.dislikedIds ?? [],
     preferredDishTypes: (nutritionConfig?.preferredDishTypes ?? onboarding?.preferredDishTypes ?? []) as DishType[],
     excludedDishTypes: (nutritionConfig?.excludedDishTypes ?? onboarding?.excludedDishTypes ?? []) as DishType[],
+    recetasOcultas: reglas.reglas,
   };
   const pools: Record<number, Recipe[]> = {};
   for (const slot of Array.from(new Set<number>(slots.map(s => s.slot)))) {
