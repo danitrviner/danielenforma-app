@@ -48,10 +48,20 @@ export interface FiltroDeLista {
   ingrediente: string;
   /** `con`: la receta lleva ese ingrediente; `sin`: no lo lleva. */
   modoIngrediente: 'con' | 'sin';
+  /** Intolerancias / condiciones (códigos del recetario): solo recetas aptas para TODAS las marcadas. */
+  condiciones: number[];
+  /** Según los alimentos del propio atleta: las que llevan alguno que le gusta o alguno que no. */
+  alimentos: '' | 'gustan' | 'no_gustan';
+}
+
+/** Los alimentos que el atleta dijo en el alta, para el filtro `alimentos`. */
+export interface AlimentosDelAtleta {
+  gustan: string[];
+  noGustan: string[];
 }
 
 export const FILTRO_VACIO: FiltroDeLista = {
-  texto: '', categoria: '', tiempo: '', ingrediente: '', modoIngrediente: 'con',
+  texto: '', categoria: '', tiempo: '', ingrediente: '', modoIngrediente: 'con', condiciones: [], alimentos: '',
 };
 
 export const TOPES_DE_TIEMPO: { value: TopeDeTiempo; label: string }[] = [
@@ -83,12 +93,15 @@ function pasaTiempo(r: Recipe, tope: TopeDeTiempo): boolean {
 }
 
 /** Aplica los filtros de la lista del coach. No altera el orden. */
-export function filtrarLista(recetas: Recipe[], f: FiltroDeLista): Recipe[] {
+export function filtrarLista(recetas: Recipe[], f: FiltroDeLista, alimentos?: AlimentosDelAtleta): Recipe[] {
   const ingrediente = f.ingrediente.trim();
+  const lista = f.alimentos === 'gustan' ? alimentos?.gustan : f.alimentos === 'no_gustan' ? alimentos?.noGustan : undefined;
   return recetas.filter(r => {
     if (f.texto.trim() && !coincideBusqueda(r.name, f.texto.trim())) return false;
     if (f.categoria && !encajaCategoria(r, f.categoria)) return false;
     if (!pasaTiempo(r, f.tiempo)) return false;
+    if (f.condiciones.length > 0 && violatesHealthConditions(r, f.condiciones)) return false;
+    if (f.alimentos && !(lista ?? []).some(a => ingredientMatch(r, a))) return false;
     if (ingrediente) {
       const lleva = ingredientMatch(r, ingrediente);
       if (f.modoIngrediente === 'con' ? !lleva : lleva) return false;

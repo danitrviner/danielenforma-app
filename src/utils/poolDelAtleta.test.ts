@@ -56,3 +56,31 @@ describe('filtrarLista y categoriasDe', () => {
     expect(etiquetaDeTiempo({})).toBe('Sin tiempo');
   });
 });
+
+describe('filtrarLista · intolerancias y alimentos del atleta', () => {
+  // Un código en `restrictions` significa «NO apta para esa condición».
+  const apta = r('apta', { restrictions: [55] } as Partial<Recipe>);
+  const noCeliaca = r('noCeliaca', { restrictions: [66] } as Partial<Recipe>);
+  const noLactosa = r('noLactosa', { restrictions: [87] } as Partial<Recipe>);
+  const sinDato = r('sinDato');
+  const atun = r('atun', { restrictions: [66], ingredientsText: [{ name: 'Atún', quantity: 80 }] } as Partial<Recipe>);
+  const brocoli = r('brocoli', { restrictions: [66], ingredientsText: [{ name: 'Brócoli', quantity: 100 }] } as Partial<Recipe>);
+  const ids = (l: Recipe[]) => l.map(x => x.id);
+
+  it('apta para una condición: quita las que la prohíben y las que no tienen el dato', () => {
+    const f = { ...FILTRO_VACIO, condiciones: [66] };
+    expect(ids(filtrarLista([apta, noCeliaca, noLactosa, sinDato], f))).toEqual(['apta', 'noLactosa']);
+  });
+  it('apta para varias condiciones a la vez', () => {
+    const f = { ...FILTRO_VACIO, condiciones: [66, 87] };
+    expect(ids(filtrarLista([apta, noCeliaca, noLactosa], f))).toEqual(['apta']);
+  });
+  it('por alimentos del atleta: los que le gustan y los que no', () => {
+    const alim = { gustan: ['atun'], noGustan: ['brocoli'] };
+    expect(ids(filtrarLista([atun, brocoli], { ...FILTRO_VACIO, alimentos: 'gustan' }, alim))).toEqual(['atun']);
+    expect(ids(filtrarLista([atun, brocoli], { ...FILTRO_VACIO, alimentos: 'no_gustan' }, alim))).toEqual(['brocoli']);
+  });
+  it('sin lista de alimentos, el filtro de alimentos no devuelve nada (no inventa)', () => {
+    expect(filtrarLista([atun], { ...FILTRO_VACIO, alimentos: 'gustan' })).toEqual([]);
+  });
+});

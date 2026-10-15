@@ -3,11 +3,12 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { AthleteNutritionConfig, OnboardingData, Recipe, WeekDay } from '../types';
 import { cargarIndiceRecetas, getRecipeFavorites, saveReglasDeReceta } from '../dbService';
 import { reglasDeRecetaKey, useReglasDeReceta } from '../hooks/useReglasDeReceta';
-import { athleteConditions } from '../utils/dietaryRestrictions';
+import { athleteConditions, HEALTH_CONDITIONS, restrictionLabel } from '../utils/dietaryRestrictions';
 import { dietTypeVigente } from '../utils/foodPrefs';
 import { dishType, dishTypeLabel, type DishType } from '../utils/dishTypes';
 import {
-  poolDelAtleta, filtrarLista, categoriasDe, FILTRO_VACIO, TOPES_DE_TIEMPO, type FiltroDeLista,
+  poolDelAtleta, filtrarLista, categoriasDe, FILTRO_VACIO, TOPES_DE_TIEMPO,
+  type FiltroDeLista, type AlimentosDelAtleta,
 } from '../utils/poolDelAtleta';
 import { etiquetaDeTiempo } from '../utils/tiempoDeReceta';
 import { useConfirm } from '../hooks/useConfirm';
@@ -35,6 +36,47 @@ interface Props {
   onboarding: OnboardingData | null;
   nutritionConfig: AthleteNutritionConfig | null;
 }
+
+const TONOS = {
+  excluido: 'border-danger/50 text-danger bg-danger/10',
+  evitado: 'border-warning/50 text-warning bg-warning/10',
+  preferido: 'border-accent-line text-accent-ink bg-accent/10',
+} as const;
+
+const GrupoDeAlimentos: React.FC<{
+  titulo: string;
+  ayuda: string;
+  tono: keyof typeof TONOS;
+  items: string[];
+  onElegir?: (alimento: string) => void;
+}> = ({ titulo, ayuda, tono, items, onElegir }) => (
+  <div>
+    <p className="font-sans text-label font-bold text-ink">
+      {titulo} <span className="font-mono text-caption font-normal text-ink-3">· {items.length}</span>
+    </p>
+    <p className="font-mono text-caption text-ink-3 mb-1.5">{ayuda}</p>
+    {items.length === 0 ? (
+      <p className="font-sans text-label text-ink-3">Nada indicado.</p>
+    ) : (
+      <ul className="m-0 p-0 list-none flex flex-wrap gap-1.5">
+        {items.map(a => (
+          <li key={a}>
+            {onElegir ? (
+              <button
+                type="button"
+                onClick={() => onElegir(a)}
+                className={`min-h-[32px] px-2.5 rounded-chip border font-sans text-caption ${TONOS[tono]} hover:brightness-125`}
+                aria-label={`Ver recetas con ${a}`}
+              >{a}</button>
+            ) : (
+              <span className={`inline-flex items-center min-h-[32px] px-2.5 rounded-chip border font-sans text-caption ${TONOS[tono]}`}>{a}</span>
+            )}
+          </li>
+        ))}
+      </ul>
+    )}
+  </div>
+);
 
 const Fila: React.FC<{
   receta: Recipe;
@@ -138,6 +180,16 @@ export default function ReglasDeRecetasPanel({ athleteEmail, onboarding, nutriti
 
   const porId = useMemo(() => new Map(reglas.map(r => [r.recipeId, r])), [reglas]);
 
+  // Lo que el atleta dijo en el alta: se enseña (para no tener que abrir su
+  // ficha) y se puede usar como filtro.
+  const alimentos: AlimentosDelAtleta = useMemo(() => ({
+    gustan: onboarding?.likedFoods ?? [],
+    noGustan: onboarding?.dislikedFoods ?? [],
+  }), [onboarding]);
+  const alergias = onboarding?.allergies ?? [];
+  const condicionesDelAtleta = useMemo(() => athleteConditions(onboarding), [onboarding]);
+  const [verAlimentos, setVerAlimentos] = useState(false);
+
   const guardar = useMutation({
     mutationFn: (siguientes: ReglaDeReceta[]) => saveReglasDeReceta({ athleteId: athleteEmail, reglas: siguientes }),
     onMutate: async siguientes => {
@@ -158,8 +210,8 @@ export default function ReglasDeRecetasPanel({ athleteEmail, onboarding, nutriti
 
   const lista = useMemo(() => {
     const escondidasPrimero = [...pool].sort((a, b) => Number(porId.has(b.id)) - Number(porId.has(a.id)));
-    return filtrarLista(escondidasPrimero, filtro).filter(r => !soloEscondidas || porId.has(r.id));
-  }, [pool, porId, soloEscondidas, filtro]);
+    return filtrarLista(escondidasPrimero, filtro, alimentos).filter(r => !soloEscondidas || porId.has(r.id));
+  }, [pool, porId, soloEscondidas, filtro, alimentos]);
 
   // Esconder o permitir TODAS las que se ven con los filtros puestos: «todo lo
   // que lleve atún», «todas las de más de 30 minutos». Una sola escritura.
@@ -198,6 +250,47 @@ export default function ReglasDeRecetasPanel({ athleteEmail, onboarding, nutriti
           <p className="font-mono text-caption text-ink-2">
             {pool.length.toLocaleString('es-ES')} en su pool · {reglas.length} {reglas.length === 1 ? 'escondida' : 'escondidas'}
           </p>
+
+          <div className="border border-hairline rounded-surface">
+            <button
+              type="button"
+              onClick={() => setVerAlimentos(v => !v)}
+              aria-expanded={verAlimentos}
+              className="w-full flex items-center justify-between gap-2 px-3 min-h-[44px] text-left"
+            >
+              <span className="font-sans text-label font-bold text-ink">
+                Lo que excluye y prefiere este atleta
+                <span className="ml-2 font-mono text-caption font-normal text-ink-3">
+                  {(indice.length - pool.length).toLocaleString('es-ES')} recetas fuera por sus restricciones
+                </span>
+              </span>
+              <Icon name="expand_more" size="s" className={`text-ink-2 transition-transform ${verAlimentos ? 'rotate-180' : ''}`} />
+            </button>
+            {verAlimentos && (
+              <div className="px-3 pb-3 space-y-3 border-t border-hairline pt-3">
+                <GrupoDeAlimentos
+                  titulo="Excluido siempre"
+                  ayuda="Alergias, intolerancias y condiciones: el generador nunca se los pone."
+                  tono="excluido"
+                  items={[...condicionesDelAtleta.map(restrictionLabel), ...alergias]}
+                />
+                <GrupoDeAlimentos
+                  titulo="No le gustan"
+                  ayuda="El generador los evita mientras queden recetas suficientes. Toca uno para ver qué recetas lo llevan."
+                  tono="evitado"
+                  items={alimentos.noGustan}
+                  onElegir={a => cambiarFiltro({ ingrediente: a, modoIngrediente: 'con' })}
+                />
+                <GrupoDeAlimentos
+                  titulo="Le gustan"
+                  ayuda="Suben en el orden de las recetas. Toca uno para ver qué recetas lo llevan."
+                  tono="preferido"
+                  items={alimentos.gustan}
+                  onElegir={a => cambiarFiltro({ ingrediente: a, modoIngrediente: 'con' })}
+                />
+              </div>
+            )}
+          </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
             <input
@@ -246,6 +339,44 @@ export default function ReglasDeRecetasPanel({ athleteEmail, onboarding, nutriti
               onChange={v => cambiarFiltro({ tiempo: v as FiltroDeLista['tiempo'] })}
               options={TOPES_DE_TIEMPO}
             />
+            <Select
+              label="Según sus alimentos"
+              value={filtro.alimentos}
+              onChange={v => cambiarFiltro({ alimentos: v as FiltroDeLista['alimentos'] })}
+              options={[
+                { value: '', label: 'Cualquiera' },
+                { value: 'gustan', label: 'Llevan algo que le gusta' },
+                { value: 'no_gustan', label: 'Llevan algo que NO le gusta' },
+              ]}
+            />
+          </div>
+
+          <div>
+            <p className="font-mono text-caption text-ink-3 mb-1.5">
+              Apta para (solo las que valen para todas las marcadas)
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {HEALTH_CONDITIONS.map(c => {
+                const on = filtro.condiciones.includes(c.code);
+                const suya = condicionesDelAtleta.includes(c.code);
+                return (
+                  <button
+                    key={c.code}
+                    type="button"
+                    onClick={() => cambiarFiltro({
+                      condiciones: on ? filtro.condiciones.filter(x => x !== c.code) : [...filtro.condiciones, c.code],
+                    })}
+                    aria-pressed={on}
+                    title={suya ? 'Ya la tiene: su pool ya cumple esta condición' : c.help}
+                    className={`min-h-[32px] px-2.5 rounded-chip border font-sans text-caption transition-colors ${
+                      on ? 'border-accent bg-accent/15 text-ink' : 'border-hairline text-ink-2 hover:text-ink'
+                    }`}
+                  >
+                    {c.label}{suya ? ' · suya' : ''}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
