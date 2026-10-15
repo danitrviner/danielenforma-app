@@ -696,6 +696,7 @@ export default function ClientHub({
           setAthletePhotoAssignments={setAthletePhotoAssignments}
           athleteQResponses={athleteQResponses}
           coachQuestionnaires={coachQuestionnaires}
+          bodyweightLogs={bodyweightLogs}
         />
       );
 

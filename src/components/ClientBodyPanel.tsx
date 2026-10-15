@@ -1,7 +1,7 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import {
-  UserProfile, ProgressPhoto, PhotoView, PhotoAssignment,
-  Questionnaire, QuestionnaireResponse,
+  UserProfile, ProgressPhoto, PhotoAssignment,
+  Questionnaire, QuestionnaireResponse, BodyweightLog,
 } from '../types';
 import { deactivatePhotoAssignment } from '../dbService';
 import { scheduleLabel } from '../utils/scheduleEngine';
@@ -12,7 +12,7 @@ import { Skeleton } from './ui';
 import BodyweightPanel from './BodyweightPanel';
 import BodyMeasurementsPanel from './BodyMeasurementsPanel';
 import QuestionnaireChartsPanel from './QuestionnaireChartsPanel';
-import PhotoCompareCurtain from './progress/PhotoCompareCurtain';
+import ComparadorFotos from './revision/ComparadorFotos';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    ClientBodyPanel (reorganización del Hub — pestaña "Cuerpo", zona "Atleta")
@@ -31,15 +31,15 @@ interface Props {
   setAthletePhotoAssignments: React.Dispatch<React.SetStateAction<PhotoAssignment[]>>;
   athleteQResponses: QuestionnaireResponse[];
   coachQuestionnaires: Questionnaire[];
+  bodyweightLogs?: BodyweightLog[];
 }
 
 export default function ClientBodyPanel({
   athlete, athletePhotos, loadingPhotos, athletePhotoAssignments, setAthletePhotoAssignments,
-  athleteQResponses, coachQuestionnaires,
+  athleteQResponses, coachQuestionnaires, bodyweightLogs = [],
 }: Props) {
   const { showToast } = useToast();
 
-  const [selectedView, setSelectedView] = useState<PhotoView>('front');
   const irp = useMemo(
     () => computeIRP({ responses: athleteQResponses, questionnaires: coachQuestionnaires }),
     [athleteQResponses, coachQuestionnaires],
@@ -49,14 +49,6 @@ export default function ClientBodyPanel({
     await deactivatePhotoAssignment(id).catch(err => { console.error(err); showToast('No se pudo desactivar el check-in de fotos.'); });
     setAthletePhotoAssignments(prev => prev.map(a => a.id === id ? { ...a, active: false } : a));
   };
-
-  const viewPhotos = athletePhotos
-    .filter(p => p.view === selectedView && p.athleteId === athlete.email && !!p.date)
-    .sort((a, b) => a.date.localeCompare(b.date));
-  const baseline = viewPhotos[0];
-  const latest   = viewPhotos[viewPhotos.length - 1];
-  const fmtDate  = (d: string) =>
-    new Date(d + 'T12:00:00').toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: '2-digit' });
 
   return (
     <div className="space-y-6">
@@ -70,19 +62,6 @@ export default function ClientBodyPanel({
               <span className="font-mono text-caption text-ink-2">({athletePhotos.length} fotos)</span>
             )}
           </h3>
-          <div className="flex bg-raised rounded-control ">
-            {([
-              { id: 'front', label: 'Frente'   },
-              { id: 'side',  label: 'Lateral'  },
-              { id: 'back',  label: 'Espalda'  },
-            ] as { id: PhotoView; label: string }[]).map(v => (
-              <button
-                key={v.id}
-                onClick={() => setSelectedView(v.id)}
-                className={`px-3 py-1 rounded-control font-sans text-caption font-bold uppercase transition-all tracking-wider ${selectedView === v.id ? 'bg-accent text-on-accent' : 'text-ink-2 hover:text-ink'}`}
-              >{v.label}</button>
-            ))}
-          </div>
         </div>
         {loadingPhotos ? (
           <div className="p-3 grid grid-cols-3 gap-2">
@@ -90,41 +69,9 @@ export default function ClientBodyPanel({
             <Skeleton className="aspect-square w-full" />
             <Skeleton className="aspect-square w-full" />
           </div>
-        ) : viewPhotos.length === 0 ? (
-          <div className="p-10 text-center">
-            <span className="material-symbols-outlined text-display text-ink-3 block mb-2">photo_camera</span>
-            <p className="font-sans text-label text-ink-2">Sin fotos todavía.</p>
-          </div>
         ) : (
           <div className="p-3 bg-bg/90">
-            {viewPhotos.length === 1 ? (
-              <div className="relative rounded-surface overflow-hidden border border-accent/20 group max-w-[240px] mx-auto">
-                {/* Sin z-index explícito: al llevar la misma cifra (10) que
-                    `--z-sticky` del nav de zonas de ClientHub.tsx, y sin que
-                    este contenedor `relative` abra su propio contexto de
-                    apilamiento (no tiene z-index propio), el badge competía
-                    en el MISMO contexto que ese nav — empate a 10 lo gana
-                    quien va después en el DOM, y esto va después. Rastreo
-                    móvil 17-08: por eso tapaba las pestañas Ficha/Cuerpo al
-                    hacer scroll. z-index:auto ya pinta por encima de la
-                    <img> hermana sin necesidad de competir con nada global. */}
-                <div className="absolute top-2 left-2 bg-accent text-on-accent px-3 rounded-control font-sans text-caption font-bold">
-                  Actual · {fmtDate(latest.date)}
-                </div>
-                <img className="w-full h-[280px] object-cover object-top group-hover:scale-105 transition-all duration-500" src={latest.url} alt="Actual" />
-              </div>
-            ) : (
-              <PhotoCompareCurtain
-                antes={baseline}
-                ahora={latest}
-                badge={`${Math.max(1, Math.round((new Date(latest.date).getTime() - new Date(baseline.date).getTime()) / (7 * 86_400_000)))} SEMANAS`}
-              />
-            )}
-            {viewPhotos.length > 2 && (
-              <p className="text-center font-mono text-caption text-ink-2 mt-2">
-                {viewPhotos.length} fotos — mostrando baseline y más reciente
-              </p>
-            )}
+            <ComparadorFotos photos={athletePhotos} athleteEmail={athlete.email} bodyweightLogs={bodyweightLogs} />
           </div>
         )}
 

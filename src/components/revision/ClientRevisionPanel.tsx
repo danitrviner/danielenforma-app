@@ -434,7 +434,7 @@ export default function ClientRevisionPanel({
 
         {/* Va el último porque es la conclusión: los bloques de arriba son la
             prueba, y este es lo que se le dice. */}
-        <Seccion titulo="Qué le digo">
+        <Seccion titulo="Cierre de la revisión">
           <BloqueCierre
             athleteEmail={athlete.email}
             athleteName={athlete.displayName}

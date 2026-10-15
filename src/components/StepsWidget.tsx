@@ -8,7 +8,7 @@ import { todayStr } from '../utils/questionnaireSchedule';
 import { DEFAULT_KCAL_PER_STEP } from '../utils/nutritionConstants';
 import { isHealthStepsSupported, isHealthStepsLinked, linkHealthSteps, getTodaySteps } from '../services/healthSteps';
 import { Skeleton } from './ui';
-import { Icon, Button } from './ui';
+import { Icon, Button, Sheet } from './ui';
 import { useCifraQueSube } from '../hooks/useCifraQueSube';
 
 interface Props {
@@ -157,60 +157,75 @@ export default function StepsWidget({ athleteEmail, compacto = false }: Props) {
     const Envoltorio = (linked ? 'div' : 'button') as React.ElementType;
     /* Sin vincular Y sin nada apuntado hoy, la tarjeta NO enseña «0 / 8.000»:
        un cero es un hueco con forma de dato y encima desanima justo a quien
-       menos ha andado. Se convierte en la invitación a conectarlo, y mide lo
-       mismo de alto para que la pantalla no pegue un salto el día que lo haga
-       (Dani, 10-09-2026). */
-    if (!linked && steps === 0) {
-      return (
-        <button
-          onClick={healthSupported ? handleLink : () => { setInput(''); setEditing(true); }}
-          className="text-left bg-surface border border-dashed border-strong rounded-surface p-4 flex flex-col gap-2 hover:border-accent-line transition-colors duration-(--duration-state)"
-        >
-          <p className="font-mono text-caption uppercase tracking-wider text-ink-2">Pasos</p>
-          <Icon name="directions_walk" size="l" className="text-ink-3" />
-          <p className="font-sans text-body-s font-bold text-ink leading-snug">
-            {healthSupported ? 'Conéctalo con Salud' : 'Apunta los de hoy'}
-          </p>
-          <p className="font-mono text-caption text-ink-4 leading-snug">
-            {healthSupported ? 'Se actualizan solos' : 'Sin báscula ni pulsera'}
-          </p>
-        </button>
-      );
-    }
-    /* Vinculado a Salud, la tarjeta no se edita: los pasos los manda el
-       teléfono. Se pinta como un `div`, no como un botón deshabilitado — un
-       botón que no responde parece roto, sobre todo en móvil, donde no hay
-       `hover` que delate que no es pulsable. */
+       menos ha andado. Enseña el OBJETIVO de hoy, apagado, con la barra vacía
+       y la invitación debajo; mide lo mismo que la tarjeta con datos para que
+       la pantalla no pegue un salto el día que los haya. Antes era una tarjeta
+       de puro texto que en la web (sin Salud) no decía nada del objetivo
+       (Dani, 15-10-2026). */
+    const vacio = !linked && steps === 0;
+    const alTocar = vacio && healthSupported
+      ? handleLink
+      : () => { setInput(steps ? String(steps) : ''); setEditing(true); };
     return (
-      <Envoltorio
-        {...(linked ? {} : { onClick: () => { setInput(String(steps)); setEditing(true); } })}
-        aria-label={`Pasos de hoy: ${steps.toLocaleString('es-ES')} de ${goal.toLocaleString('es-ES')}.${
-          remaining > 0 ? ` Te faltan ${remaining.toLocaleString('es-ES')}.` : ' Objetivo cumplido.'
-        }${linked ? '' : ' Pulsa para editarlos.'}`}
-        className={`text-left bg-surface border border-hairline rounded-surface p-4 flex flex-col gap-2 transition-colors duration-(--duration-state)${
-          linked ? '' : ' hover:border-strong'
-        }`}
-      >
-        <p className="font-mono text-caption uppercase tracking-wider text-accent-ink flex items-center gap-1.5">
-          Pasos
-          {linked && <Icon name="check_circle" size="s" className="text-success" label="Vinculado con Salud" />}
-        </p>
-        <p className="font-mono font-bold text-feature text-ink tracking-tight leading-none tabular-nums">
-          {Math.round(pasosAnimados).toLocaleString('es-ES')}
-        </p>
-        <div className="h-[26px] flex items-center">
-          <div className="h-1.5 w-full bg-track rounded-full overflow-hidden">
-            <div
-              className="h-full bg-accent rounded-full transition-all duration-(--duration-slide)"
-              style={{ width: `${pct}%` }}
-            />
+      <>
+        <Envoltorio
+          {...(linked ? {} : { onClick: alTocar })}
+          aria-label={vacio
+            ? `Pasos de hoy: objetivo ${goal.toLocaleString('es-ES')}. ${healthSupported ? 'Pulsa para conectarlo con Salud.' : 'Pulsa para apuntar los de hoy.'}`
+            : `Pasos de hoy: ${steps.toLocaleString('es-ES')} de ${goal.toLocaleString('es-ES')}.${
+                remaining > 0 ? ` Te faltan ${remaining.toLocaleString('es-ES')}.` : ' Objetivo cumplido.'
+              }${linked ? '' : ' Pulsa para editarlos.'}`}
+          className={`text-left bg-surface border rounded-surface p-4 flex flex-col gap-2 transition-colors duration-(--duration-state) ${
+            vacio ? 'border-dashed border-strong hover:border-accent-line' : linked ? 'border-hairline' : 'border-hairline hover:border-strong'
+          }`}
+        >
+          <p className="font-mono text-caption uppercase tracking-wider text-accent-ink flex items-center gap-1.5">
+            {vacio ? 'Pasos · objetivo' : 'Pasos'}
+            {linked && <Icon name="check_circle" size="s" className="text-success" label="Vinculado con Salud" />}
+          </p>
+          <p className={`font-mono font-bold text-feature tracking-tight leading-none tabular-nums ${vacio ? 'text-ink-3' : 'text-ink'}`}>
+            {vacio ? goal.toLocaleString('es-ES') : Math.round(pasosAnimados).toLocaleString('es-ES')}
+          </p>
+          <div className="h-[26px] flex items-center">
+            <div className="h-1.5 w-full bg-track rounded-full overflow-hidden">
+              <div
+                className="h-full bg-accent rounded-full transition-all duration-(--duration-slide)"
+                style={{ width: `${pct}%` }}
+              />
+            </div>
           </div>
-        </div>
-        <p className="font-mono text-caption text-ink-4 leading-snug">
-          de {goal.toLocaleString('es-ES')}
-          {remaining > 0 ? ` · faltan ${remaining.toLocaleString('es-ES')}` : ' · cumplido'}
-        </p>
-      </Envoltorio>
+          <p className="font-mono text-caption text-ink-4 leading-snug">
+            {vacio
+              ? (healthSupported ? 'Conéctalo con Salud' : 'Toca y apunta los de hoy')
+              : <>de {goal.toLocaleString('es-ES')}{remaining > 0 ? ` · faltan ${remaining.toLocaleString('es-ES')}` : ' · cumplido'}</>}
+          </p>
+        </Envoltorio>
+        {/* Antes el toque ponía `editing` a true pero esta rama nunca pintaba el
+            campo (solo la versión grande lo hacía): en la web la tarjeta no
+            respondía. */}
+        <Sheet
+          open={editing && !linked}
+          onClose={() => setEditing(false)}
+          title="Pasos de hoy"
+          size="s"
+          footer={<Button onClick={handleSave} loading={saving} icon="check" label="Guardar" />}
+        >
+          <input
+            type="number"
+            inputMode="numeric"
+            min={0}
+            max={100000}
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') handleSave(); }}
+            placeholder="0"
+            autoFocus
+            aria-label="Pasos de hoy"
+            className="w-full bg-raised border border-hairline rounded-control px-3 py-2 text-ink font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-accent"
+          />
+          <p className="mt-2 font-mono text-caption text-ink-3">Objetivo de hoy: {goal.toLocaleString('es-ES')}</p>
+        </Sheet>
+      </>
     );
   }
 
