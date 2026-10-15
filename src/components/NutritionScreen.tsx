@@ -1,3 +1,5 @@
+import { useReglasDeReceta } from '../hooks/useReglasDeReceta';
+import { recetaPermitida } from '../utils/reglasDeReceta';
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { minutosDeReceta } from '../utils/tiempoDeReceta';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -825,6 +827,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
   // respetar. Las alergias y el tipo de dieta son filtros DUROS — antes solo
   // los aplicaba "Cambiar comida"; el resto de listas (este picker, el
   // recetario) no miraban nada de esto.
+  const recetasOcultas = useReglasDeReceta(profile.email);
   const swapPrefs: AlternativePrefs = useMemo(() => ({
     allergies:         onboarding?.allergies ?? [],
     conditions:        athleteConditions(onboarding),
@@ -838,7 +841,8 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     dislikedRecipeIds: recipeFavorites.dislikedIds ?? [],
     preferredDishTypes: (nutConfig?.preferredDishTypes ?? onboarding?.preferredDishTypes ?? []) as DishType[],
     excludedDishTypes:  (nutConfig?.excludedDishTypes  ?? onboarding?.excludedDishTypes  ?? []) as DishType[],
-  }), [onboarding, nutConfig, recipeFavorites]);
+    recetasOcultas,
+  }), [onboarding, nutConfig, recipeFavorites, recetasOcultas]);
 
   // Un tipo de plato excluido es una decisión explícita del atleta en sus
   // preferencias, igual de firme que una alergia: faltaba aquí, así que los
@@ -848,8 +852,10 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     !swapPrefs.allergies!.some(f => ingredientMatch(r, f)) &&
     !violatesHealthConditions(r, swapPrefs.conditions) &&
     !swapPrefs.dislikedRecipeIds!.includes(r.id) &&
+    // Escondida por el coach: para hoy, que es el día que el atleta está planificando.
+    recetaPermitida(r.id, swapPrefs.recetasOcultas, [diaSemanaDe(hoyFecha)]) &&
     !(swapPrefs.excludedDishTypes ?? []).includes(dishType(r)) &&
-    !violatesDietType(r, swapPrefs.dietType), [swapPrefs]);
+    !violatesDietType(r, swapPrefs.dietType), [swapPrefs, hoyFecha]);
 
   /** Lo que el atleta ha pedido, primero: sus favoritas y después los tipos de
    *  plato que marcó querer más. Dentro de cada grupo, por nombre. */
@@ -984,11 +990,12 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     if (!swapSourceRecipe || swapPool.length === 0) return [];
     return findRecipeAlternatives(swapSourceRecipe, swapPool, {
       prefs: swapPrefs,
+      dias: [diaSemanaDe(viewDate)],
       intakeType: swapContext?.slot,
       search: swapSearch.trim() || undefined,
       limit: 40,
     });
-  }, [swapSourceRecipe, swapPool, swapPrefs, swapContext?.slot, swapSearch]);
+  }, [swapSourceRecipe, swapPool, swapPrefs, swapContext?.slot, swapSearch, viewDate]);
 
   // Pestañas de tipo de plato: el atleta que no quiere otro batido necesita ver
   // de un vistazo qué otras familias hay disponibles, no rebuscar en la lista.

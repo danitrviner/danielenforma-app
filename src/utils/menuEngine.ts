@@ -1,3 +1,4 @@
+import { recetasOcultas, type ReglaDeReceta } from './reglasDeReceta';
 import {
   Recipe, MealItem, Diet, WeekDay, DietType, DietMode, FoodCategory,
   BudgetVec, MenuDay, MenuMeal, MenuComplement, MenuRacionExtra, HungerProfile,
@@ -103,6 +104,8 @@ export interface GeneratorPrefs {
   dislikedRecipeIds?: string[];  // hard-excluded ("no me gusta")
   preferredDishTypes?: DishType[]; // strong bonus for these dish types
   excludedDishTypes?: DishType[];  // hard-excluded dish types
+  /** Recetas que el COACH esconde a este atleta, en todos o en algunos días. */
+  recetasOcultas?: ReglaDeReceta[];
 }
 
 export interface MenuCandidate {
@@ -334,6 +337,8 @@ function pesosPorCategoria(target: BudgetVec): BudgetVec {
 
 
 export interface RankOptions {
+  /** Días a los que sirve la elección: una receta escondida en cualquiera de ellos no sale. */
+  dias?: WeekDay[];
   needsTupper?: boolean;
   /** Se está eligiendo para cocinar una vez y comer durante la semana. Distinto
    *  de `needsTupper`, que solo dice que ESA comida se la lleva de casa: aquí
@@ -367,8 +372,10 @@ export function rankCandidates(
   const excludedDish = new Set(prefs.excludedDishTypes ?? []);
   const preferredDish = new Set(prefs.preferredDishTypes ?? []);
 
+  const ocultasPorElCoach = recetasOcultas(prefs.recetasOcultas, opts.dias);
   const permitidas = pool.filter(r =>
     !disliked.has(r.id) &&
+    !ocultasPorElCoach.has(r.id) &&
     !excludedDish.has(dishType(r)) &&
     !prefs.allergies.some(f => ingredientMatch(r, f)) &&
     !violatesHealthConditions(r, prefs.conditions) &&
@@ -859,7 +866,7 @@ export function generateDay(args: GenerateDayArgs): MenuDay {
     // a propósito para dejar hueco a los acompañamientos: es al revés — la
     // receta tiene que cubrir prácticamente todo y el acompañamiento es un
     // comodín de dos o tres puntos (Dani, 2026-09-05).
-    const ranked = rankCandidates(pool, objetivoFranja, prefs, usedIds, { needsTupper: slot.needsTupper, mode, usedDishTypes: dishTypes });
+    const ranked = rankCandidates(pool, objetivoFranja, prefs, usedIds, { needsTupper: slot.needsTupper, mode, usedDishTypes: dishTypes, dias: [day] });
     const pick = ranked[0];
     const id = `${day}_m${i + 1}`;
     if (!pick) return emptyMeal(id, slot);
@@ -911,12 +918,16 @@ function generateWeekBatch(args: GenerateWeekArgs): MenuDay[] {
     .map(day => (schedule[day] ? dietsById.get(schedule[day]!) ?? null : null))
     .filter((d): d is Diet => d != null);
 
+  // Una receta se cocina para TODOS los días con dieta: si el coach la esconde
+  // en cualquiera de ellos, no vale para la tanda.
+  const diasDeLaTanda = WEEK_DAYS.filter(d => !!schedule[d]);
+
   // One fixed recipe per slot, chosen against the average slot target.
   const usedAcrossSlots = new Set<string>();
   const slotRecipe: (Recipe | null)[] = slots.map((slot, i) => {
     const slotTargetsAcrossDays = scheduledDiets.map(d => slotTargets(dietBudgetVec(d), slots)[i]);
     const repTarget = avgVec(slotTargetsAcrossDays);
-    const ranked = rankCandidates(pools[slot.slot] ?? [], repTarget, prefs, usedAcrossSlots, { needsTupper: slot.needsTupper, batch: true, mode });
+    const ranked = rankCandidates(pools[slot.slot] ?? [], repTarget, prefs, usedAcrossSlots, { needsTupper: slot.needsTupper, batch: true, mode, dias: diasDeLaTanda });
     const pick = ranked[0]?.recipe ?? null;
     if (pick) usedAcrossSlots.add(pick.id);
     return pick;
@@ -940,7 +951,7 @@ function generateWeekBatch(args: GenerateWeekArgs): MenuDay[] {
         if (fit) return buildMeal(id, slot, fixed, fit.scale, fit.exch);
       }
       // Fixed recipe can't scale to this day's target — pick a one-off for this day.
-      const ranked = rankCandidates(pools[slot.slot] ?? [], targets[i], prefs, new Set(), { needsTupper: slot.needsTupper, batch: true, mode });
+      const ranked = rankCandidates(pools[slot.slot] ?? [], targets[i], prefs, new Set(), { needsTupper: slot.needsTupper, batch: true, mode, dias: [day] });
       const pick = ranked[0];
       return pick ? buildMeal(id, slot, pick.recipe, pick.scale, pick.exch) : emptyMeal(id, slot);
     });
@@ -1166,7 +1177,7 @@ export function findSwapAlternatives(
   // en su mismo sentido.
 
   const graded: SwapCandidate[] = [];
-  for (const c of rankCandidates(pool, mealTarget, prefs, usedIds, { mode })) {
+  for (const c of rankCandidates(pool, mealTarget, prefs, usedIds, { mode, dias: [day.day] })) {
     // La receta nueva recibe sus propias raciones extra para cubrir lo que le
     // falte a la comida, igual que hizo el generador con la original.
     const hueco: BudgetVec = {

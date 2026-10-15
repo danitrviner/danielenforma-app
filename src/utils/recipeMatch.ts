@@ -1,4 +1,5 @@
-import type { Recipe, BudgetVec, DietType, FoodCategory } from '../types';
+import type { Recipe, BudgetVec, DietType, FoodCategory, WeekDay } from '../types';
+import { recetasOcultas, type ReglaDeReceta } from './reglasDeReceta';
 import { superaElTiempo } from './tiempoDeReceta';
 import { ingredientMatch, violatesDietType } from './foodPrefs';
 import { violatesHealthConditions } from './dietaryRestrictions';
@@ -81,6 +82,8 @@ export interface AlternativePrefs {
   preferredDishTypes?: DishType[];
   /** Señal blanda: prima las Rápidas (pidió recetas de supervivencia). */
   quiereRapidas?: boolean;
+  /** Filtro duro: recetas que el COACH esconde a este atleta (todos o algunos días). */
+  recetasOcultas?: ReglaDeReceta[];
 }
 
 export interface AlternativeOptions {
@@ -97,6 +100,8 @@ export interface AlternativeOptions {
   limit?: number;
   /** Repartir el resultado entre tipos de plato distintos. Por defecto sí. */
   diversify?: boolean;
+  /** Día(s) al que sirve la alternativa; sin él, solo cuentan las reglas de «todos los días». */
+  dias?: WeekDay[];
   /** Texto de búsqueda libre sobre el nombre. */
   search?: string;
   /** Solo recetas aptas para tupper. */
@@ -152,6 +157,7 @@ export function findRecipeAlternatives(
     diversify = true,
     search,
     onlyTupper,
+    dias,
   } = options;
 
   const sourceExch = recipeExchanges(source);
@@ -163,6 +169,7 @@ export function findRecipeAlternatives(
   const excludedDish = new Set(prefs.excludedDishTypes ?? []);
   const preferredDish = new Set(prefs.preferredDishTypes ?? []);
   const allergies = prefs.allergies ?? [];
+  const ocultasPorElCoach = recetasOcultas(prefs.recetasOcultas, dias);
   const nSearch = search ? norm(search) : null;
 
   const scored: RecipeAlternative[] = [];
@@ -176,6 +183,7 @@ export function findRecipeAlternatives(
     if (allergies.some(f => ingredientMatch(r, f))) continue;
     if (violatesHealthConditions(r, prefs.conditions)) continue;
     if (disliked.has(r.id)) continue;
+    if (ocultasPorElCoach.has(r.id)) continue;
     if (violatesDietType(r, prefs.dietType)) continue;
     if (superaElTiempo(r, prefs.cookingMaxTime)) continue;
     if (!matchesIntake(r, intakeType)) continue;

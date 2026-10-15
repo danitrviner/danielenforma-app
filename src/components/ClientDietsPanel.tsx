@@ -1,3 +1,4 @@
+import ReglasDeRecetasPanel from './ReglasDeRecetasPanel';
 import React, { useState, useMemo, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -336,6 +337,15 @@ export default function ClientDietsPanel({
             }
           />
         </div>
+      )}
+
+      {/* Recetas que el coach esconde a este atleta */}
+      {subView === 'info' && (
+        <ReglasDeRecetasPanel
+          athleteEmail={athlete.email}
+          onboarding={onboardingData}
+          nutritionConfig={nutritionConfig}
+        />
       )}
 
       {/* Weekly schedule grid */}

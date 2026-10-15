@@ -1,3 +1,4 @@
+import { useReglasDeReceta } from '../hooks/useReglasDeReceta';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -155,6 +156,7 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
   const scheduledCount = WEEK_DAYS.filter(d => schedule[d]).length;
   const pctSum = slots.reduce((s, sl) => s + sl.pct, 0);
 
+  const recetasOcultas = useReglasDeReceta(athleteEmail);
   const prefs: GeneratorPrefs = useMemo(() => ({
     allergies: onboarding?.allergies ?? [],
     conditions: athleteConditions(onboarding),
@@ -170,7 +172,8 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
     dislikedRecipeIds: favorites.dislikedIds ?? [],
     preferredDishTypes: preferredDish as DishType[],
     excludedDishTypes: excludedDish as DishType[],
-  }), [onboarding, nutritionConfig, variety, favorites, preferredDish, excludedDish]);
+    recetasOcultas,
+  }), [onboarding, nutritionConfig, variety, favorites, preferredDish, excludedDish, recetasOcultas]);
 
   function cycleDishType(id: string) {
     if (preferredDish.includes(id)) { setPreferredDish(p => p.filter(x => x !== id)); setExcludedDish(e => [...e, id]); }

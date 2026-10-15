@@ -396,6 +396,15 @@ service cloud.firestore {
       allow read, write: if isCoach() || isOwnerEmail(email);
     }
 
+    // ── athleteRecipeRules (docId = email) ───────────────────────────────────
+    // Recetas que el coach esconde a un atleta (utils/reglasDeReceta.ts). El
+    // atleta lo LEE para que su menú y su buscador respeten el filtro, pero no
+    // lo puede escribir: es una decisión del coach.
+    match /athleteRecipeRules/{email} {
+      allow read: if isCoach() || isOwnerEmail(email);
+      allow write: if isCoach();
+    }
+
     // ── cambiosAtleta (athleteId = EMAIL) ────────────────────────────────────
     // Historial de lo que el coach ha cambiado a un atleta. Solo el coach: el
     // atleta no lo lee ni lo escribe (db/cambios.ts, widgets de Revisión).

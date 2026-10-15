@@ -1,5 +1,6 @@
 import { db, collection, doc, getDoc, setDoc, getDocs, addDoc, updateDoc, deleteDoc, query, where } from '../firebase';
 import { Recipe, RecipeFavorites } from '../types';
+import type { ReglasDeReceta } from '../utils/reglasDeReceta';
 import { forceLocalOnly, setLocalBypassMode, stripUndefined, esFalloDePermisos } from './core';
 import { OWNER_RECETARIO, OWNER_RECETARIO_TODOS, hidratarEntradaIndice, encajaCategoria, type FiltroRapidas } from './recetasHidratacion';
 import { escribirLocal } from '../utils/almacenLocal';
@@ -241,6 +242,34 @@ export async function deleteRecipe(id: string): Promise<void> {
     if (esFalloDePermisos(err)) throw err;
     setLocalRecipes(filtered);
   }
+}
+
+// ─── REGLAS DE RECETA DEL COACH ───────────────────────────────────────────────
+// Doc id = email del atleta. Lo escribe solo el coach (firestore.rules); el
+// atleta lo LEE para que sus pantallas apliquen el filtro. Sin copia local a
+// propósito: es una decisión del coach y una copia vieja escondería recetas que
+// ya se han vuelto a permitir.
+
+export async function getReglasDeReceta(athleteEmail: string): Promise<ReglasDeReceta> {
+  const vacio: ReglasDeReceta = { athleteId: athleteEmail, reglas: [] };
+  if (forceLocalOnly) return vacio;
+  try {
+    const snap = await getDoc(doc(db, 'athleteRecipeRules', athleteEmail));
+    return snap.exists() ? { ...vacio, ...(snap.data() as Partial<ReglasDeReceta>) } : vacio;
+  } catch (err) {
+    // Un fallo de lectura no puede dejar al atleta sin menú: sin reglas, se
+    // genera con el pool normal. Se avisa, no se calla.
+    console.warn('getReglasDeReceta failed:', err);
+    return vacio;
+  }
+}
+
+export async function saveReglasDeReceta(reglas: ReglasDeReceta): Promise<void> {
+  if (forceLocalOnly) return;
+  await setDoc(
+    doc(db, 'athleteRecipeRules', reglas.athleteId),
+    stripUndefined({ ...reglas, updatedAt: new Date().toISOString() }),
+  );
 }
 
 // ─── RECIPE FAVORITES ─────────────────────────────────────────────────────────
