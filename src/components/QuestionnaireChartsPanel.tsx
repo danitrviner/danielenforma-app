@@ -9,6 +9,8 @@ import {
   ALTURA_GRAFICA, MARGEN_GRAFICA, ANCHO_EJE_Y, REJILLA_GRAFICA, TICK_GRAFICA, EJE_GRAFICA,
 } from './ui';
 import { weekKey } from '../utils/seriesCorrelation';
+import { agujetasPorGrupo, esSerieDeAgujetas } from '../utils/agujetasConjuntas';
+import AgujetasConjuntasChart from './AgujetasConjuntasChart';
 
 interface Props {
   questionnaires: Questionnaire[];
@@ -23,16 +25,7 @@ interface Props {
   ocultarDoms?: boolean;
 }
 
-/** Una serie de agujetas: por `signalKey` (`doms.<grupo>`) en los
- *  cuestionarios nuevos, y por el título en los que se crearon antes de que
- *  existieran las señales. */
-export function esSerieDeAgujetas(question: QuestionnaireQuestion, qTitle: string): boolean {
-  if (question.signalKey?.startsWith('doms.')) return true;
-  // Con `\b`: sin los límites de palabra, "dom's" casaba dentro de cualquier
-  // palabra que lo contuviera y habría escondido de las gráficas un
-  // cuestionario que no tiene nada que ver con las agujetas.
-  return /\bagujetas\b|\bdom['\u2019]?s\b/i.test(qTitle);
-}
+export { esSerieDeAgujetas };
 
 // ── Data helpers ──────────────────────────────────────────────────────────────
 
@@ -187,13 +180,22 @@ export default function QuestionnaireChartsPanel({ questionnaires, responses, oc
   const [weekly, setWeekly] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
+  // Agujetas de TODOS los grupos en una sola gráfica (solo el coach: al atleta
+  // se le ocultan, ver `ocultarDoms`). Con ella a la vista, las series sueltas
+  // de agujetas dejan de ofrecerse en el selector.
+  const agujetas = useMemo(
+    () => (ocultarDoms ? [] : agujetasPorGrupo(questionnaires, responses)),
+    [questionnaires, responses, ocultarDoms],
+  );
+  const hayAgujetasConjuntas = agujetas.length > 0;
+
   // Collect all graphable questions that have at least one numeric answer
   const graphable = useMemo(() => {
     const result: { question: QuestionnaireQuestion; qTitle: string }[] = [];
     for (const q of questionnaires) {
       for (const question of q.questions) {
         if (question.type !== 'numeric' && question.type !== 'scale') continue;
-        if (ocultarDoms && esSerieDeAgujetas(question, q.title)) continue;
+        if ((ocultarDoms || hayAgujetasConjuntas) && esSerieDeAgujetas(question, q.title)) continue;
         const hasData = responses.some(r =>
           r.answers.some(a => a.questionId === question.id && typeof a.value === 'number')
         );
@@ -201,7 +203,7 @@ export default function QuestionnaireChartsPanel({ questionnaires, responses, oc
       }
     }
     return result;
-  }, [questionnaires, responses, ocultarDoms]);
+  }, [questionnaires, responses, ocultarDoms, hayAgujetasConjuntas]);
 
   /* Una sola gráfica con selector, no una rejilla con todas. El cuestionario
      de agujetas solo ya trae 14 zonas (cuádriceps, pectoral, trapecio…): con
@@ -234,9 +236,23 @@ export default function QuestionnaireChartsPanel({ questionnaires, responses, oc
     return [...map.entries()];
   }, [graphable]);
 
-  if (graphable.length === 0 || !selected) return null;
+  if (!hayAgujetasConjuntas && (graphable.length === 0 || !selected)) return null;
 
   return (
+    <div className="space-y-6">
+      {hayAgujetasConjuntas && (
+        <div className="space-y-3">
+          <h3 className="font-sans font-bold text-title-s text-ink flex items-center gap-2">
+            <Icon name="show_chart" size="m" className="text-accent-ink" />
+            Agujetas
+            <span className="font-mono text-caption text-ink-2 font-normal">
+              {agujetas.length} grupo{agujetas.length !== 1 ? 's' : ''}
+            </span>
+          </h3>
+          <AgujetasConjuntasChart series={agujetas} />
+        </div>
+      )}
+      {graphable.length > 0 && selected && (
     <div className="space-y-4">
       {/* Header + toggle */}
       <div className="flex items-center justify-between flex-wrap gap-2">
@@ -290,6 +306,8 @@ export default function QuestionnaireChartsPanel({ questionnaires, responses, oc
         </p>
         <QuestionChart question={selected.question} responses={responses} weekly={agregado} />
       </div>
+    </div>
+      )}
     </div>
   );
 }
