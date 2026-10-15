@@ -23,6 +23,11 @@ export function novedadesPendientes(
   return alta ? sinVer.filter(n => n.fecha > alta) : sinVer;
 }
 
+/** Cuántas se enseñan de golpe en la ventana de Inicio. Un atleta que lleva
+ *  semanas sin abrir la app no debe recibir un muro de seis tarjetas: ve las
+ *  más recientes y el resto queda en Perfil › Ajustes › Qué hay de nuevo. */
+export const MAX_EN_VENTANA = 3;
+
 /** El id que hay que guardar al cerrar la ventana: el de la más reciente. */
 export function idMasReciente(novedades: Novedad[]): string | undefined {
   return novedades[0]?.id;

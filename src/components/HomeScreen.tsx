@@ -10,7 +10,7 @@ import PendingTasksPanel from './PendingTasksPanel';
 import SolicitudConsentimientoIA from './SolicitudConsentimientoIA';
 import NovedadesSheet from './NovedadesSheet';
 import { NOVEDADES } from '../data/novedades';
-import { idMasReciente, novedadesPendientes } from '../utils/novedades';
+import { idMasReciente, novedadesPendientes, MAX_EN_VENTANA } from '../utils/novedades';
 import { debePedirseConsentimiento, haSidoAplazado, marcarAplazado } from '../ai/consentimientoIA';
 import StepsWidget from './StepsWidget';
 import TarjetaPeso from './home/TarjetaPeso';
@@ -241,7 +241,12 @@ export default function HomeScreen({ profile, checkins, onNavigate, onProfileCha
         <SolicitudConsentimientoIA onboarding={onboarding} onAhoraNo={aplazar} />
       )}
 
-      <NovedadesSheet open={mostrarNovedades} onClose={cerrarNovedades} novedades={novedadesSinVer} />
+      <NovedadesSheet
+        open={mostrarNovedades}
+        onClose={cerrarNovedades}
+        novedades={novedadesSinVer.slice(0, MAX_EN_VENTANA)}
+        hayMas={novedadesSinVer.length > MAX_EN_VENTANA}
+      />
 
       <PageHeader
         title={`Hola, ${profile.displayName?.split(' ')[0] || 'de nuevo'}`}

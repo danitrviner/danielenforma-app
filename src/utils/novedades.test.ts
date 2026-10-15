@@ -29,3 +29,23 @@ describe('novedadesPendientes', () => {
     expect(idMasReciente([])).toBeUndefined();
   });
 });
+
+import { MAX_EN_VENTANA } from './novedades';
+import { NOVEDADES } from '../data/novedades';
+
+describe('datos de novedades', () => {
+  it('ids únicos, fechas válidas y de la más reciente a la más antigua', () => {
+    expect(new Set(NOVEDADES.map(n => n.id)).size).toBe(NOVEDADES.length);
+    for (const n of NOVEDADES) {
+      expect(n.fecha).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      expect(Number.isNaN(Date.parse(n.fecha))).toBe(false);
+      expect(n.puntos.length).toBeGreaterThan(0);
+    }
+    const fechas = NOVEDADES.map(n => n.fecha);
+    expect(fechas).toEqual([...fechas].sort().reverse());
+  });
+  it('la ventana enseña un tope razonable', () => {
+    expect(MAX_EN_VENTANA).toBeGreaterThan(0);
+    expect(MAX_EN_VENTANA).toBeLessThan(5);
+  });
+});

@@ -18,9 +18,11 @@ interface Props {
   open: boolean;
   onClose: () => void;
   novedades: Novedad[];
+  /** Hay más novedades de las que se enseñan aquí: se indica dónde verlas. */
+  hayMas?: boolean;
 }
 
-export default function NovedadesSheet({ open, onClose, novedades }: Props) {
+export default function NovedadesSheet({ open, onClose, novedades, hayMas = false }: Props) {
   return (
     <Sheet
       open={open}
@@ -52,6 +54,11 @@ export default function NovedadesSheet({ open, onClose, novedades }: Props) {
               </ul>
             </section>
           ))}
+          {hayMas && (
+            <p className="font-mono text-caption text-ink-3">
+              Hay más novedades anteriores en Perfil › Ajustes › Qué hay de nuevo.
+            </p>
+          )}
         </div>
       )}
     </Sheet>
