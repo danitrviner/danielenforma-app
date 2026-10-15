@@ -6,13 +6,16 @@ import { reglasDeRecetaKey, useReglasDeReceta } from '../hooks/useReglasDeReceta
 import { athleteConditions } from '../utils/dietaryRestrictions';
 import { dietTypeVigente } from '../utils/foodPrefs';
 import { dishType, dishTypeLabel, type DishType } from '../utils/dishTypes';
-import { poolDelAtleta } from '../utils/poolDelAtleta';
-import { coincideBusqueda } from '../utils/busqueda';
+import {
+  poolDelAtleta, filtrarLista, categoriasDe, FILTRO_VACIO, TOPES_DE_TIEMPO, type FiltroDeLista,
+} from '../utils/poolDelAtleta';
+import { etiquetaDeTiempo } from '../utils/tiempoDeReceta';
+import { useConfirm } from '../hooks/useConfirm';
 import {
   DIAS_SEMANA, conRegla, etiquetaDeDias, type ReglaDeReceta,
 } from '../utils/reglasDeReceta';
 import { useToast } from '../hooks/useToast';
-import { Icon, Skeleton } from './ui';
+import { Icon, Skeleton, Select } from './ui';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Recetas de este atleta (Dietas › Info)
@@ -56,7 +59,9 @@ const Fila: React.FC<{
           <p className={`font-sans text-label font-bold truncate ${escondida ? 'text-ink-3 line-through' : 'text-ink'}`}>
             {receta.name}
           </p>
-          <p className="font-mono text-caption text-ink-3 truncate">{dishTypeLabel(dishType(receta))}</p>
+          <p className="font-mono text-caption text-ink-3 truncate">
+            {receta.categoria ?? dishTypeLabel(dishType(receta))} · <span className="text-ink-2">{etiquetaDeTiempo(receta)}</span>
+          </p>
         </div>
         <button
           type="button"
@@ -102,9 +107,15 @@ export default function ReglasDeRecetasPanel({ athleteEmail, onboarding, nutriti
   const queryClient = useQueryClient();
   const { showToast } = useToast();
   const reglas = useReglasDeReceta(athleteEmail);
-  const [busqueda, setBusqueda] = useState('');
+  const { confirm, ConfirmDialog } = useConfirm();
+  const [filtro, setFiltro] = useState<FiltroDeLista>(FILTRO_VACIO);
   const [soloEscondidas, setSoloEscondidas] = useState(false);
   const [visibles, setVisibles] = useState(POR_PAGINA);
+  const cambiarFiltro = (parcial: Partial<FiltroDeLista>) => {
+    setFiltro(f => ({ ...f, ...parcial }));
+    setVisibles(POR_PAGINA);
+  };
+  const hayFiltro = JSON.stringify(filtro) !== JSON.stringify(FILTRO_VACIO) || soloEscondidas;
 
   const { data: indice = [], isPending: cargandoIndice } = useQuery({
     queryKey: ['recetarioIndice'],
@@ -143,12 +154,25 @@ export default function ReglasDeRecetasPanel({ athleteEmail, onboarding, nutriti
     onSettled: () => queryClient.invalidateQueries({ queryKey: reglasDeRecetaKey(athleteEmail) }),
   });
 
+  const categorias = useMemo(() => categoriasDe(pool), [pool]);
+
   const lista = useMemo(() => {
     const escondidasPrimero = [...pool].sort((a, b) => Number(porId.has(b.id)) - Number(porId.has(a.id)));
-    return escondidasPrimero.filter(r =>
-      (!soloEscondidas || porId.has(r.id)) && coincideBusqueda(r.name, busqueda.trim()),
-    );
-  }, [pool, porId, soloEscondidas, busqueda]);
+    return filtrarLista(escondidasPrimero, filtro).filter(r => !soloEscondidas || porId.has(r.id));
+  }, [pool, porId, soloEscondidas, filtro]);
+
+  // Esconder o permitir TODAS las que se ven con los filtros puestos: «todo lo
+  // que lleve atún», «todas las de más de 30 minutos». Una sola escritura.
+  const aplicarALasVisibles = async (esconder: boolean) => {
+    const ids = new Set<string>(lista.map(r => r.id));
+    const verbo = esconder ? 'Esconder' : 'Volver a permitir';
+    if (!await confirm(`¿${verbo} las ${ids.size.toLocaleString('es-ES')} recetas que se ven ahora?`)) return;
+    const siguientes = esconder
+      ? [...reglas.filter(r => !ids.has(r.recipeId)), ...[...ids].map(recipeId => ({ recipeId }))]
+      : reglas.filter(r => !ids.has(r.recipeId));
+    guardar.mutate(siguientes);
+  };
+  const visiblesEscondidas = lista.filter(r => porId.has(r.id)).length;
 
   // Las escondidas que ya no están en el pool (la receta se retiró o el atleta
   // cambió de dieta) siguen contando: se pueden volver a permitir desde aquí.
@@ -171,18 +195,60 @@ export default function ReglasDeRecetasPanel({ athleteEmail, onboarding, nutriti
         <Skeleton className="h-40 w-full" />
       ) : (
         <>
-          <div className="flex flex-wrap items-center gap-3">
-            <p className="font-mono text-caption text-ink-2">
-              {pool.length.toLocaleString('es-ES')} en su pool · {reglas.length} {reglas.length === 1 ? 'escondida' : 'escondidas'}
-            </p>
+          <p className="font-mono text-caption text-ink-2">
+            {pool.length.toLocaleString('es-ES')} en su pool · {reglas.length} {reglas.length === 1 ? 'escondida' : 'escondidas'}
+          </p>
+
+          <div className="grid gap-3 sm:grid-cols-2">
             <input
               type="search"
-              value={busqueda}
-              onChange={e => { setBusqueda(e.target.value); setVisibles(POR_PAGINA); }}
-              placeholder="Buscar receta"
-              aria-label="Buscar receta del pool"
-              className="flex-1 min-w-[160px] bg-bg border border-hairline rounded-control px-3 min-h-[44px] font-sans text-base text-ink focus:outline-none focus:border-accent"
+              value={filtro.texto}
+              onChange={e => cambiarFiltro({ texto: e.target.value })}
+              placeholder="Buscar por nombre"
+              aria-label="Buscar receta del pool por nombre"
+              className="bg-bg border border-hairline rounded-control px-3 min-h-[44px] font-sans text-base text-ink focus:outline-none focus:border-accent"
             />
+            <div className="flex gap-2">
+              <input
+                type="search"
+                value={filtro.ingrediente}
+                onChange={e => cambiarFiltro({ ingrediente: e.target.value })}
+                placeholder="Ingrediente (atún, huevo…)"
+                aria-label="Filtrar por ingrediente"
+                className="min-w-0 flex-1 bg-bg border border-hairline rounded-control px-3 min-h-[44px] font-sans text-base text-ink focus:outline-none focus:border-accent"
+              />
+              <div role="group" aria-label="Con o sin ese ingrediente" className="flex flex-shrink-0 border border-hairline rounded-control overflow-hidden">
+                {(['con', 'sin'] as const).map(m => (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => cambiarFiltro({ modoIngrediente: m })}
+                    aria-pressed={filtro.modoIngrediente === m}
+                    className={`px-3 min-h-[44px] font-sans text-caption font-bold uppercase transition-colors ${
+                      filtro.modoIngrediente === m ? 'bg-accent text-on-accent' : 'text-ink-2 hover:text-ink'
+                    }`}
+                  >{m}</button>
+                ))}
+              </div>
+            </div>
+            <Select
+              label="Categoría"
+              value={filtro.categoria}
+              onChange={v => cambiarFiltro({ categoria: v })}
+              options={[
+                { value: '', label: 'Todas las categorías' },
+                ...categorias.map(c => ({ value: c.nombre, label: `${c.nombre} (${c.total.toLocaleString('es-ES')})` })),
+              ]}
+            />
+            <Select
+              label="Tiempo"
+              value={filtro.tiempo}
+              onChange={v => cambiarFiltro({ tiempo: v as FiltroDeLista['tiempo'] })}
+              options={TOPES_DE_TIEMPO}
+            />
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
               onClick={() => { setSoloEscondidas(v => !v); setVisibles(POR_PAGINA); }}
@@ -191,6 +257,34 @@ export default function ReglasDeRecetasPanel({ athleteEmail, onboarding, nutriti
                 soloEscondidas ? 'bg-accent text-on-accent border-accent' : 'border-hairline text-ink-2 hover:text-ink'
               }`}
             >Solo escondidas</button>
+            {hayFiltro && (
+              <button
+                type="button"
+                onClick={() => { setFiltro(FILTRO_VACIO); setSoloEscondidas(false); setVisibles(POR_PAGINA); }}
+                className="min-h-[44px] px-3 font-mono text-caption text-ink-2 hover:text-ink"
+              >Quitar filtros</button>
+            )}
+            {hayFiltro && lista.length > 0 && (
+              <span className="ml-auto flex flex-wrap items-center gap-2">
+                <span className="font-mono text-caption text-ink-3">{lista.length.toLocaleString('es-ES')} a la vista</span>
+                {lista.length > visiblesEscondidas && (
+                  <button
+                    type="button"
+                    onClick={() => aplicarALasVisibles(true)}
+                    disabled={guardar.isPending}
+                    className="min-h-[44px] px-3 rounded-control border border-warning text-warning font-sans text-caption font-bold uppercase disabled:opacity-50"
+                  >Esconder las que se ven</button>
+                )}
+                {visiblesEscondidas > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => aplicarALasVisibles(false)}
+                    disabled={guardar.isPending}
+                    className="min-h-[44px] px-3 rounded-control border border-hairline text-ink-2 hover:text-ink font-sans text-caption font-bold uppercase disabled:opacity-50"
+                  >Permitir las que se ven</button>
+                )}
+              </span>
+            )}
           </div>
 
           {huerfanas.length > 0 && (
@@ -206,7 +300,7 @@ export default function ReglasDeRecetasPanel({ athleteEmail, onboarding, nutriti
 
           {lista.length === 0 ? (
             <p className="font-sans text-label text-ink-3 py-4">
-              {soloEscondidas ? 'No has escondido ninguna receta.' : 'Ninguna receta coincide con esa búsqueda.'}
+              {soloEscondidas && !hayFiltro ? 'No has escondido ninguna receta.' : 'Ninguna receta coincide con esos filtros.'}
             </p>
           ) : (
             <ul className="m-0 p-0 list-none">
@@ -233,6 +327,7 @@ export default function ReglasDeRecetasPanel({ athleteEmail, onboarding, nutriti
           )}
         </>
       )}
+      <ConfirmDialog />
     </div>
   );
 }

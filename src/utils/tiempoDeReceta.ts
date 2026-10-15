@@ -69,3 +69,14 @@ export function superaElTiempo(recipe: Pick<Recipe, 'cookingTime'>, maxMinutos?:
   if (estimado && maxMinutos <= MAX_MIN_SOLO_RAPIDAS) return true;
   return minutos > maxMinutos;
 }
+
+/**
+ * «10 min», «~20 min» o «Sin tiempo» para enseñárselo al coach. La virgulilla
+ * marca que son minutos ESTIMADOS a partir del índice del recetario (ver más
+ * arriba), no los que declara la propia receta.
+ */
+export function etiquetaDeTiempo(recipe: Pick<Recipe, 'cookingTime'>): string {
+  const min = minutosDeReceta(recipe);
+  if (min == null) return 'Sin tiempo';
+  return (recipe.cookingTime ?? 0) <= MAX_INDICE ? `~${min} min` : `${min} min`;
+}
