@@ -68,17 +68,19 @@ export default function OrdenDelCiclo({
         </button>
       </div>
 
-      {sesiones.length > 1 && (
+      {new Set(sesiones.map(se => se.tipo)).size > 1 && (
         <div className="flex items-center gap-1.5 flex-wrap">
           <span className="font-sans text-caption text-ink-3">Empezar por</span>
-          {sesiones.map(({ tipo, dia }, k) => (
+          {/* Un botón por TIPO de sesión (la primera vez que sale): con un
+              ciclo de 14 días habría tres «Tirón» iguales. */}
+          {sesiones.filter((se, k) => sesiones.findIndex(o => o.tipo === se.tipo) === k).map(({ tipo, dia }) => (
             <button
               key={dia}
               type="button"
               onClick={() => onEmpezarPor(dia)}
-              aria-pressed={k === 0}
+              aria-pressed={tipo === sesiones[0].tipo}
               className={`px-2.5 py-1 rounded-full border font-sans text-caption transition-colors ${
-                k === 0
+                tipo === sesiones[0].tipo
                   ? 'bg-accent/10 border-accent text-accent-ink'
                   : 'bg-raised border-hairline text-ink-2 hover:border-accent/40 hover:text-ink'
               }`}

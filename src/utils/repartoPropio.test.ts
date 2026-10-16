@@ -192,3 +192,15 @@ describe('duración del ciclo con reparto propio', () => {
     expect(offsetsDelMesociclo(meso)).toEqual([0, 1, 3]);
   });
 });
+
+describe('runDistribution exacto (reparto de la calculadora)', () => {
+  it('cada grupo va a TODAS sus sesiones con las series a partes iguales', () => {
+    const g = grupos({ pecho: 9, dorsal: 12 });
+    // Ciclo de 14 días: pecho 3 veces (1,5×), dorsal 4 (2×).
+    const sesiones: MuscleGroup[][] = [['pecho'], ['dorsal'], ['pecho'], ['dorsal'], ['pecho', 'dorsal'], ['dorsal']];
+    const { days } = runDistribution(g, 6, undefined, { cicloDias: 14, offsets: [0, 2, 4, 7, 9, 11] }, sesiones, true);
+    const de = (grupo: MuscleGroup) => days.map(d => d.assignments.find(a => a.group === grupo)?.series ?? 0);
+    expect(de('pecho')).toEqual([6, 0, 6, 0, 6, 0]);
+    expect(de('dorsal')).toEqual([0, 6, 0, 6, 6, 6]);
+  });
+});

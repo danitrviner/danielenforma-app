@@ -69,7 +69,7 @@ export const SERIES_POR_DIA_TOPE = 23;
 const SERIES_POR_DIA_AVISO = 12;
 
 /** Series por sesión y grupo que tiene sentido acumular sin caer en trabajo basura. */
-const SERIES_POR_SESION = 8;
+export const SERIES_POR_SESION = 8;
 
 const FACTOR_INTENT: Record<VolumeIntent, number> = {
   conservador: 0.85,

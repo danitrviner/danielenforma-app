@@ -366,6 +366,14 @@ export function runDistribution(
    * reparto propio con días que no son ninguno de la lista.
    */
   gruposPorSesion?: MuscleGroup[][],
+  /**
+   * Con `true`, cada grupo va a TODAS las sesiones que lo llevan y sus series
+   * se reparten a partes iguales entre ellas. Es lo que pide un reparto salido
+   * de la calculadora de frecuencias: el coach ya decidió cuántas veces se
+   * toca cada grupo, la distribución no tiene que volver a decidirlo por
+   * volumen («series ÷ 6»).
+   */
+  exacto = false,
 ): { days: DayPlan[]; overloadAlert: boolean } {
   const days: DayPlan[] = Array.from({ length: sesiones }, (_, i) => ({
     assignments: [], totalSeries: 0, dayType: dayTypes?.[i],
@@ -399,6 +407,18 @@ export function runDistribution(
 
   for (const group of active) {
     const candidates = allowedDays(group);
+    const enSuReparto = !!gruposPorSesion && candidates.some(i => gruposPorSesion[i]?.includes(group));
+    if (exacto && enSuReparto) {
+      const totalCiclo = Math.round(groups[group].series * semanas);
+      splitEvenly(totalCiclo, candidates.length).forEach((chunk, k) => {
+        if (chunk <= 0) return;
+        const d = candidates[k];
+        days[d].assignments.push({ group, series: chunk });
+        days[d].totalSeries += chunk;
+      });
+      placedOn[group] = [...candidates];
+      continue;
+    }
     // Volumen del CICLO: la configuración es semanal, así que un ciclo de dos
     // semanas mueve el doble de series. Es lo que hace que la vuelta entera
     // cuadre con lo que el coach pidió por semana.

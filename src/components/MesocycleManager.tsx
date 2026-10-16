@@ -44,8 +44,11 @@ import {
 } from '../utils/trainingSplits';
 import {
   aplicarReordenacionAlMeso, nuevoIndiceDeSesion, ajustarDiasDelReparto, quitarDescanso, sinMoverSesiones,
+  camposDeCalendario,
 } from '../utils/reordenarMeso';
 import OrdenDelCiclo from './mesociclo/OrdenDelCiclo';
+import CalculadoraRepartoSheet from './mesociclo/CalculadoraRepartoSheet';
+import type { OpcionDeReparto } from '../utils/calculadoraReparto';
 import { zoneLabel, heatmapBg, heatmapText, VOLUME_ZONE_LEGEND, GENERIC_LANDMARK } from '../utils/volumeZones';
 import { VOLUME_LANDMARKS_DEFAULT, type VolumeLandmark } from '../data/volumeLandmarks';
 import { getVolumeLandmarks } from '../dbService';
@@ -2169,22 +2172,25 @@ export default function MesocycleManager({
     scheduleAutoSave(updated);
   };
 
+  // La distribución de un mesociclo tal y como está ahora (reparto, calendario
+  // y volumen). Recibe el meso en vez de leer `editing` para poder usarse justo
+  // después de cambiarlo, antes de que el estado se haya actualizado.
+  const distribucionPara = (meso: Mesocycle): WeekDistribution => {
+    const reparto = repartoDelMesociclo(meso);
+    const result = runDistribution(
+      meso.groups,
+      meso.daysPerWeek,
+      reparto ? tiposDeEntrenamiento(reparto) : undefined,
+      { cicloDias: cicloDiasDeMeso(meso), offsets: offsetsDelMesociclo(meso) },
+      reparto ? gruposPorSesion(reparto) : undefined,
+      !!meso.reparto?.frecuencias,
+    );
+    return { ...result, snapshot: buildSnapshot(meso), generatedAt: new Date().toISOString() };
+  };
+
   const handleGenerateDistribution = () => {
     if (!editing) return;
-    const reparto = repartoDelMesociclo(editing);
-    const result = runDistribution(
-      editing.groups,
-      editing.daysPerWeek,
-      reparto ? tiposDeEntrenamiento(reparto) : undefined,
-      { cicloDias, offsets: offsetsCiclo },
-      reparto ? gruposPorSesion(reparto) : undefined,
-    );
-    const distribution: WeekDistribution = {
-      ...result,
-      snapshot: buildSnapshot(editing),
-      generatedAt: new Date().toISOString(),
-    };
-    const updated = { ...editing, distribution };
+    const updated = { ...editing, distribution: distribucionPara(editing) };
     setEditing(updated);
     scheduleAutoSave(updated);
     setGenPhase('idle');
@@ -3045,6 +3051,27 @@ export default function MesocycleManager({
     sincronizarFechasDelAtleta(updated, rutinasCuadran ? perm.map(o => sesiones[o]) : sesiones);
   };
 
+  // «Usar este reparto» en la calculadora: queda como reparto propio, con su
+  // calendario, y la distribución se recalcula ya (exacta: cada grupo en sus
+  // días). Las rutinas que hubiera no se tocan: si ya no cuadran, la pestaña
+  // lo avisa y se generan de nuevo.
+  const [showCalculadora, setShowCalculadora] = useState(false);
+  const usarRepartoCalculado = (opcion: OpcionDeReparto) => {
+    if (!editing) return;
+    const base: Mesocycle = {
+      ...editing,
+      reparto: opcion.reparto,
+      ...camposDeCalendario(opcion.reparto),
+      // Los nombres puestos a mano eran de las sesiones de antes.
+      nombresSesion: undefined,
+    };
+    const updated: Mesocycle = { ...base, distribution: distribucionPara(base) };
+    setEditing(updated);
+    scheduleAutoSave(updated);
+    setShowCalculadora(false);
+    showToast('Reparto aplicado y distribución recalculada.', 'success');
+  };
+
   // «Duración del split» con un reparto propio: alarga o acorta con descansos
   // al final. Si acortar cortaría una sesión, ese reparto ya no cabe y se suelta.
   const cambiarDuracionCiclo = (dias: number | undefined) => {
@@ -3464,6 +3491,36 @@ export default function MesocycleManager({
                             Entrenamiento prediseñado: {editing.days!.length} días · {editing.days!.reduce((s, d) => s + d.exercises.length, 0)} ejercicios. El generador los usará en vez de auto-sugerir.
                           </p>
                         </div>
+                      )}
+
+                      {/* Calculadora: del «quiero el pecho a 1,5 y el dorsal a 2» a
+                          repartos concretos que lo cumplen. */}
+                      <div className="flex items-center justify-between gap-3 flex-wrap rounded-surface border border-hairline bg-raised px-3 py-2.5">
+                        <div className="min-w-0">
+                          <p className="font-sans text-label text-ink">
+                            {editing.reparto ? `Reparto propio: ${editing.reparto.nombre}` : '¿Sabes cuántas veces quieres tocar cada grupo?'}
+                          </p>
+                          <p className="font-sans text-caption text-ink-3">
+                            {editing.reparto?.frecuencias
+                              ? 'Calculado por frecuencias. Puedes recalcularlo o reordenar sus días abajo.'
+                              : 'Pon la frecuencia de cada grupo y los días, y la app te propone repartos que la cumplen.'}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setShowCalculadora(true)}
+                          className="flex items-center gap-2 px-3 py-2 bg-accent/10 border border-accent/40 text-accent-ink font-sans text-label font-bold rounded-control hover:bg-accent/20 transition-colors"
+                        >
+                          <Icon name="calculate" size="s" />
+                          Calcular por frecuencias
+                        </button>
+                      </div>
+                      {showCalculadora && (
+                        <CalculadoraRepartoSheet
+                          editing={editing}
+                          onClose={() => setShowCalculadora(false)}
+                          onUsar={usarRepartoCalculado}
+                        />
                       )}
 
                       {/* Reparto de días — plantillas Torso/Pierna/Push/Pull filtradas por daysPerWeek */}

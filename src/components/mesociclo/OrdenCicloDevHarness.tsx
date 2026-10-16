@@ -1,12 +1,13 @@
 import React, { useMemo, useState } from 'react';
 import { Mesocycle, MuscleGroup, MuscleGroupConfig, MUSCLE_ORDER, MUSCLE_LABELS_SHORT, RepartoPropio } from '../../types';
-import { SegmentedControl } from '../ui';
+import { SegmentedControl, Button } from '../ui';
 import OrdenDelCiclo from './OrdenDelCiclo';
+import CalculadoraRepartoSheet from './CalculadoraRepartoSheet';
 import {
   TRAINING_SPLITS, repartoDelMesociclo, repartoDesdeCatalogo, moverDiaDelReparto, moverSesionDelReparto, empezarRepartoPor,
   tiposDeEntrenamiento, gruposPorSesion, type Reordenacion,
 } from '../../utils/trainingSplits';
-import { aplicarReordenacionAlMeso, ajustarDiasDelReparto, quitarDescanso, sinMoverSesiones } from '../../utils/reordenarMeso';
+import { aplicarReordenacionAlMeso, ajustarDiasDelReparto, quitarDescanso, sinMoverSesiones, camposDeCalendario } from '../../utils/reordenarMeso';
 import { offsetsDelMesociclo, cicloDiasDeMeso } from '../../utils/asignacionMesociclo';
 import { runDistribution } from '../../utils/programacion';
 import { buildSnapshot, isStale } from '../../utils/repartoDesactualizado';
@@ -24,6 +25,13 @@ function grupos(series: Partial<Record<MuscleGroup, number>>): Record<MuscleGrou
   return Object.fromEntries(MUSCLE_ORDER.map(g => [g, { series: series[g] ?? 0, priority: 'media' }])) as Record<MuscleGroup, MuscleGroupConfig>;
 }
 
+function conDistribucion(base: Mesocycle): Mesocycle {
+  const r = repartoDelMesociclo(base)!;
+  const { days, overloadAlert } = runDistribution(base.groups, base.daysPerWeek, tiposDeEntrenamiento(r),
+    { cicloDias: cicloDiasDeMeso(base), offsets: offsetsDelMesociclo(base) }, gruposPorSesion(r), !!base.reparto?.frecuencias);
+  return { ...base, distribution: { days, overloadAlert, snapshot: buildSnapshot(base), generatedAt: new Date().toISOString() } };
+}
+
 function mesoCon(splitId: string): Mesocycle {
   const split = TRAINING_SPLITS.find(s => s.id === splitId)!;
   const base: Mesocycle = {
@@ -32,16 +40,14 @@ function mesoCon(splitId: string): Mesocycle {
     cycleDays: split.dayTypes.length === 7 ? undefined : split.dayTypes.length, splitId,
     groups: grupos({ pecho: 12, dorsal: 14, trapecio: 8, biceps: 10, triceps: 9, cuadriceps: 12, isquios: 8, gluteo: 8, deltoide_lat: 10 }),
   };
-  const r = repartoDelMesociclo(base)!;
-  const { days, overloadAlert } = runDistribution(base.groups, base.daysPerWeek, tiposDeEntrenamiento(r),
-    { cicloDias: cicloDiasDeMeso(base), offsets: offsetsDelMesociclo(base) }, gruposPorSesion(r));
-  return { ...base, distribution: { days, overloadAlert, snapshot: buildSnapshot(base), generatedAt: new Date().toISOString() } };
+  return conDistribucion(base);
 }
 
 export default function OrdenCicloDevHarness() {
   const [splitId, setSplitId] = useState(SPLITS[0]);
   const [meso, setMeso] = useState<Mesocycle>(() => mesoCon(SPLITS[0]));
   const reparto = useMemo(() => repartoDelMesociclo(meso), [meso]);
+  const [calc, setCalc] = useState(false);
 
   const reordenar = (cambio: (base: RepartoPropio) => Reordenacion) => {
     const catalogo = TRAINING_SPLITS.find(sp => sp.id === meso.splitId);
@@ -60,6 +66,14 @@ export default function OrdenCicloDevHarness() {
           onChange={v => { setSplitId(v); setMeso(mesoCon(v)); }}
           options={SPLITS.map(id => ({ value: id, label: TRAINING_SPLITS.find(s => s.id === id)!.label.split(' (')[0] }))}
         />
+        <Button variant="secondary" icon="calculate" onClick={() => setCalc(true)}>Calcular por frecuencias</Button>
+        {calc && (
+          <CalculadoraRepartoSheet
+            editing={meso}
+            onClose={() => setCalc(false)}
+            onUsar={o => { setMeso(conDistribucion({ ...meso, reparto: o.reparto, ...camposDeCalendario(o.reparto) })); setCalc(false); }}
+          />
+        )}
         {reparto && (
           <OrdenDelCiclo
             dayTypes={reparto.dayTypes}
