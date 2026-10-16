@@ -63,6 +63,9 @@ export {
   getMesocycles, getMesocyclesForAthletes, createMesocycle, updateMesocycle, deleteMesocycle,
   getMesocycleTemplates, createMesocycleTemplate, updateMesocycleTemplate, deleteMesocycleTemplate,
 } from './db/training';
+export {
+  getRepartosGuardados, guardarReparto, renombrarRepartoGuardado, borrarRepartoGuardado, repartoDeGuardado,
+} from './db/repartos';
 
 // ─── CATÁLOGO DE MÁQUINAS + GIMNASIO DEL ATLETA ───────────────────────────────
 // Catálogo publicado = JSON del bundle (src/data/maquinas) + overrides del admin

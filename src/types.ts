@@ -1876,6 +1876,17 @@ export interface RepartoPropio {
   basadoEn?: string;
 }
 
+/**
+ * Un reparto propio guardado en «Mis repartos» (colección `repartosGuardados`)
+ * para reutilizarlo en otros mesociclos. Solo del coach: el atleta nunca lo lee.
+ */
+export interface RepartoGuardado extends RepartoPropio {
+  id: string;
+  /** UID del coach. */
+  ownerId: string;
+  creadoEn: string;
+}
+
 export interface Mesocycle {
   id: string;
   athleteId: string;

@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   MuscleGroup, MuscleGroupConfig, Mesocycle, UserProfile, Workout,
   DayPlan, DayAssignment, WeekDistribution, Exercise, WorkoutExercise, TemplateDay,
-  WorkoutLog, WorkoutAssignment, PhaseType, EventoDeSemana, RepartoPropio,
+  WorkoutLog, WorkoutAssignment, PhaseType, EventoDeSemana, RepartoPropio, RepartoGuardado,
   MUSCLE_LABELS, MUSCLE_LABELS_SHORT, MUSCLE_ORDER, WorkoutTechnique,
 } from '../types';
 import {
@@ -14,6 +14,7 @@ import {
   getUserProfileByEmail, migratePrimaryFocusToMuscleGroup,
   getMesocycleTemplates, createTask, getWorkoutLogs, getWorkoutAssignmentsByMesocycleIds, createMesocycleTemplate,
   getAssignmentsForAthlete, getQuestionnairesByCoach,
+  getRepartosGuardados, guardarReparto, borrarRepartoGuardado, repartoDeGuardado,
 } from '../dbService';
 import ExerciseConfigEditor, { COLUMNAS_FILA } from './ExerciseConfigEditor';
 import RoutinePreview, { PreviewDay, PreviewExercise } from './training/RoutinePreview';
@@ -2022,6 +2023,13 @@ export default function MesocycleManager({
   // no hay motivo para pagar dos queries cada vez que se entra a programar.
   // Mismas queryKeys que ClientHub/MesocycleDashboard: si ya están en caché,
   // esto no lee nada de Firestore.
+  // «Mis repartos»: solo se piden al abrir Distribución.
+  const { data: repartosGuardados = [] } = useQuery({
+    queryKey: ['repartosGuardados', coachId],
+    queryFn: () => getRepartosGuardados(coachId),
+    enabled: editorTab === 'distribution',
+  });
+
   const necesitaLogs = (editorTab === 'cierre' || editorTab === 'exercises' || editorTab === 'draft') && !athleteLogs && !!selectedEmail;
   const { data: logsQuery = [], isPending: logsPending } = useQuery({
     queryKey: ['workoutLogs', selectedEmail],
@@ -3056,20 +3064,53 @@ export default function MesocycleManager({
   // días). Las rutinas que hubiera no se tocan: si ya no cuadran, la pestaña
   // lo avisa y se generan de nuevo.
   const [showCalculadora, setShowCalculadora] = useState(false);
-  const usarRepartoCalculado = (opcion: OpcionDeReparto) => {
+  const aplicarRepartoPropio = (reparto: RepartoPropio, mensaje: string) => {
     if (!editing) return;
     const base: Mesocycle = {
       ...editing,
-      reparto: opcion.reparto,
-      ...camposDeCalendario(opcion.reparto),
+      reparto,
+      ...camposDeCalendario(reparto),
       // Los nombres puestos a mano eran de las sesiones de antes.
       nombresSesion: undefined,
     };
     const updated: Mesocycle = { ...base, distribution: distribucionPara(base) };
     setEditing(updated);
     scheduleAutoSave(updated);
+    showToast(mensaje, 'success');
+  };
+  const usarRepartoCalculado = (opcion: OpcionDeReparto) => {
+    aplicarRepartoPropio(opcion.reparto, 'Reparto aplicado y distribución recalculada.');
     setShowCalculadora(false);
-    showToast('Reparto aplicado y distribución recalculada.', 'success');
+  };
+
+  // «Mis repartos»: guardar el reparto propio con un nombre, usarlo en otro
+  // mesociclo y borrarlo.
+  const [nombreAGuardar, setNombreAGuardar] = useState<string | null>(null);
+  const [guardandoReparto, setGuardandoReparto] = useState(false);
+  const guardarRepartoActual = async () => {
+    if (!editing?.reparto || nombreAGuardar === null) return;
+    setGuardandoReparto(true);
+    try {
+      await guardarReparto(coachId, { ...editing.reparto, nombre: nombreAGuardar });
+      await queryClient.invalidateQueries({ queryKey: ['repartosGuardados', coachId] });
+      setNombreAGuardar(null);
+      showToast('Guardado en Mis repartos.', 'success');
+    } catch (err) {
+      console.error('[guardarRepartoActual]', err);
+      showToast('No se pudo guardar el reparto.', 'error');
+    } finally {
+      setGuardandoReparto(false);
+    }
+  };
+  const borrarRepartoDeLaLista = async (r: RepartoGuardado) => {
+    if (!await confirm(`¿Borrar «${r.nombre}» de Mis repartos? Los mesociclos que ya lo usan no cambian.`)) return;
+    try {
+      await borrarRepartoGuardado(r.id);
+      await queryClient.invalidateQueries({ queryKey: ['repartosGuardados', coachId] });
+    } catch (err) {
+      console.error('[borrarRepartoDeLaLista]', err);
+      showToast('No se pudo borrar el reparto.', 'error');
+    }
   };
 
   // «Duración del split» con un reparto propio: alarga o acorta con descansos
@@ -3506,15 +3547,75 @@ export default function MesocycleManager({
                               : 'Pon la frecuencia de cada grupo y los días, y la app te propone repartos que la cumplen.'}
                           </p>
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => setShowCalculadora(true)}
-                          className="flex items-center gap-2 px-3 py-2 bg-accent/10 border border-accent/40 text-accent-ink font-sans text-label font-bold rounded-control hover:bg-accent/20 transition-colors"
-                        >
-                          <Icon name="calculate" size="s" />
-                          Calcular por frecuencias
-                        </button>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {editing.reparto && nombreAGuardar === null && (
+                            <button
+                              type="button"
+                              onClick={() => setNombreAGuardar(editing.reparto!.nombre)}
+                              className="flex items-center gap-2 px-3 py-2 bg-raised border border-hairline text-ink-2 font-sans text-label font-bold rounded-control hover:text-ink hover:border-strong transition-colors"
+                            >
+                              <Icon name="bookmark_add" size="s" />
+                              Guardar en Mis repartos
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => setShowCalculadora(true)}
+                            className="flex items-center gap-2 px-3 py-2 bg-accent/10 border border-accent/40 text-accent-ink font-sans text-label font-bold rounded-control hover:bg-accent/20 transition-colors"
+                          >
+                            <Icon name="calculate" size="s" />
+                            Calcular por frecuencias
+                          </button>
+                        </div>
+                        {nombreAGuardar !== null && (
+                          <form
+                            className="w-full flex items-end gap-2 flex-wrap"
+                            onSubmit={e => { e.preventDefault(); void guardarRepartoActual(); }}
+                          >
+                            <div className="flex-1 min-w-[200px]">
+                              <Input
+                                label="Nombre en Mis repartos"
+                                value={nombreAGuardar}
+                                onChange={setNombreAGuardar}
+                                placeholder="Ej. PPL pecho 1,5 · 5 días"
+                              />
+                            </div>
+                            <Button type="submit" icon="check" loading={guardandoReparto} disabled={!nombreAGuardar.trim()}>Guardar</Button>
+                            <Button type="button" variant="ghost" onClick={() => setNombreAGuardar(null)}>Cancelar</Button>
+                          </form>
+                        )}
                       </div>
+
+                      {repartosGuardados.length > 0 && (
+                        <div className="space-y-2">
+                          <span className="font-mono text-caption text-ink-2 uppercase tracking-wider">Mis repartos</span>
+                          <div className="flex flex-wrap gap-2">
+                            {repartosGuardados.map(r => {
+                              const sesiones = r.dias.filter(Boolean).length;
+                              return (
+                                <div key={r.id} className="flex items-stretch rounded-control border border-hairline bg-raised hover:border-accent/40 transition-colors">
+                                  <button
+                                    type="button"
+                                    onClick={() => aplicarRepartoPropio(repartoDeGuardado(r), `«${r.nombre}» aplicado y distribución recalculada.`)}
+                                    className="px-3 py-2 text-left font-sans text-label text-ink-2 hover:text-ink flex flex-col items-start gap-0.5"
+                                  >
+                                    <span>{r.nombre}</span>
+                                    <span className="font-mono text-caption opacity-70">{r.dias.length} d · {sesiones} sesiones</span>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => void borrarRepartoDeLaLista(r)}
+                                    aria-label={`Borrar ${r.nombre} de Mis repartos`}
+                                    className="px-2 text-ink-3 hover:text-danger border-l border-hairline transition-colors"
+                                  >
+                                    <Icon name="close" size="s" />
+                                  </button>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
                       {showCalculadora && (
                         <CalculadoraRepartoSheet
                           editing={editing}

@@ -341,3 +341,30 @@ describe('cardio · leer un documento que todavía no existe', () => {
     await assertFails(getDoc(doc(atleta, 'cardioWeeklyGoals', `otro@enforma.com_${SEMANA}`)));
   });
 });
+
+describe('repartosGuardados · «Mis repartos» solo del coach (16-10)', () => {
+  const REPARTO = { nombre: 'PPL', dias: [{ tipo: 'Empuje', grupos: ['pecho'] }, null], ownerId: 'uid-coach', creadoEn: '2026-10-16' };
+
+  it('el coach guarda, lee, renombra y borra', async () => {
+    const coach = env.authenticatedContext('uid-coach', { email: COACH, email_verified: true }).firestore();
+    await assertSucceeds(setDoc(doc(coach, 'repartosGuardados', 'r1'), REPARTO));
+    await assertSucceeds(getDoc(doc(coach, 'repartosGuardados', 'r1')));
+    await assertSucceeds(updateDoc(doc(coach, 'repartosGuardados', 'r1'), { nombre: 'Otro' }));
+  });
+
+  it('un atleta con perfil no lo lee ni lo escribe', async () => {
+    const uid = 'uid-atleta-real';
+    await sembrar(async db => {
+      await setDoc(doc(db, 'user_profiles', uid), { userId: uid, email: ATLETA, role: 'client' });
+      await setDoc(doc(db, 'repartosGuardados', 'r1'), REPARTO);
+    });
+    const atleta = env.authenticatedContext(uid, { email: ATLETA, email_verified: true }).firestore();
+    await assertFails(getDoc(doc(atleta, 'repartosGuardados', 'r1')));
+    await assertFails(setDoc(doc(atleta, 'repartosGuardados', 'r2'), { ...REPARTO, ownerId: uid }));
+  });
+
+  it('el coach con el correo SIN verificar no entra', async () => {
+    const coach = env.authenticatedContext('uid-coach', { email: COACH, email_verified: false }).firestore();
+    await assertFails(setDoc(doc(coach, 'repartosGuardados', 'r1'), REPARTO));
+  });
+});

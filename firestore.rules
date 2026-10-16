@@ -360,6 +360,15 @@ service cloud.firestore {
       allow write: if isCoach();
     }
 
+    // ── repartosGuardados (ownerId = UID del coach) · 16-10 ──────────────────
+    // «Mis repartos»: repartos propios que el coach guarda para reutilizarlos
+    // en otros mesociclos. Es material de trabajo del coach, no catálogo: el
+    // atleta no lo necesita para nada (lo que entrena va copiado dentro de su
+    // mesociclo), así que ni lo lee.
+    match /repartosGuardados/{docId} {
+      allow read, write: if isCoach();
+    }
+
     // ── recipes (ownerId = UID del autor, o el centinela del recetario) ──────
     // Athletes may create their own (e.g. "guardar como receta" from Intercambios,
     // or as a weekly-menu swap candidate); el recetario importado en bloque queda

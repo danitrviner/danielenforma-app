@@ -37,6 +37,7 @@ const SIN_DATOS_DEL_ATLETA: Record<string, string> = {
   questionnaires: 'plantillas de cuestionario del coach',
   questionnairePacks: 'conjuntos de plantillas de cuestionario del coach: guardan ids de plantilla y cadencia, ningún atleta',
   mesocycleTemplates: 'plantillas de mesociclo',
+  repartosGuardados: 'repartos guardados por el coach («Mis repartos»), sin datos de ningún atleta',
   onboardingTemplates: 'plantillas del formulario de alta',
   challengeTemplates: 'plantillas de reto semanal',
   academyCourses: 'contenido formativo, igual para todos',
