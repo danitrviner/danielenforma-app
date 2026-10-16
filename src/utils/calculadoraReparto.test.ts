@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { MUSCLE_ORDER, type MuscleGroup, type MuscleGroupConfig } from '../types';
-import { calcularRepartos, frecuenciaPorDefecto, nombrarSesion, GRUPOS_COMODIN } from './calculadoraReparto';
+import { MUSCLE_ORDER, type MuscleGroup, type MuscleGroupConfig, type Mesocycle } from '../types';
+import { calcularRepartos, frecuenciaPorDefecto, nombrarSesion, GRUPOS_COMODIN, evaluarRepartoActual } from './calculadoraReparto';
+import { buildSnapshot } from './repartoDesactualizado';
 import { repartoDelMesociclo, gruposPorSesion, frecuenciaSemanalDeSplit } from './trainingSplits';
 
 function grupos(series: Partial<Record<MuscleGroup, number>>, alta: MuscleGroup[] = []): Record<MuscleGroup, MuscleGroupConfig> {
@@ -131,5 +132,43 @@ describe('nombrarSesion', () => {
   it('los comodines no cuentan', () => {
     expect(GRUPOS_COMODIN).toContain('core');
     expect(nombrarSesion(s('core'))).toBe('Core');
+  });
+});
+
+describe('evaluarRepartoActual', () => {
+  const base: Mesocycle = {
+    id: 'm', athleteId: 'a', number: 1, weeks: 4, startDate: '2026-10-19', objective: '', daysPerWeek: 4,
+    splitId: '4-torso-pierna-x2', groups: grupos({ pecho: 12, dorsal: 12, trapecio: 6, cuadriceps: 10, core: 4 }),
+  };
+
+  it('sin reparto no hay tarjeta', () => {
+    expect(evaluarRepartoActual({ ...base, splitId: undefined }, { frecuencias: {}, grupos: base.groups })).toBeNull();
+  });
+
+  it('mide el reparto de la lista sin contar los comodines y compara con lo que se pide', () => {
+    const r = evaluarRepartoActual(base, { frecuencias: { pecho: 1.5, dorsal: 2 }, grupos: base.groups })!;
+    expect(r.sesiones.map(s => s.tipo)).toEqual(['Torso', 'Pierna', 'Torso', 'Pierna']);
+    expect(r.frecuencias.pecho).toEqual({ objetivo: 1.5, conseguida: 2 });
+    expect(r.frecuencias.dorsal).toEqual({ objetivo: 2, conseguida: 2 });
+    expect(r.frecuencias.core).toBeUndefined();
+    expect(r.frecuencias.cuadriceps).toEqual({ objetivo: 0, conseguida: 2 });
+  });
+
+  it('con distribución al día manda lo que de verdad se entrena', () => {
+    const meso: Mesocycle = {
+      ...base,
+      distribution: {
+        days: [
+          { assignments: [{ group: 'pecho', series: 6 }, { group: 'trapecio', series: 6 }], totalSeries: 12 },
+          { assignments: [{ group: 'cuadriceps', series: 10 }], totalSeries: 10 },
+          { assignments: [{ group: 'pecho', series: 6 }, { group: 'dorsal', series: 12 }], totalSeries: 18 },
+          { assignments: [], totalSeries: 0 },
+        ],
+        overloadAlert: false, snapshot: buildSnapshot(base), generatedAt: 'x',
+      },
+    };
+    const r = evaluarRepartoActual(meso, { frecuencias: { trapecio: 2 }, grupos: meso.groups })!;
+    expect(r.frecuencias.trapecio).toEqual({ objetivo: 2, conseguida: 1 });
+    expect(r.frecuencias.dorsal?.conseguida).toBe(1);
   });
 });

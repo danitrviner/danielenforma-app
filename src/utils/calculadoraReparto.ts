@@ -1,5 +1,6 @@
-import { MuscleGroup, MuscleGroupConfig, MUSCLE_ORDER, MUSCLE_LABELS_SHORT, MUSCLE_LABELS, RepartoPropio } from '../types';
-import { DAY_TYPE_MUSCLES } from './trainingSplits';
+import { MuscleGroup, MuscleGroupConfig, MUSCLE_ORDER, MUSCLE_LABELS_SHORT, MUSCLE_LABELS, RepartoPropio, Mesocycle } from '../types';
+import { DAY_TYPE_MUSCLES, DESCANSO, repartoDelMesociclo, gruposPorSesion } from './trainingSplits';
+import { isStale } from './repartoDesactualizado';
 import { SERIES_POR_DIA_TOPE, SERIES_POR_SESION } from './volumeSuggestion';
 import { splitEvenly } from './programacion';
 
@@ -451,16 +452,7 @@ function construirOpcion(estado: Estado, ctx: Contexto, est: Estrategia, e: Entr
   });
   desambiguar(sesiones);
 
-  const avisos: string[] = [];
-  for (const s of sesiones) {
-    if (s.total > ctx.maxSesion) avisos.push(`${s.tipo} (día ${s.dia + 1}): ${s.total} series, por encima del tope de ${ctx.maxSesion}.`);
-  }
-  for (const g of ctx.grupos) {
-    if (GRUPOS_COMODIN.includes(g)) continue;
-    const dias = estado[g]!.map(s => ctx.offsets[s]).sort((a, b) => a - b);
-    const seguidos = dias.some((d, k) => (k === dias.length - 1 ? dias[0] + ctx.cicloDias - d : dias[k + 1] - d) <= 1) && dias.length > 1;
-    if (seguidos) avisos.push(`${MUSCLE_LABELS[g]} cae en días seguidos.`);
-  }
+  const avisos = avisosDeSesiones(sesiones, ctx.cicloDias, ctx.maxSesion);
 
   const frecuencias: OpcionDeReparto['frecuencias'] = {};
   for (const g of MUSCLE_ORDER) {
@@ -483,6 +475,86 @@ function construirOpcion(estado: Estado, ctx: Contexto, est: Estrategia, e: Entr
   // sesiones son la misma opción.
   const id = sesiones.map(s => s.grupos.map(x => x.grupo).sort().join('+')).sort().join('|');
   return { id, estrategia: est.nombre, cicloDias: ctx.cicloDias, sesiones, reparto, frecuencias, avisos, coste: coste(estado, ctx, est, false) };
+}
+
+/** Sesiones por encima del tope y grupos que caen en días seguidos (en círculo). */
+function avisosDeSesiones(sesiones: SesionCalculada[], cicloDias: number, maxSesion: number): string[] {
+  const avisos: string[] = [];
+  for (const s of sesiones) {
+    if (s.total > maxSesion) avisos.push(`${s.tipo} (día ${s.dia + 1}): ${s.total} series, por encima del tope de ${maxSesion}.`);
+  }
+  for (const g of MUSCLE_ORDER) {
+    if (GRUPOS_COMODIN.includes(g)) continue;
+    const dias = sesiones.filter(s => s.grupos.some(x => x.grupo === g)).map(s => s.dia).sort((a, b) => a - b);
+    if (dias.length < 2) continue;
+    const seguidos = dias.some((d, k) => (k === dias.length - 1 ? dias[0] + cicloDias - d : dias[k + 1] - d) <= 1);
+    if (seguidos) avisos.push(`${MUSCLE_LABELS[g]} cae en días seguidos.`);
+  }
+  return avisos;
+}
+
+/**
+ * El reparto que el mesociclo YA tiene, medido con la misma vara que las
+ * opciones: qué se entrena cada día, cuántas veces por semana sale cada grupo
+ * frente a lo que se pide ahora, y sus avisos. Es la primera tarjeta de la
+ * calculadora, para ver qué cambia cada propuesta respecto a lo de hoy.
+ *
+ * Si hay distribución al día manda ella (es lo que de verdad se entrena: en un
+ * «Torso» de la lista caben todos los grupos del tren superior, pero el
+ * trapecio quizá solo va un día). Si no, los grupos de cada día del reparto,
+ * sin los comodines que un día de la lista acepta pero no entrena por sí solo.
+ */
+export function evaluarRepartoActual(
+  meso: Mesocycle,
+  e: Pick<EntradaCalculadora, 'frecuencias' | 'grupos' | 'maxSeriesSesion'>,
+): OpcionDeReparto | null {
+  const r = repartoDelMesociclo(meso);
+  if (!r) return null;
+  const cicloDias = r.dayTypes.length;
+  const offsets = r.dayTypes.flatMap((t, i) => (t === DESCANSO ? [] : [i]));
+  const tipos = r.dayTypes.filter(t => t !== DESCANSO);
+  const maxSesion = e.maxSeriesSesion ?? SERIES_POR_DIA_TOPE;
+
+  let porSesion: { grupo: MuscleGroup; series: number }[][];
+  const dist = meso.distribution;
+  if (dist && !isStale(meso, dist) && dist.days.length === offsets.length) {
+    porSesion = dist.days.map(d => d.assignments.filter(a => a.series > 0).map(a => ({ grupo: a.group, series: a.series })));
+  } else {
+    const grupos = gruposPorSesion(r).map(gs => gs.filter(g =>
+      (r.propio || !GRUPOS_COMODIN.includes(g)) && ((e.grupos[g]?.series ?? 0) > 0 || (e.frecuencias[g] ?? 0) > 0)));
+    const seriesEn = new Map<string, number>();
+    for (const g of MUSCLE_ORDER) {
+      const ss = grupos.flatMap((gs, k) => (gs.includes(g) ? [k] : []));
+      if (ss.length === 0) continue;
+      splitEvenly(Math.round((e.grupos[g]?.series ?? 0) * cicloDias / 7), ss.length).forEach((n, k) => seriesEn.set(`${g}@${ss[k]}`, n));
+    }
+    porSesion = grupos.map((gs, k) => MUSCLE_ORDER.filter(g => gs.includes(g)).map(g => ({ grupo: g, series: seriesEn.get(`${g}@${k}`) ?? 0 })));
+  }
+
+  const sesiones: SesionCalculada[] = offsets.map((dia, k) => ({
+    dia, tipo: tipos[k], grupos: porSesion[k], total: porSesion[k].reduce((a, x) => a + x.series, 0),
+  }));
+  const avisos = avisosDeSesiones(sesiones, cicloDias, maxSesion);
+
+  const frecuencias: OpcionDeReparto['frecuencias'] = {};
+  for (const g of MUSCLE_ORDER) {
+    const objetivo = e.frecuencias[g] ?? 0;
+    const veces = sesiones.filter(s => s.grupos.some(x => x.grupo === g)).length;
+    if (objetivo <= 0 && veces === 0) continue;
+    const conseguida = Math.round((veces * 7 / cicloDias) * 100) / 100;
+    frecuencias[g] = { objetivo, conseguida };
+  }
+
+  return {
+    id: 'actual',
+    estrategia: 'Tu reparto actual',
+    cicloDias,
+    sesiones,
+    reparto: meso.reparto ?? { nombre: r.nombre, dias: r.dayTypes.map((t, i) => (t === DESCANSO ? null : { tipo: t, grupos: r.gruposPorDia[i] })) },
+    frecuencias,
+    avisos,
+    coste: Infinity,
+  };
 }
 
 /** «lunes, miércoles y viernes» para los textos de la hoja. */

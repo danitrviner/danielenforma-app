@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Mesocycle, MuscleGroup, MUSCLE_ORDER, MUSCLE_LABELS, MUSCLE_LABELS_SHORT } from '../../types';
 import { Sheet, Button, Icon } from '../ui';
 import {
-  calcularRepartos, frecuenciaPorDefecto, FRECUENCIA_MAXIMA, type OpcionDeReparto,
+  calcularRepartos, evaluarRepartoActual, frecuenciaPorDefecto, FRECUENCIA_MAXIMA, type OpcionDeReparto,
 } from '../../utils/calculadoraReparto';
 import { offsetsDelMesociclo, cicloDiasDeMeso } from '../../utils/asignacionMesociclo';
 import { SERIES_POR_DIA_TOPE, SERIES_POR_SESION } from '../../utils/volumeSuggestion';
@@ -71,12 +71,18 @@ const Aviso: React.FC<{ texto: string }> = ({ texto }) => (
 
 function TarjetaOpcion({ opcion, mejor, inicioSemana, onUsar }: {
   key?: React.Key;
-  opcion: OpcionDeReparto; mejor: boolean; inicioSemana: number; onUsar: () => void;
+  opcion: OpcionDeReparto; mejor: boolean; inicioSemana: number;
+  /** Sin él es la tarjeta del reparto actual: se mira, no se elige. */
+  onUsar?: () => void;
 }) {
-  const semanas = opcion.cicloDias / 7;
+  // Filas de 7: un ciclo rotativo de 9 días ocupa una semana y dos días.
+  const filas = Math.ceil(opcion.cicloDias / 7);
   const sesionDe = new Map(opcion.sesiones.map(s => [s.dia, s]));
+  const actual = !onUsar;
   return (
-    <div className={`rounded-surface border p-3 space-y-3 ${mejor ? 'border-accent bg-accent/5' : 'border-hairline bg-surface'}`}>
+    <div className={`rounded-surface border p-3 space-y-3 ${
+      actual ? 'border-dashed border-strong bg-inset' : mejor ? 'border-accent bg-accent/5' : 'border-hairline bg-surface'
+    }`}>
       <div className="flex items-start justify-between gap-2">
         <div>
           <h3 className="font-sans text-title-s text-ink">{opcion.estrategia}</h3>
@@ -91,9 +97,9 @@ function TarjetaOpcion({ opcion, mejor, inicioSemana, onUsar }: {
 
       {/* El ciclo entero, una fila por semana: se ve de un vistazo qué toca cada día. */}
       <div className="space-y-1">
-        {Array.from({ length: semanas }, (_, w) => (
+        {Array.from({ length: filas }, (_, w) => (
           <div key={w} className="grid grid-cols-7 gap-1">
-            {Array.from({ length: 7 }, (_, k) => {
+            {Array.from({ length: Math.min(7, opcion.cicloDias - w * 7) }, (_, k) => {
               const dia = w * 7 + k;
               const s = sesionDe.get(dia);
               return (
@@ -124,9 +130,31 @@ function TarjetaOpcion({ opcion, mejor, inicioSemana, onUsar }: {
         ))}
       </ul>
 
+      {/* En el reparto actual, lo que importa es qué frecuencias NO cumple. */}
+      {actual && (() => {
+        const distintas = (Object.entries(opcion.frecuencias) as [MuscleGroup, { objetivo: number; conseguida: number }][])
+          .filter(([, f]) => f.objetivo > 0 && f.objetivo !== f.conseguida);
+        return distintas.length === 0 ? (
+          <p className="font-sans text-caption text-success">Ya cumple todas las frecuencias que pides.</p>
+        ) : (
+          <div className="space-y-1">
+            <p className="font-mono text-caption text-ink-2 uppercase tracking-wider">Ahora → pides</p>
+            <div className="flex flex-wrap gap-1.5">
+              {distintas.map(([g, f]) => (
+                <span key={g} className="rounded-chip border border-warning/30 bg-warning/10 px-2 py-0.5 font-mono text-caption text-warning">
+                  {MUSCLE_LABELS_SHORT[g]} {fmt(f.conseguida)}× → {fmt(f.objetivo)}×
+                </span>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
+
       {opcion.avisos.map((a, i) => <Aviso key={i} texto={a} />)}
 
-      <Button onClick={onUsar} icon="check" fullWidth variant={mejor ? 'primary' : 'secondary'}>Usar este reparto</Button>
+      {onUsar && (
+        <Button onClick={onUsar} icon="check" fullWidth variant={mejor ? 'primary' : 'secondary'}>Usar este reparto</Button>
+      )}
     </div>
   );
 }
@@ -153,6 +181,11 @@ export default function CalculadoraRepartoSheet({ editing, onClose, onUsar }: Pr
       ? calcularRepartos({ diasSemana: dias, inicioSemana, frecuencias, grupos: editing.groups, maxSeriesSesion: maxSesion, maxSeriesGrupoSesion: maxGrupo })
       : null),
     [paso, dias, inicioSemana, frecuencias, editing.groups, maxSesion, maxGrupo],
+  );
+  // Lo que el mesociclo ya tiene, medido contra las frecuencias pedidas ahora.
+  const actual = useMemo(
+    () => (paso === 2 ? evaluarRepartoActual(editing, { frecuencias, grupos: editing.groups, maxSeriesSesion: maxSesion }) : null),
+    [paso, editing, frecuencias, maxSesion],
   );
   const mejorId = resultado?.opciones.length
     ? resultado.opciones.reduce((a, b) => (b.coste < a.coste ? b : a)).id
@@ -250,6 +283,12 @@ export default function CalculadoraRepartoSheet({ editing, onClose, onUsar }: Pr
           {resultado!.avisos.map((a, i) => <Aviso key={i} texto={a} />)}
           {resultado!.opciones.length === 0 && resultado!.avisos.length === 0 && (
             <p className="font-sans text-label text-ink-2">No sale ningún reparto con estos datos.</p>
+          )}
+          {actual && (
+            <>
+              <TarjetaOpcion opcion={actual} mejor={false} inicioSemana={inicioSemana} />
+              <p className="font-mono text-caption text-ink-3 uppercase tracking-wider pt-1">Propuestas</p>
+            </>
           )}
           {resultado!.opciones.map(o => (
             <TarjetaOpcion key={o.id} opcion={o} mejor={o.id === mejorId} inicioSemana={inicioSemana} onUsar={() => onUsar(o)} />
