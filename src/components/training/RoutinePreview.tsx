@@ -70,6 +70,8 @@ interface Props {
   onAdd: (dayIdx: number) => void;
   onBack: () => void;
   onAssign: () => void;
+  /** Texto del botón de confirmar (por defecto «Asignar al atleta»). */
+  assignLabel?: string;
 }
 
 function SetsStepper({ value, onChange }: { value: number; onChange: (v: number) => void }) {
@@ -96,7 +98,7 @@ function SetsStepper({ value, onChange }: { value: number; onChange: (v: number)
 
 export default function RoutinePreview({
   days, distribution, mesoGroups, mesoNumber, weeks, daysPerWeek, semanasDelCiclo, vueltas, offsets, catalogo,
-  onSets, onMove, onRemove, onReplace, onAdd, onBack, onAssign,
+  onSets, onMove, onRemove, onReplace, onAdd, onBack, onAssign, assignLabel,
 }: Props) {
   // Balance de la SEMANA: lo pautado en todos los días contra el volumen del
   // mesociclo (pestaña «Volumen»), que es el número que el coach decidió antes
@@ -133,7 +135,7 @@ export default function RoutinePreview({
             className="px-4 py-2 bg-accent text-on-accent font-sans text-label font-bold uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all flex items-center gap-2"
           >
             <Icon name="assignment_turned_in" size="s" />
-            Asignar al atleta
+            {assignLabel ?? 'Asignar al atleta'}
           </button>
         </div>
       </div>

@@ -139,6 +139,11 @@ const ProgresionHarness = import.meta.env.DEV
   ? pantallaDiferida('ProgresionDevHarness', () => import('./components/mesociclo/ProgresionDevHarness'))
   : null;
 
+// Banco de pruebas del editor de mesociclos en modo plantilla (ruta /dev/plantilla).
+const PlantillaHarness = import.meta.env.DEV
+  ? pantallaDiferida('PlantillaDevHarness', () => import('./components/mesociclo/PlantillaDevHarness'))
+  : null;
+
 // Banco de pruebas de «Orden del ciclo» (Mesociclo › Distribución, ruta /dev/orden-ciclo).
 const OrdenCicloHarness = import.meta.env.DEV
   ? pantallaDiferida('OrdenCicloDevHarness', () => import('./components/mesociclo/OrdenCicloDevHarness'))
@@ -777,6 +782,13 @@ function AppContent() {
     );
   }
 
+  if (PlantillaHarness && location.pathname === '/dev/plantilla') {
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-bg" />}>
+        <PlantillaHarness />
+      </Suspense>
+    );
+  }
   if (OrdenCicloHarness && location.pathname === '/dev/orden-ciclo') {
     return (
       <Suspense fallback={<div className="min-h-screen bg-bg" />}>

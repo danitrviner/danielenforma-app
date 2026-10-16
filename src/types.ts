@@ -606,6 +606,23 @@ export interface TemplateStage {
   semanasTest?: number[];
   reviewCadenceWeeks?: number;  // cada cuántas semanas se programa una revisión durante esta etapa
   reviewType?: TaskType;
+  /**
+   * El PLAN del mesociclo, igual que en `Mesocycle` (16-10). Antes una etapa
+   * solo guardaba volumen y días, y al guardar un mesociclo como plantilla o
+   * aplicarla se perdían el reparto, el ciclo, la distribución… Ahora la
+   * plantilla se edita con el mismo editor y viaja entera: ver
+   * `utils/plantillaMeso.ts`, el único sitio que traduce entre los dos.
+   */
+  objective?: string;
+  cycleDays?: number;
+  customOffsets?: number[];
+  splitId?: string;
+  reparto?: RepartoPropio;
+  distribution?: WeekDistribution;
+  phaseType?: PhaseType;
+  nombresSesion?: string[];
+  ejerciciosClave?: string[];
+  notasSemana?: Record<string, string>;
 }
 
 export interface Workout {
