@@ -23,6 +23,30 @@ export interface Novedad {
 
 export const NOVEDADES: Novedad[] = [
   {
+    id: '2026-10-recetario-descubrir',
+    fecha: '2026-10-16',
+    titulo: 'Un recetario para descubrir',
+    puntos: [
+      {
+        titulo: 'Recetas por grupos',
+        texto:
+          'Recetas ya no es una lista larga: la tienes en filas por comida, calorías, tipo de plato, dieta o ' +
+          'ingrediente. Toca una y ves todas las de ese grupo.',
+      },
+      {
+        titulo: '¿Qué tienes en la nevera?',
+        texto:
+          'Marca lo que tienes en casa y te salen las recetas que lo usan todo, primero las que menos cosas de más piden.',
+      },
+      {
+        titulo: 'Las que encajan, a la vista',
+        texto:
+          'Arriba salen las que cuadran con tu próxima comida sin tocar cantidades, las que más haces y las que te ' +
+          'recomienda tu entrenador. Al usar una receta en Mi plan, las que llenan ese hueco llevan «Encaja».',
+      },
+    ],
+  },
+  {
     id: '2026-10-pasos-objetivo',
     fecha: '2026-10-15',
     titulo: 'Tus pasos, más claros',
