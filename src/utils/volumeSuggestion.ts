@@ -3,7 +3,7 @@ import {
 } from '../types';
 import type { VolumeLandmark } from '../data/volumeLandmarks';
 import type { VolumeHistory } from './volumeHistory';
-import { TRAINING_SPLITS, frecuenciaSemanalDeSplit } from './trainingSplits';
+import { TRAINING_SPLITS, frecuenciaSemanalDeSplit, RepartoResuelto } from './trainingSplits';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // SUGERIDOR DE VOLUMEN — propone las series semanales de los 17 grupos.
@@ -30,6 +30,8 @@ export interface VolumeSuggestionInput {
   semanasDelCiclo?: number;
   /** Reparto elegido (utils/trainingSplits). Acota el volumen por frecuencia real. */
   splitId?: string;
+  /** Reparto ya resuelto (`repartoDelMesociclo`); manda sobre `splitId`, y es el único que ve un reparto propio. */
+  reparto?: Pick<RepartoResuelto, 'dayTypes' | 'gruposPorDia'>;
   level: ExperienceLevel;
   intent: VolumeIntent;
   priorities: Record<MuscleGroup, 'alta' | 'media' | 'baja'>;
@@ -114,9 +116,12 @@ function clamp(n: number, min: number, max: number): number {
  * `null` = el reparto no cubre este grupo en ningún día y la distribución lo
  * colocará por su fallback, así que no se acota por aquí.
  */
-function frecuenciaDisponible(group: MuscleGroup, splitId: string | undefined): number | null {
-  if (!splitId) return null;
-  const split = TRAINING_SPLITS.find(s => s.id === splitId);
+function frecuenciaDisponible(
+  group: MuscleGroup,
+  splitId: string | undefined,
+  reparto?: Pick<RepartoResuelto, 'dayTypes' | 'gruposPorDia'>,
+): number | null {
+  const split = reparto ?? (splitId ? TRAINING_SPLITS.find(s => s.id === splitId) : undefined);
   if (!split) return null;
   const frecuencia = frecuenciaSemanalDeSplit(split, group);
   return frecuencia > 0 ? frecuencia : null;
@@ -164,7 +169,7 @@ function aplicarRecorte(
 }
 
 export function suggestVolume(input: VolumeSuggestionInput): VolumeSuggestionResult {
-  const { landmarks, daysPerWeek, splitId, level, priorities, history } = input;
+  const { landmarks, daysPerWeek, splitId, reparto, level, priorities, history } = input;
   // El volumen que se sugiere es SEMANAL, así que el techo también: con un ciclo
   // de dos semanas y 10 sesiones, las sesiones de una semana son 5, no 10.
   const semanas = Math.max(1, input.semanasDelCiclo ?? 1);
@@ -258,7 +263,7 @@ export function suggestVolume(input: VolumeSuggestionInput): VolumeSuggestionRes
       series = topeGrupo;
     }
 
-    const frecuencia = frecuenciaDisponible(g, splitId);
+    const frecuencia = frecuenciaDisponible(g, splitId, reparto);
     if (frecuencia != null) {
       const topeFrecuencia = Math.round(frecuencia * SERIES_POR_SESION);
       if (series > topeFrecuencia) {
@@ -300,8 +305,8 @@ export function suggestVolume(input: VolumeSuggestionInput): VolumeSuggestionRes
   // Un grupo al que el reparto no llega en ningún día acabaría colocado por el
   // fallback de la distribución, en un día que no le toca. Se dice, no se
   // esconde.
-  if (splitId) {
-    const huerfanos = MUSCLE_ORDER.filter(g => groups[g].series > 0 && frecuenciaDisponible(g, splitId) === null);
+  if (splitId || reparto) {
+    const huerfanos = MUSCLE_ORDER.filter(g => groups[g].series > 0 && frecuenciaDisponible(g, splitId, reparto) === null);
     if (huerfanos.length > 0) {
       warnings.push(`El reparto elegido no tiene un día propio para ${huerfanos.map(g => MUSCLE_LABELS[g]).join(', ')} — la distribución los colocará donde quepan.`);
     }

@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   MuscleGroup, MuscleGroupConfig, Mesocycle, UserProfile, Workout,
   DayPlan, DayAssignment, WeekDistribution, Exercise, WorkoutExercise, TemplateDay,
-  WorkoutLog, WorkoutAssignment, PhaseType, EventoDeSemana,
+  WorkoutLog, WorkoutAssignment, PhaseType, EventoDeSemana, RepartoPropio,
   MUSCLE_LABELS, MUSCLE_LABELS_SHORT, MUSCLE_ORDER, WorkoutTechnique,
 } from '../types';
 import {
@@ -39,15 +39,20 @@ import { atletasActivos } from '../utils/atletas';
 import {
   TRAINING_SPLITS, DAY_TYPE_MUSCLES, getSplitsForDays, recommendSplit,
   cicloDeSplit, sesionesDeSplit, tiposDeEntrenamiento, offsetsDeSplit, frecuenciaSemanalDeSplit,
-  type TrainingSplit,
+  repartoDelMesociclo, gruposPorSesion, repartoDesdeCatalogo, moverDiaDelReparto, moverSesionDelReparto, empezarRepartoPor,
+  type TrainingSplit, type Reordenacion,
 } from '../utils/trainingSplits';
+import {
+  aplicarReordenacionAlMeso, nuevoIndiceDeSesion, ajustarDiasDelReparto, quitarDescanso, sinMoverSesiones,
+} from '../utils/reordenarMeso';
+import OrdenDelCiclo from './mesociclo/OrdenDelCiclo';
 import { zoneLabel, heatmapBg, heatmapText, VOLUME_ZONE_LEGEND, GENERIC_LANDMARK } from '../utils/volumeZones';
 import { VOLUME_LANDMARKS_DEFAULT, type VolumeLandmark } from '../data/volumeLandmarks';
 import { getVolumeLandmarks } from '../dbService';
 import VolumeSuggestionSheet from './VolumeSuggestionSheet';
 import { useToast } from '../hooks/useToast';
 import { nombreDeMeso, nombreDeSesion } from '../utils/nombresMeso';
-import { fechasDelMesociclo, cicloDiasDeMeso, sesionesDeMesociclo } from '../utils/asignacionMesociclo';
+import { fechasDelMesociclo, cicloDiasDeMeso, sesionesDeMesociclo, offsetsDelMesociclo } from '../utils/asignacionMesociclo';
 import { buildSnapshot, isStale } from '../utils/repartoDesactualizado';
 import { addDays, esFechaIso, hoyIsoLocal, isoLocal } from '../utils/trainingWeek';
 import { useAthleteProfileSignals } from '../hooks/useAthleteProfileSignals';
@@ -2166,12 +2171,13 @@ export default function MesocycleManager({
 
   const handleGenerateDistribution = () => {
     if (!editing) return;
-    const split = editing.splitId ? TRAINING_SPLITS.find(s => s.id === editing.splitId) : undefined;
+    const reparto = repartoDelMesociclo(editing);
     const result = runDistribution(
       editing.groups,
       editing.daysPerWeek,
-      split ? tiposDeEntrenamiento(split) : undefined,
+      reparto ? tiposDeEntrenamiento(reparto) : undefined,
       { cicloDias, offsets: offsetsCiclo },
+      reparto ? gruposPorSesion(reparto) : undefined,
     );
     const distribution: WeekDistribution = {
       ...result,
@@ -2437,20 +2443,11 @@ export default function MesocycleManager({
       // del ciclo (Push, Pull, Descanso, Legs, Descanso), así que las sesiones
       // no son los primeros N días — y si se siguiera sumando de 7 en 7, la
       // segunda vuelta de un ciclo de 9 pisaría las fechas de la primera.
-      const splitAsignado = editing.splitId ? TRAINING_SPLITS.find(sp => sp.id === editing.splitId) : undefined;
       const cicloDias = cicloDiasDeMeso(editing);
-      // Un patrón tocado a mano en el calendario manda sobre el cálculo
-      // automático — mismo criterio que `offsetsCiclo` más abajo en el
-      // componente, para que lo que se ve en el calendario sea exactamente lo
-      // que se asigna al atleta.
-      const offsets = editing.customOffsets && editing.customOffsets.length === editing.daysPerWeek
-        ? [...editing.customOffsets].sort((a, b) => a - b)
-        : offsetsDeSesiones({
-            sesiones: editing.daysPerWeek,
-            cicloDias,
-            offsetsDelSplit: splitAsignado ? offsetsDeSplit(splitAsignado) : undefined,
-            repartirEnElCiclo: editing.cycleDays !== undefined,
-          });
+      // Un patrón tocado a mano o un reparto propio mandan sobre el cálculo
+      // automático — la misma regla que el calendario de la pantalla
+      // (`offsetsDelMesociclo`), para que lo que se ve sea lo que se asigna.
+      const offsets = offsetsDelMesociclo(editing);
       // Migración 24-08: se escribe el EMAIL. Antes era el UID — esta era la
       // única colección del proyecto con esa clave.
       const programadas: Omit<WorkoutAssignment, 'id'>[] = [];
@@ -2564,10 +2561,9 @@ export default function MesocycleManager({
    * dejar el calendario del atleta a medias. Con espera, porque marcar tres días
    * seguidos son tres clics y no tres reescrituras.
    */
-  const sincronizarFechasDelAtleta = (meso: Mesocycle) => {
+  const sincronizarFechasDelAtleta = (meso: Mesocycle, sesiones: MesoWorkoutGroup[] = mesoGroupsForTabs) => {
     if (syncTimer.current) clearTimeout(syncTimer.current);
     if (!selectedEmail) return;
-    const sesiones = mesoGroupsForTabs;
     syncTimer.current = setTimeout(async () => {
       try {
         const existentes = await getWorkoutAssignmentsByMesocycleIds([meso.id]);
@@ -2928,7 +2924,7 @@ export default function MesocycleManager({
   // única condición: si el coach cambia el nº de sesiones o la duración del
   // ciclo después de haber tocado el calendario, el patrón a mano deja de
   // encajar y se cae al automático en vez de dejar el mesociclo sin calendario.
-  const splitActual = editing?.splitId ? TRAINING_SPLITS.find(sp => sp.id === editing.splitId) : undefined;
+  const splitActual = editing ? repartoDelMesociclo(editing) : undefined;
   const cicloDias = editing ? cicloDiasDeMeso(editing) : 7;
 
   // Dos versiones del patrón a mano, y no es redundante:
@@ -3009,6 +3005,57 @@ export default function MesocycleManager({
     setEditing(updated);
     scheduleAutoSave(updated);
     sincronizarFechasDelAtleta(updated);
+  };
+
+  // Reordena los días del reparto (o cambia sus descansos). Si el mesociclo
+  // sigue un reparto de la lista, el primer cambio lo convierte en propio. Todo
+  // lo que va por índice de sesión viaja con su día: la distribución, los
+  // nombres, la vista previa y —si ya están generadas— las rutinas del atleta,
+  // cuyas fechas se reescriben como al tocar el calendario.
+  const reordenarCiclo = (cambio: (base: RepartoPropio) => Reordenacion) => {
+    if (!editing) return;
+    const catalogo = editing.splitId ? TRAINING_SPLITS.find(sp => sp.id === editing.splitId) : undefined;
+    const base = editing.reparto ?? (catalogo ? repartoDesdeCatalogo(catalogo) : undefined);
+    if (!base) return;
+    const r = cambio(base);
+    const perm = r.sesionAnterior;
+    const updated = aplicarReordenacionAlMeso(editing, r);
+    setEditing(updated);
+    scheduleAutoSave(updated);
+    setPreviewDays(prev => (prev.length === perm.length ? perm.map(o => prev[o]) : prev));
+
+    const sesiones = mesoGroupsForTabs;
+    const seMueven = perm.some((o, k) => o !== k);
+    const rutinasCuadran = sesiones.length === perm.length
+      && sesiones.every((g, k) => g.dayIndex === k);
+    if (seMueven && rutinasCuadran) {
+      const nuevo = nuevoIndiceDeSesion(perm);
+      queryClient.setQueryData<Workout[]>(['workouts'], prev => prev?.map(w =>
+        w.mesocycleId === editing.id && w.dayIndex != null
+          ? { ...w, dayIndex: nuevo.get(w.dayIndex) ?? w.dayIndex }
+          : w));
+      Promise.all(sesiones.flatMap(g =>
+        g.workoutIds.map(id => updateWorkoutStrict(id, { dayIndex: nuevo.get(g.dayIndex!) }))))
+        .catch(err => {
+          console.error('[reordenarCiclo]', err);
+          showToast('No se pudieron mover las rutinas con sus días. Vuelve a generar las rutinas.', 'error');
+        })
+        .finally(() => { void queryClient.invalidateQueries({ queryKey: ['workouts'] }); });
+    }
+    sincronizarFechasDelAtleta(updated, rutinasCuadran ? perm.map(o => sesiones[o]) : sesiones);
+  };
+
+  // «Duración del split» con un reparto propio: alarga o acorta con descansos
+  // al final. Si acortar cortaría una sesión, ese reparto ya no cabe y se suelta.
+  const cambiarDuracionCiclo = (dias: number | undefined) => {
+    if (!editing) return;
+    if (!editing.reparto) { updateField('cycleDays', dias); return; }
+    const ajustado = ajustarDiasDelReparto(editing.reparto, dias ?? 7);
+    if (ajustado) { reordenarCiclo(() => sinMoverSesiones(ajustado)); return; }
+    const updated: Mesocycle = { ...editing, reparto: undefined, cycleDays: dias };
+    setEditing(updated);
+    scheduleAutoSave(updated);
+    showToast(`El reparto propio no cabe en ${dias ?? 7} días: se ha quitado.`, 'error');
   };
 
   const restablecerCalendario = () => {
@@ -3210,12 +3257,12 @@ export default function MesocycleManager({
                       {[2,3,4,5,6,7,8,9,10].map(d => (
                         <button key={d} onClick={() => {
                             if (!editing) return;
-                            const split = editing.splitId ? TRAINING_SPLITS.find(s => s.id === editing.splitId) : undefined;
+                            const split = repartoDelMesociclo(editing);
                             const clearsSplit = split && sesionesDeSplit(split) !== d;
                             const updated = {
                               ...editing,
                               daysPerWeek: d,
-                              ...(clearsSplit ? { splitId: undefined, cycleDays: undefined } : {}),
+                              ...(clearsSplit ? { splitId: undefined, reparto: undefined, cycleDays: undefined } : {}),
                               // Un ciclo no puede tener menos días que sesiones.
                               ...(editing.cycleDays !== undefined && editing.cycleDays < d ? { cycleDays: d } : {}),
                             };
@@ -3249,7 +3296,7 @@ export default function MesocycleManager({
                   </div>
                   <div className="flex gap-1 items-center overflow-x-auto hide-scrollbar pb-1">
                     <button
-                      onClick={() => updateField('cycleDays', undefined)}
+                      onClick={() => cambiarDuracionCiclo(undefined)}
                       className={`px-3 h-11 flex-shrink-0 rounded-control font-mono text-label font-bold transition-all ${
                         editing.cycleDays === undefined ? 'bg-accent text-on-accent' : 'bg-raised text-ink-2 hover:text-ink'
                       }`}
@@ -3257,7 +3304,7 @@ export default function MesocycleManager({
                     {[3, 4, 5, 6, 8, 9, 10, 12, 14].filter(d => d >= editing.daysPerWeek).map(d => (
                       <button
                         key={d}
-                        onClick={() => updateField('cycleDays', d)}
+                        onClick={() => cambiarDuracionCiclo(d)}
                         className={`w-11 h-11 flex-shrink-0 rounded-control font-mono text-label font-bold transition-all ${
                           editing.cycleDays === d ? 'bg-accent text-on-accent' : 'bg-raised text-ink-2 hover:text-ink'
                         }`}
@@ -3299,7 +3346,7 @@ export default function MesocycleManager({
                         <button
                           type="button"
                           className="font-sans text-caption font-bold text-warning underline"
-                          onClick={() => updateField('cycleDays', undefined)}
+                          onClick={() => cambiarDuracionCiclo(undefined)}
                         >
                           Hacerlo semanal (descanso el 7.º día)
                         </button>
@@ -3450,6 +3497,8 @@ export default function MesocycleManager({
                                       const ciclo = cicloDeSplit(split);
                                       const updated: Mesocycle = {
                                         ...editing,
+                                        // Elegir uno de la lista sustituye al reparto propio.
+                                        reparto: undefined,
                                         splitId: quitando ? undefined : split.id,
                                         cycleDays: quitando || ciclo === 7 ? undefined : ciclo,
                                         // Un reparto de la lista trae su propio calendario —
@@ -3460,7 +3509,7 @@ export default function MesocycleManager({
                                       scheduleAutoSave(updated);
                                     }}
                                     className={`px-3 py-2 rounded-control border font-sans text-label text-left transition-all flex items-center gap-2 ${
-                                      editing.splitId === split.id
+                                      editing.splitId === split.id && !editing.reparto
                                         ? 'bg-accent/10 border-accent text-accent-ink'
                                         : 'bg-raised border-hairline text-ink-2 hover:border-accent/40 hover:text-ink'
                                     }`}
@@ -3475,7 +3524,7 @@ export default function MesocycleManager({
                                       <span
                                         title="Recomendado según tu volumen/prioridad configurados"
                                         className={`font-mono text-caption px-1.5 py-0.5 rounded-full border ${
-                                          editing.splitId === split.id
+                                          editing.splitId === split.id && !editing.reparto
                                             ? 'border-accent text-accent-ink'
                                             : 'border-data/40 text-data'
                                         }`}
@@ -3499,11 +3548,25 @@ export default function MesocycleManager({
                         offsets={offsetsCalendario}
                         tipos={tiposCiclo}
                         sesiones={editing.daysPerWeek}
-                        personalizado={!!customCrudo}
-                        onToggleDay={toggleDiaCiclo}
+                        personalizado={!!customCrudo || !!editing.reparto}
+                        onToggleDay={editing.reparto ? undefined : toggleDiaCiclo}
                         onRestablecer={customCrudo ? restablecerCalendario : undefined}
                         fechaInicio={editing.startDate}
                       />
+                      {/* Orden de los días del reparto: empezar por Pierna,
+                          mover un descanso… Lo que ya está repartido (y las
+                          rutinas, si las hay) viaja con su día. */}
+                      {splitActual && (
+                        <OrdenDelCiclo
+                          dayTypes={splitActual.dayTypes}
+                          propio={splitActual.propio}
+                          fechaInicio={editing.startDate}
+                          onMover={(i, dir) => reordenarCiclo(base => (base.dias[i] ? moverSesionDelReparto : moverDiaDelReparto)(base, i, dir))}
+                          onEmpezarPor={i => reordenarCiclo(base => empezarRepartoPor(base, i))}
+                          onAnadirDescanso={() => reordenarCiclo(base => sinMoverSesiones(ajustarDiasDelReparto(base, base.dias.length + 1)!))}
+                          onQuitarDescanso={i => reordenarCiclo(base => sinMoverSesiones(quitarDescanso(base, i)))}
+                        />
+                      )}
                       {calAtleta.estado !== 'idle' && (
                         <p
                           role="status"

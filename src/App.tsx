@@ -139,6 +139,11 @@ const ProgresionHarness = import.meta.env.DEV
   ? pantallaDiferida('ProgresionDevHarness', () => import('./components/mesociclo/ProgresionDevHarness'))
   : null;
 
+// Banco de pruebas de «Orden del ciclo» (Mesociclo › Distribución, ruta /dev/orden-ciclo).
+const OrdenCicloHarness = import.meta.env.DEV
+  ? pantallaDiferida('OrdenCicloDevHarness', () => import('./components/mesociclo/OrdenCicloDevHarness'))
+  : null;
+
 /* La pantalla de espera de la app, con marca. Existe como componente y no como
    un `<div className="min-h-screen bg-bg" />` suelto por un motivo concreto:
    ese div es NEGRO Y VACÍO, exactamente igual que una app colgada. Cuando un
@@ -772,6 +777,13 @@ function AppContent() {
     );
   }
 
+  if (OrdenCicloHarness && location.pathname === '/dev/orden-ciclo') {
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-bg" />}>
+        <OrdenCicloHarness />
+      </Suspense>
+    );
+  }
   if (ProgresionHarness && location.pathname === '/dev/progresion') {
     return (
       <Suspense fallback={<div className="min-h-screen bg-bg" />}>

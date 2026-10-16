@@ -9,6 +9,7 @@ import { getDossier, appendDossierFacts, renderDossier } from '../db/dossier';
 import { calcularDerivas, resumirPatrones } from '../utils/derivaPropuestas';
 import { sesionesDeMesociclo, fechasDelMesociclo, cicloDiasDeMeso } from '../utils/asignacionMesociclo';
 import { vueltasDelCiclo } from '../utils/progression';
+import { repartoDelMesociclo } from '../utils/trainingSplits';
 import { totalSemanas as totalSemanasNutri } from '../utils/semanasNutricion';
 import { normalizarTexto as normTexto } from '../utils/busqueda';
 import { nombreDeMeso } from '../utils/nombresMeso';
@@ -3529,6 +3530,7 @@ async function getVolumeSuggestion(
     landmarks: landmarks ?? VOLUME_LANDMARKS_DEFAULT,
     daysPerWeek: diasPorSemana,
     splitId: actual?.splitId,
+    reparto: actual ? repartoDelMesociclo(actual) : undefined,
     level: nivel,
     intent,
     priorities,

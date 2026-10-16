@@ -1,4 +1,4 @@
-import { MuscleGroup, MuscleGroupConfig } from '../types';
+import { MuscleGroup, MuscleGroupConfig, Mesocycle, RepartoPropio } from '../types';
 import { frecuenciaPorSemana, offsetsDeSesiones } from './progression';
 
 // Catálogo de repartos de entrenamiento estándar (torso/pierna, push/pull,
@@ -155,22 +155,22 @@ export const TRAINING_SPLITS: TrainingSplit[] = [
 ];
 
 /** Días del ciclo, contando los de descanso. */
-export function cicloDeSplit(split: TrainingSplit): number {
+export function cicloDeSplit(split: Pick<TrainingSplit, 'dayTypes'>): number {
   return split.dayTypes.length;
 }
 
 /** Tipos de los días en los que SÍ se entrena, en orden. */
-export function tiposDeEntrenamiento(split: TrainingSplit): string[] {
+export function tiposDeEntrenamiento(split: Pick<TrainingSplit, 'dayTypes'>): string[] {
   return split.dayTypes.filter(t => t !== DESCANSO);
 }
 
 /** Cuántas sesiones tiene el ciclo. */
-export function sesionesDeSplit(split: TrainingSplit): number {
+export function sesionesDeSplit(split: Pick<TrainingSplit, 'dayTypes'>): number {
   return tiposDeEntrenamiento(split).length;
 }
 
 /** Posición (0-based) dentro del ciclo de cada sesión, en orden. */
-export function offsetsDeSplit(split: TrainingSplit): number[] {
+export function offsetsDeSplit(split: Pick<TrainingSplit, 'dayTypes'>): number[] {
   const offsets: number[] = [];
   split.dayTypes.forEach((t, i) => { if (t !== DESCANSO) offsets.push(i); });
   return offsets;
@@ -183,8 +183,14 @@ export function offsetsDeSplit(split: TrainingSplit): number[] {
  * ciclos de distinta duración: dos veces en un ciclo de 9 días no son dos veces
  * por semana, son 1,56.
  */
-export function frecuenciaSemanalDeSplit(split: TrainingSplit, group: MuscleGroup): number {
-  const veces = split.dayTypes.filter(t => t !== DESCANSO && (DAY_TYPE_MUSCLES[t] ?? []).includes(group)).length;
+export function frecuenciaSemanalDeSplit(
+  split: Pick<TrainingSplit, 'dayTypes'> & { gruposPorDia?: MuscleGroup[][] },
+  group: MuscleGroup,
+): number {
+  // Un reparto resuelto trae los grupos de cada día; uno del catálogo los saca
+  // del nombre del día.
+  const gruposDe = (i: number) => split.gruposPorDia?.[i] ?? DAY_TYPE_MUSCLES[split.dayTypes[i]] ?? [];
+  const veces = split.dayTypes.filter((t, i) => t !== DESCANSO && gruposDe(i).includes(group)).length;
   return frecuenciaPorSemana(veces, cicloDeSplit(split));
 }
 
@@ -253,3 +259,135 @@ export const DAY_TYPE_MUSCLES: Record<string, MuscleGroup[]> = {
   'Cuádriceps':      ['cuadriceps', 'aductores', 'gemelo', 'core', 'lumbares', 'rotadores'],
   'Glúteo/Isquios':  ['gluteo', 'isquios', 'gemelo', 'core', 'lumbares', 'rotadores'],
 };
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Reparto del mesociclo: el propio o el de la lista
+
+   Un mesociclo puede llevar un reparto propio (`Mesocycle.reparto`: días en
+   el orden que quiera el coach y con los grupos que quiera) o solo el id de
+   uno del catálogo (`splitId`). Todo lo que necesite saber qué se entrena cada
+   día del ciclo pasa por `repartoDelMesociclo`, para que los dos caminos
+   respondan lo mismo: duración del ciclo, días de sesión, grupos de cada día.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+export interface RepartoResuelto {
+  nombre: string;
+  /** Una entrada por día del ciclo, `DESCANSO` en los libres (como `TrainingSplit.dayTypes`). */
+  dayTypes: string[];
+  /** Grupos de cada día del ciclo; `[]` en los descansos. */
+  gruposPorDia: MuscleGroup[][];
+  /** `true` si sale de `Mesocycle.reparto`; `false` si es uno del catálogo. */
+  propio: boolean;
+  /** Id del catálogo: el elegido o, en uno propio, del que se partió. */
+  splitId?: string;
+}
+
+/** Un reparto del catálogo, convertido en propio para poder tocarlo. */
+export function repartoDesdeCatalogo(split: TrainingSplit): RepartoPropio {
+  return {
+    nombre: split.label,
+    basadoEn: split.id,
+    dias: split.dayTypes.map(t => t === DESCANSO ? null : { tipo: t, grupos: [...(DAY_TYPE_MUSCLES[t] ?? [])] }),
+  };
+}
+
+/** Qué reparto sigue el mesociclo. `undefined` = ninguno (sesiones sin tipo). */
+export function repartoDelMesociclo(
+  meso: Pick<Mesocycle, 'reparto' | 'splitId'>,
+): RepartoResuelto | undefined {
+  const propio = meso.reparto;
+  if (propio && propio.dias.some(d => d)) {
+    return {
+      nombre: propio.nombre,
+      // Un día que se llamara «Descanso» se confundiría con un día libre.
+      dayTypes: propio.dias.map(d => d ? (d.tipo === DESCANSO ? 'Sesión' : d.tipo) : DESCANSO),
+      gruposPorDia: propio.dias.map(d => d ? [...d.grupos] : []),
+      propio: true,
+      splitId: propio.basadoEn,
+    };
+  }
+  const split = meso.splitId ? TRAINING_SPLITS.find(sp => sp.id === meso.splitId) : undefined;
+  if (!split) return undefined;
+  return {
+    nombre: split.label,
+    dayTypes: [...split.dayTypes],
+    gruposPorDia: split.dayTypes.map(t => t === DESCANSO ? [] : [...(DAY_TYPE_MUSCLES[t] ?? [])]),
+    propio: false,
+    splitId: split.id,
+  };
+}
+
+/** Grupos de cada SESIÓN (sin los descansos), en el orden del ciclo. */
+export function gruposPorSesion(r: Pick<RepartoResuelto, 'dayTypes' | 'gruposPorDia'>): MuscleGroup[][] {
+  return r.dayTypes.flatMap((t, i) => t === DESCANSO ? [] : [r.gruposPorDia[i] ?? []]);
+}
+
+/**
+ * Huella de QUÉ se entrena en el reparto, sin importar el orden de los días.
+ *
+ * Es lo que entra en la foto de la distribución: reordenar los días mueve la
+ * distribución con ellos y no obliga a recalcular nada, pero cambiar los
+ * grupos de un día sí.
+ */
+export function huellaDeReparto(r: Pick<RepartoResuelto, 'dayTypes' | 'gruposPorDia'>): string {
+  return gruposPorSesion(r).map(g => [...g].sort().join('+')).sort().join('|');
+}
+
+/* ── Reordenar los días de un reparto propio ──────────────────────────────── */
+
+export interface Reordenacion {
+  reparto: RepartoPropio;
+  /**
+   * Para cada sesión NUEVA (en orden), qué sesión era antes. Es lo que mueve
+   * con su día todo lo que cuelga del índice de sesión: la distribución
+   * (`WeekDistribution.days`) y las rutinas (`Workout.dayIndex`).
+   */
+  sesionAnterior: number[];
+}
+
+function reordenar(reparto: RepartoPropio, orden: number[]): Reordenacion {
+  // Índice de sesión de cada día del ciclo ANTES de mover nada.
+  const sesionDeDia: number[] = [];
+  let n = 0;
+  reparto.dias.forEach((d, i) => { sesionDeDia[i] = d ? n++ : -1; });
+  const dias = orden.map(i => reparto.dias[i]);
+  const sesionAnterior = orden.filter(i => reparto.dias[i]).map(i => sesionDeDia[i]);
+  return { reparto: { ...reparto, dias }, sesionAnterior };
+}
+
+/** Cambia el día `i` del ciclo por su vecino (`dir` = -1 izquierda, +1 derecha). */
+export function moverDiaDelReparto(reparto: RepartoPropio, i: number, dir: -1 | 1): Reordenacion {
+  const j = i + dir;
+  const orden = reparto.dias.map((_, k) => k);
+  if (j >= 0 && j < orden.length) [orden[i], orden[j]] = [orden[j], orden[i]];
+  return reordenar(reparto, orden);
+}
+
+/**
+ * Cambia la SESIÓN del día `i` por la sesión anterior o siguiente, dejando los
+ * descansos donde están: Push · Desc · Pull pasa a Pull · Desc · Push. Es lo
+ * que quiere decir «poner el tirón antes que el empuje»; con `moverDiaDelReparto`
+ * habría que saltar el descanso a mano y se movería de día.
+ */
+export function moverSesionDelReparto(reparto: RepartoPropio, i: number, dir: -1 | 1): Reordenacion {
+  const orden = reparto.dias.map((_, k) => k);
+  let j = i + dir;
+  while (j >= 0 && j < orden.length && !reparto.dias[j]) j += dir;
+  if (reparto.dias[i] && j >= 0 && j < orden.length) [orden[i], orden[j]] = [orden[j], orden[i]];
+  return reordenar(reparto, orden);
+}
+
+/**
+ * Hace que la sesión del día `i` sea la primera del ciclo, rotando el ORDEN de
+ * las sesiones pero sin mover los días de calendario: un Push-Pull-Legs de
+ * lunes, miércoles y viernes pasa a Legs-Push-Pull en esos mismos tres días.
+ * Es lo que se quiere al decir «empezar por pierna»; girar el ciclo entero
+ * arrastraría también los descansos y cambiaría qué días se entrena.
+ */
+export function empezarRepartoPor(reparto: RepartoPropio, i: number): Reordenacion {
+  const huecos = reparto.dias.flatMap((d, k) => (d ? [k] : []));
+  const inicio = huecos.indexOf(i);
+  const orden = reparto.dias.map((_, k) => k);
+  if (inicio > 0) huecos.forEach((hueco, n) => { orden[hueco] = huecos[(n + inicio) % huecos.length]; });
+  return reordenar(reparto, orden);
+}

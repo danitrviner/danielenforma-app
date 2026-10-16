@@ -1851,9 +1851,29 @@ export interface WeekDistribution {
     cycleDays?: number;
     splitId?: string;
     customOffsets?: string; // Mesocycle.customOffsets, serializado con .join(',')
+    /** Huella de los grupos de cada sesión del reparto propio (ver `huellaDeReparto`). */
+    reparto?: string;
     groupSeries: Partial<Record<MuscleGroup, number>>;
   };
   generatedAt: string;
+}
+
+/** Un día de entrenamiento de un reparto propio. */
+export interface DiaDeReparto {
+  /** Nombre del día que ve el coach y que da nombre a la rutina («Pierna», «Pecho · Tríceps»). */
+  tipo: string;
+  /** Grupos que se entrenan ese día. Es lo que usa la distribución, no el nombre. */
+  grupos: MuscleGroup[];
+}
+
+export interface RepartoPropio {
+  nombre: string;
+  /** Una entrada por DÍA DEL CICLO, en orden; `null` = descanso. */
+  dias: (DiaDeReparto | null)[];
+  /** Frecuencia por semana que pidió el coach en la calculadora (si salió de ahí). */
+  frecuencias?: Partial<Record<MuscleGroup, number>>;
+  /** Id del reparto del catálogo del que se partió, si se partió de uno. */
+  basadoEn?: string;
 }
 
 export interface Mesocycle {
@@ -1929,7 +1949,17 @@ export interface Mesocycle {
   programId?: string;      // links mesocycles created from the same template
   programOrder?: number;   // position in the sequence (0-based)
   splitId?: string;        // id del reparto de días elegido (ver utils/trainingSplits.ts)
-  deloadWeek?: number;     // semana (1-indexada) de descarga dentro del meso; undefined = sin descarga marcada
+  /**
+   * Reparto PROPIO del mesociclo: qué se entrena cada día del ciclo y en qué
+   * orden. Manda sobre `splitId` (ver `repartoDelMesociclo`).
+   *
+   * Existe porque el catálogo trae el orden y los grupos de cada día ya
+   * escritos: empezar por Pierna en vez de por Push, o un día «Pecho ·
+   * Hombro · Tríceps» que no es ninguno de la lista, no se podía decir.
+   * `daysPerWeek` y `cycleDays` se mantienen sincronizados con él al escribir.
+   */
+  reparto?: RepartoPropio;
+  deloadWeek?: number;    // semana (1-indexada) de descarga dentro del meso; undefined = sin descarga marcada
   /**
    * Semanas DE CICLO (vueltas, 1-indexadas) en las que el volumen baja de
    * verdad: cada ejercicio hace la mitad de series (redondeando hacia arriba).
