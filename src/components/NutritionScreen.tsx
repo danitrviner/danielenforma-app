@@ -4,16 +4,16 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { minutosDeReceta } from '../utils/tiempoDeReceta';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { UserProfile, Diet, DietMeal, DietItem, FoodCategory, DietMode, MealItem, Recipe, RecipeFavorites, RecetaPendiente, MenuCompletionLog, DietCompletionLog } from '../types';
-import { getDietsForAthlete, getAthleteDietConfig, saveAthleteDietConfig, createDiet, updateDiet, deleteDiet, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig, saveAthleteNutritionConfig, getRecipes, getRecipeFavorites, getNutritionProgram, markNutritionPhaseSeen, computeActivePhase, createNotificationDeduped, getDietCompletionLog, saveDietCompletionLog, createRecipe, queryRecetas, queryRecetasForGenerator, cargarIndiceRecetas, getOnboarding, getRecipeById, getMenuCompletionLog, saveMenuCompletionLog, getAlimentosPersonales, crearAlimentoPersonal, actualizarAlimentoPersonal, borrarAlimentoPersonal } from '../dbService';
-import type { RecetasCursor } from '../dbService';
-import { CAT_BASICAS, encajaCategoria, FILTROS_RAPIDAS, type FiltroRapidas } from '../db/recetasHidratacion';
+import { getDietsForAthlete, getAthleteDietConfig, saveAthleteDietConfig, createDiet, updateDiet, deleteDiet, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig, saveAthleteNutritionConfig, getRecipes, getRecipeFavorites, getNutritionProgram, markNutritionPhaseSeen, computeActivePhase, createNotificationDeduped, getDietCompletionLog, saveDietCompletionLog, createRecipe, queryRecetasForGenerator, cargarIndiceRecetas, getOnboarding, getRecipeById, getMenuCompletionLog, saveMenuCompletionLog, getAlimentosPersonales, crearAlimentoPersonal, actualizarAlimentoPersonal, borrarAlimentoPersonal } from '../dbService';
+import { esPlatoDelRecetario } from '../db/recetasHidratacion';
+import RecetarioDescubrir from './RecetarioDescubrir';
 import { CATS, BUDGET_CATS, CAT_LABEL, CAT_COLOR, CAT_BG, MODE_LABEL, ALL_DIET_MODES, round2, fmtQty, foodNameWithoutGrams, addToPlaced, recipeToDietItems, computeDietPlaced } from '../utils/exchangeHelpers';
 import { parseBaseGrams, etiquetaDePeso } from '../utils/conversionNutricional';
 import { findRecipeAlternatives, recipeExchanges, groupByDishType, ordenarPorCupo, type RecipeAlternative, type AlternativePrefs } from '../utils/recipeMatch';
 import { ingredientMatch, violatesDietType } from '../utils/foodPrefs';
 import { athleteConditions, violatesHealthConditions } from '../utils/dietaryRestrictions';
 import { dietTypeVigente } from '../utils/foodPrefs';
-import { coincideBusqueda, normalizarTexto } from '../utils/busqueda';
+import { coincideBusqueda } from '../utils/busqueda';
 import { coincidePorEquivalencia, explicacionesPara, esAlimentoLibre } from '../utils/equivalenciasDeAlimentos';
 import { dishType, dishTypeLabel, type DishType } from '../utils/dishTypes';
 import { filasDeComida, escalarReceta } from '../utils/filasDelPlan';
@@ -59,31 +59,6 @@ const HAMBRE_TEXTO: Record<'manana' | 'equilibrado' | 'noche', string> = {
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 // (ItemState viene de dietHelpers.ts — compartido con el resto de "Mi plan")
-
-// Mismas categorías fijas que RecipesScreen.tsx/RecipeBuilderScreen.tsx — el
-/** Tope de resultados del buscador del recetario. Sin él, una búsqueda de una
- *  letra pinta miles de filas de golpe y el móvil se queda clavado; con él,
- *  quien busca algo concreto lo encuentra igual y quien escribe "a" ve una
- *  muestra. No es paginación: es el freno de la lista renderizada. */
-const LIMITE_RESULTADOS_BUSQUEDA = 200;
-/** Cuántas coincidencias se recogen del catálogo antes de ordenarlas. Más alto
- *  que el tope de lo que se pinta para que el orden por cupo y preferencias
- *  tenga entre qué elegir, y acotado para que un término de una letra no
- *  arrastre miles de recetas hasta la ordenación. */
-const MAX_CANDIDATOS_BUSQUEDA = 500;
-
-// catálogo `queryRecetas` filtra por `categoria`, no hay forma de listarlas
-// dinámicamente sin traerse la colección entera, así que cada sitio que
-// navega el recetario mantiene su propia copia de esta lista corta.
-const RECETAS_CATS = [
-  'Todas',
-  CAT_BASICAS,
-  'Platos salados / principales',
-  'Desayuno y dulces',
-  'Bebidas',
-  'Suplementos deportivos',
-  'Alimentos y suplementos',
-];
 
 interface Props {
   profile: UserProfile;
@@ -450,22 +425,13 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
   const [recipeCatFilter, setRecipeCatFilter]       = useState<string>('all');
   // Dos fuentes en el mismo picker (a petición de Dani): "Mis recetas" (propias
   // + del coach, via getRecipes — lo que ya había) y "Recetario" (el catálogo
-  // de ~8.850, paginado con queryRecetas — antes solo estaba en la pestaña
-  // Recetas, no accesible desde aquí al elegir qué comer en una comida).
+  // de ~8.850, con la misma portada «Descubrir» que la pestaña Recetas).
   const [recipeSource, setRecipeSource]             = useState<'mias' | 'recetario'>('mias');
-  const [recetarioCat, setRecetarioCat]             = useState<string>('Todas');
-  const [recetarioRapidas, setRecetarioRapidas]     = useState<FiltroRapidas>('');
-  const [recetarioResults, setRecetarioResults]     = useState<Recipe[]>([]);
-  const [recetarioCursor, setRecetarioCursor]       = useState<RecetasCursor | null>(null);
-  const [recetarioHasMore, setRecetarioHasMore]     = useState(false);
-  const [recetarioLoading, setRecetarioLoading]     = useState(false);
-  const [recetarioLoadingMore, setRecetarioLoadingMore] = useState(false);
-  // El índice ENTERO (8.850) para el buscador. `recetarioResults` es solo la
-  // página que se está mostrando —48 recetas— y el término de búsqueda se
-  // aplicaba sobre ella: buscar "sandwich" miraba 48 de 8.850 y contestaba que
-  // no existe. `cargarIndiceRecetas` memoiza la promesa, así que esto no
-  // descarga nada que `queryRecetas` no estuviera pidiendo ya.
+  // El índice ENTERO (8.850): la portada calcula sus colecciones y su buscador
+  // sobre él. `cargarIndiceRecetas` memoiza la promesa: si la pestaña Recetas
+  // ya lo bajó, aquí no se descarga otra vez.
   const [indiceRecetario, setIndiceRecetario] = useState<Recipe[]>([]);
+  const [indiceRecetarioEstado, setIndiceRecetarioEstado] = useState<'cargando' | 'listo' | 'error'>('cargando');
   // Tracks how many items each meal had originally (before any recipe was applied)
   const [origItemCounts, setOrigItemCounts]         = useState<Record<string, number>>({});
 
@@ -937,54 +903,20 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
       ordenarPorCupo(filtered, cupoDisponible, 0.5, recipeSearchDebounced.trim().length === 0));
   }, [recipes, enabledModes, recipeCatFilter, recipeSearchDebounced, isSafeForAthlete, ordenarPorPreferencia, cupoDisponible]);
 
-  // Recetario (catálogo ~8.850) — queryRecetas solo filtra por categoría en el
-  // servidor (no hay búsqueda de texto ahí), así que el término de búsqueda se
-  // aplica en cliente sobre lo ya cargado, igual que hace RecipeBuilderScreen.
-  //
-  // ANTES filtraba por `r.ingredients.some(...)`, pero el recetario importado
-  // SIEMPRE tiene `ingredients: []` (el importador lo deja vacío a propósito,
-  // ver mapRecipe en importRecetas.mjs) — así que ese `.some()` era siempre
-  // `false` y esta pestaña no mostraba NUNCA ninguna receta del catálogo, para
-  // nadie. Bug de disponibilidad puro, no de preferencias, pero apareció al
-  // auditar esta pantalla para que respete alergias en todos los apartados.
-  /* El nombre normalizado se calcula UNA vez por receta, no en cada tecla:
-     `normalizarTexto` hace NFD + dos regex por nombre y son 8.850. */
-  const indiceBuscable = useMemo(
-    () => indiceRecetario.map(r => ({ receta: r, nombre: normalizarTexto(r.name) })),
-    [indiceRecetario],
-  );
-
-  const sortedRecetarioResults = useMemo(() => {
-    const termino = normalizarTexto(recipeSearchDebounced);
-    const buscando = termino.length > 0;
-    // Buscando se mira el catálogo ENTERO (con su filtro de categoría, el mismo
-    // que aplica la paginación); sin buscar, la página cargada. Antes se
-    // buscaba siempre sobre la página: el "Sándwich de jamón serrano" que le
-    // había salido a Javier en el menú no aparecía nunca (Dani, 07-09-2026).
-    let base: Recipe[];
-    if (buscando) {
-      // El corte va ANTES de ordenar. Ordenar es lo caro (el comparador
-      // recalcula los intercambios de cada receta), así que recortar después
-      // no ahorraba nada: con un término de una letra se ordenaban miles de
-      // recetas para tirar todas menos 200.
-      const encontradas: Recipe[] = [];
-      for (const { receta, nombre } of indiceBuscable) {
-        if (!encajaCategoria(receta, recetarioCat, recetarioRapidas)) continue;
-        if (!nombre.includes(termino)) continue;
-        encontradas.push(receta);
-        if (encontradas.length >= MAX_CANDIDATOS_BUSQUEDA) break;
-      }
-      base = encontradas;
-    } else {
-      base = recetarioResults;
-    }
-    const safe = base.filter(r => isSafeForAthlete(r, 'recetario'));
-    // Antes salía en el orden del catálogo (alfabético): las favoritas del
-    // atleta quedaban donde cayeran, y los tipos de plato que había pedido
-    // tener más no se adelantaban. Y buscando no se esconde lo que no cabe en
-    // el cupo del día: quien escribe un nombre quiere ESA receta.
-    return ordenarPorPreferencia(ordenarPorCupo(safe, cupoDisponible, 0.5, !buscando)).slice(0, LIMITE_RESULTADOS_BUSQUEDA);
-  }, [recetarioResults, indiceBuscable, recetarioCat, recetarioRapidas, recipeSearchDebounced, isSafeForAthlete, ordenarPorPreferencia, cupoDisponible]);
+  /* El recetario para «Usar receta»: lo que el atleta puede comer, con lo que
+     mejor llena el hueco elegido delante y sus favoritas y tipos de plato
+     preferidos por encima. Se ordena una vez (la portada no reordena), así que
+     cada colección sale ya en ese orden. */
+  const poolSelectorRecetario = useMemo(() => {
+    const seguras = indiceRecetario.filter(r => esPlatoDelRecetario(r) && isSafeForAthlete(r, 'recetario'));
+    const porCupo = ordenarPorCupo(seguras, cupoDisponible, 0.5, false);
+    const favoritas = new Set(recipeFavorites.recipeIds);
+    const preferidos = new Set(swapPrefs.preferredDishTypes ?? []);
+    const rango = (r: Recipe) => (favoritas.has(r.id) ? 0 : preferidos.has(dishType(r)) ? 1 : 2);
+    // `sort` es estable: dentro de cada rango se queda el orden por cupo.
+    return porCupo.sort((a, b) => rango(a) - rango(b));
+  }, [indiceRecetario, isSafeForAthlete, cupoDisponible, recipeFavorites, swapPrefs]);
+  const favoritasSet = useMemo(() => new Set(recipeFavorites.recipeIds), [recipeFavorites]);
 
   const swapCandidates = useMemo(() => {
     if (!swapSourceRecipe || swapPool.length === 0) return [];
@@ -1332,43 +1264,20 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     setRecipeSearch('');
     setRecipeCatFilter('all');
     setRecipeSource('mias');
-    setRecetarioCat('Todas');
-    setRecetarioRapidas('');
-    setRecetarioResults([]);
-    setRecetarioCursor(null);
-    setRecetarioHasMore(false);
   };
 
-  const loadRecetario = async (cat: string, rapidas: FiltroRapidas, cursor: RecetasCursor | null, append: boolean) => {
-    const result = await queryRecetas({ categoria: cat === 'Todas' ? undefined : cat, rapidas }, cursor);
-    setRecetarioResults(prev => append ? [...prev, ...result.recipes] : result.recipes);
-    setRecetarioCursor(result.cursor);
-    setRecetarioHasMore(result.hasMore);
-  };
-
-  // Carga (o recarga al cambiar de categoría) en cuanto se entra en la
-  // pestaña "Recetario" del picker — no antes, para no pedir nada si el
-  // atleta se queda en "Mis recetas".
+  // El índice se pide en cuanto se entra en la pestaña "Recetario" del picker
+  // — no antes, para no bajar nada si el atleta se queda en "Mis recetas".
+  const cargarIndiceRecetario = useCallback(() => {
+    setIndiceRecetarioEstado('cargando');
+    cargarIndiceRecetas()
+      .then(rs => { setIndiceRecetario(rs); setIndiceRecetarioEstado(rs.length > 0 ? 'listo' : 'error'); })
+      .catch(() => setIndiceRecetarioEstado('error'));
+  }, []);
   useEffect(() => {
-    if (!recipePickerMealId || recipeSource !== 'recetario') return;
-    if (indiceRecetario.length === 0) cargarIndiceRecetas().then(setIndiceRecetario).catch(() => {});
-    setRecetarioLoading(true);
-    loadRecetario(recetarioCat, recetarioRapidas, null, false)
-      .catch(() => showToast('No se pudo cargar el recetario.'))
-      .finally(() => setRecetarioLoading(false));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [recipePickerMealId, recipeSource, recetarioCat, recetarioRapidas]);
-
-  const handleRecetarioLoadMore = async () => {
-    setRecetarioLoadingMore(true);
-    try {
-      await loadRecetario(recetarioCat, recetarioRapidas, recetarioCursor, true);
-    } catch {
-      showToast('No se pudo cargar más recetas.');
-    } finally {
-      setRecetarioLoadingMore(false);
-    }
-  };
+    if (!recipePickerMealId || recipeSource !== 'recetario' || indiceRecetario.length > 0) return;
+    cargarIndiceRecetario();
+  }, [recipePickerMealId, recipeSource, indiceRecetario.length, cargarIndiceRecetario]);
 
   // ── "Guardar como receta" ────────────────────────────────────────────────
 
@@ -2835,66 +2744,34 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                 ))}
               </div>
 
-              {/* Search */}
-              <div className="px-4 py-2 bg-surface flex items-center gap-2 border-b border-hairline">
-                <Icon name="search" size="s" className="text-ink-2" />
-                <input
-                  type="text"
-                  placeholder="Buscar receta..."
-                  value={recipeSearch}
-                  onChange={e => setRecipeSearch(e.target.value)}
-                  className="w-full bg-transparent border-none text-ink text-title-s focus:ring-0 focus:outline-none p-2 placeholder-ink-2/45"
-                />
-              </div>
-
-              {/* Category filter */}
-              {recipeSource === 'mias' ? (
-                availableRecipeCats.length > 0 && (
-                  <div className="px-4 py-2 bg-surface border-b border-hairline flex gap-2 overflow-x-auto hide-scrollbar">
-                    {[{ id: 'all', label: 'Todas' }, ...availableRecipeCats.map(c => ({ id: c, label: c }))].map(cat => (
-                      <button
-                        key={cat.id}
-                        onClick={() => setRecipeCatFilter(cat.id)}
-                        className={`px-3 py-2 rounded-full font-sans text-caption font-bold uppercase tracking-wider whitespace-nowrap transition-all flex-shrink-0 ${
-                          recipeCatFilter === cat.id
-                            ? 'bg-accent text-on-accent'
-                            : 'bg-raised text-ink-2 border border-transparent hover:border-hairline'
-                        }`}
-                      >{cat.label}</button>
-                    ))}
-                  </div>
-                )
-              ) : (
-                <>
-                  <div className="px-4 py-2 bg-surface border-b border-hairline flex gap-2 overflow-x-auto hide-scrollbar">
-                    {RECETAS_CATS.map(cat => (
-                      <button
-                        key={cat}
-                        onClick={() => setRecetarioCat(cat)}
-                        className={`px-3 py-2 rounded-full font-sans text-caption font-bold uppercase tracking-wider whitespace-nowrap transition-all flex-shrink-0 ${
-                          recetarioCat === cat
-                            ? 'bg-accent text-on-accent'
-                            : 'bg-raised text-ink-2 border border-transparent hover:border-hairline'
-                        }`}
-                      >{cat}</button>
-                    ))}
-                  </div>
-                  {recetarioCat === CAT_BASICAS && (
-                    <div className="px-4 py-2 bg-surface border-b border-hairline flex gap-2 overflow-x-auto hide-scrollbar">
-                      {FILTROS_RAPIDAS.map(f => (
-                        <button
-                          key={f.value}
-                          onClick={() => setRecetarioRapidas(f.value)}
-                          className={`px-3 py-1.5 rounded-full font-sans text-caption font-bold whitespace-nowrap transition-all flex-shrink-0 ${
-                            recetarioRapidas === f.value
-                              ? 'bg-accent/15 text-accent-ink border border-accent/40'
-                              : 'bg-raised text-ink-2 border border-transparent hover:border-hairline'
-                          }`}
-                        >{f.label}</button>
-                      ))}
-                    </div>
-                  )}
-                </>
+              {/* Buscador y categorías solo para "Mis recetas": el recetario trae
+                  los suyos dentro de la portada «Descubrir». */}
+              {recipeSource === 'mias' && (
+                <div className="px-4 py-2 bg-surface flex items-center gap-2 border-b border-hairline">
+                  <Icon name="search" size="s" className="text-ink-2" />
+                  <input
+                    type="text"
+                    placeholder="Buscar receta..."
+                    value={recipeSearch}
+                    onChange={e => setRecipeSearch(e.target.value)}
+                    className="w-full bg-transparent border-none text-ink text-title-s focus:ring-0 focus:outline-none p-2 placeholder-ink-2/45"
+                  />
+                </div>
+              )}
+              {recipeSource === 'mias' && availableRecipeCats.length > 0 && (
+                <div className="px-4 py-2 bg-surface border-b border-hairline flex gap-2 overflow-x-auto hide-scrollbar">
+                  {[{ id: 'all', label: 'Todas' }, ...availableRecipeCats.map(c => ({ id: c, label: c }))].map(cat => (
+                    <button
+                      key={cat.id}
+                      onClick={() => setRecipeCatFilter(cat.id)}
+                      className={`px-3 py-2 rounded-full font-sans text-caption font-bold uppercase tracking-wider whitespace-nowrap transition-all flex-shrink-0 ${
+                        recipeCatFilter === cat.id
+                          ? 'bg-accent text-on-accent'
+                          : 'bg-raised text-ink-2 border border-transparent hover:border-hairline'
+                      }`}
+                    >{cat.label}</button>
+                  ))}
+                </div>
               )}
               </>
             )}
@@ -2909,25 +2786,18 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                   ) : sortedPickerRecipes.map(recipe => (
                     <RecipePickerRow key={recipe.id} recipe={recipe} isFav={recipeFavorites.recipeIds.includes(recipe.id)} enabledModes={enabledModes} onSelect={handleApplyRecipe} />
                   ))
-                ) : recetarioLoading ? (
-                  <div className="text-center py-10 font-mono text-label text-ink-2 italic">Cargando recetario…</div>
-                ) : sortedRecetarioResults.length === 0 ? (
-                  <div className="text-center py-10 font-mono text-label text-ink-2 italic">Ninguna receta coincide.</div>
                 ) : (
-                  <>
-                    {sortedRecetarioResults.map(recipe => (
-                      <RecipePickerRow key={recipe.id} recipe={recipe} isFav={recipeFavorites.recipeIds.includes(recipe.id)} enabledModes={enabledModes} onSelect={handleApplyRecipe} />
-                    ))}
-                    {recetarioHasMore && (
-                      <button
-                        onClick={handleRecetarioLoadMore}
-                        disabled={recetarioLoadingMore}
-                        className="w-full text-center py-3 font-sans text-label font-bold text-accent-ink disabled:opacity-50"
-                      >
-                        {recetarioLoadingMore ? 'Cargando…' : 'Cargar más'}
-                      </button>
-                    )}
-                  </>
+                  <RecetarioDescubrir
+                    pool={poolSelectorRecetario}
+                    estado={indiceRecetarioEstado}
+                    onReintentar={cargarIndiceRecetario}
+                    favoritas={favoritasSet}
+                    onElegir={r => handleApplyRecipe(r)}
+                    verbo="Usar"
+                    cupo={ambitoCupo === 'comida' && targetMeal
+                      ? { titulo: `Encajan en ${mealLabel(targetMeal.name, (selectedDiet?.meals.indexOf(targetMeal) ?? 0) + 1).toLowerCase()}`, cupo: cupoDisponible }
+                      : { titulo: 'Caben en lo que te queda hoy', cupo: cupoDisponible, criterio: 'caber' }}
+                  />
                 )}
               </div>
           </Sheet>

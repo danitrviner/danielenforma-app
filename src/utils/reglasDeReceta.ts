@@ -31,7 +31,23 @@ export interface ReglaDeReceta {
 export interface ReglasDeReceta {
   athleteId: string;
   reglas: ReglaDeReceta[];
+  /** Recetas que el coach le recomienda (10-2026): una fila arriba de su
+   *  recetario, en el orden en que las marcó. Una receta escondida no puede
+   *  estar recomendada a la vez (ver `conRecomendada`). */
+  recomendadas?: string[];
   updatedAt?: string;
+}
+
+/** Marca o desmarca una receta como recomendada. Recomendar una receta la
+ *  vuelve a permitir: recomendar algo que el atleta no puede ver no tiene
+ *  sentido, y dejarlo así haría que la recomendación no saliera nunca. */
+export function conRecomendada(
+  doc: Pick<ReglasDeReceta, 'reglas' | 'recomendadas'>, recipeId: string, recomendar: boolean,
+): { reglas: ReglaDeReceta[]; recomendadas: string[] } {
+  const actuales = (doc.recomendadas ?? []).filter(id => id !== recipeId);
+  return recomendar
+    ? { reglas: doc.reglas.filter(r => r.recipeId !== recipeId), recomendadas: [recipeId, ...actuales] }
+    : { reglas: doc.reglas, recomendadas: actuales };
 }
 
 export const DIAS_SEMANA: { dia: WeekDay; corto: string; largo: string }[] = [
