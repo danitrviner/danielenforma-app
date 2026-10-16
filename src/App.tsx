@@ -128,6 +128,11 @@ const AsignadosHarness = import.meta.env.DEV
   ? pantallaDiferida('AsignadosDevHarness', () => import('./components/AsignadosDevHarness'))
   : null;
 
+// Banco de pruebas de Nutrición › Recetas, portada «Descubrir» (ruta /dev/recetario).
+const RecetarioHarness = import.meta.env.DEV
+  ? pantallaDiferida('RecetarioDevHarness', () => import('./components/RecetarioDevHarness'))
+  : null;
+
 // Banco de pruebas de «Planificar progresión» (Mesociclo › Ejercicios) y del
 // aviso de cambios al empezar la sesión (ruta /dev/progresion).
 const ProgresionHarness = import.meta.env.DEV
@@ -771,6 +776,14 @@ function AppContent() {
     return (
       <Suspense fallback={<div className="min-h-screen bg-bg" />}>
         <ProgresionHarness />
+      </Suspense>
+    );
+  }
+
+  if (RecetarioHarness && location.pathname === '/dev/recetario') {
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-bg" />}>
+        <RecetarioHarness />
       </Suspense>
     );
   }

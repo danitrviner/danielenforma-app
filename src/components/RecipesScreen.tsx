@@ -1,22 +1,26 @@
 import { useReglasDeReceta } from '../hooks/useReglasDeReceta';
 import { recetaPermitida } from '../utils/reglasDeReceta';
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { superaElTiempo, minutosDeReceta } from '../utils/tiempoDeReceta';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   UserProfile, Recipe, RecipeFavorites, FoodCategory, DietMode, RecetaPendiente } from '../types';
 import {
   getRecipes, getRecipeFavorites, saveRecipeFavorites, deleteRecipe,
-  getAthleteNutritionConfig, queryRecetas, cargarIndiceRecetas, getOnboarding,
+  getAthleteNutritionConfig, cargarIndiceRecetas, getOnboarding,
   getDietsForAthlete, getAthleteDietConfig, OWNER_RECETARIO_TODOS, getRecipeById,
+  getDietCompletionLogsForAthlete,
 } from '../dbService';
-import type { RecetasCursor } from '../dbService';
-import { CAT_BASICAS, encajaCategoria, FILTROS_RAPIDAS, type FiltroRapidas } from '../db/recetasHidratacion';
-import { useDebouncedValue } from '../hooks/useDebouncedValue';
+import { esPlatoDelRecetario } from '../db/recetasHidratacion';
+import { useRecomendadasDelCoach } from '../hooks/useReglasDeReceta';
+import RecetarioDescubrir, { type FilaPersonal } from './RecetarioDescubrir';
+import { cupoDeLaProximaComida, recetasMasHechas } from '../utils/coleccionesRecetario';
+import { resolveSlots } from '../utils/mealDistribution';
+import { diaSemanaDe } from '../hooks/useDiaActual';
+import { hoyIsoLocal } from '../utils/trainingWeek';
 import { classifyRecipe, violatesDietType } from '../utils/foodPrefs';
 import { athleteConditions } from '../utils/dietaryRestrictions';
 import { dietTypeVigente } from '../utils/foodPrefs';
-import { coincideBusqueda } from '../utils/busqueda';
 import { dishType } from '../utils/dishTypes';
 import { BUDGET_CATS, roundQuarter, CAT_COLOR, CAT_BG } from '../utils/exchangeHelpers';
 import { exchangeToKcal } from '../utils/nutritionConstants';
@@ -24,7 +28,7 @@ import { fotoDeReceta } from '../utils/fotoDeReceta';
 import { escalarRecetaEntera } from '../utils/escalarRecetaEntera';
 import FotoDeReceta from './FotoDeReceta';
 import { Skeleton } from './ui';
-import { EmptyState, Badge, Chip, SearchField, Button, Select, ListRow } from './ui';
+import { EmptyState, Badge, Chip, Button, ListRow } from './ui';
 import { pulsable } from '../utils/a11y';
 
 // ── Exchange helpers ──────────────────────────────────────────────────────────
@@ -70,16 +74,6 @@ function formatExchanges(exch: Partial<Record<FoodCategory, number>>): string {
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const RECETAS_CATS = [
-  'Todas',
-  CAT_BASICAS,
-  'Platos salados / principales',
-  'Desayuno y dulces',
-  'Bebidas',
-  'Suplementos deportivos',
-  'Alimentos y suplementos',
-];
-
 const INTAKE_LABELS: Record<number, string> = {
   1: 'Desayuno',
   2: 'Media mañana',
@@ -88,10 +82,8 @@ const INTAKE_LABELS: Record<number, string> = {
   5: 'Cena',
 };
 
-// Cuántas recetas visibles intenta juntar cada clic de «Cargar más recetas», y
-// cuántas lecturas como mucho se encadenan para lograrlo.
-const RECETAS_VISIBLES_POR_CLIC = 12;
-const MAX_PAGINAS_POR_CLIC = 3;
+// Días de registro que se miran para «Las que más haces».
+const DIAS_MAS_HECHAS = 30;
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
@@ -208,80 +200,6 @@ const RecipeCard = React.memo(function RecipeCard({ recipe, isFav, large = false
         {exchStr !== '—' && (
           <p className="font-mono text-caption text-on-veil-accent/80 font-bold">{exchStr}</p>
         )}
-      </div>
-    </article>
-  );
-});
-
-// Compact card used in the Recetas paginated grid (image-forward, tighter)
-const RecetaCard = React.memo(function RecetaCard({ recipe, isFav, isFeatured, excedeTiempo, onOpen, onToggleFav }: Omit<CardProps, 'large'>) {
-  const photo = fotoDeReceta(recipe);
-  const exch = recipe.exchanges;
-
-  return (
-    <article
-      {...pulsable(() => onOpen(recipe), `Abrir la receta ${recipe.name}`)}
-      className={`group relative rounded-surface overflow-hidden bg-raised border aspect-[4/5] flex flex-col justify-end cursor-pointer transition-all ${
-        isFeatured
-          ? 'border-accent/40 hover:border-accent/70'
-          : 'border-hairline hover:border-accent/40'
-      }`}
-    >
-      <FotoDeReceta
-        src={photo}
-        alt={recipe.name}
-        className="absolute inset-0 w-full h-full object-cover opacity-70 group-hover:scale-105 transition-transform duration-500"
-        fallback={
-          <div className="absolute inset-0 bg-gradient-to-br from-raised to-bg flex items-center justify-center">
-            <span className="material-symbols-outlined text-display text-ink-3">skillet</span>
-          </div>
-        }
-      />
-      <div className="absolute inset-0 bg-gradient-to-t from-veil/95 via-veil/50 to-transparent" />
-
-      <button
-        onClick={e => { e.stopPropagation(); onToggleFav(recipe.id); }}
-        className="absolute top-2 right-2 w-7 h-7 rounded-full bg-veil/50 flex items-center justify-center z-10"
-      >
-        <span className="material-symbols-outlined text-body-s"
-          style={{ fontVariationSettings: isFav ? "'FILL' 1" : "'FILL' 0", color: isFav ? 'var(--color-on-veil-accent)' : 'var(--color-on-veil-2)' }}
-        >favorite</span>
-      </button>
-
-      {/* kcal or featured badge */}
-      {isFeatured ? (
-        <div className="absolute top-2 left-2 bg-warning/90 rounded-control px-2 font-mono text-caption text-on-fill font-bold z-10 flex items-center ">
-          <span className="material-symbols-outlined" style={{ fontSize: '9px', fontVariationSettings: "'FILL' 1" }}>star</span>
-          Para ti
-        </div>
-      ) : recipe.kcal ? (
-        <div className="absolute top-2 left-2 bg-veil/60 backdrop-blur-sm rounded-control px-2 font-mono text-caption text-on-veil-2 z-10">
-          {recipe.kcal} kcal
-        </div>
-      ) : null}
-
-      <div className="relative z-10 p-3 space-y-1">
-        <p className="font-sans font-bold text-on-veil text-label leading-tight line-clamp-2">{recipe.name}</p>
-        {exch && (exch.HC > 0 || exch.PROT > 0 || exch.GRASA > 0) && (
-          <p className="font-mono text-caption text-on-veil-accent/75">
-            {[exch.HC > 0 && `${exch.HC}HC`, exch.PROT > 0 && `${exch.PROT}P`, exch.GRASA > 0 && `${exch.GRASA}G`]
-              .filter(Boolean).join(' · ')}
-          </p>
-        )}
-        <div className="flex flex-wrap gap-1 ">
-          {recipe.cookingTime && (
-            <span
-              className={`flex items-center font-mono text-caption ${excedeTiempo ? 'text-warning' : 'text-ink-2'}`}
-              title={excedeTiempo ? 'Tarda más de lo que sueles tener para cocinar' : undefined}
-            >
-              <span className="material-symbols-outlined" style={{ fontSize: '10px' }}>schedule</span>
-              ~{minutosDeReceta(recipe)}min
-            </span>
-          )}
-          {recipe.tupper && (
-            <span className="font-mono text-caption text-data">tupper</span>
-          )}
-        </div>
       </div>
     </article>
   );
@@ -758,21 +676,11 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
   );
   const [selectedCat, setSelectedCat]   = useState<string>('all');
 
-  const [showDislikedSection, setShowDislikedSection] = useState(false);
 
-  // Recetas browser
-  const [recetasCat, setRecetasCat]         = useState<string>('Todas');
-  const [recetasRapidas, setRecetasRapidas] = useState<FiltroRapidas>('');
-  const [recetasIntake, setRecetasIntake]   = useState<number | null>(null);
-  const [recetasSearch, setRecetasSearch]   = useState('');
-  const recetasSearchDebounced = useDebouncedValue(recetasSearch, 200);
-  const [recetasRecipes, setRecetasRecipes] = useState<Recipe[]>([]);
-  // Índice completo (8.850 recetas) para que buscar por nombre no se quede
-  // mirando solo la página ya paginada (`recetasRecipes`, 48 a la vez) — sin
-  // esto, una receta que encaja pero no cayó en las primeras páginas cargadas
-  // era invisible para el buscador aunque el índice entero ya estuviera en
-  // memoria. `cargarIndiceRecetas` memoiza la promesa: `queryRecetas` (arriba)
-  // pide el mismo índice, así que esto no duplica la descarga.
+  /* El recetario entero (8.850) en memoria: la portada «Descubrir» calcula sus
+     colecciones y su buscador sobre él. `cargarIndiceRecetas` memoiza la
+     promesa, así que no se descarga dos veces. Antes se paginaba de 48 en 48
+     con dos desplegables, y para dar con algo había que saber qué buscar. */
   const [indiceRecetas, setIndiceRecetas] = useState<Recipe[]>([]);
   /* Y en qué estado está esa carga. Sin esto, mientras el índice no estaba (aún
      bajando, o porque falló) el buscador contestaba «Nada para X» — o sea, "esa
@@ -786,68 +694,11 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
       .catch(() => setIndiceEstado('error'));
   }, []);
   useEffect(() => { cargarIndice(); }, [cargarIndice]);
-  const [recetasCursor, setRecetasCursor]   = useState<RecetasCursor | null>(null);
-  const [recetasHasMore, setRecetasHasMore] = useState(false);
-  const [recetasLoading, setRecetasLoading] = useState(true);
-  const [recetasLoadingMore, setRecetasLoadingMore] = useState(false);
-  const [recetasError, setRecetasError] = useState<string | null>(null);
 
   // Detail
   const [activeRecipe, setActiveRecipe] = useState<Recipe | null>(null);
   const [savingFav, setSavingFav]       = useState(false);
   const [deletingOwn, setDeletingOwn]   = useState(false);
-
-  // ── Recetas paginated load ────────────────────────────────────────────────────
-
-  // Cada carga que NO es "cargar más" (append=false) es una selección de
-  // filtro nueva. Sin esto, dos toques rápidos en distintas categorías podían
-  // acabar con la respuesta de la PRIMERA pisando a la segunda si llegaba más
-  // tarde — no hay AbortController real aquí (queryRecetas filtra en memoria
-  // sobre el índice ya cargado, no hay petición de red que cancelar), pero el
-  // resultado tardío se puede simplemente descartar en vez de aplicarse.
-  const recetasGenRef = useRef(0);
-
-  const loadRecetas = useCallback(async (
-    cat: string,
-    intake: number | null,
-    rapidas: FiltroRapidas,
-    cursor: RecetasCursor | null,
-    append: boolean,
-  ) => {
-    const generacion = append ? recetasGenRef.current : ++recetasGenRef.current;
-    const filters = {
-      categoria: cat === 'Todas' ? undefined : cat,
-      intakeType: intake ?? undefined,
-      rapidas,
-    };
-    try {
-      const result = await queryRecetas(filters, cursor);
-      if (generacion !== recetasGenRef.current) return null; // el filtro cambió mientras cargaba
-      setRecetasRecipes(prev => append ? [...prev, ...result.recipes] : result.recipes);
-      setRecetasCursor(result.cursor);
-      setRecetasHasMore(result.hasMore);
-      setRecetasError(null);
-      // Se devuelve además de guardarse en estado: `handleLoadMore` encadena
-      // páginas dentro de un mismo clic y no puede esperar al re-render para
-      // saber con qué cursor sigue ni cuántas recetas le han valido.
-      return result;
-    } catch (err) {
-      if (generacion !== recetasGenRef.current) return null;
-      console.warn('queryRecetas failed:', err);
-      setRecetasError('No se pudieron cargar las recetas. Reintenta.');
-      // Keep hasMore true so the retry button stays visible; cursor is left
-      // untouched so retrying repeats the same (failed) page.
-      setRecetasHasMore(true);
-      return null;
-    }
-  }, []);
-
-  // Reset and reload when filters change
-  useEffect(() => {
-    setRecetasLoading(true);
-    setRecetasSearch('');
-    loadRecetas(recetasCat, recetasIntake, recetasRapidas, null, false).finally(() => setRecetasLoading(false));
-  }, [recetasCat, recetasIntake, recetasRapidas, loadRecetas]);
 
   // Lo que de verdad acaba en pantalla. El filtrado por alergias, tipo de dieta
   // y presupuesto ocurre DESPUÉS de paginar, así que sin esto una página entera
@@ -864,23 +715,6 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
     if (prefs.tiposExcluidos.size > 0 && prefs.tiposExcluidos.has(dishType(r))) return false;
     return classifyRecipe(r, prefs.liked, prefs.disliked, prefs.allergies, prefs.conditions) !== 'allergy';
   }, [onlyFitsBudget, fitsBudget, prefs, recetasOcultas]);
-
-  const handleLoadMore = useCallback(async () => {
-    setRecetasLoadingMore(true);
-    // Se encadenan páginas hasta juntar recetas visibles de verdad, no hasta
-    // completar una lectura. El tope evita quemar lecturas en cadena cuando el
-    // recetario se acaba o las preferencias descartan casi todo.
-    let cursor = recetasCursor;
-    let visibles = 0;
-    for (let intento = 0; intento < MAX_PAGINAS_POR_CLIC && visibles < RECETAS_VISIBLES_POR_CLIC; intento++) {
-      const result = await loadRecetas(recetasCat, recetasIntake, recetasRapidas, cursor, true);
-      if (!result) break;                       // error: el aviso ya está puesto
-      visibles += result.recipes.filter(esVisible).length;
-      cursor = result.cursor;
-      if (!result.hasMore) break;
-    }
-    setRecetasLoadingMore(false);
-  }, [loadRecetas, recetasCat, recetasIntake, recetasRapidas, recetasCursor, esVisible]);
 
   // ── Derived data ────────────────────────────────────────────────────────────
 
@@ -911,57 +745,65 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
     return onlyFitsBudget ? safe.filter(fitsBudget) : safe;
   }, [recipes, favoritosSet, selectedCat, profile.userId, onlyFitsBudget, fitsBudget, prefs]);
 
-  const { recetasFeatured, recetasNormal, recetasDisliked, recetasTotalVisible } = useMemo(() => {
-    const termino = recetasSearchDebounced.trim();
-    // Con término de búsqueda se filtra el ÍNDICE COMPLETO (mismos filtros de
-    // categoría/momento que ya aplica queryRecetas para paginar), no solo lo
-    // ya paginado — de lo contrario solo aparecían coincidencias que hubieran
-    // caído en alguna de las páginas ya cargadas.
-    const bySearch = termino
-      ? indiceRecetas.filter(r =>
-          encajaCategoria(r, recetasCat, recetasRapidas) &&
-          (recetasIntake == null || (r.intakeTypes ?? []).includes(recetasIntake)) &&
-          coincideBusqueda(r.name, termino))
-      : recetasRecipes;
-    const searched = onlyFitsBudget ? bySearch.filter(fitsBudget) : bySearch;
-
-    // Ojo con este atajo: lo que no esté aquí no se filtra. Devuelve la lista
-    // TAL CUAL, sin pasar por `esVisible`, así que olvidar una restricción aquí
-    // la desactiva entera para el buscador aunque el resto de la pantalla la
-    // respete. Le pasó al filtro por condición de salud nada más añadirlo: un
-    // celíaco omnívoro y sin más preferencias caía por este return y volvía a
-    // ver el seitán.
-    const hasPrefs = prefs.liked.length > 0 || prefs.disliked.length > 0 || prefs.allergies.length > 0 ||
-      prefs.conditions.length > 0 ||
-      prefs.tiposPreferidos.size > 0 || prefs.tiposExcluidos.size > 0 || favoritosSet.size > 0 ||
-      (!!prefs.dietType && prefs.dietType !== 'omnivoro' && prefs.dietType !== 'otro');
-    if (!hasPrefs) {
-      return { recetasFeatured: [], recetasNormal: searched, recetasDisliked: [], recetasTotalVisible: searched.length };
-    }
-
-    // «Destacadas» reúne, por este orden, lo que el atleta ha dicho que quiere:
-    // primero sus favoritas —es la señal más explícita que existe, la marcó
-    // receta a receta—, después los tipos de plato que pidió tener más y los
-    // ingredientes que le gustan. Antes esta sección solo miraba ingredientes,
-    // así que una receta marcada como favorita podía aparecer enterrada entre
-    // cientos.
-    const favoritas: Recipe[] = [], featured: Recipe[] = [], normal: Recipe[] = [], disliked: Recipe[] = [];
-    for (const r of searched) {
-      if (!esVisible(r)) continue;
-      if (favoritosSet.has(r.id)) { favoritas.push(r); continue; }
+  /* El pool de la portada: lo que este atleta puede ver, en el orden en que lo
+     quiere. Primero sus favoritas —la señal más explícita que hay, la marcó
+     receta a receta—, luego los tipos de plato que pidió tener más y los
+     ingredientes que le gustan, el resto, y al final lo que lleva algo que no
+     le gusta (no se esconde: puede que hoy le apetezca). */
+  const poolDescubrir = useMemo(() => {
+    const favs: Recipe[] = [], destacadas: Recipe[] = [], normales: Recipe[] = [], noGustan: Recipe[] = [];
+    for (const r of indiceRecetas) {
+      if (!esPlatoDelRecetario(r) || !esVisible(r)) continue;
+      if (favoritosSet.has(r.id)) { favs.push(r); continue; }
       const cls = classifyRecipe(r, prefs.liked, prefs.disliked, prefs.allergies, prefs.conditions);
-      if (cls === 'disliked') { disliked.push(r); continue; }
-      if (cls === 'featured' || prefs.tiposPreferidos.has(dishType(r))) featured.push(r);
-      else normal.push(r);
+      if (cls === 'disliked') noGustan.push(r);
+      else if (cls === 'featured' || prefs.tiposPreferidos.has(dishType(r))) destacadas.push(r);
+      else normales.push(r);
     }
-    featured.unshift(...favoritas);
-    return {
-      recetasFeatured: featured,
-      recetasNormal:   normal,
-      recetasDisliked: disliked,
-      recetasTotalVisible: featured.length + normal.length + disliked.length,
-    };
-  }, [recetasRecipes, indiceRecetas, recetasSearchDebounced, recetasCat, recetasIntake, recetasRapidas, prefs, onlyFitsBudget, fitsBudget, esVisible, favoritosSet]);
+    return [...favs, ...destacadas, ...normales, ...noGustan];
+  }, [indiceRecetas, esVisible, favoritosSet, prefs]);
+
+  /* La fila «Encajan en tu comida»: el reparto que el coach puso a la próxima
+     comida de hoy, en la dieta que toca hoy (la del calendario semanal o, sin
+     calendario, la primera activa). Día libre o sin reparto = sin fila. */
+  const cupoProxima = useMemo(() => {
+    const programada = dietConfig?.weeklySchedule?.[diaSemanaDe(hoyIsoLocal())];
+    if (programada === null) return null;
+    const dieta = diets.find(d => d.id === (programada ?? dietConfig?.activeDietIds?.[0]));
+    const ahora = new Date();
+    return cupoDeLaProximaComida(dieta?.meals, resolveSlots, ahora.getHours() + ahora.getMinutes() / 60);
+  }, [diets, dietConfig]);
+
+  /* Lo que el atleta ha comido de verdad el último mes, para «Las que más
+     haces». Una lectura por día registrado (~30 como mucho) y se guarda diez
+     minutos: no se vuelve a pedir cada vez que entra en la pestaña. */
+  const desdeMasHechas = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - DIAS_MAS_HECHAS);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }, []);
+  const { data: registrosRecientes = [] } = useQuery({
+    queryKey: ['dietCompletionLogs', profile.email, 'desde', desdeMasHechas],
+    queryFn: () => getDietCompletionLogsForAthlete(profile.email, desdeMasHechas),
+    staleTime: 10 * 60_000,
+  });
+  const recomendadasIds = useRecomendadasDelCoach(profile.email);
+  const filasPersonales = useMemo<FilaPersonal[]>(() => {
+    const enPool = new Map(poolDescubrir.map(r => [r.id, r]));
+    const propias = new Map(recipes.map(r => [r.id, r]));
+    const buscar = (id: string) => enPool.get(id) ?? propias.get(id);
+    return [
+      {
+        id: 'coach', titulo: 'Recomendadas por tu entrenador', icono: 'star',
+        recetas: recomendadasIds.map(id => enPool.get(id)).filter((r): r is Recipe => !!r),
+      },
+      {
+        id: 'mas_hechas', titulo: 'Las que más haces', icono: 'history', subtitulo: 'Lo que más has comido este último mes.',
+        recetas: recetasMasHechas(registrosRecientes).map(x => buscar(x.recipeId)).filter((r): r is Recipe => !!r),
+      },
+    ];
+  }, [poolDescubrir, recipes, recomendadasIds, registrosRecientes]);
+
 
   // ── Favorites ───────────────────────────────────────────────────────────────
 
@@ -1031,30 +873,33 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
 
   // ── Detail view ─────────────────────────────────────────────────────────────
 
-  if (activeRecipe) {
-    return (
-      <RecipeDetail
-        recipe={activeRecipe}
-        isFav={favoritosSet.has(activeRecipe.id)}
-        isDisliked={(favorites.dislikedIds ?? []).includes(activeRecipe.id)}
-        isOwn={activeRecipe.ownerId === profile.userId}
-        enabledModes={enabledModes}
-        savingFav={savingFav}
-        deletingOwn={deletingOwn}
-        dailyBudgetTotal={dailyBudgetTotal}
-        onBack={() => setActiveRecipe(null)}
-        onToggleFav={toggleFavorite}
-        onToggleDislike={toggleDislike}
-        onDelete={handleDeleteRecipe}
-        onAddToIntercambios={onAddToIntercambios}
-      />
-    );
-  }
+  const detalle = activeRecipe && (
+    <RecipeDetail
+      recipe={activeRecipe}
+      isFav={favoritosSet.has(activeRecipe.id)}
+      isDisliked={(favorites.dislikedIds ?? []).includes(activeRecipe.id)}
+      isOwn={activeRecipe.ownerId === profile.userId}
+      enabledModes={enabledModes}
+      savingFav={savingFav}
+      deletingOwn={deletingOwn}
+      dailyBudgetTotal={dailyBudgetTotal}
+      onBack={() => setActiveRecipe(null)}
+      onToggleFav={toggleFavorite}
+      onToggleDislike={toggleDislike}
+      onDelete={handleDeleteRecipe}
+      onAddToIntercambios={onAddToIntercambios}
+    />
+  );
+
 
   // ── Gallery view ─────────────────────────────────────────────────────────────
 
   return (
-    <div className="space-y-6">
+    <>
+    {detalle}
+    {/* La portada sigue montada mientras se lee una receta: al volver, la
+        colección que tenías abierta sigue ahí en vez de devolverte al principio. */}
+    <div className="space-y-6" hidden={!!activeRecipe}>
       {/* Sin cabecera propia — ver NutritionScreen. */}
 
       {/* "Cabe en mi presupuesto" — primer chip, seleccionado por defecto (handoff, panel 03) */}
@@ -1133,203 +978,18 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
         </div>
       )}
 
-      {/* ── Biblioteca de recetas (paginated, backed by the Recetas dataset — never shown to the user) ──── */}
-      <section className="space-y-4">
-        <h2 className="font-sans font-bold text-body-s text-ink uppercase tracking-wider flex items-center gap-2">
-          <span className="material-symbols-outlined text-data text-title-s">library_books</span>
-          Biblioteca de recetas
-          <span className="font-mono text-caption text-ink-2 normal-case font-normal">8 850 recetas</span>
-        </h2>
-
-        {/* Category filter */}
-        {/* Dos desplegables en vez de dos filas de chips (petición de Dani,
-            14-08). Entre la tira de categorías —que además se cortaba a la
-            derecha con su barra de scroll— y los seis chips de momento se iba
-            media pantalla del móvil antes de enseñar una sola receta. Con
-            `Select` la lista la dibuja iOS como rueda a pantalla completa, que
-            para elegir una de seis opciones va mejor que una fila que hay que
-            arrastrar. */}
-        <div className={`grid grid-cols-1 gap-3 ${recetasCat === CAT_BASICAS ? 'sm:grid-cols-3' : 'sm:grid-cols-2'}`}>
-          <Select
-            label="Categoría"
-            value={recetasCat}
-            onChange={setRecetasCat}
-            options={RECETAS_CATS.map(cat => ({ value: cat, label: cat }))}
-          />
-          {recetasCat === CAT_BASICAS && (
-            <Select
-              label="Tiempo"
-              value={recetasRapidas}
-              onChange={v => setRecetasRapidas(v as FiltroRapidas)}
-              options={FILTROS_RAPIDAS}
-            />
-          )}
-          <Select
-            label="Momento del día"
-            value={recetasIntake === null ? '' : String(recetasIntake)}
-            onChange={v => setRecetasIntake(v === '' ? null : Number(v))}
-            options={[
-              { value: '', label: 'Todos los momentos' },
-              ...Object.entries(INTAKE_LABELS).map(([k, label]) => ({ value: k, label })),
-            ]}
-          />
-        </div>
-
-        {/* Name search */}
-        <SearchField
-          value={recetasSearch}
-          onChange={setRecetasSearch}
-          placeholder="Buscar entre 8.850 recetas…"
-          label="Buscar en la biblioteca de recetas"
-        />
-
-        {/* Grid */}
-        {recetasLoading ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-            <Skeleton className="h-40 w-full rounded-surface" />
-            <Skeleton className="h-40 w-full rounded-surface" />
-            <Skeleton className="h-40 w-full rounded-surface" />
-            <Skeleton className="h-40 w-full rounded-surface" />
-          </div>
-        ) : recetasTotalVisible === 0 && recetasError ? (
-          <div className="flex flex-col items-center gap-3 py-10">
-            <p className="font-sans text-label text-danger uppercase tracking-widest text-center">{recetasError}</p>
-            <button
-              onClick={handleLoadMore}
-              disabled={recetasLoadingMore}
-              className="px-6 py-3 bg-raised border border-hairline hover:border-accent/50 text-ink-2 hover:text-ink font-sans text-label uppercase tracking-wider rounded-control transition-all disabled:opacity-50 flex items-center gap-2"
-            >
-              {recetasLoadingMore
-                ? <><span className="material-symbols-outlined text-body-s animate-spin">progress_activity</span>Cargando…</>
-                : <><span className="material-symbols-outlined text-body-s">refresh</span>Reintentar</>
-              }
-            </button>
-          </div>
-        ) : recetasSearch && indiceEstado !== 'listo' ? (
-          /* Buscando sin catálogo cargado no se puede decir que no haya nada:
-             se dice lo que de verdad pasa. */
-          <EmptyState
-            icon={indiceEstado === 'cargando' ? 'hourglass_top' : 'cloud_off'}
-            title={indiceEstado === 'cargando' ? 'Cargando el recetario…' : 'No se pudo cargar el recetario'}
-            description={indiceEstado === 'cargando'
-              ? 'Son 8.850 recetas; un momento y vuelve a buscar.'
-              : 'Sin él no se puede buscar entre las 8.850 recetas.'}
-            actionLabel={indiceEstado === 'error' ? 'Reintentar' : undefined}
-            onAction={indiceEstado === 'error' ? cargarIndice : undefined}
-          />
-        ) : recetasTotalVisible === 0 ? (
-          <EmptyState
-            icon="search_off"
-            title={recetasSearch ? `Nada para «${recetasSearch}»` : 'Sin recetas para estos filtros.'}
-            description={onlyFitsBudget ? 'Prueba con otro término, o quita el filtro de presupuesto.' : undefined}
-            actionLabel={onlyFitsBudget ? 'Quitar presupuesto' : undefined}
-            onAction={onlyFitsBudget ? () => setOnlyFitsBudget(false) : undefined}
-          />
-        ) : (
-          <div className="space-y-6">
-            <p className="font-sans text-caption text-ink-2 uppercase">
-              {recetasSearch
-                ? `${recetasTotalVisible} de ${recetasRecipes.length} resultados en esta página`
-                : `${recetasRecipes.length} receta${recetasRecipes.length !== 1 ? 's' : ''} cargada${recetasRecipes.length !== 1 ? 's' : ''}${recetasHasMore ? ' · hay más' : ''}`
-              }
-            </p>
-
-            {/* ── Destacadas: favoritas primero, luego tipos de plato pedidos e
-                   ingredientes que le gustan ── */}
-            {recetasFeatured.length > 0 && (
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-warning text-body-s" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
-                  <h3 className="font-sans text-caption text-warning uppercase tracking-wider font-bold">
-                    Destacadas para ti ({recetasFeatured.length})
-                  </h3>
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-                  {recetasFeatured.map(r => (
-                    <RecetaCard
-                      key={r.id}
-                      recipe={r}
-                      isFav={favoritosSet.has(r.id)}
-                      isFeatured
-                      onOpen={openRecipe}
-                      excedeTiempo={excedeTiempoDeCocina(r)}
-                      onToggleFav={toggleFavorite}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* ── Normal recipes ── */}
-            {recetasNormal.length > 0 && (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-                {recetasNormal.map(r => (
-                  <RecetaCard
-                    key={r.id}
-                    recipe={r}
-                    isFav={favoritosSet.has(r.id)}
-                    onOpen={openRecipe}
-                    excedeTiempo={excedeTiempoDeCocina(r)}
-                    onToggleFav={toggleFavorite}
-                  />
-                ))}
-              </div>
-            )}
-
-            {/* ── With disliked ingredients (collapsible) ── */}
-            {recetasDisliked.length > 0 && (
-              <div className="space-y-2">
-                <button
-                  onClick={() => setShowDislikedSection(v => !v)}
-                  className="flex items-center gap-2 w-full text-left group"
-                >
-                  <span className="material-symbols-outlined text-body-s text-ink-3 group-hover:text-ink-2 transition-colors">
-                    {showDislikedSection ? 'expand_less' : 'expand_more'}
-                  </span>
-                  <span className="font-sans text-caption text-ink-3 group-hover:text-ink-2 uppercase tracking-wider transition-colors">
-                    Con ingredientes que no te gustan ({recetasDisliked.length})
-                  </span>
-                </button>
-                {showDislikedSection && (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 opacity-50">
-                    {recetasDisliked.map(r => (
-                      <RecetaCard
-                        key={r.id}
-                        recipe={r}
-                        isFav={favoritosSet.has(r.id)}
-                        onOpen={openRecipe}
-                        excedeTiempo={excedeTiempoDeCocina(r)}
-                        onToggleFav={toggleFavorite}
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {recetasError && (
-              <div className="flex flex-col items-center gap-2 pt-2">
-                <p className="font-sans text-caption text-danger uppercase tracking-wide">{recetasError}</p>
-              </div>
-            )}
-
-            {recetasHasMore && !recetasSearch && (
-              <div className="flex justify-center pt-2">
-                <button
-                  onClick={handleLoadMore}
-                  disabled={recetasLoadingMore}
-                  className="px-6 py-3 bg-raised border border-hairline hover:border-accent/50 text-ink-2 hover:text-ink font-sans text-label uppercase tracking-wider rounded-control transition-all disabled:opacity-50 flex items-center gap-2"
-                >
-                  {recetasLoadingMore
-                    ? <><span className="material-symbols-outlined text-body-s animate-spin">progress_activity</span>Cargando…</>
-                    : <><span className="material-symbols-outlined text-body-s">expand_more</span>{recetasError ? 'Reintentar' : 'Cargar más recetas'}</>
-                  }
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-      </section>
+      <RecetarioDescubrir
+        pool={poolDescubrir}
+        estado={indiceEstado}
+        onReintentar={cargarIndice}
+        favoritas={favoritosSet}
+        onElegir={openRecipe}
+        onFavorita={toggleFavorite}
+        cupo={cupoProxima}
+        filasPersonales={filasPersonales}
+        excedeTiempo={excedeTiempoDeCocina}
+      />
     </div>
+    </>
   );
 }

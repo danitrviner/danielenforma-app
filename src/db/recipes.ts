@@ -264,11 +264,18 @@ export async function getReglasDeReceta(athleteEmail: string): Promise<ReglasDeR
   }
 }
 
-export async function saveReglasDeReceta(reglas: ReglasDeReceta): Promise<void> {
+/* `merge`: las escondidas y las recomendadas viven en el mismo documento y se
+   guardan por separado. Sin merge, guardar una regla de esconder borraba las
+   recomendadas (y al revés), porque `setDoc` reemplaza el documento entero.
+   Los arrays que sí se mandan se sustituyen enteros, que es lo que se quiere. */
+export async function saveReglasDeReceta(
+  reglas: Pick<ReglasDeReceta, 'athleteId'> & Partial<Pick<ReglasDeReceta, 'reglas' | 'recomendadas'>>,
+): Promise<void> {
   if (forceLocalOnly) return;
   await setDoc(
     doc(db, 'athleteRecipeRules', reglas.athleteId),
     stripUndefined({ ...reglas, updatedAt: new Date().toISOString() }),
+    { merge: true },
   );
 }
 

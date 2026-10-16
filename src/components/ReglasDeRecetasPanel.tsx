@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { AthleteNutritionConfig, OnboardingData, Recipe, WeekDay } from '../types';
 import { cargarIndiceRecetas, getRecipeFavorites, saveReglasDeReceta } from '../dbService';
-import { reglasDeRecetaKey, useReglasDeReceta } from '../hooks/useReglasDeReceta';
+import { reglasDeRecetaKey, useReglasDeReceta, useRecomendadasDelCoach } from '../hooks/useReglasDeReceta';
 import { athleteConditions, HEALTH_CONDITIONS, restrictionLabel } from '../utils/dietaryRestrictions';
 import { dietTypeVigente } from '../utils/foodPrefs';
 import { dishType, dishTypeLabel, type DishType } from '../utils/dishTypes';
@@ -13,7 +13,7 @@ import {
 import { etiquetaDeTiempo } from '../utils/tiempoDeReceta';
 import { useConfirm } from '../hooks/useConfirm';
 import {
-  DIAS_SEMANA, AMBITOS, conRegla, etiquetaDeDias, etiquetaDeAmbitos, type AmbitoDeRegla, type ReglaDeReceta,
+  DIAS_SEMANA, AMBITOS, conRegla, conRecomendada, etiquetaDeDias, etiquetaDeAmbitos, type AmbitoDeRegla, type ReglaDeReceta,
 } from '../utils/reglasDeReceta';
 import { useToast } from '../hooks/useToast';
 import { Icon, Skeleton, Select } from './ui';
@@ -81,12 +81,14 @@ const GrupoDeAlimentos: React.FC<{
 const Fila: React.FC<{
   receta: Recipe;
   regla: ReglaDeReceta | undefined;
+  recomendada: boolean;
+  onRecomendar: () => void;
   guardando: boolean;
   /** Ámbitos con los que se esconde al pulsar el ojo (los de «Al esconder, aplicar en»). */
   ambitosNuevos: AmbitoDeRegla[];
   /** `null` la quita; un objeto la crea o la modifica sin perder lo que no se toca. */
   onCambiar: (cambio: null | { dias?: WeekDay[]; ambitos?: AmbitoDeRegla[] }) => void;
-}> = ({ receta, regla, guardando, ambitosNuevos, onCambiar }) => {
+}> = ({ receta, regla, recomendada, onRecomendar, guardando, ambitosNuevos, onCambiar }) => {
   const escondida = !!regla;
   const dias = regla?.dias?.length ? regla.dias : TODOS;
   const ambitos = regla?.ambitos?.length ? regla.ambitos : AMBITOS.map(a => a.ambito);
@@ -116,6 +118,21 @@ const Fila: React.FC<{
             {receta.categoria ?? dishTypeLabel(dishType(receta))} · <span className="text-ink-2">{etiquetaDeTiempo(receta)}</span>
           </p>
         </div>
+        {/* Recomendar: sale arriba de su recetario, en «Recomendadas por tu
+            entrenador». Una escondida no se puede recomendar (no la vería). */}
+        <button
+          type="button"
+          onClick={onRecomendar}
+          disabled={guardando}
+          aria-pressed={recomendada}
+          aria-label={`${recomendada ? 'Dejar de recomendar' : 'Recomendar'}: ${receta.name}`}
+          className={`flex-shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-control border transition-colors disabled:opacity-50 ${
+            recomendada ? 'border-accent text-accent-ink bg-accent-bg' : 'border-hairline text-ink-3 hover:text-ink hover:border-strong'
+          }`}
+          title={recomendada ? 'Recomendada: sale arriba de su recetario' : 'Recomendársela: saldrá arriba de su recetario'}
+        >
+          <Icon name="star" size="m" filled={recomendada} />
+        </button>
         <button
           type="button"
           onClick={() => onCambiar(escondida ? null : { ambitos: ambitosNuevos })}
@@ -183,6 +200,9 @@ export default function ReglasDeRecetasPanel({ athleteEmail, onboarding, nutriti
   const queryClient = useQueryClient();
   const { showToast } = useToast();
   const reglas = useReglasDeReceta(athleteEmail);
+  const recomendadas = useRecomendadasDelCoach(athleteEmail);
+  const recomendadasSet = useMemo(() => new Set(recomendadas), [recomendadas]);
+  const [soloRecomendadas, setSoloRecomendadas] = useState(false);
   const { confirm, ConfirmDialog } = useConfirm();
   const [filtro, setFiltro] = useState<FiltroDeLista>(FILTRO_VACIO);
   const [soloEscondidas, setSoloEscondidas] = useState(false);
@@ -191,7 +211,7 @@ export default function ReglasDeRecetasPanel({ athleteEmail, onboarding, nutriti
     setFiltro(f => ({ ...f, ...parcial }));
     setVisibles(POR_PAGINA);
   };
-  const hayFiltro = JSON.stringify(filtro) !== JSON.stringify(FILTRO_VACIO) || soloEscondidas;
+  const hayFiltro = JSON.stringify(filtro) !== JSON.stringify(FILTRO_VACIO) || soloEscondidas || soloRecomendadas;
 
   const { data: indice = [], isPending: cargandoIndice } = useQuery({
     queryKey: ['recetarioIndice'],
@@ -232,12 +252,16 @@ export default function ReglasDeRecetasPanel({ athleteEmail, onboarding, nutriti
     });
 
   const guardar = useMutation({
-    mutationFn: (siguientes: ReglaDeReceta[]) => saveReglasDeReceta({ athleteId: athleteEmail, reglas: siguientes }),
-    onMutate: async siguientes => {
+    // Se manda solo lo que cambia (escondidas, recomendadas o las dos): el
+    // guardado hace merge y no pisa la otra lista.
+    mutationFn: (cambio: { reglas?: ReglaDeReceta[]; recomendadas?: string[] }) =>
+      saveReglasDeReceta({ athleteId: athleteEmail, ...cambio }),
+    onMutate: async cambio => {
       // Optimista: el interruptor responde al instante y se deshace si falla.
       await queryClient.cancelQueries({ queryKey: reglasDeRecetaKey(athleteEmail) });
       const previo = queryClient.getQueryData(reglasDeRecetaKey(athleteEmail));
-      queryClient.setQueryData(reglasDeRecetaKey(athleteEmail), { athleteId: athleteEmail, reglas: siguientes });
+      queryClient.setQueryData(reglasDeRecetaKey(athleteEmail), (p: object | undefined) =>
+        ({ athleteId: athleteEmail, reglas: [], ...p, ...cambio }));
       return { previo };
     },
     onError: (_err, _vars, ctx) => {
@@ -250,9 +274,12 @@ export default function ReglasDeRecetasPanel({ athleteEmail, onboarding, nutriti
   const categorias = useMemo(() => categoriasDe(pool), [pool]);
 
   const lista = useMemo(() => {
-    const escondidasPrimero = [...pool].sort((a, b) => Number(porId.has(b.id)) - Number(porId.has(a.id)));
-    return filtrarLista(escondidasPrimero, filtro, alimentos).filter(r => !soloEscondidas || porId.has(r.id));
-  }, [pool, porId, soloEscondidas, filtro, alimentos]);
+    // Primero lo que ya has tocado: escondidas y recomendadas.
+    const peso = (r: Recipe) => (porId.has(r.id) ? 2 : 0) + (recomendadasSet.has(r.id) ? 1 : 0);
+    const tocadasPrimero = [...pool].sort((a, b) => peso(b) - peso(a));
+    return filtrarLista(tocadasPrimero, filtro, alimentos)
+      .filter(r => (!soloEscondidas || porId.has(r.id)) && (!soloRecomendadas || recomendadasSet.has(r.id)));
+  }, [pool, porId, recomendadasSet, soloEscondidas, soloRecomendadas, filtro, alimentos]);
 
   // Esconder o permitir TODAS las que se ven con los filtros puestos: «todo lo
   // que lleve atún», «todas las de más de 30 minutos». Una sola escritura.
@@ -263,7 +290,10 @@ export default function ReglasDeRecetasPanel({ athleteEmail, onboarding, nutriti
     const siguientes = esconder
       ? [...reglas.filter(r => !ids.has(r.recipeId)), ...[...ids].map(recipeId => conRegla([], recipeId, { ambitos: ambitosNuevos })[0])]
       : reglas.filter(r => !ids.has(r.recipeId));
-    guardar.mutate(siguientes);
+    // Lo que se esconde deja de estar recomendado: no lo vería.
+    guardar.mutate(esconder
+      ? { reglas: siguientes, recomendadas: recomendadas.filter(id => !ids.has(id)) }
+      : { reglas: siguientes });
   };
   const visiblesEscondidas = lista.filter(r => porId.has(r.id)).length;
 
@@ -279,8 +309,9 @@ export default function ReglasDeRecetasPanel({ athleteEmail, onboarding, nutriti
           Recetas de este atleta
         </h3>
         <p className="font-sans text-label text-ink-2 mt-1">
-          Lo que puede recibir hoy según sus alergias, dieta y preferencias. Tú decides dónde afecta: el menú que genera la app,
-          los cambios de comida o el recetario general.
+          Lo que puede recibir hoy según sus alergias, dieta y preferencias. Con la estrella se la recomiendas: le sale arriba de
+          su recetario. Con el ojo la escondes, y tú decides dónde afecta: el menú que genera la app, los cambios de comida o el
+          recetario general.
         </p>
       </div>
 
@@ -289,7 +320,7 @@ export default function ReglasDeRecetasPanel({ athleteEmail, onboarding, nutriti
       ) : (
         <>
           <p className="font-mono text-caption text-ink-2">
-            {pool.length.toLocaleString('es-ES')} en su pool · {reglas.length} {reglas.length === 1 ? 'escondida' : 'escondidas'}
+            {pool.length.toLocaleString('es-ES')} en su pool · {reglas.length} {reglas.length === 1 ? 'escondida' : 'escondidas'} · {recomendadas.length} {recomendadas.length === 1 ? 'recomendada' : 'recomendadas'}
           </p>
 
           <div className="border border-hairline rounded-surface">
@@ -453,10 +484,18 @@ export default function ReglasDeRecetasPanel({ athleteEmail, onboarding, nutriti
                 soloEscondidas ? 'bg-accent text-on-accent border-accent' : 'border-hairline text-ink-2 hover:text-ink'
               }`}
             >Solo escondidas</button>
+            <button
+              type="button"
+              onClick={() => { setSoloRecomendadas(v => !v); setVisibles(POR_PAGINA); }}
+              aria-pressed={soloRecomendadas}
+              className={`min-h-[44px] px-3 rounded-control border font-sans text-caption font-bold uppercase transition-colors ${
+                soloRecomendadas ? 'bg-accent text-on-accent border-accent' : 'border-hairline text-ink-2 hover:text-ink'
+              }`}
+            >Recomendadas · {recomendadas.length}</button>
             {hayFiltro && (
               <button
                 type="button"
-                onClick={() => { setFiltro(FILTRO_VACIO); setSoloEscondidas(false); setVisibles(POR_PAGINA); }}
+                onClick={() => { setFiltro(FILTRO_VACIO); setSoloEscondidas(false); setSoloRecomendadas(false); setVisibles(POR_PAGINA); }}
                 className="min-h-[44px] px-3 font-mono text-caption text-ink-2 hover:text-ink"
               >Quitar filtros</button>
             )}
@@ -489,14 +528,15 @@ export default function ReglasDeRecetasPanel({ athleteEmail, onboarding, nutriti
               <button
                 type="button"
                 className="text-accent-ink hover:underline"
-                onClick={() => guardar.mutate(reglas.filter(r => pool.some(p => p.id === r.recipeId)))}
+                onClick={() => guardar.mutate({ reglas: reglas.filter(r => pool.some(p => p.id === r.recipeId)) })}
               >Quitarlas</button>
             </p>
           )}
 
           {lista.length === 0 ? (
             <p className="font-sans text-label text-ink-3 py-4">
-              {soloEscondidas && !hayFiltro ? 'No has escondido ninguna receta.' : 'Ninguna receta coincide con esos filtros.'}
+              {soloRecomendadas && recomendadas.length === 0 ? 'Aún no le has recomendado ninguna receta.'
+                : soloEscondidas && reglas.length === 0 ? 'No has escondido ninguna receta.' : 'Ninguna receta coincide con esos filtros.'}
             </p>
           ) : (
             <ul className="m-0 p-0 list-none">
@@ -505,9 +545,14 @@ export default function ReglasDeRecetasPanel({ athleteEmail, onboarding, nutriti
                   key={r.id}
                   receta={r}
                   regla={porId.get(r.id)}
+                  recomendada={recomendadasSet.has(r.id)}
+                  onRecomendar={() => guardar.mutate(conRecomendada({ reglas, recomendadas }, r.id, !recomendadasSet.has(r.id)))}
                   guardando={guardar.isPending}
                   ambitosNuevos={ambitosNuevos}
-                  onCambiar={cambio => guardar.mutate(conRegla(reglas, r.id, cambio))}
+                  onCambiar={cambio => guardar.mutate(cambio
+                    // Esconderla la quita de recomendadas: no la vería.
+                    ? { reglas: conRegla(reglas, r.id, cambio), recomendadas: recomendadas.filter(id => id !== r.id) }
+                    : { reglas: conRegla(reglas, r.id, cambio) })}
                 />
               ))}
             </ul>

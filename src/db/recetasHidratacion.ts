@@ -63,6 +63,13 @@ export const OWNER_RECETARIO_TODOS = [OWNER_RECETARIO, OWNER_RECETARIO_LEGACY];
  */
 const CAT_SUPLEMENTOS = 'Suplementos deportivos';
 const CAT_NO_PLATOS = 'Alimentos y suplementos';
+/** ¿Es un plato que se cocina? Fuera los suplementos y los alimentos sueltos
+ *  (agua, aceite, una barrita de marca): están en el recetario para que el
+ *  coach los pueda poner en un plan, pero no se «descubren». */
+export function esPlatoDelRecetario(r: Pick<Recipe, 'categoria'>): boolean {
+  return r.categoria !== CAT_SUPLEMENTOS && r.categoria !== CAT_NO_PLATOS;
+}
+
 const RE_SUPLEMENTO_PURO = /\b(creatina|glutamina|beta[\s-]?alanina|citrulina|arginina|taurina|bcaa|hmb)\b|^cafeina\b/;
 
 export function esSuplementoPuroPorNombre(nombre: string | undefined | null): boolean {
