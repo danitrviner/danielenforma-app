@@ -326,7 +326,7 @@ export default function AthleteOnboardingWizard({ profile, onComplete }: Props) 
   const [goalTimelineMotivation, setGoalTimelineMotivation] = useState(borrador?.goalTimelineMotivation ?? '');
   const [coachExpectations, setCoachExpectations] = useState(borrador?.coachExpectations ?? '');
   const [experienceLevel, setExperienceLevel] = useState<ExperienceLevel | ''>(borrador?.experienceLevel ?? '');
-  const [equipment, setEquipment] = useState<string[]>(borrador?.equipment ?? []);
+  const [equipment] = useState<string[]>(borrador?.equipment ?? []);
   const [injuries, setInjuries] = useState(borrador?.injuries ?? '');
   const [noInjuries, setNoInjuries] = useState(borrador?.noInjuries ?? false);
   // `null` y no `false`: con `false` de partida el chip «No» salía ya

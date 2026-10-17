@@ -1,8 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  CoachReport, WorkoutLog, Exercise, Mesocycle,
-  WorkoutAssignment, BodyweightLog,
+  CoachReport, WorkoutLog, Exercise, WorkoutAssignment, BodyweightLog,
 } from '../types';
 import {
   getMesocycles, getCoachReportsForAthlete, saveCoachReport, deleteCoachReport, createNotificationDeduped,

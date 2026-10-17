@@ -1,5 +1,5 @@
 import { db, collection, doc, getDoc, setDoc, getDocs, addDoc, updateDoc, deleteDoc, query, where, limit, documentId } from '../firebase';
-import { MealItem, BancoPersonal, AthleteNutritionConfig, Diet, AthleteDietConfig, DietCompletionLog, WeeklyMenu, MenuCompletionLog, NutritionProgram, NutritionPhase } from '../types';
+import { MealItem, BancoPersonal, AthleteNutritionConfig, Diet, AthleteDietConfig, DietCompletionLog, WeeklyMenu, MenuCompletionLog, NutritionProgram } from '../types';
 import { registroQueGana } from './registroDelDia';
 import { forceLocalOnly, setLocalBypassMode, stripUndefined, authReady, withAuthRetry, esFalloDePermisos, escribirEnLotes } from './core';
 import { SYSTEM_FOODS } from '../nutricion_seed_en_forma';
@@ -19,7 +19,7 @@ function getLocalFoodItems(): MealItem[] {
   try {
     const raw = localStorage.getItem(FOOD_ITEMS_LOCAL_KEY);
     return raw ? (JSON.parse(raw) as MealItem[]) : [];
-  } catch (e) {
+  } catch {
     return [];
   }
 }
@@ -27,7 +27,7 @@ function getLocalFoodItems(): MealItem[] {
 function saveLocalFoodItems(items: MealItem[]) {
   try {
     escribirLocal(FOOD_ITEMS_LOCAL_KEY, JSON.stringify(items));
-  } catch (e) {}
+  } catch {}
 }
 
 let foodItemsCache: MealItem[] | null = null;
@@ -317,7 +317,7 @@ export async function getAthleteNutritionConfig(athleteEmail: string): Promise<A
     try {
       const raw = localStorage.getItem(localKey);
       return raw ? normalize(JSON.parse(raw)) : defaultConfig;
-    } catch (e) { return defaultConfig; }
+    } catch { return defaultConfig; }
   }
   await authReady;
   try {
@@ -332,7 +332,7 @@ export async function getAthleteNutritionConfig(athleteEmail: string): Promise<A
       try {
         const raw = localStorage.getItem(localKey);
         if (raw) return normalize(JSON.parse(raw));
-      } catch (_) {}
+      } catch {}
       return defaultConfig;
     });
   } catch (err) {
@@ -342,7 +342,7 @@ export async function getAthleteNutritionConfig(athleteEmail: string): Promise<A
     try {
       const raw = localStorage.getItem(localKey);
       return raw ? normalize(JSON.parse(raw)) : defaultConfig;
-    } catch (e) { return defaultConfig; }
+    } catch { return defaultConfig; }
   }
 }
 
@@ -885,7 +885,7 @@ export async function getAthleteDietConfig(athleteEmail: string): Promise<Athlet
     try {
       const raw = localStorage.getItem(localKey);
       if (raw) return JSON.parse(raw);
-    } catch (_) {}
+    } catch {}
     return defaultCfg;
   } catch (err) {
     console.warn('getAthleteDietConfig Firestore failed, using local:', err);

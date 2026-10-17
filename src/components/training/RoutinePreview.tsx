@@ -7,6 +7,8 @@ import {
   seriesPorGrupo, seriesPlanificadasDelDia, seriesPlanificadasDelMeso, balanceDeSeries,
 } from '../../utils/programacion';
 import SeriesBalance from './SeriesBalance';
+import PanelIndicesCdg from '../mesociclo/PanelIndicesCdg';
+import ResumenCdgDia from '../mesociclo/ResumenCdgDia';
 import { Icon } from '../ui';
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -70,6 +72,8 @@ interface Props {
   onAdd: (dayIdx: number) => void;
   onBack: () => void;
   onAssign: () => void;
+  /** Texto del botón de confirmar (por defecto «Asignar al atleta»). */
+  assignLabel?: string;
 }
 
 function SetsStepper({ value, onChange }: { value: number; onChange: (v: number) => void }) {
@@ -96,7 +100,7 @@ function SetsStepper({ value, onChange }: { value: number; onChange: (v: number)
 
 export default function RoutinePreview({
   days, distribution, mesoGroups, mesoNumber, weeks, daysPerWeek, semanasDelCiclo, vueltas, offsets, catalogo,
-  onSets, onMove, onRemove, onReplace, onAdd, onBack, onAssign,
+  onSets, onMove, onRemove, onReplace, onAdd, onBack, onAssign, assignLabel,
 }: Props) {
   // Balance de la SEMANA: lo pautado en todos los días contra el volumen del
   // mesociclo (pestaña «Volumen»), que es el número que el coach decidió antes
@@ -133,7 +137,7 @@ export default function RoutinePreview({
             className="px-4 py-2 bg-accent text-on-accent font-sans text-label font-bold uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all flex items-center gap-2"
           >
             <Icon name="assignment_turned_in" size="s" />
-            Asignar al atleta
+            {assignLabel ?? 'Asignar al atleta'}
           </button>
         </div>
       </div>
@@ -143,6 +147,15 @@ export default function RoutinePreview({
       <div className="bg-surface border border-hairline rounded-surface px-4 py-3">
         <SeriesBalance balance={balanceSemana} referencia={referenciaCiclo} ocultarSiVacio={false} />
       </div>
+
+      {/* Índices CDG (IF, IEM, estrés articular) de lo que se va a asignar, con los
+          días en columnas. Se ve ANTES de asignar, que es cuando todavía es barato cambiar. */}
+      <PanelIndicesCdg
+        grupos={days.map((pd, i) => ({ name: `Día ${(offsets[i] ?? i) + 1}`, exercises: pd.exercises }))}
+        meso={{}}
+        semana={0}
+        allExercises={catalogo}
+      />
 
       <div className="flex flex-wrap gap-3">
         {days.map((pd, dayIdx) => {
@@ -161,6 +174,7 @@ export default function RoutinePreview({
                 </span>
                 <span className="font-mono text-caption text-ink-2 flex-shrink-0 tabular-nums">
                   {totalSeries} series · {pd.exercises.length} ejerc.
+                  <ResumenCdgDia ejercicios={pd.exercises} allExercises={catalogo} />
                 </span>
               </div>
 

@@ -96,6 +96,8 @@ export interface UserProfile {
    * escritores no coincidían en cuántos puntos vale un nivel.
    */
   level: number;
+  /** Umbrales de aviso de la carga aguda/crónica (CDG) de ESTE atleta. Ausente = 0,8 – 1,6. */
+  cdgUmbralesCarga?: { inferior: number; superior: number };
   currentStreak: number;
   maxStreak: number;
   initialWeight: number;
@@ -355,6 +357,15 @@ export interface Exercise {
   instructions?: string;     // descripción global — visible para cualquier atleta
   isCustom: boolean;
 
+  // ─── Vínculo con el catálogo CDG (Índice de hipertrofia V4) ─────────────
+  // Nombre EXACTO del ejercicio en el catálogo CDG (scripts/cdg/catalogo-cdg.json).
+  // El motor de src/utils/cdg busca por este nombre; sin él el ejercicio cuenta 0
+  // en IF/IEM/estrés articular. Lo escribe scripts/aplicarEmparejadoCdg.mjs.
+  cdgNombre?: string;
+  // El coach revisó el ejercicio y no tiene equivalente en CDG (distinto de
+  // «aún sin emparejar»). Con esto la pantalla de emparejado no lo vuelve a pedir.
+  cdgSinEquivalente?: boolean;
+
   // ─── Curaduría del coach ────────────────────────────────────────────────
   // El catálogo son 1.721 ejercicios: 40 escritos a mano y 1.681 importados de
   // un banco de vídeos y traducidos con un diccionario palabra por palabra, así
@@ -606,6 +617,23 @@ export interface TemplateStage {
   semanasTest?: number[];
   reviewCadenceWeeks?: number;  // cada cuántas semanas se programa una revisión durante esta etapa
   reviewType?: TaskType;
+  /**
+   * El PLAN del mesociclo, igual que en `Mesocycle` (16-10). Antes una etapa
+   * solo guardaba volumen y días, y al guardar un mesociclo como plantilla o
+   * aplicarla se perdían el reparto, el ciclo, la distribución… Ahora la
+   * plantilla se edita con el mismo editor y viaja entera: ver
+   * `utils/plantillaMeso.ts`, el único sitio que traduce entre los dos.
+   */
+  objective?: string;
+  cycleDays?: number;
+  customOffsets?: number[];
+  splitId?: string;
+  reparto?: RepartoPropio;
+  distribution?: WeekDistribution;
+  phaseType?: PhaseType;
+  nombresSesion?: string[];
+  ejerciciosClave?: string[];
+  notasSemana?: Record<string, string>;
 }
 
 export interface Workout {
@@ -1851,9 +1879,40 @@ export interface WeekDistribution {
     cycleDays?: number;
     splitId?: string;
     customOffsets?: string; // Mesocycle.customOffsets, serializado con .join(',')
+    /** Huella de los grupos de cada sesión del reparto propio (ver `huellaDeReparto`). */
+    reparto?: string;
     groupSeries: Partial<Record<MuscleGroup, number>>;
   };
   generatedAt: string;
+}
+
+/** Un día de entrenamiento de un reparto propio. */
+export interface DiaDeReparto {
+  /** Nombre del día que ve el coach y que da nombre a la rutina («Pierna», «Pecho · Tríceps»). */
+  tipo: string;
+  /** Grupos que se entrenan ese día. Es lo que usa la distribución, no el nombre. */
+  grupos: MuscleGroup[];
+}
+
+export interface RepartoPropio {
+  nombre: string;
+  /** Una entrada por DÍA DEL CICLO, en orden; `null` = descanso. */
+  dias: (DiaDeReparto | null)[];
+  /** Frecuencia por semana que pidió el coach en la calculadora (si salió de ahí). */
+  frecuencias?: Partial<Record<MuscleGroup, number>>;
+  /** Id del reparto del catálogo del que se partió, si se partió de uno. */
+  basadoEn?: string;
+}
+
+/**
+ * Un reparto propio guardado en «Mis repartos» (colección `repartosGuardados`)
+ * para reutilizarlo en otros mesociclos. Solo del coach: el atleta nunca lo lee.
+ */
+export interface RepartoGuardado extends RepartoPropio {
+  id: string;
+  /** UID del coach. */
+  ownerId: string;
+  creadoEn: string;
 }
 
 export interface Mesocycle {
@@ -1929,7 +1988,17 @@ export interface Mesocycle {
   programId?: string;      // links mesocycles created from the same template
   programOrder?: number;   // position in the sequence (0-based)
   splitId?: string;        // id del reparto de días elegido (ver utils/trainingSplits.ts)
-  deloadWeek?: number;     // semana (1-indexada) de descarga dentro del meso; undefined = sin descarga marcada
+  /**
+   * Reparto PROPIO del mesociclo: qué se entrena cada día del ciclo y en qué
+   * orden. Manda sobre `splitId` (ver `repartoDelMesociclo`).
+   *
+   * Existe porque el catálogo trae el orden y los grupos de cada día ya
+   * escritos: empezar por Pierna en vez de por Push, o un día «Pecho ·
+   * Hombro · Tríceps» que no es ninguno de la lista, no se podía decir.
+   * `daysPerWeek` y `cycleDays` se mantienen sincronizados con él al escribir.
+   */
+  reparto?: RepartoPropio;
+  deloadWeek?: number;    // semana (1-indexada) de descarga dentro del meso; undefined = sin descarga marcada
   /**
    * Semanas DE CICLO (vueltas, 1-indexadas) en las que el volumen baja de
    * verdad: cada ejercicio hace la mitad de series (redondeando hacia arriba).
@@ -1959,6 +2028,13 @@ export interface Mesocycle {
    * reconoce nada usa un color neutro en vez de inventar un tipo.
    */
   phaseType?: PhaseType;
+  /**
+   * IEM semanal objetivo por zona (utils/cdg/zonas.ts), la «premisa» del bloque
+   * con la que el panel CDG compara lo programado. Solo coach.
+   */
+  cdgObjetivosIem?: Partial<Record<string, number>>;
+  /** Actitud del bloque para el freno/acelerador por agujetas (utils/cdg/agujetas.ts). Sin valor = estático. */
+  cdgActitud?: 'estatico' | 'dinamico' | 'agresivo';
 }
 
 // Tipos de fase de un mesociclo, para el color/icono del Roadmap → Calendario.
@@ -2514,6 +2590,10 @@ export interface MesocycleTemplateStageProposal {
   deloadWeek?: number;
   reviewCadenceWeeks?: number;
   reviewType?: TaskType;
+  /** Reparto propio de la etapa (16-10), con su ciclo y la distribución ya calculada. */
+  reparto?: RepartoPropio;
+  cycleDays?: number;
+  distribution?: WeekDistribution;
 }
 
 export interface MesocycleTemplateProposalPayload {

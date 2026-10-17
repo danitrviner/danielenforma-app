@@ -37,6 +37,9 @@ export default function InvitacionesPendientesPanel() {
     Promise.all(yaUnidos.map(inv => markInviteJoined(inv.email)))
       .then(() => queryClient.invalidateQueries({ queryKey: pendingInvitesKey }))
       .catch(err => console.warn('marcado perezoso de invitaciones aceptadas falló:', err));
+    // `pendingInvitesKey` es un array literal nuevo en cada render: meterlo
+    // repetiría el marcado en cada pintado.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingInvites, joinedEmails, queryClient]);
 
   const visibleInvites = pendingInvites.filter(inv => !joinedEmails.has(inv.email.toLowerCase()));

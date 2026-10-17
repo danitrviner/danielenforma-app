@@ -1,612 +1,50 @@
 import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { MuscleGroup, MuscleGroupConfig, MesocycleTemplate, TemplateStage, TemplateDay, WorkoutExercise, Exercise, MUSCLE_ORDER, MUSCLE_LABELS, TaskType } from '../types';
+import { MuscleGroup, MuscleGroupConfig, MesocycleTemplate, TemplateStage, MUSCLE_ORDER, MUSCLE_LABELS, TaskType } from '../types';
 import { getTopMuscleGroups } from '../utils/muscleGroupRanking';
 import {
   getMesocycleTemplates, createMesocycleTemplate,
-  updateMesocycleTemplate, deleteMesocycleTemplate, getExercises,
+  updateMesocycleTemplate, deleteMesocycleTemplate,
 } from '../dbService';
 import { Skeleton } from './ui';
 import { Icon, Button, EmptyState, Dialog, Input } from './ui';
-import ExercisePickerSheet from './ExercisePickerSheet';
+import MesocycleManager from './MesocycleManager';
+import { etapaDesdeMeso, mesoDesdeEtapa, LUNES_DE_PLANTILLA } from '../utils/plantillaMeso';
+import { repartoDelMesociclo } from '../utils/trainingSplits';
 
-import { heatmapBg, heatmapText } from '../utils/volumeZones';
 function mesocycleTemplatesKey(coachId: string) {
   return ['mesocycleTemplates', coachId] as const;
 }
 
-// ── Constants ──────────────────────────────────────────────────────────────────
+/* ═══════════════════════════════════════════════════════════════════════════
+   Biblioteca › Plantillas de mesociclo
 
-const MUSCLE_GROUPS: MuscleGroup[] = MUSCLE_ORDER;
+   Una plantilla es una secuencia de mesociclos (etapas). Cada etapa se edita
+   con EL MISMO editor que el mesociclo de un atleta (`MesocycleManager` en
+   modo plantilla): volumen, reparto propio o calculado, distribución y
+   rutinas. Antes tenía su propio formulario, que se había quedado atrás —sin
+   reparto, sin ciclo de N días, sin distribución— y lo que se diseñaba en un
+   sitio no se podía hacer en el otro (Dani, 16-10).
+   ═══════════════════════════════════════════════════════════════════════════ */
 
 const DEFAULT_GROUPS = (): Record<MuscleGroup, MuscleGroupConfig> =>
   Object.fromEntries(
-    MUSCLE_GROUPS.map(g => [g, { series: 0, priority: 'media' as const }])
+    MUSCLE_ORDER.map(g => [g, { series: 0, priority: 'media' as const }])
   ) as Record<MuscleGroup, MuscleGroupConfig>;
-
-// ── Heatmap ───────────────────────────────────────────────────────────────────
-//
-// Esta pantalla llevaba su propia copia de los colores de volumen, con los
-// umbrales viejos escritos a mano (≤4, ≤9, ≤14, 15+). `utils/volumeZones.ts`
-// existe justo para eso y su `GENERIC_LANDMARK` reproduce esos mismos
-// umbrales, así que se usa el de verdad: si mañana se toca la escala, esta
-// pantalla ya no se queda atrás pintando otra cosa que el resto de la app.
-//
-// Única diferencia práctica: en 15 series exactas el rojo sale un punto más
-// cargado, porque la rampa canónica empieza a contar desde el máximo de MAV y
-// la copia lo hacía desde 15. Es un tono, no un cambio de zona.
-
-// ── Sub-components ─────────────────────────────────────────────────────────────
-
-function Stepper({ value, min = 0, max = 25, onChange }: {
-  value: number; min?: number; max?: number; onChange: (v: number) => void;
-}) {
-  return (
-    <div className="flex items-center gap-1">
-      <button
-        onClick={() => onChange(Math.max(min, value - 1))}
-        disabled={value <= min}
-        className="w-6 h-6 rounded-control bg-raised text-ink-2 hover:bg-raised disabled:opacity-30 text-label font-bold flex items-center justify-center"
-      >−</button>
-      <span className="w-8 text-center font-mono text-body-s font-bold" style={{ color: heatmapText(value) }}>
-        {value}
-      </span>
-      <button
-        onClick={() => onChange(Math.min(max, value + 1))}
-        disabled={value >= max}
-        className="w-6 h-6 rounded-control bg-raised text-ink-2 hover:bg-raised disabled:opacity-30 text-label font-bold flex items-center justify-center"
-      >+</button>
-    </div>
-  );
-}
-
-function PrioritySelector({ value, onChange }: {
-  value: 'alta' | 'media' | 'baja';
-  onChange: (v: 'alta' | 'media' | 'baja') => void;
-}) {
-  const opts = [
-    { v: 'alta'  as const, icon: '⭐', label: 'Alta'  },
-    { v: 'media' as const, icon: '◑',  label: 'Media' },
-    { v: 'baja'  as const, icon: '⚪', label: 'Baja'  },
-  ];
-  return (
-    <div className="flex gap-1">
-      {opts.map(o => (
-        <button
-          key={o.v} onClick={() => onChange(o.v)} title={o.label}
-          className={`px-2 rounded-control text-label font-mono transition-all ${
-            value === o.v ? 'bg-accent text-on-accent font-bold' : 'bg-raised text-ink-2 hover:bg-raised'
-          }`}
-        >{o.icon}</button>
-      ))}
-    </div>
-  );
-}
-
-// ── Exercise row ───────────────────────────────────────────────────────────────
-
-const ExerciseRow: React.FC<{
-  ex: WorkoutExercise;
-  exName: string;
-  isFirst: boolean;
-  isLast: boolean;
-  onChange: (updated: WorkoutExercise) => void;
-  onDelete: () => void;
-  onMoveUp: () => void;
-  onMoveDown: () => void;
-}> = ({
-  ex, exName, isFirst, isLast,
-  onChange, onDelete, onMoveUp, onMoveDown,
-}) => {
-  return (
-    <div className="flex items-center gap-2 py-2 border-b border-hairline last:border-0 group">
-      {/* Name */}
-      <span className="font-sans text-caption text-ink-2 flex-1 min-w-0 truncate" title={exName}>{exName}</span>
-      {/* Sets */}
-      <div className="flex items-center ">
-        <span className="font-mono text-caption text-ink-3">sets</span>
-        <input
-          type="number" min={1} max={20} value={ex.sets}
-          onChange={e => onChange({ ...ex, sets: Math.max(1, Number(e.target.value)) })}
-          className="w-10 bg-bg border border-hairline rounded-control px-1 text-center font-mono text-title-s text-ink focus:outline-none focus:border-accent/50"
-        />
-      </div>
-      {/* Reps */}
-      <div className="flex items-center ">
-        <span className="font-mono text-caption text-ink-3">reps</span>
-        <input
-          type="text" value={ex.reps}
-          onChange={e => onChange({ ...ex, reps: e.target.value })}
-          className="w-14 bg-bg border border-hairline rounded-control px-1 text-center font-mono text-title-s text-ink focus:outline-none focus:border-accent/50"
-          placeholder="8-12"
-        />
-      </div>
-      {/* RIR */}
-      <div className="flex items-center ">
-        <span className="font-mono text-caption text-ink-3">rir</span>
-        <input
-          type="number" min={0} max={5} value={ex.rir}
-          onChange={e => onChange({ ...ex, rir: Math.min(5, Math.max(0, Number(e.target.value))) })}
-          className="w-10 bg-bg border border-hairline rounded-control px-1 text-center font-mono text-title-s text-ink focus:outline-none focus:border-accent/50"
-        />
-      </div>
-      {/* Rest */}
-      <div className="flex items-center ">
-        <span className="font-mono text-caption text-ink-3">rest</span>
-        <input
-          type="number" min={0} max={600} step={15} value={ex.restSeconds}
-          onChange={e => onChange({ ...ex, restSeconds: Math.max(0, Number(e.target.value)) })}
-          className="w-14 bg-bg border border-hairline rounded-control px-1 text-center font-mono text-title-s text-ink focus:outline-none focus:border-accent/50"
-        />
-      </div>
-      {/* Reorder + delete */}
-      <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
-        <button onClick={onMoveUp} disabled={isFirst} title="Subir"
-          className="w-5 h-5 flex items-center justify-center rounded-control text-ink-2 hover:text-ink disabled:opacity-20">
-          <Icon name="arrow_upward" size="s" />
-        </button>
-        <button onClick={onMoveDown} disabled={isLast} title="Bajar"
-          className="w-5 h-5 flex items-center justify-center rounded-control text-ink-2 hover:text-ink disabled:opacity-20">
-          <Icon name="arrow_downward" size="s" />
-        </button>
-        <button onClick={onDelete} title="Eliminar ejercicio"
-          className="w-5 h-5 flex items-center justify-center rounded-control text-ink-2 hover:text-danger">
-          <Icon name="close" size="s" />
-        </button>
-      </div>
-    </div>
-  );
-}
-
-// ── Day block ──────────────────────────────────────────────────────────────────
-
-const DayBlock: React.FC<{
-  day: TemplateDay;
-  dayIdx: number;
-  exercises: Exercise[];
-  onChange: (updated: TemplateDay) => void;
-  onDelete: () => void;
-}> = ({
-  day, dayIdx, exercises,
-  onChange, onDelete,
-}) => {
-  const [open, setOpen] = useState(true);
-  /* Aquí había un `<select>` con la biblioteca entera dentro: más de mil
-     ejercicios en una lista nativa, sin buscador ni filtro por grupo, ordenada
-     por como viniera el array. Encontrar «Press banca con mancuernas» era
-     bajar a rueda. Es el mismo hueco que ya se tapó en el generador y en los
-     ejercicios programados, así que se usa el mismo picker: buscador sin
-     tildes, chips por grupo muscular y aviso de material. */
-  const [pickerAbierto, setPickerAbierto] = useState(false);
-
-  const addExercise = (ejercicio: Exercise) => {
-    const newEx: WorkoutExercise = {
-      exerciseId: ejercicio.id,
-      order: day.exercises.length,
-      sets: 3,
-      reps: '8-12',
-      rir: 2,
-      restSeconds: 90,
-    };
-    onChange({ ...day, exercises: [...day.exercises, newEx] });
-    setPickerAbierto(false);
-  };
-
-  const updateEx = (idx: number, updated: WorkoutExercise) => {
-    const exs = [...day.exercises];
-    exs[idx] = updated;
-    onChange({ ...day, exercises: exs });
-  };
-
-  const deleteEx = (idx: number) => {
-    const exs = day.exercises.filter((_, i) => i !== idx).map((e, i) => ({ ...e, order: i }));
-    onChange({ ...day, exercises: exs });
-  };
-
-  const moveEx = (idx: number, dir: -1 | 1) => {
-    const exs = [...day.exercises];
-    const newIdx = idx + dir;
-    if (newIdx < 0 || newIdx >= exs.length) return;
-    [exs[idx], exs[newIdx]] = [exs[newIdx], exs[idx]];
-    onChange({ ...day, exercises: exs.map((e, i) => ({ ...e, order: i })) });
-  };
-
-  const sortedExs = [...day.exercises].sort((a, b) => a.order - b.order);
-
-  return (
-    <div className="border border-hairline rounded-surface overflow-hidden">
-      {/* Header */}
-      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- el control accesible es el botón del chevron; esta cabecera lleva dentro un campo de texto, así que no puede ser ella misma el botón */}
-      <div className="flex items-center gap-2 px-3 py-2 bg-surface cursor-pointer group" onClick={() => setOpen(o => !o)}>
-        <button
-          type="button"
-          onClick={e => { e.stopPropagation(); setOpen(o => !o); }}
-          aria-expanded={open}
-          aria-label={open ? 'Plegar el día' : 'Desplegar el día'}
-          className="flex-shrink-0 flex items-center justify-center"
-        >
-          <Icon name="chevron_right" size="s" className={`text-ink-2 transition-transform ${open ? 'rotate-90' : ''}`} />
-        </button>
-        <input
-          type="text"
-          value={day.name}
-          onClick={e => e.stopPropagation()}
-          onChange={e => onChange({ ...day, name: e.target.value })}
-          className="flex-1 bg-transparent font-mono text-title-s text-ink focus:outline-none"
-          placeholder="Nombre del día"
-        />
-        <span className="font-mono text-caption text-ink-3">{day.exercises.length} ejerc.</span>
-        <button
-          onClick={e => { e.stopPropagation(); onDelete(); }}
-          className="opacity-0 group-hover:opacity-100 w-5 h-5 flex items-center justify-center rounded-control text-ink-2 hover:text-danger transition-all"
-          title="Eliminar día"
-        >
-          <Icon name="delete" size="s" />
-        </button>
-      </div>
-
-      {/* Body */}
-      {open && (
-        <div className="px-3 py-2 bg-bg space-y-1">
-          {/* Exercise list */}
-          {sortedExs.length === 0 ? (
-            <p className="font-sans text-caption text-ink-3 italic py-1">Sin ejercicios.</p>
-          ) : (
-            sortedExs.map((ex, idx) => {
-              const exObj = exercises.find(e => e.id === ex.exerciseId);
-              return (
-                <ExerciseRow
-                  key={`${ex.exerciseId}_${idx}`}
-                  ex={ex}
-                  exName={exObj?.name ?? `(${ex.exerciseId.slice(-6)})`}
-                  isFirst={idx === 0}
-                  isLast={idx === sortedExs.length - 1}
-                  onChange={updated => updateEx(idx, updated)}
-                  onDelete={() => deleteEx(idx)}
-                  onMoveUp={() => moveEx(idx, -1)}
-                  onMoveDown={() => moveEx(idx, 1)}
-                />
-              );
-            })
-          )}
-
-          {/* Add exercise */}
-          <div className="pt-1">
-            <button
-              type="button"
-              onClick={() => setPickerAbierto(true)}
-              className="w-full flex items-center justify-center gap-1.5 px-3 py-2 bg-raised border border-hairline text-ink-2 font-sans text-label rounded-control hover:border-accent/40 hover:text-accent-ink transition-all"
-            >
-              <Icon name="add" size="s" />
-              Añadir ejercicio
-            </button>
-          </div>
-
-          <ExercisePickerSheet
-            open={pickerAbierto}
-            onClose={() => setPickerAbierto(false)}
-            exercises={exercises}
-            onSelect={addExercise}
-            title={`Añadir a ${day.name || `Día ${dayIdx + 1}`}`}
-          />
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ── Stage accordion ────────────────────────────────────────────────────────────
-
-// StageForm is declared below but TypeScript resolves interfaces globally in a file
-interface StageFormShape {
-  id: string;
-  name: string;
-  weeks: number;
-  daysPerWeek: number;
-  groups: Record<MuscleGroup, MuscleGroupConfig>;
-  days: TemplateDay[];
-  // Bloque H — periodización completa de la etapa (Pantalla 4): descarga y
-  // cadencia de revisiones, se materializan al aplicar la plantilla igual
-  // que en propose_periodization_block (Bloque H2.1).
-  deloadWeek?: number;
-  reviewCadenceWeeks?: number;
-  reviewType?: TaskType;
-}
-
-interface StageFormProps {
-  stage: StageFormShape;
-  stageIdx: number;
-  exercises: Exercise[];
-  isOnly: boolean;
-  onChange: (updated: StageFormShape) => void;
-  onDelete: () => void;
-}
-
-const StageAccordion: React.FC<StageFormProps> = ({
-  stage, stageIdx, exercises, isOnly,
-  onChange, onDelete,
-}) => {
-  const [open, setOpen] = useState(true);
-  const [tab, setTab] = useState<'volume' | 'training'>('volume');
-
-  const totalSeries = MUSCLE_GROUPS.reduce((s, g) => s + stage.groups[g].series, 0);
-
-  const updateGroup = (g: MuscleGroup, field: keyof MuscleGroupConfig, value: number | string) => {
-    onChange({
-      ...stage,
-      groups: { ...stage.groups, [g]: { ...stage.groups[g], [field]: value } },
-    });
-  };
-
-  const addDay = () => {
-    if (stage.days.length >= stage.daysPerWeek) return;
-    const newDay: TemplateDay = {
-      id: `day_${Date.now()}_${Math.random().toString(36).slice(2, 5)}`,
-      name: `Día ${stage.days.length + 1}`,
-      exercises: [],
-    };
-    onChange({ ...stage, days: [...stage.days, newDay] });
-  };
-
-  const updateDay = (idx: number, updated: TemplateDay) => {
-    const days = [...stage.days];
-    days[idx] = updated;
-    onChange({ ...stage, days });
-  };
-
-  const deleteDay = (idx: number) => {
-    onChange({ ...stage, days: stage.days.filter((_, i) => i !== idx) });
-  };
-
-  return (
-    <div className="border border-hairline rounded-surface overflow-hidden">
-      {/* Stage header */}
-      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- mismo caso que la cabecera de día: el control accesible es el botón del chevron */}
-      <div className="flex items-center gap-2 px-4 py-3 bg-surface cursor-pointer" onClick={() => setOpen(o => !o)}>
-        <button
-          type="button"
-          onClick={e => { e.stopPropagation(); setOpen(o => !o); }}
-          aria-expanded={open}
-          aria-label={open ? 'Plegar el mesociclo' : 'Desplegar el mesociclo'}
-          className="flex-shrink-0 flex items-center justify-center"
-        >
-          <Icon name="chevron_right" size="s" className={`text-ink-2 transition-transform ${open ? 'rotate-90' : ''}`} />
-        </button>
-        <span className="font-mono text-caption text-ink-3 flex-shrink-0">#{stageIdx + 1}</span>
-        <input
-          type="text"
-          value={stage.name}
-          onClick={e => e.stopPropagation()}
-          onChange={e => onChange({ ...stage, name: e.target.value })}
-          className="flex-1 bg-transparent font-sans font-bold text-title-s text-ink focus:outline-none"
-          placeholder="Nombre del mesociclo"
-        />
-        {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- solo corta la propagación del clic de la cabecera; los controles de verdad son los steppers de dentro */}
-        <div className="flex items-center gap-3 flex-shrink-0" onClick={e => e.stopPropagation()}>
-          <div className="flex items-center gap-1">
-            <span className="font-mono text-caption text-ink-3">sem</span>
-            <Stepper value={stage.weeks} min={1} max={20} onChange={v => onChange({ ...stage, weeks: v })} />
-          </div>
-          <div className="flex items-center gap-1">
-            <span className="font-mono text-caption text-ink-3">días/sem</span>
-            <Stepper value={stage.daysPerWeek} min={1} max={10} onChange={v => onChange({ ...stage, daysPerWeek: v })} />
-          </div>
-          {!isOnly && (
-            <button
-              onClick={onDelete}
-              className="w-6 h-6 flex items-center justify-center rounded-control text-ink-2 hover:text-danger transition-colors"
-              title="Eliminar mesociclo"
-            >
-              <Icon name="delete" size="s" />
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Stage body */}
-      {open && (
-        <div className="bg-bg">
-          {/* Tabs */}
-          <div className="flex border-b border-hairline">
-            {(['volume', 'training'] as const).map(t => (
-              <button
-                key={t}
-                onClick={() => setTab(t)}
-                className={`px-4 py-2 font-mono text-label uppercase tracking-wider transition-colors ${
-                  tab === t ? 'text-accent-ink border-b-2 border-accent' : 'text-ink-3 hover:text-ink-2'
-                }`}
-              >
-                {t === 'volume' ? 'Volumen' : 'Entrenamiento'}
-              </button>
-            ))}
-          </div>
-
-          {/* Volume table */}
-          {tab === 'volume' && (
-            <div className="p-4">
-              <div className="flex items-center justify-between mb-2">
-                <span className="font-sans text-caption text-ink-2 uppercase tracking-wider">Volumen y prioridad por grupo</span>
-                <span className="font-mono text-caption text-accent-ink font-bold">{totalSeries} series/sem</span>
-              </div>
-              <div className="border border-hairline rounded-surface overflow-hidden">
-                <table className="w-full">
-                  <thead>
-                    <tr className="bg-bg border-b border-hairline">
-                      <th className="px-3 py-2 text-left font-mono text-caption text-ink-2 uppercase tracking-wider">Grupo</th>
-                      <th className="px-3 py-2 text-center font-mono text-caption text-ink-2 uppercase tracking-wider">Series</th>
-                      <th className="px-3 py-2 text-right font-mono text-caption text-ink-2 uppercase tracking-wider">Prioridad</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {MUSCLE_GROUPS.map((g) => {
-                      const cfg = stage.groups[g];
-                      return (
-                        <tr
-                          key={g}
-                          className="border-b border-hairline last:border-0 transition-colors"
-                          style={{ backgroundColor: heatmapBg(cfg.series) }}
-                        >
-                          <td className="px-3 py-3">
-                            <span className="font-sans text-label font-medium" style={{ color: cfg.series > 0 ? heatmapText(cfg.series) : 'var(--color-ink-2)' }}>
-                              {MUSCLE_LABELS[g]}
-                            </span>
-                          </td>
-                          <td className="px-3 py-3">
-                            <div className="flex justify-center">
-                              <Stepper value={cfg.series} onChange={v => updateGroup(g, 'series', v)} />
-                            </div>
-                          </td>
-                          <td className="px-3 py-3">
-                            <div className="flex justify-end">
-                              <PrioritySelector
-                                value={cfg.priority}
-                                onChange={v => updateGroup(g, 'priority', v)}
-                              />
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Descarga y cadencia de revisiones (Bloque H) — se materializan
-                  al aplicar la plantilla: el mesociclo se crea con esta semana de
-                  descarga marcada, y las revisiones aparecen solas en el
-                  calendario del atleta (deriveDeloadEvents / deriveReviewEvents). */}
-              <div className="mt-4 pt-4 border-t border-hairline space-y-3">
-                <div className="flex items-center gap-3 flex-wrap">
-                  <button
-                    type="button"
-                    onClick={() => onChange({ ...stage, deloadWeek: stage.deloadWeek !== undefined ? undefined : stage.weeks })}
-                    className={`relative w-10 h-5.5 rounded-full flex-shrink-0 transition-colors ${stage.deloadWeek !== undefined ? 'bg-accent' : 'bg-inset'}`}
-                    style={{ padding: 3 }}
-                    aria-pressed={stage.deloadWeek !== undefined}
-                  >
-                    <span className="block w-4 h-4 rounded-full bg-ink transition-transform duration-200" style={{ transform: stage.deloadWeek !== undefined ? 'translateX(18px)' : 'translateX(0)' }} />
-                  </button>
-                  <span className="font-mono text-caption text-ink-2 uppercase tracking-wider">Incluye semana de descarga</span>
-                  {stage.deloadWeek !== undefined && (
-                    <div className="flex items-center gap-1.5">
-                      <span className="font-sans text-caption text-ink-3">en la semana</span>
-                      <input
-                        type="number" min={1} max={stage.weeks}
-                        value={stage.deloadWeek}
-                        onChange={e => onChange({ ...stage, deloadWeek: Math.min(stage.weeks, Math.max(1, parseInt(e.target.value) || 1)) })}
-                        className="w-14 bg-raised border border-hairline rounded-control px-2 py-1 text-center text-caption text-ink font-mono focus:outline-none focus:border-accent"
-                      />
-                    </div>
-                  )}
-                </div>
-                <div className="flex items-center gap-3 flex-wrap">
-                  <button
-                    type="button"
-                    onClick={() => onChange(stage.reviewCadenceWeeks !== undefined
-                      ? { ...stage, reviewCadenceWeeks: undefined, reviewType: undefined }
-                      : { ...stage, reviewCadenceWeeks: 2, reviewType: 'revision' })}
-                    className={`relative w-10 h-5.5 rounded-full flex-shrink-0 transition-colors ${stage.reviewCadenceWeeks !== undefined ? 'bg-accent' : 'bg-inset'}`}
-                    style={{ padding: 3 }}
-                    aria-pressed={stage.reviewCadenceWeeks !== undefined}
-                  >
-                    <span className="block w-4 h-4 rounded-full bg-ink transition-transform duration-200" style={{ transform: stage.reviewCadenceWeeks !== undefined ? 'translateX(18px)' : 'translateX(0)' }} />
-                  </button>
-                  <span className="font-mono text-caption text-ink-2 uppercase tracking-wider">Programar revisiones cada</span>
-                  {stage.reviewCadenceWeeks !== undefined && (
-                    <>
-                      <input
-                        type="number" min={1} max={stage.weeks}
-                        value={stage.reviewCadenceWeeks}
-                        onChange={e => onChange({ ...stage, reviewCadenceWeeks: Math.max(1, parseInt(e.target.value) || 1) })}
-                        className="w-14 bg-raised border border-hairline rounded-control px-2 py-1 text-center text-caption text-ink font-mono focus:outline-none focus:border-accent"
-                      />
-                      <span className="font-sans text-caption text-ink-3">semanas ·</span>
-                      <select
-                        value={stage.reviewType ?? 'revision'}
-                        onChange={e => onChange({ ...stage, reviewType: e.target.value as TaskType })}
-                        className="bg-raised border border-hairline rounded-control px-2 py-1 text-caption text-ink font-sans focus:outline-none focus:border-accent cursor-pointer"
-                      >
-                        <option value="revision">Check-in</option>
-                        <option value="cuestionario">Cuestionario</option>
-                        <option value="foto">Fotos</option>
-                      </select>
-                    </>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Training / days */}
-          {tab === 'training' && (
-            <div className="p-4 space-y-2">
-              <div className="flex items-center justify-between mb-2">
-                <span className="font-sans text-caption text-ink-2 uppercase tracking-wider">
-                  Días de entrenamiento ({stage.days.length}/{stage.daysPerWeek})
-                </span>
-                <button
-                  onClick={addDay}
-                  disabled={stage.days.length >= stage.daysPerWeek}
-                  className="flex items-center gap-1 px-2 py-1 bg-raised border border-hairline text-ink-2 font-mono text-caption rounded-control hover:border-accent/40 hover:text-accent-ink disabled:opacity-30 transition-all"
-                >
-                  <Icon name="add" size="s" />
-                  Añadir día
-                </button>
-              </div>
-              {stage.days.length === 0 ? (
-                <div className="text-center py-6 border border-dashed border-hairline rounded-surface">
-                  <p className="font-sans text-caption text-ink-3">Sin días predefinidos. El generador usará distribución automática.</p>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {stage.days.map((day, idx) => (
-                    <DayBlock
-                      key={day.id}
-                      day={day}
-                      dayIdx={idx}
-                      exercises={exercises}
-                      onChange={updated => updateDay(idx, updated)}
-                      onDelete={() => deleteDay(idx)}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ── Form state types ───────────────────────────────────────────────────────────
-
-interface StageForm {
-  id: string;
-  name: string;
-  weeks: number;
-  daysPerWeek: number;
-  groups: Record<MuscleGroup, MuscleGroupConfig>;
-  days: TemplateDay[];
-  deloadWeek?: number;
-  reviewCadenceWeeks?: number;
-  reviewType?: TaskType;
-}
 
 interface FormState {
   name: string;
   description: string;
-  stages: StageForm[];
+  stages: TemplateStage[];
 }
 
-function emptyStage(n: number): StageForm {
+function emptyStage(n: number): TemplateStage {
   return {
     id: `stage_${Date.now()}_${Math.random().toString(36).slice(2, 5)}`,
     name: `Mesociclo ${n}`,
     weeks: 4,
     daysPerWeek: 4,
     groups: DEFAULT_GROUPS(),
-    days: [],
   };
 }
 
@@ -615,21 +53,111 @@ function emptyForm(): FormState {
 }
 
 function formFromTemplate(tpl: MesocycleTemplate): FormState {
-  return {
-    name: tpl.name,
-    description: tpl.description ?? '',
-    stages: tpl.stages.map(s => ({ ...s, days: s.days ?? [] })),
-  };
+  return { name: tpl.name, description: tpl.description ?? '', stages: tpl.stages.map(s => ({ ...s })) };
+}
+
+// ── Una etapa en la lista ─────────────────────────────────────────────────────
+
+function TarjetaEtapa({ stage, idx, total, onEditar, onCambio, onMover, onBorrar }: {
+  key?: React.Key;
+  stage: TemplateStage;
+  idx: number;
+  total: number;
+  onEditar: () => void;
+  onCambio: (s: TemplateStage) => void;
+  onMover: (dir: -1 | 1) => void;
+  onBorrar: () => void;
+}) {
+  const reparto = repartoDelMesociclo(stage);
+  const series = MUSCLE_ORDER.reduce((a, g) => a + (stage.groups[g]?.series ?? 0), 0);
+  const ejercicios = (stage.days ?? []).reduce((a, d) => a + d.exercises.length, 0);
+  const ciclo = stage.cycleDays ?? 7;
+  return (
+    <div className="bg-raised border border-hairline rounded-surface p-4 space-y-3">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="font-mono text-caption text-ink-3 uppercase tracking-wider">Etapa {idx + 1}</p>
+          <p className="font-sans font-bold text-body-s text-ink truncate">{stage.name}</p>
+          <p className="font-mono text-caption text-ink-2">
+            {stage.weeks} sem · {stage.daysPerWeek} sesiones{ciclo !== 7 ? ` cada ${ciclo} días` : '/sem'} · {series} series/sem
+          </p>
+          <p className="font-sans text-caption text-ink-3 truncate">
+            {reparto ? reparto.nombre : 'Sin reparto'}
+            {stage.distribution ? ' · distribución hecha' : ''}
+            {ejercicios > 0 ? ` · ${ejercicios} ejercicios` : ' · sin rutinas'}
+          </p>
+        </div>
+        <div className="flex items-center gap-1 flex-shrink-0">
+          <button type="button" aria-label="Subir etapa" disabled={idx === 0} onClick={() => onMover(-1)}
+            className="w-9 h-9 flex items-center justify-center rounded-control text-ink-3 hover:text-ink disabled:opacity-30">
+            <Icon name="arrow_upward" size="s" />
+          </button>
+          <button type="button" aria-label="Bajar etapa" disabled={idx === total - 1} onClick={() => onMover(1)}
+            className="w-9 h-9 flex items-center justify-center rounded-control text-ink-3 hover:text-ink disabled:opacity-30">
+            <Icon name="arrow_downward" size="s" />
+          </button>
+          <button type="button" aria-label="Quitar etapa" disabled={total === 1} onClick={onBorrar}
+            className="w-9 h-9 flex items-center justify-center rounded-control text-ink-3 hover:text-danger disabled:opacity-30">
+            <Icon name="delete" size="s" />
+          </button>
+        </div>
+      </div>
+
+      {/* Revisiones: lo único de la etapa que no es del mesociclo, sino de
+          cómo se acompaña al atleta mientras dura. */}
+      <div className="flex items-center gap-3 flex-wrap">
+        <button
+          type="button"
+          onClick={() => onCambio(stage.reviewCadenceWeeks !== undefined
+            ? { ...stage, reviewCadenceWeeks: undefined, reviewType: undefined }
+            : { ...stage, reviewCadenceWeeks: 2, reviewType: 'revision' })}
+          className={`relative w-10 h-5.5 rounded-full flex-shrink-0 transition-colors ${stage.reviewCadenceWeeks !== undefined ? 'bg-accent' : 'bg-inset'}`}
+          style={{ padding: 3 }}
+          aria-pressed={stage.reviewCadenceWeeks !== undefined}
+          aria-label="Programar revisiones"
+        >
+          <span className="block w-4 h-4 rounded-full bg-ink transition-transform duration-200" style={{ transform: stage.reviewCadenceWeeks !== undefined ? 'translateX(18px)' : 'translateX(0)' }} />
+        </button>
+        <span className="font-mono text-caption text-ink-2 uppercase tracking-wider">Revisiones cada</span>
+        {stage.reviewCadenceWeeks !== undefined && (
+          <>
+            <input
+              type="number" min={1} max={stage.weeks}
+              aria-label="Semanas entre revisiones"
+              value={stage.reviewCadenceWeeks}
+              onChange={e => onCambio({ ...stage, reviewCadenceWeeks: Math.max(1, parseInt(e.target.value) || 1) })}
+              className="w-14 bg-surface border border-hairline rounded-control px-2 py-1 text-center text-caption text-ink font-mono focus:outline-none focus:border-accent"
+            />
+            <span className="font-sans text-caption text-ink-3">semanas ·</span>
+            <select
+              aria-label="Tipo de revisión"
+              value={stage.reviewType ?? 'revision'}
+              onChange={e => onCambio({ ...stage, reviewType: e.target.value as TaskType })}
+              className="bg-surface border border-hairline rounded-control px-2 py-1 text-caption text-ink font-sans focus:outline-none focus:border-accent cursor-pointer"
+            >
+              <option value="revision">Check-in</option>
+              <option value="cuestionario">Cuestionario</option>
+              <option value="foto">Fotos</option>
+            </select>
+          </>
+        )}
+      </div>
+
+      <Button onClick={onEditar} icon="edit" variant="secondary" fullWidth>Editar mesociclo</Button>
+    </div>
+  );
 }
 
 // ── Template editor ────────────────────────────────────────────────────────────
 
 function TemplateEditor({
+  coachId,
   initial,
   saving,
   onSave,
   onCancel,
 }: {
+  coachId: string;
   initial: FormState;
   saving: boolean;
   onSave: (f: FormState) => void;
@@ -637,34 +165,62 @@ function TemplateEditor({
 }) {
   const [form, setForm] = useState<FormState>(initial);
   const [nameError, setNameError] = useState('');
-  const { data: exercises = [] } = useQuery({
-    queryKey: ['exercises'],
-    queryFn: getExercises,
+  // Etapa abierta en el editor de mesociclos (`null` = la lista de etapas).
+  const [editandoEtapa, setEditandoEtapa] = useState<string | null>(null);
+
+  const updateStage = (id: string, updated: TemplateStage) => {
+    setForm(f => ({ ...f, stages: f.stages.map(s => (s.id === id ? updated : s)) }));
+  };
+  const addStage = () => setForm(f => ({ ...f, stages: [...f.stages, emptyStage(f.stages.length + 1)] }));
+  const deleteStage = (id: string) => setForm(f => ({ ...f, stages: f.stages.filter(s => s.id !== id) }));
+  const moveStage = (idx: number, dir: -1 | 1) => setForm(f => {
+    const stages = [...f.stages];
+    const j = idx + dir;
+    if (j < 0 || j >= stages.length) return f;
+    [stages[idx], stages[j]] = [stages[j], stages[idx]];
+    return { ...f, stages };
   });
 
-  const addStage = () => {
-    setForm(f => ({ ...f, stages: [...f.stages, emptyStage(f.stages.length + 1)] }));
-  };
-
-  const updateStage = (idx: number, updated: StageForm) => {
-    setForm(f => {
-      const stages = [...f.stages];
-      stages[idx] = updated;
-      return { ...f, stages };
-    });
-  };
-
-  const deleteStage = (idx: number) => {
-    setForm(f => ({ ...f, stages: f.stages.filter((_, i) => i !== idx) }));
-  };
-
   const handleSubmit = () => {
-    if (!form.name.trim()) { setNameError('El nombre es obligatorio.'); return; }
+    if (!form.name.trim()) { setNameError('El nombre es obligatorio.'); setEditandoEtapa(null); return; }
     setNameError('');
     onSave(form);
   };
 
   const totalWeeks = form.stages.reduce((s, st) => s + st.weeks, 0);
+  const etapaAbierta = form.stages.find(s => s.id === editandoEtapa) ?? null;
+  const idxAbierta = etapaAbierta ? form.stages.indexOf(etapaAbierta) : -1;
+
+  if (etapaAbierta) {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <button
+            type="button"
+            onClick={() => setEditandoEtapa(null)}
+            className="flex items-center gap-1 font-sans text-label text-ink-2 hover:text-ink transition-colors"
+          >
+            <Icon name="arrow_back" size="s" />
+            {form.name.trim() ? `Volver a «${form.name.trim()}»` : 'Volver a la plantilla'}
+          </button>
+          <Button onClick={handleSubmit} loading={saving} icon="check" size="s">Guardar plantilla</Button>
+        </div>
+        <MesocycleManager
+          key={etapaAbierta.id}
+          coachId={coachId}
+          plantilla={{
+            meso: mesoDesdeEtapa(etapaAbierta, {
+              id: `plantilla-${etapaAbierta.id}`, athleteId: '', number: idxAbierta + 1, startDate: LUNES_DE_PLANTILLA,
+            }, true),
+            onGuardar: meso => updateStage(etapaAbierta.id, etapaDesdeMeso(meso, {
+              id: etapaAbierta.id,
+              revisiones: { reviewCadenceWeeks: etapaAbierta.reviewCadenceWeeks, reviewType: etapaAbierta.reviewType },
+            })),
+          }}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="bg-surface border border-hairline rounded-surface overflow-hidden">
@@ -674,13 +230,12 @@ function TemplateEditor({
           <Icon name="edit_note" size="m" className="text-accent-ink" />
           {initial.name ? `Editar "${initial.name}"` : 'Nueva plantilla de mesociclo'}
         </h3>
-        <button onClick={onCancel} className="text-ink-2 hover:text-ink transition-colors">
+        <button onClick={onCancel} aria-label="Cerrar" className="text-ink-2 hover:text-ink transition-colors">
           <Icon name="close" size="m" />
         </button>
       </div>
 
       <div className="p-5 space-y-5">
-        {/* Name + description */}
         <div className="grid grid-cols-1 gap-3">
           <Input
             label="Nombre de la plantilla"
@@ -698,9 +253,8 @@ function TemplateEditor({
           />
         </div>
 
-        {/* Stages */}
         <div>
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
             <div>
               <span className="font-mono text-caption text-ink-2 uppercase tracking-wider">
                 Mesociclos ({form.stages.length})
@@ -715,22 +269,25 @@ function TemplateEditor({
               Añadir mesociclo
             </button>
           </div>
+          <p className="font-sans text-caption text-ink-3 mb-3">
+            Cada mesociclo se edita con el mismo editor que el de un atleta: volumen, reparto, distribución y rutinas.
+          </p>
           <div className="space-y-3">
             {form.stages.map((stage, idx) => (
-              <StageAccordion
+              <TarjetaEtapa
                 key={stage.id}
                 stage={stage}
-                stageIdx={idx}
-                exercises={exercises}
-                isOnly={form.stages.length === 1}
-                onChange={updated => updateStage(idx, updated)}
-                onDelete={() => deleteStage(idx)}
+                idx={idx}
+                total={form.stages.length}
+                onEditar={() => setEditandoEtapa(stage.id)}
+                onCambio={s => updateStage(stage.id, s)}
+                onMover={dir => moveStage(idx, dir)}
+                onBorrar={() => deleteStage(stage.id)}
               />
             ))}
           </div>
         </div>
 
-        {/* Actions */}
         <div className="flex gap-3">
           <Button onClick={handleSubmit} loading={saving} variant="primary" fullWidth>
             Guardar plantilla
@@ -868,17 +425,8 @@ export default function MesocycleTemplateLibrary({ coachId }: Props) {
         ownerId: coachId,
         name: form.name,
         description: form.description || undefined,
-        stages: form.stages.map(s => ({
-          id: s.id,
-          name: s.name,
-          weeks: s.weeks,
-          daysPerWeek: s.daysPerWeek,
-          groups: s.groups,
-          days: s.days.length > 0 ? s.days : undefined,
-          deloadWeek: s.deloadWeek,
-          reviewCadenceWeeks: s.reviewCadenceWeeks,
-          reviewType: s.reviewType,
-        })),
+        // La etapa entera: el editor de mesociclos ya la deja con todo el plan.
+        stages: form.stages,
       };
 
       if (editingId === null) {
@@ -924,6 +472,7 @@ export default function MesocycleTemplateLibrary({ coachId }: Props) {
   if (showEditor) {
     return (
       <TemplateEditor
+        coachId={coachId}
         initial={editingTemplate ? formFromTemplate(editingTemplate) : emptyForm()}
         saving={saveMutation.isPending}
         onSave={handleSave}

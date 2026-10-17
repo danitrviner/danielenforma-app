@@ -1,11 +1,10 @@
 import { describe, it, expect } from 'vitest';
+import { addDays } from './trainingWeek';
 import { NutritionProgram } from '../types';
 import { historialDeObjetivos } from './historialObjetivos';
 
-const pesosDiarios = (desde: string, n: number, f: (i: number) => number) => Array.from({ length: n }, (_, i) => {
-  const d = new Date(desde + 'T12:00:00'); d.setDate(d.getDate() + i);
-  return { date: d.toISOString().slice(0, 10), weight: f(i) };
-});
+const pesosDiarios = (desde: string, n: number, f: (i: number) => number) =>
+  Array.from({ length: n }, (_, i) => ({ date: addDays(desde, i), weight: f(i) }));
 
 describe('historialDeObjetivos', () => {
   const program: NutritionProgram = {

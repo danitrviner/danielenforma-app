@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { addDays } from './trainingWeek';
 import {
   clasificarRitmo, mediasSemanales, pendiente, senalCintura, senalFuerza,
   verificarObjetivo, RANGO_PCT_SEMANA,
@@ -6,9 +7,8 @@ import {
 
 /** Un peso diario que cambia `kgSemana` por semana, desde `desde`, durante `dias`. */
 function serie(desde: string, pesoInicial: number, kgSemana: number, dias: number) {
-  const base = Date.UTC(+desde.slice(0, 4), +desde.slice(5, 7) - 1, +desde.slice(8, 10));
   return Array.from({ length: dias }, (_, i) => ({
-    date: new Date(base + i * 86400000).toISOString().slice(0, 10),
+    date: addDays(desde, i),
     weight: pesoInicial + (kgSemana / 7) * i,
   }));
 }

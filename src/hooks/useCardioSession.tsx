@@ -312,7 +312,6 @@ function CardioSessionProviderInner({ profile, children }: { profile: UserProfil
   }, [zona2Assignment, intervalAssignment, state]);
 
   const targetZone = sessionType === 'zona2' ? (zona2Assignment?.targetZone ?? 'z2') : undefined;
-  const targetDurationSec = sessionType === 'zona2' ? zona2Assignment?.targetDurationSec : undefined;
 
   // Estado "vivo" de la sesión, en refs: es la fuente de verdad que lee
   // cualquier callback (parada manual, desconexión de la banda, cierre por

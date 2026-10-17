@@ -4,7 +4,6 @@ import {
 } from '../types';
 import { buildTrainingReport, TrainingReport } from './trainingReport';
 import { buildMovementPatternReport, PatternPerf } from './movementPatterns';
-import { buildAccumulatedStimulusReport, IEARow } from './accumulatedStimulusIndex';
 import { addDays, hoyIsoLocal} from './trainingWeek';
 import { adherenciaDeMesociclo } from './adherence';
 import { seriesRealizadasPorGrupo } from './programacion';
@@ -67,7 +66,6 @@ export interface CierreMesociclo {
   /** Variación de 1RM/tonelaje por patrón de movimiento — bloque "Rendimiento" del protocolo de mediciones. */
   patrones: PatternPerf[];
   /** Índice de Estímulo Acumulado por grupo — sustituye al tonelaje bruto, no distorsionado por el rango de reps. */
-  estimuloAcumulado: IEARow[];
   /** Frases para el coach, ya masticadas. */
   titulares: string[];
   /** Borrador copiable para mandarle al cliente. El coach lo edita antes. */
@@ -120,11 +118,6 @@ export function buildCierreMesociclo(params: {
     periodStart: inicio, periodEnd: fin,
     comparison,
   }).patterns;
-  const estimuloAcumulado = buildAccumulatedStimulusReport({
-    logs, exercises, mesocycles,
-    periodStart: inicio, periodEnd: fin,
-    comparison,
-  }).rows;
 
   // ── Adherencia ──────────────────────────────────────────────────────────
   const asigMeso = assignments.filter(a => a.mesocycleId === meso.id);
@@ -242,7 +235,6 @@ export function buildCierreMesociclo(params: {
     volumen: { filas, totalProgramadas, totalRealizadas, pct: pctVolumen },
     informe,
     patrones,
-    estimuloAcumulado,
     titulares,
     resumenParaCliente: frases.join(' '),
   };

@@ -550,7 +550,7 @@ interface Props {
 const FIELD = 'bg-bg border border-hairline rounded-surface px-3 py-2 text-body-s text-ink font-mono focus:outline-none focus:ring-1 focus:ring-accent w-full';
 
 export default function OnboardingForm({
-  athleteEmail, initialData, isCoach = false, template = [], onSaved, onCancel,
+  athleteEmail, initialData, template = [], onSaved, onCancel,
 }: Props) {
   const [form, setForm] = useState<FormState>(initialData ? fromOnboarding(initialData) : DEFAULTS);
   const [saving, setSaving] = useState(false);

@@ -2,7 +2,7 @@ import React from 'react';
 import { UserProfile } from '../../types';
 import { VentanaRevision, PesoVsSemanaPasada } from '../../utils/revisionCoach';
 import { TrainingReport } from '../../utils/trainingReport';
-import { MONTHS_ES, fechaCorta } from '../../utils/trainingWeek';
+import { fechaCorta } from '../../utils/trainingWeek';
 import { Card, Delta, Badge } from '../ui';
 
 /* ═══════════════════════════════════════════════════════════════════════════

@@ -1,29 +1,4 @@
-import {
-  db,
-  auth,
-  onAuthStateChanged,
-  collection,
-  doc,
-  getDoc,
-  setDoc,
-  getDocs,
-  addDoc,
-  updateDoc,
-  deleteDoc,
-  query,
-  where,
-  orderBy,
-  limit,
-  startAfter,
-  writeBatch,
-} from './firebase';
-import { QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
-import { UserProfile, WeightCheckIn, Exercise, ExercisePersonalNote, Workout, WorkoutAssignment, WorkoutLog, MealItem, AthleteNutritionConfig, DietMode, Diet, AthleteDietConfig, DietCompletionLog, Recipe, RecipeFavorites, ProgressPhoto, PhotoView, PhotoAssignment, Mesocycle, MuscleGroup, MuscleGroupConfig, MesocycleTemplate, TemplateStage, TemplateDay, Questionnaire, QuestionnaireAssignment, QuestionnaireResponse, BodyweightLog, StepLog, OnboardingData, NutritionPhase, NutritionProgram, RoadmapItem, Roadmap, LevelLadder, Invite, CoachNote, OnboardingTemplate, AppNotification, TaskItem, Resource, CoachReport, WeeklyChallenge, ChallengeTemplate, CoachClientTask, AiChat, AiProposal, KnowledgeNote, CoachInstructions, CoachQuickReplies, WeeklyMenu, MenuCompletionLog } from './types';
-import { SYSTEM_EXERCISES } from './data';
-import { SYSTEM_FOODS } from './nutricion_seed_en_forma';
-import { compressImage } from './utils/compressImage';
-import { markInviteJoined } from './db/invites';
-import { forceLocalOnly, stripUndefined, authReady, withAuthRetry, setLocalBypassMode, isLocalBypassActive, hayFalloDePermisos, descartarAvisoDePermisos, escriturasPendientes, suscribirEscriturasPendientes, estadoDeConexion, suscribirEstadoDeConexion } from './db/core';
+import { setLocalBypassMode, isLocalBypassActive, hayFalloDePermisos, descartarAvisoDePermisos, escriturasPendientes, suscribirEscriturasPendientes, estadoDeConexion, suscribirEstadoDeConexion } from './db/core';
 
 // stripUndefined/authReady/withAuthRetry/forceLocalOnly/setLocalBypassMode/
 // isLocalBypassActive movidos a src/db/core.ts (2026-07-18) — es la ÚNICA
@@ -63,6 +38,9 @@ export {
   getMesocycles, getMesocyclesForAthletes, createMesocycle, updateMesocycle, deleteMesocycle,
   getMesocycleTemplates, createMesocycleTemplate, updateMesocycleTemplate, deleteMesocycleTemplate,
 } from './db/training';
+export {
+  getRepartosGuardados, guardarReparto, renombrarRepartoGuardado, borrarRepartoGuardado, repartoDeGuardado,
+} from './db/repartos';
 
 // ─── CATÁLOGO DE MÁQUINAS + GIMNASIO DEL ATLETA ───────────────────────────────
 // Catálogo publicado = JSON del bundle (src/data/maquinas) + overrides del admin

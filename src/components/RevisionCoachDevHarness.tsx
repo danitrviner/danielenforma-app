@@ -537,7 +537,7 @@ export default function RevisionCoachDevHarness() {
       },
     ]);
     return qc;
-  }, [anatomia]);
+  }, [anatomia, objetivoParam]);
 
   return (
     <QueryClientProvider client={client}>

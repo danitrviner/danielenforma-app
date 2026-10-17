@@ -7,7 +7,7 @@ import {
   BodyweightLog, StepLog, WorkoutLog, Exercise, DietCompletionLog, Diet,
   MuscleGroup, CardioSession,
 } from '../types.js';
-import { epley } from './oneRepMax.js';
+import { rmDeSerie, rirEfectivo } from './oneRepMax.js';
 import { weightedGroupsOf } from './trainingReport.js';
 import { adherenciaDelDia } from './diaDeDieta.js';
 
@@ -36,6 +36,8 @@ export interface BestSet {
   exerciseId: string;
   weight: number;
   reps: number;
+  /** RIR efectivo de la serie (al fallo = 0): hace falta para proponer retos con el mismo esfuerzo. */
+  rir: number;
   e1rm: number;
   date: string;
 }
@@ -53,9 +55,9 @@ export function bestSet(
     for (const entry of log.entries) {
       if (opts.exerciseIds && !opts.exerciseIds.has(entry.exerciseId)) continue;
       for (const set of entry.sets) {
-        const e1rm = epley(set.weight, set.repsDone);
+        const e1rm = rmDeSerie(set);
         if (e1rm > 0 && (!best || e1rm > best.e1rm)) {
-          best = { exerciseId: entry.exerciseId, weight: set.weight, reps: set.repsDone, e1rm, date: log.date };
+          best = { exerciseId: entry.exerciseId, weight: set.weight, reps: set.repsDone, rir: rirEfectivo(set.rir, set.alFallo), e1rm, date: log.date };
         }
       }
     }

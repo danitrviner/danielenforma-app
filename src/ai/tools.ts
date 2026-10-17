@@ -9,6 +9,12 @@ import { getDossier, appendDossierFacts, renderDossier } from '../db/dossier';
 import { calcularDerivas, resumirPatrones } from '../utils/derivaPropuestas';
 import { sesionesDeMesociclo, fechasDelMesociclo, cicloDiasDeMeso } from '../utils/asignacionMesociclo';
 import { vueltasDelCiclo } from '../utils/progression';
+import { repartoDelMesociclo } from '../utils/trainingSplits';
+import { repartoDesdeAsistente, repartoParaAsistente, sesionesDelReparto, diasSemanaDesdeAsistente, calcularRepartoParaAsistente } from './repartoAsistente';
+import { frecuenciaPorDefecto } from '../utils/calculadoraReparto';
+import { camposDeCalendario } from '../utils/reordenarMeso';
+import { distribucionDeMeso } from '../utils/distribucionDeMeso';
+import { getRepartosGuardados } from '../db/repartos';
 import { totalSemanas as totalSemanasNutri } from '../utils/semanasNutricion';
 import { normalizarTexto as normTexto } from '../utils/busqueda';
 import { nombreDeMeso } from '../utils/nombresMeso';
@@ -149,7 +155,7 @@ export const TOOL_DEFINITIONS = [
   {
     name: 'get_training_history',
     description:
-      'Métricas de entrenamiento de un cliente calculadas por el motor determinista: sesiones, tonelaje vs ventana anterior, rendimiento por grupo muscular y por ejercicio (e1RM Epley, PRs). Ventana en semanas terminando hoy.',
+      'Métricas de entrenamiento de un cliente calculadas por el motor determinista: sesiones, tonelaje vs ventana anterior, rendimiento por grupo muscular y por ejercicio (e1RM con la fórmula de CDG, PRs). Ventana en semanas terminando hoy.',
     input_schema: {
       type: 'object',
       properties: {
@@ -364,6 +370,28 @@ export const TOOL_DEFINITIONS = [
     },
   },
   {
+    name: 'calcular_reparto',
+    description:
+      'La CALCULADORA DE REPARTO de Dani (la misma de Mesociclo › Distribución): le das los días de la semana que entrena el atleta y cuántas veces por semana quieres tocar cada grupo, y devuelve 3-4 repartos que cumplen esas frecuencias EXACTAS (empuje/tirón/pierna, torso/pierna, torso/pierna/brazo-hombro, por patrones, cuerpo completo), con las series de cada sesión, los avisos (sesiones demasiado largas, grupos en días seguidos) y cuál encaja mejor. Si el atleta ya tiene mesociclo, también su reparto actual medido contra lo que pides. Frecuencias «y media» (1,5×) dan un ciclo de 14 días con los mismos días las dos semanas. Úsala SIEMPRE antes de proponer un mesociclo para decidir el reparto, en vez de elegirlo de memoria; luego pasa el "reparto" de la opción elegida a propose_mesocycle.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        athlete_email: { type: 'string', description: 'Opcional: toma las series del bloque en curso, su fecha de inicio y lo compara con su reparto actual.' },
+        dias_semana: { type: 'array', items: { type: 'string' }, description: 'Días en que entrena: ["L","M","X","V","S"] (también "lunes"…).' },
+        frecuencias: { type: 'object', description: 'Veces por semana por grupo, en pasos de 0,5: {"pecho":1.5,"dorsal":2,…}. Los grupos que no pongas salen de su volumen (series ÷ 6). 0 = ese grupo no entra.' },
+        series: { type: 'object', description: 'Opcional: series semanales por grupo {"pecho":12,…}. Por defecto, las del mesociclo en curso del atleta.' },
+        max_series_sesion: { type: 'number', description: 'Tope de series de una sesión (por defecto 23, el de Dani).' },
+        max_series_grupo_sesion: { type: 'number', description: 'Tope de series de un grupo en una sesión (por defecto 8).' },
+      },
+      required: ['dias_semana', 'frecuencias'],
+    },
+  },
+  {
+    name: 'list_mis_repartos',
+    description: 'Los repartos que Dani ha guardado en «Mis repartos» (Mesociclo › Distribución) para reutilizar. Cada uno va en la misma forma que acepta propose_mesocycle en "reparto". Míralos antes de inventar uno: si alguno encaja, úsalo y dilo.',
+    input_schema: { type: 'object', properties: {} },
+  },
+  {
     name: 'propose_mesocycle',
     description:
       'Crea una PROPUESTA de mesociclo (bloque de entrenamiento) con series semanales objetivo por grupo muscular. Se valida automáticamente (grupos válidos, series 0–25, volumen razonable para los días). NUNCA se crea el mesociclo real: Dani lo aprueba o rechaza desde el panel. Antes conviene mirar get_training_history para respetar la progresión de volumen del bloque anterior. Solo defines el reparto de volumen; los entrenamientos concretos (ejercicios por día) los materializa Dani después en la app.',
@@ -372,9 +400,13 @@ export const TOOL_DEFINITIONS = [
       properties: {
         athlete_email: { type: 'string' },
         weeks: { type: 'number', description: 'Duración en semanas (1–12)' },
-        days_per_week: { type: 'number', description: 'Días de entrenamiento por ciclo (1–10). Hasta 7 es una semana normal; de 8 a 10 el ciclo se repite cada N días en vez de cada semana.' },
+        days_per_week: { type: 'number', description: 'Sesiones por ciclo (1–14). Hasta 7 es una semana normal; por encima, el ciclo se repite cada N días. Con reparto, las sesiones de su ciclo (10 en uno de 14 días con 5 días/semana).' },
         objective: { type: 'string', description: 'Objetivo del bloque, ej. "Hipertrofia — énfasis espalda"' },
         start_date: { type: 'string', description: 'Fecha de inicio YYYY-MM-DD (opcional; por defecto hoy)' },
+        reparto: {
+          type: 'object',
+          description: 'Opcional pero recomendado: el reparto de días, tal cual lo devuelven calcular_reparto o list_mis_repartos: {"nombre":"…","dias":[{"tipo":"Empuje","grupos":["pecho","triceps"]},{"tipo":"Descanso"},…],"frecuencias":{…}}. Un elemento por día del ciclo, en orden; los libres con tipo "Descanso". Con él, days_per_week tiene que ser su número de sesiones, el ciclo dura sus días y la distribución de series sale ya hecha.',
+        },
         groups: {
           type: 'object',
           description: 'Series semanales objetivo por grupo muscular. Solo incluye los grupos que se entrenan. Ej: {"pecho":{"series":12,"priority":"alta"},"dorsal":{"series":16,"priority":"alta"}}. Grupos válidos: pecho, dorsal, trapecio, deltoide_ant, deltoide_lat, deltoide_post, biceps, triceps, antebrazo, cuadriceps, isquios, gluteo, aductores, gemelo, core, lumbares, rotadores.',
@@ -450,7 +482,7 @@ export const TOOL_DEFINITIONS = [
       properties: {
         athlete_email: { type: 'string' },
         weeks: { type: 'number', description: 'Duración en semanas (1–12)' },
-        days_per_week: { type: 'number', description: 'Días de entrenamiento por ciclo (1–10). Hasta 7 es una semana normal; de 8 a 10 el ciclo se repite cada N días en vez de cada semana.' },
+        days_per_week: { type: 'number', description: 'Sesiones por ciclo (1–14). Hasta 7 es una semana normal; por encima, el ciclo se repite cada N días. Con reparto, las sesiones de su ciclo (10 en uno de 14 días con 5 días/semana).' },
         objective: { type: 'string', description: 'Objetivo del bloque, ej. "Hipertrofia — énfasis espalda"' },
         start_date: { type: 'string', description: 'Fecha de inicio YYYY-MM-DD (opcional; por defecto hoy)' },
         deload_week: { type: 'number', description: 'Semana (1-indexada) de descarga dentro del bloque, si el bloque debe incluir una. Omitir si no aplica.' },
@@ -932,6 +964,7 @@ export const TOOL_DEFINITIONS = [
               weeks: { type: 'number' },
               days_per_week: { type: 'number' },
               groups: { type: 'object', description: 'Igual que en propose_mesocycle: {"pecho":{"series":12,"priority":"alta"},…}' },
+              reparto: { type: 'object', description: 'Opcional: el reparto de días de la etapa, igual que en propose_mesocycle (de calcular_reparto o list_mis_repartos). days_per_week = sus sesiones.' },
               deload_week: { type: 'number' },
               review_cadence_weeks: { type: 'number' },
               review_type: { type: 'string', enum: ['revision', 'cuestionario', 'foto'] },
@@ -1038,6 +1071,8 @@ export function toolStatusLabel(name: string, input: Record<string, unknown>): s
     case 'get_exercise_usage': return 'Mirando cómo programas tú…';
     case 'get_coach_adjustments': return 'Repasando lo que sueles corregir…';
     case 'propose_mesocycle': return `Preparando propuesta de mesociclo${who}…`;
+    case 'calcular_reparto': return `Calculando repartos por frecuencia${who}…`;
+    case 'list_mis_repartos': return 'Mirando tus repartos guardados…';
     case 'propose_workout_days': return `Montando las sesiones${who}…`;
     case 'propose_periodization_block': return `Preparando propuesta de bloque completo${who}…`;
     case 'get_setup_status': return `Viendo en qué fase está${who}…`;
@@ -2504,6 +2539,49 @@ async function getCoachAdjustments(athleteEmail?: string): Promise<string> {
   });
 }
 
+/* ── Reparto: la calculadora y «Mis repartos» (16-10) ──────────────────────
+   Las mismas piezas que usa Dani en Mesociclo › Distribución, para que lo que
+   propone el asistente salga del mismo motor y no de una regla de memoria. */
+async function calcularRepartoTool(email: string | undefined, input: Record<string, unknown>): Promise<string> {
+  const diasSemana = diasSemanaDesdeAsistente(input.dias_semana);
+  const mesos = email ? await getMesocycles(email) : [];
+  const actual = mesoActivo(mesos, hoyIsoLocal()) ?? [...mesos].sort((a, b) => b.number - a.number)[0] ?? null;
+
+  const seriesPedidas = (input.series ?? {}) as Record<string, unknown>;
+  const grupos = Object.fromEntries(MUSCLE_ORDER.map(g => {
+    const s = Number(seriesPedidas[g]);
+    const series = seriesPedidas[g] !== undefined && Number.isFinite(s) && s >= 0 ? s : (actual?.groups[g]?.series ?? 0);
+    return [g, { series, priority: actual?.groups[g]?.priority ?? 'media' }];
+  })) as Record<MuscleGroup, MuscleGroupConfig>;
+
+  const pedidas = (input.frecuencias ?? {}) as Record<string, unknown>;
+  const frecuencias = Object.fromEntries(MUSCLE_ORDER.map(g => {
+    const f = Number(pedidas[g]);
+    return [g, pedidas[g] !== undefined && Number.isFinite(f) && f >= 0 ? Math.round(f * 2) / 2 : frecuenciaPorDefecto(grupos[g].series)];
+  })) as Record<MuscleGroup, number>;
+
+  const inicioSemana = actual?.startDate ? (new Date(`${actual.startDate}T12:00:00`).getDay() + 6) % 7 : 0;
+  const n = (v: unknown) => (Number.isFinite(Number(v)) && Number(v) > 0 ? Number(v) : undefined);
+  return toResult(calcularRepartoParaAsistente({
+    diasSemana, inicioSemana, frecuencias, grupos,
+    maxSeriesSesion: n(input.max_series_sesion), maxSeriesGrupoSesion: n(input.max_series_grupo_sesion),
+  }, actual));
+}
+
+async function listMisRepartos(): Promise<string> {
+  const uid = auth.currentUser?.uid;
+  if (!uid) return toResult({ repartos: [], note: 'Sin sesión de coach no se pueden leer.' });
+  try {
+    const lista = await getRepartosGuardados(uid);
+    return toResult({
+      repartos: lista.map(r => ({ ...repartoParaAsistente(r), sesiones: sesionesDelReparto(r), cicloDias: r.dias.length })),
+      note: lista.length ? 'Pásale el que encaje a propose_mesocycle en "reparto".' : 'Dani no tiene repartos guardados todavía.',
+    });
+  } catch {
+    return toResult({ repartos: [], note: 'No se han podido leer «Mis repartos» (puede que sus reglas aún no estén desplegadas).' });
+  }
+}
+
 async function proposeMesocycle(
   athleteEmail: string,
   weeks: number,
@@ -2514,8 +2592,14 @@ async function proposeMesocycle(
   rationale: string,
   chatId: string,
   expediente?: ProposalExpediente,
+  repartoInput?: unknown,
 ): Promise<string> {
   const issues = validateMesocyclePayload({ weeks, daysPerWeek, objective, groups: groupsInput });
+  const { reparto, issues: issuesReparto } = repartoDesdeAsistente(repartoInput);
+  issues.push(...issuesReparto);
+  if (reparto && sesionesDelReparto(reparto) !== daysPerWeek) {
+    issues.push({ field: 'days_per_week', message: `El reparto tiene ${sesionesDelReparto(reparto)} sesiones y days_per_week dice ${daysPerWeek}: tienen que coincidir.` });
+  }
   if (issues.length > 0) {
     return toResult({ valid: false, issues, note: 'Corrige estos problemas y vuelve a llamar a propose_mesocycle.' });
   }
@@ -2545,6 +2629,14 @@ async function proposeMesocycle(
     daysPerWeek,
     groups,
   };
+  // Con reparto: el calendario sale de él y la distribución se calcula ya, la
+  // misma que daría «Distribución automática» en el editor.
+  if (reparto) {
+    const { cycleDays } = camposDeCalendario(reparto);
+    payload.reparto = reparto;
+    if (cycleDays !== undefined) payload.cycleDays = cycleDays;
+    payload.distribution = distribucionDeMeso({ ...payload, id: '' });
+  }
 
   const trained = (Object.keys(MUSCLE_LABELS) as MuscleGroup[])
     .filter(g => groups[g].series > 0)
@@ -2552,7 +2644,7 @@ async function proposeMesocycle(
   const totalSeries = trained.length > 0
     ? (Object.keys(MUSCLE_LABELS) as MuscleGroup[]).reduce((s, g) => s + groups[g].series, 0)
     : 0;
-  const summary = `Mesociclo #${number} · ${objective} · ${weeks} sem × ${daysPerWeek} días · ${totalSeries} series/sem`;
+  const summary = `Mesociclo #${number} · ${objective} · ${weeks} sem × ${daysPerWeek} días · ${totalSeries} series/sem${reparto ? ` · ${reparto.nombre}` : ''}`;
   const anterior = [...existing].sort((a, b) => b.startDate.localeCompare(a.startDate))[0];
   const cambios = cambiosDeMesociclo(anterior, payload);
 
@@ -3136,6 +3228,21 @@ async function proposeMesocycleTemplate(email: string, name: string, description
       (Object.keys(MUSCLE_LABELS) as MuscleGroup[]).map(g => [g, { series: groupsInput[g]?.series ?? 0, priority: groupsInput[g]?.priority ?? 'media' }]),
     ) as Record<MuscleGroup, MuscleGroupConfig>;
     const stage: MesocycleTemplateStageProposal = { name: nombre, weeks, daysPerWeek, groups };
+    const { reparto, issues: issuesReparto } = repartoDesdeAsistente(st.reparto);
+    if (issuesReparto.length) { problemas.push(`Etapa "${nombre}", reparto: ${issuesReparto.map(x => x.message).join(' · ')}`); return; }
+    if (reparto) {
+      if (sesionesDelReparto(reparto) !== daysPerWeek) {
+        problemas.push(`Etapa "${nombre}": el reparto tiene ${sesionesDelReparto(reparto)} sesiones y days_per_week dice ${daysPerWeek}`);
+        return;
+      }
+      const { cycleDays } = camposDeCalendario(reparto);
+      stage.reparto = reparto;
+      if (cycleDays !== undefined) stage.cycleDays = cycleDays;
+      stage.distribution = distribucionDeMeso({
+        id: '', athleteId: '', number: i + 1, startDate: hoyIsoLocal(), objective: nombre,
+        weeks, daysPerWeek, groups, reparto, ...(cycleDays !== undefined ? { cycleDays } : {}),
+      });
+    }
     if (Array.isArray(st.days) && st.days.length) {
       const dias = (st.days as Record<string, unknown>[]).map((d, k) => ({ day_index: k, name: d.name, exercises: d.exercises }));
       const issuesDias = validateWorkoutDays(dias as WorkoutDayInput[], catalogo, daysPerWeek);
@@ -3529,6 +3636,7 @@ async function getVolumeSuggestion(
     landmarks: landmarks ?? VOLUME_LANDMARKS_DEFAULT,
     daysPerWeek: diasPorSemana,
     splitId: actual?.splitId,
+    reparto: actual ? repartoDelMesociclo(actual) : undefined,
     level: nivel,
     intent,
     priorities,
@@ -3654,6 +3762,10 @@ export async function executeTool(
           ),
           isError: false,
         };
+      case 'calcular_reparto':
+        return { content: await calcularRepartoTool(email || undefined, input), isError: false };
+      case 'list_mis_repartos':
+        return { content: await listMisRepartos(), isError: false };
       case 'propose_mesocycle': {
         if (!email || typeof input.objective !== 'string' || !input.groups) {
           return { content: 'Faltan athlete_email, objective o groups', isError: true };
@@ -3668,6 +3780,7 @@ export async function executeTool(
           typeof input.rationale === 'string' ? input.rationale : '',
           chatId,
           leerExpediente(input),
+          input.reparto,
         );
         const parsed = JSON.parse(content) as { valid?: boolean };
         return { content, isError: parsed.valid === false };

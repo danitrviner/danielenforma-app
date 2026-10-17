@@ -22,7 +22,7 @@ export default function CardioLiveDemo() {
   const [zoneIndex, setZoneIndex] = useState(2);
   const [elapsedSec, setElapsedSec] = useState(742);
   const [paused, setPaused] = useState(false);
-  const [chartData, setChartData] = useState(() => Array.from({ length: 20 }, (_, i) => ({ t: i * 4, bpm: 120 + Math.round(Math.sin(i / 3) * 20) })));
+  const [chartData] = useState(() => Array.from({ length: 20 }, (_, i) => ({ t: i * 4, bpm: 120 + Math.round(Math.sin(i / 3) * 20) })));
   const [mode, setMode] = useState<'libre' | 'zona2' | 'intervalos'>('zona2');
   const [locked, setLocked] = useState(false);
   const [prefs, setPrefs] = useState<CardioLivePrefs>(DEFAULT_LIVE_PREFS);

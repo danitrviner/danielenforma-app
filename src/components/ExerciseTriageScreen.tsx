@@ -1,12 +1,13 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Exercise, MuscleGroup, MUSCLE_ORDER, MUSCLE_LABELS } from '../types';
+import { Exercise, MUSCLE_ORDER, MUSCLE_LABELS } from '../types';
 import { getExercises, getWorkouts, updateExercise, deleteExercise, seedExercisesIfEmpty } from '../dbService';
 import { useToast } from '../hooks/useToast';
 import { mensajeDeErrorFirestore } from '../utils/erroresFirestore';
 import { getOrigen, ordenarParaRevision, tieneInglesSinTraducir } from '../utils/ejerciciosOrigen';
 import { haptics } from '../services/haptics';
 import { ScreenSkeleton, Button, Icon, ProgressBar, EmptyState, SegmentedControl, Dialog } from './ui';
+import EmparejadoCdgScreen from './EmparejadoCdgScreen';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Revisión del catálogo de ejercicios
@@ -58,6 +59,7 @@ const PRIORIDADES: { valor: Prioridad; label: string; tecla: string }[] = [
 const MODOS = [
   { value: 'cribado', label: 'Cribado' },
   { value: 'clasificar', label: 'Clasificar' },
+  { value: 'cdg', label: 'Emparejado CDG' },
 ];
 const MODO_KEY = 'triage-modo';
 
@@ -96,12 +98,14 @@ export default function ExerciseTriageScreen({ onClose }: ExerciseTriageScreenPr
   // los campos de una en la otra es lo que hacía la pantalla lenta de recorrer.
   // Se recuerda entre sesiones porque el cribado de 1.721 ejercicios no se
   // termina en una sentada.
-  const [modo, setModo] = useState<'cribado' | 'clasificar'>(
-    () => (localStorage.getItem(MODO_KEY) as 'cribado' | 'clasificar' | null) ?? 'cribado',
+  const [modo, setModo] = useState<'cribado' | 'clasificar' | 'cdg'>(
+    () => (localStorage.getItem(MODO_KEY) as 'cribado' | 'clasificar' | 'cdg' | null) ?? 'cribado',
   );
   useEffect(() => { localStorage.setItem(MODO_KEY, modo); }, [modo]);
 
-  const lista = ordenados ?? [];
+  // Memorizadas: un `[]` o un objeto nuevo en cada render hacía que todos los
+  // efectos y callbacks que dependen de ellas se rehicieran sin motivo.
+  const lista = useMemo(() => ordenados ?? [], [ordenados]);
   const [indice, setIndice] = useState(0);
   const [arrancado, setArrancado] = useState(false);
 
@@ -118,9 +122,9 @@ export default function ExerciseTriageScreen({ onClose }: ExerciseTriageScreenPr
   // instante; Firestore se escribe detrás. Si la escritura falla se avisa y se
   // revierte, en vez de dejarte creyendo que quedó guardado.
   const [cambios, setCambios] = useState<Record<string, Partial<Exercise>>>({});
-  const actual: Exercise | undefined = lista[indice]
+  const actual: Exercise | undefined = useMemo(() => (lista[indice]
     ? { ...lista[indice], ...cambios[lista[indice].id] }
-    : undefined;
+    : undefined), [lista, indice, cambios]);
 
   const origen = actual ? getOrigen(actual.id) : null;
 
@@ -216,6 +220,9 @@ export default function ExerciseTriageScreen({ onClose }: ExerciseTriageScreenPr
   // Notas: texto libre, se guarda al salir del campo (no en cada tecla) para
   // no machacar Firestore mientras el coach todavía está escribiendo.
   const [borradorNota, setBorradorNota] = useState(actual?.notasRevision ?? '');
+  // Solo al cambiar de ejercicio: si se reiniciara con cada cambio de la nota,
+  // se pisaría lo que el coach está escribiendo.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { setBorradorNota(actual?.notasRevision ?? ''); }, [actual?.id]);
   const guardarNota = useCallback(() => {
     if (!actual) return;
@@ -242,7 +249,9 @@ export default function ExerciseTriageScreen({ onClose }: ExerciseTriageScreenPr
   // ─── Teclado ───────────────────────────────────────────────────────────────
   useEffect(() => {
     const alPulsar = (e: KeyboardEvent) => {
-      if (!actual) return;
+      // En «Emparejado CDG» no hay ficha activa: los atajos de la revisión
+      // (Enter marca «revisado») no deben actuar sobre ejercicios que no se ven.
+      if (!actual || modo === 'cdg') return;
       const enCampo = e.target instanceof HTMLElement
         && ['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName);
       if (enCampo) {
@@ -273,7 +282,11 @@ export default function ExerciseTriageScreen({ onClose }: ExerciseTriageScreenPr
     };
     window.addEventListener('keydown', alPulsar);
     return () => window.removeEventListener('keydown', alPulsar);
-  }, [actual, guardar, siguiente, irA, indice, abrirNombre]);
+  }, [actual, guardar, siguiente, irA, indice, abrirNombre, modo]);
+
+  if (modo === 'cdg') {
+    return <EmparejadoCdgScreen modos={MODOS} modo={modo} onModo={v => setModo(v as typeof modo)} onClose={onClose} />;
+  }
 
   if (loadingEx || !ordenados) return <ScreenSkeleton />;
 
@@ -330,7 +343,7 @@ export default function ExerciseTriageScreen({ onClose }: ExerciseTriageScreenPr
             label="Modo de revisión"
             options={MODOS}
             value={modo}
-            onChange={v => setModo(v as 'cribado' | 'clasificar')}
+            onChange={v => setModo(v as typeof modo)}
           />
           {marcados.length > 0 && (
             <Button variant="ghost" size="s" onClick={() => setConfirmandoBorrado(true)}>

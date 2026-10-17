@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import type { MenuMeal, MenuComplement } from '../types';
+import type { MenuMeal } from '../types';
 import { topeDeExtra, acotarExtrasDeComida } from './menuEngine';
 
 /* La regla, en palabras de Dani (auditoría §6):

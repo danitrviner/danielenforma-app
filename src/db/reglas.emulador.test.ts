@@ -13,7 +13,7 @@
  * encerrado a todo cliente nuevo — que es exactamente el fallo P0-2 que este
  * proyecto ya sufrió una vez. Desplegar sin comprobarlo era inaceptable.
  */
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
+import { describe, it, beforeAll, afterAll, beforeEach } from 'vitest';
 import { readFileSync } from 'node:fs';
 import {
   initializeTestEnvironment,
@@ -339,5 +339,67 @@ describe('cardio · leer un documento que todavía no existe', () => {
     const atleta = env.authenticatedContext(uid, { email: ATLETA, email_verified: true }).firestore();
     await assertSucceeds(getDoc(doc(atleta, 'cardioWeeklyGoals', idObjetivo)));
     await assertFails(getDoc(doc(atleta, 'cardioWeeklyGoals', `otro@enforma.com_${SEMANA}`)));
+  });
+});
+
+describe('repartosGuardados · «Mis repartos» solo del coach (16-10)', () => {
+  const REPARTO = { nombre: 'PPL', dias: [{ tipo: 'Empuje', grupos: ['pecho'] }, null], ownerId: 'uid-coach', creadoEn: '2026-10-16' };
+
+  it('el coach guarda, lee, renombra y borra', async () => {
+    const coach = env.authenticatedContext('uid-coach', { email: COACH, email_verified: true }).firestore();
+    await assertSucceeds(setDoc(doc(coach, 'repartosGuardados', 'r1'), REPARTO));
+    await assertSucceeds(getDoc(doc(coach, 'repartosGuardados', 'r1')));
+    await assertSucceeds(updateDoc(doc(coach, 'repartosGuardados', 'r1'), { nombre: 'Otro' }));
+  });
+
+  it('un atleta con perfil no lo lee ni lo escribe', async () => {
+    const uid = 'uid-atleta-real';
+    await sembrar(async db => {
+      await setDoc(doc(db, 'user_profiles', uid), { userId: uid, email: ATLETA, role: 'client' });
+      await setDoc(doc(db, 'repartosGuardados', 'r1'), REPARTO);
+    });
+    const atleta = env.authenticatedContext(uid, { email: ATLETA, email_verified: true }).firestore();
+    await assertFails(getDoc(doc(atleta, 'repartosGuardados', 'r1')));
+    await assertFails(setDoc(doc(atleta, 'repartosGuardados', 'r2'), { ...REPARTO, ownerId: uid }));
+  });
+
+  it('el coach con el correo SIN verificar no entra', async () => {
+    const coach = env.authenticatedContext('uid-coach', { email: COACH, email_verified: false }).firestore();
+    await assertFails(setDoc(doc(coach, 'repartosGuardados', 'r1'), REPARTO));
+  });
+});
+
+describe('cdgCatalogo · catálogo CDG con licencia personal del coach', () => {
+  const uid = 'uid-atleta-cdg';
+
+  async function sembrarCatalogo() {
+    await sembrar(async db => {
+      await setDoc(doc(db, 'user_profiles', uid), { userId: uid, email: ATLETA, role: 'client' });
+      await setDoc(doc(db, 'cdgCatalogo', 'v4'), { json: '{}', ejercicios: 0 });
+    });
+  }
+
+  it('el coach lo lee', async () => {
+    await sembrarCatalogo();
+    const coach = env.authenticatedContext('uid-coach', { email: COACH, email_verified: true }).firestore();
+    await assertSucceeds(getDoc(doc(coach, 'cdgCatalogo', 'v4')));
+  });
+
+  it('un atleta con perfil NO lo lee', async () => {
+    await sembrarCatalogo();
+    const atleta = env.authenticatedContext(uid, { email: ATLETA, email_verified: true }).firestore();
+    await assertFails(getDoc(doc(atleta, 'cdgCatalogo', 'v4')));
+  });
+
+  it('nadie escribe desde el cliente, ni el coach', async () => {
+    await sembrarCatalogo();
+    const coach = env.authenticatedContext('uid-coach', { email: COACH, email_verified: true }).firestore();
+    await assertFails(setDoc(doc(coach, 'cdgCatalogo', 'v4'), { json: 'x' }));
+    await assertFails(updateDoc(doc(coach, 'cdgCatalogo', 'v4'), { json: 'x' }));
+  });
+
+  it('sin sesión no se lee', async () => {
+    await sembrarCatalogo();
+    await assertFails(getDoc(doc(env.unauthenticatedContext().firestore(), 'cdgCatalogo', 'v4')));
   });
 });

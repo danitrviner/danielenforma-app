@@ -162,7 +162,7 @@ try {
     // Clear any stale bypass flag left by older builds
     localStorage.removeItem('enforma_use_local_fallback');
   }
-} catch (e) {}
+} catch {}
 
 /**
  * Último error de Firestore que provocó una caída a local, tal cual. Lo lee

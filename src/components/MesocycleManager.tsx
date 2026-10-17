@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  MuscleGroup, MuscleGroupConfig, Mesocycle, UserProfile, Workout,
-  DayPlan, DayAssignment, WeekDistribution, Exercise, WorkoutExercise, TemplateDay,
-  WorkoutLog, WorkoutAssignment, PhaseType, EventoDeSemana,
+  MuscleGroup, MuscleGroupConfig, Mesocycle, Workout,
+  DayPlan, WeekDistribution, Exercise, WorkoutExercise, TemplateDay,
+  WorkoutLog, WorkoutAssignment, PhaseType, EventoDeSemana, RepartoPropio, RepartoGuardado,
   MUSCLE_LABELS, MUSCLE_LABELS_SHORT, MUSCLE_ORDER, WorkoutTechnique,
 } from '../types';
 import {
@@ -13,7 +13,8 @@ import {
   deleteWorkoutsByMesocycleIdStrict, reprogramarAsignacionesDelMeso,
   getUserProfileByEmail, migratePrimaryFocusToMuscleGroup,
   getMesocycleTemplates, createTask, getWorkoutLogs, getWorkoutAssignmentsByMesocycleIds, createMesocycleTemplate,
-  getAssignmentsForAthlete, getQuestionnairesByCoach,
+  getAssignmentsForAthlete, getQuestionnairesByCoach, updateUserProfile,
+  getRepartosGuardados, guardarReparto, borrarRepartoGuardado, repartoDeGuardado,
 } from '../dbService';
 import ExerciseConfigEditor, { COLUMNAS_FILA } from './ExerciseConfigEditor';
 import RoutinePreview, { PreviewDay, PreviewExercise } from './training/RoutinePreview';
@@ -22,7 +23,7 @@ import SeriesBalance from './training/SeriesBalance';
 import MesocycleReviewPanel from './MesocycleReviewPanel';
 import {
   balanceDeSeries, seriesPorGrupo, seriesPlanificadasDelDia, seriesPlanificadasDelMeso, duracionEstimadaMin,
-  frecuenciaSemanal, gruposEnDiasSeguidos, repartoDeSeries, runDistribution,
+  frecuenciaSemanal, gruposEnDiasSeguidos, repartoDeSeries,
 } from '../utils/programacion';
 import ExercisePickerSheet from './ExercisePickerSheet';
 import ExerciseVideoPlayer from './ExerciseVideoPlayer';
@@ -35,20 +36,36 @@ import {
 } from '../utils/semanasDelBloque';
 import BarraDeSemanas, { type Alcance, type AvisoDeSemana, type ElementoProgramado } from './mesociclo/BarraDeSemanas';
 import PlanificadorProgresion from './mesociclo/PlanificadorProgresion';
+import PanelIndicesCdg from './mesociclo/PanelIndicesCdg';
+import BarraObjetivosCdg from './mesociclo/BarraObjetivosCdg';
+import { useAgujetasCdg } from '../hooks/useAgujetasCdg';
+import { clasificarFaseEntreno } from '../utils/roadmapCalendar';
+import ResumenCdgDia from './mesociclo/ResumenCdgDia';
+import SeguimientoCdg from './mesociclo/SeguimientoCdg';
 import { atletasActivos } from '../utils/atletas';
 import {
   TRAINING_SPLITS, DAY_TYPE_MUSCLES, getSplitsForDays, recommendSplit,
   cicloDeSplit, sesionesDeSplit, tiposDeEntrenamiento, offsetsDeSplit, frecuenciaSemanalDeSplit,
-  type TrainingSplit,
+  repartoDelMesociclo, repartoDesdeCatalogo, DESCANSO, moverDiaDelReparto, moverSesionDelReparto, empezarRepartoPor,
+  type TrainingSplit, type Reordenacion,
 } from '../utils/trainingSplits';
-import { zoneLabel, heatmapBg, heatmapText, VOLUME_ZONE_LEGEND, GENERIC_LANDMARK } from '../utils/volumeZones';
+import {
+  aplicarReordenacionAlMeso, nuevoIndiceDeSesion, repartoImplicito, ajustarDiasDelReparto, quitarDescanso, sinMoverSesiones,
+  camposDeCalendario,
+} from '../utils/reordenarMeso';
+import OrdenDelCiclo from './mesociclo/OrdenDelCiclo';
+import CalculadoraRepartoSheet from './mesociclo/CalculadoraRepartoSheet';
+import { etapaDesdeMeso, mesoDesdeEtapa } from '../utils/plantillaMeso';
+import { distribucionDeMeso } from '../utils/distribucionDeMeso';
+import type { OpcionDeReparto } from '../utils/calculadoraReparto';
+import { zoneLabel, heatmapBg, heatmapText, VOLUME_ZONE_LEGEND } from '../utils/volumeZones';
 import { VOLUME_LANDMARKS_DEFAULT, type VolumeLandmark } from '../data/volumeLandmarks';
 import { getVolumeLandmarks } from '../dbService';
 import VolumeSuggestionSheet from './VolumeSuggestionSheet';
 import { useToast } from '../hooks/useToast';
 import { nombreDeMeso, nombreDeSesion } from '../utils/nombresMeso';
-import { fechasDelMesociclo, cicloDiasDeMeso, sesionesDeMesociclo } from '../utils/asignacionMesociclo';
-import { buildSnapshot, isStale } from '../utils/repartoDesactualizado';
+import { fechasDelMesociclo, cicloDiasDeMeso, sesionesDeMesociclo, offsetsDelMesociclo } from '../utils/asignacionMesociclo';
+import { isStale } from '../utils/repartoDesactualizado';
 import { addDays, esFechaIso, hoyIsoLocal, isoLocal } from '../utils/trainingWeek';
 import { useAthleteProfileSignals } from '../hooks/useAthleteProfileSignals';
 import { useAthleteWeight } from '../hooks/useAthleteWeight';
@@ -587,6 +604,7 @@ function MesoExercisesTabs({
   // pantalla enseña los ejercicios tal y como tocan esa semana, y lo que se
   // toque se guarda como cambio desde esa semana (o solo esa).
   const [semana, setSemana] = useState(0);
+  const { agujetas: agujetasCdg } = useAgujetasCdg(meso.athleteId);
   const [alcance, setAlcance] = useState<Alcance>('desde');
   const [comparar, setComparar] = useState<{ a: number; b: number } | null>(null);
   type Deshacer = { tipo: 'dia'; clave: string; prev: WorkoutExercise[] } | { tipo: 'meso'; prev: Partial<Mesocycle> };
@@ -975,6 +993,10 @@ function MesoExercisesTabs({
                       {' · ~'}{duracionEstimadaMin(g.exercises)} min
                     </span>
                   )}
+                  <ResumenCdgDia
+                    ejercicios={semana > 0 && gruposBase[gIdx] ? gruposBase[gIdx].exercises.map(we => resolverEjercicioDelMeso(we, meso, semana)) : (gruposBase[gIdx]?.exercises ?? g.exercises)}
+                    allExercises={allExercises}
+                  />
                 </span>
               </div>
               <SeriesBalance
@@ -1496,7 +1518,20 @@ function MesoExercisesTabs({
         <SeriesBalance balance={balanceSemana} referencia={referenciaCiclo} ocultarSiVacio={false} onGroupClick={jumpToGroup} />
       </div>
 
+      <PanelIndicesCdg
+        grupos={gruposBase} meso={meso} semana={semana} allExercises={allExercises}
+        objetivos={meso.cdgObjetivosIem}
+        onCambiarObjetivo={(zona, valor) => {
+          const siguiente = { ...(meso.cdgObjetivosIem ?? {}) };
+          if (valor == null) delete siguiente[zona]; else siguiente[zona] = valor;
+          onUpdateMeso({ cdgObjetivosIem: siguiente });
+        }}
+        agujetas={agujetasCdg}
+        definicion={clasificarFaseEntreno(meso) === 'definicion'}
+      />
+
       <div ref={zonaRef} className="space-y-4">
+      <BarraObjetivosCdg grupos={gruposBase} meso={meso} semana={semana} allExercises={allExercises} objetivos={meso.cdgObjetivosIem} />
       {/* Carrusel de días — solo el día activo muestra su contenido debajo. Con
           sitio para varias columnas las pestañas sobran: los días ya se ven
           todos. */}
@@ -1838,7 +1873,7 @@ function ProgressionView({ editing, mesocycles, onUpdateGroup, onApplySuggestion
 // ─── Main component ───────────────────────────────────────────────────────────
 
 type SaveState  = 'idle' | 'pending' | 'saving' | 'saved' | 'error';
-type EditorTab  = 'distribution' | 'exercises' | 'progression' | 'draft' | 'cierre';
+type EditorTab  = 'distribution' | 'exercises' | 'progression' | 'draft' | 'cierre' | 'seguimiento';
 
 // One row per distinct day pattern (name) generated for this mesocycle — every week
 // repeats the same exercises per day (see handleAssign), so grouping by name collapses
@@ -1885,6 +1920,7 @@ function groupMesoWorkouts(workouts: Workout[], mesocycleId: string): MesoWorkou
 }
 
 interface MesocycleManagerProps {
+  key?: React.Key;
   coachId: string;
   athleteEmail?: string;      // when set: skip the athlete selector
   athleteEquipment?: string[]; // from onboarding; used to rank exercises in generator
@@ -1900,20 +1936,29 @@ interface MesocycleManagerProps {
   // pestaña «Cierre» las pide por su cuenta al abrirse, nunca antes.
   athleteLogs?: WorkoutLog[];
   athleteAssignments?: WorkoutAssignment[];
+  /**
+   * MODO PLANTILLA (Biblioteca › Plantillas, 16-10): edita una etapa de
+   * plantilla con este mismo editor, sin atleta. Nada se asigna ni se guarda
+   * como mesociclo: cada cambio llega a `onGuardar`, las rutinas viven en
+   * `meso.days` y lo que solo tiene sentido con un atleta (lista de bloques,
+   * fechas, draft con su material, cierre, asignar) no se enseña.
+   */
+  plantilla?: { meso: Mesocycle; onGuardar: (meso: Mesocycle) => void };
 }
 
 export default function MesocycleManager({
   coachId, athleteEmail, athleteEquipment = [], athleteLevel, athleteName,
   athleteHatedExercises = [], athleteInjuries = '',
-  athleteLogs, athleteAssignments,
+  athleteLogs, athleteAssignments, plantilla,
 }: MesocycleManagerProps) {
+  const modoPlantilla = !!plantilla;
   const { showToast } = useToast();
   const { confirm, ConfirmDialog } = useConfirm();
   const queryClient = useQueryClient();
   const [selectedEmail, setSelectedEmail] = useState(athleteEmail ?? '');
   const [creating, setCreating]           = useState(false);
 
-  const [editing, setEditing]             = useState<Mesocycle | null>(null);
+  const [editing, setEditing]             = useState<Mesocycle | null>(plantilla?.meso ?? null);
   const [editorTab, setEditorTab]         = useState<EditorTab>('progression');
   const [saveState, setSaveState]         = useState<SaveState>('idle');
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -2004,9 +2049,15 @@ export default function MesocycleManager({
   // cualquier React.memo de las tarjetas que dependa de esta lista) se
   // recalculaban en cada tecla de CUALQUIER campo de la pantalla, no solo los
   // que tocan ejercicios.
+  // En una plantilla las sesiones son `editing.days` (no hay Workouts): se
+  // presentan con la misma forma, con ids ficticios `tpl:<día>` que las
+  // escrituras de abajo reconocen.
+  const diasDePlantilla = modoPlantilla ? editing?.days : undefined;
   const mesoGroupsForTabs = useMemo(
-    () => groupMesoWorkouts(mesoWorkouts, editing?.id ?? ''),
-    [mesoWorkouts, editing?.id]
+    () => (modoPlantilla
+      ? (diasDePlantilla ?? []).map((d, i) => ({ name: d.name, dayIndex: i, workoutIds: [`tpl:${i}`], exercises: d.exercises }))
+      : groupMesoWorkouts(mesoWorkouts, editing?.id ?? '')),
+    [modoPlantilla, diasDePlantilla, mesoWorkouts, editing?.id]
   );
 
   // Datos del CIERRE. Solo se piden si esta pantalla no los recibió por props y
@@ -2014,7 +2065,14 @@ export default function MesocycleManager({
   // no hay motivo para pagar dos queries cada vez que se entra a programar.
   // Mismas queryKeys que ClientHub/MesocycleDashboard: si ya están en caché,
   // esto no lee nada de Firestore.
-  const necesitaLogs = (editorTab === 'cierre' || editorTab === 'exercises' || editorTab === 'draft') && !athleteLogs && !!selectedEmail;
+  // «Mis repartos»: solo se piden al abrir Distribución.
+  const { data: repartosGuardados = [] } = useQuery({
+    queryKey: ['repartosGuardados', coachId],
+    queryFn: () => getRepartosGuardados(coachId),
+    enabled: editorTab === 'distribution',
+  });
+
+  const necesitaLogs = (editorTab === 'cierre' || editorTab === 'exercises' || editorTab === 'draft' || editorTab === 'seguimiento') && !athleteLogs && !!selectedEmail;
   const { data: logsQuery = [], isPending: logsPending } = useQuery({
     queryKey: ['workoutLogs', selectedEmail],
     queryFn: () => getWorkoutLogs(selectedEmail),
@@ -2072,13 +2130,21 @@ export default function MesocycleManager({
   // Selecting a different athlete resets the editor — the mesocycle list itself now
   // comes from the ['mesocycles', selectedEmail] query above.
   useEffect(() => {
+    if (modoPlantilla) return;
     setEditing(null);
     setGenPhase('idle');
-  }, [selectedEmail]);
+  }, [selectedEmail, modoPlantilla]);
 
+  const onGuardarPlantilla = plantilla?.onGuardar;
   const scheduleAutoSave = useCallback((updated: Mesocycle) => {
     if (saveTimer.current) clearTimeout(saveTimer.current);
     setSaveState('pending');
+    if (onGuardarPlantilla) {
+      // En una plantilla «guardar» es devolverle la etapa a la biblioteca, que
+      // la escribe al pulsar «Guardar plantilla».
+      saveTimer.current = setTimeout(() => { onGuardarPlantilla(updated); setSaveState('idle'); }, 300);
+      return;
+    }
     saveTimer.current = setTimeout(async () => {
       setSaveState('saving');
       try {
@@ -2092,7 +2158,7 @@ export default function MesocycleManager({
         setSaveState('error');
       }
     }, 800);
-  }, [queryClient, selectedEmail]);
+  }, [queryClient, selectedEmail, onGuardarPlantilla]);
 
   // El bloque tal cual, con sus cambios por semana, descargas y test, como
   // plantilla reutilizable con otros clientes.
@@ -2103,17 +2169,11 @@ export default function MesocycleManager({
         ownerId: coachId,
         name: `${editing.objective?.trim() || nombreDeMeso(editing)} · ${editing.weeks} semanas`,
         description: 'Guardada desde un mesociclo, con sus cambios semana a semana.',
-        stages: [{
+        // El plan entero (reparto, ciclo, distribución…), no solo volumen y días.
+        stages: [etapaDesdeMeso(editing, {
           id: `st_${Date.now()}`,
-          name: editing.objective?.trim() || nombreDeMeso(editing),
-          weeks: editing.weeks,
-          daysPerWeek: editing.daysPerWeek,
-          groups: { ...editing.groups },
-          days: mesoGroupsForTabs.map((g, i) => ({ id: `d${i + 1}`, name: g.name, exercises: g.exercises })),
-          ...(editing.deloadWeek !== undefined ? { deloadWeek: editing.deloadWeek } : {}),
-          ...(editing.semanasDescarga ? { semanasDescarga: editing.semanasDescarga } : {}),
-          ...(editing.semanasTest ? { semanasTest: editing.semanasTest } : {}),
-        }],
+          dias: mesoGroupsForTabs.map((g, i) => ({ id: `d${i + 1}`, name: g.name, exercises: g.exercises })),
+        })],
       });
       setTemplates([]);
       showToast('Plantilla guardada en tu biblioteca de mesociclos', 'success');
@@ -2164,21 +2224,14 @@ export default function MesocycleManager({
     scheduleAutoSave(updated);
   };
 
+  // La distribución de un mesociclo tal y como está ahora (reparto, calendario
+  // y volumen). Recibe el meso en vez de leer `editing` para poder usarse justo
+  // después de cambiarlo, antes de que el estado se haya actualizado.
+  const distribucionPara = distribucionDeMeso;
+
   const handleGenerateDistribution = () => {
     if (!editing) return;
-    const split = editing.splitId ? TRAINING_SPLITS.find(s => s.id === editing.splitId) : undefined;
-    const result = runDistribution(
-      editing.groups,
-      editing.daysPerWeek,
-      split ? tiposDeEntrenamiento(split) : undefined,
-      { cicloDias, offsets: offsetsCiclo },
-    );
-    const distribution: WeekDistribution = {
-      ...result,
-      snapshot: buildSnapshot(editing),
-      generatedAt: new Date().toISOString(),
-    };
-    const updated = { ...editing, distribution };
+    const updated = { ...editing, distribution: distribucionPara(editing) };
     setEditing(updated);
     scheduleAutoSave(updated);
     setGenPhase('idle');
@@ -2241,13 +2294,16 @@ export default function MesocycleManager({
   // ── Generator ──────────────────────────────────────────────────────────────
 
   const handleGenerate = async () => {
-    const hasDays = (editing?.days?.length ?? 0) > 0;
+    // En una plantilla `days` son las rutinas que se están diseñando, no un
+    // entreno prediseñado del que partir: generar parte siempre del reparto.
+    const hasDays = !modoPlantilla && (editing?.days?.length ?? 0) > 0;
     if (!hasDays && !editing?.distribution) return;
     setGenPhase('loading');
     setGenError('');
 
     try {
-      // 1. Resolve athlete UID
+      // 1. Resolve athlete UID (una plantilla no tiene atleta)
+      if (!modoPlantilla) {
       const profile = await getUserProfileByEmail(editing!.athleteId);
       if (!profile) {
         setGenError(`No se encontró perfil para ${editing!.athleteId}. El atleta debe haber iniciado sesión al menos una vez.`);
@@ -2255,6 +2311,7 @@ export default function MesocycleManager({
         return;
       }
       setAthleteUid(profile.userId);
+      }
 
       // 2. Load exercises + run migration
       await migratePrimaryFocusToMuscleGroup();
@@ -2376,7 +2433,25 @@ export default function MesocycleManager({
     }
   };
 
+  // Plantilla: «Guardar en la plantilla» deja la vista previa como sus rutinas.
+  const guardarRutinasEnPlantilla = () => {
+    if (!editing) return;
+    const days: TemplateDay[] = Array.from({ length: editing.daysPerWeek }, (_, dayIdx) => {
+      const pd = previewDays[dayIdx];
+      const exercises: WorkoutExercise[] = (pd?.exercises ?? []).map(({ name: _name, equipmentMismatch: _mismatch, ...we }) => we);
+      return { id: `d${dayIdx + 1}`, name: nombrePropioDeSesion(editing.nombresSesion, dayIdx) ?? tiposCiclo[dayIdx], exercises };
+    });
+    const updated = { ...editing, days };
+    setEditing(updated);
+    scheduleAutoSave(updated);
+    setGenPhase('idle');
+    setPreviewDays([]);
+    setEditorTab('exercises');
+    showToast('Rutinas guardadas en la plantilla.', 'success');
+  };
+
   const handleAssign = async () => {
+    if (modoPlantilla) { guardarRutinasEnPlantilla(); return; }
     if (!editing || !athleteUid) return;
     // Las semanas del mesociclo son semanas de calendario; lo que se repite es
     // el MICROCICLO. Con uno de 14 días, 8 semanas son 4 vueltas, no 8.
@@ -2437,20 +2512,11 @@ export default function MesocycleManager({
       // del ciclo (Push, Pull, Descanso, Legs, Descanso), así que las sesiones
       // no son los primeros N días — y si se siguiera sumando de 7 en 7, la
       // segunda vuelta de un ciclo de 9 pisaría las fechas de la primera.
-      const splitAsignado = editing.splitId ? TRAINING_SPLITS.find(sp => sp.id === editing.splitId) : undefined;
       const cicloDias = cicloDiasDeMeso(editing);
-      // Un patrón tocado a mano en el calendario manda sobre el cálculo
-      // automático — mismo criterio que `offsetsCiclo` más abajo en el
-      // componente, para que lo que se ve en el calendario sea exactamente lo
-      // que se asigna al atleta.
-      const offsets = editing.customOffsets && editing.customOffsets.length === editing.daysPerWeek
-        ? [...editing.customOffsets].sort((a, b) => a - b)
-        : offsetsDeSesiones({
-            sesiones: editing.daysPerWeek,
-            cicloDias,
-            offsetsDelSplit: splitAsignado ? offsetsDeSplit(splitAsignado) : undefined,
-            repartirEnElCiclo: editing.cycleDays !== undefined,
-          });
+      // Un patrón tocado a mano o un reparto propio mandan sobre el cálculo
+      // automático — la misma regla que el calendario de la pantalla
+      // (`offsetsDelMesociclo`), para que lo que se ve sea lo que se asigna.
+      const offsets = offsetsDelMesociclo(editing);
       // Migración 24-08: se escribe el EMAIL. Antes era el UID — esta era la
       // única colección del proyecto con esa clave.
       const programadas: Omit<WorkoutAssignment, 'id'>[] = [];
@@ -2564,10 +2630,9 @@ export default function MesocycleManager({
    * dejar el calendario del atleta a medias. Con espera, porque marcar tres días
    * seguidos son tres clics y no tres reescrituras.
    */
-  const sincronizarFechasDelAtleta = (meso: Mesocycle) => {
+  const sincronizarFechasDelAtleta = (meso: Mesocycle, sesiones: MesoWorkoutGroup[] = mesoGroupsForTabs) => {
     if (syncTimer.current) clearTimeout(syncTimer.current);
     if (!selectedEmail) return;
-    const sesiones = mesoGroupsForTabs;
     syncTimer.current = setTimeout(async () => {
       try {
         const existentes = await getWorkoutAssignmentsByMesocycleIds([meso.id]);
@@ -2680,6 +2745,17 @@ export default function MesocycleManager({
     }));
   }
 
+  // Plantilla: escribir un día es tocar `editing.days[dayIndex]`.
+  function escribirDiaDePlantilla(group: MesoWorkoutGroup, patch: Partial<TemplateDay>) {
+    setEditing(prev => {
+      if (!prev || group.dayIndex == null) return prev;
+      const days = (prev.days ?? []).map((d, i) => (i === group.dayIndex ? { ...d, ...patch } : d));
+      const updated = { ...prev, days };
+      scheduleAutoSave(updated);
+      return updated;
+    });
+  }
+
   // ── "Ejercicios programados" edit helpers ──────────────────────────────────
   // Since handleAssign now creates one Workout doc per day (reused across every week),
   // a group normally wraps a single workoutId — but old mesocycles generated before this
@@ -2689,6 +2765,7 @@ export default function MesocycleManager({
     group: MesoWorkoutGroup, exIdx: number, patch: Partial<WorkoutExercise>,
   ) {
     const updatedExercises = group.exercises.map((e, i) => i === exIdx ? { ...e, ...patch } : e);
+    if (modoPlantilla) { escribirDiaDePlantilla(group, { exercises: updatedExercises }); return; }
     queryClient.setQueryData<Workout[]>(['workouts'], prev => prev?.map(w =>
       group.workoutIds.includes(w.id) ? { ...w, exercises: updatedExercises } : w
     ));
@@ -2700,6 +2777,7 @@ export default function MesocycleManager({
   // handleAssign). Las sesiones YA REGISTRADAS no se tocan: WorkoutLog guarda
   // su propia copia de lo que se hizo, no una referencia al Workout.
   async function writeMesoWorkoutExercises(group: MesoWorkoutGroup, updatedExercises: WorkoutExercise[]) {
+    if (modoPlantilla) { escribirDiaDePlantilla(group, { exercises: updatedExercises }); return; }
     queryClient.setQueryData<Workout[]>(['workouts'], prev => prev?.map(w =>
       group.workoutIds.includes(w.id) ? { ...w, exercises: updatedExercises } : w
     ));
@@ -2710,6 +2788,7 @@ export default function MesocycleManager({
   // —es la única que tiene la lista de `groups` hermanos a mano—; aquí solo se
   // escribe, igual que `writeMesoWorkoutExercises`.
   async function handleRenameDay(group: MesoWorkoutGroup, nuevoNombre: string) {
+    if (modoPlantilla) { escribirDiaDePlantilla(group, { name: nuevoNombre }); return; }
     queryClient.setQueryData<Workout[]>(['workouts'], prev => prev?.map(w =>
       group.workoutIds.includes(w.id) ? { ...w, name: nuevoNombre } : w
     ));
@@ -2821,23 +2900,13 @@ export default function MesocycleManager({
       for (let i = 0; i < tpl.stages.length; i++) {
         const stage = tpl.stages[i];
         const stageStartDate = startDate;
-        const meso = await createMesocycle({
-          athleteId:    selectedEmail,
-          number:       startNumber + i,
-          weeks:        stage.weeks,
-          startDate:    stageStartDate,
-          objective:    stage.name,
-          daysPerWeek:  stage.daysPerWeek,
-          groups:       { ...stage.groups },
-          days:         stage.days && stage.days.length > 0
-                          ? stage.days.map(d => ({ ...d, exercises: d.exercises.map(e => ({ ...e })) }))
-                          : undefined,
-          programId,
-          programOrder: i,
-          ...(stage.deloadWeek !== undefined ? { deloadWeek: stage.deloadWeek } : {}),
-          ...(stage.semanasDescarga ? { semanasDescarga: stage.semanasDescarga } : {}),
-          ...(stage.semanasTest ? { semanasTest: stage.semanasTest } : {}),
+        // Todo el plan de la etapa (reparto, ciclo, distribución…), con el
+        // mismo traspaso que usa el editor de plantillas.
+        const { id: _sinId, ...datos } = mesoDesdeEtapa(stage, {
+          id: '', athleteId: selectedEmail, number: startNumber + i, startDate: stageStartDate,
+          programId, programOrder: i,
         });
+        const meso = await createMesocycle(datos);
         created.push(meso);
 
         // Cadencia de revisiones de la etapa (Bloque H, Pantalla 4) — se crean
@@ -2928,7 +2997,7 @@ export default function MesocycleManager({
   // única condición: si el coach cambia el nº de sesiones o la duración del
   // ciclo después de haber tocado el calendario, el patrón a mano deja de
   // encajar y se cae al automático en vez de dejar el mesociclo sin calendario.
-  const splitActual = editing?.splitId ? TRAINING_SPLITS.find(sp => sp.id === editing.splitId) : undefined;
+  const splitActual = editing ? repartoDelMesociclo(editing) : undefined;
   const cicloDias = editing ? cicloDiasDeMeso(editing) : 7;
 
   // Dos versiones del patrón a mano, y no es redundante:
@@ -2946,6 +3015,13 @@ export default function MesocycleManager({
   // que no encaja descuadra las fechas. Lo que ya no pasa es que TOCAR el
   // calendario deje el patrón inválido: `toggleDiaCiclo` mueve `daysPerWeek`.
   const customValido = customCrudo && customCrudo.length === editing?.daysPerWeek ? customCrudo : null;
+
+  // Lo que se enseña en «Orden del ciclo»: el reparto del meso o, si no tiene,
+  // el que sigue de hecho su calendario.
+  const repartoDeHecho = editing && !splitActual ? repartoImplicito(editing) : null;
+  const ordenDelCiclo = splitActual
+    ? { dayTypes: splitActual.dayTypes, propio: splitActual.propio }
+    : repartoDeHecho ? { dayTypes: repartoDeHecho.dias.map(d => d?.tipo ?? DESCANSO), propio: false } : null;
 
   const offsetsAutomaticos = editing
     ? offsetsDeSesiones({
@@ -3011,6 +3087,113 @@ export default function MesocycleManager({
     sincronizarFechasDelAtleta(updated);
   };
 
+  // Reordena los días del reparto (o cambia sus descansos). Si el mesociclo
+  // sigue un reparto de la lista, el primer cambio lo convierte en propio. Todo
+  // lo que va por índice de sesión viaja con su día: la distribución, los
+  // nombres, la vista previa y —si ya están generadas— las rutinas del atleta,
+  // cuyas fechas se reescriben como al tocar el calendario.
+  const reordenarCiclo = (cambio: (base: RepartoPropio) => Reordenacion) => {
+    if (!editing) return;
+    const catalogo = editing.splitId ? TRAINING_SPLITS.find(sp => sp.id === editing.splitId) : undefined;
+    // Sin reparto (calendario tocado a mano): el que sigue de hecho.
+    const base = editing.reparto ?? (catalogo ? repartoDesdeCatalogo(catalogo) : repartoImplicito(editing) ?? undefined);
+    if (!base) return;
+    const r = cambio(base);
+    const perm = r.sesionAnterior;
+    const updated = aplicarReordenacionAlMeso(editing, r);
+    setEditing(updated);
+    scheduleAutoSave(updated);
+    setPreviewDays(prev => (prev.length === perm.length ? perm.map(o => prev[o]) : prev));
+
+    const sesiones = mesoGroupsForTabs;
+    const seMueven = perm.some((o, k) => o !== k);
+    // En una plantilla las rutinas son `days`, y ya se han movido con su día.
+    const rutinasCuadran = !modoPlantilla && sesiones.length === perm.length
+      && sesiones.every((g, k) => g.dayIndex === k);
+    if (seMueven && rutinasCuadran) {
+      const nuevo = nuevoIndiceDeSesion(perm);
+      queryClient.setQueryData<Workout[]>(['workouts'], prev => prev?.map(w =>
+        w.mesocycleId === editing.id && w.dayIndex != null
+          ? { ...w, dayIndex: nuevo.get(w.dayIndex) ?? w.dayIndex }
+          : w));
+      Promise.all(sesiones.flatMap(g =>
+        g.workoutIds.map(id => updateWorkoutStrict(id, { dayIndex: nuevo.get(g.dayIndex!) }))))
+        .catch(err => {
+          console.error('[reordenarCiclo]', err);
+          showToast('No se pudieron mover las rutinas con sus días. Vuelve a generar las rutinas.', 'error');
+        })
+        .finally(() => { void queryClient.invalidateQueries({ queryKey: ['workouts'] }); });
+    }
+    sincronizarFechasDelAtleta(updated, rutinasCuadran ? perm.map(o => sesiones[o]) : sesiones);
+  };
+
+  // «Usar este reparto» en la calculadora: queda como reparto propio, con su
+  // calendario, y la distribución se recalcula ya (exacta: cada grupo en sus
+  // días). Las rutinas que hubiera no se tocan: si ya no cuadran, la pestaña
+  // lo avisa y se generan de nuevo.
+  const [showCalculadora, setShowCalculadora] = useState(false);
+  const aplicarRepartoPropio = (reparto: RepartoPropio, mensaje: string) => {
+    if (!editing) return;
+    const base: Mesocycle = {
+      ...editing,
+      reparto,
+      ...camposDeCalendario(reparto),
+      // Los nombres puestos a mano eran de las sesiones de antes.
+      nombresSesion: undefined,
+    };
+    const updated: Mesocycle = { ...base, distribution: distribucionPara(base) };
+    setEditing(updated);
+    scheduleAutoSave(updated);
+    showToast(mensaje, 'success');
+  };
+  const usarRepartoCalculado = (opcion: OpcionDeReparto) => {
+    aplicarRepartoPropio(opcion.reparto, 'Reparto aplicado y distribución recalculada.');
+    setShowCalculadora(false);
+  };
+
+  // «Mis repartos»: guardar el reparto propio con un nombre, usarlo en otro
+  // mesociclo y borrarlo.
+  const [nombreAGuardar, setNombreAGuardar] = useState<string | null>(null);
+  const [guardandoReparto, setGuardandoReparto] = useState(false);
+  const guardarRepartoActual = async () => {
+    if (!editing?.reparto || nombreAGuardar === null) return;
+    setGuardandoReparto(true);
+    try {
+      await guardarReparto(coachId, { ...editing.reparto, nombre: nombreAGuardar });
+      await queryClient.invalidateQueries({ queryKey: ['repartosGuardados', coachId] });
+      setNombreAGuardar(null);
+      showToast('Guardado en Mis repartos.', 'success');
+    } catch (err) {
+      console.error('[guardarRepartoActual]', err);
+      showToast('No se pudo guardar el reparto.', 'error');
+    } finally {
+      setGuardandoReparto(false);
+    }
+  };
+  const borrarRepartoDeLaLista = async (r: RepartoGuardado) => {
+    if (!await confirm(`¿Borrar «${r.nombre}» de Mis repartos? Los mesociclos que ya lo usan no cambian.`)) return;
+    try {
+      await borrarRepartoGuardado(r.id);
+      await queryClient.invalidateQueries({ queryKey: ['repartosGuardados', coachId] });
+    } catch (err) {
+      console.error('[borrarRepartoDeLaLista]', err);
+      showToast('No se pudo borrar el reparto.', 'error');
+    }
+  };
+
+  // «Duración del split» con un reparto propio: alarga o acorta con descansos
+  // al final. Si acortar cortaría una sesión, ese reparto ya no cabe y se suelta.
+  const cambiarDuracionCiclo = (dias: number | undefined) => {
+    if (!editing) return;
+    if (!editing.reparto) { updateField('cycleDays', dias); return; }
+    const ajustado = ajustarDiasDelReparto(editing.reparto, dias ?? 7);
+    if (ajustado) { reordenarCiclo(() => sinMoverSesiones(ajustado)); return; }
+    const updated: Mesocycle = { ...editing, reparto: undefined, cycleDays: dias };
+    setEditing(updated);
+    scheduleAutoSave(updated);
+    showToast(`El reparto propio no cabe en ${dias ?? 7} días: se ha quitado.`, 'error');
+  };
+
   const restablecerCalendario = () => {
     if (!editing) return;
     // `undefined` explícito, no quitar la clave: así `updateMesocycle` lo borra
@@ -3033,7 +3216,7 @@ export default function MesocycleManager({
     <div className="space-y-6">
       <ConfirmDialog />
       {/* Title + selector only in standalone mode */}
-      {!athleteEmail && (
+      {!athleteEmail && !modoPlantilla && (
         <>
           <div>
             <h1 className="font-sans font-extrabold text-display tracking-tight text-ink">Macrociclo</h1>
@@ -3064,12 +3247,12 @@ export default function MesocycleManager({
         </>
       )}
 
-      {selectedEmail && (
+      {(selectedEmail || modoPlantilla) && (
         <>
         <div className="flex flex-col xl:flex-row gap-6">
 
-          {/* ── Left: list ── */}
-          <div className="xl:w-64 flex-shrink-0 space-y-3">
+          {/* ── Left: list ── (una plantilla edita una sola etapa: no hay lista) */}
+          <div className={`xl:w-64 flex-shrink-0 space-y-3 ${modoPlantilla ? 'hidden' : ''}`}>
             <button
               onClick={handleNew} disabled={creating}
               className="w-full flex items-center justify-center gap-2 py-3 bg-accent text-on-accent font-sans text-label font-bold uppercase tracking-wider rounded-control hover:bg-accent-press active:scale-95 transition-all disabled:opacity-50"
@@ -3137,7 +3320,7 @@ export default function MesocycleManager({
               {/* Mesocycle header */}
               <div className="bg-surface border border-hairline rounded-surface p-5 space-y-4">
                 <div className="flex items-center justify-between">
-                  <h2 className="font-sans font-bold text-ink text-title-s truncate">{nombreDeMeso(editing)}</h2>
+                  <h2 className="font-sans font-bold text-ink text-title-s truncate">{modoPlantilla ? (editing.name || 'Mesociclo de la plantilla') : nombreDeMeso(editing)}</h2>
                   <span className={`font-sans text-label uppercase tracking-wider transition-colors ${
                     saveState === 'saved'  ? 'text-success' :
                     saveState === 'error'  ? 'text-danger' :
@@ -3150,26 +3333,26 @@ export default function MesocycleManager({
                     «Meso #1» indistinguibles entre atletas. Vacío = se sigue
                     llamando «Meso #N» (ver nombreDeMeso). */}
                 <div>
-                  <label htmlFor="mesocyclemanager-nombre-del-mesociclo" className="block font-mono text-caption text-ink-2 uppercase mb-1">Nombre del mesociclo</label>
+                  <label htmlFor="mesocyclemanager-nombre-del-mesociclo" className="block font-mono text-caption text-ink-2 uppercase mb-1">{modoPlantilla ? 'Nombre de la etapa' : 'Nombre del mesociclo'}</label>
                   <input id="mesocyclemanager-nombre-del-mesociclo"
                     type="text"
                     value={editing.name ?? ''}
                     onChange={e => updateField('name', e.target.value)}
-                    placeholder={`Meso #${editing.number}`}
+                    placeholder={modoPlantilla ? 'Ej. Acumulación' : `Meso #${editing.number}`}
                     maxLength={60}
                     className="w-full bg-raised border border-hairline rounded-control px-3 py-2 text-body-s text-ink font-sans focus:outline-none focus:border-accent placeholder:text-ink-3"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                  <div>
+                  {!modoPlantilla && (<div>
                     <label htmlFor="mesocyclemanager-no-meso" className="block font-mono text-caption text-ink-2 uppercase mb-1">Nº Meso</label>
                     <input id="mesocyclemanager-no-meso" type="number" min={1}
                       value={editing.number}
                       onChange={e => updateField('number', parseInt(e.target.value) || 1)}
                       className="w-full bg-raised border border-hairline rounded-control px-3 py-2 text-title-s text-ink font-mono focus:outline-none focus:border-accent"
                     />
-                  </div>
+                  </div>)}
                   <div>
                     <label htmlFor="mesocyclemanager-semanas" className="block font-mono text-caption text-ink-2 uppercase mb-1">Semanas</label>
                     <input id="mesocyclemanager-semanas" type="number" min={1} max={16}
@@ -3178,7 +3361,7 @@ export default function MesocycleManager({
                       className="w-full bg-raised border border-hairline rounded-control px-3 py-2 text-title-s text-ink font-mono focus:outline-none focus:border-accent"
                     />
                   </div>
-                  <div>
+                  {!modoPlantilla && (<div>
                     <Input
                       label="Fecha inicio"
                       type="date"
@@ -3203,19 +3386,19 @@ export default function MesocycleManager({
                         </button>
                       </p>
                     )}
-                  </div>
+                  </div>)}
                   <div className="col-span-2 lg:col-span-4">
                     <span className="block font-mono text-caption text-ink-2 uppercase mb-1">Sesiones por ciclo</span>
                     <div className="flex gap-1 overflow-x-auto hide-scrollbar pb-1">
                       {[2,3,4,5,6,7,8,9,10].map(d => (
                         <button key={d} onClick={() => {
                             if (!editing) return;
-                            const split = editing.splitId ? TRAINING_SPLITS.find(s => s.id === editing.splitId) : undefined;
+                            const split = repartoDelMesociclo(editing);
                             const clearsSplit = split && sesionesDeSplit(split) !== d;
                             const updated = {
                               ...editing,
                               daysPerWeek: d,
-                              ...(clearsSplit ? { splitId: undefined, cycleDays: undefined } : {}),
+                              ...(clearsSplit ? { splitId: undefined, reparto: undefined, cycleDays: undefined } : {}),
                               // Un ciclo no puede tener menos días que sesiones.
                               ...(editing.cycleDays !== undefined && editing.cycleDays < d ? { cycleDays: d } : {}),
                             };
@@ -3249,7 +3432,7 @@ export default function MesocycleManager({
                   </div>
                   <div className="flex gap-1 items-center overflow-x-auto hide-scrollbar pb-1">
                     <button
-                      onClick={() => updateField('cycleDays', undefined)}
+                      onClick={() => cambiarDuracionCiclo(undefined)}
                       className={`px-3 h-11 flex-shrink-0 rounded-control font-mono text-label font-bold transition-all ${
                         editing.cycleDays === undefined ? 'bg-accent text-on-accent' : 'bg-raised text-ink-2 hover:text-ink'
                       }`}
@@ -3257,7 +3440,7 @@ export default function MesocycleManager({
                     {[3, 4, 5, 6, 8, 9, 10, 12, 14].filter(d => d >= editing.daysPerWeek).map(d => (
                       <button
                         key={d}
-                        onClick={() => updateField('cycleDays', d)}
+                        onClick={() => cambiarDuracionCiclo(d)}
                         className={`w-11 h-11 flex-shrink-0 rounded-control font-mono text-label font-bold transition-all ${
                           editing.cycleDays === d ? 'bg-accent text-on-accent' : 'bg-raised text-ink-2 hover:text-ink'
                         }`}
@@ -3299,7 +3482,7 @@ export default function MesocycleManager({
                         <button
                           type="button"
                           className="font-sans text-caption font-bold text-warning underline"
-                          onClick={() => updateField('cycleDays', undefined)}
+                          onClick={() => cambiarDuracionCiclo(undefined)}
                         >
                           Hacerlo semanal (descanso el 7.º día)
                         </button>
@@ -3362,13 +3545,15 @@ export default function MesocycleManager({
                 label="Pestañas del editor de mesociclo"
                 value={editorTab}
                 onChange={id => { setEditorTab(id as EditorTab); if (id !== 'distribution') setGenPhase('idle'); setVolcado({ estado: 'idle', mensaje: '' }); }}
-                items={[
+                items={([
                   { id: 'progression',  label: 'Volumen',      icon: 'trending_up' },
                   { id: 'draft',        label: 'Draft',        icon: 'checklist' },
                   { id: 'distribution', label: 'Distribución', icon: 'grid_view' },
                   { id: 'exercises',    label: 'Ejercicios',   icon: 'fitness_center' },
                   { id: 'cierre',       label: 'Cierre',       icon: 'monitoring' },
-                ] as TabItem[]}
+                  { id: 'seguimiento',  label: 'Seguimiento CDG', icon: 'insights' },
+                // En una plantilla no hay atleta: ni draft con su material, ni cierre, ni seguimiento.
+                ] as TabItem[]).filter(t => !modoPlantilla || (t.id !== 'draft' && t.id !== 'cierre' && t.id !== 'seguimiento'))}
               />
 
               {/* ── Progresión y volumen ── */}
@@ -3419,6 +3604,96 @@ export default function MesocycleManager({
                         </div>
                       )}
 
+                      {/* Calculadora: del «quiero el pecho a 1,5 y el dorsal a 2» a
+                          repartos concretos que lo cumplen. */}
+                      <div className="flex items-center justify-between gap-3 flex-wrap rounded-surface border border-hairline bg-raised px-3 py-2.5">
+                        <div className="min-w-0">
+                          <p className="font-sans text-label text-ink">
+                            {editing.reparto ? `Reparto propio: ${editing.reparto.nombre}` : '¿Sabes cuántas veces quieres tocar cada grupo?'}
+                          </p>
+                          <p className="font-sans text-caption text-ink-3">
+                            {editing.reparto?.frecuencias
+                              ? 'Calculado por frecuencias. Puedes recalcularlo o reordenar sus días abajo.'
+                              : 'Pon la frecuencia de cada grupo y los días, y la app te propone repartos que la cumplen.'}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {editing.reparto && nombreAGuardar === null && (
+                            <button
+                              type="button"
+                              onClick={() => setNombreAGuardar(editing.reparto!.nombre)}
+                              className="flex items-center gap-2 px-3 py-2 bg-raised border border-hairline text-ink-2 font-sans text-label font-bold rounded-control hover:text-ink hover:border-strong transition-colors"
+                            >
+                              <Icon name="bookmark_add" size="s" />
+                              Guardar en Mis repartos
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => setShowCalculadora(true)}
+                            className="flex items-center gap-2 px-3 py-2 bg-accent/10 border border-accent/40 text-accent-ink font-sans text-label font-bold rounded-control hover:bg-accent/20 transition-colors"
+                          >
+                            <Icon name="calculate" size="s" />
+                            Calcular por frecuencias
+                          </button>
+                        </div>
+                        {nombreAGuardar !== null && (
+                          <form
+                            className="w-full flex items-end gap-2 flex-wrap"
+                            onSubmit={e => { e.preventDefault(); void guardarRepartoActual(); }}
+                          >
+                            <div className="flex-1 min-w-[200px]">
+                              <Input
+                                label="Nombre en Mis repartos"
+                                value={nombreAGuardar}
+                                onChange={setNombreAGuardar}
+                                placeholder="Ej. PPL pecho 1,5 · 5 días"
+                              />
+                            </div>
+                            <Button type="submit" icon="check" loading={guardandoReparto} disabled={!nombreAGuardar.trim()}>Guardar</Button>
+                            <Button type="button" variant="ghost" onClick={() => setNombreAGuardar(null)}>Cancelar</Button>
+                          </form>
+                        )}
+                      </div>
+
+                      {repartosGuardados.length > 0 && (
+                        <div className="space-y-2">
+                          <span className="font-mono text-caption text-ink-2 uppercase tracking-wider">Mis repartos</span>
+                          <div className="flex flex-wrap gap-2">
+                            {repartosGuardados.map(r => {
+                              const sesiones = r.dias.filter(Boolean).length;
+                              return (
+                                <div key={r.id} className="flex items-stretch rounded-control border border-hairline bg-raised hover:border-accent/40 transition-colors">
+                                  <button
+                                    type="button"
+                                    onClick={() => aplicarRepartoPropio(repartoDeGuardado(r), `«${r.nombre}» aplicado y distribución recalculada.`)}
+                                    className="px-3 py-2 text-left font-sans text-label text-ink-2 hover:text-ink flex flex-col items-start gap-0.5"
+                                  >
+                                    <span>{r.nombre}</span>
+                                    <span className="font-mono text-caption opacity-70">{r.dias.length} d · {sesiones} sesiones</span>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => void borrarRepartoDeLaLista(r)}
+                                    aria-label={`Borrar ${r.nombre} de Mis repartos`}
+                                    className="px-2 text-ink-3 hover:text-danger border-l border-hairline transition-colors"
+                                  >
+                                    <Icon name="close" size="s" />
+                                  </button>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                      {showCalculadora && (
+                        <CalculadoraRepartoSheet
+                          editing={editing}
+                          onClose={() => setShowCalculadora(false)}
+                          onUsar={usarRepartoCalculado}
+                        />
+                      )}
+
                       {/* Reparto de días — plantillas Torso/Pierna/Push/Pull filtradas por daysPerWeek */}
                       <div className="space-y-2">
                         <span className="font-mono text-caption text-ink-2 uppercase tracking-wider">
@@ -3450,6 +3725,8 @@ export default function MesocycleManager({
                                       const ciclo = cicloDeSplit(split);
                                       const updated: Mesocycle = {
                                         ...editing,
+                                        // Elegir uno de la lista sustituye al reparto propio.
+                                        reparto: undefined,
                                         splitId: quitando ? undefined : split.id,
                                         cycleDays: quitando || ciclo === 7 ? undefined : ciclo,
                                         // Un reparto de la lista trae su propio calendario —
@@ -3460,7 +3737,7 @@ export default function MesocycleManager({
                                       scheduleAutoSave(updated);
                                     }}
                                     className={`px-3 py-2 rounded-control border font-sans text-label text-left transition-all flex items-center gap-2 ${
-                                      editing.splitId === split.id
+                                      editing.splitId === split.id && !editing.reparto
                                         ? 'bg-accent/10 border-accent text-accent-ink'
                                         : 'bg-raised border-hairline text-ink-2 hover:border-accent/40 hover:text-ink'
                                     }`}
@@ -3475,7 +3752,7 @@ export default function MesocycleManager({
                                       <span
                                         title="Recomendado según tu volumen/prioridad configurados"
                                         className={`font-mono text-caption px-1.5 py-0.5 rounded-full border ${
-                                          editing.splitId === split.id
+                                          editing.splitId === split.id && !editing.reparto
                                             ? 'border-accent text-accent-ink'
                                             : 'border-data/40 text-data'
                                         }`}
@@ -3499,11 +3776,25 @@ export default function MesocycleManager({
                         offsets={offsetsCalendario}
                         tipos={tiposCiclo}
                         sesiones={editing.daysPerWeek}
-                        personalizado={!!customCrudo}
-                        onToggleDay={toggleDiaCiclo}
+                        personalizado={!!customCrudo || !!editing.reparto}
+                        onToggleDay={editing.reparto ? undefined : toggleDiaCiclo}
                         onRestablecer={customCrudo ? restablecerCalendario : undefined}
                         fechaInicio={editing.startDate}
                       />
+                      {/* Orden de los días del reparto: empezar por Pierna,
+                          mover un descanso… Lo que ya está repartido (y las
+                          rutinas, si las hay) viaja con su día. */}
+                      {ordenDelCiclo && (
+                        <OrdenDelCiclo
+                          dayTypes={ordenDelCiclo.dayTypes}
+                          propio={ordenDelCiclo.propio}
+                          fechaInicio={editing.startDate}
+                          onMover={(i, dir) => reordenarCiclo(base => (base.dias[i] ? moverSesionDelReparto : moverDiaDelReparto)(base, i, dir))}
+                          onEmpezarPor={i => reordenarCiclo(base => empezarRepartoPor(base, i))}
+                          onAnadirDescanso={() => reordenarCiclo(base => sinMoverSesiones(ajustarDiasDelReparto(base, base.dias.length + 1)!))}
+                          onQuitarDescanso={i => reordenarCiclo(base => sinMoverSesiones(quitarDescanso(base, i)))}
+                        />
+                      )}
                       {calAtleta.estado !== 'idle' && (
                         <p
                           role="status"
@@ -3697,6 +3988,7 @@ export default function MesocycleManager({
                       onAdd={dayIdx => setExercisePicker({ context: 'preview', dayIdx, exIdx: null })}
                       onBack={() => { setGenPhase('idle'); setPreviewDays([]); }}
                       onAssign={handleAssign}
+                      assignLabel={modoPlantilla ? 'Guardar en la plantilla' : undefined}
                     />
                   )}
 
@@ -3758,7 +4050,7 @@ export default function MesocycleManager({
               {editorTab === 'exercises' && (
                 <MesoExercisesView
                   groups={mesoGroupsForTabs}
-                  loading={loadingMesoWorkouts}
+                  loading={!modoPlantilla && loadingMesoWorkouts}
                   weeks={editing.weeks}
                   allExercises={allExercises}
                   onUpdateExercise={updateMesoWorkoutExercise}
@@ -3775,7 +4067,7 @@ export default function MesocycleManager({
                   cicloDias={cicloDias}
                   logs={athleteLogs ?? (logsPending ? undefined : logsQuery)}
                   onWriteDay={(g, exs) => { void writeMesoWorkoutExercises(g, exs); }}
-                  onGuardarPlantilla={() => { void guardarComoPlantilla(); }}
+                  onGuardarPlantilla={modoPlantilla ? undefined : () => { void guardarComoPlantilla(); }}
                   revisiones={revisionesDelMeso}
                   onGoToDistribution={() => setEditorTab('distribution')}
                   libraryWorkouts={allWorkouts.filter(w => !w.mesocycleId)}
@@ -3789,7 +4081,7 @@ export default function MesocycleManager({
                   previa y pulsar «Asignar» — que además reescribe los
                   ejercicios y se lleva por delante lo que se acaba de ajustar
                   en esta pantalla. Esto solo escribe fechas. */}
-              {editorTab === 'exercises' && mesoGroupsForTabs.length > 0 && (
+              {editorTab === 'exercises' && mesoGroupsForTabs.length > 0 && !modoPlantilla && (
                 <div className="bg-surface border border-hairline rounded-surface p-5 space-y-3">
                   <div className="flex items-start justify-between gap-4 flex-wrap">
                     <div className="min-w-0">
@@ -3831,6 +4123,31 @@ export default function MesocycleManager({
                   sexo={sexoAtleta}
                   pesoLogs={pesoLogsAtleta}
                 />
+              )}
+
+              {/* ── Seguimiento CDG (solo coach): Gestión, carga aguda/crónica, rendimiento ── */}
+              {editorTab === 'seguimiento' && (
+                logsPending && !athleteLogs
+                  ? <Skeleton className="h-40 w-full" />
+                  : (
+                    <SeguimientoCdg
+                      athleteEmail={selectedEmail}
+                      logs={cierreLogs}
+                      meso={editing}
+                      cicloDias={cicloDias}
+                      vueltas={vueltasDelCiclo(editing.weeks, cicloDias)}
+                      grupos={mesoGroupsForTabs}
+                      allExercises={allExercises}
+                      umbrales={selectedAthlete?.cdgUmbralesCarga}
+                      onCambiarActitud={a => actualizarMeso({ cdgActitud: a })}
+                      onGuardarUmbrales={u => {
+                        if (!selectedAthlete) return;
+                        void updateUserProfile(selectedAthlete.userId, { cdgUmbralesCarga: u })
+                          .then(() => { void queryClient.invalidateQueries({ queryKey: ['userProfiles'] }); showToast('Umbrales guardados para este atleta', 'success'); })
+                          .catch(() => showToast('No se pudieron guardar los umbrales', 'error'));
+                      }}
+                    />
+                  )
               )}
 
               {/* Delete zone */}

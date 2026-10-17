@@ -6,7 +6,7 @@ import { getCardioProfile, getCardioSessionsSince, getCardioAssignmentsForAthlet
 import { objetivoDePasos } from '../utils/semanasNutricion';
 import { hoyIsoLocal as hoyPasos } from '../utils/trainingWeek';
 import { ventanaCardio, ventanaHrv } from '../utils/ventanaHistorial';
-import { getZoneForBpm, ZONE_LABEL, ZONE_COLOR, ZONE_INK, ZONE_ORDER } from '../utils/cardioZones';
+import { getZoneForBpm, ZONE_LABEL, ZONE_INK, ZONE_ORDER } from '../utils/cardioZones';
 import {
   summarizeSamples, pickActiveZona2Assignment, pickActiveIntervalAssignment,
   weeklyCardioMinutesDone, dailyCardioMinutesForWeek, defaultWeeklyCardioGoal, isoWeekKey,
@@ -129,7 +129,6 @@ export default function CardioScreen({ profile }: Props) {
     connect, cancelReady, start, pause, resume, advanceBlockManually, save, discard, finishCooldown, confirmEffort, closeSummary,
   } = cardio;
 
-  const targetZone = sessionType === 'zona2' ? (zona2Assignment?.targetZone ?? 'z2') : undefined;
   const targetDurationSec = sessionType === 'zona2' ? zona2Assignment?.targetDurationSec : undefined;
 
   if (loadingProfile || loadingSessions) {

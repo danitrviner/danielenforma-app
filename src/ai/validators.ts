@@ -111,10 +111,11 @@ export function validateMesocyclePayload(payload: MesocycleProposalPayload): Val
   if (!Number.isInteger(payload.weeks) || payload.weeks < 1 || payload.weeks > 12) {
     issues.push({ field: 'weeks', message: `weeks debe ser un entero entre 1 y 12 (recibido: ${JSON.stringify(payload.weeks)})` });
   }
-  // Hasta 10: por encima de 7 el mesociclo deja de ser semanal y pasa a ser un
+  // Hasta 14: por encima de 7 el mesociclo deja de ser semanal y pasa a ser un
   // ciclo largo que se repite cada N días (ver diasDeCiclo en utils/progression).
-  if (!Number.isInteger(payload.daysPerWeek) || payload.daysPerWeek < 1 || payload.daysPerWeek > 10) {
-    issues.push({ field: 'daysPerWeek', message: `daysPerWeek debe ser un entero entre 1 y 10 (recibido: ${JSON.stringify(payload.daysPerWeek)})` });
+  // 14 es el ciclo de dos semanas de la calculadora de frecuencias («y media»).
+  if (!Number.isInteger(payload.daysPerWeek) || payload.daysPerWeek < 1 || payload.daysPerWeek > 14) {
+    issues.push({ field: 'daysPerWeek', message: `daysPerWeek debe ser un entero entre 1 y 14 (recibido: ${JSON.stringify(payload.daysPerWeek)})` });
   }
   if (!payload.objective?.trim()) {
     issues.push({ field: 'objective', message: 'objective (objetivo del mesociclo) es obligatorio' });

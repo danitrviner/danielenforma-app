@@ -39,6 +39,9 @@ import { isoWeekKey, isoWeekBounds } from '../../utils/challengeOptions';
 import { saveDossierJudgement, appendDossierFacts } from '../../db/dossier';
 import { dossierKey } from '../DossierPanel';
 import { nombreDeSesion } from '../../utils/nombresMeso';
+import { nombrePropioDeSesion } from '../../utils/draftEjercicios';
+import { repartoDelMesociclo, tiposDeEntrenamiento } from '../../utils/trainingSplits';
+import { distribucionDeMeso } from '../../utils/distribucionDeMeso';
 import { describirEdicion, motivoParaNoAprobar } from '../../utils/edicionPropuesta';
 import { ordenarPropuestasPorPlan } from '../../utils/ordenPropuestas';
 import { auth } from '../../firebase';
@@ -136,7 +139,12 @@ export function useProposalActions(
           await updateAiProposal(p.id, { status: 'approved', reviewedAt: new Date().toISOString(), resultEntityId: created.id });
         }
       } else if (p.kind === 'mesocycle') {
-        const created = await createMesocycle(p.payload as Omit<Mesocycle, 'id'>);
+        const meso = p.payload as Omit<Mesocycle, 'id'>;
+        // Con reparto, la distribución se rehace al aprobar: Dani ha podido
+        // tocar las series en la propuesta y la de la propuesta sería vieja.
+        const created = await createMesocycle(meso.reparto
+          ? { ...meso, distribution: distribucionDeMeso({ ...meso, id: '' }) }
+          : meso);
         await updateAiProposal(p.id, { status: 'approved', reviewedAt: new Date().toISOString(), resultEntityId: created.id });
       } else if (p.kind === 'roadmap') {
         // Se AÑADEN a lo que ya tiene: el roadmap es suyo, no se reemplaza.
@@ -308,8 +316,14 @@ export function useProposalActions(
             ...(ex.notes ? { notes: ex.notes } : {}),
             ...(ex.muscleGroup ? { muscleGroup: ex.muscleGroup } : {}),
           }));
+          // Sin nombre, el mismo que pondría el editor: el que le puso Dani a
+          // esa sesión o el tipo de día de su reparto («Pierna», «Empuje»…).
+          const tipo = meso
+            ? nombrePropioDeSesion(meso.nombresSesion, dia.dayIndex)
+              ?? (() => { const r = repartoDelMesociclo(meso); return r ? tiposDeEntrenamiento(r)[dia.dayIndex] : undefined; })()
+            : undefined;
           const nombre = dia.name?.trim() || (meso
-            ? nombreDeSesion({ dayIdx: dia.dayIndex, athleteName, meso })
+            ? nombreDeSesion({ tipo, dayIdx: dia.dayIndex, athleteName, meso })
             : `Sesión ${dia.dayIndex + 1}`);
           const existente = delMeso.find(w => w.dayIndex === dia.dayIndex);
           try {
@@ -510,6 +524,9 @@ export function useProposalActions(
         const stages: TemplateStage[] = v.stages.map((st, i) => ({
           id: `stage_${Date.now()}_${i}`,
           name: st.name, weeks: st.weeks, daysPerWeek: st.daysPerWeek, groups: st.groups,
+          ...(st.reparto ? { reparto: st.reparto } : {}),
+          ...(st.cycleDays !== undefined ? { cycleDays: st.cycleDays } : {}),
+          ...(st.distribution ? { distribution: st.distribution } : {}),
           ...(st.deloadWeek !== undefined ? { deloadWeek: st.deloadWeek } : {}),
           ...(st.reviewCadenceWeeks !== undefined ? { reviewCadenceWeeks: st.reviewCadenceWeeks, reviewType: st.reviewType ?? 'revision' } : {}),
           ...(st.days ? {

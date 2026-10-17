@@ -1,6 +1,6 @@
 import type { Mesocycle, Workout } from '../types';
 import { diasDeCiclo, vueltasDelCiclo, offsetsDeSesiones } from './progression';
-import { TRAINING_SPLITS, offsetsDeSplit, cicloDeSplit } from './trainingSplits';
+import { repartoDelMesociclo, offsetsDeSplit, cicloDeSplit } from './trainingSplits';
 import { addDays } from './trainingWeek';
 
 /**
@@ -14,15 +14,13 @@ import { addDays } from './trainingWeek';
  * acababa produciendo un ciclo rotativo más corto que una semana y SIN día de
  * descanso, y las sesiones se desplazaban por el calendario vuelta tras vuelta
  * (cayendo en domingo, y saliendo en rojo días que aún no han llegado). Con un
- * `splitId` puesto manda el reparto; sin él, el cálculo de siempre.
+ * reparto (propio o `splitId`) manda él; sin él, el cálculo de siempre.
  */
 export function cicloDiasDeMeso(
-  meso: Pick<Mesocycle, 'daysPerWeek' | 'cycleDays' | 'splitId'>,
+  meso: Pick<Mesocycle, 'daysPerWeek' | 'cycleDays' | 'splitId' | 'reparto'>,
 ): number {
-  if (meso.splitId) {
-    const split = TRAINING_SPLITS.find(sp => sp.id === meso.splitId);
-    if (split) return cicloDeSplit(split);
-  }
+  const reparto = repartoDelMesociclo(meso);
+  if (reparto) return cicloDeSplit(reparto);
   return diasDeCiclo(meso.daysPerWeek, meso.cycleDays);
 }
 
@@ -80,11 +78,11 @@ export function offsetsDelMesociclo(meso: Mesocycle): number[] {
   if (meso.customOffsets && meso.customOffsets.length === meso.daysPerWeek) {
     return [...meso.customOffsets].sort((a, b) => a - b);
   }
-  const split = meso.splitId ? TRAINING_SPLITS.find(sp => sp.id === meso.splitId) : undefined;
+  const reparto = repartoDelMesociclo(meso);
   return offsetsDeSesiones({
     sesiones: meso.daysPerWeek,
     cicloDias,
-    offsetsDelSplit: split ? offsetsDeSplit(split) : undefined,
+    offsetsDelSplit: reparto ? offsetsDeSplit(reparto) : undefined,
     repartirEnElCiclo: meso.cycleDays !== undefined,
   });
 }

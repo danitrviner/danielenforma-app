@@ -1,6 +1,12 @@
 import { MuscleGroup, Mesocycle, WeekDistribution, MUSCLE_ORDER } from '../types';
+import { repartoDelMesociclo, huellaDeReparto } from './trainingSplits';
 
 const MUSCLE_GROUPS: MuscleGroup[] = MUSCLE_ORDER;
+
+function huellaDeRepartoDeMeso(m: Mesocycle): string | undefined {
+  const r = repartoDelMesociclo(m);
+  return r ? huellaDeReparto(r) : undefined;
+}
 
 export function buildSnapshot(m: Mesocycle) {
   const groupSeries: Partial<Record<MuscleGroup, number>> = {};
@@ -12,6 +18,7 @@ export function buildSnapshot(m: Mesocycle) {
     // Serializado a texto: es el único campo del snapshot que es un array, y
     // la comparación de abajo es toda por igualdad simple.
     customOffsets: m.customOffsets ? m.customOffsets.join(',') : undefined,
+    reparto: m.reparto ? huellaDeRepartoDeMeso(m) : undefined,
     groupSeries,
   };
 }
@@ -28,6 +35,9 @@ export function isStale(m: Mesocycle, dist: WeekDistribution): boolean {
   // reparto de la lista (`splitId` pasa a undefined): eso no cuenta.
   if (cur.daysPerWeek !== snap.daysPerWeek) return true;
   if (cur.splitId !== undefined && cur.splitId !== snap.splitId) return true;
+  // Reparto propio: cuenta QUÉ grupos lleva cada sesión, no el orden de los
+  // días —reordenar mueve la distribución con su día y no la deja vieja—.
+  if (cur.reparto !== undefined && cur.reparto !== snap.reparto) return true;
   const keys = new Set([...Object.keys(cur.groupSeries), ...Object.keys(snap.groupSeries)]) as Set<MuscleGroup>;
   for (const k of keys) {
     if (cur.groupSeries[k] !== snap.groupSeries[k]) return true;

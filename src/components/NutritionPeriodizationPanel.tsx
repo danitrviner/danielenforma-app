@@ -19,7 +19,6 @@ import {
   ObjetivoCorporalTipo, OBJETIVO_LABEL, OBJETIVOS_ORDEN, RANGO_PCT_SEMANA,
 } from '../utils/verificacionObjetivo';
 import { phaseTypeDeObjetivo, ritmoSugeridoKg } from '../utils/objetivoDeFase';
-import { roundQuarter } from '../utils/exchangeHelpers';
 import {
   resolvePhaseTargetKcal,
   suggestPhaseTargetKcal,
@@ -84,7 +83,7 @@ function phaseTextColor(bgColor: string): string {
 }
 
 function fmtDate(isoDate: string): string {
-  const [y, m, d] = isoDate.split('-');
+  const [, m, d] = isoDate.split('-');
   return `${d}/${m}`;
 }
 
@@ -136,7 +135,7 @@ function ProgramTimeline({ program, diets, today }: TimelineProps) {
           if (activePhase?.id === a.id) return -1;
           if (activePhase?.id === b.id) return 1;
           return 0;
-        }).map((phase, idx) => {
+        }).map((phase) => {
           const origIdx = program.phases.indexOf(phase);
           const bg = PHASE_COLORS[origIdx % PHASE_COLORS.length];
           const fg = phaseTextColor(bg);

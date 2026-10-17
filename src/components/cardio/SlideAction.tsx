@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { Icon } from '../ui';
-import { colorDeTema, conAlfa } from '../../utils/coloresPersistidos';
+import { conAlfa } from '../../utils/coloresPersistidos';
 
 // "Deslizar para guardar/descartar" en vez de un botón — el patrón exacto
 // observado en FITIV (§4bis.1 del análisis). Con las manos sudadas o en

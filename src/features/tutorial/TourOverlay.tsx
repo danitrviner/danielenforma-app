@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useScrollLock } from '../../components/ui/internal/overlayHooks';
 import { TourStep } from './steps';
 import { TourState, isBlockedByAction } from './tourReducer';
-import { Icon, Button } from '../../components/ui';
+import { Button } from '../../components/ui';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    TourOverlay (F3.12)

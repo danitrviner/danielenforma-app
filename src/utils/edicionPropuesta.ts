@@ -213,7 +213,10 @@ export function motivoParaNoAprobar(kind: AiProposal['kind'], payload: AiProposa
       ? (payload as PeriodizationBlockPayload).mesocycle
       : (payload as Omit<Mesocycle, 'id'>);
     if (!Number.isInteger(meso.weeks) || meso.weeks < 1 || meso.weeks > 16) return 'Las semanas del bloque van de 1 a 16.';
-    if (!Number.isInteger(meso.daysPerWeek) || meso.daysPerWeek < 1 || meso.daysPerWeek > 10) return 'Las sesiones por ciclo van de 1 a 10.';
+    if (!Number.isInteger(meso.daysPerWeek) || meso.daysPerWeek < 1 || meso.daysPerWeek > 14) return 'Las sesiones por ciclo van de 1 a 14.';
+    if (meso.reparto && meso.reparto.dias.filter(Boolean).length !== meso.daysPerWeek) {
+      return `El reparto «${meso.reparto.nombre}» tiene ${meso.reparto.dias.filter(Boolean).length} sesiones: las sesiones por ciclo tienen que ser esas.`;
+    }
     const pasado = (Object.keys(MUSCLE_LABELS) as MuscleGroup[]).find(g => (meso.groups?.[g]?.series ?? 0) > 25);
     if (pasado) return `${MUSCLE_LABELS[pasado]} pasa de 25 series semanales.`;
     const total = (Object.keys(MUSCLE_LABELS) as MuscleGroup[]).reduce((s, g) => s + (meso.groups?.[g]?.series ?? 0), 0);

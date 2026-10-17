@@ -139,6 +139,16 @@ const ProgresionHarness = import.meta.env.DEV
   ? pantallaDiferida('ProgresionDevHarness', () => import('./components/mesociclo/ProgresionDevHarness'))
   : null;
 
+// Banco de pruebas del editor de mesociclos en modo plantilla (ruta /dev/plantilla).
+const PlantillaHarness = import.meta.env.DEV
+  ? pantallaDiferida('PlantillaDevHarness', () => import('./components/mesociclo/PlantillaDevHarness'))
+  : null;
+
+// Banco de pruebas de «Orden del ciclo» (Mesociclo › Distribución, ruta /dev/orden-ciclo).
+const OrdenCicloHarness = import.meta.env.DEV
+  ? pantallaDiferida('OrdenCicloDevHarness', () => import('./components/mesociclo/OrdenCicloDevHarness'))
+  : null;
+
 /* La pantalla de espera de la app, con marca. Existe como componente y no como
    un `<div className="min-h-screen bg-bg" />` suelto por un motivo concreto:
    ese div es NEGRO Y VACÍO, exactamente igual que una app colgada. Cuando un
@@ -511,6 +521,10 @@ function AppContent() {
       clearTimeout(safetyTimeout);
       unsubscribe();
     };
+    // Un solo listener de sesión para toda la vida de la app: con
+    // loadUserSession/showToast (nuevas en cada render) se volvería a
+    // suscribir a Firebase Auth en cada pintado.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /* ═══════════════════════════════════════════════════════════════════════
@@ -639,6 +653,9 @@ function AppContent() {
       if (!planVisible) void handleRefreshData();
     });
     return () => { sub.then(h => h.remove()); };
+    // handleRefreshData es nueva en cada render: el listener solo se rehace
+    // cuando cambia lo que decide si hace falta.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isCoach, hasPlan, planVisible, athleteUserId, queryClient]);
 
   // Punto rojo en Hoy mientras el catálogo de máquinas siga a medias. Sin cifra:
@@ -772,6 +789,20 @@ function AppContent() {
     );
   }
 
+  if (PlantillaHarness && location.pathname === '/dev/plantilla') {
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-bg" />}>
+        <PlantillaHarness />
+      </Suspense>
+    );
+  }
+  if (OrdenCicloHarness && location.pathname === '/dev/orden-ciclo') {
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-bg" />}>
+        <OrdenCicloHarness />
+      </Suspense>
+    );
+  }
   if (ProgresionHarness && location.pathname === '/dev/progresion') {
     return (
       <Suspense fallback={<div className="min-h-screen bg-bg" />}>

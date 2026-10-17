@@ -11,7 +11,7 @@ import {
 import { cobradoDe } from '../lib/dinero';
 import type { CrmPago } from '../types';
 import { useServicios } from '../hooks/useServicios';
-import { formatDia, tiempoRelativo, hoyISO, aDiaISO } from '../lib/fechas';
+import { tiempoRelativo, hoyISO, aDiaISO } from '../lib/fechas';
 import MetricCard from '../components/MetricCard';
 import RecurringRevenueCard from '../components/RecurringRevenueCard';
 import EmptyState from '../components/EmptyState';

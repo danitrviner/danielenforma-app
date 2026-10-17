@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import type { Recipe, MenuMeal, DietItem, FoodCategory } from '../types';
+import type { Recipe, MenuMeal, DietItem } from '../types';
 import { totalConExtras } from './menuEngine';
 import { itemsDeComidaDelMenu } from './conversionNutricional';
 import { recipeToDietItems } from './exchangeHelpers';

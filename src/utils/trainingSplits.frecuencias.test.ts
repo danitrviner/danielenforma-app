@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { MuscleGroup } from '../types';
 import {
   TRAINING_SPLITS, cicloDeSplit, sesionesDeSplit, offsetsDeSplit, frecuenciaSemanalDeSplit,
 } from './trainingSplits';

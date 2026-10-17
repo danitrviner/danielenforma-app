@@ -232,7 +232,7 @@ it('ningún componente escribe un color literal ni pega alfa hex a una variable'
     const corto = f.slice(raiz.length + 1);
     for (const linea of readFileSync(f, 'utf8').split('\n')) {
       if (linea.trimStart().startsWith('*') || linea.trimStart().startsWith('//')) continue;
-      for (const m of linea.matchAll(/rgba?\(\s*\d{1,3}\s*,/g)) culpables.push(`${corto}: ${linea.trim().slice(0, 70)}`);
+      for (const _m of linea.matchAll(/rgba?\(\s*\d{1,3}\s*,/g)) culpables.push(`${corto}: ${linea.trim().slice(0, 70)}`);
       for (const m of linea.matchAll(/var\(--color-[a-z0-9-]+\)[0-9a-f]{2}\b/g)) culpables.push(`${corto}: ${m[0]}`);
     }
   }

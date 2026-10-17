@@ -112,9 +112,14 @@ export default function ProposalEditor({ proposal: p, payload, onChange }: Props
           <span className="flex items-center gap-1">
             <Num etiqueta="Semanas del mesociclo" value={meso.weeks} min={1} max={16} onChange={weeks => setMeso({ ...meso, weeks })} /> sem
           </span>
-          <span className="flex items-center gap-1">
-            <Num etiqueta="Sesiones por ciclo" value={meso.daysPerWeek} min={1} max={10} onChange={daysPerWeek => setMeso({ ...meso, daysPerWeek })} /> días/ciclo
-          </span>
+          {meso.reparto ? (
+            // Con reparto, las sesiones son las suyas: cambiarlas aquí lo descuadraría.
+            <span>{meso.daysPerWeek} sesiones · {meso.reparto.nombre}{meso.cycleDays ? ` · ciclo de ${meso.cycleDays} días` : ''}</span>
+          ) : (
+            <span className="flex items-center gap-1">
+              <Num etiqueta="Sesiones por ciclo" value={meso.daysPerWeek} min={1} max={10} onChange={daysPerWeek => setMeso({ ...meso, daysPerWeek })} /> días/ciclo
+            </span>
+          )}
           <span className="font-mono text-ink-4">{total} series/sem</span>
         </div>
         {bloque && (

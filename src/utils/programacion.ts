@@ -360,6 +360,20 @@ export function runDistribution(
   sesiones: number,
   dayTypes?: string[], // reparto elegido (Torso/Pierna/Push/...) — si viene, restringe qué días acepta cada grupo muscular
   ciclo?: { cicloDias: number; offsets: number[] },
+  /**
+   * Grupos que admite cada sesión (`gruposPorSesion` de un reparto resuelto).
+   * Si viene, manda sobre `DAY_TYPE_MUSCLES[dayTypes[i]]`: es lo que permite un
+   * reparto propio con días que no son ninguno de la lista.
+   */
+  gruposPorSesion?: MuscleGroup[][],
+  /**
+   * Con `true`, cada grupo va a TODAS las sesiones que lo llevan y sus series
+   * se reparten a partes iguales entre ellas. Es lo que pide un reparto salido
+   * de la calculadora de frecuencias: el coach ya decidió cuántas veces se
+   * toca cada grupo, la distribución no tiene que volver a decidirlo por
+   * volumen («series ÷ 6»).
+   */
+  exacto = false,
 ): { days: DayPlan[]; overloadAlert: boolean } {
   const days: DayPlan[] = Array.from({ length: sesiones }, (_, i) => ({
     assignments: [], totalSeries: 0, dayType: dayTypes?.[i],
@@ -382,9 +396,10 @@ export function runDistribution(
 
   // Días permitidos para un grupo dado el reparto elegido; sin reparto, todos valen.
   const allowedDays = (group: MuscleGroup): number[] => {
-    if (!dayTypes) return Array.from({ length: sesiones }, (_, i) => i);
+    if (!dayTypes && !gruposPorSesion) return Array.from({ length: sesiones }, (_, i) => i);
+    const gruposDe = (i: number) => gruposPorSesion?.[i] ?? DAY_TYPE_MUSCLES[dayTypes?.[i] ?? ''] ?? [];
     const allowed = Array.from({ length: sesiones }, (_, i) => i)
-      .filter(i => (DAY_TYPE_MUSCLES[dayTypes[i]] ?? []).includes(group));
+      .filter(i => gruposDe(i).includes(group));
     // si el reparto no cubre este grupo en ningún día, no lo bloqueamos —
     // mejor colocarlo en algún día que perder el volumen configurado
     return allowed.length > 0 ? allowed : Array.from({ length: sesiones }, (_, i) => i);
@@ -392,6 +407,18 @@ export function runDistribution(
 
   for (const group of active) {
     const candidates = allowedDays(group);
+    const enSuReparto = !!gruposPorSesion && candidates.some(i => gruposPorSesion[i]?.includes(group));
+    if (exacto && enSuReparto) {
+      const totalCiclo = Math.round(groups[group].series * semanas);
+      splitEvenly(totalCiclo, candidates.length).forEach((chunk, k) => {
+        if (chunk <= 0) return;
+        const d = candidates[k];
+        days[d].assignments.push({ group, series: chunk });
+        days[d].totalSeries += chunk;
+      });
+      placedOn[group] = [...candidates];
+      continue;
+    }
     // Volumen del CICLO: la configuración es semanal, así que un ciclo de dos
     // semanas mueve el doble de series. Es lo que hace que la vuelta entera
     // cuadre con lo que el coach pidió por semana.

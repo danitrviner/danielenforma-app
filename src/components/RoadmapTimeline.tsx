@@ -1074,7 +1074,7 @@ export default function RoadmapTimeline({ mesocycles: mesocyclesProp, nutritionP
             'Entrenamiento', 'Nutrición',
             ...(showReviewLane ? ['Revisiones'] : []),
             'Objetivos',
-          ].map((label, i) => (
+          ].map((label) => (
             <div
               key={label}
               style={{ height: LANE_H }}

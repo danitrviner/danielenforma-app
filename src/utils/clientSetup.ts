@@ -174,7 +174,7 @@ function manualStatus(manualTasks: CoachClientTask[] | undefined, itemId: string
 export function computeSetupChecklist(inputs: SetupInputs): SetupResult {
   const {
     profile, onboarding, checkins, mesocycles, workoutAssignments, diets, dietConfig,
-    nutritionConfig, qAssignments, photoAssignments, photos, workoutLogs, roadmap,
+    nutritionConfig, qAssignments, photos, workoutLogs, roadmap,
     nutritionProgram, weeklyChallenge, manualTasks, today,
     workouts, cardioAssignments, dossier,
   } = inputs;

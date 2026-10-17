@@ -198,6 +198,15 @@ service cloud.firestore {
       allow write: if isCoach();
     }
 
+    // ── cdgCatalogo (catálogo de la plantilla «Índice de hipertrofia» de CulturaDeGym) ──
+    // Uso personal con licencia del coach: lectura SOLO para el coach y nadie
+    // escribe desde el cliente (lo sube scripts/subirCatalogoCdg.mjs con el
+    // Admin SDK, que se salta las reglas). El atleta no lo descarga nunca.
+    match /cdgCatalogo/{docId} {
+      allow read: if isCoach();
+      allow write: if false;
+    }
+
     // ── catalogos (docId = nombre del catálogo: "exercises", "foodItems"...) ──
     // Sello de versión de cada catálogo versionado (src/db/catalogoVersionado.ts):
     // un solo campo `version` que le dice al dispositivo si su copia local de
@@ -358,6 +367,15 @@ service cloud.firestore {
     match /mesocycleTemplates/{docId} {
       allow read: if esUsuarioDeLaApp();  // 04-10
       allow write: if isCoach();
+    }
+
+    // ── repartosGuardados (ownerId = UID del coach) · 16-10 ──────────────────
+    // «Mis repartos»: repartos propios que el coach guarda para reutilizarlos
+    // en otros mesociclos. Es material de trabajo del coach, no catálogo: el
+    // atleta no lo necesita para nada (lo que entrena va copiado dentro de su
+    // mesociclo), así que ni lo lee.
+    match /repartosGuardados/{docId} {
+      allow read, write: if isCoach();
     }
 
     // ── recipes (ownerId = UID del autor, o el centinela del recetario) ──────

@@ -1,7 +1,7 @@
 import React from 'react';
 import { CardioDeLaVentana } from '../../utils/cardioDeLaVentana';
 import { TrainingLoadState } from '../../utils/cardioMetrics';
-import { MONTHS_ES, fechaCorta } from '../../utils/trainingWeek';
+import { fechaCorta } from '../../utils/trainingWeek';
 import { HubTab } from '../ClientHub';
 import { Sparkline, Badge, Button, Collapsible } from '../ui';
 

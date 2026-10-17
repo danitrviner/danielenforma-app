@@ -3,14 +3,12 @@ import { pantallaDiferida } from '../utils/pantallaDiferida';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import {
-  UserProfile, WeightCheckIn, Workout, WorkoutAssignment, WorkoutLog,
-  Exercise, Diet, AthleteDietConfig, AthleteNutritionConfig, DietMode,
-  FoodCategory, ProgressPhoto, PhotoAssignment,
+  UserProfile, WeightCheckIn, WorkoutAssignment, WorkoutLog,
+  Diet, AthleteDietConfig, AthleteNutritionConfig, DietMode,
+  PhotoAssignment,
   Questionnaire, QuestionnaireAssignment, QuestionnaireResponse,
-  OnboardingData, WeekDay, BodyweightLog,
-  OnboardingTemplateQuestion, Mesocycle, CoachReport, AiProposal, WeeklyMenu,
+  OnboardingData, WeekDay, OnboardingTemplateQuestion, WeeklyMenu,
 } from '../types';
-import { OPEN_AI_PANEL_EVENT } from '../ai/events';
 import { computeAdherenceScore, scoreStyle, SIN_DATOS_ADHERENCIA } from '../utils/adherence';
 import { atletasActivos } from '../utils/atletas';
 import { makeId } from './nutrition/dietHelpers';
@@ -33,7 +31,6 @@ import {
   getResponsesForAthlete,
   getPhotoAssignmentsForAthlete,
   getOnboarding,
-  getNutritionProgram, saveNutritionProgram, computeActivePhase, computePhaseStartDate, deleteNutritionProgram,
   getOnboardingTemplate, getMesocycles, getCoachReportsForAthlete, getAiProposalsForAthlete,
   getWeeklyMenusForAthlete, getMenuCompletionLogsForAthlete, getAllUserProfilesOrThrow,
   getCoachClientTasks,

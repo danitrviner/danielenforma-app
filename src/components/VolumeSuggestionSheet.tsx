@@ -6,7 +6,7 @@ import {
 import type { VolumeLandmark } from '../data/volumeLandmarks';
 import { suggestVolume, VolumeIntent, SERIES_POR_DIA_TOPE } from '../utils/volumeSuggestion';
 import { buildVolumeHistoryFrom } from '../utils/volumeHistory';
-import { TRAINING_SPLITS } from '../utils/trainingSplits';
+import { repartoDelMesociclo } from '../utils/trainingSplits';
 import { cicloDiasDeMeso } from '../utils/asignacionMesociclo';
 import { zoneLabel, heatmapText } from '../utils/volumeZones';
 import {
@@ -108,7 +108,8 @@ export default function VolumeSuggestionSheet({
     return copia;
   }, [prioridades, prioridadesTocadas, history.feedback]);
 
-  const split = editing.splitId ? TRAINING_SPLITS.find(s => s.id === editing.splitId) : undefined;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const split = useMemo(() => repartoDelMesociclo(editing), [editing.reparto, editing.splitId]);
   const cicloDias = cicloDiasDeMeso(editing);
   const semanasDelCiclo = cicloDias / 7;
   const sesionesPorSemana = Math.max(1, Math.round(editing.daysPerWeek / semanasDelCiclo));
@@ -118,11 +119,12 @@ export default function VolumeSuggestionSheet({
     daysPerWeek: editing.daysPerWeek,
     semanasDelCiclo,
     splitId: editing.splitId,
+    reparto: split,
     level,
     intent,
     priorities: prioridadesEfectivas,
     history,
-  }), [landmarks, editing.daysPerWeek, semanasDelCiclo, editing.splitId, level, intent, prioridadesEfectivas, history]);
+  }), [landmarks, editing.daysPerWeek, semanasDelCiclo, editing.splitId, split, level, intent, prioridadesEfectivas, history]);
 
   const totalActual = MUSCLE_ORDER.reduce((s, g) => s + (editing.groups[g]?.series ?? 0), 0);
 
@@ -173,7 +175,7 @@ export default function VolumeSuggestionSheet({
               `${sesionesPorSemana} sesiones/sem`,
               semanasDelCiclo === 1 ? 'ciclo semanal' : `ciclo de ${semanasDelCiclo.toLocaleString('es-ES')} semanas`,
               `${editing.weeks} vueltas`,
-              split ? split.label : 'sin reparto elegido',
+              split ? split.nombre : 'sin reparto elegido',
               editing.deloadWeek !== undefined ? `descarga en la semana ${editing.deloadWeek}` : 'sin descarga',
             ].map(t => (
               <span key={t} className="rounded-chip border border-hairline bg-raised px-2.5 py-1 font-mono text-caption text-ink-2">{t}</span>
