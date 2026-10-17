@@ -7,6 +7,8 @@ import {
   seriesPorGrupo, seriesPlanificadasDelDia, seriesPlanificadasDelMeso, balanceDeSeries,
 } from '../../utils/programacion';
 import SeriesBalance from './SeriesBalance';
+import PanelIndicesCdg from '../mesociclo/PanelIndicesCdg';
+import ResumenCdgDia from '../mesociclo/ResumenCdgDia';
 import { Icon } from '../ui';
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -144,6 +146,15 @@ export default function RoutinePreview({
         <SeriesBalance balance={balanceSemana} referencia={referenciaCiclo} ocultarSiVacio={false} />
       </div>
 
+      {/* Índices CDG (IF, IEM, estrés articular) de lo que se va a asignar, con los
+          días en columnas. Se ve ANTES de asignar, que es cuando todavía es barato cambiar. */}
+      <PanelIndicesCdg
+        grupos={days.map((pd, i) => ({ name: `Día ${(offsets[i] ?? i) + 1}`, exercises: pd.exercises }))}
+        meso={{}}
+        semana={0}
+        allExercises={catalogo}
+      />
+
       <div className="flex flex-wrap gap-3">
         {days.map((pd, dayIdx) => {
           const dayPlan  = distribution?.days[dayIdx];
@@ -161,6 +172,7 @@ export default function RoutinePreview({
                 </span>
                 <span className="font-mono text-caption text-ink-2 flex-shrink-0 tabular-nums">
                   {totalSeries} series · {pd.exercises.length} ejerc.
+                  <ResumenCdgDia ejercicios={pd.exercises} allExercises={catalogo} />
                 </span>
               </div>
 

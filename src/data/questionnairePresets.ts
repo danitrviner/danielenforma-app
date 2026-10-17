@@ -13,7 +13,8 @@
 // justo el objetivo de este proyecto.
 
 import { QuestionnaireQuestion, QSchedule, BodyMetricKey, Questionnaire, MuscleGroup } from '../types.js';
-import { OPCIONES_GRUPOS, VolumeSignalKey, SignalKey } from './questionnaireSignals.js';
+import { OPCIONES_GRUPOS, VolumeSignalKey, SignalKey, AgujetasSignalKey } from './questionnaireSignals.js';
+import { ZONAS_IEM } from '../utils/cdg/zonas.js';
 
 export interface QuestionnairePresetDef {
   title: string;
@@ -169,6 +170,19 @@ const DOMS: QuestionnairePresetDef = {
   description: 'Escala de 0 (nada) a 10 (muchísimo) por grupo muscular.',
   suggestedSchedule: { type: 'interval', intervalDays: 14 },
   questions: DOMS_ZONES.map(({ zona, group }) => scaleSignal(zona, `doms.${group}` as VolumeSignalKey, { required: true, min: 0, max: 10, minLabel: 'Nada', maxLabel: 'Muchísimo' })),
+};
+
+// ── 3b. Agujetas a las 48 h (escala del curso CDG) ───────────────────────────
+// 1 a 5, a las 48 h de entrenar cada zona. Las zonas son las del IEM
+// (utils/cdg/zonas.ts), así el seguimiento cruza cada respuesta con el IEM de
+// esa misma zona y propone frenar o acelerar. No sustituye al DOM's 0-10: ese
+// lo siguen leyendo el IRP y el sugeridor de volumen.
+export const TITULO_AGUJETAS_48H = 'Agujetas a las 48 h';
+const AGUJETAS_48H: QuestionnairePresetDef = {
+  title: TITULO_AGUJETAS_48H,
+  description: 'Puntúa cada zona 48 h después de entrenarla. 1 = apenas he notado trabajo · 3 = las noto al moverme · 5 = me duele incluso en reposo. Deja en blanco las zonas que no has entrenado.',
+  suggestedSchedule: { type: 'interval', intervalDays: 7 },
+  questions: ZONAS_IEM.map(z => scaleSignal(z.nombre, `agujetas.${z.clave}` as AgujetasSignalKey, { required: false, min: 1, max: 5, minLabel: 'Apenas noté trabajo', maxLabel: 'Duele en reposo' })),
 };
 
 // ── 4. Mediciones ──────────────────────────────────────────────────────────────
@@ -427,6 +441,7 @@ export const QUESTIONNAIRE_PRESETS: QuestionnairePresetDef[] = [
   ENTRENAMIENTO,
   EVALUACION_DOLOR,
   DOMS,
+  AGUJETAS_48H,
   MEDICIONES,
   REVISION_SEMANA_3,
   REVISION_SEMANAL,

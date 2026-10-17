@@ -8,7 +8,7 @@ import {
 } from 'recharts';
 import { WorkoutLog, Exercise, Mesocycle } from '../types';
 import { getMesocycles } from '../dbService';
-import { epley } from '../utils/oneRepMax';
+import { rmDeSerie } from '../utils/oneRepMax';
 import { addDays } from '../utils/trainingWeek';
 import { ewmaDeSeriePorSesion } from '../utils/loadTrend';
 import { formatearDuracion } from '../utils/duracionSesion';
@@ -175,7 +175,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
     setExcludedBuckets(new Set());
   }, [activeExId, mesocycleFilter, granularity]);
 
-  // Per-date session aggregation (with best Epley 1RM for activeExId)
+  // Per-date session aggregation (with best CDG 1RM for activeExId)
   const sessionRows = useMemo<SessionRow[]>(() => {
     const byDate = new Map<string, SessionRow>();
     for (const log of logs) {
@@ -191,7 +191,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
           row.reps    += Number(s.repsDone);
           row.tonnage  = Math.round((row.tonnage + Number(s.weight) * Number(s.repsDone)) * 10) / 10;
           if (entry.exerciseId === activeExId) {
-            const v = epley(s.weight, s.repsDone);
+            const v = rmDeSerie(s);
             if (v > (row.orm ?? 0)) row.orm = v;
           }
         }
@@ -212,7 +212,7 @@ export default function LoadHistoryPanel({ logs, exercises, athleteId }: Props) 
       for (const entry of log.entries) {
         if (entry.exerciseId !== activeExId) continue;
         for (const s of entry.sets) {
-          const v = epley(s.weight, s.repsDone);
+          const v = rmDeSerie(s);
           if (v > (byDate.get(log.date) ?? 0)) byDate.set(log.date, v);
         }
       }

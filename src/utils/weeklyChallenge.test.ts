@@ -77,8 +77,8 @@ describe('generateAutoChallenge', () => {
     const ch = generateAutoChallenge(input({ stepLogs: logs, exercises, workoutLogs, previousKind: 'pasos_media' }));
     expect(ch.kind).toBe('carga_ejercicio');
     expect(ch.metric.exerciseName).toBe('Sentadilla trasera');
-    // target = min(epley(102.5,5), epley(100,6)) = min(119.6, 120) = 119.6
-    expect(ch.metric.target).toBeCloseTo(119.6, 1);
+    // target = min(rm(102.5×5, RIR 2), rm(100×6, RIR 2)) = min(126.8, 126.8) — mismo esfuerzo que la marca
+    expect(ch.metric.target).toBeCloseTo(126.8, 1);
   });
 
   it('prefers a viable non-repeated option over the generic fallback', () => {
@@ -128,11 +128,11 @@ describe('evaluateChallengeProgress', () => {
       workoutLogs: [{
         id: 'w1', athleteId: 'a@x.com', workoutId: 'wk', assignmentId: 'as',
         date: '2026-07-07', completedAt: '2026-07-07',
-        entries: [{ exerciseId: 'ex1', sets: [{ weight: 100, repsDone: 5, rir: 1 }] }],
+        entries: [{ exerciseId: 'ex1', sets: [{ weight: 95, repsDone: 5, rir: 1 }] }],
       }],
     };
     const res = evaluateChallengeProgress(ch, data, '2026-07-08');
-    expect(res.progressValue).toBeCloseTo(116.7, 1); // epley(100,5)
+    expect(res.progressValue).toBeCloseTo(114.5, 1); // RM CDG de 95 kg × 5 con RIR 1
     expect(res.achieved).toBe(false);
     expect(res.pct).toBeGreaterThan(0);
     expect(res.pct).toBeLessThan(100);

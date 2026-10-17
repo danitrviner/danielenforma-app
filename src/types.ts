@@ -96,6 +96,8 @@ export interface UserProfile {
    * escritores no coincidían en cuántos puntos vale un nivel.
    */
   level: number;
+  /** Umbrales de aviso de la carga aguda/crónica (CDG) de ESTE atleta. Ausente = 0,8 – 1,6. */
+  cdgUmbralesCarga?: { inferior: number; superior: number };
   currentStreak: number;
   maxStreak: number;
   initialWeight: number;
@@ -354,6 +356,15 @@ export interface Exercise {
   imageUrl?: string;
   instructions?: string;     // descripción global — visible para cualquier atleta
   isCustom: boolean;
+
+  // ─── Vínculo con el catálogo CDG (Índice de hipertrofia V4) ─────────────
+  // Nombre EXACTO del ejercicio en el catálogo CDG (scripts/cdg/catalogo-cdg.json).
+  // El motor de src/utils/cdg busca por este nombre; sin él el ejercicio cuenta 0
+  // en IF/IEM/estrés articular. Lo escribe scripts/aplicarEmparejadoCdg.mjs.
+  cdgNombre?: string;
+  // El coach revisó el ejercicio y no tiene equivalente en CDG (distinto de
+  // «aún sin emparejar»). Con esto la pantalla de emparejado no lo vuelve a pedir.
+  cdgSinEquivalente?: boolean;
 
   // ─── Curaduría del coach ────────────────────────────────────────────────
   // El catálogo son 1.721 ejercicios: 40 escritos a mano y 1.681 importados de
@@ -1959,6 +1970,13 @@ export interface Mesocycle {
    * reconoce nada usa un color neutro en vez de inventar un tipo.
    */
   phaseType?: PhaseType;
+  /**
+   * IEM semanal objetivo por zona (utils/cdg/zonas.ts), la «premisa» del bloque
+   * con la que el panel CDG compara lo programado. Solo coach.
+   */
+  cdgObjetivosIem?: Partial<Record<string, number>>;
+  /** Actitud del bloque para el freno/acelerador por agujetas (utils/cdg/agujetas.ts). Sin valor = estático. */
+  cdgActitud?: 'estatico' | 'dinamico' | 'agresivo';
 }
 
 // Tipos de fase de un mesociclo, para el color/icono del Roadmap → Calendario.

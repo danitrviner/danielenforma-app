@@ -341,3 +341,38 @@ describe('cardio · leer un documento que todavía no existe', () => {
     await assertFails(getDoc(doc(atleta, 'cardioWeeklyGoals', `otro@enforma.com_${SEMANA}`)));
   });
 });
+
+describe('cdgCatalogo · catálogo CDG con licencia personal del coach', () => {
+  const uid = 'uid-atleta-cdg';
+
+  async function sembrarCatalogo() {
+    await sembrar(async db => {
+      await setDoc(doc(db, 'user_profiles', uid), { userId: uid, email: ATLETA, role: 'client' });
+      await setDoc(doc(db, 'cdgCatalogo', 'v4'), { json: '{}', ejercicios: 0 });
+    });
+  }
+
+  it('el coach lo lee', async () => {
+    await sembrarCatalogo();
+    const coach = env.authenticatedContext('uid-coach', { email: COACH, email_verified: true }).firestore();
+    await assertSucceeds(getDoc(doc(coach, 'cdgCatalogo', 'v4')));
+  });
+
+  it('un atleta con perfil NO lo lee', async () => {
+    await sembrarCatalogo();
+    const atleta = env.authenticatedContext(uid, { email: ATLETA, email_verified: true }).firestore();
+    await assertFails(getDoc(doc(atleta, 'cdgCatalogo', 'v4')));
+  });
+
+  it('nadie escribe desde el cliente, ni el coach', async () => {
+    await sembrarCatalogo();
+    const coach = env.authenticatedContext('uid-coach', { email: COACH, email_verified: true }).firestore();
+    await assertFails(setDoc(doc(coach, 'cdgCatalogo', 'v4'), { json: 'x' }));
+    await assertFails(updateDoc(doc(coach, 'cdgCatalogo', 'v4'), { json: 'x' }));
+  });
+
+  it('sin sesión no se lee', async () => {
+    await sembrarCatalogo();
+    await assertFails(getDoc(doc(env.unauthenticatedContext().firestore(), 'cdgCatalogo', 'v4')));
+  });
+});

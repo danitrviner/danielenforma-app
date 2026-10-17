@@ -1,5 +1,5 @@
 import { WorkoutLog, Exercise, Mesocycle, MuscleGroup, MUSCLE_LABELS } from '../types.js';
-import { epley } from './oneRepMax.js';
+import { rmDeSerie } from './oneRepMax.js';
 import { addDays } from './trainingWeek.js';
 
 // Deterministic training-performance report engine (no LLM/external API), same
@@ -31,8 +31,8 @@ export interface ExercisePerf {
   sets: number;
   reps: number;
   tonnage: number;
-  bestOrm: number;               // best Epley 1RM in the current period
-  prevBestOrm: number | null;    // best Epley in the comparison window
+  bestOrm: number;               // best CDG 1RM in the current period
+  prevBestOrm: number | null;    // best CDG 1RM in the comparison window
   deltaOrmPct: number | null;    // signed % vs prevBestOrm
   isPR: boolean;                 // bestOrm beats the all-time best BEFORE this period
 }
@@ -99,7 +99,7 @@ export function aggregate(logs: WorkoutLog[]): Agg {
         const t = w * r;
         row.tonnage = round1(row.tonnage + t);
         tonnage = round1(tonnage + t);
-        const orm = epley(w, r);
+        const orm = rmDeSerie(s);
         if (orm > row.bestOrm) row.bestOrm = orm;
       }
     }
@@ -107,7 +107,7 @@ export function aggregate(logs: WorkoutLog[]): Agg {
   return { tonnage, perExercise, dates };
 }
 
-// Best all-time Epley per exercise, strictly before `beforeDate` — used for PR detection.
+// Best all-time RM (CDG) per exercise, strictly before `beforeDate` — used for PR detection.
 // Exportada además del uso interno del reporte: TrainingScreen la reutiliza para
 // detectar un PR en vivo justo al terminar la sesión (mismo criterio: exige
 // historial previo, un primer registro nunca cuenta como récord).
@@ -117,7 +117,7 @@ export function allTimeBestBefore(logs: WorkoutLog[], beforeDate: string): Map<s
     if (log.date >= beforeDate) continue;
     for (const entry of log.entries) {
       for (const s of entry.sets) {
-        const orm = epley(s.weight, s.repsDone);
+        const orm = rmDeSerie(s);
         if (orm > (best.get(entry.exerciseId) ?? 0)) best.set(entry.exerciseId, orm);
       }
     }

@@ -19,7 +19,7 @@ import { useToast } from '../hooks/useToast';
 import { useTourTarget } from '../features/tutorial/TourTargetContext';
 import { useTutorialEngine } from '../features/tutorial/TutorialEngine';
 import { exerciseBestProgress, exerciseWeightTrend, ExerciseBestProgress } from '../utils/athleteMetrics';
-import { epley } from '../utils/oneRepMax';
+import { rmDeSerie } from '../utils/oneRepMax';
 import { allTimeBestBefore } from '../utils/trainingReport';
 import { Skeleton } from './ui';
 import { useBotonAtras } from '../services/botonAtras';
@@ -665,7 +665,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
       const priorBest = allTimeBestBefore(logs, activeAssignment.date);
       const prs: SessionCelebration['prs'] = [];
       for (const entry of entries) {
-        const newBest = entry.sets.reduce((max, s) => Math.max(max, epley(s.weight, s.repsDone)), 0);
+        const newBest = entry.sets.reduce((max, s) => Math.max(max, rmDeSerie(s)), 0);
         const prevBest = priorBest.get(entry.exerciseId);
         if (newBest > 0 && prevBest != null && newBest > prevBest) {
           prs.push({ exerciseId: entry.exerciseId, name: getExercise(entry.exerciseId)?.name || entry.exerciseId, newBest });

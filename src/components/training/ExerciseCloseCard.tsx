@@ -1,7 +1,7 @@
 import React from 'react';
 import { CardioAssignment, Exercise, WorkoutExercise } from '../../types';
 import { Icon, Button, Chip } from '../ui';
-import { epley } from '../../utils/oneRepMax';
+import { rmDeSerie } from '../../utils/oneRepMax';
 import { SetInput } from './setInput';
 
 interface Props {
@@ -43,7 +43,7 @@ function rpeDeSerie(s: SetInput): number | null {
  * vez de `ExerciseCard` en cuanto todas las series de la página están
  * marcadas. A diferencia de hoy (el récord solo se calculaba al terminar TODA
  * la sesión, en `handleFinish`), aquí se calcula por ejercicio con el mismo
- * criterio (`epley` + mejor histórico ANTES de la fecha) para que el atleta lo
+ * criterio (`rmDeSerie` + mejor histórico ANTES de la fecha) para que el atleta lo
  * vea en el momento, no al final de los 5 ejercicios.
  */
 export default function ExerciseCloseCard({
@@ -57,7 +57,7 @@ export default function ExerciseCloseCard({
   let bestSet: SetInput | null = null;
   let bestOrm = 0;
   for (const s of doneSets) {
-    const orm = epley(s.weight, s.repsDone);
+    const orm = rmDeSerie(s);
     if (orm > bestOrm) { bestOrm = orm; bestSet = s; }
   }
   const esRecord = bestOrm > 0 && priorBestOrm != null && bestOrm > priorBestOrm;

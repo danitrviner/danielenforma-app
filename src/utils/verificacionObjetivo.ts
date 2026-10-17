@@ -1,5 +1,5 @@
 import { BodyweightLog, BodyMeasurement, WorkoutLog } from '../types.js';
-import { epley } from './oneRepMax.js';
+import { rmDeSerie } from './oneRepMax.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Verificación del objetivo corporal
@@ -267,7 +267,7 @@ export function senalFuerza(
     const mitad = log.date < corte ? 0 : 1;
     for (const e of log.entries ?? []) {
       for (const s of e.sets ?? []) {
-        const rm = epley(s.weight, s.repsDone);
+        const rm = rmDeSerie(s);
         if (!rm) continue;
         const par = mejor.get(e.exerciseId) ?? [0, 0];
         par[mitad] = Math.max(par[mitad], rm);

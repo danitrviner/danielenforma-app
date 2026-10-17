@@ -5,7 +5,7 @@ import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend,
 } from 'recharts';
 import { WorkoutLog, Exercise, QuestionnaireResponse, Questionnaire, BodyweightLog, WorkoutAssignment, BodyMetricKey, BODY_METRIC_LABELS } from '../types';
-import { epley } from '../utils/oneRepMax';
+import { rmDeSerie } from '../utils/oneRepMax';
 import { getStepsForAthlete } from '../dbService';
 import { useBodyMeasurements } from '../hooks/useBodyMeasurements';
 import { DataPoint, Aggregation, Granularity, weekKey, toWeeklyBuckets, pearsonAligned } from '../utils/seriesCorrelation';
@@ -14,7 +14,9 @@ import { pctGrasaUSNavy, masaMagraEstimadaKg, computeIRC } from '../utils/bodyFa
 import { e1rmAlometrico, pesoCorporalEn } from '../utils/allometricScore';
 import { ewmaDeSeñal } from '../utils/wellnessTrend';
 import { historialIRP } from '../utils/readinessIndex';
-import { seriesIEAPorGrupo, seriesTonelajePorPatron } from '../utils/stimulusSeries';
+import { seriesTonelajePorPatron } from '../utils/stimulusSeries';
+import { useMotorCdg } from '../hooks/useMotorCdg';
+import { seriesIEMPorSemana } from '../utils/cdg';
 import { resumirSerie, ResumenMetrica } from '../utils/progressSummary';
 import { mdcDeMetrica } from '../utils/mdc';
 import { Sexo } from '../utils/athleteProfileSignals';
@@ -123,6 +125,8 @@ function TarjetaTitular({ r }: { r: ResumenMetrica; key?: React.Key }) {
 export default function CorrelationPanel({
   athleteEmail, logs, exercises, responses, questionnaires, bodyweightLogs, assignments, sexo, modo,
 }: Props) {
+  // Catálogo CDG (solo el coach lo carga) para la familia «Estímulo (IEM)».
+  const { motor } = useMotorCdg();
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [selectorOpen, setSelectorOpen] = useState(false);
   // Variante elegida de cada familia (familiaId -> value). Se conserva al
@@ -340,7 +344,7 @@ export default function CorrelationPanel({
         const eid = entry.exerciseId;
         for (const set of entry.sets) {
           if (!set.weight || !set.repsDone) continue;
-          const orm = epley(set.weight, set.repsDone);
+          const orm = rmDeSerie(set);
           if (!ormMap[eid]) ormMap[eid] = {};
           const prev = ormMap[eid][log.date] ?? 0;
           if (orm > prev) ormMap[eid][log.date] = orm;
@@ -381,13 +385,16 @@ export default function CorrelationPanel({
       result.push({ id: 'orm_alom', label: '1RM alométrico', agg: 'avg', variantes: alomVariantes });
     }
 
-    // IEA semanal por grupo muscular — estímulo real recibido, no tonelaje
-    // bruto (que miente cuando cambia el rango de repeticiones).
-    const iea = seriesIEAPorGrupo(logs, exercises);
-    if (iea.length > 0) {
+    // IEM semanal (estímulo muscular de CDG) por grupo y por músculo — estímulo real
+    // recibido, no tonelaje bruto (que miente cuando cambia el rango de repeticiones).
+    // Sustituye al antiguo IEA «de estímulo acumulado». Sin catálogo CDG, no hay familia.
+    const iem = motor
+      ? seriesIEMPorSemana(motor, logs, id => exercises.find(e => e.id === id)?.cdgNombre, weekKey)
+      : [];
+    if (iem.length > 0) {
       result.push({
-        id: 'iea', label: 'Estímulo (IEA)', agg: 'sum',
-        variantes: iea.map(s => ({ value: s.group, label: s.label, points: s.points })),
+        id: 'iem', label: 'Estímulo (IEM)', agg: 'sum',
+        variantes: iem.map(s => ({ value: s.clave, label: s.label, points: s.points })),
       });
     }
 
@@ -401,7 +408,7 @@ export default function CorrelationPanel({
     }
 
     return result;
-  }, [logs, exercises, bodyweightLogs, sexo]);
+  }, [logs, exercises, bodyweightLogs, sexo, motor]);
 
   const varianteDe = (f: Familia) => variantePorFamilia[f.id] ?? f.variantes[0].value;
 

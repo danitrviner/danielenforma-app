@@ -26,7 +26,7 @@ import {
 } from '../types.js';
 import { ProjectionResult } from './nutritionPeriodization.js';
 import { getWeekStart, addDays } from './trainingWeek.js';
-import { epley } from './oneRepMax.js';
+import { rmCdg } from './oneRepMax.js';
 import {
   avgSteps, bestSet, dailyDietPcts, lastBodyweight, normalizeText, BestSet,
   fractionalSetsByGroup, zone2Minutes, loggedDays,
@@ -240,7 +240,7 @@ export function generateChallengeOptions(input: AutoChallengeInput): ChallengeOp
         : `Segundo (y último) intento del hito de ${m.milestone} kg — si falla, el motor rota a progresión normal`,
       metric: {
         unit: 'kg (1RM est.)',
-        target: epley(m.milestone, best.reps),
+        target: rmCdg(m.milestone, best.reps, best.rir),
         baseline: best.e1rm,
         exerciseId,
         exerciseName,
@@ -251,7 +251,7 @@ export function generateChallengeOptions(input: AutoChallengeInput): ChallengeOp
     const exerciseName = nameById.get(exerciseId) ?? 'tu básico';
     // Incremento en discos reales: múltiplos de 1,25 kg, entre 1,25 y 5.
     const incKg = clamp(Math.round((2.5 * cargaTuning.factor) / 1.25) * 1.25, 1.25, 5);
-    const target = Math.min(epley(best.weight + incKg, best.reps), epley(best.weight, best.reps + 1));
+    const target = Math.min(rmCdg(best.weight + incKg, best.reps, best.rir), rmCdg(best.weight, best.reps + 1, best.rir));
     options.push({
       kind: 'carga_ejercicio',
       score: 70,

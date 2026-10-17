@@ -149,7 +149,7 @@ export const TOOL_DEFINITIONS = [
   {
     name: 'get_training_history',
     description:
-      'Métricas de entrenamiento de un cliente calculadas por el motor determinista: sesiones, tonelaje vs ventana anterior, rendimiento por grupo muscular y por ejercicio (e1RM Epley, PRs). Ventana en semanas terminando hoy.',
+      'Métricas de entrenamiento de un cliente calculadas por el motor determinista: sesiones, tonelaje vs ventana anterior, rendimiento por grupo muscular y por ejercicio (e1RM con la fórmula de CDG, PRs). Ventana en semanas terminando hoy.',
     input_schema: {
       type: 'object',
       properties: {
