@@ -40,11 +40,11 @@ import { atletasActivos } from '../utils/atletas';
 import {
   TRAINING_SPLITS, DAY_TYPE_MUSCLES, getSplitsForDays, recommendSplit,
   cicloDeSplit, sesionesDeSplit, tiposDeEntrenamiento, offsetsDeSplit, frecuenciaSemanalDeSplit,
-  repartoDelMesociclo, repartoDesdeCatalogo, moverDiaDelReparto, moverSesionDelReparto, empezarRepartoPor,
+  repartoDelMesociclo, repartoDesdeCatalogo, DESCANSO, moverDiaDelReparto, moverSesionDelReparto, empezarRepartoPor,
   type TrainingSplit, type Reordenacion,
 } from '../utils/trainingSplits';
 import {
-  aplicarReordenacionAlMeso, nuevoIndiceDeSesion, ajustarDiasDelReparto, quitarDescanso, sinMoverSesiones,
+  aplicarReordenacionAlMeso, nuevoIndiceDeSesion, repartoImplicito, ajustarDiasDelReparto, quitarDescanso, sinMoverSesiones,
   camposDeCalendario,
 } from '../utils/reordenarMeso';
 import OrdenDelCiclo from './mesociclo/OrdenDelCiclo';
@@ -2992,6 +2992,13 @@ export default function MesocycleManager({
   // calendario deje el patrón inválido: `toggleDiaCiclo` mueve `daysPerWeek`.
   const customValido = customCrudo && customCrudo.length === editing?.daysPerWeek ? customCrudo : null;
 
+  // Lo que se enseña en «Orden del ciclo»: el reparto del meso o, si no tiene,
+  // el que sigue de hecho su calendario.
+  const repartoDeHecho = editing && !splitActual ? repartoImplicito(editing) : null;
+  const ordenDelCiclo = splitActual
+    ? { dayTypes: splitActual.dayTypes, propio: splitActual.propio }
+    : repartoDeHecho ? { dayTypes: repartoDeHecho.dias.map(d => d?.tipo ?? DESCANSO), propio: false } : null;
+
   const offsetsAutomaticos = editing
     ? offsetsDeSesiones({
         sesiones: editing.daysPerWeek,
@@ -3064,7 +3071,8 @@ export default function MesocycleManager({
   const reordenarCiclo = (cambio: (base: RepartoPropio) => Reordenacion) => {
     if (!editing) return;
     const catalogo = editing.splitId ? TRAINING_SPLITS.find(sp => sp.id === editing.splitId) : undefined;
-    const base = editing.reparto ?? (catalogo ? repartoDesdeCatalogo(catalogo) : undefined);
+    // Sin reparto (calendario tocado a mano): el que sigue de hecho.
+    const base = editing.reparto ?? (catalogo ? repartoDesdeCatalogo(catalogo) : repartoImplicito(editing) ?? undefined);
     if (!base) return;
     const r = cambio(base);
     const perm = r.sesionAnterior;
@@ -3750,10 +3758,10 @@ export default function MesocycleManager({
                       {/* Orden de los días del reparto: empezar por Pierna,
                           mover un descanso… Lo que ya está repartido (y las
                           rutinas, si las hay) viaja con su día. */}
-                      {splitActual && (
+                      {ordenDelCiclo && (
                         <OrdenDelCiclo
-                          dayTypes={splitActual.dayTypes}
-                          propio={splitActual.propio}
+                          dayTypes={ordenDelCiclo.dayTypes}
+                          propio={ordenDelCiclo.propio}
                           fechaInicio={editing.startDate}
                           onMover={(i, dir) => reordenarCiclo(base => (base.dias[i] ? moverSesionDelReparto : moverDiaDelReparto)(base, i, dir))}
                           onEmpezarPor={i => reordenarCiclo(base => empezarRepartoPor(base, i))}

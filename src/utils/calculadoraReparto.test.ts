@@ -141,8 +141,10 @@ describe('evaluarRepartoActual', () => {
     splitId: '4-torso-pierna-x2', groups: grupos({ pecho: 12, dorsal: 12, trapecio: 6, cuadriceps: 10, core: 4 }),
   };
 
-  it('sin reparto no hay tarjeta', () => {
-    expect(evaluarRepartoActual({ ...base, splitId: undefined }, { frecuencias: {}, grupos: base.groups })).toBeNull();
+  it('sin reparto, la tarjeta sale de su calendario; sin sesiones, no hay tarjeta', () => {
+    const r = evaluarRepartoActual({ ...base, splitId: undefined }, { frecuencias: {}, grupos: base.groups })!;
+    expect(r.sesiones.map(s => s.tipo)).toEqual(['Sesión 1', 'Sesión 2', 'Sesión 3', 'Sesión 4']);
+    expect(evaluarRepartoActual({ ...base, splitId: undefined, daysPerWeek: 0 }, { frecuencias: {}, grupos: base.groups })).toBeNull();
   });
 
   it('mide el reparto de la lista sin contar los comodines y compara con lo que se pide', () => {
