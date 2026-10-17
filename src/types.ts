@@ -2035,6 +2035,10 @@ export interface Mesocycle {
   cdgObjetivosIem?: Partial<Record<string, number>>;
   /** Actitud del bloque para el freno/acelerador por agujetas (utils/cdg/agujetas.ts). Sin valor = estático. */
   cdgActitud?: 'estatico' | 'dinamico' | 'agresivo';
+  /** Tipo de bloque (guía del IH): cuándo se sube (estático = agujetas 1; dinámico = 1-3). Manda sobre `cdgActitud`. */
+  cdgSensibilidad?: 'estatico' | 'dinamico';
+  /** Tipo de bloque: cuánto se sube (suave ~10 %, medio ~20 %, agresivo ~30 %). Manda sobre `cdgActitud`. */
+  cdgVelocidad?: 'suave' | 'medio' | 'agresivo';
 }
 
 // Tipos de fase de un mesociclo, para el color/icono del Roadmap → Calendario.

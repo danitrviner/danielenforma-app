@@ -6,7 +6,8 @@ import { computeAnthropometricIndices, ANTHROPOMETRIC_INDEX_LABELS, type Anthrop
 import {
   semanasRealizadasDelMeso, cargaAgudaCronicaDelMeso, rendimientoDelCiclo, incrementoAntropometria,
   UMBRALES_CARGA_POR_DEFECTO, sinMusculos, SEMANAS_CARGA_CRONICA, type UmbralesCarga,
-  ZONAS_IEM, iemPorZona, variacion, propuestaZona, ACTITUDES, ACTITUD_POR_DEFECTO, type ActitudBloque, type TonoPropuesta
+  ZONAS_IEM, iemPorZona, variacion, propuestaZona, SENSIBILIDADES, VELOCIDADES, tipoDeBloque, contextoDeLaSemana,
+  type TipoDeBloque, type Sensibilidad, type Velocidad, type TonoPropuesta
 } from '../../utils/cdg';
 import { useAgujetasCdg } from '../../hooks/useAgujetasCdg';
 import { Button, Collapsible, Select } from '../ui';
@@ -36,8 +37,8 @@ interface Props {
   allExercises: Exercise[];
   umbrales?: UmbralesCarga;
   onGuardarUmbrales: (u: UmbralesCarga) => void;
-  /** Guarda la actitud del bloque (`Mesocycle.cdgActitud`). */
-  onCambiarActitud?: (a: ActitudBloque) => void;
+  /** Guarda el tipo de bloque (`Mesocycle.cdgSensibilidad` y `cdgVelocidad`). */
+  onCambiarTipo?: (t: TipoDeBloque) => void;
 }
 
 const TONO: Record<TonoPropuesta, string> = {
@@ -65,9 +66,10 @@ const Th = ({ children, derecha }: { children?: React.ReactNode; derecha?: boole
   <th className={`py-1 font-normal uppercase tracking-wide text-ink-3 ${derecha ? 'text-right' : 'text-left'}`}>{children}</th>
 );
 
-export default function SeguimientoCdg ({ athleteEmail, logs, meso, cicloDias, vueltas, grupos, allExercises, umbrales, onGuardarUmbrales, onCambiarActitud }: Props) {
-  const { agujetas, sueño } = useAgujetasCdg(athleteEmail);
-  const actitud = meso.cdgActitud ?? ACTITUD_POR_DEFECTO;
+export default function SeguimientoCdg ({ athleteEmail, logs, meso, cicloDias, vueltas, grupos, allExercises, umbrales, onGuardarUmbrales, onCambiarTipo }: Props) {
+  const { agujetas, sueño, estres, motivacion, fatigaPost } = useAgujetasCdg(athleteEmail);
+  const tipo = tipoDeBloque(meso);
+  const { contexto, motivos } = contextoDeLaSemana({ estres: estres?.value, sueñoHoras: sueño?.value, motivacion: motivacion?.value });
   const { motor, cargando, noSubido, error } = useMotorCdg();
   const { all: medidas } = useBodyMeasurements(athleteEmail);
   const porId = useMemo(() => new Map(allExercises.map(e => [e.id, e])), [allExercises]);
@@ -161,26 +163,55 @@ export default function SeguimientoCdg ({ athleteEmail, logs, meso, cicloDias, v
               z, lectura, objetivo,
               iem: ahora?.[z.clave] ?? 0,
               vs: ahora && antes ? variacion(antes[z.clave], ahora[z.clave]) : null,
-              propuesta: propuestaZona({ agujetas: lectura?.valor, anterior: lectura?.anterior, sensible: z.sensible, actitud, esObjetivo: objetivo != null })
+              propuesta: propuestaZona({
+                agujetas: lectura?.valor, anterior: lectura?.anterior, sensible: z.sensible, tipo, esObjetivo: objetivo != null,
+                iem: ahora?.[z.clave] ?? 0, contexto, fatigaPost: fatigaPost?.value,
+              })
             };
           }).filter(f => f.iem > 0.005 || f.lectura || f.objetivo != null);
           return (
             <>
+              {/* Tipo de bloque (guía del IH): cuándo se sube y cuánto, por separado. */}
               <div className="flex flex-wrap items-end gap-3">
-                <div className="w-44">
+                <div className="w-40">
                   <Select
-                    label="Actitud del bloque"
-                    value={actitud}
-                    onChange={v => onCambiarActitud?.(v as ActitudBloque)}
-                    options={ACTITUDES.map(a => ({ value: a.value, label: a.label }))}
+                    label="Sensibilidad"
+                    value={tipo.sensibilidad}
+                    onChange={v => onCambiarTipo?.({ ...tipo, sensibilidad: v as Sensibilidad })}
+                    options={SENSIBILIDADES.map(a => ({ value: a.value, label: a.label }))}
                   />
                 </div>
-                <p className="font-sans text-caption text-ink-3 pb-2">{ACTITUDES.find(a => a.value === actitud)?.ayuda}</p>
+                <div className="w-44">
+                  <Select
+                    label="Velocidad"
+                    value={tipo.velocidad}
+                    onChange={v => onCambiarTipo?.({ ...tipo, velocidad: v as Velocidad })}
+                    options={VELOCIDADES.map(a => ({ value: a.value, label: a.label }))}
+                  />
+                </div>
+                <p className="font-sans text-caption text-ink-3 pb-2">{SENSIBILIDADES.find(a => a.value === tipo.sensibilidad)?.ayuda}.</p>
               </div>
-              <p className="font-sans text-caption text-ink-2">
-                {sueño ? <>Sueño reciente: <b className="font-mono">{n1(sueño.value)} h</b> por noche. </> : 'Sin datos de sueño. '}
-                Si descansa peor, cualquier subida de IEM sube también el riesgo por estrés articular.
-              </p>
+              {/* El protocolo se lee en orden: contexto → cómo sale de las sesiones → agujetas por zona → rendimiento. */}
+              <ol className="font-sans text-caption text-ink-2 space-y-0.5 list-decimal pl-4">
+                <li>
+                  Contexto: <b className={contexto === 'desfavorable' ? 'text-warning' : contexto === 'favorable' ? 'text-success' : 'text-ink'}>{
+                    contexto === 'sin-dato' ? 'sin datos' : contexto}</b>
+                  {motivos.length ? ` (${motivos.join(', ')})` : ''}
+                  {' · '}{estres ? `estrés ${estres.value}/10` : 'sin estrés'} · {sueño ? `${n1(sueño.value)} h de sueño` : 'sin sueño'} · {motivacion ? `motivación ${motivacion.value}/10` : 'sin motivación'}.
+                  {contexto === 'desfavorable' && ' Un mal momento puntual no obliga a bajar; si se repite varias semanas, sí.'}
+                </li>
+                <li>
+                  Al salir de las sesiones: {fatigaPost ? <b className={fatigaPost.value >= 8 ? 'text-warning' : 'text-ink'}>{fatigaPost.value}/10</b> : 'sin dato'}
+                  {fatigaPost && fatigaPost.value >= 8 ? ' — no subir IEM; mejor bajar el IF manteniéndolo.' : ' (0-7: hay margen).'}
+                </li>
+                <li>Agujetas a las 48 h contra el IEM de cada zona (tabla).</li>
+                <li>Rendimiento: RM y tonelaje (abajo).</li>
+              </ol>
+              {(!estres && !motivacion && !fatigaPost) && (
+                <p className="font-sans text-caption text-ink-3">
+                  El contexto y el cansancio salen del cuestionario «Agujetas a las 48 h» (motivación y cansancio al salir) y de la revisión semanal (estrés y sueño).
+                </p>
+              )}
               {filas.length === 0 ? <p className="font-sans text-caption text-ink-3">Sin estímulo registrado ni agujetas todavía.</p> : (
                 <div className="overflow-x-auto">
                   <table className="w-full font-sans text-caption">
@@ -195,7 +226,11 @@ export default function SeguimientoCdg ({ athleteEmail, logs, meso, cicloDias, v
                           <td className="py-1 px-2 text-right font-mono tabular-nums text-ink">{f.iem > 0.005 ? n1(f.iem) : '·'}</td>
                           <td className="py-1 px-2 text-right font-mono tabular-nums text-ink-2">{pct(f.vs)}</td>
                           <td className="py-1 px-2 text-right font-mono tabular-nums text-ink-2">{f.objetivo != null ? n1(f.objetivo) : '—'}</td>
-                          <td className={`py-1 pl-2 ${TONO[f.propuesta.tono]}`}><b>{ETIQUETA_TONO[f.propuesta.tono]}</b> · {f.propuesta.texto}</td>
+                          <td className={`py-1 pl-2 ${TONO[f.propuesta.tono]}`}>
+                            <b>{ETIQUETA_TONO[f.propuesta.tono]}</b>
+                            {f.propuesta.iemPropuesto != null && <span className="font-mono"> → {n1(f.propuesta.iemPropuesto)}</span>}
+                            {' · '}{f.propuesta.texto}
+                          </td>
                         </tr>
                       ))}
                     </tbody>

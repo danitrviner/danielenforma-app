@@ -25,7 +25,7 @@ export type VolumeSignalKey =
 // bienestar semanal (Revisión Semanal) — motor de analítica, ver
 // src/utils/athleteProfileSignals.ts, src/utils/wellnessTrend.ts.
 export type PerfilSignalKey = 'perfil.sexo_biologico' | 'perfil.antiguedad_entrenamiento_anios';
-export type WellnessSignalKey = 'wellness.sleep_hours_weekly' | 'wellness.stress_weekly';
+export type WellnessSignalKey = 'wellness.sleep_hours_weekly' | 'wellness.stress_weekly' | 'wellness.motivation_weekly' | 'wellness.fatigue_post_weekly';
 /** Agujetas a las 48 h, escala 1-5 del curso, por zona de IEM (utils/cdg/zonas.ts). */
 export type AgujetasSignalKey = `agujetas.${ZonaIem}`;
 
@@ -52,6 +52,8 @@ export const SEÑALES_PERFIL: { key: PerfilSignalKey; label: string; tipos: stri
 export const SEÑALES_WELLNESS: { key: WellnessSignalKey; label: string; tipos: string[] }[] = [
   { key: 'wellness.sleep_hours_weekly', label: 'Horas de sueño (semanal)', tipos: ['numeric'] },
   { key: 'wellness.stress_weekly',      label: 'Estrés de la semana (1-10)', tipos: ['scale', 'numeric'] },
+  { key: 'wellness.motivation_weekly',  label: 'Motivación para entrenar (1-10)', tipos: ['scale', 'numeric'] },
+  { key: 'wellness.fatigue_post_weekly', label: 'Cansancio al acabar las sesiones (1-10)', tipos: ['scale', 'numeric'] },
 ];
 
 /** Todas las señales que el editor puede asignar a una pregunta. */

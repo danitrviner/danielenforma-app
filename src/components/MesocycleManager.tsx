@@ -4139,7 +4139,7 @@ export default function MesocycleManager({
                       grupos={mesoGroupsForTabs}
                       allExercises={allExercises}
                       umbrales={selectedAthlete?.cdgUmbralesCarga}
-                      onCambiarActitud={a => actualizarMeso({ cdgActitud: a })}
+                      onCambiarTipo={t => actualizarMeso({ cdgSensibilidad: t.sensibilidad, cdgVelocidad: t.velocidad })}
                       onGuardarUmbrales={u => {
                         if (!selectedAthlete) return;
                         void updateUserProfile(selectedAthlete.userId, { cdgUmbralesCarga: u })

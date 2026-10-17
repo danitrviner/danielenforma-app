@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { ZONAS_IEM, indicesDeZonas, iemPorZona, avisosIemIea, variacion } from './zonas'
-import { agujetasPorZona, propuestaZona, aEscala5 } from './agujetas'
+import { agujetasPorZona, propuestaZona, aEscala5, tipoDeBloque, contextoDeLaSemana } from './agujetas'
 import { readFileSync, existsSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { expandirCatalogo, crearMotor } from './motor'
@@ -71,27 +71,57 @@ describe('agujetas por zona', () => {
 })
 
 describe('freno / acelerador', () => {
-  const base = { sensible: false, actitud: 'estatico' as const, esObjetivo: false }
-  it('5 frena con 20-30 %', () => {
-    expect(propuestaZona({ ...base, agujetas: 5 })).toMatchObject({ tono: 'freno' })
-    expect(propuestaZona({ ...base, agujetas: 5 }).texto).toContain('20-30 %')
+  const estatico = { sensibilidad: 'estatico', velocidad: 'suave' } as const
+  const dinamico = { sensibilidad: 'dinamico', velocidad: 'medio' } as const
+  const base = { sensible: false, tipo: estatico, esObjetivo: false, iem: 20, contexto: 'favorable' as const }
+  it('5 frena ya y propone bajar ~25 %', () => {
+    const p = propuestaZona({ ...base, agujetas: 5 })
+    expect(p).toMatchObject({ tono: 'freno', pct: -25, iemPropuesto: 15 })
+    expect(p.texto).toContain('estiramiento')
   })
-  it('4 en zona no sensible es pasarse; en sensible se espera una semana', () => {
-    expect(propuestaZona({ ...base, agujetas: 4 }).tono).toBe('freno')
+  it('4 en zona no propensa es pasarse; en propensa se espera una semana', () => {
+    expect(propuestaZona({ ...base, agujetas: 4 })).toMatchObject({ tono: 'freno', pct: -20 })
     expect(propuestaZona({ ...base, sensible: true, agujetas: 4 }).tono).toBe('vigilar')
     expect(propuestaZona({ ...base, sensible: true, agujetas: 4, anterior: 4 }).tono).toBe('freno')
   })
-  it('bloque estático solo sube en zonas objetivo y con un 1', () => {
-    expect(propuestaZona({ ...base, agujetas: 1 }).tono).toBe('mantener')
-    expect(propuestaZona({ ...base, agujetas: 1, esObjetivo: true }).tono).toBe('acelerar')
-    expect(propuestaZona({ ...base, agujetas: 2, esObjetivo: true }).tono).toBe('mantener')
+  it('estático solo sube con un 1; dinámico con 1-3', () => {
+    expect(propuestaZona({ ...base, agujetas: 1 })).toMatchObject({ tono: 'acelerar', pct: 10 })
+    expect(propuestaZona({ ...base, agujetas: 2 }).tono).toBe('mantener')
+    expect(propuestaZona({ ...base, tipo: dinamico, agujetas: 3 })).toMatchObject({ tono: 'acelerar', pct: 20, iemPropuesto: 24 })
   })
-  it('dinámico sube con 1-2, agresivo incluso con 3', () => {
-    expect(propuestaZona({ ...base, actitud: 'dinamico', agujetas: 2 }).tono).toBe('acelerar')
-    expect(propuestaZona({ ...base, actitud: 'dinamico', agujetas: 3 }).tono).toBe('mantener')
-    expect(propuestaZona({ ...base, actitud: 'agresivo', agujetas: 3 }).tono).toBe('acelerar')
+  it('la velocidad decide cuánto; el contexto neutro lo deja a la mitad; desfavorable no sube', () => {
+    const agresivo = { sensibilidad: 'dinamico', velocidad: 'agresivo' } as const
+    expect(propuestaZona({ ...base, tipo: agresivo, agujetas: 2 }).pct).toBe(30)
+    expect(propuestaZona({ ...base, tipo: agresivo, agujetas: 2, contexto: 'neutro' }).pct).toBe(15)
+    expect(propuestaZona({ ...base, tipo: agresivo, agujetas: 2, contexto: 'desfavorable' }).tono).toBe('mantener')
   })
-  it('sin agujetas no propone nada', () => {
+  it('con base alta no más de un 10 %', () => {
+    const agresivo = { sensibilidad: 'dinamico', velocidad: 'agresivo' } as const
+    const p = propuestaZona({ ...base, tipo: agresivo, agujetas: 1, iem: 120 })
+    expect(p.pct).toBe(10)
+    expect(p.texto).toContain('mantén los puntos')
+  })
+  it('saliendo muy cansado de las sesiones no se sube', () => {
+    const p = propuestaZona({ ...base, agujetas: 1, fatigaPost: 9 })
+    expect(p.tono).toBe('mantener')
+    expect(p.texto).toContain('baja el IF')
+  })
+  it('sin agujetas no hay dato', () => {
     expect(propuestaZona({ ...base }).tono).toBe('sin-dato')
+  })
+})
+
+describe('tipo de bloque y contexto', () => {
+  it('la actitud antigua se traduce a los dos ejes', () => {
+    expect(tipoDeBloque({})).toEqual({ sensibilidad: 'estatico', velocidad: 'suave' })
+    expect(tipoDeBloque({ cdgActitud: 'dinamico' })).toEqual({ sensibilidad: 'dinamico', velocidad: 'medio' })
+    expect(tipoDeBloque({ cdgActitud: 'agresivo' })).toEqual({ sensibilidad: 'dinamico', velocidad: 'agresivo' })
+    expect(tipoDeBloque({ cdgActitud: 'agresivo', cdgVelocidad: 'suave' }).velocidad).toBe('suave')
+  })
+  it('contexto de la semana', () => {
+    expect(contextoDeLaSemana({}).contexto).toBe('sin-dato')
+    expect(contextoDeLaSemana({ estres: 3, sueñoHoras: 7.5, motivacion: 8 }).contexto).toBe('favorable')
+    expect(contextoDeLaSemana({ estres: 5, sueñoHoras: 7 }).contexto).toBe('neutro')
+    expect(contextoDeLaSemana({ estres: 8, sueñoHoras: 5 })).toEqual({ contexto: 'desfavorable', motivos: ['estrés 8/10', '5 h de sueño'] })
   })
 })
