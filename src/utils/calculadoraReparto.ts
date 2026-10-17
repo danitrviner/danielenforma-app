@@ -1,6 +1,7 @@
 import { MuscleGroup, MuscleGroupConfig, MUSCLE_ORDER, MUSCLE_LABELS_SHORT, MUSCLE_LABELS, RepartoPropio, Mesocycle } from '../types';
 import { DAY_TYPE_MUSCLES, DESCANSO, repartoDelMesociclo, gruposPorSesion } from './trainingSplits';
 import { isStale } from './repartoDesactualizado';
+import { repartoImplicito } from './reordenarMeso';
 import { SERIES_POR_DIA_TOPE, SERIES_POR_SESION } from './volumeSuggestion';
 import { splitEvenly } from './programacion';
 
@@ -508,7 +509,9 @@ export function evaluarRepartoActual(
   meso: Mesocycle,
   e: Pick<EntradaCalculadora, 'frecuencias' | 'grupos' | 'maxSeriesSesion'>,
 ): OpcionDeReparto | null {
-  const r = repartoDelMesociclo(meso);
+  // Sin reparto (calendario tocado a mano), el que sigue de hecho.
+  const implicito = repartoImplicito(meso);
+  const r = repartoDelMesociclo(implicito ? { reparto: implicito } : meso);
   if (!r) return null;
   const cicloDias = r.dayTypes.length;
   const offsets = r.dayTypes.flatMap((t, i) => (t === DESCANSO ? [] : [i]));

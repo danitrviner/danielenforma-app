@@ -6,7 +6,7 @@ import {
   huellaDeReparto, moverDiaDelReparto, moverSesionDelReparto, empezarRepartoPor, frecuenciaSemanalDeSplit,
 } from './trainingSplits';
 import { cicloDiasDeMeso, offsetsDelMesociclo, fechasDelMesociclo } from './asignacionMesociclo';
-import { aplicarReordenacionAlMeso, moverClavesDeEjercicio, ajustarDiasDelReparto, quitarDescanso, sinMoverSesiones } from './reordenarMeso';
+import { aplicarReordenacionAlMeso, moverClavesDeEjercicio, ajustarDiasDelReparto, quitarDescanso, sinMoverSesiones, repartoImplicito } from './reordenarMeso';
 import { buildSnapshot, isStale } from './repartoDesactualizado';
 import { runDistribution } from './programacion';
 
@@ -202,5 +202,39 @@ describe('runDistribution exacto (reparto de la calculadora)', () => {
     const de = (grupo: MuscleGroup) => days.map(d => d.assignments.find(a => a.group === grupo)?.series ?? 0);
     expect(de('pecho')).toEqual([6, 0, 6, 0, 6, 0]);
     expect(de('dorsal')).toEqual([0, 6, 0, 6, 6, 6]);
+  });
+});
+
+describe('repartoImplicito (mesociclo con el calendario tocado a mano)', () => {
+  const MANO: Mesocycle = {
+    ...MESO, splitId: undefined, daysPerWeek: 3, customOffsets: [0, 1, 4],
+    nombresSesion: ['Pierna', '', ''],
+    distribution: {
+      days: [
+        { assignments: [{ group: 'cuadriceps', series: 6 }], totalSeries: 6, dayType: 'Sesión 1' },
+        { assignments: [{ group: 'pecho', series: 6 }], totalSeries: 6 },
+        { assignments: [{ group: 'dorsal', series: 6 }], totalSeries: 6, dayType: 'Tirón' },
+      ],
+      overloadAlert: false, snapshot: buildSnapshot(MESO), generatedAt: 'x',
+    },
+  };
+
+  it('sale de su calendario, sus nombres y su distribución', () => {
+    const r = repartoImplicito(MANO)!;
+    expect(r.dias.map(d => d?.tipo ?? DESCANSO)).toEqual(['Pierna', 'Sesión 2', DESCANSO, DESCANSO, 'Tirón', DESCANSO, DESCANSO]);
+    expect(r.dias[0]!.grupos).toEqual(['cuadriceps']);
+  });
+
+  it('un meso que ya tiene reparto no tiene implícito', () => {
+    expect(repartoImplicito(MESO)).toBeNull();
+  });
+
+  it('reordenarlo lo convierte en propio sin dejar la distribución vieja', () => {
+    const r = moverSesionDelReparto(repartoImplicito(MANO)!, 4, -1); // Tirón antes que la sesión 2
+    const nuevo = aplicarReordenacionAlMeso(MANO, r);
+    expect(nuevo.customOffsets).toBeUndefined();
+    expect(offsetsDelMesociclo(nuevo)).toEqual([0, 1, 4]);
+    expect(nuevo.distribution!.days.map(d => d.assignments[0].group)).toEqual(['cuadriceps', 'dorsal', 'pecho']);
+    expect(isStale(nuevo, nuevo.distribution!)).toBe(false);
   });
 });

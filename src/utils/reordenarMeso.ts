@@ -1,5 +1,6 @@
 import type { Mesocycle, RepartoPropio } from '../types';
 import { huellaDeReparto, repartoDelMesociclo, type Reordenacion } from './trainingSplits';
+import { cicloDiasDeMeso, offsetsDelMesociclo } from './asignacionMesociclo';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Reordenar los días del ciclo SIN perder lo que ya está hecho
@@ -12,6 +13,30 @@ import { huellaDeReparto, repartoDelMesociclo, type Reordenacion } from './train
    tiene que viajar con su día; si no, el lunes seguiría siendo «Push» con los
    ejercicios de pierna dentro.
    ═══════════════════════════════════════════════════════════════════════════ */
+
+/**
+ * El reparto que un mesociclo SIN reparto ya sigue de hecho: sus días del
+ * calendario (tocado a mano o automático), con el nombre de cada sesión y los
+ * grupos que le puso la distribución. `null` si ya tiene reparto.
+ *
+ * Muchos bloques reales no tienen ninguno de la lista porque se tocó el
+ * calendario; sin esto no se podían reordenar ni compararse en la calculadora.
+ */
+export function repartoImplicito(meso: Mesocycle): RepartoPropio | null {
+  if (repartoDelMesociclo(meso) || meso.daysPerWeek <= 0) return null;
+  const cicloDias = cicloDiasDeMeso(meso);
+  const offsets = offsetsDelMesociclo(meso);
+  const dist = meso.distribution && meso.distribution.days.length === meso.daysPerWeek ? meso.distribution : undefined;
+  const dias: RepartoPropio['dias'] = Array.from({ length: cicloDias }, () => null);
+  offsets.forEach((o, k) => {
+    if (o < 0 || o >= cicloDias) return;
+    dias[o] = {
+      tipo: meso.nombresSesion?.[k]?.trim() || dist?.days[k]?.dayType || `Sesión ${k + 1}`,
+      grupos: dist ? dist.days[k].assignments.map(a => a.group) : [],
+    };
+  });
+  return dias.some(Boolean) ? { nombre: 'Reparto del calendario', dias } : null;
+}
 
 /** Lista indexada por sesión, en el orden nuevo. Si su longitud no cuadra, no se toca. */
 export function permutarPorSesion<T>(lista: T[] | undefined, sesionAnterior: number[]): T[] | undefined {
