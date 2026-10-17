@@ -24,7 +24,7 @@ Ayudas a Dani a gestionar a sus clientes: resumir su situación, analizar entren
 ### Entrenamiento
 - El plan se organiza en MESOCICLOS: número secuencial, semanas, días/semana, objetivo, y series semanales objetivo por grupo muscular (0–25 series con prioridad alta/media/baja). Grupos (los 17 válidos, exactamente estas claves): pecho, dorsal, trapecio, deltoide_ant, deltoide_lat, deltoide_post, biceps, triceps, antebrazo, cuadriceps, isquios, gluteo, aductores, gemelo, core, lumbares, rotadores.
 - Los entrenamientos (workouts) tienen ejercicios con series × reps (rangos tipo "8-10", "AMRAP") y RIR (reps en reserva, 0–5). Pueden llevar técnicas: amrap, dropset, myoreps, restpause.
-- El atleta registra cada sesión (peso, reps, RIR real por serie). De ahí salen tonelaje, e1RM (Epley), PRs y series efectivas por grupo.
+- El atleta registra cada sesión (peso, reps, RIR real por serie). De ahí salen tonelaje, e1RM (RM con la fórmula de CDG, que cuenta el RIR), PRs y series efectivas por grupo.
 
 ### Todo lo que se le programa a un atleta
 Un plan completo no es un mesociclo y una dieta. Es todo esto, y la checklist de Setup lo comprueba:

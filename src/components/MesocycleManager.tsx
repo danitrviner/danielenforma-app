@@ -13,7 +13,7 @@ import {
   deleteWorkoutsByMesocycleIdStrict, reprogramarAsignacionesDelMeso,
   getUserProfileByEmail, migratePrimaryFocusToMuscleGroup,
   getMesocycleTemplates, createTask, getWorkoutLogs, getWorkoutAssignmentsByMesocycleIds, createMesocycleTemplate,
-  getAssignmentsForAthlete, getQuestionnairesByCoach,
+  getAssignmentsForAthlete, getQuestionnairesByCoach, updateUserProfile,
   getRepartosGuardados, guardarReparto, borrarRepartoGuardado, repartoDeGuardado,
 } from '../dbService';
 import ExerciseConfigEditor, { COLUMNAS_FILA } from './ExerciseConfigEditor';
@@ -36,6 +36,12 @@ import {
 } from '../utils/semanasDelBloque';
 import BarraDeSemanas, { type Alcance, type AvisoDeSemana, type ElementoProgramado } from './mesociclo/BarraDeSemanas';
 import PlanificadorProgresion from './mesociclo/PlanificadorProgresion';
+import PanelIndicesCdg from './mesociclo/PanelIndicesCdg';
+import BarraObjetivosCdg from './mesociclo/BarraObjetivosCdg';
+import { useAgujetasCdg } from '../hooks/useAgujetasCdg';
+import { clasificarFaseEntreno } from '../utils/roadmapCalendar';
+import ResumenCdgDia from './mesociclo/ResumenCdgDia';
+import SeguimientoCdg from './mesociclo/SeguimientoCdg';
 import { atletasActivos } from '../utils/atletas';
 import {
   TRAINING_SPLITS, DAY_TYPE_MUSCLES, getSplitsForDays, recommendSplit,
@@ -598,6 +604,7 @@ function MesoExercisesTabs({
   // pantalla enseña los ejercicios tal y como tocan esa semana, y lo que se
   // toque se guarda como cambio desde esa semana (o solo esa).
   const [semana, setSemana] = useState(0);
+  const { agujetas: agujetasCdg } = useAgujetasCdg(meso.athleteId);
   const [alcance, setAlcance] = useState<Alcance>('desde');
   const [comparar, setComparar] = useState<{ a: number; b: number } | null>(null);
   type Deshacer = { tipo: 'dia'; clave: string; prev: WorkoutExercise[] } | { tipo: 'meso'; prev: Partial<Mesocycle> };
@@ -986,6 +993,10 @@ function MesoExercisesTabs({
                       {' · ~'}{duracionEstimadaMin(g.exercises)} min
                     </span>
                   )}
+                  <ResumenCdgDia
+                    ejercicios={semana > 0 && gruposBase[gIdx] ? gruposBase[gIdx].exercises.map(we => resolverEjercicioDelMeso(we, meso, semana)) : (gruposBase[gIdx]?.exercises ?? g.exercises)}
+                    allExercises={allExercises}
+                  />
                 </span>
               </div>
               <SeriesBalance
@@ -1507,7 +1518,20 @@ function MesoExercisesTabs({
         <SeriesBalance balance={balanceSemana} referencia={referenciaCiclo} ocultarSiVacio={false} onGroupClick={jumpToGroup} />
       </div>
 
+      <PanelIndicesCdg
+        grupos={gruposBase} meso={meso} semana={semana} allExercises={allExercises}
+        objetivos={meso.cdgObjetivosIem}
+        onCambiarObjetivo={(zona, valor) => {
+          const siguiente = { ...(meso.cdgObjetivosIem ?? {}) };
+          if (valor == null) delete siguiente[zona]; else siguiente[zona] = valor;
+          onUpdateMeso({ cdgObjetivosIem: siguiente });
+        }}
+        agujetas={agujetasCdg}
+        definicion={clasificarFaseEntreno(meso) === 'definicion'}
+      />
+
       <div ref={zonaRef} className="space-y-4">
+      <BarraObjetivosCdg grupos={gruposBase} meso={meso} semana={semana} allExercises={allExercises} objetivos={meso.cdgObjetivosIem} />
       {/* Carrusel de días — solo el día activo muestra su contenido debajo. Con
           sitio para varias columnas las pestañas sobran: los días ya se ven
           todos. */}
@@ -1849,7 +1873,7 @@ function ProgressionView({ editing, mesocycles, onUpdateGroup, onApplySuggestion
 // ─── Main component ───────────────────────────────────────────────────────────
 
 type SaveState  = 'idle' | 'pending' | 'saving' | 'saved' | 'error';
-type EditorTab  = 'distribution' | 'exercises' | 'progression' | 'draft' | 'cierre';
+type EditorTab  = 'distribution' | 'exercises' | 'progression' | 'draft' | 'cierre' | 'seguimiento';
 
 // One row per distinct day pattern (name) generated for this mesocycle — every week
 // repeats the same exercises per day (see handleAssign), so grouping by name collapses
@@ -2048,7 +2072,7 @@ export default function MesocycleManager({
     enabled: editorTab === 'distribution',
   });
 
-  const necesitaLogs = (editorTab === 'cierre' || editorTab === 'exercises' || editorTab === 'draft') && !athleteLogs && !!selectedEmail;
+  const necesitaLogs = (editorTab === 'cierre' || editorTab === 'exercises' || editorTab === 'draft' || editorTab === 'seguimiento') && !athleteLogs && !!selectedEmail;
   const { data: logsQuery = [], isPending: logsPending } = useQuery({
     queryKey: ['workoutLogs', selectedEmail],
     queryFn: () => getWorkoutLogs(selectedEmail),
@@ -3519,7 +3543,9 @@ export default function MesocycleManager({
                   { id: 'distribution', label: 'Distribución', icon: 'grid_view' },
                   { id: 'exercises',    label: 'Ejercicios',   icon: 'fitness_center' },
                   { id: 'cierre',       label: 'Cierre',       icon: 'monitoring' },
-                ] as TabItem[]).filter(t => !modoPlantilla || (t.id !== 'draft' && t.id !== 'cierre'))}
+                  { id: 'seguimiento',  label: 'Seguimiento CDG', icon: 'insights' },
+                // En una plantilla no hay atleta: ni draft con su material, ni cierre, ni seguimiento.
+                ] as TabItem[]).filter(t => !modoPlantilla || (t.id !== 'draft' && t.id !== 'cierre' && t.id !== 'seguimiento'))}
               />
 
               {/* ── Progresión y volumen ── */}
@@ -4089,6 +4115,31 @@ export default function MesocycleManager({
                   sexo={sexoAtleta}
                   pesoLogs={pesoLogsAtleta}
                 />
+              )}
+
+              {/* ── Seguimiento CDG (solo coach): Gestión, carga aguda/crónica, rendimiento ── */}
+              {editorTab === 'seguimiento' && (
+                logsPending && !athleteLogs
+                  ? <Skeleton className="h-40 w-full" />
+                  : (
+                    <SeguimientoCdg
+                      athleteEmail={selectedEmail}
+                      logs={cierreLogs}
+                      meso={editing}
+                      cicloDias={cicloDias}
+                      vueltas={vueltasDelCiclo(editing.weeks, cicloDias)}
+                      grupos={mesoGroupsForTabs}
+                      allExercises={allExercises}
+                      umbrales={selectedAthlete?.cdgUmbralesCarga}
+                      onCambiarActitud={a => actualizarMeso({ cdgActitud: a })}
+                      onGuardarUmbrales={u => {
+                        if (!selectedAthlete) return;
+                        void updateUserProfile(selectedAthlete.userId, { cdgUmbralesCarga: u })
+                          .then(() => { void queryClient.invalidateQueries({ queryKey: ['userProfiles'] }); showToast('Umbrales guardados para este atleta', 'success'); })
+                          .catch(() => showToast('No se pudieron guardar los umbrales', 'error'));
+                      }}
+                    />
+                  )
               )}
 
               {/* Delete zone */}

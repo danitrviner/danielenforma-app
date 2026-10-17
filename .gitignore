@@ -54,3 +54,6 @@ copia-cuentas-demo.json
 
 # Copias que dejan los scripts antes de escribir en producción (datos de clientes)
 scripts/backups/
+
+# Catálogo CDG (licencia personal, no va al repo)
+scripts/cdg/*.json

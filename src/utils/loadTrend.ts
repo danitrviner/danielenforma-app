@@ -1,5 +1,5 @@
 import { WorkoutLog } from '../types';
-import { epley } from './oneRepMax';
+import { rmDeSerie } from './oneRepMax';
 import { DataPoint } from './seriesCorrelation';
 import { computeEWMA } from './ewma';
 
@@ -15,7 +15,7 @@ export function ewmaDeSeriePorSesion(logs: WorkoutLog[], exerciseId: string, lam
     for (const entry of log.entries) {
       if (entry.exerciseId !== exerciseId) continue;
       for (const set of entry.sets) {
-        const orm = epley(set.weight, set.repsDone);
+        const orm = rmDeSerie(set);
         if (orm > (porDia.get(log.date) ?? 0)) porDia.set(log.date, orm);
       }
     }

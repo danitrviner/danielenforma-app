@@ -8,7 +8,7 @@ import { Delta, Icon } from '../ui';
    Las dos listas que Dani lee en voz alta. Los filtros que deciden quién entra
    están en `mejoresYPeores` (utils/revisionCoach.ts) y son deliberadamente
    estrictos: un ejercicio que se estrena no «sube un 100 %», dos series sueltas
-   no son una tendencia y un ±1 % de Epley es ruido de redondeo. Un dato flojo
+   no son una tendencia y un ±1 % del RM estimado es ruido de redondeo. Un dato flojo
    leído en un vídeo cuesta la credibilidad de todo lo demás.
    ═══════════════════════════════════════════════════════════════════════════ */
 
@@ -62,7 +62,7 @@ export default function BloqueMejoresEjercicios({ suben, bajan, comparacion }: P
         />
       </div>
       <p className="font-mono text-caption text-ink-3">
-        1RM estimado por Epley, {comparacion}. Solo entran ejercicios con historial previo y al menos
+        RM estimado con la fórmula de CDG (cuenta el RIR), {comparacion}. Solo entran ejercicios con historial previo y al menos
         3 series en la ventana: un ejercicio que se estrena no tiene con qué compararse.
       </p>
     </div>

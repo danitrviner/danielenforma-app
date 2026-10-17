@@ -33,6 +33,7 @@ const SIN_DATOS_DEL_ATLETA: Record<string, string> = {
   foodItems: 'catálogo global de alimentos',
   recipes: 'recetario global',
   maquinas: 'catálogo global de máquinas de gimnasio',
+  cdgCatalogo: 'catálogo CDG (Índice de hipertrofia), solo lectura del coach: ningún dato de atletas',
   workouts: 'plantillas de entrenamiento del coach',
   questionnaires: 'plantillas de cuestionario del coach',
   questionnairePacks: 'conjuntos de plantillas de cuestionario del coach: guardan ids de plantilla y cadencia, ningún atleta',

@@ -1,5 +1,5 @@
 import { WarmupSet, WorkoutSetLog } from '../../types';
-import { epley } from '../oneRepMax';
+import { rmDeSerie } from '../oneRepMax';
 import { calculateWarmupSets } from './WarmupCalculator';
 import { FALLBACK_RAMP, MAX_STEPS, MAX_TOP_FRACTION, MIN_START_FRACTION, MIN_STEPS } from './constants';
 import { RampParams, WarmupFactor, WarmupResolvedContext } from './types';
@@ -22,7 +22,7 @@ function resolveContext(targetWeight: number, targetReps: number, previousSets?:
     return !best || s.weight > best.weight ? s : best;
   }, null);
 
-  const estimatedE1RM = previousTop ? epley(previousTop.weight, previousTop.repsDone) || null : null;
+  const estimatedE1RM = previousTop ? rmDeSerie(previousTop) || null : null;
 
   return {
     targetWeight,

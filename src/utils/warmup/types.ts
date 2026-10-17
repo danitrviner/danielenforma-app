@@ -18,7 +18,7 @@ export interface WarmupResolvedContext {
   previousTopWeight: number | null;
   previousTopReps: number | null;
   previousRir: number | null;      // RIR achieved on that previous top set, if logged
-  estimatedE1RM: number | null;    // epley(previousTopWeight, previousTopReps), null if no history
+  estimatedE1RM: number | null;    // RM de CDG (rmCdg) de la serie top anterior, con su RIR; null sin historial
 }
 
 export type WarmupFactor = (params: RampParams, ctx: WarmupResolvedContext) => RampParams;

@@ -2,7 +2,8 @@ import React, { useMemo, useState } from 'react';
 import { Exercise, Mesocycle, WorkoutAssignment, WorkoutLog, BodyweightLog } from '../types';
 import { buildCierreMesociclo, FilaVolumenGrupo } from '../utils/cierreMesociclo';
 import { ExercisePerf } from '../utils/trainingReport';
-import { IEARow } from '../utils/accumulatedStimulusIndex';
+import { useMotorCdg } from '../hooks/useMotorCdg';
+import { iemDeLogs, filasIEM, type FilaIEM } from '../utils/cdg';
 import { Sexo } from '../utils/athleteProfileSignals';
 import { e1rmAlometrico, pesoCorporalEn } from '../utils/allometricScore';
 import { useToast } from '../hooks/useToast';
@@ -55,6 +56,7 @@ export default function MesocycleReviewPanel({
 }: Props) {
   const { showToast } = useToast();
   const [vista, setVista] = useState<Vista>('volumen');
+  const { motor, cargando: cargandoCdg, noSubido } = useMotorCdg();
 
   const cierre = useMemo(
     () => buildCierreMesociclo({ meso, mesocycles, logs, assignments, exercises, athleteName }),
@@ -65,6 +67,16 @@ export default function MesocycleReviewPanel({
   // atleta no se pesó ese día, es la última medida conocida hasta esa fecha)
   // — para el 1RM alométrico, que corrige el sesgo del peso corporal.
   const pesoEnCierre = useMemo(() => pesoCorporalEn(cierre.fin, pesoLogs), [cierre.fin, pesoLogs]);
+
+  // Estímulo (IEM de CDG) de las sesiones del bloque. Sustituye al antiguo «IEA»
+  // (series efectivas × RIR medio / 10): mismo hueco, ahora con la fórmula de la hoja.
+  const estimulo = useMemo(() => {
+    if (!motor) return null;
+    const delBloque = logs.filter(l => l.date >= cierre.inicio && l.date <= cierre.fin);
+    const nombreCdgDe = (id: string) => exercises.find(e => e.id === id)?.cdgNombre;
+    const r = iemDeLogs(motor, delBloque, nombreCdgDe);
+    return { filas: filasIEM(motor, r.IEM), sinVinculo: r.sinVinculo.map(id => exercises.find(e => e.id === id)?.name ?? id) };
+  }, [motor, logs, cierre.inicio, cierre.fin, exercises]);
 
   const copiar = async (texto: string, queEs: string) => {
     try {
@@ -191,7 +203,7 @@ export default function MesocycleReviewPanel({
               { value: 'fuerza',   label: 'Fuerza' },
               { value: 'grupos',   label: 'Por grupo' },
               { value: 'patrones', label: 'Rendimiento' },
-              { value: 'estimulo', label: 'Estímulo (IEA)' },
+              { value: 'estimulo', label: 'Estímulo (IEM)' },
             ]}
           />
 
@@ -199,7 +211,7 @@ export default function MesocycleReviewPanel({
           {vista === 'fuerza'   && <TablaFuerza ejercicios={cierre.informe.perExercise} comparacion={cierre.comparacion} sexo={sexo} pesoKg={pesoEnCierre} />}
           {vista === 'grupos'   && <TablaGruposPerf grupos={cierre.informe.muscleGroups} comparacion={cierre.comparacion} />}
           {vista === 'patrones' && <TablaGruposPerf grupos={cierre.patrones} comparacion={cierre.comparacion} />}
-          {vista === 'estimulo' && <TablaEstimulo filas={cierre.estimuloAcumulado} />}
+          {vista === 'estimulo' && <TablaEstimulo estimulo={estimulo} cargando={cargandoCdg} noSubido={noSubido} />}
 
           {/* Borrador para el cliente */}
           <div className="bg-surface border border-hairline rounded-surface p-4 space-y-2">
@@ -334,37 +346,51 @@ function TablaFuerza({ ejercicios, comparacion, sexo, pesoKg }: {
 }
 
 
-function TablaEstimulo({ filas }: { filas: IEARow[] }) {
-  if (filas.length === 0) {
-    return <p className="font-sans text-caption text-ink-3">Sin series registradas por grupo muscular.</p>;
+function TablaEstimulo({ estimulo, cargando, noSubido }: {
+  estimulo: { filas: FilaIEM[]; sinVinculo: string[] } | null;
+  cargando: boolean;
+  noSubido: boolean;
+}) {
+  if (cargando) return <p className="font-sans text-caption text-ink-3">Cargando el catálogo CDG…</p>;
+  if (!estimulo) {
+    return (
+      <p className="font-sans text-caption text-ink-3">
+        {noSubido
+          ? 'El catálogo CDG aún no está en Firestore (se sube con scripts/subirCatalogoCdg.mjs --aplicar): sin él no se puede calcular el estímulo.'
+          : 'El estímulo (IEM) solo se calcula en la vista del entrenador, con el catálogo CDG cargado.'}
+      </p>
+    );
   }
   return (
     <div className="space-y-2">
-      <div className="overflow-x-auto rounded-surface border border-hairline">
-        <table className="w-full border-collapse" style={{ minWidth: '480px' }}>
-          <thead>
-            <tr className="bg-bg">
-              <th className="text-left px-3 py-2.5 font-mono text-caption text-ink-2 uppercase tracking-wider border-b border-hairline">Grupo</th>
-              <th className="text-right px-3 py-2.5 font-mono text-caption text-ink-2 uppercase tracking-wider border-b border-hairline">Series efect.</th>
-              <th className="text-right px-3 py-2.5 font-mono text-caption text-ink-2 uppercase tracking-wider border-b border-hairline">RIR medio</th>
-              <th className="text-right px-3 py-2.5 font-mono text-caption text-ink-2 uppercase tracking-wider border-b border-hairline">IEA</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filas.map(f => (
-              <tr key={f.group} className="border-b border-hairline last:border-b-0">
-                <td className="px-3 py-2.5 font-sans text-label text-ink whitespace-nowrap">{f.label}</td>
-                <td className="px-3 py-2.5 text-right font-mono text-label text-ink-2 tabular-nums">{f.fractionalSets}</td>
-                <td className="px-3 py-2.5 text-right font-mono text-label text-ink-2 tabular-nums">{f.meanRir != null ? f.meanRir : '—'}</td>
-                <td className="px-3 py-2.5 text-right font-mono text-label font-bold text-ink tabular-nums">{f.iea != null ? f.iea : '—'}</td>
+      {estimulo.filas.length === 0 ? (
+        <p className="font-sans text-caption text-ink-3">Ninguna serie del bloque cuenta en el índice (hacen falta ejercicios con vínculo CDG, con kg y con RIR entre 0 y 4).</p>
+      ) : (
+        <div className="overflow-x-auto rounded-surface border border-hairline">
+          <table className="w-full border-collapse" style={{ minWidth: '320px' }}>
+            <thead>
+              <tr className="bg-bg">
+                <th className="text-left px-3 py-2.5 font-mono text-caption text-ink-2 uppercase tracking-wider border-b border-hairline">Músculo</th>
+                <th className="text-right px-3 py-2.5 font-mono text-caption text-ink-2 uppercase tracking-wider border-b border-hairline">IEM</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {estimulo.filas.map(f => (
+                <tr key={`${f.compuesto ? 'c' : 'm'}-${f.nombre}`} className="border-b border-hairline last:border-b-0">
+                  <td className={`px-3 py-2.5 font-sans text-label whitespace-nowrap ${f.compuesto ? 'font-bold text-ink' : 'text-ink-2'}`}>{f.nombre}{f.compuesto ? ' (grupo)' : ''}</td>
+                  <td className="px-3 py-2.5 text-right font-mono text-label font-bold text-ink tabular-nums">{Math.round(f.valor * 100) / 100}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      {estimulo.sinVinculo.length > 0 && (
+        <p className="font-sans text-caption text-warning">Sin vínculo CDG (no cuentan): {estimulo.sinVinculo.join(', ')}.</p>
+      )}
       <p className="font-mono text-caption text-ink-3">
-        IEA = series efectivas × (RIR medio real / 10) — sustituye al tonelaje bruto, que se dispara solo por cambiar el
-        rango de repeticiones aunque el estímulo real no haya subido. Sin RIR registrado en el bloque, sale «—».
+        IEM = estímulo muscular de la plantilla CDG, sumado sobre las series del bloque (cada músculo según el ejercicio, el RIR y las
+        repeticiones). Los «grupos» suman sus porciones. Las series sin kg y las de RIR 5 no cuentan.
       </p>
     </div>
   );

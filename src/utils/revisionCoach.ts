@@ -8,7 +8,6 @@ import {
 import {
   buildMovementPatternReport, MovementPattern, PatternPerf, patronesDeGrupo, PATTERN_LABELS,
 } from './movementPatterns';
-import { buildAccumulatedStimulusReport, IEARow } from './accumulatedStimulusIndex';
 import { seriesRealizadasPorGrupo } from './programacion';
 import { construirMapaCalor, CeldaMapaCalor } from './mapaCalorCorporal';
 import { VolumeLandmark, VOLUME_LANDMARKS_DEFAULT } from '../data/volumeLandmarks';
@@ -241,7 +240,6 @@ export interface RevisionDelAtleta {
   suben: ExercisePerf[];
   bajan: ExercisePerf[];
   mapa: CeldaMapaCalor[];
-  estimulo: IEARow[];
   bienestar: BienestarDeLaVentana;
   /**
    * Curva EWMA del 1RM estimado de cada ejercicio de la ventana, calculada
@@ -359,7 +357,6 @@ export function buildRevisionCoach(params: RevisionParams): RevisionDelAtleta {
 
   const informe = buildTrainingReport(comun);
   const patrones = buildMovementPatternReport(comun).patterns;
-  const estimulo = buildAccumulatedStimulusReport(comun).rows;
 
   // El mapa de calor cuenta SOLO el grupo principal, igual que el cierre de
   // mesociclo: es la unidad con la que se programó `Mesocycle.groups`. Las
@@ -383,7 +380,7 @@ export function buildRevisionCoach(params: RevisionParams): RevisionDelAtleta {
     ventana, informe, patrones,
     ejerciciosPorPatron: porPatron,
     ejerciciosSinPatron: sinPatron,
-    suben, bajan, mapa, estimulo, bienestar,
+    suben, bajan, mapa, bienestar,
     curvaPorEjercicio, ultimaSesionPorEjercicio,
   };
 }
@@ -461,7 +458,7 @@ export interface OpcionesMejoresYPeores {
  *  · `deltaOrmPct != null` — sin ventana de comparación no hay progresión que
  *    contar. Un ejercicio que se estrena no «sube un 100 %».
  *  · `minSeries` — dos series sueltas de un accesorio no son una tendencia.
- *  · `umbralPct` — un ±1 % en un 1RM estimado por Epley es ruido de redondeo,
+ *  · `umbralPct` — un ±1 % en un RM estimado (fórmula CDG) es ruido de redondeo,
  *    no una mejora.
  */
 export function mejoresYPeores(

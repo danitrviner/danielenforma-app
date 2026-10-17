@@ -1,4 +1,5 @@
 import { MuscleGroup, MUSCLE_LABELS, MUSCLE_ORDER, QuestionnaireQuestion } from '../types.js';
+import { ZONAS_IEM, type ZonaIem } from '../utils/cdg/zonas.js';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // SEÑALES DE CUESTIONARIO — las pocas respuestas que un motor lee de verdad.
@@ -25,9 +26,11 @@ export type VolumeSignalKey =
 // src/utils/athleteProfileSignals.ts, src/utils/wellnessTrend.ts.
 export type PerfilSignalKey = 'perfil.sexo_biologico' | 'perfil.antiguedad_entrenamiento_anios';
 export type WellnessSignalKey = 'wellness.sleep_hours_weekly' | 'wellness.stress_weekly';
+/** Agujetas a las 48 h, escala 1-5 del curso, por zona de IEM (utils/cdg/zonas.ts). */
+export type AgujetasSignalKey = `agujetas.${ZonaIem}`;
 
 /** Unión de TODAS las señales que puede llevar una pregunta, para tipar los helpers de preset. */
-export type SignalKey = VolumeSignalKey | PerfilSignalKey | WellnessSignalKey;
+export type SignalKey = VolumeSignalKey | PerfilSignalKey | WellnessSignalKey | AgujetasSignalKey;
 
 /** Señales sueltas (no las 17 de DOM's) que el selector del editor ofrece. */
 export const SEÑALES_FIN_MESOCICLO: { key: VolumeSignalKey; label: string; tipos: string[] }[] = [
@@ -52,7 +55,10 @@ export const SEÑALES_WELLNESS: { key: WellnessSignalKey; label: string; tipos: 
 ];
 
 /** Todas las señales que el editor puede asignar a una pregunta. */
-export const SEÑALES_DISPONIBLES = [...SEÑALES_FIN_MESOCICLO, ...SEÑALES_DOMS, ...SEÑALES_PERFIL, ...SEÑALES_WELLNESS];
+export const SEÑALES_AGUJETAS_48H: { key: AgujetasSignalKey; label: string; tipos: string[] }[] =
+  ZONAS_IEM.map(z => ({ key: `agujetas.${z.clave}` as AgujetasSignalKey, label: `Agujetas 48 h (1-5) · ${z.nombre}`, tipos: ['scale', 'numeric'] }));
+
+export const SEÑALES_DISPONIBLES = [...SEÑALES_FIN_MESOCICLO, ...SEÑALES_DOMS, ...SEÑALES_AGUJETAS_48H, ...SEÑALES_PERFIL, ...SEÑALES_WELLNESS];
 
 export function esSeñalDoms(key: string): MuscleGroup | null {
   if (!key.startsWith('doms.')) return null;
