@@ -615,6 +615,7 @@ export interface TemplateStage {
   /** Ver Mesocycle.semanasDescarga / semanasTest: viajan con la plantilla. */
   semanasDescarga?: number[];
   semanasTest?: number[];
+  semanasPivot?: number[];
   reviewCadenceWeeks?: number;  // cada cuántas semanas se programa una revisión durante esta etapa
   reviewType?: TaskType;
   /**
@@ -2012,6 +2013,11 @@ export interface Mesocycle {
   /** Semanas de ciclo de test: los ejercicios sin técnica pasan a AMRAP esa
    *  semana, y el atleta lo ve en sus novedades. */
   semanasTest?: number[];
+  /** Semanas pivot (guía del IH): mitad de series salvo los grupos de
+   *  prioridad alta. Baja el IF manteniendo el estímulo de lo que importa. */
+  semanasPivot?: number[];
+  /** Vuelve de un parón: la semana 1 va a RPE 6-7 (RIR ≥ 3). Guía del IH. */
+  vuelveDeParon?: boolean;
   /** Algo del cliente que cae esa semana de ciclo (vacaciones, viaje,
    *  competición). El atleta ve la nota en sus novedades. */
   eventosSemana?: Record<string, EventoDeSemana>;
@@ -2060,6 +2066,8 @@ export interface MesocycleTemplate {
   name: string;
   description?: string;
   stages: TemplateStage[];
+  /** Etiquetas para encontrarla (guía del IH: «3 días», «IF bajo», «sin cizalla»…). */
+  etiquetas?: string[];
 }
 
 // ─── PENDING TASKS (athlete dashboard) ─────────────────────────────────────────

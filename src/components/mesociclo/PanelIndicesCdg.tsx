@@ -36,7 +36,7 @@ import Collapsible from '../ui/Collapsible';
 
 interface Props {
   grupos: Array<{ name: string; exercises: WorkoutExercise[] }>;
-  meso: Pick<Mesocycle, 'semanasDescarga' | 'semanasTest'>;
+  meso: Pick<Mesocycle, 'semanasDescarga' | 'semanasTest' | 'semanasPivot'> & Partial<Pick<Mesocycle, 'groups'>>;
   /** 0 = Base (sin progresión); 1+ = semana de ciclo. */
   semana: number;
   allExercises: Exercise[];

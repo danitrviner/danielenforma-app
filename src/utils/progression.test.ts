@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { WorkoutExercise } from '../types';
 import {
   mesocycleWeekNumber, resolveExerciseForWeek, diasDeCiclo, offsetsDeSesiones, frecuenciaPorSemana,
-  vueltasDelCiclo,
+  vueltasDelCiclo, resolverEjercicioDelMeso,
 } from './progression';
 
 describe('mesocycleWeekNumber', () => {
@@ -277,5 +277,29 @@ describe('vueltasDelCiclo', () => {
 
   it('nunca devuelve menos de una vuelta', () => {
     expect(vueltasDelCiclo(1, 14)).toBe(1);
+  });
+});
+
+describe('semana pivot (guía del IH)', () => {
+  const we = { exerciseId: 'banca', order: 0, sets: 4, reps: '8', rir: 2, restSeconds: 120, muscleGroup: 'pecho' } as const;
+  const meso = { semanasPivot: [3], groups: { pecho: { priority: 'alta' }, dorsal: { priority: 'media' } } };
+  it('mantiene los grupos de prioridad alta y baja a la mitad el resto', () => {
+    expect(resolverEjercicioDelMeso({ ...we }, meso, 3).sets).toBe(4);
+    expect(resolverEjercicioDelMeso({ ...we, muscleGroup: 'dorsal' }, meso, 3).sets).toBe(2);
+    expect(resolverEjercicioDelMeso({ ...we, muscleGroup: 'dorsal' }, meso, 2).sets).toBe(4);
+  });
+  it('si la semana también es de descarga, manda la descarga (todo a la mitad, una sola vez)', () => {
+    expect(resolverEjercicioDelMeso({ ...we }, { ...meso, semanasDescarga: [3] }, 3).sets).toBe(2);
+    expect(resolverEjercicioDelMeso({ ...we, muscleGroup: 'dorsal' }, { ...meso, semanasDescarga: [3] }, 3).sets).toBe(2);
+  });
+});
+
+describe('vuelve de un parón (guía del IH)', () => {
+  const we = { exerciseId: 'banca', order: 0, sets: 3, reps: '8', rir: 1, restSeconds: 120 };
+  it('la semana 1 va con al menos RIR 3; el resto, como estaba', () => {
+    expect(resolverEjercicioDelMeso({ ...we }, { vuelveDeParon: true }, 1).rir).toBe(3);
+    expect(resolverEjercicioDelMeso({ ...we, rir: 4 }, { vuelveDeParon: true }, 1).rir).toBe(4);
+    expect(resolverEjercicioDelMeso({ ...we }, { vuelveDeParon: true }, 2).rir).toBe(1);
+    expect(resolverEjercicioDelMeso({ ...we }, {}, 1).rir).toBe(1);
   });
 });

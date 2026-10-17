@@ -213,17 +213,38 @@ export function aplicarDescarga(we: WorkoutExercise): WorkoutExercise {
   return { ...we, sets: mitad(we.sets) };
 }
 
+function conRirMinimo(we: WorkoutExercise, minimo: number): WorkoutExercise {
+  const sube = (rir: number | undefined) => (rir == null ? rir : Math.max(rir, minimo));
+  if (we.setGroups && we.setGroups.length > 0) {
+    return syncAggregateFromGroups({ ...we, setGroups: we.setGroups.map(g => ({ ...g, rir: sube(g.rir) as number })) });
+  }
+  return { ...we, rir: sube(we.rir) as number };
+}
+
 /** Lo que el atleta hace de verdad en la semana de ciclo `semana` de este
  *  mesociclo: cambios por semana + escalones + descarga. Es la función a usar
  *  en cualquier sitio que pinte o cuente una sesión de un mesociclo. */
 export function resolverEjercicioDelMeso(
   we: WorkoutExercise,
-  meso: { semanasDescarga?: number[]; semanasTest?: number[] } | undefined,
+  meso: {
+    semanasDescarga?: number[]; semanasTest?: number[]; semanasPivot?: number[];
+    groups?: Partial<Record<string, { priority?: string }>>;
+    vuelveDeParon?: boolean;
+  } | undefined,
   semana: number,
   conditionCtx?: ProgressionConditionCtx,
 ): WorkoutExercise {
   let r = resolveExerciseForWeek(we, semana, conditionCtx);
   if (meso?.semanasDescarga?.includes(semana)) r = aplicarDescarga(r);
+  // Semana pivot (guía del IH): descarga CON objetivos. Baja la fatiga (mitad
+  // de series) en todo menos los grupos de prioridad alta, que mantienen su
+  // estímulo. Si la semana ya es de descarga, manda la descarga.
+  else if (meso?.semanasPivot?.includes(semana) && !(r.muscleGroup && meso.groups?.[r.muscleGroup]?.priority === 'alta')) {
+    r = aplicarDescarga(r);
+  }
+  // Vuelve de un parón (guía del IH): la primera semana a RPE 6-7, o sea,
+  // con al menos 3 repeticiones en reserva. Solo sube el RIR, nunca lo baja.
+  if (meso?.vuelveDeParon && semana === 1) r = conRirMinimo(r, 3);
   // Semana de test: lo que no tenga ya una técnica va a AMRAP.
   if (meso?.semanasTest?.includes(semana) && !r.technique) r = { ...r, technique: 'amrap' };
   return r;

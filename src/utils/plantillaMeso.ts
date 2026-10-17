@@ -14,7 +14,7 @@ import type { Mesocycle, TemplateDay, TemplateStage } from '../types';
 /** Lo que define el PLAN de un bloque y no depende de ningún atleta ni fecha. */
 const CAMPOS_DE_PLAN = [
   'cycleDays', 'customOffsets', 'splitId', 'reparto', 'distribution', 'phaseType',
-  'nombresSesion', 'ejerciciosClave', 'notasSemana', 'deloadWeek', 'semanasDescarga', 'semanasTest',
+  'nombresSesion', 'ejerciciosClave', 'notasSemana', 'deloadWeek', 'semanasDescarga', 'semanasTest', 'semanasPivot',
 ] as const satisfies readonly (keyof Mesocycle & keyof TemplateStage)[];
 
 /**

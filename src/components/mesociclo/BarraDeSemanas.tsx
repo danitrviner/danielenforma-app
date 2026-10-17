@@ -52,6 +52,12 @@ interface Props {
   nota: string;
   onNota: (texto: string) => void;
   onDescarga: (semanas: number[], activar: boolean) => void;
+  /** Semanas pivot (descarga con objetivos). Sin `onPivot` no se ofrece. */
+  pivots?: number[];
+  onPivot?: (semanas: number[], activar: boolean) => void;
+  /** Vuelve de un parón: la semana 1 a RPE 6-7. Sin el callback no se ofrece. */
+  vuelveDeParon?: boolean;
+  onVuelveDeParon?: (activar: boolean) => void;
   onQuitarCambios: (semanas: number[]) => void;
   onComparar: () => void;
   puedeDeshacer: boolean;
@@ -77,6 +83,7 @@ export default function BarraDeSemanas(p: Props) {
   const selOrdenada = [...sel].sort((a, b) => a - b);
   const esDescarga = (s: number) => p.descargas.includes(s);
   const esTest = (s: number) => p.tests.includes(s);
+  const esPivot = (s: number) => (p.pivots ?? []).includes(s);
   const evento = p.eventos[String(p.semana)];
 
   const pulsar = (s: number) => {
@@ -174,9 +181,10 @@ export default function BarraDeSemanas(p: Props) {
                 <span className="font-mono text-[10px] leading-none text-ink-3 tabular-nums">
                   {real !== null ? `${real}/${p.totales[s] ?? 0}` : p.totales[s] ?? 0}
                 </span>
-                {(esDescarga(s) || esTest(s) || p.eventos[String(s)] || p.revisiones?.[s]?.length) && (
+                {(esDescarga(s) || esPivot(s) || esTest(s) || p.eventos[String(s)] || p.revisiones?.[s]?.length) && (
                   <span className="flex gap-0.5">
                     {esDescarga(s) && <span className="font-mono text-[9px] leading-[11px] font-bold text-info border border-info rounded-[5px] px-0.5">D</span>}
+                    {!esDescarga(s) && esPivot(s) && <span className="font-mono text-[9px] leading-[11px] font-bold text-info border border-info rounded-[5px] px-0.5">P</span>}
                     {esTest(s) && <span className="font-mono text-[9px] leading-[11px] font-bold text-warning border border-warning rounded-[5px] px-0.5">T</span>}
                     {!!p.revisiones?.[s]?.length && <span className="font-mono text-[9px] leading-[11px] font-bold text-success border border-success rounded-[5px] px-0.5">R</span>}
                     {p.eventos[String(s)] && (
@@ -249,6 +257,32 @@ export default function BarraDeSemanas(p: Props) {
                 <Icon name="trending_down" size="s" />
                 {esDescarga(p.semana) ? 'Descarga activada' : 'Semana de descarga'}
               </button>
+              {p.onVuelveDeParon && p.semana === 1 && (
+                <button
+                  type="button"
+                  aria-pressed={!!p.vuelveDeParon}
+                  onClick={() => p.onVuelveDeParon?.(!p.vuelveDeParon)}
+                  title="Primera semana a RPE 6-7 (al menos 3 repeticiones en reserva)"
+                  className={`inline-flex items-center gap-1.5 rounded-control border px-3 py-1.5 font-sans text-label font-bold transition-colors ${
+                    p.vuelveDeParon ? 'border-info text-info bg-info/10' : 'border-hairline text-ink-2 hover:text-ink hover:border-strong'}`}
+                >
+                  <Icon name="tune" size="s" />
+                  {p.vuelveDeParon ? 'Vuelve de parón: S1 a RPE 6-7' : 'Vuelve de un parón'}
+                </button>
+              )}
+              {p.onPivot && (
+                <button
+                  type="button"
+                  aria-pressed={esPivot(p.semana)}
+                  onClick={() => p.onPivot?.([p.semana], !esPivot(p.semana))}
+                  title="Descarga con objetivos: mitad de series salvo los grupos de prioridad alta"
+                  className={`inline-flex items-center gap-1.5 rounded-control border px-3 py-1.5 font-sans text-label font-bold transition-colors ${
+                    esPivot(p.semana) ? 'border-info text-info bg-info/10' : 'border-hairline text-ink-2 hover:text-ink hover:border-strong'}`}
+                >
+                  <Icon name="tune" size="s" />
+                  {esPivot(p.semana) ? 'Pivot activada' : 'Semana pivot'}
+                </button>
+              )}
               <button
                 type="button"
                 aria-pressed={esTest(p.semana)}
@@ -272,6 +306,7 @@ export default function BarraDeSemanas(p: Props) {
                 ? `Lo que toques vale solo para la semana ${p.semana}; la ${p.semana + 1} vuelve a lo anterior.`
                 : `Lo que toques se aplica en semanas alternas (S${p.semana}, S${p.semana + 2}…): rotación A/B, por ejemplo otra variante del ejercicio.`}
             {esDescarga(p.semana) && ' Es semana de descarga: el atleta hace la mitad de series de lo que ves aquí.'}
+            {!esDescarga(p.semana) && esPivot(p.semana) && ' Semana pivot: mitad de series en todo menos los grupos de prioridad alta (baja el IF un 30-50 % manteniendo lo que importa).'}
             {esTest(p.semana) && ' Semana de test: los ejercicios sin técnica van a AMRAP.'}
           </p>
           <div className="flex items-end gap-2 flex-wrap">
