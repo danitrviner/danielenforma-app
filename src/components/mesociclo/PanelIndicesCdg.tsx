@@ -196,7 +196,7 @@ export default function PanelIndicesCdg ({ grupos, meso, semana, allExercises, o
                 <thead>
                   <tr className="text-ink-3 font-sans text-caption uppercase tracking-wide">
                     <th className="py-1 pr-3 text-left font-normal">IEM por zona</th>
-                    {sesiones.map(se => <th key={se.nombre} className="py-1 px-2 text-right font-normal whitespace-nowrap">{se.nombre}</th>)}
+                    {sesiones.map((se, i) => <th key={`${i}-${se.nombre}`} className="py-1 px-2 text-right font-normal whitespace-nowrap">{se.nombre}</th>)}
                     <th className="py-1 px-2 text-right font-normal text-ink">Semana</th>
                     {conObjetivos && <th className="py-1 px-2 text-right font-normal" title="IEM semanal que te propones para esta zona en el bloque">Objetivo</th>}
                     {conObjetivos && <th className="py-1 px-2 text-right font-normal">Falta</th>}
@@ -266,31 +266,31 @@ export default function PanelIndicesCdg ({ grupos, meso, semana, allExercises, o
               <thead>
                 <tr className="text-ink-3 font-sans text-caption uppercase tracking-wide">
                   <th className="py-1 pr-3 text-left font-normal" />
-                  {tabla.columnas.map(c => (
-                    <th key={c.nombre} className={`py-1 px-2 text-right font-normal whitespace-nowrap ${c.total ? 'text-ink' : ''}`}>{c.nombre}</th>
+                  {tabla.columnas.map((c, i) => (
+                    <th key={`${i}-${c.nombre}`} className={`py-1 px-2 text-right font-normal whitespace-nowrap ${c.total ? 'text-ink' : ''}`}>{c.nombre}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 <tr className="border-t border-strong">
                   <td className="py-1.5 pr-3 font-sans text-caption font-bold text-ink">IF (fatiga)</td>
-                  {tabla.columnas.map(c => <td key={c.nombre} className="py-1.5 px-2 text-right font-mono text-caption font-bold text-ink tabular-nums">{n1(c.IF)}</td>)}
+                  {tabla.columnas.map((c, i) => <td key={`${i}-${c.nombre}`} className="py-1.5 px-2 text-right font-mono text-caption font-bold text-ink tabular-nums">{n1(c.IF)}</td>)}
                 </tr>
                 <tr className="border-t border-hairline">
                   <td className="py-1 pr-3 font-sans text-caption text-ink-2">Tiempo</td>
-                  {tabla.columnas.map(c => <td key={c.nombre} className="py-1 px-2 text-right font-mono text-caption text-ink-2 tabular-nums">{formatearTiempo(c.tiempoSeg)}</td>)}
+                  {tabla.columnas.map((c, i) => <td key={`${i}-${c.nombre}`} className="py-1 px-2 text-right font-mono text-caption text-ink-2 tabular-nums">{formatearTiempo(c.tiempoSeg)}</td>)}
                 </tr>
                 <tr className="border-t border-hairline">
                   <td className="py-1 pr-3 font-sans text-caption text-ink-2">IEM total</td>
-                  {tabla.columnas.map(c => <td key={c.nombre} className="py-1 px-2 text-right font-mono text-caption text-ink-2 tabular-nums">{celda(c.IEM.reduce((a, v) => a + v, 0))}</td>)}
+                  {tabla.columnas.map((c, i) => <td key={`${i}-${c.nombre}`} className="py-1 px-2 text-right font-mono text-caption text-ink-2 tabular-nums">{celda(c.IEM.reduce((a, v) => a + v, 0))}</td>)}
                 </tr>
                 <tr className="border-t border-hairline" title="Estímulo por unidad de fatiga: cuánto IEM compra cada punto de IF">
                   <td className="py-1 pr-3 font-sans text-caption text-ink-2">IEM por punto de IF</td>
-                  {tabla.columnas.map(c => <td key={c.nombre} className="py-1 px-2 text-right font-mono text-caption text-ink-2 tabular-nums">{c.IF > 0.005 ? n1(c.IEM.reduce((a, v) => a + v, 0) / c.IF) : '·'}</td>)}
+                  {tabla.columnas.map((c, i) => <td key={`${i}-${c.nombre}`} className="py-1 px-2 text-right font-mono text-caption text-ink-2 tabular-nums">{c.IF > 0.005 ? n1(c.IEM.reduce((a, v) => a + v, 0) / c.IF) : '·'}</td>)}
                 </tr>
                 <tr className="border-t border-hairline" title="Resultados por unidad de tiempo">
                   <td className="py-1 pr-3 font-sans text-caption text-ink-2">IEM por minuto</td>
-                  {tabla.columnas.map(c => <td key={c.nombre} className="py-1 px-2 text-right font-mono text-caption text-ink-2 tabular-nums">{c.tiempoSeg > 0 ? n1(c.IEM.reduce((a, v) => a + v, 0) / (c.tiempoSeg / 60)) : '·'}</td>)}
+                  {tabla.columnas.map((c, i) => <td key={`${i}-${c.nombre}`} className="py-1 px-2 text-right font-mono text-caption text-ink-2 tabular-nums">{c.tiempoSeg > 0 ? n1(c.IEM.reduce((a, v) => a + v, 0) / (c.tiempoSeg / 60)) : '·'}</td>)}
                 </tr>
                 <Bloque titulo="IEM · grupos (suma de porciones)" columnas={tabla.columnas} filas={tabla.compuestos} />
                 <Bloque titulo="IEM · por músculo" columnas={tabla.columnas} filas={tabla.musculos} />
@@ -311,8 +311,8 @@ export default function PanelIndicesCdg ({ grupos, meso, semana, allExercises, o
 
           <Collapsible trigger={<span className="font-sans text-caption font-bold text-ink-2">Aporte de cada ejercicio</span>}>
             <div className="space-y-3 pb-1">
-              {aportes.map(se => (
-                <div key={se.nombre}>
+              {aportes.map((se, i) => (
+                <div key={`${i}-${se.nombre}`}>
                   <p className="font-sans text-caption uppercase tracking-wide text-ink-3">{se.nombre}</p>
                   <ul className="space-y-1">
                     {se.ejercicios.map((e, i) => (
