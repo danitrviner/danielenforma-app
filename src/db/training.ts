@@ -29,7 +29,7 @@ function getLocalExercises(): Exercise[] {
   try {
     const raw = localStorage.getItem(EXERCISES_LOCAL_KEY);
     return raw ? (JSON.parse(raw) as Exercise[]) : [];
-  } catch (e) {
+  } catch {
     return [];
   }
 }
@@ -37,7 +37,7 @@ function getLocalExercises(): Exercise[] {
 function saveLocalExercises(exercises: Exercise[]) {
   try {
     escribirLocal(EXERCISES_LOCAL_KEY, JSON.stringify(exercises));
-  } catch (e) {}
+  } catch {}
 }
 
 let exercisesCache: Exercise[] | null = null;
@@ -228,7 +228,7 @@ function getLocalWorkouts(): Workout[] {
   try {
     const raw = localStorage.getItem(WORKOUTS_LOCAL_KEY);
     return raw ? (JSON.parse(raw) as Workout[]) : [];
-  } catch (e) {
+  } catch {
     return [];
   }
 }
@@ -236,7 +236,7 @@ function getLocalWorkouts(): Workout[] {
 function saveLocalWorkouts(workouts: Workout[]) {
   try {
     escribirLocal(WORKOUTS_LOCAL_KEY, JSON.stringify(workouts));
-  } catch (e) {}
+  } catch {}
 }
 
 let workoutsCache: Workout[] | null = null;
@@ -375,7 +375,7 @@ function getLocalAssignments(): WorkoutAssignment[] {
   try {
     const raw = localStorage.getItem(ASSIGNMENTS_LOCAL_KEY);
     return raw ? (JSON.parse(raw) as WorkoutAssignment[]) : [];
-  } catch (e) {
+  } catch {
     return [];
   }
 }
@@ -383,7 +383,7 @@ function getLocalAssignments(): WorkoutAssignment[] {
 function saveLocalAssignments(assignments: WorkoutAssignment[]) {
   try {
     escribirLocal(ASSIGNMENTS_LOCAL_KEY, JSON.stringify(assignments));
-  } catch (e) {}
+  } catch {}
 }
 
 /**
@@ -586,7 +586,7 @@ function getLocalWorkoutLogs(): WorkoutLog[] {
   try {
     const raw = localStorage.getItem(WORKOUT_LOGS_LOCAL_KEY);
     return raw ? (JSON.parse(raw) as WorkoutLog[]) : [];
-  } catch (e) {
+  } catch {
     return [];
   }
 }
@@ -594,7 +594,7 @@ function getLocalWorkoutLogs(): WorkoutLog[] {
 function saveLocalWorkoutLogs(logs: WorkoutLog[]) {
   try {
     escribirLocal(WORKOUT_LOGS_LOCAL_KEY, JSON.stringify(logs));
-  } catch (e) {}
+  } catch {}
 }
 
 /**

@@ -53,7 +53,7 @@ function getLocalUserProfile(userId: string, email: string, displayName?: string
       }
       return parsed;
     }
-  } catch (e) {}
+  } catch {}
 
   const defaultProfile: UserProfile = {
     userId,
@@ -76,7 +76,7 @@ function getLocalUserProfile(userId: string, email: string, displayName?: string
 function saveLocalUserProfile(userId: string, profile: UserProfile) {
   try {
     escribirLocal(`enforma_profile_${userId}`, JSON.stringify(profile));
-  } catch (e) {}
+  } catch {}
 }
 
 function updateLocalUserProfile(userId: string, updates: Partial<UserProfile>) {
@@ -84,7 +84,7 @@ function updateLocalUserProfile(userId: string, updates: Partial<UserProfile>) {
     const current = getLocalUserProfile(userId, updates.email || '');
     const updated = { ...current, ...updates };
     saveLocalUserProfile(userId, updated);
-  } catch (e) {}
+  } catch {}
 }
 
 function getLocalCheckIns(): WeightCheckIn[] {
@@ -97,14 +97,14 @@ function getLocalCheckIns(): WeightCheckIn[] {
         timestamp: new Date(item.timestamp)
       }));
     }
-  } catch (e) {}
+  } catch {}
   return [];
 }
 
 function saveLocalCheckIns(entries: WeightCheckIn[]) {
   try {
     escribirLocal('enforma_checkins', JSON.stringify(entries));
-  } catch (e) {}
+  } catch {}
 }
 
 function submitLocalCoachFeedback(checkInId: string, feedback: string) {
@@ -122,7 +122,7 @@ function submitLocalCoachFeedback(checkInId: string, feedback: string) {
       return item;
     });
     saveLocalCheckIns(updated);
-  } catch (e) {}
+  } catch {}
 }
 
 
@@ -145,7 +145,7 @@ export async function getOrCreateUserProfile(userId: string, email: string, disp
       if (isDanitrviner && data.role !== 'coach') {
         try {
           await updateDoc(docRef, { role: 'coach' });
-        } catch (e) {}
+        } catch {}
         data.role = 'coach';
       }
       // Save local copy for backup
@@ -163,7 +163,7 @@ export async function getOrCreateUserProfile(userId: string, email: string, disp
         saveLocalUserProfile(userId, existing);
         return existing;
       }
-    } catch (_) {
+    } catch {
       // Email check failed; fall through to create new profile
     }
 
@@ -269,7 +269,7 @@ async function leerPerfiles(estricto: boolean): Promise<UserProfile[]> {
           }
         }
       }
-    } catch (e) {}
+    } catch {}
 
     const deduped = deduplicateByEmail(profiles);
     return deduped;
@@ -315,7 +315,7 @@ export async function getAllUsersAdmin(): Promise<UserProfile[]> {
           if (raw) profiles.push(JSON.parse(raw));
         }
       }
-    } catch (e) {}
+    } catch {}
     return deduplicateByEmail(profiles);
   }
 
@@ -433,7 +433,7 @@ export async function addWeightCheckIn(
     // also update profile's actualWeight
     try {
       await updateUserProfile(userId, { actualWeight: checkInData.weight });
-    } catch (e) {}
+    } catch {}
     
     /* La racha. Antes esto repartía además 50 XP y subía de nivel al llegar a
        400 — un contador que solo se veía en la tarjeta de identidad, que nadie
@@ -456,7 +456,7 @@ export async function addWeightCheckIn(
           actualWeight: checkInData.weight
         });
       }
-    } catch (e) {}
+    } catch {}
 
     const fullResult = {
       id: docRef.id,
@@ -495,7 +495,7 @@ function addLocalWeightCheckIn(userId: string, email: string, entry: any): Weigh
       maxStreak,
       actualWeight: entry.weight
     });
-  } catch (e) {}
+  } catch {}
 
   const currentLocal = getLocalCheckIns();
   saveLocalCheckIns([fullResult, ...currentLocal]);

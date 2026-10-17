@@ -1,6 +1,6 @@
 import React from 'react';
 import { ExercisePerf } from '../../utils/trainingReport';
-import { MONTHS_ES, fechaCorta } from '../../utils/trainingWeek';
+import { fechaCorta } from '../../utils/trainingWeek';
 import { Delta, Badge, Sparkline } from '../ui';
 
 /* ═══════════════════════════════════════════════════════════════════════════

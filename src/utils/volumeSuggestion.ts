@@ -66,7 +66,6 @@ const MAX_SERIES_PER_GROUP = 25;
  * encima de eso la pantalla de Distribución marca sobrevolumen.
  */
 export const SERIES_POR_DIA_TOPE = 23;
-const SERIES_POR_DIA_AVISO = 12;
 
 /** Series por sesión y grupo que tiene sentido acumular sin caer en trabajo basura. */
 export const SERIES_POR_SESION = 8;

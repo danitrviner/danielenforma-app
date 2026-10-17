@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { AcademyCourse, AcademyLesson, AcademyCategory, AcademyAccess, UnlockRule } from '../types';
 import {
   getAllCourses, createCourse, updateCourse, deleteCourse,
-  getAllLessons, createLesson, updateLesson, deleteLesson,
+  getAllLessons, createLesson, deleteLesson,
   getAllUserProfilesOrThrow, getAllAcademyAccess, setAcademyAccess, createNotificationDeduped,
 } from '../dbService';
 import { atletasActivos } from '../utils/atletas';
@@ -34,7 +34,7 @@ const UNLOCK_LABEL = (r: UnlockRule): string => {
   return `Requiere completar otro curso`;
 };
 
-export default function AcademyCoachScreen({ coachId, coachEmail }: Props) {
+export default function AcademyCoachScreen({ coachEmail }: Props) {
   const [tab, setTab] = useState<Tab>('cursos');
   const tabs: { id: Tab; label: string; icon: string }[] = [
     { id: 'cursos', label: 'Cursos', icon: 'video_library' },

@@ -300,7 +300,7 @@ export async function getRecipeFavorites(athleteEmail: string): Promise<RecipeFa
     try {
       const raw = localStorage.getItem(localKey);
       if (raw) return JSON.parse(raw);
-    } catch (_) {}
+    } catch {}
     return defaultFav;
   } catch (err) {
     console.warn('getRecipeFavorites Firestore failed, using local:', err);

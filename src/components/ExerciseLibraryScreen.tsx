@@ -7,7 +7,7 @@ import { useToast } from '../hooks/useToast';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { mensajeDeErrorFirestore } from '../utils/erroresFirestore';
 import { Skeleton } from './ui';
-import { Badge, EmptyState, Dialog, Button, Icon, Input, PageHeader, Select, Sheet, Chip, SearchField, ListRow } from './ui';
+import { Badge, EmptyState, Dialog, Button, Icon, Input, PageHeader, Select, Sheet, Chip, SearchField } from './ui';
 import type { BadgeTone } from './ui';
 import ExerciseTriageScreen from './ExerciseTriageScreen';
 import { coincideBusqueda } from '../utils/busqueda';
@@ -38,7 +38,6 @@ const EQUIPMENT_OPTIONS = [
   'banco',
   'gomas',
 ] as const;
-type EquipmentOption = typeof EQUIPMENT_OPTIONS[number];
 
 // Tonos de `Badge`: la distinción entre valores la lleva la etiqueta de
 // texto, no un arcoíris de hex sueltos — `Badge` reserva "accent" para lo

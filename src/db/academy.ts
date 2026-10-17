@@ -1,4 +1,4 @@
-import { db, collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc, query, where } from '../firebase';
+import { db, collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc } from '../firebase';
 import { AcademyCourse, AcademyLesson, AcademyProgress, AcademyAccess } from '../types';
 import { forceLocalOnly, setLocalBypassMode, stripUndefined, esFalloDePermisos } from './core';
 import { leerCatalogo, marcarCatalogoCambiado } from './catalogoVersionado';

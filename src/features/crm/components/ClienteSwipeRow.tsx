@@ -1,6 +1,5 @@
 import React from 'react';
 import { Icon } from '../../../components/ui';
-import { pulsable } from '../../../utils/a11y';
 
 /**
  * Variante de `ui/SwipeRow` con DOS acciones reveladas al deslizar (Mensaje +

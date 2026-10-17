@@ -5,7 +5,6 @@ import {
   WorkoutAssignment, Workout,
 } from '../types';
 import { createWorkoutAssignment, deleteWorkoutAssignment, updateWorkoutLog, updateUserProfile, reprogramarAsignacionesDelMeso } from '../dbService';
-import { descartarDiasCerrados } from '../utils/estadoDeAsignacion';
 import { sesionesDeMesociclo, fechasDelMesociclo } from '../utils/asignacionMesociclo';
 import { addDays, hoyIsoLocal, esFechaIso } from '../utils/trainingWeek';
 import { nombreDeMeso } from '../utils/nombresMeso';

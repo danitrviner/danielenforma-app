@@ -24,7 +24,7 @@ type UnifiedItem =
 /** Cuántos días de respuestas entran en la bandeja. */
 const DIAS_DE_BANDEJA = 60;
 
-export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId, coachEmail }: ReviewsScreenProps) {
+export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId }: ReviewsScreenProps) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { showToast } = useToast();

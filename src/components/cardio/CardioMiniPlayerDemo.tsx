@@ -30,7 +30,7 @@ export default function CardioMiniPlayerDemo() {
 
   useEffect(() => {
     if (paused) return;
-    const id = window.setInterval(() => { setElapsedSec(s => s + 1); setBpm(b => 130 + Math.round(Math.sin(Date.now() / 3000) * 10)); }, 1000);
+    const id = window.setInterval(() => { setElapsedSec(s => s + 1); setBpm(() => 130 + Math.round(Math.sin(Date.now() / 3000) * 10)); }, 1000);
     return () => window.clearInterval(id);
   }, [paused]);
 

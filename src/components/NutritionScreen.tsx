@@ -17,7 +17,7 @@ import { coincideBusqueda } from '../utils/busqueda';
 import { coincidePorEquivalencia, explicacionesPara, esAlimentoLibre } from '../utils/equivalenciasDeAlimentos';
 import { dishType, dishTypeLabel, type DishType } from '../utils/dishTypes';
 import { filasDeComida, escalarReceta } from '../utils/filasDelPlan';
-import { escalarRecetaEntera, factorDeReceta , escalaDeReceta } from '../utils/escalarRecetaEntera';
+import { escalarRecetaEntera, escalaDeReceta } from '../utils/escalarRecetaEntera';
 import { dietaPautadaDelDia } from '../utils/nutritionSummary';
 import { perfilDeHambreVigente } from '../utils/perfilDeHambre';
 import { distributeMealTargets } from '../utils/mealDistribution';

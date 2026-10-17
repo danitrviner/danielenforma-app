@@ -1,6 +1,6 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
-import { CardioSession, CardioZones } from '../../types';
+import { CardioSession } from '../../types';
 import ZoneBars from './ZoneBars';
 import { Button, RingSeal } from '../ui';
 import { useScrollLock } from '../ui/internal/overlayHooks';

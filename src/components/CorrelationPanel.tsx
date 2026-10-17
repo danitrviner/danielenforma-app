@@ -330,7 +330,7 @@ export default function CorrelationPanel({
     }
 
     return result;
-  }, [logs, exercises, responses, questionnaires, bodyweightLogs, bodyMeasurements, latestBodyMeasurements, stepLogs, assignments, sexo]);
+  }, [logs, responses, questionnaires, bodyweightLogs, bodyMeasurements, latestBodyMeasurements, stepLogs, assignments, sexo]);
 
   // ── Familias (un chip + desplegable de variante) ─────────────────────────
   const familias = useMemo<Familia[]>(() => {

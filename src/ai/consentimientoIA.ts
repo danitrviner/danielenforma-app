@@ -114,7 +114,7 @@ export function motivoParaElCoach(estado: EstadoConsentimiento, alias: string): 
  * identificador estable dentro de la conversación; lo que no necesita es que
  * sea un dato personal real.
  */
-export function aliasDeAtleta(nombreCompleto: string | undefined, email: string): string {
+export function aliasDeAtleta(nombreCompleto: string | undefined, _email: string): string {
   const limpio = (nombreCompleto ?? '').trim();
   if (!limpio) return 'Atleta';
   // Nombre de pila y la inicial del primer apellido: suficiente para que el

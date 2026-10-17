@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { UserProfile, Recipe, RecetaPendiente } from '../types';
+import { UserProfile, RecetaPendiente } from '../types';
 import { getAthleteNutritionConfig } from '../dbService';
 import NutritionScreen from './NutritionScreen';
 import MyMenuScreen from './MyMenuScreen';

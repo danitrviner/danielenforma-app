@@ -1,38 +1,21 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { AiChat, AiChatMessage, AiProposal, AiProposalPayload, Diet, DossierPatch, LevelLadder, Mesocycle, MuscleGroup, MUSCLE_LABELS, MUSCLE_ORDER, PeriodizationBlockPayload,
-  RoadmapProposalPayload, NutritionProgramProposalPayload, SpecialDayProposalPayload, WorkoutDaysProposalPayload, WorkoutExercise, NutritionPhase, Roadmap,
-  SetupConfigProposalPayload, PublishBlockProposalPayload, WeeklyChallengeProposalPayload,
-  WorkoutTemplateProposalPayload, MesocycleTemplateProposalPayload, WeeklyChallenge, CardioProgram,
-  TemplateStage, WeekDay } from '../types';
+import { AiChat, AiChatMessage, AiProposal, AiProposalPayload, Diet, MuscleGroup, MUSCLE_LABELS, MUSCLE_ORDER } from '../types';
 import {
-  getAiChats, saveAiChat, deleteAiChat, getPendingAiProposals, updateAiProposal,
-  submitCoachFeedback, createDiet, updateDiet, createMesocycle,
-  getCoachInstructions, saveCoachInstructions,
-  getDoctrina, getDoctrinaParaEditar, saveDoctrina, resetDoctrina, createTask,
-  getVolumeLandmarks, getVolumeLandmarksParaEditar, saveVolumeLandmarks, resetVolumeLandmarks,
-  getRoadmap, saveRoadmap, saveNutritionProgram, getAllUserProfiles,
-  getWorkoutAssignments, updateWorkoutAssignment,
-  getWorkouts, createWorkoutStrict, updateWorkout, getMesocycles, getExercises,
-  updateUserProfile, getAthleteNutritionConfig, saveAthleteNutritionConfig,
-  getAthleteDietConfig, saveAthleteDietConfig, assignQuestionnaire, assignPhotoCheckIn,
-  createCardioAssignment, saveWeeklyChallenge, createMesocycleTemplate,
-  createWorkoutAssignmentStrict, getDietsForAthlete,
+  getAiChats, saveAiChat, deleteAiChat, getPendingAiProposals, getCoachInstructions, saveCoachInstructions,
+  getDoctrina, getDoctrinaParaEditar, saveDoctrina, resetDoctrina, getVolumeLandmarks, getVolumeLandmarksParaEditar, saveVolumeLandmarks, resetVolumeLandmarks,
+  getWorkouts, getExercises,
 } from '../dbService';
-import { sesionesDeMesociclo, fechasDelMesociclo } from '../utils/asignacionMesociclo';
-import { prescripcionDeSemana, ZONA2_BASE_MIN_DEFECTO } from '../utils/cardioProgression';
-import { isoWeekKey, isoWeekBounds } from '../utils/challengeOptions';
 import { VOLUME_LANDMARKS_DEFAULT, type VolumeLandmark } from '../data/volumeLandmarks';
 import { runAgentTurn, messageText, TurnoCancelado } from '../ai/aiClient';
 import { TAREAS, type Tarea } from '../ai/tareas';
 import { renderPerfilProgramacion } from '../ai/perfilProgramacion';
-import { ordenarPropuestasPorPlan, agruparPropuestasPorAtleta } from '../utils/ordenPropuestas';
+import { agruparPropuestasPorAtleta } from '../utils/ordenPropuestas';
 import { toolStatusLabel } from '../ai/tools';
 import { sanearHistorial } from '../ai/historial';
-import DossierPanel, { dossierKey } from './DossierPanel';
+import DossierPanel from './DossierPanel';
 import HistorialFichaPanel from './HistorialFichaPanel';
-import { saveDossierJudgement, appendDossierFacts } from '../db/dossier';
 import { OPEN_AI_PANEL_EVENT, OpenAiPanelDetail } from '../ai/events';
 import { Icon, Button, ListRow, Dialog } from './ui';
 import { useNavigate } from 'react-router-dom';
@@ -40,10 +23,7 @@ const MAX_MESSAGES_PER_CHAT = 60; // ~30 turnos; después se pide empezar chat n
 
 import ProposalCard from './ai/ProposalCard';
 import { useProposalActions } from './ai/useProposalActions';
-import { nombreDeSesion } from '../utils/nombresMeso';
-import { describirEdicion, motivoParaNoAprobar } from '../utils/edicionPropuesta';
 import { dejarBorradorDeDieta } from '../ai/borradorDieta';
-import { auth } from '../firebase';
 
 interface Props {
   activeAthleteEmail?: string;
@@ -270,10 +250,8 @@ export default function AiChatPanel({ activeAthleteEmail, activeAthleteName }: P
     () => agruparPropuestasPorAtleta(proposals, activeAthleteEmail),
     [proposals, activeAthleteEmail],
   );
-  const [reviewingId, setReviewingId] = useState<string | null>(null);
   // El porqué que Dani escribe al aprobar. Opcional a propósito: si fuese
   // obligatorio, la fricción se pagaría en cada propuesta y acabaría vacío.
-  const [notaAprobacion, setNotaAprobacion] = useState<Record<string, string>>({});
   // Lo que Dani ha tocado de una propuesta antes de aprobarla. Vacío = se
   // aprueba tal cual vino. Vive en el panel y no en la propuesta a propósito:
   // mientras no apruebe, lo que la IA propuso sigue siendo lo que propuso.

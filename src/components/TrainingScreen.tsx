@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { UserProfile, Workout, WorkoutAssignment, Exercise, WorkoutLog, WorkoutEntryLog, ExercisePersonalNote } from '../types';
+import { UserProfile, Workout, WorkoutAssignment, WorkoutLog, WorkoutEntryLog } from '../types';
 import LoadHistoryPanel from './LoadHistoryPanel';
 import {
   getWorkoutAssignmentsForAthlete, getWorkoutsByIds, getExercises,

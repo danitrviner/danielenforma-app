@@ -1,5 +1,4 @@
 import React from 'react';
-import Icon from './Icon';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    SearchField (Fase 3, nueva)

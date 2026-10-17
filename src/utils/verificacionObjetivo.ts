@@ -1,5 +1,6 @@
 import { BodyweightLog, BodyMeasurement, WorkoutLog } from '../types.js';
 import { rmDeSerie } from './oneRepMax.js';
+import { addDays } from './trainingWeek.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Verificación del objetivo corporal
@@ -117,10 +118,8 @@ function diasEntre(desde: string, hasta: string): number {
   return Math.round((b - a) / 86400000);
 }
 
-function sumarDias(iso: string, dias: number): string {
-  const d = new Date(Date.UTC(+iso.slice(0, 4), +iso.slice(5, 7) - 1, +iso.slice(8, 10) + dias));
-  return d.toISOString().slice(0, 10);
-}
+// Fechas de calendario en hora local, como el resto de la app (regla de lint).
+const sumarDias = (iso: string, dias: number): string => addDays(iso, dias);
 
 // ── Piezas puras ─────────────────────────────────────────────────────────────
 

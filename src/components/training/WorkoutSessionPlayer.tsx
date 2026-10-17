@@ -78,7 +78,7 @@ interface Props {
 export default function WorkoutSessionPlayer({
   profile, activeAssignment, activeWorkout, playerSets, updateSet, addSetRow, prevEntries,
   exerciseNoteInputs, updateExerciseNote,
-  getExercise, getPersonalNote, logs, exerciseProgressById, handleFinish, isFinishing, canFinish,
+  getExercise, getPersonalNote, logs, exerciseProgressById, handleFinish, isFinishing,
   sessionStartedAt, completedDurationSeg,
   celebration, dismissCelebration, cerrarPlayer, sameDayCardio,
   videoTargetRef, setEditorTargetRef, firstSetRowTargetRef, onMarkActionDone,

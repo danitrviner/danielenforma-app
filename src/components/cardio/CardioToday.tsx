@@ -61,7 +61,7 @@ function fmtMin(sec?: number): string {
 const TYPE_LABEL: Record<CardioSessionType, string> = { zona2: 'LISS · ZONA 2', intervalos: 'HIIT · INTERVALOS', libre: 'CARDIO LIBRE' };
 
 export default function CardioToday({
-  connState, bpm, deviceStatus, error,
+  connState, bpm, error,
   zona2Assignment, intervalAssignment, sessionType, onChangeSessionType,
   skippedToday, onConnect, onCancelReady, onStart, onManualAdd, onSkipToday,
   weeklyMinutesGoal, weeklyMinutesDone, sessionsGoal, sessionsDone, dailyMinutes,

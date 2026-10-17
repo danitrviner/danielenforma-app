@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Diet, DietItem, DietMeal, FoodCategory, DietMode, MealItem, OnboardingData, UserProfile, NutritionProgram, NutritionPhase } from '../types';
+import { Diet, DietItem, DietMeal, FoodCategory, DietMode, MealItem, OnboardingData, NutritionProgram, NutritionPhase } from '../types';
 import { getDietsForAthlete, createDiet, updateDiet, deleteDiet, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig, getAllUserProfilesOrThrow, getAlimentosPersonales } from '../dbService';
 import { DietNumerosView } from './DietMealsView';
 import { CATS, BUDGET_CATS, CAT_LABEL, CAT_COLOR, MODE_LABEL, round2, fmtQty, addToPlaced } from '../utils/exchangeHelpers';
@@ -261,7 +261,7 @@ export default function NutritionPlansScreen({
       setEnabledModes(['OMNIVORO']);
       setActiveDietMode('OMNIVORO');
     }
-  }, [selectedEmail, nutConfig]);
+  }, [selectedEmail, nutConfig, loadingNutConfig]);
 
   // ── Live dashboard ───────────────────────────────────────────────────────────
   const placed = useMemo(() => computePlaced(form.meals), [form.meals]);

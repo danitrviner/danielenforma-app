@@ -22,7 +22,7 @@ export function useBodyMeasurements(athleteEmail: string | undefined): AthleteMe
     queryFn: () => getBodyMeasurementsForAthlete(athleteEmail!),
     enabled: !!athleteEmail,
   });
-  const all = data ?? [];
+  const all = useMemo(() => data ?? [], [data]);
   const latest = useMemo(() => {
     const map: Partial<Record<BodyMetricKey, BodyMeasurement>> = {};
     for (const m of all) map[m.metricKey] = m; // all está ascendente por fecha, el último gana

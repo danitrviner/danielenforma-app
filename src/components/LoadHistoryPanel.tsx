@@ -6,7 +6,7 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine,
   ResponsiveContainer,
 } from 'recharts';
-import { WorkoutLog, Exercise, Mesocycle } from '../types';
+import { WorkoutLog, Exercise } from '../types';
 import { getMesocycles } from '../dbService';
 import { rmDeSerie } from '../utils/oneRepMax';
 import { addDays } from '../utils/trainingWeek';

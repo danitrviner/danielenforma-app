@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { MealItem, FoodCategory, DietMode } from '../types';
@@ -35,11 +35,6 @@ const CAT_COLOR: Record<FoodCategory, string> = {
   MIX_GRASA: 'bg-macro-mix-grasa/10 text-macro-mix-grasa border border-macro-mix-grasa/20',
 };
 
-const MODE_COLOR: Record<DietMode, string> = {
-  OMNIVORO:  'bg-accent/10 text-accent-ink border border-accent/20',
-  VEGANO:    'bg-success/10 text-success border border-success/20',
-  SIN_PESAR: 'bg-data/10 text-data border border-data/20',
-};
 
 const EMPTY_FORM: Omit<MealItem, 'id'> = { mode: 'OMNIVORO', category: 'HC', label: '' };
 

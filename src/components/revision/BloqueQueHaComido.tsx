@@ -3,7 +3,7 @@ import { BudgetVec } from '../../types';
 import {
   ComidaDeLaSemana, DiaComido, ItemComido, OrigenItem, totalesDeLaVentana,
 } from '../../utils/comidaDeLaSemana';
-import { MONTHS_ES, fechaCorta } from '../../utils/trainingWeek';
+import { fechaCorta } from '../../utils/trainingWeek';
 import { Badge, BarraCumplimiento, Collapsible, EmptyState, Icon } from '../ui';
 
 /* ═══════════════════════════════════════════════════════════════════════════

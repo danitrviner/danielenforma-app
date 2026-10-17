@@ -23,7 +23,6 @@ import { athleteConditions } from '../utils/dietaryRestrictions';
 import { dietTypeVigente } from '../utils/foodPrefs';
 import { dishType } from '../utils/dishTypes';
 import { BUDGET_CATS, roundQuarter, CAT_COLOR, CAT_BG } from '../utils/exchangeHelpers';
-import { exchangeToKcal } from '../utils/nutritionConstants';
 import { fotoDeReceta } from '../utils/fotoDeReceta';
 import { escalarRecetaEntera } from '../utils/escalarRecetaEntera';
 import FotoDeReceta from './FotoDeReceta';
@@ -225,7 +224,6 @@ interface DetailProps {
   onAddToIntercambios?: (pendiente: RecetaPendiente) => void;
 }
 
-const SCALE_STEPS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3];
 
 function RecipeDetail({ recipe, isFav, isDisliked, isOwn, enabledModes, savingFav, deletingOwn, dailyBudgetTotal, onBack, onToggleFav, onToggleDislike, onDelete, onAddToIntercambios }: DetailProps) {
   const [checkedSteps, setCheckedSteps] = useState<Record<number, boolean>>({});

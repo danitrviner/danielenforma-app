@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { AthleteCardioProfile, CardioZones, HrTest } from '../types';
+import { CardioZones, HrTest } from '../types';
 import {
   getAllUserProfilesOrThrow, getCardioProfile, saveCardioProfile, defaultZonesFromAge,
   getAllPendingHrTests, updateHrTest, createNotificationDeduped,
@@ -154,7 +154,6 @@ function PendingTestsTab({ coachEmail }: { coachEmail: string }) {
         zones: defaultZonesFromAge(restingHR, maxHR), updatedAt: new Date().toISOString(), updatedBy: coachEmail,
       });
     }
-    const athlete = profiles.find(p => p.email === t.athleteId);
     createNotificationDeduped(`notif_hrtest_approved_${t.id}`, {
       recipientEmail: t.athleteId, type: 'hrtest_approved', title: 'Zonas de FC actualizadas',
       body: 'Tu entrenador aprobó tu test y actualizó tus zonas de frecuencia cardíaca.',

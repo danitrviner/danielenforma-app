@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useMemo, Suspense } from 'react';
+import React, { useState, useMemo, Suspense } from 'react';
 import { pantallaDiferida } from '../utils/pantallaDiferida';
 import { useQuery, useQueries, useQueryClient } from '@tanstack/react-query';
-import { UserProfile, WeightCheckIn, QuestionnaireAssignment, QuestionnaireResponse, Questionnaire, QuestionnaireQuestion, PhotoAssignment, ProgressPhoto, PhotoView } from '../types';
+import { UserProfile, WeightCheckIn, QuestionnaireAssignment, QuestionnaireResponse, Questionnaire, QuestionnaireQuestion, PhotoAssignment, PhotoView } from '../types';
 import { createNotificationDeduped, getAssignmentsForAthlete, getResponsesForAthlete, getQuestionnaireById, getPesoExtremo, getPhotoAssignmentsForAthlete, getProgressPhotos, getMesocycles } from '../dbService';
 import { todayStr, hasAnsweredThisOccurrence, isUpcoming, isOverdue, ScheduleContext } from '../utils/questionnaireSchedule';
 import { cadenciaEnCristiano, proximaOcurrencia, finDeEstaSemana, startOfDay } from '../utils/scheduleEngine';
@@ -267,7 +267,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
     queryFn: () => getPhotoAssignmentsForAthlete(profile.email),
   });
   // Same cache key PhotosScreen (rendered below) uses for the same athlete's photos.
-  const { data: progressPhotos = [], isPending: loadingProgressPhotos } = useQuery({
+  const { isPending: loadingProgressPhotos } = useQuery({
     queryKey: ['progressPhotos', profile.email],
     queryFn: () => getProgressPhotos(profile.email),
   });

@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Exercise, MuscleGroup, MUSCLE_ORDER, MUSCLE_LABELS } from '../types';
+import { Exercise, MUSCLE_ORDER, MUSCLE_LABELS } from '../types';
 import { getExercises, getWorkouts, updateExercise, deleteExercise, seedExercisesIfEmpty } from '../dbService';
 import { useToast } from '../hooks/useToast';
 import { mensajeDeErrorFirestore } from '../utils/erroresFirestore';
@@ -103,7 +103,9 @@ export default function ExerciseTriageScreen({ onClose }: ExerciseTriageScreenPr
   );
   useEffect(() => { localStorage.setItem(MODO_KEY, modo); }, [modo]);
 
-  const lista = ordenados ?? [];
+  // Memorizadas: un `[]` o un objeto nuevo en cada render hacía que todos los
+  // efectos y callbacks que dependen de ellas se rehicieran sin motivo.
+  const lista = useMemo(() => ordenados ?? [], [ordenados]);
   const [indice, setIndice] = useState(0);
   const [arrancado, setArrancado] = useState(false);
 
@@ -120,9 +122,9 @@ export default function ExerciseTriageScreen({ onClose }: ExerciseTriageScreenPr
   // instante; Firestore se escribe detrás. Si la escritura falla se avisa y se
   // revierte, en vez de dejarte creyendo que quedó guardado.
   const [cambios, setCambios] = useState<Record<string, Partial<Exercise>>>({});
-  const actual: Exercise | undefined = lista[indice]
+  const actual: Exercise | undefined = useMemo(() => (lista[indice]
     ? { ...lista[indice], ...cambios[lista[indice].id] }
-    : undefined;
+    : undefined), [lista, indice, cambios]);
 
   const origen = actual ? getOrigen(actual.id) : null;
 
@@ -218,6 +220,9 @@ export default function ExerciseTriageScreen({ onClose }: ExerciseTriageScreenPr
   // Notas: texto libre, se guarda al salir del campo (no en cada tecla) para
   // no machacar Firestore mientras el coach todavía está escribiendo.
   const [borradorNota, setBorradorNota] = useState(actual?.notasRevision ?? '');
+  // Solo al cambiar de ejercicio: si se reiniciara con cada cambio de la nota,
+  // se pisaría lo que el coach está escribiendo.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { setBorradorNota(actual?.notasRevision ?? ''); }, [actual?.id]);
   const guardarNota = useCallback(() => {
     if (!actual) return;

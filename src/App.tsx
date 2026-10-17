@@ -521,6 +521,10 @@ function AppContent() {
       clearTimeout(safetyTimeout);
       unsubscribe();
     };
+    // Un solo listener de sesión para toda la vida de la app: con
+    // loadUserSession/showToast (nuevas en cada render) se volvería a
+    // suscribir a Firebase Auth en cada pintado.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /* ═══════════════════════════════════════════════════════════════════════
@@ -649,6 +653,9 @@ function AppContent() {
       if (!planVisible) void handleRefreshData();
     });
     return () => { sub.then(h => h.remove()); };
+    // handleRefreshData es nueva en cada render: el listener solo se rehace
+    // cuando cambia lo que decide si hace falta.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isCoach, hasPlan, planVisible, athleteUserId, queryClient]);
 
   // Punto rojo en Hoy mientras el catálogo de máquinas siga a medias. Sin cifra:

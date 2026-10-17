@@ -8,7 +8,7 @@ import {
 } from '../dbService';
 import { atletasActivos } from '../utils/atletas';
 import { avisosActivos } from '../utils/avisosDelCoach';
-import { getWeekRange, getWeekStart, addDays, esFechaIso, hoyIsoLocal} from '../utils/trainingWeek';
+import { getWeekRange, addDays, esFechaIso, hoyIsoLocal} from '../utils/trainingWeek';
 import { deriveReviewEvents, deriveVolumeIncreaseEvents, deriveKcalChangeEvents, deriveDeloadEvents, weekAdherence } from '../utils/planEvents';
 import { Avatar, PageHeader, EmptyState, Skeleton, Icon, Badge, BadgeTone } from './ui';
 

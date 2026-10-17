@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  MuscleGroup, MuscleGroupConfig, Mesocycle, UserProfile, Workout,
-  DayPlan, DayAssignment, WeekDistribution, Exercise, WorkoutExercise, TemplateDay,
+  MuscleGroup, MuscleGroupConfig, Mesocycle, Workout,
+  DayPlan, WeekDistribution, Exercise, WorkoutExercise, TemplateDay,
   WorkoutLog, WorkoutAssignment, PhaseType, EventoDeSemana, RepartoPropio, RepartoGuardado,
   MUSCLE_LABELS, MUSCLE_LABELS_SHORT, MUSCLE_ORDER, WorkoutTechnique,
 } from '../types';
@@ -58,7 +58,7 @@ import CalculadoraRepartoSheet from './mesociclo/CalculadoraRepartoSheet';
 import { etapaDesdeMeso, mesoDesdeEtapa } from '../utils/plantillaMeso';
 import { distribucionDeMeso } from '../utils/distribucionDeMeso';
 import type { OpcionDeReparto } from '../utils/calculadoraReparto';
-import { zoneLabel, heatmapBg, heatmapText, VOLUME_ZONE_LEGEND, GENERIC_LANDMARK } from '../utils/volumeZones';
+import { zoneLabel, heatmapBg, heatmapText, VOLUME_ZONE_LEGEND } from '../utils/volumeZones';
 import { VOLUME_LANDMARKS_DEFAULT, type VolumeLandmark } from '../data/volumeLandmarks';
 import { getVolumeLandmarks } from '../dbService';
 import VolumeSuggestionSheet from './VolumeSuggestionSheet';

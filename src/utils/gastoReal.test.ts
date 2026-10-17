@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { addDays } from './trainingWeek';
 import type { Diet, DietCompletionLog } from '../types';
 import { calcularGastoReal, evolucionDelGasto, kcalDelDia, kcalParaObjetivo } from './gastoReal';
 
@@ -10,10 +11,7 @@ function registro(date: string, intercambios: number): DietCompletionLog {
     doneItemIds: ['m_0'],
   } as DietCompletionLog;
 }
-const dias = (desde: string, n: number) => Array.from({ length: n }, (_, i) => {
-  const d = new Date(desde + 'T12:00:00'); d.setDate(d.getDate() + i);
-  return d.toISOString().slice(0, 10);
-});
+const dias = (desde: string, n: number) => Array.from({ length: n }, (_, i) => addDays(desde, i));
 const HASTA = '2026-09-27';
 const VENTANA = dias('2026-08-31', 28); // 28 días que acaban en HASTA
 

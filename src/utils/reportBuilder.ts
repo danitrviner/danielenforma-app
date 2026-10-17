@@ -33,7 +33,7 @@ export interface MuscleSectionData { rows: MuscleGroupPerf[]; }
 const MONTHS_ES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
 export function fmtReportDate(dateStr: string): string {
   if (!dateStr) return '';
-  const [y, m, d] = dateStr.split('-');
+  const [, m, d] = dateStr.split('-');
   return `${parseInt(d)} ${MONTHS_ES[parseInt(m) - 1]}`;
 }
 
