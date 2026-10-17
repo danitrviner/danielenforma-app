@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { ZONAS_IEM, indicesDeZonas, iemPorZona, avisosIemIea, variacion } from './zonas'
 import { agujetasPorZona, propuestaZona, aEscala5, tipoDeBloque, contextoDeLaSemana } from './agujetas'
+import { bandaIF, consejosDeTiempo } from './referencias'
 import { readFileSync, existsSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { expandirCatalogo, crearMotor } from './motor'
@@ -123,5 +124,20 @@ describe('tipo de bloque y contexto', () => {
     expect(contextoDeLaSemana({ estres: 3, sueñoHoras: 7.5, motivacion: 8 }).contexto).toBe('favorable')
     expect(contextoDeLaSemana({ estres: 5, sueñoHoras: 7 }).contexto).toBe('neutro')
     expect(contextoDeLaSemana({ estres: 8, sueñoHoras: 5 })).toEqual({ contexto: 'desfavorable', motivos: ['estrés 8/10', '5 h de sueño'] })
+  })
+})
+
+describe('referencias de la guía', () => {
+  it('bandas de IF por sesión', () => {
+    expect(bandaIF(35).banda).toBe('sencilla')
+    expect(bandaIF(40).banda).toBe('intermedia')
+    expect(bandaIF(85).banda).toBe('alta')
+    expect(bandaIF(101).banda).toBe('muy-alta')
+  })
+  it('consejos solo si la sesión no cabe, con los unilaterales primero', () => {
+    expect(consejosDeTiempo({ minutosDisponibles: 60, tiempoSeg: 55 * 60, unilaterales: 2 })).toEqual([])
+    const c = consejosDeTiempo({ minutosDisponibles: 60, tiempoSeg: 75 * 60, unilaterales: 2 })[0]
+    expect(c).toMatch(/^Se pasa ~15 min de los 60/)
+    expect(c.indexOf('unilaterales')).toBeLessThan(c.indexOf('superseries'))
   })
 })

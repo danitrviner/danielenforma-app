@@ -1528,6 +1528,7 @@ function MesoExercisesTabs({
         }}
         agujetas={agujetasCdg}
         definicion={clasificarFaseEntreno(meso) === 'definicion'}
+        athleteEmail={meso.athleteId || undefined}
       />
 
       <div ref={zonaRef} className="space-y-4">
