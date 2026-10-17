@@ -2572,6 +2572,10 @@ export interface MesocycleTemplateStageProposal {
   deloadWeek?: number;
   reviewCadenceWeeks?: number;
   reviewType?: TaskType;
+  /** Reparto propio de la etapa (16-10), con su ciclo y la distribución ya calculada. */
+  reparto?: RepartoPropio;
+  cycleDays?: number;
+  distribution?: WeekDistribution;
 }
 
 export interface MesocycleTemplateProposalPayload {

@@ -23,7 +23,7 @@ import SeriesBalance from './training/SeriesBalance';
 import MesocycleReviewPanel from './MesocycleReviewPanel';
 import {
   balanceDeSeries, seriesPorGrupo, seriesPlanificadasDelDia, seriesPlanificadasDelMeso, duracionEstimadaMin,
-  frecuenciaSemanal, gruposEnDiasSeguidos, repartoDeSeries, runDistribution,
+  frecuenciaSemanal, gruposEnDiasSeguidos, repartoDeSeries,
 } from '../utils/programacion';
 import ExercisePickerSheet from './ExercisePickerSheet';
 import ExerciseVideoPlayer from './ExerciseVideoPlayer';
@@ -40,7 +40,7 @@ import { atletasActivos } from '../utils/atletas';
 import {
   TRAINING_SPLITS, DAY_TYPE_MUSCLES, getSplitsForDays, recommendSplit,
   cicloDeSplit, sesionesDeSplit, tiposDeEntrenamiento, offsetsDeSplit, frecuenciaSemanalDeSplit,
-  repartoDelMesociclo, gruposPorSesion, repartoDesdeCatalogo, moverDiaDelReparto, moverSesionDelReparto, empezarRepartoPor,
+  repartoDelMesociclo, repartoDesdeCatalogo, moverDiaDelReparto, moverSesionDelReparto, empezarRepartoPor,
   type TrainingSplit, type Reordenacion,
 } from '../utils/trainingSplits';
 import {
@@ -50,6 +50,7 @@ import {
 import OrdenDelCiclo from './mesociclo/OrdenDelCiclo';
 import CalculadoraRepartoSheet from './mesociclo/CalculadoraRepartoSheet';
 import { etapaDesdeMeso, mesoDesdeEtapa } from '../utils/plantillaMeso';
+import { distribucionDeMeso } from '../utils/distribucionDeMeso';
 import type { OpcionDeReparto } from '../utils/calculadoraReparto';
 import { zoneLabel, heatmapBg, heatmapText, VOLUME_ZONE_LEGEND, GENERIC_LANDMARK } from '../utils/volumeZones';
 import { VOLUME_LANDMARKS_DEFAULT, type VolumeLandmark } from '../data/volumeLandmarks';
@@ -58,7 +59,7 @@ import VolumeSuggestionSheet from './VolumeSuggestionSheet';
 import { useToast } from '../hooks/useToast';
 import { nombreDeMeso, nombreDeSesion } from '../utils/nombresMeso';
 import { fechasDelMesociclo, cicloDiasDeMeso, sesionesDeMesociclo, offsetsDelMesociclo } from '../utils/asignacionMesociclo';
-import { buildSnapshot, isStale } from '../utils/repartoDesactualizado';
+import { isStale } from '../utils/repartoDesactualizado';
 import { addDays, esFechaIso, hoyIsoLocal, isoLocal } from '../utils/trainingWeek';
 import { useAthleteProfileSignals } from '../hooks/useAthleteProfileSignals';
 import { useAthleteWeight } from '../hooks/useAthleteWeight';
@@ -2202,18 +2203,7 @@ export default function MesocycleManager({
   // La distribución de un mesociclo tal y como está ahora (reparto, calendario
   // y volumen). Recibe el meso en vez de leer `editing` para poder usarse justo
   // después de cambiarlo, antes de que el estado se haya actualizado.
-  const distribucionPara = (meso: Mesocycle): WeekDistribution => {
-    const reparto = repartoDelMesociclo(meso);
-    const result = runDistribution(
-      meso.groups,
-      meso.daysPerWeek,
-      reparto ? tiposDeEntrenamiento(reparto) : undefined,
-      { cicloDias: cicloDiasDeMeso(meso), offsets: offsetsDelMesociclo(meso) },
-      reparto ? gruposPorSesion(reparto) : undefined,
-      !!meso.reparto?.frecuencias,
-    );
-    return { ...result, snapshot: buildSnapshot(meso), generatedAt: new Date().toISOString() };
-  };
+  const distribucionPara = distribucionDeMeso;
 
   const handleGenerateDistribution = () => {
     if (!editing) return;

@@ -95,6 +95,9 @@ frecuencia es logística, no magia. Sube a 3 solo si el volumen no cabe por sesi
 fatiga poco. Por encima de 3 no hay beneficio documentado.
 Estructura por días: 2-3 fullbody · 4 torso/pierna ×2 · 5 torso/pierna + día de prioritarios ·
 6 empuje/tirón/pierna ×2. Con menos de 3 días no se hace empuje/tirón/pierna: no da frecuencia.
+Eso es el punto de partida, no el reparto: el reparto concreto sale de calcular_reparto (los días
+que entrena + las veces por semana de cada grupo), que prueba esas estructuras y otras y cumple las
+frecuencias exactas. Frecuencias «y media» (1,5×) = ciclo de 14 días con los mismos días.
 No repartas en más días "por sistema": más días es más desplazamientos, más fricción y más
 probabilidad de que se salte sesiones.
 
