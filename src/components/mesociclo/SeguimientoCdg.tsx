@@ -7,7 +7,8 @@ import {
   semanasRealizadasDelMeso, cargaAgudaCronicaDelMeso, rendimientoDelCiclo, incrementoAntropometria,
   UMBRALES_CARGA_POR_DEFECTO, sinMusculos, SEMANAS_CARGA_CRONICA, type UmbralesCarga,
   ZONAS_IEM, iemPorZona, variacion, propuestaZona, SENSIBILIDADES, VELOCIDADES, tipoDeBloque, contextoDeLaSemana,
-  type TipoDeBloque, type Sensibilidad, type Velocidad, type TonoPropuesta
+  type TipoDeBloque, type Sensibilidad, type Velocidad, type TonoPropuesta,
+  leerRendimiento, indicadoresCambioDeBloque, avisosIemIea, type SemanaParaLectura, type Contexto
 } from '../../utils/cdg';
 import { useAgujetasCdg } from '../../hooks/useAgujetasCdg';
 import { Button, Collapsible, Select } from '../ui';
@@ -67,7 +68,7 @@ const Th = ({ children, derecha }: { children?: React.ReactNode; derecha?: boole
 );
 
 export default function SeguimientoCdg ({ athleteEmail, logs, meso, cicloDias, vueltas, grupos, allExercises, umbrales, onGuardarUmbrales, onCambiarTipo }: Props) {
-  const { agujetas, sueño, estres, motivacion, fatigaPost } = useAgujetasCdg(athleteEmail);
+  const { agujetas, sueño, estres, motivacion, fatigaPost, historial } = useAgujetasCdg(athleteEmail);
   const tipo = tipoDeBloque(meso);
   const { contexto, motivos } = contextoDeLaSemana({ estres: estres?.value, sueñoHoras: sueño?.value, motivacion: motivacion?.value });
   const { motor, cargando, noSubido, error } = useMotorCdg();
@@ -350,6 +351,59 @@ export default function SeguimientoCdg ({ athleteEmail, logs, meso, cicloDias, v
           </div>
         )}
       </Seccion>
+
+      {(() => {
+        // Guía del IH: tonelaje frente a RM y «¿toca cambiar de bloque?».
+        const sumar = (m: number[][]) => m.reduce((a, d) => a + d.reduce((x, y) => x + y, 0), 0);
+        const paraLectura: SemanaParaLectura[] = semanas.map(s => ({ semana: s.semana, rendimiento: s.rendimiento, iemTotal: sumar(s.calculo.IEM) }));
+        const lecturas = paraLectura.map((_, i) => leerRendimiento(paraLectura.slice(0, i + 1)).lectura).filter(l => l !== 'sin-dato');
+        const ultima = leerRendimiento(paraLectura);
+        const contextos: Contexto[] = [];
+        const h = historial;
+        if (h) {
+          const n = Math.max(h.estres.length, h.sueño.length, h.motivacion.length);
+          for (let k = n; k >= 1; k--) {
+            contextos.push(contextoDeLaSemana({ estres: h.estres.at(-k), sueñoHoras: h.sueño.at(-k), motivacion: h.motivacion.at(-k) }).contexto);
+          }
+        }
+        let avisosArticulares = 0;
+        if (semanas.length >= 2) {
+          const totales = (s: typeof semanas[number]) => ({
+            IEM: s.calculo.IEM.reduce((acc, d) => acc.map((v, i) => v + (d[i] ?? 0)), new Array<number>(motor.musculos.length).fill(0)),
+            estresArticular: s.calculo.estresArticular.reduce((acc, d) => acc.map((v, i) => v + (d[i] ?? 0)), new Array<number>(motor.articulaciones.length).fill(0)),
+          });
+          avisosArticulares = avisosIemIea(motor, totales(semanas[semanas.length - 2]), totales(semanas[semanas.length - 1])).length;
+        }
+        const cambio = indicadoresCambioDeBloque({
+          semanasHechas: semanas.length, contextos,
+          fatigaPost: h?.fatigaPost ?? [], motivacion: h?.motivacion ?? [],
+          lecturas, avisosArticulares, rmUltimaSemana: ultima.rm,
+        });
+        return (
+          <>
+            <Seccion titulo="Lectura del rendimiento">
+              <p className="font-sans text-caption text-ink">{ultima.texto}</p>
+              {ultima.tonelaje != null && ultima.rm != null && (
+                <p className="font-mono text-caption text-ink-2">Tonelaje {pct(ultima.tonelaje)} · RM {pct(ultima.rm)} (ejercicios comunes de las dos últimas semanas)</p>
+              )}
+              <p className="font-sans text-caption text-ink-3">Anota las bajadas intencionadas (descargas) para no malinterpretarlas después.</p>
+            </Seccion>
+            <Seccion titulo="¿Toca cambiar de bloque?">
+              <p className="font-sans text-caption text-ink">{cambio.resumen}</p>
+              <ul className="font-sans text-caption space-y-0.5">
+                {cambio.aFavor.map(i => (
+                  <li key={i.clave} className={i.cumple ? 'text-warning' : 'text-ink-3'}>
+                    {i.cumple ? '● ' : '○ '}{i.texto}{i.detalle ? ` · ${i.detalle}` : ''}
+                  </li>
+                ))}
+                {cambio.enContra.filter(i => i.cumple).map(i => (
+                  <li key={i.clave} className="text-success">✓ {i.texto}</li>
+                ))}
+              </ul>
+            </Seccion>
+          </>
+        );
+      })()}
 
       <Seccion titulo="Antropometría · inicio → último">
         <table className="w-full font-sans text-caption">

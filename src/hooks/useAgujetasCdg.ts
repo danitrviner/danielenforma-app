@@ -27,7 +27,7 @@ export function useAgujetasCdg (athleteEmail?: string) {
     enabled,
   });
   return useMemo(() => {
-    if (!respuestas.data || !cuestionarios.data) return { agujetas: undefined, sueño: undefined, estres: undefined, motivacion: undefined, fatigaPost: undefined, cargando: enabled && (respuestas.isPending || cuestionarios.isPending) };
+    if (!respuestas.data || !cuestionarios.data) return { agujetas: undefined, sueño: undefined, estres: undefined, motivacion: undefined, fatigaPost: undefined, historial: undefined, cargando: enabled && (respuestas.isPending || cuestionarios.isPending) };
     const r = respuestas.data; const q = cuestionarios.data;
     const sueño = ewmaDeSeñal('wellness.sleep_hours_weekly', r, q).at(-1);
     // Lo último que contestó (no la media): el protocolo decide con la semana que acaba.
@@ -35,6 +35,13 @@ export function useAgujetasCdg (athleteEmail?: string) {
     return {
       agujetas: agujetasPorZona(k => historialDeSeñal(k, r, q)), sueño,
       estres: ultimo('wellness.stress_weekly'), motivacion: ultimo('wellness.motivation_weekly'), fatigaPost: ultimo('wellness.fatigue_post_weekly'),
+      // Las semanas anteriores, para ver si un mal contexto es puntual o persistente.
+      historial: {
+        estres: historialDeSeñal('wellness.stress_weekly', r, q).map(p => p.value),
+        sueño: historialDeSeñal('wellness.sleep_hours_weekly', r, q).map(p => p.value),
+        motivacion: historialDeSeñal('wellness.motivation_weekly', r, q).map(p => p.value),
+        fatigaPost: historialDeSeñal('wellness.fatigue_post_weekly', r, q).map(p => p.value),
+      },
       cargando: false,
     };
   }, [respuestas.data, cuestionarios.data, respuestas.isPending, cuestionarios.isPending, enabled]);
