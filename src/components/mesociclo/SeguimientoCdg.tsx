@@ -8,9 +8,13 @@ import {
   UMBRALES_CARGA_POR_DEFECTO, sinMusculos, SEMANAS_CARGA_CRONICA, type UmbralesCarga,
   ZONAS_IEM, iemPorZona, variacion, propuestaZona, SENSIBILIDADES, VELOCIDADES, tipoDeBloque, contextoDeLaSemana,
   type TipoDeBloque, type Sensibilidad, type Velocidad, type TonoPropuesta,
-  leerRendimiento, indicadoresCambioDeBloque, avisosIemIea, type SemanaParaLectura, type Contexto
+  leerRendimiento, indicadoresCambioDeBloque, avisosIemIea, type SemanaParaLectura, type Contexto,
+  tipoSugerido, semanasHastaAburrirse, avisoDeFiabilidad, referenciasToleradas
 } from '../../utils/cdg';
 import { useAgujetasCdg } from '../../hooks/useAgujetasCdg';
+import { useQuery } from '@tanstack/react-query';
+import { getDossier } from '../../db/dossier';
+import { dossierKey } from '../DossierPanel';
 import { Button, Collapsible, Select } from '../ui';
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -70,6 +74,11 @@ const Th = ({ children, derecha }: { children?: React.ReactNode; derecha?: boole
 export default function SeguimientoCdg ({ athleteEmail, logs, meso, cicloDias, vueltas, grupos, allExercises, umbrales, onGuardarUmbrales, onCambiarTipo }: Props) {
   const { agujetas, sueño, estres, motivacion, fatigaPost, historial } = useAgujetasCdg(athleteEmail);
   const tipo = tipoDeBloque(meso);
+  // Tipificación del cliente (ficha viva): misma caché que la ficha.
+  const { data: ficha } = useQuery({ queryKey: dossierKey(athleteEmail), queryFn: () => getDossier(athleteEmail), enabled: !!athleteEmail, staleTime: 60_000 });
+  const tip = ficha?.tipificacion;
+  const sugerido = tipoSugerido(tip);
+  const fiabilidad = avisoDeFiabilidad(tip);
   const { contexto, motivos } = contextoDeLaSemana({ estres: estres?.value, sueñoHoras: sueño?.value, motivacion: motivacion?.value });
   const { motor, cargando, noSubido, error } = useMotorCdg();
   const { all: medidas } = useBodyMeasurements(athleteEmail);
@@ -192,6 +201,13 @@ export default function SeguimientoCdg ({ athleteEmail, logs, meso, cicloDias, v
                 </div>
                 <p className="font-sans text-caption text-ink-3 pb-2">{SENSIBILIDADES.find(a => a.value === tipo.sensibilidad)?.ayuda}.</p>
               </div>
+              {sugerido && meso.cdgSensibilidad == null && meso.cdgVelocidad == null && (sugerido.sensibilidad !== tipo.sensibilidad || sugerido.velocidad !== tipo.velocidad) && (
+                <p className="font-sans text-caption text-ink-2">
+                  Por su tipificación (freno {tip?.freno}/5) encaja un bloque {SENSIBILIDADES.find(a => a.value === sugerido.sensibilidad)?.label.toLowerCase()} y {VELOCIDADES.find(a => a.value === sugerido.velocidad)?.label.toLowerCase()}.{' '}
+                  <button type="button" className="underline font-bold" onClick={() => onCambiarTipo?.(sugerido)}>Usarlo</button>
+                </p>
+              )}
+              {fiabilidad && <p className="font-sans text-caption text-warning">{fiabilidad}</p>}
               {/* El protocolo se lee en orden: contexto → cómo sale de las sesiones → agujetas por zona → rendimiento. */}
               <ol className="font-sans text-caption text-ink-2 space-y-0.5 list-decimal pl-4">
                 <li>
@@ -375,7 +391,7 @@ export default function SeguimientoCdg ({ athleteEmail, logs, meso, cicloDias, v
           avisosArticulares = avisosIemIea(motor, totales(semanas[semanas.length - 2]), totales(semanas[semanas.length - 1])).length;
         }
         const cambio = indicadoresCambioDeBloque({
-          semanasHechas: semanas.length, contextos,
+          semanasHechas: semanas.length, contextos, semanasAburrimiento: semanasHastaAburrirse(tip),
           fatigaPost: h?.fatigaPost ?? [], motivacion: h?.motivacion ?? [],
           lecturas, avisosArticulares, rmUltimaSemana: ultima.rm,
         });
@@ -387,6 +403,17 @@ export default function SeguimientoCdg ({ athleteEmail, logs, meso, cicloDias, v
                 <p className="font-mono text-caption text-ink-2">Tonelaje {pct(ultima.tonelaje)} · RM {pct(ultima.rm)} (ejercicios comunes de las dos últimas semanas)</p>
               )}
               <p className="font-sans text-caption text-ink-3">Anota las bajadas intencionadas (descargas) para no malinterpretarlas después.</p>
+              {(() => {
+                const ref = referenciasToleradas(semanas.map(se => Math.max(0, ...se.calculo.IF)), h?.fatigaPost ?? []);
+                if (ref.tolerado == null && ref.demasiado == null) return null;
+                return (
+                  <p className="font-sans text-caption text-ink-2">
+                    Referencia de este atleta:{ref.tolerado != null && <> lleva bien sesiones de hasta <b className="font-mono">IF {n1(ref.tolerado)}</b></>}
+                    {ref.tolerado != null && ref.demasiado != null && ';'}
+                    {ref.demasiado != null && <> con <b className="font-mono">IF {n1(ref.demasiado)}</b> salió destrozado</>}.
+                  </p>
+                );
+              })()}
             </Seccion>
             <Seccion titulo="¿Toca cambiar de bloque?">
               <p className="font-sans text-caption text-ink">{cambio.resumen}</p>

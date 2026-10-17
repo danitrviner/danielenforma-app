@@ -74,6 +74,8 @@ export interface Indicador { clave: string; texto: string; cumple: boolean; deta
  */
 export function indicadoresCambioDeBloque (o: {
   semanasHechas: number
+  /** A partir de cuántas semanas con los mismos ejercicios se aburre (tipificación; por defecto 8). */
+  semanasAburrimiento?: number
   /** Contexto de cada semana, de la más antigua a la más reciente. */
   contextos: Contexto[]
   fatigaPost: number[]
@@ -92,7 +94,7 @@ export function indicadoresCambioDeBloque (o: {
   const molestias = o.avisosArticulares > 0 && (o.rmUltimaSemana ?? 0) > UMBRAL
   const aFavor: Indicador[] = [
     { clave: 'contexto', cumple: contextoMalo && (fatigaAlta || motivacionCae), texto: 'Contexto malo persistente (4+ semanas) con cansancio alto o motivación cayendo' },
-    { clave: 'aburrimiento', cumple: o.semanasHechas >= 8, texto: 'Mismos ejercicios ~2 meses (aburrimiento)', detalle: `${o.semanasHechas} semanas en este bloque` },
+    { clave: 'aburrimiento', cumple: o.semanasHechas >= (o.semanasAburrimiento ?? 8), texto: `Mismos ejercicios ${(o.semanasAburrimiento ?? 8) < 8 ? `${o.semanasAburrimiento}+ semanas (se aburre antes)` : '~2 meses'} (aburrimiento)`, detalle: `${o.semanasHechas} semanas en este bloque` },
     { clave: 'estancado', cumple: estancado, texto: 'Tonelaje estancado o bajando pese a acumular' },
     { clave: 'molestias', cumple: molestias, texto: 'Molestias: el RM sube a la vez que el estrés articular (la bandera que más pesa)' },
     { clave: 'duracion', cumple: o.semanasHechas >= 12, texto: 'Duración típica superada (8-12 semanas)', detalle: o.semanasHechas >= 8 && o.semanasHechas < 12 ? 'dentro de la ventana 8-12' : undefined },

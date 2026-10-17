@@ -26,6 +26,7 @@ import React, { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { AthleteDossier, DossierPatch } from '../types';
 import { getDossier, saveDossierJudgement, saveDossierNote, DOSSIER_VACIO } from '../db/dossier';
+import { ESCALAS } from '../utils/cdg/tipificacion';
 import { getAthleteStatusNote } from '../db/coachSettings';
 import { Button, Card, Icon } from './ui';
 
@@ -98,6 +99,10 @@ export default function DossierPanel({ athleteEmail, athleteName }: Props) {
         esperado: borrador.esperado,
         foco: borrador.foco,
         preguntasAbiertas: preguntas.split('\n').map(l => l.trim()).filter(Boolean),
+        // Las cinco escalas siempre, con 0 = «sin valor»: la ficha se guarda con
+        // merge y una escala desmarcada (clave ausente) se quedaría la de antes.
+        // Al leer, `normalizar` descarta los 0.
+        tipificacion: Object.fromEntries(ESCALAS.map(e => [e.clave, borrador.tipificacion?.[e.clave] ?? 0])),
       };
       await saveDossierJudgement(athleteEmail, patch);
       await saveDossierNote(athleteEmail, borrador.note);
@@ -147,6 +152,42 @@ export default function DossierPanel({ athleteEmail, athleteName }: Props) {
             className="w-full bg-field border border-hairline rounded-control p-3 text-label text-ink resize-y focus:border-accent-line focus:outline-none"
           />
         </label>
+
+        {/* Tipificación (guía del IH): cinco escalas para decidir más rápido. */}
+        <div className="flex flex-col gap-2">
+          <span className="text-label text-ink">Tipificación</span>
+          <span className="text-caption text-ink-3">Lo que ves en la llamada y las primeras semanas. Decide el tipo de bloque que se sugiere, cuándo se aburre y cuánto fiarse de su seguimiento.</span>
+          {ESCALAS.map(e => (
+            <div key={e.clave} className="flex items-center gap-2 flex-wrap">
+              <span className="text-caption text-ink-2 w-24 text-right">{e.izquierda}</span>
+              <div className="flex gap-1" role="radiogroup" aria-label={e.que}>
+                {[1, 2, 3, 4, 5].map(v => {
+                  const activo = borrador.tipificacion?.[e.clave] === v;
+                  return (
+                    <button
+                      key={v}
+                      type="button"
+                      role="radio"
+                      aria-checked={activo}
+                      aria-label={`${e.que}: ${v}`}
+                      onClick={() => {
+                        setSucio(true);
+                        // Sin claves a undefined: Firestore no las acepta.
+                        setBorrador(b => {
+                          const t = { ...b.tipificacion };
+                          if (activo) delete t[e.clave]; else t[e.clave] = v;
+                          return { ...b, tipificacion: t };
+                        });
+                      }}
+                      className={`w-8 h-8 rounded-control font-mono text-caption transition-colors ${activo ? 'bg-accent text-on-accent' : 'bg-raised text-ink-2 hover:text-ink'}`}
+                    >{v}</button>
+                  );
+                })}
+              </div>
+              <span className="text-caption text-ink-2">{e.derecha}</span>
+            </div>
+          ))}
+        </div>
 
         <label className="flex flex-col gap-1">
           <span className="text-label text-ink">Nota tuya</span>

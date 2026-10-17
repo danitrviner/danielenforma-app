@@ -2417,10 +2417,29 @@ export interface AthleteDossier {
   preguntasAbiertas: string[];  // lo que falta saber, y a quién preguntárselo
   hechos: DossierFact[];        // append-only, lo escribe la IA
   updatedAt: string;
+  /** Tipificación del cliente (guía del IH). Ver utils/cdg/tipificacion.ts. */
+  tipificacion?: TipificacionCliente;
+}
+
+/**
+ * Tipificación del cliente (guía del Índice de Hipertrofia): cinco escalas
+ * 1-5, del polo izquierdo al derecho. No son etiquetas para el atleta.
+ */
+export interface TipificacionCliente {
+  /** 1 Pupas … 5 Tanque: cuánto freno necesita. */
+  freno?: number;
+  /** 1 Prisillas … 5 «el gym es mi vida»: tolerancia a más tiempo y volumen. */
+  tiempo?: number;
+  /** 1 Me aburro … 5 Costumbres: necesidad de cambios. */
+  cambios?: number;
+  /** 1 Honesto … 5 Copy-paste: cuánto fiarse del seguimiento. */
+  honestidad?: number;
+  /** 1 Dejado … 5 Minucioso: cumplimentación. */
+  cumplimentacion?: number;
 }
 
 /** Los campos de juicio: los únicos que necesitan el OK de Dani. */
-export type DossierJudgement = Pick<AthleteDossier, 'objetivos' | 'evaluacion' | 'esperado' | 'foco' | 'preguntasAbiertas'>;
+export type DossierJudgement = Pick<AthleteDossier, 'objetivos' | 'evaluacion' | 'esperado' | 'foco' | 'preguntasAbiertas' | 'tipificacion'>;
 export type DossierPatch = Partial<DossierJudgement>;
 
 // El contexto con el que la IA propuso algo. Se congela con la propuesta: la

@@ -21,6 +21,7 @@ import { db, doc, getDoc, setDoc } from '../firebase';
 import { AthleteDossier, DossierFact, DossierPatch } from '../types';
 import { forceLocalOnly, setLocalBypassMode, esFalloDePermisos } from './core';
 import { escribirLocal } from '../utils/almacenLocal';
+import { ESCALAS, describirTipificacion, type TipificacionCliente } from '../utils/cdg/tipificacion';
 
 const LOCAL_KEY = 'enforma_athlete_dossier_v1';
 const COLECCION = 'athleteStatus';
@@ -47,7 +48,19 @@ function normalizar(datos: Record<string, unknown> | undefined): AthleteDossier 
       : [],
     hechos: Array.isArray(datos?.hechos) ? (datos.hechos as DossierFact[]) : [],
     updatedAt: typeof datos?.updatedAt === 'string' ? datos.updatedAt : '',
+    ...(tipificacionValida(datos?.tipificacion) ? { tipificacion: tipificacionValida(datos?.tipificacion)! } : {}),
   };
+}
+
+/** Solo las escalas conocidas y con valor 1-5: lo demás se descarta. */
+function tipificacionValida(t: unknown): TipificacionCliente | null {
+  if (!t || typeof t !== 'object') return null;
+  const out: TipificacionCliente = {};
+  for (const e of ESCALAS) {
+    const v = (t as Record<string, unknown>)[e.clave];
+    if (typeof v === 'number' && v >= 1 && v <= 5) out[e.clave] = Math.round(v);
+  }
+  return Object.keys(out).length ? out : null;
 }
 
 function leerLocal(): Record<string, AthleteDossier> {
@@ -128,6 +141,7 @@ export function renderDossier(ficha: AthleteDossier): string {
   if (ficha.preguntasAbiertas.length) {
     seccion('PREGUNTAS ABIERTAS', ficha.preguntasAbiertas.map(q => `- ${q}`).join('\n'));
   }
+  seccion('TIPIFICACIÓN DEL CLIENTE', describirTipificacion(ficha.tipificacion));
   seccion('NOTA DEL COACH', ficha.note);
   if (ficha.hechos.length) {
     const ultimos = ficha.hechos.slice(-25)
