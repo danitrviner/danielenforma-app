@@ -57,6 +57,7 @@ import OrdenDelCiclo from './mesociclo/OrdenDelCiclo';
 import CalculadoraRepartoSheet from './mesociclo/CalculadoraRepartoSheet';
 import { etapaDesdeMeso, mesoDesdeEtapa } from '../utils/plantillaMeso';
 import { distribucionDeMeso } from '../utils/distribucionDeMeso';
+import { ordenarSesion } from '../utils/ordenSesion';
 import type { OpcionDeReparto } from '../utils/calculadoraReparto';
 import { zoneLabel, heatmapBg, heatmapText, VOLUME_ZONE_LEGEND } from '../utils/volumeZones';
 import { VOLUME_LANDMARKS_DEFAULT, type VolumeLandmark } from '../data/volumeLandmarks';
@@ -682,6 +683,11 @@ function MesoExercisesTabs({
   };
 
   const tests = useMemo<number[]>(() => meso.semanasTest ?? [], [meso.semanasTest]);
+  const pivots = useMemo<number[]>(() => meso.semanasPivot ?? [], [meso.semanasPivot]);
+  const onPivot = (semanas: number[], activar: boolean) => {
+    const lista = Array.from(new Set<number>(activar ? [...pivots, ...semanas] : pivots.filter(s => !semanas.includes(s)))).sort((a, b) => a - b);
+    cambiarMeso({ semanasPivot: lista.length > 0 ? lista : undefined });
+  };
   const onTest = (semanas: number[], activar: boolean) => {
     const lista = Array.from(new Set<number>(activar ? [...tests, ...semanas] : tests.filter(s => !semanas.includes(s)))).sort((a, b) => a - b);
     cambiarMeso({ semanasTest: lista.length > 0 ? lista : undefined });
@@ -1247,6 +1253,10 @@ function MesoExercisesTabs({
         nota={notas[String(semana)] ?? ''}
         onNota={onNota}
         onDescarga={onDescarga}
+        pivots={pivots}
+        onPivot={onPivot}
+        vuelveDeParon={!!meso.vuelveDeParon}
+        onVuelveDeParon={activar => cambiarMeso({ vuelveDeParon: activar || undefined })}
         onQuitarCambios={quitarCambios}
         onComparar={() => setComparar({ a: Math.max(1, semana - 1), b: Math.max(2, semana || vueltas) })}
         puedeDeshacer={pila.length > 0}
@@ -1528,6 +1538,7 @@ function MesoExercisesTabs({
         }}
         agujetas={agujetasCdg}
         definicion={clasificarFaseEntreno(meso) === 'definicion'}
+        athleteEmail={meso.athleteId || undefined}
       />
 
       <div ref={zonaRef} className="space-y-4">
@@ -2421,7 +2432,14 @@ export default function MesocycleManager({
           }
         }
 
-        return { dayIndex: dayIdx, exercises: dayExs, warnings };
+        // Orden de la guía del IH: lo prioritario primero; en pierna, analíticos
+        // antes que multiarticulares; en el resto, alternar empuje y tracción.
+        const porIdEj = new Map(exercises.map(e => [e.id, e]));
+        const ordenados = ordenarSesion(
+          dayExs.map(pe => ({ ...pe, secundarios: porIdEj.get(pe.exerciseId)?.secondaryMuscleGroups?.length ?? 0 })),
+          editing!.groups,
+        ).map(({ secundarios: _s, ...pe }, i) => ({ ...pe, order: i }));
+        return { dayIndex: dayIdx, exercises: ordenados, warnings };
       });
 
       setPreviewDays(days);
@@ -4139,7 +4157,7 @@ export default function MesocycleManager({
                       grupos={mesoGroupsForTabs}
                       allExercises={allExercises}
                       umbrales={selectedAthlete?.cdgUmbralesCarga}
-                      onCambiarActitud={a => actualizarMeso({ cdgActitud: a })}
+                      onCambiarTipo={t => actualizarMeso({ cdgSensibilidad: t.sensibilidad, cdgVelocidad: t.velocidad })}
                       onGuardarUmbrales={u => {
                         if (!selectedAthlete) return;
                         void updateUserProfile(selectedAthlete.userId, { cdgUmbralesCarga: u })

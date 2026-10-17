@@ -1,10 +1,12 @@
 import React, { useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { getOnboarding } from '../../dbService';
 import type { Exercise, Mesocycle, WorkoutExercise } from '../../types';
 import { resolverEjercicioDelMeso } from '../../utils/progression';
 import { useMotorCdg } from '../../hooks/useMotorCdg';
 import {
   resumenSesion, sumarSesiones, formatearTiempo, ZONAS_IEM, iemPorZona, indicesDeZonas, avisosIemIea, variacion,
-  type ZonaIem, type LecturaAgujetas
+  bandaIF, consejosDeTiempo, type ZonaIem, type LecturaAgujetas
 } from '../../utils/cdg';
 import { seriesPorGrupo } from '../../utils/programacion';
 import Collapsible from '../ui/Collapsible';
@@ -34,7 +36,7 @@ import Collapsible from '../ui/Collapsible';
 
 interface Props {
   grupos: Array<{ name: string; exercises: WorkoutExercise[] }>;
-  meso: Pick<Mesocycle, 'semanasDescarga' | 'semanasTest'>;
+  meso: Pick<Mesocycle, 'semanasDescarga' | 'semanasTest' | 'semanasPivot'> & Partial<Pick<Mesocycle, 'groups'>>;
   /** 0 = Base (sin progresión); 1+ = semana de ciclo. */
   semana: number;
   allExercises: Exercise[];
@@ -46,7 +48,13 @@ interface Props {
   agujetas?: Partial<Record<ZonaIem, LecturaAgujetas>>;
   /** Bloque de definición: el curso pide mantener el IEM y bajar el IF. */
   definicion?: boolean;
+  /** Atleta del bloque: de su alta salen los minutos que tiene por sesión. */
+  athleteEmail?: string;
 }
+
+const TONO_BANDA: Record<string, string> = {
+  sencilla: 'text-ink-2', intermedia: 'text-ink', alta: 'text-warning', 'muy-alta': 'text-danger',
+};
 
 const n1 = (v: number) => (Math.round(v * 10) / 10).toLocaleString('es-ES');
 const celda = (v: number) => (v > 0.005 ? n1(v) : '·');
@@ -73,8 +81,15 @@ function Bloque ({ titulo, columnas, filas }: { titulo: string; columnas: Column
   );
 }
 
-export default function PanelIndicesCdg ({ grupos, meso, semana, allExercises, objetivos, onCambiarObjetivo, agujetas, definicion }: Props) {
+export default function PanelIndicesCdg ({ grupos, meso, semana, allExercises, objetivos, onCambiarObjetivo, agujetas, definicion, athleteEmail }: Props) {
   const { motor, cargando, noSubido, error } = useMotorCdg();
+  // Misma clave de caché que el resto de pantallas que leen el alta.
+  const { data: alta } = useQuery({
+    queryKey: ['onboarding', athleteEmail],
+    queryFn: () => getOnboarding(athleteEmail!),
+    enabled: !!athleteEmail,
+  });
+  const minutosDisponibles = alta?.sessionMaxMinutes && alta.sessionMaxMinutes > 0 ? alta.sessionMaxMinutes : undefined;
   const porId = useMemo(() => new Map(allExercises.map(e => [e.id, e])), [allExercises]);
   const nombreCdgDe = useMemo(() => (id: string) => porId.get(id)?.cdgNombre, [porId]);
   const nombreDe = (id: string) => porId.get(id)?.name ?? 'Ejercicio';
@@ -276,9 +291,20 @@ export default function PanelIndicesCdg ({ grupos, meso, semana, allExercises, o
                   <td className="py-1.5 pr-3 font-sans text-caption font-bold text-ink">IF (fatiga)</td>
                   {tabla.columnas.map((c, i) => <td key={`${i}-${c.nombre}`} className="py-1.5 px-2 text-right font-mono text-caption font-bold text-ink tabular-nums">{n1(c.IF)}</td>)}
                 </tr>
+                <tr className="border-t border-hairline" title="Referencia de la guía por sesión: <40 sencilla · 40-70 intermedia · 70-100 alta · >100 muy alta">
+                  <td className="py-1 pr-3 font-sans text-caption text-ink-2">Nivel de IF</td>
+                  {tabla.columnas.map((c, i) => {
+                    if (c.total) return <td key={`${i}-${c.nombre}`} />;
+                    const b = bandaIF(c.IF);
+                    return <td key={`${i}-${c.nombre}`} className={`py-1 px-2 text-right font-sans text-caption whitespace-nowrap ${TONO_BANDA[b.banda]}`}>{c.IF > 0.005 ? b.etiqueta : '·'}</td>;
+                  })}
+                </tr>
                 <tr className="border-t border-hairline">
-                  <td className="py-1 pr-3 font-sans text-caption text-ink-2">Tiempo</td>
-                  {tabla.columnas.map((c, i) => <td key={`${i}-${c.nombre}`} className="py-1 px-2 text-right font-mono text-caption text-ink-2 tabular-nums">{formatearTiempo(c.tiempoSeg)}</td>)}
+                  <td className="py-1 pr-3 font-sans text-caption text-ink-2">Tiempo{minutosDisponibles ? ` (tiene ${minutosDisponibles} min)` : ''}</td>
+                  {tabla.columnas.map((c, i) => {
+                    const pasa = !c.total && minutosDisponibles != null && c.tiempoSeg / 60 > minutosDisponibles;
+                    return <td key={`${i}-${c.nombre}`} className={`py-1 px-2 text-right font-mono text-caption tabular-nums ${pasa ? 'text-warning font-bold' : 'text-ink-2'}`}>{formatearTiempo(c.tiempoSeg)}</td>;
+                  })}
                 </tr>
                 <tr className="border-t border-hairline">
                   <td className="py-1 pr-3 font-sans text-caption text-ink-2">IEM total</td>
@@ -298,6 +324,20 @@ export default function PanelIndicesCdg ({ grupos, meso, semana, allExercises, o
               </tbody>
             </table>
           </div>
+
+          {minutosDisponibles != null && (() => {
+            // Sesiones que no caben en su tiempo, con qué hacer (guía: «si te pasas de tiempo…»).
+            const avisosTiempo = sesiones.flatMap(se => consejosDeTiempo({
+              minutosDisponibles,
+              tiempoSeg: se.r.tiempoSeg,
+              unilaterales: se.ejercicios.filter(e => (nombreCdgDe(e.exerciseId) ?? '').toLowerCase().includes('unilateral')).length,
+            }).map(t => `${se.nombre}: ${t}`));
+            return avisosTiempo.length > 0 && (
+              <ul className="font-sans text-caption text-warning space-y-0.5">
+                {avisosTiempo.map((t, i) => <li key={i}>{t}</li>)}
+              </ul>
+            );
+          })()}
 
           {avisosArticulares.length > 0 && (
             <ul className="space-y-1 font-sans text-caption text-warning">

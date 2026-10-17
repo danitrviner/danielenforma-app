@@ -615,6 +615,7 @@ export interface TemplateStage {
   /** Ver Mesocycle.semanasDescarga / semanasTest: viajan con la plantilla. */
   semanasDescarga?: number[];
   semanasTest?: number[];
+  semanasPivot?: number[];
   reviewCadenceWeeks?: number;  // cada cuántas semanas se programa una revisión durante esta etapa
   reviewType?: TaskType;
   /**
@@ -2012,6 +2013,11 @@ export interface Mesocycle {
   /** Semanas de ciclo de test: los ejercicios sin técnica pasan a AMRAP esa
    *  semana, y el atleta lo ve en sus novedades. */
   semanasTest?: number[];
+  /** Semanas pivot (guía del IH): mitad de series salvo los grupos de
+   *  prioridad alta. Baja el IF manteniendo el estímulo de lo que importa. */
+  semanasPivot?: number[];
+  /** Vuelve de un parón: la semana 1 va a RPE 6-7 (RIR ≥ 3). Guía del IH. */
+  vuelveDeParon?: boolean;
   /** Algo del cliente que cae esa semana de ciclo (vacaciones, viaje,
    *  competición). El atleta ve la nota en sus novedades. */
   eventosSemana?: Record<string, EventoDeSemana>;
@@ -2035,6 +2041,10 @@ export interface Mesocycle {
   cdgObjetivosIem?: Partial<Record<string, number>>;
   /** Actitud del bloque para el freno/acelerador por agujetas (utils/cdg/agujetas.ts). Sin valor = estático. */
   cdgActitud?: 'estatico' | 'dinamico' | 'agresivo';
+  /** Tipo de bloque (guía del IH): cuándo se sube (estático = agujetas 1; dinámico = 1-3). Manda sobre `cdgActitud`. */
+  cdgSensibilidad?: 'estatico' | 'dinamico';
+  /** Tipo de bloque: cuánto se sube (suave ~10 %, medio ~20 %, agresivo ~30 %). Manda sobre `cdgActitud`. */
+  cdgVelocidad?: 'suave' | 'medio' | 'agresivo';
 }
 
 // Tipos de fase de un mesociclo, para el color/icono del Roadmap → Calendario.
@@ -2056,6 +2066,8 @@ export interface MesocycleTemplate {
   name: string;
   description?: string;
   stages: TemplateStage[];
+  /** Etiquetas para encontrarla (guía del IH: «3 días», «IF bajo», «sin cizalla»…). */
+  etiquetas?: string[];
 }
 
 // ─── PENDING TASKS (athlete dashboard) ─────────────────────────────────────────
@@ -2413,10 +2425,29 @@ export interface AthleteDossier {
   preguntasAbiertas: string[];  // lo que falta saber, y a quién preguntárselo
   hechos: DossierFact[];        // append-only, lo escribe la IA
   updatedAt: string;
+  /** Tipificación del cliente (guía del IH). Ver utils/cdg/tipificacion.ts. */
+  tipificacion?: TipificacionCliente;
+}
+
+/**
+ * Tipificación del cliente (guía del Índice de Hipertrofia): cinco escalas
+ * 1-5, del polo izquierdo al derecho. No son etiquetas para el atleta.
+ */
+export interface TipificacionCliente {
+  /** 1 Pupas … 5 Tanque: cuánto freno necesita. */
+  freno?: number;
+  /** 1 Prisillas … 5 «el gym es mi vida»: tolerancia a más tiempo y volumen. */
+  tiempo?: number;
+  /** 1 Me aburro … 5 Costumbres: necesidad de cambios. */
+  cambios?: number;
+  /** 1 Honesto … 5 Copy-paste: cuánto fiarse del seguimiento. */
+  honestidad?: number;
+  /** 1 Dejado … 5 Minucioso: cumplimentación. */
+  cumplimentacion?: number;
 }
 
 /** Los campos de juicio: los únicos que necesitan el OK de Dani. */
-export type DossierJudgement = Pick<AthleteDossier, 'objetivos' | 'evaluacion' | 'esperado' | 'foco' | 'preguntasAbiertas'>;
+export type DossierJudgement = Pick<AthleteDossier, 'objetivos' | 'evaluacion' | 'esperado' | 'foco' | 'preguntasAbiertas' | 'tipificacion'>;
 export type DossierPatch = Partial<DossierJudgement>;
 
 // El contexto con el que la IA propuso algo. Se congela con la propuesta: la

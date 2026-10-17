@@ -36,7 +36,14 @@ interface FormState {
   name: string;
   description: string;
   stages: TemplateStage[];
+  etiquetas: string[];
 }
+
+/** Las etiquetas de la guía del IH para guardar plantillas y encontrarlas después. */
+const ETIQUETAS_SUGERIDAS = [
+  '2 días', '3 días', '4 días', '5 días', '6 días', 'Pivot', 'IF bajo', 'Sin cizalla', 'Sin pendulares',
+  '45 min', 'Especialización de brazo', 'Especialización de glúteo', 'Definición',
+];
 
 function emptyStage(n: number): TemplateStage {
   return {
@@ -49,11 +56,11 @@ function emptyStage(n: number): TemplateStage {
 }
 
 function emptyForm(): FormState {
-  return { name: '', description: '', stages: [emptyStage(1)] };
+  return { name: '', description: '', stages: [emptyStage(1)], etiquetas: [] };
 }
 
 function formFromTemplate(tpl: MesocycleTemplate): FormState {
-  return { name: tpl.name, description: tpl.description ?? '', stages: tpl.stages.map(s => ({ ...s })) };
+  return { name: tpl.name, description: tpl.description ?? '', stages: tpl.stages.map(s => ({ ...s })), etiquetas: tpl.etiquetas ?? [] };
 }
 
 // ── Una etapa en la lista ─────────────────────────────────────────────────────
@@ -251,6 +258,23 @@ function TemplateEditor({
             onChange={v => setForm(f => ({ ...f, description: v }))}
             placeholder="Breve descripción de la plantilla"
           />
+          <div className="space-y-1.5">
+            <span className="font-mono text-caption text-ink-2 uppercase tracking-wider">Etiquetas</span>
+            <div className="flex flex-wrap gap-1.5">
+              {[...new Set([...ETIQUETAS_SUGERIDAS, ...form.etiquetas])].map(t => {
+                const on = form.etiquetas.includes(t);
+                return (
+                  <button
+                    key={t}
+                    type="button"
+                    aria-pressed={on}
+                    onClick={() => setForm(f => ({ ...f, etiquetas: on ? f.etiquetas.filter(x => x !== t) : [...f.etiquetas, t] }))}
+                    className={`px-2.5 py-1 rounded-full border font-sans text-caption transition-colors ${on ? 'bg-accent/10 border-accent text-accent-ink' : 'bg-raised border-hairline text-ink-2 hover:text-ink'}`}
+                  >{t}</button>
+                );
+              })}
+            </div>
+          </div>
         </div>
 
         <div>
@@ -345,6 +369,11 @@ function TemplateCard({
           {tpl.description && (
             <p className="font-sans text-caption text-ink-2 truncate">{tpl.description}</p>
           )}
+          {(tpl.etiquetas?.length ?? 0) > 0 && (
+            <div className="flex flex-wrap gap-1 mt-1">
+              {tpl.etiquetas!.map(t => <span key={t} className="font-sans text-caption px-2 rounded-full border border-hairline text-ink-2">{t}</span>)}
+            </div>
+          )}
           <div className="flex gap-3 mt-1 flex-wrap">
             <span className="font-mono text-caption text-ink-2">{tpl.stages.length} meso{tpl.stages.length !== 1 ? 's' : ''}</span>
             <span className="font-mono text-caption text-accent-ink font-bold">{totalWeeks} semanas</span>
@@ -411,9 +440,13 @@ export default function MesocycleTemplateLibrary({ coachId }: Props) {
     queryKey,
     queryFn: () => getMesocycleTemplates(coachId),
   });
+  const [filtro, setFiltro] = useState<string | null>(null);
+  const todasEtiquetas = useMemo(() => [...new Set(templatesRaw.flatMap(t => t.etiquetas ?? []))].sort(), [templatesRaw]);
   const templates = useMemo(
-    () => [...templatesRaw].sort((a, b) => a.name.localeCompare(b.name)),
-    [templatesRaw]
+    () => [...templatesRaw]
+      .filter(t => !filtro || (t.etiquetas ?? []).includes(filtro))
+      .sort((a, b) => a.name.localeCompare(b.name)),
+    [templatesRaw, filtro]
   );
   const [editingId, setEditingId]     = useState<string | null>(null);
   const [showEditor, setShowEditor]   = useState(false);
@@ -427,6 +460,7 @@ export default function MesocycleTemplateLibrary({ coachId }: Props) {
         description: form.description || undefined,
         // La etapa entera: el editor de mesociclos ya la deja con todo el plan.
         stages: form.stages,
+        ...(form.etiquetas.length ? { etiquetas: form.etiquetas } : { etiquetas: [] }),
       };
 
       if (editingId === null) {
@@ -497,6 +531,20 @@ export default function MesocycleTemplateLibrary({ coachId }: Props) {
       </div>
 
       {/* Content */}
+      {todasEtiquetas.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {todasEtiquetas.map(t => (
+            <button
+              key={t}
+              type="button"
+              aria-pressed={filtro === t}
+              onClick={() => setFiltro(f => (f === t ? null : t))}
+              className={`px-2.5 py-1 rounded-full border font-sans text-caption transition-colors ${filtro === t ? 'bg-accent/10 border-accent text-accent-ink' : 'bg-raised border-hairline text-ink-2 hover:text-ink'}`}
+            >{t}</button>
+          ))}
+        </div>
+      )}
+
       {loading ? (
         <div className="space-y-3">
           <Skeleton className="h-20 w-full rounded-surface" />

@@ -20,12 +20,36 @@
  */
 import { ZONAS_IEM, type ZonaIem } from './zonas.js'
 
+/**
+ * Tipo de bloque (guía del Índice de Hipertrofia, «tipos de bloque»): dos ejes
+ * que antes iban juntos en una sola «actitud».
+ *  - Sensibilidad: CUÁNDO se sube. Estático = solo con agujetas 1; dinámico = con 1-3.
+ *  - Velocidad: CUÁNTO se sube. Suave ≈ +10 %, medio ≈ +20 %, agresivo hasta ≈ +30 %.
+ */
+export type Sensibilidad = 'estatico' | 'dinamico'
+export type Velocidad = 'suave' | 'medio' | 'agresivo'
+export interface TipoDeBloque { sensibilidad: Sensibilidad; velocidad: Velocidad }
+
+/** Actitud de una sola pieza: la que guardaban los bloques creados antes de separar los ejes. */
 export type ActitudBloque = 'estatico' | 'dinamico' | 'agresivo'
-export const ACTITUD_POR_DEFECTO: ActitudBloque = 'estatico'
-export const ACTITUDES: Array<{ value: ActitudBloque; label: string; ayuda: string }> = [
-  { value: 'estatico', label: 'Estático', ayuda: 'Solo sube en zonas objetivo y con un 1' },
-  { value: 'dinamico', label: 'Dinámico', ayuda: 'Sube con agujetas de 1-2' },
-  { value: 'agresivo', label: 'Agresivo', ayuda: 'Sube incluso con un 3 si el contexto acompaña' },
+export const TIPO_POR_DEFECTO: TipoDeBloque = { sensibilidad: 'estatico', velocidad: 'suave' }
+
+/** El tipo de un mesociclo: los campos nuevos o, si no hay, el que equivale a la actitud antigua. */
+export function tipoDeBloque (m: { cdgSensibilidad?: Sensibilidad; cdgVelocidad?: Velocidad; cdgActitud?: ActitudBloque }): TipoDeBloque {
+  const viejo: TipoDeBloque = m.cdgActitud === 'agresivo' ? { sensibilidad: 'dinamico', velocidad: 'agresivo' }
+    : m.cdgActitud === 'dinamico' ? { sensibilidad: 'dinamico', velocidad: 'medio' }
+      : TIPO_POR_DEFECTO
+  return { sensibilidad: m.cdgSensibilidad ?? viejo.sensibilidad, velocidad: m.cdgVelocidad ?? viejo.velocidad }
+}
+
+export const SENSIBILIDADES: Array<{ value: Sensibilidad; label: string; ayuda: string }> = [
+  { value: 'estatico', label: 'Estático', ayuda: 'Solo se sube con agujetas de 1' },
+  { value: 'dinamico', label: 'Dinámico', ayuda: 'Se sube con agujetas de 1 a 3' },
+]
+export const VELOCIDADES: Array<{ value: Velocidad; label: string; pct: number }> = [
+  { value: 'suave', label: 'Suave (~10 %)', pct: 10 },
+  { value: 'medio', label: 'Medio (~20 %)', pct: 20 },
+  { value: 'agresivo', label: 'Agresivo (~30 %)', pct: 30 },
 ]
 
 export interface PuntoSeñal { date: string; value: number }
@@ -64,19 +88,74 @@ export function agujetasPorZona (serie: SerieDeSeñal): Partial<Record<ZonaIem, 
 }
 
 export type TonoPropuesta = 'freno' | 'vigilar' | 'mantener' | 'acelerar' | 'sin-dato'
-export interface Propuesta { tono: TonoPropuesta; texto: string }
+export interface Propuesta {
+  tono: TonoPropuesta
+  texto: string
+  /** Cambio de IEM propuesto en % (negativo = bajar). */
+  pct?: number
+  /** IEM semanal al que llevaría ese cambio. */
+  iemPropuesto?: number
+}
 
-export function propuestaZona (o: { agujetas?: number; anterior?: number; sensible: boolean; actitud: ActitudBloque; esObjetivo: boolean }): Propuesta {
-  const { agujetas: a, anterior, sensible, actitud, esObjetivo } = o
+export type Contexto = 'favorable' | 'neutro' | 'desfavorable' | 'sin-dato'
+
+/**
+ * Contexto de la semana a partir del seguimiento (guía, paso 1 del protocolo):
+ * dónde va el pie antes de mirar ninguna zona.
+ */
+export function contextoDeLaSemana (o: { estres?: number; sueñoHoras?: number; motivacion?: number }): { contexto: Contexto; motivos: string[] } {
+  const { estres, sueñoHoras, motivacion } = o
+  if (estres == null && sueñoHoras == null && motivacion == null) return { contexto: 'sin-dato', motivos: [] }
+  const malos: string[] = []
+  if (estres != null && estres >= 7) malos.push(`estrés ${estres}/10`)
+  if (sueñoHoras != null && sueñoHoras < 6) malos.push(`${sueñoHoras.toLocaleString('es-ES')} h de sueño`)
+  if (motivacion != null && motivacion <= 4) malos.push(`motivación ${motivacion}/10`)
+  if (malos.length) return { contexto: 'desfavorable', motivos: malos }
+  const buenos = (estres == null || estres <= 4) && (sueñoHoras == null || sueñoHoras >= 7) && (motivacion == null || motivacion >= 7)
+  return { contexto: buenos ? 'favorable' : 'neutro', motivos: [] }
+}
+
+const r1 = (v: number) => Math.round(v * 10) / 10
+
+/**
+ * Freno / acelerador de una zona: el protocolo semanal de la guía.
+ *  1. Agujetas 5 → bajar 20-30 % (si la subida vino de ejercicios en
+ *     estiramiento, quitar estiramiento antes que series).
+ *  2. Agujetas 4: en zona propensa (isquios, aductores) se espera una semana;
+ *     en el resto, bajar 15-30 %.
+ *  3. Fatiga al salir de las sesiones 8-9 o más → no subir IEM: bajar IF manteniéndolo.
+ *  4. Contexto desfavorable → no subir (un mal momento puntual tampoco obliga a bajar).
+ *  5. Se sube si lo permite la sensibilidad (estático: 1; dinámico: 1-3), lo que
+ *     diga la velocidad, a la mitad con contexto neutro. Con una base alta
+ *     (≥ 100) no más de un 10 %: se mantienen los puntos añadidos, no el porcentaje.
+ */
+export function propuestaZona (o: {
+  agujetas?: number; anterior?: number; sensible: boolean; tipo: TipoDeBloque; esObjetivo: boolean;
+  iem?: number; contexto?: Contexto; fatigaPost?: number
+}): Propuesta {
+  const { agujetas: a, anterior, sensible, tipo, esObjetivo, iem = 0, contexto = 'sin-dato', fatigaPost } = o
+  const con = (pct: number) => (iem > 0.005 ? { pct, iemPropuesto: r1(iem * (1 + pct / 100)) } : { pct })
   if (a == null) return { tono: 'sin-dato', texto: 'Sin agujetas registradas: decide con la recuperación entre sesiones y el rendimiento.' }
-  if (a >= 5) return { tono: 'freno', texto: 'Frenar ya en esta zona: bajar su IEM un 20-30 %.' }
+  if (a >= 5) return { tono: 'freno', texto: 'Frenar ya: bajar su IEM un 20-30 %. Si la subida vino de ejercicios en estiramiento, quita estiramiento antes que series.', ...con(-25) }
   if (a >= 4) {
-    if (!sensible) return { tono: 'freno', texto: 'No es una zona propensa a agujetas: con un 4 te estás pasando. Bajar su IEM.' }
-    if (anterior != null && anterior >= 4) return { tono: 'freno', texto: 'Segunda semana seguida en 4 o más: no se recupera. Bajar su IEM.' }
-    return { tono: 'vigilar', texto: 'Zona propensa a agujetas (trabajo en estiramiento): esperar una semana. Si sigue en 4, bajar.' }
+    if (!sensible) return { tono: 'freno', texto: 'No es una zona propensa a agujetas: con un 4 te estás pasando. Bajar su IEM un 15-30 %.', ...con(-20) }
+    if (anterior != null && anterior >= 4) return { tono: 'freno', texto: 'Segunda semana seguida en 4 o más: no se recupera. Bajar su IEM un 15-30 %.', ...con(-20) }
+    return { tono: 'vigilar', texto: 'Zona propensa a agujetas (trabajo en estiramiento): esperar una semana y anotarlo. Si sigue en 4, bajar.' }
   }
-  const umbralSubir = actitud === 'agresivo' ? 3 : actitud === 'dinamico' ? 2 : 1
-  const puedeSubir = a <= umbralSubir && (actitud !== 'estatico' || esObjetivo)
-  if (puedeSubir) return { tono: 'acelerar', texto: `Margen para subir el IEM${esObjetivo ? ' (zona objetivo)' : ''} si el IF de la sesión y el contexto lo permiten. Cuanto mejor el contexto, más se sube.` }
-  return { tono: 'mantener', texto: a <= 2 && actitud === 'estatico' && !esObjetivo ? 'Mantener: en bloque estático solo se sube en las zonas objetivo.' : 'Mantener el IEM.' }
+  if (fatigaPost != null && fatigaPost >= 8) {
+    return { tono: 'mantener', texto: `Sale muy cansado de las sesiones (${fatigaPost}/10): no subir el IEM. Si puedes, baja el IF de la sesión manteniendo el IEM.` }
+  }
+  const umbral = tipo.sensibilidad === 'dinamico' ? 3 : 1
+  if (a > umbral) return { tono: 'mantener', texto: tipo.sensibilidad === 'estatico' && a <= 3 ? 'Mantener: en un bloque estático solo se sube con agujetas de 1.' : 'Mantener el IEM.' }
+  if (contexto === 'desfavorable') return { tono: 'mantener', texto: 'Contexto desfavorable esta semana: no subir. Si se repite varias semanas, baja carga; si es puntual, solo espera.' }
+  let pct = VELOCIDADES.find(v => v.value === tipo.velocidad)!.pct
+  const notas: string[] = []
+  if (contexto === 'neutro' || contexto === 'sin-dato') { pct = Math.round(pct / 2); notas.push(contexto === 'neutro' ? 'contexto neutro: la mitad' : 'sin datos de contexto: la mitad') }
+  if (iem >= 100 && pct > 10) { pct = 10; notas.push('base alta: mantén los puntos añadidos, no repitas el porcentaje') }
+  if (iem > 0.005 && iem < 10) notas.push('zona poco trabajada: admite subidas mucho mayores')
+  return {
+    tono: 'acelerar',
+    texto: `Margen para subir el IEM ~${pct} %${esObjetivo ? ' (zona objetivo)' : ''}${notas.length ? ` · ${notas.join(' · ')}` : ''}. Comprueba que el IF de la sesión lo admite.`,
+    ...con(pct),
+  }
 }
