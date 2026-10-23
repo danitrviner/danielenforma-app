@@ -204,6 +204,7 @@ progress_activity
 psychiatry
 publish
 push_pin
+qr_code_scanner
 query_stats
 quiz
 radio

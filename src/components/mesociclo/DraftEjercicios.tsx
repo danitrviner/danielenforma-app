@@ -8,7 +8,9 @@ import {
 } from '../../utils/draftEjercicios';
 import { parseVideoUrl } from '../../utils/embedPlayerControl';
 import { coincideBusqueda } from '../../utils/busqueda';
-import { Icon, Sparkline } from '../ui';
+import { Icon, Sparkline, Chip } from '../ui';
+import { atributosFiltrables, MATERIALES } from '../../utils/atributosEjercicio';
+import { useFichaDeEjercicio } from '../useFichaDeEjercicio';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Draft de ejercicios (pestaña entre «Volumen» y «Distribución»)
@@ -37,6 +39,8 @@ interface Props {
   maquinas: Maquina[];
   maquinasPropias: MaquinaPropia[];
   onChange: (draft: Draft, draftMaquinas: Record<string, string> | undefined) => void;
+  /** Con él, la ficha deja además corregir la clasificación muscular del ejercicio (E-04). */
+  coachId?: string;
 }
 
 /**
@@ -74,10 +78,11 @@ type TarjetaProps = {
   onToggle: () => void;
   onMove?: (delta: -1 | 1) => void;
   onMaquina?: (id: string | undefined) => void;
+  onFicha?: () => void;
 };
 
 const Tarjeta: React.FC<TarjetaProps> = ({
-  ex, elegido, compatible, historial, maquinasDelGrupo, maquinaId, onToggle, onMove, onMaquina,
+  ex, elegido, compatible, historial, maquinasDelGrupo, maquinaId, onToggle, onMove, onMaquina, onFicha,
 }) => {
   const maquina = maquinasDelGrupo.find(m => m.id === maquinaId);
   return (
@@ -133,6 +138,17 @@ const Tarjeta: React.FC<TarjetaProps> = ({
           {!compatible && <span className="font-mono text-caption text-warning">Sin material compatible</span>}
         </div>
 
+        {onFicha && (
+          <button
+            type="button"
+            onClick={onFicha}
+            aria-label={`Ver la ficha de ${ex.name}`}
+            className="self-start font-mono text-caption text-ink-3 hover:text-accent-ink underline decoration-dotted"
+          >
+            Ficha
+          </button>
+        )}
+
         {elegido && (
           <div className="mt-auto flex items-center gap-1.5 pt-1.5 border-t border-hairline">
             {maquinasDelGrupo.length > 0 && onMaquina && (
@@ -168,7 +184,8 @@ const Tarjeta: React.FC<TarjetaProps> = ({
   );
 };
 
-type GrupoProps = Omit<Props, 'groups' | 'maquinas' | 'maquinasPropias'> & {
+type GrupoProps = Omit<Props, 'groups' | 'maquinas' | 'maquinasPropias' | 'coachId'> & {
+  onFicha?: (ex: Exercise) => void;
   grupo: MuscleGroup;
   series: number;
   maquinasDelGrupo: { id: string; nombre: string; fotoUrl: string }[];
@@ -176,10 +193,15 @@ type GrupoProps = Omit<Props, 'groups' | 'maquinas' | 'maquinasPropias'> & {
 
 const GrupoDraft: React.FC<GrupoProps> = ({
   grupo, series, draft, draftMaquinas, exercises, logs, rutinasDelCoach, material, vetados,
-  maquinasDelGrupo, onChange,
+  maquinasDelGrupo, onChange, onFicha,
 }) => {
   const [verTodos, setVerTodos] = useState(false);
   const [busqueda, setBusqueda] = useState('');
+  // Filtros por atributo (E-03): solo se ofrecen si casi todo el catálogo tiene el dato.
+  const filtrables = useMemo(() => atributosFiltrables(exercises), [exercises]);
+  const [materialFiltro, setMaterialFiltro] = useState<string | null>(null);
+  const [lateralidad, setLateralidad] = useState<'uni' | 'bi' | null>(null);
+  const [conGoma, setConGoma] = useState(false);
   const ids = idsDelDraft(draft, grupo);
   const sugeridos = ejerciciosSugeridos(series);
 
@@ -194,8 +216,14 @@ const GrupoDraft: React.FC<GrupoProps> = ({
   const elegidos = ids.map(id => porId.get(id)).filter((c): c is NonNullable<typeof c> => !!c);
   const libres = candidatos.filter(c => !ids.includes(c.ejercicio.id));
   const termino = busqueda.trim();
-  const filtrados = termino ? libres.filter(c => coincideBusqueda(c.ejercicio.name, termino)) : libres;
-  const visibles = verTodos || termino ? filtrados : filtrados.slice(0, CANDIDATOS_VISIBLES);
+  const pasaAtributos = (e: Exercise) =>
+    (!materialFiltro || (e.equipment ?? []).includes(materialFiltro)) &&
+    (!lateralidad || e.lateralidad === lateralidad) &&
+    (!conGoma || e.goma === true);
+  const hayFiltroDeAtributo = !!materialFiltro || !!lateralidad || conGoma;
+  const porAtributos = hayFiltroDeAtributo ? libres.filter(c => pasaAtributos(c.ejercicio)) : libres;
+  const filtrados = termino ? porAtributos.filter(c => coincideBusqueda(c.ejercicio.name, termino)) : porAtributos;
+  const visibles = verTodos || termino || hayFiltroDeAtributo ? filtrados : filtrados.slice(0, CANDIDATOS_VISIBLES);
 
   const cambiar = (d: Draft, maq = draftMaquinas) => onChange(d, maq);
   const alternar = (id: string) => {
@@ -261,6 +289,7 @@ const GrupoDraft: React.FC<GrupoProps> = ({
                 onToggle={() => alternar(c.ejercicio.id)}
                 onMove={delta => cambiar(moverEnDraft(draft, grupo, c.ejercicio.id, delta))}
                 onMaquina={m => asignarMaquina(c.ejercicio.id, m)}
+                onFicha={onFicha && (() => onFicha(c.ejercicio))}
               />
             ))}
           </ul>
@@ -287,8 +316,25 @@ const GrupoDraft: React.FC<GrupoProps> = ({
             className="w-44 bg-bg border border-hairline rounded-control px-2.5 py-1.5 text-label font-sans text-ink focus:outline-none focus:border-accent"
           />
         </div>
+        {(filtrables.equipment || filtrables.lateralidad || filtrables.goma) && (
+          <div className="flex flex-wrap gap-1.5" role="group" aria-label="Filtrar candidatos por material y variante">
+            {filtrables.equipment && MATERIALES.map(m => (
+              <Chip key={m} selected={materialFiltro === m} onClick={() => setMaterialFiltro(materialFiltro === m ? null : m)} className="capitalize">{m}</Chip>
+            ))}
+            {filtrables.lateralidad && (
+              <>
+                <Chip selected={lateralidad === 'uni'} onClick={() => setLateralidad(lateralidad === 'uni' ? null : 'uni')}>Unilateral</Chip>
+                <Chip selected={lateralidad === 'bi'} onClick={() => setLateralidad(lateralidad === 'bi' ? null : 'bi')}>Bilateral</Chip>
+              </>
+            )}
+            {filtrables.goma && <Chip selected={conGoma} onClick={() => setConGoma(v => !v)}>Con goma</Chip>}
+            {hayFiltroDeAtributo && (
+              <button type="button" onClick={() => { setMaterialFiltro(null); setLateralidad(null); setConGoma(false); }} className="font-mono text-caption text-accent-ink px-2">Limpiar</button>
+            )}
+          </div>
+        )}
         {visibles.length === 0 ? (
-          <p className="font-sans text-label text-ink-3">No hay más ejercicios{termino ? ' con ese nombre' : ''}.</p>
+          <p className="font-sans text-label text-ink-3">No hay más ejercicios{termino ? ' con ese nombre' : hayFiltroDeAtributo ? ' con esos filtros' : ''}.</p>
         ) : (
           <ul className="m-0 p-0 list-none grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
             {visibles.map(c => (
@@ -300,6 +346,7 @@ const GrupoDraft: React.FC<GrupoProps> = ({
                 historial={historialDeEjercicio(logs, c.ejercicio.id)}
                 maquinasDelGrupo={maquinasDelGrupo}
                 onToggle={() => alternar(c.ejercicio.id)}
+                onFicha={onFicha && (() => onFicha(c.ejercicio))}
               />
             ))}
           </ul>
@@ -319,8 +366,9 @@ const GrupoDraft: React.FC<GrupoProps> = ({
 };
 
 export default function DraftEjercicios({
-  groups, maquinas, maquinasPropias, ...resto
+  groups, maquinas, maquinasPropias, coachId, ...resto
 }: Props) {
+  const { abrirFicha, hojas } = useFichaDeEjercicio(coachId);
   const gruposConSeries = MUSCLE_ORDER.filter(g => (groups[g]?.series ?? 0) > 0);
 
   const maquinasDe = (g: MuscleGroup) => [
@@ -349,9 +397,11 @@ export default function DraftEjercicios({
           grupo={g}
           series={groups[g].series}
           maquinasDelGrupo={maquinasDe(g)}
+          onFicha={abrirFicha}
           {...resto}
         />
       ))}
+      {hojas}
     </div>
   );
 }

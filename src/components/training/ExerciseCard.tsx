@@ -1,7 +1,8 @@
 import React from 'react';
 import { Exercise, WorkoutEntryLog, WorkoutExercise } from '../../types';
 import { Icon } from '../ui';
-import { TECHNIQUE_EMOJI, TECHNIQUE_LABEL, TECHNIQUE_COLOR, TECHNIQUE_DESCRIPTION } from '../../utils/workoutTechniques';
+import { TECHNIQUE_EMOJI, TECHNIQUE_LABEL, TECHNIQUE_COLOR } from '../../utils/workoutTechniques';
+import { ajustesDe, partesDeTecnica, llevaSegmentos, pesoDeBajada, serieDelSegmento, seriesConTecnica } from '../../utils/tecnicaDeSerie';
 import { expandSetGroups } from '../../utils/setGroups';
 import { generateWarmup } from '../../utils/warmup/WarmupGenerator';
 import { parseTargetReps } from '../../utils/warmup/WarmupEngine';
@@ -23,7 +24,8 @@ interface Props {
   onOpenHistory: () => void;
   onUpdateSet: (sIdx: number, field: keyof SetInput, value: string | boolean) => void;
   onMarkDone: (sIdx: number, markingDone: boolean) => void;
-  onAddRow: () => void;
+  /** Añade una bajada o miniserie tras la serie principal `segmentoDe` (1 = la primera). */
+  onAddRow: (segmentoDe: number) => void;
   noteValue: string;
   onNoteChange: (value: string) => void;
   restTimer: { totalSeconds: number; secondsLeft: number } | null;
@@ -42,9 +44,9 @@ interface Props {
 /**
  * Una página del carrusel de la sesión en curso — un ejercicio a la vez
  * (mockup "Entreno · Serie en curso v2"). La tabla normal de series se
- * mantiene tal cual (mismo prerelleno/placeholder de "última vez"); dropset y
- * myoreps solo cambian cómo se PINTAN esas mismas filas, no el dato que
- * guardan — cada bajada/miniserie sigue siendo un `SetInput` normal.
+ * mantiene tal cual (mismo prerelleno/placeholder de "última vez"); dropset,
+ * myoreps y rest-pause añaden, tras la última serie, un bloque con sus
+ * segmentos (`SetInput` con `segmento: true`).
  */
 // React.memo: es la página del carrusel que más cambia por render (cada
 // serie marcada, cada tecla del peso/reps) — sin esto, WorkoutSessionPlayer
@@ -61,8 +63,9 @@ export default React.memo(function ExerciseCard({
   const idNota = React.useId();
   const motivoMarcado = motivoDeLaNota(noteValue);
   const expanded = expandSetGroups(we);
-  const totalSets = exSets.length;
-  const doneSets = exSets.filter(s => s.done).length;
+  // Las bajadas y miniseries no son series: no cuentan en «2/3».
+  const totalSets = exSets.filter(s => !s.segmento).length;
+  const doneSets = exSets.filter(s => !s.segmento && s.done).length;
   const set1Weight = parseFloat(exSets[0]?.weight || '') || 0;
   const warmup = generateWarmup({
     mode: we.warmupMode,
@@ -75,6 +78,17 @@ export default React.memo(function ExerciseCard({
   const sugerencia = React.useMemo(() => sugerirCarga(we, prevEntry), [we, prevEntry]);
   const esDropset = we.technique === 'dropset';
   const esMyoreps = we.technique === 'myoreps';
+  const esRestpause = we.technique === 'restpause';
+  // Las series principales conservan su fila; las bajadas/miniseries (segmento)
+  // se guardan detrás y se pintan aparte, un bloque por cada serie que lleva la
+  // técnica (E-06). Un segmento sin `segmentoDe` es de la última (registros viejos).
+  const nPrincipales = exSets.filter(s => !s.segmento).length;
+  const seriesTecnica = llevaSegmentos(we.technique) ? seriesConTecnica(we, nPrincipales) : [];
+  const segmentosDe = (k: number) => exSets
+    .map((s, i) => ({ s, i }))
+    .filter(({ s }) => serieDelSegmento(s, nPrincipales) === k)
+    .map(({ i }) => i);
+  const pctBajada = ajustesDe(we).dropset.pctBajada;
 
   // Tamaño adaptativo del nombre — un nombre largo ("Elevación de rodilla
   // alterno inclinado, de espalda") ocupaba media tarjeta a text-feature
@@ -179,8 +193,8 @@ export default React.memo(function ExerciseCard({
         <div className={`flex items-start gap-2 px-4 py-3 border-b ${TECHNIQUE_COLOR[we.technique]}`}>
           <span className="text-title-s flex-shrink-0 leading-none">{TECHNIQUE_EMOJI[we.technique]}</span>
           <p className="font-sans text-label leading-relaxed">
-            <span className="font-bold uppercase tracking-wide">{TECHNIQUE_LABEL[we.technique]}. </span>
-            {TECHNIQUE_DESCRIPTION[we.technique]}
+            <span className="font-bold uppercase tracking-wide">{TECHNIQUE_LABEL[we.technique]} · </span>
+            {(() => { const t = partesDeTecnica(we, expanded.length || nPrincipales); return `${t.series}: ${t.pauta}.`; })()}
           </p>
         </div>
       )}
@@ -206,16 +220,26 @@ export default React.memo(function ExerciseCard({
       )}
 
       {/* Series */}
-      {esDropset ? (
-        <DropsetRows
-          exSets={exSets} warmup={warmup} onUpdateSet={onUpdateSet} onMarkDone={onMarkDone} onAddRow={onAddRow}
-          firstSetRowTargetRef={firstSetRowTargetRef} setEditorTargetRef={setEditorTargetRef}
-        />
-      ) : esMyoreps ? (
-        <MyorepsRows
-          exSets={exSets} warmup={warmup} onUpdateSet={onUpdateSet} onMarkDone={onMarkDone} onAddRow={onAddRow}
-          firstSetRowTargetRef={firstSetRowTargetRef} setEditorTargetRef={setEditorTargetRef}
-        />
+      {esDropset || esMyoreps || esRestpause ? (
+        <>
+          <NormalTable
+            we={we} exSets={exSets.slice(0, nPrincipales)} expanded={expanded} warmup={warmup} prevEntry={prevEntry}
+            onUpdateSet={onUpdateSet} onMarkDone={onMarkDone}
+            firstSetRowTargetRef={firstSetRowTargetRef} setEditorTargetRef={setEditorTargetRef}
+          />
+          {seriesTecnica.map(k => (esDropset ? (
+            <DropsetRows
+              key={k} exSets={exSets} serie={k} indices={segmentosDe(k)} pctBajada={pctBajada}
+              onUpdateSet={onUpdateSet} onMarkDone={onMarkDone} onAddRow={() => onAddRow(k)}
+            />
+          ) : (
+            <MyorepsRows
+              key={k} exSets={exSets} serie={k} indices={segmentosDe(k)}
+              onUpdateSet={onUpdateSet} onMarkDone={onMarkDone} onAddRow={() => onAddRow(k)}
+              variante={esRestpause ? 'restpause' : 'myoreps'}
+            />
+          )))}
+        </>
       ) : (
         <NormalTable
           we={we} exSets={exSets} expanded={expanded} warmup={warmup} prevEntry={prevEntry}
@@ -415,72 +439,84 @@ function NormalTable({
   );
 }
 
-// ── Dropset: base + bajadas encadenadas (mockup frame 02) ──────────────────
+// ── Dropset: bajadas DESPUÉS de la última serie principal ─────────────────
+// Las series principales se pintan en la tabla normal; aquí solo van las
+// bajadas (`segmento`). Antes la fila 0 hacía de «BASE» y las demás de bajada,
+// así que un dropset en la última de 3 series convertía las series 2 y 3 en
+// bajadas. Ahora la técnica se SUMA a la serie, no la sustituye.
 
-function DropsetRows({ exSets, warmup, onUpdateSet, onMarkDone, onAddRow, firstSetRowTargetRef, setEditorTargetRef }: {
+function DropsetRows({ exSets, serie, indices, pctBajada, onUpdateSet, onMarkDone, onAddRow }: {
   exSets: SetInput[];
-  warmup: ReturnType<typeof generateWarmup>;
+  /** Serie principal tras la que van (1 = la primera). */
+  serie: number;
+  /** Posiciones en `exSets` de las bajadas de esta serie. */
+  indices: number[];
+  /** Bajada de peso pautada, para sugerir el peso de cada bajada. */
+  pctBajada: number;
   onUpdateSet: Props['onUpdateSet'];
   onMarkDone: Props['onMarkDone'];
   onAddRow: () => void;
-  firstSetRowTargetRef?: Props['firstSetRowTargetRef'];
-  setEditorTargetRef?: Props['setEditorTargetRef'];
+  key?: React.Key;
 }) {
-  const baseWeight = parseFloat(exSets[0]?.weight || '') || 0;
+  const base = exSets.filter(s => !s.segmento)[serie - 1];
+  const baseWeight = parseFloat(base?.weight || '') || 0;
+  const bajadas = indices.map(i => exSets[i]);
+  const hechas = bajadas.filter(s => s.done);
   return (
-    <div className="px-4 py-4 space-y-2.5">
-      {warmup.sets.length > 0 && (
-        <p className="font-mono text-caption text-warning/70 uppercase">🔥 {warmup.sets.length} series de calentamiento arriba</p>
-      )}
-      <div className="relative">
-        {exSets.length > 1 && <div className="absolute left-[19px] top-9 bottom-9 w-px bg-accent-line" aria-hidden />}
-        <div className="space-y-2.5">
-          {exSets.map((s, sIdx) => {
-            const esBase = sIdx === 0;
-            const dropWeight = parseFloat(s.weight || '') || 0;
-            const caida = !esBase && baseWeight > 0 && dropWeight > 0 ? Math.round((1 - dropWeight / baseWeight) * 100) : null;
-            return (
-              <div
-                key={sIdx}
-                className={`relative flex items-center gap-3 rounded-surface p-3 ${esBase ? 'bg-inset border border-accent-line' : 'bg-raised'}`}
-              >
-                <span className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-control font-mono text-caption font-bold ${esBase ? 'bg-accent-bg text-accent-ink' : 'bg-hairline text-ink-2'}`}>
-                  {esBase ? 'BASE' : `D${sIdx}`}
-                </span>
-                <div className="flex-1 min-w-0 flex items-center gap-2" ref={sIdx === 0 ? setEditorTargetRef : undefined}>
-                  <input
-                    type="number" min={0} step={0.5}
-                    value={s.weight}
-                    onChange={e => onUpdateSet(sIdx, 'weight', e.target.value)}
-                    placeholder="kg"
-                    disabled={s.done}
-                    className="w-16 rounded-control border border-hairline bg-field px-2 py-1.5 text-center font-mono text-title-s text-ink focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50"
-                  />
-                  <span className="font-mono text-caption text-ink-3">kg ×</span>
-                  <input
-                    type="number" min={0}
-                    value={s.repsDone}
-                    onChange={e => onUpdateSet(sIdx, 'repsDone', e.target.value)}
-                    placeholder="reps"
-                    disabled={s.done}
-                    className="w-14 rounded-control border border-hairline bg-field px-2 py-1.5 text-center font-mono text-title-s text-ink focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50"
-                  />
-                  {caida != null && caida > 0 && <span className="font-mono text-caption font-bold text-danger">−{caida}%</span>}
-                </div>
-                <button
-                  ref={sIdx === 0 ? firstSetRowTargetRef : undefined}
-                  onClick={() => onMarkDone(sIdx, !s.done)}
-                  className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-control border transition-colors duration-(--duration-state) ${
-                    s.done ? 'bg-accent border-accent text-on-accent' : 'border-hairline text-ink-3 hover:border-accent-line hover:text-accent-ink'
-                  }`}
-                >
-                  <Icon name={s.done ? 'check_circle' : 'radio_button_unchecked'} size="s" filled={s.done} />
-                </button>
+    <div className="px-4 py-4 space-y-2.5 border-t border-hairline">
+      <p className="font-mono text-label text-accent-ink uppercase tracking-wide">
+        Drop set · tras la serie {serie}
+      </p>
+      {bajadas.map((s, i) => {
+        const sIdx = indices[i];
+        const sugerido = pesoDeBajada(baseWeight, pctBajada, i);
+        const dropWeight = parseFloat(s.weight || '') || 0;
+        const caida = baseWeight > 0 && dropWeight > 0 ? Math.round((1 - dropWeight / baseWeight) * 100) : null;
+        return (
+          <div key={sIdx} className="flex items-center gap-2 rounded-surface bg-raised p-3 ml-2 border-l-2 border-accent-line">
+            <span className="flex h-7 w-9 flex-shrink-0 items-center justify-center rounded-control bg-hairline font-mono text-label font-bold text-ink-2">
+              D{i + 1}
+            </span>
+            <div className="flex-1 min-w-0">
+              {/* Una sola línea «kg × reps»: a 375 px no cabía con el −20 % al lado y
+                  se partía «kg ×». La caída va debajo. */}
+              <div className="flex items-center gap-1.5 whitespace-nowrap">
+              <input
+                type="number" min={0} step={0.5}
+                value={s.weight}
+                onChange={e => onUpdateSet(sIdx, 'weight', e.target.value)}
+                placeholder={sugerido != null ? String(sugerido).replace('.', ',') : 'kg'}
+                disabled={s.done}
+                className="w-16 rounded-control border border-hairline bg-field px-2 py-1.5 text-center font-mono text-title-s text-ink focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50"
+              />
+              <span className="font-mono text-label text-ink-3">kg ×</span>
+              <input
+                type="number" min={0}
+                value={s.repsDone}
+                onChange={e => onUpdateSet(sIdx, 'repsDone', e.target.value)}
+                placeholder="reps"
+                disabled={s.done}
+                className="w-14 rounded-control border border-hairline bg-field px-2 py-1.5 text-center font-mono text-title-s text-ink focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50"
+              />
               </div>
-            );
-          })}
-        </div>
-      </div>
+              {caida != null && caida > 0 && <span className="mt-1 block font-mono text-label font-bold text-danger">−{caida}% de peso</span>}
+            </div>
+            <button
+              onClick={() => {
+                // Sin peso escrito se apunta el sugerido: si no, la bajada contaría 0 kg.
+                if (!s.done && !s.weight && sugerido != null) onUpdateSet(sIdx, 'weight', String(sugerido));
+                onMarkDone(sIdx, !s.done);
+              }}
+              aria-label={s.done ? `Desmarcar bajada ${i + 1}` : `Marcar bajada ${i + 1} como hecha`}
+              className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-control border transition-colors duration-(--duration-state) ${
+                s.done ? 'bg-accent border-accent text-on-accent' : 'border-hairline text-ink-3 hover:border-accent-line hover:text-accent-ink'
+              }`}
+            >
+              <Icon name={s.done ? 'check_circle' : 'radio_button_unchecked'} size="s" filled={s.done} />
+            </button>
+          </div>
+        );
+      })}
       <button
         type="button"
         onClick={onAddRow}
@@ -488,83 +524,52 @@ function DropsetRows({ exSets, warmup, onUpdateSet, onMarkDone, onAddRow, firstS
       >
         + Añadir bajada
       </button>
-      <div className="rounded-surface bg-bg p-3 flex items-center justify-between">
-        <span className="font-mono text-caption text-ink-2 uppercase tracking-wide">Total del dropset</span>
-        <span className="font-mono text-body-s font-bold text-ink">
-          {exSets.filter(s => s.done).reduce((n, s) => n + (parseInt(s.repsDone) || 0), 0)} reps ·{' '}
-          {Math.round(exSets.filter(s => s.done).reduce((v, s) => v + (parseFloat(s.weight) || 0) * (parseInt(s.repsDone) || 0), 0))} kg
-        </span>
-      </div>
+      {hechas.length > 0 && (
+        <div className="rounded-surface bg-bg p-3 flex items-center justify-between">
+          <span className="font-mono text-label text-ink-2 uppercase tracking-wide">Bajadas hechas</span>
+          <span className="font-mono text-body-s font-bold text-ink">
+            {hechas.reduce((n, s) => n + (parseInt(s.repsDone) || 0), 0)} reps
+          </span>
+        </div>
+      )}
     </div>
   );
 }
 
-// ── Myoreps: activación + miniseries (mockup frame 03) ──────────────────────
+// ── Myoreps / rest-pause: miniseries o pausas DESPUÉS de la última serie ───
 
-function MyorepsRows({ exSets, warmup, onUpdateSet, onMarkDone, onAddRow, firstSetRowTargetRef, setEditorTargetRef }: {
+function MyorepsRows({ exSets, serie, indices, onUpdateSet, onMarkDone, onAddRow, variante }: {
   exSets: SetInput[];
-  warmup: ReturnType<typeof generateWarmup>;
+  /** Serie principal que hace de activación (1 = la primera). */
+  serie: number;
+  /** Posiciones en `exSets` de las miniseries de esta serie. */
+  indices: number[];
+  key?: React.Key;
+  /** Myo-reps: miniseries sin parar casi. Rest-pause: pausas cortas con el mismo peso. */
+  variante: 'myoreps' | 'restpause';
   onUpdateSet: Props['onUpdateSet'];
   onMarkDone: Props['onMarkDone'];
   onAddRow: () => void;
-  firstSetRowTargetRef?: Props['firstSetRowTargetRef'];
-  setEditorTargetRef?: Props['setEditorTargetRef'];
 }) {
-  const activacion = exSets[0];
-  const miniseries = exSets.slice(1);
-  const totalEfectivo = exSets.filter(s => s.done).reduce((n, s) => n + (parseInt(s.repsDone) || 0), 0);
+  const activacion = exSets.filter(s => !s.segmento)[serie - 1];
+  const miniseries = indices.map(i => exSets[i]);
+  const totalEfectivo = miniseries.filter(s => s.done).reduce((n, s) => n + (parseInt(s.repsDone) || 0), 0);
   return (
-    <div className="px-4 py-4 space-y-3">
-      {warmup.sets.length > 0 && (
-        <p className="font-mono text-caption text-warning/70 uppercase">🔥 {warmup.sets.length} series de calentamiento arriba</p>
-      )}
-      {activacion && (
-        <div className="rounded-surface border border-hairline bg-inset p-3.5 space-y-3" ref={setEditorTargetRef}>
-          <p className="font-mono text-caption text-ink-2 uppercase tracking-wide">Serie de activación</p>
-          <div className="flex items-center gap-3">
-            <input
-              type="number" min={0} step={0.5}
-              value={activacion.weight}
-              onChange={e => onUpdateSet(0, 'weight', e.target.value)}
-              placeholder="kg"
-              disabled={activacion.done}
-              className="w-16 rounded-control border border-hairline bg-field px-2 py-2 text-center font-mono text-title-s text-ink focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50"
-            />
-            <span className="font-mono text-caption text-ink-3">kg ×</span>
-            <input
-              type="number" min={0}
-              value={activacion.repsDone}
-              onChange={e => onUpdateSet(0, 'repsDone', e.target.value)}
-              placeholder="reps"
-              disabled={activacion.done}
-              className="w-14 rounded-control border border-hairline bg-field px-2 py-2 text-center font-mono text-title-s text-ink focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50"
-            />
-            <button
-              ref={firstSetRowTargetRef}
-              onClick={() => onMarkDone(0, !activacion.done)}
-              className={`ml-auto flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-control border transition-colors duration-(--duration-state) ${
-                activacion.done ? 'bg-accent border-accent text-on-accent' : 'border-hairline text-ink-3 hover:border-accent-line hover:text-accent-ink'
-              }`}
-            >
-              <Icon name={activacion.done ? 'check_circle' : 'radio_button_unchecked'} size="s" filled={activacion.done} />
-            </button>
-          </div>
-        </div>
-      )}
-
-      <div className="rounded-surface bg-raised p-3.5 space-y-2.5">
-        <p className="font-mono text-caption text-ink-2 uppercase tracking-wide">Miniseries · sigue mientras aguantes 4+ reps</p>
+    <div className="px-4 py-4 space-y-3 border-t border-hairline">
+      <div className="rounded-surface bg-raised p-3.5 space-y-2.5 ml-3 border-l-2 border-accent-line">
+        <p className="font-mono text-label text-accent-ink uppercase tracking-wide">{variante === 'restpause'
+            ? `Rest-pause · tras la serie ${serie} · descansa 10-15 s y sigue`
+            : `Myo-reps · tras la serie ${serie} · sigue mientras aguantes 4+ reps`}</p>
         <div className="flex flex-wrap items-center gap-2.5">
           {miniseries.map((s, i) => {
-            const sIdx = i + 1;
+            const sIdx = indices[i];
             return (
               <button
                 key={sIdx}
                 type="button"
                 onClick={() => {
-                  // Las miniseries se hacen con el mismo peso que la activación
-                  // — no tienen campo de peso propio en el mockup, así que se
-                  // copia aquí para que el volumen/tonelaje no se calcule a 0.
+                  // Las miniseries se hacen con el mismo peso que la serie de
+                  // activación: se copia para que el tonelaje no salga a 0.
                   if (!s.done && !s.weight && activacion?.weight) onUpdateSet(sIdx, 'weight', activacion.weight);
                   onMarkDone(sIdx, !s.done);
                 }}
@@ -581,24 +586,26 @@ function MyorepsRows({ exSets, warmup, onUpdateSet, onMarkDone, onAddRow, firstS
                   disabled={s.done}
                   className="w-9 bg-transparent text-center font-mono text-title-s font-bold focus:outline-none disabled:opacity-100"
                 />
-                <span className="font-mono text-[9px] leading-none uppercase tracking-wide opacity-70">reps</span>
+                <span className="font-mono text-caption leading-none uppercase tracking-wide opacity-70">reps</span>
               </button>
             );
           })}
           <button
             type="button"
             onClick={onAddRow}
+            aria-label={variante === 'restpause' ? 'Añadir pausa' : 'Añadir miniserie'}
             className="flex h-14 w-14 items-center justify-center rounded-full border border-dashed border-hairline text-ink-3 hover:text-accent-ink hover:border-accent-line text-title-m"
           >
             +
           </button>
         </div>
       </div>
-
-      <div className="rounded-surface bg-bg p-3 flex items-center justify-between">
-        <span className="font-mono text-caption text-ink-2 uppercase tracking-wide">Total efectivo</span>
-        <span className="font-mono text-body-s font-bold text-accent-ink">{totalEfectivo} reps cerca del fallo</span>
-      </div>
+      {totalEfectivo > 0 && (
+        <div className="rounded-surface bg-bg p-3 flex items-center justify-between">
+          <span className="font-mono text-label text-ink-2 uppercase tracking-wide">{variante === 'restpause' ? 'Reps tras las pausas' : 'Miniseries hechas'}</span>
+          <span className="font-mono text-body-s font-bold text-accent-ink">{totalEfectivo} reps</span>
+        </div>
+      )}
     </div>
   );
 }

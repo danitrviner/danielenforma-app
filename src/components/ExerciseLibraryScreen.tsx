@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import ExerciseVideoPlayer from './ExerciseVideoPlayer';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Exercise, MuscleGroup, MUSCLE_ORDER, MUSCLE_LABELS } from '../types';
@@ -7,10 +7,12 @@ import { useToast } from '../hooks/useToast';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { mensajeDeErrorFirestore } from '../utils/erroresFirestore';
 import { Skeleton } from './ui';
+import { useFichaDeEjercicio } from './useFichaDeEjercicio';
 import { Badge, EmptyState, Dialog, Button, Icon, Input, PageHeader, Select, Sheet, Chip, SearchField } from './ui';
 import type { BadgeTone } from './ui';
 import ExerciseTriageScreen from './ExerciseTriageScreen';
 import { coincideBusqueda } from '../utils/busqueda';
+import { atributosFiltrables } from '../utils/atributosEjercicio';
 
 interface ExerciseLibraryScreenProps {
   coachId: string;
@@ -33,6 +35,7 @@ const EQUIPMENT_OPTIONS = [
   'mancuernas',
   'barra',
   'máquina',
+  'multipower',
   'polea',
   'kettlebell',
   'banco',
@@ -93,6 +96,7 @@ const exercisesQueryKey = ['exercises'] as const;
 export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreenProps) {
   const queryClient = useQueryClient();
   const { showToast } = useToast();
+  const { abrirFicha, hojas: hojasDeFicha } = useFichaDeEjercicio(coachId);
   const { data: exercises = [], isPending: loading } = useQuery({
     queryKey: exercisesQueryKey,
     queryFn: async () => {
@@ -109,6 +113,9 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
   const [filterType, setFilterType]             = useState('');
   const [filterEndurance, setFilterEndurance]   = useState('');
   const [filterEquipment, setFilterEquipment]   = useState<string[]>([]);
+  const [filterLateralidad, setFilterLateralidad] = useState('');
+  const [filterGoma, setFilterGoma]               = useState('');
+  const [filterGuiado, setFilterGuiado]           = useState('');
   const [showFilterSheet, setShowFilterSheet]   = useState(false);
   // Borrador de la hoja de filtros (panel 05 del handoff): se aplica solo al
   // pulsar "Ver N ejercicios", no en cada toque de chip — así el atleta... (el
@@ -129,12 +136,17 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
   const [showTriage, setShowTriage]             = useState(false);
 
   const sinRevisar = exercises.filter(e => !e.revisado).length;
+  // Un filtro solo se ofrece si el atributo está rellenado en casi todo el catálogo.
+  const filtrables = useMemo(() => atributosFiltrables(exercises), [exercises]);
 
   function matchesFilters(ex: Exercise, groups: MuscleGroup[], equipment: string[]): boolean {
     if (!coincideBusqueda(ex.name, searchDebounced)) return false;
     if (groups.length > 0 && (!ex.muscleGroup || !groups.includes(ex.muscleGroup))) return false;
     if (filterType && ex.type !== filterType) return false;
     if (filterEndurance && ex.enduranceProfile !== filterEndurance) return false;
+    if (filterLateralidad && ex.lateralidad !== filterLateralidad) return false;
+    if (filterGoma && String(ex.goma === true) !== filterGoma) return false;
+    if (filterGuiado && String(ex.guiado === true) !== filterGuiado) return false;
     if (equipment.length > 0) {
       const eq = ex.equipment ?? [];
       if (eq.length === 0) return false;
@@ -239,7 +251,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
     return ex.muscleGroup ? MACRO_MUSCLE_LABELS[ex.muscleGroup] : ex.primaryFocus;
   }
 
-  const hasFilters = filterMuscleGroups.length > 0 || !!filterType || !!filterEndurance || filterEquipment.length > 0 || !!search;
+  const hasFilters = filterMuscleGroups.length > 0 || !!filterType || !!filterEndurance || filterEquipment.length > 0 || !!filterLateralidad || !!filterGoma || !!filterGuiado || !!search;
 
   function toggleGroupChip(g: MuscleGroup) {
     setFilterMuscleGroups(prev => prev.includes(g) ? prev.filter(x => x !== g) : [...prev, g]);
@@ -293,7 +305,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
           onClick={openFilterSheet}
           aria-label="Filtros"
           className={`relative flex h-12 w-12 shrink-0 items-center justify-center rounded-control border transition-colors ${
-            filterType || filterEndurance || filterEquipment.length > 0 ? 'bg-accent/14 border-accent-line text-accent-ink' : 'bg-raised border-hairline text-ink-2'
+            filterType || filterEndurance || filterEquipment.length > 0 || filterLateralidad || filterGoma || filterGuiado ? 'bg-accent/14 border-accent-line text-accent-ink' : 'bg-raised border-hairline text-ink-2'
           }`}
         >
           <Icon name="tune" size="m" />
@@ -310,7 +322,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
 
       {hasFilters && (
         <button
-          onClick={() => { setFilterMuscleGroups([]); setFilterType(''); setFilterEndurance(''); setFilterEquipment([]); setSearch(''); }}
+          onClick={() => { setFilterMuscleGroups([]); setFilterType(''); setFilterEndurance(''); setFilterEquipment([]); setFilterLateralidad(''); setFilterGoma(''); setFilterGuiado(''); setSearch(''); }}
           className="text-ink-2 hover:text-ink text-label font-mono flex items-center gap-1"
         >
           <Icon name="close" size="s" />
@@ -449,8 +461,18 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                         )}
                       </td>
                       <td className="p-4 pr-6 text-right">
+                        <div className="flex items-center gap-2 justify-end">
+                          <button
+                            onClick={() => abrirFicha(ex)}
+                            className="flex items-center gap-1 px-2 py-1 rounded-control font-mono text-caption text-ink-2 hover:text-accent-ink hover:bg-accent/10 transition-all"
+                            title="Ver la ficha del ejercicio"
+                            aria-label={`Ver la ficha de ${ex.name}`}
+                          >
+                            <Icon name="query_stats" size="s" />
+                            Ficha
+                          </button>
                         {canEdit(ex) ? (
-                          <div className="flex items-center gap-2 justify-end">
+                          <>
                             <button
                               onClick={() => openEdit(ex)}
                               className="text-ink-2 hover:text-accent-ink p-2 rounded-control hover:bg-accent/10 transition-all"
@@ -465,10 +487,11 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                             >
                               <Icon name="delete" size="s" />
                             </button>
-                          </div>
+                          </>
                         ) : (
                           <span className="text-ink-3 font-mono text-caption uppercase">—</span>
                         )}
+                        </div>
                       </td>
                     </tr>
                     {videoAbierto === ex.id && ex.videoUrl && (
@@ -514,18 +537,23 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                     ))}
                   </div>
                 </div>
+                <div className="flex items-center gap-1 flex-shrink-0">
+                <button onClick={() => abrirFicha(ex)} aria-label={`Ver la ficha de ${ex.name}`} title="Ver la ficha del ejercicio" className="text-ink-2 hover:text-accent-ink p-2 rounded-control transition-all">
+                  <Icon name="query_stats" size="s" />
+                </button>
                 {canEdit(ex) ? (
-                  <div className="flex items-center gap-1 flex-shrink-0">
+                  <>
                     <button onClick={() => openEdit(ex)} aria-label="Editar" className="text-ink-2 hover:text-accent-ink p-2 rounded-control transition-all">
                       <Icon name="edit" size="s" />
                     </button>
                     <button onClick={() => setDeleteConfirm(ex.id)} aria-label="Eliminar" className="text-ink-2 hover:text-danger p-2 rounded-control transition-all">
                       <Icon name="delete" size="s" />
                     </button>
-                  </div>
+                  </>
                 ) : (
                   <Icon name="chevron_right" size="m" className="text-ink-4 flex-shrink-0" />
                 )}
+                </div>
               </div>
             ))}
           </div>
@@ -553,12 +581,48 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
             ))}
           </div>
 
-          <p className="text-caption font-mono uppercase text-ink-2">Equipamiento</p>
-          <div className="flex flex-wrap gap-2">
-            {EQUIPMENT_OPTIONS.map(eq => (
-              <Chip key={eq} selected={draftEquipment.includes(eq)} onClick={() => toggleDraftEquipment(eq)} className="capitalize">{eq}</Chip>
-            ))}
-          </div>
+          {filtrables.equipment && (
+            <>
+              <p className="text-caption font-mono uppercase text-ink-2">Equipamiento</p>
+              <div className="flex flex-wrap gap-2">
+                {EQUIPMENT_OPTIONS.map(eq => (
+                  <Chip key={eq} selected={draftEquipment.includes(eq)} onClick={() => toggleDraftEquipment(eq)} className="capitalize">{eq}</Chip>
+                ))}
+              </div>
+            </>
+          )}
+
+          {(filtrables.lateralidad || filtrables.goma || filtrables.guiado) && (
+            <div className="grid grid-cols-2 gap-3">
+              {filtrables.lateralidad && (
+                <Select
+                  label="Lateralidad"
+                  value={filterLateralidad}
+                  onChange={v => setFilterLateralidad(v)}
+                  placeholder="Todas"
+                  options={[{ value: 'uni', label: 'Unilateral' }, { value: 'bi', label: 'Bilateral' }]}
+                />
+              )}
+              {filtrables.goma && (
+                <Select
+                  label="Goma"
+                  value={filterGoma}
+                  onChange={v => setFilterGoma(v)}
+                  placeholder="Todas"
+                  options={[{ value: 'true', label: 'Con goma' }, { value: 'false', label: 'Sin goma' }]}
+                />
+              )}
+              {filtrables.guiado && (
+                <Select
+                  label="Trayectoria"
+                  value={filterGuiado}
+                  onChange={v => setFilterGuiado(v)}
+                  placeholder="Todas"
+                  options={[{ value: 'true', label: 'Guiada (máquina, multipower)' }, { value: 'false', label: 'Libre' }]}
+                />
+              )}
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-3">
             <Select
@@ -746,6 +810,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
             </form>
         </Dialog>
       )}
+      {hojasDeFicha}
     </div>
   );
 }

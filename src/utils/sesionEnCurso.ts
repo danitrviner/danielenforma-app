@@ -36,6 +36,9 @@ export interface SerieBorrador {
   repsDone: string;
   rir: string;
   done: boolean;
+  /** Bajada o miniserie añadida tras una serie principal. */
+  segmento?: boolean;
+  segmentoDe?: number;
 }
 
 export interface SesionEnCurso {

@@ -65,6 +65,9 @@ export function mapRecipe(r) {
     // Lo marca la pestaña Básicas del recetario (ver public/recetas/basicas_existentes.json
     // para las del recetario original que también lo son).
     basica:      r.basica === true ? true : null,
+    // Ingredientes vinculados al catálogo por 100 g (N-05): los usará el
+    // motor de ajuste (N-06). Solo lo llevan las recetas base.
+    vinculo:     r.vinculo ?? null,
   };
 
   // Strip nulls for clean Firestore docs

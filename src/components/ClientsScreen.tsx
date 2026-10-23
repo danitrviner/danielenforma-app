@@ -14,7 +14,7 @@ import AthletesBar from './AthletesBar';
 import CoachNotesPanel from './CoachNotesPanel';
 import InvitarAtletaModal from '../features/crm/components/InvitarAtletaModal';
 import { calcPlanExpiry } from '../hooks/usePlanExpiry';
-import { getPendingReviews } from '../hooks/usePendingReviews';
+import { useRevisionesSinLeer } from '../hooks/useRevisionesSinLeer';
 import { estimateSetupPct } from '../utils/clientSetup';
 import { atletasActivos, esBaja, esAnonimizado } from '../utils/atletas';
 import { Avatar, Skeleton, Button, Icon } from './ui';
@@ -98,6 +98,9 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
   const fetchingCount = useIsFetching();
   const mutatingCount = useIsMutating();
   const isSyncing = fetchingCount > 0 || mutatingCount > 0;
+  // Revisiones sin leer por cliente (K-05): se piden al abrir esta lista, con la
+  // misma consulta y ventana que la bandeja de Revisiones, que las reutiliza.
+  const revisionesSinLeer = useRevisionesSinLeer(coachId, true);
   // Shared 'userProfiles' cache key (same as CommandPalette/ReviewsScreen/MesocycleManager).
   // Sin filtrar: el CRM y la sección "Archivados" de abajo necesitan también
   // las bajas y los anonimizados. `athletes` (abajo) es la vista filtrada
@@ -273,7 +276,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
         planDaysLeft, planExpired, planSoon,
         daysSince, checkinLate, daysSinceLogin,
         totalCheckCount: athleteCheckins.length,
-        pendingCount: getPendingReviews(athleteCheckins).length,
+        pendingCount: revisionesSinLeer.porAtleta.get(athlete.email.toLowerCase()) ?? 0,
         pendingNotesCount,
         sortScore,
         setupPct,
@@ -287,7 +290,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
      * orden siga siendo estable. */
     }).sort((a, b) =>
       compararNombres(a.displayName, b.displayName) || a.sortScore - b.sortScore);
-  }, [athletes, checkins, todayMs, allAssignments, allWorkoutLogs]);
+  }, [athletes, checkins, todayMs, allAssignments, allWorkoutLogs, revisionesSinLeer]);
 
   const filteredAthletes = useMemo(() => {
     const q = search.trim().toLowerCase();

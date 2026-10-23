@@ -1,4 +1,5 @@
 import ReglasDeRecetasPanel from './ReglasDeRecetasPanel';
+import RecetasDelGeneradorPanel from './RecetasDelGeneradorPanel';
 import React, { useState, useMemo, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -337,6 +338,17 @@ export default function ClientDietsPanel({
             }
           />
         </div>
+      )}
+
+      {/* De qué recetas tira el generador con cada dieta */}
+      {subView === 'info' && (
+        <RecetasDelGeneradorPanel
+          athleteEmail={athlete.email}
+          diets={athleteDiets}
+          dietConfig={athleteDietConfig}
+          onboarding={onboardingData}
+          nutritionConfig={nutritionConfig}
+        />
       )}
 
       {/* Recetas que el coach esconde a este atleta */}

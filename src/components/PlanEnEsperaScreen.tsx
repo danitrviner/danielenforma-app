@@ -5,7 +5,7 @@ import CheckInScreen from './CheckInScreen';
 import AthleteRoadmapScreen from './AthleteRoadmapScreen';
 import MiFichaCard from './MiFichaCard';
 import { signOut, auth } from '../firebase';
-import { Icon, AtlasLogo } from './ui';
+import { Icon, AtlasLogo, Wordmark } from './ui';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Sala de espera del atleta sin plan — bloqueo total (16-08).
@@ -95,7 +95,7 @@ export default function PlanEnEsperaScreen({ profile, checkins, onLogOut }: Prop
       <div className="flex-none w-full max-w-lg mx-auto px-6 pt-[calc(2rem+var(--safe-top))] pb-2">
         <div className="flex items-center gap-2">
           <AtlasLogo alt="En Forma" className="w-7 h-7 object-contain" />
-          <span className="font-sans font-bold text-title-m tracking-tighter uppercase text-accent-ink">EN FORMA</span>
+          <Wordmark />
         </div>
       </div>
       <div className="flex-1 min-h-0 overflow-y-auto w-full max-w-lg mx-auto px-6 py-6">

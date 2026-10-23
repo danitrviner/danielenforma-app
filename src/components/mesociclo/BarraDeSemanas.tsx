@@ -42,7 +42,6 @@ interface Props {
   onTest: (semanas: number[], activar: boolean) => void;
   eventos: Record<string, EventoDeSemana>;
   onEvento: (semana: number, evento: EventoDeSemana | undefined) => void;
-  onProgresiones: () => void;
   /** Abre «Planificar progresión» (unos pocos ejercicios, semana a semana). */
   onPlanificar?: () => void;
   onGuardarPlantilla?: () => void;
@@ -112,7 +111,6 @@ export default function BarraDeSemanas(p: Props) {
             {p.onPlanificar && (
               <Button size="s" variant="secondary" icon="tune" onClick={p.onPlanificar}>Planificar progresión</Button>
             )}
-            <Button size="s" variant="ghost" icon="trending_up" onClick={p.onProgresiones}>Progresiones</Button>
             <Button size="s" variant="ghost" icon="swap_horiz" onClick={p.onComparar}>Comparar</Button>
             {p.onGuardarPlantilla && (
               <Button size="s" variant="ghost" icon="library_books" onClick={p.onGuardarPlantilla}>Guardar como plantilla</Button>

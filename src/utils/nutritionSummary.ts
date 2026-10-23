@@ -35,7 +35,9 @@ export function pickTodaysDiet(diets: Diet[], config: AthleteDietConfig | null, 
  * esté marcada activa: si el coach la ha puesto en el martes, es la del martes.
  */
 export function dietaPautadaDelDia(diets: Diet[], config: AthleteDietConfig | null, weekday: WeekDay): Diet | null {
-  const propias = diets.filter(d => !d.selfManaged);
+  // Un borrador (autoguardado a medias, aún sin «Guardar») no llega al atleta,
+  // ni aunque esté programado o marcado activo.
+  const propias = diets.filter(d => !d.selfManaged && !d.isDraft);
   const programadaId = config?.weeklySchedule?.[weekday];
   if (programadaId) {
     const programada = propias.find(d => d.id === programadaId);

@@ -1,17 +1,23 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   Questionnaire, QuestionnaireAssignment, QuestionnaireResponse, QuestionnaireQuestion,
   BodyweightLog, BodyMeasurement, BODY_METRIC_UNITS,
 } from '../types';
-import { submitResponse, addBodyweight, saveBodyMeasurement, uploadQuestionnaireMedia } from '../dbService';
+import { submitResponse, guardarPesoDelDia, saveBodyMeasurement, uploadQuestionnaireMedia } from '../dbService';
 import { resolveQuestions } from '../utils/questionnaireResolve';
+import { pasosDeCuestionario } from '../utils/pasosDeCuestionario';
 import { todayStr } from '../utils/questionnaireSchedule';
 import { bodyweightForAthleteKey, invalidarExtremosDePeso } from '../hooks/useAthleteWeight';
 import { useBodyMeasurements, bodyMeasurementsForAthleteKey } from '../hooks/useBodyMeasurements';
 import { mensajeDeErrorFirestore } from '../utils/erroresFirestore';
 import { useToast } from '../hooks/useToast';
-import { Icon, Button, ProgressBar } from './ui';
+import { Icon, Button } from './ui';
+
+type Answers = Record<string, string | number | boolean>;
+
+/** Lo que se guarda para retomar: respuestas hasta ahora y la pantalla en que iba. */
+export interface BorradorDeCuestionario { answers: Answers; stepIdx: number }
 
 interface Props {
   questionnaire: Questionnaire;
@@ -19,73 +25,31 @@ interface Props {
   athleteEmail: string;
   /** Último peso conocido — prefill de una pregunta 'metric' de peso corporal. */
   currentWeight?: number;
+  /** Borrador guardado de esta misma asignación (viene del servidor, ver `useProgresoRevision`). */
+  borrador?: BorradorDeCuestionario | null;
+  /** Se llama (con retraso) en cada cambio, y con `null` al enviar. Sin esto no se guarda nada. */
+  onBorrador?: (b: BorradorDeCuestionario | null) => void;
   onSubmitted: (r: QuestionnaireResponse) => void;
   onCancel: () => void;
 }
 
-type Answers = Record<string, string | number | boolean>;
-interface Draft { answers: Answers; stepIdx: number }
-
 /* ═══════════════════════════════════════════════════════════════════════════
-   QuestionnaireWizard (F3.13c, pendiente cerrado — "Revisiones - Experiencia"
-   panel 03: una pregunta a la vez, con progreso, y "puedes salir y volver".
+   QuestionnaireWizard — una pantalla por pregunta (K-03)
 
-   Sustituye al `QuestionnaireForm` anterior (formulario largo de una sola
-   página, todas las preguntas a la vez). Alcance decidido con Dani: el
-   mockup agrupa varias preguntas relacionadas por paso, pero
-   `QuestionnaireQuestion` no tiene ningún campo de sección/tema — inventar
-   una agrupación sin ese dato sería adivinar. Se hace "una pregunta = un
-   paso" (cero cambios de modelo) en vez de tocar el editor del coach para
-   añadir secciones.
+   La pregunta va grande y arriba (24 px, no el 11 px en mayúsculas de antes);
+   las escalas, en botones de 52 px. Las respuestas sencillas (numéricas y
+   medidas) se agrupan de tres en tres: ver `utils/pasosDeCuestionario`.
 
-   "Guardado, sales y vuelves" se resuelve con un borrador en localStorage,
-   NO en Firestore: no hay concepto de respuesta parcial en el modelo de
-   datos (`submitResponse` es una escritura atómica única), y quedarse en
-   ese mismo dispositivo es exactamente el caso real (el móvil del atleta,
-   no rellenar a medias en el portátil y terminar en el móvil). La clave del borrador
-   incluye la fecha de hoy — `assignment.id` es fijo para TODA la
-   recurrencia (semanal/mensual/...), así que sin la fecha un borrador de la
-   semana pasada se colaría en la ocasión de esta semana. Efecto colateral
-   a propósito: el borrador "caduca" solo con que cambie el día, sin
-   necesitar limpieza aparte para el caso normal.
+   «Guardado, sales y vuelves» (K-02): el borrador ya NO vive en localStorage
+   sino en el servidor, dentro del progreso de la revisión semanal, así que se
+   retoma desde otro dispositivo. Este componente no sabe dónde se guarda:
+   recibe `borrador` y avisa con `onBorrador`. Las respuestas se siguen enviando
+   como siempre, una por cuestionario, con `submitResponse`.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-function draftStorageKey(assignmentId: string): string {
-  return `questionnaireDraft_${assignmentId}_${todayStr()}`;
-}
+const ESPERA_GUARDADO_MS = 600;
 
-function loadDraft(assignmentId: string): Draft | null {
-  try {
-    const raw = localStorage.getItem(draftStorageKey(assignmentId));
-    return raw ? JSON.parse(raw) as Draft : null;
-  } catch {
-    return null;
-  }
-}
-
-function saveDraft(assignmentId: string, draft: Draft): void {
-  try {
-    localStorage.setItem(draftStorageKey(assignmentId), JSON.stringify(draft));
-  } catch {
-    // best-effort: sin localStorage (privado/lleno) el wizard sigue funcionando, solo sin resumir
-  }
-}
-
-function clearDraft(assignmentId: string): void {
-  try {
-    // Barre también borradores de días anteriores de este mismo assignment —
-    // si no, se acumula uno por cada día que no se llegó a enviar.
-    const prefix = `questionnaireDraft_${assignmentId}_`;
-    for (let i = localStorage.length - 1; i >= 0; i--) {
-      const k = localStorage.key(i);
-      if (k?.startsWith(prefix)) localStorage.removeItem(k);
-    }
-  } catch {
-    // best-effort
-  }
-}
-
-export default function QuestionnaireWizard({ questionnaire, assignment, athleteEmail, currentWeight, onSubmitted, onCancel }: Props) {
+export default function QuestionnaireWizard({ questionnaire, assignment, athleteEmail, currentWeight, borrador, onBorrador, onSubmitted, onCancel }: Props) {
   const queryClient = useQueryClient();
   const { showToast } = useToast();
   const { latest: latestMeasurements } = useBodyMeasurements(athleteEmail);
@@ -93,26 +57,34 @@ export default function QuestionnaireWizard({ questionnaire, assignment, athlete
   // coach configura en ClientReviewsPanel. Sin esto, el chip "personalizado · N"
   // que ve el coach no tendría ningún efecto en lo que responde el atleta.
   const questions = useMemo(() => resolveQuestions(questionnaire, assignment), [questionnaire, assignment]);
-  const initial = useMemo(() => loadDraft(assignment.id), [assignment.id]);
-  const [answers, setAnswers] = useState<Answers>(initial?.answers ?? {});
-  const [stepIdx, setStepIdx] = useState(() => Math.min(Math.max(initial?.stepIdx ?? 0, 0), questions.length - 1));
+  const pasos = useMemo(() => pasosDeCuestionario(questions), [questions]);
+  const [answers, setAnswers] = useState<Answers>(borrador?.answers ?? {});
+  const [stepIdx, setStepIdx] = useState(() => Math.min(Math.max(borrador?.stepIdx ?? 0, 0), Math.max(pasos.length - 1, 0)));
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
   const [savedFlash, setSavedFlash] = useState(false);
   const [uploading, setUploading] = useState(false);
 
-  const question = questions[stepIdx];
+  const grupo = (pasos[stepIdx] ?? []).map(i => questions[i]);
+  const unica = grupo.length === 1 ? grupo[0] : null;
   const isFirst = stepIdx === 0;
-  const isLast = stepIdx === questions.length - 1;
+  const isLast = stepIdx === pasos.length - 1;
 
-  // Autoguardado: cada respuesta o cambio de paso persiste al instante.
+  // Autoguardado con retraso: cada respuesta o cambio de pantalla se guarda,
+  // pero no una escritura por cada tecla.
+  const primeraVez = useRef(true);
+  const onBorradorRef = useRef(onBorrador);
+  onBorradorRef.current = onBorrador;
   useEffect(() => {
-    saveDraft(assignment.id, { answers, stepIdx });
+    if (primeraVez.current) { primeraVez.current = false; return; }
     if (Object.keys(answers).length === 0) return;
-    setSavedFlash(true);
-    const t = setTimeout(() => setSavedFlash(false), 1200);
-    return () => clearTimeout(t);
-  }, [answers, stepIdx, assignment.id]);
+    const guardar = setTimeout(() => {
+      onBorradorRef.current?.({ answers, stepIdx });
+      setSavedFlash(true);
+    }, ESPERA_GUARDADO_MS);
+    const apagar = setTimeout(() => setSavedFlash(false), ESPERA_GUARDADO_MS + 1200);
+    return () => { clearTimeout(guardar); clearTimeout(apagar); };
+  }, [answers, stepIdx]);
 
   // 05-7. Las preguntas numéricas llamaban a `setAnswer(parseFloat(value))`, y
   // `parseFloat('')` es NaN. Vaciar el campo —o escribir «72,5», que en un
@@ -123,14 +95,14 @@ export default function QuestionnaireWizard({ questionnaire, assignment, athlete
   // respondida. Se filtra en el único sitio por el que pasan todas las
   // respuestas, para que ninguna vía futura pueda saltárselo: un número no
   // finito significa «sin responder», y lo correcto es borrar la clave.
-  const setAnswer = (value: string | number | boolean) => {
+  const setAnswer = (questionId: string, value: string | number | boolean) => {
     setError('');
     setAnswers(prev => {
       if (typeof value === 'number' && !Number.isFinite(value)) {
-        const { [question.id]: _descartado, ...resto } = prev;
+        const { [questionId]: _descartado, ...resto } = prev;
         return resto;
       }
-      return { ...prev, [question.id]: value };
+      return { ...prev, [questionId]: value };
     });
   };
 
@@ -140,11 +112,11 @@ export default function QuestionnaireWizard({ questionnaire, assignment, athlete
     return latestMeasurements[q.metricKey]?.value;
   };
 
-  const subirMedia = async (file: File) => {
+  const subirMedia = async (question: QuestionnaireQuestion, file: File) => {
     setUploading(true);
     setError('');
     try {
-      setAnswer(await uploadQuestionnaireMedia(athleteEmail, question.id, file));
+      setAnswer(question.id, await uploadQuestionnaireMedia(athleteEmail, question.id, file));
     } catch (e) {
       console.error('uploadQuestionnaireMedia failed:', e);
       setError(mensajeDeErrorFirestore(e, `subir el archivo de "${question.label}"`));
@@ -181,11 +153,10 @@ export default function QuestionnaireWizard({ questionnaire, assignment, athlete
 
       try {
         if (q.metricKey === 'bodyweight') {
-          const entry = await addBodyweight({
-            athleteId: athleteEmail, date: hoy, weight: valor,
-            kind: 'daily', createdAt: new Date().toISOString(),
-          });
-          queryClient.setQueryData<BodyweightLog[]>(bodyweightForAthleteKey(athleteEmail), prev => [...(prev ?? []), entry]);
+          // Un peso por día: si hoy ya hay uno se corrige, no se duplica.
+          const deHoy = queryClient.getQueryData<BodyweightLog[]>(bodyweightForAthleteKey(athleteEmail))?.find(l => l.date === hoy);
+          const entry = await guardarPesoDelDia(athleteEmail, hoy, valor, deHoy);
+          queryClient.setQueryData<BodyweightLog[]>(bodyweightForAthleteKey(athleteEmail), prev => [...(prev ?? []).filter(l => l.id !== entry.id), entry]);
           // El peso que se registra desde el cuestionario cuenta igual que el
           // del panel: los extremos pueden haber cambiado.
           invalidarExtremosDePeso(queryClient, athleteEmail);
@@ -213,8 +184,8 @@ export default function QuestionnaireWizard({ questionnaire, assignment, athlete
   };
 
   const goNext = async () => {
-    if (question.required && answers[question.id] === undefined) {
-      setError('Responde para continuar.');
+    if (grupo.some(q => q.required && answers[q.id] === undefined)) {
+      setError(grupo.length > 1 ? 'Rellena lo obligatorio para continuar.' : 'Responde para continuar.');
       return;
     }
     setError('');
@@ -243,7 +214,7 @@ export default function QuestionnaireWizard({ questionnaire, assignment, athlete
           ? 'Enviado, pero una de tus medidas no se ha podido guardar. Apúntala en Perfil › Revisión.'
           : `Enviado, pero ${fallidas} de tus medidas no se han podido guardar. Apúntalas en Perfil › Revisión.`);
       }
-      clearDraft(assignment.id);
+      onBorrador?.(null);
       onSubmitted(response);
     } catch (e) {
       console.error('submitResponse failed:', e);
@@ -253,55 +224,33 @@ export default function QuestionnaireWizard({ questionnaire, assignment, athlete
     }
   };
 
-  return (
-    <div className="bg-surface border border-hairline rounded-surface p-4 sm:p-6 space-y-5">
-      <div className="flex items-center gap-3">
-        <button type="button" onClick={onCancel} className="text-ink-2 hover:text-ink transition-colors p-1" aria-label="Cerrar">
-          <Icon name="close" size="m" />
-        </button>
-        <span className="font-sans text-caption text-ink-2 uppercase tracking-widest">
-          Paso {stepIdx + 1} de {questions.length}
-        </span>
-        <span className={`ml-auto font-sans text-caption font-bold uppercase text-accent-ink transition-opacity duration-(--duration-base) ${savedFlash ? 'opacity-100' : 'opacity-0'}`}>
-          Guardado
-        </span>
-      </div>
-
-      <ProgressBar value={((stepIdx + 1) / questions.length) * 100} label={`Paso ${stepIdx + 1} de ${questions.length}`} />
-
-      {isFirst && (
-        <div>
-          <h2 className="font-sans font-bold text-title-m text-ink">{questionnaire.title}</h2>
-          {questionnaire.description && <p className="text-label text-ink-2 font-sans mt-1">{questionnaire.description}</p>}
-        </div>
-      )}
-
-      <div key={question.id} className="space-y-3 animate-fade-up">
-        <label className="block font-sans text-caption text-ink-2 uppercase tracking-wider">
-          {question.label}{question.required && ' *'}{question.unit && ` (${question.unit})`}
-          {question.type === 'metric' && question.metricKey && ` (${question.metricKey === 'bodyweight' ? 'kg' : 'cm'})`}
-        </label>
-        {question.helpText && <p className="text-caption text-ink-4">{question.helpText}</p>}
-
+  /** El control de UNA pregunta. `grande` = es la única de la pantalla. */
+  const renderControl = (question: QuestionnaireQuestion) => {
+    const valor = answers[question.id];
+    const campoNumero = 'w-full bg-raised border-0 border-b border-hairline text-ink font-mono text-title-m p-3 focus:ring-0 focus:border-accent transition-colors';
+    return (
+      <>
         {question.type === 'text' && (
           <textarea
-            value={(answers[question.id] as string) ?? ''}
-            onChange={e => setAnswer(e.target.value)}
+            value={(valor as string) ?? ''}
+            onChange={e => setAnswer(question.id, e.target.value)}
             maxLength={question.maxChars}
             placeholder="Escribe aquí..."
-            className="w-full bg-raised border-0 border-b border-hairline text-ink text-title-s p-3 focus:ring-0 focus:border-accent transition-colors min-h-[80px]"
+            className="w-full bg-raised border-0 border-b border-hairline text-ink text-title-s p-3 focus:ring-0 focus:border-accent transition-colors min-h-[120px]"
           />
         )}
 
         {question.type === 'numeric' && (
           <input
             type="number"
+            inputMode="decimal"
             step={question.decimals ? Math.pow(10, -question.decimals) : 1}
             min={question.min}
             max={question.max}
-            value={(answers[question.id] as string) ?? ''}
-            onChange={e => setAnswer(parseFloat(e.target.value))}
-            className="w-full bg-raised border-0 border-b border-hairline text-ink font-mono text-title-m p-3 focus:ring-0 focus:border-accent transition-colors"
+            value={(valor as string) ?? ''}
+            onChange={e => setAnswer(question.id, parseFloat(e.target.value))}
+            aria-label={question.label}
+            className={campoNumero}
           />
         )}
 
@@ -312,11 +261,13 @@ export default function QuestionnaireWizard({ questionnaire, assignment, athlete
         {question.type === 'metric' && (
           <input
             type="number"
+            inputMode="decimal"
             step={0.1}
-            value={(answers[question.id] as string) ?? ''}
-            onChange={e => setAnswer(parseFloat(e.target.value))}
+            value={(valor as string) ?? ''}
+            onChange={e => setAnswer(question.id, parseFloat(e.target.value))}
             placeholder={prefillFor(question) !== undefined ? String(prefillFor(question)) : undefined}
-            className="w-full bg-raised border-0 border-b border-hairline text-ink font-mono text-title-m p-3 focus:ring-0 focus:border-accent transition-colors"
+            aria-label={question.label}
+            className={campoNumero}
           />
         )}
 
@@ -325,45 +276,48 @@ export default function QuestionnaireWizard({ questionnaire, assignment, athlete
             <input
               type="file"
               accept={question.mediaKind === 'video' ? 'video/*' : question.mediaKind === 'image' ? 'image/*' : 'video/*,image/*'}
-              onChange={e => { const f = e.target.files?.[0]; if (f) subirMedia(f); }}
+              onChange={e => { const f = e.target.files?.[0]; if (f) subirMedia(question, f); }}
               disabled={uploading}
               aria-label={`Adjuntar archivo para ${question.label}`}
               className="w-full font-sans text-title-s text-ink-2 file:mr-3 file:py-2 file:px-3 file:rounded-control file:border-0 file:bg-accent file:text-on-accent file:font-sans file:font-bold"
             />
             {uploading && <p className="font-mono text-caption text-ink-2">Subiendo…</p>}
-            {typeof answers[question.id] === 'string' && !uploading && (
+            {typeof valor === 'string' && !uploading && (
               <p className="font-mono text-caption text-success">Archivo subido</p>
             )}
           </div>
         )}
 
-        {question.type === 'scale' && (
-          <div className="space-y-2">
-            <div className="flex gap-2 flex-wrap">
-              {Array.from(
-                { length: (question.scaleMax ?? 10) - (question.scaleMin ?? 1) + 1 },
-                (_, i) => (question.scaleMin ?? 1) + i
-              ).map(v => (
-                <button
-                  key={v}
-                  type="button"
-                  onClick={() => setAnswer(v)}
-                  className={`flex-1 min-w-[38px] h-11 rounded-control font-mono text-label font-bold transition-all ${
-                    answers[question.id] === v
-                      ? 'bg-accent text-on-accent'
-                      : 'bg-raised text-ink-2 border border-hairline hover:border-accent/50'
-                  }`}
-                >{v}</button>
-              ))}
-            </div>
-            {(question.scaleMinLabel || question.scaleMaxLabel) && (
-              <div className="flex justify-between text-caption font-mono text-ink-2">
-                <span>{question.scaleMin ?? 1} – {question.scaleMinLabel}</span>
-                <span>{question.scaleMaxLabel} – {question.scaleMax ?? 10}</span>
+        {question.type === 'scale' && (() => {
+          const min = question.scaleMin ?? 1;
+          const max = question.scaleMax ?? 10;
+          const n = max - min + 1;
+          return (
+            <div className="space-y-2">
+              <div className={`grid gap-2 ${n <= 5 ? 'grid-cols-5' : 'grid-cols-6'}`}>
+                {Array.from({ length: n }, (_, i) => min + i).map(v => (
+                  <button
+                    key={v}
+                    type="button"
+                    onClick={() => setAnswer(question.id, v)}
+                    aria-pressed={valor === v}
+                    className={`h-[52px] rounded-control font-mono text-title-s font-bold transition-all active:scale-95 ${
+                      valor === v
+                        ? 'bg-accent text-on-accent'
+                        : 'bg-raised text-ink-2 border border-hairline hover:border-accent/50'
+                    }`}
+                  >{v}</button>
+                ))}
               </div>
-            )}
-          </div>
-        )}
+              {(question.scaleMinLabel || question.scaleMaxLabel) && (
+                <div className="flex justify-between text-caption font-sans text-ink-2">
+                  <span>{question.scaleMinLabel}</span>
+                  <span>{question.scaleMaxLabel}</span>
+                </div>
+              )}
+            </div>
+          );
+        })()}
 
         {question.type === 'boolean' && (
           <div className="flex gap-2">
@@ -371,9 +325,10 @@ export default function QuestionnaireWizard({ questionnaire, assignment, athlete
               <button
                 key={String(v)}
                 type="button"
-                onClick={() => setAnswer(v)}
-                className={`flex-1 py-3 font-sans text-label rounded-control border transition-all min-h-[44px] ${
-                  answers[question.id] === v
+                onClick={() => setAnswer(question.id, v)}
+                aria-pressed={valor === v}
+                className={`flex-1 py-3 font-sans text-label rounded-control border transition-all min-h-[52px] active:scale-95 ${
+                  valor === v
                     ? 'bg-accent text-on-accent font-bold border-transparent'
                     : 'bg-raised text-ink border-hairline'
                 }`}
@@ -386,9 +341,9 @@ export default function QuestionnaireWizard({ questionnaire, assignment, athlete
           <div className="flex flex-col gap-2">
             {question.options.map(opt => {
               const curSelected: string[] = question.multiSelect
-                ? ((answers[question.id] as string | undefined) ?? '').split(',').filter(Boolean)
+                ? ((valor as string | undefined) ?? '').split(',').filter(Boolean)
                 : [];
-              const isSelected = question.multiSelect ? curSelected.includes(opt) : answers[question.id] === opt;
+              const isSelected = question.multiSelect ? curSelected.includes(opt) : valor === opt;
               return (
                 <button
                   key={opt}
@@ -396,12 +351,13 @@ export default function QuestionnaireWizard({ questionnaire, assignment, athlete
                   onClick={() => {
                     if (question.multiSelect) {
                       const next = isSelected ? curSelected.filter(o => o !== opt) : [...curSelected, opt];
-                      setAnswer(next.join(','));
+                      setAnswer(question.id, next.join(','));
                     } else {
-                      setAnswer(opt);
+                      setAnswer(question.id, opt);
                     }
                   }}
-                  className={`w-full py-3 px-3 text-label font-mono rounded-control border text-left transition-all min-h-[44px] ${
+                  aria-pressed={isSelected}
+                  className={`w-full py-3 px-4 text-label font-sans rounded-control border text-left transition-all min-h-[52px] active:scale-[0.99] ${
                     isSelected
                       ? 'bg-accent text-on-accent border-transparent font-bold'
                       : 'bg-raised text-ink border-hairline'
@@ -411,17 +367,74 @@ export default function QuestionnaireWizard({ questionnaire, assignment, athlete
             })}
           </div>
         )}
+      </>
+    );
+  };
+
+  /** Unidad que se escribe junto al enunciado. */
+  const unidadDe = (q: QuestionnaireQuestion) =>
+    q.type === 'metric' && q.metricKey ? (q.metricKey === 'bodyweight' ? 'kg' : 'cm') : q.unit;
+
+  return (
+    <div className="bg-surface border border-hairline rounded-surface p-4 sm:p-6 space-y-5">
+      <div className="flex items-center gap-3">
+        <button type="button" onClick={onCancel} className="text-ink-2 hover:text-ink transition-colors p-1" aria-label="Cerrar">
+          <Icon name="close" size="m" />
+        </button>
+        <span className="min-w-0 flex-1 truncate text-center font-mono text-caption uppercase tracking-[.16em] text-ink-2">
+          {questionnaire.title} · {stepIdx + 1} de {pasos.length}
+        </span>
+        <span className={`font-sans text-caption font-bold uppercase text-accent-ink transition-opacity duration-(--duration-base) ${savedFlash ? 'opacity-100' : 'opacity-0'}`}>
+          Guardado
+        </span>
       </div>
 
-      {error && <p className="text-label text-danger font-sans">{error}</p>}
+      {/* Progreso por pantallas, no una barra continua: se ve cuánto queda. */}
+      <div className="flex gap-1" role="progressbar" aria-valuemin={1} aria-valuemax={pasos.length} aria-valuenow={stepIdx + 1} aria-label={`Pantalla ${stepIdx + 1} de ${pasos.length}`}>
+        {pasos.map((_, i) => (
+          <span key={i} className={`h-1 flex-1 rounded-full ${i <= stepIdx ? 'bg-accent' : 'bg-hairline'}`} />
+        ))}
+      </div>
+
+      <div key={stepIdx} className="space-y-5 animate-fade-up">
+        {isFirst && questionnaire.description && (
+          <p className="text-label text-ink-2 font-sans">{questionnaire.description}</p>
+        )}
+
+        {unica ? (
+          <div className="space-y-4">
+            <h2 className="font-sans font-bold text-title-l leading-tight text-ink">
+              {unica.label}{unidadDe(unica) && <span className="ml-2 font-mono text-title-s font-normal text-ink-2">({unidadDe(unica)})</span>}
+            </h2>
+            {unica.helpText && <p className="font-sans text-body-s text-ink-2">{unica.helpText}</p>}
+            {renderControl(unica)}
+            {!unica.required && <p className="font-sans text-caption text-ink-3">Opcional: puedes pasar a la siguiente sin responder.</p>}
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {grupo.map(q => (
+              <div key={q.id} className="space-y-2">
+                <p className="font-sans font-bold text-title-s text-ink">
+                  {q.label}{unidadDe(q) && <span className="ml-2 font-mono text-body-s font-normal text-ink-2">({unidadDe(q)})</span>}
+                  {!q.required && <span className="ml-2 font-sans text-caption font-normal text-ink-3">opcional</span>}
+                </p>
+                {q.helpText && <p className="font-sans text-caption text-ink-3">{q.helpText}</p>}
+                {renderControl(q)}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {error && <p className="text-label text-danger font-sans" role="alert">{error}</p>}
 
       <div className="flex gap-2 pt-2">
-        <Button variant="secondary" size="l" icon="arrow_back" label="Paso anterior" onClick={goBack} disabled={isFirst || saving} />
+        <Button variant="secondary" size="l" icon="arrow_back" label="Pantalla anterior" onClick={goBack} disabled={isFirst || saving} />
         <Button
           variant="primary" size="l" fullWidth
           iconTrailing={isLast ? 'send' : 'arrow_forward'}
           onClick={goNext}
-          disabled={saving}
+          disabled={saving || uploading}
           loading={saving}
           loadingLabel="Enviando"
         >

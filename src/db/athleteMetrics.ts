@@ -1,4 +1,4 @@
-import { db, collection, doc, getDocs, addDoc, updateDoc, deleteDoc, query, where, limit, orderBy } from '../firebase';
+import { db, collection, doc, getDocs, addDoc, setDoc, updateDoc, deleteDoc, query, where, limit, orderBy } from '../firebase';
 import { BodyweightLog, StepLog } from '../types';
 import { forceLocalOnly, setLocalBypassMode, stripUndefined, esFalloDePermisos } from './core';
 import { escribirLocal } from '../utils/almacenLocal';
@@ -94,6 +94,43 @@ export async function addBodyweight(data: Omit<BodyweightLog, 'id'>): Promise<Bo
     if (esFalloDePermisos(err)) throw err;
     const entry: BodyweightLog = { ...data, id: `local_bw_${Date.now()}` };
     saveLocalBw([...getLocalBw(), entry]);
+    return entry;
+  }
+}
+
+/** Id del peso «del día»: uno por atleta y día, para que volver a guardar sustituya. */
+export function idPesoDelDia(email: string, fecha: string): string {
+  return `${email}_${fecha}`;
+}
+
+/**
+ * Guarda el peso de un día SIN duplicarlo. Si ya hay un registro de ese día
+ * (`existente`, con el id que tenga: los antiguos son aleatorios) se corrige;
+ * si no, se escribe con el id determinista `{email}_{fecha}`, así dos
+ * guardados seguidos —doble toque, dos dispositivos— caen en el mismo documento.
+ */
+export async function guardarPesoDelDia(
+  email: string, fecha: string, weight: number, existente?: BodyweightLog,
+): Promise<BodyweightLog> {
+  if (existente) {
+    await updateBodyweight(existente.id, { weight });
+    return { ...existente, weight };
+  }
+  const entry: BodyweightLog = {
+    id: idPesoDelDia(email, fecha), athleteId: email, date: fecha, weight, createdAt: new Date().toISOString(),
+  };
+  const sinEste = () => getLocalBw().filter(b => b.id !== entry.id);
+  if (forceLocalOnly) { saveLocalBw([...sinEste(), entry]); return entry; }
+  try {
+    const { id, ...datos } = entry;
+    await setDoc(doc(db, 'bodyweightLogs', id), stripUndefined(datos));
+    saveLocalBw([...sinEste(), entry]);
+    return entry;
+  } catch (err) {
+    console.warn('guardarPesoDelDia Firestore failed:', err);
+    setLocalBypassMode(true, err);
+    if (esFalloDePermisos(err)) throw err;
+    saveLocalBw([...sinEste(), entry]);
     return entry;
   }
 }

@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import type { Diet, Mesocycle, NutritionProgram } from '../types';
-import { resumirDieta, resumirPrograma, resumirCalendarioDietas, resumirMeso, resumirConfigNutricion } from './cambiosAtleta';
+import { resumirDieta, resumirPrograma, resumirCalendarioDietas, resumirMeso, resumirConfigNutricion, resumirReglasDeReceta } from './cambiosAtleta';
+import type { ReglasDeReceta } from './reglasDeReceta';
 
 const dieta = (over: Partial<Diet> = {}): Diet => ({
   id: 'd1', athleteId: 'a@x.com', name: 'Entreno',
@@ -70,4 +71,68 @@ describe('resumirMeso', () => {
     expect(l).toContain('Sesiones por ciclo 4 → 5');
   });
   it('un meso nuevo (sin antes) no registra nada', () => expect(resumirMeso(undefined, meso(12))).toEqual([]));
+});
+
+describe('resumirReglasDeReceta (N-09)', () => {
+  const nombre = (id: string) => ({ a: 'Pollo al curry', b: 'Tortitas', c: 'Salmón', d: 'Lentejas', e: 'Pasta' } as Record<string, string>)[id];
+  const base = (over: Partial<ReglasDeReceta> = {}): ReglasDeReceta => ({ athleteId: 'x@y.z', reglas: [], ...over });
+
+  it('sin cambios no dice nada', () => {
+    expect(resumirReglasDeReceta(base(), base(), nombre)).toEqual([]);
+    expect(resumirReglasDeReceta(undefined, base(), nombre)).toEqual([]);
+  });
+  it('recetas ocultas: las nuevas y las quitadas, con nombre', () => {
+    const l = resumirReglasDeReceta(base({ reglas: [{ recipeId: 'a' }] }), base({ reglas: [{ recipeId: 'b' }, { recipeId: 'c' }] }), nombre);
+    expect(l).toEqual(['Recetas ocultas: +2 («Tortitas», «Salmón»)', 'Recetas ocultas: −1 («Pollo al curry»)']);
+  });
+  it('más de tres: «y N más»', () => {
+    const l = resumirReglasDeReceta(undefined, base({ reglas: ['a', 'b', 'c', 'd', 'e'].map(recipeId => ({ recipeId })) }), nombre);
+    expect(l).toEqual(['Recetas ocultas: +5 («Pollo al curry», «Tortitas», «Salmón» y 2 más)']);
+  });
+  it('una receta que sigue oculta pero con otros días cuenta como cambio de alcance', () => {
+    const l = resumirReglasDeReceta(base({ reglas: [{ recipeId: 'a' }] }), base({ reglas: [{ recipeId: 'a', dias: ['mon'] }] }), nombre);
+    expect(l).toEqual(['Alcance cambiado en 1 receta oculta («Pollo al curry»)']);
+  });
+  it('recomendadas', () => {
+    expect(resumirReglasDeReceta(base({ recomendadas: ['a'] }), base({ recomendadas: ['a', 'd'] }), nombre)).toEqual(['Recomendadas: +1 («Lentejas»)']);
+  });
+  it('lista del menú: de la general a una propia, y entre dos propias lo que entra y sale', () => {
+    expect(resumirReglasDeReceta(base(), base({ listaMenu: ['a', 'b'] }), nombre)).toEqual(['Lista del menú: la general → 2 recetas']);
+    expect(resumirReglasDeReceta(base({ listaMenu: ['a', 'b'] }), base(), nombre)).toEqual(['Lista del menú: 2 recetas → la general']);
+    expect(resumirReglasDeReceta(base({ listaMenu: ['a', 'b'] }), base({ listaMenu: ['b', 'c'] }), nombre))
+      .toEqual(['Lista del menú: +1 («Salmón»)', 'Lista del menú: −1 («Pollo al curry»)']);
+  });
+  it('recetario', () => {
+    expect(resumirReglasDeReceta(base(), base({ recetario: 'recomendadas' }), nombre)).toEqual(['Recetario: todas → solo recomendadas']);
+  });
+  it('sin función de nombres pone «receta»', () => {
+    expect(resumirReglasDeReceta(undefined, base({ reglas: [{ recipeId: 'a' }] }))).toEqual(['Recetas ocultas: +1 («receta»)']);
+  });
+});
+
+describe('resumirReglasDeReceta: recetas del generador por dieta', () => {
+  const base = (seleccion?: ReglasDeReceta['seleccion']): ReglasDeReceta => ({ athleteId: 'a@x.com', reglas: [], seleccion });
+  const nombre = (id: string) => ({ d1: 'Día A', p1: 'Batch' } as Record<string, string>)[id];
+
+  it('cuenta el antes y el después de cada dieta con nombre', () => {
+    const l = resumirReglasDeReceta(base(), base({ porDieta: { d1: { rapidas: true, con: ['Arroz'] } } }), nombre);
+    expect(l).toEqual(['Recetas del generador · Dieta «Día A»: Sin filtros → Rápidas · con arroz']);
+  });
+
+  it('todas las dietas, paquetes y días con tiempo', () => {
+    const l = resumirReglasDeReceta(
+      base({ general: { tupper: true } }),
+      base({ general: { paquetes: ['p1'] }, diasConTiempo: ['wed', 'thu'] }),
+      nombre,
+    );
+    expect(l).toEqual([
+      'Recetas del generador · Todas las dietas: Tupper → paquete Batch',
+      'Días con tiempo para cocinar: ninguno → X, J',
+    ]);
+  });
+
+  it('sin cambios en la selección, nada', () => {
+    const sel = { porDieta: { d1: { sin: ['Atún'] } } };
+    expect(resumirReglasDeReceta(base(sel), base(sel), nombre)).toEqual([]);
+  });
 });

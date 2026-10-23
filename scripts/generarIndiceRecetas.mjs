@@ -81,6 +81,9 @@ function mapEntradaIndice(r) {
   if (r.tupper)      entrada.tupper      = r.tupper;
   // Pestaña «Básicas» del recetario.
   if (r.basica === true || BASICAS_EXISTENTES.has(r.id)) entrada.basica = true;
+  // Recetas base con ingredientes vinculados (N-05): el motor de ajuste (N-06)
+  // necesita sus gramos, rangos y valores por 100 g sin abrir la receta.
+  if (r.vinculo) entrada.vinculo = { ingredientes: r.vinculo.ingredientes, calculadoEn: r.vinculo.calculadoEn };
   return entrada;
 }
 

@@ -4,7 +4,7 @@ import { resolveExerciseForWeek, resolverEjercicioDelMeso } from './progression'
 import {
   programarCambio, quitarCambiosDeSemana, novedadesDeSemana, compararSemanas, seriesDeLaSemana, origenDeCambios,
   programarEnSemanas, semanasAlternas, rirDescendente, subirSeries, revisionesPorSemana,
-  rirLineal, rirPorSemana, seriesPorSemana, tecnicaPorSemana, repsPorSemana, descansoPorSemana,
+  rirLineal, rirPorSemana, seriesPorSemana, repsPorSemana, tecnicaEnSemanas, diferencias,
 } from './semanasDelBloque';
 
 const curl: WorkoutExercise = { exerciseId: 'curl', order: 0, sets: 4, reps: '10', rir: 1, restSeconds: 75 };
@@ -175,20 +175,9 @@ describe('progresiones semana a semana, sin «cada X semanas»', () => {
   it('rirLineal reparte de RIR 3 a 0 saltando la descarga y rirDescendente usa lo mismo', () => {
     expect(rirLineal(5, 3, 0, [5])).toEqual({ 1: 3, 2: 2, 3: 1, 4: 0 });
   });
-  it('técnica de alta intensidad desde una semana, o solo esa semana', () => {
-    const desde = { ...curl, weeklyProgression: tecnicaPorSemana(curl, [4], 'dropset', false) };
-    expect([3, 4, 5].map(s => resolveExerciseForWeek(desde, s).technique)).toEqual([undefined, 'dropset', 'dropset']);
-    const solo = { ...curl, weeklyProgression: tecnicaPorSemana(curl, [4], 'myoreps', true) };
-    expect([3, 4, 5].map(s => resolveExerciseForWeek(solo, s).technique)).toEqual([undefined, 'myoreps', undefined]);
-  });
-  it('quitar la técnica desde una semana', () => {
-    const conTecnica = { ...curl, technique: 'amrap' as const };
-    const we = { ...conTecnica, weeklyProgression: tecnicaPorSemana(conTecnica, [3], null, false) };
-    expect([2, 3].map(s => resolveExerciseForWeek(we, s).technique)).toEqual(['amrap', undefined]);
-  });
 });
 
-describe('repeticiones y descanso semana a semana', () => {
+describe('repeticiones semana a semana', () => {
   it('reps distintas desde cada semana, y se mantienen hasta el siguiente cambio', () => {
     const we = { ...curl, weeklyProgression: repsPorSemana(curl, { 1: '12-15', 4: '8-10', 7: '6-8' }) };
     expect([1, 3, 4, 6, 7, 9].map(s => resolveExerciseForWeek(we, s).reps)).toEqual(['12-15', '12-15', '8-10', '8-10', '6-8', '6-8']);
@@ -201,8 +190,25 @@ describe('repeticiones y descanso semana a semana', () => {
     const we = { ...conBloques, weeklyProgression: repsPorSemana(conBloques, { 3: '5' }) };
     expect(resolveExerciseForWeek(we, 3).setGroups!.map(g => g.reps)).toEqual(['6-8', '12-15']);
   });
-  it('descanso más largo desde la S5', () => {
-    const we = { ...curl, weeklyProgression: descansoPorSemana(curl, { 5: 120 }) };
-    expect([4, 5, 8].map(s => resolveExerciseForWeek(we, s).restSeconds)).toEqual([75, 120, 120]);
+});
+
+describe('tecnicaEnSemanas (E-06)', () => {
+  const base = { exerciseId: 'e', order: 0, sets: 3, reps: '8-12', restSeconds: 90, rir: 1 } as WorkoutExercise;
+
+  it('pone la técnica desde una semana y la quita después de «hasta»', () => {
+    const reglas = tecnicaEnSemanas(base, 3, 4, 'dropset', { series: 'todas' });
+    const w = { ...base, weeklyProgression: reglas };
+    expect(resolveExerciseForWeek(w, 2).technique).toBeUndefined();
+    expect(resolveExerciseForWeek(w, 3).technique).toBe('dropset');
+    expect(resolveExerciseForWeek(w, 4).tecnicaAjustes).toEqual({ series: 'todas' });
+    expect(resolveExerciseForWeek(w, 5).technique).toBeUndefined();
+    expect(resolveExerciseForWeek(w, 5).tecnicaAjustes).toBeUndefined();
+  });
+
+  it('hasta el final del bloque si no hay «hasta», y se describe para el atleta', () => {
+    const w = { ...base, weeklyProgression: tecnicaEnSemanas(base, 2, null, 'myoreps') };
+    expect(resolveExerciseForWeek(w, 9).technique).toBe('myoreps');
+    expect(diferencias(resolveExerciseForWeek(w, 1), resolveExerciseForWeek(w, 2), id => id)[0])
+      .toBe('técnica · Última serie: myo-reps, activación de 12-15 reps y 3-5 miniseries de 3-5, descansando 15 s');
   });
 });

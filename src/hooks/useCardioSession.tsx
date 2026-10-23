@@ -22,6 +22,7 @@ import { calcAge, mifflinBMR } from '../utils/energyCalc';
 import { haptics } from '../services/haptics';
 import { speak, speakUrgent, cancelSpeech, setVoiceEnabled } from '../services/cardioVoice';
 import { loadLivePrefs, saveLivePrefs, CardioLivePrefs } from '../utils/cardioLivePrefs';
+import { useCardioAplazos } from './useCardioAplazos';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    El motor de la sesión de cardio en vivo (F2 del plan de réplica FITIV).
@@ -302,8 +303,9 @@ function CardioSessionProviderInner({ profile, children }: { profile: UserProfil
   // mesociclo. Se resuelve en el mismo punto en el que se elige el cardio
   // activo para que la tarjeta de hoy, el reproductor en vivo y el panel del
   // coach vean exactamente la misma sesión.
-  const zona2Assignment = resolverAsignacionCardio(pickActiveZona2Assignment(assignments, todayIso), sessions, todayIso);
-  const intervalAssignment = resolverAsignacionCardio(pickActiveIntervalAssignment(assignments, todayIso), sessions, todayIso);
+  const { asignacionesEfectivas } = useCardioAplazos(profile.email, todayIso, assignments, cardioEnUso);
+  const zona2Assignment = resolverAsignacionCardio(pickActiveZona2Assignment(asignacionesEfectivas, todayIso), sessions, todayIso);
+  const intervalAssignment = resolverAsignacionCardio(pickActiveIntervalAssignment(asignacionesEfectivas, todayIso), sessions, todayIso);
   const autoSelectedRef = useRef(false);
   useEffect(() => {
     if (autoSelectedRef.current || state !== 'idle') return;

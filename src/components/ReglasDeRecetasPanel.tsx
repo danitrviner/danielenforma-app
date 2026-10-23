@@ -251,11 +251,17 @@ export default function ReglasDeRecetasPanel({ athleteEmail, onboarding, nutriti
       return siguiente.length === 0 ? prev : siguiente;
     });
 
+  // Para que el historial de cambios diga «Pollo al curry» y no «receta».
+  const nombreDe = useMemo(() => {
+    const m = new Map(indice.map(r => [r.id, r.name]));
+    return (id: string) => m.get(id);
+  }, [indice]);
+
   const guardar = useMutation({
     // Se manda solo lo que cambia (escondidas, recomendadas o las dos): el
     // guardado hace merge y no pisa la otra lista.
     mutationFn: (cambio: { reglas?: ReglaDeReceta[]; recomendadas?: string[] }) =>
-      saveReglasDeReceta({ athleteId: athleteEmail, ...cambio }),
+      saveReglasDeReceta({ athleteId: athleteEmail, ...cambio }, nombreDe),
     onMutate: async cambio => {
       // Optimista: el interruptor responde al instante y se deshace si falla.
       await queryClient.cancelQueries({ queryKey: reglasDeRecetaKey(athleteEmail) });

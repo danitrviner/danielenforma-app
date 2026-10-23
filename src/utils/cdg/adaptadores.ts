@@ -9,6 +9,8 @@
 import type { WorkoutExercise, WorkoutLog, WorkoutTechnique } from '../../types'
 import { parsearReps, rirARpe, type CdgSerie, type CdgTecnica, type MotorCdg } from './motor.js'
 import type { CdgSerieRealizada, SemanaRealizada, CargaPorSesion } from './seguimiento.js'
+import { seriesPrincipales } from '../seriesPrincipales.js'
+import { seriesConTecnica } from '../tecnicaDeSerie.js'
 
 export type NombreCdgDe = (exerciseId: string) => string | undefined
 
@@ -45,8 +47,10 @@ export function seriesProgramadas (
     if (!reps) continue
     for (let i = 0; i < g.sets; i++) out.push({ exerciseName: nombre, rpe: rirARpe(g.rir), repetitions: reps, intensificationTechnique: 'Normal' })
   }
+  // La técnica va en las series que diga el ejercicio (E-06); sin ajustes, en la
+  // última, que es como se leía antes.
   const tec = we.technique ? tecnicas[we.technique] : null
-  if (tec && out.length) out[out.length - 1].intensificationTechnique = tec
+  if (tec) for (const n of seriesConTecnica(we, out.length)) out[n - 1].intensificationTechnique = tec
   return out
 }
 
@@ -65,7 +69,7 @@ export function seriesRealizadas (
   const nombre = nombreCdgDe(entry.exerciseId)
   if (!nombre) return []
   const out: CdgSerieRealizada[] = []
-  for (const s of entry.sets) {
+  for (const s of seriesPrincipales(entry.sets)) {
     if (!s.repsDone) continue
     if (!contarSinPeso && !s.weight) continue
     out.push({

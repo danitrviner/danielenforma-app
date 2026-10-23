@@ -3,6 +3,7 @@ import { resolveExerciseForWeek, resolverEjercicioDelMeso, mesocycleWeekNumber }
 import { expandSetGroups } from './setGroups';
 import { rangoDeReps } from './cargaSugerida';
 import { diferencias, novedadesDeSemana, seriesDe, type NovedadesDeSemana } from './semanasDelBloque';
+import { seriesPrincipales } from './seriesPrincipales.js';
 
 /* «Planificar progresión» (Mesociclo › Ejercicios): el coach elige unos pocos
    ejercicios de todo el bloque y los programa semana a semana en una tabla.
@@ -87,8 +88,9 @@ export function realDeLaSemana(
   if (!log) return null;
   const entry = log.entries.find(e => e.exerciseId === pautado.exerciseId);
   const sets = entry?.sets ?? [];
+  const principales = seriesPrincipales(sets);
   const filas = expandSetGroups(pautado);
-  const buenas = sets.filter((s, i) => {
+  const buenas = principales.filter((s, i) => {
     const rango = rangoDeReps(filas[Math.min(i, filas.length - 1)]?.reps ?? '');
     return s.alFallo || !rango || s.repsDone >= rango.min;
   }).length;
@@ -96,7 +98,7 @@ export function realDeLaSemana(
   const mejor = sets.reduce<WorkoutSetLog | null>(
     (m, s) => !m || s.weight > m.weight || (s.weight === m.weight && s.repsDone > m.repsDone) ? s : m, null);
   return {
-    hechas: sets.length,
+    hechas: principales.length,
     pautadas,
     mejor,
     cumple: sets.length > 0 && Math.min(buenas, sets.length) >= pautadas,

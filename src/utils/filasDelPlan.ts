@@ -23,6 +23,15 @@ import { addToPlaced } from './exchangeHelpers';
 export type FilaDelPlan =
   | { tipo: 'alimento'; idx: number; item: DietItem }
   | {
+      /** Un producto apuntado con gramos (D-03): una línea por categoría, enlazadas
+       *  por `lineaId`, pintadas como UNA fila. `item` es la primera línea, la que
+       *  lleva `gramos` y `nutrientes`. */
+      tipo: 'producto';
+      lineaId: string;
+      idxs: number[];
+      item: DietItem;
+    }
+  | {
       tipo: 'receta';
       recipeId: string;
       nombre: string;
@@ -42,6 +51,13 @@ export function filasDeComida(items: DietItem[]): FilaDelPlan[] {
     const item = items[i];
     const recipeId = item.originRecipeId;
     if (!recipeId) {
+      const lineaId = item.lineaId;
+      if (lineaId) {
+        const idxs: number[] = [];
+        while (i < items.length && !items[i].originRecipeId && items[i].lineaId === lineaId) { idxs.push(i); i++; }
+        filas.push({ tipo: 'producto', lineaId, idxs, item });
+        continue;
+      }
       filas.push({ tipo: 'alimento', idx: i, item });
       i++;
       continue;

@@ -61,7 +61,11 @@ export function buildShoppingList(days: MenuDay[], recipesById: Map<string, Reci
     for (const meal of day.meals) {
       const recipe = meal.recipeId ? recipesById.get(meal.recipeId) : undefined;
       if (recipe?.ingredientsText?.length) {
-        for (const ing of recipe.ingredientsText) {
+        // Receta base ajustada (N-06): los gramos de cada ingrediente ya vienen
+        // calculados para esta comida; no se multiplica por la escala.
+        const ajustados = meal.ajuste ? new Map(meal.ajuste.gramos.map(g => [g.n, g.gramos])) : null;
+        for (const [n, ing] of recipe.ingredientsText.entries()) {
+          if (ajustados?.has(n)) { addGrams(ing.name, ajustados.get(n)!); continue; }
           // El ÍNDICE del recetario guarda los ingredientes solo por nombre: las
           // cantidades se quitan a propósito para que quepa en el móvil, y
           // llegan al pedir la receta entera. Multiplicar ese hueco por la

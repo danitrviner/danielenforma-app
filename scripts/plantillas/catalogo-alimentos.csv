@@ -1,0 +1,3 @@
+﻿id;nombre;estado;kcal;proteina;hidratos;grasa;fibra;azucares;grasa_saturada;sal;unidad_nombre;unidad_gramos;fuente
+;Ejemplo: arroz blanco;crudo;354;7;78;0,9;1,3;0,1;0,2;0;;;etiqueta
+;Ejemplo: pan de molde;listo;265;9;49;3,5;2,5;5;0,7;1,2;rebanada;30;etiqueta

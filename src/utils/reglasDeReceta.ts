@@ -1,4 +1,6 @@
 import type { WeekDay } from '../types';
+import type { ModoRecetario } from './accesoARecetas';
+import type { SeleccionDeRecetas } from './seleccionDeRecetas';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Reglas del coach sobre las recetas de UN atleta
@@ -35,6 +37,13 @@ export interface ReglasDeReceta {
    *  recetario, en el orden en que las marcó. Una receta escondida no puede
    *  estar recomendada a la vez (ver `conRecomendada`). */
   recomendadas?: string[];
+  /** Recetas con las que el generador trabaja para ESTE atleta (10-2026, N-03).
+   *  Gana a la lista global; ausente = la global, o todas. Ver accesoARecetas.ts. */
+  listaMenu?: string[];
+  /** Qué navega el atleta en el recetario. Ausente = todas. */
+  recetario?: ModoRecetario;
+  /** Qué recetas usa el generador con cada dieta (10-2026). Ver seleccionDeRecetas.ts. */
+  seleccion?: SeleccionDeRecetas;
   updatedAt?: string;
 }
 

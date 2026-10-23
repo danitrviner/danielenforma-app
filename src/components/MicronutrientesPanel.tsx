@@ -4,8 +4,11 @@ import { AthleteNutritionConfig } from '../types';
 import {
   getDietsForAthlete, getAthleteDietConfig, getOnboarding,
   getAthleteNutritionConfig, saveAthleteNutritionConfig,
+  getNutritionProgram,
 } from '../dbService';
 import { buildMicronutrientEstimate, MicroStatus } from '../utils/micronutrients';
+import { dietaDeReferencia } from '../utils/objetivoDelDia';
+import { hoyIsoLocal } from '../utils/trainingWeek';
 import { NotaDeFuente } from './FuentesCientificasSheet';
 import VegetableSelector from './VegetableSelector';
 import { Skeleton } from './ui';
@@ -50,6 +53,10 @@ export default function MicronutrientesPanel({ athleteEmail }: Props) {
     queryKey: ['athleteDietConfig', athleteEmail],
     queryFn: () => getAthleteDietConfig(athleteEmail).catch(() => null),
   });
+  const { data: programa = null, isPending: cargandoPrograma } = useQuery({
+    queryKey: ['nutritionProgram', athleteEmail],
+    queryFn: () => getNutritionProgram(athleteEmail).catch(() => null),
+  });
   const { data: onboarding, isPending: cargandoAlta } = useQuery({
     queryKey: ['onboarding', athleteEmail],
     queryFn: () => getOnboarding(athleteEmail).catch(() => null),
@@ -59,16 +66,16 @@ export default function MicronutrientesPanel({ athleteEmail }: Props) {
     queryFn: () => getAthleteNutritionConfig(athleteEmail).catch(() => null),
   });
 
-  const cargando = cargandoDietas || cargandoConfig || cargandoAlta || cargandoNutricion;
+  const cargando = cargandoDietas || cargandoConfig || cargandoPrograma || cargandoAlta || cargandoNutricion;
 
   const nutritionConfig: AthleteNutritionConfig = nutritionConfigData
     ?? { athleteId: athleteEmail, enabledModes: ['OMNIVORO'] };
 
   const coachDiets = useMemo(() => (diets ?? []).filter(d => !d.selfManaged), [diets]);
-  const activeDiet = useMemo(() => {
-    const activeId = dietConfig?.activeDietIds?.[0] ?? null;
-    return activeId ? coachDiets.find(d => d.id === activeId) ?? null : (coachDiets[0] ?? null);
-  }, [coachDiets, dietConfig]);
+  const activeDiet = useMemo(
+    () => dietaDeReferencia(coachDiets, dietConfig, programa, hoyIsoLocal()),
+    [coachDiets, dietConfig, programa],
+  );
 
   const vegServings = nutritionConfig.vegServingsPerDay ?? DEFAULT_VEG_SERVINGS;
   const vegTypes = useMemo(() => nutritionConfig.vegTypes ?? [], [nutritionConfig.vegTypes]);

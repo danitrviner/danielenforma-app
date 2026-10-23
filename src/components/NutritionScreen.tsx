@@ -1,10 +1,11 @@
-import { useReglasDeReceta } from '../hooks/useReglasDeReceta';
+import { useReglasDeReceta, useListaDeMenu, useSeleccionDeRecetas } from '../hooks/useReglasDeReceta';
+import { quiereAlgunaDieta } from '../utils/seleccionDeRecetas';
 import { recetaPermitida, type AmbitoDeRegla } from '../utils/reglasDeReceta';
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { minutosDeReceta } from '../utils/tiempoDeReceta';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { UserProfile, Diet, DietMeal, DietItem, FoodCategory, DietMode, MealItem, Recipe, RecipeFavorites, RecetaPendiente, MenuCompletionLog, DietCompletionLog } from '../types';
-import { getDietsForAthlete, getAthleteDietConfig, saveAthleteDietConfig, createDiet, updateDiet, deleteDiet, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig, saveAthleteNutritionConfig, getRecipes, getRecipeFavorites, getNutritionProgram, markNutritionPhaseSeen, computeActivePhase, createNotificationDeduped, getDietCompletionLog, saveDietCompletionLog, createRecipe, queryRecetasForGenerator, cargarIndiceRecetas, getOnboarding, getRecipeById, getMenuCompletionLog, saveMenuCompletionLog, getAlimentosPersonales, crearAlimentoPersonal, actualizarAlimentoPersonal, borrarAlimentoPersonal } from '../dbService';
+import { getDietsForAthlete, getAthleteDietConfig, saveAthleteDietConfig, createDiet, updateDiet, deleteDiet, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig, saveAthleteNutritionConfig, getRecipes, getRecipeFavorites, getNutritionProgram, markNutritionPhaseSeen, computeActivePhase, createNotificationDeduped, getDietCompletionLog, saveDietCompletionLog, createRecipe, queryRecetasForGenerator, cargarIndiceRecetas, getOnboarding, getRecipeById, getMenuCompletionLog, saveMenuCompletionLog, getAlimentosPersonales, getCatalogoAlimentos, crearAlimentoPersonal, actualizarAlimentoPersonal, borrarAlimentoPersonal, getDietCompletionLogsForAthlete } from '../dbService';
 import { esPlatoDelRecetario } from '../db/recetasHidratacion';
 import RecetarioDescubrir from './RecetarioDescubrir';
 import { CATS, BUDGET_CATS, CAT_LABEL, CAT_COLOR, CAT_BG, MODE_LABEL, ALL_DIET_MODES, round2, fmtQty, foodNameWithoutGrams, addToPlaced, recipeToDietItems, computeDietPlaced } from '../utils/exchangeHelpers';
@@ -18,10 +19,11 @@ import { coincidePorEquivalencia, explicacionesPara, esAlimentoLibre } from '../
 import { dishType, dishTypeLabel, type DishType } from '../utils/dishTypes';
 import { filasDeComida, escalarReceta } from '../utils/filasDelPlan';
 import { escalarRecetaEntera, escalaDeReceta } from '../utils/escalarRecetaEntera';
-import { dietaPautadaDelDia } from '../utils/nutritionSummary';
+import { objetivoDelDia } from '../utils/objetivoDelDia';
 import { perfilDeHambreVigente } from '../utils/perfilDeHambre';
 import { distributeMealTargets } from '../utils/mealDistribution';
-import { exchangeToKcal } from '../utils/nutritionConstants';
+import { exchangeToKcal, GRAMS_PER_EXCHANGE } from '../utils/nutritionConstants';
+import { resumenDelDia } from '../utils/resumenDelDia';
 import { useToast } from '../hooks/useToast';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import Coachmark from './Coachmark';
@@ -35,6 +37,18 @@ import { EmptyState, Sheet, Icon, Button, ProgressBar, RingSeal, Stepper, Dialog
 import MealItemSwipeRow from './nutrition/MealItemSwipeRow';
 import CrearAlimentoSheet from './nutrition/CrearAlimentoSheet';
 import GuiaDeIntercambios from './nutrition/GuiaDeIntercambios';
+import GramosSheet from './nutrition/GramosSheet';
+import AnadidoRapidoSheet, { type AnadidoRapido } from './nutrition/AnadidoRapidoSheet';
+import { alimentosUsados, claveDeCatalogo, claveDeProducto, type AlimentoUsado } from '../utils/alimentosFrecuentes';
+import { itemsDeAlimentoPorGramos, sePuedeEnGramos } from '../utils/gramosDeAlimento';
+import { itemsDeProducto } from '../utils/productoAIntercambios';
+import ProductoOffSheet from './nutrition/ProductoOffSheet';
+import ScannerSheet from './nutrition/ScannerSheet';
+import { encontrarPorCodigo } from '../utils/codigoBarras';
+import ProductoEscaneadoSheet from './nutrition/ProductoEscaneadoSheet';
+import { cargarIndiceOff, ATRIBUCION_OFF } from '../services/openFoodFacts';
+import { buscarEnIndiceOff, extrasDeRacion, type EntradaIndiceOff, type OffProducto } from '../utils/productoOff';
+import { buscarEnCatalogo, comoProducto, nombreDeAlimento, type AlimentoCatalogo } from '../utils/catalogoAlimentos';
 import { NotaDeFuente } from './FuentesCientificasSheet';
 import { calcularArrastreEntreComidas, type ComidaParaArrastre, type ObjetivoEfectivoComida } from '../utils/arrastreEntreComidas';
 import { aDiaFlexible, aPorComidas, filasEnOrdenCronologico, horaActualHHMM, ID_COMIDA_FLEXIBLE } from '../utils/diaFlexible';
@@ -49,7 +63,6 @@ import { addDays, hoyIsoLocal} from '../utils/trainingWeek';
 import SemanaNutricionAtleta from './nutrition/SemanaNutricionAtleta';
 import HabitosDelDia from './nutrition/HabitosDelDia';
 import { getWorkoutAssignmentsForAthlete } from '../dbService';
-import { dietaDeLaSemana } from '../utils/semanasNutricion';
 
 const HAMBRE_TEXTO: Record<'manana' | 'equilibrado' | 'noche', string> = {
   manana: 'por la mañana',
@@ -326,10 +339,12 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
   const entrenaEseDia = program?.ciclado && asignacionesEntreno
     ? asignacionesEntreno.some(a => a.date === viewDate && a.status !== 'skipped')
     : undefined;
-  const dietaPautada = useMemo(() => {
-    const base = dietaPautadaDelDia(allDietsList, dietConfigRaw ?? null, diaSemanaDe(viewDate));
-    return base ? dietaDeLaSemana(base, program, viewDate, entrenaEseDia) : base;
-  }, [allDietsList, dietConfigRaw, viewDate, program, entrenaEseDia]);
+  // Una sola respuesta a «qué le toca hoy», la misma que usa Inicio (utils/objetivoDelDia.ts).
+  const objetivoHoy = useMemo(
+    () => objetivoDelDia({ diets: allDietsList, config: dietConfigRaw ?? null, program, fecha: viewDate, entrena: entrenaEseDia }),
+    [allDietsList, dietConfigRaw, viewDate, program, entrenaEseDia],
+  );
+  const dietaPautada = objetivoHoy.dieta;
   const cupoPautado = dietaPautada?.budget ?? null;
 
   /* Las dietas del coach que el atleta puede cargarse en un día. Solo las
@@ -340,7 +355,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     const activos = new Set(dietConfigRaw?.activeDietIds ?? []);
     const programadas = new Set(Object.values(dietConfigRaw?.weeklySchedule ?? {}).filter(Boolean) as string[]);
     return allDietsList
-      .filter(d => !d.selfManaged && (activos.has(d.id) || programadas.has(d.id)))
+      .filter(d => !d.selfManaged && !d.isDraft && (activos.has(d.id) || programadas.has(d.id) || d.id === dietaPautada?.id))
       .sort((a, b) => Number(b.id === dietaPautada?.id) - Number(a.id === dietaPautada?.id)
         || a.name.localeCompare(b.name));
   }, [allDietsList, dietConfigRaw, dietaPautada]);
@@ -468,7 +483,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
   const [recipeNameDraft, setRecipeNameDraft] = useState('');
   const [savingRecipe, setSavingRecipe] = useState(false);
 
-  // "Añadir a Intercambios" desde Recetas — solo queda elegir la comida del día
+  // "Añadir a la comida" desde Recetas — solo queda elegir la comida del día
   // (antes había un paso previo para elegir la dieta; ya no hay dietas).
   const [chooseMealForRecipe, setChooseMealForRecipe] = useState<RecetaPendiente | null>(null);
 
@@ -506,21 +521,13 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
         setActiveDietMode(nutConfig.enabledModes[0]);
       }
 
-      // Apply nutrition program phase if active
-      const dietConfig = dietConfigRaw;
+      // Aviso de cambio de fase
       if (program && program.phases.length > 0) {
         const todayStr = hoyIsoLocal();
         const activePhase = computeActivePhase(program, todayStr);
         if (activePhase && activePhase.dietId) {
-          const currentActive = new Set(dietConfig?.activeDietIds ?? []);
-          if (!currentActive.has(activePhase.dietId) || currentActive.size !== 1) {
-            const newConfig = {
-              ...(dietConfig ?? { athleteId: profile.email }),
-              activeDietIds: [activePhase.dietId],
-            };
-            await saveAthleteDietConfig(newConfig).catch(() => {});
-            queryClient.setQueryData(athleteDietConfigKey, newConfig);
-          }
+          // Antes aquí se reescribía `activeDietIds` con la dieta de la fase. Ya no:
+          // la dieta de la fase la resuelve `objetivoDelDia`, sin escribir nada.
           if (program.lastSeenPhaseId !== activePhase.id) {
             setPhaseBanner(`Tu plan de nutrición cambió a: ${activePhase.name}`);
             // Merge parcial: reescribir el programa entero desde este snapshot
@@ -741,6 +748,68 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
   const totalEaten = BUDGET_CATS.reduce((s, c) => s + doneByCat[c], 0);
   const leftExch = round2(totalBudget - totalEaten);
   const leftKcal = Math.round(exchangeToKcal(leftByCat)); // puede ser negativo si el día se pasa
+
+  // Vista de la tarjeta del día (D-02): el mismo día contado en intercambios o
+  // en calorías y macros. Solo cambia lo que se enseña; lo apuntado es lo mismo.
+  const [vistaCupo, setVistaCupo] = useState<'intercambios' | 'macros'>(() => {
+    try { return localStorage.getItem('enforma_diario_vista') === 'macros' ? 'macros' : 'intercambios'; } catch { return 'intercambios'; }
+  });
+  const cambiarVistaCupo = (v: 'intercambios' | 'macros') => {
+    setVistaCupo(v);
+    try { localStorage.setItem('enforma_diario_vista', v); } catch { /* sin almacenamiento: la vista no se recuerda */ }
+  };
+  /* Buscador por modo (D-03). En «Calorías y macros» la hoja de añadir abre con
+     lo que el atleta ya apunta (recientes y frecuentes del último mes) y
+     «Mostrar todos» despliega el banco. Una consulta acotada a SU email. */
+  const [mostrarTodos, setMostrarTodos] = useState(false);
+  const [gramosDe, setGramosDe] = useState<MealItem | null>(null);
+  const [anadidoRapidoAbierto, setAnadidoRapidoAbierto] = useState(false);
+  const usarListaRapida = !!pickerItem && pickerItem.itemIdx === null && vistaCupo === 'macros';
+  const desdeUsados = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 30);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }, []);
+  const { data: registrosUsados = [] } = useQuery({
+    queryKey: ['dietCompletionLogs', profile.email, 'desde', desdeUsados],
+    queryFn: () => getDietCompletionLogsForAthlete(profile.email, desdeUsados),
+    staleTime: 10 * 60_000,
+    enabled: usarListaRapida,
+  });
+  const usados = useMemo(() => alimentosUsados(registrosUsados), [registrosUsados]);
+  /** Gramos de la última vez que apuntó este producto o alimento del catálogo, si se sabe. */
+  const ultimosGramos = (clave: string) =>
+    [...usados.recientes, ...usados.frecuentes].find(u => u.clave === clave)?.gramos;
+  // Productos de supermercado (Open Food Facts en local): el índice de nombres
+  // se baja una vez, al abrir el buscador para añadir, y se busca en el móvil.
+  const [productoOffAbierto, setProductoOffAbierto] = useState<EntradaIndiceOff | null>(null);
+  // Escáner: hoja de la cámara y, ya leído, el código pendiente de resolver.
+  const [escanerAbierto, setEscanerAbierto] = useState(false);
+  const [codigoEscaneado, setCodigoEscaneado] = useState<string | null>(null);
+  // Crear un alimento desde un producto escaneado: nombre (si se conoce) y código.
+  const [crearInicial, setCrearInicial] = useState<{ nombre?: string; codigo?: string } | null>(null);
+  const { data: indiceOff = [] } = useQuery({
+    queryKey: ['offIndice'],
+    queryFn: cargarIndiceOff,
+    staleTime: Infinity,
+    retry: 1,
+    enabled: !!pickerItem && pickerItem.itemIdx === null,
+  });
+  // Catálogo por 100 g (N-04): solo en «Calorías y macros». En Intercambios
+  // manda el banco de siempre (Dani, 23-10). Se baja al abrir el buscador.
+  const [alimentoCatalogoAbierto, setAlimentoCatalogoAbierto] = useState<AlimentoCatalogo | null>(null);
+  const { data: catalogoAlimentos = [] } = useQuery({
+    queryKey: ['catalogoAlimentos'],
+    queryFn: getCatalogoAlimentos,
+    staleTime: 60 * 60_000,
+    enabled: usarListaRapida,
+  });
+  const resumenMacros = useMemo(
+    () => resumenDelDia(selectedDiet?.meals, (Object.entries(itemStates) as [string, ItemState][]).filter(([, st]) => st.done).map(([k]) => k)),
+    [selectedDiet, itemStates],
+  );
+  const kcalObjetivo = Math.round(exchangeToKcal(effBudget));
+  const kcalQuedan = kcalObjetivo - resumenMacros.kcal;
   // El sello "Día cerrado en presupuesto" solo sale cuando de verdad has
   // consumido tu cupo en las tres categorías —no por marcar "todos los
   // alimentos que llevas añadidos", que en un menú a medio montar era 1 y
@@ -761,6 +830,16 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
   // el atleta no tiene que salir y volver a entrar cambiando de categoría para
   // encontrar un alimento que no sabía en qué grupo estaba.
   const isSearchingFoods = searchTerm.trim().length > 0;
+  const alimentosDelCatalogo = useMemo(
+    () => (usarListaRapida && isSearchingFoods ? buscarEnCatalogo(catalogoAlimentos, searchTerm, 12) : []),
+    [usarListaRapida, isSearchingFoods, catalogoAlimentos, searchTerm],
+  );
+  const productosOff = useMemo(
+    () => (pickerItem?.itemIdx === null && isSearchingFoods ? buscarEnIndiceOff(indiceOff, searchTerm, 12) : []),
+    [pickerItem, isSearchingFoods, indiceOff, searchTerm],
+  );
+  // Vista de «recientes y frecuentes» (modo Calorías y macros, sin buscar).
+  const vistaRapida = usarListaRapida && !isSearchingFoods && !mostrarTodos;
   const filteredFoods = useMemo(() => {
     const term = searchTerm.trim();
     return foodItems.filter(f =>
@@ -794,6 +873,8 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
   // los aplicaba "Cambiar comida"; el resto de listas (este picker, el
   // recetario) no miraban nada de esto.
   const recetasOcultas = useReglasDeReceta(profile.email);
+  const listaMenu = useListaDeMenu(profile.email);
+  const { seleccion, paquetes } = useSeleccionDeRecetas(profile.email);
   const swapPrefs: AlternativePrefs = useMemo(() => ({
     allergies:         onboarding?.allergies ?? [],
     conditions:        athleteConditions(onboarding),
@@ -808,7 +889,10 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     preferredDishTypes: (nutConfig?.preferredDishTypes ?? onboarding?.preferredDishTypes ?? []) as DishType[],
     excludedDishTypes:  (nutConfig?.excludedDishTypes  ?? onboarding?.excludedDishTypes  ?? []) as DishType[],
     recetasOcultas,
-  }), [onboarding, nutConfig, recipeFavorites, recetasOcultas]);
+    listaMenu,
+    seleccion,
+    paquetes,
+  }), [onboarding, nutConfig, recipeFavorites, recetasOcultas, listaMenu, seleccion, paquetes]);
 
   // Un tipo de plato excluido es una decisión explícita del atleta en sus
   // preferencias, igual de firme que una alergia: faltaba aquí, así que los
@@ -924,11 +1008,12 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
       prefs: swapPrefs,
       dias: [diaSemanaDe(viewDate)],
       ambito: 'cambios',
+      dietId: objetivoHoy.dietaBase?.id,
       intakeType: swapContext?.slot,
       search: swapSearch.trim() || undefined,
       limit: 40,
     });
-  }, [swapSourceRecipe, swapPool, swapPrefs, swapContext?.slot, swapSearch, viewDate]);
+  }, [swapSourceRecipe, swapPool, swapPrefs, swapContext?.slot, swapSearch, viewDate, objetivoHoy.dietaBase?.id]);
 
   // Pestañas de tipo de plato: el atleta que no quiere otro batido necesita ver
   // de un vistazo qué otras familias hay disponibles, no rebuscar en la lista.
@@ -1162,6 +1247,107 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     setSearchTerm('');
     setPickerAddedCounts({});
     setPickerRecentlyAdded(null);
+    setMostrarTodos(false);
+  };
+
+  /** Mete una o varias líneas (un producto repartido en categorías) en la comida
+   *  abierta, ya marcadas como comidas, con tick, toast y «Deshacer». */
+  const agregarItems = (newItems: DietItem[], etiqueta: string, foodId: string) => {
+    if (!pickerItem || !selectedDiet) return;
+    const { mealId } = pickerItem;
+    const meal = selectedDiet.meals.find(m => m.id === mealId);
+    if (!meal) { setPickerItem(null); return; }
+    const primerIdx = meal.items.length;
+    setSelectedDiet(prev => {
+      if (!prev) return prev;
+      return { ...prev, meals: prev.meals.map(m => m.id !== mealId ? m : { ...m, items: [...m.items, ...newItems] }) };
+    });
+    // Nace COMIDO: si lo has metido en el día es porque te lo has comido.
+    setItemStates(prev => {
+      const next = { ...prev };
+      newItems.forEach((it, k) => { next[`${mealId}_${primerIdx + k}`] = { foodLabel: it.foodLabel, done: true }; });
+      return next;
+    });
+    setSearchTerm('');
+    void haptics.light();
+    tutorial.markActionDone('registrar-ingesta');
+    setPickerAddedCounts(prev => ({ ...prev, [foodId]: (prev[foodId] ?? 0) + 1 }));
+    setPickerRecentlyAdded(foodId);
+    if (pickerRecentTimer.current) clearTimeout(pickerRecentTimer.current);
+    pickerRecentTimer.current = setTimeout(() => setPickerRecentlyAdded(null), 1200);
+    showToast(`${foodNameWithoutGrams(etiqueta)} añadido.`, 'success', {
+      actionLabel: 'Deshacer',
+      onAction: () => {
+        setSelectedDiet(prev => {
+          if (!prev) return prev;
+          return { ...prev, meals: prev.meals.map(m => m.id !== mealId ? m : { ...m, items: m.items.filter(it => !newItems.includes(it)) }) };
+        });
+        setItemStates(prev => {
+          const next = { ...prev };
+          newItems.forEach((_, k) => { delete next[`${mealId}_${primerIdx + k}`]; });
+          return next;
+        });
+        setPickerAddedCounts(prev => ({ ...prev, [foodId]: Math.max(0, (prev[foodId] ?? 1) - 1) }));
+      },
+    });
+  };
+
+  const nuevoLineaId = () => `ln_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
+
+  const confirmarGramos = (food: MealItem, gramos: number) => {
+    const items = itemsDeAlimentoPorGramos(food, gramos, nuevoLineaId(), modoFlexible ? horaActualHHMM() : undefined);
+    setGramosDe(null);
+    agregarItems(items, food.label, food.id);
+  };
+
+  const confirmarProductoOff = (prod: OffProducto, gramos: number) => {
+    const extras = extrasDeRacion(prod, gramos);
+    const r = itemsDeProducto({
+      nombre: prod.n, ...(prod.b ? { marca: prod.b } : {}), gramos, lineaId: nuevoLineaId(),
+      origen: { tipo: 'off', codigo: prod.c },
+      porCien: { kcal: prod.k, p: prod.p, hc: prod.h, g: prod.g },
+      ...(extras ? { extras } : {}),
+      ...(modoFlexible ? { hora: horaActualHHMM() } : {}),
+    });
+    setProductoOffAbierto(null);
+    if (r.items.length === 0) {
+      showToast('Esa ración es demasiado pequeña para contarla en tu día.', 'info');
+      return;
+    }
+    agregarItems(r.items, prod.n, `off_${prod.c}`);
+  };
+
+  const confirmarAlimentoCatalogo = (a: AlimentoCatalogo, gramos: number) => {
+    const prod = comoProducto(a);
+    const extras = extrasDeRacion(prod, gramos);
+    const r = itemsDeProducto({
+      nombre: prod.n, gramos, lineaId: nuevoLineaId(),
+      origen: { tipo: 'catalogo', id: a.id },
+      porCien: { kcal: prod.k, p: prod.p, hc: prod.h, g: prod.g },
+      ...(extras ? { extras } : {}),
+      ...(modoFlexible ? { hora: horaActualHHMM() } : {}),
+    });
+    setAlimentoCatalogoAbierto(null);
+    if (r.items.length === 0) {
+      showToast('Esa ración es demasiado pequeña para contarla en tu día.', 'info');
+      return;
+    }
+    agregarItems(r.items, prod.n, `cat_${a.id}`);
+  };
+
+  const confirmarAnadidoRapido = (a: AnadidoRapido) => {
+    const r = itemsDeProducto({
+      nombre: a.nombre, gramos: 100, lineaId: nuevoLineaId(),
+      origen: { tipo: 'personal', id: 'rapido' },
+      porCien: { kcal: a.kcal, p: a.p, hc: a.hc, g: a.g },
+      ...(modoFlexible ? { hora: horaActualHHMM() } : {}),
+    });
+    setAnadidoRapidoAbierto(false);
+    if (r.items.length === 0) {
+      showToast('Esa ración es demasiado pequeña para contarla en tu día.', 'info');
+      return;
+    }
+    agregarItems(r.items, a.nombre, `rapido_${a.nombre}`);
   };
 
   const handleSelectFood = (food: MealItem) => {
@@ -1169,14 +1355,8 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     const { mealId, itemIdx } = pickerItem;
 
     if (itemIdx === null) {
-      // Add a brand-new item to the meal — keep the picker open (just clear the
-      // search) so the athlete can add HC, then proteína, then grasa... in one go
-      // instead of opening/closing the picker for every single food.
-      const meal = selectedDiet.meals.find(m => m.id === mealId);
-      if (!meal) { setPickerItem(null); return; }
-      const newIdx = meal.items.length;
-      // `baseGrams` es por intercambio: al subir la cantidad, los gramos suben
-      // solos, y no hay que acordarse de recalcularlos en ningún escalador.
+      // En «Calorías y macros» se pregunta cuántos gramos (si se pueden saber).
+      if (vistaCupo === 'macros' && sePuedeEnGramos(food)) { setGramosDe(food); return; }
       const newItem: DietItem = {
         category: food.category, foodLabel: food.label, quantity: 1,
         baseGrams: parseBaseGrams(food.label) ?? undefined,
@@ -1184,42 +1364,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
         // hora de verdad para poder enseñar "Lo que voy comiendo" en orden.
         ...(modoFlexible ? { hora: horaActualHHMM() } : {}),
       };
-      setSelectedDiet(prev => {
-        if (!prev) return prev;
-        return { ...prev, meals: prev.meals.map(m => m.id !== mealId ? m : { ...m, items: [...m.items, newItem] }) };
-      });
-      // Nace COMIDO. Si lo has metido en el día es porque te lo has comido: el
-      // paso de "ahora deslízalo a la derecha" no aportaba nada y dejaba el cupo
-      // sin descontar hasta que te acordabas de hacerlo.
-      setItemStates(prev => ({ ...prev, [`${mealId}_${newIdx}`]: { foodLabel: newItem.foodLabel, done: true } }));
-      setSearchTerm('');
-      // El picker se queda abierto para encadenar varias añadidas seguidas
-      // (ver comentario arriba) — sin esto, tocar "+" no daba ninguna señal
-      // de que el toque había hecho algo.
-      void haptics.light();
-      // El objetivo del tour "registrar una ingesta" se cumple aquí: antes lo
-      // marcaba el botón de marcar la comida entera, que ya no existe.
-      tutorial.markActionDone('registrar-ingesta');
-      // T13: tick + ×N en la fila, y Deshacer en el toast.
-      setPickerAddedCounts(prev => ({ ...prev, [food.id]: (prev[food.id] ?? 0) + 1 }));
-      setPickerRecentlyAdded(food.id);
-      if (pickerRecentTimer.current) clearTimeout(pickerRecentTimer.current);
-      pickerRecentTimer.current = setTimeout(() => setPickerRecentlyAdded(null), 1200);
-      showToast(`${food.label} añadido.`, 'success', {
-        actionLabel: 'Deshacer',
-        onAction: () => {
-          setSelectedDiet(prev => {
-            if (!prev) return prev;
-            return { ...prev, meals: prev.meals.map(m => m.id !== mealId ? m : { ...m, items: m.items.filter(it => it !== newItem) }) };
-          });
-          setItemStates(prev => {
-            const next = { ...prev };
-            delete next[`${mealId}_${newIdx}`];
-            return next;
-          });
-          setPickerAddedCounts(prev => ({ ...prev, [food.id]: Math.max(0, (prev[food.id] ?? 1) - 1) }));
-        },
-      });
+      agregarItems([newItem], food.label, food.id);
     } else {
       // Swap an existing item in place — a single replacement, so close afterwards.
       // Cambiar un alimento por otro no lo "descome": es la misma ingesta, solo
@@ -1537,7 +1682,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     // puñado): el recetario entero quedaba fuera del "Cambiar comida". Ahora se
     // trae el bloque del recetario correspondiente al momento del día.
     const recetario = slot != null
-      ? await queryRecetasForGenerator(slot, 300).catch(() => [] as Recipe[])
+      ? await queryRecetasForGenerator(slot, 300, listaMenu, quiereAlgunaDieta(seleccion, paquetes)).catch(() => [] as Recipe[])
       : [];
     setSwapPool([...recetario, ...recipes]);
     setSwapLoading(false);
@@ -2031,7 +2176,59 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                   </div>
                 ) : (
                   <>
-                    <div className="flex items-end justify-between gap-3">
+                    <SegmentedControl
+                      label="Cómo ver el día"
+                      options={[{ value: 'intercambios', label: 'Intercambios' }, { value: 'macros', label: 'Calorías y macros' }]}
+                      value={vistaCupo}
+                      onChange={v => cambiarVistaCupo(v as 'intercambios' | 'macros')}
+                    />
+                    {vistaCupo === 'macros' ? (
+                      <div className="mt-4">
+                        <div className="flex items-end justify-between gap-3">
+                          <div>
+                            <span className="block font-mono text-caption text-ink-3 uppercase tracking-[.16em]">Te quedan</span>
+                            <div className="flex items-baseline gap-2 mt-2">
+                              <span className={`font-display font-black text-headline leading-none ${kcalQuedan < 0 ? 'text-danger' : 'text-accent-ink'}`}>
+                                {Math.abs(kcalQuedan).toLocaleString('es-ES')}
+                              </span>
+                              <span className="font-sans font-semibold text-body-s text-ink-3">kcal</span>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <span className="block font-mono text-caption text-ink-3 uppercase tracking-[.14em]">Objetivo</span>
+                            <span className="block font-mono text-title-s text-ink-2 mt-2">{kcalObjetivo.toLocaleString('es-ES')}</span>
+                          </div>
+                        </div>
+                        <div className="flex flex-col gap-3 mt-5">
+                          {([
+                            { clave: 'PROT', etiqueta: 'PROTEÍNAS', comido: resumenMacros.p, objetivo: effBudget.PROT * GRAMS_PER_EXCHANGE.PROT },
+                            { clave: 'HC', etiqueta: 'HIDRATOS', comido: resumenMacros.hc, objetivo: effBudget.HC * GRAMS_PER_EXCHANGE.HC },
+                            { clave: 'GRASA', etiqueta: 'GRASAS', comido: resumenMacros.g, objetivo: effBudget.GRASA * GRAMS_PER_EXCHANGE.GRASA },
+                          ] as const).map(m => {
+                            const over = m.objetivo > 0 && m.comido > m.objetivo;
+                            return (
+                              <div key={m.clave}>
+                                <div className="flex items-baseline justify-between mb-2">
+                                  <span className="font-mono text-caption font-semibold text-ink-2 tracking-[.1em]">{m.etiqueta}</span>
+                                  <span className={`font-mono text-label font-bold ${over ? 'text-danger' : 'text-ink-2'}`}>
+                                    {Math.round(m.comido)} / {Math.round(m.objetivo)} g
+                                  </span>
+                                </div>
+                                <ProgressBar value={m.objetivo > 0 ? (m.comido / m.objetivo) * 100 : 0} label={`${m.etiqueta}, ${Math.round(m.comido)} de ${Math.round(m.objetivo)} gramos`} />
+                              </div>
+                            );
+                          })}
+                        </div>
+                        {(resumenMacros.aproximado || resumenMacros.incompletos > 0) && (
+                          <p className="font-sans text-body-s text-ink-3 mt-4">
+                            {resumenMacros.aproximado && 'Los alimentos del banco se cuentan por sus intercambios, así que es una estimación. '}
+                            {resumenMacros.incompletos > 0 && `${resumenMacros.incompletos} ${resumenMacros.incompletos === 1 ? 'producto tiene' : 'productos tienen'} datos incompletos y no ${resumenMacros.incompletos === 1 ? 'suma' : 'suman'}.`}
+                          </p>
+                        )}
+                      </div>
+                    ) : (
+                    <>
+                    <div className="flex items-end justify-between gap-3 mt-4">
                       <div>
                         <span className="block font-mono text-caption text-ink-3 uppercase tracking-[.16em]">Te quedan</span>
                         <div className="flex items-baseline gap-2 mt-2">
@@ -2067,6 +2264,8 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                         );
                       })}
                     </div>
+                    </>
+                    )}
                   </>
                 )}
 
@@ -2395,6 +2594,40 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                                       >+</button>
                                     </div>
                                     )}
+                                  </div>
+                                </MealItemSwipeRow>
+                              </React.Fragment>
+                            );
+                          }
+
+                          if (fila.tipo === 'producto') {
+                            const { item: base } = fila;
+                            const lineas = fila.idxs.map(i => meal.items[i]);
+                            const rapido = base.origen?.id === 'rapido';
+                            const n = base.nutrientes;
+                            const abrev = { HC: 'HC', PROT: 'P', GRASA: 'G' } as const;
+                            const equiv = lineas
+                              .filter(l => l.category === 'HC' || l.category === 'PROT' || l.category === 'GRASA')
+                              .map(l => `${fmtQty(l.quantity)} ${abrev[l.category as 'HC' | 'PROT' | 'GRASA']}`)
+                              .join(' + ');
+                            const detalle = vistaCupo === 'macros' && n
+                              ? `${rapido ? '' : `${base.gramos} g · `}${n.kcal} kcal · P ${n.p} · HC ${n.hc} · G ${n.g}`
+                              : `${rapido || !base.gramos ? '' : `${base.gramos} g · `}≈ ${equiv}`;
+                            const canDeleteP = selectedDiet.selfManaged || fila.idxs[0] >= (origItemCounts[meal.id] ?? Infinity);
+                            return (
+                              <React.Fragment key={`${meal.id}_producto_${fila.lineaId}`}>
+                                <MealItemSwipeRow
+                                  className="rounded-surface"
+                                  onDelete={canDeleteP ? () => handleRemoveReceta(meal.id, fila.idxs) : undefined}
+                                >
+                                  <div className="flex items-center gap-3 p-3 rounded-surface border border-hairline bg-surface">
+                                    <span className="w-8 h-8 rounded-control bg-inset border border-hairline flex-shrink-0 flex items-center justify-center">
+                                      <span className="material-symbols-outlined text-body-s text-ink-3 select-none">nutrition</span>
+                                    </span>
+                                    <div className="flex-1 min-w-0">
+                                      <p className="font-sans text-body-s font-semibold leading-snug text-ink">{foodNameWithoutGrams(base.foodLabel)}</p>
+                                      <p className="font-mono text-caption text-accent-ink">{detalle}</p>
+                                    </div>
                                   </div>
                                 </MealItemSwipeRow>
                               </React.Fragment>
@@ -3013,7 +3246,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                   categorías y buscador. */}
               <div className="px-4 pb-2 flex items-center justify-between gap-3">
                 <span className="font-sans text-caption text-ink-2 uppercase">
-                  {isSearchingFoods ? `Todas las categorías · ${MODE_LABEL[activeDietMode]}` : `${CAT_LABEL[pickerCategory]} · ${MODE_LABEL[activeDietMode]}`}
+                  {isSearchingFoods ? `Todas las categorías · ${MODE_LABEL[activeDietMode]}` : vistaRapida ? `Lo que más apuntas · ${MODE_LABEL[activeDietMode]}` : `${CAT_LABEL[pickerCategory]} · ${MODE_LABEL[activeDietMode]}`}
                 </span>
                 <button
                   type="button"
@@ -3043,6 +3276,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
               ))}
             </div>
 
+            {!vistaRapida && (
             <div className={`p-3 bg-surface border-b border-hairline flex gap-2 flex-wrap transition-opacity ${isSearchingFoods ? 'opacity-40' : ''}`}>
               {CATS.map(cat => (
                 <button key={cat} onClick={() => { setPickerCategory(cat); setSearchTerm(''); }}
@@ -3054,6 +3288,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                 >{CAT_LABEL[cat]}</button>
               ))}
             </div>
+            )}
 
             <div className="px-4 py-2 bg-surface flex items-center gap-2 border-b border-hairline">
               <Icon name="search" size="s" className="text-ink-2" />
@@ -3061,6 +3296,17 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                 onChange={e => setSearchTerm(e.target.value)}
                 className="w-full bg-transparent border-none text-ink text-title-s focus:ring-0 focus:outline-none p-2 placeholder-ink-2/45"
               />
+              {pickerItem.itemIdx === null && (
+                <button
+                  type="button"
+                  onClick={() => setEscanerAbierto(true)}
+                  aria-label="Escanear código de barras"
+                  className="flex flex-shrink-0 items-center gap-1.5 rounded-full border border-accent/25 bg-accent-bg px-3 py-1.5 font-sans text-caption font-bold text-accent-ink transition-colors hover:bg-accent/20"
+                >
+                  <Icon name="qr_code_scanner" size="s" />
+                  Escanear
+                </button>
+              )}
             </div>
             </>
           )}
@@ -3076,7 +3322,75 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                 </div>
               ))}
 
-              {filteredFoods.length === 0 ? (
+              {vistaRapida ? (() => {
+                // Cada apunte vuelve a su origen: banco de intercambios, producto
+                // de supermercado (ficha por código) o catálogo por 100 g (por id).
+                // Si el catálogo ya no lo trae, la fila no sale.
+                type FilaUsada = { u: AlimentoUsado; nombre: string; sub?: string; abrir: () => void; tuyo?: boolean };
+                const filaDe = (u: AlimentoUsado): FilaUsada | null => {
+                  if (u.tipo === 'off' && u.codigo) {
+                    const codigo = u.codigo;
+                    return { u, nombre: u.label, sub: u.marca, abrir: () => setProductoOffAbierto({ c: codigo, n: u.label, b: u.marca ?? '', t: '' }) };
+                  }
+                  if (u.tipo === 'catalogo') {
+                    const a = catalogoAlimentos.find(x => claveDeCatalogo(x.id) === u.clave);
+                    return a ? { u, nombre: nombreDeAlimento(a), abrir: () => setAlimentoCatalogoAbierto(a) } : null;
+                  }
+                  const food = foodItems.find(f => f.id === u.clave) ?? foodItems.find(f => f.label === u.clave);
+                  if (!food || food.mode !== activeDietMode) return null;
+                  return { u, nombre: foodNameWithoutGrams(food.label), tuyo: !!food.personal, abrir: () => handleSelectFood(food) };
+                };
+                const lista = (xs: AlimentoUsado[]) => xs.map(filaDe).filter((x): x is FilaUsada => !!x);
+                const recientes = lista(usados.recientes);
+                const frecuentes = lista(usados.frecuentes);
+                // Sin historial: empezar por lo que ya tiene en su plan.
+                const delPlan: FilaUsada[] = recientes.length === 0 && frecuentes.length === 0
+                  ? Array.from(new Set((selectedDiet?.meals ?? []).flatMap(m => m.items).filter(it => !it.originRecipeId).map(it => it.foodLabel)))
+                      .map(l => foodItems.find(f => f.label === l))
+                      .filter((f): f is MealItem => !!f && f.mode === activeDietMode)
+                      .slice(0, 8)
+                      .map(food => ({ u: { clave: food.id, label: food.label, veces: 0, ultimo: '' } as AlimentoUsado, nombre: foodNameWithoutGrams(food.label), tuyo: !!food.personal, abrir: () => handleSelectFood(food) }))
+                  : [];
+                const bloque = (titulo: string, xs: FilaUsada[]) => xs.length === 0 ? null : (
+                  <div key={titulo} className="space-y-2">
+                    <p className="pt-2 font-mono text-caption font-semibold uppercase tracking-[.16em] text-ink-3">{titulo}</p>
+                    {xs.map(({ u, nombre, sub, tuyo, abrir }) => (
+                      <button
+                        key={`${titulo}_${u.clave}`}
+                        type="button"
+                        onClick={abrir}
+                        className="w-full flex items-center gap-3 py-4 px-4 rounded-control border border-hairline bg-surface hover:bg-raised hover:border-accent/40 text-left transition-transform active:scale-[0.98]"
+                      >
+                        <span className="flex-1 min-w-0 font-sans text-label text-ink leading-snug">
+                          {nombre}
+                          {tuyo && <span className="ml-2 align-middle text-caption font-mono font-bold uppercase text-accent-ink">tuyo</span>}
+                          {sub && <span className="block font-sans text-caption text-ink-3">{sub}</span>}
+                        </span>
+                        {u.gramos ? <span className="font-mono text-caption text-ink-3 flex-shrink-0">{u.gramos} g</span> : null}
+                        <span className="material-symbols-outlined text-ink-2 select-none text-title-s flex-shrink-0">add_circle</span>
+                      </button>
+                    ))}
+                  </div>
+                );
+                return (
+                  <>
+                    {bloque('Recientes', recientes)}
+                    {bloque('Frecuentes', frecuentes)}
+                    {bloque('De tu plan', delPlan)}
+                    {recientes.length + frecuentes.length + delPlan.length === 0 && (
+                      <p className="py-4 font-sans text-body-s text-ink-3">Aún no hay nada reciente. Pulsa «Mostrar todos» o busca por nombre.</p>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setMostrarTodos(true)}
+                      className="w-full flex items-center gap-3 p-4 rounded-control border border-hairline text-left transition-all active:scale-[0.98] hover:border-accent/40 group"
+                    >
+                      <Icon name="list" size="m" className="text-ink-2 group-hover:text-accent-ink transition-colors" />
+                      <span className="flex-1 font-sans text-label text-ink-2 group-hover:text-accent-ink transition-colors">Mostrar todos</span>
+                    </button>
+                  </>
+                );
+              })() : filteredFoods.length === 0 ? (
                 /* El momento natural de crear un alimento es justo este: has
                    buscado el tuyo, no está, y hasta hoy el camino se acababa
                    aquí. Por eso la acción principal del vacío pasa a ser
@@ -3198,7 +3512,61 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
               {/* Siempre al final de la lista, no en la barra de arriba: la
                   barra ya lleva modos, categorías y buscador, y una cuarta
                   fila fija dejaba la lista en un palmo de pantalla. */}
-              {filteredFoods.length > 0 && (
+              {alimentosDelCatalogo.length > 0 && (
+                <div className="space-y-2 pt-2">
+                  <p className="font-mono text-caption font-semibold uppercase tracking-[.16em] text-ink-3">Alimentos</p>
+                  {alimentosDelCatalogo.map(a => (
+                    <button
+                      key={a.id}
+                      type="button"
+                      onClick={() => setAlimentoCatalogoAbierto(a)}
+                      className="w-full flex items-center gap-3 py-4 px-4 rounded-control border border-hairline bg-surface hover:bg-raised hover:border-accent/40 text-left transition-transform active:scale-[0.98]"
+                    >
+                      <span className="flex-1 min-w-0 font-sans text-label text-ink leading-snug">
+                        {nombreDeAlimento(a)}
+                        <span className="block font-mono text-caption text-ink-3">{a.porCien.kcal} kcal · 100 g</span>
+                      </span>
+                      <span className="material-symbols-outlined text-ink-2 select-none text-title-s flex-shrink-0">add_circle</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {productosOff.length > 0 && (
+                <div className="space-y-2 pt-2">
+                  <p className="font-mono text-caption font-semibold uppercase tracking-[.16em] text-ink-3">Productos de supermercado</p>
+                  {productosOff.map(e => (
+                    <button
+                      key={e.c}
+                      type="button"
+                      onClick={() => setProductoOffAbierto(e)}
+                      className="w-full flex items-center gap-3 py-4 px-4 rounded-control border border-hairline bg-surface hover:bg-raised hover:border-accent/40 text-left transition-transform active:scale-[0.98]"
+                    >
+                      <span className="flex-1 min-w-0 font-sans text-label text-ink leading-snug">
+                        {e.n}
+                        {e.b && <span className="block font-sans text-caption text-ink-3">{e.b}</span>}
+                      </span>
+                      <span className="material-symbols-outlined text-ink-2 select-none text-title-s flex-shrink-0">add_circle</span>
+                    </button>
+                  ))}
+                  <p className="font-sans text-caption text-ink-3">{ATRIBUCION_OFF}</p>
+                </div>
+              )}
+
+              {usarListaRapida && (
+                <button
+                  type="button"
+                  onClick={() => setAnadidoRapidoAbierto(true)}
+                  className="w-full flex items-center gap-3 p-4 rounded-control border border-dashed border-hairline text-left transition-all active:scale-[0.98] hover:border-accent/40 group"
+                >
+                  <Icon name="bolt" size="m" className="text-ink-2 group-hover:text-accent-ink transition-colors" />
+                  <span className="flex-1 font-sans text-label text-ink-2 group-hover:text-accent-ink transition-colors">
+                    Añadido rápido: kcal y macros a mano
+                  </span>
+                </button>
+              )}
+
+              {!vistaRapida && filteredFoods.length > 0 && (
                 <button
                   type="button"
                   onClick={() => setCrearAlimentoAbierto(true)}
@@ -3214,6 +3582,61 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
         </Sheet>
         );
       })()}
+
+      {gramosDe && (
+        <GramosSheet
+          food={gramosDe}
+          ultimos={usados.recientes.find(u => u.clave === gramosDe.id || u.clave === gramosDe.label)?.gramos}
+          onConfirm={g => confirmarGramos(gramosDe, g)}
+          onClose={() => setGramosDe(null)}
+        />
+      )}
+      {escanerAbierto && (
+        <ScannerSheet
+          onClose={() => setEscanerAbierto(false)}
+          onCodigo={codigo => {
+            setEscanerAbierto(false);
+            // Lo que el atleta creó desde una etiqueta va ANTES que Open Food Facts:
+            // es su dato, y le sirve para corregir uno mal puesto.
+            const propio = encontrarPorCodigo(alimentosPropios, codigo);
+            if (propio) { showToast(`Es uno de tus alimentos: ${foodNameWithoutGrams(propio.label)}.`, 'info'); handleSelectFood(propio); return; }
+            setCodigoEscaneado(codigo);
+          }}
+        />
+      )}
+      {codigoEscaneado && (
+        <ProductoEscaneadoSheet
+          codigo={codigoEscaneado}
+          vista={vistaCupo}
+          onConfirm={(prod, gramos) => { setCodigoEscaneado(null); confirmarProductoOff(prod, gramos); }}
+          onBuscarPorNombre={() => setCodigoEscaneado(null)}
+          onCrearDesdeEtiqueta={inicial => { setCodigoEscaneado(null); setCrearInicial(inicial); setCrearAlimentoAbierto(true); }}
+          onClose={() => setCodigoEscaneado(null)}
+        />
+      )}
+      {productoOffAbierto && (
+        <ProductoOffSheet
+          entrada={productoOffAbierto}
+          vista={vistaCupo}
+          gramosIniciales={ultimosGramos(claveDeProducto(productoOffAbierto.c))}
+          onConfirm={confirmarProductoOff}
+          onClose={() => setProductoOffAbierto(null)}
+        />
+      )}
+      {alimentoCatalogoAbierto && (
+        <ProductoOffSheet
+          entrada={{ c: alimentoCatalogoAbierto.id, n: nombreDeAlimento(alimentoCatalogoAbierto), b: '', t: '' }}
+          producto={comoProducto(alimentoCatalogoAbierto)}
+          vista={vistaCupo}
+          gramosIniciales={ultimosGramos(claveDeCatalogo(alimentoCatalogoAbierto.id))}
+          nota={alimentoCatalogoAbierto.fuente ? `Valores por 100 g · ${alimentoCatalogoAbierto.fuente}` : 'Valores por 100 g del catálogo de En Forma.'}
+          onConfirm={(_, gramos) => confirmarAlimentoCatalogo(alimentoCatalogoAbierto, gramos)}
+          onClose={() => setAlimentoCatalogoAbierto(null)}
+        />
+      )}
+      {anadidoRapidoAbierto && (
+        <AnadidoRapidoSheet onConfirm={confirmarAnadidoRapido} onClose={() => setAnadidoRapidoAbierto(false)} />
+      )}
 
       {/* Editar un alimento propio. Misma hoja que crearlo: se rellena con los
           macros guardados y el grupo y los gramos se recalculan al vuelo. */}
@@ -3287,7 +3710,8 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
         <CrearAlimentoSheet
           mode={activeDietMode}
           destino="personal"
-          onClose={() => setCrearAlimentoAbierto(false)}
+          {...(crearInicial ? { inicial: crearInicial } : {})}
+          onClose={() => { setCrearAlimentoAbierto(false); setCrearInicial(null); }}
           onGuardar={async (data) => {
             const creado = await crearAlimentoPersonal(profile.email, data);
             queryClient.setQueryData<MealItem[]>(

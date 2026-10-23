@@ -18,6 +18,7 @@ import { adherenciaDelDia, dietaDelDia } from './diaDeDieta';
 import { addDays as addDaysStr } from './trainingWeek';
 import { aggregate } from './trainingReport';
 import { exchangeToKcal, GRAMS_PER_EXCHANGE } from './nutritionConstants';
+import { seriesPrincipales } from './seriesPrincipales.js';
 
 // ── Fechas — mismo patrón que trainingWeek.ts: todo en YYYY-MM-DD local,
 // nunca `toISOString()` (desplaza un día fuera de UTC — ver hoyIsoLocal). ──
@@ -523,7 +524,7 @@ export function construirIndiceDeDias(datos: DatosCalendario, hoy: string): Map<
           .filter(a => a.status === 'completed')
           .map(a => logsPorAssignment.get(a.id))
           .filter((l): l is WorkoutLog => !!l);
-        const seriesHechas = logsCompletados.reduce((s, l) => s + l.entries.reduce((s2, e) => s2 + e.sets.length, 0), 0);
+        const seriesHechas = logsCompletados.reduce((s, l) => s + l.entries.reduce((s2, e) => s2 + seriesPrincipales(e.sets).length, 0), 0);
         estado = (seriesPrevistas !== undefined && seriesHechas > 0 && seriesHechas < seriesPrevistas) ? 'partial' : 'done';
       } else if (todasFalladas) {
         estado = 'skipped';
@@ -539,7 +540,7 @@ export function construirIndiceDeDias(datos: DatosCalendario, hoy: string): Map<
       const wo = workoutsPorId.get(asig.workoutId);
       const log = logsPorAssignment.get(asig.id) ?? logsDelDia[0];
       const seriesTotal = wo ? wo.exercises.reduce((s, e) => s + e.sets, 0) : undefined;
-      const seriesHechas = log ? log.entries.reduce((s, e) => s + e.sets.length, 0) : 0;
+      const seriesHechas = log ? log.entries.reduce((s, e) => s + seriesPrincipales(e.sets).length, 0) : 0;
       detalleEntreno = {
         esDescanso: false,
         nombreRutina: wo?.name,

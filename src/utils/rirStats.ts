@@ -1,4 +1,5 @@
 import { WorkoutLog } from '../types';
+import { seriesPrincipales } from './seriesPrincipales.js';
 
 const WINDOW_DAYS = 28; // misma ventana que computeAdherenceScore (adherence.ts)
 
@@ -16,7 +17,7 @@ export function computeAverageRir(logs: WorkoutLog[], today: Date = new Date()):
     const d = new Date(log.date);
     if (d < windowStart || d > today) continue;
     for (const entry of log.entries) {
-      for (const set of entry.sets) {
+      for (const set of seriesPrincipales(entry.sets)) {
         if (set.alFallo) continue;
         if (typeof set.rir === 'number' && !isNaN(set.rir)) values.push(set.rir);
       }

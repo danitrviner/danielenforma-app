@@ -5,6 +5,7 @@ import { forceLocalOnly, setLocalBypassMode, stripUndefined, authReady, withAuth
 import { SYSTEM_FOODS } from '../nutricion_seed_en_forma';
 import { idDeFoodItem } from '../utils/foodItemId';
 import { leerCatalogo, marcarCatalogoCambiado } from './catalogoVersionado';
+import { COLECCION_CATALOGO, type AlimentoCatalogo, type TrozoCatalogo } from '../utils/catalogoAlimentos';
 import { escribirLocal } from '../utils/almacenLocal';
 import { registrarCambio } from './cambios';
 import { resumirCalendarioDietas, resumirConfigNutricion, resumirDieta, resumirPrograma } from '../utils/cambiosAtleta';
@@ -47,6 +48,24 @@ export async function getFoodItems(): Promise<MealItem[]> {
     console.warn('getFoodItems Firestore failed, using local:', err);
     setLocalBypassMode(true, err);
     return getLocalFoodItems();
+  }
+}
+
+/* Catálogo de alimentos por 100 g (N-04): trozos en `catalogoAlimentos`, con el
+   sello de `catalogos/catalogoAlimentos`. Lo escribe solo el script de
+   importación. Si falla, el Diario sigue sin esta sección: no activa el modo
+   local de toda la app por un catálogo opcional. */
+export async function getCatalogoAlimentos(): Promise<AlimentoCatalogo[]> {
+  if (forceLocalOnly) return [];
+  try {
+    const trozos = await leerCatalogo(COLECCION_CATALOGO, COLECCION_CATALOGO, d => ({ id: d.id, ...(d.data() as TrozoCatalogo) }));
+    return trozos
+      .filter(t => t.id.startsWith('trozo_'))
+      .sort((a, b) => a.id.localeCompare(b.id))
+      .flatMap(t => t.alimentos ?? []);
+  } catch (err) {
+    console.warn('getCatalogoAlimentos failed:', err);
+    return [];
   }
 }
 
@@ -277,7 +296,15 @@ export async function crearAlimentoPersonal(
    * quien lo está creando: igualmente acaba colocado en su comida. */
   const yaEsta = actuales.find(f =>
     f.mode === data.mode && f.label.trim().toLowerCase() === data.label.trim().toLowerCase());
-  if (yaEsta) return comoPersonal(yaEsta);
+  if (yaEsta) {
+    // Si se vuelve a crear desde un producto escaneado, el código de barras no
+    // se pierde: se le añade al que ya existía para que el escáner lo reconozca.
+    if (data.codigo && yaEsta.codigo !== data.codigo) {
+      const { id: _id, ...resto } = yaEsta;
+      return actualizarAlimentoPersonal(athleteEmail, yaEsta.id, { ...resto, codigo: data.codigo });
+    }
+    return comoPersonal(yaEsta);
+  }
 
   const nuevo: MealItem = { ...data, id: `pers_${Date.now()}_${Math.random().toString(36).slice(2, 8)}` };
   await escribirBancoPersonal(athleteEmail, [...actuales, nuevo]);

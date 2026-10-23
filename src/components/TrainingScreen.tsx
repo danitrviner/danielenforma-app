@@ -482,6 +482,8 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
         repsDone: String(s.repsDone),
         rir: s.alFallo ? 'fallo' : String(s.rir),
         done: true,
+        ...(s.segmento ? { segmento: true } : {}),
+        ...(s.segmento && s.segmentoDe ? { segmentoDe: s.segmentoDe } : {}),
       }));
     });
     const exerciseNoteInputsFromLog = orderedExercises.map(we =>
@@ -554,14 +556,13 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
   };
 
   /** Añade una bajada (dropset) o miniserie (myoreps) suelta durante la
-   * sesión — mismo `SetInput` que cualquier otra fila, sin campo nuevo en el
-   * modelo de datos (decisión del plan: "Dropset/myoreps: solo visual, dato
-   * simple"). `sesionEnCurso.ts` ya sabe tolerar que el borrador tenga más
+   * sesión — mismo `SetInput` que cualquier otra fila, con `segmento: true`
+   * para que no cuente como una serie más (volumen, estímulo). `sesionEnCurso.ts` ya sabe tolerar que el borrador tenga más
    * series por ejercicio que el prerelleno recién calculado. */
-  const addSetRow = (exIdx: number) => {
+  const addSetRow = (exIdx: number, segmentoDe: number) => {
     setPlayerSets(prev => {
       const next = [...prev];
-      next[exIdx] = [...(next[exIdx] || []), nuevaSerieVacia()];
+      next[exIdx] = [...(next[exIdx] || []), nuevaSerieVacia(true, segmentoDe)];
       return next;
     });
   };
@@ -629,6 +630,8 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
               repsDone: parseInt(s.repsDone) || 0,
               rir: s.rir === 'fallo' ? 0 : parseInt(s.rir) || 0,
               alFallo: s.rir === 'fallo',
+              ...(s.segmento ? { segmento: true } : {}),
+              ...(s.segmento && s.segmentoDe ? { segmentoDe: s.segmentoDe } : {}),
             })),
           note: (exerciseNoteInputs[exIdx] || '').trim() || undefined,
         }))

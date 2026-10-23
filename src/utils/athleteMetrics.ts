@@ -10,6 +10,7 @@ import {
 import { rmDeSerie, rirEfectivo } from './oneRepMax.js';
 import { weightedGroupsOf } from './trainingReport.js';
 import { adherenciaDelDia } from './diaDeDieta.js';
+import { seriesPrincipales } from './seriesPrincipales.js';
 
 // Normaliza para comparar nombres de ejercicio: minúsculas y sin acentos.
 export function normalizeText(s: string): string {
@@ -183,7 +184,7 @@ export function fractionalSetsByGroup(
       if (entry.sets.length === 0) continue;
       for (const { group, weight } of weightedGroupsOf(entry.exerciseId, exercises)) {
         if (group === 'none') continue;
-        acc.set(group, (acc.get(group) ?? 0) + entry.sets.length * weight);
+        acc.set(group, (acc.get(group) ?? 0) + seriesPrincipales(entry.sets).length * weight);
       }
     }
   }

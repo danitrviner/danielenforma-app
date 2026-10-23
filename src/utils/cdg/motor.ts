@@ -4,9 +4,8 @@
  * IF  = índice de fatiga
  * IEM = índice de estímulo muscular (33 músculos)
  * IEA = índice de estrés ARTICULAR (11 zonas).
- *   ⚠️ OJO: no confundir con `utils/accumulatedStimulusIndex.ts`, que en la app
- *   también se llama "IEA" pero es el Índice de Estímulo Acumulado. Aquí se
- *   expone como `estresArticular` para que no se mezclen.
+ *   Se expone como `estresArticular`: la app tuvo otro «IEA» (Índice de
+ *   Estímulo Acumulado, `utils/accumulatedStimulusIndex.ts`), retirado en E-11.
  *
  * Validado contra el motor original (9.000 casos, diferencia 0) y contra hojas
  * reales. Las rarezas del original se replican A PROPÓSITO para que los números

@@ -4,6 +4,7 @@ import {
 import { frecuenciaPorSemana } from './progression';
 import { rankMuscleGroups } from './muscleGroupRanking';
 import { DAY_TYPE_MUSCLES } from './trainingSplits';
+import { seriesPrincipales } from './seriesPrincipales.js';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Ayudas de PROGRAMACIÓN — lo que el coach necesita ver mientras monta un
@@ -129,7 +130,7 @@ export function seriesRealizadasPorGrupo(
     for (const entry of log.entries) {
       const g = porId.get(entry.exerciseId)?.muscleGroup;
       if (!g) continue;
-      acc.set(g, (acc.get(g) ?? 0) + entry.sets.length);
+      acc.set(g, (acc.get(g) ?? 0) + seriesPrincipales(entry.sets).length);
     }
   }
   return acc;

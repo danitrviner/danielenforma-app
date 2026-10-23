@@ -163,3 +163,17 @@ describe('el stepper guarda lo que hace', () => {
     expect(vuelta[0].escala).toBeCloseTo(1, 3);
   });
 });
+
+describe('filasDeComida · productos con varias líneas (D-03)', () => {
+  it('junta en una fila las líneas con el mismo lineaId', () => {
+    const items = [
+      { category: 'PROT', foodLabel: 'Yogur', quantity: 1, lineaId: 'a', gramos: 125 },
+      { category: 'GRASA', foodLabel: 'Yogur', quantity: 0.25, lineaId: 'a' },
+      { category: 'HC', foodLabel: 'Pan', quantity: 1 },
+    ] as DietItem[];
+    const filas = filasDeComida(items);
+    expect(filas).toHaveLength(2);
+    expect(filas[0]).toMatchObject({ tipo: 'producto', lineaId: 'a', idxs: [0, 1] });
+    expect(filas[1]).toMatchObject({ tipo: 'alimento', idx: 2 });
+  });
+});

@@ -1,14 +1,17 @@
 import type { Recipe, WeeklyMenu, UserProfile } from '../types';
 import {
   getNutritionProgram, getPublishedMenu, getWeeklyMenusForAthlete, createWeeklyMenu, getDietsForAthlete,
-  getAthleteDietConfig, getAthleteNutritionConfig, getOnboarding, getRecipeFavorites, getReglasDeReceta, getRecipes,
+  getAthleteDietConfig, getAthleteNutritionConfig, getOnboarding, getRecipeFavorites, getReglasDeReceta, getAccesoGlobalARecetas, getRecipes,
   queryRecetasForGenerator, getFoodItems, createNotificationDeduped,
 } from '../dbService';
 import { generateWeek, slotsFromOnboarding, recipeMatchesSlot, type GeneratorPrefs } from '../utils/menuEngine';
+import { listaDeMenuVigente } from '../utils/accesoARecetas';
+import { quiereAlgunaDieta } from '../utils/seleccionDeRecetas';
 import { athleteConditions } from '../utils/dietaryRestrictions';
 import { dietTypeVigente } from '../utils/foodPrefs';
 import type { DishType } from '../utils/dishTypes';
 import { semanaQueNecesitaMenu, ajustesDeLaSemana, aplicarAjustes } from '../utils/semanasNutricion';
+import { calendarioDeMenu } from '../utils/objetivoDelDia';
 import { hoyIsoLocal } from '../utils/trainingWeek';
 
 /* Menú semanal que se genera solo. Al empezar una semana de la periodización
@@ -37,12 +40,15 @@ export async function generarMenuSiToca(athleteEmail: string, coachId: string, c
   // Lo que el coach ha escondido a este atleta. Sin lectura posible (red, permisos)
   // se genera sin reglas: un menú sin ellas es mejor que ninguno.
   const reglas = await getReglasDeReceta(athleteEmail);
-  const schedule = dietConfig?.weeklySchedule ?? {};
+  const acceso = await getAccesoGlobalARecetas();
+  // Qué dieta lleva cada día: la misma resolución que Inicio y Nutrición
+  // (calendario → fase → activa), no el calendario a pelo.
+  const { schedule, dietas: dietasDelCoach } = calendarioDeMenu({ diets, config: dietConfig, program, semana });
   if (!Object.values(schedule).some(Boolean)) return null;
 
   const ajustes = ajustesDeLaSemana(program, semana);
   const mantenimiento = (program.semanasMantenimiento ?? []).includes(semana);
-  const dietas = diets.map(d => aplicarAjustes(d, ajustes, { mantenimiento }));
+  const dietas = dietasDelCoach.map(d => aplicarAjustes(d, ajustes, { mantenimiento }));
 
   // Mismo reparto, variedad y preferencias que el editor (WeeklyMenuEditor).
   const slots = slotsFromOnboarding(onboarding, nutritionConfig?.hungerProfile, nutritionConfig?.mealCount);
@@ -60,10 +66,14 @@ export async function generarMenuSiToca(athleteEmail: string, coachId: string, c
     preferredDishTypes: (nutritionConfig?.preferredDishTypes ?? onboarding?.preferredDishTypes ?? []) as DishType[],
     excludedDishTypes: (nutritionConfig?.excludedDishTypes ?? onboarding?.excludedDishTypes ?? []) as DishType[],
     recetasOcultas: reglas.reglas,
+    listaMenu: listaDeMenuVigente(reglas.listaMenu, acceso.listaMenu),
+    seleccion: reglas.seleccion,
+    paquetes: acceso.paquetes ?? [],
   };
+  const tambien = quiereAlgunaDieta(prefs.seleccion, prefs.paquetes);
   const pools: Record<number, Recipe[]> = {};
   for (const slot of Array.from(new Set<number>(slots.map(s => s.slot)))) {
-    const recetas = await queryRecetasForGenerator(slot, 300);
+    const recetas = await queryRecetasForGenerator(slot, 300, prefs.listaMenu, tambien);
     pools[slot] = [...recetas, ...delCoach.filter(r => recipeMatchesSlot(r, slot))];
   }
   const days = generateWeek({

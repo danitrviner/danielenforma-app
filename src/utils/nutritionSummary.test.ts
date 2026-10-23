@@ -73,6 +73,15 @@ describe('dietaPautadaDelDia', () => {
     expect(dietaPautadaDelDia([diet('d1', [1])], null, 'mon')).toBeNull();
   });
 
+  it('un borrador no llega al atleta, ni programado ni activo', () => {
+    const borrador: Diet = { ...diet('b1', [1]), isDraft: true };
+    const config: AthleteDietConfig = { athleteId: 'a@x.com', activeDietIds: ['b1'], weeklySchedule: { mon: 'b1' } };
+    expect(dietaPautadaDelDia([borrador], config, 'mon')).toBeNull();
+    // y si hay otra dieta guardada y activa, gana esa
+    const config2: AthleteDietConfig = { athleteId: 'a@x.com', activeDietIds: ['d1'], weeklySchedule: { mon: 'b1' } };
+    expect(dietaPautadaDelDia([borrador, diet('d1', [1])], config2, 'mon')?.id).toBe('d1');
+  });
+
   it('coge la primera activa cuando no hay programada ese día', () => {
     const diets = [diet('d1', [1]), diet('d2', [1])];
     const config: AthleteDietConfig = { athleteId: 'a@x.com', activeDietIds: ['d2'] };

@@ -5,16 +5,13 @@ import {
   UserProfile,
 } from '../types';
 import {
-  getMesocycles, getNutritionProgram, getRoadmap, getBodyweightForAthlete,
+  getNutritionProgram, getRoadmap, getBodyweightForAthlete,
   getStepsForAthlete, getWorkoutLogs, getExercises, getDietCompletionLogsForAthlete,
   getDietsForAthlete, getOnboarding, getAthleteNutritionConfig, getWorkoutAssignmentsForAthlete,
   getWeeklyChallengesForAthlete, saveRoadmapLevelProgress, createNotificationDeduped,
   updateUserProfile,
-  getTasksForAthlete, getWorkouts, getCardioSessionsSince, getProgressPhotos,
-  getCoachDayNotesForAthlete,
 } from '../dbService';
 import { bodyweightForAthleteKey } from '../hooks/useAthleteWeight';
-import CalendarioAtleta from './roadmap/calendario/atleta/CalendarioAtleta';
 import PhaseHeroCard from './roadmap/PhaseHeroCard';
 import WeeklyChallengeCard, { ChallengePendingCard } from './roadmap/WeeklyChallengeCard';
 import PhasePathStepper from './roadmap/PhasePathStepper';
@@ -34,7 +31,7 @@ import TarjetaIdentidadAtleta from './TarjetaIdentidadAtleta';
 const PHASE_COLORS = ['var(--color-accent)', 'var(--color-data)', 'var(--color-warning)', 'var(--color-chart-3)'];
 const DEFAULT_STEP_GOAL = 8000;
 import { COACH_EMAIL } from '../utils/coach';
-import { ventanaPasos, ventanaCardio } from '../utils/ventanaHistorial';
+import { ventanaPasos } from '../utils/ventanaHistorial';
 import { hoyIsoLocal } from '../utils/trainingWeek';
 
 interface Props {
@@ -47,10 +44,6 @@ export default function AthleteRoadmapScreen({ profile }: Props) {
   // no solo pulsando el ítem desde el checklist.
   useEffect(() => { markRoadmapVisited(profile.email); }, [profile.email]);
 
-  const { data: mesocycles = [], isPending: loadingMesocycles } = useQuery({
-    queryKey: ['mesocycles', profile.email],
-    queryFn: () => getMesocycles(profile.email),
-  });
   const { data: nutritionProgram = null, isPending: loadingNutritionProgram } = useQuery({
     queryKey: ['nutritionProgram', profile.email],
     queryFn: () => getNutritionProgram(profile.email),
@@ -104,42 +97,10 @@ export default function AthleteRoadmapScreen({ profile }: Props) {
     queryKey: ['weeklyChallengesForAthlete', profile.email],
     queryFn: () => getWeeklyChallengesForAthlete(profile.email),
   });
-  // Pantalla 6 (Bloque H) — el atleta ve su propio cuadro de mando, en modo
-  // solo lectura: mismos derivadores que el coach, sin ningún handler de
-  // edición (RoadmapTimeline los oculta solo cuando faltan los `on*`).
-  const { data: tasks = [], isPending: loadingTasks } = useQuery({
-    queryKey: ['tasksForAthlete', profile.email],
-    queryFn: () => getTasksForAthlete(profile.email),
-  });
-  const { data: workouts = [], isPending: loadingWorkouts } = useQuery({
-    queryKey: ['workouts'],
-    queryFn: getWorkouts,
-  });
-  // El año natural en curso: es exactamente el rango que puede pintar el
-  // calendario (sus tres niveles cuelgan de `new Date().getFullYear()`), y de
-  // paso da de sobra para el motor de retos, que solo mira 4 semanas atrás.
-  // Una consulta con ventana en vez de dos —ni el histórico entero de la
-  // banda, que son cientos de lecturas por cada visita al Road map.
-  // Misma clave y ventana que CardioScreen: una sola lectura de cardio por sesión.
-  const cardioSince = ventanaCardio();
-  const { data: cardioSessions = [], isPending: loadingCardio } = useQuery({
-    queryKey: ['cardioSessions', profile.email, cardioSince],
-    queryFn: () => getCardioSessionsSince(profile.email, cardioSince),
-  });
-  // Solo para el calendario: la foto y la nota del entrenador de cada día.
-  const { data: progressPhotos = [], isPending: loadingPhotos } = useQuery({
-    queryKey: ['progressPhotos', profile.email],
-    queryFn: () => getProgressPhotos(profile.email),
-  });
-  const { data: coachDayNotes = [], isPending: loadingDayNotes } = useQuery({
-    queryKey: ['coachDayNotes', profile.email],
-    queryFn: () => getCoachDayNotesForAthlete(profile.email),
-  });
 
-  const loading = loadingMesocycles || loadingNutritionProgram || loadingRoadmap || loadingBodyweight
+  const loading = loadingNutritionProgram || loadingRoadmap || loadingBodyweight
     || loadingSteps || loadingWorkoutLogs || loadingExercises || loadingDietCompletionLogs
-    || loadingDiets || loadingOnboarding || loadingNutConfig || loadingAssignments || loadingChallengeHistory
-    || loadingTasks || loadingWorkouts || loadingCardio || loadingPhotos || loadingDayNotes;
+    || loadingDiets || loadingOnboarding || loadingNutConfig || loadingAssignments || loadingChallengeHistory;
 
   const stepGoal = nutConfig?.stepGoal ?? DEFAULT_STEP_GOAL;
   const kcalPerStep = nutConfig?.kcalPerStep ?? DEFAULT_KCAL_PER_STEP;
@@ -301,30 +262,10 @@ export default function AthleteRoadmapScreen({ profile }: Props) {
 
       <RecentAchievements achievements={achievements} />
 
-      <div>
-        <p className="font-mono text-caption uppercase tracking-widest text-ink-2 mb-3 px-1">Tu planificación completa</p>
-        <CalendarioAtleta
-          mesocycles={mesocycles}
-          nutritionProgram={nutritionProgram}
-          roadmap={roadmap}
-          workoutAssignments={assignments}
-          workoutLogs={workoutLogs}
-          workouts={workouts}
-          exercises={exercises}
-          diets={diets}
-          dietCompletionLogs={dietCompletionLogs}
-          cardioSessions={cardioSessions}
-          bodyweightLogs={bodyweightLogs}
-          tasks={tasks}
-          progressPhotos={progressPhotos}
-          coachDayNotes={coachDayNotes}
-        />
-      </div>
-
       {/* Quién eres, al final: nombre, nivel, XP y meta. Estaba encima de las
           pestañas del Perfil ocupando la primera pantalla entera antes de
           poder llegar a nada, y aquí cierra el relato de por dónde vas, detrás
-          del calendario y de los logros (Dani, 10-09-2026). */}
+          de los logros (Dani, 10-09-2026). */}
       <TarjetaIdentidadAtleta profile={profile} />
     </div>
   );

@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { LineChart, Line, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { BodyweightLog } from '../types';
-import { getBodyweightForAthlete, addBodyweight, updateBodyweight, deleteBodyweight } from '../dbService';
+import { getBodyweightForAthlete, guardarPesoDelDia, updateBodyweight, deleteBodyweight } from '../dbService';
 import { bodyweightForAthleteKey, invalidarExtremosDePeso } from '../hooks/useAthleteWeight';
 import { Skeleton, SegmentedControl } from './ui';
 import { Icon, EmptyState } from './ui';
@@ -125,13 +125,9 @@ export default function BodyweightPanel({ athleteEmail, readOnly = false }: Prop
     if (!newDate || isNaN(w) || w <= 0) return;
     setAdding(true);
     try {
-      const entry = await addBodyweight({
-        athleteId: athleteEmail,
-        date: newDate,
-        weight: w,
-        createdAt: new Date().toISOString(),
-      });
-      queryClient.setQueryData<BodyweightLog[]>(queryKey, prev => [...(prev ?? []), entry]);
+      // Un peso por día: si esa fecha ya tiene uno, se corrige en vez de duplicar.
+      const entry = await guardarPesoDelDia(athleteEmail, newDate, w, logs.find(l => l.date === newDate));
+      queryClient.setQueryData<BodyweightLog[]>(queryKey, prev => [...(prev ?? []).filter(l => l.id !== entry.id), entry]);
       // Un peso nuevo puede ser el más reciente —o el primero, si es el
       // estreno—, así que los extremos que leen Check-in y Destacados dejan de
       // ser válidos.

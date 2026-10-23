@@ -105,7 +105,7 @@ export const TOUR_STEPS: TourStep[] = [
   {
     id: 'academia', section: 'Academia', tab: 'academy', targetId: 'nav-tab-academy',
     title: 'Aquí te explico el porqué de todo',
-    body: 'Entrenamiento, nutrición, fisiología — lecciones cortas para que entiendas lo que estás haciendo, no solo que lo hagas.',
+    body: 'En el botón «+» tienes Training Lab: lecciones cortas de entrenamiento, nutrición y fisiología para que entiendas lo que estás haciendo, no solo que lo hagas. Ahí también están Cardio y tus Check-ins.',
   },
   {
     id: 'fotos-progreso', section: 'Perfil', tab: 'profile', targetId: 'profile-progress-row',

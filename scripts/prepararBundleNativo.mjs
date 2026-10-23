@@ -25,7 +25,9 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // Solo material de origen del importador. El índice que consume la app NO entra
 // aquí a propósito.
-const FUERA_DEL_MOVIL = ['recetas'];
+// `off`: la copia de Open Food Facts (42 MB). En el móvil se pide a producción
+// (ver services/openFoodFacts.ts), igual que las funciones de `api/`.
+const FUERA_DEL_MOVIL = ['recetas', 'off'];
 
 function pesoDe(ruta) {
   let total = 0;

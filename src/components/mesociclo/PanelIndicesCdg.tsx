@@ -9,6 +9,7 @@ import {
   bandaIF, consejosDeTiempo, type ZonaIem, type LecturaAgujetas
 } from '../../utils/cdg';
 import { seriesPorGrupo } from '../../utils/programacion';
+import { nombresCortosDeSesiones } from '../../utils/nombresMeso';
 import Collapsible from '../ui/Collapsible';
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -62,7 +63,7 @@ const pct = (v: number | null) => (v == null ? '—' : `${v > 0 ? '+' : ''}${Mat
 const leerNumero = (t: string) => { const n = Number(t.replace(',', '.').trim()); return t.trim() === '' || !(n > 0) ? undefined : n; };
 const TONO_AGUJETAS = (v: number) => (v >= 5 ? 'text-danger' : v >= 4 ? 'text-warning' : 'text-ink');
 
-type Columna = { nombre: string; IF: number; tiempoSeg: number; compuestos: Record<string, number>; IEM: number[]; estresArticular: number[]; total?: boolean };
+type Columna = { nombre: string; completo?: string; IF: number; tiempoSeg: number; compuestos: Record<string, number>; IEM: number[]; estresArticular: number[]; total?: boolean };
 
 function Bloque ({ titulo, columnas, filas }: { titulo: string; columnas: Columna[]; filas: Array<{ nombre: string; valores: number[] }> }) {
   if (filas.length === 0) return null;
@@ -78,6 +79,16 @@ function Bloque ({ titulo, columnas, filas }: { titulo: string; columnas: Column
         </tr>
       ))}
     </>
+  );
+}
+
+function Tarjeta ({ titulo, valor, detalle, aviso }: { titulo: string; valor: string; detalle: React.ReactNode; aviso?: boolean; key?: React.Key }) {
+  return (
+    <div className={`rounded-control px-3 py-2.5 ${aviso ? 'bg-warning/10' : 'bg-raised'}`}>
+      <p className={`font-sans text-label ${aviso ? 'text-warning' : 'text-ink-2'}`}>{titulo}</p>
+      <p className={`font-sans text-title-l font-bold tabular-nums ${aviso ? 'text-warning' : 'text-ink'}`}>{valor}</p>
+      <p className={`font-sans text-body-s ${aviso ? 'text-warning' : 'text-ink-2'}`}>{detalle}</p>
+    </div>
   );
 }
 
@@ -101,6 +112,8 @@ export default function PanelIndicesCdg ({ grupos, meso, semana, allExercises, o
       return { nombre: g.name, ejercicios, r: resumenSesion(motor, ejercicios, nombreCdgDe) };
     });
   }, [motor, grupos, meso, nombreCdgDe]);
+  // Cabeceras compactas (E-02): el nombre completo queda en el tooltip.
+  const cortos = useMemo(() => nombresCortosDeSesiones(grupos.map(g => g.name)), [grupos]);
   const sesiones = useMemo(() => calcular(semana), [calcular, semana]);
   // Semana anterior, para «vs S-1» y el aviso IEM ↔ estrés articular.
   const anterior = useMemo(() => {
@@ -112,7 +125,7 @@ export default function PanelIndicesCdg ({ grupos, meso, semana, allExercises, o
     if (!motor || sesiones.length === 0) return null;
     const t = sumarSesiones(motor, sesiones.map(s => s.r));
     const columnas: Columna[] = [
-      ...sesiones.map(s => ({ nombre: s.nombre, IF: s.r.IF, tiempoSeg: s.r.tiempoSeg, compuestos: s.r.compuestos, IEM: s.r.IEM, estresArticular: s.r.estresArticular })),
+      ...sesiones.map((s, i) => ({ nombre: cortos[i] ?? s.nombre, completo: s.nombre, IF: s.r.IF, tiempoSeg: s.r.tiempoSeg, compuestos: s.r.compuestos, IEM: s.r.IEM, estresArticular: s.r.estresArticular })),
       { nombre: 'Semana', IF: t.IF, tiempoSeg: t.tiempoSeg, compuestos: t.compuestos, IEM: t.IEM, estresArticular: t.estresArticular, total: true }
     ];
     const conValor = (nombres: string[], de: (c: Columna) => number[]) =>
@@ -123,7 +136,7 @@ export default function PanelIndicesCdg ({ grupos, meso, semana, allExercises, o
       musculos: conValor(motor.musculos, c => c.IEM),
       articulaciones: conValor(motor.articulaciones, c => c.estresArticular)
     };
-  }, [motor, sesiones]);
+  }, [motor, sesiones, cortos]);
 
   const zonas = useMemo(() => {
     if (!motor || !tabla) return null;
@@ -160,8 +173,8 @@ export default function PanelIndicesCdg ({ grupos, meso, semana, allExercises, o
   const aportes = useMemo(() => {
     if (!motor) return [];
     const { zonas: defs } = indicesDeZonas(motor);
-    return sesiones.map(se => ({
-      nombre: se.nombre,
+    return sesiones.map((se, i) => ({
+      nombre: cortos[i] ?? se.nombre,
       ejercicios: se.r.porEjercicio.map(pe => {
         const porZona = defs
           .map(z => ({ clave: z.clave, nombre: z.nombre, valor: z.iMusculos.reduce((a, i) => a + (pe.IEM[i] ?? 0), 0), objetivo: objetivos?.[z.clave] != null }))
@@ -170,7 +183,7 @@ export default function PanelIndicesCdg ({ grupos, meso, semana, allExercises, o
         return { exerciseId: pe.exerciseId, IF: pe.IF, porZona };
       })
     }));
-  }, [motor, sesiones, objetivos]);
+  }, [motor, sesiones, cortos, objetivos]);
 
   const [verTodas, setVerTodas] = React.useState(false);
   const conObjetivos = !!onCambiarObjetivo || Object.keys(objetivos ?? {}).length > 0;
@@ -188,76 +201,203 @@ export default function PanelIndicesCdg ({ grupos, meso, semana, allExercises, o
   const etiqueta = semana === 0 ? 'Base' : `Semana ${semana}`;
   const total = tabla?.columnas[tabla.columnas.length - 1];
 
+  // Series efectivas de la semana y su variación frente a la anterior: salen de
+  // `seriesPorGrupo`, la misma cuenta que la tabla por zona (y que seriesPrincipales).
+  const seriesSemana = useMemo(() => {
+    if (sesiones.length === 0) return null;
+    const suma = (ses: typeof sesiones) =>
+      [...seriesPorGrupo(ses.flatMap(se => se.ejercicios), allExercises).values()].reduce((a, v) => a + v, 0);
+    const actual = suma(sesiones);
+    const previa = semana >= 2 ? suma(calcular(semana - 1)) : null;
+    return { actual, delta: previa == null ? null : actual - previa };
+  }, [sesiones, calcular, semana, allExercises]);
+
+  const avisosTiempo = useMemo(() => (minutosDisponibles == null ? [] : sesiones.flatMap((se, i) => consejosDeTiempo({
+    minutosDisponibles,
+    tiempoSeg: se.r.tiempoSeg,
+    unilaterales: se.ejercicios.filter(e => (nombreCdgDe(e.exerciseId) ?? '').toLowerCase().includes('unilateral')).length,
+  }).map(t => `${cortos[i] ?? se.nombre}: ${t}`))), [sesiones, cortos, minutosDisponibles, nombreCdgDe]);
+
+  const [soloConObjetivo, setSoloConObjetivo] = React.useState(false);
+  const FILAS_INICIALES = 6;
+
+  const filasZona = useMemo(() => {
+    if (!zonas) return [];
+    const base = soloConObjetivo ? zonas.visibles.filter(f => f.objetivo != null) : zonas.visibles;
+    return verTodas ? [...base, ...(soloConObjetivo ? [] : zonas.ocultas)] : base.slice(0, FILAS_INICIALES);
+  }, [zonas, soloConObjetivo, verTodas]);
+  const zonasRestantes = zonas
+    ? (soloConObjetivo ? zonas.visibles.filter(f => f.objetivo != null) : [...zonas.visibles, ...zonas.ocultas]).length - filasZona.length
+    : 0;
+
+  // Resumen y avisos de la semana (tarjetas de arriba).
+  const resumen = useMemo(() => {
+    if (!tabla || !total || !zonas || !seriesSemana) return null;
+    const iemTotal = total.IEM.reduce((a, v) => a + v, 0);
+    const iemPrevio = anterior ? anterior.IEM.reduce((a, v) => a + v, 0) : null;
+    const conObjetivo = zonas.visibles.filter(f => f.objetivo != null);
+    const bajoObjetivo = conObjetivo.filter(f => f.falta != null && f.falta > 0.05);
+    const sesionesIF = tabla.columnas.filter(c => !c.total);
+    const mayor = sesionesIF.reduce<Columna | null>((m, c) => (m == null || c.IF > m.IF ? c : m), null);
+    const sinContar = avisos.rir5.length + avisos.sinVinculo.length + avisos.fuera.length;
+    const partes: string[] = [];
+    if (bajoObjetivo.length > 0) partes.push(`${bajoObjetivo.length} ${bajoObjetivo.length === 1 ? 'zona' : 'zonas'} bajo objetivo`);
+    if (avisosTiempo.length > 0) partes.push(`${avisosTiempo.length} de tiempo`);
+    if (avisosArticulares.length > 0) partes.push(`${avisosArticulares.length} ${avisosArticulares.length === 1 ? 'articular' : 'articulares'}`);
+    if (sinContar > 0) partes.push(`${sinContar} ${sinContar === 1 ? 'ejercicio' : 'ejercicios'} sin contar`);
+    return {
+      iemTotal,
+      dIEM: iemPrevio != null ? variacion(iemPrevio, iemTotal) : null,
+      enObjetivo: conObjetivo.length - bajoObjetivo.length,
+      conObjetivo: conObjetivo.length,
+      mayor,
+      sesionesIF: sesionesIF.length,
+      nAvisos: bajoObjetivo.length + avisosTiempo.length + avisosArticulares.length + sinContar,
+      detalleAvisos: partes.join(' · '),
+      ifMuyAlto: sesionesIF.some(c => bandaIF(c.IF).banda === 'muy-alta'),
+    };
+  }, [tabla, total, zonas, seriesSemana, anterior, avisos, avisosTiempo, avisosArticulares]);
+
   return (
     <div className="bg-surface border border-hairline rounded-surface px-4 py-3">
       <p className="font-sans font-bold text-body-s text-ink">
         Índices CDG · {etiqueta}
-        {total && <span className="ml-2 font-mono font-normal text-ink-2">IF {n1(total.IF)} · {formatearTiempo(total.tiempoSeg)}</span>}
       </p>
 
-      {cargando && <p className="pt-2 font-sans text-caption text-ink-3">Cargando el catálogo CDG…</p>}
-      {error && <p className="pt-2 font-sans text-caption text-danger">No se pudo leer el catálogo CDG: {error.message}</p>}
+      {cargando && <p className="pt-2 font-sans text-body-s text-ink-3">Cargando el catálogo CDG…</p>}
+      {error && <p className="pt-2 font-sans text-body-s text-danger">No se pudo leer el catálogo CDG: {error.message}</p>}
       {noSubido && (
-        <p className="pt-2 font-sans text-caption text-ink-3">
+        <p className="pt-2 font-sans text-body-s text-ink-3">
           El catálogo CDG aún no está en Firestore (se sube con <code>scripts/subirCatalogoCdg.mjs --aplicar</code>).
         </p>
       )}
 
-      {tabla && (
+      {tabla && total && (
         <div className="pt-2 space-y-3">
+          {resumen && seriesSemana && (
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
+              <Tarjeta
+                titulo="Series efectivas de la semana"
+                valor={n1(seriesSemana.actual)}
+                detalle={seriesSemana.delta != null ? <><span className={seriesSemana.delta >= 0 ? 'text-success' : 'text-warning'}>{seriesSemana.delta > 0 ? '+' : ''}{n1(seriesSemana.delta)}</span> vs S{semana - 1}</> : 'Sin semana anterior'}
+              />
+              <Tarjeta
+                titulo="IEM total de la semana"
+                valor={n1(resumen.iemTotal)}
+                detalle={<>
+                  {resumen.dIEM != null && <><span className={resumen.dIEM >= 0 ? 'text-success' : 'text-warning'}>{pct(resumen.dIEM)}</span> vs S{semana - 1}</>}
+                  {resumen.dIEM != null && resumen.conObjetivo > 0 && ' · '}
+                  {resumen.conObjetivo > 0 && `${resumen.enObjetivo} de ${resumen.conObjetivo} zonas en objetivo`}
+                  {resumen.dIEM == null && resumen.conObjetivo === 0 && 'Sin objetivos puestos'}
+                </>}
+              />
+              <Tarjeta
+                titulo="IF de la semana"
+                valor={n1(total.IF)}
+                detalle={`${resumen.sesionesIF} ${resumen.sesionesIF === 1 ? 'sesión' : 'sesiones'}${resumen.mayor ? ` · máx. ${n1(resumen.mayor.IF)} (${resumen.mayor.nombre})` : ''} · ${formatearTiempo(total.tiempoSeg)}`}
+              />
+              <Tarjeta
+                aviso={resumen.nAvisos > 0}
+                titulo="Avisos"
+                valor={String(resumen.nAvisos)}
+                detalle={resumen.nAvisos > 0 ? resumen.detalleAvisos : 'Todo en orden'}
+              />
+            </div>
+          )}
+
           {zonas && (
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr className="text-ink-3 font-sans text-caption uppercase tracking-wide">
-                    <th className="py-1 pr-3 text-left font-normal">IEM por zona</th>
-                    {sesiones.map((se, i) => <th key={`${i}-${se.nombre}`} className="py-1 px-2 text-right font-normal whitespace-nowrap">{se.nombre}</th>)}
-                    <th className="py-1 px-2 text-right font-normal text-ink">Semana</th>
-                    {conObjetivos && <th className="py-1 px-2 text-right font-normal" title="IEM semanal que te propones para esta zona en el bloque">Objetivo</th>}
-                    {conObjetivos && <th className="py-1 px-2 text-right font-normal">Falta</th>}
-                    <th className="py-1 px-2 text-right font-normal" title="Series efectivas de la semana en esta zona">Series</th>
-                    {anterior && <th className="py-1 px-2 text-right font-normal whitespace-nowrap">vs S{semana - 1}</th>}
-                    {agujetas && <th className="py-1 px-2 text-right font-normal whitespace-nowrap" title="Últimas agujetas a las 48 h (1-5)">Agujetas</th>}
-                  </tr>
-                </thead>
-                <tbody>
-                  {[...zonas.visibles, ...(verTodas ? zonas.ocultas : [])].map(f => (
-                    <tr key={f.z.clave} className="border-t border-hairline">
-                      <td className={`py-1 pr-3 font-sans text-caption whitespace-nowrap ${f.objetivo != null ? 'font-bold text-ink' : 'text-ink-2'}`}>{f.z.nombre}</td>
-                      {f.porSesion.map((v, i) => <td key={i} className={`py-1 px-2 text-right font-mono text-caption tabular-nums ${v > 0.005 ? 'text-ink' : 'text-ink-3'}`}>{celda(v)}</td>)}
-                      <td className="py-1 px-2 text-right font-mono text-caption font-bold text-ink tabular-nums">{celda(f.valor)}</td>
-                      {conObjetivos && <td className="py-1 px-2 text-right">
-                        {onCambiarObjetivo ? (
-                          <input
-                            key={`${f.z.clave}-${f.objetivo ?? ''}`}
-                            defaultValue={f.objetivo != null ? String(f.objetivo).replace('.', ',') : ''}
-                            placeholder="—"
-                            inputMode="decimal"
-                            aria-label={`IEM objetivo de ${f.z.nombre}`}
-                            className="w-14 bg-raised border border-hairline rounded-control px-1.5 py-0.5 text-right font-mono text-caption text-ink"
-                            onBlur={e => { const v = leerNumero(e.currentTarget.value); if (v !== f.objetivo) onCambiarObjetivo(f.z.clave, v); }}
-                            onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur(); }}
-                          />
-                        ) : <span className="font-mono text-caption text-ink-2">{f.objetivo != null ? n1(f.objetivo) : '—'}</span>}
-                      </td>}
-                      {conObjetivos && <td className={`py-1 px-2 text-right font-mono text-caption tabular-nums ${f.falta == null ? 'text-ink-3' : f.falta > 0.05 ? 'text-warning' : 'text-success'}`}>
-                        {f.falta == null ? '—' : f.falta > 0.05 ? n1(f.falta) : f.falta < -0.05 ? <span title={`Pasa el objetivo en ${n1(-f.falta)}`}>✓ +{n1(-f.falta)}</span> : '✓'}
-                      </td>}
-                      <td className="py-1 px-2 text-right font-mono text-caption text-ink-2 tabular-nums">{f.series || '·'}</td>
-                      {anterior && <td className="py-1 px-2 text-right font-mono text-caption text-ink-2 tabular-nums">{pct(f.vs)}</td>}
-                      {agujetas && (
-                        <td className="py-1 px-2 text-right font-mono text-caption tabular-nums" title={f.agujetas ? `${f.agujetas.fecha}${f.agujetas.deEscala10 ? ' · del cuestionario 0-10, convertido' : ''}` : 'Sin respuesta'}>
-                          {f.agujetas ? <span className={TONO_AGUJETAS(f.agujetas.valor)}>{f.agujetas.valor}/5{f.agujetas.deEscala10 ? '*' : ''}</span> : <span className="text-ink-3">—</span>}
-                        </td>
-                      )}
+            <div className="border border-hairline rounded-surface">
+              <div className="flex flex-wrap items-center gap-2 px-3 py-2.5">
+                <p className="font-sans text-body-s font-bold text-ink">Por zona muscular
+                  <span className="ml-2 font-normal text-ink-2">series + IEM{conObjetivos ? ' frente al objetivo' : ''}</span>
+                </p>
+                {conObjetivos && (
+                  <span className="ml-auto flex gap-1.5">
+                    {[{ v: true, t: 'Solo con objetivo' }, { v: false, t: `Todas (${zonas.visibles.length + zonas.ocultas.length})` }].map(o => (
+                      <button
+                        key={String(o.v)}
+                        type="button"
+                        onClick={() => setSoloConObjetivo(o.v)}
+                        aria-pressed={soloConObjetivo === o.v}
+                        className={`min-h-[36px] px-3 rounded-chip border font-sans text-label transition-colors ${
+                          soloConObjetivo === o.v ? 'bg-accent text-on-accent border-accent' : 'border-hairline text-ink-2 hover:text-ink'
+                        }`}
+                      >{o.t}</button>
+                    ))}
+                  </span>
+                )}
+              </div>
+              <div className="overflow-x-auto px-3">
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr className="text-ink-3 font-sans text-label">
+                      <th className="py-1 pr-3 text-left font-normal">Zona</th>
+                      {sesiones.map((se, i) => <th key={`${i}-${se.nombre}`} title={se.nombre} className="py-1 px-2 text-right font-normal whitespace-nowrap">{cortos[i] ?? se.nombre}</th>)}
+                      <th className="py-1 px-2 text-right font-normal text-ink" title="IEM de la semana en esta zona">IEM semana</th>
+                      {conObjetivos && <th className="py-1 px-2 text-right font-normal" title="IEM semanal que te propones para esta zona en el bloque">Objetivo</th>}
+                      {conObjetivos && <th className="py-1 px-2 text-left font-normal">Frente al objetivo</th>}
+                      {conObjetivos && <th className="py-1 px-2 text-right font-normal">Falta</th>}
+                      <th className="py-1 px-2 text-right font-normal" title="Series efectivas de la semana en esta zona">Series</th>
+                      {anterior && <th className="py-1 px-2 text-right font-normal whitespace-nowrap">vs S{semana - 1}</th>}
+                      {agujetas && <th className="py-1 px-2 text-right font-normal whitespace-nowrap" title="Últimas agujetas a las 48 h (1-5)">Agujetas</th>}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pt-1.5 font-sans text-caption text-ink-3">
-                {zonas.ocultas.length > 0 && (
-                  <button type="button" className="underline hover:text-ink" onClick={() => setVerTodas(v => !v)}>
-                    {verTodas ? 'Ocultar zonas sin estímulo' : `Ver las ${zonas.ocultas.length} zonas sin estímulo`}
+                  </thead>
+                  <tbody>
+                    {filasZona.map(f => {
+                      const bajo = f.falta != null && f.falta > 0.05;
+                      return (
+                        <tr key={f.z.clave} className={`border-t border-hairline ${bajo ? 'bg-warning/10' : ''}`}>
+                          <td className={`py-1.5 pr-3 font-sans text-body-s whitespace-nowrap ${f.objetivo != null ? 'font-bold text-ink' : 'text-ink-2'}`}>{f.z.nombre}</td>
+                          {f.porSesion.map((v, i) => <td key={i} className={`py-1.5 px-2 text-right font-mono text-body-s tabular-nums ${v > 0.005 ? 'text-ink' : 'text-ink-3'}`}>{celda(v)}</td>)}
+                          <td className="py-1.5 px-2 text-right font-mono text-body-s font-bold text-ink tabular-nums">{celda(f.valor)}</td>
+                          {conObjetivos && <td className="py-1.5 px-2 text-right">
+                            {onCambiarObjetivo ? (
+                              <input
+                                key={`${f.z.clave}-${f.objetivo ?? ''}`}
+                                defaultValue={f.objetivo != null ? String(f.objetivo).replace('.', ',') : ''}
+                                placeholder="—"
+                                inputMode="decimal"
+                                aria-label={`IEM objetivo de ${f.z.nombre}`}
+                                className="w-16 bg-raised border border-hairline rounded-control px-1.5 py-1 text-right font-mono text-body-s text-ink"
+                                onBlur={e => { const v = leerNumero(e.currentTarget.value); if (v !== f.objetivo) onCambiarObjetivo(f.z.clave, v); }}
+                                onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur(); }}
+                              />
+                            ) : <span className="font-mono text-body-s text-ink-2">{f.objetivo != null ? n1(f.objetivo) : '—'}</span>}
+                          </td>}
+                          {conObjetivos && <td className="py-1.5 px-2">
+                            {f.objetivo != null && f.objetivo > 0 ? (
+                              <div
+                                className="relative h-2 w-24 rounded-chip bg-raised"
+                                role="img"
+                                aria-label={`${Math.round((f.valor / f.objetivo) * 100)} % del objetivo`}
+                              >
+                                <div
+                                  className={`absolute inset-y-0 left-0 rounded-chip ${bajo ? 'bg-warning' : 'bg-success'}`}
+                                  style={{ width: `${Math.min(100, (f.valor / f.objetivo) * 100)}%` }}
+                                />
+                              </div>
+                            ) : <span className="font-mono text-body-s text-ink-3">—</span>}
+                          </td>}
+                          {conObjetivos && <td className={`py-1.5 px-2 text-right font-mono text-body-s tabular-nums ${f.falta == null ? 'text-ink-3' : bajo ? 'text-warning' : 'text-success'}`}>
+                            {f.falta == null ? '—' : bajo ? n1(f.falta) : f.falta < -0.05 ? <span title={`Pasa el objetivo en ${n1(-f.falta)}`}>✓ +{n1(-f.falta)}</span> : '✓'}
+                          </td>}
+                          <td className="py-1.5 px-2 text-right font-mono text-body-s text-ink-2 tabular-nums">{f.series || '·'}</td>
+                          {anterior && <td className="py-1.5 px-2 text-right font-mono text-body-s text-ink-2 tabular-nums">{pct(f.vs)}</td>}
+                          {agujetas && (
+                            <td className="py-1.5 px-2 text-right font-mono text-body-s tabular-nums" title={f.agujetas ? `${f.agujetas.fecha}${f.agujetas.deEscala10 ? ' · del cuestionario 0-10, convertido' : ''}` : 'Sin respuesta'}>
+                              {f.agujetas ? <span className={TONO_AGUJETAS(f.agujetas.valor)}>{f.agujetas.valor}/5{f.agujetas.deEscala10 ? '*' : ''}</span> : <span className="text-ink-3">—</span>}
+                            </td>
+                          )}
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-3 py-2 border-t border-hairline font-sans text-body-s text-ink-3">
+                {(zonasRestantes > 0 || verTodas) && (
+                  <button type="button" className="text-accent-ink hover:underline min-h-[32px]" onClick={() => setVerTodas(v => !v)}>
+                    {verTodas ? 'Ver menos zonas' : `Ver ${zonasRestantes} ${zonasRestantes === 1 ? 'zona más' : 'zonas más'}`}
                   </button>
                 )}
                 {onCambiarObjetivo && <span>Escribe el IEM semanal objetivo de cada zona; «Falta» es lo que queda por cubrir.</span>}
@@ -266,101 +406,140 @@ export default function PanelIndicesCdg ({ grupos, meso, semana, allExercises, o
             </div>
           )}
 
-          {definicion && anterior && total && (() => {
+          {definicion && anterior && (() => {
             const dIEM = variacion(anterior.IEM.reduce((a, v) => a + v, 0), total.IEM.reduce((a, v) => a + v, 0));
             const dIF = variacion(anterior.IF, total.IF);
             return (
-              <p className="font-sans text-caption text-ink-2">
+              <p className="font-sans text-body-s text-ink-2">
                 Bloque de definición: mantener el IEM y bajar el IF. Frente a S{semana - 1}: IEM <b className="font-mono">{pct(dIEM)}</b> · IF <b className="font-mono">{pct(dIF)}</b>.
               </p>
             );
           })()}
 
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="text-ink-3 font-sans text-caption uppercase tracking-wide">
-                  <th className="py-1 pr-3 text-left font-normal" />
-                  {tabla.columnas.map((c, i) => (
-                    <th key={`${i}-${c.nombre}`} className={`py-1 px-2 text-right font-normal whitespace-nowrap ${c.total ? 'text-ink' : ''}`}>{c.nombre}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                <tr className="border-t border-strong">
-                  <td className="py-1.5 pr-3 font-sans text-caption font-bold text-ink">IF (fatiga)</td>
-                  {tabla.columnas.map((c, i) => <td key={`${i}-${c.nombre}`} className="py-1.5 px-2 text-right font-mono text-caption font-bold text-ink tabular-nums">{n1(c.IF)}</td>)}
-                </tr>
-                <tr className="border-t border-hairline" title="Referencia de la guía por sesión: <40 sencilla · 40-70 intermedia · 70-100 alta · >100 muy alta">
-                  <td className="py-1 pr-3 font-sans text-caption text-ink-2">Nivel de IF</td>
-                  {tabla.columnas.map((c, i) => {
-                    if (c.total) return <td key={`${i}-${c.nombre}`} />;
-                    const b = bandaIF(c.IF);
-                    return <td key={`${i}-${c.nombre}`} className={`py-1 px-2 text-right font-sans text-caption whitespace-nowrap ${TONO_BANDA[b.banda]}`}>{c.IF > 0.005 ? b.etiqueta : '·'}</td>;
-                  })}
-                </tr>
-                <tr className="border-t border-hairline">
-                  <td className="py-1 pr-3 font-sans text-caption text-ink-2">Tiempo{minutosDisponibles ? ` (tiene ${minutosDisponibles} min)` : ''}</td>
-                  {tabla.columnas.map((c, i) => {
-                    const pasa = !c.total && minutosDisponibles != null && c.tiempoSeg / 60 > minutosDisponibles;
-                    return <td key={`${i}-${c.nombre}`} className={`py-1 px-2 text-right font-mono text-caption tabular-nums ${pasa ? 'text-warning font-bold' : 'text-ink-2'}`}>{formatearTiempo(c.tiempoSeg)}</td>;
-                  })}
-                </tr>
-                <tr className="border-t border-hairline">
-                  <td className="py-1 pr-3 font-sans text-caption text-ink-2">IEM total</td>
-                  {tabla.columnas.map((c, i) => <td key={`${i}-${c.nombre}`} className="py-1 px-2 text-right font-mono text-caption text-ink-2 tabular-nums">{celda(c.IEM.reduce((a, v) => a + v, 0))}</td>)}
-                </tr>
-                <tr className="border-t border-hairline" title="Estímulo por unidad de fatiga: cuánto IEM compra cada punto de IF">
-                  <td className="py-1 pr-3 font-sans text-caption text-ink-2">IEM por punto de IF</td>
-                  {tabla.columnas.map((c, i) => <td key={`${i}-${c.nombre}`} className="py-1 px-2 text-right font-mono text-caption text-ink-2 tabular-nums">{c.IF > 0.005 ? n1(c.IEM.reduce((a, v) => a + v, 0) / c.IF) : '·'}</td>)}
-                </tr>
-                <tr className="border-t border-hairline" title="Resultados por unidad de tiempo">
-                  <td className="py-1 pr-3 font-sans text-caption text-ink-2">IEM por minuto</td>
-                  {tabla.columnas.map((c, i) => <td key={`${i}-${c.nombre}`} className="py-1 px-2 text-right font-mono text-caption text-ink-2 tabular-nums">{c.tiempoSeg > 0 ? n1(c.IEM.reduce((a, v) => a + v, 0) / (c.tiempoSeg / 60)) : '·'}</td>)}
-                </tr>
-                <Bloque titulo="IEM · grupos (suma de porciones)" columnas={tabla.columnas} filas={tabla.compuestos} />
-                <Bloque titulo="IEM · por músculo" columnas={tabla.columnas} filas={tabla.musculos} />
-                <Bloque titulo="Estrés articular (IEA)" columnas={tabla.columnas} filas={tabla.articulaciones} />
-              </tbody>
-            </table>
+          <div className="border border-hairline rounded-surface px-3">
+            <Collapsible
+              trigger={
+                <span className="flex flex-wrap items-center gap-x-2 gap-y-1 min-w-0 flex-1">
+                  <span className="font-sans text-body-s font-bold text-ink">Fatiga por sesión (IF)</span>
+                  <span className="font-sans text-body-s text-ink-2">
+                    {tabla.columnas.filter(c => !c.total).map(c => `${c.nombre} ${Math.round(c.IF)}`).join(' · ')}
+                  </span>
+                  <span className={`ml-auto px-2 rounded-chip font-mono text-caption ${resumen?.ifMuyAlto ? 'bg-warning/10 text-warning' : 'bg-success/10 text-success'}`}>
+                    {resumen?.ifMuyAlto ? 'Hay sesiones de IF muy alto' : 'Dentro de lo tolerado'}
+                  </span>
+                </span>
+              }
+            >
+              <div className="space-y-3 pb-3">
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse">
+                    <thead>
+                      <tr className="text-ink-3 font-sans text-label">
+                        <th className="py-1 pr-3 text-left font-normal" />
+                        {tabla.columnas.map((c, i) => (
+                          <th key={`${i}-${c.nombre}`} title={c.completo} className={`py-1 px-2 text-right font-normal whitespace-nowrap ${c.total ? 'text-ink' : ''}`}>{c.nombre}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr className="border-t border-strong">
+                        <td className="py-1.5 pr-3 font-sans text-body-s font-bold text-ink">IF (fatiga)</td>
+                        {tabla.columnas.map((c, i) => <td key={`${i}-${c.nombre}`} className="py-1.5 px-2 text-right font-mono text-body-s font-bold text-ink tabular-nums">{n1(c.IF)}</td>)}
+                      </tr>
+                      <tr className="border-t border-hairline" title="Referencia de la guía por sesión: <40 sencilla · 40-70 intermedia · 70-100 alta · >100 muy alta">
+                        <td className="py-1 pr-3 font-sans text-body-s text-ink-2">Nivel de IF</td>
+                        {tabla.columnas.map((c, i) => {
+                          if (c.total) return <td key={`${i}-${c.nombre}`} />;
+                          const b = bandaIF(c.IF);
+                          return <td key={`${i}-${c.nombre}`} className={`py-1 px-2 text-right font-sans text-body-s whitespace-nowrap ${TONO_BANDA[b.banda]}`}>{c.IF > 0.005 ? b.etiqueta : '·'}</td>;
+                        })}
+                      </tr>
+                      <tr className="border-t border-hairline">
+                        <td className="py-1 pr-3 font-sans text-body-s text-ink-2">Tiempo{minutosDisponibles ? ` (tiene ${minutosDisponibles} min)` : ''}</td>
+                        {tabla.columnas.map((c, i) => {
+                          const pasa = !c.total && minutosDisponibles != null && c.tiempoSeg / 60 > minutosDisponibles;
+                          return <td key={`${i}-${c.nombre}`} className={`py-1 px-2 text-right font-mono text-body-s tabular-nums ${pasa ? 'text-warning font-bold' : 'text-ink-2'}`}>{formatearTiempo(c.tiempoSeg)}</td>;
+                        })}
+                      </tr>
+                      <tr className="border-t border-hairline">
+                        <td className="py-1 pr-3 font-sans text-body-s text-ink-2">IEM total</td>
+                        {tabla.columnas.map((c, i) => <td key={`${i}-${c.nombre}`} className="py-1 px-2 text-right font-mono text-body-s text-ink-2 tabular-nums">{celda(c.IEM.reduce((a, v) => a + v, 0))}</td>)}
+                      </tr>
+                      <tr className="border-t border-hairline" title="Estímulo por unidad de fatiga: cuánto IEM compra cada punto de IF">
+                        <td className="py-1 pr-3 font-sans text-body-s text-ink-2">IEM por punto de IF</td>
+                        {tabla.columnas.map((c, i) => <td key={`${i}-${c.nombre}`} className="py-1 px-2 text-right font-mono text-body-s text-ink-2 tabular-nums">{c.IF > 0.005 ? n1(c.IEM.reduce((a, v) => a + v, 0) / c.IF) : '·'}</td>)}
+                      </tr>
+                      <tr className="border-t border-hairline" title="Resultados por unidad de tiempo">
+                        <td className="py-1 pr-3 font-sans text-body-s text-ink-2">IEM por minuto</td>
+                        {tabla.columnas.map((c, i) => <td key={`${i}-${c.nombre}`} className="py-1 px-2 text-right font-mono text-body-s text-ink-2 tabular-nums">{c.tiempoSeg > 0 ? n1(c.IEM.reduce((a, v) => a + v, 0) / (c.tiempoSeg / 60)) : '·'}</td>)}
+                      </tr>
+                      <Bloque titulo="IEM · grupos (suma de porciones)" columnas={tabla.columnas} filas={tabla.compuestos} />
+                      <Bloque titulo="IEM · por músculo" columnas={tabla.columnas} filas={tabla.musculos} />
+                    </tbody>
+                  </table>
+                </div>
+                {avisosTiempo.length > 0 && (
+                  <ul className="font-sans text-body-s text-warning space-y-0.5">
+                    {avisosTiempo.map((t, i) => <li key={i}>{t}</li>)}
+                  </ul>
+                )}
+              </div>
+            </Collapsible>
           </div>
 
-          {minutosDisponibles != null && (() => {
-            // Sesiones que no caben en su tiempo, con qué hacer (guía: «si te pasas de tiempo…»).
-            const avisosTiempo = sesiones.flatMap(se => consejosDeTiempo({
-              minutosDisponibles,
-              tiempoSeg: se.r.tiempoSeg,
-              unilaterales: se.ejercicios.filter(e => (nombreCdgDe(e.exerciseId) ?? '').toLowerCase().includes('unilateral')).length,
-            }).map(t => `${se.nombre}: ${t}`));
-            return avisosTiempo.length > 0 && (
-              <ul className="font-sans text-caption text-warning space-y-0.5">
-                {avisosTiempo.map((t, i) => <li key={i}>{t}</li>)}
-              </ul>
-            );
-          })()}
+          <div className="border border-hairline rounded-surface px-3">
+            <Collapsible
+              trigger={
+                <span className="flex flex-wrap items-center gap-x-2 gap-y-1 min-w-0 flex-1">
+                  <span className="font-sans text-body-s font-bold text-ink">Estrés articular</span>
+                  <span className="font-sans text-body-s text-ink-2">{tabla.articulaciones.length} zonas</span>
+                  <span className={`ml-auto px-2 rounded-chip font-mono text-caption ${avisosArticulares.length > 0 ? 'bg-warning/10 text-warning' : 'bg-raised text-ink-2'}`}>
+                    {avisosArticulares.length > 0 ? 'Con avisos' : 'Sin avisos'}
+                  </span>
+                </span>
+              }
+            >
+              <div className="space-y-3 pb-3">
+                {avisosArticulares.length > 0 && (
+                  <ul className="space-y-1 font-sans text-body-s text-warning">
+                    {avisosArticulares.map(a => (
+                      <li key={`${a.zona}-${a.articulacion}`}>
+                        {ZONAS_IEM.find(z => z.clave === a.zona)?.nombre}: el IEM sube {pct(a.dIEM)} y el estrés de {a.articulacion} sube más ({pct(a.dIEA)}). La carga extra va más al tejido pasivo que al músculo.
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse">
+                    <thead>
+                      <tr className="text-ink-3 font-sans text-label">
+                        <th className="py-1 pr-3 text-left font-normal" />
+                        {tabla.columnas.map((c, i) => (
+                          <th key={`${i}-${c.nombre}`} title={c.completo} className={`py-1 px-2 text-right font-normal whitespace-nowrap ${c.total ? 'text-ink' : ''}`}>{c.nombre}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <Bloque titulo="Estrés articular (IEA)" columnas={tabla.columnas} filas={tabla.articulaciones} />
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </Collapsible>
+          </div>
 
-          {avisosArticulares.length > 0 && (
-            <ul className="space-y-1 font-sans text-caption text-warning">
-              {avisosArticulares.map(a => (
-                <li key={`${a.zona}-${a.articulacion}`}>
-                  {ZONAS_IEM.find(z => z.clave === a.zona)?.nombre}: el IEM sube {pct(a.dIEM)} y el estrés de {a.articulacion} sube más ({pct(a.dIEA)}). La carga extra va más al tejido pasivo que al músculo.
-                </li>
-              ))}
-            </ul>
-          )}
-
-          <Collapsible trigger={<span className="font-sans text-caption font-bold text-ink-2">Aporte de cada ejercicio</span>}>
+          <Collapsible trigger={<span className="font-sans text-body-s font-bold text-ink-2">Aporte de cada ejercicio</span>}>
             <div className="space-y-3 pb-1">
               {aportes.map((se, i) => (
                 <div key={`${i}-${se.nombre}`}>
-                  <p className="font-sans text-caption uppercase tracking-wide text-ink-3">{se.nombre}</p>
+                  <p className="font-sans text-label text-ink-3">{se.nombre}</p>
                   <ul className="space-y-1">
                     {se.ejercicios.map((e, i) => (
                       <li key={`${e.exerciseId}-${i}`} className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                        <span className="font-sans text-caption text-ink">{nombreDe(e.exerciseId)}</span>
-                        <span className="font-mono text-caption text-ink-3">IF {n1(e.IF)}</span>
+                        <span className="font-sans text-body-s text-ink">{nombreDe(e.exerciseId)}</span>
+                        <span className="font-mono text-label text-ink-3">IF {n1(e.IF)}</span>
                         {e.porZona.slice(0, 4).map(z => (
-                          <span key={z.clave} className={`font-mono text-caption px-1.5 rounded-control ${z.objetivo ? 'bg-raised text-ink border border-strong' : 'text-ink-2'}`}>
+                          <span key={z.clave} className={`font-mono text-label px-1.5 rounded-control ${z.objetivo ? 'bg-raised text-ink border border-strong' : 'text-ink-2'}`}>
                             {z.nombre.split(' (')[0]} +{n1(z.valor)}
                           </span>
                         ))}
@@ -373,7 +552,7 @@ export default function PanelIndicesCdg ({ grupos, meso, semana, allExercises, o
           </Collapsible>
 
           {(avisos.rir5.length > 0 || avisos.sinVinculo.length > 0 || avisos.fuera.length > 0) && (
-            <ul className="space-y-1 font-sans text-caption text-warning">
+            <ul className="space-y-1 font-sans text-body-s text-warning">
               {avisos.rir5.map(id => <li key={`r5-${id}`}>RIR 5 no cuenta en el índice: {nombreDe(id)}</li>)}
               {avisos.sinVinculo.map(id => <li key={`sv-${id}`}>Sin vínculo CDG (cuenta 0): {nombreDe(id)}</li>)}
               {avisos.fuera.map(id => <li key={`fc-${id}`}>Su nombre CDG no está en el catálogo (cuenta 0): {nombreDe(id)}</li>)}

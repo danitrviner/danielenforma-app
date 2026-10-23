@@ -7,6 +7,8 @@
 import { parsearReps, rirARpe, type CdgSerie, type MotorCdg, type CdgTecnica } from './motor.js'
 
 export const SEMANAS_CARGA_CRONICA = 6
+/** Con menos semanas no se calcula; entre esto y 6 se calcula avisando de que es poco fiable (E-10). */
+export const SEMANAS_CARGA_MINIMAS = 3
 
 // ─── Semana X ───────────────────────────────────────────────────────────────
 
@@ -95,13 +97,14 @@ export interface CargaPorSesion { IF: number[]; IEM: number[][]; estresArticular
 
 /**
  * aguda = lo PROGRAMADO para la semana que viene (totales por día + total).
- * semanasPrevias = las 6 últimas semanas REALIZADAS, la más reciente primero.
- * Si no hay exactamente 6, devuelve null (como el original).
+ * semanasPrevias = las últimas semanas REALIZADAS, la más reciente primero:
+ * 6 como el original; con `minimo` se admiten menos (E-10) y la crónica es la
+ * media simple de las que haya. Fuera de [minimo, 6] devuelve null.
  * IF: crónica 0 → 0. IEM/estrés articular: crónica 0 → 1.
  */
-export function cargaAgudaCronica (aguda: CargaPorSesion, semanasPrevias: CalculoSemana[]) {
-  if (semanasPrevias.length !== SEMANAS_CARGA_CRONICA) return null
-  const n = SEMANAS_CARGA_CRONICA
+export function cargaAgudaCronica (aguda: CargaPorSesion, semanasPrevias: CalculoSemana[], minimo = SEMANAS_CARGA_CRONICA) {
+  if (semanasPrevias.length < minimo || semanasPrevias.length > SEMANAS_CARGA_CRONICA) return null
+  const n = semanasPrevias.length
   const conTotal = (rows: number[][]) => [...rows, rows.reduce((a, r) => a.map((v, i) => v + r[i]))]
   const cIF = new Array<number>(8).fill(0)
   let cIEM: number[][] | null = null; let cEA: number[][] | null = null
@@ -119,6 +122,28 @@ export function cargaAgudaCronica (aguda: CargaPorSesion, semanasPrevias: Calcul
     IEM: cronica.IEM.map((r, i) => r.map((c, k) => (c === 0 ? 1 : aguda.IEM[i][k] / c))),
     estresArticular: cronica.estresArticular.map((r, i) => r.map((c, k) => (c === 0 ? 1 : aguda.estresArticular[i][k] / c)))
   }
+}
+
+/**
+ * Una semana con todo en la sesión 1 (el resto a 0). Sirve para comparar
+ * semanas de bloques distintos, cuyas sesiones no se corresponden: solo
+ * cuentan los totales de la semana.
+ */
+export function colapsarSemana (c: CalculoSemana): CalculoSemana {
+  const suma = (rows: number[][]) => rows.reduce((a, r) => a.map((v, i) => v + (r[i] ?? 0)))
+  const ceros = (n: number) => new Array<number>(n).fill(0)
+  const nM = c.IEM[0]?.length ?? 0; const nJ = c.estresArticular[0]?.length ?? 0
+  return {
+    IF: [c.IF.reduce((a, b) => a + b, 0), ...c.IF.slice(1).map(() => 0)],
+    IEM: [c.IEM.length ? suma(c.IEM) : ceros(nM), ...c.IEM.slice(1).map(() => ceros(nM))],
+    estresArticular: [c.estresArticular.length ? suma(c.estresArticular) : ceros(nJ), ...c.estresArticular.slice(1).map(() => ceros(nJ))]
+  }
+}
+
+/** Lo mismo para la carga aguda (8 huecos: 7 sesiones + total). */
+export function colapsarCarga (a: CargaPorSesion): CargaPorSesion {
+  const dias = colapsarSemana({ IF: a.IF.slice(0, 7), IEM: a.IEM.slice(0, 7), estresArticular: a.estresArticular.slice(0, 7) })
+  return { IF: [...dias.IF, a.IF[7]], IEM: [...dias.IEM, a.IEM[7]], estresArticular: [...dias.estresArticular, a.estresArticular[7]] }
 }
 
 /** Avisos fuera de [inferior, superior] (en la hoja: Presentación M14/M13, por defecto 0.8 / 1.6). */

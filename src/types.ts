@@ -269,6 +269,10 @@ export interface MealItem {
   /** Alimento del banco PERSONAL de un atleta, no del banco común. Lo pone
    *  `getAlimentosPersonales` al mezclarlos; no se guarda en Firestore. */
   personal?: boolean;
+  /** Código de barras (EAN/UPC) con el que se creó desde la etiqueta de un
+   *  producto. El escáner busca primero entre los alimentos propios por este
+   *  campo, antes que en Open Food Facts. */
+  codigo?: string;
 }
 
 /** Información nutricional de una etiqueta, por 100 g o 100 ml de producto. */
@@ -352,6 +356,11 @@ export interface Exercise {
   // de ejercicios con peso libre — sentadilla, press banca).
   strengthCurve?: 'estiramiento' | 'acortamiento' | 'campana';
   equipment?: string[];      // material necesario; undefined/empty = siempre disponible
+  // Atributos deducidos del nombre por scripts/atributosEjercicios.mjs (E-03).
+  // Todos opcionales: sin dato no se filtra por ellos (ver utils/atributosEjercicio.ts).
+  lateralidad?: 'uni' | 'bi'; // se trabaja un lado cada vez (uni) o los dos a la vez
+  goma?: boolean;             // lleva banda elástica
+  guiado?: boolean;           // trayectoria fija (máquina, multipower); la polea no
   videoUrl?: string;
   imageUrl?: string;
   instructions?: string;     // descripción global — visible para cualquier atleta
@@ -399,6 +408,18 @@ export interface Exercise {
 // Observación personalizada de un ejercicio, visible únicamente para un atleta concreto
 // (distinta de `Exercise.instructions`, que es la descripción global). Doc ID determinista
 // `${exerciseId}_${athleteId}` — evita duplicados y permite getDoc directo sin query.
+// Registro de un cambio de clasificación muscular de un ejercicio del catálogo
+// (E-04). Solo el coach lo lee y lo escribe; no lleva datos de atletas.
+export interface ExerciseChange {
+  id: string;
+  exerciseId: string;
+  exerciseName: string;
+  coachId: string;
+  at: string; // ISO
+  before: { muscleGroup?: MuscleGroup; secondaryMuscleGroups?: MuscleGroup[] };
+  after: { muscleGroup?: MuscleGroup; secondaryMuscleGroups?: MuscleGroup[] };
+}
+
 export interface ExercisePersonalNote {
   id: string;
   exerciseId: string;
@@ -495,6 +516,16 @@ export interface Gimnasio {
 // distinct badge + explanation of what to actually do. See utils/workoutTechniques.ts.
 export type WorkoutTechnique = 'amrap' | 'dropset' | 'myoreps' | 'restpause' | 'fallo';
 
+/** Cómo se hace la técnica y en qué series (E-06). Sin esto —o sin alguno de
+ *  sus campos— valen los de `utils/tecnicaDeSerie.ts` (AJUSTES_POR_DEFECTO):
+ *  la técnica va en la última serie, que es como se leía antes. */
+export interface AjustesDeTecnica {
+  /** 'ultima' (por defecto), 'todas' o números de serie (1 = la primera). */
+  series?: 'ultima' | 'todas' | number[];
+  dropset?: { bajadas: number; pctBajada: number; hastaFallo: boolean };
+  myoreps?: { repsActivacion: string; miniSeries: string; repsMini: string; descansoSeg: number };
+}
+
 // One warm-up approximation set — display-only, never logged, never counts toward
 // volume/records/progression. See src/utils/warmup/.
 export interface WarmupSet {
@@ -532,6 +563,8 @@ export interface WorkoutExercise {
   // 'all' highlights every set, a number highlights only that set (1-indexed).
   recordVideoSet?: number | 'all';
   technique?: WorkoutTechnique;
+  /** Series y parámetros de `technique` (E-06). Ver utils/tecnicaDeSerie.ts. */
+  tecnicaAjustes?: AjustesDeTecnica;
   warmupMode?: WarmupMode;            // undefined behaves as 'none'
   manualWarmupSets?: WarmupSet[];     // only read when warmupMode === 'manual'
   // When present (non-empty), overrides the uniform `sets`/`reps`/`rir` scheme above —
@@ -577,6 +610,7 @@ export interface CambiosDeSemana {
   restSeconds?: number;
   setGroups?: WorkoutSetGroup[] | null;
   technique?: WorkoutTechnique | null;
+  tecnicaAjustes?: AjustesDeTecnica | null;
   notes?: string;
   warmupMode?: WarmupMode | null;
   manualWarmupSets?: WarmupSet[] | null;
@@ -669,6 +703,13 @@ export interface WorkoutSetLog {
   // la forma se rompió") y el contrato de datos original lo mezclaba. Cuando
   // es true, `rir` no se lee — se conserva por compatibilidad con logs viejos.
   alFallo?: boolean;
+  // Bajada (dropset) o miniserie (myoreps) hecha DESPUÉS de la última serie
+  // principal. Cuenta como carga (tonelaje, 1RM) pero NO como serie: no suma
+  // volumen ni estímulo. Ausente en los registros anteriores.
+  segmento?: boolean;
+  /** Serie principal (1 = la primera) tras la que se hizo el segmento. Ausente
+   *  en los registros anteriores a E-06: entonces es la última principal. */
+  segmentoDe?: number;
 }
 
 export interface WorkoutEntryLog {
@@ -865,6 +906,27 @@ export interface QuestionnaireResponse {
    * trabajo.
    */
   reviewedAt?: string;
+}
+
+/**
+ * Progreso de la revisión semanal (K-02): lo que el atleta lleva respondido,
+ * guardado en servidor para poder retomarlo en cualquier dispositivo. Un
+ * documento por atleta y ciclo (`${email}_${viernes}`). NO son respuestas: las
+ * respuestas se siguen escribiendo en `questionnaireResponses` al enviar cada
+ * cuestionario, así que gráficas, informes y bandeja del coach no cambian.
+ */
+export interface ProgresoRevision {
+  id: string;
+  athleteId: string;           // email
+  /** Viernes del ciclo (YYYY-MM-DD). El ciclo caduca el martes siguiente. */
+  ciclo: string;
+  /** Borrador por asignación: respuestas hasta ahora y paso en el que iba. */
+  respuestas: Record<string, { answers: Record<string, string | number | boolean>; stepIdx: number }>;
+  /** Cuándo pulsó «Enviar» en el resumen. */
+  enviadaEn?: string;
+  /** Al enviar faltaba algún paso obligatorio. */
+  incompleta?: boolean;
+  actualizadoEn: string;
 }
 
 // ─── BODY MEASUREMENTS ─────────────────────────────────────────────────────────
@@ -1154,6 +1216,32 @@ export interface DietItem {
    *  comiendo" se ordena por esto. Ausente en un día "por comidas" normal —
    *  ahí el orden lo da la comida en la que vive el ítem, no la hora. */
   hora?: string;
+
+  // ─── Diario de alimentos (D-02) ──────────────────────────────────────────
+  // Lo que sabemos de un alimento apuntado que NO viene solo del banco de
+  // intercambios: un producto escaneado, uno personal… Todo opcional: lo
+  // guardado antes no lo trae y se lee igual.
+
+  /** De dónde sale: tu banco, un alimento personal, Open Food Facts o una receta. */
+  origen?: { tipo: 'catalogo' | 'personal' | 'off' | 'receta'; id?: string; codigo?: string };
+  marca?: string;
+  /** Gramos reales que comió. Solo en la PRIMERA línea de un producto repartido
+   *  en varias categorías (ver `lineaId`), para no contarlos dos veces. */
+  gramos?: number;
+  /** Nutrientes de esa ración, congelados al apuntarla. `null` = el producto no
+   *  los declara completos («datos incompletos»): no se inventan. Igual que
+   *  `gramos`, solo en la primera línea del producto. Ausente = alimento del
+   *  banco, cuyos kcal y macros se derivan de sus intercambios. */
+  nutrientes?: { kcal: number; p: number; hc: number; g: number } | null;
+  /** Enlaza las líneas por categoría de UN mismo producto (un yogur proteico
+   *  son «1 PROT» + «0,25 GRASA»): la pantalla las pinta como una fila y
+   *  borrarla las quita todas. Ver utils/productoAIntercambios.ts. */
+  lineaId?: string;
+  /** Resto de nutrientes de la ración, congelados como `nutrientes` y solo en la
+   *  primera línea: fibra, azúcares, saturada y sal en gramos; `m` son
+   *  micronutrientes con las claves y unidades de `data/micronutrients.ts`.
+   *  Solo está lo que el producto declara: ausente = no declarado, no cero. */
+  extras?: { f?: number; az?: number; sat?: number; sal?: number; m?: Record<string, number> };
 }
 
 /** Una receta camino de «Mi plan», con lo que se come de ella ya resuelto.
@@ -1646,6 +1734,42 @@ export interface RecetaPaso {
   items?: { position: number; description: string }[];
 }
 
+/* Recetas con ingredientes vinculados al catálogo por 100 g (N-05). La lógica
+   está en utils/recetaVinculada.ts; los tipos viven aquí porque `Recipe` los usa. */
+export type Palanca = 'hc' | 'proteina' | 'grasa';
+
+export interface IngredienteVinculado {
+  /** Posición del ingrediente en `ingredients` de la receta. */
+  n: number;
+  /** null = no cuenta (sal, especias, agua). */
+  alimentoId: string | null;
+  gramos: number;
+  min: number;
+  max: number;
+  /** Qué macro mueve este ingrediente cuando el motor (N-06) ajusta la receta. */
+  palanca?: Palanca;
+  /** No se toca al ajustar. */
+  fijo?: boolean;
+  /** Copia de los valores por 100 g del alimento al calcular la receta. Con
+   *  ella el ajuste (N-06) funciona en el móvil sin bajar el catálogo; se
+   *  refresca con `vincularRecetas.ts recalcular`. */
+  porCien?: { kcal: number; p: number; hc: number; g: number };
+}
+
+export interface VinculoDeReceta {
+  ingredientes: IngredienteVinculado[];
+  calculadoEn: string;
+  /** Macros y kcal que tenía la receta antes de vincularla, para auditar o revertir. */
+  antes?: { macros: MacrosCrudos | null; kcal: number | null; weight: number | null };
+}
+
+/** Macros en el formato del recetario original. */
+export interface MacrosCrudos {
+  carbohydrate: { grams: number; percentage: number };
+  protein: { grams: number; percentage: number };
+  fat: { grams: number; percentage: number };
+}
+
 export interface Recipe {
   id: string;
   ownerId: string;    // UID de Firebase, o el centinela del recetario importado (OWNER_RECETARIO en db/recipes)
@@ -1679,6 +1803,9 @@ export interface Recipe {
   /** Plato de «supervivencia»: rápido, pocos ingredientes y de supermercado.
    *  Pestaña «Básicas» del recetario. */
   basica?: boolean;
+  /** Ingredientes vinculados al catálogo por 100 g (N-05, solo recetas base):
+   *  de aquí salen sus macros. Ver utils/recetaVinculada.ts. */
+  vinculo?: VinculoDeReceta;
 }
 
 export interface RecipeFavorites {
@@ -1715,6 +1842,13 @@ export interface MenuRacionExtra {
   gramos: number;   // lo que hay que añadir, ya calculado
 }
 
+/** Gramos de cada ingrediente de una receta base ajustada a una comida (N-06),
+ *  por su posición en la receta, y qué se cambió y por qué (para enseñarlo). */
+export interface AjusteDeReceta {
+  gramos: Array<{ n: number; gramos: number }>;
+  cambios: Array<{ n: number; nombre: string; antes: number; despues: number; motivo: string }>;
+}
+
 export interface MenuMeal {
   id: string;
   /** Lo que esta comida debería sumar, guardado al generar el día.
@@ -1735,6 +1869,9 @@ export interface MenuMeal {
   recipeName: string;  // denormalized so the viewer can render without a fetch
   recipeImage?: string;
   scale: number;       // 0.5-4.0, en pasos de 0.25 (ver MENU_SCALES)
+  /** Receta base ajustada ingrediente a ingrediente (N-06) en vez de escalada
+   *  entera: entonces `scale` es 1 y las cantidades salen de aquí. */
+  ajuste?: AjusteDeReceta;
   exch: BudgetVec;      // exchanges already scaled
   kcal: number;
   /** Acompañamientos: alimentos sueltos que cierran lo que el plato no llega a
@@ -2169,6 +2306,8 @@ export interface AcademyCourse {
   published: boolean;
   unlockRule: UnlockRule;
   lessonCount: number; // denormalized, kept in sync on lesson create/delete
+  /** Se abre solo al darle acceso a Training Lab a un atleta nuevo (p. ej. el curso 1). */
+  inicial?: boolean;
 }
 
 export interface AcademyLessonResource {
@@ -2273,6 +2412,20 @@ export interface CardioAssignment {
   /** Si viene, la duración/los bloques de arriba son los de la semana en curso
    *  y los recalcula `resolverAsignacionCardio` — no se editan a mano. */
   program?: CardioProgram;
+}
+
+/**
+ * «Mover a mañana»: el atleta aplaza el cardio PAUTADO de un día al siguiente.
+ * Una por atleta y día de origen (id `{email}_{desde}`). No es una sesión ni
+ * toca el objetivo semanal; solo cambia en qué día toca la asignación.
+ */
+export interface CardioAplazo {
+  id: string;
+  athleteId: string;   // email
+  desde: string;       // YYYY-MM-DD: el día que tocaba
+  hasta: string;       // YYYY-MM-DD: el día al que se pasa
+  assignmentId?: string;
+  createdAt: string;   // ISO
 }
 
 export interface CardioSession {

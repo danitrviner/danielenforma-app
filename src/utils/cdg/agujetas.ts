@@ -100,18 +100,44 @@ export interface Propuesta {
 export type Contexto = 'favorable' | 'neutro' | 'desfavorable' | 'sin-dato'
 
 /**
+ * Umbrales del protocolo semanal, en un solo sitio (E-09). PENDIENTES DE
+ * VALIDAR con la formación de Dani (decisión D15): la pantalla los marca así
+ * hasta entonces. Fijos a propósito: no se editan desde la app (Dani, 23-10).
+ */
+export const UMBRALES_PROTOCOLO = {
+  /** Contexto desfavorable si estrés ≥, sueño <, motivación ≤. */
+  estresMalo: 7, sueñoMaloHoras: 6, motivacionMala: 4,
+  /** Contexto favorable si estrés ≤, sueño ≥, motivación ≥ (todos los que haya). */
+  estresBueno: 4, sueñoBuenoHoras: 7, motivacionBuena: 7,
+  /** Fatiga al salir de las sesiones a partir de la cual no se sube el IEM. */
+  fatigaPostAlta: 8,
+  /** Con una base de IEM así de alta, la subida no pasa de `subidaMaxBaseAlta` %. */
+  iemBaseAlta: 100, subidaMaxBaseAlta: 10,
+  /** Una lectura de agujetas más antigua que esto ya no dice nada de la semana. */
+  diasVigenciaAgujetas: 7,
+  validados: false,
+} as const
+
+/** ¿La lectura de agujetas es de los últimos `diasVigenciaAgujetas` días? (fechas YYYY-MM-DD) */
+export function agujetasVigentes (fechaLectura: string, hoy: string, dias: number = UMBRALES_PROTOCOLO.diasVigenciaAgujetas): boolean {
+  const ms = Date.parse(`${hoy}T00:00:00Z`) - Date.parse(`${fechaLectura.slice(0, 10)}T00:00:00Z`)
+  return Number.isFinite(ms) && ms >= 0 && ms <= dias * 86_400_000
+}
+
+/**
  * Contexto de la semana a partir del seguimiento (guía, paso 1 del protocolo):
  * dónde va el pie antes de mirar ninguna zona.
  */
 export function contextoDeLaSemana (o: { estres?: number; sueñoHoras?: number; motivacion?: number }): { contexto: Contexto; motivos: string[] } {
   const { estres, sueñoHoras, motivacion } = o
   if (estres == null && sueñoHoras == null && motivacion == null) return { contexto: 'sin-dato', motivos: [] }
+  const u = UMBRALES_PROTOCOLO
   const malos: string[] = []
-  if (estres != null && estres >= 7) malos.push(`estrés ${estres}/10`)
-  if (sueñoHoras != null && sueñoHoras < 6) malos.push(`${sueñoHoras.toLocaleString('es-ES')} h de sueño`)
-  if (motivacion != null && motivacion <= 4) malos.push(`motivación ${motivacion}/10`)
+  if (estres != null && estres >= u.estresMalo) malos.push(`estrés ${estres}/10`)
+  if (sueñoHoras != null && sueñoHoras < u.sueñoMaloHoras) malos.push(`${sueñoHoras.toLocaleString('es-ES')} h de sueño`)
+  if (motivacion != null && motivacion <= u.motivacionMala) malos.push(`motivación ${motivacion}/10`)
   if (malos.length) return { contexto: 'desfavorable', motivos: malos }
-  const buenos = (estres == null || estres <= 4) && (sueñoHoras == null || sueñoHoras >= 7) && (motivacion == null || motivacion >= 7)
+  const buenos = (estres == null || estres <= u.estresBueno) && (sueñoHoras == null || sueñoHoras >= u.sueñoBuenoHoras) && (motivacion == null || motivacion >= u.motivacionBuena)
   return { contexto: buenos ? 'favorable' : 'neutro', motivos: [] }
 }
 
@@ -142,7 +168,7 @@ export function propuestaZona (o: {
     if (anterior != null && anterior >= 4) return { tono: 'freno', texto: 'Segunda semana seguida en 4 o más: no se recupera. Bajar su IEM un 15-30 %.', ...con(-20) }
     return { tono: 'vigilar', texto: 'Zona propensa a agujetas (trabajo en estiramiento): esperar una semana y anotarlo. Si sigue en 4, bajar.' }
   }
-  if (fatigaPost != null && fatigaPost >= 8) {
+  if (fatigaPost != null && fatigaPost >= UMBRALES_PROTOCOLO.fatigaPostAlta) {
     return { tono: 'mantener', texto: `Sale muy cansado de las sesiones (${fatigaPost}/10): no subir el IEM. Si puedes, baja el IF de la sesión manteniendo el IEM.` }
   }
   const umbral = tipo.sensibilidad === 'dinamico' ? 3 : 1
@@ -151,7 +177,7 @@ export function propuestaZona (o: {
   let pct = VELOCIDADES.find(v => v.value === tipo.velocidad)!.pct
   const notas: string[] = []
   if (contexto === 'neutro' || contexto === 'sin-dato') { pct = Math.round(pct / 2); notas.push(contexto === 'neutro' ? 'contexto neutro: la mitad' : 'sin datos de contexto: la mitad') }
-  if (iem >= 100 && pct > 10) { pct = 10; notas.push('base alta: mantén los puntos añadidos, no repitas el porcentaje') }
+  if (iem >= UMBRALES_PROTOCOLO.iemBaseAlta && pct > UMBRALES_PROTOCOLO.subidaMaxBaseAlta) { pct = UMBRALES_PROTOCOLO.subidaMaxBaseAlta; notas.push('base alta: mantén los puntos añadidos, no repitas el porcentaje') }
   if (iem > 0.005 && iem < 10) notas.push('zona poco trabajada: admite subidas mucho mayores')
   return {
     tono: 'acelerar',

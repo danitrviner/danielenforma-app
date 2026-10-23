@@ -1,5 +1,5 @@
-import { db, collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc, query, where } from '../firebase';
-import { AthleteCardioProfile, CardioAssignment, CardioSession, HrTest, HrvReading, CardioZones, CardioWeeklyGoal } from '../types';
+import { db, collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc, query, where, documentId } from '../firebase';
+import { AthleteCardioProfile, CardioAplazo, CardioAssignment, CardioSession, HrTest, HrvReading, CardioZones, CardioWeeklyGoal } from '../types';
 import { forceLocalOnly, setLocalBypassMode, stripUndefined, esFalloDePermisos } from './core';
 import { escribirLocal } from '../utils/almacenLocal';
 
@@ -116,6 +116,90 @@ export async function createCardioAssignment(data: Omit<CardioAssignment, 'id'>)
     const a: CardioAssignment = { ...data, id: `local_ca_${Date.now()}` };
     saveLocalAssignments([...getLocalAssignments(), a]);
     return a;
+  }
+}
+
+// ─── APLAZOS («Mover a mañana»; doc id = `{email}_{desde}`) ────────────────
+//
+// Un gesto del atleta, no un dato de negocio crítico: si Firestore lo rechaza
+// (reglas aún sin desplegar, sin conexión) se queda en este dispositivo, que es
+// como funcionaba antes. Por eso NO relanza el error ni activa el modo local
+// global (`setLocalBypassMode`): un aplazo fallido no debe tumbar el resto.
+
+const APLAZOS_LOCAL_KEY = 'enforma_cardio_aplazos_v1';
+
+function leerAplazosLocal(): CardioAplazo[] {
+  try { return JSON.parse(localStorage.getItem(APLAZOS_LOCAL_KEY) || '[]'); } catch { return []; }
+}
+function guardarAplazosLocal(list: CardioAplazo[]): void {
+  // Solo los de los últimos días: no tiene sentido guardar más.
+  escribirLocal(APLAZOS_LOCAL_KEY, JSON.stringify(list.slice(-30)));
+}
+
+export function idAplazo(athleteId: string, desde: string): string {
+  return `${athleteId}_${desde}`;
+}
+
+/** Los aplazos que pueden afectar a `hoy`: el de hoy (lo aplazado hacia mañana) y el de ayer (lo que llega hoy). */
+export async function getCardioAplazos(athleteId: string, ayer: string, hoy: string): Promise<CardioAplazo[]> {
+  const locales = leerAplazosLocal().filter(a => a.athleteId === athleteId && (a.desde === ayer || a.desde === hoy));
+  if (forceLocalOnly) return locales;
+  try {
+    const snaps = await Promise.all([ayer, hoy].map(d => getDoc(doc(db, 'cardioAplazos', idAplazo(athleteId, d)))));
+    const remotos = snaps.filter(s => s.exists()).map(s => ({ id: s.id, ...s.data() } as CardioAplazo));
+    // Gana lo remoto; lo local solo cubre lo que no se pudo subir.
+    const ids = new Set(remotos.map(a => a.id));
+    return [...remotos, ...locales.filter(a => !ids.has(a.id))];
+  } catch (err) {
+    console.warn('getCardioAplazos Firestore failed, using local:', err);
+    return locales;
+  }
+}
+
+/**
+ * Los aplazos de UN atleta desde `desde` (YYYY-MM-DD) hasta hoy y más allá: lo
+ * que el coach mira en su ficha. Acotado por el rango del id (`{email}_{fecha}`),
+ * así que solo lee los documentos de esa ventana, sin índice nuevo. Lo remoto
+ * gana; lo local solo cubre lo que no se pudo subir.
+ */
+export async function getCardioAplazosDesde(athleteId: string, desde: string): Promise<CardioAplazo[]> {
+  const locales = leerAplazosLocal().filter(a => a.athleteId === athleteId && a.desde >= desde);
+  if (forceLocalOnly) return locales;
+  try {
+    const snap = await getDocs(query(
+      collection(db, 'cardioAplazos'),
+      where(documentId(), '>=', idAplazo(athleteId, desde)),
+      where(documentId(), '<=', idAplazo(athleteId, '9999-12-31')),
+    ));
+    const remotos = snap.docs.map(d => ({ id: d.id, ...d.data() } as CardioAplazo)).filter(a => a.athleteId === athleteId);
+    const ids = new Set(remotos.map(a => a.id));
+    return [...remotos, ...locales.filter(a => !ids.has(a.id))];
+  } catch (err) {
+    console.warn('getCardioAplazosDesde Firestore failed, using local:', err);
+    return locales;
+  }
+}
+
+export async function setCardioAplazo(athleteId: string, desde: string, hasta: string, assignmentId?: string): Promise<CardioAplazo> {
+  const aplazo: CardioAplazo = { id: idAplazo(athleteId, desde), athleteId, desde, hasta, assignmentId, createdAt: new Date().toISOString() };
+  guardarAplazosLocal([...leerAplazosLocal().filter(a => a.id !== aplazo.id), aplazo]);
+  if (forceLocalOnly) return aplazo;
+  try {
+    const { id, ...datos } = aplazo;
+    await setDoc(doc(db, 'cardioAplazos', id), stripUndefined(datos));
+  } catch (err) {
+    console.warn('setCardioAplazo Firestore failed, kept local:', err);
+  }
+  return aplazo;
+}
+
+export async function deleteCardioAplazo(id: string): Promise<void> {
+  guardarAplazosLocal(leerAplazosLocal().filter(a => a.id !== id));
+  if (forceLocalOnly) return;
+  try {
+    await deleteDoc(doc(db, 'cardioAplazos', id));
+  } catch (err) {
+    console.warn('deleteCardioAplazo Firestore failed:', err);
   }
 }
 

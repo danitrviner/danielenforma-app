@@ -1,15 +1,20 @@
 import React, { useMemo, useState } from 'react';
 import { Icon, Button, Select, Sheet, Dialog, SegmentedControl, Input, Stepper } from '../ui';
-import { MUSCLE_LABELS, type Mesocycle, type MuscleGroup, type WorkoutExercise, type WorkoutLog, type WorkoutSetGroup } from '../../types';
+import { MUSCLE_LABELS, type Mesocycle, type MuscleGroup, type WorkoutExercise, type WorkoutLog, type WorkoutSetGroup, type WorkoutTechnique } from '../../types';
+import { TECNICAS_ELEGIBLES } from '../../utils/tecnicaDeSerie';
+import { TECHNIQUE_LABEL } from '../../utils/workoutTechniques';
 import { resolverEjercicioDelMeso } from '../../utils/progression';
 import { syncAggregateFromGroups } from '../../utils/setGroups';
+import { nombresCortosDeSesiones } from '../../utils/nombresMeso';
 import {
-  programarCambio, quitarCambiosDeSemana, tieneCambiosEn, rirDescendente, subirSeries, seriesDe, type EjercicioDelDia,
+  programarCambio, quitarCambiosDeSemana, tieneCambiosEn, rirDescendente, rirPorSemana, repsPorSemana, subirSeries, seriesDe, tecnicaEnSemanas, type EjercicioDelDia,
 } from '../../utils/semanasDelBloque';
 import {
   claveEjercicioClave, describirCelda, prescritoEn, cambiaEn, realDeLaSemana,
 } from '../../utils/planificadorProgresion';
 import type { AvisoDeSemana } from './BarraDeSemanas';
+import PropuestaIemSheet from './PropuestaIemSheet';
+import { aplicarOperaciones } from '../../utils/cdg/progresionIem';
 
 export interface DiaPlanificable {
   /** Clave del grupo en MesocycleManager (workoutIds unidos). */
@@ -29,6 +34,8 @@ interface Props {
   semanaActual?: number;
   nombreDe: (id: string) => string;
   grupoDe: (we: WorkoutExercise) => MuscleGroup | undefined;
+  /** Nombre del ejercicio en el catálogo CDG (para «Proponer por IEM»). Sin él, el botón no sale. */
+  nombreCdgDe?: (id: string) => string | undefined;
   /** Avisos de volumen (MEV/MRV) del bloque entero con los ejercicios dados. */
   avisosDe: (ejercicios: EjercicioDelDia[]) => Record<number, AvisoDeSemana[]>;
   onCancelar: () => void;
@@ -62,6 +69,7 @@ export default function PlanificadorProgresion(p: Props) {
   );
   const [editando, setEditando] = useState<{ clave: string; exIdx: number; semana: number } | null>(null);
   const [progresiones, setProgresiones] = useState(false);
+  const [porIem, setPorIem] = useState(false);
   const [descartar, setDescartar] = useState(false);
 
   const descargas = p.meso.semanasDescarga ?? [];
@@ -131,6 +139,9 @@ export default function PlanificadorProgresion(p: Props) {
           <div className="ml-auto flex flex-wrap gap-2 [&_button]:whitespace-nowrap">
             <Button size="s" variant="ghost" icon="checklist" onClick={() => setPaso('elegir')}>Cambiar ejercicios</Button>
             <Button size="s" variant="ghost" icon="trending_up" disabled={filas.length === 0} onClick={() => setProgresiones(true)}>Progresiones</Button>
+            {p.nombreCdgDe && (
+              <Button size="s" variant="ghost" icon="insights" disabled={filas.length === 0} onClick={() => setPorIem(true)}>Proponer por IEM</Button>
+            )}
           </div>
         </div>
         <p className="font-sans text-caption text-ink-2">
@@ -304,6 +315,7 @@ export default function PlanificadorProgresion(p: Props) {
         open={progresiones}
         onClose={() => setProgresiones(false)}
         vueltas={p.vueltas}
+        descargas={descargas}
         cuantos={filas.length}
         onAplicar={fn => {
           setBorrador(prev => {
@@ -316,6 +328,38 @@ export default function PlanificadorProgresion(p: Props) {
           setProgresiones(false);
         }}
       />
+
+      {p.nombreCdgDe && porIem && (
+        <PropuestaIemSheet
+          open
+          onClose={() => setPorIem(false)}
+          meso={p.meso}
+          dias={p.dias.map(d => ({ ...d, exercises: borrador[d.clave] ?? d.exercises }))}
+          vueltas={p.vueltas}
+          cicloDias={p.cicloDias}
+          logs={p.logs}
+          semanaActual={p.semanaActual}
+          elegidos={new Set(filas.map(f => `${f.d.clave}#${f.exIdx}`))}
+          nombreDe={p.nombreDe}
+          nombreCdgDe={p.nombreCdgDe}
+          grupoDe={p.grupoDe}
+          onAplicar={(semana, porEjercicio) => {
+            setBorrador(prev => {
+              const next = { ...prev };
+              for (const [clave, ops] of porEjercicio) {
+                const corte = clave.lastIndexOf('#');
+                const dia = clave.slice(0, corte);
+                const exIdx = Number(clave.slice(corte + 1));
+                next[dia] = next[dia].map((w, i) => i === exIdx
+                  ? withReglas(w, programarCambio(w, semana, false, aplicarOperaciones(prescritoEn(w, semana), ops)))
+                  : w);
+              }
+              return next;
+            });
+            setPorIem(false);
+          }}
+        />
+      )}
 
       {dialogoDescartar}
     </div>
@@ -339,12 +383,19 @@ function SelectorDeEjercicios({ dias, seleccion, onSeleccion, nombreDe, grupoDe,
   onContinuar: () => void;
 }) {
   const [filtro, setFiltro] = useState<MuscleGroup | ''>('');
+  const cortosDeDias = useMemo(() => {
+    const cortos = nombresCortosDeSesiones(dias.map(d => d.name));
+    return new Map(dias.map((d, i) => [d.clave, cortos[i]]));
+  }, [dias]);
   const grupos = [...new Set(dias.flatMap(d => d.exercises.map(grupoDe)).filter((g): g is MuscleGroup => !!g))];
   const alternar = (claves: string[], marcar: boolean) => {
     const n = new Set(seleccion);
     for (const k of claves) { if (marcar) n.add(k); else n.delete(k); }
     onSeleccion(n);
   };
+  // Todos los que se ven con el filtro de grupo puesto (o todos, sin filtro).
+  const clavesVisibles = [...new Set(dias.flatMap(d => d.exercises.filter(we => !filtro || grupoDe(we) === filtro).map(we => claveEjercicioClave(d, we.exerciseId))))];
+  const todosMarcados = clavesVisibles.length > 0 && clavesVisibles.every(k => seleccion.has(k));
   const chip = (activo: boolean) => `rounded-chip border px-2.5 py-1 font-sans text-caption font-bold transition-colors ${
     activo ? 'border-accent text-accent-ink bg-accent/12' : 'border-hairline text-ink-2 hover:text-ink hover:border-strong'}`;
 
@@ -358,6 +409,16 @@ function SelectorDeEjercicios({ dias, seleccion, onSeleccion, nombreDe, grupoDe,
         <p className="font-sans text-caption text-ink-2">
           Solo esos saldrán en la tabla semana a semana. La próxima vez que entres ya estarán marcados.
         </p>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => alternar(clavesVisibles, !todosMarcados)}
+            className="min-h-[36px] px-3 rounded-control border border-hairline font-sans text-label font-bold text-accent-ink hover:border-strong"
+          >
+            {todosMarcados ? 'Quitar todos los ejercicios' : 'Seleccionar todos los ejercicios'}
+          </button>
+          <span className="font-mono text-caption text-ink-3">{clavesVisibles.filter(k => seleccion.has(k)).length} de {clavesVisibles.length}</span>
+        </div>
         {grupos.length > 1 && (
           <div className="flex flex-wrap gap-1.5" role="group" aria-label="Filtrar por grupo muscular">
             <button type="button" aria-pressed={filtro === ''} onClick={() => setFiltro('')} className={chip(filtro === '')}>Todos</button>
@@ -379,7 +440,7 @@ function SelectorDeEjercicios({ dias, seleccion, onSeleccion, nombreDe, grupoDe,
           return (
             <section key={d.clave} className="bg-surface border border-hairline rounded-surface overflow-hidden">
               <div className="flex items-center gap-2 px-3 py-2 bg-bg border-b border-hairline">
-                <p className="font-sans font-bold text-body-s text-ink truncate flex-1">{d.name}</p>
+                <p className="font-sans font-bold text-body-s text-ink truncate flex-1" title={d.name}>{cortosDeDias.get(d.clave) ?? d.name}</p>
                 <button type="button" onClick={() => alternar(claves, !todos)} className="font-sans text-caption font-bold text-accent-ink hover:text-ink">
                   {todos ? 'Ninguno' : 'Todos'}
                 </button>
@@ -513,10 +574,12 @@ function CampoSeries({ value, max, onChange }: { value: number; max: number; onC
 
 // ── Progresiones en un clic, solo para la selección ─────────────────────────
 
-function ProgresionesDeLaSeleccion({ open, onClose, vueltas, cuantos, onAplicar }: {
+function ProgresionesDeLaSeleccion({ open, onClose, vueltas, descargas, cuantos, onAplicar }: {
   open: boolean;
   onClose: () => void;
   vueltas: number;
+  /** Semanas de descarga del bloque, solo para marcarlas en las etiquetas. */
+  descargas: number[];
   cuantos: number;
   onAplicar: (fn: (we: WorkoutExercise, descargas: number[]) => WorkoutExercise['weeklyProgression']) => void;
 }) {
@@ -524,6 +587,22 @@ function ProgresionesDeLaSeleccion({ open, onClose, vueltas, cuantos, onAplicar 
   const [rirHasta, setRirHasta] = useState('0');
   const [seriesCada, setSeriesCada] = useState('2');
   const [seriesHasta, setSeriesHasta] = useState(String(Math.max(2, vueltas - 1)));
+  // Semana a semana: lo que se rellena aquí ANTES de aplicarlo ('' = no tocar esa semana).
+  const [rirSemanas, setRirSemanas] = useState<Record<number, string>>({});
+  const [repsSemanas, setRepsSemanas] = useState<Record<number, string>>({});
+  const semanas = Array.from({ length: vueltas }, (_, i) => i + 1);
+  const etiquetaSemana = (w: number) => `S${w}${descargas.includes(w) ? ' · desc.' : ''}`;
+  const rirElegido: Record<number, number> = {};
+  for (const [w, v] of Object.entries(rirSemanas)) if (v !== '') rirElegido[Number(w)] = Number(v);
+  const repsElegidas: Record<number, string> = {};
+  for (const w of semanas) { const v = (repsSemanas[w] ?? '').trim(); if (v) repsElegidas[w] = v; }
+  // Técnica de intensidad (E-06): desde una semana, opcionalmente hasta otra.
+  const [tecnica, setTecnica] = useState<string>('dropset');
+  const [tecnicaSeries, setTecnicaSeries] = useState<'ultima' | 'todas'>('ultima');
+  const [tecnicaDesde, setTecnicaDesde] = useState(String(Math.min(3, vueltas)));
+  const [tecnicaHasta, setTecnicaHasta] = useState('');
+  const hayRir = Object.keys(rirElegido).length > 0;
+  const hayReps = Object.keys(repsElegidas).length > 0;
   const rir = [0, 1, 2, 3, 4, 5].map(n => ({ value: String(n), label: `RIR ${n}` }));
   return (
     <Sheet open={open} onClose={onClose} title="Progresiones a la selección">
@@ -543,6 +622,30 @@ function ProgresionesDeLaSeleccion({ open, onClose, vueltas, cuantos, onAplicar 
           </Button>
         </section>
         <section className="space-y-2">
+          <p className="font-sans font-bold text-body-s text-ink">RIR semana a semana</p>
+          <div className="grid grid-cols-4 gap-2">
+            {semanas.map(w => (
+              <label key={w} className="flex flex-col gap-1">
+                <span className="font-mono text-caption text-ink-3 uppercase">{etiquetaSemana(w)}</span>
+                <select
+                  value={rirSemanas[w] ?? ''}
+                  onChange={e => setRirSemanas(prev => ({ ...prev, [w]: e.target.value }))}
+                  aria-label={`RIR de la semana ${w}`}
+                  className={`h-10 w-full rounded-field border bg-field px-2 font-mono text-body-s text-ink focus:outline-none focus:border-accent ${rirSemanas[w] ? 'border-accent' : 'border-hairline'}`}
+                >
+                  <option value="">—</option>
+                  {[0, 1, 2, 3, 4, 5].map(n => <option key={n} value={String(n)}>RIR {n}</option>)}
+                </select>
+              </label>
+            ))}
+          </div>
+          <p className="font-sans text-caption text-ink-3">Las semanas en «—» no cambian: siguen con el último RIR programado.</p>
+          <div className="flex gap-2">
+            <Button size="s" icon="check" disabled={!hayRir} onClick={() => onAplicar(we => rirPorSemana(we, rirElegido))}>Aplicar RIR por semana</Button>
+            {hayRir && <Button size="s" variant="ghost" onClick={() => setRirSemanas({})}>Vaciar</Button>}
+          </div>
+        </section>
+        <section className="space-y-2">
           <p className="font-sans font-bold text-body-s text-ink">Subir series</p>
           <div className="grid grid-cols-2 gap-3">
             <Select label="+1 serie cada" value={seriesCada} onChange={setSeriesCada} options={[1, 2, 3, 4].map(n => ({ value: String(n), label: n === 1 ? 'semana' : `${n} semanas` }))} />
@@ -551,6 +654,51 @@ function ProgresionesDeLaSeleccion({ open, onClose, vueltas, cuantos, onAplicar 
           </div>
           <p className="font-sans text-caption text-ink-3">Con bloques (top set + back-off), la serie va al último bloque.</p>
           <Button size="s" icon="add" onClick={() => onAplicar(we => subirSeries(we, Number(seriesCada), Number(seriesHasta)))}>Aplicar series</Button>
+        </section>
+        <section className="space-y-2">
+          <p className="font-sans font-bold text-body-s text-ink">Técnica de intensidad</p>
+          <div className="grid grid-cols-2 gap-3">
+            <Select label="Técnica" value={tecnica} onChange={setTecnica}
+              options={[...TECNICAS_ELEGIBLES.map(t => ({ value: t, label: TECHNIQUE_LABEL[t] })), { value: 'ninguna', label: 'Quitar técnica' }]} />
+            <Select label="En qué series" value={tecnicaSeries} onChange={v => setTecnicaSeries(v as 'ultima' | 'todas')}
+              options={[{ value: 'ultima', label: 'Última serie' }, { value: 'todas', label: 'Todas las series' }]} />
+            <Select label="Desde la semana" value={tecnicaDesde} onChange={setTecnicaDesde}
+              options={semanas.map(w => ({ value: String(w), label: etiquetaSemana(w) }))} />
+            <Select label="Hasta" value={tecnicaHasta} onChange={setTecnicaHasta}
+              options={[{ value: '', label: 'El final del bloque' }, ...semanas.filter(w => w >= Number(tecnicaDesde) && w < vueltas).map(w => ({ value: String(w), label: etiquetaSemana(w) }))]} />
+          </div>
+          <p className="font-sans text-caption text-ink-3">Con los valores por defecto (drop set: 2 bajadas de −20 %; myo-reps: 3-5 miniseries). Se pueden cambiar en cada ejercicio.</p>
+          <Button size="s" icon="bolt" onClick={() => onAplicar(we => tecnicaEnSemanas(
+            we, Number(tecnicaDesde), tecnicaHasta ? Number(tecnicaHasta) : null,
+            tecnica === 'ninguna' ? null : tecnica as WorkoutTechnique,
+            tecnicaSeries === 'todas' ? { series: 'todas' } : undefined,
+          ))}>
+            Aplicar técnica
+          </Button>
+        </section>
+        <section className="space-y-2">
+          <p className="font-sans font-bold text-body-s text-ink">Repeticiones semana a semana</p>
+          <div className="grid grid-cols-4 gap-2">
+            {semanas.map(w => (
+              <label key={w} className="flex flex-col gap-1">
+                <span className="font-mono text-caption text-ink-3 uppercase">{etiquetaSemana(w)}</span>
+                <input
+                  type="text"
+                  inputMode="text"
+                  placeholder="—"
+                  value={repsSemanas[w] ?? ''}
+                  onChange={e => setRepsSemanas(prev => ({ ...prev, [w]: e.target.value }))}
+                  aria-label={`Repeticiones de la semana ${w}`}
+                  className={`h-10 w-full rounded-field border bg-field px-2 text-center font-mono text-body-s text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent ${repsSemanas[w]?.trim() ? 'border-accent' : 'border-hairline'}`}
+                />
+              </label>
+            ))}
+          </div>
+          <p className="font-sans text-caption text-ink-3">Un rango como 8-10 o un número. Se mantiene hasta la siguiente semana que escribas. Los ejercicios con bloques (top set + back-off) no se tocan.</p>
+          <div className="flex gap-2">
+            <Button size="s" icon="check" disabled={!hayReps} onClick={() => onAplicar(we => repsPorSemana(we, repsElegidas))}>Aplicar repeticiones</Button>
+            {hayReps && <Button size="s" variant="ghost" onClick={() => setRepsSemanas({})}>Vaciar</Button>}
+          </div>
         </section>
       </div>
     </Sheet>

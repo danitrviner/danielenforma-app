@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { UserProfile, CardioSessionType } from '../types';
-import { getCardioProfile, getCardioSessionsSince, getCardioAssignmentsForAthlete, getHrvReadingsForAthlete, getCardioWeeklyGoal, getStepsForDate, getAthleteNutritionConfig, getNutritionProgram } from '../dbService';
+import { getCardioProfile, getCardioSessionsSince, getCardioAssignmentsForAthlete, getHrvReadingsForAthlete, getCardioWeeklyGoal, getStepsForDate, getAthleteNutritionConfig, getNutritionProgram, setCardioAplazo, deleteCardioAplazo } from '../dbService';
+import { idAplazo } from '../db/cardio';
 import { objetivoDePasos } from '../utils/semanasNutricion';
 import { hoyIsoLocal as hoyPasos } from '../utils/trainingWeek';
 import { ventanaCardio, ventanaHrv } from '../utils/ventanaHistorial';
@@ -15,7 +16,8 @@ import { resolverAsignacionCardio } from '../utils/cardioProgression';
 import { hoyIsoLocal } from '../utils/trainingWeek';
 import { suggestedPerceivedEffort } from '../utils/cardioMetrics';
 import { DateRangeFilter, filterSessions, allTags } from '../utils/cardioHistory';
-import { isCardioSkippedToday, skipCardioToday } from '../utils/cardioSkipToday';
+import { aplazadoHoy, mananaDe } from '../utils/cardioAplazos';
+import { useCardioAplazos, cardioAplazosKey } from '../hooks/useCardioAplazos';
 import { useCardioSession, SAMPLE_INTERVAL_SEC } from '../hooks/useCardioSession';
 import { Skeleton } from './ui';
 import FuentesCientificasSheet, { EnlaceFuentes } from './FuentesCientificasSheet';
@@ -100,7 +102,6 @@ export default function CardioScreen({ profile }: Props) {
     queryFn: () => getAthleteNutritionConfig(profile.email).catch(() => null),
   });
 
-  const [skippedToday, setSkippedToday] = useState(() => isCardioSkippedToday(profile.email, todayIso));
   const [showHrvTest, setShowHrvTest] = useState(false);
   const [showFuentes, setShowFuentes] = useState(false);
   const [showManualAdd, setShowManualAdd] = useState(false);
@@ -119,8 +120,9 @@ export default function CardioScreen({ profile }: Props) {
   // mesociclo. Se resuelve en el mismo punto en el que se elige el cardio
   // activo para que la tarjeta de hoy, el reproductor en vivo y el panel del
   // coach vean exactamente la misma sesión.
-  const zona2Assignment = resolverAsignacionCardio(pickActiveZona2Assignment(assignments, todayIso), sessions, todayIso);
-  const intervalAssignment = resolverAsignacionCardio(pickActiveIntervalAssignment(assignments, todayIso), sessions, todayIso);
+  const { aplazos, asignacionesEfectivas } = useCardioAplazos(profile.email, todayIso, assignments);
+  const zona2Assignment = resolverAsignacionCardio(pickActiveZona2Assignment(asignacionesEfectivas, todayIso), sessions, todayIso);
+  const intervalAssignment = resolverAsignacionCardio(pickActiveIntervalAssignment(asignacionesEfectivas, todayIso), sessions, todayIso);
 
   const { state, sessionType, setSessionType, bpm, deviceStatus, error, paused,
     displayElapsedSec, displaySamples, displayTimeInZone, displayBelowZoneSec,
@@ -128,6 +130,20 @@ export default function CardioScreen({ profile }: Props) {
     intervalBlocksRef, sessionTargetZoneRef, livePrefs, setLivePrefs, locked, registerActivity, unlock, lock,
     connect, cancelReady, start, pause, resume, advanceBlockManually, save, discard, finishCooldown, confirmEffort, closeSummary,
   } = cardio;
+
+  // «Mover a mañana»: se guarda como aplazo (sincroniza y lo ve el coach) y la
+  // asignación puntual pasa de verdad al día siguiente. Deshacer lo quita.
+  const skippedToday = !!aplazadoHoy(aplazos, todayIso);
+  const asignacionDeHoy = sessionType === 'zona2' ? zona2Assignment : sessionType === 'intervalos' ? intervalAssignment : undefined;
+  const refrescarAplazos = () => queryClient.invalidateQueries({ queryKey: cardioAplazosKey(profile.email, todayIso) });
+  const aplazarHoy = async () => {
+    await setCardioAplazo(profile.email, todayIso, mananaDe(todayIso), asignacionDeHoy?.id);
+    await refrescarAplazos();
+  };
+  const deshacerAplazo = async () => {
+    await deleteCardioAplazo(idAplazo(profile.email, todayIso));
+    await refrescarAplazos();
+  };
 
   const targetDurationSec = sessionType === 'zona2' ? zona2Assignment?.targetDurationSec : undefined;
 
@@ -241,9 +257,22 @@ export default function CardioScreen({ profile }: Props) {
     <div className="space-y-6">
       <PageHeader title="Cardio" subtitle="Zonas de FC y dashboard en vivo" />
 
-      {!cardioProfile && (
-        <div className="bg-surface border border-hairline rounded-surface p-4 text-center">
-          <p className="text-label text-ink-2 font-sans">Tu entrenador todavía no ha configurado tus zonas de FC.</p>
+      {/* Sin zonas de FC la sesión en vivo no se puede ofrecer (necesita las
+          zonas), pero eso NO bloquea el cardio: antes aquí solo salía un aviso
+          y el atleta sin zonas no tenía ninguna acción. Siempre se puede
+          apuntar una sesión hecha, con duración, FC media si la sabe y RPE. */}
+      {!cardioProfile && state === 'idle' && (
+        <div className="bg-surface border border-hairline rounded-surface p-4 space-y-3">
+          <div>
+            <p className="font-sans text-title-s font-bold text-ink">Cardio libre</p>
+            <p className="font-sans text-body-s text-ink-2 mt-1">
+              Hoy no tienes cardio pautado. Si has hecho alguno, apúntalo y contará en tu historial.
+            </p>
+          </div>
+          <Button onClick={() => setShowManualAdd(true)} fullWidth size="l" icon="edit_note">Apuntar una sesión</Button>
+          <p className="font-sans text-label text-ink-3">
+            Tu entrenador todavía no ha configurado tus zonas de FC, así que la sesión en vivo con pulsómetro aún no está disponible.
+          </p>
         </div>
       )}
 
@@ -267,7 +296,9 @@ export default function CardioScreen({ profile }: Props) {
             onCancelReady={cancelReady}
             onStart={start}
             onManualAdd={() => setShowManualAdd(true)}
-            onSkipToday={() => { skipCardioToday(profile.email, todayIso); setSkippedToday(true); }}
+            onSkipToday={aplazarHoy}
+            onUndoSkip={deshacerAplazo}
+            mananaIso={mananaDe(todayIso)}
             weeklyMinutesGoal={minutesGoal}
             weeklyMinutesDone={weeklyCardioMinutesDone(sessions, todayIso)}
             sessionsGoal={sessionsGoal}

@@ -5,12 +5,11 @@ import { useReuniones } from '../hooks/useReuniones';
 import { usePagos } from '../hooks/usePagos';
 import { formatEuros, sumaCobrado, pendienteDe, ingresosPorMes } from '../lib/dinero';
 import {
-  facturacionDelMes, mesDe, mrr, permanenciaMedia, ltvMedio, ticketMedio, agrupaCobrado,
+  facturacionDelMes, mesDe, mrr, permanenciaMedia, ltvMedio, ticketMedio,
   churnDelMes, porCobrar, porCobrarDelMes,
 } from '../lib/metricas';
-import { cobradoDe } from '../lib/dinero';
-import type { CrmPago } from '../types';
 import { useServicios } from '../hooks/useServicios';
+import { ingresosPorServicio } from '../lib/ingresosPorServicio';
 import { tiempoRelativo, hoyISO, aDiaISO } from '../lib/fechas';
 import MetricCard from '../components/MetricCard';
 import RecurringRevenueCard from '../components/RecurringRevenueCard';
@@ -86,12 +85,15 @@ export default function DashboardScreen() {
   /* Qué servicio deja más dinero. Es la comparación que no se podía hacer
      —«el B cobra menos de alta pero tiene más recorrido»— y sale de agrupar lo
      cobrado por el NOMBRE del servicio del que cuelga cada movimiento. */
-  const porServicio = useMemo(() => {
-    const nombrePorId = new Map(servicios.map(sv => [sv.id, sv.nombre]));
-    return agrupaCobrado<CrmPago>(pagos, p => (p.servicioId ? nombrePorId.get(p.servicioId) : undefined), cobradoDe)
-      .filter(g => g.totalCents > 0)
-      .slice(0, 4);
-  }, [pagos, servicios]);
+  const porServicio = useMemo(
+    // Por TIPO de servicio (R-03), no por el nombre escrito a mano; histórico
+    // completo, con «Sin clasificar» al final para que se vea lo que falta.
+    () => ingresosPorServicio(pagos, servicios, '2000-01-01', '9999-12-31')
+      .filter(f => f.cobradoNetoCents > 0)
+      .map(f => ({ grupo: f.grupo, totalCents: f.cobradoNetoCents, n: f.cobros }))
+      .slice(0, 4),
+    [pagos, servicios],
+  );
 
   // Lo del MES en curso, desglosado por clase de venta.
   const delMes = useMemo(() => facturacionDelMes(pagos, mesDe(hoy)), [pagos, hoy]);

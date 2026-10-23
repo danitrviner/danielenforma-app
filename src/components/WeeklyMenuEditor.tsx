@@ -1,4 +1,5 @@
-import { useReglasDeReceta } from '../hooks/useReglasDeReceta';
+import { useReglasDeReceta, useListaDeMenu, useSeleccionDeRecetas } from '../hooks/useReglasDeReceta';
+import { quiereAlgunaDieta } from '../utils/seleccionDeRecetas';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -157,6 +158,8 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
   const pctSum = slots.reduce((s, sl) => s + sl.pct, 0);
 
   const recetasOcultas = useReglasDeReceta(athleteEmail);
+  const listaMenu = useListaDeMenu(athleteEmail);
+  const { seleccion, paquetes } = useSeleccionDeRecetas(athleteEmail);
   const prefs: GeneratorPrefs = useMemo(() => ({
     allergies: onboarding?.allergies ?? [],
     conditions: athleteConditions(onboarding),
@@ -173,7 +176,10 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
     preferredDishTypes: preferredDish as DishType[],
     excludedDishTypes: excludedDish as DishType[],
     recetasOcultas,
-  }), [onboarding, nutritionConfig, variety, favorites, preferredDish, excludedDish, recetasOcultas]);
+    listaMenu,
+    seleccion,
+    paquetes,
+  }), [onboarding, nutritionConfig, variety, favorites, preferredDish, excludedDish, recetasOcultas, listaMenu, seleccion, paquetes]);
 
   function cycleDishType(id: string) {
     if (preferredDish.includes(id)) { setPreferredDish(p => p.filter(x => x !== id)); setExcludedDish(e => [...e, id]); }
@@ -232,7 +238,7 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
   async function ensurePool(slot: number): Promise<Recipe[]> {
     const cached = pools[slot];
     if (cached) return cached;
-    const [recetas, builder] = await Promise.all([queryRecetasForGenerator(slot, 300), ensureBuilderRecipes()]);
+    const [recetas, builder] = await Promise.all([queryRecetasForGenerator(slot, 300, listaMenu, quiereAlgunaDieta(seleccion, paquetes)), ensureBuilderRecipes()]);
     const combined = [...recetas, ...builder.filter(r => recipeMatchesSlot(r, slot))];
     setPools(prev => ({ ...prev, [slot]: combined }));
     return combined;
@@ -293,7 +299,7 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
     const targets = slotTargets(menuDay.target, slots);
     const usedIds = new Set<string>(menuDay.meals.filter((_, i) => i !== mealIdx).map(m => m.recipeId));
     usedIds.add(menuDay.meals[mealIdx]?.recipeId ?? ''); // force a different pick than the current one
-    const ranked = rankCandidates(pool, targets[mealIdx], prefs, usedIds, { needsTupper: slot.needsTupper });
+    const ranked = rankCandidates(pool, targets[mealIdx], prefs, usedIds, { needsTupper: slot.needsTupper, dias: [day], dietId: menuDay.dietId });
     const pick = ranked[0];
     if (!pick) return;
     const nextMeals = [...menuDay.meals];
@@ -302,6 +308,7 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
       recipeId: pick.recipe.id, recipeName: pick.recipe.name,
       recipeImage: fotoDeReceta(pick.recipe),
       scale: pick.scale, exch: pick.exch, complements: [],
+      ajuste: pick.ajuste,
       // Las raciones extra eran de la receta ANTERIOR ("+45g de arroz" con un
       // plato que ya no lleva arroz), y las kcal se quedaban con las del plato
       // viejo. Al cambiar de receta se caen las dos cosas y se recalcula.
@@ -340,7 +347,7 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
       const pool = await ensurePool(slot.slot);
       const targets = slotTargets(menuDay.target, slots);
       const usedIds = new Set<string>(menuDay.meals.map(m => m.recipeId));
-      const ranked = rankCandidates(pool, targets[mealIdx], prefs, usedIds, { needsTupper: slot.needsTupper });
+      const ranked = rankCandidates(pool, targets[mealIdx], prefs, usedIds, { needsTupper: slot.needsTupper, dias: [day], dietId: menuDay.dietId });
       setPickerCandidates(ranked.slice(0, 12));
     }
     setPickerLoading(false);
@@ -355,6 +362,7 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
       recipeId: c.recipe.id, recipeName: c.recipe.name,
       recipeImage: fotoDeReceta(c.recipe),
       scale: c.scale, exch: c.exch, complements: [],
+      ajuste: c.ajuste,
       racionesExtra: undefined,
       kcal: Math.round(exchangeToKcal(c.exch)),
     };

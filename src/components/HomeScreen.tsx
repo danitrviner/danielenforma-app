@@ -1,11 +1,12 @@
 import React, { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { UserProfile, WeightCheckIn, WeekDay } from '../types';
-import { getWorkoutAssignmentsForAthlete, getWorkoutsByIds, getCardioAssignmentsForAthlete, getDietsForAthlete, getAthleteDietConfig, getDietCompletionLog, getOnboarding, getCoachDayNote, getMesocycles, getBodyweightForAthlete, updateUserProfile } from '../dbService';
+import { UserProfile, WeightCheckIn } from '../types';
+import { getWorkoutAssignmentsForAthlete, getWorkoutsByIds, getCardioAssignmentsForAthlete, getDietsForAthlete, getAthleteDietConfig, getDietCompletionLog, getOnboarding, getCoachDayNote, getMesocycles, getBodyweightForAthlete, updateUserProfile, getNutritionProgram } from '../dbService';
 import { formatDate, hoyIsoLocal } from '../utils/trainingWeek';
 import { bloquesDelCiclo, bloqueActual, EstadoDeDia } from '../utils/cicloDelAtleta';
 import { pickActiveZona2Assignment, pickActiveIntervalAssignment } from '../utils/cardioSession';
-import { pickTodaysDiet, countMealsDone } from '../utils/nutritionSummary';
+import { countMealsDone } from '../utils/nutritionSummary';
+import { objetivoDelDia } from '../utils/objetivoDelDia';
 import PendingTasksPanel from './PendingTasksPanel';
 import SolicitudConsentimientoIA from './SolicitudConsentimientoIA';
 import NovedadesSheet from './NovedadesSheet';
@@ -14,6 +15,7 @@ import { idMasReciente, novedadesPendientes, MAX_EN_VENTANA } from '../utils/nov
 import { debePedirseConsentimiento, haSidoAplazado, marcarAplazado } from '../ai/consentimientoIA';
 import StepsWidget from './StepsWidget';
 import TarjetaPeso from './home/TarjetaPeso';
+import RegistrarPesoSheet from './home/RegistrarPesoSheet';
 import WeeklyChallengeCard, { ChallengePendingCard } from './roadmap/WeeklyChallengeCard';
 import { useRetoDeLaSemana } from '../hooks/useRetoDeLaSemana';
 import ResourcesPanel from './ResourcesPanel';
@@ -36,7 +38,6 @@ interface HomeScreenProps {
   onProfileChanged?: (updates: Partial<UserProfile>) => void;
 }
 
-const JS_TO_WD: Record<number, WeekDay> = { 0: 'sun', 1: 'mon', 2: 'tue', 3: 'wed', 4: 'thu', 5: 'fri', 6: 'sat' };
 const DIA_SEMANA = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -94,7 +95,6 @@ export default function HomeScreen({ profile, checkins, onNavigate, onProfileCha
   // "hoy" se quedaba en ayer y esta pantalla podía desacordar con las que sí
   // recalculaban la fecha en cada render (p. ej. CardioScreen).
   const TODAY_DATE = hoyIsoLocal();
-  const TODAY_WD: WeekDay = JS_TO_WD[new Date().getDay()];
   // Nota del coach para hoy (Roadmap → Calendario, sheet de Día · botón
   // "Nota") — cierra el hueco que este archivo documenta más abajo como
   // pendiente por no existir "campo de nota por asignación". Un doc por
@@ -141,6 +141,11 @@ export default function HomeScreen({ profile, checkins, onNavigate, onProfileCha
     queryKey: ['athleteDietConfig', profile.email],
     queryFn: () => getAthleteDietConfig(profile.email).catch(() => null),
   });
+  // Misma clave que Nutrición y el Road map: una sola lectura entre las tres pantallas.
+  const { data: nutritionProgram = null } = useQuery({
+    queryKey: ['nutritionProgram', profile.email],
+    queryFn: () => getNutritionProgram(profile.email).catch(() => null),
+  });
   const { data: completionLog } = useQuery({
     queryKey: ['dietCompletionLog', profile.email, TODAY_DATE],
     queryFn: () => getDietCompletionLog(profile.email, TODAY_DATE),
@@ -164,6 +169,8 @@ export default function HomeScreen({ profile, checkins, onNavigate, onProfileCha
     queryFn: () => getBodyweightForAthlete(profile.email, desdePeso),
   });
 
+  const [pesoAbierto, setPesoAbierto] = useState(false);
+
   const sorted = [...assignments].sort((a, b) => a.date.localeCompare(b.date));
   // La misma vuelta del microciclo que enseña Rutinas (Día 1 → Día N, sin cajón
   // de «Atrasados» al final), para que el resumen y la pantalla no cuenten dos
@@ -184,7 +191,11 @@ export default function HomeScreen({ profile, checkins, onNavigate, onProfileCha
      para el martes": el plan del día vive en su propio documento desde 09-2026
      (ver DietCompletionLog.meals). `dietaDelDia` cae a la dieta antigua para
      los días de antes del cambio, así que un histórico viejo se sigue leyendo. */
-  const todaysDiet = dietaDelDia(completionLog ?? null, diets) ?? pickTodaysDiet(diets, dietConfig, TODAY_WD);
+  const entrenaHoy = nutritionProgram?.ciclado
+    ? assignments.some(a => a.date === TODAY_DATE && a.status !== 'skipped')
+    : undefined;
+  const todaysDiet = dietaDelDia(completionLog ?? null, diets)
+    ?? objetivoDelDia({ diets, config: dietConfig, program: nutritionProgram, fecha: TODAY_DATE, entrena: entrenaHoy }).dieta;
   const mealsDone = todaysDiet ? countMealsDone(todaysDiet, completionLog?.doneItemIds ?? []) : null;
 
   /* A-2. Se le pregunta aquí, en la primera pantalla que abre, porque los
@@ -284,10 +295,17 @@ export default function HomeScreen({ profile, checkins, onNavigate, onProfileCha
         <TarjetaPeso
           logs={pesajes}
           metaKg={profile.targetWeight}
-          onClick={() => onNavigate('checkin')}
+          onClick={() => setPesoAbierto(true)}
         />
         <StepsWidget athleteEmail={profile.email} compacto />
       </div>
+      <RegistrarPesoSheet
+        open={pesoAbierto}
+        onClose={() => setPesoAbierto(false)}
+        athleteEmail={profile.email}
+        logs={pesajes}
+        hoy={TODAY_DATE}
+      />
 
       {/* Nota del coach para hoy (Roadmap → Calendario) — encima del entreno
           del día, solo si hay una escrita para la fecha de hoy. */}
