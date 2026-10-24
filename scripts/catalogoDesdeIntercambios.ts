@@ -171,6 +171,35 @@ const TABLA: Record<string, Entrada | null> = {
   '80g Beyond Burger': e(80, ['Beyond Burger', 'crudo']),
 };
 
+/** Alimentos de las recetas que NO están en los intercambios (salsas, fiambres,
+ *  carnes procesadas…). Valores reales: mediana de los productos españoles de
+ *  Open Food Facts que ya tiene la app (`public/off`, 24-10; n = productos).
+ *  [nombre, estado, kcal, proteína, hidratos, grasa, fibra, azúcares, saturada, sal, medida?] */
+type Medio = [string, Estado, number, number, number, number, number | '', number, number, number, ([string, number] | null)?];
+const MEDIOS: Medio[] = [
+  ['Ketchup', 'listo', 100, 1.3, 22, 0.1, 1, 18.5, 0, 2, ['cucharada', 15]],           // n=285
+  ['Ketchup sin azúcar', 'listo', 38, 1.5, 6.2, 0, 1.3, 4.2, 0, 1.5, ['cucharada', 15]], // n=21
+  ['Salsa de soja', 'listo', 66, 7.5, 6.9, 0, 0, 2, 0, 12.8, ['cucharada', 15]],          // n=99
+  ['Pesto', 'listo', 431, 4.5, 6.2, 42, 1.9, 2, 5.8, 2.2, ['cucharada', 15]],             // n=140
+  ['Mostaza', 'listo', 104, 3.6, 8, 4.5, 1.5, 3, 0.4, 3.3, ['cucharadita', 5]],           // n=160
+  ['Salsa barbacoa', 'listo', 121, 1.2, 28, 0.3, 0.9, 23, 0, 2, ['cucharada', 15]],       // n=91
+  ['Gambas peladas', 'crudo', 56, 12, 0, 0.8, '', 0, 0.2, 1],                             // n=114 (congeladas)
+  ['Langostinos cocidos', 'listo', 97, 21.3, 0, 1.1, '', 0, 0.3, 1.3],                    // n=200
+  ['Jamón cocido extra', 'listo', 106, 19, 1, 3, '', 0.6, 1.2, 1.9, ['loncha', 15]],      // n=573
+  ['Fiambre de pechuga de pavo', 'listo', 89, 18, 1.1, 1, '', 0.5, 0.4, 1.8, ['loncha', 15]], // n=731
+  ['Queso crema light', 'listo', 172, 8, 3.8, 14, '', 3.6, 10, 1],                        // n=10
+  ['Queso crema', 'listo', 243, 5.8, 3.8, 22, '', 3.3, 15, 1],                            // n=68
+  ['Queso en lonchas light', 'listo', 287, 28, 1.4, 19, '', 0.5, 12.8, 1.5, ['loncha', 20]], // n=38
+  ['Queso cheddar', 'listo', 387, 25, 0.6, 32, '', 0.5, 21, 1.7, ['loncha', 20]],         // n=26
+  ['Queso rallado', 'listo', 341, 24, 2, 26, '', 0.5, 17.1, 1.8],                         // n=185
+  ['Salchichas de pavo', 'listo', 170, 13.1, 2.3, 12, '', 0.5, 3.8, 2, ['salchicha', 40]], // n=42
+  ['Hamburguesa de pollo', 'crudo', 137, 16, 1.8, 7, 0, 0.5, 2, 1.6, ['hamburguesa', 100]], // n=158
+  ['Carne picada de ternera', 'crudo', 193, 18, 1, 13, '', 0.5, 5.8, 0.3],                // n=36
+  ['Carne picada de pavo', 'crudo', 110, 18.6, 1, 3.5, '', 0.5, 1.1, 1.2],                // n=7
+  ['Contramuslo de pollo', 'crudo', 130, 20, 0, 5.6, '', 0, 1.9, 0.2],                    // n=410
+  ['Lomo de cerdo', 'crudo', 134, 20.4, 0.8, 4.5, '', 0.5, 1.8, 1.7],                     // n=119
+];
+
 const r1 = (n: number) => Math.round(n * 10) / 10;
 
 /** Valores por 100 g. Si pasan de 100 g de nutrientes (el aceite: 10 ml son
@@ -209,13 +238,24 @@ for (const f of conPeso) {
   }
 }
 
+for (const [nombre, estado, kcal, p, hc, g, fibra, az, sat, sal, medida] of MEDIOS) {
+  const clave = `${nombre}|${estado}`;
+  if (yaEsta.has(clave)) continue;
+  yaEsta.add(clave);
+  filas.push([
+    '', nombre, estado, String(kcal), String(p), String(hc), String(g),
+    String(fibra), String(az), String(sat), String(sal), medida?.[0] ?? '', medida ? String(medida[1]) : '',
+    'Open Food Facts (mediana España)',
+  ]);
+}
+
 if (faltan.length) {
   console.error(`Líneas de intercambios sin pasar a la tabla (${faltan.length}):\n  ${faltan.join('\n  ')}`);
   process.exit(1);
 }
 
 const coma = (c: string) => c.replace('.', ',');
-const csv = [COLUMNAS_CSV.join(';'), ...filas.map(f => f.map((c, i) => (i >= 3 && i <= 6 ? coma(c) : c)).join(';'))].join('\n') + '\n';
+const csv = [COLUMNAS_CSV.join(';'), ...filas.map(f => f.map((c, i) => (i >= 3 && i <= 10 ? coma(c) : c)).join(';'))].join('\n') + '\n';
 const { filas: validadas, alimentos, erroresGenerales } = validarCsv(csv);
 const conError = validadas.filter(x => x.errores.length);
 const conAviso = validadas.filter(x => x.avisos.length);

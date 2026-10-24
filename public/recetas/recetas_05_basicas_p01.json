@@ -1120,19 +1120,19 @@
       ],
       "macros": {
         "carbohydrate": {
-          "grams": 75,
-          "percentage": 56
+          "grams": 76,
+          "percentage": 49
         },
         "protein": {
-          "grams": 41,
-          "percentage": 30
+          "grams": 23,
+          "percentage": 15
         },
         "fat": {
-          "grams": 9,
-          "percentage": 14
+          "grams": 25,
+          "percentage": 36
         }
       },
-      "kcal": 539,
+      "kcal": 628,
       "weight": 320,
       "categoria": "Platos salados / principales",
       "basica": true,
@@ -1154,16 +1154,16 @@
           },
           {
             "n": 1,
-            "alimentoId": "ternera-magra-crudo",
+            "alimentoId": "carne-picada-de-ternera-crudo",
             "gramos": 130,
             "min": 65,
             "max": 260,
             "palanca": "proteina",
             "porCien": {
-              "kcal": 125,
-              "p": 31.3,
-              "hc": 0,
-              "g": 0
+              "kcal": 193,
+              "p": 18,
+              "hc": 1,
+              "g": 13
             }
           },
           {
@@ -1181,7 +1181,7 @@
             }
           }
         ],
-        "calculadoEn": "2026-10-24T07:06:04.900Z",
+        "calculadoEn": "2026-10-24T07:20:06.750Z",
         "antes": {
           "macros": {
             "carbohydrate": {
@@ -1265,19 +1265,19 @@
       ],
       "macros": {
         "carbohydrate": {
-          "grams": 75,
-          "percentage": 57
+          "grams": 77,
+          "percentage": 56
         },
         "protein": {
-          "grams": 38,
-          "percentage": 28
+          "grams": 28,
+          "percentage": 21
         },
         "fat": {
-          "grams": 9,
-          "percentage": 15
+          "grams": 14,
+          "percentage": 23
         }
       },
-      "kcal": 527,
+      "kcal": 542,
       "weight": 340,
       "categoria": "Platos salados / principales",
       "basica": true,
@@ -1299,16 +1299,16 @@
           },
           {
             "n": 1,
-            "alimentoId": "pechuga-de-pavo-crudo",
+            "alimentoId": "carne-picada-de-pavo-crudo",
             "gramos": 150,
             "min": 75,
             "max": 300,
             "palanca": "proteina",
             "porCien": {
-              "kcal": 100,
-              "p": 25,
-              "hc": 0,
-              "g": 0
+              "kcal": 110,
+              "p": 18.6,
+              "hc": 1,
+              "g": 3.5
             }
           },
           {
@@ -1326,7 +1326,7 @@
             }
           }
         ],
-        "calculadoEn": "2026-10-24T07:06:04.900Z",
+        "calculadoEn": "2026-10-24T07:20:06.750Z",
         "antes": {
           "macros": {
             "carbohydrate": {
@@ -1553,18 +1553,18 @@
       "macros": {
         "carbohydrate": {
           "grams": 75,
-          "percentage": 58
+          "percentage": 63
         },
         "protein": {
-          "grams": 31,
-          "percentage": 24
+          "grams": 18,
+          "percentage": 15
         },
         "fat": {
-          "grams": 10,
-          "percentage": 18
+          "grams": 11,
+          "percentage": 22
         }
       },
-      "kcal": 514,
+      "kcal": 474,
       "weight": 250,
       "categoria": "Platos salados / principales",
       "basica": true,
@@ -1586,16 +1586,16 @@
           },
           {
             "n": 1,
-            "alimentoId": "pescado-blanco-crudo",
+            "alimentoId": "gambas-peladas-crudo",
             "gramos": 150,
             "min": 75,
             "max": 300,
             "palanca": "hc",
             "porCien": {
-              "kcal": 83,
-              "p": 20.8,
+              "kcal": 56,
+              "p": 12,
               "hc": 0,
-              "g": 0
+              "g": 0.8
             }
           },
           {
@@ -1613,7 +1613,7 @@
             }
           }
         ],
-        "calculadoEn": "2026-10-24T07:06:04.900Z",
+        "calculadoEn": "2026-10-24T07:20:06.750Z",
         "antes": {
           "macros": {
             "carbohydrate": {
@@ -1706,19 +1706,19 @@
       ],
       "macros": {
         "carbohydrate": {
-          "grams": 75,
-          "percentage": 57
+          "grams": 76,
+          "percentage": 59
         },
         "protein": {
-          "grams": 39,
-          "percentage": 30
+          "grams": 33,
+          "percentage": 26
         },
         "fat": {
-          "grams": 7,
-          "percentage": 13
+          "grams": 9,
+          "percentage": 15
         }
       },
-      "kcal": 523,
+      "kcal": 517,
       "weight": 280,
       "categoria": "Platos salados / principales",
       "basica": true,
@@ -1768,34 +1768,34 @@
           },
           {
             "n": 3,
-            "alimentoId": "pechuga-de-pavo-crudo",
+            "alimentoId": "fiambre-de-pechuga-de-pavo-listo",
             "gramos": 60,
             "min": 30,
             "max": 120,
             "palanca": "proteina",
             "porCien": {
-              "kcal": 100,
-              "p": 25,
-              "hc": 0,
-              "g": 0
+              "kcal": 89,
+              "p": 18,
+              "hc": 1.1,
+              "g": 1
             }
           },
           {
             "n": 4,
-            "alimentoId": "queso-curado-listo",
+            "alimentoId": "queso-rallado-listo",
             "gramos": 10,
             "min": 5,
             "max": 20,
             "palanca": "grasa",
             "porCien": {
-              "kcal": 332,
-              "p": 41.7,
-              "hc": 0,
-              "g": 18.3
+              "kcal": 341,
+              "p": 24,
+              "hc": 2,
+              "g": 26
             }
           }
         ],
-        "calculadoEn": "2026-10-24T07:06:04.900Z",
+        "calculadoEn": "2026-10-24T07:20:06.750Z",
         "antes": {
           "macros": {
             "carbohydrate": {
@@ -3777,19 +3777,19 @@
       ],
       "macros": {
         "carbohydrate": {
-          "grams": 75,
-          "percentage": 60
+          "grams": 76,
+          "percentage": 61
         },
         "protein": {
-          "grams": 31,
-          "percentage": 25
+          "grams": 27,
+          "percentage": 22
         },
         "fat": {
-          "grams": 8,
-          "percentage": 15
+          "grams": 10,
+          "percentage": 17
         }
       },
-      "kcal": 499,
+      "kcal": 501,
       "weight": 310,
       "categoria": "Platos salados / principales",
       "basica": true,
@@ -3839,20 +3839,20 @@
           },
           {
             "n": 3,
-            "alimentoId": "mozzarella-light-listo",
+            "alimentoId": "queso-crema-light-listo",
             "gramos": 30,
             "min": 15,
             "max": 60,
             "palanca": "proteina",
             "porCien": {
-              "kcal": 166,
-              "p": 20.8,
-              "hc": 0,
-              "g": 9.2
+              "kcal": 172,
+              "p": 8,
+              "hc": 3.8,
+              "g": 14
             }
           }
         ],
-        "calculadoEn": "2026-10-24T07:06:04.900Z",
+        "calculadoEn": "2026-10-24T07:20:06.750Z",
         "antes": {
           "macros": {
             "carbohydrate": {
@@ -3937,19 +3937,19 @@
       ],
       "macros": {
         "carbohydrate": {
-          "grams": 75,
-          "percentage": 47
+          "grams": 76,
+          "percentage": 48
         },
         "protein": {
-          "grams": 48,
-          "percentage": 30
+          "grams": 44,
+          "percentage": 28
         },
         "fat": {
           "grams": 16,
-          "percentage": 23
+          "percentage": 24
         }
       },
-      "kcal": 632,
+      "kcal": 627,
       "weight": 340,
       "categoria": "Platos salados / principales",
       "basica": true,
@@ -3985,16 +3985,16 @@
           },
           {
             "n": 2,
-            "alimentoId": "pechuga-de-pavo-crudo",
+            "alimentoId": "fiambre-de-pechuga-de-pavo-listo",
             "gramos": 50,
             "min": 25,
             "max": 100,
             "palanca": "proteina",
             "porCien": {
-              "kcal": 100,
-              "p": 25,
-              "hc": 0,
-              "g": 0
+              "kcal": 89,
+              "p": 18,
+              "hc": 1.1,
+              "g": 1
             }
           },
           {
@@ -4012,7 +4012,7 @@
             }
           }
         ],
-        "calculadoEn": "2026-10-24T07:06:04.900Z",
+        "calculadoEn": "2026-10-24T07:20:06.750Z",
         "antes": {
           "macros": {
             "carbohydrate": {
@@ -4106,19 +4106,19 @@
       ],
       "macros": {
         "carbohydrate": {
-          "grams": 75,
-          "percentage": 56
+          "grams": 82,
+          "percentage": 59
         },
         "protein": {
-          "grams": 30,
-          "percentage": 22
+          "grams": 25,
+          "percentage": 18
         },
         "fat": {
-          "grams": 13,
-          "percentage": 22
+          "grams": 15,
+          "percentage": 23
         }
       },
-      "kcal": 538,
+      "kcal": 562,
       "weight": 330,
       "categoria": "Platos salados / principales",
       "basica": true,
@@ -4140,39 +4140,45 @@
           },
           {
             "n": 1,
-            "alimentoId": "carne-roja-grasa-crudo",
+            "alimentoId": "hamburguesa-de-pollo-crudo",
             "gramos": 120,
             "min": 60,
             "max": 240,
             "palanca": "proteina",
             "porCien": {
-              "kcal": 143,
-              "p": 17.9,
-              "hc": 0,
-              "g": 7.9
+              "kcal": 137,
+              "p": 16,
+              "hc": 1.8,
+              "g": 7
             }
           },
           {
             "n": 2,
-            "alimentoId": "queso-curado-listo",
+            "alimentoId": "queso-cheddar-listo",
+            "gramos": 20,
+            "min": 10,
+            "max": 40,
+            "palanca": "grasa",
+            "porCien": {
+              "kcal": 387,
+              "p": 25,
+              "hc": 0.6,
+              "g": 32
+            }
+          },
+          {
+            "n": 3,
+            "alimentoId": "ketchup-listo",
             "gramos": 20,
             "min": 20,
             "max": 20,
             "fijo": true,
             "porCien": {
-              "kcal": 332,
-              "p": 41.7,
-              "hc": 0,
-              "g": 18.3
+              "kcal": 100,
+              "p": 1.3,
+              "hc": 22,
+              "g": 0.1
             }
-          },
-          {
-            "n": 3,
-            "alimentoId": null,
-            "gramos": 20,
-            "min": 20,
-            "max": 20,
-            "fijo": true
           },
           {
             "n": 4,
@@ -4183,7 +4189,7 @@
             "fijo": true
           }
         ],
-        "calculadoEn": "2026-10-24T07:06:04.900Z",
+        "calculadoEn": "2026-10-24T07:20:06.750Z",
         "antes": {
           "macros": {
             "carbohydrate": {
@@ -4747,19 +4753,19 @@
       ],
       "macros": {
         "carbohydrate": {
-          "grams": 44,
-          "percentage": 41
+          "grams": 49,
+          "percentage": 35
         },
         "protein": {
-          "grams": 55,
-          "percentage": 51
+          "grams": 32,
+          "percentage": 23
         },
         "fat": {
-          "grams": 4,
-          "percentage": 8
+          "grams": 26,
+          "percentage": 42
         }
       },
-      "kcal": 429,
+      "kcal": 557,
       "weight": 305,
       "categoria": "Platos salados / principales",
       "basica": true,
@@ -4781,39 +4787,45 @@
           },
           {
             "n": 1,
-            "alimentoId": "ternera-magra-crudo",
+            "alimentoId": "carne-picada-de-ternera-crudo",
             "gramos": 150,
             "min": 75,
             "max": 300,
             "palanca": "proteina",
             "porCien": {
-              "kcal": 125,
-              "p": 31.3,
-              "hc": 0,
-              "g": 0
+              "kcal": 193,
+              "p": 18,
+              "hc": 1,
+              "g": 13
             }
           },
           {
             "n": 2,
-            "alimentoId": "queso-curado-listo",
+            "alimentoId": "queso-cheddar-listo",
             "gramos": 20,
-            "min": 20,
-            "max": 20,
-            "fijo": true,
+            "min": 10,
+            "max": 40,
+            "palanca": "grasa",
             "porCien": {
-              "kcal": 332,
-              "p": 41.7,
-              "hc": 0,
-              "g": 18.3
+              "kcal": 387,
+              "p": 25,
+              "hc": 0.6,
+              "g": 32
             }
           },
           {
             "n": 3,
-            "alimentoId": null,
+            "alimentoId": "ketchup-listo",
             "gramos": 15,
             "min": 15,
             "max": 15,
-            "fijo": true
+            "fijo": true,
+            "porCien": {
+              "kcal": 100,
+              "p": 1.3,
+              "hc": 22,
+              "g": 0.1
+            }
           },
           {
             "n": 4,
@@ -4824,7 +4836,7 @@
             "fijo": true
           }
         ],
-        "calculadoEn": "2026-10-24T07:06:04.900Z",
+        "calculadoEn": "2026-10-24T07:20:06.750Z",
         "antes": {
           "macros": {
             "carbohydrate": {
@@ -6173,19 +6185,19 @@
       ],
       "macros": {
         "carbohydrate": {
-          "grams": 50,
-          "percentage": 50
+          "grams": 51,
+          "percentage": 52
         },
         "protein": {
-          "grams": 28,
-          "percentage": 28
+          "grams": 23,
+          "percentage": 24
         },
         "fat": {
           "grams": 10,
-          "percentage": 22
+          "percentage": 24
         }
       },
-      "kcal": 398,
+      "kcal": 392,
       "weight": 250,
       "categoria": "Platos salados / principales",
       "basica": true,
@@ -6235,20 +6247,20 @@
           },
           {
             "n": 3,
-            "alimentoId": "pechuga-de-pavo-crudo",
+            "alimentoId": "fiambre-de-pechuga-de-pavo-listo",
             "gramos": 60,
             "min": 30,
             "max": 120,
             "palanca": "proteina",
             "porCien": {
-              "kcal": 100,
-              "p": 25,
-              "hc": 0,
-              "g": 0
+              "kcal": 89,
+              "p": 18,
+              "hc": 1.1,
+              "g": 1
             }
           }
         ],
-        "calculadoEn": "2026-10-24T07:06:04.900Z",
+        "calculadoEn": "2026-10-24T07:20:06.750Z",
         "antes": {
           "macros": {
             "carbohydrate": {
@@ -6329,18 +6341,18 @@
       "macros": {
         "carbohydrate": {
           "grams": 38,
-          "percentage": 33
+          "percentage": 34
         },
         "protein": {
-          "grams": 53,
-          "percentage": 46
+          "grams": 48,
+          "percentage": 43
         },
         "fat": {
-          "grams": 11,
-          "percentage": 21
+          "grams": 12,
+          "percentage": 23
         }
       },
-      "kcal": 459,
+      "kcal": 453,
       "weight": 340,
       "categoria": "Platos salados / principales",
       "basica": true,
@@ -6376,16 +6388,16 @@
           },
           {
             "n": 2,
-            "alimentoId": "pechuga-de-pavo-crudo",
+            "alimentoId": "fiambre-de-pechuga-de-pavo-listo",
             "gramos": 60,
             "min": 30,
             "max": 120,
             "palanca": "proteina",
             "porCien": {
-              "kcal": 100,
-              "p": 25,
-              "hc": 0,
-              "g": 0
+              "kcal": 89,
+              "p": 18,
+              "hc": 1.1,
+              "g": 1
             }
           },
           {
@@ -6403,7 +6415,7 @@
             }
           }
         ],
-        "calculadoEn": "2026-10-24T07:06:04.900Z",
+        "calculadoEn": "2026-10-24T07:20:06.750Z",
         "antes": {
           "macros": {
             "carbohydrate": {
@@ -6491,15 +6503,15 @@
           "percentage": 50
         },
         "protein": {
-          "grams": 23,
-          "percentage": 17
+          "grams": 24,
+          "percentage": 18
         },
         "fat": {
           "grams": 19,
-          "percentage": 33
+          "percentage": 32
         }
       },
-      "kcal": 533,
+      "kcal": 539,
       "weight": 260,
       "categoria": "Platos salados / principales",
       "basica": true,
@@ -6549,14 +6561,20 @@
           },
           {
             "n": 3,
-            "alimentoId": null,
+            "alimentoId": "salsa-de-soja-listo",
             "gramos": 10,
             "min": 10,
             "max": 10,
-            "fijo": true
+            "fijo": true,
+            "porCien": {
+              "kcal": 66,
+              "p": 7.5,
+              "hc": 6.9,
+              "g": 0
+            }
           }
         ],
-        "calculadoEn": "2026-10-24T07:06:04.900Z",
+        "calculadoEn": "2026-10-24T07:20:06.750Z",
         "antes": {
           "macros": {
             "carbohydrate": {
@@ -6781,19 +6799,19 @@
       ],
       "macros": {
         "carbohydrate": {
-          "grams": 67,
-          "percentage": 53
+          "grams": 69,
+          "percentage": 52
         },
         "protein": {
-          "grams": 22,
-          "percentage": 17
+          "grams": 16,
+          "percentage": 12
         },
         "fat": {
-          "grams": 16,
-          "percentage": 30
+          "grams": 21,
+          "percentage": 36
         }
       },
-      "kcal": 500,
+      "kcal": 532,
       "weight": 280,
       "categoria": "Platos salados / principales",
       "basica": true,
@@ -6815,16 +6833,16 @@
           },
           {
             "n": 1,
-            "alimentoId": "carne-roja-grasa-crudo",
+            "alimentoId": "salchichas-de-pavo-listo",
             "gramos": 120,
             "min": 60,
             "max": 240,
             "palanca": "proteina",
             "porCien": {
-              "kcal": 143,
-              "p": 17.9,
-              "hc": 0,
-              "g": 7.9
+              "kcal": 170,
+              "p": 13.1,
+              "hc": 2.3,
+              "g": 12
             }
           },
           {
@@ -6842,7 +6860,7 @@
             }
           }
         ],
-        "calculadoEn": "2026-10-24T07:06:04.900Z",
+        "calculadoEn": "2026-10-24T07:20:06.750Z",
         "antes": {
           "macros": {
             "carbohydrate": {
@@ -6928,18 +6946,18 @@
       "macros": {
         "carbohydrate": {
           "grams": 90,
-          "percentage": 68
+          "percentage": 74
         },
         "protein": {
-          "grams": 31,
-          "percentage": 24
+          "grams": 18,
+          "percentage": 15
         },
         "fat": {
-          "grams": 5,
-          "percentage": 8
+          "grams": 6,
+          "percentage": 11
         }
       },
-      "kcal": 531,
+      "kcal": 490,
       "weight": 325,
       "categoria": "Platos salados / principales",
       "basica": true,
@@ -6961,16 +6979,16 @@
           },
           {
             "n": 1,
-            "alimentoId": "pescado-blanco-crudo",
+            "alimentoId": "gambas-peladas-crudo",
             "gramos": 150,
             "min": 75,
             "max": 300,
             "palanca": "hc",
             "porCien": {
-              "kcal": 83,
-              "p": 20.8,
+              "kcal": 56,
+              "p": 12,
               "hc": 0,
-              "g": 0
+              "g": 0.8
             }
           },
           {
@@ -7002,7 +7020,7 @@
             }
           }
         ],
-        "calculadoEn": "2026-10-24T07:06:04.900Z",
+        "calculadoEn": "2026-10-24T07:20:06.750Z",
         "antes": {
           "macros": {
             "carbohydrate": {
@@ -7247,19 +7265,19 @@
       ],
       "macros": {
         "carbohydrate": {
-          "grams": 75,
-          "percentage": 56
+          "grams": 78,
+          "percentage": 55
         },
         "protein": {
-          "grams": 22,
-          "percentage": 16
+          "grams": 16,
+          "percentage": 11
         },
         "fat": {
-          "grams": 16,
-          "percentage": 28
+          "grams": 21,
+          "percentage": 34
         }
       },
-      "kcal": 533,
+      "kcal": 565,
       "weight": 290,
       "categoria": "Platos salados / principales",
       "basica": true,
@@ -7281,16 +7299,16 @@
           },
           {
             "n": 1,
-            "alimentoId": "carne-roja-grasa-crudo",
+            "alimentoId": "salchichas-de-pavo-listo",
             "gramos": 120,
             "min": 60,
             "max": 240,
             "palanca": "proteina",
             "porCien": {
-              "kcal": 143,
-              "p": 17.9,
-              "hc": 0,
-              "g": 7.9
+              "kcal": 170,
+              "p": 13.1,
+              "hc": 2.3,
+              "g": 12
             }
           },
           {
@@ -7308,7 +7326,7 @@
             }
           }
         ],
-        "calculadoEn": "2026-10-24T07:06:04.900Z",
+        "calculadoEn": "2026-10-24T07:20:06.750Z",
         "antes": {
           "macros": {
             "carbohydrate": {
@@ -7390,19 +7408,19 @@
       ],
       "macros": {
         "carbohydrate": {
-          "grams": 75,
+          "grams": 76,
           "percentage": 57
         },
         "protein": {
           "grams": 38,
-          "percentage": 28
+          "percentage": 29
         },
         "fat": {
-          "grams": 9,
-          "percentage": 15
+          "grams": 8,
+          "percentage": 14
         }
       },
-      "kcal": 529,
+      "kcal": 536,
       "weight": 260,
       "categoria": "Platos salados / principales",
       "basica": true,
@@ -7438,20 +7456,20 @@
           },
           {
             "n": 2,
-            "alimentoId": "mantequilla-ligera-listo",
+            "alimentoId": "pesto-listo",
             "gramos": 20,
             "min": 20,
             "max": 20,
             "fijo": true,
             "porCien": {
-              "kcal": 396,
-              "p": 0,
-              "hc": 0,
-              "g": 44
+              "kcal": 431,
+              "p": 4.5,
+              "hc": 6.2,
+              "g": 42
             }
           }
         ],
-        "calculadoEn": "2026-10-24T07:06:04.900Z",
+        "calculadoEn": "2026-10-24T07:20:06.750Z",
         "antes": {
           "macros": {
             "carbohydrate": {
@@ -7533,19 +7551,19 @@
       ],
       "macros": {
         "carbohydrate": {
-          "grams": 75,
-          "percentage": 60
+          "grams": 77,
+          "percentage": 61
         },
         "protein": {
-          "grams": 25,
-          "percentage": 20
+          "grams": 20,
+          "percentage": 16
         },
         "fat": {
-          "grams": 11,
-          "percentage": 20
+          "grams": 13,
+          "percentage": 23
         }
       },
-      "kcal": 499,
+      "kcal": 501,
       "weight": 210,
       "categoria": "Platos salados / principales",
       "basica": true,
@@ -7581,20 +7599,20 @@
           },
           {
             "n": 2,
-            "alimentoId": "mozzarella-light-listo",
+            "alimentoId": "queso-crema-light-listo",
             "gramos": 40,
             "min": 20,
             "max": 80,
             "palanca": "proteina",
             "porCien": {
-              "kcal": 166,
-              "p": 20.8,
-              "hc": 0,
-              "g": 9.2
+              "kcal": 172,
+              "p": 8,
+              "hc": 3.8,
+              "g": 14
             }
           }
         ],
-        "calculadoEn": "2026-10-24T07:06:04.900Z",
+        "calculadoEn": "2026-10-24T07:20:06.750Z",
         "antes": {
           "macros": {
             "carbohydrate": {
@@ -7858,19 +7876,19 @@
       ],
       "macros": {
         "carbohydrate": {
-          "grams": 75,
-          "percentage": 60
+          "grams": 76,
+          "percentage": 61
         },
         "protein": {
-          "grams": 44,
-          "percentage": 35
+          "grams": 40,
+          "percentage": 32
         },
         "fat": {
-          "grams": 3,
-          "percentage": 5
+          "grams": 4,
+          "percentage": 7
         }
       },
-      "kcal": 500,
+      "kcal": 501,
       "weight": 370,
       "categoria": "Platos salados / principales",
       "basica": true,
@@ -7914,20 +7932,20 @@
           },
           {
             "n": 3,
-            "alimentoId": "mozzarella-light-listo",
+            "alimentoId": "queso-crema-light-listo",
             "gramos": 30,
             "min": 15,
             "max": 60,
             "palanca": "proteina",
             "porCien": {
-              "kcal": 166,
-              "p": 20.8,
-              "hc": 0,
-              "g": 9.2
+              "kcal": 172,
+              "p": 8,
+              "hc": 3.8,
+              "g": 14
             }
           }
         ],
-        "calculadoEn": "2026-10-24T07:06:04.900Z",
+        "calculadoEn": "2026-10-24T07:20:06.750Z",
         "antes": {
           "macros": {
             "carbohydrate": {
@@ -8311,19 +8329,19 @@
       ],
       "macros": {
         "carbohydrate": {
-          "grams": 50,
-          "percentage": 49
+          "grams": 51,
+          "percentage": 41
         },
         "protein": {
-          "grams": 41,
-          "percentage": 40
+          "grams": 23,
+          "percentage": 19
         },
         "fat": {
-          "grams": 5,
-          "percentage": 11
+          "grams": 22,
+          "percentage": 40
         }
       },
-      "kcal": 410,
+      "kcal": 498,
       "weight": 490,
       "categoria": "Platos salados / principales",
       "basica": true,
@@ -8345,16 +8363,16 @@
           },
           {
             "n": 1,
-            "alimentoId": "ternera-magra-crudo",
+            "alimentoId": "carne-picada-de-ternera-crudo",
             "gramos": 130,
             "min": 65,
             "max": 260,
             "palanca": "proteina",
             "porCien": {
-              "kcal": 125,
-              "p": 31.3,
-              "hc": 0,
-              "g": 0
+              "kcal": 193,
+              "p": 18,
+              "hc": 1,
+              "g": 13
             }
           },
           {
@@ -8372,7 +8390,7 @@
             }
           }
         ],
-        "calculadoEn": "2026-10-24T07:06:04.900Z",
+        "calculadoEn": "2026-10-24T07:20:06.750Z",
         "antes": {
           "macros": {
             "carbohydrate": {
@@ -8714,19 +8732,19 @@
       ],
       "macros": {
         "carbohydrate": {
-          "grams": 50,
-          "percentage": 46
+          "grams": 51,
+          "percentage": 47
         },
         "protein": {
-          "grams": 47,
-          "percentage": 43
+          "grams": 31,
+          "percentage": 28
         },
         "fat": {
-          "grams": 5,
-          "percentage": 11
+          "grams": 12,
+          "percentage": 25
         }
       },
-      "kcal": 434,
+      "kcal": 447,
       "weight": 455,
       "categoria": "Platos salados / principales",
       "basica": true,
@@ -8748,16 +8766,16 @@
           },
           {
             "n": 1,
-            "alimentoId": "carne-roja-magra-crudo",
+            "alimentoId": "lomo-de-cerdo-crudo",
             "gramos": 150,
             "min": 75,
             "max": 300,
             "palanca": "proteina",
             "porCien": {
-              "kcal": 125,
-              "p": 31.3,
-              "hc": 0,
-              "g": 0
+              "kcal": 134,
+              "p": 20.4,
+              "hc": 0.8,
+              "g": 4.5
             }
           },
           {
@@ -8775,7 +8793,7 @@
             }
           }
         ],
-        "calculadoEn": "2026-10-24T07:06:04.900Z",
+        "calculadoEn": "2026-10-24T07:20:06.750Z",
         "antes": {
           "macros": {
             "carbohydrate": {
@@ -8850,18 +8868,18 @@
       "macros": {
         "carbohydrate": {
           "grams": 50,
-          "percentage": 44
+          "percentage": 45
         },
         "protein": {
-          "grams": 27,
-          "percentage": 23
+          "grams": 30,
+          "percentage": 27
         },
         "fat": {
-          "grams": 17,
-          "percentage": 33
+          "grams": 13,
+          "percentage": 28
         }
       },
-      "kcal": 461,
+      "kcal": 441,
       "weight": 455,
       "categoria": "Platos salados / principales",
       "basica": true,
@@ -8883,16 +8901,16 @@
           },
           {
             "n": 1,
-            "alimentoId": "carne-roja-grasa-crudo",
+            "alimentoId": "contramuslo-de-pollo-crudo",
             "gramos": 150,
             "min": 75,
             "max": 300,
             "palanca": "proteina",
             "porCien": {
-              "kcal": 143,
-              "p": 17.9,
+              "kcal": 130,
+              "p": 20,
               "hc": 0,
-              "g": 7.9
+              "g": 5.6
             }
           },
           {
@@ -8910,7 +8928,7 @@
             }
           }
         ],
-        "calculadoEn": "2026-10-24T07:06:04.900Z",
+        "calculadoEn": "2026-10-24T07:20:06.750Z",
         "antes": {
           "macros": {
             "carbohydrate": {
@@ -9004,19 +9022,19 @@
       ],
       "macros": {
         "carbohydrate": {
-          "grams": 77,
-          "percentage": 59
+          "grams": 83,
+          "percentage": 63
         },
         "protein": {
-          "grams": 22,
-          "percentage": 16
+          "grams": 19,
+          "percentage": 15
         },
         "fat": {
-          "grams": 15,
-          "percentage": 25
+          "grams": 13,
+          "percentage": 22
         }
       },
-      "kcal": 526,
+      "kcal": 533,
       "weight": 410,
       "categoria": "Platos salados / principales",
       "basica": true,
@@ -9038,16 +9056,16 @@
           },
           {
             "n": 1,
-            "alimentoId": "carne-roja-grasa-crudo",
+            "alimentoId": "hamburguesa-de-pollo-crudo",
             "gramos": 120,
             "min": 60,
             "max": 240,
             "palanca": "proteina",
             "porCien": {
-              "kcal": 143,
-              "p": 17.9,
-              "hc": 0,
-              "g": 7.9
+              "kcal": 137,
+              "p": 16,
+              "hc": 1.8,
+              "g": 7
             }
           },
           {
@@ -9080,14 +9098,20 @@
           },
           {
             "n": 4,
-            "alimentoId": null,
+            "alimentoId": "ketchup-listo",
             "gramos": 15,
             "min": 15,
             "max": 15,
-            "fijo": true
+            "fijo": true,
+            "porCien": {
+              "kcal": 100,
+              "p": 1.3,
+              "hc": 22,
+              "g": 0.1
+            }
           }
         ],
-        "calculadoEn": "2026-10-24T07:06:04.900Z",
+        "calculadoEn": "2026-10-24T07:20:06.750Z",
         "antes": {
           "macros": {
             "carbohydrate": {
@@ -9600,18 +9624,18 @@
       "macros": {
         "carbohydrate": {
           "grams": 25,
-          "percentage": 27
+          "percentage": 31
         },
         "protein": {
-          "grams": 56,
-          "percentage": 61
+          "grams": 43,
+          "percentage": 52
         },
         "fat": {
-          "grams": 5,
-          "percentage": 12
+          "grams": 6,
+          "percentage": 17
         }
       },
-      "kcal": 370,
+      "kcal": 329,
       "weight": 455,
       "categoria": "Platos salados / principales",
       "basica": true,
@@ -9633,16 +9657,16 @@
           },
           {
             "n": 1,
-            "alimentoId": "pescado-blanco-crudo",
+            "alimentoId": "gambas-peladas-crudo",
             "gramos": 150,
             "min": 75,
             "max": 300,
             "palanca": "hc",
             "porCien": {
-              "kcal": 83,
-              "p": 20.8,
+              "kcal": 56,
+              "p": 12,
               "hc": 0,
-              "g": 0
+              "g": 0.8
             }
           },
           {
@@ -9668,7 +9692,7 @@
             }
           }
         ],
-        "calculadoEn": "2026-10-24T07:06:04.900Z",
+        "calculadoEn": "2026-10-24T07:20:06.750Z",
         "antes": {
           "macros": {
             "carbohydrate": {
@@ -9755,18 +9779,18 @@
       "macros": {
         "carbohydrate": {
           "grams": 75,
-          "percentage": 66
+          "percentage": 63
         },
         "protein": {
-          "grams": 34,
+          "grams": 36,
           "percentage": 30
         },
         "fat": {
-          "grams": 2,
-          "percentage": 4
+          "grams": 4,
+          "percentage": 7
         }
       },
-      "kcal": 453,
+      "kcal": 477,
       "weight": 310,
       "categoria": "Platos salados / principales",
       "basica": true,
@@ -9802,16 +9826,16 @@
           },
           {
             "n": 2,
-            "alimentoId": "mozzarella-light-listo",
+            "alimentoId": "queso-en-lonchas-light-listo",
             "gramos": 20,
             "min": 10,
             "max": 40,
             "palanca": "proteina",
             "porCien": {
-              "kcal": 166,
-              "p": 20.8,
-              "hc": 0,
-              "g": 9.2
+              "kcal": 287,
+              "p": 28,
+              "hc": 1.4,
+              "g": 19
             }
           },
           {
@@ -9823,7 +9847,7 @@
             "fijo": true
           }
         ],
-        "calculadoEn": "2026-10-24T07:06:04.900Z",
+        "calculadoEn": "2026-10-24T07:20:06.750Z",
         "antes": {
           "macros": {
             "carbohydrate": {
@@ -10066,18 +10090,18 @@
       "macros": {
         "carbohydrate": {
           "grams": 38,
-          "percentage": 45
+          "percentage": 42
         },
         "protein": {
-          "grams": 29,
-          "percentage": 35
+          "grams": 28,
+          "percentage": 31
         },
         "fat": {
-          "grams": 7,
-          "percentage": 20
+          "grams": 11,
+          "percentage": 27
         }
       },
-      "kcal": 333,
+      "kcal": 360,
       "weight": 190,
       "categoria": "Platos salados / principales",
       "basica": true,
@@ -10099,30 +10123,30 @@
           },
           {
             "n": 1,
-            "alimentoId": "pechuga-de-pavo-crudo",
+            "alimentoId": "jamon-cocido-extra-listo",
             "gramos": 50,
-            "min": 50,
-            "max": 50,
-            "fijo": true,
+            "min": 25,
+            "max": 100,
+            "palanca": "proteina",
             "porCien": {
-              "kcal": 100,
-              "p": 25,
-              "hc": 0,
-              "g": 0
+              "kcal": 106,
+              "p": 19,
+              "hc": 1,
+              "g": 3
             }
           },
           {
             "n": 2,
-            "alimentoId": "mozzarella-light-listo",
+            "alimentoId": "queso-en-lonchas-light-listo",
             "gramos": 20,
             "min": 10,
             "max": 40,
             "palanca": "proteina",
             "porCien": {
-              "kcal": 166,
-              "p": 20.8,
-              "hc": 0,
-              "g": 9.2
+              "kcal": 287,
+              "p": 28,
+              "hc": 1.4,
+              "g": 19
             }
           },
           {
@@ -10140,7 +10164,7 @@
             }
           }
         ],
-        "calculadoEn": "2026-10-24T07:06:04.900Z",
+        "calculadoEn": "2026-10-24T07:20:06.750Z",
         "antes": {
           "macros": {
             "carbohydrate": {
@@ -10233,19 +10257,19 @@
       ],
       "macros": {
         "carbohydrate": {
-          "grams": 60,
-          "percentage": 52
+          "grams": 61,
+          "percentage": 45
         },
         "protein": {
-          "grams": 48,
-          "percentage": 41
+          "grams": 32,
+          "percentage": 23
         },
         "fat": {
-          "grams": 3,
-          "percentage": 7
+          "grams": 19,
+          "percentage": 32
         }
       },
-      "kcal": 461,
+      "kcal": 542,
       "weight": 320,
       "categoria": "Platos salados / principales",
       "basica": true,
@@ -10267,16 +10291,16 @@
           },
           {
             "n": 1,
-            "alimentoId": "ternera-magra-crudo",
+            "alimentoId": "carne-picada-de-ternera-crudo",
             "gramos": 120,
             "min": 60,
             "max": 240,
             "palanca": "proteina",
             "porCien": {
-              "kcal": 125,
-              "p": 31.3,
-              "hc": 0,
-              "g": 0
+              "kcal": 193,
+              "p": 18,
+              "hc": 1,
+              "g": 13
             }
           },
           {
@@ -10308,7 +10332,7 @@
             }
           }
         ],
-        "calculadoEn": "2026-10-24T07:06:04.900Z",
+        "calculadoEn": "2026-10-24T07:20:06.750Z",
         "antes": {
           "macros": {
             "carbohydrate": {
@@ -10547,19 +10571,19 @@
       ],
       "macros": {
         "carbohydrate": {
-          "grams": 69,
-          "percentage": 62
+          "grams": 75,
+          "percentage": 61
         },
         "protein": {
-          "grams": 22,
-          "percentage": 19
+          "grams": 16,
+          "percentage": 13
         },
         "fat": {
-          "grams": 10,
-          "percentage": 19
+          "grams": 14,
+          "percentage": 26
         }
       },
-      "kcal": 447,
+      "kcal": 494,
       "weight": 245,
       "categoria": "Platos salados / principales",
       "basica": true,
@@ -10581,28 +10605,34 @@
           },
           {
             "n": 1,
-            "alimentoId": "carne-roja-grasa-crudo",
+            "alimentoId": "salchichas-de-pavo-listo",
             "gramos": 120,
             "min": 60,
             "max": 240,
             "palanca": "proteina",
             "porCien": {
-              "kcal": 143,
-              "p": 17.9,
-              "hc": 0,
-              "g": 7.9
+              "kcal": 170,
+              "p": 13.1,
+              "hc": 2.3,
+              "g": 12
             }
           },
           {
             "n": 2,
-            "alimentoId": null,
+            "alimentoId": "ketchup-listo",
             "gramos": 15,
             "min": 15,
             "max": 15,
-            "fijo": true
+            "fijo": true,
+            "porCien": {
+              "kcal": 100,
+              "p": 1.3,
+              "hc": 22,
+              "g": 0.1
+            }
           }
         ],
-        "calculadoEn": "2026-10-24T07:06:04.900Z",
+        "calculadoEn": "2026-10-24T07:20:06.750Z",
         "antes": {
           "macros": {
             "carbohydrate": {
@@ -10979,19 +11009,19 @@
       ],
       "macros": {
         "carbohydrate": {
-          "grams": 50,
-          "percentage": 70
+          "grams": 51,
+          "percentage": 73
         },
         "protein": {
-          "grams": 22,
-          "percentage": 30
+          "grams": 18,
+          "percentage": 25
         },
         "fat": {
-          "grams": 0,
-          "percentage": 0
+          "grams": 1,
+          "percentage": 2
         }
       },
-      "kcal": 288,
+      "kcal": 281,
       "weight": 200,
       "categoria": "Desayuno y dulces",
       "basica": true,
@@ -11027,20 +11057,20 @@
           },
           {
             "n": 2,
-            "alimentoId": "pechuga-de-pavo-crudo",
+            "alimentoId": "fiambre-de-pechuga-de-pavo-listo",
             "gramos": 60,
             "min": 30,
             "max": 120,
             "palanca": "proteina",
             "porCien": {
-              "kcal": 100,
-              "p": 25,
-              "hc": 0,
-              "g": 0
+              "kcal": 89,
+              "p": 18,
+              "hc": 1.1,
+              "g": 1
             }
           }
         ],
-        "calculadoEn": "2026-10-24T07:06:04.900Z",
+        "calculadoEn": "2026-10-24T07:20:06.750Z",
         "antes": {
           "macros": {
             "carbohydrate": {
@@ -11749,19 +11779,19 @@
       ],
       "macros": {
         "carbohydrate": {
-          "grams": 30,
-          "percentage": 58
+          "grams": 31,
+          "percentage": 62
         },
         "protein": {
-          "grams": 22,
-          "percentage": 42
+          "grams": 18,
+          "percentage": 35
         },
         "fat": {
-          "grams": 0,
-          "percentage": 0
+          "grams": 1,
+          "percentage": 3
         }
       },
-      "kcal": 208,
+      "kcal": 201,
       "weight": 150,
       "categoria": "Desayuno y dulces",
       "basica": true,
@@ -11783,16 +11813,16 @@
           },
           {
             "n": 1,
-            "alimentoId": "pechuga-de-pavo-crudo",
+            "alimentoId": "fiambre-de-pechuga-de-pavo-listo",
             "gramos": 60,
             "min": 30,
             "max": 120,
             "palanca": "proteina",
             "porCien": {
-              "kcal": 100,
-              "p": 25,
-              "hc": 0,
-              "g": 0
+              "kcal": 89,
+              "p": 18,
+              "hc": 1.1,
+              "g": 1
             }
           },
           {
@@ -11810,7 +11840,7 @@
             }
           }
         ],
-        "calculadoEn": "2026-10-24T07:06:04.900Z",
+        "calculadoEn": "2026-10-24T07:20:06.750Z",
         "antes": {
           "macros": {
             "carbohydrate": {
