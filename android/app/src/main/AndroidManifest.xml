@@ -93,6 +93,11 @@
         <package android:name="com.google.android.apps.healthdata" />
     </queries>
 
+    <!-- Escáner de código de barras (Diario). La cámara no es obligatoria: la app
+         se instala igual en dispositivos sin ella y ofrece escribir el código. -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+
     <uses-permission android:name="android.permission.health.READ_STEPS" />
 
     <!-- capacitor-health declara en su propio manifiesto los permisos de TODOS

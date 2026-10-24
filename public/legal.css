@@ -185,7 +185,7 @@ footer a { margin-right: 1rem; }
    src/index.css (:root). */
 @media (prefers-color-scheme: light) {
   :root {
-    --bg: #F4F2ED;
+    --bg: #F8F6F2;
     --surface: #FFFFFF;
     --ink: #1B1916;
     --ink-2: rgba(27, 25, 22, 0.77);

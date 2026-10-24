@@ -9,6 +9,11 @@ export interface SetInput {
   repsDone: string;
   rir: string;
   done: boolean;
+  /** Bajada (dropset) o miniserie (myoreps) que se suma DESPUÉS de la última
+   *  serie principal. No es una serie más: no cuenta para el volumen. */
+  segmento?: boolean;
+  /** Serie principal (1 = la primera) a la que pertenece el segmento. */
+  segmentoDe?: number;
 }
 
 /** Orden de ciclo del selector compacto de la tabla: el valor más bajo (serie
@@ -36,8 +41,12 @@ export function rirClaseColor(valor: string): string {
  * añadida a mano por el atleta durante la sesión — mismo shape que cualquier
  * otra serie, sin campo nuevo en el modelo de datos (Contexto del plan:
  * "Dropset/myoreps: solo visual, dato simple"). */
-export function nuevaSerieVacia(): SetInput {
-  return { weight: '', repsDone: '', rir: '0', done: false };
+export function nuevaSerieVacia(segmento = false, segmentoDe?: number): SetInput {
+  return {
+    weight: '', repsDone: '', rir: '0', done: false,
+    ...(segmento ? { segmento: true } : {}),
+    ...(segmento && segmentoDe ? { segmentoDe } : {}),
+  };
 }
 
 /**

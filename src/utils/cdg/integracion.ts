@@ -12,7 +12,7 @@ import type { MotorCdg } from './motor.js'
 import { cargaProgramada, semanaRealizadaDesdeLogs, type NombreCdgDe } from './adaptadores.js'
 import {
   avisosCarga, cargaAgudaCronica, calcularSemana, filasGestion, rendimientoCiclo, rendimientoSemana,
-  SEMANAS_CARGA_CRONICA, incrementosAntropometria,
+  SEMANAS_CARGA_CRONICA, SEMANAS_CARGA_MINIMAS, colapsarSemana, colapsarCarga, incrementosAntropometria,
   type CalculoSemana, type FilaGestion, type FilaRendimiento, type SemanaRealizada
 } from './seguimiento.js'
 
@@ -91,17 +91,26 @@ export type CargaAgudaCronicaDelMeso =
   | { disponible: false; motivo: string; semanaReferencia?: number }
   | {
       disponible: true
-      /** La semana PROGRAMADA que se compara con las 6 últimas realizadas. */
+      /** La semana PROGRAMADA que se compara con las últimas realizadas. */
       semanaReferencia: number
+      /** Semanas de ESTE bloque usadas para la crónica. */
       semanasUsadas: number[]
+      /** Semanas de bloques anteriores usadas (E-10): entonces solo cuentan los totales. */
+      semanasDeOtrosBloques: number
+      /** Menos de 6 semanas: se calcula, pero es poco fiable. */
+      fiable: boolean
       ac: NonNullable<ReturnType<typeof cargaAgudaCronica>>
       avisos: ReturnType<typeof avisosCarga>
     }
 
 /**
  * Aguda = lo programado para la semana siguiente a la última realizada.
- * Crónica = media de las 6 últimas semanas realizadas (dentro de este bloque).
- * Con menos de 6 no hay cálculo, y dice cuántas hay.
+ * Crónica = media simple de las 6 últimas semanas realizadas (E-10):
+ *  - con 6 del propio bloque, como siempre (sesión a sesión y total);
+ *  - si no llegan, se completan con las más recientes de bloques anteriores
+ *    (`semanasAnteriores`, la más reciente primero) y solo se comparan los
+ *    TOTALES de la semana: las sesiones de otro bloque no se corresponden;
+ *  - con 3 a 5 semanas se calcula avisando de que es poco fiable; con menos, no.
  */
 export function cargaAgudaCronicaDelMeso (args: {
   motor: MotorCdg
@@ -111,22 +120,64 @@ export function cargaAgudaCronicaDelMeso (args: {
   vueltas: number
   nombreCdgDe: NombreCdgDe
   umbrales?: Partial<UmbralesCarga>
+  /** Semanas realizadas de bloques anteriores, la más reciente primero (`semanasAnterioresAlBloque`). */
+  semanasAnteriores?: CalculoSemana[]
 }): CargaAgudaCronicaDelMeso {
   const { motor, semanas, grupos, meso, vueltas, nombreCdgDe } = args
   if (semanas.length === 0) return { disponible: false, motivo: 'Todavía no hay sesiones registradas en este bloque.' }
   const ref = semanas[semanas.length - 1].semana + 1
   if (ref > vueltas) return { disponible: false, motivo: 'La última semana del bloque ya está realizada: no hay semana siguiente que comparar.' }
   const previas = semanas.filter(s => s.semana < ref).slice(-SEMANAS_CARGA_CRONICA).reverse()
-  if (previas.length < SEMANAS_CARGA_CRONICA) {
+  const deOtros = previas.length < SEMANAS_CARGA_CRONICA
+    ? (args.semanasAnteriores ?? []).slice(0, SEMANAS_CARGA_CRONICA - previas.length)
+    : []
+  const total = previas.length + deOtros.length
+  if (total < SEMANAS_CARGA_MINIMAS) {
     return {
       disponible: false, semanaReferencia: ref,
-      motivo: `Hacen falta ${SEMANAS_CARGA_CRONICA} semanas realizadas para la carga crónica y hay ${previas.length}.`
+      motivo: `Hacen falta al menos ${SEMANAS_CARGA_MINIMAS} semanas realizadas para la carga crónica y hay ${total}.`
     }
   }
-  const aguda = cargaProgramada(motor, sesionesProgramadasDeLaSemana(grupos, meso, ref), nombreCdgDe)
-  const ac = cargaAgudaCronica(aguda, previas.map(s => s.calculo))!
+  const cruza = deOtros.length > 0
+  const agudaSesiones = cargaProgramada(motor, sesionesProgramadasDeLaSemana(grupos, meso, ref), nombreCdgDe)
+  const aguda = cruza ? colapsarCarga(agudaSesiones) : agudaSesiones
+  const cronicas = [...previas.map(s => s.calculo), ...deOtros].map(c => (cruza ? colapsarSemana(c) : c))
+  const ac = cargaAgudaCronica(aguda, cronicas, SEMANAS_CARGA_MINIMAS)!
   const u = { ...UMBRALES_CARGA_POR_DEFECTO, ...args.umbrales }
-  return { disponible: true, semanaReferencia: ref, semanasUsadas: previas.map(s => s.semana), ac, avisos: avisosCarga(ac, motor, u) }
+  const avisos = avisosCarga(ac, motor, u)
+  // Cruzando bloques, la «sesión 1» colapsada es la semana entera: solo vale el total.
+  const soloTotal = <T extends { sesion: string }>(xs: T[]) => (cruza ? xs.filter(x => x.sesion === 'Total de sesiones') : xs)
+  return {
+    disponible: true, semanaReferencia: ref, semanasUsadas: previas.map(s => s.semana),
+    semanasDeOtrosBloques: deOtros.length, fiable: total >= SEMANAS_CARGA_CRONICA, ac,
+    avisos: { sesionesIF: soloTotal(avisos.sesionesIF), musculos: soloTotal(avisos.musculos), articulaciones: soloTotal(avisos.articulaciones) },
+  }
+}
+
+/**
+ * Semanas realizadas ANTES de un bloque (de bloques anteriores), en tramos de
+ * 7 días hacia atrás desde su inicio, la más reciente primero. Las semanas sin
+ * entrenos no cuentan (como en la hoja: solo semanas realizadas). Todo va a la
+ * sesión 1: entre bloques solo se comparan totales.
+ */
+export function semanasAnterioresAlBloque (e: {
+  logs: WorkoutLog[]; inicio: string; motor: MotorCdg; nombreCdgDe: NombreCdgDe; maxSemanas?: number; buscarHasta?: number
+}): CalculoSemana[] {
+  const max = e.maxSemanas ?? SEMANAS_CARGA_CRONICA
+  const tramos = e.buscarHasta ?? 12
+  const inicio = Date.parse(`${e.inicio.slice(0, 10)}T00:00:00Z`)
+  const out: CalculoSemana[] = []
+  for (let k = 1; k <= tramos && out.length < max; k++) {
+    const desde = inicio - k * 7 * 86_400_000
+    const hasta = desde + 7 * 86_400_000
+    const deLaSemana = e.logs.filter(l => {
+      const t = Date.parse(`${l.date.slice(0, 10)}T00:00:00Z`)
+      return t >= desde && t < hasta
+    })
+    if (deLaSemana.length === 0) continue
+    out.push(calcularSemana(e.motor, semanaRealizadaDesdeLogs(deLaSemana, e.nombreCdgDe, () => 0)))
+  }
+  return out
 }
 
 /** Mejora del ciclo por ejercicio y por categoría (Empuje, Tracción, Brazo, Pierna, Cadera). */

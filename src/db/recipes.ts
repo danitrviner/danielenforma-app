@@ -1,9 +1,12 @@
 import { db, collection, doc, getDoc, setDoc, getDocs, addDoc, updateDoc, deleteDoc, query, where } from '../firebase';
 import { Recipe, RecipeFavorites } from '../types';
 import type { ReglasDeReceta } from '../utils/reglasDeReceta';
+import { filtrarPorLista, type AccesoGlobalARecetas, type ListaDeMenu } from '../utils/accesoARecetas';
 import { forceLocalOnly, setLocalBypassMode, stripUndefined, esFalloDePermisos } from './core';
 import { OWNER_RECETARIO, OWNER_RECETARIO_TODOS, hidratarEntradaIndice, encajaCategoria, type FiltroRapidas } from './recetasHidratacion';
 import { escribirLocal } from '../utils/almacenLocal';
+import { registrarCambio } from './cambios';
+import { resumirReglasDeReceta } from '../utils/cambiosAtleta';
 
 export { OWNER_RECETARIO, OWNER_RECETARIO_TODOS };
 export { CAT_BASICAS, encajaCategoria, FILTROS_RAPIDAS } from './recetasHidratacion';
@@ -269,12 +272,49 @@ export async function getReglasDeReceta(athleteEmail: string): Promise<ReglasDeR
    recomendadas (y al revés), porque `setDoc` reemplaza el documento entero.
    Los arrays que sí se mandan se sustituyen enteros, que es lo que se quiere. */
 export async function saveReglasDeReceta(
-  reglas: Pick<ReglasDeReceta, 'athleteId'> & Partial<Pick<ReglasDeReceta, 'reglas' | 'recomendadas'>>,
+  reglas: Pick<ReglasDeReceta, 'athleteId'> & Partial<Pick<ReglasDeReceta, 'reglas' | 'recomendadas' | 'listaMenu' | 'recetario' | 'seleccion'>>,
+  /** Para que el historial diga «Pollo al curry» y no «receta»; opcional. */
+  nombreDe?: (id: string) => string | undefined,
 ): Promise<void> {
   if (forceLocalOnly) return;
+  // El estado de ANTES, para el historial (N-09): una lectura de un solo documento
+  // del atleta, solo cuando el coach guarda. Si falla, se guarda igual sin historial.
+  let antes: ReglasDeReceta | undefined;
+  try {
+    const snap = await getDoc(doc(db, 'athleteRecipeRules', reglas.athleteId));
+    antes = snap.exists() ? ({ reglas: [], ...(snap.data() as Partial<ReglasDeReceta>), athleteId: reglas.athleteId }) : undefined;
+  } catch { /* sin «antes» no hay frase, pero el guardado no se frena */ }
+  // `mergeFields` y no `merge`: con `merge` los mapas se mezclan campo a campo,
+  // así que quitar el filtro de una dieta de `seleccion` no lo borraba nunca.
+  // Así cada campo que se manda se sustituye entero y el resto no se toca.
+  const datos = stripUndefined({ ...reglas, updatedAt: new Date().toISOString() });
+  await setDoc(doc(db, 'athleteRecipeRules', reglas.athleteId), datos, { mergeFields: Object.keys(datos) });
+  const despues: ReglasDeReceta = { reglas: [], ...antes, ...stripUndefined(reglas) };
+  void registrarCambio<ReglasDeReceta>({
+    athleteId: reglas.athleteId, area: 'nutricion', objeto: 'recetas', titulo: 'Recetas del atleta',
+    antes, despues, resumir: (a, d) => resumirReglasDeReceta(a, d, nombreDe),
+  });
+}
+
+/* Lista global de recetas «para el menú» (N-03): `recipeAccess/global`. La lee
+   cualquier usuario con sesión y solo la escribe el coach. Sin copia local, por
+   lo mismo que las reglas. Si falla la lectura se trabaja con todas las recetas. */
+export async function getAccesoGlobalARecetas(): Promise<AccesoGlobalARecetas> {
+  if (forceLocalOnly) return {};
+  try {
+    const snap = await getDoc(doc(db, 'recipeAccess', 'global'));
+    return snap.exists() ? (snap.data() as AccesoGlobalARecetas) : {};
+  } catch (err) {
+    console.warn('getAccesoGlobalARecetas failed:', err);
+    return {};
+  }
+}
+
+export async function saveAccesoGlobalARecetas(acceso: AccesoGlobalARecetas): Promise<void> {
+  if (forceLocalOnly) return;
   await setDoc(
-    doc(db, 'athleteRecipeRules', reglas.athleteId),
-    stripUndefined({ ...reglas, updatedAt: new Date().toISOString() }),
+    doc(db, 'recipeAccess', 'global'),
+    stripUndefined({ ...acceso, updatedAt: new Date().toISOString() }),
     { merge: true },
   );
 }
@@ -344,7 +384,12 @@ function shuffle<T>(arr: T[]): T[] {
 // devolverla. Guardar la lista ya recortada ataba el tamaño al de la primera
 // llamada de la sesión: si el generador (300) se adelantaba al buscador de
 // alternativas (todas), el buscador recibía las mismas 300 sin enterarse.
-export async function queryRecetasForGenerator(intakeType: number, maxResults = 300): Promise<Recipe[]> {
+export async function queryRecetasForGenerator(
+  intakeType: number, maxResults = 300, lista?: ListaDeMenu,
+  /** Recetas que quiere alguna dieta del atleta (`quiereAlgunaDieta`): se suman
+   *  a la muestra, hasta `maxResults` más, para que sus filtros tengan dónde elegir. */
+  tambien?: (r: Recipe) => boolean,
+): Promise<Recipe[]> {
   let franja = recetasGeneratorCache.get(intakeType);
   if (!franja) {
     const indice = await cargarIndiceRecetas();
@@ -354,6 +399,13 @@ export async function queryRecetasForGenerator(intakeType: number, maxResults = 
     franja = shuffle(indice.filter(r => (r.intakeTypes ?? []).includes(intakeType)));
     recetasGeneratorCache.set(intakeType, franja);
   }
-  return maxResults >= franja.length ? franja : franja.slice(0, maxResults);
+  // La lista del coach se aplica ANTES de recortar: si no, las 300 elegidas al
+  // azar podían no incluir ninguna de las suyas y la lista no tenía efecto.
+  const delaLista = filtrarPorLista(franja, lista);
+  const muestra = maxResults >= delaLista.length ? delaLista : delaLista.slice(0, maxResults);
+  if (!tambien) return muestra;
+  const ya = new Set(muestra.map(r => r.id));
+  const extra = franja.filter(r => !ya.has(r.id) && tambien(r));
+  return [...muestra, ...(maxResults >= extra.length ? extra : extra.slice(0, maxResults))];
 }
 

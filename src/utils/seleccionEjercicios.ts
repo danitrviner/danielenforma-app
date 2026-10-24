@@ -93,9 +93,27 @@ const normalizar = normalizarTexto;
 function cubreElMaterial(ex: Exercise, material: string[]): boolean {
   const eq = ex.equipment ?? [];
   if (eq.length === 0 || material.length === 0) return true;
-  const suyo = material.map(normalizar);
+  const suyo = material.map(m => SINONIMOS_DE_MATERIAL[normalizar(m).trim()] ?? normalizar(m).trim());
+  if (suyo.includes(GIMNASIO_COMPLETO)) return true;
   return eq.some(e => suyo.includes(normalizar(e)));
 }
+
+// El alta guardaba el material en palabras libres («Gimnasio completo»,
+// «Barra y discos»), no en las del catálogo (E-03). Sin esta traducción, un
+// atleta con «Gimnasio completo» vería todo el catálogo como incompatible.
+const GIMNASIO_COMPLETO = 'gimnasio completo';
+const SINONIMOS_DE_MATERIAL: Record<string, string> = {
+  'gimnasio': GIMNASIO_COMPLETO,
+  'gym': GIMNASIO_COMPLETO,
+  'barra y discos': 'barra',
+  'mancuerna': 'mancuernas',
+  'maquinas': 'maquina',
+  'poleas': 'polea',
+  'kettlebells': 'kettlebell',
+  'goma': 'gomas',
+  'bandas elasticas': 'gomas',
+  'cintas elasticas': 'gomas',
+};
 
 /**
  * ¿Lo veta una lesión o una preferencia?

@@ -73,7 +73,7 @@
 	     Apple rechaza los textos genéricos: cada uno dice qué se abre, cuándo y
 	     para qué se usa lo que se captura. -->
 	<key>NSCameraUsageDescription</key>
-	<string>En Forma abre la cámara solo cuando pulsas «Hacer foto», para que puedas enviar a tu entrenador tu foto de progreso, la foto de una máquina de tu gimnasio o el vídeo de un ejercicio que te haya pedido.</string>
+	<string>En Forma abre la cámara solo cuando pulsas «Hacer foto» o «Escanear», para que puedas enviar a tu entrenador tu foto de progreso, la foto de una máquina de tu gimnasio o el vídeo de un ejercicio que te haya pedido, y para leer el código de barras de un producto y apuntarlo en tu diario. Al escanear no se guarda ninguna imagen.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>En Forma accede a tus fotos solo cuando eliges una de la galería, para enviar a tu entrenador tu foto de progreso, una máquina de tu gimnasio o la respuesta a un cuestionario.</string>
 	<key>NSMicrophoneUsageDescription</key>

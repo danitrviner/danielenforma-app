@@ -32,6 +32,15 @@ export type TipoMovimiento = 'alta' | 'renovacion' | 'upsell' | 'descuento' | 'd
 /** Qué clase de venta es un contrato. Un cliente empieza con un `alta`. */
 export type TipoServicio = 'alta' | 'renovacion' | 'upsell';
 
+/**
+ * Qué servicio es, del catálogo cerrado de Dani (R-01): trimestral, semestral,
+ * anual u «otro». NO es `TipoServicio` (la clase de VENTA: alta, renovación,
+ * upsell) ni `Periodicidad` (la duración, que solo sugiere el fin): es lo que
+ * permite agrupar los ingresos sin que «Asesoría 3 meses» y «asesoria
+ * trimestral» salgan como dos servicios distintos.
+ */
+export type TipoDeServicio = 'trimestral' | 'semestral' | 'anual' | 'otro';
+
 export type MetodoPago = 'transferencia' | 'tarjeta' | 'bizum' | 'efectivo' | 'stripe' | 'otro';
 
 /**
@@ -142,6 +151,13 @@ export interface CrmServicio {
    * pide siempre. Trátalo como obligatorio en código nuevo.
    */
   tipo?: TipoServicio;
+  /**
+   * Qué servicio es (catálogo cerrado, ver `TipoDeServicio`). Opcional solo por
+   * los servicios escritos antes de R-01: `scripts/normalizarServiciosCrm.mjs`
+   * lo rellena tras revisar Dani un CSV. Sin él, un servicio cuenta como «Sin
+   * clasificar» en los ingresos, nunca se esconde.
+   */
+  tipoServicio?: TipoDeServicio;
   /**
    * OJO: `periodicidad` NO genera nada. Quien crea los movimientos es el número
    * de cuotas que se pide al dar de alta el servicio (pago único = 1 cuota,

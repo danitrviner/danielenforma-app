@@ -92,6 +92,7 @@ import { computeDietPlaced, parseBaseGrams } from '../utils/exchangeHelpers';
 import { exchangeToKcal } from '../utils/nutritionConstants';
 import { buildPhaseEnergyPlans } from '../utils/nutritionPeriodization';
 import { computeActivePhase } from '../utils/fasesNutricion';
+import { dietaDeReferencia } from '../utils/objetivoDelDia';
 import { addDays, hoyIsoLocal, isoLocal } from '../utils/trainingWeek';
 import { weekKey } from '../utils/seriesCorrelation';
 import { resolveQuestions } from '../utils/questionnaireResolve';
@@ -3418,8 +3419,7 @@ async function getNutritionAnalysis(email: string): Promise<string> {
     getNutritionProgram(email).catch(() => null),
   ]);
   const coachDiets = diets.filter(d => !d.selfManaged);
-  const activeId = dietConfig?.activeDietIds?.[0] ?? null;
-  const activeDiet = activeId ? coachDiets.find(d => d.id === activeId) ?? null : (coachDiets[0] ?? null);
+  const activeDiet = dietaDeReferencia(diets, dietConfig, programa, hoyIsoLocal());
   // La fase que rige hoy: sin ella, los macros se comparaban contra el alta
   // —calculada para mantener— y cualquier atleta en déficit salía con una
   // alerta falsa que el modelo leía como un problema del plan.

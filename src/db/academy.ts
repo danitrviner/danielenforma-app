@@ -80,6 +80,14 @@ export async function deleteCourse(id: string): Promise<void> {
   }
 }
 
+/** Borra un curso Y sus lecciones (antes quedaban sueltas en `academyLessons`). Devuelve cuántas lecciones borró. */
+export async function deleteCourseWithLessons(id: string): Promise<number> {
+  const lecciones = (await getAllLessons()).filter(l => l.courseId === id);
+  for (const l of lecciones) await deleteLesson(l.id);
+  await deleteCourse(id);
+  return lecciones.length;
+}
+
 // ─── LESSONS ────────────────────────────────────────────────────────────────
 
 const LESSONS_LOCAL_KEY = 'enforma_academy_lessons_v1';

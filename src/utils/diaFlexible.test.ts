@@ -110,7 +110,7 @@ describe('filasEnOrdenCronologico', () => {
       item({ foodLabel: 'Comida', hora: '13:30' }),
     ];
     const filas = filasEnOrdenCronologico(items);
-    const nombres = filas.map(f => (f.tipo === 'alimento' ? f.item.foodLabel : f.nombre));
+    const nombres = filas.map(f => (f.tipo === 'receta' ? f.nombre : f.item.foodLabel));
     expect(nombres).toEqual(['Desayuno', 'Comida', 'Cena', 'Sin hora 1', 'Sin hora 2']);
   });
 

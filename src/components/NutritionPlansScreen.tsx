@@ -57,12 +57,8 @@ function blankBudget(): Record<FoodCategory, number> {
   return { HC: 0, PROT: 0, GRASA: 0, MIX_HC: 0, MIX_GRASA: 0 };
 }
 
-// Grams of pure macronutrient per 1 intercambio (exchange).
-// System rule: 1 intercambio = 100 kcal.
-// HC:    100 kcal / 4 kcal·g⁻¹ = 25 g
-// PROT:  100 kcal / 4 kcal·g⁻¹ = 25 g
-// GRASA: 100 kcal / 9 kcal·g⁻¹ ≈ 11 g
-const G_PER_EXCH = { HC: 25, PROT: 25, GRASA: 11 } as const;
+// Gramos por intercambio: una sola fuente, utils/nutritionConstants.ts (1 intercambio ≈ 100 kcal).
+const G_PER_EXCH = GRAMS_PER_EXCHANGE;
 
 const roundHalf = (n: number) => Math.round(n * 2) / 2;
 

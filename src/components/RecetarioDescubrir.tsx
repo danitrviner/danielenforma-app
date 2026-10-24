@@ -179,7 +179,7 @@ function Fila({ fila, resumen, onAbrir }: { fila: FilaDescubrir; resumen: Map<st
   const colecciones = fila.colecciones.filter(c => (resumen.get(c.id)?.total ?? 0) > 0);
   if (colecciones.length === 0) return null;
   // `surface`, no `raised`: en modo claro `raised` (#F8F6F2) sobre el fondo
-  // (#F4F2ED) no se distingue y la baldosa quedaba como un borde suelto.
+  // (#F8F6F2) no se distingue y la baldosa quedaba como un borde suelto.
   const base = 'snap-start flex-shrink-0 bg-surface border border-strong hover:border-accent/50 transition-colors text-left';
   // Una portada distinta por baldosa: «Desayuno» y «Media mañana» comparten
   // muchas recetas y salían con el mismo plato. Se elige la primera de cada

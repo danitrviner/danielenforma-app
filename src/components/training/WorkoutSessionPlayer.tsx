@@ -36,7 +36,7 @@ interface Props {
   activeWorkout: Workout;
   playerSets: SetInput[][];
   updateSet: (exIdx: number, sIdx: number, field: keyof SetInput, value: string | boolean) => void;
-  addSetRow: (exIdx: number) => void;
+  addSetRow: (exIdx: number, segmentoDe: number) => void;
   prevEntries: WorkoutEntryLog[];
   exerciseNoteInputs: string[];
   updateExerciseNote: (exIdx: number, value: string) => void;
@@ -351,7 +351,7 @@ export default function WorkoutSessionPlayer({
       onOpenHistory: () => setHistoryExId(we.exerciseId),
       onUpdateSet: (sIdx: number, field: keyof SetInput, value: string | boolean) => updateSetStable(exIdx, sIdx, field, value),
       onMarkDone: (sIdx: number, markingDone: boolean) => handleMarkDoneStable(exIdx, sIdx, markingDone),
-      onAddRow: () => addSetRowStable(exIdx),
+      onAddRow: (segmentoDe: number) => addSetRowStable(exIdx, segmentoDe),
       onNoteChange: (v: string) => updateExerciseNoteStable(exIdx, v),
     }))
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -26,7 +26,8 @@ import { DataPoint } from './seriesCorrelation';
 //
 // No inventa ni una cuenta: encadena los motores que ya existían y estaban
 // repartidos por cinco pantallas distintas (trainingReport, movementPatterns,
-// accumulatedStimulusIndex, programacion, mapaCalorCorporal). Lo único propio
+// programacion, mapaCalorCorporal; el antiguo accumulatedStimulusIndex se
+// retiró en E-11). Lo único propio
 // de aquí es QUÉ ventana se mira, CÓMO se agrupa para contarlo, y qué merece
 // salir en el vídeo.
 //

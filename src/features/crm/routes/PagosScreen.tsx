@@ -2,6 +2,9 @@ import React, { useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { usePagos } from '../hooks/usePagos';
 import { useSuscripciones } from '../hooks/useSuscripciones';
+import { useServicios } from '../hooks/useServicios';
+import { ingresosPorServicio } from '../lib/ingresosPorServicio';
+import IngresosPorServicio from '../components/IngresosPorServicio';
 import { formatEuros } from '../lib/dinero';
 import { resumenPeriodo } from '../lib/metricas';
 import { hoyISO } from '../lib/fechas';
@@ -92,6 +95,8 @@ export default function PagosScreen({ coachEmail }: { coachEmail: string }) {
   const { data: suscripciones = [], isPending: cargandoSuscripciones, isError: errorSuscripciones } = useSuscripciones();
 
   const cashPeriodo = useMemo(() => resumenPeriodo(pagos, desde, hasta), [pagos, desde, hasta]);
+  const { data: servicios = [] } = useServicios();
+  const ingresosServicio = useMemo(() => ingresosPorServicio(pagos, servicios, desde, hasta), [pagos, servicios, desde, hasta]);
 
   const pagosFiltrados = useMemo(() => {
     const q = busqueda.trim().toLowerCase();
@@ -171,6 +176,12 @@ export default function PagosScreen({ coachEmail }: { coachEmail: string }) {
           <MetricCard icon="autorenew" label="Recaudado renovaciones" value={formatEuros(cashPeriodo.recaudadoRenovacionesCents)} sub="cobrado en el periodo" />
           <MetricCard icon="autorenew" label="Contratado renovaciones" value={formatEuros(cashPeriodo.contratadoRenovacionesCents)} sub="vendido, aún sin cobrar" />
         </div>
+      </section>
+
+      {/* Ingresos por servicio (R-03): mismo periodo que el cash de arriba. */}
+      <section className="space-y-2">
+        <h2 className="font-mono text-caption uppercase tracking-widest text-ink-2">Ingresos por servicio</h2>
+        <IngresosPorServicio filas={ingresosServicio} />
       </section>
 
       <section className="space-y-2">

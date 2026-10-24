@@ -198,6 +198,14 @@ service cloud.firestore {
       allow write: if isCoach();
     }
 
+    // ── exerciseChanges ──────────────────────────────────────────────────────
+    // Historial de correcciones de clasificación muscular de los ejercicios
+    // (E-04). Solo el coach; se crea y no se edita ni se borra desde la app.
+    match /exerciseChanges/{docId} {
+      allow read, create: if isCoach();
+      allow update, delete: if false;
+    }
+
     // ── cdgCatalogo (catálogo de la plantilla «Índice de hipertrofia» de CulturaDeGym) ──
     // Uso personal con licencia del coach: lectura SOLO para el coach y nadie
     // escribe desde el cliente (lo sube scripts/subirCatalogoCdg.mjs con el
@@ -423,6 +431,24 @@ service cloud.firestore {
       allow write: if isCoach();
     }
 
+    // ── catalogoAlimentos/trozo_NNN ──────────────────────────────────────────
+    // Catálogo de alimentos por 100 g (N-04), en trozos. Lo lee cualquier
+    // usuario de la app (el Diario del atleta) y solo lo escribe el coach (en
+    // la práctica, el script de importación con su clave).
+    match /catalogoAlimentos/{docId} {
+      allow read: if esUsuarioDeLaApp();
+      allow write: if isCoach();
+    }
+
+    // ── recipeAccess/global ──────────────────────────────────────────────────
+    // Lista global de recetas con las que trabaja el generador de menús
+    // (utils/accesoARecetas.ts). La lee cualquier sesión (el generador corre
+    // en la app del atleta) y solo la escribe el coach.
+    match /recipeAccess/{docId} {
+      allow read: if request.auth != null;
+      allow write: if isCoach();
+    }
+
     // ── cambiosAtleta (athleteId = EMAIL) ────────────────────────────────────
     // Historial de lo que el coach ha cambiado a un atleta. Solo el coach: el
     // atleta no lo lee ni lo escribe (db/cambios.ts, widgets de Revisión).
@@ -476,6 +502,24 @@ service cloud.firestore {
       allow create: if request.auth != null
                     && request.resource.data.athleteId == request.auth.token.email
                     && request.auth.token.email_verified == true;
+      allow update, delete: if isCoach()
+                            || (request.auth != null && request.auth.token.email == resource.data.athleteId && request.auth.token.email_verified == true);
+    }
+
+    // ── revisionProgreso (docId = `${athleteId}_${viernes}`; athleteId = EMAIL) ──
+    // Borrador de la revisión semanal (K-02): lo que el atleta lleva respondido,
+    // para retomarlo en otro dispositivo. No son respuestas (esas siguen en
+    // `questionnaireResponses`). Se lee por getDoc directo sobre el id de la
+    // semana, y una semana sin empezar no debe tumbar la app a modo local:
+    // mismo guard de `resource == null` que dietCompletionLogs.
+    match /revisionProgreso/{docId} {
+      allow read: if isCoach()
+                  || (request.auth != null && (resource == null
+                      || (request.auth.token.email == resource.data.athleteId && request.auth.token.email_verified == true)));
+      allow create: if isCoach()
+                    || (request.auth != null
+                        && request.resource.data.athleteId == request.auth.token.email
+                        && request.auth.token.email_verified == true);
       allow update, delete: if isCoach()
                             || (request.auth != null && request.auth.token.email == resource.data.athleteId && request.auth.token.email_verified == true);
     }
@@ -779,6 +823,28 @@ service cloud.firestore {
                   || (request.auth != null && request.auth.token.email == resource.data.athleteId
                       && request.auth.token.email_verified == true);
       allow write: if isCoach();
+    }
+
+    // ── cardioAplazos («Mover a mañana»; doc id `${athleteId}_${desde}`) ─────
+    // Lo escribe el propio atleta (aplazar y deshacer); lo lee él y el coach.
+    // El `get` de un documento que no existe llega con `resource == null`: se
+    // permite por el prefijo del id, igual que cardioWeeklyGoals.
+    match /cardioAplazos/{docId} {
+      allow read: if isCoach()
+                  || (resource != null && request.auth != null
+                      && request.auth.token.email == resource.data.athleteId
+                      && request.auth.token.email_verified == true)
+                  || (resource == null && request.auth != null
+                      && request.auth.token.email_verified == true
+                      && docId.size() > request.auth.token.email.size()
+                      && docId[0:(request.auth.token.email.size() + 1)] == request.auth.token.email + '_');
+      allow create: if request.auth != null
+                    && request.resource.data.athleteId == request.auth.token.email
+                    && request.auth.token.email_verified == true
+                    && docId == request.auth.token.email + '_' + request.resource.data.desde;
+      allow update, delete: if isCoach()
+                            || (request.auth != null && request.auth.token.email == resource.data.athleteId
+                                && request.auth.token.email_verified == true);
     }
 
     // ── cardioSessions (athleteId = EMAIL; registrado por el propio atleta) ──

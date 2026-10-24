@@ -9,8 +9,10 @@ import { identificarUsuario, migaDePan } from './monitorizacion';
 import { UserProfile, WeightCheckIn, NotificationType } from './types';
 import { getOrCreateUserProfile, getCheckIns, getOnboarding, getWorkoutAssignmentsForAthlete, getGimnasio, updateUserProfile, getPendingAiProposals } from './dbService';
 import { useGimnasioPendiente } from './features/gimnasio/RecordatorioGimnasioCard';
-import { getPendingReviews } from './hooks/usePendingReviews';
+import { useRevisionesSinLeer } from './hooks/useRevisionesSinLeer';
+import { useRevisionDeLaSemana } from './hooks/useRevisionDeLaSemana';
 import NotificationBell from './components/NotificationBell';
+import HojaHerramientas from './components/HojaHerramientas';
 import TutorialEngine from './features/tutorial/TutorialEngine';
 import { useTourTarget } from './features/tutorial/TourTargetContext';
 
@@ -21,7 +23,7 @@ import { useAvisoConexion } from './hooks/useAvisoConexion';
 import { ToastProvider, useToast } from './hooks/useToast';
 import { CardioSessionProvider } from './hooks/useCardioSession';
 import CardioMiniPlayer from './components/cardio/CardioMiniPlayer';
-import { ScreenSkeleton, AtlasLogo } from './components/ui';
+import { ScreenSkeleton, AtlasLogo, Wordmark } from './components/ui';
 import { Icon } from './components/ui';
 import { OPEN_AI_PANEL_EVENT } from './ai/events';
 import { limpiarDatosDeSesion } from './utils/cierreDeSesion';
@@ -99,12 +101,6 @@ const GimnasioHarness = import.meta.env.DEV
 // producción que UiShowcase/GimnasioHarness.
 const CalendarioHarness = import.meta.env.DEV
   ? pantallaDiferida('DevHarness', () => import('./components/roadmap/calendario/DevHarness'))
-  : null;
-
-// El mismo banco de pruebas, pero del calendario del ATLETA (ruta
-// /dev/calendario-atleta) — comparte fixture con el del coach a propósito.
-const CalendarioAtletaHarness = import.meta.env.DEV
-  ? pantallaDiferida('DevHarnessAtleta', () => import('./components/roadmap/calendario/atleta/DevHarnessAtleta'))
   : null;
 
 // Banco de pruebas de Perfil › Revisión (ruta /dev/revision) — misma razón
@@ -205,6 +201,9 @@ type NavGroup = { title?: string; items: NavItem[] };
 // expandibles (CheckInScreen/AthleteRoadmapScreen embebidos, no un salto de
 // pantalla). Sus rutas siguen vivas (ATHLETE_PATH_SEGMENTS) por si algo
 // externo enlaza directo a /checkin o /roadmap.
+/** Marcador del botón central de la barra del atleta (no es una ruta). */
+const BOTON_HERRAMIENTAS = 'herramientas' as const;
+
 const ATHLETE_TABS: NavItem[] = [
   { id: 'home',      label: 'Hoy',      shortLabel: 'Hoy',      icon: 'bolt' },
   { id: 'training',  label: 'Rutinas',  shortLabel: 'Rutinas',  icon: 'fitness_center' },
@@ -545,6 +544,16 @@ function AppContent() {
   // Null-safe a propósito: se evalúa antes de la puerta de sesión.
   const isCoach = esCoach(profile);
 
+  /* Insignia de «Revisiones» del coach (K-05). Solo LEE de la caché: no carga nada
+     al arrancar. Se rellena cuando el coach abre la lista de clientes o la bandeja,
+     que son las que piden las respuestas (misma consulta, misma ventana). */
+  const revisionesSinLeer = useRevisionesSinLeer(isCoach && profile ? profile.userId : '', false);
+
+  /* Insignia del «+» del atleta: pasos que le faltan de la revisión semanal.
+     Igual que la del coach, solo LEE de la caché (`false`): se rellena cuando
+     abre Check-ins o la hoja del «+», que son las que cargan esos datos. */
+  const { faltan: pasosDeRevision } = useRevisionDeLaSemana(!isCoach && profile ? profile.email : '', false);
+
   /* Cuántas propuestas del asistente están sin decidir. Solo para el
      contador de la cabecera de móvil; comparte clave (y caché) con la bandeja
      del asistente, la pantalla de Propuestas y el aviso de Inicio. */
@@ -668,6 +677,7 @@ function AppContent() {
   // se llama `use*`, así que la regla lo trata como uno. Se resuelve aquí en vez
   // de en el JSX de la barra de navegación, que está detrás de los gates.
   const navTabsRef = useTourTarget('nav-tabs');
+  const [herramientasAbiertas, setHerramientasAbiertas] = useState(false);
   // Mismo motivo por el que estas tres no pueden resolverse dentro del
   // .map() de mobileTabs más abajo: una ref inline nueva en cada render
   // reengancha el elemento y dispara un bucle de renders (Maximum update
@@ -761,14 +771,6 @@ function AppContent() {
     return (
       <Suspense fallback={<div className="min-h-screen bg-bg" />}>
         <CalendarioHarness />
-      </Suspense>
-    );
-  }
-
-  if (CalendarioAtletaHarness && location.pathname === '/dev/calendario-atleta') {
-    return (
-      <Suspense fallback={<div className="min-h-screen bg-bg" />}>
-        <CalendarioAtletaHarness />
       </Suspense>
     );
   }
@@ -950,9 +952,14 @@ function AppContent() {
     );
   }
 
-  const mobileTabs = isCoach ? COACH_TABS_MOBILE : ATHLETE_TABS;
+  // Barra del atleta: Hoy · Rutinas · [+] · Nutrición · Perfil. El «+» abre la
+  // hoja de herramientas (Training Lab, Cardio, Check-ins); en escritorio la
+  // barra lateral sigue con los cinco destinos de siempre (ATHLETE_TABS).
+  const mobileTabs: (NavItem | typeof BOTON_HERRAMIENTAS)[] = isCoach
+    ? COACH_TABS_MOBILE
+    : [ATHLETE_TABS[0], ATHLETE_TABS[1], BOTON_HERRAMIENTAS, ATHLETE_TABS[3], ATHLETE_TABS[4]];
   const navGroups = isCoach ? COACH_NAV_GROUPS : [{ items: ATHLETE_TABS }];
-  const pendingCount = getPendingReviews(checkins).length;
+  const pendingCount = isCoach ? revisionesSinLeer.total : 0;
 
   // Pestaña activa para resaltar la nav — el primer segmento de la URL, ya
   // no un estado aparte que podía desincronizarse de dónde estaba el usuario.
@@ -965,6 +972,7 @@ function AppContent() {
   const librarySection = pathTab === 'library' ? location.pathname.split('/')[2] : undefined;
   const esActiva = (id: NavTab) =>
     pathTab === id || (librarySection != null && LIBRARY_SECTION_TAB[librarySection] === id);
+  const herramientasActivas = ['academy', 'cardio', 'checkin'].some(t => esActiva(t as NavTab));
 
   // Los cuatro catálogos ya no tienen ruta propia para el coach: se navega
   // directo a su sección de /library para no pasar por el redirect (que sigue
@@ -1005,7 +1013,7 @@ function AppContent() {
       <header className="hidden md:flex justify-between items-center w-full px-8 h-[var(--header-h)] pt-[var(--safe-top)] bg-bg fixed top-0 left-0 border-b border-hairline z-[var(--z-header)]">
         <div className="flex items-center gap-2 text-accent-ink">
           <AtlasLogo alt="En Forma" className="w-6 h-6 object-contain" />
-          <span className="font-sans font-bold text-title-m tracking-tighter uppercase select-none">EN FORMA</span>
+          <Wordmark />
           <span className="text-caption bg-surface border border-hairline text-ink-2 px-2 rounded-control font-mono uppercase ml-2 select-none">
             {isCoach ? 'Modo entrenador' : 'Modo atleta'}
           </span>
@@ -1026,7 +1034,7 @@ function AppContent() {
       <header className={`md:hidden flex justify-between items-center w-full px-4 h-[var(--header-h)] bg-bg border-b border-hairline sticky top-0 z-[var(--z-header)] ${avisoConexion === 'ok' ? 'pt-[var(--safe-top)]' : ''}`}>
         <div className="flex items-center gap-2 text-accent-ink">
           <AtlasLogo alt="En Forma" className="w-6 h-6 object-contain" />
-          <span className="font-sans font-bold text-title-m tracking-tighter uppercase">EN FORMA</span>
+          <Wordmark />
           <span className="text-caption bg-hairline text-ink-2 px-2 rounded-control font-bold uppercase select-none">
             {isCoach ? 'C' : 'A'}
           </span>
@@ -1055,23 +1063,6 @@ function AppContent() {
                   {propuestasPendientes}
                 </span>
               )}
-            </button>
-          )}
-          {/* Cardio, atajo del atleta. Su sitio en la barra inferior se lo
-              quedaron los cinco destinos de siempre, así que para llegar había
-              que entrar por Perfil: demasiados pasos para algo que se abre
-              nada más subirse a la cinta. Ocupa el hueco del botón de IA, que
-              es solo del coach, y así ninguna de las dos cabeceras crece.
-              Sin `bloquearSinPlan` aquí: quien llega a esta cabecera ya pasó
-              el gate de la sala de espera (más arriba), así que si es
-              atleta es porque ya tiene plan. */}
-          {!isCoach && (
-            <button
-              onClick={() => goToTab('cardio')}
-              aria-label="Cardio"
-              className="flex h-8 w-8 items-center justify-center rounded-full text-accent-ink transition-colors hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-line"
-            >
-              <Icon name="monitor_heart" size="m" filled />
             </button>
           )}
           <NotificationBell recipientEmail={profile.email} onNavigate={goToTab} mutedTypes={mutedNotifTypes} />
@@ -1261,7 +1252,7 @@ function AppContent() {
         ref={navTabsRef}
         aria-hidden={tecladoAbierto || undefined}
         className={
-          'md:hidden fixed bottom-0 w-full z-[var(--z-nav)] flex items-stretch gap-1 px-2 py-4 bg-bg/92 backdrop-blur-md border-t border-hairline select-none'
+          'md:hidden fixed bottom-0 w-full z-[var(--z-nav)] flex items-stretch gap-1 px-2 py-4 bg-surface/95 dark:bg-bg/92 backdrop-blur-md border-t border-hairline select-none'
           + (tecladoAbierto ? ' invisible' : '')
         }
         style={{
@@ -1270,6 +1261,34 @@ function AppContent() {
         }}
       >
         {mobileTabs.map((tab) => {
+          if (tab === BOTON_HERRAMIENTAS) {
+            return (
+              <div key={BOTON_HERRAMIENTAS} className="relative flex flex-1 min-w-0 items-start justify-center">
+                <button
+                  ref={navTabAcademyRef}
+                  onClick={() => setHerramientasAbiertas(true)}
+                  aria-label="Herramientas: Training Lab, Cardio y Check-ins"
+                  aria-haspopup="dialog"
+                  className={
+                    '-mt-7 flex h-14 w-14 items-center justify-center rounded-surface border-[3px] border-surface dark:border-bg bg-veil text-on-veil-accent shadow-e2 '
+                    + 'transition-transform duration-(--duration-state) ease-brand active:scale-95 '
+                    + 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent '
+                    + (herramientasActivas ? 'ring-2 ring-accent' : '')
+                  }
+                >
+                  <Icon name="add" size="xl" />
+                </button>
+                {!isCoach && !!pasosDeRevision && (
+                  <span
+                    aria-label={`Te quedan ${pasosDeRevision} ${pasosDeRevision === 1 ? 'paso' : 'pasos'} de la revisión`}
+                    className="pointer-events-none absolute -top-8 right-[calc(50%-34px)] flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 font-mono text-caption font-bold leading-none text-on-fill"
+                  >
+                    {Math.min(pasosDeRevision, 99)}
+                  </span>
+                )}
+              </div>
+            );
+          }
           const activa = esActiva(tab.id);
           const insignia = tab.id === 'reviews' ? Math.min(pendingCount, 99) : 0;
           return (
@@ -1278,7 +1297,7 @@ function AppContent() {
               ref={
                 tab.id === 'training' ? navTabTrainingRef
                 : tab.id === 'nutrition' ? navTabNutritionRef
-                : tab.id === 'academy' ? navTabAcademyRef
+                : tab.id === 'academy' && isCoach ? navTabAcademyRef
                 : undefined
               }
               onClick={() => goToNav(tab.id)}
@@ -1321,6 +1340,15 @@ function AppContent() {
           );
         })}
       </nav>
+
+      {!isCoach && (
+        <HojaHerramientas
+          open={herramientasAbiertas}
+          onClose={() => setHerramientasAbiertas(false)}
+          athleteEmail={profile.email}
+          onGo={goToNav}
+        />
+      )}
 
       {/* Asistente IA — solo coach, flotante y global para poder preguntar desde cualquier pantalla */}
       {isCoach && (

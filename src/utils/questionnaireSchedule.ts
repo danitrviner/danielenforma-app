@@ -27,10 +27,17 @@ export const DIA_CUESTIONARIO = 5;
 /** El viernes del ciclo martes→lunes al que pertenece `iso`: un lunes o un
  *  domingo apuntan al viernes anterior (misma revisión), un martes o miércoles
  *  al siguiente. */
-function viernesDelCiclo(iso: string): string {
+export function viernesDelCiclo(iso: string): string {
   const d = startOfDay(iso);
   const posicion = (d.getDay() - DIA_CADUCIDAD_PENDIENTE + 7) % 7; // martes = 0 … lunes = 6
   d.setDate(d.getDate() + (DIA_CUESTIONARIO - DIA_CADUCIDAD_PENDIENTE) - posicion);
+  return isoLocal(d);
+}
+
+/** El martes en que caduca la revisión del ciclo cuyo viernes es `viernes`. */
+export function martesDeCaducidad(viernes: string): string {
+  const d = startOfDay(viernes);
+  d.setDate(d.getDate() + 4);
   return isoLocal(d);
 }
 

@@ -9,20 +9,21 @@ import {
   getRecipes, getRecipeFavorites, saveRecipeFavorites, deleteRecipe,
   getAthleteNutritionConfig, cargarIndiceRecetas, getOnboarding,
   getDietsForAthlete, getAthleteDietConfig, OWNER_RECETARIO_TODOS, getRecipeById,
-  getDietCompletionLogsForAthlete,
+  getDietCompletionLogsForAthlete, getNutritionProgram,
 } from '../dbService';
 import { esPlatoDelRecetario } from '../db/recetasHidratacion';
-import { useRecomendadasDelCoach } from '../hooks/useReglasDeReceta';
+import { useRecomendadasDelCoach, useModoRecetario } from '../hooks/useReglasDeReceta';
+import { entraEnRecetario } from '../utils/accesoARecetas';
 import RecetarioDescubrir, { type FilaPersonal } from './RecetarioDescubrir';
 import { cupoDeLaProximaComida, recetasMasHechas } from '../utils/coleccionesRecetario';
 import { resolveSlots } from '../utils/mealDistribution';
-import { diaSemanaDe } from '../hooks/useDiaActual';
 import { hoyIsoLocal } from '../utils/trainingWeek';
 import { classifyRecipe, violatesDietType } from '../utils/foodPrefs';
 import { athleteConditions } from '../utils/dietaryRestrictions';
 import { dietTypeVigente } from '../utils/foodPrefs';
 import { dishType } from '../utils/dishTypes';
 import { BUDGET_CATS, roundQuarter, CAT_COLOR, CAT_BG } from '../utils/exchangeHelpers';
+import { objetivoDelDia } from '../utils/objetivoDelDia';
 import { fotoDeReceta } from '../utils/fotoDeReceta';
 import { escalarRecetaEntera } from '../utils/escalarRecetaEntera';
 import FotoDeReceta from './FotoDeReceta';
@@ -629,12 +630,20 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
     queryKey: ['athleteDietConfig', profile.email],
     queryFn: () => getAthleteDietConfig(profile.email).catch(() => null),
   });
+  // Lo que le toca hoy, resuelto como en Inicio y Nutrición (utils/objetivoDelDia.ts).
+  const { data: programaNutri = null } = useQuery({
+    queryKey: ['nutritionProgram', profile.email],
+    queryFn: () => getNutritionProgram(profile.email).catch(() => null),
+  });
+  const objetivoHoy = useMemo(
+    () => objetivoDelDia({ diets, config: dietConfig, program: programaNutri, fecha: hoyIsoLocal() }),
+    [diets, dietConfig, programaNutri],
+  );
   const dailyBudgetTotal = useMemo(() => {
-    const activeIds = new Set(dietConfig?.activeDietIds ?? []);
-    const active = diets.filter(d => activeIds.has(d.id));
-    if (active.length === 0) return null;
-    return active.reduce((sum, d) => sum + BUDGET_CATS.reduce((s, c) => s + (d.budget[c] ?? 0), 0), 0);
-  }, [diets, dietConfig]);
+    const d = objetivoHoy.dieta;
+    if (!d) return null;
+    return BUDGET_CATS.reduce((s, c) => s + (d.budget[c] ?? 0), 0);
+  }, [objetivoHoy]);
   const [onlyFitsBudget, setOnlyFitsBudget] = useState(true);
   const fitsBudget = useCallback((r: Recipe) => {
     if (dailyBudgetTotal == null) return true; // sin dieta activa — no hay presupuesto que aplicar
@@ -647,6 +656,8 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
   // navega el atleta los ignoraba: le seguía ofreciendo justo lo que había
   // marcado como excluido y no le adelantaba lo que había pedido tener más.
   const recetasOcultas = useReglasDeReceta(profile.email);
+  const modoRecetario = useModoRecetario(profile.email);
+  const recomendadasDelCoach = useRecomendadasDelCoach(profile.email);
   const prefs = useMemo(() => ({
     liked:     onboardingData?.likedFoods     ?? [],
     disliked:  onboardingData?.dislikedFoods  ?? [],
@@ -708,11 +719,13 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
     // El coach la ha escondido a este atleta (en el recetario, que no tiene día,
     // solo cuentan las reglas de todos los días).
     if (!recetaPermitida(r.id, recetasOcultas, 'recetario')) return false;
+    // Recetario acotado por el coach a las recetas que le recomienda.
+    if (!entraEnRecetario(r.id, modoRecetario, recomendadasDelCoach)) return false;
     // Un tipo de plato excluido es una decisión explícita del atleta, igual de
     // firme que una alergia a efectos de no enseñárselo.
     if (prefs.tiposExcluidos.size > 0 && prefs.tiposExcluidos.has(dishType(r))) return false;
     return classifyRecipe(r, prefs.liked, prefs.disliked, prefs.allergies, prefs.conditions) !== 'allergy';
-  }, [onlyFitsBudget, fitsBudget, prefs, recetasOcultas]);
+  }, [onlyFitsBudget, fitsBudget, prefs, recetasOcultas, modoRecetario, recomendadasDelCoach]);
 
   // ── Derived data ────────────────────────────────────────────────────────────
 
@@ -765,12 +778,10 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
      comida de hoy, en la dieta que toca hoy (la del calendario semanal o, sin
      calendario, la primera activa). Día libre o sin reparto = sin fila. */
   const cupoProxima = useMemo(() => {
-    const programada = dietConfig?.weeklySchedule?.[diaSemanaDe(hoyIsoLocal())];
-    if (programada === null) return null;
-    const dieta = diets.find(d => d.id === (programada ?? dietConfig?.activeDietIds?.[0]));
+    if (objetivoHoy.origen === 'libre') return null;
     const ahora = new Date();
-    return cupoDeLaProximaComida(dieta?.meals, resolveSlots, ahora.getHours() + ahora.getMinutes() / 60);
-  }, [diets, dietConfig]);
+    return cupoDeLaProximaComida(objetivoHoy.dieta?.meals, resolveSlots, ahora.getHours() + ahora.getMinutes() / 60);
+  }, [objetivoHoy]);
 
   /* Lo que el atleta ha comido de verdad el último mes, para «Las que más
      haces». Una lectura por día registrado (~30 como mucho) y se guarda diez

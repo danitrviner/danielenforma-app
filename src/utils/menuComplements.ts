@@ -10,7 +10,7 @@ import { MealItem, DietMode, FoodCategory } from '../types';
 //
 // Ahora el catálogo es el BANCO DE INTERCAMBIOS entero, que es donde ya vive esa
 // información con sus gramos ("40g pan (de molde, tostado, con o sin
-// semillas...)") y que el atleta ya usa en Intercambios. No hacía falta una
+// semillas...)") y que el atleta ya usa en el Diario. No hacía falta una
 // segunda lista: hacía falta usar la que ya teníamos (Dani, 2026-09-05).
 //
 // La lista blanca no desaparece del todo, cambia de papel: ya no decide QUÉ

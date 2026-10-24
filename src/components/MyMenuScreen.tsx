@@ -1,4 +1,4 @@
-import { useReglasDeReceta } from '../hooks/useReglasDeReceta';
+import { useReglasDeReceta, useListaDeMenu, useSeleccionDeRecetas } from '../hooks/useReglasDeReceta';
 import React, { useMemo, useState, useRef } from 'react';
 import { minutosDeReceta } from '../utils/tiempoDeReceta';
 import { useNavigate } from 'react-router-dom';
@@ -28,6 +28,7 @@ import { substitutesFor } from '../utils/ingredientSubstitutions';
 import { Icon, EmptyState, ListRow, Badge, Sheet, Dialog, ScreenSkeleton } from './ui';
 import { fotoDeReceta } from '../utils/fotoDeReceta';
 import { escalarRecetaEntera } from '../utils/escalarRecetaEntera';
+import { recetaAjustada, fraseDeCambio } from '../utils/ajusteDeReceta';
 import { useToast } from '../hooks/useToast';
 import { useDiaActual } from '../hooks/useDiaActual';
 import { registrarComidaDelMenu, quitarComidaDelMenu, type DiaDelPlan } from '../utils/registroDesdeElMenu';
@@ -151,6 +152,8 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
   const [shoppingItems, setShoppingItems] = useState<ShoppingListItem[] | null>(null);
 
   const recetasOcultas = useReglasDeReceta(profile.email);
+  const listaMenu = useListaDeMenu(profile.email);
+  const { seleccion, paquetes } = useSeleccionDeRecetas(profile.email);
   const prefs: GeneratorPrefs = useMemo(() => ({
     allergies: onboarding?.allergies ?? [],
     conditions: athleteConditions(onboarding),
@@ -168,7 +171,10 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
     preferredDishTypes: (nutritionConfig?.preferredDishTypes ?? onboarding?.preferredDishTypes ?? []) as DishType[],
     excludedDishTypes: (nutritionConfig?.excludedDishTypes ?? onboarding?.excludedDishTypes ?? []) as DishType[],
     recetasOcultas,
-  }), [onboarding, nutritionConfig, favorites, recetasOcultas]);
+    listaMenu,
+    seleccion,
+    paquetes,
+  }), [onboarding, nutritionConfig, favorites, recetasOcultas, listaMenu, seleccion, paquetes]);
 
   const swapFiltradas = useMemo(() => {
     const q = normalizeStr(swapQuery.trim());
@@ -185,8 +191,13 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
      receta de fábrica. La cabecera de la comida ya decía «×2» y los gramos de
      abajo seguían siendo los de una ración (Dani, 10-09-2026). */
   const detailRecipeVista = useMemo(
-    () => (detailRecipe ? escalarRecetaEntera(detailRecipe, detailMeal?.scale ?? 1) : null),
-    [detailRecipe, detailMeal?.scale],
+    () => {
+      if (!detailRecipe) return null;
+      // Receta base ajustada a esta comida (N-06): sus gramos, no la escala.
+      if (detailMeal?.ajuste) return recetaAjustada(detailRecipe, detailMeal.ajuste.gramos);
+      return escalarRecetaEntera(detailRecipe, detailMeal?.scale ?? 1);
+    },
+    [detailRecipe, detailMeal?.scale, detailMeal?.ajuste],
   );
   const detailSwaps = new Map((detailMeal?.ingredientSwaps ?? []).map(s => [s.from, s.to]));
 
@@ -473,6 +484,9 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
         recipeId: candidate.recipe.id, recipeName: candidate.recipe.name,
         recipeImage: fotoDeReceta(candidate.recipe),
         scale: candidate.scale, exch: candidate.exch,
+        // El ajuste por ingredientes es de la receta ANTERIOR: se cambia por el
+        // de la nueva o se quita.
+        ajuste: candidate.ajuste,
         racionesExtra: candidate.raciones.length > 0 ? candidate.raciones : undefined,
         kcal: Math.round(exchangeToKcal(totalConExtras(candidate.exch, m.complements, candidate.raciones))),
       }
@@ -501,7 +515,7 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
         <EmptyState
           icon="restaurant_menu"
           title="Todavía no tienes un menú semanal"
-          description="Tu entrenador aún no ha publicado un menú basado en recetas. Mientras tanto, sigue usando Intercambios."
+          description="Tu entrenador aún no ha publicado un menú basado en recetas. Mientras tanto, sigue usando el Diario."
         />
       </div>
     );
@@ -595,7 +609,7 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
       {/* Meals */}
       {!day || day.meals.length === 0 ? (
         <div className="bg-surface border border-hairline rounded-surface">
-          <EmptyState icon="event_busy" title="Sin menú para este día" description="Usa Intercambios si quieres montarte algo igualmente." />
+          <EmptyState icon="event_busy" title="Sin menú para este día" description="Usa el Diario si quieres montarte algo igualmente." />
         </div>
       ) : (
         <div className="space-y-3">
@@ -1001,6 +1015,14 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
                   <p className="font-mono text-caption text-accent-ink">
                     Cantidades para ×{detailMeal!.scale} de la receta
                   </p>
+                )}
+                {detailMeal?.ajuste && detailMeal.ajuste.cambios.length > 0 && (
+                  <div className="rounded-control bg-raised p-3">
+                    <p className="font-sans text-label font-semibold text-ink">Ajustada a tu comida</p>
+                    <ul className="pt-1 font-sans text-body-s text-ink-2">
+                      {detailMeal.ajuste.cambios.map(c => <li key={c.n}>{fraseDeCambio(c)}</li>)}
+                    </ul>
+                  </div>
                 )}
                 {detailRecipeVista?.kcal != null && (
                   <p className="font-mono text-caption text-ink-2">{detailRecipeVista.kcal} kcal{detailRecipe.cookingTime != null ? ` · ~${minutosDeReceta(detailRecipe)} min` : ''}</p>

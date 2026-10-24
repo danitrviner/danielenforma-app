@@ -5,7 +5,7 @@ import {
 } from '../../../dbService';
 import { crmKeys } from '../lib/crmQueries';
 import { hoyISO } from '../lib/fechas';
-import type { Cliente, CrmServicio, Periodicidad, TipoServicio } from '../types';
+import type { Cliente, CrmServicio, Periodicidad, TipoDeServicio, TipoServicio } from '../types';
 
 export interface NuevoServicio {
   nombre: string;
@@ -13,6 +13,8 @@ export interface NuevoServicio {
   /** Alta, renovación o upsell. Ver docs/crm-modelo-v2.md. */
   tipo: TipoServicio;
   periodicidad: Periodicidad;
+  /** Qué servicio es (catálogo cerrado). Siempre se pide al crear. */
+  tipoServicio: TipoDeServicio;
   fechaContratacion: string;
   fechaInicio: string;
   fechaFin?: string;

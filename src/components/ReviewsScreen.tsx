@@ -2,8 +2,9 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { WeightCheckIn, QuestionnaireResponse, Questionnaire } from '../types';
-import { getAllUserProfilesOrThrow, submitCoachFeedback, getQuestionnairesByCoach, getResponsesByQuestionnaireIds, getQuickReplies, saveQuickReplies, marcarRespuestaVista } from '../dbService';
+import { getAllUserProfilesOrThrow, submitCoachFeedback, getQuickReplies, saveQuickReplies, marcarRespuestaVista } from '../dbService';
 import { usePendingReviews } from '../hooks/usePendingReviews';
+import { useRespuestasDeLaBandeja, DIAS_DE_BANDEJA } from '../hooks/useRevisionesSinLeer';
 import { useToast } from '../hooks/useToast';
 import { mensajeDeErrorFirestore } from '../utils/erroresFirestore';
 import { atletasActivos } from '../utils/atletas';
@@ -22,7 +23,6 @@ type UnifiedItem =
   | { kind: 'response'; sortKey: number; data: QuestionnaireResponse; questionnaire?: Questionnaire };
 
 /** Cuántos días de respuestas entran en la bandeja. */
-const DIAS_DE_BANDEJA = 60;
 
 export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId }: ReviewsScreenProps) {
   const navigate = useNavigate();
@@ -42,30 +42,17 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId }: 
     queryFn: getQuickReplies,
   });
 
-  const { data: questionnaires = [], isPending: loadingQuestionnaires } = useQuery({
-    queryKey: ['questionnairesByCoach', coachId],
-    queryFn: () => getQuestionnairesByCoach(coachId),
-    enabled: !!coachId,
-  });
-  const questionnaireIds = useMemo(() => questionnaires.map(q => q.id), [questionnaires]);
+  // Plantillas y respuestas de la bandeja: el mismo hook (y la misma caché) que
+  // usa la lista de clientes para contar revisiones sin leer (K-05).
   /* Esta pantalla es la BANDEJA de trabajo, no un archivo. Los check-ins ya se
      filtran a los no aprobados, pero las respuestas de cuestionario no tienen
      ese concepto y se traían TODAS desde siempre: una colección que solo crece,
      pagada entera cada vez que se abría la pantalla, para enseñar las últimas
      semanas. El histórico completo de cada atleta sigue estando en su
      Revisión, que es donde se mira. */
-  const desdeRespuestas = useMemo(
-    () => new Date(Date.now() - DIAS_DE_BANDEJA * 86_400_000).toISOString(),
-    [],
-  );
-  const { data: allResponses = [], isPending: loadingResponsesQuery } = useQuery({
-    // El `desde` va en la clave: sin él, esta consulta acotada compartiría
-    // caché con cualquier otra pantalla que pida el historial entero y una de
-    // las dos vería la lista de la otra.
-    queryKey: ['responsesByQuestionnaireIds', questionnaireIds, desdeRespuestas],
-    queryFn: () => getResponsesByQuestionnaireIds(questionnaireIds, desdeRespuestas),
-    enabled: !!coachId && questionnaireIds.length > 0,
-  });
+  const {
+    questionnaires, questionnaireIds, responses: allResponses, desde: desdeRespuestas, loading: loadingResponses,
+  } = useRespuestasDeLaBandeja(coachId, true);
 
   /* Marcar vista: se pinta al instante y se guarda de fondo. Si la escritura
      falla, la lista se refresca desde Firestore y la respuesta reaparece — no
@@ -82,9 +69,6 @@ export default function ReviewsScreen({ checkins, onRefreshCheckIns, coachId }: 
       queryClient.invalidateQueries({ queryKey: ['responsesByQuestionnaireIds'] });
     }
   };
-  // Mirrors the old effect's loading flag: true while questionnaires load, and
-  // (only if there are any) while their responses load too.
-  const loadingResponses = loadingQuestionnaires || (questionnaireIds.length > 0 && loadingResponsesQuery);
 
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [feedbackText, setFeedbackText] = useState('');

@@ -3,6 +3,9 @@ import type {
 } from '../types';
 import { MUSCLE_LABELS, MUSCLE_ORDER } from '../types';
 import { macrosDeCupo, kcalDeDieta } from './semanasNutricion';
+import { etiquetaDeDias, type ReglasDeReceta } from './reglasDeReceta';
+import { filtroDeTarjeta, resumenDeFiltro, TODAS_LAS_DIETAS } from './seleccionDeRecetas';
+import { dishTypeLabel } from './dishTypes';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Historial de cambios del coach sobre un atleta
@@ -197,6 +200,82 @@ export function resumirMeso(antes: Mesocycle | undefined, despues: Mesocycle): s
   if (!antes.distribution && despues.distribution) l.push('Reparto de series generado');
   else if (antes.distribution && despues.distribution && antes.distribution.generatedAt !== despues.distribution.generatedAt) {
     l.push('Reparto de series recalculado');
+  }
+  return l;
+}
+
+const ETIQUETA_RECETARIO = { todas: 'todas', recomendadas: 'solo recomendadas' } as const;
+
+/** Hasta tres nombres y «y N más»: la frase se lee de un vistazo aunque se toquen cien recetas. */
+function nombres(ids: string[], nombreDe: (id: string) => string | undefined): string {
+  const mostrados = ids.slice(0, 3).map(id => `«${nombreDe(id) ?? 'receta'}»`).join(', ');
+  return ids.length > 3 ? `${mostrados} y ${ids.length - 3} más` : mostrados;
+}
+
+function difLista(antes: string[], despues: string[], etiqueta: string, nombreDe: (id: string) => string | undefined): string[] {
+  const a = new Set(antes);
+  const d = new Set(despues);
+  const nuevas = despues.filter(id => !a.has(id));
+  const quitadas = antes.filter(id => !d.has(id));
+  const l: string[] = [];
+  if (nuevas.length) l.push(`${etiqueta}: +${nuevas.length} (${nombres(nuevas, nombreDe)})`);
+  if (quitadas.length) l.push(`${etiqueta}: −${quitadas.length} (${nombres(quitadas, nombreDe)})`);
+  return l;
+}
+
+/**
+ * Reglas del coach sobre las recetas de UN atleta (N-09): recetas escondidas,
+ * recomendadas, lista del menú y qué navega en el recetario. `nombreDe` pone
+ * nombre a los ids; sin él, «receta».
+ */
+export function resumirReglasDeReceta(
+  antes: ReglasDeReceta | undefined,
+  despues: ReglasDeReceta,
+  nombreDe: (id: string) => string | undefined = () => undefined,
+): string[] {
+  const l: string[] = [];
+  const reglasA = antes?.reglas ?? [];
+  const reglasD = despues.reglas ?? [];
+  l.push(...difLista(reglasA.map(r => r.recipeId), reglasD.map(r => r.recipeId), 'Recetas ocultas', nombreDe));
+  // Una receta que sigue oculta pero con otros días o dónde: cuenta como cambio.
+  const firma = (r: { dias?: string[]; ambitos?: string[] }) => JSON.stringify([[...(r.dias ?? [])].sort(), [...(r.ambitos ?? [])].sort()]);
+  const previas = new Map(reglasA.map(r => [r.recipeId, firma(r)]));
+  const reajustadas = reglasD.filter(r => previas.has(r.recipeId) && previas.get(r.recipeId) !== firma(r)).map(r => r.recipeId);
+  if (reajustadas.length) l.push(`Alcance cambiado en ${reajustadas.length} ${reajustadas.length === 1 ? 'receta oculta' : 'recetas ocultas'} (${nombres(reajustadas, nombreDe)})`);
+
+  l.push(...difLista(antes?.recomendadas ?? [], despues.recomendadas ?? [], 'Recomendadas', nombreDe));
+
+  const listaA = antes?.listaMenu ?? [];
+  const listaD = despues.listaMenu ?? [];
+  if (listaA.length > 0 && listaD.length > 0) {
+    // Las dos son listas propias: lo que se añade y se quita, no «79 → 79».
+    l.push(...difLista(listaA, listaD, 'Lista del menú', nombreDe));
+  } else if (listaA.length !== listaD.length) {
+    const texto = (xs: string[]) => (xs.length ? `${xs.length} recetas` : 'la general');
+    l.push(`Lista del menú: ${flecha(texto(listaA), texto(listaD))}`);
+  }
+  const recA = antes?.recetario ?? 'todas';
+  const recD = despues.recetario ?? 'todas';
+  if (recA !== recD) l.push(`Recetario: ${flecha(ETIQUETA_RECETARIO[recA], ETIQUETA_RECETARIO[recD])}`);
+
+  // Filtros del generador por dieta. `nombreDe` también resuelve ids de dieta
+  // y de paquete (el panel le pasa los tres).
+  const selA = antes?.seleccion;
+  const selD = despues.seleccion;
+  const claves = new Set([TODAS_LAS_DIETAS, ...Object.keys(selA?.porDieta ?? {}), ...Object.keys(selD?.porDieta ?? {})]);
+  for (const clave of claves) {
+    const fa = filtroDeTarjeta(selA, clave);
+    const fd = filtroDeTarjeta(selD, clave);
+    if (JSON.stringify(fa) === JSON.stringify(fd)) continue;
+    const quien = clave === TODAS_LAS_DIETAS ? 'Todas las dietas' : `Dieta «${nombreDe(clave) ?? 'borrada'}»`;
+    const texto = (f: typeof fa) => resumenDeFiltro(f, nombreDe, dishTypeLabel);
+    l.push(`Recetas del generador · ${quien}: ${flecha(texto(fa), texto(fd))}`);
+  }
+  const diasA = selA?.diasConTiempo ?? [];
+  const diasD = selD?.diasConTiempo ?? [];
+  if (JSON.stringify([...diasA].sort()) !== JSON.stringify([...diasD].sort())) {
+    const texto = (d: typeof diasA) => (d.length ? etiquetaDeDias(d) : 'ninguno');
+    l.push(`Días con tiempo para cocinar: ${flecha(texto(diasA), texto(diasD))}`);
   }
   return l;
 }

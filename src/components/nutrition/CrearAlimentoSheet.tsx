@@ -64,12 +64,19 @@ interface Props {
   destino: 'personal' | 'banco';
   /** Alimento que se está editando. Sin esto, la hoja crea uno nuevo. */
   editando?: MealItem;
+  /** Al crear desde un producto escaneado: su nombre (si se conoce) y su código
+   *  de barras, que se guarda con el alimento para reconocerlo la próxima vez. */
+  inicial?: { nombre?: string; codigo?: string };
   /** Borrar el alimento que se está editando. Solo se pinta si se pasa. */
   onEliminar?: () => void;
 }
 
-export default function CrearAlimentoSheet({ mode, onClose, onGuardar, destino, editando, onEliminar }: Props) {
-  const inicial = useMemo(() => desdeAlimento(editando), [editando]);
+export default function CrearAlimentoSheet({ mode, onClose, onGuardar, destino, editando, inicial: desdeProducto, onEliminar }: Props) {
+  const inicial = useMemo(() => {
+    const base = desdeAlimento(editando);
+    return desdeProducto?.nombre && !editando ? { ...base, form: { ...base.form, nombre: desdeProducto.nombre } } : base;
+  }, [editando, desdeProducto]);
+  const codigo = editando?.codigo ?? desdeProducto?.codigo;
   const [form, setForm] = useState(inicial.form);
   const [unidad, setUnidad] = useState<'g' | 'ml'>(inicial.unidad);
   const [guardando, setGuardando] = useState(false);
@@ -105,6 +112,7 @@ export default function CrearAlimentoSheet({ mode, onClose, onGuardar, destino, 
         label: etiquetaDeBanco(form.nombre, calculo.gramosPorIntercambio, unidad),
         porCien: macros,
         gramosPorIntercambio: calculo.gramosPorIntercambio,
+        ...(codigo ? { codigo } : {}),
       });
       onClose();
     } catch {

@@ -4,14 +4,16 @@ import { useMotorCdg } from '../../hooks/useMotorCdg';
 import { useBodyMeasurements } from '../../hooks/useBodyMeasurements';
 import { computeAnthropometricIndices, ANTHROPOMETRIC_INDEX_LABELS, type AnthropometricIndexKey } from '../../utils/anthropometricIndices';
 import {
-  semanasRealizadasDelMeso, cargaAgudaCronicaDelMeso, rendimientoDelCiclo, incrementoAntropometria,
+  semanasRealizadasDelMeso, cargaAgudaCronicaDelMeso, rendimientoDelCiclo, incrementoAntropometria, semanasAnterioresAlBloque,
   UMBRALES_CARGA_POR_DEFECTO, sinMusculos, SEMANAS_CARGA_CRONICA, type UmbralesCarga,
   ZONAS_IEM, iemPorZona, variacion, propuestaZona, SENSIBILIDADES, VELOCIDADES, tipoDeBloque, contextoDeLaSemana,
+  UMBRALES_PROTOCOLO, agujetasVigentes,
   type TipoDeBloque, type Sensibilidad, type Velocidad, type TonoPropuesta,
   leerRendimiento, indicadoresCambioDeBloque, avisosIemIea, type SemanaParaLectura, type Contexto,
   tipoSugerido, semanasHastaAburrirse, avisoDeFiabilidad, referenciasToleradas
 } from '../../utils/cdg';
 import { useAgujetasCdg } from '../../hooks/useAgujetasCdg';
+import { hoyIsoLocal } from '../../utils/trainingWeek';
 import { useQuery } from '@tanstack/react-query';
 import { getDossier } from '../../db/dossier';
 import { dossierKey } from '../DossierPanel';
@@ -95,8 +97,17 @@ export default function SeguimientoCdg ({ athleteEmail, logs, meso, cicloDias, v
     const { semanas, descartados } = semanasRealizadasDelMeso({
       logs, meso, cicloDias, vueltas, motor, nombreCdgDe, sesionDeWorkout: id => sesionPorWorkout.get(id)
     });
-    const carga = cargaAgudaCronicaDelMeso({ motor, semanas, grupos, meso, vueltas, nombreCdgDe, umbrales });
-    return { semanas, descartados, carga, ciclo: rendimientoDelCiclo(motor, semanas) };
+    // Semanas de bloques anteriores (E-10): completan la crónica cuando este
+    // bloque aún no tiene 6, y dan la comparación «bloque anterior vs este».
+    const anteriores = semanasAnterioresAlBloque({ logs: logs.filter(l => l.mesocycleId !== meso.id), inicio: meso.startDate, motor, nombreCdgDe });
+    const carga = cargaAgudaCronicaDelMeso({ motor, semanas, grupos, meso, vueltas, nombreCdgDe, umbrales, semanasAnteriores: anteriores });
+    const media = (cs: Array<{ IF: number[]; IEM: number[][] }>) => cs.length === 0 ? null : {
+      IF: cs.reduce((a, c) => a + c.IF.reduce((x, y) => x + y, 0), 0) / cs.length,
+      IEM: cs.reduce((a, c) => a + c.IEM.reduce((x, d) => x + d.reduce((p, q) => p + q, 0), 0), 0) / cs.length,
+      n: cs.length,
+    };
+    const comparacionBloques = { antes: media(anteriores), ahora: media(semanas.map(s => s.calculo)) };
+    return { semanas, descartados, carga, comparacionBloques, ciclo: rendimientoDelCiclo(motor, semanas) };
   }, [motor, logs, meso, cicloDias, vueltas, nombreCdgDe, sesionPorWorkout, grupos, umbrales]);
 
   const [semanaSel, setSemanaSel] = useState<string>('');
@@ -127,7 +138,7 @@ export default function SeguimientoCdg ({ athleteEmail, logs, meso, cicloDias, v
     );
   }
 
-  const { semanas, descartados, carga, ciclo } = datos;
+  const { semanas, descartados, carga, comparacionBloques, ciclo } = datos;
   const sinVinculo = new Set<string>();
   for (const l of logs) if (l.mesocycleId === meso.id) for (const e of l.entries) if (!nombreCdgDe(e.exerciseId)) sinVinculo.add(e.exerciseId);
 
@@ -166,15 +177,19 @@ export default function SeguimientoCdg ({ athleteEmail, logs, meso, cicloDias, v
           const idx = semanaActiva ? semanas.indexOf(semanaActiva) : -1;
           const ahora = semanaActiva ? iemPorZona(motor, sumaDias(semanaActiva.calculo.IEM)) : null;
           const antes = idx > 0 ? iemPorZona(motor, sumaDias(semanas[idx - 1].calculo.IEM)) : null;
+          const hoy = hoyIsoLocal();
           const filas = ZONAS_IEM.map(z => {
             const lectura = agujetas?.[z.clave];
+            // Solo cuentan las agujetas de la última semana: una lectura vieja
+            // no dice nada de cómo ha encajado la semana que se evalúa.
+            const vigente = !!lectura && agujetasVigentes(lectura.fecha, hoy);
             const objetivo = meso.cdgObjetivosIem?.[z.clave];
             return {
-              z, lectura, objetivo,
+              z, lectura, vigente, objetivo,
               iem: ahora?.[z.clave] ?? 0,
               vs: ahora && antes ? variacion(antes[z.clave], ahora[z.clave]) : null,
               propuesta: propuestaZona({
-                agujetas: lectura?.valor, anterior: lectura?.anterior, sensible: z.sensible, tipo, esObjetivo: objetivo != null,
+                agujetas: vigente ? lectura?.valor : undefined, anterior: vigente ? lectura?.anterior : undefined, sensible: z.sensible, tipo, esObjetivo: objetivo != null,
                 iem: ahora?.[z.clave] ?? 0, contexto, fatigaPost: fatigaPost?.value,
               })
             };
@@ -218,8 +233,8 @@ export default function SeguimientoCdg ({ athleteEmail, logs, meso, cicloDias, v
                   {contexto === 'desfavorable' && ' Un mal momento puntual no obliga a bajar; si se repite varias semanas, sí.'}
                 </li>
                 <li>
-                  Al salir de las sesiones: {fatigaPost ? <b className={fatigaPost.value >= 8 ? 'text-warning' : 'text-ink'}>{fatigaPost.value}/10</b> : 'sin dato'}
-                  {fatigaPost && fatigaPost.value >= 8 ? ' — no subir IEM; mejor bajar el IF manteniéndolo.' : ' (0-7: hay margen).'}
+                  Al salir de las sesiones: {fatigaPost ? <b className={fatigaPost.value >= UMBRALES_PROTOCOLO.fatigaPostAlta ? 'text-warning' : 'text-ink'}>{fatigaPost.value}/10</b> : 'sin dato'}
+                  {fatigaPost && fatigaPost.value >= UMBRALES_PROTOCOLO.fatigaPostAlta ? ' — no subir IEM; mejor bajar el IF manteniéndolo.' : ` (0-${UMBRALES_PROTOCOLO.fatigaPostAlta - 1}: hay margen).`}
                 </li>
                 <li>Agujetas a las 48 h contra el IEM de cada zona (tabla).</li>
                 <li>Rendimiento: RM y tonelaje (abajo).</li>
@@ -238,7 +253,7 @@ export default function SeguimientoCdg ({ athleteEmail, logs, meso, cicloDias, v
                         <tr key={f.z.clave} className="border-t border-hairline align-top">
                           <td className={`py-1 pr-2 whitespace-nowrap ${f.objetivo != null ? 'font-bold text-ink' : 'text-ink-2'}`}>{f.z.nombre}</td>
                           <td className="py-1 px-2 text-right font-mono tabular-nums" title={f.lectura ? `${f.lectura.fecha}${f.lectura.deEscala10 ? ' · cuestionario 0-10 convertido' : ''}` : undefined}>
-                            {f.lectura ? <>{f.lectura.anterior != null && <span className="text-ink-3">{f.lectura.anterior} → </span>}<b className={f.lectura.valor >= 5 ? 'text-danger' : f.lectura.valor >= 4 ? 'text-warning' : 'text-ink'}>{f.lectura.valor}</b>{f.lectura.deEscala10 ? '*' : ''}</> : <span className="text-ink-3">—</span>}
+                            {f.lectura && !f.vigente ? <span className="text-ink-3" title={`Última lectura: ${f.lectura.fecha}`}>{f.lectura.valor} · antigua</span> : f.lectura ? <>{f.lectura.anterior != null && <span className="text-ink-3">{f.lectura.anterior} → </span>}<b className={f.lectura.valor >= 5 ? 'text-danger' : f.lectura.valor >= 4 ? 'text-warning' : 'text-ink'}>{f.lectura.valor}</b>{f.lectura.deEscala10 ? '*' : ''}</> : <span className="text-ink-3">—</span>}
                           </td>
                           <td className="py-1 px-2 text-right font-mono tabular-nums text-ink">{f.iem > 0.005 ? n1(f.iem) : '·'}</td>
                           <td className="py-1 px-2 text-right font-mono tabular-nums text-ink-2">{pct(f.vs)}</td>
@@ -253,6 +268,11 @@ export default function SeguimientoCdg ({ athleteEmail, logs, meso, cicloDias, v
                     </tbody>
                   </table>
                 </div>
+              )}
+              {!UMBRALES_PROTOCOLO.validados && (
+                <p className="font-sans text-caption text-warning">
+                  Umbrales pendientes de validar: contexto malo con estrés ≥ {UMBRALES_PROTOCOLO.estresMalo}, sueño &lt; {UMBRALES_PROTOCOLO.sueñoMaloHoras} h o motivación ≤ {UMBRALES_PROTOCOLO.motivacionMala}; no subir con cansancio ≥ {UMBRALES_PROTOCOLO.fatigaPostAlta}; con IEM ≥ {UMBRALES_PROTOCOLO.iemBaseAlta}, subir como mucho un {UMBRALES_PROTOCOLO.subidaMaxBaseAlta} %. Agujetas de los últimos {UMBRALES_PROTOCOLO.diasVigenciaAgujetas} días.
+                </p>
               )}
               <p className="font-sans text-caption text-ink-3">
                 Agujetas en escala 1-5 del cuestionario «Agujetas a las 48 h»{ZONAS_IEM.some(z => agujetas?.[z.clave]?.deEscala10) ? ' (* = del DOM\'s 0-10, convertido)' : ''}. No se leen a ciegas: los ejercicios en estiramiento y los tempos excéntricos largos dan más agujetas con el mismo IEM.
@@ -286,8 +306,14 @@ export default function SeguimientoCdg ({ athleteEmail, logs, meso, cicloDias, v
         ) : (
           <>
             <p className="font-sans text-caption text-ink-2">
-              Lo programado para la semana {carga.semanaReferencia} frente a la media de las {SEMANAS_CARGA_CRONICA} últimas realizadas (semanas {carga.semanasUsadas.slice().sort((a, b) => a - b).join(', ')}).
+              Lo programado para la semana {carga.semanaReferencia} frente a la media de las {carga.semanasUsadas.length + carga.semanasDeOtrosBloques} últimas realizadas
+              {carga.semanasUsadas.length > 0 ? ` (de este bloque: ${carga.semanasUsadas.slice().sort((a, b) => a - b).map(s => `S${s}`).join(', ')}` : ' ('}
+              {carga.semanasDeOtrosBloques > 0 ? `${carga.semanasUsadas.length > 0 ? '; ' : ''}${carga.semanasDeOtrosBloques} de bloques anteriores` : ''}).
+              {carga.semanasDeOtrosBloques > 0 && ' Al mezclar bloques solo se compara el total de la semana: sus sesiones no se corresponden.'}
             </p>
+            {!carga.fiable && (
+              <p className="font-sans text-caption text-warning">Poca historia ({carga.semanasUsadas.length + carga.semanasDeOtrosBloques} de {SEMANAS_CARGA_CRONICA} semanas): tómalo como orientativo.</p>
+            )}
             <table className="w-full font-sans text-caption">
               <thead><tr><Th>Sesión</Th><Th derecha>IF aguda / crónica</Th></tr></thead>
               <tbody>
@@ -306,6 +332,16 @@ export default function SeguimientoCdg ({ athleteEmail, logs, meso, cicloDias, v
               </ul>
             )}
           </>
+        )}
+        {comparacionBloques.antes && comparacionBloques.ahora && (
+          <div className="rounded-control border border-hairline p-3 space-y-1">
+            <p className="font-sans text-caption font-bold text-ink">Bloque anterior vs este (media por semana)</p>
+            <p className="font-sans text-caption text-ink-2">
+              Fatiga (IF): {n1(comparacionBloques.antes.IF)} → <b className="text-ink">{n1(comparacionBloques.ahora.IF)}</b> ({pct(variacion(comparacionBloques.antes.IF, comparacionBloques.ahora.IF))})
+              {' · '}Estímulo (IEM total): {n1(comparacionBloques.antes.IEM)} → <b className="text-ink">{n1(comparacionBloques.ahora.IEM)}</b> ({pct(variacion(comparacionBloques.antes.IEM, comparacionBloques.ahora.IEM))})
+            </p>
+            <p className="font-sans text-caption text-ink-3">Con {comparacionBloques.antes.n} semana{comparacionBloques.antes.n === 1 ? '' : 's'} antes de este bloque y {comparacionBloques.ahora.n} de este.</p>
+          </div>
         )}
         <div className="flex flex-wrap items-end gap-2 pt-1">
           <label className="flex flex-col gap-1">

@@ -10,9 +10,9 @@ Réplica exacta (validada contra el motor original y hojas reales) de:
 | `cdg.test.ts` | Valores sacados de la hoja real. `npx vitest run src/utils/cdg` |
 
 ## Nombres
-En la hoja "IEA" es estrés **articular**. En la app ya existe un "IEA" que es
-Índice de Estímulo **Acumulado** (`utils/accumulatedStimulusIndex.ts`). Aquí se
-llama `estresArticular` para no mezclarlos.
+En la hoja "IEA" es estrés **articular**. La app tuvo otro "IEA", el Índice de
+Estímulo **Acumulado** (`utils/accumulatedStimulusIndex.ts`), retirado en E-11
+porque premiaba el RIR alto. Aquí se llama `estresArticular`.
 
 ## Catálogo
 `catalogo-cdg.json` (1.034 ejercicios) NO va en el repo ni en el bundle:

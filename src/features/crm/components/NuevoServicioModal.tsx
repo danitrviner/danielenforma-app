@@ -5,7 +5,8 @@ import { parseEurosACents, formatEuros, repartirEnCuotas } from '../lib/dinero';
 import { hoyISO, sumarMeses, mesesDePeriodicidad, formatDia } from '../lib/fechas';
 import { EscrituraEncolada } from '../../../db/crm';
 import Modal, { Campo, inputClass, BotonPrimario, BotonSecundario } from './Modal';
-import type { Cliente, Periodicidad, TipoServicio } from '../types';
+import { CATALOGO_SERVICIOS, entradaDelCatalogo } from '../lib/catalogoServicios';
+import type { Cliente, Periodicidad, TipoDeServicio, TipoServicio } from '../types';
 
 // Qué clase de venta es un servicio. Es lo que permite separar «facturación de
 // altas» de «facturación de renovaciones», y de ahí salen el LTV por servicio y
@@ -32,11 +33,18 @@ export default function NuevoServicioModal({ cliente, coachEmail, onCerrar }: {
 
   const { data: yaTiene = [] } = useServiciosDe(cliente.id);
 
-  const [nombre, setNombre] = useState('');
+  // Qué servicio es (R-01): catálogo cerrado. El nombre sale del tipo; solo en
+  // «Otro» lo escribe el coach.
+  const [tipoServicio, setTipoServicio] = useState<TipoDeServicio | null>(null);
+  const [nombrePropio, setNombrePropio] = useState('');
+  const entrada = tipoServicio ? entradaDelCatalogo(tipoServicio) : null;
+  const nombre = entrada?.nombre ?? nombrePropio;
   const [importe, setImporte] = useState('');
   const [periodicidad, setPeriodicidad] = useState<Periodicidad>('mensual');
   const [fechaInicio, setFechaInicio] = useState(hoyISO());
   const [fechaFin, setFechaFin] = useState('');
+  // Mientras el coach no toque el fin, sigue al tipo y al inicio.
+  const [finTocado, setFinTocado] = useState(false);
   const [descripcion, setDescripcion] = useState('');
   const [generarPago, setGenerarPago] = useState(true);
   const [cuotas, setCuotas] = useState(1);
@@ -75,7 +83,18 @@ export default function NuevoServicioModal({ cliente, coachEmail, onCerrar }: {
   };
 
   const puedeGuardar =
-    nombre.trim().length > 0 && !importeInvalido && !fechasInvertidas && !crear.isPending;
+    tipoServicio !== null && nombre.trim().length > 0 && !importeInvalido && !fechasInvertidas && !crear.isPending;
+
+  const elegirTipoServicio = (t: TipoDeServicio) => {
+    const e = entradaDelCatalogo(t);
+    setTipoServicio(t);
+    if (e.periodicidad) setPeriodicidad(e.periodicidad);
+    if (e.meses && !finTocado) setFechaFin(sumarMeses(fechaInicio, e.meses));
+  };
+  const cambiarInicio = (v: string) => {
+    setFechaInicio(v);
+    if (entrada?.meses && !finTocado && v) setFechaFin(sumarMeses(v, entrada.meses));
+  };
 
   const guardar = async () => {
     try {
@@ -86,6 +105,7 @@ export default function NuevoServicioModal({ cliente, coachEmail, onCerrar }: {
           nombre: nombre.trim(),
           importeCents: importeCents ?? 0,
           tipo: tipoElegido,
+          tipoServicio: tipoServicio as TipoDeServicio,
           periodicidad,
           fechaContratacion: hoyISO(),
           fechaInicio,
@@ -130,9 +150,32 @@ export default function NuevoServicioModal({ cliente, coachEmail, onCerrar }: {
       }
     >
       <div className="space-y-3">
-        <Campo label="Nombre del servicio *">
-          <input className={inputClass} value={nombre} onChange={e => setNombre(e.target.value)} placeholder="Asesoría 3 meses" />
+        <Campo
+          label="Servicio *"
+          hint={entrada?.nombre ? `Se guardará como «${entrada.nombre}».` : tipoServicio === 'otro' ? 'Escribe cómo se llama.' : 'Elige de qué servicio se trata.'}
+        >
+          <div className="flex gap-2">
+            {CATALOGO_SERVICIOS.map(e => (
+              <button
+                key={e.id}
+                type="button"
+                onClick={() => elegirTipoServicio(e.id)}
+                aria-pressed={tipoServicio === e.id}
+                className={`flex-1 rounded-control border px-3 py-2 font-sans text-caption font-bold transition-colors ${
+                  tipoServicio === e.id
+                    ? 'bg-accent text-on-accent border-accent'
+                    : 'bg-raised text-ink-2 border-hairline hover:text-ink'
+                }`}
+              >{e.etiqueta}</button>
+            ))}
+          </div>
         </Campo>
+
+        {tipoServicio === 'otro' && (
+          <Campo label="Nombre del servicio *">
+            <input className={inputClass} value={nombrePropio} onChange={e => setNombrePropio(e.target.value)} placeholder="Sesión suelta, plan mensual…" />
+          </Campo>
+        )}
 
         <Campo
           label="Qué venta es"
@@ -168,18 +211,26 @@ export default function NuevoServicioModal({ cliente, coachEmail, onCerrar }: {
             <input className={inputClass} value={importe} onChange={e => setImporte(e.target.value)} placeholder="149,90" inputMode="decimal" />
           </Campo>
 
-          <Campo label="Duración" hint="Solo para sugerir el fin">
-            <select
-              className={inputClass}
-              value={periodicidad}
-              onChange={e => setPeriodicidad(e.target.value as Periodicidad)}
-            >
-              {PERIODICIDADES.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}
-            </select>
-          </Campo>
+          {/* En trimestral, semestral y anual la duración ya la dice el servicio;
+              solo se pregunta en «Otro» (un plan mensual, una sesión suelta…). */}
+          {tipoServicio === 'otro' ? (
+            <Campo label="Duración" hint="Solo para sugerir el fin">
+              <select
+                className={inputClass}
+                value={periodicidad}
+                onChange={e => setPeriodicidad(e.target.value as Periodicidad)}
+              >
+                {PERIODICIDADES.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}
+              </select>
+            </Campo>
+          ) : (
+            <Campo label="Duración" hint="La marca el servicio">
+              <input className={inputClass} value={entrada ? `${entrada.meses} meses` : '—'} disabled readOnly />
+            </Campo>
+          )}
 
           <Campo label="Inicio">
-            <input className={inputClass} type="date" value={fechaInicio} onChange={e => setFechaInicio(e.target.value)} />
+            <input className={inputClass} type="date" value={fechaInicio} onChange={e => cambiarInicio(e.target.value)} />
           </Campo>
 
           <Campo
@@ -187,11 +238,11 @@ export default function NuevoServicioModal({ cliente, coachEmail, onCerrar }: {
             error={fechasInvertidas ? 'El fin es anterior al inicio.' : undefined}
             hint={!fechasInvertidas && fechaFin ? formatDia(fechaFin) : 'Opcional'}
           >
-            <input className={inputClass} type="date" value={fechaFin} onChange={e => setFechaFin(e.target.value)} />
+            <input className={inputClass} type="date" value={fechaFin} onChange={e => { setFinTocado(true); setFechaFin(e.target.value); }} />
           </Campo>
         </div>
 
-        {periodicidad !== 'unico' && (
+        {tipoServicio === 'otro' && periodicidad !== 'unico' && (
           <button
             type="button"
             onClick={sugerirFin}

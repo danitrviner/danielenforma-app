@@ -1,7 +1,7 @@
-import { WorkoutExercise, WeeklyProgressionRule, CambiosDeSemana, WorkoutSetGroup, WorkoutTechnique, EventoDeSemana, Mesocycle, QuestionnaireAssignment } from '../types';
+import { WorkoutExercise, WeeklyProgressionRule, CambiosDeSemana, WorkoutSetGroup, EventoDeSemana, Mesocycle, QuestionnaireAssignment, WorkoutTechnique, AjustesDeTecnica } from '../types';
 import { resolveExerciseForWeek, resolverEjercicioDelMeso, mesocycleWeekNumber } from './progression';
 import { startOfDay, planWeekDueDate, mesocycleEndDate } from './scheduleEngine';
-import { TECHNIQUE_LABEL } from './workoutTechniques';
+import { describirTecnica } from './tecnicaDeSerie';
 
 /* Programar un mesociclo semana a semana (barra de semanas de Mesociclo ›
    Ejercicios). Los cambios viven en el propio ejercicio, como reglas de
@@ -11,7 +11,7 @@ import { TECHNIQUE_LABEL } from './workoutTechniques';
 
 const CAMPOS: (keyof CambiosDeSemana)[] = [
   'exerciseId', 'muscleGroup', 'sets', 'reps', 'rir', 'restSeconds', 'setGroups',
-  'technique', 'notes', 'warmupMode', 'manualWarmupSets', 'recordVideoSet',
+  'technique', 'tecnicaAjustes', 'notes', 'warmupMode', 'manualWarmupSets', 'recordVideoSet',
 ];
 
 const igual = (a: unknown, b: unknown) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
@@ -150,21 +150,23 @@ export function repsPorSemana(we: WorkoutExercise, porSemana: Record<number, str
   return programarEnSemanas(we, semanas, false, (r, s) => ({ ...r, reps: porSemana[s].trim() }));
 }
 
-/** Descanso entre series (segundos) desde cada semana indicada. */
-export function descansoPorSemana(we: WorkoutExercise, porSemana: Record<number, number>): WeeklyProgressionRule[] | undefined {
-  const semanas = Object.keys(porSemana).map(Number).filter(s => porSemana[s] > 0).sort((a, b) => a - b);
-  if (semanas.length === 0) return we.weeklyProgression;
-  return programarEnSemanas(we, semanas, false, (r, s) => ({ ...r, restSeconds: Math.round(porSemana[s]) }));
-}
-
-/** Técnica de alta intensidad (drop-set, myo-reps, rest-pause, AMRAP, al fallo)
- *  desde las semanas indicadas. `solo` la limita a esa semana; con `null` se
- *  quita la técnica desde esa semana. */
-export function tecnicaPorSemana(
-  we: WorkoutExercise, semanas: number[], tecnica: WorkoutTechnique | null, solo: boolean,
+/** Técnica de intensidad desde la semana `desde` y, si se indica, hasta la
+ *  `hasta` (incluida): la siguiente vuelve a lo que hubiera antes. `tecnica`
+ *  null = quitarla en esas semanas. Sustituye a la técnica que tuviera el
+ *  ejercicio, con sus ajustes (`ajustes`; sin ellos, los de por defecto). */
+export function tecnicaEnSemanas(
+  we: WorkoutExercise, desde: number, hasta: number | null, tecnica: WorkoutTechnique | null, ajustes?: AjustesDeTecnica,
 ): WeeklyProgressionRule[] | undefined {
-  if (semanas.length === 0) return we.weeklyProgression;
-  return programarEnSemanas(we, semanas, solo, r => ({ ...r, technique: tecnica ?? undefined }));
+  const antes = resolveExerciseForWeek(we, desde);
+  let reglas = programarEnSemanas(we, [desde], false, r => ({
+    ...r, technique: tecnica ?? undefined, tecnicaAjustes: tecnica ? ajustes : undefined,
+  }));
+  if (hasta != null && hasta >= desde) {
+    reglas = programarEnSemanas({ ...we, weeklyProgression: reglas }, [hasta + 1], false, r => ({
+      ...r, technique: antes.technique, tecnicaAjustes: antes.tecnicaAjustes,
+    }));
+  }
+  return reglas;
 }
 
 /** Quita lo programado desde la barra en `semana` (los escalones clásicos
@@ -231,8 +233,8 @@ export function diferencias(
     if (antes.rir !== despues.rir) out.push(`RIR ${antes.rir} → ${despues.rir}`);
   }
   if (antes.restSeconds !== despues.restSeconds) out.push(`descanso ${fmtDescanso(antes.restSeconds)} → ${fmtDescanso(despues.restSeconds)}`);
-  if (antes.technique !== despues.technique) {
-    out.push(despues.technique ? `técnica: ${TECHNIQUE_LABEL[despues.technique]}` : 'sin técnica especial');
+  if (antes.technique !== despues.technique || !igual(antes.tecnicaAjustes, despues.tecnicaAjustes)) {
+    out.push(despues.technique ? `técnica · ${describirTecnica(despues, seriesDe(despues))}` : 'sin técnica especial');
   }
   if ((antes.notes ?? '') !== (despues.notes ?? '') && despues.notes?.trim()) out.push(`nota: «${despues.notes.trim()}»`);
   return out;

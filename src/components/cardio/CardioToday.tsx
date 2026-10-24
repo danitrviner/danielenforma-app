@@ -42,6 +42,9 @@ interface Props {
   onStart: () => void;
   onManualAdd: () => void;
   onSkipToday: () => void;
+  onUndoSkip: () => void;
+  /** YYYY-MM-DD de mañana, para decir a qué día se ha pasado. */
+  mananaIso: string;
 
   weeklyMinutesGoal: number;
   weeklyMinutesDone: number;
@@ -63,11 +66,13 @@ const TYPE_LABEL: Record<CardioSessionType, string> = { zona2: 'LISS · ZONA 2',
 export default function CardioToday({
   connState, bpm, error,
   zona2Assignment, intervalAssignment, sessionType, onChangeSessionType,
-  skippedToday, onConnect, onCancelReady, onStart, onManualAdd, onSkipToday,
+  skippedToday, onConnect, onCancelReady, onStart, onManualAdd, onSkipToday, onUndoSkip, mananaIso,
   weeklyMinutesGoal, weeklyMinutesDone, sessionsGoal, sessionsDone, dailyMinutes,
   todaysSteps, stepGoal,
 }: Props) {
   const activeAssignment = sessionType === 'zona2' ? zona2Assignment : sessionType === 'intervalos' ? intervalAssignment : undefined;
+  // «jueves 23»: a qué día se ha pasado. Sin esto «mañana» no dice nada al abrir la pantalla otro día.
+  const etiquetaManana = new Date(`${mananaIso}T12:00:00`).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric' });
   const targetZone = zona2Assignment?.targetZone;
 
   return (
@@ -94,7 +99,12 @@ export default function CardioToday({
           <div><p className="text-ink-3">Tipo</p><p className="text-ink">{sessionType === 'intervalos' ? `${intervalAssignment?.intervals?.length ?? 0} bloques` : '—'}</p></div>
         </div>
 
-        {skippedToday && <Banner tone="info">Movido a mañana. Puedes empezarlo igualmente si cambias de idea.</Banner>}
+        {skippedToday && (
+          <Banner tone="info">
+            Movido a mañana{etiquetaManana ? `, ${etiquetaManana}` : ''}. Puedes empezarlo igualmente si cambias de idea.{' '}
+            <button type="button" onClick={onUndoSkip} className="font-bold underline underline-offset-2">Deshacer</button>
+          </Banner>
+        )}
         {error && <Banner tone="danger">{error}</Banner>}
 
         {/* Sin BLE (o sea, entrando por el navegador) "Empezar cardio" solo
@@ -105,7 +115,7 @@ export default function CardioToday({
         {connState === 'idle' && !HAY_BANDA && (
           <div className="space-y-2">
             <Button onClick={onManualAdd} fullWidth size="l">Ya lo hice</Button>
-            {!skippedToday && <Button variant="secondary" size="m" onClick={onSkipToday} fullWidth>Mover a mañana</Button>}
+            {!skippedToday && activeAssignment && <Button variant="secondary" size="m" onClick={onSkipToday} fullWidth>Mover a mañana</Button>}
             <p className="font-sans text-caption text-ink-3 leading-relaxed">
               Seguir el cardio en vivo con banda de pulso necesita la app instalada. Desde el
               navegador haz tu sesión y regístrala aquí al terminar.
@@ -118,7 +128,7 @@ export default function CardioToday({
             <Button onClick={onConnect} fullWidth size="l">Empezar cardio</Button>
             <div className="flex gap-2">
               <Button variant="secondary" size="m" onClick={onManualAdd} className="flex-1">Ya lo hice</Button>
-              {!skippedToday && <Button variant="ghost" size="m" onClick={onSkipToday} className="flex-1">Mover a mañana</Button>}
+              {!skippedToday && activeAssignment && <Button variant="ghost" size="m" onClick={onSkipToday} className="flex-1">Mover a mañana</Button>}
             </div>
           </div>
         )}

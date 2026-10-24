@@ -1,14 +1,18 @@
 import React, { useState, useMemo, Suspense } from 'react';
 import { pantallaDiferida } from '../utils/pantallaDiferida';
-import { useQuery, useQueries, useQueryClient } from '@tanstack/react-query';
-import { UserProfile, WeightCheckIn, QuestionnaireAssignment, QuestionnaireResponse, Questionnaire, QuestionnaireQuestion, PhotoAssignment, PhotoView } from '../types';
-import { createNotificationDeduped, getAssignmentsForAthlete, getResponsesForAthlete, getQuestionnaireById, getPesoExtremo, getPhotoAssignmentsForAthlete, getProgressPhotos, getMesocycles } from '../dbService';
-import { todayStr, hasAnsweredThisOccurrence, isUpcoming, isOverdue, ScheduleContext } from '../utils/questionnaireSchedule';
+import { useQueryClient } from '@tanstack/react-query';
+import { UserProfile, WeightCheckIn, QuestionnaireAssignment, QuestionnaireResponse, QuestionnaireQuestion, PhotoAssignment, PhotoView } from '../types';
+import { createNotificationDeduped } from '../dbService';
+import { todayStr, hasAnsweredThisOccurrence, isUpcoming, isOverdue } from '../utils/questionnaireSchedule';
 import { cadenciaEnCristiano, proximaOcurrencia, finDeEstaSemana, startOfDay } from '../utils/scheduleEngine';
-import { pesoUltimoKey } from '../hooks/useAthleteWeight';
 import { leerSexo } from '../utils/athleteProfileSignals';
 import PhotosScreen from './PhotosScreen';
 import QuestionnaireWizard from './QuestionnaireWizard';
+import RevisionDeLaSemana from './checkin/RevisionDeLaSemana';
+import HistorialDeRevisiones from './checkin/HistorialDeRevisiones';
+import { historialDeRevisiones, type PasoRevision } from '../utils/revisionSemanal';
+import { useRevisionDeLaSemana } from '../hooks/useRevisionDeLaSemana';
+import { useToast } from '../hooks/useToast';
 import { Badge, Button, EmptyState, Icon, Skeleton } from './ui';
 
 // Diferido: arrastran recharts (344 KB) — igual que hacía ProfileScreen antes
@@ -56,25 +60,28 @@ const SECCIONES_REVISION = [
   { id: 'revision-historial', icono: 'history', label: 'Historial' },
 ] as const;
 
+/** Lleva la pantalla hasta un bloque de la revisión (con salto directo si el WebView ignora el desplazamiento suave). */
+function irAlBloque(id: string) {
+  const destino = document.getElementById(id);
+  if (!destino) return;
+  // Con «reducir movimiento» activado —y en algunos WebView— el desplazamiento
+  // suave se ignora SIN error: el botón no hace nada y no hay forma de saber
+  // por qué. Se intenta suave y, si al cabo de un momento no se ha movido
+  // nada, se salta de golpe. Llegar de golpe es peor que llegar suave; no
+  // llegar es mucho peor que las dos.
+  const antes = document.scrollingElement?.scrollTop ?? 0;
+  const suave = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  destino.scrollIntoView({ behavior: suave ? 'smooth' : 'auto', block: 'start' });
+  if (!suave) return;
+  window.setTimeout(() => {
+    if ((document.scrollingElement?.scrollTop ?? 0) === antes) {
+      destino.scrollIntoView({ behavior: 'auto', block: 'start' });
+    }
+  }, 250);
+}
+
 function IndiceDeLaRevision({ pendientes }: { pendientes: number }) {
-  const irA = (id: string) => {
-    const destino = document.getElementById(id);
-    if (!destino) return;
-    // Con «reducir movimiento» activado —y en algunos WebView— el desplazamiento
-    // suave se ignora SIN error: el botón no hace nada y no hay forma de saber
-    // por qué. Se intenta suave y, si al cabo de un momento no se ha movido
-    // nada, se salta de golpe. Llegar de golpe es peor que llegar suave; no
-    // llegar es mucho peor que las dos.
-    const antes = document.scrollingElement?.scrollTop ?? 0;
-    const suave = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    destino.scrollIntoView({ behavior: suave ? 'smooth' : 'auto', block: 'start' });
-    if (!suave) return;
-    window.setTimeout(() => {
-      if ((document.scrollingElement?.scrollTop ?? 0) === antes) {
-        destino.scrollIntoView({ behavior: 'auto', block: 'start' });
-      }
-    }, 250);
-  };
+  const irA = irAlBloque;
   return (
     <nav aria-label="Secciones de la revisión" className="-mx-1 flex gap-2 overflow-x-auto hide-scrollbar px-1 pb-1">
       {SECCIONES_REVISION.map(s => (
@@ -122,68 +129,18 @@ interface CheckInScreenProps {
 export default function CheckInScreen({ profile, checkins }: CheckInScreenProps) {
   const queryClient = useQueryClient();
 
-  // Solo para prefill de la pregunta 'metric' bodyweight de los cuestionarios
-  // — el registro/edición de peso en sí vive en BodyweightPanel (rediseño
-  // Fase 3.2, "Perfil"): un único sitio para pesarse, no dos widgets distintos.
-  //
-  // Y solo hace falta el peso más reciente, no el historial: antes se leían
-  // todos los registros del atleta para quedarse con el último de la lista.
-  const { data: ultimoPeso = null } = useQuery({
-    queryKey: pesoUltimoKey(profile.email),
-    queryFn: () => getPesoExtremo(profile.email, 'ultimo'),
-  });
+  // Revisión de esta semana (K-01) y todo lo que la alimenta: un solo hook
+  // compartido con la hoja del «+» y el contador de la barra (mismas claves de
+  // caché, una lectura). El peso más reciente solo sirve aquí para rellenar la
+  // pregunta 'metric' bodyweight de los cuestionarios: el registro del peso vive
+  // en BodyweightPanel (Perfil).
+  const {
+    revision, ultimoPeso, rawAssignments, assignments, responses, templates, scheduleCtx, loadingQ,
+    photoAssignments, loadingPhotoAssignments,
+    progreso, guardarBorrador, marcarEnviada,
+  } = useRevisionDeLaSemana(profile.email);
   const latestWeight = ultimoPeso?.weight;
-
-  // Questionnaire state
   const responsesKey = ['responsesForAthlete', profile.email] as const;
-  const { data: rawAssignments = [], isPending: loadingAssignments } = useQuery({
-    queryKey: ['assignmentsForAthlete', profile.email],
-    queryFn: () => getAssignmentsForAthlete(profile.email),
-  });
-  const { data: responses = [], isPending: loadingResponses } = useQuery({
-    queryKey: responsesKey,
-    queryFn: () => getResponsesForAthlete(profile.email),
-  });
-  const assignments = useMemo(() => rawAssignments.filter(a => a.active), [rawAssignments]);
-  // Plantillas que hacen falta: las de las asignaciones activas Y las de
-  // cualquier respuesta ya enviada — el historial tiene que poder titular
-  // respuestas de un cuestionario que el coach desasignó después.
-  const activeQuestionnaireIds = useMemo(
-    () => [...new Set([
-      ...assignments.map(a => a.questionnaireId),
-      ...responses.map(r => r.questionnaireId),
-    ])],
-    [assignments, responses]
-  );
-  // One cache entry per questionnaire id, same key PendingTasksPanel/ProfileScreen
-  // use for the same lookup — reuses/gets reused by them instead of refetching.
-  const questionnaireQueries = useQueries({
-    queries: activeQuestionnaireIds.map(id => ({
-      queryKey: ['questionnaireById', id],
-      queryFn: (): Promise<Questionnaire | null> => getQuestionnaireById(id),
-    })),
-  });
-  const templates = useMemo(() => {
-    const tMap = new Map<string, Questionnaire>();
-    for (const q of questionnaireQueries) {
-      const t = q.data as Questionnaire | null | undefined;
-      if (t) tMap.set(t.id, t);
-    }
-    return tMap;
-  }, [questionnaireQueries]);
-  // Mesociclos del atleta — contexto para los disparadores 'plan_week' y
-  // 'mesocycle_end' (scheduleEngine no conoce el plan de entreno por sí solo).
-  const { data: mesocycles = [] } = useQuery({
-    // Misma clave que TrainingScreen/HomeScreen/ClientHub — antes llevaba el
-    // sufijo "ForAthlete" y pagaba su propia lectura en vez de compartir la
-    // de las demás pantallas.
-    queryKey: ['mesocycles', profile.email],
-    queryFn: () => getMesocycles(profile.email),
-  });
-  const scheduleCtx: ScheduleContext = useMemo(() => ({ mesocycles }), [mesocycles]);
-
-  const loadingQ = loadingAssignments || loadingResponses
-    || (activeQuestionnaireIds.length > 0 && questionnaireQueries.some(q => q.isPending));
 
   const [activeAssignment, setActiveAssignment] = useState<QuestionnaireAssignment | null>(null);
 
@@ -261,19 +218,6 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
     return map;
   }, [templates, rawAssignments]);
 
-  // Photo check-in state
-  const { data: rawPhotoAssignments = [], isPending: loadingPhotoAssignmentsQ } = useQuery({
-    queryKey: ['photoAssignmentsForAthlete', profile.email],
-    queryFn: () => getPhotoAssignmentsForAthlete(profile.email),
-  });
-  // Same cache key PhotosScreen (rendered below) uses for the same athlete's photos.
-  const { isPending: loadingProgressPhotos } = useQuery({
-    queryKey: ['progressPhotos', profile.email],
-    queryFn: () => getProgressPhotos(profile.email),
-  });
-  const photoAssignments = useMemo(() => rawPhotoAssignments.filter(a => a.active), [rawPhotoAssignments]);
-  const loadingPhotoAssignments = loadingPhotoAssignmentsQ || loadingProgressPhotos;
-
   // Sin asignación explícita del coach (ya no es configurable desde su UI):
   // por defecto se piden las 3 vistas cada semana, para que el flujo de fotos
   // de check-in nunca dependa de que alguien lo active a mano.
@@ -292,6 +236,25 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
 
   const upcomingPhotoAssignments = effectivePhotoAssignments.filter(a => isUpcoming(a));
 
+  const { showToast } = useToast();
+  const historial = useMemo(
+    () => historialDeRevisiones(responses, progreso?.incompleta ? [{ ciclo: progreso.ciclo, incompleta: true }] : []),
+    [responses, progreso],
+  );
+
+  const abrirPaso = (paso: PasoRevision) => {
+    if (paso.tipo === 'cuestionario') {
+      const a = assignments.find(x => x.id === paso.assignmentId);
+      if (a) { setActiveAssignment(a); window.setTimeout(() => irAlBloque('revision-wizard'), 60); }
+      return;
+    }
+    irAlBloque(paso.tipo === 'peso' ? 'revision-peso' : 'revision-fotos');
+  };
+  const enviarRevision = (incompleta: boolean) => {
+    marcarEnviada(incompleta);
+    showToast(incompleta ? 'Revisión enviada. Queda incompleta hasta que termines lo que falta.' : 'Revisión enviada. Tu coach ya puede verla.', 'success');
+  };
+
   const handleQuestionnaireSubmitted = (r: QuestionnaireResponse) => {
     queryClient.setQueryData<QuestionnaireResponse[]>(responsesKey, prev => [...(prev ?? []), r]);
     setActiveAssignment(null);
@@ -308,15 +271,28 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
 
   return (
     <div className="space-y-6">
+      {/* Tu revisión de esta semana: el recorrido único (K-03). Se oculta sola
+          fuera de la ventana de revisión (viernes a lunes). */}
+      {!loadingQ && !loadingPhotoAssignments && (
+        <RevisionDeLaSemana
+          revision={revision}
+          enviada={!!progreso?.enviadaEn}
+          onAbrirPaso={abrirPaso}
+          onEnviar={enviarRevision}
+        />
+      )}
+
       {/* Peso corporal (handoff §1) — primera sección, antes del check-in
           semanal. Vive aquí (no en ProfileScreen) para que sea el mismo
           único sitio para pesarse tanto desde Perfil › Progreso como desde
           la ruta /checkin a la que saltan las tareas pendientes de Home:
           antes esa ruta no tenía ningún input de peso y el atleta no podía
           añadirlo al entrar a responder un cuestionario desde ahí. */}
-      <Suspense fallback={<Skeleton className="w-full h-48 rounded-surface" />}>
-        <BodyweightPanel athleteEmail={profile.email} />
-      </Suspense>
+      <div id="revision-peso" className="scroll-mt-20">
+        <Suspense fallback={<Skeleton className="w-full h-48 rounded-surface" />}>
+          <BodyweightPanel athleteEmail={profile.email} />
+        </Suspense>
+      </div>
 
       {/* Su objetivo y cómo va, justo debajo del peso que lo alimenta. Solo
           aparece si el coach ha confirmado el objetivo de la fase. */}
@@ -338,14 +314,18 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
 
       {/* Questionnaire active form */}
       {activeAssignment && templates.get(activeAssignment.questionnaireId) && (
-        <QuestionnaireWizard
-          questionnaire={templates.get(activeAssignment.questionnaireId)!}
-          assignment={activeAssignment}
-          athleteEmail={profile.email}
-          currentWeight={latestWeight}
-          onSubmitted={handleQuestionnaireSubmitted}
-          onCancel={() => setActiveAssignment(null)}
-        />
+        <div id="revision-wizard" className="scroll-mt-20">
+          <QuestionnaireWizard
+            questionnaire={templates.get(activeAssignment.questionnaireId)!}
+            assignment={activeAssignment}
+            athleteEmail={profile.email}
+            currentWeight={latestWeight}
+            borrador={progreso?.respuestas[activeAssignment.id] ?? null}
+            onBorrador={b => guardarBorrador(activeAssignment.id, b)}
+            onSubmitted={handleQuestionnaireSubmitted}
+            onCancel={() => setActiveAssignment(null)}
+          />
+        </div>
       )}
 
       {/* ── Cuestionarios (todos, no solo los vencidos) ──────────────────────
@@ -466,6 +446,9 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
           )}
         </section>
       )}
+
+      {/* Historial de revisiones (K-04): qué semanas se enviaron y cómo quedaron. */}
+      {!activeAssignment && <HistorialDeRevisiones revisiones={historial} />}
 
       {/* Upcoming (not-yet-due) recurring photo check-ins */}
       {!loadingPhotoAssignments && upcomingPhotoAssignments.length > 0 && (

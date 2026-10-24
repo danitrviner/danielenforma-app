@@ -117,10 +117,10 @@
   --text-title-s--line-height: 1.3;
   --text-title-s--letter-spacing: -0.01em;
 
-  --text-body: 15px;
+  --text-body: 16px;
   --text-body--line-height: 1.55;
 
-  --text-body-s: 13px;
+  --text-body-s: 14px;
   --text-body-s--line-height: 1.5;
 
   /* `label` es el único paso cuya definición en el DS no es solo un tamaño sino
@@ -133,10 +133,10 @@
      plan llama «el más subestimable».
      El tracking de las versalitas sigue donde ya estaba, en las clases
      `tracking-*` explícitas. Qué textos son de verdad etiquetas lo decide F5. */
-  --text-label: 12px;
+  --text-label: 13px;
   --text-label--line-height: 1.2;
 
-  --text-caption: 11px;
+  --text-caption: 12px;
   --text-caption--line-height: 1.35;
   --text-caption--letter-spacing: 0.02em;
 
@@ -573,13 +573,13 @@
   color-scheme: light;
 
   /* Superficies */
-  --p-bg:      #F4F2ED;
+  --p-bg:      #F8F6F2;
   --p-surface: #FFFFFF;
   /* `raised` vive DENTRO de tarjetas blancas (chips, filas, hover del botón
      fantasma, Badge neutral): con #FFF idéntico a `surface` desaparecía.
-     Blanco roto, entre `surface` (#FFF) y `bg` (#F4F2ED): 1,09:1 contra la
+     Blanco roto, entre `surface` (#FFF) y `bg` (#F8F6F2): 1,04:1 contra la
      tarjeta, lo justo para leerse como «un escalón» sin ensuciarla. */
-  --p-raised:  #F8F6F2;
+  --p-raised:  #FAF9F6;
   --p-field:   #FFFFFF;
   --p-inset:   #EBE8E1;
   --p-track:   #DFDBD2;
@@ -592,11 +592,12 @@
      que tinta clara sobre negro, así que el mismo 0,34 que en oscuro da
      2,8:1 aquí daba 2,1:1 y «Guardando» no se leía. Lo que se iguala entre
      temas es el RATIO de cada escalón, no el número de alfa:
-       ink-2  8,3:1   ink-3  5,8:1   ink-4  3,9:1   ink-5  2,8:1
-     Medido sobre blanco, que es el caso peor de este tema. */
-  --p-ink-2:     rgba(27, 25, 22, 0.77);
-  --p-ink-3:     rgba(27, 25, 22, 0.67);
-  --p-ink-4:     rgba(27, 25, 22, 0.62);
+       ink-2  10,3:1  ink-3  7,2:1   ink-4  5,0:1   ink-5  2,8:1
+     Medido sobre blanco, que es el caso peor de este tema. (22-10: subidos
+     para que el texto secundario se lea sin acercar la vista.) */
+  --p-ink-2:     rgba(27, 25, 22, 0.85);
+  --p-ink-3:     rgba(27, 25, 22, 0.75);
+  --p-ink-4:     rgba(27, 25, 22, 0.66);
   --p-ink-5:     rgba(27, 25, 22, 0.44);
   --p-on-accent: #1B1916;   /* el oro de relleno sigue pidiendo tinta encima */
 
@@ -699,9 +700,9 @@
   --p-track:   #2E2E2E;
 
   --p-ink:       #F5F5F4;
-  --p-ink-2:     rgba(245, 245, 244, 0.7);
-  --p-ink-3:     rgba(245, 245, 244, 0.56);
-  --p-ink-4:     rgba(245, 245, 244, 0.5);
+  --p-ink-2:     rgba(245, 245, 244, 0.78);
+  --p-ink-3:     rgba(245, 245, 244, 0.66);
+  --p-ink-4:     rgba(245, 245, 244, 0.58);
   --p-ink-5:     rgba(245, 245, 244, 0.32);
   --p-on-accent: #121212;
 

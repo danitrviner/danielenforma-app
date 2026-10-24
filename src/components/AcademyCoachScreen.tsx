@@ -1,18 +1,15 @@
 import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { AcademyCourse, AcademyLesson, AcademyCategory, AcademyAccess, UnlockRule } from '../types';
-import {
-  getAllCourses, createCourse, updateCourse, deleteCourse,
-  getAllLessons, createLesson, deleteLesson,
-  getAllUserProfilesOrThrow, getAllAcademyAccess, setAcademyAccess, createNotificationDeduped,
-} from '../dbService';
-import { atletasActivos } from '../utils/atletas';
+import { AcademyCourse, AcademyCategory, UnlockRule } from '../types';
+import { getAllCourses, createCourse, updateCourse, deleteCourseWithLessons, getAllLessons } from '../dbService';
 import { subirArchivo } from '../almacenamiento';
 import { compressImage } from '../utils/compressImage';
 import PortadaCurso from './academy/PortadaCurso';
-import { parseVideoUrl } from '../utils/embedPlayerControl';
-import { Avatar, Skeleton } from './ui';
-import { Card, Tabs, Button } from './ui';
+import LeccionesCoach from './academy/LeccionesCoach';
+import AccesoCoach from './academy/AccesoCoach';
+import { moverElemento } from '../utils/academyAdmin';
+import { useConfirm } from '../hooks/useConfirm';
+import { Skeleton, Icon, Card, Tabs, Button } from './ui';
 
 interface Props {
   coachId: string;
@@ -28,7 +25,7 @@ const CATEGORY_LABEL: Record<AcademyCategory, string> = {
 const CATEGORIES = Object.keys(CATEGORY_LABEL) as AcademyCategory[];
 
 const UNLOCK_LABEL = (r: UnlockRule): string => {
-  if (r.type === 'immediate') return 'Inmediato';
+  if (r.type === 'immediate') return 'Sin condición';
   if (r.type === 'daysSinceJoin') return `${r.value} días desde el alta`;
   if (r.type === 'level') return `Nivel ${r.value}`;
   return `Requiere completar otro curso`;
@@ -49,114 +46,188 @@ export default function AcademyCoachScreen({ coachEmail }: Props) {
       <Tabs items={tabs} value={tab} onChange={id => setTab(id as Tab)} label="Secciones de TrainingLab" />
 
       {tab === 'cursos' && <CoursesTab />}
-      {tab === 'lecciones' && <LessonsTab />}
-      {tab === 'acceso' && <AccessTab coachEmail={coachEmail} />}
+      {tab === 'lecciones' && <LeccionesCoach />}
+      {tab === 'acceso' && <AccesoCoach coachEmail={coachEmail} />}
     </div>
   );
 }
 
 // ─── CURSOS ─────────────────────────────────────────────────────────────────
 
-function CoursesTab() {
-  const queryClient = useQueryClient();
-  const { data: courses = [], isPending } = useQuery({ queryKey: ['academyCourses'], queryFn: getAllCourses });
-  const [showForm, setShowForm] = useState(false);
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [category, setCategory] = useState<AcademyCategory>('entrenamiento');
-  const [unlockType, setUnlockType] = useState<UnlockRule['type']>('immediate');
-  const [unlockValue, setUnlockValue] = useState('');
-  const [saving, setSaving] = useState(false);
+interface DatosCurso {
+  title: string;
+  description: string;
+  category: AcademyCategory;
+  unlockRule: UnlockRule;
+  inicial: boolean;
+}
 
-  const buildRule = (): UnlockRule => {
+/** Crear y editar un curso con el mismo formulario. El desbloqueo es a mano (Dani, 23-10): «Sin condición» y se abre curso a curso en Acceso; las reglas por días, nivel o prerrequisito siguen ahí por si se usan. */
+function CursoForm({ inicial, cursos, guardando, onSubmit, onCancel }: {
+  inicial?: AcademyCourse;
+  cursos: AcademyCourse[];
+  guardando: boolean;
+  onSubmit: (d: DatosCurso) => void;
+  onCancel: () => void;
+  /** Sin `@types/react` en el repo, TS no excluye `key` por su cuenta (ver Chip). */
+  key?: React.Key;
+}) {
+  const [title, setTitle] = useState(inicial?.title ?? '');
+  const [description, setDescription] = useState(inicial?.description ?? '');
+  const [category, setCategory] = useState<AcademyCategory>(inicial?.category ?? 'entrenamiento');
+  const [unlockType, setUnlockType] = useState<UnlockRule['type']>(inicial?.unlockRule.type ?? 'immediate');
+  const [unlockValue, setUnlockValue] = useState(inicial && inicial.unlockRule.type !== 'immediate' ? String(inicial.unlockRule.value) : '');
+  const [esInicial, setEsInicial] = useState(!!inicial?.inicial);
+
+  const regla = (): UnlockRule => {
     if (unlockType === 'daysSinceJoin') return { type: 'daysSinceJoin', value: Number(unlockValue) || 0 };
     if (unlockType === 'level') return { type: 'level', value: Number(unlockValue) || 1 };
     if (unlockType === 'prerequisite') return { type: 'prerequisite', value: unlockValue };
     return { type: 'immediate' };
   };
-
-  const handleCreate = async (e: React.FormEvent) => {
+  const enviar = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
-    setSaving(true);
+    onSubmit({ title: title.trim(), description: description.trim(), category, unlockRule: regla(), inicial: esInicial });
+  };
+  const CAMPO = 'max-w-full bg-bg border border-hairline rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent';
+
+  return (
+    <form onSubmit={enviar} className="bg-raised border border-hairline rounded-surface p-3 space-y-2">
+      <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Título del curso" required className={`w-full ${CAMPO}`} />
+      <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="Descripción" rows={2} className={`w-full ${CAMPO}`} />
+      <div className="flex gap-2 flex-wrap">
+        <select value={category} onChange={e => setCategory(e.target.value as AcademyCategory)} className={CAMPO} aria-label="Categoría">
+          {CATEGORIES.map(c => <option key={c} value={c}>{CATEGORY_LABEL[c]}</option>)}
+        </select>
+        <select value={unlockType} onChange={e => setUnlockType(e.target.value as UnlockRule['type'])} className={CAMPO} aria-label="Condición de desbloqueo">
+          <option value="immediate">Sin condición (lo abres tú en Acceso)</option>
+          <option value="daysSinceJoin">Días desde el alta</option>
+          <option value="level">Nivel mínimo de su escalera</option>
+          <option value="prerequisite">Requiere completar otro curso</option>
+        </select>
+        {unlockType === 'prerequisite' ? (
+          <select value={unlockValue} onChange={e => setUnlockValue(e.target.value)} className={`flex-1 min-w-[140px] ${CAMPO}`} aria-label="Curso requerido">
+            <option value="">Elige el curso...</option>
+            {cursos.filter(c => c.id !== inicial?.id).map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
+          </select>
+        ) : unlockType !== 'immediate' && (
+          <input value={unlockValue} onChange={e => setUnlockValue(e.target.value)} placeholder="Número" inputMode="numeric" className={`flex-1 min-w-[100px] ${CAMPO}`} />
+        )}
+      </div>
+      <label className="flex items-center gap-2 font-sans text-label text-ink-2">
+        <input type="checkbox" checked={esInicial} onChange={e => setEsInicial(e.target.checked)} className="w-4 h-4 accent-accent" />
+        Curso inicial: se abre solo al dar acceso a un atleta nuevo
+      </label>
+      <div className="flex gap-2">
+        <Button type="button" variant="secondary" onClick={onCancel} className="flex-1">Cancelar</Button>
+        <Button type="submit" disabled={guardando} className="flex-1">{guardando ? 'Guardando...' : inicial ? 'Guardar cambios' : 'Crear curso'}</Button>
+      </div>
+    </form>
+  );
+}
+
+function CoursesTab() {
+  const queryClient = useQueryClient();
+  const { confirm, ConfirmDialog } = useConfirm();
+  const { data: courses = [], isPending } = useQuery({ queryKey: ['academyCourses'], queryFn: getAllCourses });
+  const { data: lessons = [] } = useQuery({ queryKey: ['academyLessons'], queryFn: getAllLessons });
+  const [creando, setCreando] = useState(false);
+  const [editando, setEditando] = useState<string | null>(null);
+  const [guardando, setGuardando] = useState(false);
+
+  const ordenados = [...courses].sort((a, b) => a.order - b.order);
+  const setCursos = (fn: (prev: AcademyCourse[]) => AcademyCourse[]) =>
+    queryClient.setQueryData<AcademyCourse[]>(['academyCourses'], prev => fn(prev ?? []));
+
+  const crear = async (d: DatosCurso) => {
+    setGuardando(true);
     try {
-      const course = await createCourse({
-        title: title.trim(), description: description.trim(), category, order: courses.length,
-        published: false, unlockRule: buildRule(), lessonCount: 0,
-      });
-      queryClient.setQueryData<AcademyCourse[]>(['academyCourses'], prev => [...(prev ?? []), course]);
-      setTitle(''); setDescription(''); setUnlockValue(''); setShowForm(false);
-    } finally { setSaving(false); }
+      const order = ordenados.length > 0 ? ordenados[ordenados.length - 1].order + 1 : 0;
+      const course = await createCourse({ ...d, order, published: false, lessonCount: 0 });
+      setCursos(prev => [...prev, course]);
+      setCreando(false);
+    } finally { setGuardando(false); }
+  };
+
+  const guardarEdicion = async (c: AcademyCourse, d: DatosCurso) => {
+    setGuardando(true);
+    try {
+      await updateCourse(c.id, d);
+      setCursos(prev => prev.map(x => (x.id === c.id ? { ...x, ...d } : x)));
+      setEditando(null);
+    } finally { setGuardando(false); }
   };
 
   const togglePublished = async (c: AcademyCourse) => {
-    queryClient.setQueryData<AcademyCourse[]>(['academyCourses'], prev => prev?.map(x => x.id === c.id ? { ...x, published: !x.published } : x));
+    setCursos(prev => prev.map(x => (x.id === c.id ? { ...x, published: !x.published } : x)));
     await updateCourse(c.id, { published: !c.published });
   };
 
-  const handleDelete = async (id: string) => {
-    queryClient.setQueryData<AcademyCourse[]>(['academyCourses'], prev => prev?.filter(c => c.id !== id));
-    await deleteCourse(id);
+  const mover = async (c: AcademyCourse, delta: -1 | 1) => {
+    const cambios = moverElemento(ordenados, c.id, delta);
+    if (cambios.length === 0) return;
+    const orden = new Map(cambios.map(x => [x.id, x.order]));
+    setCursos(prev => prev.map(x => (orden.has(x.id) ? { ...x, order: orden.get(x.id)! } : x)));
+    for (const x of cambios) await updateCourse(x.id, { order: x.order });
+  };
+
+  const borrar = async (c: AcademyCourse) => {
+    const n = lessons.filter(l => l.courseId === c.id).length;
+    const aviso = n > 0
+      ? `Este curso tiene ${n} lección${n === 1 ? '' : 'es'}: se borrarán también. ¿Borrar «${c.title}»?`
+      : `¿Borrar el curso «${c.title}»?`;
+    if (!await confirm(aviso)) return;
+    setCursos(prev => prev.filter(x => x.id !== c.id));
+    await deleteCourseWithLessons(c.id);
+    queryClient.setQueryData(['academyLessons'], (prev: unknown) => (Array.isArray(prev) ? prev.filter((l: { courseId: string }) => l.courseId !== c.id) : prev));
   };
 
   return (
     <Card
       title="Cursos"
       action={
-        <button onClick={() => setShowForm(v => !v)} className="flex items-center gap-1 text-caption font-mono font-bold uppercase text-accent-ink hover:text-accent-press">
-          <span className="material-symbols-outlined text-body-s">{showForm ? 'close' : 'add'}</span>
-          {showForm ? 'Cancelar' : 'Nuevo curso'}
+        <button onClick={() => setCreando(v => !v)} className="flex items-center gap-1 text-caption font-mono font-bold uppercase text-accent-ink hover:text-accent-press">
+          <Icon name={creando ? 'close' : 'add'} size="s" />
+          {creando ? 'Cancelar' : 'Nuevo curso'}
         </button>
       }
     >
-
-      {showForm && (
-        <form onSubmit={handleCreate} className="bg-raised border border-hairline rounded-surface p-3 space-y-2">
-          <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Título del curso" required
-            className="w-full bg-bg border border-hairline rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent" />
-          <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="Descripción" rows={2}
-            className="w-full bg-bg border border-hairline rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent" />
-          <div className="flex gap-2 flex-wrap">
-            <select value={category} onChange={e => setCategory(e.target.value as AcademyCategory)}
-              className="bg-bg border border-hairline rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent">
-              {CATEGORIES.map(c => <option key={c} value={c}>{CATEGORY_LABEL[c]}</option>)}
-            </select>
-            <select value={unlockType} onChange={e => setUnlockType(e.target.value as UnlockRule['type'])}
-              className="bg-bg border border-hairline rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent">
-              <option value="immediate">Desbloqueo inmediato</option>
-              <option value="daysSinceJoin">Días desde el alta</option>
-              <option value="level">Nivel mínimo de su escalera</option>
-              <option value="prerequisite">Requiere otro curso (ID)</option>
-            </select>
-            {unlockType !== 'immediate' && (
-              <input value={unlockValue} onChange={e => setUnlockValue(e.target.value)} placeholder={unlockType === 'prerequisite' ? 'ID de curso' : 'Número'}
-                className="flex-1 min-w-[100px] bg-bg border border-hairline rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent" />
-            )}
-          </div>
-          <Button type="submit" disabled={saving} fullWidth>{saving ? 'Guardando...' : 'Crear curso'}</Button>
-        </form>
-      )}
+      <ConfirmDialog />
+      {creando && <CursoForm cursos={ordenados} guardando={guardando} onSubmit={d => void crear(d)} onCancel={() => setCreando(false)} />}
 
       {isPending ? (
         <div className="space-y-2"><Skeleton className="h-14 w-full" /><Skeleton className="h-14 w-full" /></div>
-      ) : courses.length === 0 ? (
+      ) : ordenados.length === 0 ? (
         <p className="text-label text-ink-3 font-sans py-2">Todavía no hay cursos.</p>
       ) : (
         <div className="space-y-2">
-          {courses.map(c => (
-            <div key={c.id} className="flex items-center gap-3 bg-raised border border-hairline rounded-surface p-3">
-              <PortadaPicker curso={c} />
-              <div className="flex-1 min-w-0">
-                <p className="font-sans font-bold text-body-s text-ink truncate">{c.title}</p>
-                <p className="text-caption text-ink-2 font-mono">{CATEGORY_LABEL[c.category]} · {c.lessonCount} lecciones · {UNLOCK_LABEL(c.unlockRule)}</p>
+          {ordenados.map((c, i) => (
+            editando === c.id ? (
+              <CursoForm key={c.id} inicial={c} cursos={ordenados} guardando={guardando} onSubmit={d => void guardarEdicion(c, d)} onCancel={() => setEditando(null)} />
+            ) : (
+              <div key={c.id} className="flex items-center gap-3 flex-wrap bg-raised border border-hairline rounded-surface p-3">
+                <div className="flex flex-col flex-shrink-0">
+                  <button onClick={() => void mover(c, -1)} disabled={i === 0} aria-label={`Subir ${c.title}`} className="text-ink-3 hover:text-accent-ink disabled:opacity-20"><Icon name="keyboard_arrow_up" size="s" /></button>
+                  <button onClick={() => void mover(c, 1)} disabled={i === ordenados.length - 1} aria-label={`Bajar ${c.title}`} className="text-ink-3 hover:text-accent-ink disabled:opacity-20"><Icon name="keyboard_arrow_down" size="s" /></button>
+                </div>
+                <PortadaPicker curso={c} />
+                <div className="flex-1 min-w-[9rem]">
+                  <p className="font-sans font-bold text-body-s text-ink">
+                    {c.title}
+                    {c.inicial && <span className="ml-2 align-middle font-mono text-caption font-bold uppercase text-accent-ink">inicial</span>}
+                  </p>
+                  <p className="text-caption text-ink-2 font-mono">{CATEGORY_LABEL[c.category]} · {c.lessonCount} lecciones · {UNLOCK_LABEL(c.unlockRule)}</p>
+                </div>
+                <div className="flex items-center gap-2 ml-auto">
+                <button onClick={() => void togglePublished(c)} className={`text-caption font-mono font-bold uppercase px-2 py-1 rounded-control ${c.published ? 'bg-data/10 text-data' : 'bg-hairline text-ink-3'}`}>
+                  {c.published ? 'Publicado' : 'Borrador'}
+                </button>
+                <button onClick={() => setEditando(c.id)} aria-label={`Editar ${c.title}`} className="text-ink-2 hover:text-accent-ink flex-shrink-0"><Icon name="edit" size="s" /></button>
+                <button onClick={() => void borrar(c)} aria-label={`Borrar ${c.title}`} className="text-ink-2 hover:text-danger flex-shrink-0"><Icon name="delete" size="s" /></button>
+                </div>
               </div>
-              <button onClick={() => togglePublished(c)} className={`text-caption font-mono font-bold uppercase px-2 py-1 rounded-control ${c.published ? 'bg-data/10 text-data' : 'bg-hairline text-ink-3'}`}>
-                {c.published ? 'Publicado' : 'Borrador'}
-              </button>
-              <button onClick={() => handleDelete(c.id)} className="text-ink-2 hover:text-danger flex-shrink-0">
-                <span className="material-symbols-outlined text-title-s">delete</span>
-              </button>
-            </div>
+            )
           ))}
         </div>
       )}
@@ -221,178 +292,5 @@ function PortadaPicker({ curso }: { curso: AcademyCourse }) {
         onChange={e => { void elegir(e.target.files?.[0]); e.target.value = ''; }}
       />
     </label>
-  );
-}
-
-// ─── LECCIONES ──────────────────────────────────────────────────────────────
-
-function LessonsTab() {
-  const queryClient = useQueryClient();
-  const { data: courses = [] } = useQuery({ queryKey: ['academyCourses'], queryFn: getAllCourses });
-  const { data: lessons = [], isPending } = useQuery({ queryKey: ['academyLessons'], queryFn: getAllLessons });
-  const [showForm, setShowForm] = useState(false);
-  const [courseId, setCourseId] = useState('');
-  const [title, setTitle] = useState('');
-  const [videoProvider, setVideoProvider] = useState<'youtube' | 'vimeo'>('youtube');
-  const [videoId, setVideoId] = useState('');
-  const [saving, setSaving] = useState(false);
-
-  const handleCreate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!title.trim() || !videoId.trim() || !courseId) return;
-    setSaving(true);
-    try {
-      const parsed = parseVideoUrl(videoId);
-      const finalProvider = parsed?.provider ?? videoProvider;
-      const finalId = parsed?.id ?? videoId.trim();
-      const lessonsInCourse = lessons.filter(l => l.courseId === courseId);
-      const lesson = await createLesson({
-        courseId, title: title.trim(), order: lessonsInCourse.length,
-        videoProvider: finalProvider, videoId: finalId,
-      });
-      queryClient.setQueryData<AcademyLesson[]>(['academyLessons'], prev => [...(prev ?? []), lesson]);
-      const course = courses.find(c => c.id === courseId);
-      if (course) {
-        await updateCourse(courseId, { lessonCount: lessonsInCourse.length + 1 });
-        queryClient.setQueryData<AcademyCourse[]>(['academyCourses'], prev => prev?.map(c => c.id === courseId ? { ...c, lessonCount: lessonsInCourse.length + 1 } : c));
-      }
-      setTitle(''); setVideoId(''); setShowForm(false);
-    } finally { setSaving(false); }
-  };
-
-  const handleDelete = async (l: AcademyLesson) => {
-    queryClient.setQueryData<AcademyLesson[]>(['academyLessons'], prev => prev?.filter(x => x.id !== l.id));
-    await deleteLesson(l.id);
-    const remaining = lessons.filter(x => x.courseId === l.courseId && x.id !== l.id).length;
-    await updateCourse(l.courseId, { lessonCount: remaining });
-    queryClient.setQueryData<AcademyCourse[]>(['academyCourses'], prev => prev?.map(c => c.id === l.courseId ? { ...c, lessonCount: remaining } : c));
-  };
-
-  return (
-    <Card
-      title="Lecciones"
-      action={
-        <button onClick={() => setShowForm(v => !v)} className="flex items-center gap-1 text-caption font-mono font-bold uppercase text-accent-ink hover:text-accent-press">
-          <span className="material-symbols-outlined text-body-s">{showForm ? 'close' : 'add'}</span>
-          {showForm ? 'Cancelar' : 'Nueva lección'}
-        </button>
-      }
-    >
-
-      {showForm && (
-        <form onSubmit={handleCreate} className="bg-raised border border-hairline rounded-surface p-3 space-y-2">
-          <select value={courseId} onChange={e => setCourseId(e.target.value)} required
-            className="w-full bg-bg border border-hairline rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent">
-            <option value="">Selecciona curso...</option>
-            {courses.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
-          </select>
-          <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Título de la lección" required
-            className="w-full bg-bg border border-hairline rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent" />
-          <div className="flex gap-2">
-            <select value={videoProvider} onChange={e => setVideoProvider(e.target.value as 'youtube' | 'vimeo')}
-              className="bg-bg border border-hairline rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent">
-              <option value="youtube">YouTube</option>
-              <option value="vimeo">Vimeo</option>
-            </select>
-            <input value={videoId} onChange={e => setVideoId(e.target.value)} placeholder="ID o URL del vídeo" required
-              className="flex-1 bg-bg border border-hairline rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent" />
-          </div>
-          <Button type="submit" disabled={saving} fullWidth>{saving ? 'Guardando...' : 'Crear lección'}</Button>
-        </form>
-      )}
-
-      {isPending ? (
-        <div className="space-y-2"><Skeleton className="h-12 w-full" /><Skeleton className="h-12 w-full" /></div>
-      ) : lessons.length === 0 ? (
-        <p className="text-label text-ink-3 font-sans py-2">Todavía no hay lecciones.</p>
-      ) : (
-        <div className="space-y-2">
-          {lessons.map(l => (
-            <div key={l.id} className="flex items-center gap-3 bg-raised border border-hairline rounded-surface p-3">
-              <span className="material-symbols-outlined text-data">play_circle</span>
-              <div className="flex-1 min-w-0">
-                <p className="font-sans font-bold text-body-s text-ink truncate">{l.title}</p>
-                <p className="text-caption text-ink-2 font-sans">{courses.find(c => c.id === l.courseId)?.title ?? '—'}</p>
-              </div>
-              <button onClick={() => handleDelete(l)} className="text-ink-2 hover:text-danger flex-shrink-0">
-                <span className="material-symbols-outlined text-title-s">delete</span>
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
-    </Card>
-  );
-}
-
-// ─── ACCESO (capa 1: quién ve la pestaña Academia) ─────────────────────────
-
-function AccessTab({ coachEmail }: { coachEmail: string }) {
-  const queryClient = useQueryClient();
-  const { data: profiles = [], isPending: loadingProfiles } = useQuery({ queryKey: ['userProfiles'], queryFn: getAllUserProfilesOrThrow });
-  const { data: accessList = [], isPending: loadingAccess } = useQuery({ queryKey: ['academyAccessAll'], queryFn: getAllAcademyAccess });
-  const [selected, setSelected] = useState<Set<string>>(new Set());
-
-  const athletes = atletasActivos(profiles).filter(p => p.role === 'client');
-  const accessByEmail = new Map(accessList.map(a => [a.athleteId, a]));
-
-  const toggle = async (email: string, enabled: boolean) => {
-    const updated = await setAcademyAccess(email, enabled, coachEmail);
-    queryClient.setQueryData<AcademyAccess[]>(['academyAccessAll'], prev => [...(prev ?? []).filter(a => a.athleteId !== email), updated]);
-    if (enabled) {
-      createNotificationDeduped(`notif_academy_access_${email}_${updated.grantedAt}`, {
-        recipientEmail: email, type: 'academy_access_granted', title: 'Training Lab desbloqueado 🎓',
-        body: 'Tu entrenador te ha dado acceso a Training Lab.',
-        link: 'academy', createdAt: new Date().toISOString(), read: false,
-      }).catch(err => console.warn('createNotificationDeduped (academy access) failed:', err));
-    }
-  };
-
-  const toggleSelected = (email: string) => {
-    setSelected(prev => {
-      const next = new Set(prev);
-      if (next.has(email)) next.delete(email);
-      else next.add(email);
-      return next;
-    });
-  };
-
-  const grantSelected = async () => {
-    for (const email of selected) await toggle(email, true);
-    setSelected(new Set());
-  };
-
-  if (loadingProfiles || loadingAccess) {
-    return <div className="space-y-2"><Skeleton className="h-12 w-full" /><Skeleton className="h-12 w-full" /></div>;
-  }
-
-  return (
-    <Card
-      title="Acceso por atleta"
-      action={selected.size > 0 && (
-        <button onClick={grantSelected} className="text-caption font-sans font-bold uppercase text-accent-ink hover:text-accent-press">
-          Conceder a {selected.size} seleccionado{selected.size === 1 ? '' : 's'}
-        </button>
-      )}
-    >
-      <div className="space-y-2">
-        {athletes.map(a => {
-          const enabled = accessByEmail.get(a.email)?.enabled ?? false;
-          return (
-            <div key={a.email} className="flex items-center gap-3 bg-raised border border-hairline rounded-surface p-3">
-              <input type="checkbox" checked={selected.has(a.email)} onChange={() => toggleSelected(a.email)} className="w-4 h-4 accent-accent" />
-              <Avatar src={a.avatarUrl} name={a.displayName} className="w-7 h-7 rounded-full object-cover flex-shrink-0" />
-              <p className="flex-1 min-w-0 font-sans font-bold text-body-s text-ink truncate">{a.displayName}</p>
-              <button
-                onClick={() => toggle(a.email, !enabled)}
-                className={`text-caption font-mono font-bold uppercase px-3 py-2 rounded-full transition-colors ${enabled ? 'bg-data/10 text-data' : 'bg-hairline text-ink-3'}`}
-              >
-                {enabled ? 'Acceso activo' : 'Sin acceso'}
-              </button>
-            </div>
-          );
-        })}
-      </div>
-    </Card>
   );
 }

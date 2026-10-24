@@ -8,6 +8,7 @@ import LessonPlayer from './academy/LessonPlayer';
 import PortadaCurso from './academy/PortadaCurso';
 import TarjetaCurso from './academy/TarjetaCurso';
 import { siguienteLeccion } from '../utils/academyContinuar';
+import { cursosVisibles, progresoRecalculado } from '../utils/academyAdmin';
 import { Skeleton } from './ui';
 import { Icon, Button, EmptyState, PageHeader, ListRow, ProgressBar } from './ui';
 
@@ -58,11 +59,11 @@ export default function AcademyScreen({ profile }: Props) {
     return <EmptyState icon="lock" title="Training Lab aún no disponible" description="Tu entrenador todavía no te ha dado acceso a Training Lab." />;
   }
 
-  const visibleCourses = access.grantedCourses?.length
-    ? courses.filter(c => access.grantedCourses!.includes(c.id))
-    : courses;
+  const visibleCourses = cursosVisibles(access, courses);
   const publishedCourses = visibleCourses.filter(c => c.published).sort((a, b) => a.order - b.order);
-  const progressSafe = progress ?? { athleteId: profile.email, completed: {}, courseProgress: {} };
+  // El % de cada curso se recalcula con las lecciones que hay ahora: si el coach
+  // añade una a un curso terminado, deja de verse al 100 % al abrirlo.
+  const progressSafe = progresoRecalculado(progress ?? { athleteId: profile.email, completed: {}, courseProgress: {} }, courses, lessons);
   const courseTitleById = (id: string) => courses.find(c => c.id === id)?.title ?? '';
 
   const openCourse = openCourseId ? publishedCourses.find(c => c.id === openCourseId) : null;

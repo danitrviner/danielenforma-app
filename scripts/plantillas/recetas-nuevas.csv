@@ -1,0 +1,5 @@
+﻿receta;momentos;minutos;tupper;no_apta_para;foto;pasos;ingrediente;alimento_id;gramos;min;max;palanca;fijo
+Ejemplo: pasta con carne;comida, cena;20;sí;vegano, vegetariano, sin gluten;https://images.unsplash.com/ejemplo.jpg;Cuece la pasta | Dora la carne picada | Mezcla con el tomate;Pasta;pasta-seco;80;;;;
+Ejemplo: pasta con carne;;;;;;;Carne picada de ternera;ternera-picada-5;120;;;;
+Ejemplo: pasta con carne;;;;;;;Tomate frito;tomate-frito;60;60;60;;sí
+Ejemplo: pasta con carne;;;;;;;Sal;-;1;;;;

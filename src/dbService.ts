@@ -58,7 +58,7 @@ export {
 // Movido a src/db/nutrition.ts (2026-07-18) — reexportado aquí para que ningún
 // import existente (`from '../dbService'`) tenga que cambiar.
 export {
-  getFoodItems, createFoodItem, updateFoodItem, deleteFoodItem, seedFoodItemsIfEmpty,
+  getFoodItems, getCatalogoAlimentos, createFoodItem, updateFoodItem, deleteFoodItem, seedFoodItemsIfEmpty,
   getAlimentosPersonales, crearAlimentoPersonal, actualizarAlimentoPersonal, borrarAlimentoPersonal,
   getAthleteNutritionConfig, saveAthleteNutritionConfig,
   getDietsForAthlete, createDiet, updateDiet, deleteDiet,
@@ -91,7 +91,7 @@ export { inviteClient, getPendingInvites, markInviteJoined, cancelInvite } from 
 // ─── RECIPES ─────────────────────────────────────────────────────────────────
 // Movido a src/db/recipes.ts (2026-07-18) — reexportado aquí para que ningún
 // import existente (`from '../dbService'`) tenga que cambiar.
-export { getRecipes, getRecipeById, queryRecetas, cargarIndiceRecetas, createRecipe, updateRecipe, deleteRecipe, getRecipeFavorites, saveRecipeFavorites, getReglasDeReceta, saveReglasDeReceta, queryRecetasForGenerator, OWNER_RECETARIO_TODOS } from './db/recipes';
+export { getRecipes, getRecipeById, queryRecetas, cargarIndiceRecetas, createRecipe, updateRecipe, deleteRecipe, getRecipeFavorites, saveRecipeFavorites, getReglasDeReceta, saveReglasDeReceta, getAccesoGlobalARecetas, saveAccesoGlobalARecetas, queryRecetasForGenerator, OWNER_RECETARIO_TODOS } from './db/recipes';
 export type { RecetasCursor, RecetasFilters } from './db/recipes';
 
 // ─── PROGRESS PHOTOS + ASIGNACIONES DE FOTO ───────────────────────────────────
@@ -118,7 +118,7 @@ export {
 // Movido a src/db/athleteMetrics.ts (2026-07-18) — reexportado aquí para que
 // ningún import existente (`from '../dbService'`) tenga que cambiar.
 export {
-  getBodyweightForAthlete, addBodyweight, updateBodyweight, deleteBodyweight,
+  getBodyweightForAthlete, addBodyweight, guardarPesoDelDia, updateBodyweight, deleteBodyweight,
   getStepsForAthlete, getStepsForDate, getPesoExtremo, addSteps, updateSteps,
 } from './db/athleteMetrics';
 
@@ -187,7 +187,7 @@ export {
 
 // ─── TRAININGLAB (academia: cursos, lecciones, progreso, acceso) ──────────────
 export {
-  getAllCourses, createCourse, updateCourse, deleteCourse,
+  getAllCourses, createCourse, updateCourse, deleteCourse, deleteCourseWithLessons,
   getAllLessons, createLesson, updateLesson, deleteLesson,
   getAcademyProgress, markLessonComplete,
   getAllAcademyAccess, getAcademyAccess, setAcademyAccess,
@@ -212,9 +212,13 @@ export {
 // ─── CARDIO (zonas, BLE en vivo, tests de FC) ─────────────────────────────────
 export {
   getCardioProfile, saveCardioProfile, defaultZonesFromAge,
+  getCardioAplazos, getCardioAplazosDesde, setCardioAplazo, deleteCardioAplazo,
   getCardioAssignmentsForAthlete, createCardioAssignment, updateCardioAssignment, deleteCardioAssignment,
   getCardioSessionsForAthlete, getCardioSessionsSince, createCardioSession, updateCardioSession,
   getCardioWeeklyGoal, saveCardioWeeklyGoal,
   getHrTestsForAthlete, getAllPendingHrTests, createHrTest, updateHrTest,
   getHrvReadingsForAthlete, createHrvReading,
 } from './db/cardio';
+
+export { corregirClasificacion } from './db/exerciseChanges';
+export type { NuevaClasificacion } from './db/exerciseChanges';

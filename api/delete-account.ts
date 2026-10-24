@@ -67,7 +67,7 @@ export const POR_CAMPO = [
   'stepLogs', 'progressPhotos', 'photoAssignments', 'questionnaireAssignments',
   'questionnaireResponses', 'exerciseNotes', 'mesocycles', 'weeklyChallenges',
   'notifications', 'tasks', 'coachNotes', 'coachClientTasks', 'athleteStatus',
-  'coachReports', 'cardioAssignments', 'cardioSessions', 'cardioWeeklyGoals',
+  'coachReports', 'cardioAssignments', 'cardioSessions', 'cardioWeeklyGoals', 'cardioAplazos', 'revisionProgreso',
   'hrTests', 'hrvReadings', 'aiChats', 'aiProposals', 'coachDayNotes', 'cambiosAtleta',
 ];
 

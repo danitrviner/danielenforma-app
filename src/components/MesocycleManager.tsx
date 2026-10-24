@@ -4,7 +4,7 @@ import {
   MuscleGroup, MuscleGroupConfig, Mesocycle, Workout,
   DayPlan, WeekDistribution, Exercise, WorkoutExercise, TemplateDay,
   WorkoutLog, WorkoutAssignment, PhaseType, EventoDeSemana, RepartoPropio, RepartoGuardado,
-  MUSCLE_LABELS, MUSCLE_LABELS_SHORT, MUSCLE_ORDER, WorkoutTechnique,
+  MUSCLE_LABELS, MUSCLE_LABELS_SHORT, MUSCLE_ORDER,
 } from '../types';
 import {
   getMesocycles, createMesocycle, updateMesocycle, deleteMesocycle,
@@ -26,13 +26,13 @@ import {
   frecuenciaSemanal, gruposEnDiasSeguidos, repartoDeSeries,
 } from '../utils/programacion';
 import ExercisePickerSheet from './ExercisePickerSheet';
+import { useFichaDeEjercicio } from './useFichaDeEjercicio';
 import ExerciseVideoPlayer from './ExerciseVideoPlayer';
-import { TECHNIQUE_LABEL } from '../utils/workoutTechniques';
 import { MesocycleTemplate } from '../types';
 import { offsetsDeSesiones, formateaFrecuencia, vueltasDelCiclo, resolveExerciseForWeek, resolverEjercicioDelMeso, mesocycleWeekNumber } from '../utils/progression';
 import {
   quitarCambiosDeSemana, semanasConCambios, origenDeCambios, diferencias, compararSemanas,
-  seriesDeLaSemana, seriesDe, programarEnSemanas, semanasAlternas, rirLineal, rirPorSemana, seriesPorSemana, tecnicaPorSemana, repsPorSemana, descansoPorSemana, revisionesPorSemana, type EjercicioDelDia,
+  seriesDeLaSemana, seriesDe, programarEnSemanas, semanasAlternas, revisionesPorSemana, type EjercicioDelDia,
 } from '../utils/semanasDelBloque';
 import BarraDeSemanas, { type Alcance, type AvisoDeSemana, type ElementoProgramado } from './mesociclo/BarraDeSemanas';
 import PlanificadorProgresion from './mesociclo/PlanificadorProgresion';
@@ -64,7 +64,7 @@ import { VOLUME_LANDMARKS_DEFAULT, type VolumeLandmark } from '../data/volumeLan
 import { getVolumeLandmarks } from '../dbService';
 import VolumeSuggestionSheet from './VolumeSuggestionSheet';
 import { useToast } from '../hooks/useToast';
-import { nombreDeMeso, nombreDeSesion } from '../utils/nombresMeso';
+import { nombreDeMeso, nombreDeSesion, nombresCortosDeSesiones } from '../utils/nombresMeso';
 import { fechasDelMesociclo, cicloDiasDeMeso, sesionesDeMesociclo, offsetsDelMesociclo } from '../utils/asignacionMesociclo';
 import { isStale } from '../utils/repartoDesactualizado';
 import { addDays, esFechaIso, hoyIsoLocal, isoLocal } from '../utils/trainingWeek';
@@ -454,8 +454,10 @@ function Delta({ delta, showEqual = false }: { delta: number | null; showEqual?:
 function MesoExercisesView({
   groups, loading, weeks, allExercises, onUpdateExercise, onReplaceExercise, onAddExercise, onRemoveExercise,
   onMoveExercise, onGoToDistribution, libraryWorkouts, onUseLibraryWorkout, distribution, mesoGroups, semanasDelCiclo,
-  onRenameDay, meso, onUpdateMeso, vueltas, cicloDias, logs, onWriteDay, onGuardarPlantilla, revisiones,
+  onRenameDay, meso, onUpdateMeso, vueltas, cicloDias, logs, onWriteDay, onGuardarPlantilla, revisiones, coachId,
 }: {
+  /** Con él, la ficha de cada ejercicio deja corregir su clasificación muscular. */
+  coachId?: string;
   onGuardarPlantilla?: () => void;
   revisiones?: Record<number, string[]>;
   groups: MesoWorkoutGroup[];
@@ -504,7 +506,7 @@ function MesoExercisesView({
     );
   }
 
-  return <MesoExercisesTabs {...{ groups, weeks, allExercises, onUpdateExercise, onReplaceExercise, onAddExercise, onRemoveExercise, onMoveExercise, libraryWorkouts, onUseLibraryWorkout, distribution, mesoGroups, semanasDelCiclo, onRenameDay, meso, onUpdateMeso, vueltas, cicloDias, logs, onWriteDay, onGuardarPlantilla, revisiones }} />;
+  return <MesoExercisesTabs {...{ groups, weeks, allExercises, onUpdateExercise, onReplaceExercise, onAddExercise, onRemoveExercise, onMoveExercise, libraryWorkouts, onUseLibraryWorkout, distribution, mesoGroups, semanasDelCiclo, onRenameDay, meso, onUpdateMeso, vueltas, cicloDias, logs, onWriteDay, onGuardarPlantilla, revisiones, coachId }} />;
 }
 
 const PREFIJO_DIA = /^(Día\s*\d+\s*–\s*)(.*)$/i;
@@ -574,8 +576,9 @@ function MesoExercisesTabs({
   groups: gruposBase, weeks, allExercises, onUpdateExercise: guardarEjercicio, onReplaceExercise: elegirOtroEjercicio,
   onAddExercise, onRemoveExercise,
   onMoveExercise, libraryWorkouts, onUseLibraryWorkout, distribution, mesoGroups, semanasDelCiclo,
-  onRenameDay, meso, onUpdateMeso, vueltas, cicloDias, logs, onWriteDay, onGuardarPlantilla, revisiones,
+  onRenameDay, meso, onUpdateMeso, vueltas, cicloDias, logs, onWriteDay, onGuardarPlantilla, revisiones, coachId,
 }: {
+  coachId?: string;
   onGuardarPlantilla?: () => void;
   revisiones?: Record<number, string[]>;
   groups: MesoWorkoutGroup[];
@@ -605,6 +608,7 @@ function MesoExercisesTabs({
   // pantalla enseña los ejercicios tal y como tocan esa semana, y lo que se
   // toque se guarda como cambio desde esa semana (o solo esa).
   const [semana, setSemana] = useState(0);
+  const { abrirFicha, hojas: hojasDeFicha } = useFichaDeEjercicio(coachId);
   const { agujetas: agujetasCdg } = useAgujetasCdg(meso.athleteId);
   const [alcance, setAlcance] = useState<Alcance>('desde');
   const [comparar, setComparar] = useState<{ a: number; b: number } | null>(null);
@@ -615,6 +619,7 @@ function MesoExercisesTabs({
   const apuntar = (d: Deshacer) => setPila(prev => [...prev.slice(-19), d]);
 
   const nombreDe = useCallback((id: string) => allExercises.find(e => e.id === id)?.name ?? 'Ejercicio', [allExercises]);
+  const nombreCdgDe = useCallback((id: string) => allExercises.find(e => e.id === id)?.cdgNombre, [allExercises]);
   const ejerciciosDelBloque: EjercicioDelDia[] = useMemo(
     () => gruposBase.flatMap(g => g.exercises.map(we => ({ we, dia: g.name }))),
     [gruposBase],
@@ -699,19 +704,6 @@ function MesoExercisesTabs({
     onUpdateMeso({ eventosSemana: Object.keys(siguientes).length > 0 ? siguientes : undefined });
   };
 
-  // Progresiones en un clic (se aplican a todos los ejercicios del bloque).
-  const [progresiones, setProgresiones] = useState(false);
-  const [rirDesde, setRirDesde] = useState('3');
-  const [rirHasta, setRirHasta] = useState('0');
-  // Semana a semana: lo que se rellena en la hoja ANTES de aplicarlo.
-  const [rirSemanas, setRirSemanas] = useState<Record<number, string>>({});       // '' = no tocar esa semana
-  const [seriesSemanas, setSeriesSemanas] = useState<Record<number, number>>({}); // series que se suman esa semana
-  const [repsSemanas, setRepsSemanas] = useState<Record<number, string>>({});      // '' = no tocar
-  const [descansoSemanas, setDescansoSemanas] = useState<Record<number, string>>({}); // segundos, '' = no tocar
-  const [tecnicaSel, setTecnicaSel] = useState<WorkoutTechnique | 'ninguna'>('dropset');
-  const [tecnicaSemanas, setTecnicaSemanas] = useState<number[]>([]);
-  const [tecnicaSolo, setTecnicaSolo] = useState(false);
-  const [tecnicaAlcance, setTecnicaAlcance] = useState<'ultimo' | 'todos'>('ultimo');
   const { showToast: avisar } = useToast();
 
   const deshacer = () => {
@@ -1114,6 +1106,17 @@ function MesoExercisesTabs({
                           <span className="font-mono text-caption">Vídeo</span>
                         </button>
                       )}
+                      {ex && (
+                        <button
+                          onClick={() => abrirFicha(ex)}
+                          title="Ver la ficha del ejercicio"
+                          aria-label={`Ver la ficha de ${ex.name}`}
+                          className={`flex items-center gap-1 px-2 py-1 rounded-control text-ink-3 hover:text-accent-ink transition-colors${oculta}`}
+                        >
+                          <Icon name="query_stats" size="s" />
+                          <span className="font-mono text-caption">Ficha</span>
+                        </button>
+                      )}
                       <button
                         onClick={() => onReplaceExercise(g, exIdx)}
                         title="Cambiar ejercicio"
@@ -1221,6 +1224,7 @@ function MesoExercisesTabs({
         semanaActual={semanaActual}
         nombreDe={nombreDe}
         grupoDe={grupoDe}
+        nombreCdgDe={nombreCdgDe}
         avisosDe={avisosDe}
         onCancelar={() => setPlanificando(false)}
         onAceptar={aceptarPlanificacion}
@@ -1245,7 +1249,6 @@ function MesoExercisesTabs({
         onTest={onTest}
         eventos={eventos}
         onEvento={onEvento}
-        onProgresiones={() => setProgresiones(true)}
         onPlanificar={() => setPlanificando(true)}
         onGuardarPlantilla={onGuardarPlantilla}
         revisiones={revisiones}
@@ -1265,232 +1268,6 @@ function MesoExercisesTabs({
         onQuitarProgramado={quitarProgramado}
         descargaSoloCalendario={meso.deloadWeek !== undefined && meso.semanasDescarga === undefined && cicloDias === 7 ? meso.deloadWeek : undefined}
       />
-
-      <Sheet open={progresiones} onClose={() => setProgresiones(false)} title="Progresiones en un clic">
-        {(() => {
-          const semanasDelBloque = Array.from({ length: vueltas }, (_, i) => i + 1);
-          const semanasDeSubida = semanasDelBloque.filter(w => w > 1);
-          const etiquetaSemana = (w: number) => `S${w}${descargas.includes(w) ? ' · desc.' : ''}`;
-          const rirElegido: Record<number, number> = {};
-          for (const [w, v] of Object.entries(rirSemanas)) if (v !== '') rirElegido[Number(w)] = Number(v);
-          const subidas = semanasDeSubida.filter(w => (seriesSemanas[w] ?? 0) > 0);
-          const totalExtra = subidas.reduce((n, w) => n + (seriesSemanas[w] ?? 0), 0);
-          const hayReps = semanasDelBloque.some(w => (repsSemanas[w] ?? '').trim() !== '');
-          const hayDescanso = semanasDelBloque.some(w => (descansoSemanas[w] ?? '') !== '');
-          const chip = (activo: boolean) =>
-            `h-10 rounded-control border font-mono text-caption font-bold transition-colors ${
-              activo ? 'border-accent bg-accent/15 text-accent-ink' : 'border-hairline bg-field text-ink-2 hover:border-strong'
-            }`;
-          return (
-        <div className="space-y-6">
-          <p className="font-sans text-label text-ink-2">
-            Se aplican a todos los ejercicios del bloque como cambios por semana. Después puedes retocar lo que quieras semana a semana, o deshacerlo.
-          </p>
-
-          <section className="space-y-3">
-            <p className="font-sans font-bold text-body-s text-ink">RIR semana a semana</p>
-            <div className="grid grid-cols-4 gap-2">
-              {semanasDelBloque.map(w => (
-                <label key={w} className="flex flex-col gap-1">
-                  <span className="font-mono text-caption text-ink-3 uppercase">{etiquetaSemana(w)}</span>
-                  <select
-                    value={rirSemanas[w] ?? ''}
-                    onChange={e => setRirSemanas(prev => ({ ...prev, [w]: e.target.value }))}
-                    aria-label={`RIR de la semana ${w}`}
-                    className={`h-10 w-full rounded-field border bg-field px-2 font-mono text-body-s text-ink focus:outline-none focus:border-accent ${rirSemanas[w] ? 'border-accent' : 'border-hairline'}`}
-                  >
-                    <option value="">—</option>
-                    {[0, 1, 2, 3, 4, 5].map(n => <option key={n} value={String(n)}>RIR {n}</option>)}
-                  </select>
-                </label>
-              ))}
-            </div>
-            <p className="font-sans text-caption text-ink-3">
-              Las semanas en «—» no cambian: siguen con el último RIR programado. ¿Prefieres que baje solo?
-            </p>
-            <div className="flex flex-wrap items-end gap-2">
-              <div className="w-28"><Select label="De" value={rirDesde} onChange={setRirDesde} options={[0, 1, 2, 3, 4, 5].map(n => ({ value: String(n), label: `RIR ${n}` }))} /></div>
-              <div className="w-28"><Select label="A" value={rirHasta} onChange={setRirHasta} options={[0, 1, 2, 3, 4, 5].map(n => ({ value: String(n), label: `RIR ${n}` }))} /></div>
-              <Button size="s" variant="secondary" icon="trending_down" onClick={() => {
-                const lineal = rirLineal(vueltas, Number(rirDesde), Number(rirHasta), descargas);
-                setRirSemanas(Object.fromEntries(Object.entries(lineal).map(([w, n]) => [w, String(n)])));
-              }}>Rellenar bajando</Button>
-              {Object.keys(rirElegido).length > 0 && (
-                <Button size="s" variant="ghost" onClick={() => setRirSemanas({})}>Vaciar</Button>
-              )}
-            </div>
-            <Button size="s" icon="check" disabled={Object.keys(rirElegido).length === 0} onClick={() => {
-              escribirDias(we => ({ ...we, weeklyProgression: rirPorSemana(we, rirElegido) }));
-              setProgresiones(false);
-              avisar(`RIR programado en ${Object.keys(rirElegido).length} ${Object.keys(rirElegido).length === 1 ? 'semana' : 'semanas'}`, 'success');
-            }}>Aplicar RIR</Button>
-          </section>
-
-          <section className="space-y-3">
-            <p className="font-sans font-bold text-body-s text-ink">Subir series</p>
-            <p className="font-sans text-caption text-ink-3">
-              Toca una semana para sumar una serie ese día; vuelve a tocarla para sumar 2 o 3, y otra vez para quitarla. Se acumulan con las anteriores.
-            </p>
-            <div className="grid grid-cols-4 gap-2">
-              {semanasDeSubida.map(w => {
-                const n = seriesSemanas[w] ?? 0;
-                return (
-                  <button
-                    key={w}
-                    type="button"
-                    onClick={() => setSeriesSemanas(prev => ({ ...prev, [w]: ((prev[w] ?? 0) + 1) % 4 }))}
-                    aria-label={`Semana ${w}: ${n > 0 ? `suma ${n} ${n === 1 ? 'serie' : 'series'}` : 'sin cambio'}`}
-                    className={`${chip(n > 0)} flex flex-col items-center justify-center leading-tight`}
-                  >
-                    <span className="text-ink-3 font-normal">{etiquetaSemana(w)}</span>
-                    <span>{n > 0 ? `+${n}` : '—'}</span>
-                  </button>
-                );
-              })}
-            </div>
-            {subidas.length > 0 && (
-              <p className="font-mono text-caption text-ink-2">
-                {subidas.map(w => `S${w} +${seriesSemanas[w]}`).join(' · ')} → +{totalExtra} {totalExtra === 1 ? 'serie' : 'series'} al final del bloque
-              </p>
-            )}
-            <p className="font-sans text-caption text-ink-3">Con bloques (top set + back-off), la serie va al último bloque.</p>
-            <div className="flex gap-2">
-              <Button size="s" icon="add" disabled={subidas.length === 0} onClick={() => {
-                const extra: Record<number, number> = {};
-                for (const w of subidas) extra[w] = seriesSemanas[w]!;
-                escribirDias(we => ({ ...we, weeklyProgression: seriesPorSemana(we, extra) }));
-                setProgresiones(false);
-                avisar('Subida de series programada', 'success');
-              }}>Aplicar series</Button>
-              {subidas.length > 0 && <Button size="s" variant="ghost" onClick={() => setSeriesSemanas({})}>Vaciar</Button>}
-            </div>
-          </section>
-
-          <section className="space-y-3">
-            <p className="font-sans font-bold text-body-s text-ink">Repeticiones semana a semana</p>
-            <div className="grid grid-cols-4 gap-2">
-              {semanasDelBloque.map(w => (
-                <label key={w} className="flex flex-col gap-1">
-                  <span className="font-mono text-caption text-ink-3 uppercase">{etiquetaSemana(w)}</span>
-                  <input
-                    type="text"
-                    inputMode="text"
-                    placeholder="—"
-                    value={repsSemanas[w] ?? ''}
-                    onChange={e => setRepsSemanas(prev => ({ ...prev, [w]: e.target.value }))}
-                    aria-label={`Repeticiones de la semana ${w}`}
-                    className={`h-10 w-full rounded-field border bg-field px-2 text-center font-mono text-body-s text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent ${repsSemanas[w]?.trim() ? 'border-accent' : 'border-hairline'}`}
-                  />
-                </label>
-              ))}
-            </div>
-            <p className="font-sans text-caption text-ink-3">Un rango como 8-10 o un número. Se mantiene hasta la siguiente semana que escribas. Los ejercicios con bloques (top set + back-off) no se tocan.</p>
-            <div className="flex gap-2">
-              <Button size="s" icon="check" disabled={!hayReps} onClick={() => {
-                const elegido: Record<number, string> = {};
-                for (const w of semanasDelBloque) { const v = (repsSemanas[w] ?? '').trim(); if (v) elegido[w] = v; }
-                escribirDias(we => ({ ...we, weeklyProgression: repsPorSemana(we, elegido) }));
-                setProgresiones(false);
-                avisar('Repeticiones programadas', 'success');
-              }}>Aplicar repeticiones</Button>
-              {hayReps && <Button size="s" variant="ghost" onClick={() => setRepsSemanas({})}>Vaciar</Button>}
-            </div>
-          </section>
-
-          <section className="space-y-3">
-            <p className="font-sans font-bold text-body-s text-ink">Descanso entre series</p>
-            <div className="grid grid-cols-4 gap-2">
-              {semanasDelBloque.map(w => (
-                <label key={w} className="flex flex-col gap-1">
-                  <span className="font-mono text-caption text-ink-3 uppercase">{etiquetaSemana(w)}</span>
-                  <select
-                    value={descansoSemanas[w] ?? ''}
-                    onChange={e => setDescansoSemanas(prev => ({ ...prev, [w]: e.target.value }))}
-                    aria-label={`Descanso de la semana ${w}`}
-                    className={`h-10 w-full rounded-field border bg-field px-2 font-mono text-body-s text-ink focus:outline-none focus:border-accent ${descansoSemanas[w] ? 'border-accent' : 'border-hairline'}`}
-                  >
-                    <option value="">—</option>
-                    {[45, 60, 75, 90, 120, 150, 180, 240].map(n => <option key={n} value={String(n)}>{n} s</option>)}
-                  </select>
-                </label>
-              ))}
-            </div>
-            <div className="flex gap-2">
-              <Button size="s" icon="check" disabled={!hayDescanso} onClick={() => {
-                const elegido: Record<number, number> = {};
-                for (const w of semanasDelBloque) { const v = descansoSemanas[w]; if (v) elegido[w] = Number(v); }
-                escribirDias(we => ({ ...we, weeklyProgression: descansoPorSemana(we, elegido) }));
-                setProgresiones(false);
-                avisar('Descanso programado', 'success');
-              }}>Aplicar descanso</Button>
-              {hayDescanso && <Button size="s" variant="ghost" onClick={() => setDescansoSemanas({})}>Vaciar</Button>}
-            </div>
-          </section>
-
-          <section className="space-y-3">
-            <p className="font-sans font-bold text-body-s text-ink">Series de alta intensidad</p>
-            <div className="grid grid-cols-2 gap-3">
-              <Select
-                label="Técnica"
-                value={tecnicaSel}
-                onChange={v => setTecnicaSel(v as WorkoutTechnique | 'ninguna')}
-                options={[
-                  ...(Object.keys(TECHNIQUE_LABEL) as WorkoutTechnique[]).map(t => ({ value: t, label: TECHNIQUE_LABEL[t] })),
-                  { value: 'ninguna', label: 'Quitar la técnica' },
-                ]}
-              />
-              <Select
-                label="Ejercicios"
-                value={tecnicaAlcance}
-                onChange={v => setTecnicaAlcance(v as 'ultimo' | 'todos')}
-                options={[
-                  { value: 'ultimo', label: 'Último de cada día' },
-                  { value: 'todos', label: 'Todos' },
-                ]}
-              />
-            </div>
-            <div className="grid grid-cols-4 gap-2">
-              {semanasDelBloque.map(w => {
-                const on = tecnicaSemanas.includes(w);
-                return (
-                  <button
-                    key={w}
-                    type="button"
-                    aria-pressed={on}
-                    onClick={() => setTecnicaSemanas(prev => on ? prev.filter(x => x !== w) : [...prev, w].sort((a, b) => a - b))}
-                    className={chip(on)}
-                  >
-                    {etiquetaSemana(w)}
-                  </button>
-                );
-              })}
-            </div>
-            <label className="flex items-center gap-2 font-sans text-label text-ink-2">
-              <input type="checkbox" checked={tecnicaSolo} onChange={e => setTecnicaSolo(e.target.checked)} />
-              Solo esas semanas (si no, se mantiene hasta que la quites)
-            </label>
-            <Button size="s" icon="bolt" disabled={tecnicaSemanas.length === 0} onClick={() => {
-              const tecnica = tecnicaSel === 'ninguna' ? null : tecnicaSel;
-              escribirDias((we, i, total) => (tecnicaAlcance === 'ultimo' && i !== total - 1)
-                ? we
-                : { ...we, weeklyProgression: tecnicaPorSemana(we, tecnicaSemanas, tecnica, tecnicaSolo) });
-              setProgresiones(false);
-              avisar(tecnica ? `${TECHNIQUE_LABEL[tecnica]} programado` : 'Técnica quitada', 'success');
-            }}>Aplicar técnica</Button>
-          </section>
-
-          <section className="space-y-2">
-            <p className="font-sans font-bold text-body-s text-ink">Descarga</p>
-            <Button size="s" icon="trending_down" disabled={descargas.includes(vueltas)} onClick={() => {
-              onDescarga([vueltas], true);
-              setProgresiones(false);
-              avisar(`Descarga en la semana ${vueltas}`, 'success');
-            }}>Descarga en la última semana (S{vueltas})</Button>
-          </section>
-        </div>
-          );
-        })()}
-      </Sheet>
 
       <Sheet open={comparar !== null} onClose={() => setComparar(null)} title="Comparar semanas">
         {comparar && (() => {
@@ -1554,7 +1331,10 @@ function MesoExercisesTabs({
             const i = groups.findIndex(g => g.name === id);
             if (i >= 0) setActiveIdx(i);
           }}
-          items={groups.map(g => ({ id: g.name, label: g.name } as TabItem))}
+          items={(() => {
+            const cortos = nombresCortosDeSesiones(groups.map(g => g.name));
+            return groups.map((g, i) => ({ id: g.name, label: cortos[i] } as TabItem));
+          })()}
         />
       )}
 
@@ -1612,6 +1392,7 @@ function MesoExercisesTabs({
           )}
         </div>
       </Sheet>
+      {hojasDeFicha}
     </div>
   );
 }
@@ -3602,6 +3383,7 @@ export default function MesocycleManager({
                   maquinas={maquinasDelAtleta?.catalogo ?? []}
                   maquinasPropias={maquinasDelAtleta?.propias ?? []}
                   onChange={(draft, draftMaquinas) => actualizarMeso({ draft, draftMaquinas })}
+                  coachId={coachId}
                 />
               )}
 
@@ -4067,6 +3849,7 @@ export default function MesocycleManager({
               {/* ── Ejercicios programados ── */}
               {editorTab === 'exercises' && (
                 <MesoExercisesView
+                  coachId={coachId}
                   groups={mesoGroupsForTabs}
                   loading={!modoPlantilla && loadingMesoWorkouts}
                   weeks={editing.weeks}

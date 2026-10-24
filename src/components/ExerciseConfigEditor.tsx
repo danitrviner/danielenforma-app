@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { WorkoutExercise, WorkoutTechnique, WarmupMode, WarmupSet, WorkoutSetGroup, WeeklyProgressionRule } from '../types';
-import { TECHNIQUES, TECHNIQUE_EMOJI, TECHNIQUE_LABEL, TECHNIQUE_COLOR, TECHNIQUE_DESCRIPTION } from '../utils/workoutTechniques';
+import { TECHNIQUE_EMOJI, TECHNIQUE_LABEL, TECHNIQUE_COLOR, TECHNIQUE_DESCRIPTION } from '../utils/workoutTechniques';
+import { TECNICAS_ELEGIBLES } from '../utils/tecnicaDeSerie';
+import AjustesDeTecnicaEditor from './AjustesDeTecnicaEditor';
 import { syncAggregateFromGroups, newSetGroup } from '../utils/setGroups';
 import { Icon, SegmentedControl } from './ui';
 
@@ -266,8 +268,10 @@ export default function ExerciseConfigEditor({ we, onChange, mesoWeeks, disposic
     onChange({ manualWarmupSets: (we.manualWarmupSets || []).filter((_, i) => i !== wIdx) });
   };
 
+  // Al cambiar de técnica, los ajustes de la anterior no valen (un drop set
+  // no tiene miniseries): se empieza desde los valores por defecto.
   const setTechnique = (technique: WorkoutTechnique | undefined) => {
-    onChange({ technique });
+    onChange({ technique, tecnicaAjustes: undefined });
   };
 
   const toggleRecordVideo = () => {
@@ -385,7 +389,9 @@ export default function ExerciseConfigEditor({ we, onChange, mesoWeeks, disposic
                   : 'border-hairline text-ink-2 hover:text-ink hover:border-strong'
               }`}
             >Normal</button>
-            {TECHNIQUES.map(t => (
+            {/* Rest-pause ya no se ofrece; si un ejercicio antiguo la lleva, sale
+                para que se vea y se pueda quitar. */}
+            {[...TECNICAS_ELEGIBLES, ...(we.technique === 'restpause' ? ['restpause' as const] : [])].map(t => (
               <button
                 key={t}
                 type="button"
@@ -402,6 +408,7 @@ export default function ExerciseConfigEditor({ we, onChange, mesoWeeks, disposic
           {we.technique && (
             <p className="font-sans text-caption text-ink-2 leading-relaxed">{TECHNIQUE_DESCRIPTION[we.technique]}</p>
           )}
+          <AjustesDeTecnicaEditor we={we} totalSets={totalSets} onChange={onChange} />
         </div>
       )}
 

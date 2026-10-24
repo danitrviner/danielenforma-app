@@ -7,6 +7,7 @@ import {
 } from '../../dbService';
 import { buildNutritionReport, DEFAULT_THRESHOLDS } from '../../utils/nutritionAnalysis';
 import { computeActivePhase } from '../../utils/fasesNutricion';
+import { dietaDeReferencia } from '../../utils/objetivoDelDia';
 import { getNutritionProgram } from '../../dbService';
 import { VentanaRevision } from '../../utils/revisionCoach';
 import { Button, Skeleton, Icon } from '../ui';
@@ -80,10 +81,10 @@ export default function BloqueNutricionHabitos({
     ?? { athleteId: athleteEmail, enabledModes: ['OMNIVORO'] };
 
   const coachDiets = useMemo(() => dietas.filter(d => !d.selfManaged), [dietas]);
-  const activeDiet = useMemo(() => {
-    const activeId = dietConfig?.activeDietIds?.[0] ?? null;
-    return activeId ? coachDiets.find(d => d.id === activeId) ?? null : (coachDiets[0] ?? null);
-  }, [coachDiets, dietConfig]);
+  const activeDiet = useMemo(
+    () => dietaDeReferencia(dietas, dietConfig, programa, ventana.hasta),
+    [dietas, dietConfig, programa, ventana.hasta],
+  );
 
   const stepGoal = nutritionConfigData?.stepGoal ?? DEFAULT_STEP_GOAL;
 

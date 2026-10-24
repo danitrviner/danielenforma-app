@@ -94,7 +94,7 @@ export function aggregate(logs: WorkoutLog[]): Agg {
       for (const s of entry.sets) {
         const w = Number(s.weight) || 0;
         const r = Number(s.repsDone) || 0;
-        row.sets++;
+        if (!s.segmento) row.sets++;
         row.reps += r;
         const t = w * r;
         row.tonnage = round1(row.tonnage + t);

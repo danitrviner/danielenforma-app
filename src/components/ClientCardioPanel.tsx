@@ -9,6 +9,8 @@ import {
 import { isoWeekKey } from '../utils/challengeOptions';
 import { hoyIsoLocal } from '../utils/trainingWeek';
 import { useConfirm } from '../hooks/useConfirm';
+import { useCardioAplazosDelAtleta } from '../hooks/useCardioAplazosDelAtleta';
+import { resumenDeAplazos, DIAS_DE_APLAZOS } from '../utils/cardioAplazos';
 import { Badge, Button, Card, EmptyState, Icon, Sheet, Skeleton } from './ui';
 import CardioPrescriptionForm from './cardio/CardioPrescriptionForm';
 
@@ -69,6 +71,8 @@ export default function ClientCardioPanel({ athlete }: Props) {
     queryKey: ['cardioSessions', athlete.email],
     queryFn: () => getCardioSessionsForAthlete(athlete.email),
   });
+  const { data: aplazos = [] } = useCardioAplazosDelAtleta(athlete.email, hoyIso);
+  const resumenAplazos = useMemo(() => resumenDeAplazos(aplazos, assignments, hoyIso), [aplazos, assignments, hoyIso]);
   const { data: cardioProfile = null } = useQuery({
     queryKey: ['cardioProfile', athlete.email],
     queryFn: () => getCardioProfile(athlete.email),
@@ -278,6 +282,27 @@ export default function ClientCardioPanel({ athlete }: Props) {
                 <span className="font-mono text-caption text-ink tabular-nums">
                   {cardioProfile.zones[z].min}–{cardioProfile.zones[z].max} ppm
                 </span>
+              </div>
+            ))}
+          </Card>
+        </section>
+      )}
+
+      {/* ── Aplazos recientes («Mover a mañana») ──────────────────────────── */}
+      {resumenAplazos.total > 0 && (
+        <section className="space-y-3">
+          <h3 className="font-sans font-bold text-title-s text-ink flex items-center gap-2">
+            <Icon name="event_repeat" size="m" className="text-accent-ink" />
+            Aplazos recientes
+          </h3>
+          <Card className="space-y-1">
+            <p className="font-sans text-body-s text-ink-2">
+              Ha aplazado el cardio {resumenAplazos.total === 1 ? '1 vez' : `${resumenAplazos.total} veces`} en {DIAS_DE_APLAZOS} días.
+            </p>
+            {resumenAplazos.lineas.map(l => (
+              <div key={l.id} className="flex items-center justify-between gap-3 py-1 border-b border-hairline last:border-0">
+                <span className="font-mono text-caption text-ink tabular-nums">{l.texto}</span>
+                {l.nombre && <span className="font-sans text-caption text-ink-2 text-right">{l.nombre}</span>}
               </div>
             ))}
           </Card>

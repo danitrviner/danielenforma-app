@@ -1,4 +1,6 @@
 import type { Recipe, BudgetVec, DietType, FoodCategory, WeekDay } from '../types';
+import { type ListaDeMenu } from './accesoARecetas';
+import { aplicarSeleccion, type PaqueteDeRecetas, type SeleccionDeRecetas } from './seleccionDeRecetas';
 import { recetasOcultas, type AmbitoDeRegla, type ReglaDeReceta } from './reglasDeReceta';
 import { superaElTiempo } from './tiempoDeReceta';
 import { ingredientMatch, violatesDietType } from './foodPrefs';
@@ -84,6 +86,11 @@ export interface AlternativePrefs {
   quiereRapidas?: boolean;
   /** Filtro duro: recetas que el COACH esconde a este atleta (todos o algunos días). */
   recetasOcultas?: ReglaDeReceta[];
+  /** Recetas con las que el coach trabaja con este atleta; ausente = todas. */
+  listaMenu?: ListaDeMenu;
+  /** Filtros del coach por dieta (seleccionDeRecetas.ts); ganan a `listaMenu`. */
+  seleccion?: SeleccionDeRecetas;
+  paquetes?: PaqueteDeRecetas[];
 }
 
 export interface AlternativeOptions {
@@ -104,6 +111,8 @@ export interface AlternativeOptions {
   dias?: WeekDay[];
   /** Dónde se ofrecen: por defecto «cambios» (cambiar comida); el recetario pasa `recetario`. */
   ambito?: AmbitoDeRegla;
+  /** Dieta del día: decide qué filtros de `prefs.seleccion` mandan. */
+  dietId?: string | null;
   /** Texto de búsqueda libre sobre el nombre. */
   search?: string;
   /** Solo recetas aptas para tupper. */
@@ -161,6 +170,7 @@ export function findRecipeAlternatives(
     onlyTupper,
     dias,
     ambito = 'cambios',
+    dietId,
   } = options;
 
   const sourceExch = recipeExchanges(source);
@@ -177,7 +187,8 @@ export function findRecipeAlternatives(
 
   const scored: RecipeAlternative[] = [];
 
-  for (const r of pool) {
+  const { pool: enLista, conTiempo } = aplicarSeleccion(pool, prefs, { dietId, dias, ambito });
+  for (const r of enLista) {
     if (r.id === source.id) continue;
 
     // ── Filtros duros ────────────────────────────────────────────────────────
@@ -188,7 +199,7 @@ export function findRecipeAlternatives(
     if (disliked.has(r.id)) continue;
     if (ocultasPorElCoach.has(r.id)) continue;
     if (violatesDietType(r, prefs.dietType)) continue;
-    if (superaElTiempo(r, prefs.cookingMaxTime)) continue;
+    if (superaElTiempo(r, conTiempo ? undefined : prefs.cookingMaxTime)) continue;
     if (!matchesIntake(r, intakeType)) continue;
     if (onlyTupper && !r.tupper) continue;
     if (nSearch && !norm(r.name).includes(nSearch)) continue;
@@ -212,7 +223,7 @@ export function findRecipeAlternatives(
     let score = totalDrift * 4 + fitScore(sourceExch as unknown as Record<string, number>, exch as unknown as Record<string, number>);
     if (favorites.has(r.id)) score -= 3;
     if (preferredDish.has(dt)) score -= 1.5;
-    if (prefs.quiereRapidas && r.basica) score -= 1.5;
+    if (prefs.quiereRapidas && !conTiempo && r.basica) score -= 1.5;
     if ((prefs.likedFoods ?? []).some(f => ingredientMatch(r, f))) score -= 0.5;
     if ((prefs.dislikedFoods ?? []).some(f => ingredientMatch(r, f))) score += 2;
 

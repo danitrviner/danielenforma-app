@@ -104,6 +104,20 @@ describe('elegirEjercicios · el atleta manda sobre el criterio', () => {
     expect(r[0].razones.join(' ')).toContain('Ningún ejercicio de este grupo');
   });
 
+  it('«Gimnasio completo» del alta cubre todo el catálogo', () => {
+    const soloConMaterial = CATALOGO.filter(e => (e.equipment?.length ?? 0) > 0);
+    const r = elegirEjercicios(entrada({
+      catalogo: soloConMaterial, materialDelAtleta: ['Gimnasio completo'],
+    }));
+    expect(r[0].materialIncompatible).toBe(false);
+  });
+
+  it('«Barra y discos» del alta cuenta como barra', () => {
+    const conBarra = CATALOGO.filter(e => e.equipment?.includes('barra'));
+    const r = elegirEjercicios(entrada({ catalogo: conBarra, materialDelAtleta: ['Barra y discos'] }));
+    expect(r[0].materialIncompatible).toBe(false);
+  });
+
   it('un ejercicio vetado por lesión cae al último puesto y se marca', () => {
     const r = elegirEjercicios(entrada({
       trozos: [3, 3, 3, 3],
