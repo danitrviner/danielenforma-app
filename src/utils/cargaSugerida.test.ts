@@ -35,4 +35,14 @@ describe('carga sugerida (doble progresión)', () => {
     expect(sugerirCarga({ ...we, sets: 1 }, fallo).series).toEqual([null]);
     expect(sugerirCarga(we, undefined).resumen).toBeNull();
   });
+
+  it('las bajadas de la última vez no se cuentan como series', () => {
+    const previa: WorkoutEntryLog = { exerciseId: 'press', sets: [
+      { weight: 60, repsDone: 12, rir: 2 },
+      { weight: 48, repsDone: 12, rir: 2, segmento: true, segmentoDe: 1 },
+      { weight: 60, repsDone: 10, rir: 2 },
+      { weight: 60, repsDone: 12, rir: 2 },
+    ] };
+    expect(sugerirCarga(we, previa).series).toEqual([{ peso: 62.5, reps: 8 }, null, { peso: 62.5, reps: 8 }]);
+  });
 });

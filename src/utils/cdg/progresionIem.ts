@@ -8,9 +8,12 @@
  *     contexto, cansancio y tipo de bloque). Objetivo de la zona =
  *     IEM base × (1 + pct). Positivo sube, negativo frena, 0/ausente no se toca.
  *  2. Con qué: en los ejercicios que trabajan la zona se prueban, por separado,
- *     bajar 1 de RIR, +1 serie y —solo si se permite y el ejercicio es de
- *     aislamiento— un drop set en la última serie. Para frenar, subir 1 de RIR o
- *     quitar 1 serie. Cada palanca, una vez por ejercicio y semana.
+ *     bajar 1 de RIR y +1 serie (las dos pueden ir en el mismo ejercicio y
+ *     semana). La serie de más solo si cabe en el tiempo de sesión del atleta;
+ *     si no cabe, se sube intensidad. Las técnicas NO son una palanca para subir
+ *     el IEM (Dani, 25-10): solo se sugiere un drop set, en aislamiento y con
+ *     aviso de fatiga, cuando la serie no cabe y se permite. Para frenar, subir
+ *     1 de RIR o quitar 1 serie. Cada palanca, una vez por ejercicio y semana.
  *  3. Se elige el cambio que más IEM de la zona da por cada punto de IF (para
  *     frenar, el que más IF quita por punto de IEM), sin pasarse más de lo que
  *     falta, hasta llegar al objetivo o quedarse sin palancas.
@@ -54,6 +57,8 @@ export interface CambioIem {
   deltaIF: number
   /** La zona del ejercicio pasaría de su máximo de series recuperables. */
   superaMrv?: { series: number; mrv: number }
+  /** Técnica sugerida para ahorrar tiempo: la serie de más no cabía en la sesión. */
+  porTiempo?: boolean
 }
 
 export interface ResumenZonaIem {
@@ -76,13 +81,18 @@ export interface EntradaProgresionIem {
   /** IEM por zona de la semana de referencia (realizado o, si no hay, programado). */
   iemBase: Partial<Record<ZonaIem, number>>
   pctPorZona: Partial<Record<ZonaIem, number>>
+  /** `tecnica`: sugerir un drop set (aislamiento) cuando la serie de más no cabe en el tiempo. */
   palancas?: { rir?: boolean; series?: boolean; tecnica?: boolean }
+  /** Tiempo de sesión: el máximo del atleta y lo que dura ya cada día (por `dia`). Sin él no se mira. */
+  tiempo?: { limiteSeg: number; porDia: Partial<Record<string, number>> }
   rirMinimo?: number
   /** Series máximas recuperables por grupo muscular (por defecto, VOLUME_LANDMARKS_DEFAULT). */
   mrvPorGrupo?: Partial<Record<MuscleGroup, number>>
 }
 
 const RIR_MAXIMO = 4 // el motor no admite RIR 5
+/** Lo que alarga la sesión una serie de más: su descanso y ~45 s de trabajo. */
+export const segundosDeUnaSerie = (we: WorkoutExercise) => (we.restSeconds ?? 90) + 45
 const ITERACIONES = 12
 const r1 = (v: number) => Math.round(v * 10) / 10
 const r2 = (v: number) => Math.round(v * 100) / 100
@@ -170,6 +180,10 @@ export function proponerProgresionIem (e: EntradaProgresionIem): { cambios: Camb
   }
 
   const usado = new Set<string>() // `${clave}:${tipo}`
+  // Tiempo que ya lleva cada día (se le suma cada serie que se proponga).
+  const tiempoDia = new Map(Object.entries(e.tiempo?.porDia ?? {}).map(([d, v]) => [d, v ?? 0]))
+  const cabeUnaSerie = (x: EjercicioProgramable, we: WorkoutExercise) =>
+    !e.tiempo || (tiempoDia.get(x.dia) ?? 0) + segundosDeUnaSerie(we) <= e.tiempo.limiteSeg
   const cambios: CambioIem[] = []
   const resumen: ResumenZonaIem[] = []
 
@@ -198,9 +212,11 @@ export function proponerProgresionIem (e: EntradaProgresionIem): { cambios: Camb
         if (x.movible === false || c.zonas[z.clave] <= 0.005) continue
         const ops: OperacionIem[] = []
         if (dir > 0) {
+          const cabe = cabeUnaSerie(x, we)
           if (palancas.rir && !usado.has(`${x.clave}:rir`) && rirMinDe(we) > rirMinimo) ops.push({ tipo: 'rir', delta: -1 })
-          if (palancas.series && !usado.has(`${x.clave}:serie`)) ops.push({ tipo: 'serie', delta: 1 })
-          if (palancas.tecnica && !usado.has(`${x.clave}:tecnica`) && !we.technique && esAislamiento(we)) ops.push({ tipo: 'tecnica' })
+          if (palancas.series && !usado.has(`${x.clave}:serie`) && cabe) ops.push({ tipo: 'serie', delta: 1 })
+          // Técnica solo para ahorrar tiempo: cuando la serie de más no cabe.
+          if (palancas.tecnica && palancas.series && !cabe && !usado.has(`${x.clave}:tecnica`) && !we.technique && esAislamiento(we)) ops.push({ tipo: 'tecnica' })
         } else {
           if (palancas.rir && !usado.has(`${x.clave}:rir`) && rirMaxDe(we) < RIR_MAXIMO) ops.push({ tipo: 'rir', delta: 1 })
           if (palancas.series && !usado.has(`${x.clave}:serie`) && seriesTotales(we) > 1) ops.push({ tipo: 'serie', delta: -1 })
@@ -224,9 +240,11 @@ export function proponerProgresionIem (e: EntradaProgresionIem): { cambios: Camb
       const { de, a } = describir(weAntes, mejor.op)
       actual.set(mejor.x.clave, mejor.nuevo)
       usado.add(`${mejor.x.clave}:${mejor.op.tipo}`)
+      if (mejor.op.tipo === 'serie') tiempoDia.set(mejor.x.dia, (tiempoDia.get(mejor.x.dia) ?? 0) + mejor.op.delta * segundosDeUnaSerie(weAntes))
       const cambio: CambioIem = {
         clave: mejor.x.clave, dia: mejor.x.dia, exerciseId: weAntes.exerciseId, zona: z.clave, op: mejor.op,
         de, a, deltaIemZona: r2(mejor.dz), deltaIF: r2(mejor.dIF),
+        ...(mejor.op.tipo === 'tecnica' ? { porTiempo: true } : {}),
       }
       if (mejor.op.tipo === 'serie' && mejor.op.delta > 0 && mejor.x.grupo) {
         const mrv = mrvDe(mejor.x.grupo)
@@ -243,4 +261,30 @@ export function proponerProgresionIem (e: EntradaProgresionIem): { cambios: Camb
     })
   }
   return { cambios, zonas: resumen }
+}
+
+/**
+ * Aviso de rendimiento (Dani, 25-10): sin % fijo ni por una sola sesión. Cuenta
+ * cuántas semanas seguidas, hasta la última hecha, el tonelaje de la zona no
+ * mejora mientras la carga programada (IEM) sigue igual o sube. 2 semanas =
+ * vigilar; 3 o más = plantearse bajar o descargar. Es un aviso: no frena nada.
+ * Listas en orden cronológico, una entrada por semana realizada.
+ */
+export function semanasSinMejorar (tonelajes: number[], cargas: number[]): number {
+  let n = 0
+  for (let i = tonelajes.length - 1; i > 0; i--) {
+    if (!(tonelajes[i - 1] > 0)) break
+    const sinMejora = tonelajes[i] <= tonelajes[i - 1]
+    const masCarga = (cargas[i] ?? 0) >= (cargas[i - 1] ?? 0)
+    if (!sinMejora || !masCarga) break
+    n++
+  }
+  // Solo cuenta si la carga ha subido de verdad en ese tramo.
+  if (n > 0 && !((cargas[cargas.length - 1] ?? 0) > (cargas[cargas.length - 1 - n] ?? 0))) return 0
+  return n
+}
+
+/** ¿Hay que avisar? (2 semanas o más sin mejorar con más carga). */
+export function rendimientoEstancado (tonelajes: number[], cargas: number[]): boolean {
+  return semanasSinMejorar(tonelajes, cargas) >= 2
 }

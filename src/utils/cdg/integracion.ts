@@ -104,7 +104,8 @@ export type CargaAgudaCronicaDelMeso =
     }
 
 /**
- * Aguda = lo programado para la semana siguiente a la última realizada.
+ * Aguda = lo programado para la semana siguiente a la última realizada (o la
+ * semana que se pida en `semanaReferencia`).
  * Crónica = media simple de las 6 últimas semanas realizadas (E-10):
  *  - con 6 del propio bloque, como siempre (sesión a sesión y total);
  *  - si no llegan, se completan con las más recientes de bloques anteriores
@@ -122,10 +123,15 @@ export function cargaAgudaCronicaDelMeso (args: {
   umbrales?: Partial<UmbralesCarga>
   /** Semanas realizadas de bloques anteriores, la más reciente primero (`semanasAnterioresAlBloque`). */
   semanasAnteriores?: CalculoSemana[]
+  /** Semana programada a comparar (la que mira el coach en Volumen, 11-a). Sin ella,
+   *  la siguiente a la última realizada, como en Seguimiento. */
+  semanaReferencia?: number
 }): CargaAgudaCronicaDelMeso {
   const { motor, semanas, grupos, meso, vueltas, nombreCdgDe } = args
-  if (semanas.length === 0) return { disponible: false, motivo: 'Todavía no hay sesiones registradas en este bloque.' }
-  const ref = semanas[semanas.length - 1].semana + 1
+  const elegida = args.semanaReferencia
+  if (elegida != null && elegida < 1) return { disponible: false, motivo: 'En Base no hay semana programada que comparar.' }
+  if (elegida == null && semanas.length === 0) return { disponible: false, motivo: 'Todavía no hay sesiones registradas en este bloque.' }
+  const ref = elegida ?? semanas[semanas.length - 1].semana + 1
   if (ref > vueltas) return { disponible: false, motivo: 'La última semana del bloque ya está realizada: no hay semana siguiente que comparar.' }
   const previas = semanas.filter(s => s.semana < ref).slice(-SEMANAS_CARGA_CRONICA).reverse()
   const deOtros = previas.length < SEMANAS_CARGA_CRONICA

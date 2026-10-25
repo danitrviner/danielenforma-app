@@ -77,8 +77,11 @@ function clave(athleteEmail: string, assignmentId: string): string {
 
 /** La «forma» de una rutina: cuántas series tiene cada ejercicio, en orden.
  *  Es lo que se compara para decidir si un borrador sigue siendo aplicable. */
+/** Series PRINCIPALES por ejercicio. Las bajadas y miniseries no cuentan: unas
+ *  las añade el atleta y otras llegan ya puestas (14-b), y ninguna dice si el
+ *  coach cambió la rutina. Así un borrador de antes de 14-b sigue valiendo. */
 export function formaDeSesion(playerSets: SerieBorrador[][]): number[] {
-  return playerSets.map(ex => ex.length);
+  return playerSets.map(ex => ex.filter(s => !s.segmento).length);
 }
 
 function mismaForma(a: number[], b: number[]): boolean {

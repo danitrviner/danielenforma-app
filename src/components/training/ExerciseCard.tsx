@@ -2,7 +2,7 @@ import React from 'react';
 import { Exercise, WorkoutEntryLog, WorkoutExercise } from '../../types';
 import { Icon } from '../ui';
 import { TECHNIQUE_EMOJI, TECHNIQUE_LABEL, TECHNIQUE_COLOR } from '../../utils/workoutTechniques';
-import { ajustesDe, partesDeTecnica, llevaSegmentos, pesoDeBajada, serieDelSegmento, seriesConTecnica } from '../../utils/tecnicaDeSerie';
+import { ajustesDe, partesDeTecnica, llevaSegmentos, pesoDeBajada, serieDelSegmento, seriesConTecnica, seriesPrincipales, pautaDelBloque } from '../../utils/tecnicaDeSerie';
 import { expandSetGroups } from '../../utils/setGroups';
 import { generateWarmup } from '../../utils/warmup/WarmupGenerator';
 import { parseTargetReps } from '../../utils/warmup/WarmupEngine';
@@ -89,6 +89,29 @@ export default React.memo(function ExerciseCard({
     .filter(({ s }) => serieDelSegmento(s, nPrincipales) === k)
     .map(({ i }) => i);
   const pctBajada = ajustesDe(we).dropset.pctBajada;
+
+  // 14-c: «Completar serie 3 + drop». Cierra de una vez la siguiente serie que
+  // lleva la técnica y las bajadas/miniseries que ya tienen reps apuntadas (sin
+  // peso escrito se usa el sugerido o el de la serie, como al marcarlas a mano).
+  const siguiente = exSets.slice(0, nPrincipales).findIndex(s => !s.done);
+  const serieSiguiente = siguiente + 1;
+  const segmentosSiguiente = siguiente >= 0 && seriesTecnica.includes(serieSiguiente) ? segmentosDe(serieSiguiente) : [];
+  const principalSiguiente = siguiente >= 0 ? exSets[siguiente] : undefined;
+  const puedeCompletar = !!principalSiguiente && !!principalSiguiente.weight && !!principalSiguiente.repsDone;
+  const completarConTecnica = () => {
+    if (!principalSiguiente || !puedeCompletar) return;
+    onMarkDone(siguiente, true);
+    const peso = parseFloat(principalSiguiente.weight) || 0;
+    segmentosSiguiente.forEach((idx, k) => {
+      const seg = exSets[idx];
+      if (seg.done || !seg.repsDone) return;
+      if (!seg.weight) {
+        const sugerido = esDropset ? pesoDeBajada(peso, pctBajada, k) : peso || null;
+        if (sugerido != null) onUpdateSet(idx, 'weight', String(sugerido));
+      }
+      onMarkDone(idx, true);
+    });
+  };
 
   // Tamaño adaptativo del nombre — un nombre largo ("Elevación de rodilla
   // alterno inclinado, de espalda") ocupaba media tarjeta a text-feature
@@ -229,16 +252,32 @@ export default React.memo(function ExerciseCard({
           />
           {seriesTecnica.map(k => (esDropset ? (
             <DropsetRows
-              key={k} exSets={exSets} serie={k} indices={segmentosDe(k)} pctBajada={pctBajada}
+              key={k} exSets={exSets} serie={k} indices={segmentosDe(k)} pctBajada={pctBajada} pauta={pautaDelBloque(we)}
               onUpdateSet={onUpdateSet} onMarkDone={onMarkDone} onAddRow={() => onAddRow(k)}
             />
           ) : (
             <MyorepsRows
-              key={k} exSets={exSets} serie={k} indices={segmentosDe(k)}
+              key={k} exSets={exSets} serie={k} indices={segmentosDe(k)} pauta={pautaDelBloque(we)}
               onUpdateSet={onUpdateSet} onMarkDone={onMarkDone} onAddRow={() => onAddRow(k)}
               variante={esRestpause ? 'restpause' : 'myoreps'}
             />
           )))}
+          {segmentosSiguiente.length > 0 && (
+            <div className="px-4 pb-4">
+              <button
+                type="button"
+                onClick={completarConTecnica}
+                disabled={!puedeCompletar}
+                className="w-full rounded-surface bg-accent py-3.5 font-sans font-bold text-body text-on-accent transition-opacity disabled:opacity-40"
+              >
+                Completar serie {serieSiguiente} + {esDropset ? 'drop' : 'miniseries'}
+              </button>
+              {!puedeCompletar && <p className="mt-1.5 text-center font-sans text-caption text-ink-3">Apunta el peso y las reps de la serie {serieSiguiente}.</p>}
+              {puedeCompletar && segmentosSiguiente.some(i => !exSets[i].done && !exSets[i].repsDone) && (
+                <p className="mt-1.5 text-center font-sans text-caption text-ink-3">Las {esDropset ? 'bajadas' : 'miniseries'} sin reps se quedan para marcarlas después.</p>
+              )}
+            </div>
+          )}
         </>
       ) : (
         <NormalTable
@@ -330,6 +369,8 @@ function NormalTable({
   firstSetRowTargetRef?: Props['firstSetRowTargetRef'];
   setEditorTargetRef?: Props['setEditorTargetRef'];
 }) {
+  // Lo de la última vez por serie principal (sin bajadas ni miniseries).
+  const previas = prevEntry ? seriesPrincipales(prevEntry.sets) : [];
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-left sm:min-w-[480px]">
@@ -359,7 +400,7 @@ function NormalTable({
             </tr>
           ))}
           {exSets.map((setInput, sIdx) => {
-            const prev = prevEntry?.sets[sIdx];
+            const prev = previas[sIdx];
             const shouldRecord = we.recordVideoSet === 'all' || we.recordVideoSet === sIdx + 1;
             const esSiguiente = !setInput.done && exSets.slice(0, sIdx).every(s => s.done);
             const alFallo = setInput.rir === 'fallo';
@@ -445,7 +486,7 @@ function NormalTable({
 // así que un dropset en la última de 3 series convertía las series 2 y 3 en
 // bajadas. Ahora la técnica se SUMA a la serie, no la sustituye.
 
-function DropsetRows({ exSets, serie, indices, pctBajada, onUpdateSet, onMarkDone, onAddRow }: {
+function DropsetRows({ exSets, serie, indices, pctBajada, pauta, onUpdateSet, onMarkDone, onAddRow }: {
   exSets: SetInput[];
   /** Serie principal tras la que van (1 = la primera). */
   serie: number;
@@ -453,6 +494,8 @@ function DropsetRows({ exSets, serie, indices, pctBajada, onUpdateSet, onMarkDon
   indices: number[];
   /** Bajada de peso pautada, para sugerir el peso de cada bajada. */
   pctBajada: number;
+  /** Cómo hacerlas, con lo programado (14-d): «Sin descanso · −20 % cada bajada…». */
+  pauta: string;
   onUpdateSet: Props['onUpdateSet'];
   onMarkDone: Props['onMarkDone'];
   onAddRow: () => void;
@@ -464,9 +507,10 @@ function DropsetRows({ exSets, serie, indices, pctBajada, onUpdateSet, onMarkDon
   const hechas = bajadas.filter(s => s.done);
   return (
     <div className="px-4 py-4 space-y-2.5 border-t border-hairline">
-      <p className="font-mono text-label text-accent-ink uppercase tracking-wide">
-        Drop set · tras la serie {serie}
-      </p>
+      <div>
+        <p className="font-mono text-label text-accent-ink uppercase tracking-wide">Drop set · tras la serie {serie}</p>
+        {pauta && <p className="font-sans text-caption text-ink-2">{pauta}</p>}
+      </div>
       {bajadas.map((s, i) => {
         const sIdx = indices[i];
         const sugerido = pesoDeBajada(baseWeight, pctBajada, i);
@@ -538,7 +582,7 @@ function DropsetRows({ exSets, serie, indices, pctBajada, onUpdateSet, onMarkDon
 
 // ── Myoreps / rest-pause: miniseries o pausas DESPUÉS de la última serie ───
 
-function MyorepsRows({ exSets, serie, indices, onUpdateSet, onMarkDone, onAddRow, variante }: {
+function MyorepsRows({ exSets, serie, indices, pauta, onUpdateSet, onMarkDone, onAddRow, variante }: {
   exSets: SetInput[];
   /** Serie principal que hace de activación (1 = la primera). */
   serie: number;
@@ -547,6 +591,8 @@ function MyorepsRows({ exSets, serie, indices, onUpdateSet, onMarkDone, onAddRow
   key?: React.Key;
   /** Myo-reps: miniseries sin parar casi. Rest-pause: pausas cortas con el mismo peso. */
   variante: 'myoreps' | 'restpause';
+  /** Cómo hacerlas, con lo programado (14-d). Vacía en rest-pause (solo lo antiguo). */
+  pauta: string;
   onUpdateSet: Props['onUpdateSet'];
   onMarkDone: Props['onMarkDone'];
   onAddRow: () => void;
@@ -557,9 +603,12 @@ function MyorepsRows({ exSets, serie, indices, onUpdateSet, onMarkDone, onAddRow
   return (
     <div className="px-4 py-4 space-y-3 border-t border-hairline">
       <div className="rounded-surface bg-raised p-3.5 space-y-2.5 ml-3 border-l-2 border-accent-line">
-        <p className="font-mono text-label text-accent-ink uppercase tracking-wide">{variante === 'restpause'
-            ? `Rest-pause · tras la serie ${serie} · descansa 10-15 s y sigue`
-            : `Myo-reps · tras la serie ${serie} · sigue mientras aguantes 4+ reps`}</p>
+        <div>
+          <p className="font-mono text-label text-accent-ink uppercase tracking-wide">{variante === 'restpause'
+              ? `Rest-pause · tras la serie ${serie} · descansa 10-15 s y sigue`
+              : `Myo-reps · tras la serie ${serie}`}</p>
+          {variante === 'myoreps' && pauta && <p className="font-sans text-caption text-ink-2">{pauta}</p>}
+        </div>
         <div className="flex flex-wrap items-center gap-2.5">
           {miniseries.map((s, i) => {
             const sIdx = indices[i];

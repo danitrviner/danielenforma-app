@@ -13,8 +13,12 @@ import {
   claveEjercicioClave, describirCelda, prescritoEn, cambiaEn, realDeLaSemana,
 } from '../../utils/planificadorProgresion';
 import type { AvisoDeSemana } from './BarraDeSemanas';
-import PropuestaIemSheet from './PropuestaIemSheet';
-import { aplicarOperaciones } from '../../utils/cdg/progresionIem';
+import PanelPropuestaIem from './PanelPropuestaIem';
+import { usePropuestaIem } from './usePropuestaIem';
+import type { VolumeLandmark } from '../../data/volumeLandmarks';
+import { aplicarOperaciones, iemProgramadoPorZona } from '../../utils/cdg/progresionIem';
+import { zonaDeGrupo } from '../../utils/cdg/zonasDesplegables';
+import { useMotorCdg } from '../../hooks/useMotorCdg';
 
 export interface DiaPlanificable {
   /** Clave del grupo en MesocycleManager (workoutIds unidos). */
@@ -36,6 +40,10 @@ interface Props {
   grupoDe: (we: WorkoutExercise) => MuscleGroup | undefined;
   /** Nombre del ejercicio en el catálogo CDG (para «Proponer por IEM»). Sin él, el botón no sale. */
   nombreCdgDe?: (id: string) => string | undefined;
+  /** MEV/MRV editados por el coach: el MRV de la propuesta por IEM. */
+  landmarks?: Partial<Record<MuscleGroup, VolumeLandmark>>;
+  /** Guarda el modo de una zona (`Mesocycle.cdgModoPorZona`) al cambiarlo en la propuesta. */
+  onCambiarModo?: (zona: string, modo: 'estatico' | 'dinamico') => void;
   /** Avisos de volumen (MEV/MRV) del bloque entero con los ejercicios dados. */
   avisosDe: (ejercicios: EjercicioDelDia[]) => Record<number, AvisoDeSemana[]>;
   onCancelar: () => void;
@@ -70,6 +78,14 @@ export default function PlanificadorProgresion(p: Props) {
   const [editando, setEditando] = useState<{ clave: string; exIdx: number; semana: number } | null>(null);
   const [progresiones, setProgresiones] = useState(false);
   const [porIem, setPorIem] = useState(false);
+  // IEM de la zona del ejercicio en cada casilla (13-b). Solo con el catálogo
+  // CDG cargado y el ejercicio vinculado; si no, la casilla queda como antes.
+  const { motor } = useMotorCdg();
+  const iemEnCasilla = (original: WorkoutExercise, r: WorkoutExercise): number | null => {
+    if (!motor || !p.nombreCdgDe || !p.nombreCdgDe(r.exerciseId)) return null;
+    const zona = zonaDeGrupo(p.grupoDe(original));
+    return zona ? iemProgramadoPorZona(motor, p.nombreCdgDe, [r])[zona] ?? 0 : null;
+  };
   const [descartar, setDescartar] = useState(false);
 
   const descargas = p.meso.semanasDescarga ?? [];
@@ -82,6 +98,34 @@ export default function PlanificadorProgresion(p: Props) {
 
   const filas = p.dias.flatMap(d => (borrador[d.clave] ?? []).map((we, exIdx) => ({ d, exIdx, we }))
     .filter(f => seleccion.has(claveEjercicioClave(f.d, f.we.exerciseId))));
+
+  // Propuesta por IEM dentro de la tabla (13-a, 13-d, 13-g).
+  const diasActuales = useMemo(() => p.dias.map(d => ({ ...d, exercises: borrador[d.clave] ?? d.exercises })), [p.dias, borrador]);
+  const clavesElegidas = filas.map(f => `${f.d.clave}#${f.exIdx}`).join('|');
+  const elegidos = useMemo(() => new Set(clavesElegidas ? clavesElegidas.split('|') : []), [clavesElegidas]);
+  const pr = usePropuestaIem({
+    activo: porIem && !!p.nombreCdgDe, meso: p.meso, dias: diasActuales, vueltas: p.vueltas, cicloDias: p.cicloDias, logs: p.logs,
+    semanaActual: p.semanaActual, elegidos, nombreCdgDe: p.nombreCdgDe, grupoDe: p.grupoDe, landmarks: p.landmarks,
+  });
+  const propuesta = porIem ? pr.calculo : null;
+  const borradorDe = (s: number) => propuesta?.borrador.find(b => b.semana === s);
+  const programarPropuesta = () => {
+    const semana = pr.semana;
+    const porEjercicio = pr.operacionesMarcadas();
+    setBorrador(prev => {
+      const next = { ...prev };
+      for (const [clave, ops] of porEjercicio) {
+        const corte = clave.lastIndexOf('#');
+        const dia = clave.slice(0, corte);
+        const exIdx = Number(clave.slice(corte + 1));
+        next[dia] = next[dia].map((w, i) => i === exIdx
+          ? withReglas(w, programarCambio(w, semana, false, aplicarOperaciones(prescritoEn(w, semana), ops)))
+          : w);
+      }
+      return next;
+    });
+    setPorIem(false);
+  };
 
   const modificar = (clave: string, exIdx: number, fn: (we: WorkoutExercise) => WorkoutExercise) =>
     setBorrador(prev => ({ ...prev, [clave]: prev[clave].map((w, i) => i === exIdx ? fn(w) : w) }));
@@ -140,7 +184,7 @@ export default function PlanificadorProgresion(p: Props) {
             <Button size="s" variant="ghost" icon="checklist" onClick={() => setPaso('elegir')}>Cambiar ejercicios</Button>
             <Button size="s" variant="ghost" icon="trending_up" disabled={filas.length === 0} onClick={() => setProgresiones(true)}>Progresiones</Button>
             {p.nombreCdgDe && (
-              <Button size="s" variant="ghost" icon="insights" disabled={filas.length === 0} onClick={() => setPorIem(true)}>Proponer por IEM</Button>
+              <Button size="s" variant={porIem ? 'secondary' : 'ghost'} icon="insights" disabled={filas.length === 0} onClick={() => setPorIem(v => !v)}>{porIem ? 'Cerrar propuesta' : 'Proponer por IEM'}</Button>
             )}
           </div>
         </div>
@@ -150,6 +194,7 @@ export default function PlanificadorProgresion(p: Props) {
         </p>
       </div>
 
+      <div className={porIem ? 'grid gap-3 lg:grid-cols-[minmax(0,1fr)_340px] items-start' : ''}>
       {filas.length === 0 ? (
         <div className="bg-surface border border-dashed border-hairline rounded-surface px-4 py-8 text-center space-y-3">
           <p className="font-sans text-label text-ink-2">No has elegido ningún ejercicio.</p>
@@ -176,6 +221,8 @@ export default function PlanificadorProgresion(p: Props) {
                         {tests.includes(s) && <span className="font-mono text-[9px] leading-[11px] font-bold text-warning border border-warning rounded-[5px] px-0.5" title="Semana de test">T</span>}
                         {aviso && <span className={`w-1.5 h-1.5 rounded-full ${aviso === 'peligro' ? 'bg-danger' : 'bg-warning'}`} aria-hidden />}
                       </span>
+                      {propuesta && s === pr.semana && <span className="block font-sans text-[10px] font-bold text-accent-ink">propuesta</span>}
+                      {propuesta && borradorDe(s) && <span className="block font-sans text-[10px] text-ink-3">borrador</span>}
                     </th>
                   );
                 })}
@@ -190,6 +237,11 @@ export default function PlanificadorProgresion(p: Props) {
                       <p className="font-sans font-bold text-label text-ink leading-snug">{p.nombreDe(we.exerciseId)}</p>
                       <p className="font-sans text-caption text-ink-3">
                         {[d.name, p.grupoDe(we) ? MUSCLE_LABELS[p.grupoDe(we)!] : null].filter(Boolean).join(' · ')}
+                        {(() => {
+                          // 13-c: el % de la semana de su zona, con la propuesta abierta.
+                          const z = propuesta?.zonas.find(x => x.zona === zonaDeGrupo(p.grupoDe(we)));
+                          return z ? <b className={z.pct > 0 ? 'text-success' : z.pct < 0 ? 'text-danger' : 'text-ink-2'}> · {z.pct === 0 ? 'mantener' : `${z.pct > 0 ? '+' : ''}${z.pct} %`}</b> : null;
+                        })()}
                       </p>
                       {conCambios && (
                         <button type="button" onClick={() => modificar(d.clave, exIdx, w => {
@@ -210,11 +262,44 @@ export default function PlanificadorProgresion(p: Props) {
                       const otro = s > 0 && r.exerciseId !== we.exerciseId;
                       const real = s > 0 && p.logs ? realDeLaSemana(p.logs, p.meso, p.cicloDias, d.workoutIds, we, s) : null;
                       const enDescarga = descargas.includes(s);
+                      const iem = iemEnCasilla(we, s === 0 ? we : resolverEjercicioDelMeso(we, p.meso, s));
+                      const claveFila = `${d.clave}#${exIdx}`;
+                      const casilla = propuesta && s === pr.semana ? propuesta.casillas.get(claveFila) : undefined;
+                      const enBorrador = !casilla ? borradorDe(s)?.porEjercicio.get(claveFila) : undefined;
+                      if (casilla && casilla.incluida) {
+                        const cp = describirCelda(casilla.we);
+                        const iemP = iemEnCasilla(we, casilla.we);
+                        return (
+                          <td key={s} className={`border-b border-hairline p-1 align-top ${s === p.semanaActual ? 'bg-accent/8' : ''}`}>
+                            <button type="button" onClick={() => pr.alternarEjercicio(claveFila)}
+                              title={casilla.motivos.length ? 'Propuesta del motor: toca para quitarla' : 'Se mantiene'}
+                              className="w-full rounded-control border-[1.5px] border-dashed border-accent bg-accent/8 px-2 py-1.5 text-left">
+                              <span className="block font-mono text-label font-bold tabular-nums text-ink">{cp.esquema}</span>
+                              <span className="block font-mono text-caption text-ink-3 tabular-nums">{cp.rir}{iemP != null && ` · IEM ${iemP.toLocaleString('es-ES', { maximumFractionDigits: 1 })}`}</span>
+                              <span className="block font-sans text-caption font-bold text-accent-ink">{casilla.motivos.length ? casilla.motivos.join(' · ') : '= mantiene'}</span>
+                              {casilla.porTiempo && <span className="block font-sans text-caption text-warning">para ahorrar tiempo · mucha fatiga</span>}
+                              {casilla.superaMrv && <span className="block font-sans text-caption text-warning">pasa del máximo recuperable</span>}
+                            </button>
+                          </td>
+                        );
+                      }
+                      if (enBorrador) {
+                        const cb = describirCelda(enBorrador.we);
+                        return (
+                          <td key={s} className={`border-b border-hairline p-1 align-top ${s === p.semanaActual ? 'bg-accent/8' : ''}`}>
+                            <div title="Borrador: no se guarda; se vuelve a proponer cada semana" className="w-full rounded-control border border-dashed border-hairline px-2 py-1.5 text-left opacity-70">
+                              <span className="block font-mono text-label tabular-nums text-ink-3">{cb.esquema}</span>
+                              <span className="block font-mono text-caption text-ink-3 tabular-nums">{cb.rir}</span>
+                              <span className="block font-sans text-caption text-ink-3">{enBorrador.motivos.length ? enBorrador.motivos.join(' · ') : '= mantiene'}</span>
+                            </div>
+                          </td>
+                        );
+                      }
                       return (
                         <td key={s} className={`border-b border-hairline p-1 align-top ${s === p.semanaActual ? 'bg-accent/8' : ''}`}>
                           <button
                             type="button"
-                            onClick={() => setEditando({ clave: d.clave, exIdx, semana: s })}
+                            onClick={() => (casilla && !casilla.incluida ? pr.alternarEjercicio(claveFila) : setEditando({ clave: d.clave, exIdx, semana: s }))}
                             title={[
                               s === 0 ? 'Base del bloque' : `Semana ${s}`,
                               `${c.esquema} · ${c.rir} · descanso ${fmtDescanso(r.restSeconds)}`,
@@ -229,10 +314,13 @@ export default function PlanificadorProgresion(p: Props) {
                             {otro && <span className="block font-sans text-caption font-bold text-accent-ink truncate">{p.nombreDe(r.exerciseId)}</span>}
                             <span className={`block font-mono text-label font-bold tabular-nums ${cambia || s === 0 ? 'text-ink' : 'text-ink-2'}`}>{c.esquema}</span>
                             <span className="block font-mono text-caption text-ink-3 tabular-nums">
-                              {c.rir}{solo ? ' · solo' : ''}
+                              {c.rir}{solo ? ' · solo' : ''}{iem != null && <span title="IEM de la zona esa semana"> · IEM {iem.toLocaleString('es-ES', { maximumFractionDigits: 1 })}</span>}
                             </span>
                             {enDescarga && (
                               <span className="block font-mono text-caption text-info tabular-nums">hace {seriesDe(resolverEjercicioDelMeso(we, p.meso, s))}</span>
+                            )}
+                            {casilla && !casilla.incluida && (
+                              <span className="mt-1 block font-sans text-caption text-accent-ink">propuesta quitada · toca para volver a ponerla</span>
                             )}
                             {real && (
                               <span className={`mt-1 flex items-center gap-1 border-t border-hairline pt-1 font-mono text-caption tabular-nums ${real.cumple ? 'text-success' : 'text-warning'}`}>
@@ -248,6 +336,22 @@ export default function PlanificadorProgresion(p: Props) {
                   </tr>
                 );
               })}
+              {propuesta && (() => {
+                // 13-f: lo que no se ha elegido no lo toca el motor, pero cuenta para el IEM de su zona.
+                const otros = p.dias.flatMap(d => (borrador[d.clave] ?? []).filter((_, i) => !elegidos.has(`${d.clave}#${i}`)).map(we => p.nombreDe(we.exerciseId)));
+                if (otros.length === 0) return null;
+                return (
+                  <tr>
+                    <th scope="row" className="sticky left-0 z-[1] bg-surface border-b border-r border-hairline px-3 py-2 text-left align-top">
+                      <p className="font-sans text-label text-ink-3">Otros ejercicios ({otros.length})</p>
+                      <p className="font-sans text-caption text-ink-3">no elegidos</p>
+                    </th>
+                    <td colSpan={semanas.length} className="border-b border-hairline px-3 py-2 font-sans text-caption text-ink-3">
+                      El motor no los toca aunque haya margen; cuentan para el IEM de su zona. {otros.slice(0, 8).join(' · ')}{otros.length > 8 ? ` · y ${otros.length - 8} más` : ''}
+                    </td>
+                  </tr>
+                );
+              })()}
               <tr>
                 <th scope="row" className="sticky left-0 z-[1] bg-surface border-r border-hairline px-3 py-2 text-left font-mono text-caption font-bold uppercase tracking-wider text-ink-3">
                   Series de la selección
@@ -263,6 +367,26 @@ export default function PlanificadorProgresion(p: Props) {
           </table>
         </div>
       )}
+      {propuesta && (
+        <div className="lg:col-start-1 flex items-start gap-2 rounded-surface border border-hairline bg-surface px-3 py-2.5">
+          <Icon name="lightbulb" size="s" className="text-accent-ink mt-0.5" />
+          <p className="font-sans text-caption text-ink-2">
+            <b className="text-ink">Por qué: </b>
+            {(() => {
+              const q = propuesta.porQue;
+              const ctx = q.contexto === 'sin-dato' ? 'sin datos de contexto' : `contexto ${q.contexto}`;
+              const datos = [q.sueño != null ? `sueño ${q.sueño.toLocaleString('es-ES', { maximumFractionDigits: 1 })} h` : null, q.estres != null ? `estrés ${q.estres}` : null, q.motivacion != null ? `motivación ${q.motivacion}` : null].filter(Boolean).join(', ');
+              const agu = q.agujetasMedias != null ? `agujetas medias ${q.agujetasMedias.toLocaleString('es-ES', { maximumFractionDigits: 1 })}/5` : 'sin agujetas recientes';
+              const zonas = propuesta.zonas.map(z => `${z.nombre} ${z.modo === 'dinamico' ? 'dinámico' : 'estático'} ${z.pct === 0 ? 'se mantiene' : `${z.pct > 0 ? '+' : ''}${z.pct} %`}`).join(' · ');
+              return `${agu} y ${ctx}${datos ? ` (${datos})` : ''}${q.motivos.length ? `: ${q.motivos.join(', ')}` : ''}. Velocidad del bloque: ${q.velocidad}. ${zonas}.`;
+            })()}
+          </p>
+        </div>
+      )}
+      {porIem && p.nombreCdgDe && (
+        <PanelPropuestaIem pr={pr} onProgramar={programarPropuesta} onCerrar={() => setPorIem(false)} onGuardarModo={p.onCambiarModo} />
+      )}
+      </div>
 
       {semanasConAviso.length > 0 && (
         <div className="bg-surface border border-hairline rounded-surface px-4 py-2.5 space-y-1">
@@ -328,38 +452,6 @@ export default function PlanificadorProgresion(p: Props) {
           setProgresiones(false);
         }}
       />
-
-      {p.nombreCdgDe && porIem && (
-        <PropuestaIemSheet
-          open
-          onClose={() => setPorIem(false)}
-          meso={p.meso}
-          dias={p.dias.map(d => ({ ...d, exercises: borrador[d.clave] ?? d.exercises }))}
-          vueltas={p.vueltas}
-          cicloDias={p.cicloDias}
-          logs={p.logs}
-          semanaActual={p.semanaActual}
-          elegidos={new Set(filas.map(f => `${f.d.clave}#${f.exIdx}`))}
-          nombreDe={p.nombreDe}
-          nombreCdgDe={p.nombreCdgDe}
-          grupoDe={p.grupoDe}
-          onAplicar={(semana, porEjercicio) => {
-            setBorrador(prev => {
-              const next = { ...prev };
-              for (const [clave, ops] of porEjercicio) {
-                const corte = clave.lastIndexOf('#');
-                const dia = clave.slice(0, corte);
-                const exIdx = Number(clave.slice(corte + 1));
-                next[dia] = next[dia].map((w, i) => i === exIdx
-                  ? withReglas(w, programarCambio(w, semana, false, aplicarOperaciones(prescritoEn(w, semana), ops)))
-                  : w);
-              }
-              return next;
-            });
-            setPorIem(false);
-          }}
-        />
-      )}
 
       {dialogoDescartar}
     </div>

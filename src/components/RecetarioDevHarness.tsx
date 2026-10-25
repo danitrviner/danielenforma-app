@@ -1,12 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import type { AthleteDietConfig, Diet, DietCompletionLog, Recipe, UserProfile } from '../types';
+import type { AthleteDietConfig, Diet, DietCompletionLog, OnboardingData, Recipe, UserProfile } from '../types';
 import RecipesScreen from './RecipesScreen';
 import RecetarioDescubrir from './RecetarioDescubrir';
-import ReglasDeRecetasPanel from './ReglasDeRecetasPanel';
+import RecetasDelAtletaPanel from './RecetasDelAtletaPanel';
 import { cargarIndiceRecetas } from '../dbService';
 import { esPlatoDelRecetario } from '../db/recetasHidratacion';
-import { reglasDeRecetaKey } from '../hooks/useReglasDeReceta';
+import { accesoGlobalKey, reglasDeRecetaKey } from '../hooks/useReglasDeReceta';
 import { SegmentedControl } from './ui';
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -22,7 +22,7 @@ import { SegmentedControl } from './ui';
 
    La pestaña «Usar receta» pinta la misma portada como la monta el selector de
    Mi plan: tocar una receta la «usa» en vez de abrirla. «Coach» es el panel
-   donde el coach esconde y recomienda recetas a ese atleta.
+   del coach con las recetas de ese atleta (tablero Disponibles → En su plan).
    ═══════════════════════════════════════════════════════════════════════════ */
 
 const EMAIL = 'dev.atleta@example.com';
@@ -56,6 +56,10 @@ function dia(n: number, recetas: string[]): DietCompletionLog {
   } as DietCompletionLog;
 }
 
+const ONBOARDING = {
+  likedFoods: ['pollo', 'arroz', 'huevo'], dislikedFoods: ['champiñón'], allergies: [], cookingMaxTime: 15, mealCount: 4,
+} as unknown as OnboardingData;
+
 function sembrar(qc: QueryClient) {
   const fijo = (key: readonly unknown[], data: unknown) => qc.setQueryData(key, data);
   fijo(['recipes', PERFIL.userId], []);
@@ -65,6 +69,7 @@ function sembrar(qc: QueryClient) {
   fijo(['dietsForAthlete', EMAIL], [DIETA]);
   fijo(['athleteDietConfig', EMAIL], { athleteId: EMAIL, activeDietIds: [DIETA.id] } as AthleteDietConfig);
   fijo(reglasDeRecetaKey(EMAIL), { athleteId: EMAIL, reglas: [], recomendadas: [POKE, SALMON, LENTEJAS] });
+  fijo(accesoGlobalKey, { paquetes: [{ id: 'cenas', nombre: 'Cenas rápidas', recipeIds: [POKE, SALMON, TOSTADA] }] });
   const d = new Date(); d.setDate(d.getDate() - 30);
   const desde = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
   fijo(['dietCompletionLogs', EMAIL, 'desde', desde], [
@@ -111,7 +116,13 @@ export default function RecetarioDevHarness() {
         />
         {modo === 'recetario' ? <RecipesScreen profile={PERFIL} />
           : modo === 'selector' ? <SelectorDeComida />
-          : <ReglasDeRecetasPanel athleteEmail={EMAIL} onboarding={null} nutritionConfig={null} />}
+          : <RecetasDelAtletaPanel
+              athleteEmail={EMAIL}
+              diets={[DIETA]}
+              dietConfig={{ athleteId: EMAIL, activeDietIds: [DIETA.id] } as AthleteDietConfig}
+              onboarding={ONBOARDING}
+              nutritionConfig={null}
+            />}
       </div>
     </QueryClientProvider>
   );

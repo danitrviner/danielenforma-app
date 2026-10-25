@@ -2194,6 +2194,10 @@ export interface Mesocycle {
   cdgSensibilidad?: 'estatico' | 'dinamico';
   /** Tipo de bloque: cuánto se sube (suave ~10 %, medio ~20 %, agresivo ~30 %). Manda sobre `cdgActitud`. */
   cdgVelocidad?: 'suave' | 'medio' | 'agresivo';
+  /** Modo de cada zona para el freno/acelerador (Dani, 25-10). Sin valor: las
+   *  zonas con objetivo de IEM van en dinámico y el resto en estático. Manda
+   *  sobre `cdgSensibilidad`, que queda para bloques antiguos. */
+  cdgModoPorZona?: Partial<Record<string, 'estatico' | 'dinamico'>>;
 }
 
 // Tipos de fase de un mesociclo, para el color/icono del Roadmap → Calendario.

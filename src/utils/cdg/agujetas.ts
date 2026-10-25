@@ -42,6 +42,18 @@ export function tipoDeBloque (m: { cdgSensibilidad?: Sensibilidad; cdgVelocidad?
   return { sensibilidad: m.cdgSensibilidad ?? viejo.sensibilidad, velocidad: m.cdgVelocidad ?? viejo.velocidad }
 }
 
+/**
+ * Modo (sensibilidad) de una zona (Dani, 25-10): lo que el coach haya puesto o,
+ * por defecto, dinámico en las zonas que se priorizan (las que tienen objetivo
+ * de IEM) y estático en el resto, que se mantienen.
+ */
+export function sensibilidadDeZona (
+  m: { cdgModoPorZona?: Partial<Record<string, Sensibilidad>>; cdgObjetivosIem?: Partial<Record<string, number>> },
+  zona: ZonaIem,
+): Sensibilidad {
+  return m.cdgModoPorZona?.[zona] ?? (m.cdgObjetivosIem?.[zona] != null ? 'dinamico' : 'estatico')
+}
+
 export const SENSIBILIDADES: Array<{ value: Sensibilidad; label: string; ayuda: string }> = [
   { value: 'estatico', label: 'Estático', ayuda: 'Solo se sube con agujetas de 1' },
   { value: 'dinamico', label: 'Dinámico', ayuda: 'Se sube con agujetas de 1 a 3' },
@@ -87,7 +99,7 @@ export function agujetasPorZona (serie: SerieDeSeñal): Partial<Record<ZonaIem, 
   return out
 }
 
-export type TonoPropuesta = 'freno' | 'vigilar' | 'mantener' | 'acelerar' | 'sin-dato'
+export type TonoPropuesta = 'freno' | 'vigilar' | 'mantener' | 'acelerar' | 'objetivo' | 'sin-dato'
 export interface Propuesta {
   tono: TonoPropuesta
   texto: string
@@ -145,8 +157,9 @@ const r1 = (v: number) => Math.round(v * 10) / 10
 
 /**
  * Freno / acelerador de una zona: el protocolo semanal de la guía.
- *  1. Agujetas 5 → bajar 20-30 % (si la subida vino de ejercicios en
- *     estiramiento, quitar estiramiento antes que series).
+ *  1. Agujetas 5 (duele en reposo) → nunca subir; reducir o pausar esa carga,
+ *     y cuánto lo decide el coach: sin % fijo (Dani, 25-10). Si la subida vino
+ *     de ejercicios en estiramiento, quitar estiramiento antes que series.
  *  2. Agujetas 4: en zona propensa (isquios, aductores) se espera una semana;
  *     en el resto, bajar 15-30 %.
  *  3. Fatiga al salir de las sesiones 8-9 o más → no subir IEM: bajar IF manteniéndolo.
@@ -154,15 +167,19 @@ const r1 = (v: number) => Math.round(v * 10) / 10
  *  5. Se sube si lo permite la sensibilidad (estático: 1; dinámico: 1-3), lo que
  *     diga la velocidad, a la mitad con contexto neutro. Con una base alta
  *     (≥ 100) no más de un 10 %: se mantienen los puntos añadidos, no el porcentaje.
+ *  6. El IEM objetivo de la zona (Volumen) es la meta: la subida no lo pasa, y
+ *     si ya llega, el motor no propone y decide el coach (Dani, 25-10).
  */
 export function propuestaZona (o: {
   agujetas?: number; anterior?: number; sensible: boolean; tipo: TipoDeBloque; esObjetivo: boolean;
   iem?: number; contexto?: Contexto; fatigaPost?: number
+  /** IEM semanal objetivo de la zona (`Mesocycle.cdgObjetivosIem`), si lo hay. */
+  objetivo?: number
 }): Propuesta {
-  const { agujetas: a, anterior, sensible, tipo, esObjetivo, iem = 0, contexto = 'sin-dato', fatigaPost } = o
+  const { agujetas: a, anterior, sensible, tipo, esObjetivo, iem = 0, contexto = 'sin-dato', fatigaPost, objetivo } = o
   const con = (pct: number) => (iem > 0.005 ? { pct, iemPropuesto: r1(iem * (1 + pct / 100)) } : { pct })
   if (a == null) return { tono: 'sin-dato', texto: 'Sin agujetas registradas: decide con la recuperación entre sesiones y el rendimiento.' }
-  if (a >= 5) return { tono: 'freno', texto: 'Frenar ya: bajar su IEM un 20-30 %. Si la subida vino de ejercicios en estiramiento, quita estiramiento antes que series.', ...con(-25) }
+  if (a >= 5) return { tono: 'freno', texto: 'Duele incluso en reposo: no subir. Reduce o pausa la carga de esta zona y mira cómo evoluciona; tú decides cuánto. Si la subida vino de ejercicios en estiramiento, quita estiramiento antes que series.' }
   if (a >= 4) {
     if (!sensible) return { tono: 'freno', texto: 'No es una zona propensa a agujetas: con un 4 te estás pasando. Bajar su IEM un 15-30 %.', ...con(-20) }
     if (anterior != null && anterior >= 4) return { tono: 'freno', texto: 'Segunda semana seguida en 4 o más: no se recupera. Bajar su IEM un 15-30 %.', ...con(-20) }
@@ -174,11 +191,19 @@ export function propuestaZona (o: {
   const umbral = tipo.sensibilidad === 'dinamico' ? 3 : 1
   if (a > umbral) return { tono: 'mantener', texto: tipo.sensibilidad === 'estatico' && a <= 3 ? 'Mantener: en un bloque estático solo se sube con agujetas de 1.' : 'Mantener el IEM.' }
   if (contexto === 'desfavorable') return { tono: 'mantener', texto: 'Contexto desfavorable esta semana: no subir. Si se repite varias semanas, baja carga; si es puntual, solo espera.' }
+  if (objetivo != null && objetivo > 0 && iem >= objetivo - 0.05) {
+    return { tono: 'objetivo', texto: `Ya llega a su objetivo de ${r1(objetivo).toLocaleString('es-ES')}: decide tú si sigue subiendo.` }
+  }
   let pct = VELOCIDADES.find(v => v.value === tipo.velocidad)!.pct
   const notas: string[] = []
   if (contexto === 'neutro' || contexto === 'sin-dato') { pct = Math.round(pct / 2); notas.push(contexto === 'neutro' ? 'contexto neutro: la mitad' : 'sin datos de contexto: la mitad') }
   if (iem >= UMBRALES_PROTOCOLO.iemBaseAlta && pct > UMBRALES_PROTOCOLO.subidaMaxBaseAlta) { pct = UMBRALES_PROTOCOLO.subidaMaxBaseAlta; notas.push('base alta: mantén los puntos añadidos, no repitas el porcentaje') }
   if (iem > 0.005 && iem < 10) notas.push('zona poco trabajada: admite subidas mucho mayores')
+  if (objetivo != null && objetivo > 0 && iem > 0.005 && iem * (1 + pct / 100) > objetivo) {
+    // Hacia abajo: la subida no pasa del objetivo (1e-9 por el redondeo de coma flotante).
+    pct = Math.max(1, Math.floor((objetivo / iem - 1) * 100 + 1e-9))
+    notas.push(`hasta su objetivo de ${r1(objetivo).toLocaleString('es-ES')}`)
+  }
   return {
     tono: 'acelerar',
     texto: `Margen para subir el IEM ~${pct} %${esObjetivo ? ' (zona objetivo)' : ''}${notas.length ? ` · ${notas.join(' · ')}` : ''}. Comprueba que el IF de la sesión lo admite.`,

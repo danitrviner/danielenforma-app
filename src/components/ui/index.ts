@@ -48,6 +48,8 @@ export { default as ActionRow } from './ActionRow';
 export { default as PageHeader } from './PageHeader';
 
 export { default as Sheet } from './Sheet';
+export { default as PanelLateral } from './PanelLateral';
+export { useAnchoMinimo } from './internal/useAnchoMinimo';
 export type { SheetSize } from './Sheet';
 
 export { default as Dialog } from './Dialog';

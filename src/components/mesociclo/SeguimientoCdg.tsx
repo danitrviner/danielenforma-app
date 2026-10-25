@@ -7,7 +7,7 @@ import {
   semanasRealizadasDelMeso, cargaAgudaCronicaDelMeso, rendimientoDelCiclo, incrementoAntropometria, semanasAnterioresAlBloque,
   UMBRALES_CARGA_POR_DEFECTO, sinMusculos, SEMANAS_CARGA_CRONICA, type UmbralesCarga,
   ZONAS_IEM, iemPorZona, variacion, propuestaZona, SENSIBILIDADES, VELOCIDADES, tipoDeBloque, contextoDeLaSemana,
-  UMBRALES_PROTOCOLO, agujetasVigentes,
+  UMBRALES_PROTOCOLO, agujetasVigentes, sensibilidadDeZona, type ZonaIem,
   type TipoDeBloque, type Sensibilidad, type Velocidad, type TonoPropuesta,
   leerRendimiento, indicadoresCambioDeBloque, avisosIemIea, type SemanaParaLectura, type Contexto,
   tipoSugerido, semanasHastaAburrirse, avisoDeFiabilidad, referenciasToleradas
@@ -46,13 +46,15 @@ interface Props {
   onGuardarUmbrales: (u: UmbralesCarga) => void;
   /** Guarda el tipo de bloque (`Mesocycle.cdgSensibilidad` y `cdgVelocidad`). */
   onCambiarTipo?: (t: TipoDeBloque) => void;
+  /** Guarda el modo de una zona (`Mesocycle.cdgModoPorZona`). */
+  onCambiarModo?: (zona: ZonaIem, modo: Sensibilidad) => void;
 }
 
 const TONO: Record<TonoPropuesta, string> = {
-  freno: 'text-danger', vigilar: 'text-warning', mantener: 'text-ink-2', acelerar: 'text-success', 'sin-dato': 'text-ink-3'
+  freno: 'text-danger', vigilar: 'text-warning', mantener: 'text-ink-2', acelerar: 'text-success', objetivo: 'text-ink', 'sin-dato': 'text-ink-3'
 };
 const ETIQUETA_TONO: Record<TonoPropuesta, string> = {
-  freno: 'Frenar', vigilar: 'Vigilar', mantener: 'Mantener', acelerar: 'Acelerar', 'sin-dato': 'Sin dato'
+  freno: 'Frenar', vigilar: 'Vigilar', mantener: 'Mantener', acelerar: 'Acelerar', objetivo: 'En objetivo', 'sin-dato': 'Sin dato'
 };
 
 const n1 = (v: number) => (Math.round(v * 10) / 10).toLocaleString('es-ES');
@@ -73,7 +75,7 @@ const Th = ({ children, derecha }: { children?: React.ReactNode; derecha?: boole
   <th className={`py-1 font-normal uppercase tracking-wide text-ink-3 ${derecha ? 'text-right' : 'text-left'}`}>{children}</th>
 );
 
-export default function SeguimientoCdg ({ athleteEmail, logs, meso, cicloDias, vueltas, grupos, allExercises, umbrales, onGuardarUmbrales, onCambiarTipo }: Props) {
+export default function SeguimientoCdg ({ athleteEmail, logs, meso, cicloDias, vueltas, grupos, allExercises, umbrales, onGuardarUmbrales, onCambiarTipo, onCambiarModo }: Props) {
   const { agujetas, sueño, estres, motivacion, fatigaPost, historial } = useAgujetasCdg(athleteEmail);
   const tipo = tipoDeBloque(meso);
   // Tipificación del cliente (ficha viva): misma caché que la ficha.
@@ -184,13 +186,16 @@ export default function SeguimientoCdg ({ athleteEmail, logs, meso, cicloDias, v
             // no dice nada de cómo ha encajado la semana que se evalúa.
             const vigente = !!lectura && agujetasVigentes(lectura.fecha, hoy);
             const objetivo = meso.cdgObjetivosIem?.[z.clave];
+            // Modo por zona (Dani, 25-10): con objetivo, dinámico; el resto, estático.
+            const modo = sensibilidadDeZona(meso, z.clave);
             return {
-              z, lectura, vigente, objetivo,
+              z, lectura, vigente, objetivo, modo,
               iem: ahora?.[z.clave] ?? 0,
               vs: ahora && antes ? variacion(antes[z.clave], ahora[z.clave]) : null,
               propuesta: propuestaZona({
-                agujetas: vigente ? lectura?.valor : undefined, anterior: vigente ? lectura?.anterior : undefined, sensible: z.sensible, tipo, esObjetivo: objetivo != null,
-                iem: ahora?.[z.clave] ?? 0, contexto, fatigaPost: fatigaPost?.value,
+                agujetas: vigente ? lectura?.valor : undefined, anterior: vigente ? lectura?.anterior : undefined, sensible: z.sensible,
+                tipo: { ...tipo, sensibilidad: modo }, esObjetivo: objetivo != null,
+                iem: ahora?.[z.clave] ?? 0, contexto, fatigaPost: fatigaPost?.value, objetivo,
               })
             };
           }).filter(f => f.iem > 0.005 || f.lectura || f.objetivo != null);
@@ -198,14 +203,6 @@ export default function SeguimientoCdg ({ athleteEmail, logs, meso, cicloDias, v
             <>
               {/* Tipo de bloque (guía del IH): cuándo se sube y cuánto, por separado. */}
               <div className="flex flex-wrap items-end gap-3">
-                <div className="w-40">
-                  <Select
-                    label="Sensibilidad"
-                    value={tipo.sensibilidad}
-                    onChange={v => onCambiarTipo?.({ ...tipo, sensibilidad: v as Sensibilidad })}
-                    options={SENSIBILIDADES.map(a => ({ value: a.value, label: a.label }))}
-                  />
-                </div>
                 <div className="w-44">
                   <Select
                     label="Velocidad"
@@ -214,12 +211,14 @@ export default function SeguimientoCdg ({ athleteEmail, logs, meso, cicloDias, v
                     options={VELOCIDADES.map(a => ({ value: a.value, label: a.label }))}
                   />
                 </div>
-                <p className="font-sans text-caption text-ink-3 pb-2">{SENSIBILIDADES.find(a => a.value === tipo.sensibilidad)?.ayuda}.</p>
+                <p className="font-sans text-caption text-ink-3 pb-2">
+                  Modo por zona (columna «Modo»): las zonas con objetivo van en dinámico y el resto en estático, que se mantienen. Tócalo para cambiarlo.
+                </p>
               </div>
-              {sugerido && meso.cdgSensibilidad == null && meso.cdgVelocidad == null && (sugerido.sensibilidad !== tipo.sensibilidad || sugerido.velocidad !== tipo.velocidad) && (
+              {sugerido && meso.cdgVelocidad == null && sugerido.velocidad !== tipo.velocidad && (
                 <p className="font-sans text-caption text-ink-2">
-                  Por su tipificación (freno {tip?.freno}/5) encaja un bloque {SENSIBILIDADES.find(a => a.value === sugerido.sensibilidad)?.label.toLowerCase()} y {VELOCIDADES.find(a => a.value === sugerido.velocidad)?.label.toLowerCase()}.{' '}
-                  <button type="button" className="underline font-bold" onClick={() => onCambiarTipo?.(sugerido)}>Usarlo</button>
+                  Por su tipificación (freno {tip?.freno}/5) encaja una velocidad {VELOCIDADES.find(a => a.value === sugerido.velocidad)?.label.toLowerCase()}.{' '}
+                  <button type="button" className="underline font-bold" onClick={() => onCambiarTipo?.({ ...tipo, velocidad: sugerido.velocidad })}>Usarla</button>
                 </p>
               )}
               {fiabilidad && <p className="font-sans text-caption text-warning">{fiabilidad}</p>}
@@ -247,11 +246,19 @@ export default function SeguimientoCdg ({ athleteEmail, logs, meso, cicloDias, v
               {filas.length === 0 ? <p className="font-sans text-caption text-ink-3">Sin estímulo registrado ni agujetas todavía.</p> : (
                 <div className="overflow-x-auto">
                   <table className="w-full font-sans text-caption">
-                    <thead><tr><Th>Zona</Th><Th derecha>Agujetas 48 h</Th><Th derecha>IEM S{semanaActiva?.semana ?? '—'}</Th><Th derecha>vs anterior</Th><Th derecha>Objetivo</Th><Th>Propuesta</Th></tr></thead>
+                    <thead><tr><Th>Zona</Th><Th>Modo</Th><Th derecha>Agujetas 48 h</Th><Th derecha>IEM S{semanaActiva?.semana ?? '—'}</Th><Th derecha>vs anterior</Th><Th derecha>Objetivo</Th><Th>Propuesta</Th></tr></thead>
                     <tbody>
                       {filas.map(f => (
                         <tr key={f.z.clave} className="border-t border-hairline align-top">
                           <td className={`py-1 pr-2 whitespace-nowrap ${f.objetivo != null ? 'font-bold text-ink' : 'text-ink-2'}`}>{f.z.nombre}</td>
+                          <td className="py-1 pr-2">
+                            <button type="button" disabled={!onCambiarModo}
+                              onClick={() => onCambiarModo?.(f.z.clave, f.modo === 'dinamico' ? 'estatico' : 'dinamico')}
+                              title={SENSIBILIDADES.find(a => a.value === f.modo)?.ayuda}
+                              className={`rounded-chip border px-2 py-0.5 font-sans text-caption ${f.modo === 'dinamico' ? 'border-accent-line text-accent-ink' : 'border-hairline text-ink-2'}`}>
+                              {SENSIBILIDADES.find(a => a.value === f.modo)?.label}
+                            </button>
+                          </td>
                           <td className="py-1 px-2 text-right font-mono tabular-nums" title={f.lectura ? `${f.lectura.fecha}${f.lectura.deEscala10 ? ' · cuestionario 0-10 convertido' : ''}` : undefined}>
                             {f.lectura && !f.vigente ? <span className="text-ink-3" title={`Última lectura: ${f.lectura.fecha}`}>{f.lectura.valor} · antigua</span> : f.lectura ? <>{f.lectura.anterior != null && <span className="text-ink-3">{f.lectura.anterior} → </span>}<b className={f.lectura.valor >= 5 ? 'text-danger' : f.lectura.valor >= 4 ? 'text-warning' : 'text-ink'}>{f.lectura.valor}</b>{f.lectura.deEscala10 ? '*' : ''}</> : <span className="text-ink-3">—</span>}
                           </td>

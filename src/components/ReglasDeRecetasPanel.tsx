@@ -35,6 +35,10 @@ interface Props {
   athleteEmail: string;
   onboarding: OnboardingData | null;
   nutritionConfig: AthleteNutritionConfig | null;
+  /** Dentro de «Ajustes finos» del tablero (RecetasDelAtletaPanel): sin tarjeta
+   *  propia, sin lo del alta (lo enseña el tablero) y sin estrellas (se
+   *  recomienda desde «En su plan»). */
+  enAjustes?: boolean;
 }
 
 const TONOS = {
@@ -82,7 +86,8 @@ const Fila: React.FC<{
   receta: Recipe;
   regla: ReglaDeReceta | undefined;
   recomendada: boolean;
-  onRecomendar: () => void;
+  /** Sin esto no se pinta la estrella. */
+  onRecomendar?: () => void;
   guardando: boolean;
   /** Ámbitos con los que se esconde al pulsar el ojo (los de «Al esconder, aplicar en»). */
   ambitosNuevos: AmbitoDeRegla[];
@@ -120,7 +125,7 @@ const Fila: React.FC<{
         </div>
         {/* Recomendar: sale arriba de su recetario, en «Recomendadas por tu
             entrenador». Una escondida no se puede recomendar (no la vería). */}
-        <button
+        {onRecomendar && <button
           type="button"
           onClick={onRecomendar}
           disabled={guardando}
@@ -132,7 +137,7 @@ const Fila: React.FC<{
           title={recomendada ? 'Recomendada: sale arriba de su recetario' : 'Recomendársela: saldrá arriba de su recetario'}
         >
           <Icon name="star" size="m" filled={recomendada} />
-        </button>
+        </button>}
         <button
           type="button"
           onClick={() => onCambiar(escondida ? null : { ambitos: ambitosNuevos })}
@@ -196,7 +201,7 @@ const Fila: React.FC<{
   );
 };
 
-export default function ReglasDeRecetasPanel({ athleteEmail, onboarding, nutritionConfig }: Props) {
+export default function ReglasDeRecetasPanel({ athleteEmail, onboarding, nutritionConfig, enAjustes = false }: Props) {
   const queryClient = useQueryClient();
   const { showToast } = useToast();
   const reglas = useReglasDeReceta(athleteEmail);
@@ -308,8 +313,13 @@ export default function ReglasDeRecetasPanel({ athleteEmail, onboarding, nutriti
   const huerfanas = reglas.filter(r => !pool.some(p => p.id === r.recipeId));
 
   return (
-    <div className="bg-surface border border-hairline rounded-surface p-5 space-y-4">
-      <div>
+    <div className={enAjustes ? 'space-y-4' : 'bg-surface border border-hairline rounded-surface p-5 space-y-4'}>
+      {enAjustes ? (
+        <p className="font-sans text-label text-ink-2">
+          Para excepciones: una receta que no quieres que le salga ciertos días, o que esté en su menú pero no en su
+          recetario. Con el ojo la escondes y eliges días y sitios.
+        </p>
+      ) : <div>
         <h3 className="font-sans font-bold text-title-s text-ink flex items-center gap-2">
           <Icon name="menu_book" size="m" className="text-accent-ink" />
           Recetas de este atleta
@@ -319,7 +329,7 @@ export default function ReglasDeRecetasPanel({ athleteEmail, onboarding, nutriti
           su recetario. Con el ojo la escondes, y tú decides dónde afecta: el menú que genera la app, los cambios de comida o el
           recetario general.
         </p>
-      </div>
+      </div>}
 
       {cargandoIndice ? (
         <Skeleton className="h-40 w-full" />
@@ -329,7 +339,7 @@ export default function ReglasDeRecetasPanel({ athleteEmail, onboarding, nutriti
             {pool.length.toLocaleString('es-ES')} en su pool · {reglas.length} {reglas.length === 1 ? 'escondida' : 'escondidas'} · {recomendadas.length} {recomendadas.length === 1 ? 'recomendada' : 'recomendadas'}
           </p>
 
-          <div className="border border-hairline rounded-surface">
+          {!enAjustes && <div className="border border-hairline rounded-surface">
             <button
               type="button"
               onClick={() => setVerAlimentos(v => !v)}
@@ -368,7 +378,7 @@ export default function ReglasDeRecetasPanel({ athleteEmail, onboarding, nutriti
                 />
               </div>
             )}
-          </div>
+          </div>}
 
           <div className="grid gap-3 sm:grid-cols-2">
             <input
@@ -490,14 +500,14 @@ export default function ReglasDeRecetasPanel({ athleteEmail, onboarding, nutriti
                 soloEscondidas ? 'bg-accent text-on-accent border-accent' : 'border-hairline text-ink-2 hover:text-ink'
               }`}
             >Solo escondidas</button>
-            <button
+            {!enAjustes && <button
               type="button"
               onClick={() => { setSoloRecomendadas(v => !v); setVisibles(POR_PAGINA); }}
               aria-pressed={soloRecomendadas}
               className={`min-h-[44px] px-3 rounded-control border font-sans text-caption font-bold uppercase transition-colors ${
                 soloRecomendadas ? 'bg-accent text-on-accent border-accent' : 'border-hairline text-ink-2 hover:text-ink'
               }`}
-            >Recomendadas · {recomendadas.length}</button>
+            >Recomendadas · {recomendadas.length}</button>}
             {hayFiltro && (
               <button
                 type="button"
@@ -552,7 +562,7 @@ export default function ReglasDeRecetasPanel({ athleteEmail, onboarding, nutriti
                   receta={r}
                   regla={porId.get(r.id)}
                   recomendada={recomendadasSet.has(r.id)}
-                  onRecomendar={() => guardar.mutate(conRecomendada({ reglas, recomendadas }, r.id, !recomendadasSet.has(r.id)))}
+                  onRecomendar={enAjustes ? undefined : () => guardar.mutate(conRecomendada({ reglas, recomendadas }, r.id, !recomendadasSet.has(r.id)))}
                   guardando={guardar.isPending}
                   ambitosNuevos={ambitosNuevos}
                   onCambiar={cambio => guardar.mutate(cambio
