@@ -76,6 +76,17 @@ export function pautaDeTecnica(we: Pick<WorkoutExercise, 'technique' | 'tecnicaA
   }
 }
 
+/** Segunda línea del bloque de bajadas / miniseries en la sesión (14-d): cómo
+ *  hacerlas, con lo que programó el coach. Vacía en las técnicas sin bloque. */
+export function pautaDelBloque(we: Pick<WorkoutExercise, 'technique' | 'tecnicaAjustes'>): string {
+  const a = ajustesDe(we);
+  if (we.technique === 'dropset') {
+    return `Sin descanso · −${a.dropset.pctBajada}\u00a0% cada bajada · ${a.dropset.hastaFallo ? 'hasta el fallo' : 'sin llegar al fallo'}`;
+  }
+  if (we.technique === 'myoreps') return `${a.myoreps.descansoSeg}\u00a0s entre miniseries · ${a.myoreps.repsMini} reps cada una`;
+  return '';
+}
+
 /** En qué series y qué hacer, por separado: para poner el nombre de la técnica
  *  en negrita sin repetirlo («DROP-SET · Series 2 y 3: 2 bajadas de −20 %…»). */
 export function partesDeTecnica(we: Pick<WorkoutExercise, 'technique' | 'tecnicaAjustes'>, total: number): { series: string; pauta: string } {
@@ -103,4 +114,60 @@ export function pesoDeBajada(pesoSerie: number, pctBajada: number, i: number): n
 export function serieDelSegmento(s: { segmento?: boolean; segmentoDe?: number }, nPrincipales: number): number | null {
   if (!s.segmento) return null;
   return s.segmentoDe && s.segmentoDe >= 1 && s.segmentoDe <= nPrincipales ? s.segmentoDe : nPrincipales;
+}
+
+/** Las series principales de un registro, sin bajadas ni miniseries. Para
+ *  leer «la serie 2 de la última vez» hay que contar solo estas: si la técnica
+ *  iba en una serie que no es la última, sus segmentos quedan en medio. */
+export function seriesPrincipales<T extends { segmento?: boolean }>(sets: readonly T[]): T[] {
+  return sets.filter(s => !s.segmento);
+}
+
+/**
+ * Segmentos que la sesión trae ya puestos (14-b), por serie principal: drop set,
+ * tantas bajadas como haya programado el coach; myo-reps, el mínimo de
+ * miniseries del rango («3-5» → 3). El atleta puede añadir más a mano.
+ */
+export function segmentosProgramados(we: Pick<WorkoutExercise, 'technique' | 'tecnicaAjustes'>, nPrincipales: number): number[] {
+  if (we.technique !== 'dropset' && we.technique !== 'myoreps') return [];
+  const a = ajustesDe(we);
+  const minimo = parseInt(a.myoreps.miniSeries, 10);
+  const porSerie = we.technique === 'dropset'
+    ? a.dropset.bajadas
+    : Number.isFinite(minimo) && minimo > 0 ? minimo : parseInt(AJUSTES_POR_DEFECTO.myoreps.miniSeries, 10);
+  const n = Math.max(0, Math.min(10, Math.round(porSerie)));
+  return seriesConTecnica(we, nPrincipales).flatMap(serie => Array.from({ length: n }, () => serie));
+}
+
+/**
+ * Lo que se guarda en `tecnicaAjustes.series` al marcar series una a una en el
+ * editor (14-a). Solo la última → 'ultima' y todas → 'todas', para que la
+ * técnica siga en su sitio si luego cambia el número de series; cualquier otra
+ * combinación, los números. Ninguna → `null`: se quita la técnica.
+ */
+export function seriesAGuardar(marcadas: readonly number[], total: number): AjustesDeTecnica['series'] | null {
+  const nums = [...new Set(marcadas)].filter(n => Number.isInteger(n) && n >= 1 && n <= total).sort((a, b) => a - b);
+  if (nums.length === 0) return null;
+  if (nums.length === 1 && nums[0] === total) return 'ultima';
+  if (nums.length === total) return 'todas';
+  return nums;
+}
+
+/** Pauta debajo de cada serie marcada en el editor del coach (14-a). */
+export function pautaDeSerie(we: Pick<WorkoutExercise, 'technique' | 'tecnicaAjustes'>): string {
+  const a = ajustesDe(we);
+  switch (we.technique) {
+    case 'dropset': {
+      const d = a.dropset;
+      return `Después de la serie: ${d.bajadas} ${d.bajadas === 1 ? 'bajada' : 'bajadas'} · −${d.pctBajada}\u00a0% cada una · ${d.hastaFallo ? 'hasta el fallo' : 'sin llegar al fallo'} · sin descanso`;
+    }
+    case 'myoreps': {
+      const m = a.myoreps;
+      return `Después de la serie: ${m.miniSeries} miniseries de ${m.repsMini} reps · ${m.descansoSeg}\u00a0s entre ellas`;
+    }
+    case 'restpause': return 'Después de la serie: pausas de 10-15 s y unas repeticiones más';
+    case 'amrap': return 'Esta serie: todas las repeticiones posibles con buena técnica';
+    case 'fallo': return 'Esta serie: hasta el fallo';
+    default: return '';
+  }
 }

@@ -223,10 +223,13 @@ interface DetailProps {
   onToggleDislike: (id: string) => void;
   onDelete: (id: string) => void;
   onAddToIntercambios?: (pendiente: RecetaPendiente) => void;
+  /** Para mirarla desde otra pantalla (el tablero de recetas del coach): sin
+   *  barra de volver, favorita, «no me gusta» ni borrar. */
+  soloLectura?: boolean;
 }
 
 
-function RecipeDetail({ recipe, isFav, isDisliked, isOwn, enabledModes, savingFav, deletingOwn, dailyBudgetTotal, onBack, onToggleFav, onToggleDislike, onDelete, onAddToIntercambios }: DetailProps) {
+export function RecipeDetail({ recipe, isFav, isDisliked, isOwn, enabledModes, savingFav, deletingOwn, dailyBudgetTotal, onBack, onToggleFav, onToggleDislike, onDelete, onAddToIntercambios, soloLectura = false }: DetailProps) {
   const [checkedSteps, setCheckedSteps] = useState<Record<number, boolean>>({});
   const [scale, setScale] = useState(1);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -247,7 +250,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, isOwn, enabledModes, savingFa
   return (
     <div className="space-y-6">
       {/* Back bar */}
-      <div className="flex items-center justify-between bg-raised px-4 py-3 rounded-surface border border-hairline">
+      {!soloLectura && <div className="flex items-center justify-between bg-raised px-4 py-3 rounded-surface border border-hairline">
         <button
           onClick={onBack}
           className="flex items-center gap-2 text-ink-2 hover:text-accent-ink transition-colors font-sans text-label uppercase tracking-wider"
@@ -290,7 +293,7 @@ function RecipeDetail({ recipe, isFav, isDisliked, isOwn, enabledModes, savingFa
             </button>
           )}
         </div>
-      </div>
+      </div>}
 
       {isOwn && confirmingDelete && (
         <div className="flex items-start gap-2 bg-danger/10 border border-danger/25 text-danger px-4 py-3 rounded-surface text-body-s">

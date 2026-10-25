@@ -69,4 +69,31 @@ describe('prefillWorkoutSets', () => {
     expect(rows[0][0].rir).toBe('1');
     expect(rows[0][1].rir).toBe('3');
   });
+
+  it('14-b: drop set y myo-reps traen sus bajadas / miniseries ya puestas, detrás de las series', () => {
+    const drop = prefillWorkoutSets({ ...WORKOUT, exercises: [{ ...EX, technique: 'dropset' }] }, [])[0];
+    expect(drop).toHaveLength(5);
+    expect(drop.slice(0, 3).every(r => !r.segmento)).toBe(true);
+    expect(drop.slice(3)).toEqual([
+      { weight: '', repsDone: '', rir: '0', done: false, segmento: true, segmentoDe: 3 },
+      { weight: '', repsDone: '', rir: '0', done: false, segmento: true, segmentoDe: 3 },
+    ]);
+    const myo = prefillWorkoutSets({ ...WORKOUT, exercises: [{ ...EX, technique: 'myoreps', tecnicaAjustes: { myoreps: { repsActivacion: '12-15', miniSeries: '4-6', repsMini: '3-5', descansoSeg: 15 } } }] }, [])[0];
+    expect(myo.filter(r => r.segmento)).toHaveLength(4);
+    expect(prefillWorkoutSets({ ...WORKOUT, exercises: [{ ...EX, technique: 'amrap' }] }, [])[0]).toHaveLength(3);
+  });
+
+  it('lo de la última vez se lee por serie principal aunque las bajadas fueran en medio', () => {
+    const prev: WorkoutEntryLog[] = [{
+      exerciseId: 'ex1',
+      sets: [
+        { weight: 60, repsDone: 10, rir: 0 },
+        { weight: 48, repsDone: 8, rir: 0, segmento: true, segmentoDe: 1 },
+        { weight: 62.5, repsDone: 9, rir: 1 },
+        { weight: 62.5, repsDone: 8, rir: 1 },
+      ],
+    }];
+    const rows = prefillWorkoutSets(WORKOUT, prev)[0];
+    expect(rows.map(r => r.weight)).toEqual(['60', '62.5', '62.5']);
+  });
 });

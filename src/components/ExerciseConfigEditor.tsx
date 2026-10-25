@@ -22,6 +22,8 @@ interface Props {
   /** Campos que esta semana difieren de la base, con desde cuándo ("S3",
    *  "solo S5"): la fila los marca en oro. Solo en disposición 'fila'. */
   marcas?: Partial<Record<string, string>>;
+  /** Recordatorio del alcance en la técnica al editar una semana (14-e). */
+  alcanceTecnica?: string;
 }
 
 /** Columnas de la vista en filas: mover · nº · ejercicio · series · reps ·
@@ -188,7 +190,7 @@ function ChipSeccion({ etiqueta, valor, activa, abierta, onClick, discreto }: {
 // video reminder and warm-up mode. Used identically from WorkoutsScreen (shared routine
 // library) and from MesocycleManager's generator preview + "Ejercicios programados" tab,
 // so a coach configures an exercise the same way no matter which screen they're on.
-export default function ExerciseConfigEditor({ we, onChange, mesoWeeks, disposicion = 'tarjeta', inicio, acciones, marcas = {} }: Props) {
+export default function ExerciseConfigEditor({ we, onChange, mesoWeeks, disposicion = 'tarjeta', inicio, acciones, marcas = {}, alcanceTecnica }: Props) {
   const enFila = disposicion === 'fila';
   const hasGroups = (we.setGroups?.length ?? 0) > 0;
 
@@ -408,7 +410,7 @@ export default function ExerciseConfigEditor({ we, onChange, mesoWeeks, disposic
           {we.technique && (
             <p className="font-sans text-caption text-ink-2 leading-relaxed">{TECHNIQUE_DESCRIPTION[we.technique]}</p>
           )}
-          <AjustesDeTecnicaEditor we={we} totalSets={totalSets} onChange={onChange} />
+          <AjustesDeTecnicaEditor we={we} totalSets={totalSets} onChange={onChange} alcance={alcanceTecnica} />
         </div>
       )}
 

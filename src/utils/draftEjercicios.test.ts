@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import type { Exercise } from '../types';
 import {
   alternarEnDraft, moverEnDraft, catalogoParaGrupo, ejerciciosSugeridos,
-  conNombreDeSesion, nombrePropioDeSesion,
+  conNombreDeSesion, nombrePropioDeSesion, resumenDeMaterial,
 } from './draftEjercicios';
 
 const ex = (id: string, muscleGroup: Exercise['muscleGroup'] = 'pecho') =>
@@ -45,5 +45,20 @@ describe('draft de ejercicios', () => {
     expect(nombrePropioDeSesion(n, 1)).toBeUndefined();
     expect(nombrePropioDeSesion(n, 2)).toBe('Brazos');
     expect(nombrePropioDeSesion(undefined, 0)).toBeUndefined();
+  });
+});
+
+describe('resumen del material (12-e)', () => {
+  const conEq = (id: string, equipment: string[], muscleGroup: Exercise['muscleGroup'] = 'pecho') => ({ ...ex(id, muscleGroup), equipment }) as Exercise;
+  const catalogo = [conEq('press', ['maquina']), conEq('apert', ['mancuernas']), conEq('flex', []), conEq('remo', ['maquina'], 'dorsal')];
+
+  it('cuenta los de los grupos del bloque que su material no cubre', () => {
+    expect(resumenDeMaterial(['Mancuernas', ' '], catalogo, ['pecho'])).toEqual({ material: ['Mancuernas'], noEncajan: 1 });
+  });
+  it('«Gimnasio completo» lo cubre todo', () => {
+    expect(resumenDeMaterial(['Gimnasio completo'], catalogo, ['pecho', 'dorsal']).noEncajan).toBe(0);
+  });
+  it('sin material en el alta no cuenta nada', () => {
+    expect(resumenDeMaterial([], catalogo, ['pecho'])).toEqual({ material: [], noEncajan: 0 });
   });
 });

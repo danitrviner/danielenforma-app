@@ -1,5 +1,6 @@
 import { WorkoutExercise, WorkoutEntryLog } from '../types';
 import { expandSetGroups } from './setGroups';
+import { seriesPrincipales } from './tecnicaDeSerie';
 
 /* Doble progresión: se sube la carga cuando el atleta llegó al TOPE del rango
    de repeticiones con el esfuerzo pautado (su RIR igual o mayor que el del
@@ -32,8 +33,9 @@ const kg = (n: number) => `${n.toLocaleString('es-ES', { maximumFractionDigits: 
 export function sugerirCarga(we: WorkoutExercise, previa: WorkoutEntryLog | undefined): CargaSugerida {
   const filas = expandSetGroups(we);
   if (!previa) return { series: filas.map(() => null), resumen: null };
+  const previas = seriesPrincipales(previa.sets);
   const series = filas.map((fila, i) => {
-    const prev = previa.sets[i];
+    const prev = previas[i];
     const rango = rangoDeReps(fila.reps);
     if (!prev || !rango || prev.weight <= 0 || prev.alFallo) return null;
     if (prev.repsDone < rango.max || prev.rir < fila.rir) return null;

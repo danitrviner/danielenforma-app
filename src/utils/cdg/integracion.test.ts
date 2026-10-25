@@ -73,6 +73,22 @@ describe('cargaAgudaCronicaDelMeso', () => {
     }
   })
 
+  it('con semana de referencia elegida, la crónica son las realizadas antes de esa semana', () => {
+    const semanas = [1, 2, 3, 4, 5, 6].map(semana)
+    const r = cargaAgudaCronicaDelMeso({ motor, semanas, grupos, meso, vueltas: 8, nombreCdgDe, semanaReferencia: 4 })
+    expect(r.disponible).toBe(true)
+    if (r.disponible) {
+      expect(r.semanaReferencia).toBe(4)
+      expect(r.semanasUsadas).toEqual([3, 2, 1])
+      expect(r.fiable).toBe(false)
+    }
+  })
+
+  it('en Base (semana 0) no hay nada que comparar', () => {
+    const r = cargaAgudaCronicaDelMeso({ motor, semanas: [1, 2, 3].map(semana), grupos, meso, vueltas: 8, nombreCdgDe, semanaReferencia: 0 })
+    expect(r.disponible).toBe(false)
+  })
+
   it('sin semana siguiente en el bloque, lo dice', () => {
     const r = cargaAgudaCronicaDelMeso({ motor, semanas: [semana(8)], grupos, meso, vueltas: 8, nombreCdgDe })
     expect(r.disponible).toBe(false)
