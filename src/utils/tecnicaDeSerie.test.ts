@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import type { WorkoutExercise } from '../types';
 import {
-  ajustesDe, seriesConTecnica, describirTecnica, pesoDeBajada, serieDelSegmento, TECNICAS_ELEGIBLES, llevaSegmentos,
+  ajustesDe, seriesConTecnica, describirTecnica, pesoDeBajada, serieDelSegmento, TECNICAS_ELEGIBLES, llevaSegmentos, segmentosProgramados, seriesPrincipales, pautaDelBloque, seriesAGuardar, pautaDeSerie,
 } from './tecnicaDeSerie';
 
 const we = (extra: Partial<WorkoutExercise> = {}): WorkoutExercise =>
@@ -47,5 +47,43 @@ describe('tecnicaDeSerie', () => {
     expect(TECNICAS_ELEGIBLES).not.toContain('restpause');
     expect(llevaSegmentos('restpause')).toBe(true);
     expect(llevaSegmentos('amrap')).toBe(false);
+  });
+
+  it('14-b: segmentos programados por serie con técnica', () => {
+    expect(segmentosProgramados(we({ technique: 'dropset' }), 3)).toEqual([3, 3]);
+    expect(segmentosProgramados(we({ technique: 'dropset', tecnicaAjustes: { series: 'todas', dropset: { bajadas: 1, pctBajada: 20, hastaFallo: true } } }), 3)).toEqual([1, 2, 3]);
+    expect(segmentosProgramados(we({ technique: 'myoreps' }), 2)).toEqual([2, 2, 2]);
+    expect(segmentosProgramados(we({ technique: 'myoreps', tecnicaAjustes: { myoreps: { repsActivacion: '12', miniSeries: 'muchas', repsMini: '3', descansoSeg: 15 } } }), 1)).toEqual([1, 1, 1]);
+    expect(segmentosProgramados(we({ technique: 'restpause' }), 3)).toEqual([]);
+    expect(segmentosProgramados(we(), 3)).toEqual([]);
+  });
+
+  it('series principales: fuera bajadas y miniseries', () => {
+    expect(seriesPrincipales([{ n: 1 }, { n: 2, segmento: true }, { n: 3 }]).map(s => s.n)).toEqual([1, 3]);
+  });
+
+  it('14-d: la pauta del bloque sale de lo programado', () => {
+    expect(pautaDelBloque(we({ technique: 'dropset' }))).toBe('Sin descanso · −20\u00a0% cada bajada · hasta el fallo');
+    expect(pautaDelBloque(we({ technique: 'dropset', tecnicaAjustes: { dropset: { bajadas: 3, pctBajada: 15, hastaFallo: false } } })))
+      .toBe('Sin descanso · −15\u00a0% cada bajada · sin llegar al fallo');
+    expect(pautaDelBloque(we({ technique: 'myoreps' }))).toBe('15\u00a0s entre miniseries · 3-5 reps cada una');
+    expect(pautaDelBloque(we({ technique: 'restpause' }))).toBe('');
+  });
+
+  it('14-a: qué se guarda al marcar series una a una', () => {
+    expect(seriesAGuardar([3], 3)).toBe('ultima');
+    expect(seriesAGuardar([1, 2, 3], 3)).toBe('todas');
+    expect(seriesAGuardar([1], 1)).toBe('ultima');
+    expect(seriesAGuardar([3, 1, 1], 3)).toEqual([1, 3]);
+    expect(seriesAGuardar([2], 3)).toEqual([2]);
+    expect(seriesAGuardar([], 3)).toBeNull();
+    expect(seriesAGuardar([7], 3)).toBeNull();
+  });
+
+  it('14-a: pauta por serie según la técnica', () => {
+    expect(pautaDeSerie(we({ technique: 'dropset' }))).toBe('Después de la serie: 2 bajadas · −20\u00a0% cada una · hasta el fallo · sin descanso');
+    expect(pautaDeSerie(we({ technique: 'myoreps' }))).toBe('Después de la serie: 3-5 miniseries de 3-5 reps · 15\u00a0s entre ellas');
+    expect(pautaDeSerie(we({ technique: 'fallo' }))).toBe('Esta serie: hasta el fallo');
+    expect(pautaDeSerie(we())).toBe('');
   });
 });

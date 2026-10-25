@@ -90,7 +90,7 @@ interface Candidato {
 const normalizar = normalizarTexto;
 
 /** ¿El material del atleta cubre este ejercicio? Sin etiquetas, sí. */
-function cubreElMaterial(ex: Exercise, material: string[]): boolean {
+export function cubreElMaterial(ex: Exercise, material: string[]): boolean {
   const eq = ex.equipment ?? [];
   if (eq.length === 0 || material.length === 0) return true;
   const suyo = material.map(m => SINONIMOS_DE_MATERIAL[normalizar(m).trim()] ?? normalizar(m).trim());

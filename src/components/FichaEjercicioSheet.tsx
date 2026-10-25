@@ -3,7 +3,8 @@ import type { Exercise } from '../types';
 import { useMotorCdg } from '../hooks/useMotorCdg';
 import { fichaPorSerie, SERIE_DE_REFERENCIA } from '../utils/cdg/fichaEjercicio';
 import { MUSCLE_LABELS } from '../types';
-import { Sheet, Button } from './ui';
+import { Sheet, PanelLateral, useAnchoMinimo } from './ui';
+import ClasificacionEnFicha from './ClasificacionEnFicha';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Ficha de un ejercicio (E-05, solo coach)
@@ -11,13 +12,17 @@ import { Sheet, Button } from './ui';
    Qué aporta UNA serie del ejercicio según el catálogo CDG: estímulo (IEM),
    fatiga (IF), la articulación más cargada y el reparto por músculo. Serie de
    referencia fija: 8-12 repeticiones a RIR 1. No son totales de sesión.
+   En escritorio va en un panel a la derecha que no tapa la lista (12-a); en
+   móvil, en la hoja de abajo. La clasificación se corrige aquí mismo (12-b).
    ═══════════════════════════════════════════════════════════════════════════ */
 
 interface Props {
   ejercicio: Exercise;
   onClose: () => void;
-  /** Abre la hoja de clasificación (E-04). Sin él no se ofrece el botón. */
-  onClasificar?: () => void;
+  /** Con él se puede corregir la clasificación muscular (E-04) dentro de la ficha. */
+  coachId?: string;
+  /** Tras guardar una clasificación nueva, el ejercicio actualizado. */
+  onGuardado?: (nuevo: Exercise) => void;
   /** Sin `@types/react` en el repo, TS no excluye `key` por su cuenta (ver Chip). */
   key?: React.Key;
 }
@@ -34,14 +39,14 @@ function Tarjeta({ titulo, valor, detalle }: { titulo: string; valor: string; de
   );
 }
 
-export default function FichaEjercicioSheet({ ejercicio, onClose, onClasificar }: Props) {
+export default function FichaEjercicioSheet({ ejercicio, onClose, coachId, onGuardado }: Props) {
+  const escritorio = useAnchoMinimo(1024);
   const { motor, cargando, noSubido, error } = useMotorCdg();
   const ficha = useMemo(() => (motor ? fichaPorSerie(motor, ejercicio.cdgNombre) : null), [motor, ejercicio.cdgNombre]);
   const referencia = `RIR ${SERIE_DE_REFERENCIA.rir} · ${SERIE_DE_REFERENCIA.reps.replace('-', '–')} reps`;
   const maximo = ficha?.musculos[0]?.valor ?? 0;
 
-  return (
-    <Sheet open onClose={onClose} title="Ficha del ejercicio">
+  const contenido = (
       <div className="space-y-4">
         <div>
           <p className="font-sans text-body font-bold text-ink">{ejercicio.name}</p>
@@ -84,7 +89,7 @@ export default function FichaEjercicioSheet({ ejercicio, onClose, onClasificar }
                 <ul className="space-y-1.5">
                   {ficha.musculos.slice(0, 6).map(m => (
                     <li key={m.nombre} className="flex items-center gap-3">
-                      <span className="w-40 shrink-0 font-sans text-body-s text-ink truncate">{m.nombre}</span>
+                      <span className="w-40 shrink-0 font-sans text-body-s leading-tight text-ink">{m.nombre}</span>
                       <span className="relative h-2 flex-1 rounded-chip bg-raised" role="img" aria-label={`${n1(m.valor)} de IEM`}>
                         <span className="absolute inset-y-0 left-0 rounded-chip bg-accent" style={{ width: `${Math.max(4, (m.valor / maximo) * 100)}%` }} />
                       </span>
@@ -102,15 +107,21 @@ export default function FichaEjercicioSheet({ ejercicio, onClose, onClasificar }
 
         <div className="pt-3 border-t border-hairline space-y-2">
           <p className="font-sans text-label text-ink-2">Clasificación en En Forma</p>
-          <p className="font-sans text-body-s text-ink">
-            Principal: <b>{ejercicio.muscleGroup ? MUSCLE_LABELS[ejercicio.muscleGroup] : 'Sin asignar'}</b>
-            {' · '}Secundarios: {(ejercicio.secondaryMuscleGroups ?? []).length
-              ? ejercicio.secondaryMuscleGroups!.map(g => MUSCLE_LABELS[g]).join(', ')
-              : 'ninguno'}
-          </p>
-          {onClasificar && <Button variant="secondary" onClick={onClasificar}>Corregir clasificación</Button>}
+          {coachId ? (
+            <ClasificacionEnFicha ejercicio={ejercicio} coachId={coachId} onGuardado={nuevo => onGuardado?.(nuevo)} />
+          ) : (
+            <p className="font-sans text-body-s text-ink">
+              Principal: <b>{ejercicio.muscleGroup ? MUSCLE_LABELS[ejercicio.muscleGroup] : 'Sin asignar'}</b>
+              {' · '}Secundarios: {(ejercicio.secondaryMuscleGroups ?? []).length
+                ? ejercicio.secondaryMuscleGroups!.map(g => MUSCLE_LABELS[g]).join(', ')
+                : 'ninguno'}
+            </p>
+          )}
         </div>
       </div>
-    </Sheet>
   );
+
+  return escritorio
+    ? <PanelLateral open onClose={onClose} title="Ficha del ejercicio">{contenido}</PanelLateral>
+    : <Sheet open onClose={onClose} title="Ficha del ejercicio">{contenido}</Sheet>;
 }

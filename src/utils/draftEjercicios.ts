@@ -1,6 +1,6 @@
 import type { Exercise, Mesocycle, MuscleGroup, WorkoutLog } from '../types';
 import { SERIES_MAX_POR_EJERCICIO } from './programacion';
-import { bloquesSeguidosCon } from './seleccionEjercicios';
+import { bloquesSeguidosCon, cubreElMaterial } from './seleccionEjercicios';
 import { exerciseBestProgress, exerciseWeightTrend } from './athleteMetrics';
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -97,4 +97,16 @@ export function conNombreDeSesion(nombres: string[] | undefined, i: number, nomb
   const base = Array.from({ length: total }, (_, k) => nombres?.[k] ?? '');
   base[i] = nombre;
   return base;
+}
+
+/**
+ * Línea «Material del atleta» del Draft (12-e): lo que escribió en el alta y
+ * cuántos ejercicios de los grupos del bloque no encajan con él, con la misma
+ * regla que ordena los candidatos y marca «Sin material compatible».
+ */
+export function resumenDeMaterial(material: string[], catalogo: Exercise[], grupos: MuscleGroup[]): { material: string[]; noEncajan: number } {
+  const suyo = material.map(m => m.trim()).filter(Boolean);
+  if (suyo.length === 0) return { material: [], noEncajan: 0 };
+  const noEncajan = catalogo.filter(e => !!e.muscleGroup && grupos.includes(e.muscleGroup) && !cubreElMaterial(e, suyo)).length;
+  return { material: suyo, noEncajan };
 }

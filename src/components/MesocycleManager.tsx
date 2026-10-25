@@ -454,7 +454,7 @@ function Delta({ delta, showEqual = false }: { delta: number | null; showEqual?:
 function MesoExercisesView({
   groups, loading, weeks, allExercises, onUpdateExercise, onReplaceExercise, onAddExercise, onRemoveExercise,
   onMoveExercise, onGoToDistribution, libraryWorkouts, onUseLibraryWorkout, distribution, mesoGroups, semanasDelCiclo,
-  onRenameDay, meso, onUpdateMeso, vueltas, cicloDias, logs, onWriteDay, onGuardarPlantilla, revisiones, coachId,
+  onRenameDay, meso, onUpdateMeso, vueltas, cicloDias, logs, onWriteDay, onGuardarPlantilla, revisiones, coachId, landmarks, umbralesCarga,
 }: {
   /** Con él, la ficha de cada ejercicio deja corregir su clasificación muscular. */
   coachId?: string;
@@ -481,6 +481,10 @@ function MesoExercisesView({
   distribution?: WeekDistribution;
   mesoGroups: Record<MuscleGroup, MuscleGroupConfig>;
   semanasDelCiclo: number;
+  /** MEV/MRV por grupo editados por el coach (coachSettings/volumeLandmarks). */
+  landmarks: Record<MuscleGroup, VolumeLandmark>;
+  /** Límites de carga aguda/crónica del atleta (los de Seguimiento). */
+  umbralesCarga?: { inferior: number; superior: number };
   onRenameDay: (group: MesoWorkoutGroup, nuevoNombre: string) => void;
 }) {
   if (loading) {
@@ -506,7 +510,7 @@ function MesoExercisesView({
     );
   }
 
-  return <MesoExercisesTabs {...{ groups, weeks, allExercises, onUpdateExercise, onReplaceExercise, onAddExercise, onRemoveExercise, onMoveExercise, libraryWorkouts, onUseLibraryWorkout, distribution, mesoGroups, semanasDelCiclo, onRenameDay, meso, onUpdateMeso, vueltas, cicloDias, logs, onWriteDay, onGuardarPlantilla, revisiones, coachId }} />;
+  return <MesoExercisesTabs {...{ groups, weeks, allExercises, onUpdateExercise, onReplaceExercise, onAddExercise, onRemoveExercise, onMoveExercise, libraryWorkouts, onUseLibraryWorkout, distribution, mesoGroups, semanasDelCiclo, onRenameDay, meso, onUpdateMeso, vueltas, cicloDias, logs, onWriteDay, onGuardarPlantilla, revisiones, coachId, landmarks, umbralesCarga }} />;
 }
 
 const PREFIJO_DIA = /^(Día\s*\d+\s*–\s*)(.*)$/i;
@@ -576,7 +580,7 @@ function MesoExercisesTabs({
   groups: gruposBase, weeks, allExercises, onUpdateExercise: guardarEjercicio, onReplaceExercise: elegirOtroEjercicio,
   onAddExercise, onRemoveExercise,
   onMoveExercise, libraryWorkouts, onUseLibraryWorkout, distribution, mesoGroups, semanasDelCiclo,
-  onRenameDay, meso, onUpdateMeso, vueltas, cicloDias, logs, onWriteDay, onGuardarPlantilla, revisiones, coachId,
+  onRenameDay, meso, onUpdateMeso, vueltas, cicloDias, logs, onWriteDay, onGuardarPlantilla, revisiones, coachId, landmarks, umbralesCarga,
 }: {
   coachId?: string;
   onGuardarPlantilla?: () => void;
@@ -601,6 +605,10 @@ function MesoExercisesTabs({
   distribution?: WeekDistribution;
   mesoGroups: Record<MuscleGroup, MuscleGroupConfig>;
   semanasDelCiclo: number;
+  /** MEV/MRV por grupo editados por el coach (coachSettings/volumeLandmarks). */
+  landmarks: Record<MuscleGroup, VolumeLandmark>;
+  /** Límites de carga aguda/crónica del atleta (los de Seguimiento). */
+  umbralesCarga?: { inferior: number; superior: number };
 }) {
 
   // ── Semanas del bloque ────────────────────────────────────────────────────
@@ -644,6 +652,11 @@ function MesoExercisesTabs({
     });
   };
   const semanasObjetivo = () => alcance === 'alternar' ? semanasAlternas(semana, vueltas) : [semana];
+  // Recordatorio en la técnica (14-e): el alcance se elige en la barra de semanas.
+  const alcanceTecnica = semana === 0 ? undefined
+    : alcance === 'solo' ? `Se aplica solo en S${semana} · cámbialo arriba`
+      : alcance === 'alternar' ? `Se aplica en S${semana}, S${semana + 2}… · cámbialo arriba`
+        : `Se aplica desde S${semana} · cámbialo arriba`;
   const onReplaceExercise = (g: MesoWorkoutGroup, exIdx: number) => {
     const base = baseDe(g);
     apuntar({ tipo: 'dia', clave: claveGrupo(base), prev: base.exercises });
@@ -755,7 +768,7 @@ function MesoExercisesTabs({
       }
       const lista: AvisoDeSemana[] = [];
       for (const [grupo, serie] of porGrupo) {
-        const lm = VOLUME_LANDMARKS_DEFAULT[grupo];
+        const lm = landmarks[grupo];
         if (!lm) continue;
         const semanal = Math.round(serie / Math.max(semanasDelCiclo, 1 / 7));
         if (semanal > lm.mrv) lista.push({ tono: 'peligro', texto: `${MUSCLE_LABELS[grupo]}: ${semanal} series, por encima de su máximo recuperable (${lm.mrv})` });
@@ -766,7 +779,7 @@ function MesoExercisesTabs({
       if (lista.length > 0) out[s] = lista;
     }
     return out;
-  }, [meso, vueltas, allExercises, semanasDelCiclo, descargas, mesoGroups]);
+  }, [meso, vueltas, allExercises, semanasDelCiclo, descargas, mesoGroups, landmarks]);
   const avisos = useMemo(() => avisosDe(ejerciciosDelBloque), [avisosDe, ejerciciosDelBloque]);
 
   // «Planificar progresión»: unos pocos ejercicios de todo el bloque, semana a
@@ -1154,6 +1167,7 @@ function MesoExercisesTabs({
                           onChange={patch => onUpdateExercise(g, exIdx, patch)}
                           mesoWeeks={semana === 0 ? weeks : undefined}
                           marcas={marcas}
+                          alcanceTecnica={alcanceTecnica}
                           inicio={<>{flechas}{numero}{nombre}</>}
                           acciones={botones}
                         />
@@ -1174,7 +1188,7 @@ function MesoExercisesTabs({
                           {nombre}
                           <div className="flex items-center gap-1 flex-shrink-0">{botones}</div>
                         </div>
-                        <ExerciseConfigEditor we={we} onChange={patch => onUpdateExercise(g, exIdx, patch)} mesoWeeks={semana === 0 ? weeks : undefined} />
+                        <ExerciseConfigEditor we={we} onChange={patch => onUpdateExercise(g, exIdx, patch)} mesoWeeks={semana === 0 ? weeks : undefined} alcanceTecnica={alcanceTecnica} />
                       </div>
                     </div>
                   );
@@ -1225,6 +1239,8 @@ function MesoExercisesTabs({
         nombreDe={nombreDe}
         grupoDe={grupoDe}
         nombreCdgDe={nombreCdgDe}
+        landmarks={landmarks}
+        onCambiarModo={(zona, modo) => onUpdateMeso({ cdgModoPorZona: { ...(meso.cdgModoPorZona ?? {}), [zona]: modo } })}
         avisosDe={avisosDe}
         onCancelar={() => setPlanificando(false)}
         onAceptar={aceptarPlanificacion}
@@ -1316,6 +1332,9 @@ function MesoExercisesTabs({
         agujetas={agujetasCdg}
         definicion={clasificarFaseEntreno(meso) === 'definicion'}
         athleteEmail={meso.athleteId || undefined}
+        landmarks={landmarks}
+        semanasDelCiclo={semanasDelCiclo}
+        carga={logs ? { logs, meso, cicloDias, vueltas, grupos: gruposBase, umbrales: umbralesCarga } : undefined}
       />
 
       <div ref={zonaRef} className="space-y-4">
@@ -3850,6 +3869,8 @@ export default function MesocycleManager({
               {editorTab === 'exercises' && (
                 <MesoExercisesView
                   coachId={coachId}
+                  landmarks={volumeLandmarks}
+                  umbralesCarga={selectedAthlete?.cdgUmbralesCarga}
                   groups={mesoGroupsForTabs}
                   loading={!modoPlantilla && loadingMesoWorkouts}
                   weeks={editing.weeks}
@@ -3941,6 +3962,7 @@ export default function MesocycleManager({
                       allExercises={allExercises}
                       umbrales={selectedAthlete?.cdgUmbralesCarga}
                       onCambiarTipo={t => actualizarMeso({ cdgSensibilidad: t.sensibilidad, cdgVelocidad: t.velocidad })}
+                      onCambiarModo={(zona, modo) => actualizarMeso({ cdgModoPorZona: { ...(editing.cdgModoPorZona ?? {}), [zona]: modo } })}
                       onGuardarUmbrales={u => {
                         if (!selectedAthlete) return;
                         void updateUserProfile(selectedAthlete.userId, { cdgUmbralesCarga: u })

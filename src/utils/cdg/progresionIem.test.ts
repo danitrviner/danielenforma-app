@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import catalogoPrueba from './__fixtures__/catalogoPrueba.json'
 import { crearMotor, expandirCatalogo, type CdgCatalogoCompacto } from './index'
-import { proponerProgresionIem, aplicarOperaciones, type EjercicioProgramable } from './progresionIem'
+import { proponerProgresionIem, aplicarOperaciones, rendimientoEstancado, semanasSinMejorar, segundosDeUnaSerie, type EjercicioProgramable } from './progresionIem'
 import type { WorkoutExercise } from '../../types'
 
 const motor = crearMotor(expandirCatalogo(catalogoPrueba as CdgCatalogoCompacto))
@@ -62,13 +62,17 @@ describe('E-08 · propuesta por IEM', () => {
     expect(r.cambios.filter(c => c.op.tipo === 'serie').every(c => c.superaMrv?.mrv === 6)).toBe(true)
   })
 
-  it('la técnica solo si se permite y en aislamiento', () => {
+  it('la técnica solo si se permite, en aislamiento y cuando la serie no cabe en la sesión (Dani, 25-10)', () => {
     const b = base()
     const r = proponerProgresionIem({
       motor, nombreCdgDe, ejercicios: dia(), iemBase: { pectoral: b }, pctPorZona: { pectoral: 60 },
-      palancas: { rir: false, series: false, tecnica: true },
+      palancas: { rir: false, series: true, tecnica: true }, tiempo: { limiteSeg: 100, porDia: { 'Empuje A': 100 } },
     })
     expect(r.cambios.map(c => c.clave)).toEqual(['A:peck'])
+    expect(proponerProgresionIem({
+      motor, nombreCdgDe, ejercicios: dia(), iemBase: { pectoral: b }, pctPorZona: { pectoral: 60 },
+      palancas: { rir: false, series: false, tecnica: true },
+    }).cambios).toEqual([])
   })
 
   it('es reproducible y las operaciones marcadas se aplican igual', () => {
@@ -92,5 +96,64 @@ describe('E-08 · propuesta por IEM', () => {
     const r = proponerProgresionIem({ motor, nombreCdgDe, ejercicios: dia(), iemBase: {}, pctPorZona: { biceps: 10 } })
     expect(r.cambios).toEqual([])
     expect(r.zonas[0].nota).toContain('Sin IEM de referencia')
+  })
+})
+
+describe('13-h · tiempo de sesión, técnica y rendimiento (Dani, 25-10)', () => {
+  const base = () => proponerProgresionIem({ motor, nombreCdgDe, ejercicios: dia(), iemBase: { pectoral: 1 }, pctPorZona: { pectoral: 1 } }).zonas[0].antes
+
+  it('si la serie de más no cabe en la sesión, sube intensidad (RIR) en vez de series', () => {
+    const b = base()
+    const sinTiempo = proponerProgresionIem({
+      motor, nombreCdgDe, ejercicios: dia(), iemBase: { pectoral: b }, pctPorZona: { pectoral: 30 },
+      tiempo: { limiteSeg: 3600, porDia: { 'Empuje A': 3600 } },
+    })
+    expect(sinTiempo.cambios.length).toBeGreaterThan(0)
+    expect(sinTiempo.cambios.every(c => c.op.tipo === 'rir')).toBe(true)
+  })
+
+  it('con tiempo de sobra puede añadir serie y bajar RIR en el mismo ejercicio', () => {
+    const b = base()
+    const r = proponerProgresionIem({
+      motor, nombreCdgDe, ejercicios: dia(), iemBase: { pectoral: b }, pctPorZona: { pectoral: 60 },
+      tiempo: { limiteSeg: 99999, porDia: { 'Empuje A': 0 } },
+    })
+    const porEj = new Map<string, Set<string>>()
+    for (const c of r.cambios) porEj.set(c.clave, new Set([...(porEj.get(c.clave) ?? []), c.op.tipo]))
+    expect([...porEj.values()].some(t => t.has('rir') && t.has('serie'))).toBe(true)
+  })
+
+  it('la técnica no sube el IEM por su cuenta: solo se sugiere cuando la serie no cabe, y lo marca', () => {
+    const b = base()
+    const conTiempo = proponerProgresionIem({
+      motor, nombreCdgDe, ejercicios: dia(), iemBase: { pectoral: b }, pctPorZona: { pectoral: 60 }, palancas: { tecnica: true },
+      tiempo: { limiteSeg: 99999, porDia: {} },
+    })
+    expect(conTiempo.cambios.some(c => c.op.tipo === 'tecnica')).toBe(false)
+    const sinTiempo = proponerProgresionIem({
+      motor, nombreCdgDe, ejercicios: dia().map(x => ({ ...x, we: { ...x.we, rir: 0 } })), iemBase: { pectoral: b }, pctPorZona: { pectoral: 60 }, palancas: { tecnica: true },
+      tiempo: { limiteSeg: 100, porDia: { 'Empuje A': 100 } },
+    })
+    const tecnicas = sinTiempo.cambios.filter(c => c.op.tipo === 'tecnica')
+    expect(tecnicas.length).toBeGreaterThan(0)
+    expect(tecnicas.every(c => c.porTiempo)).toBe(true)
+  })
+
+  it('una serie de más cuesta su descanso y ~45 s', () => {
+    expect(segundosDeUnaSerie(we('press', 3, 2))).toBe(135)
+  })
+
+  it('aviso de rendimiento: dos semanas sin mejorar el tonelaje mientras sube la carga', () => {
+    expect(rendimientoEstancado([1000, 980, 950], [50, 55, 60])).toBe(true)
+    expect(rendimientoEstancado([1000, 1050, 950], [50, 55, 60])).toBe(false) // una sola semana mala
+    expect(rendimientoEstancado([1000, 980, 950], [60, 55, 50])).toBe(false) // bajando carga, es lo esperable
+    expect(rendimientoEstancado([1000, 980], [50, 55])).toBe(false) // poca historia
+  })
+
+  it('cuenta las semanas seguidas sin mejorar: 2 = vigilar, 3 = plantearse bajar (Dani: 2-3 semanas)', () => {
+    expect(semanasSinMejorar([1000, 980, 950], [50, 55, 60])).toBe(2)
+    expect(semanasSinMejorar([900, 1000, 990, 980, 970], [40, 50, 55, 60, 60])).toBe(3)
+    expect(semanasSinMejorar([1000, 1000, 1000], [50, 50, 50])).toBe(0) // sin subir carga no avisa
+    expect(semanasSinMejorar([1000, 1100], [50, 55])).toBe(0)
   })
 })

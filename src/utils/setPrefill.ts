@@ -1,6 +1,7 @@
 import { Workout, WorkoutEntryLog } from '../types';
 import { expandSetGroups } from './setGroups';
 import { sugerirCarga } from './cargaSugerida';
+import { segmentosProgramados, seriesPrincipales } from './tecnicaDeSerie';
 
 /** Fila de entrada del editor de series — mismo shape que `SetInput` en
  * TrainingScreen.tsx, extraído aquí para poder testear el prerelleno sin
@@ -10,6 +11,9 @@ export interface SetPrefill {
   repsDone: string;
   rir: string; // '0'-'5' o 'fallo'
   done: boolean;
+  /** Bajada o miniserie programada (14-b), tras la serie `segmentoDe`. */
+  segmento?: boolean;
+  segmentoDe?: number;
 }
 
 /**
@@ -39,8 +43,12 @@ export function prefillWorkoutSets(workout: Workout, prevEntries: WorkoutEntryLo
       // Donde toca subir (doble progresión, ver cargaSugerida.ts) la fila llega
       // ya con la carga nueva y el mínimo del rango, no con lo de la última vez.
       const sugerida = sugerirCarga(we, prevEntry).series;
-      return expandSetGroups(we).map((row, sIdx) => {
-        const prev = prevEntry?.sets[sIdx];
+      // «La serie 2 de la última vez» cuenta solo series principales: las
+      // bajadas de una técnica en otra serie que no sea la última van en medio.
+      const previas = prevEntry ? seriesPrincipales(prevEntry.sets) : [];
+      const filas = expandSetGroups(we);
+      const principales: SetPrefill[] = filas.map((row, sIdx) => {
+        const prev = previas[sIdx];
         const sube = sugerida[sIdx];
         if (sube) return { weight: String(sube.peso), repsDone: String(sube.reps), rir: String(row.rir), done: false };
         return {
@@ -50,5 +58,10 @@ export function prefillWorkoutSets(workout: Workout, prevEntries: WorkoutEntryLo
           done: false,
         };
       });
+      // Bajadas / miniseries ya puestas (14-b), DETRÁS de las principales: así
+      // las filas de las series no se mueven. Sin marcar no se guardan.
+      const segmentos = segmentosProgramados(we, filas.length)
+        .map(segmentoDe => ({ weight: '', repsDone: '', rir: '0', done: false, segmento: true, segmentoDe }));
+      return [...principales, ...segmentos];
     });
 }

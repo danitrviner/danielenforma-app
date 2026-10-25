@@ -143,6 +143,10 @@ describe('sesionEnCurso — utilidades', () => {
     expect(formaDeSesion([[serie(), serie(), serie()], [serie()]])).toEqual([3, 1]);
   });
 
+  it('formaDeSesion no cuenta bajadas ni miniseries (las que llegan puestas o se añaden)', () => {
+    expect(formaDeSesion([[serie(), serie(), { ...serie(), segmento: true, segmentoDe: 2 }]])).toEqual([2]);
+  });
+
   it('tieneSeriesHechas distingue el borrador vacío del que ya tiene trabajo', () => {
     expect(tieneSeriesHechas(sesion())).toBe(true);
     expect(tieneSeriesHechas(sesion({ playerSets: [[serie(), serie()]] }))).toBe(false);

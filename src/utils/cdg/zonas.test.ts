@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { ZONAS_IEM, indicesDeZonas, iemPorZona, avisosIemIea, variacion } from './zonas'
-import { agujetasPorZona, propuestaZona, aEscala5, tipoDeBloque, contextoDeLaSemana } from './agujetas'
+import { agujetasPorZona, propuestaZona, aEscala5, tipoDeBloque, contextoDeLaSemana, sensibilidadDeZona } from './agujetas'
 import { bandaIF, consejosDeTiempo } from './referencias'
 import { readFileSync, existsSync } from 'node:fs'
 import { resolve } from 'node:path'
@@ -75,10 +75,20 @@ describe('freno / acelerador', () => {
   const estatico = { sensibilidad: 'estatico', velocidad: 'suave' } as const
   const dinamico = { sensibilidad: 'dinamico', velocidad: 'medio' } as const
   const base = { sensible: false, tipo: estatico, esObjetivo: false, iem: 20, contexto: 'favorable' as const }
-  it('5 frena ya y propone bajar ~25 %', () => {
+  it('5 nunca sube y no fija un %: decide el coach cuánto bajar (Dani, 25-10)', () => {
     const p = propuestaZona({ ...base, agujetas: 5 })
-    expect(p).toMatchObject({ tono: 'freno', pct: -25, iemPropuesto: 15 })
+    expect(p.tono).toBe('freno')
+    expect(p.pct).toBeUndefined()
+    expect(p.texto).toContain('tú decides cuánto')
     expect(p.texto).toContain('estiramiento')
+  })
+  it('el objetivo de Volumen es la meta: no se pasa y, si ya llega, decide el coach', () => {
+    expect(propuestaZona({ ...base, agujetas: 1, objetivo: 20 })).toMatchObject({ tono: 'objetivo' })
+    expect(propuestaZona({ ...base, agujetas: 1, objetivo: 20 }).pct).toBeUndefined()
+    const p = propuestaZona({ ...base, agujetas: 1, iem: 20, objetivo: 21 })
+    expect(p).toMatchObject({ tono: 'acelerar', pct: 5 })
+    expect(p.texto).toContain('hasta su objetivo')
+    expect(propuestaZona({ ...base, agujetas: 5, objetivo: 20 }).tono).toBe('freno')
   })
   it('4 en zona no propensa es pasarse; en propensa se espera una semana', () => {
     expect(propuestaZona({ ...base, agujetas: 4 })).toMatchObject({ tono: 'freno', pct: -20 })
@@ -139,5 +149,15 @@ describe('referencias de la guía', () => {
     const c = consejosDeTiempo({ minutosDisponibles: 60, tiempoSeg: 75 * 60, unilaterales: 2 })[0]
     expect(c).toMatch(/^Se pasa ~15 min de los 60/)
     expect(c.indexOf('unilaterales')).toBeLessThan(c.indexOf('superseries'))
+  })
+})
+
+describe('modo por zona (Dani, 25-10)', () => {
+  it('con objetivo, dinámico; sin objetivo, estático; lo puesto por el coach manda', () => {
+    const m = { cdgObjetivosIem: { pectoral: 120 }, cdgModoPorZona: { dorsal: 'dinamico' as const, pectoral: 'estatico' as const } }
+    expect(sensibilidadDeZona({ cdgObjetivosIem: { pectoral: 120 } }, 'pectoral')).toBe('dinamico')
+    expect(sensibilidadDeZona({}, 'pectoral')).toBe('estatico')
+    expect(sensibilidadDeZona(m, 'pectoral')).toBe('estatico')
+    expect(sensibilidadDeZona(m, 'dorsal')).toBe('dinamico')
   })
 })

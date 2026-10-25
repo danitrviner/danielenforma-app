@@ -4,13 +4,15 @@ import {
 } from '../../types';
 import { ordenarCandidatos } from '../../utils/seleccionEjercicios';
 import {
-  Draft, alternarEnDraft, moverEnDraft, ejerciciosSugeridos, historialDeEjercicio, idsDelDraft,
+  Draft, alternarEnDraft, moverEnDraft, ejerciciosSugeridos, historialDeEjercicio, idsDelDraft, resumenDeMaterial,
 } from '../../utils/draftEjercicios';
 import { parseVideoUrl } from '../../utils/embedPlayerControl';
 import { coincideBusqueda } from '../../utils/busqueda';
 import { Icon, Sparkline, Chip } from '../ui';
 import { atributosFiltrables, MATERIALES } from '../../utils/atributosEjercicio';
 import { useFichaDeEjercicio } from '../useFichaDeEjercicio';
+import { useMotorCdg } from '../../hooks/useMotorCdg';
+import { zonaPorSerie, SERIE_DE_REFERENCIA } from '../../utils/cdg/fichaEjercicio';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Draft de ejercicios (pestaña entre «Volumen» y «Distribución»)
@@ -26,6 +28,7 @@ import { useFichaDeEjercicio } from '../useFichaDeEjercicio';
    ═══════════════════════════════════════════════════════════════════════════ */
 
 const CANDIDATOS_VISIBLES = 12;
+const n1 = (v: number) => v.toLocaleString('es-ES', { maximumFractionDigits: 1 });
 
 interface Props {
   groups: Mesocycle['groups'];
@@ -79,10 +82,16 @@ type TarjetaProps = {
   onMove?: (delta: -1 | 1) => void;
   onMaquina?: (id: string | undefined) => void;
   onFicha?: () => void;
+  /** IEM de la zona de la sección e IF de una serie de referencia (12-c).
+   *  'sin-vinculo' si el ejercicio no está en el catálogo CDG; sin él (catálogo
+   *  aún cargando) no se pinta nada. */
+  cdg?: { zona: string; IEM: number; IF: number; dudosa?: boolean; principal?: { zona: string; IEM: number } } | 'sin-vinculo';
+  /** Grupo de la sección, para el aviso «Clasificado: …» (12-d). */
+  grupo?: MuscleGroup;
 };
 
 const Tarjeta: React.FC<TarjetaProps> = ({
-  ex, elegido, compatible, historial, maquinasDelGrupo, maquinaId, onToggle, onMove, onMaquina, onFicha,
+  ex, elegido, compatible, historial, maquinasDelGrupo, maquinaId, onToggle, onMove, onMaquina, onFicha, cdg, grupo,
 }) => {
   const maquina = maquinasDelGrupo.find(m => m.id === maquinaId);
   return (
@@ -103,6 +112,28 @@ const Tarjeta: React.FC<TarjetaProps> = ({
       </button>
 
       <div className="px-2.5 pb-2.5 pt-1.5 flex flex-col gap-1.5 flex-1">
+        {cdg && (
+          <div className="flex flex-wrap gap-1" title={`Una serie de ${SERIE_DE_REFERENCIA.reps} reps a RIR ${SERIE_DE_REFERENCIA.rir}`}>
+            {cdg === 'sin-vinculo' ? (
+              <span className="rounded-control bg-raised px-1.5 py-0.5 font-mono text-caption text-ink-3">Sin vínculo CDG</span>
+            ) : cdg.dudosa && grupo ? (
+              <>
+                {/* 12-d: trabaja sobre todo otra zona; toca para revisarlo en la ficha. */}
+                <button type="button" onClick={onFicha}
+                  title={`Según el CDG trabaja sobre todo ${cdg.principal?.zona ?? 'otra zona'} (IEM ${n1(cdg.principal?.IEM ?? 0)} frente a ${n1(cdg.IEM)}). Revisa la clasificación en la ficha.`}
+                  className="rounded-control bg-danger/10 px-1.5 py-0.5 font-mono text-caption font-bold uppercase text-danger">
+                  Clasificado: {MUSCLE_LABELS[grupo]}
+                </button>
+                <span className="rounded-control bg-raised px-1.5 py-0.5 font-mono text-caption text-ink-2">IF {n1(cdg.IF)}</span>
+              </>
+            ) : (
+              <>
+                <span className="rounded-control bg-accent/10 px-1.5 py-0.5 font-mono text-caption text-accent-ink">IEM {cdg.zona} {n1(cdg.IEM)}</span>
+                <span className="rounded-control bg-raised px-1.5 py-0.5 font-mono text-caption text-ink-2">IF {n1(cdg.IF)}</span>
+              </>
+            )}
+          </div>
+        )}
         {historial.mejor ? (
           <div className="flex items-end justify-between gap-2">
             <div className="min-w-0">
@@ -212,6 +243,14 @@ const GrupoDraft: React.FC<GrupoProps> = ({
     [grupo, exercises, rutinasDelCoach, material, logs, vetados],
   );
   const porId = useMemo(() => new Map(candidatos.map(c => [c.ejercicio.id, c])), [candidatos]);
+  // Etiquetas IEM / IF por serie (12-c), con el catálogo CDG que ya está en caché.
+  const { motor } = useMotorCdg();
+  const cdgPorId = useMemo(() => {
+    const m = new Map<string, TarjetaProps['cdg']>();
+    if (!motor) return m;
+    for (const c of candidatos) m.set(c.ejercicio.id, zonaPorSerie(motor, c.ejercicio.cdgNombre, grupo) ?? 'sin-vinculo');
+    return m;
+  }, [motor, candidatos, grupo]);
 
   const elegidos = ids.map(id => porId.get(id)).filter((c): c is NonNullable<typeof c> => !!c);
   const libres = candidatos.filter(c => !ids.includes(c.ejercicio.id));
@@ -290,6 +329,8 @@ const GrupoDraft: React.FC<GrupoProps> = ({
                 onMove={delta => cambiar(moverEnDraft(draft, grupo, c.ejercicio.id, delta))}
                 onMaquina={m => asignarMaquina(c.ejercicio.id, m)}
                 onFicha={onFicha && (() => onFicha(c.ejercicio))}
+                cdg={cdgPorId.get(c.ejercicio.id)}
+                grupo={grupo}
               />
             ))}
           </ul>
@@ -328,9 +369,15 @@ const GrupoDraft: React.FC<GrupoProps> = ({
               </>
             )}
             {filtrables.goma && <Chip selected={conGoma} onClick={() => setConGoma(v => !v)}>Con goma</Chip>}
-            {hayFiltroDeAtributo && (
-              <button type="button" onClick={() => { setMaterialFiltro(null); setLateralidad(null); setConGoma(false); }} className="font-mono text-caption text-accent-ink px-2">Limpiar</button>
-            )}
+            {hayFiltroDeAtributo && (() => {
+              const n = Number(!!materialFiltro) + Number(!!lateralidad) + Number(conGoma);
+              return (
+                <span className="font-mono text-caption text-ink-3 px-2">
+                  {n} {n === 1 ? 'filtro activo' : 'filtros activos'} ·{' '}
+                  <button type="button" onClick={() => { setMaterialFiltro(null); setLateralidad(null); setConGoma(false); }} className="text-accent-ink">Limpiar</button>
+                </span>
+              );
+            })()}
           </div>
         )}
         {visibles.length === 0 ? (
@@ -347,6 +394,8 @@ const GrupoDraft: React.FC<GrupoProps> = ({
                 maquinasDelGrupo={maquinasDelGrupo}
                 onToggle={() => alternar(c.ejercicio.id)}
                 onFicha={onFicha && (() => onFicha(c.ejercicio))}
+                cdg={cdgPorId.get(c.ejercicio.id)}
+                grupo={grupo}
               />
             ))}
           </ul>
@@ -370,6 +419,8 @@ export default function DraftEjercicios({
 }: Props) {
   const { abrirFicha, hojas } = useFichaDeEjercicio(coachId);
   const gruposConSeries = MUSCLE_ORDER.filter(g => (groups[g]?.series ?? 0) > 0);
+  // Material del atleta (12-e), una vez para todo el Draft: es suyo, no de cada grupo.
+  const material = resumenDeMaterial(resto.material, resto.exercises, gruposConSeries);
 
   const maquinasDe = (g: MuscleGroup) => [
     ...maquinas.filter(m => m.categoria === g).map(m => ({ id: m.id, nombre: m.nombreMostrado, fotoUrl: m.fotoUrl })),
@@ -390,6 +441,14 @@ export default function DraftEjercicios({
       <p className="font-sans text-label text-ink-2">
         Elige por grupo los ejercicios que quieres usar. Al generar las rutinas solo se escogerá entre ellos; un grupo
         sin elegir usa toda la biblioteca.
+      </p>
+      <p className="font-sans text-label text-ink-2 -mt-2">
+        {material.material.length === 0 ? 'El atleta no ha indicado material en el alta: se muestran todos.' : <>
+          Material del atleta: <b className="text-ink">{material.material.join(' + ')}</b>
+          {material.noEncajan === 0
+            ? ' · todos los ejercicios de estos grupos le valen'
+            : <> · <span className="text-warning">{material.noEncajan} {material.noEncajan === 1 ? 'ejercicio no encaja y sale' : 'ejercicios no encajan y salen'} al final</span> con «Sin material compatible»</>}
+        </>}
       </p>
       {gruposConSeries.map(g => (
         <GrupoDraft
