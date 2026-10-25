@@ -652,6 +652,12 @@ function MesoExercisesTabs({
     });
   };
   const semanasObjetivo = () => alcance === 'alternar' ? semanasAlternas(semana, vueltas) : [semana];
+  // Datos de la tarjeta de carga aguda/crónica (11-a), estables entre repintados:
+  // el panel recalcula con todo el historial solo cuando cambian de verdad.
+  const cargaPanel = useMemo(
+    () => (logs ? { logs, meso, cicloDias, vueltas, grupos: gruposBase, umbrales: umbralesCarga } : undefined),
+    [logs, meso, cicloDias, vueltas, gruposBase, umbralesCarga],
+  );
   // Recordatorio en la técnica (14-e): el alcance se elige en la barra de semanas.
   const alcanceTecnica = semana === 0 ? undefined
     : alcance === 'solo' ? `Se aplica solo en S${semana} · cámbialo arriba`
@@ -1334,7 +1340,7 @@ function MesoExercisesTabs({
         athleteEmail={meso.athleteId || undefined}
         landmarks={landmarks}
         semanasDelCiclo={semanasDelCiclo}
-        carga={logs ? { logs, meso, cicloDias, vueltas, grupos: gruposBase, umbrales: umbralesCarga } : undefined}
+        carga={cargaPanel}
       />
 
       <div ref={zonaRef} className="space-y-4">

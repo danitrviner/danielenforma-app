@@ -420,7 +420,11 @@ export default function DraftEjercicios({
   const { abrirFicha, hojas } = useFichaDeEjercicio(coachId);
   const gruposConSeries = MUSCLE_ORDER.filter(g => (groups[g]?.series ?? 0) > 0);
   // Material del atleta (12-e), una vez para todo el Draft: es suyo, no de cada grupo.
-  const material = resumenDeMaterial(resto.material, resto.exercises, gruposConSeries);
+  const claveGrupos = gruposConSeries.join(',');
+  const material = useMemo(
+    () => resumenDeMaterial(resto.material, resto.exercises, claveGrupos ? claveGrupos.split(',') as MuscleGroup[] : []),
+    [resto.material, resto.exercises, claveGrupos],
+  );
 
   const maquinasDe = (g: MuscleGroup) => [
     ...maquinas.filter(m => m.categoria === g).map(m => ({ id: m.id, nombre: m.nombreMostrado, fotoUrl: m.fotoUrl })),
