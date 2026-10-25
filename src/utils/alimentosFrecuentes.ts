@@ -1,4 +1,5 @@
 import type { DietCompletionLog, DietItem } from '../types';
+import { exchangeToKcal } from './nutritionConstants';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Recientes y frecuentes del Diario (D-03)
@@ -26,6 +27,11 @@ export interface AlimentoUsado {
   /** Código de barras, solo en `off`. */
   codigo?: string;
   marca?: string;
+  /** kcal de la última vez (de sus nutrientes, o de sus intercambios si es del banco). */
+  kcal?: number;
+  /** Las líneas tal cual se apuntaron la última vez: el «+» del Diario las vuelve
+   *  a meter de un toque, con los mismos gramos. */
+  lineas?: DietItem[];
 }
 
 export const claveDeProducto = (codigo: string) => `off:${codigo}`;
@@ -56,6 +62,20 @@ function gramosDe(item: DietItem): number | undefined {
   return undefined;
 }
 
+/** kcal de unas líneas del registro: las del producto si las congeló, si no, de sus intercambios. */
+function kcalDe(lineas: DietItem[]): number | undefined {
+  const n = lineas.find(l => l.nutrientes !== undefined)?.nutrientes;
+  if (n === null) return undefined;
+  if (n) return Math.round(n.kcal);
+  const v = { HC: 0, PROT: 0, GRASA: 0 };
+  for (const l of lineas) {
+    if (l.category === 'HC' || l.category === 'PROT' || l.category === 'GRASA') v[l.category] += l.quantity;
+    else if (l.category === 'MIX_HC') { v.HC += l.quantity / 2; v.PROT += l.quantity / 2; }
+    else { v.GRASA += l.quantity / 2; v.PROT += l.quantity / 2; }
+  }
+  return Math.round(exchangeToKcal(v));
+}
+
 export function alimentosUsados(logs: DietCompletionLog[]): UsadosDelAtleta {
   const porClave = new Map<string, AlimentoUsado>();
 
@@ -72,10 +92,14 @@ export function alimentosUsados(logs: DietCompletionLog[]): UsadosDelAtleta {
         const { clave } = que;
         const actual = porClave.get(clave);
         const gramos = gramosDe(item);
+        const lineas = (item.lineaId ? meal.items.filter(l => l.lineaId === item.lineaId) : [item])
+          .map(({ hora: _h, origenMenu: _o, escala: _e, ...l }) => l);
+        const kcal = kcalDe(lineas);
         if (!actual) {
           porClave.set(clave, {
             ...que, label: item.foodLabel, veces: 1, ultimo: log.date,
             ...(gramos ? { gramos } : {}), ...(item.marca ? { marca: item.marca } : {}),
+            ...(kcal !== undefined ? { kcal } : {}), lineas,
           });
           return;
         }
@@ -85,6 +109,8 @@ export function alimentosUsados(logs: DietCompletionLog[]): UsadosDelAtleta {
           actual.label = item.foodLabel;
           if (item.marca) actual.marca = item.marca;
           if (gramos) actual.gramos = gramos;
+          if (kcal !== undefined) actual.kcal = kcal;
+          actual.lineas = lineas;
         }
       });
     }

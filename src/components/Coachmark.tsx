@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Icon } from './ui';
+import type { UserProfile } from '../types';
+import { vecesVisto, apuntarVisto, DESCARTADO } from '../utils/avisosVistos';
 
 // Reemplaza el carrusel genérico de AppTour: en vez de un tutorial de 6
 // pantallas que el atleta ve antes de tocar nada y olvida al cerrarlo, esto
@@ -7,48 +9,30 @@ import { Icon } from './ui';
 // esa pantalla.
 //
 // Deja de aparecer de dos formas: al pulsar la X, o solo —tras MAX_VISTAS
-// apariciones—. Antes únicamente lo cerraba la X, así que a quien no la
-// pulsara le salía en cada visita para siempre. Ahora se cuenta cada montaje
-// (localStorage por id+atleta): valor 'x' = descartado a mano; un número =
-// nº de veces visto.
-const keyFor = (id: string, email: string) => `enforma_coachmark_${id}_${email}`;
-
+// apariciones—. La cuenta se guarda en el perfil del atleta además de en el
+// móvil (utils/avisosVistos.ts): solo en localStorage se perdía al cerrar
+// sesión y el aviso volvía a salir «cada vez que entras».
 const MAX_VISTAS = 2;
 
-function estadoActual(id: string, email: string): { visto: boolean; vistas: number } {
-  try {
-    const raw = localStorage.getItem(keyFor(id, email));
-    if (raw === null) return { visto: false, vistas: 0 };
-    // Legado: la versión anterior guardaba '1' al cerrar con la X.
-    if (raw === 'x' || raw === '1') return { visto: true, vistas: MAX_VISTAS };
-    const n = parseInt(raw, 10);
-    if (Number.isNaN(n)) return { visto: true, vistas: MAX_VISTAS };
-    return { visto: n >= MAX_VISTAS, vistas: n };
-  } catch {
-    return { visto: false, vistas: 0 };
-  }
-}
-
-function guardar(id: string, email: string, valor: string): void {
-  try { localStorage.setItem(keyFor(id, email), valor); } catch { /* noop */ }
-}
+/** La clave que usaba la versión anterior: se sigue leyendo para no repetir a quien ya lo vio. */
+const claveLegado = (id: string, email: string) => `enforma_coachmark_${id}_${email}`;
 
 interface Props {
   id: string;
-  email: string;
+  profile: Pick<UserProfile, 'email' | 'userId' | 'avisosVistos'>;
   icon: string;
   text: string;
 }
 
-export default function Coachmark({ id, email, icon, text }: Props) {
-  const [dismissed, setDismissed] = useState(() => estadoActual(id, email).visto);
+export default function Coachmark({ id, profile, icon, text }: Props) {
+  const [dismissed, setDismissed] = useState(() => vecesVisto(profile, `coachmark_${id}`, claveLegado(id, profile.email)) >= MAX_VISTAS);
 
   // Cuenta esta aparición una sola vez por montaje. Si con ella se alcanza el
   // tope, esta es la última: se muestra ahora y ya no vuelve.
   useEffect(() => {
     if (dismissed) return;
-    const { vistas } = estadoActual(id, email);
-    guardar(id, email, String(vistas + 1));
+    const vistas = vecesVisto(profile, `coachmark_${id}`, claveLegado(id, profile.email));
+    apuntarVisto(profile, `coachmark_${id}`, vistas + 1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -59,7 +43,7 @@ export default function Coachmark({ id, email, icon, text }: Props) {
       <Icon name={icon} size="l" className="text-accent-ink flex-shrink-0" />
       <p className="flex-1 text-label text-accent-ink leading-relaxed">{text}</p>
       <button
-        onClick={() => { guardar(id, email, 'x'); setDismissed(true); }}
+        onClick={() => { apuntarVisto(profile, `coachmark_${id}`, DESCARTADO); setDismissed(true); }}
         aria-label="Cerrar aviso"
         className="text-accent-ink/60 hover:text-accent-ink flex-shrink-0 -m-1 p-1"
       >

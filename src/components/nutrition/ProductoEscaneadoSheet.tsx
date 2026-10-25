@@ -21,9 +21,11 @@ type Props = {
   /** `nombre` viene relleno cuando el producto se conoce pero está incompleto. */
   onCrearDesdeEtiqueta: (inicial: { nombre?: string; codigo: string }) => void;
   onClose: () => void;
+  /** En «Calorías y macros» el producto encontrado se abre en la ficha del Diario. */
+  fichaCalorias?: (producto: OffProducto) => React.ReactNode;
 };
 
-export default function ProductoEscaneadoSheet({ codigo, vista, onConfirm, onBuscarPorNombre, onCrearDesdeEtiqueta, onClose }: Props) {
+export default function ProductoEscaneadoSheet({ codigo, vista, onConfirm, onBuscarPorNombre, onCrearDesdeEtiqueta, onClose, fichaCalorias }: Props) {
   const { data: registro, isPending, isError } = useQuery({
     queryKey: ['offPorCodigo', codigo],
     queryFn: () => buscarProductoPorCodigo(codigo),
@@ -31,6 +33,7 @@ export default function ProductoEscaneadoSheet({ codigo, vista, onConfirm, onBus
   });
 
   if (registro && !esIncompleto(registro)) {
+    if (fichaCalorias) return <>{fichaCalorias(registro)}</>;
     return (
       <ProductoOffSheet
         entrada={{ c: registro.c, n: registro.n, b: registro.b, t: '' }}
