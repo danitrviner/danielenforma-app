@@ -151,6 +151,10 @@ export interface UserProfile {
    *  atleta ha cerrado. Dato suyo, como `tutorial`: tampoco está en la lista
    *  bloqueada de user_profiles. */
   novedadesVistas?: string;
+  /** Avisos de «solo N veces» (guía de intercambios, coachmarks): id → veces
+   *  vistas, 999 = cerrado a mano. Dato suyo, como `tutorial`. Ver
+   *  utils/avisosVistos.ts. */
+  avisosVistos?: Record<string, number>;
   checklistInicial?: {
     primeraSesion: boolean;
     cincoIngestas: boolean;
@@ -325,6 +329,10 @@ export interface AthleteNutritionConfig {
   cookingMaxTime?: number;    // minutos
   quiereRapidas?: boolean;    // ver OnboardingData.quiereRapidas
   mealCount?: number;         // 3 | 4 | 5 | 6 (ver CONTEOS_COMIDAS)
+  /** Reparto del día en «Calorías y macros»: % de las kcal por comida, en el
+   *  orden de las comidas del día. Si no casa con las de un día concreto, se usa
+   *  el de por defecto (utils/diarioCalorias.ts). */
+  repartoKcalPct?: number[];
 }
 
 export type HungerProfile = 'manana' | 'equilibrado' | 'noche';
@@ -1242,6 +1250,10 @@ export interface DietItem {
    *  micronutrientes con las claves y unidades de `data/micronutrients.ts`.
    *  Solo está lo que el producto declara: ausente = no declarado, no cero. */
   extras?: { f?: number; az?: number; sat?: number; sal?: number; m?: Record<string, number> };
+  /** Receta de la que sale este ingrediente cuando se apuntó desglosada (modo
+   *  «Calorías y macros»): cada ingrediente es su propia línea, editable, y la
+   *  pantalla las agrupa bajo el nombre del plato. Ver utils/recetaDesglosada.ts. */
+  receta?: { id: string; nombre: string };
 }
 
 /** Una receta camino de «Mi plan», con lo que se come de ella ya resuelto.

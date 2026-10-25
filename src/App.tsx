@@ -140,6 +140,11 @@ const PlantillaHarness = import.meta.env.DEV
   ? pantallaDiferida('PlantillaDevHarness', () => import('./components/mesociclo/PlantillaDevHarness'))
   : null;
 
+// Banco de pruebas del Diario de nutrición del atleta (ruta /dev/nutricion).
+const NutricionHarness = import.meta.env.DEV
+  ? pantallaDiferida('NutricionDevHarness', () => import('./components/NutricionDevHarness'))
+  : null;
+
 // Banco de pruebas de «Orden del ciclo» (Mesociclo › Distribución, ruta /dev/orden-ciclo).
 const OrdenCicloHarness = import.meta.env.DEV
   ? pantallaDiferida('OrdenCicloDevHarness', () => import('./components/mesociclo/OrdenCicloDevHarness'))
@@ -795,6 +800,13 @@ function AppContent() {
     return (
       <Suspense fallback={<div className="min-h-screen bg-bg" />}>
         <PlantillaHarness />
+      </Suspense>
+    );
+  }
+  if (NutricionHarness && location.pathname === '/dev/nutricion') {
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-bg" />}>
+        <NutricionHarness />
       </Suspense>
     );
   }

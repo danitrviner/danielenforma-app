@@ -469,7 +469,7 @@ export default function WorkoutSessionPlayer({
 
       <Coachmark
         id="training_player_mark_set"
-        email={profile.email}
+        profile={profile}
         icon="touch_app"
         text="Marca el círculo al terminar cada serie — es lo que usa tu coach para progresarte."
       />

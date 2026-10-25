@@ -177,7 +177,7 @@ export default function PhotosScreen({ profile }: Props) {
     <div className="space-y-3">
       <Coachmark
         id="photos_upload_hint"
-        email={profile.email}
+        profile={profile}
         icon="photo_camera"
         text="Sube una foto por cada ángulo — es la forma más clara de ver tu progreso real, más allá del peso."
       />
