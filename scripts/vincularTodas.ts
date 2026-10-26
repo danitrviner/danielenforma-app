@@ -46,6 +46,8 @@ const ahora = new Date().toISOString();
 let total = 0, yaVinculadas = 0, vinculadas = 0;
 const dudas = new Map<string, number>();
 const cambiadas: RecetaCruda[] = [];
+/** Las que ya traían vínculo: se suben también, para que Firestore quede igual que los JSON. */
+const conVinculo: RecetaCruda[] = [];
 
 for (const archivo of readdirSync(DIR).filter(f => /^recetas_.*\.json$/.test(f)).sort()) {
   const ruta = resolve(DIR, archivo);
@@ -54,7 +56,7 @@ for (const archivo of readdirSync(DIR).filter(f => /^recetas_.*\.json$/.test(f))
   let tocado = false;
   json.recipes = json.recipes.map(receta => {
     total++;
-    if (receta.vinculo) { yaVinculadas++; return receta; }
+    if (receta.vinculo) { yaVinculadas++; conVinculo.push(receta); return receta; }
     const v = vinculoAutomatico(receta, catalogo);
     if ('dudosos' in v) {
       for (const d of v.dudosos) dudas.set(d, (dudas.get(d) ?? 0) + 1);
@@ -84,9 +86,12 @@ if (FIRESTORE) {
   if (!sa) { console.error('Falta GOOGLE_APPLICATION_CREDENTIALS.'); process.exit(1); }
   const db = abrirDb(JSON.parse(readFileSync(resolve(sa), 'utf8')));
   // Solo lo que cambia al vincular: macros, kcal, peso, intercambios y vínculo.
-  for (let i = 0; i < cambiadas.length; i += 400) {
+  // Todas las vinculadas (las de ahora y las que ya lo estaban en los JSON):
+  // idempotente, deja Firestore igual que los ficheros.
+  const subir = [...conVinculo, ...cambiadas];
+  for (let i = 0; i < subir.length; i += 400) {
     const lote = db.batch();
-    for (const r of cambiadas.slice(i, i + 400)) {
+    for (const r of subir.slice(i, i + 400)) {
       const d = mapRecipe(r);
       lote.set(db.collection('recipes').doc(r.id), {
         macros: d.macros, kcal: d.kcal, weight: d.weight, exchanges: d.exchanges, vinculo: d.vinculo,
@@ -94,7 +99,7 @@ if (FIRESTORE) {
     }
     await lote.commit();
   }
-  console.log(`Firestore: ${cambiadas.length} recetas actualizadas.`);
+  console.log(`Firestore: ${subir.length} recetas actualizadas.`);
 } else if (!APLICAR) {
   console.log('EN SECO: no se ha escrito nada. --aplicar reescribe los JSON; --aplicar --firestore sube además las recetas.');
 }
