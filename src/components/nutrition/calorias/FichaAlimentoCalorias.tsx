@@ -32,6 +32,8 @@ export interface FichaProps {
   comidas: { id: string; nombre: string }[];
   mealId: string;
   textoBoton?: string;
+  /** Solo al abrirla desde una fila del día: cambiar ese alimento por otro. */
+  onCambiar?: () => void;
   onConfirm: (gramos: number, mealId: string) => void;
   onClose: () => void;
 }
@@ -75,7 +77,7 @@ export function DonutMacros({ kcal, p, hc, g, size = 96 }: { kcal: number; p: nu
 }
 
 export default function FichaAlimentoCalorias({
-  nombre, marca, porCien, extrasPorCien, raciones, aproximado, nota, comidas, mealId: mealInicial, textoBoton = 'Añadir', onConfirm, onClose,
+  nombre, marca, porCien, extrasPorCien, raciones, aproximado, nota, comidas, mealId: mealInicial, textoBoton = 'Añadir', onCambiar, onConfirm, onClose,
 }: FichaProps) {
   const [racionIdx, setRacionIdx] = useState(0);
   const [numTexto, setNumTexto] = useState('1');
@@ -206,6 +208,17 @@ export default function FichaAlimentoCalorias({
         )}
 
         {nota && <p className="font-sans text-caption text-ink-3">{nota}</p>}
+
+        {onCambiar && (
+          <button
+            type="button"
+            onClick={onCambiar}
+            className="flex w-full items-center justify-center gap-2 rounded-surface border border-hairline py-3.5 font-sans text-body-s font-bold text-ink-2 hover:border-accent/50 hover:text-accent-ink"
+          >
+            <Icon name="swap_horiz" size="s" />
+            Cambiar por otro alimento
+          </button>
+        )}
       </div>
     </Sheet>
   );

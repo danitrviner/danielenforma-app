@@ -27,6 +27,12 @@ describe('alimentos generales', () => {
     expect(arroz.porCien).toEqual({ kcal: 333, p: 0, hc: 83.3, g: 0 });
   });
 
+  it('la medida entre paréntesis del principio pasa a la ración', () => {
+    const aceite = alimentoGeneral({ id: 'o', mode: 'OMNIVORO', category: 'GRASA', label: '10g (1 cuchara) aceite de oliva virgen extra' });
+    expect(aceite.nombre).toBe('Aceite de oliva virgen extra');
+    expect(aceite.racion).toBe('10 g · 1 cuchara');
+  });
+
   it('«sin pesar»: medida casera y sin datos por 100 g', () => {
     const patata = alimentoGeneral({ id: 'p', mode: 'SIN_PESAR', category: 'HC', label: 'Patata → 1 patata mediana del tamaño de un puño' });
     expect(patata.nombre).toBe('Patata');

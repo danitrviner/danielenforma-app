@@ -10,14 +10,14 @@ import { sonMacrosVacios } from '../utils/macros';
 import { getDietsForAthlete, getAthleteDietConfig, saveAthleteDietConfig, createDiet, updateDiet, deleteDiet, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig, saveAthleteNutritionConfig, getRecipes, getRecipeFavorites, getNutritionProgram, markNutritionPhaseSeen, computeActivePhase, createNotificationDeduped, getDietCompletionLog, saveDietCompletionLog, createRecipe, queryRecetasForGenerator, cargarIndiceRecetas, getOnboarding, getRecipeById, getMenuCompletionLog, saveMenuCompletionLog, getAlimentosPersonales, getCatalogoAlimentos, crearAlimentoPersonal, actualizarAlimentoPersonal, borrarAlimentoPersonal, getDietCompletionLogsForAthlete } from '../dbService';
 import { esPlatoDelRecetario } from '../db/recetasHidratacion';
 import RecetarioDescubrir from './RecetarioDescubrir';
-import { CATS, BUDGET_CATS, CAT_LABEL, CAT_COLOR, CAT_BG, MODE_LABEL, ALL_DIET_MODES, round2, fmtQty, foodNameWithoutGrams, addToPlaced, recipeToDietItems, computeDietPlaced } from '../utils/exchangeHelpers';
+import { BUDGET_CATS, MODE_LABEL, ALL_DIET_MODES, round2, fmtQty, foodNameWithoutGrams, addToPlaced, recipeToDietItems, computeDietPlaced } from '../utils/exchangeHelpers';
 import { parseBaseGrams, etiquetaDePeso, pesoDeItem } from '../utils/conversionNutricional';
 import { findRecipeAlternatives, recipeExchanges, groupByDishType, ordenarPorCupo, type RecipeAlternative, type AlternativePrefs } from '../utils/recipeMatch';
 import { ingredientMatch, violatesDietType } from '../utils/foodPrefs';
 import { athleteConditions, violatesHealthConditions } from '../utils/dietaryRestrictions';
 import { dietTypeVigente } from '../utils/foodPrefs';
 import { coincideBusqueda } from '../utils/busqueda';
-import { coincidePorEquivalencia, explicacionesPara, esAlimentoLibre } from '../utils/equivalenciasDeAlimentos';
+import { coincidePorEquivalencia } from '../utils/equivalenciasDeAlimentos';
 import { dishType, dishTypeLabel, type DishType } from '../utils/dishTypes';
 import { filasDeComida, escalarReceta } from '../utils/filasDelPlan';
 import { escalarRecetaEntera, escalaDeReceta } from '../utils/escalarRecetaEntera';
@@ -27,7 +27,6 @@ import { resumenDelDia } from '../utils/resumenDelDia';
 import { useToast } from '../hooks/useToast';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import Coachmark from './Coachmark';
-import { apuntarVisto } from '../utils/avisosVistos';
 import { haptics } from '../services/haptics';
 import { useTourTarget } from '../features/tutorial/TourTargetContext';
 import { useTutorialEngine } from '../features/tutorial/TutorialEngine';
@@ -38,14 +37,13 @@ import { EmptyState, Sheet, Icon, Button, Dialog, ListRow, Input } from './ui';
 import MealItemSwipeRow from './nutrition/MealItemSwipeRow';
 import { SemanaDelDiario, TarjetaDelDia, EtiquetaMacro } from './nutrition/DiaDeNutricion';
 import AnadirAlimentoCalorias, { type FilaAlimento, type PestanaAnadir, type SeccionFilas } from './nutrition/calorias/AnadirAlimentoCalorias';
+import { alimentosGeneralesPorGrupo, type AlimentoGeneral } from '../utils/alimentosGenerales';
 import FichaAlimentoCalorias, { FichaProductoOff, racionesDe } from './nutrition/calorias/FichaAlimentoCalorias';
 import { lineasDelDiario, kcalDeLineas, type LineaDiario } from '../utils/diarioCalorias';
 import { recetaDesglosada, faltanCantidades } from '../utils/recetaDesglosada';
 
 import CrearAlimentoSheet from './nutrition/CrearAlimentoSheet';
-import GuiaDeIntercambios from './nutrition/GuiaDeIntercambios';
 import GramosSheet from './nutrition/GramosSheet';
-import AnadidoRapidoSheet, { type AnadidoRapido } from './nutrition/AnadidoRapidoSheet';
 import { alimentosUsados, claveDeCatalogo, claveDeProducto, type AlimentoUsado } from '../utils/alimentosFrecuentes';
 import { itemsDeAlimentoPorGramos, sePuedeEnGramos, previsionDeGramos, gramosPorIntercambioDe, gramosSugeridos } from '../utils/gramosDeAlimento';
 import { itemsDeProducto } from '../utils/productoAIntercambios';
@@ -389,7 +387,9 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
 
   // Food picker — itemIdx null means "add a new item", a number means "swap that item"
   const [pickerItem, setPickerItem] = useState<{ mealId: string; itemIdx: number | null; category: FoodCategory } | null>(null);
-  const [pickerCategory, setPickerCategory] = useState<FoodCategory>('HC');
+  /* «Cambiar» un alimento (desde su ficha): la hoja de Añadir se abre para
+     elegir otro, y lo elegido ocupa el sitio de esas líneas. */
+  const [reemplazo, setReemplazo] = useState<{ mealId: string; idxs: number[] } | null>(null);
   const [crearAlimentoAbierto, setCrearAlimentoAbierto] = useState(false);
   const [alimentoABorrar, setAlimentoABorrar] = useState<MealItem | null>(null);
   const [alimentoAEditar, setAlimentoAEditar] = useState<MealItem | null>(null);
@@ -400,14 +400,11 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
      solo en el móvil se perdía al cerrar sesión y volvía a salir cada vez que
      pulsaba «Añadir» (Dani, 25-10-2026). El efecto que la abre va más abajo,
      junto a `vistaCupo`, que es de quien depende. */
-  const [guiaAbierta, setGuiaAbierta] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   // T13 (18-08): mismo tick + ×N que el selector del coach, para la rama de
   // "añadir" (itemIdx === null) — "cambiar" sigue siendo una sustitución
   // única que cierra al terminar, no hace falta contador ahí.
   const [pickerAddedCounts, setPickerAddedCounts] = useState<Record<string, number>>({});
-  const [pickerRecentlyAdded, setPickerRecentlyAdded] = useState<string | null>(null);
-  const pickerRecentTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Recipe picker
   const [recipePickerMealId, setRecipePickerMealId] = useState<string | null>(null);
@@ -738,9 +735,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
   /* Buscador por modo (D-03). En «Calorías y macros» la hoja de añadir abre con
      lo que el atleta ya apunta (recientes y frecuentes del último mes) y
      «Mostrar todos» despliega el banco. Una consulta acotada a SU email. */
-  const [mostrarTodos, setMostrarTodos] = useState(false);
   const [gramosDe, setGramosDe] = useState<MealItem | null>(null);
-  const [anadidoRapidoAbierto, setAnadidoRapidoAbierto] = useState(false);
   const usarListaRapida = !!pickerItem && pickerItem.itemIdx === null;
   const desdeUsados = useMemo(() => {
     const d = new Date();
@@ -816,30 +811,6 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     () => (pickerItem?.itemIdx === null && isSearchingFoods ? buscarEnIndiceOff(indiceOff, searchTerm, 12) : []),
     [pickerItem, isSearchingFoods, indiceOff, searchTerm],
   );
-  // Vista de «recientes y frecuentes» (modo Calorías y macros, sin buscar).
-  const vistaRapida = usarListaRapida && !isSearchingFoods && !mostrarTodos;
-  const filteredFoods = useMemo(() => {
-    const term = searchTerm.trim();
-    return foodItems.filter(f =>
-      f.mode === activeDietMode &&
-      (term
-        // El banco está escrito en categorías ("legumbre cocida") y el atleta
-        // escribe alimentos ("lentejas"): sin el diccionario de equivalencias,
-        // media despensa daba cero resultados. Ver equivalenciasDeAlimentos.ts.
-        ? coincideBusqueda(f.label, term) || coincidePorEquivalencia(f.label, term)
-        : f.category === pickerCategory)
-    );
-  }, [foodItems, activeDietMode, pickerCategory, searchTerm]);
-
-  /* Por qué sale lo que sale. Encontrar "legumbre cocida" al escribir
-     "lentejas" sin decir nada deja al atleta sin saber si eso le vale o si el
-     buscador se ha equivocado — la frase es la mitad del arreglo. */
-  const explicacionesDeBusqueda = useMemo(
-    () => explicacionesPara(searchTerm),
-    [searchTerm],
-  );
-  const buscaAlgoLibre = useMemo(() => esAlimentoLibre(searchTerm), [searchTerm]);
-
   const availableRecipeCats = useMemo(() => {
     const s = new Set<string>();
     recipes.forEach(r => r.categories.forEach(c => s.add(c)));
@@ -1223,11 +1194,8 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
 
   const handleOpenAddPicker = (mealId: string, category: FoodCategory = 'HC') => {
     setPickerItem({ mealId, itemIdx: null, category });
-    setPickerCategory(category);
     setSearchTerm('');
     setPickerAddedCounts({});
-    setPickerRecentlyAdded(null);
-    setMostrarTodos(false);
   };
 
   /** Mete una o varias líneas (un producto repartido en categorías) en la comida
@@ -1235,6 +1203,14 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
   const agregarItems = (newItems: DietItem[], etiqueta: string, foodId: string, mealIdDestino?: string) => {
     const mealId = mealIdDestino ?? pickerItem?.mealId;
     if (!mealId || !selectedDiet) return;
+    if (reemplazo) {
+      cambiarLineas(reemplazo, { mealId, items: newItems });
+      setReemplazo(null);
+      setPickerItem(null);
+      void haptics.light();
+      showToast(`Cambiado por ${foodNameWithoutGrams(etiqueta)}.`, 'success');
+      return;
+    }
     const meal = selectedDiet.meals.find(m => m.id === mealId);
     if (!meal) { setPickerItem(null); return; }
     const primerIdx = meal.items.length;
@@ -1252,9 +1228,6 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     void haptics.light();
     tutorial.markActionDone('registrar-ingesta');
     setPickerAddedCounts(prev => ({ ...prev, [foodId]: (prev[foodId] ?? 0) + 1 }));
-    setPickerRecentlyAdded(foodId);
-    if (pickerRecentTimer.current) clearTimeout(pickerRecentTimer.current);
-    pickerRecentTimer.current = setTimeout(() => setPickerRecentlyAdded(null), 1200);
     showToast(`${foodNameWithoutGrams(etiqueta)} añadido.`, 'success', {
       actionLabel: 'Deshacer',
       onAction: () => {
@@ -1315,61 +1288,21 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     agregarItems(r.items, prod.n, `cat_${a.id}`);
   };
 
-  const confirmarAnadidoRapido = (a: AnadidoRapido) => {
-    const r = itemsDeProducto({
-      nombre: a.nombre, gramos: 100, lineaId: nuevoLineaId(),
-      origen: { tipo: 'personal', id: 'rapido' },
-      porCien: { kcal: a.kcal, p: a.p, hc: a.hc, g: a.g },
-      ...(modoFlexible ? { hora: horaActualHHMM() } : {}),
-    });
-    setAnadidoRapidoAbierto(false);
-    if (r.items.length === 0) {
-      showToast('Esa ración es demasiado pequeña para contarla en tu día.', 'info');
-      return;
-    }
-    agregarItems(r.items, a.nombre, `rapido_${a.nombre}`);
-  };
+
 
   const handleSelectFood = (food: MealItem) => {
     if (!pickerItem || !selectedDiet) return;
-    const { mealId, itemIdx } = pickerItem;
-
-    if (itemIdx === null) {
-      // En «Calorías y macros» se pregunta cuántos gramos (si se pueden saber).
-      if (sePuedeEnGramos(food)) { abrirFichaBanco(food, mealId); return; }
-      const newItem: DietItem = {
-        category: food.category, foodLabel: food.label, quantity: 1,
-        baseGrams: parseBaseGrams(food.label) ?? undefined,
-        // En "Día flexible" no hay comida con la que ordenar: se guarda la
-        // hora de verdad para poder enseñar "Lo que voy comiendo" en orden.
-        ...(modoFlexible ? { hora: horaActualHHMM() } : {}),
-      };
-      agregarItems([newItem], food.label, food.id);
-    } else {
-      // Swap an existing item in place — a single replacement, so close afterwards.
-      // Cambiar un alimento por otro no lo "descome": es la misma ingesta, solo
-      // que ahora es pasta en vez de arroz.
-      const key = `${mealId}_${itemIdx}`;
-      setItemStates(prev => ({ ...prev, [key]: { foodLabel: food.label, done: prev[key]?.done ?? true } }));
-      setSelectedDiet(prev => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          meals: prev.meals.map(m => m.id !== mealId ? m : {
-            ...m,
-            // Cambiar de alimento RECALCULA el gramaje: mantener el del anterior
-            // enseñaría 40 g de pan sobre una fila que ya es arroz.
-            items: m.items.map((it, i) => i !== itemIdx ? it : {
-              ...it, category: food.category, foodLabel: food.label,
-              baseGrams: parseBaseGrams(food.label) ?? undefined,
-            }),
-          }),
-        };
-      });
-      setPickerItem(null);
-      void haptics.light();
-      showToast(`Cambiado por ${food.label}.`, 'success');
-    }
+    const { mealId } = pickerItem;
+    // Se pregunta cuántos gramos, si se pueden saber; lo que no se pesa
+    // (medidas caseras) entra como una ración.
+    if (sePuedeEnGramos(food)) { abrirFichaBanco(food, mealId); return; }
+    const newItem: DietItem = {
+      category: food.category, foodLabel: food.label, quantity: 1,
+      baseGrams: parseBaseGrams(food.label) ?? undefined,
+      // En un "Día flexible" guardado antes de 10-2026 se ordena por hora.
+      ...(modoFlexible ? { hora: horaActualHHMM() } : {}),
+    };
+    agregarItems([newItem], food.label, food.id);
   };
 
   // ── Recipe picker handlers ─────────────────────────────────────────────────
@@ -1721,17 +1654,6 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     });
   };
 
-  // Reparto del cupo diario por comida (handoff — a petición de Dani): el
-  // total diario lo fija el coach y es fijo (`selectedDiet.budget`), pero el
-  // atleta puede mover cuánto de ese total asigna a cada comida. Mismo patrón
-  // que `setMealTarget` del lado coach (NutritionPlansScreen.tsx), adaptado a
-  // `setSelectedDiet` — esto ya dispara `isDirty`/autoguardado solo, porque
-  // `dietSnapshot` serializa `meals` completo.
-
-
-
-
-
   const addMeal = () => {
     if (!selectedDiet) return;
     const newMeal: DietMeal = { id: makeId(), name: `Comida ${selectedDiet.meals.length + 1}`, items: [] };
@@ -2007,6 +1929,11 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
       aproximado: linea.aproximado,
       mealId,
       textoBoton: 'Guardar',
+      onCambiar: () => {
+        setFicha(null);
+        setReemplazo({ mealId, idxs: linea.idxs });
+        handleOpenAddPicker(mealId);
+      },
       alConfirmar: (g, m) => {
         let nuevos: DietItem[];
         if (linea.tipo === 'producto') {
@@ -2116,8 +2043,12 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
   }, [registrosUsados, viewDate, resumenMacros.kcal]);
 
   /* «Añadir alimento» en calorías: pestañas y filas. */
-  const [pestanaAnadir, setPestanaAnadir] = useState<PestanaAnadir>('todo');
-  useEffect(() => { if (usarListaRapida) setPestanaAnadir('todo'); }, [usarListaRapida]);
+  const [pestanaAnadir, setPestanaAnadir] = useState<PestanaAnadir>('recientes');
+  const hayRecientes = usados.recientes.length + usados.frecuentes.length > 0;
+  useEffect(() => {
+    if (usarListaRapida) setPestanaAnadir(hayRecientes ? 'recientes' : 'generales');
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- solo al abrir la hoja
+  }, [usarListaRapida]);
 
   const seccionesAnadir = useMemo((): { secciones: SeccionFilas[]; vacio: string } => {
     if (!usarListaRapida || !pickerItem) return { secciones: [], vacio: '' };
@@ -2139,13 +2070,6 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
         ...(food.personal && food.porCien ? { onEditar: () => setAlimentoAEditar(food) } : {}),
       };
     };
-    const unicos = (xs: MealItem[]) => {
-      const vistos = new Set<string>();
-      return xs.filter(f => { const k = foodNameWithoutGrams(f.label).toLowerCase(); if (vistos.has(k)) return false; vistos.add(k); return true; });
-    };
-    // Del banco del coach, primero el modo del atleta; sin filtro de modo a la vista.
-    const delCoach = unicos([...foodItemsComunes].sort((a, b) => Number(b.mode === activeDietMode) - Number(a.mode === activeDietMode)));
-
     const filaUsado = (u: AlimentoUsado): FilaAlimento | null => {
       const detalle = [u.kcal != null ? `${u.kcal} kcal` : null, u.gramos ? `${u.gramos} g` : null].filter(Boolean).join(', ') || undefined;
       const reanadir = u.lineas && u.lineas.length > 0
@@ -2167,36 +2091,60 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
       return { ...filaBanco(food), clave: u.clave, detalle: detalle ?? filaBanco(food).detalle, anadido: veces(u.clave) + veces(food.id), onAnadir: reanadir };
     };
 
-    if (pestanaAnadir === 'coach') {
-      return { secciones: [{ titulo: 'Alimentos de tu entrenador', filas: delCoach.filter(f => coincide(f.label)).slice(0, 150).map(filaBanco) }], vacio: 'No hay alimentos del coach con ese nombre.' };
-    }
-    if (pestanaAnadir === 'mios') {
-      return { secciones: [{ titulo: 'Mis alimentos', filas: alimentosPropios.filter(f => coincide(f.label)).map(filaBanco) }], vacio: term ? 'Ninguno de tus alimentos se llama así.' : 'Aún no has creado alimentos. Crea uno desde su etiqueta.' };
+    /* Alimentos generales: los 310 del banco en el modo de dieta del atleta,
+       por grupo, con las kcal de su ración (utils/alimentosGenerales.ts). */
+    const filaGeneral = (a: AlimentoGeneral): FilaAlimento => ({
+      clave: `banco_${a.food.id}`,
+      nombre: a.nombre,
+      detalle: `${a.porRacion.kcal} kcal · ${a.racion}`,
+      anadido: veces(a.food.id),
+      onAbrir: () => handleSelectFood(a.food),
+    });
+    const generales = alimentosGeneralesPorGrupo(foodItemsComunes, activeDietMode)
+      .map(g => ({ titulo: g.titulo, filas: g.alimentos.filter(a => coincide(a.food.label) || coincide(a.nombre)).map(filaGeneral) }));
+    const filasRecetas = recipes
+      .filter(r => coincideBusqueda(r.name, term) && isSafeForAthlete(r))
+      .map((r): FilaAlimento => {
+        const kcal = r.kcal ?? Math.round(exchangeToKcal(recipeExchanges(r)));
+        return { clave: `receta_${r.id}`, nombre: r.name, detalle: kcal ? `${kcal} kcal` : undefined, anadido: veces(`receta_${r.id}`), onAbrir: () => void anadirRecetaCalorias(r, mealId) };
+      });
+    const filasMios = alimentosPropios.filter(f => coincide(f.label)).map(filaBanco);
+
+    if (pestanaAnadir === 'generales') {
+      return { secciones: generales, vacio: 'Ningún alimento general se llama así. Prueba en «Todo».' };
     }
     if (pestanaAnadir === 'comidas') {
-      const filas = recipes
-        .filter(r => coincideBusqueda(r.name, term) && isSafeForAthlete(r))
-        .map((r): FilaAlimento => {
-          const kcal = r.kcal ?? Math.round(exchangeToKcal(recipeExchanges(r)));
-          return { clave: `receta_${r.id}`, nombre: r.name, detalle: kcal ? `${kcal} kcal` : undefined, anadido: veces(`receta_${r.id}`), onAbrir: () => void anadirRecetaCalorias(r, mealId) };
-        });
-      return { secciones: [{ titulo: 'Mis comidas y recetas', filas }], vacio: term ? 'Ninguna de tus comidas se llama así.' : 'Aún no tienes comidas guardadas. Guarda una desde el menú de cada comida.' };
+      return {
+        secciones: [
+          { titulo: 'Mis recetas y comidas', filas: filasRecetas },
+          { titulo: 'Mis alimentos', filas: filasMios },
+        ],
+        vacio: term
+          ? 'Nada tuyo se llama así.'
+          : 'Aún no tienes nada tuyo. Guarda una comida desde su menú «···» o crea un alimento desde su etiqueta.',
+      };
     }
-    if (!term) {
+    if (pestanaAnadir === 'recientes') {
       const vistos = new Set<string>();
       const historial = [...usados.recientes, ...usados.frecuentes]
         .filter(u => { if (vistos.has(u.clave)) return false; vistos.add(u.clave); return true; })
+        .filter(u => coincide(u.label))
         .map(filaUsado).filter((x): x is FilaAlimento => !!x);
-      return { secciones: [{ titulo: 'Historial', filas: historial }], vacio: 'Aún no has apuntado nada. Busca un alimento o escanéalo.' };
+      return { secciones: [{ titulo: 'Lo que más apuntas', filas: historial }], vacio: term ? 'No has apuntado nada con ese nombre. Prueba en «Todo».' : 'Aún no has apuntado nada. Mira los alimentos generales o busca uno.' };
+    }
+    // Todo: el buscador sobre toda la app.
+    if (!term) {
+      return { secciones: [], vacio: 'Escribe para buscar entre todos los alimentos, los productos del supermercado y tus recetas.' };
     }
     return {
       secciones: [
-        { titulo: 'Mis alimentos', filas: alimentosPropios.filter(f => coincide(f.label)).map(filaBanco) },
+        { titulo: 'Mis alimentos', filas: filasMios },
         { titulo: 'Alimentos', filas: alimentosDelCatalogo.map((a): FilaAlimento => ({
           clave: `cat_${a.id}`, nombre: nombreDeAlimento(a), detalle: `${Math.round(a.porCien.kcal)} kcal, 100 g`,
           anadido: veces(`cat_${a.id}`), onAbrir: () => abrirFichaCatalogo(a, mealId),
         })) },
-        { titulo: 'Del coach', filas: delCoach.filter(f => coincide(f.label)).slice(0, 20).map(filaBanco) },
+        { titulo: 'Alimentos generales', filas: generales.flatMap(g => g.filas).slice(0, 20) },
+        { titulo: 'Mis recetas y comidas', filas: filasRecetas.slice(0, 20) },
         { titulo: 'Supermercado', filas: productosOff.map((e): FilaAlimento => ({
           clave: `off_${e.c}`, nombre: e.n, detalle: e.b || undefined, anadido: veces(`off_${e.c}`),
           onAbrir: () => setFicha({ tipo: 'off', codigo: e.c, nombre: e.n, marca: e.b || undefined, ultimos: ultimosGramos(claveDeProducto(e.c)), mealId }),
@@ -3301,9 +3249,9 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
           encima, "auto" dejaba la lista en un tercio de pantalla. */}
       {pickerItem && usarListaRapida && (
         <AnadirAlimentoCalorias
-          comidas={comidasDelDia}
-          mealId={pickerItem.mealId}
-          onCambiarComida={mealId => setPickerItem(prev => (prev ? { ...prev, mealId } : prev))}
+          titulo={reemplazo
+            ? `Cambiar ${conMayuscula(foodNameWithoutGrams(selectedDiet?.meals.find(m => m.id === reemplazo.mealId)?.items[reemplazo.idxs[0]]?.foodLabel ?? 'alimento'))}`
+            : `Añadir a ${comidasDelDia.find(c => c.id === pickerItem.mealId)?.nombre ?? 'la comida'}`}
           busqueda={searchTerm}
           onBusqueda={setSearchTerm}
           pestana={pestanaAnadir}
@@ -3314,369 +3262,26 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
             ? { texto: 'Buscar en el recetario', icono: 'skillet', onClick: () => handleOpenRecipePicker(pickerItem.mealId) }
             : { texto: 'Crear alimento desde su etiqueta', icono: 'edit_note', onClick: () => { setCrearInicial(null); setCrearAlimentoAbierto(true); } }}
           onEscanear={() => setEscanerAbierto(true)}
-          onRapido={() => setAnadidoRapidoAbierto(true)}
-          onClose={() => setPickerItem(null)}
+          filtro={pestanaAnadir === 'generales' && enabledModes.length > 1 ? (
+            <div className="flex flex-wrap gap-2" role="group" aria-label="Tipo de alimentos">
+              {ALL_DIET_MODES.filter(m => enabledModes.includes(m)).map(m => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => selectDietMode(m)}
+                  aria-pressed={activeDietMode === m}
+                  className={`rounded-full border px-3 py-1.5 font-sans text-body-s font-bold transition-colors ${activeDietMode === m ? 'border-accent bg-accent text-on-accent' : 'border-hairline text-ink-2 hover:text-ink'}`}
+                >
+                  {MODE_LABEL[m]}
+                </button>
+              ))}
+            </div>
+          ) : undefined}
+          nota={pestanaAnadir === 'todo' && productosOff.length > 0 ? ATRIBUCION_OFF : undefined}
+          onClose={() => { setPickerItem(null); setReemplazo(null); }}
         />
       )}
 
-      {pickerItem && !usarListaRapida && (() => {
-        const totalAdded = Object.values<number>(pickerAddedCounts).reduce((a, b) => a + b, 0);
-        return (
-        <Sheet
-          open
-          onClose={() => setPickerItem(null)}
-          title={pickerItem.itemIdx === null ? 'Añadir alimento' : 'Cambiar alimento'}
-          alto="completo"
-          footer={
-            pickerItem.itemIdx === null ? (
-              <Button onClick={() => setPickerItem(null)} fullWidth>
-                {totalAdded > 0 ? `Hecho · ${totalAdded} añadido${totalAdded === 1 ? '' : 's'}` : 'Hecho'}
-              </Button>
-            ) : undefined
-          }
-          toolbar={(
-            <>
-              {/* La guía, siempre a mano. Comparte fila con el contexto para
-                  no añadir un cuarto piso a una barra que ya lleva modos,
-                  categorías y buscador. */}
-              <div className="px-4 pb-2 flex items-center justify-between gap-3">
-                <span className="font-sans text-caption text-ink-2 uppercase">
-                  {isSearchingFoods ? `Todas las categorías · ${MODE_LABEL[activeDietMode]}` : vistaRapida ? `Lo que más apuntas · ${MODE_LABEL[activeDietMode]}` : `${CAT_LABEL[pickerCategory]} · ${MODE_LABEL[activeDietMode]}`}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => { setGuiaAbierta(true); apuntarVisto(profile, 'guia_intercambios', 1); }}
-                  className="flex items-center gap-1.5 flex-shrink-0 rounded-full border border-accent/25 bg-accent-bg px-3 py-1 font-sans text-caption font-bold text-accent-ink transition-colors hover:bg-accent/20"
-                >
-                  <Icon name="help" size="s" />
-                  Cómo funciona
-                </button>
-              </div>
-
-            {/* Único sitio donde se elige el modo. La misma fila vivía además
-                en la cabecera de "Mi plan", y ahí no pintaba nada: el modo
-                decide QUÉ ALIMENTOS salen, así que su sitio es el buscador de
-                alimentos, no el encabezado de la pantalla (Dani, 06-09).
-                Se ofrecen los TRES modos, no solo `enabledModes`: antes esta
-                fila se escondía si el coach solo había habilitado uno, y era
-                el selector de arriba —el que se ha quitado— el que dejaba al
-                atleta pasarse a "Sin pesar" por su cuenta. Usa `selectDietMode`
-                (no `setActiveDietMode`) para conservar ese comportamiento:
-                habilita el modo y lo persiste. */}
-            <div className="px-4 py-2 bg-bg border-b border-hairline flex gap-2 flex-wrap">
-              {ALL_DIET_MODES.map(mode => (
-                <button key={mode} onClick={() => selectDietMode(mode)}
-                  className={`px-3 py-1 rounded-full font-sans text-caption font-bold uppercase tracking-wider transition-all ${activeDietMode === mode ? 'bg-accent text-on-accent' : 'bg-raised text-ink-2 border border-hairline'}`}
-                >{MODE_LABEL[mode]}</button>
-              ))}
-            </div>
-
-            {!vistaRapida && (
-            <div className={`p-3 bg-surface border-b border-hairline flex gap-2 flex-wrap transition-opacity ${isSearchingFoods ? 'opacity-40' : ''}`}>
-              {CATS.map(cat => (
-                <button key={cat} onClick={() => { setPickerCategory(cat); setSearchTerm(''); }}
-                  className={`px-3 py-2 rounded-full font-sans text-caption font-bold uppercase tracking-wider transition-all ${pickerCategory === cat && !isSearchingFoods ? 'bg-accent text-on-accent' : 'bg-raised text-ink-2 border border-transparent hover:border-hairline'}`}
-                  /* `CAT_LABEL`, no `cat.replace('_',' ')`: "MIX GRASA" no le
-                     dice nada a nadie, y es justo la categoría que hay que
-                     explicar — "½P+½Grasa" sí dice que un huevo cuenta media
-                     proteína y media grasa. */
-                >{CAT_LABEL[cat]}</button>
-              ))}
-            </div>
-            )}
-
-            <div className="px-4 py-2 bg-surface flex items-center gap-2 border-b border-hairline">
-              <Icon name="search" size="s" className="text-ink-2" />
-              <input type="text" placeholder="Buscar en todas las categorías..." value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-                className="w-full bg-transparent border-none text-ink text-title-s focus:ring-0 focus:outline-none p-2 placeholder-ink-2/45"
-              />
-              {pickerItem.itemIdx === null && (
-                <button
-                  type="button"
-                  onClick={() => setEscanerAbierto(true)}
-                  aria-label="Escanear código de barras"
-                  className="flex flex-shrink-0 items-center gap-1.5 rounded-full border border-accent/25 bg-accent-bg px-3 py-1.5 font-sans text-caption font-bold text-accent-ink transition-colors hover:bg-accent/20"
-                >
-                  <Icon name="qr_code_scanner" size="s" />
-                  Escanear
-                </button>
-              )}
-            </div>
-            </>
-          )}
-        >
-            <div className="pt-4 space-y-2">
-              {/* La equivalencia, escrita. Va ARRIBA de la lista y no pegada a
-                  cada fila: lo que hay que explicar es el salto de "lentejas" a
-                  "legumbre", que es uno solo aunque devuelva seis alimentos. */}
-              {explicacionesDeBusqueda.map(frase => (
-                <div key={frase} className="flex items-start gap-2 rounded-control bg-accent-bg border border-accent/20 p-3">
-                  <Icon name="lightbulb" size="s" className="mt-0.5 flex-shrink-0 text-accent-ink" />
-                  <p className="font-sans text-body-s text-ink-2">{frase}</p>
-                </div>
-              ))}
-
-              {vistaRapida ? (() => {
-                // Cada apunte vuelve a su origen: banco de intercambios, producto
-                // de supermercado (ficha por código) o catálogo por 100 g (por id).
-                // Si el catálogo ya no lo trae, la fila no sale.
-                type FilaUsada = { u: AlimentoUsado; nombre: string; sub?: string; abrir: () => void; tuyo?: boolean };
-                const filaDe = (u: AlimentoUsado): FilaUsada | null => {
-                  if (u.tipo === 'off' && u.codigo) {
-                    const codigo = u.codigo;
-                    return { u, nombre: u.label, sub: u.marca, abrir: () => setProductoOffAbierto({ c: codigo, n: u.label, b: u.marca ?? '', t: '' }) };
-                  }
-                  if (u.tipo === 'catalogo') {
-                    const a = catalogoAlimentos.find(x => claveDeCatalogo(x.id) === u.clave);
-                    return a ? { u, nombre: nombreDeAlimento(a), abrir: () => setAlimentoCatalogoAbierto(a) } : null;
-                  }
-                  const food = foodItems.find(f => f.id === u.clave) ?? foodItems.find(f => f.label === u.clave);
-                  if (!food || food.mode !== activeDietMode) return null;
-                  return { u, nombre: foodNameWithoutGrams(food.label), tuyo: !!food.personal, abrir: () => handleSelectFood(food) };
-                };
-                const lista = (xs: AlimentoUsado[]) => xs.map(filaDe).filter((x): x is FilaUsada => !!x);
-                const recientes = lista(usados.recientes);
-                const frecuentes = lista(usados.frecuentes);
-                // Sin historial: empezar por lo que ya tiene en su plan.
-                const delPlan: FilaUsada[] = recientes.length === 0 && frecuentes.length === 0
-                  ? Array.from(new Set((selectedDiet?.meals ?? []).flatMap(m => m.items).filter(it => !it.originRecipeId).map(it => it.foodLabel)))
-                      .map(l => foodItems.find(f => f.label === l))
-                      .filter((f): f is MealItem => !!f && f.mode === activeDietMode)
-                      .slice(0, 8)
-                      .map(food => ({ u: { clave: food.id, label: food.label, veces: 0, ultimo: '' } as AlimentoUsado, nombre: foodNameWithoutGrams(food.label), tuyo: !!food.personal, abrir: () => handleSelectFood(food) }))
-                  : [];
-                const bloque = (titulo: string, xs: FilaUsada[]) => xs.length === 0 ? null : (
-                  <div key={titulo} className="space-y-2">
-                    <p className="pt-2 font-mono text-caption font-semibold uppercase tracking-[.16em] text-ink-3">{titulo}</p>
-                    {xs.map(({ u, nombre, sub, tuyo, abrir }) => (
-                      <button
-                        key={`${titulo}_${u.clave}`}
-                        type="button"
-                        onClick={abrir}
-                        className="w-full flex items-center gap-3 py-4 px-4 rounded-control border border-hairline bg-surface hover:bg-raised hover:border-accent/40 text-left transition-transform active:scale-[0.98]"
-                      >
-                        <span className="flex-1 min-w-0 font-sans text-body font-bold text-ink leading-snug">
-                          {nombre}
-                          {tuyo && <span className="ml-2 align-middle text-caption font-mono font-bold uppercase text-accent-ink">tuyo</span>}
-                          {sub && <span className="block font-sans text-caption text-ink-3">{sub}</span>}
-                        </span>
-                        {u.gramos ? <span className="font-mono text-caption text-ink-3 flex-shrink-0">{u.gramos} g</span> : null}
-                        <span className="material-symbols-outlined text-ink-2 select-none text-title-s flex-shrink-0">add_circle</span>
-                      </button>
-                    ))}
-                  </div>
-                );
-                return (
-                  <>
-                    {bloque('Recientes', recientes)}
-                    {bloque('Frecuentes', frecuentes)}
-                    {bloque('De tu plan', delPlan)}
-                    {recientes.length + frecuentes.length + delPlan.length === 0 && (
-                      <p className="py-4 font-sans text-body-s text-ink-3">Aún no hay nada reciente. Pulsa «Mostrar todos» o busca por nombre.</p>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => setMostrarTodos(true)}
-                      className="w-full flex items-center gap-3 p-4 rounded-control border border-hairline text-left transition-all active:scale-[0.98] hover:border-accent/40 group"
-                    >
-                      <Icon name="list" size="m" className="text-ink-2 group-hover:text-accent-ink transition-colors" />
-                      <span className="flex-1 font-sans text-label text-ink-2 group-hover:text-accent-ink transition-colors">Mostrar todos</span>
-                    </button>
-                  </>
-                );
-              })() : filteredFoods.length === 0 ? (
-                /* El momento natural de crear un alimento es justo este: has
-                   buscado el tuyo, no está, y hasta hoy el camino se acababa
-                   aquí. Por eso la acción principal del vacío pasa a ser
-                   "Crearlo" y no "Quitar búsqueda". */
-                /* Tres vacíos distintos, y confundirlos es lo que hacía
-                   antes esta pantalla:
-                     · lo buscado es LIBRE → no falta nada, es que no cuenta.
-                       Ofrecer "créalo" aquí sería invitarle a apuntar
-                       intercambios de una lechuga.
-                     · lo buscado no existe → créalo.
-                     · no ha buscado nada → la categoría está vacía. */
-                buscaAlgoLibre ? (
-                  <EmptyState
-                    icon="check_circle"
-                    title="Eso es libre"
-                    description="No cuenta intercambios ni hace falta apuntarlo."
-                    actionLabel="Seguir buscando"
-                    onAction={() => setSearchTerm('')}
-                  />
-                ) : (
-                <EmptyState
-                  icon={searchTerm ? 'add_circle' : 'search_off'}
-                  title={searchTerm ? `Nada para «${searchTerm}»` : 'Sin alimentos en esta categoría.'}
-                  description={searchTerm
-                    ? 'Puedes crearlo con los datos de su etiqueta y la app calcula el intercambio.'
-                    : undefined}
-                  actionLabel={searchTerm ? 'Crear este alimento' : undefined}
-                  onAction={searchTerm ? () => setCrearAlimentoAbierto(true) : undefined}
-                />
-                )
-              ) : filteredFoods.map(food => {
-                const veces = pickerAddedCounts[food.id] ?? 0;
-                const reciente = pickerRecentlyAdded === food.id;
-                const puedeEditarse = !!food.personal && !!food.porCien;
-                return (
-                  /* La fila es un `div` y no un `button` porque los alimentos
-                     propios llevan su lápiz dentro, y un botón dentro de un
-                     botón no es HTML válido: el navegador lo desanida y el
-                     segundo deja de recibir el clic. */
-                  <div key={food.id}
-                    className={`w-full flex items-center gap-3 rounded-control border transition-all group ${
-                      reciente ? 'bg-success/10 border-success/40' : 'bg-surface hover:bg-raised border-hairline hover:border-accent/40'
-                    }`}
-                  >
-                    <button
-                      type="button"
-                      onClick={() => handleSelectFood(food)}
-                      className={`flex-1 min-w-0 flex items-center gap-3 py-4 pl-4 text-left transition-transform active:scale-[0.98] ${puedeEditarse ? 'pr-1' : 'pr-4'}`}
-                    >
-                      {isSearchingFoods && (
-                        <span className={`text-caption font-mono font-bold px-2 rounded-control border flex-shrink-0 ${CAT_BG[food.category]} ${CAT_COLOR[food.category]}`}>
-                          {CAT_LABEL[food.category]}
-                        </span>
-                      )}
-                      <span className="flex-1 min-w-0 font-sans text-body font-bold text-ink group-hover:text-accent-ink transition-colors leading-snug">
-                        {food.label}
-                        {/* Distingue lo tuyo de los 310 del sistema. Sin esto,
-                            un alimento creado por ti y uno de Dani se leen
-                            igual y no se sabe cuál se puede borrar. */}
-                        {food.personal && (
-                          <span className="ml-2 align-middle text-caption font-mono font-bold uppercase text-accent-ink">tuyo</span>
-                        )}
-                      </span>
-                      {/* El "+" solo va aquí dentro cuando NO hay lápiz: con
-                          lápiz, el extremo derecho tiene que seguir siendo el
-                          "+", así que sale de este botón y se pinta al final de
-                          la fila. */}
-                      {!puedeEditarse && (reciente ? (
-                        <span className="flex items-center gap-1 flex-shrink-0 text-success">
-                          <Icon name="check_circle" size="m" />
-                          {veces > 1 && <span className="font-mono text-caption font-bold">×{veces}</span>}
-                        </span>
-                      ) : (
-                        <span className="material-symbols-outlined text-ink-2 group-hover:text-accent-ink transition-colors select-none text-title-s flex-shrink-0">add_circle</span>
-                      ))}
-                    </button>
-
-                    {/* Solo se puede reabrir la calculadora si el alimento trae
-                        los macros con los que se creó. Los de antes de que
-                        existiera `porCien` no los tienen: se borran y se vuelven
-                        a crear, que es más honesto que abrir un formulario vacío
-                        que pisaría lo que ya hay. */}
-                    {puedeEditarse && (
-                      <>
-                        <button
-                          type="button"
-                          aria-label={`Editar ${food.label}`}
-                          onClick={() => setAlimentoAEditar(food)}
-                          className="flex-shrink-0 p-2 text-ink-3 hover:text-accent-ink transition-colors"
-                        >
-                          <Icon name="edit" size="s" />
-                        </button>
-                        {/* El "+" se queda SIEMPRE en el extremo derecho, que es
-                            donde está en los otros 310 alimentos. Ahí había una
-                            papelera, y el dedo que va a añadir borraba (Dani,
-                            24-09). Borrar se ha mudado dentro de la hoja de
-                            editar, donde hay que entrar a propósito. */}
-                        <button
-                          type="button"
-                          aria-label={`Añadir ${food.label} a esta comida`}
-                          onClick={() => handleSelectFood(food)}
-                          className="flex-shrink-0 py-4 pr-4 pl-1 transition-transform active:scale-90"
-                        >
-                          {reciente ? (
-                            <span className="flex items-center gap-1 text-success">
-                              <Icon name="check_circle" size="m" />
-                              {veces > 1 && <span className="font-mono text-caption font-bold">×{veces}</span>}
-                            </span>
-                          ) : (
-                            <span className="material-symbols-outlined text-ink-2 group-hover:text-accent-ink transition-colors select-none text-title-s">add_circle</span>
-                          )}
-                        </button>
-                      </>
-                    )}
-                  </div>
-                );
-              })}
-
-              {/* Siempre al final de la lista, no en la barra de arriba: la
-                  barra ya lleva modos, categorías y buscador, y una cuarta
-                  fila fija dejaba la lista en un palmo de pantalla. */}
-              {alimentosDelCatalogo.length > 0 && (
-                <div className="space-y-2 pt-2">
-                  <p className="font-mono text-caption font-semibold uppercase tracking-[.16em] text-ink-3">Alimentos</p>
-                  {alimentosDelCatalogo.map(a => (
-                    <button
-                      key={a.id}
-                      type="button"
-                      onClick={() => setAlimentoCatalogoAbierto(a)}
-                      className="w-full flex items-center gap-3 py-4 px-4 rounded-control border border-hairline bg-surface hover:bg-raised hover:border-accent/40 text-left transition-transform active:scale-[0.98]"
-                    >
-                      <span className="flex-1 min-w-0 font-sans text-body font-bold text-ink leading-snug">
-                        {nombreDeAlimento(a)}
-                        <span className="block font-mono text-caption text-ink-3">{a.porCien.kcal} kcal · 100 g</span>
-                      </span>
-                      <span className="material-symbols-outlined text-ink-2 select-none text-title-s flex-shrink-0">add_circle</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {productosOff.length > 0 && (
-                <div className="space-y-2 pt-2">
-                  <p className="font-mono text-caption font-semibold uppercase tracking-[.16em] text-ink-3">Productos de supermercado</p>
-                  {productosOff.map(e => (
-                    <button
-                      key={e.c}
-                      type="button"
-                      onClick={() => setProductoOffAbierto(e)}
-                      className="w-full flex items-center gap-3 py-4 px-4 rounded-control border border-hairline bg-surface hover:bg-raised hover:border-accent/40 text-left transition-transform active:scale-[0.98]"
-                    >
-                      <span className="flex-1 min-w-0 font-sans text-body font-bold text-ink leading-snug">
-                        {e.n}
-                        {e.b && <span className="block font-sans text-caption text-ink-3">{e.b}</span>}
-                      </span>
-                      <span className="material-symbols-outlined text-ink-2 select-none text-title-s flex-shrink-0">add_circle</span>
-                    </button>
-                  ))}
-                  <p className="font-sans text-caption text-ink-3">{ATRIBUCION_OFF}</p>
-                </div>
-              )}
-
-              {usarListaRapida && (
-                <button
-                  type="button"
-                  onClick={() => setAnadidoRapidoAbierto(true)}
-                  className="w-full flex items-center gap-3 p-4 rounded-control border border-dashed border-hairline text-left transition-all active:scale-[0.98] hover:border-accent/40 group"
-                >
-                  <Icon name="bolt" size="m" className="text-ink-2 group-hover:text-accent-ink transition-colors" />
-                  <span className="flex-1 font-sans text-label text-ink-2 group-hover:text-accent-ink transition-colors">
-                    Añadido rápido: kcal y macros a mano
-                  </span>
-                </button>
-              )}
-
-              {!vistaRapida && filteredFoods.length > 0 && (
-                <button
-                  type="button"
-                  onClick={() => setCrearAlimentoAbierto(true)}
-                  className="w-full flex items-center gap-3 p-4 rounded-control border border-dashed border-hairline text-left transition-all active:scale-[0.98] hover:border-accent/40 group"
-                >
-                  <Icon name="add_circle" size="m" className="text-ink-2 group-hover:text-accent-ink transition-colors" />
-                  <span className="flex-1 font-sans text-label text-ink-2 group-hover:text-accent-ink transition-colors">
-                    ¿No está? Crear alimento desde su etiqueta
-                  </span>
-                </button>
-              )}
-            </div>
-        </Sheet>
-        );
-      })()}
 
       {ficha?.tipo === 'valores' && (
         <FichaAlimentoCalorias
@@ -3770,9 +3375,6 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
           onClose={() => setAlimentoCatalogoAbierto(null)}
         />
       )}
-      {anadidoRapidoAbierto && (
-        <AnadidoRapidoSheet onConfirm={confirmarAnadidoRapido} onClose={() => setAnadidoRapidoAbierto(false)} />
-      )}
 
       {/* Editar un alimento propio. Misma hoja que crearlo: se rellena con los
           macros guardados y el grupo y los gramos se recalculan al vuelo. */}
@@ -3801,7 +3403,6 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
         />
       )}
 
-      {guiaAbierta && <GuiaDeIntercambios onClose={() => setGuiaAbierta(false)} />}
 
       {/* Borrar un alimento propio. Solo quita la entrada del banco personal:
           lo que ya esté colocado en un plan se queda donde está, porque ahí
@@ -3858,10 +3459,8 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
             // buscador te devuelva a la lista para tener que buscarlo otra vez
             // sería dar un paso de más justo cuando ya has hecho el trabajo.
             handleSelectFood(creado);
-            // Y se deja la lista en su categoría, sin el término de búsqueda
-            // que no lo encontraba, para que se vea dónde ha caído.
+            // Sin el término de búsqueda que no lo encontraba.
             setSearchTerm('');
-            setPickerCategory(creado.category);
             showToast(`«${creado.label}» añadido a tus alimentos`, 'success');
           }}
         />

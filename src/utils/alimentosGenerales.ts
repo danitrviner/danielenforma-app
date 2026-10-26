@@ -60,13 +60,20 @@ export function alimentoGeneral(food: MealItem): AlimentoGeneral {
   const gramos = food.gramosPorIntercambio && food.gramosPorIntercambio > 0
     ? food.gramosPorIntercambio
     : (casera ? null : parseBaseGrams(food.label));
-  const nombre = conMayuscula(casera ? casera.nombre : foodNameWithoutGrams(food.label));
+  // «10g (1 cuchara) aceite de oliva»: la medida entre paréntesis del principio
+  // es parte de la ración, no del nombre.
+  let nombre = casera ? casera.nombre : foodNameWithoutGrams(food.label);
+  let medida: string | null = null;
+  const parentesis = nombre.match(/^\(([^)]+)\)\s*(.+)$/);
+  if (parentesis) { medida = parentesis[1]; nombre = parentesis[2]; }
+  nombre = conMayuscula(nombre);
+  const enGramos = gramos ? `${Math.round(gramos)} g` : null;
   return {
     food,
     nombre,
     grupo: GRUPO_DE[food.category],
     gramosRacion: gramos,
-    racion: casera ? casera.medida : gramos ? `${Math.round(gramos)} g` : '1 ración',
+    racion: casera ? casera.medida : [enGramos, medida].filter(Boolean).join(' · ') || '1 ración',
     porRacion,
     porCien: gramos ? redondearMacros(escalarMacros(porRacion, 100 / gramos)) : null,
   };
