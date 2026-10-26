@@ -480,8 +480,8 @@ export default function ClientDietsPanel({
                         <span className="material-symbols-outlined" style={{ fontSize: '10px' }}>inventory_2</span>batch
                       </span>
                     )}
-                    {isMenuStale(m, athleteDietConfig?.weeklySchedule ?? {}, athleteDiets) && (
-                      <span className="flex-shrink-0 flex items-center text-caption font-mono font-bold uppercase text-warning bg-warning/10 border border-warning/25 px-2 rounded-control" title="Las dietas o el calendario han cambiado desde que se generó — regenera para actualizar los puntos.">
+                    {isMenuStale(m, athleteDietConfig?.weeklySchedule ?? {}, athleteDiets, nutritionProgram) && (
+                      <span className="flex-shrink-0 flex items-center text-caption font-mono font-bold uppercase text-warning bg-warning/10 border border-warning/25 px-2 rounded-control" title="Las dietas o el calendario han cambiado desde que se generó — regenera para actualizar las kcal.">
                         <span className="material-symbols-outlined" style={{ fontSize: '10px' }}>sync_problem</span>desactualizado
                       </span>
                     )}

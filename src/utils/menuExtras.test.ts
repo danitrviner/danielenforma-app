@@ -7,6 +7,12 @@ import {
 import { complementosDisponibles, isSimpleComplement } from './menuComplements';
 import { buildShoppingList } from './menuShoppingList';
 import { Recipe, Diet, BudgetVec, MealItem, MenuDay } from '../types';
+import { macrosDeIntercambios, objetivoDeDieta } from './macrosLegado';
+import { macrosDelPlato } from './menuMacros';
+import type { Macros } from '../types';
+/** Casos escritos en intercambios, pasados a kcal y gramos. */
+const mx = (v: { HC?: number; PROT?: number; GRASA?: number }): Macros => macrosDeIntercambios(v);
+
 
 const prefs: GeneratorPrefs = { allergies: [], disliked: [], liked: [], variety: 3 };
 
@@ -68,25 +74,25 @@ describe('catálogo de extras', () => {
 describe('extras que propone el generador', () => {
   it('llena un alimento antes de pasar al siguiente, no reparte migajas', () => {
     // Un hueco de 0,75 debe ser UN extra de 0,75, no tres de 0,25.
-    const out = fillComplements({ HC: 0.75, PROT: 0, GRASA: 0 }, BANCO, 'OMNIVORO');
+    const out = fillComplements(mx({ HC: 0.75, PROT: 0, GRASA: 0 }), BANCO, 'OMNIVORO');
     expect(out).toHaveLength(1);
     expect(out[0].quantity).toBe(0.75);
   });
 
   it('encadena solo cuando no cabe en un alimento', () => {
-    const out = fillComplements({ HC: 3, PROT: 0, GRASA: 0 }, BANCO, 'OMNIVORO');
+    const out = fillComplements(mx({ HC: 3, PROT: 0, GRASA: 0 }), BANCO, 'OMNIVORO');
     expect(out.length).toBeGreaterThan(1);
     expect(new Set(out.map(c => c.foodLabel)).size).toBe(out.length); // alimentos distintos
     expect(out.every(c => c.quantity <= 2)).toBe(true);
   });
 
   it('trabaja en pasos de 0,25 (antes perdía lo que no llegaba a media ración)', () => {
-    const out = fillComplements({ HC: 1.25, PROT: 0, GRASA: 0 }, BANCO, 'OMNIVORO');
+    const out = fillComplements(mx({ HC: 1.25, PROT: 0, GRASA: 0 }), BANCO, 'OMNIVORO');
     expect(out.reduce((s, c) => s + c.quantity, 0)).toBe(1.25);
   });
 
   it('no propone nada si no falta nada', () => {
-    expect(fillComplements({ HC: 0, PROT: 0, GRASA: 0 }, BANCO, 'OMNIVORO')).toEqual([]);
+    expect(fillComplements(mx({ HC: 0, PROT: 0, GRASA: 0 }), BANCO, 'OMNIVORO')).toEqual([]);
   });
 });
 
@@ -96,18 +102,18 @@ describe('la receta cubre la comida, o se descarta', () => {
   it('multiplica hasta x4 para llegar al objetivo', () => {
     expect(MENU_SCALES[MENU_SCALES.length - 1]).toBe(4);
     const plato = receta('r', { HC: 2, PROT: 1, GRASA: 0.5 });     // 3,5 int base
-    const fit = bestScaleFit(plato, { HC: 8, PROT: 4, GRASA: 2 }); // 14 int → x4
+    const fit = bestScaleFit(plato, mx({ HC: 8, PROT: 4, GRASA: 2 })); // 14 int → x4
     expect(fit?.scale).toBe(4);
   });
 
   it('descarta la receta que no llega ni multiplicada por cuatro', () => {
     const pequena = receta('r', { HC: 1, PROT: 0, GRASA: 0 });          // 1 int
-    expect(bestScaleFit(pequena, { HC: 10, PROT: 5, GRASA: 5 })).toBeNull();
+    expect(bestScaleFit(pequena, mx({ HC: 10, PROT: 5, GRASA: 5 }))).toBeNull();
   });
 
   it('descarta también la que se pasa a media ración', () => {
     const enorme = receta('r', { HC: 10, PROT: 5, GRASA: 5 });
-    expect(bestScaleFit(enorme, { HC: 1, PROT: 0, GRASA: 0 })).toBeNull();
+    expect(bestScaleFit(enorme, mx({ HC: 1, PROT: 0, GRASA: 0 }))).toBeNull();
   });
 
   it('ya no hay reintento que readmita a las descartadas', () => {
@@ -150,11 +156,8 @@ describe('el día completo: la receta cubre, el comodín remata', () => {
 
   it('el día cuadra con su presupuesto contando plato + extras', () => {
     const d = dia();
-    const puesto = d.meals.reduce((s, m) => {
-      const t = totalConExtras(m.exch, m.complements, m.racionesExtra);
-      return s + t.HC + t.PROT + t.GRASA;
-    }, 0);
-    expect(Math.abs(puesto - 30)).toBeLessThanOrEqual(1);
+    const puesto = d.meals.reduce((s, m) => s + totalConExtras(macrosDelPlato(m), m.complements, m.racionesExtra).kcal, 0);
+    expect(Math.abs(puesto - objetivoDeDieta(dieta).kcal)).toBeLessThanOrEqual(100);
   });
 
   it('ninguna receta se sirve por encima de la ración máxima', () => {
@@ -333,10 +336,10 @@ describe('extras y condiciones de salud', () => {
     // Banco donde el único HC "de abrir y comer" es el pan: sin el filtro, el
     // relleno automático solo puede echar mano de él.
     const soloPan = BANCO.filter(f => f.id !== 'manzana');
-    expect(fillComplements(gap, soloPan, 'OMNIVORO').some(c => /pan/i.test(c.foodLabel))).toBe(true);
-    expect(fillComplements(gap, soloPan, 'OMNIVORO', CELIACO)).toEqual([]);
+    expect(fillComplements(mx(gap), soloPan, 'OMNIVORO').some(c => /pan/i.test(c.foodLabel))).toBe(true);
+    expect(fillComplements(mx(gap), soloPan, 'OMNIVORO', CELIACO)).toEqual([]);
     // Y con fruta en el banco, cierra el hueco con ella en vez de con pan.
-    const conFruta = fillComplements(gap, BANCO, 'OMNIVORO', CELIACO);
+    const conFruta = fillComplements(mx(gap), BANCO, 'OMNIVORO', CELIACO);
     expect(conFruta.length).toBeGreaterThan(0);
     expect(conFruta.every(c => !/pan/i.test(c.foodLabel))).toBe(true);
   });
@@ -356,18 +359,18 @@ describe('extras y condiciones de salud', () => {
 // semana va a estar bien puesta» (Dani, 07-09-2026).
 describe('los extras miran la semana, no solo el día', () => {
   it('con la semana ya sobrada, el día sale sin acompañamientos', () => {
-    expect(sinExtrasPorLaSemana(2)).toBe(true);
-    expect(sinExtrasPorLaSemana(0.75)).toBe(true);
+    expect(sinExtrasPorLaSemana(200)).toBe(true);
+    expect(sinExtrasPorLaSemana(75)).toBe(true);
   });
 
   it('con la semana corta o en su sitio, los extras siguen puestos', () => {
-    expect(sinExtrasPorLaSemana(-3)).toBe(false);
+    expect(sinExtrasPorLaSemana(-300)).toBe(false);
     expect(sinExtrasPorLaSemana(0)).toBe(false);
   });
 
   it('un sobrante de redondeo no apaga los extras de toda la semana', () => {
-    expect(sinExtrasPorLaSemana(0.25)).toBe(false);
-    expect(sinExtrasPorLaSemana(0.5)).toBe(false);
+    expect(sinExtrasPorLaSemana(25)).toBe(false);
+    expect(sinExtrasPorLaSemana(50)).toBe(false);
   });
 
   it('la desviación de un día es lo puesto menos su objetivo', () => {
@@ -378,6 +381,6 @@ describe('los extras miran la semana, no solo el día', () => {
         exch: { HC: 5, PROT: 2, GRASA: 1 }, kcal: 0, complements: [],
       }],
     };
-    expect(desviacionDelDia(dia)).toBe(1);      // un intercambio de más
+    expect(desviacionDelDia(dia)).toBe(100);    // un intercambio de HC (100 kcal) de más
   });
 });

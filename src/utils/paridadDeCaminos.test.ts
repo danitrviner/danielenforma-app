@@ -3,6 +3,8 @@ import type { Recipe, MenuMeal, DietItem } from '../types';
 import { totalConExtras } from './menuEngine';
 import { itemsDeComidaDelMenu } from './conversionNutricional';
 import { recipeToDietItems } from './exchangeHelpers';
+import { macrosDeLineas } from './macrosLegado';
+import { macrosDelPlato } from './menuMacros';
 
 /* La misma comida tiene que dar lo mismo se meta como se meta (auditoría §8.4).
  *
@@ -31,6 +33,14 @@ const comida = (over: Partial<MenuMeal> = {}): MenuMeal => ({
   ...over,
 } as MenuMeal);
 
+/** Lo que suman las líneas del diario (kcal y gramos) contra lo que el menú
+ *  dice que lleva la comida. */
+function expectMismoTotal(r: Recipe, m: MenuMeal) {
+  const lineas = macrosDeLineas(itemsDeComidaDelMenu(r, m));
+  const menu = totalConExtras(macrosDelPlato(m), m.complements, m.racionesExtra);
+  for (const k of ['kcal', 'p', 'hc', 'g'] as const) expect(lineas[k]).toBeCloseTo(menu[k], 0);
+}
+
 function sumaPorCategoria(items: DietItem[]): Record<string, number> {
   const total: Record<string, number> = { HC: 0, PROT: 0, GRASA: 0 };
   for (const i of items) total[i.category] = (total[i.category] ?? 0) + i.quantity;
@@ -40,32 +50,28 @@ function sumaPorCategoria(items: DietItem[]): Record<string, number> {
 describe('marcar la comida y añadirla al plan dan lo mismo', () => {
   it('con el plato tal cual', () => {
     const m = comida();
-    expect(sumaPorCategoria(itemsDeComidaDelMenu(receta, m)))
-      .toEqual({ ...totalConExtras(m.exch, m.complements, m.racionesExtra) });
+    expectMismoTotal(receta, m);
   });
 
   it('con el plato escalado a ×1,5', () => {
     // Es el caso que fallaba: el menú sirve ración y media y el botón metía
     // una ración.
     const m = comida({ scale: 1.5, exch: { HC: 3, PROT: 1.5, GRASA: 0.75 } });
-    expect(sumaPorCategoria(itemsDeComidaDelMenu(receta, m)))
-      .toEqual({ ...totalConExtras(m.exch, m.complements, m.racionesExtra) });
+    expectMismoTotal(receta, m);
   });
 
   it('con acompañamientos', () => {
     const m = comida({
       complements: [{ foodLabel: '40g pan (de molde)', category: 'HC', quantity: 1 }],
     });
-    expect(sumaPorCategoria(itemsDeComidaDelMenu(receta, m)))
-      .toEqual({ ...totalConExtras(m.exch, m.complements, m.racionesExtra) });
+    expectMismoTotal(receta, m);
   });
 
   it('con más ración de un ingrediente del propio plato', () => {
     const m = comida({
       racionesExtra: [{ ingrediente: 'Arroz', nombre: 'arroz', category: 'HC', quantity: 1, gramos: 30 }],
     });
-    expect(sumaPorCategoria(itemsDeComidaDelMenu(receta, m)))
-      .toEqual({ ...totalConExtras(m.exch, m.complements, m.racionesExtra) });
+    expectMismoTotal(receta, m);
   });
 
   it('con escala y los dos tipos de extra a la vez', () => {
@@ -75,8 +81,18 @@ describe('marcar la comida y añadirla al plan dan lo mismo', () => {
       complements: [{ foodLabel: '40g pan (de molde)', category: 'HC', quantity: 1 }],
       racionesExtra: [{ ingrediente: 'Pollo', nombre: 'pollo', category: 'PROT', quantity: 0.5, gramos: 25 }],
     });
-    expect(sumaPorCategoria(itemsDeComidaDelMenu(receta, m)))
-      .toEqual({ ...totalConExtras(m.exch, m.complements, m.racionesExtra) });
+    expectMismoTotal(receta, m);
+  });
+});
+
+describe('con los gramos exactos del plato (menús en kcal)', () => {
+  it('el diario apunta las kcal reales del plato, no las de sus intercambios', () => {
+    const m = comida({
+      macros: { kcal: 352, p: 30, hc: 32, g: 12 },
+      complements: [{ foodLabel: '40g pan (de molde)', category: 'HC', quantity: 1 }],
+    });
+    expectMismoTotal(receta, m);
+    expect(macrosDeLineas(itemsDeComidaDelMenu(receta, m)).kcal).toBeCloseTo(452, 0);
   });
 });
 

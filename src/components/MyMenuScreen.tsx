@@ -6,6 +6,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   UserProfile, WeeklyMenu, RecipeFavorites, MenuCompletionLog,
   WeekDay, MenuDay, MenuMeal, Recipe, FoodCategory, MenuComplement, MealItem, DietMode, RecetaPendiente, DietItem,
+  Macros,
 } from '../types';
 import { itemsDeComidaDelMenu } from '../utils/conversionNutricional';
 import {
@@ -21,7 +22,8 @@ import { athleteConditions } from '../utils/dietaryRestrictions';
 import { dietTypeVigente } from '../utils/foodPrefs';
 import { complementosDisponibles } from '../utils/menuComplements';
 import { foodNameWithoutGrams, foodNameShort, itemWeightLabel } from '../utils/exchangeHelpers';
-import { exchangeToKcal } from '../utils/nutritionConstants';
+import { macrosDeLaComida, macrosDelPlato } from '../utils/menuMacros';
+import { intercambiosDeMacros } from '../utils/macrosLegado';
 import { buildShoppingList, ShoppingListItem } from '../utils/menuShoppingList';
 import { DishType } from '../utils/dishTypes';
 import { substitutesFor } from '../utils/ingredientSubstitutions';
@@ -49,12 +51,13 @@ const CAT_LABEL: Record<FoodCategory, string> = { HC: 'HC', PROT: 'PROT', GRASA:
    vez, al cargar — y la app nativa no se recarga, se queda en segundo plano y
    vuelve al día siguiente escribiendo todavía en el día anterior. */
 
-function fmtExch(exch: { HC: number; PROT: number; GRASA: number }): string {
+/** «P 32 · HC 60 · G 14 g» del plato. */
+function fmtMacros(m: Macros): string {
   const parts: string[] = [];
-  if (exch.HC > 0) parts.push(`${exch.HC} HC`);
-  if (exch.PROT > 0) parts.push(`${exch.PROT} PROT`);
-  if (exch.GRASA > 0) parts.push(`${exch.GRASA} GRASA`);
-  return parts.join(' · ') || '—';
+  if (m.p > 0) parts.push(`P ${Math.round(m.p)}`);
+  if (m.hc > 0) parts.push(`HC ${Math.round(m.hc)}`);
+  if (m.g > 0) parts.push(`G ${Math.round(m.g)}`);
+  return parts.length > 0 ? `${parts.join(' · ')} g` : '—';
 }
 
 /** Cuántas alternativas se pintan de golpe por bloque (el resto, bajo demanda). */
@@ -63,13 +66,14 @@ const SWAP_PAGE = 12;
 // Qué le pasa al día si acepta una alternativa "aproximada". Se dice el macro y
 // la dirección, no un número abstracto: "te deja corto de HC" es accionable,
 // "desviación 1,4" no. Solo se nombra el macro que más se mueve.
-function describeDrift(drift: { HC: number; PROT: number; GRASA: number }): string {
-  const cats: [keyof typeof drift, string][] = [['HC', 'hidratos'], ['PROT', 'proteína'], ['GRASA', 'grasa']];
+function describeDrift(drift: Macros): string {
+  // Se compara por kcal de cada macro (la grasa pesa más por gramo).
+  const cats: ['p' | 'hc' | 'g', string, number][] = [['hc', 'hidratos', 4], ['p', 'proteína', 4], ['g', 'grasa', 9]];
   const [cat, label] = cats.reduce((peor, actual) =>
-    Math.abs(drift[actual[0]]) > Math.abs(drift[peor[0]]) ? actual : peor);
-  const v = drift[cat];
-  if (Math.abs(v) < 0.25) return 'te deja casi igual';
-  return v > 0 ? `te pasa ${v} de ${label}` : `te deja ${Math.abs(v)} corto de ${label}`;
+    Math.abs(drift[actual[0]] * actual[2]) > Math.abs(drift[peor[0]] * peor[2]) ? actual : peor);
+  const v = Math.round(drift[cat]);
+  if (Math.abs(v) < 5) return 'te deja casi igual';
+  return v > 0 ? `te pasa ${v} g de ${label}` : `te deja ${Math.abs(v)} g corto de ${label}`;
 }
 
 interface Props {
@@ -264,7 +268,7 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
           : estructuraDeDia((onboarding?.meals ?? []).map(m => ({ name: m.name, slot: m.intakeType }))),
         doneItemIds: log?.doneItemIds ?? [],
       };
-      const total = totalConExtras(meal.exch, meal.complements, meal.racionesExtra);
+      const total = macrosDeLaComida(meal);
       /* Los ítems se construyen con la MISMA función que usa el botón «Añadir a
        * mi plan», para que marcar y añadir no puedan volver a separarse. La
        * receta hace falta solo para el nombre cuando el menú no lo trae; si no
@@ -274,14 +278,14 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
       try {
         const receta = meal.recipeId ? await getRecipeById(meal.recipeId) : null;
         if (receta) items = itemsDeComidaDelMenu(receta, meal);
-      } catch { /* sin ficha: se registra por intercambios, como antes */ }
+      } catch { /* sin ficha: se registra con las kcal y gramos de la comida */ }
 
       const siguiente = marcando
         ? registrarComidaDelMenu(dia, {
             clave,
             nombre: meal.name,
             slot: meal.slot,
-            intercambios: total,
+            macros: total,
             etiqueta: meal.recipeName,
             items,
           })
@@ -456,7 +460,7 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
       meals: d.meals.map(m => m.id !== mealId ? m : {
         ...m,
         complements: siguiente,
-        kcal: Math.round(exchangeToKcal(totalConExtras(m.exch, siguiente, m.racionesExtra))),
+        kcal: Math.round(totalConExtras(macrosDelPlato(m), siguiente, m.racionesExtra).kcal),
       }),
     });
     queryClient.setQueryData<WeeklyMenu | null>(menuKey, prev => prev ? { ...prev, days: nextDays } : prev);
@@ -483,12 +487,14 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
         ...m,
         recipeId: candidate.recipe.id, recipeName: candidate.recipe.name,
         recipeImage: fotoDeReceta(candidate.recipe),
-        scale: candidate.scale, exch: candidate.exch,
+        scale: candidate.scale, macros: candidate.macros,
+        // Binarios viejos: siguen leyendo el plato en intercambios.
+        exch: (({ HC, PROT, GRASA }) => ({ HC, PROT, GRASA }))(intercambiosDeMacros(candidate.macros)),
         // El ajuste por ingredientes es de la receta ANTERIOR: se cambia por el
         // de la nueva o se quita.
         ajuste: candidate.ajuste,
         racionesExtra: candidate.raciones.length > 0 ? candidate.raciones : undefined,
-        kcal: Math.round(exchangeToKcal(totalConExtras(candidate.exch, m.complements, candidate.raciones))),
+        kcal: Math.round(totalConExtras(candidate.macros, m.complements, candidate.raciones).kcal),
       }
       : m);
     const nextDay: MenuDay = { ...day, meals: nextMeals };
@@ -656,7 +662,7 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
                   </button>
 
                   <div className="flex-1 min-w-0">
-                    <p className="font-mono text-caption text-ink-2">{fmtExch(meal.exch)} · {meal.kcal} kcal</p>
+                    <p className="font-mono text-caption text-ink-2">{fmtMacros(macrosDelPlato(meal))} · {meal.kcal} kcal</p>
                     {/* Más ración de algo que el plato YA lleva. Va antes que los
                         acompañamientos y con otro aspecto, porque no es algo que
                         se añade al lado: es el mismo plato, servido más grande. */}
@@ -833,8 +839,8 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
                         <div className="flex-1 min-w-0">
                           <p className="font-sans text-body-s text-ink truncate">{c.recipe.name}</p>
                           <p className="font-mono text-caption text-ink-2">
-                            {fmtExch(c.exch)}
-                            {c.fit === 'exacto' ? ' · mantiene tus puntos del día' : ` · ${describeDrift(c.drift)}`}
+                            {Math.round(c.macros.kcal)} kcal · {fmtMacros(c.macros)}
+                            {c.fit === 'exacto' ? ' · mantiene tu día' : ` · ${describeDrift(c.drift)}`}
                           </p>
                         </div>
                       </button>
@@ -960,8 +966,8 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
               <div>
                 <p className="font-mono text-caption text-ink-3 mb-2">
                   {actual
-                    ? `Cámbialo por otro de ${CAT_LABEL[actual.category]} — mismos intercambios`
-                    : 'Elige de tu banco de intercambios'}
+                    ? `Cámbialo por otro de ${CAT_LABEL[actual.category]} — mismas kcal`
+                    : 'Elige de tus alimentos generales'}
                 </p>
                 <input
                   type="search"

@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { Recipe, Diet, MenuDay, MenuMeal, BudgetVec, WeeklyMenu } from '../types';
+import { Recipe, Diet, MenuDay, MenuMeal, BudgetVec, WeeklyMenu, Macros, NutritionProgram } from '../types';
+import { macrosDeIntercambios, objetivoDeDieta } from './macrosLegado';
+import { aplicarAjustes, ajustesDeLaSemana } from './semanasNutricion';
 import {
   bestScaleFit, rankCandidates, generateDay, generateWeek,
   isDayWithinTolerance, findSwapAlternatives, GeneratorPrefs,
@@ -24,19 +26,23 @@ function diet(overrides: Partial<Diet>): Diet {
   };
 }
 
+/** Los casos se escribieron en intercambios: se pasan a kcal y gramos con las
+ *  equivalencias de siempre (25 g HC / 25 g P / 11 g G). */
+const mx = (v: BudgetVec): Macros => macrosDeIntercambios(v);
+
 const basePrefs: GeneratorPrefs = { allergies: [], disliked: [], liked: [], variety: 3 };
 
 describe('bestScaleFit', () => {
   it('discards a recipe whose ideal scale falls outside 0.5x-2x', () => {
     const r = recipe({ exchanges: { HC: 1, PROT: 1, GRASA: 0 } }); // total 2
     const target: BudgetVec = { HC: 10, PROT: 10, GRASA: 0 };      // total 20 → idealScale 10
-    expect(bestScaleFit(r, target)).toBeNull();
+    expect(bestScaleFit(r, mx(target))).toBeNull();
   });
 
   it('picks the scale that exactly matches the target when one exists', () => {
     const r = recipe({ exchanges: { HC: 2, PROT: 2, GRASA: 1 } });
     const target: BudgetVec = { HC: 2, PROT: 2, GRASA: 1 };
-    const fit = bestScaleFit(r, target);
+    const fit = bestScaleFit(r, mx(target));
     expect(fit).toMatchObject({ scale: 1, score: 0 });
   });
 });
@@ -52,16 +58,16 @@ describe('rankCandidates', () => {
     const ids = (r: ReturnType<typeof rankCandidates>) => r.map(c => c.recipe.id).sort();
 
     it('una regla de todos los días la quita siempre', () => {
-      expect(ids(rankCandidates([a, b], target, prefs([{ recipeId: 'a' }]), new Set()))).toEqual(['b']);
-      expect(ids(rankCandidates([a, b], target, prefs([{ recipeId: 'a' }]), new Set(), { dias: ['wed'] }))).toEqual(['b']);
+      expect(ids(rankCandidates([a, b], mx(target), prefs([{ recipeId: 'a' }]), new Set()))).toEqual(['b']);
+      expect(ids(rankCandidates([a, b], mx(target), prefs([{ recipeId: 'a' }]), new Set(), { dias: ['wed'] }))).toEqual(['b']);
     });
 
     it('una regla de martes solo la quita ese día', () => {
       const p = prefs([{ recipeId: 'a', dias: ['tue'] }]);
-      expect(ids(rankCandidates([a, b], target, p, new Set(), { dias: ['tue'] }))).toEqual(['b']);
-      expect(ids(rankCandidates([a, b], target, p, new Set(), { dias: ['wed'] }))).toEqual(['a', 'b']);
+      expect(ids(rankCandidates([a, b], mx(target), p, new Set(), { dias: ['tue'] }))).toEqual(['b']);
+      expect(ids(rankCandidates([a, b], mx(target), p, new Set(), { dias: ['wed'] }))).toEqual(['a', 'b']);
       // Sin día (buscador del recetario) no se esconde: puede servir otro día.
-      expect(ids(rankCandidates([a, b], target, p, new Set()))).toEqual(['a', 'b']);
+      expect(ids(rankCandidates([a, b], mx(target), p, new Set()))).toEqual(['a', 'b']);
     });
   });
 
@@ -71,7 +77,7 @@ describe('rankCandidates', () => {
     const target: BudgetVec = { HC: 2, PROT: 2, GRASA: 1 };
     const prefs: GeneratorPrefs = { ...basePrefs, allergies: ['cacahuete'] };
 
-    const ranked = rankCandidates([safe, allergen], target, prefs, new Set());
+    const ranked = rankCandidates([safe, allergen], mx(target), prefs, new Set());
 
     expect(ranked.map(c => c.recipe.id)).toEqual(['safe']);
   });
@@ -85,7 +91,7 @@ describe('rankCandidates', () => {
     const target: BudgetVec = { HC: 2, PROT: 2, GRASA: 1 };
     const prefs: GeneratorPrefs = { ...basePrefs, allergies: ['gluten'], conditions: [66] };
 
-    const ranked = rankCandidates([seitan, arroz], target, prefs, new Set());
+    const ranked = rankCandidates([seitan, arroz], mx(target), prefs, new Set());
 
     expect(ranked.map(c => c.recipe.id)).toEqual(['arroz']);
   });
@@ -94,9 +100,9 @@ describe('rankCandidates', () => {
     const sinDato = recipe({ id: 'sinDato', exchanges: { HC: 2, PROT: 2, GRASA: 1 }, ingredientsText: [{ name: 'Arroz', quantity: 100 }] });
     const target: BudgetVec = { HC: 2, PROT: 2, GRASA: 1 };
 
-    expect(rankCandidates([sinDato], target, { ...basePrefs, conditions: [66] }, new Set())).toEqual([]);
+    expect(rankCandidates([sinDato], mx(target), { ...basePrefs, conditions: [66] }, new Set())).toEqual([]);
     // Sin condiciones, esa misma receta sigue estando disponible.
-    expect(rankCandidates([sinDato], target, basePrefs, new Set()).map(c => c.recipe.id)).toEqual(['sinDato']);
+    expect(rankCandidates([sinDato], mx(target), basePrefs, new Set()).map(c => c.recipe.id)).toEqual(['sinDato']);
   });
 
   it('excludes recipes with meat/fish/animal ingredients for a vegan athlete', () => {
@@ -105,7 +111,7 @@ describe('rankCandidates', () => {
     const target: BudgetVec = { HC: 2, PROT: 2, GRASA: 1 };
     const prefs: GeneratorPrefs = { ...basePrefs, dietType: 'vegano' };
 
-    const ranked = rankCandidates([veganOk, notVegan], target, prefs, new Set());
+    const ranked = rankCandidates([veganOk, notVegan], mx(target), prefs, new Set());
 
     expect(ranked.map(c => c.recipe.id)).toEqual(['v1']);
   });
@@ -118,17 +124,17 @@ describe('rankCandidates · Rápidas', () => {
 
   it('con ≤15 min solo entran las Rápidas (minutos reales)', () => {
     const estimada = recipe({ id: 'estimada', name: 'C bocadillo', cookingTime: 4, exchanges: { HC: 2, PROT: 2, GRASA: 1 } });
-    const ranked = rankCandidates([estimada, rapida], target, { ...basePrefs, cookingMaxTime: 15 }, new Set());
+    const ranked = rankCandidates([estimada, rapida], mx(target), { ...basePrefs, cookingMaxTime: 15 }, new Set());
     expect(ranked.map(c => c.recipe.id)).toEqual(['rapida']);
   });
 
   it('con más tiempo y «Sí» a las Rápidas, las adelanta', () => {
-    const ranked = rankCandidates([normal, rapida], target, { ...basePrefs, cookingMaxTime: 45, quiereRapidas: true }, new Set());
+    const ranked = rankCandidates([normal, rapida], mx(target), { ...basePrefs, cookingMaxTime: 45, quiereRapidas: true }, new Set());
     expect(ranked[0].recipe.id).toBe('rapida');
   });
 
   it('con más tiempo y sin pedirlas, no las adelanta', () => {
-    const ranked = rankCandidates([normal, rapida], target, { ...basePrefs, cookingMaxTime: 45 }, new Set());
+    const ranked = rankCandidates([normal, rapida], mx(target), { ...basePrefs, cookingMaxTime: 45 }, new Set());
     expect(ranked[0].score).toBe(ranked[1].score);
   });
 });
@@ -419,23 +425,23 @@ describe('recipe favorites / dislikes / dish-type prefs', () => {
   const tostada = recipe({ id: 'tostada', name: 'Tostada de aguacate', exchanges: { HC: 2, PROT: 2, GRASA: 1 } });
 
   it('hard-excludes a disliked recipe', () => {
-    const ranked = rankCandidates([batido, tostada], target, { ...basePrefs, dislikedRecipeIds: ['batido'] }, new Set());
+    const ranked = rankCandidates([batido, tostada], mx(target), { ...basePrefs, dislikedRecipeIds: ['batido'] }, new Set());
     expect(ranked.map(c => c.recipe.id)).toEqual(['tostada']);
   });
 
   it('hard-excludes an excluded dish type', () => {
-    const ranked = rankCandidates([batido, tostada], target, { ...basePrefs, excludedDishTypes: ['batido'] }, new Set());
+    const ranked = rankCandidates([batido, tostada], mx(target), { ...basePrefs, excludedDishTypes: ['batido'] }, new Set());
     expect(ranked.map(c => c.recipe.id)).toEqual(['tostada']);
   });
 
   it('ranks a favorite above an equally-fitting non-favorite', () => {
-    const ranked = rankCandidates([batido, tostada], target, { ...basePrefs, favoriteRecipeIds: ['tostada'] }, new Set());
+    const ranked = rankCandidates([batido, tostada], mx(target), { ...basePrefs, favoriteRecipeIds: ['tostada'] }, new Set());
     expect(ranked[0].recipe.id).toBe('tostada');
   });
 
   it('penalizes repeating a dish type already used', () => {
     const usedDishTypes = new Map([['batido' as const, 1]]);
-    const ranked = rankCandidates([batido, tostada], target, basePrefs, new Set(), { usedDishTypes });
+    const ranked = rankCandidates([batido, tostada], mx(target), basePrefs, new Set(), { usedDishTypes });
     expect(ranked[0].recipe.id).toBe('tostada'); // batido penalized for repetition
   });
 
@@ -453,7 +459,7 @@ describe('recipe favorites / dislikes / dish-type prefs', () => {
         ingredientsText: [{ name: 'Arroz', quantity: 80 }],
       })),
     ];
-    const ranked = rankCandidates([conEspinacas, ...otras], target, { ...basePrefs, disliked: ['Espinaca'] }, new Set());
+    const ranked = rankCandidates([conEspinacas, ...otras], mx(target), { ...basePrefs, disliked: ['Espinaca'] }, new Set());
     expect(ranked.map(c => c.recipe.id)).not.toContain('espinacas');
   });
 
@@ -462,7 +468,7 @@ describe('recipe favorites / dislikes / dish-type prefs', () => {
       id: 'espinacas', name: 'Salteado de espinacas', exchanges: { HC: 2, PROT: 2, GRASA: 1 },
       ingredientsText: [{ name: 'Espinaca', quantity: 100 }],
     });
-    const ranked = rankCandidates([conEspinacas], target, { ...basePrefs, disliked: ['Espinaca'] }, new Set());
+    const ranked = rankCandidates([conEspinacas], mx(target), { ...basePrefs, disliked: ['Espinaca'] }, new Set());
     expect(ranked.map(c => c.recipe.id)).toEqual(['espinacas']);
   });
 
@@ -471,7 +477,7 @@ describe('recipe favorites / dislikes / dish-type prefs', () => {
   it('un favorito NO adelanta a una receta que encaja mucho mejor', () => {
     const clava = recipe({ id: 'clava', name: 'Encaja', exchanges: { HC: 2, PROT: 2, GRASA: 1 } });
     const favoritoMalo = recipe({ id: 'malo', name: 'Favorito grande', exchanges: { HC: 5, PROT: 4, GRASA: 3 } });
-    const ranked = rankCandidates([favoritoMalo, clava], target, { ...basePrefs, favoriteRecipeIds: ['malo'] }, new Set());
+    const ranked = rankCandidates([favoritoMalo, clava], mx(target), { ...basePrefs, favoriteRecipeIds: ['malo'] }, new Set());
     expect(ranked[0].recipe.id).toBe('clava');
   });
 });
@@ -500,8 +506,8 @@ describe('precisión del día generado', () => {
   // calorías y ya está, y todas las demás se quedan eliminadas". La comida sale
   // vacía a propósito, para que el entrenador lo vea y cambie el recetario.
   it('deja la comida vacía si ninguna receta llega, en vez de taparlo con extras', () => {
-    // Comida ≈ 23 int; el recetario solo tiene platos de 3, que a ×4 se quedan
-    // en 12 — a once del objetivo, muy por encima de lo que cierra el comodín.
+    // Comida ≈ 2.315 kcal; el recetario solo tiene platos de ~300, que a ×4 se
+    // quedan en 1.200 — muy por encima de lo que cierra el comodín.
     const pequenas = poolDe(20, { HC: 1, PROT: 1, GRASA: 1 });
     const pools = { 1: pequenas, 2: pequenas, 3: pequenas, 5: pequenas };
     const day = generateDay({
@@ -513,11 +519,12 @@ describe('precisión del día generado', () => {
   });
 
   it('admite la receta que se queda a un comodín del objetivo', () => {
-    // Platos de 5 int para una comida de ~23: a ×4 llegan a 20, se quedan a 3.
-    // Ese hueco es justo lo que cierran la ración extra y el acompañamiento, así
-    // que la receta vale (Dani, 2026-09-05: "si queda relativamente cerca de
-    // intercambios, se pueden añadir complementos para llegar").
-    const casi = poolDe(20, { HC: 2, PROT: 2, GRASA: 1 });
+    // Platos de ~525 kcal para una comida de ~2.315: a ×4 llegan a 2.100, se
+    // quedan a ~220 kcal. Ese hueco está dentro de lo que cierran la ración
+    // extra y el acompañamiento (300 kcal), así que la receta vale (Dani,
+    // 2026-09-05: "si queda relativamente cerca, se pueden añadir complementos
+    // para llegar").
+    const casi = poolDe(20, { HC: 2.25, PROT: 2, GRASA: 1 });
     const pools = { 1: casi, 2: casi, 3: casi, 5: casi };
     const day = generateDay({
       day: 'mon',
@@ -528,7 +535,7 @@ describe('precisión del día generado', () => {
   });
 
   it('con platos que SÍ llegan multiplicando, ninguna comida se queda vacía', () => {
-    // Los mismos 23 int, pero con platos de 7: ×3,25 llega, así que se sirven.
+    // La misma comida, pero con platos de ~700 kcal: ×3,25 llega, así que se sirven.
     const suficientes = poolDe(20, { HC: 3, PROT: 3, GRASA: 1 });
     const pools = { 1: suficientes, 2: suficientes, 3: suficientes, 5: suficientes };
     const day = generateDay({
@@ -546,7 +553,7 @@ describe('precisión del día generado', () => {
     const target: BudgetVec = { HC: 8, PROT: 5, GRASA: 2 };
     const grasiento = recipe({ id: 'grasiento', exchanges: { HC: 8, PROT: 5, GRASA: 5 } });
     const ajustado  = recipe({ id: 'ajustado',  exchanges: { HC: 7, PROT: 5, GRASA: 2 } });
-    const ranked = rankCandidates([grasiento, ajustado], target, basePrefs, new Set());
+    const ranked = rankCandidates([grasiento, ajustado], mx(target), basePrefs, new Set());
     expect(ranked[0].recipe.id).toBe('ajustado');
   });
 
@@ -556,7 +563,7 @@ describe('precisión del día generado', () => {
       { id: 'f1', mode: 'OMNIVORO' as const, category: 'HC' as const, label: '1 intercambio = 1 manzana' },
       { id: 'f2', mode: 'OMNIVORO' as const, category: 'HC' as const, label: '1 intercambio = 1 plátano' },
     ];
-    const comps = fillComplements(gap, frutas, 'OMNIVORO');
+    const comps = fillComplements(mx(gap), frutas, 'OMNIVORO');
     const total = comps.reduce((s, c) => s + c.quantity, 0);
     expect(total).toBeGreaterThanOrEqual(4.5); // antes se quedaba en 2
   });
@@ -637,5 +644,66 @@ describe('reajustarDia', () => {
     } as unknown as MenuDay;
     const r = reajustarDia({ dia, diet: DIETA, slots: SLOTS, foods: [], mode: 'OMNIVORO' });
     expect(r.target).toEqual({ HC: 10, PROT: 7, GRASA: 4 });
+  });
+});
+
+// Fallos del motor en intercambios que arregla la reescritura en kcal (26-10-2026).
+describe('motor en kcal', () => {
+  it('usa los gramos exactos de la receta, no sus intercambios redondeados', () => {
+    // 352 kcal reales que el índice apuntaba como 1 HC + 1 P + 1 G (≈ 300).
+    const r = recipe({ id: 'exacta', kcal: 352, macros: { prot: 30, carb: 32, fat: 12 }, exchanges: { HC: 1, PROT: 1, GRASA: 1 } });
+    const fit = bestScaleFit(r, { kcal: 352, p: 30, hc: 32, g: 12 });
+    expect(fit).toMatchObject({ scale: 1, score: 0 });
+    expect(fit!.macros.kcal).toBe(352);
+  });
+
+  it('un día con el total clavado pero la grasa cambiada por hidratos no está cuadrado', () => {
+    const objetivo: Macros = { kcal: 2000, p: 150, hc: 200, g: 66.7 };
+    const plato = (p: number, hc: number, g: number): MenuMeal => ({
+      id: 'mon_m1', slot: 3, name: 'Comida', recipeId: 'r', recipeName: 'r', scale: 1, kcal: 0, complements: [],
+      exch: { HC: 0, PROT: 0, GRASA: 0 }, macros: { kcal: p * 4 + hc * 4 + g * 9, p, hc, g },
+    });
+    const dia = (m: MenuMeal): MenuDay => ({ day: 'mon', dietId: 'd1', target: { HC: 0, PROT: 0, GRASA: 0 }, objetivo, meals: [m] });
+    expect(isDayWithinTolerance(dia(plato(150, 200, 66.7)))).toBe(true);
+    // −75 g de HC (−300 kcal) y +33 g de grasa (+300 kcal): mismo total.
+    expect(isDayWithinTolerance(dia(plato(150, 125, 100)))).toBe(false);
+  });
+
+  it('cuenta los intercambios mixtos del cupo de las dietas viejas', () => {
+    const conMixtos = diet({ budget: { HC: 4, PROT: 4, GRASA: 2, MIX_HC: 2, MIX_GRASA: 0 } });
+    const slots = [{ slot: 1, name: 'Única', pct: 100 }];
+    const day = generateDay({ day: 'mon', diet: conMixtos, slots, pools: { 1: [] }, foods: [], prefs: basePrefs, usedIds: new Set() });
+    expect(day.objetivo!.kcal).toBeGreaterThan(mx({ HC: 4, PROT: 4, GRASA: 2 }).kcal);
+  });
+
+  it('un menú generado con los ajustes de su semana no sale «desactualizado»', () => {
+    const d = diet({ id: 'd1', objetivo: { kcal: 2000, p: 150, hc: 200, g: 66 } });
+    const program: NutritionProgram = {
+      athleteId: 'a@x.com', startDate: '2026-10-05', phases: [],
+      cambiosSemana: [{ semana: 1, ajustes: [{ cat: 'HC', delta: 0, gramos: 30 }] }],
+    };
+    const conAjuste = aplicarAjustes(d, ajustesDeLaSemana(program, 1));
+    const menu = {
+      semanaPrograma: 1,
+      days: [{ day: 'mon' as const, dietId: 'd1', target: { HC: 0, PROT: 0, GRASA: 0 }, objetivo: objetivoDeDieta(conAjuste), meals: [] }],
+    };
+    expect(isMenuStale(menu, { mon: 'd1' }, [d], program)).toBe(false);
+    // Comparando con la dieta pelada (lo que hacía antes) saltaba en falso.
+    expect(isMenuStale(menu, { mon: 'd1' }, [d])).toBe(true);
+    // Si el coach cambia la dieta, sí.
+    expect(isMenuStale(menu, { mon: 'd1' }, [{ ...d, objetivo: { kcal: 2200, p: 150, hc: 250, g: 66 } }], program)).toBe(true);
+  });
+});
+
+describe('variedad con recetas que clavan el objetivo', () => {
+  it('una receta ya servida no deja fuera de banda a las demás', () => {
+    // «clava» encaja perfecta pero ya salió esta semana; «buena» se queda a
+    // ~140 kcal de error (más grasa, menos hidratos): fuera de la banda de 90
+    // si se mide desde «clava», pero muy por debajo del castigo por repetir.
+    const clava = recipe({ id: 'clava', name: 'Clava', kcal: 600, macros: { prot: 45, carb: 67.5, fat: 16.7 } });
+    const buena = recipe({ id: 'buena', name: 'Buena', kcal: 596, macros: { prot: 45, carb: 50, fat: 24 } });
+    const target: Macros = { kcal: 600, p: 45, hc: 67.5, g: 16.7 };
+    const ranked = rankCandidates([clava, buena], target, basePrefs, new Set(['clava']));
+    expect(ranked[0].recipe.id).toBe('buena');
   });
 });

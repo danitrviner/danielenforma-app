@@ -1866,7 +1866,9 @@ export type BudgetVec = { HC: number; PROT: number; GRASA: number };
 export interface MenuComplement {
   foodLabel: string;
   category: FoodCategory;
-  quantity: number; // exchanges, multiples of 0.25
+  /** Raciones del banco (la ración de referencia de ese alimento), múltiplos
+   *  de 0,25. Es el mismo número que antes eran «intercambios». */
+  quantity: number;
 }
 
 /** Más ración de algo que la receta YA lleva: "+60g de arroz" en el arroz con
@@ -1880,7 +1882,8 @@ export interface MenuRacionExtra {
   /** Cómo se le llama al atleta ("pollo"). */
   nombre: string;
   category: FoodCategory;
-  quantity: number; // intercambios, múltiplos de 0,25
+  /** Raciones del banco, múltiplos de 0,25 (antes «intercambios»). */
+  quantity: number;
   gramos: number;   // lo que hay que añadir, ya calculado
 }
 
@@ -1905,6 +1908,9 @@ export interface MenuMeal {
    *  antes de 09-2026, y en ese caso NO se recorta nada.
    */
   objetivo?: BudgetVec;
+  /** Lo mismo en kcal y gramos (10-2026). Manda sobre `objetivo`, que se sigue
+   *  escribiendo para binarios viejos. Leer con `objetivoDeLaComida`. */
+  objetivoMacros?: Macros;
   slot: number; // intakeType 1-5
   name: string; // "Desayuno", "Comida"...
   recipeId: string;
@@ -1914,7 +1920,10 @@ export interface MenuMeal {
   /** Receta base ajustada ingrediente a ingrediente (N-06) en vez de escalada
    *  entera: entonces `scale` es 1 y las cantidades salen de aquí. */
   ajuste?: AjusteDeReceta;
-  exch: BudgetVec;      // exchanges already scaled
+  exch: BudgetVec;      // exchanges already scaled (binarios viejos; manda `macros`)
+  /** kcal y gramos del PLATO ya escalado (10-2026), sin extras. Leer con
+   *  `macrosDelPlato`: en menús viejos se deduce de `exch`. */
+  macros?: Macros;
   kcal: number;
   /** Acompañamientos: alimentos sueltos que cierran lo que el plato no llega a
    *  cubrir. Plan B de `racionesExtra`. */
@@ -1933,6 +1942,9 @@ export interface MenuDay {
   dietId: string | null;
   dietName?: string;
   target: BudgetVec;   // snapshot of the linked diet's budget at generation time
+  /** Objetivo del día en kcal y gramos al generar (10-2026). Manda sobre
+   *  `target`. Leer con `objetivoDelDiaDeMenu`. */
+  objetivo?: Macros;
   meals: MenuMeal[];
 }
 

@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { registrarComidaDelMenu, quitarComidaDelMenu, yaRegistrada, type DiaDelPlan, type ComidaDelMenu } from './registroDesdeElMenu';
 import type { DietMeal } from '../types';
+import { macrosDeLineas } from './macrosLegado';
 
 const comida = (id: string, name: string, slot: number, items: DietMeal['items'] = []): DietMeal =>
   ({ id, name, slot, items });
@@ -9,7 +10,7 @@ const SANDWICH: ComidaDelMenu = {
   clave: 'wed_m4',
   nombre: 'Merienda',
   slot: 4,
-  intercambios: { HC: 1, PROT: 1, GRASA: 1 },
+  macros: { kcal: 320, p: 25, hc: 25, g: 11 },
   etiqueta: 'Sándwich de jamón serrano y tomate',
 };
 
@@ -23,6 +24,8 @@ describe('registrar una comida del menú en el plan', () => {
     const dia = registrarComidaDelMenu(diaVacio(), SANDWICH);
     const merienda = dia.meals.find(m => m.id === 'd4')!;
     expect(merienda.items.map(i => [i.category, i.quantity])).toEqual([['HC', 1], ['PROT', 1], ['GRASA', 1]]);
+    // Las kcal y gramos reales van en la primera línea; las demás, unidas a ella.
+    expect(macrosDeLineas(merienda.items)).toEqual({ kcal: 320, p: 25, hc: 25, g: 11 });
     expect(merienda.items.every(i => i.origenMenu === 'wed_m4')).toBe(true);
     expect(dia.doneItemIds).toEqual(['d4_0', 'd4_1', 'd4_2']);
   });
@@ -105,7 +108,7 @@ describe('cuando el menú manda los ítems ya resueltos', () => {
 
   const comidaConItems = {
     clave: 'lun_m1', nombre: 'Comida', slot: 3,
-    intercambios: { HC: 3, PROT: 1 },
+    macros: { kcal: 400, p: 25, hc: 75, g: 0 },
     etiqueta: 'Arroz con pollo',
     items,
   };

@@ -1,4 +1,5 @@
-import type { DietItem, DietMeal, FoodCategory } from '../types';
+import type { DietItem, DietMeal, Macros } from '../types';
+import { intercambiosDeMacros } from './macrosLegado';
 
 /**
  * Llevar una comida del menú semanal al registro del día ("Mi plan"), y
@@ -36,11 +37,11 @@ export interface ComidaDelMenu {
   /** Franja 1-5. Manda sobre el nombre al emparejar. */
   slot?: number;
   /** Lo que se come, ya escalado y con acompañamientos incluidos. */
-  intercambios: Partial<Record<FoodCategory, number>>;
+  macros: Macros;
   /** Con qué nombre aparece en el plan. */
   etiqueta: string;
   /** Los ítems ya resueltos, tal y como los construye
-   *  `itemsDeComidaDelMenu`. Cuando vienen, mandan sobre `intercambios`.
+   *  `itemsDeComidaDelMenu`. Cuando vienen, mandan sobre `macros`.
    *
    *  Por qué: reconstruirlos aquí desde el vector de intercambios los dejaba
    *  sin `originRecipeId` y sin gramaje, así que la misma comida salía en el
@@ -67,15 +68,21 @@ export function registrarComidaDelMenu(dia: DiaDelPlan, comida: ComidaDelMenu): 
 
   // Los ítems ya resueltos mandan; el vector de intercambios es el camino
   // antiguo, que se conserva para los llamantes que todavía no los construyen.
+  // Sin ítems (la ficha de la receta no cargó): la comida entra como una
+  // línea por grupo, unidas, con las kcal y gramos reales en la primera.
+  const enIntercambios = intercambiosDeMacros(comida.macros);
+  const lineaId = `menu_${comida.clave}`;
   const nuevos: DietItem[] = comida.items?.length
     ? comida.items.map(i => ({ ...i, origenMenu: comida.clave }))
-    : (Object.entries(comida.intercambios) as [FoodCategory, number][])
-        .filter(([, q]) => q > 0)
-        .map(([category, quantity]) => ({
+    : (['HC', 'PROT', 'GRASA'] as const)
+        .filter(category => enIntercambios[category] > 0)
+        .map((category, k) => ({
           category,
           foodLabel: comida.etiqueta,
-          quantity,
+          quantity: enIntercambios[category],
           origenMenu: comida.clave,
+          lineaId,
+          ...(k === 0 ? { nutrientes: { kcal: Math.round(comida.macros.kcal), p: comida.macros.p, hc: comida.macros.hc, g: comida.macros.g } } : {}),
         }));
   if (nuevos.length === 0) return dia;
 

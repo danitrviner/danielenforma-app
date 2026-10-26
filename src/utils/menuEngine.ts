@@ -2,86 +2,125 @@ import { type ListaDeMenu } from './accesoARecetas';
 import { aplicarSeleccion, type PaqueteDeRecetas, type SeleccionDeRecetas } from './seleccionDeRecetas';
 import { recetasOcultas, type AmbitoDeRegla, type ReglaDeReceta } from './reglasDeReceta';
 import {
-  Recipe, MealItem, Diet, WeekDay, DietType, DietMode, FoodCategory,
-  BudgetVec, MenuDay, MenuMeal, MenuComplement, MenuRacionExtra, HungerProfile, AjusteDeReceta,
+  Recipe, MealItem, Diet, WeekDay, DietType, DietMode, FoodCategory, Macros, NutritionProgram,
+  MenuDay, MenuMeal, MenuComplement, MenuRacionExtra, HungerProfile, AjusteDeReceta,
 } from '../types';
-import { addToPlaced, round2 } from './exchangeHelpers';
+import { round2 } from './exchangeHelpers';
 import { ingredientesEscalables } from './escalarIngrediente';
 import { superaElTiempo } from './tiempoDeReceta';
-import { quotaSplit } from './quotaSplit';
 import { slotPercents } from './slotWeights';
 import { ingredientMatch, violatesDietType } from './foodPrefs';
 import { violatesHealthConditions } from './dietaryRestrictions';
-import { exchangeToKcal, GRAMS_PER_EXCHANGE } from './nutritionConstants';
-import { exchangesFromMacros } from './exchangeRounding';
 import { ajustarReceta, sePuedeAjustar } from './ajusteDeReceta';
 import { simpleComplementsFor, encajaEnCategoria } from './menuComplements';
 import { dishType, DishType } from './dishTypes';
 import { fotoDeReceta } from './fotoDeReceta';
+import { kcalDeGramos, MACROS_CERO, redondearMacros, restarMacros, sinNegativos, sumarMacros, escalarMacros } from './macros';
+import { intercambiosDeMacros, macrosDeIntercambios, objetivoDeDieta } from './macrosLegado';
+import {
+  macrosDeLaComida, macrosDelPlato, macrosDeRaciones, macrosDeRacionesExtra, macrosDeAcompanamientos,
+  objetivoDeLaComida, objetivoDelDiaDeMenu, macrosDelDiaDeMenu,
+} from './menuMacros';
+import { ajustesDeLaSemana, aplicarAjustes, semanaDelPrograma } from './semanasNutricion';
+import { hoyIsoLocal } from './trainingWeek';
 
-// Pure, framework-free generator for recipe-first weekly menus. Reads its
-// daily point budget from the client's already-configured exchange-type diets
-// (Diet.budget + AthleteDietConfig.weeklySchedule) — see WeeklyMenuEditor.tsx
-// for how the pieces are wired together with Firestore reads.
+/* ═══════════════════════════════════════════════════════════════════════════
+   Generador de menús semanales por recetas, en kcal y gramos (10-2026)
+
+   Reescrito sobre el de intercambios (Dani, 26-10-2026). Lo que hace es lo
+   mismo —elegir un plato por comida, escalarlo, completar con más ración de la
+   propia receta o con un acompañamiento, y cuadrar el DÍA—, pero:
+
+     · Mide en gramos de proteína, hidratos y grasa y en kcal. El objetivo del
+       día es el de la dieta en kcal (`objetivoDeDieta`), con los ajustes de la
+       semana ya aplicados.
+     · Usa los gramos EXACTOS de cada receta. El motor anterior usaba los
+       intercambios del índice, redondeados a enteros: una receta de 352 kcal
+       contaba como 300, y escalada ×4 el error pasaba de 200 kcal por comida.
+     · Las kcal de cada comida son las de la receta, no las de sus intercambios.
+     · Cuenta los intercambios mixtos del cupo de las dietas viejas (antes el
+       objetivo los perdía y esos días salían cortos).
+     · La tolerancia del día mira también cada macro, no solo el total: un día
+       con 300 kcal de grasa de más y 300 de hidratos de menos ya no pasa por
+       «cuadrado».
+     · «Desactualizado» compara contra las dietas con los ajustes de la semana
+       del menú (antes saltaba en falso en cualquier semana con ajustes).
+
+   Cómo se mide el error: en kcal de cada macro (P y HC a 4 kcal/g, grasa a 9),
+   con más peso en la macro de la que menos pide la comida —es la que hay que
+   cuidar—. Las preferencias (favoritas, variedad…) se expresan en esas mismas
+   kcal, así que se comparan con el error nutricional en la misma escala.
+
+   Acompañamientos y raciones extra van en RACIONES del banco (utils/menuMacros).
+   ═══════════════════════════════════════════════════════════════════════════ */
 
 // Raciones a las que se puede servir una receta. El recetario está construido
 // en torno a platos de 400 kcal y una comida de un atleta de 2.600 kcal ronda
-// las 1.000: con el tope en ×2 solo el 23 % de las recetas llegaban, y el resto
-// se "arreglaba" recortando el plato y colgándole extras. Hasta ×4 llega el
-// 91 % (Dani, 2026-09-05: "si la comida es de 600 kcal, buscamos recetas de 600
-// o que se puedan multiplicar, punto").
+// las 1.000: hasta ×4 llega el 91 % de las recetas (Dani, 2026-09-05: "si la
+// comida es de 600 kcal, buscamos recetas de 600 o que se puedan multiplicar").
 export const MENU_SCALES = [
   0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3, 3.25, 3.5, 3.75, 4,
 ] as const;
 const WEEK_DAYS: WeekDay[] = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 
-// Cuánto peor que el mejor encaje puede ser una receta y seguir compitiendo por
-// preferencias (favoritos, variedad, tipo de plato). Ver `rankCandidates`.
-const BANDA_MINIMA = 0.5;   // intercambios
-const BANDA_PCT    = 0.15;  // …o el 15 % del objetivo de la franja, lo que sea mayor
-const FUERA_DE_BANDA = 100; // constante para que lo que no encaja quede siempre al final
-/** Tope de complementos encadenados por categoría (ver `fillComplements`). */
-const MAX_COMPLEMENTOS_POR_CATEGORIA = 3;
-/** Tope de acompañamientos de UNA comida, sumando las tres categorías. Sin él
- *  salían hasta nueve —tres por macro— y el plato llegaba escoltado por media
- *  despensa. Un plato admite un acompañamiento y un postre; más que eso ya no
- *  es una comida, es una lista de la compra (Dani, 2026-09-05). */
-const MAX_ACOMPANAMIENTOS_POR_COMIDA = 2;
-/** Y cuántos intercambios pueden sumar entre todos. El comodín son dos o tres
- *  puntos para ayudar a la receta a cuadrar, no media comida colgando del plato:
- *  la receta tiene que cubrir prácticamente el 100 %. Si con esto no se llega,
- *  el plato no era el adecuado y hay que buscar otro más alto en calorías — se
- *  avisa en vez de estirar el comodín. */
-const MAX_INTERCAMBIOS_ACOMPANAMIENTOS = 3;
-/** Lo lejos que puede quedarse una receta del objetivo de su franja y aun así
- *  valer. Es el mismo tope que el comodín a propósito: se admite justo lo que el
- *  comodín puede cerrar, ni un intercambio más (ver `bestScaleFit`). */
-const MARGEN_COMODIN = MAX_INTERCAMBIOS_ACOMPANAMIENTOS;
-/** Tope de ingredientes distintos de la receta a los que subir la ración. */
-const MAX_RACIONES_EXTRA_POR_COMIDA = 2;
-/** Mínimo para que subir la ración merezca la pena. Por debajo salían consejos
- *  que nadie puede seguir —"+3g de aceite", "+7g de arroz"—; lo que quede por
- *  debajo de esto se deja para el acompañamiento o cabe de sobra en la
- *  tolerancia del día. */
-const MIN_RACION_EXTRA = 0.5;
-/** Tope de raciones de UN mismo complemento — más que esto deja de ser realista.
- *  Al llegar aquí se pasa al siguiente alimento (ver `fillComplements`). */
-const MAX_RACIONES_POR_COMPLEMENTO = 2;
-/** Y el suelo: por debajo de media ración, no se pone nada.
- *
- *  "0,25 de plátano" no es un consejo, es ruido: nadie pesa un cuarto de
- *  plátano, y el atleta que lo lee o lo ignora o se queda con la sensación de
- *  que la app le pide cosas absurdas (Dani, 07-09-2026). Lo que queda por
- *  debajo de este suelo se deja sin cerrar a propósito: cabe de sobra en la
- *  tolerancia del día y, sobre todo, lo compensa el balance de la semana. */
-const MIN_COMPLEMENTO = 0.5;
-/** Unidad del sistema de intercambios: todo se redondea a múltiplos de 0,25. */
-const PASO_INTERCAMBIO = 0.25;
-/** Suelo y techo del peso por macro (ver `pesosPorCategoria`). */
-const PRESUPUESTO_MINIMO = 0.5;
+const KCAL_G = { p: 4, hc: 4, g: 9 } as const;
+type Macro = keyof typeof KCAL_G;
+const MACROS: Macro[] = ['hc', 'p', 'g'];
+
+// ── Encaje ──
+/** Las preferencias solo ordenan dentro de esta banda de error sobre el mejor
+ *  encaje: 50 kcal o el 15 % de la comida, lo que sea mayor. */
+const BANDA_MINIMA_KCAL = 50;
+const BANDA_PCT = 0.15;
+/** Lo que no encaja queda siempre al final, por mucha preferencia que tenga. */
+const FUERA_DE_BANDA = 1e6;
+/** Peso por macro: suelo de lo que pide y techo del peso (ver `pesosPorMacro`). */
+const MACRO_MINIMO_KCAL = 50;
 const PESO_MAXIMO = 4;
 /** Por debajo de esto, excluir los "no me gusta" dejaría la franja sin recetas. */
 const MIN_RECETAS_PARA_EXCLUIR = 5;
+
+// ── Preferencias, en kcal de error equivalentes ──
+const BONO_FAVORITA = 300;
+const BONO_TIPO_PREFERIDO = 150;
+const CASTIGO_NO_GUSTA = 200;
+const BONO_GUSTA = 50;
+const BONO_TUPPER = 50;
+const BONO_RAPIDAS = 150;
+const CASTIGO_BATCH_SIN_TUPPER = 400;
+const CASTIGO_REPETIDA = 500;
+const CASTIGO_TIPO_REPETIDO = 200;
+
+// ── Comodín (raciones extra y acompañamientos) ──
+/** Tope de acompañamientos de UNA comida. Un plato admite un acompañamiento y
+ *  un postre; más ya es una lista de la compra (Dani, 2026-09-05). */
+const MAX_ACOMPANAMIENTOS_POR_COMIDA = 2;
+/** Y cuántas kcal pueden sumar entre todos: el comodín ayuda a cuadrar, no es
+ *  media comida colgando del plato. */
+const MAX_KCAL_ACOMPANAMIENTOS = 300;
+/** Lo lejos que puede quedarse una receta del objetivo de su franja (a su
+ *  ración máxima) y aun así valer: justo lo que el comodín puede cerrar. */
+const MARGEN_COMODIN_KCAL = MAX_KCAL_ACOMPANAMIENTOS;
+/** Tope de ingredientes distintos de la receta a los que subir la ración. */
+const MAX_RACIONES_EXTRA_POR_COMIDA = 2;
+/** Mínimos en raciones del banco: por debajo salían consejos que nadie sigue
+ *  ("+3 g de aceite", "un cuarto de plátano"). */
+const MIN_RACION_EXTRA = 0.5;
+const MIN_COMPLEMENTO = 0.5;
+/** Tope de raciones de UN mismo acompañamiento. */
+const MAX_RACIONES_POR_COMPLEMENTO = 2;
+const MAX_COMPLEMENTOS_POR_MACRO = 3;
+/** Las raciones del banco van de 0,25 en 0,25. */
+const PASO_RACION = 0.25;
+
+// ── Tolerancias del día ──
+/** Un día se da por cuadrado si el total no se sale más de esto… */
+const TOLERANCIA_DIA_KCAL = 100;
+/** …y ninguna macro más de esto (o del 20 % de lo que pide esa macro). */
+const TOLERANCIA_MACRO_KCAL = 100;
+const TOLERANCIA_MACRO_PCT = 0.2;
+/** Con la semana ya pasada más de esto, el día sale sin acompañamientos. */
+const MARGEN_SEMANA_KCAL = 50;
 
 export interface MealSlotSpec {
   slot: number;   // intakeType 1-5
@@ -117,15 +156,6 @@ export interface GeneratorPrefs {
   seleccion?: SeleccionDeRecetas;
   /** Paquetes del coach a los que puede apuntar `seleccion`. */
   paquetes?: PaqueteDeRecetas[];
-}
-
-export interface MenuCandidate {
-  recipe: Recipe;
-  scale: number;
-  /** Receta base ajustada por ingredientes (N-06); `scale` es entonces 1. */
-  ajuste?: AjusteDeReceta;
-  exch: BudgetVec;
-  score: number; // lower is better
 }
 
 // ─── Meal slots from anamnesis ──────────────────────────────────────────────
@@ -223,148 +253,153 @@ export function recipeMatchesSlot(recipe: Recipe, slot: number): boolean {
   return true;
 }
 
-// Antes redondeaba cada franja a 0,25 de forma independiente (roundQuarter),
-// lo que podía desviar la suma de las franjas hasta n·0,125 respecto al
-// presupuesto real del día. quotaSplit reparte por peso (aquí, sl.pct) con
-// suma EXACTA — misma regla que usa el reparto de "Mi plan"/coach.
-export function slotTargets(dayBudget: BudgetVec, slots: MealSlotSpec[]): BudgetVec[] {
-  const weights = slots.map(sl => sl.pct);
-  const hc = quotaSplit(dayBudget.HC, weights);
-  const prot = quotaSplit(dayBudget.PROT, weights);
-  const grasa = quotaSplit(dayBudget.GRASA, weights);
-  return slots.map((_, i) => ({ HC: hc[i], PROT: prot[i], GRASA: grasa[i] }));
+
+export interface MenuCandidate {
+  recipe: Recipe;
+  scale: number;
+  /** Receta base ajustada por ingredientes (N-06); `scale` es entonces 1. */
+  ajuste?: AjusteDeReceta;
+  /** kcal y gramos del plato a esa escala. */
+  macros: Macros;
+  score: number; // lower is better
 }
 
-// ─── Recipe → exchanges ──────────────────────────────────────────────────────
+// ─── Vectores ────────────────────────────────────────────────────────────────
 
-// Recipes from the imported recetario carry a precomputed aggregate; coach/athlete builder recipes
-// carry structured, per-mode ingredients instead (see exchangeHelpers.ts).
-export function recipeExchanges(recipe: Recipe, mode: DietMode = 'OMNIVORO'): BudgetVec | null {
-  if (recipe.exchanges) {
-    return { HC: recipe.exchanges.HC ?? 0, PROT: recipe.exchanges.PROT ?? 0, GRASA: recipe.exchanges.GRASA ?? 0 };
+const VACIO: Macros = { ...MACROS_CERO };
+
+/** kcal que aporta cada macro (no el total de la etiqueta). */
+function kcalDeMacro(m: Macros, macro: Macro): number {
+  return m[macro] * KCAL_G[macro];
+}
+
+/** El objetivo de un vector de gramos: las kcal salen de los gramos. */
+function conKcal(m: { p: number; hc: number; g: number }): Macros {
+  return { kcal: kcalDeGramos(m), p: m.p, hc: m.hc, g: m.g };
+}
+
+/** Reparte unos gramos por pesos con suma EXACTA, al gramo (mayor resto). */
+function repartirGramos(total: number, pesos: number[]): number[] {
+  const n = pesos.length;
+  if (n === 0) return [];
+  const unidades = Math.round(total);
+  const suma = pesos.reduce((s, w) => s + w, 0);
+  if (unidades <= 0) return pesos.map(() => 0);
+  const exactos = suma > 0 ? pesos.map(w => (unidades * w) / suma) : pesos.map(() => unidades / n);
+  const out = exactos.map(Math.floor);
+  let resto = unidades - out.reduce((s, v) => s + v, 0);
+  const orden = exactos.map((v, i) => ({ i, f: v - Math.floor(v) })).sort((a, b) => b.f - a.f || a.i - b.i);
+  for (let k = 0; resto > 0; k++, resto--) out[orden[k % n].i] += 1;
+  return out;
+}
+
+// Reparte el objetivo del día entre las franjas por su peso (`sl.pct`), macro a
+// macro y con suma exacta al gramo.
+export function slotTargets(objetivoDia: Macros, slots: MealSlotSpec[]): Macros[] {
+  const pesos = slots.map(sl => sl.pct);
+  const p = repartirGramos(objetivoDia.p, pesos);
+  const hc = repartirGramos(objetivoDia.hc, pesos);
+  const g = repartirGramos(objetivoDia.g, pesos);
+  return slots.map((_, i) => conKcal({ p: p[i], hc: hc[i], g: g[i] }));
+}
+
+// ─── Receta → kcal y gramos ──────────────────────────────────────────────────
+
+const basePorReceta = new WeakMap<Recipe, Map<DietMode, Macros | null>>();
+
+/**
+ * kcal y gramos de una ración de la receta. Por orden de confianza: los gramos
+ * del recetario (`macros`, exactos), los ingredientes del constructor en el
+ * modo de dieta del atleta (por sus raciones del banco) y, en recetas viejas,
+ * sus intercambios. Null si no hay de dónde sacarlo.
+ */
+export function macrosBaseDeReceta(recipe: Recipe, mode: DietMode = 'OMNIVORO'): Macros | null {
+  let porModo = basePorReceta.get(recipe);
+  if (!porModo) { porModo = new Map(); basePorReceta.set(recipe, porModo); }
+  if (porModo.has(mode)) return porModo.get(mode)!;
+  let m: Macros | null = null;
+  const mac = recipe.macros;
+  if (mac && (mac.prot || mac.carb || mac.fat)) {
+    const g = { p: mac.prot ?? 0, hc: mac.carb ?? 0, g: mac.fat ?? 0 };
+    m = { kcal: recipe.kcal && recipe.kcal > 0 ? recipe.kcal : kcalDeGramos(g), ...g };
+  } else if ((recipe.ingredients ?? []).length > 0) {
+    const relevantes = recipe.ingredients.filter(i => i.mode === mode);
+    const usar = relevantes.length > 0 ? relevantes : recipe.ingredients;
+    const v: Partial<Record<FoodCategory, number>> = {};
+    for (const ing of usar) v[ing.category] = (v[ing.category] ?? 0) + (ing.quantity ?? 0);
+    m = macrosDeIntercambios(v);
+  } else if (recipe.exchanges) {
+    m = macrosDeIntercambios(recipe.exchanges);
   }
-  const ingredients = recipe.ingredients ?? [];
-  if (ingredients.length === 0) return null;
-  const relevant = ingredients.filter(i => i.mode === mode);
-  const use = relevant.length > 0 ? relevant : ingredients; // fall back to whatever mode the recipe has
-  const p: Record<FoodCategory, number> = { HC: 0, PROT: 0, GRASA: 0, MIX_HC: 0, MIX_GRASA: 0 };
-  for (const ing of use) addToPlaced(p, ing.category, ing.quantity);
-  return { HC: p.HC, PROT: p.PROT, GRASA: p.GRASA };
+  if (m && m.kcal <= 0) m = null;
+  porModo.set(mode, m);
+  return m;
 }
 
-function complementExchanges(c: MenuComplement): BudgetVec {
-  const p: Record<FoodCategory, number> = { HC: 0, PROT: 0, GRASA: 0, MIX_HC: 0, MIX_GRASA: 0 };
-  addToPlaced(p, c.category, c.quantity);
-  return { HC: p.HC, PROT: p.PROT, GRASA: p.GRASA };
-}
-
-function sumVec(a: BudgetVec, b: BudgetVec): BudgetVec {
-  return { HC: a.HC + b.HC, PROT: a.PROT + b.PROT, GRASA: a.GRASA + b.GRASA };
-}
-
-function mealTotalExch(meal: MenuMeal): BudgetVec {
-  return totalConExtras(meal.exch, meal.complements, meal.racionesExtra);
-}
-
-/** Lo que suma una comida: el plato, más la ración extra de sus propios
- *  ingredientes, más los acompañamientos. Exportado porque la pantalla del
- *  atleta recalcula las kcal cada vez que se toca algo. */
+/** Lo que suma una comida: el plato, la ración extra de sus ingredientes y los
+ *  acompañamientos. Exportado porque la pantalla del atleta lo recalcula cada
+ *  vez que se toca algo. */
 export function totalConExtras(
-  exch: BudgetVec,
+  plato: Macros,
   complements: MenuComplement[],
   raciones?: MenuRacionExtra[],
-): BudgetVec {
-  const conAcompanamientos = complements.reduce((acc, c) => sumVec(acc, complementExchanges(c)), exch);
-  return sumVec(conAcompanamientos, racionesExtraExch(raciones));
+): Macros {
+  return sumarMacros(plato, macrosDeAcompanamientos(complements), macrosDeRacionesExtra(raciones));
 }
 
-// ─── Scaling & ranking ───────────────────────────────────────────────────────
+// ─── Escala y encaje ─────────────────────────────────────────────────────────
 
-// Best-fit scale within MENU_SCALES (0.5x-2x). Returns null when even the
-// widest scale in range can't reasonably approach the target — i.e. the
-// recipe's natural portion is more than 2x too big or too small — so it gets
-// discarded from candidacy entirely rather than served as a bad match.
+/** Peso de cada macro en el error: la media de lo que pide la comida entre lo
+ *  que pide esa macro. Cuanto menos pide una macro, más caro desviarse en ella
+ *  (pasarse 40 g de grasa en una dieta de 70 es mucho peor que 40 g de
+ *  hidratos en una de 300). El suelo evita dividir por casi cero. */
+function pesosPorMacro(objetivo: Macros): Record<Macro, number> {
+  const kc = MACROS.map(m => kcalDeMacro(objetivo, m));
+  const media = kc.reduce((s, v) => s + v, 0) / 3;
+  if (media <= 0) return { p: 1, hc: 1, g: 1 };
+  const peso = (v: number) => Math.min(PESO_MAXIMO, media / Math.max(v, MACRO_MINIMO_KCAL));
+  return { hc: peso(kc[0]), p: peso(kc[1]), g: peso(kc[2]) };
+}
+
+/** Error ponderado, en kcal, entre lo puesto y el objetivo. */
+function errorPonderado(objetivo: Macros, puesto: Macros, pesos = pesosPorMacro(objetivo)): number {
+  return round2(MACROS.reduce((s, m) => s + pesos[m] * Math.abs(kcalDeMacro(objetivo, m) - kcalDeMacro(puesto, m)), 0));
+}
+
+/**
+ * La mejor escala de MENU_SCALES para acercar la receta al objetivo. Null si ni
+ * a su ración máxima se acerca lo bastante (le faltan más kcal de las que puede
+ * cerrar el comodín) o si a media ración ya se pasa: lo que sobra no lo quita
+ * nadie. Las recetas base vinculadas (N-06) se ajustan ingrediente a
+ * ingrediente en vez de escalarse.
+ */
 export function bestScaleFit(
-  recipe: Recipe, target: BudgetVec, mode: DietMode = 'OMNIVORO',
-): { scale: number; exch: BudgetVec; score: number; ajuste?: AjusteDeReceta } | null {
-  // Receta base con ingredientes vinculados (N-06): en vez de escalarla entera
-  // se mueven sus ingredientes palanca dentro de sus rangos. Si así no encaja,
-  // se descarta y el generador elige otra (no se cae a la escala entera).
+  recipe: Recipe, target: Macros, mode: DietMode = 'OMNIVORO',
+): { scale: number; macros: Macros; score: number; ajuste?: AjusteDeReceta } | null {
+  if (target.kcal <= 0) return null;
   const vinculados = recipe.vinculo?.ingredientes;
   if (sePuedeAjustar(vinculados)) {
-    const objetivo = { p: target.PROT * GRAMS_PER_EXCHANGE.PROT, hc: target.HC * GRAMS_PER_EXCHANGE.HC, g: target.GRASA * GRAMS_PER_EXCHANGE.GRASA };
-    const r = ajustarReceta(vinculados, objetivo, (recipe.ingredientsText ?? []).map(i => i.name));
+    const r = ajustarReceta(vinculados, { p: target.p, hc: target.hc, g: target.g }, (recipe.ingredientsText ?? []).map(i => i.name));
     if (!r.encaja) return null;
-    const exch = exchangesFromMacros({ carb: r.total.hc, prot: r.total.p, fat: r.total.g }, GRAMS_PER_EXCHANGE);
-    const pesosAjuste = pesosPorCategoria(target);
-    const score = round2(
-      pesosAjuste.HC * Math.abs(target.HC - exch.HC)
-      + pesosAjuste.PROT * Math.abs(target.PROT - exch.PROT)
-      + pesosAjuste.GRASA * Math.abs(target.GRASA - exch.GRASA),
-    );
-    return { scale: 1, exch, score, ajuste: { gramos: r.gramos, cambios: r.cambios } };
+    const macros: Macros = { kcal: r.total.kcal, p: r.total.p, hc: r.total.hc, g: r.total.g };
+    return { scale: 1, macros, score: errorPonderado(target, macros), ajuste: { gramos: r.gramos, cambios: r.cambios } };
   }
-  const base = recipeExchanges(recipe, mode);
+  const base = macrosBaseDeReceta(recipe, mode);
   if (!base) return null;
-  const baseTotal = base.HC + base.PROT + base.GRASA;
-  const targetTotal = target.HC + target.PROT + target.GRASA;
-  if (baseTotal <= 0 || targetTotal <= 0) return null;
+  const ideal = target.kcal / base.kcal;
+  if (ideal < MENU_SCALES[0]) return null;
+  const maxima = MENU_SCALES[MENU_SCALES.length - 1];
+  if (ideal > maxima && base.kcal * maxima < target.kcal - MARGEN_COMODIN_KCAL) return null;
 
-  const idealScale = targetTotal / baseTotal;
-
-  // Un plato que a MEDIA ración ya se pasa del objetivo se descarta siempre: lo
-  // que sobra no lo quita nadie.
-  if (idealScale < MENU_SCALES[0]) return null;
-
-  // Por arriba hay un margen, y solo uno: el del comodín. Una receta que a su
-  // ración máxima se queda a tres intercambios o menos del objetivo SÍ vale,
-  // porque ese hueco es exactamente lo que cierran la ración extra y el
-  // acompañamiento. Más lejos, se descarta.
-  //
-  // Este margen sustituye al viejo `permitirFueraDeRango`, que readmitía a TODAS
-  // las recetas cuando ninguna llegaba y servía la más grande fiando el resto a
-  // los complementos: de ahí salía el plato escoltado por media despensa. La
-  // diferencia está en que aquí el margen está acotado por el mismo tope que el
-  // comodín, así que por construcción no puede producir aquello (Dani,
-  // 2026-09-05: "si esa receta no llega pero queda relativamente cerca de
-  // intercambios, se pueden añadir complementos para llegar").
-  const escalaMaxima = MENU_SCALES[MENU_SCALES.length - 1];
-  const alcanzaConMargen = baseTotal * escalaMaxima >= targetTotal - MARGEN_COMODIN;
-  if (idealScale > escalaMaxima && !alcanzaConMargen) return null;
-
-  // Distancia L1 PONDERADA por categoría. `fitScore` mide en intercambios
-  // absolutos y trata igual los tres macros; con una dieta de definición
-  // (20 HC / 14 PROT / 9 GRASA) eso significa que pasarse 4 de grasa —casi la
-  // mitad del presupuesto del día— puntúa igual que pasarse 4 de HC, que es un
-  // 20 %. El resultado era días que clavaban HC y proteína y se iban a 13/9 de
-  // grasa (Dani, 24-08). El peso sube en la categoría con menos presupuesto,
-  // que es justo la que hay que cuidar.
-  const pesos = pesosPorCategoria(target);
-  let best: { scale: number; exch: BudgetVec; score: number } | null = null;
+  const pesos = pesosPorMacro(target);
+  let mejor: { scale: number; macros: Macros; score: number } | null = null;
   for (const scale of MENU_SCALES) {
-    const exch: BudgetVec = { HC: round2(base.HC * scale), PROT: round2(base.PROT * scale), GRASA: round2(base.GRASA * scale) };
-    const score = round2(
-      pesos.HC * Math.abs(target.HC - exch.HC)
-      + pesos.PROT * Math.abs(target.PROT - exch.PROT)
-      + pesos.GRASA * Math.abs(target.GRASA - exch.GRASA),
-    );
-    if (!best || score < best.score) best = { scale, exch, score };
+    const macros = redondearMacros(escalarMacros(base, scale));
+    const score = errorPonderado(target, macros, pesos);
+    if (!mejor || score < mejor.score) mejor = { scale, macros, score };
   }
-  return best;
+  return mejor;
 }
-
-// Peso de cada macro en la distancia: la media del objetivo dividida entre lo
-// que pide esa categoría. Con los tres macros iguales da 1 y se comporta como
-// la L1 de siempre; cuanto más pequeño es el presupuesto de una categoría, más
-// caro sale desviarse en ella. El suelo evita dividir por ~0 en una categoría
-// que la dieta no usa.
-function pesosPorCategoria(target: BudgetVec): BudgetVec {
-  const media = (target.HC + target.PROT + target.GRASA) / 3;
-  if (media <= 0) return { HC: 1, PROT: 1, GRASA: 1 };
-  const peso = (v: number) => Math.min(PESO_MAXIMO, media / Math.max(v, PRESUPUESTO_MINIMO));
-  return { HC: peso(target.HC), PROT: peso(target.PROT), GRASA: peso(target.GRASA) };
-}
-
 
 export interface RankOptions {
   /** Días a los que sirve la elección: una receta escondida en cualquiera de ellos no sale. */
@@ -377,7 +412,7 @@ export interface RankOptions {
   /** Se está eligiendo para cocinar una vez y comer durante la semana. Distinto
    *  de `needsTupper`, que solo dice que ESA comida se la lleva de casa: aquí
    *  TODO se cocina por adelantado, así que un plato que solo esté bueno recién
-   *  hecho es mala elección aunque encaje de intercambios. */
+   *  hecho es mala elección aunque encaje de kcal. */
   batch?: boolean;
   mode?: DietMode;
   // Dish types already placed (per day and/or week) with how many times — used to
@@ -385,17 +420,15 @@ export interface RankOptions {
   usedDishTypes?: ReadonlyMap<DishType, number>;
 }
 
-// Filtros duros (nunca salen): alergias, condiciones de salud, incompatibilidad con el tipo de dieta,
-// tiempo de cocina por encima del máximo, recetas marcadas "no me gusta", tipos
-// de plato excluidos y —desde 24-08— los ALIMENTOS marcados "no me gusta" en
-// Preferencias alimentarias, con reserva si dejaran la franja sin recetas.
-// Señales blandas (solo ordenan): favoritos y tipos de plato preferidos, alimentos
-// que le gustan, tupper, repetición de receta (`usedIds`) y de tipo de plato.
-// Las señales blandas NUNCA adelantan a una receta que encaja mejor: solo
-// ordenan dentro de la banda de tolerancia (ver `BANDA_MINIMA`/`BANDA_PCT`).
+// Filtros duros (nunca salen): alergias, condiciones de salud, tipo de dieta,
+// tiempo de cocina, recetas «no me gusta», tipos de plato excluidos y los
+// ALIMENTOS «no me gusta» (con reserva si dejaran la franja sin recetas).
+// Señales blandas (solo ordenan, dentro de la banda de buen encaje):
+// favoritas, tipos de plato preferidos, alimentos que le gustan, tupper,
+// repetición de receta y de tipo de plato.
 export function rankCandidates(
   pool: Recipe[],
-  target: BudgetVec,
+  target: Macros,
   prefs: GeneratorPrefs,
   usedIds: ReadonlySet<string>,
   opts: RankOptions = {},
@@ -407,8 +440,6 @@ export function rankCandidates(
   const preferredDish = new Set(prefs.preferredDishTypes ?? []);
 
   const ocultasPorElCoach = recetasOcultas(prefs.recetasOcultas, opts.ambito ?? 'menu', opts.dias);
-  // Los filtros del coach para esta dieta (o la lista del menú de siempre). En
-  // un día «con tiempo» tampoco cuenta el tope de minutos del atleta.
   const { pool: delaLista, conTiempo } = aplicarSeleccion(pool, prefs, { dietId: opts.dietId, dias: opts.dias, ambito: opts.ambito });
   const permitidas = delaLista.filter(r =>
     !disliked.has(r.id) &&
@@ -419,218 +450,143 @@ export function rankCandidates(
     !violatesDietType(r, prefs.dietType) &&
     !superaElTiempo(r, conTiempo ? undefined : prefs.cookingMaxTime),
   );
-
-  // Los alimentos marcados "no me gusta" en Preferencias alimentarias se
-  // EXCLUYEN, no se penalizan. Antes sumaban +2 al `fitScore` —la misma escala
-  // que la distancia en intercambios— así que un plato con espinacas seguía
-  // saliendo si encajaba 2 puntos mejor que el resto: al atleta le llegaba en
-  // la dieta justo lo que había dicho que no quería. Con 8.850 recetas casi
-  // siempre hay alternativa; si un atleta descarta tanto que la franja se
-  // quedaría sin nada, se vuelven a admitir (una comida con algo que no le
-  // encanta es mejor que una comida vacía) y el coach lo ve en el borrador.
+  // Los alimentos «no me gusta» se EXCLUYEN; solo si dejaran la franja casi
+  // vacía se vuelven a admitir, al final de la lista.
   const sinNoDeseados = permitidas.filter(r => !prefs.disliked.some(f => ingredientMatch(r, f)));
   const safe = sinNoDeseados.length >= MIN_RECETAS_PARA_EXCLUIR ? sinNoDeseados : permitidas;
 
-  // Se calcula PRIMERO el encaje puro de cada receta, sin preferencias. Antes
-  // las preferencias se sumaban directamente al `fitScore`, que es distancia L1
-  // en intercambios: un favorito (−3) que se pasaba 3 intercambios empataba con
-  // uno que cuadraba clavado, y una receta ya usada (+5) perdía contra
-  // cualquier cosa. Eso es lo que descuadraba los días enteros (Dani, 24-08):
-  // las señales blandas competían de tú a tú con la precisión nutricional.
+  // Primero el encaje puro de cada receta, sin preferencias: una receta que ni
+  // a su ración máxima llega queda eliminada (no se estira el comodín).
   type ConEncaje = { recipe: Recipe; fit: NonNullable<ReturnType<typeof bestScaleFit>> };
-
-  // Una receta que no llega al objetivo de la franja ni a su ración máxima queda
-  // ELIMINADA, sin excepción. Antes había un reintento que las readmitía a todas
-  // cuando ninguna llegaba, y servía el plato más grande disponible fiando el
-  // resto a los complementos: eso es lo que producía "arroz con pollo + cinco
-  // acompañamientos". Si para una comida de 1.000 kcal no hay ningún plato que
-  // llegue —ni multiplicado por cuatro—, la respuesta es buscar una receta más
-  // alta en calorías, no estirar el comodín (Dani, 2026-09-05). La comida sale
-  // vacía y el editor del entrenador lo enseña, en vez de taparlo.
   const conEncaje: ConEncaje[] = safe
     .map(recipe => ({ recipe, fit: bestScaleFit(recipe, target, mode) }))
     .filter((c): c is ConEncaje => c.fit != null);
   if (conEncaje.length === 0) return [];
 
-  // Banda de tolerancia: las preferencias solo ordenan DENTRO de las recetas
-  // que ya encajan bien. Se mide en intercambios y crece con el tamaño de la
-  // franja (un desayuno de 3 int. no admite el mismo error absoluto que una
-  // comida de 10), con un suelo para que en franjas pequeñas siga habiendo
-  // variedad donde elegir.
-  const objetivoTotal = target.HC + target.PROT + target.GRASA;
-  const mejorEncaje = Math.min(...conEncaje.map(c => c.fit.score));
-  const banda = Math.max(BANDA_MINIMA, objetivoTotal * BANDA_PCT);
-  const limite = mejorEncaje + banda;
+  // La banda se mide desde la mejor receta AÚN NO USADA: si se midiera desde
+  // una ya servida (p. ej. una receta base que se ajusta y clava el objetivo),
+  // todo lo demás quedaría fuera de banda y la repetida ganaría siempre pese a
+  // su castigo.
+  const frescas = conEncaje.filter(c => !usedIds.has(c.recipe.id));
+  const mejorEncaje = Math.min(...(frescas.length > 0 ? frescas : conEncaje).map(c => c.fit.score));
+  const limite = mejorEncaje + Math.max(BANDA_MINIMA_KCAL, target.kcal * BANDA_PCT);
 
   const scored: MenuCandidate[] = [];
   for (const { recipe, fit } of conEncaje) {
     let score = fit.score;
     const dt = dishType(recipe);
-    if (favorites.has(recipe.id)) score -= 3;            // favorites: appear much more
-    if (preferredDish.has(dt)) score -= 1.5;             // preferred dish types: prioritized
-    // Sigue penalizando por si la franja cayó en la reserva de arriba (recetario
-    // demasiado restringido): dentro de lo que hay, lo no deseado va al final.
-    if (prefs.disliked.some(f => ingredientMatch(recipe, f))) score += 2;
-    if (prefs.liked.some(f => ingredientMatch(recipe, f))) score -= 0.5;
-    if (opts.needsTupper && recipe.tupper) score -= 0.5;
-    // Quien pidió Rápidas las recibe antes. El resto del recetario sigue
-    // entrando: un filtro duro dejaría el menú en 79 platos y se repetiría.
-    // Con ≤15 min ya no hace falta: el filtro de tiempo solo deja las Rápidas.
-    if (prefs.quiereRapidas && !conTiempo && recipe.basica) score -= 1.5;
-    // Penalización fuerte, no exclusión: si el recetario disponible para esa
-    // franja tuviera pocos platos de tupper, excluirlos dejaría la comida vacía,
-    // que es peor que proponer algo que aguanta regular. Con +4 solo sale un no-
-    // tupper cuando de verdad no hay alternativa razonable.
-    if (opts.batch && !recipe.tupper) score += 4;
-    if (usedIds.has(recipe.id)) score += 5;              // strong nudge away, not a hard block
+    if (favorites.has(recipe.id)) score -= BONO_FAVORITA;
+    if (preferredDish.has(dt)) score -= BONO_TIPO_PREFERIDO;
+    if (prefs.disliked.some(f => ingredientMatch(recipe, f))) score += CASTIGO_NO_GUSTA;
+    if (prefs.liked.some(f => ingredientMatch(recipe, f))) score -= BONO_GUSTA;
+    if (opts.needsTupper && recipe.tupper) score -= BONO_TUPPER;
+    if (prefs.quiereRapidas && !conTiempo && recipe.basica) score -= BONO_RAPIDAS;
+    if (opts.batch && !recipe.tupper) score += CASTIGO_BATCH_SIN_TUPPER;
+    if (usedIds.has(recipe.id)) score += CASTIGO_REPETIDA;
     const dishReuse = opts.usedDishTypes?.get(dt) ?? 0;
-    if (dishReuse > 0) score += 2 * dishReuse;           // spread dish types across the day/week
-    // Fuera de banda no se descarta —el buscador de alternativas y las franjas
-    // con recetario pobre necesitan la lista larga— pero nunca puede adelantar
-    // a algo que sí encaja, por muy favorito que sea.
+    if (dishReuse > 0) score += CASTIGO_TIPO_REPETIDO * dishReuse;
     if (fit.score > limite) score += FUERA_DE_BANDA;
-    scored.push({ recipe, scale: fit.scale, exch: fit.exch, score, ...(fit.ajuste ? { ajuste: fit.ajuste } : {}) });
+    scored.push({ recipe, scale: fit.scale, macros: fit.macros, score, ...(fit.ajuste ? { ajuste: fit.ajuste } : {}) });
   }
   return scored.sort((a, b) => a.score - b.score);
 }
 
-// ─── Complements ─────────────────────────────────────────────────────────────
+// ─── Raciones y acompañamientos ──────────────────────────────────────────────
 
-// Closes positive shortfalls only (never trims an overshoot) with simple,
-// ready-to-eat foods — never invents an unrealistic recipe scale to chase the
-// last 0.25 of a category. Capped at 2 exchanges of a single complement.
+/** A qué macro se imputa un alimento de esa categoría (los mixtos, a la suya). */
+function macroDe(category: FoodCategory): Macro {
+  if (category === 'HC' || category === 'MIX_HC') return 'hc';
+  if (category === 'GRASA' || category === 'MIX_GRASA') return 'g';
+  return 'p';
+}
+
+/** ¿Un alimento de `origen` aporta a la macro `destino`? */
+function aportaA(origen: FoodCategory, destino: Macro): boolean {
+  return macrosDeRaciones(origen, 1)[destino] > 0;
+}
+
+/** Cuántas raciones de esa categoría caben en el hueco, contando TODO lo que
+ *  aporta (un mixto arrastra proteína). A la baja, en pasos de 0,25: pasarse es
+ *  peor que quedarse corto, lo que sobra no lo quita nadie. */
+function cabenRaciones(category: FoodCategory, hueco: Macros): number {
+  const una = macrosDeRaciones(category, 1);
+  let tope = Infinity;
+  for (const m of MACROS) if (una[m] > 0) tope = Math.min(tope, hueco[m] / una[m]);
+  if (!Number.isFinite(tope)) return 0;
+  return Math.max(0, Math.floor(tope / PASO_RACION + 1e-9) * PASO_RACION);
+}
+
+// Cierra lo que falta (nunca recorta un exceso) con alimentos sencillos del
+// banco, en raciones de 0,25. Se llena un alimento hasta 2 raciones antes de
+// pasar a otro, y el orden es fijo (mismo menú, mismos extras).
 export function fillComplements(
-  gap: BudgetVec, foods: MealItem[], mode: DietMode, conditions?: readonly number[],
+  gap: Macros, foods: MealItem[], mode: DietMode, conditions?: readonly number[],
 ): MenuComplement[] {
-  // Los extras salen del banco de intercambios, no del recetario, así que el
-  // filtro por condición es el de `menuComplements` (por nombre) y no el de
-  // códigos. Sin esto, al celíaco al que ya no se le pone seitán se le seguía
-  // colgando "40g de pan" al lado del plato.
   const simple = simpleComplementsFor(foods, conditions).filter(f => f.mode === mode);
-  const cats: (keyof BudgetVec)[] = ['HC', 'PROT', 'GRASA'];
   const result: MenuComplement[] = [];
-  for (const cat of cats) {
-    let need = gap[cat];
-    if (need < MIN_COMPLEMENTO) continue;
-    const candidates = simple.filter(f => encajaEnCategoria(f, cat));
+  let hueco = sinNegativos(gap);
+  const CAT_DE: Record<Macro, 'HC' | 'PROT' | 'GRASA'> = { hc: 'HC', p: 'PROT', g: 'GRASA' };
+  for (const m of MACROS) {
+    const candidates = simple.filter(f => encajaEnCategoria(f, CAT_DE[m]));
     if (candidates.length === 0) continue;
-    // Antes se ponía UN solo complemento tapado a 2 intercambios: un hueco de 4
-    // se quedaba a medias y el día seguía descuadrado sin decirlo. Ahora se
-    // encadenan hasta cerrar el hueco, con alimentos distintos mientras los
-    // haya (3 raciones de pan es peor consejo que pan + fruta + arroz) y un
-    // tope de seguridad para no escribir una lista absurda si el hueco es
-    // enorme por un fallo de configuración de la dieta.
-    // El alimento concreto se elige por ORDEN, no al azar. Antes era
-    // `Math.random()`: regenerar el mismo menú dos veces daba extras distintos
-    // sin que nada hubiera cambiado, y no había forma de reproducir un menú para
-    // depurarlo. Ahora es siempre el mismo para la misma situación — y sobre
-    // todo, ya no importa tanto acertar: el atleta puede cambiarlo (ver
-    // `complementosDisponibles`, que le abre el banco entero).
     const usados = new Set<string>();
-    for (let n = 0; n < MAX_COMPLEMENTOS_POR_CATEGORIA && need >= MIN_COMPLEMENTO; n++) {
-      // `frescos` ENCOGE en cada vuelta (se le quita el que se acaba de usar),
-      // así que indexarla con el contador de la vuelta se saltaba alimentos: en
-      // la segunda vuelta n=1 sobre una lista ya sin el primero apuntaba al
-      // tercero. Mientras queden frescos se coge el primero; solo al agotarlos
-      // se rota sobre la lista completa.
+    for (let n = 0; n < MAX_COMPLEMENTOS_POR_MACRO; n++) {
       const frescos = candidates.filter(f => !usados.has(f.label));
       const food = frescos.length > 0 ? frescos[0] : candidates[n % candidates.length];
-      // Se LLENA cada alimento hasta una ración razonable antes de pasar al
-      // siguiente, en vez de repartir el hueco a partes iguales entre los tres.
-      // Repartiendo, un hueco de 0,75 salía como tres extras de 0,25 —"cómete un
-      // cuarto de tortita de arroz, un cuarto de yogur y un cuarto de dátiles"—
-      // y un día entero podía acabar con quince extras minúsculos. Así, 0,75 es
-      // un solo alimento y solo se encadena cuando de verdad no cabe en uno.
-      // En pasos de 0,25, la unidad del sistema de intercambios: con pasos de
-      // 0,5 el resto que no llegaba a media ración se perdía y el día acababa
-      // por debajo de su presupuesto sin que nada lo dijera.
-      const aPaso = (v: number) => Math.floor(v / PASO_INTERCAMBIO) * PASO_INTERCAMBIO;
-      const qty = Math.min(MAX_RACIONES_POR_COMPLEMENTO, aPaso(need));
+      // Lo que cabe de ese alimento SIN pasarse en ninguna macro…
+      const caben = cabenRaciones(food.category, hueco);
+      // …acotado a lo que de verdad falta de la macro que se está cerrando.
+      const faltan = Math.floor((hueco[m] / macrosDeRaciones(food.category, 1)[m]) / PASO_RACION + 1e-9) * PASO_RACION;
+      const qty = Math.min(MAX_RACIONES_POR_COMPLEMENTO, caben, faltan);
       if (qty < MIN_COMPLEMENTO) break;
       usados.add(food.label);
-      result.push({ foodLabel: food.label, category: food.category, quantity: qty });
-      need = round2(need - qty);
+      result.push({ foodLabel: food.label, category: food.category, quantity: round2(qty) });
+      hueco = sinNegativos(restarMacros(hueco, macrosDeRaciones(food.category, qty)));
     }
   }
   return result;
 }
 
-/**
- * ¿Hay que dejar el día sin acompañamientos porque la semana ya va sobrada?
- *
- * Un extra existe para cerrar lo que le falta al día. Pero el presupuesto que
- * de verdad importa es el de la SEMANA: si los días ya generados suman de más,
- * añadirle comida a este día empeora justo lo que se quiere corregir. Y al
- * revés, un día que se quede algo corto no es un problema si la semana cuadra
- * (Dani, 07-09-2026: "aunque un día se quede con menos de lo que debe, la
- * semana va a estar bien puesta").
- *
- * El margen es medio intercambio —el mismo suelo que `MIN_COMPLEMENTO`— para
- * que un sobrante de redondeo no apague los extras de toda la semana.
- */
-export function sinExtrasPorLaSemana(balanceSemana: number): boolean {
-  return balanceSemana > MIN_COMPLEMENTO;
+/** ¿El día sale sin acompañamientos porque la semana ya va sobrada? Lo que
+ *  manda es el balance de la SEMANA (Dani, 07-09-2026). */
+export function sinExtrasPorLaSemana(balanceSemanaKcal: number): boolean {
+  return balanceSemanaKcal > MARGEN_SEMANA_KCAL;
 }
 
-/** Lo que un día generado lleva de más (+) o de menos (−) respecto a su cupo,
- *  en intercambios. Es el sumatorio que alimenta `sinExtrasPorLaSemana`. */
+/** Lo que un día lleva de más (+) o de menos (−) respecto a su objetivo, en kcal. */
 export function desviacionDelDia(dia: MenuDay): number {
-  const puesto = dayTotals(dia);
-  return round2(
-    (puesto.HC - dia.target.HC) + (puesto.PROT - dia.target.PROT) + (puesto.GRASA - dia.target.GRASA),
-  );
+  return Math.round(macrosDelDiaDeMenu(dia).kcal - objetivoDelDiaDeMenu(dia).kcal);
 }
 
-/** Índice id → receta a partir de los pools, para que `finalizeDay` pueda mirar
- *  los ingredientes del plato que ya se eligió. */
 function recetasDe(pools: Record<number, Recipe[]>): Map<string, Recipe> {
   const m = new Map<string, Recipe>();
   for (const lista of Object.values(pools)) for (const r of lista) m.set(r.id, r);
   return m;
 }
 
-// ─── Más ración de la propia receta ─────────────────────────────────────────
-
 /* Antes que colgarle un alimento suelto al plato, se mira si la receta ya lleva
-   algo de esa categoría que se pueda servir en más cantidad: al arroz con pollo
-   al que le faltan hidratos se le echa más arroz, no dos tostadas.
-
-   Los ingredientes MIX (legumbre, tofu) SÍ entran, que es lo que Dani eligió
-   entre las tres opciones: subir garbanzos para cubrir hidratos arrastra algo de
-   proteína, y se acepta mientras el arrastre quepa en lo que le falta a esa
-   comida. Sin ese arrastre acotado se quedarían fuera casi todas las recetas de
-   legumbre y las vegetarianas. */
+   algo de esa macro que se pueda servir en más cantidad: al arroz con pollo al
+   que le faltan hidratos se le echa más arroz, no dos tostadas. Los mixtos
+   (legumbre, tofu) entran mientras su arrastre de proteína quepa. */
 function subirRaciones(
   receta: Recipe | null,
-  hueco: BudgetVec,
+  hueco: Macros,
   foods: MealItem[],
   mode: DietMode,
-): { raciones: MenuRacionExtra[]; restante: BudgetVec } {
-  const restante: BudgetVec = { ...hueco };
+): { raciones: MenuRacionExtra[]; restante: Macros } {
+  let restante = sinNegativos(hueco);
   const raciones: MenuRacionExtra[] = [];
   if (!receta) return { raciones, restante };
-
-  // Solo `ingredientsText` (recetario importado): trae el NOMBRE del ingrediente,
-  // que es lo que hay que emparejar con el banco. `ingredients` es la forma del
-  // constructor de recetas del entrenador y no lleva nombre, sino categoría y
-  // cantidad ya resueltas — esas recetas no pasan por aquí.
   const candidatos = ingredientesEscalables(receta.ingredientsText, foods, mode);
   if (candidatos.length === 0) return { raciones, restante };
 
-  const cats: (keyof BudgetVec)[] = ['HC', 'PROT', 'GRASA'];
-  for (const cat of cats) {
+  for (const m of MACROS) {
     if (raciones.length >= MAX_RACIONES_EXTRA_POR_COMIDA) break;
-    if (restante[cat] < PASO_INTERCAMBIO) continue;
-
-    const ing = candidatos.find(c =>
-      !raciones.some(r => r.ingrediente === c.nombreEnReceta) && aportaA(c.category, cat));
+    const ing = candidatos.find(c => !raciones.some(r => r.ingrediente === c.nombreEnReceta) && aportaA(c.category, m) && macroDe(c.category) === m)
+      ?? candidatos.find(c => !raciones.some(r => r.ingrediente === c.nombreEnReceta) && aportaA(c.category, m));
     if (!ing) continue;
-
-    // Cuántos intercambios caben sin que el arrastre de un MIX se pase de lo que
-    // le falta a la comida en la OTRA categoría que ese MIX también aporta.
-    const cantidad = cabenIntercambios(ing.category, cat, restante);
+    const cantidad = cabenRaciones(ing.category, restante);
     if (cantidad < MIN_RACION_EXTRA) continue;
-
     raciones.push({
       ingrediente: ing.nombreEnReceta,
       nombre: ing.nombre,
@@ -638,169 +594,103 @@ function subirRaciones(
       quantity: cantidad,
       gramos: Math.round(ing.gramosPorIntercambio * cantidad),
     });
-    const puesto: Record<FoodCategory, number> = { HC: 0, PROT: 0, GRASA: 0, MIX_HC: 0, MIX_GRASA: 0 };
-    addToPlaced(puesto, ing.category, cantidad);
-    for (const c of cats) restante[c] = Math.max(0, round2(restante[c] - puesto[c]));
+    restante = sinNegativos(restarMacros(restante, macrosDeRaciones(ing.category, cantidad)));
   }
   return { raciones, restante };
 }
 
-/** ¿Un alimento de `origen` aporta a la categoría `destino`? MIX_HC da mitad
- *  hidratos y mitad proteína; MIX_GRASA, mitad grasa y mitad proteína. */
-function aportaA(origen: FoodCategory, destino: keyof BudgetVec): boolean {
-  if (origen === destino) return true;
-  if (origen === 'MIX_HC') return destino === 'HC' || destino === 'PROT';
-  if (origen === 'MIX_GRASA') return destino === 'GRASA' || destino === 'PROT';
-  return false;
-}
-
-/** Cuántos intercambios de un alimento caben en el hueco, contando TODO lo que
- *  aporta. Redondeado a la baja al paso de 0,25: pasarse es peor que quedarse
- *  corto, porque lo que falta lo puede cerrar el acompañamiento y lo que sobra
- *  no lo quita nadie. */
-function cabenIntercambios(origen: FoodCategory, destino: keyof BudgetVec, hueco: BudgetVec): number {
-  const cats: (keyof BudgetVec)[] = ['HC', 'PROT', 'GRASA'];
-  const unidad: Record<FoodCategory, number> = { HC: 0, PROT: 0, GRASA: 0, MIX_HC: 0, MIX_GRASA: 0 };
-  addToPlaced(unidad, origen, 1);
-  let tope = hueco[destino] / (unidad[destino] || 1);
-  for (const c of cats) {
-    if (unidad[c] > 0) tope = Math.min(tope, hueco[c] / unidad[c]);
-  }
-  return Math.max(0, Math.floor(tope / PASO_INTERCAMBIO) * PASO_INTERCAMBIO);
-}
-
-/** Lo que aportan las raciones extra de una comida, en intercambios. */
-export function racionesExtraExch(raciones: MenuRacionExtra[] | undefined): BudgetVec {
-  const p: Record<FoodCategory, number> = { HC: 0, PROT: 0, GRASA: 0, MIX_HC: 0, MIX_GRASA: 0 };
-  for (const r of raciones ?? []) addToPlaced(p, r.category, r.quantity);
-  return { HC: round2(p.HC), PROT: round2(p.PROT), GRASA: round2(p.GRASA) };
-}
-
-/* El comodín, acotado por DOS límites a la vez — manda el que se alcance antes:
-   como mucho dos piezas, y como mucho tres intercambios entre todas. Un hueco de
-   1,5 sale como una pieza; uno de 3, como dos; uno de 5 se queda en dos piezas y
-   3 puntos, y los 2 que faltan NO se tapan: significa que ese plato no era el
-   adecuado para esa comida. */
+/** El comodín, acotado: como mucho dos piezas y 300 kcal entre todas. Lo que
+ *  no quepa NO se tapa: ese plato no era el adecuado para esa comida. */
 function acotarAcompanamientos(propuestos: MenuComplement[]): MenuComplement[] {
   const out: MenuComplement[] = [];
-  let puestos = 0;
+  let kcal = 0;
   for (const c of propuestos) {
     if (out.length >= MAX_ACOMPANAMIENTOS_POR_COMIDA) break;
-    const cabe = round2(Math.min(c.quantity, MAX_INTERCAMBIOS_ACOMPANAMIENTOS - puestos));
-    if (cabe < PASO_INTERCAMBIO) break;
-    out.push(cabe === c.quantity ? c : { ...c, quantity: cabe });
-    puestos = round2(puestos + cabe);
+    const porRacion = macrosDeRaciones(c.category, 1).kcal;
+    const cabe = Math.floor(Math.min(c.quantity, (MAX_KCAL_ACOMPANAMIENTOS - kcal) / porRacion) / PASO_RACION + 1e-9) * PASO_RACION;
+    if (cabe < PASO_RACION) break;
+    out.push(cabe === c.quantity ? c : { ...c, quantity: round2(cabe) });
+    kcal += porRacion * cabe;
   }
   return out;
 }
 
-/** Lo que le falta a UNA comida para llegar a su objetivo, una vez puesto el
- *  plato. Nunca negativo: si el plato se pasó, esa comida no lleva extras (lo
- *  que sobra ya lo absorbe la comida siguiente, ver `generateDay`). */
-function huecoDeComida(meal: MenuMeal, objetivo: BudgetVec): BudgetVec {
-  const puesto = mealTotalExch(meal);
+/** Lo que le falta a UNA comida para llegar a su objetivo (nunca negativo). */
+function huecoDeComida(meal: MenuMeal, objetivo: Macros): Macros {
+  return sinNegativos(restarMacros(objetivo, macrosDeLaComida(meal)));
+}
+
+/** kcal de la comida: las de la receta y las de sus extras. */
+function kcalDeLaComida(meal: MenuMeal): number {
+  return Math.round(macrosDeLaComida(meal).kcal);
+}
+
+/** Los campos en intercambios que siguen leyendo los binarios viejos. */
+function intercambiosDe(m: Macros) {
+  const v = intercambiosDeMacros(m);
+  return { HC: v.HC, PROT: v.PROT, GRASA: v.GRASA };
+}
+
+// ─── Día ─────────────────────────────────────────────────────────────────────
+
+function emptyMeal(id: string, slot: MealSlotSpec): MenuMeal {
   return {
-    HC: Math.max(0, round2(objetivo.HC - puesto.HC)),
-    PROT: Math.max(0, round2(objetivo.PROT - puesto.PROT)),
-    GRASA: Math.max(0, round2(objetivo.GRASA - puesto.GRASA)),
+    id, slot: slot.slot, name: slot.name, recipeId: '', recipeName: 'Sin receta disponible', scale: 1,
+    exch: { HC: 0, PROT: 0, GRASA: 0 }, macros: { ...VACIO }, kcal: 0, complements: [],
   };
 }
 
-function mealKcal(meal: MenuMeal): number {
-  const total = mealTotalExch(meal);
-  return Math.round(exchangeToKcal(total));
-}
-
-// ─── Day generation ──────────────────────────────────────────────────────────
-
-function dietBudgetVec(diet: Diet): BudgetVec {
-  return { HC: diet.budget.HC ?? 0, PROT: diet.budget.PROT ?? 0, GRASA: diet.budget.GRASA ?? 0 };
-}
-
-function emptyMeal(id: string, slot: MealSlotSpec): MenuMeal {
-  return { id, slot: slot.slot, name: slot.name, recipeId: '', recipeName: 'Sin receta disponible', scale: 1, exch: { HC: 0, PROT: 0, GRASA: 0 }, kcal: 0, complements: [] };
-}
-
-function buildMeal(id: string, slot: MealSlotSpec, recipe: Recipe, scale: number, exch: BudgetVec, ajuste?: AjusteDeReceta): MenuMeal {
+function buildMeal(id: string, slot: MealSlotSpec, recipe: Recipe, scale: number, macros: Macros, ajuste?: AjusteDeReceta): MenuMeal {
   const meal: MenuMeal = {
     id, slot: slot.slot, name: slot.name,
     recipeId: recipe.id, recipeName: recipe.name,
     recipeImage: fotoDeReceta(recipe),
-    scale, exch, kcal: 0, complements: [],
+    scale, macros, exch: intercambiosDe(macros), kcal: 0, complements: [],
     ...(ajuste ? { ajuste } : {}),
   };
-  meal.kcal = mealKcal(meal);
+  meal.kcal = kcalDeLaComida(meal);
   return meal;
 }
 
-// Shared tail of day generation: fill the remaining category gap with simple
-// complements and recompute kcal. Used by both per-day and batch generation.
-function finalizeDay(
-  day: WeekDay, diet: Diet, target: BudgetVec, targets: BudgetVec[],
-  meals: MenuMeal[], foods: MealItem[], mode: DietMode,
-  // Para saber qué ingredientes lleva cada plato y poder subirle la ración; la
-  // comida solo guarda el id y el nombre de la receta.
-  recetasPorId?: Map<string, Recipe>,
-  // Condiciones de salud del atleta. Los extras se eligen aquí dentro, así que
-  // sin esto el día terminaba de cuadrarse con comida que el atleta no puede
-  // comer, por muy bien filtrados que estuvieran los platos.
-  conditions?: readonly number[],
-  // Lo que llevan de más (positivo) o de menos (negativo) los días de la semana
-  // ya generados, en intercambios. Ver `sinExtrasPorLaSemana`.
-  balanceSemana = 0,
-): MenuDay {
-  // Cuánto falta para el DÍA (nunca negativo: si los platos se pasaron, no hay
-  // extras). Es el día y no cada comida por su cuenta lo que manda: los platos
-  // se eligen arrastrando el resto de la comida anterior, así que una comida
-  // puede venir servida de más. Rellenar cada una contra su objetivo fijo
-  // ignoraba ese arrastre y el día acababa pasado de presupuesto.
-  const puesto = meals.reduce((acc, m) => sumVec(acc, mealTotalExch(m)), { HC: 0, PROT: 0, GRASA: 0 });
-  const restanteDelDia: BudgetVec = {
-    HC: Math.max(0, round2(target.HC - puesto.HC)),
-    PROT: Math.max(0, round2(target.PROT - puesto.PROT)),
-    GRASA: Math.max(0, round2(target.GRASA - puesto.GRASA)),
-  };
+function diaVacio(day: WeekDay): MenuDay {
+  return { day, dietId: null, target: { HC: 0, PROT: 0, GRASA: 0 }, objetivo: { ...VACIO }, meals: [] };
+}
 
-  // Ese resto se REPARTE entre las comidas que se han quedado cortas, en
-  // proporción a lo cortas que estén. Antes se metía entero en la franja con más
-  // presupuesto de cada macro; con un tope de plato esa franja es siempre la
-  // comida, y el atleta se encontraba el arroz a la cubana escoltado por nueve
-  // extras mientras el desayuno y la cena iban limpios.
-  const cats: (keyof BudgetVec)[] = ['HC', 'PROT', 'GRASA'];
-  const huecos = meals.map((meal, i) => (targets[i] ? huecoDeComida(meal, targets[i]) : { HC: 0, PROT: 0, GRASA: 0 }));
-  const reparto: BudgetVec[] = meals.map(() => ({ HC: 0, PROT: 0, GRASA: 0 }));
-  for (const cat of cats) {
-    const pesos = huecos.map(h => h[cat]);
+// Cierre común de la generación: reparte lo que le falta al DÍA entre las
+// comidas que se han quedado cortas (en proporción a lo cortas que estén),
+// primero como más ración de la propia receta y luego como acompañamiento.
+function finalizeDay(
+  day: WeekDay, diet: Diet, target: Macros, targets: Macros[],
+  meals: MenuMeal[], foods: MealItem[], mode: DietMode,
+  recetasPorId?: Map<string, Recipe>,
+  conditions?: readonly number[],
+  balanceSemanaKcal = 0,
+): MenuDay {
+  const puesto = sumarMacros(...meals.map(macrosDeLaComida));
+  const restanteDelDia = sinNegativos(restarMacros(target, puesto));
+  const huecos = meals.map((meal, i) => (targets[i] ? huecoDeComida(meal, targets[i]) : { ...VACIO }));
+  const reparto: { p: number; hc: number; g: number }[] = meals.map(() => ({ p: 0, hc: 0, g: 0 }));
+  for (const m of MACROS) {
+    const pesos = huecos.map(h => h[m]);
     if (pesos.reduce((s, v) => s + v, 0) <= 0) continue;
-    quotaSplit(restanteDelDia[cat], pesos).forEach((v, i) => { reparto[i][cat] = v; });
+    repartirGramos(restanteDelDia[m], pesos).forEach((v, i) => { reparto[i][m] = v; });
   }
 
   meals.forEach((meal, i) => {
-    /* Qué debería sumar esta comida: lo que ya pone el plato más lo que el
-     * reparto del día le asigna. Se guarda en el documento porque el reparto
-     * depende del perfil de hambre del onboarding, que no viaja con el menú:
-     * sin esto, nadie más puede saber cuánto cabe en una comida sin adivinarlo,
-     * y de ahí que la edición manual de extras no tuviera ningún tope.
-     * Ver `topeDeExtra`. */
-    const puestoPorElPlato = mealTotalExch(meal);
-    meal.objetivo = {
-      HC: round2(puestoPorElPlato.HC + reparto[i].HC),
-      PROT: round2(puestoPorElPlato.PROT + reparto[i].PROT),
-      GRASA: round2(puestoPorElPlato.GRASA + reparto[i].GRASA),
-    };
-
-    // 1º más ración de lo que la receta ya lleva, 2º un acompañamiento para lo
-    // que quede. Ese orden es el punto de todo esto: es más natural echar más
-    // arroz al arroz con pollo que ponerle dos tostadas al lado.
+    // Lo que esta comida debería sumar: su plato más lo que el día le asigna.
+    // Se guarda porque es el tope de los extras (`topeDeExtra`).
+    const objetivoComida = redondearMacros(sumarMacros(macrosDeLaComida(meal), conKcal(reparto[i])));
+    meal.objetivoMacros = objetivoComida;
+    meal.objetivo = intercambiosDe(objetivoComida);
     const receta = recetasPorId?.get(meal.recipeId) ?? null;
-    const { raciones, restante } = subirRaciones(receta, reparto[i], foods, mode);
+    const { raciones, restante } = subirRaciones(receta, conKcal(reparto[i]), foods, mode);
     if (raciones.length > 0) meal.racionesExtra = raciones;
-    if (!sinExtrasPorLaSemana(balanceSemana)) {
+    if (!sinExtrasPorLaSemana(balanceSemanaKcal)) {
       meal.complements.push(...acotarAcompanamientos(fillComplements(restante, foods, mode, conditions)));
     }
   });
-  for (const meal of meals) meal.kcal = mealKcal(meal);
-  return { day, dietId: diet.id, dietName: diet.name, target, meals };
+  for (const meal of meals) meal.kcal = kcalDeLaComida(meal);
+  return { day, dietId: diet.id, dietName: diet.name, target: intercambiosDe(target), objetivo: redondearMacros(target), meals };
 }
 
 export interface ReajustarDiaArgs {
@@ -809,59 +699,41 @@ export interface ReajustarDiaArgs {
   slots: MealSlotSpec[];
   foods: MealItem[];
   mode?: DietMode;
-  /** Las recetas de las comidas del día, para poder subirles la ración. */
   recetasPorId?: Map<string, Recipe>;
   conditions?: readonly number[];
 }
 
 /**
- * Vuelve a cuadrar un día cuyos platos han cambiado.
- *
- * El caso: el coach pulsa «otra receta» en la comida y el día entero se
- * descuadra. Las raciones extra y los acompañamientos que tenía eran para
- * COMPLETAR los platos anteriores; con un plato distinto sobran o faltan, y
- * hasta ahora se quedaban como estaban. Un menú de 2.100 kcal se iba a 1.850 o
- * a 2.400 y nadie lo decía: el coach lo publicaba pensando que seguía cuadrado.
- *
- * Esto no vuelve a elegir recetas —las que hay son las que el coach quiere— y
- * solo rehace lo derivado: tira las raciones extra y los acompañamientos de
- * todas las comidas y deja que `finalizeDay` los reparta otra vez contra el
- * objetivo del día. Es el MISMO cierre que usa la generación, así que un día
- * reajustado y uno generado cuadran con el mismo criterio.
- *
- * `balanceSemana` no se pasa a propósito: el reajuste es de UN día suelto que
- * el coach está tocando a mano, y aplicarle la corrección de la semana entera
- * le quitaría los acompañamientos por algo que él no ha hecho en este día.
+ * Vuelve a cuadrar un día cuyos platos han cambiado (el coach pulsó «otra
+ * receta»): no vuelve a elegir recetas, solo rehace raciones extra y
+ * acompañamientos contra el objetivo del día, con el mismo cierre que la
+ * generación. Sin balance de semana: es un día suelto tocado a mano.
  */
 export function reajustarDia(args: ReajustarDiaArgs): MenuDay {
   const { dia, diet, slots, foods, recetasPorId, conditions } = args;
   const mode = args.mode ?? 'OMNIVORO';
-  const target = dietBudgetVec(diet);
+  const target = objetivoDeDieta(diet);
   const targets = slotTargets(target, slots);
-
-  // Copia limpia: fuera lo derivado, que es lo único que este reajuste rehace.
   const meals: MenuMeal[] = dia.meals.map(m => ({
     ...m,
+    macros: macrosDelPlato(m),
     racionesExtra: undefined,
     complements: [],
   }));
-
   return finalizeDay(dia.day, diet, target, targets, meals, foods, mode, recetasPorId, conditions);
 }
 
 export interface GenerateDayArgs {
   day: WeekDay;
-  diet: Diet | null; // null = free/unassigned day, no meals generated
+  diet: Diet | null; // null = día libre, sin comidas
   slots: MealSlotSpec[];
-  pools: Record<number, Recipe[]>; // recipe candidates keyed by slot (intakeType)
+  pools: Record<number, Recipe[]>; // recetas candidatas por franja (intakeType)
   foods: MealItem[];
   prefs: GeneratorPrefs;
-  usedIds: Set<string>; // mutated in place to track recipe variety across days
-  usedDishTypes?: Map<DishType, number>; // mutated in place to spread dish types across days
+  usedIds: Set<string>; // se muta: variedad de recetas entre días
+  usedDishTypes?: Map<DishType, number>; // se muta: variedad de tipos de plato
   mode?: DietMode;
-  /** Lo que llevan de más (+) o de menos (−) los días ya generados de esta
-   *  semana. Con la semana en positivo, este día sale sin acompañamientos
-   *  (ver `sinExtrasPorLaSemana`). */
+  /** kcal de más (+) o de menos (−) de los días ya generados de la semana. */
   balanceSemana?: number;
 }
 
@@ -872,56 +744,35 @@ function bumpDishType(map: Map<DishType, number>, dt: DishType): void {
 export function generateDay(args: GenerateDayArgs): MenuDay {
   const { day, diet, slots, pools, foods, prefs, usedIds } = args;
   const mode = args.mode ?? 'OMNIVORO';
-  // A per-day dish-type tally (seeded from any week-level one passed in) so two
-  // slots on the same day don't both come out as, say, batidos.
   const dishTypes = args.usedDishTypes ?? new Map<DishType, number>();
+  if (!diet) return diaVacio(day);
 
-  if (!diet) {
-    return { day, dietId: null, target: { HC: 0, PROT: 0, GRASA: 0 }, meals: [] };
-  }
-
-  const target = dietBudgetVec(diet);
+  const target = objetivoDeDieta(diet);
   const targets = slotTargets(target, slots);
 
-  // Se elige franja a franja recalculando lo que QUEDA del día, en vez de
-  // resolver las cuatro contra su cuota fija. Las recetas vienen en
-  // intercambios discretos y la escala solo va de 0,5 a 2 en pasos de 0,25, así
-  // que cada comida deja un pico suelto; con cuotas fijas esos picos se SUMAN
-  // (era lo que dejaba días a −3 o −4 intercambios). Arrastrando el resto, la
-  // comida siguiente lo absorbe y el error se cancela en vez de acumularse.
-  let restante: BudgetVec = { ...target };
+  // Franja a franja, recalculando lo que QUEDA del día: el pico que deja una
+  // comida (la escala va de 0,25 en 0,25) lo absorbe la siguiente en vez de
+  // sumarse. Nunca por debajo de cero.
+  let restante: Macros = { ...target };
   const meals: MenuMeal[] = slots.map((slot, i) => {
-    // Nunca por debajo de cero: si una comida se pasó, la siguiente pide lo
-    // mínimo, no un objetivo negativo — con un objetivo negativo `bestScaleFit`
-    // descarta TODAS las recetas y la comida saldría vacía, que es mucho peor
-    // que servir algo pequeño.
-    const disponible: BudgetVec = {
-      HC: Math.max(0, restante.HC), PROT: Math.max(0, restante.PROT), GRASA: Math.max(0, restante.GRASA),
-    };
-    const objetivoFranja = slotTargets(disponible, slots.slice(i))[0] ?? targets[i];
-    const pool = pools[slot.slot] ?? [];
-    // El plato apunta al 100 % de la comida. Hubo una versión que lo recortaba
-    // a propósito para dejar hueco a los acompañamientos: es al revés — la
-    // receta tiene que cubrir prácticamente todo y el acompañamiento es un
-    // comodín de dos o tres puntos (Dani, 2026-09-05).
-    const ranked = rankCandidates(pool, objetivoFranja, prefs, usedIds, { needsTupper: slot.needsTupper, mode, usedDishTypes: dishTypes, dias: [day], dietId: diet.id });
+    const disponible = sinNegativos(restante);
+    const objetivoFranja = slotTargets(conKcal(disponible), slots.slice(i))[0] ?? targets[i];
+    const ranked = rankCandidates(pools[slot.slot] ?? [], objetivoFranja, prefs, usedIds, {
+      needsTupper: slot.needsTupper, mode, usedDishTypes: dishTypes, dias: [day], dietId: diet.id,
+    });
     const pick = ranked[0];
     const id = `${day}_m${i + 1}`;
     if (!pick) return emptyMeal(id, slot);
     usedIds.add(pick.recipe.id);
     bumpDishType(dishTypes, dishType(pick.recipe));
-    restante = {
-      HC: round2(restante.HC - pick.exch.HC),
-      PROT: round2(restante.PROT - pick.exch.PROT),
-      GRASA: round2(restante.GRASA - pick.exch.GRASA),
-    };
-    return buildMeal(id, slot, pick.recipe, pick.scale, pick.exch, pick.ajuste);
+    restante = restarMacros(restante, pick.macros);
+    return buildMeal(id, slot, pick.recipe, pick.scale, pick.macros, pick.ajuste);
   });
 
   return finalizeDay(day, diet, target, targets, meals, foods, mode, recetasDe(pools), prefs.conditions, args.balanceSemana ?? 0);
 }
 
-// ─── Week generation ─────────────────────────────────────────────────────────
+// ─── Semana ──────────────────────────────────────────────────────────────────
 
 export interface GenerateWeekArgs {
   schedule: Partial<Record<WeekDay, string | null>>;
@@ -931,128 +782,94 @@ export interface GenerateWeekArgs {
   foods: MealItem[];
   prefs: GeneratorPrefs;
   mode?: DietMode;
-  batch?: boolean; // batch-cooking: one recipe per slot for the whole week, portioned per day
+  batch?: boolean; // batch cooking: una receta por franja para toda la semana
 }
 
-function avgVec(vecs: BudgetVec[]): BudgetVec {
-  if (vecs.length === 0) return { HC: 0, PROT: 0, GRASA: 0 };
-  const sum = vecs.reduce(sumVec, { HC: 0, PROT: 0, GRASA: 0 });
-  return { HC: sum.HC / vecs.length, PROT: sum.PROT / vecs.length, GRASA: sum.GRASA / vecs.length };
+function media(vs: Macros[]): Macros {
+  if (vs.length === 0) return { ...VACIO };
+  return escalarMacros(sumarMacros(...vs), 1 / vs.length);
 }
 
-// Batch cooking: the athlete wants to cook everything in one session and portion
-// it out over the week, so we fix ONE recipe per meal slot for the whole week
-// (chosen against the average of that slot's targets across scheduled days) and
-// only re-scale it per day. A day whose budget would push that recipe outside
-// the 0.5–2x range falls back to a per-day pick for that slot alone (rare).
-// Distinct recipes are kept across slots so breakfast ≠ lunch. See buildBatchPlan
-// for the consolidated "cook once" view this feeds.
+// Batch cooking: UNA receta por franja para toda la semana (elegida contra la
+// media de los objetivos de esa franja), re-escalada cada día. Si un día no
+// llega con ella, ese día lleva otra para esa franja.
 function generateWeekBatch(args: GenerateWeekArgs): MenuDay[] {
   const { schedule, diets, slots, pools, foods, prefs } = args;
   const mode = args.mode ?? 'OMNIVORO';
   const dietsById = new Map(diets.map(d => [d.id, d]));
-
   const scheduledDiets = WEEK_DAYS
     .map(day => (schedule[day] ? dietsById.get(schedule[day]!) ?? null : null))
     .filter((d): d is Diet => d != null);
-
-  // Una receta se cocina para TODOS los días con dieta: si el coach la esconde
-  // en cualquiera de ellos, no vale para la tanda.
   const diasDeLaTanda = WEEK_DAYS.filter(d => !!schedule[d]);
-  // Los filtros de una dieta solo valen para la tanda si toda la semana es esa
-  // dieta; con varias, mandan los de «Todas las dietas».
   const idsDeLaTanda = new Set(scheduledDiets.map(d => d.id));
   const dietaDeLaTanda = idsDeLaTanda.size === 1 ? [...idsDeLaTanda][0] : null;
 
-  // One fixed recipe per slot, chosen against the average slot target.
   const usedAcrossSlots = new Set<string>();
   const slotRecipe: (Recipe | null)[] = slots.map((slot, i) => {
-    const slotTargetsAcrossDays = scheduledDiets.map(d => slotTargets(dietBudgetVec(d), slots)[i]);
-    const repTarget = avgVec(slotTargetsAcrossDays);
+    const repTarget = media(scheduledDiets.map(d => slotTargets(objetivoDeDieta(d), slots)[i]));
     const ranked = rankCandidates(pools[slot.slot] ?? [], repTarget, prefs, usedAcrossSlots, { needsTupper: slot.needsTupper, batch: true, mode, dias: diasDeLaTanda, dietId: dietaDeLaTanda });
     const pick = ranked[0]?.recipe ?? null;
     if (pick) usedAcrossSlots.add(pick.id);
     return pick;
   });
 
-  // Igual que en `generateWeek`: los extras de un día miran lo que llevan los
-  // días ya generados, no solo lo que le falta a ese día.
   let balanceSemana = 0;
   return WEEK_DAYS.map(day => {
     const dietId = schedule[day] ?? null;
     const diet = dietId ? dietsById.get(dietId) ?? null : null;
-    if (!diet) return { day, dietId: null, target: { HC: 0, PROT: 0, GRASA: 0 }, meals: [] };
-
-    const target = dietBudgetVec(diet);
+    if (!diet) return diaVacio(day);
+    const target = objetivoDeDieta(diet);
     const targets = slotTargets(target, slots);
     const meals: MenuMeal[] = slots.map((slot, i) => {
       const id = `${day}_m${i + 1}`;
       const fixed = slotRecipe[i];
       if (fixed) {
         const fit = bestScaleFit(fixed, targets[i], mode);
-        if (fit) return buildMeal(id, slot, fixed, fit.scale, fit.exch, fit.ajuste);
+        if (fit) return buildMeal(id, slot, fixed, fit.scale, fit.macros, fit.ajuste);
       }
-      // Fixed recipe can't scale to this day's target — pick a one-off for this day.
       const ranked = rankCandidates(pools[slot.slot] ?? [], targets[i], prefs, new Set(), { needsTupper: slot.needsTupper, batch: true, mode, dias: [day], dietId: diet.id });
       const pick = ranked[0];
-      return pick ? buildMeal(id, slot, pick.recipe, pick.scale, pick.exch, pick.ajuste) : emptyMeal(id, slot);
+      return pick ? buildMeal(id, slot, pick.recipe, pick.scale, pick.macros, pick.ajuste) : emptyMeal(id, slot);
     });
-
     const generado = finalizeDay(day, diet, target, targets, meals, foods, mode, recetasDe(pools), prefs.conditions, balanceSemana);
-    balanceSemana = round2(balanceSemana + desviacionDelDia(generado));
+    balanceSemana += desviacionDelDia(generado);
     return generado;
   });
 }
 
-// Variety semantics (prefs.variety):
-//  1-2  monotone   — one generation per diet type (e.g. "Día Alto"), cloned to
-//                     every day scheduled with that type.
-//  3    balanced   — no repeated recipe within the same diet type, but the
-//                     same recipe may reappear across different diet types.
-//  4-5  max variety — no repeated recipe anywhere in the week.
-// args.batch overrides variety entirely (see generateWeekBatch).
+// Variedad (prefs.variety):
+//  1-2  monótono  — un día por dieta, clonado a todos los días con esa dieta.
+//  3    equilibrado — sin repetir receta dentro de la misma dieta.
+//  4-5  máxima    — sin repetir receta en toda la semana.
+// args.batch manda sobre la variedad (ver generateWeekBatch).
 export function generateWeek(args: GenerateWeekArgs): MenuDay[] {
   if (args.batch) return generateWeekBatch(args);
-
   const { schedule, diets, slots, pools, foods, prefs } = args;
   const mode = args.mode ?? 'OMNIVORO';
   const dietsById = new Map(diets.map(d => [d.id, d]));
-
   const globalUsed = new Set<string>();
   const perDietUsed = new Map<string, Set<string>>();
   const perDietTemplate = new Map<string, MenuDay>();
-  // Week-level dish-type tallies so the same *kind* of meal (e.g. breakfast
-  // batido) doesn't repeat every day. Not used for variety<=2 (we clone there).
   const globalDishTypes = new Map<DishType, number>();
   const perDietDishTypes = new Map<string, Map<DishType, number>>();
 
-  /* El sumatorio de la semana, día a día. Lo que decide si un día lleva
-     acompañamientos no es solo lo que le falta a ÉL: si lo ya generado suma de
-     más, añadirle comida a este día empeora la semana entera. Ver
-     `sinExtrasPorLaSemana`. */
+  // El balance de la semana decide si un día lleva acompañamientos.
   let balanceSemana = 0;
-  const conBalance = (dia: MenuDay): MenuDay => {
-    balanceSemana = round2(balanceSemana + desviacionDelDia(dia));
-    return dia;
-  };
+  const conBalance = (dia: MenuDay): MenuDay => { balanceSemana += desviacionDelDia(dia); return dia; };
 
   return WEEK_DAYS.map(day => {
     const dietId = schedule[day] ?? null;
     const diet = dietId ? dietsById.get(dietId) ?? null : null;
-    if (!diet) return generateDay({ day, diet: null, slots, pools, foods, prefs, usedIds: new Set(), mode });
-
+    if (!diet) return diaVacio(day);
     if (prefs.variety <= 2) {
       const template = perDietTemplate.get(diet.id);
       if (template) {
-        // El clon repite el día tal cual, extras incluidos: es el punto de
-        // este modo. Cuenta igual para el balance de la semana.
         return conBalance({ ...template, day, meals: template.meals.map((m, i) => ({ ...m, id: `${day}_m${i + 1}` })) });
       }
       const generated = conBalance(generateDay({ day, diet, slots, pools, foods, prefs, usedIds: new Set(), mode, balanceSemana }));
       perDietTemplate.set(diet.id, generated);
       return generated;
     }
-
     if (prefs.variety === 3) {
       const usedIds = perDietUsed.get(diet.id) ?? new Set<string>();
       perDietUsed.set(diet.id, usedIds);
@@ -1060,75 +877,61 @@ export function generateWeek(args: GenerateWeekArgs): MenuDay[] {
       perDietDishTypes.set(diet.id, usedDishTypes);
       return conBalance(generateDay({ day, diet, slots, pools, foods, prefs, usedIds, usedDishTypes, mode, balanceSemana }));
     }
-
     return conBalance(generateDay({ day, diet, slots, pools, foods, prefs, usedIds: globalUsed, usedDishTypes: globalDishTypes, mode, balanceSemana }));
   });
 }
 
-// ─── Tolerance ───────────────────────────────────────────────────────────────
+// ─── Tolerancia ──────────────────────────────────────────────────────────────
 
-export function dayTotals(day: MenuDay): BudgetVec {
-  return day.meals.reduce((acc, m) => sumVec(acc, mealTotalExch(m)), { HC: 0, PROT: 0, GRASA: 0 });
+export function dayTotals(day: MenuDay): Macros {
+  return macrosDelDiaDeMenu(day);
 }
 
+/** kcal de más (+) o de menos (−) del día. */
 export function dayGlobalDeviation(day: MenuDay): number {
-  const totals = dayTotals(day);
-  const targetTotal = day.target.HC + day.target.PROT + day.target.GRASA;
-  const actualTotal = totals.HC + totals.PROT + totals.GRASA;
-  return round2(actualTotal - targetTotal);
+  return desviacionDelDia(day);
 }
 
+/** ¿El día está cuadrado? El total a ±100 kcal y cada macro a ±100 kcal (o
+ *  ±20 % de lo que pide esa macro, lo que sea mayor). */
 export function isDayWithinTolerance(day: MenuDay): boolean {
-  if (day.meals.length === 0) return true; // free/unassigned day
-  return Math.abs(dayGlobalDeviation(day)) <= 1;
+  if (day.meals.length === 0) return true;
+  const objetivo = objetivoDelDiaDeMenu(day);
+  const puesto = macrosDelDiaDeMenu(day);
+  if (Math.abs(puesto.kcal - objetivo.kcal) > TOLERANCIA_DIA_KCAL) return false;
+  return MACROS.every(m => Math.abs(kcalDeMacro(puesto, m) - kcalDeMacro(objetivo, m))
+    <= Math.max(TOLERANCIA_MACRO_KCAL, kcalDeMacro(objetivo, m) * TOLERANCIA_MACRO_PCT));
 }
 
-// ─── Athlete-facing swap ─────────────────────────────────────────────────────
+// ─── Cambiar un plato (atleta) ───────────────────────────────────────────────
 
 export type SwapFit = 'exacto' | 'aproximado';
 
 export interface SwapCandidate extends MenuCandidate {
   fit: SwapFit;
-  /** Raciones extra que le tocan a ESTA receta si se acepta el cambio (las de la
-   *  receta anterior se caen: iban con su plato). */
+  /** Raciones extra que le tocan a ESTA receta si se acepta el cambio. */
   raciones: MenuRacionExtra[];
-  /** Cómo quedaría el día en cada macro si se acepta el cambio (actual − objetivo). */
-  drift: BudgetVec;
-  /** Lo mismo sobre la suma de los tres. */
+  /** Cómo quedaría el día (puesto − objetivo), en kcal y gramos. */
+  drift: Macros;
+  /** Lo mismo en kcal totales. */
   driftTotal: number;
 }
 
-// Hasta dónde puede moverse el DÍA al aceptar un cambio. El tope sobre el total
-// es el que ya se exigía; el reparto POR MACRO es nuevo, y es el arreglo de
-// fondo: antes solo se miraba la suma de los tres, así que una receta que
-// cambiaba 3 de hidratos por 3 de grasa entraba en la lista rotulada "mantiene
-// tus puntos del día". Medido contra el recetario real (8.850 recetas,
-// 2026-09-05), el 65 % de las alternativas que se ofrecían para la comida se
-// desviaban más de un intercambio en algún macro concreto, con picos de 2 sobre
-// un presupuesto de 10,5 de HC. El tope crece con el presupuesto del día para no
-// dejar sin alternativas a quien come poco, y el suelo evita que una categoría
-// pequeña (grasa) quede tan encorsetada que no admita ninguna receta.
-const SWAP_TOTAL_EXACTO = 1;
-const SWAP_TOTAL_APROX = 2;
-const SWAP_MACRO_MIN_EXACTO = 1;
-const SWAP_MACRO_MIN_APROX = 1.5;
+// Hasta dónde puede moverse el DÍA al aceptar un cambio: el total y cada macro.
+const SWAP_TOTAL_EXACTO_KCAL = 100;
+const SWAP_TOTAL_APROX_KCAL = 200;
+const SWAP_MACRO_MIN_EXACTO_KCAL = 100;
+const SWAP_MACRO_MIN_APROX_KCAL = 150;
 const SWAP_MACRO_PCT_EXACTO = 0.15;
 const SWAP_MACRO_PCT_APROX = 0.25;
 
-function swapMacroTol(budget: number, min: number, pct: number): number {
-  return Math.max(min, budget * pct);
-}
-
-// Alternatives that, if substituted in, keep the *day's* deviation within
-// tolerance — in each macro, not just in the sum. Uses the meal's current
-// exchanges (recipe + its complements) as the matching target, since that's what
-// the coach already approved for this slot.
-//
-// Devuelve TODAS las que encajan, no una terna corta: el atleta que abre
-// "Cambiar comida" es justo el que no quiere lo que hay, y cortar la lista a
-// cinco le dejaba fuera cientos de opciones válidas del recetario. Se etiquetan
-// en dos niveles ('exacto' / 'aproximado') para que la pantalla pueda enseñarlas
-// todas sin mentir sobre cuáles cuadran clavadas.
+/**
+ * Alternativas para el PLATO de una comida que, aceptadas, no dejan el día peor
+ * de lo que ya estaba (por signo, en el total y en cada macro). Los
+ * acompañamientos se quedan; las raciones extra van con el plato, así que la
+ * receta nueva recibe las suyas. Todas las que encajan, en dos niveles
+ * ('exacto' / 'aproximado') y repartidas por tipo de plato en ronda.
+ */
 export function findSwapAlternatives(
   day: MenuDay,
   mealId: string,
@@ -1136,132 +939,43 @@ export function findSwapAlternatives(
   prefs: GeneratorPrefs,
   count = Infinity,
   mode: DietMode = 'OMNIVORO',
-  /** Banco del atleta. Con él, cada candidata se evalúa con SUS propias raciones
-   *  extra, igual que hizo el generador con el plato original; sin él se evalúa
-   *  el plato pelado (el menú sigue cuadrando, solo se ofrecen menos opciones). */
   foods: MealItem[] = [],
 ): SwapCandidate[] {
   const meal = day.meals.find(m => m.id === mealId);
   if (!meal) return [];
-
-  // Se busca sustituto para el PLATO, no para la comida entera. Los
-  // ACOMPAÑAMIENTOS siguen ahí después del cambio, así que no entran en el
-  // objetivo: apuntar al total de la comida hacía que una comida con extras solo
-  // admitiera recetas enormes —justo las que casi no existen— y dejaba la lista
-  // en dos o tres opciones.
-  //
-  // Las RACIONES EXTRA tampoco entran en el objetivo, pero por otro motivo: son
-  // parte del plato ("+45g de arroz" solo significa algo mientras el plato sea el
-  // arroz con pollo), así que al cambiar de receta se caen y la NUEVA recibe las
-  // suyas. Exigírselas al plato solo era el error opuesto: el plato ya iba a
-  // ración máxima y las raciones sumaban 4 intercambios encima, así que no había
-  // receta en el recetario capaz de sustituir a las dos cosas juntas y la lista
-  // salía vacía.
-  // Una comida sin plato (el generador no encontró receta) tiene `exch` a cero:
-  // buscarle sustituto contra un objetivo de cero solo devuelve recetas
-  // minúsculas, que es justo lo contrario de lo que hace falta. En ese caso el
-  // objetivo es lo que la comida DEBERÍA aportar, no lo que aporta.
-  const platoVacio = !meal.recipeId
-    || (meal.exch.HC + meal.exch.PROT + meal.exch.GRASA) < PASO_INTERCAMBIO;
-  const complementosDeEstaComida = meal.complements
-    .reduce((acc, c) => sumVec(acc, complementExchanges(c)), { HC: 0, PROT: 0, GRASA: 0 });
-  // Lo que esta comida tiene que aportar en total, que es lo que el entrenador
-  // aprobó al generar el menú.
-  const objetivoDeLaComida = mealTotalExch(meal);
-  // Para una comida sin plato, el objetivo NO puede salir de lo que la comida
-  // aporta —que es cero, y con cero `bestScaleFit` no admite ninguna receta: ese
-  // fue el primer intento y dejaba la lista igual de vacía—. Sale de lo que le
-  // falta al DÍA: el presupuesto menos lo que ya ponen las demás comidas (y los
-  // acompañamientos de esta, que siguen ahí después del cambio).
-  const otherMealsTotal = day.meals
-    .filter(m => m.id !== mealId)
-    .reduce((acc, m) => sumVec(acc, mealTotalExch(m)), complementosDeEstaComida);
-  const mealTarget = platoVacio
-    ? {
-      HC: Math.max(0, round2(day.target.HC - otherMealsTotal.HC)),
-      PROT: Math.max(0, round2(day.target.PROT - otherMealsTotal.PROT)),
-      GRASA: Math.max(0, round2(day.target.GRASA - otherMealsTotal.GRASA)),
-    }
-    : meal.exch;
-  const targetTotal = day.target.HC + day.target.PROT + day.target.GRASA;
+  const objetivoDia = objetivoDelDiaDeMenu(day);
+  const plato = macrosDelPlato(meal);
+  const acompanamientos = macrosDeAcompanamientos(meal.complements);
+  const objetivoDeLaComidaAhora = macrosDeLaComida(meal);
+  const otras = sumarMacros(acompanamientos, ...day.meals.filter(m => m.id !== mealId).map(macrosDeLaComida));
+  // Una comida sin plato apunta a lo que le falta al día, no a cero.
+  const platoVacio = !meal.recipeId || plato.kcal < 25;
+  const objetivoPlato = platoVacio ? conKcal(sinNegativos(restarMacros(objetivoDia, otras))) : plato;
   const usedIds = new Set(day.meals.filter(m => m.id !== mealId).map(m => m.recipeId));
 
-  // Cómo está el día AHORA MISMO, antes de tocar nada. La tolerancia se mide
-  // contra esto y no solo contra el objetivo: si el menú ya venía descuadrado
-  // —porque el recetario no daba para cerrar el hueco, o porque el atleta ya
-  // había cambiado cosas— exigir llegar al objetivo dejaba la lista de
-  // alternativas VACÍA, y el atleta se quedaba atrapado con un plato que no
-  // quiere por un desajuste que no ha provocado él. La regla correcta es que un
-  // cambio no puede dejar el día PEOR de lo que ya estaba.
-  const actual = day.meals.reduce((acc, m) => sumVec(acc, mealTotalExch(m)), { HC: 0, PROT: 0, GRASA: 0 });
-  const desvioConSigno: BudgetVec = {
-    HC: round2(actual.HC - day.target.HC),
-    PROT: round2(actual.PROT - day.target.PROT),
-    GRASA: round2(actual.GRASA - day.target.GRASA),
-  };
-  const desvioTotalConSigno = round2(
-    actual.HC + actual.PROT + actual.GRASA - (day.target.HC + day.target.PROT + day.target.GRASA));
-
-  const cats: (keyof BudgetVec)[] = ['HC', 'PROT', 'GRASA'];
-  const tolExacto = { HC: 0, PROT: 0, GRASA: 0 } as BudgetVec;
-  const tolAprox = { HC: 0, PROT: 0, GRASA: 0 } as BudgetVec;
-  for (const cat of cats) {
-    tolExacto[cat] = swapMacroTol(day.target[cat], SWAP_MACRO_MIN_EXACTO, SWAP_MACRO_PCT_EXACTO);
-    tolAprox[cat] = swapMacroTol(day.target[cat], SWAP_MACRO_MIN_APROX, SWAP_MACRO_PCT_APROX);
-  }
-  const topeTotalExacto = SWAP_TOTAL_EXACTO;
-  const topeTotalAprox = SWAP_TOTAL_APROX;
-  // "No dejar el día peor de lo que ya estaba" se aplica por SIGNO, no por
-  // magnitud. Subiendo el tope al desvío actual en valor absoluto, un día que ya
-  // iba 2 puntos CORTO admitía también alternativas 2 puntos PASADAS: el margen
-  // se abría hacia los dos lados y el cambio podía empeorar el día justo en la
-  // dirección contraria. Ahora solo se perdona el exceso que ya venía de antes y
-  // en su mismo sentido.
+  // Cómo está el día AHORA: un cambio no puede dejarlo peor de lo que ya estaba.
+  const actual = macrosDelDiaDeMenu(day);
+  const desvio = restarMacros(actual, objetivoDia);
+  const tol = (min: number, pct: number) => Object.fromEntries(MACROS.map(m => [m, Math.max(min, kcalDeMacro(objetivoDia, m) * pct)])) as Record<Macro, number>;
+  const tolExacto = tol(SWAP_MACRO_MIN_EXACTO_KCAL, SWAP_MACRO_PCT_EXACTO);
+  const tolAprox = tol(SWAP_MACRO_MIN_APROX_KCAL, SWAP_MACRO_PCT_APROX);
+  const exceso = (valor: number, yaHabia: number): number =>
+    valor >= 0 ? Math.max(0, valor - Math.max(0, yaHabia)) : Math.max(0, -valor - Math.max(0, -yaHabia));
 
   const graded: SwapCandidate[] = [];
-  for (const c of rankCandidates(pool, mealTarget, prefs, usedIds, { mode, dias: [day.day], ambito: 'cambios', dietId: day.dietId })) {
-    // La receta nueva recibe sus propias raciones extra para cubrir lo que le
-    // falte a la comida, igual que hizo el generador con la original.
-    const hueco: BudgetVec = {
-      HC: Math.max(0, round2(objetivoDeLaComida.HC - c.exch.HC - complementosDeEstaComida.HC)),
-      PROT: Math.max(0, round2(objetivoDeLaComida.PROT - c.exch.PROT - complementosDeEstaComida.PROT)),
-      GRASA: Math.max(0, round2(objetivoDeLaComida.GRASA - c.exch.GRASA - complementosDeEstaComida.GRASA)),
-    };
+  for (const c of rankCandidates(pool, objetivoPlato, prefs, usedIds, { mode, dias: [day.day], ambito: 'cambios', dietId: day.dietId })) {
+    const hueco = sinNegativos(restarMacros(objetivoDeLaComidaAhora, sumarMacros(c.macros, acompanamientos)));
     const { raciones } = subirRaciones(c.recipe, hueco, foods, mode);
-    const aporta = sumVec(c.exch, racionesExtraExch(raciones));
-
-    const drift: BudgetVec = {
-      HC: round2(otherMealsTotal.HC + aporta.HC - day.target.HC),
-      PROT: round2(otherMealsTotal.PROT + aporta.PROT - day.target.PROT),
-      GRASA: round2(otherMealsTotal.GRASA + aporta.GRASA - day.target.GRASA),
-    };
-    const driftTotal = round2(
-      otherMealsTotal.HC + aporta.HC + otherMealsTotal.PROT + aporta.PROT
-      + otherMealsTotal.GRASA + aporta.GRASA - targetTotal,
-    );
-    // Cuánto se sale por un lado, descontando lo que el día ya se salía POR ESE
-    // MISMO lado (`desvioActual` guarda la magnitud; `actual` da el signo).
-    const exceso = (valor: number, yaHabia: number): number => {
-      if (valor >= 0) return Math.max(0, valor - Math.max(0, yaHabia));
-      return Math.max(0, -valor - Math.max(0, -yaHabia));
-    };
-    const dentroDe = (topeTotal: number, topeMacro: BudgetVec) =>
-      exceso(driftTotal, desvioTotalConSigno) <= topeTotal
-      && cats.every(cat => exceso(drift[cat], desvioConSigno[cat]) <= topeMacro[cat]);
-
-    if (dentroDe(topeTotalExacto, tolExacto)) graded.push({ ...c, fit: 'exacto', drift, driftTotal, raciones });
-    else if (dentroDe(topeTotalAprox, tolAprox)) graded.push({ ...c, fit: 'aproximado', drift, driftTotal, raciones });
-    // Más allá de eso el cambio saca del plan: no se ofrece.
+    const aporta = sumarMacros(c.macros, macrosDeRacionesExtra(raciones));
+    const drift = redondearMacros(restarMacros(sumarMacros(otras, aporta), objetivoDia));
+    const driftTotal = Math.round(drift.kcal);
+    const dentro = (topeTotal: number, topeMacro: Record<Macro, number>) =>
+      exceso(driftTotal, desvio.kcal) <= topeTotal
+      && MACROS.every(m => exceso(kcalDeMacro(drift, m), kcalDeMacro(desvio, m)) <= topeMacro[m]);
+    if (dentro(SWAP_TOTAL_EXACTO_KCAL, tolExacto)) graded.push({ ...c, fit: 'exacto', drift, driftTotal, raciones });
+    else if (dentro(SWAP_TOTAL_APROX_KCAL, tolAprox)) graded.push({ ...c, fit: 'aproximado', drift, driftTotal, raciones });
   }
 
-  // Diversify by dish type so the athlete sees genuinely different options (a
-  // batido, a tostada, a tortilla…) rather than variations of the same thing.
-  //
-  // Reparto en RONDA, no "el mejor de cada tipo y luego relleno por puntuación":
-  // ese relleno volvía a ser monotemático en cuanto se agotaban los tipos nuevos,
-  // justo en la parte de la lista donde mira quien no quiere nada de lo primero.
-  // Misma regla que el "Cambiar comida" de Mi plan (utils/recipeMatch.ts). Se
-  // hace DENTRO de cada nivel de encaje para que las exactas sigan yendo antes.
   const porRondas = (cands: SwapCandidate[]): SwapCandidate[] => {
     const groups = new Map<DishType, SwapCandidate[]>();
     for (const c of cands) {
@@ -1282,7 +996,6 @@ export function findSwapAlternatives(
     }
     return out;
   };
-
   const ordenadas = [
     ...porRondas(graded.filter(c => c.fit === 'exacto')),
     ...porRondas(graded.filter(c => c.fit === 'aproximado')),
@@ -1327,124 +1040,98 @@ export function buildBatchPlan(days: MenuDay[]): BatchRecipeEntry[] {
   return list.sort((a, b) => b.totalScale - a.totalScale);
 }
 
-// ─── Periodization / staleness ───────────────────────────────────────────────
+// ─── Menú desactualizado ─────────────────────────────────────────────────────
 
-// A published menu goes stale when the client's weekly schedule or a linked
-// diet's budget changes after generation (e.g. the coach moved to a new
-// periodization phase). Compares each day's snapshot dietId/target against the
-// current schedule + diets so the coach gets nudged to regenerate.
+/**
+ * ¿Ha cambiado algo desde que se generó? El calendario (otra dieta ese día) o
+ * el objetivo de la dieta. Se compara contra la dieta CON los ajustes de la
+ * semana del menú (`program` + `menu.semanaPrograma`): el menú se generó así, y
+ * comparar con la dieta pelada lo marcaba «desactualizado» en cualquier semana
+ * con ajustes aunque no hubiera cambiado nada.
+ */
 export function isMenuStale(
-  menu: { days: MenuDay[] },
+  menu: { days: MenuDay[]; semanaPrograma?: number },
   schedule: Partial<Record<WeekDay, string | null>>,
   diets: Diet[],
+  program?: NutritionProgram | null,
 ): boolean {
   const dietsById = new Map(diets.map(d => [d.id, d]));
+  const semana = menu.semanaPrograma ?? (program ? semanaDelPrograma(program, hoyIsoLocal()) : undefined);
+  const mantenimiento = program && semana != null ? (program.semanasMantenimiento ?? []).includes(semana) : false;
+  const ajustes = program && semana != null ? ajustesDeLaSemana(program, semana) : [];
   for (const day of menu.days) {
     const currentDietId = schedule[day.day] ?? null;
     if (currentDietId !== day.dietId) return true;
-    if (currentDietId) {
-      const diet = dietsById.get(currentDietId);
-      if (!diet) return true;
-      const b = dietBudgetVec(diet);
-      if (b.HC !== day.target.HC || b.PROT !== day.target.PROT || b.GRASA !== day.target.GRASA) return true;
-    }
+    if (!currentDietId) continue;
+    const diet = dietsById.get(currentDietId);
+    if (!diet) return true;
+    const ahora = objetivoDeDieta(ajustes.length > 0 || mantenimiento ? aplicarAjustes(diet, ajustes, { mantenimiento }) : diet);
+    const entonces = objetivoDelDiaDeMenu(day);
+    if (MACROS.some(m => Math.abs(ahora[m] - entonces[m]) > 1)) return true;
   }
   return false;
 }
 
 // ─── Tope de extras ──────────────────────────────────────────────────────────
 
-/* La regla, en palabras de Dani (auditoría §6): «los extras son solo alimentos
- * que se añaden cuando la receta no cubre las necesidades de los macros o kcal,
- * para que no se coma de menos según lo que tenemos calculado».
- *
- * O sea: el extra RELLENA lo que falta, no añade por encima. El generador ya
- * respetaba sus propios límites, pero la edición manual del atleta no tenía
- * ninguno: desde la hoja de extras se podía seguir sumando sin fin y salirse
- * del plan sin que nada lo dijera.
- *
- * El tope sale de `meal.objetivo`, guardado al generar el día. Cuando falta
- * (menús publicados antes de 09-2026) NO se recorta: clampar sobre una
- * suposición se comería extras legítimos, y eso es peor que no tener tope. */
+/* El extra RELLENA lo que falta, no añade por encima (Dani, auditoría §6). El
+ * tope sale del objetivo de la comida guardado al generar; en menús anteriores
+ * a 09-2026 no hay y NO se recorta (clampar sobre una suposición se comería
+ * extras legítimos). */
 
-/**
- * Cuántos intercambios de `category` caben todavía como extra en esta comida.
- * `Infinity` si la comida no trae objetivo guardado.
- *
- * `excluirComplemento` es el índice del extra que se está midiendo: sin él, un
- * extra ya puesto contaría contra su propio hueco y sería imposible subirlo.
- */
+/** Cuántas raciones de `category` caben todavía como extra en esta comida.
+ *  `Infinity` si la comida no trae objetivo guardado. `excluirComplemento` es el
+ *  índice del extra que se está midiendo (que no cuente contra sí mismo). */
 export function topeDeExtra(
   meal: MenuMeal,
   category: FoodCategory,
   excluirComplemento?: number,
 ): number {
-  if (!meal.objetivo) return Infinity;
-
+  const objetivo = objetivoDeLaComida(meal);
+  if (!objetivo) return Infinity;
   const sinEse: MenuMeal = excluirComplemento == null ? meal : {
     ...meal,
     complements: meal.complements.filter((_, i) => i !== excluirComplemento),
   };
-  return cabenIntercambios(category, catDestino(category), huecoDeComida(sinEse, meal.objetivo));
-}
-
-/** A qué casilla del presupuesto se imputa un alimento de esta categoría. */
-function catDestino(category: FoodCategory): keyof BudgetVec {
-  if (category === 'MIX_HC') return 'HC';
-  if (category === 'MIX_GRASA') return 'GRASA';
-  return category;
+  return cabenRaciones(category, huecoDeComida(sinEse, objetivo));
 }
 
 /**
  * Recorta los extras de una comida a lo que de verdad cabe. Pura e idempotente:
- * una comida que ya cabe se devuelve TAL CUAL (misma referencia), para que
- * llamarla de más no provoque escrituras ni renders inútiles.
- *
- * Se aplica en la capa de escritura (`updateWeeklyMenu`), que es el único paso
- * obligatorio por el que pasan todas las ediciones del menú — las del atleta y
- * las del coach. Las reglas de Firestore no pueden sumar arrays, así que este
- * es el sitio más cercano a «backend» que tiene esta app, y conviene decirlo en
- * claro en vez de fingir una validación de servidor que no existe.
+ * una comida que ya cabe se devuelve TAL CUAL (misma referencia). Se aplica al
+ * escribir el menú (`updateWeeklyMenu`), el único paso por el que pasan todas
+ * las ediciones del atleta y del coach.
  */
 export function acotarExtrasDeComida(meal: MenuMeal): { meal: MenuMeal; recortado: boolean } {
-  if (!meal.objetivo) return { meal, recortado: false };
-
-  const objetivo = meal.objetivo;
+  const objetivo = objetivoDeLaComida(meal);
+  if (!objetivo) return { meal, recortado: false };
   let recortado = false;
-
-  // Base: el plato solo. Los extras se van recolocando encima uno a uno, así
-  // que cada uno se mide contra lo que queda después de los anteriores.
   let acumulado: MenuMeal = { ...meal, complements: [], racionesExtra: [] };
 
   const raciones: MenuRacionExtra[] = [];
   for (const r of meal.racionesExtra ?? []) {
-    const cabe = Math.min(r.quantity, cabenIntercambios(r.category, catDestino(r.category), huecoDeComida(acumulado, objetivo)));
-    if (cabe < PASO_INTERCAMBIO) { recortado = true; continue; }
-    // Los gramos van con la cantidad: dejar los 180 g de seis intercambios en
-    // una ración de dos enseñaría un gramaje que no corresponde.
+    const cabe = Math.min(r.quantity, cabenRaciones(r.category, huecoDeComida(acumulado, objetivo)));
+    if (cabe < PASO_RACION) { recortado = true; continue; }
     const ajustada = cabe === r.quantity ? r
       : { ...r, quantity: round2(cabe), gramos: Math.round((r.gramos / r.quantity) * cabe) };
     if (ajustada !== r) recortado = true;
     raciones.push(ajustada);
     acumulado = { ...acumulado, racionesExtra: raciones };
   }
-
   const complementos: MenuComplement[] = [];
   for (const c of meal.complements) {
-    const cabe = Math.min(c.quantity, cabenIntercambios(c.category, catDestino(c.category), huecoDeComida(acumulado, objetivo)));
-    if (cabe < PASO_INTERCAMBIO) { recortado = true; continue; }
+    const cabe = Math.min(c.quantity, cabenRaciones(c.category, huecoDeComida(acumulado, objetivo)));
+    if (cabe < PASO_RACION) { recortado = true; continue; }
     const ajustado = cabe === c.quantity ? c : { ...c, quantity: round2(cabe) };
     if (ajustado !== c) recortado = true;
     complementos.push(ajustado);
     acumulado = { ...acumulado, complements: complementos };
   }
-
   if (!recortado) return { meal, recortado: false };
-
   const recortada: MenuMeal = {
     ...meal,
     complements: complementos,
     ...(meal.racionesExtra ? { racionesExtra: raciones } : {}),
   };
-  return { meal: { ...recortada, kcal: mealKcal(recortada) }, recortado: true };
+  return { meal: { ...recortada, kcal: kcalDeLaComida(recortada) }, recortado: true };
 }
