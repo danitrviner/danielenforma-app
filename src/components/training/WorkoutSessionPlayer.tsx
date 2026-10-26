@@ -419,14 +419,18 @@ export default function WorkoutSessionPlayer({
   });
 
   return (
-    <div className="space-y-6">
-      <header className="pb-4 border-b border-hairline sticky top-[var(--header-h)] bg-bg/92 backdrop-blur-md z-[var(--z-sticky)] pt-2 space-y-3">
+    <div className="space-y-3">
+      {/* Cabecera compacta: con la sesión en marcha el nombre del entreno no
+          aporta (ya se eligió para entrar) y en el móvil ocupaba tres líneas.
+          Queda solo para lectores de pantalla; todo sube para que la ficha del
+          ejercicio quepa sin scroll vertical. */}
+      <header className="pb-2 border-b border-hairline sticky top-[var(--header-h)] bg-bg/92 backdrop-blur-md z-[var(--z-sticky)] pt-1 space-y-2">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="s" icon="arrow_back" label="Volver" onClick={cerrarPlayer} className="shrink-0" />
           <div className="flex-1 min-w-0">
-            <h1 className="font-display text-title-l font-black uppercase tracking-tight text-ink truncate">{activeWorkout.name}</h1>
-            <p className="font-mono text-caption text-ink-2">
-              {formatDate(activeAssignment.date)} · EJERCICIO {String(pageIdx + 1).padStart(2, '0')}/{orderedExercises.length}
+            <h1 className="sr-only">{activeWorkout.name}</h1>
+            <p className="font-mono text-caption text-ink-2 uppercase whitespace-nowrap truncate">
+              {formatDate(activeAssignment.date).replace(/ \d{4}$/, '')} · EJ. {String(pageIdx + 1).padStart(2, '0')}/{orderedExercises.length}
             </p>
           </div>
           {/* Cronómetro general — empieza al abrir la sesión (no al marcar la
