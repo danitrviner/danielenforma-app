@@ -254,6 +254,16 @@ export interface WeightCheckIn {
 export type FoodCategory = 'HC' | 'PROT' | 'GRASA' | 'MIX_HC' | 'MIX_GRASA';
 export type DietMode = 'OMNIVORO' | 'VEGANO' | 'SIN_PESAR';
 
+/** Calorías y gramos de proteína, hidratos y grasa. La unidad de toda la
+ *  nutrición desde 10-2026 (adiós a los intercambios). Ver utils/macros.ts;
+ *  los datos viejos en intercambios se leen con utils/macrosLegado.ts. */
+export interface Macros {
+  kcal: number;
+  p: number;
+  hc: number;
+  g: number;
+}
+
 export interface MealItem {
   id: string;
   mode: DietMode;
@@ -1288,6 +1298,9 @@ export interface Diet {
   athleteId: string;  // email
   name: string;
   budget: Record<FoodCategory, number>; // total exchanges per category for the day
+  /** Objetivo del día en kcal y gramos (10-2026). Manda sobre `budget`, que
+   *  se sigue escribiendo para los binarios viejos; leer con `objetivoDeDieta`. */
+  objetivo?: Macros;
   meals: DietMeal[];
   coachNote?: string;
   isDraft?: boolean;
@@ -1344,6 +1357,9 @@ export interface DietCompletionLog {
   /** Cupo de intercambios pautado ese día. Igual que `meals`: se congela para
    *  que el histórico no se mueva si luego le cambias el cupo al atleta. */
   budget?: Record<FoodCategory, number>;
+  /** Objetivo de ese día en kcal y gramos (10-2026). Congelado igual que
+   *  `budget`, que manda solo si falta este. Leer con `objetivoDelRegistro`. */
+  objetivo?: Macros;
   /**
    * «Día flexible» (10-2026): el atleta no reparte por comidas, apunta lo que
    * va comiendo contra el cupo del día entero. `meals` sigue teniendo la misma

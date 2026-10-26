@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { DietMeal, FoodCategory } from '../types';
-import { exchangeToKcal } from '../utils/nutritionConstants';
+import { kcalDeIntercambio } from '../utils/macrosLegado';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -9,10 +9,8 @@ import { exchangeToKcal } from '../utils/nutritionConstants';
 // HC o grasa) no tienen constante compartida — se aproximan a 100 kcal, igual
 // que el resto, tal y como ya hacía esta tabla.
 const KCAL_INT: Record<FoodCategory, number> = {
-  HC: exchangeToKcal({ HC: 1, PROT: 0, GRASA: 0 }),
-  PROT: exchangeToKcal({ HC: 0, PROT: 1, GRASA: 0 }),
-  GRASA: exchangeToKcal({ HC: 0, PROT: 0, GRASA: 1 }),
-  MIX_HC: 100, MIX_GRASA: 100,
+  HC: kcalDeIntercambio('HC'), PROT: kcalDeIntercambio('PROT'), GRASA: kcalDeIntercambio('GRASA'),
+  MIX_HC: kcalDeIntercambio('MIX_HC'), MIX_GRASA: kcalDeIntercambio('MIX_GRASA'),
 };
 
 const DISPLAY_CATS: FoodCategory[] = ['HC', 'PROT', 'GRASA'];

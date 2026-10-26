@@ -17,7 +17,8 @@ import {
 import { adherenciaDelDia, dietaDelDia } from './diaDeDieta';
 import { addDays as addDaysStr } from './trainingWeek';
 import { aggregate } from './trainingReport';
-import { exchangeToKcal, GRAMS_PER_EXCHANGE } from './nutritionConstants';
+import { GRAMS_PER_EXCHANGE } from './nutritionConstants';
+import { kcalDeIntercambio } from './macrosLegado';
 import { seriesPrincipales } from './seriesPrincipales.js';
 
 // ── Fechas — mismo patrón que trainingWeek.ts: todo en YYYY-MM-DD local,
@@ -347,10 +348,8 @@ export interface DatosCalendario {
 // ahí: HC/PROT/GRASA de la fuente única, MIX_* aproximados a 100, sin
 // constante compartida en el repo para esos dos).
 const KCAL_POR_INTERCAMBIO: Record<FoodCategory, number> = {
-  HC: exchangeToKcal({ HC: 1, PROT: 0, GRASA: 0 }),
-  PROT: exchangeToKcal({ HC: 0, PROT: 1, GRASA: 0 }),
-  GRASA: exchangeToKcal({ HC: 0, PROT: 0, GRASA: 1 }),
-  MIX_HC: 100, MIX_GRASA: 100,
+  HC: kcalDeIntercambio('HC'), PROT: kcalDeIntercambio('PROT'), GRASA: kcalDeIntercambio('GRASA'),
+  MIX_HC: kcalDeIntercambio('MIX_HC'), MIX_GRASA: kcalDeIntercambio('MIX_GRASA'),
 };
 
 function kcalDeDieta(diet: Diet | undefined): number {

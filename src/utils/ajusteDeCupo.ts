@@ -1,4 +1,5 @@
-import { exchangeToKcal, GRAMS_PER_EXCHANGE } from './nutritionConstants';
+import { exchangeToKcal } from './nutritionConstants';
+import { kcalDeIntercambio } from './macrosLegado';
 import { roundQuarter } from './exchangeHelpers';
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -37,9 +38,7 @@ export interface AjusteDeCupo {
 
 /** kcal que aporta un intercambio de cada categoría. */
 const KCAL_POR_INTERCAMBIO: Record<keyof CupoDeMacros, number> = {
-  HC: GRAMS_PER_EXCHANGE.HC * 4,
-  PROT: GRAMS_PER_EXCHANGE.PROT * 4,
-  GRASA: GRAMS_PER_EXCHANGE.GRASA * 9,
+  HC: kcalDeIntercambio('HC'), PROT: kcalDeIntercambio('PROT'), GRASA: kcalDeIntercambio('GRASA'),
 };
 
 /**
