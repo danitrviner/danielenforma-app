@@ -5,14 +5,15 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { minutosDeReceta } from '../utils/tiempoDeReceta';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { UserProfile, Diet, DietMeal, DietItem, FoodCategory, DietMode, MealItem, Recipe, RecipeFavorites, RecetaPendiente, MenuCompletionLog, DietCompletionLog, Macros } from '../types';
-import { macrosDeIntercambios, objetivoDelRegistro, intercambiosDeMacros } from '../utils/macrosLegado';
-import { sonMacrosVacios } from '../utils/macros';
+import { macrosDeIntercambios, objetivoDelRegistro, intercambiosDeMacros, macrosDeLineas } from '../utils/macrosLegado';
+import { sonMacrosVacios, sinNegativos, restarMacros, escalarMacros, redondearMacros } from '../utils/macros';
+import { macrosDeReceta, ordenarPorLoQueQueda } from '../utils/macrosDeReceta';
 import { getDietsForAthlete, getAthleteDietConfig, saveAthleteDietConfig, createDiet, updateDiet, deleteDiet, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig, saveAthleteNutritionConfig, getRecipes, getRecipeFavorites, getNutritionProgram, markNutritionPhaseSeen, computeActivePhase, createNotificationDeduped, getDietCompletionLog, saveDietCompletionLog, createRecipe, queryRecetasForGenerator, cargarIndiceRecetas, getOnboarding, getRecipeById, getMenuCompletionLog, saveMenuCompletionLog, getAlimentosPersonales, getCatalogoAlimentos, crearAlimentoPersonal, actualizarAlimentoPersonal, borrarAlimentoPersonal, getDietCompletionLogsForAthlete } from '../dbService';
 import { esPlatoDelRecetario } from '../db/recetasHidratacion';
 import RecetarioDescubrir from './RecetarioDescubrir';
 import { BUDGET_CATS, MODE_LABEL, ALL_DIET_MODES, round2, fmtQty, foodNameWithoutGrams, addToPlaced, recipeToDietItems, computeDietPlaced } from '../utils/exchangeHelpers';
 import { parseBaseGrams, etiquetaDePeso, pesoDeItem } from '../utils/conversionNutricional';
-import { findRecipeAlternatives, recipeExchanges, groupByDishType, ordenarPorCupo, type RecipeAlternative, type AlternativePrefs } from '../utils/recipeMatch';
+import { findRecipeAlternatives, recipeExchanges, groupByDishType, type RecipeAlternative, type AlternativePrefs } from '../utils/recipeMatch';
 import { ingredientMatch, violatesDietType } from '../utils/foodPrefs';
 import { athleteConditions, violatesHealthConditions } from '../utils/dietaryRestrictions';
 import { dietTypeVigente } from '../utils/foodPrefs';
@@ -22,7 +23,6 @@ import { dishType, dishTypeLabel, type DishType } from '../utils/dishTypes';
 import { filasDeComida, escalarReceta } from '../utils/filasDelPlan';
 import { escalarRecetaEntera, escalaDeReceta } from '../utils/escalarRecetaEntera';
 import { objetivoDelDia } from '../utils/objetivoDelDia';
-import { exchangeToKcal } from '../utils/nutritionConstants';
 import { resumenDelDia } from '../utils/resumenDelDia';
 import { useToast } from '../hooks/useToast';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
@@ -55,7 +55,6 @@ import { cargarIndiceOff, ATRIBUCION_OFF } from '../services/openFoodFacts';
 import { buscarEnIndiceOff, extrasDeRacion, type EntradaIndiceOff, type OffProducto } from '../utils/productoOff';
 import { buscarEnCatalogo, comoProducto, nombreDeAlimento, type AlimentoCatalogo } from '../utils/catalogoAlimentos';
 import { NotaDeFuente } from './FuentesCientificasSheet';
-import { calcularArrastreEntreComidas, type ComidaParaArrastre, type ObjetivoEfectivoComida } from '../utils/arrastreEntreComidas';
 import { filasEnOrdenCronologico, horaActualHHMM } from '../utils/diaFlexible';
 
 import {
@@ -81,14 +80,13 @@ interface Props {
 // Fila del picker de recetas — compartida entre "Mis recetas" (propias/coach)
 // y "Recetario" (catálogo), antes duplicada entera en el JSX de cada una.
 // Fila de una alternativa en "Cambiar comida". A diferencia de RecipePickerRow,
-// esta muestra los INTERCAMBIOS —que es lo que tiene que cuadrar— y avisa cuando
-// el total no es idéntico, en vez de enseñar solo las kcal sin contexto.
+// esta muestra kcal y gramos —lo que tiene que cuadrar— y avisa cuando las kcal
+// no son idénticas.
 function SwapCandidateRow({ alt, isFav, onSelect }: {
   alt: RecipeAlternative; isFav: boolean; onSelect: (r: Recipe) => void;
   key?: React.Key;
 }) {
-  const { recipe, exchanges, totalDrift } = alt;
-  const total = exchanges.HC + exchanges.PROT + exchanges.GRASA;
+  const { recipe, macros: m, kcalDrift } = alt;
   const photo = fotoDeReceta(recipe);
   return (
     <button
@@ -111,15 +109,13 @@ function SwapCandidateRow({ alt, isFav, onSelect }: {
           {recipe.name}
         </span>
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="font-mono text-caption text-accent-ink/70">{fmtQty(total)} int.</span>
+          <span className="font-mono text-caption text-accent-ink/70">{Math.round(m.kcal)} kcal</span>
           <span className="font-mono text-caption text-ink-2">
-            {fmtQty(exchanges.HC)} HC · {fmtQty(exchanges.PROT)} P · {fmtQty(exchanges.GRASA)} G
+            P {Math.round(m.p)} · HC {Math.round(m.hc)} · G {Math.round(m.g)} g
           </span>
-          {/* Honestidad: si el total no es exacto se dice, no se esconde. */}
-          {totalDrift > 0.001 && (
-            <span className="font-mono text-caption text-ink-2 italic">
-              ({totalDrift > 0 ? '±' : ''}{fmtQty(totalDrift)})
-            </span>
+          {/* Honestidad: si las kcal no son las mismas se dice, no se esconde. */}
+          {kcalDrift >= 1 && (
+            <span className="font-mono text-caption text-ink-2 italic">(±{Math.round(kcalDrift)} kcal)</span>
           )}
           <span className="font-sans text-caption text-ink-2">· {dishTypeLabel(alt.dishType)}</span>
         </div>
@@ -135,15 +131,13 @@ function RecipePickerRow({ recipe, isFav, enabledModes, onSelect }: {
   // por su cuenta — mismo workaround que `Badge.tsx`.
   key?: React.Key;
 }) {
-  const exchParts: string[] = [];
-  const totals: Partial<Record<FoodCategory, number>> = {};
-  recipe.ingredients
-    .filter(ing => enabledModes.includes(ing.mode))
-    .forEach(ing => { totals[ing.category] = (totals[ing.category] ?? 0) + ing.quantity; });
-  (['HC', 'PROT', 'GRASA', 'MIX_HC', 'MIX_GRASA'] as FoodCategory[])
-    .filter(c => (totals[c] ?? 0) > 0)
-    .forEach(c => exchParts.push(`${totals[c]} ${c.replace('_', ' ')}`));
-  const exchStr = exchParts.join(' · ') || '—';
+  // kcal y gramos (utils/macrosDeReceta.ts). `enabledModes` ya no hace falta:
+  // las macros de la receta no dependen del modo.
+  void enabledModes;
+  const m = macrosDeReceta(recipe);
+  const exchStr = m.kcal > 0
+    ? `${Math.round(m.kcal)} kcal · P ${Math.round(m.p)} · HC ${Math.round(m.hc)} · G ${Math.round(m.g)} g`
+    : '—';
 
   return (
     <button
@@ -638,97 +632,11 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
 
   // ── Derived ──────────────────────────────────────────────────────────────────
 
-  const { doneByCat, mealDoneByCat, doneItems } = useMemo(() => {
-    const doneByCat: Record<FoodCategory, number> = { HC: 0, PROT: 0, GRASA: 0, MIX_HC: 0, MIX_GRASA: 0 };
-    const mealDoneByCat: Record<string, Record<FoodCategory, number>> = {};
-    let total = 0;
-    let done = 0;
-    if (selectedDiet) {
-      for (const meal of selectedDiet.meals) {
-        const mealBycat: Record<FoodCategory, number> = { HC: 0, PROT: 0, GRASA: 0, MIX_HC: 0, MIX_GRASA: 0 };
-        meal.items.forEach((item, idx) => {
-          total++;
-          const st = itemStates[`${meal.id}_${idx}`];
-          if (st?.done) {
-            done++;
-            addToPlaced(doneByCat, item.category, item.quantity);
-            addToPlaced(mealBycat,  item.category, item.quantity);
-          }
-        });
-        mealDoneByCat[meal.id] = mealBycat;
-      }
-    }
-    return { doneByCat, mealDoneByCat, totalItems: total, doneItems: done };
-  }, [selectedDiet, itemStates]);
-
-  /* Arrastre entre comidas (decisión de Dani, 10-2026): si en una comida te
-     pasas, lo que sobra se resta del objetivo de las siguientes; si te quedas
-     corto, se les suma. `calcularArrastreEntreComidas` es pura y no toca
-     `meal.target` —el reparto que guarda la dieta sigue siendo el original—,
-     así que esto se recalcula solo en cada render con lo que hay colocado
-     ahora mismo: quitar el alimento que sobraba deshace el arrastre solo. */
-  /* Lo que hay PUESTO en cada comida, marcado como comido o no. El arrastre
-     compara contra esto y no contra `mealDoneByCat`: un día sembrado con la
-     dieta del coach trae los alimentos colocados pero sin marcar, y es justo
-     ahí donde tiene que poder decir «tienes 2: quita medio». */
-  const puestoPorComida = useMemo(() => {
-    const out: Record<string, Record<FoodCategory, number>> = {};
-    for (const meal of selectedDiet?.meals ?? []) {
-      const p: Record<FoodCategory, number> = { HC: 0, PROT: 0, GRASA: 0, MIX_HC: 0, MIX_GRASA: 0 };
-      for (const item of meal.items) addToPlaced(p, item.category, item.quantity);
-      out[meal.id] = p;
-    }
-    return out;
-  }, [selectedDiet]);
-
-  const objetivoEfectivoPorComida = useMemo(() => {
-    const vacio = new Map<string, ObjetivoEfectivoComida>();
-    if (!selectedDiet) return vacio;
-    const comidas: ComidaParaArrastre[] = selectedDiet.meals.map((meal, mi) => ({
-      id: meal.id,
-      nombre: mealLabel(meal.name, mi + 1),
-      target: meal.target,
-      libre: meal.libre,
-      colocado: {
-        HC: puestoPorComida[meal.id]?.HC ?? 0,
-        PROT: puestoPorComida[meal.id]?.PROT ?? 0,
-        GRASA: puestoPorComida[meal.id]?.GRASA ?? 0,
-      },
-    }));
-    const resultado = calcularArrastreEntreComidas(comidas);
-    return new Map(resultado.map(r => [r.mealId, r]));
-  }, [selectedDiet, puestoPorComida]);
-
-  /** El objetivo EFECTIVO de una comida en una categoría de cupo (HC/PROT/
-   *  GRASA) — el que ve el atleta y contra el que cuadran el selector de
-   *  recetas y "Encajan". Para MIX_HC/MIX_GRASA (fuera del arrastre) cae al
-   *  reparto original de la comida, sin ajustar. */
-  const objetivoEfectivo = useCallback((mealId: string, cat: FoodCategory, original: number): number => {
-    if (cat !== 'HC' && cat !== 'PROT' && cat !== 'GRASA') return original;
-    return objetivoEfectivoPorComida.get(mealId)?.objetivo[cat] ?? original;
-  }, [objetivoEfectivoPorComida]);
-
-
-  // Presupuesto efectivo del tracker. Una dieta del coach trae su cupo en
-  // `budget`; un menú propio en construcción no tiene cupo (todo a 0), así que
-  // el baseline de las barras y del "te quedan" es lo que el propio menú suma
-  // —no cero—. Sin esto, marcar el único alimento de un menú a medio montar
-  // llenaba las barras al 100 % y cerraba el día "en presupuesto".
-  const plannedByCat = useMemo(() => computeDietPlaced(selectedDiet?.meals), [selectedDiet]);
-  const effBudget: Record<'HC' | 'PROT' | 'GRASA', number> = {
-    HC: (selectedDiet?.budget.HC ?? 0) || plannedByCat.HC,
-    PROT: (selectedDiet?.budget.PROT ?? 0) || plannedByCat.PROT,
-    GRASA: (selectedDiet?.budget.GRASA ?? 0) || plannedByCat.GRASA,
-  };
-
-  // "TE QUEDAN" del tracker — suma de las tres categorías de presupuesto,
-  // igual que el handoff (nunca desglosa MIX_HC/MIX_GRASA en la cifra grande).
-  const leftByCat = useMemo(() => ({
-    HC: effBudget.HC - doneByCat.HC,
-    PROT: effBudget.PROT - doneByCat.PROT,
-    GRASA: effBudget.GRASA - doneByCat.GRASA,
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [effBudget.HC, effBudget.PROT, effBudget.GRASA, doneByCat]);
+  /** Cuántos alimentos hay marcados como comidos en el día. */
+  const doneItems = useMemo(
+    () => (selectedDiet?.meals ?? []).reduce((n, meal) => n + meal.items.filter((_, idx) => itemStates[`${meal.id}_${idx}`]?.done).length, 0),
+    [selectedDiet, itemStates],
+  );
 
   /* Una sola vista, en kcal y gramos (10-2026): los intercambios ya no se
      enseñan en ningún sitio. */
@@ -865,55 +773,39 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     return [...lista].sort((a, b) => rango(a) - rango(b) || a.name.localeCompare(b.name));
   }, [swapPrefs, recipeFavorites]);
 
-  /* Lo que queda por cubrir, según lo que el atleta haya contestado: el cupo de
-     ESA comida (su reparto menos lo que ya lleva puesto ahí) o el del día
-     entero. Sin reparto asignado a la comida, "la comida" no tiene cupo propio
-     que mirar y se cae al del día — que es la respuesta honesta, no un cero
-     que dejaría la lista vacía. */
-  const cupoDisponible = useMemo(() => {
-    const delDia = { HC: Math.max(0, leftByCat.HC), PROT: Math.max(0, leftByCat.PROT), GRASA: Math.max(0, leftByCat.GRASA) };
-    if (ambitoCupo === 'dia' || !recipePickerMealId) return delDia;
-    const meal = selectedDiet?.meals.find(m => m.id === recipePickerMealId);
-    const target = meal?.target;
-    if (!target) return delDia;
-    const puesto = mealDoneByCat[recipePickerMealId] ?? { HC: 0, PROT: 0, GRASA: 0, MIX_HC: 0, MIX_GRASA: 0 };
-    // El objetivo EFECTIVO (con el arrastre entre comidas ya aplicado), no el
-    // reparto original — si esta comida ha recibido lo que sobró en la
-    // anterior, el hueco real contra el que cuadrar las recetas es ese.
-    return {
-      HC: Math.max(0, round2(objetivoEfectivo(meal.id, 'HC', target.HC) - puesto.HC)),
-      PROT: Math.max(0, round2(objetivoEfectivo(meal.id, 'PROT', target.PROT) - puesto.PROT)),
-      GRASA: Math.max(0, round2(objetivoEfectivo(meal.id, 'GRASA', target.GRASA) - puesto.GRASA)),
-    };
-  }, [ambitoCupo, recipePickerMealId, selectedDiet, mealDoneByCat, leftByCat, objetivoEfectivo]);
+  /* Lo que queda por cubrir (10-2026, sin reparto por comidas): lo que queda
+     del día y, para «esta comida», eso mismo entre las comidas que faltan por
+     hacer (las que aún no tienen nada comido, contando esta). */
+  const quedaDelDia = useMemo(
+    () => sinNegativos(restarMacros(objetivoDia, { kcal: resumenMacros.kcal, p: resumenMacros.p, hc: resumenMacros.hc, g: resumenMacros.g })),
+    [objetivoDia, resumenMacros],
+  );
+  const comidasPorHacer = useCallback((incluir?: string) => {
+    const meals = (selectedDiet?.meals ?? []).filter(m => !m.libre);
+    const vacias = meals.filter(m => !m.items.some((_, k) => itemStates[`${m.id}_${k}`]?.done)).map(m => m.id);
+    return Math.max(1, vacias.length + (incluir && !vacias.includes(incluir) ? 1 : 0));
+  }, [selectedDiet, itemStates]);
+  const cupoDisponible = useMemo((): Macros => {
+    if (ambitoCupo === 'dia' || !recipePickerMealId) return quedaDelDia;
+    return escalarMacros(quedaDelDia, 1 / comidasPorHacer(recipePickerMealId));
+  }, [ambitoCupo, recipePickerMealId, quedaDelDia, comidasPorHacer]);
 
-  /* 2-3 recetas guardadas que encajan en lo que le falta a cada comida (con
-     los intercambios de ESTA semana de la periodización), para no tener que
-     abrir el buscador. Mismo orden que el selector: lo que mejor aprovecha el
-     hueco y, a igualdad, sus favoritas. */
+  /* 2-3 recetas guardadas que encajan en cada comida que aún está vacía (lo
+     que queda del día entre las comidas que faltan), para no tener que abrir
+     el buscador. Mismo orden que el selector: lo que mejor aprovecha el hueco
+     y, a igualdad, sus favoritas. */
   const sugerenciasPorComida = useMemo(() => {
     const out: Record<string, Recipe[]> = {};
     const seguras = recipes.filter(r => ((r.ingredients ?? []).length === 0 || r.ingredients.some(ing => enabledModes.includes(ing.mode))) && isSafeForAthlete(r));
     if (seguras.length === 0 || !selectedDiet) return out;
-    const delDia = { HC: Math.max(0, leftByCat.HC), PROT: Math.max(0, leftByCat.PROT), GRASA: Math.max(0, leftByCat.GRASA) };
+    const hueco = escalarMacros(quedaDelDia, 1 / comidasPorHacer());
+    if (hueco.kcal < 100) return out;
     for (const meal of selectedDiet.meals) {
-      const t = meal.target;
-      if (meal.libre) continue;
-      // Sin reparto propio y FUERA de "Día flexible", esta comida no tiene
-      // hueco que mirar (como siempre). En flexible —una sola comida sin
-      // target— se mira contra lo que queda del DÍA, que es lo único que hay.
-      if (!t && !modoFlexible) continue;
-      const puesto = mealDoneByCat[meal.id] ?? { HC: 0, PROT: 0, GRASA: 0, MIX_HC: 0, MIX_GRASA: 0 };
-      const hueco = t ? {
-        HC: Math.max(0, round2(objetivoEfectivo(meal.id, 'HC', t.HC ?? 0) - puesto.HC)),
-        PROT: Math.max(0, round2(objetivoEfectivo(meal.id, 'PROT', t.PROT ?? 0) - puesto.PROT)),
-        GRASA: Math.max(0, round2(objetivoEfectivo(meal.id, 'GRASA', t.GRASA ?? 0) - puesto.GRASA)),
-      } : delDia;
-      if (hueco.HC + hueco.PROT + hueco.GRASA < 1) continue;
-      out[meal.id] = ordenarPorPreferencia(ordenarPorCupo(seguras, hueco, 0.5, true)).slice(0, 3);
+      if (meal.libre || meal.items.some((_, k) => itemStates[`${meal.id}_${k}`]?.done)) continue;
+      out[meal.id] = ordenarPorPreferencia(ordenarPorLoQueQueda(seguras, hueco, true)).slice(0, 3);
     }
     return out;
-  }, [recipes, enabledModes, isSafeForAthlete, selectedDiet, mealDoneByCat, ordenarPorPreferencia, leftByCat, modoFlexible, objetivoEfectivo]);
+  }, [recipes, enabledModes, isSafeForAthlete, selectedDiet, itemStates, ordenarPorPreferencia, quedaDelDia, comidasPorHacer]);
 
   const sortedPickerRecipes = useMemo(() => {
     // Una receta guardada del recetario no trae `ingredients` (ver
@@ -933,7 +825,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     // Solo lo que cabe en el cupo elegido, y de lo que mejor lo aprovecha en
     // adelante — ofrecer una receta que no entra no ayuda a nadie.
     return ordenarPorPreferencia(
-      ordenarPorCupo(filtered, cupoDisponible, 0.5, recipeSearchDebounced.trim().length === 0));
+      ordenarPorLoQueQueda(filtered, cupoDisponible, recipeSearchDebounced.trim().length === 0));
   }, [recipes, enabledModes, recipeCatFilter, recipeSearchDebounced, isSafeForAthlete, ordenarPorPreferencia, cupoDisponible]);
 
   /* El recetario para «Usar receta»: lo que el atleta puede comer, con lo que
@@ -942,7 +834,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
      cada colección sale ya en ese orden. */
   const poolSelectorRecetario = useMemo(() => {
     const seguras = indiceRecetario.filter(r => esPlatoDelRecetario(r) && isSafeForAthlete(r, 'recetario'));
-    const porCupo = ordenarPorCupo(seguras, cupoDisponible, 0.5, false);
+    const porCupo = ordenarPorLoQueQueda(seguras, cupoDisponible, false);
     const favoritas = new Set(recipeFavorites.recipeIds);
     const preferidos = new Set(swapPrefs.preferredDishTypes ?? []);
     const rango = (r: Recipe) => (favoritas.has(r.id) ? 0 : preferidos.has(dishType(r)) ? 1 : 2);
@@ -1346,8 +1238,8 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
 
   const confirmSaveMealAsRecipe = async (meal: DietMeal) => {
     const name = recipeNameDraft.trim();
-    // En «Calorías y macros» la comida es solo lo apuntado: lo sembrado del plan
-    // sin marcar no se ve, así que tampoco se guarda.
+    // Se guarda lo comido de esa comida, con sus kcal y gramos reales (los de
+    // las etiquetas cuando los hay): son los que luego lee la receta.
     const items = meal.items.filter((_, i) => itemStates[`${meal.id}_${i}`]?.done);
     if (!name || items.length === 0) return;
     setSavingRecipe(true);
@@ -1355,6 +1247,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
       const placed: Record<FoodCategory, number> = { HC: 0, PROT: 0, GRASA: 0, MIX_HC: 0, MIX_GRASA: 0 };
       for (const item of items) addToPlaced(placed, item.category, item.quantity);
       const exchanges = { HC: placed.HC, PROT: placed.PROT, GRASA: placed.GRASA };
+      const macrosComida = redondearMacros(macrosDeLineas(items));
       const ingredients: Recipe['ingredients'] = items.map(item => ({
         foodLabel: item.foodLabel, category: item.category, mode: activeDietMode, quantity: item.quantity,
       }));
@@ -1365,8 +1258,10 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
         ingredients,
         extras: [],
         steps: [],
+        // `exchanges` sigue para los binarios viejos; manda `macros`.
         exchanges,
-        kcal: Math.round(exchangeToKcal(exchanges)),
+        macros: { prot: macrosComida.p, carb: macrosComida.hc, fat: macrosComida.g },
+        kcal: Math.round(macrosComida.kcal),
       });
       setRecipes(prev => [...prev, saved]);
       showToast(`"${name}" guardada como receta — ya está disponible en Recetas.`, 'success');
@@ -1738,7 +1633,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     const { recipe } = pendiente;
     // En «Calorías y macros» la receta entra ingrediente a ingrediente, salvo
     // que venga de «Mi menú» con su ración ya resuelta.
-    if (!pendiente.items) { void anadirRecetaCalorias(recipe, mealId); return; }
+    if (!pendiente.items) { void anadirRecetaCalorias(recipe, mealId, pendiente.escala); return; }
     /* Si quien manda la receta ya sabe qué se come exactamente —«Mi menú», que
      * conoce la escala servida y los extras—, esos ítems mandan. Reconstruirlos
      * aquí desde la receta cruda era el «20 intercambios salen 26»: entraba el
@@ -1955,14 +1850,14 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
   };
 
   /** Una receta en «Calorías y macros»: ingrediente a ingrediente si hay datos. */
-  const anadirRecetaCalorias = async (recipe: Recipe, mealId: string) => {
+  const anadirRecetaCalorias = async (recipe: Recipe, mealId: string, escala = 1) => {
     let completa = recipe;
     if (faltanCantidades(recipe)) {
       completa = (await getRecipeById(recipe.id).catch(() => null)) ?? recipe;
     }
     const catalogo = await queryClient.fetchQuery({ queryKey: ['catalogoAlimentos'], queryFn: getCatalogoAlimentos, staleTime: 60 * 60_000 })
       .catch(() => [] as AlimentoCatalogo[]);
-    const { items } = recetaDesglosada(completa, { catalogo, nuevoLineaId, enabledModes });
+    const { items } = recetaDesglosada(completa, { catalogo, nuevoLineaId, enabledModes, factor: escala });
     if (items.length === 0) {
       showToast(`No se pudo añadir "${recipe.name}": no trae sus cantidades.`, 'error');
       return;
@@ -2105,7 +2000,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     const filasRecetas = recipes
       .filter(r => coincideBusqueda(r.name, term) && isSafeForAthlete(r))
       .map((r): FilaAlimento => {
-        const kcal = r.kcal ?? Math.round(exchangeToKcal(recipeExchanges(r)));
+        const kcal = Math.round(macrosDeReceta(r).kcal);
         return { clave: `receta_${r.id}`, nombre: r.name, detalle: kcal ? `${kcal} kcal` : undefined, anadido: veces(`receta_${r.id}`), onAbrir: () => void anadirRecetaCalorias(r, mealId) };
       });
     const filasMios = alimentosPropios.filter(f => coincide(f.label)).map(filaBanco);
@@ -3172,11 +3067,9 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
             <div className="px-4 pb-3 space-y-3">
               {swapSourceRecipe && (
                 <div className="font-sans text-caption text-ink-2">
-                  Mismos intercambios que <span className="text-ink font-bold">{swapSourceRecipe.name}</span>
+                  Parecidas en calorías a <span className="text-ink font-bold">{swapSourceRecipe.name}</span>
                   {' · '}
-                  <span className="font-mono text-accent-ink">
-                    {fmtQty(recipeExchanges(swapSourceRecipe).HC + recipeExchanges(swapSourceRecipe).PROT + recipeExchanges(swapSourceRecipe).GRASA)} int.
-                  </span>
+                  <span className="font-mono text-accent-ink">{Math.round(macrosDeReceta(swapSourceRecipe).kcal)} kcal</span>
                 </div>
               )}
               {/* 16 px: por debajo, Safari en iOS hace zoom al enfocar y no
@@ -3474,11 +3367,10 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
         const meal = selectedDiet?.meals.find(m => m.id === preguntaAmbito);
         const idx = selectedDiet?.meals.findIndex(m => m.id === preguntaAmbito) ?? 0;
         const nombreComida = meal ? mealLabel(meal.name, idx + 1) : 'esta comida';
-        const sinReparto = !meal?.target;
-        const totalDia = round2(Math.max(0, leftByCat.HC) + Math.max(0, leftByCat.PROT) + Math.max(0, leftByCat.GRASA));
-        const restanteComida = meal?.target
-          ? round2(BUDGET_CATS.reduce((s, c) => s + Math.max(0, (meal.target![c] ?? 0) - (mealDoneByCat[meal.id]?.[c] ?? 0)), 0))
-          : null;
+        // Sin reparto por comidas: «esta comida» es lo que queda del día entre
+        // las comidas que faltan por hacer.
+        const faltan = comidasPorHacer(preguntaAmbito);
+        const kcalComida = Math.round(quedaDelDia.kcal / faltan);
         return (
           <Sheet
             open
@@ -3489,12 +3381,11 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
           >
             <div className="space-y-2 pt-2">
               <p className="font-sans text-body-s text-ink-2 px-1">
-                Solo verás recetas que te quepan en el cupo que elijas.
+                Solo verás recetas que te quepan en lo que elijas.
               </p>
 
               <button
                 onClick={() => abrirRecetarioConAmbito(preguntaAmbito, 'comida')}
-                disabled={sinReparto}
                 className="w-full flex items-center gap-3 p-4 bg-surface hover:bg-raised rounded-control border border-hairline hover:border-accent/40 text-left transition-all disabled:opacity-40 disabled:hover:border-hairline"
               >
                 <span className="w-9 h-9 rounded-control bg-accent-bg flex items-center justify-center flex-shrink-0">
@@ -3503,9 +3394,9 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                 <span className="flex-1 min-w-0">
                   <span className="block font-sans font-bold text-body-s text-ink">Que cuadre en {nombreComida}</span>
                   <span className="block font-mono text-caption text-ink-2">
-                    {sinReparto
-                      ? 'Esta comida no tiene reparto asignado todavía'
-                      : `Te quedan ${fmtQty(restanteComida ?? 0)} int. en esta comida`}
+                    {faltan > 1
+                      ? `Unas ${numEs(kcalComida)} kcal (lo que te queda entre ${faltan} comidas)`
+                      : `Te quedan ${numEs(kcalComida)} kcal`}
                   </span>
                 </span>
               </button>
@@ -3519,7 +3410,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                 </span>
                 <span className="flex-1 min-w-0">
                   <span className="block font-sans font-bold text-body-s text-ink">Que cuadre en lo que me queda del día</span>
-                  <span className="block font-mono text-caption text-ink-2">Te quedan {fmtQty(totalDia)} int. hoy</span>
+                  <span className="block font-mono text-caption text-ink-2">Te quedan {numEs(quedaDelDia.kcal)} kcal hoy</span>
                 </span>
               </button>
             </div>

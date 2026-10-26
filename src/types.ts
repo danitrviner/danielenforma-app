@@ -1275,6 +1275,9 @@ export interface DietItem {
 export interface RecetaPendiente {
   recipe: Recipe;
   items?: DietItem[];
+  /** Escala elegida en la ficha del Recetario (×0,25–×3). `recipe` va SIN
+   *  escalar: la escala se aplica al desglosarla en el diario. */
+  escala?: number;
 }
 
 export interface DietMeal {

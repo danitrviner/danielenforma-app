@@ -1,6 +1,8 @@
 import { useReglasDeReceta } from '../hooks/useReglasDeReceta';
 import { recetaPermitida } from '../utils/reglasDeReceta';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { objetivoDeDieta } from '../utils/macrosLegado';
+import { macrosDeReceta } from '../utils/macrosDeReceta';
 import { superaElTiempo, minutosDeReceta } from '../utils/tiempoDeReceta';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -22,7 +24,7 @@ import { classifyRecipe, violatesDietType } from '../utils/foodPrefs';
 import { athleteConditions } from '../utils/dietaryRestrictions';
 import { dietTypeVigente } from '../utils/foodPrefs';
 import { dishType } from '../utils/dishTypes';
-import { BUDGET_CATS, roundQuarter, CAT_COLOR, CAT_BG } from '../utils/exchangeHelpers';
+import { roundQuarter, CAT_COLOR, CAT_BG } from '../utils/exchangeHelpers';
 import { objetivoDelDia } from '../utils/objetivoDelDia';
 import { fotoDeReceta } from '../utils/fotoDeReceta';
 import { escalarRecetaEntera } from '../utils/escalarRecetaEntera';
@@ -31,11 +33,7 @@ import { Skeleton } from './ui';
 import { EmptyState, Badge, Chip, Button, ListRow } from './ui';
 import { pulsable } from '../utils/a11y';
 
-// ── Exchange helpers ──────────────────────────────────────────────────────────
-
-const CAT_LABELS: Record<FoodCategory, string> = {
-  HC: 'HC', PROT: 'PROT', GRASA: 'GRASA', MIX_HC: 'MIX·HC', MIX_GRASA: 'MIX·GRASA',
-};
+// ── Colores de macro ──────────────────────────────────────────────────────────
 
 // Antes tenía su propio mapa de color (-400 en todo) distinto del que ya
 // usaba NutritionScreen.tsx (-300 texto / -500 fondo) para las mismas 5
@@ -49,27 +47,12 @@ const CAT_COLORS: Record<FoodCategory, string> = {
   MIX_GRASA: `${CAT_COLOR.MIX_GRASA} ${CAT_BG.MIX_GRASA}`,
 };
 
-function calcExchanges(recipe: Recipe): Partial<Record<FoodCategory, number>> {
-  if (recipe.exchanges) {
-    const { HC, PROT, GRASA } = recipe.exchanges;
-    const result: Partial<Record<FoodCategory, number>> = {};
-    if (HC    > 0) result.HC    = HC;
-    if (PROT  > 0) result.PROT  = PROT;
-    if (GRASA > 0) result.GRASA = GRASA;
-    return result;
-  }
-  const totals: Partial<Record<FoodCategory, number>> = {};
-  for (const ing of recipe.ingredients ?? []) {
-    totals[ing.category] = (totals[ing.category] ?? 0) + ing.quantity;
-  }
-  return totals;
-}
-
-function formatExchanges(exch: Partial<Record<FoodCategory, number>>): string {
-  const CATS: FoodCategory[] = ['HC', 'PROT', 'GRASA', 'MIX_HC', 'MIX_GRASA'];
-  return CATS.filter(c => (exch[c] ?? 0) > 0)
-    .map(c => `${exch[c]} ${CAT_LABELS[c]}`)
-    .join(' · ') || '—';
+/** «352 kcal · P 28 g · HC 42 g · G 8 g» (utils/macrosDeReceta.ts). */
+function textoMacros(recipe: Recipe): string {
+  const m = macrosDeReceta(recipe);
+  if (m.kcal <= 0) return '—';
+  const partes = ([['P', m.p], ['HC', m.hc], ['G', m.g]] as const).filter(([, v]) => v > 0).map(([e, v]) => `${e} ${Math.round(v)} g`);
+  return [`${Math.round(m.kcal)} kcal`, ...partes].join(' · ');
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -102,7 +85,7 @@ function RecipePlaceholder() {
    nombre y tres intercambios (Dani, 10-09-2026). Con foto se mantiene la
    tarjeta, que ahí el espacio sí lo justifica la imagen. */
 const RecetaFilaCompacta = React.memo(function RecetaFilaCompacta({ recipe, isFav, onOpen, onToggleFav }: CardProps) {
-  const exchStr = formatExchanges(calcExchanges(recipe));
+  const exchStr = textoMacros(recipe);
   return (
     /* El botón de favorita va FUERA de la ListRow, no en su `trailing`: con
        `onClick`, ListRow es ella misma un `<button>`, y un botón dentro de otro
@@ -113,7 +96,7 @@ const RecetaFilaCompacta = React.memo(function RecetaFilaCompacta({ recipe, isFa
       <ListRow
         className="min-w-0 flex-1"
         title={recipe.name}
-        subtitle={[exchStr, recipe.kcal != null ? `${recipe.kcal} kcal` : null].filter(Boolean).join(' · ')}
+        subtitle={exchStr}
         leading={
           <span className="w-9 h-9 rounded-control bg-accent-bg border border-accent/20 flex items-center justify-center">
             <span className="material-symbols-outlined text-body-s text-accent-ink select-none">skillet</span>
@@ -157,7 +140,7 @@ interface CardProps {
 // que `onOpen`/`onToggleFav` tengan identidad estable (useCallback más abajo)
 // y de que `recipe` no se reconstruya en cada render (ya sale de un useMemo).
 const RecipeCard = React.memo(function RecipeCard({ recipe, isFav, large = false, onOpen, onToggleFav }: CardProps) {
-  const exchStr = formatExchanges(calcExchanges(recipe));
+  const exchStr = textoMacros(recipe);
   const photo = fotoDeReceta(recipe);
   const colSpan = large ? 'col-span-1 md:col-span-8' : 'col-span-1 md:col-span-4';
   const minH    = large ? 'min-h-[300px] md:min-h-[360px]' : 'min-h-[220px] md:min-h-[280px]';
@@ -238,9 +221,9 @@ export function RecipeDetail({ recipe, isFav, isDisliked, isOwn, enabledModes, s
   // caían por el hueco y se trataban como receta propia sin ingredientes.
   const isRecetas = OWNER_RECETARIO_TODOS.includes(recipe.ownerId);
   const scaledRecipe = useMemo(() => escalarRecetaEntera(recipe, scale), [recipe, scale]);
-  const exch = calcExchanges(scaledRecipe);
-  const scaledTotal = BUDGET_CATS.reduce((s, c) => s + (exch[c] ?? 0), 0);
-  const fitsBudget = dailyBudgetTotal == null || scaledTotal <= dailyBudgetTotal;
+  // kcal y gramos de la ración elegida (utils/macrosDeReceta.ts).
+  const m = macrosDeReceta(scaledRecipe);
+  const fitsBudget = dailyBudgetTotal == null || m.kcal <= dailyBudgetTotal;
   const photo = fotoDeReceta(recipe);
 
   const visibleIngredients = isRecetas
@@ -405,17 +388,17 @@ export function RecipeDetail({ recipe, isFav, isDisliked, isOwn, enabledModes, s
               {scaledRecipe.kcal} kcal
             </span>
           )}
-          {(Object.entries(exch) as [FoodCategory, number][])
+          {([['P', m.p, 'PROT'], ['HC', m.hc, 'HC'], ['G', m.g, 'GRASA']] as const)
             .filter(([, v]) => v > 0)
-            .map(([cat, val]) => (
-              <span key={cat} className={`px-3 py-1 rounded-surface border font-mono text-label font-bold ${CAT_COLORS[cat]}`}>
-                {val} {CAT_LABELS[cat]}
+            .map(([etq, val, cat]) => (
+              <span key={etq} className={`px-3 py-1 rounded-surface border font-mono text-label font-bold ${CAT_COLORS[cat]}`}>
+                {etq} {Math.round(val)} g
               </span>
             ))}
         </div>
 
         {/* Escala — panel 03 del handoff: ×0,25–×3, recalcula en vivo */}
-        {(recipe.exchanges || (recipe.ingredients?.length ?? 0) > 0) && (
+        {(recipe.macros || recipe.exchanges || (recipe.ingredients?.length ?? 0) > 0) && (
           <div className="bg-surface border border-hairline rounded-surface p-4">
             <div className="flex items-baseline justify-between">
               <span className="font-mono text-caption font-semibold tracking-[.14em] text-ink-3">ESCALA</span>
@@ -445,7 +428,7 @@ export function RecipeDetail({ recipe, isFav, isDisliked, isOwn, enabledModes, s
             )}
 
             {onAddToIntercambios && (
-              <Button variant="primary" size="l" fullWidth onClick={() => onAddToIntercambios({ recipe: scaledRecipe })} className="mt-3">
+              <Button variant="primary" size="l" fullWidth onClick={() => onAddToIntercambios({ recipe, escala: scale })} className="mt-3">
                 Añadir a la comida
               </Button>
             )}
@@ -642,17 +625,16 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
     () => objetivoDelDia({ diets, config: dietConfig, program: programaNutri, fecha: hoyIsoLocal() }),
     [diets, dietConfig, programaNutri],
   );
+  // Las kcal de hoy: una receta que las pasa sola no «cabe en tu día».
   const dailyBudgetTotal = useMemo(() => {
     const d = objetivoHoy.dieta;
     if (!d) return null;
-    return BUDGET_CATS.reduce((s, c) => s + (d.budget[c] ?? 0), 0);
+    return objetivoDeDieta(d).kcal;
   }, [objetivoHoy]);
   const [onlyFitsBudget, setOnlyFitsBudget] = useState(true);
   const fitsBudget = useCallback((r: Recipe) => {
     if (dailyBudgetTotal == null) return true; // sin dieta activa — no hay presupuesto que aplicar
-    const exch = calcExchanges(r);
-    const total = BUDGET_CATS.reduce((s, c) => s + (exch[c] ?? 0), 0);
-    return total <= dailyBudgetTotal;
+    return macrosDeReceta(r).kcal <= dailyBudgetTotal;
   }, [dailyBudgetTotal]);
   // Los tipos de plato (arroces, ensaladas, tortillas…) se preguntan en la ficha
   // de iniciación y el motor de menús ya los respetaba, pero el recetario que
@@ -777,13 +759,13 @@ export default function RecipesScreen({ profile, onAddToIntercambios }: Props) {
     return [...favs, ...destacadas, ...normales, ...noGustan];
   }, [indiceRecetas, esVisible, favoritosSet, prefs]);
 
-  /* La fila «Encajan en tu comida»: el reparto que el coach puso a la próxima
-     comida de hoy, en la dieta que toca hoy (la del calendario semanal o, sin
-     calendario, la primera activa). Día libre o sin reparto = sin fila. */
+  /* La fila «Encajan en tu comida»: el objetivo de hoy repartido a partes
+     iguales entre las comidas del plan (sin reparto por comidas, 10-2026), para
+     la próxima comida. Día libre o sin objetivo = sin fila. */
   const cupoProxima = useMemo(() => {
     if (objetivoHoy.origen === 'libre') return null;
     const ahora = new Date();
-    return cupoDeLaProximaComida(objetivoHoy.dieta?.meals, resolveSlots, ahora.getHours() + ahora.getMinutes() / 60);
+    return cupoDeLaProximaComida(objetivoHoy.dieta?.meals, objetivoHoy.dieta ? objetivoDeDieta(objetivoHoy.dieta) : null, resolveSlots, ahora.getHours() + ahora.getMinutes() / 60);
   }, [objetivoHoy]);
 
   /* Lo que el atleta ha comido de verdad el último mes, para «Las que más
