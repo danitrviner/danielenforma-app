@@ -133,7 +133,30 @@ export function encajaCategoria(
   return grupoDeReceta(r) === cat || r.categoria === cat;
 }
 
-export function hidratarEntradaIndice(r: Recipe): Recipe {
+/** Valores por 100 g de los alimentos del índice: id → [kcal, p, hc, g]. */
+export type AlimentosDelIndice = Record<string, [number, number, number, number]>;
+/** Un ingrediente vinculado en el índice: [n, alimento, gramos, min, max, palanca]. */
+type TuplaDeVinculo = [number, string | null, number, number, number, 'p' | 'h' | 'g' | 0];
+
+const PALANCA_LARGA = { p: 'proteina', h: 'hc', g: 'grasa' } as const;
+
+/** El vínculo compacto del índice (ver generarIndiceRecetas.mjs) en su forma normal. */
+export function vinculoDeIndice(vin: TuplaDeVinculo[], alimentos: AlimentosDelIndice = {}): NonNullable<Recipe['vinculo']> {
+  return {
+    calculadoEn: '',
+    ingredientes: vin.map(([n, alimentoId, gramos, min, max, pal]) => {
+      const v = alimentoId ? alimentos[alimentoId] : undefined;
+      return {
+        n, alimentoId, gramos, min, max,
+        ...(pal ? { palanca: PALANCA_LARGA[pal] } : { fijo: true }),
+        ...(v ? { porCien: { kcal: v[0], p: v[1], hc: v[2], g: v[3] } } : {}),
+      };
+    }),
+  };
+}
+
+export function hidratarEntradaIndice(entrada: Recipe & { vin?: TuplaDeVinculo[] }, alimentos?: AlimentosDelIndice): Recipe {
+  const { vin, ...r } = entrada;
   const categoria = noEsUnPlato(r)
     ? CAT_NO_PLATOS
     : esSuplementoPuroPorNombre(r.name) ? CAT_SUPLEMENTOS : r.categoria;
@@ -149,5 +172,6 @@ export function hidratarEntradaIndice(r: Recipe): Recipe {
     ingredients: [],
     extras: [],
     steps: [],
+    ...(vin ? { vinculo: vinculoDeIndice(vin, alimentos) } : {}),
   } as Recipe;
 }

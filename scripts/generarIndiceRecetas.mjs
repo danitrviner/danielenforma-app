@@ -78,6 +78,10 @@ function macrosYKcal(r) {
  * Todo lo demás —pasos, cantidades, peso, tiempo, dificultad— se queda fuera y
  * llega con la receta completa desde Firestore al abrirla.
  */
+/** Valores por 100 g de los alimentos de los vínculos: [kcal, p, hc, g]. */
+const ALIMENTOS = new Map();
+const PALANCA_CORTA = { proteina: 'p', hc: 'h', grasa: 'g' };
+
 function mapEntradaIndice(r) {
   const entrada = {
     id:          r.id,
@@ -98,9 +102,17 @@ function mapEntradaIndice(r) {
   if (r.tupper)      entrada.tupper      = r.tupper;
   // Pestaña «Básicas» del recetario.
   if (r.basica === true || BASICAS_EXISTENTES.has(r.id)) entrada.basica = true;
-  // Recetas base con ingredientes vinculados (N-05): el motor de ajuste (N-06)
-  // necesita sus gramos, rangos y valores por 100 g sin abrir la receta.
-  if (r.vinculo) entrada.vinculo = { ingredientes: r.vinculo.ingredientes, calculadoEn: r.vinculo.calculadoEn };
+  // Recetas con ingredientes vinculados (N-05, y desde 26-10-2026 casi todas):
+  // el generador de menús necesita sus gramos y rangos sin abrir la receta.
+  // Compacto: una tupla [n, alimento, gramos, min, max, palanca] por
+  // ingrediente (palanca 'p'|'h'|'g', o 0 si es fijo) y los valores por 100 g
+  // de cada alimento UNA vez en `alimentos` (ver hidratarEntradaIndice).
+  if (r.vinculo) {
+    entrada.vin = r.vinculo.ingredientes.map(i => {
+      if (i.alimentoId && i.porCien) ALIMENTOS.set(i.alimentoId, [i.porCien.kcal, i.porCien.p, i.porCien.hc, i.porCien.g]);
+      return [i.n, i.alimentoId, i.gramos, i.min, i.max, i.fijo || !i.palanca ? 0 : PALANCA_CORTA[i.palanca]];
+    });
+  }
   return entrada;
 }
 
@@ -120,7 +132,7 @@ function main() {
   // entradas en cada arranque.
   recetas.sort((a, b) => a.name.localeCompare(b.name, 'es'));
 
-  const json = JSON.stringify({ generado: new Date().toISOString(), total: recetas.length, recetas });
+  const json = JSON.stringify({ generado: new Date().toISOString(), total: recetas.length, alimentos: Object.fromEntries(ALIMENTOS), recetas });
   writeFileSync(SALIDA, json);
 
   const kb = n => `${(n / 1024).toFixed(0)} KB`;

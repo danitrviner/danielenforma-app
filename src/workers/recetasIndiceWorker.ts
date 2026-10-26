@@ -1,4 +1,4 @@
-import { hidratarEntradaIndice } from '../db/recetasHidratacion';
+import { hidratarEntradaIndice, type AlimentosDelIndice } from '../db/recetasHidratacion';
 import { Recipe } from '../types';
 
 /**
@@ -24,8 +24,8 @@ type MensajeSalida = { recetas: Recipe[] } | { error: string };
 
 (self as any).onmessage = (evento: MessageEvent<MensajeEntrada>) => {
   try {
-    const datos = JSON.parse(evento.data.texto) as { recetas?: Recipe[] };
-    const recetas = (datos.recetas ?? []).map(hidratarEntradaIndice);
+    const datos = JSON.parse(evento.data.texto) as { recetas?: Recipe[]; alimentos?: AlimentosDelIndice };
+    const recetas = (datos.recetas ?? []).map(r => hidratarEntradaIndice(r, datos.alimentos));
     (self as any).postMessage({ recetas } satisfies MensajeSalida);
   } catch (err) {
     (self as any).postMessage({ error: err instanceof Error ? err.message : 'Error parseando el índice' } satisfies MensajeSalida);

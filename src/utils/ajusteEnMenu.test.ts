@@ -21,17 +21,21 @@ const receta = (): Recipe => ({
 });
 
 describe('generador de menús con recetas base ajustables (N-06)', () => {
-  it('ajusta ingredientes en vez de escalar la receta entera', () => {
+  // Dani, 26-10-2026: primero la ración entera a la escala que toca y, dentro
+  // de ella, solo los alimentos que hacen falta (aquí el arroz sube y el pollo
+  // baja un poco) para clavar los macros.
+  it('escala la receta y ajusta sus alimentos para clavar los macros', () => {
     const fit = bestScaleFit(receta(), mx({ HC: 4, PROT: 2, GRASA: 0 }));
-    expect(fit?.scale).toBe(1);
-    expect(fit?.ajuste?.gramos.find(g => g.n === 0)!.gramos).toBeGreaterThan(90);
-    expect(fit?.ajuste?.cambios[0].motivo).toBe('faltaban hidratos');
-    // 4 intercambios de HC = 100 g: el ajuste llega a ±5 g.
+    expect(fit?.scale).toBe(1.25);
+    expect(fit?.ajuste?.gramos.find(g => g.n === 0)!.gramos).toBe(130);
+    expect(fit?.ajuste?.cambios[0]).toMatchObject({ nombre: 'Arroz', antes: 113, despues: 130, motivo: 'faltaban hidratos' });
     expect(Math.abs(fit!.macros.hc - 100)).toBeLessThanOrEqual(5);
   });
 
-  it('si no encaja dentro de sus rangos, se descarta', () => {
-    expect(bestScaleFit(receta(), mx({ HC: 12, PROT: 2, GRASA: 0 }))).toBeNull();
+  it('si ni moviendo sus alimentos encaja, se escala entera como cualquier receta', () => {
+    const fit = bestScaleFit(receta(), mx({ HC: 12, PROT: 2, GRASA: 0 }));
+    expect(fit).not.toBeNull();
+    expect(fit?.ajuste).toBeUndefined();
   });
 
   it('sin vínculo sigue escalando como siempre', () => {
