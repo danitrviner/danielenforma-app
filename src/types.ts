@@ -339,9 +339,8 @@ export interface AthleteNutritionConfig {
   cookingMaxTime?: number;    // minutos
   quiereRapidas?: boolean;    // ver OnboardingData.quiereRapidas
   mealCount?: number;         // 3 | 4 | 5 | 6 (ver CONTEOS_COMIDAS)
-  /** Reparto del día en «Calorías y macros»: % de las kcal por comida, en el
-   *  orden de las comidas del día. Si no casa con las de un día concreto, se usa
-   *  el de por defecto (utils/diarioCalorias.ts). */
+  /** Reparto de las kcal por comida que había hasta 10-2026. Ya no se usa
+   *  (solo cuenta el total del día); puede venir en datos guardados. */
   repartoKcalPct?: number[];
 }
 

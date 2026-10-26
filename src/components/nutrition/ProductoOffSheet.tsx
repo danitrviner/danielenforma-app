@@ -3,22 +3,19 @@ import { useQuery } from '@tanstack/react-query';
 import { Sheet, Button, Input, Banner } from '../ui';
 import { getProductoOff, ATRIBUCION_OFF } from '../../services/openFoodFacts';
 import { extrasDeRacion, esIncompleto, motivoDeIncompleto, type EntradaIndiceOff, type OffProducto } from '../../utils/productoOff';
-import { itemsDeProducto, nutrientesDeRacion } from '../../utils/productoAIntercambios';
+import { nutrientesDeRacion } from '../../utils/productoAIntercambios';
 import { MICRO_META, MICRO_KEYS } from '../../data/micronutrients';
-import { fmtQty } from '../../utils/exchangeHelpers';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Ficha de un producto de supermercado (D-04)
 
    Sale del buscador por nombre (y del escáner). Pide los gramos, enseña lo que
-   aporta la ración y, en el modo Intercambios, su equivalencia. Lo que el
+   aporta la ración en kcal y gramos. Lo que el
    producto no declara se dice («no declarado»): no se inventa ni se pone a 0.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 type Props = {
   entrada: EntradaIndiceOff;
-  /** Cómo está viendo el día el atleta: decide si se enseña la equivalencia en intercambios. */
-  vista: 'intercambios' | 'macros';
   /** Producto ya conocido (alimento del catálogo, N-04): no se descarga nada. */
   producto?: OffProducto;
   /** Pie de la ficha. Por defecto, la atribución de Open Food Facts. */
@@ -29,9 +26,8 @@ type Props = {
   onClose: () => void;
 };
 
-const ABREV = { HC: 'HC', PROT: 'P', GRASA: 'G' } as const;
 
-export default function ProductoOffSheet({ entrada, vista, producto: conocido, nota, gramosIniciales, onConfirm, onClose }: Props) {
+export default function ProductoOffSheet({ entrada, producto: conocido, nota, gramosIniciales, onConfirm, onClose }: Props) {
   const consulta = useQuery({
     queryKey: ['offProducto', entrada.c],
     queryFn: () => getProductoOff(entrada.c),
@@ -52,12 +48,7 @@ export default function ProductoOffSheet({ entrada, vista, producto: conocido, n
     if (!producto || !valido) return null;
     const porCien = { kcal: producto.k, p: producto.p, hc: producto.h, g: producto.g };
     const n = nutrientesDeRacion(porCien, gramos);
-    const r = itemsDeProducto({ nombre: producto.n, gramos, lineaId: 'previo', origen: { tipo: 'off', codigo: producto.c }, porCien });
-    const equiv = r.items
-      .filter(i => i.category === 'HC' || i.category === 'PROT' || i.category === 'GRASA')
-      .map(i => `${fmtQty(i.quantity)} ${ABREV[i.category as 'HC' | 'PROT' | 'GRASA']}`)
-      .join(' + ');
-    return { n, equiv, extras: extrasDeRacion(producto, gramos) };
+    return { n, extras: extrasDeRacion(producto, gramos) };
   }, [producto, gramos, valido]);
 
   const micros = calculo?.extras?.m ?? {};
@@ -105,11 +96,6 @@ export default function ProductoOffSheet({ entrada, vista, producto: conocido, n
                       </div>
                     ))}
                   </dl>
-                  {vista === 'intercambios' && (
-                    <p className="pt-3 font-sans text-body-s text-ink-2">
-                      En intercambios: <span className="font-mono font-bold text-accent-ink">{calculo.equiv ? `≈ ${calculo.equiv}` : 'menos de ¼ de intercambio'}</span>
-                    </p>
-                  )}
                 </>
               ) : (
                 <p className="font-sans text-body-s text-ink-3">Escribe los gramos para ver lo que aporta.</p>

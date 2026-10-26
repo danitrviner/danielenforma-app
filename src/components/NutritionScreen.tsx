@@ -5,13 +5,13 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { minutosDeReceta } from '../utils/tiempoDeReceta';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { UserProfile, Diet, DietMeal, DietItem, FoodCategory, DietMode, MealItem, Recipe, RecipeFavorites, RecetaPendiente, MenuCompletionLog, DietCompletionLog, Macros } from '../types';
-import { macrosDeIntercambios, objetivoDelRegistro, intercambiosDeMacros, macrosDeLineas } from '../utils/macrosLegado';
+import { macrosDeIntercambios, objetivoDelRegistro, intercambiosDeMacros, macrosDeLineas, objetivoDeDieta } from '../utils/macrosLegado';
 import { sonMacrosVacios, sinNegativos, restarMacros, escalarMacros, redondearMacros } from '../utils/macros';
 import { macrosDeReceta, ordenarPorLoQueQueda } from '../utils/macrosDeReceta';
 import { getDietsForAthlete, getAthleteDietConfig, saveAthleteDietConfig, createDiet, updateDiet, deleteDiet, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig, saveAthleteNutritionConfig, getRecipes, getRecipeFavorites, getNutritionProgram, markNutritionPhaseSeen, computeActivePhase, createNotificationDeduped, getDietCompletionLog, saveDietCompletionLog, createRecipe, queryRecetasForGenerator, cargarIndiceRecetas, getOnboarding, getRecipeById, getMenuCompletionLog, saveMenuCompletionLog, getAlimentosPersonales, getCatalogoAlimentos, crearAlimentoPersonal, actualizarAlimentoPersonal, borrarAlimentoPersonal, getDietCompletionLogsForAthlete } from '../dbService';
 import { esPlatoDelRecetario } from '../db/recetasHidratacion';
 import RecetarioDescubrir from './RecetarioDescubrir';
-import { BUDGET_CATS, MODE_LABEL, ALL_DIET_MODES, round2, fmtQty, foodNameWithoutGrams, addToPlaced, recipeToDietItems, computeDietPlaced } from '../utils/exchangeHelpers';
+import { BUDGET_CATS, MODE_LABEL, ALL_DIET_MODES, round2, fmtQty, foodNameWithoutGrams, addToPlaced, recipeToDietItems } from '../utils/exchangeHelpers';
 import { parseBaseGrams, etiquetaDePeso, pesoDeItem } from '../utils/conversionNutricional';
 import { findRecipeAlternatives, recipeExchanges, groupByDishType, type RecipeAlternative, type AlternativePrefs } from '../utils/recipeMatch';
 import { ingredientMatch, violatesDietType } from '../utils/foodPrefs';
@@ -60,7 +60,7 @@ import { filasEnOrdenCronologico, horaActualHHMM } from '../utils/diaFlexible';
 import {
   COACH_EMAIL, makeId, dietSnapshot, estructuraDeDia, sembrarDiaDelPlan, plantillaDeComidas,
   WD_FULL,
-  mealLabel, CHIP_LABEL, ItemState,
+  mealLabel, ItemState,
 } from './nutrition/dietHelpers';
 import { useDiaActual, diaSemanaDe } from '../hooks/useDiaActual';
 import { addDays, hoyIsoLocal} from '../utils/trainingWeek';
@@ -82,6 +82,14 @@ interface Props {
 // Fila de una alternativa en "Cambiar comida". A diferencia de RecipePickerRow,
 // esta muestra kcal y gramos —lo que tiene que cuadrar— y avisa cuando las kcal
 // no son idénticas.
+/** Lo que suma un menú guardado: «1.850 kcal · P 140 · HC 200 · G 55 g». */
+function resumenDeMenu(meals: DietMeal[]): string {
+  const items = meals.flatMap(m => m.items);
+  if (items.length === 0) return '';
+  const m = macrosDeLineas(items);
+  return `${Math.round(m.kcal).toLocaleString('es-ES')} kcal · P ${Math.round(m.p)} · HC ${Math.round(m.hc)} · G ${Math.round(m.g)} g`;
+}
+
 function SwapCandidateRow({ alt, isFav, onSelect }: {
   alt: RecipeAlternative; isFav: boolean; onSelect: (r: Recipe) => void;
   key?: React.Key;
@@ -387,13 +395,6 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
   const [crearAlimentoAbierto, setCrearAlimentoAbierto] = useState(false);
   const [alimentoABorrar, setAlimentoABorrar] = useState<MealItem | null>(null);
   const [alimentoAEditar, setAlimentoAEditar] = useState<MealItem | null>(null);
-  /* La guía se abre sola la PRIMERA vez que este atleta llega al buscador en
-     modo Intercambios, y después solo si la pide desde «Cómo funciona». Es
-     explicación, no un aviso: reaparecer cada dos por tres la convierte en algo
-     que se cierra sin leer. Se recuerda en su perfil (utils/avisosVistos.ts):
-     solo en el móvil se perdía al cerrar sesión y volvía a salir cada vez que
-     pulsaba «Añadir» (Dani, 25-10-2026). El efecto que la abre va más abajo,
-     junto a `vistaCupo`, que es de quien depende. */
   const [searchTerm, setSearchTerm] = useState('');
   // T13 (18-08): mismo tick + ×N que el selector del coach, para la rama de
   // "añadir" (itemIdx === null) — "cambiar" sigue siendo una sustitución
@@ -2709,16 +2710,13 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
               <p className="font-sans text-caption text-ink-2 uppercase tracking-wider mb-2">De tu entrenador</p>
               <div className="space-y-1">
                 {dietasDelCoach.map(dt => {
-                  const dPlaced = computeDietPlaced(dt.meals);
-                  const chips = BUDGET_CATS.filter(cat => dPlaced[cat] > 0)
-                    .map(cat => `${CHIP_LABEL[cat]} ${fmtQty(dPlaced[cat])}`)
-                    .join(' · ');
+                  const chips = resumenDeMenu(dt.meals);
                   const esLaDeHoy = dt.id === dietaPautada?.id;
                   return (
                     <ListRow
                       key={dt.id}
                       title={dt.name}
-                      subtitle={[esLaDeHoy ? 'La de este día' : null, chips || 'Solo cupo, sin alimentos']
+                      subtitle={[esLaDeHoy ? 'La de este día' : null, chips || `Solo el objetivo: ${numEs(Math.round(objetivoDeDieta(dt).kcal))} kcal`]
                         .filter(Boolean).join(' · ')}
                       leading={
                         <span className="w-9 h-9 rounded-control bg-accent-bg flex items-center justify-center flex-shrink-0">
@@ -2748,10 +2746,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
           ) : (
             <div className="space-y-1">
               {menusGuardados.map(dt => {
-                const dPlaced = computeDietPlaced(dt.meals);
-                const chips = BUDGET_CATS.filter(cat => dPlaced[cat] > 0)
-                  .map(cat => `${CHIP_LABEL[cat]} ${fmtQty(dPlaced[cat])}`)
-                  .join(' · ');
+                const chips = resumenDeMenu(dt.meals);
                 return (
                   <ListRow
                     key={dt.id}
@@ -3222,7 +3217,6 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
       {codigoEscaneado && (
         <ProductoEscaneadoSheet
           codigo={codigoEscaneado}
-          vista="macros"
           onConfirm={(prod, gramos) => { setCodigoEscaneado(null); confirmarProductoOff(prod, gramos); }}
           {...(pickerItem ? {
             fichaCalorias: (prod: OffProducto) => (
@@ -3251,7 +3245,6 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
       {productoOffAbierto && (
         <ProductoOffSheet
           entrada={productoOffAbierto}
-          vista="macros"
           gramosIniciales={ultimosGramos(claveDeProducto(productoOffAbierto.c))}
           onConfirm={confirmarProductoOff}
           onClose={() => setProductoOffAbierto(null)}
@@ -3261,7 +3254,6 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
         <ProductoOffSheet
           entrada={{ c: alimentoCatalogoAbierto.id, n: nombreDeAlimento(alimentoCatalogoAbierto), b: '', t: '' }}
           producto={comoProducto(alimentoCatalogoAbierto)}
-          vista="macros"
           gramosIniciales={ultimosGramos(claveDeCatalogo(alimentoCatalogoAbierto.id))}
           nota={alimentoCatalogoAbierto.fuente ? `Valores por 100 g · ${alimentoCatalogoAbierto.fuente}` : 'Valores por 100 g del catálogo de En Forma.'}
           onConfirm={(_, gramos) => confirmarAlimentoCatalogo(alimentoCatalogoAbierto, gramos)}

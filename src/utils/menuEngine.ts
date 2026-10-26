@@ -883,10 +883,6 @@ export function generateWeek(args: GenerateWeekArgs): MenuDay[] {
 
 // ─── Tolerancia ──────────────────────────────────────────────────────────────
 
-export function dayTotals(day: MenuDay): Macros {
-  return macrosDelDiaDeMenu(day);
-}
-
 /** kcal de más (+) o de menos (−) del día. */
 export function dayGlobalDeviation(day: MenuDay): number {
   return desviacionDelDia(day);

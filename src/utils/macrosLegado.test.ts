@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { Diet, DietItem, DietMeal } from '../types';
 import {
   macrosDeIntercambios, kcalDeIntercambio, intercambiosDeMacros, macrosDeLinea, macrosDeLineas,
-  esLineaAproximada, objetivoDeDieta, objetivoDelRegistro,
+  esLineaAproximada, objetivoDeDieta, objetivoDelRegistro, objetivoYCupo,
 } from './macrosLegado';
 import { exchangeToKcal } from './nutritionConstants';
 import { kcalDeDieta } from './semanasNutricion';
@@ -72,5 +72,13 @@ describe('macrosLegado · lo nuevo manda', () => {
     const v = intercambiosDeMacros(m);
     expect(v).toEqual({ HC: 10, PROT: 6, GRASA: 6.36, MIX_HC: 0, MIX_GRASA: 0 });
     expect(Math.abs(macrosDeIntercambios(v).kcal - m.kcal)).toBeLessThanOrEqual(1);
+  });
+
+  it('objetivoYCupo guarda el objetivo y su cupo, y el objetivo manda al leer', () => {
+    const m = { kcal: 2230, p: 150, hc: 250, g: 70 };
+    const d = objetivoYCupo(m);
+    expect(d.objetivo).toEqual(m);
+    expect(d.budget).toEqual(intercambiosDeMacros(m));
+    expect(objetivoDeDieta(d)).toEqual(m);
   });
 });

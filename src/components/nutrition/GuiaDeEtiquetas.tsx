@@ -82,7 +82,7 @@ export default function GuiaDeEtiquetas({ onClose }: Props) {
             Esa no tiene truco: el número que ponga, sin más.
           </Punto>
           <Punto icono="visibility_off" titulo="La fibra y la sal no se apuntan">
-            No tienen casilla porque no cuentan intercambios. Si el envase separa la
+            No tienen casilla porque no cambian tus kcal ni tus macros. Si el envase separa la
             fibra de los hidratos, deja los hidratos como vengan.
           </Punto>
           <Punto icono="rule" titulo="Si algo no viene, pon 0">
@@ -140,9 +140,9 @@ export default function GuiaDeEtiquetas({ onClose }: Props) {
           <h3 className="font-mono text-caption font-semibold uppercase tracking-[.16em] text-ink-3">
             Antes de guardar
           </h3>
-          <Punto icono="fact_check" titulo="Mira el recuadro del intercambio">
-            Te dice los gramos que salen y en qué grupo cae. Si ves algo raro —3 g de
-            pan, 900 g de pollo— hay un número mal puesto.
+          <Punto icono="fact_check" titulo="Mira el recuadro de abajo">
+            Te dice las kcal y los macros por 100 g. Si ves algo raro —900 kcal en
+            un pan, 3 g de proteína en un pollo— hay un número mal puesto.
           </Punto>
           <Punto icono="error" titulo="«Las calorías no cuadran con los macros»">
             Ese aviso salta cuando las kcal no encajan con lo demás. Casi siempre es

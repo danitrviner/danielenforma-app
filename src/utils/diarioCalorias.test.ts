@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { DietMeal } from '../types';
-import { lineasDelDiario, kcalDeLineas, repartoKcalPorDefecto, repartoKcalVigente, kcalPorComida } from './diarioCalorias';
+import { lineasDelDiario, kcalDeLineas } from './diarioCalorias';
 
 const comida = (items: DietMeal['items'], extra: Partial<DietMeal> = {}): DietMeal => ({ id: 'm1', name: 'Desayuno', items, ...extra });
 
@@ -53,32 +53,5 @@ describe('lineasDelDiario', () => {
     const ls = lineasDelDiario(comida([{ category: 'HC', foodLabel: 'Pan raro', quantity: 1, lineaId: 'x', nutrientes: null }]), new Set(['m1_0']));
     expect(ls[0].kcal).toBeNull();
     expect(kcalDeLineas(ls)).toBe(0);
-  });
-});
-
-describe('reparto de calorías por comida', () => {
-  const meals: DietMeal[] = [
-    { id: 'a', name: 'Desayuno', items: [], target: { HC: 2, PROT: 1, GRASA: 1, MIX_HC: 0, MIX_GRASA: 0 } },
-    { id: 'b', name: 'Comida', items: [], target: { HC: 4, PROT: 2, GRASA: 1, MIX_HC: 0, MIX_GRASA: 0 } },
-  ];
-
-  it('sale del reparto por intercambios pasado a kcal y suma 100', () => {
-    const r = repartoKcalPorDefecto(meals);
-    expect(r.reduce((s, n) => s + n, 0)).toBe(100);
-    expect(r[1]).toBeGreaterThan(r[0]);
-  });
-
-  it('sin reparto en la dieta, a partes iguales', () => {
-    expect(repartoKcalPorDefecto([{ id: 'a', name: 'a', items: [] }, { id: 'b', name: 'b', items: [] }, { id: 'c', name: 'c', items: [] }])).toEqual([34, 33, 33]);
-  });
-
-  it('respeta el guardado solo si casa con las comidas y suma 100', () => {
-    expect(repartoKcalVigente(meals, [30, 70])).toEqual([30, 70]);
-    expect(repartoKcalVigente(meals, [30, 60])).toEqual(repartoKcalPorDefecto(meals));
-    expect(repartoKcalVigente(meals, [20, 30, 50])).toEqual(repartoKcalPorDefecto(meals));
-  });
-
-  it('kcal por comida', () => {
-    expect(kcalPorComida(2330, [25, 35, 30, 10])).toEqual([583, 816, 699, 233]);
   });
 });

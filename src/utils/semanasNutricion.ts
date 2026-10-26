@@ -165,14 +165,6 @@ export function diaDeLaSemana(fecha: string): WeekDay {
   return DIA_SEMANA[new Date(Date.UTC(y, m - 1, d)).getUTCDay()];
 }
 
-/** Intercambios de HC que el ciclado suma (o resta) ese día, o 0. `entrena`
- *  undefined = no se sabe (no se aplica nada). */
-export function hcDelCiclado(program: Pick<NutritionProgram, 'ciclado'>, semana: number, entrena: boolean | undefined): number {
-  const c = program.ciclado;
-  if (!c || entrena === undefined || semana < c.desde || (c.hasta !== undefined && semana > c.hasta)) return 0;
-  return entrena ? c.entreno : c.descanso;
-}
-
 /** La dieta que toca `fecha` con todo lo programado para esa semana.
  *  `entrena`: si ese día tiene sesión asignada (para el ciclado de hidratos). */
 export function dietaDeLaSemana(diet: Diet, program: NutritionProgram | null | undefined, fecha: string, entrena?: boolean): Diet {
@@ -215,14 +207,6 @@ export function macrosDeComida(meal: DietMeal): Record<MacroAjustable, number> {
   if (meal.items.length > 0) for (const it of meal.items) addToPlaced(p, it.category, it.quantity);
   else for (const [cat, q] of Object.entries(meal.target ?? {}) as [FoodCategory, number][]) addToPlaced(p, cat, q ?? 0);
   return { HC: p.HC, PROT: p.PROT, GRASA: p.GRASA };
-}
-
-/** kcal de una comida por sus alimentos (o por su objetivo si aún no tiene). */
-export function kcalDeComida(meal: DietMeal): number {
-  const p = VACIO();
-  if (meal.items.length > 0) for (const it of meal.items) addToPlaced(p, it.category, it.quantity);
-  else for (const [cat, q] of Object.entries(meal.target ?? {}) as [FoodCategory, number][]) addToPlaced(p, cat, q ?? 0);
-  return Math.round(objetivoDeDieta({ budget: p }).kcal);
 }
 
 /** kcal/día de cada semana del programa (índice 1..N; 0 queda a null), con la
