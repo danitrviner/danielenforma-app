@@ -186,30 +186,51 @@ const SECOS_POR_DEFECTO = /\b(arroz|pasta|quinoa|cuscus|couscous|bulgur|mijo|esp
  * Los sinónimos buenos que caen en `baja` por esta regla van en
  * `SINONIMOS_REVISADOS`, que manda sobre la puntuación.
  */
-export function emparejar(nombre: string, catalogo: AlimentoCatalogo[]): { alimento?: AlimentoCatalogo; confianza: Confianza } {
+export interface CandidatoDeAlimento {
+  alimento: AlimentoCatalogo;
+  puntos: number;
+  /** Cuánto del nombre del alimento está en el ingrediente (1 = entero). */
+  cubre: number;
+  /** Cuánto del ingrediente queda explicado por el alimento (1 = entero). */
+  explica: number;
+  estado?: AlimentoCatalogo['estado'];
+}
+
+/** Palabras significativas de un nombre (sin vacías ni estado, en singular). */
+export function palabrasDe(nombre: string): string[] {
+  return palabras(nombre).filter(w => !(w in ESTADOS_EN_TEXTO));
+}
+
+/** Los alimentos del catálogo que comparten alguna palabra con el ingrediente,
+ *  de mejor a peor. Es lo que `emparejar` puntúa; se expone para que el
+ *  revinculado pueda desempatar por las kcal de la receta. */
+export function candidatosDe(nombre: string, catalogo: AlimentoCatalogo[]): CandidatoDeAlimento[] {
   const ps = palabras(nombre);
   const estadoEscrito = ps.map(w => ESTADOS_EN_TEXTO[w]).find(Boolean);
   const del = new Set(ps.filter(w => !(w in ESTADOS_EN_TEXTO)));
-  type Candidato = { alimento: AlimentoCatalogo; puntos: number; cubre: number; explica: number; estado?: AlimentoCatalogo['estado'] };
-  const candidatos: Candidato[] = [];
+  const candidatos: CandidatoDeAlimento[] = [];
   for (const a of catalogo) {
     const estadoCat = estadoDelAlimento(a);
     const pa = palabras(a.nombre).filter(w => !(w in ESTADOS_EN_TEXTO));
     if (pa.length === 0) continue;
     const comunes = pa.filter(w => del.has(w)).length;
     if (comunes === 0) continue;
-    // `cubre`: cuánto del nombre del alimento está en el ingrediente.
-    // `explica`: cuánto del ingrediente queda explicado por el alimento.
     const cubre = comunes / pa.length;
     const explica = comunes / Math.max(1, del.size);
     const estado = estadoEscrito && estadoCat ? (estadoEscrito === estadoCat ? 0.2 : -0.5) : 0;
     candidatos.push({ alimento: a, puntos: cubre + explica + estado, cubre, explica, estado: estadoCat });
   }
-  if (candidatos.length === 0) return { confianza: 'ninguna' };
-  // A igual puntuación y sin estado escrito, antes la versión sin cocer: las
-  // cantidades de una receta son en crudo («Patata 200 g», «Couscous 60 g»).
-  const cocido = (c: Candidato) => (c.estado === 'cocido' ? 1 : 0);
+  const cocido = (c: CandidatoDeAlimento) => (c.estado === 'cocido' ? 1 : 0);
   candidatos.sort((a, b) => b.puntos - a.puntos || (estadoEscrito ? 0 : cocido(a) - cocido(b)));
+  return candidatos;
+}
+
+export function emparejar(nombre: string, catalogo: AlimentoCatalogo[]): { alimento?: AlimentoCatalogo; confianza: Confianza } {
+  const ps = palabras(nombre);
+  const estadoEscrito = ps.map(w => ESTADOS_EN_TEXTO[w]).find(Boolean);
+  type Candidato = CandidatoDeAlimento;
+  const candidatos = candidatosDe(nombre, catalogo);
+  if (candidatos.length === 0) return { confianza: 'ninguna' };
   const mejor = candidatos[0];
   const estadoChoca = !!estadoEscrito && !!mejor.estado && estadoEscrito !== mejor.estado;
   // Sin estado escrito, una entrada «seco» y otra «cocido» con las mismas
@@ -596,6 +617,8 @@ export type VinculoAutomatico =
 export function vinculoAutomatico(
   receta: Pick<RecetaCruda, 'ingredients'>,
   catalogo: AlimentoCatalogo[],
+  /** Pares ya decididos (p. ej. por las kcal de la receta): posición del ingrediente → alimento. */
+  forzados?: ReadonlyMap<number, AlimentoCatalogo>,
 ): VinculoAutomatico {
   const dudosos: string[] = [];
   const ingredientes: IngredienteVinculado[] = receta.ingredients.map((ing, n) => {
@@ -603,7 +626,8 @@ export function vinculoAutomatico(
     if (esIngredienteQueNoCuenta(ing.name) || gramos <= 0) {
       return { n, alimentoId: null, gramos, min: gramos, max: gramos, fijo: true };
     }
-    const { alimento, confianza } = emparejarRevisado(ing.name, catalogo);
+    const forzado = forzados?.get(n);
+    const { alimento, confianza } = forzado ? { alimento: forzado, confianza: 'alta' as Confianza } : emparejarRevisado(ing.name, catalogo);
     if (!alimento || confianza !== 'alta') {
       dudosos.push(ing.name);
       return { n, alimentoId: null, gramos, min: gramos, max: gramos, fijo: true };

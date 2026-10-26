@@ -43,7 +43,9 @@ export const OBJETIVOS_ORDEN: ObjetivoCorporalTipo[] = [
 
 /** Rango de ritmo en % del peso por semana, con signo. `min` < `max` siempre. */
 export const RANGO_PCT_SEMANA: Partial<Record<ObjetivoCorporalTipo, { min: number; max: number }>> = {
-  volumen:           { min: 0.25, max: 0.4 },
+  // 0,2-0,35 %/sem (Iraki 2019, Helms 2014; doctrina §5). Hasta el 26-10-2026
+  // era 0,25-0,4 y daba por «lento» lo que la doctrina llamaba ideal.
+  volumen:           { min: 0.2, max: 0.35 },
   deficit:           { min: -0.6, max: -0.4 },
   // El borde −0,6 cuenta como «en rango» en los dos: justo en la frontera
   // no hay nada que corregir, sea cual sea la etiqueta.

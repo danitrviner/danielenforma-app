@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import type { AlimentoCatalogo } from './catalogoAlimentos';
 import {
-  calcularIngredientes, macrosCrudos, aplicarVinculo, mismoResultado, emparejar, emparejarRevisado, propuestaDeRango,
+  calcularIngredientes, macrosCrudos, aplicarVinculo, mismoResultado, emparejar, emparejarRevisado, propuestaDeRango, candidatosDe, palabrasDe,
   filasDePropuesta, leerVinculos, leerRecetasNuevas, recetaCrudaNueva, esIngredienteQueNoCuenta, vinculoAutomatico,
   COLUMNAS_VINCULOS, COLUMNAS_RECETAS_NUEVAS, type RecetaCruda, type IngredienteVinculado,
 } from './recetaVinculada';
@@ -274,6 +274,25 @@ describe('vinculoAutomatico', () => {
   it('si algo no empareja seguro, no vincula y dice qué', () => {
     const r = vinculoAutomatico({ ingredients: [{ name: 'Arroz', quantity: 200 }, { name: 'Salsa secreta del chef', quantity: 30 }] }, CAT);
     expect(r).toEqual({ ok: false, dudosos: ['Salsa secreta del chef'] });
+  });
+
+  it('un par forzado (desempate por kcal del revinculado) entra como alta', () => {
+    const CAT2 = [...CAT, cat('garbanzos-seco', 'Garbanzos', { kcal: 334, p: 19, hc: 55, g: 6 }), cat('garbanzos-cocido', 'Garbanzos', { kcal: 139, p: 7.2, hc: 19, g: 2.6 })];
+    const receta = { ingredients: [{ name: 'Garbanzo', quantity: 60 }, { name: 'Pechuga de pollo', quantity: 100 }] };
+    // Dos entradas con las mismas palabras y estados seco/cocido: solo, es duda…
+    expect(vinculoAutomatico(receta, CAT2.map(c => c.id.startsWith('garbanzos') ? { ...c, estado: c.id.endsWith('seco') ? 'seco' : 'cocido' } : c) as typeof CAT2)).toMatchObject({ ok: false, dudosos: ['Garbanzo'] });
+    // …y con el par decidido se vincula sin más.
+    const r = vinculoAutomatico(receta, CAT2, new Map([[0, CAT2.find(c => c.id === 'garbanzos-seco')!]]));
+    expect(r.ok).toBe(true);
+    if ('ingredientes' in r) expect(r.ingredientes[0]).toMatchObject({ alimentoId: 'garbanzos-seco', gramos: 60 });
+  });
+
+  it('candidatosDe lista los alimentos que comparten palabras, de mejor a peor; palabrasDe quita vacías y estado', () => {
+    const CAT2 = [...CAT, cat('harina-de-garbanzo-listo', 'Harina de garbanzo', { kcal: 387, p: 22, hc: 58, g: 6.7 }), cat('garbanzos-seco', 'Garbanzos', { kcal: 334, p: 19, hc: 55, g: 6 })];
+    const c = candidatosDe('Garbanzo cocido', CAT2);
+    expect(c.map(x => x.alimento.id)).toEqual(['garbanzos-seco', 'harina-de-garbanzo-listo']);
+    expect(c[0]).toMatchObject({ cubre: 1, explica: 1 });
+    expect(palabrasDe('Garbanzos cocidos de bote')).toEqual(['garbanzo', 'bote']);
   });
 
   it('media ya no vincula sola; un sinónimo revisado sí (26-10-2026)', () => {

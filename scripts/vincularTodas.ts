@@ -34,7 +34,7 @@ import { fileURLToPath } from 'url';
 import { cargarCatalogoAlimentos } from './_lib/cargarCatalogoAlimentos';
 import { abrirDb } from './_lib/firestoreDb.mjs';
 import { mapRecipe } from './lib/mapearReceta.mjs';
-import { aplicarVinculo, emparejarRevisado, mismoResultado, vinculoAutomatico, type RecetaCruda } from '../src/utils/recetaVinculada';
+import { aplicarVinculo, calcularIngredientes, candidatosDe, emparejarRevisado, mismoResultado, palabrasDe, vinculoAutomatico, type RecetaCruda } from '../src/utils/recetaVinculada';
 import type { AlimentoCatalogo } from '../src/utils/catalogoAlimentos';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -72,6 +72,56 @@ function desvincular(receta: RecetaCruda): RecetaCruda {
 /** Nombre del ingrediente n de la receta. */
 const nombreIng = (receta: RecetaCruda, n: number) => receta.ingredients[n]?.name ?? `#${n}`;
 
+/* Desempate por las kcal de la receta (Dani, 26-10-2026: «¿no lo puedes saber
+   tú con las kcal?»). Si TODO menos UN ingrediente está vinculado y ese tiene
+   varios candidatos (garbanzo seco o cocido, arándano fresco o deshidratado,
+   coco natural o rallado…), se prueba cada uno y gana el que deja las kcal de
+   la receta más cerca de las que declara el recetario. Solo se acepta si el
+   error queda dentro del margen y el segundo mejor está claramente peor. */
+const MARGEN_KCAL_RESOLVER = 30;
+const MARGEN_PCT_RESOLVER = 0.07;
+/** Palabras que distinguen presentaciones del MISMO alimento. Un candidato solo
+ *  entra en el desempate si ingrediente y alimento se diferencian en estas:
+ *  «Garbanzo» puede ser garbanzo seco o cocido, nunca harina de garbanzo;
+ *  «Arándano rojo» puede ser el fresco o el deshidratado, nunca la mermelada. */
+const VARIANTES = new Set(['deshidratado', 'deshidratada', 'natural', 'rallado', 'rallada', 'lata', 'conserva', 'bote', 'escurrido', 'escurrida',
+  'congelado', 'congelada', 'fresco', 'fresca', 'seco', 'seca', 'cocido', 'cocida', 'crudo', 'cruda', 'agua', 'entero', 'entera', 'troceado', 'troceada',
+  'copo', 'grano', 'pelado', 'pelada', 'vasito', 'envasado', 'envasada', 'integral']);
+function mismoAlimento(ingrediente: string, alimento: string): boolean {
+  const a = new Set(palabrasDe(ingrediente));
+  const b = new Set(palabrasDe(alimento));
+  const distintas = [...a].filter(w => !b.has(w)).concat([...b].filter(w => !a.has(w)));
+  return distintas.every(w => VARIANTES.has(w));
+}
+let resueltasPorKcal = 0;
+const paresPorKcal = new Map<string, number>();
+function resolverPorKcal(receta: RecetaCruda): ReturnType<typeof vinculoAutomatico> {
+  const v = vinculoAutomatico(receta, catalogo);
+  if (!('dudosos' in v) || v.dudosos.length !== 1) return v;
+  const kcalDeclaradas = receta.vinculo?.antes?.kcal ?? receta.kcal;
+  if (!kcalDeclaradas || kcalDeclaradas <= 0) return v;
+  const n = receta.ingredients.findIndex(i => i.name === v.dudosos[0]);
+  if (n < 0) return v;
+  const candidatos = candidatosDe(v.dudosos[0], catalogo).filter(c => mismoAlimento(v.dudosos[0], c.alimento.nombre));
+  if (candidatos.length === 0) return v;
+  const pruebas = candidatos.map(c => {
+    const vv = vinculoAutomatico(receta, catalogo, new Map([[n, c.alimento]]));
+    if ('dudosos' in vv) return null;
+    const calc = calcularIngredientes(vv.ingredientes, porId);
+    if (!calc.ok) return null;
+    return { alimento: c.alimento, error: Math.abs(calc.kcal - kcalDeclaradas), v: vv };
+  }).filter((p): p is NonNullable<typeof p> => p !== null).sort((a, b) => a.error - b.error);
+  if (pruebas.length === 0) return v;
+  const [mejor, segundo] = pruebas;
+  const margen = Math.max(MARGEN_KCAL_RESOLVER, kcalDeclaradas * MARGEN_PCT_RESOLVER);
+  if (mejor.error > margen) return v;
+  if (segundo && segundo.alimento.id !== mejor.alimento.id && segundo.error < mejor.error * 2 && segundo.error <= margen) return v;
+  resueltasPorKcal++;
+  const clave = `${v.dudosos[0]};${mejor.alimento.id}`;
+  paresPorKcal.set(clave, (paresPorKcal.get(clave) ?? 0) + 1);
+  return mejor.v;
+}
+
 for (const archivo of readdirSync(DIR).filter(f => /^recetas_.*\.json$/.test(f)).sort()) {
   const ruta = resolve(DIR, archivo);
   const texto = readFileSync(ruta, 'utf8');
@@ -80,7 +130,7 @@ for (const archivo of readdirSync(DIR).filter(f => /^recetas_.*\.json$/.test(f))
   json.recipes = json.recipes.map(receta => {
     total++;
     if (receta.vinculo && (!REVINCULAR || receta.basica === true)) { yaVinculadas++; conVinculo.push(receta); return receta; }
-    const v = vinculoAutomatico(receta, catalogo);
+    const v = resolverPorKcal(receta);
     if ('dudosos' in v) {
       for (const d of v.dudosos) dudas.set(d, (dudas.get(d) ?? 0) + 1);
       if (!receta.vinculo) return receta;
@@ -117,6 +167,8 @@ for (const archivo of readdirSync(DIR).filter(f => /^recetas_.*\.json$/.test(f))
           cambios.push(`${nombreIng(receta, i.n)}: ${antesId ?? '—'} → ${i.alimentoId ?? '—'}`);
         } else if (previo && JSON.stringify(previo.porCien ?? null) !== JSON.stringify(i.porCien ?? null)) {
           cambios.push(`${nombreIng(receta, i.n)}: porCien`);
+        } else if (previo && (previo.min !== i.min || previo.max !== i.max || previo.gramos !== i.gramos)) {
+          cambios.push(`${nombreIng(receta, i.n)}: rango ${previo.min}-${previo.max} → ${i.min}-${i.max}`);
         }
       }
       filasRecetas.push([receta.id, receta.name, 'cambia', String(receta.kcal ?? ''), String(nueva.kcal ?? ''), cambios.join(' | ')]);
@@ -148,6 +200,11 @@ if (REVINCULAR) {
   console.log(`Recetas: ${total} · ya vinculadas: ${yaVinculadas} · se vinculan ahora: ${vinculadas} · quedan sin vincular: ${total - yaVinculadas - vinculadas}`);
 }
 console.log(`Dudas: ${dudas.size} ingredientes distintos → ${informe}`);
+if (resueltasPorKcal > 0) {
+  const rutaKcal = resolve(__dirname, 'out/vincular-por-kcal.csv');
+  writeFileSync(rutaKcal, '\ufeffingrediente;alimento;recetas\n' + [...paresPorKcal.entries()].sort((a, b) => b[1] - a[1]).map(([k, c]) => `${k};${c}`).join('\n') + '\n');
+  console.log(`Desempatadas por las kcal de la receta: ${resueltasPorKcal} → ${rutaKcal}`);
+}
 
 if (FIRESTORE) {
   if (!APLICAR) { console.log('--firestore necesita --aplicar.'); process.exit(1); }

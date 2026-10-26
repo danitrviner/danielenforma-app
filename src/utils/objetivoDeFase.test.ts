@@ -40,7 +40,7 @@ describe('cambiarObjetivo', () => {
     expect(p.startDate).toBe('2026-09-01');
     expect(p.phases).toHaveLength(1);
     expect(p.phases[0]).toMatchObject({ objetivo: 'volumen', phaseType: 'superavit', weeks: 8, dietId: '' });
-    expect(p.phases[0].targetRateKgWeek).toBeCloseTo(0.25, 2); // centro 0,325 % de 80 kg = 0,26 → 0,25
+    expect(p.phases[0].targetRateKgWeek).toBeCloseTo(0.2, 2); // centro 0,275 % de 80 kg = 0,22 → 0,20 (rango 0,2-0,35 desde 26-10-2026)
   });
 
   it('a mitad de fase: recorta a lo vivido, inserta la nueva y conserva las siguientes', () => {
