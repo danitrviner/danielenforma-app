@@ -74,22 +74,13 @@ export function estructuraDeDia(
 }
 
 /**
- * Las comidas con las que empieza un día: las del onboarding y, si el atleta
- * cambió cuántas hace en Preferencias (`AthleteNutritionConfig.mealCount`),
- * ese número manda: se recortan o se añaden «Comida N». Sin objetivo por
- * comida (10-2026): solo cuenta el total del día.
+ * Las comidas con las que empieza un día: siempre las cinco (Desayuno, Media
+ * mañana, Comida, Merienda y Cena), sea cual sea el onboarding o lo que dijera
+ * en Preferencias (Dani, 26-10-2026). Sin objetivo por comida: solo cuenta el
+ * total del día.
  */
-export function plantillaDeComidas(
-  delOnboarding: { name: string; slot?: number }[] | null | undefined,
-  mealCount?: number | null,
-): { name: string; slot?: number }[] {
-  const base = delOnboarding?.length ? delOnboarding : COMIDAS_POR_DEFECTO;
-  if (!mealCount || mealCount < 1 || mealCount === base.length) return base;
-  if (mealCount < base.length) return base.slice(0, mealCount);
-  return [
-    ...base,
-    ...Array.from({ length: mealCount - base.length }, (_, i) => ({ name: `Comida ${base.length + i + 1}` })),
-  ];
+export function plantillaDeComidas(): { name: string; slot?: number }[] {
+  return COMIDAS_POR_DEFECTO;
 }
 
 /** "martes, 2 de septiembre" — la fecha del día que se está viendo, en claro. */

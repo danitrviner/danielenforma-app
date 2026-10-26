@@ -1362,15 +1362,8 @@ export interface DietCompletionLog {
   /** Objetivo de ese día en kcal y gramos (10-2026). Congelado igual que
    *  `budget`, que manda solo si falta este. Leer con `objetivoDelRegistro`. */
   objetivo?: Macros;
-  /**
-   * «Día flexible» (10-2026): el atleta no reparte por comidas, apunta lo que
-   * va comiendo contra el cupo del día entero. `meals` sigue teniendo la misma
-   * forma —UNA sola comida sintética con todo lo apuntado— para no abrir un
-   * segundo formato de almacenamiento; esta marca es lo único que le dice a la
-   * pantalla que pinte "Lo que voy comiendo" en vez de las tarjetas por comida.
-   * Por día, no por atleta: activarlo un día no toca los demás. Ver
-   * utils/diaFlexible.ts para la conversión ida y vuelta con el modo normal.
-   */
+  /** «Día flexible» de antes de 10-2026: ya no existe (Dani, 26-10-2026). Los
+   *  días guardados así se leen como un día normal con una sola comida. */
   modoFlexible?: boolean;
   /** Cuándo se guardó por última vez (ISO). Lo pone `saveDietCompletionLog` y
    *  sirve para decidir, al reabrir la app, si manda el día que hay en el móvil

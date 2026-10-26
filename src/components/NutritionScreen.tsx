@@ -55,7 +55,6 @@ import { cargarIndiceOff, ATRIBUCION_OFF } from '../services/openFoodFacts';
 import { buscarEnIndiceOff, extrasDeRacion, type EntradaIndiceOff, type OffProducto } from '../utils/productoOff';
 import { buscarEnCatalogo, comoProducto, nombreDeAlimento, type AlimentoCatalogo } from '../utils/catalogoAlimentos';
 import { NotaDeFuente } from './FuentesCientificasSheet';
-import { filasEnOrdenCronologico, horaActualHHMM } from '../utils/diaFlexible';
 
 import {
   COACH_EMAIL, makeId, dietSnapshot, estructuraDeDia, sembrarDiaDelPlan, plantillaDeComidas,
@@ -368,18 +367,9 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
   // read-only view, so it can't just be the query data directly) ───────────
   const [selectedDiet, setSelectedDiet] = useState<Diet | null>(null);
   const [savedDietSnapshot, setSavedDietSnapshot] = useState('');
-  /** Último `modoFlexible` ya guardado — `dietSnapshot` no lo incluye (es un
-   *  campo del registro, no de la dieta), así que `isDirty` lo compara aparte;
-   *  sin esto, activar el modo en un día cuya estructura colapsa a una sola
-   *  comida que ya tenía un único hueco podía no detectarse como cambio. */
-  const [savedModoFlexible, setSavedModoFlexible] = useState(false);
   // "Mis dietas" — gestión de las dietas del atleta (crear/duplicar/borrar),
   // absorbida aquí en la fusión de Intercambios + Mis Dietas ("Mi plan").
   const [misDietasOpen, setMisDietasOpen] = useState(false);
-  /** «Día flexible» (utils/diaFlexible.ts) — por día, seedeado del propio
-   *  registro en el mismo efecto que siembra `selectedDiet`. Activarlo aquí no
-   *  toca otros días: cada uno trae su propia marca. */
-  const [modoFlexible, setModoFlexible] = useState(false);
 
   // Per-item state (ephemeral, day-only)
   const [itemStates, setItemStates] = useState<Record<string, ItemState>>({});
@@ -568,7 +558,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     const { meals, budget } = sembrarDiaDelPlan(
       diaLog,
       allDietsList,
-      plantillaDeComidas((onboarding?.meals ?? []).map(m => ({ name: m.name, slot: m.intakeType })), nutConfig?.mealCount),
+      plantillaDeComidas(),
       cupoPautado,
       // Las comidas del día empiezan vacías (Dani, 26-10-2026): solo sale lo
       // que apunta el atleta. El coach pauta el objetivo, no los alimentos.
@@ -602,8 +592,6 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     setSavedDietSnapshot(dietSnapshot(plan));
     setItemStates(estados);
     setOrigItemCounts(counts);
-    setModoFlexible(diaLog?.modoFlexible ?? false);
-    setSavedModoFlexible(diaLog?.modoFlexible ?? false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loadingPhase1, loadingDia, viewDate, diaLog, cupoPautado, dietaPautada, allDietsList, profile.email]);
 
@@ -874,7 +862,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
   // ── Handlers ─────────────────────────────────────────────────────────────────
 
   const isDirty = selectedDiet
-    ? dietSnapshot(selectedDiet) !== savedDietSnapshot || modoFlexible !== savedModoFlexible
+    ? dietSnapshot(selectedDiet) !== savedDietSnapshot
     : false;
 
   /**
@@ -905,7 +893,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
 
   /** Vaciar el día — deja la estructura de comidas pero sin alimentos. */
   const handleStartBlank = () => {
-    const meals = estructuraDeDia(plantillaDeComidas((onboarding?.meals ?? []).map(m => ({ name: m.name, slot: m.intakeType })), nutConfig?.mealCount));
+    const meals = estructuraDeDia(plantillaDeComidas());
     setSelectedDiet(prev => prev ? { ...prev, meals } : prev);
     setItemStates({});
     setOrigItemCounts(Object.fromEntries(meals.map(m => [m.id, 0])));
@@ -1052,10 +1040,6 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     const racionesVegetales = habitos?.racionesVegetales ?? previo?.racionesVegetales;
     const log = {
       athleteId: profile.email, date: viewDate, dietId, doneItemIds, meals, budget, objetivo,
-      // Por día, no por atleta: el estado de React ya es la fuente de verdad
-      // de ESTE día (se seedea del registro al cambiar de fecha), así que se
-      // escribe directo y no como un patch condicional igual que agua/verdura.
-      modoFlexible,
       ...(aguaMl !== undefined ? { aguaMl } : {}),
       ...(racionesVegetales !== undefined ? { racionesVegetales } : {}),
     };
@@ -1063,7 +1047,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     return saveDietCompletionLog(log)
       .catch(() => showToast('No se pudo guardar el registro del día. Se reintentará al recargar.', 'error'));
   // eslint-disable-next-line react-hooks/exhaustive-deps -- diaKey se deriva de profile.email y viewDate
-  }, [profile.email, viewDate, allDietsList, queryClient, showToast, modoFlexible]);
+  }, [profile.email, viewDate, allDietsList, queryClient, showToast]);
 
   const guardarHabitos = (patch: { aguaMl?: number; racionesVegetales?: number }) => {
     if (!selectedDiet) return;
@@ -1140,7 +1124,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
   const nuevoLineaId = () => `ln_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
 
   const confirmarGramos = (food: MealItem, gramos: number) => {
-    const items = itemsDeAlimentoPorGramos(food, gramos, nuevoLineaId(), modoFlexible ? horaActualHHMM() : undefined);
+    const items = itemsDeAlimentoPorGramos(food, gramos, nuevoLineaId());
     setGramosDe(null);
     agregarItems(items, food.label, food.id);
   };
@@ -1152,7 +1136,6 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
       origen: { tipo: 'off', codigo: prod.c },
       porCien: { kcal: prod.k, p: prod.p, hc: prod.h, g: prod.g },
       ...(extras ? { extras } : {}),
-      ...(modoFlexible ? { hora: horaActualHHMM() } : {}),
     });
     setProductoOffAbierto(null);
     if (r.items.length === 0) {
@@ -1170,7 +1153,6 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
       origen: { tipo: 'catalogo', id: a.id },
       porCien: { kcal: prod.k, p: prod.p, hc: prod.h, g: prod.g },
       ...(extras ? { extras } : {}),
-      ...(modoFlexible ? { hora: horaActualHHMM() } : {}),
     });
     setAlimentoCatalogoAbierto(null);
     if (r.items.length === 0) {
@@ -1191,8 +1173,6 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     const newItem: DietItem = {
       category: food.category, foodLabel: food.label, quantity: 1,
       baseGrams: parseBaseGrams(food.label) ?? undefined,
-      // En un "Día flexible" guardado antes de 10-2026 se ordena por hora.
-      ...(modoFlexible ? { hora: horaActualHHMM() } : {}),
     };
     agregarItems([newItem], food.label, food.id);
   };
@@ -1201,9 +1181,6 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
 
   /** Abrir el recetario desde una comida: primero la pregunta del cupo. */
   const handleOpenRecipePicker = (mealId: string) => {
-    // En "Día flexible" no hay "esta comida" que preguntar —es una sola
-    // comida sin reparto propio—: se va derecho a cuadrar contra el día.
-    if (modoFlexible) { abrirRecetarioConAmbito(mealId, 'dia'); return; }
     setPreguntaAmbito(mealId);
   };
 
@@ -1600,13 +1577,12 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
       pendiente.current = null;
       const doneItemIds = (Object.entries(itemStates) as [string, ItemState][]).filter(([, v]) => v.done).map(([k]) => k);
       setSavedDietSnapshot(dietSnapshot(plan));
-      setSavedModoFlexible(modoFlexible);
       void guardarDia(plan.meals, doneItemIds, plan);
     };
     pendiente.current = { guardar: escribir };
     const t = setTimeout(escribir, 1200);
     return () => clearTimeout(t);
-  }, [isDirty, selectedDiet, itemStates, guardarDia, modoFlexible]);
+  }, [isDirty, selectedDiet, itemStates, guardarDia]);
 
   /** Suelta lo pendiente ya. Se llama antes de cambiar de día y al salir. */
   const guardarYa = useCallback(() => { pendiente.current?.guardar(); }, []);
@@ -1650,12 +1626,11 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
      * aquí desde la receta cruda era el «20 intercambios salen 26»: entraba el
      * plato base en vez de la ración y media con pan que el atleta se comió.
      * Ver utils/paridadDeCaminos.test.ts. */
-    const newItemsSinHora: DietItem[] = pendiente.items ?? recipeToDietItems(recipe, enabledModes);
-    if (newItemsSinHora.length === 0) {
+    const newItems: DietItem[] = pendiente.items ?? recipeToDietItems(recipe, enabledModes);
+    if (newItems.length === 0) {
       showToast(`No se pudo añadir "${recipe.name}": no tiene datos nutricionales.`, 'error');
       return;
     }
-    const newItems = modoFlexible ? newItemsSinHora.map(it => ({ ...it, hora: horaActualHHMM() })) : newItemsSinHora;
     const startIdx = meal.items.length;
     setSelectedDiet(prev => {
       if (!prev) return prev;
@@ -1765,7 +1740,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
       aproximado: !exacto,
       mealId,
       alConfirmar: (g, m) => {
-        const items = itemsDeAlimentoPorGramos(food, g, nuevoLineaId(), modoFlexible ? horaActualHHMM() : undefined);
+        const items = itemsDeAlimentoPorGramos(food, g, nuevoLineaId());
         agregarItems(items, food.label, food.id, m);
       },
     });
@@ -1786,7 +1761,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
         const r = itemsDeProducto({
           nombre: prod.n, gramos: g, lineaId: nuevoLineaId(), origen: { tipo: 'catalogo', id: a.id },
           porCien: { kcal: prod.k, p: prod.p, hc: prod.h, g: prod.g },
-          ...(extras ? { extras } : {}), ...(modoFlexible ? { hora: horaActualHHMM() } : {}),
+          ...(extras ? { extras } : {}),
         });
         if (r.items.length === 0) { showToast('Esa ración es demasiado pequeña para contarla en tu día.', 'info'); return; }
         agregarItems(r.items, prod.n, `cat_${a.id}`, m);
@@ -1802,7 +1777,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
       nombre: prod.n, ...(prod.b ? { marca: prod.b } : {}), gramos, lineaId: nuevoLineaId(),
       origen: { tipo: 'off', codigo: prod.c },
       porCien: { kcal: prod.k, p: prod.p, hc: prod.h, g: prod.g },
-      ...(extras ? { extras } : {}), ...(modoFlexible ? { hora: horaActualHHMM() } : {}),
+      ...(extras ? { extras } : {}),
     });
     if (r.items.length === 0) { showToast('Esa ración es demasiado pequeña para contarla en tu día.', 'info'); return; }
     agregarItems(r.items, prod.n, `off_${prod.c}`, mealId);
@@ -1873,8 +1848,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
       showToast(`No se pudo añadir "${recipe.name}": no trae sus cantidades.`, 'error');
       return;
     }
-    const conHora = modoFlexible ? items.map(it => ({ ...it, hora: horaActualHHMM() })) : items;
-    agregarItems(conHora, recipe.name, `receta_${recipe.id}`, mealId);
+    agregarItems(items, recipe.name, `receta_${recipe.id}`, mealId);
   };
 
   /** Copia a una comida lo que se apuntó en la misma comida ayer. */
@@ -2382,7 +2356,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                           >
                             Nada apuntado todavía. Toca + para añadir.
                           </button>
-                        ) : (modoFlexible ? filasEnOrdenCronologico(meal.items) : filasDeComida(meal.items)).map(fila => {
+                        ) : filasDeComida(meal.items).map(fila => {
                           /* Una receta ocupa UN renglón, con la suma de sus
                              intercambios; un alimento suelto, el suyo. Ver
                              utils/filasDelPlan.ts para por qué. */
@@ -2408,7 +2382,6 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                                         {nombreReceta}
                                       </span>
                                       <span className="block font-mono text-caption text-ink-2">
-                                        {modoFlexible && meal.items[fila.idxs[0]]?.hora && `${meal.items[fila.idxs[0]].hora} · `}
                                         {numEs(kcalDeLineasComida(meal, fila.idxs))} kcal · receta
                                       </span>
                                       {fila.origenMenu && (
@@ -2553,16 +2526,12 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                     </div>
                   );
                 })}
-                {/* En "Día flexible" no hay comidas que añadir: todo va a la
-                    única lista de "Lo que voy comiendo". */}
-                {!modoFlexible && (
-                  <button
-                    onClick={addMeal}
-                    className="w-full py-3 rounded-control border border-dashed border-hairline text-ink-2 font-sans text-label font-bold uppercase tracking-wider hover:border-accent/40 hover:text-accent-ink transition-all"
-                  >
-                    + Añadir comida
-                  </button>
-                )}
+                <button
+                  onClick={addMeal}
+                  className="w-full py-3 rounded-control border border-dashed border-hairline text-ink-2 font-sans text-label font-bold uppercase tracking-wider hover:border-accent/40 hover:text-accent-ink transition-all"
+                >
+                  + Añadir comida
+                </button>
               </div>
 
               {/* Autoguardado — sin botón "Guardar". Va al final de las comidas,
