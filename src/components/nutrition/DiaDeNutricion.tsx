@@ -118,8 +118,6 @@ export function TarjetaDelDia(p: {
   onDiaAnterior: () => void;
   onDiaSiguiente: () => void;
   onHoy: () => void;
-  /** Abre el plan que pautó el entrenador para este día; sin plan, no sale. */
-  onPlan?: () => void;
   onMasOpciones: () => void;
   comido: number;
   objetivo: number;
@@ -140,11 +138,7 @@ export function TarjetaDelDia(p: {
   return (
     <div className="overflow-hidden rounded-canvas bg-surface">
       <div className="flex items-center justify-between border-b border-hairline px-3 py-2">
-        {p.onPlan ? (
-          <button type="button" onClick={p.onPlan} aria-label="Plan de tu entrenador" className="flex h-10 w-10 items-center justify-center text-ink-2 hover:text-ink">
-            <Icon name="restaurant_menu" size="m" />
-          </button>
-        ) : <span aria-hidden className="h-10 w-10" />}
+        <span aria-hidden className="h-10 w-10" />
         <div className="flex items-center gap-1">
           <button type="button" onClick={p.onDiaAnterior} aria-label="Día anterior" className="flex h-10 w-10 items-center justify-center text-ink-2 hover:text-ink">
             <Icon name="chevron_left" size="m" />

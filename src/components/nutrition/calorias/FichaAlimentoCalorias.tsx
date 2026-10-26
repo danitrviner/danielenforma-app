@@ -82,7 +82,8 @@ export default function FichaAlimentoCalorias({
   const [racionIdx, setRacionIdx] = useState(0);
   const [numTexto, setNumTexto] = useState('1');
   const [mealId, setMealId] = useState(mealInicial);
-  const [verTabla, setVerTabla] = useState(true);
+  // Siempre cerrada al abrir la ficha (Dani, 26-10-2026).
+  const [verTabla, setVerTabla] = useState(false);
 
   const racion = raciones[racionIdx] ?? raciones[0];
   const num = parseFloat(numTexto.replace(',', '.'));
@@ -109,7 +110,7 @@ export default function FichaAlimentoCalorias({
   ] : [];
 
   return (
-    <Sheet open onClose={onClose} label={nombre} alto="completo" size="m">
+    <Sheet open onClose={onClose} label={nombre} size="m">
       <div className="space-y-5 pb-4">
         <div className="flex items-start gap-3 pt-1">
           <div className="min-w-0 flex-1">
@@ -127,7 +128,61 @@ export default function FichaAlimentoCalorias({
           </button>
         </div>
 
-        <div className="space-y-3">
+        {n ? (
+          <>
+            <div className="flex items-center gap-4">
+              <DonutMacros kcal={n.kcal} p={n.p} hc={n.hc} g={n.g} />
+              <div className="grid flex-1 grid-cols-3 gap-2 text-center">
+                {([
+                  ['Hidratos', n.hc, n.hc * 4, 'var(--color-macro-hc)'],
+                  ['Grasa', n.g, n.g * 9, 'var(--color-macro-grasa)'],
+                  ['Proteína', n.p, n.p * 4, 'var(--color-macro-prot)'],
+                ] as const).map(([etq, gr, kc, color]) => (
+                  <div key={etq}>
+                    <span className="block font-mono text-label font-bold" style={{ color }}>{pct(kc)}%</span>
+                    <span className="block font-mono text-title-s font-bold text-ink">{fmt(gr)} g</span>
+                    <span className="block font-sans text-caption text-ink-2">{etq}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            {aproximado && (
+              <p className="font-sans text-caption text-ink-3">Valores aproximados: este alimento del banco se cuenta por su equivalencia.</p>
+            )}
+
+            <div className="border-t border-hairline pt-4">
+              <button type="button" onClick={() => setVerTabla(v => !v)} aria-expanded={verTabla} className="flex w-full items-center justify-between">
+                <span className="font-sans text-body font-bold text-ink">Información nutricional</span>
+                <span className="flex items-center gap-1 font-sans text-body-s text-accent-ink">
+                  {verTabla ? 'Ocultar' : 'Ver'}
+                  <Icon name="expand_more" size="s" className={`transition-transform duration-(--duration-base) ease-(--ease-brand) motion-reduce:transition-none ${verTabla ? 'rotate-180' : ''}`} />
+                </span>
+              </button>
+              {/* Se despliega animando la altura (grid 0fr → 1fr) y la hoja,
+                  que mide lo que su contenido, crece con ella. */}
+              <div
+                className={`grid transition-[grid-template-rows,opacity] duration-(--duration-slide) ease-(--ease-brand) motion-reduce:transition-none ${verTabla ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}
+                aria-hidden={!verTabla}
+              >
+                <div className="overflow-hidden">
+                  <dl className="space-y-2 pt-3">
+                    {filas.map(([etq, v, u]) => (
+                      <div key={etq} className="flex justify-between gap-3 font-sans text-body">
+                        <dt className="text-ink">{etq}</dt>
+                        <dd className="font-mono text-ink-2">{v === undefined ? <span className="text-ink-3">—</span> : `${fmt(v)}${u ? ` ${u}` : ''}`}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                </div>
+              </div>
+            </div>
+          </>
+        ) : (
+          <p className="font-sans text-body-s text-ink-3">Escribe cuántas raciones para ver lo que aporta.</p>
+        )}
+
+        {/* Lo que se apunta, debajo de la información (Dani, 26-10-2026). */}
+        <div className="space-y-3 border-t border-hairline pt-5">
           <div className="flex items-center justify-between gap-3">
             <span className="font-sans text-body text-ink">Ración</span>
             <Select
@@ -160,52 +215,6 @@ export default function FichaAlimentoCalorias({
             </div>
           )}
         </div>
-
-        {n ? (
-          <>
-            <div className="flex items-center gap-4 border-t border-hairline pt-5">
-              <DonutMacros kcal={n.kcal} p={n.p} hc={n.hc} g={n.g} />
-              <div className="grid flex-1 grid-cols-3 gap-2 text-center">
-                {([
-                  ['Hidratos', n.hc, n.hc * 4, 'var(--color-macro-hc)'],
-                  ['Grasa', n.g, n.g * 9, 'var(--color-macro-grasa)'],
-                  ['Proteína', n.p, n.p * 4, 'var(--color-macro-prot)'],
-                ] as const).map(([etq, gr, kc, color]) => (
-                  <div key={etq}>
-                    <span className="block font-mono text-label font-bold" style={{ color }}>{pct(kc)}%</span>
-                    <span className="block font-mono text-title-s font-bold text-ink">{fmt(gr)} g</span>
-                    <span className="block font-sans text-caption text-ink-2">{etq}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-            {aproximado && (
-              <p className="font-sans text-caption text-ink-3">Valores aproximados: este alimento del banco se cuenta por su equivalencia.</p>
-            )}
-
-            <div className="border-t border-hairline pt-4">
-              <button type="button" onClick={() => setVerTabla(v => !v)} className="flex w-full items-center justify-between">
-                <span className="font-sans text-body font-bold text-ink">Información nutricional</span>
-                <span className="flex items-center gap-1 font-sans text-body-s text-accent-ink">
-                  {verTabla ? 'Ocultar' : 'Ver'}
-                  <Icon name={verTabla ? 'expand_less' : 'expand_more'} size="s" />
-                </span>
-              </button>
-              {verTabla && (
-                <dl className="mt-3 space-y-2">
-                  {filas.map(([etq, v, u]) => (
-                    <div key={etq} className="flex justify-between gap-3 font-sans text-body">
-                      <dt className="text-ink">{etq}</dt>
-                      <dd className="font-mono text-ink-2">{v === undefined ? <span className="text-ink-3">—</span> : `${fmt(v)}${u ? ` ${u}` : ''}`}</dd>
-                    </div>
-                  ))}
-                </dl>
-              )}
-            </div>
-          </>
-        ) : (
-          <p className="font-sans text-body-s text-ink-3">Escribe cuántas raciones para ver lo que aporta.</p>
-        )}
 
         {nota && <p className="font-sans text-caption text-ink-3">{nota}</p>}
 

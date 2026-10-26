@@ -39,7 +39,7 @@ import { SemanaDelDiario, TarjetaDelDia, EtiquetaMacro } from './nutrition/DiaDe
 import AnadirAlimentoCalorias, { type FilaAlimento, type PestanaAnadir, type SeccionFilas } from './nutrition/calorias/AnadirAlimentoCalorias';
 import { alimentosGeneralesPorGrupo, type AlimentoGeneral } from '../utils/alimentosGenerales';
 import FichaAlimentoCalorias, { FichaProductoOff, racionesDe } from './nutrition/calorias/FichaAlimentoCalorias';
-import { lineasDelDiario, kcalDeLineas, type LineaDiario } from '../utils/diarioCalorias';
+import { lineasDelDiario, type LineaDiario } from '../utils/diarioCalorias';
 import { recetaDesglosada, faltanCantidades } from '../utils/recetaDesglosada';
 
 import CrearAlimentoSheet from './nutrition/CrearAlimentoSheet';
@@ -571,8 +571,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
       plantillaDeComidas((onboarding?.meals ?? []).map(m => ({ name: m.name, slot: m.intakeType })), nutConfig?.mealCount),
       cupoPautado,
       // Las comidas del día empiezan vacías (Dani, 26-10-2026): solo sale lo
-      // que apunta el atleta. El plan del coach se consulta y se copia desde
-      // «Plan de tu entrenador».
+      // que apunta el atleta. El coach pauta el objetivo, no los alimentos.
       null,
     );
     // Objetivo en kcal: el congelado del día si lo tiene; si no, el de la
@@ -1345,6 +1344,17 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     } : prev);
   };
 
+  /** El stepper de una receta entera va en raciones del plato (×1, ×1,25…),
+   *  no en intercambios: `escalarReceta` mueve el plato por su ítem mayor, así
+   *  que el paso se traduce a esa escala. Por debajo de ¼ de ración, no baja. */
+  const escalarRacionesDeReceta = (meal: DietMeal, idxs: number[], pasoRaciones: number) => {
+    const escala = meal.items[idxs[0]]?.escala ?? 1;
+    if (escala + pasoRaciones < 0.25) return;
+    const base = idxs.reduce((max, i) => Math.max(max, meal.items[i]?.quantity ?? 0), 0);
+    if (base <= 0) return;
+    handleEscalarReceta(meal.id, idxs, base * (pasoRaciones / escala));
+  };
+
   const handleRemoveItem = (mealId: string, itemIdx: number) => {
     if (!selectedDiet) return;
     const meal = selectedDiet.meals.find(m => m.id === mealId);
@@ -1890,45 +1900,6 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     showToast(`Copiado de ayer: ${items.length === 1 ? '1 alimento' : `${new Set(items.map(i => i.lineaId ?? i.foodLabel)).size} alimentos`}.`, 'success');
   };
 
-  /** El plan que pautó el coach para este día, por comidas, para consultarlo y
-   *  copiarlo: las comidas del día empiezan vacías (Dani, 26-10-2026). */
-  const planDelCoach = useMemo(() => {
-    const meals = dietaPautada?.meals;
-    if (!meals || meals.every(m => m.items.length === 0)) return null;
-    return meals.map((m, i) => {
-      const todo = new Set<string>(m.items.map((_, j) => `${m.id}_${j}`));
-      const lineas = lineasDelDiario(m, todo, nombreDeReceta);
-      return {
-        nombre: mealLabel(m.name, i + 1),
-        kcal: kcalDeLineas(lineas),
-        filas: lineas.map(l => ({ nombre: conMayuscula(foodNameWithoutGrams(l.nombre)), detalle: [l.gramos ? `${l.gramos} g` : null, l.kcal != null ? `${l.kcal} kcal` : null].filter(Boolean).join(' · ') })),
-      };
-    });
-  }, [dietaPautada, nombreDeReceta]);
-  const [planCoachAbierto, setPlanCoachAbierto] = useState(false);
-
-  /** «Copiar a mi día»: la comida del plan entra en la suya del día, ya como comida. */
-  const copiarDelPlan = (i: number) => {
-    const plan = dietaPautada?.meals?.[i];
-    if (!plan || !selectedDiet) return;
-    // A qué comida del día va: la que se llama igual, si no la de la misma
-    // franja (desayuno, comida…), y si no la misma posición o la última.
-    const norm = (t: string) => t.trim().toLocaleLowerCase('es-ES');
-    const destino = selectedDiet.meals.find(m => norm(m.name) === norm(plan.name))
-      ?? (plan.slot != null ? selectedDiet.meals.find(m => m.slot === plan.slot) : undefined)
-      ?? selectedDiet.meals[i]
-      ?? selectedDiet.meals[selectedDiet.meals.length - 1];
-    if (!destino) return;
-    const ids = new Map<string, string>();
-    const items = plan.items.map(({ hora: _h, ...it }) => {
-      if (!it.lineaId) return it;
-      if (!ids.has(it.lineaId)) ids.set(it.lineaId, nuevoLineaId());
-      return { ...it, lineaId: ids.get(it.lineaId)! };
-    });
-    cambiarLineas(null, { mealId: destino.id, items });
-    showToast(`${mealLabel(plan.name, i + 1)} copiada a tu día.`, 'success');
-  };
-
   /* La semana del diario: kcal apuntadas por día (los últimos 30 días, ya
      pedidos para el historial) más el día que se está editando, en vivo. */
   const kcalPorFecha = useMemo(() => {
@@ -2066,7 +2037,6 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     onDiaAnterior: () => irAlDia(addDays(viewDate, -1)),
     onDiaSiguiente: () => irAlDia(addDays(viewDate, 1)),
     onHoy: () => irAlDia(hoyFecha),
-    onPlan: planDelCoach ? () => setPlanCoachAbierto(true) : undefined,
     onMasOpciones: () => setMenuDiaAbierto(true),
   };
   // Sin dieta del coach para el día no hay objetivo: decirlo en vez de enseñar
@@ -2434,7 +2404,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                                       onClick={() => abrirReceta(meal.id, fila.recipeId, total, meal.items[fila.idxs[0]]?.escala)}
                                       className="flex-1 min-w-0 text-left rounded-control -m-1 p-1 transition-colors hover:bg-raised/60 active:bg-raised"
                                     >
-                                      <span className="block font-sans text-body font-bold leading-snug text-ink">
+                                      <span className="block font-sans text-body-s font-bold leading-snug text-ink">
                                         {nombreReceta}
                                       </span>
                                       <span className="block font-mono text-caption text-ink-2">
@@ -2458,14 +2428,14 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                                     <div className="flex items-center gap-1 bg-inset rounded-control border border-hairline flex-shrink-0">
                                       <button
                                         type="button"
-                                        onClick={() => handleEscalarReceta(meal.id, fila.idxs, -0.25)}
+                                        onClick={() => escalarRacionesDeReceta(meal, fila.idxs, -0.25)}
                                         aria-label={`Reducir ${nombreReceta}`}
                                         className="w-7 h-7 flex items-center justify-center text-ink-2 hover:text-ink font-bold text-body-s active:scale-90"
                                       >−</button>
-                                      <span className="w-9 text-center font-mono text-caption text-ink">{fmtQty(total)}</span>
+                                      <span className="w-10 text-center font-mono text-caption text-ink">×{(Math.round((meal.items[fila.idxs[0]]?.escala ?? 1) * 100) / 100).toLocaleString('es-ES')}</span>
                                       <button
                                         type="button"
-                                        onClick={() => handleEscalarReceta(meal.id, fila.idxs, 0.25)}
+                                        onClick={() => escalarRacionesDeReceta(meal, fila.idxs, 0.25)}
                                         aria-label={`Aumentar ${nombreReceta}`}
                                         className="w-7 h-7 flex items-center justify-center text-ink-2 hover:text-ink font-bold text-body-s active:scale-90"
                                       >+</button>
@@ -2498,7 +2468,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                                       onClick={() => { abrirFichaDeFila(meal, fila.idxs); }}
                                       className="flex-1 min-w-0 text-left rounded-control -m-1 p-1 transition-colors hover:bg-raised/60 active:bg-raised"
                                     >
-                                      <span className="block font-sans text-body font-bold leading-snug text-ink">{foodNameWithoutGrams(base.foodLabel)}</span>
+                                      <span className="block font-sans text-body-s font-bold leading-snug text-ink">{foodNameWithoutGrams(base.foodLabel)}</span>
                                       <span className="block font-mono text-caption text-accent-ink">{detalle}</span>
                                     </button>
                                   </div>
@@ -2539,7 +2509,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                                       </span>
                                     )}
                                     {sePesa && ' '}
-                                    <span className="font-sans text-body font-bold leading-snug text-ink">
+                                    <span className="font-sans text-body-s font-bold leading-snug text-ink">
                                       {foodNameWithoutGrams(st.foodLabel)}
                                     </span>
                                     {item.origenMenu && (
@@ -2595,13 +2565,13 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                 )}
               </div>
 
-              {/* Autoguardado — sin botón "Guardar". Ya no avisa de que se vaya a
-                  crear una copia: no hay dieta del coach que forkear, el día se
-                  guarda en su propio registro y punto. */}
+              {/* Autoguardado — sin botón "Guardar". Va al final de las comidas,
+                  no flotando: fija se quedaba a media pantalla tapando comidas
+                  al bajar y volver a subir (Dani, 26-10-2026). */}
               {(() => {
                 const statusLabel = isDirty ? 'Guardando el día...' : 'Día guardado';
                 return (
-                  <div className="sticky bottom-20 md:bottom-4 flex items-center justify-between gap-3 bg-surface border border-hairline rounded-surface p-3 shadow-e1">
+                  <div className="flex items-center justify-between gap-3 bg-surface border border-hairline rounded-surface p-3">
                     <span className="font-mono text-caption text-ink-2 uppercase tracking-wider pl-1">
                       {statusLabel}
                     </span>
@@ -2622,50 +2592,10 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
       )}
       </>
 
-      {/* Plan del entrenador para este día: se consulta y se copia por comidas
-          (las comidas del día empiezan vacías). */}
-      {planCoachAbierto && planDelCoach && (
-        <Sheet open onClose={() => setPlanCoachAbierto(false)} title="Plan de tu entrenador" size="m">
-          <div className="space-y-3 pb-2">
-            {planDelCoach.map((m, i) => (
-              <div key={i} className="overflow-hidden rounded-surface border border-hairline bg-surface">
-                <div className="flex items-center justify-between gap-3 px-4 py-3">
-                  <div className="min-w-0">
-                    <span className="block truncate font-sans text-title-s font-bold text-ink">{m.nombre}</span>
-                    <span className="block font-mono text-caption text-ink-2">≈ {numEs(m.kcal)} kcal</span>
-                  </div>
-                  {m.filas.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => copiarDelPlan(i)}
-                      className="flex flex-none items-center gap-1 rounded-full bg-raised px-3 py-2 font-sans text-body-s font-bold text-accent-ink"
-                    >
-                      <Icon name="content_copy" size="s" />
-                      Copiar a mi día
-                    </button>
-                  )}
-                </div>
-                {m.filas.length > 0 && (
-                  <ul className="border-t border-hairline">
-                    {m.filas.map((f, j) => (
-                      <li key={j} className="flex items-center justify-between gap-3 border-b border-hairline px-4 py-2.5 last:border-b-0">
-                        <span className="min-w-0 font-sans text-body font-bold leading-snug text-ink">{f.nombre}</span>
-                        <span className="flex-none font-mono text-body-s text-ink-2">{f.detalle}</span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            ))}
-          </div>
-        </Sheet>
-      )}
-
       {/* Menús «···»: el del día y el de cada comida. */}
       {menuDiaAbierto && (
         <Sheet open onClose={() => setMenuDiaAbierto(false)} title="Opciones del día" size="s">
           <div className="space-y-1 pb-2">
-            {planDelCoach && opcionMenu('restaurant_menu', 'Plan de tu entrenador', () => { setMenuDiaAbierto(false); setPlanCoachAbierto(true); })}
             {(menusGuardados.length > 0 || dietasDelCoach.length > 0) && opcionMenu('bookmark', 'Menús guardados', () => { setMenuDiaAbierto(false); setMisDietasOpen(true); })}
             {opcionMenu('bookmark_add', 'Guardar el día como menú', () => { setMenuDiaAbierto(false); void handleSaveAsMenu(); })}
           </div>
