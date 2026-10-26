@@ -81,6 +81,25 @@ export function estructuraDeDia(
   }));
 }
 
+/**
+ * Las comidas con las que empieza un día: las del onboarding y, si el atleta
+ * cambió cuántas hace en Preferencias (`AthleteNutritionConfig.mealCount`),
+ * ese número manda: se recortan o se añaden «Comida N». Sin objetivo por
+ * comida (10-2026): solo cuenta el total del día.
+ */
+export function plantillaDeComidas(
+  delOnboarding: { name: string; slot?: number }[] | null | undefined,
+  mealCount?: number | null,
+): { name: string; slot?: number }[] {
+  const base = delOnboarding?.length ? delOnboarding : COMIDAS_POR_DEFECTO;
+  if (!mealCount || mealCount < 1 || mealCount === base.length) return base;
+  if (mealCount < base.length) return base.slice(0, mealCount);
+  return [
+    ...base,
+    ...Array.from({ length: mealCount - base.length }, (_, i) => ({ name: `Comida ${base.length + i + 1}` })),
+  ];
+}
+
 /** "martes, 2 de septiembre" — la fecha del día que se está viendo, en claro. */
 export function fechaLarga(iso: string): string {
   const [y, m, d] = iso.split('-').map(Number);
