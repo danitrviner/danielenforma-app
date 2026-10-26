@@ -55,6 +55,7 @@ check_circle
 checklist
 chevron_left
 chevron_right
+chips
 circle
 close
 cloud_off
@@ -64,6 +65,7 @@ contacts
 content_copy
 content_cut
 contrast
+cookie
 cottage
 create
 cyclone
@@ -279,6 +281,7 @@ trending_flat
 trending_up
 trophy
 tune
+udon
 unarchive
 undo
 unfold_less
