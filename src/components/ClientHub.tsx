@@ -498,6 +498,7 @@ export default function ClientHub({
         athleteId: diet.athleteId,
         name: `${diet.name} (copia)`,
         budget: { ...diet.budget },
+        ...(diet.objetivo ? { objetivo: { ...diet.objetivo } } : {}),
         meals: diet.meals.map(m => ({
           ...m,
           id: makeId(),

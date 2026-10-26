@@ -220,7 +220,7 @@ export default function BloqueNutricionHabitos({
 
       {adherence.daysWithBudget > 0 && (
         <p className="font-mono text-caption text-ink-3 leading-relaxed">
-          La adherencia mide COMIDA, no tics: intercambios comidos ÷ intercambios de cupo. Puede
+          La adherencia mide COMIDA, no tics: kcal comidas ÷ kcal de su objetivo. Puede
           pasar del 100 % —comer de más es un dato— y por eso no se recorta. Contando líneas
           marcadas, como se hacía antes, saldría {adherence.avgPctPorLineas} %: desde que en «Mi
           plan» todo lo que añade nace ya marcado, ese número da casi siempre 100.

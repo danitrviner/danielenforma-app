@@ -1,4 +1,4 @@
-import type { Macros } from '../types';
+import type { Macros } from '../types.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Calorías y macros (10-2026)

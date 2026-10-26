@@ -1,5 +1,7 @@
 import { exchangeToKcal } from './nutritionConstants';
 import { kcalDeIntercambio } from './macrosLegado';
+import { kcalDeGramos, macrosDesdeGramos } from './macros';
+import type { Macros } from '../types';
 import { roundQuarter } from './exchangeHelpers';
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -92,6 +94,51 @@ export function ajustarCupoSinTocarProteina(
     kcalDespues,
     kcalSinColocar: 0,
     nota: sube
+      ? 'Las kcal de más se han repartido entre hidratos y grasa. La proteína no se toca.'
+      : 'El recorte sale de hidratos y grasa. La proteína se queda igual: es lo que protege la masa magra en déficit.',
+  };
+}
+
+// ── En gramos (10-2026) ──────────────────────────────────────────────────────
+
+export interface AjusteDeObjetivo {
+  objetivo: Macros;
+  kcalAntes: number;
+  kcalDespues: number;
+  kcalSinColocar: number;
+  nota: string;
+}
+
+/**
+ * Lo mismo que `ajustarCupoSinTocarProteina`, sobre el objetivo en gramos:
+ * lleva las kcal a `kcalObjetivo` moviendo solo hidratos y grasa, cada uno
+ * con su peso relativo. La proteína no se toca. Gramos enteros.
+ */
+export function ajustarObjetivoSinTocarProteina(objetivo: Macros, kcalObjetivo: number): AjusteDeObjetivo | null {
+  if (!Number.isFinite(kcalObjetivo) || kcalObjetivo <= 0) return null;
+  const kcalAntes = kcalDeGramos(objetivo);
+  if (kcalAntes <= 0) return null;
+  const kcalProteina = objetivo.p * 4;
+  const kcalParaElResto = kcalObjetivo - kcalProteina;
+  if (kcalParaElResto <= 0) {
+    const minimo = macrosDesdeGramos(objetivo.p, 0, 0);
+    return {
+      objetivo: minimo, kcalAntes, kcalDespues: minimo.kcal,
+      kcalSinColocar: Math.round(kcalProteina - kcalObjetivo),
+      nota: 'Solo con la proteína ya se pasa del objetivo. Se han dejado hidratos y grasa a cero sin tocarla: bajar de aquí es decisión tuya.',
+    };
+  }
+  const kcalHc = objetivo.hc * 4;
+  const kcalGrasa = objetivo.g * 9;
+  const pesoHc = kcalHc + kcalGrasa > 0 ? kcalHc / (kcalHc + kcalGrasa) : 0.5;
+  const nuevo = macrosDesdeGramos(
+    Math.round(objetivo.p),
+    Math.round((kcalParaElResto * pesoHc) / 4),
+    Math.round((kcalParaElResto * (1 - pesoHc)) / 9),
+  );
+  return {
+    objetivo: nuevo, kcalAntes, kcalDespues: nuevo.kcal, kcalSinColocar: 0,
+    nota: kcalObjetivo > kcalAntes
       ? 'Las kcal de más se han repartido entre hidratos y grasa. La proteína no se toca.'
       : 'El recorte sale de hidratos y grasa. La proteína se queda igual: es lo que protege la masa magra en déficit.',
   };

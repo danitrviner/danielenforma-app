@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { BudgetVec } from '../../types';
 import {
   ComidaDeLaSemana, DiaComido, ItemComido, OrigenItem, totalesDeLaVentana,
 } from '../../utils/comidaDeLaSemana';
@@ -22,7 +21,7 @@ import { Badge, BarraCumplimiento, Collapsible, EmptyState, Icon } from '../ui';
    Sobre la marca de «comido»: en «Mi plan» todo lo que el atleta añade nace ya
    marcado, así que casi siempre está todo marcado y esa señal informa poco. Se
    enseña igual —cuando de verdad deja algo sin marcar, importa— pero el peso
-   de la pantalla está en la selección y en los intercambios, no en el tic. La
+   de la pantalla está en la selección y en las kcal, no en el tic. La
    nota al pie lo dice para que nadie lea el 100 % como una medalla.
    ═══════════════════════════════════════════════════════════════════════════ */
 
@@ -35,20 +34,16 @@ const ORIGEN_META: Record<OrigenItem, { label: string; icon: string } | null> = 
   menu: { label: 'menú', icon: 'menu_book' },
 };
 
-function totalDe(v: BudgetVec): number {
-  return Math.round((v.HC + v.PROT + v.GRASA) * 10) / 10;
-}
-
 function pct(comido: number, cupo: number): number | null {
   return cupo > 0 ? Math.round((comido / cupo) * 100) : null;
 }
 
-/** «+2,5» / «−1» / «en su cupo». */
+/** «+250 kcal» / «−120 kcal» / «en su objetivo» (±100 kcal). */
 function textoDesvio(desvio: number): { texto: string; color: string } {
-  if (Math.abs(desvio) <= 1) return { texto: 'en su cupo', color: 'var(--color-success)' };
+  if (Math.abs(desvio) <= 100) return { texto: 'en su objetivo', color: 'var(--color-success)' };
   const signo = desvio > 0 ? '+' : '−';
   return {
-    texto: `${signo}${Math.abs(desvio).toLocaleString('es-ES', { maximumFractionDigits: 1 })}`,
+    texto: `${signo}${Math.round(Math.abs(desvio)).toLocaleString('es-ES')} kcal`,
     color: desvio > 0 ? 'var(--color-warning)' : 'var(--color-ink-2)',
   };
 }
@@ -58,8 +53,8 @@ function CeldaMacro({ label, comido, cupo }: { label: string; comido: number; cu
     <div className="min-w-[68px]">
       <span className="font-mono text-caption text-ink-3 uppercase tracking-[.08em] block">{label}</span>
       <span className="font-mono text-label text-ink tabular-nums block">
-        {comido.toLocaleString('es-ES', { maximumFractionDigits: 1 })}
-        <span className="text-ink-3"> / {cupo.toLocaleString('es-ES', { maximumFractionDigits: 1 })}</span>
+        {Math.round(comido).toLocaleString('es-ES')}
+        <span className="text-ink-3"> / {Math.round(cupo).toLocaleString('es-ES')} g</span>
       </span>
       <BarraCumplimiento pct={pct(comido, cupo)} />
     </div>
@@ -89,8 +84,7 @@ function Linea({ item }: { item: ItemComido; key?: React.Key }) {
       )}
       <span className="font-mono text-caption text-ink-2 tabular-nums shrink-0 w-14 text-right">{item.peso}</span>
       <span className="font-mono text-caption text-ink-3 tabular-nums shrink-0 w-16 text-right">
-        {item.categoria === 'MIX_HC' ? '½P+½HC' : item.categoria === 'MIX_GRASA' ? '½P+½G' : item.categoria}
-        {' '}×{item.cantidad.toLocaleString('es-ES', { maximumFractionDigits: 2 })}
+        {item.kcal.toLocaleString('es-ES')} kcal
       </span>
     </li>
   );
@@ -107,7 +101,7 @@ function DetalleDelDia({ dia }: { dia: DiaComido }) {
           <div className="flex items-baseline justify-between gap-3 border-b border-hairline pb-1.5">
             <span className="font-sans font-bold text-label text-ink">{comida.nombre}</span>
             <span className="font-mono text-caption text-ink-2 tabular-nums">
-              {totalDe(comida.comido).toLocaleString('es-ES', { maximumFractionDigits: 1 })} int.
+              {Math.round(comida.comido.kcal).toLocaleString('es-ES')} kcal
             </span>
           </div>
           <ul className="divide-y divide-hairline/50">
@@ -142,9 +136,9 @@ function FilaDia({ dia, abierto, onAbrir }: {
       >
         <span className="font-mono text-caption text-ink-2 tabular-nums w-[84px] shrink-0">{fechaCorta(dia.fecha, { dia: true })}</span>
         <span className="flex gap-3 flex-wrap flex-1 min-w-0">
-          <CeldaMacro label="HC" comido={dia.comido.HC} cupo={dia.cupo.HC} />
-          <CeldaMacro label="Prot" comido={dia.comido.PROT} cupo={dia.cupo.PROT} />
-          <CeldaMacro label="Grasa" comido={dia.comido.GRASA} cupo={dia.cupo.GRASA} />
+          <CeldaMacro label="HC" comido={dia.comido.hc} cupo={dia.cupo.hc} />
+          <CeldaMacro label="Prot" comido={dia.comido.p} cupo={dia.cupo.p} />
+          <CeldaMacro label="Grasa" comido={dia.comido.g} cupo={dia.cupo.g} />
         </span>
         <span className="text-right shrink-0">
           <span className="font-mono text-label text-ink tabular-nums block">
@@ -186,8 +180,8 @@ export default function BloqueQueHaComido({ comida, todoAbierto = false }: Props
     );
   }
 
-  const totalComido = totalDe(comido);
-  const totalCupo = totalDe(cupo);
+  const totalComido = Math.round(comido.kcal);
+  const totalCupo = Math.round(cupo.kcal);
 
   return (
     <div className="space-y-3">
@@ -195,8 +189,8 @@ export default function BloqueQueHaComido({ comida, todoAbierto = false }: Props
           cuántos días y con qué constancia. */}
       <div className="flex flex-wrap items-baseline gap-x-5 gap-y-1">
         <span className="font-mono text-label text-ink tabular-nums">
-          {totalComido.toLocaleString('es-ES', { maximumFractionDigits: 1 })}
-          <span className="text-ink-3"> de {totalCupo.toLocaleString('es-ES', { maximumFractionDigits: 1 })} intercambios</span>
+          {totalComido.toLocaleString('es-ES')}
+          <span className="text-ink-3"> de {totalCupo.toLocaleString('es-ES')} kcal</span>
         </span>
         <span className="font-mono text-caption text-ink-2">
           {patrones.kcalMediaComido.toLocaleString('es-ES')} kcal de media al día
@@ -260,7 +254,7 @@ export default function BloqueQueHaComido({ comida, todoAbierto = false }: Props
             {patrones.porComida.length > 0 && (
               <div>
                 <span className="font-mono text-caption text-ink-3 uppercase tracking-[.08em] block mb-1.5">
-                  Dónde se le va el cupo
+                  Dónde se le va el objetivo
                 </span>
                 <ul className="space-y-0.5">
                   {patrones.porComida.slice(0, 4).map(c => {
@@ -269,7 +263,7 @@ export default function BloqueQueHaComido({ comida, todoAbierto = false }: Props
                       <li key={c.nombre} className="flex items-baseline justify-between gap-3">
                         <span className="font-sans text-label text-ink-2 truncate">{c.nombre}</span>
                         <span className="font-mono text-caption tabular-nums shrink-0" style={{ color: d.color }}>
-                          {d.texto}{d.texto !== 'en su cupo' && ' int.'}
+                          {d.texto}
                         </span>
                       </li>
                     );
@@ -291,9 +285,9 @@ export default function BloqueQueHaComido({ comida, todoAbierto = false }: Props
       </Collapsible>
 
       <p className="font-mono text-caption text-ink-3">
-        Los intercambios son los que el atleta ha marcado como comidos. En «Mi plan» todo lo que añade nace ya
-        marcado, así que el tic dice sobre todo que lo apuntó: lo que de verdad informa es la selección de
-        alimentos y cuánto suma frente a su cupo. Un día sin registrar no es un día sin comer.
+        Las kcal son las de lo que el atleta ha marcado como comido. Lo que añade nace ya marcado, así que el
+        tic dice sobre todo que lo apuntó: lo que de verdad informa es la selección de alimentos y cuánto suma
+        frente a su objetivo. Un día sin registrar no es un día sin comer.
       </p>
     </div>
   );

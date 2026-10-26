@@ -3,7 +3,7 @@ import {
   MenuCompletionLog, WeeklyMenu, WeekDay, NutritionPhase,
 } from '../types';
 import { GRAMS_PER_EXCHANGE } from './nutritionConstants';
-import { adherenciaDelDia, adherenciaPorIntercambios } from './diaDeDieta';
+import { adherenciaDelDia, adherenciaPorKcal } from './diaDeDieta';
 import { hoyIsoLocal, addDays } from './trainingWeek';
 
 const WEEK_DAYS: WeekDay[] = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
@@ -99,7 +99,7 @@ export function computeAdherenceRate(
   // como ceros hundiría la media de alguien que simplemente no tenía dieta
   // puesta ese día.
   const conCupo = inWindow
-    .map(log => adherenciaPorIntercambios(log, diets))
+    .map(log => adherenciaPorKcal(log, diets))
     .filter((a): a is NonNullable<typeof a> => a !== null);
   const avgPct = conCupo.length > 0
     ? Math.round(conCupo.reduce((s, a) => s + a.pct, 0) / conCupo.length)

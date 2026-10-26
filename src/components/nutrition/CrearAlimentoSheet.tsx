@@ -139,8 +139,8 @@ export default function CrearAlimentoSheet({ mode, onClose, onGuardar, destino, 
       <div className="space-y-5 pt-2">
         <p className="font-sans text-body-s text-ink-2">
           {editando
-            ? `Corrige lo que haga falta. Los gramos del intercambio y el grupo se vuelven a calcular solos.`
-            : `Copia lo que pone la etiqueta por 100 ${unidad}. Los gramos que son un intercambio y el grupo al que pertenece se calculan solos.`}
+            ? `Corrige lo que haga falta. Las kcal y el grupo se vuelven a calcular solos.`
+            : `Copia lo que pone la etiqueta por 100 ${unidad}. Las kcal y el grupo al que pertenece se calculan solos.`}
         </p>
 
         {/* Al editar, el grupo puede cambiar: si tocas los macros lo bastante,

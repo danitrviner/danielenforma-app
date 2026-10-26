@@ -3,13 +3,12 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Diet, DietItem, DietMeal, FoodCategory, DietMode, MealItem, OnboardingData, NutritionProgram, NutritionPhase } from '../types';
 import { getDietsForAthlete, createDiet, updateDiet, deleteDiet, getFoodItems, seedFoodItemsIfEmpty, getAthleteNutritionConfig, getAllUserProfilesOrThrow, getAlimentosPersonales } from '../dbService';
 import { DietNumerosView } from './DietMealsView';
-import { CATS, BUDGET_CATS, CAT_LABEL, CAT_COLOR, MODE_LABEL, round2, fmtQty, addToPlaced } from '../utils/exchangeHelpers';
+import { CATS, CAT_LABEL, CAT_COLOR, MODE_LABEL, round2, fmtQty } from '../utils/exchangeHelpers';
 import { parseBaseGrams, etiquetaDePeso } from '../utils/conversionNutricional';
-import { distributeMealTargets, inferSlot, DistributeResult, SLOT_LABEL, HUNGER_PROFILE_LABEL } from '../utils/mealDistribution';
-import { perfilDeHambreVigente } from '../utils/perfilDeHambre';
+import { inferSlot, SLOT_LABEL } from '../utils/mealDistribution';
 import { resolvePhaseTargetKcal } from '../utils/nutritionPeriodization';
-import { exchangeToKcal, GRAMS_PER_EXCHANGE } from '../utils/nutritionConstants';
-import { macrosDeCupo } from '../utils/semanasNutricion';
+import { objetivoDeDieta, intercambiosDeMacros, macrosDeLineas } from '../utils/macrosLegado';
+import { macrosDesdeGramos } from '../utils/macros';
 import { useAthleteWeight } from '../hooks/useAthleteWeight';
 import { computePhaseStartDate } from '../dbService';
 import { useToast } from '../hooks/useToast';
@@ -40,42 +39,42 @@ const CAT_BG: Record<FoodCategory, string> = {
 
 const makeId = () => `${Date.now()}_${Math.random().toString(36).slice(2, 5)}`;
 
-function computePlaced(meals: DietMeal[]): Record<FoodCategory, number> {
-  const p: Record<FoodCategory, number> = { HC: 0, PROT: 0, GRASA: 0, MIX_HC: 0, MIX_GRASA: 0 };
-  for (const meal of meals)
-    for (const item of meal.items) addToPlaced(p, item.category, item.quantity);
-  return p;
+/** kcal y gramos de lo que hay puesto en unas comidas. */
+function macrosPuestos(meals: DietMeal[]) {
+  return macrosDeLineas(meals.flatMap(m => m.items));
 }
 
-function computeMealPlaced(meal: DietMeal): Record<FoodCategory, number> {
-  const p: Record<FoodCategory, number> = { HC: 0, PROT: 0, GRASA: 0, MIX_HC: 0, MIX_GRASA: 0 };
-  for (const item of meal.items) addToPlaced(p, item.category, item.quantity);
-  return p;
+/** Objetivo de una dieta en gramos enteros, para el formulario. */
+function gramosDeDieta(d: Pick<Diet, 'budget' | 'objetivo'>): ObjetivoEnGramos {
+  const m = objetivoDeDieta(d);
+  return { p: Math.round(m.p), hc: Math.round(m.hc), g: Math.round(m.g) };
 }
-
-function blankBudget(): Record<FoodCategory, number> {
-  return { HC: 0, PROT: 0, GRASA: 0, MIX_HC: 0, MIX_GRASA: 0 };
-}
-
-// Gramos por intercambio: una sola fuente, utils/nutritionConstants.ts (1 intercambio ≈ 100 kcal).
-const G_PER_EXCH = GRAMS_PER_EXCHANGE;
-
-const roundHalf = (n: number) => Math.round(n * 2) / 2;
 
 // ── Types ──────────────────────────────────────────────────────────────────────
+
+/** El objetivo del día en gramos de proteína, hidratos y grasa (10-2026):
+ *  el coach pauta en gramos y las kcal salen solas (4/4/9). */
+interface ObjetivoEnGramos { p: number; hc: number; g: number }
 
 interface FormState {
   name: string;
   coachNote: string;
-  budget: Record<FoodCategory, number>;
+  objetivo: ObjetivoEnGramos;
   meals: DietMeal[];
+}
+
+/** Lo que se guarda: el objetivo en kcal y, para binarios viejos, su cupo en
+ *  intercambios equivalente. */
+function objetivoParaGuardar(o: ObjetivoEnGramos): Pick<Diet, 'objetivo' | 'budget'> {
+  const objetivo = macrosDesdeGramos(o.p, o.hc, o.g);
+  return { objetivo, budget: intercambiosDeMacros(objetivo) };
 }
 
 function blankForm(): FormState {
   return {
     name: '',
     coachNote: '',
-    budget: blankBudget(),
+    objetivo: { p: 0, hc: 0, g: 0 },
     meals: [{ id: makeId(), name: '', items: [] }],
   };
 }
@@ -85,7 +84,7 @@ function blankForm(): FormState {
 function formTieneAlgoQueGuardar(f: FormState): boolean {
   return f.name.trim().length > 0
     || f.meals.some(m => m.items.length > 0)
-    || Object.values(f.budget).some(v => v !== 0);
+    || f.objetivo.p > 0 || f.objetivo.hc > 0 || f.objetivo.g > 0;
 }
 
 // Más estricto que lo anterior a propósito: un presupuesto tocado sin
@@ -170,8 +169,6 @@ export default function NutritionPlansScreen({
   // explicación de reparto (se limpia al tocar un objetivo a mano) y el
   // aviso antes de pisar objetivos ya puestos.
   const [manualSlotMealIds, setManualSlotMealIds] = useState<Set<string>>(new Set());
-  const [lastDistribution, setLastDistribution] = useState<DistributeResult | null>(null);
-  const [confirmDistributeOpen, setConfirmDistributeOpen] = useState(false);
 
   // Preview view mode (shared localStorage key with athlete)
   const [showPreview, setShowPreview] = useState(false);
@@ -217,7 +214,7 @@ export default function NutritionPlansScreen({
       setForm({
         name: embeddedDiet.name,
         coachNote: embeddedDiet.coachNote ?? '',
-        budget: { ...embeddedDiet.budget },
+        objetivo: gramosDeDieta(embeddedDiet),
         meals: embeddedDiet.meals.map(m => ({ ...m, items: m.items.map(i => ({ ...i })) })),
       });
       setIsDraftSession(embeddedDiet.isDraft === true);
@@ -260,19 +257,9 @@ export default function NutritionPlansScreen({
   }, [selectedEmail, nutConfig, loadingNutConfig]);
 
   // ── Live dashboard ───────────────────────────────────────────────────────────
-  const placed = useMemo(() => computePlaced(form.meals), [form.meals]);
+  const placed = useMemo(() => macrosPuestos(form.meals), [form.meals]);
+  const objetivoForm = macrosDesdeGramos(form.objetivo.p, form.objetivo.hc, form.objetivo.g);
 
-  // Per-category mismatch: sum of meal targets ≠ day budget (only when targets are set)
-  const targetMismatches = useMemo(() => {
-    return CATS.flatMap(cat => {
-      if (form.budget[cat] === 0) return [];
-      const sum = form.meals.reduce((s, m) => s + (m.target?.[cat] ?? 0), 0);
-      if (sum === 0) return []; // targets not yet set — no mismatch
-      return round2(sum) !== round2(form.budget[cat])
-        ? [{ cat, sum: round2(sum), budget: form.budget[cat] }]
-        : [];
-    });
-  }, [form.meals, form.budget]);
 
   // T12 (18-08). La fase manda sobre el presupuesto — cuando la dieta que se
   // edita está vinculada a una fase con un objetivo kcal EXPLÍCITO (no
@@ -296,7 +283,7 @@ export default function NutritionPlansScreen({
     return { week, totalWeeks: linkedPhase.weeks };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isActivePhaseDiet, nutritionProgram, linkedPhase, linkedPhaseIndex]);
-  const currentBudgetKcal = exchangeToKcal(form.budget);
+  const currentBudgetKcal = objetivoForm.kcal;
   const phaseKcalMismatch = phaseTargetKcal != null && Math.round(currentBudgetKcal) !== Math.round(phaseTargetKcal);
 
   // T15 (18-08). Antes NADA tocaba Firestore hasta pulsar "Guardar": salir de
@@ -316,7 +303,7 @@ export default function NutritionPlansScreen({
       const data: Omit<Diet, 'id'> = {
         athleteId: selectedEmail,
         name: form.name.trim(),
-        budget: form.budget,
+        ...objetivoParaGuardar(form.objetivo),
         meals: form.meals,
         coachNote: form.coachNote.trim() || undefined,
       };
@@ -354,7 +341,7 @@ export default function NutritionPlansScreen({
     setForm({
       name: dt.name,
       coachNote: dt.coachNote ?? '',
-      budget: { ...dt.budget },
+      objetivo: gramosDeDieta(dt),
       meals: dt.meals.map(m => ({ ...m, items: m.items.map(i => ({ ...i })) })),
     });
     // Reanudar un borrador ya empezado sigue autoguardando como borrador;
@@ -370,7 +357,7 @@ export default function NutritionPlansScreen({
       const data: Omit<Diet, 'id'> = {
         athleteId: selectedEmail,
         name: form.name.trim(),
-        budget: form.budget,
+        ...objetivoParaGuardar(form.objetivo),
         meals: form.meals,
         coachNote: form.coachNote.trim() || undefined,
       };
@@ -472,74 +459,24 @@ export default function NutritionPlansScreen({
       }),
     }));
 
-  const setBudget = (cat: FoodCategory, val: number) =>
-    setForm(f => ({ ...f, budget: { ...f.budget, [cat]: Math.max(0, round2(val)) } }));
+  const setObjetivo = (macro: keyof ObjetivoEnGramos, val: number) =>
+    setForm(f => ({ ...f, objetivo: { ...f.objetivo, [macro]: Math.max(0, Math.round(val)) } }));
 
-  // T12: reparte el objetivo kcal de la FASE (no del onboarding) en
-  // HC/PROT/GRASA con el reparto de macros del atleta. 1 intercambio ≈
-  // 100 kcal es la regla fija del sistema (exchangeHelpers/systemPrompt), así
-  // que repartir por macro y convertir a intercambios es sencillamente
-  // kcal-de-esa-categoría / 100.
+  // T12: reparte el objetivo kcal de la FASE (no del onboarding) en gramos de
+  // P/HC/G con el reparto de macros del atleta (4/4/9 kcal por gramo).
   const ajustarAlObjetivoDeLaFase = () => {
     if (!onboardingData || phaseTargetKcal == null) return;
     const { hc, prot, grasa } = onboardingData.macroSplit;
-    setBudget('HC',    roundHalf((phaseTargetKcal * hc    / 100) / 100));
-    setBudget('PROT',  roundHalf((phaseTargetKcal * prot  / 100) / 100));
-    setBudget('GRASA', roundHalf((phaseTargetKcal * grasa / 100) / 100));
-  };
-
-  const setMealTarget = (mealId: string, cat: FoodCategory, delta: number) => {
-    // Una explicación de reparto ("repartido según sus preferencias…") no
-    // puede quedarse flotando sobre números que el coach acaba de tocar a mano.
-    setLastDistribution(null);
     setForm(f => ({
       ...f,
-      meals: f.meals.map(m => {
-        if (m.id !== mealId) return m;
-        const cur = m.target ?? blankBudget();
-        return { ...m, target: { ...cur, [cat]: Math.max(0, round2(cur[cat] + delta)) } };
-      }),
+      objetivo: {
+        p: Math.round((phaseTargetKcal * prot / 100) / 4),
+        hc: Math.round((phaseTargetKcal * hc / 100) / 4),
+        g: Math.round((phaseTargetKcal * grasa / 100) / 9),
+      },
     }));
   };
 
-  /* El perfil de hambre efectivo. Antes solo se miraba `nutConfig.hungerProfile`,
-     que únicamente se rellena si el atleta entra a Perfil › Preferencias y lo
-     elige a mano: en la práctica estaba vacío casi siempre y el reparto salía
-     uniforme, ignorando que el atleta ya había contestado en el alta a qué hora
-     tiene más hambre (Dani, 10-09-2026). */
-  const perfilDeHambre = perfilDeHambreVigente(nutConfig?.hungerProfile, onboardingData?.appetitePeakTime);
-  const hambreDeducidaDelAlta = !nutConfig?.hungerProfile && !!perfilDeHambre;
-
-  const runAutoDistribute = () => {
-    const result = distributeMealTargets({
-      budget: form.budget,
-      meals: form.meals,
-      hungerProfile: perfilDeHambre,
-      trainingSlot: nutConfig?.trainingSlot,
-    });
-    const prevMeals = form.meals;
-    setForm(f => ({
-      ...f,
-      // Persiste también la franja resuelta (si la comida no tenía una ya)
-      // para que el Badge de "Deducido del nombre" salga sin tener que volver
-      // a repartir.
-      meals: f.meals.map((m, idx) => ({ ...m, target: result.targets[idx], slot: m.slot ?? result.slots[idx] })),
-    }));
-    setLastDistribution(result);
-    showToast('Objetivos repartidos.', 'success', {
-      actionLabel: 'Deshacer',
-      onAction: () => { setForm(f => ({ ...f, meals: prevMeals })); setLastDistribution(null); },
-    });
-  };
-
-  const autoDistribute = () => {
-    if (form.meals.length === 0) return;
-    // autoDistribute pisa CUALQUIER objetivo manual sin avisar — si ya hay
-    // alguno puesto a mano, confirmar antes en vez de borrarlo de golpe.
-    const hasManualTargets = form.meals.some(m => CATS.some(c => (m.target?.[c] ?? 0) > 0));
-    if (hasManualTargets) { setConfirmDistributeOpen(true); return; }
-    runAutoDistribute();
-  };
 
   // ── Food picker ──────────────────────────────────────────────────────────────
 
@@ -612,8 +549,7 @@ export default function NutritionPlansScreen({
   // picker — es justo lo que el coach está intentando cuadrar, y antes
   // quedaba tapado por el propio sheet.
   const pickerMeal = pickerMealId ? form.meals.find(m => m.id === pickerMealId) : undefined;
-  const pickerMealPlaced = pickerMeal ? computeMealPlaced(pickerMeal) : null;
-  const pickerMealTarget = pickerMeal?.target?.[pickerCategory];
+  const pickerMealPlaced = pickerMeal ? macrosPuestos([pickerMeal]) : null;
   const pickerTotalAdded = Object.values<number>(pickerAddedCounts).reduce((a, b) => a + b, 0);
 
   // ── Selected athlete ─────────────────────────────────────────────────────────
@@ -664,7 +600,8 @@ export default function NutritionPlansScreen({
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {diets.map(dt => {
-              const dtPlaced = computePlaced(dt.meals);
+              const dtObjetivo = objetivoDeDieta(dt);
+              const dtPuesto = macrosPuestos(dt.meals);
               return (
                 <div key={dt.id} className="bg-surface border border-hairline rounded-surface p-5 hover:border-hairline transition-colors flex flex-col gap-4">
                   <div>
@@ -674,13 +611,20 @@ export default function NutritionPlansScreen({
                     {dt.coachNote && (
                       <p className="text-caption text-data italic font-sans mb-2">{dt.coachNote}</p>
                     )}
-                    {/* Budget summary */}
+                    {/* Objetivo: kcal y gramos (puesto en el plan / objetivo) */}
                     <div className="flex flex-wrap gap-2 mb-2">
-                      {CATS.filter(c => dt.budget[c] > 0).map(c => (
-                        <span key={c} className={`text-caption font-mono px-2 rounded-control border ${CAT_BG[c]}`}>
-                          {c.replace('_', ' ')} {fmtQty(dtPlaced[c])}/{fmtQty(dt.budget[c])}
+                      {dtObjetivo.kcal > 0 && (
+                        <span className="text-caption font-mono px-2 rounded-control border border-hairline text-ink">
+                          {Math.round(dtPuesto.kcal)}/{Math.round(dtObjetivo.kcal)} kcal
                         </span>
-                      ))}
+                      )}
+                      {([['P', 'PROT', dtPuesto.p, dtObjetivo.p], ['HC', 'HC', dtPuesto.hc, dtObjetivo.hc], ['G', 'GRASA', dtPuesto.g, dtObjetivo.g]] as const)
+                        .filter(([, , , o]) => o > 0)
+                        .map(([etq, cat, pu, o]) => (
+                          <span key={etq} className={`text-caption font-mono px-2 rounded-control border ${CAT_BG[cat]}`}>
+                            {etq} {Math.round(pu)}/{Math.round(o)} g
+                          </span>
+                        ))}
                     </div>
                     {/* Meals preview */}
                     <p className="text-caption font-mono text-ink-2">
@@ -757,31 +701,25 @@ export default function NutritionPlansScreen({
           El fallback 0px conserva el comportamiento cuando se usa suelto. */}
       <div className="bg-bg border-b border-hairline p-4 sticky top-[var(--hub-sticky-top,0px)] z-[var(--z-sticky)]">
         <div className="flex items-baseline justify-between mb-3">
-          <p className="font-mono text-caption text-ink-2 uppercase tracking-wider">Distribución en vivo</p>
+          <p className="font-mono text-caption text-ink-2 uppercase tracking-wider">Plan en vivo</p>
           <p className="font-mono text-caption text-ink-2 uppercase tracking-wider">
             Total{' '}
-            <span className="font-bold text-ink">
-              {fmtQty(BUDGET_CATS.reduce((s, c) => s + placed[c], 0))}/{fmtQty(BUDGET_CATS.reduce((s, c) => s + form.budget[c], 0))}
-            </span>
-            {' '}intercambios
+            <span className="font-bold text-ink">{Math.round(placed.kcal)}/{Math.round(objetivoForm.kcal)}</span>
+            {' '}kcal
           </p>
         </div>
         <div className="grid grid-cols-3 gap-x-2 gap-y-3">
-          {BUDGET_CATS.map(cat => {
-            const b = form.budget[cat];
-            const p = placed[cat];
-            const isOver = b > 0 && p > b;
-            const isOk = b > 0 && round2(p) === round2(b);
-            const pct = b > 0 ? Math.min(100, (p / b) * 100) : (p > 0 ? 100 : 0);
+          {([['PROT', 'P', placed.p, form.objetivo.p], ['HC', 'HC', placed.hc, form.objetivo.hc], ['GRASA', 'G', placed.g, form.objetivo.g]] as const).map(([cat, etq, pu, o]) => {
+            const isOver = o > 0 && pu > o * 1.05;
+            const isOk = o > 0 && Math.abs(pu - o) <= o * 0.05;
+            const pct = o > 0 ? Math.min(100, (pu / o) * 100) : (pu > 0 ? 100 : 0);
             const barColor = isOver ? 'bg-danger' : isOk ? 'bg-success' : 'bg-accent';
             return (
               <div key={cat}>
                 <div className="flex items-center justify-between mb-1">
-                  <span className={`text-caption font-mono font-bold ${CAT_COLOR[cat]}`}>
-                    {cat.replace('_', ' ')}
-                  </span>
+                  <span className={`text-caption font-mono font-bold ${CAT_COLOR[cat]}`}>{etq}</span>
                   <span className={`text-caption font-mono font-bold ${isOver ? 'text-danger' : isOk ? 'text-success' : 'text-ink'}`}>
-                    {fmtQty(p)}{b > 0 ? `/${fmtQty(b)}` : ''}{isOk ? ' ✓' : isOver ? ' !' : ''}
+                    {Math.round(pu)}{o > 0 ? `/${Math.round(o)}` : ''} g{isOk ? ' ✓' : isOver ? ' !' : ''}
                   </span>
                 </div>
                 <div className="h-1 w-full bg-track rounded-full overflow-hidden">
@@ -791,19 +729,6 @@ export default function NutritionPlansScreen({
             );
           })}
         </div>
-
-        {targetMismatches.length > 0 && (
-          <div className="mt-3 bg-warning/10 border border-warning/30 rounded-surface px-3 py-2 flex flex-wrap gap-x-3 gap-y-1">
-            <span className="font-sans text-caption text-warning uppercase tracking-wider w-full ">
-              ⚠ Objetivos por comida no cuadran con el presupuesto
-            </span>
-            {targetMismatches.map(({ cat, sum, budget: b }) => (
-              <span key={cat} className="font-mono text-caption text-warning">
-                {cat.replace('_', ' ')}: suma {fmtQty(sum)} ≠ {fmtQty(b)}
-              </span>
-            ))}
-          </div>
-        )}
       </div>
 
       {/* Metadata */}
@@ -852,7 +777,6 @@ export default function NutritionPlansScreen({
               <span className="text-ink-3">·</span>
               <span className="text-ink-2">
                 objetivo <span className="text-ink font-bold">{Math.round(phaseTargetKcal)} kcal</span>
-                {' '}(≈{fmtQty(roundHalf(phaseTargetKcal / 100))} intercambios)
               </span>
             </>
           )}
@@ -863,7 +787,7 @@ export default function NutritionPlansScreen({
       <div className="bg-surface border border-hairline rounded-surface p-5 space-y-3">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <h3 className="font-sans text-label text-ink-2 uppercase tracking-wider">
-            Presupuesto diario (intercambios por categoría)
+            Objetivo diario · {Math.round(objetivoForm.kcal).toLocaleString('es-ES')} kcal
           </h3>
           {/* T12: si hay una fase con objetivo propio, el botón obedece a la
               fase, no al onboarding — la fase manda. Si no hay fase (o su
@@ -879,11 +803,14 @@ export default function NutritionPlansScreen({
             </button>
           ) : onboardingData && (
             <button
-              onClick={() => {
-                setBudget('HC',    roundHalf(onboardingData.macroGrams.hc    / G_PER_EXCH.HC));
-                setBudget('PROT',  roundHalf(onboardingData.macroGrams.prot  / G_PER_EXCH.PROT));
-                setBudget('GRASA', roundHalf(onboardingData.macroGrams.grasa / G_PER_EXCH.GRASA));
-              }}
+              onClick={() => setForm(f => ({
+                ...f,
+                objetivo: {
+                  p: Math.round(onboardingData.macroGrams.prot),
+                  hc: Math.round(onboardingData.macroGrams.hc),
+                  g: Math.round(onboardingData.macroGrams.grasa),
+                },
+              }))}
               className="flex items-center gap-2 px-3 py-2 bg-accent/10 border border-accent/30 text-accent-ink hover:bg-accent/20 font-mono text-caption uppercase tracking-wide rounded-control transition-all"
             >
               <Icon name="auto_fix_high" size="s" />
@@ -912,33 +839,39 @@ export default function NutritionPlansScreen({
         )}
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-          {BUDGET_CATS.map(cat => (
-            <div key={cat}>
-              <label className={`block font-mono text-caption uppercase mb-2 ${CAT_COLOR[cat]}`}>
-                {cat}
+          {([['p', 'PROT', 'Proteína', 5], ['hc', 'HC', 'Hidratos', 5], ['g', 'GRASA', 'Grasa', 2]] as const).map(([macro, cat, etq, paso]) => (
+            <div key={macro}>
+              <label htmlFor={`objetivo-${macro}`} className={`block font-mono text-caption uppercase mb-2 ${CAT_COLOR[cat]}`}>
+                {etq} (g)
               </label>
               <div className="flex items-center bg-bg border border-hairline rounded-surface overflow-hidden">
                 <button
-                  onClick={() => setBudget(cat, form.budget[cat] - 0.5)}
+                  type="button"
+                  onClick={() => setObjetivo(macro, form.objetivo[macro] - paso)}
+                  aria-label={`Menos ${etq.toLowerCase()}`}
                   className="px-3 py-2 text-ink-2 hover:text-ink hover:bg-raised transition-colors text-body-s font-bold"
                 >−</button>
-                <span className="flex-1 text-center font-mono text-body-s text-ink">{fmtQty(form.budget[cat])}</span>
+                <input
+                  id={`objetivo-${macro}`}
+                  inputMode="numeric"
+                  value={String(form.objetivo[macro])}
+                  onChange={e => setObjetivo(macro, Number(e.target.value.replace(/[^0-9]/g, '')) || 0)}
+                  onFocus={e => e.target.select()}
+                  className="min-w-0 flex-1 bg-transparent text-center font-mono text-body-s text-ink focus:outline-none"
+                />
                 <button
-                  onClick={() => setBudget(cat, form.budget[cat] + 0.5)}
+                  type="button"
+                  onClick={() => setObjetivo(macro, form.objetivo[macro] + paso)}
+                  aria-label={`Más ${etq.toLowerCase()}`}
                   className="px-3 py-2 text-ink-2 hover:text-ink hover:bg-raised transition-colors text-body-s font-bold"
                 >+</button>
               </div>
-              {(cat === 'PROT' || cat === 'GRASA') && (() => {
-                const gMacro = Math.round(macrosDeCupo(form.budget)[cat] * GRAMS_PER_EXCHANGE[cat]);
-                const gKg = pesoParaProteina ? Math.round((gMacro / pesoParaProteina) * 10) / 10 : null;
-                return (
-                  <p className="mt-1.5 font-mono text-caption text-ink-2">
-                    {gMacro} g{gKg != null ? (
-                      <> · <span className="font-bold text-ink">{String(gKg).replace('.', ',')} g/kg</span>{cat === 'PROT' && <> · peso {String(Math.round(pesoParaProteina! * 10) / 10).replace('.', ',')} kg</>}</>
-                    ) : ' · sin peso registrado'}
-                  </p>
-                );
-              })()}
+              <p className="mt-1.5 font-mono text-caption text-ink-2">
+                {Math.round(form.objetivo[macro] * (macro === 'g' ? 9 : 4))} kcal
+                {macro === 'p' && (pesoParaProteina
+                  ? <> · <span className="font-bold text-ink">{String(Math.round((form.objetivo.p / pesoParaProteina) * 10) / 10).replace('.', ',')} g/kg</span> · peso {String(Math.round(pesoParaProteina * 10) / 10).replace('.', ',')} kg</>
+                  : ' · sin peso registrado')}
+              </p>
             </div>
           ))}
         </div>
@@ -978,15 +911,6 @@ export default function NutritionPlansScreen({
             Comidas ({form.meals.length})
           </h3>
           <div className="flex gap-2">
-            {CATS.some(c => form.budget[c] > 0) && form.meals.length > 1 && (
-              <button
-                onClick={autoDistribute}
-                className="flex items-center gap-2 px-3 py-2 bg-raised border border-data/40 text-data hover:border-data/70 font-sans text-caption uppercase rounded-control transition-all"
-              >
-                <Icon name="auto_fix_high" size="s" />
-                Repartir objetivos
-              </button>
-            )}
             <button
               onClick={addMeal}
               className="flex items-center gap-2 px-3 py-2 bg-raised border border-hairline text-accent-ink hover:border-accent/40 font-sans text-caption uppercase rounded-control transition-all"
@@ -995,30 +919,6 @@ export default function NutritionPlansScreen({
             </button>
           </div>
         </div>
-
-        {/* T12: visible ANTES de pulsar el botón — el reparto automático ya
-            usa el perfil de hambre del atleta (runAutoDistribute pasa
-            hungerProfile/trainingSlot a distributeMealTargets), pero eso no
-            se veía en ningún sitio hasta que se pulsaba. */}
-        <p className="text-caption font-mono text-ink-3">
-          {perfilDeHambre
-            ? `Reparto según su hambre: ${HUNGER_PROFILE_LABEL[perfilDeHambre]}${hambreDeducidaDelAlta ? ' (por lo que contestó en el alta)' : ''}${nutConfig?.trainingSlot != null ? ` · entreno cerca de: ${SLOT_LABEL[nutConfig.trainingSlot]}` : ''}`
-            : 'Sin perfil de hambre — reparto uniforme'}
-        </p>
-
-        {/* Por qué se repartió así — o por qué NO se personalizó, para que
-            quede claro que falta pedirle esa preferencia al atleta. */}
-        {lastDistribution && (
-          lastDistribution.personalized && lastDistribution.reasons.length > 0 ? (
-            <p className="text-caption font-mono text-data">
-              Repartido según las preferencias de {selectedAthlete?.displayName ?? 'este atleta'}: {lastDistribution.reasons.join(' · ')}.
-            </p>
-          ) : (
-            <p className="text-caption font-mono text-ink-3">
-              Reparto uniforme — {selectedAthlete?.displayName ?? 'el atleta'} no ha indicado cuándo tiene más hambre.
-            </p>
-          )
-        )}
 
         {form.meals.map((meal, mi) => (
           <div key={meal.id} className="bg-surface border border-hairline rounded-surface overflow-hidden">
@@ -1056,56 +956,10 @@ export default function NutritionPlansScreen({
               )}
             </div>
 
-            {/* Per-meal target steppers (only if day has any budget) */}
-            {CATS.some(c => form.budget[c] > 0) && (() => {
-              const activeCats = CATS.filter(c => form.budget[c] > 0);
-              const mPlaced = computeMealPlaced(meal);
-              return (
-                <div className="px-4 py-3 bg-bg/50 border-b border-hairline">
-                  <p className="font-mono text-caption text-ink-2 uppercase tracking-wider mb-2">Objetivo comida</p>
-                  <div className="flex flex-wrap gap-2">
-                    {activeCats.map(cat => {
-                      const tgt = meal.target?.[cat] ?? 0;
-                      const p = mPlaced[cat];
-                      const isOk = tgt > 0 && round2(p) === round2(tgt);
-                      const isOver = tgt > 0 && p > tgt;
-                      return (
-                        <div key={cat} className="flex items-center gap-1">
-                          <span className={`font-mono text-caption w-14 ${CAT_COLOR[cat]}`}>
-                            {cat.replace('_', ' ')}
-                          </span>
-                          <div className="flex items-center bg-raised rounded-control border border-hairline">
-                            <button
-                              onClick={() => setMealTarget(meal.id, cat, -0.25)}
-                              className="w-5 h-5 flex items-center justify-center text-ink-2 hover:text-ink text-label font-bold"
-                            >−</button>
-                            <span className="w-7 text-center font-mono text-caption text-ink">{fmtQty(tgt)}</span>
-                            <button
-                              onClick={() => setMealTarget(meal.id, cat, 0.25)}
-                              className="w-5 h-5 flex items-center justify-center text-ink-2 hover:text-ink text-label font-bold"
-                            >+</button>
-                          </div>
-                          {tgt > 0 && (
-                            <span className={`font-mono text-caption ml-1 ${isOver ? 'text-danger' : isOk ? 'text-success' : 'text-ink-2'}`}>
-                              {fmtQty(p)}{isOk ? ' ✓' : isOver ? ' !' : ''}
-                            </span>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })()}
-
             {/* Items */}
             <div className="p-3 space-y-2">
               {meal.items.map((item, idx) => (
                 <div key={idx} className="flex items-center gap-2 bg-bg border border-hairline rounded-surface px-3 py-2">
-                  {/* Category */}
-                  <span className={`text-caption font-mono font-bold px-2 rounded-control border flex-shrink-0 ${CAT_BG[item.category]}`}>
-                    {item.category.replace('_', ' ')}
-                  </span>
                   {/* Label */}
                   <span className="flex-1 text-label text-ink font-sans truncate min-w-0">
                     {item.foodLabel}
@@ -1122,9 +976,9 @@ export default function NutritionPlansScreen({
                       className="w-6 h-6 flex items-center justify-center text-ink-2 hover:text-ink font-bold text-body-s"
                     >+</button>
                   </div>
-                  {/* Weight */}
-                  <span className="text-caption font-mono text-ink-2 flex-shrink-0 w-12 text-right">
-                    {etiquetaDePeso(item)}
+                  {/* Gramos y kcal */}
+                  <span className="text-caption font-mono text-ink-2 flex-shrink-0 w-20 text-right">
+                    {etiquetaDePeso(item) || 'ración'} · {Math.round(macrosDeLineas([item]).kcal)}
                   </span>
                   {/* Remove */}
                   <button onClick={() => removeItem(meal.id, idx)} className="text-ink-2 hover:text-danger transition-colors flex-shrink-0">
@@ -1170,13 +1024,8 @@ export default function NutritionPlansScreen({
                     <div className="space-y-1">
                       {meal.items.map((it, idx) => (
                         <div key={idx} className="flex items-center gap-2 font-mono text-caption text-ink-2">
-                          <span className={`text-caption font-bold px-2 rounded-control border ${
-                            it.category === 'HC' ? 'bg-macro-hc/10 border-macro-hc/20 text-macro-hc' :
-                            it.category === 'PROT' ? 'bg-macro-prot/10 border-macro-prot/20 text-macro-prot' :
-                            'bg-warning/10 border-warning/20 text-warning'
-                          }`}>{it.category.replace('_', ' ')}</span>
                           <span>{it.foodLabel}</span>
-                          <span className="text-ink-3">×{it.quantity}</span>
+                          <span className="text-ink-3">{etiquetaDePeso(it) || 'ración'} · {Math.round(macrosDeLineas([it]).kcal)} kcal</span>
                         </div>
                       ))}
                     </div>
@@ -1184,7 +1033,7 @@ export default function NutritionPlansScreen({
                 </div>
               ))}
             </div>
-            <DietNumerosView meals={form.meals} budget={form.budget} />
+            <DietNumerosView meals={form.meals} objetivo={objetivoForm} />
           </div>
         )}
       </div>
@@ -1206,23 +1055,6 @@ export default function NutritionPlansScreen({
         </Button>
       </div>
 
-      {/* Confirmar antes de pisar objetivos manuales con el reparto automático */}
-      {confirmDistributeOpen && (
-        <Dialog
-          open
-          onClose={() => setConfirmDistributeOpen(false)}
-          title="¿Sustituir los objetivos?"
-          size="s"
-          footer={(
-            <>
-              <Button onClick={() => setConfirmDistributeOpen(false)} variant="secondary">Cancelar</Button>
-              <Button onClick={() => { setConfirmDistributeOpen(false); runAutoDistribute(); }} variant="primary">Repartir</Button>
-            </>
-          )}
-        >
-          <p className="text-body-s text-ink-2">Ya hay objetivos puestos a mano en alguna comida. Se sustituirán por el reparto automático.</p>
-        </Dialog>
-      )}
 
       {/* Food picker sheet. T13: alto="completo" — con la barra de filtros +
           modos + buscador, en "auto" (max-h-[85vh]) a la lista le quedaba un
@@ -1248,7 +1080,7 @@ export default function NutritionPlansScreen({
                 </span>
                 {pickerMealPlaced && (
                   <span className="font-mono text-caption text-ink-2">
-                    {fmtQty(pickerMealPlaced[pickerCategory])} / {pickerMealTarget !== undefined ? fmtQty(pickerMealTarget) : '—'} {pickerCategory.replace('_', ' ')}
+                    Esta comida lleva {Math.round(pickerMealPlaced.kcal)} kcal
                   </span>
                 )}
               </div>

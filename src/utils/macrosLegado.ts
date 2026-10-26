@@ -1,6 +1,6 @@
-import type { Diet, DietCompletionLog, DietItem, FoodCategory, Macros } from '../types';
-import { GRAMS_PER_EXCHANGE } from './nutritionConstants';
-import { MACROS_CERO, kcalDeGramos, sumarMacros } from './macros';
+import type { Diet, DietCompletionLog, DietItem, FoodCategory, Macros } from '../types.js';
+import { GRAMS_PER_EXCHANGE } from './nutritionConstants.js';
+import { MACROS_CERO, kcalDeGramos, sumarMacros } from './macros.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Datos viejos en intercambios → kcal y macros (10-2026)

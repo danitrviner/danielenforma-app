@@ -1,4 +1,5 @@
 import { FoodCategory, DietMode, DietItem, DietMeal, Diet, Recipe } from '../types.js';
+import { objetivoDeDieta, macrosDeLineas } from './macrosLegado.js';
 
 // Shared constants + helpers for the food-exchange (intercambios) system.
 // Extracted from NutritionScreen.tsx / NutritionPlansScreen.tsx, which duplicated
@@ -115,9 +116,13 @@ export function computeDietPlaced(meals: DietMeal[] | undefined): Record<FoodCat
 // items to cover every category the coach budgeted for. Firestore docs aren't
 // guaranteed to match the TS shape (older diets can predate a field) — guard
 // against `budget`/`meals` being missing rather than trusting the type.
-export function isDietPending(diet: Pick<Diet, 'budget' | 'meals'>): boolean {
-  const placed = computeDietPlaced(diet.meals);
-  return BUDGET_CATS.some(cat => (diet.budget?.[cat] ?? 0) > 0 && placed[cat] < (diet.budget?.[cat] ?? 0));
+/** ¿El plan de comidas está a medias? Solo si el coach ha empezado a poner
+ *  alimentos y no llegan al 90 % de las kcal del objetivo: un plan sin
+ *  alimentos es «los eliges tú», no uno pendiente (10-2026). */
+export function isDietPending(diet: Pick<Diet, 'budget' | 'meals' | 'objetivo'>): boolean {
+  const objetivo = objetivoDeDieta(diet).kcal;
+  const puesto = macrosDeLineas(diet.meals.flatMap(m => m.items)).kcal;
+  return objetivo > 0 && puesto > 0 && puesto < objetivo * 0.9;
 }
 
 export function recipeToDietItems(recipe: Recipe, enabledModes: DietMode[]): DietItem[] {

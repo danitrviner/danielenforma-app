@@ -1476,8 +1476,11 @@ export interface ReglaDePeso {
   ritmoMinimo: number;
   semanas: number;
   cat: MacroAjustable;
-  /** Intercambios (en positivo); el signo lo pone el tipo. */
+  /** Intercambios (en positivo); el signo lo pone el tipo. Equivalente de
+   *  `gramos` para binarios viejos. */
   cantidad: number;
+  /** Gramos del macro (en positivo), 10-2026. Mandan sobre `cantidad`. */
+  gramos?: number;
 }
 
 export interface CicladoPorEntreno {
@@ -1487,16 +1490,24 @@ export interface CicladoPorEntreno {
   entreno: number;
   /** Ídem los días sin sesión. */
   descanso: number;
+  /** Gramos de hidratos (10-2026); mandan sobre `entreno`/`descanso`, que
+   *  quedan como su equivalente para binarios viejos. */
+  entrenoG?: number;
+  descansoG?: number;
 }
 
 export type MacroAjustable = 'HC' | 'PROT' | 'GRASA';
 
-/** +/− intercambios de un macro en una comida. Sin `slot`, en la comida que
- *  más tenga de ese macro. */
+/** +/− gramos de un macro en el día (10-2026). `delta` es su equivalente en
+ *  intercambios, que se sigue escribiendo para binarios viejos y para ajustar
+ *  los alimentos del plan; `slot` (de cuando había reparto por comidas) solo
+ *  dice en qué comida del plan se nota. */
 export interface AjusteDeComida {
   slot?: number;   // 1=Desayuno … 5=Cena, misma escala que DietMeal.slot
   cat: MacroAjustable;
   delta: number;
+  /** Gramos del macro; mandan sobre `delta`. */
+  gramos?: number;
 }
 
 export interface CambioNutricionSemana {

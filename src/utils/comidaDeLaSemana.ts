@@ -1,7 +1,8 @@
-import type { BudgetVec, Diet, DietCompletionLog, FoodCategory } from '../types';
+import type { Diet, DietCompletionLog, DietItem, FoodCategory, Macros } from '../types';
 import { comidasDelDia, cupoDelDia } from './diaDeDieta';
-import { addToPlaced, itemWeightLabel, foodNameShort, round2 } from './exchangeHelpers';
-import { exchangeToKcal } from './nutritionConstants';
+import { itemWeightLabel, foodNameShort, round2 } from './exchangeHelpers';
+import { macrosDeIntercambios, macrosDeLinea, macrosDeLineas, objetivoDelRegistro } from './macrosLegado';
+import { MACROS_CERO, redondearMacros, sumarMacros } from './macros';
 import { addDays, diasEntreFechas } from './trainingWeek';
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -39,6 +40,8 @@ export interface ItemComido {
   peso: string;
   categoria: FoodCategory;
   cantidad: number;
+  /** kcal de la línea (las de su etiqueta, o por sus intercambios). */
+  kcal: number;
   marcado: boolean;
   origen: OrigenItem;
 }
@@ -48,8 +51,8 @@ export interface ComidaDelDia {
   nombre: string;
   slot?: number;
   items: ItemComido[];
-  /** Intercambios de los items MARCADOS de esta comida. */
-  comido: BudgetVec;
+  /** kcal y gramos de los items MARCADOS de esta comida. */
+  comido: Macros;
 }
 
 export interface DiaComido {
@@ -57,14 +60,15 @@ export interface DiaComido {
   /** `false` = no hay registro ninguno de ese día. Distinto de un día vacío a propósito. */
   registrado: boolean;
   comidas: ComidaDelDia[];
-  /** Intercambios marcados como comidos. */
-  comido: BudgetVec;
-  /** Intercambios que había puestos en el día, marcados o no. */
-  puesto: BudgetVec;
-  cupo: BudgetVec;
+  /** kcal y gramos marcados como comidos. */
+  comido: Macros;
+  /** kcal y gramos que había puestos en el día, marcados o no. */
+  puesto: Macros;
+  /** Objetivo de ese día (el congelado, o el cupo viejo traducido). */
+  cupo: Macros;
   kcalComido: number;
   kcalCupo: number;
-  /** comido − cupo, sumando las tres categorías. Positivo = se pasó. */
+  /** kcal comidas − kcal del objetivo. Positivo = se pasó. */
   desvio: number;
   /** Cuántos items hay y cuántos están marcados — para poder decir «12 de 14». */
   items: number;
@@ -77,7 +81,7 @@ export interface PatronesComida {
   diasPorEncima: number;
   diasPorDebajo: number;
   diasEnObjetivo: number;
-  /** Media de `desvio` de los días registrados, en intercambios. */
+  /** Media de `desvio` de los días registrados, en kcal. */
   desvioMedio: number;
   /** Media de kcal comidas frente al cupo, de los días registrados. */
   kcalMediaComido: number;
@@ -95,22 +99,9 @@ export interface ComidaDeLaSemana {
   patrones: PatronesComida;
 }
 
-const CERO: BudgetVec = { HC: 0, PROT: 0, GRASA: 0 };
-
-/** Un día se da por «en objetivo» si no se pasa ni se queda corto por más de esto. */
-export const TOLERANCIA_DIA = 1;
-
-function vec(p: Record<FoodCategory, number>): BudgetVec {
-  return { HC: round2(p.HC), PROT: round2(p.PROT), GRASA: round2(p.GRASA) };
-}
-
-function sumar(a: BudgetVec, b: BudgetVec): BudgetVec {
-  return { HC: round2(a.HC + b.HC), PROT: round2(a.PROT + b.PROT), GRASA: round2(a.GRASA + b.GRASA) };
-}
-
-function total(v: BudgetVec): number {
-  return round2(v.HC + v.PROT + v.GRASA);
-}
+/** Un día se da por «en objetivo» si no se pasa ni se queda corto por más de
+ *  esto, en kcal (lo que antes era un intercambio). */
+export const TOLERANCIA_DIA = 100;
 
 /** Todas las fechas de la ventana, incluidos los dos extremos. */
 function fechasDeLaVentana(desde: string, hasta: string): string[] {
@@ -127,37 +118,36 @@ function origenDe(item: { originRecipeId?: string; origenMenu?: string }): Orige
 
 /** El día tal y como quedó registrado, o un día vacío si no hay registro. */
 function construirDia(fecha: string, log: DietCompletionLog | undefined, diets: Diet[]): DiaComido {
-  const cupoBruto = cupoDelDia(log, diets);
-  const cupo: BudgetVec = { HC: cupoBruto.HC ?? 0, PROT: cupoBruto.PROT ?? 0, GRASA: cupoBruto.GRASA ?? 0 };
+  const cupo = redondearMacros((log ? objetivoDelRegistro(log) : null) ?? macrosDeIntercambios(cupoDelDia(log, diets)));
 
   if (!log) {
     return {
       fecha, registrado: false, comidas: [],
-      comido: CERO, puesto: CERO, cupo,
-      kcalComido: 0, kcalCupo: Math.round(exchangeToKcal(cupo)),
-      desvio: round2(-total(cupo)), items: 0, itemsMarcados: 0,
+      comido: { ...MACROS_CERO }, puesto: { ...MACROS_CERO }, cupo,
+      kcalComido: 0, kcalCupo: Math.round(cupo.kcal),
+      desvio: -Math.round(cupo.kcal), items: 0, itemsMarcados: 0,
     };
   }
 
   const marcados = new Set(log.doneItemIds ?? []);
   const comidas: ComidaDelDia[] = [];
-  const acumComido: Record<FoodCategory, number> = { HC: 0, PROT: 0, GRASA: 0, MIX_HC: 0, MIX_GRASA: 0 };
-  const acumPuesto: Record<FoodCategory, number> = { HC: 0, PROT: 0, GRASA: 0, MIX_HC: 0, MIX_GRASA: 0 };
+  const todosComidos: DietItem[] = [];
+  const todosPuestos: DietItem[] = [];
   let items = 0;
   let itemsMarcados = 0;
 
   for (const meal of comidasDelDia(log, diets)) {
-    const porComida: Record<FoodCategory, number> = { HC: 0, PROT: 0, GRASA: 0, MIX_HC: 0, MIX_GRASA: 0 };
+    const comidosAqui: DietItem[] = [];
     const lineas: ItemComido[] = meal.items.map((item, idx) => {
       // La clave de «marcado» es posicional (`${mealId}_${idx}`) — es la misma
       // que escribe el tracker del atleta, así que se replica tal cual.
       const marcado = marcados.has(`${meal.id}_${idx}`);
       items++;
-      addToPlaced(acumPuesto, item.category, item.quantity);
+      todosPuestos.push(item);
       if (marcado) {
         itemsMarcados++;
-        addToPlaced(acumComido, item.category, item.quantity);
-        addToPlaced(porComida, item.category, item.quantity);
+        todosComidos.push(item);
+        comidosAqui.push(item);
       }
       return {
         etiqueta: foodNameShort(item.foodLabel),
@@ -165,20 +155,21 @@ function construirDia(fecha: string, log: DietCompletionLog | undefined, diets: 
         peso: itemWeightLabel(item.foodLabel, item.quantity),
         categoria: item.category,
         cantidad: item.quantity,
+        kcal: Math.round(macrosDeLinea(item).kcal),
         marcado,
         origen: origenDe(item),
       };
     });
-    comidas.push({ id: meal.id, nombre: meal.name, slot: meal.slot, items: lineas, comido: vec(porComida) });
+    comidas.push({ id: meal.id, nombre: meal.name, slot: meal.slot, items: lineas, comido: redondearMacros(macrosDeLineas(comidosAqui)) });
   }
 
-  const comido = vec(acumComido);
+  const comido = redondearMacros(macrosDeLineas(todosComidos));
   return {
     fecha, registrado: true, comidas,
-    comido, puesto: vec(acumPuesto), cupo,
-    kcalComido: Math.round(exchangeToKcal(comido)),
-    kcalCupo: Math.round(exchangeToKcal(cupo)),
-    desvio: round2(total(comido) - total(cupo)),
+    comido, puesto: redondearMacros(macrosDeLineas(todosPuestos)), cupo,
+    kcalComido: Math.round(comido.kcal),
+    kcalCupo: Math.round(cupo.kcal),
+    desvio: Math.round(comido.kcal - cupo.kcal),
     items, itemsMarcados,
   };
 }
@@ -190,7 +181,7 @@ function construirPatrones(dias: DiaComido[]): PatronesComida {
   // Un día sin cupo pautado no se puede juzgar: no hay objetivo contra el que
   // decir si se pasó o se quedó corto. Cuenta como registrado, pero no entra
   // en el reparto de «por encima / por debajo / en objetivo».
-  const juzgables = registrados.filter(d => total(d.cupo) > 0);
+  const juzgables = registrados.filter(d => d.cupo.kcal > 0);
   const porEncima = juzgables.filter(d => d.desvio > TOLERANCIA_DIA).length;
   const porDebajo = juzgables.filter(d => d.desvio < -TOLERANCIA_DIA).length;
 
@@ -214,16 +205,15 @@ function construirPatrones(dias: DiaComido[]): PatronesComida {
     .sort((a, b) => b.veces - a.veces || a.etiqueta.localeCompare(b.etiqueta))
     .slice(0, 10);
 
-  // Desvío por ingesta: cuánto se separa cada comida de su objetivo. Solo tiene
-  // sentido cuando el coach repartió el cupo por comida (`meal.target`); sin
-  // reparto no hay objetivo por ingesta y la fila no sale.
+  // Desvío por ingesta, en kcal: cuánto se separa cada comida de su parte del
+  // día (el objetivo a partes iguales entre las comidas, sin reparto propio).
   const porNombre = new Map<string, number[]>();
   for (const d of registrados) {
     for (const c of d.comidas) {
-      const objetivo = d.comidas.length > 0 ? total(d.cupo) / d.comidas.length : 0;
+      const objetivo = d.comidas.length > 0 ? d.cupo.kcal / d.comidas.length : 0;
       if (objetivo <= 0) continue;
       const lista = porNombre.get(c.nombre) ?? [];
-      lista.push(round2(total(c.comido) - objetivo));
+      lista.push(Math.round(c.comido.kcal - objetivo));
       porNombre.set(c.nombre, lista);
     }
   }
@@ -280,13 +270,10 @@ export function construirComidaDeLaSemana(params: ComidaDeLaSemanaParams): Comid
 }
 
 /** Lo comido y el cupo de toda la ventana, para la cabecera del bloque. */
-export function totalesDeLaVentana(comida: ComidaDeLaSemana): { comido: BudgetVec; cupo: BudgetVec } {
-  let comido = CERO;
-  let cupo = CERO;
-  for (const d of comida.dias) {
-    if (!d.registrado) continue;
-    comido = sumar(comido, d.comido);
-    cupo = sumar(cupo, d.cupo);
-  }
-  return { comido, cupo };
+export function totalesDeLaVentana(comida: ComidaDeLaSemana): { comido: Macros; cupo: Macros } {
+  const registrados = comida.dias.filter(d => d.registrado);
+  return {
+    comido: redondearMacros(sumarMacros(...registrados.map(d => d.comido))),
+    cupo: redondearMacros(sumarMacros(...registrados.map(d => d.cupo))),
+  };
 }

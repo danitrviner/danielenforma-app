@@ -9,6 +9,7 @@ import { isMenuStale } from '../utils/menuEngine';
 import { computeMenuAdherenceRate } from '../utils/nutritionAnalysis';
 import { DEFAULT_KCAL_PER_STEP } from '../utils/nutritionConstants';
 import { isDietPending } from '../utils/exchangeHelpers';
+import { objetivoDeDieta } from '../utils/macrosLegado';
 import { SLOT_LABEL, HUNGER_PROFILE_LABEL } from '../utils/mealDistribution';
 import { getDietsForAthlete, deleteWeeklyMenu, getWeeklyMenusForAthlete, getNutritionProgram, computeActivePhase, updateAiProposal } from '../dbService';
 import { appendDossierFacts } from '../db/dossier';
@@ -273,7 +274,7 @@ export default function ClientDietsPanel({
                       )}
                     </div>
                     <p className="font-mono text-caption text-ink-2">
-                      {dt.meals.length} comida{dt.meals.length !== 1 ? 's' : ''} · {Object.values(dt.budget ?? {}).reduce((s, n) => s + (Number(n) || 0), 0)} intercambios
+                      {dt.meals.length} comida{dt.meals.length !== 1 ? 's' : ''} · {Math.round(objetivoDeDieta(dt).kcal).toLocaleString('es-ES')} kcal
                     </p>
                   </div>
 
@@ -373,9 +374,7 @@ export default function ClientDietsPanel({
           {WEEK_DAYS.map(day => {
             const scheduledId = athleteDietConfig?.weeklySchedule?.[day] ?? null;
             const scheduledDiet = scheduledId ? athleteDiets.find(d => d.id === scheduledId) ?? null : null;
-            const totalExch = scheduledDiet
-              ? (scheduledDiet.budget?.HC ?? 0) + (scheduledDiet.budget?.PROT ?? 0) + (scheduledDiet.budget?.GRASA ?? 0)
-              : null;
+            const kcalDia = scheduledDiet ? Math.round(objetivoDeDieta(scheduledDiet).kcal) : null;
             return (
               <div key={day} className="flex flex-col gap-1">
                 <span className="text-caption font-mono font-bold text-ink-2 uppercase text-center tracking-widest">
@@ -392,9 +391,9 @@ export default function ClientDietsPanel({
                     <option key={dt.id} value={dt.id}>{dt.name}</option>
                   ))}
                 </select>
-                {totalExch !== null && (
+                {kcalDia !== null && (
                   <span className="text-caption font-mono text-accent-ink text-center">
-                    {totalExch} int.
+                    {kcalDia.toLocaleString('es-ES')} kcal
                   </span>
                 )}
               </div>

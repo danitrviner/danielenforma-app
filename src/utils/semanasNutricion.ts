@@ -3,8 +3,10 @@ import type {
   Diet, DietMeal, NutritionProgram, AjusteDeComida, CambioNutricionSemana, MacroAjustable, WeekDay, Suplemento, NutritionPhase,
 } from '../types';
 import { resolveSlots, SLOT_LABEL } from './mealDistribution';
-import { exchangeToKcal } from './nutritionConstants';
+import { GRAMS_PER_EXCHANGE } from './nutritionConstants';
 import { addToPlaced } from './exchangeHelpers';
+import { objetivoDeDieta } from './macrosLegado';
+import { macrosDesdeGramos } from './macros';
 import type { FoodCategory } from '../types';
 
 /* La periodización nutricional semana a semana. Las fases dicen QUÉ dieta toca
@@ -47,6 +49,35 @@ export function faseDeLaSemana(program: Pick<NutritionProgram, 'phases'>, semana
 
 const aplica = (c: CambioNutricionSemana, s: number) => c.semana <= s && (!c.solo || c.semana === s);
 
+// ── Gramos (10-2026) ────────────────────────────────────────────────────────
+// Los ajustes se piensan y se enseñan en gramos de cada macro. Cada uno lleva
+// también su equivalente en intercambios (`delta`) para los binarios viejos y
+// para mover los alimentos del plan del coach, que siguen guardados así.
+
+const r2 = (n: number) => Math.round(n * 100) / 100;
+
+/** Gramos de un ajuste: los suyos o, si es viejo, sus intercambios traducidos. */
+export function gramosDeAjuste(a: Pick<AjusteDeComida, 'cat' | 'delta' | 'gramos'>): number {
+  return a.gramos ?? a.delta * GRAMS_PER_EXCHANGE[a.cat];
+}
+
+/** Un ajuste nuevo, en gramos, con su equivalente en intercambios. */
+export function ajusteEnGramos(cat: MacroAjustable, gramos: number, slot?: number): AjusteDeComida {
+  return { ...(slot !== undefined ? { slot } : {}), cat, gramos, delta: r2(gramos / GRAMS_PER_EXCHANGE[cat]) };
+}
+
+/** Gramos de hidratos del ciclado ese día (o 0). */
+export function gramosDelCiclado(program: Pick<NutritionProgram, 'ciclado'>, semana: number, entrena: boolean | undefined): number {
+  const c = program.ciclado;
+  if (!c || entrena === undefined || semana < c.desde || (c.hasta !== undefined && semana > c.hasta)) return 0;
+  return entrena ? (c.entrenoG ?? c.entreno * GRAMS_PER_EXCHANGE.HC) : (c.descansoG ?? c.descanso * GRAMS_PER_EXCHANGE.HC);
+}
+
+/** Gramos de una regla por peso. */
+export function gramosDeRegla(regla: Pick<ReglaDePeso, 'cat' | 'cantidad' | 'gramos'>): number {
+  return regla.gramos ?? regla.cantidad * GRAMS_PER_EXCHANGE[regla.cat];
+}
+
 /** Los ajustes que rigen en la semana `s` (acumulados desde el principio). */
 export function ajustesDeLaSemana(program: Pick<NutritionProgram, 'cambiosSemana'>, s: number): AjusteDeComida[] {
   return (program.cambiosSemana ?? []).filter(c => aplica(c, s)).flatMap(c => c.ajustes);
@@ -88,7 +119,7 @@ function ajustarComida(meal: DietMeal, cat: MacroAjustable, deltaMacro: number):
 
 /** La dieta con los ajustes aplicados: comidas y cupo diario. */
 export function aplicarAjustes(
-  diet: Diet, ajustes: AjusteDeComida[], opciones: { mantenimiento?: boolean; libres?: number[]; hcDelDia?: number } = {},
+  diet: Diet, ajustes: AjusteDeComida[], opciones: { mantenimiento?: boolean; libres?: number[]; hcDelDia?: number; hcDelDiaG?: number } = {},
 ): Diet {
   let meals = diet.meals.map(m => ({ ...m, items: m.items.map(it => ({ ...it })) }));
   const slots = resolveSlots(meals);
@@ -98,9 +129,15 @@ export function aplicarAjustes(
   const todos: AjusteDeComida[] = [
     ...ajustes,
     ...(opciones.mantenimiento ? meals.map((_, i) => ({ slot: slots[i], cat: 'HC' as const, delta: 1 })) : []),
-    ...(opciones.hcDelDia ? [{ ...(iEntreno >= 0 ? { slot: slots[iEntreno] } : {}), cat: 'HC' as const, delta: opciones.hcDelDia }] : []),
+    ...(opciones.hcDelDiaG ? [ajusteEnGramos('HC', opciones.hcDelDiaG, iEntreno >= 0 ? slots[iEntreno] : undefined)]
+      : opciones.hcDelDia ? [{ ...(iEntreno >= 0 ? { slot: slots[iEntreno] } : {}), cat: 'HC' as const, delta: opciones.hcDelDia }] : []),
   ];
   const budget = { ...diet.budget };
+  // El objetivo en kcal y gramos se mueve con los gramos de cada ajuste.
+  const base = objetivoDeDieta(diet);
+  const g = { p: base.p, hc: base.hc, g: base.g };
+  const CLAVE = { PROT: 'p', HC: 'hc', GRASA: 'g' } as const;
+  for (const a of todos) if (a.delta !== 0 || a.gramos) g[CLAVE[a.cat]] = Math.max(0, g[CLAVE[a.cat]] + gramosDeAjuste(a));
   for (const a of todos) {
     if (a.delta === 0 || meals.length === 0) continue;
     let idx = a.slot !== undefined ? slots.indexOf(a.slot) : -1;
@@ -114,7 +151,7 @@ export function aplicarAjustes(
   if (opciones.libres && opciones.libres.length > 0) {
     meals = meals.map((m, i) => opciones.libres!.includes(slots[i]) ? { ...m, libre: true } : m);
   }
-  return { ...diet, meals, budget };
+  return { ...diet, meals, budget, objetivo: macrosDesdeGramos(g.p, g.hc, g.g) };
 }
 
 export function libresDelDia(program: Pick<NutritionProgram, 'comidasLibres'>, semana: number, dia: WeekDay): number[] {
@@ -144,9 +181,9 @@ export function dietaDeLaSemana(diet: Diet, program: NutritionProgram | null | u
   const ajustes = ajustesDeLaSemana(program, s);
   const mantenimiento = (program.semanasMantenimiento ?? []).includes(s);
   const libres = libresDelDia(program, s, diaDeLaSemana(fecha));
-  const hcDelDia = hcDelCiclado(program, s, entrena);
-  if (ajustes.length === 0 && !mantenimiento && libres.length === 0 && hcDelDia === 0) return diet;
-  return aplicarAjustes(diet, ajustes, { mantenimiento, libres, hcDelDia });
+  const hcDelDiaG = gramosDelCiclado(program, s, entrena);
+  if (ajustes.length === 0 && !mantenimiento && libres.length === 0 && hcDelDiaG === 0) return diet;
+  return aplicarAjustes(diet, ajustes, { mantenimiento, libres, hcDelDiaG });
 }
 
 /** Objetivo de pasos que rige `fecha`: el último que haya empezado, o `base`. */
@@ -159,12 +196,10 @@ export function objetivoDePasos(program: Pick<NutritionProgram, 'startDate' | 'p
 
 const VACIO = (): Record<FoodCategory, number> => ({ HC: 0, PROT: 0, GRASA: 0, MIX_HC: 0, MIX_GRASA: 0 });
 
-/** kcal del cupo, con los intercambios mixtos repartidos como en el resto de
- *  la app (medio de cada macro, ver addToPlaced). */
-export function kcalDeDieta(diet: Pick<Diet, 'budget'>): number {
-  const p = VACIO();
-  for (const [cat, q] of Object.entries(diet.budget) as [FoodCategory, number][]) addToPlaced(p, cat, q ?? 0);
-  return exchangeToKcal(p);
+/** kcal del objetivo de la dieta: el suyo en kcal o, si es vieja, su cupo
+ *  con los mixtos repartidos (utils/macrosLegado.ts). */
+export function kcalDeDieta(diet: Pick<Diet, 'budget' | 'objetivo'>): number {
+  return Math.round(objetivoDeDieta(diet).kcal);
 }
 
 /** Intercambios de cada macro en el cupo diario, con los mixtos repartidos. */
@@ -187,7 +222,7 @@ export function kcalDeComida(meal: DietMeal): number {
   const p = VACIO();
   if (meal.items.length > 0) for (const it of meal.items) addToPlaced(p, it.category, it.quantity);
   else for (const [cat, q] of Object.entries(meal.target ?? {}) as [FoodCategory, number][]) addToPlaced(p, cat, q ?? 0);
-  return exchangeToKcal(p);
+  return Math.round(objetivoDeDieta({ budget: p }).kcal);
 }
 
 /** kcal/día de cada semana del programa (índice 1..N; 0 queda a null), con la
@@ -215,8 +250,12 @@ export function programarAjuste(
   let cambio = lista.find(c => c.semana === semana && !!c.solo === solo);
   if (!cambio) { cambio = { semana, ...(solo ? { solo: true } : {}), ajustes: [] }; lista.push(cambio); }
   const mismo = cambio.ajustes.find(a => a.slot === ajuste.slot && a.cat === ajuste.cat);
-  if (mismo) mismo.delta += ajuste.delta; else cambio.ajustes.push({ ...ajuste });
-  cambio.ajustes = cambio.ajustes.filter(a => a.delta !== 0);
+  if (mismo) {
+    const g = gramosDeAjuste(mismo) + gramosDeAjuste(ajuste);
+    mismo.gramos = Math.round(g * 10) / 10;
+    mismo.delta = r2(mismo.delta + ajuste.delta);
+  } else cambio.ajustes.push({ ...ajuste });
+  cambio.ajustes = cambio.ajustes.filter(a => Math.abs(gramosDeAjuste(a)) > 0.05);
   const out = lista.filter(c => c.ajustes.length > 0).sort((a, b) => a.semana - b.semana);
   return out.length > 0 ? out : undefined;
 }
@@ -233,9 +272,9 @@ export function suplementosDeLaSemana(program: Pick<NutritionProgram, 'suplement
 // ── Describir ───────────────────────────────────────────────────────────────
 
 export function describirAjuste(a: AjusteDeComida): string {
-  const donde = a.slot !== undefined ? SLOT_LABEL[a.slot] ?? `Comida ${a.slot}` : `Comida con más ${NOMBRE_MACRO[a.cat]}`;
-  const n = Math.abs(a.delta);
-  return `${donde}: ${a.delta > 0 ? '+' : '−'}${n.toLocaleString('es-ES')} ${n === 1 ? 'intercambio' : 'intercambios'} de ${NOMBRE_MACRO[a.cat]}`;
+  const g = gramosDeAjuste(a);
+  const n = Math.round(Math.abs(g));
+  return `${g > 0 ? '+' : '−'}${n.toLocaleString('es-ES')} g de ${NOMBRE_MACRO[a.cat]} al día`;
 }
 
 export interface NovedadesNutricion {
@@ -256,8 +295,9 @@ export function novedadesNutricion(program: NutritionProgram, s: number): Noveda
   const terminan = (program.cambiosSemana ?? []).filter(c => c.solo && c.semana === s - 1);
   if (terminan.length > 0) ajustes.push('Termina el ajuste puntual de la semana pasada');
   if (program.ciclado && program.ciclado.desde === s) {
-    const { entreno, descanso } = program.ciclado;
-    const t = (n: number) => `${n > 0 ? '+' : n < 0 ? '−' : ''}${Math.abs(n)} ${Math.abs(n) === 1 ? 'intercambio' : 'intercambios'} de hidratos`;
+    const entreno = gramosDelCiclado(program, s, true);
+    const descanso = gramosDelCiclado(program, s, false);
+    const t = (n: number) => `${n > 0 ? '+' : n < 0 ? '−' : ''}${Math.round(Math.abs(n))} g de hidratos`;
     ajustes.push(`Días de entreno: ${t(entreno)}; días de descanso: ${t(descanso)}`);
   }
   const pasos = (program.pasosPorSemana ?? []).find(p => p.semana === s);
@@ -279,15 +319,15 @@ export function hayNovedadesNutricion(n: NovedadesNutricion): boolean {
 
 // ── Progresiones en un clic ─────────────────────────────────────────────────
 
-/** Salida de déficit: +1 intercambio de hidratos cada semana desde `desde`
- *  hasta rozar `objetivoKcal` (sin pasarse más de medio intercambio). */
+/** Salida de déficit: +25 g de hidratos (100 kcal) cada semana desde `desde`
+ *  hasta rozar `objetivoKcal` (sin pasarse más de 50 kcal). */
 export function salidaDeDeficit(program: NutritionProgram, diets: Diet[], desde: number, objetivoKcal: number): NutritionProgram {
   let p = program;
   const n = totalSemanas(program);
   for (let s = desde; s <= n; s++) {
     const k = kcalPorSemana(p, diets)[s];
     if (k == null || k + 100 > objetivoKcal + 50) break;
-    p = { ...p, cambiosSemana: programarAjuste(p, s, false, { cat: 'HC', delta: 1 }) };
+    p = { ...p, cambiosSemana: programarAjuste(p, s, false, ajusteEnGramos('HC', GRAMS_PER_EXCHANGE.HC)) };
   }
   return p;
 }
@@ -301,15 +341,15 @@ export function descansosDeDieta(program: NutritionProgram, cada: number, desde:
   return { ...program, semanasMantenimiento: lista.length > 0 ? lista : undefined };
 }
 
-/** Bajada progresiva: −1 intercambio de `cat` cada `cada` semanas desde
- *  `desde`, sin bajar de `sueloKcal`. */
+/** Bajada progresiva: −≈100 kcal de `cat` (25 g de P o HC, 11 g de grasa)
+ *  cada `cada` semanas desde `desde`, sin bajar de `sueloKcal`. */
 export function bajadaProgresiva(program: NutritionProgram, diets: Diet[], desde: number, cada: number, cat: MacroAjustable, sueloKcal: number): NutritionProgram {
   let p = program;
   const n = totalSemanas(program);
   for (let s = desde; s <= n; s += Math.max(1, cada)) {
     const k = kcalPorSemana(p, diets)[s];
     if (k == null || k - 100 < sueloKcal) break;
-    p = { ...p, cambiosSemana: programarAjuste(p, s, false, { cat, delta: -1 }) };
+    p = { ...p, cambiosSemana: programarAjuste(p, s, false, ajusteEnGramos(cat, -GRAMS_PER_EXCHANGE[cat])) };
   }
   return p;
 }
@@ -348,11 +388,11 @@ export function evaluarReglasDePeso(program: NutritionProgram, pesos: (number | 
       ? ritmos.every(r => -r < regla.ritmoMinimo)
       : ritmos.every(r => r < regla.ritmoMinimo);
     if (!insuficiente) continue;
-    const delta = regla.tipo === 'bajar' ? -regla.cantidad : regla.cantidad;
+    const gramos = regla.tipo === 'bajar' ? -gramosDeRegla(regla) : gramosDeRegla(regla);
     const media = ritmos.reduce((x, y) => x + y, 0) / ritmos.length;
     out.push({
-      regla, semana: destino, ajuste: { cat: regla.cat, delta },
-      texto: `${regla.semanas} semanas ${regla.tipo === 'bajar' ? 'bajando' : 'subiendo'} ${kg(Math.abs(media))}/semana de media (menos de ${kg(regla.ritmoMinimo)}): ${delta > 0 ? '+' : '−'}${Math.abs(delta)} ${NOMBRE_MACRO[regla.cat]} desde la semana ${destino}.`,
+      regla, semana: destino, ajuste: ajusteEnGramos(regla.cat, gramos),
+      texto: `${regla.semanas} semanas ${regla.tipo === 'bajar' ? 'bajando' : 'subiendo'} ${kg(Math.abs(media))}/semana de media (menos de ${kg(regla.ritmoMinimo)}): ${gramos > 0 ? '+' : '−'}${Math.round(Math.abs(gramos))} g de ${NOMBRE_MACRO[regla.cat]} desde la semana ${destino}.`,
     });
   }
   return out;
@@ -360,8 +400,8 @@ export function evaluarReglasDePeso(program: NutritionProgram, pesos: (number | 
 
 // ── Proteína ────────────────────────────────────────────────────────────────
 
-/** g de proteína por kg de peso que da el cupo de cada semana (25 g por
- *  intercambio de proteína, mixtos a medias). Índice 1..N; null sin dato. */
+/** g de proteína por kg de peso que da el objetivo de cada semana. Índice
+ *  1..N; null sin dato. */
 export function proteinaGKgPorSemana(program: NutritionProgram, diets: Diet[], pesoKg: number | null): (number | null)[] {
   const n = totalSemanas(program);
   return Array.from({ length: n + 1 }, (_, s) => {
@@ -370,7 +410,7 @@ export function proteinaGKgPorSemana(program: NutritionProgram, diets: Diet[], p
     const diet = f && diets.find(d => d.id === f.fase.dietId);
     if (!diet) return null;
     const d = aplicarAjustes(diet, ajustesDeLaSemana(program, s), { mantenimiento: (program.semanasMantenimiento ?? []).includes(s) });
-    return Math.round((macrosDeCupo(d.budget).PROT * 25 / pesoKg) * 10) / 10;
+    return Math.round((objetivoDeDieta(d).p / pesoKg) * 10) / 10;
   });
 }
 
@@ -401,7 +441,7 @@ export function habitosPorSemana(program: NutritionProgram, logs: DietCompletion
  *  dos semanas con la misma firma comen igual. */
 export function firmaDeSemana(program: NutritionProgram, s: number): string {
   const ajustes = ajustesDeLaSemana(program, s)
-    .map(a => `${a.slot ?? '*'}:${a.cat}:${a.delta}`).sort();
+    .map(a => `${a.slot ?? '*'}:${a.cat}:${gramosDeAjuste(a)}`).sort();
   return JSON.stringify({ a: ajustes, m: (program.semanasMantenimiento ?? []).includes(s) });
 }
 

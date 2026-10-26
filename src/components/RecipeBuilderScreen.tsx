@@ -5,6 +5,8 @@ import { getRecipes, createRecipe, updateRecipe, deleteRecipe, getFoodItems, que
 import type { RecetasCursor } from '../dbService';
 import { CAT_BASICAS, encajaCategoria, FILTROS_RAPIDAS, type FiltroRapidas } from '../db/recetasHidratacion';
 import { roundQuarter } from '../utils/exchangeHelpers';
+import { macrosDeIntercambios } from '../utils/macrosLegado';
+import { parseBaseGrams } from '../utils/conversionNutricional';
 import { Skeleton, Icon } from './ui';
 import { EmptyState, Badge, Chip, Dialog, Button, Input } from './ui';
 import { fotoDeReceta } from '../utils/fotoDeReceta';
@@ -81,11 +83,18 @@ function calcExchanges(ingredients: RecipeIngredient[]): Partial<Record<FoodCate
   return totals;
 }
 
-function formatExchanges(exch: Partial<Record<FoodCategory, number>>): string {
-  const CATS: FoodCategory[] = ['HC', 'PROT', 'GRASA', 'MIX_HC', 'MIX_GRASA'];
-  return CATS.filter(c => (exch[c] ?? 0) > 0)
-    .map(c => `${exch[c]} ${CAT_LABELS[c]}`)
-    .join(' · ') || '—';
+/** «352 kcal · P 28 g · HC 42 g · G 8 g» de unos ingredientes (10-2026). */
+function textoMacros(ingredients: RecipeIngredient[]): string {
+  const m = macrosDeIntercambios(calcExchanges(ingredients));
+  if (m.kcal <= 0) return '—';
+  return `${Math.round(m.kcal)} kcal · P ${Math.round(m.p)} · HC ${Math.round(m.hc)} · G ${Math.round(m.g)} g`;
+}
+
+/** Gramos y kcal de un ingrediente: «80 g · 200 kcal» (o la ración si no se pesa). */
+function textoIngrediente(ing: RecipeIngredient): string {
+  const base = parseBaseGrams(ing.foodLabel);
+  const kcal = Math.round(macrosDeIntercambios({ [ing.category]: ing.quantity }).kcal);
+  return `${base ? `${Math.round(base * ing.quantity)} g` : `${ing.quantity} rac.`} · ${kcal} kcal`;
 }
 
 interface FormState {
@@ -206,7 +215,6 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
     return encontradas;
   }, [recetasRecipes, indiceBuscable, recetasCat, recetasRapidas, recetasIntake, recetasSearchDebounced]);
 
-  const liveExchanges = useMemo(() => calcExchanges(form.ingredients), [form.ingredients]);
 
   const filteredFoods = useMemo(() =>
     ingredientSearch.trim().length < 2
@@ -297,6 +305,16 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
       ingredients: form.ingredients,
       extras: form.extras,
       steps: form.steps,
+      // kcal y gramos (10-2026); `exchanges` para el motor de menús y los binarios viejos.
+      ...(() => {
+        const exch = calcExchanges(form.ingredients);
+        const m = macrosDeIntercambios(exch);
+        if (m.kcal <= 0) return {};
+        return {
+          macros: { prot: Math.round(m.p * 10) / 10, carb: Math.round(m.hc * 10) / 10, fat: Math.round(m.g * 10) / 10 },
+          kcal: Math.round(m.kcal),
+        };
+      })(),
     };
     try {
       if (editingId) {
@@ -350,7 +368,7 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {recipes.map(recipe => {
-            const exchStr = formatExchanges(calcExchanges(recipe.ingredients));
+            const exchStr = textoMacros(recipe.ingredients);
             return (
               <div key={recipe.id} className="bg-raised border border-hairline rounded-surface overflow-hidden flex flex-col">
                 {fotoDeReceta(recipe) && (
@@ -605,17 +623,8 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
             {/* Live exchanges */}
             {form.ingredients.length > 0 && (
               <div className="bg-raised border border-accent/20 rounded-surface p-3">
-                <p className="font-mono text-caption text-ink-2 uppercase tracking-wider mb-2">Intercambios totales</p>
-                <div className="flex flex-wrap gap-2">
-                  {(Object.entries(liveExchanges) as [FoodCategory, number][])
-                    .filter(([, v]) => v > 0)
-                    .map(([cat, val]) => (
-                      <span key={cat} className={`px-3 py-1 rounded-surface border font-mono text-label font-bold ${CAT_COLORS[cat]}`}>
-                        {val} {CAT_LABELS[cat]}
-                      </span>
-                    ))
-                  }
-                </div>
+                <p className="font-mono text-caption text-ink-2 uppercase tracking-wider mb-2">Total de la receta</p>
+                <p className="font-mono text-label font-bold text-ink">{textoMacros(form.ingredients)}</p>
               </div>
             )}
 
@@ -662,8 +671,8 @@ export default function RecipeBuilderScreen({ coachId }: Props) {
                   {form.ingredients.map((ing, idx) => (
                     <li key={idx} className="flex items-center gap-2 px-3 py-2 bg-raised rounded-surface border border-hairline">
                       <span className="text-label text-ink font-sans flex-1 truncate">{ing.foodLabel}</span>
-                      <span className={`font-sans text-caption font-bold shrink-0 ${CAT_COLORS[ing.category].split(' ')[0]}`}>{CAT_LABELS[ing.category]}</span>
-                      <div className="flex items-center gap-1 shrink-0">
+                      <span className="font-mono text-caption text-ink-2 shrink-0">{textoIngrediente(ing)}</span>
+                      <div className="flex items-center gap-1 shrink-0" aria-label="Raciones">
                         <button type="button" onClick={() => adjustIngQty(idx, -0.25)} className="w-6 h-6 bg-raised rounded-control text-ink text-label hover:bg-raised transition-colors">-</button>
                         <span className="w-8 text-center font-mono text-label text-ink select-none">{ing.quantity}</span>
                         <button type="button" onClick={() => adjustIngQty(idx, 0.25)} className="w-6 h-6 bg-raised rounded-control text-ink text-label hover:bg-raised transition-colors">+</button>
