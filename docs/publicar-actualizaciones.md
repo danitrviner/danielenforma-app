@@ -82,8 +82,11 @@ Los dos números se suben **a mano** y son independientes:
 
 | | Dónde | Valor a 01-09-2026 |
 |---|---|---|
-| iOS | `ios/App/App.xcodeproj/project.pbxproj` → `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION` | 1.0 (5) |
-| Android | `android/app/build.gradle` → `versionName` / `versionCode` | 1.0 (2) |
+| iOS | `ios/App/App.xcodeproj/project.pbxproj` → `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION` | 1.0 (5) → **1.1 (7)** el 26-10-2026 |
+| Android | `android/app/build.gradle` → `versionName` / `versionCode` | 1.0 (2) → **1.1 (3)** el 26-10-2026 |
+
+Desde el 26-10-2026 el `Info.plist` de iOS lee el número de build del proyecto
+(`$(CURRENT_PROJECT_VERSION)`): antes lo tenía fijo y subirlo en el proyecto no servía.
 
 `versionCode` de Android tiene que subir **siempre**, aunque el `versionName` se quede igual;
 Play rechaza un código repetido. En iOS pasa lo mismo con `CURRENT_PROJECT_VERSION` dentro de la
@@ -145,6 +148,23 @@ Con esto puesto, todo lo del apartado 7 habría llegado a los atletas en minutos
 ---
 
 ## 7 · Cola de espera — lo que hay hecho y sin publicar
+
+### Versión 1.1 — nutrición en kcal (26-10-2026) · LISTA PARA SUBIR
+
+En la web desde el 26-10-2026 (PR #12). Binarios generados en `~/Desktop/App enforma/binarios-1.1/`:
+
+- **Android**: `en-forma-1.1-(3).aab`, firmado con la clave de subida → Play Console › Producción › Crear versión.
+- **iOS**: `EnForma-1.1-(7).xcarchive` → abrir con doble clic (Xcode › Organizer) › *Distribute App* › App Store Connect. En App Store Connect hay que crear antes la versión **1.1**.
+
+Qué lleva: todo a kcal y gramos (diario, añadir alimentos con chips de ración, recetas desglosadas,
+dietas del coach, generador de menús, asistente), 5 comidas fijas, sin modo flexible, iconos nuevos
+de recetas y el reproductor de entreno sin título.
+
+Después de que la gente actualice:
+1. `GOOGLE_APPLICATION_CREDENTIALS=… npx tsx scripts/migrarAKcal.ts --aplicar` (en simulacro el
+   26-10-2026: 138 dietas, 1 periodización y 20 menús). **No antes**: una dieta con `objetivo` que un
+   atleta edite desde la app vieja solo cambiaría el cupo y el objetivo se quedaría viejo.
+2. Pruebas de [`QA-nutricion-kcal.md`](QA-nutricion-kcal.md).
 
 ### Rama `nutricion-registro-diario` (01-09-2026)
 
