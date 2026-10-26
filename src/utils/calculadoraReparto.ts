@@ -29,10 +29,10 @@ export const GRUPOS_COMODIN: MuscleGroup[] = ['core', 'lumbares', 'rotadores'];
 
 export const FRECUENCIA_MAXIMA = 3;
 
-/** Frecuencia de partida que sale del volumen: series ÷ 6 por sesión, a medios, mínimo 1. */
+/** Frecuencia de partida que sale del volumen: series ÷ `SERIES_POR_SESION` (8), a medios, mínimo 1. */
 export function frecuenciaPorDefecto(seriesSemanales: number): number {
   if (seriesSemanales <= 0) return 0;
-  const f = Math.round((seriesSemanales / 6) * 2) / 2;
+  const f = Math.round((seriesSemanales / SERIES_POR_SESION) * 2) / 2;
   return Math.min(FRECUENCIA_MAXIMA, Math.max(1, f));
 }
 

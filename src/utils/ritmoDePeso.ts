@@ -13,6 +13,7 @@
    Todo aquí es cálculo puro sobre kg y semanas. Nada de kcal: la estimación
    energética vive en `nutritionPeriodization.ts` y se alimenta de esto.
    ═══════════════════════════════════════════════════════════════════════════ */
+import { pendiente } from './verificacionObjetivo';
 
 /**
  * Cuántas semanas hacen falta para ir de un peso a otro a un ritmo dado.
@@ -102,10 +103,10 @@ export function duracionDeLasFases(
  */
 export function ritmoReal(pesosSemanales: readonly number[]): number | null {
   if (pesosSemanales.length < 2) return null;
-  const primero = pesosSemanales[0];
-  const ultimo = pesosSemanales[pesosSemanales.length - 1];
-  const semanas = pesosSemanales.length - 1;
-  return (ultimo - primero) / semanas;
+  // Regresión sobre todas las semanas (utils/verificacionObjetivo.ts), igual
+  // que el veredicto de Cuerpo: con «primero − último» una retención en la
+  // última semana movía el ritmo entero (M4, 26-10-2026).
+  return pendiente(pesosSemanales.map((p, i) => [i, p] as [number, number]));
 }
 
 export type EstadoDelRitmo = 'en-rumbo' | 'por-encima' | 'por-debajo' | 'sin-datos';

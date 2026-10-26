@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   comidasDelDia, cupoDelDia, dietaDelDia, totalItemsDelDia, adherenciaDelDia,
-  adherenciaPorKcal, enObjetivo,
+  adherenciaPorKcal, enObjetivo, toleranciaDelDiaKcal,
 } from './diaDeDieta';
 import type { Diet, DietCompletionLog } from '../types';
 
@@ -174,9 +174,15 @@ describe('adherenciaPorKcal', () => {
     expect(a.pct).toBe(100);
   });
 
-  it('la banda de «en objetivo» es simétrica', () => {
-    expect(enObjetivo({ pct: 90, comido: { kcal: 0, p: 0, hc: 0, g: 0 }, objetivo: { kcal: 100, p: 0, hc: 25, g: 0 } })).toBe(true);
-    expect(enObjetivo({ pct: 110, comido: { kcal: 0, p: 0, hc: 0, g: 0 }, objetivo: { kcal: 100, p: 0, hc: 25, g: 0 } })).toBe(true);
-    expect(enObjetivo({ pct: 89, comido: { kcal: 0, p: 0, hc: 0, g: 0 }, objetivo: { kcal: 100, p: 0, hc: 25, g: 0 } })).toBe(false);
+  it('la banda de «en objetivo» es simétrica: el 10 % o 100 kcal, lo que sea mayor (26-10-2026)', () => {
+    const a = (comido: number, objetivo: number) => ({ pct: (comido / objetivo) * 100, comido: { kcal: comido, p: 0, hc: 0, g: 0 }, objetivo: { kcal: objetivo, p: 0, hc: 0, g: 0 } });
+    expect(enObjetivo(a(1800, 2000))).toBe(true);
+    expect(enObjetivo(a(2200, 2000))).toBe(true);
+    expect(enObjetivo(a(1780, 2000))).toBe(false);
+    // Objetivo pequeño: manda el mínimo de 100 kcal.
+    expect(enObjetivo(a(410, 500))).toBe(true);
+    expect(enObjetivo(a(395, 500))).toBe(false);
+    expect(toleranciaDelDiaKcal(2600)).toBe(260);
+    expect(toleranciaDelDiaKcal(800)).toBe(100);
   });
 });

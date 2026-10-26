@@ -11,12 +11,12 @@ const asg = (date: string, status: WorkoutAssignment['status']): WorkoutAssignme
   ({ id: `as_${date}`, workoutId: 'w1', athleteId: 'a@x.com', date, status });
 
 describe('computeBodyweightSection', () => {
-  it('usa el último peso previo al periodo como línea base', () => {
+  it('compara el peso representativo del periodo con el de la ventana anterior (26-10-2026)', () => {
     const logs = [bw('2026-06-28', 80), bw('2026-07-03', 79.4), bw('2026-07-08', 79)];
     const r = computeBodyweightSection(logs, '2026-07-01', '2026-07-08', 75);
     expect(r.startWeight).toBe(80);
-    expect(r.endWeight).toBe(79);
-    expect(r.deltaKg).toBe(-1);
+    expect(r.endWeight).toBe(79.2); // media de los dos pesajes del periodo
+    expect(r.deltaKg).toBe(-0.8);
     expect(r.towardsTarget).toBe(true);
     expect(r.entries).toBe(2);
   });
@@ -24,7 +24,7 @@ describe('computeBodyweightSection', () => {
   it('marca dirección contraria cuando se aleja del objetivo', () => {
     const logs = [bw('2026-07-01', 80), bw('2026-07-07', 81)];
     const r = computeBodyweightSection(logs, '2026-07-01', '2026-07-08', 75);
-    expect(r.deltaKg).toBe(1);
+    expect(r.deltaKg).toBe(0.5); // 80 → media del periodo 80,5
     expect(r.towardsTarget).toBe(false);
   });
 
@@ -32,6 +32,15 @@ describe('computeBodyweightSection', () => {
     const r = computeBodyweightSection([bw('2026-06-01', 80)], '2026-07-01', '2026-07-08', undefined);
     expect(r.endWeight).toBeNull();
     expect(r.towardsTarget).toBeNull();
+  });
+});
+
+describe('computeBodyweightSection · mediana', () => {
+  it('con tres o más pesajes el raro no cuenta', () => {
+    const logs = [bw('2026-06-28', 80), bw('2026-07-02', 81), bw('2026-07-04', 83), bw('2026-07-06', 81)];
+    const r = computeBodyweightSection(logs, '2026-07-01', '2026-07-07', 75);
+    expect(r.endWeight).toBe(81);
+    expect(r.deltaKg).toBe(1);
   });
 });
 

@@ -1,10 +1,11 @@
 import {
   Exercise, Mesocycle, MuscleGroup, Questionnaire, QuestionnaireResponse, WorkoutAssignment, WorkoutLog,
 } from '../types';
-import { buildTrainingReport } from './trainingReport';
 import { computeAverageRir } from './rirStats';
 import { adherenciaDeMesociclo } from './adherence';
 import { grupoDesdeEtiqueta, esSeñalDoms } from '../data/questionnaireSignals';
+import { seriesRealizadasPorGrupo } from './programacion';
+import { addDays } from './trainingWeek';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // HISTORIAL DE VOLUMEN — lo que pasó en el bloque anterior, en la forma exacta
@@ -135,30 +136,20 @@ export function buildVolumeHistoryFrom(params: {
   const feedback = leerFeedback(params.responses ?? [], params.questionnaires ?? []);
   if (!previous) return { ...HISTORIAL_VACIO, feedback };
 
-  const informe = buildTrainingReport({
-    logs, exercises, mesocycles,
-    periodStart: previous.startDate, periodEnd: previous.startDate,
-    comparison: { mode: 'mesocycle', currentId: previous.id, previousId: null },
-  });
-
-  // El informe da series del BLOQUE entero; `MuscleGroupConfig.series` es
-  // semanal. Sin esta división se compararían peras con manzanas y el motor
-  // creería que el atleta hizo cuatro veces el volumen que le tocaba.
-  //
-  // Ojo con la unidad: `MuscleGroupPerf.sets` son series efectivas PONDERADAS
-  // (el grupo principal del ejercicio cuenta 1 y cada secundario 0,5), así que
-  // `performed` recoge también el estímulo indirecto — un fondo programado como
-  // tríceps suma medio set a pecho. Es lo que interesa para decidir el volumen
-  // del bloque siguiente. El panel de «Cierre» (utils/cierreMesociclo.ts) cuenta
-  // solo el grupo principal a propósito, porque allí la pregunta es otra: si se
-  // ejecutó lo que se programó, medido en la misma unidad en que se programó.
+  // Series del bloque anterior por grupo PRINCIPAL, en la misma unidad en que
+  // se programaron (`MuscleGroupConfig.series` es semanal: se divide por las
+  // semanas del bloque). Hasta el 26-10-2026 se usaban las series ponderadas
+  // del informe (secundario 0,5), que inflaban lo hecho un 20-40 % y la regla
+  // «adherencia < 70 % → techo en lo hecho» casi nunca recortaba (M10).
+  const finPrevio = addDays(previous.startDate, previous.weeks * 7 - 1);
+  const logsPrevios = logs.filter(l => l.mesocycleId ? l.mesocycleId === previous.id : (l.date >= previous.startDate && l.date <= finPrevio));
+  const realizadas = seriesRealizadasPorGrupo(logsPrevios, exercises);
   const semanas = Math.max(1, previous.weeks);
   const groups: Partial<Record<MuscleGroup, GroupHistory>> = {};
-  for (const g of informe.muscleGroups) {
-    if (g.group === 'none') continue;
-    const grupo = g.group as MuscleGroup;
+  for (const [grupo, sets] of realizadas) {
+    if ((grupo as string) === 'none') continue;
     const planned = previous.groups[grupo]?.series ?? 0;
-    const performed = Math.round(g.sets / semanas);
+    const performed = Math.round(sets / semanas);
     groups[grupo] = {
       planned, performed,
       deltaPct: planned > 0 ? Math.round(((performed - planned) / planned) * 100) : 0,

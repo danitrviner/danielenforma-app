@@ -4,6 +4,9 @@ import {
 } from '../types';
 import { resolveQuestions } from './questionnaireResolve';
 import { adherenciaPorKcal } from './diaDeDieta';
+import { pesoRepresentativo } from './verificacionObjetivo';
+import { addDays, diasEntreFechas } from './trainingWeek';
+
 
 // Extra report sections beyond pure training performance (peso corporal,
 // adherencia a sesiones, nutrición y retos). Same deterministic philosophy as
@@ -35,11 +38,17 @@ export function computeBodyweightSection(
 ): BodyweightSectionData {
   const sorted = [...logs].sort((a, b) => a.date.localeCompare(b.date));
   const inPeriod = sorted.filter(l => inRange(l.date, periodStart, periodEnd));
-  // Baseline: last known weight BEFORE the period, so a single mid-week log
-  // still yields a delta instead of a flat 0.
+  // Peso representativo de cada ventana (mediana con 3+ pesajes, media con
+  // menos: utils/verificacionObjetivo.ts), el mismo criterio que la Revisión
+  // y Cuerpo (M4, 26-10-2026). Línea base: la ventana anterior de la misma
+  // duración; si no se pesó en ella, el último peso conocido antes del periodo.
+  const dias = diasEntreFechas(periodStart, periodEnd) + 1;
+  const ventanaAnterior = sorted.filter(l => inRange(l.date, addDays(periodStart, -dias), addDays(periodStart, -1)));
   const before = sorted.filter(l => l.date < periodStart);
-  const baseline = before.length ? before[before.length - 1].weight : (inPeriod[0]?.weight ?? null);
-  const endWeight = inPeriod.length ? inPeriod[inPeriod.length - 1].weight : null;
+  const baseline = ventanaAnterior.length ? round1(pesoRepresentativo(ventanaAnterior.map(l => l.weight)))
+    : before.length ? before[before.length - 1].weight
+    : (inPeriod[0]?.weight ?? null);
+  const endWeight = inPeriod.length ? round1(pesoRepresentativo(inPeriod.map(l => l.weight))) : null;
   const deltaKg = baseline != null && endWeight != null ? round1(endWeight - baseline) : null;
   let towardsTarget: boolean | null = null;
   if (targetWeight != null && deltaKg != null && baseline != null && deltaKg !== 0) {

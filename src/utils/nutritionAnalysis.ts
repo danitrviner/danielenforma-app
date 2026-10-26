@@ -4,6 +4,7 @@ import {
 } from '../types';
 import { adherenciaDelDia, adherenciaPorKcal } from './diaDeDieta';
 import { objetivoDeDieta } from './macrosLegado';
+import { pesoRepresentativo } from './verificacionObjetivo';
 import { hoyIsoLocal, addDays } from './trainingWeek';
 
 const WEEK_DAYS: WeekDay[] = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
@@ -260,9 +261,14 @@ export function computeWeightTrend(
   const window = fechasDeLaVentana(thresholds);
   const inWindow = logs.filter(l => window.has(l.date)).sort((a, b) => a.date.localeCompare(b.date));
   if (inWindow.length === 0) return { latestWeight: null, deltaFromFirst: null, towardsTarget: null };
-  const first = inWindow[0].weight;
+  // El cambio se mide entre el peso representativo de la primera mitad de la
+  // ventana y el de la segunda (mediana con 3+ pesajes), no entre dos pesajes
+  // sueltos: un 83 raro entre 81 ya no vale +1,2 kg (M4, 26-10-2026).
+  const mitad = Math.max(1, Math.floor(inWindow.length / 2));
+  const first = round1(pesoRepresentativo(inWindow.slice(0, mitad).map(l => l.weight)));
   const latest = inWindow[inWindow.length - 1].weight;
-  const delta = round1(latest - first);
+  const ultimos = round1(pesoRepresentativo(inWindow.slice(mitad).map(l => l.weight)));
+  const delta = inWindow.length < 2 ? 0 : round1(ultimos - first);
   const towardsTarget = targetWeight == null ? null : (
     targetWeight === first ? Math.abs(latest - targetWeight) <= Math.abs(delta) :
     targetWeight > first ? latest >= first : latest <= first

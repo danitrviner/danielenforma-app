@@ -119,8 +119,16 @@ export function adherenciaPorKcal(
 
 /** Margen dentro del cual un día se considera cumplido. */
 export const BANDA_EN_OBJETIVO_PCT = 10;
+/** …y nunca menos de esto en kcal, para objetivos pequeños. */
+export const BANDA_EN_OBJETIVO_MIN_KCAL = 100;
+
+/** Kcal de margen de un día con ese objetivo: el 10 % o 100 kcal, lo que sea
+ *  mayor. La misma cifra en la Revisión, los titulares y el diario (M9, 26-10-2026). */
+export function toleranciaDelDiaKcal(objetivoKcal: number): number {
+  return Math.max(BANDA_EN_OBJETIVO_MIN_KCAL, objetivoKcal * (BANDA_EN_OBJETIVO_PCT / 100));
+}
 
 /** ¿Ese día estuvo en su objetivo, con el margen de siempre? */
 export function enObjetivo(a: AdherenciaPorKcal | null): boolean {
-  return a !== null && Math.abs(a.pct - 100) <= BANDA_EN_OBJETIVO_PCT;
+  return a !== null && Math.abs(a.comido.kcal - a.objetivo.kcal) <= toleranciaDelDiaKcal(a.objetivo.kcal);
 }

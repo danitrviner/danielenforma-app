@@ -38,16 +38,18 @@ describe('runDistribution · ciclo de dos semanas — las frecuencias «y media�
     expect(seriesDe(days, 'pecho')).toBe(18); // 9 por semana × 2 semanas
   });
 
-  it('9 series semanales caen en 3 sesiones del ciclo: frecuencia 1,5', () => {
-    const { days } = runDistribution(grupos({ pecho: 9 }), 6, undefined, {
+  // Desde el 26-10-2026 son 8 series por sesión y grupo (doctrina §3), no 6:
+  // 12 → 3 sesiones del ciclo, 20 → 5, 28 → 7.
+  it('12 series semanales caen en 3 sesiones del ciclo: frecuencia 1,5', () => {
+    const { days } = runDistribution(grupos({ pecho: 12 }), 6, undefined, {
       cicloDias: 14, offsets: [0, 1, 2, 7, 8, 9],
     });
     expect(sesionesCon(days, 'pecho')).toBe(3);
     expect(frecuenciaPorSemana(3, 14)).toBe(1.5);
   });
 
-  it('15 series semanales caen en 5 sesiones del ciclo: frecuencia 2,5', () => {
-    const { days } = runDistribution(grupos({ pecho: 15 }), 10, undefined, {
+  it('20 series semanales caen en 5 sesiones del ciclo: frecuencia 2,5', () => {
+    const { days } = runDistribution(grupos({ pecho: 20 }), 10, undefined, {
       cicloDias: 14, offsets: [0, 1, 2, 3, 4, 7, 8, 9, 10, 11],
     });
     expect(sesionesCon(days, 'pecho')).toBe(5);
@@ -56,7 +58,7 @@ describe('runDistribution · ciclo de dos semanas — las frecuencias «y media�
 
   it('una frecuencia impar sale como 2 sesiones una semana y 3 la siguiente', () => {
     const offsets = [0, 1, 2, 3, 4, 7, 8, 9, 10, 11];
-    const { days } = runDistribution(grupos({ pecho: 15 }), 10, undefined, { cicloDias: 14, offsets });
+    const { days } = runDistribution(grupos({ pecho: 20 }), 10, undefined, { cicloDias: 14, offsets });
     const enSemana = [0, 0];
     days.forEach((d, i) => {
       if (d.assignments.some(a => a.group === 'pecho' && a.series > 0)) enSemana[offsets[i] < 7 ? 0 : 1]++;
@@ -64,15 +66,15 @@ describe('runDistribution · ciclo de dos semanas — las frecuencias «y media�
     expect(enSemana.sort()).toEqual([2, 3]);
   });
 
-  it('21 series semanales dan 3 y 4: frecuencia 3,5', () => {
+  it('28 series semanales dan 3 y 4: frecuencia 3,5', () => {
     const offsets = [0, 1, 2, 3, 4, 7, 8, 9, 10, 11];
-    const { days } = runDistribution(grupos({ pecho: 21 }), 10, undefined, { cicloDias: 14, offsets });
+    const { days } = runDistribution(grupos({ pecho: 28 }), 10, undefined, { cicloDias: 14, offsets });
     expect(sesionesCon(days, 'pecho')).toBe(7);
     expect(frecuenciaPorSemana(7, 14)).toBe(3.5);
   });
 
   it('la frecuencia que reporta la vista es la real, no el número de sesiones', () => {
-    const { days } = runDistribution(grupos({ pecho: 9 }), 6, undefined, {
+    const { days } = runDistribution(grupos({ pecho: 12 }), 6, undefined, {
       cicloDias: 14, offsets: [0, 1, 2, 7, 8, 9],
     });
     const fila = frecuenciaSemanal(days, 14).find(f => f.group === 'pecho')!;
@@ -101,7 +103,7 @@ describe('runDistribution · con el reparto Torso-Pierna alterno', () => {
 
   it('deja pecho y cuádriceps a 1,5 por semana', () => {
     const { days } = runDistribution(
-      grupos({ pecho: 9, cuadriceps: 9 }),
+      grupos({ pecho: 12, cuadriceps: 12 }),
       6,
       tiposDeEntrenamiento(split),
       { cicloDias: cicloDeSplit(split), offsets: offsetsDeSplit(split) },

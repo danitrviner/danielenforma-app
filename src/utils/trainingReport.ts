@@ -99,12 +99,22 @@ export function aggregate(logs: WorkoutLog[]): Agg {
         const t = w * r;
         row.tonnage = round1(row.tonnage + t);
         tonnage = round1(tonnage + t);
+        // Una serie de calentamiento mal apuntada (RIR vacío = 0) no es un
+        // récord: el 1RM solo se estima con peso y 3+ repeticiones (B13, 26-10-2026).
+        if (!cuentaParaRm(s)) continue;
         const orm = rmDeSerie(s);
         if (orm > row.bestOrm) row.bestOrm = orm;
       }
     }
   }
   return { tonnage, perExercise, dates };
+}
+
+/** Repeticiones mínimas para que una serie cuente en el 1RM estimado. */
+export const REPS_MINIMAS_RM = 3;
+/** ¿Sirve esta serie para estimar el 1RM? Con peso y al menos `REPS_MINIMAS_RM` repeticiones. */
+export function cuentaParaRm(s: { weight?: number | null; repsDone?: number | null }): boolean {
+  return (Number(s.weight) || 0) > 0 && (Number(s.repsDone) || 0) >= REPS_MINIMAS_RM;
 }
 
 // Best all-time RM (CDG) per exercise, strictly before `beforeDate` — used for PR detection.
@@ -117,6 +127,7 @@ export function allTimeBestBefore(logs: WorkoutLog[], beforeDate: string): Map<s
     if (log.date >= beforeDate) continue;
     for (const entry of log.entries) {
       for (const s of entry.sets) {
+        if (!cuentaParaRm(s)) continue;
         const orm = rmDeSerie(s);
         if (orm > (best.get(entry.exerciseId) ?? 0)) best.set(entry.exerciseId, orm);
       }

@@ -2617,9 +2617,9 @@ async function proposeMesocycle(
   const profile = await findProfile(athleteEmail);
   if (!profile) return toResult({ valid: false, issues: [{ field: 'athlete_email', message: `No existe ningún cliente con email ${athleteEmail}` }] });
 
-  // Numeración secuencial como en MesocycleManager (mesocycles.length + 1).
   const existing = await getMesocycles(athleteEmail);
-  const number = existing.length + 1;
+  // Tras borrar un mesociclo, `length + 1` repetía número (B14, 26-10-2026).
+  const number = Math.max(0, ...existing.map(m => m.number ?? 0)) + 1;
 
   // Rellena todos los grupos: los omitidos van a 0 series (shape completo que
   // espera el editor de la app).
@@ -2814,7 +2814,8 @@ async function proposePeriodizationBlock(
   if (!profile) return toResult({ valid: false, issues: [{ field: 'athlete_email', message: `No existe ningún cliente con email ${athleteEmail}` }] });
 
   const existing = await getMesocycles(athleteEmail);
-  const number = existing.length + 1;
+  // Tras borrar un mesociclo, `length + 1` repetía número (B14, 26-10-2026).
+  const number = Math.max(0, ...existing.map(m => m.number ?? 0)) + 1;
   const groups = Object.fromEntries(
     (Object.keys(MUSCLE_LABELS) as MuscleGroup[]).map(g => {
       const cfg = groupsInput[g];

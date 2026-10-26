@@ -529,7 +529,14 @@ export interface RankOptions {
  * de tolerancia. El tiempo de cocina entra solo si no manda la selección por
  * dieta (`prefs.seleccion`), que puede traer el suyo.
  */
-export function filtroDuro(prefs: Pick<GeneratorPrefs, 'allergies' | 'conditions' | 'dietType' | 'cookingMaxTime' | 'seleccion'>): (r: Recipe) => boolean {
+export interface PrefsDeFiltroDuro {
+  allergies: string[];
+  conditions?: readonly number[];
+  dietType?: DietType;
+  cookingMaxTime?: number;
+  seleccion?: SeleccionDeRecetas;
+}
+export function filtroDuro(prefs: PrefsDeFiltroDuro): (r: Recipe) => boolean {
   const conTiempoPropio = !!prefs.seleccion;
   return r =>
     !prefs.allergies.some(f => ingredientMatch(r, f)) &&

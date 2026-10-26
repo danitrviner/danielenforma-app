@@ -6,7 +6,7 @@ import type { ReglasDeReceta } from './reglasDeReceta';
 const dieta = (over: Partial<Diet> = {}): Diet => ({
   id: 'd1', athleteId: 'a@x.com', name: 'Entreno',
   budget: { HC: 10, PROT: 8, GRASA: 6, MIX_HC: 0, MIX_GRASA: 0 },
-  meals: [{ id: 'm1', name: 'Desayuno', items: [{ name: 'Avena' }] as never }],
+  meals: [{ id: 'm1', name: 'Desayuno', items: [{ foodLabel: 'Avena' }] as never }],
   ...over,
 });
 
@@ -16,10 +16,11 @@ describe('resumirDieta', () => {
   it('cuenta kcal, hidratos y alimentos añadidos o quitados', () => {
     const l = resumirDieta(dieta(), dieta({
       budget: { HC: 12, PROT: 8, GRASA: 6, MIX_HC: 0, MIX_GRASA: 0 },
-      meals: [{ id: 'm1', name: 'Desayuno', items: [{ name: 'Pan' }] as never }],
+      meals: [{ id: 'm1', name: 'Desayuno', items: [{ foodLabel: 'Pan' }] as never }],
     }));
     expect(l.some(x => x.startsWith('Kcal'))).toBe(true);
-    expect(l).toContain('Hidratos 10 → 12 int.');
+    // En gramos (10 → 12 intercambios de HC son 250 → 300 g), no en intercambios (26-10-2026).
+    expect(l).toContain('Hidratos 250 → 300 g');
     expect(l).toContain('Añade Pan');
     expect(l).toContain('Quita Avena');
   });
