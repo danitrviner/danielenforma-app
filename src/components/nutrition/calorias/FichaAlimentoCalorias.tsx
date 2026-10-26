@@ -17,7 +17,14 @@ import { nutrientesDeRacion } from '../../../utils/productoAIntercambios';
 
 export interface PorCien { kcal: number; p: number; hc: number; g: number }
 export interface ExtrasPorCien { f?: number; az?: number; sat?: number; sal?: number }
-export interface Racion { etiqueta: string; gramos: number }
+export interface Racion {
+  etiqueta: string;
+  gramos: number;
+  /** La ración del alimento (su unidad o su ración de referencia): sale marcada. */
+  recomendada?: boolean;
+  /** Rótulo pequeño encima de la cantidad («Última vez», «Apuntado»). */
+  nota?: string;
+}
 
 export interface FichaProps {
   nombre: string;
@@ -84,10 +91,14 @@ export default function FichaAlimentoCalorias({
   const [mealId, setMealId] = useState(mealInicial);
   // Siempre cerrada al abrir la ficha (Dani, 26-10-2026).
   const [verTabla, setVerTabla] = useState(false);
+  /** «Otra cantidad»: gramos escritos a mano (racionIdx = -1). */
+  const [otraTexto, setOtraTexto] = useState('');
 
-  const racion = raciones[racionIdx] ?? raciones[0];
+  const otra = racionIdx === -1;
+  const gramosOtra = parseFloat(otraTexto.replace(',', '.'));
+  const base = otra ? (Number.isFinite(gramosOtra) ? gramosOtra : 0) : (raciones[racionIdx] ?? raciones[0])?.gramos ?? 0;
   const num = parseFloat(numTexto.replace(',', '.'));
-  const gramos = racion && Number.isFinite(num) && num > 0 ? Math.round(racion.gramos * num * 10) / 10 : 0;
+  const gramos = base > 0 && Number.isFinite(num) && num > 0 ? Math.round(base * num * 10) / 10 : 0;
   const valido = gramos > 0 && gramos <= 5000;
 
   const n = useMemo(() => (valido ? nutrientesDeRacion(porCien, gramos) : null), [porCien, gramos, valido]);
@@ -183,14 +194,58 @@ export default function FichaAlimentoCalorias({
 
         {/* Lo que se apunta, debajo de la información (Dani, 26-10-2026). */}
         <div className="space-y-3 border-t border-hairline pt-5">
-          <div className="flex items-center justify-between gap-3">
-            <span className="font-sans text-body text-ink">Ración</span>
-            <Select
-              className="w-52"
-              value={String(racionIdx)}
-              onChange={v => setRacionIdx(Number(v))}
-              options={raciones.map((r, i) => ({ value: String(i), label: r.etiqueta }))}
-            />
+          {/* Las raciones como chips (Dani, 26-10-2026, propuesta A): la
+              recomendada lleva su estrella y se elige de un toque. */}
+          <div className="space-y-3">
+            <span className="block font-sans text-body font-bold text-ink">Ración</span>
+            <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Ración">
+              {raciones.map((r, i) => {
+                const elegida = racionIdx === i;
+                return (
+                  <button
+                    key={`${r.etiqueta}_${i}`}
+                    type="button"
+                    role="radio"
+                    aria-checked={elegida}
+                    onClick={() => setRacionIdx(i)}
+                    className={`flex min-h-11 flex-col items-start justify-center gap-0.5 rounded-surface border px-3.5 py-2 text-left font-sans transition-colors duration-(--duration-state) ${elegida ? 'border-accent bg-accent-bg' : 'border-hairline bg-field hover:border-accent/40'}`}
+                  >
+                    {r.recomendada ? (
+                      <span className="flex items-center gap-1 font-mono text-caption font-bold uppercase tracking-wider text-accent-ink">
+                        <Icon name="star" size="s" filled />
+                        Recomendada
+                      </span>
+                    ) : r.nota ? (
+                      <span className="font-mono text-caption font-semibold uppercase tracking-wider text-ink-3">{r.nota}</span>
+                    ) : null}
+                    <span className={`text-body text-ink ${elegida ? 'font-bold' : ''}`}>{r.etiqueta}</span>
+                  </button>
+                );
+              })}
+              <button
+                type="button"
+                role="radio"
+                aria-checked={otra}
+                onClick={() => setRacionIdx(-1)}
+                className={`flex min-h-11 items-center rounded-surface border px-3.5 py-2 font-sans text-body transition-colors duration-(--duration-state) ${otra ? 'border-accent bg-accent-bg font-bold text-ink' : 'border-dashed border-hairline text-ink-2 hover:border-accent/40'}`}
+              >
+                Otra cantidad
+              </button>
+            </div>
+            {otra && (
+              <div className="flex items-center justify-between gap-3 animate-fade-up">
+                <label htmlFor="ficha-otra" className="font-sans text-body text-ink">Gramos</label>
+                <input
+                  id="ficha-otra"
+                  inputMode="decimal"
+                  autoFocus
+                  value={otraTexto}
+                  onChange={e => setOtraTexto(e.target.value)}
+                  placeholder="g"
+                  className="h-[54px] w-28 rounded-field border border-hairline bg-field px-4 text-right font-mono text-title-s text-ink focus:border-accent focus:outline-none"
+                />
+              </div>
+            )}
           </div>
           <div className="flex items-center justify-between gap-3">
             <label htmlFor="ficha-num" className="font-sans text-body text-ink">Nº de raciones</label>
@@ -233,14 +288,15 @@ export default function FichaAlimentoCalorias({
   );
 }
 
-/** Raciones de un producto: lo de la última vez, la ración declarada, 100 g y 1 g. */
+/** Raciones de un producto: la recomendada (su unidad o su ración declarada),
+ *  lo de la última vez y 100 g. La primera sale elegida. */
 export function racionesDe(opc: { ultimos?: number; racion?: number; unidad?: { nombre: string; gramos: number } }): Racion[] {
   const out: Racion[] = [];
-  if (opc.ultimos && opc.ultimos > 0) out.push({ etiqueta: `${opc.ultimos} g (última vez)`, gramos: opc.ultimos });
-  if (opc.unidad && opc.unidad.gramos > 0) out.push({ etiqueta: `1 ${opc.unidad.nombre} (${opc.unidad.gramos} g)`, gramos: opc.unidad.gramos });
-  else if (opc.racion && opc.racion > 0) out.push({ etiqueta: `1 ración (${opc.racion} g)`, gramos: opc.racion });
-  out.push({ etiqueta: '100 g', gramos: 100 });
-  out.push({ etiqueta: '1 g', gramos: 1 });
+  if (opc.unidad && opc.unidad.gramos > 0) out.push({ etiqueta: `1 ${opc.unidad.nombre} · ${opc.unidad.gramos} g`, gramos: opc.unidad.gramos, recomendada: true });
+  else if (opc.racion && opc.racion > 0) out.push({ etiqueta: `1 ración · ${opc.racion} g`, gramos: opc.racion, recomendada: true });
+  // La última vez, solo si no es ya la recomendada: dos chips iguales confunden.
+  if (opc.ultimos && opc.ultimos > 0 && !out.some(r => r.gramos === opc.ultimos)) out.push({ etiqueta: `${opc.ultimos} g`, gramos: opc.ultimos, nota: 'Última vez' });
+  if (!out.some(r => r.gramos === 100)) out.push({ etiqueta: '100 g', gramos: 100 });
   return out;
 }
 

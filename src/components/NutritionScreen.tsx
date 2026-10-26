@@ -1806,7 +1806,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
       marca: linea.marca,
       porCien,
       extrasPorCien,
-      raciones: [{ etiqueta: `${linea.gramos} g (apuntado)`, gramos: linea.gramos }, { etiqueta: '100 g', gramos: 100 }, { etiqueta: '1 g', gramos: 1 }],
+      raciones: [{ etiqueta: `${linea.gramos} g`, gramos: linea.gramos, nota: 'Apuntado' }, ...(linea.gramos === 100 ? [] : [{ etiqueta: '100 g', gramos: 100 }])],
       aproximado: linea.aproximado,
       mealId,
       textoBoton: 'Guardar',
