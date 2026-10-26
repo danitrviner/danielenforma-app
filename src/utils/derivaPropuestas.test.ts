@@ -52,7 +52,7 @@ describe('calcularDerivas', () => {
     expect(calcularDerivas([p], [meso('m1', { dorsal: 20 })], [])).toEqual([]);
   });
 
-  it('compara también el presupuesto de una dieta', () => {
+  it('compara también el objetivo de una dieta, en gramos', () => {
     const dieta: Diet = {
       id: 'd1', athleteId: 'ana@x.com', name: 'Volumen',
       budget: { HC: 10, PROT: 6, GRASA: 4, MIX_HC: 0, MIX_GRASA: 0 }, meals: [],
@@ -64,6 +64,6 @@ describe('calcularDerivas', () => {
       resultEntityId: 'd1', createdAt: '2026-09-01T10:00:00Z',
     };
     const [deriva] = calcularDerivas([propuesta], [], [dieta]);
-    expect(deriva.cambios).toEqual(['HC 8 → 10 intercambios']);
+    expect(deriva.cambios).toEqual(['HC 200 → 250 g']);
   });
 });

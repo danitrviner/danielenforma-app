@@ -103,13 +103,13 @@ describe('y lo que NO se debe aprobar se para, diciendo por qué', () => {
 
   it('una dieta descuadrada dice QUÉ categoría no cuadra, no «revísala»', () => {
     const roto = JSON.parse(JSON.stringify(DIETA_BIEN));
-    roto.meals[0].items[0].quantity = 1;   // 4 HC de presupuesto, 1 puesto
+    roto.meals[0].items[0].quantity = 1;   // 100 g de HC de objetivo, 25 g puestos
     const motivo = aprueba('diet', roto);
     expect(motivo).toContain('HC');
-    expect(motivo).toContain('presupuesto 4');
+    expect(motivo).toContain('objetivo 100 g');
   });
 
-  it('pero aguanta el redondeo de un cuarto de intercambio sin protestar', () => {
+  it('pero aguanta un redondeo pequeño (6 g de 100) sin protestar', () => {
     const casi = JSON.parse(JSON.stringify(DIETA_BIEN));
     casi.meals[0].items[0].quantity = 4.25;
     expect(aprueba('diet', casi)).toBeNull();

@@ -14,7 +14,7 @@ import type {
   SpecialDayProposalPayload, WorkoutDaysProposalPayload,
 } from '../types';
 import { MUSCLE_LABELS } from '../types';
-import { BUDGET_CATS, computeDietPlaced } from './exchangeHelpers';
+import { macrosDeLineas, objetivoDeDieta } from './macrosLegado';
 
 function mesoDe(kind: AiProposal['kind'], payload: AiProposalPayload): Omit<Mesocycle, 'id'> {
   return kind === 'periodizationBlock'
@@ -106,8 +106,10 @@ export function describirEdicion(original: AiProposal, editado: AiProposalPayloa
   if (original.kind === 'diet') {
     const a = antes as Omit<Diet, 'id'>;
     const b = editado as Omit<Diet, 'id'>;
-    for (const cat of ['HC', 'PROT', 'GRASA'] as const) {
-      if (a.budget?.[cat] !== b.budget?.[cat]) cambios.push(`${cat} ${a.budget?.[cat] ?? 0} → ${b.budget?.[cat] ?? 0} intercambios`);
+    const oa = objetivoDeDieta(a);
+    const ob = objetivoDeDieta(b);
+    for (const [k, nombre] of [['p', 'P'], ['hc', 'HC'], ['g', 'G']] as const) {
+      if (Math.round(oa[k]) !== Math.round(ob[k])) cambios.push(`${nombre} ${Math.round(oa[k])} → ${Math.round(ob[k])} g`);
     }
     const quitadas = (a.meals ?? []).filter(m => !(b.meals ?? []).some(x => x.id === m.id)).map(m => m.name);
     if (quitadas.length) cambios.push(`quitó ${quitadas.join(', ')}`);
@@ -182,14 +184,18 @@ export function motivoParaNoAprobar(kind: AiProposal['kind'], payload: AiProposa
   if (kind === 'diet') {
     const v = payload as Omit<Diet, 'id'>;
     if ((v.meals ?? []).length === 0) return 'La dieta se ha quedado sin comidas.';
-    // El mismo margen que usa el validador de la IA: 0.26, por los redondeos
-    // de 0.25 repartidos entre varias comidas.
-    const colocado = computeDietPlaced(v.meals ?? []);
-    const descuadre = BUDGET_CATS
-      .filter(cat => Math.abs((colocado[cat] ?? 0) - (v.budget?.[cat] ?? 0)) > 0.26)
-      .map(cat => `${cat}: presupuesto ${v.budget?.[cat] ?? 0}, puesto ${colocado[cat] ?? 0}`);
-    if (descuadre.length) {
-      return `Las comidas ya no cuadran con el presupuesto (${descuadre.join('; ')}). Ábrela en el editor de dietas para recolocarlas.`;
+    // El mismo margen que usa el validador del asistente: el 10 % o 10 g por
+    // macro (5 g en grasa), lo que sea mayor.
+    const lineas = (v.meals ?? []).flatMap(m => m.items);
+    if (lineas.length > 0) {
+      const objetivo = objetivoDeDieta(v);
+      const puesto = macrosDeLineas(lineas);
+      const descuadre = ([['p', 'P', 10], ['hc', 'HC', 10], ['g', 'G', 5]] as const)
+        .filter(([k, , min]) => Math.abs(puesto[k] - objetivo[k]) > Math.max(min, objetivo[k] * 0.1))
+        .map(([k, nombre]) => `${nombre}: objetivo ${Math.round(objetivo[k])} g, puesto ${Math.round(puesto[k])} g`);
+      if (descuadre.length) {
+        return `Las comidas ya no cuadran con el objetivo (${descuadre.join('; ')}). Ábrela en el editor de dietas para recolocarlas.`;
+      }
     }
   }
 

@@ -92,6 +92,12 @@ export function objetivoDeDieta(diet: Pick<Diet, 'objetivo' | 'budget'> | null |
   return diet.objetivo ? { ...diet.objetivo } : macrosDeCupo(diet.budget);
 }
 
+/** Lo que se guarda de un objetivo nuevo: el objetivo en kcal y gramos y,
+ *  para los binarios viejos, su cupo en intercambios equivalente. */
+export function objetivoYCupo(objetivo: Macros): Pick<Diet, 'objetivo' | 'budget'> {
+  return { objetivo, budget: intercambiosDeMacros(objetivo) };
+}
+
 /** Objetivo congelado de un día apuntado, o null si el registro no lo trae. */
 export function objetivoDelRegistro(log: Pick<DietCompletionLog, 'objetivo' | 'budget'> | null | undefined): Macros | null {
   if (!log) return null;

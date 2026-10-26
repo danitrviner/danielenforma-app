@@ -13,7 +13,9 @@ import {
   Diet, Mesocycle, MuscleGroup, MUSCLE_LABELS, MUSCLE_ORDER, MuscleGroupConfig,
   NutritionProgram, NutritionProgramProposalPayload,
 } from '../types';
-import { exchangeToKcal } from '../utils/nutritionConstants';
+import { objetivoDeDieta } from '../utils/macrosLegado';
+
+const MACROS_DE_DIETA = [['p', 'Proteína'], ['hc', 'Hidratos'], ['g', 'Grasa']] as const;
 
 function series(m: Pick<Mesocycle, 'groups'> | undefined, g: MuscleGroup): number {
   return (m?.groups?.[g] as MuscleGroupConfig | undefined)?.series ?? 0;
@@ -64,13 +66,15 @@ export function cambiosDeMesociclo(anterior: Mesocycle | undefined, nuevo: Omit<
 export function cambiosDeDieta(base: Diet | undefined, nueva: Omit<Diet, 'id'>): string[] {
   if (!base) return [];
   const cambios: string[] = [];
-  const kcalAntes = exchangeToKcal(base.budget);
-  const kcalAhora = exchangeToKcal(nueva.budget);
+  const objAntes = objetivoDeDieta(base);
+  const objAhora = objetivoDeDieta(nueva);
+  const kcalAntes = Math.round(objAntes.kcal);
+  const kcalAhora = Math.round(objAhora.kcal);
   if (kcalAntes !== kcalAhora) cambios.push(`Kcal: ${kcalAntes} → ${kcalAhora} (${kcalAhora > kcalAntes ? '+' : ''}${kcalAhora - kcalAntes})`);
-  for (const cat of ['HC', 'PROT', 'GRASA'] as const) {
-    const a = base.budget?.[cat] ?? 0;
-    const b = nueva.budget?.[cat] ?? 0;
-    if (a !== b) cambios.push(`${cat}: ${a} → ${b} intercambios`);
+  for (const [k, nombre] of MACROS_DE_DIETA) {
+    const a = Math.round(objAntes[k]);
+    const b = Math.round(objAhora[k]);
+    if (a !== b) cambios.push(`${nombre}: ${a} → ${b} g`);
   }
   const comidasAntes = base.meals?.length ?? 0;
   const comidasAhora = nueva.meals?.length ?? 0;

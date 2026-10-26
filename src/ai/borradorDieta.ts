@@ -1,7 +1,7 @@
 /* El puente entre la propuesta de dieta y el editor de dietas de verdad.
  *
- * Cuadrar intercambios no se hace en una tarjeta: hace falta el buscador de
- * alimentos, las recetas y el balance en vivo de colocado vs presupuesto — o
+ * Cuadrar los alimentos no se hace en una tarjeta: hace falta el buscador de
+ * alimentos, las recetas y el balance en vivo de colocado vs objetivo — o
  * sea, el editor que ya existe. Así que la propuesta no se edita a mano ahí:
  * se manda al editor tal cual, y allí se toca como cualquier otra dieta.
  *

@@ -2771,7 +2771,8 @@ export interface WeekPlanProposalPayload {
     sets?: number; reps?: string; rir?: number; restSeconds?: number; bloques?: WorkoutSetGroup[];
   }[];
   nutricion?: {
-    ajustes?: { semana: number; solo?: boolean; slot?: number; cat: MacroAjustable; delta: number }[];
+    /** `gramos` del macro desde 10-2026; `delta` (intercambios) va al lado para binarios viejos. */
+    ajustes?: { semana: number; solo?: boolean; slot?: number; cat: MacroAjustable; delta: number; gramos?: number }[];
     semanasMantenimiento?: number[];
     suplementos?: Omit<Suplemento, 'id'>[];
     pasosPorSemana?: { semana: number; pasos: number }[];

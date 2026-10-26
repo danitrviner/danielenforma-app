@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { validateMesocyclePayload, validateNutritionPhases, validateDietPayload, type MesocycleProposalPayload } from './validators';
+import { validateMesocyclePayload, validateNutritionPhases, validateDietPayload, leerDietaPropuesta, type MesocycleProposalPayload } from './validators';
 import { SYSTEM_FOODS } from '../nutricion_seed_en_forma';
 
 /* El tope de volumen total era days × 12 y rechazaba repartos normales: con el
@@ -150,5 +150,77 @@ describe('validateDietPayload · el banco de alimentos del coach', () => {
       ['otra cosa que no es esa'],
     );
     expect(issues.some(i => i.field === 'item.foodLabel')).toBe(false);
+  });
+});
+
+// Dietas en kcal y gramos (10-2026): el asistente pauta gramos de P/HC/G.
+describe('leerDietaPropuesta — objetivo en gramos', () => {
+  const objetivo = { proteina_g: 160, hidratos_g: 220, grasa_g: 70 };
+
+  it('las kcal salen de los gramos (4/4/9)', () => {
+    const r = leerDietaPropuesta({ objetivo });
+    expect(r.issues).toEqual([]);
+    expect(r.objetivo).toEqual({ kcal: 160 * 4 + 220 * 4 + 70 * 9, p: 160, hc: 220, g: 70 });
+  });
+
+  it('si manda kcal que no cuadran con sus gramos, se lo dice', () => {
+    const r = leerDietaPropuesta({ objetivo: { ...objetivo, kcal: 2600 } });
+    expect(r.issues.some(i => i.field === 'objetivo.kcal' && i.message.includes('2150'))).toBe(true);
+    // Un redondeo pequeño no protesta.
+    expect(leerDietaPropuesta({ objetivo: { ...objetivo, kcal: 2160 } }).issues).toEqual([]);
+  });
+
+  it('rechaza gramos negativos y objetivos imposibles', () => {
+    expect(leerDietaPropuesta({ objetivo: { ...objetivo, grasa_g: -5 } }).issues.some(i => i.field === 'objetivo.grasa_g')).toBe(true);
+    expect(leerDietaPropuesta({ objetivo: { proteina_g: 20, hidratos_g: 20, grasa_g: 5 } }).issues.some(i => i.field === 'objetivo')).toBe(true);
+  });
+
+  it('sin objetivo ni cupo, falta el objetivo', () => {
+    expect(leerDietaPropuesta({}).issues[0].field).toBe('objetivo');
+  });
+
+  it('un cupo en intercambios de un chat viejo se sigue leyendo', () => {
+    const r = leerDietaPropuesta({ budget: { HC: 8, PROT: 6, GRASA: 4 } });
+    expect(r.issues).toEqual([]);
+    expect(r.objetivo).toMatchObject({ p: 150, hc: 200, g: 44 });
+  });
+
+  it('los alimentos van en gramos y se guardan como raciones del banco', () => {
+    const r = leerDietaPropuesta({
+      objetivo: { proteina_g: 150, hidratos_g: 250, grasa_g: 0 },
+      meals: [{ name: 'Comida', items: [
+        { foodLabel: '150g patata (cruda o cocida)', gramos: 1500 },
+        { foodLabel: '120g pescado blanco (merluza, bacalao, lubina...)', gramos: 720 },
+      ] }],
+    });
+    expect(r.issues).toEqual([]);
+    expect(r.meals[0].items).toEqual([
+      { category: 'HC', foodLabel: '150g patata (cruda o cocida)', quantity: 10, baseGrams: 150 },
+      { category: 'PROT', foodLabel: '120g pescado blanco (merluza, bacalao, lubina...)', quantity: 6, baseGrams: 120 },
+    ]);
+  });
+
+  it('un alimento sin pesar pide raciones, no gramos', () => {
+    const sinPesar = 'Patata → 1 patata mediana del tamaño de un puño';
+    const conGramos = leerDietaPropuesta({ objetivo, meals: [{ name: 'C', items: [{ foodLabel: sinPesar, gramos: 200 }] }] });
+    expect(conGramos.issues.some(i => i.message.includes('raciones'))).toBe(true);
+    const conRaciones = leerDietaPropuesta({ objetivo: { proteina_g: 0, hidratos_g: 150, grasa_g: 0 }, meals: [{ name: 'C', items: [{ foodLabel: sinPesar, raciones: 6 }] }] });
+    expect(conRaciones.issues).toEqual([]);
+  });
+
+  it('si las comidas no suman el objetivo, dice cuánto suman y cuánto pide', () => {
+    const r = leerDietaPropuesta({
+      objetivo,
+      meals: [{ name: 'Comida', items: [{ foodLabel: '150g patata (cruda o cocida)', gramos: 150 }] }],
+    });
+    const issue = r.issues.find(i => i.field === 'meals');
+    expect(issue?.message).toContain('HC 25 g');
+    expect(issue?.message).toContain('HC 220 g');
+  });
+
+  it('una fase de la periodización acepta la dieta con objetivo en gramos', () => {
+    expect(validateNutritionPhases([{ name: 'Déficit', weeks: 8, diet: { name: 'Baja', objetivo, meals: [] } }], [])).toEqual([]);
+    expect(validateNutritionPhases([{ name: 'Déficit', weeks: 8, diet: { name: 'Baja', meals: [] } }], [])
+      .some(i => i.message.includes('objetivo'))).toBe(true);
   });
 });

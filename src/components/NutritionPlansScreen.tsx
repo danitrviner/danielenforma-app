@@ -7,7 +7,7 @@ import { CATS, CAT_LABEL, CAT_COLOR, MODE_LABEL, round2, fmtQty } from '../utils
 import { parseBaseGrams, etiquetaDePeso } from '../utils/conversionNutricional';
 import { inferSlot, SLOT_LABEL } from '../utils/mealDistribution';
 import { resolvePhaseTargetKcal } from '../utils/nutritionPeriodization';
-import { objetivoDeDieta, intercambiosDeMacros, macrosDeLineas } from '../utils/macrosLegado';
+import { objetivoDeDieta, objetivoYCupo, macrosDeLineas } from '../utils/macrosLegado';
 import { macrosDesdeGramos } from '../utils/macros';
 import { useAthleteWeight } from '../hooks/useAthleteWeight';
 import { computePhaseStartDate } from '../dbService';
@@ -66,8 +66,7 @@ interface FormState {
 /** Lo que se guarda: el objetivo en kcal y, para binarios viejos, su cupo en
  *  intercambios equivalente. */
 function objetivoParaGuardar(o: ObjetivoEnGramos): Pick<Diet, 'objetivo' | 'budget'> {
-  const objetivo = macrosDesdeGramos(o.p, o.hc, o.g);
-  return { objetivo, budget: intercambiosDeMacros(objetivo) };
+  return objetivoYCupo(macrosDesdeGramos(o.p, o.hc, o.g));
 }
 
 function blankForm(): FormState {

@@ -88,8 +88,11 @@ import { construirTitulares } from '../utils/titularesRevision';
 import { construirComidaDeLaSemana } from '../utils/comidaDeLaSemana';
 import { getVolumeLandmarks } from '../db/coachSettings';
 import { buildTrainingReportDraft } from '../utils/reportBuilder';
-import { computeDietPlaced, parseBaseGrams } from '../utils/exchangeHelpers';
-import { exchangeToKcal } from '../utils/nutritionConstants';
+import { macrosDeLinea, macrosDeLineas, objetivoDeDieta, objetivoYCupo } from '../utils/macrosLegado';
+import { redondearMacros } from '../utils/macros';
+import { alimentoGeneral } from '../utils/alimentosGenerales';
+import { ajusteEnGramos } from '../utils/semanasNutricion';
+import { GRAMS_PER_EXCHANGE } from '../utils/nutritionConstants';
 import { buildPhaseEnergyPlans } from '../utils/nutritionPeriodization';
 import { computeActivePhase } from '../utils/fasesNutricion';
 import { dietaDeReferencia } from '../utils/objetivoDelDia';
@@ -97,11 +100,49 @@ import { addDays, hoyIsoLocal, isoLocal } from '../utils/trainingWeek';
 import { weekKey } from '../utils/seriesCorrelation';
 import { resolveQuestions } from '../utils/questionnaireResolve';
 import { SYSTEM_FOODS } from '../nutricion_seed_en_forma';
-import { validateDietPayload, DietUpdatePayload, validateMesocyclePayload, MesocycleProposalPayload, validateNutritionPhases, validateWorkoutDays, claveDeEjercicio, WorkoutDayInput, WorkoutExerciseInput, validateLevelLadder, LadderLevelInput, LadderCriterionInput } from './validators';
-import { UserProfile, WeightCheckIn, Diet, FoodCategory, Mesocycle, MuscleGroup, MuscleGroupConfig, MUSCLE_LABELS, MUSCLE_ORDER, ExperienceLevel, PeriodizationBlockPayload, ProposalExpediente, DossierFact, DossierPatch } from '../types';
+import { leerDietaPropuesta, DietUpdatePayload, validateMesocyclePayload, MesocycleProposalPayload, validateNutritionPhases, validateWorkoutDays, claveDeEjercicio, WorkoutDayInput, WorkoutExerciseInput, validateLevelLadder, LadderLevelInput, LadderCriterionInput } from './validators';
+import { UserProfile, WeightCheckIn, Diet, Macros, MealItem, Mesocycle, MuscleGroup, MuscleGroupConfig, MUSCLE_LABELS, MUSCLE_ORDER, ExperienceLevel, PeriodizationBlockPayload, ProposalExpediente, DossierFact, DossierPatch } from '../types';
 import { cambiosDeMesociclo, cambiosDeDieta, cambiosDePeriodizacion } from './cambiosPropuesta';
 import { tareaPorId, type BriefSeccion } from './tareas';
 import { mediana } from '../utils/perfilProgramacion';
+
+// Objetivo del día y comidas de una dieta, en gramos (10-2026). Compartido por
+// propose_diet_update y las dietas nuevas de propose_nutrition_program.
+const ESQUEMA_OBJETIVO = {
+  type: 'object',
+  description: 'Objetivo del día en GRAMOS; las kcal salen solas (P×4 + HC×4 + G×9). Ej. {"proteina_g":160,"hidratos_g":220,"grasa_g":70} ≈ 2150 kcal',
+  properties: {
+    proteina_g: { type: 'number' },
+    hidratos_g: { type: 'number' },
+    grasa_g: { type: 'number' },
+    kcal: { type: 'number', description: 'Opcional: si la mandas, se comprueba que cuadre con los gramos' },
+  },
+  required: ['proteina_g', 'hidratos_g', 'grasa_g'],
+} as const;
+
+const ESQUEMA_COMIDAS = {
+  type: 'array',
+  description: 'Solo si Dani lo pide: comidas con sus alimentos. Lo que sumen debe cuadrar con el objetivo (±10 %).',
+  items: {
+    type: 'object',
+    properties: {
+      name: { type: 'string' },
+      items: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            foodLabel: { type: 'string', description: 'Etiqueta EXACTA de get_food_library' },
+            gramos: { type: 'number', description: 'Gramos del alimento' },
+            raciones: { type: 'number', description: 'Solo para alimentos sin pesar (medidas caseras), en vez de gramos' },
+          },
+          required: ['foodLabel'],
+        },
+      },
+    },
+    required: ['name', 'items'],
+  },
+} as const;
 
 // Definiciones que se envían a la API en cada petición. Mantener el orden y el
 // contenido estables: forman parte del prefijo cacheado del prompt.
@@ -209,7 +250,7 @@ export const TOOL_DEFINITIONS = [
   {
     name: 'get_diet',
     description:
-      'Dietas del cliente con presupuesto de intercambios, intercambios colocados por comida, kcal estimadas (1 int ≈ 100 kcal) y la periodización nutricional (fases) si existe.',
+      'Dietas del cliente: objetivo del día en kcal y gramos de proteína, hidratos y grasa, lo que suman los alimentos colocados en sus comidas (si los hay) y la periodización nutricional (fases) si existe.',
     input_schema: {
       type: 'object',
       properties: {
@@ -262,12 +303,12 @@ export const TOOL_DEFINITIONS = [
   {
     name: 'get_food_library',
     description:
-      'Lista los alimentos válidos del sistema de intercambios (etiqueta exacta, categoría y modo). Úsala SIEMPRE antes de construir los items de una dieta — foodLabel debe coincidir EXACTO con una de estas etiquetas.',
+      'Lista los alimentos generales de la app: etiqueta exacta, grupo, ración habitual y kcal/macros por 100 g y por ración. Úsala SIEMPRE antes de poner alimentos en una dieta — foodLabel debe coincidir EXACTO con una de estas etiquetas.',
     input_schema: {
       type: 'object',
       properties: {
         mode: { type: 'string', enum: ['OMNIVORO', 'VEGANO', 'SIN_PESAR'], description: 'Filtra por modo de dieta' },
-        category: { type: 'string', enum: ['HC', 'PROT', 'GRASA', 'MIX_HC', 'MIX_GRASA'], description: 'Filtra por categoría' },
+        grupo: { type: 'string', enum: ['hidratos', 'proteinas', 'grasas', 'mixtos'], description: 'Filtra por grupo' },
       },
       required: [],
     },
@@ -275,49 +316,22 @@ export const TOOL_DEFINITIONS = [
   {
     name: 'propose_diet_update',
     description:
-      'Crea una PROPUESTA de dieta (nueva o ajuste de una existente). Se valida automáticamente (categorías, múltiplos de 0.25, alimentos reconocidos, presupuesto vs colocado); si hay errores los recibes de vuelta para corregir antes de reintentar. NUNCA se guarda como dieta real: Dani la aprueba o rechaza desde el panel.',
+      'Crea una PROPUESTA de dieta (nueva o ajuste de una existente) con su objetivo del día en gramos de proteína, hidratos y grasa. Se valida automáticamente (gramos, kcal, alimentos reconocidos, comidas vs objetivo); si hay errores los recibes de vuelta para corregir antes de reintentar. NUNCA se guarda como dieta real: Dani la aprueba o rechaza desde el panel.',
     input_schema: {
       type: 'object',
       properties: {
         athlete_email: { type: 'string' },
         base_diet_id: { type: 'string', description: 'Id de la dieta que se ajusta (opcional; omítelo si es una dieta nueva)' },
         name: { type: 'string', description: 'Nombre de la dieta' },
-        budget: {
-          type: 'object',
-          description: 'Intercambios/día por categoría, ej. {"HC":8,"PROT":6,"GRASA":4} ≈ 1800 kcal',
-          properties: { HC: { type: 'number' }, PROT: { type: 'number' }, GRASA: { type: 'number' } },
-          required: ['HC', 'PROT', 'GRASA'],
-        },
-        meals: {
-          type: 'array',
-          description: 'Comidas con sus items. La suma de items por categoría debe cuadrar con budget.',
-          items: {
-            type: 'object',
-            properties: {
-              name: { type: 'string' },
-              items: {
-                type: 'array',
-                items: {
-                  type: 'object',
-                  properties: {
-                    category: { type: 'string', enum: ['HC', 'PROT', 'GRASA', 'MIX_HC', 'MIX_GRASA'] },
-                    foodLabel: { type: 'string', description: 'Etiqueta EXACTA de get_food_library' },
-                    quantity: { type: 'number', description: 'Múltiplo de 0.25' },
-                  },
-                  required: ['category', 'foodLabel', 'quantity'],
-                },
-              },
-            },
-            required: ['name', 'items'],
-          },
-        },
+        objetivo: ESQUEMA_OBJETIVO,
+        meals: ESQUEMA_COMIDAS,
         rationale: { type: 'string', description: 'Justificación breve para Dani (no la ve el atleta)' },
         expediente_datos: { type: 'string', description: 'En qué datos concretos te has apoyado (qué has mirado y qué has visto). Se guarda con la propuesta.' },
         expediente_huecos: { type: 'string', description: 'Qué NO sabías al proponer esto y has tenido que asumir.' },
         expediente_preguntas: { type: 'array', items: { type: 'string' }, description: 'Preguntas que quedan abiertas después de esta propuesta.' },
         expediente_esperado: { type: 'string', description: 'Qué esperas ver, en cuánto tiempo, y qué harías si no pasa.' },
       },
-      required: ['athlete_email', 'name', 'budget'],
+      required: ['athlete_email', 'name', 'objetivo'],
     },
   },
   {
@@ -670,35 +684,10 @@ export const TOOL_DEFINITIONS = [
                 description: 'Dieta nueva para esta fase, mismo formato que propose_diet_update',
                 properties: {
                   name: { type: 'string' },
-                  budget: {
-                    type: 'object',
-                    properties: { HC: { type: 'number' }, PROT: { type: 'number' }, GRASA: { type: 'number' } },
-                    required: ['HC', 'PROT', 'GRASA'],
-                  },
-                  meals: {
-                    type: 'array',
-                    items: {
-                      type: 'object',
-                      properties: {
-                        name: { type: 'string' },
-                        items: {
-                          type: 'array',
-                          items: {
-                            type: 'object',
-                            properties: {
-                              category: { type: 'string', enum: ['HC', 'PROT', 'GRASA', 'MIX_HC', 'MIX_GRASA'] },
-                              foodLabel: { type: 'string' },
-                              quantity: { type: 'number' },
-                            },
-                            required: ['category', 'foodLabel', 'quantity'],
-                          },
-                        },
-                      },
-                      required: ['name', 'items'],
-                    },
-                  },
+                  objetivo: ESQUEMA_OBJETIVO,
+                  meals: ESQUEMA_COMIDAS,
                 },
-                required: ['name', 'budget'],
+                required: ['name', 'objetivo'],
               },
             },
             required: ['name', 'weeks'],
@@ -742,7 +731,7 @@ export const TOOL_DEFINITIONS = [
   {
     name: 'propose_week_plan',
     description:
-      'PROPONE la programación SEMANA A SEMANA de un mesociclo ya creado (con sus sesiones) y/o de la periodización nutricional: semanas de descarga (series a la mitad), semanas de test (AMRAP), RIR que baja a lo largo del bloque, +1 serie cada N semanas, cambios de un ejercicio desde una semana (p. ej. pasar a top set + back-off), y en nutrición ± intercambios por comida desde una semana, semanas de mantenimiento, suplementación y pasos por semana. Las semanas del mesociclo son semanas DE CICLO (vueltas del microciclo); las de nutrición, semanas del programa desde su inicio. Úsala después de propose_mesocycle/propose_workout_days y propose_nutrition_program, no en su lugar.',
+      'PROPONE la programación SEMANA A SEMANA de un mesociclo ya creado (con sus sesiones) y/o de la periodización nutricional: semanas de descarga (series a la mitad), semanas de test (AMRAP), RIR que baja a lo largo del bloque, +1 serie cada N semanas, cambios de un ejercicio desde una semana (p. ej. pasar a top set + back-off), y en nutrición ± gramos de un macro desde una semana, semanas de mantenimiento, suplementación y pasos por semana. Las semanas del mesociclo son semanas DE CICLO (vueltas del microciclo); las de nutrición, semanas del programa desde su inicio. Úsala después de propose_mesocycle/propose_workout_days y propose_nutrition_program, no en su lugar.',
     input_schema: {
       type: 'object',
       properties: {
@@ -773,8 +762,8 @@ export const TOOL_DEFINITIONS = [
             ajustes: { type: 'array', items: { type: 'object', properties: {
               semana: { type: 'number' }, solo: { type: 'boolean' },
               franja: { type: 'number', description: '1=Desayuno 2=Media mañana 3=Comida 4=Merienda 5=Cena; sin ella, la comida con más de ese macro' },
-              macro: { type: 'string', enum: ['HC', 'PROT', 'GRASA'] }, delta: { type: 'number', description: 'Intercambios (≈100 kcal cada uno), negativo para quitar' },
-            }, required: ['semana', 'macro', 'delta'] } },
+              macro: { type: 'string', enum: ['HC', 'PROT', 'GRASA'] }, gramos: { type: 'number', description: 'Gramos de ese macro al día (25 g de HC o P ≈ 100 kcal; 11 g de grasa ≈ 100 kcal), negativo para quitar' },
+            }, required: ['semana', 'macro', 'gramos'] } },
             semanas_mantenimiento: { type: 'array', items: { type: 'number' } },
             suplementos: { type: 'array', items: { type: 'object', properties: {
               nombre: { type: 'string' }, dosis: { type: 'string' }, momento: { type: 'string' }, desde: { type: 'number' }, hasta: { type: 'number' },
@@ -1119,6 +1108,18 @@ function isoDate(d: Date | string): string {
 // coach. Se marca explícitamente como dato (nunca instrucción, ver regla dura
 // #8 de systemPrompt.ts) y se acota en longitud para reducir superficie de
 // prompt injection (auditoría de seguridad 2026-07-23).
+/** El objetivo de una dieta como lo lee el asistente: kcal y gramos. */
+function objetivoParaElAsistente(d: Pick<Diet, 'objetivo' | 'budget'>) {
+  const o = redondearMacros(objetivoDeDieta(d));
+  return { kcal: Math.round(o.kcal), proteina_g: Math.round(o.p), hidratos_g: Math.round(o.hc), grasa_g: Math.round(o.g) };
+}
+
+/** «P 160 g · HC 220 g · G 70 g ≈ 2150 kcal» */
+function textoDeObjetivo(d: Pick<Diet, 'objetivo' | 'budget'>): string {
+  const o = objetivoParaElAsistente(d);
+  return `P ${o.proteina_g} g · HC ${o.hidratos_g} g · G ${o.grasa_g} g ≈ ${o.kcal} kcal`;
+}
+
 const MAX_ATHLETE_TEXT_CHARS = 500;
 function markAthleteText(text: string | null | undefined): string | null {
   if (!text) return null;
@@ -1254,7 +1255,7 @@ async function getClientOverview(email: string): Promise<string> {
     adherence4w: adherence,
     diets: diets.map(d => ({
       id: d.id, name: d.name, isDraft: !!d.isDraft, selfManaged: !!d.selfManaged,
-      budget: d.budget, kcalApprox: exchangeToKcal(d.budget),
+      objetivo: objetivoParaElAsistente(d),
     })),
     nutritionModes: nutriConfig.enabledModes,
     stepGoal: nutriConfig.stepGoal ?? null,
@@ -1569,13 +1570,18 @@ async function getDietInfo(email: string): Promise<string> {
       name: d.name,
       isDraft: !!d.isDraft,
       selfManaged: !!d.selfManaged,
-      budget: d.budget,
-      kcalApprox: exchangeToKcal(d.budget),
-      placed: computeDietPlaced(d.meals),
+      objetivo: objetivoParaElAsistente(d),
+      // Lo que suman los alimentos colocados (si los hay), en kcal y gramos.
+      colocado: d.meals.some(m => m.items.length > 0)
+        ? (({ kcal, p, hc, g }) => ({ kcal: Math.round(kcal), proteina_g: Math.round(p), hidratos_g: Math.round(hc), grasa_g: Math.round(g) }))(macrosDeLineas(d.meals.flatMap(m => m.items)))
+        : null,
       coachNote: d.coachNote ?? null,
       meals: d.meals.map(m => ({
         name: m.name,
-        items: m.items.map(i => ({ food: i.foodLabel, category: i.category, qty: i.quantity })),
+        items: m.items.map(i => {
+          const gramos = i.baseGrams ? Math.round(i.baseGrams * i.quantity) : null;
+          return { food: i.foodLabel, ...(gramos ? { gramos } : { raciones: i.quantity }), kcal: Math.round(macrosDeLinea(i).kcal) };
+        }),
       })),
     })),
     nutritionProgram: program ? {
@@ -1872,9 +1878,9 @@ async function proposeNutritionProgram(
 ): Promise<string> {
   if (fasesInput.length === 0) return toResult({ error: 'La periodización necesita al menos una fase' });
 
-  const [dietasDelAtleta, etiquetasDelCoach] = await Promise.all([
+  const [dietasDelAtleta, alimentosDelCoach] = await Promise.all([
     getDietsForAthlete(athleteEmail),
-    etiquetasDelBancoDelCoach(athleteEmail),
+    alimentosDelBancoDelCoach(athleteEmail),
   ]);
 
   // La validación vive en validators.ts, con sus tests: aquí solo se construye.
@@ -1912,32 +1918,17 @@ async function proposeNutritionProgram(
       }
       fase.dietId = f.diet_id;
     } else if (f.diet && typeof f.diet === 'object') {
-      const bruta = f.diet as { name?: string; budget?: Record<FoodCategory, number>; meals?: DietUpdatePayload['meals'] };
-      if (!bruta.name || !bruta.budget) {
-        problemas.push(`Fase "${nombre}": la dieta necesita name y budget`);
+      const bruta = f.diet as DietUpdatePayload & { name?: string };
+      if (!bruta.name) {
+        problemas.push(`Fase "${nombre}": la dieta necesita name`);
         return;
       }
-      const comidas = Array.isArray(bruta.meals) ? bruta.meals : [];
-      const issues = validateDietPayload({ budget: bruta.budget, meals: comidas }, etiquetasDelCoach);
-      if (issues.length) {
-        problemas.push(`Fase "${nombre}": ${issues.map(x => x.message).join(' · ')}`);
+      const leida = leerDietaPropuesta(bruta, alimentosDelCoach);
+      if (leida.issues.length || !leida.objetivo) {
+        problemas.push(`Fase "${nombre}": ${leida.issues.map(x => x.message).join(' · ')}`);
         return;
       }
-      fase.diet = {
-        athleteId: athleteEmail,
-        name: bruta.name,
-        budget: bruta.budget,
-        meals: comidas.map((m, k) => ({
-          id: `meal_${Date.now()}_${i}_${k}`,
-          name: m.name,
-          items: m.items.map(it => ({
-            category: it.category,
-            foodLabel: it.foodLabel,
-            quantity: it.quantity,
-            grams: parseBaseGrams(it.foodLabel) != null ? Math.round((parseBaseGrams(it.foodLabel) as number) * it.quantity * 10) / 10 : undefined,
-          })),
-        })),
-      };
+      fase.diet = dietaDePropuesta(athleteEmail, bruta.name, leida.objetivo, leida.meals, `${i}_`);
     } else {
       problemas.push(`Fase "${nombre}": necesita diet_id (dieta existente) o diet (dieta nueva)`);
       return;
@@ -2058,11 +2049,17 @@ async function proposeWeekPlan(
     payload.nutricion = {};
     if (Array.isArray(nut.ajustes)) {
       payload.nutricion.ajustes = (nut.ajustes as Record<string, unknown>[])
-        .filter(a => typeof a.semana === 'number' && ['HC', 'PROT', 'GRASA'].includes(String(a.macro)) && typeof a.delta === 'number' && a.delta !== 0)
+        // En gramos del macro; `delta` (intercambios) solo llega de chats viejos.
         .map(a => ({
-          semana: Math.round(a.semana as number), cat: a.macro as MacroAjustable, delta: Math.round((a.delta as number) * 4) / 4,
+          a,
+          gramos: Math.round(typeof a.gramos === 'number' ? a.gramos
+            : typeof a.delta === 'number' && ['HC', 'PROT', 'GRASA'].includes(String(a.macro)) ? a.delta * GRAMS_PER_EXCHANGE[a.macro as MacroAjustable] : 0),
+        }))
+        .filter(({ a, gramos }) => typeof a.semana === 'number' && ['HC', 'PROT', 'GRASA'].includes(String(a.macro)) && Number.isFinite(gramos) && gramos !== 0)
+        .map(({ a, gramos }) => ({
+          semana: Math.round(a.semana as number),
+          ...ajusteEnGramos(a.macro as MacroAjustable, gramos, typeof a.franja === 'number' ? Math.round(a.franja) : undefined),
           ...(a.solo === true ? { solo: true } : {}),
-          ...(typeof a.franja === 'number' ? { slot: Math.round(a.franja) } : {}),
         }));
       if (payload.nutricion.ajustes.some(a => fuera(a.semana))) errores.push(`Las semanas de la periodización van de 1 a ${n}.`);
       if (payload.nutricion.ajustes.length) partes.push(`${payload.nutricion.ajustes.length} ajuste${payload.nutricion.ajustes.length === 1 ? '' : 's'} de dieta`);
@@ -2273,55 +2270,64 @@ async function draftCheckinFeedback(
   });
 }
 
-function getFoodLibrary(mode?: string, category?: string): string {
+function getFoodLibrary(mode?: string, grupo?: string): string {
   let foods = SYSTEM_FOODS;
   if (mode) foods = foods.filter(f => f.mode === mode);
-  if (category) foods = foods.filter(f => f.category === category);
-  return toResult({ count: foods.length, foods: foods.map(f => ({ mode: f.mode, category: f.category, label: f.label })) });
+  const generales = foods.map(alimentoGeneral).filter(a => !grupo || a.grupo === grupo);
+  const cifras = (m: Macros) => ({ kcal: Math.round(m.kcal), p: Math.round(m.p * 10) / 10, hc: Math.round(m.hc * 10) / 10, g: Math.round(m.g * 10) / 10 });
+  return toResult({
+    count: generales.length,
+    foods: generales.map(a => ({
+      label: a.food.label, mode: a.food.mode, grupo: a.grupo, racion: a.racion,
+      porRacion: cifras(a.porRacion),
+      ...(a.porCien ? { porCien: cifras(a.porCien) } : { sinPesar: true }),
+    })),
+  });
+}
+
+/** La dieta que se guarda al aprobar: el objetivo en kcal y gramos y, para los
+ *  binarios viejos, su cupo en intercambios equivalente. */
+function dietaDePropuesta(
+  athleteEmail: string, name: string, objetivo: Macros,
+  meals: { name: string; items: Diet['meals'][number]['items'] }[], prefijoId = '',
+): Omit<Diet, 'id'> {
+  return {
+    athleteId: athleteEmail,
+    name,
+    ...objetivoYCupo(objetivo),
+    meals: meals.map((m, i) => ({ id: `meal_${Date.now()}_${prefijoId}${i}`, name: m.name, items: m.items })),
+  };
 }
 
 async function proposeDietUpdate(
   athleteEmail: string,
   baseDietId: string | undefined,
   name: string,
-  budget: Record<FoodCategory, number>,
-  meals: NonNullable<DietUpdatePayload['meals']>,
+  propuesta: DietUpdatePayload,
   rationale: string,
   chatId: string,
   expediente?: ProposalExpediente,
 ): Promise<string> {
-  const payload: DietUpdatePayload = { budget, meals };
-  const issues = validateDietPayload(payload, await etiquetasDelBancoDelCoach(athleteEmail));
-  if (issues.length > 0) {
-    return toResult({ valid: false, issues, note: 'Corrige estos problemas y vuelve a llamar a propose_diet_update.' });
+  const leida = leerDietaPropuesta(propuesta, await alimentosDelBancoDelCoach(athleteEmail));
+  if (leida.issues.length > 0 || !leida.objetivo) {
+    return toResult({ valid: false, issues: leida.issues, note: 'Corrige estos problemas y vuelve a llamar a propose_diet_update.' });
   }
 
-  const dietMeals = meals.map((m, i) => ({
-    id: `meal_${Date.now()}_${i}`,
-    name: m.name,
-    items: m.items.map(it => ({
-      category: it.category,
-      foodLabel: it.foodLabel,
-      quantity: it.quantity,
-      grams: parseBaseGrams(it.foodLabel) != null ? Math.round((parseBaseGrams(it.foodLabel) as number) * it.quantity * 10) / 10 : undefined,
-    })),
-  }));
-
-  const dietPayload: Omit<Diet, 'id'> = { athleteId: athleteEmail, name, budget, meals: dietMeals };
-  const kcal = exchangeToKcal(budget);
+  const dietPayload = dietaDePropuesta(athleteEmail, name, leida.objetivo, leida.meals);
+  const kcal = Math.round(leida.objetivo.kcal);
 
   let baseSummary = '';
   let base: Diet | undefined;
   if (baseDietId) {
     base = (await getDietsForAthlete(athleteEmail)).find(d => d.id === baseDietId);
     if (base) {
-      const prevKcal = exchangeToKcal(base.budget);
+      const prevKcal = Math.round(objetivoDeDieta(base).kcal);
       baseSummary = ` (ajuste de "${base.name}": ${prevKcal} → ${kcal} kcal)`;
     }
   }
   const cambios = cambiosDeDieta(base, dietPayload);
 
-  const summary = `Dieta "${name}"${baseSummary || ' (nueva)'} · HC ${budget.HC} / PROT ${budget.PROT} / GRASA ${budget.GRASA} ≈ ${kcal} kcal`;
+  const summary = `Dieta "${name}"${baseSummary || ' (nueva)'} · ${textoDeObjetivo(dietPayload)}`;
   const proposal = await createAiProposal({
     athleteId: athleteEmail,
     kind: 'diet',
@@ -2339,7 +2345,7 @@ async function proposeDietUpdate(
   return toResult({
     proposalCreated: true,
     proposalId: proposal.id,
-    kcalApprox: kcal,
+    kcal,
     note: 'Propuesta creada. Dani la revisa y aprueba desde el panel del asistente antes de que el atleta la vea.',
   });
 }
@@ -3431,7 +3437,7 @@ async function getNutritionAnalysis(email: string): Promise<string> {
     bodyweightLogs, targetWeight: profile.targetWeight || undefined, onboarding, faseActiva,
   });
   return toResult({
-    dietaActiva: activeDiet ? { id: activeDiet.id, nombre: activeDiet.name, kcalAprox: exchangeToKcal(activeDiet.budget), budget: activeDiet.budget } : null,
+    dietaActiva: activeDiet ? { id: activeDiet.id, nombre: activeDiet.name, objetivo: objetivoParaElAsistente(activeDiet) } : null,
     objetivoPasos: nutriConfig.stepGoal ?? null,
     resumen: informe.summary,
     adherencia: informe.adherence,
@@ -3552,7 +3558,7 @@ async function getRevisionEngine(email: string, periodoPedido: string): Promise<
  * su propuesta y el validador lo rechazaba por «no reconocido» — dejando al
  * modelo buscando un sinónimo de algo que existe.
  */
-async function etiquetasDelBancoDelCoach(athleteEmail?: string): Promise<string[]> {
+async function alimentosDelBancoDelCoach(athleteEmail?: string): Promise<MealItem[]> {
   const leer = async <T,>(fn: () => Promise<T[]>, queja: string): Promise<T[]> => {
     try {
       return await fn();
@@ -3567,7 +3573,7 @@ async function etiquetasDelBancoDelCoach(athleteEmail?: string): Promise<string[
       ? leer(() => getAlimentosPersonales(athleteEmail), 'No se pudo leer el banco personal del atleta:')
       : Promise.resolve([]),
   ]);
-  return [...comunes, ...propios].map(f => f.label).filter(Boolean);
+  return [...comunes, ...propios].filter(f => !!f.label);
 }
 
 /**
@@ -3727,19 +3733,23 @@ export async function executeTool(
         };
       case 'get_food_library':
         return {
-          content: getFoodLibrary(typeof input.mode === 'string' ? input.mode : undefined, typeof input.category === 'string' ? input.category : undefined),
+          content: getFoodLibrary(typeof input.mode === 'string' ? input.mode : undefined, typeof input.grupo === 'string' ? input.grupo : undefined),
           isError: false,
         };
       case 'propose_diet_update': {
-        if (!email || typeof input.name !== 'string' || !input.budget) {
-          return { content: 'Faltan athlete_email, name o budget', isError: true };
+        if (!email || typeof input.name !== 'string' || (!input.objetivo && !input.budget)) {
+          return { content: 'Faltan athlete_email, name u objetivo', isError: true };
         }
         const content = await proposeDietUpdate(
           email,
           typeof input.base_diet_id === 'string' ? input.base_diet_id : undefined,
           input.name,
-          input.budget as Record<FoodCategory, number>,
-          (Array.isArray(input.meals) ? input.meals : []) as NonNullable<DietUpdatePayload['meals']>,
+          {
+            ...(input.objetivo ? { objetivo: input.objetivo as DietUpdatePayload['objetivo'] } : {}),
+            // Un chat empezado antes de pasar a kcal aún puede mandar intercambios.
+            ...(input.budget ? { budget: input.budget as DietUpdatePayload['budget'] } : {}),
+            meals: (Array.isArray(input.meals) ? input.meals : []) as NonNullable<DietUpdatePayload['meals']>,
+          },
           typeof input.rationale === 'string' ? input.rationale : '',
           chatId,
           leerExpediente(input),

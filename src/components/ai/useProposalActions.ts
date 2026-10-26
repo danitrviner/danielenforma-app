@@ -32,6 +32,7 @@ import {
 } from '../../dbService';
 import { rirDescendente, subirSeries, programarEnSemanas } from '../../utils/semanasDelBloque';
 import { programarAjuste } from '../../utils/semanasNutricion';
+import { objetivoDeDieta } from '../../utils/macrosLegado';
 import { vueltasDelCiclo } from '../../utils/progression';
 import { sesionesDeMesociclo, fechasDelMesociclo, cicloDiasDeMeso } from '../../utils/asignacionMesociclo';
 import { prescripcionDeSemana, ZONA2_BASE_MIN_DEFECTO } from '../../utils/cardioProgression';
@@ -87,6 +88,13 @@ function clavesQueRefrescar(kind: AiProposal['kind'], athleteEmail: string): unk
   }
 }
 
+/** Una propuesta de antes de pasar a kcal trae solo el cupo en intercambios:
+ *  se le pone su objetivo. Sin esto, al aplicarla sobre una dieta que ya tiene
+ *  `objetivo` se cambiaría el cupo y el objetivo viejo seguiría mandando. */
+function conObjetivo<T extends Pick<Diet, 'objetivo' | 'budget'>>(d: T): T {
+  return d.objetivo ? d : { ...d, objetivo: objetivoDeDieta(d) };
+}
+
 class AprobacionYaAvisada extends Error {
   constructor(readonly causa: unknown) { super('aprobación fallida, ya avisada'); }
 }
@@ -130,7 +138,7 @@ export function useProposalActions(
         await submitCoachFeedback(checkInId, feedback);
         await updateAiProposal(p.id, { status: 'approved', reviewedAt: new Date().toISOString(), resultEntityId: checkInId });
       } else if (p.kind === 'diet') {
-        const dietPayload = p.payload as Omit<Diet, 'id'>;
+        const dietPayload = conObjetivo(p.payload as Omit<Diet, 'id'>);
         if (p.baseEntityId) {
           await updateDiet(p.baseEntityId, dietPayload);
           await updateAiProposal(p.id, { status: 'approved', reviewedAt: new Date().toISOString(), resultEntityId: p.baseEntityId });
@@ -165,7 +173,7 @@ export function useProposalActions(
         for (const [i, fase] of phases.entries()) {
           let dietId = fase.dietId ?? '';
           if (!dietId && fase.diet) {
-            const creada = await createDiet(fase.diet);
+            const creada = await createDiet(conObjetivo(fase.diet));
             dietId = creada.id;
           }
           fases.push({
@@ -240,7 +248,7 @@ export function useProposalActions(
           if (!programa) throw new Error('El atleta ya no tiene periodización nutricional.');
           let nuevo = { ...programa };
           for (const a of plan.nutricion.ajustes ?? []) {
-            nuevo = { ...nuevo, cambiosSemana: programarAjuste(nuevo, a.semana, !!a.solo, { cat: a.cat, delta: a.delta, ...(a.slot !== undefined ? { slot: a.slot } : {}) }) };
+            nuevo = { ...nuevo, cambiosSemana: programarAjuste(nuevo, a.semana, !!a.solo, { cat: a.cat, delta: a.delta, ...(a.gramos !== undefined ? { gramos: a.gramos } : {}), ...(a.slot !== undefined ? { slot: a.slot } : {}) }) };
           }
           if (plan.nutricion.semanasMantenimiento?.length) {
             nuevo.semanasMantenimiento = Array.from(new Set<number>([...(nuevo.semanasMantenimiento ?? []), ...plan.nutricion.semanasMantenimiento])).sort((a, b) => a - b);

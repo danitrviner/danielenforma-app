@@ -10,6 +10,7 @@
  * falta que Dani escriba nada para que quede constancia de lo que tocó.
  */
 import { AiProposal, Diet, Mesocycle, MuscleGroup, MUSCLE_LABELS, MuscleGroupConfig } from '../types';
+import { objetivoDeDieta } from './macrosLegado';
 
 export interface Deriva {
   proposalId: string;
@@ -47,10 +48,13 @@ function derivaDeMesociclo(p: AiProposal, actual: Mesocycle): string[] {
 function derivaDeDieta(p: AiProposal, actual: Diet): string[] {
   const propuesta = p.payload as Omit<Diet, 'id'>;
   const cambios: string[] = [];
-  for (const cat of ['HC', 'PROT', 'GRASA'] as const) {
-    const antes = propuesta.budget?.[cat] ?? 0;
-    const ahora = actual.budget?.[cat] ?? 0;
-    if (antes !== ahora) cambios.push(`${cat} ${antes} → ${ahora} intercambios`);
+  const objPropuesto = objetivoDeDieta(propuesta);
+  const objActual = objetivoDeDieta(actual);
+  for (const [k, nombre] of [['p', 'P'], ['hc', 'HC'], ['g', 'G']] as const) {
+    const antes = Math.round(objPropuesto[k]);
+    const ahora = Math.round(objActual[k]);
+    // Menos de 5 g es redondeo, no criterio.
+    if (Math.abs(antes - ahora) >= 5) cambios.push(`${nombre} ${antes} → ${ahora} g`);
   }
   const comidasAntes = propuesta.meals?.length ?? 0;
   const comidasAhora = actual.meals?.length ?? 0;
@@ -119,9 +123,9 @@ export function resumirPatrones(derivas: Deriva[]): string[] {
         cuenta.set(clave, (cuenta.get(clave) ?? 0) + 1);
         continue;
       }
-      const cat = c.match(/^(HC|PROT|GRASA) (\d+(?:\.\d+)?) → (\d+(?:\.\d+)?) intercambios$/);
+      const cat = c.match(/^(P|HC|G) (\d+(?:\.\d+)?) → (\d+(?:\.\d+)?) g$/);
       if (cat) {
-        const clave = `${cat[1]}: ${Number(cat[3]) > Number(cat[2]) ? 'sube' : 'baja'} intercambios sobre lo propuesto`;
+        const clave = `${cat[1]}: ${Number(cat[3]) > Number(cat[2]) ? 'sube' : 'baja'} gramos sobre lo propuesto`;
         cuenta.set(clave, (cuenta.get(clave) ?? 0) + 1);
         continue;
       }
