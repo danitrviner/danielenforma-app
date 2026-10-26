@@ -80,6 +80,12 @@ function macrosYKcal(r) {
  */
 /** Valores por 100 g de los alimentos de los vínculos: [kcal, p, hc, g]. */
 const ALIMENTOS = new Map();
+// Dónde se vio cada versión de un alimento: id → (kcal|p|hc|g → [recetaIds]).
+// Dos recetas con porCien distinto para el mismo alimentoId no pueden
+// compartir una entrada de `alimentos`: el índice se queda con una y la otra
+// receta se desglosa mal en la app (revisión de motores 26-10-2026: 34
+// alimentos, 4.138 recetas afectadas). El generador aborta y lo lista.
+const VERSIONES = new Map();
 const PALANCA_CORTA = { proteina: 'p', hc: 'h', grasa: 'g' };
 
 function mapEntradaIndice(r) {
@@ -109,7 +115,14 @@ function mapEntradaIndice(r) {
   // de cada alimento UNA vez en `alimentos` (ver hidratarEntradaIndice).
   if (r.vinculo) {
     entrada.vin = r.vinculo.ingredientes.map(i => {
-      if (i.alimentoId && i.porCien) ALIMENTOS.set(i.alimentoId, [i.porCien.kcal, i.porCien.p, i.porCien.hc, i.porCien.g]);
+      if (i.alimentoId && i.porCien) {
+        const v = [i.porCien.kcal, i.porCien.p, i.porCien.hc, i.porCien.g];
+        ALIMENTOS.set(i.alimentoId, v);
+        const porId = VERSIONES.get(i.alimentoId) ?? new Map();
+        const clave = v.join('|');
+        porId.set(clave, [...(porId.get(clave) ?? []), r.id]);
+        VERSIONES.set(i.alimentoId, porId);
+      }
       return [i.n, i.alimentoId, i.gramos, i.min, i.max, i.fijo || !i.palanca ? 0 : PALANCA_CORTA[i.palanca]];
     });
   }
@@ -131,6 +144,20 @@ function main() {
   // consulta de Firestore (`orderBy('name')`), y así el móvil no reordena 8.850
   // entradas en cada arranque.
   recetas.sort((a, b) => a.name.localeCompare(b.name, 'es'));
+
+  const conflictos = [...VERSIONES].filter(([, porId]) => porId.size > 1);
+  if (conflictos.length > 0) {
+    console.error(`✗ ${conflictos.length} alimento(s) con más de un porCien en las recetas; no se escribe el índice.`);
+    console.error('  Unifica los vínculos (scripts/vincularTodas.ts --revincular o vincularRecetas.ts recalcular) y vuelve a generar.');
+    for (const [id, porId] of conflictos) {
+      console.error(`  · ${id}`);
+      for (const [clave, ids] of porId) {
+        const muestra = ids.slice(0, 3).join(', ') + (ids.length > 3 ? ', …' : '');
+        console.error(`      ${clave.padEnd(24)} en ${String(ids.length).padStart(5)} receta(s): ${muestra}`);
+      }
+    }
+    process.exit(1);
+  }
 
   const json = JSON.stringify({ generado: new Date().toISOString(), total: recetas.length, alimentos: Object.fromEntries(ALIMENTOS), recetas });
   writeFileSync(SALIDA, json);

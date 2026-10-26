@@ -142,24 +142,59 @@ const NO_CUENTA = new RegExp('^(' + [
   'curcuma', 'raiz de curcuma', 'raiz de jengibre', 'chile en polvo', 'chile verde', 'cebolla en polvo', 'tabasco', 'wasabi',
   'extracto de vainilla', 'piel de limon', 'piel de naranja', 'vino', 'cafe solo', 'cafe soluble', 'cafe descafeinado',
   'cafe espresso', 'te', 'te matcha', 'bicarbonato', 'electrolitos', 'trufa negra', 'sacarina',
+  // Revisión de motores 26-10-2026: la levadura química (2-3 g) y la infusión
+  // no suman; la nutricional y la de cerveza sí son alimento.
+  'levadura(?! nutricional| de cerveza)', 'infusion', 'semillas de cilantro', 'planta de clavo', 'clavo de olor',
 ].join('|') + ')\\b');
 
 export function esIngredienteQueNoCuenta(nombre: string): boolean {
   return NO_CUENTA.test(normalizarTexto(nombre));
 }
 
+/** Estado de un alimento del catálogo: el campo o, si no lo trae, la palabra
+ *  de estado de su nombre («Pistachos crudos», «Jamón cocido»). */
+function estadoDelAlimento(a: AlimentoCatalogo): AlimentoCatalogo['estado'] {
+  return a.estado ?? palabras(a.nombre).map(w => ESTADOS_EN_TEXTO[w]).find(Boolean);
+}
+
+/**
+ * Cereales y legumbres: sin estado escrito, un «Arroz basmati 60 g» o unas
+ * «Lentejas 70 g» son el alimento SECO. Emparejarlos con la entrada «cocido»
+ * del catálogo (la única que a veces existe) divide sus kcal por 2,5. Medido
+ * el 26-10-2026 en 134 recetas de arroz (−118 kcal de mediana). Con estas
+ * palabras y un candidato cocido, el emparejado se queda en `baja`.
+ */
+const SECOS_POR_DEFECTO = /\b(arroz|pasta|quinoa|cuscus|couscous|bulgur|mijo|espelta|trigo|avena|lenteja|garbanzo|alubia|judia(?! verde)|judion|frijol|fideo|macarron|espagueti|noodle|tallarin|soja texturizada)\b/;
+
 /**
  * El alimento del catálogo que más se parece al nombre del ingrediente.
  * Puntúa cuántas palabras del alimento aparecen en el ingrediente; el estado
  * escrito («(en crudo)») desempata y, si contradice al del alimento, baja la confianza.
+ *
+ * Qué significa cada confianza (revisión de motores, 26-10-2026):
+ *  · `alta`: las mismas palabras en los dos sentidos («Pechugas de pollo» →
+ *    «Pechuga de pollo»).
+ *  · `media`: el ingrediente lleva descriptores de más y el alimento entero
+ *    está dentro («Almendras al natural» → «Almendras», «Garbanzo cocido
+ *    envasado» → «Garbanzos (cocido)»). Casi siempre acierta.
+ *  · `baja`: el ALIMENTO lleva palabras que el ingrediente no tiene. Antes era
+ *    `media` y por ahí entraron «Calabaza» → «Pipas de calabaza» (144 recetas,
+ *    +533 kcal de mediana), «Tomate seco» → «Lechuga y tomate» (47) y «Avena» →
+ *    «Bebida de avena». También cuando el estado choca, cuando dos candidatos
+ *    empatan con estados de peso distinto («Lentejas» seco/cocido) y cuando un
+ *    cereal o legumbre sin estado solo casa con su versión cocida.
+ * Los sinónimos buenos que caen en `baja` por esta regla van en
+ * `SINONIMOS_REVISADOS`, que manda sobre la puntuación.
  */
 export function emparejar(nombre: string, catalogo: AlimentoCatalogo[]): { alimento?: AlimentoCatalogo; confianza: Confianza } {
   const ps = palabras(nombre);
   const estadoEscrito = ps.map(w => ESTADOS_EN_TEXTO[w]).find(Boolean);
   const del = new Set(ps.filter(w => !(w in ESTADOS_EN_TEXTO)));
-  let mejor: { alimento: AlimentoCatalogo; puntos: number; cubre: number; explica: number } | undefined;
+  type Candidato = { alimento: AlimentoCatalogo; puntos: number; cubre: number; explica: number; estado?: AlimentoCatalogo['estado'] };
+  const candidatos: Candidato[] = [];
   for (const a of catalogo) {
-    const pa = palabras(a.nombre);
+    const estadoCat = estadoDelAlimento(a);
+    const pa = palabras(a.nombre).filter(w => !(w in ESTADOS_EN_TEXTO));
     if (pa.length === 0) continue;
     const comunes = pa.filter(w => del.has(w)).length;
     if (comunes === 0) continue;
@@ -167,20 +202,105 @@ export function emparejar(nombre: string, catalogo: AlimentoCatalogo[]): { alime
     // `explica`: cuánto del ingrediente queda explicado por el alimento.
     const cubre = comunes / pa.length;
     const explica = comunes / Math.max(1, del.size);
-    const estado = estadoEscrito && a.estado ? (estadoEscrito === a.estado ? 0.2 : -0.5) : 0;
-    const puntos = cubre + explica + estado;
-    if (!mejor || puntos > mejor.puntos) mejor = { alimento: a, puntos, cubre, explica };
+    const estado = estadoEscrito && estadoCat ? (estadoEscrito === estadoCat ? 0.2 : -0.5) : 0;
+    candidatos.push({ alimento: a, puntos: cubre + explica + estado, cubre, explica, estado: estadoCat });
   }
-  if (!mejor) return { confianza: 'ninguna' };
-  const estadoChoca = !!estadoEscrito && !!mejor.alimento.estado && estadoEscrito !== mejor.alimento.estado;
-  // «Pechuga de pavo» → «Pechuga de pollo» comparte la mitad en los dos
-  // sentidos: es otro alimento, así que baja. «Arroz» → «Arroz blanco» explica
-  // todo el ingrediente: probable, pero a mirar (media).
-  const confianza: Confianza = estadoChoca ? 'baja'
+  if (candidatos.length === 0) return { confianza: 'ninguna' };
+  // A igual puntuación y sin estado escrito, antes la versión sin cocer: las
+  // cantidades de una receta son en crudo («Patata 200 g», «Couscous 60 g»).
+  const cocido = (c: Candidato) => (c.estado === 'cocido' ? 1 : 0);
+  candidatos.sort((a, b) => b.puntos - a.puntos || (estadoEscrito ? 0 : cocido(a) - cocido(b)));
+  const mejor = candidatos[0];
+  const estadoChoca = !!estadoEscrito && !!mejor.estado && estadoEscrito !== mejor.estado;
+  // Sin estado escrito, una entrada «seco» y otra «cocido» con las mismas
+  // palabras («Lentejas», «Garbanzos») no se pueden distinguir: a revisar.
+  const empatados = candidatos.filter(c => c.puntos === mejor.puntos);
+  const ambiguo = !estadoEscrito && empatados.some(c => c.estado === 'seco') && empatados.some(c => c.estado === 'cocido');
+  const secoComoCocido = !estadoEscrito && mejor.estado === 'cocido' && SECOS_POR_DEFECTO.test(normalizarTexto(nombre));
+  const confianza: Confianza = estadoChoca || ambiguo || secoComoCocido ? 'baja'
     : mejor.cubre === 1 && mejor.explica === 1 ? 'alta'
-    : (mejor.explica === 1 && mejor.cubre >= 0.5) || (mejor.cubre === 1 && mejor.explica >= 0.5) ? 'media'
+    : mejor.cubre === 1 && mejor.explica >= 0.5 ? 'media'
     : 'baja';
   return { alimento: mejor.alimento, confianza };
+}
+
+/**
+ * Sinónimos revisados a mano (26-10-2026) sobre los 209 ingredientes que
+ * salían con confianza `media` en el recetario: ingrediente normalizado →
+ * id del alimento. Mandan sobre la puntuación de `emparejar` y son lo único,
+ * además de `alta`, que acepta la vinculación automática. Lo que no está aquí
+ * ni es `alta` queda como duda para que Dani lo decida (añadir el alimento al
+ * catálogo o este sinónimo).
+ */
+export const SINONIMOS_REVISADOS: Readonly<Record<string, string>> = {
+  'aceituna negra': 'aceitunas-escurrido', 'aceituna verde': 'aceitunas-escurrido',
+  'ajo negro': 'ajo', 'almendra molida': 'almendras-listo', 'almendras al natural': 'almendras-listo',
+  'alubia blanca cocida': 'alubias-cocido', 'anchoa': 'anchoa-en-lata', 'arroz cocido': 'arroz-en-vasito-cocido',
+  'arroz salvaje': 'arroz-seco', 'atun': 'atun-al-natural-escurrido', 'atun en lata (aceite)': 'atun-en-aceite-escurrido',
+  'atun en lata (al natural)': 'atun-al-natural-escurrido', 'azucar glas': 'azucar-listo', 'azucar moreno': 'azucar-listo',
+  'bacalao atlantico': 'bacalao-crudo', 'bacalao pacifico': 'bacalao-crudo', 'bebida de almendra': 'bebida-de-almendras-sin-azucar-listo',
+  'bebida de soja': 'bebida-de-soja-sin-azucar-listo', 'bebida de soja con chocolate': 'bebida-de-soja-sabor-chocolate-listo',
+  'boniato rojo': 'boniato-crudo', 'brocoli congelado': 'brocoli', 'cacao puro en polvo': 'cacao-en-polvo',
+  'carne picada mixta (ternera-cerdo)': 'carne-picada-de-cerdo', 'castanas': 'castanas-peladas-listo',
+  'cereales integrales': 'cereales-integrales-0-azucares', 'cereales weetabix minis': 'cereales-weetabix',
+  'chocolate negro 70%': 'chocolate-negro-70-85', 'chuleta de lomo de cerdo': 'lomo-de-cerdo-crudo',
+  'ciclodextrina en polvo': 'ciclodextrina-listo', 'compota de manzana': 'manzana-listo',
+  'contramuslo de pollo con piel': 'contramuslo-de-pollo-crudo', 'contramuslo de pollo sin piel': 'contramuslo-de-pollo-crudo',
+  'copos de trigo sarraceno': 'trigo-sarraceno', 'crema de arroz': 'arroz-seco', 'crema de cacahuete (226ers)': 'crema-de-cacahuete-listo',
+  'esparrago en conserva': 'esparragos-cocido', 'esparrago triguero': 'esparragos-cocido', 'espinacas congeladas': 'espinacas',
+  'fiambre de pavo': 'fiambre-de-pechuga-de-pavo-listo', 'fideos de arroz': 'arroz-seco', 'filete de ternera magra': 'ternera-magra-crudo',
+  'frankfurt de seitan': 'seitan-listo', 'fructosa': 'fructosa-en-polvo', 'gambas': 'gambas-peladas-crudo',
+  'gambas peladas congeladas': 'gambas-peladas-crudo', 'garbanzo cocido envasado': 'garbanzos-cocido', 'garbanzos cocidos de bote': 'garbanzos-cocido',
+  'gazpacho envasado': 'gazpacho-listo', 'gnocchis de patata': 'gnocchi-listo', 'gnocchis de queso': 'gnocchi-listo',
+  'guisante crudo': 'guisante-cocido', 'guisante verde': 'guisantes-listo', 'guisantes congelados': 'guisantes-congelados-cocidos',
+  'guisantes en lata': 'guisantes-listo', 'haba': 'haba-cocida', 'hamburguesa de pollo (super)': 'hamburguesa-de-pollo-crudo',
+  'hamburguesa de pollo y espinacas': 'hamburguesa-de-pollo-crudo', 'harina de arroz hidrolizada (hsn)': 'harina-de-arroz-listo',
+  'harina de avena sabores': 'harina-de-avena-listo', 'harina de espelta': 'espelta', 'harina de maiz amarillo': 'harina-de-maiz-listo',
+  'harina de trigo integral': 'harina-de-trigo-listo', 'harina de trigo sarraceno': 'harina-de-trigo-listo', 'heura': 'heura-albondigas-listo',
+  'higado de pollo': 'higado-crudo', 'higado de ternera': 'higado-crudo', 'huevo de codorniz': 'huevo-crudo',
+  'kefir': 'kefir-sin-grasa-listo', 'kiwi amarillo': 'kiwi-listo', 'langostino': 'langostinos-cocidos-listo',
+  'leche semidesnatada sin lactosa': 'leche-semidesnatada-listo', 'lentejas cocidas de bote': 'lentejas-cocido',
+  'lomo alto de cerdo': 'lomo-de-cerdo-crudo', 'lomo de cerdo (magro)': 'lomo-de-cerdo-crudo', 'lomo de cerdo fresco': 'lomo-de-cerdo-crudo',
+  'lomo de ternera lechal': 'lomo-de-ternera', 'lomo embuchado extra': 'lomo-embuchado-listo', 'maiz dulce': 'maiz-dulce-en-lata-escurrido',
+  'mantequilla sin sal': 'mantequilla-listo', 'melon cantaloupe': 'melon-listo', 'membrillo': 'dulce-de-membrillo',
+  'merluza congelada': 'merluza-crudo', 'mermelada de albaricoque': 'mermelada-listo', 'mermelada de frambuesa': 'mermelada-listo',
+  'mermelada de fresa': 'mermelada-listo', 'mermelada de mora': 'mermelada-listo', 'mermelada de naranja': 'mermelada-listo',
+  'mermelada light': 'mermelada-light-de-fresa', 'migas de bacalao': 'bacalao-crudo', 'mijo inflado': 'mijo',
+  'mozzarella fresca': 'mozzarella-listo', 'mozzarella fresca light': 'mozzarella-light-listo', 'nata': 'nata-para-cocinar-listo',
+  'nata ligera para cocinar': 'nata-para-cocinar-listo', 'noodle de arroz': 'arroz-seco', 'nueces de macadamia': 'nueces-listo',
+  'nueces pecanas': 'nueces-listo', 'palomitas': 'maiz-para-palomitas-seco', 'pan bagel': 'pan-listo', 'pan blanco': 'pan-listo',
+  'pan de avena': 'pan-listo', 'pan de barra': 'pan-listo', 'pan de centeno': 'pan-listo', 'pan de hamburguesa': 'pan-listo',
+  'pan de leche': 'pan-listo', 'pan de molde integral': 'pan-de-molde-listo', 'pan de molde sin gluten': 'pan-de-molde-listo',
+  'pan de perrito': 'pan-listo', 'pan de pita': 'pan-listo', 'pan integral': 'pan-integral-sin-gluten', 'pan multicereal': 'pan-listo',
+  'pan sin gluten': 'pan-integral-sin-gluten', 'pan thins': 'pan-listo', 'pan tostado blanco': 'pan-tostado-listo',
+  'pan tostado integral': 'pan-tostado-listo', 'pan tostado sin gluten': 'pan-tostado-listo', 'pan wasa': 'pan-listo',
+  'pasas deshidratadas': 'pasas-listo', 'pasta de arroz': 'arroz-seco', 'pasta de espelta en seco': 'pasta-seco',
+  'pasta de sarraceno en seco': 'pasta-seco', 'pasta en seco de maiz': 'pasta-seco', 'pasta integral en seco': 'pasta-seco',
+  'pasta sin gluten en seco': 'pasta-seco', 'patata en bote': 'patata-cocido', 'pechuga de pavo en lonchas': 'pechuga-de-pavo-crudo',
+  'pechuga de pollo con piel': 'pechuga-de-pollo-crudo', 'pechuga de pollo en lata al natural': 'pechuga-de-pollo-crudo',
+  'placas de pasta': 'pasta-seco', 'platano macho': 'platano-listo', 'proteina whey (crown)': 'proteina-whey',
+  'queso cheddar en lonchas': 'queso-cheddar-listo', 'queso cottage': 'queso-cottage-light-listo', 'queso cottage 0%': 'queso-cottage-light-listo',
+  'queso crema light (tipo philadelphia)': 'queso-crema-light-listo', 'queso de cabra curado': 'queso-curado-listo',
+  'queso de cabra semicurado': 'queso-de-cabra-listo', 'queso de cabra tierno': 'queso-de-cabra-listo',
+  'queso manchego curado': 'queso-curado-listo', 'queso manchego semicurado': 'queso-semicurado-listo', 'queso mozzarella': 'mozzarella-listo',
+  'quinoa cocida': 'quinoa-en-vasito-cocido', 'quinoa hinchada': 'quinoa-seco', 'salsa de soja (tamari)': 'salsa-de-soja-listo',
+  'salsa de soja y trigo (shoyu)': 'salsa-de-soja-listo', 'salvado de avena': 'salvado-de-avena-crujiente', 'sardinas en lata': 'sardina-crudo',
+  'soja texturizada fina': 'soja-texturizada-seco', 'soja texturizada gruesa': 'soja-texturizada-seco', 'tofu firme': 'tofu-listo',
+  'tortilla de trigo (wrap)': 'tortilla-tipo-wrap-listo', 'tortilla wrap de maiz': 'tortilla-tipo-wrap-listo', 'tortita de arroz y quinoa': 'tortitas-de-arroz-listo',
+  'yogur bebido yopro danone': 'yogur-yopro-danone-listo', 'yogur de cabra desnatado': 'yogur-de-cabra', 'yogur de oveja natural': 'yogur-natural-listo',
+  'yogur de soja': 'yogur-de-soja-natural-listo', 'yogur desnatado': 'yogur-natural-desnatado-0-listo', 'yogur griego ligero': 'yogur-griego-0-listo',
+  'zumo de mandarina': 'mandarina-listo',
+};
+
+/** Emparejado con la lista blanca delante: un sinónimo revisado es `alta`
+ *  (si su alimento está en el catálogo); si no, la puntuación de siempre. */
+export function emparejarRevisado(nombre: string, catalogo: AlimentoCatalogo[]): { alimento?: AlimentoCatalogo; confianza: Confianza } {
+  const id = SINONIMOS_REVISADOS[normalizarTexto(nombre)];
+  if (id) {
+    const alimento = catalogo.find(a => a.id === id);
+    if (alimento) return { alimento, confianza: 'alta' };
+  }
+  return emparejar(nombre, catalogo);
 }
 
 const redondear5 = (n: number) => Math.max(5, Math.round(n / 5) * 5);
@@ -224,7 +344,7 @@ export function filasDePropuesta(receta: RecetaCruda, catalogo: AlimentoCatalogo
       return [receta.id, receta.name, String(n), ing.name, String(ing.quantity), NO_CUENTA_ID, 'no cuenta', 'alta',
         String(ing.quantity), String(ing.quantity), String(ing.quantity), '', 'sí', ''];
     }
-    const { alimento, confianza } = emparejar(ing.name, catalogo);
+    const { alimento, confianza } = emparejarRevisado(ing.name, catalogo);
     let gramos = ing.quantity;
     let nota = '';
     // Cantidades pequeñas con un alimento que tiene medida casera: probablemente son unidades.
@@ -463,8 +583,10 @@ export type VinculoAutomatico =
 
 /**
  * El vínculo de una receta sin revisión manual: solo si TODO lo que cuenta
- * empareja con el catálogo con confianza alta o media (lo dudoso se deja para
- * revisar y la receta sigue escalándose entera). Palanca: el macro que da al
+ * empareja con el catálogo con confianza alta o es un sinónimo revisado
+ * (`SINONIMOS_REVISADOS`); lo dudoso se deja para revisar y la receta sigue
+ * escalándose entera. Hasta el 26-10-2026 también entraba `media`, y por ahí
+ * se colaron 144 recetas con «Calabaza» → «Pipas de calabaza». Palanca: el macro que da al
  * menos el 60 % de sus kcal, rango de la mitad al doble; lo de pocas kcal y lo
  * que no cuenta, fijo.
  */
@@ -478,8 +600,8 @@ export function vinculoAutomatico(
     if (esIngredienteQueNoCuenta(ing.name) || gramos <= 0) {
       return { n, alimentoId: null, gramos, min: gramos, max: gramos, fijo: true };
     }
-    const { alimento, confianza } = emparejar(ing.name, catalogo);
-    if (!alimento || (confianza !== 'alta' && confianza !== 'media')) {
+    const { alimento, confianza } = emparejarRevisado(ing.name, catalogo);
+    if (!alimento || confianza !== 'alta') {
       dudosos.push(ing.name);
       return { n, alimentoId: null, gramos, min: gramos, max: gramos, fijo: true };
     }

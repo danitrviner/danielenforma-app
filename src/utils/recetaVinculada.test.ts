@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import type { AlimentoCatalogo } from './catalogoAlimentos';
 import {
-  calcularIngredientes, macrosCrudos, aplicarVinculo, mismoResultado, emparejar, propuestaDeRango,
+  calcularIngredientes, macrosCrudos, aplicarVinculo, mismoResultado, emparejar, emparejarRevisado, propuestaDeRango,
   filasDePropuesta, leerVinculos, leerRecetasNuevas, recetaCrudaNueva, esIngredienteQueNoCuenta, vinculoAutomatico,
   COLUMNAS_VINCULOS, COLUMNAS_RECETAS_NUEVAS, type RecetaCruda, type IngredienteVinculado,
 } from './recetaVinculada';
@@ -80,14 +80,64 @@ describe('cálculo', () => {
 describe('emparejado y propuesta', () => {
   it('casa por palabras y usa el estado escrito', () => {
     // «Arroz» solo cubre la mitad de «Arroz blanco»: acierta, pero se marca para mirarlo.
-    expect(emparejar('Arroz (en crudo)', LISTA)).toEqual({ alimento: ARROZ, confianza: 'media' });
+    // El alimento lleva «blanco» y el ingrediente no: a revisar (antes era media).
+    expect(emparejar('Arroz (en crudo)', LISTA)).toEqual({ alimento: ARROZ, confianza: 'baja' });
     expect(emparejar('Arroz blanco crudo', LISTA)).toEqual({ alimento: ARROZ, confianza: 'alta' });
     expect(emparejar('Arroz cocido', LISTA).alimento).toBe(ARROZ_COCIDO);
     expect(emparejar('Pechugas de pollo', LISTA)).toEqual({ alimento: POLLO, confianza: 'alta' });
-    expect(emparejar('Pollo', LISTA)).toEqual({ alimento: POLLO, confianza: 'media' });
+    expect(emparejar('Pollo', LISTA)).toEqual({ alimento: POLLO, confianza: 'baja' });
     expect(emparejar('Pechuga de pavo', [POLLO]).confianza).toBe('baja');
     expect(emparejar('Pechuga de pollo a la plancha', LISTA)).toEqual({ alimento: POLLO, confianza: 'media' });
     expect(emparejar('Quinoa', LISTA)).toEqual({ confianza: 'ninguna' });
+  });
+
+  it('el alimento con palabras de más que el ingrediente es baja; al revés, media (26-10-2026)', () => {
+    const al = (id: string, nombre: string, estado?: AlimentoCatalogo['estado']): AlimentoCatalogo =>
+      ({ id, nombre, estado, porCien: { kcal: 100, p: 1, hc: 1, g: 1 } });
+    const PIPAS = al('pipas-de-calabaza', 'Pipas de calabaza');
+    const CALABAZA = al('calabaza', 'Calabaza');
+    // 144 recetas con «Calabaza» → «Pipas de calabaza» (+533 kcal) entraron por aquí.
+    expect(emparejar('Calabaza', [PIPAS]).confianza).toBe('baja');
+    expect(emparejar('Calabaza', [PIPAS, CALABAZA])).toEqual({ alimento: CALABAZA, confianza: 'alta' });
+    expect(emparejar('Tomate seco', [al('lechuga-y-tomate', 'Lechuga y tomate')]).confianza).toBe('baja');
+    expect(emparejar('Avena', [al('bebida-de-avena', 'Bebida de avena')]).confianza).toBe('baja');
+    // Descriptores de más en el ingrediente, alimento entero dentro: media.
+    expect(emparejar('Almendras al natural', [al('almendras', 'Almendras')]).confianza).toBe('media');
+    expect(emparejar('Garbanzo cocido envasado', [al('garbanzos-cocido', 'Garbanzos', 'cocido')]).confianza).toBe('media');
+  });
+
+  it('el estado puede venir en el nombre del alimento y cereales/legumbres sin estado no son cocidos (26-10-2026)', () => {
+    const al = (id: string, nombre: string, estado?: AlimentoCatalogo['estado']): AlimentoCatalogo =>
+      ({ id, nombre, estado, porCien: { kcal: 100, p: 1, hc: 1, g: 1 } });
+    // Antes «crudos» chocaba con el estado «listo» del primero y la duda se llevaba 35 recetas.
+    const P_LISTO = al('pistachos-listo', 'Pistachos', 'listo');
+    const P_CRUDOS = al('pistachos-crudos', 'Pistachos crudos');
+    expect(emparejar('Pistachos crudos', [P_LISTO, P_CRUDOS])).toEqual({ alimento: P_CRUDOS, confianza: 'alta' });
+    expect(emparejar('Jamón Cocido', [al('jamon-serrano', 'Jamón serrano'), al('jamon-cocido', 'Jamón cocido')])).toEqual({ alimento: al('jamon-cocido', 'Jamón cocido'), confianza: 'alta' });
+    // «Arroz integral 60 g» es arroz seco: su única entrada cocida no vale (−118 kcal de mediana en 134 recetas).
+    expect(emparejar('Arroz integral', [al('arroz-integral-cocido', 'Arroz integral', 'cocido')]).confianza).toBe('baja');
+    expect(emparejar('Arroz integral (en crudo)', [al('arroz-integral-crudo', 'Arroz integral', 'crudo')]).confianza).toBe('alta');
+    // Dos entradas con las mismas palabras y peso distinto, sin estado escrito: a revisar.
+    expect(emparejar('Lentejas', [al('lentejas-seco', 'Lentejas', 'seco'), al('lentejas-cocido', 'Lentejas', 'cocido')]).confianza).toBe('baja');
+    expect(emparejar('Lentejas', [al('lentejas-seco', 'Lentejas', 'seco')]).confianza).toBe('alta');
+    expect(emparejar('Lentejas cocidas', [al('lentejas-seco', 'Lentejas', 'seco'), al('lentejas-cocido', 'Lentejas', 'cocido')])).toEqual({ alimento: al('lentejas-cocido', 'Lentejas', 'cocido'), confianza: 'alta' });
+    // Verduras no son cereal: «Brócoli» → «Brócoli (cocido)» sigue siendo alta; «Judía verde» tampoco es legumbre seca.
+    expect(emparejar('Brócoli', [al('brocoli-cocido', 'Brócoli', 'cocido')]).confianza).toBe('alta');
+    expect(emparejar('Judía verde', [al('judia-verde-cocido', 'Judía verde', 'cocido')]).confianza).toBe('alta');
+    // A igual puntuación, sin estado escrito, gana la versión sin cocer (455 recetas de «Patata» iban a la cocida).
+    expect(emparejar('Patata', [al('patata-cocido', 'Patata', 'cocido'), al('patata-crudo', 'Patata', 'crudo')]).alimento?.id).toBe('patata-crudo');
+    expect(emparejar('Patata', [al('patata-cocido', 'Patata', 'cocido'), al('patata-crudo', 'Patata', 'crudo')]).confianza).toBe('alta');
+    expect(emparejar('Couscous', [al('couscous-cocido', 'Couscous cocido'), al('couscous', 'Couscous')])).toEqual({ alimento: al('couscous', 'Couscous'), confianza: 'alta' });
+    expect(emparejar('Couscous cocido', [al('couscous', 'Couscous'), al('couscous-cocido', 'Couscous cocido')]).alimento?.id).toBe('couscous-cocido');
+  });
+
+  it('los sinónimos revisados mandan sobre la puntuación', () => {
+    const al = (id: string, nombre: string): AlimentoCatalogo => ({ id, nombre, porCien: { kcal: 100, p: 1, hc: 1, g: 1 } });
+    const ALMENDRAS = al('almendras-listo', 'Almendras');
+    expect(emparejarRevisado('Almendras al natural', [ALMENDRAS])).toEqual({ alimento: ALMENDRAS, confianza: 'alta' });
+    // Si el alimento del sinónimo no está en el catálogo, se puntúa como siempre.
+    expect(emparejarRevisado('Almendras al natural', [al('otro', 'Almendras')]).confianza).toBe('media');
+    expect(emparejarRevisado('Calabaza', [al('pipas-de-calabaza', 'Pipas de calabaza')]).confianza).toBe('baja');
   });
 
   it('sal y especias no cuentan', () => {
@@ -100,6 +150,13 @@ describe('emparejado y propuesta', () => {
     for (const n of ['Albahaca fresca', 'Tomillo seco', 'Té', 'Té matcha', 'Café solo', 'Vino blanco', 'Curry en polvo', 'Nuez moscada', 'Piel de limón'])
       expect(esIngredienteQueNoCuenta(n), n).toBe(true);
     for (const n of ['Tomate rojo', 'Ternera', 'Tempeh', 'Café con leche', 'Mentas de chocolate', 'Chile con carne', 'Cebolla'])
+      expect(esIngredienteQueNoCuenta(n), n).toBe(false);
+  });
+
+  it('la levadura química y la infusión no cuentan; la nutricional y la de cerveza sí (26-10-2026)', () => {
+    for (const n of ['Levadura', 'Levadura química', 'Levadura en polvo', 'Infusión de manzanilla', 'Semillas de cilantro', 'Clavo de olor'])
+      expect(esIngredienteQueNoCuenta(n), n).toBe(true);
+    for (const n of ['Levadura nutricional', 'Levadura de cerveza'])
       expect(esIngredienteQueNoCuenta(n), n).toBe(false);
   });
 
@@ -215,5 +272,16 @@ describe('vinculoAutomatico', () => {
   it('si algo no empareja seguro, no vincula y dice qué', () => {
     const r = vinculoAutomatico({ ingredients: [{ name: 'Arroz', quantity: 200 }, { name: 'Salsa secreta del chef', quantity: 30 }] }, CAT);
     expect(r).toEqual({ ok: false, dudosos: ['Salsa secreta del chef'] });
+  });
+
+  it('media ya no vincula sola; un sinónimo revisado sí (26-10-2026)', () => {
+    const CAT2 = [...CAT, cat('almendras-listo', 'Almendras', { kcal: 600, p: 21, hc: 7, g: 52 }), cat('pipas-de-calabaza', 'Pipas de calabaza', { kcal: 560, p: 30, hc: 11, g: 49 })];
+    expect(vinculoAutomatico({ ingredients: [{ name: 'Pechuga de pollo a la plancha', quantity: 150 }] }, CAT2))
+      .toEqual({ ok: false, dudosos: ['Pechuga de pollo a la plancha'] });
+    expect(vinculoAutomatico({ ingredients: [{ name: 'Calabaza', quantity: 200 }] }, CAT2))
+      .toEqual({ ok: false, dudosos: ['Calabaza'] });
+    const r = vinculoAutomatico({ ingredients: [{ name: 'Almendras al natural', quantity: 30 }] }, CAT2);
+    expect(r.ok).toBe(true);
+    if ('ingredientes' in r) expect(r.ingredientes[0]).toMatchObject({ alimentoId: 'almendras-listo', palanca: 'grasa' });
   });
 });
