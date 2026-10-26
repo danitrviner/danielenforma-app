@@ -317,7 +317,10 @@ export function propuestaDeRango(gramos: number, alimento?: AlimentoCatalogo): P
   const total = e.proteina + e.hc + e.grasa;
   const dominante = total > 0 ? (Object.entries(e) as [Palanca, number][]).find(([, v]) => v / total >= 0.6)?.[0] : undefined;
   if (!dominante) return { min: gramos, max: gramos, fijo: true };
-  return { min: redondear5(gramos * 0.5), max: redondear5(gramos * 2), palanca: dominante };
+  // El rango siempre contiene los gramos de la receta: con `redondear5` solo,
+  // 3 g de aceite daban {min 5, max 5} y el ajuste subía el aceite a 5 g sin
+  // que nadie lo pidiera (1.100 palancas del índice, revisión 26-10-2026).
+  return { min: Math.min(gramos, redondear5(gramos * 0.5)), max: Math.max(gramos, redondear5(gramos * 2)), palanca: dominante };
 }
 
 /* ── CSV de vínculos ─────────────────────────────────────────────────────── */

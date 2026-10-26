@@ -163,6 +163,8 @@ describe('emparejado y propuesta', () => {
   it('palanca = macro con ≥60 % de las kcal; si no hay, fijo', () => {
     expect(propuestaDeRango(90, ARROZ)).toEqual({ min: 45, max: 180, palanca: 'hc' });
     expect(propuestaDeRango(10, ACEITE)).toEqual({ min: 5, max: 20, palanca: 'grasa' });
+    // El rango contiene siempre los gramos de la receta: 3 g de aceite no se suben a 5 (26-10-2026).
+    expect(propuestaDeRango(3, ACEITE)).toEqual({ min: 3, max: 5, palanca: 'grasa' });
     expect(propuestaDeRango(80, TOMATE)).toEqual({ min: 80, max: 80, fijo: true });
     expect(propuestaDeRango(30)).toEqual({ min: 30, max: 30, fijo: true });
   });
