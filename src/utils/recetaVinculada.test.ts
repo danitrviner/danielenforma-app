@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import type { AlimentoCatalogo } from './catalogoAlimentos';
 import {
   calcularIngredientes, macrosCrudos, aplicarVinculo, mismoResultado, emparejar, propuestaDeRango,
-  filasDePropuesta, leerVinculos, leerRecetasNuevas, recetaCrudaNueva, esIngredienteQueNoCuenta,
+  filasDePropuesta, leerVinculos, leerRecetasNuevas, recetaCrudaNueva, esIngredienteQueNoCuenta, vinculoAutomatico,
   COLUMNAS_VINCULOS, COLUMNAS_RECETAS_NUEVAS, type RecetaCruda, type IngredienteVinculado,
 } from './recetaVinculada';
 
@@ -186,5 +186,34 @@ describe('recetas nuevas', () => {
     expect(recetas.map(r => r.nombre)).toEqual(['X']);
     expect(errores[0].mensaje).toContain('marciano');
     expect(avisos.map(a => a.mensaje).join(' ')).toContain('Sin momentos');
+  });
+});
+
+describe('vinculoAutomatico', () => {
+  const cat = (id: string, nombre: string, porCien: { kcal: number; p: number; hc: number; g: number }) =>
+    ({ id, nombre, porCien }) as Parameters<typeof vinculoAutomatico>[1][number];
+  const CAT = [
+    cat('arroz', 'Arroz', { kcal: 360, p: 6.7, hc: 80, g: 0.6 }),
+    cat('pollo', 'Pechuga de pollo', { kcal: 110, p: 23, hc: 0, g: 1.6 }),
+    cat('tomate', 'Tomate rojo', { kcal: 18, p: 0.9, hc: 3.9, g: 0.2 }),
+    cat('aceite', 'Aceite de oliva', { kcal: 884, p: 0, hc: 0, g: 100 }),
+  ];
+
+  it('vincula todo lo que empareja seguro, con palancas y verduras fijas', () => {
+    const r = vinculoAutomatico({ ingredients: [
+      { name: 'Arroz', quantity: 200 }, { name: 'Pechuga de pollo', quantity: 100 },
+      { name: 'Tomate rojo', quantity: 80 }, { name: 'Aceite de oliva', quantity: 10 }, { name: 'Sal', quantity: 1 },
+    ] }, CAT);
+    expect(r.ok).toBe(true);
+    if (!('ingredientes' in r)) return;
+    expect(r.ingredientes.map(i => [i.alimentoId, i.palanca ?? (i.fijo ? 'fijo' : '')])).toEqual([
+      ['arroz', 'hc'], ['pollo', 'proteina'], ['tomate', 'fijo'], ['aceite', 'grasa'], [null, 'fijo'],
+    ]);
+    expect(r.ingredientes[0]).toMatchObject({ min: 100, max: 400 });
+  });
+
+  it('si algo no empareja seguro, no vincula y dice qué', () => {
+    const r = vinculoAutomatico({ ingredients: [{ name: 'Arroz', quantity: 200 }, { name: 'Salsa secreta del chef', quantity: 30 }] }, CAT);
+    expect(r).toEqual({ ok: false, dudosos: ['Salsa secreta del chef'] });
   });
 });

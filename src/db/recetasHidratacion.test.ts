@@ -53,3 +53,17 @@ describe('lo que no es un plato sale de los platos principales', () => {
     expect(esSuplementoPuroPorNombre('Descafeinado con leche')).toBe(false);
   });
 });
+
+describe('vínculo compacto del índice (26-10-2026)', () => {
+  it('rehidrata las tuplas con los valores por 100 g de cada alimento', () => {
+    const out = hidratarEntradaIndice(
+      { ...receta({ name: 'Arroz con pollo' }), vin: [[0, 'arroz', 90, 45, 180, 'h'], [1, null, 1, 1, 1, 0]] } as never,
+      { arroz: [360, 6.7, 80, 0.6] },
+    );
+    expect(out.vinculo?.ingredientes).toEqual([
+      { n: 0, alimentoId: 'arroz', gramos: 90, min: 45, max: 180, palanca: 'hc', porCien: { kcal: 360, p: 6.7, hc: 80, g: 0.6 } },
+      { n: 1, alimentoId: null, gramos: 1, min: 1, max: 1, fijo: true },
+    ]);
+    expect((out as unknown as { vin?: unknown }).vin).toBeUndefined();
+  });
+});

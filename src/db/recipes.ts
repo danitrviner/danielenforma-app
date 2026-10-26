@@ -3,7 +3,7 @@ import { Recipe, RecipeFavorites } from '../types';
 import type { ReglasDeReceta } from '../utils/reglasDeReceta';
 import { filtrarPorLista, type AccesoGlobalARecetas, type ListaDeMenu } from '../utils/accesoARecetas';
 import { forceLocalOnly, setLocalBypassMode, stripUndefined, esFalloDePermisos } from './core';
-import { OWNER_RECETARIO, OWNER_RECETARIO_TODOS, hidratarEntradaIndice, encajaCategoria, type FiltroRapidas } from './recetasHidratacion';
+import { OWNER_RECETARIO, OWNER_RECETARIO_TODOS, hidratarEntradaIndice, encajaCategoria, type FiltroRapidas, type AlimentosDelIndice } from './recetasHidratacion';
 import { escribirLocal } from '../utils/almacenLocal';
 import { registrarCambio } from './cambios';
 import { resumirReglasDeReceta } from '../utils/cambiosAtleta';
@@ -117,8 +117,8 @@ export interface RecetasFilters {
 // `fetch` normal); lo único que cruza a un Web Worker es el parseo, que es lo
 // que de verdad bloqueaba la pantalla — ver recetasIndiceWorker.ts.
 function parsearIndiceEnPrincipal(texto: string): Recipe[] {
-  const datos = JSON.parse(texto) as { recetas?: Recipe[] };
-  return (datos.recetas ?? []).map(hidratarEntradaIndice);
+  const datos = JSON.parse(texto) as { recetas?: Recipe[]; alimentos?: AlimentosDelIndice };
+  return (datos.recetas ?? []).map(r => hidratarEntradaIndice(r, datos.alimentos));
 }
 
 function parsearIndiceEnWorker(texto: string): Promise<Recipe[]> {

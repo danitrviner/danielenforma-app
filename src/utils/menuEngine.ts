@@ -257,7 +257,8 @@ export function recipeMatchesSlot(recipe: Recipe, slot: number): boolean {
 export interface MenuCandidate {
   recipe: Recipe;
   scale: number;
-  /** Receta base ajustada por ingredientes (N-06); `scale` es entonces 1. */
+  /** Ajuste por ingredientes (receta vinculada): gramos FINALES de cada uno,
+   *  ya con la escala aplicada. */
   ajuste?: AjusteDeReceta;
   /** kcal y gramos del plato a esa escala. */
   macros: Macros;
@@ -377,14 +378,13 @@ export function bestScaleFit(
   recipe: Recipe, target: Macros, mode: DietMode = 'OMNIVORO',
 ): { scale: number; macros: Macros; score: number; ajuste?: AjusteDeReceta } | null {
   if (target.kcal <= 0) return null;
-  const vinculados = recipe.vinculo?.ingredientes;
-  if (sePuedeAjustar(vinculados)) {
-    const r = ajustarReceta(vinculados, { p: target.p, hc: target.hc, g: target.g }, (recipe.ingredientsText ?? []).map(i => i.name));
-    if (!r.encaja) return null;
-    const macros: Macros = { kcal: r.total.kcal, p: r.total.p, hc: r.total.hc, g: r.total.g };
-    return { scale: 1, macros, score: errorPonderado(target, macros), ajuste: { gramos: r.gramos, cambios: r.cambios } };
-  }
   const base = macrosBaseDeReceta(recipe, mode);
+  const vinculados = recipe.vinculo?.ingredientes;
+  if (sePuedeAjustar(vinculados) && base) {
+    const ajustada = mejorEscalaAjustada(recipe, vinculados, target, base);
+    if (ajustada) return ajustada;
+    // Ni moviendo sus alimentos encaja: se escala entera, como cualquier otra.
+  }
   if (!base) return null;
   const ideal = target.kcal / base.kcal;
   if (ideal < MENU_SCALES[0]) return null;
@@ -399,6 +399,36 @@ export function bestScaleFit(
     if (!mejor || score < mejor.score) mejor = { scale, macros, score };
   }
   return mejor;
+}
+
+/* Escala + ajuste por alimento (Dani, 26-10-2026: «que solo se escale el
+   arroz, o solo el pollo»). Primero la ración entera a las escalas cercanas a
+   la que haría falta; dentro de cada una, los alimentos que se pueden mover
+   (palancas) dentro de su rango para clavar los macros. Gana la que mejor
+   cuadra, y a igualdad la que menos alimentos toca. Los gramos del ajuste son
+   ya los finales (con la escala aplicada). */
+function mejorEscalaAjustada(
+  recipe: Recipe, vinculados: NonNullable<Recipe['vinculo']>['ingredientes'], target: Macros, base: Macros,
+): { scale: number; macros: Macros; score: number; ajuste: AjusteDeReceta } | null {
+  const ideal = target.kcal / base.kcal;
+  const nombres = (recipe.ingredientsText ?? []).map(i => i.name);
+  const pesos = pesosPorMacro(target);
+  let mejor: { scale: number; macros: Macros; score: number; ajuste: AjusteDeReceta; orden: number } | null = null;
+  for (const scale of MENU_SCALES) {
+    if (Math.abs(scale - ideal) > 0.5) continue;
+    const escalados = vinculados.map(i => ({ ...i, gramos: i.gramos * scale, min: i.min * scale, max: i.max * scale }));
+    const r = ajustarReceta(escalados, { p: target.p, hc: target.hc, g: target.g }, nombres);
+    if (!r.encaja) continue;
+    const macros: Macros = { kcal: r.total.kcal, p: r.total.p, hc: r.total.hc, g: r.total.g };
+    const score = errorPonderado(target, macros, pesos);
+    // A igualdad, la que menos alimentos toca y la escala más cercana a la ideal.
+    const orden = score + r.cambios.length * 5 + Math.abs(scale - ideal) * 10;
+    if (!mejor || orden < mejor.orden) {
+      const cambios = r.cambios.map(c => ({ ...c, antes: Math.round(c.antes), despues: Math.round(c.despues) }));
+      mejor = { scale, macros, score, ajuste: { gramos: r.gramos.map(g => ({ n: g.n, gramos: Math.round(g.gramos) })), cambios }, orden };
+    }
+  }
+  return mejor ? { scale: mejor.scale, macros: mejor.macros, score: mejor.score, ajuste: mejor.ajuste } : null;
 }
 
 export interface RankOptions {

@@ -450,3 +450,43 @@ export function recetaCrudaNueva(
   if (out.receta.vinculo) delete out.receta.vinculo.antes;
   return out;
 }
+
+/* ── Vinculación automática (bloque B, 26-10-2026) ───────────────────────── */
+
+/** Por debajo de esto (kcal por 100 g) un alimento no se mueve al ajustar:
+ *  verduras, caldos, salsas ligeras. Dani: «verduras, especias y salsas fijas». */
+export const KCAL_MIN_PALANCA = 70;
+
+export type VinculoAutomatico =
+  | { ok: true; ingredientes: IngredienteVinculado[] }
+  | { ok: false; dudosos: string[] };
+
+/**
+ * El vínculo de una receta sin revisión manual: solo si TODO lo que cuenta
+ * empareja con el catálogo con confianza alta o media (lo dudoso se deja para
+ * revisar y la receta sigue escalándose entera). Palanca: el macro que da al
+ * menos el 60 % de sus kcal, rango de la mitad al doble; lo de pocas kcal y lo
+ * que no cuenta, fijo.
+ */
+export function vinculoAutomatico(
+  receta: Pick<RecetaCruda, 'ingredients'>,
+  catalogo: AlimentoCatalogo[],
+): VinculoAutomatico {
+  const dudosos: string[] = [];
+  const ingredientes: IngredienteVinculado[] = receta.ingredients.map((ing, n) => {
+    const gramos = Number(ing.quantity) || 0;
+    if (esIngredienteQueNoCuenta(ing.name) || gramos <= 0) {
+      return { n, alimentoId: null, gramos, min: gramos, max: gramos, fijo: true };
+    }
+    const { alimento, confianza } = emparejar(ing.name, catalogo);
+    if (!alimento || (confianza !== 'alta' && confianza !== 'media')) {
+      dudosos.push(ing.name);
+      return { n, alimentoId: null, gramos, min: gramos, max: gramos, fijo: true };
+    }
+    const rango = alimento.porCien.kcal < KCAL_MIN_PALANCA
+      ? { min: gramos, max: gramos, fijo: true }
+      : propuestaDeRango(gramos, alimento);
+    return { n, alimentoId: alimento.id, gramos, ...rango };
+  });
+  return dudosos.length > 0 ? { ok: false, dudosos } : { ok: true, ingredientes };
+}
