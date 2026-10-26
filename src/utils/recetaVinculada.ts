@@ -131,8 +131,18 @@ function palabras(s: string): string[] {
 
 export type Confianza = 'alta' | 'media' | 'baja' | 'ninguna';
 
-/** Ingredientes que no aportan nada que contar: se proponen como «no cuenta». */
-const NO_CUENTA = /^(sal|pimienta|agua|especias?|oregano|perejil|ajo en polvo|comino|pimenton|canela|edulcorante|vinagre|limon \(zumo\)|zumo de limon|hielo)\b/;
+/** Ingredientes que no aportan nada que contar: se proponen como «no cuenta».
+ *  La segunda parte son los 46 que Dani dio por buenos el 26-10-2026
+ *  (especias, hierbas, café, té, vino de cocinar y cantidades mínimas). */
+const NO_CUENTA = new RegExp('^(' + [
+  'sal', 'pimienta', 'agua', 'especias?', 'oregano', 'perejil', 'ajo en polvo', 'comino', 'pimenton', 'canela',
+  'edulcorante', 'vinagre', 'limon \\(zumo\\)', 'zumo de limon', 'hielo',
+  'albahaca', 'cebollino', 'curry en polvo', 'cilantro', 'hojas de cilantro', 'romero', 'laurel', 'menta', 'hierbabuena',
+  'tomillo', 'hierbas provenzales', 'eneldo', 'estragon', 'nuez moscada', 'azafran', 'cardamomo', 'semillas de comino',
+  'curcuma', 'raiz de curcuma', 'raiz de jengibre', 'chile en polvo', 'chile verde', 'cebolla en polvo', 'tabasco', 'wasabi',
+  'extracto de vainilla', 'piel de limon', 'piel de naranja', 'vino', 'cafe solo', 'cafe soluble', 'cafe descafeinado',
+  'cafe espresso', 'te', 'te matcha', 'bicarbonato', 'electrolitos', 'trufa negra', 'sacarina',
+].join('|') + ')\\b');
 
 export function esIngredienteQueNoCuenta(nombre: string): boolean {
   return NO_CUENTA.test(normalizarTexto(nombre));
