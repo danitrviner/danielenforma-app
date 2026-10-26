@@ -2,9 +2,12 @@
 // Si algo no cuadra, el ejecutor de la tool devuelve estos issues como
 // tool_result de error para que el modelo se autocorrija — nunca llega una
 // propuesta rota a la tarjeta de revisión de Dani.
-import { FoodCategory, DietMeal, MuscleGroup, MUSCLE_LABELS } from '../types';
-import { CATS, BUDGET_CATS, computeDietPlaced } from '../utils/exchangeHelpers';
+import { FoodCategory, DietItem, Macros, MealItem, MuscleGroup, MUSCLE_LABELS } from '../types';
+import { CATS, BUDGET_CATS } from '../utils/exchangeHelpers';
 import { SYSTEM_FOODS } from '../nutricion_seed_en_forma';
+import { parseBaseGrams } from '../utils/conversionNutricional';
+import { macrosDesdeGramos, redondearMacros } from '../utils/macros';
+import { macrosDeLineas, objetivoDeDieta } from '../utils/macrosLegado';
 
 export interface ValidationIssue { field: string; message: string }
 
@@ -13,78 +16,187 @@ export interface ValidationIssue { field: string; message: string }
  * añade los suyos al banco (`foodItems`), y esos están en Firestore, adonde
  * este módulo no puede ir ni debe.
  *
- * Por eso `validateDietPayload` acepta etiquetas extra: quien la llama sabe
+ * Por eso `validateDietPayload` acepta alimentos extra: quien la llama sabe
  * leer el banco del coach y le pasa la unión. Sin eso, el asistente proponía
  * un alimento que Dani tiene creado, el validador lo rechazaba por
  * «no reconocido» y el modelo se quedaba dando vueltas buscando un sinónimo
  * del sistema para algo que ya existía.
  */
-const SYSTEM_FOOD_LABELS = new Set(SYSTEM_FOODS.map(f => f.label));
-const BUDGET_TOLERANCE = 0.26; // margen por redondeos de 0.25 en varias comidas
+type AlimentoDelBanco = Pick<MealItem, 'label' | 'category' | 'gramosPorIntercambio'>;
+const SYSTEM_FOOD_BY_LABEL = new Map<string, AlimentoDelBanco>(SYSTEM_FOODS.map(f => [f.label, f]));
 
-export interface DietUpdatePayload {
-  budget: Record<FoodCategory, number>;
-  meals?: { name: string; items: { category: FoodCategory; foodLabel: string; quantity: number }[] }[];
+/* Dietas en kcal y gramos (10-2026). El asistente pauta el OBJETIVO del día en
+ * gramos de proteína, hidratos y grasa —las kcal salen solas, 4/4/9— y, si
+ * Dani se lo pide, alimentos por gramos (o por raciones los que van sin pesar).
+ * Un cupo en intercambios (`budget`) aún puede llegar de un chat empezado
+ * antes del cambio: se lee con las equivalencias de siempre. */
+
+/** El objetivo del día, tal y como lo manda el asistente. */
+export interface ObjetivoPropuesto { proteina_g: number; hidratos_g: number; grasa_g: number; kcal?: number }
+
+/** Un alimento de una comida propuesta. `category`/`quantity` son el formato
+ *  viejo (intercambios): `quantity` se lee como raciones. */
+export interface ItemPropuesto {
+  foodLabel: string;
+  gramos?: number;
+  raciones?: number;
+  category?: FoodCategory;
+  quantity?: number;
 }
 
-export function validateDietPayload(
-  payload: DietUpdatePayload,
-  /** Etiquetas del banco del coach, además de las del sistema. */
-  etiquetasDelCoach?: Iterable<string>,
-): ValidationIssue[] {
-  const issues: ValidationIssue[] = [];
-  const conocidas = etiquetasDelCoach
-    ? new Set([...SYSTEM_FOOD_LABELS, ...etiquetasDelCoach])
-    : SYSTEM_FOOD_LABELS;
+export interface DietUpdatePayload {
+  objetivo?: ObjetivoPropuesto;
+  budget?: Partial<Record<FoodCategory, number>>;
+  meals?: { name: string; items: ItemPropuesto[] }[];
+}
 
-  for (const cat of BUDGET_CATS) {
-    const v = payload.budget?.[cat];
-    if (typeof v !== 'number' || !Number.isFinite(v) || v < 0) {
-      issues.push({ field: `budget.${cat}`, message: `budget.${cat} debe ser un número ≥ 0 (recibido: ${JSON.stringify(v)})` });
+export interface DietaLeida {
+  issues: ValidationIssue[];
+  /** El objetivo en kcal y gramos; null si no se pudo leer. */
+  objetivo: Macros | null;
+  /** Las comidas con sus alimentos ya como líneas de dieta. */
+  meals: { name: string; items: DietItem[] }[];
+}
+
+/** Por debajo o por encima de esto, el objetivo es casi seguro un error. */
+const KCAL_MIN = 600;
+const KCAL_MAX = 7000;
+/** Lo que pueden separarse las kcal que manda el modelo de las de sus gramos. */
+const TOLERANCIA_KCAL_DECLARADAS = 0.05;
+/** Lo que pueden separarse las comidas del objetivo, por macro: el 10 % o 10 g
+ *  (5 g en grasa), lo que sea mayor. */
+const TOLERANCIA_COMIDAS = { p: 10, hc: 10, g: 5 } as const;
+
+const numeroValido = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v) && v >= 0;
+
+function leerObjetivo(payload: DietUpdatePayload, issues: ValidationIssue[]): Macros | null {
+  const o = payload.objetivo;
+  if (o) {
+    const campos = [['proteina_g', o.proteina_g], ['hidratos_g', o.hidratos_g], ['grasa_g', o.grasa_g]] as const;
+    for (const [campo, v] of campos) {
+      if (!numeroValido(v)) issues.push({ field: `objetivo.${campo}`, message: `objetivo.${campo} debe ser un número ≥ 0 en gramos (recibido: ${JSON.stringify(v)})` });
     }
+    if (issues.length) return null;
+    const m = macrosDesdeGramos(Math.round(o.proteina_g), Math.round(o.hidratos_g), Math.round(o.grasa_g));
+    if (m.kcal < KCAL_MIN || m.kcal > KCAL_MAX) {
+      issues.push({ field: 'objetivo', message: `P ${m.p} g · HC ${m.hc} g · G ${m.g} g son ${m.kcal} kcal: fuera de lo razonable (${KCAL_MIN}-${KCAL_MAX})` });
+    }
+    if (o.kcal !== undefined) {
+      if (!numeroValido(o.kcal)) {
+        issues.push({ field: 'objetivo.kcal', message: `objetivo.kcal debe ser un número (recibido: ${JSON.stringify(o.kcal)})` });
+      } else if (Math.abs(o.kcal - m.kcal) > m.kcal * TOLERANCIA_KCAL_DECLARADAS) {
+        issues.push({
+          field: 'objetivo.kcal',
+          message: `objetivo.kcal=${o.kcal} no cuadra con los gramos: P×4 + HC×4 + G×9 = ${m.kcal} kcal. Ajusta los gramos o quita kcal (se calcula sola).`,
+        });
+      }
+    }
+    return m;
+  }
+  if (payload.budget) {
+    for (const cat of BUDGET_CATS) {
+      const v = payload.budget[cat];
+      if (!numeroValido(v)) issues.push({ field: `budget.${cat}`, message: `budget.${cat} debe ser un número ≥ 0 (recibido: ${JSON.stringify(v)})` });
+    }
+    return issues.length ? null : objetivoDeDieta({ budget: { HC: 0, PROT: 0, GRASA: 0, MIX_HC: 0, MIX_GRASA: 0, ...payload.budget } });
+  }
+  issues.push({ field: 'objetivo', message: 'Falta objetivo: { proteina_g, hidratos_g, grasa_g } del día, en gramos' });
+  return null;
+}
+
+/**
+ * Lee una dieta propuesta: su objetivo en kcal y gramos y sus comidas como
+ * líneas de dieta, con los problemas que haya. Sin comidas vale: el asistente
+ * propone el OBJETIVO y los alimentos los coloca Dani en el editor de dietas.
+ */
+export function leerDietaPropuesta(
+  payload: DietUpdatePayload,
+  /** Alimentos del banco del coach (o sus etiquetas), además de los del sistema. */
+  bancoDelCoach?: Iterable<AlimentoDelBanco | string>,
+): DietaLeida {
+  const issues: ValidationIssue[] = [];
+  const objetivo = leerObjetivo(payload, issues);
+
+  const banco = new Map(SYSTEM_FOOD_BY_LABEL);
+  const soloEtiquetas = new Set<string>();
+  for (const f of bancoDelCoach ?? []) {
+    if (typeof f === 'string') soloEtiquetas.add(f);
+    else if (f.label) banco.set(f.label, f);
   }
 
-  // Sin comidas vale: Dani solo quiere el PRESUPUESTO de intercambios de la
-  // IA; los alimentos los coloca él en el editor de dietas. Si vienen comidas,
-  // se validan como siempre.
   if (payload.meals !== undefined && !Array.isArray(payload.meals)) {
     issues.push({ field: 'meals', message: 'meals debe ser una lista (o no venir)' });
   }
 
-  for (const meal of payload.meals ?? []) {
+  const meals = (Array.isArray(payload.meals) ? payload.meals : []).map(meal => {
     if (!meal.name?.trim()) issues.push({ field: 'meals[].name', message: 'Cada comida necesita un nombre' });
+    const items: DietItem[] = [];
     for (const item of meal.items ?? []) {
-      if (!CATS.includes(item.category)) {
-        issues.push({ field: 'item.category', message: `Categoría inválida "${item.category}" en "${item.foodLabel}" — válidas: ${CATS.join(', ')}` });
-      }
-      const q = item.quantity;
-      if (typeof q !== 'number' || !Number.isFinite(q) || q <= 0 || Math.abs(Math.round(q * 4) - q * 4) > 1e-6) {
-        issues.push({ field: 'item.quantity', message: `Cantidad inválida en "${item.foodLabel}" (${q}) — debe ser múltiplo positivo de 0.25` });
-      }
-      if (!conocidas.has(item.foodLabel)) {
+      const food = banco.get(item.foodLabel);
+      if (!food && !soloEtiquetas.has(item.foodLabel)) {
         issues.push({
           field: 'item.foodLabel',
           message: `Alimento no reconocido: "${item.foodLabel}" — usa get_food_library para ver las etiquetas exactas válidas`,
         });
+        continue;
       }
+      const category = food?.category ?? item.category;
+      if (!category || !CATS.includes(category)) {
+        issues.push({ field: 'item.category', message: `No sé de qué grupo es "${item.foodLabel}"` });
+        continue;
+      }
+      const base = parseBaseGrams(item.foodLabel) ?? food?.gramosPorIntercambio ?? null;
+      let raciones: number;
+      if (item.gramos !== undefined) {
+        if (!numeroValido(item.gramos) || item.gramos <= 0) {
+          issues.push({ field: 'item.gramos', message: `Gramos inválidos en "${item.foodLabel}" (${JSON.stringify(item.gramos)})` });
+          continue;
+        }
+        if (!base) {
+          issues.push({ field: 'item.gramos', message: `"${item.foodLabel}" va sin pesar: indica raciones en vez de gramos` });
+          continue;
+        }
+        raciones = item.gramos / base;
+      } else {
+        const r = item.raciones ?? item.quantity;
+        if (!numeroValido(r) || r <= 0) {
+          issues.push({ field: 'item.gramos', message: `Falta la cantidad de "${item.foodLabel}": gramos (o raciones si va sin pesar)` });
+          continue;
+        }
+        raciones = r;
+      }
+      items.push({
+        category,
+        foodLabel: item.foodLabel,
+        quantity: Math.round(raciones * 100) / 100,
+        ...(base ? { baseGrams: base } : {}),
+      });
+    }
+    return { name: meal.name, items };
+  });
+
+  // Coherencia: lo que suman las comidas debe cuadrar con el objetivo.
+  const lineas = meals.flatMap(m => m.items);
+  if (issues.length === 0 && objetivo && lineas.length > 0) {
+    const puesto = redondearMacros(macrosDeLineas(lineas));
+    const fuera = (['p', 'hc', 'g'] as const).filter(k =>
+      Math.abs(puesto[k] - objetivo[k]) > Math.max(TOLERANCIA_COMIDAS[k], objetivo[k] * 0.1));
+    if (fuera.length) {
+      issues.push({
+        field: 'meals',
+        message: `Las comidas suman P ${Math.round(puesto.p)} g · HC ${Math.round(puesto.hc)} g · G ${Math.round(puesto.g)} g (${Math.round(puesto.kcal)} kcal) y el objetivo es P ${objetivo.p} g · HC ${objetivo.hc} g · G ${objetivo.g} g (${objetivo.kcal} kcal): deben cuadrar (ajusta el objetivo o los gramos)`,
+      });
     }
   }
 
-  // Coherencia: lo colocado en las comidas debe cuadrar con el presupuesto.
-  if (issues.length === 0 && (payload.meals?.length ?? 0) > 0) {
-    const placed = computeDietPlaced(payload.meals as DietMeal[]);
-    for (const cat of BUDGET_CATS) {
-      const budget = payload.budget[cat] ?? 0;
-      if (Math.abs(placed[cat] - budget) > BUDGET_TOLERANCE) {
-        issues.push({
-          field: `budget.${cat}`,
-          message: `budget.${cat}=${budget} pero las comidas colocan ${placed[cat]} — deben cuadrar (ajusta el presupuesto o los items)`,
-        });
-      }
-    }
-  }
+  return { issues, objetivo, meals };
+}
 
-  return issues;
+export function validateDietPayload(
+  payload: DietUpdatePayload,
+  bancoDelCoach?: Iterable<AlimentoDelBanco | string>,
+): ValidationIssue[] {
+  return leerDietaPropuesta(payload, bancoDelCoach).issues;
 }
 
 // ── Mesociclos ──────────────────────────────────────────────────────────────
@@ -202,11 +314,11 @@ export function validateNutritionPhases(
       issues.push({ field: `phases[${i}].diet_id`, message: `Fase ${donde}: la dieta ${f.diet_id} no es de este atleta` });
     }
     if (tieneDieta) {
-      const d = f.diet as { name?: unknown; budget?: unknown; meals?: unknown };
-      if (typeof d.name !== 'string' || !d.name.trim() || !d.budget || !Array.isArray(d.meals)) {
-        issues.push({ field: `phases[${i}].diet`, message: `Fase ${donde}: la dieta necesita name, budget y meals` });
+      const d = f.diet as { name?: unknown; objetivo?: unknown; budget?: unknown; meals?: unknown };
+      if (typeof d.name !== 'string' || !d.name.trim() || (!d.objetivo && !d.budget)) {
+        issues.push({ field: `phases[${i}].diet`, message: `Fase ${donde}: la dieta necesita name y objetivo` });
       } else {
-        for (const issue of validateDietPayload({ budget: d.budget as Record<FoodCategory, number>, meals: d.meals as DietUpdatePayload['meals'] })) {
+        for (const issue of validateDietPayload(d as DietUpdatePayload)) {
           issues.push({ field: `phases[${i}].diet.${issue.field}`, message: `Fase ${donde}: ${issue.message}` });
         }
       }

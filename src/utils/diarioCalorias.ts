@@ -1,6 +1,5 @@
 import type { DietItem, DietMeal } from '../types';
 import { resumenDelDia } from './resumenDelDia';
-import { exchangeToKcal } from './nutritionConstants';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    El Diario en modo «Calorías y macros» (Dani, 25-10-2026)
@@ -33,7 +32,6 @@ export interface LineaDiario {
   tipo: 'alimento' | 'producto' | 'plato';
 }
 
-const r1 = (n: number) => Math.round(n * 10) / 10;
 
 /** kcal y macros de unas líneas del banco, a partir de sus intercambios. */
 function desdeIntercambios(items: DietItem[]) {
@@ -127,42 +125,4 @@ export function lineasDelDiario(
 
 export function kcalDeLineas(lineas: LineaDiario[]): number {
   return Math.round(lineas.reduce((s, l) => s + (l.kcal ?? 0), 0));
-}
-
-export function macrosDeLineas(lineas: LineaDiario[]): { p: number; hc: number; g: number } {
-  const t = lineas.reduce((a, l) => (l.macros ? { p: a.p + l.macros.p, hc: a.hc + l.macros.hc, g: a.g + l.macros.g } : a), { p: 0, hc: 0, g: 0 });
-  return { p: r1(t.p), hc: r1(t.hc), g: r1(t.g) };
-}
-
-/** Enteros que suman exactamente 100 (resto mayor). */
-function aCien(pesos: number[]): number[] {
-  const total = pesos.reduce((s, p) => s + p, 0);
-  if (pesos.length === 0) return [];
-  if (!(total > 0)) return aCien(pesos.map(() => 1));
-  const exactos = pesos.map(p => (p / total) * 100);
-  const base = exactos.map(Math.floor);
-  let falta = 100 - base.reduce((s, b) => s + b, 0);
-  const orden = exactos.map((e, i) => ({ i, resto: e - Math.floor(e) })).sort((a, b) => b.resto - a.resto);
-  for (const { i } of orden) { if (falta <= 0) break; base[i]++; falta--; }
-  return base;
-}
-
-/**
- * Reparto por defecto, en % del día: el que ya tenía la dieta por comidas
- * pasado a kcal, y si no tenía ninguno, a partes iguales.
- */
-export function repartoKcalPorDefecto(meals: DietMeal[]): number[] {
-  const pesos = meals.map(m => (m.target ? exchangeToKcal({ HC: m.target.HC ?? 0, PROT: m.target.PROT ?? 0, GRASA: m.target.GRASA ?? 0 }) : 0));
-  return aCien(pesos.some(p => p > 0) ? pesos : meals.map(() => 1));
-}
-
-/** El reparto guardado por el atleta si casa con las comidas de hoy; si no, el de por defecto. */
-export function repartoKcalVigente(meals: DietMeal[], guardado?: number[] | null): number[] {
-  if (guardado && guardado.length === meals.length && guardado.every(n => Number.isFinite(n) && n >= 0)
-    && guardado.reduce((s, n) => s + n, 0) === 100) return guardado;
-  return repartoKcalPorDefecto(meals);
-}
-
-export function kcalPorComida(kcalObjetivo: number, porcentajes: number[]): number[] {
-  return porcentajes.map(p => Math.round((kcalObjetivo * p) / 100));
 }

@@ -83,7 +83,7 @@ describe('semanas del programa nutricional', () => {
     expect(kcal[3]! - kcal[4]!).toBe(100);
     expect(kcal[6]! - kcal[5]!).toBe(200);
     const n4 = novedadesNutricion(p, 4);
-    expect(n4.ajustes).toEqual(['Cena: −1 intercambio de hidratos']);
+    expect(n4.ajustes).toEqual(['−25 g de hidratos al día']);
     expect(n4.suplementos).toEqual(['Creatina · 5 g']);
     expect(novedadesNutricion(p, 7).vuelveDeMantenimiento).toBe(true);
     expect(suplementosDeLaSemana(p, 3)).toEqual([]);
@@ -138,7 +138,7 @@ describe('progresiones de nutrición, reglas por peso y proteína', () => {
     const lento = evaluarReglasDePeso(p, [80, 79.8, 79.7, 79.6], 5);
     expect(lento).toHaveLength(1);
     expect(lento[0].semana).toBe(6);
-    expect(lento[0].ajuste).toEqual({ cat: 'HC', delta: -1 });
+    expect(lento[0].ajuste).toEqual({ cat: 'HC', gramos: -25, delta: -1 });
     expect(evaluarReglasDePeso(p, [80, 79.5, 79, 78.4], 5)).toEqual([]);
     const yaProgramado = { ...p, cambiosSemana: [{ semana: 6, ajustes: [{ cat: 'HC' as const, delta: -1 }] }] };
     expect(evaluarReglasDePeso(yaProgramado, [80, 79.8, 79.7, 79.6], 5)).toEqual([]);
@@ -179,3 +179,18 @@ describe('menú semanal automático', () => {
     expect(semanaQueNecesitaMenu(p, {}, [], '2026-09-28')).toBeNull();
   });
 });
+
+describe('ajustes en gramos (10-2026)', () => {
+  it('el objetivo en kcal se mueve con los gramos del ajuste', () => {
+    const base = aplicarAjustes(dieta, []);
+    const d = aplicarAjustes(dieta, [{ cat: 'HC', delta: -0.8, gramos: -20 }]);
+    expect(base.objetivo!.hc - d.objetivo!.hc).toBe(20);
+    expect(base.objetivo!.kcal - d.objetivo!.kcal).toBe(80);
+  });
+
+  it('un ajuste viejo, solo en intercambios, se lee en gramos', () => {
+    const d = aplicarAjustes(dieta, [{ cat: 'PROT', delta: 1 }]);
+    expect(d.objetivo!.p - aplicarAjustes(dieta, []).objetivo!.p).toBe(25);
+  });
+});
+

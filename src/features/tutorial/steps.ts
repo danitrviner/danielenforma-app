@@ -83,19 +83,19 @@ export const TOUR_STEPS: TourStep[] = [
   },
   {
     id: 'intercambios', section: 'Nutrición', tab: 'nutrition', targetId: 'nutrition-tracker',
-    title: 'Comes por intercambios, no por gramos a ciegas',
-    body: 'Esta barra te dice lo que te queda hoy. Cada intercambio son unos 100 kcal — no hace falta que hagas la cuenta, la barra ya la hace por ti.',
+    title: 'Tu día, en calorías y macros',
+    body: 'Esta tarjeta te dice lo que llevas, lo que te queda y tu objetivo de hoy, con la proteína, los hidratos y la grasa. No hace falta que hagas la cuenta: la app la hace por ti.',
   },
   {
     id: 'registrar-ingesta', section: 'Nutrición', tab: 'nutrition', targetId: 'nutrition-first-meal-row',
-    title: 'El día ya viene puesto: tú lo corriges',
-    body: 'Lo que ves aquí ya cuenta como comido. Si comiste algo que no estaba, añádelo; si no te lo comiste, deslízalo a la izquierda y quítalo.',
+    title: 'Apunta lo que comes',
+    body: 'Toca + en la comida para añadir un alimento o una receta. Lo que apuntas cuenta como comido; si te equivocas, deslízalo a la izquierda y quítalo.',
     requiresAction: true, actionLabel: 'Añade un alimento',
   },
   {
     id: 'intercambiar-alimento', section: 'Nutrición', tab: 'nutrition', targetId: 'nutrition-first-meal-row',
-    title: 'Si no tienes un alimento, lo cambias',
-    body: 'Toca Cambiar junto a un alimento para sustituirlo por otro sin perder tus intercambios. Y con «Editar reparto por comida» decides cuántos intercambios va a cada ingesta.',
+    title: 'Corrige los gramos cuando quieras',
+    body: 'Toca un alimento para cambiar sus gramos o moverlo a otra comida. Y en el icono del plan ves lo que te ha pautado tu entrenador para copiarlo a tu día.',
   },
   {
     id: 'recetas', section: 'Recetas', tab: 'nutrition', targetId: 'nav-tab-nutrition',

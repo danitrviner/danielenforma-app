@@ -1,9 +1,10 @@
 import React, { useMemo, useState } from 'react';
 import { Icon, Button, SegmentedControl, Select } from '../ui';
 import type { Diet, NutritionProgram, MacroAjustable, WeekDay, Suplemento, BodyweightLog, ReglaDePeso, DietCompletionLog } from '../../types';
-import { SLOT_LABEL, resolveSlots } from '../../utils/mealDistribution';
+import { SLOT_LABEL } from '../../utils/mealDistribution';
+import { objetivoDeDieta, macrosDeLineas } from '../../utils/macrosLegado';
 import {
-  totalSemanas, faseDeLaSemana, ajustesDeLaSemana, aplicarAjustes, kcalDeDieta, kcalDeComida, macrosDeComida, macrosDeCupo, kcalPorSemana, programarAjuste,
+  totalSemanas, faseDeLaSemana, ajustesDeLaSemana, aplicarAjustes, kcalDeDieta, kcalPorSemana, programarAjuste, ajusteEnGramos, gramosDeAjuste, gramosDeRegla,
   quitarCambiosNutricion, describirAjuste, semanaDelPrograma, NOMBRE_DIA, suplementosDeLaSemana,
   salidaDeDeficit, descansosDeDieta, bajadaProgresiva, evaluarReglasDePeso, proteinaGKgPorSemana, habitosPorSemana,
 } from '../../utils/semanasNutricion';
@@ -11,8 +12,8 @@ import { hoyIsoLocal } from '../../utils/trainingWeek';
 import { weeklyRealWeightKg } from '../../utils/nutritionPeriodization';
 import Sheet from '../ui/Sheet';
 
-const MACROS: { cat: MacroAjustable; label: string }[] = [
-  { cat: 'HC', label: 'Hidratos' }, { cat: 'PROT', label: 'Proteína' }, { cat: 'GRASA', label: 'Grasa' },
+const MACROS: { cat: MacroAjustable; label: string; clave: 'hc' | 'p' | 'g'; paso: number }[] = [
+  { cat: 'HC', label: 'Hidratos', clave: 'hc', paso: 10 }, { cat: 'PROT', label: 'Proteína', clave: 'p', paso: 10 }, { cat: 'GRASA', label: 'Grasa', clave: 'g', paso: 5 },
 ];
 const DIAS: WeekDay[] = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 
@@ -44,13 +45,17 @@ export default function SemanasNutricionCoach({ program, diets, onGuardar, pesos
   const [pila, setPila] = useState<NutritionProgram[]>([]);
   const [libre, setLibre] = useState<{ dia: WeekDay; slot: string; hasta: string }>({ dia: 'sat', slot: '5', hasta: '' });
   const [sup, setSup] = useState<{ nombre: string; dosis: string; momento: string; hasta: string }>({ nombre: '', dosis: '', momento: '', hasta: '' });
-  const [ciclo, setCiclo] = useState(() => ({ entreno: String(program.ciclado?.entreno ?? 2), descanso: String(program.ciclado?.descanso ?? -1) }));
+  // Ciclado en gramos de hidratos (10-2026).
+  const [ciclo, setCiclo] = useState(() => ({
+    entreno: String(program.ciclado ? (program.ciclado.entrenoG ?? program.ciclado.entreno * 25) : 50),
+    descanso: String(program.ciclado ? (program.ciclado.descansoG ?? program.ciclado.descanso * 25) : -25),
+  }));
   const [pasos, setPasos] = useState('');
   const [progAbierto, setProgAbierto] = useState(false);
   const [salida, setSalida] = useState(() => String(Math.round((mantenimientoKcal ?? 2500) / 50) * 50));
   const [descanso, setDescanso] = useState({ cada: '6', hasta: '' });
   const [bajada, setBajada] = useState({ cada: '2', cat: 'HC', suelo: '1600' });
-  const [regla, setRegla] = useState({ tipo: 'bajar', ritmo: '0.3', semanas: '2', cat: 'HC', cantidad: '1' });
+  const [regla, setRegla] = useState({ tipo: 'bajar', ritmo: '0.3', semanas: '2', cat: 'HC', gramos: '25' });
   const [ignoradas, setIgnoradas] = useState<Set<string>>(new Set());
   const [minimos, setMinimos] = useState({ agua: String(program.minimos?.aguaL ?? ''), raciones: String(program.minimos?.raciones ?? '') });
 
@@ -88,11 +93,11 @@ export default function SemanasNutricionCoach({ program, diets, onGuardar, pesos
   const dietaBase = fase ? diets.find(d => d.id === fase.fase.dietId) : undefined;
   const esMant = mant.includes(semana);
   const dietaSemana = dietaBase ? aplicarAjustes(dietaBase, ajustesDeLaSemana(program, semana), { mantenimiento: esMant }) : undefined;
-  const slots = dietaSemana ? resolveSlots(dietaSemana.meals) : [];
   const empiezan = new Set((program.cambiosSemana ?? []).map(c => c.semana));
 
-  const ajustar = (slot: number, cat: MacroAjustable, delta: number) =>
-    guardar({ ...program, cambiosSemana: programarAjuste(program, semana, solo, { slot, cat, delta }) });
+  /** ± gramos de un macro en el objetivo del día (sin reparto por comidas). */
+  const ajustar = (cat: MacroAjustable, gramos: number) =>
+    guardar({ ...program, cambiosSemana: programarAjuste(program, semana, solo, ajusteEnGramos(cat, gramos)) });
   const marcarMant = (semanas: number[], activar: boolean) => {
     const lista = Array.from(new Set<number>(activar ? [...mant, ...semanas] : mant.filter(s => !semanas.includes(s)))).sort((a, b) => a - b);
     guardar({ ...program, semanasMantenimiento: lista.length > 0 ? lista : undefined });
@@ -112,9 +117,9 @@ export default function SemanasNutricionCoach({ program, diets, onGuardar, pesos
     ...(program.cambiosSemana ?? []).flatMap(c => c.ajustes.map(a => ({
       semana: c.semana, tono: 'cambio' as const,
       texto: `${c.solo ? 'Solo' : 'Desde'} S${c.semana} · ${describirAjuste(a)}`,
-      quitar: () => guardar({ ...program, cambiosSemana: programarAjuste(program, c.semana, !!c.solo, { ...a, delta: -a.delta }) }),
+      quitar: () => guardar({ ...program, cambiosSemana: programarAjuste(program, c.semana, !!c.solo, { ...a, delta: -a.delta, gramos: -gramosDeAjuste(a) }) }),
     }))),
-    ...mant.map(s => ({ semana: s, tono: 'esp' as const, texto: `Solo S${s} · Mantenimiento: +1 hidrato en cada comida`, quitar: () => marcarMant([s], false) })),
+    ...mant.map(s => ({ semana: s, tono: 'esp' as const, texto: `Solo S${s} · Mantenimiento: +25 g de hidratos por comida`, quitar: () => marcarMant([s], false) })),
     ...(program.comidasLibres ?? []).map((c, i) => ({
       semana: c.desde, tono: 'cambio' as const,
       texto: `Desde S${c.desde}${c.hasta ? ` hasta S${c.hasta}` : ''} · ${SLOT_LABEL[c.slot] ?? 'Comida'} del ${NOMBRE_DIA[c.dia]} libre`,
@@ -303,58 +308,45 @@ export default function SemanasNutricionCoach({ program, diets, onGuardar, pesos
           {!dietaSemana ? (
             <p className="font-sans text-label text-ink-3">Esta fase no tiene dieta enlazada: enlázale una al editar la periodización.</p>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[34rem] border-separate border-spacing-y-1">
-                <thead>
-                  <tr className="font-mono text-caption text-ink-3 uppercase tracking-wider">
-                    <th className="text-left font-normal px-2">Comida · {dietaSemana.name}</th>
-                    {MACROS.map(m => <th key={m.cat} className="font-normal w-28">{m.label}</th>)}
-                    <th className="font-normal w-20 text-right px-2">kcal</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {dietaSemana.meals.map((meal, i) => {
-                    const slot = slots[i];
-                    const baseMeal = dietaBase?.meals[i];
-                    const cant = (m: typeof meal | undefined, cat: MacroAjustable) => (m ? macrosDeComida(m)[cat] : 0);
-                    const kcalComida = kcalDeComida(meal);
-                    return (
-                      <tr key={meal.id} className="bg-surface">
-                        <td className="px-2 py-1.5 rounded-l-control">
-                          <p className="font-sans font-bold text-label text-ink">{meal.name || SLOT_LABEL[slot]}</p>
-                          <p className="font-sans text-caption text-ink-3 truncate max-w-[16rem]">{meal.items.map(it => it.foodLabel).join(' · ') || 'Sin alimentos'}</p>
-                        </td>
-                        {MACROS.map(m => {
-                          const v = cant(meal, m.cat);
-                          const cambiado = Math.abs(v - cant(baseMeal, m.cat)) > 0.001;
-                          return (
-                            <td key={m.cat} className="px-1">
-                              <div className={`mx-auto w-24 h-8 rounded-control flex items-center justify-between px-1 ${cambiado ? 'ring-1 ring-accent-line bg-accent/8' : 'bg-inset'}`}>
-                                <button type="button" aria-label={`Menos ${m.label} en ${meal.name}`} onClick={() => ajustar(slot, m.cat, -1)}
-                                  className="w-6 h-6 rounded-control bg-surface text-ink-2 font-mono font-bold">−</button>
-                                <span className="font-mono text-body-s font-bold tabular-nums text-ink">{v.toLocaleString('es-ES')}</span>
-                                <button type="button" aria-label={`Más ${m.label} en ${meal.name}`} onClick={() => ajustar(slot, m.cat, 1)}
-                                  className="w-6 h-6 rounded-control bg-accent/14 text-accent-ink font-mono font-bold">+</button>
-                              </div>
-                            </td>
-                          );
-                        })}
-                        <td className="px-2 text-right font-mono text-label text-ink-2 tabular-nums rounded-r-control">{kcalComida.toLocaleString('es-ES')}</td>
-                      </tr>
-                    );
-                  })}
-                  <tr>
-                    <td className="px-2 font-mono text-caption text-ink-2 uppercase tracking-wider">Cupo del día</td>
-                    {MACROS.map(m => (
-                      <td key={m.cat} className="text-center font-mono text-label font-bold text-ink tabular-nums">{macrosDeCupo(dietaSemana.budget)[m.cat].toLocaleString('es-ES')}</td>
-                    ))}
-                    <td className="px-2 text-right font-mono text-label font-bold text-ink tabular-nums">{kcalDeDieta(dietaSemana).toLocaleString('es-ES')}</td>
-                  </tr>
-                </tbody>
-              </table>
-              <p className="font-sans text-caption text-ink-3 mt-1">
-                Cada ± es un intercambio (unas 100 kcal) y se reparte en los alimentos de esa comida. Vale para cualquier dieta que el atleta tenga ese día.
-                {esMant && ' Semana de mantenimiento: ya incluye +1 hidrato en cada comida.'}
+            <div className="space-y-2">
+              {(() => {
+                const obj = objetivoDeDieta(dietaSemana);
+                const base = dietaBase ? objetivoDeDieta(dietaBase) : obj;
+                return (
+                  <div className="rounded-control bg-surface p-3">
+                    <div className="flex items-baseline justify-between gap-2">
+                      <p className="font-sans font-bold text-label text-ink">Objetivo del día · {dietaSemana.name}</p>
+                      <p className="font-mono text-label font-bold text-ink tabular-nums">{kcalDeDieta(dietaSemana).toLocaleString('es-ES')} kcal</p>
+                    </div>
+                    <div className="mt-2 grid grid-cols-3 gap-2">
+                      {MACROS.map(m => {
+                        const v = Math.round(obj[m.clave]);
+                        const cambiado = Math.abs(obj[m.clave] - base[m.clave]) > 0.5;
+                        return (
+                          <div key={m.cat} className="text-center">
+                            <p className="font-mono text-caption text-ink-3 uppercase tracking-wider">{m.label}</p>
+                            <div className={`mx-auto mt-1 h-8 rounded-control flex items-center justify-between px-1 ${cambiado ? 'ring-1 ring-accent-line bg-accent/8' : 'bg-inset'}`}>
+                              <button type="button" aria-label={`${m.paso} g menos de ${m.label.toLowerCase()}`} onClick={() => ajustar(m.cat, -m.paso)}
+                                className="w-6 h-6 rounded-control bg-surface text-ink-2 font-mono font-bold">−</button>
+                              <span className="font-mono text-body-s font-bold tabular-nums text-ink">{v} g</span>
+                              <button type="button" aria-label={`${m.paso} g más de ${m.label.toLowerCase()}`} onClick={() => ajustar(m.cat, m.paso)}
+                                className="w-6 h-6 rounded-control bg-accent/14 text-accent-ink font-mono font-bold">+</button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
+              {dietaSemana.meals.some(m => m.items.length > 0) && (
+                <p className="font-sans text-caption text-ink-3">
+                  Plan de comidas: {dietaSemana.meals.map(m => `${m.name || SLOT_LABEL[m.slot ?? 3]} ${Math.round(macrosDeLineas(m.items).kcal)} kcal`).join(' · ')}
+                </p>
+              )}
+              <p className="font-sans text-caption text-ink-3">
+                Cada ± mueve el objetivo del día ({MACROS.map(m => `${m.paso} g de ${m.label.toLowerCase()}`).join(', ')}). Vale para cualquier dieta que el atleta tenga ese día.
+                {esMant && ' Semana de mantenimiento: ya incluye +25 g de hidratos por comida.'}
               </p>
             </div>
           )}
@@ -364,16 +356,25 @@ export default function SemanasNutricionCoach({ program, diets, onGuardar, pesos
               <p className="font-sans font-bold text-label text-ink">Días de entreno y descanso</p>
               <p className="font-sans text-caption text-ink-3">
                 Hidratos según si ese día tiene sesión asignada. Van a la comida pegada al entreno si la dieta la marca.
-                {program.ciclado && ` Ahora: desde S${program.ciclado.desde}, entreno ${program.ciclado.entreno > 0 ? '+' : ''}${program.ciclado.entreno}, descanso ${program.ciclado.descanso > 0 ? '+' : ''}${program.ciclado.descanso}.`}
+                {program.ciclado && (() => {
+                  const e = program.ciclado.entrenoG ?? program.ciclado.entreno * 25;
+                  const d = program.ciclado.descansoG ?? program.ciclado.descanso * 25;
+                  return ` Ahora: desde S${program.ciclado.desde}, entreno ${e > 0 ? '+' : ''}${e} g, descanso ${d > 0 ? '+' : ''}${d} g.`;
+                })()}
               </p>
               <div className="grid grid-cols-2 gap-2">
                 <Select label="Día de entreno" value={ciclo.entreno} onChange={v => setCiclo({ ...ciclo, entreno: v })}
-                  options={[-3, -2, -1, 0, 1, 2, 3, 4].map(k => ({ value: String(k), label: `${k > 0 ? '+' : ''}${k} HC` }))} />
+                  options={[-75, -50, -25, 0, 25, 50, 75, 100].map(k => ({ value: String(k), label: `${k > 0 ? '+' : ''}${k} g HC` }))} />
                 <Select label="Día de descanso" value={ciclo.descanso} onChange={v => setCiclo({ ...ciclo, descanso: v })}
-                  options={[-4, -3, -2, -1, 0, 1, 2].map(k => ({ value: String(k), label: `${k > 0 ? '+' : ''}${k} HC` }))} />
+                  options={[-100, -75, -50, -25, 0, 25, 50].map(k => ({ value: String(k), label: `${k > 0 ? '+' : ''}${k} g HC` }))} />
               </div>
               <div className="flex gap-2 flex-wrap">
-                <Button size="s" icon="fitness_center" onClick={() => guardar({ ...program, ciclado: { desde: semana, entreno: Number(ciclo.entreno), descanso: Number(ciclo.descanso) } })}>
+                <Button size="s" icon="fitness_center" onClick={() => guardar({ ...program, ciclado: {
+                  desde: semana,
+                  entrenoG: Number(ciclo.entreno), descansoG: Number(ciclo.descanso),
+                  // Equivalente para binarios viejos.
+                  entreno: Number(ciclo.entreno) / 25, descanso: Number(ciclo.descanso) / 25,
+                } })}>
                   Aplicar desde S{semana}
                 </Button>
                 {program.ciclado && (
@@ -405,7 +406,7 @@ export default function SemanasNutricionCoach({ program, diets, onGuardar, pesos
               {(program.reglasPeso ?? []).map(r => (
                 <div key={r.id} className="flex items-center gap-2 font-sans text-caption text-ink-2">
                   <span className="flex-1">
-                    Si {r.semanas} semanas {r.tipo === 'bajar' ? 'baja' : 'sube'} menos de {r.ritmoMinimo.toLocaleString('es-ES')} kg/sem → {r.tipo === 'bajar' ? '−' : '+'}{r.cantidad} {r.cat}
+                    Si {r.semanas} semanas {r.tipo === 'bajar' ? 'baja' : 'sube'} menos de {r.ritmoMinimo.toLocaleString('es-ES')} kg/sem → {r.tipo === 'bajar' ? '−' : '+'}{Math.round(gramosDeRegla(r))} g de {MACROS.find(m => m.cat === r.cat)?.label.toLowerCase()}
                   </span>
                   <button type="button" aria-label="Quitar regla" onClick={() => {
                     const resto = (program.reglasPeso ?? []).filter(x => x.id !== r.id);
@@ -422,13 +423,15 @@ export default function SemanasNutricionCoach({ program, diets, onGuardar, pesos
                   options={['1', '2', '3'].map(v => ({ value: v, label: `${v} semana${v === '1' ? '' : 's'}` }))} />
                 <Select label="Ajustar" value={regla.cat} onChange={v => setRegla({ ...regla, cat: v })}
                   options={MACROS.map(m => ({ value: m.cat, label: m.label }))} />
-                <Select label="Intercambios" value={regla.cantidad} onChange={v => setRegla({ ...regla, cantidad: v })}
-                  options={['1', '2', '3'].map(v => ({ value: v, label: v }))} />
+                <Select label="Gramos" value={regla.gramos} onChange={v => setRegla({ ...regla, gramos: v })}
+                  options={['10', '15', '25', '50', '75'].map(v => ({ value: v, label: `${v} g` }))} />
               </div>
               <Button size="s" icon="add" onClick={() => {
                 const nueva: ReglaDePeso = {
                   id: `rp_${Date.now()}`, tipo: regla.tipo as 'bajar' | 'subir', ritmoMinimo: Number(regla.ritmo),
-                  semanas: Number(regla.semanas), cat: regla.cat as MacroAjustable, cantidad: Number(regla.cantidad),
+                  semanas: Number(regla.semanas), cat: regla.cat as MacroAjustable, gramos: Number(regla.gramos),
+                  // Equivalente para binarios viejos.
+                  cantidad: Math.round((Number(regla.gramos) / (regla.cat === 'GRASA' ? 11 : 25)) * 100) / 100,
                 };
                 guardar({ ...program, reglasPeso: [...(program.reglasPeso ?? []), nueva] });
               }}>Añadir regla</Button>
@@ -524,7 +527,7 @@ export default function SemanasNutricionCoach({ program, diets, onGuardar, pesos
           <p className="font-sans text-label text-ink-2">Se programan como cambios por semana desde la semana {semana}. Después puedes retocarlas semana a semana o deshacerlas.</p>
           <section className="space-y-2">
             <p className="font-sans font-bold text-body-s text-ink">Salida de déficit</p>
-            <p className="font-sans text-caption text-ink-3">+1 intercambio de hidratos cada semana hasta llegar al objetivo{mantenimientoKcal ? ` (su mantenimiento estimado ronda las ${mantenimientoKcal.toLocaleString('es-ES')} kcal)` : ''}.</p>
+            <p className="font-sans text-caption text-ink-3">+25 g de hidratos (100 kcal) cada semana hasta llegar al objetivo{mantenimientoKcal ? ` (su mantenimiento estimado ronda las ${mantenimientoKcal.toLocaleString('es-ES')} kcal)` : ''}.</p>
             <div className="flex gap-2 items-end flex-wrap">
               <label className="flex flex-col gap-1 font-mono text-caption text-ink-2 uppercase tracking-wider">Objetivo kcal
                 <input id="salida-kcal" inputMode="numeric" value={salida} onChange={e => setSalida(e.target.value.replace(/\D/g, ''))}
@@ -550,7 +553,7 @@ export default function SemanasNutricionCoach({ program, diets, onGuardar, pesos
           <section className="space-y-2">
             <p className="font-sans font-bold text-body-s text-ink">Bajada progresiva</p>
             <div className="grid grid-cols-3 gap-3">
-              <Select label="−1 intercambio de" value={bajada.cat} onChange={v => setBajada({ ...bajada, cat: v })}
+              <Select label="−100 kcal de" value={bajada.cat} onChange={v => setBajada({ ...bajada, cat: v })}
                 options={MACROS.filter(m => m.cat !== 'PROT').map(m => ({ value: m.cat, label: m.label }))} />
               <Select label="Cada" value={bajada.cada} onChange={v => setBajada({ ...bajada, cada: v })}
                 options={['1', '2', '3', '4'].map(v => ({ value: v, label: v === '1' ? 'semana' : `${v} semanas` }))} />

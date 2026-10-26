@@ -254,6 +254,16 @@ export interface WeightCheckIn {
 export type FoodCategory = 'HC' | 'PROT' | 'GRASA' | 'MIX_HC' | 'MIX_GRASA';
 export type DietMode = 'OMNIVORO' | 'VEGANO' | 'SIN_PESAR';
 
+/** Calorías y gramos de proteína, hidratos y grasa. La unidad de toda la
+ *  nutrición desde 10-2026 (adiós a los intercambios). Ver utils/macros.ts;
+ *  los datos viejos en intercambios se leen con utils/macrosLegado.ts. */
+export interface Macros {
+  kcal: number;
+  p: number;
+  hc: number;
+  g: number;
+}
+
 export interface MealItem {
   id: string;
   mode: DietMode;
@@ -329,9 +339,8 @@ export interface AthleteNutritionConfig {
   cookingMaxTime?: number;    // minutos
   quiereRapidas?: boolean;    // ver OnboardingData.quiereRapidas
   mealCount?: number;         // 3 | 4 | 5 | 6 (ver CONTEOS_COMIDAS)
-  /** Reparto del día en «Calorías y macros»: % de las kcal por comida, en el
-   *  orden de las comidas del día. Si no casa con las de un día concreto, se usa
-   *  el de por defecto (utils/diarioCalorias.ts). */
+  /** Reparto de las kcal por comida que había hasta 10-2026. Ya no se usa
+   *  (solo cuenta el total del día); puede venir en datos guardados. */
   repartoKcalPct?: number[];
 }
 
@@ -1265,6 +1274,9 @@ export interface DietItem {
 export interface RecetaPendiente {
   recipe: Recipe;
   items?: DietItem[];
+  /** Escala elegida en la ficha del Recetario (×0,25–×3). `recipe` va SIN
+   *  escalar: la escala se aplica al desglosarla en el diario. */
+  escala?: number;
 }
 
 export interface DietMeal {
@@ -1288,6 +1300,9 @@ export interface Diet {
   athleteId: string;  // email
   name: string;
   budget: Record<FoodCategory, number>; // total exchanges per category for the day
+  /** Objetivo del día en kcal y gramos (10-2026). Manda sobre `budget`, que
+   *  se sigue escribiendo para los binarios viejos; leer con `objetivoDeDieta`. */
+  objetivo?: Macros;
   meals: DietMeal[];
   coachNote?: string;
   isDraft?: boolean;
@@ -1344,15 +1359,11 @@ export interface DietCompletionLog {
   /** Cupo de intercambios pautado ese día. Igual que `meals`: se congela para
    *  que el histórico no se mueva si luego le cambias el cupo al atleta. */
   budget?: Record<FoodCategory, number>;
-  /**
-   * «Día flexible» (10-2026): el atleta no reparte por comidas, apunta lo que
-   * va comiendo contra el cupo del día entero. `meals` sigue teniendo la misma
-   * forma —UNA sola comida sintética con todo lo apuntado— para no abrir un
-   * segundo formato de almacenamiento; esta marca es lo único que le dice a la
-   * pantalla que pinte "Lo que voy comiendo" en vez de las tarjetas por comida.
-   * Por día, no por atleta: activarlo un día no toca los demás. Ver
-   * utils/diaFlexible.ts para la conversión ida y vuelta con el modo normal.
-   */
+  /** Objetivo de ese día en kcal y gramos (10-2026). Congelado igual que
+   *  `budget`, que manda solo si falta este. Leer con `objetivoDelRegistro`. */
+  objetivo?: Macros;
+  /** «Día flexible» de antes de 10-2026: ya no existe (Dani, 26-10-2026). Los
+   *  días guardados así se leen como un día normal con una sola comida. */
   modoFlexible?: boolean;
   /** Cuándo se guardó por última vez (ISO). Lo pone `saveDietCompletionLog` y
    *  sirve para decidir, al reabrir la app, si manda el día que hay en el móvil
@@ -1457,8 +1468,11 @@ export interface ReglaDePeso {
   ritmoMinimo: number;
   semanas: number;
   cat: MacroAjustable;
-  /** Intercambios (en positivo); el signo lo pone el tipo. */
+  /** Intercambios (en positivo); el signo lo pone el tipo. Equivalente de
+   *  `gramos` para binarios viejos. */
   cantidad: number;
+  /** Gramos del macro (en positivo), 10-2026. Mandan sobre `cantidad`. */
+  gramos?: number;
 }
 
 export interface CicladoPorEntreno {
@@ -1468,16 +1482,24 @@ export interface CicladoPorEntreno {
   entreno: number;
   /** Ídem los días sin sesión. */
   descanso: number;
+  /** Gramos de hidratos (10-2026); mandan sobre `entreno`/`descanso`, que
+   *  quedan como su equivalente para binarios viejos. */
+  entrenoG?: number;
+  descansoG?: number;
 }
 
 export type MacroAjustable = 'HC' | 'PROT' | 'GRASA';
 
-/** +/− intercambios de un macro en una comida. Sin `slot`, en la comida que
- *  más tenga de ese macro. */
+/** +/− gramos de un macro en el día (10-2026). `delta` es su equivalente en
+ *  intercambios, que se sigue escribiendo para binarios viejos y para ajustar
+ *  los alimentos del plan; `slot` (de cuando había reparto por comidas) solo
+ *  dice en qué comida del plan se nota. */
 export interface AjusteDeComida {
   slot?: number;   // 1=Desayuno … 5=Cena, misma escala que DietMeal.slot
   cat: MacroAjustable;
   delta: number;
+  /** Gramos del macro; mandan sobre `delta`. */
+  gramos?: number;
 }
 
 export interface CambioNutricionSemana {
@@ -1836,7 +1858,9 @@ export type BudgetVec = { HC: number; PROT: number; GRASA: number };
 export interface MenuComplement {
   foodLabel: string;
   category: FoodCategory;
-  quantity: number; // exchanges, multiples of 0.25
+  /** Raciones del banco (la ración de referencia de ese alimento), múltiplos
+   *  de 0,25. Es el mismo número que antes eran «intercambios». */
+  quantity: number;
 }
 
 /** Más ración de algo que la receta YA lleva: "+60g de arroz" en el arroz con
@@ -1850,7 +1874,8 @@ export interface MenuRacionExtra {
   /** Cómo se le llama al atleta ("pollo"). */
   nombre: string;
   category: FoodCategory;
-  quantity: number; // intercambios, múltiplos de 0,25
+  /** Raciones del banco, múltiplos de 0,25 (antes «intercambios»). */
+  quantity: number;
   gramos: number;   // lo que hay que añadir, ya calculado
 }
 
@@ -1875,6 +1900,9 @@ export interface MenuMeal {
    *  antes de 09-2026, y en ese caso NO se recorta nada.
    */
   objetivo?: BudgetVec;
+  /** Lo mismo en kcal y gramos (10-2026). Manda sobre `objetivo`, que se sigue
+   *  escribiendo para binarios viejos. Leer con `objetivoDeLaComida`. */
+  objetivoMacros?: Macros;
   slot: number; // intakeType 1-5
   name: string; // "Desayuno", "Comida"...
   recipeId: string;
@@ -1884,7 +1912,10 @@ export interface MenuMeal {
   /** Receta base ajustada ingrediente a ingrediente (N-06) en vez de escalada
    *  entera: entonces `scale` es 1 y las cantidades salen de aquí. */
   ajuste?: AjusteDeReceta;
-  exch: BudgetVec;      // exchanges already scaled
+  exch: BudgetVec;      // exchanges already scaled (binarios viejos; manda `macros`)
+  /** kcal y gramos del PLATO ya escalado (10-2026), sin extras. Leer con
+   *  `macrosDelPlato`: en menús viejos se deduce de `exch`. */
+  macros?: Macros;
   kcal: number;
   /** Acompañamientos: alimentos sueltos que cierran lo que el plato no llega a
    *  cubrir. Plan B de `racionesExtra`. */
@@ -1903,6 +1934,9 @@ export interface MenuDay {
   dietId: string | null;
   dietName?: string;
   target: BudgetVec;   // snapshot of the linked diet's budget at generation time
+  /** Objetivo del día en kcal y gramos al generar (10-2026). Manda sobre
+   *  `target`. Leer con `objetivoDelDiaDeMenu`. */
+  objetivo?: Macros;
   meals: MenuMeal[];
 }
 
@@ -2729,7 +2763,8 @@ export interface WeekPlanProposalPayload {
     sets?: number; reps?: string; rir?: number; restSeconds?: number; bloques?: WorkoutSetGroup[];
   }[];
   nutricion?: {
-    ajustes?: { semana: number; solo?: boolean; slot?: number; cat: MacroAjustable; delta: number }[];
+    /** `gramos` del macro desde 10-2026; `delta` (intercambios) va al lado para binarios viejos. */
+    ajustes?: { semana: number; solo?: boolean; slot?: number; cat: MacroAjustable; delta: number; gramos?: number }[];
     semanasMantenimiento?: number[];
     suplementos?: Omit<Suplemento, 'id'>[];
     pasosPorSemana?: { semana: number; pasos: number }[];

@@ -8,7 +8,7 @@ import {
   TEXTO_DE_AVISO,
   type MacrosPorCien,
 } from '../../utils/alimentoDesdeMacros';
-import { CAT_LABEL, CAT_BG, CAT_COLOR, fmtQty, foodNameWithoutGrams } from '../../utils/exchangeHelpers';
+import { foodNameWithoutGrams } from '../../utils/exchangeHelpers';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Crear un alimento a partir de su etiqueta
@@ -139,18 +139,9 @@ export default function CrearAlimentoSheet({ mode, onClose, onGuardar, destino, 
       <div className="space-y-5 pt-2">
         <p className="font-sans text-body-s text-ink-2">
           {editando
-            ? `Corrige lo que haga falta. Los gramos del intercambio y el grupo se vuelven a calcular solos.`
-            : `Copia lo que pone la etiqueta por 100 ${unidad}. Los gramos que son un intercambio y el grupo al que pertenece se calculan solos.`}
+            ? `Corrige lo que haga falta. Las kcal se vuelven a calcular solas.`
+            : `Copia lo que pone la etiqueta por 100 ${unidad}. Las kcal se comprueban solas.`}
         </p>
-
-        {/* Al editar, el grupo puede cambiar: si tocas los macros lo bastante,
-            un alimento deja de ser proteína y pasa a mixto. Vale avisar de que
-            eso va a pasar, porque el atleta lo tiene ya colocado en comidas. */}
-        {editando && editando.category !== calculo.category && !sinDatos && (
-          <Banner tone="info">
-            Con estos datos cambia de grupo: de {CAT_LABEL[editando.category]} a {CAT_LABEL[calculo.category]}.
-          </Banner>
-        )}
 
         <Input
           label="Nombre del alimento"
@@ -201,47 +192,35 @@ export default function CrearAlimentoSheet({ mode, onClose, onGuardar, destino, 
           />
         </div>
 
-        {/* El resultado, en vivo. Mientras no haya datos suficientes se queda
-            en gris diciendo qué falta, en vez de enseñar un 0g · HC que
-            parecería un cálculo hecho. */}
+        {/* El resultado, en vivo, por 100 g: las kcal y los gramos de cada
+            macro. Mientras no haya datos suficientes se queda en gris diciendo
+            qué falta, en vez de enseñar un 0 que parecería un cálculo hecho. */}
         <div className="rounded-surface border border-hairline bg-surface p-4">
           <p className="font-mono text-caption font-semibold uppercase tracking-[.16em] text-ink-3">
-            1 intercambio
+            Por 100 {unidad}
           </p>
 
           {sinDatos ? (
             <p className="pt-2 font-sans text-body-s text-ink-3">
-              Escribe las calorías y los macros y aquí verás la porción.
+              Escribe las calorías y los macros y aquí verás lo que aporta.
             </p>
           ) : (
             <>
-              <div className="flex items-baseline gap-3 pt-1">
-                <span className="font-mono text-display text-ink">
-                  {calculo.gramosPorIntercambio}{unidad}
-                </span>
-                <span className={`rounded-control border px-2 py-1 font-mono text-caption font-bold ${CAT_BG[calculo.category]} ${CAT_COLOR[calculo.category]}`}>
-                  {CAT_LABEL[calculo.category]}
-                </span>
-              </div>
-
-              {/* El desglose: de dónde salen esas ~100 kcal. Es lo que explica
-                  el grupo elegido, y lo que deja ver de un vistazo cuando un
-                  alimento está a caballo entre dos. */}
+              <p className="pt-1 font-mono text-display text-ink">
+                {Math.round(calculo.kcalUsadas)} <span className="text-title-s text-ink-2">kcal</span>
+              </p>
               <dl className="grid grid-cols-3 gap-2 pt-4">
                 {([
-                  ['Hidratos', calculo.desglose.HC],
-                  ['Proteína', calculo.desglose.PROT],
-                  ['Grasa', calculo.desglose.GRASA],
+                  ['Hidratos', macros.hc],
+                  ['Proteína', macros.prot],
+                  ['Grasa', macros.grasa],
                 ] as const).map(([nombre, valor]) => (
                   <div key={nombre} className="rounded-control bg-raised p-2 text-center">
                     <dt className="font-sans text-caption text-ink-3">{nombre}</dt>
-                    <dd className="font-mono text-title-s text-ink">{fmtQty(valor)}</dd>
+                    <dd className="font-mono text-title-s text-ink">{(Math.round(valor * 10) / 10).toLocaleString('es-ES')} g</dd>
                   </div>
                 ))}
               </dl>
-              <p className="pt-2 font-sans text-caption text-ink-3">
-                Suma {fmtQty(calculo.desglose.total)} intercambios · {calculo.kcalUsadas} kcal / 100 {unidad}
-              </p>
             </>
           )}
         </div>

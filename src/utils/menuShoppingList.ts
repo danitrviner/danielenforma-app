@@ -14,7 +14,7 @@ export interface ShoppingListItem {
   name: string;
   grams: number | null;       // total grams when known
   exchanges: number | null;   // total exchanges when grams can't be derived
-  display: string;            // human-friendly amount, e.g. "1.2 kg" or "3 int."
+  display: string;            // human-friendly amount, e.g. "1.2 kg" or "3 rac." (raciones del banco)
 }
 
 function normalizeName(s: string): string {
@@ -105,7 +105,7 @@ export function buildShoppingList(days: MenuDay[], recipesById: Map<string, Reci
     grams: a.hasGrams ? Math.round(a.grams) : null,
     exchanges: a.hasGrams ? null : Math.round(a.exchanges * 100) / 100,
     display: a.hasGrams ? fmtGrams(a.grams)
-      : a.exchanges > 0 ? `${Math.round(a.exchanges * 100) / 100} int.`
+      : a.exchanges > 0 ? `${String(Math.round(a.exchanges * 100) / 100).replace('.', ',')} rac.`
       : 'al gusto',
   }));
 

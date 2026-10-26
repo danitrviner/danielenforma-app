@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import {
   OnboardingData, Diet, AthleteDietConfig, AthleteNutritionConfig, Recipe, RecipeFavorites,
   MealItem, WeeklyMenu, MenuDay, WeekDay, FoodCategory, DietMode,
+  Macros, MenuMeal,
 } from '../types';
 import { queryRecetasForGenerator, getRecipes, getRecipeById, getFoodItems, createWeeklyMenu, updateWeeklyMenu, publishWeeklyMenu, getRecipeFavorites, getNutritionProgram } from '../dbService';
 import { semanaDelPrograma, totalSemanas, ajustesDeLaSemana, aplicarAjustes, kcalDeDieta } from '../utils/semanasNutricion';
@@ -16,7 +17,8 @@ import {
 } from '../utils/menuEngine';
 import { athleteConditions } from '../utils/dietaryRestrictions';
 import { dietTypeVigente } from '../utils/foodPrefs';
-import { exchangeToKcal } from '../utils/nutritionConstants';
+import { intercambiosDeMacros } from '../utils/macrosLegado';
+import { macrosDelPlato, objetivoDelDiaDeMenu } from '../utils/menuMacros';
 import { buildShoppingList } from '../utils/menuShoppingList';
 import { DISH_TYPES, DishType } from '../utils/dishTypes';
 import { Icon, Button, Input, ProgressBar, Select } from './ui';
@@ -46,12 +48,19 @@ interface Props {
 
 type Step = 'config' | 'generating' | 'review';
 
-function fmtExch(exch: { HC: number; PROT: number; GRASA: number }): string {
+/** «P 32 · HC 60 · G 14 g». */
+function fmtMacros(m: Macros): string {
   const parts: string[] = [];
-  if (exch.HC > 0) parts.push(`${exch.HC} HC`);
-  if (exch.PROT > 0) parts.push(`${exch.PROT} PROT`);
-  if (exch.GRASA > 0) parts.push(`${exch.GRASA} GRASA`);
-  return parts.join(' · ') || '—';
+  if (m.p > 0) parts.push(`P ${Math.round(m.p)}`);
+  if (m.hc > 0) parts.push(`HC ${Math.round(m.hc)}`);
+  if (m.g > 0) parts.push(`G ${Math.round(m.g)}`);
+  return parts.length > 0 ? `${parts.join(' · ')} g` : '—';
+}
+
+/** El plato en intercambios, para los binarios viejos. */
+function exchDe(m: Macros) {
+  const v = intercambiosDeMacros(m);
+  return { HC: v.HC, PROT: v.PROT, GRASA: v.GRASA };
 }
 
 function devBadge(day: MenuDay): { label: string; cls: string } {
@@ -70,7 +79,7 @@ function devBadge(day: MenuDay): { label: string; cls: string } {
   const dev = dayGlobalDeviation(day);
   const ok = isDayWithinTolerance(day);
   const cls = ok ? 'text-success bg-success/10 border-success/20' : 'text-danger bg-danger/10 border-danger/20';
-  const label = dev === 0 ? 'Ajustado' : `${dev > 0 ? '+' : ''}${dev} int.`;
+  const label = Math.abs(dev) < 10 ? 'Ajustado' : `${dev > 0 ? '+' : ''}${dev} kcal`;
   return { label, cls };
 }
 
@@ -296,7 +305,7 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
     const slot = slots[mealIdx];
     if (!slot) return;
     const pool = await ensurePool(slot.slot);
-    const targets = slotTargets(menuDay.target, slots);
+    const targets = slotTargets(objetivoDelDiaDeMenu(menuDay), slots);
     const usedIds = new Set<string>(menuDay.meals.filter((_, i) => i !== mealIdx).map(m => m.recipeId));
     usedIds.add(menuDay.meals[mealIdx]?.recipeId ?? ''); // force a different pick than the current one
     const ranked = rankCandidates(pool, targets[mealIdx], prefs, usedIds, { needsTupper: slot.needsTupper, dias: [day], dietId: menuDay.dietId });
@@ -307,13 +316,13 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
       ...nextMeals[mealIdx],
       recipeId: pick.recipe.id, recipeName: pick.recipe.name,
       recipeImage: fotoDeReceta(pick.recipe),
-      scale: pick.scale, exch: pick.exch, complements: [],
+      scale: pick.scale, macros: pick.macros, exch: exchDe(pick.macros), complements: [],
       ajuste: pick.ajuste,
       // Las raciones extra eran de la receta ANTERIOR ("+45g de arroz" con un
       // plato que ya no lleva arroz), y las kcal se quedaban con las del plato
       // viejo. Al cambiar de receta se caen las dos cosas y se recalcula.
       racionesExtra: undefined,
-      kcal: Math.round(exchangeToKcal(pick.exch)),
+      kcal: Math.round(pick.macros.kcal),
     };
 
     // Y el DÍA entero se vuelve a cuadrar. Cambiar un plato descuadra el día:
@@ -322,11 +331,20 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
     // se iba a 1.850 o a 2.400 y nadie lo decía — el coach lo publicaba
     // pensando que seguía cuadrado. Las recetas NO se vuelven a elegir: solo se
     // rehace lo derivado.
-    const dietDelDia = menuDay.dietId ? diets.find(d => d.id === menuDay.dietId) : null;
+    await reajustarYGuardar(day, menuDay, nextMeals, pick.recipe);
+  };
+
+  /* Vuelve a cuadrar el día tras cambiar un plato. Con la dieta DE LA SEMANA
+     (con sus ajustes), que es con la que se generó: con la dieta pelada, un día
+     de una semana con «−20 g de hidratos» se reajustaba a su objetivo de antes. */
+  const reajustarYGuardar = async (day: WeekDay, menuDay: MenuDay, nextMeals: MenuMeal[], receta: Recipe) => {
+    const dietDelDia = menuDay.dietId
+      ? (dietasDeLaSemana.find(d => d.id === menuDay.dietId) ?? diets.find(d => d.id === menuDay.dietId))
+      : null;
     if (!dietDelDia) { updateDay(day, { ...menuDay, meals: nextMeals }); return; }
     const foodList = await ensureFoods();
     const recetas = new Map<string, Recipe>(recipesById);
-    recetas.set(pick.recipe.id, pick.recipe);
+    recetas.set(receta.id, receta);
     updateDay(day, reajustarDia({
       dia: { ...menuDay, meals: nextMeals },
       diet: dietDelDia,
@@ -345,7 +363,7 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
     const slot = slots[mealIdx];
     if (menuDay && slot) {
       const pool = await ensurePool(slot.slot);
-      const targets = slotTargets(menuDay.target, slots);
+      const targets = slotTargets(objetivoDelDiaDeMenu(menuDay), slots);
       const usedIds = new Set<string>(menuDay.meals.map(m => m.recipeId));
       const ranked = rankCandidates(pool, targets[mealIdx], prefs, usedIds, { needsTupper: slot.needsTupper, dias: [day], dietId: menuDay.dietId });
       setPickerCandidates(ranked.slice(0, 12));
@@ -361,13 +379,15 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
       ...nextMeals[mealIdx],
       recipeId: c.recipe.id, recipeName: c.recipe.name,
       recipeImage: fotoDeReceta(c.recipe),
-      scale: c.scale, exch: c.exch, complements: [],
+      scale: c.scale, macros: c.macros, exch: exchDe(c.macros), complements: [],
       ajuste: c.ajuste,
       racionesExtra: undefined,
-      kcal: Math.round(exchangeToKcal(c.exch)),
+      kcal: Math.round(c.macros.kcal),
     };
-    updateDay(day, { ...menuDay, meals: nextMeals });
     setPickerFor(null);
+    // Elegir a mano también descuadra el día: se vuelve a cuadrar igual que con
+    // «otra receta» (antes se quedaba descuadrado sin decirlo).
+    void reajustarYGuardar(day, menuDay, nextMeals, c.recipe);
   };
 
   const handleSaveDraft = async () => {
@@ -404,7 +424,7 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
           </button>
           <div>
             <h2 className="font-sans font-bold text-title-l text-ink">Generar menú semanal</h2>
-            <p className="text-ink-2 text-label font-sans">Las recetas son la base — puntos de intercambios ya pautados por día</p>
+            <p className="text-ink-2 text-label font-sans">Las recetas son la base — con las kcal y macros pautados para cada día</p>
           </div>
         </div>
 
@@ -600,7 +620,7 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
             )}
           </h2>
           <p className="text-ink-2 text-label font-mono">
-            {menu.status === 'published' ? 'Publicado — editable por el atleta vía intercambios' : 'Borrador — revisa antes de publicar'}
+            {menu.status === 'published' ? 'Publicado — el atleta puede cambiar platos sin salirse de su día' : 'Borrador — revisa antes de publicar'}
           </p>
         </div>
       </div>
@@ -701,7 +721,7 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
                                 {meal.scale !== 1 && <span className="font-mono text-caption text-accent-ink">×{meal.scale}</span>}
                               </div>
                               <p className="font-sans font-bold text-body-s text-ink leading-tight truncate">{meal.recipeName}</p>
-                              <p className="font-mono text-caption text-ink-2 ">{fmtExch(meal.exch)} · {meal.kcal} kcal</p>
+                              <p className="font-mono text-caption text-ink-2 ">{fmtMacros(macrosDelPlato(meal))} · {meal.kcal} kcal</p>
                               {meal.complements.length > 0 && (
                                 <div className="flex flex-wrap gap-1 mt-2">
                                   {meal.complements.map((c, ci) => (
@@ -748,7 +768,7 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
                                     </div>
                                     <div className="flex-1 min-w-0">
                                       <p className="font-sans text-label text-ink truncate">{c.recipe.name}</p>
-                                      <p className="font-mono text-caption text-ink-3">×{c.scale} · {fmtExch(c.exch)}</p>
+                                      <p className="font-mono text-caption text-ink-3">×{c.scale} · {Math.round(c.macros.kcal)} kcal · {fmtMacros(c.macros)}</p>
                                     </div>
                                   </button>
                                 ))

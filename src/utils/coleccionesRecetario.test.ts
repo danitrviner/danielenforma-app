@@ -119,32 +119,35 @@ describe('recetasMasHechas', () => {
 });
 
 describe('encajaEnCupo', () => {
-  const r = receta('a', 'X', { exchanges: { HC: 2, PROT: 1.5, GRASA: 1 } });
-  it('medio intercambio arriba o abajo en cada grupo', () => {
-    expect(encajaEnCupo(r, { HC: 2, PROT: 1.5, GRASA: 1 })).toBe(true);
-    expect(encajaEnCupo(r, { HC: 2.5, PROT: 1, GRASA: 0.5 })).toBe(true);
-    expect(encajaEnCupo(r, { HC: 3, PROT: 1.5, GRASA: 1 })).toBe(false);
+  // 2 HC · 1,5 P · 1 G de antes = 50 g HC · 37,5 g P · 11 g G
+  const r = receta('a', 'X', { macros: { carb: 50, prot: 37.5, fat: 11 } });
+  it('medio intercambio de cada macro arriba o abajo (12,5 g / 5,5 g)', () => {
+    expect(encajaEnCupo(r, { kcal: 449, p: 37.5, hc: 50, g: 11 })).toBe(true);
+    expect(encajaEnCupo(r, { kcal: 449, p: 25, hc: 62.5, g: 5.5 })).toBe(true);
+    expect(encajaEnCupo(r, { kcal: 549, p: 37.5, hc: 75, g: 11 })).toBe(false);
   });
-  it('un cupo vacío no lo llena nada', () => {
-    expect(encajaEnCupo(r, { HC: 0, PROT: 0, GRASA: 0 })).toBe(false);
+  it('un hueco vacío no lo llena nada', () => {
+    expect(encajaEnCupo(r, { kcal: 0, p: 0, hc: 0, g: 0 })).toBe(false);
   });
 });
 
 describe('cupoDeLaProximaComida', () => {
   const porSlot = (ms: { slot?: number }[]) => ms.map(m => m.slot ?? 3);
   const meals = [
-    { name: 'Desayuno', slot: 1, target: { HC: 2, PROT: 1, GRASA: 1 } },
-    { name: 'Comida', slot: 3, target: { HC: 3, PROT: 2, GRASA: 1 } },
-    { name: 'Cena', slot: 5, target: { HC: 1, PROT: 2, GRASA: 1 } },
+    { name: 'Desayuno', slot: 1 },
+    { name: 'Comida', slot: 3 },
+    { name: 'Cena', slot: 5 },
   ];
-  it('a media mañana toca la comida', () => {
-    expect(cupoDeLaProximaComida(meals, porSlot, 11)).toEqual({ titulo: 'Encajan en tu comida', cupo: { HC: 3, PROT: 2, GRASA: 1 } });
+  const dia = { kcal: 2400, p: 150, hc: 270, g: 78 };
+  it('a media mañana toca la comida, con el día a partes iguales', () => {
+    expect(cupoDeLaProximaComida(meals, dia, porSlot, 11)).toEqual({ titulo: 'Encajan en tu comida', cupo: { kcal: 800, p: 50, hc: 90, g: 26 } });
   });
-  it('se salta las comidas sin reparto y las libres', () => {
-    const otras = [{ name: 'Comida', slot: 3 }, { name: 'Merienda', slot: 4, libre: true, target: { HC: 1 } }, meals[2]];
-    expect(cupoDeLaProximaComida(otras, porSlot, 13)?.titulo).toBe('Encajan en tu cena');
+  it('se salta las comidas libres', () => {
+    const otras = [{ name: 'Comida', slot: 3, libre: true }, meals[2]];
+    expect(cupoDeLaProximaComida(otras, dia, porSlot, 13)?.titulo).toBe('Encajan en tu cena');
   });
-  it('sin dieta no hay fila', () => {
-    expect(cupoDeLaProximaComida(undefined, porSlot, 9)).toBeNull();
+  it('sin dieta o sin objetivo no hay fila', () => {
+    expect(cupoDeLaProximaComida(undefined, dia, porSlot, 9)).toBeNull();
+    expect(cupoDeLaProximaComida(meals, null, porSlot, 9)).toBeNull();
   });
 });

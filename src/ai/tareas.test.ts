@@ -38,9 +38,9 @@ describe('las tres tareas', () => {
     }
   });
 
-  it('el guion dice que el presupuesto sí y las comidas no', () => {
+  it('el guion dice que el objetivo sí y las comidas no', () => {
     const prompt = tareaPorId('mes_nuevo')!.prompt('M', 'm@x.com');
-    expect(prompt).toContain('PRESUPUESTO de intercambios');
+    expect(prompt).toContain('OBJETIVO de cada dieta en gramos');
     expect(prompt).toMatch(/NO rellenes comidas/);
   });
 

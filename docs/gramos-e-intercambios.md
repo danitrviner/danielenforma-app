@@ -1,5 +1,7 @@
 # Por qué los gramos no cuadraban al pasar del menú a intercambios
 
+> **Histórico (09-2026).** Desde 10-2026 la app trabaja en kcal y gramos y no enseña intercambios (ver «Nutrición en kcal y gramos» en `CLAUDE.md`). Lo de abajo explica por qué el gramaje de la receta manda, y sigue valiendo; los intercambios solo se usan para leer datos viejos.
+
 Reproducción del 15-09-2026 con recetas reales de producción (`scripts/diagGramosReceta.mjs`).
 
 ## Lo que ve el cliente

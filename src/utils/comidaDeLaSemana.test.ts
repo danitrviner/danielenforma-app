@@ -51,21 +51,22 @@ describe('construirComidaDeLaSemana', () => {
       diets: [], desde: '2026-09-14', hasta: '2026-09-14',
     });
     const dia = r.dias[0];
-    expect(dia.comido).toEqual({ HC: 2, PROT: 1, GRASA: 0 });
-    expect(dia.puesto).toEqual({ HC: 6, PROT: 3, GRASA: 2 });
+    // 2 HC + 1 PROT = 50 g HC + 25 g P = 300 kcal.
+    expect(dia.comido).toEqual({ kcal: 300, p: 25, hc: 50, g: 0 });
+    expect(dia.puesto).toEqual({ kcal: 1098, p: 75, hc: 150, g: 22 });
     expect(dia.items).toBe(5);
     expect(dia.itemsMarcados).toBe(2);
-    // 3 intercambios comidos contra un cupo de 24.
-    expect(dia.desvio).toBe(-21);
+    // 300 kcal comidas contra un objetivo de 2.394.
+    expect(dia.desvio).toBe(-2094);
   });
 
-  it('cuenta las kcal con la equivalencia del sistema de intercambios', () => {
+  it('un día viejo cuenta las kcal con las equivalencias de siempre', () => {
     const r = construirComidaDeLaSemana({
       logs: [diaTipo('2026-09-14', ['m1_0', 'm1_1', 'm2_0', 'm2_1', 'm2_2'])],
       diets: [], desde: '2026-09-14', hasta: '2026-09-14',
     });
     const dia = r.dias[0];
-    expect(dia.comido).toEqual({ HC: 6, PROT: 3, GRASA: 2 });
+    expect(dia.comido).toEqual({ kcal: 1098, p: 75, hc: 150, g: 22 });
     // 6 HC×25g×4 + 3 PROT×25g×4 + 2 GRASA×11g×9 = 600 + 300 + 198
     expect(dia.kcalComido).toBe(1098);
     expect(dia.kcalCupo).toBe(2394);
@@ -111,7 +112,8 @@ describe('construirComidaDeLaSemana', () => {
       meals: [comida('m1', 'Comida', [{ category: 'HC', foodLabel: '30g arroz', quantity: 8 }])],
     };
     const r = construirComidaDeLaSemana({ logs: [pasado], diets: [], desde: '2026-09-14', hasta: '2026-09-14' });
-    expect(r.dias[0].desvio).toBe(6);
+    // 8 HC = 800 kcal contra 2 HC = 200 kcal.
+    expect(r.dias[0].desvio).toBe(600);
     expect(r.patrones.diasPorEncima).toBe(1);
   });
 
@@ -142,8 +144,8 @@ describe('construirComidaDeLaSemana', () => {
       id: 'l', athleteId: 'ana@x.com', date: '2026-08-01', dietId: 'd1', doneItemIds: ['m1_0'],
     };
     const r = construirComidaDeLaSemana({ logs: [viejo], diets: [dieta], desde: '2026-08-01', hasta: '2026-08-01' });
-    expect(r.dias[0].comido).toEqual({ HC: 3, PROT: 0, GRASA: 0 });
-    expect(r.dias[0].cupo).toEqual({ HC: 12, PROT: 6, GRASA: 6 });
+    expect(r.dias[0].comido).toEqual({ kcal: 300, p: 0, hc: 75, g: 0 });
+    expect(r.dias[0].cupo).toEqual({ kcal: 2394, p: 150, hc: 300, g: 66 });
   });
 
   it('los ingredientes mixtos se reparten entre sus dos categorías', () => {
@@ -153,7 +155,7 @@ describe('construirComidaDeLaSemana', () => {
       meals: [comida('m1', 'Comida', [{ category: 'MIX_HC', foodLabel: '200g yogur', quantity: 2 }])],
     };
     const r = construirComidaDeLaSemana({ logs: [conMix], diets: [], desde: '2026-09-14', hasta: '2026-09-14' });
-    expect(r.dias[0].comido).toEqual({ HC: 1, PROT: 1, GRASA: 0 });
+    expect(r.dias[0].comido).toEqual({ kcal: 200, p: 25, hc: 25, g: 0 });
   });
 
   it('suma la ventana entera sin contar los días sin registro', () => {
@@ -162,8 +164,8 @@ describe('construirComidaDeLaSemana', () => {
       diets: [], desde: '2026-09-14', hasta: '2026-09-17',
     });
     const { comido, cupo } = totalesDeLaVentana(r);
-    expect(comido).toEqual({ HC: 4, PROT: 0, GRASA: 0 });
-    expect(cupo).toEqual({ HC: 24, PROT: 12, GRASA: 12 });
+    expect(comido).toEqual({ kcal: 400, p: 0, hc: 100, g: 0 });
+    expect(cupo).toEqual({ kcal: 4788, p: 300, hc: 600, g: 132 });
   });
 
   it('deja fuera los registros que caen fuera de la ventana', () => {

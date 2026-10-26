@@ -1,5 +1,5 @@
-import type { Diet, DietCompletionLog, DietMeal, FoodCategory } from '../types.js';
-import { addToPlaced } from './exchangeHelpers.js';
+import type { Diet, DietCompletionLog, DietItem, DietMeal, FoodCategory, Macros } from '../types.js';
+import { macrosDeIntercambios, macrosDeLineas, objetivoDelRegistro } from './macrosLegado.js';
 
 const CUPO_VACIO: Record<FoodCategory, number> = { HC: 0, PROT: 0, GRASA: 0, MIX_HC: 0, MIX_GRASA: 0 };
 
@@ -64,7 +64,7 @@ export function totalItemsDelDia(log: DietCompletionLog | null | undefined, diet
  *
  * Se mantiene porque hay histórico calculado así y porque para un plan que sí
  * dicta el coach todavía significa algo. Lo que mide la comida de verdad es
- * `adherenciaPorIntercambios`.
+ * `adherenciaPorKcal`.
  */
 export function adherenciaDelDia(log: DietCompletionLog | null | undefined, diets: Diet[]): number | null {
   const total = totalItemsDelDia(log, diets);
@@ -72,64 +72,55 @@ export function adherenciaDelDia(log: DietCompletionLog | null | undefined, diet
   return Math.min(100, (log.doneItemIds.length / total) * 100);
 }
 
-/** Categorías que cuentan para el cupo. Las MIX se reparten entre dos. */
-const CATS_DE_CUPO: FoodCategory[] = ['HC', 'PROT', 'GRASA'];
-
-export interface AdherenciaPorIntercambios {
-  /** Intercambios comidos ÷ intercambios de cupo, en %. Puede pasar de 100. */
+export interface AdherenciaPorKcal {
+  /** kcal comidas ÷ kcal del objetivo, en %. Puede pasar de 100. */
   pct: number;
-  comidos: Record<'HC' | 'PROT' | 'GRASA', number>;
-  cupo: Record<'HC' | 'PROT' | 'GRASA', number>;
+  comido: Macros;
+  objetivo: Macros;
 }
 
-/**
- * Adherencia del día medida en COMIDA, no en tics.
- *
- * Suma los intercambios de lo que el atleta marcó como comido y los divide
- * entre el cupo que tenía ese día. Un día en el que se come el 90 % de lo
- * pautado da 90 % aunque haya dejado ocho líneas sin tildar; uno en el que se
- * come el doble da 200 %, que es información y no un error —por eso NO se
- * recorta a 100: pasarse es un dato tan útil como quedarse corto, y taparlo
- * hace que un atleta que come de más se vea idéntico a uno que cumple.
- *
- * `null` cuando no hay cupo: sin objetivo no hay nada que cumplir.
- */
-export function adherenciaPorIntercambios(
-  log: DietCompletionLog | null | undefined,
-  diets: Diet[],
-): AdherenciaPorIntercambios | null {
-  if (!log) return null;
-
-  const cupoBruto = cupoDelDia(log, diets);
-  const cupo = { HC: 0, PROT: 0, GRASA: 0 };
-  for (const cat of Object.keys(cupoBruto) as FoodCategory[]) {
-    addToPlaced(cupo as unknown as Record<FoodCategory, number>, cat, cupoBruto[cat] ?? 0);
-  }
-  const totalCupo = CATS_DE_CUPO.reduce((t, c) => t + cupo[c], 0);
-  if (totalCupo <= 0) return null;
-
-  const marcados = new Set(log.doneItemIds);
-  const comidos = { HC: 0, PROT: 0, GRASA: 0 };
+/** Lo marcado como comido un día (con sus kcal y gramos reales). */
+export function lineasComidas(log: DietCompletionLog, diets: Diet[]): DietItem[] {
+  const marcados = new Set(log.doneItemIds ?? []);
+  const out: DietItem[] = [];
   for (const [i, comida] of comidasDelDia(log, diets).entries()) {
     comida.items.forEach((item, j) => {
       // El id de una línea es `${comida.id}_${índice}` — la misma convención
       // que usa la pantalla del atleta al marcar.
-      if (!marcados.has(`${comida.id}_${j}`) && !marcados.has(`${i}_${j}`)) return;
-      addToPlaced(comidos as unknown as Record<FoodCategory, number>, item.category, item.quantity);
+      if (marcados.has(`${comida.id}_${j}`) || marcados.has(`${i}_${j}`)) out.push(item);
     });
   }
-  const totalComido = CATS_DE_CUPO.reduce((t, c) => t + comidos[c], 0);
+  return out;
+}
 
+/**
+ * Adherencia del día medida en COMIDA, no en tics (10-2026: en kcal).
+ *
+ * Las kcal de lo que el atleta marcó como comido entre las de su objetivo de
+ * ese día. Un día en el que se come el 90 % da 90 % aunque haya dejado líneas
+ * sin tildar; uno en el que se come el doble da 200 %, que es información y no
+ * un error —por eso NO se recorta a 100—.
+ *
+ * `null` cuando no hay objetivo: sin objetivo no hay nada que cumplir.
+ */
+export function adherenciaPorKcal(
+  log: DietCompletionLog | null | undefined,
+  diets: Diet[],
+): AdherenciaPorKcal | null {
+  if (!log) return null;
+  const objetivo = objetivoDelRegistro(log) ?? macrosDeIntercambios(cupoDelDia(log, diets));
+  if (objetivo.kcal <= 0) return null;
+  const comido = macrosDeLineas(lineasComidas(log, diets));
   return {
-    pct: Math.round((totalComido / totalCupo) * 1000) / 10,
-    comidos, cupo,
+    pct: Math.round((comido.kcal / objetivo.kcal) * 1000) / 10,
+    comido, objetivo,
   };
 }
 
 /** Margen dentro del cual un día se considera cumplido. */
 export const BANDA_EN_OBJETIVO_PCT = 10;
 
-/** ¿Ese día estuvo en su cupo, con el margen de siempre? */
-export function enObjetivo(a: AdherenciaPorIntercambios | null): boolean {
+/** ¿Ese día estuvo en su objetivo, con el margen de siempre? */
+export function enObjetivo(a: AdherenciaPorKcal | null): boolean {
   return a !== null && Math.abs(a.pct - 100) <= BANDA_EN_OBJETIVO_PCT;
 }

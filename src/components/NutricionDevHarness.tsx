@@ -1,10 +1,9 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { UserProfile, Diet, MealItem, Recipe, DietCompletionLog, AthleteDietConfig } from '../types';
 import type { AlimentoCatalogo } from '../utils/catalogoAlimentos';
 import type { EntradaIndiceOff } from '../utils/productoOff';
 import { reglasDeRecetaKey, accesoGlobalKey } from '../hooks/useReglasDeReceta';
-import { SegmentedControl } from './ui';
 import NutritionScreen from './NutritionScreen';
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -106,10 +105,6 @@ function sembrar(qc: QueryClient) {
 }
 
 export default function NutricionDevHarness() {
-  const [modo, setModo] = useState<'macros' | 'intercambios'>(() => {
-    try { return localStorage.getItem('enforma_diario_vista') === 'intercambios' ? 'intercambios' : 'macros'; } catch { return 'macros'; }
-  });
-  const [version, setVersion] = useState(0);
   const qc = useMemo(() => {
     const c = new QueryClient({ defaultOptions: { queries: { staleTime: Infinity, retry: false } } });
     sembrar(c);
@@ -118,17 +113,7 @@ export default function NutricionDevHarness() {
   return (
     <QueryClientProvider client={qc}>
       <div className="mx-auto min-h-screen max-w-xl space-y-4 bg-bg px-4 py-4 text-ink">
-        <SegmentedControl
-          label="Modo"
-          value={modo}
-          onChange={v => {
-            try { localStorage.setItem('enforma_diario_vista', v); } catch { /* noop */ }
-            setModo(v as 'macros' | 'intercambios');
-            setVersion(x => x + 1);
-          }}
-          options={[{ value: 'macros', label: 'Calorías y macros' }, { value: 'intercambios', label: 'Intercambios' }]}
-        />
-        <div key={version}><NutritionScreen profile={PERFIL} /></div>
+        <NutritionScreen profile={PERFIL} />
       </div>
     </QueryClientProvider>
   );

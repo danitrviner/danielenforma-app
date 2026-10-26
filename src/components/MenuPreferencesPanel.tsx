@@ -178,7 +178,7 @@ export default function MenuPreferencesPanel({ athleteEmail }: Props) {
           options={trainingSlotOptions}
           placeholder="No entreno a una hora fija"
           disabled={savingTrainingSlot}
-          hint="Tu coach usará esto para poner más hidratos en esa comida al repartir tus intercambios."
+          hint="Tu coach usará esto para poner más hidratos en esa comida al preparar tu menú."
         />
       </div>
 
@@ -211,7 +211,7 @@ export default function MenuPreferencesPanel({ athleteEmail }: Props) {
             );
           })}
         </div>
-        <p className="font-sans text-caption text-ink-3">Se aplica a tus intercambios de recetas y a la próxima generación del coach.</p>
+        <p className="font-sans text-caption text-ink-3">Se aplica a tus recetas y a la próxima generación del menú.</p>
       </div>
 
       {/* Variedad + batch cooking */}

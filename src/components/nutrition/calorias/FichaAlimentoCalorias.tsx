@@ -17,7 +17,14 @@ import { nutrientesDeRacion } from '../../../utils/productoAIntercambios';
 
 export interface PorCien { kcal: number; p: number; hc: number; g: number }
 export interface ExtrasPorCien { f?: number; az?: number; sat?: number; sal?: number }
-export interface Racion { etiqueta: string; gramos: number }
+export interface Racion {
+  etiqueta: string;
+  gramos: number;
+  /** La ración del alimento (su unidad o su ración de referencia): sale marcada. */
+  recomendada?: boolean;
+  /** Rótulo pequeño encima de la cantidad («Última vez», «Apuntado»). */
+  nota?: string;
+}
 
 export interface FichaProps {
   nombre: string;
@@ -32,6 +39,8 @@ export interface FichaProps {
   comidas: { id: string; nombre: string }[];
   mealId: string;
   textoBoton?: string;
+  /** Solo al abrirla desde una fila del día: cambiar ese alimento por otro. */
+  onCambiar?: () => void;
   onConfirm: (gramos: number, mealId: string) => void;
   onClose: () => void;
 }
@@ -75,16 +84,21 @@ export function DonutMacros({ kcal, p, hc, g, size = 96 }: { kcal: number; p: nu
 }
 
 export default function FichaAlimentoCalorias({
-  nombre, marca, porCien, extrasPorCien, raciones, aproximado, nota, comidas, mealId: mealInicial, textoBoton = 'Añadir', onConfirm, onClose,
+  nombre, marca, porCien, extrasPorCien, raciones, aproximado, nota, comidas, mealId: mealInicial, textoBoton = 'Añadir', onCambiar, onConfirm, onClose,
 }: FichaProps) {
   const [racionIdx, setRacionIdx] = useState(0);
   const [numTexto, setNumTexto] = useState('1');
   const [mealId, setMealId] = useState(mealInicial);
-  const [verTabla, setVerTabla] = useState(true);
+  // Siempre cerrada al abrir la ficha (Dani, 26-10-2026).
+  const [verTabla, setVerTabla] = useState(false);
+  /** «Otra cantidad»: gramos escritos a mano (racionIdx = -1). */
+  const [otraTexto, setOtraTexto] = useState('');
 
-  const racion = raciones[racionIdx] ?? raciones[0];
+  const otra = racionIdx === -1;
+  const gramosOtra = parseFloat(otraTexto.replace(',', '.'));
+  const base = otra ? (Number.isFinite(gramosOtra) ? gramosOtra : 0) : (raciones[racionIdx] ?? raciones[0])?.gramos ?? 0;
   const num = parseFloat(numTexto.replace(',', '.'));
-  const gramos = racion && Number.isFinite(num) && num > 0 ? Math.round(racion.gramos * num * 10) / 10 : 0;
+  const gramos = base > 0 && Number.isFinite(num) && num > 0 ? Math.round(base * num * 10) / 10 : 0;
   const valido = gramos > 0 && gramos <= 5000;
 
   const n = useMemo(() => (valido ? nutrientesDeRacion(porCien, gramos) : null), [porCien, gramos, valido]);
@@ -107,7 +121,7 @@ export default function FichaAlimentoCalorias({
   ] : [];
 
   return (
-    <Sheet open onClose={onClose} label={nombre} alto="completo" size="m">
+    <Sheet open onClose={onClose} label={nombre} size="m">
       <div className="space-y-5 pb-4">
         <div className="flex items-start gap-3 pt-1">
           <div className="min-w-0 flex-1">
@@ -125,15 +139,113 @@ export default function FichaAlimentoCalorias({
           </button>
         </div>
 
-        <div className="space-y-3">
-          <div className="flex items-center justify-between gap-3">
-            <span className="font-sans text-body text-ink">Ración</span>
-            <Select
-              className="w-52"
-              value={String(racionIdx)}
-              onChange={v => setRacionIdx(Number(v))}
-              options={raciones.map((r, i) => ({ value: String(i), label: r.etiqueta }))}
-            />
+        {n ? (
+          <>
+            <div className="flex items-center gap-4">
+              <DonutMacros kcal={n.kcal} p={n.p} hc={n.hc} g={n.g} />
+              <div className="grid flex-1 grid-cols-3 gap-2 text-center">
+                {([
+                  ['Hidratos', n.hc, n.hc * 4, 'var(--color-macro-hc)'],
+                  ['Grasa', n.g, n.g * 9, 'var(--color-macro-grasa)'],
+                  ['Proteína', n.p, n.p * 4, 'var(--color-macro-prot)'],
+                ] as const).map(([etq, gr, kc, color]) => (
+                  <div key={etq}>
+                    <span className="block font-mono text-label font-bold" style={{ color }}>{pct(kc)}%</span>
+                    <span className="block font-mono text-title-s font-bold text-ink">{fmt(gr)} g</span>
+                    <span className="block font-sans text-caption text-ink-2">{etq}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            {aproximado && (
+              <p className="font-sans text-caption text-ink-3">Valores aproximados: este alimento del banco se cuenta por su equivalencia.</p>
+            )}
+
+            <div className="border-t border-hairline pt-4">
+              <button type="button" onClick={() => setVerTabla(v => !v)} aria-expanded={verTabla} className="flex w-full items-center justify-between">
+                <span className="font-sans text-body font-bold text-ink">Información nutricional</span>
+                <span className="flex items-center gap-1 font-sans text-body-s text-accent-ink">
+                  {verTabla ? 'Ocultar' : 'Ver'}
+                  <Icon name="expand_more" size="s" className={`transition-transform duration-(--duration-base) ease-(--ease-brand) motion-reduce:transition-none ${verTabla ? 'rotate-180' : ''}`} />
+                </span>
+              </button>
+              {/* Se despliega animando la altura (grid 0fr → 1fr) y la hoja,
+                  que mide lo que su contenido, crece con ella. */}
+              <div
+                className={`grid transition-[grid-template-rows,opacity] duration-(--duration-slide) ease-(--ease-brand) motion-reduce:transition-none ${verTabla ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}
+                aria-hidden={!verTabla}
+              >
+                <div className="overflow-hidden">
+                  <dl className="space-y-2 pt-3">
+                    {filas.map(([etq, v, u]) => (
+                      <div key={etq} className="flex justify-between gap-3 font-sans text-body">
+                        <dt className="text-ink">{etq}</dt>
+                        <dd className="font-mono text-ink-2">{v === undefined ? <span className="text-ink-3">—</span> : `${fmt(v)}${u ? ` ${u}` : ''}`}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                </div>
+              </div>
+            </div>
+          </>
+        ) : (
+          <p className="font-sans text-body-s text-ink-3">Escribe cuántas raciones para ver lo que aporta.</p>
+        )}
+
+        {/* Lo que se apunta, debajo de la información (Dani, 26-10-2026). */}
+        <div className="space-y-3 border-t border-hairline pt-5">
+          {/* Las raciones como chips (Dani, 26-10-2026, propuesta A): la
+              recomendada lleva su estrella y se elige de un toque. */}
+          <div className="space-y-3">
+            <span className="block font-sans text-body font-bold text-ink">Ración</span>
+            <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Ración">
+              {raciones.map((r, i) => {
+                const elegida = racionIdx === i;
+                return (
+                  <button
+                    key={`${r.etiqueta}_${i}`}
+                    type="button"
+                    role="radio"
+                    aria-checked={elegida}
+                    onClick={() => setRacionIdx(i)}
+                    className={`flex min-h-11 flex-col items-start justify-center gap-0.5 rounded-surface border px-3.5 py-2 text-left font-sans transition-colors duration-(--duration-state) ${elegida ? 'border-accent bg-accent-bg' : 'border-hairline bg-field hover:border-accent/40'}`}
+                  >
+                    {r.recomendada ? (
+                      <span className="flex items-center gap-1 font-mono text-caption font-bold uppercase tracking-wider text-accent-ink">
+                        <Icon name="star" size="s" filled />
+                        Recomendada
+                      </span>
+                    ) : r.nota ? (
+                      <span className="font-mono text-caption font-semibold uppercase tracking-wider text-ink-3">{r.nota}</span>
+                    ) : null}
+                    <span className={`text-body text-ink ${elegida ? 'font-bold' : ''}`}>{r.etiqueta}</span>
+                  </button>
+                );
+              })}
+              <button
+                type="button"
+                role="radio"
+                aria-checked={otra}
+                onClick={() => setRacionIdx(-1)}
+                className={`flex min-h-11 items-center rounded-surface border px-3.5 py-2 font-sans text-body transition-colors duration-(--duration-state) ${otra ? 'border-accent bg-accent-bg font-bold text-ink' : 'border-dashed border-hairline text-ink-2 hover:border-accent/40'}`}
+              >
+                Otra cantidad
+              </button>
+            </div>
+            {otra && (
+              <div className="flex items-center justify-between gap-3 animate-fade-up">
+                <label htmlFor="ficha-otra" className="font-sans text-body text-ink">Gramos</label>
+                <input
+                  id="ficha-otra"
+                  inputMode="decimal"
+                  autoFocus
+                  value={otraTexto}
+                  onChange={e => setOtraTexto(e.target.value)}
+                  placeholder="g"
+                  className="h-[54px] w-28 rounded-field border border-hairline bg-field px-4 text-right font-mono text-title-s text-ink focus:border-accent focus:outline-none"
+                />
+              </div>
+            )}
           </div>
           <div className="flex items-center justify-between gap-3">
             <label htmlFor="ficha-num" className="font-sans text-body text-ink">Nº de raciones</label>
@@ -159,66 +271,32 @@ export default function FichaAlimentoCalorias({
           )}
         </div>
 
-        {n ? (
-          <>
-            <div className="flex items-center gap-4 border-t border-hairline pt-5">
-              <DonutMacros kcal={n.kcal} p={n.p} hc={n.hc} g={n.g} />
-              <div className="grid flex-1 grid-cols-3 gap-2 text-center">
-                {([
-                  ['Hidratos', n.hc, n.hc * 4, 'var(--color-macro-hc)'],
-                  ['Grasa', n.g, n.g * 9, 'var(--color-macro-grasa)'],
-                  ['Proteína', n.p, n.p * 4, 'var(--color-macro-prot)'],
-                ] as const).map(([etq, gr, kc, color]) => (
-                  <div key={etq}>
-                    <span className="block font-mono text-label font-bold" style={{ color }}>{pct(kc)}%</span>
-                    <span className="block font-mono text-title-s font-bold text-ink">{fmt(gr)} g</span>
-                    <span className="block font-sans text-caption text-ink-2">{etq}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-            {aproximado && (
-              <p className="font-sans text-caption text-ink-3">Valores aproximados: este alimento del banco se cuenta por su equivalencia.</p>
-            )}
-
-            <div className="border-t border-hairline pt-4">
-              <button type="button" onClick={() => setVerTabla(v => !v)} className="flex w-full items-center justify-between">
-                <span className="font-sans text-body font-bold text-ink">Información nutricional</span>
-                <span className="flex items-center gap-1 font-sans text-body-s text-accent-ink">
-                  {verTabla ? 'Ocultar' : 'Ver'}
-                  <Icon name={verTabla ? 'expand_less' : 'expand_more'} size="s" />
-                </span>
-              </button>
-              {verTabla && (
-                <dl className="mt-3 space-y-2">
-                  {filas.map(([etq, v, u]) => (
-                    <div key={etq} className="flex justify-between gap-3 font-sans text-body">
-                      <dt className="text-ink">{etq}</dt>
-                      <dd className="font-mono text-ink-2">{v === undefined ? <span className="text-ink-3">—</span> : `${fmt(v)}${u ? ` ${u}` : ''}`}</dd>
-                    </div>
-                  ))}
-                </dl>
-              )}
-            </div>
-          </>
-        ) : (
-          <p className="font-sans text-body-s text-ink-3">Escribe cuántas raciones para ver lo que aporta.</p>
-        )}
-
         {nota && <p className="font-sans text-caption text-ink-3">{nota}</p>}
+
+        {onCambiar && (
+          <button
+            type="button"
+            onClick={onCambiar}
+            className="flex w-full items-center justify-center gap-2 rounded-surface border border-hairline py-3.5 font-sans text-body-s font-bold text-ink-2 hover:border-accent/50 hover:text-accent-ink"
+          >
+            <Icon name="swap_horiz" size="s" />
+            Cambiar por otro alimento
+          </button>
+        )}
       </div>
     </Sheet>
   );
 }
 
-/** Raciones de un producto: lo de la última vez, la ración declarada, 100 g y 1 g. */
+/** Raciones de un producto: la recomendada (su unidad o su ración declarada),
+ *  lo de la última vez y 100 g. La primera sale elegida. */
 export function racionesDe(opc: { ultimos?: number; racion?: number; unidad?: { nombre: string; gramos: number } }): Racion[] {
   const out: Racion[] = [];
-  if (opc.ultimos && opc.ultimos > 0) out.push({ etiqueta: `${opc.ultimos} g (última vez)`, gramos: opc.ultimos });
-  if (opc.unidad && opc.unidad.gramos > 0) out.push({ etiqueta: `1 ${opc.unidad.nombre} (${opc.unidad.gramos} g)`, gramos: opc.unidad.gramos });
-  else if (opc.racion && opc.racion > 0) out.push({ etiqueta: `1 ración (${opc.racion} g)`, gramos: opc.racion });
-  out.push({ etiqueta: '100 g', gramos: 100 });
-  out.push({ etiqueta: '1 g', gramos: 1 });
+  if (opc.unidad && opc.unidad.gramos > 0) out.push({ etiqueta: `1 ${opc.unidad.nombre} · ${opc.unidad.gramos} g`, gramos: opc.unidad.gramos, recomendada: true });
+  else if (opc.racion && opc.racion > 0) out.push({ etiqueta: `1 ración · ${opc.racion} g`, gramos: opc.racion, recomendada: true });
+  // La última vez, solo si no es ya la recomendada: dos chips iguales confunden.
+  if (opc.ultimos && opc.ultimos > 0 && !out.some(r => r.gramos === opc.ultimos)) out.push({ etiqueta: `${opc.ultimos} g`, gramos: opc.ultimos, nota: 'Última vez' });
+  if (!out.some(r => r.gramos === 100)) out.push({ etiqueta: '100 g', gramos: 100 });
   return out;
 }
 

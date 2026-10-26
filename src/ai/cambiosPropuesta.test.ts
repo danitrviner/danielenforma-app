@@ -37,12 +37,12 @@ describe('cambiosDeDieta', () => {
     meals: [{ id: 'm1', name: 'Comida', items: alimentos.map(foodLabel => ({ category: 'HC', foodLabel, quantity: 1 })) }],
   } as Diet);
 
-  it('compara kcal, intercambios y alimentos que entran y salen', () => {
+  it('compara kcal, gramos y alimentos que entran y salen', () => {
     const base = dieta({ HC: 8, PROT: 6, GRASA: 4 }, ['Arroz', 'Pollo']);
     const nueva = dieta({ HC: 6, PROT: 6, GRASA: 4 }, ['Patata', 'Pollo']);
     const cambios = cambiosDeDieta(base, nueva);
     expect(cambios[0]).toMatch(/^Kcal: \d+ → \d+ \(-\d+\)$/);
-    expect(cambios).toContain('HC: 8 → 6 intercambios');
+    expect(cambios).toContain('Hidratos: 200 → 150 g');
     expect(cambios).toContain('Entran: Patata');
     expect(cambios).toContain('Salen: Arroz');
   });

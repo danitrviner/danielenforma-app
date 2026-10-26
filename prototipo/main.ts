@@ -11,7 +11,7 @@
  * distintas.
  */
 import {
-  slotsFromOnboarding, generateWeek, findSwapAlternatives, totalConExtras,
+  slotsFromOnboarding, generateWeek, findSwapAlternatives,
   recipeMatchesSlot, slotTargets, CONTEOS_COMIDAS,
   GeneratorPrefs, MealSlotSpec, SwapCandidate, ConteoComidas,
 } from '../src/utils/menuEngine';
@@ -19,10 +19,12 @@ import { buildShoppingList } from '../src/utils/menuShoppingList';
 import { minutosDeReceta } from '../src/utils/tiempoDeReceta';
 import { ingredientesEscalables } from '../src/utils/escalarIngrediente';
 import { dishType, dishTypeLabel, DISH_TYPES } from '../src/utils/dishTypes';
-import { exchangeToKcal } from '../src/utils/nutritionConstants';
+import { kcalDeGramos } from '../src/utils/macros';
+import { macrosDeLaComida, macrosDelPlato, objetivoDelDiaDeMenu } from '../src/utils/menuMacros';
 import { SYSTEM_FOODS } from '../src/nutricion_seed_en_forma';
 import {
   Recipe, MealItem, Diet, MenuDay, MenuMeal, WeekDay, DietMode, HungerProfile,
+  Macros,
 } from '../src/types';
 import RECETAS from './recetas.json';
 
@@ -123,13 +125,10 @@ interface Resultado {
 
 let resultado: Resultado | null = null;
 
-function presupuesto(kcal: number) {
-  const t = kcal / 100;
-  return {
-    HC: Math.round(t * 0.45 * 4) / 4,
-    PROT: Math.round(t * 0.3 * 4) / 4,
-    GRASA: Math.round(t * 0.25 * 4) / 4,
-  };
+/** Objetivo del día en gramos: 45 % hidratos, 30 % proteína, 25 % grasa. */
+function presupuesto(kcal: number): Macros {
+  const g = { hc: Math.round((kcal * 0.45) / 4), p: Math.round((kcal * 0.3) / 4), g: Math.round((kcal * 0.25) / 9) };
+  return { kcal: kcalDeGramos(g), ...g };
 }
 
 function generar(): Resultado {
@@ -156,7 +155,7 @@ function generar(): Resultado {
   const b = presupuesto(estado.kcal);
   const dieta = {
     id: 'dieta', athleteId: 'atleta', name: `${estado.kcal} kcal`,
-    budget: { ...b, MIX_HC: 0, MIX_GRASA: 0 }, meals: [],
+    objetivo: b, meals: [],
   } as unknown as Diet;
   const schedule: Partial<Record<WeekDay, string>> = {};
   for (const d of DIAS) schedule[d] = 'dieta';
@@ -164,7 +163,7 @@ function generar(): Resultado {
     schedule, diets: [dieta], slots, pools, foods, prefs, mode: estado.modo,
   });
   void count;
-  return { dias, slots, prefs, pools, objetivo: b.HC + b.PROT + b.GRASA, ms: performance.now() - t0 };
+  return { dias, slots, prefs, pools, objetivo: b.kcal, ms: performance.now() - t0 };
 }
 
 // ─── Utilidades de presentación ──────────────────────────────────────────────
@@ -177,17 +176,13 @@ const el = (tag: string, cls?: string, txt?: string): HTMLElement => {
   return n;
 };
 const num = (n: number) => (Math.round(n * 100) / 100).toString().replace('.', ',');
-const kcalDe = (m: MenuMeal) => Math.round(exchangeToKcal(totalConExtras(m.exch, m.complements, m.racionesExtra)));
-const totalDe = (m: MenuMeal) => {
-  const t = totalConExtras(m.exch, m.complements, m.racionesExtra);
-  return t.HC + t.PROT + t.GRASA;
-};
+const kcalDe = (m: MenuMeal) => Math.round(macrosDeLaComida(m).kcal);
 
-function chipsMacro(v: { HC: number; PROT: number; GRASA: number }): HTMLElement {
+function chipsMacro(v: Macros): HTMLElement {
   const wrap = el('div', 'macros');
-  for (const [k, label] of [['HC', 'HC'], ['PROT', 'PR'], ['GRASA', 'GR']] as const) {
-    const c = el('span', `macro macro-${k.toLowerCase()}`);
-    c.append(el('b', '', label), document.createTextNode(num(v[k])));
+  for (const [k, clase, label] of [['hc', 'hc', 'HC'], ['p', 'prot', 'PR'], ['g', 'grasa', 'GR']] as const) {
+    const c = el('span', `macro macro-${clase}`);
+    c.append(el('b', '', label), document.createTextNode(`${Math.round(v[k])} g`));
     wrap.append(c);
   }
   return wrap;
@@ -245,7 +240,7 @@ function pintarFicha(): void {
     i.onchange = () => pintarFicha();
     w.append(i, v);
     return w;
-  })(), `${num(presupuesto(estado.kcal).HC + presupuesto(estado.kcal).PROT + presupuesto(estado.kcal).GRASA)} intercambios al día`));
+  })(), (() => { const o = presupuesto(estado.kcal); return `${o.hc} g HC · ${o.p} g P · ${o.g} g G al día`; })()));
   coach.append(fila('Banco de alimentos', opciones(
     [{ v: 'OMNIVORO', t: 'Omnívoro' }, { v: 'VEGANO', t: 'Vegano' }, { v: 'SIN_PESAR', t: 'Sin pesar' }],
     estado.modo, v => { estado.modo = v as DietMode; },
@@ -323,21 +318,21 @@ function pintarMando(r: Resultado): void {
   const sinReceta = comidas.filter(m => !m.recipeId).length;
   let peorDesvio = 0;
   for (const d of r.dias) {
-    const puesto = d.meals.reduce((s, m) => s + totalDe(m), 0);
+    const puesto = d.meals.reduce((s, m) => s + kcalDe(m), 0);
     peorDesvio = Math.max(peorDesvio, Math.abs(puesto - r.objetivo));
   }
   let coberturaMin = 1;
   let maxAcomp = 0;
   for (const m of comidas) {
-    const t = totalDe(m);
-    if (t > 0) coberturaMin = Math.min(coberturaMin, (m.exch.HC + m.exch.PROT + m.exch.GRASA) / t);
+    const t = kcalDe(m);
+    if (t > 0) coberturaMin = Math.min(coberturaMin, macrosDelPlato(m).kcal / t);
     maxAcomp = Math.max(maxAcomp, m.complements.length);
   }
   const distintas = new Set(comidas.map(m => m.recipeId)).size;
 
   const tiles: { k: string; v: string; sub: string; estado: 'ok' | 'mal' }[] = [
     { k: 'Sin receta', v: String(sinReceta), sub: `de ${comidas.length} comidas`, estado: sinReceta === 0 ? 'ok' : 'mal' },
-    { k: 'Desvío máximo', v: num(peorDesvio), sub: `intercambios sobre ${num(r.objetivo)}`, estado: peorDesvio <= 1 ? 'ok' : 'mal' },
+    { k: 'Desvío máximo', v: num(peorDesvio), sub: `kcal sobre ${num(r.objetivo)}`, estado: peorDesvio <= 100 ? 'ok' : 'mal' },
     { k: 'La receta cubre', v: `${Math.round(coberturaMin * 100)}%`, sub: 'en la peor comida', estado: coberturaMin >= 0.7 ? 'ok' : 'mal' },
     { k: 'Acompañamientos', v: String(maxAcomp), sub: 'como mucho, por comida', estado: maxAcomp <= 2 ? 'ok' : 'mal' },
     { k: 'Recetas distintas', v: String(distintas), sub: 'en la semana', estado: 'ok' },
@@ -369,7 +364,7 @@ function pintarSemana(r: Resultado): void {
   }
 
   const dia = r.dias.find(d => d.day === diaAbierto)!;
-  const objetivos = slotTargets(dia.target, r.slots);
+  const objetivos = slotTargets(objetivoDelDiaDeMenu(dia), r.slots);
   const cont = $('#comidas');
   cont.innerHTML = '';
 
@@ -382,7 +377,7 @@ function pintarSemana(r: Resultado): void {
     izq.append(el('h4', '', m.name));
     const objetivo = objetivos[i];
     izq.append(el('p', 'comida-obj',
-      `objetivo ${num(objetivo.HC + objetivo.PROT + objetivo.GRASA)} int.`));
+      `objetivo ${Math.round(objetivo.kcal)} kcal`));
     cab.append(izq);
     cab.append(el('p', 'comida-kcal', `${kcalDe(m)} kcal`));
     card.append(cab);
@@ -402,7 +397,7 @@ function pintarSemana(r: Resultado): void {
       ].filter(Boolean).join(' · ');
       t.append(meta);
       plato.append(t);
-      plato.append(chipsMacro(m.exch));
+      plato.append(chipsMacro(macrosDelPlato(m)));
       card.append(plato);
     }
 
@@ -434,14 +429,10 @@ function pintarSemana(r: Resultado): void {
     cont.append(card);
   });
 
-  const total = dia.meals.reduce((s, m) => s + totalDe(m), 0);
+  const total = dia.meals.reduce((s, m) => s + kcalDe(m), 0);
   const resumen = $('#resumen-dia');
   resumen.innerHTML = '';
-  resumen.append(
-    el('span', '', `${num(total)} de ${num(r.objetivo)} intercambios`),
-    el('span', 'sep', '·'),
-    el('span', '', `${dia.meals.reduce((s, m) => s + kcalDe(m), 0)} kcal`),
-  );
+  resumen.append(el('span', '', `${total} de ${r.objetivo} kcal`));
 }
 
 // ─── Alternativas ────────────────────────────────────────────────────────────
@@ -495,7 +486,7 @@ function abrirAlternativas(r: Resultado, dia: MenuDay, comida: MenuMeal): void {
           mins != null ? `~${mins} min` : null,
           a.raciones.length ? `+ ${a.raciones.map(x => `${x.gramos} g de ${x.nombre}`).join(', ')}` : null,
         ].filter(Boolean).join(' · ')));
-        n.append(t, chipsMacro(a.exch));
+        n.append(t, chipsMacro(a.macros));
         ul.append(n);
       }
       if (lista.length > 40) {

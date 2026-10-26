@@ -2,15 +2,18 @@ import React from 'react';
 import { Sheet, Icon, SearchField } from '../../ui';
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   Añadir alimento en «Calorías y macros» (Dani, 25-10-2026)
+   Hoja de «Añadir» del diario (Dani, 26-10-2026)
 
-   La pantalla del «Breakfast» que enseñó Dani: arriba la comida (se cambia sin
-   salir), el buscador y cuatro pestañas; debajo, Escanear y Rápido, y el
-   historial con un «+» que vuelve a meter lo de la última vez de un toque.
+   Cuatro pestañas: Recientes (lo que más apuntas), Alimentos generales (los
+   310 del banco, por Hidratos/Proteínas/Grasas/Mixtos, en kcal), Mis comidas
+   (mis recetas y comidas guardadas y mis alimentos creados) y Todo (el
+   buscador sobre toda la app). El escáner va junto al buscador.
 
-   Aquí no hay nada de intercambios: ni filtro Omnívoro/Vegano/Sin pesar ni la
-   guía. La pantalla solo pinta; las filas y lo que hacen las prepara quien la
-   abre (NutritionScreen), que es quien tiene los datos.
+   La comida es la del «+» que se tocó: ya no hay desplegable de comida arriba
+   (en iOS, al ser lo primero enfocable, abría la rueda del selector solo). Si
+   hay que cambiarla, se hace desde la ficha del alimento.
+
+   La pantalla solo pinta; las filas y lo que hacen las prepara NutritionScreen.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 export interface FilaAlimento {
@@ -27,14 +30,13 @@ export interface FilaAlimento {
   onEditar?: () => void;
 }
 
-export type PestanaAnadir = 'todo' | 'coach' | 'comidas' | 'mios';
+export type PestanaAnadir = 'recientes' | 'generales' | 'comidas' | 'todo';
 
 export interface SeccionFilas { titulo: string; filas: FilaAlimento[] }
 
 interface Props {
-  comidas: { id: string; nombre: string }[];
-  mealId: string;
-  onCambiarComida: (id: string) => void;
+  /** «Añadir a Desayuno» o «Cambiar Pan». */
+  titulo: string;
   busqueda: string;
   onBusqueda: (v: string) => void;
   pestana: PestanaAnadir;
@@ -46,41 +48,39 @@ interface Props {
   /** Botón al pie de la lista («Crear alimento», «Buscar en el recetario»…). */
   pie?: { texto: string; icono: string; onClick: () => void };
   onEscanear: () => void;
-  onRapido: () => void;
+  /** Encima de la lista (los tipos de alimento en «Alimentos generales»). */
+  filtro?: React.ReactNode;
+  /** Al pie (la atribución de Open Food Facts cuando salen sus productos). */
+  nota?: string;
   onClose: () => void;
 }
 
 const PESTANAS: { id: PestanaAnadir; texto: string }[] = [
-  { id: 'todo', texto: 'Todo' },
-  { id: 'coach', texto: 'Del coach' },
+  { id: 'recientes', texto: 'Recientes' },
+  { id: 'generales', texto: 'Alimentos generales' },
   { id: 'comidas', texto: 'Mis comidas' },
-  { id: 'mios', texto: 'Mis alimentos' },
+  { id: 'todo', texto: 'Todo' },
 ];
 
 export default function AnadirAlimentoCalorias({
-  comidas, mealId, onCambiarComida, busqueda, onBusqueda, pestana, onPestana, secciones, vacio, pie, onEscanear, onRapido, onClose,
+  titulo, busqueda, onBusqueda, pestana, onPestana, secciones, vacio, pie, onEscanear, filtro, nota, onClose,
 }: Props) {
-  const nombreComida = comidas.find(c => c.id === mealId)?.nombre ?? 'Comida';
-
   const cabecera = (
     <div className="space-y-3 border-b border-hairline bg-bg px-4 pb-0 pt-1">
-      {/* La comida es un desplegable: se cambia de desayuno a cena sin salir. */}
-      <div className="relative flex justify-center">
-        <label className="relative inline-flex items-center gap-1">
-          <span className="sr-only">Comida</span>
-          <select
-            value={mealId}
-            onChange={e => onCambiarComida(e.target.value)}
-            className="appearance-none bg-transparent pr-7 text-center font-sans text-title-m font-bold text-ink focus:outline-none"
-          >
-            {comidas.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
-          </select>
-          <Icon name="expand_more" size="m" className="pointer-events-none absolute right-0 text-ink-2" />
-        </label>
-        <span className="sr-only">Añadiendo a {nombreComida}</span>
+      <div className="flex items-center gap-2">
+        <div className="min-w-0 flex-1">
+          <SearchField label="Buscar un alimento" placeholder="Buscar un alimento" value={busqueda} onChange={onBusqueda} />
+        </div>
+        <button
+          type="button"
+          onClick={onEscanear}
+          aria-label="Escanear código de barras"
+          className="flex h-[46px] w-[46px] flex-none items-center justify-center rounded-control bg-surface text-ink-2 transition-colors hover:text-ink active:scale-95"
+        >
+          <Icon name="qr_code_scanner" size="m" />
+        </button>
       </div>
-      <SearchField label="Buscar un alimento" placeholder="Buscar un alimento" value={busqueda} onChange={onBusqueda} />
-      <div role="tablist" aria-label="Qué alimentos ver" className="-mx-4 flex gap-4 overflow-x-auto px-4">
+      <div role="tablist" aria-label="Qué alimentos ver" className="-mx-4 flex justify-between gap-3 overflow-x-auto px-4 hide-scrollbar">
         {PESTANAS.map(p => {
           const activa = p.id === pestana;
           return (
@@ -90,7 +90,7 @@ export default function AnadirAlimentoCalorias({
               role="tab"
               aria-selected={activa}
               onClick={() => onPestana(p.id)}
-              className={`flex-none border-b-2 pb-2.5 font-sans text-[15px] transition-colors ${activa ? 'border-ink font-bold text-ink' : 'border-transparent text-ink-2 hover:text-ink'}`}
+              className={`flex-none border-b-2 pb-2.5 font-sans text-[14px] transition-colors ${activa ? 'border-ink font-bold text-ink' : 'border-transparent text-ink-2 hover:text-ink'}`}
             >
               {p.texto}
             </button>
@@ -101,27 +101,9 @@ export default function AnadirAlimentoCalorias({
   );
 
   return (
-    <Sheet open onClose={onClose} label={`Añadir a ${nombreComida}`} alto="completo" toolbar={cabecera}>
+    <Sheet open onClose={onClose} title={titulo} alto="completo" toolbar={cabecera}>
       <div className="space-y-5 pb-6 pt-4">
-        {pestana === 'todo' && !busqueda.trim() && (
-          <div className="grid grid-cols-2 gap-3">
-            {([
-              { icono: 'qr_code_scanner', texto: 'Escanear', onClick: onEscanear },
-              { icono: 'bolt', texto: 'Rápido', onClick: onRapido },
-            ]).map(b => (
-              <button
-                key={b.texto}
-                type="button"
-                onClick={b.onClick}
-                className="flex flex-col items-center gap-2 rounded-surface bg-surface px-3 py-4 transition-colors hover:bg-raised active:scale-[0.98]"
-              >
-                <Icon name={b.icono} size="l" className="text-ink-2" />
-                <span className="font-sans text-body font-bold text-ink">{b.texto}</span>
-              </button>
-            ))}
-          </div>
-        )}
-
+        {filtro}
         {secciones.every(s => s.filas.length === 0) ? (
           <p className="px-1 pt-4 text-center font-sans text-body-s text-ink-3">{vacio}</p>
         ) : secciones.map(s => s.filas.length === 0 ? null : (
@@ -164,6 +146,7 @@ export default function AnadirAlimentoCalorias({
             {pie.texto}
           </button>
         )}
+        {nota && <p className="px-1 text-center font-sans text-caption text-ink-3">{nota}</p>}
       </div>
     </Sheet>
   );

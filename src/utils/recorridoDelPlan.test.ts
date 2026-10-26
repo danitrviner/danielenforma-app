@@ -25,8 +25,8 @@ const GUION_ORIGINAL = `### El plan entero, en este orden (no pares a la mitad n
 3. **Publicar el bloque** (propose_publish_block): vuelca las sesiones al calendario del atleta. Sin este paso tiene un plan que no ve. Va siempre después del 2.
 
 **C. Nutrición**
-4. **Periodización nutricional** (propose_nutrition_program): las fases encadenadas con sus semanas, kcal y recargas, y dentro de cada fase su dieta. Manda solo el PRESUPUESTO de intercambios de cada dieta (HC / PROT / GRASA): los alimentos los coloca Dani en el editor de dietas. NO rellenes comidas salvo que te lo pida.
-5. **Ajuste de dieta suelto** (propose_diet_update) solo si hace falta una dieta fuera de la periodización (día de descanso, día libre). Mismo criterio: presupuesto sí, comidas no.
+4. **Periodización nutricional** (propose_nutrition_program): las fases encadenadas con sus semanas, kcal y recargas, y dentro de cada fase su dieta. Manda solo el OBJETIVO de cada dieta en gramos (proteina_g / hidratos_g / grasa_g): los alimentos los coloca Dani en el editor de dietas. NO rellenes comidas salvo que te lo pida.
+5. **Ajuste de dieta suelto** (propose_diet_update) solo si hace falta una dieta fuera de la periodización (día de descanso, día libre). Mismo criterio: objetivo sí, comidas no.
 
 **D. Configuración del plan** (todo esto va en UNA propose_setup_config)
 6. Fecha de inicio, duración del plan y peso objetivo, si faltan.

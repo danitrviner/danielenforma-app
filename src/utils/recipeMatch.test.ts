@@ -122,13 +122,14 @@ describe('findRecipeAlternatives — seguridad', () => {
   });
 });
 
-describe('findRecipeAlternatives — equivalencia de intercambios', () => {
+describe('findRecipeAlternatives — equivalencia en kcal', () => {
   it('acepta recetas con el mismo total aunque el reparto sea distinto', () => {
     const source = receta('Origen', { HC: 2, PROT: 1, GRASA: 0 }); // total 3
     const otra   = receta('Reparto distinto', { HC: 1, PROT: 1, GRASA: 1 }); // total 3
     const out = findRecipeAlternatives(source, [otra]);
     expect(out).toHaveLength(1);
-    expect(out[0].totalDrift).toBe(0);
+    // 1 intercambio de grasa son 99 kcal, no 100: la misma comida.
+    expect(out[0].kcalDrift).toBeLessThanOrEqual(1);
   });
 
   it('descarta las que se pasan del margen de total', () => {

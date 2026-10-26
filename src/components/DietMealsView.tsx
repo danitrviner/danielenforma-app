@@ -1,139 +1,81 @@
-import React, { useMemo } from 'react';
-import { DietMeal, FoodCategory } from '../types';
-import { exchangeToKcal } from '../utils/nutritionConstants';
+import React from 'react';
+import type { DietMeal, Macros } from '../types';
+import { macrosDeLineas } from '../utils/macrosLegado';
 
-// ── Constants ─────────────────────────────────────────────────────────────────
+/* ═══════════════════════════════════════════════════════════════════════════
+   DietNumerosView — resumen en kcal y gramos de un plan (10-2026)
 
-// HC/PROT/GRASA vienen de la fuente única (nutritionConstants.ts) para no
-// duplicar la tasa kcal/intercambio. MIX_HC/MIX_GRASA (mitad proteína, mitad
-// HC o grasa) no tienen constante compartida — se aproximan a 100 kcal, igual
-// que el resto, tal y como ya hacía esta tabla.
-const KCAL_INT: Record<FoodCategory, number> = {
-  HC: exchangeToKcal({ HC: 1, PROT: 0, GRASA: 0 }),
-  PROT: exchangeToKcal({ HC: 0, PROT: 1, GRASA: 0 }),
-  GRASA: exchangeToKcal({ HC: 0, PROT: 0, GRASA: 1 }),
-  MIX_HC: 100, MIX_GRASA: 100,
-};
+   Lo que pone cada comida del plan (kcal y gramos de proteína, hidratos y
+   grasa) y el total del día contra su objetivo. Sin objetivo por comida: solo
+   cuenta el total del día. Lo usa el editor de dietas del coach.
+   ═══════════════════════════════════════════════════════════════════════════ */
 
-const DISPLAY_CATS: FoodCategory[] = ['HC', 'PROT', 'GRASA'];
-
-const CAT_COLOR: Record<FoodCategory, string> = {
-  HC: 'text-macro-hc', PROT: 'text-macro-prot', GRASA: 'text-macro-grasa',
-  MIX_HC: 'text-macro-mix-hc', MIX_GRASA: 'text-macro-mix-grasa',
-};
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-function mealKcal(items: DietMeal['items']): number {
-  return Math.round(items.reduce((s, it) => s + it.quantity * KCAL_INT[it.category], 0));
-}
-
-function mealExch(items: DietMeal['items']): Record<FoodCategory, number> {
-  const r: Record<FoodCategory, number> = { HC: 0, PROT: 0, GRASA: 0, MIX_HC: 0, MIX_GRASA: 0 };
-  for (const it of items) r[it.category] = Math.round((r[it.category] + it.quantity) * 100) / 100;
-  return r;
-}
-
-function round2(n: number) { return Math.round(n * 100) / 100; }
-
-function fmtQ(q: number): string {
-  if (Number.isInteger(q)) return String(q);
-  return q.toFixed(2).replace(/\.?0+$/, '');
-}
+const MACROS = [
+  { clave: 'p', etiqueta: 'P', color: 'text-macro-prot' },
+  { clave: 'hc', etiqueta: 'HC', color: 'text-macro-hc' },
+  { clave: 'g', etiqueta: 'G', color: 'text-macro-grasa' },
+] as const;
 
 function labelForMeal(name: string, n: number): string {
   const stripped = name.replace(/^Comida\s*\d+\s*/i, '').trim();
   return stripped || `Comida ${n}`;
 }
 
-// ── DietNumerosView ───────────────────────────────────────────────────────────
-// Resumen numérico de intercambios (colocado/objetivo por comida + total del día).
-// Se muestra siempre integrado dentro de la vista de lista — ya no es una pestaña
-// aparte (antes existía junto a "Fotos" bajo un selector Lista/Fotos/Números).
-
 interface NumerosProps {
   meals: DietMeal[];
-  budget: Record<FoodCategory, number>;
+  objetivo: Macros;
 }
 
-export function DietNumerosView({ meals, budget }: NumerosProps) {
-  const totals = useMemo(() => {
-    const t: Record<FoodCategory, number> = { HC: 0, PROT: 0, GRASA: 0, MIX_HC: 0, MIX_GRASA: 0 };
-    for (const meal of meals) {
-      for (const it of meal.items) t[it.category] = round2(t[it.category] + it.quantity);
-    }
-    return t;
-  }, [meals]);
-
-  const totalKcal   = meals.reduce((s, m) => s + mealKcal(m.items), 0);
-  const budgetKcal  = Math.round((budget.HC ?? 0) * KCAL_INT.HC + (budget.PROT ?? 0) * KCAL_INT.PROT + (budget.GRASA ?? 0) * KCAL_INT.GRASA);
-  const kcalDelta   = totalKcal - budgetKcal;
+export function DietNumerosView({ meals, objetivo }: NumerosProps) {
+  const total = macrosDeLineas(meals.flatMap(m => m.items));
+  const kcalDelta = Math.round(total.kcal - objetivo.kcal);
+  const enObjetivo = objetivo.kcal > 0 && Math.abs(kcalDelta) <= objetivo.kcal * 0.05;
 
   return (
     <div className="space-y-2">
-      {/* Per-meal rows */}
       {meals.map((meal, mi) => {
-        const kcal = mealKcal(meal.items);
-        const exch = mealExch(meal.items);
+        const m = macrosDeLineas(meal.items);
         return (
           <div key={meal.id} className="bg-surface border border-hairline rounded-surface overflow-hidden">
-            {/* Meal header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-hairline">
               <span className="font-sans font-bold text-ink text-body-s">{labelForMeal(meal.name, mi + 1)}</span>
-              <span className="font-mono text-accent-ink font-bold text-body-s">{kcal > 0 ? `${kcal} kcal` : '—'}</span>
+              <span className="font-mono text-accent-ink font-bold text-body-s">{m.kcal > 0 ? `${Math.round(m.kcal)} kcal` : '—'}</span>
             </div>
-            {/* Category grid */}
             <div className="grid grid-cols-3 divide-x divide-hairline">
-              {DISPLAY_CATS.map(cat => {
-                const v = exch[cat];
-                const tgt = meal.target?.[cat] ?? 0;
-                const isOk   = tgt > 0 && round2(v) >= round2(tgt);
-                const isOver = tgt > 0 && v > tgt;
-                return (
-                  <div key={cat} className="py-3 px-2 text-center">
-                    <span className={`block font-mono text-caption font-bold uppercase ${CAT_COLOR[cat]}`}>{cat}</span>
-                    <span className={`block font-mono font-bold text-body-s ${isOver ? 'text-danger' : isOk ? 'text-success' : 'text-ink'}`}>
-                      {fmtQ(v)}{tgt > 0 ? `/${fmtQ(tgt)}` : ''}
-                    </span>
-                    <span className={`block font-mono text-caption ${isOk ? 'text-success' : isOver ? 'text-danger' : 'text-ink-3'}`}>
-                      {isOk ? '✓ ok' : isOver ? `+${fmtQ(round2(v - tgt))}` : 'int'}
-                    </span>
-                  </div>
-                );
-              })}
+              {MACROS.map(x => (
+                <div key={x.clave} className="py-3 px-2 text-center">
+                  <span className={`block font-mono text-caption font-bold uppercase ${x.color}`}>{x.etiqueta}</span>
+                  <span className="block font-mono font-bold text-body-s text-ink">{Math.round(m[x.clave])} g</span>
+                </div>
+              ))}
             </div>
           </div>
         );
       })}
 
-      {/* Day totals */}
       <div className="bg-bg border border-accent/20 rounded-surface overflow-hidden">
         <div className="flex items-center justify-between px-4 py-3 border-b border-hairline">
           <span className="font-mono text-caption text-accent-ink uppercase font-bold tracking-wide">Total del día</span>
           <div className="text-right">
-            <span className="font-mono font-bold text-accent-ink">{totalKcal} kcal</span>
-            {budgetKcal > 0 && (
-              <span className={`block font-mono text-caption ${kcalDelta > 0 ? 'text-danger' : kcalDelta < 0 ? 'text-ink-3' : 'text-success'}`}>
-                {kcalDelta === 0 ? '✓ en presupuesto' : `${kcalDelta > 0 ? '+' : ''}${kcalDelta} vs ${budgetKcal}`}
+            <span className="font-mono font-bold text-accent-ink">{Math.round(total.kcal)} kcal</span>
+            {objetivo.kcal > 0 && (
+              <span className={`block font-mono text-caption ${enObjetivo ? 'text-success' : kcalDelta > 0 ? 'text-danger' : 'text-ink-3'}`}>
+                {enObjetivo ? '✓ en objetivo' : `${kcalDelta > 0 ? '+' : ''}${kcalDelta} vs ${Math.round(objetivo.kcal)}`}
               </span>
             )}
           </div>
         </div>
         <div className="grid grid-cols-3 divide-x divide-hairline">
-          {DISPLAY_CATS.map(cat => {
-            const v = totals[cat];
-            const b = budget[cat] ?? 0;
-            const isOver = b > 0 && v > b;
-            const isOk   = b > 0 && round2(v) === round2(b);
-            const delta  = round2(v - b);
+          {MACROS.map(x => {
+            const v = total[x.clave];
+            const o = objetivo[x.clave];
+            const pasado = o > 0 && v > o * 1.05;
+            const ok = o > 0 && Math.abs(v - o) <= o * 0.05;
             return (
-              <div key={cat} className="py-3 px-2 text-center">
-                <span className={`block font-mono text-caption font-bold uppercase ${CAT_COLOR[cat]}`}>{cat}</span>
-                <span className={`block font-mono font-bold text-title-s ${isOver ? 'text-danger' : isOk ? 'text-success' : 'text-ink'}`}>
-                  {fmtQ(v)}{b > 0 ? `/${fmtQ(b)}` : ''}
-                </span>
-                <span className={`block font-mono text-caption ${isOk ? 'text-success' : isOver ? 'text-danger' : 'text-ink-3'}`}>
-                  {isOk ? '✓' : isOver ? `+${fmtQ(delta)}` : b > 0 ? `${fmtQ(delta)}` : 'int'}
+              <div key={x.clave} className="py-3 px-2 text-center">
+                <span className={`block font-mono text-caption font-bold uppercase ${x.color}`}>{x.etiqueta}</span>
+                <span className={`block font-mono font-bold text-title-s ${pasado ? 'text-danger' : ok ? 'text-success' : 'text-ink'}`}>
+                  {Math.round(v)}{o > 0 ? `/${Math.round(o)}` : ''} g
                 </span>
               </div>
             );

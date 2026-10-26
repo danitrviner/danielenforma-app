@@ -2,8 +2,9 @@ import type { DietCompletionLog, Recipe } from '../types';
 import { dishType, type DishType } from './dishTypes';
 import { normalizarTexto } from './busqueda';
 import { minutosDeReceta } from './tiempoDeReceta';
-import { recipeExchanges } from './recipeMatch';
-import { exchangeToKcal } from './nutritionConstants';
+import type { Macros } from '../types';
+import { macrosDeReceta, encajaEnLoQueQueda } from './macrosDeReceta';
+import { escalarMacros } from './macros';
 import { violatesDietType } from './foodPrefs';
 import { violatesHealthConditions } from './dietaryRestrictions';
 
@@ -35,7 +36,8 @@ interface Ficha {
   tipo: DishType;
   kcal: number;
   minutos: number | null;
-  HC: number; PROT: number; GRASA: number;
+  /** Gramos de proteína, hidratos y grasa (utils/macrosDeReceta.ts). */
+  p: number; hc: number; g: number;
 }
 
 const fichas = new WeakMap<Recipe, Ficha>();
@@ -44,18 +46,16 @@ export function fichaDe(r: Recipe): Ficha {
   let f = fichas.get(r);
   if (f) return f;
   const ingredientes = (r.ingredientsText ?? []).map(i => i.name);
-  const e = recipeExchanges(r);
+  const m = macrosDeReceta(r);
   const nombre = normalizarTexto(r.name);
   f = {
     nombre,
     texto: `${nombre} | ${normalizarTexto(ingredientes.join(' | '))}`,
     nIngredientes: ingredientes.length || (r.ingredients ?? []).length,
     tipo: dishType(r),
-    // `kcal` del documento si lo trae (las del constructor); si no, de los
-    // intercambios, que es lo que ya hace el resto de la app.
-    kcal: r.kcal ?? Math.round(exchangeToKcal(e)),
+    kcal: Math.round(m.kcal),
     minutos: minutosDeReceta(r),
-    HC: e.HC, PROT: e.PROT, GRASA: e.GRASA,
+    p: m.p, hc: m.hc, g: m.g,
   };
   fichas.set(r, f);
   return f;
@@ -110,7 +110,7 @@ const porNombre = (id: string, titulo: string, descripcion: string, claves: stri
 
 const RAPIDAS: Coleccion = { id: 'rapidas', titulo: 'En 10 minutos', emoji: '⚡', encaja: f => f.minutos != null && f.minutos <= 10 };
 const TUPPER: Coleccion = { id: 'tupper', titulo: 'Para tupper', emoji: '🍱', encaja: (_f, r) => r.tupper === true };
-const PROTEINA: Coleccion = { id: 'proteina', titulo: 'Rica en proteína', emoji: '🍳', encaja: f => f.PROT >= 2 && f.PROT >= f.HC };
+const PROTEINA: Coleccion = { id: 'proteina', titulo: 'Rica en proteína', emoji: '🍳', encaja: f => f.p >= 50 && f.p >= f.hc };
 const VEGETARIANA: Coleccion = { id: 'vegetariana', titulo: 'Vegetariana', emoji: '🧀', encaja: (_f, r) => !violatesDietType(r, 'vegetariano') };
 const VEGANA: Coleccion = { id: 'vegana', titulo: 'Vegana', emoji: '🌱', encaja: (_f, r) => !violatesDietType(r, 'vegano') };
 // Celiaquía (66) e intolerancia total a la lactosa (87): mismos códigos que el
@@ -166,8 +166,8 @@ export const FILAS_DESCUBRIR: FilaDescubrir[] = [
     colecciones: [
       VEGETARIANA, VEGANA, SIN_GLUTEN, SIN_LACTOSA,
       { id: 'pescetariana', titulo: 'Pescetariana', emoji: '🐟', encaja: f => f.tipo === 'pescado' },
-      { id: 'baja_hc', titulo: 'Baja en hidratos', emoji: '🥜', encaja: f => f.HC <= 0.5 && f.kcal >= 150 },
-      { id: 'baja_grasa', titulo: 'Baja en grasa', emoji: '🥒', encaja: f => f.GRASA <= 0.5 },
+      { id: 'baja_hc', titulo: 'Baja en hidratos', emoji: '🥜', encaja: f => f.hc <= 12.5 && f.kcal >= 150 },
+      { id: 'baja_grasa', titulo: 'Baja en grasa', emoji: '🥒', encaja: f => f.g <= 5.5 },
       { id: 'baja_kcal', titulo: 'Baja en calorías', emoji: '🍏', encaja: f => f.kcal <= 250 },
     ],
   },
@@ -342,17 +342,12 @@ export function recetasMasHechas(logs: readonly DietCompletionLog[], minimoDeDia
 
 // ── Encajar en un cupo ────────────────────────────────────────────────────────
 
-export interface Cupo { HC: number; PROT: number; GRASA: number }
-
 /**
- * ¿Llena ese hueco sin tocar cantidades? Medio intercambio arriba o abajo en
- * cada grupo, el mismo margen que usa `cabeEnElCupo`. No basta con «caber»: una
- * receta de medio intercambio cabe en todo y no resuelve la comida de nadie.
+ * ¿Llena ese hueco sin tocar cantidades? (utils/macrosDeReceta.ts). No basta
+ * con «caber»: una receta diminuta cabe en todo y no resuelve la comida.
  */
-export function encajaEnCupo(r: Recipe, cupo: Cupo, margen = 0.5): boolean {
-  if (cupo.HC + cupo.PROT + cupo.GRASA <= 0) return false;
-  const f = fichaDe(r);
-  return Math.abs(f.HC - cupo.HC) <= margen && Math.abs(f.PROT - cupo.PROT) <= margen && Math.abs(f.GRASA - cupo.GRASA) <= margen;
+export function encajaEnCupo(r: Recipe, hueco: Macros): boolean {
+  return encajaEnLoQueQueda(r, hueco);
 }
 
 // ── La próxima comida del día ─────────────────────────────────────────────────
@@ -370,31 +365,30 @@ export function franjaDeLaHora(hora: number): number {
 }
 
 /**
- * El reparto de la siguiente comida de hoy, para la fila «Encajan en tu…».
+ * Lo que toca en la siguiente comida de hoy, para la fila «Encajan en tu…».
  *
- * Es el objetivo que el coach puso a ESA comida, no lo que le queda después de
- * lo ya comido: el recetario no lleva el registro del día y calcularlo aquí
- * sería duplicar (mal) lo que hace Mi plan. Sin reparto por comidas, sin dieta
- * hoy (día libre) o pasada la cena, no hay fila: mejor ninguna que una que
- * cuadre contra un número inventado.
+ * Sin reparto por comidas (10-2026): el objetivo del día a partes iguales entre
+ * las comidas del plan. El recetario no lleva el registro del día, así que no
+ * sabe lo ya comido; para eso está «Que cuadre en…» desde el diario. Sin
+ * objetivo, sin comidas o pasada la cena, no hay fila.
  */
 export function cupoDeLaProximaComida(
-  meals: readonly { name: string; slot?: number; target?: Partial<Cupo>; libre?: boolean }[] | undefined,
+  meals: readonly { name: string; slot?: number; libre?: boolean }[] | undefined,
+  objetivoDia: Macros | null | undefined,
   resolverFranjas: (m: { name: string; slot?: number }[]) => number[],
   hora: number,
-): { titulo: string; cupo: Cupo } | null {
-  if (!meals?.length) return null;
+): { titulo: string; cupo: Macros } | null {
+  if (!meals?.length || !objetivoDia || objetivoDia.kcal <= 0) return null;
   const franjas = resolverFranjas([...meals]);
   const ahora = franjaDeLaHora(hora);
   const candidatas = meals
     .map((m, i) => ({ m, franja: franjas[i] }))
-    .filter(({ m, franja }) => franja >= ahora && !m.libre && m.target && (m.target.HC ?? 0) + (m.target.PROT ?? 0) + (m.target.GRASA ?? 0) > 0)
+    .filter(({ m, franja }) => franja >= ahora && !m.libre)
     .sort((a, b) => a.franja - b.franja);
   const siguiente = candidatas[0];
   if (!siguiente) return null;
-  const t = siguiente.m.target!;
   return {
     titulo: `Encajan en tu ${NOMBRE_DE_FRANJA[siguiente.franja] ?? 'próxima comida'}`,
-    cupo: { HC: t.HC ?? 0, PROT: t.PROT ?? 0, GRASA: t.GRASA ?? 0 },
+    cupo: escalarMacros(objetivoDia, 1 / meals.filter(m => !m.libre).length),
   };
 }

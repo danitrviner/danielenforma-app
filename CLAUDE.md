@@ -86,17 +86,21 @@ Usar patrón `isOwner()` / `isCoach()`. Consola Firebase es la fuente de verdad.
 
 ---
 
-## Sistema de intercambios (nutrición)
+## Nutrición en kcal y gramos (desde 10-2026)
 
-```ts
-// 1 intercambio = 100 kcal
-const G_PER_EXCH = { HC: 25, PROT: 25, GRASA: 11 };
-// HC=g/25  PROT=g/25  GRASA=g/11  (redondear a 0.25 con roundQ)
-// MIX_HC   = 0.5 HC + 0.5 PROT
-// MIX_GRASA= 0.5 GRASA + 0.5 PROT
+Todo va en kcal y gramos de proteína, hidratos y grasa: el diario del atleta, las dietas del coach, el generador de menús, las recetas y el asistente. Los intercambios ya no se enseñan en ninguna pantalla.
 
-// kcal por intercambio: HC=100, PROT=100, GRASA=99, MIX_HC=100, MIX_GRASA=100
-```
+- **Tipo base:** `Macros = { kcal, p, hc, g }` (`src/types.ts`); operaciones en `src/utils/macros.ts` (kcal = P×4 + HC×4 + G×9).
+- **Objetivo del día:** `Diet.objetivo` (gramos y kcal). No hay objetivo por comida: solo cuenta el total del día.
+- **Datos viejos:** se leen con el adaptador `src/utils/macrosLegado.ts` (`objetivoDeDieta`, `objetivoDelRegistro`, `macrosDeLinea`…). No hay migración destructiva.
+- **Binarios viejos:** la web va dentro del binario, así que se escriben a la vez los campos nuevos y los viejos:
+  - dietas y registros del día: `objetivo` + `budget` (`objetivoYCupo`);
+  - menús: `macros`/`objetivoMacros`/`objetivo` + `exch`/`objetivo`/`target`;
+  - periodización: `gramos` + `delta`/`cantidad`/`entreno`.
+- **Equivalencias viejas** (solo para leer y para el cupo de binarios viejos): 1 intercambio = 25 g HC / 25 g P / 11 g G; MIX_HC y MIX_GRASA son medio y medio.
+- **Líneas del día:** cada `DietItem` sigue llevando `category` + `quantity` (raciones del banco); las de producto o receta desglosada llevan además `nutrientes` con las kcal y gramos reales, que mandan.
+- **Generador de menús:** `src/utils/menuEngine.ts` + `src/utils/menuMacros.ts`, en kcal y gramos exactos de cada receta.
+- **Migración opcional:** `scripts/migrarAKcal.ts` (simulacro por defecto, `--aplicar` solo con OK de Dani) escribe los campos nuevos en dietas, periodizaciones y menús.
 
 ## Mifflin-St Jeor (kcal automáticas — OnboardingForm)
 

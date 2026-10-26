@@ -1,14 +1,13 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import type { Recipe } from '../types';
+import type { Macros, Recipe } from '../types';
 import FotoDeReceta from './FotoDeReceta';
 import { EmptyState, Icon, SearchField, SegmentedControl, Skeleton } from './ui';
 import { fotoDeReceta } from '../utils/fotoDeReceta';
 import { coincideBusqueda } from '../utils/busqueda';
-import { fmtQty } from '../utils/exchangeHelpers';
-import { cabeEnElCupo } from '../utils/recipeMatch';
+import { cabeEnLoQueQueda } from '../utils/macrosDeReceta';
 import {
   FILAS_DESCUBRIR, NEVERA, coleccionPorId, encajaEnCupo, fichaDe, recetasConLoQueTienes, recetasDeColeccion,
-  resumirColecciones, type Coleccion, type Cupo, type FilaDescubrir, type ResumenDeColeccion,
+  resumirColecciones, type Coleccion, type FilaDescubrir, type ResumenDeColeccion,
 } from '../utils/coleccionesRecetario';
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -50,11 +49,11 @@ interface Props {
   onElegir: (r: Recipe) => void;
   /** Sin esto no se pinta el corazón (el selector de «Usar receta» no lo usa). */
   onFavorita?: (id: string) => void;
-  /** El hueco de la comida que toca: activa la fila «Encajan…» y la marca en
-   *  cada tarjeta. `llenar` (por defecto) = la receta llena ESE hueco, medio
-   *  intercambio arriba o abajo; `caber` = cabe en lo que queda, que es lo que
-   *  tiene sentido contra el día entero (ninguna receta sola llena un día). */
-  cupo?: { titulo: string; cupo: Cupo; criterio?: 'llenar' | 'caber' } | null;
+  /** El hueco de la comida que toca, en kcal y gramos: activa la fila
+   *  «Encajan…» y la marca en cada tarjeta. `llenar` (por defecto) = la receta
+   *  llena ESE hueco, con el margen de utils/macrosDeReceta.ts; `caber` = cabe
+   *  en lo que queda, que es lo que tiene sentido contra el día entero. */
+  cupo?: { titulo: string; cupo: Macros; criterio?: 'llenar' | 'caber' } | null;
   /** Filas propias del atleta que van arriba del todo (las del coach, las que más hace…). */
   filasPersonales?: FilaPersonal[];
   /** Para avisar —sin esconderla— de una receta que tarda más de lo que el atleta dijo tener. */
@@ -73,14 +72,15 @@ type FiltroLista = '' | 'rapidas' | 'tupper' | 'proteina' | 'encajan';
 
 // ── Piezas ────────────────────────────────────────────────────────────────────
 
-function Intercambios({ r }: { r: Recipe }) {
+/** Gramos de cada macro de la receta. */
+function MacrosDeReceta({ r }: { r: Recipe }) {
   const f = fichaDe(r);
-  const partes: [number, string, string][] = [[f.HC, 'HC', 'text-macro-hc'], [f.PROT, 'PROT', 'text-macro-prot'], [f.GRASA, 'GR', 'text-macro-grasa']];
+  const partes: [number, string, string][] = [[f.p, 'P', 'text-macro-prot'], [f.hc, 'HC', 'text-macro-hc'], [f.g, 'G', 'text-macro-grasa']];
   return (
     <span className="flex flex-wrap gap-1">
       {partes.filter(([n]) => n > 0).map(([n, et, color]) => (
         <span key={et} className={`font-mono text-caption px-1.5 rounded-chip bg-raised border border-hairline whitespace-nowrap ${color}`}>
-          {fmtQty(n)} {et}
+          {et} {Math.round(n)} g
         </span>
       ))}
     </span>
@@ -120,7 +120,7 @@ const TarjetaReceta = React.memo(function TarjetaReceta({ r, fav, encaja, tardaM
             )}
             {r.tupper && <Icon name="takeout_dining" size="s" className="text-data" label="Apta para tupper" />}
           </span>
-          <Intercambios r={r} />
+          <MacrosDeReceta r={r} />
         </span>
       </button>
       {onFavorita && (
@@ -273,7 +273,7 @@ export default function RecetarioDescubrir({
   const encaja = useMemo(() => {
     if (!cupo) return () => false;
     const c = cupo.cupo;
-    return cupo.criterio === 'caber' ? (r: Recipe) => cabeEnElCupo(r, c) : (r: Recipe) => encajaEnCupo(r, c);
+    return cupo.criterio === 'caber' ? (r: Recipe) => cabeEnLoQueQueda(r, c) : (r: Recipe) => encajaEnCupo(r, c);
   }, [cupo]);
   const encajan = useMemo(() => (cupo ? pool.filter(encaja) : []), [pool, cupo, encaja]);
   const conLoQueTienes = useMemo(() => recetasConLoQueTienes(pool, nevera), [pool, nevera]);
@@ -341,7 +341,7 @@ export default function RecetarioDescubrir({
       const f = fichaDe(r);
       if (filtro === 'rapidas') return f.minutos != null && f.minutos <= 10;
       if (filtro === 'tupper') return r.tupper === true;
-      if (filtro === 'proteina') return f.PROT >= 1.5;
+      if (filtro === 'proteina') return f.p >= 37.5;
       if (filtro === 'encajan') return encaja(r);
       return true;
     });
@@ -431,7 +431,7 @@ export default function RecetarioDescubrir({
           {cupo && encajan.length > 0 && (
             <section>
               <Titular onVerTodas={() => irA({ tipo: 'encajan' })}
-                subtitulo={`${cuantas(encajan.length)} ${cupo.criterio === 'caber' ? 'que caben en' : 'con'} ${fmtQty(cupo.cupo.HC)} HC · ${fmtQty(cupo.cupo.PROT)} PROT · ${fmtQty(cupo.cupo.GRASA)} GRASA`}>
+                subtitulo={`${cuantas(encajan.length)} ${cupo.criterio === 'caber' ? 'que caben en' : 'de unas'} ${Math.round(cupo.cupo.kcal)} kcal`}>
                 {cupo.titulo}
               </Titular>
               <Carril>{encajan.slice(0, EN_FILA).map(r => tarjeta(r, true))}</Carril>

@@ -1,4 +1,5 @@
-import type { Recipe, BudgetVec, DietType, FoodCategory, WeekDay } from '../types';
+import type { Recipe, BudgetVec, DietType, FoodCategory, WeekDay, Macros } from '../types';
+import { macrosDeReceta } from './macrosDeReceta';
 import { type ListaDeMenu } from './accesoARecetas';
 import { aplicarSeleccion, type PaqueteDeRecetas, type SeleccionDeRecetas } from './seleccionDeRecetas';
 import { recetasOcultas, type AmbitoDeRegla, type ReglaDeReceta } from './reglasDeReceta';
@@ -8,7 +9,7 @@ import { violatesHealthConditions } from './dietaryRestrictions';
 import { normalizarTexto } from './busqueda';
 import { dishType, DishType } from './dishTypes';
 import { GRAMS_PER_EXCHANGE } from './nutritionConstants';
-import { snapExchanges, totalExchanges } from './exchangeRounding';
+import { snapExchanges } from './exchangeRounding';
 
 // Generic L1 distance between a target and an actual macro/exchange vector.
 // Shared by menuEngine's recipe ranking (HC/PROT/GRASA exchange fit) and the
@@ -96,9 +97,8 @@ export interface AlternativePrefs {
 export interface AlternativeOptions {
   prefs?: AlternativePrefs;
   /**
-   * Desviación máxima admitida en el TOTAL de intercambios. Por defecto 0,5
-   * (≈50 kcal): el doble del margen del redondeo, para que dos recetas que se
-   * redondearon en direcciones opuestas sigan considerándose equivalentes.
+   * Desviación máxima admitida en kcal, en centenas (0,5 = 50 kcal, el valor
+   * por defecto). Se mantiene la escala de cuando se medía en intercambios.
    */
   maxTotalDrift?: number;
   /** Momento del día (intakeType 1-5). Si se pasa, solo recetas aptas para ese momento. */
@@ -122,9 +122,10 @@ export interface AlternativeOptions {
 export interface RecipeAlternative {
   recipe: Recipe;
   dishType: DishType;
-  exchanges: BudgetVec;
-  /** Diferencia absoluta en el total de intercambios respecto a la receta origen. */
-  totalDrift: number;
+  /** Sus kcal y gramos (utils/macrosDeReceta.ts). */
+  macros: Macros;
+  /** Diferencia absoluta de kcal respecto a la receta origen. */
+  kcalDrift: number;
   /** Menor es mejor. */
   score: number;
 }
@@ -173,9 +174,12 @@ export function findRecipeAlternatives(
     dietId,
   } = options;
 
-  const sourceExch = recipeExchanges(source);
-  const sourceTotal = totalExchanges(sourceExch);
-  if (sourceTotal <= 0) return [];
+  // 10-2026: se empareja por kcal y gramos. Mismas proporciones que antes con
+  // intercambios: el margen por defecto (½ intercambio) son 50 kcal, y el
+  // desglose pesa cada macro por lo que valía un intercambio de ella.
+  const sourceM = macrosDeReceta(source);
+  if (sourceM.kcal <= 0) return [];
+  const maxKcalDrift = maxTotalDrift * 100;
 
   const disliked = new Set(prefs.dislikedRecipeIds ?? []);
   const favorites = new Set(prefs.favoriteRecipeIds ?? []);
@@ -207,27 +211,27 @@ export function findRecipeAlternatives(
     const dt = dishType(r);
     if (excludedDish.has(dt)) continue;
 
-    const exch = recipeExchanges(r);
-    const total = totalExchanges(exch);
-    if (total <= 0) continue;
+    const m = macrosDeReceta(r);
+    if (m.kcal <= 0) continue;
 
-    const totalDrift = Math.abs(total - sourceTotal);
+    const kcalDrift = Math.abs(m.kcal - sourceM.kcal);
     // Con un término de búsqueda no se descarta por tamaño: el atleta que
     // escribe el nombre de un plato quiere ESE plato, y la lista sigue
     // ordenada por parecido, así que lo equivalente sale primero igual.
-    if (!nSearch && totalDrift > maxTotalDrift + 1e-9) continue;
+    if (!nSearch && kcalDrift > maxKcalDrift + 1e-9) continue;
 
     // ── Puntuación ───────────────────────────────────────────────────────────
     // El total pesa 4× el reparto: dar las mismas calorías es el objetivo, que
     // además coincida el desglose HC/PROT/GRASA es un extra deseable.
-    let score = totalDrift * 4 + fitScore(sourceExch as unknown as Record<string, number>, exch as unknown as Record<string, number>);
+    let score = (kcalDrift / 100) * 4
+      + Math.abs(m.p - sourceM.p) / 25 + Math.abs(m.hc - sourceM.hc) / 25 + Math.abs(m.g - sourceM.g) / 11;
     if (favorites.has(r.id)) score -= 3;
     if (preferredDish.has(dt)) score -= 1.5;
     if (prefs.quiereRapidas && !conTiempo && r.basica) score -= 1.5;
     if ((prefs.likedFoods ?? []).some(f => ingredientMatch(r, f))) score -= 0.5;
     if ((prefs.dislikedFoods ?? []).some(f => ingredientMatch(r, f))) score += 2;
 
-    scored.push({ recipe: r, dishType: dt, exchanges: exch, totalDrift, score });
+    scored.push({ recipe: r, dishType: dt, macros: m, kcalDrift, score });
   }
 
   scored.sort((a, b) => a.score - b.score || a.recipe.name.localeCompare(b.recipe.name));
@@ -275,49 +279,4 @@ export function groupByDishType(alts: RecipeAlternative[]): { type: DishType; co
   return [...counts.entries()]
     .map(([type, count]) => ({ type, count }))
     .sort((a, b) => b.count - a.count);
-}
-
-/**
- * ¿Cabe esta receta en lo que te queda?
- *
- * Se usa al abrir el recetario DESDE una comida del plan: el atleta que lleva
- * el desayuno y la comida registrados no quiere ver las 8.850 recetas, quiere
- * ver las que le entran en lo que le sobra. Antes el recetario no miraba el
- * cupo para nada —solo categoría, alergias y preferencias—, así que la mitad de
- * lo que ofrecía no cabía.
- *
- * El margen existe porque cuadrar al gramo no pasa nunca: una receta que se
- * pasa un cuarto de intercambio sigue siendo una respuesta razonable, y ser
- * estricto dejaba la lista casi vacía.
- */
-export function cabeEnElCupo(recipe: Recipe, cupo: BudgetVec, margen = 0.5): boolean {
-  const e = recipeExchanges(recipe);
-  return (['HC', 'PROT', 'GRASA'] as const).every(c => e[c] <= (cupo[c] ?? 0) + margen);
-}
-
-/**
- * Las recetas que caben, de la que mejor aprovecha el cupo a la que menos.
- * Ordenar por sobra (y no por "lo más pequeño primero") evita que arriba salgan
- * siempre las recetas de medio intercambio, que caben en todo y no resuelven la
- * comida de nadie.
- *
- * `descartarLasQueNoCaben` existe porque este filtro es correcto MIRANDO una
- * lista y equivocado BUSCANDO en ella. Quien navega el recetario para llenar
- * una comida quiere ver lo que le entra; quien escribe el nombre de un plato
- * concreto ya sabe cuál quiere, y esconderle justo ese —porque hoy ya ha
- * comido— es la queja de "busco una receta que tengo en mi menú y no me sale"
- * (Dani, 07-09-2026). Con búsqueda se ordenan igual, pero no se esconde nada.
- */
-export function ordenarPorCupo(
-  recipes: Recipe[], cupo: BudgetVec, margen = 0.5, descartarLasQueNoCaben = true,
-): Recipe[] {
-  const sobra = (r: Recipe) => {
-    const e = recipeExchanges(r);
-    return (['HC', 'PROT', 'GRASA'] as const).reduce((s, c) => s + Math.abs((cupo[c] ?? 0) - e[c]), 0);
-  };
-  const base = descartarLasQueNoCaben ? recipes.filter(r => cabeEnElCupo(r, cupo, margen)) : [...recipes];
-  // Con la búsqueda abierta las que caben siguen saliendo primero: la lista no
-  // cambia de criterio, solo deja de ocultar el resto.
-  return base.sort((a, b) =>
-    Number(cabeEnElCupo(b, cupo, margen)) - Number(cabeEnElCupo(a, cupo, margen)) || sobra(a) - sobra(b));
 }

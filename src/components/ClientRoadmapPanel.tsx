@@ -6,7 +6,7 @@ interface Props {
   athleteEmail: string;
   coachId: string;
   /** Saltar a otra pestaña del cliente desde el calendario del roadmap
-   *  ("Editar series", "Editar intercambios y macros", "Editar cardio"). */
+   *  ("Editar series", "Editar kcal y macros", "Editar cardio"). */
   onGoToTab?: (tab: DestinoPlan) => void;
 }
 

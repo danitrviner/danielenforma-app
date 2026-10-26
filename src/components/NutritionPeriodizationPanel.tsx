@@ -13,7 +13,9 @@ import {
   computePhaseStartDate,
 } from '../dbService';
 import { estimateMaintenanceKcal } from '../utils/energyCalc';
-import { ajustarCupoSinTocarProteina } from '../utils/ajusteDeCupo';
+import { ajustarObjetivoSinTocarProteina } from '../utils/ajusteDeCupo';
+import { objetivoDeDieta, intercambiosDeMacros } from '../utils/macrosLegado';
+import { ajusteEnGramos } from '../utils/semanasNutricion';
 import { duracionDeLasFases } from '../utils/ritmoDePeso';
 import {
   ObjetivoCorporalTipo, OBJETIVO_LABEL, OBJETIVOS_ORDEN, RANGO_PCT_SEMANA,
@@ -291,15 +293,15 @@ export default function NutritionPeriodizationPanel({
     }
   };
 
-  // La sugerencia por ritmo de peso (Δ kcal) se programa como intercambios de
-  // hidratos desde la semana que viene, en la comida que más lleva.
+  // La sugerencia por ritmo de peso (Δ kcal) se programa en gramos de
+  // hidratos desde la semana que viene (4 kcal por gramo, de 5 en 5 g).
   const programarAjusteKcal = (deltaKcal: number) => {
     if (!program) return;
-    const delta = Math.round(deltaKcal / 100);
-    if (delta === 0) { showToast('El ajuste es de menos de un intercambio: no hay nada que programar.'); return; }
+    const gramos = Math.round(deltaKcal / 4 / 5) * 5;
+    if (gramos === 0) { showToast('El ajuste es de menos de 20 kcal: no hay nada que programar.'); return; }
     const siguiente = semanaDelPrograma(program, hoyIsoLocal()) + 1;
-    void guardarPrograma({ ...program, cambiosSemana: programarAjuste(program, siguiente, false, { cat: 'HC', delta }) });
-    showToast(`Programado desde la semana ${siguiente}: ${delta > 0 ? '+' : '−'}${Math.abs(delta)} ${Math.abs(delta) === 1 ? 'intercambio' : 'intercambios'} de hidratos`, 'success');
+    void guardarPrograma({ ...program, cambiosSemana: programarAjuste(program, siguiente, false, ajusteEnGramos('HC', gramos)) });
+    showToast(`Programado desde la semana ${siguiente}: ${gramos > 0 ? '+' : '−'}${Math.abs(gramos)} g de hidratos al día`, 'success');
   };
 
   const handleCreate = () => {
@@ -428,9 +430,8 @@ export default function NutritionPeriodizationPanel({
     updatePhase(idx, { targetKcal: suggested });
   };
 
-  // Rewrites the linked diet's exchange budget so its kcal match the phase's
-  // objective, scaling HC/PROT/GRASA proportionally — the athlete then sees the
-  // adjusted diet automatically, without the coach rebuilding it meal by meal.
+  // Lleva el objetivo de la dieta vinculada a las kcal de la fase (en gramos;
+  // también su cupo equivalente para binarios viejos). El atleta lo ve solo.
   const handleAdjustDietToPhase = async (idx: number) => {
     if (!form) return;
     const phase = form.phases[idx];
@@ -444,18 +445,11 @@ export default function NutritionPeriodizationPanel({
     // que hacer: es lo que protege la masa magra cuando faltan calorías. El
     // motor deja la proteína donde está y saca la diferencia de hidratos y
     // grasa (ver utils/ajusteDeCupo.ts).
-    const ajuste = ajustarCupoSinTocarProteina(
-      {
-        HC: diet.budget?.HC ?? 0,
-        PROT: diet.budget?.PROT ?? 0,
-        GRASA: diet.budget?.GRASA ?? 0,
-      },
-      targetKcal,
-    );
+    const ajuste = ajustarObjetivoSinTocarProteina(objetivoDeDieta(diet), targetKcal);
     if (!ajuste) return;
     setAdjustingDietFor(phase.id);
     try {
-      await updateDiet(diet.id, { budget: { ...diet.budget, ...ajuste.cupo } });
+      await updateDiet(diet.id, { objetivo: ajuste.objetivo, budget: intercambiosDeMacros(ajuste.objetivo) });
       onDietsChanged?.();
       setRefreshKey(k => k + 1);
       showToast(
@@ -609,7 +603,7 @@ export default function NutritionPeriodizationPanel({
             targetKcal: resolved.kcal, maintenanceKcal, stepGoal, kcalPerStep,
           });
           const canSuggest = phase.targetWeight != null && maintenanceKcal != null && currentWeightKg != null;
-          const canAdjustDiet = !!linkedDiet && phase.targetKcal != null && ((linkedDiet.budget?.HC ?? 0) + (linkedDiet.budget?.PROT ?? 0) + (linkedDiet.budget?.GRASA ?? 0)) > 0;
+          const canAdjustDiet = !!linkedDiet && phase.targetKcal != null && objetivoDeDieta(linkedDiet).kcal > 0;
           return (
             <div
               key={phase.id}
@@ -771,7 +765,7 @@ export default function NutritionPeriodizationPanel({
                   <button
                     onClick={() => handleAdjustDietToPhase(idx)}
                     disabled={adjustingDietFor === phase.id}
-                    title="Escala los intercambios de la dieta vinculada a este objetivo"
+                    title="Ajusta la dieta vinculada a este objetivo sin tocar la proteína"
                     className="text-caption font-mono font-bold text-accent-ink hover:text-ink transition-colors uppercase tracking-wider px-2 py-1 rounded-control border border-accent/30 hover:border-accent/60 disabled:opacity-40"
                   >{adjustingDietFor === phase.id ? 'Ajustando…' : 'Ajustar dieta al tramo'}</button>
                 )}

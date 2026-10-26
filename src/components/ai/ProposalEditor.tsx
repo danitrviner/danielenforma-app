@@ -6,7 +6,9 @@ import {
   SetupConfigProposalPayload, PublishBlockProposalPayload, WeeklyChallengeProposalPayload,
   WorkoutTemplateProposalPayload, MesocycleTemplateProposalPayload, WeekPlanProposalPayload,
 } from '../../types';
-import { exchangeToKcal } from '../../utils/nutritionConstants';
+import { objetivoDeDieta, objetivoYCupo } from '../../utils/macrosLegado';
+import { kcalDeGramos, macrosDesdeGramos } from '../../utils/macros';
+import { gramosDeAjuste } from '../../utils/semanasNutricion';
 import { Badge, Icon } from '../ui';
 
 /* La propuesta deja de ser un folleto.
@@ -334,21 +336,27 @@ export default function ProposalEditor({ proposal: p, payload, onChange }: Props
 
   if (p.kind === 'diet') {
     const v = payload as Omit<Diet, 'id'>;
+    const objetivo = objetivoDeDieta(v);
+    const cambiar = (k: 'p' | 'hc' | 'g', n: number) => {
+      const g = { p: Math.round(objetivo.p), hc: Math.round(objetivo.hc), g: Math.round(objetivo.g), [k]: n };
+      onChange({ ...v, ...objetivoYCupo(macrosDesdeGramos(g.p, g.hc, g.g)) });
+    };
     return (
       <div className={caja}>
         <div className="flex gap-2 items-center flex-wrap">
-          {(['HC', 'PROT', 'GRASA'] as const).map(cat => (
-            <span key={cat} className="flex items-center gap-1 text-caption text-ink-2">
-              {cat}
-              <Num etiqueta={`Intercambios diarios de ${cat}`} value={v.budget[cat] ?? 0} min={0} max={40} step={0.25} ancho="w-14"
-                onChange={n => onChange({ ...v, budget: { ...v.budget, [cat]: n } })} />
+          {([['p', 'P', 'Proteína'], ['hc', 'HC', 'Hidratos'], ['g', 'G', 'Grasa']] as const).map(([k, corto, largo]) => (
+            <span key={k} className="flex items-center gap-1 text-caption text-ink-2">
+              {corto}
+              <Num etiqueta={`Gramos de ${largo.toLowerCase()} al día`} value={Math.round(objetivo[k])} min={0} max={800} step={5} ancho="w-16"
+                onChange={n => cambiar(k, n)} />
+              g
             </span>
           ))}
-          <span className="text-caption font-mono text-ink-2">≈ {exchangeToKcal(v.budget)} kcal</span>
+          <span className="text-caption font-mono text-ink-2">≈ {Math.round(kcalDeGramos(objetivo))} kcal</span>
         </div>
-        {/* Los items no se editan aquí a propósito: cuadrar intercambios es lo
-            que hace el editor de dietas, con su balance en vivo. Aquí se ajusta
-            el presupuesto y se quitan comidas que sobran. */}
+        {/* Los alimentos no se editan aquí a propósito: cuadrarlos es lo que
+            hace el editor de dietas, con su balance en vivo. Aquí se ajusta el
+            objetivo y se quitan comidas que sobran. */}
         {v.meals.map((m, i) => (
           <div key={m.id} className="flex items-center gap-2">
             <span className="text-caption text-ink-2 flex-1 truncate">{m.name}</span>
@@ -495,7 +503,7 @@ export default function ProposalEditor({ proposal: p, payload, onChange }: Props
         c.sets !== undefined ? `${c.sets} series` : null, c.reps ? `reps ${c.reps}` : null,
         c.rir !== undefined ? `RIR ${c.rir}` : null, c.restSeconds !== undefined ? `descanso ${c.restSeconds} s` : null,
       ].filter(Boolean).join(' · ')}`),
-      ...(v.nutricion?.ajustes ?? []).map(a => `${a.solo ? 'Solo' : 'Desde'} S${a.semana} · ${a.slot ? ['', 'Desayuno', 'Media mañana', 'Comida', 'Merienda', 'Cena'][a.slot] : 'Comida con más'} ${a.delta > 0 ? '+' : ''}${a.delta} ${a.cat}`),
+      ...(v.nutricion?.ajustes ?? []).map(a => `${a.solo ? 'Solo' : 'Desde'} S${a.semana} · ${a.slot ? ['', 'Desayuno', 'Media mañana', 'Comida', 'Merienda', 'Cena'][a.slot] : 'Comida con más'} ${gramosDeAjuste(a) > 0 ? '+' : ''}${Math.round(gramosDeAjuste(a))} g de ${({ HC: 'hidratos', PROT: 'proteína', GRASA: 'grasa' } as const)[a.cat]}`),
       ...(v.nutricion?.semanasMantenimiento?.length ? [`Mantenimiento: ${v.nutricion.semanasMantenimiento.map(s => `S${s}`).join(', ')}`] : []),
       ...(v.nutricion?.suplementos ?? []).map(x => `Suplemento: ${[x.nombre, x.dosis, x.momento].filter(Boolean).join(' · ')}${x.desde ? ` desde S${x.desde}` : ''}`),
       ...(v.nutricion?.pasosPorSemana ?? []).map(x => `Desde S${x.semana} · ${x.pasos.toLocaleString('es-ES')} pasos al día`),

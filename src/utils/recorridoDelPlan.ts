@@ -154,9 +154,9 @@ export const PASOS_DEL_RECORRIDO: PasoDelRecorrido[] = [
     tab: 'dietas',
     comprueba: ['prog_periodizacion'],
     queDecidir:
-      'Cuántas fases, de cuántas semanas cada una y con qué kcal. Solo el presupuesto de intercambios: los alimentos los colocas tú después en el editor.',
+      'Cuántas fases, de cuántas semanas cada una y con qué kcal. Solo el objetivo en gramos de proteína, hidratos y grasa: los alimentos los colocas tú después en el editor.',
     instruccionIA:
-      '**Periodización nutricional** (propose_nutrition_program): las fases encadenadas con sus semanas, kcal y recargas, y dentro de cada fase su dieta. Manda solo el PRESUPUESTO de intercambios de cada dieta (HC / PROT / GRASA): los alimentos los coloca Dani en el editor de dietas. NO rellenes comidas salvo que te lo pida.',
+      '**Periodización nutricional** (propose_nutrition_program): las fases encadenadas con sus semanas, kcal y recargas, y dentro de cada fase su dieta. Manda solo el OBJETIVO de cada dieta en gramos (proteina_g / hidratos_g / grasa_g): los alimentos los coloca Dani en el editor de dietas. NO rellenes comidas salvo que te lo pida.',
   },
   {
     numero: '5',
@@ -167,7 +167,7 @@ export const PASOS_DEL_RECORRIDO: PasoDelRecorrido[] = [
     queDecidir:
       'Si le hace falta alguna dieta suelta fuera de la periodización — el día de descanso, el día libre.',
     instruccionIA:
-      '**Ajuste de dieta suelto** (propose_diet_update) solo si hace falta una dieta fuera de la periodización (día de descanso, día libre). Mismo criterio: presupuesto sí, comidas no.',
+      '**Ajuste de dieta suelto** (propose_diet_update) solo si hace falta una dieta fuera de la periodización (día de descanso, día libre). Mismo criterio: objetivo sí, comidas no.',
   },
   {
     numero: '6',

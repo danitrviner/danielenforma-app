@@ -47,10 +47,26 @@ function computeExchanges(macros) {
   } : null);
 }
 
+/** Gramos de cada macro (como `Recipe.macros`) y kcal; las kcal que falten se
+ *  calculan con 4/4/9. Sin macros, nada: la app cae a los intercambios. */
+function macrosYKcal(r) {
+  if (!r.macros) return {};
+  const macros = {
+    carb: r.macros.carbohydrate?.grams ?? 0,
+    prot: r.macros.protein?.grams ?? 0,
+    fat:  r.macros.fat?.grams ?? 0,
+  };
+  if (!macros.carb && !macros.prot && !macros.fat) return {};
+  const kcal = r.kcal > 0 ? Math.round(r.kcal) : Math.round(macros.carb * 4 + macros.prot * 4 + macros.fat * 9);
+  return { macros, kcal };
+}
+
 /**
  * Solo los campos que se usan sin abrir la receta:
  *   · id, name, image  → la tarjeta
- *   · exchanges        → la tarjeta y el filtro por presupuesto de la dieta
+ *   · macros, kcal     → la tarjeta y el encaje en lo que te queda (10-2026:
+ *                        la app cuenta en kcal y gramos, utils/macrosDeReceta.ts)
+ *   · exchanges        → el motor de menús, mientras siga en intercambios
  *   · categoria,
  *     intakeTypes      → los filtros de categoría e ingesta
  *   · restrictions     → apto/no apto por régimen (vegano, celiaquía…)
@@ -67,6 +83,7 @@ function mapEntradaIndice(r) {
     id:          r.id,
     name:        r.name,
     exchanges:   computeExchanges(r.macros),
+    ...macrosYKcal(r),
     intakeTypes: r.intakeTypes ?? [],
     restrictions: r.forbiddenFor ?? [],
     ingredientsText: (r.ingredients ?? []).map(i => ({ name: i.name })),

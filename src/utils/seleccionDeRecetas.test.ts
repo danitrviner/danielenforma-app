@@ -7,6 +7,7 @@ import {
 } from './seleccionDeRecetas';
 import { rankCandidates, type GeneratorPrefs } from './menuEngine';
 import { findRecipeAlternatives } from './recipeMatch';
+import { macrosDeIntercambios } from './macrosLegado';
 
 function receta(id: string, o: Partial<Recipe> = {}): Recipe {
   return {
@@ -162,7 +163,7 @@ describe('editar la selección', () => {
 });
 
 describe('el generador respeta la selección por dieta', () => {
-  const target = { HC: 2, PROT: 2, GRASA: 1 };
+  const target = macrosDeIntercambios({ HC: 2, PROT: 2, GRASA: 1 });
   const rapidas = Array.from({ length: 5 }, (_, i) => receta(`r${i}`, { basica: true }));
   const garbanzos = Array.from({ length: 5 }, (_, i) => receta(`g${i}`, con('Garbanzos')));
   const lentas = Array.from({ length: 5 }, (_, i) => receta(`l${i}`, { cookingTime: 1 }));

@@ -1,6 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import type { Recipe } from '../types';
 import { bestScaleFit } from './menuEngine';
+import { macrosDeIntercambios } from './macrosLegado';
+import type { Macros } from '../types';
+/** Casos escritos en intercambios, pasados a kcal y gramos. */
+const mx = (v: { HC?: number; PROT?: number; GRASA?: number }): Macros => macrosDeIntercambios(v);
+
 
 const receta = (): Recipe => ({
   id: 'base', name: 'Arroz con pollo', ownerId: 'recetas', categories: [], ingredients: [], extras: [], steps: [],
@@ -17,19 +22,20 @@ const receta = (): Recipe => ({
 
 describe('generador de menús con recetas base ajustables (N-06)', () => {
   it('ajusta ingredientes en vez de escalar la receta entera', () => {
-    const fit = bestScaleFit(receta(), { HC: 4, PROT: 2, GRASA: 0 });
+    const fit = bestScaleFit(receta(), mx({ HC: 4, PROT: 2, GRASA: 0 }));
     expect(fit?.scale).toBe(1);
     expect(fit?.ajuste?.gramos.find(g => g.n === 0)!.gramos).toBeGreaterThan(90);
     expect(fit?.ajuste?.cambios[0].motivo).toBe('faltaban hidratos');
-    expect(fit?.exch.HC).toBe(4);
+    // 4 intercambios de HC = 100 g: el ajuste llega a ±5 g.
+    expect(Math.abs(fit!.macros.hc - 100)).toBeLessThanOrEqual(5);
   });
 
   it('si no encaja dentro de sus rangos, se descarta', () => {
-    expect(bestScaleFit(receta(), { HC: 12, PROT: 2, GRASA: 0 })).toBeNull();
+    expect(bestScaleFit(receta(), mx({ HC: 12, PROT: 2, GRASA: 0 }))).toBeNull();
   });
 
   it('sin vínculo sigue escalando como siempre', () => {
-    const fit = bestScaleFit({ ...receta(), vinculo: undefined }, { HC: 6, PROT: 4, GRASA: 0 });
+    const fit = bestScaleFit({ ...receta(), vinculo: undefined }, mx({ HC: 6, PROT: 4, GRASA: 0 }));
     expect(fit?.scale).toBe(2);
     expect(fit?.ajuste).toBeUndefined();
   });

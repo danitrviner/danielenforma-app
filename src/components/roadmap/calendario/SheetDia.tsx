@@ -276,7 +276,7 @@ export default function SheetDia({
                 </div>
               )}
               <button type="button" onClick={() => irAEditar('dietas')} className="flex items-center gap-1.5 mt-4 text-label font-semibold font-sans text-accent-ink">
-                Editar intercambios y macros<Icon name="arrow_forward" size="s" />
+                Editar kcal y macros<Icon name="arrow_forward" size="s" />
               </button>
             </div>
 

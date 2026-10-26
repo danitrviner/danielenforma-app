@@ -1,16 +1,9 @@
-// Reparto automático de intercambios por comida — sustituye el reparto
-// perfectamente igual de NutritionPlansScreen.tsx (antes `distributeEvenly`)
-// por uno que responde a cuándo el atleta tiene más hambre y a qué comida
-// cae cerca del entreno. Sin preferencia registrada, el resultado es
-// bit a bit idéntico al reparto uniforme de siempre (ver test de
-// equivalencia con distributeEvenly).
-import { FoodCategory, HungerProfile } from '../types';
+// Franjas de las comidas (1 Desayuno … 5 Cena) y sus nombres. Hasta 10-2026
+// aquí vivía también el reparto de intercambios por comida; desde que solo
+// cuenta el objetivo del día, no hay nada que repartir.
+import { HungerProfile } from '../types';
 import { normalizeStr } from './foodPrefs';
 import { FALLBACK_SLOTS, CONTEOS_COMIDAS, ConteoComidas } from './menuEngine';
-import { slotWeights } from './slotWeights';
-import { quotaSplit } from './quotaSplit';
-
-export { quotaSplit };
 
 export const SLOT_LABEL: Record<number, string> = { 1: 'Desayuno', 2: 'Media mañana', 3: 'Comida', 4: 'Merienda', 5: 'Cena' };
 export const HUNGER_PROFILE_LABEL: Record<HungerProfile, string> = {
@@ -27,7 +20,6 @@ const SLOT_KEYWORDS: [RegExp, number][] = [
   [/comida|lunch|mediodia/, 3],
 ];
 
-const AROUND_TRAINING_RE = /pre.?entreno|post.?entreno|peri.?entreno|antes de entrenar|despues de entrenar/;
 
 /** Deduce la franja a partir del nombre libre de la comida. "almuerzo" es
  *  ambiguo (comida en gran parte de España, media mañana en otra) — se
@@ -44,10 +36,6 @@ export function inferSlot(rawName: string): number | undefined {
     if (re.test(name)) return slot;
   }
   return undefined;
-}
-
-export function detectAroundTraining(rawName: string): boolean {
-  return AROUND_TRAINING_RE.test(normalizeStr(rawName || ''));
 }
 
 function clampSlot(i: number, n: number): number {
@@ -85,88 +73,4 @@ export function resolveSlots(meals: { slot?: number; name: string }[]): number[]
     }
   }
   return resolved as number[];
-}
-
-// ── Pesos por franja + perfil de hambre ─────────────────────────────────────
-
-const TRAINING_HC_BOOST = 1.6;   // hidratos hacia la ingesta peri-entreno
-const TRAINING_GRASA_DAMP = 0.5; // grasa se aparta de la ingesta de entreno
-const PROT_FLATTEN = 0.65;       // proteína casi plana entre comidas (0=uniforme, 1=perfectamente plana)
-
-export interface DistributeMealInput {
-  id: string;
-  name: string;
-  slot?: number;
-  aroundTraining?: boolean;
-}
-
-export interface DistributeInput {
-  budget: Record<FoodCategory, number>;
-  meals: DistributeMealInput[];
-  hungerProfile?: HungerProfile;
-  trainingSlot?: number;
-}
-
-export interface DistributeResult {
-  /** targets[i] ↔ meals[i] */
-  targets: Record<FoodCategory, number>[];
-  slots: number[];
-  reasons: string[];
-  /** false = reparto uniforme (sin preferencia registrada, o "equilibrado" sin comida de entreno) */
-  personalized: boolean;
-}
-
-function blankBudget(): Record<FoodCategory, number> {
-  return { HC: 0, PROT: 0, GRASA: 0, MIX_HC: 0, MIX_GRASA: 0 };
-}
-
-export function distributeMealTargets(input: DistributeInput): DistributeResult {
-  const { budget, meals, hungerProfile, trainingSlot } = input;
-  const n = meals.length;
-  if (n === 0) return { targets: [], slots: [], reasons: [], personalized: false };
-
-  const slots = resolveSlots(meals);
-  const aroundTrainingFlags = meals.some(m => m.aroundTraining)
-    ? meals.map(m => !!m.aroundTraining)
-    : slots.map(slot => trainingSlot != null && slot === trainingSlot);
-  const hasTrainingMeal = aroundTrainingFlags.some(Boolean);
-  const effectiveProfile: HungerProfile = hungerProfile ?? 'equilibrado';
-  const personalized = effectiveProfile !== 'equilibrado' || hasTrainingMeal;
-
-  const targets: Record<FoodCategory, number>[] = meals.map(() => blankBudget());
-  const cats: FoodCategory[] = ['HC', 'PROT', 'GRASA', 'MIX_HC', 'MIX_GRASA'];
-
-  const baseWeights = slotWeights(slots, effectiveProfile);
-
-  for (const cat of cats) {
-    const total = budget[cat] ?? 0;
-    if (total <= 0) continue;
-
-    if (!personalized) {
-      // Sin preferencia: reparto uniforme, idéntico al `distributeEvenly` de siempre.
-      quotaSplit(total, meals.map(() => 1)).forEach((v, i) => { targets[i][cat] = v; });
-      continue;
-    }
-
-    const mean = baseWeights.reduce((s, w) => s + w, 0) / n;
-    const weights = baseWeights.map((w, i) => {
-      let out = w;
-      if (cat === 'PROT') out = w + (mean - w) * PROT_FLATTEN;
-      if ((cat === 'HC' || cat === 'MIX_HC') && aroundTrainingFlags[i]) out *= TRAINING_HC_BOOST;
-      if ((cat === 'GRASA' || cat === 'MIX_GRASA') && aroundTrainingFlags[i]) out *= TRAINING_GRASA_DAMP;
-      return out;
-    });
-    quotaSplit(total, weights).forEach((v, i) => { targets[i][cat] = v; });
-  }
-
-  const reasons: string[] = [];
-  if (effectiveProfile === 'manana') reasons.push('más hambre por la mañana');
-  if (effectiveProfile === 'noche') reasons.push('más hambre por la noche');
-  if (hasTrainingMeal) {
-    const idx = aroundTrainingFlags.findIndex(Boolean);
-    const mealName = meals[idx]?.name?.trim() || 'la comida de entreno';
-    reasons.push(`hidratos hacia ${mealName} (entreno)`);
-  }
-
-  return { targets, slots, reasons, personalized };
 }

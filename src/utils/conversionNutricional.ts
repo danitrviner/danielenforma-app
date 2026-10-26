@@ -1,3 +1,5 @@
+import { macrosDelPlato } from './menuMacros';
+import { intercambiosDeMacros } from './macrosLegado';
 import type { DietItem, MenuMeal, Recipe } from '../types';
 import { GRAMS_PER_EXCHANGE } from './nutritionConstants';
 
@@ -161,24 +163,33 @@ function redondearDecima(n: number): number {
  * Ahora los dos caminos pasan por aquí. `paridadDeCaminos.test.ts` lo vigila.
  *
  * Se lee de `meal`, no de `recipe`, todo lo que el menú ya calculó: la escala
- * está aplicada en `exch`, y los gramos de las raciones extra vienen resueltos
+ * está aplicada en el plato (`macrosDelPlato`), y los gramos de las raciones extra vienen resueltos
  * contra el banco desde `menuEngine`. Recalcularlo aquí sería abrir otra vez la
  * puerta a que las dos cuentas se separen.
  */
 export function itemsDeComidaDelMenu(recipe: Recipe, meal: MenuMeal): DietItem[] {
   const items: DietItem[] = [];
 
-  // El plato. Una fila por categoría, como el resto de recetas importadas: sin
-  // gramaje propio, porque la fila representa el plato entero y no un alimento.
+  // El plato. Una fila por grupo, como el resto de recetas importadas, unidas
+  // por `lineaId`; la PRIMERA lleva las kcal y gramos reales del plato
+  // (10-2026), que es lo que cuenta el diario. Las demás solo están para los
+  // binarios viejos, que cuentan por intercambios.
+  const plato = macrosDelPlato(meal);
+  const enIntercambios = intercambiosDeMacros(plato);
+  const lineaId = `menu_${meal.id}`;
+  let primera = true;
   for (const cat of ['HC', 'PROT', 'GRASA'] as const) {
-    const cantidad = meal.exch?.[cat] ?? 0;
+    const cantidad = enIntercambios[cat];
     if (cantidad > 0) {
       items.push({
         category: cat,
         foodLabel: meal.recipeName || recipe.name,
         quantity: cantidad,
         originRecipeId: meal.recipeId || recipe.id,
+        lineaId,
+        ...(primera ? { nutrientes: { kcal: Math.round(plato.kcal), p: plato.p, hc: plato.hc, g: plato.g } } : {}),
       });
+      primera = false;
     }
   }
 

@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { slotPercents, slotWeights } from './slotWeights';
 import { slotsFromOnboarding, FALLBACK_SLOTS } from './menuEngine';
-import { distributeMealTargets } from './mealDistribution';
 import { HungerProfile } from '../types';
 
 const PERFILES: (HungerProfile | undefined)[] = [undefined, 'manana', 'equilibrado', 'noche'];
@@ -38,29 +37,7 @@ describe('slotPercents', () => {
   });
 });
 
-describe('un solo reparto para la dieta y para el menú', () => {
-  // El fallo que motivó esto: la dieta de intercambios repartía 20/10/38/10/27 y
-  // hacía caso al perfil de hambre; el menú de recetas repartía 20/10/40/10/25 y
-  // ni sabía que la pregunta existía. Mismo atleta, dos verdades distintas.
-  it('el menú y la dieta ordenan las franjas igual para el mismo perfil', () => {
-    for (const perfil of ['manana', 'noche'] as HungerProfile[]) {
-      const slots = slotsFromOnboarding({ mealCount: 4 }, perfil);
-
-      const dieta = distributeMealTargets({
-        budget: { HC: 12, PROT: 8, GRASA: 6, MIX_HC: 0, MIX_GRASA: 0 },
-        meals: slots.map((s, i) => ({ id: String(i), name: s.name, slot: s.slot })),
-        hungerProfile: perfil,
-      });
-
-      // Cuál es la comida más grande del día, según cada motor.
-      const mayorMenu = slots.reduce((a, b) => (b.pct > a.pct ? b : a)).slot;
-      const totales = dieta.targets.map(t => t.HC + t.PROT + t.GRASA);
-      const mayorDieta = slots[totales.indexOf(Math.max(...totales))].slot;
-
-      expect(mayorMenu).toBe(mayorDieta);
-    }
-  });
-
+describe('el reparto del menú por franjas', () => {
   it('el perfil de hambre cambia el reparto del menú (antes no hacía nada)', () => {
     const manana = slotsFromOnboarding({ mealCount: 4 }, 'manana').map(s => s.pct);
     const noche = slotsFromOnboarding({ mealCount: 4 }, 'noche').map(s => s.pct);

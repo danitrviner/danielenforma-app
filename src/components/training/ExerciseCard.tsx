@@ -117,15 +117,17 @@ export default React.memo(function ExerciseCard({
   // alterno inclinado, de espalda") ocupaba media tarjeta a text-feature
   // (26px); se reduce por escalones según longitud en vez de dejarlo fijo.
   const nombreEjercicio = ex?.name || we.exerciseId;
-  const nombreSizeClass = nombreEjercicio.length > 40 ? 'text-title-m'
-    : nombreEjercicio.length > 24 ? 'text-title-l'
-    : 'text-feature';
+  // En el móvil un escalón menos: el nombre largo ocupaba cuatro líneas y
+  // empujaba las series fuera de la pantalla.
+  const nombreSizeClass = nombreEjercicio.length > 40 ? 'text-title-s sm:text-title-m'
+    : nombreEjercicio.length > 24 ? 'text-title-m sm:text-title-l'
+    : 'text-title-l sm:text-feature';
 
   return (
     <div className={`bg-surface border rounded-surface overflow-hidden ${we.recordVideoSet ? 'border-accent/50' : 'border-hairline'}`}>
       {/* Cabecera */}
-      <div ref={exIdx === 0 ? videoTargetRef : undefined} className="flex items-center gap-3 p-4 bg-surface border-b border-hairline">
-        <span className="font-mono text-caption text-ink-3 w-5 text-center font-bold flex-shrink-0">{exIdx + 1}</span>
+      <div ref={exIdx === 0 ? videoTargetRef : undefined} className="flex items-center gap-3 p-3 sm:p-4 bg-surface border-b border-hairline">
+        <span className="hidden sm:block font-mono text-caption text-ink-3 w-5 text-center font-bold flex-shrink-0">{exIdx + 1}</span>
         <div className="flex-1 min-w-0">
           <p className={`font-display ${nombreSizeClass} font-black uppercase tracking-tight text-ink flex items-center gap-2 flex-wrap`}>
             {nombreEjercicio}

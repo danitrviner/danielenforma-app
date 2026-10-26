@@ -15,7 +15,6 @@ import { esIncompleto, motivoDeIncompleto, type OffProducto } from '../../utils/
 
 type Props = {
   codigo: string;
-  vista: 'intercambios' | 'macros';
   onConfirm: (producto: OffProducto, gramos: number) => void;
   onBuscarPorNombre: () => void;
   /** `nombre` viene relleno cuando el producto se conoce pero está incompleto. */
@@ -25,7 +24,7 @@ type Props = {
   fichaCalorias?: (producto: OffProducto) => React.ReactNode;
 };
 
-export default function ProductoEscaneadoSheet({ codigo, vista, onConfirm, onBuscarPorNombre, onCrearDesdeEtiqueta, onClose, fichaCalorias }: Props) {
+export default function ProductoEscaneadoSheet({ codigo, onConfirm, onBuscarPorNombre, onCrearDesdeEtiqueta, onClose, fichaCalorias }: Props) {
   const { data: registro, isPending, isError } = useQuery({
     queryKey: ['offPorCodigo', codigo],
     queryFn: () => buscarProductoPorCodigo(codigo),
@@ -37,7 +36,6 @@ export default function ProductoEscaneadoSheet({ codigo, vista, onConfirm, onBus
     return (
       <ProductoOffSheet
         entrada={{ c: registro.c, n: registro.n, b: registro.b, t: '' }}
-        vista={vista}
         onConfirm={onConfirm}
         onClose={onClose}
       />

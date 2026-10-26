@@ -88,12 +88,12 @@ describe('resumirPatrones', () => {
     expect(resumirPatrones([deriva(['pecho 12 → 14 series'], '2026-09-01')])).toEqual([]);
   });
 
-  it('distingue subir de bajar intercambios', () => {
+  it('distingue subir de bajar gramos', () => {
     const patrones = resumirPatrones([
-      deriva(['GRASA 5 → 4 intercambios'], '2026-09-01'),
-      deriva(['GRASA 6 → 4 intercambios'], '2026-08-01'),
+      deriva(['G 60 → 50 g'], '2026-09-01'),
+      deriva(['G 70 → 55 g'], '2026-08-01'),
     ]);
-    expect(patrones[0]).toContain('GRASA: baja intercambios');
+    expect(patrones[0]).toContain('G: baja gramos');
   });
 });
 

@@ -92,7 +92,7 @@ function SelectorDeComida() {
         favoritas={favoritas}
         onElegir={r => setUsada(r.name)}
         verbo="Usar"
-        cupo={{ titulo: 'Encajan en comida', cupo: { HC: 2, PROT: 1.5, GRASA: 1 } }}
+        cupo={{ titulo: 'Encajan en comida', cupo: { kcal: 549, p: 37.5, hc: 50, g: 11 } }}
       />
     </div>
   );

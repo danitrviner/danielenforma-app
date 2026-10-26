@@ -38,12 +38,60 @@ describe('recetaDesglosada', () => {
     expect(d.items[0]).toMatchObject({ foodLabel: 'Arroz blanco', gramos: 80, nutrientes: { kcal: 280 } });
   });
 
-  it('si algo no empareja seguro, va como plato entero', () => {
+  // Dani, 26-10-2026: «esta receta debería mostrar los alimentos dentro de la
+  // misma comida». Entraba como un solo renglón porque la leche y los copos no
+  // emparejaban con el catálogo.
+  describe('si algo no empareja seguro, se desglosa igual y suma lo de la receta', () => {
+    const leche: Recipe = {
+      ...base, name: 'Leche entera con copos de maíz, plátano y nueces',
+      kcal: 869, macros: { carb: 126, prot: 17, fat: 33 },
+      ingredientsText: [
+        { name: 'Copos de maíz sin azucares añadidos', quantity: 80 },
+        { name: 'Plátano', quantity: 125 },
+        { name: 'Nueces', quantity: 30 },
+        { name: 'Leche entera', quantity: 350 },
+      ],
+    };
+    const total = (items: ReturnType<typeof recetaDesglosada>['items']) => items.reduce((s, i) => ({
+      p: s.p + (i.nutrientes?.p ?? 0), hc: s.hc + (i.nutrientes?.hc ?? 0), g: s.g + (i.nutrientes?.g ?? 0),
+    }), { p: 0, hc: 0, g: 0 });
+
+    it('cada alimento en su línea, con sus gramos', () => {
+      const d = recetaDesglosada(leche, { nuevoLineaId, catalogo: [] });
+      expect(d.desglosada).toBe(true);
+      expect(d.items.filter(i => i.nutrientes).map(i => [i.foodLabel, i.gramos])).toEqual([
+        ['Copos de maíz sin azucares añadidos', 80], ['Plátano', 125], ['Nueces', 30], ['Leche entera', 350],
+      ]);
+      expect(d.items.every(i => i.receta?.nombre === leche.name)).toBe(true);
+    });
+
+    it('entre todos suman los macros de la receta', () => {
+      const t = total(recetaDesglosada(leche, { nuevoLineaId, catalogo: [] }).items);
+      expect(t.hc).toBeCloseTo(126, 0);
+      expect(t.p).toBeCloseTo(17, 0);
+      expect(t.g).toBeCloseTo(33, 0);
+    });
+
+    it('lo que empareja seguro lleva su valor y el resto se lleva lo que falta', () => {
+      const catalogo = [cat('platano', 'Plátano', { kcal: 90, p: 1, hc: 20, g: 0.3 })];
+      const d = recetaDesglosada(leche, { nuevoLineaId, catalogo });
+      const platano = d.items.find(i => i.foodLabel === 'Plátano' && i.nutrientes)!;
+      expect(platano.nutrientes).toMatchObject({ hc: 25 });
+      expect(total(d.items).hc).toBeCloseTo(126, 0);
+    });
+
+    it('a escala, todo escala', () => {
+      const d = recetaDesglosada(leche, { nuevoLineaId, catalogo: [], factor: 0.5 });
+      expect(d.items.find(i => i.foodLabel === 'Leche entera' && i.nutrientes)?.gramos).toBe(175);
+      expect(total(d.items).hc).toBeCloseTo(63, 0);
+    });
+  });
+
+  it('sin macros de la receta y sin emparejar, va como plato entero', () => {
     const r: Recipe = { ...base, exchanges: { HC: 2, PROT: 1, GRASA: 1 }, ingredientsText: [{ name: 'Arroz blanco', quantity: 80 }, { name: 'Salsa secreta del chef', quantity: 30 }] };
     const catalogo = [cat('arroz', 'Arroz blanco', { kcal: 350, p: 7, hc: 78, g: 1 })];
-    const d = recetaDesglosada(r, { nuevoLineaId, catalogo });
+    const d = recetaDesglosada({ ...r, exchanges: undefined }, { nuevoLineaId, catalogo });
     expect(d.desglosada).toBe(false);
-    expect(d.items.every(i => i.originRecipeId === 'r1')).toBe(true);
   });
 
   it('sabe cuándo hay que bajar la receta completa', () => {

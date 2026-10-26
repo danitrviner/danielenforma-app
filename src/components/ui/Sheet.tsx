@@ -2,6 +2,7 @@ import React from 'react';
 import { createPortal } from 'react-dom';
 import Icon from './Icon';
 import { useEscape, useFocusTrap, useScrollLock } from './internal/overlayHooks';
+import { useReducedMotion } from './internal/useReducedMotion';
 import { useBotonAtras } from '../../services/botonAtras';
 import { ANCHO_OVERLAY, type OverlaySize } from './internal/overlaySizes';
 
@@ -39,10 +40,27 @@ import { ANCHO_OVERLAY, type OverlaySize } from './internal/overlaySizes';
    encima de 96 px o con velocidad de salida cierra sin guardar — soltar por
    debajo vuelve a su sitio con la misma animación de entrada. Pointer Events
    cubre ratón y táctil con el mismo código.
+
+   10-2026 (Dani: «cuando se despliega para bajarlo no tiene animación y queda
+   tosco»): dos fallos que lo explicaban.
+     · El arrastre NO seguía al dedo: `animate-sheet-in` deja su `transform`
+       final aplicado (`fill: both`) y una animación CSS pisa al `transform` en
+       línea. Ahora la entrada va con `fill: backwards`: terminada, manda el
+       transform en línea.
+     · No había salida: cerrar desmontaba el panel de golpe. Ahora todo cierre
+       que inicia el atleta (asa, fondo, ✕, Escape, atrás) baja el panel y
+       funde el velo antes de llamar a `onClose`. Un cierre que decide la
+       pantalla (desmontarlo al confirmar) sigue siendo inmediato.
+   Soltar el asa cierra también con un gesto rápido hacia abajo, aunque no
+   llegue al umbral.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 /** A partir de aquí arrastrando hacia abajo, soltar cierra el Sheet. */
 const UMBRAL_CIERRE_PX = 96;
+/** …o soltando con esta velocidad hacia abajo (px/ms), un gesto rápido. */
+const VELOCIDAD_CIERRE = 0.5;
+/** Lo que tarda en bajar y fundirse al cerrar. */
+const DURACION_SALIDA_MS = 240;
 
 /** La escala de anchos es común con `Dialog`; vive en `internal/overlaySizes`. */
 export type SheetSize = OverlaySize;
@@ -91,12 +109,29 @@ export default function Sheet({ open, onClose, title, children, footer, toolbar,
   const ref = React.useRef<HTMLDivElement>(null);
   const idTitulo = React.useId();
 
+  const sinMovimiento = useReducedMotion();
+  // Cerrar animado: baja el panel, funde el velo y luego avisa. Un solo cierre
+  // aunque se toque dos veces (fondo + ✕).
+  const [saliendo, setSaliendo] = React.useState(false);
+  const temporizador = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  React.useEffect(() => () => { if (temporizador.current) clearTimeout(temporizador.current); }, []);
+  React.useEffect(() => { if (open) setSaliendo(false); }, [open]);
+  const cerrar = React.useCallback(() => {
+    if (sinMovimiento) { onClose(); return; }
+    if (temporizador.current) return;
+    setSaliendo(true);
+    temporizador.current = setTimeout(() => {
+      temporizador.current = null;
+      onClose();
+    }, DURACION_SALIDA_MS);
+  }, [onClose, sinMovimiento]);
+
   useScrollLock(open);
   useFocusTrap(ref, open);
-  useEscape(onClose, open);
+  useEscape(cerrar, open);
   // 07-9. Atrás en Android es el Escape del móvil: cierra esta capa en vez de
   // navegar por debajo y dejar el overlay flotando sobre otra pantalla.
-  useBotonAtras(onClose, open);
+  useBotonAtras(cerrar, open);
 
   // Arrastrar el asa: `arrastreY` es el desplazamiento en vivo (0 = en su
   // sitio); se aplica como `transform` en línea porque cambia en cada evento
@@ -105,20 +140,26 @@ export default function Sheet({ open, onClose, title, children, footer, toolbar,
   const [arrastreY, setArrastreY] = React.useState(0);
   const arrastrando = React.useRef(false);
   const origenY = React.useRef(0);
+  // Últimas dos muestras del arrastre, para medir la velocidad al soltar.
+  const muestras = React.useRef<{ y: number; t: number }[]>([]);
 
   const alBajarPuntero = (e: React.PointerEvent) => {
     arrastrando.current = true;
     origenY.current = e.clientY;
+    muestras.current = [{ y: e.clientY, t: e.timeStamp }];
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
   };
   const alMoverPuntero = (e: React.PointerEvent) => {
     if (!arrastrando.current) return;
+    muestras.current = [...muestras.current.slice(-1), { y: e.clientY, t: e.timeStamp }];
     setArrastreY(Math.max(0, e.clientY - origenY.current));
   };
   const alSoltarPuntero = () => {
     if (!arrastrando.current) return;
     arrastrando.current = false;
-    if (arrastreY > UMBRAL_CIERRE_PX) onClose();
+    const [a, b] = muestras.current;
+    const velocidad = a && b && b.t > a.t ? (b.y - a.y) / (b.t - a.t) : 0;
+    if (arrastreY > UMBRAL_CIERRE_PX || (velocidad > VELOCIDAD_CIERRE && arrastreY > 16)) cerrar();
     else setArrastreY(0);
   };
 
@@ -130,8 +171,9 @@ export default function Sheet({ open, onClose, title, children, footer, toolbar,
     // debajo de la Dynamic Island y su asa de arrastre quedaba fuera de alcance.
     <div className="fixed inset-0 z-[var(--z-modal)] flex items-end justify-center pt-[var(--safe-top)]">
       <div
-        className="fixed inset-0 z-[var(--z-overlay)] bg-veil/70 backdrop-blur-sm"
-        onClick={onClose}
+        className="fixed inset-0 z-[var(--z-overlay)] bg-veil/70 backdrop-blur-sm transition-opacity ease-brand"
+        style={{ opacity: saliendo ? 0 : 1, transitionDuration: `${DURACION_SALIDA_MS}ms` }}
+        onClick={cerrar}
         aria-hidden
       />
       <div
@@ -141,7 +183,13 @@ export default function Sheet({ open, onClose, title, children, footer, toolbar,
         aria-labelledby={title ? idTitulo : undefined}
         aria-label={title ? undefined : label}
         tabIndex={-1}
-        style={{ transform: arrastreY ? `translateY(${arrastreY}px)` : undefined }}
+        style={{
+          // La entrada no deja su transform puesto (`backwards`): así el
+          // arrastre y la salida, en línea, se ven.
+          animationFillMode: 'backwards',
+          transform: saliendo ? 'translateY(105%)' : arrastreY ? `translateY(${arrastreY}px)` : undefined,
+          ...(saliendo ? { transition: `transform ${DURACION_SALIDA_MS}ms cubic-bezier(0.4, 0, 1, 1)` } : {}),
+        }}
         className={
           `relative z-[var(--z-modal)] flex w-full ${ANCHO_OVERLAY[size]} flex-col animate-sheet-in `
           + `${alto === 'completo' ? 'h-[100dvh] max-h-none' : 'max-h-[85vh]'} `
@@ -168,7 +216,7 @@ export default function Sheet({ open, onClose, title, children, footer, toolbar,
             <h2 id={idTitulo} className="font-sans text-title-s font-bold text-ink">{title}</h2>
             <button
               type="button"
-              onClick={onClose}
+              onClick={cerrar}
               aria-label="Cerrar"
               className="flex h-9 w-9 items-center justify-center rounded-control text-ink-2 transition-colors hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-line"
             >

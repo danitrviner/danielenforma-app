@@ -1,7 +1,6 @@
-import type { BodyweightLog, Diet, DietCompletionLog, FoodCategory } from '../types.js';
-import { comidasDelDia } from './diaDeDieta.js';
-import { addToPlaced } from './exchangeHelpers.js';
-import { exchangeToKcal } from './nutritionConstants.js';
+import type { BodyweightLog, Diet, DietCompletionLog } from '../types.js';
+import { lineasComidas } from './diaDeDieta.js';
+import { macrosDeLineas } from './macrosLegado.js';
 import { addDays } from './trainingWeek.js';
 import { ObjetivoCorporalTipo, RANGO_PCT_SEMANA, pendiente } from './verificacionObjetivo.js';
 
@@ -42,25 +41,15 @@ const UMBRAL_INFRA_REGISTRO = 0.75;
 // ── Kcal de un día ───────────────────────────────────────────────────────────
 
 /**
- * Kcal que el atleta marcó como comidas ese día (intercambios × sus kcal).
- * `null` si no marcó nada: un día sin marcas es un día sin registrar, no un
- * día de ayuno.
+ * Kcal que el atleta marcó como comidas ese día (las de cada etiqueta cuando
+ * las tiene; si no, por sus intercambios). `null` si no marcó nada: un día sin
+ * marcas es un día sin registrar, no un día de ayuno.
  */
 export function kcalDelDia(log: DietCompletionLog | null | undefined, diets: Diet[]): number | null {
   if (!log || !log.doneItemIds?.length) return null;
-  const marcados = new Set(log.doneItemIds);
-  const comidos = { HC: 0, PROT: 0, GRASA: 0 };
-  let alguno = false;
-  for (const [i, comida] of comidasDelDia(log, diets).entries()) {
-    comida.items.forEach((item, j) => {
-      // Misma convención de ids que la pantalla del atleta y la adherencia.
-      if (!marcados.has(`${comida.id}_${j}`) && !marcados.has(`${i}_${j}`)) return;
-      addToPlaced(comidos as unknown as Record<FoodCategory, number>, item.category, item.quantity);
-      alguno = true;
-    });
-  }
-  if (!alguno) return null;
-  return exchangeToKcal(comidos);
+  const lineas = lineasComidas(log, diets);
+  if (lineas.length === 0) return null;
+  return Math.round(macrosDeLineas(lineas).kcal);
 }
 
 // ── El cálculo ───────────────────────────────────────────────────────────────
