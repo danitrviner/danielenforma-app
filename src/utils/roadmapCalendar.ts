@@ -14,7 +14,7 @@ import {
   WorkoutAssignment, WorkoutLog, Workout, TaskItem, RoadmapItem, DietCompletionLog,
   Diet, CardioSession, BodyweightLog, FoodCategory, RefeedDay,
 } from '../types';
-import { adherenciaDelDia, dietaDelDia } from './diaDeDieta';
+import { adherenciaPorKcal, dietaDelDia } from './diaDeDieta';
 import { addDays as addDaysStr } from './trainingWeek';
 import { aggregate } from './trainingReport';
 import { GRAMS_PER_EXCHANGE } from './nutritionConstants';
@@ -569,7 +569,8 @@ export function construirIndiceDeDias(datos: DatosCalendario, hoy: string): Map<
         // Un día ya vivido se lee de SU registro, no de la dieta de hoy: la
         // dieta cambia y reescribiría el pasado (ver utils/diaDeDieta.ts).
         const dietaDeEseDia = log ? dietaDelDia(log, datos.diets) : diet;
-        const adherenciaPct = log ? (adherenciaDelDia(log, datos.diets) ?? undefined) : undefined;
+        // En kcal sobre el objetivo del día, no en líneas marcadas (26-10-2026).
+        const adherenciaPct = log ? adherenciaPorKcal(log, datos.diets)?.pct : undefined;
         const comidasTotal = dietaDeEseDia?.meals.filter(m => m.items.length > 0).length;
         const comidasHechas = log && dietaDeEseDia
           ? dietaDeEseDia.meals.filter(m => m.items.length > 0 && m.items.every((_, idx) => log.doneItemIds.includes(`${m.id}_${idx}`))).length

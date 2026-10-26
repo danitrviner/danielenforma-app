@@ -50,16 +50,27 @@ describe('computeAdherenceSection', () => {
 });
 
 describe('computeNutritionSection', () => {
-  const diet = { id: 'd1', meals: [{ items: [{}, {}, {}, {}] }] } as unknown as Diet;
+  // Objetivo 400 kcal (4 intercambios de HC); cada línea marcada son 100 kcal.
+  const diet = {
+    id: 'd1', budget: { HC: 4 },
+    meals: [{ id: 'm1', items: Array.from({ length: 4 }, (_, i) => ({ category: 'HC', foodLabel: `a${i}`, quantity: 1 })) }],
+  } as unknown as Diet;
   const log = (date: string, done: number): DietCompletionLog =>
-    ({ id: `dl_${date}`, athleteId: 'a@x.com', date, dietId: 'd1', doneItemIds: Array.from({ length: done }, (_, i) => `i${i}`) });
+    ({ id: `dl_${date}`, athleteId: 'a@x.com', date, dietId: 'd1', doneItemIds: Array.from({ length: done }, (_, i) => `m1_${i}`) });
 
-  it('promedia el % de items completados por día registrado', () => {
+  it('promedia el % de kcal comidas sobre el objetivo por día registrado (26-10-2026)', () => {
     const r = computeNutritionSection([log('2026-07-02', 4), log('2026-07-03', 2)], [diet], '2026-07-01', '2026-07-07', null, null);
     expect(r.daysLogged).toBe(2);
     expect(r.avgPct).toBe(75); // (100 + 50) / 2
     expect(r.periodDays).toBe(7);
     expect(r.prevAvgPct).toBeNull();
+  });
+
+  it('un día sin objetivo no cuenta (ni como 0 %)', () => {
+    const sinObjetivo = { ...diet, id: 'd2', budget: {} } as unknown as Diet;
+    const r = computeNutritionSection([{ ...log('2026-07-02', 4), dietId: 'd2' }, log('2026-07-03', 2)], [diet, sinObjetivo], '2026-07-01', '2026-07-07', null, null);
+    expect(r.daysLogged).toBe(1);
+    expect(r.avgPct).toBe(50);
   });
 });
 

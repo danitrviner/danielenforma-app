@@ -3,7 +3,7 @@ import {
   QuestionnaireResponse, QuestionnaireAssignment, Questionnaire,
 } from '../types';
 import { resolveQuestions } from './questionnaireResolve';
-import { adherenciaDelDia } from './diaDeDieta';
+import { adherenciaPorKcal } from './diaDeDieta';
 
 // Extra report sections beyond pure training performance (peso corporal,
 // adherencia a sesiones, nutrición y retos). Same deterministic philosophy as
@@ -87,15 +87,18 @@ export function computeAdherenceSection(
 export interface NutritionSectionData {
   daysLogged: number;
   periodDays: number;
-  avgPct: number | null;     // mean % of diet items marked done, across logged days
+  /** Media del % de kcal comidas sobre el objetivo, en los días con objetivo
+   *  (desde 26-10-2026; antes eran líneas marcadas, que se autocumplían). */
+  avgPct: number | null;
   prevAvgPct: number | null;
 }
 
 function dietAvgPct(logs: DietCompletionLog[], diets: Diet[], start: string, end: string): { daysLogged: number; avgPct: number | null } {
-  const win = logs.filter(l => inRange(l.date, start, end));
-  if (win.length === 0) return { daysLogged: 0, avgPct: null };
-  const pcts = win.map(log => adherenciaDelDia(log, diets) ?? 0);
-  return { daysLogged: win.length, avgPct: Math.round(pcts.reduce((s, p) => s + p, 0) / pcts.length) };
+  const pcts = logs.filter(l => inRange(l.date, start, end))
+    .map(log => adherenciaPorKcal(log, diets)?.pct)
+    .filter((p): p is number => p !== undefined);
+  if (pcts.length === 0) return { daysLogged: 0, avgPct: null };
+  return { daysLogged: pcts.length, avgPct: Math.round(pcts.reduce((s, p) => s + p, 0) / pcts.length) };
 }
 
 export function computeNutritionSection(

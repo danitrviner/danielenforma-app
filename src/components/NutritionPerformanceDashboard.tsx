@@ -213,8 +213,11 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
 
   const performance = useMemo(() => {
     if (!projection) return null;
-    return computePeriodizationPerformance({ projection, onboarding, stepGoal, kcalPerStep });
-  }, [projection, onboarding, stepGoal, kcalPerStep]);
+    return computePeriodizationPerformance({
+      projection, onboarding, stepGoal, kcalPerStep,
+      gastoReal: { pesos: bodyweightLogs, registros: completionLogs, diets, hoy: today },
+    });
+  }, [projection, onboarding, stepGoal, kcalPerStep, bodyweightLogs, completionLogs, diets, today]);
 
   const dietAdherence = useMemo(
     () => computeAdherenceRate(completionLogs, diets, DEFAULT_THRESHOLDS),
@@ -547,9 +550,10 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
           valueColor={performance?.deviationKg == null ? undefined : performance.deviationKg > 0 ? 'var(--color-warning)' : 'var(--color-success)'}
           sub={performance?.achievedPct != null ? `${performance.achievedPct}% del objetivo` : 'sin datos suficientes'}
         />
-        {/* «Observado», no «real»: la ingesta se aproxima por el % de ítems
-            marcados, no se mide. Llamarlo real prometía una exactitud que el
-            dato no tiene (auditoría §18). */}
+        {/* Gasto real (utils/gastoReal.ts): kcal registradas y tendencia de
+            peso de las últimas semanas; el mismo número que la Revisión. Vacío
+            mientras no hay semanas con 5+ días registrados o si se sospecha
+            infra-registro. */}
         <StatCard
           label="Mantenimiento observado"
           value={performance?.realMaintenanceKcal != null ? `${fmtKcal(performance.realMaintenanceKcal)}` : '—'}
@@ -557,7 +561,7 @@ export default function NutritionPerformanceDashboard({ athleteEmail, athleteNam
           valueColor="var(--color-data)"
           sub={performance?.maintenanceGapKcal != null
             ? `${performance.maintenanceGapKcal >= 0 ? '+' : ''}${fmtKcal(performance.maintenanceGapKcal)} vs. la fórmula (${fmtKcal(performance.estimatedMaintenanceKcal)})`
-            : 'faltan semanas para estimarlo'}
+            : 'faltan días registrados para calcularlo'}
         />
         <StatCard
           label="Adherencia · dieta"

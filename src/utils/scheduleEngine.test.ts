@@ -16,6 +16,24 @@ function isoDate(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
+describe('cambio de hora (26-10-2026)', () => {
+  // Entre el cambio de marzo y el de octubre, de una medianoche local a otra
+  // hay n días menos una hora; con floor el intervalo de 7 días caía al día
+  // siguiente (el 04-04 en vez del 03-04). En una zona sin horario de verano
+  // esta prueba no distingue, pero el servidor de tests y los móviles de los
+  // atletas están en Europa.
+  it('un intervalo de 7 días desde el 20-03 vence el 03-04 y el 10-04, no el 04-04', () => {
+    vi.useFakeTimers();
+    const a: Scheduled = { schedule: { type: 'interval', intervalDays: 7 }, startDate: '2026-03-20' };
+    vi.setSystemTime(new Date('2026-04-03T12:00:00'));
+    expect(isDueToday(a)).toBe(true);
+    vi.setSystemTime(new Date('2026-04-04T12:00:00'));
+    expect(isDueToday(a)).toBe(false);
+    vi.setSystemTime(new Date('2026-04-10T12:00:00'));
+    expect(isDueToday(a)).toBe(true);
+  });
+});
+
 describe('legacy schedule types are unaffected by the optional ctx param', () => {
   it('once/weekdays/interval/monthly still evaluate correctly without passing ctx', () => {
     vi.useFakeTimers();
