@@ -1,3 +1,4 @@
+import { grupoDeReceta } from '../utils/grupoDeReceta';
 import React, { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { AthleteDietConfig, AthleteNutritionConfig, Diet, OnboardingData, Recipe } from '../types';
@@ -10,7 +11,7 @@ import { useConfirm } from '../hooks/useConfirm';
 import { esPlatoDelRecetario } from '../db/recetasHidratacion';
 import { athleteConditions, HEALTH_CONDITIONS, restrictionLabel } from '../utils/dietaryRestrictions';
 import { dietTypeVigente, ingredientMatch } from '../utils/foodPrefs';
-import { dishType, dishTypeLabel, type DishType } from '../utils/dishTypes';
+import { type DishType } from '../utils/dishTypes';
 import {
   poolDelAtleta, filtrarLista, categoriasDe, FILTRO_VACIO, TOPES_DE_TIEMPO, type FiltroDeLista, type AlimentosDelAtleta,
 } from '../utils/poolDelAtleta';
@@ -112,7 +113,7 @@ const Fila: React.FC<{
     <button type="button" onClick={onVer} aria-label={`Ver la receta: ${receta.name.trim()}`} className="min-w-0 flex-1 text-left group">
       <span className="block font-sans text-label font-bold text-ink truncate group-hover:text-accent-ink">{receta.name.trim()}</span>
       <span className="block font-mono text-caption text-ink-2 truncate">
-        {receta.categoria ?? dishTypeLabel(dishType(receta))} · {etiquetaDeTiempo(receta)}{receta.tupper ? ' · tupper' : ''}
+        {grupoDeReceta(receta)} · {etiquetaDeTiempo(receta)}{receta.tupper ? ' · tupper' : ''}
       </span>
     </button>
     <span className="hidden sm:flex flex-wrap justify-end gap-1">{marcas}</span>

@@ -1,3 +1,4 @@
+import { grupoDeReceta } from '../utils/grupoDeReceta';
 import { Recipe } from '../types';
 import { minutosDeReceta } from '../utils/tiempoDeReceta';
 
@@ -119,14 +120,17 @@ export function encajaRapidas(r: Pick<Recipe, 'cookingTime' | 'tupper'>, filtro?
 }
 
 /** `true` si la receta va en la pestaña `cat` del recetario ('Todas' o vacío =
- *  todas). `rapidas` solo cuenta dentro de la pestaña Rápidas. */
+ *  todas). `cat` es uno de los grupos finos (utils/grupoDeReceta.ts) o, por
+ *  compatibilidad, una de las cuatro categorías de origen. `rapidas` solo
+ *  cuenta dentro de la pestaña Rápidas. */
 export function encajaCategoria(
-  r: Pick<Recipe, 'categoria' | 'basica' | 'cookingTime' | 'tupper'>,
+  r: Pick<Recipe, 'categoria' | 'basica' | 'cookingTime' | 'tupper'> & { name?: string },
   cat?: string | null,
   rapidas?: FiltroRapidas | null,
 ): boolean {
   if (!cat || cat === 'Todas') return true;
-  return cat === CAT_BASICAS ? r.basica === true && encajaRapidas(r, rapidas) : r.categoria === cat;
+  if (cat === CAT_BASICAS) return r.basica === true && encajaRapidas(r, rapidas);
+  return grupoDeReceta(r) === cat || r.categoria === cat;
 }
 
 export function hidratarEntradaIndice(r: Recipe): Recipe {

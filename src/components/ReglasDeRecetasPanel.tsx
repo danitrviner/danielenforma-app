@@ -1,3 +1,4 @@
+import { grupoDeReceta } from '../utils/grupoDeReceta';
 import React, { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { AthleteNutritionConfig, OnboardingData, Recipe, WeekDay } from '../types';
@@ -5,7 +6,7 @@ import { cargarIndiceRecetas, getRecipeFavorites, saveReglasDeReceta } from '../
 import { reglasDeRecetaKey, useReglasDeReceta, useRecomendadasDelCoach } from '../hooks/useReglasDeReceta';
 import { athleteConditions, HEALTH_CONDITIONS, restrictionLabel } from '../utils/dietaryRestrictions';
 import { dietTypeVigente } from '../utils/foodPrefs';
-import { dishType, dishTypeLabel, type DishType } from '../utils/dishTypes';
+import { type DishType } from '../utils/dishTypes';
 import {
   poolDelAtleta, filtrarLista, categoriasDe, FILTRO_VACIO, TOPES_DE_TIEMPO,
   type FiltroDeLista, type AlimentosDelAtleta,
@@ -120,7 +121,7 @@ const Fila: React.FC<{
             {receta.name}
           </p>
           <p className="font-mono text-caption text-ink-3 truncate">
-            {receta.categoria ?? dishTypeLabel(dishType(receta))} · <span className="text-ink-2">{etiquetaDeTiempo(receta)}</span>
+            {grupoDeReceta(receta)} · <span className="text-ink-2">{etiquetaDeTiempo(receta)}</span>
           </p>
         </div>
         {/* Recomendar: sale arriba de su recetario, en «Recomendadas por tu

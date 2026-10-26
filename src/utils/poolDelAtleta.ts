@@ -4,6 +4,7 @@ import { violatesHealthConditions } from './dietaryRestrictions';
 import { minutosDeReceta, superaElTiempo } from './tiempoDeReceta';
 import { coincideBusqueda } from './busqueda';
 import { CAT_BASICAS, encajaCategoria } from '../db/recetasHidratacion';
+import { grupoDeReceta, GRUPOS_DE_RECETA } from './grupoDeReceta';
 import { dishType, type DishType } from './dishTypes';
 
 /** Los filtros DUROS que el motor aplica a las recetas de un atleta. */
@@ -72,16 +73,18 @@ export const TOPES_DE_TIEMPO: { value: TopeDeTiempo; label: string }[] = [
   { value: 'mas30', label: 'Más de 30 min' },
 ];
 
-/** Categorías presentes en la lista, con cuántas recetas tiene cada una. */
+/** Grupos presentes en la lista (utils/grupoDeReceta.ts), con cuántas recetas
+ *  tiene cada uno, en el orden de siempre (de desayuno a suplementos). */
 export function categoriasDe(recetas: Recipe[]): { nombre: string; total: number }[] {
   const cuenta = new Map<string, number>();
   for (const r of recetas) {
-    if (r.categoria) cuenta.set(r.categoria, (cuenta.get(r.categoria) ?? 0) + 1);
+    const g = grupoDeReceta(r);
+    cuenta.set(g, (cuenta.get(g) ?? 0) + 1);
   }
   const rapidas = recetas.filter(r => r.basica === true).length;
-  const lista = [...cuenta.entries()]
-    .map(([nombre, total]) => ({ nombre, total }))
-    .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+  const lista = GRUPOS_DE_RECETA
+    .filter(g => cuenta.has(g))
+    .map(nombre => ({ nombre: nombre as string, total: cuenta.get(nombre)! }));
   return rapidas > 0 ? [{ nombre: CAT_BASICAS, total: rapidas }, ...lista] : lista;
 }
 

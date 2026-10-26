@@ -21,23 +21,23 @@ import { etiquetaDeTiempo } from './tiempoDeReceta';
 
 describe('filtrarLista y categoriasDe', () => {
   const recetas = [
-    r('arroz', { categoria: 'Arroces', cookingTime: 3, ingredientsText: [{ name: 'Arroz basmati', quantity: 80 }, { name: 'Pollo', quantity: 120 }] } as Partial<Recipe>),
-    r('batido', { categoria: 'Batidos', cookingTime: 4, basica: true, ingredientsText: [{ name: 'Leche', quantity: 200 }] } as Partial<Recipe>),
-    r('guiso', { categoria: 'Carnes', cookingTime: 45, ingredientsText: [{ name: 'Ternera', quantity: 150 }] } as Partial<Recipe>),
-    r('sinTiempo', { categoria: 'Carnes' } as Partial<Recipe>),
+    r('arroz', { name: 'Arroz con pollo', categoria: 'Platos salados / principales', cookingTime: 3, ingredientsText: [{ name: 'Arroz basmati', quantity: 80 }, { name: 'Pollo', quantity: 120 }] } as Partial<Recipe>),
+    r('batido', { name: 'Batido de leche', categoria: 'Bebidas', cookingTime: 4, basica: true, ingredientsText: [{ name: 'Leche', quantity: 200 }] } as Partial<Recipe>),
+    r('guiso', { name: 'Ternera guisada', categoria: 'Platos salados / principales', cookingTime: 45, ingredientsText: [{ name: 'Ternera', quantity: 150 }] } as Partial<Recipe>),
+    r('sinTiempo', { name: 'Pollo al horno', categoria: 'Platos salados / principales' } as Partial<Recipe>),
   ];
   const ids = (l: Recipe[]) => l.map(x => x.id);
 
   it('cuenta categorías y pone Rápidas la primera', () => {
     expect(categoriasDe(recetas)).toEqual([
       { nombre: 'Rápidas', total: 1 },
-      { nombre: 'Arroces', total: 1 },
-      { nombre: 'Batidos', total: 1 },
-      { nombre: 'Carnes', total: 2 },
+      { nombre: 'Batidos y smoothies', total: 1 },
+      { nombre: 'Arroces y granos', total: 1 },
+      { nombre: 'Carnes y aves', total: 2 },
     ]);
   });
   it('filtra por categoría, incluida Rápidas', () => {
-    expect(ids(filtrarLista(recetas, { ...FILTRO_VACIO, categoria: 'Carnes' }))).toEqual(['guiso', 'sinTiempo']);
+    expect(ids(filtrarLista(recetas, { ...FILTRO_VACIO, categoria: 'Carnes y aves' }))).toEqual(['guiso', 'sinTiempo']);
     expect(ids(filtrarLista(recetas, { ...FILTRO_VACIO, categoria: 'Rápidas' }))).toEqual(['batido']);
   });
   it('filtra por tiempo y deja fuera las que no lo declaran', () => {

@@ -1,3 +1,4 @@
+import { grupoDeReceta } from '../utils/grupoDeReceta';
 import React, { useEffect, useMemo, useState } from 'react';
 import type { Recipe } from '../types';
 import { filtrarLista, categoriasDe, FILTRO_VACIO, TOPES_DE_TIEMPO, type FiltroDeLista } from '../utils/poolDelAtleta';
@@ -177,7 +178,7 @@ export default function EditorDeListaDeMenu({ recetas, valor, guardando, onGuard
                   <span className="min-w-0 flex-1">
                     <span className="block font-sans text-body-s font-semibold text-ink truncate">{r.name}</span>
                     <span className="block font-mono text-caption text-ink-3">
-                      {r.categoria ?? 'Sin categoría'} · {etiquetaDeTiempo(r)}{r.kcal ? ` · ${r.kcal} kcal` : ''}
+                      {grupoDeReceta(r)} · {etiquetaDeTiempo(r)}{r.kcal ? ` · ${r.kcal} kcal` : ''}
                     </span>
                   </span>
                   {r.basica === true && (

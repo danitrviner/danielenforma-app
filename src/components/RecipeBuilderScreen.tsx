@@ -4,6 +4,7 @@ import { Recipe, RecipeIngredient, MealItem, FoodCategory } from '../types';
 import { getRecipes, createRecipe, updateRecipe, deleteRecipe, getFoodItems, queryRecetas, cargarIndiceRecetas, getRecipeById } from '../dbService';
 import type { RecetasCursor } from '../dbService';
 import { CAT_BASICAS, encajaCategoria, FILTROS_RAPIDAS, type FiltroRapidas } from '../db/recetasHidratacion';
+import { GRUPOS_DE_RECETA } from '../utils/grupoDeReceta';
 import { roundQuarter } from '../utils/exchangeHelpers';
 import { macrosDeIntercambios } from '../utils/macrosLegado';
 import { parseBaseGrams } from '../utils/conversionNutricional';
@@ -22,15 +23,10 @@ const TOPE_RESULTADOS_BUSQUEDA = 200;
 
 // Categories/intake types as stored on imported imported recipes (see scripts/importRecetas.mjs) —
 // mirrors the athlete-facing browser in RecipesScreen.tsx.
-const RECETAS_CATS = [
-  'Todas',
-  CAT_BASICAS,
-  'Platos salados / principales',
-  'Desayuno y dulces',
-  'Bebidas',
-  'Suplementos deportivos',
-  'Alimentos y suplementos',
-];
+// Pestañas del recetario: los grupos finos (utils/grupoDeReceta.ts), no las
+// cuatro categorías de origen, en las que «Platos salados» mezclaba batidos,
+// fruta o frutos secos (Dani, 26-10-2026).
+const RECETAS_CATS = ['Todas', CAT_BASICAS, ...GRUPOS_DE_RECETA];
 
 const INTAKE_LABELS: Record<number, string> = {
   1: 'Desayuno', 2: 'Media mañana', 3: 'Comida', 4: 'Merienda', 5: 'Cena',
