@@ -183,7 +183,9 @@ export function motivoParaNoAprobar(kind: AiProposal['kind'], payload: AiProposa
   }
   if (kind === 'diet') {
     const v = payload as Omit<Diet, 'id'>;
-    if ((v.meals ?? []).length === 0) return 'La dieta se ha quedado sin comidas.';
+    // Sin comidas se puede aprobar: desde 10-2026 el coach pauta el objetivo
+    // y el atleta elige los alimentos («Mi plan»). Solo se para si lo puesto
+    // no cuadra con el objetivo.
     // El mismo margen que usa el validador del asistente: el 10 % o 10 g por
     // macro (5 g en grasa), lo que sea mayor.
     const lineas = (v.meals ?? []).flatMap(m => m.items);

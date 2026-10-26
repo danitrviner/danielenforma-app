@@ -3,6 +3,7 @@ import {
   PhotoAssignment, QSchedule, QuestionnaireAssignment, Roadmap, UserProfile, WeekDay, Workout,
 } from '../types';
 import { addDays } from './trainingWeek';
+import { objetivoDeDieta } from './macrosLegado';
 import { mesocycleWeekNumber } from './progression';
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -139,9 +140,11 @@ export function revisarCalidadDelPlan(entrada: EntradaCalidadDelPlan): DefectoDe
   if (vaciasDeComida.length > 0) {
     defectos.push({
       id: 'dieta_activa_sin_comidas',
-      gravedad: 'bloquea',
-      titulo: `Dieta activa sin alimentos: ${listar(vaciasDeComida.map(d => d.name))}`,
-      consecuencia: 'Tiene el presupuesto de intercambios puesto pero ninguna comida, así que en «Mi plan» le sale el día en blanco.',
+      // Desde 10-2026 es lo normal: el coach pauta el objetivo y el atleta
+      // elige los alimentos. Se avisa, no se para.
+      gravedad: 'revisa',
+      titulo: `Dieta activa sin alimentos colocados: ${listar(vaciasDeComida.map(d => d.name))}`,
+      consecuencia: `Tiene objetivo del día (${listar(vaciasDeComida.map(d => `${Math.round(objetivoDeDieta(d).kcal)} kcal`))}) pero ninguna comida puesta: el atleta elige qué comer dentro de ese objetivo.`,
       tab: 'dietas',
     });
   }

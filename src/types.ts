@@ -1443,8 +1443,12 @@ export interface NutritionProgram {
    *  esa si `solo`. Se aplican sobre la dieta que toque cada día, sea de la
    *  fase que sea. Ver utils/semanasNutricion.ts. */
   cambiosSemana?: CambioNutricionSemana[];
-  /** Semanas del programa de mantenimiento (diet break): +1 HC en cada comida. */
+  /** Semanas del programa de mantenimiento (diet break): el objetivo del día
+   *  sube `mantenimientoG` g de hidratos (100 g = 400 kcal si no se dice). Hasta
+   *  el 26-10-2026 era +1 intercambio de HC por comida, que con una dieta sin
+   *  comidas no subía nada y con cinco sumaba 500 kcal. */
   semanasMantenimiento?: number[];
+  mantenimientoG?: number;
   comidasLibres?: ComidaLibre[];
   suplementos?: Suplemento[];
   /** Hidratos distintos según si ese día entrena o descansa (días altos/bajos). */

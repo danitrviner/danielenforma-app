@@ -1,7 +1,7 @@
 import { Diet, NutritionProgram, NutritionPhase, OnboardingData, BodyweightLog, DietCompletionLog, StepLog } from '../types.js';
 import { computePhaseStartDate } from './fasesNutricion.js';
 import { estimateMaintenanceKcal, KCAL_PER_KG } from './energyCalc.js';
-import { exchangeToKcal } from './nutritionConstants.js';
+import { objetivoDeDieta } from './macrosLegado.js';
 import { adherenciaDelDia } from './diaDeDieta.js';
 import { addDays } from './trainingWeek.js';
 
@@ -49,7 +49,10 @@ export function resolvePhaseTargetKcal(
   diet: Diet | undefined,
 ): { kcal: number | null; source: 'manual' | 'diet' | 'none' } {
   if (phase.targetKcal != null) return { kcal: phase.targetKcal, source: 'manual' };
-  if (diet) return { kcal: exchangeToKcal(diet.budget), source: 'diet' };
+  // El objetivo de la dieta en kcal (o su cupo viejo con los mixtos repartidos):
+  // lo mismo que ve el atleta en Nutrición. Con `exchangeToKcal(budget)` una
+  // dieta vieja con mixtos salía 600 kcal por debajo (revisión 26-10-2026).
+  if (diet) return { kcal: Math.round(objetivoDeDieta(diet).kcal), source: 'diet' };
   return { kcal: null, source: 'none' };
 }
 

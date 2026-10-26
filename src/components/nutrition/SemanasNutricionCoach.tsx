@@ -4,7 +4,7 @@ import type { Diet, NutritionProgram, MacroAjustable, WeekDay, Suplemento, Bodyw
 import { SLOT_LABEL } from '../../utils/mealDistribution';
 import { objetivoDeDieta, macrosDeLineas } from '../../utils/macrosLegado';
 import {
-  totalSemanas, faseDeLaSemana, ajustesDeLaSemana, aplicarAjustes, kcalDeDieta, kcalPorSemana, programarAjuste, ajusteEnGramos, gramosDeAjuste, gramosDeRegla,
+  totalSemanas, faseDeLaSemana, ajustesDeLaSemana, aplicarAjustes, gramosDeMantenimiento, MANTENIMIENTO_G_POR_DEFECTO, kcalDeDieta, kcalPorSemana, programarAjuste, ajusteEnGramos, gramosDeAjuste, gramosDeRegla,
   quitarCambiosNutricion, describirAjuste, semanaDelPrograma, NOMBRE_DIA, suplementosDeLaSemana,
   salidaDeDeficit, descansosDeDieta, bajadaProgresiva, evaluarReglasDePeso, proteinaGKgPorSemana, habitosPorSemana,
 } from '../../utils/semanasNutricion';
@@ -63,6 +63,7 @@ export default function SemanasNutricionCoach({ program, diets, onGuardar, pesos
   const max = Math.max(1, ...kcal.map(k => k ?? 0));
   const min = Math.min(...kcal.filter((k): k is number => k != null), max) * 0.85;
   const mant = program.semanasMantenimiento ?? [];
+  const mantG = gramosDeMantenimiento(program);
   const pesoActual = pesos.length > 0 ? pesos[pesos.length - 1].weight : null;
   const protMin = program.proteinaMinGKg ?? 1.6;
   const habitos = useMemo(() => habitosPorSemana(program, registros), [program, registros]);
@@ -92,7 +93,7 @@ export default function SemanasNutricionCoach({ program, diets, onGuardar, pesos
   const fase = faseDeLaSemana(program, semana);
   const dietaBase = fase ? diets.find(d => d.id === fase.fase.dietId) : undefined;
   const esMant = mant.includes(semana);
-  const dietaSemana = dietaBase ? aplicarAjustes(dietaBase, ajustesDeLaSemana(program, semana), { mantenimiento: esMant }) : undefined;
+  const dietaSemana = dietaBase ? aplicarAjustes(dietaBase, ajustesDeLaSemana(program, semana), { mantenimiento: esMant, mantenimientoG: gramosDeMantenimiento(program) }) : undefined;
   const empiezan = new Set((program.cambiosSemana ?? []).map(c => c.semana));
 
   /** ± gramos de un macro en el objetivo del día (sin reparto por comidas). */
@@ -119,7 +120,7 @@ export default function SemanasNutricionCoach({ program, diets, onGuardar, pesos
       texto: `${c.solo ? 'Solo' : 'Desde'} S${c.semana} · ${describirAjuste(a)}`,
       quitar: () => guardar({ ...program, cambiosSemana: programarAjuste(program, c.semana, !!c.solo, { ...a, delta: -a.delta, gramos: -gramosDeAjuste(a) }) }),
     }))),
-    ...mant.map(s => ({ semana: s, tono: 'esp' as const, texto: `Solo S${s} · Mantenimiento: +25 g de hidratos por comida`, quitar: () => marcarMant([s], false) })),
+    ...mant.map(s => ({ semana: s, tono: 'esp' as const, texto: `Solo S${s} · Mantenimiento: +${mantG} g de hidratos al día (${mantG * 4} kcal)`, quitar: () => marcarMant([s], false) })),
     ...(program.comidasLibres ?? []).map((c, i) => ({
       semana: c.desde, tono: 'cambio' as const,
       texto: `Desde S${c.desde}${c.hasta ? ` hasta S${c.hasta}` : ''} · ${SLOT_LABEL[c.slot] ?? 'Comida'} del ${NOMBRE_DIA[c.dia]} libre`,
@@ -255,6 +256,11 @@ export default function SemanasNutricionCoach({ program, diets, onGuardar, pesos
             {sel.size === 0 ? 'Elige semanas en la barra' : `${sel.size} semana${sel.size === 1 ? '' : 's'}: ${selOrd.map(s => `S${s}`).join(', ')}`}
           </p>
           <div className="ml-auto flex gap-2 flex-wrap">
+            <label className="flex items-center gap-1 font-mono text-caption text-ink-2 uppercase tracking-wider">+g HC/día
+              <input inputMode="numeric" aria-label="Gramos de hidratos que suma la semana de mantenimiento" value={mantG}
+                onChange={e => { const n = Number(e.target.value.replace(/\D/g, '')); guardar({ ...program, mantenimientoG: n > 0 && n !== MANTENIMIENTO_G_POR_DEFECTO ? n : undefined }); }}
+                className="h-8 w-16 bg-inset border border-hairline rounded-control px-2 font-mono text-label text-ink normal-case focus:outline-none focus:ring-1 focus:ring-accent" />
+            </label>
             <Button size="s" icon="balance" disabled={sel.size === 0} onClick={() => marcarMant(selOrd, true)}>Marcar mantenimiento</Button>
             <Button size="s" variant="ghost" disabled={sel.size === 0} onClick={() => marcarMant(selOrd, false)}>Quitar mantenimiento</Button>
             <Button size="s" variant="ghost" icon="refresh" disabled={sel.size === 0} onClick={() => quitar(selOrd)}>Quitar cambios</Button>
@@ -346,7 +352,7 @@ export default function SemanasNutricionCoach({ program, diets, onGuardar, pesos
               )}
               <p className="font-sans text-caption text-ink-3">
                 Cada ± mueve el objetivo del día ({MACROS.map(m => `${m.paso} g de ${m.label.toLowerCase()}`).join(', ')}). Vale para cualquier dieta que el atleta tenga ese día.
-                {esMant && ' Semana de mantenimiento: ya incluye +25 g de hidratos por comida.'}
+                {esMant && ` Semana de mantenimiento: ya incluye +${mantG} g de hidratos al día (${mantG * 4} kcal).`}
               </p>
             </div>
           )}

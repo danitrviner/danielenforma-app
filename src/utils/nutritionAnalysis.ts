@@ -2,8 +2,8 @@ import {
   Diet, DietCompletionLog, StepLog, BodyweightLog, OnboardingData, FoodCategory,
   MenuCompletionLog, WeeklyMenu, WeekDay, NutritionPhase,
 } from '../types';
-import { GRAMS_PER_EXCHANGE } from './nutritionConstants';
 import { adherenciaDelDia, adherenciaPorKcal } from './diaDeDieta';
+import { objetivoDeDieta } from './macrosLegado';
 import { hoyIsoLocal, addDays } from './trainingWeek';
 
 const WEEK_DAYS: WeekDay[] = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
@@ -207,10 +207,13 @@ export function computeMacroDeviation(
   if (!diet || !onboarding?.macroGrams) return [];
   const cats: ('HC' | 'PROT' | 'GRASA')[] = ['HC', 'PROT', 'GRASA'];
   const targetByCat = objetivoEnGramos(onboarding, faseActiva ?? null);
+  // El objetivo de la dieta (kcal y gramos, o el cupo viejo con mixtos repartidos).
+  const o = objetivoDeDieta(diet);
+  const enGramos = { HC: o.hc, PROT: o.p, GRASA: o.g };
   return cats.flatMap(cat => {
     const targetGrams = targetByCat[cat];
     if (typeof targetGrams !== 'number' || !Number.isFinite(targetGrams)) return [];
-    const planGrams = round1(diet.budget[cat] * GRAMS_PER_EXCHANGE[cat]);
+    const planGrams = round1(enGramos[cat]);
     const deviationPct = targetGrams > 0 ? round1(((planGrams - targetGrams) / targetGrams) * 100) : 0;
     return [{ category: cat, targetGrams, planGrams, deviationPct }];
   });
@@ -286,7 +289,7 @@ export function detectDeficitsExcesses(
   // Solo se avisa si de verdad hay días CON cupo: sin objetivo la media es 0 y
   // saldría una alerta de adherencia baja para alguien que aún no tiene dieta.
   if (adherence.daysWithBudget > 0 && adherence.avgPct < thresholds.adherenceOkPct) {
-    flags.push(`Adherencia baja: se ha comido el ${adherence.avgPct}% de su cupo de intercambios (últimos ${adherence.windowDays} días).`);
+    flags.push(`Adherencia baja: ha comido el ${adherence.avgPct} % de su objetivo de kcal (últimos ${adherence.windowDays} días).`);
   }
   macroDeviation.forEach(m => {
     if (Math.abs(m.deviationPct) > thresholds.macroDeviationOkPct) {

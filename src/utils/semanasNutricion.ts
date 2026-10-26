@@ -56,6 +56,14 @@ const aplica = (c: CambioNutricionSemana, s: number) => c.semana <= s && (!c.sol
 
 const r2 = (n: number) => Math.round(n * 100) / 100;
 
+/** Hidratos que suma al día una semana de mantenimiento si el programa no dice otra cosa (400 kcal). */
+export const MANTENIMIENTO_G_POR_DEFECTO = 100;
+
+/** Gramos de hidratos de la semana de mantenimiento de ese programa. */
+export function gramosDeMantenimiento(program: Pick<NutritionProgram, 'mantenimientoG'> | null | undefined): number {
+  return program?.mantenimientoG ?? MANTENIMIENTO_G_POR_DEFECTO;
+}
+
 /** Gramos de un ajuste: los suyos o, si es viejo, sus intercambios traducidos. */
 export function gramosDeAjuste(a: Pick<AjusteDeComida, 'cat' | 'delta' | 'gramos'>): number {
   return a.gramos ?? a.delta * GRAMS_PER_EXCHANGE[a.cat];
@@ -117,9 +125,13 @@ function ajustarComida(meal: DietMeal, cat: MacroAjustable, deltaMacro: number):
   return { ...meal, items: items.filter(it => it.quantity > 0 || it.category !== catItems), ...(target ? { target } : {}) };
 }
 
-/** La dieta con los ajustes aplicados: comidas y cupo diario. */
+/** La dieta con los ajustes aplicados: objetivo del día y, si las hay, comidas.
+ *  `mantenimiento`: semana de mantenimiento, +`mantenimientoG` g de hidratos
+ *  (por defecto `MANTENIMIENTO_G_POR_DEFECTO`) sobre el objetivo, vaya a la
+ *  comida del entreno o a la que más hidratos lleve. */
 export function aplicarAjustes(
-  diet: Diet, ajustes: AjusteDeComida[], opciones: { mantenimiento?: boolean; libres?: number[]; hcDelDia?: number; hcDelDiaG?: number } = {},
+  diet: Diet, ajustes: AjusteDeComida[],
+  opciones: { mantenimiento?: boolean; mantenimientoG?: number; libres?: number[]; hcDelDia?: number; hcDelDiaG?: number } = {},
 ): Diet {
   let meals = diet.meals.map(m => ({ ...m, items: m.items.map(it => ({ ...it })) }));
   const slots = resolveSlots(meals);
@@ -128,7 +140,7 @@ export function aplicarAjustes(
   const iEntreno = meals.findIndex(m => m.aroundTraining);
   const todos: AjusteDeComida[] = [
     ...ajustes,
-    ...(opciones.mantenimiento ? meals.map((_, i) => ({ slot: slots[i], cat: 'HC' as const, delta: 1 })) : []),
+    ...(opciones.mantenimiento ? [ajusteEnGramos('HC', opciones.mantenimientoG ?? MANTENIMIENTO_G_POR_DEFECTO, iEntreno >= 0 ? slots[iEntreno] : undefined)] : []),
     ...(opciones.hcDelDiaG ? [ajusteEnGramos('HC', opciones.hcDelDiaG, iEntreno >= 0 ? slots[iEntreno] : undefined)]
       : opciones.hcDelDia ? [{ ...(iEntreno >= 0 ? { slot: slots[iEntreno] } : {}), cat: 'HC' as const, delta: opciones.hcDelDia }] : []),
   ];
@@ -175,7 +187,7 @@ export function dietaDeLaSemana(diet: Diet, program: NutritionProgram | null | u
   const libres = libresDelDia(program, s, diaDeLaSemana(fecha));
   const hcDelDiaG = gramosDelCiclado(program, s, entrena);
   if (ajustes.length === 0 && !mantenimiento && libres.length === 0 && hcDelDiaG === 0) return diet;
-  return aplicarAjustes(diet, ajustes, { mantenimiento, libres, hcDelDiaG });
+  return aplicarAjustes(diet, ajustes, { mantenimiento, mantenimientoG: gramosDeMantenimiento(program), libres, hcDelDiaG });
 }
 
 /** Objetivo de pasos que rige `fecha`: el último que haya empezado, o `base`. */
@@ -219,7 +231,7 @@ export function kcalPorSemana(program: NutritionProgram, diets: Diet[]): (number
     const diet = f && diets.find(d => d.id === f.fase.dietId);
     if (!diet) return null;
     const ajustes = ajustesDeLaSemana(program, s);
-    return kcalDeDieta(aplicarAjustes(diet, ajustes, { mantenimiento: (program.semanasMantenimiento ?? []).includes(s) }));
+    return kcalDeDieta(aplicarAjustes(diet, ajustes, { mantenimiento: (program.semanasMantenimiento ?? []).includes(s), mantenimientoG: gramosDeMantenimiento(program) }));
   });
 }
 
@@ -393,7 +405,7 @@ export function proteinaGKgPorSemana(program: NutritionProgram, diets: Diet[], p
     const f = faseDeLaSemana(program, s);
     const diet = f && diets.find(d => d.id === f.fase.dietId);
     if (!diet) return null;
-    const d = aplicarAjustes(diet, ajustesDeLaSemana(program, s), { mantenimiento: (program.semanasMantenimiento ?? []).includes(s) });
+    const d = aplicarAjustes(diet, ajustesDeLaSemana(program, s), { mantenimiento: (program.semanasMantenimiento ?? []).includes(s), mantenimientoG: gramosDeMantenimiento(program) });
     return Math.round((objetivoDeDieta(d).p / pesoKg) * 10) / 10;
   });
 }

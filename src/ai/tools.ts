@@ -2313,7 +2313,6 @@ async function proposeDietUpdate(
     return toResult({ valid: false, issues: leida.issues, note: 'Corrige estos problemas y vuelve a llamar a propose_diet_update.' });
   }
 
-  const dietPayload = dietaDePropuesta(athleteEmail, name, leida.objetivo, leida.meals);
   const kcal = Math.round(leida.objetivo.kcal);
 
   let baseSummary = '';
@@ -2325,6 +2324,10 @@ async function proposeDietUpdate(
       baseSummary = ` (ajuste de "${base.name}": ${prevKcal} → ${kcal} kcal)`;
     }
   }
+  const dietPayload = dietaDePropuesta(athleteEmail, name, leida.objetivo, leida.meals);
+  // Un ajuste del objetivo sobre una dieta que ya tiene comidas colocadas las
+  // conserva: la propuesta solo trae comidas si el asistente las ha escrito.
+  if (base && leida.meals.length === 0 && (base.meals?.length ?? 0) > 0) dietPayload.meals = base.meals;
   const cambios = cambiosDeDieta(base, dietPayload);
 
   const summary = `Dieta "${name}"${baseSummary || ' (nueva)'} · ${textoDeObjetivo(dietPayload)}`;
@@ -3748,7 +3751,9 @@ export async function executeTool(
             ...(input.objetivo ? { objetivo: input.objetivo as DietUpdatePayload['objetivo'] } : {}),
             // Un chat empezado antes de pasar a kcal aún puede mandar intercambios.
             ...(input.budget ? { budget: input.budget as DietUpdatePayload['budget'] } : {}),
-            meals: (Array.isArray(input.meals) ? input.meals : []) as NonNullable<DietUpdatePayload['meals']>,
+            // Sin meals no se manda lista vacía: sobre una dieta base, vacía
+            // significaría borrar las comidas que Dani tiene colocadas (A3).
+            ...(Array.isArray(input.meals) ? { meals: input.meals as NonNullable<DietUpdatePayload['meals']> } : {}),
           },
           typeof input.rationale === 'string' ? input.rationale : '',
           chatId,

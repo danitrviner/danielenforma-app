@@ -166,6 +166,10 @@ describe('motivoParaNoAprobar — lo que Dani puede romper editando', () => {
     expect(motivoParaNoAprobar('diet', dieta(8))).toBeNull();
   });
 
+  it('una dieta sin comidas se puede aprobar: el coach pauta el objetivo, no los alimentos (26-10-2026)', () => {
+    expect(motivoParaNoAprobar('diet', { ...dieta(8), meals: [] })).toBeNull();
+  });
+
   it('no deja aprobar una dieta cuyo presupuesto ya no cuadra con las comidas', () => {
     const motivo = motivoParaNoAprobar('diet', dieta(14));
     expect(motivo).toContain('no cuadran');

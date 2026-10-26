@@ -8,7 +8,7 @@ import {
   Macros, MenuMeal,
 } from '../types';
 import { queryRecetasForGenerator, getRecipes, getRecipeById, getFoodItems, createWeeklyMenu, updateWeeklyMenu, publishWeeklyMenu, getRecipeFavorites, getNutritionProgram } from '../dbService';
-import { semanaDelPrograma, totalSemanas, ajustesDeLaSemana, aplicarAjustes, kcalDeDieta } from '../utils/semanasNutricion';
+import { semanaDelPrograma, totalSemanas, ajustesDeLaSemana, aplicarAjustes, kcalDeDieta, gramosDeMantenimiento } from '../utils/semanasNutricion';
 import { hoyIsoLocal } from '../utils/trainingWeek';
 import {
   slotsFromOnboarding, generateWeek, generateDay, isDayWithinTolerance,
@@ -159,7 +159,7 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
     const ajustes = ajustesDeLaSemana(programa, semanaElegida);
     const mantenimiento = (programa.semanasMantenimiento ?? []).includes(semanaElegida);
     if (ajustes.length === 0 && !mantenimiento) return diets;
-    return diets.map(d => aplicarAjustes(d, ajustes, { mantenimiento }));
+    return diets.map(d => aplicarAjustes(d, ajustes, { mantenimiento, mantenimientoG: gramosDeMantenimiento(programa) }));
   }, [diets, programa, semanaElegida]);
 
   const schedule = dietConfig?.weeklySchedule ?? {};

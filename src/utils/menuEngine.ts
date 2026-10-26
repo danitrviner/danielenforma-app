@@ -21,7 +21,7 @@ import {
   macrosDeLaComida, macrosDelPlato, macrosDeRaciones, macrosDeRacionesExtra, macrosDeAcompanamientos,
   objetivoDeLaComida, objetivoDelDiaDeMenu, macrosDelDiaDeMenu,
 } from './menuMacros';
-import { ajustesDeLaSemana, aplicarAjustes, semanaDelPrograma } from './semanasNutricion';
+import { ajustesDeLaSemana, aplicarAjustes, semanaDelPrograma, gramosDeMantenimiento } from './semanasNutricion';
 import { hoyIsoLocal } from './trainingWeek';
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -1091,7 +1091,7 @@ export function isMenuStale(
     if (!currentDietId) continue;
     const diet = dietsById.get(currentDietId);
     if (!diet) return true;
-    const ahora = objetivoDeDieta(ajustes.length > 0 || mantenimiento ? aplicarAjustes(diet, ajustes, { mantenimiento }) : diet);
+    const ahora = objetivoDeDieta(ajustes.length > 0 || mantenimiento ? aplicarAjustes(diet, ajustes, { mantenimiento, mantenimientoG: gramosDeMantenimiento(program) }) : diet);
     const entonces = objetivoDelDiaDeMenu(day);
     if (MACROS.some(m => Math.abs(ahora[m] - entonces[m]) > 1)) return true;
   }

@@ -10,7 +10,7 @@ import { quiereAlgunaDieta } from '../utils/seleccionDeRecetas';
 import { athleteConditions } from '../utils/dietaryRestrictions';
 import { dietTypeVigente } from '../utils/foodPrefs';
 import type { DishType } from '../utils/dishTypes';
-import { semanaQueNecesitaMenu, ajustesDeLaSemana, aplicarAjustes } from '../utils/semanasNutricion';
+import { semanaQueNecesitaMenu, ajustesDeLaSemana, aplicarAjustes, gramosDeMantenimiento } from '../utils/semanasNutricion';
 import { calendarioDeMenu } from '../utils/objetivoDelDia';
 import { hoyIsoLocal } from '../utils/trainingWeek';
 
@@ -48,7 +48,7 @@ export async function generarMenuSiToca(athleteEmail: string, coachId: string, c
 
   const ajustes = ajustesDeLaSemana(program, semana);
   const mantenimiento = (program.semanasMantenimiento ?? []).includes(semana);
-  const dietas = dietasDelCoach.map(d => aplicarAjustes(d, ajustes, { mantenimiento }));
+  const dietas = dietasDelCoach.map(d => aplicarAjustes(d, ajustes, { mantenimiento, mantenimientoG: gramosDeMantenimiento(program) }));
 
   // Mismo reparto, variedad y preferencias que el editor (WeeklyMenuEditor).
   const slots = slotsFromOnboarding(onboarding, nutritionConfig?.hungerProfile, nutritionConfig?.mealCount);
