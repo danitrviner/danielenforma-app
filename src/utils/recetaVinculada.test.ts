@@ -96,6 +96,13 @@ describe('emparejado y propuesta', () => {
     expect(esIngredienteQueNoCuenta('Salmón')).toBe(false);
   });
 
+  it('las hierbas, el café, el té y el vino de cocinar tampoco (26-10-2026)', () => {
+    for (const n of ['Albahaca fresca', 'Tomillo seco', 'Té', 'Té matcha', 'Café solo', 'Vino blanco', 'Curry en polvo', 'Nuez moscada', 'Piel de limón'])
+      expect(esIngredienteQueNoCuenta(n), n).toBe(true);
+    for (const n of ['Tomate rojo', 'Ternera', 'Tempeh', 'Café con leche', 'Mentas de chocolate', 'Chile con carne', 'Cebolla'])
+      expect(esIngredienteQueNoCuenta(n), n).toBe(false);
+  });
+
   it('palanca = macro con ≥60 % de las kcal; si no hay, fijo', () => {
     expect(propuestaDeRango(90, ARROZ)).toEqual({ min: 45, max: 180, palanca: 'hc' });
     expect(propuestaDeRango(10, ACEITE)).toEqual({ min: 5, max: 20, palanca: 'grasa' });
