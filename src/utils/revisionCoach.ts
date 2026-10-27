@@ -19,6 +19,7 @@ import { ewmaDeSeriePorSesion } from './loadTrend';
 import { computeIRP, historialIRP, IRPResult } from './readinessIndex';
 import { domsCronicoDeGrupo, esDomsCronico } from './domsCronico';
 import { DataPoint } from './seriesCorrelation';
+import { pesoRepresentativo } from './verificacionObjetivo';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // REVISIÓN DEL COACH — el motor de la pantalla que Dani graba en vídeo para
@@ -339,6 +340,8 @@ export interface RevisionParams {
   questionnaires?: Questionnaire[];
   /** Check-ins — solo para resolver el periodo «desde la última revisión». */
   checkins?: WeightCheckIn[];
+  /** Peso del atleta: suma a las series de dominadas, fondos… (CR5). */
+  pesoCorporalKg?: number | null;
 }
 
 export function buildRevisionCoach(params: RevisionParams): RevisionDelAtleta {
@@ -351,7 +354,7 @@ export function buildRevisionCoach(params: RevisionParams): RevisionDelAtleta {
 
   const ventana = resolverPeriodoRevision(periodo, mesocycles, hoy, checkins);
   const comun = {
-    logs, exercises, mesocycles,
+    logs, exercises, mesocycles, pesoCorporalKg: params.pesoCorporalKg,
     periodStart: ventana.desde, periodEnd: ventana.hasta,
     comparison: ventana.comparison,
   };
@@ -523,11 +526,13 @@ export function pesoVsSemanaPasada(
   const inicioAnterior = addDays(desde, -dias);
   const finAnterior = addDays(desde, -1);
 
+  // Peso representativo de la ventana (mediana con 3+ pesajes, media con
+  // menos): el mismo criterio que Cuerpo y los reportes (M4, 26-10-2026).
   const media = (desde: string, hasta: string): { media: number | null; n: number } => {
     const v = logs.filter(l => l.date >= desde && l.date <= hasta).map(l => l.weight);
     return v.length === 0
       ? { media: null, n: 0 }
-      : { media: Math.round((v.reduce((a, b) => a + b, 0) / v.length) * 10) / 10, n: v.length };
+      : { media: Math.round(pesoRepresentativo(v) * 10) / 10, n: v.length };
   };
 
   const esta = media(desde, hasta);

@@ -2313,7 +2313,6 @@ async function proposeDietUpdate(
     return toResult({ valid: false, issues: leida.issues, note: 'Corrige estos problemas y vuelve a llamar a propose_diet_update.' });
   }
 
-  const dietPayload = dietaDePropuesta(athleteEmail, name, leida.objetivo, leida.meals);
   const kcal = Math.round(leida.objetivo.kcal);
 
   let baseSummary = '';
@@ -2325,6 +2324,10 @@ async function proposeDietUpdate(
       baseSummary = ` (ajuste de "${base.name}": ${prevKcal} → ${kcal} kcal)`;
     }
   }
+  const dietPayload = dietaDePropuesta(athleteEmail, name, leida.objetivo, leida.meals);
+  // Un ajuste del objetivo sobre una dieta que ya tiene comidas colocadas las
+  // conserva: la propuesta solo trae comidas si el asistente las ha escrito.
+  if (base && leida.meals.length === 0 && (base.meals?.length ?? 0) > 0) dietPayload.meals = base.meals;
   const cambios = cambiosDeDieta(base, dietPayload);
 
   const summary = `Dieta "${name}"${baseSummary || ' (nueva)'} · ${textoDeObjetivo(dietPayload)}`;
@@ -2614,9 +2617,9 @@ async function proposeMesocycle(
   const profile = await findProfile(athleteEmail);
   if (!profile) return toResult({ valid: false, issues: [{ field: 'athlete_email', message: `No existe ningún cliente con email ${athleteEmail}` }] });
 
-  // Numeración secuencial como en MesocycleManager (mesocycles.length + 1).
   const existing = await getMesocycles(athleteEmail);
-  const number = existing.length + 1;
+  // Tras borrar un mesociclo, `length + 1` repetía número (B14, 26-10-2026).
+  const number = Math.max(0, ...existing.map(m => m.number ?? 0)) + 1;
 
   // Rellena todos los grupos: los omitidos van a 0 series (shape completo que
   // espera el editor de la app).
@@ -2811,7 +2814,8 @@ async function proposePeriodizationBlock(
   if (!profile) return toResult({ valid: false, issues: [{ field: 'athlete_email', message: `No existe ningún cliente con email ${athleteEmail}` }] });
 
   const existing = await getMesocycles(athleteEmail);
-  const number = existing.length + 1;
+  // Tras borrar un mesociclo, `length + 1` repetía número (B14, 26-10-2026).
+  const number = Math.max(0, ...existing.map(m => m.number ?? 0)) + 1;
   const groups = Object.fromEntries(
     (Object.keys(MUSCLE_LABELS) as MuscleGroup[]).map(g => {
       const cfg = groupsInput[g];
@@ -3748,7 +3752,9 @@ export async function executeTool(
             ...(input.objetivo ? { objetivo: input.objetivo as DietUpdatePayload['objetivo'] } : {}),
             // Un chat empezado antes de pasar a kcal aún puede mandar intercambios.
             ...(input.budget ? { budget: input.budget as DietUpdatePayload['budget'] } : {}),
-            meals: (Array.isArray(input.meals) ? input.meals : []) as NonNullable<DietUpdatePayload['meals']>,
+            // Sin meals no se manda lista vacía: sobre una dieta base, vacía
+            // significaría borrar las comidas que Dani tiene colocadas (A3).
+            ...(Array.isArray(input.meals) ? { meals: input.meals as NonNullable<DietUpdatePayload['meals']> } : {}),
           },
           typeof input.rationale === 'string' ? input.rationale : '',
           chatId,

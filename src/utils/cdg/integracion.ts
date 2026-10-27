@@ -10,6 +10,7 @@ import type { WorkoutExercise, WorkoutLog } from '../../types'
 import { mesocycleWeekNumber, resolverEjercicioDelMeso } from '../progression.js'
 import type { MotorCdg } from './motor.js'
 import { cargaProgramada, semanaRealizadaDesdeLogs, type NombreCdgDe } from './adaptadores.js'
+import type { ContextoPesoCorporal } from '../pesoCorporal.js'
 import {
   avisosCarga, cargaAgudaCronica, calcularSemana, filasGestion, rendimientoCiclo, rendimientoSemana,
   SEMANAS_CARGA_CRONICA, SEMANAS_CARGA_MINIMAS, colapsarSemana, colapsarCarga, incrementosAntropometria,
@@ -38,6 +39,8 @@ export interface EntradaSemanas {
   sesionDeWorkout: (workoutId: string) => number | undefined
   nombreCdgDe: NombreCdgDe
   motor: MotorCdg
+  /** Para sumar el peso corporal a dominadas, fondos… (CR5). Sin él, como siempre. */
+  pesoCorporal?: ContextoPesoCorporal | null
 }
 
 /**
@@ -61,7 +64,7 @@ export function semanasRealizadasDelMeso (e: EntradaSemanas) {
   }
   const semanas: SemanaSeguimiento[] = [...porSemana.keys()].sort((a, b) => a - b).map(semana => {
     const logs = porSemana.get(semana)!
-    const realizada = semanaRealizadaDesdeLogs(logs, e.nombreCdgDe, l => e.sesionDeWorkout(l.workoutId))
+    const realizada = semanaRealizadaDesdeLogs(logs, e.nombreCdgDe, l => e.sesionDeWorkout(l.workoutId), { pesoCorporal: e.pesoCorporal ?? null })
     return {
       semana, realizada, logs: logs.length,
       calculo: calcularSemana(e.motor, realizada),
@@ -168,6 +171,7 @@ export function cargaAgudaCronicaDelMeso (args: {
  */
 export function semanasAnterioresAlBloque (e: {
   logs: WorkoutLog[]; inicio: string; motor: MotorCdg; nombreCdgDe: NombreCdgDe; maxSemanas?: number; buscarHasta?: number
+  pesoCorporal?: ContextoPesoCorporal | null
 }): CalculoSemana[] {
   const max = e.maxSemanas ?? SEMANAS_CARGA_CRONICA
   const tramos = e.buscarHasta ?? 12
@@ -181,7 +185,7 @@ export function semanasAnterioresAlBloque (e: {
       return t >= desde && t < hasta
     })
     if (deLaSemana.length === 0) continue
-    out.push(calcularSemana(e.motor, semanaRealizadaDesdeLogs(deLaSemana, e.nombreCdgDe, () => 0)))
+    out.push(calcularSemana(e.motor, semanaRealizadaDesdeLogs(deLaSemana, e.nombreCdgDe, () => 0, { pesoCorporal: e.pesoCorporal ?? null })))
   }
   return out
 }

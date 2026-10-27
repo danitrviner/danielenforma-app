@@ -125,7 +125,10 @@ export function construirBandejaDelDia(entrada: EntradaBandeja): SenalDelDia[] {
     }
 
     // ── Lo que hay que contestar hoy ─────────────────────────────────────
-    const pendientes = suyos.filter(c => !c.approved || !c.coachFeedback).length;
+    // Pendiente = sin aprobar. Aprobar es lo que cierra la revisión; el texto
+    // es opcional. Antes también contaba «aprobado sin texto», que quedaba
+    // pendiente para siempre (B5, 26-10-2026).
+    const pendientes = suyos.filter(c => !c.approved).length;
     if (pendientes > 0) {
       añadir('checkins', 'hoy', 'revision',
         `${pendientes} ${pendientes === 1 ? 'revisión pendiente' : 'revisiones pendientes'}`, 'revisiones');
@@ -186,7 +189,7 @@ export function construirBandejaDelDia(entrada: EntradaBandeja): SenalDelDia[] {
   const conocidos = new Set(atletas.map(a => a.email.toLowerCase()));
   for (const [emailMin, suyos] of checkinsPorEmail) {
     if (conocidos.has(emailMin)) continue;
-    const pendientes = suyos.filter(c => !c.approved || !c.coachFeedback).length;
+    const pendientes = suyos.filter(c => !c.approved).length;
     if (pendientes === 0) continue;
     const email = suyos[0].email;
     senales.push({

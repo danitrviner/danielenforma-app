@@ -5,6 +5,7 @@ import { frecuenciaPorSemana } from './progression';
 import { rankMuscleGroups } from './muscleGroupRanking';
 import { DAY_TYPE_MUSCLES } from './trainingSplits';
 import { seriesPrincipales } from './seriesPrincipales.js';
+import { SERIES_POR_SESION } from './volumeSuggestion';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Ayudas de PROGRAMACIÓN — lo que el coach necesita ver mientras monta un
@@ -339,7 +340,10 @@ function getAntagonist(g: MuscleGroup): MuscleGroup | null {
  * por sesión son 2,5 sesiones por semana. De ahí salen las frecuencias «y
  * media» que un ciclo de una sola semana no puede dar.
  */
-const SERIES_POR_SESION_Y_GRUPO = 6;
+// Una sola cifra para toda la app (doctrina §3: 8-12 series por músculo y
+// sesión); vive en volumeSuggestion.ts y la usan también la calculadora de
+// repartos y el sugeridor (M6, 26-10-2026).
+const SERIES_POR_SESION_Y_GRUPO = SERIES_POR_SESION;
 
 /**
  * Cuántas sesiones del ciclo se lleva un grupo.

@@ -3,7 +3,7 @@ import type { AlimentoCatalogo } from './catalogoAlimentos';
 import { nombreDeAlimento } from './catalogoAlimentos';
 import { itemsDeProducto } from './productoAIntercambios';
 import { recipeToDietItems, ALL_DIET_MODES } from './exchangeHelpers';
-import { emparejar, esIngredienteQueNoCuenta } from './recetaVinculada';
+import { emparejarRevisado, esIngredienteQueNoCuenta } from './recetaVinculada';
 import { parseBaseGrams } from './conversionNutricional';
 import { macrosDeReceta } from './macrosDeReceta';
 import { kcalDeGramos } from './macros';
@@ -156,8 +156,9 @@ function repartirReceta(
   ingredientes: { name: string; quantity: number }[],
   catalogo: AlimentoCatalogo[],
 ): { nombre: string; gramos: number; porCien: MacrosPorCien }[] | null {
-  const emparejados = ingredientes.map(i => ({ ing: i, ...emparejar(i.name, catalogo) }));
-  const seguro = (e: typeof emparejados[number]) => !!e.alimento && (e.confianza === 'alta' || e.confianza === 'media');
+  const emparejados = ingredientes.map(i => ({ ing: i, ...emparejarRevisado(i.name, catalogo) }));
+  // Solo lo seguro (alta o sinónimo revisado); lo demás se reparte por perfil.
+  const seguro = (e: typeof emparejados[number]) => !!e.alimento && e.confianza === 'alta';
   const deCatalogo = (e: typeof emparejados[number]): MacrosPorCien => {
     const c = e.alimento!.porCien;
     return { kcal: c.kcal, p: c.p, hc: c.hc, g: c.g };

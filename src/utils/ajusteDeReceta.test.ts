@@ -26,6 +26,13 @@ describe('ajustarReceta', () => {
     expect(r.gramos.map(g => g.gramos)).toEqual([90, 150, 80, 5, 1]);
   });
 
+  it('un aceite de 3 g con el objetivo de la receta se queda en 3 g (26-10-2026)', () => {
+    const conPocoAceite = ings().map(i => i.n === 3 ? { ...i, gramos: 3, min: 3, max: 5 } : i);
+    const r = ajustarReceta(conPocoAceite, { p: 42, hc: 77, g: 9.4 }, NOMBRES);
+    expect(r.cambios).toEqual([]);
+    expect(r.gramos.find(g => g.n === 3)!.gramos).toBe(3);
+  });
+
   it('sube arroz y pollo para una comida más grande, redondeando a 5 g', () => {
     const r = ajustarReceta(ings(), { p: 55, hc: 100, g: 12 }, NOMBRES);
     expect(r.encaja).toBe(true);

@@ -20,9 +20,11 @@ const L_M_X_V_S = [0, 1, 2, 4, 5];
 describe('frecuenciaPorDefecto', () => {
   it('sale del volumen a medios, con mínimo 1 y máximo 3', () => {
     expect(frecuenciaPorDefecto(0)).toBe(0);
+    // 8 series por sesión y grupo desde el 26-10-2026 (antes 6).
     expect(frecuenciaPorDefecto(3)).toBe(1);
-    expect(frecuenciaPorDefecto(9)).toBe(1.5);
-    expect(frecuenciaPorDefecto(12)).toBe(2);
+    expect(frecuenciaPorDefecto(9)).toBe(1);
+    expect(frecuenciaPorDefecto(12)).toBe(1.5);
+    expect(frecuenciaPorDefecto(16)).toBe(2);
     expect(frecuenciaPorDefecto(40)).toBe(3);
   });
 });

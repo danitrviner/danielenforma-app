@@ -176,6 +176,7 @@ export function buildTrainingReportDraft(params: {
   comparison: ComparisonMode;
   extras?: ReportExtrasInput;
 }): CoachReport {
+  const ultimoPeso = [...(params.extras?.bodyweightLogs ?? [])].sort((a, b) => a.date.localeCompare(b.date)).at(-1)?.weight ?? null;
   const tr = buildTrainingReport({
     logs: params.logs,
     exercises: params.exercises,
@@ -183,6 +184,7 @@ export function buildTrainingReportDraft(params: {
     periodStart: params.periodStart,
     periodEnd: params.periodEnd,
     comparison: params.comparison,
+    pesoCorporalKg: ultimoPeso,
   });
   const extras = params.extras ?? {};
   // Las secciones extra comparan sobre las mismas ventanas que el entrenamiento.

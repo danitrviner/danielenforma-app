@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { Diet, NutritionProgram } from '../types';
+import { objetivoDeDieta } from './macrosLegado';
 import {
-  semanaDelPrograma, faseDeLaSemana, aplicarAjustes, dietaDeLaSemana, programarAjuste, kcalPorSemana,
+  semanaDelPrograma, faseDeLaSemana, aplicarAjustes, dietaDeLaSemana, programarAjuste, kcalPorSemana, gramosDeMantenimiento,
   novedadesNutricion, suplementosDeLaSemana, quitarCambiosNutricion, objetivoDePasos,
   salidaDeDeficit, descansosDeDieta, bajadaProgresiva, evaluarReglasDePeso, proteinaGKgPorSemana, habitosPorSemana,
   semanaQueNecesitaMenu,
@@ -44,8 +45,19 @@ describe('semanas del programa nutricional', () => {
     expect(d.meals[0].items[0].quantity).toBe(4);
   });
 
-  it('mantenimiento: +1 HC en cada comida', () => {
-    expect(aplicarAjustes(dieta, [], { mantenimiento: true }).budget.HC).toBe(13);
+  it('mantenimiento: +100 g de hidratos al día sobre el objetivo, tenga o no comidas (26-10-2026)', () => {
+    const base = objetivoDeDieta(dieta);
+    const conComidas = aplicarAjustes(dieta, [], { mantenimiento: true });
+    expect(conComidas.objetivo!.hc).toBe(base.hc + 100);
+    expect(conComidas.budget.HC).toBe(15); // 11 + 100 g / 25
+    // Antes era +1 intercambio por comida: con 0 comidas no subía nada y con 5 sumaba 500 kcal.
+    const sinComidas = aplicarAjustes({ ...dieta, meals: [] }, [], { mantenimiento: true });
+    expect(sinComidas.objetivo!.hc).toBe(base.hc + 100);
+    expect(sinComidas.objetivo!.kcal).toBe(conComidas.objetivo!.kcal);
+    // El programa puede decir otros gramos.
+    expect(aplicarAjustes(dieta, [], { mantenimiento: true, mantenimientoG: 50 }).objetivo!.hc).toBe(base.hc + 50);
+    expect(gramosDeMantenimiento({ mantenimientoG: 60 })).toBe(60);
+    expect(gramosDeMantenimiento(undefined)).toBe(100);
   });
 
   it('los cambios «desde» se acumulan y los «solo» valen su semana', () => {
@@ -81,7 +93,7 @@ describe('semanas del programa nutricional', () => {
     };
     const kcal = kcalPorSemana(p, [dieta]);
     expect(kcal[3]! - kcal[4]!).toBe(100);
-    expect(kcal[6]! - kcal[5]!).toBe(200);
+    expect(kcal[6]! - kcal[5]!).toBe(400); // mantenimiento: +100 g de hidratos al día, con las comidas que tenga
     const n4 = novedadesNutricion(p, 4);
     expect(n4.ajustes).toEqual(['−25 g de hidratos al día']);
     expect(n4.suplementos).toEqual(['Creatina · 5 g']);

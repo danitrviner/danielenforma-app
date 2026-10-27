@@ -9,7 +9,7 @@ import {
 } from '../types.js';
 import { rmDeSerie, rirEfectivo } from './oneRepMax.js';
 import { weightedGroupsOf } from './trainingReport.js';
-import { adherenciaDelDia } from './diaDeDieta.js';
+import { adherenciaPorKcal } from './diaDeDieta.js';
 import { seriesPrincipales } from './seriesPrincipales.js';
 
 // Normaliza para comparar nombres de ejercicio: minúsculas y sin acentos.
@@ -145,9 +145,9 @@ export function totalSteps(logs: StepLog[], from: string, to: string): number {
   return [...byDay.values()].reduce((s, v) => s + v, 0);
 }
 
-// % de adherencia por día registrado dentro de [from, to] — la misma métrica
-// que weeklyDietAdherencePct (items marcados / items totales de la dieta) pero
-// sin bucketing por semanas de programa.
+// % de adherencia por día registrado dentro de [from, to]: kcal comidas sobre
+// el objetivo del día (desde 26-10-2026; antes eran líneas marcadas, que con
+// «Mi plan» daban 100 % coma lo que coma). Los días sin objetivo no cuentan.
 export function dailyDietPcts(
   completionLogs: DietCompletionLog[],
   diets: Diet[],
@@ -157,8 +157,8 @@ export function dailyDietPcts(
   const pcts: number[] = [];
   for (const log of completionLogs) {
     if (log.date < from || log.date > to) continue;
-    const pct = adherenciaDelDia(log, diets);
-    if (pct === null) continue;
+    const pct = adherenciaPorKcal(log, diets)?.pct;
+    if (pct === undefined) continue;
     pcts.push(pct);
   }
   if (pcts.length === 0) return { avg: 0, days: 0 };

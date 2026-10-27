@@ -2,10 +2,11 @@ import type {
   AthleteDietConfig, AthleteNutritionConfig, Diet, Mesocycle, NutritionPhase, NutritionProgram, WeekDay,
 } from '../types';
 import { MUSCLE_LABELS, MUSCLE_ORDER } from '../types';
-import { macrosDeCupo, kcalDeDieta } from './semanasNutricion';
+import { kcalDeDieta } from './semanasNutricion';
 import { etiquetaDeDias, type ReglasDeReceta } from './reglasDeReceta';
 import { filtroDeTarjeta, resumenDeFiltro, TODAS_LAS_DIETAS } from './seleccionDeRecetas';
 import { dishTypeLabel } from './dishTypes';
+import { objetivoDeDieta } from './macrosLegado';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Historial de cambios del coach sobre un atleta
@@ -47,7 +48,7 @@ const DIAS: Record<WeekDay, string> = {
 const ORDEN_DIAS: WeekDay[] = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 
 function nombresDeAlimentos(d: Diet): string[] {
-  return d.meals.flatMap(m => m.items.map(i => (i as { name?: string }).name ?? '')).filter(Boolean);
+  return d.meals.flatMap(m => m.items.map(i => i.foodLabel ?? '')).filter(Boolean);
 }
 
 /** Dieta: nombre, cupo (kcal y macros), nº de comidas y alimentos añadidos o quitados. */
@@ -59,10 +60,11 @@ export function resumirDieta(antes: Diet | undefined, despues: Diet): string[] {
   const kA = kcalDeDieta(antes);
   const kD = kcalDeDieta(despues);
   if (kA !== kD) l.push(`Kcal ${flecha(n(kA), n(kD))}`);
-  const mA = macrosDeCupo(antes.budget);
-  const mD = macrosDeCupo(despues.budget);
-  for (const [macro, etiqueta] of [['HC', 'Hidratos'], ['PROT', 'Proteína'], ['GRASA', 'Grasa']] as const) {
-    if (mA[macro] !== mD[macro]) l.push(`${etiqueta} ${flecha(n(mA[macro]), n(mD[macro]))} int.`);
+  // En gramos del objetivo (o del cupo viejo traducido), no en intercambios (M7, 26-10-2026).
+  const oA = objetivoDeDieta(antes);
+  const oD = objetivoDeDieta(despues);
+  for (const [macro, etiqueta] of [['hc', 'Hidratos'], ['p', 'Proteína'], ['g', 'Grasa']] as const) {
+    if (Math.round(oA[macro]) !== Math.round(oD[macro])) l.push(`${etiqueta} ${flecha(n(Math.round(oA[macro])), n(Math.round(oD[macro])))} g`);
   }
   if (antes.meals.length !== despues.meals.length) {
     l.push(`Comidas ${flecha(antes.meals.length, despues.meals.length)}`);

@@ -90,9 +90,10 @@ describe('duracionDeLasFases', () => {
 });
 
 describe('ritmoReal', () => {
-  it('el ejemplo de la auditoría: cinco semanas bajando dan su media', () => {
-    // −0,4 −0,3 −0,2 −0,5 −0,6 sobre 5 semanas = −2,0 / 5 = −0,4 kg/semana
-    expect(ritmoReal([80, 79.6, 79.3, 79.1, 78.6, 78.0])).toBeCloseTo(-0.4, 2);
+  it('el ejemplo de la auditoría: cinco semanas bajando dan su pendiente', () => {
+    // Regresión sobre las seis semanas (26-10-2026): −0,38 kg/semana; con
+    // «primero − último» salía −0,4.
+    expect(ritmoReal([80, 79.6, 79.3, 79.1, 78.6, 78.0])).toBeCloseTo(-0.377, 2);
   });
 
   it('usa la tendencia entre el primer y el último peso, no la última semana', () => {

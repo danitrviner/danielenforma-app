@@ -9,7 +9,7 @@ import type {
   WeeklyChallenge, CoachClientTask, Workout, CardioAssignment, AthleteDossier,
 } from '../types';
 import type { HubTab } from '../components/ClientHub';
-import { getWeekStart, addDays } from './trainingWeek';
+import { getWeekStart, addDays, diasEntreFechas } from './trainingWeek';
 import { isCoachGraceDay } from './challengeOptions';
 
 export type SetupPhaseId = 'alta' | 'programacion' | 'primeras_semanas' | 'consolidacion';
@@ -159,9 +159,8 @@ function parseISODate(s: string): Date {
 }
 
 function daysSincePlanStart(planStartDate: string, today: string): number {
-  const start = parseISODate(planStartDate);
-  const t = parseISODate(today);
-  return Math.floor((t.getTime() - start.getTime()) / 86_400_000);
+  // Días de calendario, sin que el cambio de hora reste uno (revisión 26-10-2026).
+  return diasEntreFechas(planStartDate, today);
 }
 
 function manualStatus(manualTasks: CoachClientTask[] | undefined, itemId: string, inWindow: boolean): SetupStatus {
@@ -406,7 +405,7 @@ function calcPlanExpirySimple(profile: { planStartDate?: string; planDurationMon
   const [y, m, d] = profile.planStartDate.split('-').map(Number);
   const end = new Date(y, m - 1 + profile.planDurationMonths, d);
   const t = parseISODate(today);
-  const daysLeft = Math.floor((end.getTime() - t.getTime()) / 86_400_000);
+  const daysLeft = Math.round((end.getTime() - t.getTime()) / 86_400_000);
   return { daysLeft, expired: daysLeft < 0, expiringSoon: daysLeft >= 0 && daysLeft <= 30 };
 }
 

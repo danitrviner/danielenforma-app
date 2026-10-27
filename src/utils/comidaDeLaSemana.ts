@@ -1,9 +1,10 @@
 import type { Diet, DietCompletionLog, DietItem, FoodCategory, Macros } from '../types';
-import { comidasDelDia, cupoDelDia } from './diaDeDieta';
+import { comidasDelDia, cupoDelDia, toleranciaDelDiaKcal, BANDA_EN_OBJETIVO_MIN_KCAL } from './diaDeDieta';
 import { itemWeightLabel, foodNameShort, round2 } from './exchangeHelpers';
 import { macrosDeIntercambios, macrosDeLinea, macrosDeLineas, objetivoDelRegistro } from './macrosLegado';
 import { MACROS_CERO, redondearMacros, sumarMacros } from './macros';
 import { addDays, diasEntreFechas } from './trainingWeek';
+import { slotPercents } from './slotWeights';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // QUÉ HA COMIDO — el registro de comida del atleta, listo para contárselo.
@@ -99,9 +100,9 @@ export interface ComidaDeLaSemana {
   patrones: PatronesComida;
 }
 
-/** Un día se da por «en objetivo» si no se pasa ni se queda corto por más de
- *  esto, en kcal (lo que antes era un intercambio). */
-export const TOLERANCIA_DIA = 100;
+/** Mínimo del margen de «día en objetivo», en kcal. El margen real es
+ *  `toleranciaDelDiaKcal` (10 % del objetivo o esto, lo que sea mayor). */
+export const TOLERANCIA_DIA = BANDA_EN_OBJETIVO_MIN_KCAL;
 
 /** Todas las fechas de la ventana, incluidos los dos extremos. */
 function fechasDeLaVentana(desde: string, hasta: string): string[] {
@@ -182,8 +183,8 @@ function construirPatrones(dias: DiaComido[]): PatronesComida {
   // decir si se pasó o se quedó corto. Cuenta como registrado, pero no entra
   // en el reparto de «por encima / por debajo / en objetivo».
   const juzgables = registrados.filter(d => d.cupo.kcal > 0);
-  const porEncima = juzgables.filter(d => d.desvio > TOLERANCIA_DIA).length;
-  const porDebajo = juzgables.filter(d => d.desvio < -TOLERANCIA_DIA).length;
+  const porEncima = juzgables.filter(d => d.desvio > toleranciaDelDiaKcal(d.cupo.kcal)).length;
+  const porDebajo = juzgables.filter(d => d.desvio < -toleranciaDelDiaKcal(d.cupo.kcal)).length;
 
   const media = (nums: number[]) => (nums.length === 0 ? 0 : round2(nums.reduce((s, n) => s + n, 0) / nums.length));
 
@@ -206,11 +207,16 @@ function construirPatrones(dias: DiaComido[]): PatronesComida {
     .slice(0, 10);
 
   // Desvío por ingesta, en kcal: cuánto se separa cada comida de su parte del
-  // día (el objetivo a partes iguales entre las comidas, sin reparto propio).
+  // día. Su parte es la de su franja (`slotPercents`: desayuno 20 %, comida
+  // 38 %…) cuando todas las comidas la traen; si no, a partes iguales. A
+  // partes iguales la cena salía siempre «por encima» (B4, 26-10-2026).
   const porNombre = new Map<string, number[]>();
   for (const d of registrados) {
-    for (const c of d.comidas) {
-      const objetivo = d.comidas.length > 0 ? d.cupo.kcal / d.comidas.length : 0;
+    const slots = d.comidas.map(c => c.slot);
+    const conFranja = slots.length > 0 && slots.every((s): s is number => typeof s === 'number');
+    const pesos = conFranja ? slotPercents(slots as number[]) : null;
+    for (const [i, c] of d.comidas.entries()) {
+      const objetivo = pesos ? d.cupo.kcal * pesos[i] / 100 : d.comidas.length > 0 ? d.cupo.kcal / d.comidas.length : 0;
       if (objetivo <= 0) continue;
       const lista = porNombre.get(c.nombre) ?? [];
       lista.push(Math.round(c.comido.kcal - objetivo));

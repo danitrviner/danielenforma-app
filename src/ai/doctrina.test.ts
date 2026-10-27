@@ -82,9 +82,9 @@ describe('decisiones de Dani que no se pueden perder', () => {
     expect(DOCTRINA_ENTRENAMIENTO_DEFAULT).toMatch(/No se recorta volumen por defecto/);
   });
 
-  it('el superávit lo gobierna el ritmo de 150-250 g/semana, no las calorías', () => {
-    expect(DOCTRINA_NUTRICION_DEFAULT).toContain('150-250 g');
-    expect(DOCTRINA_NUTRICION_DEFAULT).toContain('0,2% del peso');
+  it('el superávit lo gobierna el ritmo de 150-300 g/semana (0,2-0,35 %), no las calorías', () => {
+    expect(DOCTRINA_NUTRICION_DEFAULT).toContain('150-300 g');
+    expect(DOCTRINA_NUTRICION_DEFAULT).toContain('0,2 y el 0,35 %');
   });
 
   it('el techo del déficit es 700, con fase acelerada solo para quien llega con mucha grasa', () => {

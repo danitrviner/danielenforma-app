@@ -3,7 +3,8 @@ import { Diet, DietCompletionLog } from '../types';
 import { recentDietAdherencePct } from './nutritionPeriodization';
 
 const diet: Diet = {
-  id: 'd1', athleteId: 'a1', name: 'Dieta', selfManaged: false, budget: {} as any,
+  // 2 intercambios de proteína = 200 kcal de objetivo; cada línea son 100 kcal.
+  id: 'd1', athleteId: 'a1', name: 'Dieta', selfManaged: false, budget: { PROT: 2 } as any,
   meals: [{ id: 'm1', name: 'Comida 1', items: [
     { category: 'PROT', foodLabel: 'f1', quantity: 1 },
     { category: 'PROT', foodLabel: 'f2', quantity: 1 },
@@ -18,7 +19,7 @@ describe('recentDietAdherencePct', () => {
     expect(recentDietAdherencePct([], [diet], '2026-08-22')).toBeUndefined();
   });
 
-  it('promedia el % de items completados en los últimos 14 días', () => {
+  it('promedia el % de kcal comidas sobre el objetivo en los últimos 14 días (26-10-2026)', () => {
     const logs = [mkLog('2026-08-20', ['m1_0', 'm1_1']), mkLog('2026-08-21', ['m1_0'])];
     expect(recentDietAdherencePct(logs, [diet], '2026-08-22')).toBeCloseTo(75);
   });

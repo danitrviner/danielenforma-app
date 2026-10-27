@@ -8,6 +8,23 @@ afterEach(() => { vi.useRealTimers(); });
 // contra el día EXACTO del pulso de un 'interval' — si el atleta respondía un
 // día tarde, la ocurrencia quedaba sin cerrar para siempre. El arreglo usa una
 // ventana [último pulso, hoy] en vez de una fecha exacta.
+describe('cambio de hora (26-10-2026)', () => {
+  // «Cada 14 días» desde el 13-03: el pulso del 10-04 no se reconocía como
+  // tal (floor daba 27 días en vez de 28) y una respuesta del 09-04 cerraba
+  // una ocurrencia que aún no había empezado.
+  it('el pulso del 10-04 es un pulso nuevo: la respuesta del 09-04 no lo cierra', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-04-10T12:00:00'));
+    const a: QuestionnaireAssignment = {
+      id: 'as2', questionnaireId: 'q1', athleteId: 'x@x.com',
+      schedule: { type: 'interval', intervalDays: 14 }, startDate: '2026-03-13',
+      active: true, createdAt: '2026-03-13T00:00:00Z',
+    };
+    const r = { id: 'r1', assignmentId: 'as2', questionnaireId: 'q1', athleteId: 'x@x.com', submittedAt: '2026-04-09T10:00:00', answers: {} } as unknown as QuestionnaireResponse;
+    expect(hasAnsweredThisOccurrence(a, [r])).toBe(false);
+  });
+});
+
 describe("'interval' schedules: a late response still closes the occurrence", () => {
   const assignment: QuestionnaireAssignment = {
     id: 'as1', questionnaireId: 'q1', athleteId: 'x@x.com',
