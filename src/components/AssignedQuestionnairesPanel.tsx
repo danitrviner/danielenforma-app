@@ -11,6 +11,8 @@ import {
 } from '../dbService';
 import { fijarAlViernes, fijarAlViernesAlCrear, type ScheduleContext } from '../utils/questionnaireSchedule';
 import DiaRevisionAtleta from './revision/DiaRevisionAtleta';
+import { crearPaqueteOficial, itemsPendientes } from '../utils/paqueteOficial';
+import { PAQUETE_OFICIAL } from '../data/questionnairePresets';
 import {
   cadenciaEnCristiano, cadenciaParaTabla, proximaOcurrencia, etiquetaFechaCorta, hoyLocalStr,
 } from '../utils/scheduleEngine';
@@ -324,9 +326,28 @@ export default function AssignedQuestionnairesPanel({
   };
 
   // ── Paquetes: aplicar y guardar ────────────────────────────────────────────
+  // Paquete oficial (27-10): se crea con un toque desde las plantillas oficiales.
+  const [creandoOficial, setCreandoOficial] = useState(false);
+  const hayOficial = packs.some(p => p.name === PAQUETE_OFICIAL.nombre);
+  const crearOficial = async () => {
+    setCreandoOficial(true);
+    try {
+      const { pack, creadas } = await crearPaqueteOficial(coachId, coachQuestionnaires, { createQuestionnaire, createQuestionnairePack });
+      if (creadas.length > 0) setCoachQuestionnaires(prev => [...prev, ...creadas]);
+      queryClient.setQueryData<QuestionnairePack[]>(packsKey, prev => [...(prev ?? []), pack]);
+      showToast(`Paquete oficial creado · ${creadas.length} plantilla${creadas.length === 1 ? '' : 's'} nueva${creadas.length === 1 ? '' : 's'}`, 'success');
+    } catch (err) {
+      console.error(err);
+      showToast(mensajeDeErrorFirestore(err, 'crear el paquete oficial'));
+    } finally {
+      setCreandoOficial(false);
+    }
+  };
+
   const aplicarPack = async (pack: QuestionnairePack) => {
-    const yaPuestos = new Set(activas.map(a => a.questionnaireId));
-    const pendientes = pack.items.filter(i => !yaPuestos.has(i.questionnaireId));
+    // Plantilla viva y que no tenga ya con ese calendario: Mediciones va dos
+    // veces (fin y mitad de bloque) y una fila con la plantilla borrada se salta.
+    const pendientes = itemsPendientes(pack, activas, coachQuestionnaires);
     if (pendientes.length === 0) {
       showToast(`${athlete.displayName || 'El atleta'} ya tiene todos los cuestionarios de «${pack.name}».`);
       return;
@@ -601,9 +622,16 @@ export default function AssignedQuestionnairesPanel({
         title="Paquetes"
         subtitle="Conjuntos de cuestionarios con su cadencia, listos para aplicar de una vez"
         action={
-          <Button size="s" variant="secondary" icon="add" onClick={() => abrirConstructorDePack()}>
-            Crear paquete
-          </Button>
+          <div className="flex gap-2">
+            {!hayOficial && (
+              <Button size="s" variant="primary" icon="inventory_2" onClick={crearOficial} loading={creandoOficial} loadingLabel="Creando">
+                Paquete oficial
+              </Button>
+            )}
+            <Button size="s" variant="secondary" icon="add" onClick={() => abrirConstructorDePack()}>
+              Crear paquete
+            </Button>
+          </div>
         }
         padding="none"
       >
@@ -616,8 +644,8 @@ export default function AssignedQuestionnairesPanel({
         ) : (
           <ul className="divide-y divide-hairline/50">
             {packs.map(pack => {
-              const yaPuestos = new Set(activas.map(a => a.questionnaireId));
-              const pendientes = pack.items.filter(i => !yaPuestos.has(i.questionnaireId)).length;
+              const pendientes = itemsPendientes(pack, activas, coachQuestionnaires).length;
+              const rotas = pack.items.filter(i => !coachQuestionnaires.some(q => q.id === i.questionnaireId)).length;
               return (
                 <li key={pack.id} className="px-5 py-3 flex flex-wrap items-center gap-3">
                   <Icon name="inventory_2" size="m" className="text-data shrink-0" />
@@ -629,6 +657,11 @@ export default function AssignedQuestionnairesPanel({
                         .filter(Boolean)
                         .join(' · ') || `${pack.items.length} cuestionarios`}
                     </p>
+                    {rotas > 0 && (
+                      <p className="font-sans text-caption text-accent-ink">
+                        {rotas} fila{rotas === 1 ? '' : 's'} con un cuestionario que ya no existe: se salta{rotas === 1 ? '' : 'n'} al aplicar.
+                      </p>
+                    )}
                   </div>
                   <Button
                     size="s"

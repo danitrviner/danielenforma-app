@@ -196,7 +196,14 @@ export function isOverdue(original: QuestionnaireAssignment, ctx?: ScheduleConte
     limite.setDate(limite.getDate() + 7);
     return today.getTime() < limite.getTime();
   }
-  if (type === 'plan_week') return planWeekDueDate(a.schedule, start).getTime() <= today.getTime();
+  if (type === 'plan_week') {
+    // Los hitos («semana 4 del plan») entran en la revisión de esa semana: se
+    // piden el día que se abre el ciclo que contiene su fecha, no un día suelto
+    // a mitad de semana. Nunca antes del alta.
+    const due = aperturaDelCiclo(isoLocal(planWeekDueDate(a.schedule, start)), ctx?.diaRevision);
+    const desde = due < original.startDate ? original.startDate : due;
+    return desde <= hoyStr;
+  }
   if (type === 'monthly') return today.getDate() >= (a.schedule.dayOfMonth ?? 1);
   // mesocycle_end
   const offset = a.schedule.mesocycleOffsetDays ?? 0;
