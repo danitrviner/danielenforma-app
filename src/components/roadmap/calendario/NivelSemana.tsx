@@ -250,7 +250,7 @@ export default function NivelSemana({
                         />
                         <span
                           className="font-sans text-caption truncate"
-                          style={{ color: fase ? mezcla(fase.color, 78) : 'var(--color-ink-4)' }}
+                          style={{ color: fase ? fase.color : 'var(--color-ink-4)' }}
                           title={fase?.nombre ?? vacio}
                         >
                           {fase?.nombre ?? vacio}

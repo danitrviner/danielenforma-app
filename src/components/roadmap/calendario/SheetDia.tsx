@@ -358,7 +358,7 @@ export default function SheetDia({
                     onChange={e => setBorradorNota(e.target.value)}
                     rows={3}
                     placeholder="Escribe algo que quieras que el atleta vea hoy en Inicio…"
-                    className="w-full bg-cell border border-hairline rounded-control px-3 py-3 text-body-s text-ink focus:outline-none focus:ring-1 focus:ring-accent resize-none"
+                    className="w-full bg-cell border border-control-line rounded-control px-3 py-3 text-body-s text-ink focus:outline-none focus:ring-1 focus:ring-accent resize-none"
                   />
                   <div className="flex gap-2 justify-end">
                     <Button variant="secondary" size="s" onClick={() => setEditandoNota(false)}>Cancelar</Button>

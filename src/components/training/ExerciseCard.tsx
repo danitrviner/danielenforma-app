@@ -329,7 +329,7 @@ export default React.memo(function ExerciseCard({
           onChange={e => onNoteChange(e.target.value)}
           placeholder="ej. Molestia leve en el hombro derecho..."
           rows={2}
-          className="w-full bg-bg border border-hairline rounded-control p-3 text-title-s text-ink placeholder-ink-2/40 focus:outline-none focus:ring-1 focus:ring-accent resize-none"
+          className="w-full bg-bg border border-control-line rounded-control p-3 text-title-s text-ink placeholder-ink-2/40 focus:outline-none focus:ring-1 focus:ring-accent resize-none"
         />
       </div>
 
@@ -457,7 +457,7 @@ function NormalTable({
                     value={setInput.rir}
                     onChange={e => onUpdateSet(sIdx, 'rir', e.target.value)}
                     disabled={setInput.done}
-                    className={`w-14 sm:w-16 appearance-none bg-field border border-hairline rounded-control px-1 sm:px-2 py-2 text-center font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50 disabled:cursor-not-allowed ${rirClaseColor(setInput.rir)}`}
+                    className={`w-14 sm:w-16 appearance-none bg-field border border-control-line rounded-control px-1 sm:px-2 py-2 text-center font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50 disabled:cursor-not-allowed ${rirClaseColor(setInput.rir)}`}
                   >
                     {RIR_OPCIONES.map(v => <option key={v} value={v}>{rirTexto(v)}</option>)}
                   </select>
@@ -533,7 +533,7 @@ function DropsetRows({ exSets, serie, indices, pctBajada, pauta, onUpdateSet, on
                 onChange={e => onUpdateSet(sIdx, 'weight', e.target.value)}
                 placeholder={sugerido != null ? String(sugerido).replace('.', ',') : 'kg'}
                 disabled={s.done}
-                className="w-16 rounded-control border border-hairline bg-field px-2 py-1.5 text-center font-mono text-title-s text-ink focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50"
+                className="w-16 rounded-control border border-control-line bg-field px-2 py-1.5 text-center font-mono text-title-s text-ink focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50"
               />
               <span className="font-mono text-label text-ink-3">kg ×</span>
               <input
@@ -542,7 +542,7 @@ function DropsetRows({ exSets, serie, indices, pctBajada, pauta, onUpdateSet, on
                 onChange={e => onUpdateSet(sIdx, 'repsDone', e.target.value)}
                 placeholder="reps"
                 disabled={s.done}
-                className="w-14 rounded-control border border-hairline bg-field px-2 py-1.5 text-center font-mono text-title-s text-ink focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50"
+                className="w-14 rounded-control border border-control-line bg-field px-2 py-1.5 text-center font-mono text-title-s text-ink focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50"
               />
               </div>
               {caida != null && caida > 0 && <span className="mt-1 block font-mono text-label font-bold text-danger">−{caida}% de peso</span>}

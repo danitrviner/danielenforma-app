@@ -308,7 +308,7 @@ export default function PlanificadorProgresion(p: Props) {
                               real?.novedadesVistas === true ? 'Leyó el aviso de cambios' : real?.novedadesVistas === false ? 'No leyó el aviso de cambios' : null,
                             ].filter(Boolean).join('\n')}
                             className={`relative w-full rounded-control border px-2 py-1.5 text-left transition-colors ${
-                              cambia ? 'border-accent bg-accent/12' : 'border-hairline bg-bg hover:border-strong'}`}
+                              cambia ? 'border-accent-line bg-accent/12' : 'border-hairline bg-bg hover:border-strong'}`}
                           >
                             {propio && <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-accent" aria-hidden />}
                             {otro && <span className="block font-sans text-caption font-bold text-accent-ink truncate">{p.nombreDe(r.exerciseId)}</span>}
@@ -723,7 +723,7 @@ function ProgresionesDeLaSeleccion({ open, onClose, vueltas, descargas, cuantos,
                   value={rirSemanas[w] ?? ''}
                   onChange={e => setRirSemanas(prev => ({ ...prev, [w]: e.target.value }))}
                   aria-label={`RIR de la semana ${w}`}
-                  className={`h-10 w-full rounded-field border bg-field px-2 font-mono text-body-s text-ink focus:outline-none focus:border-accent ${rirSemanas[w] ? 'border-accent' : 'border-hairline'}`}
+                  className={`h-10 w-full rounded-field border bg-field px-2 font-mono text-body-s text-ink focus:outline-none focus:border-accent ${rirSemanas[w] ? 'border-accent' : 'border-control-line'}`}
                 >
                   <option value="">—</option>
                   {[0, 1, 2, 3, 4, 5].map(n => <option key={n} value={String(n)}>RIR {n}</option>)}
@@ -781,7 +781,7 @@ function ProgresionesDeLaSeleccion({ open, onClose, vueltas, descargas, cuantos,
                   value={repsSemanas[w] ?? ''}
                   onChange={e => setRepsSemanas(prev => ({ ...prev, [w]: e.target.value }))}
                   aria-label={`Repeticiones de la semana ${w}`}
-                  className={`h-10 w-full rounded-field border bg-field px-2 text-center font-mono text-body-s text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent ${repsSemanas[w]?.trim() ? 'border-accent' : 'border-hairline'}`}
+                  className={`h-10 w-full rounded-field border bg-field px-2 text-center font-mono text-body-s text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent ${repsSemanas[w]?.trim() ? 'border-accent' : 'border-control-line'}`}
                 />
               </label>
             ))}

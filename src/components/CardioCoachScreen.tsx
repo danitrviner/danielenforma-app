@@ -101,11 +101,11 @@ function AthleteZonesEditor({ athleteEmail, coachEmail, onBack }: { athleteEmail
       <div className="flex gap-2">
         <div className="flex-1">
           <label htmlFor="cardiocoach-fc-reposo" className="text-caption font-mono uppercase text-ink-2">FC reposo</label>
-          <input id="cardiocoach-fc-reposo" type="number" value={restingHR} onChange={e => setRestingHR(e.target.value)} className="w-full bg-bg border border-hairline rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent" />
+          <input id="cardiocoach-fc-reposo" type="number" value={restingHR} onChange={e => setRestingHR(e.target.value)} className="w-full bg-bg border border-control-line rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent" />
         </div>
         <div className="flex-1">
           <label htmlFor="cardiocoachscreen-fcmax" className="text-caption font-mono uppercase text-ink-2">FCmax</label>
-          <input id="cardiocoachscreen-fcmax" type="number" value={maxHR} onChange={e => setMaxHR(e.target.value)} className="w-full bg-bg border border-hairline rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent" />
+          <input id="cardiocoachscreen-fcmax" type="number" value={maxHR} onChange={e => setMaxHR(e.target.value)} className="w-full bg-bg border border-control-line rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent" />
         </div>
         <Button variant="secondary" size="s" onClick={regenerate} className="self-end">Recalcular</Button>
       </div>
@@ -114,10 +114,10 @@ function AthleteZonesEditor({ athleteEmail, coachEmail, onBack }: { athleteEmail
           <div key={z} className="flex items-center gap-2">
             <span className="text-label font-sans text-ink-2 w-32 flex-shrink-0">{ZONE_LABEL[z]}</span>
             <input type="number" value={active[z].min} onChange={e => setZones({ ...active, [z]: { ...active[z], min: Number(e.target.value) } })}
-              className="w-20 bg-bg border border-hairline rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent" />
+              className="w-20 bg-bg border border-control-line rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent" />
             <span className="text-ink-3">–</span>
             <input type="number" value={active[z].max} onChange={e => setZones({ ...active, [z]: { ...active[z], max: Number(e.target.value) } })}
-              className="w-20 bg-bg border border-hairline rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent" />
+              className="w-20 bg-bg border border-control-line rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent" />
           </div>
         ))}
       </div>
@@ -209,7 +209,7 @@ function PrescriptionTab() {
     <section className="bg-surface border border-hairline rounded-surface p-4 sm:p-5 space-y-3">
       <h2 className="font-sans font-bold text-title-s text-ink">Prescribir cardio</h2>
       <select value={athleteEmail} onChange={e => setAthleteEmail(e.target.value)}
-        className="w-full bg-bg border border-hairline rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent">
+        className="w-full bg-bg border border-control-line rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent">
         <option value="">Selecciona atleta...</option>
         {athletes.map(a => <option key={a.email} value={a.email}>{a.displayName}</option>)}
       </select>

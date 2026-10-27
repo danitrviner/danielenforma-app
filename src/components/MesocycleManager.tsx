@@ -308,7 +308,7 @@ const DayCard: React.FC<{
           <select
             value=""
             onChange={e => { if (e.target.value) onAddGroup(e.target.value as MuscleGroup); }}
-            className="appearance-none w-full bg-bg border border-dashed border-hairline rounded-control pl-2 pr-8 py-2 text-title-s font-sans text-ink-2 focus:outline-none focus:border-accent cursor-pointer"
+            className="appearance-none w-full bg-bg border border-dashed border-control-line rounded-control pl-2 pr-8 py-2 text-title-s font-sans text-ink-2 focus:outline-none focus:border-accent cursor-pointer"
           >
             <option value="">+ Añadir grupo…</option>
             {availableGroups.map(g => (
@@ -1453,7 +1453,7 @@ function ProgressionView({ editing, mesocycles, onUpdateGroup, onApplySuggestion
         </div>
         <button
           onClick={() => setShowSuggest(true)}
-          className="flex items-center gap-2 px-3 py-2 bg-accent/10 border border-accent/40 text-accent-ink font-sans text-label font-bold uppercase tracking-wider rounded-control hover:bg-accent/20 active:scale-95 transition-[color,background-color,border-color,opacity,transform,box-shadow]"
+          className="flex items-center gap-2 px-3 py-2 bg-accent/10 border border-accent-line text-accent-ink font-sans text-label font-bold uppercase tracking-wider rounded-control hover:bg-accent/20 active:scale-95 transition-[color,background-color,border-color,opacity,transform,box-shadow]"
         >
           <Icon name="auto_awesome" size="s" />
           Sugerir volumen
@@ -3051,7 +3051,7 @@ export default function MesocycleManager({
             <select
               value={selectedEmail}
               onChange={e => { setSelectedEmail(e.target.value); setEditing(null); setGenPhase('idle'); }}
-              className="bg-raised border border-hairline text-ink font-sans text-title-s rounded-control px-3 py-2 focus:outline-none focus:border-accent min-w-[220px]"
+              className="bg-raised border border-control-line text-ink font-sans text-title-s rounded-control px-3 py-2 focus:outline-none focus:border-accent min-w-[220px]"
             >
               <option value="">— Selecciona un atleta —</option>
               {athletes.map(a => (
@@ -3164,7 +3164,7 @@ export default function MesocycleManager({
                     onChange={e => updateField('name', e.target.value)}
                     placeholder={modoPlantilla ? 'Ej. Acumulación' : `Meso #${editing.number}`}
                     maxLength={60}
-                    className="w-full bg-raised border border-hairline rounded-control px-3 py-2 text-body-s text-ink font-sans focus:outline-none focus:border-accent placeholder:text-ink-3"
+                    className="w-full bg-raised border border-control-line rounded-control px-3 py-2 text-body-s text-ink font-sans focus:outline-none focus:border-accent placeholder:text-ink-3"
                   />
                 </div>
 
@@ -3174,7 +3174,7 @@ export default function MesocycleManager({
                     <input id="mesocyclemanager-no-meso" type="number" min={1}
                       value={editing.number}
                       onChange={e => updateField('number', parseInt(e.target.value) || 1)}
-                      className="w-full bg-raised border border-hairline rounded-control px-3 py-2 text-title-s text-ink font-mono focus:outline-none focus:border-accent"
+                      className="w-full bg-raised border border-control-line rounded-control px-3 py-2 text-title-s text-ink font-mono focus:outline-none focus:border-accent"
                     />
                   </div>)}
                   <div>
@@ -3182,7 +3182,7 @@ export default function MesocycleManager({
                     <input id="mesocyclemanager-semanas" type="number" min={1} max={16}
                       value={editing.weeks}
                       onChange={e => updateField('weeks', parseInt(e.target.value) || 1)}
-                      className="w-full bg-raised border border-hairline rounded-control px-3 py-2 text-title-s text-ink font-mono focus:outline-none focus:border-accent"
+                      className="w-full bg-raised border border-control-line rounded-control px-3 py-2 text-title-s text-ink font-mono focus:outline-none focus:border-accent"
                     />
                   </div>
                   {!modoPlantilla && (<div>
@@ -3354,7 +3354,7 @@ export default function MesocycleManager({
                         type="number" min={1} max={editing.weeks}
                         value={editing.deloadWeek}
                         onChange={e => updateField('deloadWeek', Math.min(editing.weeks, Math.max(1, parseInt(e.target.value) || 1)))}
-                        className="w-14 bg-raised border border-hairline rounded-control px-2 py-1 text-center text-caption text-ink font-mono focus:outline-none focus:border-accent"
+                        className="w-14 bg-raised border border-control-line rounded-control px-2 py-1 text-center text-caption text-ink font-mono focus:outline-none focus:border-accent"
                       />
                     </div>
                   )}

@@ -162,7 +162,7 @@ export default function WelcomeScreen({ onLoginSuccess }: WelcomeScreenProps) {
               placeholder="••••••"
               autoComplete="current-password"
               required
-              className="h-[54px] w-full rounded-field border border-hairline bg-field px-4 font-sans text-title-s text-ink transition-colors duration-(--duration-state) focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent focus:ring-inset"
+              className="h-[54px] w-full rounded-field border border-control-line bg-field px-4 font-sans text-title-s text-ink transition-colors duration-(--duration-state) focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent focus:ring-inset"
             />
           </div>
 

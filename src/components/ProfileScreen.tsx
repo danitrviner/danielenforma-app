@@ -209,7 +209,7 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
                 step="0.1"
                 value={targetWeight}
                 onChange={(e) => setTargetWeight(e.target.value)}
-                className="w-full bg-raised border border-hairline rounded-control p-3 text-title-s text-ink focus:outline-none focus:border-accent"
+                className="w-full bg-raised border border-control-line rounded-control p-3 text-title-s text-ink focus:outline-none focus:border-accent"
               />
             </div>
           )}

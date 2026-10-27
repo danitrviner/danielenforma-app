@@ -443,7 +443,7 @@ export default function ExerciseConfigEditor({ we, onChange, mesoWeeks, disposic
                     value={s.weight}
                     onChange={e => updateManualWarmupSet(wIdx, 'weight', parseFloat(e.target.value) || 0)}
                     placeholder="kg"
-                    className="w-20 bg-inset border border-hairline rounded-control px-2 py-1 text-center text-ink font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-accent"
+                    className="w-20 bg-inset border border-control-line rounded-control px-2 py-1 text-center text-ink font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-accent"
                   />
                   <span className="text-ink-2 text-label">×</span>
                   <input
@@ -451,7 +451,7 @@ export default function ExerciseConfigEditor({ we, onChange, mesoWeeks, disposic
                     value={s.reps}
                     onChange={e => updateManualWarmupSet(wIdx, 'reps', parseInt(e.target.value) || 1)}
                     placeholder="reps"
-                    className="w-16 bg-inset border border-hairline rounded-control px-2 py-1 text-center text-ink font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-accent"
+                    className="w-16 bg-inset border border-control-line rounded-control px-2 py-1 text-center text-ink font-mono text-title-s focus:outline-none focus:ring-1 focus:ring-accent"
                   />
                   <button
                     onClick={() => removeManualWarmupSet(wIdx)}
@@ -491,7 +491,7 @@ export default function ExerciseConfigEditor({ we, onChange, mesoWeeks, disposic
                   max={mesoWeeks}
                   value={rule.atWeek}
                   onChange={e => updateProgressionRule(idx, { atWeek: Math.min(mesoWeeks, Math.max(1, parseInt(e.target.value) || 1)) })}
-                  className="w-14 bg-inset border border-hairline rounded-control px-2 py-1 text-center text-ink font-mono text-title-s font-bold focus:outline-none focus:ring-1 focus:ring-accent"
+                  className="w-14 bg-inset border border-control-line rounded-control px-2 py-1 text-center text-ink font-mono text-title-s font-bold focus:outline-none focus:ring-1 focus:ring-accent"
                 />
               </div>
               <div className="flex items-center gap-1.5 flex-1 min-w-0">
@@ -502,7 +502,7 @@ export default function ExerciseConfigEditor({ we, onChange, mesoWeeks, disposic
                   max={10}
                   value={rule.addSets ?? 0}
                   onChange={e => updateProgressionRule(idx, { addSets: parseInt(e.target.value) || 0 })}
-                  className="w-14 bg-inset border border-hairline rounded-control px-2 py-1 text-center text-ink font-mono text-title-s font-bold focus:outline-none focus:ring-1 focus:ring-accent"
+                  className="w-14 bg-inset border border-control-line rounded-control px-2 py-1 text-center text-ink font-mono text-title-s font-bold focus:outline-none focus:ring-1 focus:ring-accent"
                 />
                 <span className="font-sans text-caption text-ink-2 flex-shrink-0">series</span>
               </div>
@@ -544,7 +544,7 @@ export default function ExerciseConfigEditor({ we, onChange, mesoWeeks, disposic
             <select
               value={we.recordVideoSet}
               onChange={e => onChange({ recordVideoSet: e.target.value === 'all' ? 'all' : parseInt(e.target.value) })}
-              className="ml-auto bg-surface border border-hairline rounded-control px-2 py-1.5 text-caption font-mono text-ink focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
+              className="ml-auto bg-surface border border-control-line rounded-control px-2 py-1.5 text-caption font-mono text-ink focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
             >
               <option value="all">Todas las series</option>
               {Array.from({ length: we.sets }, (_, i) => i + 1).map(n => (

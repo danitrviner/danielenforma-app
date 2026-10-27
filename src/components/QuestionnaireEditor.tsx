@@ -188,7 +188,7 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
                 value={q.type}
                 onChange={e => setQ(idx, applyTypeChange({ type: e.target.value as QuestionType }))}
                 aria-label={`Tipo de la pregunta ${idx + 1}`}
-                className="bg-raised border border-hairline rounded-control px-2 py-2 text-label font-mono text-ink focus:outline-none focus:ring-1 focus:ring-accent"
+                className="bg-raised border border-control-line rounded-control px-2 py-2 text-label font-mono text-ink focus:outline-none focus:ring-1 focus:ring-accent"
               >
                 {(Object.keys(QUESTION_TYPE_LABELS) as QuestionType[]).map(t => (
                   <option key={t} value={t}>{QUESTION_TYPE_LABELS[t]}</option>
@@ -241,7 +241,7 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
                 <select
                   value={q.signalKey ?? ''}
                   onChange={e => setQ(idx, { signalKey: e.target.value || undefined })}
-                  className="bg-raised border border-hairline rounded-control px-2 py-1 text-caption font-mono text-ink-2 focus:outline-none focus:ring-1 focus:ring-accent max-w-full"
+                  className="bg-raised border border-control-line rounded-control px-2 py-1 text-caption font-mono text-ink-2 focus:outline-none focus:ring-1 focus:ring-accent max-w-full"
                 >
                   <option value="">Ninguna (respuesta normal)</option>
                   {SEÑALES_DISPONIBLES

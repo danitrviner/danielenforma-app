@@ -788,7 +788,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
                   onChange={e => setForm(f => ({ ...f, instructions: e.target.value }))}
                   placeholder="ej. Mantén la espalda neutra durante todo el recorrido..."
                   rows={3}
-                  className="w-full bg-surface border border-hairline rounded-control px-4 py-3 text-title-s text-ink placeholder-ink-2/40 focus:outline-none focus:ring-1 focus:ring-accent transition-[color,background-color,border-color,opacity,transform,box-shadow] resize-none"
+                  className="w-full bg-surface border border-control-line rounded-control px-4 py-3 text-title-s text-ink placeholder-ink-2/40 focus:outline-none focus:ring-1 focus:ring-accent transition-[color,background-color,border-color,opacity,transform,box-shadow] resize-none"
                 />
               </div>
 

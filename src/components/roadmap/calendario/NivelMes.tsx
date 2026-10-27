@@ -84,7 +84,7 @@ function CarrilFase({ icono, label, segmentos, onEditar }: { icono: string; labe
               {mostrarTexto && (
                 <div className="flex flex-col gap-0.5 min-w-0 overflow-hidden items-start">
                   <span className="font-sans font-bold text-label whitespace-nowrap" style={{ letterSpacing: '-0.01em' }}>{s.banda.nombre}</span>
-                  <span className="font-mono text-caption opacity-60 whitespace-nowrap">{rango}</span>
+                  <span className="font-mono text-caption text-ink-3 whitespace-nowrap">{rango}</span>
                 </div>
               )}
             </button>

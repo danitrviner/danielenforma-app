@@ -170,7 +170,7 @@ export default function BloqueCierre({
               onChange={e => setNota(e.target.value)}
               rows={3}
               placeholder="Qué has decidido y por qué. Se guarda en la ficha con la fecha y la ventana, y lo lee el asistente la próxima vez."
-              className="w-full bg-raised border border-hairline rounded-control px-3 py-2 font-sans text-label text-ink placeholder:text-ink-3 focus:outline-none focus:ring-1 focus:ring-accent"
+              className="w-full bg-raised border border-control-line rounded-control px-3 py-2 font-sans text-label text-ink placeholder:text-ink-3 focus:outline-none focus:ring-1 focus:ring-accent"
             />
             <div className="flex justify-end">
               <Button size="s" onClick={guardarNota} disabled={guardando || nota.trim().length === 0}>

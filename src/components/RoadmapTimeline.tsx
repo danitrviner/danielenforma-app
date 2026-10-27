@@ -228,7 +228,7 @@ function ItemEditor({ item, onChange, onConfirm, onDelete, onCancel, saving, isN
             onChange={e => onChange({ ...item, description: e.target.value || undefined })}
             rows={2}
             placeholder="Detalle opcional..."
-            className="w-full bg-surface border border-hairline rounded-control px-3 py-3 text-title-s text-ink focus:outline-none focus:ring-1 focus:ring-accent resize-none"
+            className="w-full bg-surface border border-control-line rounded-control px-3 py-3 text-title-s text-ink focus:outline-none focus:ring-1 focus:ring-accent resize-none"
           />
         </div>
 

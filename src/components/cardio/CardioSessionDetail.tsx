@@ -86,7 +86,7 @@ export default function CardioSessionDetail({ session, allSessions, zones, onClo
 
         <input
           value={title} onChange={e => setTitle(e.target.value)} placeholder={SESSION_TYPE_LABEL[session.type] ?? 'Título'}
-          className="w-full bg-transparent font-sans font-bold text-title-l text-ink placeholder:text-ink-4 focus:outline-none border-b border-hairline pb-2"
+          className="w-full bg-transparent font-sans font-bold text-title-l text-ink placeholder:text-ink-4 focus:outline-none border-b border-control-line pb-2"
         />
 
         {comparison.count > 0 && (
@@ -153,7 +153,7 @@ export default function CardioSessionDetail({ session, allSessions, zones, onClo
           <p className="text-caption font-mono uppercase text-ink-2">Notas</p>
           <textarea
             value={notes} onChange={e => setNotes(e.target.value)} rows={3}
-            className="w-full bg-surface border border-hairline rounded-control p-3 text-title-s text-ink focus:outline-none focus:border-accent resize-none"
+            className="w-full bg-surface border border-control-line rounded-control p-3 text-title-s text-ink focus:outline-none focus:border-accent resize-none"
             placeholder="¿Cómo te sentiste?"
           />
         </div>

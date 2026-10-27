@@ -296,7 +296,7 @@ export default function ClientesList({ coachEmail }: { coachEmail: string }) {
             onChange={e => setParam('q', e.target.value)}
             placeholder="Buscar por nombre, email o DNI"
             aria-label="Buscar clientes"
-            className="w-full pl-8 pr-2 py-2 rounded-control bg-field border border-hairline text-title-s text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent/40"
+            className="w-full pl-8 pr-2 py-2 rounded-control bg-field border border-control-line text-title-s text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent/40"
           />
         </div>
         {/* Mismo desbordamiento que las pestañas de la ficha: los cinco filtros

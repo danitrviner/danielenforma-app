@@ -94,7 +94,7 @@ export default function EditorDeListaDeMenu({ recetas, valor, guardando, onGuard
           onChange={e => cambiarFiltro({ texto: e.target.value })}
           placeholder="Buscar por nombre"
           aria-label="Buscar receta por nombre"
-          className="bg-bg border border-hairline rounded-control px-3 min-h-[44px] font-sans text-body text-ink focus:outline-none focus:border-accent"
+          className="bg-bg border border-control-line rounded-control px-3 min-h-[44px] font-sans text-body text-ink focus:outline-none focus:border-accent"
         />
         <input
           type="search"
@@ -102,7 +102,7 @@ export default function EditorDeListaDeMenu({ recetas, valor, guardando, onGuard
           onChange={e => cambiarFiltro({ ingrediente: e.target.value })}
           placeholder="Ingrediente (atún, huevo…)"
           aria-label="Filtrar por ingrediente"
-          className="bg-bg border border-hairline rounded-control px-3 min-h-[44px] font-sans text-body text-ink focus:outline-none focus:border-accent"
+          className="bg-bg border border-control-line rounded-control px-3 min-h-[44px] font-sans text-body text-ink focus:outline-none focus:border-accent"
         />
         <Select
           label="Categoría"

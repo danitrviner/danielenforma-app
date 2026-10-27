@@ -133,14 +133,14 @@ function TarjetaEtapa({ stage, idx, total, onEditar, onCambio, onMover, onBorrar
               aria-label="Semanas entre revisiones"
               value={stage.reviewCadenceWeeks}
               onChange={e => onCambio({ ...stage, reviewCadenceWeeks: Math.max(1, parseInt(e.target.value) || 1) })}
-              className="w-14 bg-surface border border-hairline rounded-control px-2 py-1 text-center text-caption text-ink font-mono focus:outline-none focus:border-accent"
+              className="w-14 bg-surface border border-control-line rounded-control px-2 py-1 text-center text-caption text-ink font-mono focus:outline-none focus:border-accent"
             />
             <span className="font-sans text-caption text-ink-3">semanas ·</span>
             <select
               aria-label="Tipo de revisión"
               value={stage.reviewType ?? 'revision'}
               onChange={e => onCambio({ ...stage, reviewType: e.target.value as TaskType })}
-              className="bg-surface border border-hairline rounded-control px-2 py-1 text-caption text-ink font-sans focus:outline-none focus:border-accent cursor-pointer"
+              className="bg-surface border border-control-line rounded-control px-2 py-1 text-caption text-ink font-sans focus:outline-none focus:border-accent cursor-pointer"
             >
               <option value="revision">Check-in</option>
               <option value="cuestionario">Cuestionario</option>

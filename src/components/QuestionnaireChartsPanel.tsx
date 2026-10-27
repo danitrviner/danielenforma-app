@@ -288,7 +288,7 @@ export default function QuestionnaireChartsPanel({ questionnaires, responses, oc
         <select
           value={selected.question.id}
           onChange={e => setSelectedId(e.target.value)}
-          className="w-full bg-surface border border-hairline rounded-control px-3 min-h-[44px] font-sans text-body text-ink focus:outline-none focus:border-accent"
+          className="w-full bg-surface border border-control-line rounded-control px-3 min-h-[44px] font-sans text-body text-ink focus:outline-none focus:border-accent"
         >
           {porCuestionario.map(([qTitle, preguntas]) => (
             <optgroup key={qTitle} label={qTitle}>

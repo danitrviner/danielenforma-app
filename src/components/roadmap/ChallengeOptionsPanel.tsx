@@ -102,7 +102,7 @@ export default function ChallengeOptionsPanel({
         <select
           value={weekTarget}
           onChange={e => setWeekTarget(e.target.value as 'esta' | 'siguiente')}
-          className="bg-bg border border-hairline rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent"
+          className="bg-bg border border-control-line rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent"
         >
           <option value="esta">Esta semana</option>
           <option value="siguiente">Semana que viene</option>

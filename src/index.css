@@ -710,7 +710,7 @@
   --p-phase-fuerza:   #2F6BD4;
   --p-phase-hiper:    #7345C9;
   --p-phase-defi:     #12855A;
-  --p-phase-mant:     #8A7A60;
+  --p-phase-mant:     #6B5C44;   /* 27-10: #8A7A60 daba 3,7:1 como etiqueta de 12 px */
   --p-phase-descarga: #6B7280;
   --p-cat-cardio:     #A8720F;
   --p-refeed:         #C2521B;
@@ -771,7 +771,9 @@
 
   --p-hairline:     rgba(255, 255, 255, 0.07);
   --p-strong:       rgba(255, 255, 255, 0.12);
-  --p-control-line: rgba(255, 255, 255, 0.12);   /* = strong: el relleno `field` ya distingue el campo */
+  /* 27-10: medido, `field` sobre `bg` en oscuro es 1,2:1 y `strong` 1,4:1: el
+     campo tampoco tenía contorno aquí. Blanco al 34 % (#686868) da 3,1:1. */
+  --p-control-line: rgba(255, 255, 255, 0.34);
   /* 27-10: del 45 % (2,83:1) al 60 % (4,0:1) para que el borde del botón
      secundario pase el 3:1 también aquí. Es el único valor de oscuro que
      cambia en la revisión del modo claro. */

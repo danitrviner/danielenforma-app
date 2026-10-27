@@ -363,7 +363,7 @@ export default function CardioScreen({ profile }: Props) {
                 </Chip>
               ))}
               <select value={historyType} onChange={e => setHistoryType(e.target.value as CardioSessionType | '')}
-                className="bg-bg border border-hairline rounded-full px-3 py-1 text-title-s font-mono uppercase text-ink-2 focus:outline-none">
+                className="bg-bg border border-control-line rounded-full px-3 py-1 text-title-s font-mono uppercase text-ink-2 focus:outline-none">
                 <option value="">Cualquier tipo</option>
                 <option value="libre">Libre</option>
                 <option value="zona2">Zona 2</option>
@@ -371,7 +371,7 @@ export default function CardioScreen({ profile }: Props) {
               </select>
               {tags.length > 0 && (
                 <select value={historyTag} onChange={e => setHistoryTag(e.target.value)}
-                  className="bg-bg border border-hairline rounded-full px-3 py-1 text-title-s font-mono uppercase text-ink-2 focus:outline-none">
+                  className="bg-bg border border-control-line rounded-full px-3 py-1 text-title-s font-mono uppercase text-ink-2 focus:outline-none">
                   <option value="">Cualquier etiqueta</option>
                   {tags.map(t => <option key={t} value={t}>{t}</option>)}
                 </select>

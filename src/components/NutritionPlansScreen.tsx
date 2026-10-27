@@ -749,7 +749,7 @@ export default function NutritionPlansScreen({
             onChange={e => setForm(f => ({ ...f, coachNote: e.target.value }))}
             rows={3}
             placeholder="Indicaciones para el atleta: objetivos, recomendaciones, contexto…"
-            className="w-full bg-bg border border-hairline rounded-control px-3 py-3 text-title-s text-ink placeholder:text-ink-3 focus:outline-none focus:ring-1 focus:ring-accent resize-none"
+            className="w-full bg-bg border border-control-line rounded-control px-3 py-3 text-title-s text-ink placeholder:text-ink-3 focus:outline-none focus:ring-1 focus:ring-accent resize-none"
           />
         </div>
       </div>
@@ -941,8 +941,8 @@ export default function NutritionPlansScreen({
                 title={meal.slot != null && !manualSlotMealIds.has(meal.id) ? 'Deducido del nombre' : undefined}
                 className={`flex-shrink-0 bg-bg border rounded-control px-2 py-1 text-caption font-mono focus:outline-none focus:border-accent/50 ${
                   meal.slot != null && !manualSlotMealIds.has(meal.id)
-                    ? 'border-hairline text-ink-3'
-                    : 'border-hairline text-ink'
+                    ? 'border-control-line text-ink-3'
+                    : 'border-control-line text-ink'
                 }`}
               >
                 <option value="">— sin franja —</option>

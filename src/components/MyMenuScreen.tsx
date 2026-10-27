@@ -814,7 +814,7 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
                   value={swapQuery}
                   onChange={e => setSwapQuery(e.target.value)}
                   placeholder="Buscar entre las alternativas…"
-                  className="w-full px-3 py-2 bg-bg border border-hairline rounded-control font-sans text-body text-ink placeholder:text-ink-3 focus:border-accent/40 outline-none"
+                  className="w-full px-3 py-2 bg-bg border border-control-line rounded-control font-sans text-body text-ink placeholder:text-ink-3 focus:border-accent/40 outline-none"
                 />
                 <p className="font-mono text-caption text-ink-3">
                   {swapExactas.length} cuadran con tus puntos
@@ -974,7 +974,7 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
                   value={extraQuery}
                   onChange={e => setExtraQuery(e.target.value)}
                   placeholder="Buscar (pan, fruta, arroz…)"
-                  className="w-full px-3 py-2 bg-bg border border-hairline rounded-control font-sans text-body text-ink placeholder:text-ink-3 focus:border-accent/40 outline-none"
+                  className="w-full px-3 py-2 bg-bg border border-control-line rounded-control font-sans text-body text-ink placeholder:text-ink-3 focus:border-accent/40 outline-none"
                 />
               </div>
 

@@ -2329,7 +2329,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                             value={recipeNameDraft}
                             onChange={e => setRecipeNameDraft(e.target.value)}
                             placeholder="Nombre de la receta"
-                            className="flex-1 min-w-0 bg-raised border border-hairline rounded-control px-3 py-2 text-title-s text-ink font-mono focus:outline-none focus:border-info/50"
+                            className="flex-1 min-w-0 bg-raised border border-control-line rounded-control px-3 py-2 text-title-s text-ink font-mono focus:outline-none focus:border-info/50"
                           />
                           <button
                             onClick={() => confirmSaveMealAsRecipe(meal)}
@@ -2972,7 +2972,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                 value={swapSearch}
                 onChange={e => setSwapSearch(e.target.value)}
                 placeholder="Buscar entre las alternativas…"
-                className="w-full px-3 py-2 bg-raised border border-hairline rounded-control font-sans text-body text-ink placeholder:text-ink-2 focus:border-accent/40 outline-none"
+                className="w-full px-3 py-2 bg-raised border border-control-line rounded-control font-sans text-body text-ink placeholder:text-ink-2 focus:border-accent/40 outline-none"
               />
               {/* Familias de plato disponibles. Es la respuesta directa a "no me
                   apetece otro batido": un toque y la lista cambia de familia. */}

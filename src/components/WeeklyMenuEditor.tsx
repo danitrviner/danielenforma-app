@@ -491,7 +491,7 @@ export default function WeeklyMenuEditor({ athleteEmail, coachId, onboarding, di
                 <input id="weeklymenueditor-ingestas-de-la-anamnesis-ajustable"
                   type="number" min={0} max={100} value={sl.pct}
                   onChange={e => { slotsTocados.current = true; setSlots(prev => prev.map((s, idx) => idx === i ? { ...s, pct: Number(e.target.value) } : s)); }}
-                  className="w-16 text-right bg-raised border border-hairline rounded-control px-2 py-1 text-title-s text-ink font-mono focus:outline-none focus:border-accent/50"
+                  className="w-16 text-right bg-raised border border-control-line rounded-control px-2 py-1 text-title-s text-ink font-mono focus:outline-none focus:border-accent/50"
                 />
                 <span className="font-mono text-ink-3 text-label">%</span>
               </div>

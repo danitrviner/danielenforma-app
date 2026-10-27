@@ -236,7 +236,7 @@ export default function QuestionnaireWizard({ questionnaire, assignment, athlete
             onChange={e => setAnswer(question.id, e.target.value)}
             maxLength={question.maxChars}
             placeholder="Escribe aquí..."
-            className="w-full bg-raised border-0 border-b border-hairline text-ink text-title-s p-3 focus:ring-0 focus:border-accent transition-colors min-h-[120px]"
+            className="w-full bg-raised border-0 border-b border-control-line text-ink text-title-s p-3 focus:ring-0 focus:border-accent transition-colors min-h-[120px]"
           />
         )}
 

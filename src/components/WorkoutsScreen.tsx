@@ -426,7 +426,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
           value={editorName}
           onChange={e => setEditorName(e.target.value)}
           placeholder="ej. Fullbody A — Semana 1"
-          className="w-full bg-raised border border-hairline rounded-control px-4 py-4 text-title-m font-sans font-bold text-ink placeholder-ink-2/30 focus:outline-none focus:ring-1 focus:ring-accent transition-[color,background-color,border-color,opacity,transform,box-shadow]"
+          className="w-full bg-raised border border-control-line rounded-control px-4 py-4 text-title-m font-sans font-bold text-ink placeholder-ink-2/30 focus:outline-none focus:ring-1 focus:ring-accent transition-[color,background-color,border-color,opacity,transform,box-shadow]"
         />
       </div>
 
@@ -479,14 +479,14 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
                     <div className="flex items-center gap-1 flex-shrink-0">
                       <input
                         type="number" min={0} max={5} value={bulkRir} onChange={e => setBulkRir(e.target.value)}
-                        className="w-10 bg-raised border border-hairline rounded-control px-1 text-center text-ink font-mono text-title-s"
+                        className="w-10 bg-raised border border-control-line rounded-control px-1 text-center text-ink font-mono text-title-s"
                       />
                       <button onClick={applyBulkRir} className="font-sans text-caption text-ink-2 hover:text-accent-ink uppercase px-2 border border-hairline rounded-control">RIR</button>
                     </div>
                     <div className="flex items-center gap-1 flex-shrink-0">
                       <input
                         type="number" min={0} value={bulkRest} onChange={e => setBulkRest(e.target.value)}
-                        className="w-12 bg-raised border border-hairline rounded-control px-1 text-center text-ink font-mono text-title-s"
+                        className="w-12 bg-raised border border-control-line rounded-control px-1 text-center text-ink font-mono text-title-s"
                       />
                       <button onClick={applyBulkRest} className="font-sans text-caption text-ink-2 hover:text-accent-ink uppercase px-2 border border-hairline rounded-control">Descanso (s)</button>
                     </div>
@@ -620,14 +620,14 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
                   placeholder="Buscar por nombre..."
                   value={pickerSearch}
                   onChange={e => setPickerSearch(e.target.value)}
-                  className="w-full bg-surface border border-hairline rounded-control pl-10 pr-4 py-3 text-title-s text-ink placeholder-ink-2/50 focus:outline-none focus:ring-1 focus:ring-accent"
+                  className="w-full bg-surface border border-control-line rounded-control pl-10 pr-4 py-3 text-title-s text-ink placeholder-ink-2/50 focus:outline-none focus:ring-1 focus:ring-accent"
                 />
               </div>
               <div className="flex gap-2">
                 <select
                   value={pickerFocus}
                   onChange={e => setPickerFocus(e.target.value)}
-                  className="flex-1 bg-surface border border-hairline rounded-control px-3 py-2 text-title-s font-mono text-ink-2 focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
+                  className="flex-1 bg-surface border border-control-line rounded-control px-3 py-2 text-title-s font-mono text-ink-2 focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
                 >
                   <option value="">Todos los músculos</option>
                   {FOCUS_OPTIONS.map(f => <option key={f} value={f}>{f.charAt(0).toUpperCase() + f.slice(1)}</option>)}
@@ -635,7 +635,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
                 <select
                   value={pickerType}
                   onChange={e => setPickerType(e.target.value)}
-                  className="flex-1 bg-surface border border-hairline rounded-control px-3 py-2 text-title-s font-mono text-ink-2 focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
+                  className="flex-1 bg-surface border border-control-line rounded-control px-3 py-2 text-title-s font-mono text-ink-2 focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
                 >
                   <option value="">Todos los tipos</option>
                   {TYPE_OPTIONS.map(t => <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>)}

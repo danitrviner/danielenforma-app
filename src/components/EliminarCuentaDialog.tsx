@@ -151,7 +151,7 @@ export default function EliminarCuentaDialog({ open, onClose, email }: Props) {
               autoCapitalize="off"
               spellCheck={false}
               disabled={borrando}
-              className="h-[48px] w-full rounded-field border border-hairline bg-field px-4 font-sans text-title-s text-ink focus:border-danger focus:outline-none focus:ring-1 focus:ring-danger focus:ring-inset disabled:opacity-50"
+              className="h-[48px] w-full rounded-field border border-control-line bg-field px-4 font-sans text-title-s text-ink focus:border-danger focus:outline-none focus:ring-1 focus:ring-danger focus:ring-inset disabled:opacity-50"
             />
           </div>
 
@@ -166,7 +166,7 @@ export default function EliminarCuentaDialog({ open, onClose, email }: Props) {
               onChange={e => setPassword(e.target.value)}
               autoComplete="current-password"
               disabled={borrando}
-              className="h-[48px] w-full rounded-field border border-hairline bg-field px-4 font-sans text-title-s text-ink focus:border-danger focus:outline-none focus:ring-1 focus:ring-danger focus:ring-inset disabled:opacity-50"
+              className="h-[48px] w-full rounded-field border border-control-line bg-field px-4 font-sans text-title-s text-ink focus:border-danger focus:outline-none focus:ring-1 focus:ring-danger focus:ring-inset disabled:opacity-50"
             />
           </div>
         </div>

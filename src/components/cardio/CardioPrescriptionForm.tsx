@@ -103,21 +103,21 @@ function SeriesModePicker({ onGenerate }: { onGenerate: (blocks: CardioIntervalB
       </div>
       <div className="flex flex-wrap gap-2 items-center">
         <input type="number" min={5} value={workSec} onChange={e => setWorkSec(e.target.value)} placeholder="Trabajo (s)"
-          className="w-24 bg-surface border border-hairline rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent" />
+          className="w-24 bg-surface border border-control-line rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent" />
         <select value={workZone} onChange={e => setWorkZone(e.target.value as keyof CardioZones)}
-          className="bg-surface border border-hairline rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent">
+          className="bg-surface border border-control-line rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent">
           {ZONE_ORDER.map(z => <option key={z} value={z}>{z.toUpperCase()}</option>)}
         </select>
         <span className="text-caption text-ink-2 font-mono">/</span>
         <input type="number" min={5} value={restSec} onChange={e => setRestSec(e.target.value)} placeholder="Descanso (s)"
-          className="w-24 bg-surface border border-hairline rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent" />
+          className="w-24 bg-surface border border-control-line rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent" />
         <select value={restZone} onChange={e => setRestZone(e.target.value as keyof CardioZones)}
-          className="bg-surface border border-hairline rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent">
+          className="bg-surface border border-control-line rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent">
           {ZONE_ORDER.map(z => <option key={z} value={z}>{z.toUpperCase()}</option>)}
         </select>
         <span className="text-caption text-ink-2 font-mono">×</span>
         <input type="number" min={1} value={reps} onChange={e => setReps(e.target.value)} placeholder="Reps"
-          className="w-16 bg-surface border border-hairline rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent" />
+          className="w-16 bg-surface border border-control-line rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent" />
         <Button variant="ghost" size="s" onClick={applyCustom} icon="bolt">Generar</Button>
       </div>
     </div>
@@ -192,14 +192,14 @@ function ProgramaProgresivoEditor({
         <div className="flex items-center gap-2">
           <label htmlFor="cardioprescriptionform-minutos-de-la-semana-1" className="text-caption font-sans uppercase text-ink-2">Minutos de la semana 1</label>
           <input id="cardioprescriptionform-minutos-de-la-semana-1" type="number" min={10} value={baseMin} onChange={e => onBaseMin(e.target.value)}
-            className="w-20 bg-surface border border-hairline rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent" />
+            className="w-20 bg-surface border border-control-line rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent" />
         </div>
       )}
 
       <div className="flex items-center gap-2">
         <label htmlFor="cardioprescriptionform-empieza-el" className="text-caption font-sans uppercase text-ink-2">Empieza el</label>
         <input id="cardioprescriptionform-empieza-el" type="date" value={startDate} onChange={e => onStartDate(e.target.value)}
-          className="bg-surface border border-hairline rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent" />
+          className="bg-surface border border-control-line rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent" />
       </div>
 
       <div className="space-y-1">
@@ -331,20 +331,20 @@ export default function CardioPrescriptionForm({ athleteEmail, onCreated }: Prop
 
       <div className="flex gap-2">
         <select value={modo} onChange={e => setModo(e.target.value as ModoPrescripcion)}
-          className="flex-1 bg-bg border border-hairline rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent">
+          className="flex-1 bg-bg border border-control-line rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent">
           {(cuando === 'puntual' ? MODOS_PUNTUAL : (Object.keys(MODO_LABEL) as ModoPrescripcion[])).map(m => (
             <option key={m} value={m}>{MODO_LABEL[m]}</option>
           ))}
         </select>
         {!esPrograma && type !== 'intervalos' && (
-          <input type="number" value={durationMin} onChange={e => setDurationMin(e.target.value)} placeholder="Min" className="w-20 bg-bg border border-hairline rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent" />
+          <input type="number" value={durationMin} onChange={e => setDurationMin(e.target.value)} placeholder="Min" className="w-20 bg-bg border border-control-line rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent" />
         )}
         {cuando === 'recurrente' && !esPrograma && (
-          <input type="number" value={timesPerWeek} onChange={e => setTimesPerWeek(e.target.value)} placeholder="x/sem" className="w-20 bg-bg border border-hairline rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent" />
+          <input type="number" value={timesPerWeek} onChange={e => setTimesPerWeek(e.target.value)} placeholder="x/sem" className="w-20 bg-bg border border-control-line rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent" />
         )}
         {cuando === 'puntual' && (
           <input type="date" value={fechaPuntual} onChange={e => setFechaPuntual(e.target.value)}
-            className="bg-bg border border-hairline rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent" />
+            className="bg-bg border border-control-line rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent" />
         )}
       </div>
 
@@ -377,9 +377,9 @@ export default function CardioPrescriptionForm({ athleteEmail, onCreated }: Prop
             <div key={i} className="flex flex-col gap-2 border-b border-hairline pb-2 last:border-0 last:pb-0">
               <div className="flex gap-2 items-center">
                 <input value={b.label} onChange={e => updateBlock(i, { label: e.target.value })} placeholder={`Bloque ${i + 1}`}
-                  className="flex-1 min-w-0 bg-surface border border-hairline rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent" />
+                  className="flex-1 min-w-0 bg-surface border border-control-line rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent" />
                 <select value={b.closeType} onChange={e => updateBlock(i, { closeType: e.target.value as CardioIntervalCloseType })}
-                  className="bg-surface border border-hairline rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent">
+                  className="bg-surface border border-control-line rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent">
                   {(Object.keys(CLOSE_TYPE_LABEL) as CardioIntervalCloseType[]).map(t => <option key={t} value={t}>{CLOSE_TYPE_LABEL[t]}</option>)}
                 </select>
                 <button onClick={() => setBlocks(blocks.filter((_, idx) => idx !== i))} className="text-ink-2 hover:text-danger transition-colors">
@@ -390,36 +390,36 @@ export default function CardioPrescriptionForm({ athleteEmail, onCreated }: Prop
                 {b.closeType === 'time' && (
                   <>
                     <input type="number" min={5} value={b.durationSec} onChange={e => updateBlock(i, { durationSec: Number(e.target.value) })}
-                      className="w-14 bg-surface border border-hairline rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent" />
+                      className="w-14 bg-surface border border-control-line rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent" />
                     <span className="text-caption text-ink-2 font-mono">s</span>
                     <select value={b.targetZone} onChange={e => updateBlock(i, { targetZone: e.target.value as keyof CardioZones })}
-                      className="bg-surface border border-hairline rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent">
+                      className="bg-surface border border-control-line rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent">
                       {ZONE_ORDER.map(z => <option key={z} value={z}>{z.toUpperCase()}</option>)}
                     </select>
                   </>
                 )}
                 {b.closeType === 'zone' && (
                   <select value={b.targetZone} onChange={e => updateBlock(i, { targetZone: e.target.value as keyof CardioZones })}
-                    className="bg-surface border border-hairline rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent">
+                    className="bg-surface border border-control-line rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent">
                     {ZONE_ORDER.map(z => <option key={z} value={z}>Hasta {z.toUpperCase()}</option>)}
                   </select>
                 )}
                 {b.closeType === 'heartRate' && (
                   <>
                     <select value={b.hrDirection ?? 'above'} onChange={e => updateBlock(i, { hrDirection: e.target.value as 'above' | 'below' })}
-                      className="bg-surface border border-hairline rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent">
+                      className="bg-surface border border-control-line rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent">
                       <option value="above">Sube hasta</option>
                       <option value="below">Baja hasta</option>
                     </select>
                     <input type="number" min={40} value={b.hrThresholdBpm ?? 150} onChange={e => updateBlock(i, { hrThresholdBpm: Number(e.target.value) })}
-                      className="w-16 bg-surface border border-hairline rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent" />
+                      className="w-16 bg-surface border border-control-line rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent" />
                     <span className="text-caption text-ink-2 font-mono">ppm</span>
                   </>
                 )}
                 {b.closeType === 'calories' && (
                   <>
                     <input type="number" min={5} value={b.targetKcal ?? 50} onChange={e => updateBlock(i, { targetKcal: Number(e.target.value) })}
-                      className="w-16 bg-surface border border-hairline rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent" />
+                      className="w-16 bg-surface border border-control-line rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent" />
                     <span className="text-caption text-ink-2 font-mono">kcal</span>
                   </>
                 )}

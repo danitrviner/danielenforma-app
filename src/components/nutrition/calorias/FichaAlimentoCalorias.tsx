@@ -243,7 +243,7 @@ export default function FichaAlimentoCalorias({
                   value={otraTexto}
                   onChange={e => setOtraTexto(e.target.value)}
                   placeholder="g"
-                  className="h-[54px] w-28 rounded-field border border-hairline bg-field px-4 text-right font-mono text-title-s text-ink focus:border-accent focus:outline-none"
+                  className="h-[54px] w-28 rounded-field border border-control-line bg-field px-4 text-right font-mono text-title-s text-ink focus:border-accent focus:outline-none"
                 />
               </div>
             )}
@@ -256,7 +256,7 @@ export default function FichaAlimentoCalorias({
               value={numTexto}
               onChange={e => setNumTexto(e.target.value)}
               onFocus={e => e.target.select()}
-              className="h-[54px] w-24 rounded-field border border-hairline bg-field px-4 text-right font-mono text-title-s text-ink focus:border-accent focus:outline-none"
+              className="h-[54px] w-24 rounded-field border border-control-line bg-field px-4 text-right font-mono text-title-s text-ink focus:border-accent focus:outline-none"
             />
           </div>
           {comidas.length > 1 && (

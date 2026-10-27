@@ -322,7 +322,7 @@ export default function BarraDeSemanas(p: Props) {
                 onChange={e => p.onEvento(p.semana, { tipo: evento.tipo, ...(e.target.value ? { nota: e.target.value } : {}) })}
                 placeholder="Lo que leerá el atleta (p. ej. «entrena en el hotel lo que puedas»)"
                 aria-label="Nota del evento para el atleta"
-                className="flex-1 min-w-[14rem] h-10 bg-surface border border-hairline rounded-control px-3 font-sans text-label text-ink placeholder-ink-3 focus:outline-none focus:ring-1 focus:ring-accent"
+                className="flex-1 min-w-[14rem] h-10 bg-surface border border-control-line rounded-control px-3 font-sans text-label text-ink placeholder-ink-3 focus:outline-none focus:ring-1 focus:ring-accent"
               />
             )}
           </div>
@@ -333,7 +333,7 @@ export default function BarraDeSemanas(p: Props) {
               onChange={e => p.onNota(e.target.value)}
               placeholder={`Por qué cambias esto en la semana ${p.semana} (solo lo ves tú)`}
               rows={2}
-              className="w-full bg-surface border border-hairline rounded-control px-3 py-2 font-sans text-label text-ink placeholder-ink-3 focus:outline-none focus:ring-1 focus:ring-accent resize-y"
+              className="w-full bg-surface border border-control-line rounded-control px-3 py-2 font-sans text-label text-ink placeholder-ink-3 focus:outline-none focus:ring-1 focus:ring-accent resize-y"
             />
           )}
           {(p.revisiones?.[p.semana] ?? []).length > 0 && (

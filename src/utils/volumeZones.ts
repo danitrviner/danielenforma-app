@@ -33,11 +33,14 @@ export function zoneLabel(series: number, landmark?: VolumeLandmark): string {
 }
 
 const ZONE_COLOR_TEXT: Record<VolumeZone, string> = {
+  /* 27-10: la cifra va en tinta, no en el color de la zona. El fondo ya lleva
+     el color; el texto teñido (color-mix con la tinta) medía 3,3:1 en oscuro
+     sobre la celda verde y 4,4:1 sobre la roja. Tinta: 4,9 y 7,6. */
   sin_volumen: 'var(--color-ink-3)',
-  mev: 'color-mix(in oklab, var(--color-info) 55%, var(--color-ink))',
-  productivo: 'color-mix(in oklab, var(--color-success) 55%, var(--color-ink))',
-  mav: 'color-mix(in oklab, var(--color-warning) 55%, var(--color-ink))',
-  mrv: 'color-mix(in oklab, var(--color-danger) 55%, var(--color-ink))',
+  mev: 'var(--color-ink)',
+  productivo: 'var(--color-ink)',
+  mav: 'var(--color-ink)',
+  mrv: 'var(--color-ink)',
 };
 
 export function heatmapText(series: number, landmark?: VolumeLandmark): string {
@@ -73,8 +76,8 @@ export function heatmapBg(series: number, landmark: VolumeLandmark = GENERIC_LAN
 
 export const VOLUME_ZONE_LEGEND = [
   { label: 'Sin volumen', bg: 'var(--color-surface)',      text: 'var(--color-ink-3)'     },
-  { label: 'MEV',         bg: 'rgb(59 130 246 / 35%)',     text: 'color-mix(in oklab, var(--color-info) 55%, var(--color-ink))'      },
-  { label: 'Productivo',  bg: 'rgb(34 197 94 / 45%)',      text: 'color-mix(in oklab, var(--color-success) 55%, var(--color-ink))'   },
-  { label: 'MAV',         bg: 'rgb(249 115 22 / 55%)',     text: 'color-mix(in oklab, var(--color-warning) 55%, var(--color-ink))'   },
-  { label: 'MRV',         bg: 'rgb(239 68 68 / 55%)',      text: 'color-mix(in oklab, var(--color-danger) 55%, var(--color-ink))'    },
+  { label: 'MEV',         bg: 'rgb(59 130 246 / 35%)',     text: 'var(--color-ink)'      },
+  { label: 'Productivo',  bg: 'rgb(34 197 94 / 45%)',      text: 'var(--color-ink)'   },
+  { label: 'MAV',         bg: 'rgb(249 115 22 / 55%)',     text: 'var(--color-ink)'   },
+  { label: 'MRV',         bg: 'rgb(239 68 68 / 50%)',      text: 'var(--color-ink)'    },
 ];

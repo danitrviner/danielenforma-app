@@ -155,7 +155,7 @@ export default function PagosScreen({ coachEmail }: { coachEmail: string }) {
                 type="date"
                 value={desde}
                 onChange={e => setParam('desde', e.target.value)}
-                className="px-2 py-1.5 rounded-control bg-field border border-hairline text-body-s text-ink focus:outline-none focus:border-accent/40"
+                className="px-2 py-1.5 rounded-control bg-field border border-control-line text-body-s text-ink focus:outline-none focus:border-accent/40"
               />
             </label>
             <label className="flex items-center gap-2 font-mono text-caption text-ink-2">
@@ -164,7 +164,7 @@ export default function PagosScreen({ coachEmail }: { coachEmail: string }) {
                 type="date"
                 value={hasta}
                 onChange={e => setParam('hasta', e.target.value)}
-                className="px-2 py-1.5 rounded-control bg-field border border-hairline text-body-s text-ink focus:outline-none focus:border-accent/40"
+                className="px-2 py-1.5 rounded-control bg-field border border-control-line text-body-s text-ink focus:outline-none focus:border-accent/40"
               />
             </label>
           </div>
@@ -223,7 +223,7 @@ export default function PagosScreen({ coachEmail }: { coachEmail: string }) {
               onChange={e => setParam('q', e.target.value)}
               placeholder="Buscar por cliente o concepto"
               aria-label="Buscar pagos"
-              className="w-full pl-8 pr-2 py-2 rounded-control bg-field border border-hairline text-title-s text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent/40"
+              className="w-full pl-8 pr-2 py-2 rounded-control bg-field border border-control-line text-title-s text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent/40"
             />
           </div>
           <div className="flex items-center gap-1 min-w-0 overflow-x-auto hide-scrollbar" role="group" aria-label="Filtrar por estado">

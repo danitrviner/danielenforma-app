@@ -249,7 +249,7 @@ export default function FoodPreferencesPanel({
           value={search}
           onChange={e => setSearch(e.target.value)}
           placeholder="Buscar alimento…"
-          className="w-full bg-raised border border-hairline rounded-control pl-10 pr-4 py-2 text-title-s text-ink placeholder-ink-3 focus:outline-none focus:border-accent/50 font-mono"
+          className="w-full bg-raised border border-control-line rounded-control pl-10 pr-4 py-2 text-title-s text-ink placeholder-ink-3 focus:outline-none focus:border-accent/50 font-mono"
         />
         {search && (
           <button

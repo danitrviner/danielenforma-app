@@ -287,7 +287,7 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
                   onChange={e => setForm(f => ({ ...f, label: e.target.value }))}
                   placeholder="Ej: 100g pechuga de pollo sin piel"
                   rows={3}
-                  className="w-full bg-surface border border-hairline rounded-control px-3 py-3 text-title-s text-ink focus:outline-none focus:ring-1 focus:ring-accent resize-none"
+                  className="w-full bg-surface border border-control-line rounded-control px-3 py-3 text-title-s text-ink focus:outline-none focus:ring-1 focus:ring-accent resize-none"
                 />
               </div>
             </div>
