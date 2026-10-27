@@ -222,7 +222,10 @@ de input/select/textarea, 3:1). El oro de borde (`accent-line`) es sólido `#A87
 fila de tabla 14, etiqueta de campo 14/500; nada fuera de `--text-*`. **Movimiento:** salidas
 `dialog-out`/`toast-out` (140 ms), pliegues con `grid-template-rows`, `active:scale` en filas y
 chips, anillos con `--duration-ring`, listas con `stagger-child` (tope `--i` 8), nada de
-`transition-all`.
+`transition-all`. **Toda pantalla entra escalonada:** clase `pantalla` en la raíz de cada
+pantalla y de cada panel de pestaña (los hijos directos hacen `fade-up` con 40 ms de
+escalón, tope en el 8.º); al cambiar de pestaña el contenido se remonta con `key`. Una
+`.pantalla` dentro de otra no se funde dos veces. Una pantalla nueva lleva la clase, siempre.
 
 ---
 

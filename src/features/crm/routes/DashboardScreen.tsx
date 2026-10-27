@@ -125,7 +125,7 @@ export default function DashboardScreen() {
   const bajasRecientes = clientes.filter(c => c.fechaBaja && c.fechaBaja >= hace30dias);
 
   return (
-    <div className="space-y-4">
+    <div className="pantalla space-y-4">
       <header>
         <h1 className="font-sans font-bold text-title-m text-ink">Resumen</h1>
       </header>

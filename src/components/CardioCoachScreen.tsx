@@ -206,7 +206,7 @@ function PrescriptionTab() {
   if (isPending) return <Skeleton className="h-40 w-full rounded-surface" />;
 
   return (
-    <section className="bg-surface border border-hairline rounded-surface p-4 sm:p-5 space-y-3">
+    <section className="pantalla bg-surface border border-hairline rounded-surface p-4 sm:p-5 space-y-3">
       <h2 className="font-sans font-bold text-title-s text-ink">Prescribir cardio</h2>
       <select value={athleteEmail} onChange={e => setAthleteEmail(e.target.value)}
         className="w-full bg-bg border border-control-line rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent">

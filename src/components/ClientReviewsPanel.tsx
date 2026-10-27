@@ -45,7 +45,7 @@ export default function ClientReviewsPanel({
   const [view, setView] = useState<'recibidas' | 'asignadas'>('recibidas');
 
   return (
-    <div className="space-y-6">
+    <div className="pantalla space-y-6">
       <SegmentedControl
         label="Vista de revisiones"
         options={[

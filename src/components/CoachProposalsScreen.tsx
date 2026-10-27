@@ -74,7 +74,7 @@ export default function CoachProposalsScreen() {
   }
 
   return (
-    <div className="p-4 space-y-5 max-w-3xl mx-auto">
+    <div className="pantalla p-4 space-y-5 max-w-3xl mx-auto">
       <div>
         <h1 className="font-sans font-bold text-title-m tracking-tight text-ink uppercase flex items-center gap-2">
           <Icon name="smart_toy" size="l" filled className="text-accent-ink" />

@@ -674,7 +674,7 @@ export default function NutritionPlansScreen({
   // ── Render: editor ────────────────────────────────────────────────────────────
 
   return (
-    <div className="space-y-6 max-w-2xl">
+    <div className="pantalla space-y-6 max-w-2xl">
       {/* Header */}
       <div className="flex items-center gap-3">
         <Button onClick={handleBack} variant="secondary" size="s" icon="arrow_back">

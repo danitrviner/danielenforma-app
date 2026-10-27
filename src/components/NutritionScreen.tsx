@@ -2079,7 +2079,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     resumenDelDia([{ ...meal, items: idxs.map(i => meal.items[i]) }], idxs.map((_, k) => `${meal.id}_${k}`)).kcal;
 
   return (
-    <div className="w-full space-y-6">
+    <div className="pantalla w-full space-y-6">
       {/* Sin cabecera propia: la barra de pestañas de Nutrición ya dice en qué
           pantalla estás, y repetirlo debajo con letra de titular se comía la
           primera pantalla entera del móvil (Dani, 10-09-2026). */}

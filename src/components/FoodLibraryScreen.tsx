@@ -115,7 +115,7 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="pantalla space-y-6">
       {/* Mode selector */}
       <div className="flex gap-2 flex-wrap">
         {MODES.map(m => (

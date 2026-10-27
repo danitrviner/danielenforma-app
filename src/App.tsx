@@ -1144,7 +1144,7 @@ function AppContent() {
             pathTab, no la ruta completa, así que navegar dentro de una misma
             pestaña (p. ej. entre clientes del CRM) no reinicia la animación
             ni el estado de scroll cada vez. */}
-        <div key={pathTab} className="animate-fade-up">
+        <div key={pathTab}>
         <Routes>
           <Route path="/" element={<Navigate to={isCoach ? '/clients' : '/home'} replace />} />
 

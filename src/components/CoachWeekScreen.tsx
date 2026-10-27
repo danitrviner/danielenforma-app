@@ -174,7 +174,7 @@ export default function CoachWeekScreen({ coachId: _coachId }: Props) {
   const pendingOrOverdue = rows.filter(r => r.adherence === 'baja' || r.chips.some(c => c.status === 'vencido'));
 
   return (
-    <div className="space-y-6">
+    <div className="pantalla space-y-6">
       <PageHeader title="Esta semana" subtitle={`Semana del ${weekStart} al ${weekEnd}`} />
 
       <div className="flex gap-3 flex-wrap font-mono text-caption text-ink-2">

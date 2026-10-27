@@ -297,7 +297,7 @@ export default function RoadmapCalendario(props: Props) {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="pantalla space-y-4">
       {/* Barra superior. Segmentado Año/Mes/Día: navega entre los 3 niveles de
           zoom del CALENDARIO (eje distinto del de las sub-pestañas de
           CoachRoadmapView, que eligen Fases/Retos/Niveles/Calendario). "Día"

@@ -857,6 +857,35 @@
 }
 
 @layer utilities {
+  /* ── Entrada de pantalla (27-10) ────────────────────────────────────────────
+     Dani: «quiero que todo tenga algo de animación, como cuando abres la app».
+     Una clase en la raíz de cada pantalla y sus hijos directos entran
+     escalonados con `fade-up`: cabecera primero, cada bloque 40 ms después,
+     tope en el octavo (320 ms) para que una pantalla larga no haga esperar.
+     Solo al montar: cambiar de pestaña remonta el contenido con `key` y la
+     entrada se repite; una lista que se refresca no parpadea.
+
+     Una pantalla dentro de otra (NutritionScreen dentro del hub de
+     Nutrición, un panel dentro del Hub del cliente) NO se funde dos veces: el
+     contenedor que envuelve a otra `.pantalla` se queda quieto y deja que la
+     de dentro escalone sus propios hijos. `prefers-reduced-motion` lo apaga
+     todo desde el bloque global de abajo. */
+  .pantalla > * {
+    animation: fade-up var(--duration-stagger-item) var(--ease-brand) both;
+  }
+  .pantalla > :nth-child(2) { animation-delay: 40ms; }
+  .pantalla > :nth-child(3) { animation-delay: 80ms; }
+  .pantalla > :nth-child(4) { animation-delay: 120ms; }
+  .pantalla > :nth-child(5) { animation-delay: 160ms; }
+  .pantalla > :nth-child(6) { animation-delay: 200ms; }
+  .pantalla > :nth-child(7) { animation-delay: 240ms; }
+  .pantalla > :nth-child(8) { animation-delay: 280ms; }
+  .pantalla > :nth-child(n + 9) { animation-delay: 320ms; }
+  .pantalla > .pantalla,
+  .pantalla > :has(> .pantalla) {
+    animation: none;
+  }
+
   /* Stagger sin hook de JS: cada hijo lleva `style={{ '--i': idx }}` y esta
      clase multiplica por 40 ms — el paso que fija el handoff entre elementos
      de una misma lista. `--i` por defecto 0 para que un elemento suelto (sin

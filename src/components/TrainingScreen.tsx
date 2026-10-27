@@ -882,7 +882,7 @@ export default function TrainingScreen({ profile }: TrainingScreenProps) {
 
   // ── Render: LIST + PROGRESSION ─────────────────────────────────────────────
   return (
-    <div className="space-y-6">
+    <div className="pantalla space-y-6">
       {/* Header */}
       <header className="flex flex-col lg:flex-row lg:items-end justify-between pb-4 gap-3">
         <div>

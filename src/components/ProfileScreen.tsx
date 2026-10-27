@@ -441,7 +441,7 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
   }
 
   return (
-    <div className="space-y-4">
+    <div className="pantalla space-y-4">
       {/* Cabecera solo para el coach. En el lado del atleta el selector ya dice
           dónde está, y «Mi Perfil / Revisión, gráficas y ficha» repetía con
           letra de titular lo que las pestañas de debajo enumeran mejor. */}
@@ -483,7 +483,7 @@ export default function ProfileScreen({ profile, isCoach, checkins, onRefreshPro
       {!isCoach && (
         <div ref={progressRowRef}>
           <Tabs items={PROFILE_TABS} value={activeTab} onChange={id => setActiveTab(id as ProfileTab)} label="Secciones de Perfil" />
-          <div className="mt-4">{renderTab()}</div>
+          <div key={activeTab} className="pantalla mt-4">{renderTab()}</div>
         </div>
       )}
 

@@ -225,7 +225,7 @@ export default function ClientFichaPanel({
     : athlete.actualWeight || null;
 
   return (
-    <div className="space-y-6">
+    <div className="pantalla space-y-6">
       {/* ══ 1. ESTADO — cómo va. Lo que más se mira, así que va primero y sin
              plegar. Lo urgente (plan sin publicar, próxima revisión) se queda
              en ClientAlertsBar; esto es lo descriptivo. */}

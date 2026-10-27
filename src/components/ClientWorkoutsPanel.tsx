@@ -203,7 +203,7 @@ export default function ClientWorkoutsPanel({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="pantalla space-y-6">
       {assignments.length > 0 && !athlete.planPublishedAt && (
         <div className="bg-accent/10 border border-accent/30 rounded-surface p-4 flex items-center justify-between gap-4 flex-wrap">
           <div>

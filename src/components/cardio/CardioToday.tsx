@@ -76,7 +76,7 @@ export default function CardioToday({
   const targetZone = zona2Assignment?.targetZone;
 
   return (
-    <section className="space-y-4">
+    <section className="pantalla space-y-4">
       <div className="bg-surface border border-hairline rounded-surface p-4 sm:p-5 space-y-4">
         <div className="flex items-center justify-between gap-2">
           <Chip>{TYPE_LABEL[sessionType]}</Chip>

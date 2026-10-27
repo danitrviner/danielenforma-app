@@ -204,7 +204,7 @@ export default function ClientDietsPanel({
     />
   ) : (
     /* ── Diet list + config ── */
-    <div className="space-y-6">
+    <div className="pantalla space-y-6">
       <SegmentedControl
         label="Vista de dietas"
         options={[{ value: 'programacion', label: 'Programación' }, { value: 'info', label: 'Información' }]}

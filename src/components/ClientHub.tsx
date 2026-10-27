@@ -776,7 +776,7 @@ export default function ClientHub({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="pantalla space-y-6">
       {/* Header */}
       <div className="pb-4 space-y-4">
         <div className="flex items-center gap-3 flex-wrap">
@@ -870,7 +870,8 @@ export default function ClientHub({
           abre Implantación para que el coach no tenga que salirse del
           recorrido. Duplicar el JSX habría significado duplicar veinte props
           por panel y que los dos se desincronizaran a la primera. */}
-      {panelDePestana(activeTab)}
+      {/* `key`: al cambiar de pestaña el panel se remonta y entra escalonado (`.pantalla` en su raíz). */}
+      <div key={activeTab}>{panelDePestana(activeTab)}</div>
 
       {/* ── El editor a pantalla completa ──────────────────────────────────
           Implantación abre aquí el editor de verdad del paso en el que está el

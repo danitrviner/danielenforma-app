@@ -386,7 +386,7 @@ export default function ClientsScreen({ checkins, onRefreshCheckIns, coachId, co
   }
 
   return (
-    <div className="space-y-6">
+    <div className="pantalla space-y-6">
       {/* Header */}
       <header className="pb-4">
         {isSyncing && (

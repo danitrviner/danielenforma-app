@@ -516,7 +516,7 @@ export default function MesocycleTemplateLibrary({ coachId }: Props) {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="pantalla space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

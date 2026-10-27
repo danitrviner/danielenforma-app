@@ -399,7 +399,7 @@ export default function WorkoutsScreen({ coachId }: WorkoutsScreenProps) {
 
   // ── Render: EDITOR ────────────────────────────────────────────────────────
   return (
-    <div className="space-y-6">
+    <div className="pantalla space-y-6">
       {/* Editor header */}
       <header className="flex items-center gap-4 pb-4">
         <Button onClick={() => setView('list')} variant="secondary" size="s" icon="arrow_back">

@@ -40,7 +40,7 @@ export default function AcademyCoachScreen({ coachEmail }: Props) {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="pantalla space-y-6">
       {/* Sin cabecera propia: la pone Biblioteca (CoachLibraryScreen). */}
 
       <Tabs items={tabs} value={tab} onChange={id => setTab(id as Tab)} label="Secciones de TrainingLab" />

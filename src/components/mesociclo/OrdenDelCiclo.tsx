@@ -53,7 +53,7 @@ export default function OrdenDelCiclo({
   const hayDescansos = sesiones.length < total;
 
   return (
-    <div className="space-y-2">
+    <div className="pantalla space-y-2">
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <span className="font-mono text-caption text-ink-2 uppercase tracking-wider">
           Orden del ciclo{propio ? ' · propio' : ''}

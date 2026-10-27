@@ -247,7 +247,7 @@ export default function HomeScreen({ profile, checkins, onNavigate, onProfileCha
   const cardioRowRef = useTourTarget('home-cardio-row');
 
   return (
-    <div className="space-y-6">
+    <div className="pantalla space-y-6">
       {pedirConsentimiento && onboarding && (
         <SolicitudConsentimientoIA onboarding={onboarding} onAhoraNo={aplazar} />
       )}

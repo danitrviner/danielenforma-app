@@ -51,7 +51,7 @@ export default function ClientBodyPanel({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="pantalla space-y-6">
       {/* ── Fotos de progreso ─────────────────────────────────────────── */}
       <div className="bg-surface border border-hairline rounded-surface overflow-hidden">
         <div className="p-4 border-b border-hairline flex items-center justify-between bg-raised">

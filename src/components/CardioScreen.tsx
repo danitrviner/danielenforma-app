@@ -254,7 +254,7 @@ export default function CardioScreen({ profile }: Props) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="pantalla space-y-6">
       <PageHeader title="Cardio" subtitle="Zonas de FC y dashboard en vivo" />
 
       {/* Sin zonas de FC la sesión en vivo no se puede ofrecer (necesita las

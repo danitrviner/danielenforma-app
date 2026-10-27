@@ -249,7 +249,7 @@ export default function ClientesList({ coachEmail }: { coachEmail: string }) {
 
   return (
     <>
-    <div className="space-y-3">
+    <div className="pantalla space-y-3">
       <header className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h1 className="font-sans font-bold text-title-m text-ink">Clientes</h1>

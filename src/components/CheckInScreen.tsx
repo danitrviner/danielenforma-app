@@ -270,7 +270,7 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
   };
 
   return (
-    <div className="space-y-6">
+    <div className="pantalla space-y-6">
       {/* Tu revisión de esta semana: el recorrido único (K-03). Se oculta sola
           fuera de la ventana de revisión (viernes a lunes). */}
       {!loadingQ && !loadingPhotoAssignments && (

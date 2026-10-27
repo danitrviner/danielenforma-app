@@ -174,7 +174,7 @@ export default function PhotosScreen({ profile }: Props) {
 
   return (
     <>
-    <div className="space-y-3">
+    <div className="pantalla space-y-3">
       <Coachmark
         id="photos_upload_hint"
         profile={profile}

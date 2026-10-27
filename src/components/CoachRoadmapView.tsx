@@ -363,7 +363,7 @@ export default function CoachRoadmapView({ athleteEmail, coachId, onGoToClientTa
   };
 
   return (
-    <div className="space-y-6">
+    <div className="pantalla space-y-6">
       <div>
         <h2 className="font-sans font-bold text-title-m text-ink uppercase tracking-tight">Road map del atleta</h2>
         <p className="text-ink-2 text-label font-sans mt-1">Fases, retos semanales, niveles y calendario — editable por el coach</p>

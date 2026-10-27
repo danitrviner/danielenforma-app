@@ -185,7 +185,7 @@ export default function AcademyScreen({ profile }: Props) {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="pantalla space-y-6">
       <PageHeader title="Training Lab" subtitle="Formación — entrenamiento, nutrición y más" />
 
       {publishedCourses.length === 0 && (

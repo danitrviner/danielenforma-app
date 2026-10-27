@@ -70,7 +70,7 @@ export default function ResourcesPanel({ coachId, isCoach }: Props) {
   };
 
   return (
-    <section className="bg-surface border border-hairline rounded-surface p-4 sm:p-5">
+    <section className="pantalla bg-surface border border-hairline rounded-surface p-4 sm:p-5">
       <div className="flex items-center justify-between mb-3 pb-2 border-b border-hairline">
         <h2 className="font-sans font-bold text-title-s text-ink flex items-center gap-2">
           <span className="material-symbols-outlined text-data">folder_open</span>

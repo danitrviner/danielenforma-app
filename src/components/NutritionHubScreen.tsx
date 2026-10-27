@@ -50,7 +50,7 @@ export default function NutritionHubScreen({ profile }: NutritionHubScreenProps)
   };
 
   return (
-    <div className="space-y-6">
+    <div className="pantalla space-y-6">
       {nutritionConfig?.sharedReportSnapshot && (
         <div className="bg-surface border border-hairline rounded-surface p-4">
           <div className="flex items-center gap-2 mb-2">

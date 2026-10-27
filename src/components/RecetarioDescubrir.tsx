@@ -392,7 +392,7 @@ export default function RecetarioDescubrir({
   // ── Portada ─────────────────────────────────────────────────────────────────
   const favoritasDelPool = pool.filter(r => favoritas.has(r.id));
   return (
-    <div ref={raiz} className="space-y-8 scroll-mt-4">
+    <div ref={raiz} className="pantalla space-y-8 scroll-mt-4">
       <div className="space-y-3">
         <SearchField value={busqueda} onChange={setBusqueda} placeholder="Pollo, avena, tortitas…" label="Buscar receta por plato o ingrediente" />
         {!termino && (

@@ -500,3 +500,15 @@ lo que la regla de superficies resuelve con relleno y no con línea:
 - Bloques de fase del Calendario (1,4:1): son bandas de color con etiqueta, no controles.
 - Oro `accent` sólido sobre blanco (2,86:1, 2 sitios: círculo «hecho» del diario y una celda
   cambiada en Progresión): el relleno es oro, el borde solo lo remata.
+
+## Entrada de todas las pantallas (petición de Dani tras el PR)
+
+«Quiero que todo tenga algo de animación, como cuando abres la app.» Nueva utilidad
+`.pantalla` en `index.css`: los hijos directos de la raíz entran con `fade-up` escalonado
+(40 ms por bloque, tope en el octavo), sobre `--duration-stagger-item` y `--ease-brand`.
+Aplicada a la raíz de 48 pantallas y paneles (atleta, coach, CRM, Hub del cliente, Calendario,
+Orden del ciclo, sesión de entreno…). El contenedor de ruta de `App.tsx` deja de fundirse él
+solo (lo hacían todas las pantallas a la vez, como un bloque); ahora cada pantalla escalona lo
+suyo. Perfil y Hub del cliente remontan el contenido de la pestaña con `key`, así cada pestaña
+entra igual que la pantalla. Una `.pantalla` dentro de otra no se funde dos veces
+(`.pantalla > :has(> .pantalla)` se queda quieta). `prefers-reduced-motion` lo apaga.

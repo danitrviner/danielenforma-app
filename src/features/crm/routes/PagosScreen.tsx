@@ -108,7 +108,7 @@ export default function PagosScreen({ coachEmail }: { coachEmail: string }) {
   }, [pagos, filtro, busqueda]);
 
   return (
-    <div className="space-y-4">
+    <div className="pantalla space-y-4">
       <header>
         <h1 className="font-sans font-bold text-title-m text-ink">Pagos</h1>
       </header>

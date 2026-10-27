@@ -115,7 +115,7 @@ export default function ClienteDetail({ coachEmail }: { coachEmail: string }) {
 
   return (
     <>
-    <div className="space-y-3">
+    <div className="pantalla space-y-3">
       <button
         type="button"
         onClick={() => navigate('/crm/clientes')}

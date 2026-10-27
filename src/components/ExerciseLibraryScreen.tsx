@@ -271,7 +271,7 @@ export default function ExerciseLibraryScreen({ coachId }: ExerciseLibraryScreen
   }
 
   return (
-    <div className="space-y-6">
+    <div className="pantalla space-y-6">
       <PageHeader
         title="Biblioteca de Ejercicios"
         subtitle={

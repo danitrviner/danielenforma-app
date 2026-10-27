@@ -3037,7 +3037,7 @@ export default function MesocycleManager({
 
   // ─────────────────────────────────────────────────────────────────────────────
   return (
-    <div className="space-y-6">
+    <div className="pantalla space-y-6">
       <ConfirmDialog />
       {/* Title + selector only in standalone mode */}
       {!athleteEmail && !modoPlantilla && (
