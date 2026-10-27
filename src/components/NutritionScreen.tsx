@@ -38,7 +38,8 @@ import { Skeleton } from './ui';
 import { EmptyState, Sheet, Icon, Button, Dialog, ListRow, Input } from './ui';
 import MealItemSwipeRow from './nutrition/MealItemSwipeRow';
 import { SemanaDelDiario, TarjetaDelDia, EtiquetaMacro } from './nutrition/DiaDeNutricion';
-import AnadirAlimentoCalorias, { type FilaAlimento, type PestanaAnadir, type SeccionFilas } from './nutrition/calorias/AnadirAlimentoCalorias';
+import AnadirAlimentoCalorias, { type FilaAlimento, type PestanaAnadir, type SeccionFilas, type CombinacionFila } from './nutrition/calorias/AnadirAlimentoCalorias';
+import { combinacionesDeSiempre } from '../utils/combinacionesDeSiempre';
 import { alimentosGeneralesPorGrupo, type AlimentoGeneral } from '../utils/alimentosGenerales';
 import FichaAlimentoCalorias, { FichaProductoOff, racionesDe } from './nutrition/calorias/FichaAlimentoCalorias';
 import { lineasDelDiario, type LineaDiario } from '../utils/diarioCalorias';
@@ -1931,7 +1932,8 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
       return {
         clave: `banco_${food.id}`,
         nombre: conMayuscula(foodNameWithoutGrams(food.label)),
-        detalle: n ? `${n.kcal} kcal, ${g} g` : undefined,
+        detalle: n ? `${n.kcal} kcal · ${g} g` : undefined,
+        macros: n ? { hc: n.hc, p: n.p, g: n.g } : undefined,
         tuyo: !!food.personal,
         anadido: veces(food.id),
         onAbrir: () => handleSelectFood(food),
@@ -1939,7 +1941,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
       };
     };
     const filaUsado = (u: AlimentoUsado): FilaAlimento | null => {
-      const detalle = [u.kcal != null ? `${u.kcal} kcal` : null, u.gramos ? `${u.gramos} g` : null].filter(Boolean).join(', ') || undefined;
+      const detalle = [u.kcal != null ? `${u.kcal} kcal` : null, u.gramos ? `${u.gramos} g` : null].filter(Boolean).join(' · ') || undefined;
       const reanadir = u.lineas && u.lineas.length > 0
         ? () => {
           const id = nuevoLineaId();
@@ -1948,7 +1950,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
         : undefined;
       if (u.tipo === 'off' && u.codigo) {
         const codigo = u.codigo;
-        return { clave: u.clave, nombre: u.label, detalle, anadido: veces(u.clave), onAbrir: () => setFicha({ tipo: 'off', codigo, nombre: u.label, marca: u.marca, ultimos: u.gramos, mealId }), onAnadir: reanadir };
+        return { clave: u.clave, nombre: u.label, detalle, origen: 'Producto', anadido: veces(u.clave), onAbrir: () => setFicha({ tipo: 'off', codigo, nombre: u.label, marca: u.marca, ultimos: u.gramos, mealId }), onAnadir: reanadir };
       }
       if (u.tipo === 'catalogo') {
         const a = catalogoAlimentos.find(x => claveDeCatalogo(x.id) === u.clave);
@@ -1965,6 +1967,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
       clave: `banco_${a.food.id}`,
       nombre: a.nombre,
       detalle: `${a.porRacion.kcal} kcal · ${a.racion}`,
+      macros: { hc: a.porRacion.hc, p: a.porRacion.p, g: a.porRacion.g },
       anadido: veces(a.food.id),
       onAbrir: () => handleSelectFood(a.food),
     });
@@ -1973,13 +1976,54 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
     const filasRecetas = recipes
       .filter(r => coincideBusqueda(r.name, term) && isSafeForAthlete(r))
       .map((r): FilaAlimento => {
-        const kcal = Math.round(macrosDeReceta(r).kcal);
-        return { clave: `receta_${r.id}`, nombre: r.name, detalle: kcal ? `${kcal} kcal` : undefined, anadido: veces(`receta_${r.id}`), onAbrir: () => void anadirRecetaCalorias(r, mealId) };
+        const m = macrosDeReceta(r);
+        const kcal = Math.round(m.kcal);
+        return {
+          clave: `receta_${r.id}`, nombre: r.name, detalle: kcal ? `${kcal} kcal · 1 ración` : undefined,
+          macros: { hc: m.hc, p: m.p, g: m.g }, origen: term ? 'Receta' : undefined,
+          anadido: veces(`receta_${r.id}`), onAbrir: () => void anadirRecetaCalorias(r, mealId),
+        };
       });
     const filasMios = alimentosPropios.filter(f => coincide(f.label)).map(filaBanco);
 
+    const vistos = new Set<string>();
+    const historial = [...usados.recientes, ...usados.frecuentes]
+      .filter(u => { if (vistos.has(u.clave)) return false; vistos.add(u.clave); return true; })
+      .filter(u => coincide(u.label))
+      .map(filaUsado).filter((x): x is FilaAlimento => !!x);
+
+    /* Al escribir, el buscador mira en TODA la app (Dani, 27-10): ya no hay
+       pestaña «Todo» a la que ir para volver a buscar lo mismo. Se agrupa por
+       origen, lo tuyo y lo reciente primero; cada grupo enseña unos pocos y
+       «Ver más». Sin escribir, las pestañas sirven para mirar. */
+    if (term) {
+      const unicos = (filas: FilaAlimento[]) => {
+        const vistas = new Set<string>();
+        return filas.filter(f => { const k = f.nombre.toLowerCase(); if (vistas.has(k)) return false; vistas.add(k); return true; });
+      };
+      const tuyos = unicos([...historial, ...filasMios]);
+      const yaTuyos = new Set(tuyos.map(f => f.nombre.toLowerCase()));
+      const deCatalogo = alimentosDelCatalogo.map((a): FilaAlimento => ({
+        clave: `cat_${a.id}`, nombre: nombreDeAlimento(a), detalle: `${Math.round(a.porCien.kcal)} kcal · 100 g`,
+        macros: { hc: a.porCien.hc, p: a.porCien.p, g: a.porCien.g },
+        anadido: veces(`cat_${a.id}`), onAbrir: () => abrirFichaCatalogo(a, mealId),
+      }));
+      const deGenerales = unicos([...generales.flatMap(g => g.filas), ...deCatalogo]).filter(f => !yaTuyos.has(f.nombre.toLowerCase()));
+      return {
+        secciones: [
+          { titulo: 'Tuyos y recientes', icono: 'history', filas: tuyos, max: 4 },
+          { titulo: 'Alimentos generales', icono: 'category', filas: deGenerales, max: 4 },
+          { titulo: 'Mis comidas y recetas', icono: 'menu_book', filas: filasRecetas, max: 3 },
+          { titulo: 'Supermercado', icono: 'qr_code_scanner', filas: productosOff.map((e): FilaAlimento => ({
+            clave: `off_${e.c}`, nombre: e.n, detalle: e.b || undefined, origen: 'Producto', anadido: veces(`off_${e.c}`),
+            onAbrir: () => setFicha({ tipo: 'off', codigo: e.c, nombre: e.n, marca: e.b || undefined, ultimos: ultimosGramos(claveDeProducto(e.c)), mealId }),
+          })), max: 4 },
+        ],
+        vacio: 'No hay nada con ese nombre en la app. Prueba a escanearlo o créalo desde su etiqueta.',
+      };
+    }
     if (pestanaAnadir === 'generales') {
-      return { secciones: generales, vacio: 'Ningún alimento general se llama así. Prueba en «Todo».' };
+      return { secciones: generales, vacio: 'No hay alimentos generales para este tipo de dieta.' };
     }
     if (pestanaAnadir === 'comidas') {
       return {
@@ -1987,41 +2031,43 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
           { titulo: 'Mis recetas y comidas', filas: filasRecetas },
           { titulo: 'Mis alimentos', filas: filasMios },
         ],
-        vacio: term
-          ? 'Nada tuyo se llama así.'
-          : 'Aún no tienes nada tuyo. Guarda una comida desde su menú «···» o crea un alimento desde su etiqueta.',
+        vacio: 'Aún no tienes nada tuyo. Guarda una comida desde su menú «···» o crea un alimento desde su etiqueta.',
       };
     }
-    if (pestanaAnadir === 'recientes') {
-      const vistos = new Set<string>();
-      const historial = [...usados.recientes, ...usados.frecuentes]
-        .filter(u => { if (vistos.has(u.clave)) return false; vistos.add(u.clave); return true; })
-        .filter(u => coincide(u.label))
-        .map(filaUsado).filter((x): x is FilaAlimento => !!x);
-      return { secciones: [{ titulo: 'Lo que más apuntas', filas: historial }], vacio: term ? 'No has apuntado nada con ese nombre. Prueba en «Todo».' : 'Aún no has apuntado nada. Mira los alimentos generales o busca uno.' };
-    }
-    // Todo: el buscador sobre toda la app.
-    if (!term) {
-      return { secciones: [], vacio: 'Escribe para buscar entre todos los alimentos, los productos del supermercado y tus recetas.' };
-    }
-    return {
-      secciones: [
-        { titulo: 'Mis alimentos', filas: filasMios },
-        { titulo: 'Alimentos', filas: alimentosDelCatalogo.map((a): FilaAlimento => ({
-          clave: `cat_${a.id}`, nombre: nombreDeAlimento(a), detalle: `${Math.round(a.porCien.kcal)} kcal, 100 g`,
-          anadido: veces(`cat_${a.id}`), onAbrir: () => abrirFichaCatalogo(a, mealId),
-        })) },
-        { titulo: 'Alimentos generales', filas: generales.flatMap(g => g.filas).slice(0, 20) },
-        { titulo: 'Mis recetas y comidas', filas: filasRecetas.slice(0, 20) },
-        { titulo: 'Supermercado', filas: productosOff.map((e): FilaAlimento => ({
-          clave: `off_${e.c}`, nombre: e.n, detalle: e.b || undefined, anadido: veces(`off_${e.c}`),
-          onAbrir: () => setFicha({ tipo: 'off', codigo: e.c, nombre: e.n, marca: e.b || undefined, ultimos: ultimosGramos(claveDeProducto(e.c)), mealId }),
-        })) },
-      ],
-      vacio: 'No hay nada con ese nombre. Prueba a escanearlo o créalo desde su etiqueta.',
-    };
+    return { secciones: [{ titulo: 'Lo que más apuntas', filas: historial }], vacio: 'Aún no has apuntado nada. Mira los alimentos generales o busca uno.' };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- los handlers se rehacen en cada render; lo que cambia la lista son los datos de abajo
   }, [usarListaRapida, pickerItem, searchTerm, pestanaAnadir, pickerAddedCounts, usados, foodItems, foodItemsComunes, alimentosPropios, catalogoAlimentos, alimentosDelCatalogo, productosOff, recipes, activeDietMode, isSafeForAthlete]);
+
+  /* Tus combinaciones de siempre en esta comida (pan + mermelada en la
+     merienda), sacadas de los últimos 30 días. Un toque las mete enteras. */
+  const combinacionesAnadir = useMemo((): CombinacionFila[] => {
+    if (!usarListaRapida || !pickerItem || reemplazo || !selectedDiet) return [];
+    const meal = selectedDiet.meals.find(m => m.id === pickerItem.mealId);
+    if (!meal) return [];
+    return combinacionesDeSiempre(registrosUsados, { id: meal.id, name: meal.name }).map(c => ({
+      clave: c.clave,
+      titulo: c.nombres.join(' + '),
+      detalle: `${c.kcal} kcal · ${c.veces} veces`,
+      onAnadir: () => {
+        const ids = new Map<string, string>();
+        const items = c.items.map(({ hora: _h, origenMenu: _o, ...it }) => {
+          if (!it.lineaId) return it;
+          if (!ids.has(it.lineaId)) ids.set(it.lineaId, nuevoLineaId());
+          return { ...it, lineaId: ids.get(it.lineaId)! };
+        });
+        agregarItems(items, c.nombres.join(' + '), `combo_${c.clave}`, meal.id);
+      },
+    }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- agregarItems se rehace en cada render
+  }, [usarListaRapida, pickerItem, reemplazo, selectedDiet?.id, registrosUsados]);
+
+  /* Lo que llevas en esta comida y lo que te queda del día, arriba de la hoja. */
+  const contextoAnadir = useMemo(() => {
+    if (!pickerItem || reemplazo || !selectedDiet || !(kcalObjetivo > 0)) return undefined;
+    const meal = selectedDiet.meals.find(m => m.id === pickerItem.mealId);
+    const hechos = (Object.entries(itemStates) as [string, ItemState][]).filter(([k, st]) => st.done && k.startsWith(`${pickerItem.mealId}_`)).map(([k]) => k);
+    return { kcalComida: meal ? resumenDelDia([meal], hechos).kcal : 0, kcalDia: resumenMacros.kcal, objetivoDia: kcalObjetivo };
+  }, [pickerItem, reemplazo, selectedDiet, itemStates, resumenMacros.kcal, kcalObjetivo]);
 
   // ── Render ────────────────────────────────────────────────────────────────────
 
@@ -3068,7 +3114,10 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
           onBusqueda={setSearchTerm}
           pestana={pestanaAnadir}
           onPestana={p => { setPestanaAnadir(p); }}
+          contexto={contextoAnadir}
           secciones={seccionesAnadir.secciones}
+          combinaciones={combinacionesAnadir}
+          anadidos={(Object.values(pickerAddedCounts) as number[]).reduce((a, b) => a + b, 0)}
           vacio={seccionesAnadir.vacio}
           pie={pestanaAnadir === 'comidas'
             ? { texto: 'Buscar en el recetario', icono: 'skillet', onClick: () => handleOpenRecipePicker(pickerItem.mealId) }
@@ -3089,7 +3138,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
               ))}
             </div>
           ) : undefined}
-          nota={pestanaAnadir === 'todo' && productosOff.length > 0 ? ATRIBUCION_OFF : undefined}
+          nota={searchTerm.trim() && productosOff.length > 0 ? ATRIBUCION_OFF : undefined}
           onClose={() => { setPickerItem(null); setReemplazo(null); }}
         />
       )}
