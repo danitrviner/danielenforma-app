@@ -29,6 +29,9 @@ export const NOTAS_AGUJETAS: { n: number; titulo: string; detalle: string }[] = 
 /** «Bíceps (flexores de codo)» → «Bíceps»: en la fila del móvil no cabe más. */
 const nombreCorto = (z: ZonaIem) => ZONA_POR_CLAVE[z].nombre.split(' (')[0];
 
+/** Tinta legible sobre el color de cada nota (el rojo del 5 pide blanco). */
+const tintaDeNota = (n: number) => n <= 2 ? 'var(--color-ink)' : n >= 5 ? '#fff' : 'var(--color-on-accent)';
+
 const zonaDe = (q: QuestionnaireQuestion): ZonaIem | null => {
   const z = q.signalKey?.slice('agujetas.'.length) ?? '';
   return esZonaIem(z) ? z : null;
@@ -82,7 +85,7 @@ export default function AgujetasPaso({ preguntas, answers, setAnswer, entrenadas
               aria-label={`${n}: ${titulo}`}
               onClick={() => setAnswer(q.id, n)}
               className={`w-7 h-8 rounded-[8px] font-mono text-caption tabular-nums transition-transform active:scale-95 ${valor === n ? 'font-bold text-on-accent' : 'bg-raised border border-hairline text-ink-3'}`}
-              style={valor === n ? { background: colorDeNota(n), color: n <= 2 ? 'var(--color-ink)' : undefined } : undefined}
+              style={valor === n ? { background: colorDeNota(n), color: tintaDeNota(n) } : undefined}
             >{n}</button>
           ))}
         </div>
@@ -126,7 +129,7 @@ export default function AgujetasPaso({ preguntas, answers, setAnswer, entrenadas
                   onClick={() => { setAnswer(detalle.id, n); setDetalle(null); }}
                   className={`w-full flex items-center gap-3 text-left bg-raised border rounded-control px-3 py-2.5 ${sel ? 'border-accent-line ring-2 ring-accent-bg' : 'border-hairline'}`}
                 >
-                  <span className="w-8 h-8 rounded-[8px] grid place-items-center font-mono text-label font-bold shrink-0" style={{ background: colorDeNota(n), color: n <= 2 ? 'var(--color-ink)' : 'var(--color-on-accent)' }}>{n}</span>
+                  <span className="w-8 h-8 rounded-[8px] grid place-items-center font-mono text-label font-bold shrink-0" style={{ background: colorDeNota(n), color: tintaDeNota(n) }}>{n}</span>
                   <span>
                     <span className="block font-sans text-label font-bold text-ink">{titulo}</span>
                     <span className="block font-sans text-caption text-ink-4">{d}</span>
