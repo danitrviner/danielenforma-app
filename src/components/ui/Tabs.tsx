@@ -102,7 +102,7 @@ export default function Tabs({ items, value, onChange, label, className = '' }: 
               'relative inline-flex shrink-0 items-center gap-2 px-1 py-3 '
               + 'font-sans text-body-s transition-[color,opacity] duration-(--duration-state) '
               + 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-line focus-visible:rounded-control '
-              + (activa ? 'font-extrabold text-ink' : 'font-semibold text-ink-2 hover:text-ink')
+              + (activa ? 'font-bold text-ink' : 'font-semibold text-ink-2 hover:text-ink')
             }
           >
             {item.icon && <Icon name={item.icon} size="s" filled={activa} />}

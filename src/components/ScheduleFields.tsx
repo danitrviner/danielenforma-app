@@ -113,7 +113,7 @@ export default function ScheduleFields({
 
       {schedType === 'plan_week' && onPlanWeekChange && (
         <div className="flex items-center gap-2">
-          <span className="font-mono text-xs text-ink-3">Semana</span>
+          <span className="font-mono text-caption text-ink-3">Semana</span>
           <input
             type="number"
             value={planWeek}
@@ -121,20 +121,20 @@ export default function ScheduleFields({
             onChange={e => onPlanWeekChange(Math.max(1, Number(e.target.value)))}
             className="w-20 bg-bg border border-hairline rounded-control px-2 py-2 text-title-s text-ink font-mono focus:outline-none focus:ring-1 focus:ring-accent"
           />
-          <span className="font-mono text-xs text-ink-3">desde el alta del cuestionario</span>
+          <span className="font-mono text-caption text-ink-3">desde el alta del cuestionario</span>
         </div>
       )}
 
       {schedType === 'mesocycle_end' && onMesocycleOffsetDaysChange && (
         <div className="flex items-center gap-2">
-          <span className="font-mono text-xs text-ink-3">Días antes del cierre</span>
+          <span className="font-mono text-caption text-ink-3">Días antes del cierre</span>
           <input
             type="number"
             value={mesocycleOffsetDays}
             onChange={e => onMesocycleOffsetDaysChange(Number(e.target.value))}
             className="w-20 bg-bg border border-hairline rounded-control px-2 py-2 text-title-s text-ink font-mono focus:outline-none focus:ring-1 focus:ring-accent"
           />
-          <span className="font-mono text-xs text-ink-3">(0 = el último día del mesociclo)</span>
+          <span className="font-mono text-caption text-ink-3">(0 = el último día del mesociclo)</span>
         </div>
       )}
 

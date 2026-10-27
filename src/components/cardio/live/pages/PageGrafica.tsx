@@ -146,7 +146,7 @@ export default function PageGrafica({ chartData, zones, timeInZone, belowZoneSec
           <circle cx={last.x} cy={last.y} r={4.5} fill={lastColor} stroke="color-mix(in oklab, var(--color-veil) 35%, transparent)" strokeWidth={2} vectorEffect="non-scaling-stroke" />
         </svg>
         <span
-          className="absolute font-mono font-bold text-[15px]"
+          className="absolute font-mono font-bold text-body"
           style={{ color: lastColor, left: `min(${(last.x / CHART_W) * 100}%, calc(100% - 34px))`, top: Math.max(last.y - 26, 4) }}
         >
           {lastBpm}
@@ -167,7 +167,7 @@ export default function PageGrafica({ chartData, zones, timeInZone, belowZoneSec
               <div className="flex items-center gap-3">
                 <span className="h-2.5 w-2.5 rounded-[3px] shrink-0" style={{ background: ZONE_COLOR[z] }} />
                 <div className="flex flex-col gap-0.5">
-                  <span className="text-[13.5px]" style={{ color: isNow ? ZONE_INK[z] : 'var(--color-ink-2)' }}>{ZONE_LABEL[z]}</span>
+                  <span className="text-label" style={{ color: isNow ? ZONE_INK[z] : 'var(--color-ink-2)' }}>{ZONE_LABEL[z]}</span>
                   <span className="font-mono text-caption" style={{ color: isNow ? ZONE_INK[z] : 'var(--color-ink-4)' }}>
                     {zones[z].min}-{zones[z].max} PPM{isNow ? ' · AHORA' : ''}
                   </span>
@@ -182,7 +182,7 @@ export default function PageGrafica({ chartData, zones, timeInZone, belowZoneSec
         <div className="h-[50px] flex items-center justify-between border-t border-hairline">
           <div className="flex items-center gap-3">
             <span className="h-2.5 w-2.5 rounded-[3px] shrink-0" style={{ background: BELOW_ZONE_COLOR }} />
-            <span className="text-[13.5px] text-ink-2">{BELOW_ZONE_LABEL}</span>
+            <span className="text-label text-ink-2">{BELOW_ZONE_LABEL}</span>
           </div>
           <span className="font-mono text-label font-semibold text-ink-3">{fmt(belowZoneSec)}</span>
         </div>
@@ -199,7 +199,7 @@ export default function PageGrafica({ chartData, zones, timeInZone, belowZoneSec
             <div key={z} style={{ width: `${Math.max((timeInZone[z] / total) * 100, 0)}%`, background: ZONE_COLOR[z] }} />
           ))}
         </div>
-        <span className="text-[12.5px] leading-relaxed text-ink-3">
+        <span className="text-label leading-relaxed text-ink-3">
           {currentZone
             ? `Llevas ${fmt(timeInZone[currentZone])} en ${ZONE_LABEL[currentZone].toLowerCase()}.`
             : 'Aún no has entrado en zona.'}

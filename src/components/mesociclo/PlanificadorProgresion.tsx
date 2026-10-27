@@ -217,12 +217,12 @@ export default function PlanificadorProgresion(p: Props) {
                         <span className={`font-mono text-caption font-bold ${s === p.semanaActual ? 'rounded-[5px] bg-accent px-1 text-on-accent' : 'text-ink'}`}>
                           {s === 0 ? 'Base' : `S${s}`}
                         </span>
-                        {descargas.includes(s) && <span className="font-mono text-[9px] leading-[11px] font-bold text-info border border-info rounded-[5px] px-0.5" title="Descarga: la mitad de series">D</span>}
-                        {tests.includes(s) && <span className="font-mono text-[9px] leading-[11px] font-bold text-warning border border-warning rounded-[5px] px-0.5" title="Semana de test">T</span>}
+                        {descargas.includes(s) && <span className="font-mono text-caption leading-[11px] font-bold text-info border border-info rounded-[5px] px-0.5" title="Descarga: la mitad de series">D</span>}
+                        {tests.includes(s) && <span className="font-mono text-caption leading-[11px] font-bold text-warning border border-warning rounded-[5px] px-0.5" title="Semana de test">T</span>}
                         {aviso && <span className={`w-1.5 h-1.5 rounded-full ${aviso === 'peligro' ? 'bg-danger' : 'bg-warning'}`} aria-hidden />}
                       </span>
-                      {propuesta && s === pr.semana && <span className="block font-sans text-[10px] font-bold text-accent-ink">propuesta</span>}
-                      {propuesta && borradorDe(s) && <span className="block font-sans text-[10px] text-ink-3">borrador</span>}
+                      {propuesta && s === pr.semana && <span className="block font-sans text-caption font-bold text-accent-ink">propuesta</span>}
+                      {propuesta && borradorDe(s) && <span className="block font-sans text-caption text-ink-3">borrador</span>}
                     </th>
                   );
                 })}

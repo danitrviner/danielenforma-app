@@ -557,7 +557,7 @@ function DayTitle({ name, editing, value, onStartEdit, onChangeValue, onCommit, 
   }
 
   if (bloqueado) {
-    return <p className={`font-sans truncate ${destacado ? 'font-extrabold text-title-s text-accent-ink' : 'font-bold text-body-s text-ink'}`}>{name}</p>;
+    return <p className={`font-sans truncate ${destacado ? 'font-bold text-title-s text-accent-ink' : 'font-bold text-body-s text-ink'}`}>{name}</p>;
   }
 
   return (
@@ -567,7 +567,7 @@ function DayTitle({ name, editing, value, onStartEdit, onChangeValue, onCommit, 
       title="Renombrar día"
       className="flex items-center gap-1.5 min-w-0 group text-left"
     >
-      <p className={`font-sans truncate ${destacado ? 'font-extrabold text-title-s text-accent-ink' : 'font-bold text-body-s text-ink'}`}>{name}</p>
+      <p className={`font-sans truncate ${destacado ? 'font-bold text-title-s text-accent-ink' : 'font-bold text-body-s text-ink'}`}>{name}</p>
       <Icon name="edit" size="s" className="text-ink-3 opacity-0 group-hover:opacity-100 flex-shrink-0 transition-opacity" />
     </button>
   );
@@ -3043,7 +3043,7 @@ export default function MesocycleManager({
       {!athleteEmail && !modoPlantilla && (
         <>
           <div>
-            <h1 className="font-sans font-extrabold text-display tracking-tight text-ink">Macrociclo</h1>
+            <h1 className="font-sans font-bold text-display tracking-tight text-ink">Macrociclo</h1>
             <p className="text-ink-2 text-body-s mt-1">Diseña los mesociclos y genera rutinas reales para el atleta.</p>
           </div>
           <div className="flex items-center gap-3">

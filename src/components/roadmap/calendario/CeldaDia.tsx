@@ -25,7 +25,7 @@ interface Props {
 function Linea({ texto, color, mono }: { texto: string; color: string; mono?: boolean }) {
   return (
     <div
-      className={`truncate ${mono ? 'font-mono text-caption' : 'font-sans text-[11.5px] font-semibold'}`}
+      className={`truncate ${mono ? 'font-mono text-caption' : 'font-sans text-caption font-semibold'}`}
       style={{ color, letterSpacing: mono ? '0.01em' : undefined }}
     >
       {texto}

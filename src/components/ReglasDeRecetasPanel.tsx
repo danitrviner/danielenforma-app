@@ -388,7 +388,7 @@ export default function ReglasDeRecetasPanel({ athleteEmail, onboarding, nutriti
               onChange={e => cambiarFiltro({ texto: e.target.value })}
               placeholder="Buscar por nombre"
               aria-label="Buscar receta del pool por nombre"
-              className="bg-bg border border-hairline rounded-control px-3 min-h-[44px] font-sans text-base text-ink focus:outline-none focus:border-accent"
+              className="bg-bg border border-hairline rounded-control px-3 min-h-[44px] font-sans text-body text-ink focus:outline-none focus:border-accent"
             />
             <div className="flex gap-2">
               <input
@@ -397,7 +397,7 @@ export default function ReglasDeRecetasPanel({ athleteEmail, onboarding, nutriti
                 onChange={e => cambiarFiltro({ ingrediente: e.target.value })}
                 placeholder="Ingrediente (atún, huevo…)"
                 aria-label="Filtrar por ingrediente"
-                className="min-w-0 flex-1 bg-bg border border-hairline rounded-control px-3 min-h-[44px] font-sans text-base text-ink focus:outline-none focus:border-accent"
+                className="min-w-0 flex-1 bg-bg border border-hairline rounded-control px-3 min-h-[44px] font-sans text-body text-ink focus:outline-none focus:border-accent"
               />
               <div role="group" aria-label="Con o sin ese ingrediente" className="flex flex-shrink-0 border border-hairline rounded-control overflow-hidden">
                 {(['con', 'sin'] as const).map(m => (

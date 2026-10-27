@@ -163,7 +163,7 @@ export default function FichaAlimentoCalorias({
 
             <div className="border-t border-hairline pt-4">
               <button type="button" onClick={() => setVerTabla(v => !v)} aria-expanded={verTabla} className="flex w-full items-center justify-between">
-                <span className="font-sans text-body font-bold text-ink">Información nutricional</span>
+                <span className="font-sans text-body-s font-semibold text-ink">Información nutricional</span>
                 <span className="flex items-center gap-1 font-sans text-body-s text-accent-ink">
                   {verTabla ? 'Ocultar' : 'Ver'}
                   <Icon name="expand_more" size="s" className={`transition-transform duration-(--duration-base) ease-(--ease-brand) motion-reduce:transition-none ${verTabla ? 'rotate-180' : ''}`} />
@@ -178,7 +178,7 @@ export default function FichaAlimentoCalorias({
                 <div className="overflow-hidden">
                   <dl className="space-y-2 pt-3">
                     {filas.map(([etq, v, u]) => (
-                      <div key={etq} className="flex justify-between gap-3 font-sans text-body">
+                      <div key={etq} className="flex justify-between gap-3 font-sans text-body-s">
                         <dt className="text-ink">{etq}</dt>
                         <dd className="font-mono text-ink-2">{v === undefined ? <span className="text-ink-3">—</span> : `${fmt(v)}${u ? ` ${u}` : ''}`}</dd>
                       </div>
@@ -197,7 +197,7 @@ export default function FichaAlimentoCalorias({
           {/* Las raciones como chips (Dani, 26-10-2026, propuesta A): la
               recomendada lleva su estrella y se elige de un toque. */}
           <div className="space-y-3">
-            <span className="block font-sans text-body font-bold text-ink">Ración</span>
+            <span className="block font-sans text-body-s font-semibold text-ink">Ración</span>
             <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Ración">
               {raciones.map((r, i) => {
                 const elegida = racionIdx === i;
@@ -218,7 +218,7 @@ export default function FichaAlimentoCalorias({
                     ) : r.nota ? (
                       <span className={`font-mono text-caption font-semibold uppercase tracking-wider ${elegida ? 'text-on-accent' : 'text-ink-3'}`}>{r.nota}</span>
                     ) : null}
-                    <span className={`text-body ${elegida ? 'font-bold text-on-accent' : 'text-ink'}`}>{r.etiqueta}</span>
+                    <span className={`text-body-s font-semibold ${elegida ? 'text-on-accent' : 'text-ink'}`}>{r.etiqueta}</span>
                   </button>
                 );
               })}
@@ -227,14 +227,14 @@ export default function FichaAlimentoCalorias({
                 role="radio"
                 aria-checked={otra}
                 onClick={() => setRacionIdx(-1)}
-                className={`flex min-h-11 items-center rounded-surface border px-3.5 py-2 font-sans text-body transition-colors duration-(--duration-state) ${otra ? 'bg-accent border-accent-press text-on-accent font-bold' : 'border-dashed border-hairline text-ink-2 hover:border-accent/40'}`}
+                className={`flex min-h-11 items-center rounded-surface border px-3.5 py-2 font-sans text-body-s font-semibold transition-colors duration-(--duration-state) ${otra ? 'bg-accent border-accent-press text-on-accent' : 'border-dashed border-hairline text-ink-2 hover:border-accent/40'}`}
               >
                 Otra cantidad
               </button>
             </div>
             {otra && (
               <div className="flex items-center justify-between gap-3 animate-fade-up">
-                <label htmlFor="ficha-otra" className="font-sans text-body text-ink">Gramos</label>
+                <label htmlFor="ficha-otra" className="font-sans text-body-s font-medium text-ink">Gramos</label>
                 <input
                   id="ficha-otra"
                   inputMode="decimal"
@@ -248,7 +248,7 @@ export default function FichaAlimentoCalorias({
             )}
           </div>
           <div className="flex items-center justify-between gap-3">
-            <label htmlFor="ficha-num" className="font-sans text-body text-ink">Nº de raciones</label>
+            <label htmlFor="ficha-num" className="font-sans text-body-s font-medium text-ink">Nº de raciones</label>
             <input
               id="ficha-num"
               inputMode="decimal"
@@ -260,7 +260,7 @@ export default function FichaAlimentoCalorias({
           </div>
           {comidas.length > 1 && (
             <div className="flex items-center justify-between gap-3">
-              <span className="font-sans text-body text-ink">Comida</span>
+              <span className="font-sans text-body-s font-medium text-ink">Comida</span>
               <Select
                 className="w-52"
                 value={mealId}

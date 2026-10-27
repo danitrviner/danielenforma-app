@@ -571,7 +571,7 @@ export default function RecetasDelAtletaPanel({ athleteEmail, diets, dietConfig,
               onChange={e => cambiarFiltro({ texto: e.target.value })}
               placeholder="Buscar receta"
               aria-label="Buscar receta disponible por nombre"
-              className="min-w-0 flex-1 bg-bg border border-hairline rounded-control px-3 min-h-[44px] font-sans text-base text-ink focus:outline-none focus:border-accent"
+              className="min-w-0 flex-1 bg-bg border border-hairline rounded-control px-3 min-h-[44px] font-sans text-body text-ink focus:outline-none focus:border-accent"
             />
             <button
               type="button"
@@ -637,7 +637,7 @@ export default function RecetasDelAtletaPanel({ athleteEmail, diets, dietConfig,
                   onChange={e => cambiarFiltro({ ingrediente: e.target.value })}
                   placeholder="Ingrediente (atún, huevo…)"
                   aria-label="Filtrar por ingrediente"
-                  className="min-w-0 flex-1 bg-surface border border-hairline rounded-control px-3 min-h-[44px] font-sans text-base text-ink focus:outline-none focus:border-accent"
+                  className="min-w-0 flex-1 bg-surface border border-hairline rounded-control px-3 min-h-[44px] font-sans text-body text-ink focus:outline-none focus:border-accent"
                 />
                 <div role="group" aria-label="Con o sin ese ingrediente" className="flex flex-shrink-0 border border-hairline rounded-control overflow-hidden">
                   {(['con', 'sin'] as const).map(m => (
@@ -800,7 +800,7 @@ export default function RecetasDelAtletaPanel({ athleteEmail, diets, dietConfig,
               onChange={e => { setBuscaPlan(e.target.value); setVisiblesPlan(POR_PAGINA); }}
               placeholder="Buscar en su plan"
               aria-label="Buscar receta en su plan"
-              className="w-full bg-bg border border-hairline rounded-control px-3 min-h-[44px] font-sans text-base text-ink focus:outline-none focus:border-accent"
+              className="w-full bg-bg border border-hairline rounded-control px-3 min-h-[44px] font-sans text-body text-ink focus:outline-none focus:border-accent"
             />
           )}
 

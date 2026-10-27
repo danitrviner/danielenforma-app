@@ -203,13 +203,13 @@ function Fila({ fila, resumen, onAbrir }: { fila: FilaDescubrir; resumen: Map<st
           if (fila.forma === 'chip') return (
             <button key={c.id} type="button" onClick={() => onAbrir(c)}
               className={`${base} rounded-surface min-w-[96px] h-24 px-3 flex flex-col items-center justify-center gap-1.5 font-sans text-label text-ink-2 whitespace-nowrap`}>
-              <Emoji className="text-[32px]">{c.emoji}</Emoji>{c.titulo}
+              <Emoji className="text-display">{c.emoji}</Emoji>{c.titulo}
             </button>
           );
           if (fila.forma === 'baldosa') return (
             <button key={c.id} type="button" onClick={() => onAbrir(c)}
               className={`${base} rounded-surface w-[124px] h-[124px] p-2 flex flex-col items-center justify-center gap-2 text-center`}>
-              <Emoji className="text-[40px]">{c.emoji}</Emoji>
+              <Emoji className="text-headline">{c.emoji}</Emoji>
               <span className="font-sans font-bold text-label text-ink truncate max-w-full">{c.titulo}</span>
               <span className="font-mono text-caption text-ink-3 -mt-1.5 tabular-nums">{total.toLocaleString('es-ES')}</span>
             </button>
@@ -221,7 +221,7 @@ function Fila({ fila, resumen, onAbrir }: { fila: FilaDescubrir; resumen: Map<st
                 className={`${base} relative rounded-surface w-[236px] h-[216px] overflow-hidden`}>
                 <span className="absolute left-1/2 -top-8 -translate-x-1/2 w-[168px] h-[168px] rounded-full overflow-hidden bg-inset shadow-e2">
                   <FotoDeReceta src={portada ? fotoDeReceta(portada) : undefined} alt="" className="w-full h-full object-cover"
-                    fallback={<span className="w-full h-full flex items-center justify-center"><Emoji className="text-[56px]">{c.emoji}</Emoji></span>} />
+                    fallback={<span className="w-full h-full flex items-center justify-center"><Emoji className="text-hero">{c.emoji}</Emoji></span>} />
                 </span>
                 <span className="absolute left-4 right-16 bottom-4">
                   <span className="block font-sans font-bold text-title-s text-ink leading-tight">{c.titulo}</span>
@@ -462,7 +462,7 @@ export default function RecetarioDescubrir({
                     className={`flex-shrink-0 min-h-[40px] pl-2.5 pr-3.5 rounded-full border font-sans text-label font-bold flex items-center gap-1.5 transition-colors ${
                       on ? 'bg-accent border-accent-press text-on-accent' : 'bg-surface border-strong text-ink-2 hover:text-ink'
                     }`}>
-                    <Emoji className="text-[18px]">{i.emoji}</Emoji>{i.etiqueta}
+                    <Emoji className="text-title-m">{i.emoji}</Emoji>{i.etiqueta}
                   </button>
                 );
               })}

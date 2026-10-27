@@ -2477,12 +2477,12 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                                     className={`flex-1 min-w-0 text-left rounded-control -m-1 p-1 transition-colors ${item.origenMenu || !sePesa ? 'cursor-default' : 'hover:bg-raised/60 active:bg-raised'}`}
                                   >
                                     {sePesa && (
-                                      <span className="font-mono text-body font-bold text-accent-ink whitespace-nowrap">
+                                      <span className="font-mono text-body-s text-ink-2 whitespace-nowrap">
                                         {etiquetaDePeso(item)}
                                       </span>
                                     )}
                                     {sePesa && ' '}
-                                    <span className="font-sans text-body-s font-bold leading-snug text-ink">
+                                    <span className="font-sans text-body font-medium leading-snug text-ink">
                                       {foodNameWithoutGrams(st.foodLabel)}
                                     </span>
                                     {item.origenMenu && (
@@ -2512,7 +2512,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                                     >+</button>
                                   </div>
                                   )}
-                                  <span className="flex-none font-mono text-body font-bold text-ink">
+                                  <span className="flex-none font-mono text-body-s font-bold text-ink">
                                     {numEs(kcalDeLineasComida(meal, [idx]))}
                                   </span>
                                 </div>
@@ -2972,7 +2972,7 @@ export default function NutritionScreen({ profile, pendingRecipe, onConsumedPend
                 value={swapSearch}
                 onChange={e => setSwapSearch(e.target.value)}
                 placeholder="Buscar entre las alternativas…"
-                className="w-full px-3 py-2 bg-raised border border-hairline rounded-control font-sans text-base text-ink placeholder:text-ink-2 focus:border-accent/40 outline-none"
+                className="w-full px-3 py-2 bg-raised border border-hairline rounded-control font-sans text-body text-ink placeholder:text-ink-2 focus:border-accent/40 outline-none"
               />
               {/* Familias de plato disponibles. Es la respuesta directa a "no me
                   apetece otro batido": un toque y la lista cambia de familia. */}

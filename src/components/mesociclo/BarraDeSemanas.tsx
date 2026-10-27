@@ -176,17 +176,17 @@ export default function BarraDeSemanas(p: Props) {
                     />
                   )}
                 </span>
-                <span className="font-mono text-[10px] leading-none text-ink-3 tabular-nums">
+                <span className="font-mono text-caption leading-none text-ink-3 tabular-nums">
                   {real !== null ? `${real}/${p.totales[s] ?? 0}` : p.totales[s] ?? 0}
                 </span>
                 {(esDescarga(s) || esPivot(s) || esTest(s) || p.eventos[String(s)] || p.revisiones?.[s]?.length) && (
                   <span className="flex gap-0.5">
-                    {esDescarga(s) && <span className="font-mono text-[9px] leading-[11px] font-bold text-info border border-info rounded-[5px] px-0.5">D</span>}
-                    {!esDescarga(s) && esPivot(s) && <span className="font-mono text-[9px] leading-[11px] font-bold text-info border border-info rounded-[5px] px-0.5">P</span>}
-                    {esTest(s) && <span className="font-mono text-[9px] leading-[11px] font-bold text-warning border border-warning rounded-[5px] px-0.5">T</span>}
-                    {!!p.revisiones?.[s]?.length && <span className="font-mono text-[9px] leading-[11px] font-bold text-success border border-success rounded-[5px] px-0.5">R</span>}
+                    {esDescarga(s) && <span className="font-mono text-caption leading-[11px] font-bold text-info border border-info rounded-[5px] px-0.5">D</span>}
+                    {!esDescarga(s) && esPivot(s) && <span className="font-mono text-caption leading-[11px] font-bold text-info border border-info rounded-[5px] px-0.5">P</span>}
+                    {esTest(s) && <span className="font-mono text-caption leading-[11px] font-bold text-warning border border-warning rounded-[5px] px-0.5">T</span>}
+                    {!!p.revisiones?.[s]?.length && <span className="font-mono text-caption leading-[11px] font-bold text-success border border-success rounded-[5px] px-0.5">R</span>}
                     {p.eventos[String(s)] && (
-                      <span className="font-mono text-[9px] leading-[11px] font-bold text-accent-ink border border-accent-line rounded-[5px] px-0.5">
+                      <span className="font-mono text-caption leading-[11px] font-bold text-accent-ink border border-accent-line rounded-[5px] px-0.5">
                         {EVENTOS.find(e => e.value === p.eventos[String(s)].tipo)?.corto}
                       </span>
                     )}

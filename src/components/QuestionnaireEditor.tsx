@@ -373,7 +373,7 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
               )}
               {q.type === 'metric' && (
                 <div className="w-56">
-                  <label htmlFor={`q-${q.id}-que-mide`} className="block font-mono text-[9px] text-ink-3 uppercase mb-1">Qué mide</label>
+                  <label htmlFor={`q-${q.id}-que-mide`} className="block font-mono text-caption text-ink-3 uppercase mb-1">Qué mide</label>
                   <select id={`q-${q.id}-que-mide`}
                     value={q.metricKey ?? ''}
                     onChange={e => setQ(idx, { metricKey: (e.target.value || undefined) as BodyMetricKey | undefined })}
@@ -389,7 +389,7 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
               {q.type === 'media' && (
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label htmlFor={`q-${q.id}-tipo`} className="block font-mono text-[9px] text-ink-3 uppercase mb-1">Tipo</label>
+                    <label htmlFor={`q-${q.id}-tipo`} className="block font-mono text-caption text-ink-3 uppercase mb-1">Tipo</label>
                     <select id={`q-${q.id}-tipo`}
                       value={q.mediaKind ?? ''}
                       onChange={e => setQ(idx, { mediaKind: (e.target.value || undefined) as 'video' | 'image' | undefined })}
@@ -401,7 +401,7 @@ export default function QuestionnaireEditor({ form, setForm, onSave, onCancel, s
                     </select>
                   </div>
                   <div>
-                    <label htmlFor={`q-${q.id}-tamano-max-mb`} className="block font-mono text-[9px] text-ink-3 uppercase mb-1">Tamaño máx. (MB)</label>
+                    <label htmlFor={`q-${q.id}-tamano-max-mb`} className="block font-mono text-caption text-ink-3 uppercase mb-1">Tamaño máx. (MB)</label>
                     <input id={`q-${q.id}-tamano-max-mb`} type="number" value={q.maxSizeMb ?? ''} min={1} max={50}
                       onChange={e => setQ(idx, { maxSizeMb: e.target.value === '' ? undefined : Number(e.target.value) })}
                       placeholder="50" className={`w-full ${MINI_INPUT_CLS}`} />

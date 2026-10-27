@@ -249,12 +249,12 @@ function WellnessSection({ section }: { section: CoachReportSection }) {
           const delta = q.prevAvg != null ? Math.round((q.avg - q.prevAvg) * 10) / 10 : null;
           return (
             <li key={q.questionId} className="flex items-center gap-2.5">
-              <span className="material-symbols-outlined text-data text-base flex-shrink-0">self_improvement</span>
-              <span className="text-xs text-ink font-sans flex-1 min-w-0">{q.questionLabel}</span>
-              <span className="font-mono text-xs text-accent-ink font-bold flex-shrink-0">
+              <span className="material-symbols-outlined text-data text-body flex-shrink-0">self_improvement</span>
+              <span className="text-caption text-ink font-sans flex-1 min-w-0">{q.questionLabel}</span>
+              <span className="font-mono text-caption text-accent-ink font-bold flex-shrink-0">
                 {q.avg}{q.unit ? ` ${q.unit}` : ''}
                 {delta != null && delta !== 0 && (
-                  <span className={`ml-1.5 text-[10px] ${delta > 0 ? 'text-success' : 'text-warning'}`}>
+                  <span className={`ml-1.5 text-caption ${delta > 0 ? 'text-success' : 'text-warning'}`}>
                     ({delta > 0 ? '+' : ''}{delta})
                   </span>
                 )}

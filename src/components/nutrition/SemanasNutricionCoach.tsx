@@ -215,8 +215,8 @@ export default function SemanasNutricionCoach({ program, diets, onGuardar, pesos
                     <span className={`absolute bottom-0 w-full rounded-t-[4px] ${mant.includes(s) ? 'bg-info/60' : activa ? 'bg-accent' : 'bg-strong'}`}
                       style={{ height: k ? Math.max(4, Math.round(30 * (k - min) / Math.max(1, max - min))) : 3 }} />
                   </span>
-                  <span className="font-mono text-[10px] leading-none text-ink-3 tabular-nums">{k ? k.toLocaleString('es-ES') : '—'}</span>
-                  {mant.includes(s) && <span className="font-mono text-[9px] leading-[11px] font-bold text-info border border-info rounded-[5px] px-0.5">M</span>}
+                  <span className="font-mono text-caption leading-none text-ink-3 tabular-nums">{k ? k.toLocaleString('es-ES') : '—'}</span>
+                  {mant.includes(s) && <span className="font-mono text-caption leading-[11px] font-bold text-info border border-info rounded-[5px] px-0.5">M</span>}
                 </button>
               );
             })}

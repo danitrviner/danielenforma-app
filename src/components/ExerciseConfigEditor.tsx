@@ -566,7 +566,7 @@ export default function ExerciseConfigEditor({ we, onChange, mesoWeeks, disposic
     const marca = (campo: string) => marcas[campo];
     const conMarca = (campo: string, clases: string) => marca(campo) ? `${clases} ring-1 ring-accent-line` : clases;
     const etiqueta = (campo: string) => marca(campo) ? (
-      <span className="absolute -top-2 right-1 px-1 rounded-[5px] bg-accent text-on-accent font-mono text-[9px] leading-[12px] font-bold pointer-events-none">{marca(campo)}</span>
+      <span className="absolute -top-2 right-1 px-1 rounded-[5px] bg-accent text-on-accent font-mono text-caption leading-[12px] font-bold pointer-events-none">{marca(campo)}</span>
     ) : null;
     const celda = celdaBase;
     const inputReps = (valor: string, cambiar: (v: string) => void) => (

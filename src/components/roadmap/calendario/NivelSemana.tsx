@@ -163,12 +163,12 @@ export default function NivelSemana({
                     )}
                     {ejercicios.length > 0 && (
                       <>
-                        <p className="font-sans text-[11.5px] font-semibold text-ink truncate mb-1.5">{dia?.entreno.nombreRutina}</p>
+                        <p className="font-sans text-caption font-semibold text-ink truncate mb-1.5">{dia?.entreno.nombreRutina}</p>
                         <div className="flex flex-col gap-1">
                           {ejercicios.map(ej => (
                             <div key={ej.exerciseId} className="min-w-0">
-                              <p className="font-sans text-[11px] text-ink-2 truncate leading-tight">{ej.nombre}</p>
-                              <p className="font-mono text-[10.5px]" style={{ color: 'var(--color-ink-4)' }}>
+                              <p className="font-sans text-caption text-ink-2 truncate leading-tight">{ej.nombre}</p>
+                              <p className="font-mono text-caption" style={{ color: 'var(--color-ink-4)' }}>
                                 {ej.seriesHechas !== undefined ? `${ej.seriesHechas}/${ej.series}` : `${ej.series}`}×{ej.reps} · RIR {ej.rir}
                                 {ej.pesoMedio !== undefined && ` · ${ej.pesoMedio} kg`}
                               </p>
@@ -178,7 +178,7 @@ export default function NivelSemana({
                       </>
                     )}
                     {volEvent && (
-                      <p className="flex items-center gap-1 mt-1.5 text-[10.5px] font-sans" style={{ color: 'var(--color-phase-fuerza)' }}>
+                      <p className="flex items-center gap-1 mt-1.5 text-caption font-sans" style={{ color: 'var(--color-phase-fuerza)' }}>
                         <Icon name="trending_up" style={{ fontSize: 12 }} />{volEvent.title}
                       </p>
                     )}
@@ -187,11 +187,11 @@ export default function NivelSemana({
                   {/* Nutrición */}
                   {bandaNutri && dia && (
                     <Bloque icono="restaurant" color="var(--color-success)" titulo="Nutrición">
-                      <p className="font-mono text-[11.5px] text-ink-2">
+                      <p className="font-mono text-caption text-ink-2">
                         {esFuturo ? `${dia.nutricion.kcalObjetivo ?? '—'} kcal plan` : `${dia.nutricion.kcal ?? '—'} / ${dia.nutricion.kcalObjetivo ?? '—'} kcal`}
                       </p>
                       {!esFuturo && dia.nutricion.adherenciaPct !== undefined && (
-                        <p className="font-mono text-[10.5px]" style={{ color: dia.nutricion.adherenciaPct >= 85 ? 'var(--color-success)' : 'var(--color-warning)' }}>
+                        <p className="font-mono text-caption" style={{ color: dia.nutricion.adherenciaPct >= 85 ? 'var(--color-success)' : 'var(--color-warning)' }}>
                           {dia.nutricion.adherenciaPct}% de adherencia
                         </p>
                       )}
@@ -201,7 +201,7 @@ export default function NivelSemana({
                   {/* Cardio */}
                   {dia?.entreno.cardio && (
                     <Bloque icono="directions_run" color={COLOR_CAT_CARDIO} titulo="Cardio">
-                      <p className="font-mono text-[11.5px] text-ink-2">
+                      <p className="font-mono text-caption text-ink-2">
                         {dia.entreno.cardio.tipo === 'zona2' ? 'Zona 2' : 'VO₂'} · {dia.entreno.cardio.minutos} min
                         {dia.entreno.cardio.fcMedia ? ` · ${dia.entreno.cardio.fcMedia} bpm` : ''}
                       </p>
@@ -211,7 +211,7 @@ export default function NivelSemana({
                   {/* Recarga */}
                   {dia?.refeed && (
                     <Bloque icono="local_fire_department" color="var(--color-refeed)" titulo="Recarga">
-                      <p className="font-sans text-[11px] text-ink-2 leading-snug">{dia.refeed.note || 'Día de recarga'}</p>
+                      <p className="font-sans text-caption text-ink-2 leading-snug">{dia.refeed.note || 'Día de recarga'}</p>
                     </Bloque>
                   )}
 
@@ -220,7 +220,7 @@ export default function NivelSemana({
                     <Bloque icono="flag" color="var(--color-accent-ink)" titulo="Hitos">
                       <div className="flex flex-col gap-1">
                         {dia.hitos.map(h => (
-                          <p key={h.id} className="font-sans text-[11px] text-ink-2 leading-snug">{h.titulo}</p>
+                          <p key={h.id} className="font-sans text-caption text-ink-2 leading-snug">{h.titulo}</p>
                         ))}
                       </div>
                     </Bloque>
@@ -229,7 +229,7 @@ export default function NivelSemana({
                   {/* Nota del coach */}
                   {nota && (
                     <Bloque icono="sticky_note_2" color="var(--color-accent-ink)" titulo="Tu nota">
-                      <p className="font-sans text-[11px] text-ink-2 leading-snug">{nota.text}</p>
+                      <p className="font-sans text-caption text-ink-2 leading-snug">{nota.text}</p>
                     </Bloque>
                   )}
                 </div>
@@ -249,7 +249,7 @@ export default function NivelSemana({
                           style={{ width: 14, height: 6, background: fase?.color ?? 'var(--color-ink-5)', opacity: esFuturo ? 0.65 : 1 }}
                         />
                         <span
-                          className="font-sans text-[10.5px] truncate"
+                          className="font-sans text-caption truncate"
                           style={{ color: fase ? mezcla(fase.color, 78) : 'var(--color-ink-4)' }}
                           title={fase?.nombre ?? vacio}
                         >
