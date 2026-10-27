@@ -16,6 +16,7 @@ import { formatEurosCompacto } from '../lib/dinero';
 import DataTable, { Columna } from '../components/DataTable';
 import ClientesActionList from '../components/ClientesActionList';
 import { EstadoClientePill, EstadoFinancieroPill } from '../components/StatusPill';
+import { useRiesgoAbandono } from '../../../hooks/useRiesgoAbandono';
 import { usePagos } from '../hooks/usePagos';
 import { estadoFinancieroDe, type EstadoFinanciero } from '../lib/metricas';
 import EmptyState from '../components/EmptyState';
@@ -66,6 +67,9 @@ export default function ClientesList({ coachEmail }: { coachEmail: string }) {
   // y bajas no encajan en Requiere-acción/Al-día, así que se quedan en la
   // tabla de siempre. Ver la decisión de alcance en el plan de F3.13d.
   const vistaPorSuscripcion = filtro === 'activo';
+  // Riesgo de abandono (27-10): sale de sus revisiones. Para verlo antes de
+  // que llegue la renovación.
+  const enRiesgo = useRiesgoAbandono();
 
   const setParam = (clave: string, valor: string) => {
     const next = new URLSearchParams(params);
@@ -205,6 +209,11 @@ export default function ClientesList({ coachEmail }: { coachEmail: string }) {
           <div className="flex items-center gap-1.5 flex-wrap">
             <EstadoClientePill estado={c.estadoCrm} />
             {finanzas && finanzas !== 'al_dia' && <EstadoFinancieroPill estado={finanzas} />}
+            {c.email && enRiesgo.has(c.email.toLowerCase()) && (
+              <span className="font-sans text-[11px] font-bold px-1.5 py-0.5 rounded-full bg-danger/12 text-danger" title="Dos revisiones seguidas sin responder, o satisfacción baja">
+                Riesgo de abandono
+              </span>
+            )}
           </div>
         );
       },
