@@ -129,7 +129,7 @@ describe('inventario del borrado de cuenta', () => {
     expect(repetidas).toEqual([]);
   });
 
-  it('cubre las tres carpetas de Storage que declara storage.rules', () => {
+  it('cubre todas las carpetas de Storage con {email} que declara storage.rules', () => {
     const reglas = readFileSync(resolve(__dirname, '../../storage.rules'), 'utf8');
     const conEmail = new Set<string>();
     for (const linea of reglas.split('\n')) {

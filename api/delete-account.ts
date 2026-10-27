@@ -74,7 +74,7 @@ export const POR_CAMPO = [
 const CAMPOS_PROPIETARIO = ['userId', 'athleteId', 'email'];
 
 // Prefijos de Storage. El bucket organiza por email, igual que storage.rules.
-export const PREFIJOS_STORAGE = ['progressPhotos', 'gymPhotos', 'questionnaireMedia'];
+export const PREFIJOS_STORAGE = ['progressPhotos', 'gymPhotos', 'questionnaireMedia', 'respuestasCoach'];
 
 // Colecciones del CRM que se CONSERVAN anonimizadas: son la documentación de
 // una operación comercial (qué se contrató y qué se cobró), que hay obligación
