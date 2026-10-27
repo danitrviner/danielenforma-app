@@ -10,6 +10,7 @@ import PhotosScreen from './PhotosScreen';
 import QuestionnaireWizard from './QuestionnaireWizard';
 import RevisionDeLaSemana from './checkin/RevisionDeLaSemana';
 import HistorialDeRevisiones from './checkin/HistorialDeRevisiones';
+import RespuestaDelCoach from './checkin/RespuestaDelCoach';
 import { historialDeRevisiones, type PasoRevision } from '../utils/revisionSemanal';
 import { useRevisionDeLaSemana } from '../hooks/useRevisionDeLaSemana';
 import { ajustesRevisionDe } from '../utils/cicloRevision';
@@ -294,6 +295,8 @@ export default function CheckInScreen({ profile, checkins }: CheckInScreenProps)
 
   return (
     <div className="space-y-6">
+      <RespuestaDelCoach responses={responses} />
+
       {/* Tu revisión de esta semana: el recorrido único (K-03). Se oculta sola
           fuera de la ventana de revisión (viernes a lunes). */}
       {!loadingQ && !loadingPhotoAssignments && (
