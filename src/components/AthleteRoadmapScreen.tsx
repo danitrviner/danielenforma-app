@@ -241,7 +241,7 @@ export default function AthleteRoadmapScreen({ profile }: Props) {
   const phases = roadmap.planPhases ?? [];
 
   return (
-    <div className="space-y-6">
+    <div className="pantalla space-y-6">
       {activePhase && phaseProgress && (
         <PhaseHeroCard phase={activePhase} progress={phaseProgress} weightStatus={phaseWeightStatus} />
       )}

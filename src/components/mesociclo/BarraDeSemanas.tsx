@@ -120,7 +120,7 @@ export default function BarraDeSemanas(p: Props) {
               aria-pressed={varias}
               onClick={() => { setVarias(v => !v); setSel(new Set(!varias && p.semana > 0 ? [p.semana] : [])); }}
               className={`inline-flex items-center gap-1.5 rounded-chip border px-2.5 py-1.5 font-mono text-caption font-bold uppercase tracking-wider transition-colors ${
-                varias ? 'border-accent text-accent-ink bg-accent/12' : 'border-hairline text-ink-2 hover:text-ink hover:border-strong'}`}
+                varias ? 'bg-accent border-accent-press text-on-accent' : 'border-hairline text-ink-2 hover:text-ink hover:border-strong'}`}
             >
               <Icon name="done_all" size="s" />
               Varias semanas
@@ -176,17 +176,17 @@ export default function BarraDeSemanas(p: Props) {
                     />
                   )}
                 </span>
-                <span className="font-mono text-[10px] leading-none text-ink-3 tabular-nums">
+                <span className="font-mono text-caption leading-none text-ink-3 tabular-nums">
                   {real !== null ? `${real}/${p.totales[s] ?? 0}` : p.totales[s] ?? 0}
                 </span>
                 {(esDescarga(s) || esPivot(s) || esTest(s) || p.eventos[String(s)] || p.revisiones?.[s]?.length) && (
                   <span className="flex gap-0.5">
-                    {esDescarga(s) && <span className="font-mono text-[9px] leading-[11px] font-bold text-info border border-info rounded-[5px] px-0.5">D</span>}
-                    {!esDescarga(s) && esPivot(s) && <span className="font-mono text-[9px] leading-[11px] font-bold text-info border border-info rounded-[5px] px-0.5">P</span>}
-                    {esTest(s) && <span className="font-mono text-[9px] leading-[11px] font-bold text-warning border border-warning rounded-[5px] px-0.5">T</span>}
-                    {!!p.revisiones?.[s]?.length && <span className="font-mono text-[9px] leading-[11px] font-bold text-success border border-success rounded-[5px] px-0.5">R</span>}
+                    {esDescarga(s) && <span className="font-mono text-caption leading-[11px] font-bold text-info border border-info rounded-[5px] px-0.5">D</span>}
+                    {!esDescarga(s) && esPivot(s) && <span className="font-mono text-caption leading-[11px] font-bold text-info border border-info rounded-[5px] px-0.5">P</span>}
+                    {esTest(s) && <span className="font-mono text-caption leading-[11px] font-bold text-warning border border-warning rounded-[5px] px-0.5">T</span>}
+                    {!!p.revisiones?.[s]?.length && <span className="font-mono text-caption leading-[11px] font-bold text-success border border-success rounded-[5px] px-0.5">R</span>}
                     {p.eventos[String(s)] && (
-                      <span className="font-mono text-[9px] leading-[11px] font-bold text-accent-ink border border-accent-line rounded-[5px] px-0.5">
+                      <span className="font-mono text-caption leading-[11px] font-bold text-accent-ink border border-accent-line rounded-[5px] px-0.5">
                         {EVENTOS.find(e => e.value === p.eventos[String(s)].tipo)?.corto}
                       </span>
                     )}
@@ -322,7 +322,7 @@ export default function BarraDeSemanas(p: Props) {
                 onChange={e => p.onEvento(p.semana, { tipo: evento.tipo, ...(e.target.value ? { nota: e.target.value } : {}) })}
                 placeholder="Lo que leerá el atleta (p. ej. «entrena en el hotel lo que puedas»)"
                 aria-label="Nota del evento para el atleta"
-                className="flex-1 min-w-[14rem] h-10 bg-surface border border-hairline rounded-control px-3 font-sans text-label text-ink placeholder-ink-3 focus:outline-none focus:ring-1 focus:ring-accent"
+                className="flex-1 min-w-[14rem] h-10 bg-surface border border-control-line rounded-control px-3 font-sans text-label text-ink placeholder-ink-3 focus:outline-none focus:ring-1 focus:ring-accent"
               />
             )}
           </div>
@@ -333,7 +333,7 @@ export default function BarraDeSemanas(p: Props) {
               onChange={e => p.onNota(e.target.value)}
               placeholder={`Por qué cambias esto en la semana ${p.semana} (solo lo ves tú)`}
               rows={2}
-              className="w-full bg-surface border border-hairline rounded-control px-3 py-2 font-sans text-label text-ink placeholder-ink-3 focus:outline-none focus:ring-1 focus:ring-accent resize-y"
+              className="w-full bg-surface border border-control-line rounded-control px-3 py-2 font-sans text-label text-ink placeholder-ink-3 focus:outline-none focus:ring-1 focus:ring-accent resize-y"
             />
           )}
           {(p.revisiones?.[p.semana] ?? []).length > 0 && (

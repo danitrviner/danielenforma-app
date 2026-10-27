@@ -127,14 +127,14 @@ export default function RoutinePreview({
         <div className="flex items-center gap-2">
           <button
             onClick={onBack}
-            className="px-3 py-2 font-mono text-label text-ink-2 hover:text-ink border border-hairline rounded-control transition-all flex items-center gap-1"
+            className="px-3 py-2 font-mono text-label text-ink-2 hover:text-ink border border-hairline rounded-control transition-[color,background-color,border-color,opacity,transform,box-shadow] flex items-center gap-1"
           >
             <Icon name="arrow_back" size="s" />
             Volver
           </button>
           <button
             onClick={onAssign}
-            className="px-4 py-2 bg-accent text-on-accent font-sans text-label font-bold uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all flex items-center gap-2"
+            className="px-4 py-2 bg-accent text-on-accent font-sans text-label font-bold uppercase rounded-control hover:bg-accent-press active:scale-95 transition-[color,background-color,border-color,opacity,transform,box-shadow] flex items-center gap-2"
           >
             <Icon name="assignment_turned_in" size="s" />
             {assignLabel ?? 'Asignar al atleta'}
@@ -272,7 +272,7 @@ export default function RoutinePreview({
               <button
                 type="button"
                 onClick={() => onAdd(dayIdx)}
-                className="w-full flex items-center justify-center gap-2 bg-bg border border-dashed border-hairline rounded-control px-3 py-2 text-title-s font-sans text-ink-2 hover:text-accent-ink hover:border-accent/40 transition-all"
+                className="w-full flex items-center justify-center gap-2 bg-bg border border-dashed border-hairline rounded-control px-3 py-2 text-title-s font-sans text-ink-2 hover:text-accent-ink hover:border-accent/40 transition-[color,background-color,border-color,opacity,transform,box-shadow]"
               >
                 <Icon name="add" size="s" />
                 Añadir ejercicio

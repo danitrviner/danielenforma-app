@@ -104,7 +104,7 @@ export default function CardioZonesSettingsCard({ profile }: Props) {
             max={230}
             value={mostrando}
             onChange={e => setDraft(e.target.value)}
-            className="w-28 bg-raised border border-hairline rounded-control px-3 py-2 text-ink text-title-s font-mono focus:outline-none focus:border-accent/50"
+            className="w-28 bg-raised border border-control-line rounded-control px-3 py-2 text-ink text-title-s font-mono focus:outline-none focus:border-accent/50"
           />
           <Button variant="secondary" size="s" onClick={handleSave} loading={saving} disabled={!mostrando}>
             Guardar

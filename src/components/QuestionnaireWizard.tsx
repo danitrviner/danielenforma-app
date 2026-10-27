@@ -236,7 +236,7 @@ export default function QuestionnaireWizard({ questionnaire, assignment, athlete
             onChange={e => setAnswer(question.id, e.target.value)}
             maxLength={question.maxChars}
             placeholder="Escribe aquí..."
-            className="w-full bg-raised border-0 border-b border-hairline text-ink text-title-s p-3 focus:ring-0 focus:border-accent transition-colors min-h-[120px]"
+            className="w-full bg-raised border-0 border-b border-control-line text-ink text-title-s p-3 focus:ring-0 focus:border-accent transition-colors min-h-[120px]"
           />
         )}
 
@@ -301,7 +301,7 @@ export default function QuestionnaireWizard({ questionnaire, assignment, athlete
                     type="button"
                     onClick={() => setAnswer(question.id, v)}
                     aria-pressed={valor === v}
-                    className={`h-[52px] rounded-control font-mono text-title-s font-bold transition-all active:scale-95 ${
+                    className={`h-[52px] rounded-control font-mono text-title-s font-bold transition-[color,background-color,border-color,opacity,transform,box-shadow] active:scale-95 ${
                       valor === v
                         ? 'bg-accent text-on-accent'
                         : 'bg-raised text-ink-2 border border-hairline hover:border-accent/50'
@@ -327,7 +327,7 @@ export default function QuestionnaireWizard({ questionnaire, assignment, athlete
                 type="button"
                 onClick={() => setAnswer(question.id, v)}
                 aria-pressed={valor === v}
-                className={`flex-1 py-3 font-sans text-label rounded-control border transition-all min-h-[52px] active:scale-95 ${
+                className={`flex-1 py-3 font-sans text-label rounded-control border transition-[color,background-color,border-color,opacity,transform,box-shadow] min-h-[52px] active:scale-95 ${
                   valor === v
                     ? 'bg-accent text-on-accent font-bold border-transparent'
                     : 'bg-raised text-ink border-hairline'
@@ -357,7 +357,7 @@ export default function QuestionnaireWizard({ questionnaire, assignment, athlete
                     }
                   }}
                   aria-pressed={isSelected}
-                  className={`w-full py-3 px-4 text-label font-sans rounded-control border text-left transition-all min-h-[52px] active:scale-[0.99] ${
+                  className={`w-full py-3 px-4 text-label font-sans rounded-control border text-left transition-[color,background-color,border-color,opacity,transform,box-shadow] min-h-[52px] active:scale-[0.99] ${
                     isSelected
                       ? 'bg-accent text-on-accent border-transparent font-bold'
                       : 'bg-raised text-ink border-hairline'

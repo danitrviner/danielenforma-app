@@ -249,7 +249,7 @@ export default function ClientesList({ coachEmail }: { coachEmail: string }) {
 
   return (
     <>
-    <div className="space-y-3">
+    <div className="pantalla space-y-3">
       <header className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h1 className="font-sans font-bold text-title-m text-ink">Clientes</h1>
@@ -296,7 +296,7 @@ export default function ClientesList({ coachEmail }: { coachEmail: string }) {
             onChange={e => setParam('q', e.target.value)}
             placeholder="Buscar por nombre, email o DNI"
             aria-label="Buscar clientes"
-            className="w-full pl-8 pr-2 py-2 rounded-control bg-field border border-hairline text-title-s text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent/40"
+            className="w-full pl-8 pr-2 py-2 rounded-control bg-field border border-control-line text-title-s text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent/40"
           />
         </div>
         {/* Mismo desbordamiento que las pestañas de la ficha: los cinco filtros
@@ -311,7 +311,7 @@ export default function ClientesList({ coachEmail }: { coachEmail: string }) {
               aria-pressed={filtro === f.id}
               className={`shrink-0 px-3 py-2 rounded-control font-sans text-caption uppercase tracking-widest transition-colors ${
                 filtro === f.id
-                  ? 'bg-accent/15 text-accent-ink border border-accent/30'
+                  ? 'bg-accent text-on-accent border border-accent-press'
                   : 'bg-field text-ink-2 border border-hairline hover:border-strong'
               }`}
             >

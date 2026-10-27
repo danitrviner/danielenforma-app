@@ -191,7 +191,7 @@ const Tarjeta: React.FC<TarjetaProps> = ({
                   value={maquinaId ?? ''}
                   onChange={e => onMaquina(e.target.value || undefined)}
                   aria-label={`Máquina para ${ex.name}`}
-                  className="min-w-0 flex-1 bg-bg border border-hairline rounded-control px-1.5 py-1 text-caption font-sans text-ink-2 focus:outline-none focus:border-accent"
+                  className="min-w-0 flex-1 bg-bg border border-control-line rounded-control px-1.5 py-1 text-caption font-sans text-ink-2 focus:outline-none focus:border-accent"
                 >
                   <option value="">Sin máquina</option>
                   {maquinasDelGrupo.map(m => <option key={m.id} value={m.id}>{m.nombre}</option>)}
@@ -354,7 +354,7 @@ const GrupoDraft: React.FC<GrupoProps> = ({
             onChange={e => setBusqueda(e.target.value)}
             placeholder="Buscar ejercicio"
             aria-label={`Buscar ejercicio de ${MUSCLE_LABELS[grupo].toLowerCase()}`}
-            className="w-44 bg-bg border border-hairline rounded-control px-2.5 py-1.5 text-label font-sans text-ink focus:outline-none focus:border-accent"
+            className="w-44 bg-bg border border-control-line rounded-control px-2.5 py-1.5 text-label font-sans text-ink focus:outline-none focus:border-accent"
           />
         </div>
         {(filtrables.equipment || filtrables.lateralidad || filtrables.goma) && (

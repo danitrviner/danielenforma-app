@@ -48,7 +48,7 @@ export default function LevelLadderCard({ status }: Props) {
                 {c.criterion.kind !== 'manual' && (
                   <div className="h-1 rounded-full bg-track overflow-hidden mt-1">
                     <div
-                      className="h-full rounded-full transition-all duration-500"
+                      className="h-full rounded-full transition-[color,background-color,border-color,opacity,transform,box-shadow] duration-500"
                       style={{ width: `${Math.max(4, c.pct)}%`, backgroundColor: c.done ? 'var(--color-success)' : 'var(--color-data)' }}
                     />
                   </div>

@@ -257,7 +257,7 @@ export default function SheetDia({
                 </div>
               )}
               {bandaNutricion && (
-                <p className="text-[12.5px] text-ink-3 font-sans">
+                <p className="text-label text-ink-3 font-sans">
                   {dia.nutricion.comidasHechas !== undefined && dia.nutricion.comidasTotal !== undefined
                     ? `${dia.nutricion.comidasHechas} de ${dia.nutricion.comidasTotal} comidas marcadas`
                     : (dia.nutricion.comidasTotal !== undefined ? `${dia.nutricion.comidasTotal} comidas plan · sin registro` : 'Sin datos de comidas')}
@@ -286,7 +286,7 @@ export default function SheetDia({
                 <Icon name="directions_run" size="m" style={{ color: 'var(--color-cat-cardio)' }} />
                 <div className="flex flex-col gap-0.5">
                   <span className="font-sans font-bold text-body-s text-ink">Cardio</span>
-                  <span className="text-[12.5px] text-ink-3 font-sans">{dia.entreno.cardio ? (dia.entreno.cardio.tipo === 'zona2' ? 'Zona 2 · cinta' : 'VO₂ · intervalos') : 'Sin cardio este día'}</span>
+                  <span className="text-label text-ink-3 font-sans">{dia.entreno.cardio ? (dia.entreno.cardio.tipo === 'zona2' ? 'Zona 2 · cinta' : 'VO₂ · intervalos') : 'Sin cardio este día'}</span>
                 </div>
               </div>
               {dia.entreno.cardio && (
@@ -319,7 +319,7 @@ export default function SheetDia({
               </div>
               <div className="flex-1" />
               <span
-                className="text-[12.5px] px-3 py-1.5 rounded-control"
+                className="text-label px-3 py-1.5 rounded-control"
                 style={{ color: fotoDelDia ? 'var(--color-accent-ink)' : 'var(--color-ink-4)', background: fotoDelDia ? 'color-mix(in oklab, var(--color-accent) 10%, transparent)' : 'var(--color-cell)' }}
               >
                 {fotoDelDia ? 'Foto de progreso subida' : (esFuturo ? 'Sin foto prevista' : 'Sin foto este día')}
@@ -358,7 +358,7 @@ export default function SheetDia({
                     onChange={e => setBorradorNota(e.target.value)}
                     rows={3}
                     placeholder="Escribe algo que quieras que el atleta vea hoy en Inicio…"
-                    className="w-full bg-cell border border-hairline rounded-control px-3 py-3 text-body-s text-ink focus:outline-none focus:ring-1 focus:ring-accent resize-none"
+                    className="w-full bg-cell border border-control-line rounded-control px-3 py-3 text-body-s text-ink focus:outline-none focus:ring-1 focus:ring-accent resize-none"
                   />
                   <div className="flex gap-2 justify-end">
                     <Button variant="secondary" size="s" onClick={() => setEditandoNota(false)}>Cancelar</Button>

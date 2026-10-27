@@ -137,7 +137,7 @@ export default function DossierPanel({ athleteEmail, athleteName }: Props) {
               value={(borrador[campo.clave] as string) ?? ''}
               onChange={e => editar(campo.clave, e.target.value)}
               rows={campo.filas}
-              className="w-full bg-field border border-hairline rounded-control p-3 text-label text-ink resize-y focus:border-accent-line focus:outline-none"
+              className="w-full bg-field border border-control-line rounded-control p-3 text-label text-ink resize-y focus:border-accent-line focus:outline-none"
             />
           </label>
         ))}
@@ -149,7 +149,7 @@ export default function DossierPanel({ athleteEmail, athleteName }: Props) {
             value={preguntas}
             onChange={e => { setSucio(true); setPreguntas(e.target.value); }}
             rows={3}
-            className="w-full bg-field border border-hairline rounded-control p-3 text-label text-ink resize-y focus:border-accent-line focus:outline-none"
+            className="w-full bg-field border border-control-line rounded-control p-3 text-label text-ink resize-y focus:border-accent-line focus:outline-none"
           />
         </label>
 
@@ -196,7 +196,7 @@ export default function DossierPanel({ athleteEmail, athleteName }: Props) {
             value={borrador.note}
             onChange={e => { setSucio(true); setBorrador(b => ({ ...b, note: e.target.value })); }}
             rows={2}
-            className="w-full bg-field border border-hairline rounded-control p-3 text-label text-ink resize-y focus:border-accent-line focus:outline-none"
+            className="w-full bg-field border border-control-line rounded-control p-3 text-label text-ink resize-y focus:border-accent-line focus:outline-none"
           />
           {notaHeredada && (
             <span className="text-caption text-warning flex items-start gap-1">

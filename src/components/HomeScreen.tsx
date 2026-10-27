@@ -1,3 +1,4 @@
+import { useCuentaAlMontar } from '../hooks/useCuentaAlMontar';
 import React, { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { UserProfile, WeightCheckIn } from '../types';
@@ -89,6 +90,7 @@ const TEXTO_DEL_DIA: Record<EstadoDeDia, string> = {
 };
 
 export default function HomeScreen({ profile, checkins, onNavigate, onProfileChanged }: HomeScreenProps) {
+  const rachaAnimada = useCuentaAlMontar(profile.currentStreak);
   // Dentro del componente, no a nivel de módulo: una constante de módulo se
   // calcula una sola vez y se queda anclada al día en que se cargó la app —
   // en una sesión de Capacitor que sigue viva en segundo plano toda la noche,
@@ -247,7 +249,7 @@ export default function HomeScreen({ profile, checkins, onNavigate, onProfileCha
   const cardioRowRef = useTourTarget('home-cardio-row');
 
   return (
-    <div className="space-y-6">
+    <div className="pantalla pantalla-b space-y-6">
       {pedirConsentimiento && onboarding && (
         <SolicitudConsentimientoIA onboarding={onboarding} onAhoraNo={aplazar} />
       )}
@@ -265,7 +267,7 @@ export default function HomeScreen({ profile, checkins, onNavigate, onProfileCha
         actionInline
         action={profile.currentStreak > 0 ? (
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-control border border-accent-line bg-accent/13">
-            <span className="font-mono text-body-s font-bold text-accent-ink">{profile.currentStreak}</span>
+            <span className="font-mono text-body-s font-bold text-accent-ink">{Math.round(rachaAnimada)}</span>
           </span>
         ) : undefined}
       />
@@ -332,7 +334,7 @@ export default function HomeScreen({ profile, checkins, onNavigate, onProfileCha
         <>
           {/* ── Tarjeta primaria: entreno de fuerza, salvo día de descanso con cardio prescrito ── */}
           {!cardioIsPrimary && todayAssignment && (
-            <section ref={primaryCardRef} className={`rounded-canvas p-5 border ${todayAssignment.status === 'completed' ? 'bg-success/8 border-success/25' : 'bg-surface border-hairline'}`}>
+            <section ref={primaryCardRef} className={`protagonista rounded-canvas p-5 border ${todayAssignment.status === 'completed' ? 'bg-success/8 border-success/25' : 'bg-surface border-hairline'}`}>
               <p className="text-caption font-mono uppercase tracking-wider text-ink-2">
                 Entreno de hoy{todayWorkout && ` · ${todayWorkout.exercises.length} ejercicio${todayWorkout.exercises.length === 1 ? '' : 's'}`}
               </p>
@@ -349,7 +351,7 @@ export default function HomeScreen({ profile, checkins, onNavigate, onProfileCha
           )}
 
           {cardioIsPrimary && cardioRx && (
-            <section ref={primaryCardRef} className="rounded-canvas p-5 border bg-surface border-hairline">
+            <section ref={primaryCardRef} className="protagonista rounded-canvas p-5 border bg-surface border-hairline">
               <p className="text-caption font-mono uppercase tracking-wider text-ink-2">Día de descanso · Cardio</p>
               <p className="font-display text-feature font-black uppercase text-ink mt-1">
                 {cardioRx.type === 'zona2' ? 'Zona 2' : 'Intervalos'}

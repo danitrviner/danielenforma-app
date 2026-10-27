@@ -204,6 +204,38 @@ interface OnboardingData {
 
 ---
 
+## Sesión 2026-10-27 — Modo claro y animaciones (rama `modo-claro-3`, PR sin fusionar)
+
+Informe y maquetas: `docs/revision-modo-claro-2026-10-27.md` (+ carpeta). Decisiones de Dani:
+fondo **gris tibio** `#F3F2F0`; seleccionado **oro sólido** (`bg-accent border-accent-press
+text-on-accent`), una sola receta; segmentado con pista `inset`; fuera el ocre `#7D5300`.
+
+**Regla de superficies (claro):** página gris; lo que contiene (tarjeta, hoja, barra) blanco;
+lo que se toca dentro de blanco vuelve a gris (`raised` = `field` = `bg`); lo hundido (`inset`)
+un escalón más; nada «casi blanco». Líneas: `hairline` 14 % (separador y borde de tarjeta),
+`strong` 30 % (borde de chip/botón neutro), `control-line` 48 % claro / 34 % oscuro (contorno
+de input/select/textarea, 3:1). El oro de borde (`accent-line`) es sólido `#A87510` en claro y
+60 % en oscuro: el botón secundario pasa el 3:1.
+
+**Macros:** texto con `macro-*` (hidratos = `accent-ink`), relleno (anillo, barra, donut) con
+`macro-*-fill`. **Tipografía:** nombre de ítem en lista 16/600, dato secundario 14 mono,
+fila de tabla 14, etiqueta de campo 14/500; nada fuera de `--text-*`. **Movimiento:** salidas
+`dialog-out`/`toast-out` (140 ms), pliegues con `grid-template-rows`, `active:scale` en filas y
+chips, anillos con `--duration-ring`, listas con `stagger-child` (tope `--i` 8), nada de
+`transition-all`. **Toda pantalla entra escalonada:** clase `pantalla` en la raíz de cada
+pantalla y de cada panel de pestaña (los hijos directos hacen `fade-up` con 40 ms de
+escalón, tope en el 8.º); al cambiar de pestaña el contenido se remonta con `key`. Una
+`.pantalla` dentro de otra no se funde dos veces. Una pantalla nueva lleva la clase, siempre.
+**Segunda capa (27-10):** entrada `asentar`; `pantalla-b` + `.protagonista` solo en Inicio,
+Nutrición, Entreno y Revisión; `--ease-rebote` es la ÚNICA segunda curva (protagonista, pop de la
+barra, toast). Hooks: `useCuentaAlMontar` (cifras estáticas cuentan; nunca cronómetro/reps/FC),
+`useRecienHecho` (celebrar una transición, no un estado), `useDireccionDePestana` /
+`useDireccionDeFecha` (el contenido entra desde el lado hacia el que vas). Primitiva `SelloHecho`
+para todo círculo de «hecho». Lista → detalle con `viewTransition: true` y
+`nombreDeTransicion()`. `.fila-pulsable` en filas que navegan; `.zona-tactil` en iconos de 20 px.
+
+---
+
 ## Sesión 2026-09-23 — Objetivo corporal, verificación por tendencia y gasto real (rama `objetivo-corporal`, SIN mergear)
 
 **Objetivo = fase.** `NutritionPhase.objetivo` (6 tipos: volumen, deficit, deficit_acelerado,

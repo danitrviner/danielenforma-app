@@ -528,7 +528,7 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="pantalla space-y-6">
       {/* Week strip */}
       <div className="grid grid-cols-7 gap-2">
         {WEEK_DAYS.map(d => {
@@ -540,7 +540,7 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
             <button
               key={d}
               onClick={() => setSelectedDay(d)}
-              className={`flex flex-col items-center py-2 rounded-control border transition-all ${active ? 'bg-accent border-accent text-on-accent' : 'bg-surface border-hairline text-ink-2 hover:border-strong'}`}
+              className={`flex flex-col items-center py-2 rounded-control border transition-[color,background-color,border-color,opacity,transform,box-shadow] ${active ? 'bg-accent border-accent text-on-accent' : 'bg-surface border-hairline text-ink-2 hover:border-strong'}`}
             >
               <span className="font-mono text-caption font-bold uppercase">{WEEK_DAY_SHORT[d]}</span>
               {isToday && <span className={`w-1 h-1 rounded-full ${active ? 'bg-veil' : 'bg-accent'}`} />}
@@ -622,7 +622,7 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
           {day.meals.map(meal => {
             const done = doneKeys.has(`${selectedDay}_${meal.id}`);
             return (
-              <div key={meal.id} className={`bg-surface border rounded-surface overflow-hidden transition-all ${done ? 'border-success/30' : 'border-hairline'}`}>
+              <div key={meal.id} className={`bg-surface border rounded-surface overflow-hidden transition-[color,background-color,border-color,opacity,transform,box-shadow] ${done ? 'border-success/30' : 'border-hairline'}`}>
                 {/* Foto a sangre, mismo patrón que RecetaCard en la Biblioteca de
                     recetas — antes era una miniatura de 64px, demasiado pequeña
                     para verse bien (queja real de Dani). */}
@@ -814,7 +814,7 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
                   value={swapQuery}
                   onChange={e => setSwapQuery(e.target.value)}
                   placeholder="Buscar entre las alternativas…"
-                  className="w-full px-3 py-2 bg-bg border border-hairline rounded-control font-sans text-base text-ink placeholder:text-ink-3 focus:border-accent/40 outline-none"
+                  className="w-full px-3 py-2 bg-bg border border-control-line rounded-control font-sans text-body text-ink placeholder:text-ink-3 focus:border-accent/40 outline-none"
                 />
                 <p className="font-mono text-caption text-ink-3">
                   {swapExactas.length} cuadran con tus puntos
@@ -831,7 +831,7 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
                       <button
                         key={c.recipe.id}
                         onClick={() => confirmSwap(c)}
-                        className="w-full flex items-center gap-3 px-3 py-3 text-left bg-bg border border-hairline hover:border-accent/40 rounded-control transition-all"
+                        className="w-full flex items-center gap-3 px-3 py-3 text-left bg-bg border border-hairline hover:border-accent/40 rounded-control transition-[color,background-color,border-color,opacity,transform,box-shadow]"
                       >
                         <div className="w-10 h-10 rounded-surface overflow-hidden flex-shrink-0 bg-raised">
                           <FotoDeReceta src={fotoDeReceta(c.recipe)} alt="" className="w-full h-full object-cover" fallback={null} />
@@ -974,7 +974,7 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
                   value={extraQuery}
                   onChange={e => setExtraQuery(e.target.value)}
                   placeholder="Buscar (pan, fruta, arroz…)"
-                  className="w-full px-3 py-2 bg-bg border border-hairline rounded-control font-sans text-base text-ink placeholder:text-ink-3 focus:border-accent/40 outline-none"
+                  className="w-full px-3 py-2 bg-bg border border-control-line rounded-control font-sans text-body text-ink placeholder:text-ink-3 focus:border-accent/40 outline-none"
                 />
               </div>
 
@@ -985,7 +985,7 @@ export default function MyMenuScreen({ profile, onAddToPlan }: Props) {
                   <button
                     key={item.id}
                     onClick={() => elegirAlimento(item)}
-                    className="w-full flex items-center justify-between gap-3 px-3 py-3 text-left bg-bg border border-hairline hover:border-accent/40 rounded-control transition-all"
+                    className="w-full flex items-center justify-between gap-3 px-3 py-3 text-left bg-bg border border-hairline hover:border-accent/40 rounded-control transition-[color,background-color,border-color,opacity,transform,box-shadow]"
                   >
                     <span className="font-sans text-body-s text-ink truncate">{item.label}</span>
                     <Badge tone="neutral">{CAT_LABEL[item.category]}</Badge>

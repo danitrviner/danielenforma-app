@@ -203,7 +203,7 @@ export default function MenuPreferencesPanel({ athleteEmail }: Props) {
               <button
                 key={dt.id}
                 onClick={() => cycleDishType(dt.id)}
-                className={`flex items-center gap-1 px-3 py-2 rounded-control border font-mono text-caption font-bold transition-all ${cls}`}
+                className={`flex items-center gap-1 px-3 py-2 rounded-control border font-mono text-caption font-bold transition-[color,background-color,border-color,opacity,transform,box-shadow] ${cls}`}
               >
                 <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>{dt.icon}</span>
                 {dt.label}
@@ -223,7 +223,7 @@ export default function MenuPreferencesPanel({ athleteEmail }: Props) {
               key={v}
               disabled={savingVariety}
               onClick={() => handleVarietyChange(v)}
-              className={`flex-1 py-2 rounded-control font-mono font-bold text-label transition-all disabled:opacity-50 ${variety === v ? 'bg-accent text-on-accent' : 'bg-raised border border-hairline text-ink-2 hover:text-ink'}`}
+              className={`flex-1 py-2 rounded-control font-mono font-bold text-label transition-[color,background-color,border-color,opacity,transform,box-shadow] disabled:opacity-50 ${variety === v ? 'bg-accent text-on-accent' : 'bg-raised border border-hairline text-ink-2 hover:text-ink'}`}
             >
               {v}
             </button>

@@ -59,7 +59,9 @@ import { ANCHO_OVERLAY, type OverlaySize } from './internal/overlaySizes';
 const UMBRAL_CIERRE_PX = 96;
 /** …o soltando con esta velocidad hacia abajo (px/ms), un gesto rápido. */
 const VELOCIDAD_CIERRE = 0.5;
-/** Lo que tarda en bajar y fundirse al cerrar. */
+/** Lo que tarda en bajar y fundirse al cerrar: `--duration-base` (240 ms).
+ *  Más que `--duration-exit` porque recorre 26 px y escala; menos que la
+ *  entrada (380), como manda el handoff. */
 const DURACION_SALIDA_MS = 240;
 
 /** La escala de anchos es común con `Dialog`; vive en `internal/overlaySizes`. */
@@ -188,7 +190,7 @@ export default function Sheet({ open, onClose, title, children, footer, toolbar,
           // arrastre y la salida, en línea, se ven.
           animationFillMode: 'backwards',
           transform: saliendo ? 'translateY(105%)' : arrastreY ? `translateY(${arrastreY}px)` : undefined,
-          ...(saliendo ? { transition: `transform ${DURACION_SALIDA_MS}ms cubic-bezier(0.4, 0, 1, 1)` } : {}),
+          ...(saliendo ? { transition: `transform ${DURACION_SALIDA_MS}ms var(--ease-brand)` } : {}),
         }}
         className={
           `relative z-[var(--z-modal)] flex w-full ${ANCHO_OVERLAY[size]} flex-col animate-sheet-in `

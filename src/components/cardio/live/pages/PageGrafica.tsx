@@ -108,7 +108,7 @@ export default function PageGrafica({ chartData, zones, timeInZone, belowZoneSec
             return (
               <div
                 key={z}
-                className="flex-1 flex items-center justify-end pr-2.5 border-b border-hairline last:border-b-0 transition-colors duration-700"
+                className="flex-1 flex items-center justify-end pr-2.5 border-b border-hairline last:border-b-0 transition-colors duration-(--duration-bar)"
                 // La banda de la zona actual se ilumina un poco (petición de
                 // Dani, 21-08) — mismo truco de opacidad-en-hex que ya usa
                 // el resto del panel, solo con un dígito más alto (`44`
@@ -122,7 +122,7 @@ export default function PageGrafica({ chartData, zones, timeInZone, belowZoneSec
                 style={{ background: `color-mix(in oklab, ${ZONE_COLOR[z]} ${isNow ? 27 : 13}%, transparent)` }}
               >
                 <span
-                  className={`font-mono text-[11px] transition-colors duration-700 ${isNow ? '' : 'dark:opacity-85'}`}
+                  className={`font-mono text-caption transition-colors duration-(--duration-bar)`}
                   style={{ color: ZONE_INK[z] }}
                 >
                   {z.toUpperCase()}
@@ -146,12 +146,12 @@ export default function PageGrafica({ chartData, zones, timeInZone, belowZoneSec
           <circle cx={last.x} cy={last.y} r={4.5} fill={lastColor} stroke="color-mix(in oklab, var(--color-veil) 35%, transparent)" strokeWidth={2} vectorEffect="non-scaling-stroke" />
         </svg>
         <span
-          className="absolute font-mono font-bold text-[15px]"
+          className="absolute font-mono font-bold text-body"
           style={{ color: lastColor, left: `min(${(last.x / CHART_W) * 100}%, calc(100% - 34px))`, top: Math.max(last.y - 26, 4) }}
         >
           {lastBpm}
         </span>
-        <div className="absolute left-3.5 bottom-2.5 font-mono text-[11px] text-ink-3">ÚLTIMOS {WINDOW_SEC} S</div>
+        <div className="absolute left-3.5 bottom-2.5 font-mono text-caption text-ink-3">ÚLTIMOS {WINDOW_SEC} S</div>
       </div>
 
       {/* Lista de zonas, Z1 → Z5 ascendente, fila actual resaltada */}
@@ -167,39 +167,39 @@ export default function PageGrafica({ chartData, zones, timeInZone, belowZoneSec
               <div className="flex items-center gap-3">
                 <span className="h-2.5 w-2.5 rounded-[3px] shrink-0" style={{ background: ZONE_COLOR[z] }} />
                 <div className="flex flex-col gap-0.5">
-                  <span className="text-[13.5px]" style={{ color: isNow ? ZONE_INK[z] : 'var(--color-ink-2)' }}>{ZONE_LABEL[z]}</span>
-                  <span className="font-mono text-[11px]" style={{ color: isNow ? ZONE_INK[z] : 'var(--color-ink-4)' }}>
+                  <span className="text-label" style={{ color: isNow ? ZONE_INK[z] : 'var(--color-ink-2)' }}>{ZONE_LABEL[z]}</span>
+                  <span className="font-mono text-caption" style={{ color: isNow ? ZONE_INK[z] : 'var(--color-ink-4)' }}>
                     {zones[z].min}-{zones[z].max} PPM{isNow ? ' · AHORA' : ''}
                   </span>
                 </div>
               </div>
-              <span className="font-mono text-[13px]" style={{ color: isNow ? ZONE_INK[z] : 'var(--color-ink-3)', fontWeight: isNow ? 700 : 600 }}>
+              <span className="font-mono text-label" style={{ color: isNow ? ZONE_INK[z] : 'var(--color-ink-3)', fontWeight: isNow ? 700 : 600 }}>
                 {fmt(timeInZone[z])}
               </span>
             </div>
           );
         })}
-        <div className="h-[50px] flex items-center justify-between border-t border-hairline dark:opacity-60">
+        <div className="h-[50px] flex items-center justify-between border-t border-hairline">
           <div className="flex items-center gap-3">
             <span className="h-2.5 w-2.5 rounded-[3px] shrink-0" style={{ background: BELOW_ZONE_COLOR }} />
-            <span className="text-[13.5px] text-ink-2">{BELOW_ZONE_LABEL}</span>
+            <span className="text-label text-ink-2">{BELOW_ZONE_LABEL}</span>
           </div>
-          <span className="font-mono text-[13px] font-semibold text-ink-3">{fmt(belowZoneSec)}</span>
+          <span className="font-mono text-label font-semibold text-ink-3">{fmt(belowZoneSec)}</span>
         </div>
       </div>
 
       {/* Reparto de la sesión */}
       <div className="bg-surface border border-hairline dark:border-transparent dark:bg-veil/25 rounded-2xl p-4 flex flex-col gap-3">
         <div className="flex items-center justify-between">
-          <span className="font-mono text-[11px] tracking-wide text-ink-3 uppercase">Reparto de la sesión</span>
-          <span className="font-mono text-[11px] text-ink-3">{fmt(elapsedSec)}</span>
+          <span className="font-mono text-caption tracking-wide text-ink-3 uppercase">Reparto de la sesión</span>
+          <span className="font-mono text-caption text-ink-3">{fmt(elapsedSec)}</span>
         </div>
         <div className="h-3.5 rounded-md overflow-hidden flex gap-0.5">
           {ZONE_ORDER.map(z => (
             <div key={z} style={{ width: `${Math.max((timeInZone[z] / total) * 100, 0)}%`, background: ZONE_COLOR[z] }} />
           ))}
         </div>
-        <span className="text-[12.5px] leading-relaxed text-ink-3">
+        <span className="text-label leading-relaxed text-ink-3">
           {currentZone
             ? `Llevas ${fmt(timeInZone[currentZone])} en ${ZONE_LABEL[currentZone].toLowerCase()}.`
             : 'Aún no has entrado en zona.'}

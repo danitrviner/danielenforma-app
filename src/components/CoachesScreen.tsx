@@ -211,11 +211,11 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
         </div>
         <div className="flex gap-2">
           <button type="button" onClick={handleReset}
-            className="px-3 py-2 font-sans text-caption uppercase border border-hairline text-ink-2 hover:text-ink rounded-control transition-all">
+            className="px-3 py-2 font-sans text-caption uppercase border border-hairline text-ink-2 hover:text-ink rounded-control transition-[color,background-color,border-color,opacity,transform,box-shadow]">
             Restaurar por defecto
           </button>
           <button type="button" onClick={handleSave} disabled={saving || !dirty}
-            className="px-3 py-2 font-sans text-caption uppercase bg-accent text-on-accent font-bold rounded-control hover:bg-accent-press disabled:opacity-50 transition-all">
+            className="px-3 py-2 font-sans text-caption uppercase bg-accent text-on-accent font-bold rounded-control hover:bg-accent-press disabled:opacity-50 transition-[color,background-color,border-color,opacity,transform,box-shadow]">
             {saving ? 'Guardando…' : 'Guardar plantilla'}
           </button>
         </div>
@@ -234,7 +234,7 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
             {repetidas.map(q => q.label).join(' · ')}
           </p>
           <button type="button" onClick={quitarRepetidas}
-            className="px-3 py-2 font-sans text-caption uppercase border border-warning/40 text-warning hover:bg-warning/10 rounded-control transition-all">
+            className="px-3 py-2 font-sans text-caption uppercase border border-warning/40 text-warning hover:bg-warning/10 rounded-control transition-[color,background-color,border-color,opacity,transform,box-shadow]">
             Quitarlas de la plantilla
           </button>
         </div>
@@ -258,7 +258,7 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
 
             <div className="space-y-3">
               {qs.map(q => (
-                <div key={q.id} className={`border rounded-surface transition-all ${editingId === q.id ? 'border-accent/30 bg-bg' : 'border-hairline bg-bg'}`}>
+                <div key={q.id} className={`border rounded-surface transition-[color,background-color,border-color,opacity,transform,box-shadow] ${editingId === q.id ? 'border-accent/30 bg-bg' : 'border-hairline bg-bg'}`}>
                   {editingId === q.id ? (
                     /* Inline editor */
                     <div className="p-3 space-y-2">
@@ -269,7 +269,7 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
                         {(['numeric', 'scale', 'text', 'choice'] as const).map(t => (
                           <button key={t} type="button"
                             onClick={() => updateQ(q.id, { type: t })}
-                            className={`px-3 py-1 rounded-control font-sans text-caption font-bold uppercase border transition-all ${
+                            className={`px-3 py-1 rounded-control font-sans text-caption font-bold uppercase border transition-[color,background-color,border-color,opacity,transform,box-shadow] ${
                               q.type === t ? 'bg-accent text-on-accent border-transparent' : 'text-ink-2 border-hairline hover:text-ink'
                             }`}>
                             {TYPE_LABEL[t]}
@@ -285,10 +285,10 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
                         <div className="flex gap-2">
                           <input type="number" value={q.scaleMin ?? 1} placeholder="Min"
                             onChange={e => updateQ(q.id, { scaleMin: Number(e.target.value) })}
-                            className="w-20 bg-bg border border-hairline rounded-control px-2 py-1 text-title-s text-ink font-mono focus:outline-none" />
+                            className="w-20 bg-bg border border-control-line rounded-control px-2 py-1 text-title-s text-ink font-mono focus:outline-none" />
                           <input type="number" value={q.scaleMax ?? 10} placeholder="Max"
                             onChange={e => updateQ(q.id, { scaleMax: Number(e.target.value) })}
-                            className="w-20 bg-bg border border-hairline rounded-control px-2 py-1 text-title-s text-ink font-mono focus:outline-none" />
+                            className="w-20 bg-bg border border-control-line rounded-control px-2 py-1 text-title-s text-ink font-mono focus:outline-none" />
                         </div>
                       )}
                       {q.type === 'choice' && (
@@ -356,7 +356,7 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
             </div>
 
             <button type="button" onClick={() => addQ(section)}
-              className="flex items-center gap-2 font-mono text-caption uppercase text-ink-2 hover:text-accent-ink border border-dashed border-hairline hover:border-accent/30 px-3 py-2 rounded-control w-full justify-center transition-all">
+              className="flex items-center gap-2 font-mono text-caption uppercase text-ink-2 hover:text-accent-ink border border-dashed border-hairline hover:border-accent/30 px-3 py-2 rounded-control w-full justify-center transition-[color,background-color,border-color,opacity,transform,box-shadow]">
               <span className="material-symbols-outlined text-body-s">add</span>
               Añadir pregunta
             </button>
@@ -367,7 +367,7 @@ function OnboardingTemplateEditor({ coachEmail }: { coachEmail: string }) {
       {dirty && (
         <div className="flex justify-end">
           <button type="button" onClick={handleSave} disabled={saving}
-            className="px-4 py-2 font-sans text-label uppercase bg-accent text-on-accent font-bold rounded-control hover:bg-accent-press disabled:opacity-50 transition-all">
+            className="px-4 py-2 font-sans text-label uppercase bg-accent text-on-accent font-bold rounded-control hover:bg-accent-press disabled:opacity-50 transition-[color,background-color,border-color,opacity,transform,box-shadow]">
             {saving ? 'Guardando…' : 'Guardar plantilla'}
           </button>
         </div>
@@ -512,7 +512,7 @@ function RecetasImportPanel() {
       {status === 'idle' && (
         <button
           onClick={startImport}
-          className="px-4 py-2 bg-data/10 border border-data/30 text-data hover:bg-data/20 font-sans text-label uppercase tracking-wider rounded-control transition-all flex items-center gap-2"
+          className="px-4 py-2 bg-data/10 border border-data/30 text-data hover:bg-data/20 font-sans text-label uppercase tracking-wider rounded-control transition-[color,background-color,border-color,opacity,transform,box-shadow] flex items-center gap-2"
         >
           <span className="material-symbols-outlined text-body-s">upload</span>
           Importar / Reimportar
@@ -526,7 +526,7 @@ function RecetasImportPanel() {
             <>
               <div className="w-full h-2.5 bg-track rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-data transition-all duration-300 rounded-full"
+                  className="h-full bg-data transition-[color,background-color,border-color,opacity,transform,box-shadow] duration-300 rounded-full"
                   style={{ width: `${pct}%` }}
                 />
               </div>
@@ -547,7 +547,7 @@ function RecetasImportPanel() {
           </div>
           <button
             onClick={startImport}
-            className="px-3 py-2 border border-hairline text-ink-2 hover:text-ink font-sans text-caption uppercase rounded-control transition-all"
+            className="px-3 py-2 border border-hairline text-ink-2 hover:text-ink font-sans text-caption uppercase rounded-control transition-[color,background-color,border-color,opacity,transform,box-shadow]"
           >
             Reimportar
           </button>
@@ -561,7 +561,7 @@ function RecetasImportPanel() {
           </p>
           <button
             onClick={startImport}
-            className="px-3 py-2 border border-data/30 text-data hover:bg-data/10 font-sans text-caption uppercase rounded-control transition-all"
+            className="px-3 py-2 border border-data/30 text-data hover:bg-data/10 font-sans text-caption uppercase rounded-control transition-[color,background-color,border-color,opacity,transform,box-shadow]"
           >
             Reintentar
           </button>
@@ -685,7 +685,7 @@ export default function CoachesScreen({ currentUserId, currentUserEmail }: Props
                     }`}>{isCoach ? 'Coach' : 'Atleta'}</span>
                     {canToggle && (
                       <button onClick={() => handleToggleRole(user)} disabled={updating === user.userId}
-                        className={`px-3 py-2 rounded-control font-sans text-label font-bold uppercase tracking-wider transition-all active:scale-95 disabled:opacity-50 border ${
+                        className={`px-3 py-2 rounded-control font-sans text-label font-bold uppercase tracking-wider transition-[color,background-color,border-color,opacity,transform,box-shadow] active:scale-95 disabled:opacity-50 border ${
                           isCoach ? 'border-danger/40 text-danger hover:bg-danger/10' : 'border-data/40 text-data hover:bg-data/10'
                         }`}>
                         {updating === user.userId

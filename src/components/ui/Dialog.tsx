@@ -4,6 +4,11 @@ import Icon from './Icon';
 import { useEscape, useFocusTrap, useScrollLock } from './internal/overlayHooks';
 import { useBotonAtras } from '../../services/botonAtras';
 import { ANCHO_OVERLAY, type OverlaySize } from './internal/overlaySizes';
+import { useReducedMotion } from './internal/useReducedMotion';
+
+/** Lo que tarda en fundirse al cerrar: `--duration-exit` (140 ms). Un
+ *  diálogo no recorre nada al irse, solo se asienta y se funde. */
+const DURACION_SALIDA_MS = 140;
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Dialog
@@ -37,12 +42,29 @@ export default function Dialog({ open, onClose, title, children, footer, size = 
   const ref = React.useRef<HTMLDivElement>(null);
   const idTitulo = React.useId();
 
+  // Cerrar animado, igual que Sheet: funde el velo y el panel y luego avisa.
+  // Un solo cierre aunque se toque dos veces (fondo + ✕ + Escape).
+  const sinMovimiento = useReducedMotion();
+  const [saliendo, setSaliendo] = React.useState(false);
+  const temporizador = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  React.useEffect(() => () => { if (temporizador.current) clearTimeout(temporizador.current); }, []);
+  React.useEffect(() => { if (open) setSaliendo(false); }, [open]);
+  const cerrar = React.useCallback(() => {
+    if (sinMovimiento) { onClose(); return; }
+    if (temporizador.current) return;
+    setSaliendo(true);
+    temporizador.current = setTimeout(() => {
+      temporizador.current = null;
+      onClose();
+    }, DURACION_SALIDA_MS);
+  }, [onClose, sinMovimiento]);
+
   useScrollLock(open);
   useFocusTrap(ref, open);
-  useEscape(onClose, open);
+  useEscape(cerrar, open);
   // 07-9. Atrás en Android es el Escape del móvil: cierra esta capa en vez de
   // navegar por debajo y dejar el overlay flotando sobre otra pantalla.
-  useBotonAtras(onClose, open);
+  useBotonAtras(cerrar, open);
 
   if (!open) return null;
 
@@ -55,8 +77,9 @@ export default function Dialog({ open, onClose, title, children, footer, size = 
     // borde FÍSICO de la pantalla, isla incluida.
     <div className="fixed inset-0 z-[var(--z-modal)] flex items-center justify-center p-4 pt-[calc(1rem+var(--safe-top))] pb-[calc(1rem+env(safe-area-inset-bottom,0px))]">
       <div
-        className="fixed inset-0 z-[var(--z-overlay)] bg-veil/70 backdrop-blur-sm"
-        onClick={onClose}
+        className="fixed inset-0 z-[var(--z-overlay)] bg-veil/70 backdrop-blur-sm transition-opacity duration-(--duration-exit) ease-brand"
+        style={{ opacity: saliendo ? 0 : 1 }}
+        onClick={cerrar}
         aria-hidden
       />
       <div
@@ -67,7 +90,7 @@ export default function Dialog({ open, onClose, title, children, footer, size = 
         aria-label={title ? undefined : label}
         tabIndex={-1}
         className={
-          `relative z-[var(--z-modal)] flex max-h-[85vh] w-full ${ANCHO_OVERLAY[size]} flex-col animate-sheet-in `
+          `relative z-[var(--z-modal)] flex max-h-[85vh] w-full ${ANCHO_OVERLAY[size]} flex-col ${saliendo ? 'animate-dialog-out' : 'animate-sheet-in'} `
           + 'rounded-canvas border border-strong bg-raised shadow-e2 focus:outline-none'
         }
       >
@@ -76,7 +99,7 @@ export default function Dialog({ open, onClose, title, children, footer, size = 
             <h2 id={idTitulo} className="font-sans text-title-s font-bold text-ink">{title}</h2>
             <button
               type="button"
-              onClick={onClose}
+              onClick={cerrar}
               aria-label="Cerrar"
               className="flex h-9 w-9 items-center justify-center rounded-control text-ink-2 transition-colors hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-line"
             >

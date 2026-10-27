@@ -174,7 +174,7 @@ export default function CoachWeekScreen({ coachId: _coachId }: Props) {
   const pendingOrOverdue = rows.filter(r => r.adherence === 'baja' || r.chips.some(c => c.status === 'vencido'));
 
   return (
-    <div className="space-y-6">
+    <div className="pantalla space-y-6">
       <PageHeader title="Esta semana" subtitle={`Semana del ${weekStart} al ${weekEnd}`} />
 
       <div className="flex gap-3 flex-wrap font-mono text-caption text-ink-2">
@@ -199,7 +199,7 @@ export default function CoachWeekScreen({ coachId: _coachId }: Props) {
             <button
               key={athlete.userId}
               onClick={() => navigate(`/clients/${encodeURIComponent(athlete.email)}/roadmap`)}
-              className="w-full flex items-center gap-3 bg-surface border border-hairline rounded-surface p-4 text-left hover:border-accent/30 transition-all"
+              className="w-full flex items-center gap-3 bg-surface border border-hairline rounded-surface p-4 text-left hover:border-accent/30 transition-[color,background-color,border-color,opacity,transform,box-shadow]"
             >
               <Avatar src={athlete.avatarUrl} name={athlete.displayName} className="w-10 h-10 rounded-full object-cover border border-hairline flex-shrink-0" />
               <div className="min-w-0 flex-1">

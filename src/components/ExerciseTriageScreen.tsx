@@ -427,7 +427,7 @@ export default function ExerciseTriageScreen({ onClose }: ExerciseTriageScreenPr
               onBlur={confirmarNombre}
               onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); confirmarNombre(); } }}
               autoFocus
-              className="h-[54px] w-full rounded-field border border-hairline bg-field px-4 font-sans text-title-s text-ink transition-colors focus:outline-none focus:border-accent focus:ring-1 focus:ring-inset focus:ring-accent"
+              className="h-[54px] w-full rounded-field border border-control-line bg-field px-4 font-sans text-title-s text-ink transition-colors focus:outline-none focus:border-accent focus:ring-1 focus:ring-inset focus:ring-accent"
             />
           </label>
         ) : (
@@ -573,7 +573,7 @@ export default function ExerciseTriageScreen({ onClose }: ExerciseTriageScreenPr
           onBlur={guardarNota}
           placeholder="Dudas, grabar de otro ángulo, confirmar con fisio…"
           rows={2}
-          className="mt-1 w-full rounded-field border border-hairline bg-field px-4 py-3 font-sans text-body-s text-ink transition-colors focus:outline-none focus:border-accent focus:ring-1 focus:ring-inset focus:ring-accent resize-none"
+          className="mt-1 w-full rounded-field border border-control-line bg-field px-4 py-3 font-sans text-body-s text-ink transition-colors focus:outline-none focus:border-accent focus:ring-1 focus:ring-inset focus:ring-accent resize-none"
         />
       </label>
 

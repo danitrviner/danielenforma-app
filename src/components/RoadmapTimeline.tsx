@@ -228,7 +228,7 @@ function ItemEditor({ item, onChange, onConfirm, onDelete, onCancel, saving, isN
             onChange={e => onChange({ ...item, description: e.target.value || undefined })}
             rows={2}
             placeholder="Detalle opcional..."
-            className="w-full bg-surface border border-hairline rounded-control px-3 py-3 text-title-s text-ink focus:outline-none focus:ring-1 focus:ring-accent resize-none"
+            className="w-full bg-surface border border-control-line rounded-control px-3 py-3 text-title-s text-ink focus:outline-none focus:ring-1 focus:ring-accent resize-none"
           />
         </div>
 
@@ -730,7 +730,7 @@ export default function RoadmapTimeline({ mesocycles: mesocyclesProp, nutritionP
       <div
         key={m.id}
         style={{ position: 'absolute', left: x, top: topBase + ITEM_Y, width: w, height: ITEM_H, zIndex: isResizing ? 15 : 5 }}
-        className={`rounded-surface overflow-hidden cursor-default transition-all ${isResizing ? '' : goldTimingClasses(timing)}`}
+        className={`rounded-surface overflow-hidden cursor-default transition-[color,background-color,border-color,opacity,transform,box-shadow] ${isResizing ? '' : goldTimingClasses(timing)}`}
         title={`${m.objective || `Mes. ${m.number}`} · ${m.weeks} semanas · ${fmtDate(m.startDate)} – ${fmtDate(mEnd)}`}
       >
         <div style={{ background: color }} className="h-full px-3 flex flex-col justify-center">
@@ -805,7 +805,7 @@ export default function RoadmapTimeline({ mesocycles: mesocyclesProp, nutritionP
       <div
         key={b.key}
         style={{ position: 'absolute', left: x, top: topBase + ITEM_Y, width: w, height: ITEM_H, zIndex: isResizing ? 15 : 5 }}
-        className={`rounded-surface overflow-hidden cursor-default transition-all ${isResizing ? '' : cyanTimingClasses(timing)}`}
+        className={`rounded-surface overflow-hidden cursor-default transition-[color,background-color,border-color,opacity,transform,box-shadow] ${isResizing ? '' : cyanTimingClasses(timing)}`}
         title={`${b.label} · ${fmtDate(b.start)} – ${fmtDate(b.end)}`}
       >
         <div style={{ background: b.color }} className="h-full px-3 flex flex-col justify-center">
@@ -1203,7 +1203,7 @@ export default function RoadmapTimeline({ mesocycles: mesocyclesProp, nutritionP
                 key={item.id}
                 onClick={() => !readonly && openEdit(item)}
                 disabled={readonly}
-                className={`flex items-center gap-2 px-3 py-2 rounded-control border border-hairline text-label font-sans ${readonly ? 'cursor-default' : 'hover:border-accent/40 cursor-pointer'} transition-all`}
+                className={`flex items-center gap-2 px-3 py-2 rounded-control border border-hairline text-label font-sans ${readonly ? 'cursor-default' : 'hover:border-accent/40 cursor-pointer'} transition-[color,background-color,border-color,opacity,transform,box-shadow]`}
                 style={{ color: statusColor(item.status) }}
                 title={item.description}
               >

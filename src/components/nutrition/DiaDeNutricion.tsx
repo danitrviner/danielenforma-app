@@ -1,3 +1,5 @@
+import { useCuentaAlMontar } from '../../hooks/useCuentaAlMontar';
+import { useRecienHecho } from '../../hooks/useRecienHecho';
 import React from 'react';
 import { Icon } from '../ui';
 import { addDays } from '../../utils/trainingWeek';
@@ -37,6 +39,7 @@ function AnilloDia({ pct, activo }: { pct: number | null; activo: boolean }) {
         <circle
           cx="20" cy="20" r={r} fill="none" stroke={pct > 105 ? 'var(--color-danger)' : 'var(--color-accent)'} strokeWidth="2.5" strokeLinecap="round"
           strokeDasharray={`${Math.min(1, pct / 100) * c} ${c}`} transform="rotate(-90 20 20)"
+          style={{ transition: 'stroke-dasharray var(--duration-bar) var(--ease-brand)' }}
         />
       )}
     </svg>
@@ -94,7 +97,8 @@ function Arco({ quedan, pct, texto }: { quedan: number; pct: number; texto: stri
           strokeDasharray={`${largo} 999`} transform="rotate(135 62 62)" />
         {lleno > 0 && (
           <circle cx="62" cy="62" r={r} fill="none" stroke={pasado ? 'var(--color-danger)' : 'var(--color-accent)'} strokeWidth="8" strokeLinecap="round"
-            strokeDasharray={`${lleno} 999`} transform="rotate(135 62 62)" />
+            strokeDasharray={`${lleno} 999`} transform="rotate(135 62 62)"
+            style={{ transition: 'stroke-dasharray var(--duration-ring) var(--ease-brand)' }} />
         )}
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
@@ -135,8 +139,15 @@ export function TarjetaDelDia(p: {
   nota?: React.ReactNode;
 }) {
   const quedan = p.objetivo - p.comido;
+  // P2: las tres cifras cuentan hasta su valor al montar y el arco crece con
+  // ellas (va de la cifra animada, no de la real). Al cerrar el día, la tarjeta
+  // late una vez (solo en la transición, no al volver con el día ya cerrado).
+  const comidoAnim = useCuentaAlMontar(p.comido);
+  const objetivoAnim = useCuentaAlMontar(p.objetivo);
+  const quedanAnim = objetivoAnim - comidoAnim;
+  const recienCerrado = useRecienHecho(!!p.cerrado);
   return (
-    <div className="overflow-hidden rounded-canvas bg-surface">
+    <div className={`overflow-hidden rounded-canvas bg-surface ${recienCerrado ? 'animate-latido' : ''}`}>
       <div className="flex items-center justify-between border-b border-hairline px-3 py-2">
         <span aria-hidden className="h-10 w-10" />
         <div className="flex items-center gap-1">
@@ -155,12 +166,12 @@ export function TarjetaDelDia(p: {
 
       <div className="flex items-center justify-between gap-2 px-4 pt-4 pb-2">
         <div className="w-20 text-center">
-          <span className="block font-mono text-title-m font-bold text-ink">{p.fmt(p.comido)}</span>
+          <span className="block font-mono text-title-m font-bold text-ink">{p.fmt(comidoAnim)}</span>
           <span className="font-sans text-body-s text-ink-2">{p.etiquetaComido}</span>
         </div>
-        <Arco quedan={quedan} pct={p.objetivo > 0 ? p.comido / p.objetivo : 0} texto={p.fmt(Math.abs(quedan))} />
+        <Arco quedan={quedan} pct={p.objetivo > 0 ? comidoAnim / p.objetivo : 0} texto={p.fmt(Math.abs(quedanAnim))} />
         <div className="w-20 text-center">
-          <span className="block font-mono text-title-m font-bold text-ink">{p.fmt(p.objetivo)}</span>
+          <span className="block font-mono text-title-m font-bold text-ink">{p.fmt(objetivoAnim)}</span>
           <span className="font-sans text-body-s text-ink-2">objetivo</span>
         </div>
       </div>
@@ -176,7 +187,7 @@ export function TarjetaDelDia(p: {
               <span className="block font-sans text-body-s font-bold text-ink">{m.etiqueta}</span>
               <span className={`block font-mono text-caption ${pasado ? 'text-danger' : 'text-ink-2'}`}>{p.fmtMacro(m.comido, m.objetivo)}</span>
               <span className="mt-1.5 block h-1.5 overflow-hidden rounded-full bg-hairline">
-                <span className="block h-full rounded-full" style={{ width: `${m.objetivo > 0 ? Math.min(100, (m.comido / m.objetivo) * 100) : 0}%`, background: pasado ? 'var(--color-danger)' : m.color }} />
+                <span className="block h-full origin-left animate-scale-x-in rounded-full transition-[width] duration-(--duration-bar) ease-brand" style={{ width: `${m.objetivo > 0 ? Math.min(100, (m.comido / m.objetivo) * 100) : 0}%`, background: pasado ? 'var(--color-danger)' : m.color }} />
               </span>
             </div>
           );

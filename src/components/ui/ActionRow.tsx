@@ -64,7 +64,7 @@ export default function ActionRow({ initials, title, meta, urgent = true, onClic
       <button
         type="button"
         onClick={onClick}
-        className={`flex w-full items-center gap-3 px-4 py-3 text-left transition-colors duration-(--duration-state) hover:bg-raised ${className}`}
+        className={`flex w-full items-center gap-3 px-4 py-3 text-left fila-pulsable hover:bg-raised ${className}`}
       >
         {cuerpo}
       </button>

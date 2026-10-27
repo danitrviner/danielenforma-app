@@ -108,7 +108,7 @@ export default function TourOverlay({
       borderRadius: 14,
       border: '1px solid color-mix(in oklab, var(--color-accent) 55%, transparent)',
       boxShadow: '0 0 0 9999px color-mix(in oklab, var(--color-veil) 62%, transparent)',
-      transition: 'top 300ms, left 300ms, width 300ms, height 300ms',
+      transition: 'top var(--duration-slide) var(--ease-brand), left var(--duration-slide) var(--ease-brand), width var(--duration-slide) var(--ease-brand), height var(--duration-slide) var(--ease-brand)',
       pointerEvents: 'none',
       zIndex: 1,
     };

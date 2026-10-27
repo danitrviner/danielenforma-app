@@ -120,7 +120,7 @@ export default function ExerciseCloseCard({
           onChange={e => onNoteChange(e.target.value)}
           placeholder="Escribe cómo te has sentido…"
           rows={2}
-          className="w-full bg-bg border border-hairline rounded-control p-3 text-title-s text-ink placeholder-ink-2/40 focus:outline-none focus:ring-1 focus:ring-accent resize-none"
+          className="w-full bg-bg border border-control-line rounded-control p-3 text-title-s text-ink placeholder-ink-2/40 focus:outline-none focus:ring-1 focus:ring-accent resize-none"
         />
         <div className="flex flex-wrap gap-2">
           {CHIPS_RAPIDOS.map(c => <Chip key={c} onClick={() => addChip(c)}>{c}</Chip>)}

@@ -29,7 +29,7 @@ export default function FotoDeReceta({ src, alt, className, fallback }: Props) {
       alt={alt}
       loading="lazy"
       decoding="async"
-      className={className}
+      className={`contorno-foto ${className}`}
       onError={() => setFallo(true)}
     />
   );

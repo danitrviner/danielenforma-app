@@ -115,14 +115,14 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="pantalla space-y-6">
       {/* Mode selector */}
       <div className="flex gap-2 flex-wrap">
         {MODES.map(m => (
           <button
             key={m.id}
             onClick={() => setFilterMode(m.id)}
-            className={`px-4 py-2 rounded-control font-mono text-label font-bold uppercase tracking-wider transition-all ${
+            className={`px-4 py-2 rounded-control font-mono text-label font-bold uppercase tracking-wider transition-[color,background-color,border-color,opacity,transform,box-shadow] ${
               filterMode === m.id
                 ? 'bg-accent text-on-accent'
                 : 'bg-raised text-ink-2 border border-hairline hover:border-accent/40 hover:text-ink'
@@ -141,7 +141,7 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
         <div className="flex items-center gap-2 flex-wrap">
           <button
             onClick={() => setFilterCat('all')}
-            className={`px-3 py-1 rounded-full font-mono text-caption font-bold uppercase transition-all tracking-wider ${
+            className={`px-3 py-1 rounded-full font-mono text-caption font-bold uppercase transition-[color,background-color,border-color,opacity,transform,box-shadow] tracking-wider ${
               filterCat === 'all' ? 'bg-raised text-ink' : 'text-ink-2 hover:text-ink'
             }`}
           >
@@ -151,7 +151,7 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
             <button
               key={cat.id}
               onClick={() => setFilterCat(cat.id)}
-              className={`px-3 py-1 rounded-full font-mono text-caption font-bold uppercase transition-all tracking-wider ${
+              className={`px-3 py-1 rounded-full font-mono text-caption font-bold uppercase transition-[color,background-color,border-color,opacity,transform,box-shadow] tracking-wider ${
                 filterCat === cat.id ? CAT_COLOR[cat.id] + '' : 'text-ink-2 hover:text-ink'
               }`}
             >
@@ -178,14 +178,14 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
               no una cuenta ("1 manzana o 1 pera"). */}
           <button
             onClick={() => setCalculadoraAbierta(true)}
-            className="flex items-center gap-2 px-4 py-3 bg-accent text-on-accent font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-all whitespace-nowrap"
+            className="flex items-center gap-2 px-4 py-3 bg-accent text-on-accent font-sans font-bold text-label uppercase rounded-control hover:bg-accent-press active:scale-95 transition-[color,background-color,border-color,opacity,transform,box-shadow] whitespace-nowrap"
           >
             <span className="material-symbols-outlined text-body-s">calculate</span>
             Desde etiqueta
           </button>
           <button
             onClick={openCreate}
-            className="flex items-center gap-2 px-4 py-3 bg-raised text-ink border border-hairline font-sans font-bold text-label uppercase rounded-control hover:border-accent/40 active:scale-95 transition-all whitespace-nowrap"
+            className="flex items-center gap-2 px-4 py-3 bg-raised text-ink border border-hairline font-sans font-bold text-label uppercase rounded-control hover:border-accent/40 active:scale-95 transition-[color,background-color,border-color,opacity,transform,box-shadow] whitespace-nowrap"
           >
             <span className="material-symbols-outlined text-body-s">add</span>
             A mano
@@ -287,7 +287,7 @@ export default function FoodLibraryScreen({ coachId: _coachId }: Props) {
                   onChange={e => setForm(f => ({ ...f, label: e.target.value }))}
                   placeholder="Ej: 100g pechuga de pollo sin piel"
                   rows={3}
-                  className="w-full bg-surface border border-hairline rounded-control px-3 py-3 text-title-s text-ink focus:outline-none focus:ring-1 focus:ring-accent resize-none"
+                  className="w-full bg-surface border border-control-line rounded-control px-3 py-3 text-title-s text-ink focus:outline-none focus:ring-1 focus:ring-accent resize-none"
                 />
               </div>
             </div>

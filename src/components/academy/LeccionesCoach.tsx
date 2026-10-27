@@ -62,7 +62,7 @@ function LessonForm({ cursos, inicial, courseIdInicial, guardando, onSubmit, onC
       </select>
       <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Título de la lección" required className={CAMPO} />
       <div className="flex gap-2">
-        <select value={provider} onChange={e => setProvider(e.target.value as 'youtube' | 'vimeo')} className="bg-bg border border-hairline rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent" aria-label="Plataforma del vídeo">
+        <select value={provider} onChange={e => setProvider(e.target.value as 'youtube' | 'vimeo')} className="bg-bg border border-control-line rounded-control p-2 text-title-s text-ink focus:outline-none focus:border-accent" aria-label="Plataforma del vídeo">
           <option value="youtube">YouTube</option>
           <option value="vimeo">Vimeo</option>
         </select>
@@ -78,7 +78,7 @@ function LessonForm({ cursos, inicial, courseIdInicial, guardando, onSubmit, onC
         <p className="font-mono text-caption uppercase tracking-wider text-ink-2">Descargables</p>
         {resources.map((r, i) => (
           <div key={i} className="flex gap-2 flex-wrap items-center">
-            <select value={r.kind} onChange={e => cambiarRecurso(i, { kind: e.target.value as 'pdf' | 'link' })} className="bg-bg border border-hairline rounded-control p-2 text-title-s text-ink" aria-label="Tipo de descargable">
+            <select value={r.kind} onChange={e => cambiarRecurso(i, { kind: e.target.value as 'pdf' | 'link' })} className="bg-bg border border-control-line rounded-control p-2 text-title-s text-ink" aria-label="Tipo de descargable">
               <option value="pdf">PDF</option>
               <option value="link">Enlace</option>
             </select>

@@ -419,7 +419,7 @@ export default function WorkoutSessionPlayer({
   });
 
   return (
-    <div className="space-y-3">
+    <div className="pantalla space-y-3">
       {/* Cabecera compacta: con la sesión en marcha el nombre del entreno no
           aporta (ya se eligió para entrar) y en el móvil ocupaba tres líneas.
           Queda solo para lectores de pantalla; todo sube para que la ficha del

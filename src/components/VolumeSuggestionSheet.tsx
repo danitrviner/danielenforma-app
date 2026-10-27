@@ -226,7 +226,7 @@ export default function VolumeSuggestionSheet({
               {MUSCLE_ORDER.map(g => {
                 const p = prioridadesEfectivas[g];
                 const tono = p === 'alta'
-                  ? 'border-accent bg-accent/14 text-accent-ink'
+                  ? 'bg-accent border-accent-press text-on-accent'
                   : p === 'baja'
                     ? 'border-hairline bg-transparent text-ink-3'
                     : 'border-hairline bg-raised text-ink-2';

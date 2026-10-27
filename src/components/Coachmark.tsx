@@ -45,7 +45,7 @@ export default function Coachmark({ id, profile, icon, text }: Props) {
       <button
         onClick={() => { apuntarVisto(profile, `coachmark_${id}`, DESCARTADO); setDismissed(true); }}
         aria-label="Cerrar aviso"
-        className="text-accent-ink/60 hover:text-accent-ink flex-shrink-0 -m-1 p-1"
+        className="text-accent-ink hover:text-accent-press flex-shrink-0 -m-1 p-1"
       >
         <Icon name="close" size="m" />
       </button>

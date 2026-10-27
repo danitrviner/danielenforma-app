@@ -360,7 +360,7 @@ export default function AccionesRapidasSheet({
                         onChange={e => setNotaTexto(e.target.value)}
                         rows={3}
                         placeholder="Hoy toca ir a por todas en el press. Si el hombro molesta, para."
-                        className="w-full bg-cell border border-hairline rounded-field p-3 text-body-s font-sans text-ink resize-y"
+                        className="w-full bg-cell border border-control-line rounded-field p-3 text-body-s font-sans text-ink resize-y"
                       />
                       <label className="flex items-center gap-2.5 text-label font-sans text-ink-2 cursor-pointer">
                         <input type="checkbox" checked={notaAvisar} onChange={e => setNotaAvisar(e.target.checked)} className="accent-[var(--color-accent)]" />
